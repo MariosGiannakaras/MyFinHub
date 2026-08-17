@@ -25,4 +25,5 @@
 .login-logout:hover{color:var(--blue-2);transform:translateY(-1px)}
 .login-logout:active{transform:translateY(1px)}
 .login-logout:disabled{opacity:.55;cursor:wait;transform:none}
+.session-error-banner{position:fixed;z-index:120;left:50%;bottom:22px;transform:translateX(-50%);width:min(520px,calc(100% - 28px));border:1px solid rgba(214,64,88,.22);background:rgba(255,245,247,.97);color:#9f263a;border-radius:14px;padding:11px 14px;box-shadow:0 12px 34px rgba(15,34,62,.18);font-size:10px;line-height:1.45;text-align:center}
 @media(max-width:520px){.login-screen{padding:14px}.login-card{padding:20px;border-radius:23px}.login-brand img{width:52px;height:52px}}
