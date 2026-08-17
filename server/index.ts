@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { accessTokenAal, beginTotpEnrollment, challengeTotp, clearSessionCookies, getTotpFactors, requireSession, revokeSession, setSessionCookies, signInWithPassword, verifyTotp } from './auth.js';
 import { ApiError, assertSameOrigin, handleApi, methodNotAllowed, requestHeader, sendJson } from './http.js';
 import { backupStore, DATA_SOURCE, isOwner, readStore, writeStore } from './storage.js';
+import { isAuthRejection } from './upstream.js';
 import { validateFinanceData } from './validation.js';
 
 const app = express();
@@ -32,8 +33,12 @@ app.post('/api/auth/login', (req, res) => void handleApi(res, async () => {
     throw new ApiError(401, 'INVALID_CREDENTIALS', 'Invalid email or password.');
   }
   let tokens;
-  try { tokens = await signInWithPassword(email, password); }
-  catch { throw new ApiError(401, 'INVALID_CREDENTIALS', 'Invalid email or password.'); }
+  try {
+    tokens = await signInWithPassword(email, password);
+  } catch (error) {
+    if (isAuthRejection(error)) throw new ApiError(401, 'INVALID_CREDENTIALS', 'Invalid email or password.');
+    throw error;
+  }
   if (!tokens.access_token || !tokens.refresh_token || !(await isOwner(tokens.access_token))) {
     await revokeSession(tokens.access_token);
     clearSessionCookies(req, res);
@@ -101,7 +106,8 @@ app.post('/api/auth/mfa/verify', (req, res) => void handleApi(res, async () => {
     setSessionCookies(req, res, tokens);
     sendJson(res, 200, { authenticated: true, email: tokens.user?.email || session.user.email || null });
   } catch (error) {
-    if (error instanceof ApiError && error.code === 'AUTH_REQUIRED') throw error;
+    if (isAuthRejection(error)) throw new ApiError(401, 'INVALID_MFA_CODE', 'Invalid verification code.');
+    if (error instanceof ApiError) throw error;
     throw new ApiError(401, 'INVALID_MFA_CODE', 'Invalid verification code.');
   }
 }));

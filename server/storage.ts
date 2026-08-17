@@ -1,6 +1,7 @@
 import type { FinanceData } from '../src/types.js';
 import { migrateData } from '../src/lib/domain.js';
 import { ApiError } from './http.js';
+import { fetchUpstream } from './upstream.js';
 import { validateFinanceData } from './validation.js';
 
 export const DATA_SOURCE = 'Supabase/PostgreSQL';
@@ -27,7 +28,7 @@ function config(accessToken?: string) {
 
 async function supabase<T>(path: string, init: RequestInit = {}, accessToken?: string): Promise<T> {
   const { url, apiKey, authorization } = config(accessToken);
-  const response = await fetch(`${url}/rest/v1/${path}`, {
+  const response = await fetchUpstream(`${url}/rest/v1/${path}`, {
     ...init,
     headers: {
       apikey: apiKey,
@@ -36,7 +37,7 @@ async function supabase<T>(path: string, init: RequestInit = {}, accessToken?: s
       ...(init.body ? { 'content-type': 'application/json' } : {}),
       ...(init.headers || {}),
     },
-  });
+  }, 'DATA');
 
   const payload = await response.json().catch(() => null) as { message?: string; code?: string } | T | null;
   if (!response.ok) {
@@ -49,6 +50,8 @@ async function supabase<T>(path: string, init: RequestInit = {}, accessToken?: s
     if (/FORBIDDEN|42501/i.test(marker) || response.status === 403) throw new ApiError(403, 'FORBIDDEN', 'Access denied.');
     if (response.status === 401) throw new ApiError(401, 'AUTH_REQUIRED', 'Authentication required.');
     if (/INVALID_DATA|INVALID_SCHEMA_VERSION|22023/i.test(marker)) throw new ApiError(400, 'INVALID_DATA', 'The finance data is invalid.');
+    if (response.status === 429) throw new ApiError(429, 'DATA_RATE_LIMITED', 'Data service is busy. Try again shortly.');
+    if (response.status >= 500) throw new ApiError(503, 'DATA_UNAVAILABLE', 'Data service is temporarily unavailable. Try again.');
     throw new ApiError(502, 'SUPABASE_ERROR', 'Database request failed.', false);
   }
   return payload as T;
@@ -61,6 +64,7 @@ function first<T>(value: T | T[]): T {
 function envelope(row: StateRow) {
   if (!row) throw new ApiError(500, 'EMPTY_DATABASE', 'RheomIQ database is empty.', false);
   const migrated = migrateData(row.data);
+  validateFinanceData(migrated);
   return {
     data: migrated,
     revision: String(row.revision),

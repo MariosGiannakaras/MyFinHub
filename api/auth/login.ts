@@ -1,6 +1,7 @@
 import { accessTokenAal, clearSessionCookies, getTotpFactors, revokeSession, setSessionCookies, signInWithPassword } from '../../server/auth.js';
 import { ApiError, assertSameOrigin, handleApi, methodNotAllowed, readJsonBody, sendJson } from '../../server/http.js';
 import { isOwner } from '../../server/storage.js';
+import { isAuthRejection } from '../../server/upstream.js';
 
 export default async function handler(req: any, res: any) {
   await handleApi(res, async () => {
@@ -15,8 +16,12 @@ export default async function handler(req: any, res: any) {
     }
 
     let tokens;
-    try { tokens = await signInWithPassword(email, password); }
-    catch { throw new ApiError(401, 'INVALID_CREDENTIALS', 'Invalid email or password.'); }
+    try {
+      tokens = await signInWithPassword(email, password);
+    } catch (error) {
+      if (isAuthRejection(error)) throw new ApiError(401, 'INVALID_CREDENTIALS', 'Invalid email or password.');
+      throw error;
+    }
 
     if (!tokens.access_token || !tokens.refresh_token || !(await isOwner(tokens.access_token))) {
       await revokeSession(tokens.access_token);

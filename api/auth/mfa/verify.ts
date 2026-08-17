@@ -1,6 +1,7 @@
 import { accessTokenAal, challengeTotp, clearSessionCookies, getTotpFactors, requireSession, setSessionCookies, verifyTotp } from '../../../server/auth.js';
 import { ApiError, assertSameOrigin, handleApi, methodNotAllowed, readJsonBody, sendJson } from '../../../server/http.js';
 import { isOwner } from '../../../server/storage.js';
+import { isAuthRejection } from '../../../server/upstream.js';
 
 export default async function handler(req: any, res: any) {
   await handleApi(res, async () => {
@@ -30,7 +31,8 @@ export default async function handler(req: any, res: any) {
       setSessionCookies(req, res, tokens);
       return sendJson(res, 200, { authenticated: true, email: tokens.user?.email || session.user.email || null });
     } catch (error) {
-      if (error instanceof ApiError && error.code === 'AUTH_REQUIRED') throw error;
+      if (isAuthRejection(error)) throw new ApiError(401, 'INVALID_MFA_CODE', 'Invalid verification code.');
+      if (error instanceof ApiError) throw error;
       throw new ApiError(401, 'INVALID_MFA_CODE', 'Invalid verification code.');
     }
   });
