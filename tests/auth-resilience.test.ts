@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { requireSession, signInWithPassword } from '../server/auth.js';
-import { ApiError } from '../server/http.js';
 
 function response(status: number, body: unknown = {}) {
   return new Response(JSON.stringify(body), {
@@ -73,6 +72,6 @@ describe('Supabase Auth failure resilience', () => {
 
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response(400, { message: 'invalid login credentials' })));
     await expect(signInWithPassword('owner@example.com', 'wrong-password'))
-      .rejects.toSatisfy((error: unknown) => error instanceof ApiError && error.code === 'AUTH_REJECTED');
+      .rejects.toMatchObject({ status: 400, code: 'AUTH_REJECTED' });
   });
 });
