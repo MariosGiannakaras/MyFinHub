@@ -19,3 +19,15 @@
 - Reconciliation edits must calculate against the balance excluding the reconciliation event being edited.
 - UI motion must respect `prefers-reduced-motion`; interaction state cannot be conveyed only by motion or color.
 - CI/security checks are production gates. Keep tests, dependency audit, CodeQL, Dependabot, and security headers working when changing the app.
+
+## Delivery workflow
+
+- Implementation, infrastructure, dependency-policy, and database changes start from a tracked GitHub issue unless they are an emergency security fix.
+- Use short-lived branches named `feat/<issue>-<slug>`, `fix/<issue>-<slug>`, `chore/<issue>-<slug>`, or `security/<issue>-<slug>`. Never implement directly on `main`.
+- Every implementation branch returns through a pull request that links the issue with `Closes #<issue>`, states scope and risk, and completes the repository PR checklist.
+- Do not merge while required CI, CodeQL, Supabase migration checks, or relevant deployment checks are failing or pending.
+- Prefer squash merge for a single clear change history. Delete merged branches and do not leave abandoned implementation branches or unresolved review threads.
+- Major dependency upgrades require an explicit compatibility review; do not merge them solely because Dependabot opened a PR.
+- Database DDL changes are made only through ordered files in `supabase/migrations/`. Never make an untracked production schema change and leave Git behind.
+- Production data is used only by the production runtime. Preview/development deployments must not receive credentials or configuration that can mutate the production finance database unless that access is explicitly reviewed and intended.
+- Before merging backend/auth/database changes, verify authorization failure paths as well as the successful path. Before merging finance-domain changes, run the domain regression suite and preserve the invariants above.

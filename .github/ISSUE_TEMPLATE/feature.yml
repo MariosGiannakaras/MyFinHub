@@ -1,0 +1,57 @@
+name: Feature or improvement
+description: Plan a user-facing feature, workflow improvement, or architectural enhancement.
+title: "feat: "
+body:
+  - type: markdown
+    attributes:
+      value: Keep the issue focused on one outcome. Describe behavior and constraints before implementation.
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What should improve and why?
+    validations:
+      required: true
+  - type: textarea
+    id: current
+    attributes:
+      label: Current behavior
+      description: What happens today?
+    validations:
+      required: true
+  - type: textarea
+    id: desired
+    attributes:
+      label: Desired behavior
+      description: Describe the expected user-visible and data behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: constraints
+    attributes:
+      label: Constraints and invariants
+      description: Note finance semantics, security, compatibility, or UX rules that must not change.
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Use a concrete checklist.
+      value: |
+        - [ ]
+        - [ ]
+    validations:
+      required: true
+  - type: dropdown
+    id: areas
+    attributes:
+      label: Primary area
+      options:
+        - Frontend / UX
+        - Finance domain logic
+        - Backend / API
+        - Authentication / security
+        - Supabase / database
+        - Vercel / deployment
+        - Repository / CI
+    validations:
+      required: true
