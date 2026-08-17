@@ -1,6 +1,6 @@
-import { requireSession } from '../server/auth.js';
-import { assertSameOrigin, handleApi, methodNotAllowed, readJsonBody, sendJson } from '../server/http.js';
-import { readStore, writeStore } from '../server/storage.js';
+import { accessTokenAal, clearSessionCookies, requireSession } from '../server/auth.js';
+import { ApiError, assertSameOrigin, handleApi, methodNotAllowed, readJsonBody, sendJson } from '../server/http.js';
+import { isOwner, readStore, writeStore } from '../server/storage.js';
 import { validateFinanceData } from '../server/validation.js';
 
 export default async function handler(req: any, res: any) {
@@ -8,6 +8,11 @@ export default async function handler(req: any, res: any) {
     if (req.method !== 'GET' && req.method !== 'PUT') return methodNotAllowed(res, ['GET', 'PUT']);
 
     const session = await requireSession(req, res);
+    if (!(await isOwner(session.accessToken))) {
+      clearSessionCookies(req, res);
+      throw new ApiError(401, 'AUTH_REQUIRED', 'Authentication required.');
+    }
+    if (accessTokenAal(session.accessToken) !== 'aal2') throw new ApiError(403, 'MFA_REQUIRED', 'Verification required.');
     if (req.method === 'GET') return sendJson(res, 200, await readStore(session.accessToken));
 
     assertSameOrigin(req);
