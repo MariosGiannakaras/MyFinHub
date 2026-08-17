@@ -19,13 +19,20 @@
 
 ## Validation state
 
-- Domain TypeScript compiles standalone in the current sandbox.
-- Domain smoke tests have been run against the real migrated MBAI dataset.
-- Full npm install/build cannot run in this sandbox because outbound DNS to npm registry is unavailable; CI is configured to run the full check on GitHub.
+- GitHub CI passes tests, TypeScript compilation and production build on `main`.
+- Production Supabase project is healthy in `eu-central-1`.
+- Production database contains the migrated RheomIQ schema-v3 state.
+- Imported legacy corpus verified at 5 accounts, 39 months, 2,853 transactions, 1,184 balance snapshots, 7 recurring entries, 18 subscriptions, 9 loans and 2 lending records.
+- The temporary private import bucket and uploaded JSON were deleted after migration.
+- The one-time import Edge Function is disabled and JWT-protected.
+- RLS is enabled on application state and backup tables; anonymous/authenticated roles have no table or RPC access.
 
 ## Supabase migration
 
-- SQL schema and RPC migration is implemented under `supabase/migrations/`.
-- One-time JSON import performs a post-write canonical checksum verification.
-- GitHub migration deployment workflow is committed but remains skipped until the Supabase project ref/credentials are configured.
-- Remote migration/data import cannot run until the external Supabase project is created and credentials are supplied.
+- Production migrations applied:
+  - `20260817063947_create_rheomiq_state`
+  - `20260817070649_enable_pg_net`
+- Repository migration filenames are aligned with production migration history.
+- `server/storage.ts` now treats Supabase/PostgreSQL as the durable data source; browser storage and the local JSON file are no longer the persistence layer.
+- GitHub migration deployment workflow is committed and ready.
+- Remaining external setup: configure the repository variable `SUPABASE_PROJECT_REF` and GitHub Actions secrets `SUPABASE_ACCESS_TOKEN` and `SUPABASE_DB_PASSWORD` so future migrations can deploy from `main` automatically.
