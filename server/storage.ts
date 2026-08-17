@@ -17,11 +17,12 @@ function config() {
 
 async function supabase<T>(path: string, init: RequestInit = {}): Promise<T> {
   const { url, secret } = config();
+  const modernSecret = secret.startsWith('sb_secret_');
   const response = await fetch(`${url}/rest/v1/${path}`, {
     ...init,
     headers: {
       apikey: secret,
-      authorization: `Bearer ${secret}`,
+      ...(!modernSecret ? { authorization: `Bearer ${secret}` } : {}),
       accept: 'application/json',
       ...(init.body ? { 'content-type': 'application/json' } : {}),
       ...(init.headers || {}),
