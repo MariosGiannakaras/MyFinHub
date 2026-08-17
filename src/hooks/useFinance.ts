@@ -68,7 +68,7 @@ export function useFinance() {
       }
     });
   }
-  const coordinator = coordinatorRef.current;
+  const coordinator = coordinatorRef.current!;
 
   useEffect(() => { saveStateRef.current = saveState; }, [saveState]);
   useEffect(() => { void reload(); }, [reload]);
