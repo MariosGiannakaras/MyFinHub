@@ -47,8 +47,8 @@ export function MfaScreen({
           : `Άνοιξε το Authenticator και βάλε τον 6ψήφιο κωδικό${email ? ` για ${email}` : ''}.`}</p>
       </div>
 
-      {mode === 'enroll' && !enrollment ? <button className="primary-action login-submit" type="button" disabled={busy} onClick={startEnrollment}>
-        {busy ? 'Προετοιμασία…' : 'Εμφάνιση QR κωδικού'}
+      {mode === 'enroll' && !enrollment ? <button className="primary-action login-submit" type="button" disabled={busy} aria-busy={busy} onClick={startEnrollment}>
+        <span className="login-submit-label">{busy ? 'Προετοιμασία…' : 'Εμφάνιση QR κωδικού'}</span>
       </button> : null}
 
       {enrollment ? <div className="mfa-setup neo-inset">
@@ -70,11 +70,11 @@ export function MfaScreen({
           autoFocus
         /></div></label>
         {error ? <div className="login-error" role="alert">{error}</div> : null}
-        <button className="primary-action login-submit" type="submit" disabled={busy || code.length !== 6}>{busy ? 'Επαλήθευση…' : 'Επαλήθευση'}</button>
+        <button className="primary-action login-submit" type="submit" disabled={busy || code.length !== 6} aria-busy={busy}><span className="login-submit-label">{busy ? 'Επαλήθευση…' : 'Επαλήθευση'}</span></button>
       </form> : error ? <div className="login-error" role="alert">{error}</div> : null}
 
-      <button className="ghost-button" type="button" disabled={busy} onClick={()=>void onLogout()}>Αποσύνδεση</button>
-      <small className="login-footnote">Τα οικονομικά δεδομένα παραμένουν κλειδωμένα μέχρι να ολοκληρωθεί η επαλήθευση.</small>
+      <button className="ghost-button login-logout" type="button" disabled={busy} onClick={()=>void onLogout()}>Αποσύνδεση</button>
+      <small className="login-footnote">Τα οικονομικά δεδομένα παραμένουν κλειδωμένα μέχρι να ολοκληρωθεί η επαλήθευση MFA.</small>
     </section>
   </main>;
 }
