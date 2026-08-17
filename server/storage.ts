@@ -44,6 +44,7 @@ async function supabase<T>(path: string, init: RequestInit = {}, accessToken?: s
     const upstreamMessage = payload && typeof payload === 'object' && 'message' in payload ? payload.message : '';
     const marker = `${upstreamCode || ''} ${upstreamMessage || ''}`;
     if (/REVISION_CONFLICT|40001/i.test(marker)) throw new ApiError(409, 'REVISION_CONFLICT', 'The data changed in another session. Reload before saving.');
+    if (/EXPECTED_REVISION_REQUIRED/i.test(marker)) throw new ApiError(428, 'PRECONDITION_REQUIRED', 'A current revision is required before saving.');
     if (/MFA_REQUIRED/i.test(marker)) throw new ApiError(403, 'MFA_REQUIRED', 'Verification required.');
     if (/FORBIDDEN|42501/i.test(marker) || response.status === 403) throw new ApiError(403, 'FORBIDDEN', 'Access denied.');
     if (response.status === 401) throw new ApiError(401, 'AUTH_REQUIRED', 'Authentication required.');
@@ -66,6 +67,20 @@ function envelope(row: StateRow) {
     filePath: DATA_SOURCE,
     lastSavedAt: row.updated_at,
   };
+}
+
+export function parseExpectedRevision(value?: string) {
+  if (value === undefined || value === '') {
+    throw new ApiError(428, 'PRECONDITION_REQUIRED', 'A current revision is required before saving.');
+  }
+  if (!/^(0|[1-9]\d*)$/.test(value)) {
+    throw new ApiError(400, 'INVALID_REVISION', 'Invalid data revision.');
+  }
+  const parsed = Number(value);
+  if (!Number.isSafeInteger(parsed) || parsed < 0) {
+    throw new ApiError(400, 'INVALID_REVISION', 'Invalid data revision.');
+  }
+  return parsed;
 }
 
 export async function isOwner(accessToken: string) {
@@ -101,7 +116,7 @@ export async function writeStore(data: FinanceData, expectedRevision?: string, f
   const path = force ? 'rpc/rheomiq_import_state' : 'rpc/rheomiq_save_state';
   const body = force
     ? { p_data: next }
-    : { p_data: next, p_expected_revision: expectedRevision ? Number(expectedRevision) : null };
+    : { p_data: next, p_expected_revision: parseExpectedRevision(expectedRevision) };
   const row = first(await supabase<StateRow[] | StateRow>(path, {
     method: 'POST',
     body: JSON.stringify(body),

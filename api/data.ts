@@ -1,6 +1,6 @@
 import { accessTokenAal, clearSessionCookies, requireSession } from '../server/auth.js';
 import { ApiError, assertSameOrigin, handleApi, methodNotAllowed, readJsonBody, sendJson } from '../server/http.js';
-import { isOwner, readStore, writeStore } from '../server/storage.js';
+import { isOwner, parseExpectedRevision, readStore, writeStore } from '../server/storage.js';
 import { validateFinanceData } from '../server/validation.js';
 
 export default async function handler(req: any, res: any) {
@@ -16,9 +16,10 @@ export default async function handler(req: any, res: any) {
     if (req.method === 'GET') return sendJson(res, 200, await readStore(session.accessToken));
 
     assertSameOrigin(req);
+    const expectedHeader = Array.isArray(req.headers?.['if-match']) ? req.headers['if-match'][0] : req.headers?.['if-match'];
+    const expectedRevision = String(parseExpectedRevision(typeof expectedHeader === 'string' ? expectedHeader : undefined));
     const body = await readJsonBody(req, 5 * 1024 * 1024);
     validateFinanceData(body);
-    const expected = Array.isArray(req.headers?.['if-match']) ? req.headers['if-match'][0] : req.headers?.['if-match'];
-    return sendJson(res, 200, await writeStore(body, expected || undefined, false, session.accessToken));
+    return sendJson(res, 200, await writeStore(body, expectedRevision, false, session.accessToken));
   });
 }

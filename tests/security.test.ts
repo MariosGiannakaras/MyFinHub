@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { accessTokenAal } from '../server/auth.js';
 import { ApiError, assertSameOrigin } from '../server/http.js';
+import { parseExpectedRevision } from '../server/storage.js';
 import { validateFinanceData } from '../server/validation.js';
 import { migrateData } from '../src/lib/domain.js';
 
@@ -28,6 +29,20 @@ describe('HTTP trust boundary', () => {
       'x-forwarded-proto': 'https',
       'sec-fetch-site': 'cross-site',
     }))).toThrowError(ApiError);
+  });
+});
+
+describe('optimistic save precondition', () => {
+  it('accepts non-negative integer revisions', () => {
+    expect(parseExpectedRevision('0')).toBe(0);
+    expect(parseExpectedRevision('42')).toBe(42);
+  });
+
+  it('rejects missing, malformed, and unsafe revisions', () => {
+    expect(() => parseExpectedRevision()).toThrowError(ApiError);
+    expect(() => parseExpectedRevision('1.5')).toThrowError(ApiError);
+    expect(() => parseExpectedRevision('abc')).toThrowError(ApiError);
+    expect(() => parseExpectedRevision('9007199254740992')).toThrowError(ApiError);
   });
 });
 
