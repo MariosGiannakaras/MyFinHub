@@ -1,8 +1,8 @@
 import { accessTokenAal, clearSessionCookies, requireSession } from '../server/auth.js';
 import { ApiError, assertSameOrigin, handleApi, methodNotAllowed, readJsonBody, sendJson } from '../server/http.js';
 import { MAX_FINANCE_DOCUMENT_BYTES } from '../src/lib/limits.js';
+import { parseMutableWrite } from '../server/stateValidation.js';
 import { isOwner, parseExpectedRevision, readStore, writeMutableState } from '../server/storage.js';
-import { validateFinanceState } from '../server/stateValidation.js';
 
 function duration(startedAt: number) {
   return Math.max(0, Date.now() - startedAt);
@@ -15,22 +15,6 @@ function setServerTiming(res: any, timings: { session: number; owner: number; da
     `data;dur=${timings.data}`,
     `total;dur=${timings.total}`,
   ].join(', '));
-}
-
-function parseMutableWrite(value: unknown) {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    throw new ApiError(400, 'INVALID_DATA', 'The finance data is invalid.');
-  }
-  const body = value as Record<string, unknown>;
-  const allowed = new Set(['state', 'updatedAt']);
-  if (Object.keys(body).some((key) => !allowed.has(key))) {
-    throw new ApiError(400, 'INVALID_DATA', 'The finance data is invalid.');
-  }
-  if (typeof body.updatedAt !== 'string' || !body.updatedAt || body.updatedAt.length > 64) {
-    throw new ApiError(400, 'INVALID_DATA', 'The finance data is invalid.');
-  }
-  validateFinanceState(body.state);
-  return { state: body.state, updatedAt: body.updatedAt };
 }
 
 export default async function handler(req: any, res: any) {
