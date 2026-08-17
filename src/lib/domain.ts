@@ -229,7 +229,7 @@ export function monthlyFlow(data: FinanceData, month: string) {
 
 function baseSnapshot(data: FinanceData, asOf: string) {
   const snapshots = data.seed.snapshots.filter((s) => s.date <= asOf);
-  if (snapshots.length) return snapshots[snapshots.length - 1];
+  if (snapshots.length) return snapshots.reduce((latest, current) => current.date > latest.date ? current : latest);
   return { date: '0000-00-00', balances: Object.fromEntries(data.seed.accounts.map((a) => [a.id, 0])) };
 }
 
