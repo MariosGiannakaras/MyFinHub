@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { AppShell, type PageId } from './components/AppShell';
+import { LoginScreen } from './components/LoginScreen';
 import { QuickAdd } from './components/QuickAdd';
 import { useFinance } from './hooks/useFinance';
+import { useSession } from './hooks/useSession';
 import { accountBalances, createEvent, reviewSuggestions } from './lib/domain';
 import { DashboardPage } from './pages/DashboardPage';
 import { TransactionsPage } from './pages/TransactionsPage';
@@ -16,7 +18,7 @@ import type { EventKind, FinanceEvent, Loan, RecurringItem, ReviewDecision } fro
 
 const TODAY = new Date().toLocaleDateString('en-CA');
 
-export default function App(){
+function FinanceApp({userEmail,onLogout}:{userEmail:string|null;onLogout:()=>void}){
   const finance=useFinance();
   const [page,setPage]=useState<PageId>('dashboard');
   const [quickOpen,setQuickOpen]=useState(false);
@@ -62,10 +64,17 @@ export default function App(){
     :<SettingsPage data={data} filePath={finance.filePath} lastSavedAt={finance.lastSavedAt} onImport={finance.importData} onBackup={finance.createBackup} onSettings={settings=>finance.update(c=>({...c,state:{...c.state,settings}}))}/>;
 
   return <>
-    <AppShell page={page} onPage={setPage} onQuickAdd={()=>openQuick('expense')} saveState={finance.saveState} filePath={finance.filePath} reviewCount={reviews} motionMode={data.state.settings.motion||'system'}>
+    <AppShell page={page} onPage={setPage} onQuickAdd={()=>openQuick('expense')} saveState={finance.saveState} filePath={finance.filePath} reviewCount={reviews} motionMode={data.state.settings.motion||'system'} userEmail={userEmail} onLogout={onLogout}>
       <div className="month-toolbar"><label>Περίοδος <input type="month" value={month} onChange={e=>setMonth(e.target.value)}/></label><span>Οι κινήσεις μετά την {TODAY.split('-').reverse().join('/')} δεν επηρεάζουν το σημερινό balance.</span></div>
       {content}
     </AppShell>
     <QuickAdd open={quickOpen} data={data} asOf={TODAY} motionMode={data.state.settings.motion||'system'} initial={(data.state.events??[]).find(e=>e.id===editingEventId)||null} initialKind={quickKind} onClose={()=>{setQuickOpen(false);setEditingEventId(null)}} onCreate={addEvent} currentBalance={balance}/>
   </>;
+}
+
+export default function App(){
+  const session=useSession();
+  if(session.state==='loading')return <div className="boot-screen"><img src="/brand/icon-192.png" alt="RheomIQ"/><div className="boot-pulse"/><b>RheomIQ</b><span>Έλεγχος ασφαλούς συνεδρίας…</span></div>;
+  if(session.state!=='authenticated')return <LoginScreen onLogin={session.login} error={session.error}/>;
+  return <FinanceApp userEmail={session.email} onLogout={session.logout}/>;
 }
