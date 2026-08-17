@@ -4,7 +4,7 @@
 
 <h1 align="center">RheomIQ</h1>
 <p align="center"><strong>Smart. Clear. In Control.</strong></p>
-<p align="center">Single-user personal finance ledger with Supabase/PostgreSQL persistence, compound transactions, savings logic, reconciliation and intelligent review.</p>
+<p align="center">Single-owner personal finance ledger with Supabase/PostgreSQL persistence, compound transactions, savings logic, reconciliation and intelligent review.</p>
 
 ## Accounting model
 
@@ -20,38 +20,57 @@ RheomIQ preserves the existing Excel-derived behavior instead of flattening it i
 - **Splits:** category parts must balance to the parent amount.
 - **Smart Review:** proposals do not affect reports until confirmed.
 
-## Persistence
+## Production architecture
 
-The browser is not the database. RheomIQ keeps the current UI/domain contract but stores durable state in **Supabase/PostgreSQL** through the server API.
+RheomIQ is designed as a private **single-owner online application**.
+
+- React/Vite frontend is deployable on Vercel from this GitHub repository.
+- Supabase Auth authenticates the single owner.
+- Access/refresh tokens are stored only in `HttpOnly`, `SameSite=Strict` cookies in production; finance data and auth tokens are not persisted in browser storage.
+- The online runtime uses only `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY`.
+- PostgreSQL RLS is the authorization boundary. Only the configured owner UID can access RheomIQ state/backups through authenticated RPCs.
+- The online runtime **does not need a Supabase secret/service-role key**.
+- `SUPABASE_SECRET_KEY` is reserved for offline emergency import/verification tooling and must never be configured in Vercel or exposed as `VITE_*`.
+- State-changing API routes enforce same-origin checks, bounded JSON payloads and server-side finance-state validation.
+- Unexpected backend errors return stable public error codes plus a request ID instead of raw database/internal errors.
+- Vercel security headers include CSP, anti-framing, MIME-sniffing protection, HSTS and restricted browser permissions.
+
+## Persistence and recovery
 
 - SQL schema is version-controlled in `supabase/migrations/`.
-- `rheomiq_app_state` stores the current state as PostgreSQL `jsonb` with an optimistic revision number.
-- `rheomiq_backups` stores database snapshots.
-- stale writes are rejected as revision conflicts;
-- imports create a pre-import backup;
-- RLS is enabled and browser roles have no direct access;
-- the privileged Supabase secret key is server-side only.
-
-The original local JSON remains only as a private migration/emergency export source and is never committed.
+- `rheomiq_app_state` stores the current state as PostgreSQL `jsonb` with optimistic revision locking.
+- stale writes are rejected as revision conflicts.
+- `rheomiq_backups` stores bounded database snapshots; automatic backups are throttled and retention is capped.
+- imports create a pre-import backup.
+- `rheomiq_audit_log` records save/import/backup write events without duplicating the finance payload.
+- the original local JSON remains only as a private emergency source/export and is never committed.
 
 ## Repository-managed Supabase changes
 
 Every future database/schema change must be committed as a new migration under `supabase/migrations/`.
 
-Production deployment uses the **native Supabase GitHub integration** connected to `MariosGiannakaras/RheomIQ`. With **Deploy to production** enabled in Supabase, commits to `main` automatically apply pending migrations and supported Supabase configuration from the repository. This avoids storing a Supabase personal access token or database password in GitHub Actions.
+Production deployment uses the native Supabase GitHub integration connected to `MariosGiannakaras/RheomIQ`. With **Deploy to production** enabled, commits to `main` apply pending migrations and supported Supabase configuration from the repository.
 
-Runtime/server environment still requires the backend-only Supabase URL and secret key:
+## Runtime environment
+
+Online/Vercel runtime:
 
 ```text
 SUPABASE_URL=https://<project-ref>.supabase.co
+SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
+```
+
+Offline emergency migration/verification may additionally use:
+
+```text
 SUPABASE_SECRET_KEY=sb_secret_...
 ```
 
-Never prefix the secret key with `VITE_`; that would expose it to the browser bundle.
+Never commit real keys. Never expose the secret key through a public/Vite environment variable.
 
 ## Production migration state
 
-The production Supabase project is initialized and the existing RheomIQ data has been imported to PostgreSQL. The imported state includes the complete legacy transaction/snapshot corpus and uses schema version 3. Import staging artifacts were removed after verification.
+The production Supabase project is initialized and the existing RheomIQ data has been imported to PostgreSQL. The complete legacy transaction/snapshot corpus remains in schema version 3. Temporary import storage/functions were removed after verification.
 
 ## Development
 
@@ -62,9 +81,9 @@ npm install
 npm run dev
 ```
 
-Create a local `.env` (never commit it) with the values shown in `.env.example`.
+Create a local `.env` (never commit it) from `.env.example`.
 
-## Validation
+## Validation and security gates
 
 ```bash
 npm run test
@@ -72,26 +91,25 @@ npm run build
 npm run check
 ```
 
-CI runs the full application checks on pushes and pull requests. Supabase production migrations are deployed separately by the native Supabase GitHub integration.
+GitHub CI runs tests/typecheck/build and production dependency audit. CodeQL performs static security analysis and Dependabot tracks npm/GitHub Actions updates. Supabase Security Advisor should remain free of security findings after schema changes.
 
 ## Repository structure
 
 ```text
 RheomIQ/
+├─ api/                       # Vercel Auth + finance API routes
 ├─ public/brand/              # RheomIQ application icon assets
 ├─ src/                       # React UI + finance domain logic
-├─ server/                    # server API + Supabase persistence adapter
-├─ scripts/                   # migration/verification utilities
-├─ supabase/
-│  ├─ config.toml
-│  └─ migrations/             # source of truth for PostgreSQL schema
-├─ tests/                     # ledger invariants/regression tests
+├─ server/                    # auth, HTTP validation and Supabase adapters
+├─ scripts/                   # offline migration/verification utilities
+├─ supabase/migrations/       # source of truth for PostgreSQL schema
+├─ tests/                     # finance + security regression tests
 ├─ data/                      # ignored private data + empty example
 ├─ docs/                      # architecture and UX rules
 ├─ AGENTS.md                  # durable repository invariants
-└─ .github/workflows/         # application CI
+└─ .github/                   # CI, CodeQL and Dependabot configuration
 ```
 
 ## Privacy
 
-RheomIQ is a single-user application. No user picker, team model, roles UI or multi-user data model is added. Personal finance data and Supabase credentials are excluded from Git history.
+RheomIQ has one owner and no public registration, user picker, teams, tenant switching or multi-user business model. Personal finance data and credentials are excluded from Git history.
