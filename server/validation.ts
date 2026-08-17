@@ -231,6 +231,10 @@ function validateSettings(value: unknown) {
     finiteNumber(value.savingsTargetRate, 'state.settings.savingsTargetRate', 1);
     if (value.savingsTargetRate < 0 || value.savingsTargetRate > 1) invalid('Invalid state.settings.savingsTargetRate.');
   }
+  if (value.creditLimit !== undefined) {
+    finiteNumber(value.creditLimit, 'state.settings.creditLimit');
+    if (value.creditLimit < 0) invalid('Invalid state.settings.creditLimit.');
+  }
   if (value.motion !== undefined) oneOf(value.motion, ['system','reduced','full'], 'state.settings.motion');
 }
 
