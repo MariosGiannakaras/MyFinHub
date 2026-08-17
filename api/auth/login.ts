@@ -1,4 +1,4 @@
-import { clearSessionCookies, revokeSession, setSessionCookies, signInWithPassword } from '../../server/auth.js';
+import { accessTokenAal, clearSessionCookies, getTotpFactors, revokeSession, setSessionCookies, signInWithPassword } from '../../server/auth.js';
 import { ApiError, assertSameOrigin, handleApi, methodNotAllowed, readJsonBody, sendJson } from '../../server/http.js';
 import { isOwner } from '../../server/storage.js';
 
@@ -21,10 +21,18 @@ export default async function handler(req: any, res: any) {
     if (!tokens.access_token || !tokens.refresh_token || !(await isOwner(tokens.access_token))) {
       await revokeSession(tokens.access_token);
       clearSessionCookies(req, res);
-      throw new ApiError(403, 'NOT_OWNER', 'This account is not authorized for RheomIQ.');
+      throw new ApiError(401, 'INVALID_CREDENTIALS', 'Invalid email or password.');
     }
 
     setSessionCookies(req, res, tokens);
-    return sendJson(res, 200, { authenticated: true, email: tokens.user?.email || email });
+    const factors = await getTotpFactors(tokens.access_token);
+    const hasVerifiedTotp = factors.some(factor => factor.status === 'verified');
+    const aal2 = accessTokenAal(tokens.access_token) === 'aal2';
+    return sendJson(res, 200, {
+      authenticated: aal2,
+      email: tokens.user?.email || email,
+      mfaRequired: !aal2 && hasVerifiedTotp,
+      mfaEnrollmentRequired: !aal2 && !hasVerifiedTotp,
+    });
   });
 }
