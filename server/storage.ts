@@ -1,57 +1,87 @@
-import crypto from 'node:crypto';
-import fs from 'node:fs/promises';
-import path from 'node:path';
 import type { FinanceData } from '../src/types.js';
 import { migrateData } from '../src/lib/domain.js';
 
-const ROOT = process.cwd();
-export const DATA_FILE = path.resolve(process.env.RHEOMIQ_DATA_FILE || path.join(ROOT, 'data', 'rheomiq-data.json'));
-const EXAMPLE_FILE = path.join(ROOT, 'data', 'rheomiq-data.example.json');
-const BACKUP_DIR = path.resolve(process.env.RHEOMIQ_BACKUP_DIR || path.join(path.dirname(DATA_FILE), 'backups'));
-let lastAutomaticBackup = 0;
+export const DATA_SOURCE = 'Supabase/PostgreSQL';
 
-function rev(raw: string) { return crypto.createHash('sha256').update(raw).digest('hex').slice(0, 20); }
+type StateRow = { data: FinanceData; revision: number | string; updated_at: string };
+type BackupRow = { id: number | string; created_at: string };
 
-async function ensureDataFile() {
-  await fs.mkdir(path.dirname(DATA_FILE), { recursive: true });
-  try { await fs.access(DATA_FILE); }
-  catch {
-    const fallback = await fs.readFile(EXAMPLE_FILE, 'utf8');
-    await fs.writeFile(DATA_FILE, fallback, { encoding: 'utf8', mode: 0o600 });
+function config() {
+  const url = process.env.SUPABASE_URL?.replace(/\/$/, '');
+  const secret = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !secret) {
+    throw new Error('Supabase is not configured. Set SUPABASE_URL and SUPABASE_SECRET_KEY on the server.');
   }
+  return { url, secret };
+}
+
+async function supabase<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const { url, secret } = config();
+  const response = await fetch(`${url}/rest/v1/${path}`, {
+    ...init,
+    headers: {
+      apikey: secret,
+      authorization: `Bearer ${secret}`,
+      accept: 'application/json',
+      ...(init.body ? { 'content-type': 'application/json' } : {}),
+      ...(init.headers || {}),
+    },
+  });
+
+  const payload = await response.json().catch(() => null) as { message?: string; code?: string } | T | null;
+  if (!response.ok) {
+    const message = payload && typeof payload === 'object' && 'message' in payload && payload.message
+      ? payload.message
+      : `Supabase request failed (${response.status})`;
+    const error = new Error(message) as Error & { code?: string };
+    if (/REVISION_CONFLICT|40001/i.test(`${message} ${(payload as { code?: string } | null)?.code || ''}`)) {
+      error.code = 'REVISION_CONFLICT';
+    }
+    throw error;
+  }
+  return payload as T;
+}
+
+function first<T>(value: T | T[]): T {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function envelope(row: StateRow) {
+  const migrated = migrateData(row.data);
+  return {
+    data: migrated,
+    revision: String(row.revision),
+    filePath: DATA_SOURCE,
+    lastSavedAt: row.updated_at,
+  };
 }
 
 export async function readStore() {
-  await ensureDataFile();
-  const raw = await fs.readFile(DATA_FILE, 'utf8');
-  const parsed = migrateData(JSON.parse(raw) as FinanceData);
-  const stat = await fs.stat(DATA_FILE);
-  return { data: parsed, revision: rev(raw), filePath: DATA_FILE, lastSavedAt: stat.mtime.toISOString() };
+  const rows = await supabase<StateRow[]>('rheomiq_app_state?id=eq.primary&select=data,revision,updated_at', {
+    headers: { 'cache-control': 'no-store' },
+  });
+  if (!rows.length) throw new Error('RheomIQ database is empty. Run the JSON-to-Supabase migration first.');
+  return envelope(rows[0]);
 }
 
-async function atomicWrite(data: FinanceData) {
-  const serialized = `${JSON.stringify(data, null, 2)}\n`;
-  const temp = `${DATA_FILE}.${process.pid}.${Date.now()}.tmp`;
-  await fs.writeFile(temp, serialized, { encoding: 'utf8', mode: 0o600 });
-  await fs.rename(temp, DATA_FILE);
-  return serialized;
-}
-
-export async function backupStore() {
-  await ensureDataFile(); await fs.mkdir(BACKUP_DIR, { recursive: true });
-  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const target = path.join(BACKUP_DIR, `rheomiq-${stamp}.json`);
-  await fs.copyFile(DATA_FILE, target); return target;
+export async function backupStore(reason = 'manual') {
+  const result = first(await supabase<BackupRow[] | BackupRow>('rpc/rheomiq_create_backup', {
+    method: 'POST',
+    body: JSON.stringify({ p_reason: reason }),
+  }));
+  if (!result) throw new Error('Backup failed: no application state exists.');
+  return `supabase://rheomiq_backups/${result.id}`;
 }
 
 export async function writeStore(data: FinanceData, expectedRevision?: string, force = false) {
-  const current = await readStore();
-  if (!force && expectedRevision && expectedRevision !== current.revision) {
-    const error = new Error('Revision conflict: το αρχείο άλλαξε από άλλη διεργασία. Κάνε refresh πριν ξαναγράψεις.') as Error & { code?: string };
-    error.code = 'REVISION_CONFLICT'; throw error;
-  }
-  if (Date.now() - lastAutomaticBackup > 60_000) { await backupStore(); lastAutomaticBackup = Date.now(); }
   const next = migrateData({ ...data, app: 'RheomIQ', schemaVersion: 3, updatedAt: new Date().toISOString() });
-  const raw = await atomicWrite(next);
-  return { data: next, revision: rev(raw), filePath: DATA_FILE, lastSavedAt: new Date().toISOString() };
+  const path = force ? 'rpc/rheomiq_import_state' : 'rpc/rheomiq_save_state';
+  const body = force
+    ? { p_data: next }
+    : { p_data: next, p_expected_revision: expectedRevision ? Number(expectedRevision) : null };
+  const row = first(await supabase<StateRow[] | StateRow>(path, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  }));
+  return envelope(row);
 }

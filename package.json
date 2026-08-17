@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=22.12" },
+  "engines": {
+    "node": ">=22.12"
+  },
   "scripts": {
     "dev": "concurrently -k \"npm:dev:server\" \"npm:dev:web\"",
     "dev:web": "vite --host 127.0.0.1",
@@ -12,7 +14,9 @@
     "start": "tsx server/index.ts --serve-dist",
     "test": "vitest run",
     "test:watch": "vitest",
-    "check": "npm run test && npm run build"
+    "check": "npm run test && npm run build",
+    "db:import": "tsx scripts/migrate-json-to-supabase.ts",
+    "db:verify": "tsx scripts/migrate-json-to-supabase.ts --verify-only"
   },
   "dependencies": {
     "express": "^5.2.1",

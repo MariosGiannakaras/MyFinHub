@@ -1,13 +1,13 @@
 import express from 'express';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { backupStore, readStore, writeStore } from './storage.js';
+import { backupStore, DATA_SOURCE, readStore, writeStore } from './storage.js';
 
 const app = express();
 app.disable('x-powered-by');
 app.use(express.json({ limit: '20mb' }));
 
-app.get('/api/health', (_req, res) => res.json({ ok: true, app: 'RheomIQ' }));
+app.get('/api/health', (_req, res) => res.json({ ok: true, app: 'RheomIQ', persistence: DATA_SOURCE }));
 app.get('/api/data', async (_req, res) => {
   try { res.set('cache-control', 'no-store').json(await readStore()); }
   catch (error) { res.status(500).json({ error: error instanceof Error ? error.message : 'Data read failed' }); }
@@ -37,4 +37,5 @@ if (serveDist) {
 }
 
 const port = Number(process.env.RHEOMIQ_PORT || process.env.PORT || 4317);
-app.listen(port, '127.0.0.1', () => console.log(`RheomIQ server: http://127.0.0.1:${port}`));
+const host = process.env.RHEOMIQ_HOST || '127.0.0.1';
+app.listen(port, host, () => console.log(`RheomIQ server: http://${host}:${port} (${DATA_SOURCE})`));
