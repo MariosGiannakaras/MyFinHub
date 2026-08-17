@@ -23,9 +23,14 @@
 ## Delivery workflow
 
 - Implementation, infrastructure, dependency-policy, and database changes start from a tracked GitHub issue unless they are an emergency security fix.
+- `develop` is the integration branch for routine work. Once `develop` exists, normal feature/fix/chore branches start from `develop` and return through a pull request targeting `develop`.
+- `main` is release-only. Accumulate a coherent milestone on `develop`, then open a `develop -> main` release PR when the batch is ready for production.
+- Automatic Vercel Git deployments are intentionally disabled for every branch except `main`; non-main PRs are validated by CI, CodeQL, and rendered frontend QA without consuming Vercel deployment quota. Create a manual preview only when a specific change genuinely requires deployment-level validation.
+- A merge to `main` is the normal automatic production deployment trigger. Keep the event-driven Production Smoke gate tied to that production deployment and verify the deployed SHA matches the release commit.
+- Emergency security or production hotfixes may branch from `main` and target `main` directly when necessary. After the hotfix is released, synchronize the resulting `main` commit back into `develop` before continuing routine work.
 - Use short-lived branches named `feat/<issue>-<slug>`, `fix/<issue>-<slug>`, `chore/<issue>-<slug>`, or `security/<issue>-<slug>`. Never implement directly on `main`.
 - Every implementation branch returns through a pull request that links the issue with `Closes #<issue>`, states scope and risk, and completes the repository PR checklist.
-- Do not merge while required CI, CodeQL, Supabase migration checks, or relevant deployment checks are failing or pending.
+- Do not merge while required CI, CodeQL, Supabase migration checks, or relevant release/deployment checks are failing or pending.
 - Prefer squash merge for a single clear change history. Delete merged branches and do not leave abandoned implementation branches or unresolved review threads.
 - Major dependency upgrades require an explicit compatibility review; do not merge them solely because Dependabot opened a PR.
 - Database DDL changes are made only through ordered files in `supabase/migrations/`. Never make an untracked production schema change and leave Git behind.
