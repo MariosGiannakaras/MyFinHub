@@ -6,10 +6,22 @@ import { ApiError, assertSameOrigin, handleApi, methodNotAllowed, requestHeader,
 import { backupStore, DATA_SOURCE, isOwner, readStore, writeStore } from './storage.js';
 import { isAuthRejection } from './upstream.js';
 import { validateFinanceData } from './validation.js';
+import { MAX_FINANCE_DOCUMENT_BYTES } from '../src/lib/limits.js';
 
 const app = express();
 app.disable('x-powered-by');
-app.use(express.json({ limit: '5mb', strict: true }));
+app.use(express.json({ limit: MAX_FINANCE_DOCUMENT_BYTES, strict: true }));
+app.use((error: any, _req: any, res: any, next: any) => {
+  if (error?.type === 'entity.too.large') {
+    void handleApi(res, async () => { throw new ApiError(413, 'PAYLOAD_TOO_LARGE', 'Request is too large.'); });
+    return;
+  }
+  if (error?.type === 'entity.parse.failed' || error instanceof SyntaxError) {
+    void handleApi(res, async () => { throw new ApiError(400, 'INVALID_JSON', 'Invalid JSON payload.'); });
+    return;
+  }
+  next(error);
+});
 
 async function requireFinanceSession(req: any, res: any) {
   const session = await requireSession(req, res);
