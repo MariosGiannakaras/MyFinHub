@@ -1,10 +1,12 @@
 # RheomIQ repository rules
 
 - RheomIQ is a **single-owner** personal finance application. Do not add user selection, teams, tenant switching, roles UI, public registration, or multi-user product features.
+- Production authentication is email/password plus mandatory TOTP MFA. Finance access must require the configured owner UID and an `aal2` session at both the API and PostgreSQL RLS boundaries.
+- Do not add Google/social OAuth, SSO, magic-link login, phone auth, or another identity provider unless the owner explicitly requests that architectural change. No alternate login path may bypass the mandatory MFA boundary.
 - Personal financial data and credentials must never be committed. `data/rheomiq-data.json` remains ignored.
 - The online runtime must not require `SUPABASE_SECRET_KEY` or service-role credentials. Browser-facing requests use the publishable key plus the authenticated owner's JWT and PostgreSQL RLS. Admin/secret keys are offline emergency tooling only and must never be configured as `VITE_*` variables.
 - Every finance read/write/import/backup path must require an authenticated session and database owner authorization. State-changing HTTP endpoints must enforce same-origin/CSRF checks and bounded JSON request sizes.
-- Authentication tokens must remain HttpOnly cookies in production. Never persist finance data, access tokens, or refresh tokens in browser localStorage/IndexedDB.
+- Authentication tokens must remain HttpOnly cookies in production. Never persist finance data, access tokens, refresh tokens, or TOTP enrollment secrets in browser localStorage/IndexedDB.
 - Database authorization must remain RLS-backed and migrations must remain version-controlled in `supabase/migrations/`. Do not introduce `SECURITY DEFINER` authenticated RPCs unless a documented security review proves they are necessary.
 - Preserve optimistic revision conflict checks, pre-import backups, bounded backup retention, and append-only write audit events.
 - Do not expose raw upstream/database errors to the client. Return stable public error codes/messages and log a request ID server-side for unexpected failures.
