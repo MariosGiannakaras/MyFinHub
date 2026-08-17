@@ -3,7 +3,7 @@ create or replace function public.rheomiq_save_mutable_state(
   p_expected_revision bigint,
   p_updated_at text
 )
-returns table(data jsonb, revision bigint, updated_at timestamptz)
+returns table(revision bigint, updated_at timestamptz)
 language plpgsql
 security invoker
 set search_path = 'public', 'auth'
@@ -68,7 +68,7 @@ begin
   perform public.rheomiq_prune_backups();
 
   return query
-  select s.data, s.revision, s.updated_at
+  select s.revision, s.updated_at
   from public.rheomiq_app_state s
   where s.id = 'primary';
 end;
