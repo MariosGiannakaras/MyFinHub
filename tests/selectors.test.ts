@@ -48,7 +48,7 @@ function fixture(): FinanceData {
         motion: 'system',
       },
     },
-  } as FinanceData;
+  } as unknown as FinanceData;
 }
 
 describe('memoized finance selectors', () => {
