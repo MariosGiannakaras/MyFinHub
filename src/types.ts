@@ -133,6 +133,7 @@ export interface FinanceSettings {
   defaultLoanAccount: string;
   monthlyBudget?: number;
   savingsTargetRate?: number;
+  creditLimit?: number;
   motion?: 'system' | 'reduced' | 'full';
 }
 

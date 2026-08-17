@@ -7,7 +7,7 @@ function validState(): any {
     seed: { accounts: [], months: [], transactions: [], snapshots: [], recurring: [], subscriptions: [], loans: [], lending: [], stats: {} },
     state: {
       customTransactions: [], overrides: {}, deleted: [], recurringCustom: [], recurringOverrides: {}, loanExtra: {}, loanOverrides: {}, customLoans: [], lendingCustom: [],
-      settings: { excludedFromAvailable: [], accountNames: {}, expenseCategories: [], incomeCategories: [], customPresets: [], pinnedPresets: [], defaultExpenseAccount: '', defaultIncomeAccount: '', defaultLoanAccount: '', monthlyBudget: 0, savingsTargetRate: 0, motion: 'system' },
+      settings: { excludedFromAvailable: [], accountNames: {}, expenseCategories: [], incomeCategories: [], customPresets: [], pinnedPresets: [], defaultExpenseAccount: '', defaultIncomeAccount: '', defaultLoanAccount: '', monthlyBudget: 0, savingsTargetRate: 0, creditLimit: 0, motion: 'system' },
       events: [], reviewDecisions: {},
     },
   };
@@ -39,14 +39,16 @@ describe('finance semantic range validation', () => {
     }
   });
 
-  it('accepts the valid loan and recurring boundaries', () => {
-    const state = validState(); state.state.customLoans = [loan]; state.state.recurringCustom = [recurring]; state.state.settings.savingsTargetRate = 1;
+  it('accepts the valid loan, recurring and settings boundaries', () => {
+    const state = validState(); state.state.customLoans = [loan]; state.state.recurringCustom = [recurring]; state.state.settings.savingsTargetRate = 1; state.state.settings.creditLimit = 0;
     expect(() => validateFinanceData(state)).not.toThrow();
   });
 
-  it('rejects negative budgets and savings target ratios outside 0..1', () => {
+  it('rejects negative budgets, credit limits and savings target ratios outside 0..1', () => {
     const budget = validState(); budget.state.settings.monthlyBudget = -0.01;
     expect(() => validateFinanceData(budget)).toThrowError(/monthlyBudget/i);
+    const credit = validState(); credit.state.settings.creditLimit = -0.01;
+    expect(() => validateFinanceData(credit)).toThrowError(/creditLimit/i);
     const highTarget = validState(); highTarget.state.settings.savingsTargetRate = 1.01;
     expect(() => validateFinanceData(highTarget)).toThrowError(/savingsTargetRate/i);
     const lowTarget = validState(); lowTarget.state.settings.savingsTargetRate = -0.01;

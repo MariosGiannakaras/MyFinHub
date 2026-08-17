@@ -1,0 +1,70 @@
+/* Frontend audit remediation: contrast, focus, targets, semantic tables, overlays and safe areas. */
+:root{
+  --muted:#52627d;
+  --muted-2:#5f6f88;
+  --focus-color:#174ea6;
+  --focus:0 0 0 3px rgba(23,78,166,.22);
+}
+
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,[tabindex]:focus-visible{
+  outline:2px solid var(--focus-color)!important;
+  outline-offset:2px;
+  box-shadow:var(--focus)!important;
+}
+
+.skip-link{position:fixed;left:14px;top:10px;z-index:300;transform:translateY(-150%);background:#fff;color:var(--blue-2);border:2px solid var(--blue-2);border-radius:10px;padding:10px 13px;font-size:12px;font-weight:800;box-shadow:var(--shadow-soft)}
+.skip-link:focus{transform:none}
+.sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+
+/* The former 6.5–9px microcopy was below the documented readable UI standard. */
+.page-heading p,.month-toolbar,.metric-head,.metric-card small,.eyebrow,.panel-head small,.frequent-grid b,.frequent-grid span,.frequent-grid strong,.legend div,.legend b,.insight-list b,.insight-list small,.insight-list strong,.recurring-mini span,.recurring-mini b,.recurring-mini small,.recent-list b,.recent-list small,.recent-list strong,.filterbar>span,.tr,.tr.th,.tr b,.tr small,.flow-pill,.review-meta,.review-copy h3,.review-copy p,.suggestion-tag,.review-buttons button,.summary-card span,.gauge-ring span,.savings-hero p,.saving-route>span,.logic-note b,.logic-note span,.credit-hero span,.credit-hero small,.loan-title h3,.loan-title small,.loan-title b,.loan-stats,.recurring-table b,.recurring-table small,.recurring-table strong,.recurring-table em,.report-kpis span,.settings-list>div,.settings-actions button,.secondary,.settings-form span,.form-grid label>span,.quick-modal>header small,.quick-modal>header p,.kind-grid b,.kind-grid small,.frequent-strip>span,.frequent-strip button,.frequent-strip small,.reconcile-preview,.split-head,.form-error,.mobile-more-menu>header small,.mobile-more-menu>div>button{
+  font-size:10px;
+}
+.eyebrow{font-size:10px}.page-heading p{font-size:12px}.metric-head{font-size:10px}.metric-card small{font-size:10px;line-height:1.35}.panel-head small{font-size:10px}.legend div,.legend b{font-size:10px}.tr,.tr b{font-size:11px}.tr.th,.tr small{font-size:10px}.flow-pill{font-size:9px}.review-copy h3{font-size:12px}.review-copy p{font-size:10.5px}.review-buttons button{font-size:10px}.recurring-table b{font-size:11px}.recurring-table small,.recurring-table em{font-size:10px}.loan-title h3{font-size:12px}.loan-title small,.loan-stats{font-size:10px}.kind-grid b{font-size:10px}.kind-grid small{font-size:9px}.mobile-nav button{font-size:9px;min-height:46px}.mobile-more-menu>div>button{font-size:10px}
+
+.row-actions button,.review-part button,.split-line button,.icon-button,.mobile-more-menu>header button{min-width:40px;min-height:40px}
+.top-actions button{min-width:40px;min-height:40px}
+
+.persistence-notice{position:sticky;top:86px;z-index:24;margin:0 4px 12px;border-radius:14px;padding:11px 13px;display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid #cbd8e9;background:rgba(248,251,255,.97);box-shadow:0 10px 24px rgba(24,52,96,.09);font-size:11px}
+.persistence-notice>div{display:grid;gap:2px}.persistence-notice small{color:var(--muted);font-size:10px}.persistence-notice.error,.persistence-notice.conflict{border-color:#e4aeb7;background:#fff5f7;color:#8f2436}.persistence-notice.saving{border-color:#afc8f5;background:#f0f5ff;color:#174ea6}.persistence-notice .secondary{flex:0 0 auto}
+
+.workspace-error,.not-found{max-width:720px;margin:32px auto;text-align:center}.workspace-error h2,.not-found h1{margin:0 0 8px}.workspace-error p,.not-found p{color:var(--muted);line-height:1.6}.not-found .editor-actions{justify-content:center}
+
+.semantic-table-wrap{overflow:auto;border-radius:12px}.semantic-table{width:100%;border-collapse:collapse;min-width:840px}.semantic-table th,.semantic-table td{padding:10px;border-bottom:1px solid #dfe7f2;text-align:left;vertical-align:middle;font-size:11px}.semantic-table th{font-size:10px;color:var(--muted);background:#edf3fa;font-weight:800;position:sticky;top:0;z-index:1}.semantic-table td small{display:block;color:var(--muted);font-size:10px;margin-top:3px}.semantic-table .amount{text-align:right;font-weight:800;white-space:nowrap}.semantic-table .actions{text-align:right;width:96px}.semantic-table.compact{min-width:620px}.semantic-table.compact th,.semantic-table.compact td{padding:9px}
+.filter-label{display:grid;gap:5px;font-size:10px;font-weight:750;color:#526582}.filterbar .filter-label.search-filter{flex:1}.filterbar .filter-label select{min-width:190px}
+
+.chart-alt{margin-top:10px;border-top:1px solid #dfe7f2;padding-top:10px}.chart-alt summary{cursor:pointer;color:var(--blue-2);font-size:10px;font-weight:750}.chart-alt-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px 12px;margin:9px 0 0;padding:0;list-style:none}.chart-alt-list li{display:flex;justify-content:space-between;gap:10px;font-size:10px}.chart-alt-list span{color:var(--muted)}
+
+.editor-backdrop{position:fixed;inset:0;z-index:110;background:rgba(18,33,62,.28);backdrop-filter:blur(5px);display:grid;place-items:center;padding:18px}.editor-dialog{width:min(920px,96vw);max-height:92vh;overflow:auto}.editor-dialog h2{margin:0;font-size:18px}.editor-dialog .settings-form{margin-top:12px}
+
+.card-workspace{display:grid;grid-template-columns:minmax(260px,.9fr) minmax(0,1.4fr);gap:13px}.card-limit-panel{display:grid;gap:12px}.credit-usage{height:10px;border-radius:999px;background:#dce5f0;overflow:hidden}.credit-usage>i{display:block;height:100%;background:linear-gradient(90deg,#2f6fed,#25b9d7);border-radius:999px}.credit-usage-copy{display:flex;justify-content:space-between;gap:10px;font-size:10px}.credit-usage-copy span{color:var(--muted)}.card-history{display:grid;gap:0}.card-history>div{display:grid;grid-template-columns:90px 1fr auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid #dfe7f2;font-size:10px}.card-history small{display:block;color:var(--muted);margin-top:2px}.card-history strong{font-size:11px}.empty-inline{color:var(--muted);font-size:10px;padding:14px 0}
+
+.settings-draft-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}.category-editor{display:grid;gap:7px}.category-editor textarea{min-height:92px;resize:vertical;border:1px solid #d7e1ef;border-radius:11px;background:#f8fbff;color:var(--ink);padding:10px;font:inherit;line-height:1.5}.account-name-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.account-name-grid label{display:grid;gap:5px}
+
+.action-status{margin:10px 0 0;border-radius:10px;background:#edf5ff;border:1px solid #cfddf1;color:#28416f;padding:9px 10px;font-size:10px}.form-error[role="alert"]{font-size:10px;line-height:1.45}
+
+@media(max-width:980px){
+  .persistence-notice{top:78px}
+  .card-workspace{grid-template-columns:1fr}
+}
+
+@media(max-width:680px){
+  .app-shell{padding-bottom:calc(82px + env(safe-area-inset-bottom,0px))}
+  .mobile-nav{bottom:calc(8px + env(safe-area-inset-bottom,0px));padding-bottom:max(6px,env(safe-area-inset-bottom,0px))}
+  .mobile-more-menu{bottom:calc(78px + env(safe-area-inset-bottom,0px))}
+  .persistence-notice{top:68px;margin-left:0;margin-right:0;align-items:flex-start}.persistence-notice .secondary{padding:8px 9px}
+  .month-toolbar{font-size:10px}
+  .page-heading{gap:10px}.page-heading p{font-size:11px;line-height:1.45}
+  .metric-grid{grid-template-columns:1fr 1fr}.metric-card small{font-size:9.5px}
+  .account-grid{grid-template-columns:1fr}
+  .review-buttons{grid-template-columns:1fr}.review-row{grid-template-columns:34px 1fr}
+  .recurring-table>div{grid-template-columns:auto minmax(0,1fr) auto!important}
+  .recurring-table>div>strong{grid-column:2}.recurring-table>div>.row-actions{grid-column:3;grid-row:1 / span 2}.recurring-table em{display:none!important}
+  .semantic-table{min-width:760px}.semantic-table.compact{min-width:560px}
+  .filterbar{align-items:stretch;flex-direction:column}.filterbar .filter-label select{min-width:0;width:100%}
+  .chart-alt-list{grid-template-columns:1fr}
+  .editor-backdrop{padding:8px;align-items:end}.editor-dialog{width:100%;max-height:88dvh;border-radius:22px}
+  .account-name-grid{grid-template-columns:1fr}
+  .card-history>div{grid-template-columns:72px 1fr auto}
+  .heading-actions{flex-wrap:wrap;justify-content:flex-end}.heading-actions .secondary,.heading-actions .save-button{min-height:42px}
+}

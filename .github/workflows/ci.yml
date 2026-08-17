@@ -33,3 +33,21 @@ jobs:
       - run: npm audit --prefix api --audit-level=high
       - run: npm run check
       - run: npm run check --prefix api
+      - name: Rendered frontend QA
+        run: |
+          npm run dev:web > /tmp/rheomiq-vite.log 2>&1 &
+          VITE_PID=$!
+          trap 'kill $VITE_PID || true' EXIT
+          ready=0
+          for attempt in {1..30}; do
+            if curl --fail --silent --show-error http://127.0.0.1:5173/qa.html > /dev/null; then
+              ready=1
+              break
+            fi
+            sleep 1
+          done
+          if [ "$ready" -ne 1 ]; then
+            cat /tmp/rheomiq-vite.log
+            exit 1
+          fi
+          npm run qa:frontend
