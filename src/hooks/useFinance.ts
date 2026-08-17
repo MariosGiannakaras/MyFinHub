@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { createBackup, importData, loadData, saveData } from '../lib/api';
+import { ApiError, createBackup, importData, loadData, saveData } from '../lib/api';
 import { migrateData } from '../lib/domain';
 import type { FinanceData } from '../types';
 
@@ -18,11 +18,14 @@ export function useFinance() {
   const assignData = useCallback((next: FinanceData | null) => { dataRef.current = next; setData(next); }, []);
 
   useEffect(() => {
+    let cancelled = false;
     loadData().then((res) => {
+      if (cancelled) return;
       const migrated = migrateData(res.data);
       assignData(migrated); setRevision(res.revision); revisionRef.current = res.revision;
       setFilePath(res.filePath); setLastSavedAt(res.lastSavedAt); setSaveState('saved');
-    }).catch(() => setSaveState('error'));
+    }).catch(() => { if (!cancelled) setSaveState('error'); });
+    return () => { cancelled = true; };
   }, [assignData]);
 
   const persist = useCallback((next: FinanceData) => {
@@ -33,7 +36,8 @@ export function useFinance() {
         const res = await saveData(stamped, revisionRef.current);
         revisionRef.current = res.revision; setRevision(res.revision); setFilePath(res.filePath); setLastSavedAt(res.lastSavedAt); setSaveState('saved');
       } catch (error) {
-        if (error instanceof Error && /conflict|409/i.test(error.message)) setSaveState('conflict'); else setSaveState('error');
+        if (error instanceof ApiError && (error.status === 409 || error.code === 'REVISION_CONFLICT')) setSaveState('conflict');
+        else setSaveState('error');
         throw error;
       }
     }).catch(() => undefined);
@@ -42,14 +46,20 @@ export function useFinance() {
 
   const update = useCallback((recipe: (current: FinanceData) => FinanceData) => {
     const current = dataRef.current;
-    if (!current) return;
+    if (!current || saveState === 'conflict') return;
     persist(recipe(current));
-  }, [persist]);
+  }, [persist, saveState]);
 
   const doImport = useCallback(async (incoming: FinanceData) => {
     setSaveState('saving');
-    const res = await importData(migrateData(incoming));
-    revisionRef.current = res.revision; setRevision(res.revision); assignData(migrateData(res.data)); setFilePath(res.filePath); setLastSavedAt(res.lastSavedAt); setSaveState('saved');
+    try {
+      const res = await importData(migrateData(incoming));
+      revisionRef.current = res.revision; setRevision(res.revision); assignData(migrateData(res.data)); setFilePath(res.filePath); setLastSavedAt(res.lastSavedAt); setSaveState('saved');
+    } catch (error) {
+      if (error instanceof ApiError && (error.status === 409 || error.code === 'REVISION_CONFLICT')) setSaveState('conflict');
+      else setSaveState('error');
+      throw error;
+    }
   }, [assignData]);
 
   return useMemo(() => ({ data, revision, filePath, lastSavedAt, saveState, update, importData: doImport, createBackup }), [data, revision, filePath, lastSavedAt, saveState, update, doImport]);
