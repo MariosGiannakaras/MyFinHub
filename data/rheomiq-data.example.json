@@ -1,0 +1,25 @@
+{
+  "app": "RheomIQ",
+  "schemaVersion": 3,
+  "updatedAt": "2026-08-17T00:00:00.000Z",
+  "source": { "name": "RheomIQ empty example" },
+  "seed": {
+    "accounts": [
+      { "id": "cash", "name": "Μετρητά", "short": "M", "kind": "cash", "excludeFromAvailable": false },
+      { "id": "piraeus-payroll", "name": "Μισθοδοσίας", "short": "Μ", "kind": "bank", "excludeFromAvailable": false },
+      { "id": "piraeus-savings", "name": "Ταμιευτηρίου", "short": "Τ", "kind": "savings", "excludeFromAvailable": true }
+    ],
+    "months": [], "transactions": [], "snapshots": [], "recurring": [], "subscriptions": [], "loans": [], "lending": [],
+    "stats": { "monthlySheets": 0, "transactions": 0, "snapshots": 0, "subscriptions": 0, "loans": 0, "lendingPeople": 0 }
+  },
+  "state": {
+    "customTransactions": [], "overrides": {}, "deleted": [], "recurringCustom": [], "recurringOverrides": {}, "loanExtra": {}, "loanOverrides": {}, "customLoans": [], "lendingCustom": [],
+    "settings": {
+      "excludedFromAvailable": ["piraeus-savings"], "accountNames": {},
+      "expenseCategories": ["Φαγητό / καφές", "Σούπερ μάρκετ", "Καπνός / ψιλικά", "Μετακίνηση", "Όχημα", "Λογαριασμοί", "Συνδρομές", "Αγορές", "Σπίτι", "Υγεία", "Ταξίδια", "Ψυχαγωγία", "Δόσεις / δάνεια", "Άλλο"],
+      "incomeCategories": ["Μισθός", "Επιστροφή χρημάτων", "Πώληση", "Άλλο έσοδο"],
+      "customPresets": [], "pinnedPresets": [], "defaultExpenseAccount": "piraeus-payroll", "defaultIncomeAccount": "piraeus-payroll", "defaultLoanAccount": "piraeus-payroll", "monthlyBudget": 1200, "savingsTargetRate": 0.2, "motion": "system"
+    },
+    "events": [], "reviewDecisions": {}
+  }
+}

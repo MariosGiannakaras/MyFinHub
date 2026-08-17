@@ -1,0 +1,14 @@
+node_modules/
+dist/
+dist-node/
+.vite/
+*.log
+.DS_Store
+.env
+.env.*
+!/.env.example
+
+# Real personal finance data never belongs in Git history.
+data/*.json
+!data/rheomiq-data.example.json
+data/backups/
