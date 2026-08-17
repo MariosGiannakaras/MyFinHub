@@ -58,7 +58,7 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
       setKind(initialKind);setAmount(prefill?String(prefill.amount):'');setDate(asOf);setNote(prefill?.note||'');setCategory(prefill?.category||defaults.category);setAccountId(prefill?.accountId||defaults.accountId);setFrom('piraeus-payroll');setTo('piraeus-savings');setPerson('');setActualBalance('');setParts([{id:'p1',label:'',category:data.state.settings.expenseCategories[0]||'Άλλο',amount:0},{id:'p2',label:'',category:data.state.settings.expenseCategories[1]||'Άλλο',amount:0}]);
     }
     setError('');setDirty(false);
-  },[open,initial,initialKind,prefill,asOf,data,fallbackAccount,currentBalance]);
+  },[open,initial,initialKind,prefill,asOf]);
 
   const reconciliationBase=(id:string)=>currentBalance(id)-(initial?.kind==='reconciliation'?Number(initial.legs.find(l=>l.accountId===id)?.amount||0):0);
   const transferLike=['transfer','saving_cash_offset','withdrawal','card_payment'].includes(kind);
