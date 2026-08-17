@@ -8,6 +8,10 @@ dist-node/
 .env.*
 !/.env.example
 
+# Supabase CLI local state / linked project metadata.
+supabase/.temp/
+.supabase/
+
 # Real personal finance data never belongs in Git history.
 data/*.json
 !data/rheomiq-data.example.json

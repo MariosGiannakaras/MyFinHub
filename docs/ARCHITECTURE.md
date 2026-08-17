@@ -2,16 +2,30 @@
 
 ## Runtime
 
-RheomIQ is a local-first React/Vite client plus a small Express file service. The browser is only the UI. The source of truth is a JSON file on disk (`data/rheomiq-data.json` by default).
+RheomIQ is a React/Vite client plus a small Express API. The browser remains UI-only. Durable finance state lives in Supabase/PostgreSQL; no finance data is stored in localStorage or IndexedDB.
 
-## Persistence guarantees
+The Express API is deliberately retained as a server-side boundary so the privileged Supabase secret key is never shipped to the browser. The UI contract (`FinanceData`) remains unchanged during this migration, which preserves all legacy Excel-derived semantics and existing UI behavior.
 
-1. GET returns the file plus a content revision hash.
-2. PUT requires the last seen revision (`If-Match`).
-3. The server rejects stale writes with HTTP 409 rather than silently overwriting another process.
-4. Writes are performed through a temporary file + atomic rename.
-5. Automatic backups are throttled; explicit backups are always available.
-6. Real data and backups are ignored by Git.
+## PostgreSQL persistence
+
+The database schema is owned by version-controlled SQL migrations in `supabase/migrations/`.
+
+- `rheomiq_app_state`: exactly one current application-state row (`id = 'primary') stored as `jsonb`, with an integer revision and timestamp.
+- `rheomiq_backups`: immutable database snapshots created before imports, manually, and at most hourly during normal saves.
+- `rheomiq_save_state(...)`: optimistic-concurrency write RPC. Stale revisions fail rather than overwrite newer state.
+- `rheomiq_import_state(...)`: one-time/full-state import RPC that first snapshots the previous state.
+- `rheomiq_create_backup(...)`: explicit backup RPC.
+
+RLS is enabled and no `anon`/`authenticated` table policies are granted. Only the backend's server-side Supabase secret/service role may call the persistence RPCs.
+
+This document-oriented first migration is intentional: it moves durability to PostgreSQL without reinterpreting 2,800+ legacy transactions. Future normalization can be added incrementally through migrations while preserving the current state document as the compatibility source.
+
+## Migration and deployment
+
+1. All schema changes are SQL migrations committed under `supabase/migrations/`.
+2. GitHub Actions uses the official Supabase CLI to `link`, dry-run, and `db push` migrations.
+3. Deployment runs only after the repository variable `SUPABASE_PROJECT_REF` is configured; credentials remain GitHub encrypted secrets.
+4. Real personal finance JSON is never committed. The one-time migration script reads the ignored local JSON and verifies a canonical checksum after import.
 
 ## Ledger model
 
