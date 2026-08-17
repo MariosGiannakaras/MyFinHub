@@ -25,13 +25,15 @@ RheomIQ preserves the existing Excel-derived behavior instead of flattening it i
 RheomIQ is designed as a private **single-owner online application**.
 
 - React/Vite frontend is deployable on Vercel from this GitHub repository.
-- Supabase Auth authenticates the single owner.
+- Supabase Auth authenticates the single owner with email/password plus mandatory TOTP Authenticator MFA.
+- Finance access requires both the configured owner UID and an `aal2` Supabase session. A password-only (`aal1`) session cannot read or write finance state.
 - Access/refresh tokens are stored only in `HttpOnly`, `SameSite=Strict` cookies in production; finance data and auth tokens are not persisted in browser storage.
 - The online runtime uses only `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY`.
-- PostgreSQL RLS is the authorization boundary. Only the configured owner UID can access RheomIQ state/backups through authenticated RPCs.
+- PostgreSQL RLS is the final authorization boundary; the API layer independently checks owner identity and `aal2` before finance operations.
 - The online runtime **does not need a Supabase secret/service-role key**.
 - `SUPABASE_SECRET_KEY` is reserved for offline emergency import/verification tooling and must never be configured in Vercel or exposed as `VITE_*`.
 - State-changing API routes enforce same-origin checks, bounded JSON payloads and server-side finance-state validation.
+- Login errors are intentionally generic; MFA verification uses Supabase Auth's challenge/verify flow and does not store the TOTP secret after enrollment.
 - Unexpected backend errors return stable public error codes plus a request ID instead of raw database/internal errors.
 - Vercel security headers include CSP, anti-framing, MIME-sniffing protection, HSTS and restricted browser permissions.
 
@@ -112,4 +114,4 @@ RheomIQ/
 
 ## Privacy
 
-RheomIQ has one owner and no public registration, user picker, teams, tenant switching or multi-user business model. Personal finance data and credentials are excluded from Git history.
+RheomIQ has one owner and no user picker, teams, tenant switching or multi-user business model. Personal finance data and credentials are excluded from Git history.
