@@ -2,7 +2,8 @@ import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { AppShell, type PageId } from './components/AppShell';
 import { LoginScreen } from './components/LoginScreen';
 import { MfaScreen } from './components/MfaScreen';
-import { QuickAdd } from './components/QuickAdd';
+import { PageErrorBoundary } from './components/PageErrorBoundary';
+import { QuickAdd, type QuickPrefill } from './components/QuickAdd';
 import { useFinance } from './hooks/useFinance';
 import { useLocalDate } from './hooks/useLocalDate';
 import { useSession } from './hooks/useSession';
@@ -20,29 +21,62 @@ const LendingPage = lazy(() => import('./pages/LendingPage').then((module) => ({
 const ReportsPage = lazy(() => import('./pages/ReportsPage').then((module) => ({ default: module.ReportsPage })));
 const SettingsPage = lazy(() => import('./pages/SettingsPage').then((module) => ({ default: module.SettingsPage })));
 
+const PAGE_IDS: PageId[] = ['dashboard','transactions','review','savings','credit','lending','recurring','reports','settings'];
+function routeFromHash() {
+  const raw=location.hash.replace(/^#\/?/,'').trim();
+  if(!raw)return {page:'dashboard' as PageId,notFound:false};
+  if(PAGE_IDS.includes(raw as PageId))return {page:raw as PageId,notFound:false};
+  return {page:'dashboard' as PageId,notFound:true};
+}
+function pageHash(page:PageId){return `#/${page}`;}
+
 function PageLoading() {
   return <div className="empty-state" role="status" aria-live="polite">Φόρτωση ενότητας…</div>;
+}
+
+function NotFound({onHome}:{onHome:()=>void}){
+  return <main className="login-screen"><section className="not-found neo-raised" aria-labelledby="not-found-title"><span className="eyebrow">404 · PRIVATE ROUTE</span><h1 id="not-found-title">Η ενότητα δεν υπάρχει</h1><p>Η διεύθυνση δεν αντιστοιχεί σε ενότητα του RheomIQ. Δεν εμφανίζονται οικονομικά στοιχεία σε αυτή την οθόνη.</p><div className="editor-actions"><button type="button" className="save-button" onClick={onHome}>Επιστροφή στο Dashboard</button></div></section></main>;
 }
 
 function FinanceApp({userEmail,onLogout}:{userEmail:string|null;onLogout:()=>void}){
   const finance=useFinance();
   const today=useLocalDate();
-  const [page,setPage]=useState<PageId>('dashboard');
+  const initialRoute=routeFromHash();
+  const [page,setPage]=useState<PageId>(initialRoute.page);
+  const [notFound,setNotFound]=useState(initialRoute.notFound);
   const [quickOpen,setQuickOpen]=useState(false);
   const [editingEventId,setEditingEventId]=useState<string|null>(null);
   const [quickKind,setQuickKind]=useState<EventKind>('expense');
+  const [quickPrefill,setQuickPrefill]=useState<QuickPrefill|null>(null);
   const [month,setMonth]=useState(()=>today.slice(0,7));
   const [monthIsManual,setMonthIsManual]=useState(false);
+  const [pageRetry,setPageRetry]=useState(0);
+
+  const navigate=(next:PageId,replace=false)=>{
+    const hash=pageHash(next);
+    if(location.hash!==hash){if(replace)history.replaceState(null,'',hash);else history.pushState(null,'',hash);}
+    setNotFound(false);setPage(next);
+  };
+
+  useEffect(()=>{
+    const sync=()=>{const next=routeFromHash();setPage(next.page);setNotFound(next.notFound)};
+    window.addEventListener('hashchange',sync);window.addEventListener('popstate',sync);
+    return()=>{window.removeEventListener('hashchange',sync);window.removeEventListener('popstate',sync)};
+  },[]);
 
   useEffect(()=>{
     const onKey=(e:KeyboardEvent)=>{
-      if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();setEditingEventId(null);setQuickKind('expense');setQuickOpen(true)}
-      if(e.key==='Escape')setQuickOpen(false);
+      if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){
+        e.preventDefault();
+        if(quickOpen)return;
+        setEditingEventId(null);setQuickPrefill(null);setQuickKind('expense');setQuickOpen(true);
+      }
     };
     addEventListener('keydown',onKey); return()=>removeEventListener('keydown',onKey);
-  },[]);
+  },[quickOpen]);
 
   useEffect(()=>{setMonth(current=>reportingMonthForDate(current,today,monthIsManual));},[today,monthIsManual]);
+  useEffect(()=>{if(notFound)return;requestAnimationFrame(()=>{const heading=document.querySelector<HTMLElement>('#main-workspace h1');if(heading){heading.tabIndex=-1;heading.focus({preventScroll:true})}})},[page,notFound]);
 
   const data=finance.data;
   useEffect(()=>{
@@ -53,32 +87,40 @@ function FinanceApp({userEmail,onLogout}:{userEmail:string|null;onLogout:()=>voi
   const reviews=useMemo(()=>data?reviewSuggestions(data).length:0,[data]);
   if(!data)return <div className="boot-screen"><img src="/brand/icon-192.png" alt="RheomIQ"/><div className="boot-pulse"/><b>RheomIQ</b><span>{finance.saveState==='error'?'Δεν ήταν δυνατή η φόρτωση της βάσης':'Φόρτωση οικονομικού ledger…'}</span>{finance.saveState==='error'?<button className="secondary" type="button" onClick={()=>void finance.reload()}>Δοκιμή ξανά</button>:null}</div>;
 
+  if(notFound)return <NotFound onHome={()=>navigate('dashboard',true)}/>;
+
   const addEvent=(event:FinanceEvent)=>finance.update(current=>{const events=current.state.events??[];const exists=events.some(e=>e.id===event.id);return {...current,state:{...current.state,events:exists?events.map(e=>e.id===event.id?event:e):[...events,event]}}});
   const deleteEvent=(id:string)=>finance.update(current=>({...current,state:{...current.state,events:(current.state.events??[]).filter(e=>e.id!==id)}}));
-  const editEvent=(id:string)=>{setEditingEventId(id);setQuickOpen(true)};
-  const openQuick=(kind:EventKind='expense')=>{setEditingEventId(null);setQuickKind(kind);setQuickOpen(true)};
+  const editEvent=(id:string)=>{setEditingEventId(id);setQuickPrefill(null);setQuickOpen(true)};
+  const openQuick=(kind:EventKind='expense',prefill:QuickPrefill|null=null)=>{setEditingEventId(null);setQuickKind(kind);setQuickPrefill(prefill);setQuickOpen(true)};
   const upsertRecurring=(item:RecurringItem)=>finance.update(current=>{const seed=current.seed.recurring.some(r=>r.id===item.id);if(seed)return {...current,state:{...current.state,recurringOverrides:{...current.state.recurringOverrides,[item.id]:item}}};const custom=current.state.recurringCustom??[];const exists=custom.some(r=>r.id===item.id);return {...current,state:{...current.state,recurringCustom:exists?custom.map(r=>r.id===item.id?item:r):[...custom,item]}}});
   const deleteRecurring=(id:string)=>finance.update(current=>{if(current.seed.recurring.some(r=>r.id===id)){const original=current.seed.recurring.find(r=>r.id===id)!;return {...current,state:{...current.state,recurringOverrides:{...current.state.recurringOverrides,[id]:{...original,active:false}}}}}return {...current,state:{...current.state,recurringCustom:(current.state.recurringCustom??[]).filter(r=>r.id!==id)}}});
   const upsertLoan=(loan:Loan)=>finance.update(current=>{if(current.seed.loans.some(l=>l.id===loan.id))return {...current,state:{...current.state,loanOverrides:{...current.state.loanOverrides,[loan.id]:loan}}};const custom=current.state.customLoans??[];const exists=custom.some(l=>l.id===loan.id);return {...current,state:{...current.state,customLoans:exists?custom.map(l=>l.id===loan.id?loan:l):[...custom,loan]}}});
   const payLoan=(loan:Loan)=>{const mode=loan.accountingMode||'expense-per-installment';const event=createEvent({kind:mode==='liability-repayment'?'card_payment':'expense',date:today,amount:loan.installment,note:`Δόση: ${loan.name}`,category:'Δόσεις / δάνεια',accountId:data.state.settings.defaultLoanAccount,fromAccountId:data.state.settings.defaultLoanAccount});event.loanId=loan.id;addEvent(event)};
   const decide=(id:string,decision:ReviewDecision)=>finance.update(current=>({...current,state:{...current.state,reviewDecisions:{...(current.state.reviewDecisions??{}),[id]:decision}}}));
   const balance=(accountId:string)=>accountBalances(data,today)[accountId]||0;
-  const content=page==='dashboard'?<DashboardPage data={data} month={month} asOf={today} onQuickAdd={()=>openQuick('expense')} onReview={()=>setPage('review')} onTransactions={()=>setPage('transactions')}/>
+  const recover=()=>{if((finance.saveState==='error'||finance.saveState==='conflict')&&!window.confirm('Η επαναφόρτωση θα απορρίψει τυχόν τοπικές αλλαγές που δεν αποθηκεύτηκαν. Να φορτωθεί η τελευταία έκδοση από τη βάση;'))return;void finance.reload()};
+
+  const content=page==='dashboard'?<DashboardPage data={data} month={month} asOf={today} motionMode={data.state.settings.motion||'system'} onQuickAdd={(prefill?:QuickPrefill)=>openQuick('expense',prefill||null)} onReview={()=>navigate('review')} onTransactions={()=>navigate('transactions')}/>
     :page==='transactions'?<TransactionsPage data={data} month={month} onEditEvent={editEvent} onDeleteEvent={deleteEvent}/>
     :page==='review'?<ReviewPage data={data} onDecision={decide}/>
     :page==='savings'?<SavingsPage data={data} month={month} asOf={today} onQuickAdd={()=>openQuick('saving_cash_offset')}/>
-    :page==='credit'?<CreditLoansPage data={data} asOf={today} onCardPurchase={()=>openQuick('card_purchase')} onCardPayment={()=>openQuick('card_payment')} onUpsertLoan={upsertLoan} onPayLoan={payLoan}/>
+    :page==='credit'?<CreditLoansPage data={data} asOf={today} onCardPurchase={()=>openQuick('card_purchase')} onCardPayment={()=>openQuick('card_payment')} onEditEvent={editEvent} onUpsertLoan={upsertLoan} onPayLoan={payLoan}/>
     :page==='lending'?<LendingPage data={data} onQuickAdd={()=>openQuick('lending')}/>
     :page==='recurring'?<RecurringPage data={data} onUpsert={upsertRecurring} onDelete={deleteRecurring}/>
     :page==='reports'?<ReportsPage data={data} month={month}/>
     :<SettingsPage data={data} filePath={finance.filePath} lastSavedAt={finance.lastSavedAt} onImport={finance.importData} onBackup={finance.createBackup} onSettings={settings=>finance.update(c=>({...c,state:{...c.state,settings}}))}/>;
 
+  const persistenceLabel=finance.saveState==='saved'?'Αποθηκεύτηκε':finance.saveState==='saving'?'Αποθήκευση σε εξέλιξη':finance.saveState==='conflict'?'Σύγκρουση έκδοσης':finance.saveState==='error'?'Η αποθήκευση απέτυχε':'Φόρτωση';
+  const persistenceHelp=finance.saveState==='saved'?'Η ορατή κατάσταση έχει συγχρονιστεί με τη βάση.':finance.saveState==='saving'?'Η αλλαγή φαίνεται άμεσα και αποθηκεύεται με ασφαλή revision check.':finance.saveState==='conflict'?'Υπάρχει νεότερη έκδοση στη βάση. Οι νέες αλλαγές έχουν μπλοκαριστεί μέχρι να φορτώσεις την τελευταία έκδοση.':finance.saveState==='error'?'Η ορατή αλλαγή μπορεί να υπάρχει μόνο τοπικά. Φόρτωσε ξανά τη βάση πριν συνεχίσεις.':'Έλεγχος κατάστασης.';
+
   return <>
-    <AppShell page={page} onPage={setPage} onQuickAdd={()=>openQuick('expense')} saveState={finance.saveState} filePath={finance.filePath} reviewCount={reviews} motionMode={data.state.settings.motion||'system'} userEmail={userEmail} onLogout={onLogout}>
+    <AppShell page={page} onPage={navigate} onQuickAdd={()=>openQuick('expense')} saveState={finance.saveState} filePath={finance.filePath} reviewCount={reviews} motionMode={data.state.settings.motion||'system'} userEmail={userEmail} onLogout={onLogout}>
+      <div className={`persistence-notice ${finance.saveState}`} role={finance.saveState==='error'||finance.saveState==='conflict'?'alert':'status'} aria-live="polite"><div><b>{persistenceLabel}</b><small>{persistenceHelp}</small></div>{finance.saveState==='error'||finance.saveState==='conflict'?<button type="button" className="secondary" onClick={recover}>Φόρτωση τελευταίας έκδοσης</button>:null}</div>
       <div className="month-toolbar"><label>Περίοδος <input type="month" value={month} onChange={e=>{setMonth(e.target.value);setMonthIsManual(true)}}/></label><span>Οι κινήσεις μετά την {today.split('-').reverse().join('/')} δεν επηρεάζουν το σημερινό balance.</span></div>
-      <Suspense fallback={<PageLoading/>}>{content}</Suspense>
+      <PageErrorBoundary resetKey={`${page}:${pageRetry}`} onDashboard={()=>navigate('dashboard')}><Suspense fallback={<PageLoading/>}><div key={pageRetry}>{content}</div></Suspense></PageErrorBoundary>
     </AppShell>
-    <QuickAdd open={quickOpen} data={data} asOf={today} motionMode={data.state.settings.motion||'system'} initial={(data.state.events??[]).find(e=>e.id===editingEventId)||null} initialKind={quickKind} onClose={()=>{setQuickOpen(false);setEditingEventId(null)}} onCreate={addEvent} currentBalance={balance}/>
+    <QuickAdd open={quickOpen} data={data} asOf={today} motionMode={data.state.settings.motion||'system'} initial={(data.state.events??[]).find(e=>e.id===editingEventId)||null} initialKind={quickKind} prefill={quickPrefill} onClose={()=>{setQuickOpen(false);setEditingEventId(null);setQuickPrefill(null)}} onCreate={addEvent} currentBalance={balance}/>
   </>;
 }
 
