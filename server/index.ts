@@ -3,7 +3,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { accessTokenAal, beginTotpEnrollment, challengeTotp, clearSessionCookies, getTotpFactors, requireSession, revokeSession, setSessionCookies, signInWithPassword, verifyTotp } from './auth.js';
 import { ApiError, assertSameOrigin, handleApi, methodNotAllowed, requestHeader, sendJson } from './http.js';
-import { backupStore, DATA_SOURCE, isOwner, readStore, writeStore } from './storage.js';
+import { backupStore, DATA_SOURCE, isOwner, readStore, writeMutableState, writeStore } from './storage.js';
+import { parseMutableWrite } from './stateValidation.js';
 import { isAuthRejection } from './upstream.js';
 import { validateFinanceData } from './validation.js';
 import { MAX_FINANCE_DOCUMENT_BYTES } from '../src/lib/limits.js';
@@ -139,8 +140,8 @@ app.get('/api/data', (req, res) => void handleApi(res, async () => {
 app.put('/api/data', (req, res) => void handleApi(res, async () => {
   assertSameOrigin(req);
   const session = await requireFinanceSession(req, res);
-  validateFinanceData(req.body);
-  sendJson(res, 200, await writeStore(req.body, requestHeader(req, 'if-match') || undefined, false, session.accessToken));
+  const body = parseMutableWrite(req.body);
+  sendJson(res, 200, await writeMutableState(body.state, body.updatedAt, requestHeader(req, 'if-match'), session.accessToken));
 }));
 
 app.post('/api/import', (req, res) => void handleApi(res, async () => {
