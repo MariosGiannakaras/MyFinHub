@@ -111,9 +111,8 @@ export function useFinance() {
 
   const update = useCallback((recipe: (current: FinanceData) => FinanceData) => {
     const current = dataRef.current;
-    if (!current || saveState === 'conflict' || saveState === 'error' || saveState === 'loading' || exclusiveOperation.current) return false;
+    if (!current || saveState === 'conflict' || exclusiveOperation.current) return;
     persist(recipe(current));
-    return true;
   }, [persist, saveState]);
 
   const doImport = useCallback(async (incoming: FinanceData) => {
