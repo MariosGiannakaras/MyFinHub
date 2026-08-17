@@ -44,6 +44,7 @@ async function supabase<T>(path: string, init: RequestInit = {}, accessToken?: s
     const upstreamMessage = payload && typeof payload === 'object' && 'message' in payload ? payload.message : '';
     const marker = `${upstreamCode || ''} ${upstreamMessage || ''}`;
     if (/REVISION_CONFLICT|40001/i.test(marker)) throw new ApiError(409, 'REVISION_CONFLICT', 'The data changed in another session. Reload before saving.');
+    if (/MFA_REQUIRED/i.test(marker)) throw new ApiError(403, 'MFA_REQUIRED', 'Verification required.');
     if (/FORBIDDEN|42501/i.test(marker) || response.status === 403) throw new ApiError(403, 'FORBIDDEN', 'Access denied.');
     if (response.status === 401) throw new ApiError(401, 'AUTH_REQUIRED', 'Authentication required.');
     if (/INVALID_DATA|INVALID_SCHEMA_VERSION|22023/i.test(marker)) throw new ApiError(400, 'INVALID_DATA', 'The finance data is invalid.');
