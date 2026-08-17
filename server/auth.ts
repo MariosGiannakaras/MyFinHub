@@ -37,8 +37,7 @@ async function authRequest<T>(path: string, init: RequestInit = {}): Promise<T> 
     const message = payload && typeof payload === 'object'
       ? ('message' in payload && payload.message) || ('error_description' in payload && payload.error_description)
       : null;
-    const error = new ApiError(response.status === 400 ? 401 : response.status, 'AUTH_FAILED', message || 'Authentication failed.', false);
-    throw error;
+    throw new ApiError(response.status === 400 ? 401 : response.status, 'AUTH_FAILED', message || 'Authentication failed.', false);
   }
   return payload as T;
 }
@@ -59,7 +58,7 @@ function parseCookies(req: any) {
 }
 
 function secureRuntime(req: any) {
-  return process.env.VERCEL === '1' || process.env.NODE_ENV === 'production' || requestHeader(req, 'x-forwarded-proto') === 'https';
+  return process.env.VERCEL === '1' || requestHeader(req, 'x-forwarded-proto') === 'https';
 }
 
 function serializeCookie(name: string, value: string, maxAge: number, secure: boolean) {
