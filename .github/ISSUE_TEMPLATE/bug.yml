@@ -1,0 +1,59 @@
+name: Bug report
+description: Report incorrect behavior or a regression with reproducible evidence.
+title: "fix: "
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What is wrong?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: dropdown
+    id: impact
+    attributes:
+      label: Impact area
+      options:
+        - Display / UX only
+        - Finance calculations / reports
+        - Saving / persistence
+        - Authentication / authorization
+        - Import / backup
+        - Deployment / availability
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Add non-sensitive error text, request ID, screenshots, or affected workflow. Never paste credentials or personal finance exports.
+  - type: checkboxes
+    id: safety
+    attributes:
+      label: Safety check
+      options:
+        - label: I did not include passwords, tokens, secrets, or personal finance exports in this issue.
+          required: true

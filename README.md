@@ -24,7 +24,7 @@ RheomIQ preserves the existing Excel-derived behavior instead of flattening it i
 
 RheomIQ is designed as a private **single-owner online application**.
 
-- React/Vite frontend is deployable on Vercel from this GitHub repository.
+- React/Vite frontend and Node API routes are deployable on Vercel from this GitHub repository.
 - Supabase Auth authenticates the single owner with email/password plus mandatory TOTP Authenticator MFA.
 - Finance access requires both the configured owner UID and an `aal2` Supabase session. A password-only (`aal1`) session cannot read or write finance state.
 - Access/refresh tokens are stored only in `HttpOnly`, `SameSite=Strict` cookies in production; finance data and auth tokens are not persisted in browser storage.
@@ -33,25 +33,31 @@ RheomIQ is designed as a private **single-owner online application**.
 - The online runtime **does not need a Supabase secret/service-role key**.
 - `SUPABASE_SECRET_KEY` is reserved for offline emergency import/verification tooling and must never be configured in Vercel or exposed as `VITE_*`.
 - State-changing API routes enforce same-origin checks, bounded JSON payloads and server-side finance-state validation.
+- Normal saves require an explicit current revision; stale, missing, malformed, or unsafe revision preconditions are rejected.
 - Login errors are intentionally generic; MFA verification uses Supabase Auth's challenge/verify flow and does not store the TOTP secret after enrollment.
 - Unexpected backend errors return stable public error codes plus a request ID instead of raw database/internal errors.
 - Vercel security headers include CSP, anti-framing, MIME-sniffing protection, HSTS and restricted browser permissions.
+- Vercel Functions are configured for Frankfurt (`fra1`) to stay close to the Supabase `eu-central-1` data region.
 
 ## Persistence and recovery
 
 - SQL schema is version-controlled in `supabase/migrations/`.
 - `rheomiq_app_state` stores the current state as PostgreSQL `jsonb` with optimistic revision locking.
-- stale writes are rejected as revision conflicts.
+- Stale writes are rejected as revision conflicts.
 - `rheomiq_backups` stores bounded database snapshots; automatic backups are throttled and retention is capped.
-- imports create a pre-import backup.
+- Imports create a pre-import backup.
 - `rheomiq_audit_log` records save/import/backup write events without duplicating the finance payload.
-- the original local JSON remains only as a private emergency source/export and is never committed.
+- The original local JSON remains only as a private emergency source/export and is never committed.
 
-## Repository-managed Supabase changes
+## Delivery workflow
 
-Every future database/schema change must be committed as a new migration under `supabase/migrations/`.
+Implementation and infrastructure changes follow **Issue → short-lived branch → Pull Request → automated checks → squash merge**. Branch naming and security/domain invariants are defined in `AGENTS.md`; the PR and issue templates under `.github/` make the verification steps explicit.
 
-Production deployment uses the native Supabase GitHub integration connected to `MariosGiannakaras/RheomIQ`. With **Deploy to production** enabled, commits to `main` apply pending migrations and supported Supabase configuration from the repository.
+`main` is the production source of truth. Database DDL is never applied as an untracked change: every schema change is an ordered SQL migration under `supabase/migrations/`.
+
+Supabase production deployment uses the native GitHub integration connected to this repository. Pushes/merges to `main` trigger the production deployment workflow and apply pending migrations. Per-PR Supabase preview databases are intentionally not required because Supabase Branching is a Pro-plan feature.
+
+Vercel should be connected through its Git integration so Pull Requests can receive Preview deployments and `main` can produce Production deployments. Preview deployments must not be configured with access that can unintentionally mutate the production finance database.
 
 ## Runtime environment
 
@@ -72,14 +78,16 @@ Never commit real keys. Never expose the secret key through a public/Vite enviro
 
 ## Production migration state
 
-The production Supabase project is initialized and the existing RheomIQ data has been imported to PostgreSQL. The complete legacy transaction/snapshot corpus remains in schema version 3. Temporary import storage/functions were removed after verification.
+The production Supabase project is initialized and the legacy RheomIQ corpus is stored in schema version 3. Storage artifacts used for the one-time import were removed. The old one-time import Edge Function remains server-side in a disabled `410 Gone` state with JWT verification because the connected management API does not expose function deletion; it is not part of the runtime contract.
+
+Migration-only database leftovers are removed through normal forward migrations rather than manual production DDL.
 
 ## Development
 
-Requirements: Node.js 22.12+.
+Requirements: Node.js 22 LTS. The repository pins the major in `.nvmrc` and `package.json`.
 
 ```bash
-npm install
+npm ci
 npm run dev
 ```
 
@@ -93,7 +101,7 @@ npm run build
 npm run check
 ```
 
-GitHub CI runs tests/typecheck/build and production dependency audit. CodeQL performs static security analysis and Dependabot tracks npm/GitHub Actions updates. Supabase Security Advisor should remain free of security findings after schema changes.
+GitHub CI runs deterministic installation, production dependency audit, tests/security guard, typecheck and build. CodeQL performs static security analysis and Dependabot tracks npm/GitHub Actions updates. Third-party GitHub Actions are pinned to immutable commit SHAs. Supabase Security Advisor should remain free of security findings after schema changes.
 
 ## Repository structure
 
@@ -108,8 +116,9 @@ RheomIQ/
 ├─ tests/                     # finance + security regression tests
 ├─ data/                      # ignored private data + empty example
 ├─ docs/                      # architecture and UX rules
-├─ AGENTS.md                  # durable repository invariants
-└─ .github/                   # CI, CodeQL and Dependabot configuration
+├─ AGENTS.md                  # durable repository invariants/workflow
+├─ SECURITY.md                # vulnerability-reporting policy
+└─ .github/                   # templates, CI, CodeQL and Dependabot
 ```
 
 ## Privacy
