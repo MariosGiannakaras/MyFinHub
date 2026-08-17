@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { localDateString, millisecondsUntilNextLocalDay, reportingMonthForDate } from '../src/hooks/useLocalDate.js';
+import { localDateString, millisecondsUntilNextLocalDay, reportingMonthForDate } from '../src/lib/localDate.js';
 
 describe('reactive local finance date', () => {
   it('formats the local calendar date without relying on locale output', () => {
