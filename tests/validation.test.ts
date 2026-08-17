@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { MAX_FINANCE_DOCUMENT_BYTES } from '../src/lib/limits.js';
 import { validateFinanceData } from '../server/validation.js';
 
-function validState() {
+function validState(): any {
   return {
     app: 'RheomIQ',
     schemaVersion: 3,
@@ -61,19 +61,19 @@ describe('finance document validation', () => {
       type: 'expense',
       amount: '12.50',
       note: 'invalid numeric type',
-    } as never);
+    });
     expect(() => validateFinanceData(state)).toThrowError(/amount/i);
   });
 
   it('rejects malformed snapshot balances', () => {
     const state = validState();
-    state.seed.snapshots.push({ date: '2026-08-17', balances: { bank: '100' } } as never);
+    state.seed.snapshots.push({ date: '2026-08-17', balances: { bank: '100' } });
     expect(() => validateFinanceData(state)).toThrowError(/balances/i);
   });
 
   it('rejects unsupported settings values', () => {
     const state = validState();
-    state.state.settings.motion = 'turbo' as never;
+    state.state.settings.motion = 'turbo';
     expect(() => validateFinanceData(state)).toThrowError(/motion/i);
   });
 
