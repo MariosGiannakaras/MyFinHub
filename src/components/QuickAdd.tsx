@@ -2,6 +2,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { ArrowDownToLine, ArrowLeftRight, BanknoteArrowDown, Check, CircleDollarSign, CreditCard, HandCoins, PiggyBank, RotateCcw, Scale, Split, X } from 'lucide-react';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { allAccounts, createEvent, frequentDescriptions } from '../lib/domain';
+import { entryDefaults, entryDraftError } from '../lib/inputSemantics';
 import { preserveLoanPaymentLink } from '../lib/loans';
 import { money } from '../lib/format';
 import type { EventKind, FinanceData, FinanceEvent, SplitPart } from '../types';
@@ -25,25 +26,28 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', mot
   const systemReduced = useReducedMotion();
   const reduce = systemReduced || motionMode==='reduced';
   const accounts = allAccounts(data).filter(a=>a.kind!=='credit');
+  const fallbackAccount=accounts[0]?.id||'cash';
   const frequent = useMemo(()=>frequentDescriptions(data,'expense',10),[data]);
   const [kind,setKind]=useState<EventKind>('expense');
   const [amount,setAmount]=useState('');
   const [date,setDate]=useState(asOf);
   const [note,setNote]=useState('');
   const [category,setCategory]=useState(data.state.settings.expenseCategories[0]||'Άλλο');
-  const [accountId,setAccountId]=useState(data.state.settings.defaultExpenseAccount||accounts[0]?.id||'cash');
+  const [accountId,setAccountId]=useState(data.state.settings.defaultExpenseAccount||fallbackAccount);
   const [from,setFrom]=useState('piraeus-payroll');
   const [to,setTo]=useState('piraeus-savings');
   const [person,setPerson]=useState('');
   const [actualBalance,setActualBalance]=useState('');
   const [parts,setParts]=useState<SplitPart[]>([{id:'p1',label:'',category:data.state.settings.expenseCategories[0]||'Άλλο',amount:0},{id:'p2',label:'',category:data.state.settings.expenseCategories[1]||'Άλλο',amount:0}]);
   const [error,setError]=useState('');
+  const categoryOptions=kind==='income'?data.state.settings.incomeCategories:data.state.settings.expenseCategories;
 
   useEffect(()=>{
     if(!open)return;
     if(initial){
-      setKind(initial.kind);setAmount(String(initial.amount||''));setDate(initial.date||asOf);setNote(initial.note||'');setCategory(initial.category||data.state.settings.expenseCategories[0]||'Άλλο');setAccountId(initial.accountId||initial.legs.find(l=>l.accountId!=='credit-card')?.accountId||data.state.settings.defaultExpenseAccount);setFrom(initial.fromAccountId||initial.legs.find(l=>l.amount<0)?.accountId||'piraeus-payroll');setTo(initial.toAccountId||initial.legs.find(l=>l.amount>0)?.accountId||'piraeus-savings');setPerson(initial.person||'');setParts(initial.parts?.length?initial.parts:[{id:'p1',label:'',category:data.state.settings.expenseCategories[0]||'Άλλο',amount:0},{id:'p2',label:'',category:data.state.settings.expenseCategories[1]||'Άλλο',amount:0}]);setActualBalance(initial.kind==='reconciliation'?String(currentBalance(initial.accountId||initial.legs[0]?.accountId||data.state.settings.defaultExpenseAccount)):'');setError('');
-    }else{setKind(initialKind);setAmount('');setDate(asOf);setNote('');setCategory(data.state.settings.expenseCategories[0]||'Άλλο');setAccountId(data.state.settings.defaultExpenseAccount||accounts[0]?.id||'cash');setFrom('piraeus-payroll');setTo('piraeus-savings');setPerson('');setActualBalance('');setParts([{id:'p1',label:'',category:data.state.settings.expenseCategories[0]||'Άλλο',amount:0},{id:'p2',label:'',category:data.state.settings.expenseCategories[1]||'Άλλο',amount:0}]);setError('');}
+      const defaults=entryDefaults(initial.kind,data.state.settings,fallbackAccount);
+      setKind(initial.kind);setAmount(String(initial.amount||''));setDate(initial.date||asOf);setNote(initial.note||'');setCategory(initial.category||defaults.category);setAccountId(initial.accountId||initial.legs.find(l=>l.accountId!=='credit-card')?.accountId||defaults.accountId);setFrom(initial.fromAccountId||initial.legs.find(l=>l.amount<0)?.accountId||'piraeus-payroll');setTo(initial.toAccountId||initial.legs.find(l=>l.amount>0)?.accountId||'piraeus-savings');setPerson(initial.person||'');setParts(initial.parts?.length?initial.parts:[{id:'p1',label:'',category:data.state.settings.expenseCategories[0]||'Άλλο',amount:0},{id:'p2',label:'',category:data.state.settings.expenseCategories[1]||'Άλλο',amount:0}]);setActualBalance(initial.kind==='reconciliation'?String(currentBalance(initial.accountId||initial.legs[0]?.accountId||defaults.accountId)):'');setError('');
+    }else{const defaults=entryDefaults(initialKind,data.state.settings,fallbackAccount);setKind(initialKind);setAmount('');setDate(asOf);setNote('');setCategory(defaults.category);setAccountId(defaults.accountId);setFrom('piraeus-payroll');setTo('piraeus-savings');setPerson('');setActualBalance('');setParts([{id:'p1',label:'',category:data.state.settings.expenseCategories[0]||'Άλλο',amount:0},{id:'p2',label:'',category:data.state.settings.expenseCategories[1]||'Άλλο',amount:0}]);setError('');}
   },[open,initial,initialKind,asOf,data]);
 
   const reconciliationBase=(id:string)=>currentBalance(id)-(initial?.kind==='reconciliation'?Number(initial.legs.find(l=>l.accountId===id)?.amount||0):0);
@@ -51,15 +55,18 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', mot
   const lendingLike=['lending','repayment'].includes(kind);
   const reset=()=>{setAmount('');setNote('');setError('');setActualBalance('');};
   const chooseKind=(next:EventKind)=>{
-    setKind(next);setError('');
+    const defaults=entryDefaults(next,data.state.settings,fallbackAccount);
+    setKind(next);setError('');setAccountId(defaults.accountId);setCategory(defaults.category);
     if(next==='saving_cash_offset'){setFrom('piraeus-payroll');setTo('piraeus-savings');}
     if(next==='withdrawal'){setFrom('piraeus-payroll');setTo('cash');}
   };
   const submit=()=>{
     try{
+      const draftError=entryDraftError(kind,{amount,person,actualBalance,parts});
+      if(draftError) throw new Error(draftError);
       const numeric=Number(amount);
-      if(kind!=='reconciliation' && !(numeric>0)) throw new Error('Συμπλήρωσε ποσό.');
-      const event=createEvent({kind,date,amount:kind==='reconciliation'?Math.abs(Number(actualBalance)-reconciliationBase(accountId)):numeric,note:note||kinds.find(k=>k.kind===kind)?.label||'',category,accountId,fromAccountId:from,toAccountId:to,person,parts:kind==='split'?parts:undefined,actualBalance:Number(actualBalance),currentBalance:reconciliationBase(accountId)});
+      const actual=kind==='reconciliation'?Number(actualBalance):undefined;
+      const event=createEvent({kind,date,amount:kind==='reconciliation'?Math.abs((actual as number)-reconciliationBase(accountId)):numeric,note:note||kinds.find(k=>k.kind===kind)?.label||'',category,accountId,fromAccountId:from,toAccountId:to,person:person.trim(),parts:kind==='split'?parts:undefined,actualBalance:actual,currentBalance:reconciliationBase(accountId)});
       if(initial){event.id=initial.id;event.createdAt=initial.createdAt;event.updatedAt=new Date().toISOString();preserveLoanPaymentLink(event,initial);}
       onCreate(event); reset(); onClose();
     }catch(e){setError(e instanceof Error?e.message:'Δεν ήταν δυνατή η καταχώριση.');}
@@ -76,9 +83,9 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', mot
           <label><span>Ημερομηνία</span><input type="date" value={date} onChange={e=>setDate(e.target.value)}/></label>
           {!transferLike && kind!=='card_purchase'?<label><span>Λογαριασμός</span><select value={accountId} onChange={e=>setAccountId(e.target.value)}>{accounts.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}</select></label>:null}
           {transferLike?<><label><span>Από</span><select value={from} onChange={e=>setFrom(e.target.value)}>{accounts.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}</select></label>{kind!=='card_payment'?<label><span>Προς</span><select value={to} onChange={e=>setTo(e.target.value)}>{accounts.map(a=><option key={a.id} value={a.id}>{a.name}</option>)}</select></label>:null}</>:null}
-          {!['transfer','withdrawal','saving_cash_offset','card_payment','reconciliation'].includes(kind)?<label><span>Κατηγορία</span><select value={category} onChange={e=>setCategory(e.target.value)}>{data.state.settings.expenseCategories.map(c=><option key={c}>{c}</option>)}</select></label>:null}
+          {!['transfer','withdrawal','saving_cash_offset','card_payment','reconciliation'].includes(kind)?<label><span>Κατηγορία</span><select value={category} onChange={e=>setCategory(e.target.value)}>{categoryOptions.map(c=><option key={c}>{c}</option>)}</select></label>:null}
           {lendingLike?<label><span>Πρόσωπο</span><input value={person} onChange={e=>setPerson(e.target.value)} placeholder="π.χ. Χρήστος"/></label>:null}
-          {kind==='reconciliation'?<><label><span>Πραγματικό υπόλοιπο</span><div className="money-input"><b>€</b><input inputMode="decimal" value={actualBalance} onChange={e=>setActualBalance(e.target.value.replace(',','.'))}/></div></label><div className="reconcile-preview"><span>Αναμενόμενο τώρα</span><b>{money.format(reconciliationBase(accountId))}</b><span>Διαφορά</span><strong>{Number.isFinite(Number(actualBalance))?money.format(Number(actualBalance)-reconciliationBase(accountId)):'—'}</strong></div></>:null}
+          {kind==='reconciliation'?<><label><span>Πραγματικό υπόλοιπο</span><div className="money-input"><b>€</b><input inputMode="decimal" value={actualBalance} onChange={e=>setActualBalance(e.target.value.replace(',','.'))}/></div></label><div className="reconcile-preview"><span>Αναμενόμενο τώρα</span><b>{money.format(reconciliationBase(accountId))}</b><span>Διαφορά</span><strong>{actualBalance.trim()&&Number.isFinite(Number(actualBalance))?money.format(Number(actualBalance)-reconciliationBase(accountId)):'—'}</strong></div></>:null}
           <label className="wide"><span>Σχόλιο <em>προαιρετικό</em></span><input value={note} onChange={e=>setNote(e.target.value)} placeholder="Επίλεξε συχνή κίνηση ή γράψε μόνο αν χρειάζεται"/></label>
         </div>
         {kind==='saving_cash_offset'?<div className="logic-note"><PiggyBank/><div><b>Η σωστή λογική αποταμίευσης σου</b><span>Τα μετρητά δεν αλλάζουν. Μειώνεται μόνο η Μισθοδοσίας και αυξάνεται ισόποσα ο Ταμιευτηρίου. Τα φυσικά μετρητά είναι το αντίκρισμα/αιτία της ενέργειας.</span></div></div>:null}

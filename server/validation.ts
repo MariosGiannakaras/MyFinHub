@@ -94,6 +94,7 @@ function validateRecurring(value: unknown, name: string) {
   text(value.id, `${name}.id`, 200);
   text(value.name, `${name}.name`, 1_000);
   finiteNumber(value.amount, `${name}.amount`);
+  if (value.amount <= 0) invalid(`Invalid ${name}.amount.`);
   if (value.day !== undefined && value.day !== null) {
     finiteNumber(value.day, `${name}.day`, 31);
     if (!Number.isInteger(value.day) || value.day < 1 || value.day > 31) invalid(`Invalid ${name}.day.`);
@@ -118,12 +119,17 @@ function validateLoan(value: unknown, name: string) {
   text(value.id, `${name}.id`, 200);
   text(value.name, `${name}.name`, 1_000);
   finiteNumber(value.total, `${name}.total`);
+  if (value.total <= 0) invalid(`Invalid ${name}.total.`);
   finiteNumber(value.installment, `${name}.installment`);
+  if (value.installment <= 0) invalid(`Invalid ${name}.installment.`);
   finiteNumber(value.installments, `${name}.installments`, 100_000);
-  if (!Number.isInteger(value.installments) || value.installments < 0) invalid(`Invalid ${name}.installments.`);
+  if (!Number.isInteger(value.installments) || value.installments <= 0) invalid(`Invalid ${name}.installments.`);
   optionalText(value.day, `${name}.day`, 200);
   optionalText(value.provider, `${name}.provider`, 1_000);
-  optionalNumber(value.paidCount, `${name}.paidCount`, 100_000);
+  if (value.paidCount !== undefined && value.paidCount !== null) {
+    finiteNumber(value.paidCount, `${name}.paidCount`, 100_000);
+    if (!Number.isInteger(value.paidCount) || value.paidCount < 0 || value.paidCount > value.installments) invalid(`Invalid ${name}.paidCount.`);
+  }
   optionalText(value.source, `${name}.source`, 1_000);
   if (value.accountingMode !== undefined) oneOf(value.accountingMode, ['expense-per-installment', 'liability-repayment'], `${name}.accountingMode`);
   if (value.schedule !== undefined) {
@@ -217,8 +223,14 @@ function validateSettings(value: unknown) {
   text(value.defaultExpenseAccount, 'state.settings.defaultExpenseAccount', 200, true);
   text(value.defaultIncomeAccount, 'state.settings.defaultIncomeAccount', 200, true);
   text(value.defaultLoanAccount, 'state.settings.defaultLoanAccount', 200, true);
-  if (value.monthlyBudget !== undefined) finiteNumber(value.monthlyBudget, 'state.settings.monthlyBudget');
-  if (value.savingsTargetRate !== undefined) finiteNumber(value.savingsTargetRate, 'state.settings.savingsTargetRate', 100);
+  if (value.monthlyBudget !== undefined) {
+    finiteNumber(value.monthlyBudget, 'state.settings.monthlyBudget');
+    if (value.monthlyBudget < 0) invalid('Invalid state.settings.monthlyBudget.');
+  }
+  if (value.savingsTargetRate !== undefined) {
+    finiteNumber(value.savingsTargetRate, 'state.settings.savingsTargetRate', 1);
+    if (value.savingsTargetRate < 0 || value.savingsTargetRate > 1) invalid('Invalid state.settings.savingsTargetRate.');
+  }
   if (value.motion !== undefined) oneOf(value.motion, ['system','reduced','full'], 'state.settings.motion');
 }
 
