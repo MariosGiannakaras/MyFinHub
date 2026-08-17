@@ -29,19 +29,35 @@ The browser is not the database. RheomIQ keeps the current UI/domain contract bu
 - `rheomiq_backups` stores database snapshots.
 - stale writes are rejected as revision conflicts;
 - imports create a pre-import backup;
-- the one-time JSON migration verifies a canonical checksum after writing;
 - RLS is enabled and browser roles have no direct access;
 - the privileged Supabase secret key is server-side only.
 
-The existing ignored `data/rheomiq-data.json` remains only as the one-time migration source / local emergency export. It is never committed.
+The existing ignored `data/rheomiq-data.json` is no longer the persistence layer. It may be kept locally only as an emergency export/migration source and is never committed.
+
+## Production Supabase state
+
+The production project is provisioned in `eu-central-1` and the existing finance history has been migrated to PostgreSQL schema v3.
+
+Verified migrated corpus:
+
+- 5 accounts
+- 39 months
+- 2,853 transactions
+- 1,184 balance snapshots
+- 7 recurring entries
+- 18 subscriptions
+- 9 loans
+- 2 lending records
+
+A production save/backup smoke test and stale-revision conflict test have passed. The temporary private migration upload was deleted after import and the one-time importer was disabled.
 
 ## Repository-managed Supabase changes
 
 Every future schema/backend database change must be added as a new migration under `supabase/migrations/`.
 
-GitHub Actions contains `supabase-deploy.yml`, which uses the official Supabase CLI to link the project, preview pending migrations, and run `supabase db push`. It remains skipped until the project variable/secrets are configured.
+GitHub Actions contains `supabase-deploy.yml`, which uses the official Supabase CLI to link the project, preview pending migrations, and run `supabase db push`.
 
-Required GitHub configuration after creating the Supabase project:
+Required GitHub configuration:
 
 - repository variable: `SUPABASE_PROJECT_REF`
 - repository secret: `SUPABASE_ACCESS_TOKEN`
@@ -56,21 +72,16 @@ SUPABASE_SECRET_KEY=sb_secret_...
 
 Never prefix the secret key with `VITE_`; that would expose it to the browser bundle.
 
-## One-time migration of the existing JSON
+## Import / disaster recovery verification
 
-After the Supabase migration has been deployed and the server environment variables are available:
-
-```bash
-npm run db:import -- /absolute/path/to/MBAI_Finance_Data.json
-```
-
-The importer migrates the existing RheomIQ document in memory, imports the complete state, reads it back, checks entity counts, and compares a canonical SHA-256 checksum. It fails if anything differs.
-
-Re-check later without overwriting:
+The repository retains a safe import/verification script for a future recovery or controlled re-import:
 
 ```bash
-npm run db:verify -- /absolute/path/to/MBAI_Finance_Data.json
+npm run db:import -- /absolute/path/to/rheomiq-data.json
+npm run db:verify -- /absolute/path/to/rheomiq-data.json
 ```
+
+The source JSON must remain outside Git history.
 
 ## Development
 
@@ -91,7 +102,7 @@ npm run build
 npm run check
 ```
 
-CI runs the full application checks on pushes and pull requests. Database migrations are deployed separately through `.github/workflows/supabase-deploy.yml` once the project configuration exists.
+CI runs the full application checks on pushes and pull requests. Database migrations are deployed separately through `.github/workflows/supabase-deploy.yml` once the repository variable/secrets are configured.
 
 ## Repository structure
 
@@ -100,12 +111,12 @@ RheomIQ/
 ├─ public/brand/              # RheomIQ application icon assets
 ├─ src/                       # React UI + finance domain logic
 ├─ server/                    # server API + Supabase persistence adapter
-├─ scripts/                   # safe one-time data migration/verification
+├─ scripts/                   # safe data migration/verification utilities
 ├─ supabase/
 │  ├─ config.toml
 │  └─ migrations/             # source of truth for PostgreSQL schema
 ├─ tests/                     # ledger invariants/regression tests
-├─ data/                      # ignored real migration source + empty example
+├─ data/                      # ignored real exports + empty example
 ├─ docs/                      # architecture and UX rules
 ├─ AGENTS.md                  # durable repository invariants
 └─ .github/workflows/         # CI + Supabase migration deployment
