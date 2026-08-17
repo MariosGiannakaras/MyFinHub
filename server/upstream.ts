@@ -44,7 +44,3 @@ export async function fetchUpstream(
 export function isAuthRejection(error: unknown) {
   return error instanceof ApiError && error.code === 'AUTH_REJECTED';
 }
-
-export function isAuthSessionRejection(error: unknown) {
-  return isAuthRejection(error) && [400, 401, 403, 422].includes((error as ApiError).status);
-}
