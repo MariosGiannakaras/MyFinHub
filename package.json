@@ -14,7 +14,8 @@
     "start": "tsx server/index.ts --serve-dist",
     "test": "vitest run",
     "test:watch": "vitest",
-    "check": "npm run test && npm run build",
+    "security:guard": "node scripts/security-guard.mjs",
+    "check": "npm run security:guard && npm run test && npm run build",
     "db:import": "tsx scripts/migrate-json-to-supabase.ts",
     "db:verify": "tsx scripts/migrate-json-to-supabase.ts --verify-only"
   },
