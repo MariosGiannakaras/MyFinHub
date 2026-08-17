@@ -1,9 +1,15 @@
 import { describe, expect, it } from 'vitest';
+import { accessTokenAal } from '../server/auth.js';
 import { ApiError, assertSameOrigin } from '../server/http.js';
 import { validateFinanceData } from '../server/validation.js';
 import { migrateData } from '../src/lib/domain.js';
 
 function request(headers: Record<string,string>) { return { headers }; }
+function tokenWithAal(aal?: string) {
+  const header = Buffer.from(JSON.stringify({ alg: 'none', typ: 'JWT' })).toString('base64url');
+  const payload = Buffer.from(JSON.stringify({ ...(aal ? { aal } : {}) })).toString('base64url');
+  return `${header}.${payload}.test`;
+}
 
 describe('HTTP trust boundary', () => {
   it('accepts same-origin state-changing requests', () => {
@@ -22,6 +28,17 @@ describe('HTTP trust boundary', () => {
       'x-forwarded-proto': 'https',
       'sec-fetch-site': 'cross-site',
     }))).toThrowError(ApiError);
+  });
+});
+
+describe('MFA assurance gate', () => {
+  it('recognizes an AAL2 session claim', () => {
+    expect(accessTokenAal(tokenWithAal('aal2'))).toBe('aal2');
+  });
+
+  it('fails closed for missing or unexpected AAL claims', () => {
+    expect(accessTokenAal(tokenWithAal())).toBe('aal1');
+    expect(accessTokenAal(tokenWithAal('unexpected'))).toBe('aal1');
   });
 });
 
