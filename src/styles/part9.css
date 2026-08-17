@@ -1,3 +1,4 @@
+.mobile-more-backdrop{z-index:80}
 .mobile-more-menu>nav{display:grid;grid-template-columns:1fr 1fr;gap:7px}
 .mobile-more-menu>nav>button{min-height:48px;border:1px solid #dbe4ef;border-radius:12px;background:#f9fbff;color:var(--ink-2);display:flex;align-items:center;gap:9px;padding:9px 11px;text-align:left;font-size:10px;font-weight:700}
 .mobile-more-menu>nav>button.active{border-color:rgba(47,111,237,.3);background:rgba(47,111,237,.1);color:var(--blue-2)}
