@@ -1,4 +1,4 @@
-import type { FinanceData } from './types';
+import type { FinanceData } from './types.js';
 
 export function qaFinanceData(): FinanceData {
   return {
