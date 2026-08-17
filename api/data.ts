@@ -1,5 +1,6 @@
 import { accessTokenAal, clearSessionCookies, requireSession } from '../server/auth.js';
 import { ApiError, assertSameOrigin, handleApi, methodNotAllowed, readJsonBody, sendJson } from '../server/http.js';
+import { MAX_FINANCE_DOCUMENT_BYTES } from '../src/lib/limits.js';
 import { isOwner, parseExpectedRevision, readStore, writeStore } from '../server/storage.js';
 import { validateFinanceData } from '../server/validation.js';
 
@@ -18,7 +19,7 @@ export default async function handler(req: any, res: any) {
     assertSameOrigin(req);
     const expectedHeader = Array.isArray(req.headers?.['if-match']) ? req.headers['if-match'][0] : req.headers?.['if-match'];
     const expectedRevision = String(parseExpectedRevision(typeof expectedHeader === 'string' ? expectedHeader : undefined));
-    const body = await readJsonBody(req, 5 * 1024 * 1024);
+    const body = await readJsonBody(req, MAX_FINANCE_DOCUMENT_BYTES);
     validateFinanceData(body);
     return sendJson(res, 200, await writeStore(body, expectedRevision, false, session.accessToken));
   });
