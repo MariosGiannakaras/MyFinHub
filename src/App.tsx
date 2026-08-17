@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { AppShell, type PageId } from './components/AppShell';
 import { LoginScreen } from './components/LoginScreen';
+import { MfaScreen } from './components/MfaScreen';
 import { QuickAdd } from './components/QuickAdd';
 import { useFinance } from './hooks/useFinance';
 import { useSession } from './hooks/useSession';
@@ -43,7 +44,7 @@ function FinanceApp({userEmail,onLogout}:{userEmail:string|null;onLogout:()=>voi
   const reviews=useMemo(()=>data?reviewSuggestions(data).length:0,[data]);
   if(!data)return <div className="boot-screen"><img src="/brand/icon-192.png" alt="RheomIQ"/><div className="boot-pulse"/><b>RheomIQ</b><span>{finance.saveState==='error'?'Δεν ήταν δυνατή η φόρτωση της βάσης':'Φόρτωση οικονομικού ledger…'}</span></div>;
 
-  const addEvent=(event:FinanceEvent)=>finance.update(current=>{const events=current.state.events??[];const exists=events.some(e=>e.id===event.id);return {...current,state:{...current.state,events:exists?events.map(e=>e.id===event.id?event:e):[...events,event]}}});
+  const addEvent=(event:FinanceEvent)=>finance.update(current=>{const events=current.state.events??[];const exists=events.some(e=>e.id===event.id);return {...current,state:{...current.state,events:exists?events.map(e=>e.id===event.id?event:[...events,event])}}});
   const deleteEvent=(id:string)=>finance.update(current=>({...current,state:{...current.state,events:(current.state.events??[]).filter(e=>e.id!==id)}}));
   const editEvent=(id:string)=>{setEditingEventId(id);setQuickOpen(true)};
   const openQuick=(kind:EventKind='expense')=>{setEditingEventId(null);setQuickKind(kind);setQuickOpen(true)};
@@ -75,6 +76,7 @@ function FinanceApp({userEmail,onLogout}:{userEmail:string|null;onLogout:()=>voi
 export default function App(){
   const session=useSession();
   if(session.state==='loading')return <div className="boot-screen"><img src="/brand/icon-192.png" alt="RheomIQ"/><div className="boot-pulse"/><b>RheomIQ</b><span>Έλεγχος ασφαλούς συνεδρίας…</span></div>;
+  if(session.state==='mfa'||session.state==='mfa-enroll')return <MfaScreen mode={session.state==='mfa-enroll'?'enroll':'challenge'} email={session.email} error={session.error} onEnroll={session.enrollMfa} onVerify={session.verifyMfa} onLogout={session.logout}/>;
   if(session.state!=='authenticated')return <LoginScreen onLogin={session.login} error={session.error}/>;
   return <FinanceApp userEmail={session.email} onLogout={session.logout}/>;
 }
