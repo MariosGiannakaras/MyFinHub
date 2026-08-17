@@ -1,3 +1,3 @@
 # RheomIQ
 
-Initial repository bootstrap. Full application structure follows in the implementation commit.
+Supabase migration checkpoint in progress. Full application README will be restored in the next repository checkpoint.
