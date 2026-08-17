@@ -24,7 +24,12 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
-          cache-dependency-path: package-lock.json
+          cache-dependency-path: |
+            package-lock.json
+            api/package-lock.json
       - run: npm ci
+      - run: npm ci --prefix api
       - run: npm audit --omit=dev --audit-level=high
+      - run: npm audit --prefix api --audit-level=high
       - run: npm run check
+      - run: npm run check --prefix api
