@@ -1,7 +1,13 @@
 import type { FinanceData } from '../types';
 
 export interface DataEnvelope { data: FinanceData; revision: string; filePath: string; lastSavedAt: string | null }
-export interface SessionInfo { authenticated: boolean; email: string | null }
+export interface SessionInfo {
+  authenticated: boolean;
+  email: string | null;
+  mfaRequired?: boolean;
+  mfaEnrollmentRequired?: boolean;
+}
+export interface MfaEnrollment { factorId: string; qrCode: string; secret: string }
 
 export class ApiError extends Error {
   status: number;
@@ -20,7 +26,9 @@ async function json<T>(response: Response): Promise<T> {
   const payload = await response.json().catch(() => null) as { error?: string; code?: string; requestId?: string } | T | null;
   if (!response.ok) {
     const details = payload && typeof payload === 'object' ? payload as { error?: string; code?: string; requestId?: string } : {};
-    if (response.status === 401 && typeof window !== 'undefined') window.dispatchEvent(new Event('rheomiq:auth-expired'));
+    if (response.status === 401 && details.code === 'AUTH_REQUIRED' && typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('rheomiq:auth-expired'));
+    }
     throw new ApiError(details.error || response.statusText || 'Request failed', response.status, details.code, details.requestId);
   }
   return payload as T;
@@ -40,6 +48,18 @@ export async function login(email: string, password: string): Promise<SessionInf
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ email, password }),
+  }));
+}
+
+export async function enrollMfa(): Promise<MfaEnrollment> {
+  return json(await request('/api/auth/mfa/enroll', { method: 'POST' }));
+}
+
+export async function verifyMfa(code: string, factorId?: string): Promise<SessionInfo> {
+  return json(await request('/api/auth/mfa/verify', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ code, ...(factorId ? { factorId } : {}) }),
   }));
 }
 
