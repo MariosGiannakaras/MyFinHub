@@ -3,6 +3,7 @@ import { AppShell, type PageId } from './components/AppShell';
 import { LoginScreen } from './components/LoginScreen';
 import { MfaScreen } from './components/MfaScreen';
 import { PageErrorBoundary } from './components/PageErrorBoundary';
+import { PersistenceNotice } from './components/PersistenceNotice';
 import { QuickAdd, type QuickPrefill } from './components/QuickAdd';
 import { useFinance } from './hooks/useFinance';
 import { useLocalDate } from './hooks/useLocalDate';
@@ -50,7 +51,6 @@ function FinanceApp({userEmail,onLogout}:{userEmail:string|null;onLogout:()=>voi
   const [quickPrefill,setQuickPrefill]=useState<QuickPrefill|null>(null);
   const [month,setMonth]=useState(()=>today.slice(0,7));
   const [monthIsManual,setMonthIsManual]=useState(false);
-  const [pageRetry,setPageRetry]=useState(0);
 
   const navigate=(next:PageId,replace=false)=>{
     const hash=pageHash(next);
@@ -111,14 +111,11 @@ function FinanceApp({userEmail,onLogout}:{userEmail:string|null;onLogout:()=>voi
     :page==='reports'?<ReportsPage data={data} month={month}/>
     :<SettingsPage data={data} filePath={finance.filePath} lastSavedAt={finance.lastSavedAt} onImport={finance.importData} onBackup={finance.createBackup} onSettings={settings=>finance.update(c=>({...c,state:{...c.state,settings}}))}/>;
 
-  const persistenceLabel=finance.saveState==='saved'?'Αποθηκεύτηκε':finance.saveState==='saving'?'Αποθήκευση σε εξέλιξη':finance.saveState==='conflict'?'Σύγκρουση έκδοσης':finance.saveState==='error'?'Η αποθήκευση απέτυχε':'Φόρτωση';
-  const persistenceHelp=finance.saveState==='saved'?'Η ορατή κατάσταση έχει συγχρονιστεί με τη βάση.':finance.saveState==='saving'?'Η αλλαγή φαίνεται άμεσα και αποθηκεύεται με ασφαλή revision check.':finance.saveState==='conflict'?'Υπάρχει νεότερη έκδοση στη βάση. Οι νέες αλλαγές έχουν μπλοκαριστεί μέχρι να φορτώσεις την τελευταία έκδοση.':finance.saveState==='error'?'Η ορατή αλλαγή μπορεί να υπάρχει μόνο τοπικά. Φόρτωσε ξανά τη βάση πριν συνεχίσεις.':'Έλεγχος κατάστασης.';
-
   return <>
     <AppShell page={page} onPage={navigate} onQuickAdd={()=>openQuick('expense')} saveState={finance.saveState} filePath={finance.filePath} reviewCount={reviews} motionMode={data.state.settings.motion||'system'} userEmail={userEmail} onLogout={onLogout}>
-      <div className={`persistence-notice ${finance.saveState}`} role={finance.saveState==='error'||finance.saveState==='conflict'?'alert':'status'} aria-live="polite"><div><b>{persistenceLabel}</b><small>{persistenceHelp}</small></div>{finance.saveState==='error'||finance.saveState==='conflict'?<button type="button" className="secondary" onClick={recover}>Φόρτωση τελευταίας έκδοσης</button>:null}</div>
+      <PersistenceNotice saveState={finance.saveState} onRecover={recover}/>
       <div className="month-toolbar"><label>Περίοδος <input type="month" value={month} onChange={e=>{setMonth(e.target.value);setMonthIsManual(true)}}/></label><span>Οι κινήσεις μετά την {today.split('-').reverse().join('/')} δεν επηρεάζουν το σημερινό balance.</span></div>
-      <PageErrorBoundary resetKey={`${page}:${pageRetry}`} onDashboard={()=>navigate('dashboard')}><Suspense fallback={<PageLoading/>}><div key={pageRetry}>{content}</div></Suspense></PageErrorBoundary>
+      <PageErrorBoundary resetKey={page} onDashboard={()=>navigate('dashboard')}><Suspense fallback={<PageLoading/>}>{content}</Suspense></PageErrorBoundary>
     </AppShell>
     <QuickAdd open={quickOpen} data={data} asOf={today} motionMode={data.state.settings.motion||'system'} initial={(data.state.events??[]).find(e=>e.id===editingEventId)||null} initialKind={quickKind} prefill={quickPrefill} onClose={()=>{setQuickOpen(false);setEditingEventId(null);setQuickPrefill(null)}} onCreate={addEvent} currentBalance={balance}/>
   </>;
