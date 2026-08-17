@@ -8,10 +8,21 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
       - run: npm install
+      - run: npm audit --omit=dev --audit-level=high
       - run: npm run check
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rheomiq-package-lock
+          path: package-lock.json
+          if-no-files-found: error
+          retention-days: 1
