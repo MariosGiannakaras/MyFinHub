@@ -1,5 +1,6 @@
 import { Buffer } from 'node:buffer';
 import { ApiError, requestHeader } from './http.js';
+import { fetchUpstream, isAuthRejection } from './upstream.js';
 
 const PROD_ACCESS = '__Host-rheomiq_access';
 const PROD_REFRESH = '__Host-rheomiq_refresh';
@@ -40,7 +41,7 @@ function config() {
 
 async function authRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
   const { url, publishable } = config();
-  const response = await fetch(`${url}/auth/v1/${path}`, {
+  const response = await fetchUpstream(`${url}/auth/v1/${path}`, {
     ...init,
     headers: {
       apikey: publishable,
@@ -48,13 +49,22 @@ async function authRequest<T>(path: string, init: RequestInit = {}): Promise<T> 
       ...(init.body ? { 'content-type': 'application/json' } : {}),
       ...(init.headers || {}),
     },
-  });
+  }, 'AUTH');
   const payload = await response.json().catch(() => null) as T | { message?: string; msg?: string; error_description?: string } | null;
   if (!response.ok) {
-    const message = payload && typeof payload === 'object'
-      ? ('message' in payload && payload.message) || ('msg' in payload && payload.msg) || ('error_description' in payload && payload.error_description)
-      : null;
-    throw new ApiError(response.status === 400 ? 401 : response.status, 'AUTH_FAILED', message || 'Authentication failed.', false);
+    if (response.status === 429) {
+      throw new ApiError(429, 'AUTH_RATE_LIMITED', 'Too many authentication attempts. Try again later.');
+    }
+    if (response.status >= 500) {
+      throw new ApiError(503, 'AUTH_UNAVAILABLE', 'Authentication service is temporarily unavailable. Try again.');
+    }
+    if (response.status >= 400 && response.status < 500) {
+      const message = payload && typeof payload === 'object'
+        ? ('message' in payload && payload.message) || ('msg' in payload && payload.msg) || ('error_description' in payload && payload.error_description)
+        : null;
+      throw new ApiError(response.status, 'AUTH_REJECTED', message || 'Authentication rejected.', false);
+    }
+    throw new ApiError(502, 'AUTH_UPSTREAM_ERROR', 'Authentication service returned an unexpected response.', false);
   }
   return payload as T;
 }
@@ -164,8 +174,9 @@ export async function beginTotpEnrollment(accessToken: string) {
         method: 'DELETE',
         headers: { authorization: `Bearer ${accessToken}` },
       });
-    } catch {
-      // A stale unverified factor must not block a fresh enrollment attempt.
+    } catch (error) {
+      if (!isAuthRejection(error)) throw error;
+      // A stale unverified factor that is already gone must not block a fresh enrollment attempt.
     }
   }
   const enrollment = await authRequest<TotpEnrollment>('factors', {
@@ -204,7 +215,7 @@ export async function revokeSession(accessToken: string) {
       headers: { authorization: `Bearer ${accessToken}` },
     });
   } catch {
-    // Logout remains successful locally even if the upstream session was already invalid.
+    // Local logout still clears HttpOnly cookies even if upstream revocation is unavailable.
   }
 }
 
@@ -214,8 +225,9 @@ export async function requireSession(req: any, res: any) {
     try {
       const user = await getUser(tokens.accessToken);
       return { accessToken: tokens.accessToken, user };
-    } catch {
-      // Try the refresh token once below.
+    } catch (error) {
+      if (!isAuthRejection(error)) throw error;
+      // Only a genuine Auth rejection is eligible for refresh fallback.
     }
   }
 
@@ -225,7 +237,8 @@ export async function requireSession(req: any, res: any) {
       setSessionCookies(req, res, refreshed);
       const user = refreshed.user || await getUser(refreshed.access_token);
       return { accessToken: refreshed.access_token, user };
-    } catch {
+    } catch (error) {
+      if (!isAuthRejection(error)) throw error;
       clearSessionCookies(req, res);
     }
   }
