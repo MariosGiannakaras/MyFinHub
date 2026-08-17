@@ -2,6 +2,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { ArrowDownToLine, ArrowLeftRight, BanknoteArrowDown, Check, CircleDollarSign, CreditCard, HandCoins, PiggyBank, RotateCcw, Scale, Split, X } from 'lucide-react';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { allAccounts, createEvent, frequentDescriptions } from '../lib/domain';
+import { preserveLoanPaymentLink } from '../lib/loans';
 import { money } from '../lib/format';
 import type { EventKind, FinanceData, FinanceEvent, SplitPart } from '../types';
 
@@ -59,7 +60,7 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', mot
       const numeric=Number(amount);
       if(kind!=='reconciliation' && !(numeric>0)) throw new Error('Συμπλήρωσε ποσό.');
       const event=createEvent({kind,date,amount:kind==='reconciliation'?Math.abs(Number(actualBalance)-reconciliationBase(accountId)):numeric,note:note||kinds.find(k=>k.kind===kind)?.label||'',category,accountId,fromAccountId:from,toAccountId:to,person,parts:kind==='split'?parts:undefined,actualBalance:Number(actualBalance),currentBalance:reconciliationBase(accountId)});
-      if(initial){event.id=initial.id;event.createdAt=initial.createdAt;event.updatedAt=new Date().toISOString();}
+      if(initial){event.id=initial.id;event.createdAt=initial.createdAt;event.updatedAt=new Date().toISOString();preserveLoanPaymentLink(event,initial);}
       onCreate(event); reset(); onClose();
     }catch(e){setError(e instanceof Error?e.message:'Δεν ήταν δυνατή η καταχώριση.');}
   };
