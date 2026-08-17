@@ -1,4 +1,5 @@
 import type { FinanceData } from '../types';
+import { mutableSavePayload } from './persistencePayload';
 
 export interface DataEnvelope { data: FinanceData; revision: string; filePath: string; lastSavedAt: string | null }
 export interface WriteReceipt { revision: string; filePath: string; lastSavedAt: string | null }
@@ -88,7 +89,7 @@ export async function saveData(data: FinanceData, revision: string): Promise<Wri
   return json(await request('/api/data', {
     method: 'PUT',
     headers: { 'content-type': 'application/json', 'if-match': revision },
-    body: JSON.stringify({ state: data.state, updatedAt: data.updatedAt }),
+    body: JSON.stringify(mutableSavePayload(data)),
   }));
 }
 
