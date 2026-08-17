@@ -49,6 +49,7 @@ export function migrateData(input: FinanceData): FinanceData {
         defaultLoanAccount: state.settings?.defaultLoanAccount ?? 'piraeus-payroll',
         monthlyBudget: state.settings?.monthlyBudget ?? 1200,
         savingsTargetRate: state.settings?.savingsTargetRate ?? 0.2,
+        creditLimit: state.settings?.creditLimit ?? 0,
         motion: state.settings?.motion ?? 'system',
       },
       events: state.events ?? [],
