@@ -32,38 +32,15 @@ The browser is not the database. RheomIQ keeps the current UI/domain contract bu
 - RLS is enabled and browser roles have no direct access;
 - the privileged Supabase secret key is server-side only.
 
-The existing ignored `data/rheomiq-data.json` is no longer the persistence layer. It may be kept locally only as an emergency export/migration source and is never committed.
-
-## Production Supabase state
-
-The production project is provisioned in `eu-central-1` and the existing finance history has been migrated to PostgreSQL schema v3.
-
-Verified migrated corpus:
-
-- 5 accounts
-- 39 months
-- 2,853 transactions
-- 1,184 balance snapshots
-- 7 recurring entries
-- 18 subscriptions
-- 9 loans
-- 2 lending records
-
-A production save/backup smoke test and stale-revision conflict test have passed. The temporary private migration upload was deleted after import and the one-time importer was disabled.
+The original local JSON remains only as a private migration/emergency export source and is never committed.
 
 ## Repository-managed Supabase changes
 
-Every future schema/backend database change must be added as a new migration under `supabase/migrations/`.
+Every future database/schema change must be committed as a new migration under `supabase/migrations/`.
 
-GitHub Actions contains `supabase-deploy.yml`, which uses the official Supabase CLI to link the project, preview pending migrations, and run `supabase db push`.
+Production deployment uses the **native Supabase GitHub integration** connected to `MariosGiannakaras/RheomIQ`. With **Deploy to production** enabled in Supabase, commits to `main` automatically apply pending migrations and supported Supabase configuration from the repository. This avoids storing a Supabase personal access token or database password in GitHub Actions.
 
-Required GitHub configuration:
-
-- repository variable: `SUPABASE_PROJECT_REF`
-- repository secret: `SUPABASE_ACCESS_TOKEN`
-- repository secret: `SUPABASE_DB_PASSWORD`
-
-Runtime/server environment:
+Runtime/server environment still requires the backend-only Supabase URL and secret key:
 
 ```text
 SUPABASE_URL=https://<project-ref>.supabase.co
@@ -72,16 +49,9 @@ SUPABASE_SECRET_KEY=sb_secret_...
 
 Never prefix the secret key with `VITE_`; that would expose it to the browser bundle.
 
-## Import / disaster recovery verification
+## Production migration state
 
-The repository retains a safe import/verification script for a future recovery or controlled re-import:
-
-```bash
-npm run db:import -- /absolute/path/to/rheomiq-data.json
-npm run db:verify -- /absolute/path/to/rheomiq-data.json
-```
-
-The source JSON must remain outside Git history.
+The production Supabase project is initialized and the existing RheomIQ data has been imported to PostgreSQL. The imported state includes the complete legacy transaction/snapshot corpus and uses schema version 3. Import staging artifacts were removed after verification.
 
 ## Development
 
@@ -102,7 +72,7 @@ npm run build
 npm run check
 ```
 
-CI runs the full application checks on pushes and pull requests. Database migrations are deployed separately through `.github/workflows/supabase-deploy.yml` once the repository variable/secrets are configured.
+CI runs the full application checks on pushes and pull requests. Supabase production migrations are deployed separately by the native Supabase GitHub integration.
 
 ## Repository structure
 
@@ -111,15 +81,15 @@ RheomIQ/
 ├─ public/brand/              # RheomIQ application icon assets
 ├─ src/                       # React UI + finance domain logic
 ├─ server/                    # server API + Supabase persistence adapter
-├─ scripts/                   # safe data migration/verification utilities
+├─ scripts/                   # migration/verification utilities
 ├─ supabase/
 │  ├─ config.toml
 │  └─ migrations/             # source of truth for PostgreSQL schema
 ├─ tests/                     # ledger invariants/regression tests
-├─ data/                      # ignored real exports + empty example
+├─ data/                      # ignored private data + empty example
 ├─ docs/                      # architecture and UX rules
 ├─ AGENTS.md                  # durable repository invariants
-└─ .github/workflows/         # CI + Supabase migration deployment
+└─ .github/workflows/         # application CI
 ```
 
 ## Privacy
