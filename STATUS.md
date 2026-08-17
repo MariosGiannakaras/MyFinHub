@@ -15,24 +15,24 @@
 - Mixed-comment split review editor
 - Event edit/delete and recurring/loan editing
 - Reduced-motion support
-- Unit tests and GitHub Actions CI
+- Unit tests and GitHub Actions application CI
 
 ## Validation state
 
-- GitHub CI passes tests, TypeScript compilation and production build on `main`.
-- Production Supabase project is healthy in `eu-central-1`.
-- Production database contains the migrated RheomIQ schema-v3 state.
-- Imported legacy corpus verified at 5 accounts, 39 months, 2,853 transactions, 1,184 balance snapshots, 7 recurring entries, 18 subscriptions, 9 loans and 2 lending records.
-- The temporary private import bucket and uploaded JSON were deleted after migration.
-- The one-time import Edge Function is disabled and JWT-protected.
-- RLS is enabled on application state and backup tables; anonymous/authenticated roles have no table or RPC access.
+- Application CI passes on GitHub.
+- Production Supabase schema is applied.
+- Production data import completed with 2,853 legacy transactions and 1,184 balance snapshots.
+- Save path, automatic backup creation, optimistic revision conflict rejection, and browser-role access restrictions have been smoke-tested against production.
+- Temporary import Storage artifacts were deleted and the one-time importer was locked after migration.
 
-## Supabase migration
+## Supabase deployment
 
-- Production migrations applied:
-  - `20260817063947_create_rheomiq_state`
-  - `20260817070649_enable_pg_net`
-- Repository migration filenames are aligned with production migration history.
-- `server/storage.ts` now treats Supabase/PostgreSQL as the durable data source; browser storage and the local JSON file are no longer the persistence layer.
-- GitHub migration deployment workflow is committed and ready.
-- Remaining external setup: configure the repository variable `SUPABASE_PROJECT_REF` and GitHub Actions secrets `SUPABASE_ACCESS_TOKEN` and `SUPABASE_DB_PASSWORD` so future migrations can deploy from `main` automatically.
+- SQL schema migrations are the source of truth under `supabase/migrations/`.
+- Production migration history is aligned with the repository migration versions.
+- `MariosGiannakaras/RheomIQ` is connected to the Supabase project through the native GitHub integration.
+- The intended production deployment path is Supabase **Deploy to production** from `main`; this avoids long-lived Supabase CLI/database credentials in GitHub Actions.
+- The old secret-based `supabase-deploy.yml` workflow has been removed.
+
+## Remaining external setting
+
+- Confirm/enable **Deploy to production** in Supabase Project Settings → Integrations → GitHub Integration. The connected tools available here do not expose that integration toggle programmatically.
