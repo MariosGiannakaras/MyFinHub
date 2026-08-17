@@ -1,0 +1,3 @@
+import { motion } from 'framer-motion';
+import type { ReactNode } from 'react';
+export function MetricCard({label,value,hint,icon,tone='blue',progress}:{label:string;value:string;hint?:string;icon?:ReactNode;tone?:'blue'|'cyan'|'green'|'red'|'violet';progress?:number}){return <motion.article className={`metric-card tone-${tone}`} whileHover={{y:-3}} transition={{duration:.16}}><div className="metric-head"><span>{label}</span><span className="metric-icon">{icon}</span></div><strong>{value}</strong>{hint?<small>{hint}</small>:null}{typeof progress==='number'?<div className="mini-progress" aria-label={`${Math.round(progress*100)}%`}><i style={{width:`${Math.min(100,Math.max(0,progress*100))}%`}}/></div>:null}</motion.article>}
