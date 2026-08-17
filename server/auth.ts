@@ -1,3 +1,4 @@
+import { Buffer } from 'node:buffer';
 import { ApiError, requestHeader } from './http.js';
 
 const PROD_ACCESS = '__Host-rheomiq_access';
@@ -5,14 +6,30 @@ const PROD_REFRESH = '__Host-rheomiq_refresh';
 const DEV_ACCESS = 'rheomiq_access';
 const DEV_REFRESH = 'rheomiq_refresh';
 
-type AuthUser = { id: string; email?: string | null };
-type TokenResponse = {
+type AuthFactor = {
+  id: string;
+  factor_type?: string;
+  type?: string;
+  status?: string;
+  friendly_name?: string | null;
+};
+type AuthUser = { id: string; email?: string | null; factors?: AuthFactor[] | null };
+export type TokenResponse = {
   access_token: string;
   refresh_token: string;
   expires_in: number;
   token_type?: string;
   user?: AuthUser;
 };
+type TotpEnrollment = {
+  id: string;
+  type: string;
+  friendly_name?: string | null;
+  totp?: { qr_code?: string; secret?: string; uri?: string };
+};
+type ChallengeResponse = { id: string; expires_at?: number };
+
+type JwtClaims = { aal?: string };
 
 function config() {
   const url = process.env.SUPABASE_URL?.replace(/\/$/, '');
@@ -32,10 +49,10 @@ async function authRequest<T>(path: string, init: RequestInit = {}): Promise<T> 
       ...(init.headers || {}),
     },
   });
-  const payload = await response.json().catch(() => null) as T | { message?: string; error_description?: string } | null;
+  const payload = await response.json().catch(() => null) as T | { message?: string; msg?: string; error_description?: string } | null;
   if (!response.ok) {
     const message = payload && typeof payload === 'object'
-      ? ('message' in payload && payload.message) || ('error_description' in payload && payload.error_description)
+      ? ('message' in payload && payload.message) || ('msg' in payload && payload.msg) || ('error_description' in payload && payload.error_description)
       : null;
     throw new ApiError(response.status === 400 ? 401 : response.status, 'AUTH_FAILED', message || 'Authentication failed.', false);
   }
@@ -94,6 +111,21 @@ function tokenCookies(req: any) {
   };
 }
 
+function jwtClaims(accessToken: string): JwtClaims {
+  try {
+    const payload = accessToken.split('.')[1];
+    if (!payload) return {};
+    return JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')) as JwtClaims;
+  } catch {
+    return {};
+  }
+}
+
+export function accessTokenAal(accessToken: string) {
+  const aal = jwtClaims(accessToken).aal;
+  return aal === 'aal2' ? 'aal2' : 'aal1';
+}
+
 export async function signInWithPassword(email: string, password: string) {
   return authRequest<TokenResponse>('token?grant_type=password', {
     method: 'POST',
@@ -113,6 +145,54 @@ export async function getUser(accessToken: string) {
   return authRequest<AuthUser>('user', {
     method: 'GET',
     headers: { authorization: `Bearer ${accessToken}` },
+  });
+}
+
+export async function getTotpFactors(accessToken: string) {
+  const user = await getUser(accessToken);
+  return (user.factors || []).filter(factor => (factor.factor_type || factor.type) === 'totp');
+}
+
+export async function beginTotpEnrollment(accessToken: string) {
+  const factors = await getTotpFactors(accessToken);
+  if (factors.some(factor => factor.status === 'verified')) {
+    throw new ApiError(409, 'MFA_ALREADY_ENROLLED', 'A verification method is already configured.');
+  }
+  for (const factor of factors.filter(item => item.status !== 'verified')) {
+    try {
+      await authRequest<unknown>(`factors/${encodeURIComponent(factor.id)}`, {
+        method: 'DELETE',
+        headers: { authorization: `Bearer ${accessToken}` },
+      });
+    } catch {
+      // A stale unverified factor must not block a fresh enrollment attempt.
+    }
+  }
+  const enrollment = await authRequest<TotpEnrollment>('factors', {
+    method: 'POST',
+    headers: { authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify({ factor_type: 'totp', friendly_name: 'RheomIQ Authenticator' }),
+  });
+  if (!enrollment.id || !enrollment.totp?.qr_code || !enrollment.totp.secret) {
+    throw new ApiError(502, 'MFA_ENROLLMENT_FAILED', 'Could not start verification setup.', false);
+  }
+  return enrollment;
+}
+
+export async function challengeTotp(accessToken: string, factorId: string) {
+  const challenge = await authRequest<ChallengeResponse>(`factors/${encodeURIComponent(factorId)}/challenge`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${accessToken}` },
+  });
+  if (!challenge.id) throw new ApiError(502, 'MFA_CHALLENGE_FAILED', 'Could not start verification.', false);
+  return challenge;
+}
+
+export async function verifyTotp(accessToken: string, factorId: string, challengeId: string, code: string) {
+  return authRequest<TokenResponse>(`factors/${encodeURIComponent(factorId)}/verify`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify({ challenge_id: challengeId, code }),
   });
 }
 
