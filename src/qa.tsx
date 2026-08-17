@@ -18,7 +18,7 @@ import { SettingsPage } from './pages/SettingsPage';
 import type { EventKind, FinanceData, FinanceEvent, Loan, RecurringItem } from './types';
 import './styles.css';
 
-function Crash(){throw new Error('synthetic-render-failure')}
+function Crash(): never { throw new Error('synthetic-render-failure'); }
 
 function QaWorkspace(){
   const params=new URLSearchParams(location.search);const [data,setData]=useState<FinanceData>(()=>{const next=qaFinanceData();if(params.get('motion')==='reduced')next.state.settings.motion='reduced';return next});const [page,setPage]=useState<PageId>('dashboard');const [quickOpen,setQuickOpen]=useState(false);const [quickKind,setQuickKind]=useState<EventKind>('expense');const [editing,setEditing]=useState<string|null>(null);const [crash,setCrash]=useState(false);const today='2026-08-17';const month='2026-08';
