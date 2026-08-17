@@ -10,8 +10,10 @@
 .login-form label{display:grid;gap:6px;color:var(--ink-2);font-size:10px;font-weight:750}
 .login-input{min-height:46px;border-radius:13px;display:flex;align-items:center;gap:9px;padding:0 12px;color:var(--muted)}
 .login-input input{min-width:0;flex:1;border:0;outline:0;background:transparent;color:var(--ink);height:42px}
-.login-submit{width:100%;min-height:44px;margin-top:2px}
+.login-submit{width:100%;min-height:44px;margin-top:2px;color:#fff!important;-webkit-text-fill-color:#fff;font-size:12px;line-height:1.2}
+.login-submit-label{display:inline-block;color:#fff;-webkit-text-fill-color:#fff;font-weight:750;opacity:1}
 .login-submit:disabled{opacity:.65;cursor:wait;transform:none}
+.login-submit:disabled .login-submit-label{opacity:1}
 .login-error{border:1px solid rgba(214,64,88,.18);background:rgba(214,64,88,.07);color:#b32942;border-radius:12px;padding:10px 11px;font-size:10px;line-height:1.45}
 .login-footnote{color:var(--muted);font-size:9px;line-height:1.5}
 .mfa-setup{display:grid;justify-items:center;gap:14px;padding:16px;border-radius:18px;text-align:center}
@@ -19,4 +21,8 @@
 .mfa-setup>div{display:grid;gap:7px;color:var(--ink-2);font-size:10px;line-height:1.45;max-width:100%}
 .mfa-secret{display:block;max-width:100%;overflow-wrap:anywhere;user-select:all;padding:8px 10px;border-radius:10px;background:rgba(15,34,62,.06);color:var(--ink);font-size:10px}
 .login-card>.ghost-button{justify-self:start}
+.login-logout{border:1px solid rgba(203,215,232,.9);background:rgba(247,250,254,.88);color:var(--ink-2);border-radius:11px;padding:8px 12px;font-size:10px;font-weight:700;box-shadow:var(--shadow-soft);cursor:pointer;transition:transform .15s ease,color .15s ease,opacity .15s ease}
+.login-logout:hover{color:var(--blue-2);transform:translateY(-1px)}
+.login-logout:active{transform:translateY(1px)}
+.login-logout:disabled{opacity:.55;cursor:wait;transform:none}
 @media(max-width:520px){.login-screen{padding:14px}.login-card{padding:20px;border-radius:23px}.login-brand img{width:52px;height:52px}}
