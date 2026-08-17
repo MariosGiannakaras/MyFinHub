@@ -9,7 +9,7 @@ import type { FinanceData, RecurringItem } from '../types';
 export function RecurringPage({data,onUpsert,onDelete}:{data:FinanceData;onUpsert:(item:RecurringItem)=>void;onDelete:(id:string)=>void}){
   const items=effectiveRecurringItems(data);
   const [edit,setEdit]=useState<RecurringItem|null>(null);const [editError,setEditError]=useState('');const [message,setMessage]=useState('');const modalRef=useModalFocus<HTMLElement>(Boolean(edit),'input');
-  const startNew=()=>{setEditError('');setEdit({id:`rec-${Date.now()}`,name:'',amount:0,day:null,accountId:data.state.settings.defaultExpenseAccount,category:'Σταθερά έξοδα',active:true,source:'user'})};
+  const startNew=()=>{setEditError('');setEdit({id:`rec-${Date.now()}`,name:'',amount:0,day:null,accountId:data.state.settings.defaultExpenseAccount,category:data.state.settings.expenseCategories[0]||'Άλλο',active:true,source:'user'})};
   const startEdit=(item:RecurringItem)=>{setEditError('');setEdit({...item})};
   const close=()=>{setEdit(null);setEditError('')};
   const save=()=>{if(!edit)return;const error=recurringDraftError(edit);if(error){setEditError(error);return}onUpsert(edit);setMessage('Το πάγιο ενημερώθηκε και αποθηκεύεται.');close()};
