@@ -17,15 +17,13 @@ export default async function handler(req: any, res: any) {
       throw new ApiError(401, 'AUTH_REQUIRED', 'Authentication required.');
     }
 
-    const factors = await getTotpFactors(session.accessToken);
-    const factor = requestedFactorId
-      ? factors.find(item => item.id === requestedFactorId)
-      : factors.find(item => item.status === 'verified') || factors.find(item => item.status !== 'verified');
-    if (!factor) throw new ApiError(401, 'MFA_NOT_CONFIGURED', 'Verification is unavailable.');
+    const factors = requestedFactorId ? [] : await getTotpFactors(session.accessToken);
+    const factorId = requestedFactorId || factors.find(item => item.status === 'verified')?.id;
+    if (!factorId) throw new ApiError(401, 'MFA_NOT_CONFIGURED', 'Verification is unavailable.');
 
     try {
-      const challenge = await challengeTotp(session.accessToken, factor.id);
-      const tokens = await verifyTotp(session.accessToken, factor.id, challenge.id, code);
+      const challenge = await challengeTotp(session.accessToken, factorId);
+      const tokens = await verifyTotp(session.accessToken, factorId, challenge.id, code);
       if (!tokens.access_token || !tokens.refresh_token || accessTokenAal(tokens.access_token) !== 'aal2' || !(await isOwner(tokens.access_token))) {
         throw new Error('MFA verification did not produce an owner AAL2 session.');
       }
