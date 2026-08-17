@@ -1,0 +1,1 @@
+export const MAX_FINANCE_DOCUMENT_BYTES = 4 * 1024 * 1024;
