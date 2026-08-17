@@ -1,6 +1,8 @@
 import type { FinanceData } from '../types';
+import { mutableSavePayload } from './persistencePayload';
 
 export interface DataEnvelope { data: FinanceData; revision: string; filePath: string; lastSavedAt: string | null }
+export interface WriteReceipt { revision: string; filePath: string; lastSavedAt: string | null }
 export interface SessionInfo {
   authenticated: boolean;
   email: string | null;
@@ -68,14 +70,26 @@ export async function logout(): Promise<SessionInfo> {
 }
 
 export async function loadData(): Promise<DataEnvelope> {
-  return json(await request('/api/data', { cache: 'no-store' }));
+  const canMeasure = typeof performance !== 'undefined' && typeof performance.mark === 'function';
+  if (canMeasure) performance.mark('rheomiq:data-load-start');
+  try {
+    return await json(await request('/api/data', { cache: 'no-store' }));
+  } finally {
+    if (canMeasure) {
+      performance.mark('rheomiq:data-load-end');
+      performance.clearMeasures('rheomiq:data-load');
+      performance.measure('rheomiq:data-load', 'rheomiq:data-load-start', 'rheomiq:data-load-end');
+      performance.clearMarks('rheomiq:data-load-start');
+      performance.clearMarks('rheomiq:data-load-end');
+    }
+  }
 }
 
-export async function saveData(data: FinanceData, revision: string): Promise<DataEnvelope> {
+export async function saveData(data: FinanceData, revision: string): Promise<WriteReceipt> {
   return json(await request('/api/data', {
     method: 'PUT',
     headers: { 'content-type': 'application/json', 'if-match': revision },
-    body: JSON.stringify(data),
+    body: JSON.stringify(mutableSavePayload(data)),
   }));
 }
 

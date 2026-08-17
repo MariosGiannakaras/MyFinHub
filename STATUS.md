@@ -1,48 +1,58 @@
 # RheomIQ status
 
+## Current production baseline
+
+RheomIQ is a single-owner personal finance application deployed from `main` to Vercel with Supabase/PostgreSQL as the durable store.
+
+The exhaustive production/backend audit tracked by #15 is complete. Its final verified baseline had all tracked defects fixed, CI green, CodeQL green, the current Vercel production revision deployed, and Production Smoke green against that exact revision.
+
 ## Implemented
 
-- Vite + React + TypeScript application shell and responsive RheomIQ UI
+- React + Vite + TypeScript responsive application
 - Dashboard, transactions, Smart Review, savings, credit/installments, lending, recurring, reports and settings
-- Supabase/PostgreSQL persistence with optimistic revisions, bounded backups and audit events
-- Single-owner authorization enforced by API checks and PostgreSQL RLS
-- Email/password authentication with mandatory TOTP MFA (`aal2`) before finance access
-- HttpOnly/Secure production sessions, same-origin protection, request-size limits and generic public errors
-- Version-controlled Supabase schema migrations without committed personal finance data
-- Compound event/ledger model and finance-domain regression tests
-- Correct cash-offset savings, transfer, refund, lending, card, reconciliation and split semantics
-- GitHub CI, production dependency audit, CodeQL, Dependabot and privacy/security guards
-- Native Supabase GitHub production deployment from `main`
+- Node.js 22.x production/runtime contract
+- Vercel Functions in Frankfurt (`fra1`)
+- Supabase/PostgreSQL in `eu-central-1`
+- Single-owner email/password authentication with mandatory TOTP MFA (`aal2`)
+- HttpOnly/Secure production sessions and same-origin mutation protection
+- Owner + AAL2 enforcement in both API logic and PostgreSQL RLS/RPCs
+- Publishable-key + user-JWT online Supabase access; no service-role secret required by the production web runtime
+- Optimistic revisions with stale-write conflicts instead of silent overwrite
+- Bounded full-document backups and append-only audit events
+- Full-state import with a mandatory pre-import backup
+- Production-safe finance validation and request-size bounds
+- GitHub CI, dependency audits, CodeQL, Dependabot and privacy/security guards
+- Supabase migrations deployed from version-controlled SQL on `main`
+- Vercel Production Smoke for public health, security headers, unauthenticated API denial, no-store caching and Frankfurt routing
+- Coalesced client persistence: one write in flight plus only the newest pending snapshot
+- Same-origin multi-tab revision synchronization with safe reload/conflict behavior
+- Lazy-loaded finance pages and memoized derived month/as-of selectors
+- Mutable-state-only normal writes: immutable legacy seed/history is no longer resent or replaced on every UI change
+- Lightweight `Server-Timing` and browser Performance timing for the finance data path, containing durations only
 
-## Verified production state
+## Data model
 
-- Supabase project is healthy in `eu-central-1` on PostgreSQL 17.
-- Production state is schema version 3, revision 2.
-- Legacy corpus remains 2,853 transactions and 1,184 balance snapshots.
-- One verified automatic database backup exists from persistence smoke testing.
-- RLS is enabled on finance/owner/backup/audit tables and anonymous table access is denied.
-- Supabase Security Advisor was clean after the authentication/RLS hardening.
-- The Supabase GitHub integration is active and has successfully cloned/deployed `main` with migration history aligned to the repository.
-- Import Storage objects/bucket were removed after migration. The disabled one-time importer still exists server-side as a JWT-protected `410 Gone` function because the connected management API has no delete action.
+The compatibility `FinanceData` document remains the canonical read/import representation so the 2,853 imported legacy transactions and historical snapshots keep their original semantics.
 
-## Production-readiness PR
+Normal saves now update only the mutable `state` subtree under revision locking. Full seed/history replacement remains restricted to the explicit import path. This avoids a risky relational rewrite while removing the large immutable corpus from ordinary write traffic.
 
-Issue #7 tracks the current delivery audit. PR #8 (`chore/7-production-readiness-hardening`) contains:
+At the 2026-08-17 production audit checkpoint:
 
-- deterministic Node 22 runtime and immutable SHA-pinned GitHub Actions
-- issue/PR templates, security policy and documented branch/merge workflow
-- Vercel Frankfurt function region and deterministic `npm ci` / build / `dist` contract
-- strict revision preconditions in the API/storage layer with regression coverage
-- pending Supabase migrations to enforce the revision precondition in PostgreSQL and remove the unused import staging table / `pg_net`
+- schema version was 3;
+- the legacy transaction corpus contained 2,853 rows;
+- Supabase was `ACTIVE_HEALTHY` on PostgreSQL 17;
+- RLS was enabled on the RheomIQ state, backup, audit and owner tables;
+- owner/AAL2 finance policies and RPC checks were present;
+- the historical Git privacy review found no real finance JSON, `.env`, or Supabase import payload committed to repository history.
 
-PR #8 CI and CodeQL are green. The Supabase Preview check is intentionally skipped because per-PR Supabase Branching is disabled and requires the Pro plan; production migrations remain pending until merge to `main`.
+The live revision and backup/audit row counts are expected to increase during normal use and are intentionally not treated as fixed documentation constants.
 
-## External settings still required before final production merge
+## Known non-blocking platform notes
 
-- Protect `main` with a GitHub branch ruleset: require Pull Requests, require the `validate` and `Analyze JavaScript/TypeScript` checks, require resolved conversations, and block force-push/deletion. Do not require another person's approval because RheomIQ has one owner.
-- Enable automatic deletion of merged head branches and use squash merging for the clean production history.
-- Import `MariosGiannakaras/RheomIQ` into Vercel as a Git-connected project. No Vercel project currently exists in the connected account.
-- Configure only `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` for the Vercel Production environment. Do not configure `SUPABASE_SECRET_KEY` there.
-- Create the single Supabase Auth owner account, bind its UID to `rheomiq_owner`, complete TOTP enrollment, then disable public signup.
+- Supabase Security Advisor reports `Leaked Password Protection Disabled`. Supabase exposes that protection on paid plans; mandatory owner + TOTP AAL2 remains the application access boundary on the current plan.
+- Supabase per-PR database branching is not enabled on the current plan, so the `Supabase Preview` PR check may be skipped. Production migrations are still version-controlled and applied from `main`.
+- The repository declares Node.js `22.x` in `package.json`, which Vercel documents as overriding a differing Node version selected in Project Settings. A dashboard mismatch may therefore produce a build warning without changing the actual Node 22 runtime contract.
 
-After those settings are complete, merge PR #8, verify the Supabase production migration run, re-check state counts/advisors, verify the Vercel production deployment, and close/supersede stale Dependabot PRs/branches.
+## Delivery workflow
+
+New implementation work starts from a GitHub issue and short-lived branch, is reviewed through a PR, and requires the applicable CI/CodeQL checks before squash merge. Backend/database changes also require migration validation and post-merge production verification. Personal finance payloads and credentials must never appear in issues, commits, logs or chat.

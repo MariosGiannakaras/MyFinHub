@@ -2,11 +2,13 @@ import type { FinanceData } from '../src/types.js';
 import { migrateData } from '../src/lib/domain.js';
 import { ApiError } from './http.js';
 import { fetchUpstream } from './upstream.js';
+import { validateFinanceState } from './stateValidation.js';
 import { validateFinanceData } from './validation.js';
 
 export const DATA_SOURCE = 'Supabase/PostgreSQL';
 
 type StateRow = { data: FinanceData; revision: number | string; updated_at: string };
+type MutableStateRow = { revision: number | string; updated_at: string };
 type BackupRow = { id: number | string; created_at: string };
 
 function config(accessToken?: string) {
@@ -50,6 +52,7 @@ async function supabase<T>(path: string, init: RequestInit = {}, accessToken?: s
     if (/FORBIDDEN|42501/i.test(marker) || response.status === 403) throw new ApiError(403, 'FORBIDDEN', 'Access denied.');
     if (response.status === 401) throw new ApiError(401, 'AUTH_REQUIRED', 'Authentication required.');
     if (/INVALID_DATA|INVALID_SCHEMA_VERSION|22023/i.test(marker)) throw new ApiError(400, 'INVALID_DATA', 'The finance data is invalid.');
+    if (/NO_STATE|P0002/i.test(marker)) throw new ApiError(500, 'EMPTY_DATABASE', 'RheomIQ database is empty.', false);
     if (response.status === 429) throw new ApiError(429, 'DATA_RATE_LIMITED', 'Data service is busy. Try again shortly.');
     if (response.status >= 500) throw new ApiError(503, 'DATA_UNAVAILABLE', 'Data service is temporarily unavailable. Try again.');
     throw new ApiError(502, 'SUPABASE_ERROR', 'Database request failed.', false);
@@ -67,6 +70,15 @@ function envelope(row: StateRow) {
   validateFinanceData(migrated);
   return {
     data: migrated,
+    revision: String(row.revision),
+    filePath: DATA_SOURCE,
+    lastSavedAt: row.updated_at,
+  };
+}
+
+function writeReceipt(row: MutableStateRow) {
+  if (!row) throw new ApiError(500, 'EMPTY_DATABASE', 'RheomIQ database is empty.', false);
+  return {
     revision: String(row.revision),
     filePath: DATA_SOURCE,
     lastSavedAt: row.updated_at,
@@ -110,6 +122,26 @@ export async function backupStore(accessToken?: string, reason = 'manual') {
   }, accessToken));
   if (!result) throw new ApiError(500, 'BACKUP_FAILED', 'Backup failed.', false);
   return `supabase://rheomiq_backups/${result.id}`;
+}
+
+export async function writeMutableState(
+  state: FinanceData['state'],
+  updatedAt: string,
+  expectedRevision: string,
+  accessToken?: string,
+) {
+  validateFinanceState(state);
+  if (!updatedAt || updatedAt.length > 64) throw new ApiError(400, 'INVALID_DATA', 'The finance data is invalid.');
+
+  const row = first(await supabase<MutableStateRow[] | MutableStateRow>('rpc/rheomiq_save_mutable_state', {
+    method: 'POST',
+    body: JSON.stringify({
+      p_state: state,
+      p_expected_revision: parseExpectedRevision(expectedRevision),
+      p_updated_at: updatedAt,
+    }),
+  }, accessToken));
+  return writeReceipt(row);
 }
 
 export async function writeStore(data: FinanceData, expectedRevision?: string, force = false, accessToken?: string) {

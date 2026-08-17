@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { MAX_FINANCE_DOCUMENT_BYTES } from '../src/lib/limits.js';
+import { parseMutableWrite, validateFinanceState } from '../server/stateValidation.js';
 import { validateFinanceData } from '../server/validation.js';
 
 function validState(): any {
@@ -51,6 +52,29 @@ function validState(): any {
 describe('finance document validation', () => {
   it('accepts a structurally valid finance state', () => {
     expect(() => validateFinanceData(validState())).not.toThrow();
+  });
+
+  it('accepts the mutable subtree through the canonical validator', () => {
+    expect(() => validateFinanceState(validState().state)).not.toThrow();
+  });
+
+  it('accepts only the compact mutable write envelope', () => {
+    const full = validState();
+    expect(parseMutableWrite({ state: full.state, updatedAt: full.updatedAt })).toEqual({
+      state: full.state,
+      updatedAt: full.updatedAt,
+    });
+  });
+
+  it('rejects full-document fields on the normal write path', () => {
+    const full = validState();
+    expect(() => parseMutableWrite({ state: full.state, updatedAt: full.updatedAt, seed: full.seed })).toThrowError(/invalid/i);
+  });
+
+  it('rejects malformed mutable state independently of seed data', () => {
+    const state = validState().state;
+    state.settings.savingsTargetRate = 2;
+    expect(() => validateFinanceState(state)).toThrowError(/savingsTargetRate/i);
   });
 
   it('rejects malformed nested transaction fields', () => {
