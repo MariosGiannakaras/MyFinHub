@@ -1,0 +1,130 @@
+name: Production Smoke
+
+on:
+  deployment_status:
+  workflow_dispatch:
+
+concurrency:
+  group: production-smoke
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: production-smoke
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.deployment_status.state == 'success' &&
+       github.event.deployment_status.environment == 'Production' &&
+       github.event.deployment_status.creator.login == 'vercel[bot]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      BASE_URL: https://rheom-iq-vert.vercel.app
+
+    steps:
+      - name: Verify public production surface
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          tmp="$(mktemp -d)"
+          trap 'rm -rf "$tmp"' EXIT
+
+          fetch_path() {
+            local path="$1"
+            local name="$2"
+            curl \
+              --silent \
+              --show-error \
+              --location \
+              --max-time 20 \
+              --dump-header "$tmp/${name}.headers" \
+              --output "$tmp/${name}.body" \
+              --write-out '%{http_code}' \
+              "$BASE_URL$path"
+          }
+
+          header_value() {
+            local file="$1"
+            local key="$2"
+            grep -i "^${key}:" "$file" 2>/dev/null \
+              | tail -n 1 \
+              | cut -d ':' -f 2- \
+              | sed 's/^[[:space:]]*//;s/\r$//' \
+              || true
+          }
+
+          require_header() {
+            local file="$1"
+            local key="$2"
+            local value
+            value="$(header_value "$file" "$key")"
+            if [[ -z "$value" ]]; then
+              echo "Missing required header: $key"
+              exit 1
+            fi
+          }
+
+          root_status="$(fetch_path '/' root)"
+          [[ "$root_status" == '200' ]] || {
+            echo "Expected / to return 200, got $root_status"
+            exit 1
+          }
+
+          health_status="$(fetch_path '/api/health' health)"
+          [[ "$health_status" == '200' ]] || {
+            echo "Expected /api/health to return 200, got $health_status"
+            exit 1
+          }
+
+          python - "$tmp/health.body" <<'PY'
+          import json
+          import sys
+
+          with open(sys.argv[1], encoding='utf-8') as fh:
+              payload = json.load(fh)
+
+          assert payload == {'ok': True, 'app': 'RheomIQ'}, payload
+          PY
+
+          data_status="$(fetch_path '/api/data' data)"
+          [[ "$data_status" == '401' ]] || {
+            echo "Expected unauthenticated /api/data to return 401, got $data_status"
+            exit 1
+          }
+
+          for header in \
+            Content-Security-Policy \
+            Strict-Transport-Security \
+            X-Content-Type-Options \
+            X-Frame-Options \
+            Referrer-Policy \
+            Permissions-Policy \
+            Cross-Origin-Opener-Policy \
+            Cross-Origin-Resource-Policy
+          do
+            require_header "$tmp/root.headers" "$header"
+          done
+
+          health_cache="$(header_value "$tmp/health.headers" 'Cache-Control')"
+          [[ "$health_cache" == *'no-store'* ]] || {
+            echo "Expected /api/health Cache-Control to contain no-store; got: $health_cache"
+            exit 1
+          }
+
+          data_cache="$(header_value "$tmp/data.headers" 'Cache-Control')"
+          [[ "$data_cache" == *'no-store'* ]] || {
+            echo "Expected /api/data Cache-Control to contain no-store; got: $data_cache"
+            exit 1
+          }
+
+          vercel_id="$(header_value "$tmp/health.headers" 'x-vercel-id')"
+          [[ "$vercel_id" == *'fra1'* ]] || {
+            echo "Expected /api/health x-vercel-id to include fra1; got: $vercel_id"
+            exit 1
+          }
+
+          echo "Production smoke checks passed."
