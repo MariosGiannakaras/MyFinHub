@@ -1,0 +1,9 @@
+:root{
+  --cyan:#147c95;
+  --green:#187852;
+  --red:#b32942;
+  --amber:#9a5f00;
+}
+.eyebrow{color:#315fae}
+.text-button{color:var(--blue-2)}
+.confidence-orb.medium{color:#8d5200}
