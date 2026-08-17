@@ -1,7 +1,7 @@
 import express from 'express';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { clearSessionCookies, requireSession, revokeSession, setSessionCookies, signInWithPassword } from './auth.js';
+import { accessTokenAal, beginTotpEnrollment, challengeTotp, clearSessionCookies, getTotpFactors, requireSession, revokeSession, setSessionCookies, signInWithPassword, verifyTotp } from './auth.js';
 import { ApiError, assertSameOrigin, handleApi, methodNotAllowed, requestHeader, sendJson } from './http.js';
 import { backupStore, DATA_SOURCE, isOwner, readStore, writeStore } from './storage.js';
 import { validateFinanceData } from './validation.js';
@@ -9,6 +9,18 @@ import { validateFinanceData } from './validation.js';
 const app = express();
 app.disable('x-powered-by');
 app.use(express.json({ limit: '5mb', strict: true }));
+
+async function requireFinanceSession(req: any, res: any) {
+  const session = await requireSession(req, res);
+  if (!(await isOwner(session.accessToken))) {
+    clearSessionCookies(req, res);
+    throw new ApiError(401, 'AUTH_REQUIRED', 'Authentication required.');
+  }
+  if (accessTokenAal(session.accessToken) !== 'aal2') {
+    throw new ApiError(403, 'MFA_REQUIRED', 'Verification required.');
+  }
+  return session;
+}
 
 app.get('/api/health', (req, res) => void handleApi(res, async () => sendJson(res, 200, { ok: true, app: 'RheomIQ' })));
 
@@ -25,19 +37,75 @@ app.post('/api/auth/login', (req, res) => void handleApi(res, async () => {
   if (!tokens.access_token || !tokens.refresh_token || !(await isOwner(tokens.access_token))) {
     await revokeSession(tokens.access_token);
     clearSessionCookies(req, res);
-    throw new ApiError(403, 'NOT_OWNER', 'This account is not authorized for RheomIQ.');
+    throw new ApiError(401, 'INVALID_CREDENTIALS', 'Invalid email or password.');
   }
   setSessionCookies(req, res, tokens);
-  sendJson(res, 200, { authenticated: true, email: tokens.user?.email || email });
+  const factors = await getTotpFactors(tokens.access_token);
+  const hasVerifiedTotp = factors.some(factor => factor.status === 'verified');
+  const aal2 = accessTokenAal(tokens.access_token) === 'aal2';
+  sendJson(res, 200, {
+    authenticated: aal2,
+    email: tokens.user?.email || email,
+    mfaRequired: !aal2 && hasVerifiedTotp,
+    mfaEnrollmentRequired: !aal2 && !hasVerifiedTotp,
+  });
 }));
 
 app.get('/api/auth/session', (req, res) => void handleApi(res, async () => {
   const session = await requireSession(req, res);
   if (!(await isOwner(session.accessToken))) {
     clearSessionCookies(req, res);
-    throw new ApiError(403, 'NOT_OWNER', 'This account is not authorized for RheomIQ.');
+    throw new ApiError(401, 'AUTH_REQUIRED', 'Authentication required.');
   }
-  sendJson(res, 200, { authenticated: true, email: session.user.email || null });
+  const factors = await getTotpFactors(session.accessToken);
+  const hasVerifiedTotp = factors.some(factor => factor.status === 'verified');
+  const aal2 = accessTokenAal(session.accessToken) === 'aal2';
+  sendJson(res, 200, {
+    authenticated: aal2,
+    email: session.user.email || null,
+    mfaRequired: !aal2 && hasVerifiedTotp,
+    mfaEnrollmentRequired: !aal2 && !hasVerifiedTotp,
+  });
+}));
+
+app.post('/api/auth/mfa/enroll', (req, res) => void handleApi(res, async () => {
+  assertSameOrigin(req);
+  const session = await requireSession(req, res);
+  if (!(await isOwner(session.accessToken))) {
+    clearSessionCookies(req, res);
+    throw new ApiError(401, 'AUTH_REQUIRED', 'Authentication required.');
+  }
+  const enrollment = await beginTotpEnrollment(session.accessToken);
+  sendJson(res, 200, { factorId: enrollment.id, qrCode: enrollment.totp!.qr_code!, secret: enrollment.totp!.secret! });
+}));
+
+app.post('/api/auth/mfa/verify', (req, res) => void handleApi(res, async () => {
+  assertSameOrigin(req);
+  const code = typeof req.body?.code === 'string' ? req.body.code.trim() : '';
+  const requestedFactorId = typeof req.body?.factorId === 'string' ? req.body.factorId.trim() : '';
+  if (!/^\d{6}$/.test(code)) throw new ApiError(401, 'INVALID_MFA_CODE', 'Invalid verification code.');
+  const session = await requireSession(req, res);
+  if (!(await isOwner(session.accessToken))) {
+    clearSessionCookies(req, res);
+    throw new ApiError(401, 'AUTH_REQUIRED', 'Authentication required.');
+  }
+  const factors = await getTotpFactors(session.accessToken);
+  const factor = requestedFactorId
+    ? factors.find(item => item.id === requestedFactorId)
+    : factors.find(item => item.status === 'verified') || factors.find(item => item.status !== 'verified');
+  if (!factor) throw new ApiError(401, 'MFA_NOT_CONFIGURED', 'Verification is unavailable.');
+  try {
+    const challenge = await challengeTotp(session.accessToken, factor.id);
+    const tokens = await verifyTotp(session.accessToken, factor.id, challenge.id, code);
+    if (!tokens.access_token || !tokens.refresh_token || accessTokenAal(tokens.access_token) !== 'aal2' || !(await isOwner(tokens.access_token))) {
+      throw new Error('MFA verification did not produce an owner AAL2 session.');
+    }
+    setSessionCookies(req, res, tokens);
+    sendJson(res, 200, { authenticated: true, email: tokens.user?.email || session.user.email || null });
+  } catch (error) {
+    if (error instanceof ApiError && error.code === 'AUTH_REQUIRED') throw error;
+    throw new ApiError(401, 'INVALID_MFA_CODE', 'Invalid verification code.');
+  }
 }));
 
 app.post('/api/auth/logout', (req, res) => void handleApi(res, async () => {
@@ -48,20 +116,20 @@ app.post('/api/auth/logout', (req, res) => void handleApi(res, async () => {
 }));
 
 app.get('/api/data', (req, res) => void handleApi(res, async () => {
-  const session = await requireSession(req, res);
+  const session = await requireFinanceSession(req, res);
   sendJson(res, 200, await readStore(session.accessToken));
 }));
 
 app.put('/api/data', (req, res) => void handleApi(res, async () => {
   assertSameOrigin(req);
-  const session = await requireSession(req, res);
+  const session = await requireFinanceSession(req, res);
   validateFinanceData(req.body);
   sendJson(res, 200, await writeStore(req.body, requestHeader(req, 'if-match') || undefined, false, session.accessToken));
 }));
 
 app.post('/api/import', (req, res) => void handleApi(res, async () => {
   assertSameOrigin(req);
-  const session = await requireSession(req, res);
+  const session = await requireFinanceSession(req, res);
   if (requestHeader(req, 'x-rheomiq-confirm-import') !== 'replace') throw new ApiError(400, 'IMPORT_CONFIRMATION_REQUIRED', 'Import confirmation is required.');
   validateFinanceData(req.body);
   sendJson(res, 200, await writeStore(req.body, undefined, true, session.accessToken));
@@ -69,7 +137,7 @@ app.post('/api/import', (req, res) => void handleApi(res, async () => {
 
 app.post('/api/backup', (req, res) => void handleApi(res, async () => {
   assertSameOrigin(req);
-  const session = await requireSession(req, res);
+  const session = await requireFinanceSession(req, res);
   sendJson(res, 200, { path: await backupStore(session.accessToken) });
 }));
 
