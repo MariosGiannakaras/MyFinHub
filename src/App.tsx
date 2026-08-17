@@ -42,7 +42,7 @@ function FinanceApp({userEmail,onLogout}:{userEmail:string|null;onLogout:()=>voi
     return()=>{ delete document.documentElement.dataset.motion; };
   },[data?.state.settings.motion]);
   const reviews=useMemo(()=>data?reviewSuggestions(data).length:0,[data]);
-  if(!data)return <div className="boot-screen"><img src="/brand/icon-192.png" alt="RheomIQ"/><div className="boot-pulse"/><b>RheomIQ</b><span>{finance.saveState==='error'?'Δεν ήταν δυνατή η φόρτωση της βάσης':'Φόρτωση οικονομικού ledger…'}</span></div>;
+  if(!data)return <div className="boot-screen"><img src="/brand/icon-192.png" alt="RheomIQ"/><div className="boot-pulse"/><b>RheomIQ</b><span>{finance.saveState==='error'?'Δεν ήταν δυνατή η φόρτωση της βάσης':'Φόρτωση οικονομικού ledger…'}</span>{finance.saveState==='error'?<button className="secondary" type="button" onClick={()=>void finance.reload()}>Δοκιμή ξανά</button>:null}</div>;
 
   const addEvent=(event:FinanceEvent)=>finance.update(current=>{const events=current.state.events??[];const exists=events.some(e=>e.id===event.id);return {...current,state:{...current.state,events:exists?events.map(e=>e.id===event.id?event:e):[...events,event]}}});
   const deleteEvent=(id:string)=>finance.update(current=>({...current,state:{...current.state,events:(current.state.events??[]).filter(e=>e.id!==id)}}));
@@ -76,7 +76,8 @@ function FinanceApp({userEmail,onLogout}:{userEmail:string|null;onLogout:()=>voi
 export default function App(){
   const session=useSession();
   if(session.state==='loading')return <div className="boot-screen"><img src="/brand/icon-192.png" alt="RheomIQ"/><div className="boot-pulse"/><b>RheomIQ</b><span>Έλεγχος ασφαλούς συνεδρίας…</span></div>;
-  if(session.state==='mfa'||session.state==='mfa-enroll')return <MfaScreen mode={session.state==='mfa-enroll'?'enroll':'challenge'} email={session.email} error={session.error} onEnroll={session.enrollMfa} onVerify={session.verifyMfa} onLogout={session.logout}/>;
+  if(session.state==='error')return <div className="boot-screen"><img src="/brand/icon-192.png" alt="RheomIQ"/><b>RheomIQ</b><span>{session.error||'Δεν ήταν δυνατός ο έλεγχος της συνεδρίας.'}</span><button className="secondary" type="button" onClick={()=>void session.refresh()}>Δοκιμή ξανά</button></div>;
+  if(session.state==='mfa'||session.state==='mfa-enroll')return <MfaScreen mode={session.state==='mfa-enroll'?'enroll':'challenge'} email={session.email} error={session.error} onEnroll={session.enrollMfa} onVerify={session.verifyMfa} onLogout={async()=>{await session.logout();}}/>;
   if(session.state!=='authenticated')return <LoginScreen onLogin={session.login} error={session.error}/>;
-  return <FinanceApp userEmail={session.email} onLogout={session.logout}/>;
+  return <><FinanceApp userEmail={session.email} onLogout={()=>{void session.logout();}}/>{session.error?<div className="session-error-banner" role="alert">{session.error}</div>:null}</>;
 }
