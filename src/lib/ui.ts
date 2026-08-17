@@ -8,7 +8,8 @@ export function effectiveRecurringItems(data: FinanceData): RecurringItem[] {
 
 export function accountDisplayName(data: FinanceData, accountId?: string | null) {
   if (!accountId) return '—';
-  return allAccounts(data).find((account) => account.id === accountId)?.name ?? accountId;
+  const configured=data.state.settings.accountNames?.[accountId]?.trim();
+  return configured || allAccounts(data).find((account) => account.id === accountId)?.name || accountId;
 }
 
 const EVENT_LABELS: Record<EventKind, string> = {
