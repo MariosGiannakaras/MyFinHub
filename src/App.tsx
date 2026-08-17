@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { AppShell, type PageId } from './components/AppShell';
 import { LoginScreen } from './components/LoginScreen';
 import { MfaScreen } from './components/MfaScreen';
@@ -8,16 +8,21 @@ import { useLocalDate } from './hooks/useLocalDate';
 import { useSession } from './hooks/useSession';
 import { accountBalances, createEvent, reviewSuggestions } from './lib/domain';
 import { reportingMonthForDate } from './lib/localDate';
-import { DashboardPage } from './pages/DashboardPage';
-import { TransactionsPage } from './pages/TransactionsPage';
-import { ReviewPage } from './pages/ReviewPage';
-import { SavingsPage } from './pages/SavingsPage';
-import { CreditLoansPage } from './pages/CreditLoansPage';
-import { RecurringPage } from './pages/RecurringPage';
-import { LendingPage } from './pages/LendingPage';
-import { ReportsPage } from './pages/ReportsPage';
-import { SettingsPage } from './pages/SettingsPage';
 import type { EventKind, FinanceEvent, Loan, RecurringItem, ReviewDecision } from './types';
+
+const DashboardPage = lazy(() => import('./pages/DashboardPage').then((module) => ({ default: module.DashboardPage })));
+const TransactionsPage = lazy(() => import('./pages/TransactionsPage').then((module) => ({ default: module.TransactionsPage })));
+const ReviewPage = lazy(() => import('./pages/ReviewPage').then((module) => ({ default: module.ReviewPage })));
+const SavingsPage = lazy(() => import('./pages/SavingsPage').then((module) => ({ default: module.SavingsPage })));
+const CreditLoansPage = lazy(() => import('./pages/CreditLoansPage').then((module) => ({ default: module.CreditLoansPage })));
+const RecurringPage = lazy(() => import('./pages/RecurringPage').then((module) => ({ default: module.RecurringPage })));
+const LendingPage = lazy(() => import('./pages/LendingPage').then((module) => ({ default: module.LendingPage })));
+const ReportsPage = lazy(() => import('./pages/ReportsPage').then((module) => ({ default: module.ReportsPage })));
+const SettingsPage = lazy(() => import('./pages/SettingsPage').then((module) => ({ default: module.SettingsPage })));
+
+function PageLoading() {
+  return <div className="empty-state" role="status" aria-live="polite">Φόρτωση ενότητας…</div>;
+}
 
 function FinanceApp({userEmail,onLogout}:{userEmail:string|null;onLogout:()=>void}){
   const finance=useFinance();
@@ -71,7 +76,7 @@ function FinanceApp({userEmail,onLogout}:{userEmail:string|null;onLogout:()=>voi
   return <>
     <AppShell page={page} onPage={setPage} onQuickAdd={()=>openQuick('expense')} saveState={finance.saveState} filePath={finance.filePath} reviewCount={reviews} motionMode={data.state.settings.motion||'system'} userEmail={userEmail} onLogout={onLogout}>
       <div className="month-toolbar"><label>Περίοδος <input type="month" value={month} onChange={e=>{setMonth(e.target.value);setMonthIsManual(true)}}/></label><span>Οι κινήσεις μετά την {today.split('-').reverse().join('/')} δεν επηρεάζουν το σημερινό balance.</span></div>
-      {content}
+      <Suspense fallback={<PageLoading/>}>{content}</Suspense>
     </AppShell>
     <QuickAdd open={quickOpen} data={data} asOf={today} motionMode={data.state.settings.motion||'system'} initial={(data.state.events??[]).find(e=>e.id===editingEventId)||null} initialKind={quickKind} onClose={()=>{setQuickOpen(false);setEditingEventId(null)}} onCreate={addEvent} currentBalance={balance}/>
   </>;
