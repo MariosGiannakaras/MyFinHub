@@ -6,8 +6,8 @@ import {
   frequentDescriptions,
   monthlyFlow,
   netWorth,
-} from './domain';
-import type { FinanceData } from '../types';
+} from './domain.js';
+import type { FinanceData } from '../types.js';
 
 type CacheBucket = {
   balances: Map<string, ReturnType<typeof accountBalances>>;
