@@ -1,0 +1,77 @@
+/* Semantic finance icons and account brand marks. */
+.finance-icon{--icon-tone:#64748b;--icon-bg:rgba(100,116,139,.09);width:30px;height:30px;flex:0 0 30px;border-radius:10px;display:inline-grid;place-items:center;color:var(--icon-tone);background:linear-gradient(145deg,rgba(255,255,255,.86),var(--icon-bg));box-shadow:3px 3px 8px rgba(37,59,92,.09),-3px -3px 8px rgba(255,255,255,.8),inset 0 0 0 1px rgba(255,255,255,.45);transition:transform var(--motion-fast) var(--ease-out),box-shadow var(--motion-base) ease,background-color var(--motion-base) ease}
+.finance-icon>svg{stroke-width:1.9}
+.finance-icon-inline{width:25px;height:25px;flex-basis:25px;border-radius:8px}
+.finance-icon.tone-red{--icon-tone:#b32942;--icon-bg:rgba(179,41,66,.09)}
+.finance-icon.tone-green{--icon-tone:#187852;--icon-bg:rgba(24,120,82,.09)}
+.finance-icon.tone-blue{--icon-tone:#245fb9;--icon-bg:rgba(47,111,237,.09)}
+.finance-icon.tone-cyan{--icon-tone:#147c95;--icon-bg:rgba(20,124,149,.10)}
+.finance-icon.tone-amber{--icon-tone:#9a5f00;--icon-bg:rgba(190,126,27,.11)}
+.finance-icon.tone-violet{--icon-tone:#704caf;--icon-bg:rgba(112,76,175,.10)}
+.finance-icon.tone-teal{--icon-tone:#177d71;--icon-bg:rgba(23,125,113,.10)}
+.finance-icon.tone-gold{--icon-tone:#986800;--icon-bg:rgba(211,163,44,.12)}
+.finance-icon.tone-slate{--icon-tone:#596b84;--icon-bg:rgba(89,107,132,.09)}
+@media(hover:hover){.transaction-row:hover .finance-icon,.semantic-table tbody tr:hover .finance-icon,.frequent-grid button:hover .finance-icon,.savings-action:hover .finance-icon{transform:translateY(-1px);box-shadow:4px 4px 10px rgba(37,59,92,.11),-4px -4px 10px rgba(255,255,255,.86)}}
+
+.transaction-title-line,.semantic-list-title{display:flex;align-items:center;gap:9px;min-width:0}
+.transaction-title-line>b,.semantic-list-title>b,.semantic-list-title>div{min-width:0}
+.transaction-title-line>b{line-height:1.35}
+.transaction-description-cell .finance-icon{width:32px;height:32px;flex-basis:32px;border-radius:10px}
+.transaction-comment,.transaction-meta{margin-left:41px!important}
+.semantic-list-title>div>b,.semantic-list-title>div>small{display:block}
+.semantic-list-title>div>small{margin-top:3px;color:var(--muted)}
+
+.frequent-grid button{position:relative;padding-left:44px;min-height:54px}
+.frequent-grid .frequent-icon{position:absolute;left:8px;top:50%;transform:translateY(-50%)}
+.frequent-grid .frequent-icon .finance-icon{width:28px;height:28px;flex-basis:28px}
+.frequent-grid button:hover .frequent-icon{transform:translateY(calc(-50% - 1px))}
+.frequent-strip button{display:grid;grid-template-columns:auto max-content;grid-template-rows:auto auto;column-gap:6px;align-items:center;text-align:left;padding:5px 8px}
+.frequent-strip button>.finance-icon{grid-row:1/3;width:26px;height:26px;flex-basis:26px;border-radius:8px}
+.frequent-strip button>span{font-size:8.5px;font-weight:750}
+.frequent-strip button>small{grid-column:2;margin-top:0}
+.legend-category{display:inline-flex!important;align-items:center;gap:6px;min-width:0}
+.legend-category .finance-icon{width:22px;height:22px;flex-basis:22px;border-radius:7px}
+.category-icon-list .semantic-list-title .finance-icon{width:25px;height:25px;flex-basis:25px}
+
+.bank-brand-mark{width:38px;height:38px;flex:0 0 38px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;position:relative;background:linear-gradient(145deg,#f8fbff,#e7eef7);box-shadow:4px 4px 10px rgba(36,59,92,.10),-4px -4px 10px rgba(255,255,255,.9),inset 0 0 0 1px rgba(255,255,255,.55);overflow:hidden;color:#334155;font-style:normal}
+.bank-brand-mark svg{width:18px;height:18px}
+.bank-brand-mark em{font-style:normal;font-size:8px;font-weight:850;letter-spacing:.015em;margin-left:5px;white-space:nowrap}
+.bank-brand-mark.wordmark{width:auto;min-width:86px;padding:0 10px;justify-content:flex-start}
+.brand-letter{font-style:normal;font-weight:900;line-height:1;font-size:19px}
+.bank-brand-mark.bankmark-piraeus{color:#0e4f92;background:linear-gradient(145deg,#f5fbff,#deedf9)}
+.piraeus-symbol{width:20px;height:20px;display:grid;place-items:center;position:relative;transform:rotate(45deg)}
+.piraeus-symbol b{position:absolute;width:14px;height:5px;border-radius:5px;background:currentColor}
+.piraeus-symbol b+ b{transform:rotate(90deg)}
+.bank-brand-mark.bankmark-revolut{color:#151a24;background:linear-gradient(145deg,#fff,#e8ebef)}
+.revolut-letter{font-family:ui-sans-serif,system-ui,sans-serif;transform:skewX(-7deg)}
+.bank-brand-mark.bankmark-alpha{color:#9b1e5e;background:linear-gradient(145deg,#fff6fb,#f1dfe9)}
+.alpha-letter{font-family:Georgia,serif;font-size:22px}
+.bank-brand-mark.bankmark-payzy{color:#743fb4;background:linear-gradient(145deg,#fbf7ff,#eadff7)}
+.payzy-letter{font-family:ui-rounded,system-ui,sans-serif}
+.bank-brand-mark.bankmark-viva{color:#1e3c55;background:linear-gradient(145deg,#f7fbff,#dfeaf1)}
+.viva-letter{font-family:ui-rounded,system-ui,sans-serif}
+.bank-brand-mark.bankmark-cash{color:#177d71;background:linear-gradient(145deg,#f3fffb,#dcefe9)}
+.bank-brand-mark.bankmark-generic{color:#45617f}
+.primary-balance-head>.bank-brand-mark{width:42px;height:42px;flex-basis:42px;border-radius:13px}
+.compact-account-row>.bank-brand-mark{width:34px;height:34px;flex-basis:34px;border-radius:10px}
+
+/* Card surfaces keep bank identity prominent without replacing movement icons in ledgers. */
+.payment-card.bank-piraeus .payment-card-top span,.payment-card.bank-revolut .payment-card-top span,.payment-card.bank-alpha .payment-card-top span,.payment-card.bank-payzy .payment-card-top span,.payment-card.bank-viva .payment-card-top span{display:inline-flex;align-items:center;gap:6px}
+.payment-card.bank-piraeus .payment-card-top span:before,.payment-card.bank-revolut .payment-card-top span:before,.payment-card.bank-alpha .payment-card-top span:before,.payment-card.bank-payzy .payment-card-top span:before,.payment-card.bank-viva .payment-card-top span:before{width:18px;height:18px;border-radius:6px;display:inline-grid;place-items:center;background:rgba(255,255,255,.16);box-shadow:inset 0 0 0 1px rgba(255,255,255,.18);font-size:11px;font-weight:900}
+.payment-card.bank-piraeus .payment-card-top span:before{content:'Π'}
+.payment-card.bank-revolut .payment-card-top span:before{content:'R'}
+.payment-card.bank-alpha .payment-card-top span:before{content:'α'}
+.payment-card.bank-payzy .payment-card-top span:before{content:'p'}
+.payment-card.bank-viva .payment-card-top span:before{content:'v'}
+
+@media(max-width:680px){
+  .transaction-comment,.transaction-meta{margin-left:0!important}
+  .transaction-title-line{align-items:flex-start}
+  .finance-icon{width:28px;height:28px;flex-basis:28px}
+  .bank-brand-mark.wordmark{min-width:0;width:38px;padding:0}
+  .bank-brand-mark.wordmark em{display:none}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .finance-icon{transition:none!important}
+}
