@@ -10,7 +10,7 @@ The exhaustive production/backend audit tracked by #15 is complete. Its final ve
 
 ## Current develop integration batch — unreleased
 
-As of 2026-08-18, the implementation batch tracked by #64 is complete on `develop` once its final hardening PR is merged. It remains intentionally unreleased and does not itself trigger a production Vercel deployment. The batch includes:
+As of 2026-08-18, the implementation batch tracked by #64 is complete on `develop`. It remains intentionally unreleased and does not itself trigger a production Vercel deployment. The batch includes:
 
 - automatic persistence for finance mutations with bounded Undo and Redo history;
 - Settings direct autosave through the same revision-checked persistence path, without a separate Apply/Cancel workflow;
