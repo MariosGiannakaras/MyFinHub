@@ -45,7 +45,7 @@
   .mobile-transaction-meta .flow-pill{font-size:9px}
   .mobile-account-path{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
   .mobile-row-actions{display:flex;justify-content:flex-end;gap:5px;margin-top:8px;padding-top:8px;border-top:1px solid rgba(208,219,233,.72)}
-  .mobile-row-actions .text-button{display:inline-flex;align-items:center;gap:5px;min-height:38px;padding:7px 9px}
+  .mobile-row-actions .text-button{display:inline-flex;align-items:center;gap:5px;min-height:44px;padding:8px 10px}
   .danger-text{color:#a52d43!important}
   .mobile-history-label{display:block;margin:8px 0 0 37px;color:var(--muted);font-size:9px}
 
@@ -64,15 +64,50 @@
   .mobile-action-menu summary::-webkit-details-marker{display:none}
   .mobile-action-menu[open] summary{color:var(--blue-2);box-shadow:var(--shadow-inset)}
   .mobile-action-menu>div{position:absolute;right:0;bottom:50px;z-index:15;width:min(210px,72vw);display:grid;gap:4px;padding:6px;border:1px solid #d7e1ee;border-radius:13px;background:rgba(248,251,255,.98);box-shadow:0 14px 30px rgba(28,51,91,.16)}
-  .mobile-action-menu>div button{min-height:42px;border:0;border-radius:9px;background:transparent;color:var(--ink-2);display:flex;align-items:center;gap:8px;padding:8px 9px;text-align:left;font-size:10px;font-weight:700}
+  .mobile-action-menu>div button{min-height:44px;border:0;border-radius:9px;background:transparent;color:var(--ink-2);display:flex;align-items:center;gap:8px;padding:8px 9px;text-align:left;font-size:10px;font-weight:700}
   .mobile-action-menu>div button:active{background:rgba(47,111,237,.09);transform:scale(.985)}
+
+  /* Quick Entry uses the dynamic visual viewport and a horizontal movement chooser on phones. */
+  .quick-modal{max-height:calc(88dvh - env(safe-area-inset-top,0px));overscroll-behavior:contain}
+  .quick-modal .generic-kind-grid{display:flex;gap:7px;overflow-x:auto;scroll-snap-type:x proximity;padding:0 13px 12px;scrollbar-width:thin;overscroll-behavior-inline:contain}
+  .quick-modal .generic-kind-grid>button{flex:0 0 136px;min-height:76px;scroll-snap-align:start;padding:9px 10px}
+  .quick-modal .generic-kind-grid>button>span{width:27px;height:27px}
+  .quick-modal .generic-kind-grid>button b{margin-top:5px}
+  .quick-modal .generic-kind-grid>button small{line-height:1.25}
+  .quick-modal .frequent-strip{scroll-snap-type:x proximity;overscroll-behavior-inline:contain}
+  .quick-modal .frequent-strip button{scroll-snap-align:start}
+
+  /* Prevent iOS Safari focus zoom while keeping compact layout through height/padding. */
+  input,select,textarea{font-size:16px!important}
+  .searchbox input,.money-input input{font-size:16px!important}
+
+  /* Consistent practical touch targets and press feedback after native tap highlight suppression. */
+  .text-button,.loan-actions button,.settings-actions button,.settings-draft-actions button,.report-eye,.secondary,.save-button{min-height:44px}
+  .mobile-nav button,.mobile-more-menu button,.text-button,.loan-actions button,.settings-actions button,.settings-draft-actions button,.report-eye,.secondary,.save-button{touch-action:manipulation}
+  .mobile-nav button:active,.mobile-more-menu button:active,.text-button:active,.loan-actions button:active,.settings-actions button:active,.settings-draft-actions button:active,.report-eye:active,.secondary:active,.save-button:active{transform:translateY(1px) scale(.98)}
+
+  /* On phones the already-accessible textual category list is the primary report visualization. */
+  .panel:has(.category-icon-list)>div[aria-hidden="true"]{display:none}
+  .panel:has(.category-icon-list) .chart-alt{margin-top:0;border-top:0;padding-top:0}
+  .panel:has(.category-icon-list) .chart-alt summary{min-height:38px;display:flex;align-items:center}
+  .panel:has(.category-icon-list) .category-icon-list{gap:0;margin-top:4px}
+  .panel:has(.category-icon-list) .category-icon-list li{min-height:44px;align-items:center;padding:7px 0;border-bottom:1px solid #e0e8f2;font-size:11px}
+  .panel:has(.category-icon-list) .category-icon-list li:last-child{border-bottom:0}
+  .panel:has(.category-icon-list) .category-icon-list li>b{white-space:nowrap;font-size:11px}
+
+  /* Remaining audit/history tables may scroll locally, but signal that more content exists. */
+  .semantic-table-wrap:not(.desktop-finance-table){-webkit-overflow-scrolling:touch;overscroll-behavior-inline:contain;box-shadow:inset -10px 0 14px -14px rgba(32,55,91,.55)}
+  .receivables-table th:first-child,.receivables-table td:first-child{position:sticky;left:0;z-index:2;background:#f5f8fc;box-shadow:5px 0 9px -9px rgba(32,55,91,.55)}
+  .receivables-table th:first-child{z-index:3;background:#edf3fa}
 }
 
 @media(max-width:360px){
   .mobile-transaction-filters{grid-template-columns:1fr}
   .mobile-recurring-meta{grid-template-columns:1fr}
+  .quick-modal .generic-kind-grid>button{flex-basis:124px}
 }
 
 @media(max-width:680px) and (max-height:520px){
   .mobile-more-menu{max-height:calc(100dvh - 86px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))}
+  .quick-modal{max-height:calc(92dvh - env(safe-area-inset-top,0px));border-radius:20px}
 }
