@@ -67,6 +67,7 @@ function validateLegacyTransaction(value: unknown, name: string) {
   optionalText(value.fromAccountId, `${name}.fromAccountId`, 200);
   optionalText(value.toAccountId, `${name}.toAccountId`, 200);
   optionalText(value.category, `${name}.category`, 1_000);
+  optionalText(value.subcategory, `${name}.subcategory`, 1_000);
   optionalText(value.source, `${name}.source`, 1_000);
   optionalText(value.cell, `${name}.cell`, 200);
   optionalText(value.sheet, `${name}.sheet`, 500);
@@ -80,6 +81,30 @@ function validateAccount(value: unknown, name: string) {
   text(value.kind, `${name}.kind`, 100);
   optionalText(value.short, `${name}.short`, 100);
   if (value.excludeFromAvailable !== undefined && typeof value.excludeFromAvailable !== 'boolean') invalid(`Invalid ${name}.excludeFromAvailable.`);
+}
+
+function validateCardBank(value: unknown, name: string) {
+  if (!object(value)) invalid(`Invalid ${name}.`);
+  text(value.id, `${name}.id`, 100);
+  text(value.name, `${name}.name`, 500);
+  finiteNumber(value.order, `${name}.order`, 100_000);
+  if (value.custom !== undefined && typeof value.custom !== 'boolean') invalid(`Invalid ${name}.custom.`);
+}
+
+function validatePaymentCard(value: unknown, name: string) {
+  if (!object(value)) invalid(`Invalid ${name}.`);
+  text(value.id, `${name}.id`, 200);
+  text(value.bankId, `${name}.bankId`, 100);
+  text(value.nickname, `${name}.nickname`, 500);
+  oneOf(value.kind, ['debit','prepaid','credit'], `${name}.kind`);
+  oneOf(value.network, ['visa','mastercard','other'], `${name}.network`);
+  optionalText(value.holderName, `${name}.holderName`, 500);
+  optionalText(value.last4, `${name}.last4`, 4);
+  if (value.last4 !== undefined && value.last4 !== null && !/^\d{4}$/.test(String(value.last4))) invalid(`Invalid ${name}.last4.`);
+  optionalText(value.vaultRef, `${name}.vaultRef`, 500);
+  if (typeof value.active !== 'boolean') invalid(`Invalid ${name}.active.`);
+  text(value.createdAt, `${name}.createdAt`, 64);
+  text(value.updatedAt, `${name}.updatedAt`, 64);
 }
 
 function validateSnapshot(value: unknown, name: string) {
@@ -99,9 +124,11 @@ function validateRecurring(value: unknown, name: string) {
     finiteNumber(value.day, `${name}.day`, 31);
     if (!Number.isInteger(value.day) || value.day < 1 || value.day > 31) invalid(`Invalid ${name}.day.`);
   }
+  optionalText(value.firstExpectedDate, `${name}.firstExpectedDate`, 64);
   text(value.accountId, `${name}.accountId`, 200, true);
   text(value.category, `${name}.category`, 1_000, true);
   if (typeof value.active !== 'boolean') invalid(`Invalid ${name}.active.`);
+  if (value.status !== undefined) oneOf(value.status, ['active','paused','stopped'], `${name}.status`);
   optionalText(value.source, `${name}.source`, 1_000);
 }
 
@@ -132,6 +159,14 @@ function validateLoan(value: unknown, name: string) {
   }
   optionalText(value.source, `${name}.source`, 1_000);
   if (value.accountingMode !== undefined) oneOf(value.accountingMode, ['expense-per-installment', 'liability-repayment'], `${name}.accountingMode`);
+  if (value.kind !== undefined) oneOf(value.kind, ['installment','loan','self-loan'], `${name}.kind`);
+  optionalText(value.firstExpectedDate, `${name}.firstExpectedDate`, 64);
+  optionalText(value.defaultAccountId, `${name}.defaultAccountId`, 200);
+  if (value.forgivenAmount !== undefined && value.forgivenAmount !== null) {
+    finiteNumber(value.forgivenAmount, `${name}.forgivenAmount`);
+    if (value.forgivenAmount < 0 || value.forgivenAmount > value.total) invalid(`Invalid ${name}.forgivenAmount.`);
+  }
+  if (value.longTermRecurring !== undefined && typeof value.longTermRecurring !== 'boolean') invalid(`Invalid ${name}.longTermRecurring.`);
   if (value.schedule !== undefined) {
     array(value.schedule, `${name}.schedule`, 100_000);
     for (const [index, item] of value.schedule.entries()) {
@@ -164,6 +199,7 @@ function validateSplitPart(value: unknown, name: string) {
   text(value.id, `${name}.id`, 200);
   text(value.label, `${name}.label`, 1_000, true);
   text(value.category, `${name}.category`, 1_000, true);
+  optionalText(value.subcategory, `${name}.subcategory`, 1_000);
   finiteNumber(value.amount, `${name}.amount`);
   if (value.kind !== undefined) oneOf(value.kind, PART_KINDS, `${name}.kind`);
 }
@@ -176,6 +212,7 @@ function validateEvent(value: unknown, name: string) {
   finiteNumber(value.amount, `${name}.amount`);
   text(value.note, `${name}.note`, 20_000, true);
   optionalText(value.category, `${name}.category`, 1_000);
+  optionalText(value.subcategory, `${name}.subcategory`, 1_000);
   optionalText(value.accountId, `${name}.accountId`, 200);
   optionalText(value.fromAccountId, `${name}.fromAccountId`, 200);
   optionalText(value.toAccountId, `${name}.toAccountId`, 200);
@@ -184,6 +221,8 @@ function validateEvent(value: unknown, name: string) {
   optionalText(value.createdAt, `${name}.createdAt`, 64);
   optionalText(value.updatedAt, `${name}.updatedAt`, 64);
   optionalText(value.loanId, `${name}.loanId`, 200);
+  optionalText(value.recurringId, `${name}.recurringId`, 200);
+  if (value.savingSource !== undefined) oneOf(value.savingSource, ['pay_and_save','manual_transfer','cash_offset'], `${name}.savingSource`);
   optionalNumber(value.savingAmount, `${name}.savingAmount`);
   optionalNumber(value.receivableDelta, `${name}.receivableDelta`);
   optionalNumber(value.creditDelta, `${name}.creditDelta`);
@@ -327,6 +366,18 @@ export function validateFinanceData(value: unknown): asserts value is FinanceDat
 
   array(state.lendingCustom, 'state.lendingCustom', 100_000);
   validateSettings(state.settings);
+
+  if (state.cardBanks !== undefined) {
+    array(state.cardBanks, 'state.cardBanks', 100);
+    state.cardBanks.forEach((item, index) => validateCardBank(item, `state.cardBanks[${index}]`));
+    ensureUniqueIds(state.cardBanks, 'state.cardBanks');
+  }
+
+  if (state.cards !== undefined) {
+    array(state.cards, 'state.cards', 1_000);
+    state.cards.forEach((item, index) => validatePaymentCard(item, `state.cards[${index}]`));
+    ensureUniqueIds(state.cards, 'state.cards');
+  }
 
   if (state.events !== undefined) {
     array(state.events, 'state.events', 100_000);
