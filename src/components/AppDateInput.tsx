@@ -1,0 +1,26 @@
+import { CalendarDays, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { useEffect, useId, useMemo, useState, type InputHTMLAttributes, type KeyboardEvent } from 'react';
+import { createPortal } from 'react-dom';
+import { useModalFocus } from '../hooks/useModalFocus';
+
+type ChangeLike={target:{value:string}};
+type Props=Omit<InputHTMLAttributes<HTMLInputElement>,'value'|'onChange'|'readOnly'|'type'> & {value:string;onChange:(event:ChangeLike)=>void};
+const greekDate=new Intl.DateTimeFormat('el-GR',{day:'2-digit',month:'short',year:'numeric',timeZone:'UTC'});
+const greekMonth=new Intl.DateTimeFormat('el-GR',{month:'long',year:'numeric',timeZone:'UTC'});
+const greekLong=new Intl.DateTimeFormat('el-GR',{weekday:'long',day:'numeric',month:'long',year:'numeric',timeZone:'UTC'});
+function isoDate(date:Date){return `${date.getUTCFullYear()}-${String(date.getUTCMonth()+1).padStart(2,'0')}-${String(date.getUTCDate()).padStart(2,'0')}`}
+function parseIso(value:string){const parsed=/^\d{4}-\d{2}-\d{2}$/.test(value)?new Date(`${value}T00:00:00.000Z`):new Date();return Number.isNaN(parsed.getTime())?new Date():parsed}
+function addDays(value:string,days:number){const date=parseIso(value);date.setUTCDate(date.getUTCDate()+days);return isoDate(date)}
+function monthValue(date:Date){return `${date.getUTCFullYear()}-${String(date.getUTCMonth()+1).padStart(2,'0')}`}
+function human(value:string){return value?greekDate.format(parseIso(value)):'Επίλεξε ημερομηνία'}
+
+export function AppDateInput({value,onChange,disabled=false,min,max,'aria-label':ariaLabel,className='',...inputProps}:Props){
+ const [open,setOpen]=useState(false);const [month,setMonth]=useState(()=>monthValue(parseIso(value)));const id=useId();const dialogId=`owned-date-${id.replace(/:/g,'')}`;const ref=useModalFocus<HTMLElement>(open,value?`[data-date="${value}"]`:'[data-today="true"]');
+ useEffect(()=>{if(open)setMonth(monthValue(parseIso(value)))},[open,value]);
+ const cells=useMemo(()=>{const [year,monthNumber]=month.split('-').map(Number);const first=new Date(Date.UTC(year,monthNumber-1,1));const offset=(first.getUTCDay()+6)%7;first.setUTCDate(first.getUTCDate()-offset);return Array.from({length:42},(_,index)=>{const date=new Date(first);date.setUTCDate(first.getUTCDate()+index);const iso=isoDate(date);return {iso,date,inMonth:date.getUTCMonth()===monthNumber-1,disabled:Boolean((min&&iso<min)||(max&&iso>max))}})},[month,min,max]);
+ const close=()=>setOpen(false);const choose=(next:string)=>{if((min&&next<min)||(max&&next>max))return;onChange({target:{value:next}});close()};
+ const shiftMonth=(delta:number)=>{const [year,monthNumber]=month.split('-').map(Number);setMonth(monthValue(new Date(Date.UTC(year,monthNumber-1+delta,1))))};
+ const moveFocus=(event:KeyboardEvent<HTMLElement>,from:string)=>{const delta=event.key==='ArrowLeft'?-1:event.key==='ArrowRight'?1:event.key==='ArrowUp'?-7:event.key==='ArrowDown'?7:0;if(!delta)return;event.preventDefault();const next=addDays(from,delta);const nextDate=parseIso(next);const nextMonth=monthValue(nextDate);if(nextMonth!==month)setMonth(nextMonth);queueMicrotask(()=>ref.current?.querySelector<HTMLButtonElement>(`[data-date="${next}"]`)?.focus())};
+ const portal=open&&typeof document!=='undefined'?createPortal(<div className="owned-popover-backdrop" onMouseDown={close}><section ref={ref} id={dialogId} className="owned-popover owned-date-popover neo-raised" role="dialog" aria-modal="true" aria-label={ariaLabel||'Επιλογή ημερομηνίας'} tabIndex={-1} onMouseDown={event=>event.stopPropagation()} onKeyDown={event=>{if(event.key==='Escape'){event.preventDefault();close()}}}><header><button type="button" className="icon-button" aria-label="Προηγούμενος μήνας" onClick={()=>shiftMonth(-1)}><ChevronLeft size={18}/></button><b>{greekMonth.format(parseIso(`${month}-01`))}</b><div><button type="button" className="icon-button" aria-label="Επόμενος μήνας" onClick={()=>shiftMonth(1)}><ChevronRight size={18}/></button><button type="button" className="icon-button" aria-label="Κλείσιμο ημερολογίου" onClick={close}><X size={17}/></button></div></header><div className="owned-weekdays" aria-hidden="true">{['Δε','Τρ','Τε','Πε','Πα','Σα','Κυ'].map(day=><span key={day}>{day}</span>)}</div><div className="owned-calendar-grid" role="grid" aria-label={ariaLabel||'Ημερολόγιο'}>{cells.map(cell=><button type="button" role="gridcell" data-date={cell.iso} data-today={cell.iso===isoDate(new Date())?'true':undefined} className={`${cell.inMonth?'':'outside'} ${cell.iso===value?'selected':''}`.trim()} aria-selected={cell.iso===value} aria-label={greekLong.format(cell.date)} disabled={cell.disabled} key={cell.iso} onClick={()=>choose(cell.iso)} onKeyDown={event=>moveFocus(event,cell.iso)}>{cell.date.getUTCDate()}</button>)}</div></section></div>,document.body):null;
+ return <><span className={`owned-input-shell owned-date-shell ${className}`.trim()}><input {...inputProps} className="owned-input" readOnly disabled={disabled} value={human(value)} aria-label={ariaLabel} aria-haspopup="dialog" aria-expanded={open} aria-controls={dialogId} onClick={()=>!disabled&&setOpen(true)} onKeyDown={event=>{if(disabled)return;if(['Enter',' ','ArrowDown'].includes(event.key)){event.preventDefault();setOpen(true)}}}/><CalendarDays size={16} aria-hidden="true"/></span>{portal}</>;
+}
