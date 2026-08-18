@@ -1,10 +1,10 @@
 import { CreditCard, ReceiptText, WalletCards, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useModalFocus } from '../hooks/useModalFocus';
-import { genericCategoryTree, subcategoriesFor } from '../lib/categories';
+import { categoryPath, genericCategoryTree, subcategoriesFor } from '../lib/categories';
 import { accountBalances, allAccounts, createEvent } from '../lib/domain';
 import { money, shortDate } from '../lib/format';
-import { accountDisplayName, categoryPath } from '../lib/ui';
+import { accountDisplayName } from '../lib/ui';
 import type { FinanceData, FinanceEvent } from '../types';
 
 export function CreditCardPage({data,asOf,onCreateEvent}:{data:FinanceData;asOf:string;onCreateEvent:(event:FinanceEvent)=>void}){
