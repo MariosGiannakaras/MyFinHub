@@ -2,7 +2,9 @@ name: Release Vault Key Bootstrap
 
 on:
   push:
-    branches: [release/88-vercel-key-bootstrap]
+    branches: [develop]
+    paths:
+      - .github/workflows/release-vault-key-bootstrap.yml
 
 permissions:
   contents: read
