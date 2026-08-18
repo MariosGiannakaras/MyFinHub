@@ -24,7 +24,7 @@ const has=(text:string,patterns:string[])=>patterns.some(pattern=>text.includes(
 const specificRules:Array<{key:FinanceIconKey;tone:FinanceIconTone;patterns:string[]}>=[
   {key:'supermarket',tone:'amber',patterns:['supermarket','σουπερ μαρκετ','σουπερμαρκετ','grocery','lidl','σκλαβεν','ab βασιλοπουλ','μασουτ','market in']},
   {key:'coffee',tone:'amber',patterns:['καφε','coffee','espresso','cappuccino','freddo','starbucks','coffee island','mikel','everest coffee']},
-  {key:'pharmacy',tone:'teal',patterns:['φαρμακ','pharmacy','drugstore']},
+  {key:'pharmacy',tone:'teal',patterns:['φαρμακ','pharmacy']},
   {key:'doctor',tone:'teal',patterns:['γιατρ','ιατρ','doctor','clinic','κλινικ','οδοντ','dentist','φυσιοθεραπε']},
   {key:'fuel',tone:'amber',patterns:['βενζ','καυσιμ','fuel','shell','revoil','avins','bp ','eko ','ελιν']},
   {key:'parking',tone:'slate',patterns:['parking','παρκιν','σταθμευσ']},
@@ -48,7 +48,7 @@ const specificRules:Array<{key:FinanceIconKey;tone:FinanceIconTone;patterns:stri
   {key:'pet',tone:'teal',patterns:['κτηνιατρ','pet','σκυλ','γατ','zooplus']},
   {key:'entertainment',tone:'violet',patterns:['σινεμα','cinema','movie','θεατρ','game','playstation','xbox','steam','gaming']},
   {key:'tax',tone:'slate',patterns:['φορο','tax','ααδε','τελη κυκλοφοριας','δημοσ']},
-  {key:'salary',tone:'gold',patterns:['μισθ','salary','payroll','υπερωρ','bonus','μπonus','δωρο χριστουγεννων','δωρο πασχα','επιδομα']},
+  {key:'salary',tone:'gold',patterns:['μισθ','salary','payroll','υπερωρ','bonus','δωρο χριστουγεννων','δωρο πασχα','επιδομα']},
   {key:'vehicle',tone:'amber',patterns:['αυτοκινη','οχημα','μηχαν','motorcycle','scooter','honda','forza','car ']},
   {key:'subscription',tone:'violet',patterns:['συνδρομ','subscription','monthly plan','annual plan']},
   {key:'installment',tone:'violet',patterns:['δοση','δοσεις','installment','δανειο','loan']},
@@ -75,25 +75,39 @@ function matchRules(text:string,rules= specificRules):FinanceIconSpec|null{
   return null;
 }
 
+const broadKeys=new Set<FinanceIconKey>(['shopping','subscription','installment']);
+function matchSpecific(text:string){
+  const match=matchRules(text);
+  return match&&!broadKeys.has(match.key)?match:null;
+}
+
 export function financeIconSpec(input:FinanceIconInput):FinanceIconSpec{
   const kind=normalize(input.kind);
   if(kind==='transfer')return {key:'transfer',tone:'blue'};
   if(kind==='saving cash offset'||kind==='saving_cash_offset')return {key:'saving',tone:'cyan'};
   if(kind==='withdrawal')return {key:'cash',tone:'blue'};
   if(kind==='refund')return {key:'refund',tone:'slate'};
-  if(kind==='reconciliation')return {key:'reconciliation',tone:'amber'};
+  if(kind==='reconciliation'||kind==='adjustment')return {key:'reconciliation',tone:'amber'};
   if(kind==='lending'||kind==='repayment')return {key:'lending',tone:'violet'};
   if(kind==='card payment'||kind==='card_payment')return {key:'card',tone:'blue'};
 
-  for(const source of [input.note,input.subcategory]){
-    const matched=matchRules(normalize(source));
-    if(matched)return matched;
-  }
-  const categoryText=normalize(input.category);
-  const categorySpecific=matchRules(categoryText);
+  const note=normalize(input.note);
+  const subcategory=normalize(input.subcategory);
+  const category=normalize(input.category);
+  const noteSpecific=matchSpecific(note);
+  if(noteSpecific)return noteSpecific;
+  const subSpecific=matchSpecific(subcategory);
+  if(subSpecific)return subSpecific;
+  const categorySpecific=matchSpecific(category);
   if(categorySpecific)return categorySpecific;
-  const categoryFallback=matchRules(categoryText,categoryRules);
+  const subBroad=matchRules(subcategory);
+  if(subBroad)return subBroad;
+  const categoryFallback=matchRules(category,categoryRules);
   if(categoryFallback)return categoryFallback;
+  const categoryBroad=matchRules(category);
+  if(categoryBroad)return categoryBroad;
+  const noteBroad=matchRules(note);
+  if(noteBroad)return noteBroad;
 
   if(kind==='card purchase'||kind==='card_purchase')return {key:'card',tone:'red'};
   if(kind==='split')return {key:'split',tone:'violet'};
