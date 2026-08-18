@@ -23,6 +23,7 @@ export function useFinance() {
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<SaveState>('loading');
   const [undoDepth, setUndoDepth] = useState(0);
+  const [redoDepth, setRedoDepth] = useState(0);
   const revisionRef = useRef('');
   const dataRef = useRef<FinanceData | null>(null);
   const exclusiveOperation = useRef(false);
@@ -32,9 +33,15 @@ export function useFinance() {
   const remoteReloading = useRef(false);
   const coordinatorRef = useRef<LatestValueQueue<FinanceData> | null>(null);
   const undoStackRef = useRef<FinanceData[]>([]);
+  const redoStackRef = useRef<FinanceData[]>([]);
 
   const assignData = useCallback((next: FinanceData | null) => { dataRef.current = next; setData(next); }, []);
-  const clearUndo = useCallback(() => { undoStackRef.current = []; setUndoDepth(0); }, []);
+  const clearHistory = useCallback(() => {
+    undoStackRef.current = [];
+    redoStackRef.current = [];
+    setUndoDepth(0);
+    setRedoDepth(0);
+  }, []);
 
   const applyEnvelope = useCallback((res: Awaited<ReturnType<typeof loadData>>) => {
     const migrated = productData(res.data);
@@ -44,9 +51,9 @@ export function useFinance() {
     setFilePath(res.filePath);
     setLastSavedAt(res.lastSavedAt);
     lastSaveFailed.current = false;
-    clearUndo();
+    clearHistory();
     setSaveState('saved');
-  }, [assignData, clearUndo]);
+  }, [assignData, clearHistory]);
 
   const reload = useCallback(async () => {
     setSaveState('loading');
@@ -119,11 +126,9 @@ export function useFinance() {
     return stamped;
   }, [assignData, coordinator]);
 
-  const pushUndo = useCallback((current: FinanceData) => {
-    const stack = undoStackRef.current;
+  const pushBounded = useCallback((stack: FinanceData[], current: FinanceData) => {
     stack.push(current);
     if (stack.length > MAX_UNDO_STATES) stack.splice(0, stack.length - MAX_UNDO_STATES);
-    setUndoDepth(stack.length);
   }, []);
 
   const update = useCallback((recipe: (current: FinanceData) => FinanceData) => {
@@ -132,19 +137,38 @@ export function useFinance() {
     if (!current || state === 'conflict' || state === 'error' || state === 'loading' || exclusiveOperation.current) return;
     const next = recipe(current);
     if (next === current) return;
-    pushUndo(current);
+    pushBounded(undoStackRef.current, current);
+    setUndoDepth(undoStackRef.current.length);
+    redoStackRef.current = [];
+    setRedoDepth(0);
     persist(next);
-  }, [persist, pushUndo]);
+  }, [persist, pushBounded]);
 
   const undo = useCallback(() => {
     const state = saveStateRef.current;
-    if (state === 'conflict' || state === 'error' || state === 'loading' || exclusiveOperation.current) return false;
+    const current = dataRef.current;
+    if (!current || state === 'conflict' || state === 'error' || state === 'loading' || exclusiveOperation.current) return false;
     const previous = undoStackRef.current.pop();
     if (!previous) return false;
+    pushBounded(redoStackRef.current, current);
     setUndoDepth(undoStackRef.current.length);
+    setRedoDepth(redoStackRef.current.length);
     persist(previous);
     return true;
-  }, [persist]);
+  }, [persist, pushBounded]);
+
+  const redo = useCallback(() => {
+    const state = saveStateRef.current;
+    const current = dataRef.current;
+    if (!current || state === 'conflict' || state === 'error' || state === 'loading' || exclusiveOperation.current) return false;
+    const next = redoStackRef.current.pop();
+    if (!next) return false;
+    pushBounded(undoStackRef.current, current);
+    setUndoDepth(undoStackRef.current.length);
+    setRedoDepth(redoStackRef.current.length);
+    persist(next);
+    return true;
+  }, [persist, pushBounded]);
 
   const doImport = useCallback(async (incoming: FinanceData) => {
     if (exclusiveOperation.current) throw new Error('Υπάρχει ήδη λειτουργία αποθήκευσης σε εξέλιξη.');
@@ -176,6 +200,7 @@ export function useFinance() {
   }, [coordinator]);
 
   const canUndo = undoDepth > 0 && saveState !== 'conflict' && saveState !== 'error' && saveState !== 'loading';
+  const canRedo = redoDepth > 0 && saveState !== 'conflict' && saveState !== 'error' && saveState !== 'loading';
 
-  return useMemo(() => ({ data, revision, filePath, lastSavedAt, saveState, update, reload, undo, canUndo, importData: doImport, createBackup: doBackup }), [data, revision, filePath, lastSavedAt, saveState, update, reload, undo, canUndo, doImport, doBackup]);
+  return useMemo(() => ({ data, revision, filePath, lastSavedAt, saveState, update, reload, undo, redo, canUndo, canRedo, importData: doImport, createBackup: doBackup }), [data, revision, filePath, lastSavedAt, saveState, update, reload, undo, redo, canUndo, canRedo, doImport, doBackup]);
 }
