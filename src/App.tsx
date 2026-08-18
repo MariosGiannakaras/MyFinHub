@@ -1,15 +1,16 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { AppShell, type PageId } from './components/AppShell';
 import { AppSkeleton, PageSkeleton } from './components/AppSkeleton';
 import { LoginScreen } from './components/LoginScreen';
 import { MfaScreen } from './components/MfaScreen';
 import { PageErrorBoundary } from './components/PageErrorBoundary';
+import { PeriodControl } from './components/PeriodControl';
 import { PersistenceNotice } from './components/PersistenceNotice';
 import { QuickAdd, type QuickPrefill } from './components/QuickAdd';
 import { useFinance } from './hooks/useFinance';
 import { useLocalDate } from './hooks/useLocalDate';
 import { useSession } from './hooks/useSession';
-import { accountBalances, createEvent, reviewSuggestions } from './lib/domain';
+import { accountBalances, createEvent } from './lib/domain';
 import { reportingMonthForDate } from './lib/localDate';
 import type { EventKind, FinanceEvent, Loan, RecurringItem, ReviewDecision } from './types';
 
@@ -24,6 +25,8 @@ const ReportsPage = lazy(() => import('./pages/ReportsPage').then((module) => ({
 const SettingsPage = lazy(() => import('./pages/SettingsPage').then((module) => ({ default: module.SettingsPage })));
 
 const PAGE_IDS: PageId[] = ['dashboard','transactions','review','savings','credit','lending','recurring','reports','settings'];
+const GENERIC_ENTRY_PAGES = new Set<PageId>(['dashboard','transactions']);
+const PERIOD_PAGES = new Set<PageId>(['dashboard','transactions','savings','reports']);
 function routeFromHash() {
   const raw=location.hash.replace(/^#\/?/,'').trim();
   if(!raw)return {page:'dashboard' as PageId,notFound:false};
@@ -31,14 +34,8 @@ function routeFromHash() {
   return {page:'dashboard' as PageId,notFound:true};
 }
 function pageHash(page:PageId){return `#/${page}`;}
-
-function PageLoading() {
-  return <PageSkeleton/>;
-}
-
-function NotFound({onHome}:{onHome:()=>void}){
-  return <main className="login-screen"><section className="not-found neo-raised" aria-labelledby="not-found-title"><span className="eyebrow">404 · PRIVATE ROUTE</span><h1 id="not-found-title">Η ενότητα δεν υπάρχει</h1><p>Η διεύθυνση δεν αντιστοιχεί σε ενότητα του RheomIQ. Δεν εμφανίζονται οικονομικά στοιχεία σε αυτή την οθόνη.</p><div className="editor-actions"><button type="button" className="save-button" onClick={onHome}>Επιστροφή στο Dashboard</button></div></section></main>;
-}
+function PageLoading(){return <PageSkeleton/>;}
+function NotFound({onHome}:{onHome:()=>void}){return <main className="login-screen"><section className="not-found neo-raised" aria-labelledby="not-found-title"><span className="eyebrow">404 · PRIVATE ROUTE</span><h1 id="not-found-title">Η ενότητα δεν υπάρχει</h1><p>Η διεύθυνση δεν αντιστοιχεί σε ενότητα του RheomIQ. Δεν εμφανίζονται οικονομικά στοιχεία σε αυτή την οθόνη.</p><div className="editor-actions"><button type="button" className="save-button" onClick={onHome}>Επιστροφή στο Dashboard</button></div></section></main>}
 
 function FinanceApp({userEmail,onLogout}:{userEmail:string|null;onLogout:()=>void}){
   const finance=useFinance();
@@ -53,41 +50,15 @@ function FinanceApp({userEmail,onLogout}:{userEmail:string|null;onLogout:()=>voi
   const [month,setMonth]=useState(()=>today.slice(0,7));
   const [monthIsManual,setMonthIsManual]=useState(false);
 
-  const navigate=(next:PageId,replace=false)=>{
-    const hash=pageHash(next);
-    if(location.hash!==hash){if(replace)history.replaceState(null,'',hash);else history.pushState(null,'',hash);}
-    setNotFound(false);setPage(next);
-  };
-
-  useEffect(()=>{
-    const sync=()=>{const next=routeFromHash();setPage(next.page);setNotFound(next.notFound)};
-    window.addEventListener('hashchange',sync);window.addEventListener('popstate',sync);
-    return()=>{window.removeEventListener('hashchange',sync);window.removeEventListener('popstate',sync)};
-  },[]);
-
-  useEffect(()=>{
-    const onKey=(e:KeyboardEvent)=>{
-      if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){
-        e.preventDefault();
-        if(quickOpen)return;
-        setEditingEventId(null);setQuickPrefill(null);setQuickKind('expense');setQuickOpen(true);
-      }
-    };
-    addEventListener('keydown',onKey); return()=>removeEventListener('keydown',onKey);
-  },[quickOpen]);
-
+  const navigate=(next:PageId,replace=false)=>{const hash=pageHash(next);if(location.hash!==hash){if(replace)history.replaceState(null,'',hash);else history.pushState(null,'',hash)}setNotFound(false);setPage(next)};
+  useEffect(()=>{const sync=()=>{const next=routeFromHash();setPage(next.page);setNotFound(next.notFound)};window.addEventListener('hashchange',sync);window.addEventListener('popstate',sync);return()=>{window.removeEventListener('hashchange',sync);window.removeEventListener('popstate',sync)}},[]);
+  useEffect(()=>{const onKey=(e:KeyboardEvent)=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){if(!GENERIC_ENTRY_PAGES.has(page))return;e.preventDefault();if(quickOpen)return;setEditingEventId(null);setQuickPrefill(null);setQuickKind('expense');setQuickOpen(true)}};addEventListener('keydown',onKey);return()=>removeEventListener('keydown',onKey)},[quickOpen,page]);
   useEffect(()=>{setMonth(current=>reportingMonthForDate(current,today,monthIsManual));},[today,monthIsManual]);
   useEffect(()=>{if(notFound)return;requestAnimationFrame(()=>{const heading=document.querySelector<HTMLElement>('#main-workspace h1');if(heading){heading.tabIndex=-1;heading.focus({preventScroll:true})}})},[page,notFound]);
 
   const data=finance.data;
-  useEffect(()=>{
-    const mode=data?.state.settings.motion||'system';
-    document.documentElement.dataset.motion=mode;
-    return()=>{ delete document.documentElement.dataset.motion; };
-  },[data?.state.settings.motion]);
-  const reviews=useMemo(()=>data?reviewSuggestions(data).length:0,[data]);
+  useEffect(()=>{document.documentElement.dataset.motion='full';return()=>{delete document.documentElement.dataset.motion}},[]);
   if(!data)return <AppSkeleton/>;
-
   if(notFound)return <NotFound onHome={()=>navigate('dashboard',true)}/>;
 
   const addEvent=(event:FinanceEvent)=>finance.update(current=>{const events=current.state.events??[];const exists=events.some(e=>e.id===event.id);return {...current,state:{...current.state,events:exists?events.map(e=>e.id===event.id?event:e):[...events,event]}}});
@@ -102,7 +73,7 @@ function FinanceApp({userEmail,onLogout}:{userEmail:string|null;onLogout:()=>voi
   const balance=(accountId:string)=>accountBalances(data,today)[accountId]||0;
   const recover=()=>{if((finance.saveState==='error'||finance.saveState==='conflict')&&!window.confirm('Η επαναφόρτωση θα απορρίψει τυχόν τοπικές αλλαγές που δεν αποθηκεύτηκαν. Να φορτωθεί η τελευταία έκδοση από τη βάση;'))return;void finance.reload()};
 
-  const content=page==='dashboard'?<DashboardPage data={data} month={month} asOf={today} motionMode={data.state.settings.motion||'system'} onQuickAdd={(prefill?:QuickPrefill)=>openQuick('expense',prefill||null)} onReview={()=>navigate('review')} onTransactions={()=>navigate('transactions')}/>
+  const content=page==='dashboard'?<DashboardPage data={data} month={month} asOf={today} motionMode="full" onQuickAdd={(prefill?:QuickPrefill)=>openQuick('expense',prefill||null)} onTransactions={()=>navigate('transactions')}/>
     :page==='transactions'?<TransactionsPage data={data} month={month} onEditEvent={editEvent} onDeleteEvent={deleteEvent}/>
     :page==='review'?<ReviewPage data={data} onDecision={decide}/>
     :page==='savings'?<SavingsPage data={data} month={month} asOf={today} onQuickAdd={()=>openQuick('saving_cash_offset')}/>
@@ -110,23 +81,9 @@ function FinanceApp({userEmail,onLogout}:{userEmail:string|null;onLogout:()=>voi
     :page==='lending'?<LendingPage data={data} onQuickAdd={()=>openQuick('lending')}/>
     :page==='recurring'?<RecurringPage data={data} onUpsert={upsertRecurring} onDelete={deleteRecurring}/>
     :page==='reports'?<ReportsPage data={data} month={month}/>
-    :<SettingsPage data={data} filePath={finance.filePath} lastSavedAt={finance.lastSavedAt} onImport={finance.importData} onBackup={finance.createBackup} onSettings={settings=>finance.update(c=>({...c,state:{...c.state,settings}}))}/>;
+    :<SettingsPage data={data} filePath={finance.filePath} lastSavedAt={finance.lastSavedAt} onImport={finance.importData} onBackup={finance.createBackup} onSettings={settings=>finance.update(c=>({...c,state:{...c.state,settings:{...settings,motion:'full'}}}))}/>;
 
-  return <>
-    <AppShell page={page} onPage={navigate} onQuickAdd={()=>openQuick('expense')} onRefresh={()=>{void finance.reload()}} onUndo={()=>{finance.undo()}} canUndo={finance.canUndo} saveState={finance.saveState} filePath={finance.filePath} reviewCount={reviews} motionMode={data.state.settings.motion||'system'} userEmail={userEmail} onLogout={onLogout}>
-      <PersistenceNotice saveState={finance.saveState} onRecover={recover}/>
-      <div className="month-toolbar"><label>Περίοδος <input type="month" value={month} onChange={e=>{setMonth(e.target.value);setMonthIsManual(true)}}/></label><span>Οι κινήσεις μετά την {today.split('-').reverse().join('/')} δεν επηρεάζουν το σημερινό balance.</span></div>
-      {finance.saveState==='loading'?<PageSkeleton/>:<PageErrorBoundary resetKey={page} onDashboard={()=>navigate('dashboard')}><Suspense fallback={<PageLoading/>}>{content}</Suspense></PageErrorBoundary>}
-    </AppShell>
-    <QuickAdd open={quickOpen} data={data} asOf={today} motionMode={data.state.settings.motion||'system'} initial={(data.state.events??[]).find(e=>e.id===editingEventId)||null} initialKind={quickKind} prefill={quickPrefill} onClose={()=>{setQuickOpen(false);setEditingEventId(null);setQuickPrefill(null)}} onCreate={addEvent} currentBalance={balance}/>
-  </>;
+  return <><AppShell page={page} onPage={navigate} onQuickAdd={()=>openQuick('expense')} onRefresh={()=>{void finance.reload()}} onUndo={()=>{finance.undo()}} canUndo={finance.canUndo} saveState={finance.saveState} filePath={finance.filePath} motionMode="full" userEmail={userEmail} onLogout={onLogout}><PersistenceNotice saveState={finance.saveState} onRecover={recover}/>{PERIOD_PAGES.has(page)?<div className="period-row"><PeriodControl month={month} onChange={next=>{setMonth(next);setMonthIsManual(true)}}/><span>Στοιχεία περιόδου</span></div>:null}{finance.saveState==='loading'?<PageSkeleton/>:<PageErrorBoundary resetKey={page} onDashboard={()=>navigate('dashboard')}><Suspense fallback={<PageLoading/>}>{content}</Suspense></PageErrorBoundary>}</AppShell><QuickAdd open={quickOpen} data={data} asOf={today} motionMode="full" initial={(data.state.events??[]).find(e=>e.id===editingEventId)||null} initialKind={quickKind} prefill={quickPrefill} onClose={()=>{setQuickOpen(false);setEditingEventId(null);setQuickPrefill(null)}} onCreate={addEvent} currentBalance={balance}/></>;
 }
 
-export default function App(){
-  const session=useSession();
-  if(session.state==='loading')return <div className="boot-screen"><img src="/brand/icon-192.png" alt="RheomIQ"/><div className="boot-pulse"/><b>RheomIQ</b><span>Έλεγχος ασφαλούς συνεδρίας…</span></div>;
-  if(session.state==='error')return <div className="boot-screen"><img src="/brand/icon-192.png" alt="RheomIQ"/><b>RheomIQ</b><span>{session.error||'Δεν ήταν δυνατός ο έλεγχος της συνεδρίας.'}</span><button className="secondary" type="button" onClick={()=>void session.refresh()}>Δοκιμή ξανά</button></div>;
-  if(session.state==='mfa'||session.state==='mfa-enroll')return <MfaScreen mode={session.state==='mfa-enroll'?'enroll':'challenge'} email={session.email} error={session.error} onEnroll={session.enrollMfa} onVerify={session.verifyMfa} onLogout={async()=>{await session.logout();}}/>;
-  if(session.state!=='authenticated')return <LoginScreen onLogin={session.login} error={session.error}/>;
-  return <><FinanceApp userEmail={session.email} onLogout={()=>{void session.logout();}}/>{session.error?<div className="session-error-banner" role="alert">{session.error}</div>:null}</>;
-}
+export default function App(){const session=useSession();if(session.state==='loading')return <div className="boot-screen"><img src="/brand/icon-192.png" alt="RheomIQ"/><div className="boot-pulse"/><b>RheomIQ</b><span>Έλεγχος ασφαλούς συνεδρίας…</span></div>;if(session.state==='error')return <div className="boot-screen"><img src="/brand/icon-192.png" alt="RheomIQ"/><b>RheomIQ</b><span>{session.error||'Δεν ήταν δυνατός ο έλεγχος της συνεδρίας.'}</span><button className="secondary" type="button" onClick={()=>void session.refresh()}>Δοκιμή ξανά</button></div>;if(session.state==='mfa'||session.state==='mfa-enroll')return <MfaScreen mode={session.state==='mfa-enroll'?'enroll':'challenge'} email={session.email} error={session.error} onEnroll={session.enrollMfa} onVerify={session.verifyMfa} onLogout={async()=>{await session.logout()}}/>;if(session.state!=='authenticated')return <LoginScreen onLogin={session.login} error={session.error}/>;return <><FinanceApp userEmail={session.email} onLogout={()=>{void session.logout()}}/>{session.error?<div className="session-error-banner" role="alert">{session.error}</div>:null}</>}
