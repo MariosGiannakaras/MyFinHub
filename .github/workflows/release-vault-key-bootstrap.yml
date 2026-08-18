@@ -1,6 +1,6 @@
 name: Release Vault Key Bootstrap
 
-# One-shot release #88 trigger. Remove this workflow immediately after it reports its result.
+# One-shot release #88 diagnostic. Remove this workflow immediately after it reports its result.
 on:
   push:
     branches: [develop]
@@ -29,13 +29,14 @@ jobs:
 
           post_commit_status() {
             local state="$1"
-            local description="$2"
-            payload="$(STATE="$state" DESCRIPTION="$description" python - <<'PY'
+            local context="$2"
+            local description="$3"
+            payload="$(STATE="$state" CONTEXT="$context" DESCRIPTION="$description" python - <<'PY'
           import json
           import os
           print(json.dumps({
               "state": os.environ["STATE"],
-              "context": "release/card-vault-bootstrap",
+              "context": os.environ["CONTEXT"],
               "description": os.environ["DESCRIPTION"]
           }))
           PY
@@ -50,10 +51,10 @@ jobs:
               >/dev/null
           }
 
-          post_commit_status pending "Configuring the initial Vercel Production card-vault key."
+          post_commit_status pending "release/card-vault-bootstrap/running" "Configuring the initial Vercel Production card-vault key."
 
           if [[ -z "${VERCEL_TOKEN:-}" ]]; then
-            post_commit_status failure "Blocked: repository VERCEL_TOKEN secret is not configured."
+            post_commit_status failure "release/card-vault-bootstrap/missing-vercel-token" "Repository VERCEL_TOKEN secret is not configured."
             exit 10
           fi
 
@@ -95,8 +96,8 @@ jobs:
             --data-binary "$payload")"
 
           if [[ "$http_code" != "200" && "$http_code" != "201" ]]; then
-            post_commit_status failure "Vercel environment update failed with HTTP ${http_code}."
+            post_commit_status failure "release/card-vault-bootstrap/vercel-http-${http_code}" "Vercel environment update failed with HTTP ${http_code}."
             exit 12
           fi
 
-          post_commit_status success "Sensitive Production card-vault variables configured."
+          post_commit_status success "release/card-vault-bootstrap/success" "Sensitive Production card-vault variables configured."
