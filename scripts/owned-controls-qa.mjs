@@ -29,12 +29,12 @@ try{
   console.log('Owned controls QA: Quick Entry');
   await clickText('button','Γρήγορη προσθήκη');await waitFor("function(){return Boolean(document.querySelector('.quick-modal'))}",'Quick Entry');
   assert(await c.eval("document.querySelectorAll('.quick-modal select,.quick-modal input[type=\"date\"]').length===0"),'Quick Entry has no native select/date controls');
-  assert(await c.call("function(){const input=document.querySelector('.quick-modal .owned-select-shell input');if(!input)return false;input.click();return true}"),'Quick Entry owned select opens');
+  assert(await c.call("function(){const input=document.querySelector('.quick-modal .owned-select-shell input');if(!input)return false;input.focus();input.click();return true}"),'Quick Entry owned select opens');
   await waitFor("function(){return Boolean(document.querySelector('.owned-select-popover [role=\"listbox\"]'))}",'owned listbox');
   assert(await c.eval("document.querySelector('.owned-select-popover').contains(document.activeElement)"),'listbox traps focus');
   assert(await c.eval("(()=>{const r=document.querySelector('.owned-select-popover').getBoundingClientRect();return r.left>=0&&r.right<=innerWidth+1&&r.top>=0&&r.bottom<=innerHeight+1})()"),'listbox stays within viewport');
   await c.eval("document.querySelector('.owned-select-popover [role=\"option\"]')?.click()");
-  assert(await c.call("function(){const input=document.querySelector('.quick-modal .owned-date-shell input');if(!input)return false;input.click();return true}"),'Quick Entry owned date opens');
+  assert(await c.call("function(){const input=document.querySelector('.quick-modal .owned-date-shell input');if(!input)return false;input.focus();input.click();return true}"),'Quick Entry owned date opens');
   await waitFor("function(){return Boolean(document.querySelector('.owned-calendar-grid[role=\"grid\"]'))}",'owned calendar');
   assert(await c.eval("document.querySelector('.owned-date-popover').contains(document.activeElement)"),'calendar traps focus');
   assert(await c.eval("document.querySelectorAll('.owned-calendar-grid [role=\"gridcell\"]').length===42"),'calendar renders six-week grid');
