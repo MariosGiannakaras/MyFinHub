@@ -1,0 +1,81 @@
+name: Release Vault Key Bootstrap
+
+on:
+  pull_request:
+    branches: [develop]
+    paths:
+      - .github/workflows/release-vault-key-bootstrap.yml
+
+permissions:
+  contents: read
+
+jobs:
+  configure:
+    name: configure-production-card-vault-key
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+    steps:
+      - name: Configure sensitive Vercel Production variables
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${VERCEL_TOKEN:-}" ]]; then
+            echo "Missing required GitHub secret: VERCEL_TOKEN"
+            exit 10
+          fi
+          if [[ -z "${VERCEL_PROJECT_ID:-}" ]]; then
+            echo "Missing required GitHub secret: VERCEL_PROJECT_ID"
+            exit 11
+          fi
+
+          card_vault_key="$(openssl rand -hex 32)"
+          echo "::add-mask::$card_vault_key"
+
+          payload="$(CARD_VAULT_KEY="$card_vault_key" python - <<'PY'
+          import json
+          import os
+
+          print(json.dumps([
+              {
+                  "key": "CARD_VAULT_KEY",
+                  "value": os.environ["CARD_VAULT_KEY"],
+                  "type": "sensitive",
+                  "target": ["production"],
+                  "comment": "RheomIQ AES-256-GCM card vault key; release #88"
+              },
+              {
+                  "key": "CARD_VAULT_KEY_VERSION",
+                  "value": "1",
+                  "type": "sensitive",
+                  "target": ["production"],
+                  "comment": "RheomIQ card vault key version; release #88"
+              }
+          ]))
+          PY
+          )"
+
+          endpoint="https://api.vercel.com/v10/projects/${VERCEL_PROJECT_ID}/env?upsert=true"
+          if [[ -n "${VERCEL_ORG_ID:-}" ]]; then
+            endpoint="${endpoint}&teamId=${VERCEL_ORG_ID}"
+          fi
+
+          http_code="$(curl --silent --show-error \
+            --output /tmp/vercel-env-response.json \
+            --write-out '%{http_code}' \
+            --request POST \
+            --url "$endpoint" \
+            --header "Authorization: Bearer ${VERCEL_TOKEN}" \
+            --header 'Content-Type: application/json' \
+            --data-binary "$payload")"
+
+          if [[ "$http_code" != "200" && "$http_code" != "201" ]]; then
+            echo "Vercel environment update failed with HTTP ${http_code}."
+            exit 12
+          fi
+
+          echo "Configured CARD_VAULT_KEY and CARD_VAULT_KEY_VERSION for Vercel Production."
