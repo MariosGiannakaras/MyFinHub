@@ -57,7 +57,7 @@ function FinanceApp({userEmail,onLogout}:{userEmail:string|null;onLogout:()=>voi
     :page==='review'?<ReviewPage data={data} onDecision={decide}/>
     :page==='savings'?<SavingsPage data={data} month={month} asOf={today} onCreate={addEvent}/>
     :page==='credit'?<CreditLoansPage data={data} asOf={today} onCardPurchase={()=>openQuick('card_purchase')} onCardPayment={()=>openQuick('card_payment')} onEditEvent={editEvent} onUpsertLoan={upsertLoan} onPayLoan={payLoan}/>
-    :page==='lending'?<LendingPage data={data} onQuickAdd={()=>openQuick('lending')}/>
+    :page==='lending'?<LendingPage data={data} asOf={today} onCreateEvent={addEvent}/>
     :page==='recurring'?<RecurringPage data={data} asOf={today} onUpsert={upsertRecurring} onCreateEvent={addEvent}/>
     :page==='reports'?<ReportsPage data={data} month={month}/>
     :<SettingsPage data={data} filePath={finance.filePath} lastSavedAt={finance.lastSavedAt} onImport={finance.importData} onBackup={finance.createBackup} onSettings={settings=>finance.update(c=>({...c,state:{...c.state,settings:{...settings,motion:'full'}}}))}/>;
