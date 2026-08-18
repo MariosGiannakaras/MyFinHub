@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { AppShell, type PageId } from './components/AppShell';
+import { AppSkeleton, PageSkeleton } from './components/AppSkeleton';
 import { LoginScreen } from './components/LoginScreen';
 import { MfaScreen } from './components/MfaScreen';
 import { PageErrorBoundary } from './components/PageErrorBoundary';
@@ -32,7 +33,7 @@ function routeFromHash() {
 function pageHash(page:PageId){return `#/${page}`;}
 
 function PageLoading() {
-  return <div className="empty-state" role="status" aria-live="polite">Φόρτωση ενότητας…</div>;
+  return <PageSkeleton/>;
 }
 
 function NotFound({onHome}:{onHome:()=>void}){
@@ -85,7 +86,7 @@ function FinanceApp({userEmail,onLogout}:{userEmail:string|null;onLogout:()=>voi
     return()=>{ delete document.documentElement.dataset.motion; };
   },[data?.state.settings.motion]);
   const reviews=useMemo(()=>data?reviewSuggestions(data).length:0,[data]);
-  if(!data)return <div className="boot-screen"><img src="/brand/icon-192.png" alt="RheomIQ"/><div className="boot-pulse"/><b>RheomIQ</b><span>{finance.saveState==='error'?'Δεν ήταν δυνατή η φόρτωση της βάσης':'Φόρτωση οικονομικού ledger…'}</span>{finance.saveState==='error'?<button className="secondary" type="button" onClick={()=>void finance.reload()}>Δοκιμή ξανά</button>:null}</div>;
+  if(!data)return <AppSkeleton/>;
 
   if(notFound)return <NotFound onHome={()=>navigate('dashboard',true)}/>;
 
@@ -112,10 +113,10 @@ function FinanceApp({userEmail,onLogout}:{userEmail:string|null;onLogout:()=>voi
     :<SettingsPage data={data} filePath={finance.filePath} lastSavedAt={finance.lastSavedAt} onImport={finance.importData} onBackup={finance.createBackup} onSettings={settings=>finance.update(c=>({...c,state:{...c.state,settings}}))}/>;
 
   return <>
-    <AppShell page={page} onPage={navigate} onQuickAdd={()=>openQuick('expense')} saveState={finance.saveState} filePath={finance.filePath} reviewCount={reviews} motionMode={data.state.settings.motion||'system'} userEmail={userEmail} onLogout={onLogout}>
+    <AppShell page={page} onPage={navigate} onQuickAdd={()=>openQuick('expense')} onRefresh={()=>{void finance.reload()}} onUndo={()=>{finance.undo()}} canUndo={finance.canUndo} saveState={finance.saveState} filePath={finance.filePath} reviewCount={reviews} motionMode={data.state.settings.motion||'system'} userEmail={userEmail} onLogout={onLogout}>
       <PersistenceNotice saveState={finance.saveState} onRecover={recover}/>
       <div className="month-toolbar"><label>Περίοδος <input type="month" value={month} onChange={e=>{setMonth(e.target.value);setMonthIsManual(true)}}/></label><span>Οι κινήσεις μετά την {today.split('-').reverse().join('/')} δεν επηρεάζουν το σημερινό balance.</span></div>
-      <PageErrorBoundary resetKey={page} onDashboard={()=>navigate('dashboard')}><Suspense fallback={<PageLoading/>}>{content}</Suspense></PageErrorBoundary>
+      {finance.saveState==='loading'?<PageSkeleton/>:<PageErrorBoundary resetKey={page} onDashboard={()=>navigate('dashboard')}><Suspense fallback={<PageLoading/>}>{content}</Suspense></PageErrorBoundary>}
     </AppShell>
     <QuickAdd open={quickOpen} data={data} asOf={today} motionMode={data.state.settings.motion||'system'} initial={(data.state.events??[]).find(e=>e.id===editingEventId)||null} initialKind={quickKind} prefill={quickPrefill} onClose={()=>{setQuickOpen(false);setEditingEventId(null);setQuickPrefill(null)}} onCreate={addEvent} currentBalance={balance}/>
   </>;
