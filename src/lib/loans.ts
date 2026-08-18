@@ -4,7 +4,7 @@ export function isSelfLoan(loan:Loan){return loan.kind==='self-loan'||loan.sourc
 
 export function loanPaymentEvents(data:FinanceData,loan:Loan){
   const linked=(data.state.events??[]).filter(event=>event.loanId===loan.id);
-  const payments=isSelfLoan(loan)?linked.filter(event=>event.kind==='transfer'&&/^(ΕΠΙΣΤΡΟΦΗ|RETURN)\b/i.test(event.note.trim())):linked;
+  const payments=isSelfLoan(loan)?linked.filter(event=>event.kind==='transfer'&&/^(?:ΕΠΙΣΤΡΟΦΗ|RETURN)(?:\s|:|$)/i.test(event.note.trim())):linked;
   return payments.sort((a,b)=>b.date.localeCompare(a.date)||b.createdAt.localeCompare(a.createdAt));
 }
 
