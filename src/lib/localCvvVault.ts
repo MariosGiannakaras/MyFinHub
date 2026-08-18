@@ -54,8 +54,9 @@ async function readStore<T>(storeName: string, key: IDBValidKey): Promise<T | un
   const db = await openDb();
   try {
     const transaction = db.transaction(storeName, 'readonly');
+    const done = transactionDone(transaction);
     const value = await requestResult(transaction.objectStore(storeName).get(key));
-    await transactionDone(transaction);
+    await done;
     return value as T | undefined;
   } finally {
     db.close();
@@ -66,10 +67,11 @@ async function writeStore(storeName: string, value: unknown, key?: IDBValidKey) 
   const db = await openDb();
   try {
     const transaction = db.transaction(storeName, 'readwrite');
+    const done = transactionDone(transaction);
     const store = transaction.objectStore(storeName);
     if (key === undefined) store.put(value);
     else store.put(value, key);
-    await transactionDone(transaction);
+    await done;
   } finally {
     db.close();
   }
@@ -79,8 +81,9 @@ async function deleteStore(storeName: string, key: IDBValidKey) {
   const db = await openDb();
   try {
     const transaction = db.transaction(storeName, 'readwrite');
+    const done = transactionDone(transaction);
     transaction.objectStore(storeName).delete(key);
-    await transactionDone(transaction);
+    await done;
   } finally {
     db.close();
   }
