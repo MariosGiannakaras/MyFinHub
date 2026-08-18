@@ -34,24 +34,24 @@
 .bank-brand-mark em{font-style:normal;font-size:8px;font-weight:850;letter-spacing:.015em;margin-left:5px;white-space:nowrap}
 .bank-brand-mark.wordmark{width:auto;min-width:86px;padding:0 10px;justify-content:flex-start}
 .brand-letter{font-style:normal;font-weight:900;line-height:1;font-size:19px}
-.bank-piraeus{color:#0e4f92;background:linear-gradient(145deg,#f5fbff,#deedf9)}
+.bank-brand-mark.bankmark-piraeus{color:#0e4f92;background:linear-gradient(145deg,#f5fbff,#deedf9)}
 .piraeus-symbol{width:20px;height:20px;display:grid;place-items:center;position:relative;transform:rotate(45deg)}
 .piraeus-symbol b{position:absolute;width:14px;height:5px;border-radius:5px;background:currentColor}
 .piraeus-symbol b+ b{transform:rotate(90deg)}
-.bank-revolut{color:#151a24;background:linear-gradient(145deg,#fff,#e8ebef)}
+.bank-brand-mark.bankmark-revolut{color:#151a24;background:linear-gradient(145deg,#fff,#e8ebef)}
 .revolut-letter{font-family:ui-sans-serif,system-ui,sans-serif;transform:skewX(-7deg)}
-.bank-alpha{color:#9b1e5e;background:linear-gradient(145deg,#fff6fb,#f1dfe9)}
+.bank-brand-mark.bankmark-alpha{color:#9b1e5e;background:linear-gradient(145deg,#fff6fb,#f1dfe9)}
 .alpha-letter{font-family:Georgia,serif;font-size:22px}
-.bank-payzy{color:#743fb4;background:linear-gradient(145deg,#fbf7ff,#eadff7)}
+.bank-brand-mark.bankmark-payzy{color:#743fb4;background:linear-gradient(145deg,#fbf7ff,#eadff7)}
 .payzy-letter{font-family:ui-rounded,system-ui,sans-serif}
-.bank-viva{color:#1e3c55;background:linear-gradient(145deg,#f7fbff,#dfeaf1)}
+.bank-brand-mark.bankmark-viva{color:#1e3c55;background:linear-gradient(145deg,#f7fbff,#dfeaf1)}
 .viva-letter{font-family:ui-rounded,system-ui,sans-serif}
-.bank-cash{color:#177d71;background:linear-gradient(145deg,#f3fffb,#dcefe9)}
-.bank-generic{color:#45617f}
+.bank-brand-mark.bankmark-cash{color:#177d71;background:linear-gradient(145deg,#f3fffb,#dcefe9)}
+.bank-brand-mark.bankmark-generic{color:#45617f}
 .primary-balance-head>.bank-brand-mark{width:42px;height:42px;flex-basis:42px;border-radius:13px}
 .compact-account-row>.bank-brand-mark{width:34px;height:34px;flex-basis:34px;border-radius:10px}
 
-/* Existing card CSS keeps bank identity prominent without replacing movement icons in ledgers. */
+/* Card surfaces keep bank identity prominent without replacing movement icons in ledgers. */
 .payment-card.bank-piraeus .payment-card-top span,.payment-card.bank-revolut .payment-card-top span,.payment-card.bank-alpha .payment-card-top span,.payment-card.bank-payzy .payment-card-top span,.payment-card.bank-viva .payment-card-top span{display:inline-flex;align-items:center;gap:6px}
 .payment-card.bank-piraeus .payment-card-top span:before,.payment-card.bank-revolut .payment-card-top span:before,.payment-card.bank-alpha .payment-card-top span:before,.payment-card.bank-payzy .payment-card-top span:before,.payment-card.bank-viva .payment-card-top span:before{width:18px;height:18px;border-radius:6px;display:inline-grid;place-items:center;background:rgba(255,255,255,.16);box-shadow:inset 0 0 0 1px rgba(255,255,255,.18);font-size:11px;font-weight:900}
 .payment-card.bank-piraeus .payment-card-top span:before{content:'Π'}
