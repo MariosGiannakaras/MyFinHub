@@ -1,4 +1,5 @@
 export type AccountKind = 'cash' | 'bank' | 'savings' | 'credit';
+export type SavingSource = 'pay_and_save' | 'manual_transfer' | 'cash_offset';
 
 export interface Account {
   id: string;
@@ -73,6 +74,7 @@ export interface FinanceEvent {
   legs: LedgerLeg[];
   parts?: SplitPart[];
   savingAmount?: number;
+  savingSource?: SavingSource;
   receivableDelta?: number;
   creditDelta?: number;
   source?: 'user' | 'migration' | 'review';

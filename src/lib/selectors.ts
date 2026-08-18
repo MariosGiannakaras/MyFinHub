@@ -4,16 +4,16 @@ import {
   categoryTotals,
   dailyExpenseSeries,
   frequentDescriptions,
-  monthlyFlow,
   netWorth,
 } from './domain.js';
+import { operationalMonthlyFlow } from './savings.js';
 import type { FinanceData } from '../types.js';
 
 type CacheBucket = {
   balances: Map<string, ReturnType<typeof accountBalances>>;
   available: Map<string, number>;
   netWorth: Map<string, number>;
-  monthlyFlow: Map<string, ReturnType<typeof monthlyFlow>>;
+  monthlyFlow: Map<string, ReturnType<typeof operationalMonthlyFlow>>;
   categories: Map<string, ReturnType<typeof categoryTotals>>;
   dailyExpense: Map<string, ReturnType<typeof dailyExpenseSeries>>;
   frequent: Map<string, ReturnType<typeof frequentDescriptions>>;
@@ -58,7 +58,7 @@ export function selectNetWorth(data: FinanceData, asOf: string) {
 }
 
 export function selectMonthlyFlow(data: FinanceData, month: string) {
-  return memo(bucket(data).monthlyFlow, month, () => monthlyFlow(data, month));
+  return memo(bucket(data).monthlyFlow, month, () => operationalMonthlyFlow(data, month));
 }
 
 export function selectCategoryTotals(data: FinanceData, month: string) {
