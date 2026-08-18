@@ -15,17 +15,15 @@ export function bankBrandKey(value?:string,name?:string):BankBrandKey{
   return 'generic';
 }
 
-const LABELS:Record<BankBrandKey,string>={piraeus:'Πειραιώς',revolut:'Revolut',alpha:'Alpha Bank',payzy:'payzy',viva:'Viva',cash:'Μετρητά',generic:'Λογαριασμός'};
-
 export function BankBrandMark({id,name,compact=true}:{id?:string;name?:string;compact?:boolean}){
-  const key=bankBrandKey(id,name);const label=LABELS[key];
-  if(key==='cash')return <span className="bank-brand-mark bankmark-cash" aria-label={label}><Banknote/></span>;
-  if(key==='generic')return <span className="bank-brand-mark bankmark-generic" aria-label={name||label}><Landmark/></span>;
-  return <span className={`bank-brand-mark bankmark-${key} ${compact?'compact':'wordmark'}`} aria-label={label} title={label}>
-    {key==='piraeus'?<><i className="piraeus-symbol" aria-hidden="true"><b/><b/></i>{!compact?<em>ΠΕΙΡΑΙΩΣ</em>:null}</>:null}
-    {key==='revolut'?<><i className="brand-letter revolut-letter" aria-hidden="true">R</i>{!compact?<em>Revolut</em>:null}</>:null}
-    {key==='alpha'?<><i className="brand-letter alpha-letter" aria-hidden="true">α</i>{!compact?<em>ALPHA BANK</em>:null}</>:null}
-    {key==='payzy'?<><i className="brand-letter payzy-letter" aria-hidden="true">p</i>{!compact?<em>payzy</em>:null}</>:null}
-    {key==='viva'?<><i className="brand-letter viva-letter" aria-hidden="true">v</i>{!compact?<em>viva</em>:null}</>:null}
+  const key=bankBrandKey(id,name);
+  if(key==='cash')return <span className="bank-brand-mark bankmark-cash" aria-hidden="true"><Banknote/></span>;
+  if(key==='generic')return <span className="bank-brand-mark bankmark-generic" aria-hidden="true"><Landmark/></span>;
+  return <span className={`bank-brand-mark bankmark-${key} ${compact?'compact':'wordmark'}`} aria-hidden="true">
+    {key==='piraeus'?<><i className="piraeus-symbol"><b/><b/></i>{!compact?<em>ΠΕΙΡΑΙΩΣ</em>:null}</>:null}
+    {key==='revolut'?<><i className="brand-letter revolut-letter">R</i>{!compact?<em>Revolut</em>:null}</>:null}
+    {key==='alpha'?<><i className="brand-letter alpha-letter">α</i>{!compact?<em>ALPHA BANK</em>:null}</>:null}
+    {key==='payzy'?<><i className="brand-letter payzy-letter">p</i>{!compact?<em>payzy</em>:null}</>:null}
+    {key==='viva'?<><i className="brand-letter viva-letter">v</i>{!compact?<em>viva</em>:null}</>:null}
   </span>;
 }
