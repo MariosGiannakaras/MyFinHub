@@ -11,6 +11,11 @@ const MAX_UNDO_STATES = 20;
 
 type RevisionMessage = { type: 'revision'; revision: string };
 
+function productData(input:FinanceData):FinanceData{
+  const migrated=migrateData(input);
+  return {...migrated,state:{...migrated.state,settings:{...migrated.state.settings,motion:'full'}}};
+}
+
 export function useFinance() {
   const [data, setData] = useState<FinanceData | null>(null);
   const [revision, setRevision] = useState('');
@@ -32,7 +37,7 @@ export function useFinance() {
   const clearUndo = useCallback(() => { undoStackRef.current = []; setUndoDepth(0); }, []);
 
   const applyEnvelope = useCallback((res: Awaited<ReturnType<typeof loadData>>) => {
-    const migrated = migrateData(res.data);
+    const migrated = productData(res.data);
     assignData(migrated);
     revisionRef.current = res.revision;
     setRevision(res.revision);
@@ -148,7 +153,7 @@ export function useFinance() {
     try {
       await coordinator.whenIdle();
       try {
-        const res = await importData(migrateData(incoming));
+        const res = await importData(productData(incoming));
         applyEnvelope(res);
         channelRef.current?.postMessage({ type: 'revision', revision: res.revision } satisfies RevisionMessage);
       } catch (error) {
