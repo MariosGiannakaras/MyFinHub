@@ -1,7 +1,11 @@
 import type { FinanceData, FinanceEvent, Loan } from '../types.js';
 
+export function isSelfLoan(loan:Loan){return loan.kind==='self-loan'||loan.source==='self-loan'||/\bHELP\b|ΒΟΗΘΕΙΑ/i.test(`${loan.name} ${loan.provider||''}`)}
+
 export function loanPaymentEvents(data:FinanceData,loan:Loan){
-  return (data.state.events??[]).filter(event=>event.loanId===loan.id).sort((a,b)=>b.date.localeCompare(a.date)||b.createdAt.localeCompare(a.createdAt));
+  const linked=(data.state.events??[]).filter(event=>event.loanId===loan.id);
+  const payments=isSelfLoan(loan)?linked.filter(event=>event.kind==='transfer'&&/^(ΕΠΙΣΤΡΟΦΗ|RETURN)\b/i.test(event.note.trim())):linked;
+  return payments.sort((a,b)=>b.date.localeCompare(a.date)||b.createdAt.localeCompare(a.createdAt));
 }
 
 export function loanPaidCount(data: FinanceData, loan: Loan) {
@@ -31,7 +35,6 @@ export function typicalLoanPaymentDay(data:FinanceData,loan:Loan):number|null{
   const parsed=Number.parseInt(loan.day||'',10);return Number.isInteger(parsed)&&parsed>=1&&parsed<=31?parsed:null;
 }
 
-export function isSelfLoan(loan:Loan){return loan.kind==='self-loan'||loan.source==='self-loan'||/\bHELP\b|ΒΟΗΘΕΙΑ/i.test(`${loan.name} ${loan.provider||''}`)}
 export function isLongTermLoan(loan:Loan){return loan.longTermRecurring??(loan.installments>=12&&!isSelfLoan(loan))}
 
 export function preserveLoanPaymentLink(next: FinanceEvent, previous?: FinanceEvent | null) {
