@@ -43,6 +43,8 @@ function validState(): any {
         savingsTargetRate: 0,
         motion: 'system',
       },
+      cardBanks: [],
+      cards: [],
       events: [],
       reviewDecisions: {},
     },
@@ -56,6 +58,14 @@ describe('finance document validation', () => {
 
   it('accepts the mutable subtree through the canonical validator', () => {
     expect(() => validateFinanceState(validState().state)).not.toThrow();
+  });
+
+  it('accepts cards and extended loan metadata used by current workspaces', () => {
+    const full = validState();
+    full.state.cardBanks.push({ id: 'bank-1', name: 'BANK', order: 10, custom: true });
+    full.state.cards.push({ id: 'card-1', bankId: 'bank-1', nickname: 'Visa', kind: 'credit', network: 'visa', last4: '4242', active: true, createdAt: full.updatedAt, updatedAt: full.updatedAt });
+    full.state.customLoans.push({ id: 'loan-1', name: 'Loan', total: 1200, installment: 100, installments: 12, paidCount: 0, kind: 'loan', firstExpectedDate: '2026-09-01', defaultAccountId: 'bank', forgivenAmount: 0, longTermRecurring: true });
+    expect(() => validateFinanceData(full)).not.toThrow();
   });
 
   it('accepts only the compact mutable write envelope', () => {
@@ -99,6 +109,16 @@ describe('finance document validation', () => {
     const state = validState();
     state.state.settings.motion = 'turbo';
     expect(() => validateFinanceData(state)).toThrowError(/motion/i);
+  });
+
+  it('rejects malformed card and loan extension values', () => {
+    const badCard = validState();
+    badCard.state.cards.push({ id: 'card-1', bankId: 'bank', nickname: 'Card', kind: 'credit', network: 'visa', last4: '42', active: true, createdAt: badCard.updatedAt, updatedAt: badCard.updatedAt });
+    expect(() => validateFinanceData(badCard)).toThrowError(/last4/i);
+
+    const badLoan = validState();
+    badLoan.state.customLoans.push({ id: 'loan-1', name: 'Loan', total: 100, installment: 10, installments: 10, kind: 'unknown' });
+    expect(() => validateFinanceData(badLoan)).toThrowError(/kind/i);
   });
 
   it('rejects duplicate persistent ids', () => {
