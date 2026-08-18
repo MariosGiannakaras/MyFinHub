@@ -1,0 +1,37 @@
+/* Account-first shell, Greek-safe typography, privacy reveal, skeletons and transient persistence feedback. */
+:root{
+  font-family:"Segoe UI",Roboto,"Noto Sans",Arial,system-ui,-apple-system,sans-serif;
+}
+body,button,input,select,textarea{font-family:inherit}
+h1,h2,h3,p,button,label,span,b,strong,small,td,th{word-break:normal;overflow-wrap:normal;hyphens:none}
+.brand-word{font-weight:800;letter-spacing:-.02em}
+.page-heading h1,.metric-card strong,.credit-hero b,.savings-hero h2{letter-spacing:-.015em}
+.page-heading h1{line-height:1.12}.page-heading p{line-height:1.55;max-width:74ch}
+.sidebar nav button,.primary-action,.save-button,.secondary,.text-button,.command-pill{font-weight:650}
+.eyebrow{letter-spacing:.08em;font-weight:750}
+
+.command-pill{border:0;cursor:pointer;text-align:left;transition:transform .15s ease,box-shadow .15s ease,color .15s ease}
+.command-pill:hover{color:var(--blue-2);transform:translateY(-1px)}
+.command-pill:active{transform:translateY(0)}
+.top-actions button:disabled{opacity:.38;cursor:not-allowed;transform:none!important}
+.is-spinning{animation:rheomiq-spin .8s linear infinite}
+@keyframes rheomiq-spin{to{transform:rotate(360deg)}}
+
+.primary-balance-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.primary-balance-card{min-height:154px;border-radius:24px;padding:20px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}
+.primary-balance-card:after{content:"";position:absolute;right:-34px;bottom:-48px;width:150px;height:150px;border-radius:50%;background:linear-gradient(135deg,rgba(47,111,237,.12),rgba(37,185,215,.05));pointer-events:none}
+.primary-balance-head{display:flex;align-items:center;gap:12px;position:relative;z-index:1}.primary-balance-head .account-mark{width:42px;height:42px;border-radius:13px;font-size:12px}.primary-balance-head>div{display:grid;gap:3px}.primary-balance-head small{font-size:13px;font-weight:750;color:var(--ink)}.primary-balance-head span{font-size:10px;color:var(--muted)}
+.primary-balance-card>.animated-amount{position:relative;z-index:1;font-size:34px;font-weight:800;line-height:1.05;margin-top:22px;font-variant-numeric:tabular-nums}
+.animated-amount{font-variant-numeric:tabular-nums}.animated-amount.masked{letter-spacing:.14em;color:var(--muted);user-select:none}
+.privacy-toggle{display:flex;align-items:center;gap:7px;white-space:nowrap}
+.account-balance-panel{padding:15px 16px}.compact-account-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:12px}.compact-account-row{display:flex;align-items:center;gap:10px;border:1px solid #dce5f1;background:rgba(248,251,255,.8);border-radius:14px;padding:10px 11px;min-width:0}.compact-account-row>div{display:grid;gap:3px;min-width:0}.compact-account-row small{font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.compact-account-row .animated-amount{font-size:13px;font-weight:800}
+.flow-metric-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+
+.persistence-toast{position:fixed;right:22px;top:88px;z-index:120;border-radius:999px;padding:8px 12px;font-size:10px;font-weight:750;box-shadow:0 9px 22px rgba(24,52,96,.14);border:1px solid #d6e1f0;background:#f9fbff;color:var(--ink-2);pointer-events:none}.persistence-toast.saving,.persistence-toast.loading{color:var(--blue-2);background:#f0f5ff}.persistence-toast.saved{color:#176746;background:#f0faf6;border-color:#c9eadc}
+
+.skeleton-shell{min-height:100vh;display:grid;grid-template-columns:260px minmax(0,1fr);gap:18px;padding:14px}.skeleton-sidebar{height:calc(100vh - 28px);border-radius:26px;padding:18px 14px;display:grid;align-content:start;gap:10px}.skeleton-main{min-width:0}.skeleton-workspace,.page-skeleton{padding:18px 2px 40px;display:grid;gap:15px}.skeleton{position:relative;overflow:hidden;background:#e3eaf4;border-radius:12px}.skeleton:after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.58),transparent);animation:rheomiq-shimmer 1.25s infinite}.skeleton.brand{height:50px;width:72%}.skeleton.primary{height:42px}.skeleton.nav{height:38px}.skeleton.topbar{height:62px;border-radius:20px;margin-bottom:0}.skeleton.heading{height:74px;width:min(620px,78%)}.skeleton-account-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.skeleton.account{height:96px;border-radius:20px}.skeleton.account.primary-account{height:154px}.skeleton-panel-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.skeleton.panel{height:260px;border-radius:20px}@keyframes rheomiq-shimmer{100%{transform:translateX(100%)}}
+
+@media(max-width:1100px){.compact-account-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:980px){.skeleton-shell{grid-template-columns:1fr;padding:10px}.skeleton-sidebar{display:none}.persistence-toast{top:76px;right:14px}.flow-metric-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:680px){.primary-balance-grid,.skeleton-account-grid,.skeleton-panel-grid{grid-template-columns:1fr}.primary-balance-card{min-height:136px;padding:17px}.primary-balance-card>.animated-amount{font-size:29px}.compact-account-grid{grid-template-columns:1fr}.flow-metric-grid{grid-template-columns:1fr 1fr}.flow-metric-grid .metric-card:last-child{grid-column:1/-1}.heading-actions{width:100%;justify-content:stretch}.heading-actions .privacy-toggle,.heading-actions .save-button{flex:1}.persistence-toast{top:auto;bottom:calc(88px + env(safe-area-inset-bottom,0px));right:12px}.skeleton-workspace,.page-skeleton{padding:14px 0 28px}}
+@media(prefers-reduced-motion:reduce){.skeleton:after,.is-spinning{animation:none}.command-pill{transition:none}}
