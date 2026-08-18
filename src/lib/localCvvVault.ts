@@ -1,3 +1,5 @@
+import { normalizeLocalCvv } from './localCvvFormat';
+
 const DB_NAME = 'rheomiq-local-card-vault';
 const DB_VERSION = 1;
 const KEY_STORE = 'keys';
@@ -113,12 +115,6 @@ function aad(cardId: string) {
   if (!cardId || cardId.length > 160) throw new Error('INVALID_CARD_ID');
   const origin = typeof location === 'undefined' ? 'local' : location.origin;
   return new TextEncoder().encode(`rheomiq-local-cvv-v1:${origin}:${cardId}:${RECORD_VERSION}`);
-}
-
-export function normalizeLocalCvv(value: string) {
-  const digits = value.trim();
-  if (!/^\d{3,4}$/.test(digits)) throw new Error('INVALID_CVV');
-  return digits;
 }
 
 export async function encryptLocalCvvValue(cardId: string, cvv: string, key: CryptoKey) {
