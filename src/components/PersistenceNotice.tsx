@@ -7,7 +7,7 @@ export function PersistenceNotice({saveState,onRecover}:{saveState:SaveState;onR
 
   useEffect(()=>{
     let timer:number|undefined;
-    if(saveState==='saved'&&previous.current==='saving'){
+    if(saveState==='saved'&&previous.current!=='saved'){
       setShowSaved(true);
       timer=window.setTimeout(()=>setShowSaved(false),1400);
     }else if(saveState!=='saved')setShowSaved(false);
@@ -21,6 +21,6 @@ export function PersistenceNotice({saveState,onRecover}:{saveState:SaveState;onR
   }
   if(saveState==='loading')return <div className="persistence-toast loading" role="status" aria-live="polite">Ανανέωση δεδομένων…</div>;
   if(saveState==='saving')return <div className="persistence-toast saving" role="status" aria-live="polite">Αποθήκευση…</div>;
-  if(showSaved)return <div className="persistence-toast saved" role="status" aria-live="polite">Αποθηκεύτηκε</div>;
+  if(showSaved)return <div className="persistence-toast persistence-notice saved" role="status" aria-live="polite">Αποθηκεύτηκε</div>;
   return null;
 }
