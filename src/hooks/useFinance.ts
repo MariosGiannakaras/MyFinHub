@@ -7,6 +7,7 @@ import type { FinanceData } from '../types';
 export type SaveState = 'loading' | 'saved' | 'saving' | 'error' | 'conflict';
 
 const REVISION_CHANNEL = 'rheomiq-finance-revision';
+const MAX_UNDO_STATES = 20;
 
 type RevisionMessage = { type: 'revision'; revision: string };
 
@@ -16,6 +17,7 @@ export function useFinance() {
   const [filePath, setFilePath] = useState('');
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<SaveState>('loading');
+  const [undoDepth, setUndoDepth] = useState(0);
   const revisionRef = useRef('');
   const dataRef = useRef<FinanceData | null>(null);
   const exclusiveOperation = useRef(false);
@@ -24,8 +26,10 @@ export function useFinance() {
   const channelRef = useRef<BroadcastChannel | null>(null);
   const remoteReloading = useRef(false);
   const coordinatorRef = useRef<LatestValueQueue<FinanceData> | null>(null);
+  const undoStackRef = useRef<FinanceData[]>([]);
 
   const assignData = useCallback((next: FinanceData | null) => { dataRef.current = next; setData(next); }, []);
+  const clearUndo = useCallback(() => { undoStackRef.current = []; setUndoDepth(0); }, []);
 
   const applyEnvelope = useCallback((res: Awaited<ReturnType<typeof loadData>>) => {
     const migrated = migrateData(res.data);
@@ -35,8 +39,9 @@ export function useFinance() {
     setFilePath(res.filePath);
     setLastSavedAt(res.lastSavedAt);
     lastSaveFailed.current = false;
+    clearUndo();
     setSaveState('saved');
-  }, [assignData]);
+  }, [assignData, clearUndo]);
 
   const reload = useCallback(async () => {
     setSaveState('loading');
@@ -109,11 +114,32 @@ export function useFinance() {
     return stamped;
   }, [assignData, coordinator]);
 
+  const pushUndo = useCallback((current: FinanceData) => {
+    const stack = undoStackRef.current;
+    stack.push(current);
+    if (stack.length > MAX_UNDO_STATES) stack.splice(0, stack.length - MAX_UNDO_STATES);
+    setUndoDepth(stack.length);
+  }, []);
+
   const update = useCallback((recipe: (current: FinanceData) => FinanceData) => {
     const current = dataRef.current;
-    if (!current || saveState === 'conflict' || exclusiveOperation.current) return;
-    persist(recipe(current));
-  }, [persist, saveState]);
+    const state = saveStateRef.current;
+    if (!current || state === 'conflict' || state === 'error' || state === 'loading' || exclusiveOperation.current) return;
+    const next = recipe(current);
+    if (next === current) return;
+    pushUndo(current);
+    persist(next);
+  }, [persist, pushUndo]);
+
+  const undo = useCallback(() => {
+    const state = saveStateRef.current;
+    if (state === 'conflict' || state === 'error' || state === 'loading' || exclusiveOperation.current) return false;
+    const previous = undoStackRef.current.pop();
+    if (!previous) return false;
+    setUndoDepth(undoStackRef.current.length);
+    persist(previous);
+    return true;
+  }, [persist]);
 
   const doImport = useCallback(async (incoming: FinanceData) => {
     if (exclusiveOperation.current) throw new Error('Υπάρχει ήδη λειτουργία αποθήκευσης σε εξέλιξη.');
@@ -144,5 +170,7 @@ export function useFinance() {
     return createBackup();
   }, [coordinator]);
 
-  return useMemo(() => ({ data, revision, filePath, lastSavedAt, saveState, update, reload, importData: doImport, createBackup: doBackup }), [data, revision, filePath, lastSavedAt, saveState, update, reload, doImport, doBackup]);
+  const canUndo = undoDepth > 0 && saveState !== 'conflict' && saveState !== 'error' && saveState !== 'loading';
+
+  return useMemo(() => ({ data, revision, filePath, lastSavedAt, saveState, update, reload, undo, canUndo, importData: doImport, createBackup: doBackup }), [data, revision, filePath, lastSavedAt, saveState, update, reload, undo, canUndo, doImport, doBackup]);
 }
