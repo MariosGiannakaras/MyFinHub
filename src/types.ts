@@ -1,5 +1,6 @@
 export type AccountKind = 'cash' | 'bank' | 'savings' | 'credit';
 export type SavingSource = 'pay_and_save' | 'manual_transfer' | 'cash_offset';
+export type RecurringStatus = 'active' | 'paused' | 'stopped';
 
 export interface Account {
   id: string;
@@ -81,6 +82,7 @@ export interface FinanceEvent {
   createdAt: string;
   updatedAt: string;
   loanId?: string;
+  recurringId?: string;
 }
 
 export interface ReviewDecision {
@@ -154,9 +156,11 @@ export interface RecurringItem {
   name: string;
   amount: number;
   day?: number | null;
+  firstExpectedDate?: string | null;
   accountId: string;
   category: string;
   active: boolean;
+  status?: RecurringStatus;
   source?: string;
 }
 
