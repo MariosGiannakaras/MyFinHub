@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { categoryPath, categoryTree, genericCategoryTree, parseCategoryTree } from '../src/lib/categories';
-import type { FinanceSettings } from '../src/types';
+import { categoryPath, categoryTree, genericCategoryTree, parseCategoryTree } from '../src/lib/categories.js';
+import type { FinanceSettings } from '../src/types.js';
 
 const settings:FinanceSettings={excludedFromAvailable:[],accountNames:{},expenseCategories:['Όχημα','Συνδρομές','Φαγητό'],incomeCategories:['Μισθός'],customPresets:[],pinnedPresets:[],defaultExpenseAccount:'cash',defaultIncomeAccount:'cash',defaultLoanAccount:'cash'};
 
