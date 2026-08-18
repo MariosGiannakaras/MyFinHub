@@ -1,0 +1,60 @@
+/* Dedicated mobile finance presentations. Desktop/tablet surfaces remain unchanged. */
+.mobile-transaction-filters,.mobile-transaction-list,.mobile-recurring-list{display:none}
+
+@media(max-width:680px){
+  .desktop-finance-table{display:none!important}
+  .mobile-transaction-filters,.mobile-transaction-list,.mobile-recurring-list{display:grid}
+
+  .mobile-transaction-filters{grid-template-columns:1fr 1fr;gap:8px;margin:0 0 12px}
+  .mobile-transaction-filters .filter-label{min-width:0}
+  .mobile-transaction-filters select{width:100%;height:42px;border:1px solid #d4dfec;border-radius:11px;background:#f8fbff;color:var(--ink);padding:0 9px;font-size:16px}
+
+  .mobile-transaction-list{gap:9px}
+  .mobile-transaction-row{--mobile-row-tint:rgba(82,98,125,.035);--mobile-row-accent:#8795aa;position:relative;border:1px solid rgba(214,224,237,.88);border-radius:16px;padding:12px;background:linear-gradient(145deg,rgba(255,255,255,.82),var(--mobile-row-tint));box-shadow:4px 4px 11px rgba(37,59,92,.07),-4px -4px 11px rgba(255,255,255,.75);overflow:hidden}
+  .mobile-transaction-row:before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:3px;border-radius:0 4px 4px 0;background:var(--mobile-row-accent);opacity:.66}
+  .mobile-transaction-row.kind-expense,.mobile-transaction-row.kind-card_purchase{--mobile-row-tint:rgba(179,41,66,.045);--mobile-row-accent:#c34d62}
+  .mobile-transaction-row.kind-income{--mobile-row-tint:rgba(24,120,82,.045);--mobile-row-accent:#33906d}
+  .mobile-transaction-row.kind-transfer,.mobile-transaction-row.kind-withdrawal{--mobile-row-tint:rgba(23,78,166,.04);--mobile-row-accent:#4b79c5}
+  .mobile-transaction-row.kind-saving_cash_offset{--mobile-row-tint:rgba(20,124,149,.045);--mobile-row-accent:#3294aa}
+  .mobile-transaction-row.kind-refund{--mobile-row-tint:rgba(82,98,125,.045);--mobile-row-accent:#7d8da5}
+  .mobile-transaction-row.kind-lending,.mobile-transaction-row.kind-repayment,.mobile-transaction-row.kind-split{--mobile-row-tint:rgba(105,71,168,.04);--mobile-row-accent:#8063b6}
+  .mobile-transaction-row.kind-reconciliation{--mobile-row-tint:rgba(154,95,0,.045);--mobile-row-accent:#b37b24}
+  .mobile-transaction-main{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:start}
+  .mobile-transaction-identity{display:flex;gap:9px;align-items:flex-start;min-width:0}
+  .mobile-transaction-identity>div{min-width:0;display:grid;gap:3px}
+  .mobile-transaction-identity b{font-size:12px;line-height:1.35;overflow-wrap:anywhere}
+  .mobile-transaction-identity small{font-size:9.5px;color:var(--muted);line-height:1.35}
+  .mobile-transaction-main>strong{font-size:13px;line-height:1.35;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .mobile-transaction-comment{display:flex;gap:6px;align-items:flex-start;margin:8px 0 0 37px;color:#52627d;font-size:10px;line-height:1.42}
+  .mobile-transaction-comment svg{flex:0 0 auto;margin-top:1px;color:#6f7f99}
+  .mobile-transaction-meta{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:9px 0 0 37px;color:var(--muted);font-size:9.5px}
+  .mobile-transaction-meta .flow-pill{font-size:9px}
+  .mobile-account-path{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+  .mobile-row-actions{display:flex;justify-content:flex-end;gap:5px;margin-top:8px;padding-top:8px;border-top:1px solid rgba(208,219,233,.72)}
+  .mobile-row-actions .text-button{display:inline-flex;align-items:center;gap:5px;min-height:38px;padding:7px 9px}
+  .danger-text{color:#a52d43!important}
+  .mobile-history-label{display:block;margin:8px 0 0 37px;color:var(--muted);font-size:9px}
+
+  .mobile-recurring-list{gap:9px}
+  .mobile-recurring-row{border:1px solid #d7e2ef;border-radius:16px;padding:12px;background:linear-gradient(145deg,#fbfdff,#edf3fa);box-shadow:var(--shadow-soft);position:relative}
+  .mobile-recurring-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:start}
+  .mobile-recurring-head>strong{font-size:13px;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .mobile-recurring-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:11px 0;padding:10px;border-radius:12px;background:#eef3fa;box-shadow:var(--shadow-inset)}
+  .mobile-recurring-meta>span{display:grid;gap:3px;min-width:0}
+  .mobile-recurring-meta b{font-size:10.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mobile-recurring-meta small{font-size:9px;color:var(--muted);line-height:1.35;overflow-wrap:anywhere}
+  .mobile-recurring-actions{display:grid;grid-template-columns:minmax(0,1fr) 44px;gap:7px;align-items:center}
+  .mobile-pay-action{min-height:44px;width:100%;justify-content:center}
+  .mobile-action-menu{position:relative}
+  .mobile-action-menu summary{list-style:none;width:44px;height:44px;border:1px solid #d5e0ee;border-radius:11px;background:linear-gradient(145deg,#fff,#edf3fa);box-shadow:var(--shadow-soft);display:grid;place-items:center;cursor:pointer}
+  .mobile-action-menu summary::-webkit-details-marker{display:none}
+  .mobile-action-menu[open] summary{color:var(--blue-2);box-shadow:var(--shadow-inset)}
+  .mobile-action-menu>div{position:absolute;right:0;bottom:50px;z-index:15;width:min(210px,72vw);display:grid;gap:4px;padding:6px;border:1px solid #d7e1ee;border-radius:13px;background:rgba(248,251,255,.98);box-shadow:0 14px 30px rgba(28,51,91,.16)}
+  .mobile-action-menu>div button{min-height:42px;border:0;border-radius:9px;background:transparent;color:var(--ink-2);display:flex;align-items:center;gap:8px;padding:8px 9px;text-align:left;font-size:10px;font-weight:700}
+  .mobile-action-menu>div button:active{background:rgba(47,111,237,.09);transform:scale(.985)}
+}
+
+@media(max-width:360px){
+  .mobile-transaction-filters{grid-template-columns:1fr}
+  .mobile-recurring-meta{grid-template-columns:1fr}
+}
