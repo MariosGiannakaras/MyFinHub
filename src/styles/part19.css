@@ -33,43 +33,35 @@
 .legend-category .finance-icon{width:22px;height:22px;flex-basis:22px;border-radius:7px}
 .category-icon-list .semantic-list-title .finance-icon{width:25px;height:25px;flex-basis:25px}
 
-.bank-brand-mark{width:38px;height:38px;flex:0 0 38px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;position:relative;background:linear-gradient(145deg,#f8fbff,#e7eef7);box-shadow:4px 4px 10px rgba(36,59,92,.10),-4px -4px 10px rgba(255,255,255,.9),inset 0 0 0 1px rgba(255,255,255,.55);overflow:hidden;color:#334155;font-style:normal}
+/* Real bank marks stay intact; RheomIQ applies neumorphism to the container only. */
+.bank-brand-mark{width:58px;height:38px;flex:0 0 58px;border-radius:11px;display:inline-flex;align-items:center;justify-content:center;position:relative;background:linear-gradient(145deg,#fff,#edf2f8);box-shadow:4px 4px 10px rgba(36,59,92,.10),-4px -4px 10px rgba(255,255,255,.9),inset 0 0 0 1px rgba(255,255,255,.65);overflow:hidden;color:#45617f}
 .bank-brand-mark svg{width:18px;height:18px}
-.bank-brand-mark em{font-style:normal;font-size:8px;font-weight:850;letter-spacing:.015em;margin-left:5px;white-space:nowrap}
-.bank-brand-mark.wordmark{width:auto;min-width:86px;padding:0 10px;justify-content:flex-start}
-.brand-letter{font-style:normal;font-weight:900;line-height:1;font-size:19px}
-.bank-brand-mark.bankmark-piraeus{color:#0e4f92;background:linear-gradient(145deg,#f5fbff,#deedf9)}
-.piraeus-symbol{width:20px;height:20px;display:grid;place-items:center;position:relative;transform:rotate(45deg)}
-.piraeus-symbol b{position:absolute;width:14px;height:5px;border-radius:5px;background:currentColor}
-.piraeus-symbol b+ b{transform:rotate(90deg)}
-.bank-brand-mark.bankmark-revolut{color:#151a24;background:linear-gradient(145deg,#fff,#e8ebef)}
-.revolut-letter{font-family:ui-sans-serif,system-ui,sans-serif;transform:skewX(-7deg)}
-.bank-brand-mark.bankmark-alpha{color:#9b1e5e;background:linear-gradient(145deg,#fff6fb,#f1dfe9)}
-.alpha-letter{font-family:Georgia,serif;font-size:22px}
-.bank-brand-mark.bankmark-payzy{color:#743fb4;background:linear-gradient(145deg,#fbf7ff,#eadff7)}
-.payzy-letter{font-family:ui-rounded,system-ui,sans-serif}
-.bank-brand-mark.bankmark-viva{color:#1e3c55;background:linear-gradient(145deg,#f7fbff,#dfeaf1)}
-.viva-letter{font-family:ui-rounded,system-ui,sans-serif}
-.bank-brand-mark.bankmark-cash{color:#177d71;background:linear-gradient(145deg,#f3fffb,#dcefe9)}
-.bank-brand-mark.bankmark-generic{color:#45617f}
-.primary-balance-head>.bank-brand-mark{width:42px;height:42px;flex-basis:42px;border-radius:13px}
-.compact-account-row>.bank-brand-mark{width:34px;height:34px;flex-basis:34px;border-radius:10px}
+.bank-logo-image{display:block;width:100%;height:100%;object-fit:contain;padding:7px 8px}
+.bank-brand-mark.wordmark{width:102px;min-width:102px;height:40px;flex-basis:102px}
+.bank-brand-mark.wordmark .bank-logo-image{padding:7px 10px}
+.bank-brand-mark.bankmark-payzy .bank-logo-image,.bank-brand-mark.bankmark-viva .bank-logo-image{padding:4px}
+.bank-brand-mark.bankmark-cash{width:38px;height:38px;flex-basis:38px;color:#177d71;background:linear-gradient(145deg,#f3fffb,#dcefe9)}
+.bank-brand-mark.bankmark-generic,.bank-brand-mark.bank-logo-fallback{width:38px;height:38px;flex-basis:38px;color:#45617f}
+.primary-balance-head>.bank-brand-mark{width:96px;height:42px;flex-basis:96px;border-radius:13px}
+.primary-balance-head>.bank-brand-mark .bank-logo-image{padding:7px 11px}
+.compact-account-row>.bank-brand-mark{width:54px;height:34px;flex-basis:54px;border-radius:10px}
+.compact-account-row>.bank-brand-mark .bank-logo-image{padding:6px 7px}
 
-/* Card surfaces keep bank identity prominent without replacing movement icons in ledgers. */
-.payment-card.bank-piraeus .payment-card-top span,.payment-card.bank-revolut .payment-card-top span,.payment-card.bank-alpha .payment-card-top span,.payment-card.bank-payzy .payment-card-top span,.payment-card.bank-viva .payment-card-top span{display:inline-flex;align-items:center;gap:6px}
-.payment-card.bank-piraeus .payment-card-top span:before,.payment-card.bank-revolut .payment-card-top span:before,.payment-card.bank-alpha .payment-card-top span:before,.payment-card.bank-payzy .payment-card-top span:before,.payment-card.bank-viva .payment-card-top span:before{width:18px;height:18px;border-radius:6px;display:inline-grid;place-items:center;background:rgba(255,255,255,.16);box-shadow:inset 0 0 0 1px rgba(255,255,255,.18);font-size:11px;font-weight:900}
-.payment-card.bank-piraeus .payment-card-top span:before{content:'Π'}
-.payment-card.bank-revolut .payment-card-top span:before{content:'R'}
-.payment-card.bank-alpha .payment-card-top span:before{content:'α'}
-.payment-card.bank-payzy .payment-card-top span:before{content:'p'}
-.payment-card.bank-viva .payment-card-top span:before{content:'v'}
+/* Card surfaces keep actual bank identity prominent without replacing movement icons in ledgers. */
+.payment-card.bank-piraeus .payment-card-top span,.payment-card.bank-revolut .payment-card-top span,.payment-card.bank-alpha .payment-card-top span,.payment-card.bank-payzy .payment-card-top span,.payment-card.bank-viva .payment-card-top span{display:inline-flex;align-items:center;gap:7px}
+.payment-card.bank-piraeus .payment-card-top span:before,.payment-card.bank-revolut .payment-card-top span:before,.payment-card.bank-alpha .payment-card-top span:before,.payment-card.bank-payzy .payment-card-top span:before,.payment-card.bank-viva .payment-card-top span:before{content:'';width:54px;height:23px;flex:0 0 54px;border-radius:6px;display:block;background-color:rgba(255,255,255,.94);background-repeat:no-repeat;background-position:center;background-size:contain;box-shadow:inset 0 0 0 1px rgba(255,255,255,.3)}
+.payment-card.bank-piraeus .payment-card-top span:before{background-image:url('https://upload.wikimedia.org/wikipedia/commons/0/00/Piraeus_Bank_2024_logo.svg')}
+.payment-card.bank-revolut .payment-card-top span:before{background-image:url('https://upload.wikimedia.org/wikipedia/commons/7/73/Revolut_logo.svg')}
+.payment-card.bank-alpha .payment-card-top span:before{background-image:url('https://upload.wikimedia.org/wikipedia/commons/3/35/Alpha_Bank_logo.svg')}
+.payment-card.bank-payzy .payment-card-top span:before{background-image:url('https://www.neukunden-rabatt.de/payzy_logo.jpg')}
+.payment-card.bank-viva .payment-card-top span:before{background-image:url('https://cdn.asp.events/CLIENT_CloserSt_D86EA381_5056_B739_5482D50A1A831DDD/companyProfiles/8bdb9b68-4ddb-11f0-95a-06bd0f937899-logo.png')}
 
 @media(max-width:680px){
   .transaction-comment,.transaction-meta{margin-left:0!important}
   .transaction-title-line{align-items:flex-start}
   .finance-icon{width:28px;height:28px;flex-basis:28px}
-  .bank-brand-mark.wordmark{min-width:0;width:38px;padding:0}
-  .bank-brand-mark.wordmark em{display:none}
+  .bank-brand-mark.wordmark{width:66px;min-width:66px;flex-basis:66px;height:36px}
+  .primary-balance-head>.bank-brand-mark{width:78px;flex-basis:78px}
 }
 
 @media(prefers-reduced-motion:reduce){
