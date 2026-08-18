@@ -8,6 +8,11 @@ export interface Account {
   excludeFromAvailable?: boolean;
 }
 
+export interface CategoryDefinition {
+  name: string;
+  subcategories: string[];
+}
+
 export interface LegacyTransaction {
   id: string;
   date: string;
@@ -18,6 +23,7 @@ export interface LegacyTransaction {
   amount: number;
   note: string;
   category?: string;
+  subcategory?: string;
   source?: string;
   cell?: string;
   sheet?: string;
@@ -47,6 +53,7 @@ export interface SplitPart {
   id: string;
   label: string;
   category: string;
+  subcategory?: string;
   amount: number;
   kind?: 'expense' | 'income' | 'refund' | 'saving' | 'transfer' | 'reconciliation';
 }
@@ -58,6 +65,7 @@ export interface FinanceEvent {
   amount: number;
   note: string;
   category?: string;
+  subcategory?: string;
   accountId?: string;
   fromAccountId?: string;
   toAccountId?: string;
@@ -126,6 +134,8 @@ export interface FinanceSettings {
   accountNames: Record<string, string>;
   expenseCategories: string[];
   incomeCategories: string[];
+  expenseCategoryTree?: CategoryDefinition[];
+  incomeCategoryTree?: CategoryDefinition[];
   customPresets: string[];
   pinnedPresets: string[];
   defaultExpenseAccount: string;
