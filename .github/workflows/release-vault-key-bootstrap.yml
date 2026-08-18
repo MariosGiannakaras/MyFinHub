@@ -1,0 +1,95 @@
+name: Release Vault Key Bootstrap
+
+on:
+  push:
+    branches: [develop]
+    paths:
+      - .github/workflows/release-vault-key-bootstrap.yml
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  configure:
+    name: configure-production-card-vault-key
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      GH_TOKEN: ${{ github.token }}
+      PR_NUMBER: "128"
+      VERCEL_PROJECT_NAME: rheom-iq
+      VERCEL_TEAM_SLUG: mariosgiannakaras-projects
+    steps:
+      - name: Configure sensitive Vercel Production variables
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          post_status() {
+            local message="$1"
+            body="$(MESSAGE="$message" python - <<'PY'
+          import json
+          import os
+          print(json.dumps({"body": os.environ["MESSAGE"]}))
+          PY
+            )"
+            curl --silent --show-error --fail \
+              --request POST \
+              --url "https://api.github.com/repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
+              --header "Authorization: Bearer ${GH_TOKEN}" \
+              --header 'Accept: application/vnd.github+json' \
+              --header 'Content-Type: application/json' \
+              --data-binary "$body" \
+              >/dev/null
+          }
+
+          if [[ -z "${VERCEL_TOKEN:-}" ]]; then
+            post_status "Bootstrap blocked: repository secret VERCEL_TOKEN is not configured."
+            exit 10
+          fi
+
+          card_vault_key="$(openssl rand -hex 32)"
+          echo "::add-mask::$card_vault_key"
+
+          payload="$(CARD_VAULT_KEY="$card_vault_key" python - <<'PY'
+          import json
+          import os
+
+          print(json.dumps([
+              {
+                  "key": "CARD_VAULT_KEY",
+                  "value": os.environ["CARD_VAULT_KEY"],
+                  "type": "sensitive",
+                  "target": ["production"],
+                  "comment": "RheomIQ AES-256-GCM card vault key; release #88"
+              },
+              {
+                  "key": "CARD_VAULT_KEY_VERSION",
+                  "value": "1",
+                  "type": "sensitive",
+                  "target": ["production"],
+                  "comment": "RheomIQ card vault key version; release #88"
+              }
+          ]))
+          PY
+          )"
+
+          endpoint="https://api.vercel.com/v10/projects/${VERCEL_PROJECT_NAME}/env?upsert=true&slug=${VERCEL_TEAM_SLUG}"
+
+          http_code="$(curl --silent --show-error \
+            --output /tmp/vercel-env-response.json \
+            --write-out '%{http_code}' \
+            --request POST \
+            --url "$endpoint" \
+            --header "Authorization: Bearer ${VERCEL_TOKEN}" \
+            --header 'Content-Type: application/json' \
+            --data-binary "$payload")"
+
+          if [[ "$http_code" != "200" && "$http_code" != "201" ]]; then
+            post_status "Bootstrap failed: Vercel environment update returned HTTP ${http_code}; response body was intentionally not logged."
+            exit 12
+          fi
+
+          post_status "Bootstrap succeeded: CARD_VAULT_KEY and CARD_VAULT_KEY_VERSION=1 are configured as sensitive Vercel Production variables. No key material was logged or committed."
