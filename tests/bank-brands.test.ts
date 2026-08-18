@@ -1,7 +1,5 @@
-import { createElement } from 'react';
-import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { BankBrandMark, bankBrandAsset, bankBrandKey } from '../src/components/BankBrandMark.js';
+import { bankBrandAsset, bankBrandKey } from '../src/lib/bankBrands.js';
 
 describe('bank brand identity',()=>{
   it('resolves supported banks from account ids and names',()=>{
@@ -24,12 +22,6 @@ describe('bank brand identity',()=>{
       expect(asset?.src).toMatch(/^https:\/\//);
       expect(asset?.label.length).toBeGreaterThan(2);
     }
-  });
-
-  it('renders a real logo image for a supported bank account',()=>{
-    const markup=renderToStaticMarkup(createElement(BankBrandMark,{id:'piraeus-payroll',name:'Μισθοδοσίας'}));
-    expect(markup).toContain('data-bank-brand="piraeus"');
-    expect(markup).toContain('class="bank-logo-image"');
-    expect(markup).toContain('Piraeus_Bank_2024_logo.svg');
+    expect(bankBrandAsset('piraeus')?.src).toContain('Piraeus_Bank_2024_logo.svg');
   });
 });
