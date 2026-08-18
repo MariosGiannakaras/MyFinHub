@@ -13,7 +13,7 @@ export function accountDisplayName(data: FinanceData, accountId?: string | null)
 }
 
 const EVENT_LABELS: Record<EventKind, string> = {
-  expense: 'Έξοδο', income: 'Έσοδο', transfer: 'Μεταφορά', saving_cash_offset: 'Αποταμίευση', withdrawal: 'Ανάληψη', refund: 'Επιστροφή χρημάτων', lending: 'Πλήρωσα για άλλον', repayment: 'Μου επέστρεψαν', card_purchase: 'Αγορά με πιστωτική', card_payment: 'Εξόφληση πιστωτικής', reconciliation: 'Διόρθωση υπολοίπου', split: 'Σύνθετη κίνηση',
+  expense: 'Έξοδο', income: 'Έσοδο', transfer: 'Μεταφορά', saving_cash_offset: 'Αποταμίευση', withdrawal: 'Ανάληψη', refund: 'Επιστροφή χρημάτων', lending: 'Δανεικά προς άλλον', repayment: 'Επιστροφή δανεικών', card_purchase: 'Αγορά με πιστωτική', card_payment: 'Εξόφληση πιστωτικής', reconciliation: 'Διόρθωση υπολοίπου', split: 'Σύνθετη κίνηση',
 };
 
 export function eventKindLabel(kind: string) {
@@ -21,7 +21,7 @@ export function eventKindLabel(kind: string) {
 }
 
 const REVIEW_LABELS: Record<ReviewSuggestion['semanticKind'], string> = {
-  expense: 'Έξοδο', income: 'Έσοδο', transfer: 'Μεταφορά', saving_cash_offset: 'Αποταμίευση', withdrawal: 'Ανάληψη', refund: 'Επιστροφή χρημάτων', lending: 'Πλήρωσα για άλλον', repayment: 'Μου επέστρεψαν', card_purchase: 'Αγορά με πιστωτική', card_payment: 'Εξόφληση πιστωτικής', reconciliation: 'Διόρθωση υπολοίπου', split: 'Σύνθετη κίνηση', split_required: 'Χρειάζεται διαχωρισμό', iris_context: 'Χρειάζεται χειροκίνητο έλεγχο',
+  expense: 'Έξοδο', income: 'Έσοδο', transfer: 'Μεταφορά', saving_cash_offset: 'Αποταμίευση', withdrawal: 'Ανάληψη', refund: 'Επιστροφή χρημάτων', lending: 'Δανεικά προς άλλον', repayment: 'Επιστροφή δανεικών', card_purchase: 'Αγορά με πιστωτική', card_payment: 'Εξόφληση πιστωτικής', reconciliation: 'Διόρθωση υπολοίπου', split: 'Σύνθετη κίνηση', split_required: 'Χρειάζεται διαχωρισμό', iris_context: 'Χρειάζεται χειροκίνητο έλεγχο',
 };
 
 export function reviewSemanticLabel(kind: ReviewSuggestion['semanticKind']) {

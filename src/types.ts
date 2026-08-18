@@ -3,8 +3,6 @@ export type SavingSource = 'pay_and_save' | 'manual_transfer' | 'cash_offset';
 export type RecurringStatus = 'active' | 'paused' | 'stopped';
 export type CardKind = 'debit' | 'prepaid' | 'credit';
 export type CardNetwork = 'visa' | 'mastercard' | 'other';
-export type PersonAction = 'paid_for_other' | 'paid_by_other' | 'shared_purchase' | 'settlement_received' | 'settlement_sent' | 'forgiven';
-export type SettlementMethod = 'iris' | 'cash' | 'bank_transfer' | 'other';
 
 export interface Account {
   id: string;
@@ -102,10 +100,6 @@ export interface FinanceEvent {
   savingAmount?: number;
   savingSource?: SavingSource;
   receivableDelta?: number;
-  personBalanceDelta?: number;
-  personAction?: PersonAction;
-  settlementMethod?: SettlementMethod;
-  paymentTotal?: number;
   creditDelta?: number;
   source?: 'user' | 'migration' | 'review';
   createdAt: string;
