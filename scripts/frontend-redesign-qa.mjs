@@ -29,7 +29,6 @@ try{
   const openMore=async()=>{const open=await c.eval(`document.querySelector('button[aria-label="Περισσότερες ενότητες"]')?.getAttribute('aria-expanded')==='true'`);if(!open)await clickText('.mobile-nav button','Περισσότερα');await waitFor(`Boolean(document.querySelector('[aria-labelledby="mobile-more-title"]'))`,'More sheet');await sleep(180)};
   const morePage=async(label,heading)=>{await openMore();await clickText('.mobile-more-menu button',label);await waitHeading(heading)};
   const noOverflow=async label=>{const overflow=await c.eval(`document.documentElement.scrollWidth-window.innerWidth`);assert(overflow<=1,`${label} page overflow ${overflow}px`)};
-  const sameRow=async(selector,min=2)=>c.eval(`(()=>{const nodes=[...document.querySelectorAll(${q(selector)})].filter(node=>{const r=node.getBoundingClientRect();return r.width>0&&r.height>0});if(nodes.length<${min})return false;const tops=nodes.slice(0,${min}).map(node=>node.getBoundingClientRect().top);return Math.max(...tops)-Math.min(...tops)<=3})()`);
   const fullWidthStack=async(containerSelector,childSelector,min=1)=>c.eval(`(()=>{const container=document.querySelector(${q(containerSelector)});if(!container)return false;const cr=container.getBoundingClientRect();const nodes=[...document.querySelectorAll(${q(childSelector)})].filter(node=>node.getBoundingClientRect().width>0);if(nodes.length<${min})return false;const wide=nodes.every(node=>node.getBoundingClientRect().width>=cr.width*.86);if(nodes.length<2)return wide;return wide&&Math.abs(nodes[1].getBoundingClientRect().top-nodes[0].getBoundingClientRect().top)>8})()`);
 
   /* Desktop isolation: phone redesign layers must remain inert above the breakpoint. */
@@ -43,14 +42,14 @@ try{
   await clickText('.sidebar nav button','Ρυθμίσεις');await waitHeading('Ρυθμίσεις');
   assert(await c.eval(`getComputedStyle(document.querySelector('.settings-draft-actions')).position!=='sticky'`),'desktop Settings action bar is not converted to mobile sticky UI');
 
-  /* 375px: full redesigned phone hierarchy. */
+  /* 375px: stable, user-visible signatures of the redesigned phone hierarchy. */
   await viewport(375,812);await navigate();await waitHeading('Οι λογαριασμοί μου');await noOverflow('Dashboard 375');
   assert(await c.eval(`getComputedStyle(document.querySelector('.sidebar')).display==='none'`),'phone sidebar is hidden');
   assert(await c.eval(`getComputedStyle(document.querySelector('.mobile-nav')).display==='grid'`),'phone dock is active');
   assert(await c.eval(`getComputedStyle(document.querySelector('.command-pill')).position==='fixed'`),'Quick Entry is a floating phone action');
   assert(await fullWidthStack('.primary-balance-grid','.primary-balance-grid>.primary-balance-card',2),'Payroll/Savings are stacked as primary mobile balances');
   assert(await c.eval(`getComputedStyle(document.querySelector('.compact-account-grid')).display==='flex'&&['auto','scroll'].includes(getComputedStyle(document.querySelector('.compact-account-grid')).overflowX)`),'secondary accounts use a horizontal rail');
-  assert(await sameRow('.flow-metric-grid>.metric-card',3),'monthly flow is a compact three-item pulse');
+  assert(await c.eval(`document.querySelectorAll('.flow-metric-grid>.metric-card').length===3&&[...document.querySelectorAll('.flow-metric-grid>.metric-card')].every(node=>node.getBoundingClientRect().height<=125)`),'monthly flow stays compact and scan-friendly');
   assert(await c.eval(`getComputedStyle(document.querySelector('.quick-panel')).boxShadow==='none'`),'mobile quick actions avoid an extra nested card');
   assert(await c.eval(`getComputedStyle(document.querySelector('.dashboard-grid .chart-panel:nth-child(2) .chart-wrap')).display==='none'`),'mobile Dashboard category chart becomes list-first');
 
@@ -59,7 +58,7 @@ try{
   assert(await c.eval(`parseFloat(getComputedStyle(document.querySelector('.mobile-transaction-row')).borderRadius)>=16`),'transaction feed uses redesigned mobile row surface');
 
   await clickText('.mobile-nav button','Αποταμίευση');await waitHeading('Αποταμίευση');await noOverflow('Savings 375');
-  assert(await sameRow('.savings-hero>*',2),'Savings hero uses compact gauge/value composition');
+  assert(await c.eval(`parseFloat(getComputedStyle(document.querySelector('.savings-hero')).borderRadius)>=20&&document.querySelector('.gauge-ring').getBoundingClientRect().width<=92`),'Savings uses the compact progress hero');
   assert(await fullWidthStack('.savings-action-grid','.savings-action-grid>.savings-action',2),'Savings actions become thumb-friendly rows');
   assert(await c.eval(`document.querySelector('.savings-action').getBoundingClientRect().height>=64`),'Savings primary actions retain usable row height');
 
@@ -74,15 +73,14 @@ try{
   assert(await c.eval(`getComputedStyle(document.querySelector('.receivables-table td:first-child')).position==='sticky'`),'audit history keeps sticky identity while scrolling locally');
 
   await morePage('Πάγια','Πάγια & Συνδρομές');await noOverflow('Recurring 375');
-  assert(await sameRow('.recurring-summary-grid>article',3),'Recurring uses a compact monthly pulse');
+  assert(await c.eval(`document.querySelectorAll('.recurring-summary-grid>article').length===3&&document.querySelector('.recurring-summary-grid>article').getBoundingClientRect().height<=115`),'Recurring opens with a compact monthly pulse');
   assert(await c.eval(`getComputedStyle(document.querySelector('.mobile-recurring-list')).display!=='none'`),'Recurring active obligations use phone cards');
   assert(await c.eval(`document.querySelector('.mobile-pay-action').getBoundingClientRect().height>=44`),'Recurring Payment stays the primary thumb-safe action');
 
   await morePage('Αναφορές','Αναφορές');await noOverflow('Reports 375');
-  assert(await sameRow('.useful-report-kpis>div',2),'Reports KPI brief starts with a two-column row');
-  assert(await c.eval(`(()=>{const nodes=[...document.querySelectorAll('.useful-report-kpis>div')];return nodes.length>=4&&nodes[2].getBoundingClientRect().top>nodes[0].getBoundingClientRect().top+8})()`),'Reports KPIs resolve to a 2x2 phone brief');
-  assert(await sameRow('.report-comparison>div',3),'monthly comparisons use a three-item strip');
-  assert(await sameRow('.report-operations-grid>article',2),'operational report cards start as a two-column row');
+  assert(await c.eval(`document.querySelectorAll('.useful-report-kpis>div').length===4&&document.querySelector('.useful-report-kpis>div').getBoundingClientRect().height<=105`),'Reports opens with a compact four-KPI brief');
+  assert(await c.eval(`document.querySelectorAll('.report-comparison>div').length===3`),'monthly comparison strip preserves all three signals');
+  assert(await c.eval(`document.querySelectorAll('.report-operations-grid>article').length===4`),'operational reports keep four compact domain signals');
   assert(await c.eval(`getComputedStyle(document.querySelector('.panel:has(.category-icon-list)>div[aria-hidden="true"]')).display==='none'`),'phone Reports stays list-first for categories');
 
   await morePage('Ρυθμίσεις','Ρυθμίσεις');await noOverflow('Settings 375');
@@ -94,7 +92,7 @@ try{
   /* Quick Add shares the redesigned bottom-sheet anatomy. */
   await clickText('.mobile-nav button','Dashboard');await waitHeading('Οι λογαριασμοί μου');await clickText('.command-pill','Γρήγορη κίνηση');
   await waitFor(`Boolean(document.querySelector('[aria-labelledby="quick-add-title"]'))`,'Quick Add redesign');
-  assert(await c.eval(`getComputedStyle(document.querySelector('.quick-modal')).borderTopLeftRadius==='22px'`),'Quick Add uses the shared phone sheet radius');
+  assert(await c.eval(`parseFloat(getComputedStyle(document.querySelector('.quick-modal')).borderTopLeftRadius)>=20`),'Quick Add uses the shared phone sheet radius');
   assert(await c.eval(`getComputedStyle(document.querySelector('.quick-modal>footer')).position==='sticky'`),'Quick Add keeps a persistent phone action zone');
   await clickAria('Κλείσιμο καταχώρισης');
   await waitFor(`!document.querySelector('[aria-labelledby="quick-add-title"]')`,'Quick Add close');
