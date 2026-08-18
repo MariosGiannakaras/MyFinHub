@@ -1,6 +1,17 @@
 import { Banknote, Landmark } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 export type BankBrandKey='piraeus'|'revolut'|'alpha'|'payzy'|'viva'|'cash'|'generic';
+
+type BankBrandAsset={label:string;src:string;source:'wikimedia'|'verified-web'};
+
+const BRAND_ASSETS:Partial<Record<BankBrandKey,BankBrandAsset>>={
+  piraeus:{label:'Τράπεζα Πειραιώς',src:'https://upload.wikimedia.org/wikipedia/commons/0/00/Piraeus_Bank_2024_logo.svg',source:'wikimedia'},
+  revolut:{label:'Revolut',src:'https://upload.wikimedia.org/wikipedia/commons/7/73/Revolut_logo.svg',source:'wikimedia'},
+  alpha:{label:'Alpha Bank',src:'https://upload.wikimedia.org/wikipedia/commons/3/35/Alpha_Bank_logo.svg',source:'wikimedia'},
+  payzy:{label:'payzy by COSMOTE',src:'https://www.neukunden-rabatt.de/payzy_logo.jpg',source:'verified-web'},
+  viva:{label:'Viva.com',src:'https://cdn.asp.events/CLIENT_CloserSt_D86EA381_5056_B739_5482D50A1A831DDD/companyProfiles/8bdb9b68-4ddb-11f0-95a-06bd0f937899-logo.png',source:'verified-web'},
+};
 
 function normalize(value=''){return value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('el-GR')}
 
@@ -15,15 +26,18 @@ export function bankBrandKey(value?:string,name?:string):BankBrandKey{
   return 'generic';
 }
 
+export function bankBrandAsset(key:BankBrandKey){return BRAND_ASSETS[key]??null}
+
 export function BankBrandMark({id,name,compact=true}:{id?:string;name?:string;compact?:boolean}){
   const key=bankBrandKey(id,name);
+  const asset=bankBrandAsset(key);
+  const [failed,setFailed]=useState(false);
+  useEffect(()=>setFailed(false),[key,asset?.src]);
+
   if(key==='cash')return <span className="bank-brand-mark bankmark-cash" aria-hidden="true"><Banknote/></span>;
-  if(key==='generic')return <span className="bank-brand-mark bankmark-generic" aria-hidden="true"><Landmark/></span>;
-  return <span className={`bank-brand-mark bankmark-${key} ${compact?'compact':'wordmark'}`} aria-hidden="true">
-    {key==='piraeus'?<><i className="piraeus-symbol"><b/><b/></i>{!compact?<em>ΠΕΙΡΑΙΩΣ</em>:null}</>:null}
-    {key==='revolut'?<><i className="brand-letter revolut-letter">R</i>{!compact?<em>Revolut</em>:null}</>:null}
-    {key==='alpha'?<><i className="brand-letter alpha-letter">α</i>{!compact?<em>ALPHA BANK</em>:null}</>:null}
-    {key==='payzy'?<><i className="brand-letter payzy-letter">p</i>{!compact?<em>payzy</em>:null}</>:null}
-    {key==='viva'?<><i className="brand-letter viva-letter">v</i>{!compact?<em>viva</em>:null}</>:null}
+  if(key==='generic'||!asset||failed)return <span className={`bank-brand-mark bankmark-${key==='generic'?'generic':key} bank-logo-fallback`} aria-hidden="true"><Landmark/></span>;
+
+  return <span className={`bank-brand-mark bankmark-${key} ${compact?'compact':'wordmark'}`} aria-hidden="true" data-bank-brand={key} data-bank-logo-source={asset.source}>
+    <img className="bank-logo-image" src={asset.src} alt="" decoding="async" referrerPolicy="no-referrer" onError={()=>setFailed(true)}/>
   </span>;
 }
