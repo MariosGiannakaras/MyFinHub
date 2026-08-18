@@ -39,7 +39,7 @@ try{
   assert(await c.eval("document.querySelector('.owned-date-popover').contains(document.activeElement)"),'calendar traps focus');
   assert(await c.eval("document.querySelectorAll('.owned-calendar-grid [role=\"gridcell\"]').length===42"),'calendar renders six-week grid');
   assert(await c.eval("parseFloat(getComputedStyle(document.querySelector('.owned-date-shell input')).fontSize)>=15.9"),'owned date input uses mobile-safe font size');
-  await c.send('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});await waitFor("function(){return !document.querySelector('.owned-date-popover')}",'calendar Escape close');
+  await c.eval("document.activeElement?.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',code:'Escape',bubbles:true,cancelable:true}))");await waitFor("function(){return !document.querySelector('.owned-date-popover')}",'calendar Escape close');
   await c.eval("document.querySelector('button[aria-label=\"Κλείσιμο καταχώρισης\"]')?.click()");await waitFor("function(){return !document.querySelector('.quick-modal')}",'Quick Entry close');
 
   const routeChecks=[['.mobile-nav button','Αποταμίευση','Αποταμίευση','Νέα','savings-dialog'],['.mobile-more-menu button','Πιστωτική','Πιστωτική Κάρτα','Νέα αγορά','credit-dialog'],['.mobile-more-menu button','Δόσεις & Δάνεια','Δόσεις & Δάνεια','Νέο','loan-editor-dialog'],['.mobile-more-menu button','Δανεικά / Οφειλές','Δανεικά & επιστροφές','Νέα κίνηση','lending-dialog'],['.mobile-more-menu button','Πάγια','Πάγια & Συνδρομές','Νέο πάγιο','editor-dialog']];
