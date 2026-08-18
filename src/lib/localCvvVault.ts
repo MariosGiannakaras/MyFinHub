@@ -1,4 +1,5 @@
 import { normalizeLocalCvv } from './localCvvFormat';
+export { normalizeLocalCvv } from './localCvvFormat';
 
 const DB_NAME = 'rheomiq-local-card-vault';
 const DB_VERSION = 1;
