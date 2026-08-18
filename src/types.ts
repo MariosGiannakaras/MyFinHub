@@ -1,6 +1,7 @@
 export type AccountKind = 'cash' | 'bank' | 'savings' | 'credit';
 export type SavingSource = 'pay_and_save' | 'manual_transfer' | 'cash_offset';
 export type RecurringStatus = 'active' | 'paused' | 'stopped';
+export type LoanKind = 'installment' | 'loan' | 'self-loan';
 
 export interface Account {
   id: string;
@@ -184,6 +185,11 @@ export interface Loan {
   paidCount?: number;
   source?: string;
   accountingMode?: 'expense-per-installment' | 'liability-repayment';
+  kind?: LoanKind;
+  firstExpectedDate?: string | null;
+  defaultAccountId?: string;
+  forgivenAmount?: number;
+  longTermRecurring?: boolean;
 }
 
 export interface LendingPerson {
