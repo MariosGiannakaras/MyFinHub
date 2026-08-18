@@ -1,4 +1,4 @@
-import type { CategoryDefinition, FinanceSettings } from '../types';
+import type { CategoryDefinition, FinanceSettings } from '../types.js';
 
 const seedSubcategories: Record<string,string[]> = {
   'όχημα':['Βενζίνη','Service','Συνεργείο','Ανταλλακτικά'],
