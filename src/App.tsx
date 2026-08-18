@@ -10,21 +10,23 @@ import { QuickAdd, type QuickPrefill } from './components/QuickAdd';
 import { useFinance } from './hooks/useFinance';
 import { useLocalDate } from './hooks/useLocalDate';
 import { useSession } from './hooks/useSession';
-import { accountBalances, createEvent } from './lib/domain';
+import { accountBalances } from './lib/domain';
 import { reportingMonthForDate } from './lib/localDate';
-import type { EventKind, FinanceEvent, Loan, RecurringItem, ReviewDecision } from './types';
+import type { CardBank, EventKind, FinanceData, FinanceEvent, Loan, PaymentCard, RecurringItem, ReviewDecision } from './types';
 
 const DashboardPage = lazy(() => import('./pages/DashboardPage').then((module) => ({ default: module.DashboardPage })));
 const TransactionsPage = lazy(() => import('./pages/TransactionsPage').then((module) => ({ default: module.TransactionsPage })));
 const ReviewPage = lazy(() => import('./pages/ReviewPage').then((module) => ({ default: module.ReviewPage })));
 const SavingsPage = lazy(() => import('./pages/SavingsPage').then((module) => ({ default: module.SavingsPage })));
-const CreditLoansPage = lazy(() => import('./pages/CreditLoansPage').then((module) => ({ default: module.CreditLoansPage })));
+const CardsPage = lazy(() => import('./pages/CardsPage').then((module) => ({ default: module.CardsPage })));
+const CreditCardPage = lazy(() => import('./pages/CreditCardPage').then((module) => ({ default: module.CreditCardPage })));
+const LoansPage = lazy(() => import('./pages/LoansPage').then((module) => ({ default: module.LoansPage })));
 const RecurringPage = lazy(() => import('./pages/RecurringPage').then((module) => ({ default: module.RecurringPage })));
 const LendingPage = lazy(() => import('./pages/LendingPage').then((module) => ({ default: module.LendingPage })));
 const ReportsPage = lazy(() => import('./pages/ReportsPage').then((module) => ({ default: module.ReportsPage })));
 const SettingsPage = lazy(() => import('./pages/SettingsPage').then((module) => ({ default: module.SettingsPage })));
 
-const PAGE_IDS: PageId[] = ['dashboard','transactions','review','savings','credit','lending','recurring','reports','settings'];
+const PAGE_IDS: PageId[] = ['dashboard','transactions','review','savings','cards','credit','loans','lending','recurring','reports','settings'];
 const GENERIC_ENTRY_PAGES = new Set<PageId>(['dashboard','transactions']);
 const PERIOD_PAGES = new Set<PageId>(['dashboard','transactions','savings','reports']);
 function routeFromHash() { const raw=location.hash.replace(/^#\/?/,'').trim(); if(!raw)return {page:'dashboard' as PageId,notFound:false}; if(PAGE_IDS.includes(raw as PageId))return {page:raw as PageId,notFound:false}; return {page:'dashboard' as PageId,notFound:true}; }
@@ -46,8 +48,12 @@ function FinanceApp({userEmail,onLogout}:{userEmail:string|null;onLogout:()=>voi
   const editEvent=(id:string)=>{setEditingEventId(id);setQuickPrefill(null);setQuickOpen(true)};
   const openQuick=(kind:EventKind='expense',prefill:QuickPrefill|null=null)=>{setEditingEventId(null);setQuickKind(kind);setQuickPrefill(prefill);setQuickOpen(true)};
   const upsertRecurring=(item:RecurringItem)=>finance.update(current=>{const seed=current.seed.recurring.some(r=>r.id===item.id);if(seed)return {...current,state:{...current.state,recurringOverrides:{...current.state.recurringOverrides,[item.id]:item}}};const custom=current.state.recurringCustom??[];const exists=custom.some(r=>r.id===item.id);return {...current,state:{...current.state,recurringCustom:exists?custom.map(r=>r.id===item.id?item:r):[...custom,item]}}});
-  const upsertLoan=(loan:Loan)=>finance.update(current=>{if(current.seed.loans.some(l=>l.id===loan.id))return {...current,state:{...current.state,loanOverrides:{...current.state.loanOverrides,[loan.id]:loan}}};const custom=current.state.customLoans??[];const exists=custom.some(l=>l.id===loan.id);return {...current,state:{...current.state,customLoans:exists?custom.map(l=>l.id===loan.id?loan:l):[...custom,loan]}}});
-  const payLoan=(loan:Loan)=>{const mode=loan.accountingMode||'expense-per-installment';const event=createEvent({kind:mode==='liability-repayment'?'card_payment':'expense',date:today,amount:loan.installment,note:`Δόση: ${loan.name}`,category:'Δόσεις / δάνεια',accountId:data.state.settings.defaultLoanAccount,fromAccountId:data.state.settings.defaultLoanAccount});event.loanId=loan.id;addEvent(event)};
+  const withLoan=(current:FinanceData,loan:Loan)=>{if(current.seed.loans.some(l=>l.id===loan.id))return {...current,state:{...current.state,loanOverrides:{...current.state.loanOverrides,[loan.id]:loan}}};const custom=current.state.customLoans??[];const exists=custom.some(l=>l.id===loan.id);return {...current,state:{...current.state,customLoans:exists?custom.map(l=>l.id===loan.id?loan:l):[...custom,loan]}}};
+  const upsertLoan=(loan:Loan)=>finance.update(current=>withLoan(current,loan));
+  const createSelfLoan=(loan:Loan,event:FinanceEvent)=>finance.update(current=>{const next=withLoan(current,loan);const events=next.state.events??[];return {...next,state:{...next.state,events:[...events.filter(existing=>existing.id!==event.id),event]}}});
+  const upsertBank=(bank:CardBank)=>finance.update(current=>{const banks=current.state.cardBanks??[];const exists=banks.some(item=>item.id===bank.id);return {...current,state:{...current.state,cardBanks:exists?banks.map(item=>item.id===bank.id?bank:item):[...banks,bank]}}});
+  const upsertCard=(card:PaymentCard)=>finance.update(current=>{const cards=current.state.cards??[];const exists=cards.some(item=>item.id===card.id);return {...current,state:{...current.state,cards:exists?cards.map(item=>item.id===card.id?card:item):[...cards,card]}}});
+  const archiveCard=(card:PaymentCard)=>upsertCard({...card,active:false,updatedAt:new Date().toISOString()});
   const decide=(id:string,decision:ReviewDecision)=>finance.update(current=>({...current,state:{...current.state,reviewDecisions:{...(current.state.reviewDecisions??{}),[id]:decision}}}));
   const balance=(accountId:string)=>accountBalances(data,today)[accountId]||0;
   const recover=()=>{if((finance.saveState==='error'||finance.saveState==='conflict')&&!window.confirm('Η επαναφόρτωση θα απορρίψει τυχόν τοπικές αλλαγές που δεν αποθηκεύτηκαν. Να φορτωθεί η τελευταία έκδοση από τη βάση;'))return;void finance.reload()};
@@ -56,9 +62,11 @@ function FinanceApp({userEmail,onLogout}:{userEmail:string|null;onLogout:()=>voi
     :page==='transactions'?<TransactionsPage data={data} month={month} onEditEvent={editEvent} onDeleteEvent={deleteEvent}/>
     :page==='review'?<ReviewPage data={data} onDecision={decide}/>
     :page==='savings'?<SavingsPage data={data} month={month} asOf={today} onCreate={addEvent}/>
-    :page==='credit'?<CreditLoansPage data={data} asOf={today} onCardPurchase={()=>openQuick('card_purchase')} onCardPayment={()=>openQuick('card_payment')} onEditEvent={editEvent} onUpsertLoan={upsertLoan} onPayLoan={payLoan}/>
+    :page==='cards'?<CardsPage data={data} onUpsertBank={upsertBank} onUpsertCard={upsertCard} onArchiveCard={archiveCard} onOpenCredit={()=>navigate('credit')}/>
+    :page==='credit'?<CreditCardPage data={data} asOf={today} onCreateEvent={addEvent} onEditEvent={editEvent} onDeleteEvent={deleteEvent}/>
+    :page==='loans'?<LoansPage data={data} asOf={today} onUpsertLoan={upsertLoan} onCreateEvent={addEvent} onCreateSelfLoan={createSelfLoan}/>
     :page==='lending'?<LendingPage data={data} asOf={today} onCreateEvent={addEvent}/>
-    :page==='recurring'?<RecurringPage data={data} asOf={today} onUpsert={upsertRecurring} onCreateEvent={addEvent}/>
+    :page==='recurring'?<RecurringPage data={data} asOf={today} onUpsert={upsertRecurring} onCreateEvent={addEvent} onOpenLoans={()=>navigate('loans')}/>
     :page==='reports'?<ReportsPage data={data} month={month}/>
     :<SettingsPage data={data} filePath={finance.filePath} lastSavedAt={finance.lastSavedAt} onImport={finance.importData} onBackup={finance.createBackup} onSettings={settings=>finance.update(c=>({...c,state:{...c.state,settings:{...settings,motion:'full'}}}))}/>;
 
