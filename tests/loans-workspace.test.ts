@@ -1,0 +1,11 @@
+import { describe, expect, it } from 'vitest';
+import { createEvent } from '../src/lib/domain.js';
+import { isLongTermLoan, isSelfLoan, loanOutstanding, loanPaidCount, loanRemainingInstallments, typicalLoanPaymentDay } from '../src/lib/loans.js';
+import type { FinanceData, Loan } from '../src/types.js';
+
+function fixture():FinanceData{return {app:'RheomIQ',schemaVersion:3,updatedAt:'2026-08-17T00:00:00.000Z',seed:{accounts:[{id:'bank',name:'Bank',kind:'bank'},{id:'savings',name:'Savings',kind:'savings'}],months:[],transactions:[],snapshots:[],recurring:[],subscriptions:[],loans:[],lending:[],stats:{}},state:{customTransactions:[],overrides:{},deleted:[],recurringCustom:[],recurringOverrides:{},loanExtra:{},loanOverrides:{},customLoans:[],lendingCustom:[],events:[],reviewDecisions:{},settings:{excludedFromAvailable:[],accountNames:{},expenseCategories:['Δόσεις / δάνεια'],incomeCategories:['Μισθός'],customPresets:[],pinnedPresets:[],defaultExpenseAccount:'bank',defaultIncomeAccount:'bank',defaultLoanAccount:'bank',motion:'full'}}} as FinanceData}
+
+describe('loan workspace semantics',()=>{
+ it('derives variable payment amount and installment progress independently',()=>{const data=fixture();const loan:Loan={id:'loan',name:'Bike',total:1200,installment:100,installments:12,paidCount:2,accountingMode:'expense-per-installment'};const e=createEvent({kind:'expense',date:'2026-08-14',amount:120,note:'Δόση',category:'Δόσεις / δάνεια',accountId:'bank'});e.loanId=loan.id;data.state.events=[e];expect(loanPaidCount(data,loan)).toBe(3);expect(loanRemainingInstallments(data,loan)).toBe(9);expect(loanOutstanding(data,loan)).toBe(880);expect(typicalLoanPaymentDay(data,loan)).toBe(14);expect(isLongTermLoan(loan)).toBe(true)});
+ it('recognizes HELP self-loan and forgiveness without ledger movement',()=>{const data=fixture();const loan:Loan={id:'help',name:'ΒΟΗΘΕΙΑ',total:200,installment:200,installments:1,kind:'self-loan',source:'self-loan',forgivenAmount:50};const e=createEvent({kind:'transfer',date:'2026-08-10',amount:60,note:'ΕΠΙΣΤΡΟΦΗ',fromAccountId:'bank',toAccountId:'savings'});e.loanId=loan.id;data.state.events=[e];expect(isSelfLoan(loan)).toBe(true);expect(loanOutstanding(data,loan)).toBe(90)});
+});
