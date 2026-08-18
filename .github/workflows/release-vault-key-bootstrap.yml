@@ -9,7 +9,7 @@ on:
 
 permissions:
   contents: read
-  issues: write
+  statuses: write
 
 jobs:
   configure:
@@ -19,7 +19,6 @@ jobs:
     env:
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       GH_TOKEN: ${{ github.token }}
-      PR_NUMBER: "128"
       VERCEL_PROJECT_NAME: rheom-iq
       VERCEL_TEAM_SLUG: mariosgiannakaras-projects
     steps:
@@ -28,26 +27,33 @@ jobs:
         run: |
           set -euo pipefail
 
-          post_status() {
-            local message="$1"
-            body="$(MESSAGE="$message" python - <<'PY'
+          post_commit_status() {
+            local state="$1"
+            local description="$2"
+            payload="$(STATE="$state" DESCRIPTION="$description" python - <<'PY'
           import json
           import os
-          print(json.dumps({"body": os.environ["MESSAGE"]}))
+          print(json.dumps({
+              "state": os.environ["STATE"],
+              "context": "release/card-vault-bootstrap",
+              "description": os.environ["DESCRIPTION"]
+          }))
           PY
             )"
             curl --silent --show-error --fail \
               --request POST \
-              --url "https://api.github.com/repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
+              --url "https://api.github.com/repos/${GITHUB_REPOSITORY}/statuses/${GITHUB_SHA}" \
               --header "Authorization: Bearer ${GH_TOKEN}" \
               --header 'Accept: application/vnd.github+json' \
               --header 'Content-Type: application/json' \
-              --data-binary "$body" \
+              --data-binary "$payload" \
               >/dev/null
           }
 
+          post_commit_status pending "Configuring the initial Vercel Production card-vault key."
+
           if [[ -z "${VERCEL_TOKEN:-}" ]]; then
-            post_status "Bootstrap blocked: repository secret VERCEL_TOKEN is not configured."
+            post_commit_status failure "Blocked: repository VERCEL_TOKEN secret is not configured."
             exit 10
           fi
 
@@ -89,8 +95,8 @@ jobs:
             --data-binary "$payload")"
 
           if [[ "$http_code" != "200" && "$http_code" != "201" ]]; then
-            post_status "Bootstrap failed: Vercel environment update returned HTTP ${http_code}; response body was intentionally not logged."
+            post_commit_status failure "Vercel environment update failed with HTTP ${http_code}."
             exit 12
           fi
 
-          post_status "Bootstrap succeeded: CARD_VAULT_KEY and CARD_VAULT_KEY_VERSION=1 are configured as sensitive Vercel Production variables. No key material was logged or committed."
+          post_commit_status success "Sensitive Production card-vault variables configured."
