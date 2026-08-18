@@ -24,12 +24,7 @@ function base(args:PersonEventArgs,kind:FinanceEvent['kind'],amount:number):Fina
   return {id:`evt-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,date:args.date,kind,amount,note:args.note?.trim()||'',category:args.category,subcategory:args.subcategory,accountId:args.accountId,person:args.person.trim(),legs:[],personAction:args.action,settlementMethod:args.settlementMethod,source:'user',createdAt:now,updatedAt:now};
 }
 
-/**
- * Signed person balance convention:
- *   > 0  the person owes the user
- *   < 0  the user owes the person
- *   = 0  settled
- */
+/** Signed person balance: positive = they owe the user; negative = the user owes them. */
 export function createPersonEvent(args:PersonEventArgs):FinanceEvent{
   const person=args.person.trim();
   if(!person)throw new Error('Συμπλήρωσε το πρόσωπο.');
@@ -74,7 +69,7 @@ export function createPersonEvent(args:PersonEventArgs):FinanceEvent{
     if(current<=0)throw new Error('Δεν υπάρχει ποσό που να σου χρωστά αυτό το πρόσωπο.');
     if(amount>current+.009)throw new Error('Η τακτοποίηση δεν μπορεί να ξεπερνά το ποσό που σου χρωστά.');
     const account=requireAccount(args.accountId);
-    const event=base(args,'person_settlement',amount);
+    const event=base(args,'transfer',amount);
     event.note=event.note||'Μου επέστρεψαν χρήματα';
     event.legs=[{accountId:account,amount}];
     event.receivableDelta=-amount;
@@ -87,7 +82,7 @@ export function createPersonEvent(args:PersonEventArgs):FinanceEvent{
     if(current>=0)throw new Error('Δεν υπάρχει ποσό που να χρωστάς σε αυτό το πρόσωπο.');
     if(amount>Math.abs(current)+.009)throw new Error('Η τακτοποίηση δεν μπορεί να ξεπερνά το ποσό που χρωστάς.');
     const account=requireAccount(args.accountId);
-    const event=base(args,'person_settlement',amount);
+    const event=base(args,'transfer',amount);
     event.note=event.note||'Επέστρεψα χρήματα';
     event.legs=[{accountId:account,amount:-amount}];
     event.receivableDelta=amount;
@@ -98,7 +93,7 @@ export function createPersonEvent(args:PersonEventArgs):FinanceEvent{
   const current=Number(args.currentBalance||0);
   if(Math.abs(current)<.009)throw new Error('Δεν υπάρχει οφειλή για διαγραφή ή συμψηφισμό.');
   if(amount>Math.abs(current)+.009)throw new Error('Η διαγραφή δεν μπορεί να ξεπερνά το εκκρεμές ποσό.');
-  const event=base(args,'person_settlement',amount);
+  const event=base(args,'transfer',amount);
   event.note=event.note||'Χάρισμα / συμψηφισμός οφειλής';
   const delta=current>0?-amount:amount;
   event.receivableDelta=delta;
