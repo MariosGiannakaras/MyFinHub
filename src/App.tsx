@@ -76,7 +76,7 @@ function FinanceApp({userEmail,onLogout}:{userEmail:string|null;onLogout:()=>voi
   const content=page==='dashboard'?<DashboardPage data={data} month={month} asOf={today} motionMode="full" onQuickAdd={(prefill?:QuickPrefill)=>openQuick('expense',prefill||null)} onTransactions={()=>navigate('transactions')}/>
     :page==='transactions'?<TransactionsPage data={data} month={month} onEditEvent={editEvent} onDeleteEvent={deleteEvent}/>
     :page==='review'?<ReviewPage data={data} onDecision={decide}/>
-    :page==='savings'?<SavingsPage data={data} month={month} asOf={today} onQuickAdd={()=>openQuick('saving_cash_offset')}/>
+    :page==='savings'?<SavingsPage data={data} month={month} asOf={today} onCreate={addEvent}/>
     :page==='credit'?<CreditLoansPage data={data} asOf={today} onCardPurchase={()=>openQuick('card_purchase')} onCardPayment={()=>openQuick('card_payment')} onEditEvent={editEvent} onUpsertLoan={upsertLoan} onPayLoan={payLoan}/>
     :page==='lending'?<LendingPage data={data} onQuickAdd={()=>openQuick('lending')}/>
     :page==='recurring'?<RecurringPage data={data} onUpsert={upsertRecurring} onDelete={deleteRecurring}/>
