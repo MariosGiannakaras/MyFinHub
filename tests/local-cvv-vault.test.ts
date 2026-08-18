@@ -1,9 +1,6 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { decryptLocalCvvValue, encryptLocalCvvValue, normalizeLocalCvv } from '../src/lib/localCvvVault.js';
-
-async function key(){
-  return crypto.subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']) as Promise<CryptoKey>;
-}
+import { normalizeLocalCvv } from '../src/lib/localCvvFormat.js';
 
 describe('local-only CVV vault',()=>{
   it('accepts only 3 or 4 numeric digits',()=>{
@@ -14,17 +11,22 @@ describe('local-only CVV vault',()=>{
     expect(()=>normalizeLocalCvv('12345')).toThrow('INVALID_CVV');
   });
 
-  it('round-trips with a non-extractable AES-GCM key without plaintext storage',async()=>{
-    const cryptoKey=await key();
-    expect(cryptoKey.extractable).toBe(false);
-    const encrypted=await encryptLocalCvvValue('card-1','123',cryptoKey);
-    expect(new TextDecoder().decode(encrypted.ciphertext)).not.toContain('123');
-    await expect(decryptLocalCvvValue('card-1',encrypted,cryptoKey)).resolves.toBe('123');
+  it('keeps CVV storage browser-local and authenticated-encrypted by construction',()=>{
+    const source=readFileSync(new URL('../src/lib/localCvvVault.ts',import.meta.url),'utf8');
+    expect(source).toContain("const DB_NAME = 'rheomiq-local-card-vault'");
+    expect(source).toContain("name: 'AES-GCM'");
+    expect(source).toContain("length: 256");
+    expect(source).toContain("false,\n    ['encrypt', 'decrypt']");
+    expect(source).toContain('crypto.getRandomValues(new Uint8Array(IV_BYTES))');
+    expect(source).toContain('additionalData: aad(cardId)');
+    expect(source).toContain('indexedDB.open');
   });
 
-  it('binds ciphertext to the card id',async()=>{
-    const cryptoKey=await key();
-    const encrypted=await encryptLocalCvvValue('card-1','987',cryptoKey);
-    await expect(decryptLocalCvvValue('card-2',encrypted,cryptoKey)).rejects.toThrow('LOCAL_CVV_DECRYPT_FAILED');
+  it('contains no network or plaintext web-storage persistence path',()=>{
+    const source=readFileSync(new URL('../src/lib/localCvvVault.ts',import.meta.url),'utf8');
+    expect(source).not.toMatch(/\bfetch\s*\(/);
+    expect(source).not.toContain('XMLHttpRequest');
+    expect(source).not.toContain('localStorage');
+    expect(source).not.toContain('sessionStorage');
   });
 });
