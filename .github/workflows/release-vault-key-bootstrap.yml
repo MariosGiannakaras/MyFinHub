@@ -1,13 +1,12 @@
 name: Release Vault Key Bootstrap
 
 on:
-  pull_request:
-    branches: [develop]
-    paths:
-      - .github/workflows/release-vault-key-bootstrap.yml
+  push:
+    branches: [release/88-vercel-key-bootstrap]
 
 permissions:
   contents: read
+  issues: write
 
 jobs:
   configure:
@@ -18,18 +17,38 @@ jobs:
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      GH_TOKEN: ${{ github.token }}
+      PR_NUMBER: "128"
     steps:
       - name: Configure sensitive Vercel Production variables
         shell: bash
         run: |
           set -euo pipefail
 
+          post_status() {
+            local message="$1"
+            body="$(MESSAGE="$message" python - <<'PY'
+          import json
+          import os
+          print(json.dumps({"body": os.environ["MESSAGE"]}))
+          PY
+            )"
+            curl --silent --show-error --fail \
+              --request POST \
+              --url "https://api.github.com/repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
+              --header "Authorization: Bearer ${GH_TOKEN}" \
+              --header 'Accept: application/vnd.github+json' \
+              --header 'Content-Type: application/json' \
+              --data-binary "$body" \
+              >/dev/null
+          }
+
           if [[ -z "${VERCEL_TOKEN:-}" ]]; then
-            echo "Missing required GitHub secret: VERCEL_TOKEN"
+            post_status "Bootstrap blocked: repository secret VERCEL_TOKEN is not configured."
             exit 10
           fi
           if [[ -z "${VERCEL_PROJECT_ID:-}" ]]; then
-            echo "Missing required GitHub secret: VERCEL_PROJECT_ID"
+            post_status "Bootstrap blocked: repository secret VERCEL_PROJECT_ID is not configured."
             exit 11
           fi
 
@@ -74,8 +93,8 @@ jobs:
             --data-binary "$payload")"
 
           if [[ "$http_code" != "200" && "$http_code" != "201" ]]; then
-            echo "Vercel environment update failed with HTTP ${http_code}."
+            post_status "Bootstrap failed: Vercel environment update returned HTTP ${http_code}; response body was intentionally not logged."
             exit 12
           fi
 
-          echo "Configured CARD_VAULT_KEY and CARD_VAULT_KEY_VERSION for Vercel Production."
+          post_status "Bootstrap succeeded: CARD_VAULT_KEY and CARD_VAULT_KEY_VERSION=1 are configured as sensitive Vercel Production variables. No key material was logged or committed."
