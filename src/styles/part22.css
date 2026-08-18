@@ -1,0 +1,3 @@
+@media(max-width:680px){
+  .settings-actions button,.settings-draft-actions button{min-height:46px!important;height:auto!important}
+}
