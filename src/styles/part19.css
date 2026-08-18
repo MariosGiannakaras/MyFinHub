@@ -25,6 +25,10 @@
 .frequent-grid .frequent-icon{position:absolute;left:8px;top:50%;transform:translateY(-50%)}
 .frequent-grid .frequent-icon .finance-icon{width:28px;height:28px;flex-basis:28px}
 .frequent-grid button:hover .frequent-icon{transform:translateY(calc(-50% - 1px))}
+.frequent-strip button{display:grid;grid-template-columns:auto max-content;grid-template-rows:auto auto;column-gap:6px;align-items:center;text-align:left;padding:5px 8px}
+.frequent-strip button>.finance-icon{grid-row:1/3;width:26px;height:26px;flex-basis:26px;border-radius:8px}
+.frequent-strip button>span{font-size:8.5px;font-weight:750}
+.frequent-strip button>small{grid-column:2;margin-top:0}
 .legend-category{display:inline-flex!important;align-items:center;gap:6px;min-width:0}
 .legend-category .finance-icon{width:22px;height:22px;flex-basis:22px;border-radius:7px}
 .category-icon-list .semantic-list-title .finance-icon{width:25px;height:25px;flex-basis:25px}
