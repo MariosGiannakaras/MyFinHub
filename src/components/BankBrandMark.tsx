@@ -19,9 +19,9 @@ const LABELS:Record<BankBrandKey,string>={piraeus:'Πειραιώς',revolut:'Re
 
 export function BankBrandMark({id,name,compact=true}:{id?:string;name?:string;compact?:boolean}){
   const key=bankBrandKey(id,name);const label=LABELS[key];
-  if(key==='cash')return <span className="bank-brand-mark bank-cash" aria-label={label}><Banknote/></span>;
-  if(key==='generic')return <span className="bank-brand-mark bank-generic" aria-label={name||label}><Landmark/></span>;
-  return <span className={`bank-brand-mark bank-${key} ${compact?'compact':'wordmark'}`} aria-label={label} title={label}>
+  if(key==='cash')return <span className="bank-brand-mark bankmark-cash" aria-label={label}><Banknote/></span>;
+  if(key==='generic')return <span className="bank-brand-mark bankmark-generic" aria-label={name||label}><Landmark/></span>;
+  return <span className={`bank-brand-mark bankmark-${key} ${compact?'compact':'wordmark'}`} aria-label={label} title={label}>
     {key==='piraeus'?<><i className="piraeus-symbol" aria-hidden="true"><b/><b/></i>{!compact?<em>ΠΕΙΡΑΙΩΣ</em>:null}</>:null}
     {key==='revolut'?<><i className="brand-letter revolut-letter" aria-hidden="true">R</i>{!compact?<em>Revolut</em>:null}</>:null}
     {key==='alpha'?<><i className="brand-letter alpha-letter" aria-hidden="true">α</i>{!compact?<em>ALPHA BANK</em>:null}</>:null}
