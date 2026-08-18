@@ -17,10 +17,10 @@ jobs:
     timeout-minutes: 5
     env:
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       GH_TOKEN: ${{ github.token }}
       PR_NUMBER: "128"
+      VERCEL_PROJECT_NAME: rheom-iq
+      VERCEL_TEAM_SLUG: mariosgiannakaras-projects
     steps:
       - name: Configure sensitive Vercel Production variables
         shell: bash
@@ -49,10 +49,6 @@ jobs:
             post_status "Bootstrap blocked: repository secret VERCEL_TOKEN is not configured."
             exit 10
           fi
-          if [[ -z "${VERCEL_PROJECT_ID:-}" ]]; then
-            post_status "Bootstrap blocked: repository secret VERCEL_PROJECT_ID is not configured."
-            exit 11
-          fi
 
           card_vault_key="$(openssl rand -hex 32)"
           echo "::add-mask::$card_vault_key"
@@ -80,10 +76,7 @@ jobs:
           PY
           )"
 
-          endpoint="https://api.vercel.com/v10/projects/${VERCEL_PROJECT_ID}/env?upsert=true"
-          if [[ -n "${VERCEL_ORG_ID:-}" ]]; then
-            endpoint="${endpoint}&teamId=${VERCEL_ORG_ID}"
-          fi
+          endpoint="https://api.vercel.com/v10/projects/${VERCEL_PROJECT_NAME}/env?upsert=true&slug=${VERCEL_TEAM_SLUG}"
 
           http_code="$(curl --silent --show-error \
             --output /tmp/vercel-env-response.json \
