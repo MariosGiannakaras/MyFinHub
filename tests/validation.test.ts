@@ -121,6 +121,13 @@ describe('finance document validation', () => {
     expect(() => validateFinanceData(badLoan)).toThrowError(/kind/i);
   });
 
+  it.each(['pan','cardNumber','full_card_number','expiry','expirationDate','cvv','cvc','securityCode'])('rejects payment-card secret field %s from ordinary finance state', (secretField) => {
+    const state = validState();
+    state.state.cards.push({ id: 'card-1', bankId: 'bank', nickname: 'Card', kind: 'credit', network: 'visa', last4: '4242', active: true, createdAt: state.updatedAt, updatedAt: state.updatedAt, [secretField]: 'secret' });
+    expect(() => validateFinanceData(state)).toThrowError(/secret field/i);
+    expect(() => validateFinanceState(state.state)).toThrowError(/secret field/i);
+  });
+
   it('rejects duplicate persistent ids', () => {
     const state = validState();
     state.seed.accounts.push(
