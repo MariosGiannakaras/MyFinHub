@@ -1,5 +1,6 @@
 name: Release Vault Key Bootstrap
 
+# One-shot release #88 trigger. Remove this workflow immediately after it reports its result.
 on:
   push:
     branches: [develop]
