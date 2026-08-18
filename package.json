@@ -15,7 +15,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "security:guard": "node scripts/security-guard.mjs",
-    "qa:frontend": "node scripts/frontend-qa.mjs",
+    "qa:frontend": "node scripts/frontend-qa.mjs && node scripts/frontend-redesign-qa.mjs",
     "check": "npm run security:guard && npm run test && npm run build",
     "db:import": "tsx scripts/migrate-json-to-supabase.ts",
     "db:verify": "tsx scripts/migrate-json-to-supabase.ts --verify-only"
