@@ -1,6 +1,8 @@
 export type AccountKind = 'cash' | 'bank' | 'savings' | 'credit';
 export type SavingSource = 'pay_and_save' | 'manual_transfer' | 'cash_offset';
 export type RecurringStatus = 'active' | 'paused' | 'stopped';
+export type CardKind = 'debit' | 'prepaid' | 'credit';
+export type CardNetwork = 'visa' | 'mastercard' | 'other';
 
 export interface Account {
   id: string;
@@ -13,6 +15,27 @@ export interface Account {
 export interface CategoryDefinition {
   name: string;
   subcategories: string[];
+}
+
+export interface CardBank {
+  id: string;
+  name: string;
+  order: number;
+  custom?: boolean;
+}
+
+export interface PaymentCard {
+  id: string;
+  bankId: string;
+  nickname: string;
+  kind: CardKind;
+  network: CardNetwork;
+  holderName?: string;
+  last4?: string;
+  vaultRef?: string;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface LegacyTransaction {
@@ -127,6 +150,8 @@ export interface FinanceData {
     customLoans: Loan[];
     lendingCustom: unknown[];
     settings: FinanceSettings;
+    cardBanks?: CardBank[];
+    cards?: PaymentCard[];
     events?: FinanceEvent[];
     reviewDecisions?: Record<string, ReviewDecision>;
     migration?: { fromSchema: number; migratedAt: string };
