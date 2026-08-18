@@ -27,46 +27,25 @@ const SettingsPage = lazy(() => import('./pages/SettingsPage').then((module) => 
 const PAGE_IDS: PageId[] = ['dashboard','transactions','review','savings','credit','lending','recurring','reports','settings'];
 const GENERIC_ENTRY_PAGES = new Set<PageId>(['dashboard','transactions']);
 const PERIOD_PAGES = new Set<PageId>(['dashboard','transactions','savings','reports']);
-function routeFromHash() {
-  const raw=location.hash.replace(/^#\/?/,'').trim();
-  if(!raw)return {page:'dashboard' as PageId,notFound:false};
-  if(PAGE_IDS.includes(raw as PageId))return {page:raw as PageId,notFound:false};
-  return {page:'dashboard' as PageId,notFound:true};
-}
+function routeFromHash() { const raw=location.hash.replace(/^#\/?/,'').trim(); if(!raw)return {page:'dashboard' as PageId,notFound:false}; if(PAGE_IDS.includes(raw as PageId))return {page:raw as PageId,notFound:false}; return {page:'dashboard' as PageId,notFound:true}; }
 function pageHash(page:PageId){return `#/${page}`;}
 function PageLoading(){return <PageSkeleton/>;}
 function NotFound({onHome}:{onHome:()=>void}){return <main className="login-screen"><section className="not-found neo-raised" aria-labelledby="not-found-title"><span className="eyebrow">404 · PRIVATE ROUTE</span><h1 id="not-found-title">Η ενότητα δεν υπάρχει</h1><p>Η διεύθυνση δεν αντιστοιχεί σε ενότητα του RheomIQ. Δεν εμφανίζονται οικονομικά στοιχεία σε αυτή την οθόνη.</p><div className="editor-actions"><button type="button" className="save-button" onClick={onHome}>Επιστροφή στο Dashboard</button></div></section></main>}
 
 function FinanceApp({userEmail,onLogout}:{userEmail:string|null;onLogout:()=>void}){
-  const finance=useFinance();
-  const today=useLocalDate();
-  const initialRoute=routeFromHash();
-  const [page,setPage]=useState<PageId>(initialRoute.page);
-  const [notFound,setNotFound]=useState(initialRoute.notFound);
-  const [quickOpen,setQuickOpen]=useState(false);
-  const [editingEventId,setEditingEventId]=useState<string|null>(null);
-  const [quickKind,setQuickKind]=useState<EventKind>('expense');
-  const [quickPrefill,setQuickPrefill]=useState<QuickPrefill|null>(null);
-  const [month,setMonth]=useState(()=>today.slice(0,7));
-  const [monthIsManual,setMonthIsManual]=useState(false);
-
+  const finance=useFinance(); const today=useLocalDate(); const initialRoute=routeFromHash();
+  const [page,setPage]=useState<PageId>(initialRoute.page); const [notFound,setNotFound]=useState(initialRoute.notFound); const [quickOpen,setQuickOpen]=useState(false); const [editingEventId,setEditingEventId]=useState<string|null>(null); const [quickKind,setQuickKind]=useState<EventKind>('expense'); const [quickPrefill,setQuickPrefill]=useState<QuickPrefill|null>(null); const [month,setMonth]=useState(()=>today.slice(0,7)); const [monthIsManual,setMonthIsManual]=useState(false);
   const navigate=(next:PageId,replace=false)=>{const hash=pageHash(next);if(location.hash!==hash){if(replace)history.replaceState(null,'',hash);else history.pushState(null,'',hash)}setNotFound(false);setPage(next)};
   useEffect(()=>{const sync=()=>{const next=routeFromHash();setPage(next.page);setNotFound(next.notFound)};window.addEventListener('hashchange',sync);window.addEventListener('popstate',sync);return()=>{window.removeEventListener('hashchange',sync);window.removeEventListener('popstate',sync)}},[]);
   useEffect(()=>{const onKey=(e:KeyboardEvent)=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){if(!GENERIC_ENTRY_PAGES.has(page))return;e.preventDefault();if(quickOpen)return;setEditingEventId(null);setQuickPrefill(null);setQuickKind('expense');setQuickOpen(true)}};addEventListener('keydown',onKey);return()=>removeEventListener('keydown',onKey)},[quickOpen,page]);
   useEffect(()=>{setMonth(current=>reportingMonthForDate(current,today,monthIsManual));},[today,monthIsManual]);
   useEffect(()=>{if(notFound)return;requestAnimationFrame(()=>{const heading=document.querySelector<HTMLElement>('#main-workspace h1');if(heading){heading.tabIndex=-1;heading.focus({preventScroll:true})}})},[page,notFound]);
-
-  const data=finance.data;
-  useEffect(()=>{document.documentElement.dataset.motion='full';return()=>{delete document.documentElement.dataset.motion}},[]);
-  if(!data)return <AppSkeleton/>;
-  if(notFound)return <NotFound onHome={()=>navigate('dashboard',true)}/>;
-
+  const data=finance.data; useEffect(()=>{document.documentElement.dataset.motion='full';return()=>{delete document.documentElement.dataset.motion}},[]); if(!data)return <AppSkeleton/>; if(notFound)return <NotFound onHome={()=>navigate('dashboard',true)}/>;
   const addEvent=(event:FinanceEvent)=>finance.update(current=>{const events=current.state.events??[];const exists=events.some(e=>e.id===event.id);return {...current,state:{...current.state,events:exists?events.map(e=>e.id===event.id?event:e):[...events,event]}}});
   const deleteEvent=(id:string)=>finance.update(current=>({...current,state:{...current.state,events:(current.state.events??[]).filter(e=>e.id!==id)}}));
   const editEvent=(id:string)=>{setEditingEventId(id);setQuickPrefill(null);setQuickOpen(true)};
   const openQuick=(kind:EventKind='expense',prefill:QuickPrefill|null=null)=>{setEditingEventId(null);setQuickKind(kind);setQuickPrefill(prefill);setQuickOpen(true)};
   const upsertRecurring=(item:RecurringItem)=>finance.update(current=>{const seed=current.seed.recurring.some(r=>r.id===item.id);if(seed)return {...current,state:{...current.state,recurringOverrides:{...current.state.recurringOverrides,[item.id]:item}}};const custom=current.state.recurringCustom??[];const exists=custom.some(r=>r.id===item.id);return {...current,state:{...current.state,recurringCustom:exists?custom.map(r=>r.id===item.id?item:r):[...custom,item]}}});
-  const deleteRecurring=(id:string)=>finance.update(current=>{if(current.seed.recurring.some(r=>r.id===id)){const original=current.seed.recurring.find(r=>r.id===id)!;return {...current,state:{...current.state,recurringOverrides:{...current.state.recurringOverrides,[id]:{...original,active:false}}}}}return {...current,state:{...current.state,recurringCustom:(current.state.recurringCustom??[]).filter(r=>r.id!==id)}}});
   const upsertLoan=(loan:Loan)=>finance.update(current=>{if(current.seed.loans.some(l=>l.id===loan.id))return {...current,state:{...current.state,loanOverrides:{...current.state.loanOverrides,[loan.id]:loan}}};const custom=current.state.customLoans??[];const exists=custom.some(l=>l.id===loan.id);return {...current,state:{...current.state,customLoans:exists?custom.map(l=>l.id===loan.id?loan:l):[...custom,loan]}}});
   const payLoan=(loan:Loan)=>{const mode=loan.accountingMode||'expense-per-installment';const event=createEvent({kind:mode==='liability-repayment'?'card_payment':'expense',date:today,amount:loan.installment,note:`Δόση: ${loan.name}`,category:'Δόσεις / δάνεια',accountId:data.state.settings.defaultLoanAccount,fromAccountId:data.state.settings.defaultLoanAccount});event.loanId=loan.id;addEvent(event)};
   const decide=(id:string,decision:ReviewDecision)=>finance.update(current=>({...current,state:{...current.state,reviewDecisions:{...(current.state.reviewDecisions??{}),[id]:decision}}}));
@@ -79,7 +58,7 @@ function FinanceApp({userEmail,onLogout}:{userEmail:string|null;onLogout:()=>voi
     :page==='savings'?<SavingsPage data={data} month={month} asOf={today} onCreate={addEvent}/>
     :page==='credit'?<CreditLoansPage data={data} asOf={today} onCardPurchase={()=>openQuick('card_purchase')} onCardPayment={()=>openQuick('card_payment')} onEditEvent={editEvent} onUpsertLoan={upsertLoan} onPayLoan={payLoan}/>
     :page==='lending'?<LendingPage data={data} onQuickAdd={()=>openQuick('lending')}/>
-    :page==='recurring'?<RecurringPage data={data} onUpsert={upsertRecurring} onDelete={deleteRecurring}/>
+    :page==='recurring'?<RecurringPage data={data} asOf={today} onUpsert={upsertRecurring} onCreateEvent={addEvent}/>
     :page==='reports'?<ReportsPage data={data} month={month}/>
     :<SettingsPage data={data} filePath={finance.filePath} lastSavedAt={finance.lastSavedAt} onImport={finance.importData} onBackup={finance.createBackup} onSettings={settings=>finance.update(c=>({...c,state:{...c.state,settings:{...settings,motion:'full'}}}))}/>;
 
