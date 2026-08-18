@@ -10,18 +10,22 @@ The exhaustive production/backend audit tracked by #15 is complete. Its final ve
 
 ## Current develop integration batch — unreleased
 
-As of 2026-08-18, `develop` contains the current application integration work without triggering a production Vercel deployment. The batch includes:
+As of 2026-08-18, the implementation batch tracked by #64 is complete on `develop` once its final hardening PR is merged. It remains intentionally unreleased and does not itself trigger a production Vercel deployment. The batch includes:
 
 - automatic persistence for finance mutations with bounded Undo and Redo history;
-- dedicated Cards workspace with bank grouping and local encrypted CVV handling;
+- Settings direct autosave through the same revision-checked persistence path, without a separate Apply/Cancel workflow;
+- dedicated Cards workspace with bank grouping, encrypted server-side PAN/expiry vault integration and local encrypted CVV handling;
 - dedicated Credit Card workspace with configured limit, debt/available-credit utilization, isolated purchase history and Piraeus-only repayments;
 - dedicated Installments & Loans workspace with variable manual payments, derived payment-day history, segmented installment progress and long-term obligation classification;
 - HELP / ΒΟΗΘΕΙΑ self-loans from savings, RETURN / ΕΠΙΣΤΡΟΦΗ transfers back to savings, and explicit debt forgiveness without a money movement;
 - long-term loans surfaced inside Recurring as obligations without automatic expense creation;
-- mobile navigation and rendered QA updated for the separated Cards, Credit and Loans routes;
-- server validation for the current card, recurring, linked-event and extended loan state fields.
+- active, paused and stopped recurring/subscription history with explicit manual payments;
+- app-owned Greek date/listbox controls in the core Smart Entry, Credit, Loans, Savings, Lending and Recurring entry flows;
+- live amount transitions for Savings, Credit, Loans, Recurring and Reports summaries while historical transaction/payment tables remain static;
+- mobile navigation and rendered QA for the separated Cards, Credit and Loans routes and the app-owned entry controls;
+- mutable-state validation for card/bank, recurring, linked-event and extended loan metadata, including rejection of PAN/expiry/CVV-like fields from ordinary FinanceData state.
 
-This integration batch is not a statement that production has already been updated. Production verification and Production Smoke are required only after a future merge to `main` and the corresponding Vercel deployment.
+The only intended production-release blocker for this batch is #88: configure the production card-vault key, re-run the exact release checks, apply the version-controlled migration through the normal release workflow, merge `develop -> main`, and then perform Production Smoke. Until that happens, production remains on the existing `main` baseline.
 
 ## Implemented production platform
 
