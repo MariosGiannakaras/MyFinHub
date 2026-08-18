@@ -67,6 +67,7 @@ function validateLegacyTransaction(value: unknown, name: string) {
   optionalText(value.fromAccountId, `${name}.fromAccountId`, 200);
   optionalText(value.toAccountId, `${name}.toAccountId`, 200);
   optionalText(value.category, `${name}.category`, 1_000);
+  optionalText(value.subcategory, `${name}.subcategory`, 1_000);
   optionalText(value.source, `${name}.source`, 1_000);
   optionalText(value.cell, `${name}.cell`, 200);
   optionalText(value.sheet, `${name}.sheet`, 500);
@@ -80,6 +81,42 @@ function validateAccount(value: unknown, name: string) {
   text(value.kind, `${name}.kind`, 100);
   optionalText(value.short, `${name}.short`, 100);
   if (value.excludeFromAvailable !== undefined && typeof value.excludeFromAvailable !== 'boolean') invalid(`Invalid ${name}.excludeFromAvailable.`);
+}
+
+function validateCardBank(value: unknown, name: string) {
+  if (!object(value)) invalid(`Invalid ${name}.`);
+  text(value.id, `${name}.id`, 100);
+  text(value.name, `${name}.name`, 500);
+  finiteNumber(value.order, `${name}.order`, 100_000);
+  if (value.custom !== undefined && typeof value.custom !== 'boolean') invalid(`Invalid ${name}.custom.`);
+}
+
+const FORBIDDEN_CARD_SECRET_FIELDS = new Set([
+  'pan','cardnumber','fullcardnumber','primaryaccountnumber','expiry','expirydate','expiration','expirationdate','cvv','cvc','securitycode','cardverificationvalue','cardverificationcode',
+]);
+
+function rejectPaymentCardSecrets(value: Record<string, unknown>, name: string) {
+  for (const key of Object.keys(value)) {
+    const normalized = key.replace(/[^a-z0-9]/gi, '').toLowerCase();
+    if (FORBIDDEN_CARD_SECRET_FIELDS.has(normalized)) invalid(`Payment-card secret field ${name}.${key} is not allowed in finance state.`);
+  }
+}
+
+function validatePaymentCard(value: unknown, name: string) {
+  if (!object(value)) invalid(`Invalid ${name}.`);
+  rejectPaymentCardSecrets(value, name);
+  text(value.id, `${name}.id`, 200);
+  text(value.bankId, `${name}.bankId`, 100);
+  text(value.nickname, `${name}.nickname`, 500);
+  oneOf(value.kind, ['debit','prepaid','credit'], `${name}.kind`);
+  oneOf(value.network, ['visa','mastercard','other'], `${name}.network`);
+  optionalText(value.holderName, `${name}.holderName`, 500);
+  optionalText(value.last4, `${name}.last4`, 4);
+  if (value.last4 !== undefined && value.last4 !== null && !/^\d{4}$/.test(String(value.last4))) invalid(`Invalid ${name}.last4.`);
+  optionalText(value.vaultRef, `${name}.vaultRef`, 500);
+  if (typeof value.active !== 'boolean') invalid(`Invalid ${name}.active.`);
+  text(value.createdAt, `${name}.createdAt`, 64);
+  text(value.updatedAt, `${name}.updatedAt`, 64);
 }
 
 function validateSnapshot(value: unknown, name: string) {
@@ -99,9 +136,11 @@ function validateRecurring(value: unknown, name: string) {
     finiteNumber(value.day, `${name}.day`, 31);
     if (!Number.isInteger(value.day) || value.day < 1 || value.day > 31) invalid(`Invalid ${name}.day.`);
   }
+  optionalText(value.firstExpectedDate, `${name}.firstExpectedDate`, 64);
   text(value.accountId, `${name}.accountId`, 200, true);
   text(value.category, `${name}.category`, 1_000, true);
   if (typeof value.active !== 'boolean') invalid(`Invalid ${name}.active.`);
+  if (value.status !== undefined) oneOf(value.status, ['active','paused','stopped'], `${name}.status`);
   optionalText(value.source, `${name}.source`, 1_000);
 }
 
@@ -132,6 +171,14 @@ function validateLoan(value: unknown, name: string) {
   }
   optionalText(value.source, `${name}.source`, 1_000);
   if (value.accountingMode !== undefined) oneOf(value.accountingMode, ['expense-per-installment', 'liability-repayment'], `${name}.accountingMode`);
+  if (value.kind !== undefined) oneOf(value.kind, ['installment','loan','self-loan'], `${name}.kind`);
+  optionalText(value.firstExpectedDate, `${name}.firstExpectedDate`, 64);
+  optionalText(value.defaultAccountId, `${name}.defaultAccountId`, 200);
+  if (value.forgivenAmount !== undefined && value.forgivenAmount !== null) {
+    finiteNumber(value.forgivenAmount, `${name}.forgivenAmount`);
+    if (value.forgivenAmount < 0 || value.forgivenAmount > value.total) invalid(`Invalid ${name}.forgivenAmount.`);
+  }
+  if (value.longTermRecurring !== undefined && typeof value.longTermRecurring !== 'boolean') invalid(`Invalid ${name}.longTermRecurring.`);
   if (value.schedule !== undefined) {
     array(value.schedule, `${name}.schedule`, 100_000);
     for (const [index, item] of value.schedule.entries()) {
@@ -164,6 +211,7 @@ function validateSplitPart(value: unknown, name: string) {
   text(value.id, `${name}.id`, 200);
   text(value.label, `${name}.label`, 1_000, true);
   text(value.category, `${name}.category`, 1_000, true);
+  optionalText(value.subcategory, `${name}.subcategory`, 1_000);
   finiteNumber(value.amount, `${name}.amount`);
   if (value.kind !== undefined) oneOf(value.kind, PART_KINDS, `${name}.kind`);
 }
@@ -176,6 +224,7 @@ function validateEvent(value: unknown, name: string) {
   finiteNumber(value.amount, `${name}.amount`);
   text(value.note, `${name}.note`, 20_000, true);
   optionalText(value.category, `${name}.category`, 1_000);
+  optionalText(value.subcategory, `${name}.subcategory`, 1_000);
   optionalText(value.accountId, `${name}.accountId`, 200);
   optionalText(value.fromAccountId, `${name}.fromAccountId`, 200);
   optionalText(value.toAccountId, `${name}.toAccountId`, 200);
@@ -184,6 +233,8 @@ function validateEvent(value: unknown, name: string) {
   optionalText(value.createdAt, `${name}.createdAt`, 64);
   optionalText(value.updatedAt, `${name}.updatedAt`, 64);
   optionalText(value.loanId, `${name}.loanId`, 200);
+  optionalText(value.recurringId, `${name}.recurringId`, 200);
+  if (value.savingSource !== undefined) oneOf(value.savingSource, ['pay_and_save','manual_transfer','cash_offset'], `${name}.savingSource`);
   optionalNumber(value.savingAmount, `${name}.savingAmount`);
   optionalNumber(value.receivableDelta, `${name}.receivableDelta`);
   optionalNumber(value.creditDelta, `${name}.creditDelta`);
@@ -271,28 +322,21 @@ export function validateFinanceData(value: unknown): asserts value is FinanceDat
   array(seed.accounts, 'seed.accounts', 100);
   seed.accounts.forEach((item, index) => validateAccount(item, `seed.accounts[${index}]`));
   ensureUniqueIds(seed.accounts, 'seed.accounts');
-
   stringArray(seed.months, 'seed.months', 1_200, 64);
-
   array(seed.transactions, 'seed.transactions', 100_000);
   seed.transactions.forEach((item, index) => validateLegacyTransaction(item, `seed.transactions[${index}]`));
   ensureUniqueIds(seed.transactions, 'seed.transactions');
-
   array(seed.snapshots, 'seed.snapshots', 100_000);
   seed.snapshots.forEach((item, index) => validateSnapshot(item, `seed.snapshots[${index}]`));
-
   array(seed.recurring, 'seed.recurring', 10_000);
   seed.recurring.forEach((item, index) => validateRecurring(item, `seed.recurring[${index}]`));
   ensureUniqueIds(seed.recurring, 'seed.recurring');
-
   array(seed.subscriptions, 'seed.subscriptions', 10_000);
   seed.subscriptions.forEach((item, index) => validateSubscription(item, `seed.subscriptions[${index}]`));
   ensureUniqueIds(seed.subscriptions, 'seed.subscriptions');
-
   array(seed.loans, 'seed.loans', 10_000);
   seed.loans.forEach((item, index) => validateLoan(item, `seed.loans[${index}]`));
   ensureUniqueIds(seed.loans, 'seed.loans');
-
   array(seed.lending, 'seed.lending', 10_000);
   seed.lending.forEach((item, index) => validateLending(item, `seed.lending[${index}]`));
   validateNumberRecord(seed.stats, 'seed.stats', 10_000);
@@ -300,40 +344,41 @@ export function validateFinanceData(value: unknown): asserts value is FinanceDat
   array(state.customTransactions, 'state.customTransactions', 100_000);
   state.customTransactions.forEach((item, index) => validateLegacyTransaction(item, `state.customTransactions[${index}]`));
   ensureUniqueIds(state.customTransactions, 'state.customTransactions');
-
   record(state.overrides, 'state.overrides');
   Object.entries(state.overrides).forEach(([id, item]) => { text(id, 'state.overrides key', 200); validateLegacyTransaction(item, `state.overrides.${id}`); });
-
   if (Array.isArray(state.deleted)) stringArray(state.deleted, 'state.deleted', 100_000, 200);
   else {
     record(state.deleted, 'state.deleted', 100_000);
     for (const child of Object.values(state.deleted)) if (typeof child !== 'boolean') invalid('Invalid state.deleted value.');
   }
-
   array(state.recurringCustom, 'state.recurringCustom', 10_000);
   state.recurringCustom.forEach((item, index) => validateRecurring(item, `state.recurringCustom[${index}]`));
   ensureUniqueIds(state.recurringCustom, 'state.recurringCustom');
-
   record(state.recurringOverrides, 'state.recurringOverrides', 10_000);
   Object.entries(state.recurringOverrides).forEach(([id, item]) => validateRecurring(item, `state.recurringOverrides.${id}`));
-
   validateNumberRecord(state.loanExtra, 'state.loanExtra', 10_000);
   record(state.loanOverrides, 'state.loanOverrides', 10_000);
   Object.entries(state.loanOverrides).forEach(([id, item]) => validateLoan(item, `state.loanOverrides.${id}`));
-
   array(state.customLoans, 'state.customLoans', 10_000);
   state.customLoans.forEach((item, index) => validateLoan(item, `state.customLoans[${index}]`));
   ensureUniqueIds(state.customLoans, 'state.customLoans');
-
   array(state.lendingCustom, 'state.lendingCustom', 100_000);
   validateSettings(state.settings);
-
+  if (state.cardBanks !== undefined) {
+    array(state.cardBanks, 'state.cardBanks', 100);
+    state.cardBanks.forEach((item, index) => validateCardBank(item, `state.cardBanks[${index}]`));
+    ensureUniqueIds(state.cardBanks, 'state.cardBanks');
+  }
+  if (state.cards !== undefined) {
+    array(state.cards, 'state.cards', 1_000);
+    state.cards.forEach((item, index) => validatePaymentCard(item, `state.cards[${index}]`));
+    ensureUniqueIds(state.cards, 'state.cards');
+  }
   if (state.events !== undefined) {
     array(state.events, 'state.events', 100_000);
     state.events.forEach((item, index) => validateEvent(item, `state.events[${index}]`));
     ensureUniqueIds(state.events, 'state.events');
   }
-
   if (state.reviewDecisions !== undefined) {
     record(state.reviewDecisions, 'state.reviewDecisions', 100_000);
     Object.entries(state.reviewDecisions).forEach(([id, item]) => { text(id, 'state.reviewDecisions key', 200); validateReviewDecision(item, `state.reviewDecisions.${id}`); });

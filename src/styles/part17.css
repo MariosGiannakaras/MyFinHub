@@ -1,0 +1,132 @@
+/* Interaction-state and micro-animation pass. Motion is short, state-driven and optional. */
+:root{
+  --motion-fast:140ms;
+  --motion-base:190ms;
+  --motion-slow:280ms;
+  --ease-out:cubic-bezier(.2,.8,.2,1);
+  --ease-press:cubic-bezier(.2,.7,.3,1);
+}
+
+button,.command-pill,.searchbox,.login-input,.semantic-table tbody tr,.flow-pill,.payment-card,.bank-column{
+  -webkit-tap-highlight-color:transparent;
+}
+
+button:disabled{cursor:not-allowed}
+.secondary,.text-button,.wide-action,.row-actions button,.mobile-more-menu button,.mobile-nav button,.command-pill,.top-actions button,.icon-button,.login-logout,.empty-bank-card,.payment-card button{
+  transition:transform var(--motion-fast) var(--ease-press),box-shadow var(--motion-base) var(--ease-out),border-color var(--motion-base) ease,background-color var(--motion-base) ease,color var(--motion-base) ease,opacity var(--motion-fast) ease;
+}
+
+@media(hover:hover){
+  .secondary:not(:disabled):hover,.wide-action:not(:disabled):hover,.empty-bank-card:not(:disabled):hover{transform:translateY(-1px);border-color:#b9cdef;box-shadow:0 8px 18px rgba(37,70,120,.10)}
+  .text-button:not(:disabled):hover{transform:translateY(-1px)}
+  .top-actions button:not(:disabled):hover,.icon-button:not(:disabled):hover,.row-actions button:not(:disabled):hover{transform:translateY(-1px) scale(1.025)}
+  .command-pill:hover{transform:translateY(-1px);color:var(--blue-2);box-shadow:inset 3px 3px 8px rgba(42,65,105,.07),inset -3px -3px 8px rgba(255,255,255,.92),0 8px 18px rgba(34,59,98,.07)}
+  .sidebar nav button:not(.active):hover svg,.mobile-more-menu nav button:not(.active):hover svg{transform:translateX(2px) scale(1.04)}
+  .payment-card:hover{transform:translateY(-2px);box-shadow:0 18px 34px rgba(28,51,91,.14),inset 0 1px 0 rgba(255,255,255,.36)}
+}
+.secondary:not(:disabled):active,.wide-action:not(:disabled):active,.empty-bank-card:not(:disabled):active,.command-pill:active,.top-actions button:not(:disabled):active,.icon-button:not(:disabled):active,.row-actions button:not(:disabled):active,.login-logout:not(:disabled):active,.payment-card button:not(:disabled):active{transform:translateY(0) scale(.975)}
+.sidebar nav button svg,.mobile-nav button svg,.mobile-more-menu nav button svg,.top-actions button svg,.row-actions button svg,.icon-button svg{transition:transform var(--motion-fast) var(--ease-out),color var(--motion-base) ease}
+.sidebar nav button.active svg,.mobile-nav button.active svg{transform:scale(1.08)}
+
+/* Controls gain a visible container state in addition to the existing focus outline. */
+.searchbox,.login-input,.neo-inset,.filterbar select,.form-grid input,.form-grid select,.settings-form input,.settings-form select,.settings-form textarea,.split-line input,.split-line select,.column-filter select{
+  transition:border-color var(--motion-base) ease,box-shadow var(--motion-base) ease,background-color var(--motion-base) ease,transform var(--motion-fast) var(--ease-out);
+}
+@media(hover:hover){
+  .filterbar select:hover,.form-grid input:hover,.form-grid select:hover,.settings-form input:hover,.settings-form select:hover,.settings-form textarea:hover,.split-line input:hover,.split-line select:hover,.column-filter select:hover{border-color:#b7c9e5}
+}
+.searchbox:focus-within,.login-input:focus-within,.neo-inset:focus-within{border-color:rgba(47,111,237,.42);box-shadow:inset 3px 3px 8px rgba(42,65,105,.07),inset -3px -3px 8px rgba(255,255,255,.92),0 0 0 3px rgba(47,111,237,.10)}
+.login-field:focus-within>label,.settings-form label:focus-within>span,.filter-label:focus-within>span{color:var(--blue-2)}
+
+/* Authentication: richer state feedback without turning login into an animation showcase. */
+.login-card{animation:rh-login-card-in var(--motion-slow) var(--ease-out) both;transform-origin:50% 45%}
+.login-brand,.login-shield,.login-card>div:has(>h1),.login-form,.login-footnote{animation:rh-login-content-in var(--motion-slow) var(--ease-out) both}
+.login-shield{animation-delay:35ms}.login-card>div:has(>h1){animation-delay:60ms}.login-form{animation-delay:85ms}.login-footnote{animation-delay:110ms}
+.login-field{display:grid;gap:6px}
+.login-field>label{color:var(--ink-2);font-size:10px;font-weight:750;transition:color var(--motion-base) ease,transform var(--motion-fast) var(--ease-out)}
+.login-field:focus-within>label{transform:translateX(2px)}
+.login-input{position:relative}
+.login-input>svg{flex:0 0 auto;transition:color var(--motion-base) ease,transform var(--motion-fast) var(--ease-out)}
+.login-input:focus-within>svg{color:var(--blue);transform:scale(1.08)}
+.login-input input::placeholder{color:#8c9ab0;transition:opacity var(--motion-fast) ease}
+.login-input:focus-within input::placeholder{opacity:.58}
+.login-password-toggle{width:34px;height:34px;min-width:34px;min-height:34px;border:0;border-radius:10px;background:transparent;color:var(--muted);display:grid;place-items:center;cursor:pointer;box-shadow:none;padding:0}
+.login-password-toggle:hover:not(:disabled){background:rgba(47,111,237,.08);color:var(--blue-2)}
+.login-password-toggle:active:not(:disabled){transform:scale(.92)}
+.login-field-hint{display:flex;align-items:center;gap:5px;color:#83530c;font-size:9.5px;font-weight:650;animation:rh-hint-in var(--motion-fast) var(--ease-out) both}
+.login-error{display:flex;align-items:flex-start;gap:8px;animation:rh-error-in 220ms var(--ease-out) both}
+.login-error svg{flex:0 0 auto;margin-top:1px}
+.login-submit{position:relative;overflow:hidden;isolation:isolate}
+.login-submit::after{content:"";position:absolute;inset:-60% -20%;z-index:-1;background:linear-gradient(115deg,transparent 35%,rgba(255,255,255,.22) 50%,transparent 65%);transform:translateX(-70%);opacity:0;transition:transform 420ms var(--ease-out),opacity var(--motion-fast) ease}
+.login-submit[data-state="ready"]{opacity:1;cursor:pointer}
+.login-submit[data-state="idle"]{opacity:.52;cursor:not-allowed;box-shadow:0 5px 12px rgba(47,111,237,.14)}
+.login-submit[data-state="loading"],.login-submit[aria-busy="true"]{opacity:.82;cursor:wait;transform:none}
+@media(hover:hover){.login-submit[data-state="ready"]:hover::after{transform:translateX(70%);opacity:1}}
+.login-spinner,.is-spinning{animation:rh-spin .8s linear infinite}
+.mfa-code-shell input{text-align:center;font-variant-numeric:tabular-nums;letter-spacing:.28em;font-weight:800;font-size:15px;padding-left:.28em}
+.mfa-code-progress{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;padding:0 5px}
+.mfa-code-progress i{height:3px;border-radius:999px;background:#d6dfec;transition:background-color var(--motion-base) ease,transform var(--motion-fast) var(--ease-out)}
+.mfa-code-progress i.filled{background:var(--blue);transform:scaleY(1.5)}
+
+/* Transaction semantics: subtle whole-row tint plus text/icon labels. */
+.transaction-semantic-table tbody .transaction-row{--row-tint:rgba(82,98,125,.025);--row-hover:rgba(82,98,125,.055);--row-accent:#8795aa;background:var(--row-tint);transition:background-color var(--motion-base) ease,box-shadow var(--motion-base) ease}
+.transaction-row.kind-expense,.transaction-row.kind-card_purchase{--row-tint:rgba(179,41,66,.035);--row-hover:rgba(179,41,66,.07);--row-accent:#c34d62}
+.transaction-row.kind-income{--row-tint:rgba(24,120,82,.035);--row-hover:rgba(24,120,82,.07);--row-accent:#33906d}
+.transaction-row.kind-transfer,.transaction-row.kind-withdrawal{--row-tint:rgba(23,78,166,.032);--row-hover:rgba(23,78,166,.065);--row-accent:#4b79c5}
+.transaction-row.kind-saving_cash_offset{--row-tint:rgba(20,124,149,.035);--row-hover:rgba(20,124,149,.07);--row-accent:#3294aa}
+.transaction-row.kind-refund{--row-tint:rgba(82,98,125,.035);--row-hover:rgba(82,98,125,.065);--row-accent:#7d8da5}
+.transaction-row.kind-lending,.transaction-row.kind-repayment,.transaction-row.kind-split{--row-tint:rgba(105,71,168,.03);--row-hover:rgba(105,71,168,.065);--row-accent:#8063b6}
+.transaction-row.kind-reconciliation{--row-tint:rgba(154,95,0,.035);--row-hover:rgba(154,95,0,.075);--row-accent:#b37b24}
+.transaction-row td:first-child{box-shadow:inset 3px 0 0 color-mix(in srgb,var(--row-accent) 58%,transparent);transition:box-shadow var(--motion-base) ease}
+.transaction-row:hover{background:var(--row-hover)}
+.transaction-row:focus-within{background:var(--row-hover)}
+.transaction-row:focus-within td:first-child{box-shadow:inset 4px 0 0 var(--row-accent)}
+.transaction-description-cell{min-width:270px}
+.transaction-comment{display:flex!important;align-items:flex-start;gap:6px;margin-top:5px!important;color:#52627d!important;font-size:9.5px!important;line-height:1.42;white-space:pre-line;max-width:58ch}
+.transaction-comment svg{flex:0 0 auto;margin-top:1px;color:#6f7f99}
+.transaction-meta{opacity:.83}
+.semantic-table tbody tr:not(.transaction-row){transition:background-color var(--motion-base) ease,box-shadow var(--motion-base) ease}
+.semantic-table tbody tr:not(.transaction-row):hover{background:rgba(47,111,237,.035)}
+.semantic-table tbody tr:focus-within{box-shadow:inset 0 0 0 1px rgba(47,111,237,.16)}
+.row-actions{transition:opacity var(--motion-fast) ease}
+.row-actions button{opacity:.78}
+.semantic-table tbody tr:hover .row-actions button,.semantic-table tbody tr:focus-within .row-actions button{opacity:1}
+.flow-pill{transition:transform var(--motion-fast) var(--ease-out),box-shadow var(--motion-base) ease,background-color var(--motion-base) ease}
+.semantic-table tbody tr:hover .flow-pill{transform:translateY(-1px)}
+
+/* Modal/status feedback. */
+.editor-backdrop{animation:rh-backdrop-in var(--motion-fast) ease-out both}
+.editor-dialog{animation:rh-dialog-in var(--motion-base) var(--ease-out) both;transform-origin:50% 55%}
+.action-status,.persistence-notice,.session-error-banner{animation:rh-status-in var(--motion-base) var(--ease-out) both}
+.form-error[role="alert"]{animation:rh-error-in 220ms var(--ease-out) both}
+
+/* Card workspace initial reveal. No secret data is fetched by this animation. */
+.bank-column{animation:rh-bank-in var(--motion-slow) var(--ease-out) both}
+.bank-column:nth-child(2){animation-delay:45ms}.bank-column:nth-child(3){animation-delay:90ms}.bank-column:nth-child(4){animation-delay:135ms}.bank-column:nth-child(5){animation-delay:180ms}.bank-column:nth-child(n+6){animation-delay:210ms}
+.bank-card-stack>.payment-card{animation:rh-payment-card-in var(--motion-slow) var(--ease-out) both}
+.bank-card-stack>.payment-card:nth-child(2){animation-delay:45ms}.bank-card-stack>.payment-card:nth-child(3){animation-delay:80ms}.bank-card-stack>.payment-card:nth-child(4){animation-delay:110ms}.bank-card-stack>.payment-card:nth-child(n+5){animation-delay:135ms}
+
+@keyframes rh-login-card-in{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:none}}
+@keyframes rh-login-content-in{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+@keyframes rh-hint-in{from{opacity:0;transform:translateY(-2px)}to{opacity:1;transform:none}}
+@keyframes rh-error-in{0%{opacity:0;transform:translateY(-3px)}55%{transform:translateX(2px)}100%{opacity:1;transform:none}}
+@keyframes rh-status-in{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:none}}
+@keyframes rh-backdrop-in{from{opacity:0}to{opacity:1}}
+@keyframes rh-dialog-in{from{opacity:0;transform:translateY(8px) scale(.99)}to{opacity:1;transform:none}}
+@keyframes rh-bank-in{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+@keyframes rh-payment-card-in{from{opacity:0;transform:translateY(8px) scale(.99)}to{opacity:1;transform:none}}
+@keyframes rh-spin{to{transform:rotate(360deg)}}
+
+@media(max-width:680px){
+  .transaction-comment{max-width:42ch}
+  .login-card{animation-duration:220ms}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .login-card,.login-brand,.login-shield,.login-card>div:has(>h1),.login-form,.login-footnote,.login-error,.login-field-hint,.editor-backdrop,.editor-dialog,.action-status,.persistence-notice,.session-error-banner,.form-error[role="alert"],.bank-column,.bank-card-stack>.payment-card{animation:none!important}
+  .login-spinner,.is-spinning{animation:none!important}
+  .secondary,.text-button,.wide-action,.row-actions button,.mobile-more-menu button,.mobile-nav button,.command-pill,.top-actions button,.icon-button,.login-logout,.empty-bank-card,.payment-card,.payment-card button,.searchbox,.login-input,.neo-inset,.semantic-table tbody tr,.flow-pill,.mfa-code-progress i{transition:none!important}
+  .sidebar nav button svg,.mobile-nav button svg,.mobile-more-menu nav button svg,.top-actions button svg,.row-actions button svg,.icon-button svg{transition:none!important}
+}
+html[data-motion="reduced"] .login-card,html[data-motion="reduced"] .login-brand,html[data-motion="reduced"] .login-shield,html[data-motion="reduced"] .login-form,html[data-motion="reduced"] .editor-backdrop,html[data-motion="reduced"] .editor-dialog,html[data-motion="reduced"] .action-status,html[data-motion="reduced"] .persistence-notice,html[data-motion="reduced"] .bank-column,html[data-motion="reduced"] .bank-card-stack>.payment-card{animation:none!important}
+html[data-motion="reduced"] .login-spinner,html[data-motion="reduced"] .is-spinning{animation:none!important}

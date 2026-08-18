@@ -6,10 +6,31 @@ RheomIQ is a single-owner personal finance application deployed from `main` to V
 
 The exhaustive production/backend audit tracked by #15 is complete. Its final verified baseline had all tracked defects fixed, CI green, CodeQL green, the current Vercel production revision deployed, and Production Smoke green against that exact revision.
 
-## Implemented
+`main` remains the release-only production branch. The current product work below is integrated on `develop` and is intentionally unreleased until a separate `develop -> main` release decision is made.
+
+## Current develop integration batch — unreleased
+
+As of 2026-08-18, the implementation batch tracked by #64 is complete on `develop`. It remains intentionally unreleased and does not itself trigger a production Vercel deployment. The batch includes:
+
+- automatic persistence for finance mutations with bounded Undo and Redo history;
+- Settings direct autosave through the same revision-checked persistence path, without a separate Apply/Cancel workflow;
+- dedicated Cards workspace with bank grouping, encrypted server-side PAN/expiry vault integration and local encrypted CVV handling;
+- dedicated Credit Card workspace with configured limit, debt/available-credit utilization, isolated purchase history and Piraeus-only repayments;
+- dedicated Installments & Loans workspace with variable manual payments, derived payment-day history, segmented installment progress and long-term obligation classification;
+- HELP / ΒΟΗΘΕΙΑ self-loans from savings, RETURN / ΕΠΙΣΤΡΟΦΗ transfers back to savings, and explicit debt forgiveness without a money movement;
+- long-term loans surfaced inside Recurring as obligations without automatic expense creation;
+- active, paused and stopped recurring/subscription history with explicit manual payments;
+- app-owned Greek date/listbox controls in the core Smart Entry, Credit, Loans, Savings, Lending and Recurring entry flows;
+- live amount transitions for Savings, Credit, Loans, Recurring and Reports summaries while historical transaction/payment tables remain static;
+- mobile navigation and rendered QA for the separated Cards, Credit and Loans routes and the app-owned entry controls;
+- mutable-state validation for card/bank, recurring, linked-event and extended loan metadata, including rejection of PAN/expiry/CVV-like fields from ordinary FinanceData state.
+
+The only intended production-release blocker for this batch is #88: configure the production card-vault key, re-run the exact release checks, apply the version-controlled migration through the normal release workflow, merge `develop -> main`, and then perform Production Smoke. Until that happens, production remains on the existing `main` baseline.
+
+## Implemented production platform
 
 - React + Vite + TypeScript responsive application
-- Dashboard, transactions, Smart Review, savings, credit/installments, lending, recurring, reports and settings
+- Dashboard, transactions, Smart Review, savings, finance workspaces, lending, recurring, reports and settings
 - Node.js 22.x production/runtime contract
 - Vercel Functions in Frankfurt (`fra1`)
 - Supabase/PostgreSQL in `eu-central-1`
@@ -34,7 +55,7 @@ The exhaustive production/backend audit tracked by #15 is complete. Its final ve
 
 The compatibility `FinanceData` document remains the canonical read/import representation so the 2,853 imported legacy transactions and historical snapshots keep their original semantics.
 
-Normal saves now update only the mutable `state` subtree under revision locking. Full seed/history replacement remains restricted to the explicit import path. This avoids a risky relational rewrite while removing the large immutable corpus from ordinary write traffic.
+Normal saves update only the mutable `state` subtree under revision locking. Full seed/history replacement remains restricted to the explicit import path. This avoids a risky relational rewrite while removing the large immutable corpus from ordinary write traffic.
 
 At the 2026-08-17 production audit checkpoint:
 

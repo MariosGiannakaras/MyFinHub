@@ -1,0 +1,163 @@
+/* Mobile-first finance-domain presentation. Desktop/tablet stay on the existing surfaces. */
+@media(max-width:680px){
+  .settings-actions button,.settings-draft-actions button{min-height:46px!important;height:auto!important}
+
+  /* Domain headings become concise task headers on phone. */
+  .page-heading:has(+.savings-hero),
+  .page-heading:has(+.card-workspace),
+  .page-heading:has(+.credit-hero.receivable-hero),
+  .page-heading:has(+.recurring-summary-grid){gap:9px}
+  .page-heading:has(+.savings-hero) .eyebrow,
+  .page-heading:has(+.card-workspace) .eyebrow,
+  .page-heading:has(+.credit-hero.receivable-hero) .eyebrow,
+  .page-heading:has(+.recurring-summary-grid) .eyebrow{display:none}
+  .page-heading:has(+.savings-hero) p,
+  .page-heading:has(+.card-workspace) p,
+  .page-heading:has(+.credit-hero.receivable-hero) p,
+  .page-heading:has(+.recurring-summary-grid) p{margin-top:3px;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;font-size:9px;line-height:1.45}
+  .page-heading:has(+.card-workspace) .heading-actions,
+  .page-heading:has(+.credit-hero.receivable-hero) .heading-actions{display:grid;grid-template-columns:1fr 1fr;gap:7px;width:100%}
+  .page-heading:has(+.card-workspace) .heading-actions button,
+  .page-heading:has(+.credit-hero.receivable-hero) .heading-actions button{min-width:0;width:100%;font-size:9px;padding:0 10px;justify-content:center}
+  .page-heading:has(+.recurring-summary-grid)>.save-button{width:100%;height:44px;font-size:9px;justify-content:center}
+
+  /* Transactions: mobile ledger reads like a finance feed, not a mini desktop table. */
+  .mobile-transaction-filters{padding:8px;border:1px solid rgba(211,222,235,.8);border-radius:15px;background:rgba(247,250,255,.78);box-shadow:var(--mobile-shadow-soft)}
+  .mobile-transaction-filters label>span{font-size:8px;color:#6d7d95;font-weight:800}
+  .mobile-transaction-filters select{height:44px;border-radius:12px;background:#fbfdff}
+  .mobile-transaction-list{gap:8px}
+  .mobile-transaction-row{border-radius:17px;padding:12px 11px 10px;background:rgba(249,252,255,.86);box-shadow:var(--mobile-shadow-soft)}
+  .mobile-transaction-row:before{top:12px;bottom:12px;width:3px}
+  .mobile-transaction-identity b{font-size:12.5px;letter-spacing:-.01em}
+  .mobile-transaction-identity small{font-size:9px}
+  .mobile-transaction-main>strong{font-size:13.5px;font-weight:850}
+  .mobile-transaction-comment{margin-top:7px;font-size:9.5px;color:#5f7088}
+  .mobile-transaction-meta{margin-top:8px;font-size:8.7px;gap:6px}
+  .mobile-row-actions{margin-top:9px;padding-top:7px}
+  .mobile-row-actions .text-button{min-height:38px;font-size:8.5px;border-radius:10px;background:rgba(238,244,251,.74)}
+
+  /* Savings: compact progress hero, actionable source rows and list-first history. */
+  .savings-hero{display:grid;grid-template-columns:92px minmax(0,1fr);gap:12px;padding:14px;border-radius:22px;background:linear-gradient(145deg,#f7fbff,#e9f3f4);border:1px solid rgba(255,255,255,.86);box-shadow:var(--mobile-shadow)}
+  .savings-gauge{display:grid;place-items:center}
+  .gauge-ring{width:88px!important;height:88px!important}
+  .gauge-ring>div b{font-size:18px}
+  .gauge-ring>div span{font-size:7px}
+  .savings-hero>div:last-child>.eyebrow{font-size:7px}
+  .savings-hero h2{font-size:25px;letter-spacing:-.035em;margin:3px 0 4px}
+  .savings-hero p{display:none}
+  .saving-route{grid-column:1/-1;margin-top:2px;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:6px;padding:8px;border-radius:13px;background:rgba(242,247,251,.78);box-shadow:inset 2px 2px 6px rgba(42,65,99,.045)}
+  .saving-route>span{min-width:0;display:grid;grid-template-columns:auto 1fr;align-items:center;gap:4px;font-size:8px}
+  .saving-route>span svg{width:14px;height:14px}
+  .saving-route>span b{grid-column:1/-1;font-size:10px;margin-left:18px;white-space:nowrap}
+  .saving-route>svg{width:15px;height:15px;transform:none!important}
+  .savings-action-grid{display:grid;grid-template-columns:1fr;gap:8px}
+  .savings-action{min-height:68px;padding:10px 11px;border-radius:17px;display:grid;grid-template-columns:38px minmax(0,1fr) auto;align-items:center;gap:10px;background:rgba(249,252,255,.86);border:1px solid var(--mobile-border);box-shadow:var(--mobile-shadow-soft)}
+  .savings-action-icon{width:38px;height:38px;border-radius:12px}
+  .savings-action b{font-size:10.5px}
+  .savings-action small{font-size:8px;line-height:1.35;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;margin-top:2px}
+  .savings-action strong{font-size:8.5px;color:var(--blue-2);white-space:nowrap}
+  .savings-breakdown-grid{display:grid;grid-template-columns:1fr;gap:9px}
+  .savings-breakdown-grid>.panel{border-radius:18px;padding:12px;background:rgba(249,252,255,.82);box-shadow:var(--mobile-shadow-soft)}
+  .savings-source-list>div{min-height:42px;padding:7px 0;border-bottom:1px solid #e1e9f2}
+  .savings-source-list>div:last-child{border-bottom:0}
+  .savings-source-list span{font-size:9px}
+  .savings-source-list b{font-size:10px}
+  .saving-history>div{grid-template-columns:58px minmax(0,1fr) auto;gap:8px;min-height:48px;padding:8px 0;border-bottom:1px solid #e1e9f2}
+  .saving-history>div:last-child{border-bottom:0}
+  .saving-history>div>span{font-size:8px;color:var(--muted)}
+  .saving-history b{font-size:9px}
+  .saving-history small{font-size:8px;line-height:1.3}
+  .saving-history strong{font-size:10px;white-space:nowrap}
+  .logic-note.compact{border-radius:15px;padding:10px 11px;font-size:8.5px;line-height:1.4}
+
+  /* Credit card: debt/available first, purchases second, installments as operational cards. */
+  .card-workspace{display:grid;grid-template-columns:1fr;gap:9px}
+  .credit-hero{min-height:126px;border-radius:22px;padding:16px;background:linear-gradient(135deg,#174ea6,#2f6fed 68%,#5d8df0);box-shadow:0 14px 30px rgba(35,86,181,.22);overflow:hidden}
+  .credit-hero>div span{font-size:8px;opacity:.82}
+  .credit-hero>div b{font-size:29px;letter-spacing:-.04em;margin:5px 0 2px}
+  .credit-hero>div small{font-size:8px;opacity:.8}
+  .credit-hero>svg{width:48px;height:48px;opacity:.22}
+  .card-limit-panel{border-radius:18px;padding:12px;background:rgba(249,252,255,.84);box-shadow:var(--mobile-shadow-soft)}
+  .credit-usage-copy{font-size:9px}
+  .credit-usage-copy b{font-size:11px}
+  .credit-usage{height:7px;border-radius:999px;margin:7px 0}
+  .page-stack>.panel:has(.card-history){border-radius:18px;padding:12px;background:rgba(249,252,255,.82);box-shadow:var(--mobile-shadow-soft)}
+  .card-history>div{display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:8px;align-items:center;min-height:54px;padding:8px 0;border-bottom:1px solid #e1e9f2}
+  .card-history>div:last-child{border-bottom:0}
+  .card-history>div>span{font-size:8px;color:var(--muted)}
+  .card-history .semantic-list-title{min-width:0}
+  .card-history .semantic-list-title b{font-size:9.5px}
+  .card-history .semantic-list-title small{font-size:8px}
+  .card-history>div>strong{font-size:10.5px;white-space:nowrap}
+  .card-history>div>.text-button{grid-column:2/-1;justify-self:end;min-height:34px;padding:5px 8px;font-size:8px}
+  .section-title:has(+.loan-cards){align-items:center;padding:2px 1px}
+  .section-title:has(+.loan-cards)>div span{font-size:12px}
+  .section-title:has(+.loan-cards)>div b{display:none}
+  .section-title:has(+.loan-cards)>.text-button{min-height:38px}
+  .loan-cards{display:grid;grid-template-columns:1fr;gap:9px}
+  .loan-cards>.panel{border-radius:18px;padding:12px;background:rgba(249,252,255,.84);box-shadow:var(--mobile-shadow-soft)}
+  .loan-title{grid-template-columns:auto minmax(0,1fr) auto;gap:9px;align-items:center}
+  .loan-title h3{font-size:11px}
+  .loan-title small{font-size:8px;line-height:1.35}
+  .loan-title>b{font-size:12px;white-space:nowrap}
+  .loan-progress{height:6px;margin:11px 0 8px}
+  .loan-stats{display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:8px;border-radius:12px;background:#eef4fa;font-size:8px}
+  .loan-stats b{font-size:9.5px}
+  .loan-actions{display:grid;grid-template-columns:1fr 1.25fr;gap:7px;margin-top:9px}
+  .loan-actions button{min-height:44px;border-radius:11px;font-size:8.5px;justify-content:center}
+
+  /* Lending: privacy-first summary, people as primary cards, audit history visually secondary. */
+  .receivable-hero{min-height:118px;border-radius:22px;padding:15px;background:linear-gradient(135deg,#0f5d63,#168d98 62%,#25b9d7);box-shadow:0 14px 28px rgba(19,116,126,.2)}
+  .receivable-hero>div span{font-size:8px;opacity:.84}
+  .receivable-hero>div b{font-size:27px;margin:5px 0 2px}
+  .receivable-hero>div small{font-size:8px;opacity:.8}
+  .receivable-person-grid{display:grid;grid-template-columns:1fr;gap:8px}
+  .receivable-person-grid>.panel{border-radius:17px;padding:11px;background:rgba(249,252,255,.84);box-shadow:var(--mobile-shadow-soft)}
+  .receivable-person-grid .loan-title{grid-template-columns:auto minmax(0,1fr) auto}
+  .receivable-person-grid h3{font-size:10.5px}
+  .receivable-person-grid .loan-title small{font-size:8px}
+  .receivable-person-grid .loan-title>b{font-size:11px}
+  .receivable-person-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px;padding-top:8px;border-top:1px solid #e1e9f2}
+  .receivable-person-actions>span{margin-right:auto;font-size:8px;font-weight:800;color:var(--muted)}
+  .receivable-person-actions .text-button{min-height:36px;padding:6px 8px;font-size:8px}
+  .page-stack>.panel:has(.receivables-table){border-radius:18px;padding:12px;background:rgba(249,252,255,.78);box-shadow:var(--mobile-shadow-soft)}
+  .page-stack>.panel:has(.receivables-table) .panel-head small{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+  .semantic-table-wrap:has(.receivables-table){margin-top:7px;border-radius:12px;border:1px solid #dfe7f1;background:#f7faff}
+
+  /* Recurring: monthly pulse, active obligations and lifecycle history with progressive visual weight. */
+  .recurring-summary-grid{display:grid;grid-template-columns:1.25fr 1fr 1fr;gap:7px}
+  .recurring-summary-grid>article{min-height:94px;border-radius:16px;padding:10px;background:rgba(249,252,255,.84);border:1px solid var(--mobile-border);box-shadow:var(--mobile-shadow-soft)}
+  .recurring-summary-grid>article span{font-size:7.5px;line-height:1.25}
+  .recurring-summary-grid>article b{font-size:15px;line-height:1.15;margin:6px 0 3px}
+  .recurring-summary-grid>article small{font-size:7.2px;line-height:1.3;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
+  .page-stack>.panel:has(.mobile-recurring-list){padding:12px;border-radius:18px;background:rgba(249,252,255,.78);box-shadow:var(--mobile-shadow-soft)}
+  .mobile-recurring-list{gap:8px}
+  .mobile-recurring-row{border-radius:17px;padding:11px;background:rgba(251,253,255,.92);box-shadow:none;border:1px solid #dce5ef}
+  .mobile-recurring-head>strong{font-size:12.5px}
+  .mobile-recurring-meta{margin:9px 0;padding:8px;border-radius:11px;background:#f0f5fb;box-shadow:none}
+  .mobile-recurring-meta b{font-size:9.5px}
+  .mobile-recurring-meta small{font-size:8px}
+  .mobile-pay-action{border-radius:11px;box-shadow:0 6px 13px rgba(47,111,237,.18)}
+  .inactive-recurring{border-radius:18px;padding:12px;background:rgba(246,249,253,.68);box-shadow:none;border:1px solid #dce5ef}
+  .inactive-recurring-list>article{min-height:54px;padding:8px 0;border-bottom:1px solid #e1e9f2}
+  .inactive-recurring-list>article:last-child{border-bottom:0}
+  .inactive-recurring-list b{font-size:9.5px}
+  .inactive-recurring-list small{font-size:7.8px;line-height:1.35}
+  .inactive-recurring-list>article>strong{font-size:10px}
+
+  /* Domain editors share the same bottom-sheet language and thumb-reachable actions. */
+  .editor-dialog{border-radius:22px 22px 0 0!important;padding:14px 13px calc(14px + env(safe-area-inset-bottom,0px))!important;background:rgba(248,251,255,.99)!important}
+  .editor-dialog:before{content:"";display:block;width:34px;height:4px;border-radius:999px;background:#ced8e6;margin:-4px auto 10px}
+  .editor-dialog .panel-head{position:sticky;top:0;z-index:2;background:rgba(248,251,255,.96);padding-bottom:8px}
+  .editor-dialog .panel-head>div>span{font-size:13px}
+  .editor-dialog .panel-head>div>small{font-size:8px;line-height:1.35}
+  .editor-dialog .editor-actions{position:sticky;bottom:0;z-index:2;display:grid;grid-template-columns:1fr 1.25fr;gap:7px;margin:12px -2px -2px;padding:8px 2px 1px;background:linear-gradient(180deg,rgba(248,251,255,.2),rgba(248,251,255,.98) 28%)}
+  .editor-dialog .editor-actions button{min-height:46px;width:100%;justify-content:center}
+}
+
+@media(max-width:350px){
+  .recurring-summary-grid{grid-template-columns:1fr 1fr}
+  .recurring-summary-grid>article:first-child{grid-column:1/-1}
+  .savings-hero{grid-template-columns:82px minmax(0,1fr)}
+  .gauge-ring{width:78px!important;height:78px!important}
+}

@@ -1,5 +1,5 @@
+import { AlertCircle, KeyRound, LoaderCircle, ShieldCheck } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
-import { KeyRound, ShieldCheck } from 'lucide-react';
 import type { MfaEnrollment } from '../lib/api';
 
 export function MfaScreen({
@@ -37,7 +37,7 @@ export function MfaScreen({
   };
 
   return <main className="login-screen">
-    <section className="login-card neo-raised" aria-labelledby="mfa-title">
+    <section className="login-card neo-raised" aria-labelledby="mfa-title" data-busy={busy?'true':'false'}>
       <div className="login-brand"><img src="/brand/icon-192.png" alt=""/><div><div className="brand-word">Rheom<span>IQ</span></div><small>Private finance workspace</small></div></div>
       <div className="login-shield"><ShieldCheck size={24}/><span>Δεύτερος παράγοντας ασφαλείας</span></div>
       <div>
@@ -48,7 +48,7 @@ export function MfaScreen({
       </div>
 
       {mode === 'enroll' && !enrollment ? <button className="primary-action login-submit" type="button" disabled={busy} aria-busy={busy} onClick={startEnrollment}>
-        <span className="login-submit-label">{busy ? 'Προετοιμασία…' : 'Εμφάνιση QR κωδικού'}</span>
+        {busy?<LoaderCircle className="login-spinner" size={17} aria-hidden="true"/>:null}<span className="login-submit-label">{busy ? 'Προετοιμασία…' : 'Εμφάνιση QR κωδικού'}</span>
       </button> : null}
 
       {enrollment ? <div className="mfa-setup neo-inset">
@@ -57,21 +57,28 @@ export function MfaScreen({
       </div> : null}
 
       {(mode === 'challenge' || enrollment) ? <form onSubmit={submit} className="login-form">
-        <label><span>6ψήφιος κωδικός</span><div className="login-input neo-inset"><KeyRound size={17}/><input
-          type="text"
-          inputMode="numeric"
-          autoComplete="one-time-code"
-          pattern="[0-9]{6}"
-          maxLength={6}
-          value={code}
-          onChange={e=>setCode(e.target.value.replace(/\D/g,'').slice(0,6))}
-          disabled={busy}
-          required
-          autoFocus
-        /></div></label>
-        {error ? <div className="login-error" role="alert">{error}</div> : null}
-        <button className="primary-action login-submit" type="submit" disabled={busy || code.length !== 6} aria-busy={busy}><span className="login-submit-label">{busy ? 'Επαλήθευση…' : 'Επαλήθευση'}</span></button>
-      </form> : error ? <div className="login-error" role="alert">{error}</div> : null}
+        <div className="login-field">
+          <label htmlFor="mfa-code">6ψήφιος κωδικός</label>
+          <div className="login-input neo-inset mfa-code-shell"><KeyRound size={17}/><input
+            id="mfa-code"
+            className="mfa-code-input"
+            type="text"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            pattern="[0-9]{6}"
+            maxLength={6}
+            value={code}
+            onChange={e=>setCode(e.target.value.replace(/\D/g,'').slice(0,6))}
+            disabled={busy}
+            required
+            autoFocus
+            aria-invalid={Boolean(error)}
+          /></div>
+          <div className="mfa-code-progress" aria-hidden="true">{Array.from({length:6},(_,index)=><i key={index} className={index<code.length?'filled':''}/>)}</div>
+        </div>
+        {error ? <div className="login-error" role="alert"><AlertCircle size={16}/><span>{error}</span></div> : null}
+        <button className="primary-action login-submit" type="submit" disabled={busy || code.length !== 6} aria-busy={busy} data-state={busy?'loading':code.length===6?'ready':'idle'}>{busy?<LoaderCircle className="login-spinner" size={17} aria-hidden="true"/>:null}<span className="login-submit-label">{busy ? 'Επαλήθευση…' : 'Επαλήθευση'}</span></button>
+      </form> : error ? <div className="login-error" role="alert"><AlertCircle size={16}/><span>{error}</span></div> : null}
 
       <button className="ghost-button login-logout" type="button" disabled={busy} onClick={()=>void onLogout()}>Αποσύνδεση</button>
       <small className="login-footnote">Τα οικονομικά δεδομένα παραμένουν κλειδωμένα μέχρι να ολοκληρωθεί η επαλήθευση MFA.</small>

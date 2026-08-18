@@ -7,8 +7,14 @@ import type { FinanceData } from '../types';
 export type SaveState = 'loading' | 'saved' | 'saving' | 'error' | 'conflict';
 
 const REVISION_CHANNEL = 'rheomiq-finance-revision';
+const MAX_UNDO_STATES = 20;
 
 type RevisionMessage = { type: 'revision'; revision: string };
+
+function productData(input:FinanceData):FinanceData{
+  const migrated=migrateData(input);
+  return {...migrated,state:{...migrated.state,settings:{...migrated.state.settings,motion:'full'}}};
+}
 
 export function useFinance() {
   const [data, setData] = useState<FinanceData | null>(null);
@@ -16,6 +22,8 @@ export function useFinance() {
   const [filePath, setFilePath] = useState('');
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<SaveState>('loading');
+  const [undoDepth, setUndoDepth] = useState(0);
+  const [redoDepth, setRedoDepth] = useState(0);
   const revisionRef = useRef('');
   const dataRef = useRef<FinanceData | null>(null);
   const exclusiveOperation = useRef(false);
@@ -24,19 +32,28 @@ export function useFinance() {
   const channelRef = useRef<BroadcastChannel | null>(null);
   const remoteReloading = useRef(false);
   const coordinatorRef = useRef<LatestValueQueue<FinanceData> | null>(null);
+  const undoStackRef = useRef<FinanceData[]>([]);
+  const redoStackRef = useRef<FinanceData[]>([]);
 
   const assignData = useCallback((next: FinanceData | null) => { dataRef.current = next; setData(next); }, []);
+  const clearHistory = useCallback(() => {
+    undoStackRef.current = [];
+    redoStackRef.current = [];
+    setUndoDepth(0);
+    setRedoDepth(0);
+  }, []);
 
   const applyEnvelope = useCallback((res: Awaited<ReturnType<typeof loadData>>) => {
-    const migrated = migrateData(res.data);
+    const migrated = productData(res.data);
     assignData(migrated);
     revisionRef.current = res.revision;
     setRevision(res.revision);
     setFilePath(res.filePath);
     setLastSavedAt(res.lastSavedAt);
     lastSaveFailed.current = false;
+    clearHistory();
     setSaveState('saved');
-  }, [assignData]);
+  }, [assignData, clearHistory]);
 
   const reload = useCallback(async () => {
     setSaveState('loading');
@@ -109,11 +126,49 @@ export function useFinance() {
     return stamped;
   }, [assignData, coordinator]);
 
+  const pushBounded = useCallback((stack: FinanceData[], current: FinanceData) => {
+    stack.push(current);
+    if (stack.length > MAX_UNDO_STATES) stack.splice(0, stack.length - MAX_UNDO_STATES);
+  }, []);
+
   const update = useCallback((recipe: (current: FinanceData) => FinanceData) => {
     const current = dataRef.current;
-    if (!current || saveState === 'conflict' || exclusiveOperation.current) return;
-    persist(recipe(current));
-  }, [persist, saveState]);
+    const state = saveStateRef.current;
+    if (!current || state === 'conflict' || state === 'error' || state === 'loading' || exclusiveOperation.current) return;
+    const next = recipe(current);
+    if (next === current) return;
+    pushBounded(undoStackRef.current, current);
+    setUndoDepth(undoStackRef.current.length);
+    redoStackRef.current = [];
+    setRedoDepth(0);
+    persist(next);
+  }, [persist, pushBounded]);
+
+  const undo = useCallback(() => {
+    const state = saveStateRef.current;
+    const current = dataRef.current;
+    if (!current || state === 'conflict' || state === 'error' || state === 'loading' || exclusiveOperation.current) return false;
+    const previous = undoStackRef.current.pop();
+    if (!previous) return false;
+    pushBounded(redoStackRef.current, current);
+    setUndoDepth(undoStackRef.current.length);
+    setRedoDepth(redoStackRef.current.length);
+    persist(previous);
+    return true;
+  }, [persist, pushBounded]);
+
+  const redo = useCallback(() => {
+    const state = saveStateRef.current;
+    const current = dataRef.current;
+    if (!current || state === 'conflict' || state === 'error' || state === 'loading' || exclusiveOperation.current) return false;
+    const next = redoStackRef.current.pop();
+    if (!next) return false;
+    pushBounded(undoStackRef.current, current);
+    setUndoDepth(undoStackRef.current.length);
+    setRedoDepth(redoStackRef.current.length);
+    persist(next);
+    return true;
+  }, [persist, pushBounded]);
 
   const doImport = useCallback(async (incoming: FinanceData) => {
     if (exclusiveOperation.current) throw new Error('Υπάρχει ήδη λειτουργία αποθήκευσης σε εξέλιξη.');
@@ -122,7 +177,7 @@ export function useFinance() {
     try {
       await coordinator.whenIdle();
       try {
-        const res = await importData(migrateData(incoming));
+        const res = await importData(productData(incoming));
         applyEnvelope(res);
         channelRef.current?.postMessage({ type: 'revision', revision: res.revision } satisfies RevisionMessage);
       } catch (error) {
@@ -144,5 +199,8 @@ export function useFinance() {
     return createBackup();
   }, [coordinator]);
 
-  return useMemo(() => ({ data, revision, filePath, lastSavedAt, saveState, update, reload, importData: doImport, createBackup: doBackup }), [data, revision, filePath, lastSavedAt, saveState, update, reload, doImport, doBackup]);
+  const canUndo = undoDepth > 0 && saveState !== 'conflict' && saveState !== 'error' && saveState !== 'loading';
+  const canRedo = redoDepth > 0 && saveState !== 'conflict' && saveState !== 'error' && saveState !== 'loading';
+
+  return useMemo(() => ({ data, revision, filePath, lastSavedAt, saveState, update, reload, undo, redo, canUndo, canRedo, importData: doImport, createBackup: doBackup }), [data, revision, filePath, lastSavedAt, saveState, update, reload, undo, redo, canUndo, canRedo, doImport, doBackup]);
 }

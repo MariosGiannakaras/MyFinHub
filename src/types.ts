@@ -1,4 +1,9 @@
 export type AccountKind = 'cash' | 'bank' | 'savings' | 'credit';
+export type SavingSource = 'pay_and_save' | 'manual_transfer' | 'cash_offset';
+export type RecurringStatus = 'active' | 'paused' | 'stopped';
+export type CardKind = 'debit' | 'prepaid' | 'credit';
+export type CardNetwork = 'visa' | 'mastercard' | 'other';
+export type LoanKind = 'installment' | 'loan' | 'self-loan';
 
 export interface Account {
   id: string;
@@ -6,6 +11,32 @@ export interface Account {
   short?: string;
   kind: AccountKind | string;
   excludeFromAvailable?: boolean;
+}
+
+export interface CategoryDefinition {
+  name: string;
+  subcategories: string[];
+}
+
+export interface CardBank {
+  id: string;
+  name: string;
+  order: number;
+  custom?: boolean;
+}
+
+export interface PaymentCard {
+  id: string;
+  bankId: string;
+  nickname: string;
+  kind: CardKind;
+  network: CardNetwork;
+  holderName?: string;
+  last4?: string;
+  vaultRef?: string;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface LegacyTransaction {
@@ -18,6 +49,7 @@ export interface LegacyTransaction {
   amount: number;
   note: string;
   category?: string;
+  subcategory?: string;
   source?: string;
   cell?: string;
   sheet?: string;
@@ -47,6 +79,7 @@ export interface SplitPart {
   id: string;
   label: string;
   category: string;
+  subcategory?: string;
   amount: number;
   kind?: 'expense' | 'income' | 'refund' | 'saving' | 'transfer' | 'reconciliation';
 }
@@ -58,6 +91,7 @@ export interface FinanceEvent {
   amount: number;
   note: string;
   category?: string;
+  subcategory?: string;
   accountId?: string;
   fromAccountId?: string;
   toAccountId?: string;
@@ -65,12 +99,14 @@ export interface FinanceEvent {
   legs: LedgerLeg[];
   parts?: SplitPart[];
   savingAmount?: number;
+  savingSource?: SavingSource;
   receivableDelta?: number;
   creditDelta?: number;
   source?: 'user' | 'migration' | 'review';
   createdAt: string;
   updatedAt: string;
   loanId?: string;
+  recurringId?: string;
 }
 
 export interface ReviewDecision {
@@ -115,6 +151,8 @@ export interface FinanceData {
     customLoans: Loan[];
     lendingCustom: unknown[];
     settings: FinanceSettings;
+    cardBanks?: CardBank[];
+    cards?: PaymentCard[];
     events?: FinanceEvent[];
     reviewDecisions?: Record<string, ReviewDecision>;
     migration?: { fromSchema: number; migratedAt: string };
@@ -126,6 +164,8 @@ export interface FinanceSettings {
   accountNames: Record<string, string>;
   expenseCategories: string[];
   incomeCategories: string[];
+  expenseCategoryTree?: CategoryDefinition[];
+  incomeCategoryTree?: CategoryDefinition[];
   customPresets: string[];
   pinnedPresets: string[];
   defaultExpenseAccount: string;
@@ -142,9 +182,11 @@ export interface RecurringItem {
   name: string;
   amount: number;
   day?: number | null;
+  firstExpectedDate?: string | null;
   accountId: string;
   category: string;
   active: boolean;
+  status?: RecurringStatus;
   source?: string;
 }
 
@@ -168,6 +210,11 @@ export interface Loan {
   paidCount?: number;
   source?: string;
   accountingMode?: 'expense-per-installment' | 'liability-repayment';
+  kind?: LoanKind;
+  firstExpectedDate?: string | null;
+  defaultAccountId?: string;
+  forgivenAmount?: number;
+  longTermRecurring?: boolean;
 }
 
 export interface LendingPerson {

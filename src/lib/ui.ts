@@ -3,7 +3,7 @@ import type { EventKind, FinanceData, RecurringItem, ReviewSuggestion } from '..
 
 export function effectiveRecurringItems(data: FinanceData): RecurringItem[] {
   const seeded = (data.seed.recurring ?? []).map((item) => data.state.recurringOverrides?.[item.id] ?? item);
-  return [...seeded, ...(data.state.recurringCustom ?? [])].filter((item) => item.active);
+  return [...seeded, ...(data.state.recurringCustom ?? [])].filter((item) => item.active && (item.status ?? 'active') === 'active');
 }
 
 export function accountDisplayName(data: FinanceData, accountId?: string | null) {
