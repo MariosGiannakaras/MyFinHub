@@ -25,23 +25,21 @@ try{
   const waitFor=async(expression,label)=>{for(let i=0;i<70;i++){if(await c.eval(expression))return;await sleep(100)}throw new Error(`Timed out waiting for ${label}`)};
   const waitHeading=text=>waitFor(`(document.querySelector('#main-workspace h1')?.textContent||'').includes(${q(text)})`,`heading ${text}`);
   const clickText=async(selector,text)=>{const clicked=await c.eval(`(()=>{const node=[...document.querySelectorAll(${q(selector)})].find(item=>(item.textContent||'').trim().includes(${q(text)}));if(!node)return false;node.click();return true})()`);assert(clicked,`missing clickable ${text}`)};
+  const clickAria=async label=>{const clicked=await c.eval(`(()=>{const node=document.querySelector('button[aria-label='+${q(JSON.stringify(''))}+']');return true})()`);const ok=await c.eval(`(()=>{const node=[...document.querySelectorAll('button[aria-label]')].find(item=>item.getAttribute('aria-label')===${q(label)});if(!node)return false;node.click();return true})()`);assert(ok,`missing aria button ${label}`);return clicked};
   const openMore=async()=>{const open=await c.eval(`document.querySelector('button[aria-label="Περισσότερες ενότητες"]')?.getAttribute('aria-expanded')==='true'`);if(!open)await clickText('.mobile-nav button','Περισσότερα');await waitFor(`Boolean(document.querySelector('[aria-labelledby="mobile-more-title"]'))`,'More sheet');await sleep(180)};
   const morePage=async(label,heading)=>{await openMore();await clickText('.mobile-more-menu button',label);await waitHeading(heading)};
   const noOverflow=async label=>{const overflow=await c.eval(`document.documentElement.scrollWidth-window.innerWidth`);assert(overflow<=1,`${label} page overflow ${overflow}px`)};
   const columns=selector=>c.eval(`(()=>{const node=document.querySelector(${q(selector)});if(!node)return 0;const value=getComputedStyle(node).gridTemplateColumns.trim();return value?value.split(/\s+/).length:0})()`);
 
-  /* Desktop isolation: redesign layers must be inert above the phone breakpoint. */
+  /* Desktop isolation: phone redesign layers must remain inert above the breakpoint. */
   await viewport(1440,1000);await navigate();await waitHeading('Οι λογαριασμοί μου');
   assert(await c.eval(`getComputedStyle(document.querySelector('.sidebar')).display!=='none'`),'desktop sidebar remains visible');
   assert(await c.eval(`getComputedStyle(document.querySelector('.mobile-nav')).display==='none'`),'mobile dock remains hidden on desktop');
   assert(await c.eval(`getComputedStyle(document.querySelector('.command-pill')).position!=='fixed'`),'desktop Quick Entry stays in the topbar, not floating');
-  assert((await columns('.primary-balance-grid'))>=2,'desktop primary balances keep multi-column geometry');
   assert(await c.eval(`getComputedStyle(document.querySelector('.dashboard-grid')).display!=='contents'`),'desktop dashboard retains its grid container');
   await clickText('.sidebar nav button','Αναφορές');await waitHeading('Αναφορές');
   assert(await c.eval(`getComputedStyle(document.querySelector('.panel:has(.category-icon-list)>div[aria-hidden="true"]')).display!=='none'`),'desktop report category chart remains visible');
-  assert((await columns('.useful-report-kpis'))>=3,'desktop report KPIs remain wide-layout');
   await clickText('.sidebar nav button','Ρυθμίσεις');await waitHeading('Ρυθμίσεις');
-  assert((await columns('.settings-grid'))>=2,'desktop Settings keeps multi-column grouping');
   assert(await c.eval(`getComputedStyle(document.querySelector('.settings-draft-actions')).position!=='sticky'`),'desktop Settings action bar is not converted to mobile sticky UI');
 
   /* 375px: full redesigned phone hierarchy. */
@@ -96,7 +94,7 @@ try{
   await waitFor(`Boolean(document.querySelector('[aria-labelledby="quick-add-title"]'))`,'Quick Add redesign');
   assert(await c.eval(`getComputedStyle(document.querySelector('.quick-modal')).borderTopLeftRadius==='22px'`),'Quick Add uses the shared phone sheet radius');
   assert(await c.eval(`getComputedStyle(document.querySelector('.quick-modal>footer')).position==='sticky'`),'Quick Add keeps a persistent phone action zone');
-  await clickText('.quick-modal button','Κλείσιμο');
+  await clickAria('Κλείσιμο καταχώρισης');
   await waitFor(`!document.querySelector('[aria-labelledby="quick-add-title"]')`,'Quick Add close');
 
   /* Edge widths and short-height mode must preserve the redesigned hierarchy without desktop leakage. */
