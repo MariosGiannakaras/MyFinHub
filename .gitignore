@@ -8,6 +8,10 @@ dist-node/
 .env.*
 !/.env.example
 
+# Desktop build/package outputs are generated on Windows and never committed.
+desktop/.build/
+release/desktop/
+
 # Supabase CLI local state / linked project metadata.
 supabase/.temp/
 .supabase/
