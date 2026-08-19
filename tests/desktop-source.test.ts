@@ -4,12 +4,16 @@ import { describe, expect, it } from 'vitest';
 
 const root = process.cwd();
 const read = (relative:string) => fs.readFileSync(path.join(root, relative), 'utf8');
+const exists = (relative:string) => fs.existsSync(path.join(root, relative));
+const size = (relative:string) => fs.statSync(path.join(root, relative)).size;
 
 const desktopPackage = JSON.parse(read('desktop/package.json'));
 const main = read('desktop/main.cjs');
 const preload = read('desktop/preload.cjs');
 const setup = read('desktop/setup.html');
 const setupRenderer = read('desktop/setup-renderer.js');
+const settings = read('src/pages/SettingsPage.tsx');
+const updatePanel = read('src/components/DesktopUpdatePanel.tsx');
 const workflow = read('.github/workflows/desktop-windows.yml');
 
 function mainBlock(start:string,end:string){const from=main.indexOf(start);const to=main.indexOf(end,from+start.length);expect(from).toBeGreaterThanOrEqual(0);expect(to).toBeGreaterThan(from);return main.slice(from,to);}
@@ -33,18 +37,23 @@ describe('MyFinHub Windows desktop boundary', () => {
     expect(main).toContain('sandbox: true');
     expect(main).toContain("preload: path.join(__dirname, 'preload.cjs')");
     expect(preload).toContain("contextBridge.exposeInMainWorld('myFinHubDesktop'");
-    expect(preload).not.toContain('require(\'fs\')');
+    expect(preload).not.toContain("require('fs')");
     expect(preload).not.toContain('child_process');
     expect(main).toContain('isMainSender(event)');
     expect(main).toContain('isSetupSender(event)');
   });
 
-  it('supports app-owned first-run setup without compiling secrets into the renderer', () => {
+  it('supports modern app-owned first-run setup without compiling secrets into the renderer', () => {
     expect(setup).toContain('MyFinHub');
     expect(setup).toContain('SUPABASE_URL');
     expect(setup).toContain('SUPABASE_PUBLISHABLE_KEY');
     expect(setup).toContain('CARD_VAULT_KEY');
+    expect(setup).toContain('progress-shell');
+    expect(setup).toContain('Τι εκτελείται στο παρασκήνιο');
+    expect(setup).toContain('@media(prefers-reduced-motion:reduce)');
     expect(setupRenderer).toContain('bridge.saveSetup');
+    expect(setupRenderer).toContain('setProgress(');
+    expect(preload).toContain('onSetupProgress');
     expect(main).toContain("safeStorage.encryptString(cardVaultKey)");
     expect(main).toContain("delete env.SUPABASE_SERVICE_ROLE_KEY");
     expect(main).toContain("delete env.SUPABASE_SECRET_KEY");
@@ -57,6 +66,15 @@ describe('MyFinHub Windows desktop boundary', () => {
     expect(main).toContain("env.RHEOMIQ_PORT = '0'");
     expect(main).toContain("env.RHEOMIQ_DESKTOP = '1'");
     expect(main).toContain('windowsHide: true');
+  });
+
+  it('surfaces explicit in-app update controls only through the Electron bridge', () => {
+    expect(settings).toContain('<DesktopUpdatePanel/>');
+    expect(updatePanel).toContain('window.myFinHubDesktop');
+    expect(updatePanel).toContain('Έλεγχος τώρα');
+    expect(updatePanel).toContain('Λήψη ενημέρωσης');
+    expect(updatePanel).toContain('Εγκατάσταση & επανεκκίνηση');
+    expect(updatePanel).toContain('progressbar');
   });
 
   it('checks controlled MyFinHub releases and verifies exact SHA-256 metadata before installation', () => {
@@ -84,6 +102,23 @@ describe('MyFinHub Windows desktop boundary', () => {
     expect(workflow).toContain('Unknown publisher / SmartScreen');
     expect(workflow).toContain('Get-FileHash -Algorithm SHA256');
     expect(workflow).not.toContain('Signed desktop releases require');
+  });
+
+  it('keeps canonical MyFinHub brand assets in the repo and runtime paths', () => {
+    for (const asset of [
+      'public/favicon.png',
+      'public/brand/icon-192.png',
+      'public/brand/icon-512.png',
+      'desktop/setup-brand.png',
+      'assets/branding/myfinhub/icon-32.png',
+      'assets/branding/myfinhub/icon-192.png',
+      'assets/branding/myfinhub/icon-512.png',
+      'assets/branding/myfinhub/README.md',
+    ]) expect(exists(asset)).toBe(true);
+    expect(size('public/favicon.png')).toBeGreaterThan(1000);
+    expect(size('public/brand/icon-192.png')).toBeGreaterThan(5000);
+    expect(size('public/brand/icon-512.png')).toBeGreaterThan(20000);
+    expect(workflow).toContain('assets/branding/myfinhub/**');
   });
 
   it('keeps CVV out of the server-side desktop boundary', () => {
