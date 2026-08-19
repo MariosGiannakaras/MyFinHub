@@ -33,20 +33,11 @@ jobs:
       - run: npm audit --prefix api --audit-level=high
       - run: npm run check
       - run: npm run check --prefix api
-      - name: Recover authentic brand variants
-        shell: bash
-        run: |
-          command -v ffmpeg
-          mkdir -p tmp/authentic-brand-output
-          ffmpeg -hide_banner -loglevel error -y -i tmp/authentic-rheomiq-icon.png -vf scale=32:32:flags=lanczos -frames:v 1 tmp/authentic-brand-output/icon-32.png
-          cp tmp/authentic-rheomiq-icon.png tmp/authentic-brand-output/icon-192.png
-          ffmpeg -hide_banner -loglevel error -y -i tmp/authentic-rheomiq-icon.png -vf scale=512:512:flags=lanczos -frames:v 1 tmp/authentic-brand-output/icon-512.png
-          file tmp/authentic-brand-output/icon-32.png tmp/authentic-brand-output/icon-192.png tmp/authentic-brand-output/icon-512.png
-      - name: Upload authentic brand recovery
+      - name: Upload authentic brand source for recovery
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: authentic-brand-recovery-${{ github.sha }}
-          path: tmp/authentic-brand-output/*.png
+          name: authentic-brand-source-${{ github.sha }}
+          path: tmp/authentic-rheomiq-icon.png
           if-no-files-found: error
           retention-days: 1
       - name: Rendered frontend QA
