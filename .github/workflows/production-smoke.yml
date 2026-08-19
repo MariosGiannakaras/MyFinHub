@@ -87,7 +87,7 @@ jobs:
           with open(sys.argv[1], encoding='utf-8') as fh:
               payload = json.load(fh)
 
-          assert payload == {'ok': True, 'app': 'RheomIQ'}, payload
+          assert payload == {'ok': True, 'app': 'MyFinHub'}, payload
           PY
 
           data_status="$(fetch_path '/api/data' data)"
