@@ -4,7 +4,7 @@
 
 RheomIQ is a React/Vite client with a small TypeScript API boundary. Production API handlers run as Vercel Node.js Functions in Frankfurt (`fra1`); local development exposes the same server modules through Express. The repository runtime contract is Node.js 22.x.
 
-The browser is UI-only. Durable finance data lives in Supabase/PostgreSQL in `eu-central-1`, and finance data or access tokens are not persisted in `localStorage` or IndexedDB.
+The browser is UI-only for durable finance state. Durable finance data lives in Supabase/PostgreSQL in `eu-central-1`, and finance data or access tokens are not persisted in `localStorage` or IndexedDB. The one deliberate exception is the separately classified **CVV device vault**: when the owner explicitly saves a CVV, it is encrypted by a non-extractable Web Crypto key and stored in origin-local IndexedDB. It never joins FinanceData and is not synchronized to the server.
 
 Production browser requests authenticate through HttpOnly/Secure session cookies. API handlers use the Supabase publishable key together with the signed-in user's access JWT, so PostgreSQL RLS remains part of the online authorization boundary. The production web runtime does not require a Supabase secret/service-role key. Privileged keys are limited to offline/admin workflows where explicitly required.
 
@@ -23,8 +23,9 @@ The database schema is owned by ordered SQL migrations under `supabase/migration
 - `rheomiq_backups`: immutable full-document snapshots created before imports, manually, and periodically during normal saves; retention is bounded to the newest 100 snapshots.
 - `rheomiq_audit_log`: append-only save/import/backup events without finance payloads.
 - `rheomiq_owner`: singleton owner identity used by the RLS/RPC authorization checks.
+- `rheomiq_card_secrets`: separate ciphertext-only PAN/expiry vault keyed by owner + shared card id. It is not embedded in `FinanceData` and is not included in normal finance backups.
 
-The full document remains the compatibility read/import format because the imported Excel corpus contains 2,800+ legacy transactions whose historical meaning must not be reinterpreted casually.
+The full finance document remains the compatibility read/import format because the imported Excel corpus contains 2,800+ legacy transactions whose historical meaning must not be reinterpreted casually.
 
 ### Normal writes
 
@@ -48,6 +49,50 @@ This preserves the stable `FinanceData` read contract while removing the large i
 
 `rheomiq_create_backup(...)` creates an explicit immutable full snapshot. Backup/import operations are serialized behind pending client saves so a known-stale state is never backed up as if it were current.
 
+The product migration wrapper explicitly preserves `state.cardBanks` and `state.cards` around the historical schema-v3 migrator. This prevents older migration code, which predates the Cards domain, from dropping shared card identities on load/import/offline migration.
+
+## Shared payment-card model
+
+Card metadata lives in `FinanceData.state.cards` as `PaymentCard` records. The same record is rendered by both the Cards workspace and the dedicated Credit Card page.
+
+Non-secret card metadata may include bank id, nickname, kind, network, physical/virtual form factor, visual design id, holder label, last four digits, vault reference, active/archive state and timestamps. Full PAN, expiry and CVV are forbidden from this document.
+
+New `card_purchase` and `card_payment` events may carry `cardId`. This binds history to the shared card identity without changing the existing ledger legs. Historical pre-linkage credit events with no `cardId` remain compatible and are interpreted as belonging to the historical primary credit card.
+
+The current product has one synthetic `credit-card` liability, so only one credit-card identity may be active at a time. Archiving that identity does not alter the liability or its ledger events. Repayment remains possible while archived; new purchases require an active card.
+
+### Server PAN / expiry vault
+
+`/api/card-secrets` is the only online card-secret endpoint.
+
+- `POST`: reveal PAN/expiry for one `cardId`.
+- `PUT`: create/update PAN/expiry for one `cardId`.
+- `DELETE`: explicit permanent deletion of PAN/expiry for one `cardId`.
+
+Every method requires same-origin, an authenticated owner session and AAL2. The server uses the existing authenticated owner's JWT plus the Supabase publishable key to access `rheomiq_card_secrets`, therefore table RLS remains authoritative.
+
+PAN/expiry are validated before encryption. Encryption is AES-256-GCM with a random 96-bit IV, AAD bound to owner id + card id + key version, and key material supplied only through the Production `CARD_VAULT_KEY` environment variable. PostgreSQL stores only ciphertext/IV/auth tag/key version and lookup metadata.
+
+The API body is tightly bounded and key-whitelisted. CVV/CVC/security-code-like keys are rejected. The browser client also runtime-whitelists `pan` and `expiry` rather than spreading arbitrary objects into the request.
+
+### Device-local CVV vault
+
+CVV save/reveal/delete uses the browser-local encrypted IndexedDB vault and Web Crypto. No CVV request is made to `/api/card-secrets` or any other server endpoint.
+
+Archiving a card removes its local CVV record from that browser/device but deliberately preserves its PAN/expiry server-vault row. Permanently removing PAN/expiry is a separate explicit secure-editor action.
+
+### Soft archive / restore
+
+Card removal from active UI is metadata-only archival (`active = false` plus archive timestamp). It must not delete:
+
+- card purchase/payment events;
+- credit liability/debt;
+- repayment history;
+- other finance history associated by `cardId`;
+- the PAN/expiry server-vault row.
+
+Restoring/re-adding the same card reactivates the original `PaymentCard` with the same `cardId` and vault reference. No history relinking or reconstruction is required.
+
 ## Concurrency and client synchronization
 
 Every normal save uses an `If-Match` revision. Stale writes fail with a conflict instead of overwriting newer data.
@@ -66,7 +111,7 @@ Secondary finance pages are lazy-loaded so the authenticated shell does not eage
 2. GitHub CI runs the security guard, tests, type/build checks and dependency audits; CodeQL scans JavaScript/TypeScript.
 3. Supabase Git integration applies production migrations from `main`.
 4. Vercel deploys the Git-connected `main` branch and the post-deploy Production Smoke workflow verifies the public surface, required security headers, unauthenticated API protection, `no-store` caching and Frankfurt routing.
-5. Real personal finance JSON, `.env` files and credentials are never committed.
+5. Real personal finance JSON, `.env` files, card secrets and credentials are never committed.
 
 ## Ledger model
 
@@ -80,8 +125,8 @@ Legacy Excel rows remain immutable seed data unless the user explicitly creates 
 - `refund`: asset increases and spending decreases.
 - `lending`: asset decreases and receivable increases.
 - `repayment`: asset increases and receivable decreases.
-- `card_purchase`: credit liability decreases (more negative) and spending increases.
-- `card_payment`: bank decreases and credit liability increases toward zero; spending impact zero.
+- `card_purchase`: credit liability decreases (more negative) and spending increases exactly once; optional `cardId` identifies the shared card.
+- `card_payment`: bank decreases and credit liability increases toward zero; spending impact zero; optional `cardId` identifies the shared card.
 - `reconciliation`: balance-only adjustment; spending impact zero.
 - `split`: one payment with category-level parts that must equal the parent amount.
 
