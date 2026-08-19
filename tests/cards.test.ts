@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { archiveCardRecord, cardBanks, cardsForBank, creditEventsForCard, primaryCreditCard, restoreCard } from '../src/lib/cards.js';
+import { archiveCardRecord, archivedCardMatch, cardBanks, cardsForBank, creditEventsForCard, primaryCreditCard, restoreCard } from '../src/lib/cards.js';
 import { migrateProductData } from '../src/lib/productMigration.js';
 import type { FinanceData } from '../src/types.js';
 
@@ -9,6 +9,7 @@ describe('Cards metadata',()=>{
  it('keeps the required bank order before custom banks',()=>{expect(cardBanks(fixture()).map(bank=>bank.id)).toEqual(['piraeus','revolut','alpha','payzy','viva','custom-bank'])});
  it('shows active cards only and stores no full secret field in metadata',()=>{const cards=cardsForBank(fixture(),'piraeus');expect(cards.map(card=>card.id)).toEqual(['c1','cc1']);expect(cards[0]).not.toHaveProperty('pan');expect(cards[0]).not.toHaveProperty('cvv');expect(cards[0]).not.toHaveProperty('expiry')});
  it('soft-archives and restores the exact same card id and vault reference',()=>{const original=primaryCreditCard(fixture())!;const archived=archiveCardRecord(original,'2026-08-10T00:00:00Z');expect(archived).toMatchObject({id:'cc1',active:false,archivedAt:'2026-08-10T00:00:00Z',vaultRef:'cc1'});const restored=restoreCard(archived,'2026-08-11T00:00:00Z');expect(restored).toMatchObject({id:'cc1',active:true,vaultRef:'cc1'});expect(restored).not.toHaveProperty('archivedAt')});
+ it('automatically reuses an archived record only when the last4 match is explicit',()=>{const data=fixture();data.state.cards=data.state.cards?.map(card=>card.id==='cc1'?archiveCardRecord(card):card);expect(archivedCardMatch(data,{bankId:'piraeus',kind:'credit'})).toBeUndefined();expect(archivedCardMatch(data,{bankId:'piraeus',kind:'credit',last4:'9999'})).toBeUndefined();expect(archivedCardMatch(data,{bankId:'piraeus',kind:'credit',last4:'5678'})?.id).toBe('cc1')});
  it('assigns pre-cardId legacy credit events to the historical primary card and keeps linked events',()=>{expect(creditEventsForCard(fixture(),'cc1').map(event=>event.id)).toEqual(['old-purchase','linked-payment'])});
  it('preserves card banks and cards through the product migration boundary',()=>{const input=fixture();const migrated=migrateProductData(input);expect(migrated.state.cardBanks?.[0]?.id).toBe('custom-bank');expect(migrated.state.cards?.map(card=>card.id)).toEqual(['c1','cc1'])});
 });
