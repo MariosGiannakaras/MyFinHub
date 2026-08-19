@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "description": "RheomIQ Windows desktop host",
+  "author": "MariosGiannakaras",
   "main": "main.cjs",
   "scripts": {
     "prepare:bundle": "node prepare-build.mjs",
@@ -42,7 +43,7 @@
         "to": "app/runtime/node.exe"
       },
       {
-        "from": "../public/brand/icon-512.png",
+        "from": ".build/icon-512.png",
         "to": "app/icon.png"
       }
     ],
@@ -55,7 +56,7 @@
           ]
         }
       ],
-      "icon": "../public/brand/icon-512.png",
+      "icon": ".build/icon-512.png",
       "executableName": "RheomIQ",
       "artifactName": "RheomIQ-Setup-${version}-${arch}.${ext}"
     },
