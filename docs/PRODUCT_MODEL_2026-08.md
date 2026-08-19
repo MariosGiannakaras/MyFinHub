@@ -43,7 +43,7 @@ The old Smart Review flow is not a primary workflow after the refreshed legacy i
 
 ## Cards
 
-Cards are separate from Credit Card debt/installments.
+Cards are separate from Credit Card debt/installments, but **Cards and Credit Card share one underlying `PaymentCard` identity**. A credit card created or restored from either page is the same FinanceData metadata record with the same `cardId`; there is no duplicated Credit-Card metadata object.
 
 Bank order:
 1. Piraeus
@@ -54,30 +54,59 @@ Bank order:
 
 - Horizontal bank grouping; cards vertical within bank.
 - Add-bank and add-card actions.
-- Card visuals should resemble real cards with CSS where possible.
-- Sensitive fields are masked by default and reveal with an eye control.
-- Copy controls are field-specific.
+- Card visuals use the shared interactive visual system derived from the approved card prototype: bank-specific surfaces, design selection/live preview, subtle pointer tilt, masked fields and deliberate reveal/copy actions.
+- The visual `designId` and physical/virtual form factor are non-secret presentation metadata. They do not change ledger semantics.
+- Sensitive fields are masked by default and reveal only after explicit action.
+- Copy controls are field-specific and disabled until the corresponding secret is explicitly revealed.
 - The credit card has a shortcut to the dedicated Credit Card page.
-- Payment-card secrets must not be stored in the ordinary finance document. Any recoverable PAN storage requires a dedicated encrypted vault design; CVV persistence requires separate explicit security review.
+- Only one credit card is active against the current singular credit liability model. A different credit card must not silently become a second identity for the same liability.
+
+### Card-secret storage
+
+Payment-card secrets never belong in the ordinary FinanceData document or normal JSON backups.
+
+- PAN and expiry are stored only in the dedicated `rheomiq_card_secrets` server vault, encrypted with AES-256-GCM using deployment key material outside PostgreSQL.
+- Server reads/writes require same-origin, authenticated owner and AAL2; the online path uses the owner's JWT plus the publishable Supabase key so RLS remains authoritative.
+- CVV/CVC is never sent to the server. If saved, it uses the browser/device-local encrypted IndexedDB vault only.
+- Revealed plaintext exists only in component memory while the user asks to see it.
+- Explicit server-secret deletion is distinct from card archival.
+
+### Card archival / restore
+
+Removing a card from active use is archival/soft-delete, not destructive deletion.
+
+- Set the shared card metadata record inactive and record the archive time.
+- Never delete historical finance events, purchases, repayments, balances or other finance history as a side effect of archival.
+- Never delete the PAN/expiry server-vault row as a side effect of archival, because restoring the same card must recover the same secure identity.
+- The device-local CVV record is removed when the card is archived so an inactive card does not leave a locally retrievable CVV behind.
+- Restoring/re-adding the same archived card reuses its original `cardId` (and vault reference), therefore linked history remains attached automatically.
+- Permanently deleting PAN/expiry is a separate explicit action in the secure card editor and does not delete finance history.
 
 ## Credit Card
 
-Dedicated Credit Card page.
+Dedicated Credit Card page built around the same large interactive `PaymentCard` surface used in Cards.
 
-Current limit: EUR 500.
+Current limit: EUR 500 unless changed in Settings.
 
 Show:
+- the shared card identity
 - total limit
 - current debt
 - available limit
 - utilization indicator
 - purchase history
+- repayment history
+
+New card purchases and repayments carry the shared `cardId`. Pre-linkage legacy credit events remain compatible and are associated with the historical primary credit card when no explicit `cardId` exists.
+
+Archiving the credit card must not erase or reset the liability. Existing debt and repayment capability remain available while the card is archived, but new purchases require an active card. Restoring the card returns the same identity and history.
 
 Repayment:
-- choose an eligible account from the same bank
+- choose an eligible account from the same bank as the shared credit-card record
 - subtract from that account
-- reduce credit-card liability by the same amount
-- full repayment returns available limit to EUR 500
+- reduce the singular credit-card liability by the same amount
+- full repayment returns available limit to the configured limit
+- repayment is not a second expense
 
 ## Installments & loans
 
