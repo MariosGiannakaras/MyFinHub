@@ -8,7 +8,7 @@ The August 2026 product/frontend batch tracked by #64 was promoted to production
 
 `main` remains the release-only production branch. New routine work integrates into `develop` through short-lived issue branches and does not deploy to production until a later deliberate `develop -> main` release.
 
-## Current develop integration — interactive Cards / shared Credit identity
+## Interactive Cards / shared Credit identity
 
 Issue #134 / PR #135 implements the approved interactive card prototype for integration into `develop`.
 
@@ -24,13 +24,9 @@ Issue #134 / PR #135 implements the approved interactive card prototype for inte
 - The product migration/read/import/offline migration paths explicitly preserve `cardBanks` and `cards`, preventing the older schema-v3 migrator from dropping card metadata.
 - `20260819072000_tighten_card_secret_grants.sql` narrows `authenticated` table privileges on `rheomiq_card_secrets` to SELECT/INSERT/UPDATE/DELETE while retaining owner+AAL2 RLS. The migration was dry-run in a production transaction and rolled back; no production schema mutation occurred during feature development.
 
-### Validation evidence for #134 / #135
+Validation for this work covers the repository privacy/security guard, dependency audits, unit/domain/security tests, TypeScript/Vite production build, API typecheck, rendered desktop/mobile QA, app-owned-controls QA and CodeQL. The rendered suite includes shared Cards/Credit identity and Credit archive -> history retained -> restore. The Supabase grant migration also passed a transactional dry-run with the expected CRUD-only grant set followed by rollback verification.
 
-The implementation was validated with the repository privacy/security guard, dependency audits, 120 unit/domain/security tests, TypeScript/Vite production build, API typecheck, rendered desktop/mobile QA, app-owned-controls QA and CodeQL. The rendered suite includes shared Cards/Credit identity and Credit archive -> history retained -> restore.
-
-The Supabase grant migration passed a transactional dry-run with the expected CRUD-only grant set, followed by rollback verification showing live production grants unchanged.
-
-PR #135 requires CI and CodeQL green on its exact final head before squash merge to `develop`. The feature/develop branch does **not** deploy to production; production delivery remains a separate release decision.
+The feature/develop branch does **not** deploy to production; production delivery remains a separate release decision.
 
 ## Implemented production platform
 
