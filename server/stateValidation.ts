@@ -29,7 +29,7 @@ export function validateFinanceState(value: unknown): asserts value is FinanceDa
     seed: EMPTY_SEED,
     state: value,
   });
-  validateCardStateExtensions(value);
+  validateCardStateExtensions(value as FinanceData['state']);
 }
 
 export function parseMutableWrite(value: unknown): { state: FinanceData['state']; updatedAt: string } {
