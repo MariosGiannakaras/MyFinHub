@@ -10,7 +10,7 @@ The August 2026 product/frontend batch tracked by #64 was promoted to production
 
 ## Current develop integration — interactive Cards / shared Credit identity
 
-Issue #134 / PR #135 integrates the approved interactive card prototype into the application and is validated for squash merge to `develop`.
+Issue #134 / PR #135 implements the approved interactive card prototype for integration into `develop`.
 
 - Cards use horizontal bank columns, bank-specific visual designs, a live creation preview, masked fields, explicit reveal/copy controls, pointer tilt with reduced-motion fallback, and deliberate soft-archive/restore interactions.
 - Cards and Credit Card use the same `FinanceData.state.cards` / `PaymentCard` record. A card created or restored from either page is the same underlying record and `cardId`.
@@ -24,20 +24,23 @@ Issue #134 / PR #135 integrates the approved interactive card prototype into the
 - The product migration/read/import/offline migration paths explicitly preserve `cardBanks` and `cards`, preventing the older schema-v3 migrator from dropping card metadata.
 - `20260819072000_tighten_card_secret_grants.sql` narrows `authenticated` table privileges on `rheomiq_card_secrets` to SELECT/INSERT/UPDATE/DELETE while retaining owner+AAL2 RLS. The migration was dry-run in a production transaction and rolled back; no production schema mutation occurred during feature development.
 
-### Validation for #134 / #135
+### Validation evidence for #134 / #135
 
-- privacy/security guard: green;
-- root and API dependency audits: green, 0 reported vulnerabilities at the configured gate;
-- 29 test files / 120 tests: green;
-- TypeScript + Vite production build: green;
-- Vercel API TypeScript check: green;
-- rendered frontend QA: green, including shared Cards/Credit identity and Credit archive -> history retained -> restore;
-- mobile redesign fidelity QA: green;
-- app-owned controls QA: green;
-- CodeQL: green;
-- Supabase grant migration dry-run: expected CRUD-only result, followed by rollback verification showing live grants unchanged.
+The implementation head immediately before this documentation refresh passed:
 
-This integration is production-ready source code for `develop`; it does **not** deploy from the feature/develop branch. Production delivery remains a separate release decision.
+- privacy/security guard;
+- root and API dependency audits with 0 reported vulnerabilities at the configured gate;
+- 29 test files / 120 tests;
+- TypeScript + Vite production build;
+- Vercel API TypeScript check;
+- rendered frontend QA, including shared Cards/Credit identity and Credit archive -> history retained -> restore;
+- mobile redesign fidelity QA;
+- app-owned controls QA;
+- CodeQL.
+
+The Supabase grant migration also passed a transactional dry-run with the expected CRUD-only grant set, followed by rollback verification showing live production grants unchanged.
+
+PR #135 must still have CI and CodeQL green on its exact final head before squash merge to `develop`. The feature/develop branch does **not** deploy to production; production delivery remains a separate release decision.
 
 ## Implemented production platform
 
