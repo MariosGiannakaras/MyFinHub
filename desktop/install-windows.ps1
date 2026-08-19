@@ -8,15 +8,16 @@ $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
 Set-StrictMode -Version Latest
 
+$ProductName = 'MyFinHub'
 $NodeVersion = '22.23.2'
 $RepoOwner = 'MariosGiannakaras'
-$RepoName = 'RheomIQ'
+$RepoNames = @('MyFinHub', 'RheomIQ')
 $Root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $EnvFile = Join-Path $Root '.env'
-$ProvisionDir = Join-Path $env:APPDATA 'RheomIQ'
+$ProvisionDir = Join-Path $env:APPDATA 'MyFinHub'
 $PendingProvision = Join-Path $ProvisionDir 'pending-provision.json'
-$BuildCache = Join-Path $env:LOCALAPPDATA 'RheomIQ-build'
-$TempDir = Join-Path $env:TEMP 'RheomIQ-Desktop-Install'
+$BuildCache = Join-Path $env:LOCALAPPDATA 'MyFinHub-build'
+$TempDir = Join-Path $env:TEMP 'MyFinHub-Desktop-Install'
 
 function Write-Step([string]$Message) {
   Write-Host "`n==> $Message" -ForegroundColor Cyan
@@ -107,9 +108,7 @@ function Get-Node22 {
   $npm = Get-Command npm.cmd -ErrorAction SilentlyContinue
   if ($node -and $npm) {
     $major = (& $node.Source -p "process.versions.node.split('.')[0]").Trim()
-    if ($major -eq '22') {
-      return @{ Node = $node.Source; Npm = $npm.Source }
-    }
+    if ($major -eq '22') { return @{ Node = $node.Source; Npm = $npm.Source } }
   }
 
   Write-Step "Downloading verified Node.js v$NodeVersion for the desktop build"
@@ -146,9 +145,9 @@ function Install-FromSource {
     & $toolchain.Npm ci --prefix (Join-Path $Root 'desktop')
     if ($LASTEXITCODE -ne 0) { throw 'Desktop npm ci failed.' }
 
-    Write-Step 'Running security/tests and building RheomIQ'
+    Write-Step 'Running security/tests and building MyFinHub'
     & $toolchain.Npm run check --prefix $Root
-    if ($LASTEXITCODE -ne 0) { throw 'RheomIQ validation failed.' }
+    if ($LASTEXITCODE -ne 0) { throw 'MyFinHub validation failed.' }
     & $toolchain.Npm run check --prefix (Join-Path $Root 'desktop')
     if ($LASTEXITCODE -ne 0) { throw 'Desktop validation failed.' }
 
@@ -158,24 +157,39 @@ function Install-FromSource {
     & $toolchain.Npm run dist --prefix (Join-Path $Root 'desktop')
     if ($LASTEXITCODE -ne 0) { throw 'Windows installer build failed.' }
 
-    $installer = Get-ChildItem -LiteralPath (Join-Path $Root 'release\desktop') -Filter 'RheomIQ-Setup-*-x64.exe' |
+    $installer = Get-ChildItem -LiteralPath (Join-Path $Root 'release\desktop') -Filter 'MyFinHub-Setup-*-x64.exe' |
       Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
-    if (-not $installer) { throw 'RheomIQ installer was not produced.' }
+    if (-not $installer) { throw 'MyFinHub installer was not produced.' }
     return $installer.FullName
   } finally {
     $env:PATH = $oldPath
   }
 }
 
+function Get-LatestRelease {
+  $headers = @{ 'Accept' = 'application/vnd.github+json'; 'X-GitHub-Api-Version' = '2022-11-28'; 'User-Agent' = 'MyFinHub-Windows-Installer' }
+  foreach ($repoName in $RepoNames) {
+    try {
+      $releases = Invoke-RestMethod -Headers $headers -Uri "https://api.github.com/repos/$RepoOwner/$repoName/releases?per_page=30"
+    } catch {
+      if ($_.Exception.Response -and [int]$_.Exception.Response.StatusCode -eq 404) { continue }
+      throw
+    }
+    $release = $releases | Where-Object { -not $_.draft -and -not $_.prerelease -and $_.tag_name -like 'myfinhub-v*' } | Select-Object -First 1
+    if ($release) { return @{ Release = $release; RepoName = $repoName; Headers = $headers } }
+  }
+  return $null
+}
+
 function Install-LatestRelease {
-  Write-Step 'Downloading the latest published RheomIQ desktop release'
+  Write-Step 'Downloading the latest published MyFinHub desktop release'
   New-Item -ItemType Directory -Force -Path $TempDir | Out-Null
-  $headers = @{ 'Accept' = 'application/vnd.github+json'; 'X-GitHub-Api-Version' = '2022-11-28'; 'User-Agent' = 'RheomIQ-Windows-Installer' }
-  $releases = Invoke-RestMethod -Headers $headers -Uri "https://api.github.com/repos/$RepoOwner/$RepoName/releases?per_page=30"
-  $release = $releases | Where-Object { -not $_.draft -and -not $_.prerelease -and $_.tag_name -like 'desktop-v*' } | Select-Object -First 1
-  if (-not $release) { throw 'No published RheomIQ desktop release is available yet.' }
-  $asset = $release.assets | Where-Object { $_.name -like 'RheomIQ-Setup-*-x64.exe' } | Select-Object -First 1
-  if (-not $asset) { throw 'The latest desktop release does not contain a RheomIQ x64 Windows installer.' }
+  $found = Get-LatestRelease
+  if (-not $found) { throw 'No published MyFinHub desktop release is available yet.' }
+  $release = $found.Release
+  $headers = $found.Headers
+  $asset = $release.assets | Where-Object { $_.name -like 'MyFinHub-Setup-*-x64.exe' } | Select-Object -First 1
+  if (-not $asset) { throw 'The latest desktop release does not contain a MyFinHub x64 Windows installer.' }
   $checksumAsset = $release.assets | Where-Object { $_.name -eq "$($asset.name).sha256" } | Select-Object -First 1
   if (-not $checksumAsset) { throw 'The desktop release is missing its SHA-256 checksum asset.' }
 
@@ -183,14 +197,16 @@ function Install-LatestRelease {
   $checksum = "$installer.sha256"
   Invoke-WebRequest -UseBasicParsing -Headers $headers -Uri $asset.browser_download_url -OutFile $installer
   Invoke-WebRequest -UseBasicParsing -Headers $headers -Uri $checksumAsset.browser_download_url -OutFile $checksum
-  $expected = ((Get-Content -LiteralPath $checksum -Raw).Trim() -split '\s+')[0].ToUpperInvariant()
+  $parts = ((Get-Content -LiteralPath $checksum -Raw).Trim() -split '\s+')
+  if ($parts.Count -lt 2 -or $parts[1].TrimStart('*') -ne $asset.name) { throw 'MyFinHub checksum metadata does not match the installer filename.' }
+  $expected = $parts[0].ToUpperInvariant()
   $actual = (Get-FileHash -Algorithm SHA256 -LiteralPath $installer).Hash.ToUpperInvariant()
-  if ($expected -ne $actual) { throw 'RheomIQ installer checksum verification failed.' }
+  if ($expected -ne $actual) { throw 'MyFinHub installer checksum verification failed.' }
   return $installer
 }
 
 if ($env:OS -ne 'Windows_NT') { throw 'This installer must run on Windows.' }
-if ([Environment]::Is64BitOperatingSystem -ne $true) { throw 'RheomIQ desktop currently requires 64-bit Windows.' }
+if ([Environment]::Is64BitOperatingSystem -ne $true) { throw 'MyFinHub desktop currently requires 64-bit Windows.' }
 
 $dotEnv = Read-DotEnv $EnvFile
 $supabaseUrl = Get-ConfiguredValue $dotEnv 'SUPABASE_URL'
@@ -219,7 +235,7 @@ if ($ValidateOnly) {
     Write-ProvisionPayload $supabaseUrl $publishableKey $cardVaultKey $cardVaultKeyVersion
     $bytes = [IO.File]::ReadAllBytes($PendingProvision)
     if ($bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF) { throw 'Provisioning JSON must not contain a UTF-8 BOM.' }
-    Write-Host 'RheomIQ Windows installer validation passed.' -ForegroundColor Green
+    Write-Host 'MyFinHub Windows installer validation passed.' -ForegroundColor Green
   } finally {
     $cardVaultKey = $null
     Remove-PendingProvision
@@ -236,25 +252,25 @@ try {
   Write-ProvisionPayload $supabaseUrl $publishableKey $cardVaultKey $cardVaultKeyVersion
   $cardVaultKey = $null
 
-  Write-Step 'Installing RheomIQ and creating Desktop/Start Menu shortcuts'
+  Write-Step 'Installing MyFinHub and creating Desktop/Start Menu shortcuts'
   $process = Start-Process -FilePath $installerPath -ArgumentList '/S' -PassThru -Wait
-  if ($process.ExitCode -ne 0) { throw "RheomIQ installer exited with code $($process.ExitCode)." }
+  if ($process.ExitCode -ne 0) { throw "MyFinHub installer exited with code $($process.ExitCode)." }
 
-  $installedExe = Join-Path $env:LOCALAPPDATA 'Programs\RheomIQ\RheomIQ.exe'
+  $installedExe = Join-Path $env:LOCALAPPDATA 'Programs\MyFinHub\MyFinHub.exe'
   if (-not (Test-Path $installedExe)) {
-    $installedExe = Get-ChildItem -Path (Join-Path $env:LOCALAPPDATA 'Programs') -Filter 'RheomIQ.exe' -Recurse -ErrorAction SilentlyContinue |
+    $installedExe = Get-ChildItem -Path (Join-Path $env:LOCALAPPDATA 'Programs') -Filter 'MyFinHub.exe' -Recurse -ErrorAction SilentlyContinue |
       Select-Object -First 1 -ExpandProperty FullName
   }
   if ($installedExe -and (Test-Path $installedExe)) {
     Start-Process -FilePath $installedExe | Out-Null
   } else {
-    Write-Warning 'Installation completed, but RheomIQ.exe was not found automatically. Use the RheomIQ Desktop/Start Menu shortcut.'
+    Write-Warning 'Installation completed, but MyFinHub.exe was not found automatically. Use the MyFinHub Desktop/Start Menu shortcut.'
   }
 
-  Write-Host "`nRheomIQ Windows installation completed." -ForegroundColor Green
+  Write-Host "`nMyFinHub Windows installation completed." -ForegroundColor Green
   if ($Latest) { Write-Host 'Application code updated from the latest verified GitHub desktop release.' }
   else { Write-Host 'Application code installed from this checked-out source tree.' }
-  Write-Host 'Finance data itself always synchronizes through the shared Supabase database; reinstalling is not needed for data changes.'
+  Write-Host 'Finance data itself synchronizes through the shared Supabase database; reinstalling is not needed for data changes.'
 } catch {
   Remove-PendingProvision
   throw

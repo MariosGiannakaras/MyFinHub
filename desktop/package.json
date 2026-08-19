@@ -2,7 +2,7 @@
   "name": "rheomiq-desktop",
   "version": "1.0.0",
   "private": true,
-  "description": "RheomIQ Windows desktop host",
+  "description": "MyFinHub Windows desktop host",
   "author": "MariosGiannakaras",
   "main": "main.cjs",
   "scripts": {
@@ -10,7 +10,10 @@
     "dev": "node dev.mjs",
     "pack": "npm run prepare:bundle && electron-builder --win dir --x64",
     "dist": "npm run prepare:bundle && electron-builder --win nsis --x64",
-    "check": "npm audit --audit-level=high && node --check main.cjs && node --check prepare-build.mjs && node --check dev.mjs"
+    "check": "npm audit --audit-level=high && node --check main.cjs && node --check preload.cjs && node --check setup-renderer.js && node --check prepare-build.mjs && node --check dev.mjs"
+  },
+  "dependencies": {
+    "rheomiq": "file:.."
   },
   "devDependencies": {
     "electron": "43.3.0",
@@ -18,8 +21,8 @@
     "esbuild": "0.28.1"
   },
   "build": {
-    "appId": "app.rheomiq.desktop",
-    "productName": "RheomIQ",
+    "appId": "app.myfinhub.desktop",
+    "productName": "MyFinHub",
     "asar": true,
     "directories": {
       "output": "../release/desktop",
@@ -27,6 +30,10 @@
     },
     "files": [
       "main.cjs",
+      "preload.cjs",
+      "setup.html",
+      "setup-renderer.js",
+      "setup-brand.png",
       "package.json"
     ],
     "extraResources": [
@@ -57,15 +64,17 @@
         }
       ],
       "icon": ".build/icon-512.png",
-      "executableName": "RheomIQ",
-      "artifactName": "RheomIQ-Setup-${version}-${arch}.${ext}"
+      "executableName": "MyFinHub",
+      "artifactName": "MyFinHub-Setup-${version}-${arch}.${ext}"
     },
     "nsis": {
-      "oneClick": true,
+      "oneClick": false,
       "perMachine": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": "always",
       "createStartMenuShortcut": true,
-      "shortcutName": "RheomIQ",
+      "shortcutName": "MyFinHub",
       "deleteAppDataOnUninstall": false,
       "runAfterFinish": true
     },
