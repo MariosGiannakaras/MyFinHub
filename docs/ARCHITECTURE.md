@@ -15,6 +15,20 @@ Finance access requires all of the following:
 3. an `aal2` TOTP-MFA session;
 4. matching API checks and PostgreSQL RLS/RPC checks.
 
+### Windows desktop runtime
+
+The Windows application is a packaged desktop client, not a Vercel wrapper or PWA. Electron owns the application window while a separately bundled Node.js 22 executable starts the existing Express backend as a hidden child process.
+
+The desktop backend binds only to `127.0.0.1` and asks Windows for an ephemeral port. Electron waits for a machine-readable readiness line containing that actual loopback origin, then opens the packaged Vite build from the same Express origin. This preserves the existing same-origin HTTP/API and HttpOnly-cookie model without exposing Electron/Node APIs to React.
+
+The Electron renderer has Node integration disabled, context isolation enabled, sandboxing enabled and arbitrary top-level navigation/webview attachment blocked. The hidden backend receives only the Supabase URL, publishable key and the authenticated owner's cookie/JWT flow; service-role/secret admin credentials are explicitly removed from its environment.
+
+Desktop and Vercel therefore remain separate runtime hosts but share one Supabase source of truth, one owner+AAL2 authorization model and the same optimistic revision RPCs. Finance data is not copied to a desktop database. A stale desktop or web client still receives a revision conflict rather than silently overwriting a newer save.
+
+Desktop PAN/expiry operations require the same existing `CARD_VAULT_KEY` used by the server-side vault. The installer imports that key only through a one-time restricted per-user provisioning file; Electron immediately encrypts it with Windows-backed `safeStorage`/DPAPI and deletes the plaintext file. The key is never compiled into Electron, the React bundle or Git history.
+
+Electron itself follows its supported release line independently of the application's Node 22 backend contract. Packaging copies the Node 22 executable that ran the deterministic build into desktop resources and uses that executable for Express at runtime, avoiding an accidental backend runtime upgrade when Electron's embedded Node major changes.
+
 ## Persistence model
 
 The database schema is owned by ordered SQL migrations under `supabase/migrations/`.
@@ -71,7 +85,7 @@ The current product has one synthetic `credit-card` liability, so only one credi
 
 Every method requires same-origin, an authenticated owner session and AAL2. The server uses the existing authenticated owner's JWT plus the Supabase publishable key to access `rheomiq_card_secrets`, therefore table RLS remains authoritative.
 
-PAN/expiry are validated before encryption. Encryption is AES-256-GCM with a random 96-bit IV, AAD bound to owner id + card id + key version, and key material supplied only through the Production `CARD_VAULT_KEY` environment variable. PostgreSQL stores only ciphertext/IV/auth tag/key version and lookup metadata.
+PAN/expiry are validated before encryption. Encryption is AES-256-GCM with a random 96-bit IV, AAD bound to owner id + card id + key version, and key material supplied only through the runtime `CARD_VAULT_KEY` environment boundary. PostgreSQL stores only ciphertext/IV/auth tag/key version and lookup metadata.
 
 The API body is tightly bounded and key-whitelisted. CVV/CVC/security-code-like keys are rejected. The browser client also runtime-whitelists `pan` and `expiry` rather than spreading arbitrary objects into the request.
 
@@ -97,7 +111,9 @@ Restoring/re-adding the same card reactivates the original `PaymentCard` with th
 
 Every normal save uses an `If-Match` revision. Stale writes fail with a conflict instead of overwriting newer data.
 
-The browser keeps one write in flight and retains only the newest pending snapshot, avoiding redundant intermediate full-state mutations. Successful revisions are announced through same-origin `BroadcastChannel` when supported: a clean second tab reloads, while a tab with local work enters conflict state instead of being overwritten.
+The browser keeps one write in flight and retains only the newest pending snapshot, avoiding redundant intermediate full-state mutations. Successful revisions are announced through same-origin `BroadcastChannel` when supported: a clean second tab on the same origin reloads, while a tab with local work enters conflict state instead of being overwritten.
+
+Desktop and Vercel run on different origins, so that `BroadcastChannel` is intentionally not a cross-device transport. They synchronize through the canonical Supabase state: each load/reload reads the current database revision, and every write is revision-checked. Cross-device live-push/realtime replication is not required for correctness and is not emulated by polling the full finance document.
 
 ## Performance model
 
@@ -111,7 +127,9 @@ Secondary finance pages are lazy-loaded so the authenticated shell does not eage
 2. GitHub CI runs the security guard, tests, type/build checks and dependency audits; CodeQL scans JavaScript/TypeScript.
 3. Supabase Git integration applies production migrations from `main`.
 4. Vercel deploys the Git-connected `main` branch and the post-deploy Production Smoke workflow verifies the public surface, required security headers, unauthenticated API protection, `no-store` caching and Frankfurt routing.
-5. Real personal finance JSON, `.env` files, card secrets and credentials are never committed.
+5. Windows desktop PRs additionally build on `windows-latest`, launch the packaged executable against its hidden local backend, build an NSIS installer and retain it only as CI evidence.
+6. Published desktop releases are allowed only from commits already on `main`, require a matching `desktop-v<version>` tag and valid Windows Authenticode signing credentials, and publish both the installer and a SHA-256 checksum.
+7. Real personal finance JSON, `.env` files, card secrets and credentials are never committed.
 
 ## Ledger model
 
