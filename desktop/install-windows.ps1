@@ -1,6 +1,7 @@
 [CmdletBinding()]
 param(
-  [switch]$Latest
+  [switch]$Latest,
+  [switch]$ValidateOnly
 )
 
 $ErrorActionPreference = 'Stop'
@@ -71,12 +72,9 @@ function ConvertFrom-SecureStringPlain([Security.SecureString]$Secure) {
 }
 
 function Protect-FileForCurrentUser([string]$Path) {
-  $identity = [Security.Principal.WindowsIdentity]::GetCurrent().User
-  $acl = New-Object Security.AccessControl.FileSecurity
-  $acl.SetAccessRuleProtection($true, $false)
-  $rule = New-Object Security.AccessControl.FileSystemAccessRule($identity, 'FullControl', 'Allow')
-  [void]$acl.AddAccessRule($rule)
-  Set-Acl -LiteralPath $Path -AclObject $acl
+  $sid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
+  & icacls.exe $Path '/inheritance:r' '/grant:r' "*${sid}:F" | Out-Null
+  if ($LASTEXITCODE -ne 0) { throw 'Could not restrict the provisioning file ACL.' }
 }
 
 function Write-ProvisionPayload([string]$SupabaseUrl, [string]$PublishableKey, [string]$CardVaultKey, [int]$CardVaultKeyVersion) {
@@ -87,7 +85,9 @@ function Write-ProvisionPayload([string]$SupabaseUrl, [string]$PublishableKey, [
     cardVaultKeyVersion = $CardVaultKeyVersion
   }
   if ($CardVaultKey) { $payload.cardVaultKey = $CardVaultKey }
-  $payload | ConvertTo-Json -Depth 3 | Set-Content -LiteralPath $PendingProvision -Encoding UTF8
+  $json = $payload | ConvertTo-Json -Depth 3
+  $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+  [IO.File]::WriteAllText($PendingProvision, $json, $utf8NoBom)
   Protect-FileForCurrentUser $PendingProvision
 }
 
@@ -171,9 +171,11 @@ function Install-LatestRelease {
   Write-Step 'Downloading the latest published RheomIQ desktop release'
   New-Item -ItemType Directory -Force -Path $TempDir | Out-Null
   $headers = @{ 'Accept' = 'application/vnd.github+json'; 'X-GitHub-Api-Version' = '2022-11-28'; 'User-Agent' = 'RheomIQ-Windows-Installer' }
-  $release = Invoke-RestMethod -Headers $headers -Uri "https://api.github.com/repos/$RepoOwner/$RepoName/releases/latest"
+  $releases = Invoke-RestMethod -Headers $headers -Uri "https://api.github.com/repos/$RepoOwner/$RepoName/releases?per_page=30"
+  $release = $releases | Where-Object { -not $_.draft -and -not $_.prerelease -and $_.tag_name -like 'desktop-v*' } | Select-Object -First 1
+  if (-not $release) { throw 'No published RheomIQ desktop release is available yet.' }
   $asset = $release.assets | Where-Object { $_.name -like 'RheomIQ-Setup-*-x64.exe' } | Select-Object -First 1
-  if (-not $asset) { throw 'The latest GitHub release does not contain a RheomIQ x64 Windows installer.' }
+  if (-not $asset) { throw 'The latest desktop release does not contain a RheomIQ x64 Windows installer.' }
   $checksumAsset = $release.assets | Where-Object { $_.name -eq "$($asset.name).sha256" } | Select-Object -First 1
   if (-not $checksumAsset) { throw 'The desktop release is missing its SHA-256 checksum asset.' }
 
@@ -187,7 +189,7 @@ function Install-LatestRelease {
   return $installer
 }
 
-if (-not $IsWindows) { throw 'This installer must run on Windows.' }
+if ($env:OS -ne 'Windows_NT') { throw 'This installer must run on Windows.' }
 if ([Environment]::Is64BitOperatingSystem -ne $true) { throw 'RheomIQ desktop currently requires 64-bit Windows.' }
 
 $dotEnv = Read-DotEnv $EnvFile
@@ -210,6 +212,19 @@ if ($versionRaw) {
   $parsed = 0
   if (-not [int]::TryParse($versionRaw, [ref]$parsed) -or $parsed -lt 1) { throw 'CARD_VAULT_KEY_VERSION must be an integer >= 1.' }
   $cardVaultKeyVersion = $parsed
+}
+
+if ($ValidateOnly) {
+  try {
+    Write-ProvisionPayload $supabaseUrl $publishableKey $cardVaultKey $cardVaultKeyVersion
+    $bytes = [IO.File]::ReadAllBytes($PendingProvision)
+    if ($bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF) { throw 'Provisioning JSON must not contain a UTF-8 BOM.' }
+    Write-Host 'RheomIQ Windows installer validation passed.' -ForegroundColor Green
+  } finally {
+    $cardVaultKey = $null
+    Remove-PendingProvision
+  }
+  return
 }
 
 $installerPath = $null
