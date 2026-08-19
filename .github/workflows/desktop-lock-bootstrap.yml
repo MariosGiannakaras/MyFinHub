@@ -1,0 +1,34 @@
+name: Desktop Lock Bootstrap
+
+on:
+  push:
+    branches: [feat/136-windows-desktop]
+    paths:
+      - desktop/package.json
+      - .github/workflows/desktop-lock-bootstrap.yml
+
+permissions:
+  contents: write
+
+jobs:
+  lock:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+      - name: Generate desktop package lock
+        shell: pwsh
+        run: npm install --prefix desktop --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Commit lock file
+        shell: pwsh
+        run: |
+          if (-not (Test-Path desktop/package-lock.json)) { throw 'desktop/package-lock.json was not generated.' }
+          if (-not (git status --porcelain -- desktop/package-lock.json)) { exit 0 }
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add desktop/package-lock.json
+          git commit -m "build(desktop): lock Windows dependencies"
+          git push origin HEAD:feat/136-windows-desktop
