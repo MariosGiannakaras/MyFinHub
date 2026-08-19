@@ -4,11 +4,18 @@ All notable MyFinHub changes are recorded here. Release artifacts remain availab
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-08-20
+
 ### Changed
 
 - Restored the authentic original wallet/`R` application mark from pre-rebrand repository history across browser, PWA, setup and Windows packaging assets.
 - Replaced the repository README with an application-style landing page containing a prominent Windows download, release links, checksum access, installation instructions and user-facing feature overview.
-- Added this maintained changelog.
+- Added this maintained changelog and documented the provenance of the authentic application artwork.
+
+### Notes
+
+- v1.0.1 is a branding/documentation patch over v1.0.0; finance data, database schema and authentication boundaries are unchanged.
+- The Windows build remains unsigned for personal use, so Windows may display Unknown publisher / Microsoft Defender SmartScreen.
 
 ## [1.0.0] - 2026-08-19
 
@@ -32,5 +39,6 @@ All notable MyFinHub changes are recorded here. Release artifacts remain availab
 
 - v1.0.0 is an unsigned personal-use Windows build. Windows may display Unknown publisher / Microsoft Defender SmartScreen.
 
-[Unreleased]: https://github.com/MariosGiannakaras/MyFinHub/compare/myfinhub-v1.0.0...develop
+[Unreleased]: https://github.com/MariosGiannakaras/MyFinHub/compare/myfinhub-v1.0.1...develop
+[1.0.1]: https://github.com/MariosGiannakaras/MyFinHub/releases/tag/myfinhub-v1.0.1
 [1.0.0]: https://github.com/MariosGiannakaras/MyFinHub/releases/tag/myfinhub-v1.0.0
