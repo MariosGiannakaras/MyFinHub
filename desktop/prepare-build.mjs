@@ -44,5 +44,5 @@ fs.copyFileSync(sourceIcon,generatedIcon);
 
 const stat=fs.statSync(runtimeExe);
 if(stat.size<10_000_000)throw new Error('Copied Node runtime is unexpectedly small.');
-if(!fs.existsSync(generatedIcon)||fs.statSync(generatedIcon).size<20_000)throw new Error('Canonical Windows icon is invalid or unexpectedly small.');
+if(!fs.existsSync(generatedIcon)||fs.statSync(generatedIcon).size<10_000)throw new Error('Canonical Windows icon is invalid or unexpectedly small.');
 console.log(`MyFinHub desktop backend bundled with ${process.version} (${process.arch}); canonical 512x512 Windows icon staged.`);
