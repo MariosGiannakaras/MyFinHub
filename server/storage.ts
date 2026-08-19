@@ -1,5 +1,5 @@
 import type { FinanceData } from '../src/types.js';
-import { migrateData } from '../src/lib/domain.js';
+import { migrateProductData } from '../src/lib/productMigration.js';
 import { ApiError } from './http.js';
 import { fetchUpstream } from './upstream.js';
 import { validateFinanceState } from './stateValidation.js';
@@ -66,8 +66,9 @@ function first<T>(value: T | T[]): T {
 
 function envelope(row: StateRow) {
   if (!row) throw new ApiError(500, 'EMPTY_DATABASE', 'RheomIQ database is empty.', false);
-  const migrated = migrateData(row.data);
+  const migrated = migrateProductData(row.data);
   validateFinanceData(migrated);
+  validateFinanceState(migrated.state);
   return {
     data: migrated,
     revision: String(row.revision),
@@ -146,8 +147,10 @@ export async function writeMutableState(
 
 export async function writeStore(data: FinanceData, expectedRevision?: string, force = false, accessToken?: string) {
   validateFinanceData(data);
-  const next = migrateData({ ...data, app: 'RheomIQ', schemaVersion: 3, updatedAt: new Date().toISOString() });
+  validateFinanceState(data.state);
+  const next = migrateProductData({ ...data, app: 'RheomIQ', schemaVersion: 3, updatedAt: new Date().toISOString() });
   validateFinanceData(next);
+  validateFinanceState(next.state);
 
   const path = force ? 'rpc/rheomiq_import_state' : 'rpc/rheomiq_save_state';
   const body = force

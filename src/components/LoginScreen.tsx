@@ -19,7 +19,7 @@ export function LoginScreen({ onLogin, error }:{ onLogin:(email:string,password:
 
   return <main className="login-screen">
     <section className="login-card neo-raised" aria-labelledby="login-title" data-busy={busy?'true':'false'}>
-      <div className="login-brand"><img src="/brand/icon-192.png" alt=""/><div><div className="brand-word">Rheom<span>IQ</span></div><small>Private finance workspace</small></div></div>
+      <div className="login-brand"><img src="/brand/icon-192.png" alt=""/><div><div className="brand-word">MyFin<span>Hub</span></div><small>Private finance workspace</small></div></div>
       <div className="login-shield"><ShieldCheck size={24}/><span>Προστατευμένη συνεδρία μοναδικού ιδιοκτήτη</span></div>
       <div><h1 id="login-title">Σύνδεση</h1><p>Τα οικονομικά δεδομένα είναι διαθέσιμα μόνο στον εξουσιοδοτημένο ιδιοκτήτη.</p></div>
       <form onSubmit={submit} className="login-form" noValidate={false}>

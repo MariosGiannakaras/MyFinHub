@@ -2,6 +2,8 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { normalizeLocalCvv } from '../src/lib/localCvvFormat.js';
 
+function vaultSource(){return readFileSync(new URL('../src/lib/localCvvVault.ts',import.meta.url),'utf8').replace(/\r\n/g,'\n')}
+
 describe('local-only CVV vault',()=>{
   it('accepts only 3 or 4 numeric digits',()=>{
     expect(normalizeLocalCvv('123')).toBe('123');
@@ -12,7 +14,7 @@ describe('local-only CVV vault',()=>{
   });
 
   it('keeps CVV storage browser-local and authenticated-encrypted by construction',()=>{
-    const source=readFileSync(new URL('../src/lib/localCvvVault.ts',import.meta.url),'utf8');
+    const source=vaultSource();
     expect(source).toContain("const DB_NAME = 'rheomiq-local-card-vault'");
     expect(source).toContain("name: 'AES-GCM'");
     expect(source).toContain("length: 256");
@@ -23,7 +25,7 @@ describe('local-only CVV vault',()=>{
   });
 
   it('contains no network or plaintext web-storage persistence path',()=>{
-    const source=readFileSync(new URL('../src/lib/localCvvVault.ts',import.meta.url),'utf8');
+    const source=vaultSource();
     expect(source).not.toMatch(/\bfetch\s*\(/);
     expect(source).not.toContain('XMLHttpRequest');
     expect(source).not.toContain('localStorage');

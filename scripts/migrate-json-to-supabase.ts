@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { migrateData } from '../src/lib/domain.js';
+import { migrateProductData } from '../src/lib/productMigration.js';
 import { readStore, writeStore } from '../server/storage.js';
 import type { FinanceData } from '../src/types.js';
 
@@ -32,13 +32,15 @@ function counts(data: FinanceData) {
     lending: data.seed.lending.length,
     customTransactions: data.state.customTransactions.length,
     events: data.state.events?.length || 0,
+    cards: data.state.cards?.length || 0,
+    cardBanks: data.state.cardBanks?.length || 0,
   };
 }
 
 const arg = process.argv.slice(2).find((item) => !item.startsWith('--')) || process.env.RHEOMIQ_IMPORT_FILE || 'data/rheomiq-data.json';
 const verifyOnly = process.argv.includes('--verify-only');
 const file = path.resolve(arg);
-const source = migrateData(JSON.parse(await fs.readFile(file, 'utf8')) as FinanceData);
+const source = migrateProductData(JSON.parse(await fs.readFile(file, 'utf8')) as FinanceData);
 
 if (!verifyOnly) {
   console.log(`Importing ${file} into Supabase...`);

@@ -3,6 +3,7 @@ export type SavingSource = 'pay_and_save' | 'manual_transfer' | 'cash_offset';
 export type RecurringStatus = 'active' | 'paused' | 'stopped';
 export type CardKind = 'debit' | 'prepaid' | 'credit';
 export type CardNetwork = 'visa' | 'mastercard' | 'other';
+export type CardFormFactor = 'physical' | 'virtual';
 export type LoanKind = 'installment' | 'loan' | 'self-loan';
 
 export interface Account {
@@ -31,10 +32,13 @@ export interface PaymentCard {
   nickname: string;
   kind: CardKind;
   network: CardNetwork;
+  formFactor?: CardFormFactor;
+  designId?: string;
   holderName?: string;
   last4?: string;
   vaultRef?: string;
   active: boolean;
+  archivedAt?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -107,6 +111,7 @@ export interface FinanceEvent {
   updatedAt: string;
   loanId?: string;
   recurringId?: string;
+  cardId?: string;
 }
 
 export interface ReviewDecision {

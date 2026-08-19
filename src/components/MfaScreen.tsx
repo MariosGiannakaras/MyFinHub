@@ -38,12 +38,12 @@ export function MfaScreen({
 
   return <main className="login-screen">
     <section className="login-card neo-raised" aria-labelledby="mfa-title" data-busy={busy?'true':'false'}>
-      <div className="login-brand"><img src="/brand/icon-192.png" alt=""/><div><div className="brand-word">Rheom<span>IQ</span></div><small>Private finance workspace</small></div></div>
+      <div className="login-brand"><img src="/brand/icon-192.png" alt=""/><div><div className="brand-word">MyFin<span>Hub</span></div><small>Private finance workspace</small></div></div>
       <div className="login-shield"><ShieldCheck size={24}/><span>Δεύτερος παράγοντας ασφαλείας</span></div>
       <div>
         <h1 id="mfa-title">{mode === 'enroll' ? 'Ρύθμιση Authenticator' : 'Επαλήθευση'}</h1>
         <p>{mode === 'enroll'
-          ? 'Μία φορά μόνο: σύνδεσε το RheomIQ με την εφαρμογή Authenticator στο κινητό σου.'
+          ? 'Μία φορά μόνο: σύνδεσε το MyFinHub με την εφαρμογή Authenticator στο κινητό σου.'
           : `Άνοιξε το Authenticator και βάλε τον 6ψήφιο κωδικό${email ? ` για ${email}` : ''}.`}</p>
       </div>
 
@@ -52,7 +52,7 @@ export function MfaScreen({
       </button> : null}
 
       {enrollment ? <div className="mfa-setup neo-inset">
-        <img className="mfa-qr" src={enrollment.qrCode} alt="QR κωδικός για το RheomIQ Authenticator"/>
+        <img className="mfa-qr" src={enrollment.qrCode} alt="QR κωδικός για το MyFinHub Authenticator"/>
         <div><b>Αν δεν μπορείς να σκανάρεις το QR:</b><code className="mfa-secret">{enrollment.secret}</code></div>
       </div> : null}
 

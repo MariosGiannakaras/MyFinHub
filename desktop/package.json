@@ -1,0 +1,90 @@
+{
+  "name": "rheomiq-desktop",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MyFinHub Windows desktop host",
+  "author": "MariosGiannakaras",
+  "main": "main.cjs",
+  "scripts": {
+    "prepare:bundle": "node prepare-build.mjs",
+    "dev": "node dev.mjs",
+    "pack": "npm run prepare:bundle && electron-builder --win dir --x64",
+    "dist": "npm run prepare:bundle && electron-builder --win nsis --x64",
+    "check": "npm audit --audit-level=high && node --check main.cjs && node --check preload.cjs && node --check setup-renderer.js && node --check prepare-build.mjs && node --check dev.mjs"
+  },
+  "dependencies": {
+    "rheomiq": "file:.."
+  },
+  "devDependencies": {
+    "electron": "43.3.0",
+    "electron-builder": "26.15.6",
+    "esbuild": "0.28.1"
+  },
+  "build": {
+    "appId": "app.myfinhub.desktop",
+    "productName": "MyFinHub",
+    "asar": true,
+    "directories": {
+      "output": "../release/desktop",
+      "buildResources": "../public/brand"
+    },
+    "files": [
+      "main.cjs",
+      "preload.cjs",
+      "setup.html",
+      "setup-renderer.js",
+      "setup-brand.png",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../dist",
+        "to": "app/dist"
+      },
+      {
+        "from": ".build/server/server.mjs",
+        "to": "app/server/server.mjs"
+      },
+      {
+        "from": ".build/runtime/node.exe",
+        "to": "app/runtime/node.exe"
+      },
+      {
+        "from": ".build/icon-512.png",
+        "to": "app/icon.png"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": ".build/icon-512.png",
+      "executableName": "MyFinHub",
+      "artifactName": "MyFinHub-Setup-${version}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "shortcutName": "MyFinHub",
+      "deleteAppDataOnUninstall": false,
+      "runAfterFinish": true
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "MariosGiannakaras",
+        "repo": "RheomIQ",
+        "releaseType": "release"
+      }
+    ]
+  }
+}
