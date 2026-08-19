@@ -1,0 +1,80 @@
+{
+  "name": "rheomiq-desktop",
+  "version": "1.0.0",
+  "private": true,
+  "description": "RheomIQ Windows desktop host",
+  "main": "main.cjs",
+  "scripts": {
+    "prepare:bundle": "node prepare-build.mjs",
+    "dev": "node dev.mjs",
+    "pack": "npm run prepare:bundle && electron-builder --win dir --x64",
+    "dist": "npm run prepare:bundle && electron-builder --win nsis --x64",
+    "check": "npm audit --audit-level=high && node --check main.cjs && node --check prepare-build.mjs && node --check dev.mjs"
+  },
+  "devDependencies": {
+    "electron": "43.3.0",
+    "electron-builder": "26.15.6",
+    "esbuild": "0.28.1"
+  },
+  "build": {
+    "appId": "app.rheomiq.desktop",
+    "productName": "RheomIQ",
+    "asar": true,
+    "directories": {
+      "output": "../release/desktop",
+      "buildResources": "../public/brand"
+    },
+    "files": [
+      "main.cjs",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../dist",
+        "to": "app/dist"
+      },
+      {
+        "from": ".build/server/server.mjs",
+        "to": "app/server/server.mjs"
+      },
+      {
+        "from": ".build/runtime/node.exe",
+        "to": "app/runtime/node.exe"
+      },
+      {
+        "from": "../public/brand/icon-512.png",
+        "to": "app/icon.png"
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "../public/brand/icon-512.png",
+      "executableName": "RheomIQ",
+      "artifactName": "RheomIQ-Setup-${version}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "shortcutName": "RheomIQ",
+      "deleteAppDataOnUninstall": false,
+      "runAfterFinish": true
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "MariosGiannakaras",
+        "repo": "RheomIQ",
+        "releaseType": "release"
+      }
+    ]
+  }
+}
