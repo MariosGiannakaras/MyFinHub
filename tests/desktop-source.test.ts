@@ -4,8 +4,8 @@ import { describe, expect, it } from 'vitest';
 
 const root = process.cwd();
 const read = (relative:string) => fs.readFileSync(path.join(root, relative), 'utf8');
+const bytes = (relative:string) => fs.readFileSync(path.join(root, relative));
 const exists = (relative:string) => fs.existsSync(path.join(root, relative));
-const size = (relative:string) => fs.statSync(path.join(root, relative)).size;
 
 const desktopPackage = JSON.parse(read('desktop/package.json'));
 const main = read('desktop/main.cjs');
@@ -15,6 +15,7 @@ const setupRenderer = read('desktop/setup-renderer.js');
 const settings = read('src/pages/SettingsPage.tsx');
 const updatePanel = read('src/components/DesktopUpdatePanel.tsx');
 const workflow = read('.github/workflows/desktop-windows.yml');
+const prepareBuild = read('desktop/prepare-build.mjs');
 
 function mainBlock(start:string,end:string){const from=main.indexOf(start);const to=main.indexOf(end,from+start.length);expect(from).toBeGreaterThanOrEqual(0);expect(to).toBeGreaterThan(from);return main.slice(from,to);}
 
@@ -104,7 +105,7 @@ describe('MyFinHub Windows desktop boundary', () => {
     expect(workflow).not.toContain('Signed desktop releases require');
   });
 
-  it('keeps canonical MyFinHub brand assets in the repo and runtime paths', () => {
+  it('keeps a verified MyFinHub favicon source in the repo and generates the Windows size at build time', () => {
     for (const asset of [
       'public/favicon.png',
       'public/brand/icon-192.png',
@@ -115,9 +116,12 @@ describe('MyFinHub Windows desktop boundary', () => {
       'assets/branding/myfinhub/icon-512.png',
       'assets/branding/myfinhub/README.md',
     ]) expect(exists(asset)).toBe(true);
-    expect(size('public/favicon.png')).toBeGreaterThan(1000);
-    expect(size('public/brand/icon-192.png')).toBeGreaterThan(5000);
-    expect(size('public/brand/icon-512.png')).toBeGreaterThan(10000);
+    const favicon=bytes('public/favicon.png');
+    expect([...favicon.subarray(0,8)]).toEqual([137,80,78,71,13,10,26,10]);
+    expect(favicon.readUInt32BE(16)).toBe(32);
+    expect(favicon.readUInt32BE(20)).toBe(32);
+    expect(prepareBuild).toContain("const sourceIcon=path.join(root,'public','favicon.png')");
+    expect(prepareBuild).toContain('[Drawing.Bitmap]::new(512,512)');
     expect(workflow).toContain('assets/branding/myfinhub/**');
   });
 
