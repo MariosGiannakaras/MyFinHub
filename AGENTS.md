@@ -1,9 +1,10 @@
-# RheomIQ repository rules
+# MyFinHub repository rules
 
-- RheomIQ is a **single-owner** personal finance application. Do not add user selection, teams, tenant switching, roles UI, public registration, or multi-user product features.
+- MyFinHub is a **single-owner** personal finance application. The GitHub repository and compatibility-critical internals may retain the historical RheomIQ name; do not rename stable database/migration/protocol identifiers merely for branding.
+- Do not add user selection, teams, tenant switching, roles UI, public registration, or multi-user product features.
 - Production authentication is email/password plus mandatory TOTP MFA. Finance access must require the configured owner UID and an `aal2` session at both the API and PostgreSQL RLS boundaries.
 - Do not add Google/social OAuth, SSO, magic-link login, phone auth, or another identity provider unless the owner explicitly requests that architectural change. No alternate login path may bypass the mandatory MFA boundary.
-- Personal financial data and credentials must never be committed. `data/rheomiq-data.json` remains ignored.
+- Personal financial data and credentials must never be committed. The legacy compatibility path `data/rheomiq-data.json` remains ignored.
 - The online runtime must not require `SUPABASE_SECRET_KEY` or service-role credentials. Browser-facing requests use the publishable key plus the authenticated owner's JWT and PostgreSQL RLS. Admin/secret keys are offline emergency tooling only and must never be configured as `VITE_*` variables.
 - Every finance read/write/import/backup path must require an authenticated session and database owner authorization. State-changing HTTP endpoints must enforce same-origin/CSRF checks and bounded JSON request sizes.
 - Authentication tokens must remain HttpOnly cookies in production. Never persist finance data, access tokens, refresh tokens, or TOTP enrollment secrets in browser localStorage/IndexedDB.
