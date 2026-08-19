@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ApiError, createBackup, importData, loadData, saveData } from '../lib/api';
-import { migrateData } from '../lib/domain';
 import { LatestValueQueue, remoteRevisionAction } from '../lib/persistenceQueue';
+import { migrateProductData } from '../lib/productMigration';
 import type { FinanceData } from '../types';
 
 export type SaveState = 'loading' | 'saved' | 'saving' | 'error' | 'conflict';
@@ -12,7 +12,7 @@ const MAX_UNDO_STATES = 20;
 type RevisionMessage = { type: 'revision'; revision: string };
 
 function productData(input:FinanceData):FinanceData{
-  const migrated=migrateData(input);
+  const migrated=migrateProductData(input);
   return {...migrated,state:{...migrated.state,settings:{...migrated.state.settings,motion:'full'}}};
 }
 

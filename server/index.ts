@@ -2,6 +2,7 @@ import express from 'express';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { accessTokenAal, beginTotpEnrollment, challengeTotp, clearSessionCookies, getTotpFactors, requireSession, revokeSession, setSessionCookies, signInWithPassword, verifyTotp } from './auth.js';
+import { handleCardVaultRequest } from './cardVaultHandler.js';
 import { ApiError, assertSameOrigin, handleApi, methodNotAllowed, requestHeader, sendJson } from './http.js';
 import { backupStore, DATA_SOURCE, isOwner, readStore, writeMutableState, writeStore } from './storage.js';
 import { parseMutableWrite } from './stateValidation.js';
@@ -143,6 +144,8 @@ app.put('/api/data', (req, res) => void handleApi(res, async () => {
   const body = parseMutableWrite(req.body);
   sendJson(res, 200, await writeMutableState(body.state, body.updatedAt, requestHeader(req, 'if-match'), session.accessToken));
 }));
+
+app.all('/api/card-secrets', (req, res) => void handleCardVaultRequest(req, res));
 
 app.post('/api/import', (req, res) => void handleApi(res, async () => {
   assertSameOrigin(req);
