@@ -12,6 +12,21 @@ import { MAX_FINANCE_DOCUMENT_BYTES } from '../src/lib/limits.js';
 
 const app = express();
 app.disable('x-powered-by');
+
+if (process.env.RHEOMIQ_DESKTOP === '1') {
+  const csp = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://upload.wikimedia.org https://www.neukunden-rabatt.de https://cdn.asp.events; font-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'self' blob:";
+  app.use((_req, res, next) => {
+    res.setHeader('Content-Security-Policy', csp);
+    res.setHeader('Referrer-Policy', 'no-referrer');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), browsing-topics=()');
+    res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+    res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
+    next();
+  });
+}
+
 app.use(express.json({ limit: MAX_FINANCE_DOCUMENT_BYTES, strict: true }));
 app.use((error: any, _req: any, res: any, next: any) => {
   if (error?.type === 'entity.too.large') {
