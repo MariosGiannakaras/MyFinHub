@@ -16,8 +16,8 @@ function run(command,args,cwd,env=process.env){
   });
 }
 
-if(process.platform!=='win32')throw new Error('RheomIQ desktop development currently targets Windows.');
-if(Number(process.versions.node.split('.')[0])!==22)throw new Error(`Use Node 22.x for RheomIQ desktop development; found ${process.version}.`);
+if(process.platform!=='win32')throw new Error('MyFinHub desktop development currently targets Windows.');
+if(Number(process.versions.node.split('.')[0])!==22)throw new Error(`Use Node 22.x for MyFinHub desktop development; found ${process.version}.`);
 
 const envFile=path.join(root,'.env');
 if(fs.existsSync(envFile))process.loadEnvFile(envFile);

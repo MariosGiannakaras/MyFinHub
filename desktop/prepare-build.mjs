@@ -15,10 +15,10 @@ const sourceIcon=path.join(root,'public','brand','icon-192.png');
 const generatedIcon=path.join(buildDir,'icon-512.png');
 const major=Number(process.versions.node.split('.')[0]);
 
-if(process.platform!=='win32')throw new Error('RheomIQ desktop packaging must run on Windows.');
-if(major!==22)throw new Error(`RheomIQ local backend must be packaged with Node 22.x; found ${process.version}.`);
+if(process.platform!=='win32')throw new Error('MyFinHub desktop packaging must run on Windows.');
+if(major!==22)throw new Error(`MyFinHub local backend must be packaged with Node 22.x; found ${process.version}.`);
 if(!fs.existsSync(distIndex))throw new Error('Frontend dist is missing. Run npm run build before preparing the desktop bundle.');
-if(!fs.existsSync(sourceIcon))throw new Error('RheomIQ source icon is missing.');
+if(!fs.existsSync(sourceIcon))throw new Error('MyFinHub source icon is missing.');
 
 fs.rmSync(buildDir,{recursive:true,force:true});
 fs.mkdirSync(serverDir,{recursive:true});
@@ -53,4 +53,4 @@ try{
 const stat=fs.statSync(runtimeExe);
 if(stat.size<10_000_000)throw new Error('Copied Node runtime is unexpectedly small.');
 if(!fs.existsSync(generatedIcon)||fs.statSync(generatedIcon).size<5_000)throw new Error('Generated Windows icon is invalid.');
-console.log(`RheomIQ desktop backend bundled with ${process.version} (${process.arch}); Windows icon prepared at 512x512.`);
+console.log(`MyFinHub desktop backend bundled with ${process.version} (${process.arch}); Windows icon prepared at 512x512.`);

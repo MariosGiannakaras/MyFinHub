@@ -11,11 +11,11 @@ on:
       - package.json
       - package-lock.json
       - .env.example
-      - INSTALL_RHEOMIQ_WINDOWS.bat
+      - INSTALL_MYFINHUB_WINDOWS.bat
       - .github/workflows/desktop-windows.yml
   push:
     branches: [develop]
-    tags: ['desktop-v*']
+    tags: ['myfinhub-v*']
     paths:
       - desktop/**
       - server/**
@@ -24,7 +24,7 @@ on:
       - package.json
       - package-lock.json
       - .env.example
-      - INSTALL_RHEOMIQ_WINDOWS.bat
+      - INSTALL_MYFINHUB_WINDOWS.bat
       - .github/workflows/desktop-windows.yml
   workflow_dispatch:
 
@@ -36,7 +36,7 @@ jobs:
   validate:
     name: validate-windows-package
     runs-on: windows-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     permissions:
       contents: read
     steps:
@@ -59,7 +59,7 @@ jobs:
           npm audit --audit-level=high
           npm run check
           npm run desktop:check
-      - name: Validate Windows PowerShell installer bootstrap
+      - name: Validate Windows PowerShell fallback bootstrap
         shell: pwsh
         env:
           SUPABASE_URL: https://desktop-smoke.invalid
@@ -70,46 +70,48 @@ jobs:
       - name: Build unpacked Windows desktop app
         shell: pwsh
         run: npm run desktop:pack
-      - name: Smoke packaged executable and local backend
+      - name: Smoke packaged executable and hidden local backend
         shell: pwsh
         env:
           SUPABASE_URL: https://desktop-smoke.invalid
           SUPABASE_PUBLISHABLE_KEY: sb_publishable_desktop_smoke_only
         run: |
-          $exe = Join-Path $PWD 'release\desktop\win-unpacked\RheomIQ.exe'
-          if (-not (Test-Path $exe)) { throw 'Packaged RheomIQ.exe is missing.' }
+          $exe = Join-Path $PWD 'release\desktop\win-unpacked\MyFinHub.exe'
+          if (-not (Test-Path $exe)) { throw 'Packaged MyFinHub.exe is missing.' }
           $process = Start-Process -FilePath $exe -PassThru
           Start-Sleep -Seconds 8
           $process.Refresh()
-          if ($process.HasExited) { throw "Packaged RheomIQ exited during smoke with code $($process.ExitCode)." }
+          if ($process.HasExited) { throw "Packaged MyFinHub exited during smoke with code $($process.ExitCode)." }
           taskkill /PID $process.Id /T /F | Out-Null
-      - name: Build NSIS installer
+      - name: Build interactive NSIS Setup
         shell: pwsh
         run: npm run desktop:dist
-      - name: Verify installer artifact
+      - name: Verify installer and update-channel checksum
         shell: pwsh
         run: |
-          $installer = Get-ChildItem release\desktop\RheomIQ-Setup-*-x64.exe | Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
+          $installer = Get-ChildItem release\desktop\MyFinHub-Setup-*-x64.exe | Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
           if (-not $installer) { throw 'Windows installer artifact is missing.' }
-          if ($installer.Length -lt 50MB) { throw 'Windows installer artifact is unexpectedly small.' }
+          if ($installer.Length -lt 50MB -or $installer.Length -gt 350MB) { throw 'Windows installer artifact size is outside the accepted update range.' }
           $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $installer.FullName).Hash.ToLowerInvariant()
           "$hash  $($installer.Name)" | Set-Content -LiteralPath "$($installer.FullName).sha256" -Encoding ASCII
+          $line = (Get-Content -LiteralPath "$($installer.FullName).sha256" -Raw).Trim()
+          if ($line -notmatch '^[a-f0-9]{64}\s+MyFinHub-Setup-[0-9]+\.[0-9]+\.[0-9]+-x64\.exe$') { throw 'Update checksum metadata format is invalid.' }
       - name: Upload Windows installer evidence
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: rheomiq-windows-${{ github.sha }}
+          name: myfinhub-windows-${{ github.sha }}
           path: |
-            release/desktop/RheomIQ-Setup-*-x64.exe
-            release/desktop/RheomIQ-Setup-*-x64.exe.sha256
+            release/desktop/MyFinHub-Setup-*-x64.exe
+            release/desktop/MyFinHub-Setup-*-x64.exe.sha256
           if-no-files-found: error
           retention-days: 14
 
-  publish-signed-release:
-    name: publish-signed-desktop-release
-    if: startsWith(github.ref, 'refs/tags/desktop-v')
+  publish-desktop-release:
+    name: publish-desktop-release
+    if: startsWith(github.ref, 'refs/tags/myfinhub-v')
     needs: validate
     runs-on: windows-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     permissions:
       contents: write
     steps:
@@ -130,22 +132,28 @@ jobs:
           git merge-base --is-ancestor $env:GITHUB_SHA origin/main
           if ($LASTEXITCODE -ne 0) { throw 'Desktop releases must point to a commit already present on main.' }
           $version = (Get-Content desktop/package.json -Raw | ConvertFrom-Json).version
-          $expectedTag = "desktop-v$version"
+          $expectedTag = "myfinhub-v$version"
           if ($env:GITHUB_REF_NAME -ne $expectedTag) { throw "Expected tag $expectedTag for desktop package version $version." }
-      - name: Require Windows signing credentials
+      - name: Configure optional Windows signing
         shell: pwsh
         env:
           WINDOWS_SIGNING_PFX_BASE64: ${{ secrets.WINDOWS_SIGNING_PFX_BASE64 }}
           WINDOWS_SIGNING_PFX_PASSWORD: ${{ secrets.WINDOWS_SIGNING_PFX_PASSWORD }}
         run: |
-          if ([string]::IsNullOrWhiteSpace($env:WINDOWS_SIGNING_PFX_BASE64) -or [string]::IsNullOrWhiteSpace($env:WINDOWS_SIGNING_PFX_PASSWORD)) {
-            throw 'Signed desktop releases require WINDOWS_SIGNING_PFX_BASE64 and WINDOWS_SIGNING_PFX_PASSWORD repository secrets.'
+          $hasPfx = -not [string]::IsNullOrWhiteSpace($env:WINDOWS_SIGNING_PFX_BASE64)
+          $hasPassword = -not [string]::IsNullOrWhiteSpace($env:WINDOWS_SIGNING_PFX_PASSWORD)
+          if ($hasPfx -xor $hasPassword) { throw 'Configure both Windows signing secrets or neither.' }
+          if ($hasPfx) {
+            $pfx = Join-Path $env:RUNNER_TEMP 'myfinhub-signing.pfx'
+            [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($env:WINDOWS_SIGNING_PFX_BASE64))
+            "CSC_LINK=$pfx" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+            "CSC_KEY_PASSWORD=$($env:WINDOWS_SIGNING_PFX_PASSWORD)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+            "MYFINHUB_SIGNING_ENABLED=true" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          } else {
+            "MYFINHUB_SIGNING_ENABLED=false" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+            Write-Warning 'Publishing an unsigned personal-use Windows release. Windows may show Unknown publisher / SmartScreen.'
           }
-          $pfx = Join-Path $env:RUNNER_TEMP 'rheomiq-signing.pfx'
-          [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($env:WINDOWS_SIGNING_PFX_BASE64))
-          "CSC_LINK=$pfx" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          "CSC_KEY_PASSWORD=$($env:WINDOWS_SIGNING_PFX_PASSWORD)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-      - name: Build signed installer
+      - name: Build desktop release
         shell: pwsh
         run: |
           npm ci
@@ -153,19 +161,23 @@ jobs:
           npm run build
           npm run desktop:check
           npm run desktop:dist
-      - name: Verify Authenticode signature and checksum
+      - name: Verify installer integrity and optional Authenticode
         shell: pwsh
         run: |
-          $installer = Get-ChildItem release\desktop\RheomIQ-Setup-*-x64.exe | Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
-          if (-not $installer) { throw 'Signed installer artifact is missing.' }
-          $signature = Get-AuthenticodeSignature -LiteralPath $installer.FullName
-          if ($signature.Status -ne 'Valid') { throw "Installer Authenticode signature is not valid: $($signature.Status)." }
+          $installer = Get-ChildItem release\desktop\MyFinHub-Setup-*-x64.exe | Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
+          if (-not $installer) { throw 'Desktop installer artifact is missing.' }
+          if ($installer.Length -lt 50MB -or $installer.Length -gt 350MB) { throw 'Desktop installer size is outside the accepted update range.' }
+          if ($env:MYFINHUB_SIGNING_ENABLED -eq 'true') {
+            $signature = Get-AuthenticodeSignature -LiteralPath $installer.FullName
+            if ($signature.Status -ne 'Valid') { throw "Installer Authenticode signature is not valid: $($signature.Status)." }
+          }
           $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $installer.FullName).Hash.ToLowerInvariant()
           "$hash  $($installer.Name)" | Set-Content -LiteralPath "$($installer.FullName).sha256" -Encoding ASCII
-      - name: Publish GitHub desktop release
+      - name: Publish MyFinHub desktop release
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          $installer = Get-ChildItem release\desktop\RheomIQ-Setup-*-x64.exe | Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
-          gh release create $env:GITHUB_REF_NAME $installer.FullName "$($installer.FullName).sha256" --verify-tag --title "RheomIQ Desktop $env:GITHUB_REF_NAME" --notes "Signed RheomIQ Windows desktop release. Finance data remains synchronized through the shared Supabase backend."
+          $installer = Get-ChildItem release\desktop\MyFinHub-Setup-*-x64.exe | Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
+          $signingNote = if ($env:MYFINHUB_SIGNING_ENABLED -eq 'true') { 'Authenticode-signed build.' } else { 'Unsigned personal-use build; Windows may show Unknown publisher / SmartScreen.' }
+          gh release create $env:GITHUB_REF_NAME $installer.FullName "$($installer.FullName).sha256" --verify-tag --title "MyFinHub Desktop $env:GITHUB_REF_NAME" --notes "MyFinHub Windows desktop release. $signingNote Updates are accepted only from this controlled release channel and are SHA-256 verified before installation."

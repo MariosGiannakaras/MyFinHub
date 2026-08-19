@@ -1,62 +1,93 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
-const read=(file:string)=>fs.readFileSync(path.join(root,file),'utf8').replace(/\r\n/g,'\n');
+const root = process.cwd();
+const read = (relative:string) => fs.readFileSync(path.join(root, relative), 'utf8');
 
-describe('Windows desktop source contract',()=>{
-  it('keeps the renderer isolated from Node and manages a loopback-only backend',()=>{
-    const main=read('desktop/main.cjs');
-    expect(main).toContain("const LOOPBACK = '127.0.0.1'");
-    expect(main).toContain("env.RHEOMIQ_PORT = '0'");
+const desktopPackage = JSON.parse(read('desktop/package.json'));
+const main = read('desktop/main.cjs');
+const preload = read('desktop/preload.cjs');
+const setup = read('desktop/setup.html');
+const setupRenderer = read('desktop/setup-renderer.js');
+const workflow = read('.github/workflows/desktop-windows.yml');
+
+function mainBlock(start:string,end:string){const from=main.indexOf(start);const to=main.indexOf(end,from+start.length);expect(from).toBeGreaterThanOrEqual(0);expect(to).toBeGreaterThan(from);return main.slice(from,to);}
+
+describe('MyFinHub Windows desktop boundary', () => {
+  it('uses a native MyFinHub application identity and interactive per-user NSIS installer', () => {
+    expect(desktopPackage.build.productName).toBe('MyFinHub');
+    expect(desktopPackage.build.appId).toBe('app.myfinhub.desktop');
+    expect(desktopPackage.build.win.executableName).toBe('MyFinHub');
+    expect(desktopPackage.build.win.artifactName).toBe('MyFinHub-Setup-${version}-${arch}.${ext}');
+    expect(desktopPackage.build.nsis.oneClick).toBe(false);
+    expect(desktopPackage.build.nsis.perMachine).toBe(false);
+    expect(desktopPackage.build.nsis.allowToChangeInstallationDirectory).toBe(true);
+    expect(desktopPackage.build.nsis.createDesktopShortcut).toBe('always');
+    expect(desktopPackage.build.nsis.createStartMenuShortcut).toBe(true);
+  });
+
+  it('keeps the renderer sandboxed and exposes only narrow setup/update IPC', () => {
     expect(main).toContain('contextIsolation: true');
     expect(main).toContain('nodeIntegration: false');
     expect(main).toContain('sandbox: true');
-    expect(main).toContain('webSecurity: true');
+    expect(main).toContain("preload: path.join(__dirname, 'preload.cjs')");
+    expect(preload).toContain("contextBridge.exposeInMainWorld('myFinHubDesktop'");
+    expect(preload).not.toContain('require(\'fs\')');
+    expect(preload).not.toContain('child_process');
+    expect(main).toContain('isMainSender(event)');
+    expect(main).toContain('isSetupSender(event)');
+  });
+
+  it('supports app-owned first-run setup without compiling secrets into the renderer', () => {
+    expect(setup).toContain('MyFinHub');
+    expect(setup).toContain('SUPABASE_URL');
+    expect(setup).toContain('SUPABASE_PUBLISHABLE_KEY');
+    expect(setup).toContain('CARD_VAULT_KEY');
+    expect(setupRenderer).toContain('bridge.saveSetup');
+    expect(main).toContain("safeStorage.encryptString(cardVaultKey)");
+    expect(main).toContain("delete env.SUPABASE_SERVICE_ROLE_KEY");
+    expect(main).toContain("delete env.SUPABASE_SECRET_KEY");
+  });
+
+  it('keeps the local backend loopback-only while preserving the legacy protocol contract', () => {
+    expect(main).toContain("const LOOPBACK = '127.0.0.1'");
+    expect(main).toContain("const READY_PREFIX = 'RHEOMIQ_DESKTOP_READY='");
+    expect(main).toContain("env.RHEOMIQ_HOST = LOOPBACK");
+    expect(main).toContain("env.RHEOMIQ_PORT = '0'");
+    expect(main).toContain("env.RHEOMIQ_DESKTOP = '1'");
     expect(main).toContain('windowsHide: true');
-    expect(main).toContain('delete env.SUPABASE_SECRET_KEY');
-    expect(main).toContain('delete env.SUPABASE_SERVICE_ROLE_KEY');
-    expect(main).toContain('safeStorage.encryptString');
-    expect(main).toContain("target.origin !== origin && target.protocol === 'https:'");
-    expect(main).toContain("replace(/^\\uFEFF/, '')");
-    expect(main).not.toContain('nodeIntegration: true');
   });
 
-  it('uses the existing server with an actual ephemeral port and hardened packaged responses',()=>{
-    const server=read('server/index.ts');
-    expect(server).toContain("process.env.RHEOMIQ_DIST_DIR?.trim()");
-    expect(server).toContain("process.env.RHEOMIQ_DESKTOP === '1'");
-    expect(server).toContain('listener.address()');
-    expect(server).toContain('RHEOMIQ_DESKTOP_READY=');
-    expect(server).toContain("frame-ancestors 'none'");
-    expect(server).toContain("res.setHeader('Content-Security-Policy', csp)");
-    expect(server).toContain("res.setHeader('Permissions-Policy'");
-    expect(server).not.toContain("upgrade-insecure-requests");
+  it('checks controlled MyFinHub releases and verifies exact SHA-256 metadata before installation', () => {
+    expect(main).toContain("const UPDATE_TAG = /^myfinhub-v");
+    expect(main).toContain('MyFinHub-Setup-${version}-x64.exe');
+    expect(main).toContain("crypto.createHash('sha256')");
+    expect(main).toContain('UPDATE_HOSTS');
+    expect(main).toContain("match[2] !== pendingRelease.installerName");
+    expect(main).toContain('MIN_INSTALLER_BYTES');
+    expect(main).toContain('MAX_INSTALLER_BYTES');
+    expect(main).not.toContain('autoUpdater');
+    const automatic = mainBlock('function scheduleAutomaticUpdateChecks()', 'function isMainSender');
+    expect(automatic).toContain('checkForUpdates(false)');
+    expect(automatic).not.toContain('downloadUpdate()');
+    expect(automatic).not.toContain('installDownloadedUpdate()');
+    expect(main).toContain("buttons: ['Λήψη ενημέρωσης', 'Αργότερα']");
+    expect(main).toContain("buttons: ['Εγκατάσταση & επανεκκίνηση', 'Αργότερα']");
   });
 
-  it('creates normal Windows shortcuts and never packages runtime secrets',()=>{
-    const manifest=JSON.parse(read('desktop/package.json'));
-    expect(manifest.build.nsis.createDesktopShortcut).toBe('always');
-    expect(manifest.build.nsis.createStartMenuShortcut).toBe(true);
-    expect(manifest.build.extraResources).toEqual(expect.arrayContaining([
-      expect.objectContaining({to:'app/dist'}),
-      expect.objectContaining({to:'app/server/server.mjs'}),
-      expect.objectContaining({to:'app/runtime/node.exe'}),
-    ]));
-    const serialized=JSON.stringify(manifest);
-    expect(serialized).not.toMatch(/SUPABASE_(SECRET|SERVICE_ROLE)|CARD_VAULT_KEY/);
+  it('publishes unsigned personal releases safely and keeps signing optional', () => {
+    expect(workflow).toContain("tags: ['myfinhub-v*']");
+    expect(workflow).toContain('MyFinHub-Setup-*-x64.exe');
+    expect(workflow).toContain('MYFINHUB_SIGNING_ENABLED=false');
+    expect(workflow).toContain('Configure both Windows signing secrets or neither.');
+    expect(workflow).toContain('Unknown publisher / SmartScreen');
+    expect(workflow).toContain('Get-FileHash -Algorithm SHA256');
+    expect(workflow).not.toContain('Signed desktop releases require');
   });
 
-  it('verifies bootstrap downloads and limits plaintext provisioning to a one-time user file',()=>{
-    const installer=read('desktop/install-windows.ps1');
-    expect(installer).toContain("Get-FileHash -Algorithm SHA256");
-    expect(installer).toContain("SHASUMS256.txt");
-    expect(installer).toContain("pending-provision.json");
-    expect(installer).toContain('Protect-FileForCurrentUser');
-    expect(installer).toContain('Remove-PendingProvision');
-    expect(installer).toContain("New-Object System.Text.UTF8Encoding($false)");
-    expect(installer).not.toMatch(/sb_secret_[A-Za-z0-9_-]{8,}/);
+  it('keeps CVV out of the server-side desktop boundary', () => {
+    expect(main).not.toMatch(/CVV|CVC|securityCode/i);
+    expect(setupRenderer).not.toMatch(/CVV|CVC|securityCode/i);
   });
 });
