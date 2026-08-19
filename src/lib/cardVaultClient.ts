@@ -26,7 +26,9 @@ export async function revealCardSecret(cardId:string):Promise<CardVaultSecret>{
 }
 
 export async function saveCardSecret(cardId:string,secret:CardVaultSecret){
-  return request<{saved:true;last4:string|null}>('PUT',{cardId,...secret});
+  // Runtime whitelist as well as TypeScript typing: an accidental extra field
+  // on a structurally-compatible object can never be spread into the request.
+  return request<{saved:true;last4:string|null}>('PUT',{cardId,pan:secret.pan,expiry:secret.expiry});
 }
 
 /** Explicit secret destruction only. Archiving a card must never call this. */
