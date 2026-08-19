@@ -7,6 +7,11 @@ on:
       - desktop/**
       - server/**
       - src/**
+      - public/brand/**
+      - public/favicon.png
+      - public/manifest.webmanifest
+      - assets/branding/myfinhub/**
+      - index.html
       - tests/desktop-source.test.ts
       - package.json
       - package-lock.json
@@ -20,6 +25,11 @@ on:
       - desktop/**
       - server/**
       - src/**
+      - public/brand/**
+      - public/favicon.png
+      - public/manifest.webmanifest
+      - assets/branding/myfinhub/**
+      - index.html
       - tests/desktop-source.test.ts
       - package.json
       - package-lock.json
