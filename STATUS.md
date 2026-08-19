@@ -26,21 +26,11 @@ Issue #134 / PR #135 implements the approved interactive card prototype for inte
 
 ### Validation evidence for #134 / #135
 
-The implementation head immediately before this documentation refresh passed:
+The implementation was validated with the repository privacy/security guard, dependency audits, 120 unit/domain/security tests, TypeScript/Vite production build, API typecheck, rendered desktop/mobile QA, app-owned-controls QA and CodeQL. The rendered suite includes shared Cards/Credit identity and Credit archive -> history retained -> restore.
 
-- privacy/security guard;
-- root and API dependency audits with 0 reported vulnerabilities at the configured gate;
-- 29 test files / 120 tests;
-- TypeScript + Vite production build;
-- Vercel API TypeScript check;
-- rendered frontend QA, including shared Cards/Credit identity and Credit archive -> history retained -> restore;
-- mobile redesign fidelity QA;
-- app-owned controls QA;
-- CodeQL.
+The Supabase grant migration passed a transactional dry-run with the expected CRUD-only grant set, followed by rollback verification showing live production grants unchanged.
 
-The Supabase grant migration also passed a transactional dry-run with the expected CRUD-only grant set, followed by rollback verification showing live production grants unchanged.
-
-PR #135 must still have CI and CodeQL green on its exact final head before squash merge to `develop`. The feature/develop branch does **not** deploy to production; production delivery remains a separate release decision.
+PR #135 requires CI and CodeQL green on its exact final head before squash merge to `develop`. The feature/develop branch does **not** deploy to production; production delivery remains a separate release decision.
 
 ## Implemented production platform
 
