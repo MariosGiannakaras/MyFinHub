@@ -1,90 +1,126 @@
-# RheomIQ for Windows
+# MyFinHub for Windows
 
 ## Runtime model
 
 The Windows edition is a packaged desktop client, not a PWA and not a shortcut to Vercel.
 
-- Electron owns the native `RheomIQ` application window and Windows shortcuts.
+- Electron owns the native `MyFinHub` application window, executable and Windows shortcuts.
 - A bundled **Node.js 22.x** executable starts the existing Express backend as a hidden child process.
-- The local backend binds only to `127.0.0.1` on an operating-system-selected ephemeral port. It is started before the window opens and stopped with the desktop process.
-- The packaged Vite build is served from that local backend, so the renderer and API keep the same-origin HttpOnly-cookie boundary used by local web development.
-- The local backend talks directly to the same Supabase project as the Vercel API, using `SUPABASE_URL`, the publishable key, the signed-in owner's JWT and PostgreSQL RLS. It does not need or receive a Supabase service-role key.
-- Owner identity and TOTP `aal2` remain mandatory for finance reads/writes.
+- The local backend binds only to `127.0.0.1` on an operating-system-selected ephemeral port. It is started by the desktop host and stopped with the application.
+- The packaged Vite build is served from that local backend, preserving the same-origin HttpOnly-cookie boundary used by the existing local runtime.
+- The backend talks directly to the same Supabase project as the Vercel API through the publishable key, authenticated owner JWT and PostgreSQL RLS. Service-role/secret credentials are removed from the desktop runtime environment.
+- Owner identity and mandatory TOTP `aal2` remain required for finance reads/writes.
 
-The Vercel application remains unchanged and continues to be the web/mobile client. Desktop and web are two clients of the same Supabase state and optimistic revision model.
+The Vercel application remains the web/mobile client. Desktop and web are two clients of the same canonical Supabase state and optimistic revision model.
+
+Compatibility-critical legacy internal names such as `RHEOMIQ_DESKTOP_READY`, other `RHEOMIQ_*` local-backend environment variables and existing `rheomiq_*` database objects intentionally remain unchanged. They are protocol/persistence identifiers, not visible product branding.
 
 ## What synchronizes automatically
 
-**Finance data does. Application code does not.**
+**Finance data synchronizes through Supabase; installed application code is updated through desktop releases.**
 
-Transactions, balances, cards, settings and other finance state live in the shared Supabase database. A successful save from either desktop or web writes the same canonical state; the other client reads that state on its normal load/reload path. Optimistic revision conflicts remain enabled, so an already-open stale client is not allowed to overwrite a newer save silently.
+Transactions, balances, cards, settings and the rest of the finance state use the shared Supabase database. A successful save from desktop or web writes the same canonical state. Optimistic revisions prevent a stale already-open client from silently overwriting a newer save.
 
-The React UI, Electron host and local Express backend are application code bundled into the installed Windows package. They are intentionally local so normal desktop use does not depend on Vercel. A code/UI/backend change therefore requires a new desktop build/release; it cannot safely be replaced at runtime by whatever JavaScript happens to be on Vercel without turning the desktop client back into a remote web shell.
+The React bundle, Electron host and local Express backend are intentionally local so ordinary desktop use does not depend on Vercel. UI/backend changes therefore arrive as a new Windows release, while finance data never needs Git fetches or reinstallations.
 
-## First installation from a repository checkout
+## Normal installation
 
-Run from Windows by double-clicking:
-
-```text
-INSTALL_RHEOMIQ_WINDOWS.bat
-```
-
-The bootstrapper:
-
-1. reads `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `CARD_VAULT_KEY` and `CARD_VAULT_KEY_VERSION` from the process environment or the repository `.env` when available;
-2. prompts only for missing required values and optionally for the card-vault key;
-3. locates Node.js 22 or downloads the pinned Node.js 22 runtime and verifies the official SHA-256 manifest before use;
-4. performs deterministic `npm ci` installs, security/tests, production build and Windows packaging;
-5. writes a short-lived per-user provisioning file with a restricted ACL;
-6. runs the NSIS installer, which creates the RheomIQ Desktop and Start Menu shortcuts;
-7. on first launch Electron imports the card-vault key into Windows-protected Electron `safeStorage`/DPAPI and deletes the plaintext provisioning file.
-
-Normal daily use after installation is simply the RheomIQ shortcut. No terminal, external browser, Vercel process, Node command or manual backend startup is required.
-
-## Card-vault key
-
-PAN/expiry ciphertext remains in the shared Supabase card vault. A desktop installation that needs to reveal or update those secrets must use the **same existing `CARD_VAULT_KEY` and key version** as the server-side Vercel runtime. Do not generate or rotate a replacement key merely for desktop installation; existing ciphertext would no longer be decryptable without a migration/re-encryption plan.
-
-The Windows installer never commits the key, never writes it into the packaged app and never exposes it as a `VITE_*` value. After one-time provisioning, the local copy is encrypted with Windows-backed Electron `safeStorage`. CVV remains the separate device-local encrypted browser vault and is never sent to Supabase or the local backend.
-
-If `CARD_VAULT_KEY` is intentionally omitted, the rest of RheomIQ can run, but server-vault PAN/expiry reveal/save is unavailable on that desktop until the key is provisioned.
-
-## Updating application code
-
-A repository checkout can always be rebuilt by rerunning:
+The release artifact is a standard interactive NSIS installer:
 
 ```text
-INSTALL_RHEOMIQ_WINDOWS.bat
+MyFinHub-Setup-<version>-x64.exe
 ```
 
-That installs the code currently checked out locally. Git fetch/pull is needed only if the user chooses this source-build path and wants newer source code; it is **never** needed to synchronize finance data.
+It installs per Windows user by default, creates **Desktop** and **Start Menu** shortcuts and launches MyFinHub when installation finishes. The executable is `MyFinHub.exe` and the desktop identity is `app.myfinhub.desktop`.
 
-Once a signed desktop release has been published, the same BAT can update without Git or a source build:
+On first launch, if local runtime configuration is missing, MyFinHub opens its own setup window instead of requiring a terminal. The setup UI shows steps, an animated progress/status surface and a live explanation of the background work: configuration validation, Windows-protected secret storage, local-backend startup and final application launch. UI motion respects `prefers-reduced-motion`.
+
+Required configuration:
 
 ```text
-INSTALL_RHEOMIQ_WINDOWS.bat --latest
+SUPABASE_URL
+SUPABASE_PUBLISHABLE_KEY
 ```
 
-`--latest` downloads the newest GitHub Release x64 installer and its `.sha256` companion, verifies the checksum and reinstalls it. Runtime configuration and Windows-protected card-vault secrets are preserved in the per-user application-data directory.
+Optional card-secret support additionally uses the **existing** shared values:
 
-## Signed release workflow
+```text
+CARD_VAULT_KEY
+CARD_VAULT_KEY_VERSION
+```
 
-`.github/workflows/desktop-windows.yml` validates the Windows package on `windows-latest`, including the real packaged executable and local-backend startup. Normal PR validation produces a short-retention installer artifact but does not publish it.
+The card-vault key is encrypted through Electron `safeStorage` / Windows DPAPI for the current Windows account. It is never compiled into the package, sent to the renderer bundle or committed to Git. CVV remains the separate device-local encrypted vault and never enters the server-side desktop boundary.
 
-A public desktop release must:
+## In-app updates
 
-1. be based on a commit already present on `main`;
-2. use a tag matching the desktop package version, for example `desktop-v1.0.0`;
-3. have repository secrets `WINDOWS_SIGNING_PFX_BASE64` and `WINDOWS_SIGNING_PFX_PASSWORD` configured;
-4. produce an Authenticode signature that Windows reports as `Valid` before the release is uploaded.
+A packaged MyFinHub installation checks the controlled GitHub Release channel automatically after startup and periodically while running. Automatic checks **do not** force a download or installation.
 
-The workflow then publishes the signed installer plus SHA-256 checksum as a GitHub Release. It fails closed rather than publishing an unsigned update if signing credentials are missing.
+The Windows section in **Ρυθμίσεις** exposes the current version and update state. When a newer release is available the user explicitly chooses:
 
-A future in-app unattended updater can be layered on the same signed release channel. It should not be enabled by disabling Windows signature verification or by accepting unsigned replacement binaries.
+1. **Λήψη ενημέρωσης**
+2. after verification, **Εγκατάσταση & επανεκκίνηση**
 
-## Development
+The updater accepts only a tightly controlled release shape:
 
-Windows desktop development uses the same Node.js 22 project contract:
+- release tag `myfinhub-v<semver>`;
+- exact asset `MyFinHub-Setup-<version>-x64.exe`;
+- exact companion `MyFinHub-Setup-<version>-x64.exe.sha256`;
+- GitHub/release-asset HTTPS hosts only;
+- bounded installer size;
+- streamed SHA-256 verification before the installer can become ready.
+
+It never accepts an arbitrary update URL or an unverified binary. Update progress is shown in-app and on the Windows taskbar. Installation closes the running app only after verification, starts the installer and then relaunches MyFinHub.
+
+## Unsigned personal-use releases
+
+A paid Windows code-signing certificate is **not required** for this personal-use application. The release workflow supports unsigned builds and records that fact explicitly. The tradeoff is normal Windows reputation behavior: an unsigned build may show **Unknown publisher** or Microsoft SmartScreen, particularly on first installation or after a new build.
+
+Authenticode signing remains optional. If both signing repository secrets are later configured, the same workflow signs and verifies the installer before publishing it. Partial signing configuration fails the release rather than silently falling back.
+
+Integrity for both signed and unsigned updates is still enforced by the controlled GitHub Release source, strict naming/allowlisting and SHA-256 verification described above.
+
+## Release workflow
+
+`.github/workflows/desktop-windows.yml` validates the Windows package on a real `windows-latest` runner. PR validation includes:
+
+- deterministic root + desktop dependency installation;
+- security/test/build gates;
+- PowerShell fallback-bootstrap validation;
+- unpacked Windows package build;
+- real `MyFinHub.exe` process smoke with the hidden local backend;
+- interactive NSIS Setup build;
+- installer size/checksum validation;
+- short-retention installer/checksum artifacts as CI evidence.
+
+A public desktop release is produced only from a tag such as:
+
+```text
+myfinhub-v1.0.0
+```
+
+The tagged commit must already be present on `main` and the tag version must match `desktop/package.json`. The release then publishes the installer plus its `.sha256` companion.
+
+## Source-build fallback
+
+The repository keeps a fallback bootstrap for development/recovery:
+
+```text
+INSTALL_MYFINHUB_WINDOWS.bat
+```
+
+This can build/install the checked-out source and can locate or download a verified Node.js 22 build runtime. It is **not** required for ordinary released installations.
+
+The fallback `--latest` mode remains available for recovery or machines where the application cannot start:
+
+```text
+INSTALL_MYFINHUB_WINDOWS.bat --latest
+```
+
+Normal users should use `MyFinHub-Setup-*.exe` once and then the in-app updater. Git and Node are not required on the user machine for that path.
+
+## Development and generated files
+
+Windows desktop development:
 
 ```text
 npm ci
@@ -92,15 +128,15 @@ npm ci --prefix desktop
 npm run desktop:dev
 ```
 
-`desktop:dev` builds the web client, bundles the existing Express backend, uses the current Node 22 executable as the local backend runtime and launches Electron with the root `.env` configuration. The renderer still runs with `nodeIntegration: false`, `contextIsolation: true` and Electron sandboxing.
-
-## Generated files
-
-The following are build artifacts and stay out of Git:
+Generated packaging output remains outside Git:
 
 ```text
 desktop/.build/
 release/desktop/
 ```
 
-Desktop runtime configuration is stored under the current Windows user's Electron application-data directory, not in the repository or Vercel.
+Canonical MyFinHub brand assets used by browser/PWA/desktop builds are also kept in the repository under:
+
+```text
+assets/branding/myfinhub/
+```
