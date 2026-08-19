@@ -10,6 +10,7 @@ import { QuickAdd, type QuickPrefill } from './components/QuickAdd';
 import { useFinance } from './hooks/useFinance';
 import { useLocalDate } from './hooks/useLocalDate';
 import { useSession } from './hooks/useSession';
+import { archiveCardRecord } from './lib/cards';
 import { accountBalances } from './lib/domain';
 import { reportingMonthForDate } from './lib/localDate';
 import type { CardBank, EventKind, FinanceData, FinanceEvent, Loan, PaymentCard, RecurringItem, ReviewDecision } from './types';
@@ -53,7 +54,7 @@ function FinanceApp({userEmail,onLogout}:{userEmail:string|null;onLogout:()=>voi
   const createSelfLoan=(loan:Loan,event:FinanceEvent)=>finance.update(current=>{const next=withLoan(current,loan);const events=next.state.events??[];return {...next,state:{...next.state,events:[...events.filter(existing=>existing.id!==event.id),event]}}});
   const upsertBank=(bank:CardBank)=>finance.update(current=>{const banks=current.state.cardBanks??[];const exists=banks.some(item=>item.id===bank.id);return {...current,state:{...current.state,cardBanks:exists?banks.map(item=>item.id===bank.id?bank:item):[...banks,bank]}}});
   const upsertCard=(card:PaymentCard)=>finance.update(current=>{const cards=current.state.cards??[];const exists=cards.some(item=>item.id===card.id);return {...current,state:{...current.state,cards:exists?cards.map(item=>item.id===card.id?card:item):[...cards,card]}}});
-  const archiveCard=(card:PaymentCard)=>upsertCard({...card,active:false,updatedAt:new Date().toISOString()});
+  const archiveCard=(card:PaymentCard)=>upsertCard(archiveCardRecord(card));
   const decide=(id:string,decision:ReviewDecision)=>finance.update(current=>({...current,state:{...current.state,reviewDecisions:{...(current.state.reviewDecisions??{}),[id]:decision}}}));
   const balance=(accountId:string)=>accountBalances(data,today)[accountId]||0;
   const recover=()=>{if((finance.saveState==='error'||finance.saveState==='conflict')&&!window.confirm('Η επαναφόρτωση θα απορρίψει τυχόν τοπικές αλλαγές που δεν αποθηκεύτηκαν. Να φορτωθεί η τελευταία έκδοση από τη βάση;'))return;void finance.reload()};
@@ -63,7 +64,7 @@ function FinanceApp({userEmail,onLogout}:{userEmail:string|null;onLogout:()=>voi
     :page==='review'?<ReviewPage data={data} onDecision={decide}/>
     :page==='savings'?<SavingsPage data={data} month={month} asOf={today} onCreate={addEvent}/>
     :page==='cards'?<CardsPage data={data} onUpsertBank={upsertBank} onUpsertCard={upsertCard} onArchiveCard={archiveCard} onOpenCredit={()=>navigate('credit')}/>
-    :page==='credit'?<CreditCardPage data={data} asOf={today} onCreateEvent={addEvent} onEditEvent={editEvent} onDeleteEvent={deleteEvent}/>
+    :page==='credit'?<CreditCardPage data={data} asOf={today} onCreateEvent={addEvent} onEditEvent={editEvent} onDeleteEvent={deleteEvent} onUpsertCard={upsertCard} onArchiveCard={archiveCard}/>
     :page==='loans'?<LoansPage data={data} asOf={today} onUpsertLoan={upsertLoan} onCreateEvent={addEvent} onCreateSelfLoan={createSelfLoan}/>
     :page==='lending'?<LendingPage data={data} asOf={today} onCreateEvent={addEvent}/>
     :page==='recurring'?<RecurringPage data={data} asOf={today} onUpsert={upsertRecurring} onCreateEvent={addEvent} onOpenLoans={()=>navigate('loans')}/>
