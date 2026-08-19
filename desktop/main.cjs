@@ -32,7 +32,8 @@ function userDataPath(name) {
 }
 
 function readJson(file) {
-  return JSON.parse(fs.readFileSync(file, 'utf8'));
+  const raw = fs.readFileSync(file, 'utf8').replace(/^\uFEFF/, '');
+  return JSON.parse(raw);
 }
 
 function writePrivateJson(file, value) {
@@ -267,7 +268,7 @@ function createWindow(origin, runtime) {
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     try {
       const target = new URL(url);
-      if (target.protocol === 'https:' || target.protocol === 'http:') void shell.openExternal(target.toString());
+      if (target.origin !== origin && target.protocol === 'https:') void shell.openExternal(target.toString());
     } catch { /* invalid external URL */ }
     return { action: 'deny' };
   });
