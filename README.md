@@ -1,16 +1,76 @@
 <p align="center">
-  <img src="public/brand/icon-192.png" width="128" alt="MyFinHub icon" />
+  <img src="assets/branding/myfinhub/icon-192.png" width="128" alt="MyFinHub authentic application mark" />
 </p>
 
 <h1 align="center">MyFinHub</h1>
 <p align="center"><strong>Smart. Clear. In Control.</strong></p>
-<p align="center">Private single-owner personal finance ledger with Supabase/PostgreSQL persistence, compound transactions, savings logic, reconciliation and intelligent review.</p>
+<p align="center">Private, single-owner personal finance workspace for Windows, web and mobile.</p>
 
-> The GitHub repository and several compatibility-critical internal identifiers still use the historical `RheomIQ` name. The product identity is **MyFinHub**. Existing `rheomiq_*` database objects, migration history and `RHEOMIQ_*` desktop-backend protocol variables remain intentionally stable rather than being renamed for cosmetics.
+<p align="center">
+  <a href="https://github.com/MariosGiannakaras/MyFinHub/releases/download/myfinhub-v1.0.0/MyFinHub-Setup-1.0.0-x64.exe"><img alt="Download MyFinHub for Windows" src="https://img.shields.io/badge/Download%20for%20Windows-v1.0.0-2563EB?style=for-the-badge&logo=windows11&logoColor=white"></a>
+  <a href="https://github.com/MariosGiannakaras/MyFinHub/releases/latest"><img alt="Latest release" src="https://img.shields.io/badge/Release-v1.0.0-0F766E?style=for-the-badge"></a>
+  <a href="CHANGELOG.md"><img alt="Changelog" src="https://img.shields.io/badge/Changelog-View-475569?style=for-the-badge"></a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/MariosGiannakaras/MyFinHub/releases">All releases</a> ·
+  <a href="https://github.com/MariosGiannakaras/MyFinHub/releases/tag/myfinhub-v1.0.0">v1.0.0 release notes</a> ·
+  <a href="https://github.com/MariosGiannakaras/MyFinHub/releases/download/myfinhub-v1.0.0/MyFinHub-Setup-1.0.0-x64.exe.sha256">SHA-256</a> ·
+  <a href="docs/WINDOWS_DESKTOP.md">Windows documentation</a>
+</p>
+
+> **Windows release:** download only `MyFinHub-Setup-1.0.0-x64.exe`. You do not need to clone or download the repository. The current personal-use build is unsigned, so Windows may display **Unknown publisher / Microsoft Defender SmartScreen**. Installer integrity is protected by the published SHA-256 checksum.
+
+## Download and install
+
+1. Click **Download for Windows** above.
+2. Run `MyFinHub-Setup-1.0.0-x64.exe`.
+3. Choose the installation folder if desired; Setup creates Start Menu and Desktop shortcuts.
+4. On first launch, complete the MyFinHub setup window for the shared Supabase connection.
+5. Use **Ρυθμίσεις → Ενημερώσεις** for future desktop update checks.
+
+The installed application contains its own Electron host, bundled Node.js runtime and local backend. Normal use does not require Git, Node.js, a terminal or a browser.
+
+## What MyFinHub manages
+
+- **Dashboard:** balances, net worth, spending, savings and receivables.
+- **Transactions:** income, expenses, transfers, withdrawals, refunds and reconciliation.
+- **Savings:** cash-offset saving and savings-account movements without corrupting spending totals.
+- **Recurring:** repeated obligations and long-term payment flows.
+- **Cards & credit:** card purchases, liability repayments and protected PAN/expiry storage.
+- **Loans & lending:** personal loans, installments, receivables and repayment history.
+- **Review:** controlled proposals that do not affect reports until confirmed.
+- **Reports:** finance summaries derived from the same canonical state used by every client.
+- **Autosave + Undo/Redo:** normal edits persist automatically while remaining reversible in the UI.
+
+## One finance state, multiple clients
+
+MyFinHub has two clients over the same canonical Supabase/PostgreSQL finance state:
+
+- **Web/mobile:** React/Vite with Node API routes on Vercel.
+- **Windows desktop:** Electron with the existing Express backend running locally on `127.0.0.1`.
+
+Changes made on one client synchronize through the shared database. Application updates are separate from finance-data synchronization.
+
+## Security and privacy
+
+MyFinHub is intentionally a **single-owner** application. Supabase Auth uses email/password plus mandatory TOTP Authenticator MFA. Finance access requires the configured owner UID and an `aal2` session in both API authorization and PostgreSQL RLS.
+
+Access and refresh tokens remain in HttpOnly cookies. The online runtime uses the Supabase publishable key, never a service-role secret. Full PAN/expiry use a separate ciphertext-only card vault; CVV remains encrypted device-local state and is never included in ordinary finance backups.
+
+Desktop updates are accepted only from the controlled MyFinHub GitHub Release channel. The app requires the exact versioned installer and `.sha256` asset pair, validates trusted GitHub URLs and verifies the downloaded installer hash before installation.
+
+## Authentic branding
+
+The application mark in this repository is the **original project artwork**, recovered byte-for-byte from the pre-rebrand Git history. It is the blue wallet with the `R` mark used by the original RheomIQ application. MyFinHub keeps that authentic mark while the visible product name remains **MyFinHub**.
+
+`assets/branding/myfinhub/icon-192.png` is the historical 192×192 source-of-truth. The 32×32 favicon and 512×512 Windows/PWA variants are deterministic size derivatives of that source; they are not replacement artwork or a newly invented `MF` logo.
+
+Compatibility-critical historical identifiers such as `rheomiq_*` database objects and `RHEOMIQ_*` desktop/backend protocol variables remain intentionally unchanged because they are persistence/protocol contracts, not visible product branding.
 
 ## Accounting model
 
-MyFinHub preserves the existing Excel-derived behavior instead of flattening it into a generic income/expense tracker.
+MyFinHub preserves the existing Excel-derived behavior rather than flattening everything into generic income/expense rows:
 
 - **Cash-offset saving:** payroll/current → savings; physical cash is untouched. Counts as savings, not spending.
 - **Withdrawals:** bank → cash; no income/expense.
@@ -20,69 +80,47 @@ MyFinHub preserves the existing Excel-derived behavior instead of flattening it 
 - **Lending:** creates a receivable; repayment reduces it; net worth includes receivables.
 - **Reconciliation:** balance correction without polluting spending.
 - **Splits:** category parts must balance to the parent amount.
-- **Smart Review:** proposals do not affect reports until confirmed.
+- **Smart Review:** proposals affect reports only after confirmation.
 
-## Production architecture
+## Updates and release history
 
-MyFinHub is a private **single-owner** application with two clients over the same canonical finance state:
+The current stable Windows release is **v1.0.0**. See [`CHANGELOG.md`](CHANGELOG.md) for released and unreleased changes, or browse the complete [GitHub Releases](https://github.com/MariosGiannakaras/MyFinHub/releases) history.
 
-- **Web/mobile:** React/Vite + Node API routes on Vercel.
-- **Windows desktop:** Electron + the existing Express backend, bundled locally with Node.js 22 and started automatically in the background.
-- **Durable state:** the same Supabase/PostgreSQL project for both clients.
+Desktop releases use `myfinhub-v<version>` tags. The Windows release workflow verifies that the tag is already on `main`, builds and smoke-tests `MyFinHub.exe`, creates the interactive NSIS installer, generates SHA-256 metadata and publishes the controlled GitHub Release.
 
-Supabase Auth uses email/password plus mandatory TOTP Authenticator MFA. Finance access requires the configured owner UID and an `aal2` session in both API logic and PostgreSQL RLS. Access/refresh tokens stay in HttpOnly cookies; the online runtime uses the publishable key, never a service-role secret.
+## Development
 
-Normal writes use optimistic revision checks so a stale client cannot silently overwrite a newer save from another device.
+<details>
+<summary>Local development and architecture details</summary>
 
-## Windows desktop
+### Requirements
 
-The Windows edition installs as a normal application:
+Node.js 22 LTS.
 
-```text
-MyFinHub-Setup-<version>-x64.exe
+### Web/local server
+
+```bash
+npm ci
+npm run dev
 ```
 
-It creates `MyFinHub.exe`, Desktop and Start Menu shortcuts, opens in its own window and starts the existing local Express backend automatically on `127.0.0.1` using an OS-selected ephemeral port. Ordinary use requires no browser, terminal, Git, Node command or Vercel process.
+### Windows desktop development
 
-On first launch, missing runtime configuration is collected in an app-owned MyFinHub setup window with step indicators, progress/status UI and a live explanation of the background work. The optional `CARD_VAULT_KEY` is imported only for PAN/expiry support and stored with Windows-backed Electron `safeStorage` / DPAPI; it is never bundled into the app. CVV remains device-local and is never sent to the server boundary.
-
-### Data synchronization vs updates
-
-Finance data synchronizes through the shared Supabase database and does **not** require Git fetches or reinstallations.
-
-Application code is installed locally on purpose. Packaged MyFinHub therefore checks the controlled GitHub Release channel for newer desktop releases. Update checks are automatic, while download and install/restart remain explicit user actions in **Ρυθμίσεις**. The updater accepts only the exact MyFinHub installer/checksum asset pair and verifies SHA-256 before installation.
-
-A paid Windows code-signing certificate is not required for this personal-use application. Unsigned releases are allowed; Windows may show **Unknown publisher / SmartScreen**. Authenticode remains optional if signing credentials are added later.
-
-Full desktop details: `docs/WINDOWS_DESKTOP.md`.
-
-A source-build/recovery fallback also remains available:
-
-```text
-INSTALL_MYFINHUB_WINDOWS.bat
+```bash
+npm ci
+npm ci --prefix desktop
+npm run desktop:dev
 ```
 
-This fallback is not needed for normal installed/released usage.
+### Validation
 
-## Persistence and card secrets
+```bash
+npm run test
+npm run build
+npm run check
+```
 
-SQL schema changes are version-controlled under `supabase/migrations/`.
-
-The compatibility `FinanceData` document remains the canonical read/import representation. Normal saves update mutable state under revision locking. Existing historical PostgreSQL objects keep their legacy names, including `rheomiq_app_state`, `rheomiq_backups`, `rheomiq_audit_log` and `rheomiq_card_secrets`.
-
-Payment-card metadata may live in finance state. Full PAN/expiry do not: they use the separate ciphertext-only card vault. CVV remains encrypted device-local state. Ordinary finance backups therefore do not contain PAN/expiry/CVV.
-
-## Delivery workflow
-
-Implementation and infrastructure work follows:
-
-**Issue → short-lived branch → Pull Request → CI/CodeQL/relevant platform gates → squash merge to `develop`.**
-
-`main` remains release-only. A deliberate `develop → main` release promotes a coherent batch to production and triggers the Vercel deployment. Database DDL is never applied as an untracked production change.
-
-Windows desktop changes have a separate real-Windows package gate that builds and launches `MyFinHub.exe`, verifies the hidden local backend, builds the interactive NSIS Setup and validates the release checksum contract. Public desktop releases use `myfinhub-v<version>` tags only after the tagged commit is already on `main`.
-
-## Runtime environment
+### Runtime environment
 
 Online/Vercel runtime:
 
@@ -91,7 +129,7 @@ SUPABASE_URL=https://<project-ref>.supabase.co
 SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 ```
 
-Desktop/local PAN + expiry access additionally uses the same existing vault key:
+Desktop/local PAN + expiry access additionally uses the existing vault key:
 
 ```text
 CARD_VAULT_KEY=<64 hex chars or Base64 decoding to 32 bytes>
@@ -100,52 +138,34 @@ CARD_VAULT_KEY_VERSION=1
 
 Offline emergency migration/verification may additionally use `SUPABASE_SECRET_KEY`. Never configure that secret in Vercel/Electron runtime and never expose it as `VITE_*`.
 
-## Development
+### Persistence
 
-Requirements: Node.js 22 LTS.
+SQL schema changes are version-controlled under `supabase/migrations/`. The compatibility `FinanceData` document remains the canonical read/import representation. Normal saves use optimistic revision locking so a stale client cannot silently overwrite newer state.
 
-Web/local server:
+### Delivery workflow
 
-```bash
-npm ci
-npm run dev
-```
+**Issue → short-lived branch → Pull Request → CI/CodeQL/relevant platform gates → squash merge to `develop`.**
 
-Windows desktop:
+`main` is release-only. Deliberate `develop → main` releases promote coherent batches to production. Windows changes also pass the real-Windows package gate before release.
 
-```text
-npm ci
-npm ci --prefix desktop
-npm run desktop:dev
-```
-
-Validation:
-
-```bash
-npm run test
-npm run build
-npm run check
-```
+</details>
 
 ## Repository structure
 
 ```text
-RheomIQ/                    # historical repository name
-├─ api/                     # Vercel Auth + finance API routes
-├─ assets/branding/myfinhub # easy-to-find canonical MyFinHub assets
-├─ desktop/                 # Electron Windows host + setup/update tooling
-├─ public/brand/            # runtime web/PWA/desktop icons
-├─ src/                     # React UI + finance domain logic
-├─ server/                  # auth, HTTP validation and Supabase adapters
-├─ scripts/                 # offline migration/verification utilities
-├─ supabase/migrations/     # PostgreSQL schema source of truth
-├─ tests/                   # finance + security + desktop regressions
-├─ docs/                    # architecture, Windows desktop and UX rules
-├─ INSTALL_MYFINHUB_WINDOWS.bat
-├─ AGENTS.md
-└─ .github/                 # CI, CodeQL, Dependabot + Windows package workflow
+MyFinHub/
+├─ api/                      # Vercel Auth + finance API routes
+├─ assets/branding/myfinhub/ # canonical authentic application artwork
+├─ desktop/                  # Electron Windows host + setup/update tooling
+├─ public/brand/             # runtime web/PWA/desktop icons
+├─ src/                      # React UI + finance domain logic
+├─ server/                   # auth, HTTP validation and Supabase adapters
+├─ scripts/                  # migration/verification utilities
+├─ supabase/migrations/      # PostgreSQL schema source of truth
+├─ tests/                    # finance, security and desktop regressions
+├─ docs/                     # architecture, Windows desktop and UX rules
+├─ CHANGELOG.md
+└─ .github/                  # CI, CodeQL, Dependabot + Windows release workflow
 ```
 
-## Privacy
-
-MyFinHub has one owner and no user picker, teams, tenant switching or multi-user business model. Personal finance payloads and credentials are excluded from Git history.
+Personal finance payloads and credentials are excluded from Git history.
