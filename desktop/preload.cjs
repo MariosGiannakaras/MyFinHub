@@ -1,6 +1,7 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 const updateChannel = 'myfinhub:update-state';
+const setupProgressChannel = 'myfinhub:setup-progress';
 
 contextBridge.exposeInMainWorld('myFinHubDesktop', Object.freeze({
   getInfo: () => ipcRenderer.invoke('myfinhub:get-info'),
@@ -16,4 +17,10 @@ contextBridge.exposeInMainWorld('myFinHubDesktop', Object.freeze({
   },
   getSetupState: () => ipcRenderer.invoke('myfinhub:get-setup-state'),
   saveSetup: (value) => ipcRenderer.invoke('myfinhub:save-setup', value),
+  onSetupProgress: (listener) => {
+    if (typeof listener !== 'function') return () => {};
+    const handler = (_event, state) => listener(state);
+    ipcRenderer.on(setupProgressChannel, handler);
+    return () => ipcRenderer.removeListener(setupProgressChannel, handler);
+  },
 }));
