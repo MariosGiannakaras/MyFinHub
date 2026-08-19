@@ -36,12 +36,12 @@ jobs:
       - name: Recover authentic brand variants
         shell: bash
         run: |
-          command -v convert
+          command -v ffmpeg
           mkdir -p tmp/authentic-brand-output
-          convert tmp/authentic-rheomiq-icon.png -filter Lanczos -resize 32x32 tmp/authentic-brand-output/icon-32.png
+          ffmpeg -hide_banner -loglevel error -y -i tmp/authentic-rheomiq-icon.png -vf scale=32:32:flags=lanczos -frames:v 1 tmp/authentic-brand-output/icon-32.png
           cp tmp/authentic-rheomiq-icon.png tmp/authentic-brand-output/icon-192.png
-          convert tmp/authentic-rheomiq-icon.png -filter Lanczos -resize 512x512 tmp/authentic-brand-output/icon-512.png
-          identify tmp/authentic-brand-output/icon-32.png tmp/authentic-brand-output/icon-192.png tmp/authentic-brand-output/icon-512.png
+          ffmpeg -hide_banner -loglevel error -y -i tmp/authentic-rheomiq-icon.png -vf scale=512:512:flags=lanczos -frames:v 1 tmp/authentic-brand-output/icon-512.png
+          file tmp/authentic-brand-output/icon-32.png tmp/authentic-brand-output/icon-192.png tmp/authentic-brand-output/icon-512.png
       - name: Upload authentic brand recovery
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
