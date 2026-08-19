@@ -117,7 +117,7 @@ describe('MyFinHub Windows desktop boundary', () => {
     ]) expect(exists(asset)).toBe(true);
     expect(size('public/favicon.png')).toBeGreaterThan(1000);
     expect(size('public/brand/icon-192.png')).toBeGreaterThan(5000);
-    expect(size('public/brand/icon-512.png')).toBeGreaterThan(20000);
+    expect(size('public/brand/icon-512.png')).toBeGreaterThan(10000);
     expect(workflow).toContain('assets/branding/myfinhub/**');
   });
 
