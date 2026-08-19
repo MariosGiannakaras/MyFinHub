@@ -9,7 +9,7 @@
     "prepare:bundle": "node prepare-build.mjs",
     "dev": "node dev.mjs",
     "pack": "npm run prepare:bundle && electron-builder --win dir --x64",
-    "dist": "npm run prepare:bundle && electron-builder --win nsis --x64",
+    "dist": "npm run prepare:bundle && electron-builder --win nsis --x64 --publish never",
     "check": "npm audit --audit-level=high && node --check main.cjs && node --check preload.cjs && node --check setup-renderer.js && node --check prepare-build.mjs && node --check dev.mjs"
   },
   "dependencies": {
@@ -82,7 +82,7 @@
       {
         "provider": "github",
         "owner": "MariosGiannakaras",
-        "repo": "RheomIQ",
+        "repo": "MyFinHub",
         "releaseType": "release"
       }
     ]
