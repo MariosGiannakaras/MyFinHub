@@ -76,12 +76,7 @@
       "createStartMenuShortcut": true,
       "shortcutName": "MyFinHub",
       "deleteAppDataOnUninstall": false,
-      "runAfterFinish": true,
-      "installerIcon": "myfinhub.ico",
-      "uninstallerIcon": "myfinhub.ico",
-      "installerHeader": "installerHeader.bmp",
-      "installerSidebar": "installerSidebar.bmp",
-      "uninstallerSidebar": "uninstallerSidebar.bmp"
+      "runAfterFinish": true
     },
     "publish": [
       {
