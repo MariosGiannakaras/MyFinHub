@@ -4,76 +4,75 @@
 
 RheomIQ is a single-owner personal finance application deployed from `main` to Vercel with Supabase/PostgreSQL as the durable store.
 
-The exhaustive production/backend audit tracked by #15 is complete. Its final verified baseline had all tracked defects fixed, CI green, CodeQL green, the current Vercel production revision deployed, and Production Smoke green against that exact revision.
+The August 2026 product/frontend batch tracked by #64 was promoted to production through PR #133. `main` and `develop` were synchronized on the resulting release baseline before the next implementation work started. Issue #88 remains open only for the authenticated/browser post-deployment card-secret and backup smokes from that release; it is not an indication that the production promotion itself is pending.
 
-`main` remains the release-only production branch. The current product work below is integrated on `develop` and is intentionally unreleased until a separate `develop -> main` release decision is made.
+`main` remains the release-only production branch. New routine work integrates into `develop` through short-lived issue branches and does not deploy to production until a later deliberate `develop -> main` release.
 
-## Current develop integration batch — unreleased
+## Current develop integration — interactive Cards / shared Credit identity
 
-As of 2026-08-18, the implementation batch tracked by #64 is complete on `develop`. It remains intentionally unreleased and does not itself trigger a production Vercel deployment. The batch includes:
+Issue #134 / PR #135 integrates the approved interactive card prototype into the application and is validated for squash merge to `develop`.
 
-- automatic persistence for finance mutations with bounded Undo and Redo history;
-- Settings direct autosave through the same revision-checked persistence path, without a separate Apply/Cancel workflow;
-- dedicated Cards workspace with bank grouping, encrypted server-side PAN/expiry vault integration and local encrypted CVV handling;
-- dedicated Credit Card workspace with configured limit, debt/available-credit utilization, isolated purchase history and Piraeus-only repayments;
-- dedicated Installments & Loans workspace with variable manual payments, derived payment-day history, segmented installment progress and long-term obligation classification;
-- HELP / ΒΟΗΘΕΙΑ self-loans from savings, RETURN / ΕΠΙΣΤΡΟΦΗ transfers back to savings, and explicit debt forgiveness without a money movement;
-- long-term loans surfaced inside Recurring as obligations without automatic expense creation;
-- active, paused and stopped recurring/subscription history with explicit manual payments;
-- app-owned Greek date/listbox controls in the core Smart Entry, Credit, Loans, Savings, Lending and Recurring entry flows;
-- live amount transitions for Savings, Credit, Loans, Recurring and Reports summaries while historical transaction/payment tables remain static;
-- mobile navigation and rendered QA for the separated Cards, Credit and Loans routes and the app-owned entry controls;
-- mutable-state validation for card/bank, recurring, linked-event and extended loan metadata, including rejection of PAN/expiry/CVV-like fields from ordinary FinanceData state.
+- Cards use horizontal bank columns, bank-specific visual designs, a live creation preview, masked fields, explicit reveal/copy controls, pointer tilt with reduced-motion fallback, and deliberate soft-archive/restore interactions.
+- Cards and Credit Card use the same `FinanceData.state.cards` / `PaymentCard` record. A card created or restored from either page is the same underlying record and `cardId`.
+- New credit purchases/payments carry the shared `cardId`; legacy pre-linkage credit events remain compatible.
+- The current singular credit liability permits one active credit-card identity. The server mutable-state boundary rejects multiple active credit identities and orphan `cardId` links.
+- Credit Card is redesigned around the same large interactive card surface plus debt, available limit, utilization, purchases and repayments.
+- Card removal is archival/soft-delete. It preserves finance events, liability/balance history and the PAN/expiry server-vault row; restoring the same card reuses the same id and vault reference.
+- Device-local CVV is removed on archive. PAN/expiry deletion is a distinct explicit secure-editor action and never happens as a side effect of archival.
+- PAN/expiry are exposed through `/api/card-secrets`, requiring same-origin, owner and AAL2. The online path uses the owner JWT + Supabase publishable key so RLS remains authoritative.
+- CVV remains encrypted browser-local IndexedDB only. It is rejected by the server boundary and the browser client runtime-whitelists only PAN/expiry for server requests.
+- The product migration/read/import/offline migration paths explicitly preserve `cardBanks` and `cards`, preventing the older schema-v3 migrator from dropping card metadata.
+- `20260819072000_tighten_card_secret_grants.sql` narrows `authenticated` table privileges on `rheomiq_card_secrets` to SELECT/INSERT/UPDATE/DELETE while retaining owner+AAL2 RLS. The migration was dry-run in a production transaction and rolled back; no production schema mutation occurred during feature development.
 
-The only intended production-release blocker for this batch is #88: configure the production card-vault key, re-run the exact release checks, apply the version-controlled migration through the normal release workflow, merge `develop -> main`, and then perform Production Smoke. Until that happens, production remains on the existing `main` baseline.
+### Validation for #134 / #135
+
+- privacy/security guard: green;
+- root and API dependency audits: green, 0 reported vulnerabilities at the configured gate;
+- 29 test files / 120 tests: green;
+- TypeScript + Vite production build: green;
+- Vercel API TypeScript check: green;
+- rendered frontend QA: green, including shared Cards/Credit identity and Credit archive -> history retained -> restore;
+- mobile redesign fidelity QA: green;
+- app-owned controls QA: green;
+- CodeQL: green;
+- Supabase grant migration dry-run: expected CRUD-only result, followed by rollback verification showing live grants unchanged.
+
+This integration is production-ready source code for `develop`; it does **not** deploy from the feature/develop branch. Production delivery remains a separate release decision.
 
 ## Implemented production platform
 
 - React + Vite + TypeScript responsive application
-- Dashboard, transactions, Smart Review, savings, finance workspaces, lending, recurring, reports and settings
-- Node.js 22.x production/runtime contract
+- Node.js 22.x runtime contract
 - Vercel Functions in Frankfurt (`fra1`)
 - Supabase/PostgreSQL in `eu-central-1`
-- Single-owner email/password authentication with mandatory TOTP MFA (`aal2`)
+- single-owner email/password authentication with mandatory TOTP MFA (`aal2`)
 - HttpOnly/Secure production sessions and same-origin mutation protection
-- Owner + AAL2 enforcement in both API logic and PostgreSQL RLS/RPCs
-- Publishable-key + user-JWT online Supabase access; no service-role secret required by the production web runtime
-- Optimistic revisions with stale-write conflicts instead of silent overwrite
-- Bounded full-document backups and append-only audit events
-- Full-state import with a mandatory pre-import backup
-- Production-safe finance validation and request-size bounds
+- owner + AAL2 enforcement in API logic and PostgreSQL RLS/RPCs
+- publishable-key + user-JWT online Supabase access; no service-role secret required by the production web runtime
+- optimistic revisions with stale-write conflicts instead of silent overwrite
+- bounded full-document backups and append-only audit events
+- full-state import with a mandatory pre-import backup
+- production-safe finance validation and request-size bounds
 - GitHub CI, dependency audits, CodeQL, Dependabot and privacy/security guards
 - Supabase migrations deployed from version-controlled SQL on `main`
 - Vercel Production Smoke for public health, security headers, unauthenticated API denial, no-store caching and Frankfurt routing
-- Coalesced client persistence: one write in flight plus only the newest pending snapshot
-- Same-origin multi-tab revision synchronization with safe reload/conflict behavior
-- Lazy-loaded finance pages and memoized derived month/as-of selectors
-- Mutable-state-only normal writes: immutable legacy seed/history is no longer resent or replaced on every UI change
-- Lightweight `Server-Timing` and browser Performance timing for the finance data path, containing durations only
+- coalesced client persistence and same-origin multi-tab revision synchronization
+- lazy-loaded finance pages and memoized derived month/as-of selectors
+- mutable-state-only normal writes; immutable legacy seed/history is not resent on every save
+- lightweight `Server-Timing` and browser Performance timing containing durations only
 
-## Data model
+## Data and card-secret model
 
-The compatibility `FinanceData` document remains the canonical read/import representation so the 2,853 imported legacy transactions and historical snapshots keep their original semantics.
+The compatibility `FinanceData` document remains the canonical read/import representation so the imported legacy corpus and historical snapshots keep their original semantics. Normal saves update only the mutable `state` subtree under revision locking.
 
-Normal saves update only the mutable `state` subtree under revision locking. Full seed/history replacement remains restricted to the explicit import path. This avoids a risky relational rewrite while removing the large immutable corpus from ordinary write traffic.
-
-At the 2026-08-17 production audit checkpoint:
-
-- schema version was 3;
-- the legacy transaction corpus contained 2,853 rows;
-- Supabase was `ACTIVE_HEALTHY` on PostgreSQL 17;
-- RLS was enabled on the RheomIQ state, backup, audit and owner tables;
-- owner/AAL2 finance policies and RPC checks were present;
-- the historical Git privacy review found no real finance JSON, `.env`, or Supabase import payload committed to repository history.
-
-The live revision and backup/audit row counts are expected to increase during normal use and are intentionally not treated as fixed documentation constants.
+Payment-card metadata may live in `FinanceData.state.cards`, but full PAN, expiry and CVV do not. PAN/expiry use the separate ciphertext-only `rheomiq_card_secrets` table; CVV uses the separate device-local encrypted vault. Ordinary FinanceData backups therefore remain outside both secret stores.
 
 ## Known non-blocking platform notes
 
-- Supabase Security Advisor reports `Leaked Password Protection Disabled`. Supabase exposes that protection on paid plans; mandatory owner + TOTP AAL2 remains the application access boundary on the current plan.
-- Supabase per-PR database branching is not enabled on the current plan, so the `Supabase Preview` PR check may be skipped. Production migrations are still version-controlled and applied from `main`.
-- The repository declares Node.js `22.x` in `package.json`, which Vercel documents as overriding a differing Node version selected in Project Settings. A dashboard mismatch may therefore produce a build warning without changing the actual Node 22 runtime contract.
+- Supabase Security Advisor reports `Leaked Password Protection Disabled`; mandatory owner + TOTP AAL2 remains the application access boundary on the current plan.
+- Supabase per-PR database branching is not enabled on the current plan. Production migrations remain version-controlled and are applied from `main`.
+- The repository declares Node.js `22.x` in `package.json`; that remains the runtime contract even if a Vercel dashboard setting differs.
 
 ## Delivery workflow
 
-New implementation work starts from a GitHub issue and short-lived branch, is reviewed through a PR, and requires the applicable CI/CodeQL checks before squash merge. Backend/database changes also require migration validation and post-merge production verification. Personal finance payloads and credentials must never appear in issues, commits, logs or chat.
+New implementation work starts from a GitHub issue and short-lived branch, is reviewed through a PR, and requires the applicable CI/CodeQL checks before squash merge into `develop`. Database changes also require migration validation. Production release is a separate `develop -> main` action with post-deploy verification. Personal finance payloads and credentials must never appear in issues, commits, logs or chat.
