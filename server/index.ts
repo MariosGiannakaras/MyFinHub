@@ -165,14 +165,23 @@ app.all('/api/{*splat}', (_req, res) => methodNotAllowed(res, []));
 
 const serveDist = process.argv.includes('--serve-dist') || process.env.NODE_ENV === 'production';
 if (serveDist) {
+  const configuredDist = process.env.RHEOMIQ_DIST_DIR?.trim();
   const here = path.dirname(fileURLToPath(import.meta.url));
-  const dist = path.resolve(here, '..', 'dist');
+  const dist = configuredDist ? path.resolve(configuredDist) : path.resolve(here, '..', 'dist');
   app.use(express.static(dist, { index: false, maxAge: '1h' }));
   app.get('/{*splat}', (_req, res) => res.sendFile(path.join(dist, 'index.html')));
 }
 
 const port = Number(process.env.RHEOMIQ_PORT || process.env.PORT || 4317);
 const host = process.env.RHEOMIQ_HOST || '127.0.0.1';
-if (!process.env.VERCEL) app.listen(port, host, () => console.log(`RheomIQ server: http://${host}:${port} (${DATA_SOURCE})`));
+if (!process.env.VERCEL) {
+  const listener = app.listen(port, host, () => {
+    const address = listener.address();
+    const actualPort = typeof address === 'object' && address ? address.port : port;
+    const origin = `http://${host}:${actualPort}`;
+    if (process.env.RHEOMIQ_DESKTOP === '1') console.log(`RHEOMIQ_DESKTOP_READY=${origin}`);
+    console.log(`RheomIQ server: ${origin} (${DATA_SOURCE})`);
+  });
+}
 
 export default app;
