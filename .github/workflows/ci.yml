@@ -33,6 +33,22 @@ jobs:
       - run: npm audit --prefix api --audit-level=high
       - run: npm run check
       - run: npm run check --prefix api
+      - name: Recover authentic brand variants
+        shell: bash
+        run: |
+          command -v convert
+          mkdir -p tmp/authentic-brand-output
+          convert tmp/authentic-rheomiq-icon.png -filter Lanczos -resize 32x32 tmp/authentic-brand-output/icon-32.png
+          cp tmp/authentic-rheomiq-icon.png tmp/authentic-brand-output/icon-192.png
+          convert tmp/authentic-rheomiq-icon.png -filter Lanczos -resize 512x512 tmp/authentic-brand-output/icon-512.png
+          identify tmp/authentic-brand-output/icon-32.png tmp/authentic-brand-output/icon-192.png tmp/authentic-brand-output/icon-512.png
+      - name: Upload authentic brand recovery
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: authentic-brand-recovery-${{ github.sha }}
+          path: tmp/authentic-brand-output/*.png
+          if-no-files-found: error
+          retention-days: 1
       - name: Rendered frontend QA
         run: |
           npm run dev:web > /tmp/rheomiq-vite.log 2>&1 &
