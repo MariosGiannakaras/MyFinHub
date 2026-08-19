@@ -10,7 +10,10 @@ if not exist "%SCRIPT%" (
   exit /b 1
 )
 
-powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%SCRIPT%" %*
+set "PS_ARGS=%*"
+if /I "%~1"=="--latest" set "PS_ARGS=-Latest"
+
+powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File "%SCRIPT%" %PS_ARGS%
 set "EXITCODE=%ERRORLEVEL%"
 if not "%EXITCODE%"=="0" (
   echo.
