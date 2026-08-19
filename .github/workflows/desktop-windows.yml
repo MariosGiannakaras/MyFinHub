@@ -64,7 +64,7 @@ jobs:
         env:
           SUPABASE_URL: https://desktop-smoke.invalid
           SUPABASE_PUBLISHABLE_KEY: sb_publishable_desktop_smoke_only
-          CARD_VAULT_KEY: 0000000000000000000000000000000000000000000000000000000000000000
+          CARD_VAULT_KEY: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
           CARD_VAULT_KEY_VERSION: "1"
         run: powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File desktop\install-windows.ps1 -ValidateOnly
       - name: Build unpacked Windows desktop app
