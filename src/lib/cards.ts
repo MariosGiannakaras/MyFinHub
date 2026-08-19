@@ -45,12 +45,8 @@ export function primaryCreditCard(data:FinanceData){
 
 export function archivedCardMatch(data:FinanceData,args:{bankId:string;kind:CardKind;last4?:string}){
   const last4=args.last4?.replace(/\D/g,'');
-  const matches=archivedCardsForBank(data,args.bankId).filter(card=>card.kind===args.kind);
-  if(last4?.length===4){
-    const exact=matches.find(card=>card.last4===last4);
-    if(exact)return exact;
-  }
-  return args.kind==='credit'&&matches.length===1?matches[0]:undefined;
+  if(last4?.length!==4)return undefined;
+  return archivedCardsForBank(data,args.bankId).find(card=>card.kind===args.kind&&card.last4===last4);
 }
 
 export function restoreCard(card:PaymentCard,now=new Date().toISOString()):PaymentCard{
