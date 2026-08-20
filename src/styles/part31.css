@@ -35,6 +35,8 @@
 
 /* Mobile interactive surfaces use a subpixel-safe 42px minimum hit area. Primary/navigation controls remain 44px where defined elsewhere. */
 @media(max-width:720px){
+  /* Hover/focus bubbles can become sticky after taps on touch browsers. Icon actions retain accessible names instead. */
+  .app-tooltip-bubble{display:none}
   .top-actions button{min-width:40px;min-height:40px;width:40px;height:40px}
   .workspace .page-heading .save-button{
     width:auto;
