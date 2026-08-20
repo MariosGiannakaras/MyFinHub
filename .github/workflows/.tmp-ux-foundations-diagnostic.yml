@@ -18,10 +18,10 @@ jobs:
       - name: Report recent branch runs
         shell: bash
         run: |
-          gh api "repos/$GITHUB_REPOSITORY/actions/runs?branch=feat%2Fui-ux-hardening-batch&per_page=20" \
-            --jq '[.workflow_runs[] | {id,name,event,status,conclusion,head_sha,html_url,created_at} | select(.name=="Temporary UI UX Foundations Bootstrap" or .name=="Temporary UI UX Foundations Diagnostic")]' > /tmp/runs.json
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs?branch=feat%2Fui-ux-hardening-batch&per_page=30" \
+            --jq '[.workflow_runs[] | {id,name,path,event,status,conclusion,head_sha,html_url,created_at}]' > /tmp/runs.json
           {
-            echo '### UI/UX foundations bootstrap diagnostic'
+            echo '### UI/UX branch Actions diagnostic'
             echo
             echo '```json'
             cat /tmp/runs.json
