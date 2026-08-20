@@ -52,7 +52,7 @@ try{
   }
 
   console.log('Owned controls QA: Cards creation');
-  await openMore();await clickText('.mobile-more-menu button','Κάρτες');await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Κάρτες')}",'Cards heading');await assertNoNativeSelects('Cards');
+  await clickText('.mobile-nav button','Κάρτες');await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Κάρτες')}",'Cards heading');await assertNoNativeSelects('Cards');
   assert(await c.call("function(){const button=[...document.querySelectorAll('.bank-add-btn')].find(item=>!item.disabled);if(!button)return false;button.click();return true}"),'open card creation');
   await waitFor("function(){return Boolean(document.querySelector('.card-create-modal'))}",'card creation dialog');await assertOwned('card-create-modal','Card creation');await exerciseNestedSelect('card-create-modal','Card creation');
   assert(await c.call("function(){const button=document.querySelector('.card-create-modal .close-picker');if(!button)return false;button.click();return true}"),'close card creation');await waitFor("function(){return !document.querySelector('.card-create-modal')}",'card creation close');
