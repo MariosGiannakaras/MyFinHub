@@ -10,6 +10,15 @@ function compactModalStack() {
   }
 }
 
+function removeModalToken(token: symbol) {
+  for (let index = MODAL_STACK.length - 1; index >= 0; index -= 1) {
+    if (MODAL_STACK[index].token === token) {
+      MODAL_STACK.splice(index, 1);
+      return;
+    }
+  }
+}
+
 export function useModalFocus<T extends HTMLElement>(open: boolean, preferred?: string, onClose?: () => void): RefObject<T | null> {
   const ref = useRef<T | null>(null);
   const opener = useRef<HTMLElement | null>(null);
@@ -63,8 +72,7 @@ export function useModalFocus<T extends HTMLElement>(open: boolean, preferred?: 
     document.addEventListener('keydown', trap);
     return () => {
       document.removeEventListener('keydown', trap);
-      const index = MODAL_STACK.findLastIndex((entry) => entry.token === token);
-      if (index >= 0) MODAL_STACK.splice(index, 1);
+      removeModalToken(token);
       body.style.position = bodyStyle.position;
       body.style.top = bodyStyle.top;
       body.style.left = bodyStyle.left;
