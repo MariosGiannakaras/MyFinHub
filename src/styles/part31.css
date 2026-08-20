@@ -20,12 +20,15 @@
 
 /* Mobile interactive surfaces use a real 40px minimum hit area. Primary/navigation controls remain 44px where defined elsewhere. */
 @media(max-width:720px){
+  .top-actions button{min-width:40px;min-height:40px;width:40px;height:40px}
   .workspace .text-button,
   .workspace .account-balance-panel .section-title .text-button,
   .workspace .card-history>div>.text-button,
   .workspace .section-title:has(+.loan-cards)>.text-button,
   .workspace .receivable-person-actions .text-button,
   .workspace .mobile-row-actions .text-button,
+  .workspace .loan-list-actions button,
+  .workspace .loan-actions button,
   .workspace summary{
     min-height:40px;
   }
@@ -125,7 +128,9 @@
   .workspace .logic-note,
   .workspace .insight-list small,
   .workspace .recurring-mini small{font-size:var(--ux-small-size);line-height:1.4}
-  .workspace .text-button:not(.payment-card *){font-size:var(--ux-small-size)}
+  .workspace .text-button:not(.payment-card *),
+  .workspace .loan-list-actions button,
+  .workspace .loan-actions button{font-size:var(--ux-small-size)}
   .recharts-cartesian-axis-tick-value{font-size:max(11px,var(--ux-tiny-size))!important}
 }
 
