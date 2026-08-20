@@ -1,8 +1,8 @@
 # MyFinHub UI/UX Hardening Execution Plan
 
-Tracking issue: #158 — completed
+Tracking issue: #158 — reopened for post-review technical closure
 Branch: `feat/ui-ux-hardening-batch`
-PR: #159 — ready for review
+PR: #159 — ready for review, open and unmerged
 Evidence map: `docs/UI_UX_AUDIT_EVIDENCE.md`
 
 ## Working rules
@@ -11,7 +11,7 @@ Evidence map: `docs/UI_UX_AUDIT_EVIDENCE.md`
 - Keep commits logically separated; do not create one branch per small fix.
 - Do not change agreed visual/interaction contracts as a side effect of refactoring.
 - Every task requires evidence before it is marked complete.
-- The owner explicitly directed completion of the full implementation on 2026-08-20, satisfying the Reports/Analytics implementation checkpoint.
+- The owner directed completion of the implementation, satisfying the Reports/Analytics implementation checkpoint for the current approved scope.
 - Implementation completion does not authorize merge/release. Do not merge to `main`, bump release metadata, create a release, or publish a production installer without separate explicit owner approval.
 
 ## Execution order
@@ -58,7 +58,7 @@ Evidence map: `docs/UI_UX_AUDIT_EVIDENCE.md`
 - [x] Implement approved analytics improvements
 - [x] Verify analytical correctness, insufficient-data states and mobile behavior
 
-### Phase 5 — Integrated verification and closure
+### Phase 5 — Initial integrated verification checkpoint
 - [x] Production-like build
 - [x] Full desktop + mobile regression walkthrough
 - [x] All typography modes across desktop/mobile
@@ -67,39 +67,62 @@ Evidence map: `docs/UI_UX_AUDIT_EVIDENCE.md`
 - [x] Rendered browser QA
 - [x] CodeQL
 - [x] Windows desktop packaging gates
-- [x] Final visual evidence review
-- [x] Final completion evidence recorded
-- [x] Issue #158 synchronized to all-complete and closed
-- [x] PR #159 marked ready for review
+- [x] Initial visual evidence review
+- [x] Initial completion evidence recorded
 
-## Final verified implementation evidence
+Initial verified implementation head: `10f757cc3b6ab4c9567e9fe0344a04accc980217`.
 
-Implementation head: `10f757cc3b6ab4c9567e9fe0344a04accc980217`.
+- CI `32401155176`: **success** — 34 test files / 147 tests, build/API checks and all rendered browser suites.
+- Screenshot artifact `9418623944`: 48 files.
+- CodeQL `32401155171`: **success**.
+- Windows Desktop `32401155198`: **success**.
 
-- CI run `32401155176`: **success**.
-  - privacy/security guard passed;
-  - 34 test files / 147 tests passed;
-  - production build passed;
-  - API TypeScript check passed;
-  - existing rendered frontend QA passed;
-  - owned-control QA passed;
-  - full UI/UX desktop/mobile route-state matrix passed;
-  - completion QA passed;
-  - CDP runtime console/network QA passed across desktop/mobile routes plus auth/loading/conflict/error states;
-  - full-page visual evidence QA passed.
-- UI/UX screenshot artifact `9418623944`: 48 files, SHA-256 `3f5f3f6f52d5c4749c3bdd7e38bf3e03890704c65cc9b17865aa4747217062dc`.
-- Final screenshot review found no new overlap, clipping, layout or responsive regression in the desktop/mobile route matrix.
-- CodeQL run `32401155171`: **success**.
-- Windows Desktop run `32401155198`: **success**.
-  - application/desktop boundary validation passed;
-  - PowerShell fallback bootstrap validation passed;
-  - unpacked Windows build passed;
-  - packaged executable + hidden local backend smoke passed;
-  - interactive NSIS Setup passed;
-  - installer/update-channel checksum validation passed;
-  - Windows installer evidence upload passed;
-  - publish job correctly skipped because this is not a release tag.
+### Phase 6 — Post-review hardening
 
-## Completion
+#### Browser-owned control removal
+- [x] Convert remaining native selects to `AppSelectInput`
+- [x] Keep application pages/components free of native `input[type=date]`
+- [x] Replace Lending browser-native `<datalist>` with app-owned filtered suggestions
+- [x] Add source guards preventing native select/date/datalist regressions
+- [x] Harden owned-select focus, disabled-option handling and listbox ARIA linkage
+- [x] Harden owned-date local-today handling and min/max keyboard navigation
+- [x] Add explicit desktop/mobile CSS integration for newly converted controls
 
-All implementation and verification checklist items are complete. Issue #158 is closed as completed. PR #159 is open, ready for review and unmerged. No merge to `main`, release, production publication, release-metadata bump or production installer publication was performed.
+#### Credit / Reports edge cases
+- [x] Preserve actual utilization above 100% in report calculations
+- [x] Show actual utilization plus bounded visual progress and over-limit amount on Credit Card
+- [x] Add over-limit unit regression coverage
+- [x] Add dedicated Chromium Credit + Reports over-limit rendered QA
+- [x] Replace ambiguous trend-direction insight icons with semantic success/warning icons
+
+#### Repository / domain hygiene
+- [x] Synchronize `STATUS.md` with verified v1.0.2 behavior
+- [x] Align archive/restore copy with v1.0.2 retained-history/secret semantics
+- [x] Re-review Cards/Loans/Lending/Recurring mutation paths
+- [x] Prevent stale Lending account ids from being submitted
+- [x] Add rendered-QA browser failover for runner CDP bootstrap failures without suppressing application failures
+
+### Phase 7 — Final same-head verification and closure
+- [ ] Privacy/security guard + complete Vitest suite
+- [ ] Production build + API TypeScript check
+- [ ] Owned-controls rendered Chromium QA
+- [ ] Full desktop/mobile route/state UI/UX browser matrix
+- [ ] Dedicated credit over-limit browser QA
+- [ ] Completion QA: sorting/forms/reduced-motion/contrast
+- [ ] CDP console/network/runtime QA including 4xx/5xx and failed loads
+- [ ] Full-page screenshot evidence capture
+- [ ] Final desktop/mobile screenshot review for overlap/clipping/layout regressions
+- [ ] CodeQL on the same final head
+- [ ] Windows Desktop package/NSIS/checksum gates on the same final head
+- [ ] Confirm PR #159 has no unresolved review threads or change requests
+- [ ] Synchronize PR #159 description with final head/test counts/runs/artifacts
+- [ ] Synchronize final evidence into `docs/UI_UX_AUDIT_EVIDENCE.md` and issue #158
+- [ ] Close issue #158 as completed
+
+## Owner-gated actions after technical closure
+
+- [ ] Decide whether to perform the optional large Reports/Analytics visual restructure
+- [ ] Approve and merge PR #159
+- [ ] Approve release/version metadata and production deployment/installer publication
+
+These owner-gated actions are intentionally excluded from automatic technical closure until separately approved.
