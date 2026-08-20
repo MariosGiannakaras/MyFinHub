@@ -34,7 +34,7 @@ export function categoryMomentum(data:FinanceData,month:string,limit=10){
 export function creditCardSnapshots(data:FinanceData,asOf:string){
   return creditCards(data,{includeArchived:true}).map(card=>{
     const debt=creditDebtForCard(data,card.id,asOf);const limit=card.active===false?0:creditLimitForCard(data,card);
-    return {id:card.id,nickname:card.nickname,bankId:card.bankId,active:card.active!==false,debt,limit,available:Math.max(0,limit-debt),usage:limit>0?Math.min(1,debt/limit):0};
+    return {id:card.id,nickname:card.nickname,bankId:card.bankId,active:card.active!==false,debt,limit,available:Math.max(0,limit-debt),usage:limit>0?debt/limit:0};
   }).sort((a,b)=>b.debt-a.debt||a.nickname.localeCompare(b.nickname,'el'));
 }
 
@@ -50,7 +50,7 @@ export function creditPortfolioSnapshot(data:FinanceData,asOf:string){
     debt,
     limit,
     available,
-    usage:limit>0?Math.min(1,debt/limit):0,
+    usage:limit>0?debt/limit:0,
     cards,
   };
 }
