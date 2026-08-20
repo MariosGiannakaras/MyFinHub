@@ -17,4 +17,27 @@
 }
 .account-name-grid input:hover{border-color:#c5d4e7;background:#fff}
 .account-name-grid input:focus{border-color:rgba(47,111,237,.55);box-shadow:0 0 0 3px rgba(47,111,237,.08)}
+
+/* Mobile interactive surfaces use a real 40px minimum hit area. Primary/navigation controls remain 44px where defined elsewhere. */
+@media(max-width:720px){
+  .workspace .text-button,
+  .workspace .card-history>div>.text-button,
+  .workspace .section-title:has(+.loan-cards)>.text-button,
+  .workspace .receivable-person-actions .text-button,
+  .workspace .mobile-row-actions .text-button,
+  .workspace summary{
+    min-height:40px;
+  }
+  .workspace .card-icon-btn,
+  .workspace .inline-icon-action,
+  .workspace .row-actions button,
+  .workspace .bank-add-btn,
+  .workspace .icon-button,
+  .workspace .close-picker,
+  .workspace .mobile-action-menu summary{
+    min-width:40px;
+    min-height:40px;
+  }
+}
+
 @media(prefers-reduced-motion:reduce){.account-name-grid input{transition:none}}
