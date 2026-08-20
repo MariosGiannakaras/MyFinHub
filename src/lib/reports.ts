@@ -1,5 +1,6 @@
 import { accountBalances, effectiveLegacyTransactions, flowImpactEvent, flowImpactLegacy } from './domain.js';
 import { categoryPath } from './categories.js';
+import { creditCards, creditDebtForCard, creditLimitForCard } from './cards.js';
 import { lendingRows } from './lending.js';
 import { recurringMonthlyTotal } from './recurring.js';
 import { operationalMonthlyFlow, savingsBreakdown } from './savings.js';
@@ -21,7 +22,23 @@ export function subcategoryTotals(data:FinanceData,month:string){
   return [...totals.entries()].map(([name,value])=>({name,value:Math.max(0,value)})).filter(row=>row.value>.005).sort((a,b)=>b.value-a.value);
 }
 
+export function creditPortfolioSnapshot(data:FinanceData,asOf:string){
+  const all=creditCards(data,{includeArchived:true});
+  const active=all.filter(card=>card.active!==false);
+  const debt=all.reduce((sum,card)=>sum+creditDebtForCard(data,card.id,asOf),0);
+  const limit=active.reduce((sum,card)=>sum+creditLimitForCard(data,card),0);
+  const available=Math.max(0,limit-debt);
+  return {
+    activeCards:active.length,
+    totalCards:all.length,
+    debt,
+    limit,
+    available,
+    usage:limit>0?Math.min(1,debt/limit):0,
+  };
+}
+
 export function operationalReportSnapshot(data:FinanceData,month:string){
-  const flow=operationalMonthlyFlow(data,month);const previous=operationalMonthlyFlow(data,shiftReportMonth(month,-1));const balances=accountBalances(data,monthEnd(month));const creditDebt=Math.abs(Math.min(0,balances['credit-card']||0));const creditLimit=data.state.settings.creditLimit??0;const receivables=lendingRows(data).reduce((sum,row)=>sum+row.outstanding,0);const recurring=recurringMonthlyTotal(data);const savings=savingsBreakdown(data,month);const budget=data.state.settings.monthlyBudget??0;
-  return {flow,previous,balances,creditDebt,creditLimit,creditUsage:creditLimit>0?Math.min(1,creditDebt/creditLimit):0,receivables,recurring,savings,budget,budgetRemaining:budget-flow.expense};
+  const flow=operationalMonthlyFlow(data,month);const previous=operationalMonthlyFlow(data,shiftReportMonth(month,-1));const balances=accountBalances(data,monthEnd(month));const credit=creditPortfolioSnapshot(data,monthEnd(month));const receivables=lendingRows(data).reduce((sum,row)=>sum+row.outstanding,0);const recurring=recurringMonthlyTotal(data);const savings=savingsBreakdown(data,month);const budget=data.state.settings.monthlyBudget??0;
+  return {flow,previous,balances,creditDebt:credit.debt,creditLimit:credit.limit,creditUsage:credit.usage,creditAvailable:credit.available,creditCards:credit.activeCards,receivables,recurring,savings,budget,budgetRemaining:budget-flow.expense};
 }
