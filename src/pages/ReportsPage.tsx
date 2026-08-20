@@ -28,7 +28,7 @@ export function ReportsPage({data,month}:{data:FinanceData;month:string}){
    return rows.slice(0,5);
  },[insights,snapshot.recurring]);
  return <div className="page-stack reports-dashboard">
-  <section className="page-heading report-heading"><div><span className="eyebrow">ΑΝΑΦΟΡΕΣ · {month}</span><h1>Η οικονομική εικόνα του μήνα</h1><p>Τάσεις, μεταβολές, δεσμεύσεις και συγκέντρωση εξόδων σε μία ιεραρχημένη εικόνα. Οι συγκρίσεις περιγράφουν μόνο όσα καταγράφονται στα δεδομένα.</p></div></section>
+  <section className="page-heading report-heading"><div><span className="eyebrow">ΑΝΑΦΟΡΕΣ · {month}</span><h1>Αναφορές · Η οικονομική εικόνα του μήνα</h1><p>Τάσεις, μεταβολές, δεσμεύσεις και συγκέντρωση εξόδων σε μία ιεραρχημένη εικόνα. Οι συγκρίσεις περιγράφουν μόνο όσα καταγράφονται στα δεδομένα.</p></div></section>
 
   <section className="report-executive neo-raised" aria-label="Σύνοψη περιόδου">
    <div className="report-executive-main"><span>Καθαρή λειτουργική ροή</span><b className={netFlow<0?'negative':'positive'}><AnimatedAmount value={netFlow}/></b><small>Έσοδα μείον έξοδα της επιλεγμένης περιόδου</small></div>
