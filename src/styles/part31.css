@@ -32,6 +32,7 @@
   .workspace summary{
     min-height:40px;
   }
+  .workspace .report-eye{min-height:40px!important}
   .workspace .inline-icon-action,
   .workspace .row-actions button,
   .workspace .icon-button,
@@ -123,14 +124,37 @@
   .workspace .mobile-transaction-identity b,
   .workspace .semantic-list-title b,
   .workspace .loan-title h3{font-size:var(--ux-body-size)}
+  .workspace .mobile-transaction-filters label>span,
   .workspace .mobile-transaction-meta,
   .workspace .mobile-transaction-comment,
   .workspace .logic-note,
   .workspace .insight-list small,
-  .workspace .recurring-mini small{font-size:var(--ux-small-size);line-height:1.4}
+  .workspace .recurring-mini small,
+  .workspace .useful-report-kpis span,
+  .workspace .report-comparison>span,
+  .workspace .report-comparison b,
+  .workspace .report-flow-alt li,
+  .workspace .report-flow-alt li b,
+  .workspace .report-operations-grid>.panel>span,
+  .workspace .report-operations-grid>.panel>small,
+  .workspace .account-report-list>div>span,
+  .workspace .account-report-list>div>b,
+  .workspace .settings-form label>span,
+  .workspace .account-name-grid label>span,
+  .workspace .technical-settings .settings-list span,
+  .workspace .technical-settings .settings-list b,
+  .workspace .recurring-summary-grid>article>span,
+  .workspace .receivable-person-actions>span,
+  .workspace .savings-action b,
+  .workspace .savings-action strong,
+  .workspace .saving-route>span,
+  .workspace .saving-history>div>span,
+  .workspace .saving-history b,
+  .workspace .saving-history strong{font-size:var(--ux-small-size);line-height:1.4}
   .workspace .text-button:not(.payment-card *),
   .workspace .loan-list-actions button,
-  .workspace .loan-actions button{font-size:var(--ux-small-size)}
+  .workspace .loan-actions button,
+  .workspace .report-eye{font-size:var(--ux-small-size)}
   .recharts-cartesian-axis-tick-value{font-size:max(11px,var(--ux-tiny-size))!important}
 }
 
