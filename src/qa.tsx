@@ -30,6 +30,7 @@ function initialSaveState(raw:string|null):SaveState{return raw==='error'||raw==
 function QaWorkspace(){
   const params=new URLSearchParams(location.search);const [data,setData]=useState<FinanceData>(()=>{const next=qaFinanceData();if(params.get('motion')==='reduced')next.state.settings.motion='reduced';return next});const [saveState,setSaveState]=useState<SaveState>(()=>initialSaveState(params.get('save')));const [page,setPage]=useState<PageId>('dashboard');const [quickOpen,setQuickOpen]=useState(false);const [quickKind,setQuickKind]=useState<EventKind>('expense');const [editing,setEditing]=useState<string|null>(null);const [crash,setCrash]=useState(false);const [month,setMonth]=useState('2026-08');const today='2026-08-17';
   useEffect(()=>{document.documentElement.dataset.motion=data.state.settings.motion||'system';return()=>{delete document.documentElement.dataset.motion}},[data.state.settings.motion]);
+  useEffect(()=>{document.documentElement.dataset.textSize=data.state.settings.textSize??'normal';return()=>{delete document.documentElement.dataset.textSize}},[data.state.settings.textSize]);
   const update=(recipe:(current:FinanceData)=>FinanceData)=>setData(current=>recipe(current));
   const addEvent=(event:FinanceEvent)=>update(current=>({...current,state:{...current.state,events:[...(current.state.events??[]).filter(e=>e.id!==event.id),event]}}));
   const deleteEvent=(id:string)=>update(current=>({...current,state:{...current.state,events:(current.state.events??[]).filter(e=>e.id!==id)}}));
