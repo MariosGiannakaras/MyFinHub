@@ -237,3 +237,17 @@ export interface LendingPerson {
   entries: LendingEntry[];
   outstanding: number;
 }
+
+export interface FlowImpact {
+  income: number;
+  expense: number;
+  saving: number;
+  refund: number;
+}
+
+export interface ReviewSuggestion {
+  transaction: LegacyTransaction;
+  semanticKind: EventKind | 'split_required' | 'iris_context';
+  confidence: 'high' | 'medium' | 'low';
+  reason: string;
+}
