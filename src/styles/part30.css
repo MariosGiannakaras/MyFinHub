@@ -47,3 +47,11 @@ button,input,select,textarea{line-height:1.35}
   .transaction-sort-summary{width:100%;justify-content:space-between}
   .sort-direction-control button{min-height:34px;padding-inline:10px}
 }
+
+.sort-direction-control{display:inline-flex;align-items:center;gap:4px;padding:3px;border:1px solid var(--line);border-radius:10px;background:#eef3fa}
+.sort-direction-control button{border:0;border-radius:7px;background:transparent;padding:6px 8px;min-height:30px;font-size:var(--ux-tiny-size);font-weight:750;color:var(--muted);cursor:pointer}
+.sort-direction-control button.active{background:#fff;color:var(--blue);box-shadow:var(--shadow-soft)}
+.transaction-sort-summary,.loan-sort-controls,.panel-head-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.loan-sort-controls label{display:flex;align-items:center;gap:8px}
+.panel-head-actions>svg{flex:0 0 auto}
+@media(max-width:720px){.transaction-sort-summary,.loan-sort-controls{width:100%;align-items:stretch}.loan-sort-controls label{width:100%;justify-content:space-between}.sort-direction-control{align-self:flex-start}.panel-head-actions{width:100%;justify-content:space-between}}
