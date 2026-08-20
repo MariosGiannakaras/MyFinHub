@@ -1,39 +1,24 @@
 import { useEffect, useRef, type RefObject } from 'react';
 
 const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
-type ModalEntry = { token: symbol; root: HTMLElement };
-const MODAL_STACK: ModalEntry[] = [];
 
-function compactModalStack() {
-  for (let index = MODAL_STACK.length - 1; index >= 0; index -= 1) {
-    if (!MODAL_STACK[index].root.isConnected) MODAL_STACK.splice(index, 1);
-  }
-}
-
-function removeModalToken(token: symbol) {
-  for (let index = MODAL_STACK.length - 1; index >= 0; index -= 1) {
-    if (MODAL_STACK[index].token === token) {
-      MODAL_STACK.splice(index, 1);
-      return;
-    }
-  }
+function isTopmostModal(root: HTMLElement) {
+  const modals = [...document.querySelectorAll<HTMLElement>('[aria-modal="true"]')]
+    .filter((element) => element.isConnected && element.getClientRects().length > 0);
+  return modals.at(-1) === root;
 }
 
 export function useModalFocus<T extends HTMLElement>(open: boolean, preferred?: string, onClose?: () => void): RefObject<T | null> {
   const ref = useRef<T | null>(null);
   const opener = useRef<HTMLElement | null>(null);
-  const tokenRef = useRef(Symbol('modal'));
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
 
   useEffect(() => {
     if (!open) return;
-    const token = tokenRef.current;
     opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const root = ref.current;
     if (!root) return;
-    compactModalStack();
-    MODAL_STACK.push({ token, root });
 
     const body = document.body;
     const html = document.documentElement;
@@ -53,8 +38,7 @@ export function useModalFocus<T extends HTMLElement>(open: boolean, preferred?: 
     queueMicrotask(() => initial.focus({ preventScroll: true }));
 
     const trap = (event: KeyboardEvent) => {
-      compactModalStack();
-      if (MODAL_STACK.at(-1)?.token !== token) return;
+      if (!isTopmostModal(root)) return;
       if (event.key === 'Escape' && onCloseRef.current) {
         event.preventDefault();
         event.stopPropagation();
@@ -72,7 +56,6 @@ export function useModalFocus<T extends HTMLElement>(open: boolean, preferred?: 
     document.addEventListener('keydown', trap);
     return () => {
       document.removeEventListener('keydown', trap);
-      removeModalToken(token);
       body.style.position = bodyStyle.position;
       body.style.top = bodyStyle.top;
       body.style.left = bodyStyle.left;
