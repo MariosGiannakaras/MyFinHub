@@ -21,6 +21,16 @@
 /* Mobile interactive surfaces use a real 40px minimum hit area. Primary/navigation controls remain 44px where defined elsewhere. */
 @media(max-width:720px){
   .top-actions button{min-width:40px;min-height:40px;width:40px;height:40px}
+  .workspace .page-heading .save-button{
+    width:auto;
+    min-width:44px;
+    min-height:44px;
+    height:auto;
+    padding:0 14px;
+    font-size:var(--ux-small-size);
+    line-height:1.25;
+    gap:7px;
+  }
   .workspace .text-button,
   .workspace .account-balance-panel .section-title .text-button,
   .workspace .card-history>div>.text-button,
