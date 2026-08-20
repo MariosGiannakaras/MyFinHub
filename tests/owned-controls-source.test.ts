@@ -43,11 +43,13 @@ describe('app-owned entry controls',()=>{
     expect(styles).toContain('.owned-option-list{overflow:auto');
     expect(styles).toContain('.owned-input-shell>.owned-input{font-size:16px}');
   });
-  it('keeps browser-native select and date controls out of application pages and components',()=>{
+  it('keeps browser-native select, date and datalist popups out of application pages and components',()=>{
     const sources=[...files('src/pages'),...files('src/components')].map(file=>({file,text:readFileSync(file,'utf8')}));
     const nativeSelects=sources.filter(({text})=>/<select\b/.test(text)).map(({file})=>file);
     const nativeDates=sources.filter(({text})=>/<input\b[^>]*\btype\s*=\s*["']date["']/i.test(text)).map(({file})=>file);
+    const nativeDatalists=sources.filter(({text})=><any>/<datalist\b/.test(text)).map(({file})=>file);
     expect(nativeSelects).toEqual([]);
     expect(nativeDates).toEqual([]);
+    expect(nativeDatalists).toEqual([]);
   });
 });
