@@ -5,6 +5,7 @@ export type CardKind = 'debit' | 'prepaid' | 'credit';
 export type CardNetwork = 'visa' | 'mastercard' | 'other';
 export type CardFormFactor = 'physical' | 'virtual';
 export type LoanKind = 'installment' | 'loan' | 'self-loan';
+export type TextSizePreference = 'compact' | 'normal' | 'large';
 
 export interface Account {
   id: string;
@@ -181,6 +182,7 @@ export interface FinanceSettings {
   savingsTargetRate?: number;
   creditLimit?: number;
   motion?: 'system' | 'reduced' | 'full';
+  textSize?: TextSizePreference;
 }
 
 export interface RecurringItem {
@@ -223,22 +225,15 @@ export interface Loan {
   longTermRecurring?: boolean;
 }
 
+export interface LendingEntry {
+  date: string;
+  lent: number;
+  repaid: number;
+  haircut?: number;
+}
+
 export interface LendingPerson {
   person: string;
-  entries: Array<{ date: string; lent: number; repaid: number; haircut?: number }>;
+  entries: LendingEntry[];
   outstanding: number;
-}
-
-export interface FlowImpact {
-  income: number;
-  expense: number;
-  saving: number;
-  refund: number;
-}
-
-export interface ReviewSuggestion {
-  transaction: LegacyTransaction;
-  semanticKind: EventKind | 'split_required' | 'iris_context';
-  confidence: 'high' | 'medium' | 'low';
-  reason: string;
 }
