@@ -39,10 +39,10 @@ export function CardsPage({
   return <div className="page-stack cards-prototype-page">
     <section className="page-heading"><div><span className="eyebrow">ΚΑΡΤΕΣ</span><h1>Κάρτες</h1><p>Οι κάρτες σου σε ενιαία διάταξη. Τα στοιχεία εμφανίζονται μόνο όταν τα ζητήσεις.</p></div><div className="heading-actions"><button type="button" className="save-button" onClick={()=>{setBankName('');setError('');setBankOpen(true)}}><Plus/> Προσθήκη τράπεζας</button></div></section>
 
-    <section className="cards-workspace neo-raised" aria-label="Κάρτες ανά τράπεζα">
-      <div className="cards-grid" style={{'--bank-count':Math.max(1,banks.length)} as React.CSSProperties}>{banks.map(bank=>{
+    <section className="cards-workspace cards-prototype-workspace neo-raised" aria-label="Κάρτες ανά τράπεζα">
+      <div className="cards-grid cards-prototype-grid" style={{'--bank-count':Math.max(1,banks.length)} as React.CSSProperties}>{banks.map(bank=>{
         const active=cardsForBank(data,bank.id);const archived=archivedCardsForBank(data,bank.id);
-        return <section className="bank-column" key={bank.id} data-bank={bank.id}>
+        return <section className="bank-column cards-bank-column" key={bank.id} data-bank={bank.id}>
           <header className="bank-column-head"><div className="bank-column-title"><b>{bank.name}</b><small>{active.length} {active.length===1?'κάρτα':'κάρτες'}</small></div><button type="button" className="bank-add-btn" aria-label={`Προσθήκη κάρτας στην ${bank.name}`} title="Προσθήκη κάρτας" onClick={()=>setCardBankId(bank.id)}><Plus/></button></header>
           <div className="bank-stack">{active.length?active.map(card=><InteractivePaymentCard key={card.id} card={card} bank={bank} onUpsert={saveCard} onArchive={archive} startEditing={editingCardId===card.id} onEditingComplete={()=>setEditingCardId(current=>current===card.id?null:current)}/>):<button type="button" className="bank-empty" onClick={()=>setCardBankId(bank.id)}>Δεν υπάρχουν κάρτες</button>}</div>
           {archived.length?<details className="cards-archive"><summary><ArchiveRestore/> Αρχειοθετημένες · {archived.length}</summary><div>{archived.map(card=><button type="button" key={card.id} onClick={()=>restore(card)}><ArchiveRestore/><span><b>{card.nickname}</b><small>{card.last4?`•••• ${card.last4} · `:''}ίδιο id / ιστορικό / vault</small></span></button>)}</div></details>:null}
