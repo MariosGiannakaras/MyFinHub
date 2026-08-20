@@ -24,7 +24,6 @@ export function CardsPage({
   const [message,setMessage]=useState('');
   const bankRef=useModalFocus<HTMLElement>(bankOpen,'[data-autofocus="true"]');
   const cardBank=cardBankId?banks.find(bank=>bank.id===cardBankId):undefined;
-  const activeCredit=(data.state.cards??[]).find(card=>card.kind==='credit'&&card.active!==false);
 
   const saveBank=()=>{
     const name=bankName.trim();if(!name){setError('Συμπλήρωσε όνομα τράπεζας.');return}
@@ -33,17 +32,11 @@ export function CardsPage({
     setBankOpen(false);setBankName('');setError('');setMessage('Η τράπεζα προστέθηκε.');
   };
   const saveCard=(card:PaymentCard)=>{
-    if(card.kind==='credit'&&card.active!==false&&activeCredit&&activeCredit.id!==card.id){
-      setMessage(`Υπάρχει ήδη ενεργή πιστωτική «${activeCredit.nickname}». Αρχειοθέτησέ την πρώτα ώστε η μοναδική credit liability να παραμένει συνδεδεμένη σε μία κάρτα.`);
-      return;
-    }
     onUpsertCard(card);setMessage(`Η «${card.nickname}» είναι διαθέσιμη από την ίδια card identity σε όλες τις σχετικές ενότητες.`);
   };
-  const archive=(card:PaymentCard)=>{onArchiveCard(card);setMessage(`Η «${card.nickname}» αρχειοθετήθηκε χωρίς να χαθεί το ιστορικό της.`)};
+  const archive=(card:PaymentCard)=>{onArchiveCard(card);setMessage(`Η «${card.nickname}» αρχειοθετήθηκε χωρίς να χαθεί το ιστορικό ή τα αποθηκευμένα ασφαλή στοιχεία της.`)};
   const restore=(card:PaymentCard)=>{
-    const next=restoreCard(card);
-    if(next.kind==='credit'&&activeCredit&&activeCredit.id!==next.id){setMessage(`Δεν μπορεί να επανέλθει η «${next.nickname}» όσο είναι ενεργή η πιστωτική «${activeCredit.nickname}».`);return}
-    onUpsertCard(next);setMessage(`Η «${card.nickname}» επανήλθε με το ίδιο ιστορικό και card id.`)
+    onUpsertCard(restoreCard(card));setMessage(`Η «${card.nickname}» επανήλθε με το ίδιο card id, ιστορικό και vault σύνδεση.`)
   };
 
   return <div className="page-stack cards-prototype-page">
@@ -55,12 +48,12 @@ export function CardsPage({
         return <article className="cards-bank-column" key={bank.id} data-bank={bank.id}>
           <header className="cards-bank-head"><div className="cards-bank-title"><BankBrandMark id={bank.id} name={bank.name}/><span><b>{bank.name}</b><small>{active.length} {active.length===1?'κάρτα':'κάρτες'}</small></span></div><button type="button" className="cards-bank-add" aria-label={`Προσθήκη κάρτας στην ${bank.name}`} onClick={()=>setCardBankId(bank.id)}><Plus/></button></header>
           <div className="cards-bank-stack">{active.map(card=><InteractivePaymentCard key={card.id} card={card} bank={bank} onUpsert={saveCard} onArchive={archive} onOpenCredit={card.kind==='credit'?onOpenCredit:undefined}/>)}{!active.length?<button type="button" className="cards-empty-bank" onClick={()=>setCardBankId(bank.id)}><Plus/><b>Προσθήκη κάρτας</b><span>Διάλεξε σχέδιο, τύπο και δίκτυο.</span></button>:null}</div>
-          {archived.length?<details className="cards-archive"><summary><ArchiveRestore/> Αρχειοθετημένες · {archived.length}</summary><div>{archived.map(card=><button type="button" key={card.id} onClick={()=>restore(card)}><ArchiveRestore/><span><b>{card.nickname}</b><small>{card.last4?`•••• ${card.last4} · `:''}ίδιο id / ιστορικό</small></span></button>)}</div></details>:null}
+          {archived.length?<details className="cards-archive"><summary><ArchiveRestore/> Αρχειοθετημένες · {archived.length}</summary><div>{archived.map(card=><button type="button" key={card.id} onClick={()=>restore(card)}><ArchiveRestore/><span><b>{card.nickname}</b><small>{card.last4?`•••• ${card.last4} · `:''}ίδιο id / ιστορικό / vault</small></span></button>)}</div></details>:null}
         </article>;
       })}</div>
     </section>
 
-    <div className="logic-note compact card-security-note"><ShieldCheck/><div><b>Δύο ξεχωριστά vaults</b><span>PAN και λήξη αποθηκεύονται μόνο κρυπτογραφημένα στο owner+AAL2 server vault. Το CVV παραμένει κρυπτογραφημένο μόνο στο IndexedDB της συσκευής και δεν αποστέλλεται ποτέ στο API. Η αρχειοθέτηση δεν διαγράφει το server vault ή οικονομικό ιστορικό.</span></div></div>
+    <div className="logic-note compact card-security-note"><ShieldCheck/><div><b>Δύο ξεχωριστά vaults</b><span>PAN και λήξη αποθηκεύονται μόνο κρυπτογραφημένα στο owner+AAL2 server vault. Το CVV παραμένει κρυπτογραφημένο μόνο στο IndexedDB της συσκευής και δεν αποστέλλεται ποτέ στο API. Η αρχειοθέτηση διατηρεί και τα δύο ώστε η ίδια κάρτα να επανέρχεται πλήρως στην ίδια συσκευή.</span></div></div>
     {message?<div className="action-status" role="status" aria-live="polite">{message}</div>:null}
 
     <CardCreateDialog open={Boolean(cardBank)} data={data} banks={cardBank?[cardBank]:banks.slice(0,1)} initialBankId={cardBank?.id} onClose={()=>setCardBankId(null)} onSave={saveCard}/>
