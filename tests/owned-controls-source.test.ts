@@ -45,7 +45,7 @@ describe('app-owned entry controls',()=>{
   });
   it('keeps browser-native select and date controls out of application pages and components',()=>{
     const sources=[...files('src/pages'),...files('src/components')].map(file=>({file,text:readFileSync(file,'utf8')}));
-    const nativeSelects=sources.filter(({text})=><any>/<select\b/.test(text)).map(({file})=>file);
+    const nativeSelects=sources.filter(({text})=>/<select\b/.test(text)).map(({file})=>file);
     const nativeDates=sources.filter(({text})=>/<input\b[^>]*\btype\s*=\s*["']date["']/i.test(text)).map(({file})=>file);
     expect(nativeSelects).toEqual([]);
     expect(nativeDates).toEqual([]);
