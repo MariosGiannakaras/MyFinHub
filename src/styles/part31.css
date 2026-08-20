@@ -65,8 +65,8 @@
   .workspace .icon-button,
   .workspace .close-picker,
   .workspace .mobile-action-menu summary{
-    min-width:40px;
-    min-height:40px;
+    min-width:42px;
+    min-height:42px;
   }
 
   /* The Cards v15 surface keeps its approved visible dimensions. Only the invisible hit box grows. */
