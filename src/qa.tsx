@@ -42,6 +42,9 @@ function buildQaData(params:URLSearchParams){
     next.state.events=[...(next.state.events??[]),...Array.from({length:36},(_,index)=>({id:`extreme-${index}`,date:`2026-08-${String((index%17)+1).padStart(2,'0')}`,kind:'expense' as const,amount:index===0?987654.32:10+index,note:index===0?'Πολύ μεγάλη περιγραφή συναλλαγής που ελέγχει αναδίπλωση κειμένου χωρίς να δημιουργεί οριζόντια κύλιση ή επικάλυψη στα κουμπιά και στα ποσά':'Επαναλαμβανόμενη δοκιμαστική κίνηση',category:'Σταθερά έξοδα',accountId:'piraeus-payroll',legs:[{accountId:'piraeus-payroll',amount:-(index===0?987654.32:10+index)}],source:'user' as const,createdAt:`2026-08-17T12:${String(index%60).padStart(2,'0')}:00.000Z`,updatedAt:`2026-08-17T12:${String(index%60).padStart(2,'0')}:00.000Z`}))];
     next.state.recurringCustom=[...(next.state.recurringCustom??[]),...Array.from({length:18},(_,index)=>({id:`rec-extreme-${index}`,name:`Συνδρομή με μεγάλο όνομα ${index+1}`,amount:10+index,day:(index%28)+1,accountId:'piraeus-payroll',category:'Σταθερά έξοδα',active:true,status:'active' as const,source:'qa'}))];
   }
+  if(params.get('state')==='overlimit'){
+    next.state.cards=(next.state.cards??[]).map(card=>card.kind==='credit'?{...card,creditLimit:100}:card);
+  }
   return next;
 }
 
