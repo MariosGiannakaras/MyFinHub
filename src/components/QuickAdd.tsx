@@ -11,6 +11,7 @@ import { entryDefaults, entryDraftError } from '../lib/inputSemantics';
 import { preserveLoanPaymentLink } from '../lib/loans';
 import { money } from '../lib/format';
 import { accountDisplayName } from '../lib/ui';
+import { userErrorMessage } from '../lib/userMessage';
 import type { EventKind, FinanceData, FinanceEvent, SplitPart } from '../types';
 
 export type QuickPrefill = { note:string; amount:number; category?:string; subcategory?:string; accountId?:string };
@@ -29,7 +30,6 @@ const labelForKind=(kind:EventKind)=>genericKinds.find(item=>item.kind===kind)?.
 export function QuickAdd({ open, data, asOf, initial, initialKind='expense', prefill=null, motionMode='system', onClose, onCreate, currentBalance }: { open:boolean; data:FinanceData; asOf:string; initial?:FinanceEvent|null; initialKind?:EventKind; prefill?:QuickPrefill|null; motionMode?:'system'|'reduced'|'full'; onClose:()=>void; onCreate:(event:FinanceEvent)=>void; currentBalance:(accountId:string)=>number }) {
   const systemReduced = useReducedMotion();
   const reduce = Boolean(systemReduced) || motionMode==='reduced';
-  const modalRef = useModalFocus<HTMLElement>(open,'[data-autofocus="true"]');
   const accounts = allAccounts(data).filter(a=>a.kind!=='credit');
   const fallbackAccount=accounts[0]?.id||'cash';
   const frequent = useMemo(()=>frequentDescriptions(data,'expense',10),[data]);
@@ -68,7 +68,8 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
   const transferLike=['transfer','saving_cash_offset','withdrawal','card_payment'].includes(kind);
   const lendingLike=['lending','repayment'].includes(kind);
   const mark=()=>setDirty(true);
-  const requestClose=()=>{if(dirty&&!window.confirm('Να κλείσει η καταχώριση; Οι μη αποθηκευμένες αλλαγές θα χαθούν.'))return;onClose()};
+  const requestClose=()=>{if(dirty&&!window.confirm('Έχεις αλλαγές που δεν έχουν αποθηκευτεί. Θέλεις να κλείσεις την καταχώριση και να τις απορρίψεις;'))return;onClose()};
+  const modalRef=useModalFocus<HTMLElement>(open,'[data-autofocus="true"]',requestClose);
   const reset=()=>{setAmount('');setNote('');setSubcategory('');setError('');setActualBalance('');setDirty(false)};
   const chooseKind=(next:EventKind)=>{
     const defaults=entryDefaults(next,data.state.settings,fallbackAccount);
@@ -88,11 +89,11 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
       event.subcategory=subcategory||undefined;
       if(initial){event.id=initial.id;event.createdAt=initial.createdAt;event.updatedAt=new Date().toISOString();preserveLoanPaymentLink(event,initial)}
       onCreate(event); reset(); onClose();
-    }catch(e){setError(e instanceof Error?e.message:'Δεν ήταν δυνατή η καταχώριση.')}
+    }catch(e){setError(userErrorMessage(e,'Δεν μπορέσαμε να καταχωρίσουμε την κίνηση. Έλεγξε τα στοιχεία και δοκίμασε ξανά.'))}
   };
 
   return <AnimatePresence>{open?<motion.div className="modal-backdrop" initial={reduce?false:{opacity:0}} animate={{opacity:1}} exit={reduce?undefined:{opacity:0}} onMouseDown={requestClose}>
-    <motion.section ref={modalRef} className="quick-modal neo-raised" role="dialog" aria-modal="true" aria-labelledby="quick-add-title" aria-describedby="quick-add-description" tabIndex={-1} initial={reduce?false:{opacity:0,scale:.97,y:12}} animate={{opacity:1,scale:1,y:0}} exit={reduce?undefined:{opacity:0,scale:.98,y:8}} transition={{duration:reduce?0:.18}} onMouseDown={e=>e.stopPropagation()} onKeyDown={e=>{if(e.key==='Escape'){e.preventDefault();requestClose()}}}>
+    <motion.section ref={modalRef} className="quick-modal neo-raised" role="dialog" aria-modal="true" aria-labelledby="quick-add-title" aria-describedby="quick-add-description" tabIndex={-1} initial={reduce?false:{opacity:0,scale:.97,y:12}} animate={{opacity:1,scale:1,y:0}} exit={reduce?undefined:{opacity:0,scale:.98,y:8}} transition={{duration:reduce?0:.18}} onMouseDown={e=>e.stopPropagation()}>
       <header><div><small>{initial?'ΕΠΕΞΕΡΓΑΣΙΑ':'ΓΡΗΓΟΡΗ ΚΙΝΗΣΗ'}</small><h2 id="quick-add-title">{initial?'Επεξεργασία κίνησης':'Τι έγινε;'}</h2><p id="quick-add-description">Για καθημερινές κινήσεις. Κάρτες, δόσεις, δάνεια, αποταμίευση και συνδρομές διαχειρίζονται από τις δικές τους ενότητες.</p></div><button type="button" className="icon-button" aria-label="Κλείσιμο καταχώρισης" onClick={requestClose}><X/></button></header>
       {genericKinds.some(item=>item.kind===kind)?<div className="kind-grid generic-kind-grid" role="group" aria-label="Είδος οικονομικής κίνησης">{genericKinds.map(k=><button type="button" key={k.kind} className={kind===k.kind?'active':''} aria-pressed={kind===k.kind} onClick={()=>chooseKind(k.kind)}><span>{k.icon}</span><b>{k.label}</b><small>{k.desc}</small></button>)}</div>:null}
       <div className="entry-body">

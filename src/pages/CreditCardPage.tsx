@@ -13,6 +13,7 @@ import { categoryPath, genericCategoryTree, subcategoriesFor } from '../lib/cate
 import { accountBalances, allAccounts, createEvent } from '../lib/domain';
 import { money, shortDate } from '../lib/format';
 import { accountDisplayName } from '../lib/ui';
+import { userErrorMessage } from '../lib/userMessage';
 import type { FinanceData, FinanceEvent, PaymentCard } from '../types';
 
 export function CreditCardPage({
@@ -67,13 +68,13 @@ export function CreditCardPage({
     const numeric=Number(amount.replace(',','.'));if(!Number.isFinite(numeric)||numeric<=0){setError('Έλεγξε το ποσό της αγοράς — πρέπει να είναι μεγαλύτερο από μηδέν.');return}
     if(limit>0&&debt+numeric>limit+.005){setError(`Η αγορά ξεπερνά το διαθέσιμο όριο των ${money.format(available)}.`);return}
     try{const event=createEvent({kind:'card_purchase',date,amount:numeric,note:note.trim()||category,category});event.subcategory=subcategory||undefined;event.cardId=card.id;onCreateEvent(event);closePurchase()}
-    catch(e){setError(e instanceof Error?e.message:'Η αγορά δεν καταχωρίστηκε.')}
+    catch(e){setError(userErrorMessage(e,'Δεν μπορέσαμε να καταχωρίσουμε την αγορά. Έλεγξε τα στοιχεία και δοκίμασε ξανά.'))}
   };
   const submitRepay=()=>{
     if(!card){setError('Δεν έχει επιλεγεί πιστωτική κάρτα.');return}
     const numeric=Number(amount.replace(',','.'));if(debt<=0){setError('Δεν υπάρχει οφειλή προς αποπληρωμή.');return}if(!Number.isFinite(numeric)||numeric<=0){setError('Έλεγξε το ποσό αποπληρωμής — πρέπει να είναι μεγαλύτερο από μηδέν.');return}if(numeric>debt+.005){setError(`Η αποπληρωμή δεν μπορεί να ξεπερνά την οφειλή των ${money.format(debt)}.`);return}if(!eligibleAccounts.some(account=>account.id===sourceAccount)){setError(`Η αποπληρωμή πρέπει να γίνει από λογαριασμό της ${bank?.name??'ίδιας τράπεζας'}.`);return}
     try{const event=createEvent({kind:'card_payment',date,amount:numeric,note:`Αποπληρωμή ${card.nickname}`,fromAccountId:sourceAccount});event.cardId=card.id;onCreateEvent(event);closeRepay()}
-    catch(e){setError(e instanceof Error?e.message:'Η αποπληρωμή δεν καταχωρίστηκε.')}
+    catch(e){setError(userErrorMessage(e,'Δεν μπορέσαμε να καταχωρίσουμε την αποπληρωμή. Έλεγξε τα στοιχεία και δοκίμασε ξανά.'))}
   };
   const restoreSelected=()=>{if(!card||isActive)return;const restored=restoreCard(card);onUpsertCard(restored);setSelectedCardId(restored.id);setMessage('Η πιστωτική επανήλθε με το ίδιο card id, ιστορικό και vault στοιχεία.')};
   const editLimit=()=>{
