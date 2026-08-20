@@ -34,7 +34,16 @@ button,input,select,textarea{line-height:1.35}
 .text-size-picker button span{color:var(--muted);font-size:10px;line-height:1.35}
 .text-size-picker button.active{border-color:rgba(47,111,237,.52);background:rgba(47,111,237,.08);box-shadow:0 0 0 2px rgba(47,111,237,.08)}
 
+.sort-direction-control{display:inline-flex;align-items:center;padding:2px;border:1px solid var(--line);border-radius:10px;background:#edf2fa;box-shadow:var(--shadow-inset);gap:2px}
+.sort-direction-control button{border:0;border-radius:7px;background:transparent;color:var(--muted);padding:6px 8px;display:inline-flex;align-items:center;justify-content:center;gap:4px;font-size:10px;font-weight:760;cursor:pointer;min-height:30px}
+.sort-direction-control button.active{background:#fff;color:var(--blue-2);box-shadow:var(--shadow-soft)}
+.sort-direction-control button:not(.active):hover{color:var(--blue);background:rgba(255,255,255,.6)}
+.transaction-sort-summary,.panel-head-actions{display:flex;align-items:center;gap:9px}
+.loan-toolbar .sort-direction-control{margin-left:4px}
+
 @media(max-width:720px){
   .text-size-picker{grid-template-columns:1fr}
   .app-tooltip-bubble{display:none}
+  .transaction-sort-summary{width:100%;justify-content:space-between}
+  .sort-direction-control button{min-height:34px;padding-inline:10px}
 }
