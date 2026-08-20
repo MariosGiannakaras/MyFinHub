@@ -25,8 +25,16 @@ describe('app-owned entry controls',()=>{
   it('keeps accessible listbox and calendar roles',()=>{
     expect(selectSource).toContain('role="listbox"');
     expect(selectSource).toContain('role="option"');
+    expect(selectSource).toContain('aria-controls={listboxId}');
+    expect(selectSource).toContain('[aria-selected="true"]:not(:disabled), [role="option"]:not(:disabled)');
     expect(dateSource).toContain('role="grid"');
     expect(dateSource).toContain('role="gridcell"');
+  });
+  it('uses local today and refuses keyboard focus outside date bounds',()=>{
+    expect(dateSource).toContain("import { localDateString } from '../lib/localDate'");
+    expect(dateSource).toContain('const today=localDateString()');
+    expect(dateSource).toContain("if((min&&next<min)||(max&&next>max))return");
+    expect(dateSource).toContain('[data-date=\\"${next}\\"]:not(:disabled)');
   });
   it('keeps owned popovers viewport-contained and mobile-safe',()=>{
     expect(styles).toContain('.owned-popover-backdrop{position:fixed;inset:0');
