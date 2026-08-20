@@ -2,57 +2,60 @@
 
 ## Current production baseline
 
-The product is now branded **MyFinHub**. The historical GitHub repository name and compatibility-critical persistence/protocol identifiers may still use `RheomIQ` / `rheomiq_*` / `RHEOMIQ_*`; those internal names are intentionally not rewritten merely for branding.
+MyFinHub is released in production from `main` with Vercel as the web runtime and Supabase/PostgreSQL as the durable store. The historical GitHub repository history and compatibility-critical persistence/protocol identifiers may still use `RheomIQ`, `rheomiq_*`, and `RHEOMIQ_*`; those internal contracts are intentionally not rewritten merely for branding.
 
-Production still deploys from `main` to Vercel with Supabase/PostgreSQL as the durable store. The August 2026 product/frontend release was promoted through PR #133. Issue #88 remains open only for the remaining authenticated/browser card-secret and backup smokes from that release.
+Current stable release: **v1.0.1**.
 
-`main` is release-only. Routine work integrates into `develop` first.
+- production release commit: `main@97872cdfda2521aa9bd26ec81d3abaf148525ebd`
+- desktop tag: `myfinhub-v1.0.1`
+- Windows installer: `MyFinHub-Setup-1.0.1-x64.exe`
+- Windows Desktop release run `32317412473`: successful, including packaged executable smoke, NSIS Setup build, SHA-256 verification, and final GitHub Release publication
+- `main` and `develop` were synchronized at the v1.0.1 production baseline before this documentation-only status refresh
 
-## Current develop integration — unreleased
+Issue #88 remains open only for two authenticated/browser runtime smokes that cannot be certified from static or database-only evidence:
 
-### Interactive Cards / shared Credit identity
+1. PAN/expiry save → reveal → delete against the production API using a non-real test card, validating the configured production card-vault key path.
+2. Device-local CVV save → reveal → delete on the production origin while proving no CVV request reaches the server.
 
-Issue #134 / PR #135 is integrated on `develop` and awaits the next deliberate `develop -> main` release.
+The production FinanceData/backup secret-isolation item in #88 is complete: read-only production checks found no PAN/expiry/CVV-like keys in the canonical FinanceData row or any of the seven current production backup rows.
+
+## Released application capabilities
+
+### Cards and shared Credit identity
+
+The work from #134 / PR #135 is released.
 
 - Cards and Credit Card share the same `FinanceData.state.cards` / `PaymentCard` identity and `cardId`.
-- New credit purchases/payments carry that shared `cardId`; legacy pre-linkage history remains compatible.
-- The current singular credit liability allows one active credit-card identity and rejects orphan references.
-- Card removal is archival/soft-delete: finance events, liability/balance history and PAN/expiry vault rows remain available for restoration.
-- Device-local CVV is removed on archive; PAN/expiry deletion is a separate explicit secure action.
-- `/api/card-secrets` requires same-origin, owner and AAL2. CVV is rejected by the server boundary.
-- Product migration/read/import paths preserve `cardBanks` and `cards`.
-- Pending migration `20260819072000_tighten_card_secret_grants.sql` narrows authenticated card-vault table privileges while retaining owner+AAL2 RLS. It was previously transactionally dry-run and rolled back; production DDL waits for release.
+- New credit purchases/payments carry the shared `cardId`; legacy pre-linkage history remains compatible.
+- The singular credit-liability model allows one active credit-card identity and rejects orphan references.
+- Card removal is archival/soft-delete so finance events, liability/balance history, and the PAN/expiry vault association survive restoration.
+- Device-local CVV is removed on archive; PAN/expiry deletion remains a separate explicit secure action.
+- `/api/card-secrets` requires same-origin, owner, and AAL2 authorization. CVV is rejected by the server boundary.
+- Production migration `20260819072000_tighten_card_secret_grants.sql` is released and narrows authenticated card-vault privileges while retaining owner+AAL2 RLS.
 
-### Windows desktop foundation
+### Windows desktop application
 
-Issue #136 / PR #137 is integrated on `develop`.
+The work from #136 / PR #137 and #138 / PR #139 is released.
 
-- Electron owns the Windows app and starts the existing Express backend as a hidden child process using the bundled Node.js 22 runtime.
+- Electron owns the Windows application and starts the existing Express backend as a hidden child process using the bundled Node.js 22 runtime.
 - The backend binds only to `127.0.0.1` on an OS-selected ephemeral port and serves the packaged Vite frontend from the same local origin.
-- Renderer Node access remains disabled; context isolation, sandboxing, navigation restrictions and desktop-appropriate security headers remain enabled.
-- Desktop uses the same Supabase project, owner login, mandatory TOTP AAL2, RLS/RPC rules and optimistic revisions as the Vercel client.
-- Service-role/secret credentials are explicitly removed from the desktop runtime environment.
-- The shared PAN/expiry encryption key can be stored per Windows user through Electron `safeStorage` / Windows DPAPI. CVV remains device-local only.
+- Renderer Node access remains disabled; context isolation, sandboxing, navigation restrictions, and desktop security headers remain enabled.
+- Desktop uses the same Supabase project, owner login, mandatory TOTP AAL2, RLS/RPC rules, and optimistic revisions as the Vercel client.
+- No service-role/secret Supabase credential is part of the desktop runtime.
+- PAN/expiry vault configuration can be protected per Windows user through Electron `safeStorage` / Windows DPAPI. CVV remains device-local only.
+- The normal per-user NSIS installer creates Desktop and Start Menu shortcuts and does not require Git, Node.js, a terminal, or a browser for normal released use.
+- In-app updates use the controlled `myfinhub-v<semver>` GitHub Release channel, exact installer/checksum naming, trusted-host checks, size bounds, and streamed SHA-256 verification.
+- Unsigned personal-use releases are supported; Authenticode remains optional if signing credentials are later configured.
 
-### MyFinHub rebrand + normal Windows distribution
+### MyFinHub branding
 
-Issue #138 / draft PR #139 is the active integration branch for the final rebrand and desktop distribution work.
+The visible application identity is **MyFinHub** across web/PWA/desktop surfaces. The authentic original wallet/`R` artwork recovered from pre-rebrand Git history is used across favicon, PWA, setup, and Windows packaging assets. Compatibility-critical historical database, migration, cookie, storage, and desktop/backend protocol identifiers remain unchanged where renaming would add migration risk without user value.
 
-Implemented in the feature branch:
+## Current develop integration
 
-- visible web/PWA/desktop identity is `MyFinHub`;
-- Windows identity is `app.myfinhub.desktop`, executable `MyFinHub.exe` and installer `MyFinHub-Setup-<version>-x64.exe`;
-- interactive per-user NSIS installation with Desktop and Start Menu shortcuts;
-- app-owned first-run configuration UI with step indicators, animated progress/status surface, background-work explanation and reduced-motion fallback;
-- same-Supabase runtime configuration with no Git/Node/terminal requirement for released installations;
-- in-app Windows update status and actions in **Ρυθμίσεις**;
-- automatic update checks but explicit user download/install/restart;
-- controlled `myfinhub-v<semver>` GitHub Release channel, exact installer/checksum asset naming, host allowlisting, size bounds and streamed SHA-256 verification;
-- unsigned personal-use releases allowed with explicit SmartScreen/Unknown publisher tradeoff; Authenticode remains optional if both signing secrets are later configured;
-- canonical runtime brand assets under `public/brand/` and an easy-to-find source pack under `assets/branding/myfinhub/`;
-- Windows CI validates branding changes, the actual packaged `MyFinHub.exe`, hidden backend startup, interactive Setup and update checksum contract.
+There are no unreleased application/runtime changes recorded at this status refresh. Routine future work integrates into `develop`; `main` remains release-only.
 
-The feature branch/PR must still pass final exact-head CI, CodeQL and Windows packaging gates before it can be squash-merged into `develop`. No production deployment or desktop public release is performed from the feature branch.
+Documentation-only changes on `develop` do not imply a new production application release.
 
 ## Implemented production platform
 
@@ -68,16 +71,26 @@ The feature branch/PR must still pass final exact-head CI, CodeQL and Windows pa
 - bounded backups and append-only audit events
 - full-state import with mandatory pre-import backup
 - server-side finance validation and request-size bounds
-- GitHub CI, dependency audits, CodeQL, Dependabot and privacy/security guards
+- GitHub CI, dependency audits, CodeQL, Dependabot, and privacy/security guards
 - Vercel Production Smoke tied to the released production deployment
 - lazy-loaded finance pages and memoized derived selectors
 - mutable-state-only normal writes
+- native Windows Electron distribution with controlled GitHub Release updates
 
 ## Data and card-secret model
 
 The compatibility `FinanceData` document remains the canonical read/import representation. Normal saves update the mutable `state` subtree under revision locking.
 
-Payment-card metadata may live in `FinanceData.state.cards`; full PAN, expiry and CVV do not. PAN/expiry use the ciphertext-only legacy-named `rheomiq_card_secrets` table, while CVV uses the separate device-local encrypted vault. Ordinary FinanceData backups therefore remain outside both secret stores.
+Payment-card metadata may live in `FinanceData.state.cards`; full PAN, expiry, and CVV do not. PAN/expiry use the ciphertext-only legacy-named `rheomiq_card_secrets` table, while CVV uses the separate device-local encrypted vault. Ordinary FinanceData backups remain outside both secret stores.
+
+Production read-only verification on 2026-08-20 found:
+
+- canonical `rheomiq_app_state` revision `99` with no payment-secret JSON keys;
+- seven production backup rows with zero payment-secret JSON-key matches;
+- latest backup id `8`, revision `98`, reason `automatic`, also clean;
+- zero current rows in `rheomiq_card_secrets`.
+
+No finance values were returned and no production data was mutated by that verification.
 
 ## Known non-blocking platform notes
 
