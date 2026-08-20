@@ -1,15 +1,22 @@
 import { spawn } from 'node:child_process';
 import { rmSync } from 'node:fs';
 
+// The former frontend-redesign suite is intentionally superseded by the full
+// route/state UI/UX matrix in ui-ux-hardening-qa.mjs. Keeping both active would
+// duplicate coverage and pin CI to stale selectors from the pre-analytics DOM.
 const scripts = [
   { path: 'scripts/frontend-qa.mjs', profiles: ['/tmp/rheomiq-qa-chrome'] },
-  { path: 'scripts/frontend-redesign-qa.mjs', profiles: ['/tmp/rheomiq-redesign-qa-chrome'] },
   { path: 'scripts/owned-controls-qa.mjs', profiles: ['/tmp/rheomiq-owned-controls-qa'] },
   { path: 'scripts/ui-ux-hardening-qa.mjs', profiles: ['/tmp/myfinhub-ui-ux-qa-chrome'] },
 ];
 
 function cleanProfiles(profiles) {
-  for (const profile of profiles) rmSync(profile, { recursive: true, force: true });
+  for (const profile of profiles) {
+    try { rmSync(profile, { recursive: true, force: true, maxRetries: 4, retryDelay: 100 }); }
+    catch (error) {
+      console.warn(`Rendered QA profile cleanup skipped for ${profile}: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
 }
 
 function runScript(path) {
