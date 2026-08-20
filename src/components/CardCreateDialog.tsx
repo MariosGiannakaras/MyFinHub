@@ -19,7 +19,7 @@ export function CardCreateDialog({
   const [network,setNetwork]=useState<CardNetwork>('visa');
   const [designId,setDesignId]=useState('');
   const [error,setError]=useState('');
-  const ref=useModalFocus<HTMLElement>(open,'[data-autofocus="true"]');
+  const ref=useModalFocus<HTMLElement>(open,'[data-autofocus="true"]',onClose);
   const bank=banks.find(item=>item.id===bankId)??banks[0];
   const designs=useMemo(()=>designsForBank(bank?.id||'custom'),[bank?.id]);
   const kindDesigns=kindLock?designs.filter(item=>item.kind===kindLock):designs;
@@ -42,13 +42,13 @@ export function CardCreateDialog({
   };
   const changeBank=(next:string)=>{setBankId(next);setDesignId('');setError('')};
   const submit=()=>{
-    const name=nickname.trim();if(!name){setError('Συμπλήρωσε όνομα κάρτας.');return}if(!selected){setError('Επίλεξε σχέδιο / χρώμα κάρτας.');return}
+    const name=nickname.trim();if(!name){setError('Γράψε ένα όνομα για την κάρτα ώστε να μπορείς να την ξεχωρίζεις.');return}if(!selected){setError('Διάλεξε σχέδιο ή χρώμα για να συνεχίσεις.');return}
     const now=new Date().toISOString();
     onSave({id:`card-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,bankId:bank.id,nickname:name,kind:resolvedKind,network,formFactor:selected.formFactor,designId:selected.id,active:true,createdAt:now,updatedAt:now});onClose();
   };
 
   return <div className="picker-backdrop open prototype-card-picker" aria-hidden="false" onMouseDown={onClose}>
-    <section ref={ref} className="picker card-create-modal neo-raised" role="dialog" aria-modal="true" aria-labelledby="card-create-title" tabIndex={-1} onMouseDown={event=>event.stopPropagation()} onKeyDown={event=>{if(event.key==='Escape'){event.preventDefault();onClose()}}}>
+    <section ref={ref} className="picker card-create-modal neo-raised" role="dialog" aria-modal="true" aria-labelledby="card-create-title" tabIndex={-1} onMouseDown={event=>event.stopPropagation()}>
       <div className="picker-head"><div><h2 id="card-create-title">{kindLock==='credit'?'Νέα πιστωτική κάρτα':`Νέα κάρτα${banks.length===1?` · ${bank.name}`:''}`}</h2><p>Συμπλήρωσε τα βασικά χαρακτηριστικά. Μετά θα γράψεις αριθμό, λήξη και CVV απευθείας πάνω στην κάρτα.</p></div><button className="close-picker" type="button" aria-label="Κλείσιμο" onClick={onClose}>×</button></div>
       <div className="card-preview-stage" aria-label="Προεπισκόπηση νέας κάρτας"><div className="card-preview-shell"><article className={`payment-card prototype-payment-card ${selected?cardThemeClass(preview):'card-preview-neutral'}`}><div className="card-inner"><header className="card-header"><div className="card-brand-block"><div className="card-brand"><BankBrandMark id={bank.id} name={bank.name} compact={false}/></div><div className="card-nickname">{preview.nickname}</div></div></header><div className="card-body"><div className="card-number-wrap"><div className="card-number preview-placeholder">•••• •••• •••• ••••</div></div><div className="card-fields"><div className="card-field"><span className="card-field-label">VALID THRU</span><div className="card-field-line"><span className="card-field-value preview-placeholder">MM/YY</span></div></div><div className="card-field"><span className="card-field-label">CVV</span><div className="card-field-line"><span className="card-field-value preview-placeholder">CVV</span></div></div><div className="card-network visa-network"><span className="card-network-main">{network==='mastercard'?'MASTERCARD':'VISA'}</span><span className="card-network-type">{kindLabel(resolvedKind,selected?.formFactor==='virtual')}</span></div></div></div></div></article></div></div>
       <div className="modal-form-grid">
