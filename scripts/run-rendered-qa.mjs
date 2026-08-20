@@ -10,6 +10,7 @@ const scripts = [
   { path: 'scripts/ui-ux-hardening-qa.mjs', profiles: ['/tmp/myfinhub-ui-ux-qa-chrome'] },
   { path: 'scripts/ui-ux-completion-qa.mjs', profiles: ['/tmp/myfinhub-ui-completion-qa-chrome'] },
   { path: 'scripts/ui-ux-runtime-qa.mjs', profiles: ['/tmp/myfinhub-ui-runtime-qa-chrome'] },
+  { path: 'scripts/ui-ux-credit-overlimit-qa.mjs', profiles: ['/tmp/myfinhub-credit-overlimit-qa-chrome'] },
   { path: 'scripts/ui-ux-visual-evidence-qa.mjs', profiles: ['/tmp/myfinhub-ui-visual-evidence-chrome'] },
 ];
 
