@@ -37,6 +37,7 @@ export interface PaymentCard {
   holderName?: string;
   last4?: string;
   vaultRef?: string;
+  creditLimit?: number;
   active: boolean;
   archivedAt?: string;
   createdAt: string;
