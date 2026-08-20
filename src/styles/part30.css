@@ -33,6 +33,8 @@ button,input,select,textarea{line-height:1.4}
 .app-tooltip-right:hover .app-tooltip-bubble,.app-tooltip-right:focus-within .app-tooltip-bubble{transform:translate(0,-50%)}
 .app-tooltip-left .app-tooltip-bubble{right:calc(100% + 8px);top:50%;transform:translate(2px,-50%)}
 .app-tooltip-left:hover .app-tooltip-bubble,.app-tooltip-left:focus-within .app-tooltip-bubble{transform:translate(0,-50%)}
+.top-actions .app-tooltip:last-child.app-tooltip-bottom .app-tooltip-bubble{left:auto;right:0;transform:translateY(-2px)}
+.top-actions .app-tooltip:last-child.app-tooltip-bottom:hover .app-tooltip-bubble,.top-actions .app-tooltip:last-child.app-tooltip-bottom:focus-within .app-tooltip-bubble{transform:translateY(0)}
 
 .readability-settings{padding:18px}
 .text-size-picker{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px}
