@@ -1,0 +1,12 @@
+/* Navigation contrast hardening discovered by rendered browser QA. */
+.sidebar nav button.active{
+  background:linear-gradient(105deg,#245fcf,#174ea6);
+  color:#fff;
+}
+
+@media(max-width:680px){
+  .mobile-nav button.active{
+    background:linear-gradient(135deg,#245fcf,#174ea6);
+    color:#fff;
+  }
+}
