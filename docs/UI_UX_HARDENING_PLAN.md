@@ -1,8 +1,8 @@
 # MyFinHub UI/UX Hardening Execution Plan
 
-Tracking issue: #158
+Tracking issue: #158 — completed
 Branch: `feat/ui-ux-hardening-batch`
-Draft PR: #159
+PR: #159 — ready for review
 Evidence map: `docs/UI_UX_AUDIT_EVIDENCE.md`
 
 ## Working rules
@@ -11,8 +11,8 @@ Evidence map: `docs/UI_UX_AUDIT_EVIDENCE.md`
 - Keep commits logically separated; do not create one branch per small fix.
 - Do not change agreed visual/interaction contracts as a side effect of refactoring.
 - Every task requires evidence before it is marked complete.
-- Do not merge to `main`, bump release metadata, create a release, or publish a Windows installer without explicit owner approval.
-- The owner explicitly directed completion of the full implementation on 2026-08-20, satisfying the Reports/Analytics implementation checkpoint. This does not authorize merge/release by itself.
+- The owner explicitly directed completion of the full implementation on 2026-08-20, satisfying the Reports/Analytics implementation checkpoint.
+- Implementation completion does not authorize merge/release. Do not merge to `main`, bump release metadata, create a release, or publish a production installer without separate explicit owner approval.
 
 ## Execution order
 
@@ -58,59 +58,48 @@ Evidence map: `docs/UI_UX_AUDIT_EVIDENCE.md`
 - [x] Implement approved analytics improvements
 - [x] Verify analytical correctness, insufficient-data states and mobile behavior
 
-### Phase 5 — Integrated verification
-- [x] Production-like build on the last verified feature head
+### Phase 5 — Integrated verification and closure
+- [x] Production-like build
 - [x] Full desktop + mobile regression walkthrough
 - [x] All typography modes across desktop/mobile
-- [ ] Console/network/runtime review on the final feature head
-- [x] Automated tests on the last verified feature head
-- [x] Rendered browser QA on the last verified feature head
-- [x] CodeQL on the last verified feature head
-- [x] Windows desktop packaging gates on the last verified feature head
-- [x] Interim completion evidence added to #158
-- [ ] Final feature-head CI / CodeQL / Windows gates
-- [ ] Final completion evidence added to #158
-- [ ] Synchronize issue #158 to all-complete and close it
-- [ ] Mark PR #159 ready for review; do not merge/release without separate owner approval
+- [x] Console/network/runtime review
+- [x] Automated tests
+- [x] Rendered browser QA
+- [x] CodeQL
+- [x] Windows desktop packaging gates
+- [x] Final visual evidence review
+- [x] Final completion evidence recorded
+- [x] Issue #158 synchronized to all-complete and closed
+- [x] PR #159 marked ready for review
 
-## Evidence summary
+## Final verified implementation evidence
 
-### Verified application head before final runtime-gate addition
+Implementation head: `10f757cc3b6ab4c9567e9fe0344a04accc980217`.
 
-- CI run `32398526378`: success.
+- CI run `32401155176`: **success**.
   - privacy/security guard passed;
   - 34 test files / 147 tests passed;
   - production build passed;
   - API TypeScript check passed;
-  - all rendered browser suites passed;
-  - 47 browser screenshots uploaded as artifact `9417650819`.
-- CodeQL run `32398526375`: success.
-- Windows Desktop run `32398526464`: success.
+  - existing rendered frontend QA passed;
+  - owned-control QA passed;
+  - full UI/UX desktop/mobile route-state matrix passed;
+  - completion QA passed;
+  - CDP runtime console/network QA passed across desktop/mobile routes plus auth/loading/conflict/error states;
+  - full-page visual evidence QA passed.
+- UI/UX screenshot artifact `9418623944`: 48 files, SHA-256 `3f5f3f6f52d5c4749c3bdd7e38bf3e03890704c65cc9b17865aa4747217062dc`.
+- Final screenshot review found no new overlap, clipping, layout or responsive regression in the desktop/mobile route matrix.
+- CodeQL run `32401155171`: **success**.
+- Windows Desktop run `32401155198`: **success**.
   - application/desktop boundary validation passed;
   - PowerShell fallback bootstrap validation passed;
   - unpacked Windows build passed;
   - packaged executable + hidden local backend smoke passed;
-  - interactive NSIS setup build passed;
+  - interactive NSIS Setup passed;
   - installer/update-channel checksum validation passed;
   - Windows installer evidence upload passed;
   - publish job correctly skipped because this is not a release tag.
 
-### Coverage already proven
+## Completion
 
-- full desktop and mobile route matrices;
-- normal, empty and extreme/large-collection data;
-- Compact / Normal / Large typography;
-- authentication, persistence loading/error/conflict and page-error surfaces;
-- tooltip keyboard/hover/viewport/touch behavior;
-- date, text, numeric, nullable and deterministic sorting behavior;
-- nested modal Escape/backdrop/focus/scroll-lock behavior;
-- validation and user-facing feedback;
-- card archive/restore and delete/undo/redo flows;
-- form-error associations;
-- reduced motion;
-- representative AA text contrast;
-- deterministic Reports analytics and insufficient-history behavior.
-
-### Final delta
-
-`scripts/ui-ux-runtime-qa.mjs` adds explicit CDP-level console/runtime/network checks, including uncaught exceptions, console errors/assertions, browser error logs, failed network loads and HTTP 5xx responses. The batch is not declared complete until this delta and the documentation synchronization pass all final-head gates.
+All implementation and verification checklist items are complete. Issue #158 is closed as completed. PR #159 is open, ready for review and unmerged. No merge to `main`, release, production publication, release-metadata bump or production installer publication was performed.
