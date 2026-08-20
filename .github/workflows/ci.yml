@@ -50,6 +50,23 @@ jobs:
             cat /tmp/rheomiq-vite.log
             exit 1
           fi
+
+          # GitHub's Ubuntu image ships both system Chrome and Chromium. Prefer
+          # Chromium for isolated CDP QA and keep the individual suites unchanged.
+          QA_BROWSER="$(command -v chromium || command -v chromium-browser || command -v google-chrome || true)"
+          if [ -z "$QA_BROWSER" ]; then
+            echo "Chrome/Chromium is required for rendered frontend QA."
+            exit 1
+          fi
+          mkdir -p /tmp/myfinhub-qa-browser-bin
+          cat > /tmp/myfinhub-qa-browser-bin/google-chrome <<EOF
+          #!/usr/bin/env bash
+          exec "$QA_BROWSER" --disable-dev-shm-usage "\$@"
+          EOF
+          chmod +x /tmp/myfinhub-qa-browser-bin/google-chrome
+          export PATH="/tmp/myfinhub-qa-browser-bin:$PATH"
+          echo "Rendered QA browser: $($QA_BROWSER --version)"
+
           npm run qa:frontend
       - name: Upload UI/UX browser evidence
         if: always()
