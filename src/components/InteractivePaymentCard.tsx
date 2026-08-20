@@ -5,7 +5,7 @@ import { useModalFocus } from '../hooks/useModalFocus';
 import { cardThemeClass } from '../lib/cardDesigns';
 import { cardKindLabel, cardLabel, cardNetworkLabel } from '../lib/cards';
 import { cardVaultErrorMessage, deleteCardSecret, revealCardSecret, saveCardSecret } from '../lib/cardVaultClient';
-import { deleteLocalCvv, normalizeLocalCvv, readLocalCvv, saveLocalCvv } from '../lib/localCvvVault';
+import { normalizeLocalCvv, readLocalCvv, saveLocalCvv } from '../lib/localCvvVault';
 import type { CardBank, PaymentCard } from '../types';
 
 type Secrets={pan?:string;expiry?:string;cvv?:string};
@@ -101,7 +101,6 @@ export function InteractivePaymentCard({
     if(!onArchive)return;
     setBusy(true);
     try{
-      try{await deleteLocalCvv(card.id)}catch(error){setMessage(`${localCvvMessage(error)} Η κάρτα δεν αρχειοθετήθηκε ώστε να μη μείνει τοπικό CVV χωρίς έλεγχο.`);return}
       await onArchive(card);setRevealed({});setArchiveOpen(false);setArchiveProgress(0);
     }finally{setBusy(false)}
   };
@@ -136,7 +135,7 @@ export function InteractivePaymentCard({
         {card.kind==='credit'&&onOpenCredit?<button type="button" className="r-card-credit-link" onClick={onOpenCredit}><Link2/> Πιστωτική</button>:null}
       </div>
       {archiveOpen?<div className="r-card-archive-confirm">
-        <div><b>Αρχειοθέτηση κάρτας;</b><small>Το ιστορικό, οι κινήσεις, το υπόλοιπο και το server vault παραμένουν. Το τοπικό CVV αφαιρείται από αυτή τη συσκευή.</small><button type="button" aria-label="Ακύρωση αρχειοθέτησης" onClick={()=>{setArchiveOpen(false);setArchiveProgress(0)}}><X/></button></div>
+        <div><b>Αρχειοθέτηση κάρτας;</b><small>Το ιστορικό, οι κινήσεις, το υπόλοιπο, το server vault και το local CVV παραμένουν συνδεδεμένα στο ίδιο card id ώστε να αποκατασταθούν με επαναφορά.</small><button type="button" aria-label="Ακύρωση αρχειοθέτησης" onClick={()=>{setArchiveOpen(false);setArchiveProgress(0)}}><X/></button></div>
         <label className="r-card-archive-slider"><span>ΣΥΡΕ ΓΙΑ ΑΡΧΕΙΟΘΕΤΗΣΗ</span><input aria-label="Σύρε για αρχειοθέτηση" type="range" min="0" max="100" value={archiveProgress} onChange={e=>setArchiveProgress(Number(e.target.value))} onPointerUp={()=>{if(archiveProgress>=92)void archive();else setArchiveProgress(0)}} onKeyUp={e=>{if((e.key==='Enter'||e.key===' ')&&archiveProgress>=92)void archive()}}/></label>
         <button type="button" className="r-card-archive-keyboard" disabled={busy} onClick={()=>void archive()}><Archive/> Αρχειοθέτηση</button>
       </div>:null}
