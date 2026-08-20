@@ -47,7 +47,7 @@ describe('app-owned entry controls',()=>{
     const sources=[...files('src/pages'),...files('src/components')].map(file=>({file,text:readFileSync(file,'utf8')}));
     const nativeSelects=sources.filter(({text})=>/<select\b/.test(text)).map(({file})=>file);
     const nativeDates=sources.filter(({text})=>/<input\b[^>]*\btype\s*=\s*["']date["']/i.test(text)).map(({file})=>file);
-    const nativeDatalists=sources.filter(({text})=><any>/<datalist\b/.test(text)).map(({file})=>file);
+    const nativeDatalists=sources.filter(({text})=>/<datalist\b/.test(text)).map(({file})=>file);
     expect(nativeSelects).toEqual([]);
     expect(nativeDates).toEqual([]);
     expect(nativeDatalists).toEqual([]);
