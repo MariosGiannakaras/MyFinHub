@@ -16,7 +16,7 @@
     "test:watch": "vitest",
     "security:guard": "node scripts/security-guard.mjs",
     "qa:ux": "node scripts/ui-ux-hardening-qa.mjs",
-    "qa:frontend": "node scripts/frontend-qa.mjs && node scripts/frontend-redesign-qa.mjs && node scripts/owned-controls-qa.mjs && npm run qa:ux",
+    "qa:frontend": "node scripts/run-rendered-qa.mjs",
     "check": "npm run security:guard && npm run test && npm run build",
     "desktop:dev": "npm --prefix desktop run dev",
     "desktop:check": "npm --prefix desktop run check",
