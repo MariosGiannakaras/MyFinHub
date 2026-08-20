@@ -13,7 +13,7 @@ type RevisionMessage = { type: 'revision'; revision: string };
 
 function productData(input:FinanceData):FinanceData{
   const migrated=migrateProductData(input);
-  return {...migrated,state:{...migrated.state,settings:{...migrated.state.settings,motion:'full'}}};
+  return {...migrated,state:{...migrated.state,settings:{...migrated.state.settings,motion:'full',textSize:migrated.state.settings.textSize??'normal'}}};
 }
 
 export function useFinance() {
