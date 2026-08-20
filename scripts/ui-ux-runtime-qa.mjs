@@ -29,9 +29,9 @@ try{
   const describeArg=arg=>arg.value!==undefined?String(arg.value):arg.description||arg.type||'console value';
   c.on('Runtime.exceptionThrown',params=>findings.push(`runtime exception: ${params.exceptionDetails?.exception?.description||params.exceptionDetails?.text||'unknown exception'}`));
   c.on('Runtime.consoleAPICalled',params=>{if(params.type==='error'||params.type==='assert')findings.push(`console.${params.type}: ${(params.args||[]).map(describeArg).join(' ')}`)});
-  c.on('Log.entryAdded',params=>{const entry=params.entry;if(entry?.level==='error')findings.push(`browser log: ${entry.text||entry.url||'error entry'}`)});
+  c.on('Log.entryAdded',params=>{const entry=params.entry;if(entry?.level==='error')findings.push(`browser log: ${entry.text||'error entry'}${entry.url?` @ ${entry.url}`:''}`)});
   c.on('Network.loadingFailed',params=>{const text=params.errorText||'request failed';if(!params.canceled&&text!=='net::ERR_ABORTED')findings.push(`network failure: ${text} ${params.blockedReason||''}`.trim())});
-  c.on('Network.responseReceived',params=>{const response=params.response;if(response?.status>=500)findings.push(`HTTP ${response.status}: ${response.url}`)});
+  c.on('Network.responseReceived',params=>{const response=params.response;if(response?.status>=400)findings.push(`HTTP ${response.status}: ${response.url}`)});
   const viewport=(width,height)=>c.send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<=680});
   const urlFor=params=>{const url=new URL(baseUrl);for(const [key,value] of Object.entries(params))if(value!==undefined&&value!==null&&value!=='')url.searchParams.set(key,String(value));return url.href};
   const waitFor=async(fn,label,args=[])=>{for(let i=0;i<100;i++){if(await c.call(fn,args))return;await sleep(100)}throw new Error(`Timed out waiting for ${label}`)};
