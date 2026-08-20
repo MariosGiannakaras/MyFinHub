@@ -51,21 +51,36 @@ jobs:
             exit 1
           fi
 
-          # GitHub's Ubuntu image ships both system Chrome and Chromium. Prefer
-          # Chromium for isolated CDP QA and keep the individual suites unchanged.
-          QA_BROWSER="$(command -v chromium || command -v chromium-browser || command -v google-chrome || true)"
-          if [ -z "$QA_BROWSER" ]; then
+          # Keep both runner browsers available. Each rendered suite starts with
+          # Chromium and the coordinator switches to system Chrome only when the
+          # primary browser fails to expose its isolated CDP endpoint.
+          PRIMARY_BROWSER="$(command -v chromium || command -v chromium-browser || true)"
+          FALLBACK_BROWSER="$(command -v google-chrome || true)"
+          if [ -z "$PRIMARY_BROWSER" ]; then
+            PRIMARY_BROWSER="$FALLBACK_BROWSER"
+            FALLBACK_BROWSER=""
+          fi
+          if [ -z "$PRIMARY_BROWSER" ]; then
             echo "Chrome/Chromium is required for rendered frontend QA."
             exit 1
           fi
+          export MYFINHUB_QA_PRIMARY_BROWSER="$PRIMARY_BROWSER"
+          export MYFINHUB_QA_FALLBACK_BROWSER="$FALLBACK_BROWSER"
           mkdir -p /tmp/myfinhub-qa-browser-bin
-          cat > /tmp/myfinhub-qa-browser-bin/google-chrome <<EOF
+          cat > /tmp/myfinhub-qa-browser-bin/google-chrome <<'EOF'
           #!/usr/bin/env bash
-          exec "$QA_BROWSER" --disable-dev-shm-usage "\$@"
+          browser="${MYFINHUB_QA_PRIMARY_BROWSER}"
+          if [ "${MYFINHUB_QA_USE_FALLBACK:-0}" = "1" ] && [ -n "${MYFINHUB_QA_FALLBACK_BROWSER:-}" ]; then
+            browser="${MYFINHUB_QA_FALLBACK_BROWSER}"
+          fi
+          exec "$browser" --disable-dev-shm-usage "$@"
           EOF
           chmod +x /tmp/myfinhub-qa-browser-bin/google-chrome
           export PATH="/tmp/myfinhub-qa-browser-bin:$PATH"
-          echo "Rendered QA browser: $($QA_BROWSER --version)"
+          echo "Rendered QA primary browser: $($PRIMARY_BROWSER --version)"
+          if [ -n "$FALLBACK_BROWSER" ] && [ "$FALLBACK_BROWSER" != "$PRIMARY_BROWSER" ]; then
+            echo "Rendered QA fallback browser: $($FALLBACK_BROWSER --version)"
+          fi
 
           npm run qa:frontend
       - name: Upload UI/UX browser evidence
