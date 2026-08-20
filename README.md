@@ -7,24 +7,24 @@
 <p align="center">Private, single-owner personal finance workspace for Windows, web and mobile.</p>
 
 <p align="center">
-  <a href="https://github.com/MariosGiannakaras/MyFinHub/releases/download/myfinhub-v1.0.1/MyFinHub-Setup-1.0.1-x64.exe"><img alt="Download MyFinHub for Windows" src="https://img.shields.io/badge/Download%20for%20Windows-v1.0.1-2563EB?style=for-the-badge&logo=windows11&logoColor=white"></a>
-  <a href="https://github.com/MariosGiannakaras/MyFinHub/releases/latest"><img alt="Latest release" src="https://img.shields.io/badge/Release-v1.0.1-0F766E?style=for-the-badge"></a>
+  <a href="https://github.com/MariosGiannakaras/MyFinHub/releases/download/myfinhub-v1.0.2/MyFinHub-Setup-1.0.2-x64.exe"><img alt="Download MyFinHub for Windows" src="https://img.shields.io/badge/Download%20for%20Windows-v1.0.2-2563EB?style=for-the-badge&logo=windows11&logoColor=white"></a>
+  <a href="https://github.com/MariosGiannakaras/MyFinHub/releases/latest"><img alt="Latest release" src="https://img.shields.io/badge/Release-v1.0.2-0F766E?style=for-the-badge"></a>
   <a href="CHANGELOG.md"><img alt="Changelog" src="https://img.shields.io/badge/Changelog-View-475569?style=for-the-badge"></a>
 </p>
 
 <p align="center">
   <a href="https://github.com/MariosGiannakaras/MyFinHub/releases">All releases</a> ·
-  <a href="https://github.com/MariosGiannakaras/MyFinHub/releases/tag/myfinhub-v1.0.1">v1.0.1 release notes</a> ·
-  <a href="https://github.com/MariosGiannakaras/MyFinHub/releases/download/myfinhub-v1.0.1/MyFinHub-Setup-1.0.1-x64.exe.sha256">SHA-256</a> ·
+  <a href="https://github.com/MariosGiannakaras/MyFinHub/releases/tag/myfinhub-v1.0.2">v1.0.2 release notes</a> ·
+  <a href="https://github.com/MariosGiannakaras/MyFinHub/releases/download/myfinhub-v1.0.2/MyFinHub-Setup-1.0.2-x64.exe.sha256">SHA-256</a> ·
   <a href="docs/WINDOWS_DESKTOP.md">Windows documentation</a>
 </p>
 
-> **Windows release:** download only `MyFinHub-Setup-1.0.1-x64.exe`. You do not need to clone or download the repository. The current personal-use build is unsigned, so Windows may display **Unknown publisher / Microsoft Defender SmartScreen**. Installer integrity is protected by the published SHA-256 checksum.
+> **Windows release:** download only `MyFinHub-Setup-1.0.2-x64.exe`. You do not need to clone or download the repository. The current personal-use build is unsigned, so Windows may display **Unknown publisher / Microsoft Defender SmartScreen**. Installer integrity is protected by the published SHA-256 checksum.
 
 ## Download and install
 
 1. Click **Download for Windows** above.
-2. Run `MyFinHub-Setup-1.0.1-x64.exe`.
+2. Run `MyFinHub-Setup-1.0.2-x64.exe`.
 3. Choose the installation folder if desired; Setup creates Start Menu and Desktop shortcuts.
 4. On first launch, complete the MyFinHub setup window for the shared Supabase connection.
 5. Use **Ρυθμίσεις → Ενημερώσεις** for future desktop update checks.
@@ -37,7 +37,7 @@ The installed application contains its own Electron host, bundled Node.js runtim
 - **Transactions:** income, expenses, transfers, withdrawals, refunds and reconciliation.
 - **Savings:** cash-offset saving and savings-account movements without corrupting spending totals.
 - **Recurring:** repeated obligations and long-term payment flows.
-- **Cards & credit:** card purchases, liability repayments and protected PAN/expiry storage.
+- **Cards & credit:** unlimited cards per bank, protected PAN/expiry storage, same-device CVV recovery across archive/restore, and independent limits/debt/history for multiple credit cards.
 - **Loans & lending:** personal loans, installments, receivables and repayment history.
 - **Review:** controlled proposals that do not affect reports until confirmed.
 - **Reports:** finance summaries derived from the same canonical state used by every client.
@@ -76,7 +76,7 @@ MyFinHub preserves the existing Excel-derived behavior rather than flattening ev
 - **Withdrawals:** bank → cash; no income/expense.
 - **Internal transfers:** balance movement only.
 - **Refunds:** reduce spending.
-- **Credit card:** purchase is spending; card payment is liability repayment.
+- **Credit card:** purchase is spending; card payment is liability repayment. Each credit card keeps independent debt/limit/history while the aggregate ledger remains backward-compatible.
 - **Lending:** creates a receivable; repayment reduces it; net worth includes receivables.
 - **Reconciliation:** balance correction without polluting spending.
 - **Splits:** category parts must balance to the parent amount.
@@ -84,7 +84,7 @@ MyFinHub preserves the existing Excel-derived behavior rather than flattening ev
 
 ## Updates and release history
 
-The current stable Windows release is **v1.0.1**. See [`CHANGELOG.md`](CHANGELOG.md) for released and unreleased changes, or browse the complete [GitHub Releases](https://github.com/MariosGiannakaras/MyFinHub/releases) history.
+The current stable Windows release is **v1.0.2**. See [`CHANGELOG.md`](CHANGELOG.md) for released and unreleased changes, or browse the complete [GitHub Releases](https://github.com/MariosGiannakaras/MyFinHub/releases) history.
 
 Desktop releases use `myfinhub-v<version>` tags. The Windows release workflow verifies that the tag is already on `main`, builds and smoke-tests `MyFinHub.exe`, creates the interactive NSIS installer, generates SHA-256 metadata and publishes the controlled GitHub Release.
 
