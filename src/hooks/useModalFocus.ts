@@ -2,9 +2,11 @@ import { useEffect, useRef, type RefObject } from 'react';
 
 const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
-export function useModalFocus<T extends HTMLElement>(open: boolean, preferred?: string): RefObject<T | null> {
+export function useModalFocus<T extends HTMLElement>(open: boolean, preferred?: string, onClose?: () => void): RefObject<T | null> {
   const ref = useRef<T | null>(null);
   const opener = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     if (!open) return;
@@ -30,6 +32,12 @@ export function useModalFocus<T extends HTMLElement>(open: boolean, preferred?: 
     queueMicrotask(() => initial.focus({ preventScroll: true }));
 
     const trap = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && onCloseRef.current) {
+        event.preventDefault();
+        event.stopPropagation();
+        onCloseRef.current();
+        return;
+      }
       if (event.key !== 'Tab') return;
       const items = [...root.querySelectorAll<HTMLElement>(FOCUSABLE)].filter((item) => item.offsetParent !== null);
       if (!items.length) { event.preventDefault(); root.focus({ preventScroll: true }); return; }
