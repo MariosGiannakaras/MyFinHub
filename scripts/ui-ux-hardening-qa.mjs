@@ -28,7 +28,7 @@ try{
   const waitHeading=text=>waitFor("function(text){return (document.querySelector('#main-workspace h1')?.textContent||'').includes(text)}",`heading ${text}`,[text]);
   const clickText=async(selector,text)=>{const clicked=await c.call("function(selector,text){const node=[...document.querySelectorAll(selector)].find(item=>(item.textContent||'').trim().includes(text));if(!node)return false;node.click();return true}",[selector,text]);assert(clicked,`missing clickable ${text}`)};
   const screenshot=async name=>{const shot=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(shot.data,'base64'))};
-  const pressEscape=()=>c.eval("document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}))");
+  const pressEscape=async()=>{const args={key:'Escape',code:'Escape',windowsVirtualKeyCode:27,nativeVirtualKeyCode:27};await c.send('Input.dispatchKeyEvent',{type:'keyDown',...args});await c.send('Input.dispatchKeyEvent',{type:'keyUp',...args})};
   const noOverflow=async label=>{const overflow=await c.eval('document.documentElement.scrollWidth-window.innerWidth');assert(overflow<=1,`${label} overflow ${overflow}px`)};
 
   await viewport(1440,1000);await c.send('Page.navigate',{url:baseUrl});await waitHeading('Οι λογαριασμοί μου');
@@ -65,15 +65,12 @@ try{
   assert(await c.eval("document.body.style.position==='fixed'"),'modal locks background scroll');
   assert(await c.call("function(){const input=document.querySelector('.quick-modal .owned-date-shell .owned-input');if(!input)return false;input.click();return true}"),'date input opens');
   await waitFor("function(){return Boolean(document.querySelector('.owned-date-popover'))}",'date popover');
-  await pressEscape();await sleep(120);
-  assert(!(await c.eval("Boolean(document.querySelector('.owned-date-popover'))")),'Esc closes nested date popover');
+  await pressEscape();await waitFor("function(){return !document.querySelector('.owned-date-popover')}",'date popover closes with Escape');
   assert(await c.eval("Boolean(document.querySelector('.quick-modal'))"),'Esc leaves parent modal open');
-  await pressEscape();await sleep(120);
-  assert(!(await c.eval("Boolean(document.querySelector('.quick-modal'))")),'second Esc closes parent modal');
+  await pressEscape();await waitFor("function(){return !document.querySelector('.quick-modal')}",'parent modal closes with second Escape');
   assert(await c.eval("document.body.style.position!=='fixed'"),'closing modal restores background scroll');
   await clickText('.command-pill','Γρήγορη κίνηση');await waitFor("function(){return Boolean(document.querySelector('.modal-backdrop'))}",'Quick Add backdrop');
-  await c.eval("document.querySelector('.modal-backdrop').dispatchEvent(new MouseEvent('mousedown',{bubbles:true,cancelable:true}))");await sleep(120);
-  assert(!(await c.eval("Boolean(document.querySelector('.quick-modal'))")),'backdrop click closes modal');
+  await c.eval("document.querySelector('.modal-backdrop').dispatchEvent(new MouseEvent('mousedown',{bubbles:true,cancelable:true}))");await waitFor("function(){return !document.querySelector('.quick-modal')}",'backdrop closes Quick Add');
 
   await viewport(375,812);await c.send('Page.navigate',{url:baseUrl});await waitHeading('Οι λογαριασμοί μου');await noOverflow('Dashboard 375');
   assert(await c.eval("document.documentElement.dataset.textSize==='normal'"),'QA reload returns to persisted fixture default');
