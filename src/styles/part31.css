@@ -33,7 +33,7 @@
 /* Recharts' old 10px inline ticks were noticeably smaller than the rest of the new typography scale. */
 .recharts-cartesian-axis-tick-value{font-size:max(12px,var(--ux-tiny-size))!important}
 
-/* Mobile interactive surfaces use a real 40px minimum hit area. Primary/navigation controls remain 44px where defined elsewhere. */
+/* Mobile interactive surfaces use a subpixel-safe 42px minimum hit area. Primary/navigation controls remain 44px where defined elsewhere. */
 @media(max-width:720px){
   .top-actions button{min-width:40px;min-height:40px;width:40px;height:40px}
   .workspace .page-heading .save-button{
@@ -55,9 +55,9 @@
   .workspace .loan-list-actions button,
   .workspace .loan-actions button,
   .workspace summary{
-    min-height:40px;
+    min-height:42px;
   }
-  .workspace .report-eye{min-height:40px!important}
+  .workspace .report-eye{min-height:42px!important}
   .workspace .inline-icon-action,
   .workspace .row-actions button,
   .workspace .icon-button,
