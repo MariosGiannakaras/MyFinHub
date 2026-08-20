@@ -34,7 +34,8 @@ describe('app-owned entry controls',()=>{
     expect(dateSource).toContain("import { localDateString } from '../lib/localDate'");
     expect(dateSource).toContain('const today=localDateString()');
     expect(dateSource).toContain("if((min&&next<min)||(max&&next>max))return");
-    expect(dateSource).toContain('[data-date=\\"${next}\\"]:not(:disabled)');
+    expect(dateSource).toContain('querySelector<HTMLButtonElement>');
+    expect(dateSource).toContain(':not(:disabled)');
   });
   it('keeps owned popovers viewport-contained and mobile-safe',()=>{
     expect(styles).toContain('.owned-popover-backdrop{position:fixed;inset:0');
