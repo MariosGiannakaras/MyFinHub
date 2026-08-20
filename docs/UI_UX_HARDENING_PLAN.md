@@ -1,8 +1,8 @@
 # MyFinHub UI/UX Hardening Execution Plan
 
-Tracking issue: #158 — reopened for post-review technical closure
+Tracking issue: #158 — post-review technical closure
 Branch: `feat/ui-ux-hardening-batch`
-PR: #159 — ready for review, open and unmerged
+PR: #159 — ready for owner review, open and unmerged
 Evidence map: `docs/UI_UX_AUDIT_EVIDENCE.md`
 
 ## Working rules
@@ -12,7 +12,7 @@ Evidence map: `docs/UI_UX_AUDIT_EVIDENCE.md`
 - Do not change agreed visual/interaction contracts as a side effect of refactoring.
 - Every task requires evidence before it is marked complete.
 - The owner directed completion of the implementation, satisfying the Reports/Analytics implementation checkpoint for the current approved scope.
-- Implementation completion does not authorize merge/release. Do not merge to `main`, bump release metadata, create a release, or publish a production installer without separate explicit owner approval.
+- Technical completion does not authorize merge/release. Do not merge to `main`, bump release metadata, create a release, or publish a production installer without separate explicit owner approval.
 
 ## Execution order
 
@@ -92,7 +92,7 @@ Initial verified implementation head: `10f757cc3b6ab4c9567e9fe0344a04accc980217`
 - [x] Preserve actual utilization above 100% in report calculations
 - [x] Show actual utilization plus bounded visual progress and over-limit amount on Credit Card
 - [x] Add over-limit unit regression coverage
-- [x] Add dedicated Chromium Credit + Reports over-limit rendered QA
+- [x] Add dedicated Credit + Reports over-limit rendered QA
 - [x] Replace ambiguous trend-direction insight icons with semantic success/warning icons
 
 #### Repository / domain hygiene
@@ -101,23 +101,49 @@ Initial verified implementation head: `10f757cc3b6ab4c9567e9fe0344a04accc980217`
 - [x] Re-review Cards/Loans/Lending/Recurring mutation paths
 - [x] Prevent stale Lending account ids from being submitted
 - [x] Add rendered-QA browser failover for runner CDP bootstrap failures without suppressing application failures
+- [x] Correct the owned-controls mobile Cards route regression test
 
-### Phase 7 — Final same-head verification and closure
-- [ ] Privacy/security guard + complete Vitest suite
-- [ ] Production build + API TypeScript check
-- [ ] Owned-controls rendered Chromium QA
-- [ ] Full desktop/mobile route/state UI/UX browser matrix
-- [ ] Dedicated credit over-limit browser QA
-- [ ] Completion QA: sorting/forms/reduced-motion/contrast
-- [ ] CDP console/network/runtime QA including 4xx/5xx and failed loads
-- [ ] Full-page screenshot evidence capture
-- [ ] Final desktop/mobile screenshot review for overlap/clipping/layout regressions
-- [ ] CodeQL on the same final head
-- [ ] Windows Desktop package/NSIS/checksum gates on the same final head
-- [ ] Confirm PR #159 has no unresolved review threads or change requests
-- [ ] Synchronize PR #159 description with final head/test counts/runs/artifacts
-- [ ] Synchronize final evidence into `docs/UI_UX_AUDIT_EVIDENCE.md` and issue #158
-- [ ] Close issue #158 as completed
+### Phase 7 — Final same-head implementation verification
+- [x] Privacy/security guard + complete Vitest suite
+- [x] Production build + API TypeScript check
+- [x] Owned-controls rendered browser QA
+- [x] Full desktop/mobile route/state UI/UX browser matrix
+- [x] Dedicated credit over-limit browser QA
+- [x] Completion QA: sorting/forms/reduced-motion/contrast
+- [x] CDP console/network/runtime QA including 4xx/5xx and failed loads
+- [x] Full-page screenshot evidence capture
+- [x] Final desktop/mobile screenshot review for overlap/clipping/layout regressions
+- [x] CodeQL on the same implementation head
+- [x] Windows Desktop package/NSIS/checksum gates on the same implementation head
+- [x] Confirm PR #159 has no unresolved review threads or change requests
+- [x] Synchronize PR #159 description with final implementation evidence
+- [x] Synchronize final evidence into repository documentation and issue #158 checklist
+
+## Final verified implementation evidence
+
+Final implementation head: `f444d7f8da43b784680042b691db4b2e138203dd`.
+PR merge ref verified by CI: `e729b291130b1f741aa9e6b3f49693e897931ef3`.
+
+- CI `32406108849`: **success**.
+  - privacy/security guard passed across 238 tracked files;
+  - 34 test files / **150 tests** passed;
+  - production TypeScript/Vite build passed;
+  - API TypeScript check passed;
+  - primary Chromium CDP bootstrap failed on the runner, then the isolated system-Chrome fallback succeeded;
+  - base rendered frontend QA passed;
+  - owned-controls QA passed;
+  - full desktop/mobile route-state matrix passed;
+  - completion QA passed;
+  - runtime console/network QA passed;
+  - dedicated credit over-limit QA passed;
+  - full-page visual evidence QA passed.
+- Screenshot artifact `9420404231`: **49 files**, SHA-256 `1c1be773a510ae85e076ce4fe05bf4210d771f0f50cd50dc401bd6586eb4d7dc`.
+- Final screenshot review found no new overlap, clipping, layout or responsive regression, including the 135% credit over-limit state.
+- CodeQL `32406108695`: **success**.
+- Windows Desktop `32406108685`: **success** — boundary validation, PowerShell fallback, unpacked build, packaged executable/backend smoke, NSIS Setup, checksum and installer evidence all passed; publish correctly skipped because this was not a release tag.
+- PR #159 review state at closure: 0 unresolved review threads and 0 submitted reviews/change requests.
+
+This file and `docs/UI_UX_AUDIT_EVIDENCE.md` are documentation-only closure synchronization after the verified implementation head. Their workflow runs must remain green before issue #158 is finally closed.
 
 ## Owner-gated actions after technical closure
 
