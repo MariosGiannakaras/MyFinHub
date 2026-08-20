@@ -11,6 +11,8 @@ const scripts = [
   { path: 'scripts/ui-ux-completion-qa.mjs', profiles: ['/tmp/myfinhub-ui-completion-qa-chrome'] },
 ];
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 function cleanProfiles(profiles) {
   for (const profile of profiles) {
     try { rmSync(profile, { recursive: true, force: true, maxRetries: 8, retryDelay: 150 }); }
@@ -47,9 +49,13 @@ for (const item of scripts) {
   let result = await runScript(item.path);
   if (result.code !== 0 && isBrowserBootstrapFailure(result.output)) {
     console.warn(`Rendered QA browser bootstrap failed for ${item.path}; cleaning the isolated profile and retrying once.`);
+    await sleep(350);
     cleanProfiles(item.profiles);
     result = await runScript(item.path);
   }
+  // The child script has requested Chrome shutdown, but Chrome can keep profile
+  // files open for a few hundred milliseconds after the Node process exits.
+  await sleep(350);
   cleanProfiles(item.profiles);
   if (result.code !== 0) process.exit(result.code);
 }
