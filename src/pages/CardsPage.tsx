@@ -1,6 +1,7 @@
 import { ArchiveRestore, Plus } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { CardCreateDialog } from '../components/CardCreateDialog';
+import { FormError } from '../components/FormError';
 import { InteractivePaymentCard } from '../components/InteractivePaymentCard';
 import { Tooltip } from '../components/Tooltip';
 import { useModalFocus } from '../hooks/useModalFocus';
@@ -55,6 +56,6 @@ export function CardsPage({
 
     <CardCreateDialog open={Boolean(cardBank)} data={data} banks={cardBank?[cardBank]:banks.slice(0,1)} initialBankId={cardBank?.id} onClose={()=>setCardBankId(null)} onSave={createCard}/>
 
-    {bankOpen?<div className="picker-backdrop open" aria-hidden="false" onMouseDown={()=>setBankOpen(false)}><section ref={bankRef} className="picker compact neo-raised" role="dialog" aria-modal="true" aria-labelledby="new-bank-title" tabIndex={-1} onMouseDown={event=>event.stopPropagation()}><div className="picker-head"><div><h2 id="new-bank-title">Νέα τράπεζα</h2><p>Η νέα τράπεζα θα αποκτήσει δική της στήλη και ξεχωριστό κουμπί προσθήκης καρτών.</p></div><button type="button" className="close-picker" aria-label="Κλείσιμο" onClick={()=>setBankOpen(false)}>×</button></div><div className="modal-form-grid one"><div className="modal-field"><label>Όνομα τράπεζας</label><input data-autofocus="true" maxLength={36} value={bankName} onChange={event=>setBankName(event.target.value)} placeholder="π.χ. N26"/></div></div>{error?<div className="form-error" role="alert">{error}</div>:null}<div className="modal-actions"><button type="button" className="modal-secondary" onClick={()=>setBankOpen(false)}>Ακύρωση</button><button type="button" className="modal-primary" onClick={saveBank}><Plus/> Προσθήκη τράπεζας</button></div></section></div>:null}
+    {bankOpen?<div className="picker-backdrop open" aria-hidden="false" onMouseDown={()=>setBankOpen(false)}><section ref={bankRef} className="picker compact neo-raised" role="dialog" aria-modal="true" aria-labelledby="new-bank-title" aria-describedby={error?'new-bank-error':undefined} tabIndex={-1} onMouseDown={event=>event.stopPropagation()}><div className="picker-head"><div><h2 id="new-bank-title">Νέα τράπεζα</h2><p>Η νέα τράπεζα θα αποκτήσει δική της στήλη και ξεχωριστό κουμπί προσθήκης καρτών.</p></div><button type="button" className="close-picker" aria-label="Κλείσιμο" onClick={()=>setBankOpen(false)}>×</button></div><div className="modal-form-grid one"><div className="modal-field"><label>Όνομα τράπεζας</label><input data-autofocus="true" maxLength={36} value={bankName} onChange={event=>setBankName(event.target.value)} placeholder="π.χ. N26" aria-invalid={Boolean(error)} aria-describedby={error?'new-bank-error':undefined}/></div></div>{error?<FormError id="new-bank-error">{error}</FormError>:null}<div className="modal-actions"><button type="button" className="modal-secondary" onClick={()=>setBankOpen(false)}>Ακύρωση</button><button type="button" className="modal-primary" onClick={saveBank}><Plus/> Προσθήκη τράπεζας</button></div></section></div>:null}
   </div>;
 }
