@@ -1,0 +1,253 @@
+name: Temporary UI UX Foundations Bootstrap
+
+on:
+  push:
+    branches: [feat/ui-ux-hardening-batch]
+    paths: [.github/workflows/.tmp-ux-foundations-bootstrap.yml]
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/ui-ux-hardening-batch
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Apply shared UI UX foundations
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_one(path, old, new):
+              p=Path(path); s=p.read_text()
+              if old not in s:
+                  raise SystemExit(f'Expected text not found in {path}: {old[:100]!r}')
+              p.write_text(s.replace(old,new,1))
+
+          replace_one('server/validation.ts',
+            "  if (value.motion !== undefined) oneOf(value.motion, ['system','reduced','full'], 'state.settings.motion');\n",
+            "  if (value.motion !== undefined) oneOf(value.motion, ['system','reduced','full'], 'state.settings.motion');\n  if (value.textSize !== undefined) oneOf(value.textSize, ['compact','normal','large'], 'state.settings.textSize');\n")
+
+          replace_one('src/hooks/useFinance.ts',
+            "  return {...migrated,state:{...migrated.state,settings:{...migrated.state.settings,motion:'full'}}};",
+            "  return {...migrated,state:{...migrated.state,settings:{...migrated.state.settings,motion:'full',textSize:migrated.state.settings.textSize??'normal'}}};")
+
+          p=Path('src/hooks/useModalFocus.ts')
+          p.write_text("""import { useEffect, useRef, type RefObject } from 'react';
+
+const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex=\"-1\"])';
+
+export function useModalFocus<T extends HTMLElement>(open: boolean, preferred?: string, onClose?: () => void): RefObject<T | null> {
+  const ref = useRef<T | null>(null);
+  const opener = useRef<HTMLElement | null>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
+
+  useEffect(() => {
+    if (!open) return;
+    opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const root = ref.current;
+    if (!root) return;
+
+    const body = document.body;
+    const html = document.documentElement;
+    const scrollX = window.scrollX;
+    const scrollY = window.scrollY;
+    const bodyStyle = { position: body.style.position, top: body.style.top, left: body.style.left, right: body.style.right, width: body.style.width, overflow: body.style.overflow };
+    const htmlOverscroll = html.style.overscrollBehavior;
+    body.style.position = 'fixed';
+    body.style.top = `-${scrollY}px`;
+    body.style.left = `-${scrollX}px`;
+    body.style.right = '0';
+    body.style.width = '100%';
+    body.style.overflow = 'hidden';
+    html.style.overscrollBehavior = 'none';
+
+    const initial = (preferred ? root.querySelector<HTMLElement>(preferred) : null) ?? root.querySelector<HTMLElement>(FOCUSABLE) ?? root;
+    queueMicrotask(() => initial.focus({ preventScroll: true }));
+
+    const trap = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && onCloseRef.current) {
+        event.preventDefault();
+        event.stopPropagation();
+        onCloseRef.current();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const items = [...root.querySelectorAll<HTMLElement>(FOCUSABLE)].filter((item) => item.offsetParent !== null);
+      if (!items.length) { event.preventDefault(); root.focus({ preventScroll: true }); return; }
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus({ preventScroll: true }); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus({ preventScroll: true }); }
+    };
+    document.addEventListener('keydown', trap);
+    return () => {
+      document.removeEventListener('keydown', trap);
+      body.style.position = bodyStyle.position;
+      body.style.top = bodyStyle.top;
+      body.style.left = bodyStyle.left;
+      body.style.right = bodyStyle.right;
+      body.style.width = bodyStyle.width;
+      body.style.overflow = bodyStyle.overflow;
+      html.style.overscrollBehavior = htmlOverscroll;
+      window.scrollTo({ left: scrollX, top: scrollY, behavior: 'auto' });
+      queueMicrotask(() => opener.current?.focus({ preventScroll: true }));
+    };
+  }, [open, preferred]);
+
+  return ref;
+}
+""")
+
+          Path('src/components/Tooltip.tsx').write_text("""import { cloneElement, isValidElement, useId, type ReactElement, type ReactNode } from 'react';
+
+type TooltipSide = 'top' | 'right' | 'bottom' | 'left';
+type DescribedElement = ReactElement<{ 'aria-describedby'?: string }>;
+
+export function Tooltip({label,children,side='bottom'}:{label:string;children:ReactNode;side?:TooltipSide}) {
+  const id=useId();
+  const child=isValidElement(children)?(() => {
+    const element=children as DescribedElement;
+    const describedBy=[element.props['aria-describedby'],id].filter(Boolean).join(' ');
+    return cloneElement(element,{'aria-describedby':describedBy});
+  })():children;
+  return <span className={`app-tooltip app-tooltip-${side}`}>
+    {child}
+    <span className="app-tooltip-bubble" id={id} role="tooltip">{label}</span>
+  </span>;
+}
+""")
+
+          replace_one('src/components/AppShell.tsx',
+            "import { useModalFocus } from '../hooks/useModalFocus';\n",
+            "import { useModalFocus } from '../hooks/useModalFocus';\nimport { Tooltip } from './Tooltip';\n")
+          replace_one('src/components/AppShell.tsx',
+            " const menuRef=useModalFocus<HTMLElement>(mobileMenuOpen,'button');",
+            " const menuRef=useModalFocus<HTMLElement>(mobileMenuOpen,'button',()=>setMobileMenuOpen(false));")
+          replace_one('src/components/AppShell.tsx',
+            " useEffect(()=>{if(!mobileMenuOpen)return;const close=(event:KeyboardEvent)=>{if(event.key==='Escape'){event.preventDefault();setMobileMenuOpen(false)}};window.addEventListener('keydown',close);return()=>window.removeEventListener('keydown',close)},[mobileMenuOpen]);\n",
+            "")
+          replace_one('src/components/AppShell.tsx',
+            "<div className=\"top-actions\">{onUndo?<button type=\"button\" aria-label=\"Αναίρεση τελευταίας αλλαγής\" title=\"Αναίρεση τελευταίας αλλαγής\" disabled={!canUndo} onClick={onUndo}><Undo2 size={17}/></button>:null}{onRedo?<button type=\"button\" aria-label=\"Επαναφορά τελευταίας αναιρεμένης αλλαγής\" title=\"Επαναφορά τελευταίας αναιρεμένης αλλαγής\" disabled={!canRedo} onClick={onRedo}><Redo2 size={17}/></button>:null}{onRefresh?<button type=\"button\" aria-label=\"Ανανέωση δεδομένων\" title=\"Ανανέωση δεδομένων\" disabled={saveState==='loading'} onClick={onRefresh}><RefreshCw className={saveState==='loading'?'is-spinning':''} size={17}/></button>:null}{onLogout?<button type=\"button\" aria-label=\"Αποσύνδεση\" title=\"Αποσύνδεση\" onClick={onLogout}><LogOut size={17}/></button>:null}</div>",
+            "<div className=\"top-actions\">{onUndo?<Tooltip label=\"Αναίρεση τελευταίας αλλαγής\"><button type=\"button\" aria-label=\"Αναίρεση τελευταίας αλλαγής\" disabled={!canUndo} onClick={onUndo}><Undo2 size={17}/></button></Tooltip>:null}{onRedo?<Tooltip label=\"Επαναφορά τελευταίας αναιρεμένης αλλαγής\"><button type=\"button\" aria-label=\"Επαναφορά τελευταίας αναιρεμένης αλλαγής\" disabled={!canRedo} onClick={onRedo}><Redo2 size={17}/></button></Tooltip>:null}{onRefresh?<Tooltip label=\"Ανανέωση δεδομένων\"><button type=\"button\" aria-label=\"Ανανέωση δεδομένων\" disabled={saveState==='loading'} onClick={onRefresh}><RefreshCw className={saveState==='loading'?'is-spinning':''} size={17}/></button></Tooltip>:null}{onLogout?<Tooltip label=\"Αποσύνδεση\"><button type=\"button\" aria-label=\"Αποσύνδεση\" onClick={onLogout}><LogOut size={17}/></button></Tooltip>:null}</div>")
+
+          replace_one('src/components/CardCreateDialog.tsx',
+            "  const ref=useModalFocus<HTMLElement>(open,'[data-autofocus=\"true\"]');",
+            "  const ref=useModalFocus<HTMLElement>(open,'[data-autofocus=\"true\"]',onClose);")
+          replace_one('src/components/CardCreateDialog.tsx',
+            " tabIndex={-1} onMouseDown={event=>event.stopPropagation()} onKeyDown={event=>{if(event.key==='Escape'){event.preventDefault();onClose()}}}>",
+            " tabIndex={-1} onMouseDown={event=>event.stopPropagation()}>")
+
+          replace_one('src/App.tsx',
+            "  const data=finance.data; useEffect(()=>{document.documentElement.dataset.motion='full';return()=>{delete document.documentElement.dataset.motion}},[]); if(!data)return <AppSkeleton/>; if(notFound)return <NotFound onHome={()=>navigate('dashboard',true)}/>;",
+            "  const data=finance.data; const textSize=data?.state.settings.textSize??'normal'; useEffect(()=>{document.documentElement.dataset.motion='full';return()=>{delete document.documentElement.dataset.motion}},[]); useEffect(()=>{document.documentElement.dataset.textSize=textSize;return()=>{delete document.documentElement.dataset.textSize}},[textSize]); if(!data)return <AppSkeleton/>; if(notFound)return <NotFound onHome={()=>navigate('dashboard',true)}/>;")
+
+          replace_one('src/pages/SettingsPage.tsx',
+            "import type { FinanceData, FinanceSettings } from '../types';",
+            "import type { FinanceData, FinanceSettings, TextSizePreference } from '../types';")
+          replace_one('src/pages/SettingsPage.tsx',
+            "function cloneSettings(settings:FinanceSettings):FinanceSettings{return {...settings,motion:'full',accountNames:",
+            "function cloneSettings(settings:FinanceSettings):FinanceSettings{return {...settings,motion:'full',textSize:settings.textSize??'normal',accountNames:")
+          replace_one('src/pages/SettingsPage.tsx',
+            "function backupFilename(){const stamp=new Date().toISOString().replace(/[:.]/g,'-');return `MyFinHub-backup-${stamp}.json`;}",
+            "function textSizeLabel(value:TextSizePreference){return value==='compact'?'Συμπαγές':value==='large'?'Μεγάλο':'Κανονικό'}\nfunction backupFilename(){const stamp=new Date().toISOString().replace(/[:.]/g,'-');return `MyFinHub-backup-${stamp}.json`;}")
+          replace_one('src/pages/SettingsPage.tsx',
+            " <DesktopUpdatePanel/>\n <section className=\"settings-grid\">",
+            " <DesktopUpdatePanel/>\n <section className=\"panel neo-raised readability-settings\"><div className=\"panel-head\"><div><span>Αναγνωσιμότητα</span><small>Διάλεξε το μέγεθος κειμένου που διαβάζεις πιο άνετα. Η επιλογή εφαρμόζεται σε όλη την εφαρμογή και αποθηκεύεται αυτόματα.</small></div></div><div className=\"text-size-picker\" role=\"radiogroup\" aria-label=\"Μέγεθος κειμένου\">{(['compact','normal','large'] as TextSizePreference[]).map(value=><button key={value} type=\"button\" role=\"radio\" aria-checked={(draft.textSize??'normal')===value} className={(draft.textSize??'normal')===value?'active':''} onClick={()=>change({textSize:value})}><b>{textSizeLabel(value)}</b><span>{value==='compact'?'Περισσότερο περιεχόμενο στην οθόνη':value==='large'?'Μεγαλύτερα γράμματα και πιο άνετη ανάγνωση':'Ισορροπημένη προεπιλογή'}</span></button>)}</div></section>\n <section className=\"settings-grid\">")
+
+          replace_one('src/qaFixture.ts',
+            "creditLimit:2000,motion:'system'",
+            "creditLimit:2000,motion:'system',textSize:'normal'")
+
+          p=Path('src/styles.css'); s=p.read_text();
+          if "@import './styles/part30.css';" not in s: p.write_text(s+"@import './styles/part30.css';\n")
+          Path('src/styles/part30.css').write_text("""/* UI/UX hardening foundations: tooltips, readability preference and shared interaction states. */
+:root{
+  --ux-body-size:13px;
+  --ux-small-size:11px;
+  --ux-tiny-size:10px;
+  --ux-heading-size:29px;
+}
+html[data-text-size="compact"]{--ux-body-size:12px;--ux-small-size:10px;--ux-tiny-size:9px;--ux-heading-size:27px}
+html[data-text-size="normal"]{--ux-body-size:13px;--ux-small-size:11px;--ux-tiny-size:10px;--ux-heading-size:29px}
+html[data-text-size="large"]{--ux-body-size:15px;--ux-small-size:13px;--ux-tiny-size:11px;--ux-heading-size:32px}
+
+.sidebar nav button{font-size:var(--ux-body-size)}
+.page-heading h1{font-size:var(--ux-heading-size)}
+.page-heading p,.command-pill{font-size:var(--ux-small-size);line-height:1.5}
+.eyebrow,.month-toolbar,.metric-head,.file-line,.file-panel small,.sidebar-foot,.brand-block small{font-size:var(--ux-tiny-size)}
+button,input,select,textarea{line-height:1.35}
+
+.app-tooltip{position:relative;display:inline-flex;align-items:center;justify-content:center}
+.app-tooltip-bubble{position:absolute;z-index:120;max-width:min(260px,70vw);width:max-content;padding:7px 9px;border-radius:8px;background:#10234d;color:#fff;font-size:11px;font-weight:650;line-height:1.25;box-shadow:0 8px 24px rgba(16,35,77,.22);opacity:0;visibility:hidden;pointer-events:none;transform:translateY(-2px);transition:opacity .12s ease,transform .12s ease,visibility .12s ease}
+.app-tooltip:hover .app-tooltip-bubble,.app-tooltip:focus-within .app-tooltip-bubble{opacity:1;visibility:visible;transform:translateY(0)}
+.app-tooltip-bottom .app-tooltip-bubble{top:calc(100% + 8px);left:50%;transform:translate(-50%,-2px)}
+.app-tooltip-bottom:hover .app-tooltip-bubble,.app-tooltip-bottom:focus-within .app-tooltip-bubble{transform:translate(-50%,0)}
+.app-tooltip-top .app-tooltip-bubble{bottom:calc(100% + 8px);left:50%;transform:translate(-50%,2px)}
+.app-tooltip-top:hover .app-tooltip-bubble,.app-tooltip-top:focus-within .app-tooltip-bubble{transform:translate(-50%,0)}
+.app-tooltip-right .app-tooltip-bubble{left:calc(100% + 8px);top:50%;transform:translate(-2px,-50%)}
+.app-tooltip-right:hover .app-tooltip-bubble,.app-tooltip-right:focus-within .app-tooltip-bubble{transform:translate(0,-50%)}
+.app-tooltip-left .app-tooltip-bubble{right:calc(100% + 8px);top:50%;transform:translate(2px,-50%)}
+.app-tooltip-left:hover .app-tooltip-bubble,.app-tooltip-left:focus-within .app-tooltip-bubble{transform:translate(0,-50%)}
+
+.readability-settings{padding:18px}
+.text-size-picker{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px}
+.text-size-picker button{border:1px solid var(--line);border-radius:13px;background:#f6f9fd;padding:12px 14px;text-align:left;display:grid;gap:4px;cursor:pointer;min-height:70px}
+.text-size-picker button b{font-size:13px}
+.text-size-picker button span{color:var(--muted);font-size:10px;line-height:1.35}
+.text-size-picker button.active{border-color:rgba(47,111,237,.52);background:rgba(47,111,237,.08);box-shadow:0 0 0 2px rgba(47,111,237,.08)}
+@media(max-width:720px){.text-size-picker{grid-template-columns:1fr}.app-tooltip-bubble{display:none}}
+""")
+
+          Path('tests/ux-foundations.test.ts').write_text("""import { readFileSync } from 'node:fs';
+import { describe, expect, it } from 'vitest';
+import { validateFinanceData } from '../server/validation';
+import { qaFinanceData } from '../src/qaFixture';
+
+describe('UI/UX hardening foundations',()=>{
+  it('accepts only supported persisted text-size preferences',()=>{
+    for(const textSize of ['compact','normal','large'] as const){
+      const data=structuredClone(qaFinanceData());
+      data.state.settings.textSize=textSize;
+      expect(()=>validateFinanceData(data)).not.toThrow();
+    }
+    const invalid=structuredClone(qaFinanceData()) as any;
+    invalid.state.settings.textSize='giant';
+    expect(()=>validateFinanceData(invalid)).toThrow();
+  });
+  it('centralizes Escape handling in the modal focus hook',()=>{
+    const source=readFileSync('src/hooks/useModalFocus.ts','utf8');
+    expect(source).toContain("event.key === 'Escape'");
+    expect(source).toContain('onCloseRef.current()');
+  });
+  it('ships one shared application tooltip primitive',()=>{
+    const source=readFileSync('src/components/Tooltip.tsx','utf8');
+    expect(source).toContain('role=\"tooltip\"');
+    expect(source).toContain("'aria-describedby'");
+  });
+});
+""")
+
+          Path('.github/workflows/.tmp-ux-foundations-bootstrap.yml').unlink()
+          PY
+      - name: Verify foundations
+        run: |
+          npm ci
+          npm run test -- --run tests/ux-foundations.test.ts
+          npm run build
+      - name: Commit foundations
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "feat: establish shared UI UX foundations"
+          git push origin HEAD:feat/ui-ux-hardening-batch
