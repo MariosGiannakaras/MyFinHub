@@ -32,8 +32,11 @@ try{
   const noOverflow=async label=>{const overflow=await c.eval('document.documentElement.scrollWidth-window.innerWidth');assert(overflow<=1,`${label} overflow ${overflow}px`)};
 
   await viewport(1440,1000);await c.send('Page.navigate',{url:baseUrl});await waitHeading('Οι λογαριασμοί μου');
-  const tooltipOk=await c.eval("(()=>{const button=document.querySelector('.top-actions button[aria-label=\"Αποσύνδεση\"]');if(!button)return false;button.focus();const bubble=button.closest('.app-tooltip')?.querySelector('.app-tooltip-bubble');if(!bubble)return false;const s=getComputedStyle(bubble),r=bubble.getBoundingClientRect();return s.visibility==='visible'&&Number(s.opacity)>.9&&r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight})()");
-  assert(tooltipOk,'keyboard tooltip is visible and viewport-contained');
+  const tooltipSemantics=await c.eval("(()=>{const button=document.querySelector('.top-actions button[aria-label=\"Αποσύνδεση\"]');if(!button)return null;button.focus();const id=button.getAttribute('aria-describedby');const bubble=id?document.getElementById(id):null;const r=button.getBoundingClientRect();return {focused:document.activeElement===button,described:Boolean(bubble&&bubble.getAttribute('role')==='tooltip'&&bubble.textContent.trim()),x:r.left+r.width/2,y:r.top+r.height/2}})()");
+  assert(tooltipSemantics?.focused&&Number.isFinite(tooltipSemantics.x)&&Number.isFinite(tooltipSemantics.y),'keyboard tooltip semantics and focus');
+  await c.send('Input.dispatchMouseEvent',{type:'mouseMoved',x:tooltipSemantics.x,y:tooltipSemantics.y});await sleep(160);
+  const tooltipVisual=await c.eval("(()=>{const button=document.querySelector('.top-actions button[aria-label=\"Αποσύνδεση\"]');const bubble=button?.closest('.app-tooltip')?.querySelector('.app-tooltip-bubble');if(!bubble)return false;const s=getComputedStyle(bubble),r=bubble.getBoundingClientRect();return s.visibility==='visible'&&Number(s.opacity)>.9&&r.left>=0&&r.right<=innerWidth&&r.top>=0&&r.bottom<=innerHeight})()");
+  assert(tooltipVisual,'hover tooltip is visible and viewport-contained');
 
   await clickText('.sidebar nav button','Συναλλαγές');await waitHeading('Συναλλαγές');
   await clickText('.sort-direction-control button','ASC');await sleep(100);
