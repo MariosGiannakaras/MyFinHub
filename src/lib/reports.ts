@@ -38,6 +38,43 @@ export function creditPortfolioSnapshot(data:FinanceData,asOf:string){
   };
 }
 
+function relativeChange(current:number,previous:number){return previous===0?(current===0?0:null):(current-previous)/Math.abs(previous)}
+function average(values:number[]){return values.length?values.reduce((sum,value)=>sum+value,0)/values.length:0}
+
+export function reportInsightModel(data:FinanceData,month:string){
+  const flow=operationalMonthlyFlow(data,month);
+  const previousMonth=shiftReportMonth(month,-1);
+  const previous=operationalMonthlyFlow(data,previousMonth);
+  const recent=reportFlowSeries(data,shiftReportMonth(month,-1),3);
+  const trailingExpenseAverage=average(recent.map(row=>row.expense));
+  const categories=subcategoryTotals(data,month);
+  const previousCategories=new Map(subcategoryTotals(data,previousMonth).map(row=>[row.name,row.value]));
+  const topCategory=categories[0];
+  const recurring=recurringMonthlyTotal(data);
+  const credit=creditPortfolioSnapshot(data,monthEnd(month));
+  const topPrevious=topCategory?previousCategories.get(topCategory.name)??0:0;
+  return {
+    month,
+    incomeChange:relativeChange(flow.income,previous.income),
+    expenseChange:relativeChange(flow.expense,previous.expense),
+    savingChange:relativeChange(flow.saving,previous.saving),
+    netFlow:flow.income-flow.expense,
+    savingsRate:flow.income>0?flow.saving/flow.income:null,
+    previousSavingsRate:previous.income>0?previous.saving/previous.income:null,
+    trailingExpenseAverage,
+    expenseVsTrailingAverage:trailingExpenseAverage>0?(flow.expense-trailingExpenseAverage)/trailingExpenseAverage:null,
+    recurringBurden:flow.income>0?recurring/flow.income:null,
+    topCategory:topCategory?{
+      name:topCategory.name,
+      value:topCategory.value,
+      share:flow.expense>0?topCategory.value/flow.expense:null,
+      change:relativeChange(topCategory.value,topPrevious),
+    }:null,
+    credit,
+    sufficientExpenseHistory:recent.some(row=>row.expense>0),
+  };
+}
+
 export function operationalReportSnapshot(data:FinanceData,month:string){
   const flow=operationalMonthlyFlow(data,month);const previous=operationalMonthlyFlow(data,shiftReportMonth(month,-1));const balances=accountBalances(data,monthEnd(month));const credit=creditPortfolioSnapshot(data,monthEnd(month));const receivables=lendingRows(data).reduce((sum,row)=>sum+row.outstanding,0);const recurring=recurringMonthlyTotal(data);const savings=savingsBreakdown(data,month);const budget=data.state.settings.monthlyBudget??0;
   return {flow,previous,balances,creditDebt:credit.debt,creditLimit:credit.limit,creditUsage:credit.usage,creditAvailable:credit.available,creditCards:credit.activeCards,receivables,recurring,savings,budget,budgetRemaining:budget-flow.expense};
