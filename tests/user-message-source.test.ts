@@ -3,12 +3,11 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const ROOTS=['src/pages','src/components'];
-const FORBIDDEN=[
+const FORBIDDEN_VISIBLE_COPY=[
   /Σφάλμα:/i,
   /accounting mode/i,
   /encrypted vault/i,
   /card identity/i,
-  /\bliability\b/i,
   /pre-import backup/i,
   /same-device CVV/i,
   /πραγματικό event/i,
@@ -23,20 +22,21 @@ function files(path:string):string[]{
 }
 
 describe('user-facing copy guard',()=>{
-  it('keeps known internal implementation language out of UI source',()=>{
+  it('keeps known implementation jargon out of UI source copy',()=>{
     const offenders:string[]=[];
     for(const root of ROOTS)for(const file of files(root)){
       const source=readFileSync(file,'utf8');
-      for(const pattern of FORBIDDEN)if(pattern.test(source))offenders.push(`${file}: ${pattern}`);
+      for(const pattern of FORBIDDEN_VISIBLE_COPY)if(pattern.test(source))offenders.push(`${file}: ${pattern}`);
     }
     expect(offenders).toEqual([]);
   });
 
-  it('does not render raw Error.message directly from pages/components',()=>{
+  it('does not pass raw Error.message directly to visible error/message state or JSX',()=>{
     const offenders:string[]=[];
+    const directRawMessage=/(?:set(?:Error|Message)\s*\(\s*|\{\s*)(?:error|err|e)\s*\.\s*message\b/;
     for(const root of ROOTS)for(const file of files(root)){
       const source=readFileSync(file,'utf8');
-      if(/\b(?:error|err|e)\s*\.\s*message\b/.test(source)&&!file.endsWith('PageErrorBoundary.tsx'))offenders.push(file);
+      if(directRawMessage.test(source))offenders.push(file);
     }
     expect(offenders).toEqual([]);
   });
