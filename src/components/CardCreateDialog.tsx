@@ -1,4 +1,4 @@
-import { Plus, X } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { BankBrandMark } from './BankBrandMark';
 import { useModalFocus } from '../hooks/useModalFocus';
