@@ -18,6 +18,21 @@
 .account-name-grid input:hover{border-color:#c5d4e7;background:#fff}
 .account-name-grid input:focus{border-color:rgba(47,111,237,.55);box-shadow:0 0 0 3px rgba(47,111,237,.08)}
 
+/* Dashboard quick actions reserve a real column for the amount; long merchant names can no longer collide with it. */
+.frequent-grid button{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  grid-template-areas:"label amount" "meta amount";
+  column-gap:10px;
+  align-items:center;
+}
+.frequent-grid button>b{grid-area:label;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.35}
+.frequent-grid button>span:not(.frequent-icon){grid-area:meta;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.frequent-grid button>strong{grid-area:amount;float:none;margin:0;align-self:center;white-space:nowrap;font-variant-numeric:tabular-nums}
+
+/* Recharts' old 10px inline ticks were noticeably smaller than the rest of the new typography scale. */
+.recharts-cartesian-axis-tick-value{font-size:max(12px,var(--ux-tiny-size))!important}
+
 /* Mobile interactive surfaces use a real 40px minimum hit area. Primary/navigation controls remain 44px where defined elsewhere. */
 @media(max-width:720px){
   .top-actions button{min-width:40px;min-height:40px;width:40px;height:40px}
@@ -103,10 +118,11 @@
   .bank-column .bank-add-btn{
     position:relative;
     box-sizing:border-box;
-    width:40px;
-    height:40px;
-    min-width:40px;
-    margin:-5.5px;
+    width:42px;
+    height:42px;
+    min-width:42px;
+    min-height:42px;
+    margin:-6.5px;
     border:0;
     background:transparent;
     box-shadow:none;
@@ -114,7 +130,7 @@
   .bank-column .bank-add-btn::before{
     content:"";
     position:absolute;
-    inset:5.5px;
+    inset:6.5px;
     border:1px solid rgba(255,255,255,.86);
     border-radius:10px;
     background:linear-gradient(145deg,#fff,#edf2f9);
@@ -165,7 +181,6 @@
   .workspace .loan-list-actions button,
   .workspace .loan-actions button,
   .workspace .report-eye{font-size:var(--ux-small-size)}
-  .recharts-cartesian-axis-tick-value{font-size:max(11px,var(--ux-tiny-size))!important}
 }
 
 @media(prefers-reduced-motion:reduce){.account-name-grid input{transition:none}}
