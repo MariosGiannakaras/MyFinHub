@@ -25,10 +25,11 @@ function cleanProfiles(profiles) {
   }
 }
 
-function runScript(path) {
+function runScript(path, useFallback = false) {
   return new Promise((resolve) => {
     let output = '';
-    const child = spawn(process.execPath, [path], { env: process.env, stdio: ['ignore', 'pipe', 'pipe'] });
+    const env = { ...process.env, MYFINHUB_QA_USE_FALLBACK: useFallback ? '1' : '0' };
+    const child = spawn(process.execPath, [path], { env, stdio: ['ignore', 'pipe', 'pipe'] });
     const forward = (stream, target) => stream.on('data', (chunk) => {
       const text = chunk.toString();
       output += text;
@@ -47,17 +48,22 @@ function isBrowserBootstrapFailure(output) {
     || /ECONNREFUSED.*92\d{2}/i.test(output);
 }
 
+const primaryBrowser = process.env.MYFINHUB_QA_PRIMARY_BROWSER || '';
+const fallbackBrowser = process.env.MYFINHUB_QA_FALLBACK_BROWSER || '';
+const hasDistinctFallback = Boolean(fallbackBrowser && fallbackBrowser !== primaryBrowser);
+
 for (const item of scripts) {
   cleanProfiles(item.profiles);
-  let result = await runScript(item.path);
+  let result = await runScript(item.path, false);
   if (result.code !== 0 && isBrowserBootstrapFailure(result.output)) {
-    console.warn(`Rendered QA browser bootstrap failed for ${item.path}; cleaning the isolated profile and retrying once.`);
+    const retryMode = hasDistinctFallback ? 'fallback browser' : 'same browser';
+    console.warn(`Rendered QA browser bootstrap failed for ${item.path}; cleaning the isolated profile and retrying once with ${retryMode}.`);
     await sleep(350);
     cleanProfiles(item.profiles);
-    result = await runScript(item.path);
+    result = await runScript(item.path, hasDistinctFallback);
   }
-  // The child script has requested Chrome shutdown, but Chrome can keep profile
-  // files open for a few hundred milliseconds after the Node process exits.
+  // The child script has requested browser shutdown, but the browser can keep
+  // profile files open for a few hundred milliseconds after Node exits.
   await sleep(350);
   cleanProfiles(item.profiles);
   if (result.code !== 0) process.exit(result.code);
