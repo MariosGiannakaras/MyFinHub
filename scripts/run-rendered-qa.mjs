@@ -9,6 +9,7 @@ const scripts = [
   { path: 'scripts/owned-controls-qa.mjs', profiles: ['/tmp/rheomiq-owned-controls-qa'] },
   { path: 'scripts/ui-ux-hardening-qa.mjs', profiles: ['/tmp/myfinhub-ui-ux-qa-chrome'] },
   { path: 'scripts/ui-ux-completion-qa.mjs', profiles: ['/tmp/myfinhub-ui-completion-qa-chrome'] },
+  { path: 'scripts/ui-ux-runtime-qa.mjs', profiles: ['/tmp/myfinhub-ui-runtime-qa-chrome'] },
   { path: 'scripts/ui-ux-visual-evidence-qa.mjs', profiles: ['/tmp/myfinhub-ui-visual-evidence-chrome'] },
 ];
 
