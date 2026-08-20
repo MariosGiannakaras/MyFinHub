@@ -1,4 +1,4 @@
-import { useEffect, useRef, type RefObject } from 'react';
+import { useEffect, useId, useRef, type RefObject } from 'react';
 
 const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
@@ -8,10 +8,20 @@ function isTopmostModal(root: HTMLElement) {
   return modals.at(-1) === root;
 }
 
+function addDescription(element:HTMLElement,id:string){
+  const values=(element.getAttribute('aria-describedby')??'').split(/\s+/).filter(Boolean);
+  if(!values.includes(id))element.setAttribute('aria-describedby',[...values,id].join(' '));
+}
+function removeDescription(element:HTMLElement,id:string){
+  const values=(element.getAttribute('aria-describedby')??'').split(/\s+/).filter(Boolean).filter(value=>value!==id);
+  if(values.length)element.setAttribute('aria-describedby',values.join(' '));else element.removeAttribute('aria-describedby');
+}
+
 export function useModalFocus<T extends HTMLElement>(open: boolean, preferred?: string, onClose?: () => void): RefObject<T | null> {
   const ref = useRef<T | null>(null);
   const opener = useRef<HTMLElement | null>(null);
   const onCloseRef = useRef(onClose);
+  const generatedErrorId = `${useId().replace(/:/g,'')}-form-error`;
   onCloseRef.current = onClose;
 
   useEffect(() => {
@@ -37,6 +47,19 @@ export function useModalFocus<T extends HTMLElement>(open: boolean, preferred?: 
     const initial = (preferred ? root.querySelector<HTMLElement>(preferred) : null) ?? root.querySelector<HTMLElement>(FOCUSABLE) ?? root;
     queueMicrotask(() => initial.focus({ preventScroll: true }));
 
+    let associatedErrorId='';
+    const syncErrorAssociation=()=>{
+      const error=root.querySelector<HTMLElement>('.form-error[role="alert"]');
+      if(associatedErrorId&&(!error||error.id!==associatedErrorId)){removeDescription(root,associatedErrorId);associatedErrorId=''}
+      if(!error)return;
+      if(!error.id)error.id=generatedErrorId;
+      associatedErrorId=error.id;
+      addDescription(root,error.id);
+    };
+    syncErrorAssociation();
+    const errorObserver=new MutationObserver(syncErrorAssociation);
+    errorObserver.observe(root,{childList:true,subtree:true,attributes:true,attributeFilter:['id','role','class']});
+
     const trap = (event: KeyboardEvent) => {
       if (!isTopmostModal(root)) return;
       if (event.key === 'Escape' && onCloseRef.current) {
@@ -56,6 +79,8 @@ export function useModalFocus<T extends HTMLElement>(open: boolean, preferred?: 
     document.addEventListener('keydown', trap);
     return () => {
       document.removeEventListener('keydown', trap);
+      errorObserver.disconnect();
+      if(associatedErrorId)removeDescription(root,associatedErrorId);
       body.style.position = bodyStyle.position;
       body.style.top = bodyStyle.top;
       body.style.left = bodyStyle.left;
@@ -66,7 +91,7 @@ export function useModalFocus<T extends HTMLElement>(open: boolean, preferred?: 
       window.scrollTo({ left: scrollX, top: scrollY, behavior: 'auto' });
       queueMicrotask(() => opener.current?.focus({ preventScroll: true }));
     };
-  }, [open, preferred]);
+  }, [open, preferred, generatedErrorId]);
 
   return ref;
 }
