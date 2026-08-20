@@ -1,4 +1,4 @@
-import { ArchiveRestore, Plus, X } from 'lucide-react';
+import { ArchiveRestore, Plus } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { CardCreateDialog } from '../components/CardCreateDialog';
 import { InteractivePaymentCard } from '../components/InteractivePaymentCard';
