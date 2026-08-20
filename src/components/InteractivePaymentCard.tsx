@@ -47,19 +47,22 @@ export function InteractivePaymentCard({
   const [revealed,setRevealed]=useState<Secrets>({});
   const [busy,setBusy]=useState(false);
   const [message,setMessage]=useState('');
-  const [editing,setEditing]=useState(startEditing);
+  const [editing,setEditing]=useState(startEditing||(!card.vaultRef&&!card.last4));
   const [pan,setPan]=useState('');
   const [expiry,setExpiry]=useState('');
   const [cvv,setCvv]=useState('');
   const [deleteOpen,setDeleteOpen]=useState(false);
   const [deleteProgress,setDeleteProgress]=useState(0);
+  const [deleteOffset,setDeleteOffset]=useState(0);
   const cardRef=useRef<HTMLElement>(null);
   const sliderRef=useRef<HTMLDivElement>(null);
   const theme=cardThemeClass(card);
   const visible=Boolean(revealed.pan||revealed.expiry||revealed.cvv);
   const tiltEnabled=useMemo(()=>typeof window==='undefined'||!window.matchMedia('(prefers-reduced-motion: reduce)').matches,[]);
 
-  useEffect(()=>{if(startEditing)setEditing(true)},[startEditing]);
+  useEffect(()=>{
+    if(startEditing||(!card.vaultRef&&!card.last4)){setEditing(true);setPan('');setExpiry('');setCvv('')}
+  },[startEditing,card.id,card.vaultRef,card.last4]);
 
   const loadSecrets=async()=>{
     setBusy(true);setMessage('');
@@ -90,10 +93,11 @@ export function InteractivePaymentCard({
     finally{setBusy(false)}
   };
   const cancelInline=()=>{setEditing(false);setPan('');setExpiry('');setCvv('');onEditingComplete?.()};
+  const resetDelete=()=>{setDeleteOpen(false);setDeleteProgress(0);setDeleteOffset(0)};
   const commitArchive=async()=>{
     if(!onArchive||archiveDisabled)return;
     setBusy(true);
-    try{await onArchive(card);setRevealed({});setDeleteOpen(false);setDeleteProgress(0);setMessage('Η κάρτα αρχειοθετήθηκε και μπορεί να επανέλθει με τα ίδια στοιχεία.')}
+    try{await onArchive(card);setRevealed({});resetDelete();setMessage('Η κάρτα αρχειοθετήθηκε και μπορεί να επανέλθει με τα ίδια στοιχεία.')}
     finally{setBusy(false)}
   };
 
@@ -103,7 +107,7 @@ export function InteractivePaymentCard({
     const ry=Math.max(-6.5,Math.min(6.5,(x-.5)*13));const rx=Math.max(-6.5,Math.min(6.5,-(y-.5)*13));element.style.transform=`perspective(1000px) rotateY(${ry}deg) rotateX(${rx}deg)`;
   };
   const resetTilt=()=>{if(cardRef.current)cardRef.current.style.transform='perspective(1000px) rotateY(0deg) rotateX(0deg)'};
-  const moveDelete=(clientX:number)=>{const el=sliderRef.current;if(!el)return;const rect=el.getBoundingClientRect();const progress=Math.max(0,Math.min(1,(clientX-rect.left-19.5)/(rect.width-39)));setDeleteProgress(progress)};
+  const moveDelete=(clientX:number)=>{const el=sliderRef.current;if(!el)return;const rect=el.getBoundingClientRect();const max=Math.max(0,rect.width-47);const progress=Math.max(0,Math.min(1,(clientX-rect.left-19.5)/Math.max(1,rect.width-39)));setDeleteProgress(progress);setDeleteOffset(progress*max)};
 
   const number=visible&&revealed.pan?formatPan(revealed.pan):maskedPan(card);
   const shownExpiry=visible&&revealed.expiry?revealed.expiry:'••/••';
@@ -114,7 +118,7 @@ export function InteractivePaymentCard({
       <div className="card-inner">
         <header className="card-header">
           <div className="card-brand-block"><div className="card-brand"><PrototypeBrand card={card} bank={bank}/></div><div className="card-nickname">{card.nickname}</div></div>
-          {!editing?<div className="card-toolbar"><button className="card-icon-btn" type="button" disabled={busy} aria-pressed={visible} aria-label={visible?'Απόκρυψη στοιχείων':'Εμφάνιση στοιχείων'} title={visible?'Απόκρυψη στοιχείων':'Εμφάνιση στοιχείων'} onClick={()=>void toggleReveal()}>{visible?<EyeOff/>:<Eye/>}</button>{onArchive?<button className="card-icon-btn" type="button" disabled={busy||archiveDisabled} aria-label="Διαγραφή κάρτας" title="Διαγραφή" onClick={()=>{setDeleteProgress(0);setDeleteOpen(true)}}><Trash2/></button>:null}</div>:null}
+          {!editing?<div className="card-toolbar"><button className="card-icon-btn" type="button" disabled={busy} aria-pressed={visible} aria-label={visible?'Απόκρυψη στοιχείων':'Εμφάνιση στοιχείων'} title={visible?'Απόκρυψη στοιχείων':'Εμφάνιση στοιχείων'} onClick={()=>void toggleReveal()}>{visible?<EyeOff/>:<Eye/>}</button>{onArchive?<button className="card-icon-btn" type="button" disabled={busy||archiveDisabled} aria-label="Διαγραφή κάρτας" title="Διαγραφή" onClick={()=>{setDeleteProgress(0);setDeleteOffset(0);setDeleteOpen(true)}}><Trash2/></button>:null}</div>:null}
         </header>
         <div className="card-body">
           <div className="card-number-wrap">{editing?<input className="card-edit-input edit-number inline-number" value={pan} inputMode="numeric" maxLength={19} placeholder="1234 5678 9012 3456" aria-label="Αριθμός κάρτας" onChange={e=>setPan(formatPan(e.target.value))}/>:<><div className={`card-number ${visible?'':'masked'}`}>{number}</div><button className="copy-mini" type="button" disabled={busy} aria-label="Αντιγραφή αριθμού" title="Αντιγραφή αριθμού" onClick={()=>void copy('pan','Ο αριθμός κάρτας')}><Copy/></button></>}</div>
@@ -125,7 +129,7 @@ export function InteractivePaymentCard({
           </div>
         </div>
         {editing?<div className="card-edit-actions"><button className="card-action" type="button" disabled={busy} onClick={cancelInline}>Ακύρωση</button><button className="card-action primary" type="button" disabled={busy} onClick={()=>void saveInline()}>Αποθήκευση</button></div>:null}
-        {deleteOpen?<div className="delete-confirm"><div className="delete-confirm-head"><div className="delete-confirm-copy"><b>Διαγραφή κάρτας;</b><small>Σύρε μέχρι τέρμα για επιβεβαίωση. Η κάρτα θα αρχειοθετηθεί ώστε να μπορεί να επανέλθει με το ίδιο ιστορικό και τα ίδια vault στοιχεία.</small></div><button className="delete-cancel" type="button" aria-label="Ακύρωση διαγραφής" onClick={()=>{setDeleteOpen(false);setDeleteProgress(0)}}><X/></button></div><div ref={sliderRef} className="delete-slider" style={{'--p':deleteProgress} as React.CSSProperties}><span className="delete-slider-label">ΣΥΡΕ ΓΙΑ ΔΙΑΓΡΑΦΗ</span><button className="delete-slider-thumb" type="button" aria-label="Σύρε για διαγραφή" style={{transform:`translateX(calc(${deleteProgress} * (100% - 0px)))`}} onPointerDown={e=>{e.currentTarget.setPointerCapture(e.pointerId);moveDelete(e.clientX)}} onPointerMove={e=>{if(e.currentTarget.hasPointerCapture(e.pointerId))moveDelete(e.clientX)}} onPointerUp={e=>{try{e.currentTarget.releasePointerCapture(e.pointerId)}catch{}if(deleteProgress>=.92){setDeleteProgress(1);void commitArchive()}else setDeleteProgress(0)}} onPointerCancel={()=>setDeleteProgress(0)}><Trash2/></button></div></div>:null}
+        {deleteOpen?<div className="delete-confirm"><div className="delete-confirm-head"><div className="delete-confirm-copy"><b>Διαγραφή κάρτας;</b><small>Σύρε μέχρι τέρμα για επιβεβαίωση. Η κάρτα θα αρχειοθετηθεί ώστε να μπορεί να επανέλθει με το ίδιο ιστορικό και τα ίδια vault στοιχεία.</small></div><button className="delete-cancel" type="button" aria-label="Ακύρωση διαγραφής" onClick={resetDelete}><X/></button></div><div ref={sliderRef} className="delete-slider" style={{'--p':deleteProgress} as React.CSSProperties}><span className="delete-slider-label">ΣΥΡΕ ΓΙΑ ΔΙΑΓΡΑΦΗ</span><button className="delete-slider-thumb" type="button" aria-label="Σύρε για διαγραφή" style={{transform:`translateX(${deleteOffset}px)`}} onPointerDown={e=>{e.currentTarget.setPointerCapture(e.pointerId);moveDelete(e.clientX)}} onPointerMove={e=>{if(e.currentTarget.hasPointerCapture(e.pointerId))moveDelete(e.clientX)}} onPointerUp={e=>{try{e.currentTarget.releasePointerCapture(e.pointerId)}catch{}if(deleteProgress>=.92){setDeleteProgress(1);void commitArchive()}else{setDeleteProgress(0);setDeleteOffset(0)}}} onPointerCancel={()=>{setDeleteProgress(0);setDeleteOffset(0)}}><Trash2/></button></div></div>:null}
       </div>
     </article>
     {message?<div className="r-card-status" role="status" aria-live="polite">{message}</div>:null}
