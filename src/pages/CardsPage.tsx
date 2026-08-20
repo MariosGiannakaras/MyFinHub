@@ -35,7 +35,7 @@ export function CardsPage({
   const saveCard=(card:PaymentCard)=>{onUpsertCard(card);setMessage(`Η «${card.nickname}» αποθηκεύτηκε.`)};
   const createCard=(card:PaymentCard)=>{onUpsertCard(card);if(!card.vaultRef&&!card.last4)setEditingCardId(card.id);setMessage('Συμπλήρωσε αριθμό, λήξη και CVV απευθείας πάνω στη νέα κάρτα.')};
   const archive=(card:PaymentCard)=>{onArchiveCard(card);setMessage(`Η «${card.nickname}» αρχειοθετήθηκε χωρίς να χαθεί το ιστορικό ή τα αποθηκευμένα ασφαλή στοιχεία της.`)};
-  const restore=(card:PaymentCard)=>{onUpsertCard(restoreCard(card));setMessage(`Η «${card.nickname}» επανήλθε με το ίδιο card id, ιστορικό και vault σύνδεση.`)};
+  const restore=(card:PaymentCard)=>{onUpsertCard(restoreCard(card));setMessage(`Η «${card.nickname}» επανήλθε με το ιστορικό και τα ασφαλή στοιχεία της.`)};
 
   return <div className="page-stack cards-prototype-page">
     <section className="page-heading"><div><span className="eyebrow">ΚΑΡΤΕΣ</span><h1>Κάρτες</h1><p>Οι κάρτες σου σε ενιαία διάταξη. Τα στοιχεία εμφανίζονται μόνο όταν τα ζητήσεις.</p></div><div className="heading-actions"><button type="button" className="save-button" onClick={()=>{setBankName('');setError('');setBankOpen(true)}}><Plus/> Προσθήκη τράπεζας</button></div></section>
@@ -46,7 +46,7 @@ export function CardsPage({
         return <section className="bank-column cards-bank-column" key={bank.id} data-bank={bank.id}>
           <header className="bank-column-head"><div className="bank-column-title"><b>{bank.name}</b><small>{active.length} {active.length===1?'κάρτα':'κάρτες'}</small></div><Tooltip label={`Προσθήκη κάρτας στην ${bank.name}`} side="left"><button type="button" className="bank-add-btn" aria-label={`Προσθήκη κάρτας στην ${bank.name}`} onClick={()=>setCardBankId(bank.id)}><Plus/></button></Tooltip></header>
           <div className="bank-stack">{active.length?active.map(card=><InteractivePaymentCard key={card.id} card={card} bank={bank} onUpsert={saveCard} onArchive={archive} startEditing={editingCardId===card.id} onEditingComplete={()=>setEditingCardId(current=>current===card.id?null:current)}/>):<button type="button" className="bank-empty" onClick={()=>setCardBankId(bank.id)}>Δεν υπάρχουν κάρτες</button>}</div>
-          {archived.length?<details className="cards-archive"><summary><ArchiveRestore/> Αρχειοθετημένες · {archived.length}</summary><div>{archived.map(card=><button type="button" key={card.id} onClick={()=>restore(card)}><ArchiveRestore/><span><b>{card.nickname}</b><small>{card.last4?`•••• ${card.last4} · `:''}ίδιο id / ιστορικό / vault</small></span></button>)}</div></details>:null}
+          {archived.length?<details className="cards-archive"><summary><ArchiveRestore/> Αρχειοθετημένες · {archived.length}</summary><div>{archived.map(card=><button type="button" key={card.id} onClick={()=>restore(card)}><ArchiveRestore/><span><b>{card.nickname}</b><small>{card.last4?`•••• ${card.last4} · `:''}ίδιο ιστορικό και ασφαλή στοιχεία</small></span></button>)}</div></details>:null}
         </section>;
       })}</div>
     </section>

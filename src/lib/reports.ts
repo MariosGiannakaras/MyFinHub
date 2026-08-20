@@ -22,24 +22,38 @@ export function subcategoryTotals(data:FinanceData,month:string){
   return [...totals.entries()].map(([name,value])=>({name,value:Math.max(0,value)})).filter(row=>row.value>.005).sort((a,b)=>b.value-a.value);
 }
 
+function relativeChange(current:number,previous:number){return previous===0?(current===0?0:null):(current-previous)/Math.abs(previous)}
+function average(values:number[]){return values.length?values.reduce((sum,value)=>sum+value,0)/values.length:0}
+
+export function categoryMomentum(data:FinanceData,month:string,limit=10){
+  const current=subcategoryTotals(data,month);
+  const previous=new Map(subcategoryTotals(data,shiftReportMonth(month,-1)).map(row=>[row.name,row.value]));
+  return current.slice(0,limit).map(row=>{const previousValue=previous.get(row.name)??0;return {...row,previous:previousValue,change:relativeChange(row.value,previousValue)}});
+}
+
+export function creditCardSnapshots(data:FinanceData,asOf:string){
+  return creditCards(data,{includeArchived:true}).map(card=>{
+    const debt=creditDebtForCard(data,card.id,asOf);const limit=card.active===false?0:creditLimitForCard(data,card);
+    return {id:card.id,nickname:card.nickname,bankId:card.bankId,active:card.active!==false,debt,limit,available:Math.max(0,limit-debt),usage:limit>0?Math.min(1,debt/limit):0};
+  }).sort((a,b)=>b.debt-a.debt||a.nickname.localeCompare(b.nickname,'el'));
+}
+
 export function creditPortfolioSnapshot(data:FinanceData,asOf:string){
-  const all=creditCards(data,{includeArchived:true});
-  const active=all.filter(card=>card.active!==false);
-  const debt=all.reduce((sum,card)=>sum+creditDebtForCard(data,card.id,asOf),0);
-  const limit=active.reduce((sum,card)=>sum+creditLimitForCard(data,card),0);
+  const cards=creditCardSnapshots(data,asOf);
+  const active=cards.filter(card=>card.active);
+  const debt=cards.reduce((sum,card)=>sum+card.debt,0);
+  const limit=active.reduce((sum,card)=>sum+card.limit,0);
   const available=Math.max(0,limit-debt);
   return {
     activeCards:active.length,
-    totalCards:all.length,
+    totalCards:cards.length,
     debt,
     limit,
     available,
     usage:limit>0?Math.min(1,debt/limit):0,
+    cards,
   };
 }
-
-function relativeChange(current:number,previous:number){return previous===0?(current===0?0:null):(current-previous)/Math.abs(previous)}
-function average(values:number[]){return values.length?values.reduce((sum,value)=>sum+value,0)/values.length:0}
 
 export function reportInsightModel(data:FinanceData,month:string){
   const flow=operationalMonthlyFlow(data,month);
@@ -77,5 +91,5 @@ export function reportInsightModel(data:FinanceData,month:string){
 
 export function operationalReportSnapshot(data:FinanceData,month:string){
   const flow=operationalMonthlyFlow(data,month);const previous=operationalMonthlyFlow(data,shiftReportMonth(month,-1));const balances=accountBalances(data,monthEnd(month));const credit=creditPortfolioSnapshot(data,monthEnd(month));const receivables=lendingRows(data).reduce((sum,row)=>sum+row.outstanding,0);const recurring=recurringMonthlyTotal(data);const savings=savingsBreakdown(data,month);const budget=data.state.settings.monthlyBudget??0;
-  return {flow,previous,balances,creditDebt:credit.debt,creditLimit:credit.limit,creditUsage:credit.usage,creditAvailable:credit.available,creditCards:credit.activeCards,receivables,recurring,savings,budget,budgetRemaining:budget-flow.expense};
+  return {flow,previous,balances,creditDebt:credit.debt,creditLimit:credit.limit,creditUsage:credit.usage,creditAvailable:credit.available,creditCards:credit.activeCards,creditCardRows:credit.cards,receivables,recurring,savings,budget,budgetRemaining:budget-flow.expense};
 }
