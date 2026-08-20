@@ -38,8 +38,8 @@ export function MfaScreen({
 
   return <main className="login-screen">
     <section className="login-card neo-raised" aria-labelledby="mfa-title" data-busy={busy?'true':'false'}>
-      <div className="login-brand"><img src="/brand/icon-192.png" alt=""/><div><div className="brand-word">MyFin<span>Hub</span></div><small>Private finance workspace</small></div></div>
-      <div className="login-shield"><ShieldCheck size={24}/><span>Δεύτερος παράγοντας ασφαλείας</span></div>
+      <div className="login-brand"><img src="/brand/icon-192.png" alt=""/><div><div className="brand-word">MyFin<span>Hub</span></div><small>Προσωπικός οικονομικός χώρος</small></div></div>
+      <div className="login-shield"><ShieldCheck size={24}/><span>Δεύτερη επαλήθευση ασφαλείας</span></div>
       <div>
         <h1 id="mfa-title">{mode === 'enroll' ? 'Ρύθμιση Authenticator' : 'Επαλήθευση'}</h1>
         <p>{mode === 'enroll'
@@ -73,15 +73,16 @@ export function MfaScreen({
             required
             autoFocus
             aria-invalid={Boolean(error)}
+            aria-describedby={error?'mfa-error':undefined}
           /></div>
           <div className="mfa-code-progress" aria-hidden="true">{Array.from({length:6},(_,index)=><i key={index} className={index<code.length?'filled':''}/>)}</div>
         </div>
-        {error ? <div className="login-error" role="alert"><AlertCircle size={16}/><span>{error}</span></div> : null}
+        {error ? <div id="mfa-error" className="login-error" role="alert"><AlertCircle size={16}/><span>{error}</span></div> : null}
         <button className="primary-action login-submit" type="submit" disabled={busy || code.length !== 6} aria-busy={busy} data-state={busy?'loading':code.length===6?'ready':'idle'}>{busy?<LoaderCircle className="login-spinner" size={17} aria-hidden="true"/>:null}<span className="login-submit-label">{busy ? 'Επαλήθευση…' : 'Επαλήθευση'}</span></button>
-      </form> : error ? <div className="login-error" role="alert"><AlertCircle size={16}/><span>{error}</span></div> : null}
+      </form> : error ? <div id="mfa-error" className="login-error" role="alert"><AlertCircle size={16}/><span>{error}</span></div> : null}
 
       <button className="ghost-button login-logout" type="button" disabled={busy} onClick={()=>void onLogout()}>Αποσύνδεση</button>
-      <small className="login-footnote">Τα οικονομικά δεδομένα παραμένουν κλειδωμένα μέχρι να ολοκληρωθεί η επαλήθευση MFA.</small>
+      <small className="login-footnote">Τα οικονομικά δεδομένα παραμένουν κλειδωμένα μέχρι να ολοκληρωθεί η δεύτερη επαλήθευση ασφαλείας.</small>
     </section>
   </main>;
 }
