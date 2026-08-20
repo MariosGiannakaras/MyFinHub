@@ -2,7 +2,7 @@
 
 Tracking: issue #158 · PR #159 · branch `feat/ui-ux-hardening-batch`
 
-This document is the durable evidence map for the application-wide UI/UX hardening batch. A checkbox is complete only when the implementation exists and the relevant automated/browser evidence is green on the feature head.
+The coordinated application-wide UI/UX hardening implementation is complete. Issue #158 is closed as completed and PR #159 is ready for review. Merge/release remains a separate owner decision.
 
 ## Surface inventory
 
@@ -136,7 +136,7 @@ The approved Reports hardening is implemented in `src/pages/ReportsPage.tsx` and
 
 `tests/reports.test.ts` protects multi-card aggregation, insufficient-history behavior, trailing comparisons, recurring burden and category momentum.
 
-## Final runtime gate
+## Runtime / network gate
 
 `scripts/ui-ux-runtime-qa.mjs` is part of `qa:frontend` and performs CDP-level checks across desktop/mobile routes and auth/persistence states for:
 
@@ -144,17 +144,29 @@ The approved Reports hardening is implemented in `src/pages/ReportsPage.tsx` and
 - `console.error` / failed assertions;
 - browser error log entries;
 - non-cancelled network load failures;
-- HTTP 5xx responses.
+- HTTP 4xx and 5xx responses, reported with their URLs.
 
-It also emits a loading-state screenshot into the normal UI/UX evidence artifact.
+The gate found and forced correction of an implicit QA favicon 404 rather than suppressing it. It also emits a loading-state screenshot into the normal UI/UX evidence artifact.
 
-## Completion rule
+## Final verified implementation head
 
-The batch is complete only when the final feature head passes:
+`10f757cc3b6ab4c9567e9fe0344a04accc980217`
 
-1. security/privacy guard, unit/source tests and production build;
-2. API TypeScript validation;
-3. all rendered browser suites, including runtime/network and full-page evidence;
-4. CodeQL;
-5. Windows desktop packaging/smoke/checksum gates;
-6. issue #158 and `docs/UI_UX_HARDENING_PLAN.md` are fully checked and synchronized with the evidence above.
+- CI `32401155176`: **success**.
+  - privacy/security guard;
+  - 34 test files / 147 tests;
+  - production build;
+  - API TypeScript check;
+  - all rendered browser suites;
+  - runtime console/network gate;
+  - full-page visual evidence.
+- Screenshot artifact `9418623944`: **48 files**, SHA-256 `3f5f3f6f52d5c4749c3bdd7e38bf3e03890704c65cc9b17865aa4747217062dc`.
+- Final desktop/mobile screenshots were reviewed after the successful run; no new overlap, clipping, layout or responsive regression was found.
+- CodeQL `32401155171`: **success**.
+- Windows Desktop `32401155198`: **success** — boundary validation, PowerShell fallback, unpacked build, packaged executable/backend smoke, NSIS Setup, checksum and installer evidence.
+
+## Completion state
+
+- Issue #158: all checkboxes complete; closed as `completed`.
+- PR #159: ready for review; open and unmerged.
+- No `main` merge, production release, version bump or production installer publication was performed as part of implementation completion.
