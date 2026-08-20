@@ -8,6 +8,10 @@ function isTopmostModal(root: HTMLElement) {
   return modals.at(-1) === root;
 }
 
+function canReceiveFocus(element:HTMLElement|null){
+  return Boolean(element&&element.matches(FOCUSABLE)&&element.isConnected&&element.getClientRects().length>0);
+}
+
 function addDescription(element:HTMLElement,id:string){
   const values=(element.getAttribute('aria-describedby')??'').split(/\s+/).filter(Boolean);
   if(!values.includes(id))element.setAttribute('aria-describedby',[...values,id].join(' '));
@@ -44,7 +48,10 @@ export function useModalFocus<T extends HTMLElement>(open: boolean, preferred?: 
     body.style.overflow = 'hidden';
     html.style.overscrollBehavior = 'none';
 
-    const initial = (preferred ? root.querySelector<HTMLElement>(preferred) : null) ?? root.querySelector<HTMLElement>(FOCUSABLE) ?? root;
+    const preferredTarget = preferred ? root.querySelector<HTMLElement>(preferred) : null;
+    const initial = canReceiveFocus(preferredTarget)
+      ? preferredTarget!
+      : [...root.querySelectorAll<HTMLElement>(FOCUSABLE)].find(canReceiveFocus) ?? root;
     queueMicrotask(() => initial.focus({ preventScroll: true }));
 
     let associatedErrorId='';
@@ -69,10 +76,15 @@ export function useModalFocus<T extends HTMLElement>(open: boolean, preferred?: 
         return;
       }
       if (event.key !== 'Tab') return;
-      const items = [...root.querySelectorAll<HTMLElement>(FOCUSABLE)].filter((item) => item.offsetParent !== null);
+      const items = [...root.querySelectorAll<HTMLElement>(FOCUSABLE)].filter(canReceiveFocus);
       if (!items.length) { event.preventDefault(); root.focus({ preventScroll: true }); return; }
       const first = items[0];
       const last = items[items.length - 1];
+      if (!root.contains(document.activeElement)) {
+        event.preventDefault();
+        (event.shiftKey?last:first).focus({ preventScroll: true });
+        return;
+      }
       if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus({ preventScroll: true }); }
       else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus({ preventScroll: true }); }
     };
