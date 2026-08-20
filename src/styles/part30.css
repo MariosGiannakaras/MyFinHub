@@ -1,0 +1,40 @@
+/* UI/UX hardening foundations: tooltips, readability preference and shared interaction states. */
+:root{
+  --ux-body-size:13px;
+  --ux-small-size:11px;
+  --ux-tiny-size:10px;
+  --ux-heading-size:29px;
+}
+html[data-text-size="compact"]{--ux-body-size:12px;--ux-small-size:10px;--ux-tiny-size:9px;--ux-heading-size:27px}
+html[data-text-size="normal"]{--ux-body-size:13px;--ux-small-size:11px;--ux-tiny-size:10px;--ux-heading-size:29px}
+html[data-text-size="large"]{--ux-body-size:15px;--ux-small-size:13px;--ux-tiny-size:11px;--ux-heading-size:32px}
+
+.sidebar nav button{font-size:var(--ux-body-size)}
+.page-heading h1{font-size:var(--ux-heading-size)}
+.page-heading p,.command-pill{font-size:var(--ux-small-size);line-height:1.5}
+.eyebrow,.month-toolbar,.metric-head,.file-line,.file-panel small,.sidebar-foot,.brand-block small{font-size:var(--ux-tiny-size)}
+button,input,select,textarea{line-height:1.35}
+
+.app-tooltip{position:relative;display:inline-flex;align-items:center;justify-content:center}
+.app-tooltip-bubble{position:absolute;z-index:120;max-width:min(260px,70vw);width:max-content;padding:7px 9px;border-radius:8px;background:#10234d;color:#fff;font-size:11px;font-weight:650;line-height:1.25;box-shadow:0 8px 24px rgba(16,35,77,.22);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .12s ease,transform .12s ease,visibility .12s ease}
+.app-tooltip:hover .app-tooltip-bubble,.app-tooltip:focus-within .app-tooltip-bubble{opacity:1;visibility:visible}
+.app-tooltip-bottom .app-tooltip-bubble{top:calc(100% + 8px);left:50%;transform:translate(-50%,-2px)}
+.app-tooltip-bottom:hover .app-tooltip-bubble,.app-tooltip-bottom:focus-within .app-tooltip-bubble{transform:translate(-50%,0)}
+.app-tooltip-top .app-tooltip-bubble{bottom:calc(100% + 8px);left:50%;transform:translate(-50%,2px)}
+.app-tooltip-top:hover .app-tooltip-bubble,.app-tooltip-top:focus-within .app-tooltip-bubble{transform:translate(-50%,0)}
+.app-tooltip-right .app-tooltip-bubble{left:calc(100% + 8px);top:50%;transform:translate(-2px,-50%)}
+.app-tooltip-right:hover .app-tooltip-bubble,.app-tooltip-right:focus-within .app-tooltip-bubble{transform:translate(0,-50%)}
+.app-tooltip-left .app-tooltip-bubble{right:calc(100% + 8px);top:50%;transform:translate(2px,-50%)}
+.app-tooltip-left:hover .app-tooltip-bubble,.app-tooltip-left:focus-within .app-tooltip-bubble{transform:translate(0,-50%)}
+
+.readability-settings{padding:18px}
+.text-size-picker{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px}
+.text-size-picker button{border:1px solid var(--line);border-radius:13px;background:#f6f9fd;padding:12px 14px;text-align:left;display:grid;gap:4px;cursor:pointer;min-height:70px}
+.text-size-picker button b{font-size:13px}
+.text-size-picker button span{color:var(--muted);font-size:10px;line-height:1.35}
+.text-size-picker button.active{border-color:rgba(47,111,237,.52);background:rgba(47,111,237,.08);box-shadow:0 0 0 2px rgba(47,111,237,.08)}
+
+@media(max-width:720px){
+  .text-size-picker{grid-template-columns:1fr}
+  .app-tooltip-bubble{display:none}
+}
