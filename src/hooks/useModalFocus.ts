@@ -1,18 +1,26 @@
 import { useEffect, useRef, type RefObject } from 'react';
 
 const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+const MODAL_STACK: symbol[] = [];
 
 export function useModalFocus<T extends HTMLElement>(open: boolean, preferred?: string, onClose?: () => void): RefObject<T | null> {
   const ref = useRef<T | null>(null);
   const opener = useRef<HTMLElement | null>(null);
+  const tokenRef = useRef(Symbol('modal'));
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
 
   useEffect(() => {
     if (!open) return;
+    const token = tokenRef.current;
+    MODAL_STACK.push(token);
     opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const root = ref.current;
-    if (!root) return;
+    if (!root) {
+      const index = MODAL_STACK.lastIndexOf(token);
+      if (index >= 0) MODAL_STACK.splice(index, 1);
+      return;
+    }
 
     const body = document.body;
     const html = document.documentElement;
@@ -32,6 +40,7 @@ export function useModalFocus<T extends HTMLElement>(open: boolean, preferred?: 
     queueMicrotask(() => initial.focus({ preventScroll: true }));
 
     const trap = (event: KeyboardEvent) => {
+      if (MODAL_STACK.at(-1) !== token) return;
       if (event.key === 'Escape' && onCloseRef.current) {
         event.preventDefault();
         event.stopPropagation();
@@ -49,6 +58,8 @@ export function useModalFocus<T extends HTMLElement>(open: boolean, preferred?: 
     document.addEventListener('keydown', trap);
     return () => {
       document.removeEventListener('keydown', trap);
+      const index = MODAL_STACK.lastIndexOf(token);
+      if (index >= 0) MODAL_STACK.splice(index, 1);
       body.style.position = bodyStyle.position;
       body.style.top = bodyStyle.top;
       body.style.left = bodyStyle.left;
