@@ -11,7 +11,7 @@ type Props=Omit<InputHTMLAttributes<HTMLInputElement>,'value'|'onChange'|'childr
 function optionText(value:ReactNode){return typeof value==='string'||typeof value==='number'?String(value):Children.toArray(value).map(child=>typeof child==='string'||typeof child==='number'?String(child):'').join('');}
 
 export function AppSelectInput({value,onChange,children,disabled=false,'aria-label':ariaLabel,className='',...inputProps}:Props){
-  const [open,setOpen]=useState(false);const id=useId().replace(/:/g,'');const dialogId=`owned-select-${id}`;const listboxId=`${dialogId}-listbox`;const ref=useModalFocus<HTMLElement>(open,'[aria-selected="true"]',()=>setOpen(false));
+  const [open,setOpen]=useState(false);const id=useId().replace(/:/g,'');const dialogId=`owned-select-${id}`;const listboxId=`${dialogId}-listbox`;const ref=useModalFocus<HTMLElement>(open,'[aria-selected="true"]:not(:disabled), [role="option"]:not(:disabled)',()=>setOpen(false));
   const options=useMemo<OwnedOption[]>(()=>Children.toArray(children).flatMap(child=>{if(!isValidElement(child)||child.type!=='option')return[];const element=child as ReactElement<OptionProps>;const label=optionText(element.props.children);return [{value:String(element.props.value??label),label,disabled:Boolean(element.props.disabled)}]}),[children]);
   const selected=options.find(option=>option.value===value);
   const close=()=>setOpen(false);const choose=(next:string)=>{const option=options.find(item=>item.value===next);if(!option||option.disabled)return;onChange({target:{value:next}});close()};
