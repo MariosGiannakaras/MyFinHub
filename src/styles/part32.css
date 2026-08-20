@@ -1,4 +1,4 @@
-/* Navigation contrast hardening discovered by rendered browser QA. */
+/* Navigation/action contrast hardening discovered by rendered browser QA. */
 .sidebar nav button.active{
   background-color:#174ea6;
   background-image:linear-gradient(105deg,#245fcf,#174ea6);
@@ -6,7 +6,7 @@
 }
 
 @media(max-width:680px){
-  .mobile-nav button.active{
+  .command-pill{
     background-color:#174ea6;
     background-image:linear-gradient(135deg,#245fcf,#174ea6);
     color:#fff;
