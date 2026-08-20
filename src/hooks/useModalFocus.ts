@@ -1,7 +1,14 @@
 import { useEffect, useRef, type RefObject } from 'react';
 
 const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
-const MODAL_STACK: symbol[] = [];
+type ModalEntry = { token: symbol; root: HTMLElement };
+const MODAL_STACK: ModalEntry[] = [];
+
+function compactModalStack() {
+  for (let index = MODAL_STACK.length - 1; index >= 0; index -= 1) {
+    if (!MODAL_STACK[index].root.isConnected) MODAL_STACK.splice(index, 1);
+  }
+}
 
 export function useModalFocus<T extends HTMLElement>(open: boolean, preferred?: string, onClose?: () => void): RefObject<T | null> {
   const ref = useRef<T | null>(null);
@@ -13,14 +20,11 @@ export function useModalFocus<T extends HTMLElement>(open: boolean, preferred?: 
   useEffect(() => {
     if (!open) return;
     const token = tokenRef.current;
-    MODAL_STACK.push(token);
     opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const root = ref.current;
-    if (!root) {
-      const index = MODAL_STACK.lastIndexOf(token);
-      if (index >= 0) MODAL_STACK.splice(index, 1);
-      return;
-    }
+    if (!root) return;
+    compactModalStack();
+    MODAL_STACK.push({ token, root });
 
     const body = document.body;
     const html = document.documentElement;
@@ -40,7 +44,8 @@ export function useModalFocus<T extends HTMLElement>(open: boolean, preferred?: 
     queueMicrotask(() => initial.focus({ preventScroll: true }));
 
     const trap = (event: KeyboardEvent) => {
-      if (MODAL_STACK.at(-1) !== token) return;
+      compactModalStack();
+      if (MODAL_STACK.at(-1)?.token !== token) return;
       if (event.key === 'Escape' && onCloseRef.current) {
         event.preventDefault();
         event.stopPropagation();
@@ -58,7 +63,7 @@ export function useModalFocus<T extends HTMLElement>(open: boolean, preferred?: 
     document.addEventListener('keydown', trap);
     return () => {
       document.removeEventListener('keydown', trap);
-      const index = MODAL_STACK.lastIndexOf(token);
+      const index = MODAL_STACK.findLastIndex((entry) => entry.token === token);
       if (index >= 0) MODAL_STACK.splice(index, 1);
       body.style.position = bodyStyle.position;
       body.style.top = bodyStyle.top;
