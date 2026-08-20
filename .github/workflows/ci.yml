@@ -51,3 +51,11 @@ jobs:
             exit 1
           fi
           npm run qa:frontend
+      - name: Upload UI/UX browser evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: myfinhub-ui-ux-${{ github.sha }}
+          path: /tmp/myfinhub-ui-ux-qa/*.png
+          if-no-files-found: warn
+          retention-days: 14
