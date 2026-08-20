@@ -1,0 +1,20 @@
+/* Final visual polish discovered by screenshot review. */
+.account-name-grid input{
+  box-sizing:border-box;
+  width:100%;
+  min-width:0;
+  min-height:40px;
+  border:1px solid var(--line);
+  border-radius:11px;
+  background:#fbfdff;
+  color:inherit;
+  padding:9px 11px;
+  font:inherit;
+  box-shadow:none;
+  appearance:none;
+  -webkit-appearance:none;
+  transition:border-color .12s ease,box-shadow .12s ease,background .12s ease;
+}
+.account-name-grid input:hover{border-color:#c5d4e7;background:#fff}
+.account-name-grid input:focus{border-color:rgba(47,111,237,.55);box-shadow:0 0 0 3px rgba(47,111,237,.08)}
+@media(prefers-reduced-motion:reduce){.account-name-grid input{transition:none}}
