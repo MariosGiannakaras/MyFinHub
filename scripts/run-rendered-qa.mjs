@@ -8,11 +8,12 @@ const scripts = [
   { path: 'scripts/frontend-qa.mjs', profiles: ['/tmp/rheomiq-qa-chrome'] },
   { path: 'scripts/owned-controls-qa.mjs', profiles: ['/tmp/rheomiq-owned-controls-qa'] },
   { path: 'scripts/ui-ux-hardening-qa.mjs', profiles: ['/tmp/myfinhub-ui-ux-qa-chrome'] },
+  { path: 'scripts/ui-ux-completion-qa.mjs', profiles: ['/tmp/myfinhub-ui-completion-qa-chrome'] },
 ];
 
 function cleanProfiles(profiles) {
   for (const profile of profiles) {
-    try { rmSync(profile, { recursive: true, force: true, maxRetries: 4, retryDelay: 100 }); }
+    try { rmSync(profile, { recursive: true, force: true, maxRetries: 8, retryDelay: 150 }); }
     catch (error) {
       console.warn(`Rendered QA profile cleanup skipped for ${profile}: ${error instanceof Error ? error.message : String(error)}`);
     }
@@ -36,9 +37,9 @@ function runScript(path) {
 }
 
 function isBrowserBootstrapFailure(output) {
-  return /Timed out waiting for http:\/\/127\.0\.0\.1:922\d\/json\/version/.test(output)
+  return /Timed out waiting for http:\/\/127\.0\.0\.1:92\d{2}\/json\/version/.test(output)
     || /Chrome\/Chromium is required/.test(output)
-    || /ECONNREFUSED.*922\d/i.test(output);
+    || /ECONNREFUSED.*92\d{2}/i.test(output);
 }
 
 for (const item of scripts) {
