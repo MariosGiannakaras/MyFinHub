@@ -87,6 +87,8 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
   .panel-head-actions{width:100%;justify-content:space-between}
   .mobile-row-actions button,.mobile-recurring-actions button,.mobile-nav button,.mobile-action-menu summary{min-height:44px}
   .row-actions button,.bank-add-btn,.icon-button,.close-picker{min-width:40px;min-height:40px}
+  .period-control .app-tooltip button{min-width:40px;min-height:40px}
+  .account-balance-panel .text-button{min-height:40px}
   .chart-alt summary,.cards-archive>summary,.technical-settings>summary,.credit-report-drilldown>summary{min-height:40px;padding-block:9px}
   .app-tooltip-bubble{max-width:min(220px,80vw)}
   .report-insight-grid{grid-template-columns:1fr}
