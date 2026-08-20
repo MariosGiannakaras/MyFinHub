@@ -3,9 +3,16 @@
 .column-filter .owned-input-shell>.owned-input{height:32px;border:1px solid #d7e1ef;border-radius:9px;background:#f8fbff;color:var(--ink);padding:0 30px 0 8px;font-size:8px;font-weight:700}
 .review-part .owned-input-shell,.settings-form .owned-input-shell,.modal-field .owned-input-shell{width:100%;min-width:0}
 .credit-usage.over-limit i{background:var(--red)!important}
+.lending-person-field{display:grid;gap:6px;min-width:0}
+.lending-person-field>label{display:grid;gap:5px}
+.known-people-suggestions{display:flex;flex-wrap:wrap;gap:5px;min-width:0}
+.known-people-suggestions button{min-height:32px;max-width:100%;border:1px solid #d7e1ef;border-radius:999px;background:#f5f9fe;color:var(--ink-2);padding:5px 9px;font-size:8px;font-weight:750;display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+.known-people-suggestions button[aria-selected="true"]{border-color:#9bbcf5;background:#eaf2ff;color:#174ea6}
+.known-people-suggestions small{font-size:7px;color:var(--muted)}
 
 @media(max-width:680px){
   .mobile-transaction-filters .owned-input-shell{width:100%;min-width:0}
   .mobile-transaction-filters .owned-input-shell>.owned-input{height:44px;border:1px solid #d7e1ef;border-radius:12px;background:#fbfdff;color:var(--ink);padding:0 34px 0 10px;font-size:16px}
   .settings-form .owned-input-shell>.owned-input{min-height:46px;border-radius:12px;border-color:#d7e2ef;background:#fbfdff;padding-left:11px;padding-right:34px}
+  .known-people-suggestions button{min-height:40px;padding:7px 10px;font-size:8.5px}
 }
