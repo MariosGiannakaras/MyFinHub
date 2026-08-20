@@ -21,6 +21,7 @@
 /* Mobile interactive surfaces use a real 40px minimum hit area. Primary/navigation controls remain 44px where defined elsewhere. */
 @media(max-width:720px){
   .workspace .text-button,
+  .workspace .account-balance-panel .section-title .text-button,
   .workspace .card-history>div>.text-button,
   .workspace .section-title:has(+.loan-cards)>.text-button,
   .workspace .receivable-person-actions .text-button,
