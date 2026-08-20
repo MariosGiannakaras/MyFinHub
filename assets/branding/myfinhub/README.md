@@ -1,11 +1,13 @@
 # MyFinHub brand assets
 
-This folder contains the canonical MyFinHub artwork used by the web/PWA and Windows desktop clients.
+This folder contains the canonical application artwork used by the web/PWA and Windows desktop clients.
 
-- `icon-32.png`: compact browser/favicon asset with the wallet + MF mark only.
-- `icon-192.png`: compact PWA/setup asset with the wallet + MF mark only.
-- `icon-512.png`: high-resolution Windows/PWA application artwork.
+The mark is **not newly designed artwork**. The source-of-truth is the original pre-rebrand RheomIQ wallet/`R` icon recovered byte-for-byte from repository history.
 
-The compact variants intentionally omit the long wordmark so the mark remains readable at taskbar, Start Menu and browser-tab sizes. Product-facing runtime copies live under `public/brand/` and `public/favicon.png`; this folder is the easy-to-find source pack inside the repository.
+- `icon-192.png`: exact historical 192×192 source artwork (Git blob `803dec3521524d1054f6b542415fdbcc520c7041`).
+- `icon-32.png`: native 32×32 favicon derivative generated from the authentic source.
+- `icon-512.png`: native 512×512 Windows/PWA derivative generated from the authentic source.
 
-Compatibility-critical legacy `rheomiq_*` database identifiers and `RHEOMIQ_*` local-backend protocol names are not brand assets and remain unchanged by the rebrand.
+Product-facing runtime copies live under `public/brand/` and `public/favicon.png`; `desktop/setup-brand.png` uses the same authentic 192×192 source.
+
+The visible product name remains **MyFinHub**. Compatibility-critical legacy `rheomiq_*` database identifiers and `RHEOMIQ_*` local-backend protocol names are persistence/protocol contracts, not brand assets, and remain unchanged.
