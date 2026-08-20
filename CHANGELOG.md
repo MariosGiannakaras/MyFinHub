@@ -4,6 +4,31 @@ All notable MyFinHub changes are recorded here. Release artifacts remain availab
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-08-20
+
+### Fixed
+
+- Restored the user-supplied Cards v15 prototype as the visual and interaction contract for the Cards workspace instead of redesigning card geometry, bank stacking, icons or core interactions.
+- Removed the effective per-bank card cap so any number of active cards can coexist under the same bank.
+- Archive/restore now preserves the same card identity and recoverable secret state: PAN/expiry remain in the encrypted server vault and same-device CVV remains in the encrypted local vault instead of being deleted on archive.
+- Multiple active credit cards can now coexist with independent per-card limits, debt, available balance, purchases, repayments and history.
+- Legacy credit events created before card IDs existed remain financially readable through deterministic backward-compatible attribution; production history is not destructively rewritten.
+
+### Security
+
+- CVV/CVC remains rejected by every server request and persistence boundary and is never written to FinanceData, Supabase, backups, logs or analytics.
+- PAN/expiry continue to use the owner + AAL2 encrypted card vault with explicit deletion support.
+
+### Validation
+
+- Added regression coverage for 3+ cards under one bank, multiple active credit identities, per-card credit debt/limits, legacy event attribution and card-state validation.
+- The feature branch passed application/API checks, 136 unit/server tests, rendered frontend QA, CodeQL and the real Windows package gate including packaged `MyFinHub.exe` smoke, interactive NSIS Setup and SHA-256 verification.
+
+### Notes
+
+- v1.0.2 changes card persistence/functionality while preserving the supplied Cards presentation contract. The only conditional credit-page UI addition is a selector when more than one credit card exists, because a target card must be chosen for per-card debt and transactions.
+- The Windows build remains unsigned for personal use, so Windows may display Unknown publisher / Microsoft Defender SmartScreen.
+
 ## [1.0.1] - 2026-08-20
 
 ### Changed
@@ -39,6 +64,7 @@ All notable MyFinHub changes are recorded here. Release artifacts remain availab
 
 - v1.0.0 is an unsigned personal-use Windows build. Windows may display Unknown publisher / Microsoft Defender SmartScreen.
 
-[Unreleased]: https://github.com/MariosGiannakaras/MyFinHub/compare/myfinhub-v1.0.1...develop
+[Unreleased]: https://github.com/MariosGiannakaras/MyFinHub/compare/myfinhub-v1.0.2...develop
+[1.0.2]: https://github.com/MariosGiannakaras/MyFinHub/releases/tag/myfinhub-v1.0.2
 [1.0.1]: https://github.com/MariosGiannakaras/MyFinHub/releases/tag/myfinhub-v1.0.1
 [1.0.0]: https://github.com/MariosGiannakaras/MyFinHub/releases/tag/myfinhub-v1.0.0
