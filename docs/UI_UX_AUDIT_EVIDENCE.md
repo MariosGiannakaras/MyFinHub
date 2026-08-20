@@ -2,7 +2,7 @@
 
 Tracking: issue #158 · PR #159 · branch `feat/ui-ux-hardening-batch`
 
-The coordinated UI/UX hardening implementation has entered final post-review verification. Issue #158 is reopened only for same-head technical closure; PR #159 remains open, ready for review and unmerged. Merge/release remains a separate owner decision.
+The coordinated UI/UX hardening implementation and post-review hardening pass are technically complete. PR #159 remains open, ready for owner review and unmerged. Merge/release remains a separate owner decision.
 
 ## Surface inventory
 
@@ -54,30 +54,30 @@ Consolidated contracts:
 - `src/hooks/useModalFocus.ts` — focus trap, Escape, focus return and scroll lock;
 - `src/lib/userMessage.ts` — user-safe error normalization.
 
-`tests/shared-ui-source.test.ts` guards shared contracts. `tests/owned-controls-source.test.ts` now also blocks native `<select>`, native `input[type=date]` and `<datalist>` inside application pages/components.
+`tests/shared-ui-source.test.ts` guards shared contracts. `tests/owned-controls-source.test.ts` blocks native `<select>`, native `input[type=date]` and `<datalist>` inside application pages/components.
 
 ## Post-review browser-owned control hardening
 
-The deeper PR review found browser/OS-owned surfaces that remained after the first implementation checkpoint. They were removed rather than visually patched:
+Browser/OS-owned surfaces found during the deeper PR review were removed rather than visually patched:
 
-- Transactions desktop column filters now use `AppSelectInput`;
-- Transactions mobile filters now use `AppSelectInput`;
-- Review split editor selectors now use `AppSelectInput`;
-- Settings default-account selectors now use `AppSelectInput`;
+- Transactions desktop column filters use `AppSelectInput`;
+- Transactions mobile filters use `AppSelectInput`;
+- Review split editor selectors use `AppSelectInput`;
+- Settings default-account selectors use `AppSelectInput`;
 - Card creation selectors use owned controls;
 - Lending no longer uses browser-native `<datalist>`; known people are app-rendered filtered suggestions while free-text entry remains supported;
 - application pages/components are source-guarded against reintroducing native select/date/datalist controls.
 
-Focus/accessibility hardening added during the same pass:
+Focus/accessibility hardening:
 
 - preferred modal focus targets must be focusable and enabled;
 - Tab recovers focus inside the topmost modal if focus starts outside it;
 - owned select `aria-controls` points to the actual listbox;
-- the selected disabled placeholder cannot become the initial focus target;
+- a disabled selected placeholder cannot become the initial focus target;
 - owned-date “today” uses local calendar date rather than UTC date;
 - date keyboard navigation refuses destinations outside `min`/`max` and never focuses disabled cells.
 
-Rendered owned-control QA covers listbox focus, ARIA linkage and focus restoration.
+Rendered owned-control QA verifies Quick Entry, Savings, Credit, Loans, Lending, Recurring, Cards creation, Transactions filters and Settings defaults, including nested listbox focus/ARIA/focus-return behavior.
 
 ## Tooltip / discoverability evidence
 
@@ -135,13 +135,13 @@ Post-review corrections:
 
 ## Rendered-QA runner resilience
 
-GitHub runner browser bootstrap failures are treated separately from application assertions. The CI harness now keeps both installed browsers available:
+GitHub runner browser bootstrap failures are treated separately from application assertions. The CI harness keeps both installed browsers available:
 
 1. each rendered suite starts with Chromium;
 2. only if the suite fails with a recognized CDP bootstrap signature, the coordinator cleans its isolated profile and retries once with system Chrome;
 3. application assertion failures are never retried as browser bootstrap failures.
 
-This addresses intermittent Chromium 151 CDP startup failures without suppressing UI/runtime defects.
+The final implementation run exercised this fallback: Chromium 151 failed to expose the first CDP endpoint, the isolated system-Chrome retry succeeded, and all subsequent application/browser assertions completed successfully.
 
 ## Initial verified implementation checkpoint
 
@@ -152,21 +152,34 @@ Initial implementation head: `10f757cc3b6ab4c9567e9fe0344a04accc980217`.
 - CodeQL `32401155171`: **success**.
 - Windows Desktop `32401155198`: **success**.
 
-## Post-review verification status
+## Final verified implementation checkpoint
 
-Before the browser-failover change, head `f49c5abab42ef68e22dd11dd8e7193e7755eb0c8` established:
+Final implementation head: `f444d7f8da43b784680042b691db4b2e138203dd`.
+PR merge ref verified by CI: `e729b291130b1f741aa9e6b3f49693e897931ef3`.
 
-- privacy/security guard: passed;
-- **34 test files / 150 tests: passed**;
-- production TypeScript/Vite build: passed;
-- API TypeScript check: passed;
-- CodeQL `32405356540`: passed;
-- rendered QA did not reach application assertions because Chromium 151 failed to expose CDP on both bootstrap attempts.
+- CI `32406108849`: **success**.
+  - privacy/security guard passed across 238 tracked files;
+  - **34 test files / 150 tests passed**;
+  - production TypeScript/Vite build passed;
+  - API TypeScript check passed;
+  - base rendered frontend QA passed after the recognized Chromium bootstrap failure switched to the isolated system-Chrome fallback;
+  - owned-controls rendered QA passed;
+  - full desktop/mobile route-state matrix passed;
+  - completion QA passed for delete/undo/redo, sorting, form association, reduced motion and representative contrast;
+  - CDP runtime console/network QA passed across desktop/mobile plus auth/loading/conflict/error states;
+  - dedicated credit over-limit QA passed for Credit Card and Reports;
+  - full-page visual evidence QA passed.
+- Screenshot artifact `9420404231`: **49 files**, SHA-256 `1c1be773a510ae85e076ce4fe05bf4210d771f0f50cd50dc401bd6586eb4d7dc`.
+- The final desktop/mobile/full-page screenshots and dedicated 135% over-limit screenshot were reviewed; no new overlap, clipping, layout or responsive regression was found.
+- CodeQL `32406108695`: **success**.
+- Windows Desktop `32406108685`: **success** — application/desktop boundary, PowerShell fallback, unpacked build, packaged executable/backend smoke, interactive NSIS Setup, update-channel checksum and installer evidence all passed. Release publication correctly remained skipped.
+- PR #159 review state at technical closure: **0 unresolved review threads and 0 submitted reviews/change requests**.
+- PR #159 description is synchronized to this final implementation evidence.
 
-The final closure requires all CI, rendered browser suites, CodeQL, Windows packaging and screenshot review to pass on one common latest head after the browser-failover and documentation synchronization commits.
+This document update is closure metadata only. The implementation evidence above remains tied to `f444d7f8da43b784680042b691db4b2e138203dd`; the documentation-only closure head is required to retain green repository gates before issue #158 is closed.
 
 ## Owner-gated state
 
-- PR #159 remains open, ready for review and unmerged.
-- Optional large Reports/Analytics visual restructure requires a separate owner decision.
+- Optional large Reports/Analytics visual restructure remains a separate owner decision.
+- PR #159 remains open, ready for owner review and unmerged.
 - No `main` merge, release/version bump, production deployment or production installer publication is authorized by technical closure alone.
