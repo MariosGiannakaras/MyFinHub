@@ -110,7 +110,11 @@ describe('MyFinHub Windows desktop boundary', () => {
     expect(workflow).toContain("-ArgumentList '/S'");
     expect(workflow).toContain("'MyFinHub.lnk'");
     expect(workflow).toContain('CreateShortcut($desktopShortcut)');
-    expect(workflow).toContain("DisplayName -eq 'MyFinHub'");
+    expect(workflow).toContain("HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*");
+    expect(workflow).toContain("HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*");
+    expect(workflow).toContain("HKLM:\\Software\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*");
+    expect(workflow).toContain("DisplayName -like 'MyFinHub*'");
+    expect(workflow).toContain('UninstallString');
     expect(workflow).toContain("MainWindowTitle -match 'MyFinHub'");
     expect(workflow).toContain('ExtractAssociatedIcon($exe)');
     expect(workflow).toContain("-Filter 'Uninstall*.exe'");
