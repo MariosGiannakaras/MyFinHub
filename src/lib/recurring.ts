@@ -13,6 +13,18 @@ export function allRecurringItems(data:FinanceData):RecurringItem[]{
 export function activeRecurringItems(data:FinanceData){return allRecurringItems(data).filter(item=>recurringStatus(item)==='active')}
 export function inactiveRecurringItems(data:FinanceData){return allRecurringItems(data).filter(item=>recurringStatus(item)!=='active')}
 
+export function recurringAccountChoice(availableAccountIds:string[],...preferred:Array<string|null|undefined>):string{
+  const available=new Set(availableAccountIds);
+  for(const candidate of preferred)if(candidate&&available.has(candidate))return candidate;
+  return availableAccountIds[0]??'';
+}
+
+export function recurringAccountError(availableAccountIds:string[],accountId:string):string|null{
+  if(!availableAccountIds.length)return 'Δεν υπάρχει διαθέσιμος λογαριασμός για αυτό το πάγιο. Πρόσθεσε ή ενεργοποίησε έναν λογαριασμό και δοκίμασε ξανά.';
+  if(!accountId||!availableAccountIds.includes(accountId))return 'Ο επιλεγμένος λογαριασμός δεν είναι πλέον διαθέσιμος. Επίλεξε έναν από τους διαθέσιμους λογαριασμούς.';
+  return null;
+}
+
 export function recurringPayments(data:FinanceData,itemId:string):FinanceEvent[]{
   return (data.state.events??[]).filter(event=>event.recurringId===itemId).sort((a,b)=>b.date.localeCompare(a.date)||b.createdAt.localeCompare(a.createdAt));
 }
