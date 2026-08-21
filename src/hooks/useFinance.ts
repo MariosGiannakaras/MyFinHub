@@ -65,6 +65,7 @@ export function useFinance() {
   const redoStackRef = useRef<FinanceData[]>([]);
   const historySequenceRef=useRef(0);
   const changeHistoryRef=useRef<ChangeHistoryEntry[]>([]);
+  const initialLoadStartedRef=useRef(false);
 
   const assignData = useCallback((next: FinanceData | null) => { dataRef.current = next; setData(next); }, []);
   const setCurrentSaveState=useCallback((next:SaveState)=>{saveStateRef.current=next;setSaveState(next)},[]);
@@ -130,7 +131,11 @@ export function useFinance() {
   }
   const coordinator = coordinatorRef.current!;
 
-  useEffect(() => { void reload(); }, [reload]);
+  useEffect(() => {
+    if(initialLoadStartedRef.current)return;
+    initialLoadStartedRef.current=true;
+    void reload();
+  }, [reload]);
 
   useEffect(() => {
     if (typeof BroadcastChannel === 'undefined') return;
