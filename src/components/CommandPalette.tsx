@@ -1,6 +1,6 @@
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { ArrowRight, Clock3, CornerDownLeft, Search, X } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type KeyboardEvent } from 'react';
 import { useModalFocus } from '../hooks/useModalFocus';
 import { searchCommandItems, type CommandSearchItem, type RankedCommandSearchItem } from '../lib/commandSearch';
 import type { FinanceData } from '../types';
@@ -18,7 +18,7 @@ export function CommandPalette({open,data,motionMode='system',onClose,onExecute}
  useEffect(()=>{if(!open)return;setQuery('');setActive(0)},[open]);
  useEffect(()=>{if(active>=results.length)setActive(Math.max(0,results.length-1))},[active,results.length]);
  const run=(row:RankedCommandSearchItem|undefined)=>{if(!row)return;const next=[row.id,...recentIds.filter(id=>id!==row.id)].slice(0,8);setRecentIds(next);saveRecentIds(next);onExecute(row)};
- const onKeyDown=(event:React.KeyboardEvent<HTMLInputElement>)=>{
+ const onKeyDown=(event:KeyboardEvent<HTMLInputElement>)=>{
   if(event.key==='ArrowDown'){event.preventDefault();setActive(index=>results.length?(index+1)%results.length:0);return}
   if(event.key==='ArrowUp'){event.preventDefault();setActive(index=>results.length?(index-1+results.length)%results.length:0);return}
   if(event.key==='Home'){event.preventDefault();setActive(0);return}
