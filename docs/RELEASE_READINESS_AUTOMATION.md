@@ -21,26 +21,29 @@ The ceilings intentionally leave limited headroom for toolchain/hash variation w
 - Feature pages in `src/App.tsx`, including Reports, are loaded through `React.lazy`.
 - `recharts` is imported by the lazy Reports page rather than the eager application shell.
 - Current Vite output therefore keeps the chart implementation in a separate `CartesianChart-*` chunk.
-- `scripts/bundle-budget.mjs` now makes the main JS, chart JS and CSS ceilings executable build contracts.
+- `scripts/bundle-budget.mjs` makes the main JS, chart JS and CSS ceilings executable build contracts.
 - `tests/release-readiness-source.test.ts` guards the lazy-route/chart-import boundary.
 
-## Browser-engine inventory
+## Browser-engine coverage
 
-The existing rendered QA harness is intentionally **Chromium-specific**. It launches Chromium/Chrome and drives it through the Chrome DevTools Protocol (CDP), including `Runtime`, `Page`, `Network`, `Emulation` and `Input` domains. This provides deep deterministic coverage but is not WebKit/Safari evidence.
+The complete rendered QA harness remains intentionally **Chromium-specific**. It launches Chromium/Chrome and drives it through the Chrome DevTools Protocol (CDP), including `Runtime`, `Page`, `Network`, `Emulation` and `Input` domains. This provides deep deterministic coverage but is not Safari evidence.
 
-The critical flows suitable for a future isolated WebKit-compatible smoke are:
+A second, deliberately small compatibility gate now lives in `.github/workflows/cross-engine-smoke.yml` and `scripts/webkit-smoke.mjs`. It uses **Playwright 1.62.1 WebKit**, installed transiently in that job so Playwright does not become an application/runtime dependency or alter the application lockfile.
 
-1. Login/MFA shell labels, errors and focus.
-2. Desktop and narrow-mobile navigation.
-3. App-owned select/date controls.
-4. Modal focus, Escape and focus return.
-5. Reports layout, text alternatives and chart rendering.
-6. Branding/PWA identity assets.
-7. One representative financial mutation with undo.
+The isolated WebKit smoke covers:
 
-These should **not** be bolted onto the raw-CDP helpers. A WebKit smoke should use a separate WebKit-capable automation layer (for example Playwright WebKit) and remain a small compatibility suite rather than duplicate the complete primary-Chromium screenshot matrix. The existing Chromium suite remains the authoritative deterministic regression gate.
+1. Login identity/password interaction and MFA focus/6-digit submission readiness.
+2. Desktop shell navigation and narrow-mobile bottom/more navigation.
+3. App-owned account-select listbox and app-owned date grid.
+4. Quick Add focus, Escape close and mobile containment.
+5. Reports chart rendering, accessible text alternative and horizontal-overflow checks.
+6. MyFinHub browser/shell identity.
+7. One real Quick Add expense mutation followed by app-level undo.
+8. A small desktop/mobile WebKit screenshot artifact rather than a duplicated full visual matrix.
 
-A WebKit runtime is not currently declared in the repository dependencies or Actions setup, so desktop/narrow WebKit execution remains pending rather than being falsely marked complete.
+The WebKit job intentionally **does not** invoke `npm run qa:frontend`. Primary Chromium remains the authoritative full deterministic regression/screenshot gate; WebKit is a focused compatibility gate. `tests/release-readiness-source.test.ts` locks the Playwright version, WebKit-only install, non-duplication rule and representative coverage contract.
+
+WebKit on GitHub-hosted Linux is useful engine-level compatibility evidence. It is still **not** evidence for physical iPhone Safari behavior, iOS virtual keyboard/viewport quirks, or VoiceOver integration.
 
 ## PWA/browser identity
 
@@ -57,7 +60,7 @@ Actual browser install UI/splash rendering still requires a supported installed-
 
 ## Explicitly manual / environment-dependent gates
 
-Automation on GitHub-hosted Chromium runners is not evidence for:
+CI engine automation is not evidence for:
 
 - real iPhone/iOS Safari;
 - real Android Chrome;
