@@ -19,6 +19,7 @@ const scripts = [
   { path: 'scripts/action-center-context-qa.mjs', profiles: ['/tmp/myfinhub-action-center-context-qa-chrome'] },
   { path: 'scripts/budget-rules-qa.mjs', profiles: ['/tmp/myfinhub-budget-rules-qa-chrome'] },
   { path: 'scripts/command-palette-qa.mjs', profiles: ['/tmp/myfinhub-command-palette-qa-chrome'] },
+  { path: 'scripts/payment-flow-normalization-qa.mjs', profiles: ['/tmp/myfinhub-payment-flow-qa-chrome'] },
   { path: 'scripts/ui-ux-visual-evidence-qa.mjs', profiles: ['/tmp/myfinhub-ui-visual-evidence-chrome'] },
 ];
 
