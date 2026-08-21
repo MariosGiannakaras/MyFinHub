@@ -19,7 +19,7 @@ class Cdp{
   close(){this.ws?.close()}
 }
 const assert=(value,message)=>{if(!value)throw new Error(`UI/UX browser QA assertion failed: ${message}`)};
-const PAGE_HEADINGS={dashboard:'Οι λογαριασμοί μου',transactions:'Συναλλαγές',review:'Έλεγχος παλιών κινήσεων',savings:'Αποταμίευση',cards:'Κάρτες',credit:'Πιστωτική Κάρτα',loans:'Δόσεις & Δάνεια',lending:'Δανεικά & επιστροφές',recurring:'Πάγια & Συνδρομές',planning:'Προγραμματισμός & πρόβλεψη ρευστότητας',attention:'Χρειάζεται προσοχή',reports:'Αναφορές',settings:'Ρυθμίσεις'};
+const PAGE_HEADINGS={dashboard:'Οι λογαριασμοί μου',transactions:'Συναλλαγές',review:'Έλεγχος παλιών κινήσεων',savings:'Αποταμίευση',cards:'Κάρτες',credit:'Πιστωτική Κάρτα',loans:'Δόσεις & Δάνεια',lending:'Δανεικά & επιστροφές',recurring:'Πάγια & Συνδρομές',planning:'Προγραμματισμός & πρόβλεψη ρευστότητας',attention:'Τι χρειάζεται προσοχή',reports:'Αναφορές',settings:'Ρυθμίσεις'};
 const PAGE_IDS=Object.keys(PAGE_HEADINGS);
 try{
   await waitHttp(`http://127.0.0.1:${port}/json/version`);
