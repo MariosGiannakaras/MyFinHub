@@ -12,6 +12,7 @@ const scripts = [
   { path: 'scripts/ui-ux-runtime-qa.mjs', profiles: ['/tmp/myfinhub-ui-runtime-qa-chrome'] },
   { path: 'scripts/ui-ux-credit-overlimit-qa.mjs', profiles: ['/tmp/myfinhub-credit-overlimit-qa-chrome'] },
   { path: 'scripts/refresh-route-qa.mjs', profiles: ['/tmp/myfinhub-refresh-route-qa-chrome'] },
+  { path: 'scripts/recovered-surface-qa.mjs', profiles: ['/tmp/myfinhub-recovered-surface-qa-chrome'] },
   { path: 'scripts/reports-visual-qa.mjs', profiles: ['/tmp/myfinhub-reports-visual-qa-chrome'] },
   { path: 'scripts/brand-visual-qa.mjs', profiles: ['/tmp/myfinhub-brand-visual-qa-chrome'] },
   { path: 'scripts/ui-ux-visual-evidence-qa.mjs', profiles: ['/tmp/myfinhub-ui-visual-evidence-chrome'] },
