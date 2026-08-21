@@ -3,7 +3,7 @@ import { allAccounts, effectiveLegacyTransactions } from './domain.js';
 import { lendingRows } from './lending.js';
 import { loanRemainingInstallments } from './loans.js';
 import { allRecurringItems, recurringStatus } from './recurring.js';
-import type { FinanceData, FinanceEvent, Loan, RecurringItem } from '../types.js';
+import type { FinanceData, FinanceEvent, Loan } from '../types.js';
 
 export type CommandPage='dashboard'|'transactions'|'review'|'savings'|'cards'|'credit'|'loans'|'lending'|'recurring'|'planning'|'attention'|'reports'|'settings';
 export type CommandResultKind='command'|'transaction'|'account'|'card'|'loan'|'lending'|'recurring'|'scheduled'|'budget';
@@ -90,7 +90,13 @@ function itemScore(row:CommandSearchItem,query:string){const normalized=normaliz
 
 export function searchCommandItems(data:FinanceData,query:string,{recentIds=[],limit=14}:{recentIds?:string[];limit?:number}={}):RankedCommandSearchItem[]{
  const index=buildCommandSearchIndex(data);const recentRank=new Map(recentIds.map((id,index)=>[id,recentIds.length-index]));const normalized=normalizeCommandText(query);
- const ranked=index.flatMap(row=>{const base=normalized?itemScore(row,normalized):(row.kind==='command'?500-row.priority:0);const recent=(recentRank.get(row.id)??0)*35;if(base<=0&&recent<=0)return [];return [{...row,score:base+recent}]});
+ const ranked=index.flatMap(row=>{
+  const recentPosition=recentRank.get(row.id)??0;
+  if(normalized){const base=itemScore(row,normalized);if(base<=0)return [];return [{...row,score:base+recentPosition*8}]}
+  if(recentPosition>0)return [{...row,score:900+recentPosition*20-Math.min(row.priority,80)}];
+  if(row.kind!=='command')return [];
+  return [{...row,score:500-row.priority}];
+ });
  return ranked.sort((a,b)=>b.score-a.score||a.priority-b.priority||a.title.localeCompare(b.title,'el')||a.id.localeCompare(b.id)).slice(0,Math.max(1,limit));
 }
 
