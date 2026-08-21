@@ -69,7 +69,7 @@ async function desktopSmoke(){
 
     await amount.fill('12.34');
     await quick.getByPlaceholder('Σύντομη περιγραφή μόνο αν χρειάζεται').fill('WebKit QA Expense');
-    await quick.getByRole('button',{name:'Καταχώριση'}).click();
+    await quick.getByRole('button',{name:'Καταχώριση',exact:true}).click();
     await quick.waitFor({state:'detached'});
     await page.locator('.sidebar nav').getByRole('button',{name:'Συναλλαγές'}).click();
     await page.getByRole('heading',{name:'Συναλλαγές'}).waitFor();
