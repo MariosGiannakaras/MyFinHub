@@ -56,4 +56,8 @@ try{
  state=await c.call("function(){const dialog=document.querySelector('[aria-labelledby=\"change-history-title\"]');const rect=dialog?.getBoundingClientRect();const actions=[...document.querySelectorAll('.history-actions button')].map(node=>node.getBoundingClientRect().height);return {width:rect?.width||0,right:rect?.right||0,actions,overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+1}}");
  assert(state.width>0&&state.right<=innerWidth+1,'mobile History dialog stays inside viewport');assert(state.actions.every(height=>height>=44),'mobile History undo/redo targets remain >=44px');assert(!state.overflow,'mobile History introduces no horizontal overflow');await shot('final-ux-history-mobile');
  c.close();console.log('Final UX reconciliation rendered QA passed.');
-}finally{child.kill('SIGTERM');rmSync(profile,{recursive:true,force:true})}
+}finally{
+ child.kill('SIGTERM');
+ await new Promise(resolve=>{if(child.exitCode!==null||child.signalCode!==null)return resolve();const timer=setTimeout(resolve,1800);child.once('exit',()=>{clearTimeout(timer);resolve()})});
+ try{rmSync(profile,{recursive:true,force:true,maxRetries:8,retryDelay:100})}catch(error){console.warn(`Final UX QA cleanup warning: ${error instanceof Error?error.message:String(error)}`)}
+}
