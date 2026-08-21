@@ -6,6 +6,7 @@ import type { FinanceData } from '../types';
 
 export type SaveState = 'loading' | 'saved' | 'saving' | 'error' | 'conflict';
 export type ChangeHistoryEntry = { id:string; kind:'change'|'undo'|'redo'; label:string; at:string };
+export const SESSION_HISTORY_EVENT = 'myfinhub-session-change-history';
 
 const REVISION_CHANNEL = 'rheomiq-finance-revision';
 const MAX_UNDO_STATES = 20;
@@ -38,6 +39,11 @@ function describeChange(current:FinanceData,next:FinanceData){
   return 'Αλλαγή οικονομικών δεδομένων';
 }
 
+function publishHistory(items:ChangeHistoryEntry[]){
+  if(typeof window==='undefined')return;
+  window.dispatchEvent(new CustomEvent<ChangeHistoryEntry[]>(SESSION_HISTORY_EVENT,{detail:items}));
+}
+
 export function useFinance() {
   const [data, setData] = useState<FinanceData | null>(null);
   const [revision, setRevision] = useState('');
@@ -67,10 +73,15 @@ export function useFinance() {
     setUndoDepth(0);
     setRedoDepth(0);
     setChangeHistory([]);
+    publishHistory([]);
   }, []);
   const recordHistory=useCallback((kind:ChangeHistoryEntry['kind'],label:string)=>{
     const entry:ChangeHistoryEntry={id:`history-${Date.now()}-${++historySequenceRef.current}`,kind,label,at:new Date().toISOString()};
-    setChangeHistory(current=>[entry,...current].slice(0,MAX_HISTORY_ITEMS));
+    setChangeHistory(current=>{
+      const next=[entry,...current].slice(0,MAX_HISTORY_ITEMS);
+      publishHistory(next);
+      return next;
+    });
   },[]);
 
   const applyEnvelope = useCallback((res: Awaited<ReturnType<typeof loadData>>) => {
