@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
+const app=readFileSync(new URL('../src/App.tsx',import.meta.url),'utf8');
 const dashboard=readFileSync(new URL('../src/pages/DashboardPage.tsx',import.meta.url),'utf8');
 const skeleton=readFileSync(new URL('../src/components/AppSkeleton.tsx',import.meta.url),'utf8');
 const finance=readFileSync(new URL('../src/hooks/useFinance.ts',import.meta.url),'utf8');
@@ -36,6 +37,7 @@ describe('final UX reconciliation source contracts',()=>{
     expect(finance).toContain('setChangeHistory(next)');
     expect(finance).toContain('publishHistory(next)');
     expect(finance).not.toContain('setChangeHistory(current=>');
+    expect(app).toContain('history={finance.changeHistory}');
     expect(shell).toContain('aria-label="Ιστορικό αλλαγών"');
     expect(shell).toContain('id="change-history-title"');
     expect(shell).toContain('window.addEventListener(SESSION_HISTORY_EVENT,onHistory)');
