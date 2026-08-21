@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { qaFinanceData } from '../src/qaFixture.js';
 import { allAttentionItems, attentionDismissDecision, attentionSnoozeDecision, visibleAttentionItems } from '../src/lib/attention.js';
 import { createEvent } from '../src/lib/domain.js';
+import { migrateProductData } from '../src/lib/productMigration.js';
 
 const clone=()=>structuredClone(qaFinanceData());
 
@@ -42,5 +43,14 @@ describe('Needs Attention deterministic engine',()=>{
     expect(visibleAttentionItems(data,'2026-08-17').some(row=>row.id===item.id)).toBe(false);
     const changed=structuredClone(data);const scheduled=changed.state.scheduled?.find(row=>`scheduled:${row.id}`===item.id);if(scheduled)scheduled.amount+=1;
     if(scheduled)expect(visibleAttentionItems(changed,'2026-08-17').some(row=>row.id===item.id)).toBe(true);
+  });
+
+  it('preserves attention decisions through migration and defaults legacy state safely',()=>{
+    const data=clone();
+    const item=allAttentionItems(data,'2026-08-17').find(row=>row.severity==='warning')!;
+    data.state.attentionDecisions={[item.id]:attentionDismissDecision(item)};
+    expect(migrateProductData(data).state.attentionDecisions?.[item.id]).toEqual(data.state.attentionDecisions[item.id]);
+    const legacy=clone();delete legacy.state.attentionDecisions;
+    expect(migrateProductData(legacy).state.attentionDecisions).toEqual({});
   });
 });
