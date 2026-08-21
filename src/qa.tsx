@@ -33,7 +33,8 @@ import './styles.css';
 const QA_PAGES:PageId[]=['dashboard','transactions','review','savings','cards','credit','loans','lending','recurring','planning','attention','reports','settings'];
 const QA_PAGE_HEADINGS:Record<PageId,string>={dashboard:'Οι λογαριασμοί μου',transactions:'Συναλλαγές',review:'Έλεγχος παλιών κινήσεων',savings:'Αποταμίευση',cards:'Κάρτες',credit:'Πιστωτική Κάρτα',loans:'Δόσεις & Δάνεια',lending:'Δανεικά & επιστροφές',recurring:'Πάγια & Συνδρομές',planning:'Προγραμματισμός & πρόβλεψη ρευστότητας',attention:'Χρειάζεται προσοχή',reports:'Αναφορές · Η οικονομική εικόνα του μήνα',settings:'Ρυθμίσεις'};
 const quickToken=()=>`qa-quick-${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
-type SpecialQuickContext=Omit<Exclude<QuickActionContext,{mode:'generic'}>,'token'>;
+type DistributiveOmit<T,K extends PropertyKey>=T extends unknown?Omit<T,K>:never;
+type SpecialQuickContext=DistributiveOmit<Exclude<QuickActionContext,{mode:'generic'}>,'token'>;
 
 function Crash(): never { throw new Error('synthetic-render-failure'); }
 function initialSaveState(raw:string|null):SaveState{return raw==='error'||raw==='conflict'||raw==='saving'||raw==='loading'?raw:'saved'}
