@@ -142,10 +142,10 @@ function QaWorkspace(){
     :page==='review'?<ReviewPage data={data} onDecision={(id,decision)=>update(current=>({...current,state:{...current.state,reviewDecisions:{...(current.state.reviewDecisions??{}),[id]:decision}}}))}/>
     :page==='savings'?<SavingsPage data={data} month={month} asOf={today} onCreate={addEvent} onQuickAdd={openSpecial}/>
     :page==='cards'?<CardsPage data={data} onUpsertBank={upsertBank} onUpsertCard={upsertCard} onArchiveCard={archiveCard} onOpenCredit={()=>setPage('credit')}/>
-    :page==='credit'?<CreditCardPage data={data} asOf={today} onCreateEvent={addEvent} onEditEvent={editEvent} onDeleteEvent={deleteEvent} onUpsertCard={upsertCard} onArchiveCard={archiveCard}/>
-    :page==='loans'?<LoansPage data={data} asOf={today} onUpsertLoan={upsertLoan} onCreateEvent={addEvent} onCreateSelfLoan={createSelfLoan}/>
+    :page==='credit'?<CreditCardPage data={data} asOf={today} onCreateEvent={addEvent} onEditEvent={editEvent} onDeleteEvent={deleteEvent} onUpsertCard={upsertCard} onArchiveCard={archiveCard} onPayCard={cardId=>openSpecial({mode:'credit',action:'payment',cardId})}/>
+    :page==='loans'?<LoansPage data={data} asOf={today} onUpsertLoan={upsertLoan} onCreateSelfLoan={createSelfLoan} onPayLoan={loanId=>openSpecial({mode:'loan',loanId})}/>
     :page==='lending'?<LendingPage data={data} asOf={today} onCreateEvent={addEvent} onQuickAdd={openSpecial}/>
-    :page==='recurring'?<RecurringPage data={data} asOf={today} onUpsert={upsertRecurring} onCreateEvent={addEvent} onOpenLoans={()=>setPage('loans')}/>
+    :page==='recurring'?<RecurringPage data={data} asOf={today} onUpsert={upsertRecurring} onOpenLoans={()=>setPage('loans')} onPayRecurring={recurringId=>openSpecial({mode:'recurring',recurringId})}/>
     :page==='planning'?<PlanningPage data={data} asOf={today} onUpsertScheduled={upsertScheduled} onCompleteScheduled={completeScheduled}/>
     :page==='attention'?<AttentionPage data={data} asOf={today} onAction={handleAttention} onDecision={decideAttention}/>
     :page==='reports'?<ReportsPage data={data} month={month}/>
