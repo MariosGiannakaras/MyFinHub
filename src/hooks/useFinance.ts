@@ -67,6 +67,7 @@ export function useFinance() {
   const changeHistoryRef=useRef<ChangeHistoryEntry[]>([]);
 
   const assignData = useCallback((next: FinanceData | null) => { dataRef.current = next; setData(next); }, []);
+  const setCurrentSaveState=useCallback((next:SaveState)=>{saveStateRef.current=next;setSaveState(next)},[]);
   const clearHistory = useCallback(() => {
     undoStackRef.current = [];
     redoStackRef.current = [];
@@ -94,19 +95,19 @@ export function useFinance() {
     setLastSavedAt(res.lastSavedAt);
     lastSaveFailed.current = false;
     clearHistory();
-    setSaveState('saved');
-  }, [assignData, clearHistory]);
+    setCurrentSaveState('saved');
+  }, [assignData, clearHistory,setCurrentSaveState]);
 
   const reload = useCallback(async () => {
-    setSaveState('loading');
+    setCurrentSaveState('loading');
     try {
       applyEnvelope(await loadData());
       return true;
     } catch {
-      setSaveState('error');
+      setCurrentSaveState('error');
       return false;
     }
-  }, [applyEnvelope]);
+  }, [applyEnvelope,setCurrentSaveState]);
 
   if (!coordinatorRef.current) {
     coordinatorRef.current = new LatestValueQueue<FinanceData>(async (stamped) => {
@@ -117,19 +118,18 @@ export function useFinance() {
         setFilePath(res.filePath);
         setLastSavedAt(res.lastSavedAt);
         lastSaveFailed.current = false;
-        setSaveState('saved');
+        setCurrentSaveState('saved');
         channelRef.current?.postMessage({ type: 'revision', revision: res.revision } satisfies RevisionMessage);
       } catch (error) {
         lastSaveFailed.current = true;
-        if (error instanceof ApiError && (error.status === 409 || error.code === 'REVISION_CONFLICT')) setSaveState('conflict');
-        else setSaveState('error');
+        if (error instanceof ApiError && (error.status === 409 || error.code === 'REVISION_CONFLICT')) setCurrentSaveState('conflict');
+        else setCurrentSaveState('error');
         throw error;
       }
     });
   }
   const coordinator = coordinatorRef.current!;
 
-  useEffect(() => { saveStateRef.current = saveState; }, [saveState]);
   useEffect(() => { void reload(); }, [reload]);
 
   useEffect(() => {
@@ -146,7 +146,7 @@ export function useFinance() {
         lastSaveFailed.current,
       );
       if (action === 'conflict') {
-        setSaveState('conflict');
+        setCurrentSaveState('conflict');
         return;
       }
       if (action === 'reload' && !remoteReloading.current) {
@@ -158,15 +158,15 @@ export function useFinance() {
       if (channelRef.current === channel) channelRef.current = null;
       channel.close();
     };
-  }, [coordinator, reload]);
+  }, [coordinator, reload,setCurrentSaveState]);
 
   const persist = useCallback((next: FinanceData) => {
     const stamped = { ...next, app: 'RheomIQ', schemaVersion: 3, updatedAt: new Date().toISOString() };
     assignData(stamped);
-    setSaveState('saving');
+    setCurrentSaveState('saving');
     coordinator.enqueue(stamped);
     return stamped;
-  }, [assignData, coordinator]);
+  }, [assignData, coordinator,setCurrentSaveState]);
 
   const pushBounded = useCallback((stack: FinanceData[], current: FinanceData) => {
     stack.push(current);
@@ -218,7 +218,7 @@ export function useFinance() {
   const doImport = useCallback(async (incoming: FinanceData) => {
     if (exclusiveOperation.current) throw new Error('Υπάρχει ήδη λειτουργία αποθήκευσης σε εξέλιξη.');
     exclusiveOperation.current = true;
-    setSaveState('saving');
+    setCurrentSaveState('saving');
     try {
       await coordinator.whenIdle();
       try {
@@ -227,14 +227,14 @@ export function useFinance() {
         channelRef.current?.postMessage({ type: 'revision', revision: res.revision } satisfies RevisionMessage);
       } catch (error) {
         lastSaveFailed.current = true;
-        if (error instanceof ApiError && (error.status === 409 || error.code === 'REVISION_CONFLICT')) setSaveState('conflict');
-        else setSaveState('error');
+        if (error instanceof ApiError && (error.status === 409 || error.code === 'REVISION_CONFLICT')) setCurrentSaveState('conflict');
+        else setCurrentSaveState('error');
         throw error;
       }
     } finally {
       exclusiveOperation.current = false;
     }
-  }, [applyEnvelope, coordinator]);
+  }, [applyEnvelope, coordinator,setCurrentSaveState]);
 
   const doBackup = useCallback(async () => {
     await coordinator.whenIdle();
