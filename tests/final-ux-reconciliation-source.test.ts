@@ -24,6 +24,9 @@ describe('final UX reconciliation source contracts',()=>{
     expect(pending).toBeGreaterThan(other);
     expect(quick).toBeGreaterThan(pending);
     expect(rest).toBeGreaterThan(quick);
+    expect(styles).toContain('.page-stack>[data-dashboard-section],');
+    expect(styles).toContain('.dashboard-grid>[data-dashboard-section]{order:initial!important;grid-row:auto!important;grid-column:auto!important}');
+    expect(styles).toContain('.dashboard-grid{grid-auto-flow:row}');
     expect(styles).toContain('.dashboard-pending-grid>.panel{order:initial!important}');
   });
 
