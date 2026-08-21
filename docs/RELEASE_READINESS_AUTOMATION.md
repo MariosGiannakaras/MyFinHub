@@ -28,7 +28,7 @@ The ceilings intentionally leave limited headroom for toolchain/hash variation w
 
 The complete rendered QA harness remains intentionally **Chromium-specific**. It launches Chromium/Chrome and drives it through the Chrome DevTools Protocol (CDP), including `Runtime`, `Page`, `Network`, `Emulation` and `Input` domains. This provides deep deterministic coverage but is not Safari evidence.
 
-A second, deliberately small compatibility gate now lives in `.github/workflows/cross-engine-smoke.yml` and `scripts/webkit-smoke.mjs`. It uses **Playwright 1.62.1 WebKit**, installed transiently in that job so Playwright does not become an application/runtime dependency or alter the application lockfile.
+A second, deliberately small compatibility gate now lives in `.github/workflows/cross-engine-smoke.yml` and `scripts/webkit-smoke.mjs`. It uses the pinned stable **Playwright 1.62.1 / WebKit 26.5** toolchain, installed transiently in that job so Playwright does not become an application/runtime dependency or alter the application lockfile.
 
 The isolated WebKit smoke covers:
 
