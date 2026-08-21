@@ -6,8 +6,9 @@ import { migrateData } from './domain.js';
  *
  * The historical schema-v3 migrator predates later product domains and rebuilds
  * mutable state from its then-known fields. Preserve additive product metadata
- * explicitly so reads/imports never drop Cards or Scheduled Transactions while
- * the canonical FinanceData schema remains backwards compatible.
+ * explicitly so reads/imports never drop Cards, Scheduled Transactions or
+ * Action Center decisions while the canonical FinanceData schema remains
+ * backwards compatible.
  */
 export function migrateProductData(input:FinanceData):FinanceData{
   const migrated=migrateData(input);
@@ -19,6 +20,7 @@ export function migrateProductData(input:FinanceData):FinanceData{
       cardBanks:sourceState.cardBanks??[],
       cards:sourceState.cards??[],
       scheduled:sourceState.scheduled??[],
+      attentionDecisions:sourceState.attentionDecisions??{},
     },
   };
 }
