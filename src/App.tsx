@@ -60,7 +60,8 @@ function NotFound({ onHome }: { onHome: () => void }) {
 }
 const quickToken = () => `quick-${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
 
-type SpecialQuickContext = Omit<Exclude<QuickActionContext, { mode: 'generic' }>, 'token'>;
+type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;
+type SpecialQuickContext = DistributiveOmit<Exclude<QuickActionContext, { mode: 'generic' }>, 'token'>;
 
 function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogout: () => void }) {
   const finance = useFinance();
