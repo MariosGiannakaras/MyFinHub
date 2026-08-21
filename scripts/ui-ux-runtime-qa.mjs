@@ -19,24 +19,35 @@ class Cdp{
   close(){this.ws?.close()}
 }
 const assert=(value,message)=>{if(!value)throw new Error(`UI/UX runtime QA assertion failed: ${message}`)};
-const PAGE_HEADINGS={dashboard:'Οι λογαριασμοί μου',transactions:'Συναλλαγές',review:'Έλεγχος παλιών κινήσεων',savings:'Αποταμίευση',cards:'Κάρτες',credit:'Πιστωτική Κάρτα',loans:'Δόσεις & Δάνεια',lending:'Δανεικά & επιστροφές',recurring:'Πάγια & Συνδρομές',reports:'Αναφορές',settings:'Ρυθμίσεις'};
+const PAGE_HEADINGS={dashboard:'Οι λογαριασμοί μου',transactions:'Συναλλαγές',review:'Έλεγχος παλιών κινήσεων',savings:'Αποταμίευση',cards:'Κάρτες',credit:'Πιστωτική Κάρτα',loans:'Δόσεις & Δάνεια',lending:'Δανεικά & επιστροφές',recurring:'Πάγια & Συνδρομές',planning:'Προγραμματισμός & πρόβλεψη ρευστότητας',reports:'Αναφορές',settings:'Ρυθμίσεις'};
 try{
   await waitHttp(`http://127.0.0.1:${port}/json/version`);
   const target=await fetch(`http://127.0.0.1:${port}/json/new?${encodeURIComponent(baseUrl)}`,{method:'PUT'}).then(response=>response.json());
   const c=new Cdp(target.webSocketDebuggerUrl);await c.open();
   await c.send('Page.enable');await c.send('Runtime.enable');await c.send('Log.enable');await c.send('Network.enable');
-  const findings=[];
+  const findings=[];const recoverableAssets=[];const requests=new Map();
   const describeArg=arg=>arg.value!==undefined?String(arg.value):arg.description||arg.type||'console value';
   c.on('Runtime.exceptionThrown',params=>findings.push(`runtime exception: ${params.exceptionDetails?.exception?.description||params.exceptionDetails?.text||'unknown exception'}`));
   c.on('Runtime.consoleAPICalled',params=>{if(params.type==='error'||params.type==='assert')findings.push(`console.${params.type}: ${(params.args||[]).map(describeArg).join(' ')}`)});
   c.on('Log.entryAdded',params=>{const entry=params.entry;if(entry?.level==='error')findings.push(`browser log: ${entry.text||'error entry'}${entry.url?` @ ${entry.url}`:''}`)});
-  c.on('Network.loadingFailed',params=>{const text=params.errorText||'request failed';if(!params.canceled&&text!=='net::ERR_ABORTED')findings.push(`network failure: ${text} ${params.blockedReason||''}`.trim())});
+  c.on('Network.requestWillBeSent',params=>{if(params.requestId&&params.request?.url)requests.set(params.requestId,{url:params.request.url,type:params.type||''})});
+  c.on('Network.loadingFailed',params=>{
+    if(params.canceled||params.errorText==='net::ERR_ABORTED')return;
+    const request=requests.get(params.requestId)||{url:'unknown',type:params.type||''};
+    const type=params.type||request.type;
+    const external=(()=>{try{return new URL(request.url).origin!==new URL(baseUrl).origin}catch{return false}})();
+    if(type==='Image'&&external&&params.errorText==='net::ERR_BLOCKED_BY_ORB'){
+      recoverableAssets.push(`${params.errorText}: ${request.url}`);
+      return;
+    }
+    findings.push(`network failure: ${params.errorText||'request failed'} [${type||'unknown'}] ${request.url}${params.blockedReason?` (${params.blockedReason})`:''}`);
+  });
   c.on('Network.responseReceived',params=>{const response=params.response;if(response?.status>=400)findings.push(`HTTP ${response.status}: ${response.url}`)});
   const viewport=(width,height)=>c.send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<=680});
   const urlFor=params=>{const url=new URL(baseUrl);for(const [key,value] of Object.entries(params))if(value!==undefined&&value!==null&&value!=='')url.searchParams.set(key,String(value));return url.href};
   const waitFor=async(fn,label,args=[])=>{for(let i=0;i<100;i++){if(await c.call(fn,args))return;await sleep(100)}throw new Error(`Timed out waiting for ${label}`)};
-  const clean=async label=>{await sleep(220);assert(findings.length===0,`${label}: ${findings.join(' | ')}`)};
-  const navigate=async(params,heading)=>{findings.length=0;await c.send('Page.navigate',{url:urlFor(params)});if(heading)await waitFor("function(text){return (document.querySelector('#main-workspace h1')?.textContent||'').includes(text)}",`heading ${heading}`,[heading]);else await waitFor("function(){return document.readyState==='complete'&&Boolean(document.body?.innerText.trim())}",'document ready');await clean(JSON.stringify(params))};
+  const clean=async label=>{await sleep(260);assert(findings.length===0,`${label}: ${findings.join(' | ')}`);if(recoverableAssets.length){const fallback=await c.call("function(){return document.querySelectorAll('.bank-logo-fallback').length}");assert(fallback>0,`${label}: external bank-logo request failed without rendering a local fallback: ${recoverableAssets.join(' | ')}`);console.warn(`Runtime QA recovered ${recoverableAssets.length} external bank-logo image failure(s) with local fallback: ${recoverableAssets.join(' | ')}`)}recoverableAssets.length=0;requests.clear()};
+  const navigate=async(params,heading)=>{findings.length=0;recoverableAssets.length=0;requests.clear();await c.send('Page.navigate',{url:urlFor(params)});if(heading)await waitFor("function(text){return (document.querySelector('#main-workspace h1')?.textContent||'').includes(text)}",`heading ${heading}`,[heading]);else await waitFor("function(){return document.readyState==='complete'&&Boolean(document.body?.innerText.trim())}",'document ready');await clean(JSON.stringify(params))};
 
   console.log('Runtime QA: console/network checks across desktop routes');
   await viewport(1440,1000);for(const [page,heading] of Object.entries(PAGE_HEADINGS))await navigate({page},heading);
