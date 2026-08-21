@@ -15,6 +15,7 @@ import type { AttentionItem } from './lib/attention';
 import { archiveCardRecord } from './lib/cards';
 import { accountBalances } from './lib/domain';
 import { reportingMonthForDate } from './lib/localDate';
+import { applyTransactionRules } from './lib/transactionRules';
 import type {
   AttentionDecision,
   CardBank,
@@ -22,10 +23,12 @@ import type {
   FinanceData,
   FinanceEvent,
   Loan,
+  MonthlyBudget,
   PaymentCard,
   RecurringItem,
   ReviewDecision,
   ScheduledTransaction,
+  TransactionRule,
 } from './types';
 
 const DashboardPage = lazy(() => import('./pages/DashboardPage').then((module) => ({ default: module.DashboardPage })));
@@ -135,7 +138,8 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   const addEvent = (event: FinanceEvent) => finance.update((current) => {
     const events = current.state.events ?? [];
     const exists = events.some((existing) => existing.id === event.id);
-    return { ...current, state: { ...current.state, events: exists ? events.map((existing) => existing.id === event.id ? event : existing) : [...events, event] } };
+    const nextEvent = exists ? event : applyTransactionRules(current,event);
+    return { ...current, state: { ...current.state, events: exists ? events.map((existing) => existing.id === event.id ? nextEvent : existing) : [...events, nextEvent] } };
   });
   const deleteEvent = (id: string) => finance.update((current) => ({ ...current, state: { ...current.state, events: (current.state.events ?? []).filter((event) => event.id !== id) } }));
   const editEvent = (id: string) => {
@@ -182,8 +186,13 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   const completeScheduled = (item: ScheduledTransaction, event: FinanceEvent) => finance.update((current) => {
     const scheduled = current.state.scheduled ?? [];
     const events = current.state.events ?? [];
-    return { ...current, state: { ...current.state, scheduled: [...scheduled.filter((existing) => existing.id !== item.id), item], events: [...events.filter((existing) => existing.id !== event.id), event] } };
+    const nextEvent=applyTransactionRules(current,event);
+    return { ...current, state: { ...current.state, scheduled: [...scheduled.filter((existing) => existing.id !== item.id), item], events: [...events.filter((existing) => existing.id !== nextEvent.id), nextEvent] } };
   });
+  const upsertBudget=(budget:MonthlyBudget)=>finance.update(current=>{const rows=current.state.budgets??[];const exists=rows.some(item=>item.id===budget.id);return {...current,state:{...current.state,budgets:exists?rows.map(item=>item.id===budget.id?budget:item):[...rows,budget]}}});
+  const deleteBudget=(id:string)=>finance.update(current=>({...current,state:{...current.state,budgets:(current.state.budgets??[]).filter(item=>item.id!==id)}}));
+  const upsertRule=(rule:TransactionRule)=>finance.update(current=>{const rows=current.state.transactionRules??[];const exists=rows.some(item=>item.id===rule.id);return {...current,state:{...current.state,transactionRules:exists?rows.map(item=>item.id===rule.id?rule:item):[...rows,rule]}}});
+  const deleteRule=(id:string)=>finance.update(current=>({...current,state:{...current.state,transactionRules:(current.state.transactionRules??[]).filter(item=>item.id!==id)}}));
   const decide = (id: string, decision: ReviewDecision) => finance.update((current) => ({ ...current, state: { ...current.state, reviewDecisions: { ...(current.state.reviewDecisions ?? {}), [id]: decision } } }));
   const decideAttention = (id: string, decision: AttentionDecision) => finance.update((current) => ({ ...current, state: { ...current.state, attentionDecisions: { ...(current.state.attentionDecisions ?? {}), [id]: decision } } }));
 
@@ -194,6 +203,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
     if (item.action === 'collect_lending' && item.person) { openSpecial({ mode: 'lending', action: 'repay', person: item.person, amount: item.amount, accountId: data.state.settings.defaultIncomeAccount }); return; }
     if (item.action === 'complete_scheduled' && item.scheduledId) { openSpecial({ mode: 'scheduled', scheduledId: item.scheduledId }); return; }
     if (item.action === 'open_forecast') { navigate('planning'); return; }
+    if (item.action === 'open_budgets') { navigate('reports'); return; }
   };
 
   const balance = (accountId: string) => accountBalances(data, today)[accountId] || 0;
@@ -203,7 +213,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   };
 
   const content = page === 'dashboard'
-    ? <DashboardPage data={data} month={month} asOf={today} motionMode="full" onQuickAdd={(prefill?: QuickPrefill) => openGeneric('expense', prefill || null)} onAccountQuickAdd={(accountId, kind) => kind === 'savings' ? openSpecial({ mode: 'savings', toAccountId: accountId, savingSource: 'manual_transfer' }) : openGeneric('expense', { note: '', amount: 0, accountId })} onTransactions={() => navigate('transactions')} onPlanning={() => navigate('planning')} onAttention={() => navigate('attention')}/>
+    ? <DashboardPage data={data} month={month} asOf={today} motionMode="full" onQuickAdd={(prefill?: QuickPrefill) => openGeneric('expense', prefill || null)} onAccountQuickAdd={(accountId, kind) => kind === 'savings' ? openSpecial({ mode: 'savings', toAccountId: accountId, savingSource: 'manual_transfer' }) : openGeneric('expense', { note: '', amount: 0, accountId })} onTransactions={() => navigate('transactions')} onPlanning={() => navigate('planning')} onAttention={() => navigate('attention')} onReports={()=>navigate('reports')}/>
     : page === 'transactions' ? <TransactionsPage data={data} month={month} onEditEvent={editEvent} onDeleteEvent={deleteEvent}/>
     : page === 'review' ? <ReviewPage data={data} onDecision={decide}/>
     : page === 'savings' ? <SavingsPage data={data} month={month} asOf={today} onCreate={addEvent} onQuickAdd={openSpecial}/>
@@ -215,7 +225,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
     : page === 'planning' ? <PlanningPage data={data} asOf={today} onUpsertScheduled={upsertScheduled} onCompleteScheduled={completeScheduled}/>
     : page === 'attention' ? <AttentionPage data={data} asOf={today} onAction={handleAttention} onDecision={decideAttention}/>
     : page === 'reports' ? <ReportsPage data={data} month={month}/>
-    : <SettingsPage data={data} filePath={finance.filePath} lastSavedAt={finance.lastSavedAt} onImport={finance.importData} onBackup={finance.createBackup} onSettings={(settings) => finance.update((current) => ({ ...current, state: { ...current.state, settings: { ...settings, motion: 'full' } } }))}/>;
+    : <SettingsPage data={data} asOf={today} filePath={finance.filePath} lastSavedAt={finance.lastSavedAt} onImport={finance.importData} onBackup={finance.createBackup} onSettings={(settings) => finance.update((current) => ({ ...current, state: { ...current.state, settings: { ...settings, motion: 'full' } } }))} onUpsertBudget={upsertBudget} onDeleteBudget={deleteBudget} onUpsertRule={upsertRule} onDeleteRule={deleteRule}/>;
 
   return <>
     <AppShell page={page} onPage={navigate} onQuickAdd={() => openGeneric('expense')} onRefresh={() => { void finance.reload(); }} onUndo={() => { finance.undo(); }} onRedo={() => { finance.redo(); }} canUndo={finance.canUndo} canRedo={finance.canRedo} saveState={finance.saveState} filePath={finance.filePath} motionMode="full" userEmail={userEmail} onLogout={onLogout}>
