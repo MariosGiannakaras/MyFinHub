@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { AppShell, type PageId } from './components/AppShell';
 import { AppSkeleton, PageSkeleton } from './components/AppSkeleton';
+import { CommandPalette } from './components/CommandPalette';
 import { ContextualQuickAdd, type QuickActionContext } from './components/ContextualQuickAdd';
 import { LoginScreen } from './components/LoginScreen';
 import { MfaScreen } from './components/MfaScreen';
@@ -13,7 +14,8 @@ import { useLocalDate } from './hooks/useLocalDate';
 import { useSession } from './hooks/useSession';
 import type { AttentionItem } from './lib/attention';
 import { archiveCardRecord } from './lib/cards';
-import { accountBalances } from './lib/domain';
+import type { RankedCommandSearchItem } from './lib/commandSearch';
+import { accountBalances, allAccounts } from './lib/domain';
 import { reportingMonthForDate } from './lib/localDate';
 import { applyTransactionRules } from './lib/transactionRules';
 import type {
@@ -46,7 +48,6 @@ const ReportsPage = lazy(() => import('./pages/ReportsPage').then((module) => ({
 const SettingsPage = lazy(() => import('./pages/SettingsPage').then((module) => ({ default: module.SettingsPage })));
 
 const PAGE_IDS: PageId[] = ['dashboard','transactions','review','savings','cards','credit','loans','lending','recurring','planning','attention','reports','settings'];
-const GENERIC_ENTRY_PAGES = new Set<PageId>(['dashboard','transactions']);
 const PERIOD_PAGES = new Set<PageId>(['dashboard','transactions','savings','reports']);
 
 function routeFromHash() {
@@ -73,6 +74,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   const [page, setPage] = useState<PageId>(initialRoute.page);
   const [notFound, setNotFound] = useState(initialRoute.notFound);
   const [quickOpen, setQuickOpen] = useState(false);
+  const [commandOpen, setCommandOpen] = useState(false);
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [quickContext, setQuickContext] = useState<QuickActionContext | null>(null);
   const [month, setMonth] = useState(() => today.slice(0,7));
@@ -105,18 +107,21 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
     setQuickContext({ ...context, token: quickToken() } as QuickActionContext);
     setQuickOpen(true);
   };
+  const openCommand = () => {
+    if (quickOpen) return;
+    setCommandOpen(true);
+  };
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'k') return;
-      if (!GENERIC_ENTRY_PAGES.has(page)) return;
       event.preventDefault();
-      if (quickOpen) return;
-      openGeneric('expense');
+      if (quickOpen || commandOpen) return;
+      setCommandOpen(true);
     };
     addEventListener('keydown', onKey);
     return () => removeEventListener('keydown', onKey);
-  }, [quickOpen, page]);
+  }, [quickOpen, commandOpen]);
 
   useEffect(() => { setMonth((current) => reportingMonthForDate(current, today, monthIsManual)); }, [today, monthIsManual]);
   useEffect(() => {
@@ -206,6 +211,20 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
     if (item.action === 'open_budgets') { navigate('reports'); return; }
   };
 
+  const handleCommand=(row:RankedCommandSearchItem)=>{
+    setCommandOpen(false);const action=row.action;
+    if(action.type==='navigate'){navigate(action.page);return}
+    if(action.type==='quick_add'){
+      if(action.accountId){const account=allAccounts(data).find(item=>item.id===action.accountId);if(account?.kind==='savings'){openSpecial({mode:'savings',toAccountId:action.accountId,savingSource:'manual_transfer'});return}openGeneric(action.kind,{note:'',amount:0,accountId:action.accountId});return}
+      openGeneric(action.kind);return;
+    }
+    if(action.type==='credit_payment'){openSpecial({mode:'credit',action:'payment',cardId:action.cardId});return}
+    if(action.type==='loan_payment'){openSpecial({mode:'loan',loanId:action.loanId,accountId:action.accountId});return}
+    if(action.type==='lending_repayment'){openSpecial({mode:'lending',action:'repay',person:action.person,accountId:action.accountId??data.state.settings.defaultIncomeAccount});return}
+    if(action.type==='recurring_payment'){openSpecial({mode:'recurring',recurringId:action.recurringId,accountId:action.accountId});return}
+    if(action.type==='scheduled_complete'){openSpecial({mode:'scheduled',scheduledId:action.scheduledId});}
+  };
+
   const balance = (accountId: string) => accountBalances(data, today)[accountId] || 0;
   const recover = () => {
     if ((finance.saveState === 'error' || finance.saveState === 'conflict') && !window.confirm('Η επαναφόρτωση θα απορρίψει τυχόν τοπικές αλλαγές που δεν αποθηκεύτηκαν. Να φορτωθεί η τελευταία έκδοση από τη βάση;')) return;
@@ -228,11 +247,12 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
     : <SettingsPage data={data} asOf={today} filePath={finance.filePath} lastSavedAt={finance.lastSavedAt} onImport={finance.importData} onBackup={finance.createBackup} onSettings={(settings) => finance.update((current) => ({ ...current, state: { ...current.state, settings: { ...settings, motion: 'full' } } }))} onUpsertBudget={upsertBudget} onDeleteBudget={deleteBudget} onUpsertRule={upsertRule} onDeleteRule={deleteRule}/>;
 
   return <>
-    <AppShell page={page} onPage={navigate} onQuickAdd={() => openGeneric('expense')} onRefresh={() => { void finance.reload(); }} onUndo={() => { finance.undo(); }} onRedo={() => { finance.redo(); }} canUndo={finance.canUndo} canRedo={finance.canRedo} saveState={finance.saveState} filePath={finance.filePath} motionMode="full" userEmail={userEmail} onLogout={onLogout}>
+    <AppShell page={page} onPage={navigate} onQuickAdd={() => openGeneric('expense')} onCommand={openCommand} onRefresh={() => { void finance.reload(); }} onUndo={() => { finance.undo(); }} onRedo={() => { finance.redo(); }} canUndo={finance.canUndo} canRedo={finance.canRedo} saveState={finance.saveState} filePath={finance.filePath} motionMode="full" userEmail={userEmail} onLogout={onLogout}>
       <PersistenceNotice saveState={finance.saveState} onRecover={recover}/>
       {PERIOD_PAGES.has(page) ? <div className="period-row"><PeriodControl month={month} onChange={(next) => { setMonth(next); setMonthIsManual(true); }}/><span>Στοιχεία περιόδου</span></div> : null}
       {finance.saveState === 'loading' ? <PageSkeleton/> : <PageErrorBoundary resetKey={page} onDashboard={() => navigate('dashboard')}><Suspense fallback={<PageLoading/>}>{content}</Suspense></PageErrorBoundary>}
     </AppShell>
+    <CommandPalette open={commandOpen} data={data} motionMode="full" onClose={()=>setCommandOpen(false)} onExecute={handleCommand}/>
     <ContextualQuickAdd open={quickOpen} data={data} asOf={today} context={quickContext} motionMode="full" initial={(data.state.events ?? []).find((event) => event.id === editingEventId) || null} onClose={() => { setQuickOpen(false); setEditingEventId(null); setQuickContext(null); }} onCreate={addEvent} onCompleteScheduled={completeScheduled} currentBalance={balance}/>
   </>;
 }
