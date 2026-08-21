@@ -1,6 +1,7 @@
 import { AlertCircle, KeyRound, LoaderCircle, ShieldCheck } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import type { MfaEnrollment } from '../lib/api';
+import { BrandMark } from './BrandMark';
 
 export function MfaScreen({
   mode,
@@ -38,7 +39,7 @@ export function MfaScreen({
 
   return <main className="login-screen">
     <section className="login-card neo-raised" aria-labelledby="mfa-title" data-busy={busy?'true':'false'}>
-      <div className="login-brand"><img src="/brand/icon-192.png" alt=""/><div><div className="brand-word">MyFin<span>Hub</span></div><small>Προσωπικός οικονομικός χώρος</small></div></div>
+      <div className="login-brand"><BrandMark mode="lockup" size="lg" subtitle="Προσωπικός οικονομικός χώρος"/></div>
       <div className="login-shield"><ShieldCheck size={24}/><span>Δεύτερη επαλήθευση ασφαλείας</span></div>
       <div>
         <h1 id="mfa-title">{mode === 'enroll' ? 'Ρύθμιση Authenticator' : 'Επαλήθευση'}</h1>
