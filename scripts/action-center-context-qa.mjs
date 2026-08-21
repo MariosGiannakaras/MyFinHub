@@ -19,9 +19,20 @@ try{
   await waitHttp(`http://127.0.0.1:${port}/json/version`);
   const target=await fetch(`http://127.0.0.1:${port}/json/new?${encodeURIComponent(baseUrl)}`,{method:'PUT'}).then(response=>response.json());
   const c=new Cdp(target.webSocketDebuggerUrl);await c.open();await c.send('Page.enable');await c.send('Runtime.enable');await c.send('Network.enable');
-  const runtimeErrors=[];const failedRequests=[];
+  const runtimeErrors=[];const failedRequests=[];const recoverableAssets=[];const requests=new Map();
   c.on('Runtime.exceptionThrown',params=>runtimeErrors.push(params.exceptionDetails?.text||'runtime exception'));
-  c.on('Network.loadingFailed',params=>{if(!params.canceled&&params.errorText!=='net::ERR_ABORTED')failedRequests.push(`${params.errorText||'network failure'} [${params.type||'unknown'}]`)});
+  c.on('Network.requestWillBeSent',params=>{if(params.requestId&&params.request?.url)requests.set(params.requestId,{url:params.request.url,type:params.type||''})});
+  c.on('Network.loadingFailed',params=>{
+    if(params.canceled||params.errorText==='net::ERR_ABORTED')return;
+    const request=requests.get(params.requestId)||{url:'unknown',type:params.type||''};
+    const type=params.type||request.type;
+    const external=(()=>{try{return new URL(request.url).origin!==new URL(baseUrl).origin}catch{return false}})();
+    if(type==='Image'&&external&&params.errorText==='net::ERR_BLOCKED_BY_ORB'){
+      recoverableAssets.push(`${params.errorText}: ${request.url}`);
+      return;
+    }
+    failedRequests.push(`${params.errorText||'network failure'} [${type||'unknown'}] ${request.url}`);
+  });
   const viewport=(width,height)=>c.send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<=680});
   const urlFor=(page='attention',state='',text='normal')=>{const url=new URL(baseUrl);url.searchParams.set('page',page);if(state)url.searchParams.set('state',state);if(text!=='normal')url.searchParams.set('text',text);return url.href};
   const waitFor=async(fn,label,args=[])=>{for(let i=0;i<120;i++){if(await c.call(fn,args))return;await sleep(100)}throw new Error(`Timed out waiting for ${label}`)};
@@ -102,5 +113,6 @@ try{
 
   assert(runtimeErrors.length===0,`runtime exceptions: ${runtimeErrors.join(' | ')}`);
   assert(failedRequests.length===0,`network loading failures: ${failedRequests.join(' | ')}`);
+  if(recoverableAssets.length){const fallback=await c.call("function(){return document.querySelectorAll('.bank-logo-fallback').length}");assert(fallback>0,`external bank-logo request failed without rendering a local fallback: ${recoverableAssets.join(' | ')}`);console.warn(`Action Center QA recovered ${recoverableAssets.length} external bank-logo image failure(s) with local fallback: ${recoverableAssets.join(' | ')}`)}
   c.close();console.log('Action Center and contextual Quick Add rendered QA passed.');
 }finally{child.kill('SIGTERM')}
