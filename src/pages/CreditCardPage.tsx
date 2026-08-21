@@ -10,20 +10,19 @@ import { Tooltip } from '../components/Tooltip';
 import { useModalFocus } from '../hooks/useModalFocus';
 import { cardBanks, creditCards, creditDebtForCard, creditEventsForCard, creditLimitForCard, restoreCard } from '../lib/cards';
 import { categoryPath, genericCategoryTree, subcategoriesFor } from '../lib/categories';
-import { accountBalances, allAccounts, createEvent } from '../lib/domain';
+import { allAccounts, createEvent } from '../lib/domain';
 import { money, shortDate } from '../lib/format';
 import { accountDisplayName } from '../lib/ui';
 import { userErrorMessage } from '../lib/userMessage';
 import type { FinanceData, FinanceEvent, PaymentCard } from '../types';
 
 export function CreditCardPage({
-  data,asOf,onCreateEvent,onEditEvent,onDeleteEvent,onUpsertCard,onArchiveCard,
+  data,asOf,onCreateEvent,onEditEvent,onDeleteEvent,onUpsertCard,onArchiveCard,onPayCard,
 }:{
   data:FinanceData;asOf:string;
   onCreateEvent:(event:FinanceEvent)=>void;onEditEvent:(id:string)=>void;onDeleteEvent:(id:string)=>void;
-  onUpsertCard:(card:PaymentCard)=>void;onArchiveCard:(card:PaymentCard)=>void;
+  onUpsertCard:(card:PaymentCard)=>void;onArchiveCard:(card:PaymentCard)=>void;onPayCard:(cardId:string)=>void;
 }){
-  const balances=accountBalances(data,asOf);
   const banks=useMemo(()=>cardBanks(data),[data]);
   const allCredit=useMemo(()=>creditCards(data,{includeArchived:true}),[data]);
   const activeCredit=useMemo(()=>allCredit.filter(card=>card.active!==false),[allCredit]);
@@ -50,21 +49,15 @@ export function CreditCardPage({
   const categories=genericCategoryTree(data.state.settings,'expense');
   const [createOpen,setCreateOpen]=useState(false);
   const [purchaseOpen,setPurchaseOpen]=useState(false);
-  const [repayOpen,setRepayOpen]=useState(false);
   const [amount,setAmount]=useState('');const [date,setDate]=useState(asOf);const [note,setNote]=useState('');
   const [category,setCategory]=useState(categories[0]?.name||data.state.settings.expenseCategories[0]||'Άλλο');const [subcategory,setSubcategory]=useState('');
-  const [sourceAccount,setSourceAccount]=useState('');const [error,setError]=useState('');const [message,setMessage]=useState('');
-  const purchaseRef=useModalFocus<HTMLElement>(purchaseOpen,'[data-autofocus="true"]',()=>setPurchaseOpen(false));const repayRef=useModalFocus<HTMLElement>(repayOpen,'[data-autofocus="true"]',()=>setRepayOpen(false));
-
-  useEffect(()=>{
-    if(eligibleAccounts.some(account=>account.id===sourceAccount))return;
-    setSourceAccount(eligibleAccounts[0]?.id||'');
-  },[eligibleAccounts,sourceAccount]);
+  const [error,setError]=useState('');const [message,setMessage]=useState('');
+  const purchaseRef=useModalFocus<HTMLElement>(purchaseOpen,'[data-autofocus="true"]',()=>setPurchaseOpen(false));
 
   const reset=()=>{setAmount('');setDate(asOf);setNote('');setError('')};
   const openPurchase=()=>{if(!card||!isActive){setMessage('Επίλεξε ή επανάφερε πρώτα ενεργή πιστωτική κάρτα.');return}reset();setCategory(categories[0]?.name||'Άλλο');setSubcategory('');setPurchaseOpen(true)};
-  const openRepay=()=>{if(!card)return;reset();setAmount(debt>0?String(Number(debt.toFixed(2))):'');setSourceAccount(eligibleAccounts[0]?.id||'');setRepayOpen(true)};
-  const closePurchase=()=>{setPurchaseOpen(false);setError('')};const closeRepay=()=>{setRepayOpen(false);setError('')};
+  const openRepay=()=>{if(!card)return;onPayCard(card.id)};
+  const closePurchase=()=>{setPurchaseOpen(false);setError('')};
   const remove=(event:FinanceEvent)=>{if(window.confirm(`Να διαγραφεί η κίνηση «${event.note}»;`))onDeleteEvent(event.id)};
   const submitPurchase=()=>{
     if(!card||!isActive){setError('Δεν υπάρχει ενεργή επιλεγμένη πιστωτική κάρτα.');return}
@@ -72,12 +65,6 @@ export function CreditCardPage({
     if(limit>0&&debt+numeric>limit+.005){setError(`Η αγορά ξεπερνά το διαθέσιμο όριο των ${money.format(available)}.`);return}
     try{const event=createEvent({kind:'card_purchase',date,amount:numeric,note:note.trim()||category,category});event.subcategory=subcategory||undefined;event.cardId=card.id;onCreateEvent(event);closePurchase()}
     catch(e){setError(userErrorMessage(e,'Δεν μπορέσαμε να καταχωρίσουμε την αγορά. Έλεγξε τα στοιχεία και δοκίμασε ξανά.'))}
-  };
-  const submitRepay=()=>{
-    if(!card){setError('Δεν έχει επιλεγεί πιστωτική κάρτα.');return}
-    const numeric=Number(amount.replace(',','.'));if(debt<=0){setError('Δεν υπάρχει οφειλή προς αποπληρωμή.');return}if(!Number.isFinite(numeric)||numeric<=0){setError('Έλεγξε το ποσό αποπληρωμής — πρέπει να είναι μεγαλύτερο από μηδέν.');return}if(numeric>debt+.005){setError(`Η αποπληρωμή δεν μπορεί να ξεπερνά την οφειλή των ${money.format(debt)}.`);return}if(!eligibleAccounts.some(account=>account.id===sourceAccount)){setError(`Η αποπληρωμή πρέπει να γίνει από λογαριασμό της ${bank?.name??'ίδιας τράπεζας'}.`);return}
-    try{const event=createEvent({kind:'card_payment',date,amount:numeric,note:`Αποπληρωμή ${card.nickname}`,fromAccountId:sourceAccount});event.cardId=card.id;onCreateEvent(event);closeRepay()}
-    catch(e){setError(userErrorMessage(e,'Δεν μπορέσαμε να καταχωρίσουμε την αποπληρωμή. Έλεγξε τα στοιχεία και δοκίμασε ξανά.'))}
   };
   const restoreSelected=()=>{if(!card||isActive)return;const restored=restoreCard(card);onUpsertCard(restored);setSelectedCardId(restored.id);setMessage('Η πιστωτική επανήλθε με το ίδιο ιστορικό και τα ασφαλή στοιχεία της.')};
   const editLimit=()=>{
@@ -107,7 +94,5 @@ export function CreditCardPage({
     <CardCreateDialog open={createOpen} data={data} banks={banks} initialBankId={card?.bankId??'piraeus'} kindLock="credit" onClose={()=>setCreateOpen(false)} onSave={newCard=>{const withLimit={...newCard,creditLimit:newCard.creditLimit??data.state.settings.creditLimit??0};onUpsertCard(withLimit);setSelectedCardId(withLimit.id);setMessage('Η πιστωτική δημιουργήθηκε και εμφανίζεται και στην ενότητα Κάρτες.')}}/>
 
     {purchaseOpen?<div className="editor-backdrop" onMouseDown={closePurchase}><section ref={purchaseRef} className="panel neo-raised editor-dialog credit-dialog" role="dialog" aria-modal="true" aria-labelledby="credit-purchase-title" tabIndex={-1} onMouseDown={e=>e.stopPropagation()}><div className="panel-head"><div><span id="credit-purchase-title">Νέα αγορά · {card?.nickname??'Πιστωτική'}</span><small>Η αγορά αυξάνει μόνο την οφειλή της επιλεγμένης κάρτας, μετρά μία φορά ως έξοδο και συνδέεται με τη συγκεκριμένη κάρτα.</small></div><button type="button" className="icon-button" aria-label="Κλείσιμο αγοράς πιστωτικής" onClick={closePurchase}><X/></button></div><div className="settings-form editor-grid"><label><span>Ποσό</span><input data-autofocus="true" inputMode="decimal" value={amount} onChange={e=>setAmount(e.target.value.replace(',','.'))}/></label><label><span>Ημερομηνία</span><AppDateInput value={date} onChange={e=>setDate(e.target.value)}/></label><label><span>Κατηγορία</span><AppSelectInput value={category} onChange={e=>{setCategory(e.target.value);setSubcategory('')}}>{categories.map(item=><option key={item.name}>{item.name}</option>)}</AppSelectInput></label>{subs.length?<label><span>Υποκατηγορία</span><AppSelectInput value={subcategory} onChange={e=>setSubcategory(e.target.value)}><option value="">Χωρίς υποκατηγορία</option>{subs.map(value=><option key={value}>{value}</option>)}</AppSelectInput></label>:null}<label className="wide"><span>Περιγραφή</span><input value={note} onChange={e=>setNote(e.target.value)} placeholder="Τι αγόρασες;"/></label></div>{error?<div className="form-error" role="alert">{error}</div>:null}<div className="editor-actions"><button type="button" className="secondary" onClick={closePurchase}>Ακύρωση</button><button type="button" className="save-button" onClick={submitPurchase}>Καταχώριση αγοράς</button></div></section></div>:null}
-
-    {repayOpen?<div className="editor-backdrop" onMouseDown={closeRepay}><section ref={repayRef} className="panel neo-raised editor-dialog credit-dialog" role="dialog" aria-modal="true" aria-labelledby="credit-repay-title" tabIndex={-1} onMouseDown={e=>e.stopPropagation()}><div className="panel-head"><div><span id="credit-repay-title">Αποπληρωμή · {card?.nickname??'Πιστωτική'}</span><small>Το ποσό αφαιρείται από λογαριασμό της {bank?.name??'ίδιας τράπεζας'} και μόνο από την οφειλή της επιλεγμένης κάρτας.</small></div><button type="button" className="icon-button" aria-label="Κλείσιμο αποπληρωμής πιστωτικής" onClick={closeRepay}><X/></button></div><div className="settings-form editor-grid"><label><span>Ποσό</span><input data-autofocus="true" inputMode="decimal" value={amount} onChange={e=>setAmount(e.target.value.replace(',','.'))}/></label><label><span>Ημερομηνία</span><AppDateInput value={date} onChange={e=>setDate(e.target.value)}/></label><label className="wide"><span>Από λογαριασμό {bank?.name??''}</span><AppSelectInput value={sourceAccount} onChange={e=>setSourceAccount(e.target.value)}>{eligibleAccounts.map(account=><option key={account.id} value={account.id}>{accountDisplayName(data,account.id)} · {money.format(balances[account.id]||0)}</option>)}</AppSelectInput></label></div>{error?<div className="form-error" role="alert">{error}</div>:null}<div className="editor-actions"><button type="button" className="secondary" onClick={closeRepay}>Ακύρωση</button><button type="button" className="save-button" onClick={submitRepay}>Καταχώριση αποπληρωμής</button></div></section></div>:null}
   </div>;
 }
