@@ -1,6 +1,21 @@
 export type ShortcutId = 'commandPalette' | 'quickEntry' | 'undo' | 'redo' | 'dismiss';
 
-export type ShortcutKeyEvent = Pick<KeyboardEvent, 'key' | 'ctrlKey' | 'metaKey' | 'shiftKey' | 'altKey' | 'repeat' | 'defaultPrevented'>;
+export type ShortcutKeyEvent = {
+  key:string;
+  ctrlKey:boolean;
+  metaKey:boolean;
+  shiftKey:boolean;
+  altKey:boolean;
+  repeat:boolean;
+  defaultPrevented:boolean;
+};
+
+type ShortcutElementLike={
+  closest?:(selectors:string)=>ShortcutElementLike|null;
+  tagName?:string;
+  type?:string;
+  getAttribute?:(name:string)=>string|null;
+};
 
 export const SHORTCUT_ORDER: ShortcutId[] = ['commandPalette', 'quickEntry', 'undo', 'redo', 'dismiss'];
 
@@ -54,11 +69,16 @@ export function appShortcutFromEvent(event: ShortcutKeyEvent, platform = current
   return null;
 }
 
-export function isEditableShortcutTarget(target: EventTarget | null) {
-  if (typeof Element === 'undefined' || !(target instanceof Element)) return false;
-  if (target.closest('[contenteditable="true"], [contenteditable="plaintext-only"]')) return true;
-  const control = target.closest('input, textarea, select');
-  return Boolean(control && !(control instanceof HTMLInputElement && ['button', 'submit', 'reset', 'checkbox', 'radio', 'range', 'color', 'file'].includes(control.type)));
+export function isEditableShortcutTarget(target: unknown) {
+  const element=target as ShortcutElementLike|null;
+  if(!element||typeof element.closest!=='function')return false;
+  if(element.closest('[contenteditable="true"], [contenteditable="plaintext-only"]'))return true;
+  const control=element.closest('input, textarea, select');
+  if(!control)return false;
+  const tag=(control.tagName??'').toLowerCase();
+  if(tag!=='input')return true;
+  const type=(control.type??control.getAttribute?.('type')??'text').toLowerCase();
+  return !['button','submit','reset','checkbox','radio','range','color','file'].includes(type);
 }
 
 export function shouldBlockAppShortcut(context: { editable: boolean; modalOpen: boolean; repeat: boolean; defaultPrevented: boolean }) {
