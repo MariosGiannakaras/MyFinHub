@@ -6,8 +6,9 @@
 .history-actions button{min-height:36px;padding:7px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface-soft);color:var(--ink-2);font:inherit;font-size:.72rem;font-weight:780;cursor:pointer}
 .history-actions button:disabled{opacity:.45;cursor:not-allowed}
 @media(max-width:680px){
-  .dashboard-grid>.quick-panel,
-  .dashboard-grid>.chart-panel,
+  .page-stack>[data-dashboard-section],
+  .dashboard-grid>[data-dashboard-section]{order:initial!important;grid-row:auto!important;grid-column:auto!important}
+  .dashboard-grid{grid-auto-flow:row}
   .dashboard-pending-grid>.panel{order:initial!important}
   .top-actions button[aria-label="Αναίρεση τελευταίας αλλαγής"],
   .top-actions button[aria-label="Επαναφορά τελευταίας αναιρεμένης αλλαγής"]{display:none}
