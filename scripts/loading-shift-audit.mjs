@@ -1,6 +1,7 @@
 import { execFileSync, spawn } from 'node:child_process';
 
 const baseUrl=process.env.MYFINHUB_PERF_URL||'http://127.0.0.1:4173/qa.html';
+const qaUrl=`${baseUrl}?page=dashboard&motion=reduced`;
 const chrome=execFileSync('bash',['-lc','command -v google-chrome || command -v chromium || command -v chromium-browser'],{encoding:'utf8'}).trim();
 if(!chrome)throw new Error('Chrome/Chromium is required for loading-shift audit.');
 const port=9334;
@@ -18,12 +19,13 @@ class Cdp{
 const assert=(value,message)=>{if(!value)throw new Error(`Loading-shift assertion failed: ${message}`)};
 try{
   await waitHttp(`http://127.0.0.1:${port}/json/version`);
-  const target=await fetch(`http://127.0.0.1:${port}/json/new?${encodeURIComponent(`${baseUrl}?page=dashboard&motion=reduced`)}`,{method:'PUT'}).then(response=>response.json());
+  const targetUrl=`http://127.0.0.1:${port}/json/new?${encodeURIComponent(qaUrl)}`;
+  const target=await fetch(targetUrl,{method:'PUT'}).then(response=>response.json());
   const c=new Cdp(target.webSocketDebuggerUrl);await c.open();
   try{
     await c.send('Page.enable');await c.send('Runtime.enable');
     await c.send('Page.addScriptToEvaluateOnNewDocument',{source:`globalThis.__MYFINHUB_CLS=0;new PerformanceObserver(list=>{for(const entry of list.getEntries()){if(!entry.hadRecentInput)globalThis.__MYFINHUB_CLS+=entry.value}}).observe({type:'layout-shift',buffered:true});`});
-    await c.send('Page.navigate',{url:`${baseUrl}?page=dashboard&motion=reduced`});
+    await c.send('Page.navigate',{url:qaUrl});
     for(let i=0;i<100;i++){if(await c.eval("document.querySelector('#main-workspace h1')?.textContent.includes('Οι λογαριασμοί μου')"))break;if(i===99)throw new Error('Dashboard did not become ready');await sleep(100)}
     await sleep(250);
     await c.eval('globalThis.__MYFINHUB_CLS=0');
