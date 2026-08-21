@@ -1,7 +1,8 @@
 # Ledger foundations implementation plan
 
 Tracker: #166  
-Parent epic: #164
+Parent epic: #164  
+Stacked PR: #171
 
 This branch is stacked on the verified PR #159 head. It does not authorize merge, release, deployment, version changes or installer publication.
 
@@ -29,7 +30,12 @@ This branch is stacked on the verified PR #159 head. It does not authorize merge
 - Quick Add derives transfer defaults from current accounts rather than repository-specific account IDs.
 - Same/stale transfer endpoints produce direct user-facing validation.
 - Split editor reports remaining or overallocated amount live and prevents dropping below two parts.
-- Transactions must retain one parent row per transfer/split and expose meaningful account direction / split details.
+- Transactions retain one parent row per transfer/split and expose meaningful account direction / split details.
+- Desktop and narrow-mobile rendered QA exercise create/edit/delete/undo/redo and allocation feedback.
+
+## Validation strategy while PR #159 is unmerged
+
+PR #171 normally remains stacked on `feat/ui-ux-hardening-batch`. Because the durable Actions workflows intentionally run only for pull requests whose base is `main` or `develop`, #171 may be temporarily retargeted to `develop` solely to obtain CI/CodeQL/Windows evidence for the combined candidate state. It must be retargeted back to `feat/ui-ux-hardening-batch` after validation while #159 remains unmerged. No retarget authorizes merge.
 
 ## Verification
 
