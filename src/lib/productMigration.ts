@@ -4,10 +4,10 @@ import { migrateData } from './domain.js';
 /**
  * Product-level schema migration wrapper.
  *
- * The historical schema-v3 migrator predates the Cards domain and rebuilds the
- * mutable state object from its then-known fields. Preserve newer card metadata
- * explicitly so reads/imports never drop shared card identities while the
- * canonical FinanceData schema remains backwards compatible.
+ * The historical schema-v3 migrator predates later product domains and rebuilds
+ * mutable state from its then-known fields. Preserve additive product metadata
+ * explicitly so reads/imports never drop Cards or Scheduled Transactions while
+ * the canonical FinanceData schema remains backwards compatible.
  */
 export function migrateProductData(input:FinanceData):FinanceData{
   const migrated=migrateData(input);
@@ -18,6 +18,7 @@ export function migrateProductData(input:FinanceData):FinanceData{
       ...migrated.state,
       cardBanks:sourceState.cardBanks??[],
       cards:sourceState.cards??[],
+      scheduled:sourceState.scheduled??[],
     },
   };
 }
