@@ -44,7 +44,7 @@ try{
   await viewport(375,812);for(const [page,heading] of Object.entries(PAGE_HEADINGS))await navigate({page},heading);
   console.log('Runtime QA: auth, loading, conflict and error-state surfaces');
   for(const screen of ['login','mfa','mfa-enroll'])await navigate({screen},null);
-  await navigate({page:'dashboard',save:'loading'},PAGE_HEADINGS.dashboard);const shot=await c.send('Page.captureScreenshot',{format:'png',fromSurface:true});writeFileSync(`${evidenceDir}/runtime-loading-state.png`,Buffer.from(shot.data,'base64'));
+  await navigate({page:'dashboard',save:'loading'},null);await waitFor("function(){return Boolean(document.querySelector('.page-skeleton[role=\"status\"]'))}",'loading PageSkeleton');const shot=await c.send('Page.captureScreenshot',{format:'png',fromSurface:true});writeFileSync(`${evidenceDir}/runtime-loading-state.png`,Buffer.from(shot.data,'base64'));
   await navigate({page:'dashboard',save:'conflict'},PAGE_HEADINGS.dashboard);
   await navigate({page:'dashboard',save:'error'},PAGE_HEADINGS.dashboard);
 
