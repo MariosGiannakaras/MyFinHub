@@ -45,6 +45,14 @@ describe('final UX reconciliation source contracts',()=>{
     expect(styles).toContain('min-height:44px');
   });
 
+  it('keeps the mutation gate save-state ref synchronous with rendered state',()=>{
+    expect(finance).toContain("const setCurrentSaveState=useCallback((next:SaveState)=>{saveStateRef.current=next;setSaveState(next)},[])");
+    expect(finance).toContain("setCurrentSaveState('saved')");
+    expect(finance).toContain("setCurrentSaveState('saving')");
+    expect(finance).toContain("setCurrentSaveState('loading')");
+    expect(finance).not.toContain('useEffect(() => { saveStateRef.current = saveState; }');
+  });
+
   it('keeps skeletons route-shaped and Dashboard-shaped in the same priority order',()=>{
     expect(skeleton).toContain("data-skeleton-section=\"primary-accounts\"");
     const primary=skeleton.indexOf('data-skeleton-section="primary-accounts"');
