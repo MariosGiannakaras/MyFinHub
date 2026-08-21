@@ -15,6 +15,15 @@ export class PageErrorBoundary extends Component<{ resetKey: string; onDashboard
     if (this.state.failed && previous.resetKey !== this.props.resetKey) this.setState({ failed: false });
   }
 
+  private recoverDashboard = () => {
+    // Parent recovery must be scheduled before reopening the child tree. If the
+    // current route is already Dashboard, clearing the boundary first would
+    // immediately render the same failed child once more before the parent had
+    // a chance to clear its crash state.
+    this.props.onDashboard();
+    this.setState({ failed: false });
+  };
+
   render() {
     if (!this.state.failed) return this.props.children;
     return <section ref={this.errorRef} className="panel neo-raised workspace-error" role="alert" aria-labelledby="workspace-error-title" tabIndex={-1}>
@@ -22,7 +31,7 @@ export class PageErrorBoundary extends Component<{ resetKey: string; onDashboard
       <p>Τα οικονομικά δεδομένα δεν τροποποιήθηκαν. Δοκίμασε ξανά την ενότητα ή, αν το πρόβλημα συνεχίζεται, επαναφόρτωσε την εφαρμογή.</p>
       <div className="editor-actions">
         <button className="secondary" type="button" onClick={() => this.setState({ failed: false })}>Δοκιμή ξανά</button>
-        <button className="secondary" type="button" onClick={() => this.setState({ failed: false }, this.props.onDashboard)}>Dashboard</button>
+        <button className="secondary" type="button" onClick={this.recoverDashboard}>Dashboard</button>
         <button className="save-button" type="button" onClick={() => location.reload()}>Επαναφόρτωση εφαρμογής</button>
       </div>
     </section>;
