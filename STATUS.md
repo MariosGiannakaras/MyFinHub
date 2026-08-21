@@ -12,13 +12,12 @@ Current stable release: **v1.0.2**.
 - Windows release run `32345463537`: successful `validate-windows-package` and `publish-desktop-release`
 - published installer SHA-256: `7bbbb92ce59d926671f48e55747536bdb868871932e8b15665856e36aa3081c3`
 - Vercel production deployment for the exact release SHA reached READY and `/`, `/api/health`, and unauthenticated `/api/data` smoke checks passed
-- `main` and `develop` were re-synchronized to the exact v1.0.2 production SHA after release diagnostics were removed
 
-The v1.0.2 release completed the Cards v15 contract restoration, unlimited card stacks, archive/restore secret-retention behavior, and independent multi-credit-card model tracked in #154.
+The v1.0.2 production build is intentionally unchanged while the newer development batch remains unreleased.
 
 ## Production security verification
 
-The post-release verification tracked in #88 is **complete and closed**.
+The post-release verification tracked in #88 is complete and closed.
 
 Verified on production on 2026-08-20:
 
@@ -39,13 +38,13 @@ No finance values were returned and no production finance data was mutated by th
 The released card model is the v1.0.2 behavior from #154 / PRs #155–#157.
 
 - Cards and Credit Card share `FinanceData.state.cards` / `PaymentCard` identities keyed by `cardId`.
-- Any number of active cards may coexist under one bank; the supplied Cards v15 visual/interaction contract remains the source of truth for the bank/card stack.
+- Any number of active cards may coexist under one bank.
 - Multiple active credit cards may coexist across or within banks.
-- Credit purchases and payments target a specific `cardId`; liability, limit, available credit, and history are independent per credit card.
+- Credit purchases and payments target a specific `cardId`; liability, limit, available credit and history are independent per credit card.
 - Legacy pre-`cardId` credit events remain readable through deterministic backward-compatible attribution rather than destructive history rewriting.
-- Card removal is archival/soft-delete so finance events, liability/balance history, and card identity survive restoration.
-- Archive/restore retains recoverable PAN/expiry state in the server vault and retains same-device local CVV state for the same card id; explicit secure deletion remains a separate action.
-- `/api/card-secrets` requires same-origin, owner, and AAL2 authorization. CVV/CVC is rejected by the server boundary and remains device-local only.
+- Card removal is archival/soft-delete so finance events, liability/balance history and card identity survive restoration.
+- Archive/restore retains recoverable PAN/expiry state in the server vault and same-device local CVV state for the same card id; explicit secure deletion remains separate.
+- `/api/card-secrets` requires same-origin, owner and AAL2 authorization. CVV/CVC is rejected by the server boundary and remains device-local only.
 - Production migration `20260819072000_tighten_card_secret_grants.sql` narrows authenticated card-vault privileges while retaining owner+AAL2 RLS.
 
 ### Windows desktop application
@@ -54,52 +53,71 @@ The Windows desktop application is released and validated through the v1.0.2 rel
 
 - Electron owns the Windows application and starts the existing Express backend as a hidden child process using the bundled Node.js 22 runtime.
 - The backend binds only to `127.0.0.1` on an OS-selected ephemeral port and serves the packaged Vite frontend from the same local origin.
-- Renderer Node access remains disabled; context isolation, sandboxing, navigation restrictions, and desktop security headers remain enabled.
-- Desktop uses the same Supabase project, owner login, mandatory TOTP AAL2, RLS/RPC rules, and optimistic revisions as the Vercel client.
+- Renderer Node access remains disabled; context isolation, sandboxing, navigation restrictions and desktop security headers remain enabled.
+- Desktop uses the same Supabase project, owner login, mandatory TOTP AAL2, RLS/RPC rules and optimistic revisions as the Vercel client.
 - No service-role/secret Supabase credential is part of the desktop runtime.
 - PAN/expiry vault configuration can be protected per Windows user through Electron `safeStorage` / Windows DPAPI. CVV remains device-local only.
-- The per-user NSIS installer creates Desktop and Start Menu shortcuts and does not require Git, Node.js, a terminal, or a browser for normal released use.
-- In-app updates use the controlled `myfinhub-v<semver>` GitHub Release channel, exact installer/checksum naming, trusted-host checks, size bounds, and streamed SHA-256 verification.
+- The per-user NSIS installer creates Desktop and Start Menu shortcuts and does not require Git, Node.js, a terminal or a browser for normal released use.
+- In-app updates use the controlled `myfinhub-v<semver>` GitHub Release channel, exact installer/checksum naming, trusted-host checks, size bounds and streamed SHA-256 verification.
 - Unsigned personal-use releases are supported; Authenticode remains optional if signing credentials are later configured.
 
-### Branding state
+### Production branding
 
-The **released v1.0.2 production build** still contains the earlier pre-rebrand wallet/`R` artwork recovered from repository history. That remains production truth until a separately approved release changes it.
-
-The open feature branch / PR #159 now contains the owner-supplied **new MyFinHub light/dark brand set** tracked in #160:
-
-- native light/dark 32px and 192px square runtime assets derived from the supplied 1536px artwork;
-- explicit light/dark `BrandMark` contract used by sidebar, mobile header, Login and MFA;
-- boot compatibility path points to the new light asset;
-- favicon and Apple touch icon use the new light artwork;
-- PWA uses the new light 192 asset plus a scalable 512 wrapper, with a dark 512 wrapper retained for the brand contract;
-- Windows setup uses the new dark 192 artwork;
-- Windows packaging generates its real 512×512 application icon from the new light 192 source with high-quality System.Drawing interpolation;
-- the old RheomIQ `icon-512.png` runtime/canonical files are removed from the feature branch;
-- supplied source dimensions and SHA-256 provenance are recorded in `assets/branding/myfinhub/README.md`.
-
-Compatibility-critical historical database, migration, cookie, storage, package and desktop/backend protocol identifiers remain unchanged where renaming would add migration risk without user value.
+The released v1.0.2 production build still contains the earlier pre-rebrand wallet/`R` artwork recovered from repository history. That remains production truth until a separately approved release changes it.
 
 ## Current development integration
 
-`main` and `develop` share the released v1.0.2 baseline `d054ad549549c19039b70e76780e84feca7f3104`.
+The current `develop` integration head is `78afee74db4893f208b14536123f1232625422eb`. It is two integration commits ahead of the v1.0.2 production `main` baseline and contains the fully verified development batch from PRs #179 and #181.
 
-PR #159 on `feat/ui-ux-hardening-batch` contains the completed application-wide UI/UX/browser hardening from #158 plus the approved #160 follow-up:
+PR #179 merged the complete verified capability stack into `develop` as `cdad04e67bfb5d782e9971f85f44ab51b0aef706`:
 
-- large Reports/Analytics visual restructure with executive summary, comparative KPIs, six-month flow + insight rail, commitment/credit pressure, category momentum and private account/savings drill-down;
-- new MyFinHub light/dark branding integration and Windows/PWA asset pipeline;
-- dedicated Reports and branding rendered-QA suites in addition to the full route/state/runtime matrix.
+- application-wide UI/UX, accessibility, responsive, modal/focus, sorting, readability, owned-control and user-copy hardening from #158/#160/#162/#163;
+- new MyFinHub light/dark branding across browser/PWA/Windows surfaces;
+- the approved Reports/Analytics restructure with deterministic comparative KPIs, flow/trend, commitment/credit pressure, category momentum and responsive drill-downs;
+- atomic first-class transfers and split transactions;
+- scheduled transactions and deterministic 30/60/90 cash-flow forecasting;
+- Needs Attention action center and context-aware Quick Add;
+- monthly category budgets and deterministic transaction rules;
+- privacy-safe unified search and command palette;
+- normalized payment flows across credit cards, loans/installments and recurring obligations;
+- bundle ceilings, focused WebKit compatibility, production-mode performance/loading-shift checks and Windows package evidence.
 
-Verified #160 implementation checkpoint: `51c222aea329464c05fa4cd4cf28a214b9919ce2`.
+PR #181 then merged the final original-requirement reconciliation as `78afee74db4893f208b14536123f1232625422eb`:
 
-- CI `32455966062`: **success**, 34 test files / **151 tests**, production build, API TypeScript and all rendered browser suites.
-- Screenshot artifact `9437288171`: **56 screenshots**, SHA-256 `3e5d34c9ee7eb6db4f1c0fc700550aa95566c96735114e23c843e0482de43fe6`; manual review found no new overlap, clipping or responsive regression.
-- CodeQL `32455966171`: **success**.
-- Windows Desktop `32455966107`: **success**, including generated MyFinHub 512 icon, packaged executable/backend smoke, NSIS Setup and checksum verification.
+- Dashboard semantic/read order is exactly **Μετρητά → Μισθοδοσία → Αποταμίευση → λοιπά υπόλοιπα → εκκρεμή/actionable → Quick Entry → analytics/rest**;
+- Undo/Redo has a visible, accessible, privacy-safe session change history;
+- loading skeletons are route-shaped and the Dashboard skeleton mirrors the real ordered UI.
 
-PR #159 remains **open, unmerged and unreleased**. None of these feature-branch changes are part of production until the owner separately approves merge and release.
+Final exact-head automated evidence for #181:
 
-## Implemented production platform
+- CI #743: success — **48/48 test files, 228/228 tests**, production build/API checks, bundle budgets and complete required primary-Chromium rendered QA;
+- CodeQL #697: success;
+- Cross-engine smoke #43: success;
+- Performance smoke #37: success;
+- Windows Desktop #398: success;
+- primary Chromium required, with zero fallback activations.
+
+No feature PR remains open.
+
+## Release-readiness state
+
+Issue #165 remains intentionally open. Automated release-readiness work is complete; the remaining gates require actual environments rather than CI emulation:
+
+- physical iPhone/iOS Safari;
+- physical Android Chrome;
+- actual NVDA + Chrome/Chromium;
+- actual VoiceOver + Safari;
+- final installed-Windows visual identity checks;
+- browser-owned installed-web-app/PWA identity checks;
+- post-release production checks after a separately approved release.
+
+`docs/RELEASE_READINESS_AUTOMATION.md` records the automated boundary. `docs/RELEASE_READINESS_MANUAL_EVIDENCE.md` is the durable evidence template for the remaining real-device/assistive-technology/install-surface checks.
+
+The #165 closeout branch also strengthens Windows CI from package-build evidence to a real generated-NSIS install/launch/uninstall smoke on a fresh GitHub-hosted Windows runner, including installed executable identity, Desktop/Start Menu shortcuts, uninstall registration, associated icon and main-window title. Final user-visible installer/taskbar artwork remains a manual visual gate.
+
+No version bump, `develop -> main` merge, production deployment, GitHub Release/tag or installer publication is authorized by this development integration or by issue #165.
+
+## Implemented platform
 
 - React + Vite + TypeScript responsive web client
 - Node.js 22.x runtime contract
@@ -110,27 +128,32 @@ PR #159 remains **open, unmerged and unreleased**. None of these feature-branch 
 - owner + AAL2 enforcement in API logic and PostgreSQL RLS/RPCs
 - publishable-key + user-JWT online Supabase access; no service-role secret required
 - optimistic revisions with stale-write conflicts instead of silent overwrite
-- bounded backups and append-only audit events
+- bounded backups and append-only write audit events
 - full-state import with mandatory pre-import backup
 - server-side finance validation and request-size bounds
-- GitHub CI, dependency audits, CodeQL, Dependabot, and privacy/security guards
+- GitHub CI, dependency audits, CodeQL, Dependabot and privacy/security guards
 - Vercel Production Smoke tied to the released production deployment
 - lazy-loaded finance pages and memoized derived selectors
 - mutable-state-only normal writes
 - native Windows Electron distribution with controlled GitHub Release updates
 
+## Financial/product invariants
+
+The current development batch preserves the established accounting and privacy contracts:
+
+- internal transfers, withdrawals, savings transfers, card payments and reconciliation adjustments do not become ordinary spending;
+- split portions are counted once without rounding drift;
+- scheduled items do not affect current balances until explicit completion;
+- credit purchases are spending while paying the credit liability is not spending again;
+- payment operations use one logical mutation and shared source/target/result semantics;
+- existing `ΔΙΟΡΘΩΣΗ` remains the manual balance-correction mechanism; no duplicate reconciliation feature was introduced;
+- undo/redo, revision/conflict persistence, privacy boundaries and payment-card secret isolation remain intact.
+
 ## Data and card-secret model
 
 The compatibility `FinanceData` document remains the canonical read/import representation. Normal saves update the mutable `state` subtree under revision locking.
 
-Payment-card metadata may live in `FinanceData.state.cards`; full PAN, expiry, and CVV do not. PAN/expiry use the ciphertext-only legacy-named `rheomiq_card_secrets` table, while CVV uses the separate device-local encrypted vault. Ordinary FinanceData backups remain outside both secret stores.
-
-Production read-only verification on 2026-08-20 found:
-
-- canonical `rheomiq_app_state` revision `99` with no payment-secret JSON keys;
-- seven production backup rows with zero payment-secret JSON-key matches;
-- latest checked backup id `8`, revision `98`, reason `automatic`, also clean;
-- zero current rows in `rheomiq_card_secrets`.
+Payment-card metadata may live in `FinanceData.state.cards`; full PAN, expiry and CVV do not. PAN/expiry use the ciphertext-only legacy-named `rheomiq_card_secrets` table, while CVV uses the separate device-local encrypted vault. Ordinary FinanceData backups remain outside both secret stores.
 
 ## Known non-blocking platform notes
 
