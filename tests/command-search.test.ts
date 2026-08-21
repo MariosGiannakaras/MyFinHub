@@ -16,12 +16,13 @@ describe('unified command search',()=>{
     expect(first[0]).toBe('command:quick-transfer');
   });
 
-  it('keeps the empty-query surface command-first while allowing recent entities without leaking amounts',()=>{
+  it('shows recent entities on the empty-query surface without leaking amounts',()=>{
     const data=clone();
     data.state.events=[...(data.state.events??[]),{id:'evt-search',date:'2026-08-17',kind:'expense',amount:987654.32,note:'QA Market Search',category:'Τρόφιμα',accountId:'piraeus-payroll',legs:[{accountId:'piraeus-payroll',amount:-987654.32}],source:'user',createdAt:stamp,updatedAt:stamp}];
     expect(searchCommandItems(data,'')[0]?.id).toBe('command:quick-expense');
     const recent=searchCommandItems(data,'',{recentIds:['event:evt-search']});
-    expect(recent.some(row=>row.id==='event:evt-search')).toBe(true);
+    expect(recent[0]?.id).toBe('event:evt-search');
+    expect(recent.some(row=>row.id==='command:quick-expense')).toBe(true);
     expect(JSON.stringify(recent)).not.toContain('987654.32');
   });
 
@@ -47,12 +48,14 @@ describe('unified command search',()=>{
     expect(scheduled?.action).toEqual({type:'scheduled_complete',scheduledId:'scheduled-search'});
   });
 
-  it('uses stable ranking across repeated calls and gives recent results a bounded boost',()=>{
+  it('uses stable ranking and applies recency only as a bounded boost to actual typed matches',()=>{
     const data=clone();
     const baseline=searchCommandItems(data,'ρυθμισεις').map(row=>row.id);
     expect(searchCommandItems(data,'ρυθμισεις').map(row=>row.id)).toEqual(baseline);
-    const recent=searchCommandItems(data,'',{recentIds:['navigate:reports','navigate:settings']}).map(row=>row.id);
-    expect(recent.indexOf('navigate:settings')).toBeLessThan(recent.indexOf('navigate:dashboard'));
-    expect(recent[0]).toBe('command:quick-expense');
+    const recentEmpty=searchCommandItems(data,'',{recentIds:['navigate:reports','navigate:settings']}).map(row=>row.id);
+    expect(recentEmpty.slice(0,2)).toEqual(['navigate:reports','navigate:settings']);
+    const filtered=searchCommandItems(data,'ρυθμισεις',{recentIds:['navigate:reports']}).map(row=>row.id);
+    expect(filtered).toContain('navigate:settings');
+    expect(filtered).not.toContain('navigate:reports');
   });
 });
