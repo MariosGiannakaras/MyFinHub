@@ -1,84 +1,79 @@
 # MyFinHub Analytics Hardening Proposal and Implementation Record
 
-Tracking: #158 · branch `feat/ui-ux-hardening-batch`
+Tracking: #158 + #160 · PR #159 · branch `feat/ui-ux-hardening-batch`
 
 ## Analytics inventory
 
-The Reports surface provides:
+The Reports surface provides current-period income, expense, savings, budget position, month-over-month comparisons, six-month flow, primary-account balance history, recurring commitments, multi-card credit debt/utilization, receivables, category/subcategory totals and savings-source breakdown. Main visualizations retain textual alternatives.
 
-- current-month income, expense, savings and budget remainder;
-- month-over-month income / expense / savings change;
-- six-month income / expense / savings series;
-- primary-account balance history;
-- recurring monthly commitments;
-- multi-card credit debt / utilization;
-- receivables;
-- Pay & Save contribution;
-- category / subcategory totals;
-- savings-source breakdown;
-- textual alternatives for the main charts.
+## Correctness prerequisites
 
-The hardening work extends the descriptive totals with concentration, momentum, recent-baseline comparisons and explicit insufficient-history states.
+- Credit analytics use the multi-card subledger keyed by `cardId`, not the historical single `credit-card` liability.
+- Transfers and credit repayments do not become duplicate expenses.
+- Percentages have defined denominators and zero-denominator behavior.
+- Observed changes are described without invented causal claims.
+- Missing comparison history produces an explicit insufficient-history state instead of a synthetic trend.
 
-## Correctness prerequisite
-
-Credit analytics use the multi-card subledger, not the historical single `credit-card` liability. The hardening batch aggregates debt by `cardId`, active limits per card, total available credit and portfolio utilization before presenting insight surfaces.
-
-## Implemented insight model
-
-The following metrics are derived deterministically from existing finance data without causal speculation:
+## Deterministic insight model
 
 ### Cash-flow trend
-
 - Current income vs previous month.
 - Current expenses vs previous month.
 - Current savings vs previous month.
 - Current expenses vs trailing 3-month average.
-- Current savings rate and previous-month savings rate.
+- Current and previous-month savings rate.
 - Net operational flow (`income - expense`).
 
 ### Spending concentration and momentum
-
-- Largest category / subcategory by current-period spend.
+- Largest current category/subcategory.
 - Share of total spend represented by the largest category.
-- Category change versus previous month when both periods contain data.
-- Explicit “insufficient history” state rather than a synthetic trend when history is missing.
+- Category change versus previous month where both periods contain data.
+- Explicit new-base / insufficient-history semantics where comparison is not valid.
 
 ### Commitments and liquidity pressure
-
 - Recurring commitments as a share of current income.
 - Total active credit-card limit, debt, available credit and portfolio utilization.
-- Credit utilization per card for drill-down.
+- Per-card utilization drill-down.
 - Receivables outstanding.
 - Budget remaining / exceeded.
+- Credit utilization above 100% is preserved as the real percentage while visual progress remains bounded to 100 and accessible text announces the real value.
 
 ### Savings quality
-
 - Savings rate.
-- Savings-source mix (Pay & Save / manual transfer / cash offset).
+- Savings-source mix.
 - Current savings versus recent baseline context.
-- No claim that a change was “caused” by a category or event unless the data explicitly encodes that relationship.
 
-## Implemented Reports information hierarchy
+## Approved large Reports visual restructure
 
-1. **Headline health strip** — income, expense, savings rate, budget position.
-2. **Trend & comparison section** — six-month flow with previous-month and trailing-average context.
-3. **Actionable insights section** — deterministic callouts from recorded data.
-4. **Commitments section** — recurring burden, multi-card credit utilization, receivables.
-5. **Category momentum section** — current categories plus period-over-period deltas.
-6. **Account and savings drill-down** — account balances and savings-source mix.
+The owner explicitly approved the large Reports/Analytics visual restructure. It is implemented in `src/pages/ReportsPage.tsx` with responsive layout rules in `src/styles/part34.css`.
 
-Desktop uses comparative cards and charts. Mobile remains list-first, with textual KPI/insight context prioritized and charts constrained to responsive surfaces.
+Final information hierarchy:
 
-## Language / analytical integrity rules
+1. **Executive period summary** — net operational flow, savings rate and previous-month deltas.
+2. **Comparative KPI strip** — income, expense, budget position and receivables.
+3. **Primary analysis grid** — six-month flow plus a concise deterministic insight rail.
+4. **Pressure & commitments** — recurring burden, portfolio credit utilization and receivables, including accessible bounded meters and per-card drill-down.
+5. **Category analysis** — desktop chart plus period-over-period list; list-first presentation on narrow mobile.
+6. **Private secondary analysis** — account-balance history behind an explicit reveal control plus savings-source composition.
 
-- Describe observed changes, not invented reasons.
-- Prefer “increased/decreased compared with…” over “because of…”.
-- State when there is insufficient historical data.
-- Use the same financial semantics as the ledger; transfers and credit repayments must not become duplicate expenses.
-- Every displayed percentage has a defined denominator and zero-denominator behavior.
-- Derived trends have regression tests before UI exposure.
+The route heading remains identifiable as `Αναφορές` for navigation/QA/accessibility continuity while exposing the new hierarchy as `Αναφορές · Η οικονομική εικόνα του μήνα`.
 
-## Approval and implementation status
+## Verification contract
 
-The owner explicitly directed completion of the full implementation on 2026-08-20. That instruction satisfies the previously required owner checkpoint for the Reports/Analytics restructure. The hierarchy above is implemented on `feat/ui-ux-hardening-batch` in `src/pages/ReportsPage.tsx` and `src/lib/reports.ts`, with regression coverage in `tests/reports.test.ts` and rendered desktop/mobile QA evidence.
+- `tests/reports.test.ts` covers deterministic report calculations, including over-limit credit utilization.
+- `scripts/ui-ux-credit-overlimit-qa.mjs` verifies the shared 135% Credit + Reports semantics.
+- `scripts/reports-visual-qa.mjs` verifies desktop hierarchy, mobile list-first behavior, explicit empty state and >100% credit behavior.
+- The full route/state matrix and CDP runtime/network gate remain active around the dedicated Reports suite.
+
+## Verified implementation checkpoint
+
+Implementation head: `51c222aea329464c05fa4cd4cf28a214b9919ce2`.
+
+- CI `32455966062`: **success** — privacy/security guard, **34 test files / 151 tests**, production build, API TypeScript check and every rendered suite passed.
+- Dedicated Reports visual QA: **success** for desktop, 375px mobile, empty state and 135% over-limit state.
+- Screenshot artifact `9437288171`: **56 files**, SHA-256 `3e5d34c9ee7eb6db4f1c0fc700550aa95566c96735114e23c843e0482de43fe6`.
+- Manual review of the Reports desktop/mobile screenshots found no new overlap, clipping or horizontal-layout regression.
+- CodeQL `32455966171`: **success**.
+- Windows Desktop `32455966107`: **success**.
+
+The large Reports/Analytics restructure is therefore implemented and technically verified. Merge, release and production publication remain separate owner-gated actions.
