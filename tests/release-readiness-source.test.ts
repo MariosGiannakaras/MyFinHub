@@ -2,7 +2,9 @@ import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 const app=readFileSync(new URL('../src/App.tsx',import.meta.url),'utf8');
+const appShell=readFileSync(new URL('../src/components/AppShell.tsx',import.meta.url),'utf8');
 const reports=readFileSync(new URL('../src/pages/ReportsPage.tsx',import.meta.url),'utf8');
+const commandStyles=readFileSync(new URL('../src/styles/part40.css',import.meta.url),'utf8');
 const index=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const manifest=JSON.parse(readFileSync(new URL('../public/manifest.webmanifest',import.meta.url),'utf8')) as {name:string;short_name:string;start_url:string;display:string;icons:Array<{src:string;sizes:string;type:string}>};
 const pkg=JSON.parse(readFileSync(new URL('../package.json',import.meta.url),'utf8')) as {scripts:Record<string,string>};
@@ -44,6 +46,15 @@ describe('release-readiness source contracts',()=>{
     expect(svg).toContain('width="512"');
     expect(svg).toContain('height="512"');
     expect(svg).toContain('viewBox="0 0 512 512"');
+  });
+
+  it('keeps mobile Quick Add viewport-fixed outside the blurred sticky topbar',()=>{
+    expect(appShell).toContain('className="command-pill"');
+    expect(appShell).toContain('className="mobile-quick-action"');
+    expect(appShell).toMatch(/<\/header>\{genericEntry\?<button type="button" className="mobile-quick-action"/);
+    expect(commandStyles).toContain('.mobile-quick-action{display:none}');
+    expect(commandStyles).toContain('.command-pill{display:none}.mobile-quick-action{display:flex');
+    expect(commandStyles).toContain('position:fixed;right:16px;bottom:calc(82px + env(safe-area-inset-bottom,0px))');
   });
 
   it('keeps WebKit compatibility coverage isolated, pinned and intentionally small',()=>{
