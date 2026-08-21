@@ -1,0 +1,39 @@
+import { readFileSync } from 'node:fs';
+import { describe, expect, it } from 'vitest';
+
+const app = readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8');
+const shell = readFileSync(new URL('../src/components/AppShell.tsx', import.meta.url), 'utf8');
+const dashboard = readFileSync(new URL('../src/pages/DashboardPage.tsx', import.meta.url), 'utf8');
+const planning = readFileSync(new URL('../src/pages/PlanningPage.tsx', import.meta.url), 'utf8');
+const runner = readFileSync(new URL('../scripts/run-rendered-qa.mjs', import.meta.url), 'utf8');
+const qa = readFileSync(new URL('../src/qa.tsx', import.meta.url), 'utf8');
+
+describe('time-aware product integration', () => {
+  it('owns a dedicated Planning route in production and synthetic QA', () => {
+    expect(shell).toContain("'planning'");
+    expect(shell).toContain("label:'Προγραμματισμός'");
+    expect(app).toContain("page==='planning'");
+    expect(qa).toContain("planning:'Προγραμματισμός & πρόβλεψη ρευστότητας'");
+  });
+
+  it('posts scheduled completion as one finance.update recipe containing both scheduled and events state', () => {
+    expect(app).toMatch(/const completeScheduled=.*finance\.update\(current=>\{[^]*scheduled:[^]*events:/);
+    expect(planning).toContain('onCompleteScheduled(completed, event)');
+  });
+
+  it('keeps deterministic forecast language and an accessible text alternative', () => {
+    expect(planning).toContain('ντετερμινιστική προβολή');
+    expect(planning).toContain('Πρόβλεψη σε κείμενο');
+    expect(planning).toContain('Οι εσωτερικές μεταφορές');
+  });
+
+  it('surfaces scheduled items on Dashboard without replacing actual transaction entry', () => {
+    expect(dashboard).toContain('Προγραμματισμένα one-off');
+    expect(dashboard).toContain('onPlanning');
+    expect(dashboard).toContain('Νέα κίνηση');
+  });
+
+  it('runs the dedicated planning lifecycle browser suite in the rendered QA chain', () => {
+    expect(runner).toContain('scripts/planning-forecast-qa.mjs');
+  });
+});
