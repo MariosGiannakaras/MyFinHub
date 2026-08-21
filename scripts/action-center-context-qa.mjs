@@ -32,7 +32,8 @@ try{
   const touchTargets=async label=>{const offenders=await c.call("function(){return [...document.querySelectorAll('#main-workspace button,#main-workspace summary,.mobile-nav button,.topbar button,.contextual-quick-modal button')].filter(el=>{const r=el.getBoundingClientRect();if(!r.width||!r.height||getComputedStyle(el).visibility==='hidden'||el.disabled)return false;return r.width<40||r.height<40}).map(el=>({name:el.getAttribute('aria-label')||(el.textContent||'').trim().slice(0,45),w:Math.round(el.getBoundingClientRect().width),h:Math.round(el.getBoundingClientRect().height)}))}");assert(offenders.length===0,`${label} touch targets below 40px: ${JSON.stringify(offenders.slice(0,8))}`)};
   const clickText=async(selector,text)=>{const clicked=await c.call("function(selector,text){const node=[...document.querySelectorAll(selector)].find(item=>(item.textContent||'').trim().includes(text));if(!node)return false;node.click();return true}",[selector,text]);assert(clicked,`missing clickable ${text}`)};
   const clickAttention=async(id)=>{const clicked=await c.call("function(id){const row=document.querySelector(`[data-attention-id=\"${CSS.escape(id)}\"]`);const button=row?.querySelector('.attention-actions .save-button');button?.click();return Boolean(button)}",[id]);assert(clicked,`missing attention action ${id}`)};
-  const waitModal=async title=>{await waitFor("function(title){const modal=document.querySelector('.contextual-quick-modal');return Boolean(modal&&(modal.querySelector('h2')?.textContent||'').includes(title))}",`${title} contextual modal`,[title]);assert(await c.call("function(){return document.querySelector('.contextual-quick-modal input[data-autofocus=true]')===document.activeElement}"),`${title} autofocus`)};
+  const assertDialogSemantics=async title=>{assert(await c.call("function(title){const modal=document.querySelector('.contextual-quick-modal');if(!modal)return false;const labelled=modal.getAttribute('aria-labelledby');return modal.getAttribute('role')==='dialog'&&modal.getAttribute('aria-modal')==='true'&&Boolean(labelled)&&((document.getElementById(labelled)?.textContent||'').includes(title))}",[title]),`${title} dialog semantics`)};
+  const waitModal=async title=>{await waitFor("function(title){const modal=document.querySelector('.contextual-quick-modal');return Boolean(modal&&(modal.querySelector('h2')?.textContent||'').includes(title))}",`${title} contextual modal`,[title]);assert(await c.call("function(){return document.querySelector('.contextual-quick-modal input[data-autofocus=true]')===document.activeElement}"),`${title} autofocus`);await assertDialogSemantics(title)};
   const closeModal=async()=>{const closed=await c.call("function(){const button=document.querySelector('.contextual-quick-modal button[aria-label*=\"Κλείσιμο\"]');button?.click();return Boolean(button)}");assert(closed,'context modal close control');await waitFor("function(){return !document.querySelector('.contextual-quick-modal')}",'context modal close')};
   const pressEscape=async()=>{for(const type of ['keyDown','keyUp'])await c.send('Input.dispatchKeyEvent',{type,key:'Escape',code:'Escape',windowsVirtualKeyCode:27,nativeVirtualKeyCode:27})};
 
@@ -41,7 +42,7 @@ try{
   assert(await c.call("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Τι χρειάζεται προσοχή')}") ,'attention heading');
   assert((await c.call("function(){return document.querySelectorAll('.attention-summary-grid>article').length}"))===3,'three severity summary cards');
   assert((await c.call("function(){return document.querySelectorAll('.attention-row').length}"))>0,'attention queue has actionable items');
-  assert(await c.call("function(){const toggle=document.querySelector('.attention-page .privacy-toggle');return toggle?.getAttribute('aria-pressed')==='false'&&document.querySelectorAll('.attention-row .amount-hidden,.attention-row .animated-amount-hidden').length>=0}") ,'privacy starts hidden');
+  assert(await c.call("function(){const toggle=document.querySelector('.attention-page .privacy-toggle');return toggle?.getAttribute('aria-pressed')==='false'}") ,'privacy starts hidden');
   await clickText('.attention-page .privacy-toggle','Εμφάνιση ποσών');
   assert(await c.call("function(){return document.querySelector('.attention-page .privacy-toggle')?.getAttribute('aria-pressed')==='true'}"),'privacy toggle exposes values only on request');
   await noOverflow('attention desktop');await noUnnamed('attention desktop');await screenshot('action-center-desktop');
@@ -58,7 +59,7 @@ try{
   console.log('Action Center QA: exact credit card context');
   await navigate('attention','overlimit');
   await clickAttention('credit:qa-card');await waitModal('Πληρωμή πιστωτικής');
-  assert(await c.call("function(){return Boolean(document.querySelector('.contextual-quick-modal select'))}"),'credit payment exposes constrained source account');
+  assert(await c.call("function(){return Boolean(document.querySelector('.contextual-quick-modal input[role=combobox]'))}"),'credit payment exposes constrained source account');
   await closeModal();
 
   console.log('Action Center QA: exact scheduled completion is atomic');
@@ -71,10 +72,24 @@ try{
   await waitFor("function(){return !document.querySelector('[data-attention-id=\"scheduled:qa-scheduled-transfer\"]')}",'completed scheduled attention removal');
   assert(await c.call("function(){return Boolean(document.querySelector('.top-actions button[aria-label=\"Αναίρεση τελευταίας αλλαγής\"]'))}"),'undo remains available after atomic completion');
 
-  console.log('Action Center QA: savings invocation keeps user selection local to open modal');
+  console.log('Action Center QA: account, savings and lending invocation contexts');
+  await navigate('dashboard');
+  const bankOpened=await c.call("function(){const node=[...document.querySelectorAll('.primary-balance-card .account-context-action')].find(button=>(button.textContent||'').includes('Νέα κίνηση'));node?.click();return Boolean(node)}");assert(bankOpened,'dashboard account context action');
+  await waitFor("function(){return Boolean(document.querySelector('.quick-modal:not(.contextual-quick-modal)'))}",'account-context generic quick add');
+  assert(await c.call("function(){return [...document.querySelectorAll('.quick-modal:not(.contextual-quick-modal) input[role=combobox]')].some(input=>(input.value||'').includes('Κύριος λογαριασμός'))}"),'account context preselects originating account');
+  const genericClosed=await c.call("function(){const button=document.querySelector('.quick-modal:not(.contextual-quick-modal) button[aria-label=\"Κλείσιμο καταχώρισης\"]');button?.click();return Boolean(button)}");assert(genericClosed,'generic account context closes');
+  await waitFor("function(){return !document.querySelector('.quick-modal')}",'generic account context close');
+
   await navigate('savings');await clickText('.savings-action','Μεταφορά στην άκρη');await waitModal('Μεταφορά στην αποταμίευση');
-  const changed=await c.call("function(){const select=document.querySelector('.contextual-quick-modal select');if(!select||select.options.length<2)return false;select.value=select.options[1].value;select.dispatchEvent(new Event('change',{bubbles:true}));return select.value===select.options[1].value}");assert(changed,'user can change contextual account selection');
-  await sleep(120);assert(await c.call("function(){const select=document.querySelector('.contextual-quick-modal select');return Boolean(select&&select.selectedIndex===1)}"),'user-changed selection is not overwritten after open');await closeModal();
+  const before=await c.call("function(){return document.querySelector('.contextual-quick-modal input[role=combobox]')?.value||''}");
+  const openedSelect=await c.call("function(){const input=document.querySelector('.contextual-quick-modal input[role=combobox]');input?.click();return Boolean(input)}");assert(openedSelect,'savings source selector opens');
+  await waitFor("function(){return Boolean(document.querySelector('.owned-select-popover [role=listbox]'))}",'savings owned select');
+  const changed=await c.call("function(before){const options=[...document.querySelectorAll('.owned-select-popover [role=option]')];const option=options.find(node=>(node.textContent||'').trim()!==before&&!node.disabled);option?.click();return Boolean(option)}",[before]);assert(changed,'user can change contextual account selection');
+  await waitFor("function(before){const value=document.querySelector('.contextual-quick-modal input[role=combobox]')?.value||'';return Boolean(value&&value!==before)}",'savings selection update',[before]);
+  const after=await c.call("function(){return document.querySelector('.contextual-quick-modal input[role=combobox]')?.value||''}");await sleep(160);assert(await c.call("function(expected){return document.querySelector('.contextual-quick-modal input[role=combobox]')?.value===expected}",[after]),'user-changed selection is not overwritten after open');await closeModal();
+
+  await navigate('lending');await clickText('.receivable-person-actions button','Επιστροφή');await waitModal('Επιστροφή δανεικών');
+  assert(await c.call("function(){const values=[...document.querySelectorAll('.contextual-quick-modal input')].map(input=>input.value);return values.includes('Νίκος')&&values.includes('50')}"),'lending context carries exact person and outstanding amount');await closeModal();
 
   console.log('Action Center QA: snooze, empty state and responsive accessibility');
   await navigate('attention');
