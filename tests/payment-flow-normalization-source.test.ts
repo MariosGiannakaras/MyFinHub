@@ -7,13 +7,14 @@ const contextual=readFileSync(new URL('../src/components/ContextualQuickAdd.tsx'
 const credit=readFileSync(new URL('../src/pages/CreditCardPage.tsx',import.meta.url),'utf8');
 const loans=readFileSync(new URL('../src/pages/LoansPage.tsx',import.meta.url),'utf8');
 const recurring=readFileSync(new URL('../src/pages/RecurringPage.tsx',import.meta.url),'utf8');
+const compact=(source:string)=>source.replace(/\s+/g,'');
 
 describe('payment flow normalization source contracts',()=>{
   it('routes page payment entry points through exact shared contexts in production and QA',()=>{
-    for(const source of [app,qa]){
-      expect(source).toContain("onPayCard={(cardId)=>openSpecial({mode:'credit',action:'payment',cardId})}");
-      expect(source).toContain("onPayLoan={(loanId)=>openSpecial({mode:'loan',loanId})}");
-      expect(source).toContain("onPayRecurring={(recurringId)=>openSpecial({mode:'recurring',recurringId})}");
+    for(const source of [compact(app),compact(qa)]){
+      expect(source).toMatch(/onPayCard=\{\(?cardId\)?=>openSpecial\(\{mode:'credit',action:'payment',cardId\}\)\}/);
+      expect(source).toMatch(/onPayLoan=\{\(?loanId\)?=>openSpecial\(\{mode:'loan',loanId\}\)\}/);
+      expect(source).toMatch(/onPayRecurring=\{\(?recurringId\)?=>openSpecial\(\{mode:'recurring',recurringId\}\)\}/);
     }
   });
 
