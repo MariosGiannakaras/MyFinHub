@@ -13,6 +13,7 @@ const webkitWorkflow=readFileSync(new URL('../.github/workflows/cross-engine-smo
 const webkitSmoke=readFileSync(new URL('../scripts/webkit-smoke.mjs',import.meta.url),'utf8');
 const performanceWorkflow=readFileSync(new URL('../.github/workflows/performance-smoke.yml',import.meta.url),'utf8');
 const performanceAudit=readFileSync(new URL('../scripts/performance-audit.mjs',import.meta.url),'utf8');
+const loadingShiftAudit=readFileSync(new URL('../scripts/loading-shift-audit.mjs',import.meta.url),'utf8');
 const performanceConfig=readFileSync(new URL('../vite.performance.config.ts',import.meta.url),'utf8');
 
 describe('release-readiness source contracts',()=>{
@@ -81,6 +82,7 @@ describe('release-readiness source contracts',()=>{
     expect(performanceWorkflow).not.toContain('lighthouse@latest');
     expect(performanceWorkflow).toContain('vite build --config vite.performance.config.ts --mode production');
     expect(performanceWorkflow).toContain('node scripts/performance-audit.mjs');
+    expect(performanceWorkflow).toContain('node scripts/loading-shift-audit.mjs');
     expect(performanceWorkflow).not.toContain('npm run qa:frontend');
     expect(performanceConfig).toContain("outDir: '.performance-dist'");
     expect(performanceConfig).toContain("input: resolve(process.cwd(), 'qa.html')");
@@ -93,5 +95,9 @@ describe('release-readiness source contracts',()=>{
     expect(performanceAudit).toContain('total-blocking-time');
     expect(performanceAudit).toContain("--only-categories=performance,accessibility,best-practices");
     expect(performanceAudit).toContain('state=extreme');
+    expect(loadingShiftAudit).toContain("PerformanceObserver");
+    expect(loadingShiftAudit).toContain("type:'layout-shift'");
+    expect(loadingShiftAudit).toContain("'.qa-loading-route'");
+    expect(loadingShiftAudit).toContain('Number(cls)<=0.10');
   });
 });
