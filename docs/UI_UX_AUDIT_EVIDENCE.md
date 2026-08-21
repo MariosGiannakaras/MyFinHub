@@ -1,8 +1,8 @@
 # MyFinHub UI/UX hardening evidence
 
-Tracking: issue #158 · PR #159 · branch `feat/ui-ux-hardening-batch`
+Tracking: issues #158 and #160 · PR #159 · branch `feat/ui-ux-hardening-batch`
 
-The coordinated UI/UX hardening implementation and post-review hardening pass are technically complete. PR #159 remains open, ready for owner review and unmerged. Merge/release remains a separate owner decision.
+The coordinated application-wide UI/UX hardening, post-review hardening, approved Reports/Analytics visual restructure, and new MyFinHub branding integration are technically complete. PR #159 remains open, ready for owner review and unmerged. Merge/release remains a separate owner decision.
 
 ## Surface inventory
 
@@ -29,6 +29,9 @@ Additional surfaces covered separately:
 - persistence loading/error/conflict feedback
 - page error boundary
 - modal/dialog overlays and owned select/date popovers
+- MyFinHub desktop/tablet/mobile branding lockups
+- explicit light/dark brand variant switching
+- Windows setup / packaged application branding pipeline
 
 ## User-facing copy inventory
 
@@ -51,6 +54,7 @@ Consolidated contracts:
 - `src/components/FormError.tsx` — announced form error;
 - `src/components/SortDirectionControl.tsx` — explicit ASC/DESC control;
 - `src/components/ReadabilitySettings.tsx` — persisted text-size control;
+- `src/components/BrandMark.tsx` — single theme-ready MyFinHub light/dark brand contract;
 - `src/hooks/useModalFocus.ts` — focus trap, Escape, focus return and scroll lock;
 - `src/lib/userMessage.ts` — user-safe error normalization.
 
@@ -115,19 +119,53 @@ Interaction suites additionally cover Quick Entry, owned editors, sorting, valid
 - reduced-motion compatibility;
 - chart text alternatives where visual charts are hidden from assistive technology.
 
-## Analytics implementation and post-review edge cases
+## Reports / Analytics implementation
 
-Reports hardening in `src/pages/ReportsPage.tsx` and `src/lib/reports.ts` includes headline context, previous-period comparisons, six-month trend, deterministic insights, trailing comparisons, category/subcategory concentration and momentum, recurring burden, multi-card credit utilization/drill-down, receivables, account history and savings-source breakdown without causal claims.
+The owner-approved large Reports/Analytics restructure is implemented in `src/pages/ReportsPage.tsx`, `src/lib/reports.ts` and `src/styles/part34.css`.
 
-Post-review corrections:
+The resulting hierarchy includes:
 
-- credit utilization is no longer mathematically clamped to 100%; over-limit states can report 125%, 135%, etc.;
+1. executive health strip with net flow, savings rate and period comparisons;
+2. current-period KPI group;
+3. primary trend/comparison area paired with deterministic insight rail;
+4. commitments/liquidity pressure cards for recurring burden, multi-card credit and receivables;
+5. category momentum section with chart/list responsive behavior;
+6. account-balance and savings-source drill-down.
+
+The implementation preserves deterministic calculations, explicit insufficient-history states, non-causal language, chart text alternatives and privacy-controlled balance visibility. Mobile switches dense category analysis to a list-first presentation instead of squeezing the desktop chart.
+
+Post-review correctness corrections remain part of this surface:
+
+- credit utilization is not mathematically clamped to 100%; over-limit states can report 125%, 135%, etc.;
 - Credit Card shows the actual percentage and over-limit amount while keeping the visual progress fill and `aria-valuenow` bounded to 100;
 - `aria-valuetext` announces the real over-limit utilization;
 - Reports drill-down exposes the same actual over-limit percentage;
 - generic insight arrows were replaced with semantic warning/success icons where direction alone did not express meaning;
 - `tests/reports.test.ts` includes over-limit regression coverage;
-- `scripts/ui-ux-credit-overlimit-qa.mjs` exercises Credit + Reports with a synthetic over-limit state and emits screenshot evidence.
+- `scripts/ui-ux-credit-overlimit-qa.mjs` exercises Credit + Reports with a synthetic over-limit state;
+- `scripts/reports-visual-qa.mjs` verifies desktop hierarchy, mobile hierarchy, empty state and over-limit semantics.
+
+## MyFinHub branding implementation
+
+Issue #160 supplied four new source images. The client upload names used `.png`, but the source byte streams are JPEG/JFIF with no alpha channel. Recorded native source provenance:
+
+- light square — 1536×1536 — SHA-256 `7ea970d91a5d0a01eaec49b8546e6d555ae60ea099644bc6c7265aabcf6c3a02`;
+- dark square — 1536×1536 — SHA-256 `02466161914d0836bb8336a043e402583751f5569ec360bf135d6bf0df059dc0`;
+- light horizontal wordmark — 1536×512 — SHA-256 `a82df276af4a5319daf2259ff8e51f6b660444699bea04b432b18eb122e7e69a`;
+- dark horizontal wordmark — 1536×512 — SHA-256 `8e3c3236ebd972d017de2c273623486e52ef8deb364c5b9e5b91a62047093d5d`.
+
+Runtime integration uses canonical light/dark 32px and 192px derivatives plus scalable 512 wrappers for PWA/canonical use. The old RheomIQ 512 PNG runtime/canonical assets were removed. `BrandMark` renders both light/dark assets and switches through explicit `html[data-theme="light|dark"]`, preventing an OS preference from independently switching the logo on a still-light application surface.
+
+The shared brand contract is used on sidebar, mobile header, Login and MFA; boot compatibility paths point to the new MyFinHub asset set. Favicon, Apple touch and manifest paths were updated. Windows packaging generates a true 512×512 PNG from the new MyFinHub light 192px source with the existing PowerShell/System.Drawing pipeline before Electron packaging.
+
+`scripts/brand-visual-qa.mjs` verifies:
+
+- both light/dark assets load at the expected native 192px width;
+- explicit theme switching reaches the final correct opacity state;
+- Login has no horizontal overflow;
+- desktop lockup remains contained;
+- the 88px tablet sidebar collapses to icon-only branding without overflow;
+- mobile branding fits the header allocation.
 
 ## Runtime / network gate
 
@@ -141,9 +179,9 @@ GitHub runner browser bootstrap failures are treated separately from application
 2. only if the suite fails with a recognized CDP bootstrap signature, the coordinator cleans its isolated profile and retries once with system Chrome;
 3. application assertion failures are never retried as browser bootstrap failures.
 
-The final implementation run exercised this fallback: Chromium 151 failed to expose the first CDP endpoint, the isolated system-Chrome retry succeeded, and all subsequent application/browser assertions completed successfully.
+This separation is important: the branding QA initially exposed only a test-timing error — it sampled a 150ms CSS opacity transition after 80ms. The assertion was corrected to observe the completed transition; no application defect was hidden or bypassed.
 
-## Initial verified implementation checkpoint
+## Historical verified checkpoints
 
 Initial implementation head: `10f757cc3b6ab4c9567e9fe0344a04accc980217`.
 
@@ -152,34 +190,43 @@ Initial implementation head: `10f757cc3b6ab4c9567e9fe0344a04accc980217`.
 - CodeQL `32401155171`: **success**.
 - Windows Desktop `32401155198`: **success**.
 
-## Final verified implementation checkpoint
+Post-review hardening checkpoint: `f444d7f8da43b784680042b691db4b2e138203dd`.
 
-Final implementation head: `f444d7f8da43b784680042b691db4b2e138203dd`.
-PR merge ref verified by CI: `e729b291130b1f741aa9e6b3f49693e897931ef3`.
+- CI `32406108849`: **success** — 34 test files / 150 tests plus build/API/rendered gates.
+- Screenshot artifact `9420404231`: **49 files**.
+- CodeQL `32406108695`: **success**.
+- Windows Desktop `32406108685`: **success**.
 
-- CI `32406108849`: **success**.
-  - privacy/security guard passed across 238 tracked files;
-  - **34 test files / 150 tests passed**;
+## Verified Reports + branding implementation checkpoint
+
+Implementation head: `51c222aea329464c05fa4cd4cf28a214b9919ce2`.
+PR merge ref verified by CI: `917666d4c934906f4f0b38bcbba286ac685e9a20`.
+
+- CI `32455966062`: **success**.
+  - privacy/security guard passed across 253 tracked files;
+  - **34 test files / 151 tests passed**;
   - production TypeScript/Vite build passed;
   - API TypeScript check passed;
-  - base rendered frontend QA passed after the recognized Chromium bootstrap failure switched to the isolated system-Chrome fallback;
+  - base rendered frontend QA passed;
   - owned-controls rendered QA passed;
   - full desktop/mobile route-state matrix passed;
   - completion QA passed for delete/undo/redo, sorting, form association, reduced motion and representative contrast;
   - CDP runtime console/network QA passed across desktop/mobile plus auth/loading/conflict/error states;
   - dedicated credit over-limit QA passed for Credit Card and Reports;
+  - dedicated Reports visual QA passed for desktop, mobile, empty and over-limit states;
+  - dedicated MyFinHub branding visual QA passed for light/dark Login, desktop shell, collapsed tablet sidebar and mobile shell;
   - full-page visual evidence QA passed.
-- Screenshot artifact `9420404231`: **49 files**, SHA-256 `1c1be773a510ae85e076ce4fe05bf4210d771f0f50cd50dc401bd6586eb4d7dc`.
-- The final desktop/mobile/full-page screenshots and dedicated 135% over-limit screenshot were reviewed; no new overlap, clipping, layout or responsive regression was found.
-- CodeQL `32406108695`: **success**.
-- Windows Desktop `32406108685`: **success** — application/desktop boundary, PowerShell fallback, unpacked build, packaged executable/backend smoke, interactive NSIS Setup, update-channel checksum and installer evidence all passed. Release publication correctly remained skipped.
-- PR #159 review state at technical closure: **0 unresolved review threads and 0 submitted reviews/change requests**.
-- PR #159 description is synchronized to this final implementation evidence.
+- Screenshot artifact `9437288171`: **56 files**, SHA-256 `3e5d34c9ee7eb6db4f1c0fc700550aa95566c96735114e23c843e0482de43fe6`.
+- Manual review of all 56 screenshots found no new overlap, clipping, horizontal overflow or responsive regression. Branding remained clean across Login/MFA and desktop/tablet/mobile shell states; the restructured Reports hierarchy remained readable on desktop/mobile and preserved the 135% over-limit state.
+- CodeQL `32455966171`: **success**.
+- Windows Desktop `32455966107`: **success** — application/desktop boundary, PowerShell fallback, generated 512×512 MyFinHub icon path, unpacked build, packaged executable/backend smoke, interactive NSIS Setup, checksum and installer evidence all passed. Release publication remained skipped because this was not a release tag.
 
-This document update is closure metadata only. The implementation evidence above remains tied to `f444d7f8da43b784680042b691db4b2e138203dd`; the documentation-only closure head is required to retain green repository gates before issue #158 is closed.
+## Documentation closure state
+
+After the verified implementation checkpoint, `STATUS.md`, `docs/ANALYTICS_HARDENING_PROPOSAL.md`, `docs/UI_UX_HARDENING_PLAN.md` and this evidence record were synchronized to the approved Reports/branding scope. These are documentation-only closure changes. The final documentation head must retain green CI, CodeQL and Windows Desktop gates before issue #160 is closed.
 
 ## Owner-gated state
 
-- Optional large Reports/Analytics visual restructure remains a separate owner decision.
 - PR #159 remains open, ready for owner review and unmerged.
-- No `main` merge, release/version bump, production deployment or production installer publication is authorized by technical closure alone.
+- Merge of PR #159 is **not** authorized by technical closure.
+- No release/version bump, production deployment or production installer publication is authorized by technical closure alone.
