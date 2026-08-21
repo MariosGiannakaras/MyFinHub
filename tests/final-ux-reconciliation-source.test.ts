@@ -53,6 +53,14 @@ describe('final UX reconciliation source contracts',()=>{
     expect(finance).not.toContain('useEffect(() => { saveStateRef.current = saveState; }');
   });
 
+  it('starts initial finance hydration only once under React StrictMode',()=>{
+    expect(finance).toContain('const initialLoadStartedRef=useRef(false)');
+    expect(finance).toContain('if(initialLoadStartedRef.current)return;');
+    expect(finance).toContain('initialLoadStartedRef.current=true;');
+    expect(finance).toContain('void reload();');
+    expect(finance).not.toContain('useEffect(() => { void reload(); }, [reload]);');
+  });
+
   it('keeps skeletons route-shaped and Dashboard-shaped in the same priority order',()=>{
     expect(skeleton).toContain("data-skeleton-section=\"primary-accounts\"");
     const primary=skeleton.indexOf('data-skeleton-section="primary-accounts"');
