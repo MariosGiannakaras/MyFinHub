@@ -41,9 +41,7 @@ export function transactionRuleMatches(rule: TransactionRule, event: FinanceEven
   if (description) {
     if (mode === 'equals' ? note !== description : !note.includes(description)) return false;
   }
-  if (merchant) {
-    if (!note.includes(merchant)) return false;
-  }
+  if (merchant && !note.includes(merchant)) return false;
   if (accountId && eventAccount(event) !== accountId) return false;
   return Boolean(description || merchant || accountId);
 }
@@ -72,15 +70,21 @@ export function applyTransactionRules(data: FinanceData, event: FinanceEvent) {
   return next;
 }
 
+export function transactionRuleMatchingEvents(data: FinanceData, rule: TransactionRule) {
+  const enabledRule={...rule,enabled:true};
+  return (data.state.events ?? []).filter((event) => transactionRuleMatches(enabledRule,event));
+}
+
 export function transactionRuleMatchCount(data: FinanceData, rule: TransactionRule) {
-  return (data.state.events ?? []).filter((event) => transactionRuleMatches({ ...rule, enabled: true, scopes: ['manual','imported','review'] }, event)).length;
+  return transactionRuleMatchingEvents(data,rule).length;
 }
 
 export function normalizeTransactionRule(rule: TransactionRule): TransactionRule {
   const name = rule.name.trim();
   if (!name) throw new Error('Δώσε όνομα στον κανόνα.');
-  const priority = Math.max(0, Math.trunc(Number(rule.priority)));
-  if (!Number.isFinite(priority)) throw new Error('Η προτεραιότητα του κανόνα πρέπει να είναι έγκυρος αριθμός.');
+  const numericPriority=Number(rule.priority);
+  if (!Number.isFinite(numericPriority)) throw new Error('Η προτεραιότητα του κανόνα πρέπει να είναι έγκυρος αριθμός.');
+  const priority = Math.max(0, Math.trunc(numericPriority));
   const description = rule.match.description?.trim() || undefined;
   const merchant = rule.match.merchant?.trim() || undefined;
   const accountId = rule.match.accountId?.trim() || undefined;
