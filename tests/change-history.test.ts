@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { describeFinanceChange } from '../src/lib/changeHistory';
-import { qaFinanceData } from '../src/qaFixture';
-import type { FinanceData, FinanceEvent, PaymentCard } from '../src/types';
+import { describeFinanceChange } from '../src/lib/changeHistory.js';
+import { qaFinanceData } from '../src/qaFixture.js';
+import type { FinanceData, FinanceEvent, PaymentCard } from '../src/types.js';
 
 const clone=(data:FinanceData)=>structuredClone(data);
 const stamp='2026-08-21T12:00:00.000Z';
@@ -18,7 +18,7 @@ describe('privacy-safe user change descriptions',()=>{
   });
 
   it('shows safe previous → new values for event edits and hides changed notes',()=>{
-    const before=qaFinanceData();before.state.events=[...(before.state.events??[]),event()];const after=clone(before);after.state.events=after.state.events!.map(row=>row.id==='history-event'?{...row,amount:21.5,date:'2026-08-22',note:'SECOND SECRET NOTE',legs:[{accountId:'piraeus-payroll',amount:-21.5}]}:row);
+    const before=qaFinanceData();before.state.events=[...(before.state.events??[]),event()];const after=clone(before);after.state.events=after.state.events!.map((row:FinanceEvent)=>row.id==='history-event'?{...row,amount:21.5,date:'2026-08-22',note:'SECOND SECRET NOTE',legs:[{accountId:'piraeus-payroll',amount:-21.5}]}:row);
     const label=describeFinanceChange(before,after);
     expect(label).toContain('Επεξεργασία οικονομικής κίνησης');
     expect(label).toContain('12,34');expect(label).toContain('21,50');

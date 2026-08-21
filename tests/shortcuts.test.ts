@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { appShortcutFromEvent, isAppleShortcutPlatform, shortcutDisplay, shortcutMatches, shouldBlockAppShortcut } from '../src/lib/shortcuts';
+import { appShortcutFromEvent, isAppleShortcutPlatform, shortcutDisplay, shortcutMatches, shouldBlockAppShortcut, type ShortcutKeyEvent } from '../src/lib/shortcuts.js';
 
-const key=(value:string,patch:Partial<KeyboardEvent>={})=>({key:value,ctrlKey:false,metaKey:false,shiftKey:false,altKey:false,repeat:false,defaultPrevented:false,...patch} as KeyboardEvent);
+const key=(value:string,patch:Partial<ShortcutKeyEvent>={}):ShortcutKeyEvent=>({key:value,ctrlKey:false,metaKey:false,shiftKey:false,altKey:false,repeat:false,defaultPrevented:false,...patch});
 
 describe('app-wide keyboard shortcuts',()=>{
   it('uses platform-aware conventional search, undo and redo combinations',()=>{
