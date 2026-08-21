@@ -1,3 +1,4 @@
+import { budgetProgress } from './budgets.js';
 import { creditCards, creditDebtForCard, creditLimitForCard, cardLabel } from './cards.js';
 import { addDays, cashFlowForecast, LOW_BALANCE_THRESHOLD } from './forecast.js';
 import { lendingOutstandingFor } from './lending.js';
@@ -7,14 +8,15 @@ import { pendingScheduled, scheduledLifecycle } from './scheduled.js';
 import type { AttentionDecision, FinanceData, FinanceEvent, Loan, RecurringItem } from '../types.js';
 
 export type AttentionSeverity = 'danger' | 'warning' | 'info';
-export type AttentionKind = 'scheduled' | 'recurring' | 'loan' | 'credit' | 'lending' | 'forecast';
+export type AttentionKind = 'scheduled' | 'recurring' | 'loan' | 'credit' | 'lending' | 'forecast' | 'budget';
 export type AttentionAction =
   | 'complete_scheduled'
   | 'pay_recurring'
   | 'pay_loan'
   | 'pay_credit'
   | 'collect_lending'
-  | 'open_forecast';
+  | 'open_forecast'
+  | 'open_budgets';
 
 export interface AttentionItem {
   id: string;
@@ -30,6 +32,7 @@ export interface AttentionItem {
   recurringId?: string;
   loanId?: string;
   scheduledId?: string;
+  budgetId?: string;
   action: AttentionAction;
   fingerprint: string;
 }
@@ -45,7 +48,7 @@ function monthDate(asOf:string,day:number,monthOffset=0){
 }
 function monthStart(value:string){return `${value.slice(0,7)}-01`}
 function fingerprint(parts:Array<string|number|undefined|null>){return parts.map(value=>String(value??'')).join('|')}
-function make(item:Omit<AttentionItem,'fingerprint'>):AttentionItem{return {...item,fingerprint:fingerprint([item.kind,item.id,item.severity,item.dueDate,item.amount,item.accountId,item.cardId,item.person,item.action])}}
+function make(item:Omit<AttentionItem,'fingerprint'>):AttentionItem{return {...item,fingerprint:fingerprint([item.kind,item.id,item.severity,item.dueDate,item.amount,item.accountId,item.cardId,item.person,item.action,item.title,item.reason])}}
 function accountName(data:FinanceData,id:string){return data.state.settings.accountNames?.[id]??data.seed.accounts.find(account=>account.id===id)?.name??id}
 
 function effectiveLoans(data:FinanceData):Loan[]{
@@ -96,6 +99,18 @@ function creditAttention(data:FinanceData,asOf:string):AttentionItem[]{
   return creditCards(data).flatMap(card=>{const limit=creditLimitForCard(data,card);const debt=creditDebtForCard(data,card.id,asOf);if(limit<=0||debt<=0)return [];const ratio=debt/limit;if(ratio<CREDIT_WARNING_RATIO)return [];const severity:AttentionSeverity=ratio>=1?'danger':'warning';return [make({id:`credit:${card.id}`,kind:'credit',severity,title:cardLabel(card),reason:ratio>=1?`Η χρήση της κάρτας είναι ${Math.round(ratio*100)}% και έχει φτάσει ή ξεπεράσει το όριο.`:`Η χρήση της κάρτας είναι ${Math.round(ratio*100)}% του ορίου.`,amount:debt,cardId:card.id,action:'pay_credit'})]});
 }
 
+function budgetAttention(data:FinanceData,asOf:string):AttentionItem[]{
+  return budgetProgress(data,asOf.slice(0,7)).flatMap(row=>{
+    if(row.status==='ok')return [];
+    const label=row.scope==='overall'?'Συνολικό discretionary':row.category??'Κατηγορία';
+    const severity:AttentionSeverity=row.status==='exceeded'?'danger':'warning';
+    const reason=row.status==='exceeded'
+      ?`Το budget έχει ξεπεραστεί: ${Math.round(row.ratio*100)}% του ορίου (${row.used.toFixed(2)}€ από ${row.limit.toFixed(2)}€).`
+      :`Το budget έχει φτάσει στο ${Math.round(row.ratio*100)}% του ορίου (${row.used.toFixed(2)}€ από ${row.limit.toFixed(2)}€).`;
+    return [make({id:`budget-alert:${row.id}`,kind:'budget',severity,title:`Budget · ${label}`,reason,amount:row.used,budgetId:row.id,action:'open_budgets'})];
+  });
+}
+
 function latestOverdueLendingEvents(data:FinanceData,asOf:string){
   const byPerson=new Map<string,FinanceEvent>();
   for(const event of data.state.events??[]){
@@ -121,7 +136,7 @@ function forecastAttention(data:FinanceData,asOf:string):AttentionItem[]{
 
 function priority(item:AttentionItem){return item.severity==='danger'?0:item.severity==='warning'?1:2}
 export function allAttentionItems(data:FinanceData,asOf:string):AttentionItem[]{
-  const items=[...scheduledAttention(data,asOf),...recurringAttention(data,asOf),...loanAttention(data,asOf),...creditAttention(data,asOf),...lendingAttention(data,asOf),...forecastAttention(data,asOf)];
+  const items=[...scheduledAttention(data,asOf),...recurringAttention(data,asOf),...loanAttention(data,asOf),...creditAttention(data,asOf),...lendingAttention(data,asOf),...forecastAttention(data,asOf),...budgetAttention(data,asOf)];
   const dedup=new Map<string,AttentionItem>();for(const item of items){const current=dedup.get(item.id);if(!current||priority(item)<priority(current))dedup.set(item.id,item)}
   return [...dedup.values()].sort((a,b)=>priority(a)-priority(b)||(a.dueDate??'9999').localeCompare(b.dueDate??'9999')||a.title.localeCompare(b.title,'el'));
 }
