@@ -52,8 +52,8 @@ describe('shared UI contracts',()=>{
     expect(boundary).toContain('this.setState({ failed: false });');
     expect(boundary.indexOf('this.props.onDashboard();')).toBeLessThan(boundary.indexOf('this.setState({ failed: false });',boundary.indexOf('private recoverDashboard')));
     const app=source('src/App.tsx');
-    expect(app).toContain('onRefresh={()=>{void finance.reload()}}');
-    expect(app).not.toContain('onRefresh={()=>location.reload()');
+    expect(app).toMatch(/onRefresh=\{\(\)\s*=>\s*\{\s*void\s+finance\.reload\(\);?\s*\}\}/);
+    expect(app).not.toMatch(/onRefresh=\{\(\)\s*=>\s*location\.reload\(/);
     const qa=source('src/qa.tsx');
     expect(qa).toContain('onRefresh={refresh}');
     expect(qa).toContain('<PageSkeleton/>');
