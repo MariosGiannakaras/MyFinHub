@@ -34,6 +34,14 @@ try{
     await waitFor("function(id){return !document.getElementById(id)}",`${label} nested select close`,[listboxId]);
     await waitFor("function(id){const trigger=[...document.querySelectorAll('.owned-select-shell input[role=\"combobox\"]')].find(input=>input.getAttribute('aria-controls')===id);return Boolean(trigger&&document.activeElement===trigger&&trigger.getAttribute('aria-expanded')==='false')}",`${label} nested select focus restore`,[listboxId]);
   };
+  const exerciseLendingSuggestions=async()=>{
+    assert(await c.call("function(){const dialog=document.querySelector('.lending-dialog');return Boolean(dialog&&!dialog.querySelector('datalist'))}"),'Lending has no native datalist at runtime');
+    const firstPerson=await c.call("function(){return document.querySelector('.known-people-suggestions [role=\"option\"]')?.textContent?.trim()||''}");
+    assert(firstPerson,'Lending renders known-person suggestions');
+    const prefix=firstPerson.slice(0,1);
+    assert(await c.call("function(value){const input=document.querySelector('.lending-person-field input');if(!(input instanceof HTMLInputElement))return false;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')?.set;setter?.call(input,value);input.dispatchEvent(new Event('input',{bubbles:true}));return true}",[prefix]),'Lending person input accepts typed filter');
+    await waitFor("function(){const input=document.querySelector('.lending-person-field input');const list=document.getElementById('known-people-options');return Boolean(input&&list&&input.getAttribute('aria-autocomplete')==='list'&&input.getAttribute('aria-controls')===list.id&&list.getAttribute('role')==='listbox'&&list.querySelector('[role=\"option\"]'))}",'Lending owned suggestion list after typing');
+  };
   const openMore=async()=>{const opened=await c.call("function(){return document.querySelector('button[aria-label=\"Περισσότερες ενότητες\"]')?.getAttribute('aria-expanded')==='true'}");if(!opened)await c.call("function(){const button=document.querySelector('button[aria-label=\"Περισσότερες ενότητες\"]');if(!button)return false;button.click();return true}");await waitFor("function(){return Boolean(document.querySelector('.mobile-more-menu'))}",'More menu')};
   await viewport(375,812);await c.send('Page.navigate',{url:baseUrl});await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}",'workspace');
 
@@ -48,6 +56,7 @@ try{
     await clickText(selector,label);await waitFor("function(heading){return (document.querySelector('#main-workspace h1')?.textContent||'').includes(heading)}",heading,[heading]);
     await assertNoNativeSelects(heading);
     await clickText('button',action);await waitFor("function(dialogClass){return Boolean(document.querySelector('.'+dialogClass))}",`${heading} editor`,[dialogClass]);await assertOwned(dialogClass,heading);await exerciseNestedSelect(dialogClass,heading);
+    if(heading==='Δανεικά & επιστροφές')await exerciseLendingSuggestions();
     await c.call("function(dialogClass){const dialog=document.querySelector('.'+dialogClass);const close=dialog?.querySelector('.icon-button');if(!close)return false;close.click();return true}",[dialogClass]);await waitFor("function(dialogClass){return !document.querySelector('.'+dialogClass)}",`${heading} editor close`,[dialogClass]);
   }
 
