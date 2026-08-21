@@ -19,7 +19,7 @@ function productData(input:FinanceData):FinanceData{
   return {...migrated,state:{...migrated.state,settings:{...migrated.state.settings,motion:'full',textSize:migrated.state.settings.textSize??'normal'}}};
 }
 
-function describeChange(current:FinanceData,next:FinanceData){
+export function financeChangeLabel(current:FinanceData,next:FinanceData){
   const beforeEvents=current.state.events??[];
   const afterEvents=next.state.events??[];
   if(current.state.events!==next.state.events){
@@ -188,7 +188,7 @@ export function useFinance() {
     setUndoDepth(undoStackRef.current.length);
     redoStackRef.current = [];
     setRedoDepth(0);
-    recordHistory('change',describeChange(current,next));
+    recordHistory('change',financeChangeLabel(current,next));
     persist(next);
   }, [persist, pushBounded,recordHistory]);
 
