@@ -105,6 +105,18 @@ describe('MyFinHub Windows desktop boundary', () => {
     expect(workflow).not.toContain('Signed desktop releases require');
   });
 
+  it('installs, launches, verifies identity and uninstalls the real NSIS package in Windows CI', () => {
+    expect(workflow).toContain('Install, launch and uninstall NSIS package');
+    expect(workflow).toContain("-ArgumentList '/S'");
+    expect(workflow).toContain("'MyFinHub.lnk'");
+    expect(workflow).toContain('CreateShortcut($desktopShortcut)');
+    expect(workflow).toContain("DisplayName -eq 'MyFinHub'");
+    expect(workflow).toContain("MainWindowTitle -match 'MyFinHub'");
+    expect(workflow).toContain('ExtractAssociatedIcon($exe)');
+    expect(workflow).toContain("-Filter 'Uninstall*.exe'");
+    expect(workflow).toContain('MyFinHub executable remains after silent uninstall.');
+  });
+
   it('keeps the new light/dark MyFinHub artwork and generates the Windows 512 size at build time', () => {
     for (const asset of [
       'public/favicon.png',
