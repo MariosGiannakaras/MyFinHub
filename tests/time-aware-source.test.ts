@@ -5,6 +5,7 @@ const app = readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8');
 const shell = readFileSync(new URL('../src/components/AppShell.tsx', import.meta.url), 'utf8');
 const dashboard = readFileSync(new URL('../src/pages/DashboardPage.tsx', import.meta.url), 'utf8');
 const planning = readFileSync(new URL('../src/pages/PlanningPage.tsx', import.meta.url), 'utf8');
+const planningStyles = readFileSync(new URL('../src/styles/part37.css', import.meta.url), 'utf8');
 const runner = readFileSync(new URL('../scripts/run-rendered-qa.mjs', import.meta.url), 'utf8');
 const qa = readFileSync(new URL('../src/qa.tsx', import.meta.url), 'utf8');
 
@@ -31,6 +32,12 @@ describe('time-aware product integration', () => {
     expect(dashboard).toContain('Προγραμματισμένα one-off');
     expect(dashboard).toContain('onPlanning');
     expect(dashboard).toContain('Νέα κίνηση');
+  });
+
+  it('keeps mobile Planning tooltip actions on the real shared Tooltip wrapper and at least 44px', () => {
+    expect(planningStyles).toContain('.scheduled-actions .app-tooltip>button');
+    expect(planningStyles).not.toContain('.scheduled-actions .tooltip-trigger>button');
+    expect(planningStyles).toMatch(/\.scheduled-actions \.app-tooltip>button\{width:44px;height:44px;min-width:44px;min-height:44px/);
   });
 
   it('runs the dedicated planning lifecycle browser suite in the rendered QA chain', () => {
