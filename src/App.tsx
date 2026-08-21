@@ -13,7 +13,7 @@ import { useSession } from './hooks/useSession';
 import { archiveCardRecord } from './lib/cards';
 import { accountBalances } from './lib/domain';
 import { reportingMonthForDate } from './lib/localDate';
-import type { CardBank, EventKind, FinanceData, FinanceEvent, Loan, PaymentCard, RecurringItem, ReviewDecision } from './types';
+import type { CardBank, EventKind, FinanceData, FinanceEvent, Loan, PaymentCard, RecurringItem, ReviewDecision, ScheduledTransaction } from './types';
 
 const DashboardPage = lazy(() => import('./pages/DashboardPage').then((module) => ({ default: module.DashboardPage })));
 const TransactionsPage = lazy(() => import('./pages/TransactionsPage').then((module) => ({ default: module.TransactionsPage })));
@@ -24,10 +24,11 @@ const CreditCardPage = lazy(() => import('./pages/CreditCardPage').then((module)
 const LoansPage = lazy(() => import('./pages/LoansPage').then((module) => ({ default: module.LoansPage })));
 const RecurringPage = lazy(() => import('./pages/RecurringPage').then((module) => ({ default: module.RecurringPage })));
 const LendingPage = lazy(() => import('./pages/LendingPage').then((module) => ({ default: module.LendingPage })));
+const PlanningPage = lazy(() => import('./pages/PlanningPage').then((module) => ({ default: module.PlanningPage })));
 const ReportsPage = lazy(() => import('./pages/ReportsPage').then((module) => ({ default: module.ReportsPage })));
 const SettingsPage = lazy(() => import('./pages/SettingsPage').then((module) => ({ default: module.SettingsPage })));
 
-const PAGE_IDS: PageId[] = ['dashboard','transactions','review','savings','cards','credit','loans','lending','recurring','reports','settings'];
+const PAGE_IDS: PageId[] = ['dashboard','transactions','review','savings','cards','credit','loans','lending','recurring','planning','reports','settings'];
 const GENERIC_ENTRY_PAGES = new Set<PageId>(['dashboard','transactions']);
 const PERIOD_PAGES = new Set<PageId>(['dashboard','transactions','savings','reports']);
 function routeFromHash() { const raw=location.hash.replace(/^#\/?/,'').trim(); if(!raw)return {page:'dashboard' as PageId,notFound:false}; if(PAGE_IDS.includes(raw as PageId))return {page:raw as PageId,notFound:false}; return {page:'dashboard' as PageId,notFound:true}; }
@@ -55,11 +56,13 @@ function FinanceApp({userEmail,onLogout}:{userEmail:string|null;onLogout:()=>voi
   const upsertBank=(bank:CardBank)=>finance.update(current=>{const banks=current.state.cardBanks??[];const exists=banks.some(item=>item.id===bank.id);return {...current,state:{...current.state,cardBanks:exists?banks.map(item=>item.id===bank.id?bank:item):[...banks,bank]}}});
   const upsertCard=(card:PaymentCard)=>finance.update(current=>{const cards=current.state.cards??[];const exists=cards.some(item=>item.id===card.id);return {...current,state:{...current.state,cards:exists?cards.map(item=>item.id===card.id?card:item):[...cards,card]}}});
   const archiveCard=(card:PaymentCard)=>upsertCard(archiveCardRecord(card));
+  const upsertScheduled=(item:ScheduledTransaction)=>finance.update(current=>{const items=current.state.scheduled??[];const exists=items.some(existing=>existing.id===item.id);return {...current,state:{...current.state,scheduled:exists?items.map(existing=>existing.id===item.id?item:existing):[...items,item]}}});
+  const completeScheduled=(item:ScheduledTransaction,event:FinanceEvent)=>finance.update(current=>{const scheduled=current.state.scheduled??[];const events=current.state.events??[];return {...current,state:{...current.state,scheduled:[...scheduled.filter(existing=>existing.id!==item.id),item],events:[...events.filter(existing=>existing.id!==event.id),event]}}});
   const decide=(id:string,decision:ReviewDecision)=>finance.update(current=>({...current,state:{...current.state,reviewDecisions:{...(current.state.reviewDecisions??{}),[id]:decision}}}));
   const balance=(accountId:string)=>accountBalances(data,today)[accountId]||0;
   const recover=()=>{if((finance.saveState==='error'||finance.saveState==='conflict')&&!window.confirm('Η επαναφόρτωση θα απορρίψει τυχόν τοπικές αλλαγές που δεν αποθηκεύτηκαν. Να φορτωθεί η τελευταία έκδοση από τη βάση;'))return;void finance.reload()};
 
-  const content=page==='dashboard'?<DashboardPage data={data} month={month} asOf={today} motionMode="full" onQuickAdd={(prefill?:QuickPrefill)=>openQuick('expense',prefill||null)} onTransactions={()=>navigate('transactions')}/>
+  const content=page==='dashboard'?<DashboardPage data={data} month={month} asOf={today} motionMode="full" onQuickAdd={(prefill?:QuickPrefill)=>openQuick('expense',prefill||null)} onTransactions={()=>navigate('transactions')} onPlanning={()=>navigate('planning')}/>
     :page==='transactions'?<TransactionsPage data={data} month={month} onEditEvent={editEvent} onDeleteEvent={deleteEvent}/>
     :page==='review'?<ReviewPage data={data} onDecision={decide}/>
     :page==='savings'?<SavingsPage data={data} month={month} asOf={today} onCreate={addEvent}/>
@@ -68,6 +71,7 @@ function FinanceApp({userEmail,onLogout}:{userEmail:string|null;onLogout:()=>voi
     :page==='loans'?<LoansPage data={data} asOf={today} onUpsertLoan={upsertLoan} onCreateEvent={addEvent} onCreateSelfLoan={createSelfLoan}/>
     :page==='lending'?<LendingPage data={data} asOf={today} onCreateEvent={addEvent}/>
     :page==='recurring'?<RecurringPage data={data} asOf={today} onUpsert={upsertRecurring} onCreateEvent={addEvent} onOpenLoans={()=>navigate('loans')}/>
+    :page==='planning'?<PlanningPage data={data} asOf={today} onUpsertScheduled={upsertScheduled} onCompleteScheduled={completeScheduled}/>
     :page==='reports'?<ReportsPage data={data} month={month}/>
     :<SettingsPage data={data} filePath={finance.filePath} lastSavedAt={finance.lastSavedAt} onImport={finance.importData} onBackup={finance.createBackup} onSettings={settings=>finance.update(c=>({...c,state:{...c.state,settings:{...settings,motion:'full'}}}))}/>;
 
