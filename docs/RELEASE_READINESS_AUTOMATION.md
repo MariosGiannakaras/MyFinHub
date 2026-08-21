@@ -59,14 +59,14 @@ Actual browser-owned install UI, splash/standalone identity and home-screen pres
 
 The Windows workflow already built the unpacked app, launched the packaged executable/backend, built the assisted per-user NSIS package and verified the update-channel checksum.
 
-The #165 closeout branch strengthens that gate by also performing a **real install/launch/uninstall smoke** on the fresh GitHub-hosted Windows runner:
+The #165 closeout work strengthens that gate by also performing a **real install/launch/uninstall smoke** on the fresh GitHub-hosted Windows runner:
 
 1. Build the assisted NSIS installer.
 2. Install it silently into the runner user profile.
 3. Verify the installed Desktop shortcut and Start Menu shortcut use `MyFinHub` identity.
 4. Resolve the shortcut target and verify `MyFinHub.exe` plus executable product/file-description metadata.
 5. Extract and validate a usable associated Windows icon from the installed executable.
-6. Verify current-user uninstall registration is named `MyFinHub`.
+6. Verify a `MyFinHub` uninstall registration across the standard current-user, machine and WOW6432Node uninstall registry views, including a non-empty uninstall command.
 7. Launch the installed app and require a `MyFinHub` main-window title.
 8. Run the real generated uninstaller silently.
 9. Verify the installed executable and shortcuts are removed.
