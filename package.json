@@ -10,7 +10,7 @@
     "dev": "concurrently -k \"npm:dev:server\" \"npm:dev:web\"",
     "dev:web": "vite --host 127.0.0.1",
     "dev:server": "tsx watch server/index.ts",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && node scripts/bundle-budget.mjs",
     "start": "tsx server/index.ts --serve-dist",
     "test": "vitest run",
     "test:watch": "vitest",
