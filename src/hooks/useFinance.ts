@@ -5,15 +5,37 @@ import { migrateProductData } from '../lib/productMigration';
 import type { FinanceData } from '../types';
 
 export type SaveState = 'loading' | 'saved' | 'saving' | 'error' | 'conflict';
+export type ChangeHistoryEntry = { id:string; kind:'change'|'undo'|'redo'; label:string; at:string };
 
 const REVISION_CHANNEL = 'rheomiq-finance-revision';
 const MAX_UNDO_STATES = 20;
+const MAX_HISTORY_ITEMS = 20;
 
 type RevisionMessage = { type: 'revision'; revision: string };
 
 function productData(input:FinanceData):FinanceData{
   const migrated=migrateProductData(input);
   return {...migrated,state:{...migrated.state,settings:{...migrated.state.settings,motion:'full',textSize:migrated.state.settings.textSize??'normal'}}};
+}
+
+function describeChange(current:FinanceData,next:FinanceData){
+  const beforeEvents=current.state.events??[];
+  const afterEvents=next.state.events??[];
+  if(current.state.events!==next.state.events){
+    if(afterEvents.length>beforeEvents.length)return 'Νέα οικονομική κίνηση';
+    if(afterEvents.length<beforeEvents.length)return 'Διαγραφή οικονομικής κίνησης';
+    return 'Επεξεργασία οικονομικής κίνησης';
+  }
+  if(current.state.scheduled!==next.state.scheduled)return 'Αλλαγή προγραμματισμένης κίνησης';
+  if(current.state.budgets!==next.state.budgets)return 'Αλλαγή προϋπολογισμού';
+  if(current.state.transactionRules!==next.state.transactionRules)return 'Αλλαγή κανόνα συναλλαγών';
+  if(current.state.cards!==next.state.cards||current.state.cardBanks!==next.state.cardBanks)return 'Αλλαγή κάρτας ή τράπεζας';
+  if(current.state.customLoans!==next.state.customLoans||current.state.loanOverrides!==next.state.loanOverrides)return 'Αλλαγή δανείου ή δόσης';
+  if(current.state.recurringCustom!==next.state.recurringCustom||current.state.recurringOverrides!==next.state.recurringOverrides)return 'Αλλαγή πάγιας κίνησης';
+  if(current.state.settings!==next.state.settings)return 'Αλλαγή ρυθμίσεων';
+  if(current.state.reviewDecisions!==next.state.reviewDecisions)return 'Αλλαγή απόφασης ελέγχου';
+  if(current.state.attentionDecisions!==next.state.attentionDecisions)return 'Αλλαγή στο Χρειάζεται προσοχή';
+  return 'Αλλαγή οικονομικών δεδομένων';
 }
 
 export function useFinance() {
@@ -24,6 +46,7 @@ export function useFinance() {
   const [saveState, setSaveState] = useState<SaveState>('loading');
   const [undoDepth, setUndoDepth] = useState(0);
   const [redoDepth, setRedoDepth] = useState(0);
+  const [changeHistory,setChangeHistory]=useState<ChangeHistoryEntry[]>([]);
   const revisionRef = useRef('');
   const dataRef = useRef<FinanceData | null>(null);
   const exclusiveOperation = useRef(false);
@@ -34,14 +57,21 @@ export function useFinance() {
   const coordinatorRef = useRef<LatestValueQueue<FinanceData> | null>(null);
   const undoStackRef = useRef<FinanceData[]>([]);
   const redoStackRef = useRef<FinanceData[]>([]);
+  const historySequenceRef=useRef(0);
 
   const assignData = useCallback((next: FinanceData | null) => { dataRef.current = next; setData(next); }, []);
   const clearHistory = useCallback(() => {
     undoStackRef.current = [];
     redoStackRef.current = [];
+    historySequenceRef.current=0;
     setUndoDepth(0);
     setRedoDepth(0);
+    setChangeHistory([]);
   }, []);
+  const recordHistory=useCallback((kind:ChangeHistoryEntry['kind'],label:string)=>{
+    const entry:ChangeHistoryEntry={id:`history-${Date.now()}-${++historySequenceRef.current}`,kind,label,at:new Date().toISOString()};
+    setChangeHistory(current=>[entry,...current].slice(0,MAX_HISTORY_ITEMS));
+  },[]);
 
   const applyEnvelope = useCallback((res: Awaited<ReturnType<typeof loadData>>) => {
     const migrated = productData(res.data);
@@ -141,8 +171,9 @@ export function useFinance() {
     setUndoDepth(undoStackRef.current.length);
     redoStackRef.current = [];
     setRedoDepth(0);
+    recordHistory('change',describeChange(current,next));
     persist(next);
-  }, [persist, pushBounded]);
+  }, [persist, pushBounded,recordHistory]);
 
   const undo = useCallback(() => {
     const state = saveStateRef.current;
@@ -153,9 +184,10 @@ export function useFinance() {
     pushBounded(redoStackRef.current, current);
     setUndoDepth(undoStackRef.current.length);
     setRedoDepth(redoStackRef.current.length);
+    recordHistory('undo','Αναίρεση τελευταίας αλλαγής');
     persist(previous);
     return true;
-  }, [persist, pushBounded]);
+  }, [persist, pushBounded,recordHistory]);
 
   const redo = useCallback(() => {
     const state = saveStateRef.current;
@@ -166,9 +198,10 @@ export function useFinance() {
     pushBounded(undoStackRef.current, current);
     setUndoDepth(undoStackRef.current.length);
     setRedoDepth(redoStackRef.current.length);
+    recordHistory('redo','Επαναφορά τελευταίας αναιρεμένης αλλαγής');
     persist(next);
     return true;
-  }, [persist, pushBounded]);
+  }, [persist, pushBounded,recordHistory]);
 
   const doImport = useCallback(async (incoming: FinanceData) => {
     if (exclusiveOperation.current) throw new Error('Υπάρχει ήδη λειτουργία αποθήκευσης σε εξέλιξη.');
@@ -202,5 +235,5 @@ export function useFinance() {
   const canUndo = undoDepth > 0 && saveState !== 'conflict' && saveState !== 'error' && saveState !== 'loading';
   const canRedo = redoDepth > 0 && saveState !== 'conflict' && saveState !== 'error' && saveState !== 'loading';
 
-  return useMemo(() => ({ data, revision, filePath, lastSavedAt, saveState, update, reload, undo, redo, canUndo, canRedo, importData: doImport, createBackup: doBackup }), [data, revision, filePath, lastSavedAt, saveState, update, reload, undo, redo, canUndo, canRedo, doImport, doBackup]);
+  return useMemo(() => ({ data, revision, filePath, lastSavedAt, saveState, update, reload, undo, redo, canUndo, canRedo, undoDepth, redoDepth, changeHistory, importData: doImport, createBackup: doBackup }), [data, revision, filePath, lastSavedAt, saveState, update, reload, undo, redo, canUndo, canRedo, undoDepth, redoDepth, changeHistory, doImport, doBackup]);
 }
