@@ -8,6 +8,8 @@ const credit=readFileSync(new URL('../src/pages/CreditCardPage.tsx',import.meta.
 const loans=readFileSync(new URL('../src/pages/LoansPage.tsx',import.meta.url),'utf8');
 const recurring=readFileSync(new URL('../src/pages/RecurringPage.tsx',import.meta.url),'utf8');
 const rendered=readFileSync(new URL('../scripts/run-rendered-qa.mjs',import.meta.url),'utf8');
+const paymentQa=readFileSync(new URL('../scripts/payment-flow-normalization-qa.mjs',import.meta.url),'utf8');
+const staleHarness=readFileSync(new URL('../src/paymentFlowQa.tsx',import.meta.url),'utf8');
 const compact=(source:string)=>source.replace(/\s+/g,'');
 
 describe('payment flow normalization source contracts',()=>{
@@ -48,5 +50,15 @@ describe('payment flow normalization source contracts',()=>{
   it('keeps dedicated rendered payment coverage in the full browser gate',()=>{
     expect(rendered).toContain("scripts/payment-flow-normalization-qa.mjs");
     expect(rendered).toContain("/tmp/myfinhub-payment-flow-qa-chrome");
+  });
+
+  it('locks empty, stale-id, extreme-value and reduced-motion regression coverage',()=>{
+    expect(paymentQa).toContain("{state:'empty'}");
+    expect(paymentQa).toContain("setAmount('999999999.99')");
+    expect(paymentQa).toContain("staleHarnessUrl('missing-loan')");
+    expect(paymentQa).toContain('δεν είναι πλέον διαθέσιμο');
+    expect(staleHarness).toContain("loanId:'qa-missing-loan'");
+    expect(staleHarness).toContain('motionMode="reduced"');
+    expect(staleHarness).toContain('<ContextualQuickAdd');
   });
 });
