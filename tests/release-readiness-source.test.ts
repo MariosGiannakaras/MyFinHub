@@ -1,0 +1,103 @@
+import { existsSync, readFileSync } from 'node:fs';
+import { describe, expect, it } from 'vitest';
+
+const app=readFileSync(new URL('../src/App.tsx',import.meta.url),'utf8');
+const appShell=readFileSync(new URL('../src/components/AppShell.tsx',import.meta.url),'utf8');
+const reports=readFileSync(new URL('../src/pages/ReportsPage.tsx',import.meta.url),'utf8');
+const commandStyles=readFileSync(new URL('../src/styles/part40.css',import.meta.url),'utf8');
+const index=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+const manifest=JSON.parse(readFileSync(new URL('../public/manifest.webmanifest',import.meta.url),'utf8')) as {name:string;short_name:string;start_url:string;display:string;icons:Array<{src:string;sizes:string;type:string}>};
+const pkg=JSON.parse(readFileSync(new URL('../package.json',import.meta.url),'utf8')) as {scripts:Record<string,string>};
+const budget=readFileSync(new URL('../scripts/bundle-budget.mjs',import.meta.url),'utf8');
+const webkitWorkflow=readFileSync(new URL('../.github/workflows/cross-engine-smoke.yml',import.meta.url),'utf8');
+const webkitSmoke=readFileSync(new URL('../scripts/webkit-smoke.mjs',import.meta.url),'utf8');
+const performanceWorkflow=readFileSync(new URL('../.github/workflows/performance-smoke.yml',import.meta.url),'utf8');
+const performanceAudit=readFileSync(new URL('../scripts/performance-audit.mjs',import.meta.url),'utf8');
+const loadingShiftAudit=readFileSync(new URL('../scripts/loading-shift-audit.mjs',import.meta.url),'utf8');
+const performanceConfig=readFileSync(new URL('../vite.performance.config.ts',import.meta.url),'utf8');
+
+describe('release-readiness source contracts',()=>{
+  it('keeps large feature pages route-lazy and chart code out of the eager app shell',()=>{
+    const lazyPages=[...app.matchAll(/const\s+\w+Page\s*=\s*lazy\(\(\)\s*=>\s*import\('\.\/pages\//g)];
+    expect(lazyPages.length).toBeGreaterThanOrEqual(13);
+    expect(app).toContain("const ReportsPage = lazy(() => import('./pages/ReportsPage')");
+    expect(app).not.toContain("from 'recharts'");
+    expect(reports).toContain("from 'recharts'");
+  });
+
+  it('enforces explicit main, chart and CSS bundle budgets after every production build',()=>{
+    expect(pkg.scripts.build).toContain('node scripts/bundle-budget.mjs');
+    expect(budget).toContain("label:'main application JS'");
+    expect(budget).toContain("label:'chart JS'");
+    expect(budget).toContain("label:'application CSS'");
+  });
+
+  it('keeps browser/PWA identity consistently MyFinHub with resolvable install icons',()=>{
+    expect(manifest.name).toBe('MyFinHub');
+    expect(manifest.short_name).toBe('MyFinHub');
+    expect(manifest.start_url).toBe('/');
+    expect(manifest.display).toBe('standalone');
+    expect(index).toContain('<title>MyFinHub</title>');
+    expect(index).toContain('rel="manifest" href="/manifest.webmanifest"');
+    expect(index).toContain('rel="apple-touch-icon" href="/brand/icon-light-192.png"');
+    for(const icon of manifest.icons){
+      expect(icon.src.startsWith('/brand/')).toBe(true);
+      expect(existsSync(new URL(`../public${icon.src}`,import.meta.url))).toBe(true);
+    }
+    expect(manifest.icons.some(icon=>icon.sizes==='192x192'&&icon.type==='image/png')).toBe(true);
+    expect(manifest.icons.some(icon=>icon.sizes==='512x512'&&(icon.type==='image/png'||icon.type==='image/svg+xml'))).toBe(true);
+    const svg=readFileSync(new URL('../public/brand/icon-512.svg',import.meta.url),'utf8');
+    expect(svg).toContain('width="512"');
+    expect(svg).toContain('height="512"');
+    expect(svg).toContain('viewBox="0 0 512 512"');
+  });
+
+  it('keeps mobile Quick Add viewport-fixed outside the blurred sticky topbar',()=>{
+    expect(appShell).toContain('className="command-pill"');
+    expect(appShell).toContain('className="mobile-quick-action"');
+    expect(appShell).toMatch(/<\/header>\{genericEntry\?<button type="button" className="mobile-quick-action"/);
+    expect(commandStyles).toContain('.mobile-quick-action{display:none}');
+    expect(commandStyles).toContain('.command-pill{display:none}.mobile-quick-action{display:flex');
+    expect(commandStyles).toContain('position:fixed;right:16px;bottom:calc(82px + env(safe-area-inset-bottom,0px))');
+  });
+
+  it('keeps WebKit compatibility coverage isolated, pinned and intentionally small',()=>{
+    expect(webkitWorkflow).toContain('playwright@1.62.1');
+    expect(webkitWorkflow).toContain('playwright install --with-deps webkit');
+    expect(webkitWorkflow).toContain('node scripts/webkit-smoke.mjs');
+    expect(webkitWorkflow).not.toContain('npm run qa:frontend');
+    expect(webkitWorkflow).not.toContain('playwright@latest');
+    expect(webkitSmoke).toContain("import { webkit } from 'playwright'");
+    expect(webkitSmoke).toContain("?screen=login");
+    expect(webkitSmoke).toContain("?screen=mfa");
+    expect(webkitSmoke).toContain("getByRole('combobox',{name:'Λογαριασμός'})");
+    expect(webkitSmoke).toContain("getByLabel('Ημερομηνία')");
+    expect(webkitSmoke).toContain('WebKit QA Expense');
+    expect(webkitSmoke).toContain("name:'Αναίρεση τελευταίας αλλαγής'");
+    expect(webkitSmoke).toContain("width:390,height:844");
+  });
+
+  it('keeps Lighthouse performance evidence pinned, production-mode and smaller than the rendered matrix',()=>{
+    expect(performanceWorkflow).toContain('lighthouse@13.4.1');
+    expect(performanceWorkflow).not.toContain('lighthouse@latest');
+    expect(performanceWorkflow).toContain('vite build --config vite.performance.config.ts --mode production');
+    expect(performanceWorkflow).toContain('node scripts/performance-audit.mjs');
+    expect(performanceWorkflow).toContain('node scripts/loading-shift-audit.mjs');
+    expect(performanceWorkflow).not.toContain('npm run qa:frontend');
+    expect(performanceConfig).toContain("outDir: '.performance-dist'");
+    expect(performanceConfig).toContain("input: resolve(process.cwd(), 'qa.html')");
+    expect(performanceAudit).toContain("id:'desktop-dashboard'");
+    expect(performanceAudit).toContain("id:'desktop-reports'");
+    expect(performanceAudit).toContain("id:'mobile-dashboard'");
+    expect(performanceAudit).toContain("id:'mobile-extreme'");
+    expect(performanceAudit).toContain('largest-contentful-paint');
+    expect(performanceAudit).toContain('cumulative-layout-shift');
+    expect(performanceAudit).toContain('total-blocking-time');
+    expect(performanceAudit).toContain("--only-categories=performance,accessibility,best-practices");
+    expect(performanceAudit).toContain('state=extreme');
+    expect(loadingShiftAudit).toContain("PerformanceObserver");
+    expect(loadingShiftAudit).toContain("type:'layout-shift'");
+    expect(loadingShiftAudit).toContain("'.qa-loading-route'");
+    expect(loadingShiftAudit).toContain('Number(cls)<=0.10');
+  });
+});

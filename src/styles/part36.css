@@ -1,0 +1,64 @@
+.transaction-row.kind-transfer .amount,
+.mobile-transaction-row.kind-transfer strong {
+  color: var(--text-secondary, #526071);
+  font-weight: 800;
+}
+
+.transaction-split-details {
+  display: grid;
+  gap: 6px;
+  margin-top: 8px;
+  max-width: 560px;
+}
+
+.transaction-split-part {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  padding: 7px 9px;
+  border: 1px solid color-mix(in srgb, currentColor 10%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface, #fff) 94%, currentColor 2%);
+}
+
+.transaction-split-part > span,
+.transaction-split-part > small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.transaction-split-part > small {
+  opacity: .72;
+}
+
+.transaction-split-part > b {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.split-head [aria-live="polite"] {
+  font-variant-numeric: tabular-nums;
+}
+
+.split-line button:disabled {
+  opacity: .42;
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .transaction-split-details {
+    margin-top: 10px;
+  }
+
+  .transaction-split-part {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .transaction-split-part > small {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}

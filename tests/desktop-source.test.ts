@@ -105,23 +105,30 @@ describe('MyFinHub Windows desktop boundary', () => {
     expect(workflow).not.toContain('Signed desktop releases require');
   });
 
-  it('keeps a verified MyFinHub favicon source in the repo and generates the Windows size at build time', () => {
+  it('keeps the new light/dark MyFinHub artwork and generates the Windows 512 size at build time', () => {
     for (const asset of [
       'public/favicon.png',
-      'public/brand/icon-192.png',
-      'public/brand/icon-512.png',
+      'public/brand/icon-light-32.png',
+      'public/brand/icon-dark-32.png',
+      'public/brand/icon-light-192.png',
+      'public/brand/icon-dark-192.png',
+      'public/brand/icon-512.svg',
       'desktop/setup-brand.png',
-      'assets/branding/myfinhub/icon-32.png',
-      'assets/branding/myfinhub/icon-192.png',
-      'assets/branding/myfinhub/icon-512.png',
+      'assets/branding/myfinhub/icon-light-32.png',
+      'assets/branding/myfinhub/icon-dark-32.png',
+      'assets/branding/myfinhub/icon-light-192.png',
+      'assets/branding/myfinhub/icon-dark-192.png',
+      'assets/branding/myfinhub/icon-512.svg',
       'assets/branding/myfinhub/README.md',
     ]) expect(exists(asset)).toBe(true);
     const favicon=bytes('public/favicon.png');
     expect([...favicon.subarray(0,8)]).toEqual([137,80,78,71,13,10,26,10]);
     expect(favicon.readUInt32BE(16)).toBe(32);
     expect(favicon.readUInt32BE(20)).toBe(32);
-    expect(prepareBuild).toContain("const sourceIcon=path.join(root,'public','favicon.png')");
+    expect(bytes('desktop/setup-brand.png').equals(bytes('public/brand/icon-dark-192.png'))).toBe(true);
+    expect(prepareBuild).toContain("const sourceIcon=path.join(root,'public','brand','icon-light-192.png')");
     expect(prepareBuild).toContain('[Drawing.Bitmap]::new(512,512)');
+    expect(prepareBuild).not.toContain('nativeAppIcon');
     expect(workflow).toContain('assets/branding/myfinhub/**');
   });
 

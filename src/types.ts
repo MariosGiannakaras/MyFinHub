@@ -5,6 +5,10 @@ export type CardKind = 'debit' | 'prepaid' | 'credit';
 export type CardNetwork = 'visa' | 'mastercard' | 'other';
 export type CardFormFactor = 'physical' | 'virtual';
 export type LoanKind = 'installment' | 'loan' | 'self-loan';
+export type TextSizePreference = 'compact' | 'normal' | 'large';
+export type ScheduledKind = 'expense' | 'income' | 'transfer';
+export type ScheduledTransactionStatus = 'pending' | 'completed' | 'skipped' | 'cancelled';
+export type TransactionRuleScope = 'manual' | 'imported' | 'review';
 
 export interface Account {
   id: string;
@@ -101,6 +105,7 @@ export interface FinanceEvent {
   fromAccountId?: string;
   toAccountId?: string;
   person?: string;
+  expectedReturnDate?: string;
   legs: LedgerLeg[];
   parts?: SplitPart[];
   savingAmount?: number;
@@ -115,6 +120,26 @@ export interface FinanceEvent {
   cardId?: string;
 }
 
+export interface ScheduledTransaction {
+  id: string;
+  dueDate: string;
+  kind: ScheduledKind;
+  amount: number;
+  note: string;
+  category?: string;
+  subcategory?: string;
+  accountId?: string;
+  fromAccountId?: string;
+  toAccountId?: string;
+  status: ScheduledTransactionStatus;
+  completedEventId?: string;
+  completedAt?: string;
+  skippedAt?: string;
+  cancelledAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface ReviewDecision {
   status: 'confirmed' | 'kept' | 'snoozed';
   semanticKind?: EventKind | 'split_required';
@@ -122,6 +147,49 @@ export interface ReviewDecision {
   parts?: SplitPart[];
   decidedAt: string;
   snoozedUntil?: string;
+}
+
+export interface AttentionDecision {
+  status: 'snoozed' | 'dismissed';
+  fingerprint: string;
+  decidedAt: string;
+  snoozedUntil?: string;
+}
+
+export interface MonthlyBudget {
+  id: string;
+  month: string;
+  scope: 'category' | 'overall';
+  category?: string;
+  amount: number;
+  alertThreshold?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TransactionRuleMatch {
+  description?: string;
+  merchant?: string;
+  accountId?: string;
+  mode?: 'contains' | 'equals';
+}
+
+export interface TransactionRuleAction {
+  category?: string;
+  subcategory?: string;
+  note?: string;
+}
+
+export interface TransactionRule {
+  id: string;
+  name: string;
+  enabled: boolean;
+  priority: number;
+  scopes: TransactionRuleScope[];
+  match: TransactionRuleMatch;
+  action: TransactionRuleAction;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface FinanceData {
@@ -160,7 +228,11 @@ export interface FinanceData {
     cardBanks?: CardBank[];
     cards?: PaymentCard[];
     events?: FinanceEvent[];
+    scheduled?: ScheduledTransaction[];
     reviewDecisions?: Record<string, ReviewDecision>;
+    attentionDecisions?: Record<string, AttentionDecision>;
+    budgets?: MonthlyBudget[];
+    transactionRules?: TransactionRule[];
     migration?: { fromSchema: number; migratedAt: string };
   };
 }
@@ -181,6 +253,7 @@ export interface FinanceSettings {
   savingsTargetRate?: number;
   creditLimit?: number;
   motion?: 'system' | 'reduced' | 'full';
+  textSize?: TextSizePreference;
 }
 
 export interface RecurringItem {
@@ -223,9 +296,16 @@ export interface Loan {
   longTermRecurring?: boolean;
 }
 
+export interface LendingEntry {
+  date: string;
+  lent: number;
+  repaid: number;
+  haircut?: number;
+}
+
 export interface LendingPerson {
   person: string;
-  entries: Array<{ date: string; lent: number; repaid: number; haircut?: number }>;
+  entries: LendingEntry[];
   outstanding: number;
 }
 

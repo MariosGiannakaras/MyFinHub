@@ -1,13 +1,13 @@
 export type BankBrandKey='piraeus'|'revolut'|'alpha'|'payzy'|'viva'|'cash'|'generic';
 
-export type BankBrandAsset={label:string;src:string;source:'wikimedia'|'verified-web'};
+export type BankBrandAsset={label:string;mark:string;source:'local-text'};
 
 const BRAND_ASSETS:Partial<Record<BankBrandKey,BankBrandAsset>>={
-  piraeus:{label:'Τράπεζα Πειραιώς',src:'https://upload.wikimedia.org/wikipedia/commons/0/00/Piraeus_Bank_2024_logo.svg',source:'wikimedia'},
-  revolut:{label:'Revolut',src:'https://upload.wikimedia.org/wikipedia/commons/7/73/Revolut_logo.svg',source:'wikimedia'},
-  alpha:{label:'Alpha Bank',src:'https://upload.wikimedia.org/wikipedia/commons/3/35/Alpha_Bank_logo.svg',source:'wikimedia'},
-  payzy:{label:'payzy by COSMOTE',src:'https://www.neukunden-rabatt.de/payzy_logo.jpg',source:'verified-web'},
-  viva:{label:'Viva.com',src:'https://cdn.asp.events/CLIENT_CloserSt_D86EA381_5056_B739_5482D50A1A831DDD/companyProfiles/8bdb9b68-4ddb-11f0-95a-06bd0f937899-logo.png',source:'verified-web'},
+  piraeus:{label:'Τράπεζα Πειραιώς',mark:'ΠΕΙΡΑΙΩΣ',source:'local-text'},
+  revolut:{label:'Revolut',mark:'REVOLUT',source:'local-text'},
+  alpha:{label:'Alpha Bank',mark:'ALPHA',source:'local-text'},
+  payzy:{label:'payzy by COSMOTE',mark:'payzy',source:'local-text'},
+  viva:{label:'Viva.com',mark:'VIVA',source:'local-text'},
 };
 
 function normalize(value=''){return value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('el-GR')}

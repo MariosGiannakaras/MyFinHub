@@ -50,4 +50,41 @@ jobs:
             cat /tmp/rheomiq-vite.log
             exit 1
           fi
+
+          # PR CI must prove the rendered matrix on runner Chromium itself. Keep
+          # system Chrome discoverable for non-enforced/local runs, but block CI
+          # from silently converting a Chromium bootstrap failure into a green run.
+          PRIMARY_BROWSER="$(command -v chromium || command -v chromium-browser || true)"
+          FALLBACK_BROWSER="$(command -v google-chrome || true)"
+          if [ -z "$PRIMARY_BROWSER" ]; then
+            echo "Chromium is required for rendered frontend QA in CI."
+            exit 1
+          fi
+          export MYFINHUB_QA_PRIMARY_BROWSER="$PRIMARY_BROWSER"
+          export MYFINHUB_QA_FALLBACK_BROWSER="$FALLBACK_BROWSER"
+          export MYFINHUB_QA_REQUIRE_PRIMARY=1
+          mkdir -p /tmp/myfinhub-qa-browser-bin
+          cat > /tmp/myfinhub-qa-browser-bin/google-chrome <<'BROWSER_WRAPPER'
+          #!/usr/bin/env bash
+          browser="${MYFINHUB_QA_PRIMARY_BROWSER}"
+          if [ "${MYFINHUB_QA_USE_FALLBACK:-0}" = "1" ] && [ "${MYFINHUB_QA_REQUIRE_PRIMARY:-0}" != "1" ] && [ -n "${MYFINHUB_QA_FALLBACK_BROWSER:-}" ]; then
+            browser="${MYFINHUB_QA_FALLBACK_BROWSER}"
+          fi
+          exec "$browser" --disable-dev-shm-usage "$@"
+          BROWSER_WRAPPER
+          chmod +x /tmp/myfinhub-qa-browser-bin/google-chrome
+          export PATH="/tmp/myfinhub-qa-browser-bin:$PATH"
+          echo "Rendered QA enforced primary browser: $($PRIMARY_BROWSER --version)"
+          if [ -n "$FALLBACK_BROWSER" ] && [ "$FALLBACK_BROWSER" != "$PRIMARY_BROWSER" ]; then
+            echo "Rendered QA fallback browser is installed but disabled for CI: $($FALLBACK_BROWSER --version)"
+          fi
+
           npm run qa:frontend
+      - name: Upload UI/UX browser evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: myfinhub-ui-ux-${{ github.sha }}
+          path: /tmp/myfinhub-ui-ux-qa/*.png
+          if-no-files-found: warn
+          retention-days: 14

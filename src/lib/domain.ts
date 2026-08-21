@@ -124,6 +124,10 @@ export function createEvent(args: {
   fromAccountId?: string;
   toAccountId?: string;
   person?: string;
+  expectedReturnDate?: string;
+  cardId?: string;
+  recurringId?: string;
+  loanId?: string;
   parts?: SplitPart[];
   actualBalance?: number;
   currentBalance?: number;
@@ -195,6 +199,7 @@ export function createEvent(args: {
     fromAccountId: args.fromAccountId,
     toAccountId: args.toAccountId,
     person: args.person,
+    expectedReturnDate: args.expectedReturnDate,
     parts: args.parts,
     legs,
     savingAmount,
@@ -203,6 +208,9 @@ export function createEvent(args: {
     source: 'user',
     createdAt: now,
     updatedAt: now,
+    cardId: args.cardId,
+    recurringId: args.recurringId,
+    loanId: args.loanId,
   };
 }
 

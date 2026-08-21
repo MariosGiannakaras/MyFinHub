@@ -1,0 +1,53 @@
+name: Performance smoke
+
+on:
+  pull_request:
+    branches: [develop]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+jobs:
+  lighthouse:
+    name: Production-mode Lighthouse audit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Build production-mode performance fixture
+        run: npx vite build --config vite.performance.config.ts --mode production
+      - name: Install pinned Lighthouse runner
+        run: npm install --no-save --package-lock=false lighthouse@13.4.1
+      - name: Run Lighthouse and loading-shift regression audits
+        run: |
+          npx vite preview --config vite.performance.config.ts --host 127.0.0.1 --port 4173 > /tmp/myfinhub-performance-vite.log 2>&1 &
+          VITE_PID=$!
+          trap 'kill $VITE_PID || true' EXIT
+          ready=0
+          for attempt in {1..30}; do
+            if curl --fail --silent --show-error 'http://127.0.0.1:4173/qa.html?page=dashboard&motion=reduced' > /dev/null; then
+              ready=1
+              break
+            fi
+            sleep 1
+          done
+          if [ "$ready" -ne 1 ]; then
+            cat /tmp/myfinhub-performance-vite.log
+            exit 1
+          fi
+          node scripts/performance-audit.mjs
+          node scripts/loading-shift-audit.mjs
+      - name: Upload Lighthouse evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: myfinhub-performance-${{ github.event.pull_request.head.sha }}
+          path: /tmp/myfinhub-performance/*.json
+          if-no-files-found: warn
+          retention-days: 14
