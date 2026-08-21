@@ -1,6 +1,7 @@
 import { StrictMode, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { AppShell, type PageId } from './components/AppShell';
+import { CommandPalette } from './components/CommandPalette';
 import { ContextualQuickAdd, type QuickActionContext } from './components/ContextualQuickAdd';
 import { PageSkeleton } from './components/AppSkeleton';
 import { PeriodControl } from './components/PeriodControl';
@@ -12,7 +13,8 @@ import type { QuickPrefill } from './components/QuickAdd';
 import type { SaveState } from './hooks/useFinance';
 import type { AttentionItem } from './lib/attention';
 import { archiveCardRecord } from './lib/cards';
-import { accountBalances, createEvent } from './lib/domain';
+import type { RankedCommandSearchItem } from './lib/commandSearch';
+import { accountBalances, allAccounts, createEvent } from './lib/domain';
 import { applyTransactionRules } from './lib/transactionRules';
 import { qaFinanceData } from './qaFixture';
 import { DashboardPage } from './pages/DashboardPage';
@@ -75,6 +77,7 @@ function QaWorkspace(){
   const [saveState,setSaveState]=useState<SaveState>(()=>initialSaveState(params.get('save')));
   const [page,setPage]=useState<PageId>(()=>initialPage(params.get('page')));
   const [quickOpen,setQuickOpen]=useState(false);
+  const [commandOpen,setCommandOpen]=useState(false);
   const [quickContext,setQuickContext]=useState<QuickActionContext|null>(null);
   const [editing,setEditing]=useState<string|null>(null);
   const [crash,setCrash]=useState(false);
@@ -83,6 +86,7 @@ function QaWorkspace(){
 
   useEffect(()=>{document.documentElement.dataset.motion=data.state.settings.motion||'system';return()=>{delete document.documentElement.dataset.motion}},[data.state.settings.motion]);
   useEffect(()=>{document.documentElement.dataset.textSize=data.state.settings.textSize??'normal';return()=>{delete document.documentElement.dataset.textSize}},[data.state.settings.textSize]);
+  useEffect(()=>{const onKey=(event:KeyboardEvent)=>{if(!(event.ctrlKey||event.metaKey)||event.key.toLowerCase()!=='k')return;event.preventDefault();if(quickOpen||commandOpen)return;setCommandOpen(true)};addEventListener('keydown',onKey);return()=>removeEventListener('keydown',onKey)},[quickOpen,commandOpen]);
 
   const update=(recipe:(current:FinanceData)=>FinanceData)=>{const next=recipe(data);if(next===data)return;setUndoStack(stack=>[...stack.slice(-19),data]);setRedoStack([]);setData(next)};
   const undo=()=>{const previous=undoStack.at(-1);if(!previous)return;setUndoStack(stack=>stack.slice(0,-1));setRedoStack(stack=>[data,...stack].slice(0,20));setData(previous)};
@@ -94,6 +98,7 @@ function QaWorkspace(){
   const editEvent=(id:string)=>{const event=(data.state.events??[]).find(item=>item.id===id);setEditing(id);setQuickContext({token:quickToken(),mode:'generic',kind:event?.kind||'expense',prefill:null});setQuickOpen(true)};
   const openGeneric=(kind:EventKind='expense',prefill:QuickPrefill|null=null)=>{setEditing(null);setQuickContext({token:quickToken(),mode:'generic',kind,prefill});setQuickOpen(true)};
   const openSpecial=(context:SpecialQuickContext)=>{setEditing(null);setQuickContext({...context,token:quickToken()} as QuickActionContext);setQuickOpen(true)};
+  const openCommand=()=>{if(quickOpen)return;setCommandOpen(true)};
   const upsertRecurring=(item:RecurringItem)=>update(current=>{const seeded=current.seed.recurring.some(seed=>seed.id===item.id);if(seeded)return {...current,state:{...current.state,recurringOverrides:{...current.state.recurringOverrides,[item.id]:item}}};return {...current,state:{...current.state,recurringCustom:[...(current.state.recurringCustom??[]).filter(r=>r.id!==item.id),item]}}});
   const withLoan=(current:FinanceData,loan:Loan)=>{if(current.seed.loans.some(item=>item.id===loan.id))return {...current,state:{...current.state,loanOverrides:{...current.state.loanOverrides,[loan.id]:loan}}};return {...current,state:{...current.state,customLoans:[...(current.state.customLoans??[]).filter(item=>item.id!==loan.id),loan]}}};
   const upsertLoan=(loan:Loan)=>update(current=>withLoan(current,loan));
@@ -117,6 +122,19 @@ function QaWorkspace(){
     if(item.action==='open_forecast'){setPage('planning');return}
     if(item.action==='open_budgets'){setPage('reports')}
   };
+  const handleCommand=(row:RankedCommandSearchItem)=>{
+    setCommandOpen(false);const action=row.action;
+    if(action.type==='navigate'){setPage(action.page);return}
+    if(action.type==='quick_add'){
+      if(action.accountId){const account=allAccounts(data).find(item=>item.id===action.accountId);if(account?.kind==='savings'){openSpecial({mode:'savings',toAccountId:action.accountId,savingSource:'manual_transfer'});return}openGeneric(action.kind,{note:'',amount:0,accountId:action.accountId});return}
+      openGeneric(action.kind);return;
+    }
+    if(action.type==='credit_payment'){openSpecial({mode:'credit',action:'payment',cardId:action.cardId});return}
+    if(action.type==='loan_payment'){openSpecial({mode:'loan',loanId:action.loanId,accountId:action.accountId});return}
+    if(action.type==='lending_repayment'){openSpecial({mode:'lending',action:'repay',person:action.person,accountId:action.accountId??data.state.settings.defaultIncomeAccount});return}
+    if(action.type==='recurring_payment'){openSpecial({mode:'recurring',recurringId:action.recurringId,accountId:action.accountId});return}
+    if(action.type==='scheduled_complete'){openSpecial({mode:'scheduled',scheduledId:action.scheduledId})}
+  };
 
   const content=page==='dashboard'
     ?<DashboardPage data={data} month={month} asOf={today} motionMode={data.state.settings.motion||'system'} onQuickAdd={(prefill?:QuickPrefill)=>openGeneric('expense',prefill||null)} onAccountQuickAdd={(accountId,kind)=>kind==='savings'?openSpecial({mode:'savings',toAccountId:accountId,savingSource:'manual_transfer'}):openGeneric('expense',{note:'',amount:0,accountId})} onTransactions={()=>setPage('transactions')} onPlanning={()=>setPage('planning')} onAttention={()=>setPage('attention')} onReports={()=>setPage('reports')}/>
@@ -135,11 +153,12 @@ function QaWorkspace(){
   const periodVisible=['dashboard','transactions','savings','reports'].includes(page);
 
   return <>
-    <AppShell page={page} onPage={next=>{setCrash(false);setPage(next)}} onQuickAdd={()=>openGeneric()} onRefresh={refresh} onUndo={undo} onRedo={redo} canUndo={undoStack.length>0} canRedo={redoStack.length>0} saveState={saveState} filePath="Synthetic QA" motionMode={data.state.settings.motion||'system'} userEmail="qa@example.invalid" onLogout={()=>{}}>
+    <AppShell page={page} onPage={next=>{setCrash(false);setPage(next)}} onQuickAdd={()=>openGeneric()} onCommand={openCommand} onRefresh={refresh} onUndo={undo} onRedo={redo} canUndo={undoStack.length>0} canRedo={redoStack.length>0} saveState={saveState} filePath="Synthetic QA" motionMode={data.state.settings.motion||'system'} userEmail="qa@example.invalid" onLogout={()=>{}}>
       <PersistenceNotice saveState={saveState} onRecover={()=>setSaveState('saved')}/>
       {periodVisible?<div className="period-row"><PeriodControl month={month} onChange={setMonth}/><button type="button" className="text-button" data-qa-crash onClick={()=>setCrash(true)}>QA render failure</button></div>:<button type="button" className="text-button qa-crash-floating" data-qa-crash onClick={()=>setCrash(true)}>QA render failure</button>}
       {saveState==='loading'?<div className="qa-loading-route"><h1 className="sr-only">{QA_PAGE_HEADINGS[page]}</h1><PageSkeleton/></div>:<PageErrorBoundary resetKey={page} onDashboard={()=>{setCrash(false);setPage('dashboard')}}>{crash?<Crash/>:content}</PageErrorBoundary>}
     </AppShell>
+    <CommandPalette open={commandOpen} data={data} motionMode={data.state.settings.motion||'system'} onClose={()=>setCommandOpen(false)} onExecute={handleCommand}/>
     <ContextualQuickAdd open={quickOpen} data={data} asOf={today} context={quickContext} initial={(data.state.events??[]).find(event=>event.id===editing)||null} motionMode={data.state.settings.motion||'system'} onClose={()=>{setQuickOpen(false);setEditing(null);setQuickContext(null)}} onCreate={addEvent} onCompleteScheduled={completeScheduled} currentBalance={id=>accountBalances(data,today)[id]||0}/>
   </>;
 }
