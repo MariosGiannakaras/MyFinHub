@@ -38,4 +38,22 @@ describe('shared UI contracts',()=>{
     for(const file of ['src/components/Tooltip.tsx','src/components/FormError.tsx','src/components/ReadabilitySettings.tsx'])expect(source(file).length).toBeGreaterThan(80);
     for(const file of ['src/pages/SavingsPage.tsx','src/pages/LendingPage.tsx','src/pages/CardsPage.tsx'])expect(source(file)).toContain('FormError');
   });
+
+  it('guards recovered account, refresh and page-error contracts',()=>{
+    const recurring=source('src/pages/RecurringPage.tsx');
+    expect(recurring).toContain('recurringAccountChoice');
+    expect(recurring).toContain('recurringAccountError');
+    const savings=source('src/pages/SavingsPage.tsx');
+    expect(savings).toContain('sourceAccounts.some(account=>account.id===from)');
+    expect(savings).toContain('savingsAccounts.some(account=>account.id===to)');
+    const boundary=source('src/components/PageErrorBoundary.tsx');
+    expect(boundary).toContain('errorRef.current?.focus');
+    expect(boundary).toContain("this.setState({ failed: false }, this.props.onDashboard)");
+    const app=source('src/App.tsx');
+    expect(app).toContain('onRefresh={()=>{void finance.reload()}}');
+    expect(app).not.toContain('onRefresh={()=>location.reload()');
+    const qa=source('src/qa.tsx');
+    expect(qa).toContain('onRefresh={refresh}');
+    expect(qa).toContain('<PageSkeleton/>');
+  });
 });
