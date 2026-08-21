@@ -16,11 +16,11 @@ try{
   await waitHttp(`http://127.0.0.1:${port}/json/version`);
   const target=await fetch(`http://127.0.0.1:${port}/json/new?${encodeURIComponent(`${baseUrl}?page=reports`)}`,{method:'PUT'}).then(response=>response.json());
   const c=new Cdp(target.webSocketDebuggerUrl);await c.open();await c.send('Page.enable');await c.send('Runtime.enable');
-  const waitFor=async(fn,label)=>{for(let i=0;i<100;i++){if(await c.call(fn))return;await sleep(100)}throw new Error(`Timed out waiting for ${label}`)};
+  const waitFor=async(fn,label,args=[])=>{for(let i=0;i<100;i++){if(await c.call(fn,args))return;await sleep(100)}throw new Error(`Timed out waiting for ${label}`)};
   const clickText=async(selector,text)=>{const ok=await c.call("function(selector,text){const node=[...document.querySelectorAll(selector)].find(item=>(item.textContent||'').includes(text));if(!node)return false;node.click();return true}",[selector,text]);assert(ok,`could not click ${text}`);await sleep(120)};
   const setLabelInput=async(label,value)=>{const ok=await c.call("function(label,value){const row=[...document.querySelectorAll('label')].find(item=>[...item.children].some(child=>child.tagName==='SPAN'&&(child.textContent||'').trim().startsWith(label)));const input=row?.querySelector('input');if(!input)return false;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(input,value);input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));return true}",[label,value]);assert(ok,`could not set ${label}`);await sleep(80)};
   const setAriaInput=async(label,value)=>{const ok=await c.call("function(label,value){const input=document.querySelector(`input[aria-label=\"${label}\"]`);if(!input)return false;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(input,value);input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));return true}",[label,value]);assert(ok,`could not set ${label}`);await sleep(80)};
-  const navigate=async(label,heading)=>{await clickText('.sidebar nav button',label);await waitFor(`function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes(${JSON.stringify(heading)})}`,heading)};
+  const navigate=async(label,heading)=>{await clickText('.sidebar nav button',label);await waitFor("function(heading){return (document.querySelector('#main-workspace h1')?.textContent||'').includes(heading)}",heading,[heading])};
 
   await waitFor("function(){return !!document.querySelector('.report-kpis-v2')}",'Reports baseline');
   const reportsBefore=await c.call("function(){return document.querySelector('.report-kpis-v2')?.textContent||''}");
