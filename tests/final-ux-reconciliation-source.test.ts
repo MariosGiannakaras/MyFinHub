@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 const app=readFileSync(new URL('../src/App.tsx',import.meta.url),'utf8');
+const qa=readFileSync(new URL('../src/qa.tsx',import.meta.url),'utf8');
 const dashboard=readFileSync(new URL('../src/pages/DashboardPage.tsx',import.meta.url),'utf8');
 const skeleton=readFileSync(new URL('../src/components/AppSkeleton.tsx',import.meta.url),'utf8');
 const finance=readFileSync(new URL('../src/hooks/useFinance.ts',import.meta.url),'utf8');
@@ -28,7 +29,8 @@ describe('final UX reconciliation source contracts',()=>{
 
   it('exposes privacy-safe session history for changes, undo and redo',()=>{
     expect(finance).toContain("export const SESSION_HISTORY_EVENT = 'myfinhub-session-change-history'");
-    expect(finance).toContain("recordHistory('change',describeChange(current,next))");
+    expect(finance).toContain('export function financeChangeLabel(current:FinanceData,next:FinanceData)');
+    expect(finance).toContain("recordHistory('change',financeChangeLabel(current,next))");
     expect(finance).toContain("recordHistory('undo','Αναίρεση τελευταίας αλλαγής')");
     expect(finance).toContain("recordHistory('redo','Επαναφορά τελευταίας αναιρεμένης αλλαγής')");
     expect(finance).toContain('slice(0,MAX_HISTORY_ITEMS)');
@@ -43,6 +45,16 @@ describe('final UX reconciliation source contracts',()=>{
     expect(shell).toContain('window.addEventListener(SESSION_HISTORY_EVENT,onHistory)');
     expect(shell).toContain('className="history-actions"');
     expect(styles).toContain('min-height:44px');
+  });
+
+  it('keeps rendered QA history semantics aligned with production',()=>{
+    expect(qa).toContain("import { financeChangeLabel, type ChangeHistoryEntry, type SaveState } from './hooks/useFinance'");
+    expect(qa).toContain('useState<ChangeHistoryEntry[]>([])');
+    expect(qa).toContain("recordHistory('change',financeChangeLabel(current,next))");
+    expect(qa).toContain("recordHistory('undo','Αναίρεση τελευταίας αλλαγής')");
+    expect(qa).toContain("recordHistory('redo','Επαναφορά τελευταίας αναιρεμένης αλλαγής')");
+    expect(qa).toContain('history={changeHistory}');
+    expect(qa).toContain('slice(0,20)');
   });
 
   it('keeps the mutation gate save-state ref synchronous with rendered state',()=>{
