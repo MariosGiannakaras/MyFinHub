@@ -7,6 +7,8 @@ const index=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const manifest=JSON.parse(readFileSync(new URL('../public/manifest.webmanifest',import.meta.url),'utf8')) as {name:string;short_name:string;start_url:string;display:string;icons:Array<{src:string;sizes:string;type:string}>};
 const pkg=JSON.parse(readFileSync(new URL('../package.json',import.meta.url),'utf8')) as {scripts:Record<string,string>};
 const budget=readFileSync(new URL('../scripts/bundle-budget.mjs',import.meta.url),'utf8');
+const webkitWorkflow=readFileSync(new URL('../.github/workflows/cross-engine-smoke.yml',import.meta.url),'utf8');
+const webkitSmoke=readFileSync(new URL('../scripts/webkit-smoke.mjs',import.meta.url),'utf8');
 
 describe('release-readiness source contracts',()=>{
   it('keeps large feature pages route-lazy and chart code out of the eager app shell',()=>{
@@ -42,5 +44,21 @@ describe('release-readiness source contracts',()=>{
     expect(svg).toContain('width="512"');
     expect(svg).toContain('height="512"');
     expect(svg).toContain('viewBox="0 0 512 512"');
+  });
+
+  it('keeps WebKit compatibility coverage isolated, pinned and intentionally small',()=>{
+    expect(webkitWorkflow).toContain('playwright@1.62.1');
+    expect(webkitWorkflow).toContain('playwright install --with-deps webkit');
+    expect(webkitWorkflow).toContain('node scripts/webkit-smoke.mjs');
+    expect(webkitWorkflow).not.toContain('npm run qa:frontend');
+    expect(webkitWorkflow).not.toContain('playwright@latest');
+    expect(webkitSmoke).toContain("import { webkit } from 'playwright'");
+    expect(webkitSmoke).toContain("?screen=login");
+    expect(webkitSmoke).toContain("?screen=mfa");
+    expect(webkitSmoke).toContain("getByRole('combobox',{name:'Λογαριασμός'})");
+    expect(webkitSmoke).toContain("getByLabel('Ημερομηνία')");
+    expect(webkitSmoke).toContain('WebKit QA Expense');
+    expect(webkitSmoke).toContain("name:'Αναίρεση τελευταίας αλλαγής'");
+    expect(webkitSmoke).toContain("width:390,height:844");
   });
 });
