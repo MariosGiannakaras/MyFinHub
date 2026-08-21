@@ -67,7 +67,7 @@ The released v1.0.2 production build still contains the earlier pre-rebrand wall
 
 ## Current development integration
 
-The current `develop` integration head is `78afee74db4893f208b14536123f1232625422eb`. It is two integration commits ahead of the v1.0.2 production `main` baseline and contains the fully verified development batch from PRs #179 and #181.
+The current `develop` integration head is `6b015b7e73a0a23d844fc99bc6631901631ce148`. It is three integration commits ahead of the v1.0.2 production `main` baseline and contains the fully verified development batch from PRs #179, #181 and #182.
 
 PR #179 merged the complete verified capability stack into `develop` as `cdad04e67bfb5d782e9971f85f44ab51b0aef706`:
 
@@ -88,28 +88,33 @@ PR #181 then merged the final original-requirement reconciliation as `78afee74db
 - Undo/Redo has a visible, accessible, privacy-safe session change history;
 - loading skeletons are route-shaped and the Dashboard skeleton mirrors the real ordered UI.
 
-Final exact-head automated evidence for #181:
+PR #182 merged the automated release-readiness closeout as `6b015b7e73a0a23d844fc99bc6631901631ce148`:
 
-- CI #743: success — **48/48 test files, 228/228 tests**, production build/API checks, bundle budgets and complete required primary-Chromium rendered QA;
-- CodeQL #697: success;
-- Cross-engine smoke #43: success;
-- Performance smoke #37: success;
-- Windows Desktop #398: success;
-- primary Chromium required, with zero fallback activations.
+- generated NSIS install → identity verification → installed-app launch → uninstall smoke on a fresh GitHub-hosted Windows runner;
+- installed `MyFinHub.exe`, Desktop/Start Menu shortcuts, uninstall registration, associated icon and installed process path are verified;
+- source regressions lock MyFinHub product/window-title and installed-package contracts;
+- human-only physical-device, NVDA/VoiceOver and browser-owned visual-install checks are not completion gates.
 
-No feature PR remains open.
+Final exact-head automated evidence for #182:
+
+- CI #755: success;
+- CodeQL #709: success;
+- Cross-engine smoke #54: success;
+- Performance smoke #49: success;
+- Windows Desktop #410: success;
+- primary Chromium remains required.
+
+No feature PR or open issue remains after the #165 closeout.
 
 ## Release-readiness state
 
-Issue #165 is now defined strictly around evidence that can be produced and enforced through the repository and GitHub-hosted automation. Human-only physical-device, NVDA/VoiceOver and browser-owned visual-install checks are not completion gates.
+Issue #165 is complete and closed. The maintained automated release-readiness boundary covers primary Chromium, focused WebKit compatibility, responsive/mobile viewports, accessibility semantics, production-mode performance, skeleton/overflow regression checks, browser/PWA source identity and Windows installed-package validation.
 
-The #165 closeout PR #182 strengthens Windows CI from package-build evidence to a real generated-NSIS install/launch/uninstall smoke on a fresh GitHub-hosted Windows runner, including installed executable identity, Desktop/Start Menu shortcuts, uninstall registration, associated icon and proof that the installed executable remains running from the installed path. Source regressions additionally lock MyFinHub BrowserWindow titles and branding contracts.
+Human-only physical-device, NVDA/VoiceOver, manual Windows visual inspection and browser-owned install-prompt checks are explicitly out of scope and do not block repository readiness.
 
-The automated release-readiness boundary covers primary Chromium, focused WebKit compatibility, responsive/mobile viewports, accessibility semantics, production-mode performance, skeleton/overflow regression checks, browser/PWA source identity and Windows installed-package validation. Issue #165 can close once PR #182 has green required gates and is integrated into `develop`.
+A future production release remains separate. Version bump, `develop -> main`, production deployment, post-deployment smoke, release tag and installer publication are performed and verified only when that release is explicitly approved.
 
-A future production release remains separate. Version bump, `develop -> main`, production deployment, post-deployment smoke, release tag and installer publication are performed and verified only when that release is explicitly approved; they do not keep #165 open before a release exists.
-
-No version bump, `develop -> main` merge, production deployment, GitHub Release/tag or installer publication is authorized by this development integration or by issue #165.
+No version bump, `develop -> main` merge, production deployment, GitHub Release/tag or installer publication was performed by the #165/#182 closeout.
 
 ## Implemented platform
 
