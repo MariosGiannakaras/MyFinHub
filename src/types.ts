@@ -8,6 +8,7 @@ export type LoanKind = 'installment' | 'loan' | 'self-loan';
 export type TextSizePreference = 'compact' | 'normal' | 'large';
 export type ScheduledKind = 'expense' | 'income' | 'transfer';
 export type ScheduledTransactionStatus = 'pending' | 'completed' | 'skipped' | 'cancelled';
+export type TransactionRuleScope = 'manual' | 'imported' | 'review';
 
 export interface Account {
   id: string;
@@ -155,6 +156,42 @@ export interface AttentionDecision {
   snoozedUntil?: string;
 }
 
+export interface MonthlyBudget {
+  id: string;
+  month: string;
+  scope: 'category' | 'overall';
+  category?: string;
+  amount: number;
+  alertThreshold?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TransactionRuleMatch {
+  description?: string;
+  merchant?: string;
+  accountId?: string;
+  mode?: 'contains' | 'equals';
+}
+
+export interface TransactionRuleAction {
+  category?: string;
+  subcategory?: string;
+  note?: string;
+}
+
+export interface TransactionRule {
+  id: string;
+  name: string;
+  enabled: boolean;
+  priority: number;
+  scopes: TransactionRuleScope[];
+  match: TransactionRuleMatch;
+  action: TransactionRuleAction;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface FinanceData {
   app: string;
   schemaVersion: number;
@@ -194,6 +231,8 @@ export interface FinanceData {
     scheduled?: ScheduledTransaction[];
     reviewDecisions?: Record<string, ReviewDecision>;
     attentionDecisions?: Record<string, AttentionDecision>;
+    budgets?: MonthlyBudget[];
+    transactionRules?: TransactionRule[];
     migration?: { fromSchema: number; migratedAt: string };
   };
 }
