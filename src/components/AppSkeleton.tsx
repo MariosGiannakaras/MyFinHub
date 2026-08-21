@@ -20,6 +20,14 @@ function RouteSkeletonContent({page}:{page:string}){
   return <><div className="skeleton heading"/><div className="skeleton-account-grid"><div className="skeleton account"/><div className="skeleton account"/></div><div className="skeleton-panel-grid"><div className="skeleton panel"/><div className="skeleton panel"/></div></>;
 }
 
+function activePage(){
+  if(typeof location==='undefined')return 'dashboard';
+  const hash=location.hash.replace(/^#\/?/,'').trim();
+  if(hash)return hash;
+  const query=new URLSearchParams(location.search).get('page');
+  return query||'dashboard';
+}
+
 export function AppSkeleton(){
   return <div className="skeleton-shell" aria-label="Φόρτωση οικονομικών δεδομένων" role="status">
     <aside className="skeleton-sidebar neo-raised">
@@ -33,8 +41,9 @@ export function AppSkeleton(){
   </div>;
 }
 
-export function PageSkeleton({page='dashboard'}:{page?:string}){
-  return <div className="page-skeleton" role="status" aria-label="Ανανέωση δεδομένων" data-skeleton-page={page}>
-    <RouteSkeletonContent page={page}/>
+export function PageSkeleton({page}:{page?:string}){
+  const resolvedPage=page||activePage();
+  return <div className="page-skeleton" role="status" aria-label="Ανανέωση δεδομένων" data-skeleton-page={resolvedPage}>
+    <RouteSkeletonContent page={resolvedPage}/>
   </div>;
 }
