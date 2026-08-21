@@ -11,6 +11,9 @@ const pkg=JSON.parse(readFileSync(new URL('../package.json',import.meta.url),'ut
 const budget=readFileSync(new URL('../scripts/bundle-budget.mjs',import.meta.url),'utf8');
 const webkitWorkflow=readFileSync(new URL('../.github/workflows/cross-engine-smoke.yml',import.meta.url),'utf8');
 const webkitSmoke=readFileSync(new URL('../scripts/webkit-smoke.mjs',import.meta.url),'utf8');
+const performanceWorkflow=readFileSync(new URL('../.github/workflows/performance-smoke.yml',import.meta.url),'utf8');
+const performanceAudit=readFileSync(new URL('../scripts/performance-audit.mjs',import.meta.url),'utf8');
+const performanceConfig=readFileSync(new URL('../vite.performance.config.ts',import.meta.url),'utf8');
 
 describe('release-readiness source contracts',()=>{
   it('keeps large feature pages route-lazy and chart code out of the eager app shell',()=>{
@@ -71,5 +74,24 @@ describe('release-readiness source contracts',()=>{
     expect(webkitSmoke).toContain('WebKit QA Expense');
     expect(webkitSmoke).toContain("name:'Αναίρεση τελευταίας αλλαγής'");
     expect(webkitSmoke).toContain("width:390,height:844");
+  });
+
+  it('keeps Lighthouse performance evidence pinned, production-mode and smaller than the rendered matrix',()=>{
+    expect(performanceWorkflow).toContain('lighthouse@13.4.1');
+    expect(performanceWorkflow).not.toContain('lighthouse@latest');
+    expect(performanceWorkflow).toContain('vite build --config vite.performance.config.ts --mode production');
+    expect(performanceWorkflow).toContain('node scripts/performance-audit.mjs');
+    expect(performanceWorkflow).not.toContain('npm run qa:frontend');
+    expect(performanceConfig).toContain("outDir: '.performance-dist'");
+    expect(performanceConfig).toContain("input: resolve(process.cwd(), 'qa.html')");
+    expect(performanceAudit).toContain("id:'desktop-dashboard'");
+    expect(performanceAudit).toContain("id:'desktop-reports'");
+    expect(performanceAudit).toContain("id:'mobile-dashboard'");
+    expect(performanceAudit).toContain("id:'mobile-extreme'");
+    expect(performanceAudit).toContain('largest-contentful-paint');
+    expect(performanceAudit).toContain('cumulative-layout-shift');
+    expect(performanceAudit).toContain('total-blocking-time');
+    expect(performanceAudit).toContain("--only-categories=performance,accessibility,best-practices");
+    expect(performanceAudit).toContain('state=extreme');
   });
 });
