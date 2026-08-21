@@ -31,6 +31,11 @@ describe('final UX reconciliation source contracts',()=>{
     expect(finance).toContain("recordHistory('undo','Αναίρεση τελευταίας αλλαγής')");
     expect(finance).toContain("recordHistory('redo','Επαναφορά τελευταίας αναιρεμένης αλλαγής')");
     expect(finance).toContain('slice(0,MAX_HISTORY_ITEMS)');
+    expect(finance).toContain('const changeHistoryRef=useRef<ChangeHistoryEntry[]>([])');
+    expect(finance).toContain('changeHistoryRef.current=next');
+    expect(finance).toContain('setChangeHistory(next)');
+    expect(finance).toContain('publishHistory(next)');
+    expect(finance).not.toContain('setChangeHistory(current=>');
     expect(shell).toContain('aria-label="Ιστορικό αλλαγών"');
     expect(shell).toContain('id="change-history-title"');
     expect(shell).toContain('window.addEventListener(SESSION_HISTORY_EVENT,onHistory)');
