@@ -104,6 +104,7 @@ export interface FinanceEvent {
   fromAccountId?: string;
   toAccountId?: string;
   person?: string;
+  expectedReturnDate?: string;
   legs: LedgerLeg[];
   parts?: SplitPart[];
   savingAmount?: number;
@@ -147,6 +148,13 @@ export interface ReviewDecision {
   snoozedUntil?: string;
 }
 
+export interface AttentionDecision {
+  status: 'snoozed' | 'dismissed';
+  fingerprint: string;
+  decidedAt: string;
+  snoozedUntil?: string;
+}
+
 export interface FinanceData {
   app: string;
   schemaVersion: number;
@@ -185,6 +193,7 @@ export interface FinanceData {
     events?: FinanceEvent[];
     scheduled?: ScheduledTransaction[];
     reviewDecisions?: Record<string, ReviewDecision>;
+    attentionDecisions?: Record<string, AttentionDecision>;
     migration?: { fromSchema: number; migratedAt: string };
   };
 }
