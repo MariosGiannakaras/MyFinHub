@@ -50,6 +50,13 @@ describe('monthly category budgets',()=>{
     expect(budgetProgress(data,'2026-08')[0]).toMatchObject({rawUsed:-50,used:0,remaining:100,status:'ok'});
   });
 
+  it('keeps legacy adjustments and reconciliation events budget-neutral balance corrections',()=>{
+    const data=clean();
+    data.seed.transactions=[{id:'legacy-adjustment',date:'2026-08-05',type:'adjustment',accountId:'piraeus-payroll',amount:-25,note:'Legacy balance correction',category:'Τρόφιμα'}];
+    data.state.events=[createEvent({kind:'reconciliation',date:'2026-08-06',amount:100,note:'Balance correction',category:'Τρόφιμα',accountId:'piraeus-payroll',actualBalance:900,currentBalance:1000})];
+    expect(categoryBudgetSpending(data,'2026-08').size).toBe(0);
+  });
+
   it('adds near/exceeded budgets to Needs Attention without leaking euro values in the reason',()=>{
     const data=clean();data.state.events=[createEvent({kind:'expense',date:'2026-08-05',amount:120,note:'Food',category:'Τρόφιμα',accountId:'piraeus-payroll'})];data.state.budgets=[budget('food','category',100,'Τρόφιμα')];
     const alert=allAttentionItems(data,'2026-08-17').find(item=>item.id==='budget-alert:food');
