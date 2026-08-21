@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { qaFinanceData } from '../src/qaFixture.js';
+import { allAttentionItems } from '../src/lib/attention.js';
 import { budgetProgress, categoryBudgetSpending } from '../src/lib/budgets.js';
 import { createEvent } from '../src/lib/domain.js';
 import { createExpenseSplitEvent, createTransferEvent } from '../src/lib/ledgerFoundations.js';
 import { migrateProductData } from '../src/lib/productMigration.js';
-import { applyTransactionRules, previewTransactionRules, transactionRuleMatchCount } from '../src/lib/transactionRules.js';
+import { applyTransactionRules, previewTransactionRules, transactionRuleMatchingEvents, transactionRuleMatchCount } from '../src/lib/transactionRules.js';
 import type { MonthlyBudget, TransactionRule } from '../src/types.js';
 
 const clone=()=>structuredClone(qaFinanceData());
@@ -42,6 +43,13 @@ describe('monthly category budgets',()=>{
     const data=clean();data.state.events=[createEvent({kind:'refund',date:'2026-08-05',amount:50,note:'Refund',category:'Τρόφιμα',accountId:'piraeus-payroll'})];data.state.budgets=[budget('food','category',100,'Τρόφιμα')];
     expect(budgetProgress(data,'2026-08')[0]).toMatchObject({rawUsed:-50,used:0,remaining:100,status:'ok'});
   });
+
+  it('adds near/exceeded budgets to Needs Attention without leaking euro values in the reason',()=>{
+    const data=clean();data.state.events=[createEvent({kind:'expense',date:'2026-08-05',amount:120,note:'Food',category:'Τρόφιμα',accountId:'piraeus-payroll'})];data.state.budgets=[budget('food','category',100,'Τρόφιμα')];
+    const alert=allAttentionItems(data,'2026-08-17').find(item=>item.id==='budget-alert:food');
+    expect(alert).toMatchObject({kind:'budget',severity:'danger',action:'open_budgets',amount:120,budgetId:'food'});
+    expect(alert?.reason).not.toMatch(/€|100\.00|120\.00/);
+  });
 });
 
 describe('deterministic transaction rules',()=>{
@@ -62,12 +70,22 @@ describe('deterministic transaction rules',()=>{
     expect(transactionRuleMatchCount(data,data.state.transactionRules[0])).toBe(1);
   });
 
-  it('honors explicit manual/imported/review scope',()=>{
+  it('honors explicit manual/imported/review scope in both apply and preview',()=>{
     const data=clean();const imported=rule('imported',1,'market','Τρόφιμα');imported.scopes=['imported'];data.state.transactionRules=[imported];
     const manual=createEvent({kind:'expense',date:'2026-08-05',amount:20,note:'Market',category:data.state.settings.expenseCategories[0],accountId:'piraeus-payroll'});
-    const migration={...manual,id:'migration',source:'migration' as const};
+    const migration={...manual,id:'migration',source:'migration' as const};data.state.events=[manual,migration];
     expect(previewTransactionRules(data,manual).winner).toBeNull();
     expect(previewTransactionRules(data,migration).winner?.id).toBe('imported');
+    expect(transactionRuleMatchingEvents(data,imported).map(event=>event.id)).toEqual(['migration']);
+  });
+
+  it('supports default category/subcategory metadata without replacing explicit user metadata',()=>{
+    const data=clean();const metadata=rule('meta',1,'market','Τρόφιμα');metadata.action.subcategory='Supermarket';metadata.action.note='Default note';data.state.transactionRules=[metadata];
+    const defaultEvent=createEvent({kind:'expense',date:'2026-08-05',amount:20,note:'Market',category:data.state.settings.expenseCategories[0],accountId:'piraeus-payroll'});
+    const applied=applyTransactionRules(data,defaultEvent);
+    expect(applied.category).toBe('Τρόφιμα');expect(applied.subcategory).toBe('Supermarket');expect(applied.note).toBe('Market');
+    const explicit={...defaultEvent,category:'Υγεία',subcategory:'Φαρμακείο'};
+    expect(applyTransactionRules(data,explicit)).toMatchObject({category:'Υγεία',subcategory:'Φαρμακείο'});
   });
 
   it('preserves budgets and rules through migration and defaults legacy state safely',()=>{
