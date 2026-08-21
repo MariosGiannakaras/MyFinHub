@@ -1,12 +1,14 @@
-import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { Component, createRef, type ErrorInfo, type ReactNode } from 'react';
 
 export class PageErrorBoundary extends Component<{ resetKey: string; onDashboard: () => void; children: ReactNode }, { failed: boolean }> {
   state = { failed: false };
+  private errorRef = createRef<HTMLElement>();
 
   static getDerivedStateFromError() { return { failed: true }; }
 
   componentDidCatch(_error: Error, _info: ErrorInfo) {
     // Deliberately avoid rendering/logging finance payloads or raw exception details in the UI.
+    requestAnimationFrame(() => this.errorRef.current?.focus({ preventScroll: true }));
   }
 
   componentDidUpdate(previous: Readonly<{ resetKey: string }>) {
@@ -15,13 +17,13 @@ export class PageErrorBoundary extends Component<{ resetKey: string; onDashboard
 
   render() {
     if (!this.state.failed) return this.props.children;
-    return <section className="panel neo-raised workspace-error" role="alert" aria-labelledby="workspace-error-title">
+    return <section ref={this.errorRef} className="panel neo-raised workspace-error" role="alert" aria-labelledby="workspace-error-title" tabIndex={-1}>
       <h2 id="workspace-error-title">Η ενότητα δεν μπόρεσε να εμφανιστεί</h2>
-      <p>Τα οικονομικά δεδομένα δεν τροποποιήθηκαν. Δοκίμασε ξανά την ενότητα ή φόρτωσε ξανά την εφαρμογή.</p>
+      <p>Τα οικονομικά δεδομένα δεν τροποποιήθηκαν. Δοκίμασε ξανά την ενότητα ή, αν το πρόβλημα συνεχίζεται, επαναφόρτωσε την εφαρμογή.</p>
       <div className="editor-actions">
         <button className="secondary" type="button" onClick={() => this.setState({ failed: false })}>Δοκιμή ξανά</button>
         <button className="secondary" type="button" onClick={this.props.onDashboard}>Dashboard</button>
-        <button className="save-button" type="button" onClick={() => location.reload()}>Επαναφόρτωση</button>
+        <button className="save-button" type="button" onClick={() => location.reload()}>Επαναφόρτωση εφαρμογής</button>
       </div>
     </section>;
   }
