@@ -4,6 +4,7 @@ import { AnimatedAmount } from '../components/AnimatedAmount';
 import { AppDateInput } from '../components/AppDateInput';
 import { AppSelectInput } from '../components/AppSelectInput';
 import { FormError } from '../components/FormError';
+import type { QuickActionContext } from '../components/ContextualQuickAdd';
 import { useModalFocus } from '../hooks/useModalFocus';
 import { accountBalances, allAccounts, createEvent } from '../lib/domain';
 import { money, shortDate } from '../lib/format';
@@ -17,14 +18,15 @@ const ACTIONS:Array<{source:SavingSource;title:string;description:string;icon:ty
  {source:'manual_transfer',title:'Μεταφορά στην άκρη',description:'Χειροκίνητη μεταφορά ποσού από λογαριασμό προς τον αποταμιευτικό.',icon:Repeat2},
  {source:'cash_offset',title:'Σύνθετη αποταμίευση',description:'Η συμφωνημένη κίνηση μετρητών και ψηφιακής μεταφοράς ως μία ενέργεια, χωρίς διπλομέτρηση.',icon:BanknoteArrowDown},
 ];
+type SavingsQuickContext=Omit<Extract<QuickActionContext,{mode:'savings'}>,'token'>;
 
-export function SavingsPage({data,month,asOf,onCreate}:{data:FinanceData;month:string;asOf:string;onCreate:(event:FinanceEvent)=>void}){
+export function SavingsPage({data,month,asOf,onCreate,onQuickAdd}:{data:FinanceData;month:string;asOf:string;onCreate:(event:FinanceEvent)=>void;onQuickAdd?:(context:SavingsQuickContext)=>void}){
  const balances=accountBalances(data,asOf);const flow=operationalMonthlyFlow(data,month);const breakdown=savingsBreakdown(data,month);const target=data.state.settings.savingsTargetRate??.2;const rate=flow.income?flow.saving/flow.income:0;const progress=ratioPercent(rate,target);
  const accounts=allAccounts(data).filter(account=>account.kind!=='credit');const savingsAccounts=accounts.filter(account=>account.kind==='savings');const sourceAccounts=accounts.filter(account=>account.kind!=='savings');
  const defaultFrom=sourceAccounts.some(account=>account.id==='piraeus-payroll')?'piraeus-payroll':sourceAccounts[0]?.id||'';const defaultTo=savingsAccounts.some(account=>account.id==='piraeus-savings')?'piraeus-savings':savingsAccounts[0]?.id||'';
  const payrollName=accountDisplayName(data,'piraeus-payroll');const savingsName=accountDisplayName(data,'piraeus-savings');
  const [open,setOpen]=useState(false);const [source,setSource]=useState<SavingSource>('manual_transfer');const [amount,setAmount]=useState('');const [date,setDate]=useState(asOf);const [from,setFrom]=useState(defaultFrom);const [to,setTo]=useState(defaultTo);const [note,setNote]=useState('');const [error,setError]=useState('');const modalRef=useModalFocus<HTMLElement>(open,'[data-autofocus="true"]',()=>setOpen(false));
- const start=(next:SavingSource)=>{setSource(next);setAmount('');setDate(asOf);setFrom(defaultFrom);setTo(defaultTo);setNote(next==='pay_and_save'?'Pay & Save':next==='cash_offset'?'Σύνθετη αποταμίευση με μετρητά':'');setError('');setOpen(true)};
+ const start=(next:SavingSource)=>{if(next==='manual_transfer'&&onQuickAdd){onQuickAdd({mode:'savings',fromAccountId:defaultFrom,toAccountId:defaultTo,note:'Μεταφορά στην άκρη',savingSource:'manual_transfer'});return}setSource(next);setAmount('');setDate(asOf);setFrom(defaultFrom);setTo(defaultTo);setNote(next==='pay_and_save'?'Pay & Save':next==='cash_offset'?'Σύνθετη αποταμίευση με μετρητά':'');setError('');setOpen(true)};
  const close=()=>{setOpen(false);setError('')};
  const submit=()=>{const numeric=Number(amount.replace(',','.'));if(!Number.isFinite(numeric)||numeric<=0){setError('Έλεγξε το ποσό αποταμίευσης — πρέπει να είναι μεγαλύτερο από μηδέν.');return}if(!sourceAccounts.some(account=>account.id===from)){setError(sourceAccounts.length?'Ο λογαριασμός προέλευσης δεν είναι πλέον διαθέσιμος. Επίλεξε έναν από τους διαθέσιμους λογαριασμούς.':'Δεν υπάρχει διαθέσιμος λογαριασμός προέλευσης για αυτή την αποταμίευση.');return}if(!savingsAccounts.some(account=>account.id===to)){setError(savingsAccounts.length?'Ο λογαριασμός αποταμίευσης δεν είναι πλέον διαθέσιμος. Επίλεξε έναν από τους διαθέσιμους αποταμιευτικούς λογαριασμούς.':'Δεν υπάρχει διαθέσιμος αποταμιευτικός λογαριασμός. Πρόσθεσε ή ενεργοποίησε έναν και δοκίμασε ξανά.');return}if(from===to){setError('Επίλεξε διαφορετικό λογαριασμό προέλευσης και αποταμίευσης.');return}try{const event=createEvent({kind:'saving_cash_offset',date,amount:numeric,note:note.trim()||SAVING_SOURCE_LABELS[source],fromAccountId:from,toAccountId:to});event.savingSource=source;onCreate(event);close()}catch(e){setError(userErrorMessage(e,'Δεν μπορέσαμε να καταχωρίσουμε την αποταμίευση. Έλεγξε τα στοιχεία και δοκίμασε ξανά.'))}};
  return <div className="page-stack"><section className="page-heading"><div><span className="eyebrow">ΑΠΟΤΑΜΙΕΥΣΗ</span><h1>Αποταμίευση</h1><p>Pay & Save, απλή μεταφορά και σύνθετη αποταμίευση παραμένουν ξεχωριστές πηγές αλλά μετρούν όλες στην πραγματική αποταμίευση.</p></div></section>
