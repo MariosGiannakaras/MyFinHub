@@ -24,7 +24,7 @@ jobs:
         run: npx vite build --config vite.performance.config.ts --mode production
       - name: Install pinned Lighthouse runner
         run: npm install --no-save --package-lock=false lighthouse@13.4.1
-      - name: Run Lighthouse regression audit
+      - name: Run Lighthouse and loading-shift regression audits
         run: |
           npx vite preview --config vite.performance.config.ts --host 127.0.0.1 --port 4173 > /tmp/myfinhub-performance-vite.log 2>&1 &
           VITE_PID=$!
@@ -42,6 +42,7 @@ jobs:
             exit 1
           fi
           node scripts/performance-audit.mjs
+          node scripts/loading-shift-audit.mjs
       - name: Upload Lighthouse evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
