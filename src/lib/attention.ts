@@ -105,8 +105,8 @@ function budgetAttention(data:FinanceData,asOf:string):AttentionItem[]{
     const label=row.scope==='overall'?'Συνολικό discretionary':row.category??'Κατηγορία';
     const severity:AttentionSeverity=row.status==='exceeded'?'danger':'warning';
     const reason=row.status==='exceeded'
-      ?`Το budget έχει ξεπεραστεί: ${Math.round(row.ratio*100)}% του ορίου (${row.used.toFixed(2)}€ από ${row.limit.toFixed(2)}€).`
-      :`Το budget έχει φτάσει στο ${Math.round(row.ratio*100)}% του ορίου (${row.used.toFixed(2)}€ από ${row.limit.toFixed(2)}€).`;
+      ?`Το budget έχει ξεπεραστεί και βρίσκεται στο ${Math.round(row.ratio*100)}% του ορίου.`
+      :`Το budget πλησιάζει το όριό του και βρίσκεται στο ${Math.round(row.ratio*100)}%.`;
     return [make({id:`budget-alert:${row.id}`,kind:'budget',severity,title:`Budget · ${label}`,reason,amount:row.used,budgetId:row.id,action:'open_budgets'})];
   });
 }
