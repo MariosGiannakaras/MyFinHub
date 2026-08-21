@@ -190,7 +190,8 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
     if (item.action === 'pay_loan' && item.loanId) { openSpecial({ mode: 'loan', loanId: item.loanId, amount: item.amount, accountId: item.accountId }); return; }
     if (item.action === 'pay_credit' && item.cardId) { openSpecial({ mode: 'credit', action: 'payment', cardId: item.cardId, amount: item.amount }); return; }
     if (item.action === 'collect_lending' && item.person) { openSpecial({ mode: 'lending', action: 'repay', person: item.person, amount: item.amount, accountId: data.state.settings.defaultIncomeAccount }); return; }
-    if (item.action === 'complete_scheduled' || item.action === 'open_forecast') { navigate('planning'); return; }
+    if (item.action === 'complete_scheduled' && item.scheduledId) { openSpecial({ mode: 'scheduled', scheduledId: item.scheduledId }); return; }
+    if (item.action === 'open_forecast') { navigate('planning'); return; }
   };
 
   const balance = (accountId: string) => accountBalances(data, today)[accountId] || 0;
@@ -220,7 +221,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
       {PERIOD_PAGES.has(page) ? <div className="period-row"><PeriodControl month={month} onChange={(next) => { setMonth(next); setMonthIsManual(true); }}/><span>Στοιχεία περιόδου</span></div> : null}
       {finance.saveState === 'loading' ? <PageSkeleton/> : <PageErrorBoundary resetKey={page} onDashboard={() => navigate('dashboard')}><Suspense fallback={<PageLoading/>}>{content}</Suspense></PageErrorBoundary>}
     </AppShell>
-    <ContextualQuickAdd open={quickOpen} data={data} asOf={today} context={quickContext} motionMode="full" initial={(data.state.events ?? []).find((event) => event.id === editingEventId) || null} onClose={() => { setQuickOpen(false); setEditingEventId(null); setQuickContext(null); }} onCreate={addEvent} currentBalance={balance}/>
+    <ContextualQuickAdd open={quickOpen} data={data} asOf={today} context={quickContext} motionMode="full" initial={(data.state.events ?? []).find((event) => event.id === editingEventId) || null} onClose={() => { setQuickOpen(false); setEditingEventId(null); setQuickContext(null); }} onCreate={addEvent} onCompleteScheduled={completeScheduled} currentBalance={balance}/>
   </>;
 }
 
