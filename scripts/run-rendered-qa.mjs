@@ -15,6 +15,7 @@ const scripts = [
   { path: 'scripts/recovered-surface-qa.mjs', profiles: ['/tmp/myfinhub-recovered-surface-qa-chrome'] },
   { path: 'scripts/reports-visual-qa.mjs', profiles: ['/tmp/myfinhub-reports-visual-qa-chrome'] },
   { path: 'scripts/brand-visual-qa.mjs', profiles: ['/tmp/myfinhub-brand-visual-qa-chrome'] },
+  { path: 'scripts/planning-forecast-qa.mjs', profiles: ['/tmp/myfinhub-planning-forecast-qa-chrome'] },
   { path: 'scripts/ui-ux-visual-evidence-qa.mjs', profiles: ['/tmp/myfinhub-ui-visual-evidence-chrome'] },
 ];
 
