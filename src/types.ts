@@ -6,6 +6,8 @@ export type CardNetwork = 'visa' | 'mastercard' | 'other';
 export type CardFormFactor = 'physical' | 'virtual';
 export type LoanKind = 'installment' | 'loan' | 'self-loan';
 export type TextSizePreference = 'compact' | 'normal' | 'large';
+export type ScheduledKind = 'expense' | 'income' | 'transfer';
+export type ScheduledTransactionStatus = 'pending' | 'completed' | 'skipped' | 'cancelled';
 
 export interface Account {
   id: string;
@@ -116,6 +118,26 @@ export interface FinanceEvent {
   cardId?: string;
 }
 
+export interface ScheduledTransaction {
+  id: string;
+  dueDate: string;
+  kind: ScheduledKind;
+  amount: number;
+  note: string;
+  category?: string;
+  subcategory?: string;
+  accountId?: string;
+  fromAccountId?: string;
+  toAccountId?: string;
+  status: ScheduledTransactionStatus;
+  completedEventId?: string;
+  completedAt?: string;
+  skippedAt?: string;
+  cancelledAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface ReviewDecision {
   status: 'confirmed' | 'kept' | 'snoozed';
   semanticKind?: EventKind | 'split_required';
@@ -161,6 +183,7 @@ export interface FinanceData {
     cardBanks?: CardBank[];
     cards?: PaymentCard[];
     events?: FinanceEvent[];
+    scheduled?: ScheduledTransaction[];
     reviewDecisions?: Record<string, ReviewDecision>;
     migration?: { fromSchema: number; migratedAt: string };
   };
