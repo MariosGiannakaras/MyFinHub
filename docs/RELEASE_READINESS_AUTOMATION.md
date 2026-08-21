@@ -1,105 +1,92 @@
 # Release-readiness automation checkpoint
 
-This document records what can be proven from repository/CI automation without misrepresenting emulation as physical-device or assistive-technology evidence. Canonical tracking remains issue #165.
+This document records what repository/CI automation can prove without misrepresenting emulation as physical-device or assistive-technology evidence. Canonical tracking remains issue #165. The concrete manual evidence template is `docs/RELEASE_READINESS_MANUAL_EVIDENCE.md`.
 
-## Candidate baseline
+## Current integration baseline
 
-Baseline feature head before this hardening branch: `47180c096e05c8c8b0d840e8944321cef3f2fd99`.
+Production remains **v1.0.2** on `main@d054ad549549c19039b70e76780e84feca7f3104`.
 
-Current production bundle guardrails:
+The completed development batch is integrated in `develop`:
 
-| Asset | Representative raw | Representative gzip | Enforced ceiling |
-| --- | ---: | ---: | ---: |
-| Main application JS | ~453 KiB | ~138 KiB | 525 / 165 KiB |
-| Recharts/chart chunk | ~336 KiB | ~97 KiB | 380 / 115 KiB |
-| Application CSS | ~213 KiB | ~40 KiB | 240 / 46 KiB |
+- PR #179 merged as `cdad04e67bfb5d782e9971f85f44ab51b0aef706` and contains the verified UI/UX/branding/Reports hardening, ledger/product roadmap and automatable release-readiness work.
+- PR #181 merged as `78afee74db4893f208b14536123f1232625422eb` and closes the final Dashboard order, visible privacy-safe session history and route-shaped skeleton gaps.
+- The PR #181 validated candidate tree is identical to the merged `develop` tree.
+- No feature PR remains open. Issue #165 intentionally remains open for real-device, real assistive-technology, remaining installed-surface and release-only evidence.
 
-The ceilings intentionally leave limited headroom for toolchain/hash variation while making a material eager-import or dependency regression fail the normal production build. A ceiling should not be raised merely to make CI green; first inspect route splitting, duplicate dependencies and new eager imports.
+Final exact-head automated evidence before #181 integration:
 
-## Loading architecture
+- CI #743: success — 48/48 test files, 228/228 tests, production build/API checks, bundle budgets and complete primary-Chromium rendered QA.
+- CodeQL #697: success.
+- Cross-engine smoke #43: success.
+- Performance smoke #37: success.
+- Windows Desktop #398: success — unpacked build, packaged executable/backend smoke, NSIS build and checksum verification.
+- Primary Chromium remained mandatory with zero fallback activations.
 
-- Feature pages in `src/App.tsx`, including Reports, are loaded through `React.lazy`.
-- `recharts` is imported by the lazy Reports page rather than the eager application shell.
-- Current Vite output therefore keeps the chart implementation in a separate `CartesianChart-*` chunk.
-- The runtime dependency graph is intentionally small: React/React DOM, Framer Motion, Lucide, Recharts and the server-side Express dependency. No second chart/date/UI framework was found during the release-readiness inventory.
-- `scripts/bundle-budget.mjs` makes the main JS, chart JS and CSS ceilings executable build contracts.
-- `tests/release-readiness-source.test.ts` guards the lazy-route/chart-import boundary.
+## Bundle and loading architecture
+
+The production build enforces explicit budgets for the eager main application JS, chart chunk and application CSS through `scripts/bundle-budget.mjs`. A ceiling is a regression boundary, not a target to raise when a new eager import appears.
+
+Feature pages in `src/App.tsx`, including Reports, remain route-lazy through `React.lazy`. `recharts` remains imported by the lazy Reports page rather than the eager shell, preserving the separate chart chunk. Source regression coverage in `tests/release-readiness-source.test.ts` protects the route-lazy and chart-import boundary.
 
 ## Browser-engine coverage
 
-The complete rendered QA harness remains intentionally **Chromium-specific**. It launches Chromium/Chrome and drives it through the Chrome DevTools Protocol (CDP), including `Runtime`, `Page`, `Network`, `Emulation` and `Input` domains. This provides deep deterministic coverage but is not Safari evidence.
+The complete rendered QA harness is intentionally Chromium-specific and uses CDP for deep deterministic coverage. CI requires the primary Chromium binary; a Google Chrome fallback cannot make the gate green.
 
-A second, deliberately small compatibility gate lives in `.github/workflows/cross-engine-smoke.yml` and `scripts/webkit-smoke.mjs`. It uses the pinned stable **Playwright 1.62.1 / WebKit 26.5** toolchain, installed transiently in that job so Playwright does not become an application/runtime dependency or alter the application lockfile.
+A separate focused compatibility workflow, `.github/workflows/cross-engine-smoke.yml`, uses pinned Playwright 1.62.1 / WebKit 26.5. It covers representative Login/MFA, desktop/mobile shell navigation, app-owned select/date controls, Quick Add focus/close behavior, Reports rendering/text alternatives, branding and one real mutation + undo.
 
-The isolated WebKit smoke covers:
+This WebKit coverage has already found and prevented an engine-specific fixed-position/backdrop-filter regression. It remains engine-level evidence only. It is not physical iPhone Safari or VoiceOver evidence.
 
-1. Login identity/password interaction and MFA focus/6-digit submission readiness.
-2. Desktop shell navigation and narrow-mobile bottom/more navigation.
-3. App-owned account-select listbox and app-owned date grid.
-4. Quick Add focus, Escape close and mobile containment.
-5. Reports chart rendering, accessible text alternative and horizontal-overflow checks.
-6. MyFinHub browser/shell identity.
-7. One real Quick Add expense mutation followed by app-level undo.
-8. A small desktop/mobile WebKit screenshot artifact rather than a duplicated full visual matrix.
+## Production-mode performance evidence
 
-The WebKit pass exposed a genuine engine-specific responsive defect: the mobile Quick Add action was `position:fixed` inside a sticky topbar using `backdrop-filter`, allowing WebKit to treat the topbar as the fixed-position containing block. The mobile action now renders as a viewport-level sibling of the topbar while preserving the same `onQuickAdd` flow. Source tests prevent it from being nested back into the blurred sticky container.
+`.github/workflows/performance-smoke.yml` builds the QA fixture in production mode and runs pinned Lighthouse 13.4.1 plus the loading-shift audit. It checks desktop Dashboard, desktop Reports, narrow-mobile Dashboard and an extreme mobile fixture.
 
-The WebKit job intentionally **does not** invoke `npm run qa:frontend`. Primary Chromium remains the authoritative full deterministic regression/screenshot gate; WebKit is a focused compatibility gate. `tests/release-readiness-source.test.ts` locks the Playwright version, WebKit-only install, non-duplication rule and representative coverage contract.
+The regression contract covers performance/accessibility/best-practices scores, LCP, CLS and TBT, plus a direct skeleton-to-content layout-shift guard and horizontal-overflow checks. These are synthetic regression measurements, not field Core Web Vitals claims.
 
-WebKit on GitHub-hosted Linux is useful engine-level compatibility evidence. It is still **not** evidence for physical iPhone Safari behavior, iOS virtual keyboard/viewport quirks, or VoiceOver integration.
-
-## Production-mode performance audit
-
-`.github/workflows/performance-smoke.yml` builds the QA fixture with Vite in production mode before installing any audit-only package. Lighthouse is then installed transiently at the pinned stable `13.4.1`; it never enters `package.json` or the application lockfile.
-
-Four cold audits run independently:
-
-- desktop Dashboard;
-- desktop Reports;
-- narrow-mobile Dashboard;
-- narrow-mobile Dashboard with the `state=extreme` fixture.
-
-The guard records performance, accessibility and best-practices scores plus LCP, CLS and TBT. Synthetic TBT is used only as an interaction-responsiveness proxy; these numbers are regression evidence, not field Core Web Vitals/INP claims.
-
-Representative passing checkpoint after the privacy fix:
-
-| Case | Perf | A11y | Best practices | LCP | CLS | TBT |
-| --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Desktop Dashboard | 76 | 96 | 100 | 735 ms | 0.000 | 545 ms |
-| Desktop Reports | 100 | 96 | 100 | 569 ms | 0.000 | 0 ms |
-| Mobile Dashboard | 91 | 96 | 100 | 2756 ms | 0.000 | 134 ms |
-| Mobile extreme fixture | 80 | 96 | 100 | 2710 ms | 0.000 | 496 ms |
-
-The first baseline reported best-practices 77 on Dashboard states. Lighthouse traced that specifically to a third-party `WMF-Uniq` cookie and DevTools cookie issue caused by runtime-loaded bank logo images. All bank/account/card identity marks are now local text treatments; no bank logo requires Wikimedia or another third-party image host. The rerun reached best-practices 100 without weakening the score threshold.
-
-Lighthouse also notes absent production source maps for the large QA-only bundle. Production builds intentionally disable source maps; that diagnostic audit has no best-practices weight here and was not used as a reason to publish source maps containing application source.
-
-## PWA/browser identity
+## Browser / installed-web-app identity
 
 Automated source checks verify:
 
 - document title is `MyFinHub`;
 - manifest `name` and `short_name` are `MyFinHub`;
-- standalone start URL is `/`;
-- the Apple touch icon resolves to the 192px MyFinHub asset;
+- standalone `start_url` is `/`;
+- Apple touch icon resolves to the MyFinHub 192px asset;
 - manifest 192px and 512px icon entries resolve to repository assets;
-- the 512 SVG declares 512×512 geometry.
+- the scalable 512 asset declares 512×512 geometry.
 
-Actual browser install UI/splash rendering still requires a supported installed-browser/manual run and remains a release-readiness gate.
+Actual browser-owned install UI, splash/standalone identity and home-screen presentation remain manual checks because CI cannot substitute for those browser surfaces.
+
+## Windows installed-package automation
+
+The Windows workflow already built the unpacked app, launched the packaged executable/backend, built the assisted per-user NSIS package and verified the update-channel checksum.
+
+The #165 closeout branch strengthens that gate by also performing a **real install/launch/uninstall smoke** on the fresh GitHub-hosted Windows runner:
+
+1. Build the assisted NSIS installer.
+2. Install it silently into the runner user profile.
+3. Verify the installed Desktop shortcut and Start Menu shortcut use `MyFinHub` identity.
+4. Resolve the shortcut target and verify `MyFinHub.exe` plus executable product/file-description metadata.
+5. Extract and validate a usable associated Windows icon from the installed executable.
+6. Verify current-user uninstall registration is named `MyFinHub`.
+7. Launch the installed app and require a `MyFinHub` main-window title.
+8. Run the real generated uninstaller silently.
+9. Verify the installed executable and shortcuts are removed.
+
+This gives materially stronger installed-package evidence than build-only CI. A final visual check of the interactive installer, taskbar/window icon and absence of user-facing legacy artwork remains manual and is recorded in `docs/RELEASE_READINESS_MANUAL_EVIDENCE.md`.
 
 ## Explicitly manual / environment-dependent gates
 
-CI engine automation is not evidence for:
+Automation is not evidence for:
 
-- real iPhone/iOS Safari;
-- real Android Chrome;
-- NVDA + browser announcements;
-- VoiceOver + Safari announcements;
-- clean-user Windows NSIS installation identity (Start Menu/Desktop/taskbar/uninstall UI);
-- post-deployment production smoke.
+- real iPhone/iOS Safari touch, keyboard, viewport and safe-area behavior;
+- real Android Chrome touch/keyboard behavior;
+- NVDA + Chrome/Chromium announcements and navigation;
+- VoiceOver + Safari announcements and navigation;
+- final visual Windows installer/Desktop/Start Menu/taskbar identity;
+- browser-owned installed-web-app/PWA UI;
+- post-deployment production smoke before a deployment actually exists.
 
-Those items must remain open in #165 until real evidence exists or the owner explicitly records them as manual pre-release gates.
+Those checks stay open in #165 until actual evidence exists or the owner explicitly dispositions them. Use `docs/RELEASE_READINESS_MANUAL_EVIDENCE.md` so device/browser/AT versions and concrete results are durable rather than remembered informally.
 
-## No release authorization
+## Release boundary
 
-This hardening work does not merge any stacked feature PR, bump a version, publish an installer, deploy production, or close #165 while real-device/assistive-tech gates remain outstanding.
+None of the release-readiness automation authorizes a version bump, `develop -> main` merge, production deployment, GitHub Release/tag or installer publication. Production remains v1.0.2 until a separate owner-approved release action is performed.
