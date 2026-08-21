@@ -13,12 +13,12 @@ describe('time-aware product integration', () => {
   it('owns a dedicated Planning route in production and synthetic QA', () => {
     expect(shell).toContain("'planning'");
     expect(shell).toContain("label:'Προγραμματισμός'");
-    expect(app).toContain("page==='planning'");
+    expect(app).toMatch(/page\s*===\s*'planning'/);
     expect(qa).toContain("planning:'Προγραμματισμός & πρόβλεψη ρευστότητας'");
   });
 
   it('posts scheduled completion as one finance.update recipe containing both scheduled and events state', () => {
-    expect(app).toMatch(/const completeScheduled=.*finance\.update\(current=>\{[^]*scheduled:[^]*events:/);
+    expect(app).toMatch(/const\s+completeScheduled\s*=\s*\([^)]*\)\s*=>\s*finance\.update\(\s*\(current\)\s*=>\s*\{[^]*scheduled:[^]*events:/);
     expect(planning).toContain('onCompleteScheduled(completed, event)');
   });
 
