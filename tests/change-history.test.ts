@@ -46,9 +46,9 @@ describe('privacy-safe user change descriptions',()=>{
   });
 
   it('keeps recurring and loan names out of history while exposing safe numeric changes',()=>{
-    const recurringBefore=qaFinanceData();const recurringAfter=clone(recurringBefore);const recurring={...recurringAfter.seed.recurring[0],name:'PRIVATE RECURRING NAME',amount:(recurringAfter.seed.recurring[0]?.amount??10)+5};recurringAfter.state.recurringOverrides={...recurringAfter.state.recurringOverrides,[recurring.id]:recurring};
+    const recurringBefore=qaFinanceData();const recurringAfter=clone(recurringBefore);const recurringSeed=recurringAfter.seed.recurring[0]!;const recurring={...recurringSeed,name:'PRIVATE RECURRING NAME',amount:recurringSeed.amount+5};recurringAfter.state.recurringOverrides={...recurringAfter.state.recurringOverrides,[recurring.id]:recurring};
     const recurringLabel=describeFinanceChange(recurringBefore,recurringAfter);expect(recurringLabel).toContain('Αλλαγή πάγιας κίνησης');expect(recurringLabel).not.toContain('PRIVATE RECURRING NAME');
-    const loanBefore=qaFinanceData();const loanAfter=clone(loanBefore);const seed=loanAfter.seed.loans[0];const loan={...seed,name:'PRIVATE LOAN NAME',installment:seed.installment+10};loanAfter.state.loanOverrides={...loanAfter.state.loanOverrides,[loan.id]:loan};
+    const loanBefore=qaFinanceData();const loanAfter=clone(loanBefore);const loanSeed=loanAfter.seed.loans[0]!;const loan={...loanSeed,name:'PRIVATE LOAN NAME',installment:loanSeed.installment+10};loanAfter.state.loanOverrides={...loanAfter.state.loanOverrides,[loan.id]:loan};
     const loanLabel=describeFinanceChange(loanBefore,loanAfter);expect(loanLabel).toContain('Αλλαγή');expect(loanLabel).toContain('Δόση');expect(loanLabel).not.toContain('PRIVATE LOAN NAME');
   });
 });

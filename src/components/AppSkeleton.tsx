@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 type LineProps={width?:string;size?:'eyebrow'|'title'|'text'|'amount'};
 function Line({width='100%',size='text'}:LineProps){return <span className={`skeleton skeleton-line ${size}`} style={{width}}/>}
 function Icon(){return <span className="skeleton skeleton-icon"/>}
@@ -17,8 +19,8 @@ function Row({action=true,icon=true}:{action?:boolean;icon?:boolean}){
 }
 function Rows({count=4,action=true,icon=true}:{count?:number;action?:boolean;icon?:boolean}){return <div className="skeleton-row-list">{Array.from({length:count},(_,i)=><Row key={i} action={action} icon={icon}/>)}</div>}
 
-function Panel({children,className='',button=false}:{children?:React.ReactNode;className?:string;button?:boolean}){
-  return <div className={`skeleton-shape-panel ${className}`}><div className="skeleton-panel-title"><div><Line width="150px"/><Line width="220px" size="eyebrow"/></div><Icon/></div>{children}{button?<Button wide/>:null}</div>;
+function Panel({children,className='',button=false,section}:{children?:ReactNode;className?:string;button?:boolean;section?:string}){
+  return <div className={`skeleton-shape-panel ${className}`} data-skeleton-section={section}><div className="skeleton-panel-title"><div><Line width="150px"/><Line width="220px" size="eyebrow"/></div><Icon/></div>{children}{button?<Button wide/>:null}</div>;
 }
 function Chart({height='260px'}:{height?:string}){return <div className="skeleton-chart" style={{minHeight:height}}><div className="skeleton-chart-grid"/><span className="skeleton-chart-line"/></div>}
 function FormRows({count=4}:{count?:number}){return <div className="skeleton-form-grid">{Array.from({length:count},(_,i)=><label className="skeleton-form-field" key={i}><Line width={i%2?'42%':'58%'} size="eyebrow"/><span className="skeleton skeleton-input"/></label>)}</div>}
@@ -27,11 +29,11 @@ function DashboardSkeletonContent(){
   return <div className="skeleton-page-stack">
     <Heading actions={2}/>
     <div className="skeleton-primary-accounts" data-skeleton-section="primary-accounts">{Array.from({length:3},(_,i)=><div className="skeleton-shape-card skeleton-primary-account" key={i}><div className="skeleton-account-head"><Icon/><div><Line width="110px"/><Line width="72px" size="eyebrow"/></div></div><Line width="135px" size="amount"/><Button/></div>)}</div>
-    <Panel className="skeleton-other-balances" data-skeleton-section="other-balances"><Rows count={3}/></Panel>
+    <Panel className="skeleton-other-balances" section="other-balances"><Rows count={3}/></Panel>
     <div className="skeleton-three-column" data-skeleton-section="pending">{Array.from({length:3},(_,i)=><Panel key={i} button><Rows count={3} action={false} icon={false}/></Panel>)}</div>
-    <Panel className="skeleton-quick-entry" data-skeleton-section="quick-entry" button><div className="skeleton-frequent-grid">{Array.from({length:4},(_,i)=><div className="skeleton-frequent-item" key={i}><Icon/><Line width="68%"/><Line width="42%" size="eyebrow"/><Line width="64px"/></div>)}</div></Panel>
+    <Panel className="skeleton-quick-entry" section="quick-entry" button><div className="skeleton-frequent-grid">{Array.from({length:4},(_,i)=><div className="skeleton-frequent-item" key={i}><Icon/><Line width="68%"/><Line width="42%" size="eyebrow"/><Line width="64px"/></div>)}</div></Panel>
     <div className="skeleton-two-column"><Panel><div className="skeleton-chart-with-side"><Chart height="220px"/><Rows count={4} action={false} icon={false}/></div></Panel><Panel><Chart height="245px"/></Panel></div>
-    <MetricGrid count={3} className="skeleton-dashboard-rest"/>
+    <div data-skeleton-section="rest"><MetricGrid count={3} className="skeleton-dashboard-rest"/></div>
   </div>;
 }
 
