@@ -133,11 +133,17 @@ jobs:
           if ($null -eq $associatedIcon -or $associatedIcon.Width -lt 16 -or $associatedIcon.Height -lt 16) { throw 'Installed MyFinHub executable has no usable associated icon.' }
           $associatedIcon.Dispose()
 
-          $uninstallEntry = Get-ChildItem 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall' -ErrorAction SilentlyContinue |
-            Get-ItemProperty -ErrorAction SilentlyContinue |
-            Where-Object { $_.DisplayName -eq 'MyFinHub' } |
+          $uninstallRoots = @(
+            'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*',
+            'HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall\*',
+            'HKLM:\Software\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*'
+          )
+          $uninstallEntry = $uninstallRoots |
+            ForEach-Object { Get-ItemProperty -Path $_ -ErrorAction SilentlyContinue } |
+            Where-Object { $_.DisplayName -like 'MyFinHub*' } |
             Select-Object -First 1
-          if (-not $uninstallEntry) { throw 'MyFinHub uninstall registration is missing from the current user profile.' }
+          if (-not $uninstallEntry) { throw 'MyFinHub uninstall registration is missing from the Windows uninstall registry views.' }
+          if ([string]::IsNullOrWhiteSpace($uninstallEntry.UninstallString)) { throw 'MyFinHub uninstall registration has no uninstall command.' }
 
           $launcher = Start-Process -FilePath $exe -PassThru
           $deadline = (Get-Date).AddSeconds(15)
