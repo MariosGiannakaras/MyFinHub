@@ -64,12 +64,14 @@ export function useFinance() {
   const undoStackRef = useRef<FinanceData[]>([]);
   const redoStackRef = useRef<FinanceData[]>([]);
   const historySequenceRef=useRef(0);
+  const changeHistoryRef=useRef<ChangeHistoryEntry[]>([]);
 
   const assignData = useCallback((next: FinanceData | null) => { dataRef.current = next; setData(next); }, []);
   const clearHistory = useCallback(() => {
     undoStackRef.current = [];
     redoStackRef.current = [];
     historySequenceRef.current=0;
+    changeHistoryRef.current=[];
     setUndoDepth(0);
     setRedoDepth(0);
     setChangeHistory([]);
@@ -77,11 +79,10 @@ export function useFinance() {
   }, []);
   const recordHistory=useCallback((kind:ChangeHistoryEntry['kind'],label:string)=>{
     const entry:ChangeHistoryEntry={id:`history-${Date.now()}-${++historySequenceRef.current}`,kind,label,at:new Date().toISOString()};
-    setChangeHistory(current=>{
-      const next=[entry,...current].slice(0,MAX_HISTORY_ITEMS);
-      publishHistory(next);
-      return next;
-    });
+    const next=[entry,...changeHistoryRef.current].slice(0,MAX_HISTORY_ITEMS);
+    changeHistoryRef.current=next;
+    setChangeHistory(next);
+    publishHistory(next);
   },[]);
 
   const applyEnvelope = useCallback((res: Awaited<ReturnType<typeof loadData>>) => {
