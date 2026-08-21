@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, type RefObject } from 'react';
+import { shortcutMatches } from '../lib/shortcuts';
 
 const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
@@ -69,7 +70,7 @@ export function useModalFocus<T extends HTMLElement>(open: boolean, preferred?: 
 
     const trap = (event: KeyboardEvent) => {
       if (!isTopmostModal(root)) return;
-      if (event.key === 'Escape' && onCloseRef.current) {
+      if (shortcutMatches(event, 'dismiss') && onCloseRef.current) {
         event.preventDefault();
         event.stopPropagation();
         onCloseRef.current();
