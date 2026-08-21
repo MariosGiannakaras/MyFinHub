@@ -7,6 +7,7 @@ const contextual=readFileSync(new URL('../src/components/ContextualQuickAdd.tsx'
 const credit=readFileSync(new URL('../src/pages/CreditCardPage.tsx',import.meta.url),'utf8');
 const loans=readFileSync(new URL('../src/pages/LoansPage.tsx',import.meta.url),'utf8');
 const recurring=readFileSync(new URL('../src/pages/RecurringPage.tsx',import.meta.url),'utf8');
+const rendered=readFileSync(new URL('../scripts/run-rendered-qa.mjs',import.meta.url),'utf8');
 const compact=(source:string)=>source.replace(/\s+/g,'');
 
 describe('payment flow normalization source contracts',()=>{
@@ -42,5 +43,10 @@ describe('payment flow normalization source contracts',()=>{
     expect(contextual).toContain('aria-label="Οικονομικό αποτέλεσμα πληρωμής"');
     expect(contextual).toContain("paymentMode?'Επιβεβαίωση πληρωμής':'Καταχώριση'");
     expect(contextual).toContain('χωρίς δεύτερη χειροκίνητη εγγραφή');
+  });
+
+  it('keeps dedicated rendered payment coverage in the full browser gate',()=>{
+    expect(rendered).toContain("scripts/payment-flow-normalization-qa.mjs");
+    expect(rendered).toContain("/tmp/myfinhub-payment-flow-qa-chrome");
   });
 });
