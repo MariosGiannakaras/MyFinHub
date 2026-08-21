@@ -101,7 +101,7 @@ No feature PR remains open.
 
 ## Release-readiness state
 
-Issue #165 remains intentionally open. Automated release-readiness work is complete; the remaining gates require actual environments rather than CI emulation:
+Issue #165 remains intentionally open. The established automated release-readiness coverage is complete; the remaining gates require actual environments rather than CI emulation:
 
 - physical iPhone/iOS Safari;
 - physical Android Chrome;
@@ -113,7 +113,7 @@ Issue #165 remains intentionally open. Automated release-readiness work is compl
 
 `docs/RELEASE_READINESS_AUTOMATION.md` records the automated boundary. `docs/RELEASE_READINESS_MANUAL_EVIDENCE.md` is the durable evidence template for the remaining real-device/assistive-technology/install-surface checks.
 
-The #165 closeout branch also strengthens Windows CI from package-build evidence to a real generated-NSIS install/launch/uninstall smoke on a fresh GitHub-hosted Windows runner, including installed executable identity, Desktop/Start Menu shortcuts, uninstall registration, associated icon and main-window title. Final user-visible installer/taskbar artwork remains a manual visual gate.
+The #165 closeout work strengthens Windows CI from package-build evidence to a real generated-NSIS install/launch/uninstall smoke on a fresh GitHub-hosted Windows runner, including installed executable identity, Desktop/Start Menu shortcuts, uninstall registration, associated icon and proof that the installed executable remains running from the installed path. BrowserWindow title contracts are source-guarded; final user-visible installer/window/taskbar icon/title remain a manual visual gate because hosted runners do not expose a reliable interactive desktop.
 
 No version bump, `develop -> main` merge, production deployment, GitHub Release/tag or installer publication is authorized by this development integration or by issue #165.
 
