@@ -67,11 +67,13 @@ The #165 closeout work strengthens that gate by also performing a **real install
 4. Resolve the shortcut target and verify `MyFinHub.exe` plus executable product/file-description metadata.
 5. Extract and validate a usable associated Windows icon from the installed executable.
 6. Verify a `MyFinHub` uninstall registration across the standard current-user, machine and WOW6432Node uninstall registry views, including a non-empty uninstall command.
-7. Launch the installed app and require a `MyFinHub` main-window title.
+7. Launch the installed executable, require that the installed process remains alive and verify that the running process path is the installed `MyFinHub.exe`.
 8. Run the real generated uninstaller silently.
 9. Verify the installed executable and shortcuts are removed.
 
-This gives materially stronger installed-package evidence than build-only CI. A final visual check of the interactive installer, taskbar/window icon and absence of user-facing legacy artwork remains manual and is recorded in `docs/RELEASE_READINESS_MANUAL_EVIDENCE.md`.
+The source regression simultaneously locks `PRODUCT_NAME = 'MyFinHub'` and the BrowserWindow titles for both the main window and initial setup. GitHub-hosted Windows runners do not expose a reliable interactive desktop/window-title or taskbar-inspection API, so those final visual surfaces remain manual rather than being inferred from an empty `MainWindowTitle` property.
+
+This gives materially stronger installed-package evidence than build-only CI. A final visual check of the interactive installer, window/taskbar icon/title and absence of user-facing legacy artwork remains manual and is recorded in `docs/RELEASE_READINESS_MANUAL_EVIDENCE.md`.
 
 ## Explicitly manual / environment-dependent gates
 
@@ -81,7 +83,7 @@ Automation is not evidence for:
 - real Android Chrome touch/keyboard behavior;
 - NVDA + Chrome/Chromium announcements and navigation;
 - VoiceOver + Safari announcements and navigation;
-- final visual Windows installer/Desktop/Start Menu/taskbar identity;
+- final visual Windows installer/Desktop/Start Menu/window/taskbar identity;
 - browser-owned installed-web-app/PWA UI;
 - post-deployment production smoke before a deployment actually exists.
 
