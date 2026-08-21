@@ -2,6 +2,7 @@ import { Bar, BarChart, CartesianGrid, ComposedChart, Line, ResponsiveContainer,
 import { ArrowDownRight, ArrowUpRight, CircleCheck, CreditCard, Eye, EyeOff, HandCoins, ListChecks, PiggyBank, TriangleAlert, WalletCards } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { AnimatedAmount } from '../components/AnimatedAmount';
+import { BudgetProgressPanel } from '../components/BudgetProgressPanel';
 import { FinanceIcon } from '../components/FinanceIcon';
 import { money } from '../lib/format';
 import { categoryMomentum, operationalReportSnapshot, primaryAccountSeries, reportFlowSeries, reportInsightModel } from '../lib/reports';
@@ -39,9 +40,11 @@ export function ReportsPage({data,month}:{data:FinanceData;month:string}){
   <section className="report-kpis useful-report-kpis report-kpis-v2" aria-label="Βασικοί δείκτες">
    <article className="neo-raised"><span>Έσοδα</span><b className="positive"><AnimatedAmount value={snapshot.flow.income}/></b><small>Προηγούμενος: {money.format(snapshot.previous.income)}</small></article>
    <article className="neo-raised"><span>Έξοδα</span><b className="negative"><AnimatedAmount value={snapshot.flow.expense}/></b><small>Προηγούμενος: {money.format(snapshot.previous.expense)}</small></article>
-   <article className="neo-raised"><span>{budget>0?(budgetValue>=0?'Υπόλοιπο budget':'Υπέρβαση budget'):'Budget'}</span><b className={budget>0&&budgetValue<0?'negative':''}>{budget>0?<AnimatedAmount value={Math.abs(budgetValue)}/>:'Δεν έχει οριστεί'}</b><small>{budget>0?`Μηνιαίο όριο ${money.format(budget)}`:'Ορίζεται από τις Ρυθμίσεις'}</small></article>
+   <article className="neo-raised"><span>{budget>0?(budgetValue>=0?'Υπόλοιπο γενικού budget':'Υπέρβαση γενικού budget'):'Γενικό budget'}</span><b className={budget>0&&budgetValue<0?'negative':''}>{budget>0?<AnimatedAmount value={Math.abs(budgetValue)}/>:'Δεν έχει οριστεί'}</b><small>{budget>0?`Όριο συμβατότητας ${money.format(budget)}`:'Ορίζεται από τις Ρυθμίσεις'}</small></article>
    <article className="neo-raised"><span>Προς είσπραξη</span><b><AnimatedAmount value={snapshot.receivables}/></b><small>Καταγεγραμμένες απαιτήσεις</small></article>
   </section>
+
+  <BudgetProgressPanel data={data} month={month}/>
 
   <section className="report-primary-grid">
    <article className="panel neo-raised report-flow-panel"><div className="panel-head"><div><span>Ροή 6 μηνών</span><small>Έσοδα, έξοδα και αποταμίευση. Το γράφημα δείχνει κατεύθυνση και μέγεθος, όχι αιτιότητα.</small></div></div><div className="report-chart-frame" aria-hidden="true"><ResponsiveContainer width="100%" height={340}><ComposedChart data={series} margin={{left:4,right:12,top:8,bottom:0}}><CartesianGrid stroke="#dbe4f0" strokeDasharray="3 3" vertical={false}/><XAxis dataKey="label" tick={{fontSize:11,fill:'#52627d'}}/><YAxis tick={{fontSize:10,fill:'#52627d'}}/><Tooltip formatter={(v)=>money.format(Number(v))}/><Bar dataKey="income" name="Έσοδα" fill="#187852" radius={[6,6,0,0]}/><Bar dataKey="expense" name="Έξοδα" fill="#b32942" radius={[6,6,0,0]}/><Line type="monotone" dataKey="saving" name="Αποταμίευση" stroke="#147c95" strokeWidth={3} dot={{r:3.5}}/></ComposedChart></ResponsiveContainer></div><details className="chart-alt"><summary>Ποσά 6 μηνών σε κείμενο</summary><ul className="chart-alt-list report-flow-alt">{series.map(row=><li key={row.month}><span>{row.label}</span><b>Έσοδα {money.format(row.income)} · Έξοδα {money.format(row.expense)} · Αποταμίευση {money.format(row.saving)}</b></li>)}</ul></details></article>
