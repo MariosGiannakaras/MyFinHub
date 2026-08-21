@@ -233,55 +233,164 @@ export function monthlyFlow(data: FinanceData, month: string) {
     const f = flowImpactEvent(event);
     income += f.income; expense += f.expense; saving += f.saving; refunds += f.refund;
   }
-  return { income, expense, saving, refunds, net: income - expense };
+  return { income, expense: Math.max(0, expense), saving, refunds, net: income - expense };
+}
+
+function baseSnapshot(data: FinanceData, asOf: string) {
+  const snapshots = data.seed.snapshots.filter((s) => s.date <= asOf);
+  if (snapshots.length) return snapshots.reduce((latest, current) => current.date > latest.date ? current : latest);
+  return { date: '0000-00-00', balances: Object.fromEntries(data.seed.accounts.map((a) => [a.id, 0])) };
+}
+
+function legacyDeltaAgainstSeed(data: FinanceData, asOf: string, balances: Record<string, number>) {
+  const baseById = new Map(data.seed.transactions.map((tx) => [tx.id, tx]));
+  const deleted = deletedSet(data);
+  const addTx = (tx: LegacyTransaction, sign = 1) => {
+    if (tx.date > asOf) return;
+    if (tx.type === 'income' && tx.accountId) balances[tx.accountId] = (balances[tx.accountId] ?? 0) + sign * tx.amount;
+    if (tx.type === 'expense' && tx.accountId) balances[tx.accountId] = (balances[tx.accountId] ?? 0) - sign * tx.amount;
+    if (tx.type === 'adjustment' && tx.accountId) balances[tx.accountId] = (balances[tx.accountId] ?? 0) + sign * tx.amount;
+    if (tx.type === 'transfer' && tx.fromAccountId && tx.toAccountId) {
+      balances[tx.fromAccountId] = (balances[tx.fromAccountId] ?? 0) - sign * tx.amount;
+      balances[tx.toAccountId] = (balances[tx.toAccountId] ?? 0) + sign * tx.amount;
+    }
+  };
+  for (const id of deleted) {
+    const original = baseById.get(id); if (original) addTx(original, -1);
+  }
+  for (const [id, override] of Object.entries(data.state.overrides ?? {})) {
+    const original = baseById.get(id); if (original) addTx(original, -1);
+    addTx(override, 1);
+  }
+  for (const tx of data.state.customTransactions ?? []) addTx(tx, 1);
 }
 
 export function accountBalances(data: FinanceData, asOf: string): Record<string, number> {
-  const snapshots = [...(data.seed.snapshots ?? [])].filter((s) => s.date <= asOf).sort((a, b) => a.date.localeCompare(b.date));
-  const latest = snapshots.at(-1);
-  const base: Record<string, number> = { ...(latest?.balances ?? {}) };
-  const start = latest?.date ?? '0000-00-00';
-  for (const tx of effectiveLegacyTransactions(data)) {
-    if (tx.date <= start || tx.date > asOf) continue;
-    if (tx.type === 'income') base[tx.accountId ?? 'cash'] = (base[tx.accountId ?? 'cash'] ?? 0) + tx.amount;
-    if (tx.type === 'expense') base[tx.accountId ?? 'cash'] = (base[tx.accountId ?? 'cash'] ?? 0) - tx.amount;
-    if (tx.type === 'transfer') {
-      if (tx.fromAccountId) base[tx.fromAccountId] = (base[tx.fromAccountId] ?? 0) - tx.amount;
-      if (tx.toAccountId) base[tx.toAccountId] = (base[tx.toAccountId] ?? 0) + tx.amount;
-    }
-  }
+  const snapshot = baseSnapshot(data, asOf);
+  const balances: Record<string, number> = { ...snapshot.balances, [CREDIT_ACCOUNT.id]: 0 };
+  legacyDeltaAgainstSeed(data, asOf, balances);
   for (const event of data.state.events ?? []) {
-    if (event.date <= start || event.date > asOf) continue;
-    for (const leg of event.legs) base[leg.accountId] = (base[leg.accountId] ?? 0) + leg.amount;
+    if (event.date > asOf) continue;
+    for (const leg of event.legs) balances[leg.accountId] = (balances[leg.accountId] ?? 0) + leg.amount;
   }
-  return base;
+  return balances;
 }
 
-export function availableBalance(data: FinanceData, asOf: string): number {
+export function legacyOutstandingReceivables(data: FinanceData) {
+  return (data.seed.lending ?? []).reduce((sum, p) => sum + Number(p.outstanding || 0), 0);
+}
+
+export function eventReceivables(data: FinanceData) {
+  return (data.state.events ?? []).reduce((sum, e) => sum + Number(e.receivableDelta || 0), 0);
+}
+
+export function netWorth(data: FinanceData, asOf: string) {
+  const balances = accountBalances(data, asOf);
+  const assets = allAccounts(data).filter((a) => a.kind !== 'credit').reduce((sum, a) => sum + (balances[a.id] ?? 0), 0);
+  const credit = Math.min(0, balances[CREDIT_ACCOUNT.id] ?? 0);
+  return assets + credit + legacyOutstandingReceivables(data) + eventReceivables(data);
+}
+
+export function availableMoney(data: FinanceData, asOf: string) {
   const balances = accountBalances(data, asOf);
   const excluded = new Set(data.state.settings.excludedFromAvailable ?? []);
-  return allAccounts(data).filter((a) => !excluded.has(a.id) && !a.excludeFromAvailable).reduce((s, a) => s + (balances[a.id] ?? 0), 0);
+  return allAccounts(data)
+    .filter((a) => a.kind !== 'credit' && !excluded.has(a.id) && !a.excludeFromAvailable)
+    .reduce((sum, a) => sum + (balances[a.id] ?? 0), 0);
 }
 
-export function savingTotal(data: FinanceData, month?: string): number {
-  const start = month ? `${month}-01` : '0000-00-00';
-  const end = month ? `${month}-31` : '9999-99-99';
-  return (data.state.events ?? []).filter((e) => e.date >= start && e.date <= end).reduce((s, e) => s + (flowImpactEvent(e).saving || 0), 0);
+export function categoryTotals(data: FinanceData, month: string) {
+  const { start, end } = monthRange(month);
+  const totals = new Map<string, number>();
+  const add = (cat: string, amount: number) => totals.set(cat || 'Άλλο', (totals.get(cat || 'Άλλο') ?? 0) + amount);
+  for (const tx of effectiveLegacyTransactions(data)) {
+    if (tx.date < start || tx.date > end) continue;
+    const decision = reviewDecision(data, tx.id);
+    if (decision?.status === 'confirmed' && decision.semanticKind === 'split' && decision.parts?.length) {
+      decision.parts.forEach((p) => { const kind=p.kind||'expense'; if(kind==='expense')add(p.category,p.amount); else if(kind==='refund')add(p.category,-p.amount); });
+      continue;
+    }
+    const impact = flowImpactLegacy(data, tx);
+    if (impact.expense !== 0) add(decision?.category || tx.category || 'Άλλο', impact.expense);
+  }
+  for (const event of data.state.events ?? []) {
+    if (event.date < start || event.date > end) continue;
+    if (event.kind === 'split') (event.parts ?? []).forEach((p) => add(p.category, p.amount));
+    else {
+      const impact = flowImpactEvent(event);
+      if (impact.expense !== 0) add(event.category || 'Άλλο', impact.expense);
+    }
+  }
+  return [...totals.entries()].map(([name, value]) => ({ name, value: Math.max(0, value) })).filter((x) => x.value > 0.005).sort((a, b) => b.value - a.value);
 }
 
-export function receivableTotal(data: FinanceData): number {
-  return (data.seed.lending ?? []).reduce((s, p) => s + Number(p.outstanding || 0), 0) + (data.state.events ?? []).reduce((s, e) => s + Number(e.receivableDelta || 0), 0);
+const amountRegex = /(?:^|[^\d])(\d{1,4}(?:[.,]\d{1,2})?)\s*€/g;
+function moneyMentions(note: string) {
+  return [...note.matchAll(amountRegex)].map((m) => Number(m[1].replace(',', '.'))).filter(Number.isFinite);
 }
 
-export function creditDebt(data: FinanceData, asOf: string): number {
-  return Math.max(0, -(data.state.events ?? []).filter((e) => e.date <= asOf).reduce((s, e) => s + Number(e.creditDelta || 0), 0));
+export function suggestSplitParts(noteInput: string, fallbackCategory = 'Άλλο'): SplitPart[] {
+  const note = cleanNote(noteInput);
+  const parts: SplitPart[] = [];
+  for (const rawLine of note.split(/\n+/)) {
+    const line = rawLine.trim(); if (!line) continue;
+    const values = [...line.matchAll(/(\d{1,5}(?:[.,]\d{1,2})?)\s*€/g)].map(m=>Number(m[1].replace(',','.'))).filter(v=>v>0);
+    if (!values.length) continue;
+    const amount = values.reduce((s,v)=>s+v,0);
+    const upper=line.toLocaleUpperCase('el-GR');
+    const kind: SplitPart['kind'] = /ΕΠΙΣΤΡΟΦ/.test(upper)?'refund':/(ΜΙΣΘ|ΕΠΙΔΟΜ|ΔΩΡΟ)/.test(upper)?'income':/ΑΠΟΤΑΜΙΕΥΣ|PAY&SAVE/.test(upper)?'saving':/ΔΙ[ΟΌ]ΡΘΩΣ/.test(upper)?'reconciliation':/ΜΕΤΑΦΟΡ|ΑΝΑΛΗΨ/.test(upper)?'transfer':'expense';
+    const label=line.replace(/\s*[:=]?\s*\d[\d.,]*(?:\s*€)?[\s\S]*$/,'').trim()||line.slice(0,40);
+    parts.push({id:`sp-${parts.length}-${Math.random().toString(36).slice(2,6)}`,label,category:fallbackCategory,amount:Number(amount.toFixed(2)),kind});
+  }
+  return parts;
 }
 
-export function inferSuggestion(tx: LegacyTransaction): ReviewSuggestion {
-  const note = cleanNote(tx.note).toUpperCase();
-  if (/IRIS|P2P/.test(note)) return { transaction: tx, semanticKind: 'iris_context', confidence: 'low', reason: 'Η ένδειξη IRIS/P2P μπορεί να αφορά μεταφορά, αποπληρωμή, μοίρασμα εξόδου ή κανονική πληρωμή.' };
-  if (/ATM|ΑΝΑΛΗΨ/.test(note)) return { transaction: tx, semanticKind: 'withdrawal', confidence: 'high', reason: 'Η περιγραφή μοιάζει με ανάληψη μετρητών.' };
-  if (/ΠΙΣΤΩΤ|CREDIT CARD|CARD PAYMENT/.test(note)) return { transaction: tx, semanticKind: 'card_payment', confidence: 'medium', reason: 'Η περιγραφή μοιάζει με αποπληρωμή πιστωτικής.' };
-  if (tx.type === 'transfer') return { transaction: tx, semanticKind: 'transfer', confidence: 'high', reason: 'Η αρχική κίνηση είναι ήδη σημειωμένη ως μεταφορά.' };
-  return { transaction: tx, semanticKind: tx.type === 'income' ? 'income' : 'expense', confidence: 'medium', reason: 'Χρησιμοποιείται η αρχική ταξινόμηση μέχρι να την επιβεβαιώσεις.' };
+export function reviewSuggestions(data: FinanceData): ReviewSuggestion[] {
+  const decisions = data.state.reviewDecisions ?? {};
+  const suggestions: ReviewSuggestion[] = [];
+  for (const tx of effectiveLegacyTransactions(data)) {
+    const existingDecision=decisions[tx.id];
+    if(existingDecision?.status==='confirmed'||existingDecision?.status==='kept') continue;
+    if(existingDecision?.status==='snoozed'&&existingDecision.snoozedUntil&&existingDecision.snoozedUntil>new Date().toISOString()) continue;
+    const note = cleanNote(tx.note);
+    const upper = note.toLocaleUpperCase('el-GR');
+    const mentions = moneyMentions(note);
+    const mixed = mentions.length >= 2 || /\n\s*\+|\n.+:/m.test(note);
+    if (/PAY&SAVE/.test(upper)) suggestions.push({ transaction: tx, semanticKind: 'saving_cash_offset', confidence: 'high', reason: 'Το Pay&Save είναι αποταμίευση/εσωτερική κίνηση, όχι νέο εισόδημα ή έξοδο.' });
+    else if (/ΑΠΟΤΑΜΙΕΥΣ/.test(upper)) suggestions.push({ transaction: tx, semanticKind: mixed ? 'split_required' : 'saving_cash_offset', confidence: mixed ? 'medium' : 'high', reason: mixed ? 'Το σχόλιο περιέχει αποταμίευση μαζί με άλλο οικονομικό γεγονός και χρειάζεται split.' : 'Η κίνηση περιγράφεται ρητά ως αποταμίευση.' });
+    else if (/ΑΝΑΛΗΨΗ ΑΠΟ/.test(upper)) suggestions.push({ transaction: tx, semanticKind: mixed ? 'split_required' : 'withdrawal', confidence: mixed ? 'medium' : 'high', reason: mixed ? 'Ανάληψη και πραγματικά έξοδα εμφανίζονται στην ίδια εγγραφή.' : 'Η ανάληψη είναι μεταφορά τραπεζικού υπολοίπου σε μετρητά, όχι expense.' });
+    else if (/ΠΛΗΡΩΜΗ ΠΙΣΤΩΤΙΚΗΣ/.test(upper)) suggestions.push({ transaction: tx, semanticKind: 'card_payment', confidence: 'medium', reason: 'Η εξόφληση πιστωτικής συνήθως είναι liability transfer. Απαιτεί έλεγχο επειδή το legacy ιστορικό ίσως περιέχει τις αγορές μέσα στο ίδιο σχόλιο.' });
+    else if (/ΔΙ[ΟΌ]ΡΘΩΣ/.test(upper)) suggestions.push({ transaction: tx, semanticKind: mixed ? 'split_required' : 'reconciliation', confidence: mixed ? 'medium' : 'high', reason: mixed ? 'Η διόρθωση είναι αναμεμειγμένη με πραγματική αγορά.' : 'Η καθαρή διόρθωση υπολοίπου πρέπει να εξαιρεθεί από spending.' });
+    else if (/ΕΠΙΣΤΡΟΦ/.test(upper)) suggestions.push({ transaction: tx, semanticKind: mixed ? 'split_required' : 'refund', confidence: mixed ? 'medium' : 'medium', reason: mixed ? 'Η επιστροφή είναι μαζί με άλλο έσοδο/έξοδο.' : 'Η επιστροφή αγοράς πρέπει να μειώνει spending αντί να εμφανίζεται ως κανονικό income.' });
+    else if (/IRIS/.test(upper)) suggestions.push({ transaction: tx, semanticKind: 'iris_context', confidence: 'low', reason: 'Το IRIS μπορεί να είναι πληρωμή, επιστροφή, δανεικό ή ανταλλαγή μετρητών και χρειάζεται ανθρώπινη επιβεβαίωση.' });
+  }
+  return suggestions.sort((a, b) => ({ high: 0, medium: 1, low: 2 }[a.confidence] - { high: 0, medium: 1, low: 2 }[b.confidence]));
+}
+
+export function frequentDescriptions(data: FinanceData, type: 'expense' | 'income' = 'expense', limit = 12) {
+  const map = new Map<string, { label: string; count: number; category: string; accountId?: string; lastAmount: number; lastDate: string }>();
+  for (const tx of effectiveLegacyTransactions(data)) {
+    if (tx.type !== type) continue;
+    const label = cleanNote(tx.note).split('\n')[0].replace(/:\s*[-+]?\d.*$/, '').trim().slice(0, 42);
+    if (!label || label.length < 2) continue;
+    const prev = map.get(label) ?? { label, count: 0, category: tx.category || '', accountId: tx.accountId, lastAmount: tx.amount, lastDate: tx.date };
+    prev.count += 1;
+    if (tx.date >= prev.lastDate) { prev.lastDate = tx.date; prev.lastAmount = tx.amount; prev.category = tx.category || prev.category; prev.accountId = tx.accountId || prev.accountId; }
+    map.set(label, prev);
+  }
+  return [...map.values()].sort((a, b) => b.count - a.count).slice(0, limit);
+}
+
+export function dailyExpenseSeries(data: FinanceData, month: string) {
+  const { start, end } = monthRange(month);
+  const map = new Map<string, number>();
+  for (const tx of effectiveLegacyTransactions(data)) {
+    if (tx.date < start || tx.date > end) continue;
+    const f = flowImpactLegacy(data, tx); map.set(tx.date, (map.get(tx.date) ?? 0) + f.expense);
+  }
+  for (const event of data.state.events ?? []) {
+    if (event.date < start || event.date > end) continue;
+    const f = flowImpactEvent(event); map.set(event.date, (map.get(event.date) ?? 0) + f.expense);
+  }
+  return [...map.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([date, value]) => ({ date: date.slice(-2), value: Math.max(0, value) }));
 }
