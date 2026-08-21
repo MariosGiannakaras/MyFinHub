@@ -22,7 +22,7 @@ export class PageErrorBoundary extends Component<{ resetKey: string; onDashboard
       <p>Τα οικονομικά δεδομένα δεν τροποποιήθηκαν. Δοκίμασε ξανά την ενότητα ή, αν το πρόβλημα συνεχίζεται, επαναφόρτωσε την εφαρμογή.</p>
       <div className="editor-actions">
         <button className="secondary" type="button" onClick={() => this.setState({ failed: false })}>Δοκιμή ξανά</button>
-        <button className="secondary" type="button" onClick={this.props.onDashboard}>Dashboard</button>
+        <button className="secondary" type="button" onClick={() => this.setState({ failed: false }, this.props.onDashboard)}>Dashboard</button>
         <button className="save-button" type="button" onClick={() => location.reload()}>Επαναφόρτωση εφαρμογής</button>
       </div>
     </section>;
