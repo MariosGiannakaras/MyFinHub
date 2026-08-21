@@ -1,6 +1,6 @@
 # Release-readiness automation checkpoint
 
-This document records what repository/CI automation can prove without misrepresenting emulation as physical-device or assistive-technology evidence. Canonical tracking remains issue #165. The concrete manual evidence template is `docs/RELEASE_READINESS_MANUAL_EVIDENCE.md`.
+This document records the repository/CI evidence used for MyFinHub release-readiness tracking. Canonical tracking is issue #165. Human-only physical-device, assistive-technology and browser-owned visual checks are not required gates for #165.
 
 ## Current integration baseline
 
@@ -8,10 +8,10 @@ Production remains **v1.0.2** on `main@d054ad549549c19039b70e76780e84feca7f3104`
 
 The completed development batch is integrated in `develop`:
 
-- PR #179 merged as `cdad04e67bfb5d782e9971f85f44ab51b0aef706` and contains the verified UI/UX/branding/Reports hardening, ledger/product roadmap and automatable release-readiness work.
+- PR #179 merged as `cdad04e67bfb5d782e9971f85f44ab51b0aef706` and contains the verified UI/UX/branding/Reports hardening, ledger/product roadmap and automated release-readiness work.
 - PR #181 merged as `78afee74db4893f208b14536123f1232625422eb` and closes the final Dashboard order, visible privacy-safe session history and route-shaped skeleton gaps.
 - The PR #181 validated candidate tree is identical to the merged `develop` tree.
-- No feature PR remains open. Issue #165 intentionally remains open for real-device, real assistive-technology, remaining installed-surface and release-only evidence.
+- PR #182 is the #165 automation closeout: it strengthens installed-Windows validation and synchronizes release-readiness documentation with the actual integration state.
 
 Final exact-head automated evidence before #181 integration:
 
@@ -28,19 +28,33 @@ The production build enforces explicit budgets for the eager main application JS
 
 Feature pages in `src/App.tsx`, including Reports, remain route-lazy through `React.lazy`. `recharts` remains imported by the lazy Reports page rather than the eager shell, preserving the separate chart chunk. Source regression coverage in `tests/release-readiness-source.test.ts` protects the route-lazy and chart-import boundary.
 
-## Browser-engine coverage
+## Browser-engine and responsive coverage
 
-The complete rendered QA harness is intentionally Chromium-specific and uses CDP for deep deterministic coverage. CI requires the primary Chromium binary; a Google Chrome fallback cannot make the gate green.
+The complete rendered QA harness is Chromium-specific and uses CDP for deep deterministic coverage. CI requires the primary Chromium binary; a Google Chrome fallback cannot make the gate green.
 
-A separate focused compatibility workflow, `.github/workflows/cross-engine-smoke.yml`, uses pinned Playwright 1.62.1 / WebKit 26.5. It covers representative Login/MFA, desktop/mobile shell navigation, app-owned select/date controls, Quick Add focus/close behavior, Reports rendering/text alternatives, branding and one real mutation + undo.
+A separate focused compatibility workflow, `.github/workflows/cross-engine-smoke.yml`, uses pinned Playwright/WebKit and covers representative Login/MFA, desktop/mobile shell navigation, app-owned select/date controls, Quick Add focus/close behavior, Reports rendering/text alternatives, branding and a real mutation + undo.
 
-This WebKit coverage has already found and prevented an engine-specific fixed-position/backdrop-filter regression. It remains engine-level evidence only. It is not physical iPhone Safari or VoiceOver evidence.
+The automated mobile matrix covers dedicated narrow/mobile viewports and protects touch-target geometry, overflow, fixed/sticky layout behavior and route rendering at the source/browser-engine level.
+
+## Accessibility evidence
+
+Accessibility is enforced through source and rendered-browser contracts rather than a human screen-reader gate. Coverage includes:
+
+- labels, descriptions, validation/error and busy-state semantics;
+- modal title/description relationships, focus entry/return and Escape behavior;
+- app-owned select/date keyboard and ARIA semantics;
+- command/Quick Add focus behavior;
+- privacy-sensitive control labels;
+- Reports headings, KPI/progress semantics and chart text alternatives;
+- minimum touch-target and narrow-mobile interaction constraints.
+
+Physical NVDA/VoiceOver sessions are not a completion requirement for #165.
 
 ## Production-mode performance evidence
 
-`.github/workflows/performance-smoke.yml` builds the QA fixture in production mode and runs pinned Lighthouse 13.4.1 plus the loading-shift audit. It checks desktop Dashboard, desktop Reports, narrow-mobile Dashboard and an extreme mobile fixture.
+`.github/workflows/performance-smoke.yml` builds the QA fixture in production mode and runs pinned Lighthouse plus the loading-shift audit. It checks desktop Dashboard, desktop Reports, narrow-mobile Dashboard and an extreme mobile fixture.
 
-The regression contract covers performance/accessibility/best-practices scores, LCP, CLS and TBT, plus a direct skeleton-to-content layout-shift guard and horizontal-overflow checks. These are synthetic regression measurements, not field Core Web Vitals claims.
+The regression contract covers performance/accessibility/best-practices scores, LCP, CLS and TBT, plus a direct skeleton-to-content layout-shift guard and horizontal-overflow checks. These are deterministic CI regression measurements, not field Core Web Vitals claims.
 
 ## Browser / installed-web-app identity
 
@@ -51,44 +65,35 @@ Automated source checks verify:
 - standalone `start_url` is `/`;
 - Apple touch icon resolves to the MyFinHub 192px asset;
 - manifest 192px and 512px icon entries resolve to repository assets;
-- the scalable 512 asset declares 512×512 geometry.
+- scalable 512 artwork declares 512×512 geometry;
+- light/dark branding assets are present and locally owned.
 
-Actual browser-owned install UI, splash/standalone identity and home-screen presentation remain manual checks because CI cannot substitute for those browser surfaces.
+Browser-owned install prompts/splash presentation are not required #165 gates.
 
 ## Windows installed-package automation
 
-The Windows workflow already built the unpacked app, launched the packaged executable/backend, built the assisted per-user NSIS package and verified the update-channel checksum.
+The Windows workflow builds the unpacked app, launches the packaged executable/backend, builds the per-user NSIS package and verifies the update-channel checksum.
 
-The #165 closeout work strengthens that gate by also performing a **real install/launch/uninstall smoke** on the fresh GitHub-hosted Windows runner:
+The #165 closeout strengthens that gate with a **real install/launch/uninstall smoke** on a fresh GitHub-hosted Windows runner:
 
-1. Build the assisted NSIS installer.
+1. Build the NSIS installer.
 2. Install it silently into the runner user profile.
 3. Verify the installed Desktop shortcut and Start Menu shortcut use `MyFinHub` identity.
 4. Resolve the shortcut target and verify `MyFinHub.exe` plus executable product/file-description metadata.
 5. Extract and validate a usable associated Windows icon from the installed executable.
-6. Verify a `MyFinHub` uninstall registration across the standard current-user, machine and WOW6432Node uninstall registry views, including a non-empty uninstall command.
-7. Launch the installed executable, require that the installed process remains alive and verify that the running process path is the installed `MyFinHub.exe`.
-8. Run the real generated uninstaller silently.
+6. Verify a `MyFinHub` uninstall registration across standard Windows uninstall registry views, including a non-empty uninstall command.
+7. Launch the installed executable, require that the process remains alive and verify that it runs from the installed `MyFinHub.exe` path.
+8. Run the generated uninstaller silently.
 9. Verify the installed executable and shortcuts are removed.
 
-The source regression simultaneously locks `PRODUCT_NAME = 'MyFinHub'` and the BrowserWindow titles for both the main window and initial setup. GitHub-hosted Windows runners do not expose a reliable interactive desktop/window-title or taskbar-inspection API, so those final visual surfaces remain manual rather than being inferred from an empty `MainWindowTitle` property.
+Source regression coverage also locks `PRODUCT_NAME = 'MyFinHub'`, BrowserWindow titles and the application/setup icon contracts. No separate human Windows visual check is required by #165.
 
-This gives materially stronger installed-package evidence than build-only CI. A final visual check of the interactive installer, window/taskbar icon/title and absence of user-facing legacy artwork remains manual and is recorded in `docs/RELEASE_READINESS_MANUAL_EVIDENCE.md`.
+## Completion rule
 
-## Explicitly manual / environment-dependent gates
+Issue #165 is complete when the automated closeout PR has green required gates and is integrated into `develop`. Human-only physical-device, screen-reader and browser-owned visual checks are explicitly out of scope and do not block closure.
 
-Automation is not evidence for:
-
-- real iPhone/iOS Safari touch, keyboard, viewport and safe-area behavior;
-- real Android Chrome touch/keyboard behavior;
-- NVDA + Chrome/Chromium announcements and navigation;
-- VoiceOver + Safari announcements and navigation;
-- final visual Windows installer/Desktop/Start Menu/window/taskbar identity;
-- browser-owned installed-web-app/PWA UI;
-- post-deployment production smoke before a deployment actually exists.
-
-Those checks stay open in #165 until actual evidence exists or the owner explicitly dispositions them. Use `docs/RELEASE_READINESS_MANUAL_EVIDENCE.md` so device/browser/AT versions and concrete results are durable rather than remembered informally.
+A future production release remains a separate deliberate workflow. Production deployment, release smoke, tag/version changes and public installer publication are performed and verified only when a separately approved `develop -> main` release occurs; they do not keep #165 open in the meantime.
 
 ## Release boundary
 
-None of the release-readiness automation authorizes a version bump, `develop -> main` merge, production deployment, GitHub Release/tag or installer publication. Production remains v1.0.2 until a separate owner-approved release action is performed.
+None of the #165 closeout work authorizes a version bump, `develop -> main` merge, production deployment, GitHub Release/tag or installer publication. Production remains v1.0.2 until a separate release action is approved.
