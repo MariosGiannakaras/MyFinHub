@@ -12,9 +12,10 @@ const now=()=>new Date().toISOString();
 const ruleId=()=>`rule-${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
 
 export function BudgetRuleSettings({data,asOf,onUpsertBudget,onDeleteBudget,onUpsertRule,onDeleteRule}:{data:FinanceData;asOf:string;onUpsertBudget:(budget:MonthlyBudget)=>void;onDeleteBudget:(id:string)=>void;onUpsertRule:(rule:TransactionRule)=>void;onDeleteRule:(id:string)=>void}){
+  const expenseFallback=data.state.settings.expenseCategories[0]||'Άλλο';
   const [month,setMonth]=useState(asOf.slice(0,7));
   const [budgetScope,setBudgetScope]=useState<'category'|'overall'>('category');
-  const [budgetCategory,setBudgetCategory]=useState(data.state.settings.expenseCategories[0]||'Άλλο');
+  const [budgetCategory,setBudgetCategory]=useState(expenseFallback);
   const [budgetAmount,setBudgetAmount]=useState('');
   const [budgetAlert,setBudgetAlert]=useState('80');
   const [budgetError,setBudgetError]=useState('');
@@ -27,7 +28,7 @@ export function BudgetRuleSettings({data,asOf,onUpsertBudget,onDeleteBudget,onUp
   const [ruleMerchant,setRuleMerchant]=useState('');
   const [ruleAccount,setRuleAccount]=useState('');
   const [ruleMode,setRuleMode]=useState<'contains'|'equals'>('contains');
-  const [ruleCategory,setRuleCategory]=useState(data.state.settings.expenseCategories[0]||'Άλλο');
+  const [ruleCategory,setRuleCategory]=useState(expenseFallback);
   const [ruleScope,setRuleScope]=useState<'all'|TransactionRuleScope>('manual');
   const [ruleError,setRuleError]=useState('');
   const accounts=allAccounts(data).filter(account=>account.kind!=='credit');
@@ -50,8 +51,8 @@ export function BudgetRuleSettings({data,asOf,onUpsertBudget,onDeleteBudget,onUp
     }catch(error){setBudgetError(error instanceof Error?error.message:'Δεν μπορέσαμε να αποθηκεύσουμε το budget. Έλεγξε τα στοιχεία και δοκίμασε ξανά.')}
   };
 
-  const resetRule=()=>{setEditingRuleId(null);setRuleName('');setRulePriority('100');setRuleDescription('');setRuleMerchant('');setRuleAccount('');setRuleMode('contains');setRuleCategory(data.state.settings.expenseCategories[0]||'Άλλο');setRuleScope('manual');setRuleError('')};
-  const editRule=(rule:TransactionRule)=>{setEditingRuleId(rule.id);setRuleName(rule.name);setRulePriority(String(rule.priority));setRuleDescription(rule.match.description??'');setRuleMerchant(rule.match.merchant??'');setRuleAccount(rule.match.accountId??'');setRuleMode(rule.match.mode??'contains');setRuleCategory(rule.action.category??data.state.settings.expenseCategories[0]||'Άλλο');setRuleScope(rule.scopes.length===3?'all':rule.scopes[0]??'manual');setRuleError('')};
+  const resetRule=()=>{setEditingRuleId(null);setRuleName('');setRulePriority('100');setRuleDescription('');setRuleMerchant('');setRuleAccount('');setRuleMode('contains');setRuleCategory(expenseFallback);setRuleScope('manual');setRuleError('')};
+  const editRule=(rule:TransactionRule)=>{setEditingRuleId(rule.id);setRuleName(rule.name);setRulePriority(String(rule.priority));setRuleDescription(rule.match.description??'');setRuleMerchant(rule.match.merchant??'');setRuleAccount(rule.match.accountId??'');setRuleMode(rule.match.mode??'contains');setRuleCategory(rule.action.category??expenseFallback);setRuleScope(rule.scopes.length===3?'all':rule.scopes[0]??'manual');setRuleError('')};
   const saveRule=()=>{
     try{
       const existing=(data.state.transactionRules??[]).find(item=>item.id===editingRuleId);const timestamp=now();
