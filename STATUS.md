@@ -101,19 +101,13 @@ No feature PR remains open.
 
 ## Release-readiness state
 
-Issue #165 remains intentionally open. The established automated release-readiness coverage is complete; the remaining gates require actual environments rather than CI emulation:
+Issue #165 is now defined strictly around evidence that can be produced and enforced through the repository and GitHub-hosted automation. Human-only physical-device, NVDA/VoiceOver and browser-owned visual-install checks are not completion gates.
 
-- physical iPhone/iOS Safari;
-- physical Android Chrome;
-- actual NVDA + Chrome/Chromium;
-- actual VoiceOver + Safari;
-- final installed-Windows visual identity checks;
-- browser-owned installed-web-app/PWA identity checks;
-- post-release production checks after a separately approved release.
+The #165 closeout PR #182 strengthens Windows CI from package-build evidence to a real generated-NSIS install/launch/uninstall smoke on a fresh GitHub-hosted Windows runner, including installed executable identity, Desktop/Start Menu shortcuts, uninstall registration, associated icon and proof that the installed executable remains running from the installed path. Source regressions additionally lock MyFinHub BrowserWindow titles and branding contracts.
 
-`docs/RELEASE_READINESS_AUTOMATION.md` records the automated boundary. `docs/RELEASE_READINESS_MANUAL_EVIDENCE.md` is the durable evidence template for the remaining real-device/assistive-technology/install-surface checks.
+The automated release-readiness boundary covers primary Chromium, focused WebKit compatibility, responsive/mobile viewports, accessibility semantics, production-mode performance, skeleton/overflow regression checks, browser/PWA source identity and Windows installed-package validation. Issue #165 can close once PR #182 has green required gates and is integrated into `develop`.
 
-The #165 closeout work strengthens Windows CI from package-build evidence to a real generated-NSIS install/launch/uninstall smoke on a fresh GitHub-hosted Windows runner, including installed executable identity, Desktop/Start Menu shortcuts, uninstall registration, associated icon and proof that the installed executable remains running from the installed path. BrowserWindow title contracts are source-guarded; final user-visible installer/window/taskbar icon/title remain a manual visual gate because hosted runners do not expose a reliable interactive desktop.
+A future production release remains separate. Version bump, `develop -> main`, production deployment, post-deployment smoke, release tag and installer publication are performed and verified only when that release is explicitly approved; they do not keep #165 open before a release exists.
 
 No version bump, `develop -> main` merge, production deployment, GitHub Release/tag or installer publication is authorized by this development integration or by issue #165.
 
