@@ -1,6 +1,6 @@
 # Release-readiness automation checkpoint
 
-This document records the repository/CI evidence used for MyFinHub release-readiness tracking. Canonical tracking is issue #165. Human-only physical-device, assistive-technology and browser-owned visual checks are not required gates for #165.
+This document records the repository/CI evidence used for MyFinHub release-readiness tracking. Issue #165 is complete and closed. Human-only physical-device, assistive-technology and browser-owned visual checks are not repository completion gates.
 
 ## Current integration baseline
 
@@ -10,17 +10,17 @@ The completed development batch is integrated in `develop`:
 
 - PR #179 merged as `cdad04e67bfb5d782e9971f85f44ab51b0aef706` and contains the verified UI/UX/branding/Reports hardening, ledger/product roadmap and automated release-readiness work.
 - PR #181 merged as `78afee74db4893f208b14536123f1232625422eb` and closes the final Dashboard order, visible privacy-safe session history and route-shaped skeleton gaps.
-- The PR #181 validated candidate tree is identical to the merged `develop` tree.
-- PR #182 is the #165 automation closeout: it strengthens installed-Windows validation and synchronizes release-readiness documentation with the actual integration state.
+- PR #182 merged as `6b015b7e73a0a23d844fc99bc6631901631ce148` and completes the #165 automation closeout with stronger installed-Windows validation and synchronized release-readiness state.
+- Current `develop` is three integration commits ahead of the v1.0.2 `main` baseline.
 
-Final exact-head automated evidence before #181 integration:
+Final exact-head automated evidence for PR #182:
 
-- CI #743: success — 48/48 test files, 228/228 tests, production build/API checks, bundle budgets and complete primary-Chromium rendered QA.
-- CodeQL #697: success.
-- Cross-engine smoke #43: success.
-- Performance smoke #37: success.
-- Windows Desktop #398: success — unpacked build, packaged executable/backend smoke, NSIS build and checksum verification.
-- Primary Chromium remained mandatory with zero fallback activations.
+- CI #755: success.
+- CodeQL #709: success.
+- Cross-engine smoke #54: success.
+- Performance smoke #49: success.
+- Windows Desktop #410: success.
+- Primary Chromium remains mandatory.
 
 ## Bundle and loading architecture
 
@@ -48,7 +48,7 @@ Accessibility is enforced through source and rendered-browser contracts rather t
 - Reports headings, KPI/progress semantics and chart text alternatives;
 - minimum touch-target and narrow-mobile interaction constraints.
 
-Physical NVDA/VoiceOver sessions are not a completion requirement for #165.
+Physical NVDA/VoiceOver sessions are not a repository completion requirement.
 
 ## Production-mode performance evidence
 
@@ -68,13 +68,13 @@ Automated source checks verify:
 - scalable 512 artwork declares 512×512 geometry;
 - light/dark branding assets are present and locally owned.
 
-Browser-owned install prompts/splash presentation are not required #165 gates.
+Browser-owned install prompts/splash presentation are not repository completion gates.
 
 ## Windows installed-package automation
 
 The Windows workflow builds the unpacked app, launches the packaged executable/backend, builds the per-user NSIS package and verifies the update-channel checksum.
 
-The #165 closeout strengthens that gate with a **real install/launch/uninstall smoke** on a fresh GitHub-hosted Windows runner:
+PR #182 strengthens that gate with a **real install/launch/uninstall smoke** on a fresh GitHub-hosted Windows runner:
 
 1. Build the NSIS installer.
 2. Install it silently into the runner user profile.
@@ -86,14 +86,16 @@ The #165 closeout strengthens that gate with a **real install/launch/uninstall s
 8. Run the generated uninstaller silently.
 9. Verify the installed executable and shortcuts are removed.
 
-Source regression coverage also locks `PRODUCT_NAME = 'MyFinHub'`, BrowserWindow titles and the application/setup icon contracts. No separate human Windows visual check is required by #165.
+Source regression coverage also locks `PRODUCT_NAME = 'MyFinHub'`, BrowserWindow titles and the application/setup icon contracts. No separate human Windows visual check is required by the repository readiness contract.
 
-## Completion rule
+## Completion
 
-Issue #165 is complete when the automated closeout PR has green required gates and is integrated into `develop`. Human-only physical-device, screen-reader and browser-owned visual checks are explicitly out of scope and do not block closure.
+Issue #165 is complete and closed because PR #182 passed all required exact-head GitHub gates and was integrated into `develop`.
 
-A future production release remains a separate deliberate workflow. Production deployment, release smoke, tag/version changes and public installer publication are performed and verified only when a separately approved `develop -> main` release occurs; they do not keep #165 open in the meantime.
+Human-only physical-device, screen-reader and browser-owned visual checks are explicitly out of scope and do not block repository readiness.
+
+A future production release remains a separate deliberate workflow. Production deployment, release smoke, tag/version changes and public installer publication are performed and verified only when a separately approved `develop -> main` release occurs.
 
 ## Release boundary
 
-None of the #165 closeout work authorizes a version bump, `develop -> main` merge, production deployment, GitHub Release/tag or installer publication. Production remains v1.0.2 until a separate release action is approved.
+None of the #165/#182 closeout work authorized or performed a version bump, `develop -> main` merge, production deployment, GitHub Release/tag or installer publication. Production remains v1.0.2 until a separate release action is approved.
