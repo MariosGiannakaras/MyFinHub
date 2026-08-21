@@ -16,7 +16,9 @@ describe('shared UI contracts',()=>{
     const offenders=files('src/pages').filter(file=>/onKeyDown\s*=\s*\{[^}]*Escape/s.test(source(file)));
     expect(offenders).toEqual([]);
     const hook=source('src/hooks/useModalFocus.ts');
-    expect(hook).toContain("event.key === 'Escape'");
+    const shortcuts=source('src/lib/shortcuts.ts');
+    expect(hook).toContain("shortcutMatches(event, 'dismiss')");
+    expect(shortcuts).toContain("if (id === 'dismiss') return 'Esc'");
     expect(hook).toContain('onCloseRef.current()');
   });
 

@@ -4,25 +4,32 @@ import { describe, expect, it } from 'vitest';
 const app=readFileSync(new URL('../src/App.tsx',import.meta.url),'utf8');
 const shell=readFileSync(new URL('../src/components/AppShell.tsx',import.meta.url),'utf8');
 const palette=readFileSync(new URL('../src/components/CommandPalette.tsx',import.meta.url),'utf8');
+const shortcuts=readFileSync(new URL('../src/lib/shortcuts.ts',import.meta.url),'utf8');
+const shortcutHook=readFileSync(new URL('../src/hooks/useAppShortcuts.ts',import.meta.url),'utf8');
 const search=readFileSync(new URL('../src/lib/commandSearch.ts',import.meta.url),'utf8');
 
 describe('unified command palette source contracts',()=>{
   it('keeps Quick Add and unified search as distinct entry points',()=>{
     expect(shell).toContain('onQuickAdd:()=>void;onCommand:()=>void');
-    expect(shell).toContain('className="primary-action" onClick={onQuickAdd}');
-    expect(shell).toContain('className="command-search-action" onClick={onCommand}');
-    expect(shell).toContain('aria-label="Αναζήτηση και εντολές" onClick={onCommand}');
+    expect(shell).toContain('className="primary-action"');
+    expect(shell).toContain('onClick={onQuickAdd}');
+    expect(shell).toContain('className="command-search-action"');
+    expect(shell).toContain('onClick={onCommand}');
+    expect(shell).toContain('aria-label="Αναζήτηση και εντολές"');
     expect(app).toContain('onQuickAdd={() => openGeneric(\'expense\')} onCommand={openCommand}');
   });
 
-  it('uses global shortcut interception before modal-state guards',()=>{
-    const start=app.indexOf('const onKey = (event: KeyboardEvent) =>');
-    const end=app.indexOf("addEventListener('keydown', onKey)",start);
-    const block=app.slice(start,end);
-    expect(block).toContain('event.preventDefault();');
-    expect(block).toContain('if (quickOpen || commandOpen) return;');
-    expect(block).toContain('setCommandOpen(true);');
-    expect(block.indexOf('event.preventDefault();')).toBeLessThan(block.indexOf('if (quickOpen || commandOpen) return;'));
+  it('single-sources global app shortcuts and makes them modal/input aware',()=>{
+    expect(shell).toContain('useAppShortcuts({onCommand,onQuickEntry:onQuickAdd,onUndo,onRedo,canUndo,canRedo})');
+    expect(shortcutHook).toContain('appShortcutFromEvent(event)');
+    expect(shortcutHook).toContain('isEditableShortcutTarget(event.target)');
+    expect(shortcutHook).toContain('modalOpen: hasVisibleModal()');
+    expect(shortcutHook).toContain('event.stopImmediatePropagation()');
+    expect(shortcuts).toContain("commandPalette: { label: 'Αναζήτηση / Command Palette'");
+    expect(shortcuts).toContain("quickEntry: { label: 'Γρήγορη καταχώριση'");
+    expect(shortcuts).toContain("undo: { label: 'Αναίρεση'");
+    expect(shortcuts).toContain("redo: { label: 'Επαναφορά'");
+    expect(shortcuts).toContain("dismiss: { label: 'Κλείσιμο παραθύρου / overlay'");
   });
 
   it('keeps keyboard focus on an accessible combobox with listbox active-descendant semantics',()=>{

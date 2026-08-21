@@ -77,7 +77,7 @@ describe('release-readiness source contracts',()=>{
     expect(webkitSmoke).toContain("width:390,height:844");
   });
 
-  it('keeps Lighthouse performance evidence pinned, production-mode and smaller than the rendered matrix',()=>{
+  it('keeps Lighthouse performance evidence pinned, production-mode and preserves the all-route loading-shift boundary',()=>{
     expect(performanceWorkflow).toContain('lighthouse@13.4.1');
     expect(performanceWorkflow).not.toContain('lighthouse@latest');
     expect(performanceWorkflow).toContain('vite build --config vite.performance.config.ts --mode production');
@@ -98,6 +98,9 @@ describe('release-readiness source contracts',()=>{
     expect(loadingShiftAudit).toContain("PerformanceObserver");
     expect(loadingShiftAudit).toContain("type:'layout-shift'");
     expect(loadingShiftAudit).toContain("'.qa-loading-route'");
-    expect(loadingShiftAudit).toContain('Number(cls)<=0.10');
+    expect(loadingShiftAudit).toContain("const pages=['dashboard','transactions','review','savings','cards','credit','loans','lending','recurring','planning','attention','reports','settings']");
+    expect(loadingShiftAudit).toContain("{name:'desktop',width:1280,height:900,mobile:false}");
+    expect(loadingShiftAudit).toContain("{name:'mobile',width:375,height:812,mobile:true}");
+    expect(loadingShiftAudit).toContain('assert(cls<=0.10');
   });
 });

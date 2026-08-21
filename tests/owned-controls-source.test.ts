@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 const selectSource=readFileSync(new URL('../src/components/AppSelectInput.tsx',import.meta.url),'utf8');
 const dateSource=readFileSync(new URL('../src/components/AppDateInput.tsx',import.meta.url),'utf8');
 const modalFocusSource=readFileSync(new URL('../src/hooks/useModalFocus.ts',import.meta.url),'utf8');
+const shortcutSource=readFileSync(new URL('../src/lib/shortcuts.ts',import.meta.url),'utf8');
 const styles=readFileSync(new URL('../src/styles/part25.css',import.meta.url),'utf8');
 function files(path:string):string[]{return readdirSync(path).flatMap(name=>{const full=join(path,name);return statSync(full).isDirectory()?files(full):/\.tsx$/.test(name)?[full]:[]})}
 
@@ -15,7 +16,8 @@ describe('app-owned entry controls',()=>{
       expect(source).toContain('useModalFocus');
       expect(source).toContain('()=>setOpen(false)');
     }
-    expect(modalFocusSource).toContain("event.key === 'Escape'");
+    expect(modalFocusSource).toContain("shortcutMatches(event, 'dismiss')");
+    expect(shortcutSource).toContain("if (id === 'dismiss') return 'Esc'");
     expect(modalFocusSource).toContain('onCloseRef.current()');
     expect(modalFocusSource).toContain('opener.current?.focus');
     expect(modalFocusSource).toContain("event.key !== 'Tab'");
