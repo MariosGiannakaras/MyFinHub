@@ -45,7 +45,7 @@ function buildQaData(params:URLSearchParams){
   if(params.get('motion')==='reduced')next.state.settings.motion='reduced';
   next.state.settings.textSize=initialTextSize(params.get('text'));
   if(params.get('state')==='empty'){
-    next.seed.transactions=[];next.seed.recurring=[];next.seed.loans=[];next.seed.lending=[];next.state.events=[];next.state.scheduled=[];next.state.recurringCustom=[];next.state.recurringOverrides={};next.state.customLoans=[];next.state.loanOverrides={};next.state.cards=[];next.state.cardBanks=[];next.state.reviewDecisions={};next.state.attentionDecisions={};
+    next.seed.transactions=[];next.seed.recurring=[];next.seed.loans=[];next.seed.lending=[];next.seed.snapshots=next.seed.snapshots.map(snapshot=>({...snapshot,balances:{...snapshot.balances,'piraeus-payroll':1000,'piraeus-savings':1000,cash:1000}}));next.state.events=[];next.state.scheduled=[];next.state.recurringCustom=[];next.state.recurringOverrides={};next.state.customLoans=[];next.state.loanOverrides={};next.state.cards=[];next.state.cardBanks=[];next.state.reviewDecisions={};next.state.attentionDecisions={};
   }
   if(params.get('state')==='extreme'){
     next.state.settings.accountNames={...next.state.settings.accountNames,'piraeus-payroll':'Κύριος λογαριασμός μισθοδοσίας με εξαιρετικά μεγάλο όνομα για έλεγχο διάταξης'};
