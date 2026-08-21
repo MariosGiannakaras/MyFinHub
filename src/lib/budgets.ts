@@ -1,5 +1,5 @@
-import { effectiveLegacyTransactions, flowImpactEvent, flowImpactLegacy } from './domain.js';
-import type { FinanceData, MonthlyBudget } from '../types.js';
+import { effectiveLegacyTransactions, flowImpactEvent, flowImpactLegacy, reviewDecision } from './domain.js';
+import type { FinanceData, MonthlyBudget, SplitPart } from '../types.js';
 
 export type BudgetStatus = 'ok' | 'near' | 'exceeded';
 
@@ -30,26 +30,36 @@ function add(target: Map<string, number>, category: string | undefined, value: n
   target.set(key, (target.get(key) ?? 0) + value);
 }
 
+function addSplitParts(target:Map<string,number>,parts:SplitPart[]|undefined){
+  for(const part of parts??[]){
+    const kind=part.kind??'expense';
+    if(kind==='expense')add(target,part.category,Math.abs(Number(part.amount||0)));
+    if(kind==='refund')add(target,part.category,-Math.abs(Number(part.amount||0)));
+  }
+}
+
 /** Net categorized spending for one month. Canonical flow-impact expense values
  * already encode refunds as negative expense. Transfers/savings/reconciliation/
  * income do not consume category budgets. Split portions are handled directly so
- * each categorized portion is included exactly once.
+ * each categorized portion is included exactly once, including reviewed legacy
+ * transactions that were confirmed as semantic splits.
  */
 export function categoryBudgetSpending(data: FinanceData, month: string) {
   const totals = new Map<string, number>();
   for (const transaction of effectiveLegacyTransactions(data)) {
     if (!transaction.date.startsWith(`${month}-`)) continue;
+    const decision=reviewDecision(data,transaction.id);
+    if(decision?.status==='confirmed'&&decision.semanticKind==='split'){
+      addSplitParts(totals,decision.parts);
+      continue;
+    }
     const impact = flowImpactLegacy(data, transaction);
     if (impact.expense) add(totals, transaction.category, impact.expense);
   }
   for (const event of data.state.events ?? []) {
     if (!event.date.startsWith(`${month}-`)) continue;
     if (event.parts?.length) {
-      for (const part of event.parts) {
-        const kind = part.kind ?? 'expense';
-        if (kind === 'expense') add(totals, part.category, Math.abs(Number(part.amount || 0)));
-        if (kind === 'refund') add(totals, part.category, -Math.abs(Number(part.amount || 0)));
-      }
+      addSplitParts(totals,event.parts);
       continue;
     }
     const impact = flowImpactEvent(event);
