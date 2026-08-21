@@ -30,8 +30,10 @@ function add(target: Map<string, number>, category: string | undefined, value: n
   target.set(key, (target.get(key) ?? 0) + value);
 }
 
-/** Net categorized spending for one month. Expenses add usage, refunds reduce it.
- * Transfers/savings/reconciliation/income do not consume category budgets.
+/** Net categorized spending for one month. Canonical flow-impact expense values
+ * already encode refunds as negative expense. Transfers/savings/reconciliation/
+ * income do not consume category budgets. Split portions are handled directly so
+ * each categorized portion is included exactly once.
  */
 export function categoryBudgetSpending(data: FinanceData, month: string) {
   const totals = new Map<string, number>();
@@ -39,7 +41,6 @@ export function categoryBudgetSpending(data: FinanceData, month: string) {
     if (!transaction.date.startsWith(`${month}-`)) continue;
     const impact = flowImpactLegacy(data, transaction);
     if (impact.expense) add(totals, transaction.category, impact.expense);
-    if (impact.refund) add(totals, transaction.category, -impact.refund);
   }
   for (const event of data.state.events ?? []) {
     if (!event.date.startsWith(`${month}-`)) continue;
@@ -53,7 +54,6 @@ export function categoryBudgetSpending(data: FinanceData, month: string) {
     }
     const impact = flowImpactEvent(event);
     if (impact.expense) add(totals, event.category, impact.expense);
-    if (impact.refund) add(totals, event.category, -impact.refund);
   }
   return totals;
 }
