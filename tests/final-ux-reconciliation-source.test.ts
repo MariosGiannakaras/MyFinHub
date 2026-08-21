@@ -31,11 +31,14 @@ describe('final UX reconciliation source contracts',()=>{
     expect(styles).toContain('.dashboard-pending-grid>.panel{order:initial!important}');
   });
 
-  it('measures box-less display contents sections through their rendered children',()=>{
+  it('measures box-less and viewport geometry inside the rendered browser context',()=>{
     expect(reconciliationQa).toContain("if(style.display==='contents')");
     expect(reconciliationQa).toContain('[...node.children].map(child=>child.getBoundingClientRect())');
     expect(reconciliationQa).toContain('Math.min(...childRects.map(childRect=>childRect.top))');
     expect(reconciliationQa).toContain('Math.max(...childRects.map(childRect=>childRect.bottom))');
+    expect(reconciliationQa).toContain('viewportWidth:innerWidth');
+    expect(reconciliationQa).toContain('state.right<=state.viewportWidth+1');
+    expect(reconciliationQa).not.toContain('state.right<=innerWidth+1');
     expect(reconciliationQa).toContain('mobile visual order follows semantic order');
   });
 
