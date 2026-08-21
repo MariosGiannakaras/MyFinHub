@@ -1,14 +1,14 @@
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { BarChart3, CreditCard, Gauge, HandCoins, Landmark, ListChecks, LogOut, Menu, PiggyBank, Plus, Redo2, RefreshCw, Repeat2, Settings, Undo2, WalletCards, X } from 'lucide-react';
+import { BarChart3, CalendarRange, CreditCard, Gauge, HandCoins, Landmark, ListChecks, LogOut, Menu, PiggyBank, Plus, Redo2, RefreshCw, Repeat2, Settings, Undo2, WalletCards, X } from 'lucide-react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useModalFocus } from '../hooks/useModalFocus';
 import type { SaveState } from '../hooks/useFinance';
 import { BrandMark } from './BrandMark';
 import { Tooltip } from './Tooltip';
 
-export type PageId = 'dashboard'|'transactions'|'review'|'savings'|'cards'|'credit'|'loans'|'lending'|'recurring'|'reports'|'settings';
+export type PageId = 'dashboard'|'transactions'|'review'|'savings'|'cards'|'credit'|'loans'|'lending'|'recurring'|'planning'|'reports'|'settings';
 const nav: Array<{id:PageId; label:string; icon:ReactNode}> = [
-  {id:'dashboard',label:'Dashboard',icon:<Gauge size={18}/>},{id:'transactions',label:'Συναλλαγές',icon:<Repeat2 size={18}/>},{id:'savings',label:'Αποταμίευση',icon:<PiggyBank size={18}/>},{id:'cards',label:'Κάρτες',icon:<WalletCards size={18}/>},{id:'credit',label:'Πιστωτική',icon:<CreditCard size={18}/>},{id:'loans',label:'Δόσεις & Δάνεια',icon:<Landmark size={18}/>},{id:'lending',label:'Δανεικά / Οφειλές',icon:<HandCoins size={18}/>},{id:'recurring',label:'Πάγια',icon:<ListChecks size={18}/>},{id:'reports',label:'Αναφορές',icon:<BarChart3 size={18}/>},{id:'settings',label:'Ρυθμίσεις',icon:<Settings size={18}/>},
+  {id:'dashboard',label:'Dashboard',icon:<Gauge size={18}/>},{id:'transactions',label:'Συναλλαγές',icon:<Repeat2 size={18}/>},{id:'savings',label:'Αποταμίευση',icon:<PiggyBank size={18}/>},{id:'cards',label:'Κάρτες',icon:<WalletCards size={18}/>},{id:'credit',label:'Πιστωτική',icon:<CreditCard size={18}/>},{id:'loans',label:'Δόσεις & Δάνεια',icon:<Landmark size={18}/>},{id:'lending',label:'Δανεικά / Οφειλές',icon:<HandCoins size={18}/>},{id:'recurring',label:'Πάγια',icon:<ListChecks size={18}/>},{id:'planning',label:'Προγραμματισμός',icon:<CalendarRange size={18}/>},{id:'reports',label:'Αναφορές',icon:<BarChart3 size={18}/>},{id:'settings',label:'Ρυθμίσεις',icon:<Settings size={18}/>},
 ];
 const mobilePrimary = nav.slice(0,4);
 const mobileMore = nav.slice(4);
