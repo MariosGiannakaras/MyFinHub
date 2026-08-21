@@ -6,13 +6,13 @@ This document records what can be proven from repository/CI automation without m
 
 Baseline feature head before this hardening branch: `47180c096e05c8c8b0d840e8944321cef3f2fd99`.
 
-Latest verified production-build output on that baseline:
+Current production bundle guardrails:
 
-| Asset | Raw | Gzip | Enforced ceiling |
+| Asset | Representative raw | Representative gzip | Enforced ceiling |
 | --- | ---: | ---: | ---: |
-| Main application JS | ~463.4 KiB | ~142.9 KiB | 525 / 165 KiB |
-| Recharts/chart chunk | ~343.7 KiB | ~100.2 KiB | 380 / 115 KiB |
-| Application CSS | ~217.2 KiB | ~41.0 KiB | 240 / 46 KiB |
+| Main application JS | ~453 KiB | ~138 KiB | 525 / 165 KiB |
+| Recharts/chart chunk | ~336 KiB | ~97 KiB | 380 / 115 KiB |
+| Application CSS | ~213 KiB | ~40 KiB | 240 / 46 KiB |
 
 The ceilings intentionally leave limited headroom for toolchain/hash variation while making a material eager-import or dependency regression fail the normal production build. A ceiling should not be raised merely to make CI green; first inspect route splitting, duplicate dependencies and new eager imports.
 
@@ -21,6 +21,7 @@ The ceilings intentionally leave limited headroom for toolchain/hash variation w
 - Feature pages in `src/App.tsx`, including Reports, are loaded through `React.lazy`.
 - `recharts` is imported by the lazy Reports page rather than the eager application shell.
 - Current Vite output therefore keeps the chart implementation in a separate `CartesianChart-*` chunk.
+- The runtime dependency graph is intentionally small: React/React DOM, Framer Motion, Lucide, Recharts and the server-side Express dependency. No second chart/date/UI framework was found during the release-readiness inventory.
 - `scripts/bundle-budget.mjs` makes the main JS, chart JS and CSS ceilings executable build contracts.
 - `tests/release-readiness-source.test.ts` guards the lazy-route/chart-import boundary.
 
@@ -28,7 +29,7 @@ The ceilings intentionally leave limited headroom for toolchain/hash variation w
 
 The complete rendered QA harness remains intentionally **Chromium-specific**. It launches Chromium/Chrome and drives it through the Chrome DevTools Protocol (CDP), including `Runtime`, `Page`, `Network`, `Emulation` and `Input` domains. This provides deep deterministic coverage but is not Safari evidence.
 
-A second, deliberately small compatibility gate now lives in `.github/workflows/cross-engine-smoke.yml` and `scripts/webkit-smoke.mjs`. It uses the pinned stable **Playwright 1.62.1 / WebKit 26.5** toolchain, installed transiently in that job so Playwright does not become an application/runtime dependency or alter the application lockfile.
+A second, deliberately small compatibility gate lives in `.github/workflows/cross-engine-smoke.yml` and `scripts/webkit-smoke.mjs`. It uses the pinned stable **Playwright 1.62.1 / WebKit 26.5** toolchain, installed transiently in that job so Playwright does not become an application/runtime dependency or alter the application lockfile.
 
 The isolated WebKit smoke covers:
 
@@ -41,9 +42,37 @@ The isolated WebKit smoke covers:
 7. One real Quick Add expense mutation followed by app-level undo.
 8. A small desktop/mobile WebKit screenshot artifact rather than a duplicated full visual matrix.
 
+The WebKit pass exposed a genuine engine-specific responsive defect: the mobile Quick Add action was `position:fixed` inside a sticky topbar using `backdrop-filter`, allowing WebKit to treat the topbar as the fixed-position containing block. The mobile action now renders as a viewport-level sibling of the topbar while preserving the same `onQuickAdd` flow. Source tests prevent it from being nested back into the blurred sticky container.
+
 The WebKit job intentionally **does not** invoke `npm run qa:frontend`. Primary Chromium remains the authoritative full deterministic regression/screenshot gate; WebKit is a focused compatibility gate. `tests/release-readiness-source.test.ts` locks the Playwright version, WebKit-only install, non-duplication rule and representative coverage contract.
 
 WebKit on GitHub-hosted Linux is useful engine-level compatibility evidence. It is still **not** evidence for physical iPhone Safari behavior, iOS virtual keyboard/viewport quirks, or VoiceOver integration.
+
+## Production-mode performance audit
+
+`.github/workflows/performance-smoke.yml` builds the QA fixture with Vite in production mode before installing any audit-only package. Lighthouse is then installed transiently at the pinned stable `13.4.1`; it never enters `package.json` or the application lockfile.
+
+Four cold audits run independently:
+
+- desktop Dashboard;
+- desktop Reports;
+- narrow-mobile Dashboard;
+- narrow-mobile Dashboard with the `state=extreme` fixture.
+
+The guard records performance, accessibility and best-practices scores plus LCP, CLS and TBT. Synthetic TBT is used only as an interaction-responsiveness proxy; these numbers are regression evidence, not field Core Web Vitals/INP claims.
+
+Representative passing checkpoint after the privacy fix:
+
+| Case | Perf | A11y | Best practices | LCP | CLS | TBT |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Desktop Dashboard | 76 | 96 | 100 | 735 ms | 0.000 | 545 ms |
+| Desktop Reports | 100 | 96 | 100 | 569 ms | 0.000 | 0 ms |
+| Mobile Dashboard | 91 | 96 | 100 | 2756 ms | 0.000 | 134 ms |
+| Mobile extreme fixture | 80 | 96 | 100 | 2710 ms | 0.000 | 496 ms |
+
+The first baseline reported best-practices 77 on Dashboard states. Lighthouse traced that specifically to a third-party `WMF-Uniq` cookie and DevTools cookie issue caused by runtime-loaded bank logo images. All bank/account/card identity marks are now local text treatments; no bank logo requires Wikimedia or another third-party image host. The rerun reached best-practices 100 without weakening the score threshold.
+
+Lighthouse also notes absent production source maps for the large QA-only bundle. Production builds intentionally disable source maps; that diagnostic audit has no best-practices weight here and was not used as a reason to publish source maps containing application source.
 
 ## PWA/browser identity
 
