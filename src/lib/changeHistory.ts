@@ -1,0 +1,196 @@
+import type { FinanceData, FinanceEvent, FinanceSettings, Loan, MonthlyBudget, PaymentCard, RecurringItem, ScheduledTransaction, TransactionRule } from '../types';
+
+type Change<T> = { type:'add'|'edit'|'delete'; before?:T; after?:T } | null;
+
+const moneyFormatter=new Intl.NumberFormat('el-GR',{style:'currency',currency:'EUR',minimumFractionDigits:2,maximumFractionDigits:2});
+const money=(value:number|undefined)=>moneyFormatter.format(Number(value??0));
+const dateLabel=(value:string|undefined)=>{if(!value)return 'χωρίς ημερομηνία';const parts=value.slice(0,10).split('-');return parts.length===3?`${parts[2]}/${parts[1]}/${parts[0]}`:value.slice(0,10)};
+const bounded=(value:string|undefined,max=42)=>{const next=(value??'').replace(/\s+/g,' ').trim();return next.length>max?`${next.slice(0,max-1)}…`:next};
+const different=(a:unknown,b:unknown)=>JSON.stringify(a)!==JSON.stringify(b);
+const privacyFallback='Ενημερώθηκαν ιδιωτικές λεπτομέρειες που δεν εμφανίζονται στο ιστορικό.';
+
+function arrayChange<T extends {id:string}>(before:T[]|undefined,after:T[]|undefined):Change<T>{
+  const left=before??[];const right=after??[];
+  const added=right.find(item=>!left.some(previous=>previous.id===item.id));if(added)return {type:'add',after:added};
+  const removed=left.find(item=>!right.some(next=>next.id===item.id));if(removed)return {type:'delete',before:removed};
+  for(const next of right){const previous=left.find(item=>item.id===next.id);if(previous&&different(previous,next))return {type:'edit',before:previous,after:next}}
+  return null;
+}
+
+function accountKind(data:FinanceData,id:string|undefined){
+  if(!id)return 'λογαριασμός';
+  const kind=data.seed.accounts.find(account=>account.id===id)?.kind;
+  if(kind==='cash')return 'Μετρητά';if(kind==='savings')return 'Αποταμίευση';if(kind==='credit')return 'Πιστωτική';if(kind==='bank')return 'Τραπεζικός λογαριασμός';return 'Λογαριασμός';
+}
+
+function eventType(event:FinanceEvent){
+  if(event.kind==='transfer')return 'Μεταφορά';
+  if(event.kind==='saving_cash_offset')return 'Μεταφορά προς αποταμίευση';
+  if(event.kind==='withdrawal')return 'Ανάληψη';
+  if(event.kind==='refund')return 'Επιστροφή χρημάτων';
+  if(event.kind==='lending')return 'Δανεικά';
+  if(event.kind==='repayment')return 'Επιστροφή δανεικών';
+  if(event.kind==='card_purchase')return 'Αγορά με πιστωτική';
+  if(event.kind==='card_payment')return 'Πληρωμή πιστωτικής';
+  if(event.kind==='reconciliation')return 'Διόρθωση υπολοίπου';
+  if(event.kind==='split')return 'Split κίνηση';
+  if(event.recurringId)return 'Πληρωμή πάγιας';
+  if(event.loanId)return 'Πληρωμή δανείου / δόσης';
+  return event.kind==='income'?'Έσοδο':'Δαπάνη';
+}
+
+function eventRoute(data:FinanceData,event:FinanceEvent){
+  if(event.fromAccountId||event.toAccountId)return `${accountKind(data,event.fromAccountId)} → ${accountKind(data,event.toAccountId)}`;
+  if(event.accountId)return accountKind(data,event.accountId);
+  return '';
+}
+
+function describeEvent(current:FinanceData,next:FinanceData){
+  const change=arrayChange(current.state.events,next.state.events);if(!change)return null;
+  const event=change.after??change.before!;const type=eventType(event);const route=eventRoute(next,event);
+  if(change.type==='add')return `Νέα οικονομική κίνηση · ${type} · ${money(event.amount)} · ${dateLabel(event.date)}${route?` · ${route}`:''}`;
+  if(change.type==='delete')return `Διαγραφή οικονομικής κίνησης · ${type} · ${money(event.amount)} · ${dateLabel(event.date)}`;
+  const before=change.before!;const after=change.after!;const parts:string[]=[];
+  if(before.amount!==after.amount)parts.push(`Ποσό ${money(before.amount)} → ${money(after.amount)}`);
+  if(before.date!==after.date)parts.push(`Ημερομηνία ${dateLabel(before.date)} → ${dateLabel(after.date)}`);
+  if(before.kind!==after.kind)parts.push(`Τύπος ${eventType(before)} → ${eventType(after)}`);
+  if(before.category!==after.category)parts.push(`Κατηγορία ${bounded(before.category)||'—'} → ${bounded(after.category)||'—'}`);
+  if(before.accountId!==after.accountId)parts.push(`Λογαριασμός ${accountKind(current,before.accountId)} → ${accountKind(next,after.accountId)}`);
+  if(before.fromAccountId!==after.fromAccountId||before.toAccountId!==after.toAccountId)parts.push(`Διαδρομή ${eventRoute(current,before)||'—'} → ${eventRoute(next,after)||'—'}`);
+  if(before.savingAmount!==after.savingAmount)parts.push(`Αποταμίευση ${money(before.savingAmount)} → ${money(after.savingAmount)}`);
+  if(different(before.parts,after.parts))parts.push('Κατανομή split ενημερώθηκε');
+  return `Επεξεργασία οικονομικής κίνησης · ${parts.slice(0,3).join(' · ')||privacyFallback}`;
+}
+
+function scheduledKind(item:ScheduledTransaction){return item.kind==='income'?'Έσοδο':item.kind==='transfer'?'Μεταφορά':'Δαπάνη'}
+function scheduledStatus(value:ScheduledTransaction['status']|undefined){return value==='completed'?'Ολοκληρώθηκε':value==='skipped'?'Παραλείφθηκε':value==='cancelled'?'Ακυρώθηκε':'Εκκρεμεί'}
+function describeScheduled(current:FinanceData,next:FinanceData){
+  const change=arrayChange(current.state.scheduled,next.state.scheduled);if(!change)return null;const row=change.after??change.before!;
+  if(change.type==='add')return `Νέα προγραμματισμένη κίνηση · ${scheduledKind(row)} · ${money(row.amount)} · ${dateLabel(row.dueDate)}`;
+  if(change.type==='delete')return `Διαγραφή προγραμματισμένης κίνησης · ${scheduledKind(row)} · ${money(row.amount)}`;
+  const before=change.before!;const after=change.after!;const parts:string[]=[];
+  if(before.amount!==after.amount)parts.push(`Ποσό ${money(before.amount)} → ${money(after.amount)}`);
+  if(before.dueDate!==after.dueDate)parts.push(`Ημερομηνία ${dateLabel(before.dueDate)} → ${dateLabel(after.dueDate)}`);
+  if(before.status!==after.status)parts.push(`Κατάσταση ${scheduledStatus(before.status)} → ${scheduledStatus(after.status)}`);
+  if(before.category!==after.category)parts.push(`Κατηγορία ${bounded(before.category)||'—'} → ${bounded(after.category)||'—'}`);
+  if(before.accountId!==after.accountId||before.fromAccountId!==after.fromAccountId||before.toAccountId!==after.toAccountId)parts.push('Λογαριασμός / διαδρομή ενημερώθηκε');
+  return `Αλλαγή προγραμματισμένης κίνησης · ${parts.slice(0,3).join(' · ')||privacyFallback}`;
+}
+
+function effectiveLoans(data:FinanceData):Loan[]{
+  const seeded=data.seed.loans.map(row=>data.state.loanOverrides[row.id]??row);const ids=new Set(seeded.map(row=>row.id));return [...seeded,...(data.state.customLoans??[]).filter(row=>!ids.has(row.id))];
+}
+function loanKind(row:Loan){return row.kind==='installment'?'Δόση':row.kind==='self-loan'?'Προσωπικό δάνειο':'Δάνειο'}
+function describeLoan(current:FinanceData,next:FinanceData){
+  const change=arrayChange(effectiveLoans(current),effectiveLoans(next));if(!change)return null;const row=change.after??change.before!;
+  if(change.type==='add')return `Νέο ${loanKind(row).toLowerCase()} · ${money(row.total)} · δόση ${money(row.installment)}`;
+  if(change.type==='delete')return `Διαγραφή ${loanKind(row).toLowerCase()} · ${money(row.total)}`;
+  const before=change.before!;const after=change.after!;const parts:string[]=[];
+  if(before.total!==after.total)parts.push(`Σύνολο ${money(before.total)} → ${money(after.total)}`);
+  if(before.installment!==after.installment)parts.push(`Δόση ${money(before.installment)} → ${money(after.installment)}`);
+  if(before.installments!==after.installments)parts.push(`Πλήθος δόσεων ${before.installments} → ${after.installments}`);
+  if(before.paidCount!==after.paidCount)parts.push(`Πληρωμένες ${before.paidCount??0} → ${after.paidCount??0}`);
+  if(before.forgivenAmount!==after.forgivenAmount)parts.push(`Διαγραφή οφειλής ${money(before.forgivenAmount)} → ${money(after.forgivenAmount)}`);
+  if(before.defaultAccountId!==after.defaultAccountId)parts.push(`Λογαριασμός ${accountKind(current,before.defaultAccountId)} → ${accountKind(next,after.defaultAccountId)}`);
+  return `Αλλαγή ${loanKind(after).toLowerCase()} · ${parts.slice(0,3).join(' · ')||privacyFallback}`;
+}
+
+function effectiveRecurring(data:FinanceData):RecurringItem[]{
+  const seeded=data.seed.recurring.map(row=>data.state.recurringOverrides[row.id]??row);const ids=new Set(seeded.map(row=>row.id));return [...seeded,...(data.state.recurringCustom??[]).filter(row=>!ids.has(row.id))];
+}
+function recurringStatus(row:RecurringItem){return row.status==='paused'?'Σε παύση':row.status==='stopped'?'Σταματημένο':row.active===false?'Ανενεργό':'Ενεργό'}
+function describeRecurring(current:FinanceData,next:FinanceData){
+  const change=arrayChange(effectiveRecurring(current),effectiveRecurring(next));if(!change)return null;const row=change.after??change.before!;
+  if(change.type==='add')return `Νέα πάγια κίνηση · ${money(row.amount)} · ${recurringStatus(row)}`;
+  if(change.type==='delete')return `Διαγραφή πάγιας κίνησης · ${money(row.amount)}`;
+  const before=change.before!;const after=change.after!;const parts:string[]=[];
+  if(before.amount!==after.amount)parts.push(`Ποσό ${money(before.amount)} → ${money(after.amount)}`);
+  if(before.day!==after.day)parts.push(`Ημέρα ${before.day??'—'} → ${after.day??'—'}`);
+  if(before.status!==after.status||before.active!==after.active)parts.push(`Κατάσταση ${recurringStatus(before)} → ${recurringStatus(after)}`);
+  if(before.accountId!==after.accountId)parts.push(`Λογαριασμός ${accountKind(current,before.accountId)} → ${accountKind(next,after.accountId)}`);
+  if(before.category!==after.category)parts.push(`Κατηγορία ${bounded(before.category)||'—'} → ${bounded(after.category)||'—'}`);
+  return `Αλλαγή πάγιας κίνησης · ${parts.slice(0,3).join(' · ')||privacyFallback}`;
+}
+
+function cardKind(row:PaymentCard){return row.kind==='credit'?'Πιστωτική κάρτα':row.kind==='prepaid'?'Προπληρωμένη κάρτα':'Χρεωστική κάρτα'}
+function describeCards(current:FinanceData,next:FinanceData){
+  const change=arrayChange(current.state.cards,next.state.cards);if(change){const row=change.after??change.before!;
+    if(change.type==='add')return `Νέα κάρτα · ${cardKind(row)}${row.creditLimit!==undefined?` · όριο ${money(row.creditLimit)}`:''}`;
+    if(change.type==='delete')return `Διαγραφή κάρτας · ${cardKind(row)}`;
+    const before=change.before!;const after=change.after!;const parts:string[]=[];
+    if(before.kind!==after.kind)parts.push(`Τύπος ${cardKind(before)} → ${cardKind(after)}`);
+    if(before.creditLimit!==after.creditLimit)parts.push(`Όριο ${money(before.creditLimit)} → ${money(after.creditLimit)}`);
+    if(before.active!==after.active)parts.push(`Κατάσταση ${before.active?'Ενεργή':'Αρχειοθετημένη'} → ${after.active?'Ενεργή':'Αρχειοθετημένη'}`);
+    if(before.network!==after.network)parts.push(`Δίκτυο ${before.network} → ${after.network}`);
+    if(before.formFactor!==after.formFactor)parts.push(`Μορφή ${before.formFactor==='virtual'?'Virtual':'Physical'} → ${after.formFactor==='virtual'?'Virtual':'Physical'}`);
+    if(before.bankId!==after.bankId)parts.push('Τράπεζα κάρτας ενημερώθηκε');
+    return `Αλλαγή κάρτας · ${parts.slice(0,3).join(' · ')||privacyFallback}`;
+  }
+  if(different(current.state.cardBanks,next.state.cardBanks))return 'Αλλαγή τράπεζας καρτών · Οι ιδιωτικές ονομασίες δεν εμφανίζονται στο ιστορικό.';
+  return null;
+}
+
+function budgetLabel(row:MonthlyBudget){return row.scope==='overall'?'Συνολικό budget':`Budget · ${bounded(row.category)||'Κατηγορία'}`}
+function describeBudgets(current:FinanceData,next:FinanceData){
+  const change=arrayChange(current.state.budgets,next.state.budgets);if(!change)return null;const row=change.after??change.before!;
+  if(change.type==='add')return `Νέο ${budgetLabel(row).toLowerCase()} · ${money(row.amount)} · ${row.month}`;
+  if(change.type==='delete')return `Διαγραφή ${budgetLabel(row).toLowerCase()} · ${money(row.amount)}`;
+  const before=change.before!;const after=change.after!;const parts:string[]=[];
+  if(before.amount!==after.amount)parts.push(`Ποσό ${money(before.amount)} → ${money(after.amount)}`);
+  if(before.month!==after.month)parts.push(`Μήνας ${before.month} → ${after.month}`);
+  if(before.category!==after.category)parts.push(`Κατηγορία ${bounded(before.category)||'—'} → ${bounded(after.category)||'—'}`);
+  if(before.alertThreshold!==after.alertThreshold)parts.push(`Όριο ειδοποίησης ${Math.round((before.alertThreshold??0)*100)}% → ${Math.round((after.alertThreshold??0)*100)}%`);
+  return `Αλλαγή ${budgetLabel(after).toLowerCase()} · ${parts.slice(0,3).join(' · ')||privacyFallback}`;
+}
+
+function ruleStatus(row:TransactionRule){return row.enabled?'Ενεργός':'Ανενεργός'}
+function describeRules(current:FinanceData,next:FinanceData){
+  const change=arrayChange(current.state.transactionRules,next.state.transactionRules);if(!change)return null;const row=change.after??change.before!;
+  if(change.type==='add')return `Νέος κανόνας συναλλαγών · ${ruleStatus(row)} · προτεραιότητα ${row.priority}`;
+  if(change.type==='delete')return `Διαγραφή κανόνα συναλλαγών · ${ruleStatus(row)}`;
+  const before=change.before!;const after=change.after!;const parts:string[]=[];
+  if(before.enabled!==after.enabled)parts.push(`Κατάσταση ${ruleStatus(before)} → ${ruleStatus(after)}`);
+  if(before.priority!==after.priority)parts.push(`Προτεραιότητα ${before.priority} → ${after.priority}`);
+  if(different(before.scopes,after.scopes))parts.push('Πεδίο εφαρμογής ενημερώθηκε');
+  if(before.action.category!==after.action.category)parts.push(`Κατηγορία ${bounded(before.action.category)||'—'} → ${bounded(after.action.category)||'—'}`);
+  if(before.action.subcategory!==after.action.subcategory)parts.push(`Υποκατηγορία ${bounded(before.action.subcategory)||'—'} → ${bounded(after.action.subcategory)||'—'}`);
+  return `Αλλαγή κανόνα συναλλαγών · ${parts.slice(0,3).join(' · ')||privacyFallback}`;
+}
+
+function textSize(value:FinanceSettings['textSize']){return value==='compact'?'Compact':value==='large'?'Large':'Normal'}
+function describeSettings(current:FinanceData,next:FinanceData){
+  const before=current.state.settings;const after=next.state.settings;if(!different(before,after))return null;
+  if(before.textSize!==after.textSize)return `Αλλαγή ρυθμίσεων · Μέγεθος κειμένου ${textSize(before.textSize)} → ${textSize(after.textSize)}`;
+  if(before.monthlyBudget!==after.monthlyBudget)return `Αλλαγή ρυθμίσεων · Γενικό budget ${money(before.monthlyBudget)} → ${money(after.monthlyBudget)}`;
+  if(before.savingsTargetRate!==after.savingsTargetRate)return `Αλλαγή ρυθμίσεων · Στόχος αποταμίευσης ${Math.round((before.savingsTargetRate??0)*100)}% → ${Math.round((after.savingsTargetRate??0)*100)}%`;
+  if(before.creditLimit!==after.creditLimit)return `Αλλαγή ρυθμίσεων · Πιστωτικό όριο ${money(before.creditLimit)} → ${money(after.creditLimit)}`;
+  if(before.defaultExpenseAccount!==after.defaultExpenseAccount)return `Αλλαγή ρυθμίσεων · Προεπιλογή εξόδων ${accountKind(current,before.defaultExpenseAccount)} → ${accountKind(next,after.defaultExpenseAccount)}`;
+  if(before.defaultIncomeAccount!==after.defaultIncomeAccount)return `Αλλαγή ρυθμίσεων · Προεπιλογή εσόδων ${accountKind(current,before.defaultIncomeAccount)} → ${accountKind(next,after.defaultIncomeAccount)}`;
+  if(before.defaultLoanAccount!==after.defaultLoanAccount)return `Αλλαγή ρυθμίσεων · Προεπιλογή δόσεων ${accountKind(current,before.defaultLoanAccount)} → ${accountKind(next,after.defaultLoanAccount)}`;
+  if(different(before.excludedFromAvailable,after.excludedFromAvailable))return 'Αλλαγή ρυθμίσεων · Εξαιρούμενοι λογαριασμοί ενημερώθηκαν';
+  if(different(before.accountNames,after.accountNames))return 'Αλλαγή ρυθμίσεων · Ονόματα λογαριασμών ενημερώθηκαν χωρίς αποθήκευση των ονομασιών στο ιστορικό';
+  if(different(before.expenseCategories,after.expenseCategories)||different(before.expenseCategoryTree,after.expenseCategoryTree))return 'Αλλαγή ρυθμίσεων · Κατηγορίες εξόδων ενημερώθηκαν';
+  if(different(before.incomeCategories,after.incomeCategories)||different(before.incomeCategoryTree,after.incomeCategoryTree))return 'Αλλαγή ρυθμίσεων · Κατηγορίες εσόδων ενημερώθηκαν';
+  if(different(before.customPresets,after.customPresets)||different(before.pinnedPresets,after.pinnedPresets))return 'Αλλαγή ρυθμίσεων · Προεπιλογές ενημερώθηκαν χωρίς αποθήκευση ιδιωτικού κειμένου στο ιστορικό';
+  return `Αλλαγή ρυθμίσεων · ${privacyFallback}`;
+}
+
+function recordDecision(current:Record<string,unknown>|undefined,next:Record<string,unknown>|undefined,label:string){
+  if(!different(current,next))return null;const keys=new Set([...Object.keys(current??{}),...Object.keys(next??{})]);for(const key of keys){const before=current?.[key] as {status?:string}|undefined;const after=next?.[key] as {status?:string}|undefined;if(different(before,after))return `${label} · Κατάσταση ${bounded(before?.status)||'—'} → ${bounded(after?.status)||'—'}`;}return label;
+}
+
+export function describeFinanceChange(current:FinanceData,next:FinanceData){
+  // Prefer the primary product object when one logical mutation also creates a ledger event.
+  const scheduled=describeScheduled(current,next);if(scheduled)return scheduled;
+  const loan=describeLoan(current,next);if(loan&&different(current.state.events,next.state.events))return loan;
+  const recurring=describeRecurring(current,next);if(recurring&&different(current.state.events,next.state.events))return recurring;
+  const cards=describeCards(current,next);if(cards)return cards;
+  const event=describeEvent(current,next);if(event)return event;
+  if(loan)return loan;if(recurring)return recurring;
+  const budget=describeBudgets(current,next);if(budget)return budget;
+  const rule=describeRules(current,next);if(rule)return rule;
+  const settings=describeSettings(current,next);if(settings)return settings;
+  const review=recordDecision(current.state.reviewDecisions,next.state.reviewDecisions,'Αλλαγή απόφασης ελέγχου');if(review)return review;
+  const attention=recordDecision(current.state.attentionDecisions,next.state.attentionDecisions,'Αλλαγή στο Χρειάζεται προσοχή');if(attention)return attention;
+  return 'Αλλαγή οικονομικών δεδομένων · Οι λεπτομέρειες δεν εμφανίζονται για λόγους ιδιωτικότητας.';
+}

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ApiError, createBackup, importData, loadData, saveData } from '../lib/api';
+import { describeFinanceChange } from '../lib/changeHistory';
 import { LatestValueQueue, remoteRevisionAction } from '../lib/persistenceQueue';
 import { migrateProductData } from '../lib/productMigration';
 import type { FinanceData } from '../types';
@@ -19,25 +20,7 @@ function productData(input:FinanceData):FinanceData{
   return {...migrated,state:{...migrated.state,settings:{...migrated.state.settings,motion:'full',textSize:migrated.state.settings.textSize??'normal'}}};
 }
 
-export function financeChangeLabel(current:FinanceData,next:FinanceData){
-  const beforeEvents=current.state.events??[];
-  const afterEvents=next.state.events??[];
-  if(current.state.events!==next.state.events){
-    if(afterEvents.length>beforeEvents.length)return 'Νέα οικονομική κίνηση';
-    if(afterEvents.length<beforeEvents.length)return 'Διαγραφή οικονομικής κίνησης';
-    return 'Επεξεργασία οικονομικής κίνησης';
-  }
-  if(current.state.scheduled!==next.state.scheduled)return 'Αλλαγή προγραμματισμένης κίνησης';
-  if(current.state.budgets!==next.state.budgets)return 'Αλλαγή προϋπολογισμού';
-  if(current.state.transactionRules!==next.state.transactionRules)return 'Αλλαγή κανόνα συναλλαγών';
-  if(current.state.cards!==next.state.cards||current.state.cardBanks!==next.state.cardBanks)return 'Αλλαγή κάρτας ή τράπεζας';
-  if(current.state.customLoans!==next.state.customLoans||current.state.loanOverrides!==next.state.loanOverrides)return 'Αλλαγή δανείου ή δόσης';
-  if(current.state.recurringCustom!==next.state.recurringCustom||current.state.recurringOverrides!==next.state.recurringOverrides)return 'Αλλαγή πάγιας κίνησης';
-  if(current.state.settings!==next.state.settings)return 'Αλλαγή ρυθμίσεων';
-  if(current.state.reviewDecisions!==next.state.reviewDecisions)return 'Αλλαγή απόφασης ελέγχου';
-  if(current.state.attentionDecisions!==next.state.attentionDecisions)return 'Αλλαγή στο Χρειάζεται προσοχή';
-  return 'Αλλαγή οικονομικών δεδομένων';
-}
+export function financeChangeLabel(current:FinanceData,next:FinanceData){return describeFinanceChange(current,next)}
 
 function publishHistory(items:ChangeHistoryEntry[]){
   if(typeof window==='undefined')return;
@@ -201,7 +184,7 @@ export function useFinance() {
     pushBounded(redoStackRef.current, current);
     setUndoDepth(undoStackRef.current.length);
     setRedoDepth(redoStackRef.current.length);
-    recordHistory('undo','Αναίρεση τελευταίας αλλαγής');
+    recordHistory('undo',`Αναίρεση: ${financeChangeLabel(previous,current)}`);
     persist(previous);
     return true;
   }, [persist, pushBounded,recordHistory]);
@@ -215,7 +198,7 @@ export function useFinance() {
     pushBounded(undoStackRef.current, current);
     setUndoDepth(undoStackRef.current.length);
     setRedoDepth(redoStackRef.current.length);
-    recordHistory('redo','Επαναφορά τελευταίας αναιρεμένης αλλαγής');
+    recordHistory('redo',`Επαναφορά: ${financeChangeLabel(current,next)}`);
     persist(next);
     return true;
   }, [persist, pushBounded,recordHistory]);
