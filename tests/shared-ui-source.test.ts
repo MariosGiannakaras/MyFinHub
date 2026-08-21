@@ -48,7 +48,9 @@ describe('shared UI contracts',()=>{
     expect(savings).toContain('savingsAccounts.some(account=>account.id===to)');
     const boundary=source('src/components/PageErrorBoundary.tsx');
     expect(boundary).toContain('errorRef.current?.focus');
-    expect(boundary).toContain("this.setState({ failed: false }, this.props.onDashboard)");
+    expect(boundary).toContain('this.props.onDashboard();');
+    expect(boundary).toContain('this.setState({ failed: false });');
+    expect(boundary.indexOf('this.props.onDashboard();')).toBeLessThan(boundary.indexOf('this.setState({ failed: false });',boundary.indexOf('private recoverDashboard')));
     const app=source('src/App.tsx');
     expect(app).toContain('onRefresh={()=>{void finance.reload()}}');
     expect(app).not.toContain('onRefresh={()=>location.reload()');
