@@ -43,8 +43,10 @@ function monthDate(asOf:string,day:number,monthOffset=0){
   const base=utc(asOf);const month=base.getUTCMonth()+monthOffset;const last=new Date(Date.UTC(base.getUTCFullYear(),month+1,0)).getUTCDate();
   return new Date(Date.UTC(base.getUTCFullYear(),month,Math.min(Math.max(1,day),last),12)).toISOString().slice(0,10);
 }
+function monthStart(value:string){return `${value.slice(0,7)}-01`}
 function fingerprint(parts:Array<string|number|undefined|null>){return parts.map(value=>String(value??'')).join('|')}
 function make(item:Omit<AttentionItem,'fingerprint'>):AttentionItem{return {...item,fingerprint:fingerprint([item.kind,item.id,item.severity,item.dueDate,item.amount,item.accountId,item.cardId,item.person,item.action])}}
+function accountName(data:FinanceData,id:string){return data.state.settings.accountNames?.[id]??data.seed.accounts.find(account=>account.id===id)?.name??id}
 
 function effectiveLoans(data:FinanceData):Loan[]{
   const seeded=(data.seed.loans??[]).map(loan=>data.state.loanOverrides?.[loan.id]??loan);
@@ -53,21 +55,23 @@ function effectiveLoans(data:FinanceData):Loan[]{
 
 function recurringDue(data:FinanceData,item:RecurringItem,asOf:string){
   const day=typicalPaymentDay(data,item);if(!day)return null;
-  const current=monthDate(asOf,day);const paid=recurringPayments(data,item.id).some(event=>event.date>=current&&event.date<=asOf);
-  if(current<=asOf&&!paid)return {date:current,severity:'danger' as const,overdue:true};
-  if(current>asOf&&daysBetween(asOf,current)<=UPCOMING_DAYS)return {date:current,severity:'warning' as const,overdue:false};
-  if(paid){const next=monthDate(asOf,day,1);if(daysBetween(asOf,next)<=UPCOMING_DAYS)return {date:next,severity:'warning' as const,overdue:false}}
+  const current=monthDate(asOf,day);
+  const paidThisMonth=recurringPayments(data,item.id).some(event=>event.date>=monthStart(asOf)&&event.date<=asOf);
+  if(current<=asOf&&!paidThisMonth)return {date:current,severity:'danger' as const,overdue:true};
+  if(current>asOf&&!paidThisMonth&&daysBetween(asOf,current)<=UPCOMING_DAYS)return {date:current,severity:'warning' as const,overdue:false};
+  if(paidThisMonth){const next=monthDate(asOf,day,1);if(daysBetween(asOf,next)<=UPCOMING_DAYS)return {date:next,severity:'warning' as const,overdue:false}}
   return null;
 }
 
 function loanDue(data:FinanceData,loan:Loan,asOf:string){
   if(isSelfLoan(loan)||loanRemainingInstallments(data,loan)<=0||Number(loan.installment||0)<=0)return null;
   const day=typicalLoanPaymentDay(data,loan);if(!day)return null;
-  const current=loan.firstExpectedDate&&loan.firstExpectedDate.slice(0,7)===asOf.slice(0,7)?loan.firstExpectedDate:monthDate(asOf,day);
-  const paid=loanPaymentEvents(data,loan).some(event=>event.date>=current&&event.date<=asOf);
-  if(current<=asOf&&!paid)return {date:current,severity:'danger' as const,overdue:true};
-  if(current>asOf&&daysBetween(asOf,current)<=UPCOMING_DAYS)return {date:current,severity:'warning' as const,overdue:false};
-  if(paid){const next=monthDate(asOf,day,1);if(daysBetween(asOf,next)<=UPCOMING_DAYS)return {date:next,severity:'warning' as const,overdue:false}}
+  const first=loan.firstExpectedDate;
+  const current=first&&first>=monthStart(asOf)&&first.slice(0,7)===asOf.slice(0,7)?first:monthDate(asOf,day);
+  const paidThisMonth=loanPaymentEvents(data,loan).some(event=>event.date>=monthStart(asOf)&&event.date<=asOf);
+  if(current<=asOf&&!paidThisMonth)return {date:current,severity:'danger' as const,overdue:true};
+  if(current>asOf&&!paidThisMonth&&daysBetween(asOf,current)<=UPCOMING_DAYS)return {date:current,severity:'warning' as const,overdue:false};
+  if(paidThisMonth){const next=monthDate(asOf,day,1);if(daysBetween(asOf,next)<=UPCOMING_DAYS)return {date:next,severity:'warning' as const,overdue:false}}
   return null;
 }
 
@@ -81,11 +85,11 @@ function scheduledAttention(data:FinanceData,asOf:string):AttentionItem[]{
 }
 
 function recurringAttention(data:FinanceData,asOf:string):AttentionItem[]{
-  return activeRecurringItems(data).flatMap(item=>{const due=recurringDue(data,item,asOf);if(!due)return [];return [make({id:`recurring:${item.id}`,kind:'recurring',severity:due.severity,title:item.name,reason:due.overdue?'Δεν υπάρχει συνδεδεμένη πληρωμή για την τρέχουσα ημερομηνία του παγίου.':'Το επόμενο πάγιο πλησιάζει.',dueDate:due.date,amount:Number(item.amount||0),accountId:item.accountId,recurringId:item.id,action:'pay_recurring'})]});
+  return activeRecurringItems(data).flatMap(item=>{const due=recurringDue(data,item,asOf);if(!due)return [];return [make({id:`recurring:${item.id}`,kind:'recurring',severity:due.severity,title:item.name,reason:due.overdue?'Δεν υπάρχει συνδεδεμένη πληρωμή για το πάγιο μέσα στον τρέχοντα μήνα και η γνωστή ημέρα έχει περάσει.':'Το επόμενο πάγιο πλησιάζει.',dueDate:due.date,amount:Number(item.amount||0),accountId:item.accountId,recurringId:item.id,action:'pay_recurring'})]});
 }
 
 function loanAttention(data:FinanceData,asOf:string):AttentionItem[]{
-  return effectiveLoans(data).flatMap(loan=>{const due=loanDue(data,loan,asOf);if(!due)return [];return [make({id:`loan:${loan.id}`,kind:'loan',severity:due.severity,title:loan.name,reason:due.overdue?'Δεν υπάρχει συνδεδεμένη πληρωμή για την τρέχουσα δόση.':'Η επόμενη γνωστή δόση πλησιάζει.',dueDate:due.date,amount:Number(loan.installment||0),accountId:loan.defaultAccountId||data.state.settings.defaultLoanAccount,loanId:loan.id,action:'pay_loan'})]});
+  return effectiveLoans(data).flatMap(loan=>{const due=loanDue(data,loan,asOf);if(!due)return [];return [make({id:`loan:${loan.id}`,kind:'loan',severity:due.severity,title:loan.name,reason:due.overdue?'Δεν υπάρχει συνδεδεμένη πληρωμή για τη δόση μέσα στον τρέχοντα μήνα και η γνωστή ημέρα έχει περάσει.':'Η επόμενη γνωστή δόση πλησιάζει.',dueDate:due.date,amount:Number(loan.installment||0),accountId:loan.defaultAccountId||data.state.settings.defaultLoanAccount,loanId:loan.id,action:'pay_loan'})]});
 }
 
 function creditAttention(data:FinanceData,asOf:string):AttentionItem[]{
@@ -108,8 +112,9 @@ function lendingAttention(data:FinanceData,asOf:string):AttentionItem[]{
 
 function forecastAttention(data:FinanceData,asOf:string):AttentionItem[]{
   const forecast=cashFlowForecast(data,asOf,30);return forecast.accounts.flatMap(account=>{
-    if(account.firstNegativeDate)return [make({id:`forecast:${account.accountId}`,kind:'forecast',severity:'danger',title:'Προβλεπόμενο αρνητικό υπόλοιπο',reason:`Η ντετερμινιστική προβολή 30 ημερών περνά κάτω από μηδέν στις ${account.firstNegativeDate.split('-').reverse().join('/')}.`,dueDate:account.firstNegativeDate,amount:account.minimum,accountId:account.accountId,action:'open_forecast'})];
-    if(account.firstLowDate&&account.minimum<LOW_BALANCE_THRESHOLD)return [make({id:`forecast:${account.accountId}`,kind:'forecast',severity:'warning',title:'Προβλεπόμενο χαμηλό υπόλοιπο',reason:`Η ντετερμινιστική προβολή 30 ημερών πέφτει κάτω από ${LOW_BALANCE_THRESHOLD}€ στις ${account.firstLowDate.split('-').reverse().join('/')}.`,dueDate:account.firstLowDate,amount:account.minimum,accountId:account.accountId,action:'open_forecast'})];
+    const name=accountName(data,account.accountId);
+    if(account.firstNegativeDate)return [make({id:`forecast:${account.accountId}`,kind:'forecast',severity:'danger',title:`Προβλεπόμενο αρνητικό υπόλοιπο · ${name}`,reason:`Η ντετερμινιστική προβολή 30 ημερών περνά κάτω από μηδέν στις ${account.firstNegativeDate.split('-').reverse().join('/')}.`,dueDate:account.firstNegativeDate,amount:account.minimum,accountId:account.accountId,action:'open_forecast'})];
+    if(account.firstLowDate&&account.minimum<LOW_BALANCE_THRESHOLD)return [make({id:`forecast:${account.accountId}`,kind:'forecast',severity:'warning',title:`Προβλεπόμενο χαμηλό υπόλοιπο · ${name}`,reason:`Η ντετερμινιστική προβολή 30 ημερών πέφτει κάτω από ${LOW_BALANCE_THRESHOLD}€ στις ${account.firstLowDate.split('-').reverse().join('/')}.`,dueDate:account.firstLowDate,amount:account.minimum,accountId:account.accountId,action:'open_forecast'})];
     return [];
   });
 }
