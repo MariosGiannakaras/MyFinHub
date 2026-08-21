@@ -30,6 +30,9 @@ describe('MyFinHub Windows desktop boundary', () => {
     expect(desktopPackage.build.nsis.allowToChangeInstallationDirectory).toBe(true);
     expect(desktopPackage.build.nsis.createDesktopShortcut).toBe('always');
     expect(desktopPackage.build.nsis.createStartMenuShortcut).toBe(true);
+    expect(main).toContain("const PRODUCT_NAME = 'MyFinHub'");
+    expect(main).toContain('title: PRODUCT_NAME');
+    expect(main).toContain('title: `${PRODUCT_NAME} — Αρχική ρύθμιση`');
   });
 
   it('keeps the renderer sandboxed and exposes only narrow setup/update IPC', () => {
@@ -115,10 +118,12 @@ describe('MyFinHub Windows desktop boundary', () => {
     expect(workflow).toContain("HKLM:\\Software\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*");
     expect(workflow).toContain("DisplayName -like 'MyFinHub*'");
     expect(workflow).toContain('UninstallString');
-    expect(workflow).toContain("MainWindowTitle -match 'MyFinHub'");
+    expect(workflow).toContain('Installed MyFinHub process is not running from the installed executable path.');
+    expect(workflow).toContain("Where-Object { $_.Path -eq $exe }");
     expect(workflow).toContain('ExtractAssociatedIcon($exe)');
     expect(workflow).toContain("-Filter 'Uninstall*.exe'");
     expect(workflow).toContain('MyFinHub executable remains after silent uninstall.');
+    expect(workflow).not.toContain("MainWindowTitle -match 'MyFinHub'");
   });
 
   it('keeps the new light/dark MyFinHub artwork and generates the Windows 512 size at build time', () => {
