@@ -106,8 +106,9 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'k') return;
-      if (!GENERIC_ENTRY_PAGES.has(page) || quickOpen) return;
+      if (!GENERIC_ENTRY_PAGES.has(page)) return;
       event.preventDefault();
+      if (quickOpen) return;
       openGeneric('expense');
     };
     addEventListener('keydown', onKey);

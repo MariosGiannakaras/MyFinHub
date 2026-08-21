@@ -91,9 +91,12 @@ try{
   await navigate('lending');await clickText('.receivable-person-actions button','Επιστροφή');await waitModal('Επιστροφή δανεικών');
   assert(await c.call("function(){const values=[...document.querySelectorAll('.contextual-quick-modal input')].map(input=>input.value);return values.includes('Νίκος')&&values.includes('50')}"),'lending context carries exact person and outstanding amount');await closeModal();
 
-  console.log('Action Center QA: snooze, empty state and responsive accessibility');
+  console.log('Action Center QA: snooze, undo, empty state and responsive accessibility');
   await navigate('attention');
-  const snoozed=await c.call("function(){const row=[...document.querySelectorAll('.attention-row')].find(node=>node.classList.contains('warning')||node.classList.contains('info'));const button=row?.querySelector('button[aria-label^=\"Αναβολή\"]');const id=row?.getAttribute('data-attention-id');button?.click();return id||''}");assert(Boolean(snoozed),'non-danger item can be snoozed');await waitFor("function(id){return !document.querySelector(`[data-attention-id=\"${CSS.escape(id)}\"]`)}",'snoozed row removal',[snoozed]);
+  const snoozed=await c.call("function(){const row=[...document.querySelectorAll('.attention-row')].find(node=>node.classList.contains('warning')||node.classList.contains('info'));const button=row?.querySelector('button[aria-label^=\"Αναβολή\"]');const id=row?.getAttribute('data-attention-id');button?.click();return id||''}");assert(Boolean(snoozed),'non-danger item can be snoozed');
+  await waitFor("function(id){return !document.querySelector(`[data-attention-id=\"${CSS.escape(id)}\"]`)}",'snoozed row removal',[snoozed]);
+  const undone=await c.call("function(){const button=document.querySelector('.top-actions button[aria-label=\"Αναίρεση τελευταίας αλλαγής\"]');button?.click();return Boolean(button&&!button.disabled)}");assert(undone,'attention snooze exposes enabled undo');
+  await waitFor("function(id){return Boolean(document.querySelector(`[data-attention-id=\"${CSS.escape(id)}\"]`))}",'snoozed row restored by undo',[snoozed]);
   await navigate('attention','empty');assert(await c.call("function(){return (document.querySelector('.attention-empty')?.textContent||'').includes('Δεν υπάρχει κάτι που χρειάζεται άμεση ενέργεια')}") ,'empty attention state');
   await navigate('attention','extreme',375,812);await noOverflow('attention mobile extreme');await noUnnamed('attention mobile extreme');await touchTargets('attention mobile extreme');await screenshot('action-center-mobile');
 
