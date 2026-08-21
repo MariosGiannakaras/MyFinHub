@@ -13,7 +13,7 @@ const stamp='2026-08-17T12:00:00.000Z';
 const budget=(id:string,scope:'category'|'overall',amount:number,category?:string):MonthlyBudget=>({id,month:'2026-08',scope,category,amount,alertThreshold:.8,createdAt:stamp,updatedAt:stamp});
 const rule=(id:string,priority:number,description:string,category:string):TransactionRule=>({id,name:id,enabled:true,priority,scopes:['manual'],match:{description,mode:'contains'},action:{category},createdAt:stamp,updatedAt:stamp});
 
-function clean(){const data=clone();data.seed.transactions=[];data.state.customTransactions=[];data.state.overrides={};data.state.deleted=[];data.state.events=[];data.state.budgets=[];data.state.transactionRules=[];return data}
+function clean(){const data=clone();data.seed.transactions=[];data.state.customTransactions=[];data.state.overrides={};data.state.deleted=[];data.state.events=[];data.state.budgets=[];data.state.transactionRules=[];data.state.reviewDecisions={};return data}
 
 describe('monthly category budgets',()=>{
   it('counts split portions exactly once, excludes transfers and nets refunds deterministically',()=>{
@@ -27,6 +27,12 @@ describe('monthly category budgets',()=>{
     expect(spending.get('Τρόφιμα')).toBe(120);
     expect(spending.get('Μετακινήσεις')).toBe(20);
     expect([...spending.values()].reduce((sum,value)=>sum+value,0)).toBe(140);
+  });
+
+  it('uses reviewed legacy split portions instead of the legacy row category total',()=>{
+    const data=clean();data.seed.transactions=[{id:'legacy-split',date:'2026-08-09',type:'expense',accountId:'piraeus-payroll',amount:60,note:'Legacy mixed',category:'Άλλο'}];data.state.reviewDecisions={'legacy-split':{status:'confirmed',semanticKind:'split',decidedAt:stamp,parts:[{id:'p1',label:'Food',category:'Τρόφιμα',amount:45,kind:'expense'},{id:'p2',label:'Refund',category:'Τρόφιμα',amount:5,kind:'refund'},{id:'p3',label:'Travel',category:'Μετακινήσεις',amount:10,kind:'expense'}]}};
+    const spending=categoryBudgetSpending(data,'2026-08');
+    expect(spending.get('Τρόφιμα')).toBe(40);expect(spending.get('Μετακινήσεις')).toBe(10);expect(spending.has('Άλλο')).toBe(false);
   });
 
   it('reports used, remaining, near and exceeded states for category and overall limits',()=>{
