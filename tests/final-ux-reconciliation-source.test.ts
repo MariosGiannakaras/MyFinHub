@@ -8,6 +8,7 @@ const skeleton=readFileSync(new URL('../src/components/AppSkeleton.tsx',import.m
 const finance=readFileSync(new URL('../src/hooks/useFinance.ts',import.meta.url),'utf8');
 const shell=readFileSync(new URL('../src/components/AppShell.tsx',import.meta.url),'utf8');
 const styles=readFileSync(new URL('../src/styles/part41.css',import.meta.url),'utf8');
+const reconciliationQa=readFileSync(new URL('../scripts/final-ux-reconciliation-qa.mjs',import.meta.url),'utf8');
 const pkg=JSON.parse(readFileSync(new URL('../package.json',import.meta.url),'utf8')) as {scripts:Record<string,string>};
 
 describe('final UX reconciliation source contracts',()=>{
@@ -28,6 +29,14 @@ describe('final UX reconciliation source contracts',()=>{
     expect(styles).toContain('.dashboard-grid>[data-dashboard-section]{order:initial!important;grid-row:auto!important;grid-column:auto!important}');
     expect(styles).toContain('.dashboard-grid{grid-auto-flow:row}');
     expect(styles).toContain('.dashboard-pending-grid>.panel{order:initial!important}');
+  });
+
+  it('measures box-less display contents sections through their rendered children',()=>{
+    expect(reconciliationQa).toContain("if(style.display==='contents')");
+    expect(reconciliationQa).toContain('[...node.children].map(child=>child.getBoundingClientRect())');
+    expect(reconciliationQa).toContain('Math.min(...childRects.map(childRect=>childRect.top))');
+    expect(reconciliationQa).toContain('Math.max(...childRects.map(childRect=>childRect.bottom))');
+    expect(reconciliationQa).toContain('mobile visual order follows semantic order');
   });
 
   it('exposes privacy-safe session history for changes, undo and redo',()=>{
