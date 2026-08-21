@@ -46,6 +46,7 @@ try{
   const assertDialogSemantics=async title=>{assert(await c.call("function(title){const modal=document.querySelector('.contextual-quick-modal');if(!modal)return false;const labelled=modal.getAttribute('aria-labelledby');return modal.getAttribute('role')==='dialog'&&modal.getAttribute('aria-modal')==='true'&&Boolean(labelled)&&((document.getElementById(labelled)?.textContent||'').includes(title))}",[title]),`${title} dialog semantics`)};
   const waitModal=async title=>{await waitFor("function(title){const modal=document.querySelector('.contextual-quick-modal');return Boolean(modal&&(modal.querySelector('h2')?.textContent||'').includes(title))}",`${title} contextual modal`,[title]);assert(await c.call("function(){return document.querySelector('.contextual-quick-modal input[data-autofocus=true]')===document.activeElement}"),`${title} autofocus`);await assertDialogSemantics(title)};
   const closeModal=async()=>{const closed=await c.call("function(){const button=document.querySelector('.contextual-quick-modal button[aria-label*=\"Κλείσιμο\"]');button?.click();return Boolean(button)}");assert(closed,'context modal close control');await waitFor("function(){return !document.querySelector('.contextual-quick-modal')}",'context modal close')};
+  const closeGenericModal=async()=>{const closed=await c.call("function(){const button=document.querySelector('.quick-modal:not(.contextual-quick-modal) button[aria-label=\"Κλείσιμο καταχώρισης\"]');button?.click();return Boolean(button)}");assert(closed,'generic account context closes');await waitFor("function(){return !document.querySelector('.quick-modal')}",'generic account context close')};
   const pressEscape=async()=>{for(const type of ['keyDown','keyUp'])await c.send('Input.dispatchKeyEvent',{type,key:'Escape',code:'Escape',windowsVirtualKeyCode:27,nativeVirtualKeyCode:27})};
 
   console.log('Action Center QA: desktop hierarchy, privacy and deterministic queue');
@@ -85,11 +86,14 @@ try{
 
   console.log('Action Center QA: account, savings and lending invocation contexts');
   await navigate('dashboard');
-  const bankOpened=await c.call("function(){const node=[...document.querySelectorAll('.primary-balance-card .account-context-action')].find(button=>(button.textContent||'').includes('Νέα κίνηση'));node?.click();return Boolean(node)}");assert(bankOpened,'dashboard account context action');
-  await waitFor("function(){return Boolean(document.querySelector('.quick-modal:not(.contextual-quick-modal)'))}",'account-context generic quick add');
-  assert(await c.call("function(){return [...document.querySelectorAll('.quick-modal:not(.contextual-quick-modal) input[role=combobox]')].some(input=>(input.value||'').includes('Κύριος λογαριασμός'))}"),'account context preselects originating account');
-  const genericClosed=await c.call("function(){const button=document.querySelector('.quick-modal:not(.contextual-quick-modal) button[aria-label=\"Κλείσιμο καταχώρισης\"]');button?.click();return Boolean(button)}");assert(genericClosed,'generic account context closes');
-  await waitFor("function(){return !document.querySelector('.quick-modal')}",'generic account context close');
+  const payrollOpened=await c.call("function(){const node=document.querySelector('[data-account-id=\"piraeus-payroll\"] .account-context-action');node?.click();return Boolean(node)}");assert(payrollOpened,'dashboard payroll account context action');
+  await waitFor("function(){return Boolean(document.querySelector('.quick-modal:not(.contextual-quick-modal)'))}",'payroll account-context generic quick add');
+  assert(await c.call("function(){return [...document.querySelectorAll('.quick-modal:not(.contextual-quick-modal) input[role=combobox]')].some(input=>(input.value||'').includes('Κύριος λογαριασμός'))}"),'payroll context preselects originating payroll account');
+  await closeGenericModal();
+  const cashOpened=await c.call("function(){const node=document.querySelector('[data-account-id=\"cash\"] .account-context-action');node?.click();return Boolean(node)}");assert(cashOpened,'dashboard cash account context action');
+  await waitFor("function(){return Boolean(document.querySelector('.quick-modal:not(.contextual-quick-modal)'))}",'cash account-context generic quick add');
+  assert(await c.call("function(){return [...document.querySelectorAll('.quick-modal:not(.contextual-quick-modal) input[role=combobox]')].some(input=>(input.value||'').includes('Μετρητά'))}"),'cash context preselects originating cash account');
+  await closeGenericModal();
 
   await navigate('savings');await clickText('.savings-action','Μεταφορά στην άκρη');await waitModal('Μεταφορά στην αποταμίευση');
   const before=await c.call("function(){return document.querySelector('.contextual-quick-modal input[role=combobox]')?.value||''}");
