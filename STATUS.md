@@ -62,17 +62,42 @@ The Windows desktop application is released and validated through the v1.0.2 rel
 - In-app updates use the controlled `myfinhub-v<semver>` GitHub Release channel, exact installer/checksum naming, trusted-host checks, size bounds, and streamed SHA-256 verification.
 - Unsigned personal-use releases are supported; Authenticode remains optional if signing credentials are later configured.
 
-### MyFinHub branding
+### Branding state
 
-The visible application identity is **MyFinHub** across web/PWA/desktop surfaces. The authentic original wallet/`R` artwork recovered from pre-rebrand Git history is used across favicon, PWA, setup, and Windows packaging assets. Compatibility-critical historical database, migration, cookie, storage, package, and desktop/backend protocol identifiers remain unchanged where renaming would add migration risk without user value.
+The **released v1.0.2 production build** still contains the earlier pre-rebrand wallet/`R` artwork recovered from repository history. That remains production truth until a separately approved release changes it.
+
+The open feature branch / PR #159 now contains the owner-supplied **new MyFinHub light/dark brand set** tracked in #160:
+
+- native light/dark 32px and 192px square runtime assets derived from the supplied 1536px artwork;
+- explicit light/dark `BrandMark` contract used by sidebar, mobile header, Login and MFA;
+- boot compatibility path points to the new light asset;
+- favicon and Apple touch icon use the new light artwork;
+- PWA uses the new light 192 asset plus a scalable 512 wrapper, with a dark 512 wrapper retained for the brand contract;
+- Windows setup uses the new dark 192 artwork;
+- Windows packaging generates its real 512×512 application icon from the new light 192 source with high-quality System.Drawing interpolation;
+- the old RheomIQ `icon-512.png` runtime/canonical files are removed from the feature branch;
+- supplied source dimensions and SHA-256 provenance are recorded in `assets/branding/myfinhub/README.md`.
+
+Compatibility-critical historical database, migration, cookie, storage, package and desktop/backend protocol identifiers remain unchanged where renaming would add migration risk without user value.
 
 ## Current development integration
 
 `main` and `develop` share the released v1.0.2 baseline `d054ad549549c19039b70e76780e84feca7f3104`.
 
-The application-wide UI/UX/browser/analytics hardening batch is implemented on `feat/ui-ux-hardening-batch` in PR #159. Issue #158 is complete. The PR is ready for review but remains **unmerged and unreleased**; its changes are not part of the production baseline described above.
+PR #159 on `feat/ui-ux-hardening-batch` contains the completed application-wide UI/UX/browser hardening from #158 plus the approved #160 follow-up:
 
-Production release remains a separate deliberate action. Documentation or feature-branch changes do not imply a production deployment, version bump, desktop tag, or installer publication.
+- large Reports/Analytics visual restructure with executive summary, comparative KPIs, six-month flow + insight rail, commitment/credit pressure, category momentum and private account/savings drill-down;
+- new MyFinHub light/dark branding integration and Windows/PWA asset pipeline;
+- dedicated Reports and branding rendered-QA suites in addition to the full route/state/runtime matrix.
+
+Verified #160 implementation checkpoint: `51c222aea329464c05fa4cd4cf28a214b9919ce2`.
+
+- CI `32455966062`: **success**, 34 test files / **151 tests**, production build, API TypeScript and all rendered browser suites.
+- Screenshot artifact `9437288171`: **56 screenshots**, SHA-256 `3e5d34c9ee7eb6db4f1c0fc700550aa95566c96735114e23c843e0482de43fe6`; manual review found no new overlap, clipping or responsive regression.
+- CodeQL `32455966171`: **success**.
+- Windows Desktop `32455966107`: **success**, including generated MyFinHub 512 icon, packaged executable/backend smoke, NSIS Setup and checksum verification.
+
+PR #159 remains **open, unmerged and unreleased**. None of these feature-branch changes are part of production until the owner separately approves merge and release.
 
 ## Implemented production platform
 
