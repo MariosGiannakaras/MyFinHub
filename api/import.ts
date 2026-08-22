@@ -7,7 +7,7 @@ import { validateFinanceData } from '../server/validation.js';
 export default async function handler(req: any, res: any) {
   await handleApi(res, async () => {
     if (req.method !== 'POST') return methodNotAllowed(res, ['POST']);
-    const session = await requireSession(req, res);
+    const session = await requireSession(req, res, { allowBearer: true });
     assertMutationSessionOrigin(req, session);
     if (!(await isOwner(session.accessToken))) {
       clearSessionCookiesIfCookie(req, res, session);
