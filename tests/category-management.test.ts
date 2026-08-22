@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { categoryKey, categoryTree, parseCategoryTree, subcategoriesFor } from '../src/lib/categories';
-import type { FinanceSettings } from '../src/types';
+import { categoryKey, categoryTree, parseCategoryTree, subcategoriesFor } from '../src/lib/categories.js';
+import type { FinanceSettings } from '../src/types.js';
 
 const shell=readFileSync(new URL('../src/components/AppShell.tsx',import.meta.url),'utf8');
 const settingsSource=readFileSync(new URL('../src/pages/SettingsPage.tsx',import.meta.url),'utf8');
