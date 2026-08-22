@@ -1,5 +1,5 @@
-import { accessTokenAal, clearSessionCookies, requireSession } from './auth.js';
-import { ApiError, assertSameOrigin, handleApi, methodNotAllowed, readJsonBody, sendJson } from './http.js';
+import { accessTokenAal, assertMutationSessionOrigin, clearSessionCookiesIfCookie, requireSession } from './auth.js';
+import { ApiError, handleApi, methodNotAllowed, readJsonBody, sendJson } from './http.js';
 import { isOwner } from './storage.js';
 import { deleteCardSecrets, readCardSecrets, writeCardSecrets } from './cardVaultStore.js';
 
@@ -40,9 +40,9 @@ export async function handleCardVaultRequest(req:any,res:any){
   await handleApi(res,async()=>{
     const method=String(req.method||'').toUpperCase();
     if(method!=='POST'&&method!=='PUT'&&method!=='DELETE')return methodNotAllowed(res,['POST','PUT','DELETE']);
-    assertSameOrigin(req);
     const session=await requireSession(req,res);
-    if(!(await isOwner(session.accessToken))){clearSessionCookies(req,res);throw new ApiError(401,'AUTH_REQUIRED','Authentication required.');}
+    assertMutationSessionOrigin(req,session);
+    if(!(await isOwner(session.accessToken))){clearSessionCookiesIfCookie(req,res,session);throw new ApiError(401,'AUTH_REQUIRED','Authentication required.');}
     if(accessTokenAal(session.accessToken)!=='aal2')throw new ApiError(403,'MFA_REQUIRED','Verification required.');
     const ownerUserId=String(session.user?.id||'');
     if(!ownerUserId)throw new ApiError(401,'AUTH_REQUIRED','Authentication required.');
