@@ -8,8 +8,10 @@
   },
   "scripts": {
     "dev": "concurrently -k \"npm:dev:server\" \"npm:dev:web\"",
+    "predev:web": "node scripts/sync-ocr-assets.mjs",
     "dev:web": "vite --host 127.0.0.1",
     "dev:server": "tsx watch server/index.ts",
+    "prebuild": "node scripts/sync-ocr-assets.mjs",
     "build": "tsc -b && vite build && node scripts/bundle-budget.mjs",
     "start": "tsx server/index.ts --serve-dist",
     "test": "vitest run",
@@ -26,12 +28,15 @@
     "db:verify": "tsx scripts/migrate-json-to-supabase.ts --verify-only"
   },
   "dependencies": {
+    "@tesseract.js-data/ell": "1.0.0",
+    "@tesseract.js-data/eng": "1.0.0",
     "express": "^5.2.1",
     "framer-motion": "^12.43.0",
     "lucide-react": "^1.28.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "recharts": "^3.10.1"
+    "recharts": "^3.10.1",
+    "tesseract.js": "7.0.0"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
