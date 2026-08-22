@@ -72,7 +72,7 @@ function merchantCandidate(lines: string[]) {
   const candidates = top.map((line, index) => {
     const clean = normalizeSpaces(line).replace(/\b(?:ΑΦΜ|VAT)\b.*$/i, '').trim();
     const key = fold(clean);
-    const letters = (clean.match(/[A-Za-zΑ-Ωα-ωΆ-ώ]/g) ?? []).length;
+    const letters = (clean.match(/\p{L}/gu) ?? []).length;
     const digits = (clean.match(/\d/g) ?? []).length;
     const noise = MERCHANT_NOISE.some((word) => key.includes(word));
     const hasDate = Boolean(dateCandidate(clean));
