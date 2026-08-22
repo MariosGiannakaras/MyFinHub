@@ -12,6 +12,26 @@ function requirePublicValue(name, value, placeholder) {
   return normalized;
 }
 
+function validatePublicConfig(urlValue, keyValue) {
+  let parsed;
+  try { parsed = new URL(urlValue); } catch { throw new Error('Invalid Supabase URL.'); }
+  if (parsed.protocol !== 'https:' || !parsed.hostname || parsed.username || parsed.password) {
+    throw new Error('Supabase URL must be HTTPS.');
+  }
+  const key = String(keyValue || '').trim();
+  if (!key || key.length > 4096 || /\s/.test(key)) throw new Error('Invalid Supabase publishable key.');
+  if (/^sb_secret_/i.test(key)) throw new Error('Use the Supabase publishable/anon key, never a secret/service-role key.');
+  if (/^eyJ/.test(key)) {
+    try {
+      const payload = JSON.parse(Buffer.from(key.split('.')[1] || '', 'base64url').toString('utf8'));
+      if (payload?.role === 'service_role') throw new Error('Use the Supabase publishable/anon key, never a service-role key.');
+    } catch (error) {
+      if (error instanceof Error && /service-role/.test(error.message)) throw error;
+    }
+  }
+  return { url: parsed.toString().replace(/\/$/, ''), key };
+}
+
 function secureDelete(file) {
   try {
     const size = fs.statSync(file).size;
@@ -22,12 +42,12 @@ function secureDelete(file) {
 
 // Developer/CI environments may override the public client config explicitly. Packaged releases
 // normally use the controlled values in runtime-defaults.cjs so end users never provision them.
-process.env.SUPABASE_URL = String(process.env.SUPABASE_URL || requirePublicValue(
-  'SUPABASE_URL', defaults.supabaseUrl, '__MYFINHUB_SUPABASE_URL__',
-)).trim();
-process.env.SUPABASE_PUBLISHABLE_KEY = String(process.env.SUPABASE_PUBLISHABLE_KEY || requirePublicValue(
-  'SUPABASE_PUBLISHABLE_KEY', defaults.supabasePublishableKey, '__MYFINHUB_SUPABASE_PUBLISHABLE_KEY__',
-)).trim();
+const controlledConfig = validatePublicConfig(
+  String(process.env.SUPABASE_URL || requirePublicValue('SUPABASE_URL', defaults.supabaseUrl, '__MYFINHUB_SUPABASE_URL__')).trim(),
+  String(process.env.SUPABASE_PUBLISHABLE_KEY || requirePublicValue('SUPABASE_PUBLISHABLE_KEY', defaults.supabasePublishableKey, '__MYFINHUB_SUPABASE_PUBLISHABLE_KEY__')).trim(),
+);
+process.env.SUPABASE_URL = controlledConfig.url;
+process.env.SUPABASE_PUBLISHABLE_KEY = controlledConfig.key;
 process.env.MYFINHUB_PRODUCTION_ORIGIN = String(defaults.productionOrigin || '').trim();
 
 // A desktop binary must never receive the server-side card-vault encryption key through release
