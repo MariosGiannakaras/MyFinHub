@@ -6,6 +6,7 @@ const qa=readFileSync(new URL('../src/qa.tsx',import.meta.url),'utf8');
 const dashboard=readFileSync(new URL('../src/pages/DashboardPage.tsx',import.meta.url),'utf8');
 const skeleton=readFileSync(new URL('../src/components/AppSkeleton.tsx',import.meta.url),'utf8');
 const finance=readFileSync(new URL('../src/hooks/useFinance.ts',import.meta.url),'utf8');
+const history=readFileSync(new URL('../src/lib/changeHistory.ts',import.meta.url),'utf8');
 const shell=readFileSync(new URL('../src/components/AppShell.tsx',import.meta.url),'utf8');
 const styles=readFileSync(new URL('../src/styles/part41.css',import.meta.url),'utf8');
 const reconciliationQa=readFileSync(new URL('../scripts/final-ux-reconciliation-qa.mjs',import.meta.url),'utf8');
@@ -42,18 +43,25 @@ describe('final UX reconciliation source contracts',()=>{
     expect(reconciliationQa).toContain('mobile visual order follows semantic order');
   });
 
+  it('keeps the QA workspace on the shared app shortcut authority',()=>{
+    expect(qa).not.toContain("addEventListener('keydown',onKey)");
+    expect(qa).not.toContain("removeEventListener('keydown',onKey)");
+    expect(qa).not.toContain("event.key.toLowerCase()!=='k'");
+    expect(qa).toContain('onCommand={openCommand}');
+  });
+
   it('exposes privacy-safe session history for changes, undo and redo',()=>{
     expect(finance).toContain("export const SESSION_HISTORY_EVENT = 'myfinhub-session-change-history'");
     expect(finance).toContain('export function financeChangeLabel(current:FinanceData,next:FinanceData)');
     expect(finance).toContain("recordHistory('change',financeChangeLabel(current,next))");
-    expect(finance).toContain("recordHistory('undo','Αναίρεση τελευταίας αλλαγής')");
-    expect(finance).toContain("recordHistory('redo','Επαναφορά τελευταίας αναιρεμένης αλλαγής')");
+    expect(finance).toContain("recordHistory('undo',`Αναίρεση: ${financeChangeLabel(previous,current)}`)");
+    expect(finance).toContain("recordHistory('redo',`Επαναφορά: ${financeChangeLabel(current,next)}`)");
     expect(finance).toContain('slice(0,MAX_HISTORY_ITEMS)');
     expect(finance).toContain('const changeHistoryRef=useRef<ChangeHistoryEntry[]>([])');
-    expect(finance).toContain('changeHistoryRef.current=next');
-    expect(finance).toContain('setChangeHistory(next)');
-    expect(finance).toContain('publishHistory(next)');
-    expect(finance).not.toContain('setChangeHistory(current=>');
+    expect(history).toContain('export function describeFinanceChange');
+    expect(history).not.toContain('row.note');
+    expect(history).not.toContain('holderName');
+    expect(history).not.toContain('vaultRef');
     expect(app).toContain('history={finance.changeHistory}');
     expect(shell).toContain('aria-label="Ιστορικό αλλαγών"');
     expect(shell).toContain('id="change-history-title"');
@@ -62,14 +70,14 @@ describe('final UX reconciliation source contracts',()=>{
     expect(styles).toContain('min-height:44px');
   });
 
-  it('keeps rendered QA history semantics aligned with production',()=>{
+  it('keeps rendered QA history semantics aligned for primary change labels',()=>{
     expect(qa).toContain("import { financeChangeLabel, type ChangeHistoryEntry, type SaveState } from './hooks/useFinance'");
     expect(qa).toContain('useState<ChangeHistoryEntry[]>([])');
     expect(qa).toContain("recordHistory('change',financeChangeLabel(current,next))");
-    expect(qa).toContain("recordHistory('undo','Αναίρεση τελευταίας αλλαγής')");
-    expect(qa).toContain("recordHistory('redo','Επαναφορά τελευταίας αναιρεμένης αλλαγής')");
     expect(qa).toContain('history={changeHistory}');
     expect(qa).toContain('slice(0,20)');
+    expect(reconciliationQa).toContain("state.text.includes('12,34')");
+    expect(reconciliationQa).toContain("!state.text.includes('Final UX QA Expense')");
   });
 
   it('keeps the mutation gate save-state ref synchronous with rendered state',()=>{
@@ -89,21 +97,20 @@ describe('final UX reconciliation source contracts',()=>{
   });
 
   it('keeps skeletons route-shaped and Dashboard-shaped in the same priority order',()=>{
-    expect(skeleton).toContain("data-skeleton-section=\"primary-accounts\"");
     const primary=skeleton.indexOf('data-skeleton-section="primary-accounts"');
-    const other=skeleton.indexOf('data-skeleton-section="other-balances"');
+    const other=skeleton.indexOf('section="other-balances"');
     const pending=skeleton.indexOf('data-skeleton-section="pending"');
-    const quick=skeleton.indexOf('data-skeleton-section="quick-entry"');
+    const quick=skeleton.indexOf('section="quick-entry"');
     const rest=skeleton.indexOf('data-skeleton-section="rest"');
     expect(primary).toBeGreaterThan(-1);
     expect(other).toBeGreaterThan(primary);
     expect(pending).toBeGreaterThan(other);
     expect(quick).toBeGreaterThan(pending);
     expect(rest).toBeGreaterThan(quick);
-    expect(skeleton).toContain("if(page==='reports')");
-    expect(skeleton).toContain("if(page==='transactions'||page==='review')");
+    for(const page of ['reports','transactions','review','savings','cards','credit','loans','lending','recurring','planning','attention','settings'])expect(skeleton).toContain(`page==='${page}'`);
     expect(skeleton).toContain("location.hash.replace(/^#\\/?/,'').trim()");
     expect(skeleton).toContain("new URLSearchParams(location.search).get('page')");
+    expect(skeleton).toContain('const page=activePage()');
   });
 
   it('runs the focused rendered reconciliation before ledger QA',()=>{

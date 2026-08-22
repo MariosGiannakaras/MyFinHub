@@ -87,7 +87,6 @@ function QaWorkspace(){
 
   useEffect(()=>{document.documentElement.dataset.motion=data.state.settings.motion||'system';return()=>{delete document.documentElement.dataset.motion}},[data.state.settings.motion]);
   useEffect(()=>{document.documentElement.dataset.textSize=data.state.settings.textSize??'normal';return()=>{delete document.documentElement.dataset.textSize}},[data.state.settings.textSize]);
-  useEffect(()=>{const onKey=(event:KeyboardEvent)=>{if(!(event.ctrlKey||event.metaKey)||event.key.toLowerCase()!=='k')return;event.preventDefault();if(quickOpen||commandOpen)return;setCommandOpen(true)};addEventListener('keydown',onKey);return()=>removeEventListener('keydown',onKey)},[quickOpen,commandOpen]);
 
   const recordHistory=(kind:ChangeHistoryEntry['kind'],label:string)=>{const entry:ChangeHistoryEntry={id:`qa-history-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,kind,label,at:new Date().toISOString()};setChangeHistory(items=>[entry,...items].slice(0,20))};
   const update=(recipe:(current:FinanceData)=>FinanceData)=>{const current=data;const next=recipe(current);if(next===current)return;setUndoStack(stack=>[...stack.slice(-19),current]);setRedoStack([]);recordHistory('change',financeChangeLabel(current,next));setData(next)};

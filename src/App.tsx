@@ -112,17 +112,6 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
     setCommandOpen(true);
   };
 
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'k') return;
-      event.preventDefault();
-      if (quickOpen || commandOpen) return;
-      setCommandOpen(true);
-    };
-    addEventListener('keydown', onKey);
-    return () => removeEventListener('keydown', onKey);
-  }, [quickOpen, commandOpen]);
-
   useEffect(() => { setMonth((current) => reportingMonthForDate(current, today, monthIsManual)); }, [today, monthIsManual]);
   useEffect(() => {
     if (notFound) return;
