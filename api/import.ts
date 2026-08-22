@@ -1,5 +1,5 @@
-import { accessTokenAal, clearSessionCookies, requireSession } from '../server/auth.js';
-import { assertSameOrigin, handleApi, methodNotAllowed, readJsonBody, requestHeader, sendJson, ApiError } from '../server/http.js';
+import { accessTokenAal, assertMutationSessionOrigin, clearSessionCookiesIfCookie, requireSession } from '../server/auth.js';
+import { handleApi, methodNotAllowed, readJsonBody, requestHeader, sendJson, ApiError } from '../server/http.js';
 import { MAX_FINANCE_DOCUMENT_BYTES } from '../src/lib/limits.js';
 import { isOwner, writeStore } from '../server/storage.js';
 import { validateFinanceData } from '../server/validation.js';
@@ -7,10 +7,10 @@ import { validateFinanceData } from '../server/validation.js';
 export default async function handler(req: any, res: any) {
   await handleApi(res, async () => {
     if (req.method !== 'POST') return methodNotAllowed(res, ['POST']);
-    assertSameOrigin(req);
-    const session = await requireSession(req, res);
+    const session = await requireSession(req, res, { allowBearer: true });
+    assertMutationSessionOrigin(req, session);
     if (!(await isOwner(session.accessToken))) {
-      clearSessionCookies(req, res);
+      clearSessionCookiesIfCookie(req, res, session);
       throw new ApiError(401, 'AUTH_REQUIRED', 'Authentication required.');
     }
     if (accessTokenAal(session.accessToken) !== 'aal2') throw new ApiError(403, 'MFA_REQUIRED', 'Verification required.');

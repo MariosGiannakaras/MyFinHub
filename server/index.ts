@@ -1,7 +1,7 @@
 import express from 'express';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { accessTokenAal, beginTotpEnrollment, challengeTotp, clearSessionCookies, getTotpFactors, requireSession, revokeSession, setSessionCookies, signInWithPassword, verifyTotp } from './auth.js';
+import { accessTokenAal, assertMutationSessionOrigin, beginTotpEnrollment, challengeTotp, clearSessionCookies, clearSessionCookiesIfCookie, getTotpFactors, requireSession, revokeSession, setSessionCookies, signInWithPassword, verifyTotp } from './auth.js';
 import { handleCardVaultRequest } from './cardVaultHandler.js';
 import { ApiError, assertSameOrigin, handleApi, methodNotAllowed, requestHeader, sendJson } from './http.js';
 import { backupStore, DATA_SOURCE, isOwner, readStore, writeMutableState, writeStore } from './storage.js';
@@ -41,9 +41,9 @@ app.use((error: any, _req: any, res: any, next: any) => {
 });
 
 async function requireFinanceSession(req: any, res: any) {
-  const session = await requireSession(req, res);
+  const session = await requireSession(req, res, { allowBearer: true });
   if (!(await isOwner(session.accessToken))) {
-    clearSessionCookies(req, res);
+    clearSessionCookiesIfCookie(req, res, session);
     throw new ApiError(401, 'AUTH_REQUIRED', 'Authentication required.');
   }
   if (accessTokenAal(session.accessToken) !== 'aal2') {
@@ -154,8 +154,8 @@ app.get('/api/data', (req, res) => void handleApi(res, async () => {
 }));
 
 app.put('/api/data', (req, res) => void handleApi(res, async () => {
-  assertSameOrigin(req);
   const session = await requireFinanceSession(req, res);
+  assertMutationSessionOrigin(req, session);
   const body = parseMutableWrite(req.body);
   sendJson(res, 200, await writeMutableState(body.state, body.updatedAt, requestHeader(req, 'if-match'), session.accessToken));
 }));
@@ -163,16 +163,16 @@ app.put('/api/data', (req, res) => void handleApi(res, async () => {
 app.all('/api/card-secrets', (req, res) => void handleCardVaultRequest(req, res));
 
 app.post('/api/import', (req, res) => void handleApi(res, async () => {
-  assertSameOrigin(req);
   const session = await requireFinanceSession(req, res);
+  assertMutationSessionOrigin(req, session);
   if (requestHeader(req, 'x-rheomiq-confirm-import') !== 'replace') throw new ApiError(400, 'IMPORT_CONFIRMATION_REQUIRED', 'Import confirmation is required.');
   validateFinanceData(req.body);
   sendJson(res, 200, await writeStore(req.body, undefined, true, session.accessToken));
 }));
 
 app.post('/api/backup', (req, res) => void handleApi(res, async () => {
-  assertSameOrigin(req);
   const session = await requireFinanceSession(req, res);
+  assertMutationSessionOrigin(req, session);
   sendJson(res, 200, { path: await backupStore(session.accessToken) });
 }));
 
