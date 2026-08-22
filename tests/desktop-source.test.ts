@@ -45,6 +45,11 @@ describe('MyFinHub Windows desktop boundary', () => {
     expect(main).toContain('sandbox: true');
     expect(main).toContain("preload: path.join(__dirname, 'preload.cjs')");
     expect(preload).toContain("contextBridge.exposeInMainWorld('myFinHubDesktop'");
+    expect(preload).toContain('getRecoveryState: async () =>');
+    expect(preload).toContain('retryStartup: async () =>');
+    expect(preload).toContain('copyStartupDiagnostics: () =>');
+    expect(preload).not.toContain('getSetupState:');
+    expect(preload).not.toContain('saveSetup:');
     expect(preload).not.toContain("require('fs')");
     expect(preload).not.toContain('child_process');
     expect(main).toContain('isMainSender(event)');
@@ -63,6 +68,8 @@ describe('MyFinHub Windows desktop boundary', () => {
     expect(recovery).not.toContain('SUPABASE_URL');
     expect(recovery).not.toContain('SUPABASE_PUBLISHABLE_KEY');
     expect(recovery).not.toContain('CARD_VAULT_KEY');
+    expect(recoveryRenderer).not.toContain('supabaseUrl');
+    expect(recoveryRenderer).not.toContain('supabasePublishableKey');
     expect(recovery).toContain('Νέα προσπάθεια');
     expect(recovery).toContain('Αντιγραφή διαγνωστικών');
   });
@@ -83,7 +90,7 @@ describe('MyFinHub Windows desktop boundary', () => {
     expect(main).toContain("startupError('BACKEND_START_TIMEOUT'");
     expect(main).toContain("startupError('BACKEND_SPAWN_FAILED'");
     expect(recoveryRenderer).toContain('renderDiagnostic');
-    expect(preload).toContain('copySetupDiagnostics');
+    expect(recoveryRenderer).toContain('bridge.copyStartupDiagnostics()');
   });
 
   it('keeps CARD_VAULT_KEY server-side for Windows PAN/expiry operations', () => {
