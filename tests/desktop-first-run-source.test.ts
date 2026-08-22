@@ -33,13 +33,17 @@ describe('Windows no-setup startup/recovery contract', () => {
     expect(main).toContain("startupError('BACKEND_SPAWN_FAILED'");
   });
 
-  it('shows recovery and retry without exposing infrastructure fields', () => {
+  it('shows recovery and retry without exposing infrastructure values to the renderer', () => {
     expect(main).toContain('function sendSetupProgress');
     expect(main).toContain("setupWindow.webContents.send('myfinhub:setup-progress'");
     expect(main).toContain('return { ok: false, error: diagnostic }');
     expect(renderer).toContain('renderDiagnostic');
     expect(renderer).toContain("document.getElementById('retry')");
-    expect(renderer).toContain('bridge.saveSetup');
+    expect(renderer).toContain('bridge.retryStartup()');
+    expect(renderer).not.toContain('supabaseUrl');
+    expect(renderer).not.toContain('supabasePublishableKey');
+    expect(preload).toContain('getRecoveryState: async () =>');
+    expect(preload).toContain('retryStartup: async () =>');
     expect(recovery).toContain('Νέα προσπάθεια');
     expect(recovery).toContain('Δεν χρειάζεται να συμπληρώσεις τεχνικές ρυθμίσεις');
   });
@@ -47,7 +51,8 @@ describe('Windows no-setup startup/recovery contract', () => {
   it('supports safe diagnostic copy without exposing Electron primitives to the renderer', () => {
     expect(main).toContain("ipcMain.handle('myfinhub:copy-setup-diagnostics'");
     expect(main).toContain('formatDiagnostic(lastSetupDiagnostic');
-    expect(preload).toContain('copySetupDiagnostics: () => ipcRenderer.invoke');
+    expect(preload).toContain('copyStartupDiagnostics: () => ipcRenderer.invoke');
+    expect(renderer).toContain('bridge.copyStartupDiagnostics()');
     expect(recovery).toContain('Αντιγραφή διαγνωστικών');
     expect(renderer).not.toContain("require('electron')");
   });
