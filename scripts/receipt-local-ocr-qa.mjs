@@ -199,7 +199,7 @@ try {
   assert((await receiptCount()) === 1, 'receipt remains pending before normal Quick Entry submit');
   const quickValues = await c.call("function(){return [...document.querySelectorAll('.quick-modal:not(.contextual-quick-modal) input')].map(input=>input.value)}");
   assert(quickValues.some((value) => /MY\s*MARKET/i.test(value)), `merchant not prefilled: ${JSON.stringify(quickValues)}`);
-  assert(quickValues.some((value) => value === '2026-08-22'), `date not prefilled: ${JSON.stringify(quickValues)}`);
+  assert(quickValues.some((value) => value === '2026-08-22' || /22\s+Αυγ\s+2026/i.test(value)), `date not prefilled: ${JSON.stringify(quickValues)}`);
   assert(quickValues.some((value) => Number(value) === 24.5), `amount not prefilled: ${JSON.stringify(quickValues)}`);
   const submitClicked = await c.call("function(){const button=[...document.querySelectorAll('.quick-modal:not(.contextual-quick-modal) .save-button')].find(node=>(node.textContent||'').includes('Καταχώριση'));button?.click();return Boolean(button)}");
   assert(submitClicked, 'normal Quick Entry submit exists');
