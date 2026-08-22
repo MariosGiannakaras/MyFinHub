@@ -10,7 +10,7 @@
     "dev": "node dev.mjs",
     "pack": "npm run prepare:bundle && electron-builder --win dir --x64",
     "dist": "npm run prepare:bundle && electron-builder --win nsis --x64 --publish never",
-    "check": "npm audit --audit-level=high && node --check main.cjs && node --check preload.cjs && node --check setup-renderer.js && node --check prepare-build.mjs && node --check dev.mjs"
+    "check": "npm audit --audit-level=high && node --check main.cjs && node --check startup-diagnostics.cjs && node --check preload.cjs && node --check setup-renderer.js && node --check prepare-build.mjs && node --check dev.mjs"
   },
   "dependencies": {
     "rheomiq": "file:.."
@@ -30,6 +30,7 @@
     },
     "files": [
       "main.cjs",
+      "startup-diagnostics.cjs",
       "preload.cjs",
       "setup.html",
       "setup-renderer.js",

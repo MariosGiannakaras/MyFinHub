@@ -17,6 +17,7 @@ contextBridge.exposeInMainWorld('myFinHubDesktop', Object.freeze({
   },
   getSetupState: () => ipcRenderer.invoke('myfinhub:get-setup-state'),
   saveSetup: (value) => ipcRenderer.invoke('myfinhub:save-setup', value),
+  copySetupDiagnostics: () => ipcRenderer.invoke('myfinhub:copy-setup-diagnostics'),
   onSetupProgress: (listener) => {
     if (typeof listener !== 'function') return () => {};
     const handler = (_event, state) => listener(state);

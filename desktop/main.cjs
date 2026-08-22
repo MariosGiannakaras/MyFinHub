@@ -1,9 +1,15 @@
-const { app, BrowserWindow, Menu, dialog, safeStorage, session, shell, ipcMain } = require('electron');
+const { app, BrowserWindow, Menu, dialog, safeStorage, session, shell, ipcMain, clipboard } = require('electron');
 const { spawn } = require('node:child_process');
 const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 const readline = require('node:readline');
+const {
+  StartupError,
+  appendDiagnostic,
+  publicStartupFailure,
+  startupDiagnosticText,
+} = require('./startup-diagnostics.cjs');
 
 const PRODUCT_NAME = 'MyFinHub';
 const APP_ID = 'app.myfinhub.desktop';
@@ -11,6 +17,8 @@ const LOOPBACK = '127.0.0.1';
 // Compatibility contract with the existing local Express backend. Do not rename without a coordinated migration.
 const READY_PREFIX = 'RHEOMIQ_DESKTOP_READY=';
 const STARTUP_TIMEOUT_MS = 20_000;
+const PREFLIGHT_TIMEOUT_MS = 10_000;
+const SETUP_PROGRESS_CHANNEL = 'myfinhub:setup-progress';
 const UPDATE_OWNER = 'MariosGiannakaras';
 const UPDATE_REPOSITORIES = ['MyFinHub', 'RheomIQ'];
 const UPDATE_TAG = /^myfinhub-v(\d+\.\d+\.\d+)$/i;
@@ -28,6 +36,7 @@ let updatePromptActive = false;
 let pendingRelease = null;
 let downloadedInstaller = null;
 let startingConfiguredApp = false;
+let lastStartupFailure = null;
 let updateState = { supported: process.platform === 'win32', currentVersion: app.getVersion(), status: 'idle', availableVersion: null, progress: 0, message: '' };
 
 app.setName(PRODUCT_NAME);
@@ -68,6 +77,17 @@ function normalizePublicConfig(value) {
   try { parsed = new URL(rawUrl); } catch { throw new Error('Invalid Supabase URL.'); }
   if (parsed.protocol !== 'https:' || !parsed.hostname || parsed.username || parsed.password) throw new Error('Supabase URL must be HTTPS.');
   if (!publishable || publishable.length > 4096 || /\s/.test(publishable)) throw new Error('Invalid Supabase publishable key.');
+  if (/^sb_secret_/i.test(publishable)) {
+    throw new Error('Use the Supabase publishable/anon key, never a secret/service-role key.');
+  }
+  if (/^eyJ/.test(publishable)) {
+    try {
+      const payload = JSON.parse(Buffer.from(publishable.split('.')[1] || '', 'base64url').toString('utf8'));
+      if (payload?.role === 'service_role') throw new Error('Use the Supabase publishable/anon key, never a service-role key.');
+    } catch (error) {
+      if (error instanceof Error && /service-role/.test(error.message)) throw error;
+    }
+  }
   return { supabaseUrl: parsed.toString().replace(/\/$/, ''), supabasePublishableKey: publishable };
 }
 
@@ -86,6 +106,22 @@ function normalizeKeyVersion(raw) {
   return value;
 }
 
+function setupProgress(progress, step, message, failure = null) {
+  if (!setupWindow || setupWindow.isDestroyed()) return;
+  setupWindow.webContents.send(SETUP_PROGRESS_CHANNEL, {
+    progress: Math.max(0, Math.min(100, Number(progress) || 0)),
+    step: Math.max(1, Math.min(4, Number(step) || 1)),
+    message: String(message || ''),
+    error: Boolean(failure),
+    failure: failure || null,
+  });
+}
+
+function recordStartupFailure(error, explicitSecrets = []) {
+  lastStartupFailure = publicStartupFailure(error, explicitSecrets);
+  return lastStartupFailure;
+}
+
 function migrateLegacyDesktopConfig() {
   for (const name of ['runtime-config.json', 'runtime-secrets.json']) {
     const current = userDataPath(name);
@@ -100,11 +136,18 @@ function migrateLegacyDesktopConfig() {
 
 function storeRuntimeSecrets(cardVaultKey, cardVaultKeyVersion) {
   if (!cardVaultKey) return;
-  if (!safeStorage.isEncryptionAvailable()) throw new Error('Windows secure storage is unavailable.');
-  writePrivateJson(userDataPath('runtime-secrets.json'), {
-    cardVaultKey: safeStorage.encryptString(cardVaultKey).toString('base64'),
-    cardVaultKeyVersion,
-  });
+  if (!safeStorage.isEncryptionAvailable()) {
+    throw new StartupError('SECURE_STORAGE_UNAVAILABLE', 'secure-storage', 'Το Windows secure storage δεν είναι διαθέσιμο.', 'Electron safeStorage/DPAPI is unavailable.');
+  }
+  try {
+    writePrivateJson(userDataPath('runtime-secrets.json'), {
+      cardVaultKey: safeStorage.encryptString(cardVaultKey).toString('base64'),
+      cardVaultKeyVersion,
+    });
+  } catch (error) {
+    if (error instanceof StartupError) throw error;
+    throw new StartupError('SECURE_STORAGE_WRITE_FAILED', 'secure-storage', 'Δεν ήταν δυνατή η ασφαλής αποθήκευση του card-vault key.', error instanceof Error ? error.message : String(error), error);
+  }
 }
 
 function applyPendingProvision() {
@@ -116,6 +159,8 @@ function applyPendingProvision() {
     writePrivateJson(userDataPath('runtime-config.json'), normalizePublicConfig(value));
     const key = normalizeCardVaultKey(value.cardVaultKey || value.CARD_VAULT_KEY);
     if (key) storeRuntimeSecrets(key, normalizeKeyVersion(value.cardVaultKeyVersion || value.CARD_VAULT_KEY_VERSION));
+  } catch (error) {
+    throw new StartupError('PENDING_PROVISION_FAILED', 'configuration', 'Η αποθηκευμένη αρχική ρύθμιση δεν μπόρεσε να εφαρμοστεί.', error instanceof Error ? error.message : String(error), error instanceof Error ? error : null);
   } finally {
     secureDelete(pending);
     value = null;
@@ -127,24 +172,73 @@ function runtimeConfigExists() {
 }
 
 function loadRuntimeConfig() {
-  if (process.env.SUPABASE_URL && process.env.SUPABASE_PUBLISHABLE_KEY) return normalizePublicConfig(process.env);
-  const file = userDataPath('runtime-config.json');
-  if (!fs.existsSync(file)) throw new Error('Desktop runtime is not configured.');
-  return normalizePublicConfig(readJson(file));
+  try {
+    if (process.env.SUPABASE_URL && process.env.SUPABASE_PUBLISHABLE_KEY) return normalizePublicConfig(process.env);
+    const file = userDataPath('runtime-config.json');
+    if (!fs.existsSync(file)) throw new Error('Desktop runtime is not configured.');
+    return normalizePublicConfig(readJson(file));
+  } catch (error) {
+    throw new StartupError('CONFIG_LOAD_FAILED', 'configuration', 'Οι αποθηκευμένες ρυθμίσεις σύνδεσης δεν είναι έγκυρες.', error instanceof Error ? error.message : String(error), error instanceof Error ? error : null);
+  }
+}
+
+function storedKeyVersion() {
+  if (process.env.CARD_VAULT_KEY_VERSION) {
+    try { return normalizeKeyVersion(process.env.CARD_VAULT_KEY_VERSION); } catch { return 1; }
+  }
+  try {
+    const file = userDataPath('runtime-secrets.json');
+    if (!fs.existsSync(file)) return 1;
+    return normalizeKeyVersion(readJson(file).cardVaultKeyVersion);
+  } catch { return 1; }
 }
 
 function loadRuntimeSecrets() {
-  const envKey = normalizeCardVaultKey(process.env.CARD_VAULT_KEY);
-  if (envKey) return { cardVaultKey: envKey, cardVaultKeyVersion: normalizeKeyVersion(process.env.CARD_VAULT_KEY_VERSION) };
-  const file = userDataPath('runtime-secrets.json');
-  if (!fs.existsSync(file)) return { cardVaultKey: '', cardVaultKeyVersion: 1 };
-  if (!safeStorage.isEncryptionAvailable()) throw new Error('Windows secure storage is unavailable.');
-  const value = readJson(file);
-  const encrypted = Buffer.from(String(value.cardVaultKey || ''), 'base64');
-  return {
-    cardVaultKey: normalizeCardVaultKey(safeStorage.decryptString(encrypted)),
-    cardVaultKeyVersion: normalizeKeyVersion(value.cardVaultKeyVersion),
-  };
+  try {
+    const envKey = normalizeCardVaultKey(process.env.CARD_VAULT_KEY);
+    if (envKey) return { cardVaultKey: envKey, cardVaultKeyVersion: normalizeKeyVersion(process.env.CARD_VAULT_KEY_VERSION) };
+    const file = userDataPath('runtime-secrets.json');
+    if (!fs.existsSync(file)) return { cardVaultKey: '', cardVaultKeyVersion: 1 };
+    if (!safeStorage.isEncryptionAvailable()) throw new Error('Windows secure storage is unavailable.');
+    const value = readJson(file);
+    const encrypted = Buffer.from(String(value.cardVaultKey || ''), 'base64');
+    return {
+      cardVaultKey: normalizeCardVaultKey(safeStorage.decryptString(encrypted)),
+      cardVaultKeyVersion: normalizeKeyVersion(value.cardVaultKeyVersion),
+    };
+  } catch (error) {
+    throw new StartupError('SECURE_STORAGE_READ_FAILED', 'secure-storage', 'Δεν ήταν δυνατή η ανάγνωση των προστατευμένων desktop ρυθμίσεων.', error instanceof Error ? error.message : String(error), error instanceof Error ? error : null);
+  }
+}
+
+async function preflightSupabase(config) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), PREFLIGHT_TIMEOUT_MS);
+  try {
+    const response = await fetch(`${config.supabaseUrl}/auth/v1/settings`, {
+      method: 'GET',
+      headers: {
+        apikey: config.supabasePublishableKey,
+        accept: 'application/json',
+      },
+      redirect: 'error',
+      signal: controller.signal,
+    });
+    if (response.status === 401 || response.status === 403) {
+      throw new StartupError('SUPABASE_PREFLIGHT_REJECTED', 'connection', 'Το Supabase URL ή το publishable key απορρίφθηκε.', `Supabase preflight returned HTTP ${response.status}.`);
+    }
+    if (!response.ok) {
+      throw new StartupError('SUPABASE_PREFLIGHT_UNAVAILABLE', 'connection', 'Το Supabase project δεν απάντησε κανονικά.', `Supabase preflight returned HTTP ${response.status}.`);
+    }
+  } catch (error) {
+    if (error instanceof StartupError) throw error;
+    if (controller.signal.aborted) {
+      throw new StartupError('SUPABASE_PREFLIGHT_TIMEOUT', 'connection', 'Ο έλεγχος σύνδεσης με το Supabase έληξε λόγω timeout.', `No response within ${PREFLIGHT_TIMEOUT_MS / 1000} seconds.`, error instanceof Error ? error : null);
+    }
+    throw new StartupError('SUPABASE_PREFLIGHT_FAILED', 'connection', 'Δεν ήταν δυνατή η σύνδεση με το Supabase project.', error instanceof Error ? error.message : String(error), error instanceof Error ? error : null);
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 function runtimePaths() {
@@ -191,10 +285,16 @@ function childEnvironment(config, secrets, dist) {
 
 async function startBackend(config, secrets) {
   const runtime = runtimePaths();
-  if (!runtime.node || !fs.existsSync(runtime.node)) throw new Error('Bundled Node.js runtime is missing.');
-  if (!fs.existsSync(runtime.server) || !fs.existsSync(runtime.dist)) throw new Error('Desktop bundle is incomplete.');
+  if (!runtime.node || !fs.existsSync(runtime.node)) {
+    throw new StartupError('DESKTOP_RUNTIME_MISSING', 'runtime', 'Λείπει το ενσωματωμένο Node.js runtime του MyFinHub.', 'Expected bundled runtime/node.exe is missing. Reinstall the verified MyFinHub package.');
+  }
+  if (!fs.existsSync(runtime.server) || !fs.existsSync(runtime.dist)) {
+    throw new StartupError('DESKTOP_BUNDLE_INCOMPLETE', 'runtime', 'Η εγκατάσταση του MyFinHub δεν είναι πλήρης.', 'Expected packaged server or frontend bundle is missing. Reinstall the verified MyFinHub package.');
+  }
   return new Promise((resolve, reject) => {
     let settled = false;
+    let diagnostic = '';
+    const explicitSecrets = [config.supabasePublishableKey, secrets.cardVaultKey];
     const child = spawn(runtime.node, [runtime.server, '--serve-dist'], {
       env: childEnvironment(config, secrets, runtime.dist), windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'],
     });
@@ -203,34 +303,48 @@ async function startBackend(config, secrets) {
       if (settled) return;
       settled = true;
       try { child.kill(); } catch { /* no-op */ }
-      reject(new Error('Local backend startup timed out.'));
+      reject(new StartupError('BACKEND_STARTUP_TIMEOUT', 'backend', 'Η τοπική υπηρεσία δεν ξεκίνησε εγκαίρως.', diagnostic || `No readiness signal within ${STARTUP_TIMEOUT_MS / 1000} seconds.`));
     }, STARTUP_TIMEOUT_MS);
     const lines = readline.createInterface({ input: child.stdout });
     lines.on('line', line => {
-      if (settled || !line.startsWith(READY_PREFIX)) return;
+      if (!line.startsWith(READY_PREFIX)) {
+        diagnostic = appendDiagnostic(diagnostic, line, explicitSecrets);
+        return;
+      }
+      if (settled) return;
       const origin = line.slice(READY_PREFIX.length).trim();
       let parsed;
-      try { parsed = new URL(origin); } catch { return; }
-      if (parsed.protocol !== 'http:' || parsed.hostname !== LOOPBACK || !parsed.port) return;
+      try { parsed = new URL(origin); } catch {
+        diagnostic = appendDiagnostic(diagnostic, 'Backend emitted an invalid readiness URL.', explicitSecrets);
+        return;
+      }
+      if (parsed.protocol !== 'http:' || parsed.hostname !== LOOPBACK || !parsed.port) {
+        diagnostic = appendDiagnostic(diagnostic, 'Backend readiness URL was not loopback-only.', explicitSecrets);
+        return;
+      }
       settled = true;
       clearTimeout(timeout);
       resolve({ origin, runtime });
     });
-    child.stderr.on('data', () => {});
+    child.stderr.on('data', chunk => {
+      diagnostic = appendDiagnostic(diagnostic, chunk, explicitSecrets);
+    });
     child.on('error', error => {
       if (settled) return;
       settled = true;
       clearTimeout(timeout);
-      reject(error);
+      reject(new StartupError('BACKEND_SPAWN_FAILED', 'backend', 'Δεν ήταν δυνατή η εκκίνηση της τοπικής υπηρεσίας.', appendDiagnostic(diagnostic, error?.message || error, explicitSecrets), error));
     });
-    child.on('exit', code => {
+    child.on('exit', (code, signal) => {
       if (!settled) {
         settled = true;
         clearTimeout(timeout);
-        reject(new Error(`Local backend exited during startup (${code ?? 'unknown'}).`));
+        const exitDetail = `Local backend exited during startup (code=${code ?? 'unknown'}, signal=${signal ?? 'none'}).`;
+        reject(new StartupError('BACKEND_EXITED_DURING_STARTUP', 'backend', 'Η τοπική υπηρεσία τερματίστηκε κατά την εκκίνηση.', appendDiagnostic(exitDetail, diagnostic, explicitSecrets)));
       } else if (!quitting) {
-        dialog.showErrorBox(PRODUCT_NAME, `Η τοπική υπηρεσία του ${PRODUCT_NAME} σταμάτησε απροσδόκητα.`);
-        app.quit();
+        const exitDetail = `Local backend stopped after readiness (code=${code ?? 'unknown'}, signal=${signal ?? 'none'}).`;
+        const failure = recordStartupFailure(new StartupError('BACKEND_STOPPED', 'backend', 'Η τοπική υπηρεσία σταμάτησε απροσδόκητα.', appendDiagnostic(exitDetail, diagnostic, explicitSecrets)), explicitSecrets);
+        void recoverToSetup(failure);
       }
     });
   });
@@ -264,9 +378,9 @@ function stopBackend() {
   try { child.kill(); } catch { /* already stopped */ }
 }
 
-function createWindow(origin, runtime) {
+async function createWindow(origin, runtime) {
   Menu.setApplicationMenu(null);
-  mainWindow = new BrowserWindow({
+  const window = new BrowserWindow({
     title: PRODUCT_NAME, width: 1440, height: 930, minWidth: 960, minHeight: 650, show: false,
     backgroundColor: '#0f1720', icon: runtime.icon, autoHideMenuBar: true,
     webPreferences: {
@@ -274,19 +388,26 @@ function createWindow(origin, runtime) {
       webSecurity: true, allowRunningInsecureContent: false, devTools: !app.isPackaged,
     },
   });
-  hardenWindow(mainWindow, origin);
-  mainWindow.once('ready-to-show', () => mainWindow?.show());
-  mainWindow.webContents.once('did-finish-load', scheduleAutomaticUpdateChecks);
-  mainWindow.on('closed', () => { mainWindow = null; });
-  void mainWindow.loadURL(origin);
+  mainWindow = window;
+  hardenWindow(window, origin);
+  window.on('closed', () => { if (mainWindow === window) mainWindow = null; });
+  try {
+    await window.loadURL(origin);
+    if (!window.isDestroyed()) window.show();
+    scheduleAutomaticUpdateChecks();
+  } catch (error) {
+    if (!window.isDestroyed()) window.destroy();
+    if (mainWindow === window) mainWindow = null;
+    throw new StartupError('WINDOW_LOAD_FAILED', 'window', 'Το desktop παράθυρο δεν μπόρεσε να φορτώσει την τοπική εφαρμογή.', error instanceof Error ? error.message : String(error), error instanceof Error ? error : null);
+  }
 }
 
 function createSetupWindow() {
-  if (setupWindow) { setupWindow.show(); setupWindow.focus(); return; }
+  if (setupWindow && !setupWindow.isDestroyed()) { setupWindow.show(); setupWindow.focus(); return; }
   Menu.setApplicationMenu(null);
   const runtime = runtimePaths();
   setupWindow = new BrowserWindow({
-    title: `${PRODUCT_NAME} — Αρχική ρύθμιση`, width: 720, height: 760, minWidth: 620, minHeight: 650,
+    title: `${PRODUCT_NAME} — Αρχική ρύθμιση`, width: 760, height: 820, minWidth: 620, minHeight: 650,
     show: false, backgroundColor: '#0f1720', icon: runtime.icon, autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true,
@@ -297,6 +418,14 @@ function createSetupWindow() {
   setupWindow.once('ready-to-show', () => setupWindow?.show());
   setupWindow.on('closed', () => { setupWindow = null; });
   void setupWindow.loadFile(path.join(__dirname, 'setup.html'));
+}
+
+async function recoverToSetup(failure) {
+  stopBackend();
+  lastStartupFailure = failure || lastStartupFailure;
+  createSetupWindow();
+  setupProgress(8, 1, `${lastStartupFailure?.code || 'DESKTOP_STARTUP_FAILED'} — ${lastStartupFailure?.message || 'Η εκκίνηση απέτυχε.'}`, lastStartupFailure);
+  if (mainWindow && !mainWindow.isDestroyed()) mainWindow.destroy();
 }
 
 function sanitizedUpdateState() {
@@ -518,6 +647,20 @@ function isSetupSender(event) {
   } catch { return false; }
 }
 
+function getSetupState() {
+  let config = { supabaseUrl: '', supabasePublishableKey: '' };
+  try {
+    if (runtimeConfigExists()) config = loadRuntimeConfig();
+  } catch { /* setup must remain usable even with corrupt config */ }
+  return {
+    supabaseUrl: config.supabaseUrl || '',
+    supabasePublishableKey: config.supabasePublishableKey || '',
+    cardVaultKeyVersion: storedKeyVersion(),
+    hasStoredCardVaultKey: Boolean(process.env.CARD_VAULT_KEY || fs.existsSync(userDataPath('runtime-secrets.json'))),
+    lastStartupFailure,
+  };
+}
+
 function registerIpcHandlers() {
   ipcMain.handle('myfinhub:get-info', event => {
     if (!isMainSender(event) && !isSetupSender(event)) throw new Error('Unauthorized IPC sender.');
@@ -529,34 +672,76 @@ function registerIpcHandlers() {
   ipcMain.handle('myfinhub:install-update', event => { if (!isMainSender(event)) throw new Error('Unauthorized IPC sender.'); return installDownloadedUpdate(); });
   ipcMain.handle('myfinhub:get-setup-state', event => {
     if (!isSetupSender(event)) throw new Error('Unauthorized IPC sender.');
-    return { supabaseUrl: String(process.env.SUPABASE_URL || ''), supabasePublishableKey: String(process.env.SUPABASE_PUBLISHABLE_KEY || ''), cardVaultKeyVersion: normalizeKeyVersion(process.env.CARD_VAULT_KEY_VERSION) };
+    return getSetupState();
   });
-  ipcMain.handle('myfinhub:save-setup', (event, value) => {
+  ipcMain.handle('myfinhub:copy-setup-diagnostics', event => {
     if (!isSetupSender(event)) throw new Error('Unauthorized IPC sender.');
-    const config = normalizePublicConfig(value);
-    const cardVaultKey = normalizeCardVaultKey(value?.cardVaultKey);
-    const keyVersion = normalizeKeyVersion(value?.cardVaultKeyVersion);
-    writePrivateJson(userDataPath('runtime-config.json'), config);
-    if (cardVaultKey) storeRuntimeSecrets(cardVaultKey, keyVersion);
-    const currentSetup = setupWindow;
-    setImmediate(() => {
-      if (currentSetup && !currentSetup.isDestroyed()) currentSetup.close();
-      void startConfiguredApplication().catch(() => {
-        dialog.showErrorBox(PRODUCT_NAME, `Το ${PRODUCT_NAME} δεν μπόρεσε να ξεκινήσει μετά την αρχική ρύθμιση.`);
-        app.quit();
-      });
-    });
+    if (!lastStartupFailure) return { ok: false };
+    clipboard.writeText(startupDiagnosticText(lastStartupFailure, app.getVersion()));
     return { ok: true };
+  });
+  ipcMain.handle('myfinhub:save-setup', async (event, value) => {
+    if (!isSetupSender(event)) throw new Error('Unauthorized IPC sender.');
+    const explicitSecrets = [value?.supabasePublishableKey, value?.cardVaultKey].filter(Boolean);
+    try {
+      setupProgress(12, 1, 'Έλεγχος μορφής των ρυθμίσεων…');
+      let config;
+      let cardVaultKey;
+      let keyVersion;
+      try {
+        config = normalizePublicConfig(value);
+        cardVaultKey = normalizeCardVaultKey(value?.cardVaultKey);
+        keyVersion = normalizeKeyVersion(value?.cardVaultKeyVersion);
+      } catch (error) {
+        throw new StartupError('CONFIG_INVALID', 'configuration', 'Οι ρυθμίσεις δεν είναι έγκυρες.', error instanceof Error ? error.message : String(error), error instanceof Error ? error : null);
+      }
+
+      setupProgress(25, 1, 'Επαλήθευση Supabase URL και publishable key…');
+      await preflightSupabase(config);
+
+      setupProgress(48, 2, 'Αποθήκευση public config στον Windows λογαριασμό…');
+      try {
+        writePrivateJson(userDataPath('runtime-config.json'), config);
+      } catch (error) {
+        throw new StartupError('CONFIG_WRITE_FAILED', 'configuration', 'Δεν ήταν δυνατή η αποθήκευση των desktop ρυθμίσεων.', error instanceof Error ? error.message : String(error), error instanceof Error ? error : null);
+      }
+
+      setupProgress(60, 2, cardVaultKey ? 'Κρυπτογράφηση card-vault key με Windows DPAPI…' : 'Δεν δόθηκε νέο card-vault key — διατηρείται η υπάρχουσα ρύθμιση.');
+      if (cardVaultKey) storeRuntimeSecrets(cardVaultKey, keyVersion);
+      const secrets = loadRuntimeSecrets();
+
+      setupProgress(72, 3, 'Εκκίνηση του local backend στο 127.0.0.1…');
+      await startConfiguredApplication(config, secrets);
+      lastStartupFailure = null;
+      setupProgress(100, 4, 'Ολοκληρώθηκε. Άνοιγμα MyFinHub…');
+      const currentSetup = setupWindow;
+      setTimeout(() => {
+        if (currentSetup && !currentSetup.isDestroyed()) currentSetup.close();
+      }, 150);
+      return { ok: true };
+    } catch (error) {
+      stopBackend();
+      const failure = recordStartupFailure(error, explicitSecrets);
+      setupProgress(8, 1, `${failure.code} — ${failure.message}`, failure);
+      return { ok: false, error: failure };
+    }
   });
 }
 
-async function startConfiguredApplication() {
+async function startConfiguredApplication(configOverride = null, secretsOverride = null) {
   if (startingConfiguredApp || mainWindow) return;
   startingConfiguredApp = true;
   try {
-    const { origin, runtime } = await startBackend(loadRuntimeConfig(), loadRuntimeSecrets());
-    createWindow(origin, runtime);
-  } finally { startingConfiguredApp = false; }
+    const config = configOverride || loadRuntimeConfig();
+    const secrets = secretsOverride || loadRuntimeSecrets();
+    const { origin, runtime } = await startBackend(config, secrets);
+    await createWindow(origin, runtime);
+  } catch (error) {
+    stopBackend();
+    throw error;
+  } finally {
+    startingConfiguredApp = false;
+  }
 }
 
 async function launch() {
@@ -568,9 +753,9 @@ async function launch() {
     applyPendingProvision();
     if (!runtimeConfigExists()) { createSetupWindow(); return; }
     await startConfiguredApplication();
-  } catch {
-    dialog.showErrorBox(PRODUCT_NAME, `Το ${PRODUCT_NAME} δεν μπόρεσε να ξεκινήσει την τοπική υπηρεσία. Άνοιξε ξανά την εφαρμογή ή κάνε επανεγκατάσταση αν το πρόβλημα συνεχίζεται.`);
-    app.quit();
+  } catch (error) {
+    const failure = recordStartupFailure(error);
+    await recoverToSetup(failure);
   }
 }
 
