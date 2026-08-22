@@ -47,7 +47,7 @@ describe('desktop startup diagnostics', () => {
   });
 
   it('preflights Supabase settings and accepts a successful project/key pair', async () => {
-    const fetchImpl = vi.fn(async () => ({ ok: true, status: 200 }));
+    const fetchImpl = vi.fn(async (_url:string, _init:RequestInit) => ({ ok: true, status: 200 }));
     await expect(diagnostics.preflightSupabase(
       { supabaseUrl: 'https://example.supabase.co', supabasePublishableKey: 'sb_publishable_test' },
       { fetchImpl, timeoutMs: 500 },
@@ -55,11 +55,11 @@ describe('desktop startup diagnostics', () => {
     expect(fetchImpl).toHaveBeenCalledOnce();
     const [url, init] = fetchImpl.mock.calls[0]!;
     expect(url).toBe('https://example.supabase.co/auth/v1/settings');
-    expect((init as any).headers.apikey).toBe('sb_publishable_test');
+    expect((init.headers as Record<string,string>).apikey).toBe('sb_publishable_test');
   });
 
   it('returns a stable rejected-key code without exposing the key', async () => {
-    const fetchImpl = vi.fn(async () => ({ ok: false, status: 401 }));
+    const fetchImpl = vi.fn(async (_url:string, _init:RequestInit) => ({ ok: false, status: 401 }));
     const config = { supabaseUrl: 'https://example.supabase.co', supabasePublishableKey: 'sb_publishable_bad_secret' };
     await expect(diagnostics.preflightSupabase(config, { fetchImpl, timeoutMs: 500 })).rejects.toMatchObject({
       code: 'SUPABASE_PREFLIGHT_REJECTED',
