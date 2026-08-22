@@ -1,0 +1,60 @@
+name: OCR CSP compatibility patch
+
+on:
+  push:
+    branches: [feat/188-local-receipt-ocr]
+    paths:
+      - .github/ocr-csp.trigger
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: feat/188-local-receipt-ocr
+          fetch-depth: 0
+      - name: Allow self-hosted WebAssembly under production and desktop CSP
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          replacements = [
+              (Path('vercel.json'), "script-src 'self';", "script-src 'self' 'wasm-unsafe-eval';"),
+              (Path('server/index.ts'), "script-src 'self';", "script-src 'self' 'wasm-unsafe-eval';"),
+          ]
+          for path, before, after in replacements:
+              text = path.read_text()
+              if text.count(before) != 1:
+                  raise SystemExit(f'{path}: expected one CSP script-src occurrence, got {text.count(before)}')
+              path.write_text(text.replace(before, after, 1))
+
+          Path('tests/receipt-csp-source.test.ts').write_text("""import { readFileSync } from 'node:fs';
+          import { describe, expect, it } from 'vitest';
+
+          const vercel = readFileSync(new URL('../vercel.json', import.meta.url), 'utf8');
+          const desktop = readFileSync(new URL('../server/index.ts', import.meta.url), 'utf8');
+
+          describe('local receipt OCR CSP boundary', () => {
+            it('permits WebAssembly without enabling generic JavaScript eval', () => {
+              for (const source of [vercel, desktop]) {
+                expect(source).toContain(\"script-src 'self' 'wasm-unsafe-eval'\");
+                expect(source).toContain(\"worker-src 'self' blob:\");
+                expect(source).not.toMatch(/script-src[^;]*\s'unsafe-eval'(?:\s|;)/);
+              }
+            });
+          });
+          """.replace('          ', ''))
+          PY
+      - name: Commit patch and remove temporary automation
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/ocr-csp-sync.yml .github/ocr-csp.trigger
+          git add vercel.json server/index.ts tests/receipt-csp-source.test.ts
+          git commit -m "fix: allow local OCR WebAssembly under CSP"
+          git push origin HEAD:feat/188-local-receipt-ocr
