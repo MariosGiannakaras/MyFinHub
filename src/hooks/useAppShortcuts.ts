@@ -23,7 +23,9 @@ export function useAppShortcuts({ onCommand, onQuickEntry, onUndo, onRedo, canUn
       // page-level listeners can also act on the same combination.
       event.stopImmediatePropagation();
 
-      const editable = isEditableShortcutTarget(event.target) || isEditableShortcutTarget(document.activeElement);
+      const editable = isEditableShortcutTarget(event.target)
+        || isEditableShortcutTarget(document.activeElement)
+        || event.composedPath().some((target) => isEditableShortcutTarget(target));
       if (shouldBlockAppShortcut({
         editable,
         modalOpen: hasVisibleModal(),
