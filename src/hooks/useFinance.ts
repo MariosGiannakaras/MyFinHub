@@ -1,19 +1,30 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ApiError, createBackup, importData, loadData, saveData } from '../lib/api';
+import { describeFinanceChange } from '../lib/changeHistory';
 import { LatestValueQueue, remoteRevisionAction } from '../lib/persistenceQueue';
 import { migrateProductData } from '../lib/productMigration';
 import type { FinanceData } from '../types';
 
 export type SaveState = 'loading' | 'saved' | 'saving' | 'error' | 'conflict';
+export type ChangeHistoryEntry = { id:string; kind:'change'|'undo'|'redo'; label:string; at:string };
+export const SESSION_HISTORY_EVENT = 'myfinhub-session-change-history';
 
 const REVISION_CHANNEL = 'rheomiq-finance-revision';
 const MAX_UNDO_STATES = 20;
+const MAX_HISTORY_ITEMS = 20;
 
 type RevisionMessage = { type: 'revision'; revision: string };
 
 function productData(input:FinanceData):FinanceData{
   const migrated=migrateProductData(input);
-  return {...migrated,state:{...migrated.state,settings:{...migrated.state.settings,motion:'full'}}};
+  return {...migrated,state:{...migrated.state,settings:{...migrated.state.settings,motion:'full',textSize:migrated.state.settings.textSize??'normal'}}};
+}
+
+export function financeChangeLabel(current:FinanceData,next:FinanceData){return describeFinanceChange(current,next)}
+
+function publishHistory(items:ChangeHistoryEntry[]){
+  if(typeof window==='undefined')return;
+  window.dispatchEvent(new CustomEvent<ChangeHistoryEntry[]>(SESSION_HISTORY_EVENT,{detail:items}));
 }
 
 export function useFinance() {
@@ -24,6 +35,7 @@ export function useFinance() {
   const [saveState, setSaveState] = useState<SaveState>('loading');
   const [undoDepth, setUndoDepth] = useState(0);
   const [redoDepth, setRedoDepth] = useState(0);
+  const [changeHistory,setChangeHistory]=useState<ChangeHistoryEntry[]>([]);
   const revisionRef = useRef('');
   const dataRef = useRef<FinanceData | null>(null);
   const exclusiveOperation = useRef(false);
@@ -34,14 +46,29 @@ export function useFinance() {
   const coordinatorRef = useRef<LatestValueQueue<FinanceData> | null>(null);
   const undoStackRef = useRef<FinanceData[]>([]);
   const redoStackRef = useRef<FinanceData[]>([]);
+  const historySequenceRef=useRef(0);
+  const changeHistoryRef=useRef<ChangeHistoryEntry[]>([]);
+  const initialLoadStartedRef=useRef(false);
 
   const assignData = useCallback((next: FinanceData | null) => { dataRef.current = next; setData(next); }, []);
+  const setCurrentSaveState=useCallback((next:SaveState)=>{saveStateRef.current=next;setSaveState(next)},[]);
   const clearHistory = useCallback(() => {
     undoStackRef.current = [];
     redoStackRef.current = [];
+    historySequenceRef.current=0;
+    changeHistoryRef.current=[];
     setUndoDepth(0);
     setRedoDepth(0);
+    setChangeHistory([]);
+    publishHistory([]);
   }, []);
+  const recordHistory=useCallback((kind:ChangeHistoryEntry['kind'],label:string)=>{
+    const entry:ChangeHistoryEntry={id:`history-${Date.now()}-${++historySequenceRef.current}`,kind,label,at:new Date().toISOString()};
+    const next=[entry,...changeHistoryRef.current].slice(0,MAX_HISTORY_ITEMS);
+    changeHistoryRef.current=next;
+    setChangeHistory(next);
+    publishHistory(next);
+  },[]);
 
   const applyEnvelope = useCallback((res: Awaited<ReturnType<typeof loadData>>) => {
     const migrated = productData(res.data);
@@ -52,19 +79,19 @@ export function useFinance() {
     setLastSavedAt(res.lastSavedAt);
     lastSaveFailed.current = false;
     clearHistory();
-    setSaveState('saved');
-  }, [assignData, clearHistory]);
+    setCurrentSaveState('saved');
+  }, [assignData, clearHistory,setCurrentSaveState]);
 
   const reload = useCallback(async () => {
-    setSaveState('loading');
+    setCurrentSaveState('loading');
     try {
       applyEnvelope(await loadData());
       return true;
     } catch {
-      setSaveState('error');
+      setCurrentSaveState('error');
       return false;
     }
-  }, [applyEnvelope]);
+  }, [applyEnvelope,setCurrentSaveState]);
 
   if (!coordinatorRef.current) {
     coordinatorRef.current = new LatestValueQueue<FinanceData>(async (stamped) => {
@@ -75,20 +102,23 @@ export function useFinance() {
         setFilePath(res.filePath);
         setLastSavedAt(res.lastSavedAt);
         lastSaveFailed.current = false;
-        setSaveState('saved');
+        setCurrentSaveState('saved');
         channelRef.current?.postMessage({ type: 'revision', revision: res.revision } satisfies RevisionMessage);
       } catch (error) {
         lastSaveFailed.current = true;
-        if (error instanceof ApiError && (error.status === 409 || error.code === 'REVISION_CONFLICT')) setSaveState('conflict');
-        else setSaveState('error');
+        if (error instanceof ApiError && (error.status === 409 || error.code === 'REVISION_CONFLICT')) setCurrentSaveState('conflict');
+        else setCurrentSaveState('error');
         throw error;
       }
     });
   }
   const coordinator = coordinatorRef.current!;
 
-  useEffect(() => { saveStateRef.current = saveState; }, [saveState]);
-  useEffect(() => { void reload(); }, [reload]);
+  useEffect(() => {
+    if(initialLoadStartedRef.current)return;
+    initialLoadStartedRef.current=true;
+    void reload();
+  }, [reload]);
 
   useEffect(() => {
     if (typeof BroadcastChannel === 'undefined') return;
@@ -104,7 +134,7 @@ export function useFinance() {
         lastSaveFailed.current,
       );
       if (action === 'conflict') {
-        setSaveState('conflict');
+        setCurrentSaveState('conflict');
         return;
       }
       if (action === 'reload' && !remoteReloading.current) {
@@ -116,15 +146,15 @@ export function useFinance() {
       if (channelRef.current === channel) channelRef.current = null;
       channel.close();
     };
-  }, [coordinator, reload]);
+  }, [coordinator, reload,setCurrentSaveState]);
 
   const persist = useCallback((next: FinanceData) => {
     const stamped = { ...next, app: 'RheomIQ', schemaVersion: 3, updatedAt: new Date().toISOString() };
     assignData(stamped);
-    setSaveState('saving');
+    setCurrentSaveState('saving');
     coordinator.enqueue(stamped);
     return stamped;
-  }, [assignData, coordinator]);
+  }, [assignData, coordinator,setCurrentSaveState]);
 
   const pushBounded = useCallback((stack: FinanceData[], current: FinanceData) => {
     stack.push(current);
@@ -141,8 +171,9 @@ export function useFinance() {
     setUndoDepth(undoStackRef.current.length);
     redoStackRef.current = [];
     setRedoDepth(0);
+    recordHistory('change',financeChangeLabel(current,next));
     persist(next);
-  }, [persist, pushBounded]);
+  }, [persist, pushBounded,recordHistory]);
 
   const undo = useCallback(() => {
     const state = saveStateRef.current;
@@ -153,9 +184,10 @@ export function useFinance() {
     pushBounded(redoStackRef.current, current);
     setUndoDepth(undoStackRef.current.length);
     setRedoDepth(redoStackRef.current.length);
+    recordHistory('undo',`Αναίρεση: ${financeChangeLabel(previous,current)}`);
     persist(previous);
     return true;
-  }, [persist, pushBounded]);
+  }, [persist, pushBounded,recordHistory]);
 
   const redo = useCallback(() => {
     const state = saveStateRef.current;
@@ -166,14 +198,15 @@ export function useFinance() {
     pushBounded(undoStackRef.current, current);
     setUndoDepth(undoStackRef.current.length);
     setRedoDepth(redoStackRef.current.length);
+    recordHistory('redo',`Επαναφορά: ${financeChangeLabel(current,next)}`);
     persist(next);
     return true;
-  }, [persist, pushBounded]);
+  }, [persist, pushBounded,recordHistory]);
 
   const doImport = useCallback(async (incoming: FinanceData) => {
     if (exclusiveOperation.current) throw new Error('Υπάρχει ήδη λειτουργία αποθήκευσης σε εξέλιξη.');
     exclusiveOperation.current = true;
-    setSaveState('saving');
+    setCurrentSaveState('saving');
     try {
       await coordinator.whenIdle();
       try {
@@ -182,14 +215,14 @@ export function useFinance() {
         channelRef.current?.postMessage({ type: 'revision', revision: res.revision } satisfies RevisionMessage);
       } catch (error) {
         lastSaveFailed.current = true;
-        if (error instanceof ApiError && (error.status === 409 || error.code === 'REVISION_CONFLICT')) setSaveState('conflict');
-        else setSaveState('error');
+        if (error instanceof ApiError && (error.status === 409 || error.code === 'REVISION_CONFLICT')) setCurrentSaveState('conflict');
+        else setCurrentSaveState('error');
         throw error;
       }
     } finally {
       exclusiveOperation.current = false;
     }
-  }, [applyEnvelope, coordinator]);
+  }, [applyEnvelope, coordinator,setCurrentSaveState]);
 
   const doBackup = useCallback(async () => {
     await coordinator.whenIdle();
@@ -202,5 +235,5 @@ export function useFinance() {
   const canUndo = undoDepth > 0 && saveState !== 'conflict' && saveState !== 'error' && saveState !== 'loading';
   const canRedo = redoDepth > 0 && saveState !== 'conflict' && saveState !== 'error' && saveState !== 'loading';
 
-  return useMemo(() => ({ data, revision, filePath, lastSavedAt, saveState, update, reload, undo, redo, canUndo, canRedo, importData: doImport, createBackup: doBackup }), [data, revision, filePath, lastSavedAt, saveState, update, reload, undo, redo, canUndo, canRedo, doImport, doBackup]);
+  return useMemo(() => ({ data, revision, filePath, lastSavedAt, saveState, update, reload, undo, redo, canUndo, canRedo, undoDepth, redoDepth, changeHistory, importData: doImport, createBackup: doBackup }), [data, revision, filePath, lastSavedAt, saveState, update, reload, undo, redo, canUndo, canRedo, undoDepth, redoDepth, changeHistory, doImport, doBackup]);
 }

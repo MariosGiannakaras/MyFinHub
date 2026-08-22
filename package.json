@@ -1,6 +1,6 @@
 {
   "name": "rheomiq",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -10,12 +10,13 @@
     "dev": "concurrently -k \"npm:dev:server\" \"npm:dev:web\"",
     "dev:web": "vite --host 127.0.0.1",
     "dev:server": "tsx watch server/index.ts",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && node scripts/bundle-budget.mjs",
     "start": "tsx server/index.ts --serve-dist",
     "test": "vitest run",
     "test:watch": "vitest",
     "security:guard": "node scripts/security-guard.mjs",
-    "qa:frontend": "node scripts/frontend-qa.mjs && node scripts/frontend-redesign-qa.mjs && node scripts/owned-controls-qa.mjs",
+    "qa:ux": "node scripts/ui-ux-hardening-qa.mjs",
+    "qa:frontend": "node scripts/run-rendered-qa.mjs && node scripts/final-ux-reconciliation-qa.mjs && node scripts/ledger-foundations-qa.mjs",
     "check": "npm run security:guard && npm run test && npm run build",
     "desktop:dev": "npm --prefix desktop run dev",
     "desktop:check": "npm --prefix desktop run check",

@@ -1,0 +1,17 @@
+/* Final UX reconciliation: preserve semantic DOM order and keep History usable on narrow screens. */
+@media(min-width:681px){
+  .primary-balance-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+.history-actions{display:flex;align-items:center;gap:8px;margin-left:auto}
+.history-actions button{min-height:36px;padding:7px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface-soft);color:var(--ink-2);font:inherit;font-size:.72rem;font-weight:780;cursor:pointer}
+.history-actions button:disabled{opacity:.45;cursor:not-allowed}
+@media(max-width:680px){
+  .page-stack>[data-dashboard-section],
+  .dashboard-grid>[data-dashboard-section]{order:initial!important;grid-row:auto!important;grid-column:auto!important}
+  .dashboard-grid{grid-auto-flow:row}
+  .dashboard-pending-grid>.panel{order:initial!important}
+  .top-actions button[aria-label="Αναίρεση τελευταίας αλλαγής"],
+  .top-actions button[aria-label="Επαναφορά τελευταίας αναιρεμένης αλλαγής"]{display:none}
+  .history-actions{width:100%;justify-content:flex-end}
+  .history-actions button{min-height:44px}
+}

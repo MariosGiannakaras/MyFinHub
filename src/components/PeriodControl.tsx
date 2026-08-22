@@ -1,4 +1,5 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Tooltip } from './Tooltip';
 
 function shiftMonth(month:string,delta:number){
   const [year,rawMonth]=month.split('-').map(Number);
@@ -13,5 +14,5 @@ function monthLabel(month:string){
 }
 
 export function PeriodControl({month,onChange}:{month:string;onChange:(month:string)=>void}){
-  return <div className="period-control" aria-label="Περίοδος αναφοράς"><button type="button" aria-label="Προηγούμενος μήνας" onClick={()=>onChange(shiftMonth(month,-1))}><ChevronLeft size={17}/></button><span>{monthLabel(month)}</span><button type="button" aria-label="Επόμενος μήνας" onClick={()=>onChange(shiftMonth(month,1))}><ChevronRight size={17}/></button></div>;
+  return <div className="period-control" aria-label="Περίοδος αναφοράς"><Tooltip label="Προηγούμενος μήνας"><button type="button" aria-label="Προηγούμενος μήνας" onClick={()=>onChange(shiftMonth(month,-1))}><ChevronLeft size={17}/></button></Tooltip><span>{monthLabel(month)}</span><Tooltip label="Επόμενος μήνας"><button type="button" aria-label="Επόμενος μήνας" onClick={()=>onChange(shiftMonth(month,1))}><ChevronRight size={17}/></button></Tooltip></div>;
 }

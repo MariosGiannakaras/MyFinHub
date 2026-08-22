@@ -287,6 +287,7 @@ function validateSettings(value: unknown) {
     if (value.creditLimit < 0) invalid('Invalid state.settings.creditLimit.');
   }
   if (value.motion !== undefined) oneOf(value.motion, ['system','reduced','full'], 'state.settings.motion');
+  if (value.textSize !== undefined) oneOf(value.textSize, ['compact','normal','large'], 'state.settings.textSize');
 }
 
 function ensureUniqueIds(items: unknown[], name: string) {

@@ -30,6 +30,9 @@ describe('MyFinHub Windows desktop boundary', () => {
     expect(desktopPackage.build.nsis.allowToChangeInstallationDirectory).toBe(true);
     expect(desktopPackage.build.nsis.createDesktopShortcut).toBe('always');
     expect(desktopPackage.build.nsis.createStartMenuShortcut).toBe(true);
+    expect(main).toContain("const PRODUCT_NAME = 'MyFinHub'");
+    expect(main).toContain('title: PRODUCT_NAME');
+    expect(main).toContain('title: `${PRODUCT_NAME} — Αρχική ρύθμιση`');
   });
 
   it('keeps the renderer sandboxed and exposes only narrow setup/update IPC', () => {
@@ -105,23 +108,48 @@ describe('MyFinHub Windows desktop boundary', () => {
     expect(workflow).not.toContain('Signed desktop releases require');
   });
 
-  it('keeps a verified MyFinHub favicon source in the repo and generates the Windows size at build time', () => {
+  it('installs, launches, verifies identity and uninstalls the real NSIS package in Windows CI', () => {
+    expect(workflow).toContain('Install, launch and uninstall NSIS package');
+    expect(workflow).toContain("-ArgumentList '/S'");
+    expect(workflow).toContain("'MyFinHub.lnk'");
+    expect(workflow).toContain('CreateShortcut($desktopShortcut)');
+    expect(workflow).toContain("HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*");
+    expect(workflow).toContain("HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*");
+    expect(workflow).toContain("HKLM:\\Software\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\*");
+    expect(workflow).toContain("DisplayName -like 'MyFinHub*'");
+    expect(workflow).toContain('UninstallString');
+    expect(workflow).toContain('Installed MyFinHub process is not running from the installed executable path.');
+    expect(workflow).toContain("Where-Object { $_.Path -eq $exe }");
+    expect(workflow).toContain('ExtractAssociatedIcon($exe)');
+    expect(workflow).toContain("-Filter 'Uninstall*.exe'");
+    expect(workflow).toContain('MyFinHub executable remains after silent uninstall.');
+    expect(workflow).not.toContain("MainWindowTitle -match 'MyFinHub'");
+  });
+
+  it('keeps the new light/dark MyFinHub artwork and generates the Windows 512 size at build time', () => {
     for (const asset of [
       'public/favicon.png',
-      'public/brand/icon-192.png',
-      'public/brand/icon-512.png',
+      'public/brand/icon-light-32.png',
+      'public/brand/icon-dark-32.png',
+      'public/brand/icon-light-192.png',
+      'public/brand/icon-dark-192.png',
+      'public/brand/icon-512.svg',
       'desktop/setup-brand.png',
-      'assets/branding/myfinhub/icon-32.png',
-      'assets/branding/myfinhub/icon-192.png',
-      'assets/branding/myfinhub/icon-512.png',
+      'assets/branding/myfinhub/icon-light-32.png',
+      'assets/branding/myfinhub/icon-dark-32.png',
+      'assets/branding/myfinhub/icon-light-192.png',
+      'assets/branding/myfinhub/icon-dark-192.png',
+      'assets/branding/myfinhub/icon-512.svg',
       'assets/branding/myfinhub/README.md',
     ]) expect(exists(asset)).toBe(true);
     const favicon=bytes('public/favicon.png');
     expect([...favicon.subarray(0,8)]).toEqual([137,80,78,71,13,10,26,10]);
     expect(favicon.readUInt32BE(16)).toBe(32);
     expect(favicon.readUInt32BE(20)).toBe(32);
-    expect(prepareBuild).toContain("const sourceIcon=path.join(root,'public','favicon.png')");
+    expect(bytes('desktop/setup-brand.png').equals(bytes('public/brand/icon-dark-192.png'))).toBe(true);
+    expect(prepareBuild).toContain("const sourceIcon=path.join(root,'public','brand','icon-light-192.png')");
     expect(prepareBuild).toContain('[Drawing.Bitmap]::new(512,512)');
+    expect(prepareBuild).not.toContain('nativeAppIcon');
     expect(workflow).toContain('assets/branding/myfinhub/**');
   });
 

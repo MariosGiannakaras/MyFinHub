@@ -17,7 +17,7 @@ export function PersistenceNotice({saveState,onRecover}:{saveState:SaveState;onR
 
   if(saveState==='error'||saveState==='conflict'){
     const conflict=saveState==='conflict';
-    return <div className={`persistence-notice ${saveState}`} role="alert" aria-live="assertive"><div><b>{conflict?'Σύγκρουση έκδοσης':'Η αποθήκευση απέτυχε'}</b><small>{conflict?'Υπάρχει νεότερη έκδοση στη βάση. Οι νέες αλλαγές έχουν μπλοκαριστεί μέχρι να φορτώσεις την τελευταία έκδοση.':'Η ορατή αλλαγή μπορεί να υπάρχει μόνο τοπικά. Φόρτωσε ξανά τη βάση πριν συνεχίσεις.'}</small></div><button type="button" className="secondary" onClick={onRecover}>Φόρτωση τελευταίας έκδοσης</button></div>;
+    return <div className={`persistence-notice ${saveState}`} role="alert" aria-live="assertive"><div><b>{conflict?'Υπάρχουν νεότερα δεδομένα':'Η αποθήκευση δεν ολοκληρώθηκε'}</b><small>{conflict?'Υπάρχει νεότερη αποθηκευμένη έκδοση. Η αποθήκευση σταμάτησε για να μη γραφτεί πάνω της κατά λάθος. Φόρτωσε την τελευταία έκδοση πριν συνεχίσεις.':'Η τελευταία αλλαγή δεν έχει επιβεβαιωθεί ως αποθηκευμένη. Φόρτωσε την τελευταία αποθηκευμένη έκδοση πριν συνεχίσεις.'}</small></div><button type="button" className="secondary" onClick={onRecover}>Φόρτωση τελευταίας έκδοσης</button></div>;
   }
   if(saveState==='loading')return <div className="persistence-toast loading" role="status" aria-live="polite">Ανανέωση δεδομένων…</div>;
   if(saveState==='saving')return <div className="persistence-toast saving" role="status" aria-live="polite">Αποθήκευση…</div>;
