@@ -6,21 +6,21 @@ on:
     paths:
       - desktop/**
       - server/**
-      - src/**
-      - tests/desktop-startup-diagnostics.test.ts
+      - tests/desktop-*.test.ts
       - package.json
       - package-lock.json
       - .github/workflows/desktop-first-run.yml
+      - .github/workflows/desktop-clean-launch.yml
   push:
     branches: [develop]
     paths:
       - desktop/**
       - server/**
-      - src/**
-      - tests/desktop-startup-diagnostics.test.ts
+      - tests/desktop-*.test.ts
       - package.json
       - package-lock.json
       - .github/workflows/desktop-first-run.yml
+      - .github/workflows/desktop-clean-launch.yml
   workflow_dispatch:
 
 concurrency:
@@ -31,10 +31,10 @@ permissions:
   contents: read
 
 jobs:
-  persisted-first-run:
-    name: persisted-first-run-dpapi
+  application-owned-first-run:
+    name: application-owned-first-run-contract
     runs-on: windows-latest
-    timeout-minutes: 30
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -44,134 +44,30 @@ jobs:
           cache-dependency-path: |
             package-lock.json
             desktop/package-lock.json
-      - name: Install dependencies and validate sources
+      - name: Install dependencies
         shell: pwsh
         run: |
           npm ci
           npm ci --prefix desktop
-          npm run check
-          npm run desktop:check
-      - name: Build interactive Windows installer
-        shell: pwsh
-        run: npm run desktop:dist
-      - name: Exercise persisted first-run config and DPAPI path
+      - name: Validate application-owned first-run contract
         shell: pwsh
         run: |
-          $ErrorActionPreference = 'Stop'
-          $installer = Get-ChildItem release\desktop\MyFinHub-Setup-*-x64.exe | Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
-          if (-not $installer) { throw 'Windows installer artifact is missing.' }
+          npm run check
+          npm run desktop:check
+          npx vitest run tests/desktop-first-run-source.test.ts tests/desktop-startup-diagnostics.test.ts tests/desktop-card-vault-proxy.test.ts
+      - name: Verify release entrypoint and no legacy provisioning contract
+        shell: pwsh
+        run: |
+          $desktopPackage = Get-Content -LiteralPath 'desktop\package.json' -Raw | ConvertFrom-Json
+          if ([string]$desktopPackage.main -ne 'bootstrap.cjs') { throw 'Desktop release entrypoint must be bootstrap.cjs.' }
 
-          Get-Process MyFinHub -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
-          $install = Start-Process -FilePath $installer.FullName -ArgumentList '/S' -Wait -PassThru
-          if ($install.ExitCode -ne 0) { throw "Silent NSIS install failed with exit code $($install.ExitCode)." }
-          Start-Sleep -Seconds 3
-          Get-Process MyFinHub -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          $defaults = Get-Content -LiteralPath 'desktop\runtime-defaults.cjs' -Raw
+          if ($defaults -match '__MYFINHUB_SUPABASE_') { throw 'Desktop release defaults still contain unresolved placeholders.' }
+          if ($defaults -notmatch "supabaseUrl:\s*'https://[^']+'") { throw 'Controlled HTTPS Supabase URL is missing from desktop release defaults.' }
+          if ($defaults -notmatch "supabasePublishableKey:\s*'sb_publishable_[^']+'") { throw 'Controlled Supabase publishable key is missing from desktop release defaults.' }
 
-          $desktopShortcut = Join-Path ([Environment]::GetFolderPath('Desktop')) 'MyFinHub.lnk'
-          if (-not (Test-Path -LiteralPath $desktopShortcut)) { throw 'Installed MyFinHub Desktop shortcut is missing.' }
-          $shell = New-Object -ComObject WScript.Shell
-          $exe = $shell.CreateShortcut($desktopShortcut).TargetPath
-          if ([string]::IsNullOrWhiteSpace($exe) -or -not (Test-Path -LiteralPath $exe)) { throw 'Installed executable could not be resolved.' }
+          $bootstrap = Get-Content -LiteralPath 'desktop\bootstrap.cjs' -Raw
+          if ($bootstrap -notmatch 'delete process\.env\.CARD_VAULT_KEY') { throw 'Desktop bootstrap must remove CARD_VAULT_KEY from the release process.' }
+          if ($bootstrap -notmatch 'pending-provision\.json') { throw 'Desktop bootstrap must clean legacy pending provisioning state.' }
 
-          foreach ($name in @('SUPABASE_URL','SUPABASE_PUBLISHABLE_KEY','CARD_VAULT_KEY','CARD_VAULT_KEY_VERSION')) {
-            Remove-Item -LiteralPath "Env:$name" -ErrorAction SilentlyContinue
-          }
-
-          $userData = Join-Path $env:APPDATA 'MyFinHub'
-          if (Test-Path -LiteralPath $userData) { Remove-Item -LiteralPath $userData -Recurse -Force }
-          New-Item -ItemType Directory -Path $userData -Force | Out-Null
-
-          $publishable = 'sb_publishable_desktop_first_run_smoke_only'
-          $vault = 'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc'
-          $pending = @{
-            supabaseUrl = 'https://desktop-first-run.invalid'
-            supabasePublishableKey = $publishable
-            cardVaultKey = $vault
-            cardVaultKeyVersion = 1
-          } | ConvertTo-Json
-          $pendingPath = Join-Path $userData 'pending-provision.json'
-          Set-Content -LiteralPath $pendingPath -Value $pending -Encoding utf8
-
-          # Remote debugging is enabled only in this isolated CI launch so the test can read the
-          # already-redacted setup failure object if startup recovers to the setup window.
-          $launcher = Start-Process -FilePath $exe -ArgumentList '--remote-debugging-port=9222' -PassThru
-          Start-Sleep -Seconds 10
-          $launcher.Refresh()
-          if ($launcher.HasExited) { throw "Installed MyFinHub exited during persisted first-run smoke with code $($launcher.ExitCode)." }
-
-          $configPath = Join-Path $userData 'runtime-config.json'
-          $secretsPath = Join-Path $userData 'runtime-secrets.json'
-          if (Test-Path -LiteralPath $pendingPath) { throw 'Pending first-run provision was not consumed.' }
-          if (-not (Test-Path -LiteralPath $configPath)) { throw 'Persisted public runtime config was not created.' }
-          if (-not (Test-Path -LiteralPath $secretsPath)) { throw 'DPAPI-protected runtime secret file was not created.' }
-
-          $stored = Get-Content -LiteralPath $secretsPath -Raw
-          if ($stored.Contains($vault)) { throw 'Plaintext card-vault key leaked into persisted secret storage.' }
-          $storedJson = $stored | ConvertFrom-Json
-          if ([string]::IsNullOrWhiteSpace([string]$storedJson.cardVaultKey)) { throw 'Encrypted card-vault payload is missing.' }
-          if ([int]$storedJson.cardVaultKeyVersion -ne 1) { throw 'Stored card-vault key version is incorrect.' }
-
-          $backend = Get-CimInstance Win32_Process | Where-Object {
-            $_.Name -ieq 'node.exe' -and $_.CommandLine -match 'server\.mjs' -and $_.CommandLine -match '--serve-dist'
-          } | Select-Object -First 1
-          if (-not $backend) {
-            Write-Host 'Relevant process snapshot (no environment values are printed):'
-            Get-CimInstance Win32_Process | Where-Object {
-              $_.Name -ieq 'MyFinHub.exe' -or $_.Name -ieq 'node.exe'
-            } | Select-Object Name,ProcessId,ParentProcessId,ExecutablePath,CommandLine | Format-List | Out-String | Write-Host
-
-            try {
-              $targets = Invoke-RestMethod -Uri 'http://127.0.0.1:9222/json/list' -TimeoutSec 3
-              $setupTarget = $targets | Where-Object { [string]$_.url -match 'setup\.html' } | Select-Object -First 1
-              if ($setupTarget -and $setupTarget.webSocketDebuggerUrl) {
-                $probePath = Join-Path $env:RUNNER_TEMP 'read-myfinhub-startup-failure.mjs'
-                @'
-          const wsUrl = process.argv[2];
-          const socket = new WebSocket(wsUrl);
-          const timer = setTimeout(() => { console.error('CDP diagnostic probe timed out.'); process.exit(2); }, 5000);
-          socket.addEventListener('open', () => {
-            socket.send(JSON.stringify({
-              id: 1,
-              method: 'Runtime.evaluate',
-              params: {
-                expression: 'window.myFinHubDesktop.getSetupState().then(state => state.lastStartupFailure)',
-                awaitPromise: true,
-                returnByValue: true,
-              },
-            }));
-          });
-          socket.addEventListener('message', event => {
-            const message = JSON.parse(String(event.data));
-            if (message.id !== 1) return;
-            clearTimeout(timer);
-            console.log(JSON.stringify(message.result?.result?.value ?? null));
-            socket.close();
-          });
-          socket.addEventListener('error', () => { clearTimeout(timer); process.exit(3); });
-          '@ | Set-Content -LiteralPath $probePath -Encoding utf8
-                $failureJson = (& node $probePath ([string]$setupTarget.webSocketDebuggerUrl) | Select-Object -Last 1)
-                if ($failureJson) { Write-Host "Sanitized MyFinHub startup failure: $failureJson" }
-              }
-            } catch {
-              Write-Host "Sanitized setup diagnostic probe unavailable: $($_.Exception.Message)"
-            }
-
-            throw 'Bundled local backend did not reach a running server.mjs --serve-dist process after persisted first-run configuration.'
-          }
-          if ([string]::IsNullOrWhiteSpace([string]$backend.ExecutablePath) -or -not (Test-Path -LiteralPath $backend.ExecutablePath)) {
-            throw 'Packaged backend process has no resolvable executable path.'
-          }
-          if ([IO.Path]::GetFileName($backend.ExecutablePath) -ne 'node.exe') { throw 'Packaged backend is not running from node.exe.' }
-
-          Get-Process MyFinHub -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
-          Get-CimInstance Win32_Process | Where-Object { $_.Name -ieq 'node.exe' -and $_.CommandLine -match 'server\.mjs' -and $_.CommandLine -match '--serve-dist' } | ForEach-Object {
-            Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
-          }
-
-          $installDir = Split-Path -Parent $exe
-          $uninstaller = Get-ChildItem -LiteralPath $installDir -Filter 'Uninstall*.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
-          if (-not $uninstaller) { throw 'Installed MyFinHub uninstaller is missing.' }
-          $uninstall = Start-Process -FilePath $uninstaller.FullName -ArgumentList '/S' -Wait -PassThru
-          if ($uninstall.ExitCode -ne 0) { throw "Silent NSIS uninstall failed with exit code $($uninstall.ExitCode)." }
-
-          Write-Host 'Persisted first-run / DPAPI smoke passed without runtime environment injection.'
+          Write-Host 'Application-owned first-run contract passed. Real NSIS clean-launch lifecycle is covered by Windows Clean Launch.'
