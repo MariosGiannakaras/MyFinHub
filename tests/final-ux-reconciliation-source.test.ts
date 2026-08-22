@@ -43,6 +43,13 @@ describe('final UX reconciliation source contracts',()=>{
     expect(reconciliationQa).toContain('mobile visual order follows semantic order');
   });
 
+  it('keeps the QA workspace on the shared app shortcut authority',()=>{
+    expect(qa).not.toContain("addEventListener('keydown',onKey)");
+    expect(qa).not.toContain("removeEventListener('keydown',onKey)");
+    expect(qa).not.toContain("event.key.toLowerCase()!=='k'");
+    expect(qa).toContain('onCommand={openCommand}');
+  });
+
   it('exposes privacy-safe session history for changes, undo and redo',()=>{
     expect(finance).toContain("export const SESSION_HISTORY_EVENT = 'myfinhub-session-change-history'");
     expect(finance).toContain('export function financeChangeLabel(current:FinanceData,next:FinanceData)');
