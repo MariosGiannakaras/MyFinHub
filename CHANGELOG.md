@@ -4,6 +4,33 @@ All notable MyFinHub changes are recorded here. Release artifacts remain availab
 
 ## [Unreleased]
 
+## [1.2.2] - 2026-08-22
+
+### Fixed
+
+- Removed Supabase URL/publishable-key and card-vault-key infrastructure fields from the normal Windows first-run path. The packaged desktop app now owns its public Supabase client configuration and opens directly into the normal sign-in/TOTP flow.
+- Kept `CARD_VAULT_KEY` out of the Windows binary/runtime. Desktop PAN/expiry operations use the authenticated owner AAL2 access token against the canonical production `/api/card-secrets` boundary, where encryption remains server-side.
+- Replaced the technical provisioning screen with a non-technical recovery surface that supports retry and bounded, redacted copyable startup diagnostics.
+- Preserved the v1.2.1 bundled Node/CommonJS startup fix while retaining privileged Supabase-key rejection, loopback-only backend startup and explicit Electron window-load failure handling.
+- Added a dedicated clean-install Windows gate that proves the NSIS package launches without runtime Supabase/card-vault environment variables or provisioning files.
+
+### Security & privacy
+
+- Only the Supabase project URL and `sb_publishable_...` key are packaged; neither is a privileged secret. `sb_secret_...`, service-role credentials and the card-vault encryption key remain forbidden from the desktop release boundary.
+- Windows card-secret requests continue to require the authenticated owner and AAL2. The desktop proxy is pinned to the canonical HTTPS production origin; RLS/RPC, validation, optimistic revisions and normal server vault controls remain authoritative.
+- CVV remains encrypted device-local only and is never proxied or persisted server-side. No finance-data/schema migration, accounting rewrite or destructive history change is introduced.
+
+### Validation
+
+- Fix PR #203 exact head `c8e6e38d3fcfeb5623c04de7286b44795c0ad1a4` passed CI #858, CodeQL #812, Cross-engine/WebKit #141, Performance #135, Windows Desktop #507, Windows First Run #27 and Windows Clean Launch #28, with zero unresolved review threads.
+- PR #203 squash-merged to `develop` as `e74db8cd8baaaf2db1b0793925ddf5f443796085`. The release-prep and production-promotion heads are independently revalidated under issue #202 before tag publication.
+
+### Notes
+
+- v1.2.2 is a backward-compatible Windows onboarding/security patch over v1.2.1. Web finance behavior, database state and Android bearer API semantics are unchanged.
+- Existing legacy desktop provisioning files are obsolete under the application-owned configuration model and are removed on upgrade; no card-vault key rotation is required.
+- The Windows build may remain unsigned for personal use, so Windows can display Unknown publisher / Microsoft Defender SmartScreen; installer integrity remains protected by the controlled GitHub Release source and published SHA-256 checksum.
+
 ## [1.2.1] - 2026-08-22
 
 ### Fixed
@@ -178,7 +205,8 @@ All notable MyFinHub changes are recorded here. Release artifacts remain availab
 
 - v1.0.0 is an unsigned personal-use Windows build. Windows may display Unknown publisher / Microsoft Defender SmartScreen.
 
-[Unreleased]: https://github.com/MariosGiannakaras/MyFinHub/compare/myfinhub-v1.2.1...develop
+[Unreleased]: https://github.com/MariosGiannakaras/MyFinHub/compare/myfinhub-v1.2.2...develop
+[1.2.2]: https://github.com/MariosGiannakaras/MyFinHub/releases/tag/myfinhub-v1.2.2
 [1.2.1]: https://github.com/MariosGiannakaras/MyFinHub/releases/tag/myfinhub-v1.2.1
 [1.2.0]: https://github.com/MariosGiannakaras/MyFinHub/releases/tag/myfinhub-v1.2.0
 [1.1.0]: https://github.com/MariosGiannakaras/MyFinHub/releases/tag/myfinhub-v1.1.0

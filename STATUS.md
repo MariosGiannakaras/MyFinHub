@@ -1,90 +1,60 @@
 # MyFinHub status
 
-## v1.2.1 patch release
+## v1.2.2 Windows no-setup patch
 
 MyFinHub is a private, single-owner personal finance application. Production deploys from `main` to Vercel and uses Supabase/PostgreSQL as the durable finance store. Compatibility-critical historical identifiers such as `RheomIQ`, `rheomiq_*` and `RHEOMIQ_*` remain intentionally unchanged where they are persistence/protocol contracts.
 
-This patch release is tracked by issue #206 and fixes the Windows desktop startup defect discovered during normal v1.2.0 use.
+This patch is tracked by issue #202 and completes the Windows startup/first-run incident work after v1.2.1.
 
-- production baseline entering the patch: **v1.2.0**
-- production baseline commit: `main@5f9accec7d04825c2ce78ada1d173088d76534d1`
-- validated implementation PR: **#215**
-- integration commit: `develop@1029e7fe0ac45448ecf73a5f47913ab5bc8995e1`
-- release target: **v1.2.1**
-- release tracker: **#206**
+- production baseline entering the patch: **v1.2.1**
+- production baseline commit: `main@fa9f6c50100f10428dceab259fda024ce18e4912`
+- implementation PR: **#203**
+- implementation exact head: `c8e6e38d3fcfeb5623c04de7286b44795c0ad1a4`
+- implementation integration commit: `develop@e74db8cd8baaaf2db1b0793925ddf5f443796085`
+- release target: **v1.2.2**
+- release tracker: **#202**
 
-## Confirmed Windows root cause
+## v1.2.2 correction
 
-The v1.2.0 installed Electron host could remain alive while its bundled Node backend exited before readiness. The packaged `server.mjs` was an esbuild ESM bundle containing CommonJS Express dependencies; `debug` attempted `require('tty')`, but the ESM bundle did not provide a real Node `require`, causing:
+The Windows application now owns its infrastructure configuration instead of asking a normal user to provision it:
 
-`BACKEND_EXITED_DURING_STARTUP → Dynamic require of "tty" is not supported`
-
-The old Windows smoke checked the Electron process rather than the hidden backend process, so this backend failure could be reported as a successful package launch.
-
-## v1.2.1 corrections
-
-PR #215 makes the Windows startup boundary diagnosable, recoverable and directly testable:
-
-- the desktop ESM backend bundle now provides `createRequire(import.meta.url)` so CommonJS dependencies can resolve Node built-ins under the bundled Node.js 22 runtime;
-- backend startup stdout/stderr is captured in bounded, in-memory diagnostics rather than discarded;
-- startup failures use stable stage/code classifications for configuration, Supabase preflight, secure storage/DPAPI, runtime/bundle, backend spawn/exit/timeout and window load;
-- the first-run setup performs an HTTPS Supabase URL/publishable-key preflight before persisting configuration;
-- failed startup returns to the setup window for correction/retry rather than forcing a quit/reinstall loop;
-- setup progress is driven by real Electron-main startup stages;
-- users can copy structured diagnostics whose credentials/tokens/card-vault key material are redacted;
-- post-readiness runtime detail is intentionally excluded from copyable failure diagnostics;
-- the dedicated **Windows First Run** workflow installs the real NSIS package, consumes persisted first-run configuration, exercises Electron `safeStorage` / Windows DPAPI and requires a live packaged `node.exe → server.mjs --serve-dist` backend;
-- the general **Windows Desktop** workflow now requires the same live bundled backend for unpacked and installed launches, preventing an Electron-only false positive.
+- the release package carries only the public Supabase project URL and `sb_publishable_...` client key;
+- `sb_secret_...`, service-role credentials and `CARD_VAULT_KEY` are forbidden from the desktop release boundary;
+- Windows PAN/expiry operations proxy through the canonical protected production `/api/card-secrets` endpoint using the already-authenticated owner AAL2 access token, leaving encryption server-side;
+- the normal first launch goes directly to MyFinHub sign-in/TOTP rather than a Supabase/card-vault setup form;
+- failed local-backend startup opens a non-technical recovery UI with retry plus bounded/redacted diagnostics;
+- legacy runtime provisioning files are removed on upgrade so stale DPAPI payloads cannot block startup;
+- the v1.2.1 Node `createRequire(import.meta.url)` bundle fix and explicit window-load failure handling remain preserved.
 
 ## Exact implementation validation
 
-Final PR #215 head: `a84120333e326648fff6d48775eecdafed9ba748`.
+PR #203 final head `c8e6e38d3fcfeb5623c04de7286b44795c0ad1a4` passed:
 
-- CI #839: success — root/API checks, tests, TypeScript/Vite build, bundle budgets and Primary-Chromium rendered QA;
-- CodeQL #793: success;
-- Cross-engine/WebKit #126: success;
-- Performance #120: success;
-- Windows First Run #10: success — real install, persisted config, DPAPI-protected secret storage, live packaged backend and uninstall;
-- Windows Desktop #489: success — unpacked/installed live-backend assertions, package/install/launch/uninstall/checksum/evidence;
-- unresolved PR review threads before merge: zero.
+- CI #858;
+- CodeQL #812;
+- Cross-engine/WebKit #141;
+- Performance #135;
+- Windows First Run #27;
+- Windows Desktop #507;
+- Windows Clean Launch #28;
+- unresolved review threads: zero.
 
 ## Security and finance invariants
 
-The patch does not change finance data, accounting rules, authentication authorization or database schema.
-
-- browser/Windows HttpOnly-cookie sessions and same-origin mutation checks remain intact;
-- configured owner UID and mandatory TOTP/AAL2 remain required;
-- Supabase RLS/RPC and optimistic revision checks remain authoritative;
+- browser/Windows authentication remains owner-only with mandatory TOTP/AAL2;
+- the desktop backend remains bound only to `127.0.0.1`;
+- Supabase RLS/RPC, optimistic revisions, validation, backups and audit behavior remain authoritative;
 - approved native Android bearer routes remain explicitly scoped and fail closed;
-- no service-role/secret credential is introduced into normal web/desktop/native runtime code;
+- no service-role/secret credential is introduced into web, desktop or native client runtime code;
 - PAN/expiry remain in the existing owner+AAL2 encrypted server vault;
 - CVV remains encrypted device-local only and is rejected by server persistence;
-- receipt images/OCR remain device-local under the existing local-only OCR contract;
-- no database migration, destructive historical-data rewrite or accounting-model change is part of v1.2.1.
+- receipt capture/OCR remains device-local under the existing local-only OCR contract;
+- no database migration, destructive finance-history rewrite or accounting-model change is part of v1.2.2.
 
-## Windows desktop contract
+## Release gates
 
-Electron owns the Windows application and starts the existing Express backend as a hidden child process using the bundled Node.js 22 runtime. The backend binds only to `127.0.0.1` on an OS-selected ephemeral port and serves the packaged Vite frontend from the same local origin.
-
-Renderer Node access remains disabled; context isolation, sandboxing, navigation restrictions and desktop security headers remain enabled. Desktop uses the same Supabase project, owner login, mandatory TOTP AAL2, RLS/RPC and optimistic revision rules as the web application.
-
-Desktop releases use `myfinhub-v<semver>` tags already present on `main`. The release workflow builds the installer, verifies package/runtime behavior, creates SHA-256 metadata and publishes the controlled GitHub Release. Personal-use builds may be unsigned and can trigger SmartScreen / Unknown publisher warnings.
-
-## v1.2.1 release gates
-
-The implementation validation above is supporting evidence. The release-prep tree must independently pass the current applicable exact-head gates after the `1.2.1` version/documentation metadata is applied:
-
-- root/API installs, audits, security guard, full test suite, TypeScript/Vite build, bundle budgets and API checks;
-- Primary-Chromium rendered frontend QA;
-- CodeQL;
-- Cross-engine/WebKit;
-- Performance/loading-shift smoke where configured;
-- Windows Desktop package/install/launch/uninstall/checksum with live-backend assertions;
-- Windows First Run persisted-config/DPAPI/live-backend gate;
-- zero unresolved review threads on the unchanged release-prep head.
-
-After release-prep is squash-merged into `develop`, a separate controlled `develop → main` PR is validated. Production deployment provenance and live API/security behavior must resolve to the exact resulting `main` commit before `myfinhub-v1.2.1` and its Windows installer/checksum are considered complete.
+Implementation evidence is supporting evidence only. The v1.2.2 release-prep head must independently pass the current applicable CI, CodeQL, cross-engine, performance and Windows package/clean-launch gates with zero unresolved review threads. A separate controlled `develop → main` promotion then validates the production candidate. The release is complete only after production provenance is verified, `myfinhub-v1.2.2` resolves to the final `main` commit, the Windows installer/checksum are published, and `main`/`develop` are synchronized.
 
 ## Delivery workflow
 
-Implementation work follows **Issue → short-lived branch → PR → required checks → squash merge into `develop`**. Production release is a separate deliberate `develop → main` PR followed by production verification. After release, `develop` is synchronized to the exact released `main` baseline only after verifying that no tree content is lost.
+Implementation work follows **Issue → short-lived branch → PR → required checks → squash merge into `develop`**. Production release is a separate deliberate `develop → main` PR followed by production verification and controlled tag/Windows asset publication.
