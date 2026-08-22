@@ -32,6 +32,10 @@ await build({
   platform:'node',
   format:'esm',
   target:'node22',
+  // Express still contains CommonJS dependencies (for example debug -> require('tty')).
+  // esbuild's ESM runtime helper can delegate dynamic requires to a real Node require when
+  // one exists, so provide an ESM-safe createRequire bridge at the top of the bundle.
+  banner:{js:"import { createRequire as __myfinhubCreateRequire } from 'node:module'; const require = __myfinhubCreateRequire(import.meta.url);"},
   sourcemap:false,
   minify:false,
   legalComments:'none',
