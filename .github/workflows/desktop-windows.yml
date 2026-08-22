@@ -92,7 +92,14 @@ jobs:
           Start-Sleep -Seconds 8
           $process.Refresh()
           if ($process.HasExited) { throw "Packaged MyFinHub exited during smoke with code $($process.ExitCode)." }
+          $backend = Get-CimInstance Win32_Process | Where-Object {
+            $_.Name -ieq 'node.exe' -and $_.CommandLine -match 'server\.mjs' -and $_.CommandLine -match '--serve-dist'
+          } | Select-Object -First 1
+          if (-not $backend) { throw 'Packaged MyFinHub local backend server.mjs --serve-dist process is not running.' }
           taskkill /PID $process.Id /T /F | Out-Null
+          Get-CimInstance Win32_Process | Where-Object { $_.Name -ieq 'node.exe' -and $_.CommandLine -match 'server\.mjs' -and $_.CommandLine -match '--serve-dist' } | ForEach-Object {
+            Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
+          }
       - name: Build interactive NSIS Setup
         shell: pwsh
         run: npm run desktop:dist
@@ -106,6 +113,9 @@ jobs:
           if (-not $installer) { throw 'Windows installer artifact is missing before install smoke.' }
 
           Get-Process MyFinHub -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          Get-CimInstance Win32_Process | Where-Object { $_.Name -ieq 'node.exe' -and $_.CommandLine -match 'server\.mjs' -and $_.CommandLine -match '--serve-dist' } | ForEach-Object {
+            Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
+          }
           $install = Start-Process -FilePath $installer.FullName -ArgumentList '/S' -Wait -PassThru
           if ($install.ExitCode -ne 0) { throw "Silent NSIS install failed with exit code $($install.ExitCode)." }
           Start-Sleep -Seconds 3
@@ -145,16 +155,20 @@ jobs:
           if (-not $uninstallEntry) { throw 'MyFinHub uninstall registration is missing from the Windows uninstall registry views.' }
           if ([string]::IsNullOrWhiteSpace($uninstallEntry.UninstallString)) { throw 'MyFinHub uninstall registration has no uninstall command.' }
 
-          # GitHub-hosted runners do not expose a reliable interactive desktop/window-title API.
-          # Prove that the installed executable itself starts and remains alive; title/icon contracts
-          # are source/package-verified here and retained as a final manual visual gate in #165.
           $launcher = Start-Process -FilePath $exe -PassThru
           Start-Sleep -Seconds 8
           $launcher.Refresh()
           if ($launcher.HasExited) { throw "Installed MyFinHub exited during launch smoke with code $($launcher.ExitCode)." }
           $installedProcess = Get-Process MyFinHub -ErrorAction SilentlyContinue | Where-Object { $_.Path -eq $exe } | Select-Object -First 1
           if (-not $installedProcess) { throw 'Installed MyFinHub process is not running from the installed executable path.' }
+          $installedBackend = Get-CimInstance Win32_Process | Where-Object {
+            $_.Name -ieq 'node.exe' -and $_.CommandLine -match 'server\.mjs' -and $_.CommandLine -match '--serve-dist'
+          } | Select-Object -First 1
+          if (-not $installedBackend) { throw 'Installed MyFinHub local backend server.mjs --serve-dist process is not running.' }
           Get-Process MyFinHub -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          Get-CimInstance Win32_Process | Where-Object { $_.Name -ieq 'node.exe' -and $_.CommandLine -match 'server\.mjs' -and $_.CommandLine -match '--serve-dist' } | ForEach-Object {
+            Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
+          }
 
           $installDir = Split-Path -Parent $exe
           $uninstaller = Get-ChildItem -LiteralPath $installDir -Filter 'Uninstall*.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
