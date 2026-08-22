@@ -1,7 +1,7 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 const updateChannel = 'myfinhub:update-state';
-const setupProgressChannel = 'myfinhub:setup-progress';
+const startupProgressChannel = 'myfinhub:startup-progress';
 
 contextBridge.exposeInMainWorld('myFinHubDesktop', Object.freeze({
   getInfo: () => ipcRenderer.invoke('myfinhub:get-info'),
@@ -15,13 +15,13 @@ contextBridge.exposeInMainWorld('myFinHubDesktop', Object.freeze({
     ipcRenderer.on(updateChannel, handler);
     return () => ipcRenderer.removeListener(updateChannel, handler);
   },
-  getSetupState: () => ipcRenderer.invoke('myfinhub:get-setup-state'),
-  saveSetup: (value) => ipcRenderer.invoke('myfinhub:save-setup', value),
-  copySetupDiagnostics: () => ipcRenderer.invoke('myfinhub:copy-setup-diagnostics'),
-  onSetupProgress: (listener) => {
+  getRecoveryState: () => ipcRenderer.invoke('myfinhub:get-recovery-state'),
+  retryStartup: () => ipcRenderer.invoke('myfinhub:retry-startup'),
+  copyStartupDiagnostics: () => ipcRenderer.invoke('myfinhub:copy-startup-diagnostics'),
+  onStartupProgress: (listener) => {
     if (typeof listener !== 'function') return () => {};
     const handler = (_event, state) => listener(state);
-    ipcRenderer.on(setupProgressChannel, handler);
-    return () => ipcRenderer.removeListener(setupProgressChannel, handler);
+    ipcRenderer.on(startupProgressChannel, handler);
+    return () => ipcRenderer.removeListener(startupProgressChannel, handler);
   },
 }));
