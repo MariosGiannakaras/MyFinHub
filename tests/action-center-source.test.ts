@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 const app=readFileSync(new URL('../src/App.tsx',import.meta.url),'utf8');
+const shortcutHook=readFileSync(new URL('../src/hooks/useAppShortcuts.ts',import.meta.url),'utf8');
 
 describe('Action Center production integration contracts',()=>{
   it('delegates command shortcut authority to the shared app-shell shortcut hook',()=>{
@@ -12,6 +13,7 @@ describe('Action Center production integration contracts',()=>{
     expect(app).toContain('if (quickOpen) return;');
     expect(app).toContain('setCommandOpen(true);');
     expect(app).toContain('onCommand={openCommand}');
+    expect(shortcutHook).toContain('isEditableShortcutTarget(event.target) || isEditableShortcutTarget(document.activeElement)');
   });
 
   it('routes persisted attention decisions through the shared finance update/undo pipeline',()=>{
