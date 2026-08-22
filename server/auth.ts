@@ -1,5 +1,5 @@
 import { Buffer } from 'node:buffer';
-import { ApiError, requestHeader } from './http.js';
+import { ApiError, assertSameOrigin, requestHeader } from './http.js';
 import { fetchUpstream, isAuthRejection } from './upstream.js';
 
 const PROD_ACCESS = '__Host-rheomiq_access';
@@ -31,6 +31,15 @@ type TotpEnrollment = {
 type ChallengeResponse = { id: string; expires_at?: number };
 
 type JwtClaims = { aal?: string };
+export type SessionSource = 'cookie' | 'bearer';
+export type SessionContext = {
+  accessToken: string;
+  user: AuthUser;
+  source: SessionSource;
+};
+export type RequireSessionOptions = {
+  allowBearer?: boolean;
+};
 
 function config() {
   const url = process.env.SUPABASE_URL?.replace(/\/$/, '');
@@ -113,12 +122,28 @@ export function clearSessionCookies(req: any, res: any) {
   ]);
 }
 
+export function clearSessionCookiesIfCookie(req: any, res: any, session: Pick<SessionContext, 'source'>) {
+  if (session.source === 'cookie') clearSessionCookies(req, res);
+}
+
+export function assertMutationSessionOrigin(req: any, session: Pick<SessionContext, 'source'>) {
+  if (session.source === 'cookie') assertSameOrigin(req);
+}
+
 function tokenCookies(req: any) {
   const cookies = parseCookies(req);
   return {
     accessToken: cookies[PROD_ACCESS] || cookies[DEV_ACCESS] || '',
     refreshToken: cookies[PROD_REFRESH] || cookies[DEV_REFRESH] || '',
   };
+}
+
+function bearerAccessToken(req: any): string | null {
+  const authorization = requestHeader(req, 'authorization').trim();
+  if (!authorization) return null;
+  const match = /^Bearer\s+(\S+)$/i.exec(authorization);
+  if (!match?.[1]) throw new ApiError(401, 'AUTH_REQUIRED', 'Authentication required.');
+  return match[1];
 }
 
 function jwtClaims(accessToken: string): JwtClaims {
@@ -219,12 +244,26 @@ export async function revokeSession(accessToken: string) {
   }
 }
 
-export async function requireSession(req: any, res: any) {
+export async function requireSession(req: any, res: any, options: RequireSessionOptions = {}): Promise<SessionContext> {
+  if (options.allowBearer) {
+    const bearerToken = bearerAccessToken(req);
+    if (bearerToken !== null) {
+      try {
+        const user = await getUser(bearerToken);
+        return { accessToken: bearerToken, user, source: 'bearer' };
+      } catch (error) {
+        if (!isAuthRejection(error)) throw error;
+        // An explicit native credential is authoritative. Never fall back to ambient cookies.
+        throw new ApiError(401, 'AUTH_REQUIRED', 'Authentication required.');
+      }
+    }
+  }
+
   const tokens = tokenCookies(req);
   if (tokens.accessToken) {
     try {
       const user = await getUser(tokens.accessToken);
-      return { accessToken: tokens.accessToken, user };
+      return { accessToken: tokens.accessToken, user, source: 'cookie' };
     } catch (error) {
       if (!isAuthRejection(error)) throw error;
       // Only a genuine Auth rejection is eligible for refresh fallback.
@@ -236,7 +275,7 @@ export async function requireSession(req: any, res: any) {
       const refreshed = await refreshWithToken(tokens.refreshToken);
       setSessionCookies(req, res, refreshed);
       const user = refreshed.user || await getUser(refreshed.access_token);
-      return { accessToken: refreshed.access_token, user };
+      return { accessToken: refreshed.access_token, user, source: 'cookie' };
     } catch (error) {
       if (!isAuthRejection(error)) throw error;
       clearSessionCookies(req, res);

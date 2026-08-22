@@ -1,5 +1,5 @@
-import { accessTokenAal, clearSessionCookies, requireSession } from '../server/auth.js';
-import { ApiError, assertSameOrigin, handleApi, methodNotAllowed, readJsonBody, sendJson } from '../server/http.js';
+import { accessTokenAal, assertMutationSessionOrigin, clearSessionCookiesIfCookie, requireSession } from '../server/auth.js';
+import { ApiError, handleApi, methodNotAllowed, readJsonBody, sendJson } from '../server/http.js';
 import { MAX_FINANCE_DOCUMENT_BYTES } from '../src/lib/limits.js';
 import { parseMutableWrite } from '../server/stateValidation.js';
 import { isOwner, parseExpectedRevision, readStore, writeMutableState } from '../server/storage.js';
@@ -23,12 +23,12 @@ export default async function handler(req: any, res: any) {
 
     const totalStarted = Date.now();
     const sessionStarted = Date.now();
-    const session = await requireSession(req, res);
+    const session = await requireSession(req, res, { allowBearer: true });
     const sessionMs = duration(sessionStarted);
 
     const ownerStarted = Date.now();
     if (!(await isOwner(session.accessToken))) {
-      clearSessionCookies(req, res);
+      clearSessionCookiesIfCookie(req, res, session);
       throw new ApiError(401, 'AUTH_REQUIRED', 'Authentication required.');
     }
     const ownerMs = duration(ownerStarted);
@@ -43,7 +43,7 @@ export default async function handler(req: any, res: any) {
       return sendJson(res, 200, result);
     }
 
-    assertSameOrigin(req);
+    assertMutationSessionOrigin(req, session);
     const expectedHeader = Array.isArray(req.headers?.['if-match']) ? req.headers['if-match'][0] : req.headers?.['if-match'];
     const expectedRevision = String(parseExpectedRevision(typeof expectedHeader === 'string' ? expectedHeader : undefined));
     const body = parseMutableWrite(await readJsonBody(req, MAX_FINANCE_DOCUMENT_BYTES));

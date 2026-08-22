@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { CalendarClock, CreditCard, HandCoins, Landmark, PiggyBank, ReceiptText, X } from 'lucide-react';
-import { QuickAdd, type QuickPrefill } from './QuickAdd';
+import { type QuickPrefill } from './QuickAdd';
+import { ReceiptAwareQuickAdd } from './ReceiptAwareQuickAdd';
 import { AppDateInput } from './AppDateInput';
 import { AppSelectInput } from './AppSelectInput';
 import { FormError } from './FormError';
@@ -162,6 +163,6 @@ function ContextModal({data,asOf,context,onClose,onCreate,onCompleteScheduled}:{
 
 export function ContextualQuickAdd({open,data,asOf,context,initial,motionMode='system',onClose,onCreate,onCompleteScheduled,currentBalance}:{open:boolean;data:FinanceData;asOf:string;context:QuickActionContext|null;initial?:FinanceEvent|null;motionMode?:'system'|'reduced'|'full';onClose:()=>void;onCreate:(event:FinanceEvent)=>void;onCompleteScheduled?:(item:ScheduledTransaction,event:FinanceEvent)=>void;currentBalance:(accountId:string)=>number}){
   if(!open||!context)return null;
-  if(context.mode==='generic')return <QuickAdd key={context.token} open={open} data={data} asOf={asOf} initial={initial} initialKind={context.kind||'expense'} prefill={context.prefill||null} motionMode={motionMode} onClose={onClose} onCreate={onCreate} currentBalance={currentBalance}/>;
+  if(context.mode==='generic')return <ReceiptAwareQuickAdd key={context.token} open={open} data={data} asOf={asOf} initial={initial} initialKind={context.kind||'expense'} prefill={context.prefill||null} motionMode={motionMode} onClose={onClose} onCreate={onCreate} currentBalance={currentBalance}/>;
   return <ContextModal key={context.token} data={data} asOf={asOf} context={context} onClose={onClose} onCreate={onCreate} onCompleteScheduled={onCompleteScheduled}/>;
 }

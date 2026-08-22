@@ -12,6 +12,10 @@ function request(cookie: string) {
   return { headers: { cookie } };
 }
 
+function requestWithHeaders(headers: Record<string, string>) {
+  return { headers };
+}
+
 function responseRecorder() {
   const headers = new Map<string, unknown>();
   return {
@@ -63,6 +67,46 @@ describe('Supabase Auth failure resilience', () => {
       expect.stringContaining('rheomiq_access='),
       expect.stringContaining('rheomiq_refresh='),
     ]));
+  });
+
+  it('uses an explicitly enabled bearer token without creating or refreshing cookies', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(response(200, { id: 'owner-id', email: 'owner@example.com' }));
+    vi.stubGlobal('fetch', fetchMock);
+    const res = responseRecorder();
+
+    const session = await requireSession(requestWithHeaders({ authorization: 'Bearer native-access-token' }), res, { allowBearer: true });
+
+    expect(session).toMatchObject({ accessToken: 'native-access-token', source: 'bearer', user: { id: 'owner-id' } });
+    expect(res.headers.has('set-cookie')).toBe(false);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('fails closed on an invalid explicit bearer instead of falling back to a valid cookie', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(response(401, { message: 'invalid jwt' }));
+    vi.stubGlobal('fetch', fetchMock);
+    const res = responseRecorder();
+
+    await expect(requireSession(requestWithHeaders({
+      authorization: 'Bearer bad-native-token',
+      cookie: 'rheomiq_access=valid-cookie-token; rheomiq_refresh=valid-refresh-token',
+    }), res, { allowBearer: true })).rejects.toMatchObject({ status: 401, code: 'AUTH_REQUIRED' });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(res.headers.has('set-cookie')).toBe(false);
+  });
+
+  it('keeps browser auth endpoints cookie-only unless bearer mode is explicitly enabled', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(response(200, { id: 'cookie-owner' }));
+    vi.stubGlobal('fetch', fetchMock);
+    const res = responseRecorder();
+
+    const session = await requireSession(requestWithHeaders({
+      authorization: 'Bearer ignored-on-cookie-only-endpoint',
+      cookie: 'rheomiq_access=cookie-access-token',
+    }), res);
+
+    expect(session).toMatchObject({ accessToken: 'cookie-access-token', source: 'cookie', user: { id: 'cookie-owner' } });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it('distinguishes rate limiting from rejected credentials', async () => {

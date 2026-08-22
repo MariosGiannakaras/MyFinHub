@@ -7,7 +7,7 @@ const settings:FinanceSettings={excludedFromAvailable:[],accountNames:{},expense
 describe('category taxonomy',()=>{
   it('seeds a restrained vehicle taxonomy without exploding flat categories',()=>{
     const vehicle=categoryTree(settings,'expense').find(item=>item.name==='Όχημα');
-    expect(vehicle?.subcategories).toEqual(['Βενζίνη','Service','Συνεργείο','Ανταλλακτικά']);
+    expect(vehicle?.subcategories).toEqual(['Καύσιμα','Συντήρηση & Service','Ασφάλεια','Parking & Διόδια']);
   });
 
   it('keeps domain-specific subscription categories out of generic expense entry',()=>{
