@@ -8,6 +8,9 @@ dist-node/
 .env.*
 !/.env.example
 
+# Generated self-hosted OCR runtime assets are copied from pinned npm packages.
+public/ocr/
+
 # Desktop build/package outputs are generated on Windows and never committed.
 desktop/.build/
 release/desktop/
