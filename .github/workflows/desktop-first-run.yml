@@ -109,13 +109,26 @@ jobs:
           if ([string]::IsNullOrWhiteSpace([string]$storedJson.cardVaultKey)) { throw 'Encrypted card-vault payload is missing.' }
           if ([int]$storedJson.cardVaultKeyVersion -ne 1) { throw 'Stored card-vault key version is incorrect.' }
 
+          # The backend process contract is its bundled node executable running server.mjs --serve-dist.
+          # Do not depend on a particular install-directory spelling: electron-builder/NSIS can vary
+          # the user-level path while the command-line contract remains stable and unique to MyFinHub.
           $backend = Get-CimInstance Win32_Process | Where-Object {
-            $_.Name -ieq 'node.exe' -and $_.CommandLine -match 'server\.mjs' -and $_.ExecutablePath -like '*MyFinHub*runtime*node.exe'
+            $_.Name -ieq 'node.exe' -and $_.CommandLine -match 'server\.mjs' -and $_.CommandLine -match '--serve-dist'
           } | Select-Object -First 1
-          if (-not $backend) { throw 'Bundled local backend did not reach a running packaged process after persisted first-run configuration.' }
+          if (-not $backend) {
+            Write-Host 'Relevant process snapshot (no environment values are printed):'
+            Get-CimInstance Win32_Process | Where-Object {
+              $_.Name -ieq 'MyFinHub.exe' -or $_.Name -ieq 'node.exe'
+            } | Select-Object Name,ProcessId,ParentProcessId,ExecutablePath,CommandLine | Format-List | Out-String | Write-Host
+            throw 'Bundled local backend did not reach a running server.mjs --serve-dist process after persisted first-run configuration.'
+          }
+          if ([string]::IsNullOrWhiteSpace([string]$backend.ExecutablePath) -or -not (Test-Path -LiteralPath $backend.ExecutablePath)) {
+            throw 'Packaged backend process has no resolvable executable path.'
+          }
+          if ([IO.Path]::GetFileName($backend.ExecutablePath) -ne 'node.exe') { throw 'Packaged backend is not running from node.exe.' }
 
           Get-Process MyFinHub -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
-          Get-CimInstance Win32_Process | Where-Object { $_.Name -ieq 'node.exe' -and $_.ExecutablePath -like '*MyFinHub*runtime*node.exe' } | ForEach-Object {
+          Get-CimInstance Win32_Process | Where-Object { $_.Name -ieq 'node.exe' -and $_.CommandLine -match 'server\.mjs' -and $_.CommandLine -match '--serve-dist' } | ForEach-Object {
             Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
           }
 
