@@ -12,9 +12,6 @@ export type ShortcutKeyEvent = {
 
 type ShortcutElementLike={
   closest?:(selectors:string)=>ShortcutElementLike|null;
-  tagName?:string;
-  type?:string;
-  getAttribute?:(name:string)=>string|null;
 };
 
 export const SHORTCUT_ORDER: ShortcutId[] = ['commandPalette', 'quickEntry', 'undo', 'redo', 'dismiss'];
@@ -73,12 +70,11 @@ export function isEditableShortcutTarget(target: unknown) {
   const element=target as ShortcutElementLike|null;
   if(!element||typeof element.closest!=='function')return false;
   if(element.closest('[contenteditable="true"], [contenteditable="plaintext-only"]'))return true;
-  const control=element.closest('input, textarea, select');
-  if(!control)return false;
-  const tag=(control.tagName??'').toLowerCase();
-  if(tag!=='input')return true;
-  const type=(control.type??control.getAttribute?.('type')??'text').toLowerCase();
-  return !['button','submit','reset','checkbox','radio','range','color','file'].includes(type);
+  // Form controls own their focused keyboard context. Suppressing global app
+  // shortcuts here prevents search/quick-entry/undo from stealing keystrokes
+  // while users are interacting with text fields, selects, checkboxes, ranges,
+  // file controls, or other native inputs.
+  return Boolean(element.closest('input, textarea, select'));
 }
 
 export function shouldBlockAppShortcut(context: { editable: boolean; modalOpen: boolean; repeat: boolean; defaultPrevented: boolean }) {
