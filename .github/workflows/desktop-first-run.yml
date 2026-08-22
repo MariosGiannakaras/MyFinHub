@@ -92,7 +92,9 @@ jobs:
           $pendingPath = Join-Path $userData 'pending-provision.json'
           Set-Content -LiteralPath $pendingPath -Value $pending -Encoding utf8
 
-          $launcher = Start-Process -FilePath $exe -PassThru
+          # Remote debugging is enabled only in this isolated CI launch so the test can read the
+          # already-redacted setup failure object if startup recovers to the setup window.
+          $launcher = Start-Process -FilePath $exe -ArgumentList '--remote-debugging-port=9222' -PassThru
           Start-Sleep -Seconds 10
           $launcher.Refresh()
           if ($launcher.HasExited) { throw "Installed MyFinHub exited during persisted first-run smoke with code $($launcher.ExitCode)." }
@@ -109,9 +111,6 @@ jobs:
           if ([string]::IsNullOrWhiteSpace([string]$storedJson.cardVaultKey)) { throw 'Encrypted card-vault payload is missing.' }
           if ([int]$storedJson.cardVaultKeyVersion -ne 1) { throw 'Stored card-vault key version is incorrect.' }
 
-          # The backend process contract is its bundled node executable running server.mjs --serve-dist.
-          # Do not depend on a particular install-directory spelling: electron-builder/NSIS can vary
-          # the user-level path while the command-line contract remains stable and unique to MyFinHub.
           $backend = Get-CimInstance Win32_Process | Where-Object {
             $_.Name -ieq 'node.exe' -and $_.CommandLine -match 'server\.mjs' -and $_.CommandLine -match '--serve-dist'
           } | Select-Object -First 1
@@ -120,6 +119,43 @@ jobs:
             Get-CimInstance Win32_Process | Where-Object {
               $_.Name -ieq 'MyFinHub.exe' -or $_.Name -ieq 'node.exe'
             } | Select-Object Name,ProcessId,ParentProcessId,ExecutablePath,CommandLine | Format-List | Out-String | Write-Host
+
+            try {
+              $targets = Invoke-RestMethod -Uri 'http://127.0.0.1:9222/json/list' -TimeoutSec 3
+              $setupTarget = $targets | Where-Object { [string]$_.url -match 'setup\.html' } | Select-Object -First 1
+              if ($setupTarget -and $setupTarget.webSocketDebuggerUrl) {
+                $probePath = Join-Path $env:RUNNER_TEMP 'read-myfinhub-startup-failure.mjs'
+                @'
+const wsUrl = process.argv[2];
+const socket = new WebSocket(wsUrl);
+const timer = setTimeout(() => { console.error('CDP diagnostic probe timed out.'); process.exit(2); }, 5000);
+socket.addEventListener('open', () => {
+  socket.send(JSON.stringify({
+    id: 1,
+    method: 'Runtime.evaluate',
+    params: {
+      expression: 'window.myFinHubDesktop.getSetupState().then(state => state.lastStartupFailure)',
+      awaitPromise: true,
+      returnByValue: true,
+    },
+  }));
+});
+socket.addEventListener('message', event => {
+  const message = JSON.parse(String(event.data));
+  if (message.id !== 1) return;
+  clearTimeout(timer);
+  console.log(JSON.stringify(message.result?.result?.value ?? null));
+  socket.close();
+});
+socket.addEventListener('error', () => { clearTimeout(timer); process.exit(3); });
+'@ | Set-Content -LiteralPath $probePath -Encoding utf8
+                $failureJson = (& node $probePath ([string]$setupTarget.webSocketDebuggerUrl) | Select-Object -Last 1)
+                if ($failureJson) { Write-Host "Sanitized MyFinHub startup failure: $failureJson" }
+              }
+            } catch {
+              Write-Host "Sanitized setup diagnostic probe unavailable: $($_.Exception.Message)"
+            }
+
             throw 'Bundled local backend did not reach a running server.mjs --serve-dist process after persisted first-run configuration.'
           }
           if ([string]::IsNullOrWhiteSpace([string]$backend.ExecutablePath) -or -not (Test-Path -LiteralPath $backend.ExecutablePath)) {
