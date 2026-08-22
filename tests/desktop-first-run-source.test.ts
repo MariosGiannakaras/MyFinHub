@@ -10,6 +10,8 @@ const main = read('desktop/main.cjs');
 const preload = read('desktop/preload.cjs');
 const recovery = read('desktop/setup.html');
 const renderer = read('desktop/setup-renderer.js');
+const prepareBuild = read('desktop/prepare-build.mjs');
+const diagnostics = read('desktop/startup-diagnostics.cjs');
 const cleanLaunchWorkflow = read('.github/workflows/desktop-clean-launch.yml');
 
 describe('Windows no-setup startup/recovery contract', () => {
@@ -17,20 +19,32 @@ describe('Windows no-setup startup/recovery contract', () => {
     expect(bootstrap).toContain("require('./runtime-defaults.cjs')");
     expect(bootstrap).toContain('process.env.SUPABASE_URL');
     expect(bootstrap).toContain('process.env.SUPABASE_PUBLISHABLE_KEY');
-    expect(defaults).toContain('__MYFINHUB_SUPABASE_URL__');
-    expect(defaults).toContain('__MYFINHUB_SUPABASE_PUBLISHABLE_KEY__');
+    expect(bootstrap).toContain('never a secret/service-role key');
+    expect(defaults).toContain('https://ahsukppxwaiagampsuzb.supabase.co');
+    expect(defaults).toContain('sb_publishable_');
+    expect(defaults).not.toContain('__MYFINHUB_SUPABASE_URL__');
+    expect(defaults).not.toContain('__MYFINHUB_SUPABASE_PUBLISHABLE_KEY__');
     expect(recovery).not.toContain('SUPABASE_URL');
     expect(recovery).not.toContain('SUPABASE_PUBLISHABLE_KEY');
     expect(recovery).not.toContain('CARD_VAULT_KEY');
   });
 
-  it('captures backend diagnostics instead of discarding stderr', () => {
+  it('preserves the v1.2.1 CommonJS bridge in the packaged Node ESM backend bundle', () => {
+    expect(prepareBuild).toContain("format:'esm'");
+    expect(prepareBuild).toContain('createRequire as __myfinhubCreateRequire');
+    expect(prepareBuild).toContain('const require = __myfinhubCreateRequire(import.meta.url)');
+    expect(prepareBuild).toContain("platform:'node'");
+  });
+
+  it('captures bounded startup diagnostics but omits runtime backend output from copyable failures', () => {
     expect(main).toContain("child.stderr.on('data', chunk =>");
     expect(main).toContain('appendDiagnostic(stderrDiagnostic');
     expect(main).not.toContain("child.stderr.on('data', () => {})");
     expect(main).toContain("startupError('BACKEND_EXITED_DURING_START'");
     expect(main).toContain("startupError('BACKEND_START_TIMEOUT'");
     expect(main).toContain("startupError('BACKEND_SPAWN_FAILED'");
+    expect(diagnostics).toContain("classified.stage === 'backend-runtime'");
+    expect(diagnostics).toContain('Runtime output is intentionally omitted after backend readiness.');
   });
 
   it('shows recovery and retry without exposing infrastructure values to the renderer', () => {
