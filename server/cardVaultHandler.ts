@@ -40,7 +40,7 @@ export async function handleCardVaultRequest(req:any,res:any){
   await handleApi(res,async()=>{
     const method=String(req.method||'').toUpperCase();
     if(method!=='POST'&&method!=='PUT'&&method!=='DELETE')return methodNotAllowed(res,['POST','PUT','DELETE']);
-    const session=await requireSession(req,res);
+    const session=await requireSession(req,res,{allowBearer:true});
     assertMutationSessionOrigin(req,session);
     if(!(await isOwner(session.accessToken))){clearSessionCookiesIfCookie(req,res,session);throw new ApiError(401,'AUTH_REQUIRED','Authentication required.');}
     if(accessTokenAal(session.accessToken)!=='aal2')throw new ApiError(403,'MFA_REQUIRED','Verification required.');
