@@ -4,13 +4,26 @@ import { describe, expect, it } from 'vitest';
 
 const root = process.cwd();
 const read = (relative:string) => fs.readFileSync(path.join(root, relative), 'utf8');
+const bootstrap = read('desktop/bootstrap.cjs');
+const defaults = read('desktop/runtime-defaults.cjs');
 const main = read('desktop/main.cjs');
 const preload = read('desktop/preload.cjs');
-const setup = read('desktop/setup.html');
+const recovery = read('desktop/setup.html');
 const renderer = read('desktop/setup-renderer.js');
 const workflow = read('.github/workflows/desktop-windows.yml');
 
-describe('Windows first-run recovery contract', () => {
+describe('Windows no-setup startup/recovery contract', () => {
+  it('boots from application-owned public config instead of user provisioning', () => {
+    expect(bootstrap).toContain("require('./runtime-defaults.cjs')");
+    expect(bootstrap).toContain('process.env.SUPABASE_URL');
+    expect(bootstrap).toContain('process.env.SUPABASE_PUBLISHABLE_KEY');
+    expect(defaults).toContain('__MYFINHUB_SUPABASE_URL__');
+    expect(defaults).toContain('__MYFINHUB_SUPABASE_PUBLISHABLE_KEY__');
+    expect(recovery).not.toContain('SUPABASE_URL');
+    expect(recovery).not.toContain('SUPABASE_PUBLISHABLE_KEY');
+    expect(recovery).not.toContain('CARD_VAULT_KEY');
+  });
+
   it('captures backend diagnostics instead of discarding stderr', () => {
     expect(main).toContain("child.stderr.on('data', chunk =>");
     expect(main).toContain('appendDiagnostic(stderrDiagnostic');
@@ -20,31 +33,27 @@ describe('Windows first-run recovery contract', () => {
     expect(main).toContain("startupError('BACKEND_SPAWN_FAILED'");
   });
 
-  it('keeps setup recoverable and reports real main-process progress', () => {
+  it('shows recovery and retry without exposing infrastructure fields', () => {
     expect(main).toContain('function sendSetupProgress');
     expect(main).toContain("setupWindow.webContents.send('myfinhub:setup-progress'");
-    expect(main).toContain('await preflightSupabase(config');
     expect(main).toContain('return { ok: false, error: diagnostic }');
-    expect(main).toContain('createWindow(origin, runtime);');
-    expect(main).toContain('currentSetup.close()');
-    expect(main).not.toContain('δεν μπόρεσε να ξεκινήσει την τοπική υπηρεσία. Άνοιξε ξανά την εφαρμογή');
     expect(renderer).toContain('renderDiagnostic');
-    expect(renderer).toContain('result?.error');
-    expect(renderer).toContain('save.disabled = false');
+    expect(renderer).toContain("document.getElementById('retry')");
+    expect(renderer).toContain('bridge.saveSetup');
+    expect(recovery).toContain('Νέα προσπάθεια');
+    expect(recovery).toContain('Δεν χρειάζεται να συμπληρώσεις τεχνικές ρυθμίσεις');
   });
 
   it('supports safe diagnostic copy without exposing Electron primitives to the renderer', () => {
     expect(main).toContain("ipcMain.handle('myfinhub:copy-setup-diagnostics'");
     expect(main).toContain('formatDiagnostic(lastSetupDiagnostic');
     expect(preload).toContain('copySetupDiagnostics: () => ipcRenderer.invoke');
-    expect(setup).toContain('Αντιγραφή ασφαλών διαγνωστικών');
+    expect(recovery).toContain('Αντιγραφή διαγνωστικών');
     expect(renderer).not.toContain("require('electron')");
   });
 
-  it('requires the Windows package workflow to exercise persisted first-run configuration', () => {
-    expect(workflow).toContain('pending-provision.json');
-    expect(workflow).toContain('runtime-config.json');
-    expect(workflow).toContain('runtime-secrets.json');
-    expect(workflow).toContain('First-run persisted config and DPAPI smoke');
+  it('requires a clean installed-user launch gate before this fix can merge', () => {
+    expect(workflow).toContain('Clean installed-user launch without runtime provisioning');
+    expect(workflow).toContain('runtime-defaults.cjs');
   });
 });
