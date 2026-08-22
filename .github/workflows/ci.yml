@@ -11,9 +11,103 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
+  patch-202-v121:
+    name: patch-202-v121
+    if: github.event_name == 'pull_request' && github.event.pull_request.number == 203
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+      - name: Preserve v1.2.1 main-process startup protections
+        shell: python
+        run: |
+          from pathlib import Path
+          path = Path('desktop/main.cjs')
+          text = path.read_text(encoding='utf-8')
+
+          anchor = "  if (!publishable || publishable.length > 4096 || /\\s/.test(publishable)) throw new Error('Invalid Supabase publishable key.');\n"
+          if 'never a secret/service-role key' not in text:
+              if anchor not in text:
+                  raise SystemExit('normalizePublicConfig anchor not found')
+              insert = anchor + "  if (/^sb_secret_/i.test(publishable)) throw new Error('Use the Supabase publishable/anon key, never a secret/service-role key.');\n  if (/^eyJ/.test(publishable)) {\n    try {\n      const payload = JSON.parse(Buffer.from(publishable.split('.')[1] || '', 'base64url').toString('utf8'));\n      if (payload?.role === 'service_role') throw new Error('Use the Supabase publishable/anon key, never a service-role key.');\n    } catch (error) {\n      if (error instanceof Error && /service-role/.test(error.message)) throw error;\n    }\n  }\n"
+              text = text.replace(anchor, insert, 1)
+
+          old = """function createWindow(origin, runtime) {
+  Menu.setApplicationMenu(null);
+  mainWindow = new BrowserWindow({
+    title: PRODUCT_NAME, width: 1440, height: 930, minWidth: 960, minHeight: 650, show: false,
+    backgroundColor: '#0f1720', icon: runtime.icon, autoHideMenuBar: true,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true,
+      webSecurity: true, allowRunningInsecureContent: false, devTools: !app.isPackaged,
+    },
+  });
+  hardenWindow(mainWindow, origin);
+  mainWindow.once('ready-to-show', () => mainWindow?.show());
+  mainWindow.webContents.once('did-finish-load', scheduleAutomaticUpdateChecks);
+  mainWindow.on('closed', () => { mainWindow = null; });
+  void mainWindow.loadURL(origin);
+}
+"""
+          new = """async function createWindow(origin, runtime) {
+  Menu.setApplicationMenu(null);
+  const window = new BrowserWindow({
+    title: PRODUCT_NAME, width: 1440, height: 930, minWidth: 960, minHeight: 650, show: false,
+    backgroundColor: '#0f1720', icon: runtime.icon, autoHideMenuBar: true,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true,
+      webSecurity: true, allowRunningInsecureContent: false, devTools: !app.isPackaged,
+    },
+  });
+  mainWindow = window;
+  hardenWindow(window, origin);
+  window.on('closed', () => { if (mainWindow === window) mainWindow = null; });
+  try {
+    await window.loadURL(origin);
+    if (!window.isDestroyed()) window.show();
+    scheduleAutomaticUpdateChecks();
+  } catch (error) {
+    if (!window.isDestroyed()) window.destroy();
+    if (mainWindow === window) mainWindow = null;
+    throw startupError(
+      'WINDOW_LOAD_FAILED',
+      'window',
+      'Το desktop παράθυρο δεν μπόρεσε να φορτώσει την τοπική εφαρμογή.',
+      error instanceof Error ? error.message : String(error),
+    );
+  }
+}
+"""
+          if 'async function createWindow(origin, runtime)' not in text:
+              if old not in text:
+                  raise SystemExit('createWindow source block not found')
+              text = text.replace(old, new, 1)
+              call = '    createWindow(origin, runtime);'
+              if text.count(call) != 2:
+                  raise SystemExit(f'expected two createWindow calls, found {text.count(call)}')
+              text = text.replace(call, '    await createWindow(origin, runtime);')
+
+          path.write_text(text, encoding='utf-8')
+      - run: node --check desktop/main.cjs
+      - name: Commit patch to PR head
+        run: |
+          if git diff --quiet -- desktop/main.cjs; then
+            echo "No patch required."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add desktop/main.cjs
+          git diff --cached --check
+          git commit -m "fix(desktop): preserve v1.2.1 startup protections"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
+
   validate:
     name: validate
     runs-on: ubuntu-latest
@@ -51,9 +145,6 @@ jobs:
             exit 1
           fi
 
-          # PR CI must prove the rendered matrix on runner Chromium itself. Keep
-          # system Chrome discoverable for non-enforced/local runs, but block CI
-          # from silently converting a Chromium bootstrap failure into a green run.
           PRIMARY_BROWSER="$(command -v chromium || command -v chromium-browser || true)"
           FALLBACK_BROWSER="$(command -v google-chrome || true)"
           if [ -z "$PRIMARY_BROWSER" ]; then
