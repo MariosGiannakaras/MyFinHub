@@ -1,0 +1,87 @@
+name: Release 202 v1.2.2 prep once
+
+on:
+  push:
+    branches:
+      - release/202-v1.2.2-prep
+
+permissions:
+  contents: write
+
+jobs:
+  prepare-release:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: release/202-v1.2.2-prep
+          fetch-depth: 0
+      - name: Prepare v1.2.2 metadata and documentation
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          VERSION = '1.2.2'
+          DATE = '2026-08-22'
+
+          for rel in ['package.json', 'desktop/package.json']:
+              path = Path(rel)
+              data = json.loads(path.read_text(encoding='utf-8'))
+              data['version'] = VERSION
+              path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
+
+          readme = Path('README.md')
+          text = readme.read_text(encoding='utf-8')
+          text = text.replace('myfinhub-v1.2.1/MyFinHub-Setup-1.2.1-x64.exe', 'myfinhub-v1.2.2/MyFinHub-Setup-1.2.2-x64.exe')
+          text = text.replace('Download%20for%20Windows-v1.2.1-', 'Download%20for%20Windows-v1.2.2-')
+          text = text.replace('Release-v1.2.1-', 'Release-v1.2.2-')
+          text = text.replace('releases/tag/myfinhub-v1.2.1">v1.2.1 release notes', 'releases/tag/myfinhub-v1.2.2">v1.2.2 release notes')
+          text = text.replace('myfinhub-v1.2.1/MyFinHub-Setup-1.2.1-x64.exe.sha256', 'myfinhub-v1.2.2/MyFinHub-Setup-1.2.2-x64.exe.sha256')
+          text = text.replace('download only `MyFinHub-Setup-1.2.1-x64.exe`', 'download only `MyFinHub-Setup-1.2.2-x64.exe`')
+          text = text.replace('Run `MyFinHub-Setup-1.2.1-x64.exe`.', 'Run `MyFinHub-Setup-1.2.2-x64.exe`.')
+          text = text.replace('4. On first launch, complete the MyFinHub setup window for the shared Supabase connection.', '4. On first launch, sign in with your MyFinHub account and complete TOTP verification. No Supabase or card-vault provisioning is required.')
+          old = ('The v1.2.1 desktop startup path validates the Supabase connection before saving first-run configuration. '
+                 'If the local backend cannot start, the setup window remains available with a structured error code/stage, safe redacted diagnostics and retry/edit capability rather than closing with a generic failure.')
+          new = ('The v1.2.2 Windows package owns its public Supabase client configuration, so a normal user is never asked for infrastructure values. '
+                 'If the local backend cannot start, the recovery window remains available with a structured error code/stage, safe redacted diagnostics and retry capability rather than closing with a generic failure.')
+          if old not in text:
+              raise SystemExit('README startup paragraph contract not found')
+          text = text.replace(old, new)
+          text = text.replace('The current stable Windows release is **v1.2.1**.', 'The current stable Windows release is **v1.2.2**.')
+          old_runtime = ('Desktop/local PAN + expiry access additionally uses the existing vault key:\n\n'
+                         '```text\nCARD_VAULT_KEY=<64 hex chars or Base64 decoding to 32 bytes>\nCARD_VAULT_KEY_VERSION=1\n```')
+          new_runtime = ('Server-side/local-development PAN + expiry storage may additionally use the existing vault key. '
+                         'The packaged Windows application does **not** receive this key; its card-secret operations are proxied through the canonical protected production API:\n\n'
+                         '```text\nCARD_VAULT_KEY=<server-side 64 hex chars or Base64 decoding to 32 bytes>\nCARD_VAULT_KEY_VERSION=1\n```')
+          if old_runtime not in text:
+              raise SystemExit('README vault-key contract not found')
+          text = text.replace(old_runtime, new_runtime)
+          readme.write_text(text, encoding='utf-8')
+
+          changelog = Path('CHANGELOG.md')
+          text = changelog.read_text(encoding='utf-8')
+          marker = '## [Unreleased]\n'
+          if marker not in text:
+              raise SystemExit('CHANGELOG Unreleased marker missing')
+          section = f'''\n## [1.2.2] - {DATE}\n\n### Fixed\n\n- Removed Supabase URL/publishable-key and card-vault-key infrastructure fields from the normal Windows first-run path. The packaged desktop app now owns its public Supabase client configuration and opens directly into the normal sign-in/TOTP flow.\n- Kept `CARD_VAULT_KEY` out of the Windows binary/runtime. Desktop PAN/expiry operations use the authenticated owner AAL2 access token against the canonical production `/api/card-secrets` boundary, where encryption remains server-side.\n- Replaced the technical provisioning screen with a non-technical recovery surface that supports retry and bounded, redacted copyable startup diagnostics.\n- Preserved the v1.2.1 bundled Node/CommonJS startup fix while retaining privileged Supabase-key rejection, loopback-only backend startup and explicit Electron window-load failure handling.\n- Added a dedicated clean-install Windows gate that proves the NSIS package launches without runtime Supabase/card-vault environment variables or provisioning files.\n\n### Security & privacy\n\n- Only the Supabase project URL and `sb_publishable_...` key are packaged; neither is a privileged secret. `sb_secret_...`, service-role credentials and the card-vault encryption key remain forbidden from the desktop release boundary.\n- Windows card-secret requests continue to require the authenticated owner and AAL2. The desktop proxy is pinned to the canonical HTTPS production origin; RLS/RPC, validation, optimistic revisions and normal server vault controls remain authoritative.\n- CVV remains encrypted device-local only and is never proxied or persisted server-side. No finance-data/schema migration, accounting rewrite or destructive history change is introduced.\n\n### Validation\n\n- Fix PR #203 exact head `c8e6e38d3fcfeb5623c04de7286b44795c0ad1a4` passed CI #858, CodeQL #812, Cross-engine/WebKit #141, Performance #135, Windows Desktop #507, Windows First Run #27 and Windows Clean Launch #28, with zero unresolved review threads.\n- PR #203 squash-merged to `develop` as `e74db8cd8baaaf2db1b0793925ddf5f443796085`. The release-prep and production-promotion heads are independently revalidated under issue #202 before tag publication.\n\n### Notes\n\n- v1.2.2 is a backward-compatible Windows onboarding/security patch over v1.2.1. Web finance behavior, database state and Android bearer API semantics are unchanged.\n- Existing legacy desktop provisioning files are obsolete under the application-owned configuration model and are removed on upgrade; no card-vault key rotation is required.\n- The Windows build may remain unsigned for personal use, so Windows can display Unknown publisher / Microsoft Defender SmartScreen; installer integrity remains protected by the controlled GitHub Release source and published SHA-256 checksum.\n'''
+          text = text.replace(marker, marker + section, 1)
+          text = text.replace('[Unreleased]: https://github.com/MariosGiannakaras/MyFinHub/compare/myfinhub-v1.2.1...develop', '[Unreleased]: https://github.com/MariosGiannakaras/MyFinHub/compare/myfinhub-v1.2.2...develop')
+          link_marker = '[1.2.1]: https://github.com/MariosGiannakaras/MyFinHub/releases/tag/myfinhub-v1.2.1'
+          if link_marker not in text:
+              raise SystemExit('CHANGELOG 1.2.1 link missing')
+          text = text.replace(link_marker, '[1.2.2]: https://github.com/MariosGiannakaras/MyFinHub/releases/tag/myfinhub-v1.2.2\n' + link_marker, 1)
+          changelog.write_text(text, encoding='utf-8')
+
+          status = Path('STATUS.md')
+          status.write_text(f'''# MyFinHub status\n\n## v1.2.2 Windows no-setup patch\n\nMyFinHub is a private, single-owner personal finance application. Production deploys from `main` to Vercel and uses Supabase/PostgreSQL as the durable finance store. Compatibility-critical historical identifiers such as `RheomIQ`, `rheomiq_*` and `RHEOMIQ_*` remain intentionally unchanged where they are persistence/protocol contracts.\n\nThis patch is tracked by issue #202 and completes the Windows startup/first-run incident work after v1.2.1.\n\n- production baseline entering the patch: **v1.2.1**\n- production baseline commit: `main@fa9f6c50100f10428dceab259fda024ce18e4912`\n- implementation PR: **#203**\n- implementation exact head: `c8e6e38d3fcfeb5623c04de7286b44795c0ad1a4`\n- implementation integration commit: `develop@e74db8cd8baaaf2db1b0793925ddf5f443796085`\n- release target: **v1.2.2**\n- release tracker: **#202**\n\n## v1.2.2 correction\n\nThe Windows application now owns its infrastructure configuration instead of asking a normal user to provision it:\n\n- the release package carries only the public Supabase project URL and `sb_publishable_...` client key;\n- `sb_secret_...`, service-role credentials and `CARD_VAULT_KEY` are forbidden from the desktop release boundary;\n- Windows PAN/expiry operations proxy through the canonical protected production `/api/card-secrets` endpoint using the already-authenticated owner AAL2 access token, leaving encryption server-side;\n- the normal first launch goes directly to MyFinHub sign-in/TOTP rather than a Supabase/card-vault setup form;\n- failed local-backend startup opens a non-technical recovery UI with retry plus bounded/redacted diagnostics;\n- legacy runtime provisioning files are removed on upgrade so stale DPAPI payloads cannot block startup;\n- the v1.2.1 Node `createRequire(import.meta.url)` bundle fix and explicit window-load failure handling remain preserved.\n\n## Exact implementation validation\n\nPR #203 final head `c8e6e38d3fcfeb5623c04de7286b44795c0ad1a4` passed:\n\n- CI #858;\n- CodeQL #812;\n- Cross-engine/WebKit #141;\n- Performance #135;\n- Windows First Run #27;\n- Windows Desktop #507;\n- Windows Clean Launch #28;\n- unresolved review threads: zero.\n\n## Security and finance invariants\n\n- browser/Windows authentication remains owner-only with mandatory TOTP/AAL2;\n- the desktop backend remains bound only to `127.0.0.1`;\n- Supabase RLS/RPC, optimistic revisions, validation, backups and audit behavior remain authoritative;\n- approved native Android bearer routes remain explicitly scoped and fail closed;\n- no service-role/secret credential is introduced into web, desktop or native client runtime code;\n- PAN/expiry remain in the existing owner+AAL2 encrypted server vault;\n- CVV remains encrypted device-local only and is rejected by server persistence;\n- receipt capture/OCR remains device-local under the existing local-only OCR contract;\n- no database migration, destructive finance-history rewrite or accounting-model change is part of v1.2.2.\n\n## Release gates\n\nImplementation evidence is supporting evidence only. The v1.2.2 release-prep head must independently pass the current applicable CI, CodeQL, cross-engine, performance and Windows package/clean-launch gates with zero unresolved review threads. A separate controlled `develop → main` promotion then validates the production candidate. The release is complete only after production provenance is verified, `myfinhub-v1.2.2` resolves to the final `main` commit, the Windows installer/checksum are published, and `main`/`develop` are synchronized.\n\n## Delivery workflow\n\nImplementation work follows **Issue → short-lived branch → PR → required checks → squash merge into `develop`**. Production release is a separate deliberate `develop → main` PR followed by production verification and controlled tag/Windows asset publication.\n''', encoding='utf-8')
+          PY
+
+          git rm .github/workflows/release-202-v122-prep-once.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add package.json desktop/package.json README.md CHANGELOG.md STATUS.md
+          git commit -m 'release: prepare MyFinHub v1.2.2'
+          git push origin HEAD:release/202-v1.2.2-prep
