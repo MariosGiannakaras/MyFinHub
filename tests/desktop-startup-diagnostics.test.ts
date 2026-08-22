@@ -54,6 +54,15 @@ describe('Windows first-run startup diagnostics', () => {
     expect(copied).not.toContain(secret);
   });
 
+  it('omits runtime output for failures that happen after backend readiness', () => {
+    const runtimeOutput = 'transaction payload must never be copied';
+    const error = new diagnostics.StartupError('BACKEND_STOPPED', 'backend', 'Backend stopped.', runtimeOutput);
+    const failure = diagnostics.publicStartupFailure(error);
+    expect(failure.detail).not.toContain(runtimeOutput);
+    expect(failure.detail).toContain('runtime output');
+    expect(diagnostics.startupDiagnosticText(failure, '1.2.1')).not.toContain(runtimeOutput);
+  });
+
   it('preserves backend stderr and classifies startup stages instead of discarding the cause', () => {
     expect(main).not.toContain("child.stderr.on('data', () => {})");
     expect(main).toContain("child.stderr.on('data', chunk =>");
