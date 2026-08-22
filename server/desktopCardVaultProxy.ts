@@ -1,7 +1,7 @@
 import { ApiError } from './http.js';
 
 const TIMEOUT_MS=12_000;
-const ALLOWED_ORIGIN=/^https:\/\/[a-z0-9.-]+\.vercel\.app$/i;
+const CANONICAL_PRODUCTION_ORIGIN='https://mgfinhub.vercel.app';
 
 type RemotePayload={error?:string;code?:string;requestId?:string;pan?:string|null;expiry?:string|null;saved?:boolean;last4?:string|null;deleted?:boolean};
 
@@ -9,7 +9,7 @@ function productionOrigin(){
   const raw=String(process.env.MYFINHUB_PRODUCTION_ORIGIN||'').trim().replace(/\/$/,'');
   let parsed:URL;
   try{parsed=new URL(raw)}catch{throw new ApiError(500,'DESKTOP_VAULT_PROXY_CONFIG_ERROR','Desktop card vault proxy is not configured.',false)}
-  if(parsed.protocol!=='https:'||parsed.username||parsed.password||!ALLOWED_ORIGIN.test(parsed.origin)){
+  if(parsed.protocol!=='https:'||parsed.username||parsed.password||parsed.origin!==CANONICAL_PRODUCTION_ORIGIN){
     throw new ApiError(500,'DESKTOP_VAULT_PROXY_CONFIG_ERROR','Desktop card vault proxy is not configured.',false);
   }
   return parsed.origin;
