@@ -5,7 +5,7 @@
 // CARD_VAULT_KEY must never be added here; desktop card-secret operations use the protected
 // production MyFinHub API so the vault encryption key remains server-side.
 module.exports = Object.freeze({
-  supabaseUrl: '__MYFINHUB_SUPABASE_URL__',
-  supabasePublishableKey: '__MYFINHUB_SUPABASE_PUBLISHABLE_KEY__',
+  supabaseUrl: 'https://ahsukppxwaiagampsuzb.supabase.co',
+  supabasePublishableKey: 'sb_publishable_Ee7nzCpHN5AKwjXkPBvxdw_bTJXoJGC',
   productionOrigin: 'https://mgfinhub.vercel.app',
 });
