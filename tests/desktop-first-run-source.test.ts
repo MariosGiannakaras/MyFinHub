@@ -10,7 +10,7 @@ const main = read('desktop/main.cjs');
 const preload = read('desktop/preload.cjs');
 const recovery = read('desktop/setup.html');
 const renderer = read('desktop/setup-renderer.js');
-const workflow = read('.github/workflows/desktop-windows.yml');
+const cleanLaunchWorkflow = read('.github/workflows/desktop-clean-launch.yml');
 
 describe('Windows no-setup startup/recovery contract', () => {
   it('boots from application-owned public config instead of user provisioning', () => {
@@ -53,7 +53,10 @@ describe('Windows no-setup startup/recovery contract', () => {
   });
 
   it('requires a clean installed-user launch gate before this fix can merge', () => {
-    expect(workflow).toContain('Clean installed-user launch without runtime provisioning');
-    expect(workflow).toContain('runtime-defaults.cjs');
+    expect(cleanLaunchWorkflow).toContain('Clean installed-user launch without runtime provisioning');
+    expect(cleanLaunchWorkflow).toContain('runtime-defaults.cjs');
+    expect(cleanLaunchWorkflow).toContain('Remove-Item Env:SUPABASE_URL');
+    expect(cleanLaunchWorkflow).toContain('Clean launch unexpectedly created runtime-config.json.');
+    expect(cleanLaunchWorkflow).toContain('Clean launch unexpectedly created runtime-secrets.json.');
   });
 });
