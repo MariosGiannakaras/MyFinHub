@@ -11,7 +11,6 @@
   const diagnosticMessage = document.getElementById('diagnostic-message');
   const diagnosticDetail = document.getElementById('diagnostic-detail');
   const copyDiagnostics = document.getElementById('copy-diagnostics');
-  let recoveryState = null;
 
   const setStatus = (message, kind = '') => {
     status.textContent = message;
@@ -33,7 +32,6 @@
 
   const applyState = (state) => {
     if (!state) return;
-    recoveryState = { ...recoveryState, ...state };
     const numeric = Math.max(0, Math.min(100, Number(state.progress) || 0));
     if (progress) progress.style.width = `${numeric}%`;
     if (progressShell) progressShell.setAttribute('aria-valuenow', String(numeric));
@@ -47,14 +45,14 @@
     retry.disabled = true;
     copyDiagnostics.disabled = true;
     setStatus('Η ασφαλής desktop γέφυρα δεν είναι διαθέσιμη.', 'error');
-    renderDiagnostic({ code: 'DESKTOP_BRIDGE_UNAVAILABLE', stage: 'recovery-ui', message: 'Η desktop γέφυρα δεν φορτώθηκε.', detail: 'Κλείσε και άνοιξε ξανά το MyFinHub. Αν επαναληφθεί, χρησιμοποίησε την επόμενη διορθωμένη έκδοση.' });
+    renderDiagnostic({ code: 'DESKTOP_BRIDGE_UNAVAILABLE', stage: 'recovery-ui', message: 'Η desktop γέφυρα δεν φορτώθηκε.', detail: 'Κλείσε και άνοιξε ξανά το MyFinHub.' });
     return;
   }
 
-  const unsubscribe = bridge.onSetupProgress?.((state) => applyState(state));
+  const unsubscribe = bridge.onStartupProgress?.((state) => applyState(state));
   window.addEventListener('beforeunload', () => unsubscribe?.(), { once: true });
 
-  bridge.getSetupState().then((state) => applyState(state)).catch((error) => {
+  bridge.getRecoveryState().then((state) => applyState(state)).catch((error) => {
     setStatus('Δεν ήταν δυνατή η φόρτωση της κατάστασης εκκίνησης.', 'error');
     renderDiagnostic({ code: 'RECOVERY_STATE_LOAD_FAILED', stage: 'recovery-ui', message: 'Η φόρτωση της κατάστασης εκκίνησης απέτυχε.', detail: String(error?.message || '') });
   });
@@ -64,15 +62,7 @@
     renderDiagnostic(null);
     setStatus('Νέα προσπάθεια εκκίνησης…');
     try {
-      if (!recoveryState?.supabaseUrl || !recoveryState?.supabasePublishableKey) {
-        throw new Error('Application-owned runtime configuration is unavailable.');
-      }
-      const result = await bridge.saveSetup({
-        supabaseUrl: recoveryState.supabaseUrl,
-        supabasePublishableKey: recoveryState.supabasePublishableKey,
-        cardVaultKey: '',
-        cardVaultKeyVersion: Number(recoveryState.cardVaultKeyVersion || 1),
-      });
+      const result = await bridge.retryStartup();
       if (!result?.ok) {
         applyState({ progress: 8, message: result?.error?.message || 'Η νέα προσπάθεια απέτυχε.', error: result?.error });
         retry.disabled = false;
@@ -89,7 +79,7 @@
   copyDiagnostics?.addEventListener('click', async () => {
     copyDiagnostics.disabled = true;
     try {
-      const result = await bridge.copySetupDiagnostics();
+      const result = await bridge.copyStartupDiagnostics();
       setStatus(result?.ok ? 'Τα ασφαλή διαγνωστικά αντιγράφηκαν στο πρόχειρο.' : 'Δεν υπάρχουν διαγνωστικά για αντιγραφή.', result?.ok ? 'ok' : 'error');
     } catch {
       setStatus('Η αντιγραφή διαγνωστικών απέτυχε.', 'error');
