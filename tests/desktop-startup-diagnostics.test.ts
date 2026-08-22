@@ -19,6 +19,7 @@ const main = read('desktop/main.cjs');
 const preload = read('desktop/preload.cjs');
 const renderer = read('desktop/setup-renderer.js');
 const setup = read('desktop/setup.html');
+const prepareBuild = read('desktop/prepare-build.mjs');
 const desktopPackage = JSON.parse(read('desktop/package.json'));
 
 describe('Windows first-run startup diagnostics', () => {
@@ -103,6 +104,13 @@ describe('Windows first-run startup diagnostics', () => {
     expect(preload).toContain("copySetupDiagnostics: () => ipcRenderer.invoke('myfinhub:copy-setup-diagnostics')");
     expect(renderer).toContain('bridge.copySetupDiagnostics');
     expect(setup).toContain('Αντιγραφή ασφαλών διαγνωστικών');
+  });
+
+  it('bridges CommonJS dynamic requires inside the Node ESM desktop bundle', () => {
+    expect(prepareBuild).toContain("format:'esm'");
+    expect(prepareBuild).toContain("createRequire as __myfinhubCreateRequire");
+    expect(prepareBuild).toContain("const require = __myfinhubCreateRequire(import.meta.url)");
+    expect(prepareBuild).toContain("platform:'node'");
   });
 
   it('ships and syntax-checks the diagnostics helper in the packaged desktop app', () => {
