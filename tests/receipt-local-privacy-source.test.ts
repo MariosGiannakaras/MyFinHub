@@ -8,7 +8,8 @@ const assetSync=readFileSync(new URL('../scripts/sync-ocr-assets.mjs',import.met
 
 describe('local-only receipt privacy boundary',()=>{
   it('stores pending receipt blobs only through application-local IndexedDB',()=>{
-    expect(drafts).toContain("indexedDB.open(DB_NAME, DB_VERSION)");
+    expect(drafts).toContain('indexedDbFactory');
+    expect(drafts).toMatch(/\.open\(DB_NAME, DB_VERSION\)/);
     expect(drafts).toContain("const STORE = 'receipts'");
     expect(drafts).not.toMatch(/supabase|FinanceData|fetch\(|XMLHttpRequest|https?:\/\//i);
   });
