@@ -4,6 +4,47 @@ All notable MyFinHub changes are recorded here. Release artifacts remain availab
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-08-22
+
+### Added
+
+- Added explicit category management with normalized Greek/whitespace/case duplicate handling, validated Save actions, dirty/saved feedback and safer vehicle subcategory defaults.
+- Added clickable MyFinHub brand/home affordances for sidebar and mobile navigation while preserving the existing routing model and responsive behavior.
+- Added a device-local receipt inbox for JPG/PNG camera or file capture. Pending drafts persist in IndexedDB across reload, app close and logout until explicitly handled or deleted.
+- Added local-only Greek/English receipt OCR with Tesseract.js 7, pinned `ell`/`eng` data and self-hosted worker/WASM/language assets. OCR is lazy-loaded, bounded and runs without a cloud OCR/LLM/VLM provider.
+- Added deterministic receipt proposal parsing for merchant, date, total, currency and conservative existing-category suggestions, handing reviewed values to the existing Quick Entry flow rather than creating a second transaction engine.
+- Added an explicitly scoped native bearer authentication contract for the separate Android client on approved finance/card-secret endpoints, using Supabase owner `aal2` access JWTs.
+
+### Changed
+
+- Category editors now use explicit persistence instead of silent blur/timer autosave and reject invalid/empty trees without overwriting the last saved configuration.
+- Receipt capture is durable before OCR: OCR may be cancelled or retried later, while normal Quick Entry `Καταχώριση` remains the only transaction creation action and deletes a handled draft only after successful normal submit.
+- Non-EUR receipt detection warns and prevents silent EUR amount prefill; MyFinHub accounting remains EUR-only.
+- Browser and Windows cookie sessions remain the default session model. Native bearer mode is disabled by default and must be explicitly enabled by an approved route.
+
+### Security & privacy
+
+- Browser/Windows HttpOnly-cookie authentication, same-origin mutation checks, owner UID, mandatory TOTP/AAL2, PostgreSQL RLS/RPC, optimistic revisions, validation, backups and audit behavior remain intact.
+- Explicit bearer credentials fail closed and cannot fall back to ambient cookies after rejection. Bearer mutations may omit browser Origin metadata only after bearer authentication succeeds; this does not relax CORS.
+- No service-role or Supabase secret credential is introduced into browser, desktop or Android runtime code.
+- Receipt images and pending receipt metadata remain device-local IndexedDB state. Raw OCR text is transient and receipt images/raw OCR never enter FinanceData, Supabase, normal backups, Change History or application logs.
+- PAN/expiry remain in the existing owner+AAL2 encrypted card vault. CVV remains encrypted device-local only and is forbidden from server persistence.
+- No database/schema migration, destructive finance-data rewrite or accounting-model change is introduced by this release.
+
+### Validation
+
+- Navigation/category PR #194 passed exact-head CI #791 with **52 test files / 252 tests**, Primary-Chromium rendered QA, CodeQL #745, Cross-engine/WebKit #84, Performance #78 and Windows Desktop #443, with zero unresolved review threads.
+- Native bearer PR #197 passed exact-head CI #801, CodeQL #755, Cross-engine/WebKit #93, Performance #87 and Windows Desktop #453, followed by an exact-diff security review with zero unresolved threads.
+- Local receipt OCR PR #195 passed exact-head CI with **56 test files / 267 tests**, dedicated Primary-Chromium receipt lifecycle QA, zero external HTTP requests during OCR recognition, CodeQL, Cross-engine/WebKit, Performance and Windows Desktop validation, with clean review threads.
+- The integrated v1.2.0 release head is revalidated independently through issue #199 and its release PR; feature-branch evidence is supporting evidence, not a substitute for final-head gates.
+
+### Notes
+
+- v1.2.0 is a backward-compatible feature release over v1.1.0.
+- The Android application remains a separate repository/client. This release supplies the MyFinHub backend authentication contract it requires; it does not move Android application code into this repository.
+- Hands-on testing with representative real receipts is outside GitHub engineering tracking and is not a release gate. Reproducible defects discovered during normal use should be filed as focused fixes.
+- The Windows build may remain unsigned for personal use, so Windows can display Unknown publisher / Microsoft Defender SmartScreen; installer integrity remains protected by the controlled release source and published SHA-256 checksum.
+
 ## [1.1.0] - 2026-08-22
 
 ### Added
@@ -108,7 +149,8 @@ All notable MyFinHub changes are recorded here. Release artifacts remain availab
 
 - v1.0.0 is an unsigned personal-use Windows build. Windows may display Unknown publisher / Microsoft Defender SmartScreen.
 
-[Unreleased]: https://github.com/MariosGiannakaras/MyFinHub/compare/myfinhub-v1.1.0...develop
+[Unreleased]: https://github.com/MariosGiannakaras/MyFinHub/compare/myfinhub-v1.2.0...develop
+[1.2.0]: https://github.com/MariosGiannakaras/MyFinHub/releases/tag/myfinhub-v1.2.0
 [1.1.0]: https://github.com/MariosGiannakaras/MyFinHub/releases/tag/myfinhub-v1.1.0
 [1.0.2]: https://github.com/MariosGiannakaras/MyFinHub/releases/tag/myfinhub-v1.0.2
 [1.0.1]: https://github.com/MariosGiannakaras/MyFinHub/releases/tag/myfinhub-v1.0.1

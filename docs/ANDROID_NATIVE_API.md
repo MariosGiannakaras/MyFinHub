@@ -1,6 +1,6 @@
 # Android native API authentication contract
 
-Status: implementation branch for issue #196  
+Status: merged into `develop` via PR #197; included in the MyFinHub v1.2.0 release batch tracked by #199  
 Consumer: `MariosGiannakaras/MyFinHub-Android-App`
 
 ## Purpose
@@ -111,7 +111,7 @@ The Android app should:
 
 ## Regression contract
 
-Before this native path can be merged/released, tests must cover at least:
+The merged native path is covered by tests for at least:
 
 - valid owner AAL2 bearer read;
 - valid owner AAL2 bearer mutation without browser Origin metadata;
@@ -124,4 +124,6 @@ Before this native path can be merged/released, tests must cover at least:
 - existing cookie refresh/failure resilience preserved;
 - card-secret owner/AAL2/CVV restrictions preserved.
 
-The Android repository must not connect production finance data until this contract is merged, deployed and verified through the normal MyFinHub release process.
+PR #197 passed CI #801, CodeQL #755, Cross-engine/WebKit #93, Performance #87 and Windows Desktop #453 on exact head `e0d4ee10ec42688008a4d8436c0df8e42f7a94f2`, with zero unresolved review threads before squash merge.
+
+The Android repository may connect production finance data only after this contract has been promoted through the normal MyFinHub release process and the resulting production deployment has been verified.

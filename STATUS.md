@@ -1,207 +1,171 @@
 # MyFinHub status
 
-## v1.1.0 release-preparation snapshot
+## v1.2.0 release-preparation snapshot
 
-MyFinHub is a private, single-owner personal finance application. Production deploys from `main` to Vercel and uses Supabase/PostgreSQL as the durable store. Historical repository history and compatibility-critical identifiers may still use `RheomIQ`, `rheomiq_*` and `RHEOMIQ_*`; those contracts are intentionally not renamed merely for branding.
+MyFinHub is a private, single-owner personal finance application. Production deploys from `main` to Vercel and uses Supabase/PostgreSQL as the durable finance store. Compatibility-critical historical identifiers such as `RheomIQ`, `rheomiq_*` and `RHEOMIQ_*` remain intentionally unchanged where they are persistence/protocol contracts.
 
-This status record describes the release batch being promoted through issue #187.
+This snapshot records the release batch tracked by issue #199.
 
-- production baseline entering the release: **v1.0.2**
-- production baseline commit: `main@d054ad549549c19039b70e76780e84feca7f3104`
-- validated development integration before release metadata: `develop@66c875b793ac91bfa823788a669faa4ab47b077c`
-- implementation batch represented by PRs #179, #181, #182, #184 and #186
-- release target: **v1.1.0**
-- release tracker: issue #187
-- future receipt OCR: issue #188, explicitly excluded from v1.1.0
+- production baseline entering this release: **v1.1.0**
+- production baseline commit: `main@3614988377f77c0370370117bc072873949b13ab`
+- integrated development baseline before release metadata: `develop@8b4e242ea067aef623ed1a45dc23e79cc12edab4`
+- `develop` at release-prep start: **3 commits ahead / 0 behind** `main`
+- release scope: PRs #194, #197 and #195
+- release target: **v1.2.0**
+- release tracker: issue #199
 
-The final production `main` SHA, deployment smoke, tag, GitHub Release and Windows installer/checksum evidence are recorded in #187 after promotion. This section intentionally preserves the pre-promotion baseline so the release transition remains auditable.
+Final release-prep, production `main`, deployment, tag and Windows release evidence are recorded in #199 and the corresponding release PRs as those gates complete.
 
-## Production security verification inherited from v1.0.2
+## v1.2.0 capability batch
 
-The production security verification tracked in #88 is complete and remains the baseline for v1.1.0.
+### Home navigation and category management
 
-Verified on production on 2026-08-20:
+PR #194 added:
 
-- authenticated PAN/expiry save → reveal → delete passed with a non-real test card;
-- device-local CVV save → reveal → delete passed on the production origin;
-- ordinary production FinanceData and JSON backups contained no PAN/expiry/CVV fields;
-- canonical `rheomiq_app_state` revision `99` contained no payment-secret JSON keys;
-- seven production backup rows contained zero matching payment-secret keys;
-- latest checked backup was id `8`, revision `98`, reason `automatic`, and was clean;
-- `rheomiq_card_secrets` contained zero rows at the time of the read-only verification.
+- semantic MyFinHub brand/home buttons on desktop and mobile that route to Dashboard;
+- normalized category/subcategory comparison across whitespace, case and Greek diacritics;
+- deterministic merging of normalized duplicate categories/subcategories while preserving the first visible spelling;
+- safer non-overlapping vehicle subcategory defaults;
+- explicit expense/income category Save actions with dirty/saved state and accessible feedback;
+- invalid/empty category trees are rejected without overwriting the last persisted configuration;
+- no historical transaction category migration or accounting rewrite.
 
-No finance values were returned and no production finance data was mutated by that read-only verification.
+Exact validated feature head: `c3fa44c880d259fe95390ba8f2572e53d3c6df5d`.
 
-## v1.1.0 capability batch
+Feature validation:
 
-### Application-wide UX, accessibility and responsive hardening
+- CI #791: success, including **52 test files / 252 tests**, app/API checks, production build and bundle budgets;
+- Primary-Chromium rendered QA: success;
+- CodeQL #745: success;
+- Cross-engine/WebKit #84: success;
+- Performance #78: success;
+- Windows Desktop #443: success;
+- unresolved review threads before merge: zero.
 
-The integrated batch strengthens the existing product rather than introducing a parallel UI framework.
+### Native Android bearer API contract
 
-- application-wide UI/UX, accessibility, focus/modal, owned-control, sorting, readability and user-copy hardening;
-- responsive desktop, intermediate and narrow/mobile behavior across finance workspaces;
-- MyFinHub light/dark visual treatment across browser/PWA/Windows surfaces while retaining the authentic historical wallet/`R` application mark;
-- motion-sensitive behavior continues to respect `prefers-reduced-motion`;
-- Dashboard semantic/read order is locked to **Μετρητά → Μισθοδοσία → Αποταμίευση → λοιπά υπόλοιπα → εκκρεμή/actionable → Quick Entry → analytics/rest**.
+PR #197 added a narrow native-client authentication mode to the existing MyFinHub finance API. Android application code remains in the separate `MariosGiannakaras/MyFinHub-Android-App` repository.
 
-### Reports and financial planning
+Native bearer support is disabled by default and explicitly enabled only on approved finance/card-secret routes. Browser auth/session/MFA/login/logout remain cookie-oriented.
 
-- restructured Reports/Analytics with deterministic comparative KPIs, flow/trend views, commitment and credit-pressure indicators, category momentum and responsive drill-downs;
-- first-class internal transfers and split transactions;
-- scheduled transactions that do not affect current balances until explicit completion;
-- deterministic 30/60/90-day cash-flow forecasting;
-- monthly category budgets;
-- deterministic transaction rules;
-- Needs Attention action center;
-- context-aware Quick Entry.
+Security invariants:
 
-### Search, shortcuts and interaction model
+- browser/Windows HttpOnly/Secure cookie sessions remain unchanged;
+- cookie mutations still require same-origin/CSRF validation;
+- an explicit bearer credential is authoritative and fails closed without ambient-cookie fallback;
+- bearer mutations may omit browser Origin metadata only after bearer authentication succeeds;
+- no permissive CORS policy is introduced;
+- configured owner UID and `aal2` remain mandatory;
+- database access remains publishable-key + user JWT under existing RLS/RPC;
+- optimistic revision conflicts, validation, backups and audit behavior remain intact;
+- bearer failures do not clear unrelated browser cookies;
+- no service-role/secret credential is required or allowed in the Android client;
+- PAN/expiry remain in the existing owner+AAL2 encrypted card vault and CVV remains device-local only.
 
-- privacy-safe unified search and Command Palette;
-- one shared app-wide shortcut registry/hook;
-- Search / Command Palette: `Ctrl K` on Windows/Linux, `⌘ K` on Apple platforms;
-- Quick Entry: `Ctrl Shift Space` / `⌘ ⇧ Space`;
-- Undo: `Ctrl Z` / `⌘ Z`;
-- Redo: `Ctrl Y` on Windows/Linux, `⌘ ⇧ Z` on Apple platforms, with `Ctrl Shift Z` compatibility;
-- Escape remains owned by the existing topmost-modal focus manager;
-- shortcuts are suppressed in editable fields and modal-owned contexts;
-- Settings includes a responsive Keyboard Shortcuts reference.
+Exact validated feature head: `e0d4ee10ec42688008a4d8436c0df8e42f7a94f2`.
 
-### Undo/Redo and privacy-safe Change History
+Feature validation:
 
-The existing Undo/Redo persistence/state-stack model is retained.
+- CI #801: success;
+- CodeQL #755: success;
+- Cross-engine/WebKit #93: success;
+- Performance #87: success;
+- Windows Desktop #453: success;
+- final exact-diff security review: success;
+- unresolved review threads before merge: zero.
 
-- session-only Change History remains capped at 20 entries;
-- additions, edits, deletions, transfers, scheduled items, balance/reconciliation changes, budgets, rules, cards, loans/installments, recurring items, settings and review decisions receive concise safe summaries;
-- supported non-sensitive changes can show bounded `previous → new` values;
-- Undo/Redo entries identify the safe affected change where possible;
-- history labels exclude transaction notes/descriptions, arbitrary private free-text, custom account names, PAN, expiry secrets, CVV/CVC, vault references and other card-private values;
-- reload/import continues to clear session history as designed.
+The durable consumer contract is documented in `docs/ANDROID_NATIVE_API.md`.
 
-### High-fidelity loading skeletons
+### Device-local receipt capture and OCR
 
-Route-shaped skeletons now closely represent the final structure for:
+PR #195 added a capture-first receipt workflow attached only to generic Quick Entry.
 
-- Dashboard;
-- Transactions;
-- Review;
-- Savings;
-- Cards;
-- Credit;
-- Loans;
-- Lending;
-- Recurring;
-- Planning;
-- Attention;
-- Reports;
-- Settings.
+Lifecycle:
 
-The skeleton system uses representative headings, balances/KPIs, rows, controls, forms, buttons, cards and charts, with desktop/mobile overflow checks, reduced-motion support and the maintained CLS threshold.
+**camera/file JPG/PNG → normalized device-local IndexedDB draft → optional local OCR → deterministic proposal → existing Quick Entry → explicit normal submit → local draft deletion**.
 
-### Cards and Credit identity
+Privacy and behavior invariants:
 
-The v1.0.2 card model remains intact and is part of the v1.1.0 baseline.
+- pending receipt images remain device-local and survive normal reload/app close/logout until handled;
+- Tesseract.js 7 uses pinned Greek `ell` + English `eng` packages and self-hosted worker/WASM/language assets;
+- no Azure, Google, AWS, external LLM/VLM or other receipt-processing provider;
+- OCR is lazy-loaded, bounded, cancellable/retriable and raw OCR text is transient;
+- receipt images/raw OCR never enter FinanceData, Supabase, normal backups, Change History or application logs;
+- no permanent receipt archive or cloud receipt sync;
+- deterministic parsing proposes merchant/date/total/currency and may conservatively reuse an existing category;
+- account/card selection remains manual;
+- non-EUR detection warns and prevents silent EUR amount prefill;
+- normal Quick Entry submit remains the only transaction-creation action;
+- cancellation leaves the receipt pending and a draft is deleted only after successful normal submit;
+- no database/schema migration or accounting rewrite.
 
-- Cards and Credit share `FinanceData.state.cards` / `PaymentCard` identities keyed by `cardId`;
-- unlimited active cards may coexist under one bank;
-- multiple active credit cards may coexist across or within banks;
-- credit purchases and payments target a specific `cardId` with independent liability/limit/available-credit/history presentation;
-- legacy pre-`cardId` credit events remain readable through deterministic backward-compatible attribution;
-- card removal is archival/soft-delete so finance history and card identity survive restoration;
-- PAN/expiry remain in the owner+AAL2 encrypted server vault;
-- CVV remains encrypted device-local only and is never accepted by server persistence boundaries.
+Exact validated feature head: `88fce8217b9cb87179055bd6b25d953b02d2b3d8`.
 
-### Normalized payment flows
+Feature validation:
 
-Credit-card payments, loan/installment payments and recurring obligations use shared source/target/result semantics without changing the accounting model.
+- exact-head CI: success with **56 test files / 267 tests**, app/API checks, TypeScript/Vite build and bundle budgets;
+- dedicated Primary-Chromium receipt lifecycle QA: success;
+- OCR recognition observed **zero external HTTP requests**;
+- CodeQL: success;
+- Cross-engine/WebKit: success;
+- Performance: success;
+- Windows Desktop: success;
+- unresolved review threads before merge: zero.
 
-The following invariants remain enforced:
+Hands-on testing with representative real receipts is intentionally outside GitHub engineering tracking and is not a release gate. Issue #198 is closed as `not planned` to record that policy.
+
+## Finance, persistence and secret invariants
+
+The compatibility `FinanceData` document remains the canonical read/import representation. Normal writes update mutable state through optimistic revision locking.
+
+This release does not introduce a database migration, destructive production-data rewrite or alternate finance engine. Existing accounting behavior remains authoritative:
 
 - internal transfers, withdrawals, savings transfers, card payments and reconciliation adjustments do not become ordinary spending;
-- `saving_cash_offset` remains a payroll/current → savings transfer with no physical-cash ledger leg;
-- split portions are counted once and must balance to the parent amount;
-- credit purchases are spending while paying the credit liability is not spending again;
-- lending creates a receivable and repayment reduces it;
-- Smart Review remains advisory until explicit confirmation;
-- reconciliation uses the existing correction model rather than a duplicate accounting path.
+- `saving_cash_offset` remains payroll/current → savings with no physical-cash ledger leg;
+- split portions balance to the parent and are counted once;
+- scheduled items do not affect current balances until explicit completion;
+- credit purchases are spending while credit liability repayment is not counted as spending again;
+- lending remains a receivable and repayment reduces that receivable;
+- Smart Review remains advisory until explicit user confirmation.
 
-## Automated release-readiness evidence
+Payment-card metadata may live in `FinanceData.state.cards`; full PAN, expiry and CVV do not. PAN/expiry use the ciphertext-only server card vault. CVV uses the encrypted device-local vault and is rejected by server persistence boundaries.
 
-The latest completed implementation exact head before release metadata is:
-
-`7401eb0d4a274e2d367fe0c67ee91f77ca07ca09`
-
-Final implementation evidence:
-
-- CI #782: success;
-- full unit/source suite: **51/51 files, 247/247 tests**;
-- app/API dependency audits: zero reported vulnerabilities;
-- production build and bundle budgets: success;
-- Primary-Chromium rendered QA: success, including shortcuts, Change History privacy, mobile containment and ledger reconciliation;
-- browser evidence artifact: 86 files;
-- CodeQL #736: success;
-- Cross-engine/WebKit #79: success;
-- Performance/loading-shift #74: success;
-- Windows Desktop #435: success, including packaged executable smoke, interactive NSIS build, fresh install/launch/uninstall and checksum evidence;
-- unresolved PR review threads at merge time: zero.
-
-The release-prep and production-promotion exact heads are revalidated separately in #187; previous green runs are supporting evidence, not a substitute for final-head gates.
-
-## Windows desktop application
+## Windows desktop and release contract
 
 - Electron owns the Windows application and starts the existing Express backend as a hidden child process using the bundled Node.js 22 runtime.
 - The backend binds only to `127.0.0.1` on an OS-selected ephemeral port and serves the packaged Vite frontend from the same local origin.
 - Renderer Node access remains disabled; context isolation, sandboxing, navigation restrictions and desktop security headers remain enabled.
-- Desktop uses the same Supabase project, owner login, mandatory TOTP AAL2, RLS/RPC rules and optimistic revisions as the Vercel client.
-- No service-role/secret Supabase credential is part of the desktop runtime.
-- PAN/expiry vault configuration can be protected per Windows user through Electron `safeStorage` / Windows DPAPI. CVV remains device-local only.
-- The per-user NSIS installer creates Desktop and Start Menu shortcuts and does not require Git, Node.js, a terminal or a browser for normal use.
-- In-app updates use the controlled `myfinhub-v<semver>` GitHub Release channel, exact installer/checksum naming, trusted-host checks, size bounds and streamed SHA-256 verification.
-- Unsigned personal-use releases are supported; Authenticode remains optional if signing credentials are later configured.
+- Desktop uses the same Supabase project, owner login, mandatory TOTP AAL2, RLS/RPC and optimistic revision rules.
+- Desktop releases use `myfinhub-v<semver>` tags already present on `main`.
+- The Windows release workflow builds/smoke-tests the packaged executable and NSIS installer, verifies exact tag/version/main ancestry, generates SHA-256 metadata and publishes the controlled GitHub Release.
+- Unsigned personal-use releases may trigger SmartScreen/Unknown publisher warnings; release integrity still depends on the controlled GitHub source and checksum verification.
 
-## Implemented platform
+## Repository cleanup policy
 
-- React + Vite + TypeScript responsive web client
-- Node.js 22.x runtime contract
-- Vercel Functions in Frankfurt (`fra1`)
-- Supabase/PostgreSQL in `eu-central-1`
-- single-owner email/password authentication with mandatory TOTP MFA (`aal2`)
-- HttpOnly/Secure sessions and same-origin mutation protection
-- owner + AAL2 enforcement in API logic and PostgreSQL RLS/RPCs
-- publishable-key + user-JWT online Supabase access; no service-role secret required
-- optimistic revisions with stale-write conflicts instead of silent overwrite
-- bounded backups and append-only write audit events
-- full-state import with mandatory pre-import backup
-- server-side finance validation and request-size bounds
-- GitHub CI, dependency audits, CodeQL, Dependabot and privacy/security guards
-- Vercel Production Smoke tied to the released production deployment
-- lazy-loaded finance pages and memoized derived selectors
-- mutable-state-only normal writes
-- native Windows Electron distribution with controlled GitHub Release updates
+The v1.2.0 release finalization also closes stale bookkeeping without rewriting Git history:
 
-## Data and card-secret model
+- issue #188 no longer presents #198 as an active manual-test backlog;
+- #198 remains closed `not planned` because personal hands-on OCR testing is outside GitHub tracking;
+- merged PR #197 records its actually completed Windows and final security-review gates;
+- `docs/ANDROID_NATIVE_API.md` records the contract as merged rather than as an implementation branch;
+- historical commit messages are not rewritten solely to remove old issue references.
 
-The compatibility `FinanceData` document remains the canonical read/import representation. Normal saves update the mutable `state` subtree under revision locking.
+NPM lockfiles remain dependency snapshots rather than release-note authorities. Manifest versions define the application/desktop release version; dependency lockfiles are not regenerated solely for a version-only release metadata bump because doing so would create unrelated dependency churn. Their install compatibility is revalidated by exact-head CI and Windows package gates.
 
-Payment-card metadata may live in `FinanceData.state.cards`; full PAN, expiry and CVV do not. PAN/expiry use the ciphertext-only legacy-named `rheomiq_card_secrets` table, while CVV uses the separate device-local encrypted vault. Ordinary FinanceData backups remain outside both secret stores.
+## Final release gates
 
-## Future receipt OCR backlog
+Feature-branch validation above is supporting evidence only. The integrated v1.2.0 release-prep head must independently pass the repository's current applicable gates before merge:
 
-Issue #188 records a future receipt OCR design and is **not part of v1.1.0**.
+- root/API installs, audits, security guard, full unit/source suite, TypeScript/Vite build, bundle budgets and API checks;
+- Primary-Chromium rendered frontend QA;
+- CodeQL;
+- Cross-engine/WebKit;
+- Performance/loading-shift smoke;
+- Windows Desktop package/install/launch/uninstall/checksum validation;
+- zero unresolved review threads on the unchanged exact head.
 
-The required future model is:
-
-**receipt upload/mobile camera → temporary OCR staging → explicit user review/approval → normal finance transaction(s) → immediate purge of receipt image and OCR staging data**.
-
-There is no planned permanent receipt archive/history. Rejected, cancelled, expired or approved staging payloads must be purged, and raw receipt/OCR content must not enter canonical FinanceData, normal backups, Change History or logs.
-
-## Known non-blocking platform notes
-
-- Supabase Security Advisor previously reported `Leaked Password Protection Disabled`; mandatory owner + TOTP AAL2 remains the current application access boundary.
-- Supabase per-PR database branching is not enabled on the current plan; production migrations remain version-controlled and release-controlled.
-- The repository declares Node.js `22.x`; Electron may embed a different Node major internally, but the hidden local backend uses the bundled Node 22 runtime.
-- Unsigned Windows releases can trigger Windows reputation/SmartScreen warnings. This is an accepted personal-use distribution tradeoff, not a release-integrity bypass: the MyFinHub updater still requires the controlled release source and SHA-256 verification.
+After release-prep is squash-merged into `develop`, a separate controlled `develop → main` release PR is validated and squash-merged. Production deployment provenance/API/security behavior must resolve to the resulting exact `main` commit before the `myfinhub-v1.2.0` Windows publication tag is considered complete.
 
 ## Delivery workflow
 
-Implementation work follows Issue → short-lived branch → PR → required checks → squash merge into `develop`. Production release is a separate deliberate `develop -> main` PR followed by production verification. Desktop public release artifacts are created only from a `myfinhub-v<version>` tag whose commit is already present on `main`.
+Implementation work follows Issue → short-lived branch → PR → required checks → squash merge into `develop`. Production release is a separate deliberate `develop -> main` PR followed by production verification. After a release, `develop` may be synchronized to the exact released `main` commit only after verifying that doing so loses no tree content.
