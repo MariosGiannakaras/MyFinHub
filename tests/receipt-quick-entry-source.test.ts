@@ -34,7 +34,7 @@ describe('receipt to Quick Entry contract',()=>{
   });
 
   it('passes receipt date into the existing QuickAdd and blocks silent non-EUR amount prefill',()=>{
-    expect(bridge).toContain("receiptProposal?.currency !== 'EUR'");
+    expect(bridge).toContain("receiptProposal?.currency && receiptProposal.currency !== 'EUR'");
     expect(bridge).toContain('amount: explicitNonEur ? 0');
     expect(bridge).toContain('asOf={receiptProposal?.date ?? asOf}');
     expect(bridge).toContain("initialKind={receiptDraftId ? 'expense' : initialKind}");
