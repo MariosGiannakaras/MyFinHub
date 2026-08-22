@@ -80,12 +80,51 @@ function formatDiagnostic(diagnostic, version = '') {
   ].join('\n');
 }
 
+async function preflightSupabase(config, options = {}) {
+  const fetchImpl = options.fetchImpl || globalThis.fetch;
+  if (typeof fetchImpl !== 'function') throw startupError('SUPABASE_PREFLIGHT_UNAVAILABLE', 'supabase-preflight', 'Ο έλεγχος σύνδεσης Supabase δεν είναι διαθέσιμος.', 'No fetch implementation is available.');
+  const timeoutMs = Number.isFinite(options.timeoutMs) ? Math.max(100, options.timeoutMs) : 8000;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetchImpl(`${config.supabaseUrl}/auth/v1/settings`, {
+      method: 'GET',
+      headers: {
+        apikey: config.supabasePublishableKey,
+        accept: 'application/json',
+        'user-agent': options.userAgent || 'MyFinHub/Desktop',
+      },
+      redirect: 'error',
+      signal: controller.signal,
+    });
+    if (response.status === 401 || response.status === 403) {
+      throw startupError('SUPABASE_PREFLIGHT_REJECTED', 'supabase-preflight', 'Το Supabase project απέρριψε το publishable key.', `HTTP ${response.status}`);
+    }
+    if (response.status === 404) {
+      throw startupError('SUPABASE_PREFLIGHT_NOT_FOUND', 'supabase-preflight', 'Το Supabase URL δεν αντιστοιχεί σε διαθέσιμο Auth endpoint.', 'HTTP 404');
+    }
+    if (!response.ok) {
+      throw startupError('SUPABASE_PREFLIGHT_FAILED', 'supabase-preflight', 'Το Supabase project δεν ολοκλήρωσε τον έλεγχο σύνδεσης.', `HTTP ${response.status}`);
+    }
+    return true;
+  } catch (error) {
+    if (error instanceof DesktopStartupError) throw error;
+    if (error && error.name === 'AbortError') {
+      throw startupError('SUPABASE_PREFLIGHT_TIMEOUT', 'supabase-preflight', 'Ο έλεγχος σύνδεσης Supabase έληξε λόγω timeout.', `Timeout after ${timeoutMs}ms`);
+    }
+    throw startupError('SUPABASE_PREFLIGHT_NETWORK', 'supabase-preflight', 'Δεν ήταν δυνατή η σύνδεση με το Supabase project.', rawMessage(error));
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 module.exports = {
   DesktopStartupError,
   MAX_DIAGNOSTIC_CHARS,
   appendDiagnostic,
   classifyStartupError,
   formatDiagnostic,
+  preflightSupabase,
   publicDiagnostic,
   redactDiagnosticText,
   startupError,
