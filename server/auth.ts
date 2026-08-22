@@ -37,6 +37,9 @@ export type SessionContext = {
   user: AuthUser;
   source: SessionSource;
 };
+export type RequireSessionOptions = {
+  allowBearer?: boolean;
+};
 
 function config() {
   const url = process.env.SUPABASE_URL?.replace(/\/$/, '');
@@ -241,16 +244,18 @@ export async function revokeSession(accessToken: string) {
   }
 }
 
-export async function requireSession(req: any, res: any): Promise<SessionContext> {
-  const bearerToken = bearerAccessToken(req);
-  if (bearerToken !== null) {
-    try {
-      const user = await getUser(bearerToken);
-      return { accessToken: bearerToken, user, source: 'bearer' };
-    } catch (error) {
-      if (!isAuthRejection(error)) throw error;
-      // An explicit native credential is authoritative. Never fall back to ambient cookies.
-      throw new ApiError(401, 'AUTH_REQUIRED', 'Authentication required.');
+export async function requireSession(req: any, res: any, options: RequireSessionOptions = {}): Promise<SessionContext> {
+  if (options.allowBearer) {
+    const bearerToken = bearerAccessToken(req);
+    if (bearerToken !== null) {
+      try {
+        const user = await getUser(bearerToken);
+        return { accessToken: bearerToken, user, source: 'bearer' };
+      } catch (error) {
+        if (!isAuthRejection(error)) throw error;
+        // An explicit native credential is authoritative. Never fall back to ambient cookies.
+        throw new ApiError(401, 'AUTH_REQUIRED', 'Authentication required.');
+      }
     }
   }
 
