@@ -13,7 +13,9 @@ describe('Action Center production integration contracts',()=>{
     expect(app).toContain('if (quickOpen) return;');
     expect(app).toContain('setCommandOpen(true);');
     expect(app).toContain('onCommand={openCommand}');
-    expect(shortcutHook).toContain('isEditableShortcutTarget(event.target) || isEditableShortcutTarget(document.activeElement)');
+    expect(shortcutHook).toContain('isEditableShortcutTarget(event.target)');
+    expect(shortcutHook).toContain('isEditableShortcutTarget(document.activeElement)');
+    expect(shortcutHook).toContain('event.composedPath().some((target) => isEditableShortcutTarget(target))');
   });
 
   it('routes persisted attention decisions through the shared finance update/undo pipeline',()=>{
