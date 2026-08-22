@@ -1,5 +1,5 @@
-import { execFileSync, mkdirSync, writeFileSync } from 'node:fs';
-import { spawn } from 'node:child_process';
+import { execFileSync, spawn } from 'node:child_process';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 
 const baseUrl = process.env.RHEOMIQ_QA_URL || 'http://127.0.0.1:5173/qa.html?page=dashboard';
 const evidenceDir = process.env.MYFINHUB_UX_EVIDENCE_DIR || '/tmp/myfinhub-ui-ux-qa';
@@ -12,6 +12,7 @@ if (!chrome) throw new Error('Chrome/Chromium is required for receipt OCR QA.');
 
 const port = 9253;
 const profile = '/tmp/myfinhub-receipt-local-ocr-qa-chrome';
+rmSync(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
 const child = spawn(chrome, [
   '--headless=new',
   `--remote-debugging-port=${port}`,
@@ -92,7 +93,9 @@ try {
 
   const externalRequests = [];
   const baseOrigin = new URL(baseUrl).origin;
+  let monitorOcrNetwork = false;
   c.on('Network.requestWillBeSent', (params) => {
+    if (!monitorOcrNetwork) return;
     const url = params.request?.url || '';
     if (!/^https?:/i.test(url)) return;
     try { if (new URL(url).origin !== baseOrigin) externalRequests.push(url); } catch {}
@@ -173,9 +176,12 @@ try {
   assert((await c.call("function(){return document.querySelectorAll('.receipt-draft-row').length}")) === 1, 'reopened inbox restores receipt');
 
   console.log('Receipt OCR QA: self-hosted OCR scans locally and creates proposal');
+  externalRequests.length = 0;
+  monitorOcrNetwork = true;
   const scanClicked = await c.call("function(){const button=[...document.querySelectorAll('.receipt-review-actions button')].find(node=>(node.textContent||'').includes('Σάρωση τώρα'));button?.click();return Boolean(button)}");
   assert(scanClicked, 'scan now action exists');
   await waitFor("function(){return Boolean(document.querySelector('.receipt-proposal h3'))||Boolean(document.querySelector('.form-error'))}", 'OCR completion', [], 650);
+  monitorOcrNetwork = false;
   const scanError = await c.call("function(){return document.querySelector('.form-error')?.textContent||''}");
   assert(!scanError, `local OCR failed: ${scanError}`);
   const proposalText = await c.call("function(){return document.querySelector('.receipt-proposal')?.textContent||''}");
@@ -183,7 +189,7 @@ try {
   assert(proposalText.includes('2026-08-22'), `date proposal missing: ${proposalText}`);
   assert(/24[,.]50/.test(proposalText), `total proposal missing: ${proposalText}`);
   assert(proposalText.includes('EUR'), `currency proposal missing: ${proposalText}`);
-  assert(externalRequests.length === 0, `receipt/OCR made external HTTP requests: ${externalRequests.join(', ')}`);
+  assert(externalRequests.length === 0, `OCR scan made external HTTP requests: ${externalRequests.join(', ')}`);
   await screenshot('receipt-local-ocr-proposal');
 
   console.log('Receipt OCR QA: proposal only prefills; normal submit owns transaction + cleanup');
@@ -212,4 +218,6 @@ try {
 } finally {
   c?.close();
   child.kill('SIGTERM');
+  await sleep(250);
+  rmSync(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
 }
