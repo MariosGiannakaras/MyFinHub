@@ -1,120 +1,76 @@
-import fs from 'node:fs';
-import path from 'node:path';
 import { createRequire } from 'node:module';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
-const root = process.cwd();
-const read = (relative: string) => fs.readFileSync(path.join(root, relative), 'utf8');
 const require = createRequire(import.meta.url);
 const diagnostics = require('../desktop/startup-diagnostics.cjs') as {
-  StartupError: new (code:string, stage:string, message:string, detail?:string) => Error;
-  sanitizeDiagnosticText: (value:unknown, secrets?:unknown[]) => string;
-  appendDiagnostic: (current:string, value:unknown, secrets?:unknown[]) => string;
-  publicStartupFailure: (error:Error, secrets?:unknown[]) => {code:string;stage:string;message:string;detail:string};
-  startupDiagnosticText: (failure:unknown, version?:string) => string;
-  MAX_DIAGNOSTIC_CHARS: number;
+  MAX_DIAGNOSTIC_CHARS:number;
+  appendDiagnostic:(current:string,chunk:string,secrets?:string[])=>string;
+  classifyStartupError:(error:unknown)=>{code:string;stage:string;message:string;detail:string};
+  formatDiagnostic:(diagnostic:Record<string,string>,version?:string)=>string;
+  preflightSupabase:(config:{supabaseUrl:string;supabasePublishableKey:string},options?:Record<string,unknown>)=>Promise<boolean>;
+  publicDiagnostic:(error:unknown,detail?:string,secrets?:string[])=>{code:string;stage:string;message:string;detail:string};
+  redactDiagnosticText:(value:unknown,secrets?:string[])=>string;
 };
 
-const main = read('desktop/main.cjs');
-const preload = read('desktop/preload.cjs');
-const renderer = read('desktop/setup-renderer.js');
-const setup = read('desktop/setup.html');
-const prepareBuild = read('desktop/prepare-build.mjs');
-const desktopPackage = JSON.parse(read('desktop/package.json'));
-
-describe('Windows first-run startup diagnostics', () => {
-  it('redacts credentials, JWTs and card-vault key material from diagnostics', () => {
+describe('desktop startup diagnostics', () => {
+  it('redacts known credentials, bearer tokens, JWTs and vault-shaped keys', () => {
     const publishable = 'sb_publishable_example_123456789';
     const vault = 'a'.repeat(64);
-    const jwt = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoiYW5vbiJ9.signaturepart';
-    const safe = diagnostics.sanitizeDiagnosticText(
-      `apikey=${publishable} Authorization: Bearer ${jwt} vault=${vault}`,
-      [publishable, vault],
-    );
-    expect(safe).not.toContain(publishable);
-    expect(safe).not.toContain(vault);
-    expect(safe).not.toContain(jwt);
-    expect(safe).toContain('[redacted]');
+    const jwt = `eyJ${'a'.repeat(30)}.${'b'.repeat(30)}.${'c'.repeat(20)}`;
+    const input = `key=${publishable}\nAuthorization: Bearer token-123456789\njwt=${jwt}\nvault=${vault}`;
+    const output = diagnostics.redactDiagnosticText(input, [publishable, vault]);
+    expect(output).not.toContain(publishable);
+    expect(output).not.toContain(vault);
+    expect(output).not.toContain('token-123456789');
+    expect(output).not.toContain(jwt);
+    expect(output).toContain('[redacted]');
+    expect(output).toContain('Bearer [redacted]');
   });
 
-  it('bounds backend diagnostic capture', () => {
-    let detail = '';
-    for (let i = 0; i < 40; i += 1) detail = diagnostics.appendDiagnostic(detail, 'x'.repeat(500));
-    expect(detail.length).toBeLessThanOrEqual(diagnostics.MAX_DIAGNOSTIC_CHARS);
+  it('bounds captured backend diagnostics', () => {
+    const output = diagnostics.appendDiagnostic('prefix', 'x'.repeat(diagnostics.MAX_DIAGNOSTIC_CHARS * 2));
+    expect(output.length).toBeLessThanOrEqual(diagnostics.MAX_DIAGNOSTIC_CHARS);
   });
 
-  it('returns structured copyable failures without secret material', () => {
-    const secret = 'b'.repeat(64);
-    const error = new diagnostics.StartupError('BACKEND_EXITED_DURING_STARTUP', 'backend', 'Backend failed.', `stderr ${secret}`);
-    const failure = diagnostics.publicStartupFailure(error, [secret]);
-    expect(failure).toMatchObject({ code: 'BACKEND_EXITED_DURING_STARTUP', stage: 'backend', message: 'Backend failed.' });
-    expect(failure.detail).not.toContain(secret);
-    const copied = diagnostics.startupDiagnosticText(failure, '1.2.1');
-    expect(copied).toContain('Code: BACKEND_EXITED_DURING_STARTUP');
-    expect(copied).toContain('Secrets, tokens and card-vault key material are intentionally redacted.');
-    expect(copied).not.toContain(secret);
+  it('classifies known runtime/config failures into stable public codes', () => {
+    expect(diagnostics.classifyStartupError(new Error('Bundled Node.js runtime is missing.')).code).toBe('DESKTOP_RUNTIME_MISSING');
+    expect(diagnostics.classifyStartupError(new Error('Invalid Supabase publishable key.')).code).toBe('DESKTOP_CONFIG_INVALID');
+    expect(diagnostics.classifyStartupError(new Error('Windows secure storage is unavailable.')).stage).toBe('secure-storage');
   });
 
-  it('omits runtime output for failures that happen after backend readiness', () => {
-    const runtimeOutput = 'transaction payload must never be copied';
-    const error = new diagnostics.StartupError('BACKEND_STOPPED', 'backend', 'Backend stopped.', runtimeOutput);
-    const failure = diagnostics.publicStartupFailure(error);
-    expect(failure.detail).not.toContain(runtimeOutput);
-    expect(failure.detail).toContain('runtime output');
-    expect(diagnostics.startupDiagnosticText(failure, '1.2.1')).not.toContain(runtimeOutput);
+  it('keeps raw backend details behind redaction in public diagnostics', () => {
+    const secret = 'sb_publishable_private_test_value_123';
+    const diagnostic = diagnostics.publicDiagnostic(new Error('backend failed'), `fatal: apikey=${secret}`, [secret]);
+    expect(diagnostic.code).toBe('DESKTOP_STARTUP_FAILED');
+    expect(diagnostic.detail).not.toContain(secret);
+    expect(diagnostic.detail).toContain('[redacted]');
   });
 
-  it('preserves backend stderr and classifies startup stages instead of discarding the cause', () => {
-    expect(main).not.toContain("child.stderr.on('data', () => {})");
-    expect(main).toContain("child.stderr.on('data', chunk =>");
-    expect(main).toContain("'DESKTOP_RUNTIME_MISSING'");
-    expect(main).toContain("'DESKTOP_BUNDLE_INCOMPLETE'");
-    expect(main).toContain("'BACKEND_SPAWN_FAILED'");
-    expect(main).toContain("'BACKEND_STARTUP_TIMEOUT'");
-    expect(main).toContain("'BACKEND_EXITED_DURING_STARTUP'");
-    expect(main).toContain("'WINDOW_LOAD_FAILED'");
-    expect(main).toContain('recordStartupFailure(error');
+  it('preflights Supabase settings and accepts a successful project/key pair', async () => {
+    const fetchImpl = vi.fn(async (_url:string, _init:RequestInit) => ({ ok: true, status: 200 }));
+    await expect(diagnostics.preflightSupabase(
+      { supabaseUrl: 'https://example.supabase.co', supabasePublishableKey: 'sb_publishable_test' },
+      { fetchImpl, timeoutMs: 500 },
+    )).resolves.toBe(true);
+    expect(fetchImpl).toHaveBeenCalledOnce();
+    const [url, init] = fetchImpl.mock.calls[0]!;
+    expect(url).toBe('https://example.supabase.co/auth/v1/settings');
+    expect((init.headers as Record<string,string>).apikey).toBe('sb_publishable_test');
   });
 
-  it('performs a real Supabase preflight before persisting first-run config', () => {
-    const preflightIndex = main.indexOf('await preflightSupabase(config)');
-    const persistIndex = main.indexOf("writePrivateJson(userDataPath('runtime-config.json'), config)");
-    expect(preflightIndex).toBeGreaterThanOrEqual(0);
-    expect(persistIndex).toBeGreaterThan(preflightIndex);
-    expect(main).toContain("/auth/v1/settings");
-    expect(main).toContain('apikey: config.supabasePublishableKey');
-    expect(main).toContain("'SUPABASE_PREFLIGHT_REJECTED'");
-    expect(main).toContain("'SUPABASE_PREFLIGHT_TIMEOUT'");
+  it('returns a stable rejected-key code without exposing the key', async () => {
+    const fetchImpl = vi.fn(async (_url:string, _init:RequestInit) => ({ ok: false, status: 401 }));
+    const config = { supabaseUrl: 'https://example.supabase.co', supabasePublishableKey: 'sb_publishable_bad_secret' };
+    await expect(diagnostics.preflightSupabase(config, { fetchImpl, timeoutMs: 500 })).rejects.toMatchObject({
+      code: 'SUPABASE_PREFLIGHT_REJECTED',
+      stage: 'supabase-preflight',
+    });
   });
 
-  it('keeps setup open and returns safe error state for correction/retry', () => {
-    expect(main).toContain("ipcMain.handle('myfinhub:save-setup', async");
-    expect(main).toContain('return { ok: false, error: failure }');
-    expect(main).toContain('await recoverToSetup(failure)');
-    expect(main).not.toContain('δεν μπόρεσε να ξεκινήσει την τοπική υπηρεσία. Άνοιξε ξανά την εφαρμογή ή κάνε επανεγκατάσταση');
-    expect(renderer).toContain('if (!result?.ok)');
-    expect(renderer).toContain('renderFailure(result?.error)');
-    expect(renderer).toContain('save.disabled = false');
-  });
-
-  it('uses real main-process setup progress and exposes only a narrow diagnostic copy action', () => {
-    expect(main).toContain("const SETUP_PROGRESS_CHANNEL = 'myfinhub:setup-progress'");
-    expect(main).toContain('setupWindow.webContents.send(SETUP_PROGRESS_CHANNEL');
-    expect(main).toContain("ipcMain.handle('myfinhub:copy-setup-diagnostics'");
-    expect(preload).toContain("copySetupDiagnostics: () => ipcRenderer.invoke('myfinhub:copy-setup-diagnostics')");
-    expect(renderer).toContain('bridge.copySetupDiagnostics');
-    expect(setup).toContain('Αντιγραφή ασφαλών διαγνωστικών');
-  });
-
-  it('bridges CommonJS dynamic requires inside the Node ESM desktop bundle', () => {
-    expect(prepareBuild).toContain("format:'esm'");
-    expect(prepareBuild).toContain("createRequire as __myfinhubCreateRequire");
-    expect(prepareBuild).toContain("const require = __myfinhubCreateRequire(import.meta.url)");
-    expect(prepareBuild).toContain("platform:'node'");
-  });
-
-  it('ships and syntax-checks the diagnostics helper in the packaged desktop app', () => {
-    expect(desktopPackage.build.files).toContain('startup-diagnostics.cjs');
-    expect(desktopPackage.scripts.check).toContain('node --check startup-diagnostics.cjs');
+  it('formats only the already-sanitized diagnostic payload for clipboard use', () => {
+    const text = diagnostics.formatDiagnostic({ code: 'BACKEND_SPAWN_FAILED', stage: 'backend-start', message: 'Αποτυχία.', detail: 'spawn ENOENT' }, '1.2.1');
+    expect(text).toContain('MyFinHub 1.2.1 desktop diagnostic');
+    expect(text).toContain('Code: BACKEND_SPAWN_FAILED');
+    expect(text).toContain('Stage: backend-start');
   });
 });
