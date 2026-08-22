@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { accessTokenAal } from '../server/auth.js';
+import { accessTokenAal, assertMutationSessionOrigin } from '../server/auth.js';
 import { ApiError, assertSameOrigin } from '../server/http.js';
 import { parseExpectedRevision } from '../server/storage.js';
 import { validateFinanceData } from '../server/validation.js';
@@ -29,6 +29,16 @@ describe('HTTP trust boundary', () => {
       'x-forwarded-proto': 'https',
       'sec-fetch-site': 'cross-site',
     }))).toThrowError(ApiError);
+  });
+
+  it('keeps same-origin enforcement for ambient cookie mutation sessions', () => {
+    expect(() => assertMutationSessionOrigin(request({}), { source: 'cookie' }))
+      .toThrowError(ApiError);
+  });
+
+  it('does not require browser Origin metadata for an explicitly authenticated bearer mutation session', () => {
+    expect(() => assertMutationSessionOrigin(request({}), { source: 'bearer' }))
+      .not.toThrow();
   });
 });
 
