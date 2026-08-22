@@ -4,6 +4,50 @@ All notable MyFinHub changes are recorded here. Release artifacts remain availab
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-08-22
+
+### Added
+
+- Added the broader MyFinHub workspace capability set now integrated on `develop`: first-class internal transfers, split transactions, scheduled transactions, deterministic 30/60/90-day cash-flow forecasting, monthly category budgets, deterministic transaction rules, the **Needs Attention** action center and context-aware Quick Entry.
+- Added the restructured Reports/Analytics experience with comparative KPIs, cash-flow/trend views, commitment and credit-pressure indicators, category momentum, responsive drill-downs and a shared deterministic finance-state source of truth.
+- Added privacy-safe unified search and Command Palette support across the application without indexing or exposing card secrets/private finance text outside the intended UI boundary.
+- Added normalized payment flows across credit cards, loans/installments and recurring obligations so source account, target obligation and result semantics remain consistent while preserving existing accounting rules.
+- Added one coherent application-wide keyboard-shortcut system with platform-aware hints: Search/Command Palette (`Ctrl K` / `⌘ K`), Quick Entry (`Ctrl Shift Space` / `⌘ ⇧ Space`), Undo (`Ctrl Z` / `⌘ Z`), Redo (`Ctrl Y` / `⌘ ⇧ Z`, with `Ctrl Shift Z` compatibility) and Escape for the topmost dismissible modal.
+- Added a responsive **Keyboard Shortcuts** reference section in Settings and shortcut hints on the relevant controls/tooltips.
+- Added privacy-safe session Change History tied to the existing Undo/Redo state stacks, including useful entity/field context and bounded `previous → new` values where safe.
+
+### Changed
+
+- Hardened application-wide UI/UX, accessibility, responsive behavior, modal/focus management, sorting, readability, owned controls and user-facing copy across desktop and narrow/mobile layouts.
+- Refined the MyFinHub light/dark visual treatment across browser/PWA/Windows surfaces while preserving the authentic historical wallet/`R` application mark and all compatibility-critical persistence/protocol identifiers.
+- Locked the Dashboard semantic/read order to **Μετρητά → Μισθοδοσία → Αποταμίευση → λοιπά υπόλοιπα → εκκρεμή/actionable → Quick Entry → analytics/rest**.
+- Expanded route-shaped loading skeletons into high-fidelity compositions for Dashboard, Transactions, Review, Savings, Cards, Credit, Loans, Lending, Recurring, Planning, Attention, Reports and Settings, including representative controls/cards/lists/charts/forms and responsive/reduced-motion behavior.
+- Improved skeleton-to-content stability with all-route desktop/mobile loading-overflow and CLS regression auditing while retaining the existing performance threshold.
+- Upgraded Change History from generic labels to concise product copy covering additions, edits, deletions, transfers, scheduled items, balances/reconciliation, budgets, rules, cards, loans/installments, recurring items, settings and review/attention decisions.
+- Undo and Redo history entries now identify the affected safe change instead of recording only a generic action, without replacing the underlying persistence/state-stack model.
+- Removed duplicate legacy `Ctrl/Cmd+K` shortcut listeners so the shared shortcut hook is the single app-wide production authority, with editable-field, modal, repeat/default-prevented and event-propagation guards.
+
+### Security & privacy
+
+- Change History deliberately excludes PAN, expiry secrets, CVV/CVC, vault references, cardholder/private card values, transaction notes/descriptions, custom account names and arbitrary private free-text.
+- Existing owner-only authentication, mandatory TOTP AAL2, same-origin mutation protection, PostgreSQL RLS, optimistic revisions, payment-card secret isolation and backup boundaries remain unchanged by this release.
+- PAN/expiry continue to use the owner+AAL2 encrypted server card vault; CVV remains encrypted device-local only and is not accepted by server persistence boundaries.
+- No destructive finance-data migration, accounting rewrite, alternate login path or new service-role/runtime secret requirement was introduced.
+
+### Validation
+
+- The final v1.1.0 implementation head `7401eb0d4a274e2d367fe0c67ee91f77ca07ca09` passed the complete application/API check path with **51/51 test files and 247/247 tests**, production build and bundle budgets, and app/API dependency audits with zero reported vulnerabilities.
+- Primary-Chromium rendered QA passed in CI #782, including keyboard-only shortcut flows, editable/modal conflict handling, Change History privacy assertions, mobile containment and ledger reconciliation; the run published 86 browser-evidence files.
+- CodeQL #736, Cross-engine/WebKit #79 and Performance/loading-shift #74 passed on the same exact implementation head.
+- Windows Desktop #435 passed the packaged executable smoke, interactive NSIS build, fresh install/launch/uninstall flow, installer/update-channel checksum verification and evidence artifact upload.
+- Release-readiness automation continues to cover real Windows installed-package identity, executable/shortcut/uninstall behavior, browser/PWA identity, reduced-motion/loading boundaries and the controlled desktop update channel.
+
+### Notes
+
+- v1.1.0 is a backward-compatible feature release over v1.0.2. It preserves finance/accounting semantics, authentication/security boundaries and existing stored data while substantially expanding planning, reporting and interaction quality.
+- Receipt OCR is intentionally **not** part of v1.1.0; the future ephemeral OCR proposal is tracked separately in issue #188.
+- The Windows build may remain unsigned for personal use, so Windows can display Unknown publisher / Microsoft Defender SmartScreen; installer integrity remains protected by the controlled release source and published SHA-256 checksum.
+
 ## [1.0.2] - 2026-08-20
 
 ### Fixed
@@ -64,7 +108,8 @@ All notable MyFinHub changes are recorded here. Release artifacts remain availab
 
 - v1.0.0 is an unsigned personal-use Windows build. Windows may display Unknown publisher / Microsoft Defender SmartScreen.
 
-[Unreleased]: https://github.com/MariosGiannakaras/MyFinHub/compare/myfinhub-v1.0.2...develop
+[Unreleased]: https://github.com/MariosGiannakaras/MyFinHub/compare/myfinhub-v1.1.0...develop
+[1.1.0]: https://github.com/MariosGiannakaras/MyFinHub/releases/tag/myfinhub-v1.1.0
 [1.0.2]: https://github.com/MariosGiannakaras/MyFinHub/releases/tag/myfinhub-v1.0.2
 [1.0.1]: https://github.com/MariosGiannakaras/MyFinHub/releases/tag/myfinhub-v1.0.1
 [1.0.0]: https://github.com/MariosGiannakaras/MyFinHub/releases/tag/myfinhub-v1.0.0
