@@ -23,7 +23,7 @@ export default async function handler(req: any, res: any) {
 
     const totalStarted = Date.now();
     const sessionStarted = Date.now();
-    const session = await requireSession(req, res);
+    const session = await requireSession(req, res, { allowBearer: true });
     const sessionMs = duration(sessionStarted);
 
     const ownerStarted = Date.now();
