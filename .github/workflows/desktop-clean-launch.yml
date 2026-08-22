@@ -50,15 +50,18 @@ jobs:
         run: |
           npm run check
           npm run desktop:check
-      - name: Inject controlled public CI runtime defaults at build time
+      - name: Isolate CI from production Supabase config
         shell: pwsh
         run: |
           $path = 'desktop\runtime-defaults.cjs'
           $content = Get-Content -LiteralPath $path -Raw
-          $content = $content.Replace('__MYFINHUB_SUPABASE_URL__', 'https://desktop-smoke.invalid')
-          $content = $content.Replace('__MYFINHUB_SUPABASE_PUBLISHABLE_KEY__', 'sb_publishable_desktop_smoke_only')
+          $content = [regex]::Replace($content, "supabaseUrl:\s*'[^']*'", "supabaseUrl: 'https://desktop-smoke.invalid'")
+          $content = [regex]::Replace($content, "supabasePublishableKey:\s*'[^']*'", "supabasePublishableKey: 'sb_publishable_desktop_smoke_only'")
           Set-Content -LiteralPath $path -Value $content -Encoding UTF8
-          if ((Get-Content -LiteralPath $path -Raw) -match '__MYFINHUB_SUPABASE_') { throw 'CI runtime-default placeholders were not replaced.' }
+          $isolated = Get-Content -LiteralPath $path -Raw
+          if ($isolated -notmatch "supabaseUrl:\s*'https://desktop-smoke\.invalid'") { throw 'CI Supabase URL isolation failed.' }
+          if ($isolated -notmatch "supabasePublishableKey:\s*'sb_publishable_desktop_smoke_only'") { throw 'CI publishable-key isolation failed.' }
+          if ($isolated.Contains('ahsukppxwaiagampsuzb.supabase.co')) { throw 'Production Supabase URL leaked into clean-launch CI build.' }
       - name: Build interactive NSIS installer
         shell: pwsh
         run: npm run desktop:dist
