@@ -16,11 +16,14 @@ function productionOrigin(){
 }
 
 export async function proxyDesktopCardVault(method:'POST'|'PUT'|'DELETE',body:unknown,accessToken:string){
+  // Validate configuration outside the network catch so a bad/malicious origin cannot be disguised
+  // as an ordinary transient upstream outage.
+  const origin=productionOrigin();
   const controller=new AbortController();
   const timer=setTimeout(()=>controller.abort(),TIMEOUT_MS);
   let response:Response;
   try{
-    response=await fetch(`${productionOrigin()}/api/card-secrets`,{
+    response=await fetch(`${origin}/api/card-secrets`,{
       method,
       headers:{
         authorization:`Bearer ${accessToken}`,
