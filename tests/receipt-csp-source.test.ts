@@ -9,6 +9,7 @@ describe('local receipt OCR CSP boundary', () => {
     for (const source of [vercel, desktop]) {
       expect(source).toContain("script-src 'self' 'wasm-unsafe-eval'");
       expect(source).toContain("worker-src 'self' blob:");
+      expect(source.match(/'wasm-unsafe-eval'/g)).toHaveLength(1);
       expect(source).not.toMatch(/script-src[^;]*\s'unsafe-eval'(?:\s|;)/);
     }
   });
