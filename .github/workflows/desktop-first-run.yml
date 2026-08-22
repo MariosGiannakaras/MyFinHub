@@ -1,0 +1,128 @@
+name: Windows First Run
+
+on:
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - desktop/**
+      - server/**
+      - src/**
+      - tests/desktop-startup-diagnostics.test.ts
+      - package.json
+      - package-lock.json
+      - .github/workflows/desktop-first-run.yml
+  push:
+    branches: [develop]
+    paths:
+      - desktop/**
+      - server/**
+      - src/**
+      - tests/desktop-startup-diagnostics.test.ts
+      - package.json
+      - package-lock.json
+      - .github/workflows/desktop-first-run.yml
+  workflow_dispatch:
+
+concurrency:
+  group: desktop-first-run-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  persisted-first-run:
+    name: persisted-first-run-dpapi
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            desktop/package-lock.json
+      - name: Install dependencies and validate sources
+        shell: pwsh
+        run: |
+          npm ci
+          npm ci --prefix desktop
+          npm run check
+          npm run desktop:check
+      - name: Build interactive Windows installer
+        shell: pwsh
+        run: npm run desktop:dist
+      - name: Exercise persisted first-run config and DPAPI path
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $installer = Get-ChildItem release\desktop\MyFinHub-Setup-*-x64.exe | Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
+          if (-not $installer) { throw 'Windows installer artifact is missing.' }
+
+          Get-Process MyFinHub -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          $install = Start-Process -FilePath $installer.FullName -ArgumentList '/S' -Wait -PassThru
+          if ($install.ExitCode -ne 0) { throw "Silent NSIS install failed with exit code $($install.ExitCode)." }
+          Start-Sleep -Seconds 3
+          Get-Process MyFinHub -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+
+          $desktopShortcut = Join-Path ([Environment]::GetFolderPath('Desktop')) 'MyFinHub.lnk'
+          if (-not (Test-Path -LiteralPath $desktopShortcut)) { throw 'Installed MyFinHub Desktop shortcut is missing.' }
+          $shell = New-Object -ComObject WScript.Shell
+          $exe = $shell.CreateShortcut($desktopShortcut).TargetPath
+          if ([string]::IsNullOrWhiteSpace($exe) -or -not (Test-Path -LiteralPath $exe)) { throw 'Installed executable could not be resolved.' }
+
+          foreach ($name in @('SUPABASE_URL','SUPABASE_PUBLISHABLE_KEY','CARD_VAULT_KEY','CARD_VAULT_KEY_VERSION')) {
+            Remove-Item -LiteralPath "Env:$name" -ErrorAction SilentlyContinue
+          }
+
+          $userData = Join-Path $env:APPDATA 'MyFinHub'
+          if (Test-Path -LiteralPath $userData) { Remove-Item -LiteralPath $userData -Recurse -Force }
+          New-Item -ItemType Directory -Path $userData -Force | Out-Null
+
+          $publishable = 'sb_publishable_desktop_first_run_smoke_only'
+          $vault = 'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc'
+          $pending = @{
+            supabaseUrl = 'https://desktop-first-run.invalid'
+            supabasePublishableKey = $publishable
+            cardVaultKey = $vault
+            cardVaultKeyVersion = 1
+          } | ConvertTo-Json
+          $pendingPath = Join-Path $userData 'pending-provision.json'
+          Set-Content -LiteralPath $pendingPath -Value $pending -Encoding utf8
+
+          $launcher = Start-Process -FilePath $exe -PassThru
+          Start-Sleep -Seconds 10
+          $launcher.Refresh()
+          if ($launcher.HasExited) { throw "Installed MyFinHub exited during persisted first-run smoke with code $($launcher.ExitCode)." }
+
+          $configPath = Join-Path $userData 'runtime-config.json'
+          $secretsPath = Join-Path $userData 'runtime-secrets.json'
+          if (Test-Path -LiteralPath $pendingPath) { throw 'Pending first-run provision was not consumed.' }
+          if (-not (Test-Path -LiteralPath $configPath)) { throw 'Persisted public runtime config was not created.' }
+          if (-not (Test-Path -LiteralPath $secretsPath)) { throw 'DPAPI-protected runtime secret file was not created.' }
+
+          $stored = Get-Content -LiteralPath $secretsPath -Raw
+          if ($stored.Contains($vault)) { throw 'Plaintext card-vault key leaked into persisted secret storage.' }
+          $storedJson = $stored | ConvertFrom-Json
+          if ([string]::IsNullOrWhiteSpace([string]$storedJson.cardVaultKey)) { throw 'Encrypted card-vault payload is missing.' }
+          if ([int]$storedJson.cardVaultKeyVersion -ne 1) { throw 'Stored card-vault key version is incorrect.' }
+
+          $backend = Get-CimInstance Win32_Process | Where-Object {
+            $_.Name -ieq 'node.exe' -and $_.CommandLine -match 'server\.mjs' -and $_.ExecutablePath -like '*MyFinHub*runtime*node.exe'
+          } | Select-Object -First 1
+          if (-not $backend) { throw 'Bundled local backend did not reach a running packaged process after persisted first-run configuration.' }
+
+          Get-Process MyFinHub -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+          Get-CimInstance Win32_Process | Where-Object { $_.Name -ieq 'node.exe' -and $_.ExecutablePath -like '*MyFinHub*runtime*node.exe' } | ForEach-Object {
+            Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
+          }
+
+          $installDir = Split-Path -Parent $exe
+          $uninstaller = Get-ChildItem -LiteralPath $installDir -Filter 'Uninstall*.exe' -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $uninstaller) { throw 'Installed MyFinHub uninstaller is missing.' }
+          $uninstall = Start-Process -FilePath $uninstaller.FullName -ArgumentList '/S' -Wait -PassThru
+          if ($uninstall.ExitCode -ne 0) { throw "Silent NSIS uninstall failed with exit code $($uninstall.ExitCode)." }
+
+          Write-Host 'Persisted first-run / DPAPI smoke passed without runtime environment injection.'
