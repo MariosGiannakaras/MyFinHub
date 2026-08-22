@@ -25,7 +25,7 @@ function classifyStartupError(error, fallbackCode = 'DESKTOP_STARTUP_FAILED', fa
   if (error instanceof DesktopStartupError) return error;
   const message = rawMessage(error);
   const mappings = [
-    [/Invalid Supabase URL|Supabase URL must be HTTPS|Invalid Supabase publishable key/i, 'DESKTOP_CONFIG_INVALID', 'configuration', 'Τα στοιχεία σύνδεσης Supabase δεν είναι έγκυρα.'],
+    [/Invalid Supabase URL|Supabase URL must be HTTPS|Invalid Supabase publishable key|Use the Supabase publishable\/anon key/i, 'DESKTOP_CONFIG_INVALID', 'configuration', 'Τα στοιχεία σύνδεσης Supabase δεν είναι έγκυρα.'],
     [/Invalid card-vault key|Invalid card-vault key version/i, 'CARD_VAULT_CONFIG_INVALID', 'secure-storage', 'Το card-vault key ή το key version δεν είναι έγκυρο.'],
     [/Windows secure storage is unavailable/i, 'SECURE_STORAGE_UNAVAILABLE', 'secure-storage', 'Η ασφαλής αποθήκευση των Windows δεν είναι διαθέσιμη.'],
     [/Desktop runtime is not configured/i, 'DESKTOP_CONFIG_MISSING', 'configuration', 'Η τοπική ρύθμιση του MyFinHub λείπει.'],
@@ -60,7 +60,11 @@ function appendDiagnostic(current, chunk, secrets = []) {
 
 function publicDiagnostic(error, extraDetail = '', secrets = []) {
   const classified = classifyStartupError(error);
-  const detail = redactDiagnosticText([classified.detail, extraDetail].filter(Boolean).join('\n'), secrets);
+  // Runtime backend output can contain live finance payloads. It is intentionally excluded from
+  // copyable diagnostics after the backend has already reached readiness.
+  const detail = classified.stage === 'backend-runtime'
+    ? 'Runtime output is intentionally omitted after backend readiness.'
+    : redactDiagnosticText([classified.detail, extraDetail].filter(Boolean).join('\n'), secrets);
   return {
     code: classified.code,
     stage: classified.stage,
