@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src 'self' file:; style-src 'unsafe-inline'; script-src 'self'; form-action 'none'; base-uri 'none'" />
+  <title>MyFinHub — Ανάκτηση εκκίνησης</title>
+  <style>
+    :root{font-family:Inter,Segoe UI,system-ui,sans-serif;color:#e8f0f7;background:#0b1118;color-scheme:dark;--blue:#1162f2;--cyan:#11ced6;--muted:#91a4b7}*{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at 18% -5%,#1d3548 0,#0f1821 43%,#090e14 100%);display:grid;place-items:center;padding:28px}.shell{width:min(680px,100%);background:linear-gradient(160deg,rgba(24,37,49,.97),rgba(14,24,33,.99));border:1px solid #2a3c4c;border-radius:26px;box-shadow:0 28px 100px #0009;padding:30px}.brand{display:flex;align-items:center;gap:15px}.brand img{width:58px;height:58px;object-fit:contain}.brand b{display:block;font-size:25px}.brand span{display:block;color:var(--muted);font-size:12px;margin-top:2px}h1{font-size:24px;margin:28px 0 8px}p{color:#aebdca;line-height:1.55;margin:0}.progress-shell{height:8px;border-radius:999px;background:#0b141c;overflow:hidden;margin:24px 0 9px;box-shadow:inset 0 1px 4px #0008}.progress-shell i{display:block;height:100%;width:8%;border-radius:inherit;background:linear-gradient(90deg,var(--blue),var(--cyan));transition:width .3s ease}.live-line{color:#93a7b8;font-size:12px;min-height:19px}.diagnostic{margin-top:22px;border:1px solid #713b46;background:#25171c;border-radius:15px;padding:15px}.diagnostic[hidden]{display:none}.diagnostic-head{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:9px}.diagnostic-head b{font-size:13px}.chip{font:700 10.5px ui-monospace,SFMono-Regular,Consolas,monospace;color:#ffd4d8;background:#4a2029;border:1px solid #713b46;border-radius:999px;padding:4px 7px}.diagnostic p{color:#ffc6cb;font-size:12px}.diagnostic pre{margin:10px 0 0;max-height:175px;overflow:auto;white-space:pre-wrap;word-break:break-word;background:#0d1116;border:1px solid #3a2930;border-radius:10px;padding:11px;color:#aebdca;font:10.5px/1.5 ui-monospace,SFMono-Regular,Consolas,monospace}.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}.status{margin-top:13px;min-height:18px;color:#9fb0c0;font-size:12px}.status.error{color:#ffb4b4}.status.ok{color:#a9e6bd}button{border:0;border-radius:13px;background:linear-gradient(135deg,#e9f3fb,#c9e4f9);color:#102131;font-weight:780;padding:11px 16px;cursor:pointer}button.secondary{background:#152532;color:#dbe9f4;border:1px solid #385064}.note{margin-top:22px;padding:13px 14px;border-radius:13px;background:#0d1720;color:#8398aa;font-size:11.5px;line-height:1.5;border:1px solid #213240}@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <div class="brand"><img src="./setup-brand.png" alt="" /><div><b>MyFinHub</b><span>Windows desktop</span></div></div>
+    <h1>Δεν ολοκληρώθηκε η εκκίνηση</h1>
+    <p>Δεν χρειάζεται να συμπληρώσεις τεχνικές ρυθμίσεις. Το MyFinHub διαχειρίζεται μόνο του τη σύνδεση της εφαρμογής. Εδώ εμφανίζονται μόνο ασφαλείς πληροφορίες διάγνωσης και δυνατότητα νέας προσπάθειας.</p>
+    <div class="progress-shell" role="progressbar" aria-label="Πρόοδος εκκίνησης" aria-valuemin="0" aria-valuemax="100" aria-valuenow="8"><i id="progress-bar"></i></div>
+    <div id="live-line" class="live-line" aria-live="polite">Έλεγχος κατάστασης…</div>
+    <section id="diagnostic-panel" class="diagnostic" aria-live="assertive" hidden>
+      <div class="diagnostic-head"><b>Διαγνωστικά</b><span id="diagnostic-code" class="chip"></span><span id="diagnostic-stage" class="chip"></span></div>
+      <p id="diagnostic-message"></p>
+      <pre id="diagnostic-detail"></pre>
+    </section>
+    <div class="actions"><button id="retry" type="button">Νέα προσπάθεια</button><button id="copy-diagnostics" class="secondary" type="button">Αντιγραφή διαγνωστικών</button></div>
+    <div id="status" class="status" role="status" aria-live="polite"></div>
+    <div class="note">Τα διαγνωστικά περνούν από redaction πριν εμφανιστούν ή αντιγραφούν. Δεν περιλαμβάνουν Supabase keys, bearer/JWT tokens ή card-vault encryption keys.</div>
+  </main>
+  <script src="./recovery-renderer.js"></script>
+</body>
+</html>
