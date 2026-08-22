@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useModalFocus } from '../hooks/useModalFocus';
 import { money } from '../lib/format';
 import { normalizeReceiptFile } from '../lib/receiptImage';
-import { cancelReceiptOcr, disposeReceiptOcr, scanReceiptLocally, type ReceiptOcrProgress } from '../lib/receiptOcr';
+import type { ReceiptOcrProgress } from '../lib/receiptOcr';
 import { suggestReceiptCategory } from '../lib/receiptParser';
 import {
   createReceiptDraft,
@@ -16,6 +16,26 @@ import {
   type ReceiptProposal,
 } from '../lib/receiptDrafts';
 import type { FinanceData } from '../types';
+
+type ReceiptOcrModule = typeof import('../lib/receiptOcr');
+let receiptOcrModulePromise: Promise<ReceiptOcrModule> | null = null;
+
+const loadReceiptOcr = () => {
+  receiptOcrModulePromise ??= import('../lib/receiptOcr');
+  return receiptOcrModulePromise;
+};
+
+const disposeReceiptOcrIfLoaded = async () => {
+  const current = receiptOcrModulePromise;
+  receiptOcrModulePromise = null;
+  if (!current) return;
+  try {
+    const module = await current;
+    await module.disposeReceiptOcr();
+  } catch {
+    // Closing the inbox must not fail because an optional OCR worker was already stopping.
+  }
+};
 
 function useBlobUrl(blob?: Blob) {
   const [url, setUrl] = useState('');
@@ -98,7 +118,13 @@ export function ReceiptInbox({
   };
 
   useEffect(() => {
-    if (!open) { void disposeReceiptOcr(); return; }
+    if (!open) {
+      scanToken.current += 1;
+      setScanningId(null);
+      setProgress(null);
+      void disposeReceiptOcrIfLoaded();
+      return;
+    }
     setError('');
     setMessage('');
     void refresh();
@@ -130,6 +156,8 @@ export function ReceiptInbox({
     setError('');
     setMessage('');
     try {
+      const { scanReceiptLocally } = await loadReceiptOcr();
+      if (token !== scanToken.current) return;
       const extracted = await scanReceiptLocally(draft.image, setProgress);
       if (token !== scanToken.current) return;
       const category = suggestReceiptCategory(data, extracted.merchant);
@@ -158,7 +186,8 @@ export function ReceiptInbox({
     setScanningId(null);
     setProgress(null);
     setMessage('Η σάρωση σταμάτησε. Η απόδειξη παραμένει αποθηκευμένη για αργότερα.');
-    await cancelReceiptOcr();
+    const module = await loadReceiptOcr();
+    await module.cancelReceiptOcr();
   };
 
   const removeOne = async (draft: ReceiptDraft) => {
