@@ -1,6 +1,7 @@
 'use strict';
 
 const MAX_DIAGNOSTIC_CHARS = 4096;
+const OMIT_DETAIL_CODES = new Set(['BACKEND_STOPPED']);
 
 class StartupError extends Error {
   constructor(code, stage, message, detail = '', cause = null) {
@@ -52,11 +53,14 @@ function toStartupError(error, fallback = {}) {
 
 function publicStartupFailure(error, explicitSecrets = []) {
   const normalized = toStartupError(error);
+  const detail = OMIT_DETAIL_CODES.has(normalized.code)
+    ? 'Η υπηρεσία είχε ήδη ξεκινήσει. Μεταγενέστερο runtime output παραλείπεται σκόπιμα από τα διαγνωστικά.'
+    : normalized.detail;
   return Object.freeze({
     code: normalized.code,
     stage: normalized.stage,
     message: sanitizeDiagnosticText(normalized.message, explicitSecrets),
-    detail: sanitizeDiagnosticText(normalized.detail, explicitSecrets),
+    detail: sanitizeDiagnosticText(detail, explicitSecrets),
     timestamp: new Date().toISOString(),
   });
 }
