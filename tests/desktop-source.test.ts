@@ -108,7 +108,7 @@ describe('MyFinHub Windows desktop boundary', () => {
     expect(workflow).not.toContain('Signed desktop releases require');
   });
 
-  it('installs, launches, verifies identity and uninstalls the real NSIS package in Windows CI', () => {
+  it('installs, launches, verifies identity/backend and uninstalls the real NSIS package in Windows CI', () => {
     expect(workflow).toContain('Install, launch and uninstall NSIS package');
     expect(workflow).toContain("-ArgumentList '/S'");
     expect(workflow).toContain("'MyFinHub.lnk'");
@@ -120,6 +120,11 @@ describe('MyFinHub Windows desktop boundary', () => {
     expect(workflow).toContain('UninstallString');
     expect(workflow).toContain('Installed MyFinHub process is not running from the installed executable path.');
     expect(workflow).toContain("Where-Object { $_.Path -eq $exe }");
+    expect(workflow).toContain("$_.Name -ieq 'node.exe'");
+    expect(workflow).toContain("$_.CommandLine -match 'server\\.mjs'");
+    expect(workflow).toContain("$_.CommandLine -match '--serve-dist'");
+    expect(workflow).toContain('Packaged MyFinHub local backend server.mjs --serve-dist process is not running.');
+    expect(workflow).toContain('Installed MyFinHub local backend server.mjs --serve-dist process is not running.');
     expect(workflow).toContain('ExtractAssociatedIcon($exe)');
     expect(workflow).toContain("-Filter 'Uninstall*.exe'");
     expect(workflow).toContain('MyFinHub executable remains after silent uninstall.');
