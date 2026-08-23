@@ -18,6 +18,8 @@
     "test:watch": "vitest",
     "security:guard": "node scripts/security-guard.mjs",
     "qa:ux": "node scripts/ui-ux-hardening-qa.mjs",
+    "qa:visual": "node scripts/ui-ux-visual-evidence-qa.mjs",
+    "qa:visual:approve": "node scripts/approve-visual-baseline.mjs",
     "qa:frontend": "node scripts/run-rendered-qa.mjs && node scripts/taxonomy-management-qa.mjs && node scripts/category-icon-adoption-qa.mjs && node scripts/legacy-transaction-management-qa.mjs && node scripts/receipt-local-ocr-qa.mjs && node scripts/final-ux-reconciliation-qa.mjs && node scripts/ledger-foundations-qa.mjs",
     "check": "npm run security:guard && npm run test && npm run build",
     "desktop:dev": "npm --prefix desktop run dev",
@@ -34,7 +36,7 @@
     "framer-motion": "^12.43.0",
     "lucide-react": "^1.28.0",
     "react": "^19.2.8",
-    "react-dom": "^19.2.8",
+    "react-dom": "^19.2.4",
     "recharts": "^3.10.1",
     "tesseract.js": "7.0.0"
   },
