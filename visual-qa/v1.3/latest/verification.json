@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "appVersion": "v1.3",
+  "purpose": "Exact-head verification marker after repository-persisted Visual QA snapshot generation.",
+  "visualSourceSha": "a4c56fe9d403c0591b8ac00019db283b62214e93",
+  "visualArchiveCommitSha": "660ea0cec9ebf29857a2161bf26142774e2f201c",
+  "branch": "feat/241-canonical-credit-card-stack",
+  "timeZone": "Europe/Athens"
+}
