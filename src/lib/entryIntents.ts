@@ -21,10 +21,9 @@ export const ENTRY_INTENTS:readonly EntryIntentDefinition[]=[
 ] as const;
 
 const BY_INTENT=new Map(ENTRY_INTENTS.map(item=>[item.intent,item]));
-const BY_KIND=new Map(ENTRY_INTENTS.map(item=>[item.kind,item]));
 
 export function entryKindForIntent(intent:EntryIntent){return BY_INTENT.get(intent)!.kind}
-export function entryIntentForKind(kind:EventKind):EntryIntent|null{return BY_KIND.get(kind)?.intent??null}
+export function entryIntentForKind(kind:EventKind):EntryIntent|null{return ENTRY_INTENTS.find(item=>item.kind===kind)?.intent??null}
 export function entryIntentDefinition(intent:EntryIntent){return BY_INTENT.get(intent)!}
 
 export type FrequentEntrySuggestion={
