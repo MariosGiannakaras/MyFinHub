@@ -12,6 +12,7 @@ import { SortDirectionControl, type SortDirection } from '../components/SortDire
 import { Tooltip } from '../components/Tooltip';
 import { useModalFocus } from '../hooks/useModalFocus';
 import { cardBanks, creditCards, creditDebtForCard, creditEventsForCard, creditLimitForCard, restoreCard } from '../lib/cards';
+import { cardVaultErrorMessage } from '../lib/cardVaultClient';
 import { categoryPath, genericCategoryTree, subcategoriesFor } from '../lib/categories';
 import { allAccounts, createEvent } from '../lib/domain';
 import { money, shortDate } from '../lib/format';
@@ -20,11 +21,11 @@ import { userErrorMessage } from '../lib/userMessage';
 import type { FinanceData, FinanceEvent, PaymentCard } from '../types';
 
 export function CreditCardPage({
-  data,asOf,onCreateEvent,onEditEvent,onDeleteEvent,onUpsertCard,onArchiveCard,onPayCard,
+  data,asOf,onCreateEvent,onEditEvent,onDeleteEvent,onUpsertCard,onArchiveCard,onDeleteCard,onPayCard,
 }:{
   data:FinanceData;asOf:string;
   onCreateEvent:(event:FinanceEvent)=>void;onEditEvent:(id:string)=>void;onDeleteEvent:(id:string)=>void;
-  onUpsertCard:(card:PaymentCard)=>void;onArchiveCard:(card:PaymentCard)=>void;onPayCard:(cardId:string)=>void;
+  onUpsertCard:(card:PaymentCard)=>void;onArchiveCard:(card:PaymentCard)=>void;onDeleteCard:(card:PaymentCard)=>Promise<void>;onPayCard:(cardId:string)=>void;
 }){
   const banks=useMemo(()=>cardBanks(data),[data]);
   const allCredit=useMemo(()=>creditCards(data,{includeArchived:true}),[data]);
@@ -55,7 +56,9 @@ export function CreditCardPage({
   const [createOpen,setCreateOpen]=useState(false);
   const [purchaseOpen,setPurchaseOpen]=useState(false);
   const [archiveOpen,setArchiveOpen]=useState(false);
-  const [deleteTarget,setDeleteTarget]=useState<FinanceEvent|null>(null);
+  const [deleteEventTarget,setDeleteEventTarget]=useState<FinanceEvent|null>(null);
+  const [deleteCardTarget,setDeleteCardTarget]=useState<PaymentCard|null>(null);
+  const [deleteCardBusy,setDeleteCardBusy]=useState(false);
   const [limitOpen,setLimitOpen]=useState(false);
   const [limitText,setLimitText]=useState('');
   const [limitError,setLimitError]=useState('');
@@ -73,10 +76,22 @@ export function CreditCardPage({
   const openPurchase=()=>{if(!card){setMessage('Πρόσθεσε ή επανάφερε πρώτα ενεργή πιστωτική κάρτα.');return}reset();setCategory(categories[0]?.name||'Άλλο');setSubcategory('');setPurchaseOpen(true)};
   const openRepay=()=>{if(!card)return;onPayCard(card.id)};
   const closePurchase=()=>{setPurchaseOpen(false);setError('')};
-  const requestDelete=(event:FinanceEvent)=>setDeleteTarget(event);
-  const confirmDelete=()=>{if(!deleteTarget)return;onDeleteEvent(deleteTarget.id);setMessage(deleteTarget.kind==='card_payment'?'Η αποπληρωμή διαγράφηκε.':'Η αγορά διαγράφηκε.');setDeleteTarget(null)};
+  const requestDelete=(event:FinanceEvent)=>setDeleteEventTarget(event);
+  const confirmDelete=()=>{if(!deleteEventTarget)return;onDeleteEvent(deleteEventTarget.id);setMessage(deleteEventTarget.kind==='card_payment'?'Η αποπληρωμή διαγράφηκε.':'Η αγορά διαγράφηκε.');setDeleteEventTarget(null)};
   const archiveFromStack=(target:PaymentCard)=>{onArchiveCard(target);setMessage(`Η «${target.nickname}» αρχειοθετήθηκε. Το οικονομικό ιστορικό και τα ασφαλή στοιχεία παραμένουν συνδεδεμένα.`)};
   const restoreArchived=(target:PaymentCard)=>{const restored=restoreCard(target);onUpsertCard(restored);setSelectedCardId(restored.id);setMessage(`Η «${restored.nickname}» επανήλθε με το ίδιο ιστορικό και τα ασφαλή στοιχεία της.`)};
+  const confirmCardDelete=async()=>{
+    if(!deleteCardTarget)return;
+    if(creditDebtForCard(data,deleteCardTarget.id,asOf)>.005){setMessage('Η ολική διαγραφή επιτρέπεται μόνο αφού εξοφληθεί πλήρως η πιστωτική.');setDeleteCardTarget(null);return}
+    setDeleteCardBusy(true);setMessage('');
+    try{
+      const name=deleteCardTarget.nickname;
+      await onDeleteCard(deleteCardTarget);
+      setDeleteCardTarget(null);
+      setMessage(`Η «${name}» διαγράφηκε οριστικά. Τα προστατευμένα στοιχεία αφαιρέθηκαν, ενώ οι ιστορικές κινήσεις παραμένουν ως «Διαγραμμένη κάρτα».`);
+    }catch(error){setMessage(cardVaultErrorMessage(error))}
+    finally{setDeleteCardBusy(false)}
+  };
   const submitPurchase=()=>{
     if(!card){setError('Δεν υπάρχει ενεργή επιλεγμένη πιστωτική κάρτα.');return}
     const numeric=Number(amount.replace(',','.'));if(!Number.isFinite(numeric)||numeric<=0){setError('Έλεγξε το ποσό της αγοράς — πρέπει να είναι μεγαλύτερο από μηδέν.');return}
@@ -95,7 +110,7 @@ export function CreditCardPage({
 
   return <div className="page-stack credit-card-redesign-page">
     <section className="page-heading">
-      <div><span className="eyebrow">ΠΙΣΤΩΤΙΚΗ ΚΑΡΤΑ</span><h1>Πιστωτική Κάρτα</h1><p>Η ενεργή κάρτα, τα προστατευμένα στοιχεία της και οι αγορές/αποπληρωμές χρησιμοποιούν την ίδια καταχώριση. Οι αρχειοθετημένες κάρτες μένουν εκτός της καθημερινής στοίβας.</p></div>
+      <div><span className="eyebrow">ΠΙΣΤΩΤΙΚΗ ΚΑΡΤΑ</span><h1>Πιστωτική Κάρτα</h1><p>Μόνο οι πιστωτικές κάρτες έχουν αγορές, αποπληρωμές, όρια και οικονομικό ιστορικό. Οι αρχειοθετημένες πιστωτικές μένουν εκτός της καθημερινής στοίβας.</p></div>
       <div className="heading-actions">
         {archivedCredit.length?<button type="button" className="secondary" onClick={()=>setArchiveOpen(true)}><ArchiveRestore/> Αρχείο καρτών · {archivedCredit.length}</button>:null}
         <button type="button" className="secondary" disabled={!card||debt<=0||eligibleAccounts.length===0} onClick={openRepay}><ReceiptText/> Αποπληρωμή</button>
@@ -112,7 +127,7 @@ export function CreditCardPage({
         <div><span>Διαθέσιμο</span><b><AnimatedAmount value={available}/></b><small>Όριο {money.format(limit)} <Tooltip label="Αλλαγή ορίου πιστωτικής" side="top"><button type="button" className="inline-icon-action" aria-label="Αλλαγή ορίου πιστωτικής" onClick={editLimit}><Pencil/></button></Tooltip></small></div>
         <div><span>Χρήση ορίου</span><b className={overLimit?'negative':''}>{Math.round(usage)}%</b><div className={`credit-usage ${overLimit?'over-limit':''}`.trim()} role="progressbar" aria-label="Χρήση πιστωτικού ορίου" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(usageBar)} aria-valuetext={`${Math.round(usage)}% χρήση πιστωτικού ορίου${overLimit?' — υπέρβαση ορίου':''}`}><i style={{width:`${usageBar}%`}}/></div>{overLimit?<small className="negative">Υπέρβαση ορίου κατά {money.format(overLimitAmount)}</small>:null}</div>
       </div>
-    </section>:<section className="credit-card-empty neo-raised"><CreditCard/><h2>Δεν υπάρχει ενεργή πιστωτική κάρτα</h2><p>{archivedCredit.length?'Οι αρχειοθετημένες πιστωτικές παραμένουν στο ξεχωριστό αρχείο και δεν εμφανίζονται στην ενεργή στοίβα.':'Πρόσθεσε πιστωτική κάρτα για να συνδέσεις αγορές, αποπληρωμές και προστατευμένα στοιχεία χωρίς να αλλάξει το παλιό οικονομικό ιστορικό.'}</p><div className="credit-card-empty-actions"><button type="button" className="save-button" onClick={()=>setCreateOpen(true)}><Plus/> Προσθήκη πιστωτικής</button>{archivedCredit.length?<button type="button" className="secondary" onClick={()=>setArchiveOpen(true)}><ArchiveRestore/> Αρχείο καρτών</button>:null}</div></section>}
+    </section>:<section className="credit-card-empty neo-raised"><CreditCard/><h2>Δεν υπάρχει ενεργή πιστωτική κάρτα</h2><p>{archivedCredit.length?'Οι αρχειοθετημένες πιστωτικές παραμένουν στο ξεχωριστό αρχείο και δεν εμφανίζονται στην ενεργή στοίβα.':'Πρόσθεσε πιστωτική κάρτα για να συνδέσεις αγορές, αποπληρωμές, όριο και προστατευμένα στοιχεία.'}</p><div className="credit-card-empty-actions"><button type="button" className="save-button" onClick={()=>setCreateOpen(true)}><Plus/> Προσθήκη πιστωτικής</button>{archivedCredit.length?<button type="button" className="secondary" onClick={()=>setArchiveOpen(true)}><ArchiveRestore/> Αρχείο καρτών</button>:null}</div></section>}
 
     {message?<div className="action-status" role="status" aria-live="polite">{message}</div>:null}
 
@@ -122,11 +137,12 @@ export function CreditCardPage({
 
     <CardCreateDialog open={createOpen} data={data} banks={banks} initialBankId={card?.bankId??archivedCredit[0]?.bankId??'piraeus'} kindLock="credit" onClose={()=>setCreateOpen(false)} onSave={newCard=>{const withLimit={...newCard,creditLimit:newCard.creditLimit??data.state.settings.creditLimit??0};onUpsertCard(withLimit);setSelectedCardId(withLimit.id);setMessage('Η πιστωτική δημιουργήθηκε και προστέθηκε στην ενεργή στοίβα.')}}/>
 
-    {archiveOpen?<div className="picker-backdrop open" aria-hidden="false" onMouseDown={()=>setArchiveOpen(false)}><section ref={archiveRef} className="picker compact neo-raised card-archive-manager" role="dialog" aria-modal="true" aria-labelledby="credit-archive-title" tabIndex={-1} onMouseDown={event=>event.stopPropagation()}><div className="picker-head"><div><h2 id="credit-archive-title">Αρχείο πιστωτικών καρτών</h2><p>Οι κάρτες εδώ δεν εμφανίζονται στην ενεργή στοίβα. Η επαναφορά διατηρεί το ίδιο ιστορικό και τα ίδια προστατευμένα στοιχεία.</p></div><button type="button" className="close-picker" aria-label="Κλείσιμο αρχείου καρτών" onClick={()=>setArchiveOpen(false)}>×</button></div><div className="card-archive-list">{archivedCredit.map((archived,index)=>{const archivedBank=banks.find(item=>item.id===archived.bankId);const archivedDebt=creditDebtForCard(data,archived.id,asOf);return <article className="card-archive-row" key={archived.id}><div className="card-archive-identity"><b>{archived.nickname}</b><small>{archivedBank?.name??archived.bankId}{archived.last4?` · •••• ${archived.last4}`:''} · Οφειλή {money.format(archivedDebt)}</small></div><div className="card-archive-actions"><button data-autofocus={index===0?'true':undefined} type="button" className="save-button" onClick={()=>restoreArchived(archived)}><ArchiveRestore/> Επαναφορά</button><button type="button" className="danger" disabled aria-disabled="true" title="Η ολική διαγραφή ενεργοποιείται αφού κλειδώσει ο κανόνας για μη εξοφλημένες υποχρεώσεις."><Trash2/> Ολική διαγραφή</button></div></article>})}</div><div className="card-archive-note" role="note">Η ολική διαγραφή είναι ξεχωριστή από την αρχειοθέτηση και δεν θα αφαιρεί ιστορικές αγορές ή αποπληρωμές. Η ενεργοποίησή της παραμένει κλειδωμένη μέχρι να οριστεί ο κανόνας για μη εξοφλημένες υποχρεώσεις.</div></section></div>:null}
+    {archiveOpen?<div className="picker-backdrop open" aria-hidden="false" onMouseDown={()=>setArchiveOpen(false)}><section ref={archiveRef} className="picker compact neo-raised card-archive-manager" role="dialog" aria-modal="true" aria-labelledby="credit-archive-title" tabIndex={-1} onMouseDown={event=>event.stopPropagation()}><div className="picker-head"><div><h2 id="credit-archive-title">Αρχείο πιστωτικών καρτών</h2><p>Οι κάρτες εδώ δεν εμφανίζονται στην ενεργή στοίβα. Η επαναφορά διατηρεί το ίδιο ιστορικό και τα ίδια προστατευμένα στοιχεία.</p></div><button type="button" className="close-picker" aria-label="Κλείσιμο αρχείου καρτών" onClick={()=>setArchiveOpen(false)}>×</button></div><div className="card-archive-list">{archivedCredit.map((archived,index)=>{const archivedBank=banks.find(item=>item.id===archived.bankId);const archivedDebt=creditDebtForCard(data,archived.id,asOf);const canDelete=archivedDebt<=.005;return <article className="card-archive-row" key={archived.id}><div className="card-archive-identity"><b>{archived.nickname}</b><small>{archivedBank?.name??archived.bankId}{archived.last4?` · •••• ${archived.last4}`:''} · Οφειλή {money.format(archivedDebt)}</small></div><div className="card-archive-actions"><button data-autofocus={index===0?'true':undefined} type="button" className="save-button" onClick={()=>restoreArchived(archived)}><ArchiveRestore/> Επαναφορά</button><button type="button" className="danger" disabled={!canDelete} aria-disabled={!canDelete} title={canDelete?'Οριστική διαγραφή πιστωτικής':'Η πιστωτική πρέπει πρώτα να εξοφληθεί πλήρως.'} onClick={()=>{if(canDelete)setDeleteCardTarget(archived)}}><Trash2/> Ολική διαγραφή</button></div></article>})}</div><div className="card-archive-note" role="note">Η ολική διαγραφή ακολουθεί τον κανόνα A: επιτρέπεται μόνο με μηδενική οφειλή. Διαγράφει το card profile και όλα τα αποθηκευμένα μυστικά, αλλά κρατά τις ιστορικές αγορές/αποπληρωμές συνδεδεμένες σε ουδέτερη αναφορά «Διαγραμμένη κάρτα».</div></section></div>:null}
 
     {purchaseOpen?<div className="editor-backdrop" onMouseDown={closePurchase}><section ref={purchaseRef} className="panel neo-raised editor-dialog credit-dialog" role="dialog" aria-modal="true" aria-labelledby="credit-purchase-title" tabIndex={-1} onMouseDown={e=>e.stopPropagation()}><div className="panel-head"><div><span id="credit-purchase-title">Νέα αγορά · {card?.nickname??'Πιστωτική'}</span><small>Η αγορά αυξάνει μόνο την οφειλή της επιλεγμένης κάρτας, μετρά μία φορά ως έξοδο και συνδέεται με τη συγκεκριμένη κάρτα.</small></div><button type="button" className="icon-button" aria-label="Κλείσιμο αγοράς πιστωτικής" onClick={closePurchase}><X/></button></div><div className="settings-form editor-grid"><label><span>Ποσό</span><MoneyInput data-autofocus="true" value={amount} onValueChange={setAmount} invalid={Boolean(error)}/></label><label><span>Ημερομηνία</span><AppDateInput value={date} onChange={e=>setDate(e.target.value)}/></label><label><span>Κατηγορία</span><AppSelectInput value={category} onChange={e=>{setCategory(e.target.value);setSubcategory('')}}>{categories.map(item=><option key={item.name}>{item.name}</option>)}</AppSelectInput></label>{subs.length?<label><span>Υποκατηγορία</span><AppSelectInput value={subcategory} onChange={e=>setSubcategory(e.target.value)}><option value="">Χωρίς υποκατηγορία</option>{subs.map(value=><option key={value}>{value}</option>)}</AppSelectInput></label>:null}<label className="wide"><span>Περιγραφή</span><input value={note} onChange={e=>setNote(e.target.value)} placeholder="Τι αγόρασες;"/></label></div>{error?<div className="form-error" role="alert">{error}</div>:null}<div className="editor-actions"><button type="button" className="secondary" onClick={closePurchase}>Ακύρωση</button><button type="button" className="save-button" onClick={submitPurchase}>Καταχώριση αγοράς</button></div></section></div>:null}
 
     <MoneyEditDialog open={limitOpen} title={card?`Όριο · ${card.nickname}`:'Όριο πιστωτικής'} description="Το όριο επηρεάζει μόνο τη διαθέσιμη πίστωση και τις προειδοποιήσεις υπέρβασης. Δεν δημιουργεί οικονομική κίνηση." label="Πιστωτικό όριο" value={limitText} error={limitError} motionMode={data.state.settings.motion} onValueChange={value=>{setLimitText(value);if(limitError)setLimitError('')}} onConfirm={saveLimit} onCancel={closeLimit}/>
-    <ConfirmDialog open={Boolean(deleteTarget)} title="Διαγραφή κίνησης πιστωτικής;" description={deleteTarget?.kind==='card_payment'?'Η αποπληρωμή θα αφαιρεθεί και η οφειλή της κάρτας θα υπολογιστεί ξανά από τις υπόλοιπες κινήσεις.':'Η αγορά θα αφαιρεθεί από το οικονομικό ιστορικό της κάρτας και από τα σχετικά σύνολα.'} confirmLabel="Διαγραφή" tone="destructive" motionMode={data.state.settings.motion} onConfirm={confirmDelete} onCancel={()=>setDeleteTarget(null)}/>
+    <ConfirmDialog open={Boolean(deleteEventTarget)} title="Διαγραφή κίνησης πιστωτικής;" description={deleteEventTarget?.kind==='card_payment'?'Η αποπληρωμή θα αφαιρεθεί και η οφειλή της κάρτας θα υπολογιστεί ξανά από τις υπόλοιπες κινήσεις.':'Η αγορά θα αφαιρεθεί από το οικονομικό ιστορικό της κάρτας και από τα σχετικά σύνολα.'} confirmLabel="Διαγραφή" tone="destructive" motionMode={data.state.settings.motion} onConfirm={confirmDelete} onCancel={()=>setDeleteEventTarget(null)}/>
+    <ConfirmDialog open={Boolean(deleteCardTarget)} title="Ολική διαγραφή πιστωτικής;" description="Η κάρτα έχει μηδενική οφειλή. Θα διαγραφούν οριστικά το card profile, PAN, λήξη και CVV. Οι παλιές αγορές και αποπληρωμές δεν θα διαγραφούν και θα εμφανίζονται με ουδέτερη αναφορά «Διαγραμμένη κάρτα»." confirmLabel="Ολική διαγραφή" tone="destructive" busy={deleteCardBusy} motionMode={data.state.settings.motion} onConfirm={()=>void confirmCardDelete()} onCancel={()=>{if(!deleteCardBusy)setDeleteCardTarget(null)}}/>
   </div>;
 }
