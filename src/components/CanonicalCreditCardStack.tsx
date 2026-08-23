@@ -140,7 +140,7 @@ export function CanonicalCreditCardStack({cards,banks,selectedCardId,onActiveCar
   activeChangeRef.current=onActiveCardChange;
 
   useEffect(()=>{
-    const stage=stageRef.current,dots=dotsRef.current,statusNode=statusRef.current;
+    const stage=stageRef.current!,dots=dotsRef.current!,statusNode=statusRef.current!;
     if(!stage||!dots||!statusNode)return;
     let swiping=false;
     let drag:DragState|null=null;
