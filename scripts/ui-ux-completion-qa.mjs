@@ -30,9 +30,11 @@ try{
   await viewport(1440,1000);
   console.log('Completion QA: delete, undo and redo');
   await navigate({page:'transactions'},'Συναλλαγές');
-  await c.eval('window.confirm=()=>true');
   assert(await c.eval("document.body.textContent.includes('Freddo espresso')"),'fixture event exists before delete');
   await clickAria('Διαγραφή Freddo espresso');
+  await waitFor("function(){return Boolean(document.querySelector('[role=alertdialog]'))}",'transaction delete confirmation');
+  assert(await c.eval("(document.querySelector('[role=alertdialog]')?.textContent||'').includes('Διαγραφή κίνησης')"),'delete confirmation is app-owned dialog');
+  await clickText('[role=alertdialog] button','Διαγραφή');
   await waitFor("function(){return !document.body.textContent.includes('Freddo espresso')}",'transaction delete');
   assert(!(await c.eval("document.querySelector('button[aria-label=\"Αναίρεση τελευταίας αλλαγής\"]')?.disabled")),'Undo enabled after delete');
   await clickAria('Αναίρεση τελευταίας αλλαγής');
