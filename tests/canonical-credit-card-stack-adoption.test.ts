@@ -2,6 +2,8 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 const credit=readFileSync(new URL('../src/pages/CreditCardPage.tsx',import.meta.url),'utf8');
+const cards=readFileSync(new URL('../src/pages/CardsPage.tsx',import.meta.url),'utf8');
+const createDialog=readFileSync(new URL('../src/components/CardCreateDialog.tsx',import.meta.url),'utf8');
 const stack=readFileSync(new URL('../src/components/CanonicalCreditCardStack.tsx',import.meta.url),'utf8');
 const hostCss=readFileSync(new URL('../src/styles/canonical-credit-card-host.css',import.meta.url),'utf8');
 
@@ -15,12 +17,24 @@ describe('canonical credit-card stack adoption',()=>{
     expect(credit).not.toContain('credit-card-selector');
   });
 
-  it('keeps archived cards out of the primary deck and in a secondary manager',()=>{
+  it('keeps archived credit cards in secondary management with approved A deletion semantics',()=>{
     expect(credit).toContain('Αρχείο πιστωτικών καρτών');
     expect(credit).toContain('card-archive-manager');
     expect(credit).toContain('restoreCard(target)');
     expect(credit).toContain('Ολική διαγραφή');
-    expect(credit).toContain('disabled aria-disabled="true"');
+    expect(credit).toContain('const canDelete=archivedDebt<=.005');
+    expect(credit).toContain('disabled={!canDelete}');
+    expect(credit).toContain('κανόνα A');
+    expect(credit).toContain('Διαγραμμένη κάρτα');
+  });
+
+  it('keeps debit/prepaid cards out of the credit finance domain',()=>{
+    expect(cards).toContain("allowedKinds={['debit','prepaid']}");
+    expect(cards).toContain('Οι συναλλαγές καταχωρούνται στους αντίστοιχους λογαριασμούς, όχι στις κάρτες.');
+    expect(cards).toContain('Οριστική διαγραφή');
+    expect(cards).not.toContain('Νέα αγορά');
+    expect(cards).not.toContain('Αποπληρωμή');
+    expect(createDialog).toContain('allowedKinds?:CardKind[]');
   });
 
   it('keeps the supplied stack interaction model and stable-ID ordering',()=>{
