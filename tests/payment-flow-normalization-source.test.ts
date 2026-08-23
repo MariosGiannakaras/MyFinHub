@@ -7,6 +7,7 @@ const contextual=readFileSync(new URL('../src/components/ContextualQuickAdd.tsx'
 const credit=readFileSync(new URL('../src/pages/CreditCardPage.tsx',import.meta.url),'utf8');
 const loans=readFileSync(new URL('../src/pages/LoansPage.tsx',import.meta.url),'utf8');
 const recurring=readFileSync(new URL('../src/pages/RecurringPage.tsx',import.meta.url),'utf8');
+const linkedLoans=readFileSync(new URL('../src/components/LongTermLoanSummary.tsx',import.meta.url),'utf8');
 const rendered=readFileSync(new URL('../scripts/run-rendered-qa.mjs',import.meta.url),'utf8');
 const paymentQa=readFileSync(new URL('../scripts/payment-flow-normalization-qa.mjs',import.meta.url),'utf8');
 const staleHarness=readFileSync(new URL('../src/paymentFlowQa.tsx',import.meta.url),'utf8');
@@ -19,6 +20,15 @@ describe('payment flow normalization source contracts',()=>{
       expect(source).toMatch(/onPayLoan=\{\(?loanId\)?=>openSpecial\(\{mode:'loan',loanId\}\)\}/);
       expect(source).toMatch(/onPayRecurring=\{\(?recurringId\)?=>openSpecial\(\{mode:'recurring',recurringId\}\)\}/);
     }
+  });
+
+  it('routes linked loan obligations from Recurring into the same canonical loan payment context',()=>{
+    expect(recurring).toContain('onPayLoan:(loanId:string)=>void');
+    expect(recurring).toContain('<LongTermLoanSummary data={data} onPayLoan={onPayLoan}');
+    expect(linkedLoans).toContain('activeLongTermLoanObligations(data)');
+    expect(linkedLoans).toContain('data-linked-loan={loan.id}');
+    expect(linkedLoans).toContain('onClick={()=>onPayLoan(loan.id)}');
+    for(const source of [compact(app),compact(qa)])expect(source).toMatch(/page==='recurring'.*onPayLoan=\{\(?loanId\)?=>openSpecial\(\{mode:'loan',loanId\}\)\}/);
   });
 
   it('does not keep duplicate page-local payment engines',()=>{
@@ -60,10 +70,11 @@ describe('payment flow normalization source contracts',()=>{
     expect(rendered).toContain("/tmp/myfinhub-payment-flow-qa-chrome");
   });
 
-  it('locks empty, stale-id, computed-installment and reduced-motion regression coverage',()=>{
+  it('locks empty, stale-id, computed-installment, linked-recurring and reduced-motion regression coverage',()=>{
     expect(paymentQa).toContain("{state:'empty'}");
     expect(paymentQa).toContain('normal loan amount is computed and read-only');
     expect(paymentQa).toContain('multi-installment range preview');
+    expect(paymentQa).toContain('linked loan payment from Recurring');
     expect(paymentQa).toContain("staleHarnessUrl('missing-loan')");
     expect(paymentQa).toContain('δεν είναι πλέον διαθέσιμο');
     expect(staleHarness).toContain("loanId:'qa-missing-loan'");

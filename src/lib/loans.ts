@@ -1,6 +1,7 @@
 import type { FinanceData, FinanceEvent, Loan } from '../types.js';
 
 export type LoanInstallmentPaymentPlan={count:number;firstInstallment:number;lastInstallment:number;amount:number};
+export type LongTermLoanObligation={loan:Loan;outstanding:number;remainingInstallments:number;nextAmount:number;typicalDay:number|null;lastPayment:FinanceEvent|null};
 
 export function isSelfLoan(loan:Loan){return loan.kind==='self-loan'||loan.source==='self-loan'||/\bHELP\b|ΒΟΗΘΕΙΑ/i.test(`${loan.name} ${loan.provider||''}`)}
 
@@ -61,6 +62,17 @@ export function typicalLoanPaymentDay(data:FinanceData,loan:Loan):number|null{
 }
 
 export function isLongTermLoan(loan:Loan){return loan.longTermRecurring??(loan.installments>=12&&!isSelfLoan(loan))}
+
+export function activeLongTermLoanObligations(data:FinanceData):LongTermLoanObligation[]{
+  const loans=[...(data.seed.loans??[]).map(loan=>data.state.loanOverrides?.[loan.id]??loan),...(data.state.customLoans??[])];
+  return loans.filter(isLongTermLoan).map(loan=>{
+    const outstanding=loanOutstanding(data,loan);
+    const remainingInstallments=loanRemainingInstallments(data,loan);
+    const plan=loanInstallmentPaymentPlan(data,loan,1);
+    const payments=loanPaymentEvents(data,loan);
+    return {loan,outstanding,remainingInstallments,nextAmount:plan?.amount??0,typicalDay:typicalLoanPaymentDay(data,loan),lastPayment:payments[0]??null};
+  }).filter(row=>row.outstanding>.005&&row.remainingInstallments>0&&row.nextAmount>0).sort((a,b)=>(a.typicalDay??99)-(b.typicalDay??99)||a.loan.name.localeCompare(b.loan.name,'el'));
+}
 
 export function preserveLoanPaymentLink(next: FinanceEvent, previous?: FinanceEvent | null) {
   if (previous?.loanId) next.loanId = previous.loanId;
