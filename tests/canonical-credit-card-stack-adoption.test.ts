@@ -28,8 +28,9 @@ describe('canonical credit-card stack adoption',()=>{
     expect(credit).toContain('κανόνα A');
     expect(credit).toContain('Διαγραμμένη κάρτα');
     expect(cardDomain).toContain('export function canPermanentlyDeleteCreditCard');
-    expect(cardDomain).toContain("if(card.active!==false)return false");
-    expect(cardDomain).toContain('return creditDebtForCard(data,cardId,asOf)<=.005');
+    expect(cardDomain).toContain("card?.kind==='credit'");
+    expect(cardDomain).toContain('card.active===false');
+    expect(cardDomain).toContain('creditDebtForCard(data,cardId,asOf)<=0.005');
   });
 
   it('keeps debit/prepaid cards out of the credit finance domain',()=>{
