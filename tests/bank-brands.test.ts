@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { bankBrandAsset, bankBrandKey } from '../src/lib/bankBrands.js';
+import { bankBrandAsset, bankBrandFallbackMark, bankBrandKey } from '../src/lib/bankBrands.js';
 
 describe('bank brand identity',()=>{
   it('resolves supported banks from account ids and names',()=>{
@@ -15,15 +15,18 @@ describe('bank brand identity',()=>{
     expect(bankBrandKey('custom-bank','CUSTOM')).toBe('generic');
   });
 
-  it('maps supported brands to local text marks without third-party image requests',()=>{
+  it('keeps current supported marks local while allowing a shared local-image asset contract',()=>{
     for(const key of ['piraeus','revolut','alpha','payzy','viva'] as const){
       const asset=bankBrandAsset(key);
       expect(asset).not.toBeNull();
-      expect(asset?.source).toBe('local-text');
-      expect(asset?.mark.length).toBeGreaterThan(2);
       expect(asset?.label.length).toBeGreaterThan(2);
       expect(JSON.stringify(asset)).not.toMatch(/https?:\/\//);
+      if(asset){
+        expect(bankBrandFallbackMark(asset).length).toBeGreaterThan(2);
+        if(asset.source==='local-image')expect(asset.src.startsWith('/')).toBe(true);
+      }
     }
-    expect(bankBrandAsset('piraeus')?.mark).toBe('ΠΕΙΡΑΙΩΣ');
+    const piraeus=bankBrandAsset('piraeus');
+    expect(piraeus&&bankBrandFallbackMark(piraeus)).toBe('ΠΕΙΡΑΙΩΣ');
   });
 });
