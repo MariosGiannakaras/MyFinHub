@@ -8,6 +8,7 @@ function stringList(value:unknown,name:string,maxItems:number,maxText:number){
   if(!Array.isArray(value)||value.length>maxItems)invalid(`Invalid ${name}.`);
   for(const item of value)text(item,`${name} item`,maxText);
 }
+function identityLabelKey(value:string){return value.trim().replace(/\s+/g,' ').normalize('NFD').replace(/\p{M}/gu,'').toLocaleLowerCase('el-GR')}
 
 export function validateCategoryIdentityState(value:unknown):asserts value is FinanceData['state']{
   if(!object(value))invalid('Invalid finance state.');
@@ -40,6 +41,20 @@ export function validateCategoryIdentityState(value:unknown):asserts value is Fi
     for(const parentId of record.parentAliases??[]){
       const parent=records.get(parentId);
       if(!parent||parent.parentId!==undefined||parent.kind!==record.kind)invalid(`Invalid parent alias identity for ${record.id}.`);
+    }
+  }
+
+  const claimedPaths=new Map<string,string>();
+  for(const record of records.values()){
+    const labels=[record.label,...record.aliases];
+    const parentIds=record.parentId===undefined?['root']:[record.parentId,...(record.parentAliases??[])];
+    for(const parentId of parentIds){
+      for(const label of labels){
+        const path=`${record.kind}|${parentId}|${identityLabelKey(label)}`;
+        const owner=claimedPaths.get(path);
+        if(owner&&owner!==record.id)invalid(`Ambiguous category identity alias/path between ${owner} and ${record.id}.`);
+        claimedPaths.set(path,record.id);
+      }
     }
   }
 }
