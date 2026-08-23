@@ -8,6 +8,7 @@ const planning=readFileSync(new URL('../src/pages/PlanningPage.tsx',import.meta.
 const settings=readFileSync(new URL('../src/pages/SettingsPage.tsx',import.meta.url),'utf8');
 const receipts=readFileSync(new URL('../src/components/ReceiptInbox.tsx',import.meta.url),'utf8');
 const quickAdd=readFileSync(new URL('../src/components/QuickAdd.tsx',import.meta.url),'utf8');
+const contextualQuickAdd=readFileSync(new URL('../src/components/ContextualQuickAdd.tsx',import.meta.url),'utf8');
 
 function expectNoNativeDialog(source:string){
   expect(source).not.toContain('window.prompt');
@@ -60,6 +61,15 @@ describe('shared primitive adoption',()=>{
     expect(quickAdd).toContain("open&&!discardOpen");
     expect(quickAdd).toContain('<MoneyInput data-autofocus="true" value={amount}');
     expect(quickAdd).toContain('<MoneyInput data-autofocus="true" value={actualBalance}');
+  });
+
+  it('uses MoneyInput for contextual payment amounts while preserving computed loan-plan read-only behavior',()=>{
+    expectNoNativeDialog(contextualQuickAdd);
+    expect(contextualQuickAdd).toContain('<MoneyInput data-autofocus="true"');
+    expect(contextualQuickAdd).toContain('value={loanPaymentPlan?String(loanPaymentPlan.amount):amount}');
+    expect(contextualQuickAdd).toContain('readOnly={Boolean(loanPaymentPlan)}');
+    expect(contextualQuickAdd).toContain('invalid={amountError}');
+    expect(contextualQuickAdd).toContain('if(!loanPaymentPlan)setAmount(value)');
   });
 
   it('keeps conflict recovery behind an on-demand app-owned confirmation and the existing reload path',()=>{
