@@ -21,7 +21,7 @@ describe('monthly category budgets',()=>{
     const expense=createEvent({kind:'expense',date:'2026-08-05',amount:100,note:'Food',category:'Τρόφιμα',accountId:'piraeus-payroll'});
     const refund=createEvent({kind:'refund',date:'2026-08-06',amount:20,note:'Food refund',category:'Τρόφιμα',accountId:'piraeus-payroll'});
     const transfer=createTransferEvent(data,{date:'2026-08-07',amount:500,note:'Internal',fromAccountId:'piraeus-payroll',toAccountId:'piraeus-savings'});
-    const split=createExpenseSplitEvent(data,{date:'2026-08-08',amount:60,note:'Mixed',accountId:'piraeus-payroll',parts:[{id:'a',label:'Food',category:'Τρόφιμα',amount:40},{id:'b',label:'Travel',category:'Μετακινήσεις',amount:20}]});
+    const split=createExpenseSplitEvent(data,{date:'2026-08-08',note:'Mixed',accountId:'piraeus-payroll',parts:[{id:'a',label:'Food',category:'Τρόφιμα',amount:40},{id:'b',label:'Travel',category:'Μετακινήσεις',amount:20}]});
     data.state.events=[expense,refund,transfer,split];
     const spending=categoryBudgetSpending(data,'2026-08');
     expect(spending.get('Τρόφιμα')).toBe(120);
