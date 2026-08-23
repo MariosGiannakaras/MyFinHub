@@ -16,6 +16,6 @@ export function LongTermLoanSummary({data,onPayLoan,onOpenLoans}:{data:FinanceDa
         <button type="button" className="pay-action linked-loan-pay" aria-label={`Πληρωμή δανειακής υποχρέωσης ${loan.name}`} onClick={()=>onPayLoan(loan.id)}><ReceiptText size={16}/><span>Πληρωμή</span></button>
       </article>)}
     </div>
-    <button type="button" className="text-button" onClick={onOpenLoans}>Προβολή όλων στις Δόσεις & Δάνεια</button>
+    <button type="button" className="text-button" data-open-loans="true" onClick={onOpenLoans}>Άνοιγμα Δόσεων & Δανείων για πλήρη προβολή</button>
   </section>;
 }
