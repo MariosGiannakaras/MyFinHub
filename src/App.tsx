@@ -15,6 +15,7 @@ import type { AttentionItem } from './lib/attention';
 import { archiveCardRecord } from './lib/cards';
 import type { RankedCommandSearchItem } from './lib/commandSearch';
 import { accountBalances, allAccounts } from './lib/domain';
+import { withLegacyOverride, withLegacyTombstone } from './lib/legacyTransactions';
 import { reportingMonthForDate } from './lib/localDate';
 import type { TaxonomyOperation } from './lib/taxonomyManagement';
 import { applyTransactionRules } from './lib/transactionRules';
@@ -24,6 +25,7 @@ import type {
   EventKind,
   FinanceData,
   FinanceEvent,
+  LegacyTransaction,
   Loan,
   MonthlyBudget,
   PaymentCard,
@@ -144,6 +146,8 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
     setQuickContext({ token: quickToken(), mode: 'generic', kind: event?.kind || 'expense', prefill: null });
     setQuickOpen(true);
   };
+  const editLegacy = (transaction: LegacyTransaction) => finance.update((current) => withLegacyOverride(current, transaction));
+  const deleteLegacy = (id: string) => finance.update((current) => withLegacyTombstone(current, id));
   const upsertRecurring = (item: RecurringItem) => finance.update((current) => {
     const seeded = current.seed.recurring.some((existing) => existing.id === item.id);
     if (seeded) return { ...current, state: { ...current.state, recurringOverrides: { ...current.state.recurringOverrides, [item.id]: item } } };
@@ -228,7 +232,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
 
   const content = page === 'dashboard'
     ? <DashboardPage data={data} month={month} asOf={today} motionMode="full" onQuickAdd={(prefill?: QuickPrefill) => openGeneric('expense', prefill || null)} onAccountQuickAdd={(accountId, kind) => kind === 'savings' ? openSpecial({ mode: 'savings', toAccountId: accountId, savingSource: 'manual_transfer' }) : openGeneric('expense', { note: '', amount: 0, accountId })} onTransactions={() => navigate('transactions')} onPlanning={() => navigate('planning')} onAttention={() => navigate('attention')} onReports={()=>navigate('reports')}/>
-    : page === 'transactions' ? <TransactionsPage data={data} month={month} onEditEvent={editEvent} onDeleteEvent={deleteEvent}/>
+    : page === 'transactions' ? <TransactionsPage data={data} month={month} onEditEvent={editEvent} onDeleteEvent={deleteEvent} onEditLegacy={editLegacy} onDeleteLegacy={deleteLegacy}/>
     : page === 'review' ? <ReviewPage data={data} onDecision={decide}/>
     : page === 'savings' ? <SavingsPage data={data} month={month} asOf={today} onCreate={addEvent} onQuickAdd={openSpecial}/>
     : page === 'cards' ? <CardsPage data={data} onUpsertBank={upsertBank} onUpsertCard={upsertCard} onArchiveCard={archiveCard} onOpenCredit={() => navigate('credit')}/>
