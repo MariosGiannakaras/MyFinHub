@@ -46,6 +46,10 @@ function findRecord(records:Record<string,CategoryIdentityRecord>,kind:CategoryK
   return Object.values(records).find(record=>recordMatches(record,kind,parentId,label));
 }
 
+function conflictingRecord(records:Record<string,CategoryIdentityRecord>,kind:CategoryKind,parentId:string|undefined,label:string,excludeId?:string){
+  return Object.values(records).find(record=>record.id!==excludeId&&recordMatches(record,kind,parentId,label));
+}
+
 function availableId(records:Record<string,CategoryIdentityRecord>,kind:CategoryKind,label:string,parentId?:string){
   const base=generatedIdentityId(kind,label,parentId);
   if(!records[base])return base;
@@ -99,6 +103,16 @@ export function resolveSubcategoryIdentity(settings:FinanceSettings,kind:Categor
   return findRecord(records,kind,parent.id,subcategory)??null;
 }
 
+export function categoryIdentityLabelAvailable(settings:FinanceSettings,kind:CategoryKind,label:string,excludeId?:string){
+  const normalized=ensureCategoryIdentities(settings);
+  return !conflictingRecord(normalized.categoryIdentities??{},kind,undefined,clean(label),excludeId);
+}
+
+export function subcategoryIdentityLabelAvailable(settings:FinanceSettings,kind:CategoryKind,parentId:string,label:string,excludeId?:string){
+  const normalized=ensureCategoryIdentities(settings);
+  return !conflictingRecord(normalized.categoryIdentities??{},kind,parentId,clean(label),excludeId);
+}
+
 function withTree(settings:FinanceSettings,kind:CategoryKind,tree:CategoryDefinition[]){
   return kind==='expense'
     ? {...settings,expenseCategories:tree.map(item=>item.name),expenseCategoryTree:tree}
@@ -112,10 +126,10 @@ export function renameCategoryIdentity(settings:FinanceSettings,kind:CategoryKin
   const records={...(normalized.categoryIdentities??{})};
   const record=records[identityId];
   if(!record||record.kind!==kind||record.parentId)throw new Error('Η κατηγορία δεν βρέθηκε.');
+  if(conflictingRecord(records,kind,undefined,nextLabel,identityId))throw new Error('Το όνομα χρησιμοποιείται ήδη από άλλη κατηγορία ή παλιό όνομα.');
   const tree=categoryTree(normalized,kind).map(item=>({...item,subcategories:[...item.subcategories]}));
   const index=tree.findIndex(item=>sameLabel(item.name,record.label));
   if(index<0)throw new Error('Η κατηγορία δεν υπάρχει πλέον στο δέντρο.');
-  if(tree.some((item,itemIndex)=>itemIndex!==index&&sameLabel(item.name,nextLabel)))throw new Error('Υπάρχει ήδη κατηγορία με αυτό το όνομα.');
   const previousLabel=tree[index].name;
   tree[index]={...tree[index],name:nextLabel};
   records[identityId]=normalizedRecord(record,nextLabel);
@@ -132,12 +146,12 @@ export function renameSubcategoryIdentity(settings:FinanceSettings,kind:Category
   if(!record||record.kind!==kind||!record.parentId)throw new Error('Η υποκατηγορία δεν βρέθηκε.');
   const parent=records[record.parentId];
   if(!parent)throw new Error('Η γονική κατηγορία δεν βρέθηκε.');
+  if(conflictingRecord(records,kind,parent.id,nextLabel,identityId))throw new Error('Το όνομα χρησιμοποιείται ήδη από άλλη υποκατηγορία ή παλιό όνομα σε αυτή την κατηγορία.');
   const tree=categoryTree(normalized,kind).map(item=>({...item,subcategories:[...item.subcategories]}));
   const parentIndex=tree.findIndex(item=>sameLabel(item.name,parent.label));
   if(parentIndex<0)throw new Error('Η γονική κατηγορία δεν υπάρχει πλέον στο δέντρο.');
   const childIndex=tree[parentIndex].subcategories.findIndex(label=>sameLabel(label,record.label));
   if(childIndex<0)throw new Error('Η υποκατηγορία δεν υπάρχει πλέον στο δέντρο.');
-  if(tree[parentIndex].subcategories.some((label,index)=>index!==childIndex&&sameLabel(label,nextLabel)))throw new Error('Υπάρχει ήδη υποκατηγορία με αυτό το όνομα.');
   const previousLabel=tree[parentIndex].subcategories[childIndex];
   tree[parentIndex].subcategories[childIndex]=nextLabel;
   records[identityId]=normalizedRecord(record,nextLabel);
@@ -156,13 +170,13 @@ export function moveSubcategoryIdentity(settings:FinanceSettings,kind:CategoryKi
   if(!record||record.kind!==kind||!record.parentId)throw new Error('Η υποκατηγορία δεν βρέθηκε.');
   if(!target||target.kind!==kind||target.parentId)throw new Error('Η κατηγορία προορισμού δεν βρέθηκε.');
   if(record.parentId===target.id)return normalized;
+  if(conflictingRecord(records,kind,target.id,record.label,identityId))throw new Error('Η κατηγορία προορισμού έχει ήδη αυτή την υποκατηγορία ή δεσμευμένο παλιό όνομα.');
   const source=records[record.parentId];
   if(!source)throw new Error('Η αρχική κατηγορία δεν βρέθηκε.');
   const tree=categoryTree(normalized,kind).map(item=>({...item,subcategories:[...item.subcategories]}));
   const sourceIndex=tree.findIndex(item=>sameLabel(item.name,source.label));
   const targetIndex=tree.findIndex(item=>sameLabel(item.name,target.label));
   if(sourceIndex<0||targetIndex<0)throw new Error('Η μεταφορά δεν μπορεί να ολοκληρωθεί στο τρέχον δέντρο.');
-  if(tree[targetIndex].subcategories.some(label=>sameLabel(label,record.label)))throw new Error('Η κατηγορία προορισμού έχει ήδη υποκατηγορία με αυτό το όνομα.');
   tree[sourceIndex].subcategories=tree[sourceIndex].subcategories.filter(label=>!sameLabel(label,record.label));
   tree[targetIndex].subcategories=[...tree[targetIndex].subcategories,record.label];
   records[identityId]={...record,parentId:target.id,parentAliases:uniqueIds([...(record.parentAliases??[]),source.id]).filter(parentId=>parentId!==target.id)};
