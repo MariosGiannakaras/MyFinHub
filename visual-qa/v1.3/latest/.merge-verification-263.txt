@@ -1,0 +1,4 @@
+PR #263 final verification marker.
+Visual QA source: aafc461973110a79b813a0a929af96f780e829cc
+Visual QA bot commit: ee4d9c92662dfc2f883b39f293d3b570646a2f68
+Purpose: create a human-authored PR head after the automation-authored snapshot so required pull-request workflows run on the actual merge head. This path is intentionally ignored by Visual QA Snapshots.
