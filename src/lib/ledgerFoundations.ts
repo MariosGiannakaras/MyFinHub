@@ -81,7 +81,8 @@ export function splitDraftError(data: FinanceData, draft: { accountId: string; p
   const accountIds = new Set(transferEligibleAccounts(data).map((account) => account.id));
   if (!draft.accountId || !accountIds.has(draft.accountId)) return 'Διάλεξε υπαρκτό λογαριασμό πληρωμής.';
   if (draft.parts.length < 2) return 'Ο διαχωρισμός χρειάζεται τουλάχιστον δύο μέρη.';
-  if (draft.parts.some((part) => !Number.isFinite(Number(part.amount)) || Number(part.amount) <= 0)) return 'Κάθε επιμέρους ποσό πρέπει να είναι θετικό.';
+  const invalidPartIndex=draft.parts.findIndex((part) => !Number.isFinite(Number(part.amount)) || Number(part.amount) <= 0);
+  if (invalidPartIndex >= 0) return `Το ποσό στο μέρος ${invalidPartIndex + 1} πρέπει να είναι θετικό.`;
   const allocation = splitAllocation(draft.parts);
   if (!Number.isFinite(allocation.totalCents) || allocation.normalizedParts.some((part) => !Number.isFinite(moneyToCents(part.amount)))) return 'Έλεγξε τα επιμέρους ποσά.';
   if (allocation.totalCents <= 0) return 'Το σύνολο των επιμέρους ποσών πρέπει να είναι θετικό.';
