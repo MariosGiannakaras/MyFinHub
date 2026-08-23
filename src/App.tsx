@@ -1,8 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { AppShell, type PageId } from './components/AppShell';
 import { AppSkeleton, PageSkeleton } from './components/AppSkeleton';
-import { CommandPalette } from './components/CommandPalette';
-import { ContextualQuickAdd, type QuickActionContext } from './components/ContextualQuickAdd';
+import type { QuickActionContext } from './components/ContextualQuickAdd';
 import { LoginScreen } from './components/LoginScreen';
 import { MfaScreen } from './components/MfaScreen';
 import { PageErrorBoundary } from './components/PageErrorBoundary';
@@ -34,6 +33,8 @@ import type {
   TransactionRule,
 } from './types';
 
+const CommandPalette = lazy(() => import('./components/CommandPalette').then((module) => ({ default: module.CommandPalette })));
+const ContextualQuickAdd = lazy(() => import('./components/ContextualQuickAdd').then((module) => ({ default: module.ContextualQuickAdd })));
 const DashboardPage = lazy(() => import('./pages/DashboardPage').then((module) => ({ default: module.DashboardPage })));
 const TransactionsPage = lazy(() => import('./pages/TransactionsPage').then((module) => ({ default: module.TransactionsPage })));
 const ReviewPage = lazy(() => import('./pages/ReviewPage').then((module) => ({ default: module.ReviewPage })));
@@ -246,8 +247,8 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
       {PERIOD_PAGES.has(page) ? <div className="period-row"><PeriodControl month={month} onChange={(next) => { setMonth(next); setMonthIsManual(true); }}/><span>Στοιχεία περιόδου</span></div> : null}
       {finance.saveState === 'loading' ? <PageSkeleton/> : <PageErrorBoundary resetKey={page} onDashboard={() => navigate('dashboard')}><Suspense fallback={<PageLoading/>}>{content}</Suspense></PageErrorBoundary>}
     </AppShell>
-    <CommandPalette open={commandOpen} data={data} motionMode="full" onClose={()=>setCommandOpen(false)} onExecute={handleCommand}/>
-    <ContextualQuickAdd open={quickOpen} data={data} asOf={today} context={quickContext} motionMode="full" initial={(data.state.events ?? []).find((event) => event.id === editingEventId) || null} onClose={() => { setQuickOpen(false); setEditingEventId(null); setQuickContext(null); }} onCreate={addEvent} onCompleteScheduled={completeScheduled} currentBalance={balance}/>
+    {commandOpen ? <Suspense fallback={null}><CommandPalette open={commandOpen} data={data} motionMode="full" onClose={()=>setCommandOpen(false)} onExecute={handleCommand}/></Suspense> : null}
+    {quickOpen ? <Suspense fallback={null}><ContextualQuickAdd open={quickOpen} data={data} asOf={today} context={quickContext} motionMode="full" initial={(data.state.events ?? []).find((event) => event.id === editingEventId) || null} onClose={() => { setQuickOpen(false); setEditingEventId(null); setQuickContext(null); }} onCreate={addEvent} onCompleteScheduled={completeScheduled} currentBalance={balance}/></Suspense> : null}
   </>;
 }
 
