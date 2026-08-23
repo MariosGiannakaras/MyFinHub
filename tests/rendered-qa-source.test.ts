@@ -20,6 +20,11 @@ describe('rendered browser QA reliability contract', () => {
     expect(coordinator).toContain("process.env.MYFINHUB_QA_REQUIRE_PRIMARY === '1'");
   });
 
+  it('keeps the shared primitive adoption suite in the rendered merge gate',()=>{
+    expect(coordinator).toContain("scripts/primitives-adoption-qa.mjs");
+    expect(coordinator).toContain("/tmp/myfinhub-primitives-adoption-qa-chrome");
+  });
+
   it('enforces primary Chromium in pull-request CI', () => {
     expect(ci).toContain('export MYFINHUB_QA_REQUIRE_PRIMARY=1');
     expect(ci).toContain('${MYFINHUB_QA_REQUIRE_PRIMARY:-0}');
