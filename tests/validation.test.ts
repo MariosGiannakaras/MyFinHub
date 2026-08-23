@@ -60,6 +60,61 @@ describe('finance document validation', () => {
     expect(() => validateFinanceState(validState().state)).not.toThrow();
   });
 
+  it('accepts a bounded stable category identity graph on mutable writes', () => {
+    const state = validState().state;
+    state.settings.categoryIdentities = {
+      'cat-expense-food': { id: 'cat-expense-food', kind: 'expense', label: 'Φαγητό', aliases: ['Τρόφιμα'] },
+      'sub-expense-market': { id: 'sub-expense-market', kind: 'expense', label: 'Σούπερ μάρκετ', aliases: ['Supermarket'], parentId: 'cat-expense-food', parentAliases: [] },
+    };
+    expect(() => validateFinanceState(state)).not.toThrow();
+    expect(() => parseMutableWrite({ state, updatedAt: '2026-08-17T00:00:00.000Z' })).not.toThrow();
+  });
+
+  it('rejects category identity key/id mismatches', () => {
+    const state = validState().state;
+    state.settings.categoryIdentities = {
+      'cat-expense-food': { id: 'cat-expense-other', kind: 'expense', label: 'Φαγητό', aliases: [] },
+    };
+    expect(() => validateFinanceState(state)).toThrowError(/key\/id mismatch/i);
+  });
+
+  it('rejects missing, non-root and wrong-kind category identity parents', () => {
+    const missing = validState().state;
+    missing.settings.categoryIdentities = {
+      child: { id: 'child', kind: 'expense', label: 'Supermarket', aliases: [], parentId: 'missing-parent' },
+    };
+    expect(() => validateFinanceState(missing)).toThrowError(/parent identity/i);
+
+    const nonRoot = validState().state;
+    nonRoot.settings.categoryIdentities = {
+      root: { id: 'root', kind: 'expense', label: 'Φαγητό', aliases: [] },
+      child: { id: 'child', kind: 'expense', label: 'Supermarket', aliases: [], parentId: 'root' },
+      grandchild: { id: 'grandchild', kind: 'expense', label: 'Nested', aliases: [], parentId: 'child' },
+    };
+    expect(() => validateFinanceState(nonRoot)).toThrowError(/parent identity/i);
+
+    const wrongKind = validState().state;
+    wrongKind.settings.categoryIdentities = {
+      root: { id: 'root', kind: 'income', label: 'Μισθός', aliases: [] },
+      child: { id: 'child', kind: 'expense', label: 'Supermarket', aliases: [], parentId: 'root' },
+    };
+    expect(() => validateFinanceState(wrongKind)).toThrowError(/parent identity/i);
+  });
+
+  it('rejects self-parenting and malformed category identity alias arrays', () => {
+    const selfParent = validState().state;
+    selfParent.settings.categoryIdentities = {
+      self: { id: 'self', kind: 'expense', label: 'Invalid', aliases: [], parentId: 'self' },
+    };
+    expect(() => validateFinanceState(selfParent)).toThrowError(/parent itself/i);
+
+    const badAliases = validState().state;
+    badAliases.settings.categoryIdentities = {
+      root: { id: 'root', kind: 'expense', label: 'Φαγητό', aliases: 'old-name' },
+    };
+    expect(() => validateFinanceState(badAliases)).toThrowError(/aliases/i);
+  });
+
   it('accepts cards and extended loan metadata used by current workspaces', () => {
     const full = validState();
     full.state.cardBanks.push({ id: 'bank-1', name: 'BANK', order: 10, custom: true });

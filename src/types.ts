@@ -23,6 +23,15 @@ export interface CategoryDefinition {
   subcategories: string[];
 }
 
+export interface CategoryIdentityRecord {
+  id: string;
+  kind: 'expense' | 'income';
+  label: string;
+  aliases: string[];
+  parentId?: string;
+  parentAliases?: string[];
+}
+
 export interface CardBank {
   id: string;
   name: string;
@@ -245,6 +254,7 @@ export interface FinanceSettings {
   incomeCategories: string[];
   expenseCategoryTree?: CategoryDefinition[];
   incomeCategoryTree?: CategoryDefinition[];
+  categoryIdentities?: Record<string, CategoryIdentityRecord>;
   categoryIcons?: Record<string, string>;
   subcategoryIcons?: Record<string, string>;
   customPresets: string[];

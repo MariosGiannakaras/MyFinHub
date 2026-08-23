@@ -1,4 +1,5 @@
 import { accessTokenAal, assertMutationSessionOrigin, clearSessionCookiesIfCookie, requireSession } from '../server/auth.js';
+import { validateCategoryIdentityState } from '../server/categoryIdentityValidation.js';
 import { handleApi, methodNotAllowed, readJsonBody, requestHeader, sendJson, ApiError } from '../server/http.js';
 import { MAX_FINANCE_DOCUMENT_BYTES } from '../src/lib/limits.js';
 import { isOwner, writeStore } from '../server/storage.js';
@@ -19,6 +20,7 @@ export default async function handler(req: any, res: any) {
     }
     const body = await readJsonBody(req, MAX_FINANCE_DOCUMENT_BYTES);
     validateFinanceData(body);
+    validateCategoryIdentityState(body.state);
     return sendJson(res, 200, await writeStore(body, undefined, true, session.accessToken));
   });
 }
