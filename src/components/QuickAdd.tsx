@@ -3,7 +3,9 @@ import { ArrowDownToLine, ArrowLeftRight, BanknoteArrowDown, Check, CircleDollar
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { AppDateInput } from './AppDateInput';
 import { AppSelectInput } from './AppSelectInput';
+import { ConfirmDialog } from './ConfirmDialog';
 import { FinanceIcon } from './FinanceIcon';
+import { MoneyInput } from './MoneyInput';
 import { useModalFocus } from '../hooks/useModalFocus';
 import { genericCategoryTree, subcategoriesFor } from '../lib/categories';
 import { allAccounts, createEvent, frequentDescriptions } from '../lib/domain';
@@ -60,6 +62,7 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
   const [parts,setParts]=useState<SplitPart[]>([{id:'p1',label:'',category:data.state.settings.expenseCategories[0]||'Άλλο',amount:0},{id:'p2',label:'',category:data.state.settings.expenseCategories[1]||data.state.settings.expenseCategories[0]||'Άλλο',amount:0}]);
   const [error,setError]=useState('');
   const [dirty,setDirty]=useState(false);
+  const [discardOpen,setDiscardOpen]=useState(false);
   const categoryKind=kind==='income'?'income':'expense';
   const categoryTree=genericCategoryTree(data.state.settings,categoryKind);
   const categoryOptions=categoryTree.map(item=>item.name);
@@ -73,6 +76,7 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
 
   useEffect(()=>{
     if(!open)return;
+    setDiscardOpen(false);
     if(initial){
       const defaults=entryDefaults(initial.kind,data.state.settings,fallbackAccount);
       setKind(initial.kind);
@@ -109,12 +113,13 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
   const transferLike=['transfer','saving_cash_offset','withdrawal','card_payment'].includes(kind);
   const lendingLike=['lending','repayment'].includes(kind);
   const mark=()=>setDirty(true);
-  const requestClose=()=>{if(dirty&&!window.confirm('Έχεις αλλαγές που δεν έχουν αποθηκευτεί. Θέλεις να κλείσεις την καταχώριση και να τις απορρίψεις;'))return;onClose()};
-  const modalRef=useModalFocus<HTMLElement>(open,'[data-autofocus="true"]',requestClose);
+  const requestClose=()=>{if(dirty){setDiscardOpen(true);return}onClose()};
+  const confirmDiscard=()=>{setDiscardOpen(false);onClose()};
+  const modalRef=useModalFocus<HTMLElement>(open&&!discardOpen,'[data-autofocus="true"]',requestClose);
   useEffect(()=>{
-    if(!open||kind!=='split')return;
+    if(!open||discardOpen||kind!=='split')return;
     queueMicrotask(()=>modalRef.current?.querySelector<HTMLInputElement>('input[aria-label="Ποσό μέρους 1"]')?.focus({preventScroll:true}));
-  },[open,kind,modalRef]);
+  },[open,discardOpen,kind,modalRef]);
   const reset=()=>{setAmount('');setNote('');setSubcategory('');setError('');setActualBalance('');setDirty(false)};
   const chooseKind=(next:EventKind)=>{
     const defaults=entryDefaults(next,data.state.settings,fallbackAccount);
@@ -151,20 +156,20 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
 
   const accountOptions=(current:string)=>current&&!accountIds.has(current)?<><option value={current} disabled>Μη διαθέσιμος · {accountDisplayName(data,current)}</option>{accounts.map(a=><option key={a.id} value={a.id}>{accountDisplayName(data,a.id)}</option>)}</>:accounts.map(a=><option key={a.id} value={a.id}>{accountDisplayName(data,a.id)}</option>);
 
-  return <AnimatePresence>{open?<motion.div className="modal-backdrop" initial={reduce?false:{opacity:0}} animate={{opacity:1}} exit={reduce?undefined:{opacity:0}} onMouseDown={requestClose}>
+  return <><AnimatePresence>{open?<motion.div className="modal-backdrop" initial={reduce?false:{opacity:0}} animate={{opacity:1}} exit={reduce?undefined:{opacity:0}} onMouseDown={requestClose}>
     <motion.section ref={modalRef} className="quick-modal neo-raised" role="dialog" aria-modal="true" aria-labelledby="quick-add-title" aria-describedby="quick-add-description" tabIndex={-1} initial={reduce?false:{opacity:0,scale:.97,y:12}} animate={{opacity:1,scale:1,y:0}} exit={reduce?undefined:{opacity:0,scale:.98,y:8}} transition={{duration:reduce?0:.18}} onMouseDown={e=>e.stopPropagation()}>
       <header><div><small>{initial?'ΕΠΕΞΕΡΓΑΣΙΑ':'ΓΡΗΓΟΡΗ ΚΙΝΗΣΗ'}</small><h2 id="quick-add-title">{initial?'Επεξεργασία κίνησης':'Τι θέλεις να καταγράψεις;'}</h2><p id="quick-add-description">Διάλεξε την ενέργεια που έκανες. Εξειδικευμένες ροές για κάρτες, δόσεις, δάνεια και πάγια συνεχίζουν να ανοίγουν από το αντίστοιχο πλαίσιο.</p></div><button type="button" className="icon-button" aria-label="Κλείσιμο καταχώρισης" onClick={requestClose}><X/></button></header>
       {genericKinds.some(item=>item.kind===kind)?<div className="kind-grid generic-kind-grid" role="group" aria-label="Τι θέλεις να καταγράψεις">{genericKinds.map(k=><button type="button" key={k.kind} className={kind===k.kind?'active':''} aria-pressed={kind===k.kind} onClick={()=>chooseKind(k.kind)}><span>{k.icon}</span><b>{k.label}</b><small>{k.description}</small></button>)}</div>:null}
       <div className="entry-body">
         {kind==='expense'?<div className="frequent-strip"><span>Συχνά</span>{frequent.slice(0,6).map(f=><button type="button" key={f.label} onClick={()=>{const preset=structuredPresetFromFrequent(f);setAmount(String(preset.amount));setCategory(preset.category||category);setSubcategory(preset.subcategory||'');if(preset.accountId)setAccountId(preset.accountId);mark()}}><FinanceIcon settings={data.state.settings} kind="expense" note={f.label} category={f.category} size={14}/><span>{f.label}</span><small>{money.format(f.lastAmount)}</small></button>)}</div>:null}
         <div className="form-grid">
-          {kind!=='reconciliation'&&kind!=='split'?<label><span>Ποσό</span><div className="money-input"><b>€</b><input data-autofocus="true" inputMode="decimal" value={amount} onChange={e=>{setAmount(e.target.value.replace(',','.'));mark()}}/></div></label>:null}
+          {kind!=='reconciliation'&&kind!=='split'?<label><span>Ποσό</span><MoneyInput data-autofocus="true" value={amount} onValueChange={value=>{setAmount(value);mark()}}/></label>:null}
           <label><span>Ημερομηνία</span><AppDateInput value={date} onChange={e=>{setDate(e.target.value);mark()}}/></label>
           {!transferLike && kind!=='card_purchase'?<label><span>Λογαριασμός</span><AppSelectInput value={accountId} onChange={e=>{setAccountId(e.target.value);mark()}}>{accountOptions(accountId)}</AppSelectInput></label>:null}
           {transferLike?<><label><span>Από</span><AppSelectInput value={from} onChange={e=>{setFrom(e.target.value);mark()}}>{accountOptions(from)}</AppSelectInput></label>{kind!=='card_payment'?<label><span>Προς</span><AppSelectInput value={to} onChange={e=>{setTo(e.target.value);mark()}}>{accountOptions(to)}</AppSelectInput></label>:null}</>:null}
           {!['transfer','withdrawal','saving_cash_offset','card_payment','reconciliation','split'].includes(kind)?<><label><span>Κατηγορία</span><AppSelectInput value={category} onChange={e=>{setCategory(e.target.value);setSubcategory('');mark()}}>{categoryOptions.map(c=><option key={c}>{c}</option>)}</AppSelectInput></label>{subcategoryOptions.length?<label><span>Υποκατηγορία</span><AppSelectInput value={subcategory} onChange={e=>{setSubcategory(e.target.value);mark()}}><option value="">Χωρίς υποκατηγορία</option>{subcategoryOptions.map(value=><option key={value}>{value}</option>)}</AppSelectInput></label>:null}</>:null}
           {lendingLike?<label><span>Πρόσωπο</span><input value={person} onChange={e=>{setPerson(e.target.value);mark()}} placeholder="π.χ. Χρήστος"/></label>:null}
-          {kind==='reconciliation'?<><label><span>Πραγματικό υπόλοιπο</span><div className="money-input"><b>€</b><input data-autofocus="true" inputMode="decimal" value={actualBalance} onChange={e=>{setActualBalance(e.target.value.replace(',','.'));mark()}}/></div></label><div className="reconcile-preview"><span>Αναμενόμενο τώρα</span><b>{money.format(reconciliationBase(accountId))}</b><span>Διαφορά</span><strong>{actualBalance.trim()&&Number.isFinite(Number(actualBalance))?money.format(Number(actualBalance)-reconciliationBase(accountId)):'—'}</strong></div></>:null}
+          {kind==='reconciliation'?<><label><span>Πραγματικό υπόλοιπο</span><MoneyInput data-autofocus="true" value={actualBalance} onValueChange={value=>{setActualBalance(value);mark()}}/></label><div className="reconcile-preview"><span>Αναμενόμενο τώρα</span><b>{money.format(reconciliationBase(accountId))}</b><span>Διαφορά</span><strong>{actualBalance.trim()&&Number.isFinite(Number(actualBalance))?money.format(Number(actualBalance)-reconciliationBase(accountId)):'—'}</strong></div></>:null}
           <label className="wide"><span>Σχόλιο <em>προαιρετικό</em></span><input value={note} onChange={e=>{setNote(e.target.value);mark()}} placeholder="Σύντομη περιγραφή μόνο αν χρειάζεται"/></label>
         </div>
         {kind==='split'?<div className="split-box"><div className="split-head"><b>Επιμέρους ποσά</b><span aria-live="polite">Σύνολο: {money.format(splitStatus?.total??0)}</span></div>{parts.map((p,i)=>{const subs=subcategoriesFor(data.state.settings,'expense',p.category);return <div className="split-line split-line-taxonomy" key={p.id} role="group" aria-label={`Μέρος ${i+1}`}><input aria-label={`Περιγραφή μέρους ${i+1}`} placeholder="Περιγραφή" value={p.label} onChange={e=>{setParts(ps=>ps.map((x,j)=>j===i?{...x,label:e.target.value}:x));mark()}}/><AppSelectInput aria-label={`Κατηγορία μέρους ${i+1}`} value={p.category} onChange={e=>{setParts(ps=>ps.map((x,j)=>j===i?{...x,category:e.target.value,subcategory:undefined}:x));mark()}}>{genericCategoryTree(data.state.settings,'expense').map(c=><option key={c.name}>{c.name}</option>)}</AppSelectInput>{subs.length?<AppSelectInput aria-label={`Υποκατηγορία μέρους ${i+1}`} value={p.subcategory||''} onChange={e=>{setParts(ps=>ps.map((x,j)=>j===i?{...x,subcategory:e.target.value||undefined}:x));mark()}}><option value="">—</option>{subs.map(value=><option key={value}>{value}</option>)}</AppSelectInput>:null}<input data-autofocus={i===0?true:undefined} aria-label={`Ποσό μέρους ${i+1}`} inputMode="decimal" placeholder="0,00" value={p.amount||''} onChange={e=>{const parsed=Number(e.target.value.replace(',','.'));setParts(ps=>ps.map((x,j)=>j===i?{...x,amount:Number.isFinite(parsed)?parsed:0}:x));mark()}}/><button type="button" aria-label={`Αφαίρεση μέρους ${i+1}`} disabled={parts.length<=2} onClick={()=>{setParts(ps=>ps.filter((_,j)=>j!==i));mark()}}><X size={15}/></button></div>})}<button type="button" className="text-button" onClick={()=>{setParts(ps=>[...ps,{id:`p${Date.now()}`,label:'',category:genericCategoryTree(data.state.settings,'expense')[0]?.name||'Άλλο',amount:0}]);mark()}}>+ Προσθήκη μέρους</button></div>:null}
@@ -172,5 +177,7 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
       </div>
       <footer><button type="button" className="secondary" onClick={requestClose}>Ακύρωση</button><button type="button" className="save-button" onClick={submit}><Check size={17}/> {initial?'Εφαρμογή αλλαγών':'Καταχώριση'}</button></footer>
     </motion.section>
-  </motion.div>:null}</AnimatePresence>;
+  </motion.div>:null}</AnimatePresence>
+  <ConfirmDialog open={discardOpen} title="Απόρριψη μη αποθηκευμένων αλλαγών;" description="Έχεις αλλαγές που δεν έχουν αποθηκευτεί. Αν κλείσεις τώρα την καταχώριση, αυτές οι αλλαγές θα χαθούν." confirmLabel="Απόρριψη" tone="destructive" motionMode={motionMode} onConfirm={confirmDiscard} onCancel={()=>setDiscardOpen(false)}/>
+  </>;
 }
