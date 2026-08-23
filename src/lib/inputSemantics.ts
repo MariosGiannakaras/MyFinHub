@@ -14,10 +14,14 @@ export function entryDefaults(kind: EventKind, settings: FinanceSettings, fallba
 }
 
 export function entryDraftError(kind: EventKind, draft: { amount: string; person: string; actualBalance: string; parts: SplitPart[] }) {
+  if (kind === 'split') {
+    if (draft.parts.length < 2) return 'Ο διαχωρισμός χρειάζεται τουλάχιστον δύο μέρη.';
+    if (draft.parts.some((part) => !Number.isFinite(Number(part.amount)) || Number(part.amount) <= 0)) return 'Κάθε επιμέρους ποσό πρέπει να είναι θετικό.';
+    return null;
+  }
   const amount = Number(draft.amount);
   if (kind !== 'reconciliation' && (!Number.isFinite(amount) || amount <= 0)) return 'Συμπλήρωσε θετικό ποσό.';
   if ((kind === 'lending' || kind === 'repayment') && !draft.person.trim()) return 'Συμπλήρωσε το πρόσωπο για τα δανεικά.';
-  if (kind === 'split' && (!draft.parts.length || draft.parts.some((part) => !Number.isFinite(part.amount) || part.amount <= 0))) return 'Κάθε επιμέρους ποσό πρέπει να είναι θετικό.';
   if (kind === 'reconciliation' && (!draft.actualBalance.trim() || !Number.isFinite(Number(draft.actualBalance)))) return 'Συμπλήρωσε έγκυρο πραγματικό υπόλοιπο.';
   return null;
 }
