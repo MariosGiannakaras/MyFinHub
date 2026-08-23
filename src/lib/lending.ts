@@ -37,11 +37,8 @@ export function lendingRows(data: FinanceData): LendingRow[] {
   }
   for (const event of asArray<Record<string,unknown>>(data.state.events)) {
     const person=cleanString(event.person);
-    const date=cleanDate(event.date);
-    const kind=cleanString(event.kind);
-    const amount=finiteNumber(event.amount);
     const receivableDelta=finiteNumber(event.receivableDelta);
-    if (!person || !date || amount<=0 || (kind!=='lending'&&kind!=='repayment') || receivableDelta===0) continue;
+    if (!person || receivableDelta===0) continue;
     const row = people.get(person) ?? { person, outstanding: 0, events: 0 };
     row.outstanding += receivableDelta;
     row.events += 1;
