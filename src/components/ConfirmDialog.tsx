@@ -1,6 +1,8 @@
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { X } from 'lucide-react';
+import { useId } from 'react';
 import { useModalFocus } from '../hooks/useModalFocus';
+import '../styles/confirm-dialog.css';
 
 export type ConfirmDialogTone='default'|'destructive';
 
@@ -11,6 +13,8 @@ export function ConfirmDialog({
 }){
   const systemReduced=useReducedMotion();
   const reduce=Boolean(systemReduced)||motionMode==='reduced';
+  const titleId=useId();
+  const descriptionId=useId();
   const modalRef=useModalFocus<HTMLElement>(open,'[data-autofocus="true"]',()=>{if(!busy)onCancel()});
   const cancel=()=>{if(!busy)onCancel()};
   const confirm=()=>{if(!busy)onConfirm()};
@@ -20,8 +24,8 @@ export function ConfirmDialog({
       className="quick-modal app-confirm-dialog neo-raised"
       role="alertdialog"
       aria-modal="true"
-      aria-labelledby="app-confirm-title"
-      aria-describedby="app-confirm-description"
+      aria-labelledby={titleId}
+      aria-describedby={descriptionId}
       aria-busy={busy||undefined}
       data-tone={tone}
       tabIndex={-1}
@@ -31,7 +35,7 @@ export function ConfirmDialog({
       transition={{duration:reduce?0:.18}}
       onMouseDown={event=>event.stopPropagation()}
     >
-      <header><div><small>{tone==='destructive'?'ΕΠΙΒΕΒΑΙΩΣΗ ΕΝΕΡΓΕΙΑΣ':'ΕΠΙΒΕΒΑΙΩΣΗ'}</small><h2 id="app-confirm-title">{title}</h2><p id="app-confirm-description">{description}</p></div><button type="button" className="icon-button" aria-label="Κλείσιμο επιβεβαίωσης" disabled={busy} onClick={cancel}><X/></button></header>
+      <header><div><small>{tone==='destructive'?'ΕΠΙΒΕΒΑΙΩΣΗ ΕΝΕΡΓΕΙΑΣ':'ΕΠΙΒΕΒΑΙΩΣΗ'}</small><h2 id={titleId}>{title}</h2><p id={descriptionId}>{description}</p></div><button type="button" className="icon-button" aria-label="Κλείσιμο επιβεβαίωσης" disabled={busy} onClick={cancel}><X aria-hidden="true"/></button></header>
       <footer>
         <button type="button" className="secondary" data-autofocus="true" disabled={busy} onClick={cancel}>{cancelLabel}</button>
         <button type="button" className={`save-button ${tone==='destructive'?'destructive-action':''}`.trim()} data-action-tone={tone} disabled={busy} onClick={confirm}>{confirmLabel}</button>
