@@ -13,7 +13,7 @@ export function LongTermLoanSummary({data,onPayLoan,onOpenLoans}:{data:FinanceDa
       {obligations.map(({loan,remainingInstallments,nextAmount,typicalDay,lastPayment})=><article className="long-term-loan-obligation" role="listitem" aria-label={`Δανειακή υποχρέωση ${loan.name}`} data-linked-loan={loan.id} key={loan.id}>
         <div className="long-term-loan-copy"><b>{loan.name}</b><small>Δάνειο · {remainingInstallments} {remainingInstallments===1?'δόση απομένει':'δόσεις απομένουν'} · {typicalDay?`συνήθης ημέρα ${typicalDay}`:'χωρίς ακόμη συνήθη ημέρα'}{lastPayment?` · τελευταία ${shortDate(lastPayment.date)}`:''}</small></div>
         <strong><AnimatedAmount value={nextAmount}/></strong>
-        <button type="button" className="pay-action linked-loan-pay" aria-label={`Πληρωμή δανειακής υποχρέωσης ${loan.name}`} onClick={()=>onPayLoan(loan.id)}><ReceiptText size={16}/><span>Πληρωμή</span></button>
+        <button type="button" className="pay-action save-button linked-loan-pay" aria-label={`Πληρωμή δανειακής υποχρέωσης ${loan.name}`} onClick={()=>onPayLoan(loan.id)}><ReceiptText size={16}/><span>Πληρωμή</span></button>
       </article>)}
     </div>
     <button type="button" className="text-button" data-open-loans="true" onClick={onOpenLoans}>Άνοιγμα Δόσεων & Δανείων για πλήρη προβολή</button>
