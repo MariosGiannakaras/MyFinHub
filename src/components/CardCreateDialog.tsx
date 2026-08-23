@@ -26,7 +26,12 @@ export function CardCreateDialog({
   const ref=useModalFocus<HTMLElement>(open,'[data-autofocus="true"]',onClose);
   const bank=banks.find(item=>item.id===bankId)??banks[0];
   const designs=useMemo(()=>designsForBank(bank?.id||'custom'),[bank?.id]);
-  const displayedDesigns=designs.filter(item=>selectableKinds.includes(item.kind));
+  const resolvedKind=kindLock||kind;
+  const displayedDesigns=resolvedKind==='credit'
+    ? designs.filter(item=>item.kind==='credit')
+    : resolvedKind==='prepaid'
+      ? designs.filter(item=>item.kind!=='credit')
+      : designs.filter(item=>item.kind==='debit');
   const selected=displayedDesigns.find(item=>item.id===designId);
 
   useEffect(()=>{
@@ -37,12 +42,11 @@ export function CardCreateDialog({
   },[open,initialBankId,kindLock,banks,allowedKindsKey]);
 
   if(!open||!bank)return null;
-  const resolvedKind=kindLock||kind;
   const preview:PaymentCard={id:'preview',bankId:bank.id,nickname:nickname.trim()||'Όνομα κάρτας',kind:resolvedKind,network,formFactor:selected?.formFactor,designId:selected?.id,active:true,createdAt:'',updatedAt:''};
 
   const pickDesign=(id:string)=>{
     const item=displayedDesigns.find(option=>option.id===id);if(!item)return;
-    setDesignId(item.id);if(!kindLock)setKind(item.kind);setNetwork(item.network);setError('');
+    setDesignId(item.id);setNetwork(item.network);setError('');
   };
   const changeBank=(next:string)=>{setBankId(next);setDesignId('');setError('')};
   const submit=()=>{
