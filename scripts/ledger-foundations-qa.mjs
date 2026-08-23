@@ -29,7 +29,7 @@ try{
   await navigate('Dashboard','Οι λογαριασμοί μου');
   await clickText('button.primary-action','Γρήγορη προσθήκη');
   await waitFor("function(){return !!document.querySelector('.quick-modal')}",'Quick Add');
-  await clickText('.generic-kind-grid button','Μετέφερα');
+  await clickText('.generic-kind-grid button','Μεταφορά');
   await setLabelInput('Ποσό','42.50');
   const transferSelects=await c.call("function(){return [...document.querySelectorAll('.quick-modal [role=combobox]')].map(input=>input.value)}");
   assert(transferSelects.length>=2,'transfer exposes source and destination selectors');
