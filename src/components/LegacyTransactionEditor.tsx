@@ -95,7 +95,7 @@ export function LegacyTransactionEditor({ data, transaction, onSave, onClose }: 
         <label><span>Υποκατηγορία</span><AppSelectInput aria-label="Υποκατηγορία ιστορικής κίνησης" value={subcategory} onChange={(event) => setSubcategory(event.target.value)} disabled={!category}><option value="">Κληρονομεί / καμία</option>{subcategories.map((value) => <option key={value} value={value}>{value}</option>)}</AppSelectInput></label>
         <label className="full"><span>Περιγραφή / σχόλιο</span><textarea aria-label="Περιγραφή ιστορικής κίνησης" value={note} onChange={(event) => setNote(event.target.value)} rows={4}/></label>
       </div>
-      <FormError id="legacy-transaction-edit-error" message={error}/>
+      {error ? <FormError id="legacy-transaction-edit-error">{error}</FormError> : null}
       <footer className="editor-actions"><button type="button" className="secondary" onClick={onClose}>Ακύρωση</button><button type="button" className="save-button" onClick={submit}>Αποθήκευση override</button></footer>
     </section>
   </div>;
