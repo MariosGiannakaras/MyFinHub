@@ -1,4 +1,4 @@
-import type { CategoryDefinition, FinanceData, FinanceSettings, RecurringItem } from '../types.js';
+import type { CategoryDefinition, FinanceData, FinanceSettings } from '../types.js';
 import { categoryKey, categoryTree } from './categories.js';
 import {
   categoryIdentityLabelAvailable,
@@ -106,7 +106,7 @@ function reconcilePendingScheduled(data:FinanceData,fromCategory:string,toCatego
   return (data.state.scheduled??[]).map(item=>{
     if(item.status!=='pending'||!same(item.category,fromCategory))return item;
     if(fromSubcategory!==undefined&&!same(item.subcategory,fromSubcategory))return item;
-    return {...item,category:toCategory,...(fromSubcategory!==undefined?{subcategory:toSubcategory}:null)};
+    return {...item,category:toCategory,...(fromSubcategory!==undefined?{subcategory:toSubcategory}:{})};
   });
 }
 
@@ -114,7 +114,7 @@ function reconcileRules(data:FinanceData,fromCategory:string,toCategory:string,f
   return (data.state.transactionRules??[]).map(rule=>{
     if(!same(rule.action.category,fromCategory))return rule;
     if(fromSubcategory!==undefined&&!same(rule.action.subcategory,fromSubcategory))return rule;
-    return {...rule,action:{...rule.action,category:toCategory,...(fromSubcategory!==undefined?{subcategory:toSubcategory}:null)}};
+    return {...rule,action:{...rule.action,category:toCategory,...(fromSubcategory!==undefined?{subcategory:toSubcategory}:{})}};
   });
 }
 
