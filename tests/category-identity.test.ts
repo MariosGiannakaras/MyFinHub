@@ -58,10 +58,11 @@ describe('stable category identities',()=>{
     expect(resolveSubcategoryIdentity(second,'expense','Φαγητό','Supermarket')?.id).toBe(market?.id);
   });
 
-  it('renames a category as a label change while preserving identity and old-label resolution',()=>{
+  it('renames a category as a label change while preserving identity and reserving its historical alias',()=>{
     const initial=ensureCategoryIdentities(settings());
     const food=resolveCategoryIdentity(initial,'expense','Φαγητό');
-    if(!food)throw new Error('missing category identity');
+    const transport=resolveCategoryIdentity(initial,'expense','Μετακινήσεις');
+    if(!food||!transport)throw new Error('missing category identity');
     const renamed=renameCategoryIdentity(initial,'expense',food.id,'Τρόφιμα & φαγητό');
 
     expect(resolveCategoryIdentity(renamed,'expense','Τρόφιμα & φαγητό')?.id).toBe(food.id);
@@ -69,14 +70,16 @@ describe('stable category identities',()=>{
     expect(renamed.expenseCategoryTree?.[0].name).toBe('Τρόφιμα & φαγητό');
     expect(renamed.categoryIcons?.[categoryIconPreferenceKey('expense','Τρόφιμα & φαγητό')]).toBe('utensils');
     expect(renamed.categoryIcons?.[categoryIconPreferenceKey('expense','Φαγητό')]).toBeUndefined();
+    expect(()=>renameCategoryIdentity(renamed,'expense',transport.id,'Φαγητό')).toThrow(/παλιό όνομα/);
   });
 
   it('renames and moves a subcategory without changing its identity or breaking historical paths',()=>{
     const initial=ensureCategoryIdentities(settings());
     const market=resolveSubcategoryIdentity(initial,'expense','Φαγητό','Supermarket');
+    const restaurant=resolveSubcategoryIdentity(initial,'expense','Φαγητό','Εστιατόριο');
     const food=resolveCategoryIdentity(initial,'expense','Φαγητό');
     const transport=resolveCategoryIdentity(initial,'expense','Μετακινήσεις');
-    if(!market||!food||!transport)throw new Error('missing taxonomy identity');
+    if(!market||!restaurant||!food||!transport)throw new Error('missing taxonomy identity');
 
     const renamed=renameSubcategoryIdentity(initial,'expense',market.id,'Σούπερ μάρκετ');
     expect(resolveSubcategoryIdentity(renamed,'expense','Φαγητό','Supermarket')?.id).toBe(market.id);
@@ -89,6 +92,7 @@ describe('stable category identities',()=>{
     expect(moved.categoryIdentities?.[market.id].parentId).toBe(transport.id);
     expect(moved.categoryIdentities?.[market.id].parentAliases).toContain(food.id);
     expect(moved.subcategoryIcons?.[subcategoryIconPreferenceKey('expense','Μετακινήσεις','Σούπερ μάρκετ')]).toBe('shopping-cart');
+    expect(()=>renameSubcategoryIdentity(moved,'expense',restaurant.id,'Supermarket')).toThrow(/παλιό όνομα/);
   });
 
   it('adds identity metadata during product migration without rewriting historical category strings',()=>{
