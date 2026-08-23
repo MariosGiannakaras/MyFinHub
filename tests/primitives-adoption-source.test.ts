@@ -62,9 +62,10 @@ describe('shared primitive adoption',()=>{
     expect(quickAdd).toContain('<MoneyInput data-autofocus="true" value={actualBalance}');
   });
 
-  it('keeps conflict recovery behind app-owned confirmation and the existing reload path',()=>{
+  it('keeps conflict recovery behind an on-demand app-owned confirmation and the existing reload path',()=>{
     expectNoNativeDialog(app);
-    expect(app).toContain('<ConfirmDialog open={recoverOpen}');
+    expect(app).toContain("const ConfirmDialog = lazy(() => import('./components/ConfirmDialog')");
+    expect(app).toContain('{recoverOpen ? <Suspense fallback={null}><ConfirmDialog open');
     expect(app).toContain("finance.saveState === 'error' || finance.saveState === 'conflict'");
     expect(app).toContain('const confirmRecover=()=>{setRecoverOpen(false);void finance.reload()}');
   });
