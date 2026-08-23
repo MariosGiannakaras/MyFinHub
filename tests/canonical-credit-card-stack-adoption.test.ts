@@ -27,7 +27,7 @@ describe('canonical credit-card stack adoption',()=>{
     expect(stack).toContain("orderRef=useRef<string[]>(cards.map(card=>card.id))");
     expect(stack).toContain("event.key==='ArrowUp'");
     expect(stack).toContain("event.key==='ArrowDown'");
-    expect(stack).toContain("event.key==='End'");
+    expect(stack).toContain("case 'End':next=1");
     expect(stack).toContain("window.matchMedia('(prefers-reduced-motion: reduce)').matches");
     expect(stack).toContain('revealCardSecret(card.id)');
     expect(stack).toContain('readLocalCvv(card.id)');
