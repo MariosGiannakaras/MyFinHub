@@ -1,5 +1,5 @@
 import { Banknote, Landmark } from 'lucide-react';
-import { bankBrandAsset, bankBrandKey } from '../lib/bankBrands';
+import { bankBrandAsset, bankBrandFallbackMark, bankBrandKey } from '../lib/bankBrands';
 
 export function BankBrandMark({id,name,compact=true}:{id?:string;name?:string;compact?:boolean}){
   const key=bankBrandKey(id,name);
@@ -9,6 +9,8 @@ export function BankBrandMark({id,name,compact=true}:{id?:string;name?:string;co
   if(key==='generic'||!asset)return <span className={`bank-brand-mark bankmark-${key==='generic'?'generic':key} bank-logo-fallback`} aria-hidden="true"><Landmark/></span>;
 
   return <span className={`bank-brand-mark bankmark-${key} ${compact?'compact':'wordmark'}`} aria-hidden="true" data-bank-brand={key} data-bank-logo-source={asset.source}>
-    <span className="bank-logo-text">{asset.mark}</span>
+    {asset.source==='local-image'
+      ?<img className="bank-logo-image" src={asset.src} alt="" draggable={false}/>
+      :<span className="bank-logo-text">{bankBrandFallbackMark(asset)}</span>}
   </span>;
 }
