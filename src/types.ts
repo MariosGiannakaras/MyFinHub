@@ -57,6 +57,12 @@ export interface PaymentCard {
   updatedAt: string;
 }
 
+export interface DeletedCardReference {
+  id: string;
+  kind: 'credit';
+  deletedAt: string;
+}
+
 export interface LegacyTransaction {
   id: string;
   date: string;
@@ -237,6 +243,7 @@ export interface FinanceData {
     settings: FinanceSettings;
     cardBanks?: CardBank[];
     cards?: PaymentCard[];
+    deletedCards?: DeletedCardReference[];
     events?: FinanceEvent[];
     scheduled?: ScheduledTransaction[];
     reviewDecisions?: Record<string, ReviewDecision>;
