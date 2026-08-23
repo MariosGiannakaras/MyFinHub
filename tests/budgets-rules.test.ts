@@ -58,39 +58,55 @@ describe('monthly category budgets',()=>{
   });
 
   it('adds near/exceeded budgets to Needs Attention without leaking euro values in the reason',()=>{
-    const data=clean();
-    data.state.events=[createEvent({kind:'expense',date:'2026-08-05',amount:90,note:'Food',category:'Τρόφιμα',accountId:'piraeus-payroll'})];
-    data.state.budgets=[budget('food','category',100,'Τρόφιμα')];
-    const item=allAttentionItems(data,'2026-08-17').find(entry=>entry.id==='budget:food');
-    expect(item?.reason).toContain('90%');
-    expect(item?.reason).not.toContain('€');
+    const data=clean();data.state.events=[createEvent({kind:'expense',date:'2026-08-05',amount:120,note:'Food',category:'Τρόφιμα',accountId:'piraeus-payroll'})];data.state.budgets=[budget('food','category',100,'Τρόφιμα')];
+    const alert=allAttentionItems(data,'2026-08-17').find(item=>item.id==='budget-alert:food');
+    expect(alert).toMatchObject({kind:'budget',severity:'danger',action:'open_budgets',amount:120,budgetId:'food'});
+    expect(alert?.reason).not.toMatch(/€|100\.00|120\.00/);
   });
 });
 
-describe('transaction rules',()=>{
-  it('matches case-insensitively, respects priority and records the applied category',()=>{
-    const data=clean();
-    data.state.transactionRules=[rule('later',20,'market','Σπίτι'),rule('first',10,'market','Τρόφιμα')];
-    const event=createEvent({kind:'expense',date:'2026-08-05',amount:30,note:'MY MARKET',category:'Άλλο',accountId:'piraeus-payroll'});
-    const preview=previewTransactionRules(data,event,'manual');
-    expect(preview[0]?.rule.id).toBe('first');
-    expect(applyTransactionRules(data,event,'manual').category).toBe('Τρόφιμα');
+describe('deterministic transaction rules',()=>{
+  it('uses priority then stable id and applies only the first matching rule',()=>{
+    const data=clean();data.state.transactionRules=[rule('later',20,'market','Άλλο'),rule('winner',10,'market','Τρόφιμα'),rule('winner-b',10,'market','Μετακινήσεις')];
+    const event=createEvent({kind:'expense',date:'2026-08-05',amount:20,note:'Corner Market',category:data.state.settings.expenseCategories[0],accountId:'piraeus-payroll'});
+    const preview=previewTransactionRules(data,event);
+    expect(preview.matches.map(item=>item.id)).toEqual(['winner','winner-b','later']);
+    expect(applyTransactionRules(data,event).category).toBe('Τρόφιμα');
   });
 
-  it('filters rule preview and counts to the requested scope',()=>{
-    const data=clean();
-    data.state.transactionRules=[rule('manual',1,'rent','Σπίτι'),{...rule('import',2,'rent','Άλλο'),scopes:['imported']}];
-    data.state.events=[createEvent({kind:'expense',date:'2026-08-01',amount:10,note:'Rent',category:'Άλλο',accountId:'piraeus-payroll'})];
-    expect(transactionRuleMatchingEvents(data,data.state.transactionRules[0],'manual')).toHaveLength(1);
-    expect(transactionRuleMatchCount(data,data.state.transactionRules[1],'manual')).toBe(0);
+  it('preserves a non-default user category and never rewrites existing history',()=>{
+    const data=clean();data.state.transactionRules=[rule('food',1,'market','Τρόφιμα')];
+    const event=createEvent({kind:'expense',date:'2026-08-05',amount:20,note:'Corner Market',category:'Υγεία',accountId:'piraeus-payroll'});data.state.events=[event];
+    const before=structuredClone(data.state.events);
+    expect(applyTransactionRules(data,event).category).toBe('Υγεία');
+    expect(data.state.events).toEqual(before);
+    expect(transactionRuleMatchCount(data,data.state.transactionRules[0])).toBe(1);
   });
 
-  it('preserves rules and budgets through the product migration wrapper',()=>{
-    const data=clean();
-    data.state.budgets=[budget('food','category',100,'Τρόφιμα')];
-    data.state.transactionRules=[rule('rule',1,'market','Τρόφιμα')];
-    const migrated=migrateProductData(data);
-    expect(migrated.state.budgets).toEqual(data.state.budgets);
-    expect(migrated.state.transactionRules).toEqual(data.state.transactionRules);
+  it('honors explicit manual/imported/review scope in both apply and preview',()=>{
+    const data=clean();const imported=rule('imported',1,'market','Τρόφιμα');imported.scopes=['imported'];data.state.transactionRules=[imported];
+    const manual=createEvent({kind:'expense',date:'2026-08-05',amount:20,note:'Market',category:data.state.settings.expenseCategories[0],accountId:'piraeus-payroll'});
+    const migration={...manual,id:'migration',source:'migration' as const};data.state.events=[manual,migration];
+    expect(previewTransactionRules(data,manual).winner).toBeNull();
+    expect(previewTransactionRules(data,migration).winner?.id).toBe('imported');
+    expect(transactionRuleMatchingEvents(data,imported).map(event=>event.id)).toEqual(['migration']);
+  });
+
+  it('supports default category/subcategory metadata without replacing explicit user metadata',()=>{
+    const data=clean();const metadata=rule('meta',1,'market','Τρόφιμα');metadata.action.subcategory='Supermarket';metadata.action.note='Default note';data.state.transactionRules=[metadata];
+    const defaultEvent=createEvent({kind:'expense',date:'2026-08-05',amount:20,note:'Market',category:data.state.settings.expenseCategories[0],accountId:'piraeus-payroll'});
+    const applied=applyTransactionRules(data,defaultEvent);
+    expect(applied.category).toBe('Τρόφιμα');expect(applied.subcategory).toBe('Supermarket');expect(applied.note).toBe('Market');
+    const explicit={...defaultEvent,category:'Υγεία',subcategory:'Φαρμακείο'};
+    expect(applyTransactionRules(data,explicit)).toMatchObject({category:'Υγεία',subcategory:'Φαρμακείο'});
+  });
+
+  it('preserves budgets and rules through migration and defaults legacy state safely',()=>{
+    const data=clean();data.state.budgets=[budget('food','category',100,'Τρόφιμα')];data.state.transactionRules=[rule('food',1,'market','Τρόφιμα')];
+    expect(migrateProductData(data).state.budgets).toEqual(data.state.budgets);
+    expect(migrateProductData(data).state.transactionRules).toEqual(data.state.transactionRules);
+    const legacy=clean();delete legacy.state.budgets;delete legacy.state.transactionRules;
+    expect(migrateProductData(legacy).state.budgets).toEqual([]);
+    expect(migrateProductData(legacy).state.transactionRules).toEqual([]);
   });
 });
