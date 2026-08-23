@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createEvent } from '../src/lib/domain.js';
-import { loanInstallmentPaymentPlan, loanPaidAmount, loanPaidCount, preserveLoanPaymentLink, setLoanPaymentInstallmentCount } from '../src/lib/loans.js';
-import type { FinanceData, Loan } from '../src/types.js';
+import { loanInstallmentPaymentPlan, loanPaidAmount, loanPaidCount, loanPaymentInstallmentCount, preserveLoanPaymentLink, setLoanPaymentInstallmentCount } from '../src/lib/loans.js';
+import type { FinanceData, FinanceEvent, Loan } from '../src/types.js';
 
 const loan: Loan = {
   id: 'loan-1',
@@ -48,6 +48,17 @@ describe('loan payment linkage', () => {
     expect(edited.loanId).toBe(loan.id);
     expect(data.state.events).toHaveLength(1);
     expect(loanPaidCount(data, loan)).toBe(5);
+  });
+
+  it('persists explicit installment coverage and keeps legacy events backward compatible',()=>{
+    const payment=createEvent({kind:'expense',date:'2026-08-17',amount:50,note:'2 installments',accountId:'cash'});
+    setLoanPaymentInstallmentCount(payment,2);
+    const restored=JSON.parse(JSON.stringify(payment)) as FinanceEvent;
+    expect(restored.installmentCount).toBe(2);
+    expect(loanPaymentInstallmentCount(restored)).toBe(2);
+    const legacy={...restored};
+    delete legacy.installmentCount;
+    expect(loanPaymentInstallmentCount(legacy)).toBe(1);
   });
 
   it('caps derived progress at the configured installment count', () => {
