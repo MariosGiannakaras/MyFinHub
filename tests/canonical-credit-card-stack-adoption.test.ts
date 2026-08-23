@@ -6,6 +6,7 @@ const cards=readFileSync(new URL('../src/pages/CardsPage.tsx',import.meta.url),'
 const createDialog=readFileSync(new URL('../src/components/CardCreateDialog.tsx',import.meta.url),'utf8');
 const stack=readFileSync(new URL('../src/components/CanonicalCreditCardStack.tsx',import.meta.url),'utf8');
 const hostCss=readFileSync(new URL('../src/styles/canonical-credit-card-host.css',import.meta.url),'utf8');
+const cardDomain=readFileSync(new URL('../src/lib/cards.ts',import.meta.url),'utf8');
 
 describe('canonical credit-card stack adoption',()=>{
   it('uses the canonical stack as the active credit-card selector',()=>{
@@ -22,10 +23,13 @@ describe('canonical credit-card stack adoption',()=>{
     expect(credit).toContain('card-archive-manager');
     expect(credit).toContain('restoreCard(target)');
     expect(credit).toContain('Ολική διαγραφή');
-    expect(credit).toContain('const canDelete=archivedDebt<=.005');
+    expect(credit).toContain('const canDelete=canPermanentlyDeleteCreditCard(data,archived.id,asOf)');
     expect(credit).toContain('disabled={!canDelete}');
     expect(credit).toContain('κανόνα A');
     expect(credit).toContain('Διαγραμμένη κάρτα');
+    expect(cardDomain).toContain('export function canPermanentlyDeleteCreditCard');
+    expect(cardDomain).toContain("if(card.active!==false)return false");
+    expect(cardDomain).toContain('return creditDebtForCard(data,cardId,asOf)<=.005');
   });
 
   it('keeps debit/prepaid cards out of the credit finance domain',()=>{
