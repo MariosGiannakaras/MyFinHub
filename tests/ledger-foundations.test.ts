@@ -87,7 +87,7 @@ describe('ledger foundations', () => {
   it('requires at least two positive split parts and a current account', () => {
     const data=minimal();
     expect(splitDraftError(data,{accountId:'bank',parts:[{id:'a',label:'A',category:'Άλλο',amount:10}]})).toMatch(/τουλάχιστον δύο/);
-    expect(splitDraftError(data,{accountId:'bank',parts:[{...splitParts()[0],amount:0},splitParts()[1]]})).toMatch(/θετικό/);
+    expect(splitDraftError(data,{accountId:'bank',parts:[splitParts()[0],{...splitParts()[1],amount:0}]})).toMatch(/μέρος 2.*θετικό/);
     expect(splitDraftError(data,{accountId:'missing',parts:splitParts()})).toMatch(/υπαρκτό λογαριασμό πληρωμής/);
   });
 });
