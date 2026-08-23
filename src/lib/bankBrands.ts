@@ -1,6 +1,8 @@
 export type BankBrandKey='piraeus'|'revolut'|'alpha'|'payzy'|'viva'|'cash'|'generic';
 
-export type BankBrandAsset={label:string;mark:string;source:'local-text'};
+export type BankBrandTextAsset={label:string;mark:string;source:'local-text'};
+export type BankBrandImageAsset={label:string;src:`/${string}`;fallbackMark:string;source:'local-image'};
+export type BankBrandAsset=BankBrandTextAsset|BankBrandImageAsset;
 
 const BRAND_ASSETS:Partial<Record<BankBrandKey,BankBrandAsset>>={
   piraeus:{label:'Τράπεζα Πειραιώς',mark:'ΠΕΙΡΑΙΩΣ',source:'local-text'},
@@ -24,3 +26,5 @@ export function bankBrandKey(value?:string,name?:string):BankBrandKey{
 }
 
 export function bankBrandAsset(key:BankBrandKey){return BRAND_ASSETS[key]??null}
+
+export function bankBrandFallbackMark(asset:BankBrandAsset){return asset.source==='local-image'?asset.fallbackMark:asset.mark}
