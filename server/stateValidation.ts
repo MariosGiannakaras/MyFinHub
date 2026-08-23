@@ -1,6 +1,7 @@
 import type { FinanceData } from '../src/types.js';
 import { ApiError } from './http.js';
 import { validateCardStateExtensions } from './cardStateValidation.js';
+import { validateCategoryIdentityState } from './categoryIdentityValidation.js';
 import { validateFinanceData } from './validation.js';
 
 const EMPTY_SEED: FinanceData['seed'] = {
@@ -30,6 +31,7 @@ export function validateFinanceState(value: unknown): asserts value is FinanceDa
     state: value,
   });
   validateCardStateExtensions(value as FinanceData['state']);
+  validateCategoryIdentityState(value);
 }
 
 export function parseMutableWrite(value: unknown): { state: FinanceData['state']; updatedAt: string } {
