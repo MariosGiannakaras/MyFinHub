@@ -79,18 +79,21 @@ export function CategoryIconsWorkspace({settings,onChange,onTaxonomyOperation}:{
         const parentKey=explicitCategoryIcon(normalized,kind,category.name);
         const resolvedParent=resolvedCategoryIcon(normalized,kind,category.name)||'other';
         const otherCategories=tree.map(item=>({id:taxonomyCategoryId(normalized,kind,item.name),name:item.name})).filter((item):item is {id:string;name:string}=>Boolean(item.id&&item.id!==categoryId));
+        const categoryUpLabel=`Μετακίνηση ${category.name} προς τα πάνω`;
+        const categoryDownLabel=`Μετακίνηση ${category.name} προς τα κάτω`;
+        const categoryRenameLabel=`Μετονομασία ${category.name}`;
         return <article className="category-taxonomy-card" key={categoryId} data-category-id={categoryId}>
           <div className="category-taxonomy-head">
             <span className="category-taxonomy-glyph"><CategoryIconGlyph iconKey={resolvedParent} size={20}/></span>
             <div className="category-taxonomy-title"><b>{category.name}</b><small>{category.subcategories.length} {category.subcategories.length===1?'υποκατηγορία':'υποκατηγορίες'} · {parentKey?'προσαρμοσμένο εικονίδιο':'χωρίς ρητή επιλογή'}</small></div>
             <div className="taxonomy-row-actions" aria-label={`Ενέργειες κατηγορίας ${category.name}`}>
-              <button type="button" disabled={categoryIndex===0} aria-label={`Μετακίνηση ${category.name} προς τα πάνω`} onClick={()=>perform({type:'reorder-category',kind,identityId:categoryId,direction:'up'})}><ArrowUp size={15} aria-hidden="true"/></button>
-              <button type="button" disabled={categoryIndex===tree.length-1} aria-label={`Μετακίνηση ${category.name} προς τα κάτω`} onClick={()=>perform({type:'reorder-category',kind,identityId:categoryId,direction:'down'})}><ArrowDown size={15} aria-hidden="true"/></button>
-              <button type="button" aria-label={`Μετονομασία ${category.name}`} onClick={()=>setEditing({type:'category',id:categoryId,value:category.name})}><Pencil size={15} aria-hidden="true"/></button>
+              <button type="button" disabled={categoryIndex===0} aria-label={categoryUpLabel} title={categoryUpLabel} onClick={()=>perform({type:'reorder-category',kind,identityId:categoryId,direction:'up'})}><ArrowUp size={15} aria-hidden="true"/></button>
+              <button type="button" disabled={categoryIndex===tree.length-1} aria-label={categoryDownLabel} title={categoryDownLabel} onClick={()=>perform({type:'reorder-category',kind,identityId:categoryId,direction:'down'})}><ArrowDown size={15} aria-hidden="true"/></button>
+              <button type="button" aria-label={categoryRenameLabel} title={categoryRenameLabel} onClick={()=>setEditing({type:'category',id:categoryId,value:category.name})}><Pencil size={15} aria-hidden="true"/></button>
             </div>
           </div>
 
-          {editing?.type==='category'&&editing.id===categoryId?<div className="taxonomy-inline-editor" role="group" aria-label={`Μετονομασία κατηγορίας ${category.name}`}><input autoFocus value={editing.value} onChange={event=>setEditing({...editing,value:event.target.value})} onKeyDown={event=>{if(event.key==='Enter'){event.preventDefault();saveEdit()}if(event.key==='Escape')setEditing(null)}}/><button type="button" className="save-button" onClick={saveEdit}>Αποθήκευση</button><button type="button" className="secondary" aria-label="Ακύρωση μετονομασίας" onClick={()=>setEditing(null)}><X size={15} aria-hidden="true"/></button></div>:null}
+          {editing?.type==='category'&&editing.id===categoryId?<div className="taxonomy-inline-editor" role="group" aria-label={`Μετονομασία κατηγορίας ${category.name}`}><input autoFocus value={editing.value} onChange={event=>setEditing({...editing,value:event.target.value})} onKeyDown={event=>{if(event.key==='Enter'){event.preventDefault();saveEdit()}if(event.key==='Escape')setEditing(null)}}/><button type="button" className="save-button" onClick={saveEdit}>Αποθήκευση</button><button type="button" className="secondary" aria-label="Ακύρωση μετονομασίας" title="Ακύρωση μετονομασίας" onClick={()=>setEditing(null)}><X size={15} aria-hidden="true"/></button></div>:null}
 
           <details className="taxonomy-icon-disclosure">
             <summary>Εικονίδιο κατηγορίας</summary>
@@ -110,18 +113,22 @@ export function CategoryIconsWorkspace({settings,onChange,onTaxonomyOperation}:{
                 if(!subcategoryId)return null;
                 const override=explicitSubcategoryIcon(normalized,kind,category.name,subcategory);
                 const resolved=resolvedCategoryIcon(normalized,kind,category.name,subcategory)||'other';
+                const subcategoryUpLabel=`Μετακίνηση ${subcategory} προς τα πάνω`;
+                const subcategoryDownLabel=`Μετακίνηση ${subcategory} προς τα κάτω`;
+                const subcategoryRenameLabel=`Μετονομασία ${subcategory}`;
+                const subcategoryMoveLabel=`Μεταφορά ${subcategory} σε άλλη κατηγορία`;
                 return <article className="taxonomy-subcategory-row" role="listitem" key={subcategoryId} data-subcategory-id={subcategoryId}>
                   <div className="taxonomy-subcategory-main"><CategoryIconGlyph iconKey={resolved} size={17}/><div><b>{subcategory}</b><small>{override?'Δικό της εικονίδιο':`Κληρονομεί από «${category.name}»`}</small></div></div>
                   <div className="taxonomy-row-actions" aria-label={`Ενέργειες υποκατηγορίας ${subcategory}`}>
-                    <button type="button" disabled={subcategoryIndex===0} aria-label={`Μετακίνηση ${subcategory} προς τα πάνω`} onClick={()=>perform({type:'reorder-subcategory',kind,identityId:subcategoryId,direction:'up'})}><ArrowUp size={14} aria-hidden="true"/></button>
-                    <button type="button" disabled={subcategoryIndex===category.subcategories.length-1} aria-label={`Μετακίνηση ${subcategory} προς τα κάτω`} onClick={()=>perform({type:'reorder-subcategory',kind,identityId:subcategoryId,direction:'down'})}><ArrowDown size={14} aria-hidden="true"/></button>
-                    <button type="button" aria-label={`Μετονομασία ${subcategory}`} onClick={()=>setEditing({type:'subcategory',id:subcategoryId,value:subcategory})}><Pencil size={14} aria-hidden="true"/></button>
-                    {otherCategories.length?<button type="button" aria-label={`Μεταφορά ${subcategory} σε άλλη κατηγορία`} onClick={()=>setMoving({id:subcategoryId,targetCategoryId:otherCategories[0].id})}><MoveRight size={14} aria-hidden="true"/></button>:null}
+                    <button type="button" disabled={subcategoryIndex===0} aria-label={subcategoryUpLabel} title={subcategoryUpLabel} onClick={()=>perform({type:'reorder-subcategory',kind,identityId:subcategoryId,direction:'up'})}><ArrowUp size={14} aria-hidden="true"/></button>
+                    <button type="button" disabled={subcategoryIndex===category.subcategories.length-1} aria-label={subcategoryDownLabel} title={subcategoryDownLabel} onClick={()=>perform({type:'reorder-subcategory',kind,identityId:subcategoryId,direction:'down'})}><ArrowDown size={14} aria-hidden="true"/></button>
+                    <button type="button" aria-label={subcategoryRenameLabel} title={subcategoryRenameLabel} onClick={()=>setEditing({type:'subcategory',id:subcategoryId,value:subcategory})}><Pencil size={14} aria-hidden="true"/></button>
+                    {otherCategories.length?<button type="button" aria-label={subcategoryMoveLabel} title={subcategoryMoveLabel} onClick={()=>setMoving({id:subcategoryId,targetCategoryId:otherCategories[0].id})}><MoveRight size={14} aria-hidden="true"/></button>:null}
                   </div>
 
-                  {editing?.type==='subcategory'&&editing.id===subcategoryId?<div className="taxonomy-inline-editor taxonomy-subcategory-editor" role="group" aria-label={`Μετονομασία υποκατηγορίας ${subcategory}`}><input autoFocus value={editing.value} onChange={event=>setEditing({...editing,value:event.target.value})} onKeyDown={event=>{if(event.key==='Enter'){event.preventDefault();saveEdit()}if(event.key==='Escape')setEditing(null)}}/><button type="button" className="save-button" onClick={saveEdit}>Αποθήκευση</button><button type="button" className="secondary" aria-label="Ακύρωση μετονομασίας" onClick={()=>setEditing(null)}><X size={14} aria-hidden="true"/></button></div>:null}
+                  {editing?.type==='subcategory'&&editing.id===subcategoryId?<div className="taxonomy-inline-editor taxonomy-subcategory-editor" role="group" aria-label={`Μετονομασία υποκατηγορίας ${subcategory}`}><input autoFocus value={editing.value} onChange={event=>setEditing({...editing,value:event.target.value})} onKeyDown={event=>{if(event.key==='Enter'){event.preventDefault();saveEdit()}if(event.key==='Escape')setEditing(null)}}/><button type="button" className="save-button" onClick={saveEdit}>Αποθήκευση</button><button type="button" className="secondary" aria-label="Ακύρωση μετονομασίας" title="Ακύρωση μετονομασίας" onClick={()=>setEditing(null)}><X size={14} aria-hidden="true"/></button></div>:null}
 
-                  {moving?.id===subcategoryId?<div className="taxonomy-move-editor" role="group" aria-label={`Μεταφορά υποκατηγορίας ${subcategory}`}><label><span>Μεταφορά σε</span><AppSelectInput value={moving.targetCategoryId} onChange={event=>setMoving({...moving,targetCategoryId:event.target.value})}>{otherCategories.map(target=><option key={target.id} value={target.id}>{target.name}</option>)}</AppSelectInput></label><button type="button" className="save-button" onClick={saveMove}>Μεταφορά</button><button type="button" className="secondary" aria-label="Ακύρωση μεταφοράς" onClick={()=>setMoving(null)}><X size={14} aria-hidden="true"/></button></div>:null}
+                  {moving?.id===subcategoryId?<div className="taxonomy-move-editor" role="group" aria-label={`Μεταφορά υποκατηγορίας ${subcategory}`}><label><span>Μεταφορά σε</span><AppSelectInput value={moving.targetCategoryId} onChange={event=>setMoving({...moving,targetCategoryId:event.target.value})}>{otherCategories.map(target=><option key={target.id} value={target.id}>{target.name}</option>)}</AppSelectInput></label><button type="button" className="save-button" onClick={saveMove}>Μεταφορά</button><button type="button" className="secondary" aria-label="Ακύρωση μεταφοράς" title="Ακύρωση μεταφοράς" onClick={()=>setMoving(null)}><X size={14} aria-hidden="true"/></button></div>:null}
 
                   <details className="taxonomy-icon-disclosure taxonomy-subcategory-icon"><summary>Εικονίδιο</summary><CategoryIconPicker value={override} inheritedLabel={`Από «${category.name}»`} onChange={iconKey=>onChange(withSubcategoryIconOverride(normalized,kind,category.name,subcategory,iconKey))}/></details>
                 </article>;
