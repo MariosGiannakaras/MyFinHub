@@ -15,12 +15,19 @@ export function validateCardStateExtensions(state:FinanceData['state']){
     }
   }
 
-  const knownCardIds=new Set((state.cards??[]).map(card=>card.id));
+  const cardsById=new Map((state.cards??[]).map(card=>[card.id,card]));
+  const deletedCardIds=new Set((state.deletedCards??[]).map(card=>card.id));
+  for(const deleted of state.deletedCards??[]){
+    if(cardsById.has(deleted.id))invalid();
+  }
+
   for(const event of state.events??[]){
     if(event.cardId!==undefined&&!text(event.cardId,200))invalid();
     if(event.cardId!==undefined&&event.kind!=='card_purchase'&&event.kind!=='card_payment')invalid();
-    // Archived cards intentionally remain in `state.cards`, so linked history
-    // stays valid. A cardId with no metadata record is an orphan and rejected.
-    if(event.cardId!==undefined&&!knownCardIds.has(event.cardId))invalid();
+    if(event.cardId!==undefined){
+      const card=cardsById.get(event.cardId);
+      if(card&&card.kind!=='credit')invalid();
+      if(!card&&!deletedCardIds.has(event.cardId))invalid();
+    }
   }
 }
