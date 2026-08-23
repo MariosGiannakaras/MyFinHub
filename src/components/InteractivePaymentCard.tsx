@@ -87,7 +87,9 @@ export function InteractivePaymentCard({
     try{
       const receipt=await saveCardSecret(card.id,{pan:digits,expiry:normalizedExpiry});
       await saveLocalCvv(card.id,normalizedCvv);
-      const next={...card,last4:receipt.last4??digits.slice(-4),vaultRef:card.id,updatedAt:new Date().toISOString()};
+      const candidateLast4=receipt.last4??(digits.length>=4?digits.slice(-4):null);
+      const last4=candidateLast4&&/^\d{4}$/.test(candidateLast4)?candidateLast4:undefined;
+      const next={...card,last4,vaultRef:card.id,updatedAt:new Date().toISOString()};
       onUpsert?.(next);setRevealed({});setEditing(false);setMessage('Η κάρτα αποθηκεύτηκε.');onEditingComplete?.();
     }catch(error){setMessage(error instanceof Error&&error.message.startsWith('LOCAL_')?localCvvMessage(error):cardVaultErrorMessage(error))}
     finally{setBusy(false)}
