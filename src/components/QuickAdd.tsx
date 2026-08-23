@@ -1,5 +1,5 @@
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { ArrowDownToLine, ArrowLeftRight, BanknoteArrowDown, Check, CircleDollarSign, RotateCcw, Scale, Split, X } from 'lucide-react';
+import { ArrowDownToLine, ArrowLeftRight, BanknoteArrowDown, Check, CircleDollarSign, PiggyBank, RotateCcw, Scale, Split, X } from 'lucide-react';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { AppDateInput } from './AppDateInput';
 import { AppSelectInput } from './AppSelectInput';
@@ -7,6 +7,7 @@ import { FinanceIcon } from './FinanceIcon';
 import { useModalFocus } from '../hooks/useModalFocus';
 import { genericCategoryTree, subcategoriesFor } from '../lib/categories';
 import { allAccounts, createEvent, frequentDescriptions } from '../lib/domain';
+import { ENTRY_INTENTS, structuredPresetFromFrequent, type EntryIntent } from '../lib/entryIntents';
 import { entryDefaults, entryDraftError } from '../lib/inputSemantics';
 import {
   createExpenseSplitEvent,
@@ -24,15 +25,17 @@ import type { EventKind, FinanceData, FinanceEvent, SplitPart } from '../types';
 
 export type QuickPrefill = { note:string; amount:number; category?:string; subcategory?:string; accountId?:string };
 
-const genericKinds: Array<{kind:EventKind; label:string; desc:string; icon:ReactNode}> = [
-  {kind:'expense',label:'Αγόρασα',desc:'Κανονικό έξοδο',icon:<CircleDollarSign/>},
-  {kind:'income',label:'Πήρα χρήματα',desc:'Πραγματικό έσοδο',icon:<ArrowDownToLine/>},
-  {kind:'transfer',label:'Μετέφερα',desc:'Μεταξύ λογαριασμών',icon:<ArrowLeftRight/>},
-  {kind:'withdrawal',label:'Πήρα μετρητά',desc:'Ανάληψη από λογαριασμό',icon:<BanknoteArrowDown/>},
-  {kind:'refund',label:'Επιστροφή αγοράς',desc:'Μειώνει τα πραγματικά έξοδα',icon:<RotateCcw/>},
-  {kind:'reconciliation',label:'Διόρθωση υπολοίπου',desc:'Προσαρμογή εκτός εξόδων',icon:<Scale/>},
-  {kind:'split',label:'Σύνθετη αγορά',desc:'Μία πληρωμή, πολλές κατηγορίες',icon:<Split/>},
-];
+const intentIcons:Record<EntryIntent,ReactNode>={
+  expense:<CircleDollarSign/>,
+  income:<ArrowDownToLine/>,
+  transfer:<ArrowLeftRight/>,
+  withdrawal:<BanknoteArrowDown/>,
+  saving:<PiggyBank/>,
+  refund:<RotateCcw/>,
+  reconciliation:<Scale/>,
+  split:<Split/>,
+};
+const genericKinds=ENTRY_INTENTS.map(item=>({...item,icon:intentIcons[item.intent]}));
 const labelForKind=(kind:EventKind)=>genericKinds.find(item=>item.kind===kind)?.label||'Κίνηση';
 
 export function QuickAdd({ open, data, asOf, initial, initialKind='expense', prefill=null, motionMode='system', onClose, onCreate, currentBalance }: { open:boolean; data:FinanceData; asOf:string; initial?:FinanceEvent|null; initialKind?:EventKind; prefill?:QuickPrefill|null; motionMode?:'system'|'reduced'|'full'; onClose:()=>void; onCreate:(event:FinanceEvent)=>void; currentBalance:(accountId:string)=>number }) {
@@ -149,10 +152,10 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
 
   return <AnimatePresence>{open?<motion.div className="modal-backdrop" initial={reduce?false:{opacity:0}} animate={{opacity:1}} exit={reduce?undefined:{opacity:0}} onMouseDown={requestClose}>
     <motion.section ref={modalRef} className="quick-modal neo-raised" role="dialog" aria-modal="true" aria-labelledby="quick-add-title" aria-describedby="quick-add-description" tabIndex={-1} initial={reduce?false:{opacity:0,scale:.97,y:12}} animate={{opacity:1,scale:1,y:0}} exit={reduce?undefined:{opacity:0,scale:.98,y:8}} transition={{duration:reduce?0:.18}} onMouseDown={e=>e.stopPropagation()}>
-      <header><div><small>{initial?'ΕΠΕΞΕΡΓΑΣΙΑ':'ΓΡΗΓΟΡΗ ΚΙΝΗΣΗ'}</small><h2 id="quick-add-title">{initial?'Επεξεργασία κίνησης':'Τι έγινε;'}</h2><p id="quick-add-description">Για καθημερινές κινήσεις. Κάρτες, δόσεις, δάνεια, αποταμίευση και συνδρομές διαχειρίζονται από τις δικές τους ενότητες.</p></div><button type="button" className="icon-button" aria-label="Κλείσιμο καταχώρισης" onClick={requestClose}><X/></button></header>
-      {genericKinds.some(item=>item.kind===kind)?<div className="kind-grid generic-kind-grid" role="group" aria-label="Είδος οικονομικής κίνησης">{genericKinds.map(k=><button type="button" key={k.kind} className={kind===k.kind?'active':''} aria-pressed={kind===k.kind} onClick={()=>chooseKind(k.kind)}><span>{k.icon}</span><b>{k.label}</b><small>{k.desc}</small></button>)}</div>:null}
+      <header><div><small>{initial?'ΕΠΕΞΕΡΓΑΣΙΑ':'ΓΡΗΓΟΡΗ ΚΙΝΗΣΗ'}</small><h2 id="quick-add-title">{initial?'Επεξεργασία κίνησης':'Τι θέλεις να καταγράψεις;'}</h2><p id="quick-add-description">Διάλεξε την ενέργεια που έκανες. Εξειδικευμένες ροές για κάρτες, δόσεις, δάνεια και πάγια συνεχίζουν να ανοίγουν από το αντίστοιχο πλαίσιο.</p></div><button type="button" className="icon-button" aria-label="Κλείσιμο καταχώρισης" onClick={requestClose}><X/></button></header>
+      {genericKinds.some(item=>item.kind===kind)?<div className="kind-grid generic-kind-grid" role="group" aria-label="Τι θέλεις να καταγράψεις">{genericKinds.map(k=><button type="button" key={k.kind} className={kind===k.kind?'active':''} aria-pressed={kind===k.kind} onClick={()=>chooseKind(k.kind)}><span>{k.icon}</span><b>{k.label}</b><small>{k.description}</small></button>)}</div>:null}
       <div className="entry-body">
-        {kind==='expense'?<div className="frequent-strip"><span>Συχνά</span>{frequent.slice(0,6).map(f=><button type="button" key={f.label} onClick={()=>{setNote(f.label);setAmount(String(f.lastAmount));setCategory(f.category||category);setSubcategory('');if(f.accountId)setAccountId(f.accountId);mark()}}><FinanceIcon kind="expense" note={f.label} category={f.category} size={14}/><span>{f.label}</span><small>{money.format(f.lastAmount)}</small></button>)}</div>:null}
+        {kind==='expense'?<div className="frequent-strip"><span>Συχνά</span>{frequent.slice(0,6).map(f=><button type="button" key={f.label} onClick={()=>{const preset=structuredPresetFromFrequent(f);setAmount(String(preset.amount));setCategory(preset.category||category);setSubcategory(preset.subcategory||'');if(preset.accountId)setAccountId(preset.accountId);mark()}}><FinanceIcon kind="expense" note={f.label} category={f.category} size={14}/><span>{f.label}</span><small>{money.format(f.lastAmount)}</small></button>)}</div>:null}
         <div className="form-grid">
           {kind!=='reconciliation'?<label><span>Ποσό</span><div className="money-input"><b>€</b><input data-autofocus="true" inputMode="decimal" value={amount} onChange={e=>{setAmount(e.target.value.replace(',','.'));mark()}}/></div></label>:null}
           <label><span>Ημερομηνία</span><AppDateInput value={date} onChange={e=>{setDate(e.target.value);mark()}}/></label>
