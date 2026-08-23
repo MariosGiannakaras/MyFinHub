@@ -17,6 +17,7 @@ import {
   type TaxonomyOperation,
 } from '../lib/taxonomyManagement';
 import type { FinanceSettings } from '../types';
+import { AppSelectInput } from './AppSelectInput';
 import { CategoryIconGlyph } from './CategoryIconGlyph';
 import { CategoryIconPicker } from './CategoryIconPicker';
 
@@ -120,7 +121,7 @@ export function CategoryIconsWorkspace({settings,onChange,onTaxonomyOperation}:{
 
                   {editing?.type==='subcategory'&&editing.id===subcategoryId?<div className="taxonomy-inline-editor taxonomy-subcategory-editor" role="group" aria-label={`Μετονομασία υποκατηγορίας ${subcategory}`}><input autoFocus value={editing.value} onChange={event=>setEditing({...editing,value:event.target.value})} onKeyDown={event=>{if(event.key==='Enter'){event.preventDefault();saveEdit()}if(event.key==='Escape')setEditing(null)}}/><button type="button" className="save-button" onClick={saveEdit}>Αποθήκευση</button><button type="button" className="secondary" aria-label="Ακύρωση μετονομασίας" onClick={()=>setEditing(null)}><X size={14} aria-hidden="true"/></button></div>:null}
 
-                  {moving?.id===subcategoryId?<div className="taxonomy-move-editor" role="group" aria-label={`Μεταφορά υποκατηγορίας ${subcategory}`}><label><span>Μεταφορά σε</span><select value={moving.targetCategoryId} onChange={event=>setMoving({...moving,targetCategoryId:event.target.value})}>{otherCategories.map(target=><option key={target.id} value={target.id}>{target.name}</option>)}</select></label><button type="button" className="save-button" onClick={saveMove}>Μεταφορά</button><button type="button" className="secondary" aria-label="Ακύρωση μεταφοράς" onClick={()=>setMoving(null)}><X size={14} aria-hidden="true"/></button></div>:null}
+                  {moving?.id===subcategoryId?<div className="taxonomy-move-editor" role="group" aria-label={`Μεταφορά υποκατηγορίας ${subcategory}`}><label><span>Μεταφορά σε</span><AppSelectInput value={moving.targetCategoryId} onChange={event=>setMoving({...moving,targetCategoryId:event.target.value})}>{otherCategories.map(target=><option key={target.id} value={target.id}>{target.name}</option>)}</AppSelectInput></label><button type="button" className="save-button" onClick={saveMove}>Μεταφορά</button><button type="button" className="secondary" aria-label="Ακύρωση μεταφοράς" onClick={()=>setMoving(null)}><X size={14} aria-hidden="true"/></button></div>:null}
 
                   <details className="taxonomy-icon-disclosure taxonomy-subcategory-icon"><summary>Εικονίδιο</summary><CategoryIconPicker value={override} inheritedLabel={`Από «${category.name}»`} onChange={iconKey=>onChange(withSubcategoryIconOverride(normalized,kind,category.name,subcategory,iconKey))}/></details>
                 </article>;
