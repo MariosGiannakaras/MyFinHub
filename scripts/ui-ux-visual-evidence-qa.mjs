@@ -1,9 +1,29 @@
 import { execFileSync, spawn } from 'node:child_process';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+const repositoryRoot=process.cwd();
+const versionMarker=resolve(repositoryRoot,'visual-qa/current-version.txt');
+const appVersion=(process.env.MYFINHUB_QA_APP_VERSION||(existsSync(versionMarker)?readFileSync(versionMarker,'utf8').trim():'v1.3')).trim();
+if(!/^v\d+\.\d+(?:\.\d+)?(?:[-+][A-Za-z0-9.-]+)?$/.test(appVersion))throw new Error(`Invalid visual QA app version: ${appVersion}`);
+const timeZone=process.env.MYFINHUB_QA_TIME_ZONE||'Europe/Athens';
+const generatedDate=new Date();
+const timestampParts=Object.fromEntries(new Intl.DateTimeFormat('en-GB',{timeZone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).formatToParts(generatedDate).filter(part=>part.type!=='literal').map(part=>[part.type,part.value]));
+const timestamp=`${timestampParts.year}-${timestampParts.month}-${timestampParts.day}_${timestampParts.hour}${timestampParts.minute}${timestampParts.second}`;
+const gitValue=(...args)=>{try{return execFileSync('git',args,{encoding:'utf8'}).trim()}catch{return ''}};
+const sourceSha=(process.env.GITHUB_SHA||gitValue('rev-parse','HEAD')||'local').trim();
+const shortSha=sourceSha==='local'?'local':sourceSha.slice(0,8);
+const sourceBranch=(process.env.GITHUB_HEAD_REF||process.env.GITHUB_REF_NAME||gitValue('rev-parse','--abbrev-ref','HEAD')||'local').trim();
+const evidenceRoot=resolve(repositoryRoot,process.env.MYFINHUB_UX_EVIDENCE_ROOT||'visual-qa');
+const versionDir=resolve(evidenceRoot,appVersion);
+const runId=`${timestamp}__${shortSha}`;
+const runDir=resolve(versionDir,'runs',runId);
+const latestDir=resolve(versionDir,'latest');
+rmSync(latestDir,{recursive:true,force:true});
+mkdirSync(runDir,{recursive:true});
+mkdirSync(latestDir,{recursive:true});
 
 const baseUrl=process.env.RHEOMIQ_QA_URL||'http://127.0.0.1:5173/qa.html';
-const evidenceDir=process.env.MYFINHUB_UX_EVIDENCE_DIR||'/tmp/myfinhub-ui-ux-qa';
-mkdirSync(evidenceDir,{recursive:true});
 const chrome=execFileSync('bash',['-lc','command -v google-chrome || command -v chromium || command -v chromium-browser'],{encoding:'utf8'}).trim();
 if(!chrome)throw new Error('Chrome/Chromium is required for visual evidence QA.');
 const port=9231;
@@ -18,16 +38,20 @@ class Cdp{
   close(){this.ws?.close()}
 }
 const pages={dashboard:'Οι λογαριασμοί μου',transactions:'Συναλλαγές',review:'Έλεγχος παλιών κινήσεων',savings:'Αποταμίευση',cards:'Κάρτες',credit:'Πιστωτική Κάρτα',loans:'Δόσεις & Δάνεια',lending:'Δανεικά & επιστροφές',recurring:'Πάγια & Συνδρομές',planning:'Προγραμματισμός & πρόβλεψη ρευστότητας',reports:'Αναφορές',settings:'Ρυθμίσεις'};
+const viewports=[{mode:'desktop',width:1440,height:1000},{mode:'mobile',width:375,height:812}];
+const screenshots=[];
 try{
   await waitHttp(`http://127.0.0.1:${port}/json/version`);
   const target=await fetch(`http://127.0.0.1:${port}/json/new?${encodeURIComponent(baseUrl)}`,{method:'PUT'}).then(r=>r.json());
   const c=new Cdp(target.webSocketDebuggerUrl);await c.open();await c.send('Page.enable');
   const viewport=(width,height)=>c.send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<=680});
   const navigate=async(page,heading)=>{const url=new URL(baseUrl);url.searchParams.set('page',page);await c.send('Page.navigate',{url:url.href});for(let i=0;i<100;i++){if(await c.call("function(text){return document.readyState==='complete'&&(document.querySelector('#main-workspace h1')?.textContent||'').includes(text)}",[heading]))break;if(i===99)throw new Error(`Timed out waiting for visual route ${page}`);await sleep(100)}await sleep(120)};
-  const fullPage=async name=>{const metrics=await c.send('Page.getLayoutMetrics');const size=metrics.cssContentSize||metrics.contentSize;const width=Math.max(1,Math.ceil(size.width));const height=Math.max(1,Math.min(16000,Math.ceil(size.height)));const shot=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true,clip:{x:0,y:0,width,height,scale:1}});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(shot.data,'base64'))};
-  for(const [mode,width,height] of [['desktop',1440,1000],['mobile',375,812]]){
-    await viewport(width,height);
-    for(const [page,heading] of Object.entries(pages)){await navigate(page,heading);await fullPage(`full-${mode}-${page}`)}
-  }
-  c.close();console.log('Full-page visual evidence QA passed.');
+  const fullPage=async(page,mode,width,height)=>{const metrics=await c.send('Page.getLayoutMetrics');const size=metrics.cssContentSize||metrics.contentSize;const captureWidth=Math.max(1,Math.ceil(size.width));const captureHeight=Math.max(1,Math.min(16000,Math.ceil(size.height)));const shot=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true,clip:{x:0,y:0,width:captureWidth,height:captureHeight,scale:1}});const fileName=`${appVersion}__${timestamp}__${page}__${mode}-${width}x${height}__NEW.png`;const bytes=Buffer.from(shot.data,'base64');writeFileSync(resolve(runDir,fileName),bytes);writeFileSync(resolve(latestDir,fileName),bytes);screenshots.push({file:fileName,page,state:'NEW',viewport:{mode,width,height},capture:{width:captureWidth,height:captureHeight}})};
+  for(const item of viewports){await viewport(item.width,item.height);for(const [page,heading] of Object.entries(pages)){await navigate(page,heading);await fullPage(page,item.mode,item.width,item.height)}}
+  c.close();
+  const manifest={schemaVersion:1,appVersion,runId,generatedAt:generatedDate.toISOString(),timeZone,source:{sha:sourceSha,shortSha,branch:sourceBranch},baseUrl,latestDirectory:`visual-qa/${appVersion}/latest`,runDirectory:`visual-qa/${appVersion}/runs/${runId}`,screenshots};
+  const manifestText=`${JSON.stringify(manifest,null,2)}\n`;
+  writeFileSync(resolve(runDir,'manifest.json'),manifestText);
+  writeFileSync(resolve(latestDir,'manifest.json'),manifestText);
+  console.log(`Full-page visual evidence QA passed: ${appVersion} ${runId} (${screenshots.length} screenshots).`);
 }finally{child.kill('SIGTERM')}

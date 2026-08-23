@@ -1,0 +1,214 @@
+#myfinhub-card-stack .card-viva-business,#myfinhub-card-stack .card-viva-employee,#myfinhub-card-stack .card-viva-digital,#myfinhub-card-stack .card-viva-signature,#myfinhub-card-stack .card-viva-carbon,#myfinhub-card-stack .card-viva-cobalt{
+  --card-text:#f6f8fd;
+  --card-muted:rgba(246,248,253,.64);
+}
+
+#myfinhub-card-stack .card-viva-business{
+  background:radial-gradient(circle at 92% 12%,rgba(255,255,255,.10),transparent 24%),
+    repeating-linear-gradient(90deg,rgba(150,173,219,.10) 0 1px,transparent 1px 6px),
+    linear-gradient(145deg,#233458 0%,#1a2744 54%,#121a2f 100%);
+}
+
+#myfinhub-card-stack .card-viva-employee{
+  background:radial-gradient(circle at 16% 16%,rgba(255,255,255,.06),transparent 22%),
+    repeating-linear-gradient(0deg,rgba(148,172,213,.10) 0 1px,transparent 1px 8px),
+    linear-gradient(145deg,#354767 0%,#263654 52%,#1a243c 100%);
+}
+
+#myfinhub-card-stack .card-viva-digital{
+  background:radial-gradient(circle at 80% 12%,rgba(37,213,224,.18),transparent 27%),
+    repeating-linear-gradient(90deg,rgba(126,155,199,.08) 0 1px,transparent 1px 6px),
+    linear-gradient(145deg,#0f1b34 0%,#0c162b 62%,#08101f 100%);
+}
+
+#myfinhub-card-stack .card-viva-signature{
+  background:radial-gradient(circle at 82% 16%,rgba(255,255,255,.10),transparent 20%),
+    linear-gradient(120deg,rgba(255,255,255,.04),transparent 32%),
+    linear-gradient(145deg,#4d2f8a 0%,#36256d 48%,#22184b 100%);
+}
+
+#myfinhub-card-stack .card-viva-signature .card-inner::before{
+  content:"";
+  position:absolute;
+  right:18px;
+  top:26px;
+  width:98px;
+  height:78px;
+  opacity:.12;
+  background:linear-gradient(135deg,#fff,#fff);
+  clip-path:path("M 12 8 L 30 8 Q 39 8 44 15 L 50 23 L 64 8 L 83 8 L 64 31 L 80 58 L 61 58 L 49 38 L 39 48 Q 32 58 20 58 L 12 58 L 29 32 Z");
+}
+
+#myfinhub-card-stack .card-viva-carbon{
+  background:linear-gradient(135deg,rgba(255,255,255,.03),transparent 28%),
+    repeating-linear-gradient(45deg,rgba(255,255,255,.03) 0 2px,transparent 2px 8px),
+    repeating-linear-gradient(-45deg,rgba(255,255,255,.02) 0 2px,transparent 2px 8px),
+    linear-gradient(145deg,#202020 0%,#12161f 56%,#080b12 100%);
+}
+
+#myfinhub-card-stack .card-viva-cobalt{
+  background:radial-gradient(circle at 10% 10%,rgba(255,255,255,.11),transparent 24%),
+    linear-gradient(125deg,rgba(255,255,255,.05),transparent 24%,transparent 62%,rgba(255,255,255,.03)),
+    linear-gradient(145deg,#0e5fb0 0%,#15498d 54%,#113465 100%);
+}
+
+#myfinhub-card-stack .card-payzy-virtual,#myfinhub-card-stack .card-payzy-physical,#myfinhub-card-stack .card-payzy-pro,#myfinhub-card-stack .card-payzy-pro-night,#myfinhub-card-stack .card-payzy-neo{
+  --card-text:#ffffff;
+  --card-muted:rgba(255,255,255,.66);
+}
+
+#myfinhub-card-stack .card-payzy-virtual{
+  background:linear-gradient(35deg,transparent 0 47%,rgba(98,16,203,.42) 47% 57%,transparent 57% 100%),
+    linear-gradient(128deg,transparent 0 42%,rgba(114,24,221,.42) 42% 52%,transparent 52% 100%),
+    radial-gradient(circle at 8% 18%,rgba(162,68,255,.42),transparent 29%),
+    linear-gradient(135deg,#6b03e8 0%,#5f03df 55%,#5100c7 100%);
+}
+
+#myfinhub-card-stack .card-payzy-physical{
+  background:radial-gradient(circle at 18% 20%,rgba(255,255,255,.08),transparent 22%),
+    linear-gradient(35deg,transparent 0 47%,rgba(57,7,142,.38) 47% 57%,transparent 57% 100%),
+    linear-gradient(128deg,transparent 0 42%,rgba(124,37,255,.28) 42% 52%,transparent 52% 100%),
+    linear-gradient(145deg,#43208f 0%,#4f2fb7 58%,#6248d2 100%);
+}
+
+#myfinhub-card-stack .card-payzy-pro{
+  --card-text:#ffffff;
+  --card-muted:rgba(255,255,255,.72);
+  background:radial-gradient(circle at 88% 10%,rgba(255,255,255,.12),transparent 20%),
+    linear-gradient(145deg,rgba(255,255,255,.08),transparent 30%),
+    linear-gradient(145deg,#63cfd0 0%,#56c0c8 40%,#46b4bf 100%);
+}
+
+#myfinhub-card-stack .card-payzy-pro::before{
+  background:linear-gradient(122deg,rgba(255,255,255,.24),transparent 24%,transparent 65%,rgba(255,255,255,.08));
+}
+
+#myfinhub-card-stack .card-payzy-pro .payzy-logo{
+  color:#4c22bf;
+}
+
+#myfinhub-card-stack .card-payzy-pro .payzy-word b,#myfinhub-card-stack .card-payzy-pro .payzy-word small{
+  color:#4c22bf;
+}
+
+#myfinhub-card-stack .card-payzy-pro .card-icon-btn,#myfinhub-card-stack .card-payzy-pro .copy-mini,#myfinhub-card-stack .card-payzy-pro .card-action{
+  background:rgba(52,20,126,.10);
+}
+
+#myfinhub-card-stack .card-payzy-pro-night{
+  background:radial-gradient(circle at 82% 16%,rgba(91,255,226,.13),transparent 20%),
+    linear-gradient(32deg,transparent 0 48%,rgba(45,173,162,.18) 48% 55%,transparent 55%),
+    linear-gradient(145deg,#101b39 0%,#0a1430 50%,#060c20 100%);
+}
+
+#myfinhub-card-stack .card-payzy-pro-night .payzy-logo{
+  color:#6bfff0;
+}
+
+#myfinhub-card-stack .card-payzy-neo{
+  background:radial-gradient(circle at 12% 12%,rgba(147,255,231,.16),transparent 18%),
+    linear-gradient(125deg,rgba(98,255,231,.07),transparent 30%,transparent 62%,rgba(255,255,255,.06)),
+    linear-gradient(145deg,#ff2ab9 0%,#a718ff 45%,#4f00be 100%);
+}
+
+#myfinhub-card-stack .card-payzy-neo .payzy-logo{
+  color:#7dffe3;
+}
+
+#myfinhub-card-stack .card-custom{
+  background:radial-gradient(circle at 18% 18%,rgba(255,255,255,.14),transparent 28%),
+    linear-gradient(135deg,hsl(var(--custom-hue,215) 68% 48%),hsl(calc(var(--custom-hue,215) + 28) 62% 35%));
+}
+
+#myfinhub-card-stack .custom-mark{
+  width:27px;
+  height:27px;
+  border-radius:8px;
+  background:rgba(255,255,255,.14);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.20);
+  display:grid;
+  place-items:center;
+  font-weight:900;
+  text-transform:uppercase;
+}
+
+@media (max-width:680px){
+
+  #myfinhub-card-stack .demo-shell{
+    padding:0;
+  }
+
+  #myfinhub-card-stack .card-demo{
+    gap:54px;
+    padding-top:16px;
+  }
+
+  #myfinhub-card-stack .stack-stage{
+    width:min(100%,calc(100vw - 56px));
+  }
+
+  #myfinhub-card-stack .card-inner{
+    padding:17px;
+  }
+
+  #myfinhub-card-stack .card-fields{
+    gap:10px;
+    grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;
+  }
+
+  #myfinhub-card-stack .card-network{
+    min-width:70px;
+  }
+
+  #myfinhub-card-stack .card-network-main{
+    font-size:1rem;
+  }
+
+  #myfinhub-card-stack .delete-confirm{
+    padding:14px;
+  }
+
+  #myfinhub-card-stack .delete-confirm-copy small{
+    font-size:.62rem;
+    max-width:250px;
+  }
+
+  #myfinhub-card-stack .delete-cancel{
+    width:46px;
+    height:46px;
+    min-width:46px;
+    border-radius:13px;
+  }
+
+  #myfinhub-card-stack .delete-slider{
+    height:58px;
+    border-radius:17px;
+  }
+
+  #myfinhub-card-stack .delete-slider-thumb{
+    width:48px;
+    height:48px;
+    border-radius:13px;
+  }
+
+  #myfinhub-card-stack .delete-slider-label{
+    padding-left:50px;
+    font-size:.62rem;
+  }
+}
+
+@media (prefers-reduced-motion:reduce){
+  #myfinhub-card-stack .stack-card,#myfinhub-card-stack .payment-card,#myfinhub-card-stack .delete-confirm{
+    transition:none !important;
+    animation:none !important;
+  }
+}
+
+/* Accessibility: visible keyboard focus is intentionally scoped to this component. */
+
+#myfinhub-card-stack :is(.card-icon-btn,.copy-mini,.delete-cancel,.delete-slider):focus-visible,
+#myfinhub-card-stack .stack-stage:focus-visible{
+  outline:3px solid rgba(255,255,255,.96);
+  outline-offset:3px;
+  box-shadow:0 0 0 6px rgba(47,111,237,.52);
+}

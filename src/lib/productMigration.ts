@@ -29,6 +29,7 @@ export function migrateProductData(input:FinanceData):FinanceData{
       settings,
       cardBanks:sourceState.cardBanks??[],
       cards:sourceState.cards??[],
+      deletedCards:sourceState.deletedCards??[],
       scheduled:sourceState.scheduled??[],
       attentionDecisions:sourceState.attentionDecisions??{},
       budgets:sourceState.budgets??[],

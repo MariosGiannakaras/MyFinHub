@@ -39,7 +39,7 @@ export async function deleteCardSecret(cardId:string){
 export function cardVaultErrorMessage(error:unknown){
   if(error instanceof CardVaultClientError){
     if(error.code==='CARD_SECRET_NOT_FOUND')return 'Δεν έχουν αποθηκευτεί ακόμη αριθμός και λήξη για αυτή την κάρτα.';
-    if(error.code==='INVALID_CARD_PAN')return 'Έλεγξε τον αριθμό της κάρτας — χρειάζονται 16 ψηφία.';
+    if(error.code==='INVALID_CARD_PAN')return 'Γράψε έναν αριθμό κάρτας με αριθμητικά ψηφία.';
     if(error.code==='INVALID_CARD_EXPIRY')return 'Έλεγξε τη λήξη της κάρτας — χρησιμοποίησε μορφή MM/YY.';
     if(error.code==='MFA_REQUIRED')return 'Για να δεις ή να αλλάξεις τα ασφαλή στοιχεία της κάρτας, χρειάζεται να επαληθεύσεις ξανά τη σύνδεσή σου.';
     if(error.code==='CARD_VAULT_RATE_LIMITED')return 'Έγιναν πολλές προσπάθειες σε μικρό χρονικό διάστημα. Περίμενε λίγο και δοκίμασε ξανά.';

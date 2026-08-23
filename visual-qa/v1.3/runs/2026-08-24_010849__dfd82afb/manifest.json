@@ -1,0 +1,353 @@
+{
+  "schemaVersion": 1,
+  "appVersion": "v1.3",
+  "runId": "2026-08-24_010849__dfd82afb",
+  "generatedAt": "2026-08-23T22:08:49.541Z",
+  "timeZone": "Europe/Athens",
+  "source": {
+    "sha": "dfd82afbfba8c9341dcf2758251628f2aa1e5061",
+    "shortSha": "dfd82afb",
+    "branch": "feat/241-canonical-credit-card-stack"
+  },
+  "baseUrl": "http://127.0.0.1:5173/qa.html",
+  "latestDirectory": "visual-qa/v1.3/latest",
+  "runDirectory": "visual-qa/v1.3/runs/2026-08-24_010849__dfd82afb",
+  "screenshots": [
+    {
+      "file": "v1.3__2026-08-24_010849__dashboard__desktop-1440x1000__NEW.png",
+      "page": "dashboard",
+      "state": "NEW",
+      "viewport": {
+        "mode": "desktop",
+        "width": 1440,
+        "height": 1000
+      },
+      "capture": {
+        "width": 1425,
+        "height": 1777
+      }
+    },
+    {
+      "file": "v1.3__2026-08-24_010849__transactions__desktop-1440x1000__NEW.png",
+      "page": "transactions",
+      "state": "NEW",
+      "viewport": {
+        "mode": "desktop",
+        "width": 1440,
+        "height": 1000
+      },
+      "capture": {
+        "width": 1440,
+        "height": 1000
+      }
+    },
+    {
+      "file": "v1.3__2026-08-24_010849__review__desktop-1440x1000__NEW.png",
+      "page": "review",
+      "state": "NEW",
+      "viewport": {
+        "mode": "desktop",
+        "width": 1440,
+        "height": 1000
+      },
+      "capture": {
+        "width": 1440,
+        "height": 1000
+      }
+    },
+    {
+      "file": "v1.3__2026-08-24_010849__savings__desktop-1440x1000__NEW.png",
+      "page": "savings",
+      "state": "NEW",
+      "viewport": {
+        "mode": "desktop",
+        "width": 1440,
+        "height": 1000
+      },
+      "capture": {
+        "width": 1425,
+        "height": 1016
+      }
+    },
+    {
+      "file": "v1.3__2026-08-24_010849__cards__desktop-1440x1000__NEW.png",
+      "page": "cards",
+      "state": "NEW",
+      "viewport": {
+        "mode": "desktop",
+        "width": 1440,
+        "height": 1000
+      },
+      "capture": {
+        "width": 1440,
+        "height": 1000
+      }
+    },
+    {
+      "file": "v1.3__2026-08-24_010849__credit__desktop-1440x1000__NEW.png",
+      "page": "credit",
+      "state": "NEW",
+      "viewport": {
+        "mode": "desktop",
+        "width": 1440,
+        "height": 1000
+      },
+      "capture": {
+        "width": 1425,
+        "height": 1295
+      }
+    },
+    {
+      "file": "v1.3__2026-08-24_010849__loans__desktop-1440x1000__NEW.png",
+      "page": "loans",
+      "state": "NEW",
+      "viewport": {
+        "mode": "desktop",
+        "width": 1440,
+        "height": 1000
+      },
+      "capture": {
+        "width": 1440,
+        "height": 1000
+      }
+    },
+    {
+      "file": "v1.3__2026-08-24_010849__lending__desktop-1440x1000__NEW.png",
+      "page": "lending",
+      "state": "NEW",
+      "viewport": {
+        "mode": "desktop",
+        "width": 1440,
+        "height": 1000
+      },
+      "capture": {
+        "width": 1440,
+        "height": 1000
+      }
+    },
+    {
+      "file": "v1.3__2026-08-24_010849__recurring__desktop-1440x1000__NEW.png",
+      "page": "recurring",
+      "state": "NEW",
+      "viewport": {
+        "mode": "desktop",
+        "width": 1440,
+        "height": 1000
+      },
+      "capture": {
+        "width": 1425,
+        "height": 1049
+      }
+    },
+    {
+      "file": "v1.3__2026-08-24_010849__planning__desktop-1440x1000__NEW.png",
+      "page": "planning",
+      "state": "NEW",
+      "viewport": {
+        "mode": "desktop",
+        "width": 1440,
+        "height": 1000
+      },
+      "capture": {
+        "width": 1425,
+        "height": 1965
+      }
+    },
+    {
+      "file": "v1.3__2026-08-24_010849__reports__desktop-1440x1000__NEW.png",
+      "page": "reports",
+      "state": "NEW",
+      "viewport": {
+        "mode": "desktop",
+        "width": 1440,
+        "height": 1000
+      },
+      "capture": {
+        "width": 1425,
+        "height": 2252
+      }
+    },
+    {
+      "file": "v1.3__2026-08-24_010849__settings__desktop-1440x1000__NEW.png",
+      "page": "settings",
+      "state": "NEW",
+      "viewport": {
+        "mode": "desktop",
+        "width": 1440,
+        "height": 1000
+      },
+      "capture": {
+        "width": 1425,
+        "height": 4949
+      }
+    },
+    {
+      "file": "v1.3__2026-08-24_010849__dashboard__mobile-375x812__NEW.png",
+      "page": "dashboard",
+      "state": "NEW",
+      "viewport": {
+        "mode": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "capture": {
+        "width": 375,
+        "height": 3145
+      }
+    },
+    {
+      "file": "v1.3__2026-08-24_010849__transactions__mobile-375x812__NEW.png",
+      "page": "transactions",
+      "state": "NEW",
+      "viewport": {
+        "mode": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "capture": {
+        "width": 375,
+        "height": 1751
+      }
+    },
+    {
+      "file": "v1.3__2026-08-24_010849__review__mobile-375x812__NEW.png",
+      "page": "review",
+      "state": "NEW",
+      "viewport": {
+        "mode": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "capture": {
+        "width": 375,
+        "height": 812
+      }
+    },
+    {
+      "file": "v1.3__2026-08-24_010849__savings__mobile-375x812__NEW.png",
+      "page": "savings",
+      "state": "NEW",
+      "viewport": {
+        "mode": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "capture": {
+        "width": 375,
+        "height": 1604
+      }
+    },
+    {
+      "file": "v1.3__2026-08-24_010849__cards__mobile-375x812__NEW.png",
+      "page": "cards",
+      "state": "NEW",
+      "viewport": {
+        "mode": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "capture": {
+        "width": 375,
+        "height": 812
+      }
+    },
+    {
+      "file": "v1.3__2026-08-24_010849__credit__mobile-375x812__NEW.png",
+      "page": "credit",
+      "state": "NEW",
+      "viewport": {
+        "mode": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "capture": {
+        "width": 375,
+        "height": 1682
+      }
+    },
+    {
+      "file": "v1.3__2026-08-24_010849__loans__mobile-375x812__NEW.png",
+      "page": "loans",
+      "state": "NEW",
+      "viewport": {
+        "mode": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "capture": {
+        "width": 375,
+        "height": 1144
+      }
+    },
+    {
+      "file": "v1.3__2026-08-24_010849__lending__mobile-375x812__NEW.png",
+      "page": "lending",
+      "state": "NEW",
+      "viewport": {
+        "mode": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "capture": {
+        "width": 375,
+        "height": 857
+      }
+    },
+    {
+      "file": "v1.3__2026-08-24_010849__recurring__mobile-375x812__NEW.png",
+      "page": "recurring",
+      "state": "NEW",
+      "viewport": {
+        "mode": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "capture": {
+        "width": 375,
+        "height": 1498
+      }
+    },
+    {
+      "file": "v1.3__2026-08-24_010849__planning__mobile-375x812__NEW.png",
+      "page": "planning",
+      "state": "NEW",
+      "viewport": {
+        "mode": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "capture": {
+        "width": 375,
+        "height": 3776
+      }
+    },
+    {
+      "file": "v1.3__2026-08-24_010849__reports__mobile-375x812__NEW.png",
+      "page": "reports",
+      "state": "NEW",
+      "viewport": {
+        "mode": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "capture": {
+        "width": 375,
+        "height": 3856
+      }
+    },
+    {
+      "file": "v1.3__2026-08-24_010849__settings__mobile-375x812__NEW.png",
+      "page": "settings",
+      "state": "NEW",
+      "viewport": {
+        "mode": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "capture": {
+        "width": 375,
+        "height": 8164
+      }
+    }
+  ]
+}

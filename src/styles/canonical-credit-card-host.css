@@ -1,0 +1,143 @@
+/* Host-only integration rules. Canonical card values remain in canonical-credit-card-stack.css. */
+.credit-card-stage:has(#myfinhub-card-stack),
+.credit-card-stage-card:has(#myfinhub-card-stack){
+  overflow:visible;
+}
+.credit-card-stage-card:has(#myfinhub-card-stack){
+  min-width:0;
+  display:grid;
+  place-items:center;
+}
+.credit-card-stage-card #myfinhub-card-stack{
+  margin-inline:auto;
+}
+.card-archive-manager{
+  width:min(720px,calc(100vw - 32px));
+}
+.card-archive-list{
+  display:grid;
+  gap:12px;
+  margin-top:18px;
+}
+.card-archive-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:18px;
+  padding:14px;
+  border:1px solid var(--border);
+  border-radius:16px;
+  background:var(--panel-soft,var(--surface));
+}
+.card-archive-identity{
+  min-width:0;
+  display:grid;
+  gap:4px;
+}
+.card-archive-identity b,
+.card-archive-identity small{
+  overflow-wrap:anywhere;
+}
+.card-archive-actions{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+  gap:8px;
+}
+.card-archive-actions button{
+  min-height:44px;
+}
+.card-archive-note{
+  margin-top:16px;
+  padding:12px 14px;
+  border-radius:14px;
+  background:var(--panel-soft,var(--surface));
+  color:var(--muted);
+  font-size:.9rem;
+  line-height:1.5;
+}
+@media(max-width:680px){
+  .credit-card-stage-card:has(#myfinhub-card-stack){
+    width:100%;
+  }
+  .card-archive-manager{
+    width:min(100%,calc(100vw - 24px));
+  }
+  .card-archive-row{
+    align-items:stretch;
+    flex-direction:column;
+  }
+  .card-archive-actions{
+    justify-content:stretch;
+  }
+  .card-archive-actions button{
+    flex:1 1 100%;
+  }
+
+  /*
+   * Mobile accessibility bridge for the owner-supplied canonical card artwork.
+   * The interactive box reaches the app-wide 40px touch-target contract while
+   * the pseudo-surface keeps the original 31px/23px visible footprint and the
+   * negative margins keep canonical layout spacing unchanged.
+   */
+  #myfinhub-card-stack .card-icon-btn,
+  #myfinhub-card-stack .copy-mini{
+    position:relative;
+    width:40px;
+    height:40px;
+    min-width:40px;
+    padding:0;
+    background:transparent;
+    box-shadow:none;
+  }
+  #myfinhub-card-stack .card-icon-btn{
+    margin:-4.5px;
+  }
+  #myfinhub-card-stack .copy-mini{
+    margin:-8.5px;
+    opacity:1;
+  }
+  #myfinhub-card-stack .card-icon-btn::before,
+  #myfinhub-card-stack .copy-mini::before{
+    content:"";
+    position:absolute;
+    left:50%;
+    top:50%;
+    transform:translate(-50%,-50%);
+    pointer-events:none;
+    z-index:0;
+  }
+  #myfinhub-card-stack .card-icon-btn::before{
+    width:31px;
+    height:31px;
+    border-radius:10px;
+    background:rgba(255,255,255,.12);
+    backdrop-filter:blur(8px);
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.14);
+  }
+  #myfinhub-card-stack .copy-mini::before{
+    width:23px;
+    height:23px;
+    border-radius:7px;
+    background:rgba(255,255,255,.10);
+    opacity:.72;
+  }
+  #myfinhub-card-stack .card-icon-btn:hover,
+  #myfinhub-card-stack .copy-mini:hover{
+    background:transparent;
+  }
+  #myfinhub-card-stack .card-icon-btn:hover::before{
+    background:rgba(255,255,255,.20);
+  }
+  #myfinhub-card-stack .copy-mini:hover::before{
+    background:rgba(255,255,255,.19);
+    opacity:1;
+  }
+  #myfinhub-card-stack .card-icon-btn svg,
+  #myfinhub-card-stack .copy-mini svg{
+    position:relative;
+    z-index:1;
+    pointer-events:none;
+  }
+}

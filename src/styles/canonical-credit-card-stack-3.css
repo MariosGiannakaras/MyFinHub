@@ -1,0 +1,275 @@
+#myfinhub-card-stack .card-revolut-ruby{
+  --card-text:#fff8fb;
+  --card-muted:rgba(255,248,251,.67);
+  background:radial-gradient(circle at 16% 18%,rgba(255,255,255,.12),transparent 22%),
+    linear-gradient(125deg,rgba(255,255,255,.10),transparent 24%,transparent 68%,rgba(255,255,255,.04)),
+    linear-gradient(145deg,#7a0829 0%,#9d1138 48%,#d1255b 100%);
+}
+
+#myfinhub-card-stack .card-revolut-emerald{
+  --card-text:#f4fff8;
+  --card-muted:rgba(244,255,248,.65);
+  background:radial-gradient(circle at 84% 14%,rgba(255,255,255,.12),transparent 21%),
+    linear-gradient(118deg,rgba(255,255,255,.10),transparent 22%,transparent 70%,rgba(255,255,255,.03)),
+    linear-gradient(145deg,#0c7d5c 0%,#0d6f68 50%,#0a4f5e 100%);
+}
+
+#myfinhub-card-stack .card-revolut-gradient .card-bank-name,#myfinhub-card-stack .card-revolut-sage .card-bank-name,#myfinhub-card-stack .card-revolut-midnight .card-bank-name,#myfinhub-card-stack .card-revolut-slate .card-bank-name,#myfinhub-card-stack .card-revolut-metal-black .card-bank-name,#myfinhub-card-stack .card-revolut-metal-gold .card-bank-name,#myfinhub-card-stack .card-revolut-metal-bronze .card-bank-name,#myfinhub-card-stack .card-revolut-metal-silver .card-bank-name,#myfinhub-card-stack .card-revolut-ultra .card-bank-name{
+  font-size:1.52rem;
+  font-weight:720;
+  letter-spacing:-.055em;
+}
+
+#myfinhub-card-stack .revolut-wordmark{
+  font-family:Arial,Helvetica,sans-serif;
+  font-weight:700;
+}
+
+#myfinhub-card-stack .brand-logo-img{
+  display:block;
+  object-fit:contain;
+  object-position:left center;
+  user-select:none;
+  pointer-events:none;
+}
+
+#myfinhub-card-stack .payzy-brand-img{
+  height:27px;
+  width:auto;
+  max-width:112px;
+}
+
+#myfinhub-card-stack .viva-brand-img{
+  height:23px;
+  width:auto;
+  max-width:132px;
+}
+
+#myfinhub-card-stack .card-payzy-virtual .card-brand-block,#myfinhub-card-stack .card-payzy-physical .card-brand-block,#myfinhub-card-stack .card-payzy-pro .card-brand-block,#myfinhub-card-stack .card-payzy-pro-night .card-brand-block,#myfinhub-card-stack .card-payzy-neo .card-brand-block{
+  gap:4px;
+}
+
+#myfinhub-card-stack .card-payzy-virtual .card-brand,#myfinhub-card-stack .card-payzy-physical .card-brand,#myfinhub-card-stack .card-payzy-pro .card-brand,#myfinhub-card-stack .card-payzy-pro-night .card-brand,#myfinhub-card-stack .card-payzy-neo .card-brand{
+  min-height:27px;
+  align-items:center;
+}
+
+#myfinhub-card-stack .card-payzy-virtual .card-nickname,#myfinhub-card-stack .card-payzy-physical .card-nickname,#myfinhub-card-stack .card-payzy-pro .card-nickname,#myfinhub-card-stack .card-payzy-pro-night .card-nickname,#myfinhub-card-stack .card-payzy-neo .card-nickname{
+  line-height:1;
+  margin-top:0;
+}
+
+#myfinhub-card-stack .card-piraeus-yellow{
+  --card-text:#0b3852;
+  --card-muted:rgba(11,56,82,.60);
+  background:linear-gradient(145deg,#ffe000 0%,#ffd500 66%,#f3c900 100%);
+  box-shadow:0 17px 34px rgba(145,111,0,.18),0 5px 14px rgba(111,79,0,.15),inset 0 1px 0 rgba(255,255,255,.35);
+}
+
+#myfinhub-card-stack .card-piraeus-yellow::before{
+  background:linear-gradient(122deg,rgba(255,255,255,.23),transparent 24%,transparent 65%,rgba(165,111,0,.06));
+}
+
+#myfinhub-card-stack .card-piraeus-yellow .card-icon-btn,#myfinhub-card-stack .card-piraeus-yellow .copy-mini,#myfinhub-card-stack .card-piraeus-yellow .card-action{
+  background:rgba(6,55,78,.09);
+  box-shadow:inset 0 0 0 1px rgba(6,55,78,.08);
+}
+
+#myfinhub-card-stack .card-piraeus-yellow .card-action.primary{
+  background:#0c4562;
+  color:white;
+}
+
+#myfinhub-card-stack .piraeus-logo{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  font-family:Georgia,"Times New Roman",serif;
+  font-size:1.42rem;
+  letter-spacing:-.04em;
+}
+
+#myfinhub-card-stack .piraeus-slashes{
+  display:inline-flex;
+  gap:3px;
+  transform:skewX(-18deg);
+}
+
+#myfinhub-card-stack .piraeus-slashes i{
+  display:block;
+  width:4px;
+  height:22px;
+  border-radius:1px;
+  background:currentColor;
+}
+
+#myfinhub-card-stack .card-piraeus-green{
+  --card-text:#eee7d5;
+  --card-muted:rgba(238,231,213,.62);
+  background:radial-gradient(circle at 83% 15%,rgba(255,255,255,.05),transparent 29%),
+    linear-gradient(145deg,#003c3b 0%,#003b42 53%,#002f39 100%);
+}
+
+#myfinhub-card-stack .card-piraeus-green .card-bank-name{
+  font-family:Georgia,"Times New Roman",serif;
+  font-weight:500;
+  font-size:1.47rem;
+  letter-spacing:-.04em;
+}
+
+#myfinhub-card-stack .card-piraeus-virtual{
+  --card-text:#0b3852;
+  --card-muted:rgba(11,56,82,.58);
+  background:linear-gradient(122deg,rgba(255,255,255,.23),transparent 24%,transparent 68%,rgba(153,109,0,.05)),
+    linear-gradient(145deg,#ffe99c 0%,#ffe18a 60%,#f4d66d 100%);
+  box-shadow:0 17px 34px rgba(145,111,0,.14),0 5px 14px rgba(111,79,0,.11),inset 0 1px 0 rgba(255,255,255,.40);
+}
+
+#myfinhub-card-stack .card-piraeus-virtual .card-icon-btn,#myfinhub-card-stack .card-piraeus-virtual .copy-mini,#myfinhub-card-stack .card-piraeus-virtual .card-action{
+  background:rgba(6,55,78,.08);
+  box-shadow:inset 0 0 0 1px rgba(6,55,78,.07);
+}
+
+#myfinhub-card-stack .card-piraeus-virtual .card-action.primary{
+  background:#0c4562;
+  color:#fff;
+}
+
+#myfinhub-card-stack .card-piraeus-gold{
+  --card-text:#0a3d3c;
+  --card-muted:rgba(10,61,60,.58);
+  background:linear-gradient(115deg,rgba(255,255,255,.28),transparent 29%,transparent 63%,rgba(94,64,10,.07)),
+    linear-gradient(145deg,#d9bb77 0%,#caa762 52%,#b68b45 100%);
+  box-shadow:0 17px 34px rgba(115,83,20,.17),0 5px 14px rgba(93,66,18,.12),inset 0 1px 0 rgba(255,255,255,.36);
+}
+
+#myfinhub-card-stack .card-piraeus-gold .card-icon-btn,#myfinhub-card-stack .card-piraeus-gold .copy-mini,#myfinhub-card-stack .card-piraeus-gold .card-action{
+  background:rgba(6,55,78,.08);
+  box-shadow:inset 0 0 0 1px rgba(6,55,78,.07);
+}
+
+#myfinhub-card-stack .card-piraeus-gold .card-action.primary{
+  background:#0c4562;
+  color:#fff;
+}
+
+#myfinhub-card-stack .card-piraeus-platinum{
+  --card-text:#1b3850;
+  --card-muted:rgba(27,56,80,.55);
+  background:linear-gradient(115deg,rgba(255,255,255,.50),transparent 30%,transparent 64%,rgba(44,80,112,.06)),
+    repeating-linear-gradient(90deg,rgba(255,255,255,.10) 0 1px,rgba(67,88,102,.025) 1px 3px),
+    linear-gradient(145deg,#edf3f7 0%,#d6dfe7 56%,#bcc9d6 100%);
+}
+
+#myfinhub-card-stack .card-piraeus-platinum .card-icon-btn,#myfinhub-card-stack .card-piraeus-platinum .copy-mini,#myfinhub-card-stack .card-piraeus-platinum .card-action{
+  background:rgba(7,54,76,.07);
+  box-shadow:inset 0 0 0 1px rgba(7,54,76,.07);
+}
+
+#myfinhub-card-stack .card-piraeus-platinum .card-action.primary{
+  background:#0c4562;
+  color:#fff;
+}
+
+#myfinhub-card-stack .card-piraeus-midnight{
+  --card-text:#e7efe9;
+  --card-muted:rgba(231,239,233,.62);
+  background:radial-gradient(circle at 84% 14%,rgba(255,255,255,.06),transparent 22%),
+    linear-gradient(118deg,rgba(255,255,255,.08),transparent 22%,transparent 68%,rgba(255,255,255,.04)),
+    linear-gradient(145deg,#0f3449 0%,#123d53 48%,#0a2535 100%);
+}
+
+#myfinhub-card-stack .card-alpha{
+  --card-text:#f8fbff;
+  --card-muted:rgba(26,61,93,.62);
+  background:radial-gradient(circle at 55% 50%,transparent 0 27%,rgba(255,255,255,.20) 27.4%,transparent 28%),
+    radial-gradient(circle at 55% 50%,transparent 0 39%,rgba(255,255,255,.11) 39.3%,transparent 40%),
+    repeating-radial-gradient(circle at 55% 50%,rgba(255,255,255,.055) 0 1px,transparent 1px 9px),
+    linear-gradient(135deg,#83c4f4,#6fb7eb 50%,#5da3de 100%);
+}
+
+#myfinhub-card-stack .card-alpha .card-bank-name{
+  font-weight:450;
+  letter-spacing:.03em;
+  font-size:1.28rem;
+}
+
+#myfinhub-card-stack .card-alpha .card-number,#myfinhub-card-stack .card-alpha .card-field-value,#myfinhub-card-stack .card-alpha .edit-number,#myfinhub-card-stack .card-alpha .edit-small{
+  text-shadow:1px 1px 0 rgba(65,95,122,.72),-1px -1px 0 rgba(255,255,255,.38),0 0 2px rgba(48,75,103,.28);
+}
+
+#myfinhub-card-stack .alpha-enter{
+  font-size:1.30rem;
+  font-weight:350;
+  letter-spacing:-.03em;
+  display:flex;
+  align-items:center;
+  gap:5px;
+}
+
+#myfinhub-card-stack .alpha-enter:before{
+  content:"";
+  width:0;
+  height:0;
+  border-top:8px solid transparent;
+  border-bottom:8px solid transparent;
+  border-right:12px solid currentColor;
+}
+
+#myfinhub-card-stack .card-alpha-bonus{
+  --card-text:#f6fbff;
+  --card-muted:rgba(246,251,255,.63);
+  background:radial-gradient(circle at 70% 40%,transparent 0 22%,rgba(79,163,221,.20) 22.6%,transparent 23.4%),
+    repeating-linear-gradient(0deg,rgba(57,139,198,.11) 0 1px,transparent 1px 6px),
+    repeating-linear-gradient(90deg,rgba(57,139,198,.09) 0 1px,transparent 1px 7px),
+    linear-gradient(145deg,#173f71 0%,#0f315e 56%,#0b274d 100%);
+}
+
+#myfinhub-card-stack .card-alpha-bonus .card-bank-name{
+  font-weight:520;
+  letter-spacing:.025em;
+  font-size:1.25rem;
+}
+
+#myfinhub-card-stack .card-alpha-gold{
+  --card-text:#e7d0a0;
+  --card-muted:rgba(231,208,160,.62);
+  background:radial-gradient(circle at 65% 42%,transparent 0 25%,rgba(210,172,91,.14) 25.5%,transparent 26.2%),
+    repeating-linear-gradient(135deg,rgba(231,208,160,.055) 0 1px,transparent 1px 6px),
+    linear-gradient(145deg,#40351f 0%,#2c2519 55%,#1d1913 100%);
+}
+
+#myfinhub-card-stack .card-alpha-gold .card-bank-name{
+  font-weight:520;
+  letter-spacing:.025em;
+  font-size:1.25rem;
+}
+
+#myfinhub-card-stack .card-alpha-sky{
+  --card-text:#f9fbff;
+  --card-muted:rgba(25,70,109,.62);
+  background:radial-gradient(circle at 56% 48%,transparent 0 26%,rgba(255,255,255,.18) 26.5%,transparent 27.2%),
+    repeating-linear-gradient(90deg,rgba(255,255,255,.08) 0 1px,transparent 1px 8px),
+    linear-gradient(145deg,#9ad2f8 0%,#78b7ea 52%,#4f93d0 100%);
+}
+
+#myfinhub-card-stack .card-alpha-sky .card-bank-name{
+  font-weight:500;
+  letter-spacing:.03em;
+  font-size:1.25rem;
+}
+
+#myfinhub-card-stack .card-alpha-midnight{
+  --card-text:#edf6ff;
+  --card-muted:rgba(237,246,255,.68);
+  background:radial-gradient(circle at 64% 42%,transparent 0 25%,rgba(54,127,200,.18) 25.7%,transparent 26.6%),
+    repeating-linear-gradient(0deg,rgba(84,138,201,.08) 0 1px,transparent 1px 7px),
+    linear-gradient(145deg,#183d72 0%,#122f59 52%,#0a203f 100%);
+}
+
+#myfinhub-card-stack .card-alpha-midnight .card-bank-name{
+  font-weight:500;
+  letter-spacing:.03em;
+  font-size:1.25rem;
+}
+

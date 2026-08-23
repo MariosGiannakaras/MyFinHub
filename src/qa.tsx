@@ -12,7 +12,7 @@ import { PersistenceNotice } from './components/PersistenceNotice';
 import type { QuickPrefill } from './components/QuickAdd';
 import { financeChangeLabel, type ChangeHistoryEntry, type SaveState } from './hooks/useFinance';
 import type { AttentionItem } from './lib/attention';
-import { archiveCardRecord } from './lib/cards';
+import { archiveCardRecord, withCardProfileDeleted } from './lib/cards';
 import type { RankedCommandSearchItem } from './lib/commandSearch';
 import { accountBalances, allAccounts, createEvent } from './lib/domain';
 import { withLegacyOverride, withLegacyTombstone } from './lib/legacyTransactions';
@@ -49,9 +49,9 @@ function buildQaData(params:URLSearchParams){
   const next=qaFinanceData();
   if(params.get('motion')==='reduced')next.state.settings.motion='reduced';
   next.state.settings.textSize=initialTextSize(params.get('text'));
-  next.state.budgets=next.state.budgets??[];next.state.transactionRules=next.state.transactionRules??[];
+  next.state.budgets=next.state.budgets??[];next.state.transactionRules=next.state.transactionRules??[];next.state.deletedCards=next.state.deletedCards??[];
   if(params.get('state')==='empty'){
-    next.seed.transactions=[];next.seed.recurring=[];next.seed.loans=[];next.seed.lending=[];next.seed.snapshots=next.seed.snapshots.map(snapshot=>({...snapshot,balances:{...snapshot.balances,'piraeus-payroll':1000,'piraeus-savings':1000,cash:1000}}));next.state.events=[];next.state.scheduled=[];next.state.recurringCustom=[];next.state.recurringOverrides={};next.state.customLoans=[];next.state.loanOverrides={};next.state.cards=[];next.state.cardBanks=[];next.state.reviewDecisions={};next.state.attentionDecisions={};next.state.budgets=[];next.state.transactionRules=[];
+    next.seed.transactions=[];next.seed.recurring=[];next.seed.loans=[];next.seed.lending=[];next.seed.snapshots=next.seed.snapshots.map(snapshot=>({...snapshot,balances:{...snapshot.balances,'piraeus-payroll':1000,'piraeus-savings':1000,cash:1000}}));next.state.events=[];next.state.scheduled=[];next.state.recurringCustom=[];next.state.recurringOverrides={};next.state.customLoans=[];next.state.loanOverrides={};next.state.cards=[];next.state.deletedCards=[];next.state.cardBanks=[];next.state.reviewDecisions={};next.state.attentionDecisions={};next.state.budgets=[];next.state.transactionRules=[];
   }
   if(params.get('state')==='extreme'){
     next.state.settings.accountNames={...next.state.settings.accountNames,'piraeus-payroll':'Κύριος λογαριασμός μισθοδοσίας με εξαιρετικά μεγάλο όνομα για έλεγχο διάταξης'};
@@ -111,6 +111,7 @@ function QaWorkspace(){
   const upsertBank=(bank:CardBank)=>update(current=>({...current,state:{...current.state,cardBanks:[...(current.state.cardBanks??[]).filter(item=>item.id!==bank.id),bank]}}));
   const upsertCard=(card:PaymentCard)=>update(current=>({...current,state:{...current.state,cards:[...(current.state.cards??[]).filter(item=>item.id!==card.id),card]}}));
   const archiveCard=(card:PaymentCard)=>upsertCard(archiveCardRecord(card));
+  const deleteCard=async(card:PaymentCard)=>{update(current=>withCardProfileDeleted(current,card,`${today}T12:00:00.000Z`,today))};
   const upsertScheduled=(item:ScheduledTransaction)=>update(current=>({...current,state:{...current.state,scheduled:[...(current.state.scheduled??[]).filter(existing=>existing.id!==item.id),item]}}));
   const completeScheduled=(item:ScheduledTransaction,event:FinanceEvent)=>update(current=>{const nextEvent=applyTransactionRules(current,event);return {...current,state:{...current.state,scheduled:[...(current.state.scheduled??[]).filter(existing=>existing.id!==item.id),item],events:[...(current.state.events??[]).filter(existing=>existing.id!==nextEvent.id),nextEvent]}}});
   const upsertBudget=(budget:MonthlyBudget)=>update(current=>({...current,state:{...current.state,budgets:[...(current.state.budgets??[]).filter(item=>item.id!==budget.id),budget]}}));
@@ -146,8 +147,8 @@ function QaWorkspace(){
     :page==='transactions'?<TransactionsPage data={data} month={month} onEditEvent={editEvent} onDeleteEvent={deleteEvent} onEditLegacy={editLegacy} onDeleteLegacy={deleteLegacy}/>
     :page==='review'?<ReviewPage data={data} onDecision={(id,decision)=>update(current=>({...current,state:{...current.state,reviewDecisions:{...(current.state.reviewDecisions??{}),[id]:decision}}}))}/>
     :page==='savings'?<SavingsPage data={data} month={month} asOf={today} onCreate={addEvent} onQuickAdd={openSpecial}/>
-    :page==='cards'?<CardsPage data={data} onUpsertBank={upsertBank} onUpsertCard={upsertCard} onArchiveCard={archiveCard} onOpenCredit={()=>setPage('credit')}/>
-    :page==='credit'?<CreditCardPage data={data} asOf={today} onCreateEvent={addEvent} onEditEvent={editEvent} onDeleteEvent={deleteEvent} onUpsertCard={upsertCard} onArchiveCard={archiveCard} onPayCard={cardId=>openSpecial({mode:'credit',action:'payment',cardId})}/>
+    :page==='cards'?<CardsPage data={data} onUpsertBank={upsertBank} onUpsertCard={upsertCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard}/>
+    :page==='credit'?<CreditCardPage data={data} asOf={today} onCreateEvent={addEvent} onEditEvent={editEvent} onDeleteEvent={deleteEvent} onUpsertCard={upsertCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard} onPayCard={cardId=>openSpecial({mode:'credit',action:'payment',cardId})}/>
     :page==='loans'?<LoansPage data={data} asOf={today} onUpsertLoan={upsertLoan} onCreateSelfLoan={createSelfLoan} onPayLoan={loanId=>openSpecial({mode:'loan',loanId})}/>
     :page==='lending'?<LendingPage data={data} asOf={today} onCreateEvent={addEvent} onQuickAdd={openSpecial}/>
     :page==='recurring'?<RecurringPage data={data} asOf={today} onUpsert={upsertRecurring} onOpenLoans={()=>setPage('loans')} onPayLoan={loanId=>openSpecial({mode:'loan',loanId})} onPayRecurring={recurringId=>openSpecial({mode:'recurring',recurringId})}/>

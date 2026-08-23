@@ -11,6 +11,11 @@ describe('card secret crypto',()=>{
     expect(decryptCardSecrets(encrypted,'owner-1','card-1',key)).toEqual({pan:'4111111111111111',expiry:'09/30'});
   });
 
+  it('normalizes digits without issuer-length or Luhn validation',()=>{
+    expect(normalizeCardSecrets({pan:'1234 567 890',expiry:'12/30'})).toEqual({pan:'1234567890',expiry:'12/30'});
+    expect(normalizeCardSecrets({pan:'9999-0000-1111-2222-3333'})).toEqual({pan:'99990000111122223333'});
+  });
+
   it('binds ciphertext to owner and card id',()=>{
     const encrypted=encryptCardSecrets({pan:'4111111111111111'},'owner-1','card-1',key,'1');
     expect(()=>decryptCardSecrets(encrypted,'owner-1','card-2',key)).toThrow('CARD_VAULT_DECRYPT_FAILED');
@@ -22,8 +27,8 @@ describe('card secret crypto',()=>{
     expect(()=>encryptCardSecrets({pan:'4111111111111111'},'owner-1','card-1','bad','1')).toThrow('CARD_VAULT_KEY_INVALID');
   });
 
-  it('rejects CVV persistence and invalid card numbers',()=>{
+  it('rejects CVV persistence and PAN values without any digits',()=>{
     expect(()=>normalizeCardSecrets({pan:'4111111111111111',cvv:'123'})).toThrow('CVV_PERSISTENCE_DISABLED');
-    expect(()=>normalizeCardSecrets({pan:'1234567890123456'})).toThrow('INVALID_CARD_PAN');
+    expect(()=>normalizeCardSecrets({pan:'not-a-number'})).toThrow('INVALID_CARD_PAN');
   });
 });

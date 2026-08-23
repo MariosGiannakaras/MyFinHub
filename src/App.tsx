@@ -12,10 +12,12 @@ import { useFinance } from './hooks/useFinance';
 import { useLocalDate } from './hooks/useLocalDate';
 import { useSession } from './hooks/useSession';
 import type { AttentionItem } from './lib/attention';
-import { archiveCardRecord } from './lib/cards';
+import { archiveCardRecord, canPermanentlyDeleteCreditCard, withCardProfileDeleted } from './lib/cards';
+import { deleteCardSecret } from './lib/cardVaultClient';
 import type { RankedCommandSearchItem } from './lib/commandSearch';
 import { accountBalances, allAccounts } from './lib/domain';
 import { withLegacyOverride, withLegacyTombstone } from './lib/legacyTransactions';
+import { deleteLocalCvv } from './lib/localCvvVault';
 import { reportingMonthForDate } from './lib/localDate';
 import type { TaxonomyOperation } from './lib/taxonomyManagement';
 import { applyTransactionRules } from './lib/transactionRules';
@@ -180,6 +182,12 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
     return { ...current, state: { ...current.state, cards: exists ? cards.map((item) => item.id === card.id ? card : item) : [...cards, card] } };
   });
   const archiveCard = (card: PaymentCard) => upsertCard(archiveCardRecord(card));
+  const deleteCard = async(card:PaymentCard) => {
+    if(card.kind==='credit'&&!canPermanentlyDeleteCreditCard(data,card.id,today))throw new Error('CREDIT_CARD_HAS_OUTSTANDING_BALANCE');
+    await deleteLocalCvv(card.id);
+    await deleteCardSecret(card.id);
+    finance.update(current=>withCardProfileDeleted(current,card,new Date().toISOString(),today));
+  };
   const upsertScheduled = (item: ScheduledTransaction) => finance.update((current) => {
     const items = current.state.scheduled ?? [];
     const exists = items.some((existing) => existing.id === item.id);
@@ -238,8 +246,8 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
     : page === 'transactions' ? <TransactionsPage data={data} month={month} onEditEvent={editEvent} onDeleteEvent={deleteEvent} onEditLegacy={editLegacy} onDeleteLegacy={deleteLegacy}/>
     : page === 'review' ? <ReviewPage data={data} onDecision={decide}/>
     : page === 'savings' ? <SavingsPage data={data} month={month} asOf={today} onCreate={addEvent} onQuickAdd={openSpecial}/>
-    : page === 'cards' ? <CardsPage data={data} onUpsertBank={upsertBank} onUpsertCard={upsertCard} onArchiveCard={archiveCard} onOpenCredit={() => navigate('credit')}/>
-    : page === 'credit' ? <CreditCardPage data={data} asOf={today} onCreateEvent={addEvent} onEditEvent={editEvent} onDeleteEvent={deleteEvent} onUpsertCard={upsertCard} onArchiveCard={archiveCard} onPayCard={(cardId)=>openSpecial({mode:'credit',action:'payment',cardId})}/>
+    : page === 'cards' ? <CardsPage data={data} onUpsertBank={upsertBank} onUpsertCard={upsertCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard}/>
+    : page === 'credit' ? <CreditCardPage data={data} asOf={today} onCreateEvent={addEvent} onEditEvent={editEvent} onDeleteEvent={deleteEvent} onUpsertCard={upsertCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard} onPayCard={(cardId)=>openSpecial({mode:'credit',action:'payment',cardId})}/>
     : page === 'loans' ? <LoansPage data={data} asOf={today} onUpsertLoan={upsertLoan} onCreateSelfLoan={createSelfLoan} onPayLoan={(loanId)=>openSpecial({mode:'loan',loanId})}/>
     : page === 'lending' ? <LendingPage data={data} asOf={today} onCreateEvent={addEvent} onQuickAdd={openSpecial}/>
     : page === 'recurring' ? <RecurringPage data={data} asOf={today} onUpsert={upsertRecurring} onOpenLoans={() => navigate('loans')} onPayLoan={(loanId)=>openSpecial({mode:'loan',loanId})} onPayRecurring={(recurringId)=>openSpecial({mode:'recurring',recurringId})}/>
@@ -264,7 +272,7 @@ export default function App() {
   const session = useSession();
   if (session.state === 'loading') return <div className="boot-screen"><img src="/brand/icon-192.png" alt="MyFinHub"/><div className="boot-pulse"/><b>MyFinHub</b><span>Έλεγχος ασφαλούς συνεδρίας…</span></div>;
   if (session.state === 'error') return <div className="boot-screen"><img src="/brand/icon-192.png" alt="MyFinHub"/><b>MyFinHub</b><span>{session.error || 'Δεν ήταν δυνατός ο έλεγχος της συνεδρίας.'}</span><button className="secondary" type="button" onClick={() => void session.refresh()}>Δοκιμή ξανά</button></div>;
-  if (session.state === 'mfa' || session.state === 'mfa-enroll') return <MfaScreen mode={session.state === 'mfa-enroll' ? 'enroll' : 'challenge'} email={session.email} error={session.error} onEnroll={session.enrollMfa} onVerify={session.verifyMfa} onLogout={async () => { await session.logout(); }}/>;
+  if (session.state === 'mfa' || session.state === 'mfa-enroll') return <MfaScreen mode={session.state === 'mfa-enroll' ? 'enroll' : 'challenge'} email={session.email} error={session.error} onEnroll={session.enrollMfa} onVerify={session.verifyMfa} onLogout={async () => { await session.logout(); }}/>
   if (session.state !== 'authenticated') return <LoginScreen onLogin={session.login} error={session.error}/>;
   return <><FinanceApp userEmail={session.email} onLogout={() => { void session.logout(); }}/>{session.error ? <div className="session-error-banner" role="alert">{session.error}</div> : null}</>;
 }
