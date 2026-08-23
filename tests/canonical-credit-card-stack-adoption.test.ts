@@ -33,6 +33,15 @@ describe('canonical credit-card stack adoption',()=>{
     expect(stack).toContain('readLocalCvv(card.id)');
   });
 
+  it('maps the canonical remove gesture to reversible archive semantics',()=>{
+    expect(stack).toContain('aria-label="Αρχειοθέτηση κάρτας"');
+    expect(stack).toContain('ΣΥΡΕ ΓΙΑ ΑΡΧΕΙΟΘΕΤΗΣΗ');
+    expect(stack).toContain('await archiveRef.current(card.source)');
+    expect(stack).toContain("announce('Η κάρτα αρχειοθετήθηκε')");
+    expect(stack).not.toContain('Η ενέργεια δεν αναιρείται');
+    expect(stack).not.toContain('Σύρε για οριστική διαγραφή');
+  });
+
   it('uses local canonical logo assets and responsive host containment',()=>{
     expect(stack).toContain("../assets/canonical-credit-card/viva-logo.png");
     expect(stack).toContain("../assets/canonical-credit-card/payzy-logo.png");
