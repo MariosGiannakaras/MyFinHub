@@ -60,6 +60,7 @@ export interface PaymentCard {
 export interface DeletedCardReference {
   id: string;
   kind: 'credit';
+  createdAt: string;
   deletedAt: string;
 }
 
