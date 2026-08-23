@@ -186,7 +186,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
     if(card.kind==='credit'&&!canPermanentlyDeleteCreditCard(data,card.id,today))throw new Error('CREDIT_CARD_HAS_OUTSTANDING_BALANCE');
     await deleteLocalCvv(card.id);
     await deleteCardSecret(card.id);
-    finance.update(current=>withCardProfileDeleted(current,card,new Date().toISOString()));
+    finance.update(current=>withCardProfileDeleted(current,card,new Date().toISOString(),today));
   };
   const upsertScheduled = (item: ScheduledTransaction) => finance.update((current) => {
     const items = current.state.scheduled ?? [];
@@ -250,7 +250,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
     : page === 'credit' ? <CreditCardPage data={data} asOf={today} onCreateEvent={addEvent} onEditEvent={editEvent} onDeleteEvent={deleteEvent} onUpsertCard={upsertCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard} onPayCard={(cardId)=>openSpecial({mode:'credit',action:'payment',cardId})}/>
     : page === 'loans' ? <LoansPage data={data} asOf={today} onUpsertLoan={upsertLoan} onCreateSelfLoan={createSelfLoan} onPayLoan={(loanId)=>openSpecial({mode:'loan',loanId})}/>
     : page === 'lending' ? <LendingPage data={data} asOf={today} onCreateEvent={addEvent} onQuickAdd={openSpecial}/>
-    : page === 'recurring' ? <RecurringPage data={data} asOf={today} onUpsert={upsertRecurring} onOpenLoans={() => navigate('loans')} onPayLoan={(loanId)=>openSpecial({mode:'loan',loanId})} onPayRecurring={(recurringId)=>openSpecial({mode:'recurring',recurringId})}/>
+    : page === 'recurring' ? <RecurringPage data={data} asOf={today} onUpsert={upsertRecurring} onOpenLoans={() => navigate('loans')} onPayLoan={(loanId)=>openSpecial({mode:'loan',loanId)} onPayRecurring={(recurringId)=>openSpecial({mode:'recurring',recurringId})}/>
     : page === 'planning' ? <PlanningPage data={data} asOf={today} onUpsertScheduled={upsertScheduled} onCompleteScheduled={completeScheduled}/>
     : page === 'attention' ? <AttentionPage data={data} asOf={today} onAction={handleAttention} onDecision={decideAttention}/>
     : page === 'reports' ? <ReportsPage data={data} month={month}/>
