@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 const credit=readFileSync(new URL('../src/pages/CreditCardPage.tsx',import.meta.url),'utf8');
 const loans=readFileSync(new URL('../src/pages/LoansPage.tsx',import.meta.url),'utf8');
 const planning=readFileSync(new URL('../src/pages/PlanningPage.tsx',import.meta.url),'utf8');
+const settings=readFileSync(new URL('../src/pages/SettingsPage.tsx',import.meta.url),'utf8');
 
 function expectNoNativeDialog(source:string){
   expect(source).not.toContain('window.prompt');
@@ -31,5 +32,13 @@ describe('shared primitive adoption',()=>{
     expect(planning).toContain('<MoneyInput data-autofocus="true" value={draft.amount}');
     expect(planning).toContain('<MoneyInput data-autofocus="true" value={actualAmount}');
     expect(planning).toContain("transitionScheduled(item,status)");
+  });
+
+  it('keeps JSON import behind the app-owned confirmation without changing the import path',()=>{
+    expectNoNativeDialog(settings);
+    expect(settings).toContain('<ConfirmDialog');
+    expect(settings).toContain('pendingImportFile');
+    expect(settings).toContain('await onImport(JSON.parse(await file.text()))');
+    expect(settings).toContain('file.size>MAX_FINANCE_DOCUMENT_BYTES');
   });
 });
