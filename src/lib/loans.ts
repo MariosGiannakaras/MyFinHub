@@ -1,6 +1,5 @@
 import type { FinanceData, FinanceEvent, Loan } from '../types.js';
 
-export type LoanPaymentEvent=FinanceEvent&{installmentCount?:number};
 export type LoanInstallmentPaymentPlan={count:number;firstInstallment:number;lastInstallment:number;amount:number};
 
 export function isSelfLoan(loan:Loan){return loan.kind==='self-loan'||loan.source==='self-loan'||/\bHELP\b|ΒΟΗΘΕΙΑ/i.test(`${loan.name} ${loan.provider||''}`)}
@@ -12,13 +11,12 @@ export function loanPaymentEvents(data:FinanceData,loan:Loan){
 }
 
 export function loanPaymentInstallmentCount(event:FinanceEvent){
-  const raw=Number((event as LoanPaymentEvent).installmentCount??1);
+  const raw=Number(event.installmentCount??1);
   return Number.isInteger(raw)&&raw>0?raw:1;
 }
 
 export function setLoanPaymentInstallmentCount(event:FinanceEvent,count:number){
-  const normalized=Math.max(1,Math.floor(Number(count)||1));
-  (event as LoanPaymentEvent).installmentCount=normalized;
+  event.installmentCount=Math.max(1,Math.floor(Number(count)||1));
   return event;
 }
 
@@ -67,6 +65,6 @@ export function isLongTermLoan(loan:Loan){return loan.longTermRecurring??(loan.i
 export function preserveLoanPaymentLink(next: FinanceEvent, previous?: FinanceEvent | null) {
   if (previous?.loanId) next.loanId = previous.loanId;
   const previousCount=previous?loanPaymentInstallmentCount(previous):1;
-  if(previous&&(previous as LoanPaymentEvent).installmentCount!==undefined&&(next as LoanPaymentEvent).installmentCount===undefined)(next as LoanPaymentEvent).installmentCount=previousCount;
+  if(previous&&previous.installmentCount!==undefined&&next.installmentCount===undefined)next.installmentCount=previousCount;
   return next;
 }
