@@ -19,6 +19,7 @@ const uniqueLabels=(values:string[])=>{
   }
   return result;
 };
+const uniqueIds=(values:string[])=>[...new Set(values.filter(Boolean))];
 
 function hashToken(value:string){
   let hash=2166136261;
@@ -31,8 +32,13 @@ function generatedIdentityId(kind:CategoryKind,label:string,parentId?:string){
   return `${parentId?'sub':'cat'}-${kind}-${hashToken(`${kind}|${scope}|${categoryKey(label)}`)}`;
 }
 
+function parentMatches(record:CategoryIdentityRecord,parentId:string|undefined){
+  if(parentId===undefined)return record.parentId===undefined;
+  return record.parentId===parentId||(record.parentAliases??[]).includes(parentId);
+}
+
 function recordMatches(record:CategoryIdentityRecord,kind:CategoryKind,parentId:string|undefined,label:string){
-  if(record.kind!==kind||record.parentId!==parentId)return false;
+  if(record.kind!==kind||!parentMatches(record,parentId))return false;
   return [record.label,...(record.aliases??[])].some(candidate=>sameLabel(candidate,label));
 }
 
@@ -52,14 +58,15 @@ function normalizedRecord(record:CategoryIdentityRecord,label:string):CategoryId
   const previous=clean(record.label);
   const current=clean(label);
   const aliases=uniqueLabels([...(record.aliases??[]),...(previous&&!sameLabel(previous,current)?[previous]:[])]).filter(alias=>!sameLabel(alias,current));
-  return {...record,label:current,aliases};
+  const parentAliases=record.parentId===undefined?undefined:uniqueIds(record.parentAliases??[]).filter(id=>id!==record.parentId);
+  return {...record,label:current,aliases,parentAliases};
 }
 
 export function ensureCategoryIdentities(settings:FinanceSettings):FinanceSettings{
   const records:Record<string,CategoryIdentityRecord>={};
   for(const [id,record] of Object.entries(settings.categoryIdentities??{})){
     if(!record||record.id!==id||(record.kind!=='expense'&&record.kind!=='income')||!clean(record.label))continue;
-    records[id]={...record,label:clean(record.label),aliases:uniqueLabels(record.aliases??[])};
+    records[id]={...record,label:clean(record.label),aliases:uniqueLabels(record.aliases??[]),parentAliases:record.parentId===undefined?undefined:uniqueIds(record.parentAliases??[]).filter(parentId=>parentId!==record.parentId)};
   }
 
   for(const kind of ['expense','income'] as const){
@@ -71,7 +78,8 @@ export function ensureCategoryIdentities(settings:FinanceSettings):FinanceSettin
       for(const subcategory of category.subcategories){
         const child=findRecord(records,kind,categoryId,subcategory);
         const childId=child?.id??availableId(records,kind,subcategory,categoryId);
-        records[childId]=normalizedRecord(child??{id:childId,kind,label:subcategory,aliases:[],parentId:categoryId},subcategory);
+        const currentChild=child??{id:childId,kind,label:subcategory,aliases:[],parentId:categoryId};
+        records[childId]=normalizedRecord({...currentChild,parentId:categoryId},subcategory);
       }
     }
   }
@@ -157,7 +165,7 @@ export function moveSubcategoryIdentity(settings:FinanceSettings,kind:CategoryKi
   if(tree[targetIndex].subcategories.some(label=>sameLabel(label,record.label)))throw new Error('Η κατηγορία προορισμού έχει ήδη υποκατηγορία με αυτό το όνομα.');
   tree[sourceIndex].subcategories=tree[sourceIndex].subcategories.filter(label=>!sameLabel(label,record.label));
   tree[targetIndex].subcategories=[...tree[targetIndex].subcategories,record.label];
-  records[identityId]={...record,parentId:target.id};
+  records[identityId]={...record,parentId:target.id,parentAliases:uniqueIds([...(record.parentAliases??[]),source.id]).filter(parentId=>parentId!==target.id)};
   const subcategoryIcons={...(normalized.subcategoryIcons??{})};
   const oldIconKey=subcategoryIconPreferenceKey(kind,source.label,record.label);
   const newIconKey=subcategoryIconPreferenceKey(kind,target.label,record.label);
