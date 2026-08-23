@@ -75,12 +75,15 @@ export function withLegacyOverride(data: FinanceData, input: LegacyTransaction):
   const override = normalizeLegacyOverride(data, input);
   const deleted = deletedIds(data.state.deleted);
   deleted.delete(override.id);
+  const reviewDecisions = { ...(data.state.reviewDecisions ?? {}) };
+  delete reviewDecisions[override.id];
   return {
     ...data,
     state: {
       ...data.state,
       overrides: { ...(data.state.overrides ?? {}), [override.id]: override },
       deleted: [...deleted],
+      reviewDecisions,
     },
   };
 }
