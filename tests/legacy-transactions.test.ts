@@ -51,6 +51,40 @@ describe('legacy transaction overrides and tombstones', () => {
     expect(accountBalances(next, '2026-08-31')['bank-a']).toBe(975);
   });
 
+  it('makes a later manual edit authoritative by clearing the prior confirmed review decision only for that row', () => {
+    const data = fixture();
+    data.state.reviewDecisions = {
+      'legacy-1': { status: 'confirmed', semanticKind: 'saving_cash_offset', decidedAt: '2026-08-11T10:00:00.000Z' },
+      other: { status: 'confirmed', semanticKind: 'refund', decidedAt: '2026-08-11T11:00:00.000Z' },
+    };
+
+    const next = withLegacyOverride(data, { ...data.seed.transactions[0], amount: 55, note: 'Manual correction' });
+
+    expect(next.state.reviewDecisions['legacy-1']).toBeUndefined();
+    expect(next.state.reviewDecisions.other).toEqual(data.state.reviewDecisions.other);
+    expect(monthlyFlow(next, '2026-08')).toMatchObject({ expense: 55, saving: 0, refunds: 0 });
+  });
+
+  it('clears prior confirmed split semantics when the row is manually edited', () => {
+    const data = fixture();
+    data.state.reviewDecisions = {
+      'legacy-1': {
+        status: 'confirmed',
+        semanticKind: 'split',
+        decidedAt: '2026-08-11T10:00:00.000Z',
+        parts: [
+          { id: 'part-1', label: 'Αγορά', category: 'Τρόφιμα', amount: 30, kind: 'expense' },
+          { id: 'part-2', label: 'Επιστροφή', category: 'Τρόφιμα', amount: 10, kind: 'refund' },
+        ],
+      },
+    };
+
+    const next = withLegacyOverride(data, { ...data.seed.transactions[0], amount: 50, category: 'Μετακινήσεις' });
+
+    expect(next.state.reviewDecisions['legacy-1']).toBeUndefined();
+    expect(monthlyFlow(next, '2026-08')).toMatchObject({ expense: 50, refunds: 0 });
+  });
+
   it('tombstones an overridden row without destroying its override or double-adjusting the seed baseline', () => {
     const edited = withLegacyOverride(fixture(), { ...fixture().seed.transactions[0], amount: 75 });
     const deleted = withLegacyTombstone(edited, 'legacy-1');
