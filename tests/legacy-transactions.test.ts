@@ -48,10 +48,10 @@ describe('legacy transaction overrides and tombstones', () => {
     expect(next.state.overrides['legacy-1']).toMatchObject({ source: 'xlsx', sheet: 'August', cell: 'B12', formula: '=SUM(A1:A2)' });
     expect(effectiveLegacyTransactions(next)).toHaveLength(1);
     expect(monthlyFlow(next, '2026-08').expense).toBe(65);
-    expect(accountBalances(next, '2026-08-31')['bank-a']).toBe(935);
+    expect(accountBalances(next, '2026-08-31')['bank-a']).toBe(975);
   });
 
-  it('tombstones an overridden row without destroying its override and undo-compatible state can restore visibility', () => {
+  it('tombstones an overridden row without destroying its override or double-adjusting the seed baseline', () => {
     const edited = withLegacyOverride(fixture(), { ...fixture().seed.transactions[0], amount: 75 });
     const deleted = withLegacyTombstone(edited, 'legacy-1');
 
@@ -60,10 +60,11 @@ describe('legacy transaction overrides and tombstones', () => {
     expect(effectiveLegacyTransaction(deleted, 'legacy-1')).toBeNull();
     expect(effectiveLegacyTransactions(deleted)).toEqual([]);
     expect(monthlyFlow(deleted, '2026-08').expense).toBe(0);
-    expect(accountBalances(deleted, '2026-08-31')['bank-a']).toBe(1000);
+    expect(accountBalances(deleted, '2026-08-31')['bank-a']).toBe(1040);
 
     const restoredByUndoState = edited;
     expect(effectiveLegacyTransaction(restoredByUndoState, 'legacy-1')?.amount).toBe(75);
+    expect(accountBalances(restoredByUndoState, '2026-08-31')['bank-a']).toBe(965);
   });
 
   it('restores original by clearing both override and tombstone', () => {
@@ -75,6 +76,7 @@ describe('legacy transaction overrides and tombstones', () => {
     expect(restored.state.deleted).toEqual([]);
     expect(effectiveLegacyTransaction(restored, 'legacy-1')).toEqual(restored.seed.transactions[0]);
     expect(monthlyFlow(restored, '2026-08').expense).toBe(40);
+    expect(accountBalances(restored, '2026-08-31')['bank-a']).toBe(1000);
   });
 
   it('accepts legacy boolean-record tombstones and preserves unrelated deleted ids', () => {
@@ -89,12 +91,12 @@ describe('legacy transaction overrides and tombstones', () => {
     const transfer = withLegacyOverride(data, { ...data.seed.transactions[0], type: 'transfer', accountId: undefined, fromAccountId: 'bank-a', toAccountId: 'bank-b', amount: 120 });
     expect(transfer.state.overrides['legacy-1']).toMatchObject({ type: 'transfer', fromAccountId: 'bank-a', toAccountId: 'bank-b', amount: 120 });
     expect(transfer.state.overrides['legacy-1'].accountId).toBeUndefined();
-    expect(accountBalances(transfer, '2026-08-31')).toMatchObject({ 'bank-a': 880, 'bank-b': 320 });
+    expect(accountBalances(transfer, '2026-08-31')).toMatchObject({ 'bank-a': 920, 'bank-b': 320 });
     expect(monthlyFlow(transfer, '2026-08').expense).toBe(0);
 
     const adjustment = withLegacyOverride(data, { ...data.seed.transactions[0], type: 'adjustment', accountId: 'bank-a', amount: -25 });
     expect(adjustment.state.overrides['legacy-1'].amount).toBe(-25);
-    expect(accountBalances(adjustment, '2026-08-31')['bank-a']).toBe(975);
+    expect(accountBalances(adjustment, '2026-08-31')['bank-a']).toBe(1015);
   });
 
   it('fails closed for unknown seed ids, invalid routes and non-positive normal amounts', () => {
