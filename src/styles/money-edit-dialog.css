@@ -1,0 +1,5 @@
+.app-money-edit-dialog{width:min(480px,calc(100vw - 36px));box-sizing:border-box}
+.app-money-edit-dialog-body{padding:0 20px 4px}
+.app-money-edit-dialog .money-input{width:100%;box-sizing:border-box}
+.app-money-edit-dialog .money-input input{min-width:0}
+@media(max-width:680px){.app-money-edit-dialog-body{padding-left:13px;padding-right:13px}.app-money-edit-dialog>footer button{min-height:44px;flex:1}}

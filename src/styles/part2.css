@@ -31,7 +31,7 @@
 .frequent-grid b{font-size:9px;display:block}
 .frequent-grid span{font-size:7.5px;color:var(--muted)}
 .frequent-grid strong{font-size:10px;float:right;margin-top:-12px}
-.wide-action{width:100%;border:0;background:linear-gradient(135deg,#edf3ff,#f8fbff);color:var(--blue);border-radius:12px;padding:10px;box-shadow:var(--shadow-soft);margin-top:10px;font-weight:750;font-size:9px;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer}
+.wide-action{width:100%;min-height:44px;border:0;background:linear-gradient(135deg,#edf3ff,#f8fbff);color:var(--blue);border-radius:12px;padding:10px;box-shadow:var(--shadow-soft);margin-top:10px;font-weight:750;font-size:9px;display:flex;align-items:center;justify-content:center;gap:6px;cursor:pointer}
 .pie-layout{display:grid;grid-template-columns:210px 1fr;align-items:center;gap:8px}
 .chart-wrap{position:relative}
 .pie-center{position:absolute;inset:0;display:grid;place-content:center;text-align:center;pointer-events:none}

@@ -37,6 +37,7 @@ import type {
 
 const CommandPalette = lazy(() => import('./components/CommandPalette').then((module) => ({ default: module.CommandPalette })));
 const ContextualQuickAdd = lazy(() => import('./components/ContextualQuickAdd').then((module) => ({ default: module.ContextualQuickAdd })));
+const ConfirmDialog = lazy(() => import('./components/ConfirmDialog').then((module) => ({ default: module.ConfirmDialog })));
 const DashboardPage = lazy(() => import('./pages/DashboardPage').then((module) => ({ default: module.DashboardPage })));
 const TransactionsPage = lazy(() => import('./pages/TransactionsPage').then((module) => ({ default: module.TransactionsPage })));
 const ReviewPage = lazy(() => import('./pages/ReviewPage').then((module) => ({ default: module.ReviewPage })));
@@ -83,6 +84,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   const [quickContext, setQuickContext] = useState<QuickActionContext | null>(null);
   const [month, setMonth] = useState(() => today.slice(0,7));
   const [monthIsManual, setMonthIsManual] = useState(false);
+  const [recoverOpen,setRecoverOpen]=useState(false);
 
   const navigate = (next: PageId, replace = false) => {
     const hash = pageHash(next);
@@ -226,9 +228,10 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
 
   const balance = (accountId: string) => accountBalances(data, today)[accountId] || 0;
   const recover = () => {
-    if ((finance.saveState === 'error' || finance.saveState === 'conflict') && !window.confirm('Η επαναφόρτωση θα απορρίψει τυχόν τοπικές αλλαγές που δεν αποθηκεύτηκαν. Να φορτωθεί η τελευταία έκδοση από τη βάση;')) return;
+    if (finance.saveState === 'error' || finance.saveState === 'conflict') { setRecoverOpen(true); return; }
     void finance.reload();
   };
+  const confirmRecover=()=>{setRecoverOpen(false);void finance.reload()};
 
   const content = page === 'dashboard'
     ? <DashboardPage data={data} month={month} asOf={today} motionMode="full" onQuickAdd={(prefill?: QuickPrefill) => openGeneric('expense', prefill || null)} onAccountQuickAdd={(accountId, kind) => kind === 'savings' ? openSpecial({ mode: 'savings', toAccountId: accountId, savingSource: 'manual_transfer' }) : openGeneric('expense', { note: '', amount: 0, accountId })} onTransactions={() => navigate('transactions')} onPlanning={() => navigate('planning')} onAttention={() => navigate('attention')} onReports={()=>navigate('reports')}/>
@@ -253,6 +256,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
     </AppShell>
     {commandOpen ? <Suspense fallback={null}><CommandPalette open={commandOpen} data={data} motionMode="full" onClose={()=>setCommandOpen(false)} onExecute={handleCommand}/></Suspense> : null}
     {quickOpen ? <Suspense fallback={null}><ContextualQuickAdd open={quickOpen} data={data} asOf={today} context={quickContext} motionMode="full" initial={(data.state.events ?? []).find((event) => event.id === editingEventId) || null} onClose={() => { setQuickOpen(false); setEditingEventId(null); setQuickContext(null); }} onCreate={addEvent} onCompleteScheduled={completeScheduled} currentBalance={balance}/></Suspense> : null}
+    {recoverOpen ? <Suspense fallback={null}><ConfirmDialog open title="Φόρτωση τελευταίας αποθηκευμένης έκδοσης;" description="Η επαναφόρτωση θα απορρίψει τυχόν τοπικές αλλαγές που δεν αποθηκεύτηκαν και θα φορτώσει την τελευταία έκδοση από τη βάση." confirmLabel="Επαναφόρτωση" tone="destructive" motionMode={data.state.settings.motion} onConfirm={confirmRecover} onCancel={()=>setRecoverOpen(false)}/></Suspense> : null}
   </>;
 }
 
