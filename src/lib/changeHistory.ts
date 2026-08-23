@@ -1,4 +1,4 @@
-import type { FinanceData, FinanceEvent, FinanceSettings, Loan, MonthlyBudget, PaymentCard, RecurringItem, ScheduledTransaction, TransactionRule } from '../types.js';
+import type { FinanceData, FinanceEvent, FinanceSettings, LegacyTransaction, Loan, MonthlyBudget, PaymentCard, RecurringItem, ScheduledTransaction, TransactionRule } from '../types.js';
 
 type Change<T> = { type:'add'|'edit'|'delete'; before?:T; after?:T } | null;
 
@@ -36,6 +36,26 @@ function describeEvent(current:FinanceData,next:FinanceData){
   return `Επεξεργασία οικονομικής κίνησης · ${parts.slice(0,3).join(' · ')||privacyFallback}`;
 }
 
+function legacyType(row:LegacyTransaction){return row.type==='income'?'Έσοδο':row.type==='transfer'?'Μεταφορά':row.type==='adjustment'?'Διόρθωση υπολοίπου':'Δαπάνη'}
+function legacyRoute(data:FinanceData,row:LegacyTransaction){if(row.type==='transfer')return `${accountKind(data,row.fromAccountId)} → ${accountKind(data,row.toAccountId)}`;return accountKind(data,row.accountId)}
+function deletedLegacyIds(value:FinanceData['state']['deleted']){return new Set(Array.isArray(value)?value:Object.entries(value??{}).filter(([,deleted])=>deleted).map(([id])=>id))}
+function describeLegacy(current:FinanceData,next:FinanceData){
+  const currentDeleted=deletedLegacyIds(current.state.deleted);const nextDeleted=deletedLegacyIds(next.state.deleted);
+  const ids=new Set([...current.seed.transactions.map(row=>row.id),...Object.keys(current.state.overrides??{}),...Object.keys(next.state.overrides??{}),...currentDeleted,...nextDeleted]);
+  for(const id of ids){
+    const seed=next.seed.transactions.find(row=>row.id===id)??current.seed.transactions.find(row=>row.id===id);if(!seed)continue;
+    const wasDeleted=currentDeleted.has(id);const isDeleted=nextDeleted.has(id);
+    const before=current.state.overrides?.[id]??seed;const after=next.state.overrides?.[id]??seed;
+    if(wasDeleted!==isDeleted){const row=isDeleted?before:after;return `${isDeleted?'Διαγραφή':'Επαναφορά'} ιστορικής κίνησης · ${legacyType(row)} · ${money(row.amount)} · ${dateLabel(row.date)}`;}
+    if(different(before,after)){
+      const parts:string[]=[];
+      if(before.amount!==after.amount)parts.push(`Ποσό ${money(before.amount)} → ${money(after.amount)}`);if(before.date!==after.date)parts.push(`Ημερομηνία ${dateLabel(before.date)} → ${dateLabel(after.date)}`);if(before.type!==after.type)parts.push(`Τύπος ${legacyType(before)} → ${legacyType(after)}`);if(before.category!==after.category)parts.push(`Κατηγορία ${bounded(before.category)||'—'} → ${bounded(after.category)||'—'}`);if(before.accountId!==after.accountId||before.fromAccountId!==after.fromAccountId||before.toAccountId!==after.toAccountId)parts.push(`Διαδρομή ${legacyRoute(current,before)} → ${legacyRoute(next,after)}`);
+      return `Επεξεργασία ιστορικής κίνησης · ${parts.slice(0,3).join(' · ')||privacyFallback}`;
+    }
+  }
+  return null;
+}
+
 function scheduledKind(item:ScheduledTransaction){return item.kind==='income'?'Έσοδο':item.kind==='transfer'?'Μεταφορά':'Δαπάνη'}
 function scheduledStatus(value:ScheduledTransaction['status']|undefined){return value==='completed'?'Ολοκληρώθηκε':value==='skipped'?'Παραλείφθηκε':value==='cancelled'?'Ακυρώθηκε':'Εκκρεμεί'}
 function describeScheduled(current:FinanceData,next:FinanceData){
@@ -66,4 +86,4 @@ function describeSettings(current:FinanceData,next:FinanceData){const before=cur
 
 function recordDecision(current:Record<string,unknown>|undefined,next:Record<string,unknown>|undefined,label:string){if(!different(current,next))return null;const keys=new Set([...Object.keys(current??{}),...Object.keys(next??{})]);for(const key of keys){const before=current?.[key] as {status?:string}|undefined;const after=next?.[key] as {status?:string}|undefined;if(different(before,after))return `${label} · Κατάσταση ${bounded(before?.status)||'—'} → ${bounded(after?.status)||'—'}`;}return label}
 
-export function describeFinanceChange(current:FinanceData,next:FinanceData){const scheduled=describeScheduled(current,next);if(scheduled)return scheduled;const loan=describeLoan(current,next);if(loan&&different(current.state.events,next.state.events))return loan;const recurring=describeRecurring(current,next);if(recurring&&different(current.state.events,next.state.events))return recurring;const cards=describeCards(current,next);if(cards)return cards;const event=describeEvent(current,next);if(event)return event;if(loan)return loan;if(recurring)return recurring;const budget=describeBudgets(current,next);if(budget)return budget;const rule=describeRules(current,next);if(rule)return rule;const settings=describeSettings(current,next);if(settings)return settings;const review=recordDecision(current.state.reviewDecisions,next.state.reviewDecisions,'Αλλαγή απόφασης ελέγχου');if(review)return review;const attention=recordDecision(current.state.attentionDecisions,next.state.attentionDecisions,'Αλλαγή στο Χρειάζεται προσοχή');if(attention)return attention;return 'Αλλαγή οικονομικών δεδομένων · Οι λεπτομέρειες δεν εμφανίζονται για λόγους ιδιωτικότητας.'}
+export function describeFinanceChange(current:FinanceData,next:FinanceData){const scheduled=describeScheduled(current,next);if(scheduled)return scheduled;const loan=describeLoan(current,next);if(loan&&different(current.state.events,next.state.events))return loan;const recurring=describeRecurring(current,next);if(recurring&&different(current.state.events,next.state.events))return recurring;const cards=describeCards(current,next);if(cards)return cards;const event=describeEvent(current,next);if(event)return event;const legacy=describeLegacy(current,next);if(legacy)return legacy;if(loan)return loan;if(recurring)return recurring;const budget=describeBudgets(current,next);if(budget)return budget;const rule=describeRules(current,next);if(rule)return rule;const settings=describeSettings(current,next);if(settings)return settings;const review=recordDecision(current.state.reviewDecisions,next.state.reviewDecisions,'Αλλαγή απόφασης ελέγχου');if(review)return review;const attention=recordDecision(current.state.attentionDecisions,next.state.attentionDecisions,'Αλλαγή στο Χρειάζεται προσοχή');if(attention)return attention;return 'Αλλαγή οικονομικών δεδομένων · Οι λεπτομέρειες δεν εμφανίζονται για λόγους ιδιωτικότητας.'}
