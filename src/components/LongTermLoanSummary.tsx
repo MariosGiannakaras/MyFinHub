@@ -1,7 +1,8 @@
 import { Landmark, ReceiptText } from 'lucide-react';
 import { activeLongTermLoanObligations } from '../lib/loans';
-import { money, shortDate } from '../lib/format';
+import { shortDate } from '../lib/format';
 import type { FinanceData } from '../types';
+import { AnimatedAmount } from './AnimatedAmount';
 
 export function LongTermLoanSummary({data,onPayLoan,onOpenLoans}:{data:FinanceData;onPayLoan:(loanId:string)=>void;onOpenLoans:()=>void}){
   const obligations=activeLongTermLoanObligations(data);
@@ -11,7 +12,7 @@ export function LongTermLoanSummary({data,onPayLoan,onOpenLoans}:{data:FinanceDa
     <div className="long-term-recurring-list" role="list" aria-label="Ενεργές δανειακές υποχρεώσεις">
       {obligations.map(({loan,remainingInstallments,nextAmount,typicalDay,lastPayment})=><article className="long-term-loan-obligation" role="listitem" aria-label={`Δανειακή υποχρέωση ${loan.name}`} data-linked-loan={loan.id} key={loan.id}>
         <div className="long-term-loan-copy"><b>{loan.name}</b><small>Δάνειο · {remainingInstallments} {remainingInstallments===1?'δόση απομένει':'δόσεις απομένουν'} · {typicalDay?`συνήθης ημέρα ${typicalDay}`:'χωρίς ακόμη συνήθη ημέρα'}{lastPayment?` · τελευταία ${shortDate(lastPayment.date)}`:''}</small></div>
-        <strong>{money.format(nextAmount)}</strong>
+        <strong><AnimatedAmount value={nextAmount}/></strong>
         <button type="button" className="pay-action linked-loan-pay" aria-label={`Πληρωμή δανειακής υποχρέωσης ${loan.name}`} onClick={()=>onPayLoan(loan.id)}><ReceiptText size={16}/><span>Πληρωμή</span></button>
       </article>)}
     </div>
