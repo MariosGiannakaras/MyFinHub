@@ -19,7 +19,7 @@ export function CategoryIconsWorkspace({settings,onChange}:{settings:FinanceSett
 
   return <section className="panel neo-raised category-icons-workspace" aria-labelledby="category-icons-title">
     <div className="panel-head">
-      <div><span id="category-icons-title">Κατηγορίες & εικονίδια</span><small>Τα εικονίδια είναι τοπικά στη συσκευή. Οι υποκατηγορίες κληρονομούν το εικονίδιο της κατηγορίας εκτός αν ορίσεις διαφορετικό.</small></div>
+      <div><span id="category-icons-title">Κατηγορίες & εικονίδια</span><small>Η βιβλιοθήκη εικονιδίων είναι ενσωματωμένη στην εφαρμογή. Οι υποκατηγορίες κληρονομούν το εικονίδιο της κατηγορίας εκτός αν ορίσεις διαφορετικό.</small></div>
     </div>
     <div className="segmented-control" role="group" aria-label="Τύπος κατηγοριών">
       <button type="button" className={kind==='expense'?'active':''} aria-pressed={kind==='expense'} onClick={()=>setKind('expense')}>Έξοδα</button>
