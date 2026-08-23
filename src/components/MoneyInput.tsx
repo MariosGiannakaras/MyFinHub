@@ -1,4 +1,5 @@
 import type { InputHTMLAttributes } from 'react';
+import { normalizeMoneyInputText } from '../lib/moneyInput';
 
 type MoneyInputProps=Omit<InputHTMLAttributes<HTMLInputElement>,'type'|'inputMode'|'value'|'onChange'>&{
   value:string;
@@ -7,8 +8,6 @@ type MoneyInputProps=Omit<InputHTMLAttributes<HTMLInputElement>,'type'|'inputMod
   invalid?:boolean;
   wrapperClassName?:string;
 };
-
-export function normalizeMoneyInputText(value:string){return value.replace(/,/g,'.')}
 
 export function MoneyInput({value,onValueChange,currency='€',invalid=false,wrapperClassName='',className='',...inputProps}:MoneyInputProps){
   return <span className={`money-input ${wrapperClassName}`.trim()}>
