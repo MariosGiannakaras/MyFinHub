@@ -1,0 +1,18 @@
+/* Host-only integration rules. Canonical card values remain in canonical-credit-card-stack.css. */
+.credit-card-stage:has(#myfinhub-card-stack),
+.credit-card-stage-card:has(#myfinhub-card-stack){
+  overflow:visible;
+}
+.credit-card-stage-card:has(#myfinhub-card-stack){
+  min-width:0;
+  display:grid;
+  place-items:center;
+}
+.credit-card-stage-card #myfinhub-card-stack{
+  margin-inline:auto;
+}
+@media(max-width:680px){
+  .credit-card-stage-card:has(#myfinhub-card-stack){
+    width:100%;
+  }
+}
