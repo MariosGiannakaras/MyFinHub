@@ -20,6 +20,7 @@ const scripts = [
   { path: 'scripts/budget-rules-qa.mjs', profiles: ['/tmp/myfinhub-budget-rules-qa-chrome'] },
   { path: 'scripts/command-palette-qa.mjs', profiles: ['/tmp/myfinhub-command-palette-qa-chrome'] },
   { path: 'scripts/payment-flow-normalization-qa.mjs', profiles: ['/tmp/myfinhub-payment-flow-qa-chrome'] },
+  { path: 'scripts/primitives-adoption-qa.mjs', profiles: ['/tmp/myfinhub-primitives-adoption-qa-chrome'] },
   { path: 'scripts/ui-ux-visual-evidence-qa.mjs', profiles: ['/tmp/myfinhub-ui-visual-evidence-chrome'] },
 ];
 
