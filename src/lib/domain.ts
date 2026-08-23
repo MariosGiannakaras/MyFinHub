@@ -259,6 +259,7 @@ function legacyDeltaAgainstSeed(data: FinanceData, asOf: string, balances: Recor
     const original = baseById.get(id); if (original) addTx(original, -1);
   }
   for (const [id, override] of Object.entries(data.state.overrides ?? {})) {
+    if (deleted.has(id)) continue;
     const original = baseById.get(id); if (original) addTx(original, -1);
     addTx(override, 1);
   }
