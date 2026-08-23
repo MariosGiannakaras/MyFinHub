@@ -11,8 +11,67 @@
 .credit-card-stage-card #myfinhub-card-stack{
   margin-inline:auto;
 }
+.card-archive-manager{
+  width:min(720px,calc(100vw - 32px));
+}
+.card-archive-list{
+  display:grid;
+  gap:12px;
+  margin-top:18px;
+}
+.card-archive-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:18px;
+  padding:14px;
+  border:1px solid var(--border);
+  border-radius:16px;
+  background:var(--panel-soft,var(--surface));
+}
+.card-archive-identity{
+  min-width:0;
+  display:grid;
+  gap:4px;
+}
+.card-archive-identity b,
+.card-archive-identity small{
+  overflow-wrap:anywhere;
+}
+.card-archive-actions{
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+  gap:8px;
+}
+.card-archive-actions button{
+  min-height:44px;
+}
+.card-archive-note{
+  margin-top:16px;
+  padding:12px 14px;
+  border-radius:14px;
+  background:var(--panel-soft,var(--surface));
+  color:var(--muted);
+  font-size:.9rem;
+  line-height:1.5;
+}
 @media(max-width:680px){
   .credit-card-stage-card:has(#myfinhub-card-stack){
     width:100%;
+  }
+  .card-archive-manager{
+    width:min(100%,calc(100vw - 24px));
+  }
+  .card-archive-row{
+    align-items:stretch;
+    flex-direction:column;
+  }
+  .card-archive-actions{
+    justify-content:stretch;
+  }
+  .card-archive-actions button{
+    flex:1 1 100%;
   }
 }
