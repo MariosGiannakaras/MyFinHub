@@ -101,12 +101,14 @@ export function creditAvailableForCard(data:FinanceData,card:PaymentCard,asOf:st
 }
 
 export function canPermanentlyDeleteCreditCard(data:FinanceData,cardId:string,asOf:string){
-  return creditDebtForCard(data,cardId,asOf)<=0.005;
+  const card=allCards(data).find(item=>item.id===cardId);
+  return card?.kind==='credit'&&card.active===false&&creditDebtForCard(data,cardId,asOf)<=0.005;
 }
 
 export function withCardProfileDeleted(data:FinanceData,card:PaymentCard,deletedAt=new Date().toISOString(),asOf=deletedAt.slice(0,10)):FinanceData{
   const cards=data.state.cards??[];
   if(!cards.some(item=>item.id===card.id))return data;
+  if(card.kind==='credit'&&card.active!==false)throw new Error('CREDIT_CARD_MUST_BE_ARCHIVED');
   if(card.kind==='credit'&&!canPermanentlyDeleteCreditCard(data,card.id,asOf))throw new Error('CREDIT_CARD_HAS_OUTSTANDING_BALANCE');
   const linkedEvents=(data.state.events??[]).filter(event=>event.cardId===card.id&&(event.kind==='card_purchase'||event.kind==='card_payment'));
   if(card.kind!=='credit'&&linkedEvents.length)throw new Error('NON_CREDIT_CARD_HAS_FINANCE_HISTORY');
