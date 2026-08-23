@@ -18,19 +18,7 @@ const IV_BYTES = 12;
 function normalizePan(value?: string) {
   if (value == null || value.trim() === '') return undefined;
   const digits = value.replace(/\D/g, '');
-  if (digits.length < 12 || digits.length > 19) throw new Error('INVALID_CARD_PAN');
-  let sum = 0;
-  let double = false;
-  for (let index = digits.length - 1; index >= 0; index -= 1) {
-    let digit = Number(digits[index]);
-    if (double) {
-      digit *= 2;
-      if (digit > 9) digit -= 9;
-    }
-    sum += digit;
-    double = !double;
-  }
-  if (sum % 10 !== 0) throw new Error('INVALID_CARD_PAN');
+  if (!digits) throw new Error('INVALID_CARD_PAN');
   return digits;
 }
 
