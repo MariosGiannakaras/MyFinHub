@@ -6,6 +6,7 @@ const loans=readFileSync(new URL('../src/pages/LoansPage.tsx',import.meta.url),'
 const planning=readFileSync(new URL('../src/pages/PlanningPage.tsx',import.meta.url),'utf8');
 const settings=readFileSync(new URL('../src/pages/SettingsPage.tsx',import.meta.url),'utf8');
 const receipts=readFileSync(new URL('../src/components/ReceiptInbox.tsx',import.meta.url),'utf8');
+const quickAdd=readFileSync(new URL('../src/components/QuickAdd.tsx',import.meta.url),'utf8');
 
 function expectNoNativeDialog(source:string){
   expect(source).not.toContain('window.prompt');
@@ -50,5 +51,13 @@ describe('shared primitive adoption',()=>{
     expect(receipts).toContain('if(scanningId===request.draft.id)await cancelScan()');
     expect(receipts).toContain('if(scanningId&&request.ids.includes(scanningId))await cancelScan()');
     expect(receipts).toContain('await deleteReceiptDrafts(request.ids)');
+  });
+
+  it('uses app-owned dirty-close confirmation and shared money fields in Quick Entry',()=>{
+    expectNoNativeDialog(quickAdd);
+    expect(quickAdd).toContain('<ConfirmDialog open={discardOpen}');
+    expect(quickAdd).toContain("open&&!discardOpen");
+    expect(quickAdd).toContain('<MoneyInput data-autofocus="true" value={amount}');
+    expect(quickAdd).toContain('<MoneyInput data-autofocus="true" value={actualBalance}');
   });
 });
