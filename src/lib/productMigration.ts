@@ -1,4 +1,5 @@
 import type { FinanceData } from '../types.js';
+import { ensureCategoryIdentities } from './categoryIdentity.js';
 import { migrateData } from './domain.js';
 
 /**
@@ -13,17 +14,19 @@ import { migrateData } from './domain.js';
 export function migrateProductData(input:FinanceData):FinanceData{
   const migrated=migrateData(input);
   const sourceState=input.state??({} as FinanceData['state']);
+  const settings=ensureCategoryIdentities({
+    ...migrated.state.settings,
+    expenseCategoryTree:sourceState.settings?.expenseCategoryTree??migrated.state.settings.expenseCategoryTree,
+    incomeCategoryTree:sourceState.settings?.incomeCategoryTree??migrated.state.settings.incomeCategoryTree,
+    categoryIdentities:sourceState.settings?.categoryIdentities??migrated.state.settings.categoryIdentities,
+    categoryIcons:sourceState.settings?.categoryIcons??migrated.state.settings.categoryIcons,
+    subcategoryIcons:sourceState.settings?.subcategoryIcons??migrated.state.settings.subcategoryIcons,
+  });
   return {
     ...migrated,
     state:{
       ...migrated.state,
-      settings:{
-        ...migrated.state.settings,
-        expenseCategoryTree:sourceState.settings?.expenseCategoryTree??migrated.state.settings.expenseCategoryTree,
-        incomeCategoryTree:sourceState.settings?.incomeCategoryTree??migrated.state.settings.incomeCategoryTree,
-        categoryIcons:sourceState.settings?.categoryIcons??migrated.state.settings.categoryIcons,
-        subcategoryIcons:sourceState.settings?.subcategoryIcons??migrated.state.settings.subcategoryIcons,
-      },
+      settings,
       cardBanks:sourceState.cardBanks??[],
       cards:sourceState.cards??[],
       scheduled:sourceState.scheduled??[],
