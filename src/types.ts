@@ -244,6 +244,8 @@ export interface FinanceSettings {
   incomeCategories: string[];
   expenseCategoryTree?: CategoryDefinition[];
   incomeCategoryTree?: CategoryDefinition[];
+  categoryIcons?: Record<string, string>;
+  subcategoryIcons?: Record<string, string>;
   customPresets: string[];
   pinnedPresets: string[];
   defaultExpenseAccount: string;
