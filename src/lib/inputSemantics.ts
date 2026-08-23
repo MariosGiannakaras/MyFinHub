@@ -15,7 +15,7 @@ export function entryDefaults(kind: EventKind, settings: FinanceSettings, fallba
 
 export function entryDraftError(kind: EventKind, draft: { amount: string; person: string; actualBalance: string; parts: SplitPart[] }) {
   if (kind === 'split') {
-    if (draft.parts.length < 2) return 'Ο διαχωρισμός χρειάζεται τουλάχιστον δύο μέρη.';
+    if (draft.parts.length < 2) return 'Ο διαχωρισμός χρειάζεται τουλάχιστον δύο επιμέρους μέρη.';
     if (draft.parts.some((part) => !Number.isFinite(Number(part.amount)) || Number(part.amount) <= 0)) return 'Κάθε επιμέρους ποσό πρέπει να είναι θετικό.';
     return null;
   }
