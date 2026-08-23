@@ -72,10 +72,10 @@ describe('loan payment linkage', () => {
     expect(loanInstallmentPaymentPlan(data,loan,2)).toEqual({count:2,firstInstallment:4,lastInstallment:5,amount:50});
   });
 
-  it('uses the exact final outstanding amount instead of overpaying a rounded last installment',()=>{
+  it('uses exact remaining outstanding for the final multi-installment payment instead of overpaying',()=>{
     const data=financeState();
     data.state.loanExtra={'loan-1':2};
     const roundedLoan={...loan,total:145};
-    expect(loanInstallmentPaymentPlan(data,roundedLoan,3)).toEqual({count:1,firstInstallment:6,lastInstallment:6,amount:20});
+    expect(loanInstallmentPaymentPlan(data,roundedLoan,3)).toEqual({count:2,firstInstallment:5,lastInstallment:6,amount:45});
   });
 });
