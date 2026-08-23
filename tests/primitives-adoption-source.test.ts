@@ -5,6 +5,7 @@ const credit=readFileSync(new URL('../src/pages/CreditCardPage.tsx',import.meta.
 const loans=readFileSync(new URL('../src/pages/LoansPage.tsx',import.meta.url),'utf8');
 const planning=readFileSync(new URL('../src/pages/PlanningPage.tsx',import.meta.url),'utf8');
 const settings=readFileSync(new URL('../src/pages/SettingsPage.tsx',import.meta.url),'utf8');
+const receipts=readFileSync(new URL('../src/components/ReceiptInbox.tsx',import.meta.url),'utf8');
 
 function expectNoNativeDialog(source:string){
   expect(source).not.toContain('window.prompt');
@@ -40,5 +41,14 @@ describe('shared primitive adoption',()=>{
     expect(settings).toContain('pendingImportFile');
     expect(settings).toContain('await onImport(JSON.parse(await file.text()))');
     expect(settings).toContain('file.size>MAX_FINANCE_DOCUMENT_BYTES');
+  });
+
+  it('uses app-owned local receipt deletion while preserving OCR cancellation ordering',()=>{
+    expectNoNativeDialog(receipts);
+    expect(receipts).toContain('<ConfirmDialog');
+    expect(receipts).toContain("open&&!deleteRequest");
+    expect(receipts).toContain('if(scanningId===request.draft.id)await cancelScan()');
+    expect(receipts).toContain('if(scanningId&&request.ids.includes(scanningId))await cancelScan()');
+    expect(receipts).toContain('await deleteReceiptDrafts(request.ids)');
   });
 });
