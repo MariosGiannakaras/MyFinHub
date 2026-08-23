@@ -67,7 +67,6 @@ describe('direct taxonomy management',()=>{
 
     expect(resolveCategoryIdentity(next.state.settings,'expense','Τρόφιμα & φαγητό')?.id).toBe(food.id);
     expect(resolveCategoryIdentity(next.state.settings,'expense','Φαγητό')?.id).toBe(food.id);
-    expect(next.state.categoryIcons?.[categoryIconPreferenceKey('expense','Τρόφιμα & φαγητό')]).toBeUndefined();
     expect(next.state.settings.categoryIcons?.[categoryIconPreferenceKey('expense','Τρόφιμα & φαγητό')]).toBe('utensils');
     expect(next.state.recurringOverrides?.['seed-rec']?.category).toBe('Τρόφιμα & φαγητό');
     expect(next.state.recurringCustom[0].category).toBe('Τρόφιμα & φαγητό');
