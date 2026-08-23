@@ -29,6 +29,7 @@ export interface CategoryIdentityRecord {
   label: string;
   aliases: string[];
   parentId?: string;
+  parentAliases?: string[];
 }
 
 export interface CardBank {
