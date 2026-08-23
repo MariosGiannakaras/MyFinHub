@@ -1,3 +1,0 @@
-Visual QA snapshot persisted for source dfd82afbfba8c9341dcf2758251628f2aa1e5061.
-Snapshot commit: 46f451d7a5cfe870373bb4de8e7407c86d9849aa.
-This marker is intentionally a human/app-authored follow-up so normal PR checks run on the repository head after the bot-generated PNG snapshot commit.
