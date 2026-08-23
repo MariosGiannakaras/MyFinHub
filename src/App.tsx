@@ -17,7 +17,7 @@ import { archiveCardRecord } from './lib/cards';
 import type { RankedCommandSearchItem } from './lib/commandSearch';
 import { accountBalances, allAccounts } from './lib/domain';
 import { reportingMonthForDate } from './lib/localDate';
-import { applyTaxonomyOperation, type TaxonomyOperation } from './lib/taxonomyManagement';
+import type { TaxonomyOperation } from './lib/taxonomyManagement';
 import { applyTransactionRules } from './lib/transactionRules';
 import type {
   AttentionDecision,
@@ -188,7 +188,10 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   const deleteBudget=(id:string)=>finance.update(current=>({...current,state:{...current.state,budgets:(current.state.budgets??[]).filter(item=>item.id!==id)}}));
   const upsertRule=(rule:TransactionRule)=>finance.update(current=>{const rows=current.state.transactionRules??[];const exists=rows.some(item=>item.id===rule.id);return {...current,state:{...current.state,transactionRules:exists?rows.map(item=>item.id===rule.id?rule:item):[...rows,rule]}}});
   const deleteRule=(id:string)=>finance.update(current=>({...current,state:{...current.state,transactionRules:(current.state.transactionRules??[]).filter(item=>item.id!==id)}}));
-  const updateTaxonomy=(operation:TaxonomyOperation)=>finance.update(current=>applyTaxonomyOperation(current,operation,today));
+  const updateTaxonomy=async(operation:TaxonomyOperation)=>{
+    const {applyTaxonomyOperation}=await import('./lib/taxonomyManagement');
+    finance.update(current=>applyTaxonomyOperation(current,operation,today));
+  };
   const decide = (id: string, decision: ReviewDecision) => finance.update((current) => ({ ...current, state: { ...current.state, reviewDecisions: { ...(current.state.reviewDecisions ?? {}), [id]: decision } } }));
   const decideAttention = (id: string, decision: AttentionDecision) => finance.update((current) => ({ ...current, state: { ...current.state, attentionDecisions: { ...(current.state.attentionDecisions ?? {}), [id]: decision } } }));
 
