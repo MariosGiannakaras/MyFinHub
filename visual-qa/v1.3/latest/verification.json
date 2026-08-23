@@ -4,6 +4,9 @@
   "purpose": "Exact-head verification marker after repository-persisted Visual QA snapshot generation.",
   "visualSourceSha": "a4c56fe9d403c0591b8ac00019db283b62214e93",
   "visualArchiveCommitSha": "660ea0cec9ebf29857a2161bf26142774e2f201c",
+  "verifiedCodeSha": "7acd4368dfe9354a7654d0ba4eaed0e5007f4c7f",
+  "uiEquivalentToVisualSource": true,
+  "note": "The verified code delta after the visual source is test-only; rendered UI code is unchanged.",
   "branch": "feat/241-canonical-credit-card-stack",
   "timeZone": "Europe/Athens"
 }
