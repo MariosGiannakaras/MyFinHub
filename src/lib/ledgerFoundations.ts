@@ -56,13 +56,15 @@ export function createTransferEvent(data: FinanceData, args: {
 
 export type SplitAllocation = {
   totalCents: number;
-  allocatedCents: number;
-  remainingCents: number;
+  total: number;
   normalizedParts: SplitPart[];
 };
 
-export function splitAllocation(total: number, parts: SplitPart[]): SplitAllocation {
-  const totalCents = moneyToCents(total);
+/**
+ * Split parts are the economic source of truth. The parent amount is always
+ * derived in integer cents so 0.1 + 0.2 cannot create reconciliation drift.
+ */
+export function splitAllocation(parts: SplitPart[]): SplitAllocation {
   const normalizedParts = parts.map((part) => ({
     ...part,
     label: part.label.trim(),
@@ -71,37 +73,34 @@ export function splitAllocation(total: number, parts: SplitPart[]): SplitAllocat
     amount: centsToMoney(moneyToCents(Number(part.amount))),
     kind: 'expense' as const,
   }));
-  const allocatedCents = normalizedParts.reduce((sum, part) => sum + moneyToCents(part.amount), 0);
-  return { totalCents, allocatedCents, remainingCents: totalCents - allocatedCents, normalizedParts };
+  const totalCents = normalizedParts.reduce((sum, part) => sum + moneyToCents(part.amount), 0);
+  return { totalCents, total: centsToMoney(totalCents), normalizedParts };
 }
 
-export function splitDraftError(data: FinanceData, draft: { accountId: string; amount: number; parts: SplitPart[] }) {
+export function splitDraftError(data: FinanceData, draft: { accountId: string; parts: SplitPart[] }) {
   const accountIds = new Set(transferEligibleAccounts(data).map((account) => account.id));
   if (!draft.accountId || !accountIds.has(draft.accountId)) return 'Διάλεξε υπαρκτό λογαριασμό πληρωμής.';
-  if (!Number.isFinite(draft.amount) || draft.amount <= 0) return 'Συμπλήρωσε θετικό συνολικό ποσό.';
   if (draft.parts.length < 2) return 'Ο διαχωρισμός χρειάζεται τουλάχιστον δύο μέρη.';
   if (draft.parts.some((part) => !Number.isFinite(Number(part.amount)) || Number(part.amount) <= 0)) return 'Κάθε επιμέρους ποσό πρέπει να είναι θετικό.';
-  const allocation = splitAllocation(draft.amount, draft.parts);
+  const allocation = splitAllocation(draft.parts);
   if (!Number.isFinite(allocation.totalCents) || allocation.normalizedParts.some((part) => !Number.isFinite(moneyToCents(part.amount)))) return 'Έλεγξε τα επιμέρους ποσά.';
-  if (allocation.remainingCents > 0) return `Απομένουν ${centsToMoney(allocation.remainingCents).toFixed(2)}€ για να συμπληρωθεί το σύνολο.`;
-  if (allocation.remainingCents < 0) return `Τα επιμέρους ποσά υπερβαίνουν το σύνολο κατά ${centsToMoney(Math.abs(allocation.remainingCents)).toFixed(2)}€.`;
+  if (allocation.totalCents <= 0) return 'Το σύνολο των επιμέρους ποσών πρέπει να είναι θετικό.';
   return null;
 }
 
 export function createExpenseSplitEvent(data: FinanceData, args: {
   date: string;
-  amount: number;
   note?: string;
   accountId: string;
   parts: SplitPart[];
 }): FinanceEvent {
   const error = splitDraftError(data, args);
   if (error) throw new Error(error);
-  const allocation = splitAllocation(args.amount, args.parts);
+  const allocation = splitAllocation(args.parts);
   return createEvent({
     kind: 'split',
     date: args.date,
-    amount: centsToMoney(allocation.totalCents),
+    amount: allocation.total,
     note: args.note?.trim() || 'Διαχωρισμένη αγορά',
     accountId: args.accountId,
     parts: allocation.normalizedParts,
