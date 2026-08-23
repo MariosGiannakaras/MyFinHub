@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
+const app=readFileSync(new URL('../src/App.tsx',import.meta.url),'utf8');
 const credit=readFileSync(new URL('../src/pages/CreditCardPage.tsx',import.meta.url),'utf8');
 const loans=readFileSync(new URL('../src/pages/LoansPage.tsx',import.meta.url),'utf8');
 const planning=readFileSync(new URL('../src/pages/PlanningPage.tsx',import.meta.url),'utf8');
@@ -59,5 +60,12 @@ describe('shared primitive adoption',()=>{
     expect(quickAdd).toContain("open&&!discardOpen");
     expect(quickAdd).toContain('<MoneyInput data-autofocus="true" value={amount}');
     expect(quickAdd).toContain('<MoneyInput data-autofocus="true" value={actualBalance}');
+  });
+
+  it('keeps conflict recovery behind app-owned confirmation and the existing reload path',()=>{
+    expectNoNativeDialog(app);
+    expect(app).toContain('<ConfirmDialog open={recoverOpen}');
+    expect(app).toContain("finance.saveState === 'error' || finance.saveState === 'conflict'");
+    expect(app).toContain('const confirmRecover=()=>{setRecoverOpen(false);void finance.reload()}');
   });
 });
