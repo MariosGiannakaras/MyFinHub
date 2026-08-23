@@ -15,6 +15,7 @@ import type { AttentionItem } from './lib/attention';
 import { archiveCardRecord } from './lib/cards';
 import type { RankedCommandSearchItem } from './lib/commandSearch';
 import { accountBalances, allAccounts, createEvent } from './lib/domain';
+import { withLegacyOverride, withLegacyTombstone } from './lib/legacyTransactions';
 import { applyTaxonomyOperation, type TaxonomyOperation } from './lib/taxonomyManagement';
 import { applyTransactionRules } from './lib/transactionRules';
 import { qaFinanceData } from './qaFixture';
@@ -31,7 +32,7 @@ import { PlanningPage } from './pages/PlanningPage';
 import { AttentionPage } from './pages/AttentionPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { SettingsPage } from './pages/SettingsPage';
-import type { AttentionDecision, CardBank, EventKind, FinanceData, FinanceEvent, Loan, MonthlyBudget, PaymentCard, RecurringItem, ScheduledTransaction, TextSizePreference, TransactionRule } from './types';
+import type { AttentionDecision, CardBank, EventKind, FinanceData, FinanceEvent, LegacyTransaction, Loan, MonthlyBudget, PaymentCard, RecurringItem, ScheduledTransaction, TextSizePreference, TransactionRule } from './types';
 import './styles.css';
 
 const QA_PAGES:PageId[]=['dashboard','transactions','review','savings','cards','credit','loans','lending','recurring','planning','attention','reports','settings'];
@@ -98,6 +99,8 @@ function QaWorkspace(){
   const addEvent=(event:FinanceEvent)=>update(current=>{const events=current.state.events??[];const exists=events.some(existing=>existing.id===event.id);const nextEvent=exists?event:applyTransactionRules(current,event);return {...current,state:{...current.state,events:exists?events.map(existing=>existing.id===event.id?nextEvent:existing):[...events,nextEvent]}}});
   const deleteEvent=(id:string)=>update(current=>({...current,state:{...current.state,events:(current.state.events??[]).filter(e=>e.id!==id)}}));
   const editEvent=(id:string)=>{const event=(data.state.events??[]).find(item=>item.id===id);setEditing(id);setQuickContext({token:quickToken(),mode:'generic',kind:event?.kind||'expense',prefill:null});setQuickOpen(true)};
+  const editLegacy=(transaction:LegacyTransaction)=>update(current=>withLegacyOverride(current,transaction));
+  const deleteLegacy=(id:string)=>update(current=>withLegacyTombstone(current,id));
   const openGeneric=(kind:EventKind='expense',prefill:QuickPrefill|null=null)=>{setEditing(null);setQuickContext({token:quickToken(),mode:'generic',kind,prefill});setQuickOpen(true)};
   const openSpecial=(context:SpecialQuickContext)=>{setEditing(null);setQuickContext({...context,token:quickToken()} as QuickActionContext);setQuickOpen(true)};
   const openCommand=()=>{if(quickOpen)return;setCommandOpen(true)};
@@ -140,7 +143,7 @@ function QaWorkspace(){
   };
   const content=page==='dashboard'
     ?<DashboardPage data={data} month={month} asOf={today} motionMode={data.state.settings.motion||'system'} onQuickAdd={(prefill?:QuickPrefill)=>openGeneric('expense',prefill||null)} onAccountQuickAdd={(accountId,kind)=>kind==='savings'?openSpecial({mode:'savings',toAccountId:accountId,savingSource:'manual_transfer'}):openGeneric('expense',{note:'',amount:0,accountId})} onTransactions={()=>setPage('transactions')} onPlanning={()=>setPage('planning')} onAttention={()=>setPage('attention')} onReports={()=>setPage('reports')}/>
-    :page==='transactions'?<TransactionsPage data={data} month={month} onEditEvent={editEvent} onDeleteEvent={deleteEvent}/>
+    :page==='transactions'?<TransactionsPage data={data} month={month} onEditEvent={editEvent} onDeleteEvent={deleteEvent} onEditLegacy={editLegacy} onDeleteLegacy={deleteLegacy}/>
     :page==='review'?<ReviewPage data={data} onDecision={(id,decision)=>update(current=>({...current,state:{...current.state,reviewDecisions:{...(current.state.reviewDecisions??{}),[id]:decision}}}))}/>
     :page==='savings'?<SavingsPage data={data} month={month} asOf={today} onCreate={addEvent} onQuickAdd={openSpecial}/>
     :page==='cards'?<CardsPage data={data} onUpsertBank={upsertBank} onUpsertCard={upsertCard} onArchiveCard={archiveCard} onOpenCredit={()=>setPage('credit')}/>

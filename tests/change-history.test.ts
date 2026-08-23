@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { describeFinanceChange } from '../src/lib/changeHistory.js';
+import { withLegacyOverride, withLegacyTombstone } from '../src/lib/legacyTransactions.js';
 import { qaFinanceData } from '../src/qaFixture.js';
 import type { FinanceData, FinanceEvent, PaymentCard } from '../src/types.js';
 
@@ -30,6 +31,24 @@ describe('privacy-safe user change descriptions',()=>{
     const before=qaFinanceData();const after=clone(before);const transfer=event('transfer');transfer.kind='transfer';transfer.amount=50;transfer.note='PRIVATE TRANSFER MEMO';transfer.accountId=undefined;transfer.fromAccountId='piraeus-payroll';transfer.toAccountId='piraeus-savings';transfer.legs=[{accountId:'piraeus-payroll',amount:-50},{accountId:'piraeus-savings',amount:50}];after.state.events=[...(after.state.events??[]),transfer];
     const label=describeFinanceChange(before,after);
     expect(label).toContain('Μεταφορά');expect(label).toContain('Τραπεζικός λογαριασμός');expect(label).toContain('Αποταμίευση');expect(label).not.toContain('PRIVATE TRANSFER');
+  });
+
+  it('describes legacy overrides without retaining imported free-text',()=>{
+    const before=qaFinanceData();const original=before.seed.transactions[0]!;const after=withLegacyOverride(before,{...original,amount:99.5,date:'2026-08-20',note:'PRIVATE IMPORTED NOTE'});
+    const label=describeFinanceChange(before,after);
+    expect(label).toContain('Επεξεργασία ιστορικής κίνησης');
+    expect(label).toContain('99,50');
+    expect(label).toContain('20/08/2026');
+    expect(label).not.toContain('PRIVATE IMPORTED NOTE');
+    expect(label).not.toContain(original.note);
+  });
+
+  it('describes legacy tombstones without exposing imported notes',()=>{
+    const before=qaFinanceData();const original=before.seed.transactions[0]!;original.note='PRIVATE LEGACY DELETE NOTE';const after=withLegacyTombstone(before,original.id);
+    const label=describeFinanceChange(before,after);
+    expect(label).toContain('Διαγραφή ιστορικής κίνησης');
+    expect(label).toContain('24,50');
+    expect(label).not.toContain('PRIVATE LEGACY DELETE NOTE');
   });
 
   it('never exposes card nickname, holder, last4 or vault references',()=>{

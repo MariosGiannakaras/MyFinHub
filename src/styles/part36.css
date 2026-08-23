@@ -48,6 +48,11 @@
   cursor: not-allowed;
 }
 
+.legacy-transaction-editor {
+  width: min(1050px, calc(100vw - 36px));
+  box-sizing: border-box;
+}
+
 @media (max-width: 640px) {
   .transaction-split-details {
     margin-top: 10px;

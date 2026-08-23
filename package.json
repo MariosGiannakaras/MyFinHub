@@ -18,7 +18,7 @@
     "test:watch": "vitest",
     "security:guard": "node scripts/security-guard.mjs",
     "qa:ux": "node scripts/ui-ux-hardening-qa.mjs",
-    "qa:frontend": "node scripts/run-rendered-qa.mjs && node scripts/taxonomy-management-qa.mjs && node scripts/category-icon-adoption-qa.mjs && node scripts/receipt-local-ocr-qa.mjs && node scripts/final-ux-reconciliation-qa.mjs && node scripts/ledger-foundations-qa.mjs",
+    "qa:frontend": "node scripts/run-rendered-qa.mjs && node scripts/taxonomy-management-qa.mjs && node scripts/category-icon-adoption-qa.mjs && node scripts/legacy-transaction-management-qa.mjs && node scripts/receipt-local-ocr-qa.mjs && node scripts/final-ux-reconciliation-qa.mjs && node scripts/ledger-foundations-qa.mjs",
     "check": "npm run security:guard && npm run test && npm run build",
     "desktop:dev": "npm --prefix desktop run dev",
     "desktop:check": "npm --prefix desktop run check",
