@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { normalizeMoneyInputText } from '../src/components/MoneyInput.js';
+import { normalizeMoneyInputText } from '../src/lib/moneyInput.js';
 
 describe('MoneyInput',()=>{
   it('normalizes comma decimal separators without changing the entered numeric intent',()=>{
