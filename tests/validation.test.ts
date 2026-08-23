@@ -68,6 +68,44 @@ describe('finance document validation', () => {
     expect(() => validateFinanceData(full)).not.toThrow();
   });
 
+  it('accepts positive integer installment coverage on canonical finance events and mutable writes', () => {
+    const full = validState();
+    full.state.events.push({
+      id: 'loan-payment-1',
+      date: '2026-08-17',
+      kind: 'expense',
+      amount: 75,
+      note: 'Loan installments',
+      accountId: 'bank',
+      legs: [{ accountId: 'bank', amount: -75 }],
+      loanId: 'loan-1',
+      installmentCount: 3,
+      createdAt: full.updatedAt,
+      updatedAt: full.updatedAt,
+    });
+    expect(() => validateFinanceData(full)).not.toThrow();
+    expect(() => validateFinanceState(full.state)).not.toThrow();
+  });
+
+  it.each([0, -1, 1.5, 100_001, '2'])('rejects malformed installment coverage value %s', (installmentCount) => {
+    const full = validState();
+    full.state.events.push({
+      id: 'loan-payment-invalid',
+      date: '2026-08-17',
+      kind: 'expense',
+      amount: 25,
+      note: 'Loan installment',
+      accountId: 'bank',
+      legs: [{ accountId: 'bank', amount: -25 }],
+      loanId: 'loan-1',
+      installmentCount,
+      createdAt: full.updatedAt,
+      updatedAt: full.updatedAt,
+    });
+    expect(() => validateFinanceData(full)).toThrowError(/installmentCount/i);
+    expect(() => validateFinanceState(full.state)).toThrowError(/installmentCount/i);
+  });
+
   it('accepts only the compact mutable write envelope', () => {
     const full = validState();
     expect(parseMutableWrite({ state: full.state, updatedAt: full.updatedAt })).toEqual({

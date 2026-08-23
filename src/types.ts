@@ -116,6 +116,7 @@ export interface FinanceEvent {
   createdAt: string;
   updatedAt: string;
   loanId?: string;
+  installmentCount?: number;
   recurringId?: string;
   cardId?: string;
 }

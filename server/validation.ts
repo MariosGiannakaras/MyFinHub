@@ -234,6 +234,10 @@ function validateEvent(value: unknown, name: string) {
   optionalText(value.updatedAt, `${name}.updatedAt`, 64);
   optionalText(value.loanId, `${name}.loanId`, 200);
   optionalText(value.recurringId, `${name}.recurringId`, 200);
+  if (value.installmentCount !== undefined && value.installmentCount !== null) {
+    finiteNumber(value.installmentCount, `${name}.installmentCount`, 100_000);
+    if (!Number.isInteger(value.installmentCount) || value.installmentCount <= 0) invalid(`Invalid ${name}.installmentCount.`);
+  }
   if (value.savingSource !== undefined) oneOf(value.savingSource, ['pay_and_save','manual_transfer','cash_offset'], `${name}.savingSource`);
   optionalNumber(value.savingAmount, `${name}.savingAmount`);
   optionalNumber(value.receivableDelta, `${name}.receivableDelta`);

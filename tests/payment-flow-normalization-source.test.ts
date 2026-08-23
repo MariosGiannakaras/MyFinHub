@@ -47,14 +47,23 @@ describe('payment flow normalization source contracts',()=>{
     expect(contextual).toContain('χωρίς δεύτερη χειροκίνητη εγγραφή');
   });
 
+  it('models one real loan payment with explicit multi-installment coverage',()=>{
+    expect(contextual).toContain('loanInstallmentPaymentPlan');
+    expect(contextual).toContain('setLoanPaymentInstallmentCount');
+    expect(contextual).toContain('Πόσες δόσεις');
+    expect(contextual).toContain('readOnly={Boolean(loanPaymentPlan)}');
+    expect(contextual).toContain('Καλύπτονται οι δόσεις');
+  });
+
   it('keeps dedicated rendered payment coverage in the full browser gate',()=>{
     expect(rendered).toContain("scripts/payment-flow-normalization-qa.mjs");
     expect(rendered).toContain("/tmp/myfinhub-payment-flow-qa-chrome");
   });
 
-  it('locks empty, stale-id, extreme-value and reduced-motion regression coverage',()=>{
+  it('locks empty, stale-id, computed-installment and reduced-motion regression coverage',()=>{
     expect(paymentQa).toContain("{state:'empty'}");
-    expect(paymentQa).toContain("setAmount('999999999.99')");
+    expect(paymentQa).toContain('normal loan amount is computed and read-only');
+    expect(paymentQa).toContain('multi-installment range preview');
     expect(paymentQa).toContain("staleHarnessUrl('missing-loan')");
     expect(paymentQa).toContain('δεν είναι πλέον διαθέσιμο');
     expect(staleHarness).toContain("loanId:'qa-missing-loan'");
