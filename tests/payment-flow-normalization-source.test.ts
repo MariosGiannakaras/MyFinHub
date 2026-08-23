@@ -47,6 +47,14 @@ describe('payment flow normalization source contracts',()=>{
     expect(contextual).toContain('χωρίς δεύτερη χειροκίνητη εγγραφή');
   });
 
+  it('models one real loan payment with explicit multi-installment coverage',()=>{
+    expect(contextual).toContain('loanInstallmentPaymentPlan');
+    expect(contextual).toContain('setLoanPaymentInstallmentCount');
+    expect(contextual).toContain('Πόσες δόσεις');
+    expect(contextual).toContain('readOnly={Boolean(loanPaymentPlan)}');
+    expect(contextual).toContain('Καλύπτονται οι δόσεις');
+  });
+
   it('keeps dedicated rendered payment coverage in the full browser gate',()=>{
     expect(rendered).toContain("scripts/payment-flow-normalization-qa.mjs");
     expect(rendered).toContain("/tmp/myfinhub-payment-flow-qa-chrome");
