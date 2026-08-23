@@ -60,8 +60,8 @@ describe('legacy transaction overrides and tombstones', () => {
 
     const next = withLegacyOverride(data, { ...data.seed.transactions[0], amount: 55, note: 'Manual correction' });
 
-    expect(next.state.reviewDecisions['legacy-1']).toBeUndefined();
-    expect(next.state.reviewDecisions.other).toEqual(data.state.reviewDecisions.other);
+    expect(next.state.reviewDecisions?.['legacy-1']).toBeUndefined();
+    expect(next.state.reviewDecisions?.other).toEqual(data.state.reviewDecisions.other);
     expect(monthlyFlow(next, '2026-08')).toMatchObject({ expense: 55, saving: 0, refunds: 0 });
   });
 
@@ -81,7 +81,7 @@ describe('legacy transaction overrides and tombstones', () => {
 
     const next = withLegacyOverride(data, { ...data.seed.transactions[0], amount: 50, category: 'Μετακινήσεις' });
 
-    expect(next.state.reviewDecisions['legacy-1']).toBeUndefined();
+    expect(next.state.reviewDecisions?.['legacy-1']).toBeUndefined();
     expect(monthlyFlow(next, '2026-08')).toMatchObject({ expense: 50, refunds: 0 });
   });
 
