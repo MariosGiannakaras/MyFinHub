@@ -111,6 +111,10 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
   const mark=()=>setDirty(true);
   const requestClose=()=>{if(dirty&&!window.confirm('Έχεις αλλαγές που δεν έχουν αποθηκευτεί. Θέλεις να κλείσεις την καταχώριση και να τις απορρίψεις;'))return;onClose()};
   const modalRef=useModalFocus<HTMLElement>(open,'[data-autofocus="true"]',requestClose);
+  useEffect(()=>{
+    if(!open||kind!=='split')return;
+    queueMicrotask(()=>modalRef.current?.querySelector<HTMLInputElement>('input[aria-label="Ποσό μέρους 1"]')?.focus({preventScroll:true}));
+  },[open,kind,modalRef]);
   const reset=()=>{setAmount('');setNote('');setSubcategory('');setError('');setActualBalance('');setDirty(false)};
   const chooseKind=(next:EventKind)=>{
     const defaults=entryDefaults(next,data.state.settings,fallbackAccount);
