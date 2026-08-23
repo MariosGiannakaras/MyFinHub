@@ -15,6 +15,8 @@ export function validateCardStateExtensions(state:FinanceData['state']){
     }
   }
 
+  if(state.deletedCards!==undefined&&!Array.isArray(state.deletedCards))invalid();
+  if((state.deletedCards?.length??0)>1_000)invalid();
   const cardsById=new Map((state.cards??[]).map(card=>[card.id,card]));
   const deletedCardIds=new Set<string>();
   for(const deleted of state.deletedCards??[]){
