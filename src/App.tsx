@@ -17,6 +17,7 @@ import { archiveCardRecord } from './lib/cards';
 import type { RankedCommandSearchItem } from './lib/commandSearch';
 import { accountBalances, allAccounts } from './lib/domain';
 import { reportingMonthForDate } from './lib/localDate';
+import { applyTaxonomyOperation, type TaxonomyOperation } from './lib/taxonomyManagement';
 import { applyTransactionRules } from './lib/transactionRules';
 import type {
   AttentionDecision,
@@ -187,6 +188,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   const deleteBudget=(id:string)=>finance.update(current=>({...current,state:{...current.state,budgets:(current.state.budgets??[]).filter(item=>item.id!==id)}}));
   const upsertRule=(rule:TransactionRule)=>finance.update(current=>{const rows=current.state.transactionRules??[];const exists=rows.some(item=>item.id===rule.id);return {...current,state:{...current.state,transactionRules:exists?rows.map(item=>item.id===rule.id?rule:item):[...rows,rule]}}});
   const deleteRule=(id:string)=>finance.update(current=>({...current,state:{...current.state,transactionRules:(current.state.transactionRules??[]).filter(item=>item.id!==id)}}));
+  const updateTaxonomy=(operation:TaxonomyOperation)=>finance.update(current=>applyTaxonomyOperation(current,operation,today));
   const decide = (id: string, decision: ReviewDecision) => finance.update((current) => ({ ...current, state: { ...current.state, reviewDecisions: { ...(current.state.reviewDecisions ?? {}), [id]: decision } } }));
   const decideAttention = (id: string, decision: AttentionDecision) => finance.update((current) => ({ ...current, state: { ...current.state, attentionDecisions: { ...(current.state.attentionDecisions ?? {}), [id]: decision } } }));
 
@@ -233,7 +235,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
     : page === 'planning' ? <PlanningPage data={data} asOf={today} onUpsertScheduled={upsertScheduled} onCompleteScheduled={completeScheduled}/>
     : page === 'attention' ? <AttentionPage data={data} asOf={today} onAction={handleAttention} onDecision={decideAttention}/>
     : page === 'reports' ? <ReportsPage data={data} month={month}/>
-    : <SettingsPage data={data} asOf={today} filePath={finance.filePath} lastSavedAt={finance.lastSavedAt} onImport={finance.importData} onBackup={finance.createBackup} onSettings={(settings) => finance.update((current) => ({ ...current, state: { ...current.state, settings: { ...settings, motion: 'full' } } }))} onUpsertBudget={upsertBudget} onDeleteBudget={deleteBudget} onUpsertRule={upsertRule} onDeleteRule={deleteRule}/>;
+    : <SettingsPage data={data} asOf={today} filePath={finance.filePath} lastSavedAt={finance.lastSavedAt} onImport={finance.importData} onBackup={finance.createBackup} onSettings={(settings) => finance.update((current) => ({ ...current, state: { ...current.state, settings: { ...settings, motion: 'full' } } }))} onTaxonomyOperation={updateTaxonomy} onUpsertBudget={upsertBudget} onDeleteBudget={deleteBudget} onUpsertRule={upsertRule} onDeleteRule={deleteRule}/>;
 
   return <>
     <AppShell page={page} onPage={navigate} onQuickAdd={() => openGeneric('expense')} onCommand={openCommand} onRefresh={() => { void finance.reload(); }} onUndo={() => { finance.undo(); }} onRedo={() => { finance.redo(); }} canUndo={finance.canUndo} canRedo={finance.canRedo} history={finance.changeHistory} saveState={finance.saveState} filePath={finance.filePath} motionMode="full" userEmail={userEmail} onLogout={onLogout}>
