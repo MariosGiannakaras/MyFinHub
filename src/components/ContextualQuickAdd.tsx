@@ -9,6 +9,7 @@ import { MoneyInput } from './MoneyInput';
 import { useModalFocus } from '../hooks/useModalFocus';
 import { allAccounts, createEvent } from '../lib/domain';
 import { cardLabel, creditCards, creditDebtForCard } from '../lib/cards';
+import { creditStatementById, creditStatementEvents, recommendedPayableStatement } from '../lib/creditStatements';
 import { lendingOutstandingFor } from '../lib/lending';
 import { isSelfLoan, loanInstallmentPaymentPlan, loanOutstanding, loanRemainingInstallments, setLoanPaymentInstallmentCount } from '../lib/loans';
 import { allRecurringItems, recurringAccountError } from '../lib/recurring';
@@ -19,7 +20,7 @@ import type { EventKind, FinanceData, FinanceEvent, SavingSource, ScheduledTrans
 
 export type QuickActionContext =
   | {token:string;mode:'generic';kind?:EventKind;prefill?:QuickPrefill|null}
-  | {token:string;mode:'credit';action:'purchase'|'payment';cardId:string;amount?:number;note?:string;category?:string;fromAccountId?:string}
+  | {token:string;mode:'credit';action:'purchase'|'payment';cardId:string;statementId?:string;amount?:number;note?:string;category?:string;fromAccountId?:string}
   | {token:string;mode:'lending';action:'lend'|'repay';person?:string;amount?:number;accountId?:string;expectedReturnDate?:string}
   | {token:string;mode:'loan';loanId:string;amount?:number;accountId?:string}
   | {token:string;mode:'recurring';recurringId:string;amount?:number;accountId?:string}
@@ -33,6 +34,10 @@ function ContextModal({data,asOf,context,onClose,onCreate,onCompleteScheduled}:{
   const defaultExpense=accounts.some(account=>account.id===data.state.settings.defaultExpenseAccount)?data.state.settings.defaultExpenseAccount:accounts[0]?.id||'';
   const defaultIncome=accounts.some(account=>account.id===data.state.settings.defaultIncomeAccount)?data.state.settings.defaultIncomeAccount:accounts[0]?.id||'';
   const card=context.mode==='credit'?creditCards(data).find(item=>item.id===context.cardId):undefined;
+  const selectedStatement=context.mode==='credit'&&context.action==='payment'&&card
+    ?(context.statementId?creditStatementById(data,context.statementId,asOf):recommendedPayableStatement(data,card.id,asOf))
+    :undefined;
+  const statementPurchases=selectedStatement?creditStatementEvents(data,selectedStatement.id).filter(event=>event.kind==='card_purchase'):[];
   const recurring=context.mode==='recurring'?allRecurringItems(data).find(item=>item.id===context.recurringId):undefined;
   const loans=useMemo(()=>[...(data.seed.loans??[]).map(item=>data.state.loanOverrides?.[item.id]??item),...(data.state.customLoans??[])],[data]);
   const loan=context.mode==='loan'?loans.find(item=>item.id===context.loanId):undefined;
@@ -54,7 +59,7 @@ function ContextModal({data,asOf,context,onClose,onCreate,onCompleteScheduled}:{
   const loanOutstandingAmount=loan?loanOutstanding(data,loan):0;
   const initialLoanPlan=loan&&!isSelfLoan(loan)?loanInstallmentPaymentPlan(data,loan,1):null;
   const initialAmount=context.mode==='credit'
-    ?(context.amount??(context.action==='payment'&&card?creditDebtForCard(data,card.id,asOf):0))
+    ?(context.amount??(context.action==='payment'&&card?(selectedStatement?.remaining??creditDebtForCard(data,card.id,asOf)):0))
     :context.mode==='lending'
       ?(context.amount??(context.action==='repay'&&context.person?lendingOutstandingFor(data,context.person):0))
       :context.mode==='recurring'
@@ -95,9 +100,11 @@ function ContextModal({data,asOf,context,onClose,onCreate,onCompleteScheduled}:{
       if(context.mode==='credit'){
         if(!card||card.active===false)throw new Error('Η επιλεγμένη πιστωτική δεν είναι πλέον διαθέσιμη.');
         if(context.action==='payment'){
-          const debt=creditDebtForCard(data,card.id,asOf);if(debt<=0)throw new Error('Η συγκεκριμένη κάρτα δεν έχει τρέχουσα οφειλή.');if(numeric>debt+.01)throw new Error(`Η πληρωμή δεν μπορεί να ξεπερνά την οφειλή των ${money.format(debt)}.`);
+          const debt=creditDebtForCard(data,card.id,asOf);if(debt<=0)throw new Error('Η συγκεκριμένη κάρτα δεν έχει τρέχουσα οφειλή.');
+          const maximum=selectedStatement?.remaining??debt;if(numeric>maximum+.01)throw new Error(`Η πληρωμή δεν μπορεί να ξεπερνά ${selectedStatement?'το υπόλοιπο της δήλωσης':'την οφειλή'} των ${money.format(maximum)}.`);
           if(!sameBankAccounts.some(account=>account.id===accountId))throw new Error(`Η αποπληρωμή πρέπει να γίνει από διαθέσιμο λογαριασμό της ίδιας τράπεζας με την ${cardLabel(card)}.`);
           event=createEvent({kind:'card_payment',date,amount:numeric,note:note.trim()||`Αποπληρωμή ${cardLabel(card)}`,fromAccountId:accountId,cardId:card.id});
+          if(selectedStatement)event.statementId=selectedStatement.id;
         }else{
           event=createEvent({kind:'card_purchase',date,amount:numeric,note:note.trim()||`Αγορά με ${cardLabel(card)}`,category:context.category||data.state.settings.expenseCategories[0]||'Άλλο',cardId:card.id});
         }
@@ -145,7 +152,7 @@ function ContextModal({data,asOf,context,onClose,onCreate,onCompleteScheduled}:{
     }catch(reason){setError(reason instanceof Error?reason.message:'Δεν μπορέσαμε να ολοκληρώσουμε την κίνηση. Έλεγξε τα στοιχεία και δοκίμασε ξανά.')}
   };
 
-  const title=context.mode==='credit'?(context.action==='payment'?'Πληρωμή πιστωτικής':'Αγορά με πιστωτική'):context.mode==='lending'?(context.action==='repay'?'Επιστροφή δανεικών':'Νέα οφειλή προς εσένα'):context.mode==='loan'?(loan&&isSelfLoan(loan)?'Επιστροφή ΒΟΗΘΕΙΑΣ':installmentCount>1?'Πληρωμή δόσεων':'Πληρωμή δόσης'):context.mode==='scheduled'?'Ολοκλήρωση προγραμματισμένης':context.mode==='recurring'?'Πληρωμή παγίου':'Μεταφορά στην αποταμίευση';
+  const title=context.mode==='credit'?(context.action==='payment'?(selectedStatement?'Πληρωμή δήλωσης πιστωτικής':'Πληρωμή πιστωτικής'):'Αγορά με πιστωτική'):context.mode==='lending'?(context.action==='repay'?'Επιστροφή δανεικών':'Νέα οφειλή προς εσένα'):context.mode==='loan'?(loan&&isSelfLoan(loan)?'Επιστροφή ΒΟΗΘΕΙΑΣ':installmentCount>1?'Πληρωμή δόσεων':'Πληρωμή δόσης'):context.mode==='scheduled'?'Ολοκλήρωση προγραμματισμένης':context.mode==='recurring'?'Πληρωμή παγίου':'Μεταφορά στην αποταμίευση';
   const Icon=context.mode==='credit'?CreditCard:context.mode==='lending'?HandCoins:context.mode==='loan'?Landmark:context.mode==='scheduled'?CalendarClock:context.mode==='recurring'?ReceiptText:PiggyBank;
   const selectableAccounts=context.mode==='credit'&&context.action==='payment'?sameBankAccounts:accounts;
   const amountError=Boolean(error&&(error.includes('ποσό')||error.startsWith('Η πληρωμή δεν μπορεί')||error.startsWith('Η επιστροφή δεν μπορεί')));
@@ -153,7 +160,9 @@ function ContextModal({data,asOf,context,onClose,onCreate,onCompleteScheduled}:{
   const paymentMode=(context.mode==='credit'&&context.action==='payment')||context.mode==='loan'||context.mode==='recurring';
   const sourceLabel=accountId?accountDisplayName(data,accountId):'Μη διαθέσιμος λογαριασμός';
   const paymentEffect=context.mode==='credit'&&context.action==='payment'
-    ?`Από ${sourceLabel} προς ${targetLabel}. Η καταχώριση μειώνει τον λογαριασμό πληρωμής και την οφειλή της συγκεκριμένης κάρτας μία φορά.`
+    ?selectedStatement
+      ?`Από ${sourceLabel} προς ${targetLabel}. Η πληρωμή συνδέεται με τη δήλωση που έκλεισε ${selectedStatement.closeDate.split('-').reverse().join('/')} και μειώνει μόνο το υπόλοιπό της κατά μία πραγματική κίνηση.`
+      :`Από ${sourceLabel} προς ${targetLabel}. Η καταχώριση μειώνει τον λογαριασμό πληρωμής και την παλαιότερη μη συνδεδεμένη οφειλή της συγκεκριμένης κάρτας μία φορά.`
     :context.mode==='loan'&&loan
       ?isSelfLoan(loan)
         ?`Από ${sourceLabel} προς την αποταμίευση, με ταυτόχρονη μείωση της υποχρέωσης ${targetLabel}. Δημιουργείται μία ενιαία κίνηση επιστροφής.`
@@ -164,7 +173,7 @@ function ContextModal({data,asOf,context,onClose,onCreate,onCompleteScheduled}:{
         ?`Από ${sourceLabel} προς ${targetLabel}. Καταγράφεται μία πραγματική πληρωμή του παγίου και χρεώνεται μόνο ο επιλεγμένος λογαριασμός.`
         :'';
 
-  return <div className="modal-backdrop" onMouseDown={onClose}><section ref={modalRef} className="quick-modal contextual-quick-modal neo-raised" role="dialog" aria-modal="true" aria-labelledby="context-quick-title" aria-describedby={error?'context-quick-error':'context-quick-description'} tabIndex={-1} onMouseDown={event=>event.stopPropagation()}><header><div><small>ΓΡΗΓΟΡΗ ΚΙΝΗΣΗ ΜΕ ΠΛΑΙΣΙΟ</small><h2 id="context-quick-title"><Icon size={20}/> {title}</h2><p id="context-quick-description">Οι προεπιλογές εφαρμόζονται μόνο όταν ανοίγει αυτή η ενέργεια. Ό,τι αλλάξεις μέσα στη φόρμα παραμένει δική σου επιλογή μέχρι να κλείσεις ή να καταχωρίσεις.</p></div><button type="button" className="icon-button" aria-label="Κλείσιμο contextual καταχώρισης" onClick={onClose}><X/></button></header><div className="entry-body">{targetLabel?<div className="context-target" aria-label="Στόχος ενέργειας"><span>Στόχος</span><b>{targetLabel}</b></div>:null}<div className="form-grid"><label><span>Ποσό</span><MoneyInput data-autofocus="true" value={loanPaymentPlan?String(loanPaymentPlan.amount):amount} readOnly={Boolean(loanPaymentPlan)} aria-readonly={loanPaymentPlan?true:undefined} invalid={amountError} aria-describedby={amountError?'context-quick-error':undefined} onValueChange={value=>{if(!loanPaymentPlan)setAmount(value)}}/></label><label><span>Ημερομηνία</span><AppDateInput value={date} onChange={event=>setDate(event.target.value)}/></label>
+  return <div className="modal-backdrop" onMouseDown={onClose}><section ref={modalRef} className="quick-modal contextual-quick-modal neo-raised" role="dialog" aria-modal="true" aria-labelledby="context-quick-title" aria-describedby={error?'context-quick-error':'context-quick-description'} tabIndex={-1} onMouseDown={event=>event.stopPropagation()}><header><div><small>ΓΡΗΓΟΡΗ ΚΙΝΗΣΗ ΜΕ ΠΛΑΙΣΙΟ</small><h2 id="context-quick-title"><Icon size={20}/> {title}</h2><p id="context-quick-description">Οι προεπιλογές εφαρμόζονται μόνο όταν ανοίγει αυτή η ενέργεια. Ό,τι αλλάξεις μέσα στη φόρμα παραμένει δική σου επιλογή μέχρι να κλείσεις ή να καταχωρίσεις.</p></div><button type="button" className="icon-button" aria-label="Κλείσιμο contextual καταχώρισης" onClick={onClose}><X/></button></header><div className="entry-body">{targetLabel?<div className="context-target" aria-label="Στόχος ενέργειας"><span>Στόχος</span><b>{targetLabel}</b></div>:null}{selectedStatement?<div className="rule-preview" data-credit-statement-payment-preview role="note" aria-label="Περιεχόμενο δήλωσης προς πληρωμή"><div className="logic-note compact"><ReceiptText/><span>Δήλωση {selectedStatement.openDate.split('-').reverse().join('/')}–{selectedStatement.closeDate.split('-').reverse().join('/')} · λήξη {selectedStatement.dueDate.split('-').reverse().join('/')} · υπόλοιπο {money.format(selectedStatement.remaining)}</span></div>{statementPurchases.length?<ul>{statementPurchases.slice(0,5).map(event=><li key={event.id}><span>{event.note}</span><b>{money.format(event.amount)}</b></li>)}</ul>:null}</div>:null}<div className="form-grid"><label><span>Ποσό</span><MoneyInput data-autofocus="true" value={loanPaymentPlan?String(loanPaymentPlan.amount):amount} readOnly={Boolean(loanPaymentPlan)} aria-readonly={loanPaymentPlan?true:undefined} invalid={amountError} aria-describedby={amountError?'context-quick-error':undefined} onValueChange={value=>{if(!loanPaymentPlan)setAmount(value)}}/></label><label><span>Ημερομηνία</span><AppDateInput value={date} onChange={event=>setDate(event.target.value)}/></label>
   {context.mode==='loan'&&loan&&!isSelfLoan(loan)&&remainingLoanInstallments>0?<label><span>Πόσες δόσεις</span><AppSelectInput value={String(installmentCount)} onChange={event=>setInstallmentCount(Number(event.target.value))}>{Array.from({length:remainingLoanInstallments},(_,index)=>index+1).map(count=><option key={count} value={count}>{count}</option>)}</AppSelectInput></label>:null}
   {context.mode==='lending'?<label><span>Πρόσωπο</span><input value={person} onChange={event=>setPerson(event.target.value)}/></label>:null}
   {context.mode==='savings'?<><label><span>Από</span><AppSelectInput value={fromAccountId} onChange={event=>setFromAccountId(event.target.value)}>{savingsSources.map(account=><option value={account.id} key={account.id}>{accountDisplayName(data,account.id)}</option>)}</AppSelectInput></label><label><span>Προς αποταμίευση</span><AppSelectInput value={toAccountId} onChange={event=>setToAccountId(event.target.value)}>{savingsTargets.map(account=><option value={account.id} key={account.id}>{accountDisplayName(data,account.id)}</option>)}</AppSelectInput></label></>:context.mode==='scheduled'&&scheduled?.kind==='transfer'?<><label><span>Από</span><AppSelectInput value={fromAccountId} onChange={event=>setFromAccountId(event.target.value)}>{accounts.map(account=><option value={account.id} key={account.id}>{accountDisplayName(data,account.id)}</option>)}</AppSelectInput></label><label><span>Προς</span><AppSelectInput value={toAccountId} onChange={event=>setToAccountId(event.target.value)}>{accounts.map(account=><option value={account.id} key={account.id}>{accountDisplayName(data,account.id)}</option>)}</AppSelectInput></label></>:context.mode==='credit'&&context.action==='purchase'?null:<label><span>{context.mode==='credit'?'Πληρωμή από':context.mode==='lending'&&context.action==='repay'?'Επιστροφή σε':context.mode==='lending'?'Πληρωμή από':context.mode==='loan'||context.mode==='recurring'?'Πληρωμή από':'Λογαριασμός'}</span><AppSelectInput value={accountId} onChange={event=>setAccountId(event.target.value)}>{selectableAccounts.map(account=><option value={account.id} key={account.id}>{accountDisplayName(data,account.id)}</option>)}</AppSelectInput></label>}
