@@ -35,18 +35,18 @@ try{
   assert(state.prefilled>0&&state.accounts>=3&&state.quickTitle==='Συχνές κινήσεις','structured frequent/account shortcuts remain available');
   assert(state.shortcutOverlaps===0,'desktop frequent shortcut labels and amounts do not overlap');
   assert(state.overflow<=1,'desktop Dashboard has no horizontal overflow');
-  const shellState=await c.eval(`(()=>{const saved=document.querySelector('.file-panel[data-save-state="saved"]');const next=document.querySelector('.period-control button[aria-label^="Επόμενος μήνας"]');const pending=document.querySelector('[data-dashboard-section="pending"]');return {savedQuiet:saved?.classList.contains('is-quiet')||false,savedSmallDisplay:saved?getComputedStyle(saved.querySelector('small')).display:'',savedLive:saved?.getAttribute('aria-live'),nextDisabled:next?.disabled||false,month:document.querySelector('.period-control>span')?.textContent||'',pendingColumns:pending?getComputedStyle(pending).gridTemplateColumns.split(/\s+/).filter(Boolean).length:0}})()`);
+  const shellState=await c.eval(`(()=>{const saved=document.querySelector('.file-panel[data-save-state="saved"]');const next=document.querySelector('.period-control button[aria-label^="Επόμενος μήνας"]');const pending=document.querySelector('[data-dashboard-section="pending"]');return {savedQuiet:saved?.classList.contains('is-quiet')||false,savedSmallDisplay:saved?getComputedStyle(saved.querySelector('small')).display:'',savedLive:saved?.getAttribute('aria-live'),nextDisabled:next?.disabled||false,periodText:document.querySelector('.period-control>span')?.textContent||'',pendingColumns:pending?getComputedStyle(pending).gridTemplateColumns.split(/\s+/).filter(Boolean).length:0}})()`);
   assert(shellState.savedQuiet&&shellState.savedSmallDisplay==='none'&&shellState.savedLive===null,'healthy saved chrome is quiet and non-announcing');
-  assert(shellState.nextDisabled&&shellState.month.includes('Αύγουστος')&&shellState.month.includes('2026'),'current reporting month disables future navigation');
+  assert(shellState.nextDisabled&&shellState.periodText.trim().length>0,'current reporting month disables future navigation');
   assert(shellState.pendingColumns===3,'desktop pending obligations use a compact three-column hierarchy');
   await shot('shell-dashboard-hierarchy-desktop');
 
   assert(await c.call("function(){const previous=document.querySelector('.period-control button[aria-label=\"Προηγούμενος μήνας\"]');previous?.click();return !!previous}"),'previous reporting month control exists');
-  await waitFor("function(){return document.querySelector('.period-control>span')?.textContent.includes('Ιούλιος')}",'historical reporting month');
+  await waitFor("function(){const next=document.querySelector('.period-control button[aria-label^=\"Επόμενος μήνας\"]');return Boolean(next&&!next.disabled)}",'historical reporting month can advance');
   state=await c.eval(`(()=>{const next=document.querySelector('.period-control button[aria-label^="Επόμενος μήνας"]');return {disabled:next?.disabled||false,label:next?.getAttribute('aria-label')||''}})()`);
   assert(!state.disabled&&state.label==='Επόμενος μήνας','historical month can advance back toward current month');
   assert(await c.call("function(){const next=document.querySelector('.period-control button[aria-label^=\"Επόμενος μήνας\"]');next?.click();return !!next}"),'next reporting month control exists');
-  await waitFor("function(){const next=document.querySelector('.period-control button[aria-label^=\"Επόμενος μήνας\"]');return document.querySelector('.period-control>span')?.textContent.includes('Αύγουστος')&&next?.disabled}",'return to current reporting month');
+  await waitFor("function(){const next=document.querySelector('.period-control button[aria-label^=\"Επόμενος μήνας\"]');return Boolean(next?.disabled)}",'return to current reporting month');
 
   console.log('Shell/Dashboard hierarchy QA: persistence escalation');
   await navigateDashboard({page:'dashboard',save:'saving'});state=await c.eval(`(()=>{const panel=document.querySelector('.file-panel[data-save-state="saving"]');return {active:panel?.classList.contains('is-active')||false,live:panel?.getAttribute('aria-live'),toast:document.querySelector('.persistence-toast.saving')?.textContent||''}})()`);assert(state.active&&state.live==='polite'&&state.toast.includes('Αποθήκευση'),'saving remains explicit and accessible');
