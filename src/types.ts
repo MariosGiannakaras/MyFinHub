@@ -9,6 +9,8 @@ export type TextSizePreference = 'compact' | 'normal' | 'large';
 export type ScheduledKind = 'expense' | 'income' | 'transfer';
 export type ScheduledTransactionStatus = 'pending' | 'completed' | 'skipped' | 'cancelled';
 export type TransactionRuleScope = 'manual' | 'imported' | 'review';
+export type StatementBoundaryRule = 'include-closing-day' | 'next-cycle';
+export type CreditStatementStatus = 'open' | 'closed' | 'due' | 'paid';
 
 export interface Account {
   id: string;
@@ -51,6 +53,9 @@ export interface PaymentCard {
   last4?: string;
   vaultRef?: string;
   creditLimit?: number;
+  statementClosingDay?: number;
+  statementDueDay?: number;
+  statementBoundaryRule?: StatementBoundaryRule;
   active: boolean;
   archivedAt?: string;
   createdAt: string;
@@ -62,6 +67,17 @@ export interface DeletedCardReference {
   kind: 'credit';
   createdAt: string;
   deletedAt: string;
+}
+
+export interface CreditStatementRecord {
+  id: string;
+  cardId: string;
+  openDate: string;
+  closeDate: string;
+  dueDate: string;
+  boundaryRule: StatementBoundaryRule;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface LegacyTransaction {
@@ -135,6 +151,7 @@ export interface FinanceEvent {
   installmentCount?: number;
   recurringId?: string;
   cardId?: string;
+  statementId?: string;
 }
 
 export interface ScheduledTransaction {
@@ -245,6 +262,7 @@ export interface FinanceData {
     cardBanks?: CardBank[];
     cards?: PaymentCard[];
     deletedCards?: DeletedCardReference[];
+    creditStatements?: CreditStatementRecord[];
     events?: FinanceEvent[];
     scheduled?: ScheduledTransaction[];
     reviewDecisions?: Record<string, ReviewDecision>;

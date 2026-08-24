@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 2,
+  "layout": "surface-first-latest-only",
+  "appVersion": "v1.3",
+  "suite": "credit-statements",
+  "surface": "credit",
+  "generatedAt": "2026-08-24T13:38:35.503Z",
+  "timeZone": "Europe/Athens",
+  "source": {
+    "sha": "8b28f934d735eb81c1eae08937255b855a1946f4",
+    "shortSha": "8b28f934",
+    "branch": "feat/232-credit-statements"
+  },
+  "screenshots": [
+    "visual-qa/credit/v1.3__2026-08-24_163835__qa-credit-statements__credit-deleted-statement-history-desktop.png",
+    "visual-qa/credit/v1.3__2026-08-24_163835__qa-credit-statements__credit-deleted-statement-history-mobile.png",
+    "visual-qa/credit/v1.3__2026-08-24_163835__qa-credit-statements__credit-statement-payment-desktop.png",
+    "visual-qa/credit/v1.3__2026-08-24_163835__qa-credit-statements__credit-statements-active-desktop.png",
+    "visual-qa/credit/v1.3__2026-08-24_163835__qa-credit-statements__credit-statements-active-mobile.png"
+  ]
+}

@@ -4,15 +4,15 @@
   "appVersion": "v1.3",
   "suite": "shell-dashboard-hierarchy",
   "surface": "dashboard",
-  "generatedAt": "2026-08-24T10:24:34.030Z",
+  "generatedAt": "2026-08-24T13:38:35.503Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "874ae7afbb8c43c2e8a851d68e53335b4df34148",
-    "shortSha": "874ae7af",
-    "branch": "feat/239-obligation-lifecycle-hierarchy"
+    "sha": "8b28f934d735eb81c1eae08937255b855a1946f4",
+    "shortSha": "8b28f934",
+    "branch": "feat/232-credit-statements"
   },
   "screenshots": [
-    "visual-qa/dashboard/v1.3__2026-08-24_132434__qa-shell-dashboard-hierarchy__shell-dashboard-hierarchy-desktop.png",
-    "visual-qa/dashboard/v1.3__2026-08-24_132434__qa-shell-dashboard-hierarchy__shell-dashboard-hierarchy-mobile.png"
+    "visual-qa/dashboard/v1.3__2026-08-24_163835__qa-shell-dashboard-hierarchy__shell-dashboard-hierarchy-desktop.png",
+    "visual-qa/dashboard/v1.3__2026-08-24_163835__qa-shell-dashboard-hierarchy__shell-dashboard-hierarchy-mobile.png"
   ]
 }
