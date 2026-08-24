@@ -14,6 +14,7 @@ const scripts=[
   {path:'scripts/recovered-surface-qa.mjs',key:'recovered-surface',surface:'recovery',profiles:['/tmp/myfinhub-recovered-surface-qa-chrome']},
   {path:'scripts/reports-visual-qa.mjs',key:'reports-visual',surface:'reports',profiles:['/tmp/myfinhub-reports-visual-qa-chrome']},
   {path:'scripts/brand-visual-qa.mjs',key:'brand-visual',surface:'branding',profiles:['/tmp/myfinhub-brand-visual-qa-chrome']},
+  {path:'scripts/theme-system-qa.mjs',key:'theme-system',surface:'theme',profiles:['/tmp/myfinhub-theme-system-qa-chrome']},
   {path:'scripts/planning-forecast-qa.mjs',key:'planning-forecast',surface:'planning',profiles:['/tmp/myfinhub-planning-forecast-qa-chrome']},
   {path:'scripts/action-center-context-qa.mjs',key:'action-center',surface:'action-center',profiles:['/tmp/myfinhub-action-center-context-qa-chrome']},
   {path:'scripts/budget-rules-qa.mjs',key:'budget-rules',surface:'budgets',profiles:['/tmp/myfinhub-budget-rules-qa-chrome']},
