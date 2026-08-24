@@ -1,5 +1,6 @@
 import { budgetProgress } from './budgets.js';
 import { creditCards, creditDebtForCard, creditLimitForCard, cardLabel } from './cards.js';
+import { creditStatementViews } from './creditStatements.js';
 import { addDays, cashFlowForecast, LOW_BALANCE_THRESHOLD } from './forecast.js';
 import { lendingOutstandingFor } from './lending.js';
 import { isSelfLoan, loanPaymentEvents, loanRemainingInstallments, typicalLoanPaymentDay } from './loans.js';
@@ -28,6 +29,7 @@ export interface AttentionItem {
   amount?: number;
   accountId?: string;
   cardId?: string;
+  statementId?: string;
   person?: string;
   recurringId?: string;
   loanId?: string;
@@ -48,7 +50,7 @@ function monthDate(asOf:string,day:number,monthOffset=0){
 }
 function monthStart(value:string){return `${value.slice(0,7)}-01`}
 function fingerprint(parts:Array<string|number|undefined|null>){return parts.map(value=>String(value??'')).join('|')}
-function make(item:Omit<AttentionItem,'fingerprint'>):AttentionItem{return {...item,fingerprint:fingerprint([item.kind,item.id,item.severity,item.dueDate,item.amount,item.accountId,item.cardId,item.person,item.action,item.title,item.reason])}}
+function make(item:Omit<AttentionItem,'fingerprint'>):AttentionItem{return {...item,fingerprint:fingerprint([item.kind,item.id,item.severity,item.dueDate,item.amount,item.accountId,item.cardId,item.statementId,item.person,item.action,item.title,item.reason])}}
 function accountName(data:FinanceData,id:string){return data.state.settings.accountNames?.[id]??data.seed.accounts.find(account=>account.id===id)?.name??id}
 
 function effectiveLoans(data:FinanceData):Loan[]{
@@ -96,7 +98,21 @@ function loanAttention(data:FinanceData,asOf:string):AttentionItem[]{
 }
 
 function creditAttention(data:FinanceData,asOf:string):AttentionItem[]{
-  return creditCards(data).flatMap(card=>{const limit=creditLimitForCard(data,card);const debt=creditDebtForCard(data,card.id,asOf);if(limit<=0||debt<=0)return [];const ratio=debt/limit;if(ratio<CREDIT_WARNING_RATIO)return [];const severity:AttentionSeverity=ratio>=1?'danger':'warning';return [make({id:`credit:${card.id}`,kind:'credit',severity,title:cardLabel(card),reason:ratio>=1?`Η χρήση της κάρτας είναι ${Math.round(ratio*100)}% και έχει φτάσει ή ξεπεράσει το όριο.`:`Η χρήση της κάρτας είναι ${Math.round(ratio*100)}% του ορίου.`,amount:debt,cardId:card.id,action:'pay_credit'})]});
+  return creditCards(data).flatMap(card=>{
+    const statement=creditStatementViews(data,card.id,asOf).filter(item=>item.remaining>.005&&(item.status==='closed'||item.status==='due')).sort((a,b)=>a.dueDate.localeCompare(b.dueDate)||a.closeDate.localeCompare(b.closeDate))[0];
+    if(statement){
+      const distance=daysBetween(asOf,statement.dueDate);
+      if(statement.status==='due'||(distance>=0&&distance<=UPCOMING_DAYS)){
+        const severity:AttentionSeverity=statement.status==='due'?'danger':distance<=2?'warning':'info';
+        const reason=statement.status==='due'?'Η δήλωση της πιστωτικής έχει φτάσει ή περάσει την ημερομηνία πληρωμής και παραμένει υπόλοιπο.':`Η δήλωση της πιστωτικής λήγει σε ${distance} ${distance===1?'ημέρα':'ημέρες'}.`;
+        return [make({id:`credit-statement:${statement.id}`,kind:'credit',severity,title:`${cardLabel(card)} · Δήλωση`,reason,dueDate:statement.dueDate,amount:statement.remaining,cardId:card.id,statementId:statement.id,action:'pay_credit'})];
+      }
+    }
+    const limit=creditLimitForCard(data,card);const debt=creditDebtForCard(data,card.id,asOf);if(limit<=0||debt<=0)return [];
+    const ratio=debt/limit;if(ratio<CREDIT_WARNING_RATIO)return [];
+    const severity:AttentionSeverity=ratio>=1?'danger':'warning';
+    return [make({id:`credit:${card.id}`,kind:'credit',severity,title:cardLabel(card),reason:ratio>=1?`Η χρήση της κάρτας είναι ${Math.round(ratio*100)}% και έχει φτάσει ή ξεπεράσει το όριο.`:`Η χρήση της κάρτας είναι ${Math.round(ratio*100)}% του ορίου.`,amount:debt,cardId:card.id,action:'pay_credit'})];
+  });
 }
 
 function budgetAttention(data:FinanceData,asOf:string):AttentionItem[]{
