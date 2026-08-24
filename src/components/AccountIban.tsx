@@ -5,7 +5,9 @@ import { formatIban } from '../lib/iban';
 import '../styles/part47.css';
 
 async function copyText(value:string){
-  if(navigator.clipboard?.writeText){await navigator.clipboard.writeText(value);return}
+  if(navigator.clipboard?.writeText){
+    try{await navigator.clipboard.writeText(value);return}catch{/* fall through to the same-origin legacy copy path */}
+  }
   const node=document.createElement('textarea');node.value=value;node.setAttribute('readonly','');node.style.position='fixed';node.style.opacity='0';document.body.append(node);node.select();const ok=document.execCommand('copy');node.remove();if(!ok)throw new Error('COPY_FAILED');
 }
 
