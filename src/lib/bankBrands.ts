@@ -1,15 +1,18 @@
+import payzyLogo from '../assets/canonical-credit-card/payzy-logo.png';
+import vivaLogo from '../assets/canonical-credit-card/viva-logo.png';
+
 export type BankBrandKey='piraeus'|'revolut'|'alpha'|'payzy'|'viva'|'cash'|'generic';
 
-export type BankBrandTextAsset={label:string;mark:string;source:'local-text'};
-export type BankBrandImageAsset={label:string;src:`/${string}`;fallbackMark:string;source:'local-image'};
+export type BankBrandTextAsset={label:string;mark:string;cardMark?:string;source:'local-text'};
+export type BankBrandImageAsset={label:string;src:string;fallbackMark:string;cardMark?:string;source:'local-image'};
 export type BankBrandAsset=BankBrandTextAsset|BankBrandImageAsset;
 
 const BRAND_ASSETS:Partial<Record<BankBrandKey,BankBrandAsset>>={
-  piraeus:{label:'Τράπεζα Πειραιώς',mark:'ΠΕΙΡΑΙΩΣ',source:'local-text'},
-  revolut:{label:'Revolut',mark:'REVOLUT',source:'local-text'},
-  alpha:{label:'Alpha Bank',mark:'ALPHA',source:'local-text'},
-  payzy:{label:'payzy by COSMOTE',mark:'payzy',source:'local-text'},
-  viva:{label:'Viva.com',mark:'VIVA',source:'local-text'},
+  piraeus:{label:'Τράπεζα Πειραιώς',mark:'ΠΕΙΡΑΙΩΣ',cardMark:'Piraeus',source:'local-text'},
+  revolut:{label:'Revolut',mark:'REVOLUT',cardMark:'Revolut',source:'local-text'},
+  alpha:{label:'Alpha Bank',mark:'ALPHA',cardMark:'ALPHA BANK',source:'local-text'},
+  payzy:{label:'payzy by COSMOTE',src:payzyLogo,fallbackMark:'payzy',cardMark:'payzy',source:'local-image'},
+  viva:{label:'Viva.com',src:vivaLogo,fallbackMark:'VIVA',cardMark:'VIVA',source:'local-image'},
 };
 
 function normalize(value=''){return value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('el-GR')}
@@ -28,3 +31,5 @@ export function bankBrandKey(value?:string,name?:string):BankBrandKey{
 export function bankBrandAsset(key:BankBrandKey){return BRAND_ASSETS[key]??null}
 
 export function bankBrandFallbackMark(asset:BankBrandAsset){return asset.source==='local-image'?asset.fallbackMark:asset.mark}
+
+export function bankBrandCardMark(asset:BankBrandAsset){return asset.cardMark??bankBrandFallbackMark(asset)}
