@@ -62,8 +62,8 @@ try{
   assert(archive.text.includes('Statements 1'),'archive manager preserves statement count');
   assert(archive.deleteEnabled,'settled archived card remains eligible for hard delete');
   await c.call("function(){const row=[...document.querySelectorAll('.card-archive-row')].find(item=>(item.textContent||'').includes('QA Settled'));row?.querySelector('button.danger:not([disabled])')?.click();return true}");
-  await waitFor("function(){return [...document.querySelectorAll('[role=dialog] button')].some(item=>(item.textContent||'').includes('Ολική διαγραφή'))}",'hard-delete confirmation');
-  await c.call("function(){const buttons=[...document.querySelectorAll('[role=dialog] button')];const confirm=buttons.find(item=>(item.textContent||'').includes('Ολική διαγραφή'));confirm?.click();return Boolean(confirm)}");
+  await waitFor("function(){return Boolean(document.querySelector('.app-confirm-dialog'))}",'hard-delete confirmation');
+  await c.call("function(){const confirm=document.querySelector('.app-confirm-dialog button[data-action-tone=\"destructive\"]');confirm?.click();return Boolean(confirm)}");
   await waitFor("function(){return Boolean(document.querySelector('[data-deleted-statement-history]'))}",'deleted statement history');
   await c.call("function(){document.querySelector('.card-archive-manager .close-picker')?.click();return true}");
   await waitFor("function(){return !document.querySelector('.card-archive-manager')}",'archive manager close after deletion');
