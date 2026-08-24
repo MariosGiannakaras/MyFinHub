@@ -45,12 +45,13 @@ export function statementCloseDateForPurchase(date:string,closingDay:number,boun
   return dateAtBillingDay(next.year,next.month,closingDay);
 }
 
-export function statementOpenDateForClose(closeDate:string,closingDay:number){
+export function statementOpenDateForClose(closeDate:string,closingDay:number,boundary:StatementBoundaryRule='include-closing-day'){
   const parsed=parseDate(closeDate);
   const previous=monthShift(parsed.year,parsed.month,-1);
   const previousClose=parseDate(dateAtBillingDay(previous.year,previous.month,closingDay));
-  const nextDay=new Date(Date.UTC(previousClose.year,previousClose.month-1,previousClose.day+1));
-  return isoDate(nextDay.getUTCFullYear(),nextDay.getUTCMonth()+1,nextDay.getUTCDate());
+  const offsetDays=boundary==='next-cycle'?0:1;
+  const openDate=new Date(Date.UTC(previousClose.year,previousClose.month-1,previousClose.day+offsetDays));
+  return isoDate(openDate.getUTCFullYear(),openDate.getUTCMonth()+1,openDate.getUTCDate());
 }
 
 export function statementDueDateForClose(closeDate:string,dueDay:number){
@@ -67,7 +68,7 @@ export function groupCardPurchasesByStatement(events:FinanceEvent[],cardId:strin
     if(event.kind!=='card_purchase'||event.cardId!==cardId||!/^\d{4}-\d{2}-\d{2}$/.test(event.date)||!Number.isFinite(event.amount)||event.amount<=0)continue;
     const closeDate=statementCloseDateForPurchase(event.date,closingDay,boundary);
     const id=creditStatementId(cardId,closeDate);
-    const group=groups.get(id)??{id,cardId,openDate:statementOpenDateForClose(closeDate,closingDay),closeDate,purchaseIds:[],purchaseTotal:0};
+    const group=groups.get(id)??{id,cardId,openDate:statementOpenDateForClose(closeDate,closingDay,boundary),closeDate,purchaseIds:[],purchaseTotal:0};
     group.purchaseIds.push(event.id);
     group.purchaseTotal+=event.amount;
     groups.set(id,group);
@@ -84,7 +85,7 @@ export function cardStatementConfiguration(card:PaymentCard){
 export function statementRecordForPurchase(card:PaymentCard,date:string,now=new Date().toISOString()):CreditStatementRecord|null{
   const config=cardStatementConfiguration(card);if(!config)return null;
   const closeDate=statementCloseDateForPurchase(date,config.closingDay,config.boundary);
-  return {id:creditStatementId(card.id,closeDate),cardId:card.id,openDate:statementOpenDateForClose(closeDate,config.closingDay),closeDate,dueDate:statementDueDateForClose(closeDate,config.dueDay),boundaryRule:config.boundary,createdAt:now,updatedAt:now};
+  return {id:creditStatementId(card.id,closeDate),cardId:card.id,openDate:statementOpenDateForClose(closeDate,config.closingDay,config.boundary),closeDate,dueDate:statementDueDateForClose(closeDate,config.dueDay),boundaryRule:config.boundary,createdAt:now,updatedAt:now};
 }
 
 export function prepareCreditStatementEvent(data:FinanceData,event:FinanceEvent,now=event.updatedAt||new Date().toISOString()){
