@@ -4,18 +4,24 @@
   "appVersion": "v1.3",
   "suite": "brand-visual",
   "surface": "branding",
-  "generatedAt": "2026-08-24T17:03:16.367Z",
+  "generatedAt": "2026-08-24T17:39:38.049Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "23f53c0aedbf33e7988e24e159f7fc554d258548",
-    "shortSha": "23f53c0a",
+    "sha": "0e2c6ca6687250400d3e51da235d73388496d90f",
+    "shortSha": "0e2c6ca6",
     "branch": "feat/240-brand-registry-reconciliation"
   },
   "screenshots": [
-    "visual-qa/branding/v1.3__2026-08-24_200316__qa-brand-visual__brand-login-dark-contract.png",
-    "visual-qa/branding/v1.3__2026-08-24_200316__qa-brand-visual__brand-login-light.png",
-    "visual-qa/branding/v1.3__2026-08-24_200316__qa-brand-visual__brand-shell-desktop.png",
-    "visual-qa/branding/v1.3__2026-08-24_200316__qa-brand-visual__brand-shell-mobile.png",
-    "visual-qa/branding/v1.3__2026-08-24_200316__qa-brand-visual__brand-shell-tablet.png"
+    "visual-qa/branding/v1.3__2026-08-24_203938__qa-brand-visual__bank-registry-cards-desktop.png",
+    "visual-qa/branding/v1.3__2026-08-24_203938__qa-brand-visual__bank-registry-cards-mobile.png",
+    "visual-qa/branding/v1.3__2026-08-24_203938__qa-brand-visual__bank-registry-credit-desktop.png",
+    "visual-qa/branding/v1.3__2026-08-24_203938__qa-brand-visual__bank-registry-credit-mobile.png",
+    "visual-qa/branding/v1.3__2026-08-24_203938__qa-brand-visual__bank-registry-dashboard-desktop.png",
+    "visual-qa/branding/v1.3__2026-08-24_203938__qa-brand-visual__bank-registry-dashboard-mobile.png",
+    "visual-qa/branding/v1.3__2026-08-24_203938__qa-brand-visual__brand-login-dark-contract.png",
+    "visual-qa/branding/v1.3__2026-08-24_203938__qa-brand-visual__brand-login-light.png",
+    "visual-qa/branding/v1.3__2026-08-24_203938__qa-brand-visual__brand-shell-desktop.png",
+    "visual-qa/branding/v1.3__2026-08-24_203938__qa-brand-visual__brand-shell-mobile.png",
+    "visual-qa/branding/v1.3__2026-08-24_203938__qa-brand-visual__brand-shell-tablet.png"
   ]
 }
