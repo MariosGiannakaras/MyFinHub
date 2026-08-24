@@ -41,7 +41,7 @@
   .compact-account-row .account-iban{align-items:flex-start}
   .compact-account-row .account-iban-copy{width:40px;height:40px;flex-basis:40px}
   .account-metadata-settings .panel-head{display:grid;grid-template-columns:1fr;gap:10px}
-  .account-metadata-settings .panel-head>.secondary{justify-self:start;min-height:40px}
+  .account-metadata-settings .panel-head>.secondary{justify-self:start;min-height:44px}
   .account-metadata-list{gap:10px}
   .account-metadata-row{grid-template-columns:1fr;align-items:stretch;padding:12px;gap:9px}
   .account-metadata-row>.save-button,.account-metadata-row>small{grid-column:1}
