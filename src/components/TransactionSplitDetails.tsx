@@ -9,8 +9,8 @@ export function TransactionSplitDetails({parts}:{parts:SplitPart[]}){
   const contentId=useId();
   if(parts.length<2)return null;
   return <div className={`transaction-split-disclosure${open?' is-open':''}`}>
-    <button type="button" className="transaction-split-toggle" aria-expanded={open} aria-controls={contentId} onClick={()=>setOpen(value=>!value)}>
-      <span>{parts.length} μέρη</span><small>{open?'Απόκρυψη':'Προβολή ανάλυσης'}</small><ChevronDown size={14} aria-hidden="true"/>
+    <button type="button" className="text-button transaction-split-toggle" aria-expanded={open} aria-controls={contentId} onClick={()=>setOpen(value=>!value)} style={{display:'inline-flex',alignItems:'center',gap:6,minHeight:44,marginTop:4}}>
+      <span>{parts.length} μέρη</span><small>{open?'Απόκρυψη':'Προβολή ανάλυσης'}</small><ChevronDown size={14} aria-hidden="true" style={{transform:open?'rotate(180deg)':undefined}}/>
     </button>
     {open?<div id={contentId} className="transaction-split-details" aria-label="Ανάλυση διαχωρισμένης αγοράς">
       {parts.map((part,index)=><span className="transaction-split-part" key={part.id||`${part.category}-${index}`}>
