@@ -4,15 +4,15 @@
   "appVersion": "v1.3",
   "suite": "ledger-foundations",
   "surface": "ledger",
-  "generatedAt": "2026-08-24T21:43:04.017Z",
+  "generatedAt": "2026-08-24T22:00:33.155Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "7e80345c6be5b8b6b71412c7bbf422ab3eaa7893",
-    "shortSha": "7e80345c",
+    "sha": "080d2decd1bc77aa2f2888145512c0630aaf424e",
+    "shortSha": "080d2dec",
     "branch": "feat/228-durable-undo-redo"
   },
   "screenshots": [
-    "visual-qa/ledger/v1.3__2026-08-25_004304__qa-ledger-foundations__ledger-foundations-mobile.png",
-    "visual-qa/ledger/v1.3__2026-08-25_004304__qa-ledger-foundations__ledger-foundations-transactions.png"
+    "visual-qa/ledger/v1.3__2026-08-25_010033__qa-ledger-foundations__ledger-foundations-mobile.png",
+    "visual-qa/ledger/v1.3__2026-08-25_010033__qa-ledger-foundations__ledger-foundations-transactions.png"
   ]
 }

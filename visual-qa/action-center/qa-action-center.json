@@ -4,15 +4,15 @@
   "appVersion": "v1.3",
   "suite": "action-center",
   "surface": "action-center",
-  "generatedAt": "2026-08-24T21:43:04.017Z",
+  "generatedAt": "2026-08-24T22:00:33.155Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "7e80345c6be5b8b6b71412c7bbf422ab3eaa7893",
-    "shortSha": "7e80345c",
+    "sha": "080d2decd1bc77aa2f2888145512c0630aaf424e",
+    "shortSha": "080d2dec",
     "branch": "feat/228-durable-undo-redo"
   },
   "screenshots": [
-    "visual-qa/action-center/v1.3__2026-08-25_004304__qa-action-center__action-center-desktop.png",
-    "visual-qa/action-center/v1.3__2026-08-25_004304__qa-action-center__action-center-mobile.png"
+    "visual-qa/action-center/v1.3__2026-08-25_010033__qa-action-center__action-center-desktop.png",
+    "visual-qa/action-center/v1.3__2026-08-25_010033__qa-action-center__action-center-mobile.png"
   ]
 }
