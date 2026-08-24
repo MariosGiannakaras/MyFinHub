@@ -35,7 +35,7 @@ type DragState={
   lastY:number;
 };
 
-function formatPan(value:string){return value.replace(/\D/g,'').slice(0,16).replace(/(.{4})/g,'$1 ').trim();}
+function formatPan(value:string){return value.replace(/\D/g,'').replace(/(.{4})/g,'$1 ').trim();}
 function maskNumber(value?:string,last4?:string){
   const digits=String(value??'').replace(/\D/g,'');
   const suffix=digits.slice(-4)||String(last4??'').replace(/\D/g,'').slice(-4);
