@@ -1,20 +1,20 @@
 {
   "schemaVersion": 1,
   "appVersion": "v1.3",
-  "runId": "2026-08-24_032726__9f913d19",
-  "generatedAt": "2026-08-24T00:27:26.146Z",
+  "runId": "2026-08-24_032518__6539f3cb",
+  "generatedAt": "2026-08-24T00:25:18.860Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "9f913d193426e59ef0a3f533aea7ed3308189b72",
-    "shortSha": "9f913d19",
+    "sha": "6539f3cb8770c480ef6e2a0efb77cde357b08f07",
+    "shortSha": "6539f3cb",
     "branch": "feat/236-shared-ui-adoption"
   },
   "baseUrl": "http://127.0.0.1:5173/qa.html",
   "latestDirectory": "visual-qa/v1.3/latest",
-  "runDirectory": "visual-qa/v1.3/runs/2026-08-24_032726__9f913d19",
+  "runDirectory": "visual-qa/v1.3/runs/2026-08-24_032518__6539f3cb",
   "screenshots": [
     {
-      "file": "v1.3__2026-08-24_032726__dashboard__desktop-1440x1000__NEW.png",
+      "file": "v1.3__2026-08-24_032518__dashboard__desktop-1440x1000__NEW.png",
       "page": "dashboard",
       "state": "NEW",
       "viewport": {
@@ -28,7 +28,7 @@
       }
     },
     {
-      "file": "v1.3__2026-08-24_032726__transactions__desktop-1440x1000__NEW.png",
+      "file": "v1.3__2026-08-24_032518__transactions__desktop-1440x1000__NEW.png",
       "page": "transactions",
       "state": "NEW",
       "viewport": {
@@ -42,7 +42,7 @@
       }
     },
     {
-      "file": "v1.3__2026-08-24_032726__review__desktop-1440x1000__NEW.png",
+      "file": "v1.3__2026-08-24_032518__review__desktop-1440x1000__NEW.png",
       "page": "review",
       "state": "NEW",
       "viewport": {
@@ -56,7 +56,7 @@
       }
     },
     {
-      "file": "v1.3__2026-08-24_032726__savings__desktop-1440x1000__NEW.png",
+      "file": "v1.3__2026-08-24_032518__savings__desktop-1440x1000__NEW.png",
       "page": "savings",
       "state": "NEW",
       "viewport": {
@@ -70,7 +70,7 @@
       }
     },
     {
-      "file": "v1.3__2026-08-24_032726__cards__desktop-1440x1000__NEW.png",
+      "file": "v1.3__2026-08-24_032518__cards__desktop-1440x1000__NEW.png",
       "page": "cards",
       "state": "NEW",
       "viewport": {
@@ -84,7 +84,7 @@
       }
     },
     {
-      "file": "v1.3__2026-08-24_032726__credit__desktop-1440x1000__NEW.png",
+      "file": "v1.3__2026-08-24_032518__credit__desktop-1440x1000__NEW.png",
       "page": "credit",
       "state": "NEW",
       "viewport": {
@@ -98,7 +98,7 @@
       }
     },
     {
-      "file": "v1.3__2026-08-24_032726__loans__desktop-1440x1000__NEW.png",
+      "file": "v1.3__2026-08-24_032518__loans__desktop-1440x1000__NEW.png",
       "page": "loans",
       "state": "NEW",
       "viewport": {
@@ -112,7 +112,7 @@
       }
     },
     {
-      "file": "v1.3__2026-08-24_032726__lending__desktop-1440x1000__NEW.png",
+      "file": "v1.3__2026-08-24_032518__lending__desktop-1440x1000__NEW.png",
       "page": "lending",
       "state": "NEW",
       "viewport": {
@@ -126,7 +126,7 @@
       }
     },
     {
-      "file": "v1.3__2026-08-24_032726__recurring__desktop-1440x1000__NEW.png",
+      "file": "v1.3__2026-08-24_032518__recurring__desktop-1440x1000__NEW.png",
       "page": "recurring",
       "state": "NEW",
       "viewport": {
@@ -140,7 +140,7 @@
       }
     },
     {
-      "file": "v1.3__2026-08-24_032726__planning__desktop-1440x1000__NEW.png",
+      "file": "v1.3__2026-08-24_032518__planning__desktop-1440x1000__NEW.png",
       "page": "planning",
       "state": "NEW",
       "viewport": {
@@ -154,7 +154,7 @@
       }
     },
     {
-      "file": "v1.3__2026-08-24_032726__reports__desktop-1440x1000__NEW.png",
+      "file": "v1.3__2026-08-24_032518__reports__desktop-1440x1000__NEW.png",
       "page": "reports",
       "state": "NEW",
       "viewport": {
@@ -168,7 +168,7 @@
       }
     },
     {
-      "file": "v1.3__2026-08-24_032726__settings__desktop-1440x1000__NEW.png",
+      "file": "v1.3__2026-08-24_032518__settings__desktop-1440x1000__NEW.png",
       "page": "settings",
       "state": "NEW",
       "viewport": {
@@ -182,7 +182,7 @@
       }
     },
     {
-      "file": "v1.3__2026-08-24_032726__dashboard__mobile-375x812__NEW.png",
+      "file": "v1.3__2026-08-24_032518__dashboard__mobile-375x812__NEW.png",
       "page": "dashboard",
       "state": "NEW",
       "viewport": {
@@ -196,7 +196,7 @@
       }
     },
     {
-      "file": "v1.3__2026-08-24_032726__transactions__mobile-375x812__NEW.png",
+      "file": "v1.3__2026-08-24_032518__transactions__mobile-375x812__NEW.png",
       "page": "transactions",
       "state": "NEW",
       "viewport": {
@@ -210,7 +210,7 @@
       }
     },
     {
-      "file": "v1.3__2026-08-24_032726__review__mobile-375x812__NEW.png",
+      "file": "v1.3__2026-08-24_032518__review__mobile-375x812__NEW.png",
       "page": "review",
       "state": "NEW",
       "viewport": {
@@ -224,7 +224,7 @@
       }
     },
     {
-      "file": "v1.3__2026-08-24_032726__savings__mobile-375x812__NEW.png",
+      "file": "v1.3__2026-08-24_032518__savings__mobile-375x812__NEW.png",
       "page": "savings",
       "state": "NEW",
       "viewport": {
@@ -238,7 +238,7 @@
       }
     },
     {
-      "file": "v1.3__2026-08-24_032726__cards__mobile-375x812__NEW.png",
+      "file": "v1.3__2026-08-24_032518__cards__mobile-375x812__NEW.png",
       "page": "cards",
       "state": "NEW",
       "viewport": {
@@ -252,7 +252,7 @@
       }
     },
     {
-      "file": "v1.3__2026-08-24_032726__credit__mobile-375x812__NEW.png",
+      "file": "v1.3__2026-08-24_032518__credit__mobile-375x812__NEW.png",
       "page": "credit",
       "state": "NEW",
       "viewport": {
@@ -266,7 +266,7 @@
       }
     },
     {
-      "file": "v1.3__2026-08-24_032726__loans__mobile-375x812__NEW.png",
+      "file": "v1.3__2026-08-24_032518__loans__mobile-375x812__NEW.png",
       "page": "loans",
       "state": "NEW",
       "viewport": {
@@ -280,7 +280,7 @@
       }
     },
     {
-      "file": "v1.3__2026-08-24_032726__lending__mobile-375x812__NEW.png",
+      "file": "v1.3__2026-08-24_032518__lending__mobile-375x812__NEW.png",
       "page": "lending",
       "state": "NEW",
       "viewport": {
@@ -294,7 +294,7 @@
       }
     },
     {
-      "file": "v1.3__2026-08-24_032726__recurring__mobile-375x812__NEW.png",
+      "file": "v1.3__2026-08-24_032518__recurring__mobile-375x812__NEW.png",
       "page": "recurring",
       "state": "NEW",
       "viewport": {
@@ -308,7 +308,7 @@
       }
     },
     {
-      "file": "v1.3__2026-08-24_032726__planning__mobile-375x812__NEW.png",
+      "file": "v1.3__2026-08-24_032518__planning__mobile-375x812__NEW.png",
       "page": "planning",
       "state": "NEW",
       "viewport": {
@@ -322,7 +322,7 @@
       }
     },
     {
-      "file": "v1.3__2026-08-24_032726__reports__mobile-375x812__NEW.png",
+      "file": "v1.3__2026-08-24_032518__reports__mobile-375x812__NEW.png",
       "page": "reports",
       "state": "NEW",
       "viewport": {
@@ -336,7 +336,7 @@
       }
     },
     {
-      "file": "v1.3__2026-08-24_032726__settings__mobile-375x812__NEW.png",
+      "file": "v1.3__2026-08-24_032518__settings__mobile-375x812__NEW.png",
       "page": "settings",
       "state": "NEW",
       "viewport": {
