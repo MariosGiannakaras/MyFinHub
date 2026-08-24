@@ -12,7 +12,7 @@ function parseAccountId(value:unknown){
   return accountId;
 }
 
-function parseExpectedRevision(value:string|undefined){
+export function parseAccountMetadataExpectedRevision(value:string|undefined){
   const raw=(value??'').replace(/^W\//,'').replace(/^"|"$/g,'').trim();
   if(!/^\d+$/.test(raw))throw new ApiError(428,'REVISION_REQUIRED','Απαιτείται έκδοση της εγγραφής πριν από την αποθήκευση.');
   const revision=Number(raw);
@@ -20,7 +20,7 @@ function parseExpectedRevision(value:string|undefined){
   return revision;
 }
 
-function parseWrite(value:unknown){
+export function parseAccountMetadataWrite(value:unknown){
   if(!value||typeof value!=='object'||Array.isArray(value))throw new ApiError(400,'INVALID_ACCOUNT_METADATA','Μη έγκυρα metadata λογαριασμού.');
   const body=value as Record<string,unknown>;
   if(Object.keys(body).some(key=>key!=='accountId'&&key!=='iban'))throw new ApiError(400,'INVALID_ACCOUNT_METADATA','Μη έγκυρα metadata λογαριασμού.');
@@ -38,8 +38,8 @@ export async function handleAccountMetadataRequest(req:any,res:any){
     if(accessTokenAal(session.accessToken)!=='aal2')throw new ApiError(403,'MFA_REQUIRED','Verification required.');
     if(method==='GET')return sendJson(res,200,{records:await readAccountMetadata(session.accessToken)});
     assertMutationSessionOrigin(req,session);
-    const body=parseWrite(await readJsonBody(req,MAX_ACCOUNT_METADATA_BODY_BYTES));
-    const expectedRevision=parseExpectedRevision(requestHeader(req,'if-match'));
+    const body=parseAccountMetadataWrite(await readJsonBody(req,MAX_ACCOUNT_METADATA_BODY_BYTES));
+    const expectedRevision=parseAccountMetadataExpectedRevision(requestHeader(req,'if-match'));
     const record=await writeAccountMetadata(body.accountId,body.iban,expectedRevision,session.accessToken);
     return sendJson(res,200,{record});
   });
