@@ -4,14 +4,14 @@
   "appVersion": "v1.3",
   "suite": "ui-runtime",
   "surface": "runtime",
-  "generatedAt": "2026-08-24T20:59:02.462Z",
+  "generatedAt": "2026-08-24T21:18:10.473Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "7732cfe65fa695f277738017d9e7bea3302a73a9",
-    "shortSha": "7732cfe6",
+    "sha": "47027ad2d1fdb8af8e9c4e5e1319653f265cf951",
+    "shortSha": "47027ad2",
     "branch": "feat/233-safe-taxonomy-retirement"
   },
   "screenshots": [
-    "visual-qa/runtime/v1.3__2026-08-24_235902__qa-ui-runtime__runtime-loading-state.png"
+    "visual-qa/runtime/v1.3__2026-08-25_001810__qa-ui-runtime__runtime-loading-state.png"
   ]
 }

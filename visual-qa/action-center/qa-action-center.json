@@ -4,15 +4,15 @@
   "appVersion": "v1.3",
   "suite": "action-center",
   "surface": "action-center",
-  "generatedAt": "2026-08-24T20:59:02.462Z",
+  "generatedAt": "2026-08-24T21:18:10.473Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "7732cfe65fa695f277738017d9e7bea3302a73a9",
-    "shortSha": "7732cfe6",
+    "sha": "47027ad2d1fdb8af8e9c4e5e1319653f265cf951",
+    "shortSha": "47027ad2",
     "branch": "feat/233-safe-taxonomy-retirement"
   },
   "screenshots": [
-    "visual-qa/action-center/v1.3__2026-08-24_235902__qa-action-center__action-center-desktop.png",
-    "visual-qa/action-center/v1.3__2026-08-24_235902__qa-action-center__action-center-mobile.png"
+    "visual-qa/action-center/v1.3__2026-08-25_001810__qa-action-center__action-center-desktop.png",
+    "visual-qa/action-center/v1.3__2026-08-25_001810__qa-action-center__action-center-mobile.png"
   ]
 }
