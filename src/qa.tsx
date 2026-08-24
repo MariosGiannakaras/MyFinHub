@@ -123,7 +123,7 @@ function QaWorkspace(){
   const handleAttention=(item:AttentionItem)=>{
     if(item.action==='pay_recurring'&&item.recurringId){openSpecial({mode:'recurring',recurringId:item.recurringId,amount:item.amount,accountId:item.accountId});return}
     if(item.action==='pay_loan'&&item.loanId){openSpecial({mode:'loan',loanId:item.loanId,amount:item.amount,accountId:item.accountId});return}
-    if(item.action==='pay_credit'&&item.cardId){openSpecial({mode:'credit',action:'payment',cardId:item.cardId,amount:item.amount});return}
+    if(item.action==='pay_credit'&&item.cardId){openSpecial({mode:'credit',action:'payment',cardId:item.cardId,statementId:item.statementId,amount:item.amount});return}
     if(item.action==='collect_lending'&&item.person){openSpecial({mode:'lending',action:'repay',person:item.person,amount:item.amount,accountId:data.state.settings.defaultIncomeAccount});return}
     if(item.action==='complete_scheduled'&&item.scheduledId){openSpecial({mode:'scheduled',scheduledId:item.scheduledId});return}
     if(item.action==='open_forecast'){setPage('planning');return}
