@@ -52,7 +52,9 @@ try{
   const mobile=await c.call("function(){const overflow=Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth;const controls=[...document.querySelectorAll('[data-credit-statements] button,[data-credit-statements] summary')].filter(el=>{const r=el.getBoundingClientRect();return r.width>0&&r.height>0});return {overflow,minTouch:controls.length?Math.min(...controls.map(el=>el.getBoundingClientRect().height)):99}}");
   assert(mobile.overflow<=1,`mobile horizontal overflow ${mobile.overflow}px`);
   assert(mobile.minTouch>=41,`mobile statement touch target ${mobile.minTouch}px`);
-  await c.call("function(){document.querySelector('[data-credit-statements]')?.scrollIntoView({block:'start'});return true}");await sleep(120);
+  await sleep(160);
+  await c.call("function(){document.querySelector('[data-credit-statements]')?.scrollIntoView({block:'start'});return true}");
+  await waitFor("function(){const section=document.querySelector('[data-credit-statements]');if(!section)return false;const r=section.getBoundingClientRect();return r.top>=0&&r.top<180}",'mobile statement evidence in viewport');
   await shot(c,'credit-statements-active-mobile');
 
   await c.send('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
@@ -77,10 +79,12 @@ try{
   await c.call("function(){document.querySelector('.deleted-credit-history')?.scrollIntoView({block:'start'});return true}");await sleep(120);
   await shot(c,'credit-deleted-statement-history-desktop');
   await c.send('Emulation.setDeviceMetricsOverride',{width:375,height:812,deviceScaleFactor:1,mobile:true});
+  await sleep(180);
   const deletedMobile=await c.call("function(){const section=document.querySelector('.deleted-credit-history');const controls=[...section?.querySelectorAll('summary')||[]].filter(el=>{const r=el.getBoundingClientRect();return r.width>0&&r.height>0});return {overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth,minTouch:controls.length?Math.min(...controls.map(el=>el.getBoundingClientRect().height)):99}}");
   assert(deletedMobile.overflow<=1,`deleted statement mobile overflow ${deletedMobile.overflow}px`);
   assert(deletedMobile.minTouch>=41,`deleted statement mobile disclosure target ${deletedMobile.minTouch}px`);
-  await c.call("function(){document.querySelector('.deleted-credit-history')?.scrollIntoView({block:'start'});return true}");await sleep(120);
+  await c.call("function(){document.querySelector('.deleted-credit-history')?.scrollIntoView({block:'start'});return true}");
+  await waitFor("function(){const section=document.querySelector('.deleted-credit-history');if(!section)return false;const r=section.getBoundingClientRect();return r.top>=0&&r.top<180}",'deleted statement mobile evidence in viewport');
   await shot(c,'credit-deleted-statement-history-mobile');
 
   c.close();console.log('Credit statement lifecycle rendered QA passed.');
