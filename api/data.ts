@@ -54,7 +54,7 @@ export default async function handler(req: any, res: any) {
     const body = parseMutableWrite(await readJsonBody(req, MAX_FINANCE_DOCUMENT_BYTES));
 
     const dataStarted = Date.now();
-    const result = await writeMutableState(body.state, body.updatedAt, expectedRevision, expectedHistoryGeneration, body.historyLabel, session.accessToken);
+    const result = await writeMutableState(body.state, body.updatedAt, expectedRevision, expectedHistoryGeneration, body.historyLabel ?? 'Οικονομική αλλαγή', session.accessToken);
     const dataMs = duration(dataStarted);
     setServerTiming(res, { session: sessionMs, owner: ownerMs, data: dataMs, total: duration(totalStarted) });
     return sendJson(res, 200, result);
