@@ -10,7 +10,7 @@ export const LIGHT_THEME_TOKENS:ThemeTokens={
   '--canvas':'#eef3fb','--canvas-strong':'#e7eef8','--canvas-gradient':'radial-gradient(circle at 13% 0%,#fbfdff 0,#eef3fb 36%,#e9f0f9 100%)',
   '--surface':'#f4f7fc','--surface-2':'#edf2fa','--surface-elevated':'#f8faff','--surface-inset':'#eef3fa','--surface-hover':'#e9f0f8','--surface-selected':'#e8f0ff','--surface-translucent':'rgba(248,250,254,.9)',
   '--control-bg':'#f8fbff','--control-gradient':'linear-gradient(145deg,#fff,#edf3fa)','--surface-elevated-gradient':'linear-gradient(145deg,#f8faff,#edf2f9)',
-  '--ink':'#10234d','--ink-2':'#28416f','--text-primary':'#10234d','--text-secondary':'#516889','--muted':'#70809d','--muted-2':'#95a3ba','--text-disabled':'#8d9bb1','--on-accent':'#ffffff','--white':'#ffffff',
+  '--ink':'#10234d','--ink-2':'#28416f','--text-primary':'#10234d','--text-secondary':'#516889','--muted':'#61728c','--muted-2':'#95a3ba','--text-disabled':'#8d9bb1','--on-accent':'#ffffff','--white':'#ffffff',
   '--line':'#d9e2f0','--border-subtle':'#d9e2f0','--border-strong':'#b8c8dc','--border-glass':'rgba(255,255,255,.86)',
   '--blue':'#2f6fed','--blue-2':'#174ea6','--blue-3':'#8fb4ff','--accent':'#2f6fed','--accent-hover':'#245fcf','--accent-selected':'#5a8cff','--accent-soft':'#e9f0ff','--accent-gradient':'linear-gradient(135deg,#2f6fed,#174ea6)','--cyan':'#25b9d7','--cyan-2':'#68d8dc','--violet':'#7656d6',
   '--green':'#1d9a68','--success':'#1d9a68','--success-bg':'#e9f8f1','--red':'#d64058','--error':'#d64058','--error-bg':'#ffedf0','--amber':'#d99117','--warning':'#a66300','--warning-bg':'#fff5db','--info':'#315fae','--info-bg':'#edf3ff','--neutral-bg':'#eef2f7',
