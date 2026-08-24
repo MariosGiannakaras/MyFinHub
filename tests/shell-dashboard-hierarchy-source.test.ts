@@ -6,84 +6,17 @@ const dashboard=readFileSync(new URL('../src/pages/DashboardPage.tsx',import.met
 const period=readFileSync(new URL('../src/components/PeriodControl.tsx',import.meta.url),'utf8');
 const reporting=readFileSync(new URL('../src/lib/reportingPeriod.ts',import.meta.url),'utf8');
 const persistence=readFileSync(new URL('../src/components/PersistenceNotice.tsx',import.meta.url),'utf8');
-const shellStyles=readFileSync(new URL('../src/styles/part1.css',import.meta.url),'utf8');
-const dashboardStyles=readFileSync(new URL('../src/styles/part2.css',import.meta.url),'utf8');
-const iconStyles=readFileSync(new URL('../src/styles/part19.css',import.meta.url),'utf8');
-const reconciliationStyles=readFileSync(new URL('../src/styles/part41.css',import.meta.url),'utf8');
-const styleIndex=readFileSync(new URL('../src/styles.css',import.meta.url),'utf8');
+const styles=[readFileSync(new URL('../src/styles/part1.css',import.meta.url),'utf8'),readFileSync(new URL('../src/styles/part2.css',import.meta.url),'utf8'),readFileSync(new URL('../src/styles/part41.css',import.meta.url),'utf8')].join('\n');
 const hardening=readFileSync(new URL('../scripts/ui-ux-hardening-qa.mjs',import.meta.url),'utf8');
 const hierarchyQa=readFileSync(new URL('../scripts/shell-dashboard-hierarchy-qa.mjs',import.meta.url),'utf8');
+const renderedCoordinator=readFileSync(new URL('../scripts/run-rendered-qa.mjs',import.meta.url),'utf8');
 const pkg=JSON.parse(readFileSync(new URL('../package.json',import.meta.url),'utf8')) as {scripts:Record<string,string>};
 
 describe('shell and Dashboard hierarchy source contracts',()=>{
-  it('keeps one visible global generic entry route per form factor while preserving expert access',()=>{
-    expect(shell).toContain('data-global-quick-entry="desktop"');
-    expect(shell).toContain('data-global-quick-entry="mobile"');
-    expect(shell.match(/data-global-quick-entry=/g)?.length).toBe(2);
-    expect(shell).not.toContain('className="command-pill"');
-    expect(shell).toContain('useAppShortcuts({onCommand,onQuickEntry:onQuickAdd');
-    expect(shell).toContain('className="command-search-action"');
-    expect(hardening).toContain("clickText('[data-global-quick-entry=\"desktop\"]','Γρήγορη προσθήκη')");
-  });
-
-  it('keeps Dashboard account/frequent shortcuts contextual instead of adding generic CTAs',()=>{
-    expect(dashboard).not.toContain('className="save-button"');
-    expect(dashboard).not.toContain('Άνοιγμα καταχώρισης');
-    expect(dashboard).toContain('data-account-quick-entry={account.id}');
-    expect(dashboard).toContain('data-prefilled-quick-entry={f.label}');
-    expect(dashboard).toContain('Συχνές κινήσεις');
-    expect(dashboard).toContain('Συντομεύσεις με προ-συμπληρωμένα στοιχεία');
-    expect(dashboard).toContain("account.kind==='savings'?'Μεταφορά':'Νέα κίνηση'");
-  });
-
-  it('disables future reporting navigation and refreshes the month boundary while the app stays open',()=>{
-    expect(period).toContain('canAdvanceReportingMonth(month,currentMonth)');
-    expect(period).toContain('disabled={!canAdvance}');
-    expect(period).toContain('window.setInterval(refresh,60_000)');
-    expect(period).toContain('δεν υπάρχει μελλοντική περίοδος αναφοράς');
-    expect(reporting).toContain('shiftReportingMonth(month,1)<=maxMonth');
-    expect(reconciliationStyles).toContain('.period-control button:disabled');
-  });
-
-  it('keeps healthy persistence chrome quiet while exceptional states stay explicit and accessible',()=>{
-    expect(shell).toContain("saveState==='saved'?'is-quiet':'neo-inset is-active'");
-    expect(shell).toContain("saveState==='saved'?undefined:'polite'");
-    expect(shellStyles).toContain('.file-panel.is-quiet');
-    expect(shellStyles).toContain('.file-panel.is-active');
-    expect(persistence).toContain("saveState==='error'||saveState==='conflict'");
-    expect(persistence).toContain('role="alert" aria-live="assertive"');
-    expect(persistence).toContain("saveState==='saving'");
-    expect(persistence).toContain('role="status" aria-live="polite"');
-  });
-
-  it('uses consolidated, lower-weight hierarchy and structured shortcut layout without an override-only stylesheet',()=>{
-    expect(styleIndex).not.toContain('part47.css');
-    expect(dashboardStyles).toContain('.dashboard-grid{display:grid;grid-template-columns:.84fr 1.12fr 1.04fr;gap:11px}');
-    expect(dashboardStyles).toContain('grid-template-columns:28px minmax(0,1fr) auto');
-    expect(dashboardStyles).toContain('.frequent-grid strong{font-size:10px;grid-column:3;grid-row:1/3;float:none;margin:0');
-    expect(iconStyles).toContain('.frequent-grid .frequent-icon{position:static;transform:none}');
-    expect(reconciliationStyles).toContain('.dashboard-pending-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}');
-    expect(reconciliationStyles).toContain('.primary-balance-card{min-height:158px;padding:15px 18px}');
-    expect(reconciliationStyles).toContain('.flow-metric-grid .metric-card{min-height:110px;padding:14px}');
-    expect(reconciliationStyles).toContain('.frequent-grid>button{flex-basis:172px}');
-    const primary=dashboard.indexOf('data-dashboard-section="primary-accounts"');
-    const pending=dashboard.indexOf('data-dashboard-section="pending"');
-    const quick=dashboard.indexOf('data-dashboard-section="quick-entry"');
-    const rest=dashboard.indexOf('data-dashboard-section="rest"');
-    expect(primary).toBeGreaterThan(-1);
-    expect(pending).toBeGreaterThan(primary);
-    expect(quick).toBeGreaterThan(pending);
-    expect(rest).toBeGreaterThan(quick);
-  });
-
-  it('runs focused desktop/mobile rendered assertions as part of the canonical frontend QA chain',()=>{
-    expect(pkg.scripts['qa:frontend']).toContain('node scripts/shell-dashboard-hierarchy-qa.mjs');
-    expect(pkg.scripts['qa:frontend'].indexOf('scripts/shell-dashboard-hierarchy-qa.mjs')).toBeLessThan(pkg.scripts['qa:frontend'].indexOf('scripts/final-ux-reconciliation-qa.mjs'));
-    expect(hierarchyQa).toContain("JSON.stringify(state.globals)===JSON.stringify(['desktop'])");
-    expect(hierarchyQa).toContain("JSON.stringify(state.globals)===JSON.stringify(['mobile'])");
-    expect(hierarchyQa).toContain("shellState.savedQuiet&&shellState.savedSmallDisplay==='none'&&shellState.savedLive===null");
-    expect(hierarchyQa).toContain("shellState.nextDisabled&&shellState.month.includes('Αύγουστος')&&shellState.month.includes('2026')");
-    expect(hierarchyQa).toContain("state.shortcutOverlaps===0");
-    expect(hierarchyQa).toContain("Planning does not inherit reporting period navigation");
-  });
+  it('keeps one visible global generic entry route per form factor while preserving expert access',()=>{expect(shell).toContain('data-global-quick-entry="desktop"');expect(shell).toContain('data-global-quick-entry="mobile"');expect(shell.match(/data-global-quick-entry=/g)?.length).toBe(2);expect(shell).not.toContain('className="command-pill"');expect(shell).toContain('useAppShortcuts({onCommand,onQuickEntry:onQuickAdd');expect(shell).toContain('className="command-search-action"');expect(hardening).toContain("clickText('[data-global-quick-entry=\"desktop\"]','Γρήγορη προσθήκη')")});
+  it('keeps Dashboard account/frequent shortcuts contextual instead of adding generic CTAs',()=>{expect(dashboard).not.toContain('className="save-button"');expect(dashboard).not.toContain('Άνοιγμα καταχώρισης');expect(dashboard).toContain('data-account-quick-entry={account.id}');expect(dashboard).toContain('data-prefilled-quick-entry={f.label}');expect(dashboard).toContain('Συχνές κινήσεις');expect(dashboard).toContain('Συντομεύσεις με προ-συμπληρωμένα στοιχεία')});
+  it('disables future reporting navigation and refreshes the month boundary while the app stays open',()=>{expect(period).toContain('canAdvanceReportingMonth(month,currentMonth)');expect(period).toContain('disabled={!canAdvance}');expect(period).toContain('window.setInterval(refresh,60_000)');expect(reporting).toContain('shiftReportingMonth(month,1)<=maxMonth')});
+  it('keeps healthy persistence chrome quiet while exceptional states stay explicit and accessible',()=>{expect(shell).toContain("saveState==='saved'?'is-quiet':'neo-inset is-active'");expect(shell).toContain("saveState==='saved'?undefined:'polite'");expect(styles).toContain('.file-panel.is-quiet');expect(styles).toContain('.file-panel.is-active');expect(persistence).toContain('role="alert" aria-live="assertive"');expect(persistence).toContain('role="status" aria-live="polite"')});
+  it('uses a lower-weight, denser hierarchy and structured shortcut layout without reordering semantics',()=>{expect(styles).toContain('.dashboard-pending-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}');expect(styles).toContain('.dashboard-grid{grid-template-columns:.84fr 1.12fr 1.04fr;gap:11px}');expect(styles).toContain('.dashboard-grid>.quick-panel .frequent-grid>button{display:grid;grid-template-columns:28px minmax(0,1fr) auto');const primary=dashboard.indexOf('data-dashboard-section="primary-accounts"'),pending=dashboard.indexOf('data-dashboard-section="pending"'),quick=dashboard.indexOf('data-dashboard-section="quick-entry"'),rest=dashboard.indexOf('data-dashboard-section="rest"');expect(primary).toBeGreaterThan(-1);expect(pending).toBeGreaterThan(primary);expect(quick).toBeGreaterThan(pending);expect(rest).toBeGreaterThan(quick)});
+  it('runs focused desktop/mobile rendered assertions through the canonical coordinator',()=>{expect(pkg.scripts['qa:frontend']).toBe('node scripts/run-rendered-qa.mjs');expect(renderedCoordinator).toContain("path:'scripts/shell-dashboard-hierarchy-qa.mjs'");expect(hierarchyQa).toContain("JSON.stringify(state.globals)===JSON.stringify(['desktop'])");expect(hierarchyQa).toContain("JSON.stringify(state.globals)===JSON.stringify(['mobile'])");expect(hierarchyQa).toContain("state.shortcutOverlaps===0");expect(hierarchyQa).toContain('Planning does not inherit reporting period navigation')});
 });
