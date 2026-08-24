@@ -72,6 +72,11 @@ try{
   assert(!deleted.leaks,'deleted statement history does not retain nickname, last4 or bank identity');
   assert(deleted.overflow<=1,`deleted history desktop overflow ${deleted.overflow}px`);
   await shot(c,'credit-deleted-statement-history-desktop');
+  await c.send('Emulation.setDeviceMetricsOverride',{width:375,height:812,deviceScaleFactor:1,mobile:true});
+  const deletedMobile=await c.call("function(){const section=document.querySelector('.deleted-credit-history');const controls=[...section?.querySelectorAll('summary')||[]].filter(el=>{const r=el.getBoundingClientRect();return r.width>0&&r.height>0});return {overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth,minTouch:controls.length?Math.min(...controls.map(el=>el.getBoundingClientRect().height)):99}}");
+  assert(deletedMobile.overflow<=1,`deleted statement mobile overflow ${deletedMobile.overflow}px`);
+  assert(deletedMobile.minTouch>=41,`deleted statement mobile disclosure target ${deletedMobile.minTouch}px`);
+  await shot(c,'credit-deleted-statement-history-mobile');
 
   c.close();console.log('Credit statement lifecycle rendered QA passed.');
 }finally{child.kill('SIGTERM')}
