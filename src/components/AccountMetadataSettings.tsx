@@ -6,6 +6,7 @@ import { allAccounts } from '../lib/domain';
 import { formatIban, isValidIban, normalizeIban } from '../lib/iban';
 import { accountDisplayName } from '../lib/ui';
 import type { FinanceData } from '../types';
+import '../styles/part47.css';
 
 export function AccountMetadataSettings({data}:{data:FinanceData}){
   const metadata=useAccountMetadata();
