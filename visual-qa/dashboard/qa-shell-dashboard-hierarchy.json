@@ -4,15 +4,15 @@
   "appVersion": "v1.3",
   "suite": "shell-dashboard-hierarchy",
   "surface": "dashboard",
-  "generatedAt": "2026-08-24T13:38:35.503Z",
+  "generatedAt": "2026-08-24T16:28:35.304Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "8b28f934d735eb81c1eae08937255b855a1946f4",
-    "shortSha": "8b28f934",
-    "branch": "feat/232-credit-statements"
+    "sha": "dda3de590d03776dfc0d5891101eaaa88e60f47e",
+    "shortSha": "dda3de59",
+    "branch": "feat/254-semantic-light-dark-theme"
   },
   "screenshots": [
-    "visual-qa/dashboard/v1.3__2026-08-24_163835__qa-shell-dashboard-hierarchy__shell-dashboard-hierarchy-desktop.png",
-    "visual-qa/dashboard/v1.3__2026-08-24_163835__qa-shell-dashboard-hierarchy__shell-dashboard-hierarchy-mobile.png"
+    "visual-qa/dashboard/v1.3__2026-08-24_192835__qa-shell-dashboard-hierarchy__shell-dashboard-hierarchy-desktop.png",
+    "visual-qa/dashboard/v1.3__2026-08-24_192835__qa-shell-dashboard-hierarchy__shell-dashboard-hierarchy-mobile.png"
   ]
 }
