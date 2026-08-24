@@ -9,7 +9,7 @@ const listeners=new Set<()=>void>();
 
 function publish(next:AccountMetadataSnapshot){snapshot=next;for(const listener of listeners)listener();return snapshot}
 export function getAccountMetadataSnapshot(){return snapshot}
-export function subscribeAccountMetadata(listener:()=>void){listeners.add(listener);return()=>listeners.delete(listener)}
+export function subscribeAccountMetadata(listener:()=>void){listeners.add(listener);return()=>{listeners.delete(listener)}}
 
 function errorMessage(error:unknown){
   if(error instanceof Error&&error.message)return error.message;
