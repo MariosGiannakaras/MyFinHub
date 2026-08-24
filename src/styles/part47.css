@@ -6,15 +6,21 @@
 .file-panel.is-quiet small{display:none}
 .file-panel.is-active{border-color:rgba(213,224,239,.72)}
 .period-control button:disabled{opacity:.38;cursor:not-allowed;box-shadow:none!important;transform:none!important}
+.dashboard-grid>.quick-panel .frequent-grid>button{display:grid;grid-template-columns:28px minmax(0,1fr) auto;grid-template-rows:auto auto;column-gap:7px;row-gap:2px;align-items:center;text-align:left}
+.dashboard-grid>.quick-panel .frequent-grid>button .frequent-icon{grid-column:1;grid-row:1/3;align-self:center}
+.dashboard-grid>.quick-panel .frequent-grid>button b{grid-column:2;grid-row:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dashboard-grid>.quick-panel .frequent-grid>button span:not(.frequent-icon){grid-column:2;grid-row:2;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dashboard-grid>.quick-panel .frequent-grid>button strong{grid-column:3;grid-row:1/3;float:none;margin:0;white-space:nowrap;align-self:center}
 
 @media(min-width:681px){
   .page-heading:has(+.primary-balance-grid){align-items:center;padding-top:2px}
   .page-heading:has(+.primary-balance-grid) p{max-width:64ch}
   .page-heading:has(+.primary-balance-grid) .heading-actions{align-self:center}
+  .primary-balance-card{min-height:158px;padding:15px 18px}
   .dashboard-pending-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
   .dashboard-pending-grid>.panel{padding:14px 15px;border-color:rgba(218,227,239,.9);box-shadow:var(--shadow-soft)}
   .dashboard-pending-grid>.dashboard-attention-card{background:linear-gradient(145deg,#fbfcff,#eef4fb)}
-  .dashboard-grid{grid-template-columns:.72fr 1.18fr 1.1fr;gap:11px}
+  .dashboard-grid{grid-template-columns:.84fr 1.12fr 1.04fr;gap:11px}
   .dashboard-grid>.quick-panel{padding:14px;background:linear-gradient(145deg,#fafcff,#f0f5fb);border:1px solid rgba(218,227,239,.9);box-shadow:var(--shadow-soft)}
   .dashboard-grid>.quick-panel .panel-head{margin-bottom:10px}
   .dashboard-grid>.quick-panel .frequent-grid{gap:6px}
@@ -27,4 +33,5 @@
 @media(max-width:680px){
   .top-actions{grid-column:2}
   .dashboard-grid>.quick-panel .panel-head small{max-width:30ch}
+  .dashboard-grid>.quick-panel .frequent-grid>button{flex:0 0 172px}
 }
