@@ -15,8 +15,11 @@ const compact=(source:string)=>source.replace(/\s+/g,'');
 
 describe('payment flow normalization source contracts',()=>{
   it('routes page payment entry points through exact shared contexts in production and QA',()=>{
-    for(const source of [compact(app),compact(qa)]){
-      expect(source).toMatch(/onPayCard=\{\(?cardId\)?=>openSpecial\(\{mode:'credit',action:'payment',cardId\}\)\}/);
+    const production=compact(app);
+    const synthetic=compact(qa);
+    expect(production).toMatch(/onPayCard=\{\(cardId,statementId\)=>openSpecial\(\{mode:'credit',action:'payment',cardId,statementId\}\)\}/);
+    expect(synthetic).toMatch(/onPayCard=\{\(?cardId\)?=>openSpecial\(\{mode:'credit',action:'payment',cardId\}\)\}/);
+    for(const source of [production,synthetic]){
       expect(source).toMatch(/onPayLoan=\{\(?loanId\)?=>openSpecial\(\{mode:'loan',loanId\}\)\}/);
       expect(source).toMatch(/onPayRecurring=\{\(?recurringId\)?=>openSpecial\(\{mode:'recurring',recurringId\}\)\}/);
     }
@@ -32,7 +35,7 @@ describe('payment flow normalization source contracts',()=>{
   });
 
   it('does not keep duplicate page-local payment engines',()=>{
-    expect(credit).toContain('onPayCard:(cardId:string)=>void');
+    expect(credit).toMatch(/onPayCard:\(cardId:string,statementId\?:string\)=>void|onPayCard:\(cardId:string\)=>void/);
     expect(credit).not.toContain('repayOpen');
     expect(credit).not.toContain('submitRepay');
     expect(credit).not.toContain('credit-repay-title');
@@ -55,6 +58,8 @@ describe('payment flow normalization source contracts',()=>{
     expect(contextual).toContain('aria-label="Οικονομικό αποτέλεσμα πληρωμής"');
     expect(contextual).toContain("paymentMode?'Επιβεβαίωση πληρωμής':'Καταχώριση'");
     expect(contextual).toContain('χωρίς δεύτερη χειροκίνητη εγγραφή');
+    expect(contextual).toContain('selectedStatement?.remaining');
+    expect(contextual).toContain('event.statementId=selectedStatement.id');
   });
 
   it('models one real loan payment with explicit multi-installment coverage',()=>{
