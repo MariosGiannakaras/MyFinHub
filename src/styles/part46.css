@@ -30,6 +30,10 @@
 .taxonomy-subcategory-editor,.taxonomy-move-editor,.taxonomy-subcategory-icon{grid-column:1/-1}
 .taxonomy-move-editor{grid-template-columns:minmax(180px,1fr) auto 40px;padding:10px;border:1px solid var(--line);border-radius:12px}
 .taxonomy-move-editor .owned-select-shell,.taxonomy-move-editor .owned-input{width:100%}
+@media(min-width:681px){
+ .transactions-workspace>.transaction-filter-controls .owned-input-shell{width:100%;min-width:0}
+ .transactions-workspace>.transaction-filter-controls .owned-input-shell>.owned-input{height:40px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);padding:0 34px 0 10px;font-size:12px;font-weight:700}
+}
 @media(max-width:680px){
  .category-taxonomy-card{padding:11px}
  .category-taxonomy-head{grid-template-columns:auto minmax(0,1fr);align-items:start}
