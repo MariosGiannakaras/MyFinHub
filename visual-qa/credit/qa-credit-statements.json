@@ -4,18 +4,18 @@
   "appVersion": "v1.3",
   "suite": "credit-statements",
   "surface": "credit",
-  "generatedAt": "2026-08-24T15:23:09.735Z",
+  "generatedAt": "2026-08-24T15:37:01.715Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "bcb7a362fddda3cced862407bc5e299c4b54e077",
-    "shortSha": "bcb7a362",
+    "sha": "7fc7bd3842785538df7f13e5f6b60760597968ef",
+    "shortSha": "7fc7bd38",
     "branch": "feat/254-semantic-light-dark-theme"
   },
   "screenshots": [
-    "visual-qa/credit/v1.3__2026-08-24_182309__qa-credit-statements__credit-deleted-statement-history-desktop.png",
-    "visual-qa/credit/v1.3__2026-08-24_182309__qa-credit-statements__credit-deleted-statement-history-mobile.png",
-    "visual-qa/credit/v1.3__2026-08-24_182309__qa-credit-statements__credit-statement-payment-desktop.png",
-    "visual-qa/credit/v1.3__2026-08-24_182309__qa-credit-statements__credit-statements-active-desktop.png",
-    "visual-qa/credit/v1.3__2026-08-24_182309__qa-credit-statements__credit-statements-active-mobile.png"
+    "visual-qa/credit/v1.3__2026-08-24_183701__qa-credit-statements__credit-deleted-statement-history-desktop.png",
+    "visual-qa/credit/v1.3__2026-08-24_183701__qa-credit-statements__credit-deleted-statement-history-mobile.png",
+    "visual-qa/credit/v1.3__2026-08-24_183701__qa-credit-statements__credit-statement-payment-desktop.png",
+    "visual-qa/credit/v1.3__2026-08-24_183701__qa-credit-statements__credit-statements-active-desktop.png",
+    "visual-qa/credit/v1.3__2026-08-24_183701__qa-credit-statements__credit-statements-active-mobile.png"
   ]
 }
