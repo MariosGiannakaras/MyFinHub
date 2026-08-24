@@ -14,7 +14,7 @@ const now=()=>new Date().toISOString();
 const ruleId=()=>`rule-${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
 const scopeLabel=(scope:TransactionRuleScope)=>scope==='manual'?'χειροκίνητη καταχώριση':scope==='imported'?'εισαγωγή':'επιβεβαίωση από έλεγχο';
 
-export function BudgetRuleSettings({data,asOf,onUpsertBudget,onDeleteBudget,onUpsertRule,onDeleteRule,onReplaceRules}:{data:FinanceData;asOf:string;onUpsertBudget:(budget:MonthlyBudget)=>void;onDeleteBudget:(id:string)=>void;onUpsertRule:(rule:TransactionRule)=>void;onDeleteRule:(id:string)=>void;onReplaceRules:(rules:TransactionRule[])=>void}){
+export function BudgetRuleSettings({data,asOf,onUpsertBudget,onDeleteBudget,onUpsertRule,onDeleteRule,onReplaceRules}:{data:FinanceData;asOf:string;onUpsertBudget:(budget:MonthlyBudget)=>void;onDeleteBudget:(id:string)=>void;onUpsertRule:(rule:TransactionRule)=>void;onDeleteRule:(id:string)=>void;onReplaceRules?:(rules:TransactionRule[])=>void}){
   const expenseFallback=data.state.settings.expenseCategories[0]||'Άλλο';
   const [month,setMonth]=useState(asOf.slice(0,7));
   const [budgetScope,setBudgetScope]=useState<'category'|'overall'>('category');
@@ -72,7 +72,8 @@ export function BudgetRuleSettings({data,asOf,onUpsertBudget,onDeleteBudget,onUp
     const target=index+direction;if(target<0||target>=rules.length)return;
     const reordered=[...rules];[reordered[index],reordered[target]]=[reordered[target],reordered[index]];
     const timestamp=now();
-    onReplaceRules(reordered.map((rule,position)=>({...rule,priority:(position+1)*100,updatedAt:rule.priority===(position+1)*100?rule.updatedAt:timestamp})));
+    const normalized=reordered.map((rule,position)=>({...rule,priority:(position+1)*100,updatedAt:rule.priority===(position+1)*100?rule.updatedAt:timestamp}));
+    if(onReplaceRules)onReplaceRules(normalized);else normalized.forEach(onUpsertRule);
   };
   const conditionLabel=(rule:TransactionRule)=>{
     const parts:string[]=[];
