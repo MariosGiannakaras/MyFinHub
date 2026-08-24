@@ -1,4 +1,0 @@
-PR #264 final verification marker.
-Source implementation SHA: 9f913d193426e59ef0a3f533aea7ed3308189b72
-Visual QA snapshot SHA: ef9cf9a1363b886541bd13f0da064b1aeffa3e16
-Target: v1.3 / develop

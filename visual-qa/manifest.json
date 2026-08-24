@@ -1,0 +1,352 @@
+{
+  "schemaVersion": 2,
+  "layout": "surface-first-latest-only",
+  "appVersion": "v1.3",
+  "captureId": "2026-08-24_103354__16580f5a",
+  "generatedAt": "2026-08-24T07:33:54.923Z",
+  "timeZone": "Europe/Athens",
+  "source": {
+    "sha": "16580f5a1ce2dec4083e356960394b52e0fb7add",
+    "shortSha": "16580f5a",
+    "branch": "feat/237-shell-dashboard-hierarchy"
+  },
+  "baseUrl": "http://127.0.0.1:5173/qa.html",
+  "screenshots": [
+    {
+      "file": "visual-qa/dashboard/v1.3__2026-08-24_103354__full-page__desktop-1440x1000.png",
+      "page": "dashboard",
+      "state": "LATEST",
+      "viewport": {
+        "mode": "desktop",
+        "width": 1440,
+        "height": 1000
+      },
+      "capture": {
+        "width": 1425,
+        "height": 1767
+      }
+    },
+    {
+      "file": "visual-qa/transactions/v1.3__2026-08-24_103354__full-page__desktop-1440x1000.png",
+      "page": "transactions",
+      "state": "LATEST",
+      "viewport": {
+        "mode": "desktop",
+        "width": 1440,
+        "height": 1000
+      },
+      "capture": {
+        "width": 1440,
+        "height": 1000
+      }
+    },
+    {
+      "file": "visual-qa/review/v1.3__2026-08-24_103354__full-page__desktop-1440x1000.png",
+      "page": "review",
+      "state": "LATEST",
+      "viewport": {
+        "mode": "desktop",
+        "width": 1440,
+        "height": 1000
+      },
+      "capture": {
+        "width": 1440,
+        "height": 1000
+      }
+    },
+    {
+      "file": "visual-qa/savings/v1.3__2026-08-24_103354__full-page__desktop-1440x1000.png",
+      "page": "savings",
+      "state": "LATEST",
+      "viewport": {
+        "mode": "desktop",
+        "width": 1440,
+        "height": 1000
+      },
+      "capture": {
+        "width": 1425,
+        "height": 1016
+      }
+    },
+    {
+      "file": "visual-qa/cards/v1.3__2026-08-24_103354__full-page__desktop-1440x1000.png",
+      "page": "cards",
+      "state": "LATEST",
+      "viewport": {
+        "mode": "desktop",
+        "width": 1440,
+        "height": 1000
+      },
+      "capture": {
+        "width": 1440,
+        "height": 1000
+      }
+    },
+    {
+      "file": "visual-qa/credit/v1.3__2026-08-24_103354__full-page__desktop-1440x1000.png",
+      "page": "credit",
+      "state": "LATEST",
+      "viewport": {
+        "mode": "desktop",
+        "width": 1440,
+        "height": 1000
+      },
+      "capture": {
+        "width": 1425,
+        "height": 1280
+      }
+    },
+    {
+      "file": "visual-qa/loans/v1.3__2026-08-24_103354__full-page__desktop-1440x1000.png",
+      "page": "loans",
+      "state": "LATEST",
+      "viewport": {
+        "mode": "desktop",
+        "width": 1440,
+        "height": 1000
+      },
+      "capture": {
+        "width": 1440,
+        "height": 1000
+      }
+    },
+    {
+      "file": "visual-qa/lending/v1.3__2026-08-24_103354__full-page__desktop-1440x1000.png",
+      "page": "lending",
+      "state": "LATEST",
+      "viewport": {
+        "mode": "desktop",
+        "width": 1440,
+        "height": 1000
+      },
+      "capture": {
+        "width": 1440,
+        "height": 1000
+      }
+    },
+    {
+      "file": "visual-qa/recurring/v1.3__2026-08-24_103354__full-page__desktop-1440x1000.png",
+      "page": "recurring",
+      "state": "LATEST",
+      "viewport": {
+        "mode": "desktop",
+        "width": 1440,
+        "height": 1000
+      },
+      "capture": {
+        "width": 1425,
+        "height": 1015
+      }
+    },
+    {
+      "file": "visual-qa/planning/v1.3__2026-08-24_103354__full-page__desktop-1440x1000.png",
+      "page": "planning",
+      "state": "LATEST",
+      "viewport": {
+        "mode": "desktop",
+        "width": 1440,
+        "height": 1000
+      },
+      "capture": {
+        "width": 1425,
+        "height": 1930
+      }
+    },
+    {
+      "file": "visual-qa/reports/v1.3__2026-08-24_103354__full-page__desktop-1440x1000.png",
+      "page": "reports",
+      "state": "LATEST",
+      "viewport": {
+        "mode": "desktop",
+        "width": 1440,
+        "height": 1000
+      },
+      "capture": {
+        "width": 1425,
+        "height": 2252
+      }
+    },
+    {
+      "file": "visual-qa/settings/v1.3__2026-08-24_103354__full-page__desktop-1440x1000.png",
+      "page": "settings",
+      "state": "LATEST",
+      "viewport": {
+        "mode": "desktop",
+        "width": 1440,
+        "height": 1000
+      },
+      "capture": {
+        "width": 1425,
+        "height": 4915
+      }
+    },
+    {
+      "file": "visual-qa/dashboard/v1.3__2026-08-24_103354__full-page__mobile-375x812.png",
+      "page": "dashboard",
+      "state": "LATEST",
+      "viewport": {
+        "mode": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "capture": {
+        "width": 375,
+        "height": 3147
+      }
+    },
+    {
+      "file": "visual-qa/transactions/v1.3__2026-08-24_103354__full-page__mobile-375x812.png",
+      "page": "transactions",
+      "state": "LATEST",
+      "viewport": {
+        "mode": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "capture": {
+        "width": 375,
+        "height": 1747
+      }
+    },
+    {
+      "file": "visual-qa/review/v1.3__2026-08-24_103354__full-page__mobile-375x812.png",
+      "page": "review",
+      "state": "LATEST",
+      "viewport": {
+        "mode": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "capture": {
+        "width": 375,
+        "height": 812
+      }
+    },
+    {
+      "file": "visual-qa/savings/v1.3__2026-08-24_103354__full-page__mobile-375x812.png",
+      "page": "savings",
+      "state": "LATEST",
+      "viewport": {
+        "mode": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "capture": {
+        "width": 375,
+        "height": 1598
+      }
+    },
+    {
+      "file": "visual-qa/cards/v1.3__2026-08-24_103354__full-page__mobile-375x812.png",
+      "page": "cards",
+      "state": "LATEST",
+      "viewport": {
+        "mode": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "capture": {
+        "width": 375,
+        "height": 812
+      }
+    },
+    {
+      "file": "visual-qa/credit/v1.3__2026-08-24_103354__full-page__mobile-375x812.png",
+      "page": "credit",
+      "state": "LATEST",
+      "viewport": {
+        "mode": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "capture": {
+        "width": 375,
+        "height": 1929
+      }
+    },
+    {
+      "file": "visual-qa/loans/v1.3__2026-08-24_103354__full-page__mobile-375x812.png",
+      "page": "loans",
+      "state": "LATEST",
+      "viewport": {
+        "mode": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "capture": {
+        "width": 375,
+        "height": 1094
+      }
+    },
+    {
+      "file": "visual-qa/lending/v1.3__2026-08-24_103354__full-page__mobile-375x812.png",
+      "page": "lending",
+      "state": "LATEST",
+      "viewport": {
+        "mode": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "capture": {
+        "width": 375,
+        "height": 812
+      }
+    },
+    {
+      "file": "visual-qa/recurring/v1.3__2026-08-24_103354__full-page__mobile-375x812.png",
+      "page": "recurring",
+      "state": "LATEST",
+      "viewport": {
+        "mode": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "capture": {
+        "width": 375,
+        "height": 1446
+      }
+    },
+    {
+      "file": "visual-qa/planning/v1.3__2026-08-24_103354__full-page__mobile-375x812.png",
+      "page": "planning",
+      "state": "LATEST",
+      "viewport": {
+        "mode": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "capture": {
+        "width": 375,
+        "height": 3724
+      }
+    },
+    {
+      "file": "visual-qa/reports/v1.3__2026-08-24_103354__full-page__mobile-375x812.png",
+      "page": "reports",
+      "state": "LATEST",
+      "viewport": {
+        "mode": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "capture": {
+        "width": 375,
+        "height": 3850
+      }
+    },
+    {
+      "file": "visual-qa/settings/v1.3__2026-08-24_103354__full-page__mobile-375x812.png",
+      "page": "settings",
+      "state": "LATEST",
+      "viewport": {
+        "mode": "mobile",
+        "width": 375,
+        "height": 812
+      },
+      "capture": {
+        "width": 375,
+        "height": 8111
+      }
+    }
+  ]
+}

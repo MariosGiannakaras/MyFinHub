@@ -140,4 +140,80 @@
     z-index:1;
     pointer-events:none;
   }
+
+  /*
+   * Credit finance history must read as a mobile ledger, not as a clipped
+   * desktop table. Keep one semantic table in the DOM, visually collapse its
+   * heading row, and present every event as a labelled card row.
+   */
+  .credit-card-redesign-page .semantic-table-wrap{
+    overflow:visible;
+    border:0;
+    background:transparent;
+  }
+  .credit-card-redesign-page .semantic-table{
+    display:block;
+    width:100%;
+    min-width:0;
+  }
+  .credit-card-redesign-page .semantic-table thead{
+    position:absolute;
+    width:1px;
+    height:1px;
+    padding:0;
+    margin:-1px;
+    overflow:hidden;
+    clip:rect(0 0 0 0);
+    white-space:nowrap;
+    border:0;
+  }
+  .credit-card-redesign-page .semantic-table tbody{
+    display:grid;
+    gap:8px;
+  }
+  .credit-card-redesign-page .semantic-table tr{
+    display:grid;
+    gap:7px;
+    padding:11px 12px;
+    border:1px solid #dce5ef;
+    border-radius:14px;
+    background:rgba(249,252,255,.9);
+    box-shadow:var(--mobile-shadow-soft,var(--shadow-soft));
+  }
+  .credit-card-redesign-page .semantic-table td{
+    display:grid;
+    grid-template-columns:minmax(92px,.8fr) minmax(0,1.2fr);
+    gap:8px;
+    align-items:start;
+    min-width:0;
+    padding:0;
+    border:0;
+    text-align:left;
+    overflow-wrap:anywhere;
+  }
+  .credit-card-redesign-page .semantic-table td::before{
+    color:var(--muted);
+    font-size:var(--ux-small-size,.8rem);
+    font-weight:750;
+    line-height:1.35;
+  }
+  .credit-card-redesign-page .semantic-table td.amount{
+    text-align:left;
+  }
+  .credit-card-redesign-page .semantic-table td.actions .row-actions{
+    justify-content:flex-start;
+  }
+  .credit-card-redesign-page .credit-purchases-table td:nth-child(1)::before,
+  .credit-card-redesign-page .credit-payments-table td:nth-child(1)::before,
+  .credit-card-redesign-page .deleted-credit-history .semantic-table td:nth-child(1)::before{content:"Ημερομηνία"}
+  .credit-card-redesign-page .credit-purchases-table td:nth-child(2)::before{content:"Περιγραφή"}
+  .credit-card-redesign-page .credit-purchases-table td:nth-child(3)::before{content:"Κατηγορία"}
+  .credit-card-redesign-page .credit-purchases-table td:nth-child(4)::before,
+  .credit-card-redesign-page .credit-payments-table td:nth-child(3)::before,
+  .credit-card-redesign-page .deleted-credit-history .semantic-table td:nth-child(4)::before{content:"Ποσό"}
+  .credit-card-redesign-page .credit-purchases-table td:nth-child(5)::before,
+  .credit-card-redesign-page .credit-payments-table td:nth-child(4)::before{content:"Ενέργειες"}
+  .credit-card-redesign-page .credit-payments-table td:nth-child(2)::before{content:"Από λογαριασμό"}
+  .credit-card-redesign-page .deleted-credit-history .semantic-table td:nth-child(2)::before{content:"Τύπος"}
+  .credit-card-redesign-page .deleted-credit-history .semantic-table td:nth-child(3)::before{content:"Περιγραφή"}
 }

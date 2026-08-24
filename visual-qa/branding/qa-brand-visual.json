@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 2,
+  "layout": "surface-first-latest-only",
+  "appVersion": "v1.3",
+  "suite": "brand-visual",
+  "surface": "branding",
+  "generatedAt": "2026-08-24T07:30:47.979Z",
+  "timeZone": "Europe/Athens",
+  "source": {
+    "sha": "16580f5a1ce2dec4083e356960394b52e0fb7add",
+    "shortSha": "16580f5a",
+    "branch": "feat/237-shell-dashboard-hierarchy"
+  },
+  "screenshots": [
+    "visual-qa/branding/v1.3__2026-08-24_103047__qa-brand-visual__brand-login-dark-contract.png",
+    "visual-qa/branding/v1.3__2026-08-24_103047__qa-brand-visual__brand-login-light.png",
+    "visual-qa/branding/v1.3__2026-08-24_103047__qa-brand-visual__brand-shell-desktop.png",
+    "visual-qa/branding/v1.3__2026-08-24_103047__qa-brand-visual__brand-shell-mobile.png",
+    "visual-qa/branding/v1.3__2026-08-24_103047__qa-brand-visual__brand-shell-tablet.png"
+  ]
+}

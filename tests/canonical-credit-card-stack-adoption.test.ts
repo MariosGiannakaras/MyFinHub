@@ -61,11 +61,20 @@ describe('canonical credit-card stack adoption',()=>{
     expect(stack).not.toContain('Σύρε για οριστική διαγραφή');
   });
 
-  it('uses local canonical logo assets and responsive host containment',()=>{
+  it('preserves the owner-approved flexible PAN policy when card secrets are revealed',()=>{
+    expect(stack).toContain("function formatPan(value:string){return value.replace(/\\D/g,'').replace(/(.{4})/g,'$1 ').trim();}");
+    expect(stack).not.toContain('.slice(0,16)');
+  });
+
+  it('uses local canonical assets and a readable mobile credit-history presentation',()=>{
     expect(stack).toContain("../assets/canonical-credit-card/viva-logo.png");
     expect(stack).toContain("../assets/canonical-credit-card/payzy-logo.png");
     expect(stack).toContain("../assets/canonical-credit-card/payzy-pro-logo.png");
     expect(hostCss).toContain('@media(max-width:680px)');
     expect(hostCss).toContain('.card-archive-row');
+    expect(hostCss).toContain('.credit-card-redesign-page .semantic-table tr');
+    expect(hostCss).toContain('.credit-purchases-table td:nth-child(5)::before');
+    expect(hostCss).toContain('.credit-payments-table td:nth-child(4)::before');
+    expect(hostCss).toContain('.deleted-credit-history .semantic-table td:nth-child(4)::before');
   });
 });
