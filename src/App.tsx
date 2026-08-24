@@ -15,6 +15,7 @@ import type { AttentionItem } from './lib/attention';
 import { archiveCardRecord, canPermanentlyDeleteCreditCard, withCardProfileDeleted } from './lib/cards';
 import { deleteCardSecret } from './lib/cardVaultClient';
 import type { RankedCommandSearchItem } from './lib/commandSearch';
+import { prepareCreditStatementEvent } from './lib/creditStatements';
 import { accountBalances, allAccounts } from './lib/domain';
 import { withLegacyOverride, withLegacyTombstone } from './lib/legacyTransactions';
 import { deleteLocalCvv } from './lib/localCvvVault';
@@ -140,8 +141,10 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   const addEvent = (event: FinanceEvent) => finance.update((current) => {
     const events = current.state.events ?? [];
     const exists = events.some((existing) => existing.id === event.id);
-    const nextEvent = exists ? event : applyTransactionRules(current,event);
-    return { ...current, state: { ...current.state, events: exists ? events.map((existing) => existing.id === event.id ? nextEvent : existing) : [...events, nextEvent] } };
+    const ruledEvent = exists ? event : applyTransactionRules(current,event);
+    const prepared=prepareCreditStatementEvent(current,ruledEvent);
+    const nextEvent=prepared.event;
+    return { ...current, state: { ...current.state, creditStatements:prepared.statements, events: exists ? events.map((existing) => existing.id === event.id ? nextEvent : existing) : [...events, nextEvent] } };
   });
   const deleteEvent = (id: string) => finance.update((current) => ({ ...current, state: { ...current.state, events: (current.state.events ?? []).filter((event) => event.id !== id) } }));
   const editEvent = (id: string) => {
@@ -213,7 +216,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   const handleAttention = (item: AttentionItem) => {
     if (item.action === 'pay_recurring' && item.recurringId) { openSpecial({ mode: 'recurring', recurringId: item.recurringId, amount: item.amount, accountId: item.accountId }); return; }
     if (item.action === 'pay_loan' && item.loanId) { openSpecial({ mode: 'loan', loanId: item.loanId, amount: item.amount, accountId: item.accountId }); return; }
-    if (item.action === 'pay_credit' && item.cardId) { openSpecial({ mode: 'credit', action: 'payment', cardId: item.cardId, amount: item.amount }); return; }
+    if (item.action === 'pay_credit' && item.cardId) { openSpecial({ mode: 'credit', action: 'payment', cardId: item.cardId, statementId:item.statementId, amount: item.amount }); return; }
     if (item.action === 'collect_lending' && item.person) { openSpecial({ mode: 'lending', action: 'repay', person: item.person, amount: item.amount, accountId: data.state.settings.defaultIncomeAccount }); return; }
     if (item.action === 'complete_scheduled' && item.scheduledId) { openSpecial({ mode: 'scheduled', scheduledId: item.scheduledId }); return; }
     if (item.action === 'open_forecast') { navigate('planning'); return; }
@@ -247,7 +250,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
     : page === 'review' ? <ReviewPage data={data} onDecision={decide}/>
     : page === 'savings' ? <SavingsPage data={data} month={month} asOf={today} onCreate={addEvent} onQuickAdd={openSpecial}/>
     : page === 'cards' ? <CardsPage data={data} onUpsertBank={upsertBank} onUpsertCard={upsertCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard}/>
-    : page === 'credit' ? <CreditCardPage data={data} asOf={today} onCreateEvent={addEvent} onEditEvent={editEvent} onDeleteEvent={deleteEvent} onUpsertCard={upsertCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard} onPayCard={(cardId)=>openSpecial({mode:'credit',action:'payment',cardId})}/>
+    : page === 'credit' ? <CreditCardPage data={data} asOf={today} onCreateEvent={addEvent} onEditEvent={editEvent} onDeleteEvent={deleteEvent} onUpsertCard={upsertCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard} onPayCard={(cardId,statementId)=>openSpecial({mode:'credit',action:'payment',cardId,statementId})}/>
     : page === 'loans' ? <LoansPage data={data} asOf={today} onUpsertLoan={upsertLoan} onCreateSelfLoan={createSelfLoan} onPayLoan={(loanId)=>openSpecial({mode:'loan',loanId})}/>
     : page === 'lending' ? <LendingPage data={data} asOf={today} onCreateEvent={addEvent} onQuickAdd={openSpecial}/>
     : page === 'recurring' ? <RecurringPage data={data} asOf={today} onUpsert={upsertRecurring} onOpenLoans={() => navigate('loans')} onPayLoan={(loanId)=>openSpecial({mode:'loan',loanId})} onPayRecurring={(recurringId)=>openSpecial({mode:'recurring',recurringId})}/>
