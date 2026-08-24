@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 2,
+  "layout": "surface-first-latest-only",
+  "appVersion": "v1.3",
+  "suite": "transactions-scanability",
+  "surface": "transactions",
+  "generatedAt": "2026-08-24T09:17:03.416Z",
+  "timeZone": "Europe/Athens",
+  "source": {
+    "sha": "30e97b28877e55f690aecec34f0443c028eb7eaf",
+    "shortSha": "30e97b28",
+    "branch": "feat/238-transactions-scanability"
+  },
+  "screenshots": [
+    "visual-qa/transactions/v1.3__2026-08-24_121703__qa-transactions-scanability__transactions-baseline-desktop.png",
+    "visual-qa/transactions/v1.3__2026-08-24_121703__qa-transactions-scanability__transactions-empty-desktop.png",
+    "visual-qa/transactions/v1.3__2026-08-24_121703__qa-transactions-scanability__transactions-extreme-mobile.png",
+    "visual-qa/transactions/v1.3__2026-08-24_121703__qa-transactions-scanability__transactions-large-split-desktop.png",
+    "visual-qa/transactions/v1.3__2026-08-24_121703__qa-transactions-scanability__transactions-large-split-mobile.png"
+  ]
+}

@@ -4,17 +4,17 @@
   "appVersion": "v1.3",
   "suite": "budget-rules",
   "surface": "budgets",
-  "generatedAt": "2026-08-24T07:30:47.979Z",
+  "generatedAt": "2026-08-24T09:17:03.416Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "16580f5a1ce2dec4083e356960394b52e0fb7add",
-    "shortSha": "16580f5a",
-    "branch": "feat/237-shell-dashboard-hierarchy"
+    "sha": "30e97b28877e55f690aecec34f0443c028eb7eaf",
+    "shortSha": "30e97b28",
+    "branch": "feat/238-transactions-scanability"
   },
   "screenshots": [
-    "visual-qa/budgets/v1.3__2026-08-24_103047__qa-budget-rules__budget-rules-dashboard.png",
-    "visual-qa/budgets/v1.3__2026-08-24_103047__qa-budget-rules__budget-rules-mobile.png",
-    "visual-qa/budgets/v1.3__2026-08-24_103047__qa-budget-rules__budget-rules-reports.png",
-    "visual-qa/budgets/v1.3__2026-08-24_103047__qa-budget-rules__budget-rules-settings.png"
+    "visual-qa/budgets/v1.3__2026-08-24_121703__qa-budget-rules__budget-rules-dashboard.png",
+    "visual-qa/budgets/v1.3__2026-08-24_121703__qa-budget-rules__budget-rules-mobile.png",
+    "visual-qa/budgets/v1.3__2026-08-24_121703__qa-budget-rules__budget-rules-reports.png",
+    "visual-qa/budgets/v1.3__2026-08-24_121703__qa-budget-rules__budget-rules-settings.png"
   ]
 }
