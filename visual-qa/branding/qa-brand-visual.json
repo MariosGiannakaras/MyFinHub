@@ -4,18 +4,18 @@
   "appVersion": "v1.3",
   "suite": "brand-visual",
   "surface": "branding",
-  "generatedAt": "2026-08-24T16:28:35.304Z",
+  "generatedAt": "2026-08-24T17:03:16.367Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "dda3de590d03776dfc0d5891101eaaa88e60f47e",
-    "shortSha": "dda3de59",
-    "branch": "feat/254-semantic-light-dark-theme"
+    "sha": "23f53c0aedbf33e7988e24e159f7fc554d258548",
+    "shortSha": "23f53c0a",
+    "branch": "feat/240-brand-registry-reconciliation"
   },
   "screenshots": [
-    "visual-qa/branding/v1.3__2026-08-24_192835__qa-brand-visual__brand-login-dark-contract.png",
-    "visual-qa/branding/v1.3__2026-08-24_192835__qa-brand-visual__brand-login-light.png",
-    "visual-qa/branding/v1.3__2026-08-24_192835__qa-brand-visual__brand-shell-desktop.png",
-    "visual-qa/branding/v1.3__2026-08-24_192835__qa-brand-visual__brand-shell-mobile.png",
-    "visual-qa/branding/v1.3__2026-08-24_192835__qa-brand-visual__brand-shell-tablet.png"
+    "visual-qa/branding/v1.3__2026-08-24_200316__qa-brand-visual__brand-login-dark-contract.png",
+    "visual-qa/branding/v1.3__2026-08-24_200316__qa-brand-visual__brand-login-light.png",
+    "visual-qa/branding/v1.3__2026-08-24_200316__qa-brand-visual__brand-shell-desktop.png",
+    "visual-qa/branding/v1.3__2026-08-24_200316__qa-brand-visual__brand-shell-mobile.png",
+    "visual-qa/branding/v1.3__2026-08-24_200316__qa-brand-visual__brand-shell-tablet.png"
   ]
 }
