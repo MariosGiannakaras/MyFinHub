@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { categoryIconPreferenceKey, subcategoryIconPreferenceKey } from '../src/lib/categoryIconPreferences.js';
 import { ensureCategoryIdentities, resolveCategoryIdentity, resolveSubcategoryIdentity } from '../src/lib/categoryIdentity.js';
-import { applyTaxonomyOperation, applyTaxonomyOperationToSettings } from '../src/lib/taxonomyManagement.js';
+import { applyTaxonomyOperation, applyTaxonomyOperationToSettings, taxonomyRetirementDependencies } from '../src/lib/taxonomyManagement.js';
 import type { FinanceData, FinanceSettings } from '../src/types.js';
 
 function settings():FinanceSettings{return ensureCategoryIdentities({
@@ -106,5 +106,47 @@ describe('direct taxonomy management',()=>{
     if(!food)throw new Error('missing food identity');
     const renamed=applyTaxonomyOperationToSettings(initial,{type:'rename-category',kind:'expense',identityId:food.id,label:'Τρόφιμα'});
     expect(()=>applyTaxonomyOperationToSettings(renamed,{type:'add-category',kind:'expense',label:'Φαγητό'})).toThrow(/παλιό όνομα/i);
+  });
+
+  it('enumerates category retirement blockers without treating historical rows as live dependencies',()=>{
+    const data=fixture();
+    const food=resolveCategoryIdentity(data.state.settings,'expense','Φαγητό');
+    if(!food)throw new Error('missing food identity');
+    const dependencies=taxonomyRetirementDependencies(data,{type:'retire-category',kind:'expense',identityId:food.id},'2026-08-23');
+    expect(dependencies.map(item=>item.kind)).toEqual(['budget','budget','recurring','recurring','rule','scheduled','subcategory','subcategory']);
+    expect(dependencies.map(item=>item.id)).not.toContain('past-budget');
+    expect(dependencies.map(item=>item.id)).not.toContain('done');
+    expect(()=>applyTaxonomyOperation(data,{type:'retire-category',kind:'expense',identityId:food.id},'2026-08-23')).toThrow(/μπλοκάρεται/i);
+    expect(data.seed.transactions[0].category).toBe('Φαγητό');
+    expect(data.state.events?.[0].category).toBe('Φαγητό');
+  });
+
+  it('retires a dependency-free subcategory from active pickers while preserving its historical identity',()=>{
+    const data=fixture();
+    const market=resolveSubcategoryIdentity(data.state.settings,'expense','Φαγητό','Supermarket');
+    if(!market)throw new Error('missing market identity');
+    data.state.scheduled=(data.state.scheduled??[]).map(item=>item.id==='pending'?{...item,status:'cancelled' as const}:item);
+    data.state.transactionRules=(data.state.transactionRules??[]).map(rule=>rule.id==='rule-food'?{...rule,enabled:false}:rule);
+    expect(taxonomyRetirementDependencies(data,{type:'retire-subcategory',kind:'expense',identityId:market.id},'2026-08-23')).toEqual([]);
+    const next=applyTaxonomyOperation(data,{type:'retire-subcategory',kind:'expense',identityId:market.id},'2026-08-23');
+    expect(next.state.settings.expenseCategoryTree?.find(item=>item.name==='Φαγητό')?.subcategories).toEqual(['Εστιατόριο']);
+    expect(resolveSubcategoryIdentity(next.state.settings,'expense','Φαγητό','Supermarket')?.id).toBe(market.id);
+    expect(next.seed.transactions[0]).toMatchObject({category:'Φαγητό',subcategory:'Supermarket'});
+    expect(next.state.events?.[0]).toMatchObject({category:'Φαγητό',subcategory:'Supermarket'});
+    expect(()=>applyTaxonomyOperationToSettings(next.state.settings,{type:'add-subcategory',kind:'expense',parentId:market.parentId!,label:'Supermarket'})).toThrow(/παλιό όνομα/i);
+  });
+
+  it('requires child cleanup before category retirement and retains the stable category identity afterward',()=>{
+    let data=fixture();
+    const transport=resolveCategoryIdentity(data.state.settings,'expense','Μετακινήσεις');
+    const fuel=resolveSubcategoryIdentity(data.state.settings,'expense','Μετακινήσεις','Καύσιμα');
+    if(!transport||!fuel)throw new Error('missing transport taxonomy');
+    expect(taxonomyRetirementDependencies(data,{type:'retire-category',kind:'expense',identityId:transport.id},'2026-08-23').map(item=>item.kind)).toEqual(['subcategory']);
+    data=applyTaxonomyOperation(data,{type:'retire-subcategory',kind:'expense',identityId:fuel.id},'2026-08-23');
+    expect(taxonomyRetirementDependencies(data,{type:'retire-category',kind:'expense',identityId:transport.id},'2026-08-23')).toEqual([]);
+    data=applyTaxonomyOperation(data,{type:'retire-category',kind:'expense',identityId:transport.id},'2026-08-23');
+    expect(data.state.settings.expenseCategoryTree?.some(item=>item.name==='Μετακινήσεις')).toBe(false);
+    expect(resolveCategoryIdentity(data.state.settings,'expense','Μετακινήσεις')?.id).toBe(transport.id);
+    expect(()=>applyTaxonomyOperationToSettings(data.state.settings,{type:'add-category',kind:'expense',label:'Μετακινήσεις'})).toThrow(/παλιό όνομα/i);
   });
 });
