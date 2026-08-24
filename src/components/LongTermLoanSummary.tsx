@@ -7,7 +7,7 @@ import { AnimatedAmount } from './AnimatedAmount';
 export function LongTermLoanSummary({data,onPayLoan,onOpenLoans}:{data:FinanceData;onPayLoan:(loanId:string)=>void;onOpenLoans:()=>void}){
   const obligations=activeLongTermLoanObligations(data);
   if(!obligations.length)return null;
-  return <section className="panel neo-raised long-term-recurring" aria-labelledby="linked-loan-obligations-title">
+  return <section className="panel neo-flat long-term-recurring" aria-labelledby="linked-loan-obligations-title">
     <div className="panel-head"><div><span id="linked-loan-obligations-title">Δανειακές μηνιαίες υποχρεώσεις</span><small>Εμφανίζονται εδώ μαζί με τα τακτικά έξοδα, αλλά παραμένουν δάνεια. Η πληρωμή ενημερώνει το ίδιο δάνειο που βλέπεις στις Δόσεις & Δάνεια.</small></div><Landmark/></div>
     <div className="long-term-recurring-list" role="list" aria-label="Ενεργές δανειακές υποχρεώσεις">
       {obligations.map(({loan,remainingInstallments,nextAmount,typicalDay,lastPayment})=><article className="long-term-loan-obligation" role="listitem" aria-label={`Δανειακή υποχρέωση ${loan.name}`} data-linked-loan={loan.id} key={loan.id}>
