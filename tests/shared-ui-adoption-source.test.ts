@@ -11,7 +11,7 @@ const loans=read('src/pages/LoansPage.tsx');
 const budgetRules=read('src/components/BudgetRuleSettings.tsx');
 const hardening=read('src/styles/part30.css');
 const baseStyles=read('src/styles/part1.css');
-const rendered=read('scripts/ui-ux-visual-evidence-qa.mjs');
+const rendered=read('scripts/frontend-qa.mjs');
 
 describe('shared finance UI adoption contracts',()=>{
   it('uses the shared MoneyInput in the remaining core editable amount flows',()=>{
@@ -22,7 +22,8 @@ describe('shared finance UI adoption contracts',()=>{
     for(const source of [lending,recurring,loans,budgetRules])expect(source).toContain('<MoneyInput');
     expect(lending).not.toMatch(/<input[^>]+inputMode=\"decimal\"[^>]+value=\{amount\}/);
     expect(recurring).not.toMatch(/<input[^>]+type=\"number\"[^>]+value=\{edit\.amount/);
-    expect(loans).not.toMatch(/<input[^>]+type=\"number\"[^>]+value=\{edit\.(?:total|installment)/);
+    expect(loans).not.toContain("value={edit.total||''}");
+    expect(loans).not.toContain("value={edit.installment||''}");
     expect(budgetRules).not.toMatch(/<input[^>]+inputMode=\"decimal\"[^>]+value=\{budgetAmount\}/);
   });
 
