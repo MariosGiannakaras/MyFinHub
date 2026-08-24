@@ -67,3 +67,36 @@ export class LatestValueQueue<T> {
     }
   }
 }
+
+/**
+ * Durable history cannot coalesce distinct user mutations: every accepted
+ * mutation must become exactly one server history point. This queue therefore
+ * preserves FIFO order while still failing closed and dropping dependent
+ * pending writes after the first failed persistence operation.
+ */
+export class SequentialQueue<T> {
+  private pending: T[] = [];
+  private running = false;
+  private idlePromise: Promise<void> = Promise.resolve();
+
+  constructor(private readonly run:(value:T)=>Promise<void>){}
+
+  enqueue(value:T){
+    this.pending.push(value);
+    if(this.running)return;
+    this.running=true;
+    this.idlePromise=this.drain();
+  }
+
+  hasWork(){return this.running||this.pending.length>0}
+  whenIdle(){return this.idlePromise}
+
+  private async drain(){
+    try{
+      while(this.pending.length){
+        const value=this.pending.shift()!;
+        try{await this.run(value)}catch{this.pending=[];break}
+      }
+    }finally{this.running=false}
+  }
+}
