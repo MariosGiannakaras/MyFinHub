@@ -16,7 +16,7 @@ describe('account IBAN metadata',()=>{
     expect(isValidIban('GR1601101250000000012300695')).toBe(true);
     expect(isValidIban('GR1601101250000000012300694')).toBe(false);
     expect(isValidIban('GB82 WEST 1234 5698 7654 32')).toBe(true);
-    expect(formatIban('GR1601101250000000012300695')).toBe('GR16 0110 1250 0000 0001 2300 0695');
+    expect(formatIban('GR1601101250000000012300695')).toBe('GR16 0110 1250 0000 0001 2300 695');
     expect(assertValidIban('')).toBeNull();
     expect(()=>assertValidIban('GR1601101250000000012300694')).toThrow('INVALID_IBAN');
   });
