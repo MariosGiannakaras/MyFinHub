@@ -21,11 +21,8 @@ function localCvvMessage(error:unknown){
 
 function PrototypeBrand({card,bank}:{card:PaymentCard;bank:CardBank}){
   const design=card.designId??'';
-  if(design.startsWith('revolut'))return <span className="card-bank-name revolut-wordmark">Revolut</span>;
-  if(design.startsWith('piraeus-'))return <span className={`card-bank-name piraeus-logo ${design==='piraeus-green'?'is-green':''}`}><span className="piraeus-slashes"><i/><i/><i/></span>Piraeus</span>;
-  if(design.startsWith('alpha'))return <><span className="card-bank-name">ALPHA BANK</span>{design==='alpha'?<span className="alpha-enter">enter</span>:<span className="alpha-bonus-word">bonus</span>}</>;
-  if(design.startsWith('payzy')||design.startsWith('viva'))return <BankBrandMark id={bank.id} name={bank.name} compact={false}/>;
-  return <><span className="brand-mark custom-mark">{bank.name.trim().slice(0,1).toUpperCase()}</span><span className="card-bank-name">{bank.name}</span></>;
+  const alphaVariant=design==='alpha'?'enter':design.startsWith('alpha')?'bonus':null;
+  return <><BankBrandMark id={bank.id} name={bank.name} compact={false}/>{alphaVariant?<span className={alphaVariant==='enter'?'alpha-enter':'alpha-bonus-word'}>{alphaVariant}</span>:null}</>;
 }
 
 function PrototypeNetwork({card}:{card:PaymentCard}){
