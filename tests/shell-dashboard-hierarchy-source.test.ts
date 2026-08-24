@@ -27,7 +27,7 @@ describe('shell and Dashboard hierarchy source contracts',()=>{
     expect(dashboard).toContain('data-prefilled-quick-entry={f.label}');
     expect(dashboard).toContain('Συχνές κινήσεις');
     expect(dashboard).toContain('Συντομεύσεις με προ-συμπληρωμένα στοιχεία');
-    expect(dashboard).toContain("kind === 'savings'");
+    expect(dashboard).toContain("account.kind==='savings'?'Μεταφορά':'Νέα κίνηση'");
   });
 
   it('disables future reporting navigation and refreshes the month boundary while the app stays open',()=>{
