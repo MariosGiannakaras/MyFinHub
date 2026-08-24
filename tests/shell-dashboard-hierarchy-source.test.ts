@@ -73,8 +73,9 @@ describe('shell and Dashboard hierarchy source contracts',()=>{
     expect(pkg.scripts['qa:frontend'].indexOf('scripts/shell-dashboard-hierarchy-qa.mjs')).toBeLessThan(pkg.scripts['qa:frontend'].indexOf('scripts/final-ux-reconciliation-qa.mjs'));
     expect(hierarchyQa).toContain("JSON.stringify(state.globals)===JSON.stringify(['desktop'])");
     expect(hierarchyQa).toContain("JSON.stringify(state.globals)===JSON.stringify(['mobile'])");
-    expect(hierarchyQa).toContain("state.savedQuiet&&state.savedSmallDisplay==='none'&&state.savedLive===null");
-    expect(hierarchyQa).toContain("state.nextDisabled&&state.month.includes('Αύγουστος')&&state.month.includes('2026')");
+    expect(hierarchyQa).toContain("shellState.savedQuiet&&shellState.savedSmallDisplay==='none'&&shellState.savedLive===null");
+    expect(hierarchyQa).toContain("shellState.nextDisabled&&shellState.month.includes('Αύγουστος')&&shellState.month.includes('2026')");
+    expect(hierarchyQa).toContain("state.shortcutOverlaps===0");
     expect(hierarchyQa).toContain("Planning does not inherit reporting period navigation");
   });
 });
