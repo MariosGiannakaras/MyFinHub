@@ -51,10 +51,12 @@ describe('shell and Dashboard hierarchy source contracts',()=>{
     expect(persistence).toContain('role="status" aria-live="polite"');
   });
 
-  it('uses a lower-weight, denser hierarchy for pending, shortcuts and monthly metrics without reordering semantics',()=>{
+  it('uses a lower-weight, denser hierarchy and structured shortcut layout without reordering semantics',()=>{
     expect(styles).toContain('.dashboard-pending-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}');
-    expect(styles).toContain('.dashboard-grid{grid-template-columns:.72fr 1.18fr 1.1fr;gap:11px}');
-    expect(styles).toContain('.dashboard-grid>.quick-panel');
+    expect(styles).toContain('.dashboard-grid{grid-template-columns:.84fr 1.12fr 1.04fr;gap:11px}');
+    expect(styles).toContain('.dashboard-grid>.quick-panel .frequent-grid>button{display:grid;grid-template-columns:28px minmax(0,1fr) auto');
+    expect(styles).toContain('.dashboard-grid>.quick-panel .frequent-grid>button strong{grid-column:3;grid-row:1/3;float:none;margin:0');
+    expect(styles).toContain('.primary-balance-card{min-height:158px;padding:15px 18px}');
     expect(styles).toContain('.flow-metric-grid .metric-card{min-height:110px;padding:14px}');
     const primary=dashboard.indexOf('data-dashboard-section="primary-accounts"');
     const pending=dashboard.indexOf('data-dashboard-section="pending"');
