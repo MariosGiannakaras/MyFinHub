@@ -4,6 +4,8 @@ import { describe, expect, it } from 'vitest';
 const loans=readFileSync(new URL('../src/pages/LoansPage.tsx',import.meta.url),'utf8');
 const recurring=readFileSync(new URL('../src/pages/RecurringPage.tsx',import.meta.url),'utf8');
 const linked=readFileSync(new URL('../src/components/LongTermLoanSummary.tsx',import.meta.url),'utf8');
+const rendered=readFileSync(new URL('../scripts/obligation-lifecycle-qa.mjs',import.meta.url),'utf8');
+const coordinator=readFileSync(new URL('../scripts/run-rendered-qa.mjs',import.meta.url),'utf8');
 
 describe('obligation lifecycle hierarchy source contracts',()=>{
   it('separates active and completed loans using existing accounting-derived completion signals',()=>{
@@ -35,5 +37,14 @@ describe('obligation lifecycle hierarchy source contracts',()=>{
     expect(linked).toContain('onPayLoan(loan.id)');
     expect(linked).toContain('data-linked-loan={loan.id}');
     expect(linked).toContain('neo-flat long-term-recurring');
+  });
+  it('runs dedicated rendered desktop/mobile completed, inactive and extreme lifecycle coverage',()=>{
+    expect(coordinator).toContain("path:'scripts/obligation-lifecycle-qa.mjs'");
+    expect(rendered).toContain('active loans dominate baseline');
+    expect(rendered).toContain('completing a loan moves it into history without payment CTA');
+    expect(rendered).toContain('paused recurring items move into collapsed restorable history');
+    expect(rendered).toContain('extreme recurring list remains usable');
+    expect(rendered).toContain('loans-completed-history-mobile');
+    expect(rendered).toContain('recurring-inactive-history-mobile');
   });
 });
