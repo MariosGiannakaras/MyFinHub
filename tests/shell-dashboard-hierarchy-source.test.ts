@@ -6,7 +6,11 @@ const dashboard=readFileSync(new URL('../src/pages/DashboardPage.tsx',import.met
 const period=readFileSync(new URL('../src/components/PeriodControl.tsx',import.meta.url),'utf8');
 const reporting=readFileSync(new URL('../src/lib/reportingPeriod.ts',import.meta.url),'utf8');
 const persistence=readFileSync(new URL('../src/components/PersistenceNotice.tsx',import.meta.url),'utf8');
-const styles=readFileSync(new URL('../src/styles/part47.css',import.meta.url),'utf8');
+const shellStyles=readFileSync(new URL('../src/styles/part1.css',import.meta.url),'utf8');
+const dashboardStyles=readFileSync(new URL('../src/styles/part2.css',import.meta.url),'utf8');
+const iconStyles=readFileSync(new URL('../src/styles/part19.css',import.meta.url),'utf8');
+const reconciliationStyles=readFileSync(new URL('../src/styles/part41.css',import.meta.url),'utf8');
+const styleIndex=readFileSync(new URL('../src/styles.css',import.meta.url),'utf8');
 const hardening=readFileSync(new URL('../scripts/ui-ux-hardening-qa.mjs',import.meta.url),'utf8');
 const hierarchyQa=readFileSync(new URL('../scripts/shell-dashboard-hierarchy-qa.mjs',import.meta.url),'utf8');
 const pkg=JSON.parse(readFileSync(new URL('../package.json',import.meta.url),'utf8')) as {scripts:Record<string,string>};
@@ -38,26 +42,30 @@ describe('shell and Dashboard hierarchy source contracts',()=>{
     expect(period).toContain('window.setInterval(refresh,60_000)');
     expect(period).toContain('δεν υπάρχει μελλοντική περίοδος αναφοράς');
     expect(reporting).toContain('shiftReportingMonth(month,1)<=maxMonth');
+    expect(reconciliationStyles).toContain('.period-control button:disabled');
   });
 
   it('keeps healthy persistence chrome quiet while exceptional states stay explicit and accessible',()=>{
     expect(shell).toContain("saveState==='saved'?'is-quiet':'neo-inset is-active'");
     expect(shell).toContain("saveState==='saved'?undefined:'polite'");
-    expect(styles).toContain('.file-panel.is-quiet');
-    expect(styles).toContain('.file-panel.is-active');
+    expect(shellStyles).toContain('.file-panel.is-quiet');
+    expect(shellStyles).toContain('.file-panel.is-active');
     expect(persistence).toContain("saveState==='error'||saveState==='conflict'");
     expect(persistence).toContain('role="alert" aria-live="assertive"');
     expect(persistence).toContain("saveState==='saving'");
     expect(persistence).toContain('role="status" aria-live="polite"');
   });
 
-  it('uses a lower-weight, denser hierarchy and structured shortcut layout without reordering semantics',()=>{
-    expect(styles).toContain('.dashboard-pending-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}');
-    expect(styles).toContain('.dashboard-grid{grid-template-columns:.84fr 1.12fr 1.04fr;gap:11px}');
-    expect(styles).toContain('.dashboard-grid>.quick-panel .frequent-grid>button{display:grid;grid-template-columns:28px minmax(0,1fr) auto');
-    expect(styles).toContain('.dashboard-grid>.quick-panel .frequent-grid>button strong{grid-column:3;grid-row:1/3;float:none;margin:0');
-    expect(styles).toContain('.primary-balance-card{min-height:158px;padding:15px 18px}');
-    expect(styles).toContain('.flow-metric-grid .metric-card{min-height:110px;padding:14px}');
+  it('uses consolidated, lower-weight hierarchy and structured shortcut layout without an override-only stylesheet',()=>{
+    expect(styleIndex).not.toContain('part47.css');
+    expect(dashboardStyles).toContain('.dashboard-grid{display:grid;grid-template-columns:.84fr 1.12fr 1.04fr;gap:11px}');
+    expect(dashboardStyles).toContain('grid-template-columns:28px minmax(0,1fr) auto');
+    expect(dashboardStyles).toContain('.frequent-grid strong{font-size:10px;grid-column:3;grid-row:1/3;float:none;margin:0');
+    expect(iconStyles).toContain('.frequent-grid .frequent-icon{position:static;transform:none}');
+    expect(reconciliationStyles).toContain('.dashboard-pending-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}');
+    expect(reconciliationStyles).toContain('.primary-balance-card{min-height:158px;padding:15px 18px}');
+    expect(reconciliationStyles).toContain('.flow-metric-grid .metric-card{min-height:110px;padding:14px}');
+    expect(reconciliationStyles).toContain('.frequent-grid>button{flex-basis:172px}');
     const primary=dashboard.indexOf('data-dashboard-section="primary-accounts"');
     const pending=dashboard.indexOf('data-dashboard-section="pending"');
     const quick=dashboard.indexOf('data-dashboard-section="quick-entry"');
