@@ -34,6 +34,7 @@ try{
   assert(hierarchy.primary.includes('20/08/2026')&&hierarchy.primary.includes('90,00'),'primary statement exposes due date and remaining balance');
   assert(hierarchy.pay.includes('Πληρωμή'),'primary unpaid statement exposes payment CTA');
   assert(hierarchy.overflow<=1,`desktop horizontal overflow ${hierarchy.overflow}px`);
+  await c.call("function(){document.querySelector('[data-credit-statements]')?.scrollIntoView({block:'start'});return true}");await sleep(120);
   await shot(c,'credit-statements-active-desktop');
 
   await c.call("function(){document.querySelector('[data-primary-credit-statement] button.save-button')?.click();return true}");
@@ -51,6 +52,7 @@ try{
   const mobile=await c.call("function(){const overflow=Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth;const controls=[...document.querySelectorAll('[data-credit-statements] button,[data-credit-statements] summary')].filter(el=>{const r=el.getBoundingClientRect();return r.width>0&&r.height>0});return {overflow,minTouch:controls.length?Math.min(...controls.map(el=>el.getBoundingClientRect().height)):99}}");
   assert(mobile.overflow<=1,`mobile horizontal overflow ${mobile.overflow}px`);
   assert(mobile.minTouch>=41,`mobile statement touch target ${mobile.minTouch}px`);
+  await c.call("function(){document.querySelector('[data-credit-statements]')?.scrollIntoView({block:'start'});return true}");await sleep(120);
   await shot(c,'credit-statements-active-mobile');
 
   await c.send('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
@@ -72,11 +74,13 @@ try{
   assert(!deleted.identityLeaksNickname,'deleted card identity does not retain the former nickname');
   assert(!deleted.leaksProtectedIdentity,'deleted statement history does not retain last4 or bank identity');
   assert(deleted.overflow<=1,`deleted history desktop overflow ${deleted.overflow}px`);
+  await c.call("function(){document.querySelector('.deleted-credit-history')?.scrollIntoView({block:'start'});return true}");await sleep(120);
   await shot(c,'credit-deleted-statement-history-desktop');
   await c.send('Emulation.setDeviceMetricsOverride',{width:375,height:812,deviceScaleFactor:1,mobile:true});
   const deletedMobile=await c.call("function(){const section=document.querySelector('.deleted-credit-history');const controls=[...section?.querySelectorAll('summary')||[]].filter(el=>{const r=el.getBoundingClientRect();return r.width>0&&r.height>0});return {overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth,minTouch:controls.length?Math.min(...controls.map(el=>el.getBoundingClientRect().height)):99}}");
   assert(deletedMobile.overflow<=1,`deleted statement mobile overflow ${deletedMobile.overflow}px`);
   assert(deletedMobile.minTouch>=41,`deleted statement mobile disclosure target ${deletedMobile.minTouch}px`);
+  await c.call("function(){document.querySelector('.deleted-credit-history')?.scrollIntoView({block:'start'});return true}");await sleep(120);
   await shot(c,'credit-deleted-statement-history-mobile');
 
   c.close();console.log('Credit statement lifecycle rendered QA passed.');
