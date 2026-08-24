@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canAdvanceReportingMonth, localMonthKey, shiftReportingMonth } from '../src/lib/reportingPeriod';
+import { canAdvanceReportingMonth, localMonthKey, shiftReportingMonth } from '../src/lib/reportingPeriod.js';
 
 describe('reporting period boundaries',()=>{
   it('uses the local calendar month rather than UTC month',()=>{
