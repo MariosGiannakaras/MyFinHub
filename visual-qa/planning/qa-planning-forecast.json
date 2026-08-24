@@ -4,16 +4,16 @@
   "appVersion": "v1.3",
   "suite": "planning-forecast",
   "surface": "planning",
-  "generatedAt": "2026-08-24T15:37:01.715Z",
+  "generatedAt": "2026-08-24T16:14:06.493Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "7fc7bd3842785538df7f13e5f6b60760597968ef",
-    "shortSha": "7fc7bd38",
+    "sha": "d9cc231440030e7946cd0392d30b592c221fc7a9",
+    "shortSha": "d9cc2314",
     "branch": "feat/254-semantic-light-dark-theme"
   },
   "screenshots": [
-    "visual-qa/planning/v1.3__2026-08-24_183701__qa-planning-forecast__planning-forecast-desktop.png",
-    "visual-qa/planning/v1.3__2026-08-24_183701__qa-planning-forecast__planning-forecast-mobile.png",
-    "visual-qa/planning/v1.3__2026-08-24_183701__qa-planning-forecast__planning-forecast-negative.png"
+    "visual-qa/planning/v1.3__2026-08-24_191406__qa-planning-forecast__planning-forecast-desktop.png",
+    "visual-qa/planning/v1.3__2026-08-24_191406__qa-planning-forecast__planning-forecast-mobile.png",
+    "visual-qa/planning/v1.3__2026-08-24_191406__qa-planning-forecast__planning-forecast-negative.png"
   ]
 }
