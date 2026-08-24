@@ -11,7 +11,7 @@ const loans=read('src/pages/LoansPage.tsx');
 const budgetRules=read('src/components/BudgetRuleSettings.tsx');
 const hardening=read('src/styles/part30.css');
 const baseStyles=read('src/styles/part1.css');
-const rendered=read('scripts/frontend-qa.mjs');
+const rendered=read('scripts/ui-ux-hardening-qa.mjs');
 
 describe('shared finance UI adoption contracts',()=>{
   it('uses the shared MoneyInput in the remaining core editable amount flows',()=>{
