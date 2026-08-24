@@ -4,16 +4,16 @@
   "appVersion": "v1.3",
   "suite": "final-ux-reconciliation",
   "surface": "app-shell",
-  "generatedAt": "2026-08-24T07:30:47.979Z",
+  "generatedAt": "2026-08-24T09:08:28.087Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "16580f5a1ce2dec4083e356960394b52e0fb7add",
-    "shortSha": "16580f5a",
-    "branch": "feat/237-shell-dashboard-hierarchy"
+    "sha": "82bc6bf06da45f8aaf5498c904bb72628175f7d3",
+    "shortSha": "82bc6bf0",
+    "branch": "feat/238-transactions-scanability"
   },
   "screenshots": [
-    "visual-qa/app-shell/v1.3__2026-08-24_103047__qa-final-ux-reconciliation__final-ux-history-desktop.png",
-    "visual-qa/app-shell/v1.3__2026-08-24_103047__qa-final-ux-reconciliation__final-ux-history-mobile.png",
-    "visual-qa/app-shell/v1.3__2026-08-24_103047__qa-final-ux-reconciliation__final-ux-shortcuts-settings.png"
+    "visual-qa/app-shell/v1.3__2026-08-24_120828__qa-final-ux-reconciliation__final-ux-history-desktop.png",
+    "visual-qa/app-shell/v1.3__2026-08-24_120828__qa-final-ux-reconciliation__final-ux-history-mobile.png",
+    "visual-qa/app-shell/v1.3__2026-08-24_120828__qa-final-ux-reconciliation__final-ux-shortcuts-settings.png"
   ]
 }
