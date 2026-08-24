@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Gauge, ListFilter, Pencil, Plus, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronUp, Gauge, ListFilter, Pencil, Plus, Trash2 } from 'lucide-react';
 import { AppSelectInput } from './AppSelectInput';
 import { FormError } from './FormError';
 import { MoneyInput } from './MoneyInput';
@@ -12,6 +12,7 @@ import type { FinanceData, MonthlyBudget, TransactionRule, TransactionRuleScope 
 
 const now=()=>new Date().toISOString();
 const ruleId=()=>`rule-${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
+const scopeLabel=(scope:TransactionRuleScope)=>scope==='manual'?'χειροκίνητη καταχώριση':scope==='imported'?'εισαγωγή':'επιβεβαίωση από έλεγχο';
 
 export function BudgetRuleSettings({data,asOf,onUpsertBudget,onDeleteBudget,onUpsertRule,onDeleteRule}:{data:FinanceData;asOf:string;onUpsertBudget:(budget:MonthlyBudget)=>void;onDeleteBudget:(id:string)=>void;onUpsertRule:(rule:TransactionRule)=>void;onDeleteRule:(id:string)=>void}){
   const expenseFallback=data.state.settings.expenseCategories[0]||'Άλλο';
@@ -25,7 +26,6 @@ export function BudgetRuleSettings({data,asOf,onUpsertBudget,onDeleteBudget,onUp
 
   const [editingRuleId,setEditingRuleId]=useState<string|null>(null);
   const [ruleName,setRuleName]=useState('');
-  const [rulePriority,setRulePriority]=useState('100');
   const [ruleDescription,setRuleDescription]=useState('');
   const [ruleMerchant,setRuleMerchant]=useState('');
   const [ruleAccount,setRuleAccount]=useState('');
@@ -36,14 +36,18 @@ export function BudgetRuleSettings({data,asOf,onUpsertBudget,onDeleteBudget,onUp
   const [ruleScope,setRuleScope]=useState<'all'|TransactionRuleScope>('manual');
   const [ruleError,setRuleError]=useState('');
   const accounts=allAccounts(data).filter(account=>account.kind!=='credit');
+  const accountIds=new Set(accounts.map(account=>account.id));
+  const categoryNames=new Set(data.state.settings.expenseCategories);
   const rules=(data.state.transactionRules??[]).slice().sort((a,b)=>a.priority-b.priority||a.id.localeCompare(b.id));
+  const editingRule=rules.find(rule=>rule.id===editingRuleId);
+  const nextPriority=rules.reduce((max,rule)=>Math.max(max,rule.priority),0)+100;
 
   const draftRule=useMemo<TransactionRule>(()=>({
-    id:editingRuleId||'preview',name:ruleName||'Προεπισκόπηση',enabled:true,priority:Number(rulePriority)||0,
+    id:editingRuleId||'preview',name:ruleName||'Προεπισκόπηση',enabled:true,priority:editingRule?.priority??nextPriority,
     scopes:ruleScope==='all'?['manual','imported','review']:[ruleScope],
     match:{description:ruleDescription,merchant:ruleMerchant,accountId:ruleAccount||undefined,mode:ruleMode},
-    action:{category:ruleCategory||undefined,subcategory:ruleSubcategory||undefined,note:ruleDefaultNote||undefined},createdAt:now(),updatedAt:now(),
-  }),[editingRuleId,ruleName,rulePriority,ruleScope,ruleDescription,ruleMerchant,ruleAccount,ruleMode,ruleCategory,ruleSubcategory,ruleDefaultNote]);
+    action:{category:ruleCategory||undefined,subcategory:ruleSubcategory||undefined,note:ruleDefaultNote||undefined},createdAt:editingRule?.createdAt??now(),updatedAt:now(),
+  }),[editingRuleId,editingRule?.priority,editingRule?.createdAt,nextPriority,ruleName,ruleScope,ruleDescription,ruleMerchant,ruleAccount,ruleMode,ruleCategory,ruleSubcategory,ruleDefaultNote]);
   const previewMatches=useMemo(()=>transactionRuleMatchingEvents(data,draftRule),[data,draftRule]);
 
   const saveBudget=()=>{
@@ -55,14 +59,39 @@ export function BudgetRuleSettings({data,asOf,onUpsertBudget,onDeleteBudget,onUp
     }catch(error){setBudgetError(error instanceof Error?error.message:'Δεν μπορέσαμε να αποθηκεύσουμε το budget. Έλεγξε τα στοιχεία και δοκίμασε ξανά.')}
   };
 
-  const resetRule=()=>{setEditingRuleId(null);setRuleName('');setRulePriority('100');setRuleDescription('');setRuleMerchant('');setRuleAccount('');setRuleMode('contains');setRuleCategory(expenseFallback);setRuleSubcategory('');setRuleDefaultNote('');setRuleScope('manual');setRuleError('')};
-  const editRule=(rule:TransactionRule)=>{setEditingRuleId(rule.id);setRuleName(rule.name);setRulePriority(String(rule.priority));setRuleDescription(rule.match.description??'');setRuleMerchant(rule.match.merchant??'');setRuleAccount(rule.match.accountId??'');setRuleMode(rule.match.mode??'contains');setRuleCategory(rule.action.category??expenseFallback);setRuleSubcategory(rule.action.subcategory??'');setRuleDefaultNote(rule.action.note??'');setRuleScope(rule.scopes.length===3?'all':rule.scopes[0]??'manual');setRuleError('')};
+  const resetRule=()=>{setEditingRuleId(null);setRuleName('');setRuleDescription('');setRuleMerchant('');setRuleAccount('');setRuleMode('contains');setRuleCategory(expenseFallback);setRuleSubcategory('');setRuleDefaultNote('');setRuleScope('manual');setRuleError('')};
+  const editRule=(rule:TransactionRule)=>{setEditingRuleId(rule.id);setRuleName(rule.name);setRuleDescription(rule.match.description??'');setRuleMerchant(rule.match.merchant??'');setRuleAccount(rule.match.accountId??'');setRuleMode(rule.match.mode??'contains');setRuleCategory(rule.action.category??expenseFallback);setRuleSubcategory(rule.action.subcategory??'');setRuleDefaultNote(rule.action.note??'');setRuleScope(rule.scopes.length===3?'all':rule.scopes[0]??'manual');setRuleError('')};
   const saveRule=()=>{
     try{
       const existing=(data.state.transactionRules??[]).find(item=>item.id===editingRuleId);const timestamp=now();
       const next=normalizeTransactionRule({...draftRule,id:existing?.id??ruleId(),enabled:existing?.enabled??true,createdAt:existing?.createdAt??timestamp,updatedAt:timestamp});
       onUpsertRule(next);resetRule();
-    }catch(error){setRuleError(error instanceof Error?error.message:'Δεν μπορέσαμε να αποθηκεύσουμε τον κανόνα. Έλεγξε τα στοιχεία και δοκίμασε ξανά.')}
+    }catch(error){setRuleError(error instanceof Error?error.message:'Δεν μπορέσαμε να αποθηκεύσουμε τον αυτοματισμό. Έλεγξε τις συνθήκες και την ενέργεια και δοκίμασε ξανά.')}
+  };
+  const moveRule=(index:number,direction:-1|1)=>{
+    const target=index+direction;if(target<0||target>=rules.length)return;
+    if(direction===1){
+      const afterTarget=rules[index+2];const floor=rules[target].priority;const priority=afterTarget?(floor+afterTarget.priority)/2:floor+100;
+      onUpsertRule({...rules[index],priority,updatedAt:now()});return;
+    }
+    const afterCurrent=rules[index+1];const floor=rules[index].priority;const priority=afterCurrent?(floor+afterCurrent.priority)/2:floor+100;
+    onUpsertRule({...rules[target],priority,updatedAt:now()});
+  };
+  const conditionLabel=(rule:TransactionRule)=>{
+    const parts:string[]=[];
+    if(rule.match.description)parts.push(`η περιγραφή ${rule.match.mode==='equals'?'είναι ακριβώς':'περιέχει'} «${rule.match.description}»`);
+    if(rule.match.merchant)parts.push(`η περιγραφή περιέχει επίσης «${rule.match.merchant}»`);
+    if(rule.match.accountId)parts.push(`ο λογαριασμός είναι ${accountDisplayName(data,rule.match.accountId)}`);
+    return parts.join(' και ')||'λείπει συνθήκη';
+  };
+  const actionLabel=(rule:TransactionRule)=>{
+    const parts=[rule.action.category?`κατηγορία ${rule.action.category}`:'',rule.action.subcategory?`υποκατηγορία ${rule.action.subcategory}`:'',rule.action.note?`σχόλιο «${rule.action.note}» αν είναι κενό`:''].filter(Boolean);
+    return parts.join(' · ')||'λείπει ενέργεια';
+  };
+  const invalidReason=(rule:TransactionRule)=>{
+    if(rule.match.accountId&&!accountIds.has(rule.match.accountId))return 'Ο λογαριασμός της συνθήκης δεν είναι πλέον διαθέσιμος.';
+    if(rule.action.category&&!categoryNames.has(rule.action.category))return 'Η κατηγορία της ενέργειας δεν είναι πλέον διαθέσιμη.';
+    return '';
   };
 
   return <div className="budget-rule-settings">
@@ -72,10 +101,24 @@ export function BudgetRuleSettings({data,asOf,onUpsertBudget,onDeleteBudget,onUp
       {budgets.length?<div className="budget-settings-list">{budgets.map(row=><article key={row.id} className={`budget-setting-row ${row.status}`}><div><b>{row.scope==='overall'?'Συνολικό discretionary':row.category}</b><small>{money.format(row.used)} από {money.format(row.limit)} · {Math.round(row.ratio*100)}%</small></div><div className="budget-meter" role="progressbar" aria-label={`Χρήση budget ${row.scope==='overall'?'συνολικά':row.category}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(100,Math.round(row.ratio*100))} aria-valuetext={`${Math.round(row.ratio*100)}%`}><i style={{width:`${Math.min(100,row.ratio*100)}%`}}/></div><button type="button" className="icon-button" aria-label={`Διαγραφή budget ${row.scope==='overall'?'συνολικά':row.category}`} onClick={()=>onDeleteBudget(row.id)}><Trash2/></button></article>)}</div>:<div className="empty-inline">Δεν υπάρχουν budgets για τον επιλεγμένο μήνα.</div>}
     </section>
 
-    <section className="panel neo-raised rule-settings-panel"><div className="panel-head"><div><span>Κανόνες συναλλαγών</span><small>First match wins: μικρότερη προτεραιότητα πρώτα, μετά σταθερό id. Οι κανόνες εφαρμόζονται μόνο σε νέες κινήσεις και δεν ξαναγράφουν ιστορικό.</small></div><ListFilter/></div>
-      <div className="settings-form rule-editor-grid"><label><span>Όνομα</span><input value={ruleName} onChange={event=>setRuleName(event.target.value)}/></label><label><span>Προτεραιότητα</span><input inputMode="numeric" value={rulePriority} onChange={event=>setRulePriority(event.target.value)}/></label><label><span>Περιγραφή</span><input value={ruleDescription} placeholder="π.χ. supermarket" onChange={event=>setRuleDescription(event.target.value)}/></label><label><span>Merchant / λέξη</span><input value={ruleMerchant} placeholder="προαιρετικό" onChange={event=>setRuleMerchant(event.target.value)}/></label><label><span>Τρόπος κειμένου</span><AppSelectInput value={ruleMode} onChange={event=>setRuleMode(event.target.value as 'contains'|'equals')}><option value="contains">Περιέχει</option><option value="equals">Ακριβώς</option></AppSelectInput></label><label><span>Λογαριασμός match</span><AppSelectInput value={ruleAccount} onChange={event=>setRuleAccount(event.target.value)}><option value="">Οποιοσδήποτε</option>{accounts.map(account=><option key={account.id} value={account.id}>{accountDisplayName(data,account.id)}</option>)}</AppSelectInput></label><label><span>Κατηγορία ενέργειας</span><AppSelectInput value={ruleCategory} onChange={event=>setRuleCategory(event.target.value)}><option value="">Χωρίς αλλαγή</option>{data.state.settings.expenseCategories.map(category=><option key={category} value={category}>{category}</option>)}</AppSelectInput></label><label><span>Υποκατηγορία προεπιλογής</span><input value={ruleSubcategory} placeholder="προαιρετικό" onChange={event=>setRuleSubcategory(event.target.value)}/></label><label><span>Σχόλιο προεπιλογής</span><input value={ruleDefaultNote} placeholder="μόνο αν το νέο event δεν έχει σχόλιο" onChange={event=>setRuleDefaultNote(event.target.value)}/></label><label><span>Πεδίο εφαρμογής</span><AppSelectInput value={ruleScope} onChange={event=>setRuleScope(event.target.value as 'all'|TransactionRuleScope)}><option value="manual">Νέες χειροκίνητες</option><option value="imported">Νέες imported</option><option value="review">Review-confirmed</option><option value="all">Όλα τα νέα scopes</option></AppSelectInput></label></div>
-      <div className="rule-preview" role="status" aria-live="polite"><div className="logic-note compact"><ListFilter/><span>Προεπισκόπηση μόνο: {previewMatches.length} υπάρχουσες κινήσεις στο επιλεγμένο scope ταιριάζουν. Δεν αλλάζει καμία από αυτές.</span></div>{previewMatches.length?<ul>{previewMatches.slice(0,3).map(event=><li key={event.id}><span>{event.note}</span><b>{money.format(event.amount)}</b></li>)}</ul>:null}</div>{ruleError?<FormError id="rule-editor-error">{ruleError}</FormError>:null}<div className="editor-actions">{editingRuleId?<button type="button" className="secondary" onClick={resetRule}>Ακύρωση επεξεργασίας</button>:null}<button type="button" className="save-button" onClick={saveRule}>{editingRuleId?'Ενημέρωση κανόνα':'Προσθήκη κανόνα'}</button></div>
-      {rules.length?<div className="rule-settings-list">{rules.map(rule=><article key={rule.id} className={rule.enabled?'':'disabled'}><div><b>{rule.name}</b><small>#{rule.priority} · {rule.match.description||rule.match.merchant||rule.match.accountId} → {[rule.action.category,rule.action.subcategory,rule.action.note].filter(Boolean).join(' · ')||'metadata'} · {rule.scopes.join(', ')}</small></div><div className="rule-row-actions"><button type="button" className="secondary" onClick={()=>onUpsertRule({...rule,enabled:!rule.enabled,updatedAt:now()})}>{rule.enabled?'Απενεργοποίηση':'Ενεργοποίηση'}</button><button type="button" className="icon-button" aria-label={`Επεξεργασία κανόνα ${rule.name}`} onClick={()=>editRule(rule)}><Pencil/></button><button type="button" className="icon-button" aria-label={`Διαγραφή κανόνα ${rule.name}`} onClick={()=>onDeleteRule(rule.id)}><Trash2/></button></div></article>)}</div>:<div className="empty-inline">Δεν υπάρχουν κανόνες συναλλαγών. Οι νέες κινήσεις παραμένουν χειροκίνητες.</div>}
-    </section>
+    <details className="panel neo-raised technical-settings rule-settings-panel" data-advanced-automations>
+      <summary><ListFilter size={16}/> Προχωρημένα · Αυτοματισμοί</summary>
+      <div className="panel-head"><div><span>Αυτόματη ταξινόμηση νέων κινήσεων</span><small>Οι ενεργοί αυτοματισμοί ελέγχονται με τη σειρά που φαίνονται. Ο πρώτος που ταιριάζει εφαρμόζεται μόνο στη νέα κίνηση· το ιστορικό δεν αλλάζει.</small></div><ListFilter/></div>
+      <div className="settings-form rule-editor-grid" aria-label="Δημιουργία αυτοματισμού συναλλαγών">
+        <label><span>Όνομα αυτοματισμού</span><input value={ruleName} placeholder="π.χ. Supermarket → Τρόφιμα" onChange={event=>setRuleName(event.target.value)}/></label>
+        <label><span>Όταν η περιγραφή</span><AppSelectInput value={ruleMode} onChange={event=>setRuleMode(event.target.value as 'contains'|'equals')}><option value="contains">περιέχει</option><option value="equals">είναι ακριβώς</option></AppSelectInput></label>
+        <label><span>Κείμενο περιγραφής</span><input value={ruleDescription} placeholder="π.χ. supermarket" onChange={event=>setRuleDescription(event.target.value)}/></label>
+        <label><span>Και περιέχει επίσης <em>προαιρετικό</em></span><input value={ruleMerchant} placeholder="δεύτερη λέξη ή merchant" onChange={event=>setRuleMerchant(event.target.value)}/></label>
+        <label><span>Και ο λογαριασμός είναι <em>προαιρετικό</em></span><AppSelectInput value={ruleAccount} onChange={event=>setRuleAccount(event.target.value)}>{ruleAccount&&!accountIds.has(ruleAccount)?<option value={ruleAccount} disabled>Μη διαθέσιμος · {ruleAccount}</option>:null}<option value="">Οποιοσδήποτε λογαριασμός</option>{accounts.map(account=><option key={account.id} value={account.id}>{accountDisplayName(data,account.id)}</option>)}</AppSelectInput></label>
+        <label><span>Τότε βάλε κατηγορία</span><AppSelectInput value={ruleCategory} onChange={event=>setRuleCategory(event.target.value)}>{ruleCategory&&!categoryNames.has(ruleCategory)?<option value={ruleCategory} disabled>Μη διαθέσιμη · {ruleCategory}</option>:null}<option value="">Χωρίς αλλαγή κατηγορίας</option>{data.state.settings.expenseCategories.map(category=><option key={category} value={category}>{category}</option>)}</AppSelectInput></label>
+        <label><span>Και υποκατηγορία <em>προαιρετικό</em></span><input value={ruleSubcategory} placeholder="μόνο για νέα κίνηση" onChange={event=>setRuleSubcategory(event.target.value)}/></label>
+        <label><span>Και σχόλιο αν είναι κενό <em>προαιρετικό</em></span><input value={ruleDefaultNote} placeholder="δεν αντικαθιστά σχόλιο χρήστη" onChange={event=>setRuleDefaultNote(event.target.value)}/></label>
+        <label><span>Πότε να λειτουργεί</span><AppSelectInput value={ruleScope} onChange={event=>setRuleScope(event.target.value as 'all'|TransactionRuleScope)}><option value="manual">Όταν την καταχωρίζω εγώ</option><option value="imported">Όταν έρχεται από εισαγωγή</option><option value="review">Όταν επιβεβαιώνεται από έλεγχο</option><option value="all">Σε κάθε νέα υποστηριζόμενη κίνηση</option></AppSelectInput></label>
+      </div>
+      <div className="rule-preview" role="status" aria-live="polite"><div className="logic-note compact"><ListFilter/><span>Μόνο προεπισκόπηση: {previewMatches.length} υπάρχουσες κινήσεις θα ταίριαζαν με αυτές τις συνθήκες. Δεν αλλάζει καμία από αυτές.</span></div>{previewMatches.length?<ul>{previewMatches.slice(0,3).map(event=><li key={event.id}><span>{event.note}</span><b>{money.format(event.amount)}</b></li>)}</ul>:null}</div>
+      {ruleError?<FormError id="rule-editor-error">{ruleError}</FormError>:null}
+      <div className="editor-actions">{editingRuleId?<button type="button" className="secondary" onClick={resetRule}>Ακύρωση επεξεργασίας</button>:null}<button type="button" className="save-button" onClick={saveRule}>{editingRuleId?'Ενημέρωση αυτοματισμού':'Προσθήκη αυτοματισμού'}</button></div>
+      {rules.length?<div className="rule-settings-list" aria-label="Σειρά αυτοματισμών">{rules.map((rule,index)=>{const invalid=invalidReason(rule);return <article key={rule.id} className={rule.enabled?'':'disabled'} data-rule-invalid={invalid?'true':'false'}><div><b>{index+1}. {rule.name}</b><small><strong>Όταν</strong> {conditionLabel(rule)} · <strong>τότε</strong> {actionLabel(rule)} · {rule.scopes.length===3?'κάθε νέα υποστηριζόμενη κίνηση':rule.scopes.map(scopeLabel).join(', ')}</small>{invalid?<small role="alert">Χρειάζεται έλεγχο: {invalid}</small>:null}</div><div className="rule-row-actions"><button type="button" className="icon-button" aria-label={`Μετακίνηση αυτοματισμού ${rule.name} προς τα πάνω`} disabled={index===0} onClick={()=>moveRule(index,-1)}><ChevronUp/></button><button type="button" className="icon-button" aria-label={`Μετακίνηση αυτοματισμού ${rule.name} προς τα κάτω`} disabled={index===rules.length-1} onClick={()=>moveRule(index,1)}><ChevronDown/></button><button type="button" className="secondary" onClick={()=>onUpsertRule({...rule,enabled:!rule.enabled,updatedAt:now()})}>{rule.enabled?'Παύση':'Ενεργοποίηση'}</button><button type="button" className="icon-button" aria-label={`Επεξεργασία αυτοματισμού ${rule.name}`} onClick={()=>editRule(rule)}><Pencil/></button><button type="button" className="icon-button" aria-label={`Διαγραφή αυτοματισμού ${rule.name}`} onClick={()=>onDeleteRule(rule.id)}><Trash2/></button></div></article>})}</div>:<div className="empty-inline">Δεν υπάρχουν αυτοματισμοί. Οι νέες κινήσεις παραμένουν χειροκίνητες.</div>}
+    </details>
   </div>;
 }
