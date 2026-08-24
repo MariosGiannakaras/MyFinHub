@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 2,
+  "layout": "surface-first-latest-only",
+  "appVersion": "v1.3",
+  "suite": "frontend",
+  "surface": "core-flows",
+  "generatedAt": "2026-08-24T07:30:47.979Z",
+  "timeZone": "Europe/Athens",
+  "source": {
+    "sha": "16580f5a1ce2dec4083e356960394b52e0fb7add",
+    "shortSha": "16580f5a",
+    "branch": "feat/237-shell-dashboard-hierarchy"
+  },
+  "screenshots": [
+    "visual-qa/core-flows/v1.3__2026-08-24_103047__qa-frontend__source-1__desktop-cards.png",
+    "visual-qa/core-flows/v1.3__2026-08-24_103047__qa-frontend__source-1__mobile-cards.png"
+  ]
+}

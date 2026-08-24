@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 2,
+  "layout": "surface-first-latest-only",
+  "appVersion": "v1.3",
+  "suite": "taxonomy-management",
+  "surface": "taxonomy",
+  "generatedAt": "2026-08-24T07:30:47.979Z",
+  "timeZone": "Europe/Athens",
+  "source": {
+    "sha": "16580f5a1ce2dec4083e356960394b52e0fb7add",
+    "shortSha": "16580f5a",
+    "branch": "feat/237-shell-dashboard-hierarchy"
+  },
+  "screenshots": [
+    "visual-qa/taxonomy/v1.3__2026-08-24_103047__qa-taxonomy-management__taxonomy-management-desktop.png",
+    "visual-qa/taxonomy/v1.3__2026-08-24_103047__qa-taxonomy-management__taxonomy-management-mobile.png"
+  ]
+}
