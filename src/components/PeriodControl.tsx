@@ -1,11 +1,7 @@
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { canAdvanceReportingMonth, localMonthKey, shiftReportingMonth } from '../lib/reportingPeriod';
 import { Tooltip } from './Tooltip';
-
-function shiftMonth(month:string,delta:number){
-  const [year,rawMonth]=month.split('-').map(Number);
-  const date=new Date(Date.UTC(year,rawMonth-1+delta,1));
-  return `${date.getUTCFullYear()}-${String(date.getUTCMonth()+1).padStart(2,'0')}`;
-}
 
 function monthLabel(month:string){
   const [year,rawMonth]=month.split('-').map(Number);
@@ -14,5 +10,13 @@ function monthLabel(month:string){
 }
 
 export function PeriodControl({month,onChange}:{month:string;onChange:(month:string)=>void}){
-  return <div className="period-control" aria-label="Περίοδος αναφοράς"><Tooltip label="Προηγούμενος μήνας"><button type="button" aria-label="Προηγούμενος μήνας" onClick={()=>onChange(shiftMonth(month,-1))}><ChevronLeft size={17}/></button></Tooltip><span>{monthLabel(month)}</span><Tooltip label="Επόμενος μήνας"><button type="button" aria-label="Επόμενος μήνας" onClick={()=>onChange(shiftMonth(month,1))}><ChevronRight size={17}/></button></Tooltip></div>;
+  const [currentMonth,setCurrentMonth]=useState(()=>localMonthKey());
+  useEffect(()=>{
+    const refresh=()=>setCurrentMonth(localMonthKey());
+    const timer=window.setInterval(refresh,60_000);
+    return()=>window.clearInterval(timer);
+  },[]);
+  const canAdvance=canAdvanceReportingMonth(month,currentMonth);
+  const nextLabel=canAdvance?'Επόμενος μήνας':'Επόμενος μήνας — δεν υπάρχει μελλοντική περίοδος αναφοράς';
+  return <div className="period-control" aria-label="Περίοδος αναφοράς"><Tooltip label="Προηγούμενος μήνας"><button type="button" aria-label="Προηγούμενος μήνας" onClick={()=>onChange(shiftReportingMonth(month,-1))}><ChevronLeft size={17}/></button></Tooltip><span>{monthLabel(month)}</span><Tooltip label={nextLabel}><button type="button" aria-label={nextLabel} disabled={!canAdvance} onClick={()=>{if(canAdvance)onChange(shiftReportingMonth(month,1))}}><ChevronRight size={17}/></button></Tooltip></div>;
 }
