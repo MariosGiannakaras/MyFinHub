@@ -14,6 +14,8 @@ describe('credit-card statement cycles',()=>{
   it('keeps historical boundary helpers explicit while production configuration is locked separately',()=>{
     expect(statementCloseDateForPurchase('2026-08-25',25,'include-closing-day')).toBe('2026-08-25');
     expect(statementCloseDateForPurchase('2026-08-25',25,'next-cycle')).toBe('2026-09-25');
+    expect(statementOpenDateForClose('2026-09-25',25,'include-closing-day')).toBe('2026-08-26');
+    expect(statementOpenDateForClose('2026-09-25',25,'next-cycle')).toBe('2026-08-25');
   });
 
   it('locks configured credit cards to the owner-approved next-cycle policy prospectively',()=>{
@@ -22,10 +24,10 @@ describe('credit-card statement cycles',()=>{
     const legacyConfigured={...card,statementClosingDay:12,statementDueDay:20,statementBoundaryRule:'include-closing-day' as const};
     expect(cardStatementConfiguration(legacyConfigured)).toEqual({closingDay:12,dueDay:20,boundary:'next-cycle'});
     data.state.cards=(data.state.cards??[]).map(item=>item.id==='qa-card'?legacyConfigured:item);
-    const event:FinanceEvent={id:'closing-day-purchase',date:'2026-08-12',kind:'card_purchase',amount:40,note:'QA close date',cardId:'qa-card',legs:[{accountId:'credit-card',amount:-40}],createdAt:'2026-08-12T10:00:00.000Z',updatedAt:'2026-08-12T10:00:00.000Z'};
-    const prepared=prepareCreditStatementEvent(data,event,'2026-08-12T10:00:00.000Z');
-    expect(prepared.event.statementId).toBe('qa-card:2026-09-12');
-    expect(prepared.statements.find(item=>item.id==='qa-card:2026-09-12')?.boundaryRule).toBe('next-cycle');
+    const event:FinanceEvent={id:'closing-day-purchase',date:'2026-10-12',kind:'card_purchase',amount:40,note:'QA close date',cardId:'qa-card',legs:[{accountId:'credit-card',amount:-40}],createdAt:'2026-10-12T10:00:00.000Z',updatedAt:'2026-10-12T10:00:00.000Z'};
+    const prepared=prepareCreditStatementEvent(data,event,'2026-10-12T10:00:00.000Z');
+    expect(prepared.event.statementId).toBe('qa-card:2026-11-12');
+    expect(prepared.statements.find(item=>item.id==='qa-card:2026-11-12')).toMatchObject({openDate:'2026-10-12',boundaryRule:'next-cycle'});
   });
 
   it('resolves the first configured due day strictly after statement close',()=>{
@@ -60,10 +62,10 @@ describe('credit-card statement cycles',()=>{
   it('uses the approved boundary once closing/due days exist even if older metadata had no boundary choice',()=>{
     const data=qaFinanceData();
     data.state.cards=(data.state.cards??[]).map(card=>card.id==='qa-card'?{...card,statementBoundaryRule:undefined}:card);
-    const event:FinanceEvent={id:'approved-default-purchase',date:'2026-08-12',kind:'card_purchase',amount:25,note:'QA approved default',cardId:'qa-card',legs:[{accountId:'credit-card',amount:-25}],createdAt:'2026-08-12T10:00:00.000Z',updatedAt:'2026-08-12T10:00:00.000Z'};
+    const event:FinanceEvent={id:'approved-default-purchase',date:'2026-10-12',kind:'card_purchase',amount:25,note:'QA approved default',cardId:'qa-card',legs:[{accountId:'credit-card',amount:-25}],createdAt:'2026-10-12T10:00:00.000Z',updatedAt:'2026-10-12T10:00:00.000Z'};
     const prepared=prepareCreditStatementEvent(data,event);
-    expect(prepared.event.statementId).toBe('qa-card:2026-09-12');
-    expect(prepared.statements.find(item=>item.id==='qa-card:2026-09-12')?.boundaryRule).toBe('next-cycle');
+    expect(prepared.event.statementId).toBe('qa-card:2026-11-12');
+    expect(prepared.statements.find(item=>item.id==='qa-card:2026-11-12')).toMatchObject({openDate:'2026-10-12',boundaryRule:'next-cycle'});
   });
 
   it('derives partial and full payment state from real linked events',()=>{
