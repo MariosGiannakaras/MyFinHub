@@ -67,9 +67,10 @@ try{
   await waitFor("function(){return Boolean(document.querySelector('[data-deleted-statement-history]'))}",'deleted statement history');
   await c.call("function(){document.querySelector('.card-archive-manager .close-picker')?.click();return true}");
   await waitFor("function(){return !document.querySelector('.card-archive-manager')}",'archive manager close after deletion');
-  const deleted=await c.call("function(){const section=document.querySelector('.deleted-credit-history');return {text:section?.textContent||'',leaks:/QA Settled|2222|ΠΕΙΡΑΙΩΣ/.test(section?.textContent||''),overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}}");
+  const deleted=await c.call("function(){const section=document.querySelector('.deleted-credit-history');const identity=section?.querySelector('.deleted-credit-history-card > .panel-head')?.textContent||'';const text=section?.textContent||'';return {text,identity,identityLeaksNickname:/QA Settled/.test(identity),leaksProtectedIdentity:/2222|ΠΕΙΡΑΙΩΣ/.test(text),overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}}");
   assert(deleted.text.includes('Διαγραμμένη κάρτα')&&deleted.text.includes('δήλωση'),'deleted-card statement history stays readable with neutral identity');
-  assert(!deleted.leaks,'deleted statement history does not retain nickname, last4 or bank identity');
+  assert(!deleted.identityLeaksNickname,'deleted card identity does not retain the former nickname');
+  assert(!deleted.leaksProtectedIdentity,'deleted statement history does not retain last4 or bank identity');
   assert(deleted.overflow<=1,`deleted history desktop overflow ${deleted.overflow}px`);
   await shot(c,'credit-deleted-statement-history-desktop');
   await c.send('Emulation.setDeviceMetricsOverride',{width:375,height:812,deviceScaleFactor:1,mobile:true});
