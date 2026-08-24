@@ -4,16 +4,16 @@
   "appVersion": "v1.3",
   "suite": "receipt-local-ocr",
   "surface": "receipts",
-  "generatedAt": "2026-08-24T17:39:38.049Z",
+  "generatedAt": "2026-08-24T20:59:02.462Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "0e2c6ca6687250400d3e51da235d73388496d90f",
-    "shortSha": "0e2c6ca6",
-    "branch": "feat/240-brand-registry-reconciliation"
+    "sha": "7732cfe65fa695f277738017d9e7bea3302a73a9",
+    "shortSha": "7732cfe6",
+    "branch": "feat/233-safe-taxonomy-retirement"
   },
   "screenshots": [
-    "visual-qa/receipts/v1.3__2026-08-24_203938__qa-receipt-local-ocr__receipt-local-captured.png",
-    "visual-qa/receipts/v1.3__2026-08-24_203938__qa-receipt-local-ocr__receipt-local-mobile-empty.png",
-    "visual-qa/receipts/v1.3__2026-08-24_203938__qa-receipt-local-ocr__receipt-local-ocr-proposal.png"
+    "visual-qa/receipts/v1.3__2026-08-24_235902__qa-receipt-local-ocr__receipt-local-captured.png",
+    "visual-qa/receipts/v1.3__2026-08-24_235902__qa-receipt-local-ocr__receipt-local-mobile-empty.png",
+    "visual-qa/receipts/v1.3__2026-08-24_235902__qa-receipt-local-ocr__receipt-local-ocr-proposal.png"
   ]
 }
