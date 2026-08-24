@@ -38,7 +38,7 @@ try{
 
   await c.call("function(){document.querySelector('[data-primary-credit-statement] button.save-button')?.click();return true}");
   await waitFor("function(){return Boolean(document.querySelector('[data-credit-statement-payment-preview]'))}",'statement payment preview');
-  const preview=await c.call("function(){const box=document.querySelector('[data-credit-statement-payment-preview]');const amount=document.querySelector('.contextual-quick-modal input[inputmode=decimal],.contextual-quick-modal input[type=text]');return {text:box?.textContent||'',amount:amount?.value||'',effect:document.querySelector('.payment-effect-summary')?.textContent||''}}");
+  const preview=await c.call("function(){const box=document.querySelector('[data-credit-statement-payment-preview]');return {text:box?.textContent||'',effect:document.querySelector('.payment-effect-summary')?.textContent||''}}");
   assert(preview.text.includes('90,00')&&preview.text.includes('Ακουστικά'),'payment preview shows remaining balance and included purchase');
   assert(preview.effect.includes('δήλωση')&&preview.effect.includes('μία πραγματική κίνηση'),'payment confirmation preserves one-real-event semantics');
   await shot(c,'credit-statement-payment-desktop');
@@ -62,9 +62,11 @@ try{
   assert(archive.text.includes('Statements 1'),'archive manager preserves statement count');
   assert(archive.deleteEnabled,'settled archived card remains eligible for hard delete');
   await c.call("function(){const row=[...document.querySelectorAll('.card-archive-row')].find(item=>(item.textContent||'').includes('QA Settled'));row?.querySelector('button.danger:not([disabled])')?.click();return true}");
-  await waitFor("function(){return Boolean(document.querySelector('[role=dialog] button.danger, [role=dialog] .danger'))}",'hard-delete confirmation');
+  await waitFor("function(){return [...document.querySelectorAll('[role=dialog] button')].some(item=>(item.textContent||'').includes('Ολική διαγραφή'))}",'hard-delete confirmation');
   await c.call("function(){const buttons=[...document.querySelectorAll('[role=dialog] button')];const confirm=buttons.find(item=>(item.textContent||'').includes('Ολική διαγραφή'));confirm?.click();return Boolean(confirm)}");
   await waitFor("function(){return Boolean(document.querySelector('[data-deleted-statement-history]'))}",'deleted statement history');
+  await c.call("function(){document.querySelector('.card-archive-manager .close-picker')?.click();return true}");
+  await waitFor("function(){return !document.querySelector('.card-archive-manager')}",'archive manager close after deletion');
   const deleted=await c.call("function(){const section=document.querySelector('.deleted-credit-history');return {text:section?.textContent||'',leaks:/QA Settled|2222|ΠΕΙΡΑΙΩΣ/.test(section?.textContent||''),overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}}");
   assert(deleted.text.includes('Διαγραμμένη κάρτα')&&deleted.text.includes('δήλωση'),'deleted-card statement history stays readable with neutral identity');
   assert(!deleted.leaks,'deleted statement history does not retain nickname, last4 or bank identity');
