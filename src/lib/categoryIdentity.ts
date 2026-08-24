@@ -186,3 +186,32 @@ export function moveSubcategoryIdentity(settings:FinanceSettings,kind:CategoryKi
   if(subcategoryIcons[oldIconKey]){subcategoryIcons[newIconKey]=subcategoryIcons[oldIconKey];delete subcategoryIcons[oldIconKey]}
   return withTree({...normalized,subcategoryIcons,categoryIdentities:records},kind,tree);
 }
+
+export function retireSubcategoryIdentity(settings:FinanceSettings,kind:CategoryKind,identityId:string):FinanceSettings{
+  const normalized=ensureCategoryIdentities(settings);
+  const records={...(normalized.categoryIdentities??{})};
+  const record=records[identityId];
+  if(!record||record.kind!==kind||!record.parentId)throw new Error('Η υποκατηγορία δεν βρέθηκε.');
+  const parent=records[record.parentId];
+  if(!parent)throw new Error('Η γονική κατηγορία δεν βρέθηκε.');
+  const tree=categoryTree(normalized,kind).map(item=>({...item,subcategories:[...item.subcategories]}));
+  const parentIndex=tree.findIndex(item=>sameLabel(item.name,parent.label));
+  if(parentIndex<0)throw new Error('Η γονική κατηγορία δεν υπάρχει πλέον στο ενεργό δέντρο.');
+  const childIndex=tree[parentIndex].subcategories.findIndex(label=>sameLabel(label,record.label));
+  if(childIndex<0)throw new Error('Η υποκατηγορία έχει ήδη αποσυρθεί από το ενεργό δέντρο.');
+  tree[parentIndex]={...tree[parentIndex],subcategories:tree[parentIndex].subcategories.filter((_,index)=>index!==childIndex)};
+  return withTree({...normalized,categoryIdentities:records},kind,tree);
+}
+
+export function retireCategoryIdentity(settings:FinanceSettings,kind:CategoryKind,identityId:string):FinanceSettings{
+  const normalized=ensureCategoryIdentities(settings);
+  const records={...(normalized.categoryIdentities??{})};
+  const record=records[identityId];
+  if(!record||record.kind!==kind||record.parentId)throw new Error('Η κατηγορία δεν βρέθηκε.');
+  const tree=categoryTree(normalized,kind).map(item=>({...item,subcategories:[...item.subcategories]}));
+  const index=tree.findIndex(item=>sameLabel(item.name,record.label));
+  if(index<0)throw new Error('Η κατηγορία έχει ήδη αποσυρθεί από το ενεργό δέντρο.');
+  if(tree[index].subcategories.length)throw new Error('Μετέφερε ή απέσυρε πρώτα όλες τις ενεργές υποκατηγορίες αυτής της κατηγορίας.');
+  tree.splice(index,1);
+  return withTree({...normalized,categoryIdentities:records},kind,tree);
+}

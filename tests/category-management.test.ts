@@ -41,9 +41,10 @@ describe('category management',()=>{
     expect(shell.match(/aria-label="Μετάβαση στην Αρχική \/ Dashboard"/g)).toHaveLength(2);
   });
 
-  it('uses one direct Categories & Icons workspace instead of textarea tree editors',()=>{
+  it('uses one direct Categories & Icons workspace with safe retirement instead of destructive delete',()=>{
     expect(settingsSource).not.toContain('CategoryTreeEditor');
     expect(settingsSource).toContain('<CategoryIconsWorkspace');
+    expect(settingsSource).toContain('data={data} asOf={asOf}');
     expect(settingsSource).toContain('onTaxonomyOperation={runTaxonomyOperation}');
     expect(workspaceSource).toContain("type:'add-category'");
     expect(workspaceSource).toContain("type:'add-subcategory'");
@@ -52,12 +53,19 @@ describe('category management',()=>{
     expect(workspaceSource).toContain("type:'reorder-category'");
     expect(workspaceSource).toContain("type:'reorder-subcategory'");
     expect(workspaceSource).toContain("type:'move-subcategory'");
+    expect(workspaceSource).toContain("type:'retire-category'");
+    expect(workspaceSource).toContain("type:'retire-subcategory'");
+    expect(workspaceSource).toContain('taxonomyRetirementDependencies');
+    expect(workspaceSource).toContain('data-taxonomy-retirement-blockers');
+    expect(workspaceSource).toContain('Δεν θα γίνει αυτόματη μεταφορά');
     expect(workspaceSource).not.toMatch(/type:'delete-|Διαγραφή κατηγορίας|Διαγραφή υποκατηγορίας/);
   });
 
   it('provides keyboard-accessible reorder and edit controls without drag-only semantics',()=>{
     expect(workspaceSource).toContain('Μετακίνηση ${category.name} προς τα πάνω');
     expect(workspaceSource).toContain('Μετακίνηση ${subcategory} προς τα κάτω');
+    expect(workspaceSource).toContain('Απόσυρση κατηγορίας ${category.name}');
+    expect(workspaceSource).toContain('Απόσυρση υποκατηγορίας ${subcategory}');
     expect(workspaceSource).toContain("event.key==='Enter'");
     expect(workspaceSource).toContain("event.key==='Escape'");
     expect(workspaceSource).not.toContain('draggable=');
