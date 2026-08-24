@@ -1,5 +1,5 @@
-import payzyLogo from '../assets/canonical-credit-card/payzy-logo.png';
-import vivaLogo from '../assets/canonical-credit-card/viva-logo.png';
+const payzyLogo=new URL('../assets/canonical-credit-card/payzy-logo.png',import.meta.url).href;
+const vivaLogo=new URL('../assets/canonical-credit-card/viva-logo.png',import.meta.url).href;
 
 export type BankBrandKey='piraeus'|'revolut'|'alpha'|'payzy'|'viva'|'cash'|'generic';
 
