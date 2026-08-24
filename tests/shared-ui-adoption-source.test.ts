@@ -15,10 +15,11 @@ const rendered=read('scripts/ui-ux-visual-evidence-qa.mjs');
 
 describe('shared finance UI adoption contracts',()=>{
   it('uses the shared MoneyInput in the remaining core editable amount flows',()=>{
-    for(const source of [lending,recurring,loans,budgetRules]){
-      expect(source).toContain("from '../components/MoneyInput'");
-      expect(source).toContain('<MoneyInput');
-    }
+    expect(lending).toContain("from '../components/MoneyInput'");
+    expect(recurring).toContain("from '../components/MoneyInput'");
+    expect(loans).toContain("from '../components/MoneyInput'");
+    expect(budgetRules).toContain("from './MoneyInput'");
+    for(const source of [lending,recurring,loans,budgetRules])expect(source).toContain('<MoneyInput');
     expect(lending).not.toMatch(/<input[^>]+inputMode=\"decimal\"[^>]+value=\{amount\}/);
     expect(recurring).not.toMatch(/<input[^>]+type=\"number\"[^>]+value=\{edit\.amount/);
     expect(loans).not.toMatch(/<input[^>]+type=\"number\"[^>]+value=\{edit\.(?:total|installment)/);
