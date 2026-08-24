@@ -66,6 +66,7 @@ input::placeholder,textarea::placeholder{color:var(--muted-2)!important}option{b
 .login-shield{background:var(--accent-soft)!important;color:var(--accent)!important}.login-error,.session-error-banner{background:var(--error-bg)!important;border-color:var(--error)!important;color:var(--error)!important}.mfa-secret{background:var(--surface-inset)!important;color:var(--ink)!important}.login-logout{background:var(--surface-translucent)!important;border-color:var(--border-subtle)!important;color:var(--ink-2)!important}
 .app-tooltip-bubble{background:var(--ink)!important;color:var(--canvas)!important;box-shadow:var(--shadow-flat)!important}
 button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible,[tabindex]:focus-visible{outline-color:var(--focus-outline)!important}
+.forecast-chart{background:var(--surface-inset)!important;border-color:var(--border-subtle)!important;box-shadow:var(--shadow-inset)!important}
 .recharts-cartesian-grid line{stroke:var(--chart-grid)!important}.recharts-cartesian-axis-tick-value,.recharts-legend-item-text{fill:var(--muted)!important;color:var(--muted)!important}.recharts-default-tooltip{background:var(--surface-elevated)!important;border-color:var(--border-strong)!important;color:var(--ink)!important}
 `;
 
