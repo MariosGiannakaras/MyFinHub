@@ -1,10 +1,9 @@
 import { useEffect, useRef } from 'react';
+import { bankBrandAsset, bankBrandCardMark, bankBrandKey } from '../lib/bankBrands';
 import { defaultDesignForCard } from '../lib/cardDesigns';
 import { CardVaultClientError, cardVaultErrorMessage, revealCardSecret } from '../lib/cardVaultClient';
 import { readLocalCvv } from '../lib/localCvvVault';
 import type { CardBank, PaymentCard } from '../types';
-import vivaLogo from '../assets/canonical-credit-card/viva-logo.png';
-import payzyLogo from '../assets/canonical-credit-card/payzy-logo.png';
 import payzyProLogo from '../assets/canonical-credit-card/payzy-pro-logo.png';
 import '../styles/canonical-credit-card-stack.css';
 import '../styles/canonical-credit-card-host.css';
@@ -78,21 +77,30 @@ function cardInlineStyle(card:RuntimeCard){
 }
 function brandMarkup(card:RuntimeCard){
   const label=card.bankLabel||'Card';
-  if(card.template.startsWith('revolut'))return '<span class="card-bank-name revolut-wordmark">Revolut</span>';
+  const key=bankBrandKey(card.bankId,label);
+  const asset=bankBrandAsset(key);
+  const mark=asset?bankBrandCardMark(asset):label;
+  const source=asset?.source??'fallback';
+  const metadata=`data-bank-brand="${esc(key)}" data-bank-logo-source="${esc(source)}"`;
+  if(card.template.startsWith('revolut'))return `<span class="card-bank-name revolut-wordmark" ${metadata}>${esc(mark)}</span>`;
   if(card.template.startsWith('piraeus-')){
-    if(card.template==='piraeus-green')return '<span class="card-bank-name"><span class="piraeus-slashes" style="margin-right:7px"><i></i><i></i><i></i></span>Piraeus</span>';
-    return '<span class="card-bank-name piraeus-logo"><span class="piraeus-slashes"><i></i><i></i><i></i></span>Piraeus</span>';
+    if(card.template==='piraeus-green')return `<span class="card-bank-name" ${metadata}><span class="piraeus-slashes" style="margin-right:7px"><i></i><i></i><i></i></span>${esc(mark)}</span>`;
+    return `<span class="card-bank-name piraeus-logo" ${metadata}><span class="piraeus-slashes"><i></i><i></i><i></i></span>${esc(mark)}</span>`;
   }
   if(card.template.startsWith('alpha')){
-    if(card.template==='alpha')return '<span class="card-bank-name">ALPHA BANK</span><span class="alpha-enter">enter</span>';
-    return '<span class="card-bank-name">ALPHA BANK</span><span class="alpha-bonus-word">bonus</span>';
+    if(card.template==='alpha')return `<span class="card-bank-name" ${metadata}>${esc(mark)}</span><span class="alpha-enter">enter</span>`;
+    return `<span class="card-bank-name" ${metadata}>${esc(mark)}</span><span class="alpha-bonus-word">bonus</span>`;
   }
-  if(card.template.startsWith('viva'))return `<img class="brand-logo-img viva-brand-img" src="${esc(vivaLogo)}" alt="Viva Wallet" />`;
+  if(card.template.startsWith('viva')){
+    if(asset?.source==='local-image')return `<img class="brand-logo-img viva-brand-img" src="${esc(asset.src)}" alt="" ${metadata} />`;
+    return `<span class="card-bank-name" ${metadata}>${esc(mark)}</span>`;
+  }
   if(card.template.startsWith('payzy')){
-    const src=card.template==='payzy-pro'?payzyProLogo:payzyLogo;
-    return `<img class="brand-logo-img payzy-brand-img" src="${esc(src)}" alt="payzy by COSMOTE" />`;
+    const src=card.template==='payzy-pro'?payzyProLogo:asset?.source==='local-image'?asset.src:null;
+    if(src)return `<img class="brand-logo-img payzy-brand-img" src="${esc(src)}" alt="" ${metadata} />`;
+    return `<span class="card-bank-name" ${metadata}>${esc(mark)}</span>`;
   }
-  return `<span class="brand-mark custom-mark">${esc(label.slice(0,1))}</span><span class="card-bank-name">${esc(label)}</span>`;
+  return `<span class="brand-mark custom-mark" ${metadata}>${esc(label.slice(0,1))}</span><span class="card-bank-name">${esc(label)}</span>`;
 }
 function networkMarkup(card:RuntimeCard){
   const type=esc(kindLabel(card));
@@ -165,7 +173,8 @@ export function CanonicalCreditCardStack({cards,banks,selectedCardId,onActiveCar
       const expiry=revealed&&secret?.expiry?secret.expiry:maskExpiry();
       const cvv=revealed&&secret?.cvv?secret.cvv:maskCvv(secret?.cvv);
       const revealLabel=`${revealed?'Απόκρυψη':'Εμφάνιση'} στοιχείων`;
-      return `<div class="stack-card${stackIndex===0?' top':''}" data-card-id="${esc(card.id)}"><div class="card-slot"><article class="payment-card ${templateTheme(card.template)}" data-tilt data-revealed="${revealed?'true':'false'}"${cardInlineStyle(card)}><div class="card-inner"><header class="card-header"><div class="card-brand-block"><div class="card-brand">${brandMarkup(card)}</div><div class="card-nickname">${esc(card.name)}</div></div><div class="card-toolbar"><button class="card-icon-btn reveal-btn" type="button" data-id="${esc(card.id)}" aria-pressed="${revealed?'true':'false'}" aria-label="${esc(revealLabel)}" title="${esc(revealLabel)}">${icon(revealed?'eyeoff':'eye')}</button><button class="card-icon-btn delete-btn" type="button" data-id="${esc(card.id)}" aria-label="Αρχειοθέτηση κάρτας" title="Αρχειοθέτηση κάρτας">${icon('trash')}</button></div></header><div class="card-body"><div class="card-number-wrap"><div class="card-number ${revealed?'':'masked'}" data-secret="number">${esc(number)}</div><button class="copy-mini copy-btn" type="button" data-field="pan" data-card-id="${esc(card.id)}" aria-label="Αντιγραφή αριθμού" title="Αντιγραφή αριθμού">${icon('copy')}</button></div><div class="card-fields"><div class="card-field"><span class="card-field-label">VALID THRU</span><div class="card-field-line"><span class="card-field-value ${revealed?'':'masked'}" data-secret="expiry">${esc(expiry)}</span><button class="copy-mini copy-btn" type="button" data-field="expiry" data-card-id="${esc(card.id)}" aria-label="Αντιγραφή λήξης" title="Αντιγραφή λήξης">${icon('copy')}</button></div></div><div class="card-field"><span class="card-field-label">CVV</span><div class="card-field-line"><span class="card-field-value ${revealed?'':'masked'}" data-secret="cvv">${esc(cvv)}</span><button class="copy-mini copy-btn" type="button" data-field="cvv" data-card-id="${esc(card.id)}" aria-label="Αντιγραφή CVV" title="Αντιγραφή CVV">${icon('copy')}</button></div></div>${networkMarkup(card)}</div></div></div></article></div></div>`;
+      const cardLabel=`${card.name} · ${card.bankLabel}`;
+      return `<div class="stack-card${stackIndex===0?' top':''}" data-card-id="${esc(card.id)}"><div class="card-slot"><article class="payment-card ${templateTheme(card.template)}" data-tilt data-revealed="${revealed?'true':'false'}" aria-label="${esc(cardLabel)}"${cardInlineStyle(card)}><div class="card-inner"><header class="card-header"><div class="card-brand-block"><div class="card-brand">${brandMarkup(card)}</div><div class="card-nickname">${esc(card.name)}</div></div><div class="card-toolbar"><button class="card-icon-btn reveal-btn" type="button" data-id="${esc(card.id)}" aria-pressed="${revealed?'true':'false'}" aria-label="${esc(revealLabel)}" title="${esc(revealLabel)}">${icon(revealed?'eyeoff':'eye')}</button><button class="card-icon-btn delete-btn" type="button" data-id="${esc(card.id)}" aria-label="Αρχειοθέτηση κάρτας" title="Αρχειοθέτηση κάρτας">${icon('trash')}</button></div></header><div class="card-body"><div class="card-number-wrap"><div class="card-number ${revealed?'':'masked'}" data-secret="number">${esc(number)}</div><button class="copy-mini copy-btn" type="button" data-field="pan" data-card-id="${esc(card.id)}" aria-label="Αντιγραφή αριθμού" title="Αντιγραφή αριθμού">${icon('copy')}</button></div><div class="card-fields"><div class="card-field"><span class="card-field-label">VALID THRU</span><div class="card-field-line"><span class="card-field-value ${revealed?'':'masked'}" data-secret="expiry">${esc(expiry)}</span><button class="copy-mini copy-btn" type="button" data-field="expiry" data-card-id="${esc(card.id)}" aria-label="Αντιγραφή λήξης" title="Αντιγραφή λήξης">${icon('copy')}</button></div></div><div class="card-field"><span class="card-field-label">CVV</span><div class="card-field-line"><span class="card-field-value ${revealed?'':'masked'}" data-secret="cvv">${esc(cvv)}</span><button class="copy-mini copy-btn" type="button" data-field="cvv" data-card-id="${esc(card.id)}" aria-label="Αντιγραφή CVV" title="Αντιγραφή CVV">${icon('copy')}</button></div></div>${networkMarkup(card)}</div></div></div></article></div></div>`;
     }
     function clearGhost(){if(ghostNode){ghostNode.remove();ghostNode=null}}
     function render(){

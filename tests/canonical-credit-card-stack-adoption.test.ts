@@ -5,6 +5,7 @@ const credit=readFileSync(new URL('../src/pages/CreditCardPage.tsx',import.meta.
 const cards=readFileSync(new URL('../src/pages/CardsPage.tsx',import.meta.url),'utf8');
 const createDialog=readFileSync(new URL('../src/components/CardCreateDialog.tsx',import.meta.url),'utf8');
 const stack=readFileSync(new URL('../src/components/CanonicalCreditCardStack.tsx',import.meta.url),'utf8');
+const bankBrands=readFileSync(new URL('../src/lib/bankBrands.ts',import.meta.url),'utf8');
 const hostCss=readFileSync(new URL('../src/styles/canonical-credit-card-host.css',import.meta.url),'utf8');
 const cardDomain=readFileSync(new URL('../src/lib/cards.ts',import.meta.url),'utf8');
 
@@ -66,10 +67,14 @@ describe('canonical credit-card stack adoption',()=>{
     expect(stack).not.toContain('.slice(0,16)');
   });
 
-  it('uses local canonical assets and a readable mobile credit-history presentation',()=>{
-    expect(stack).toContain("../assets/canonical-credit-card/viva-logo.png");
-    expect(stack).toContain("../assets/canonical-credit-card/payzy-logo.png");
+  it('uses local canonical assets through the shared registry and keeps a readable mobile credit-history presentation',()=>{
+    expect(stack).toContain("from '../lib/bankBrands'");
     expect(stack).toContain("../assets/canonical-credit-card/payzy-pro-logo.png");
+    expect(stack).not.toContain("../assets/canonical-credit-card/viva-logo.png");
+    expect(stack).not.toContain("../assets/canonical-credit-card/payzy-logo.png");
+    expect(bankBrands).toContain("../assets/canonical-credit-card/viva-logo.png");
+    expect(bankBrands).toContain("../assets/canonical-credit-card/payzy-logo.png");
+    expect(bankBrands).not.toMatch(/https?:\/\//);
     expect(hostCss).toContain('@media(max-width:680px)');
     expect(hostCss).toContain('.card-archive-row');
     expect(hostCss).toContain('.credit-card-redesign-page .semantic-table tr');
