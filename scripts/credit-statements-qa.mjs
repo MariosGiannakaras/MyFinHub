@@ -54,7 +54,7 @@ try{
   assert(mobile.minTouch>=41,`mobile statement touch target ${mobile.minTouch}px`);
   await sleep(160);
   await c.call("function(){document.querySelector('[data-credit-statements]')?.scrollIntoView({block:'start'});return true}");
-  await waitFor("function(){const section=document.querySelector('[data-credit-statements]');if(!section)return false;const r=section.getBoundingClientRect();return r.top>=0&&r.top<180}",'mobile statement evidence in viewport');
+  await waitFor("function(){const node=document.querySelector('[data-primary-credit-statement]');if(!node)return false;const r=node.getBoundingClientRect();return r.bottom>90&&r.top<innerHeight-100}",'mobile primary statement visible in evidence viewport');
   await shot(c,'credit-statements-active-mobile');
 
   await c.send('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
@@ -84,7 +84,7 @@ try{
   assert(deletedMobile.overflow<=1,`deleted statement mobile overflow ${deletedMobile.overflow}px`);
   assert(deletedMobile.minTouch>=41,`deleted statement mobile disclosure target ${deletedMobile.minTouch}px`);
   await c.call("function(){document.querySelector('.deleted-credit-history')?.scrollIntoView({block:'start'});return true}");
-  await waitFor("function(){const section=document.querySelector('.deleted-credit-history');if(!section)return false;const r=section.getBoundingClientRect();return r.top>=0&&r.top<180}",'deleted statement mobile evidence in viewport');
+  await waitFor("function(){const node=document.querySelector('.deleted-credit-history-card > .panel-head');if(!node)return false;const r=node.getBoundingClientRect();return r.bottom>90&&r.top<innerHeight-100}",'deleted statement history header visible in mobile evidence viewport');
   await shot(c,'credit-deleted-statement-history-mobile');
 
   c.close();console.log('Credit statement lifecycle rendered QA passed.');
