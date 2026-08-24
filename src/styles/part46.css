@@ -43,5 +43,6 @@
  .taxonomy-subcategory-row>.taxonomy-row-actions{justify-content:flex-start}
  .taxonomy-subcategory-editor,.taxonomy-move-editor,.taxonomy-subcategory-icon{grid-column:1}
  .taxonomy-add-row input,.taxonomy-inline-editor input{min-height:46px;font-size:16px}
+ .transactions-workspace .mobile-transaction-filters{grid-template-columns:1fr}
 }
 @media(max-width:360px){.category-taxonomy-head{grid-template-columns:1fr}.taxonomy-row-actions{justify-content:flex-start}}
