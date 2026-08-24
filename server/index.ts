@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { accessTokenAal, assertMutationSessionOrigin, beginTotpEnrollment, challengeTotp, clearSessionCookies, clearSessionCookiesIfCookie, getTotpFactors, requireSession, revokeSession, setSessionCookies, signInWithPassword, verifyTotp } from './auth.js';
 import { handleCardVaultRequest } from './cardVaultHandler.js';
 import { ApiError, assertSameOrigin, handleApi, methodNotAllowed, requestHeader, sendJson } from './http.js';
-import { backupStore, DATA_SOURCE, isOwner, readStore, writeMutableState, writeStore } from './storage.js';
+import { backupStore, DATA_SOURCE, isOwner, moveHistory, readHistory, readStore, writeMutableState, writeStore } from './storage.js';
 import { parseMutableWrite } from './stateValidation.js';
 import { isAuthRejection } from './upstream.js';
 import { validateFinanceData } from './validation.js';
@@ -157,7 +157,23 @@ app.put('/api/data', (req, res) => void handleApi(res, async () => {
   const session = await requireFinanceSession(req, res);
   assertMutationSessionOrigin(req, session);
   const body = parseMutableWrite(req.body);
-  sendJson(res, 200, await writeMutableState(body.state, body.updatedAt, requestHeader(req, 'if-match'), session.accessToken));
+  sendJson(res, 200, await writeMutableState(body.state, body.updatedAt, requestHeader(req, 'if-match'), requestHeader(req, 'x-rheomiq-history-generation'), body.historyLabel, session.accessToken));
+}));
+
+app.get('/api/history', (req, res) => void handleApi(res, async () => {
+  const session = await requireFinanceSession(req, res);
+  sendJson(res, 200, await readHistory(session.accessToken));
+}));
+
+app.post('/api/history', (req, res) => void handleApi(res, async () => {
+  const session = await requireFinanceSession(req, res);
+  assertMutationSessionOrigin(req, session);
+  const action = req.body?.action;
+  const updatedAt = req.body?.updatedAt;
+  if ((action !== 'undo' && action !== 'redo') || typeof updatedAt !== 'string' || !updatedAt || updatedAt.length > 64 || Object.keys(req.body || {}).some(key => key !== 'action' && key !== 'updatedAt')) {
+    throw new ApiError(400, 'INVALID_HISTORY', 'The change-history request is invalid.');
+  }
+  sendJson(res, 200, await moveHistory(action, updatedAt, requestHeader(req, 'if-match'), requestHeader(req, 'x-rheomiq-history-generation'), session.accessToken));
 }));
 
 app.all('/api/card-secrets', (req, res) => void handleCardVaultRequest(req, res));
@@ -184,7 +200,7 @@ if (serveDist) {
   const here = path.dirname(fileURLToPath(import.meta.url));
   const dist = configuredDist ? path.resolve(configuredDist) : path.resolve(here, '..', 'dist');
   app.use(express.static(dist, { index: false, maxAge: '1h' }));
-  app.get('/{*splat}', (_req, res) => res.sendFile(path.join(dist, 'index.html')));
+  app.get('/{*splat}', (_req, res) => res.sendFile(path.join(dist, 'index.html'));
 }
 
 const port = Number(process.env.RHEOMIQ_PORT || process.env.PORT || 4317);
