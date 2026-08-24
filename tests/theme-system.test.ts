@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DARK_THEME_TOKENS, LIGHT_THEME_TOKENS, normalizeThemePreference, resolveThemePreference } from '../src/lib/theme';
+import { DARK_THEME_TOKENS, LIGHT_THEME_TOKENS, normalizeThemePreference, resolveThemePreference } from '../src/lib/theme.js';
 
 function channel(value:number){const normalized=value/255;return normalized<=.04045?normalized/12.92:((normalized+.055)/1.055)**2.4}
 function luminance(hex:string){const value=hex.replace('#','');const [r,g,b]=[0,2,4].map(index=>Number.parseInt(value.slice(index,index+2),16));return .2126*channel(r)+.7152*channel(g)+.0722*channel(b)}
