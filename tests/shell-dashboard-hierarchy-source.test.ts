@@ -8,6 +8,8 @@ const reporting=readFileSync(new URL('../src/lib/reportingPeriod.ts',import.meta
 const persistence=readFileSync(new URL('../src/components/PersistenceNotice.tsx',import.meta.url),'utf8');
 const styles=readFileSync(new URL('../src/styles/part47.css',import.meta.url),'utf8');
 const hardening=readFileSync(new URL('../scripts/ui-ux-hardening-qa.mjs',import.meta.url),'utf8');
+const hierarchyQa=readFileSync(new URL('../scripts/shell-dashboard-hierarchy-qa.mjs',import.meta.url),'utf8');
+const pkg=JSON.parse(readFileSync(new URL('../package.json',import.meta.url),'utf8')) as {scripts:Record<string,string>};
 
 describe('shell and Dashboard hierarchy source contracts',()=>{
   it('keeps one visible global generic entry route per form factor while preserving expert access',()=>{
@@ -62,5 +64,15 @@ describe('shell and Dashboard hierarchy source contracts',()=>{
     expect(pending).toBeGreaterThan(primary);
     expect(quick).toBeGreaterThan(pending);
     expect(rest).toBeGreaterThan(quick);
+  });
+
+  it('runs focused desktop/mobile rendered assertions as part of the canonical frontend QA chain',()=>{
+    expect(pkg.scripts['qa:frontend']).toContain('node scripts/shell-dashboard-hierarchy-qa.mjs');
+    expect(pkg.scripts['qa:frontend'].indexOf('scripts/shell-dashboard-hierarchy-qa.mjs')).toBeLessThan(pkg.scripts['qa:frontend'].indexOf('scripts/final-ux-reconciliation-qa.mjs'));
+    expect(hierarchyQa).toContain("JSON.stringify(state.globals)===JSON.stringify(['desktop'])");
+    expect(hierarchyQa).toContain("JSON.stringify(state.globals)===JSON.stringify(['mobile'])");
+    expect(hierarchyQa).toContain("state.savedQuiet&&state.savedSmallDisplay==='none'&&state.savedLive===null");
+    expect(hierarchyQa).toContain("state.nextDisabled&&state.month.includes('Αύγουστος')&&state.month.includes('2026')");
+    expect(hierarchyQa).toContain("Planning does not inherit reporting period navigation");
   });
 });
