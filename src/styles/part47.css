@@ -1,0 +1,30 @@
+/* #237 shell/Dashboard hierarchy: one global entry route, quiet healthy status, denser information surfaces. */
+.top-actions{grid-column:2}
+.file-panel.is-quiet{padding:8px 9px;background:transparent;border:1px solid transparent;box-shadow:none;opacity:.72}
+.file-panel.is-quiet .file-line{gap:6px}
+.file-panel.is-quiet .status-dot.saved{width:6px;height:6px;box-shadow:none}
+.file-panel.is-quiet small{display:none}
+.file-panel.is-active{border-color:rgba(213,224,239,.72)}
+.period-control button:disabled{opacity:.38;cursor:not-allowed;box-shadow:none!important;transform:none!important}
+
+@media(min-width:681px){
+  .page-heading:has(+.primary-balance-grid){align-items:center;padding-top:2px}
+  .page-heading:has(+.primary-balance-grid) p{max-width:64ch}
+  .page-heading:has(+.primary-balance-grid) .heading-actions{align-self:center}
+  .dashboard-pending-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+  .dashboard-pending-grid>.panel{padding:14px 15px;border-color:rgba(218,227,239,.9);box-shadow:var(--shadow-soft)}
+  .dashboard-pending-grid>.dashboard-attention-card{background:linear-gradient(145deg,#fbfcff,#eef4fb)}
+  .dashboard-grid{grid-template-columns:.72fr 1.18fr 1.1fr;gap:11px}
+  .dashboard-grid>.quick-panel{padding:14px;background:linear-gradient(145deg,#fafcff,#f0f5fb);border:1px solid rgba(218,227,239,.9);box-shadow:var(--shadow-soft)}
+  .dashboard-grid>.quick-panel .panel-head{margin-bottom:10px}
+  .dashboard-grid>.quick-panel .frequent-grid{gap:6px}
+  .dashboard-grid>.quick-panel .frequent-grid button{padding:9px;box-shadow:none;border-color:#dce5f1}
+  .flow-metric-grid{gap:10px}
+  .flow-metric-grid .metric-card{min-height:110px;padding:14px}
+  .account-balance-panel{padding:13px 14px}
+}
+
+@media(max-width:680px){
+  .top-actions{grid-column:2}
+  .dashboard-grid>.quick-panel .panel-head small{max-width:30ch}
+}
