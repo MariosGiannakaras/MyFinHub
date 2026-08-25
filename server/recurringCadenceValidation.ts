@@ -15,7 +15,7 @@ function validateItem(value: RecurringItem) {
   }
   if ((item.recurrenceUnit === 'year' || Number(item.recurrenceInterval ?? 1) > 1) && item.active) {
     const anchor = item.firstExpectedDate;
-    if (anchor !== undefined && anchor !== null && (typeof anchor !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(anchor))) invalid();
+    if (typeof anchor !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(anchor)) invalid();
   }
 }
 
