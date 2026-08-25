@@ -85,16 +85,16 @@ describe('native bearer finance API boundary', () => {
     expect(res.headers.has('access-control-allow-origin')).toBe(false);
   });
 
-  it('accepts an owner AAL2 bearer mutation without weakening the revision pipeline', async () => {
+  it('accepts an owner AAL2 bearer mutation without weakening revision or history-generation preconditions', async () => {
     const token = tokenWithAal('aal2');
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(upstream(200, { id: 'owner-id' })));
     const res = responseRecorder();
 
-    await dataHandler(bearerRequest('PUT', token, { 'if-match': '7' }), res);
+    await dataHandler(bearerRequest('PUT', token, { 'if-match': '7', 'x-rheomiq-history-generation': '4' }), res);
 
     expect(res.statusCode).toBe(200);
     expect(storage.parseExpectedRevision).toHaveBeenCalledWith('7');
-    expect(storage.writeMutableState).toHaveBeenCalledWith({}, '2026-08-22T00:00:00.000Z', '7', token);
+    expect(storage.writeMutableState).toHaveBeenCalledWith({}, '2026-08-22T00:00:00.000Z', '7', '4', 'Οικονομική αλλαγή', token);
     expect(res.headers.has('access-control-allow-origin')).toBe(false);
   });
 
@@ -107,6 +107,7 @@ describe('native bearer finance API boundary', () => {
       headers: {
         cookie: `rheomiq_access=${encodeURIComponent(token)}`,
         'if-match': '7',
+        'x-rheomiq-history-generation': '4',
       },
       body: { state: {}, updatedAt: '2026-08-22T00:00:00.000Z' },
     };
@@ -150,7 +151,7 @@ describe('native bearer finance API boundary', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(upstream(200, { id: 'owner-id' })));
     const res = responseRecorder();
 
-    await dataHandler(bearerRequest('PUT', token, { 'if-match': '7' }), res);
+    await dataHandler(bearerRequest('PUT', token, { 'if-match': '7', 'x-rheomiq-history-generation': '4' }), res);
 
     expect(res.statusCode).toBe(409);
     expect(JSON.parse(res.body)).toMatchObject({ code: 'REVISION_CONFLICT' });
