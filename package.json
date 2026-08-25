@@ -26,6 +26,6 @@
     "db:import": "tsx scripts/migrate-json-to-supabase.ts",
     "db:verify": "tsx scripts/migrate-json-to-supabase.ts --verify-only"
   },
-  "dependencies": {"@tesseract.js-data/ell": "1.0.0","@tesseract.js-data/eng": "1.0.0","express": "^5.2.1","framer-motion": "^12.43.0","lucide-react": "^1.28.0","react": "^19.2.8","react-dom": "^19.2.8","recharts": "^3.10.1","tesseract.js": "7.0.0"},
-  "devDependencies": {"@types/express": "^5.0.6","@types/node": "^22.18.0","@types/react": "^19.2.18","@types/react-dom": "^19.2.4","@vitejs/plugin-react": "^6.0.4","concurrently": "^10.0.4","tsx": "^4.23.1","typescript": "^7.0.2","vite": "^8.2.0","vitest": "^4.1.10"}
+  "dependencies": {"@tesseract.js-data/ell": "1.0.0","@tesseract.js-data/eng": "1.0.0","express": "^5.2.1","framer-motion": "^12.43.0","lucide-react": "^1.33.0","react": "^19.2.8","react-dom": "^19.2.8","recharts": "^3.10.1","tesseract.js": "7.0.0"},
+  "devDependencies": {"@types/express": "^5.0.6","@types/node": "^22.18.0","@types/react": "^19.2.18","@types/react-dom": "^19.2.4","@vitejs/plugin-react": "^6.1.0","concurrently": "^10.0.4","tsx": "^4.23.1","typescript": "^7.0.2","vite": "^8.2.2","vitest": "^4.1.11"}
 }
