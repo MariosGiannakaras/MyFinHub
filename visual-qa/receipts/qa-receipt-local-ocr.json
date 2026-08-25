@@ -4,16 +4,16 @@
   "appVersion": "v1.3",
   "suite": "receipt-local-ocr",
   "surface": "receipts",
-  "generatedAt": "2026-08-25T19:13:30.227Z",
+  "generatedAt": "2026-08-24T22:04:15.932Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "f37ff364c924b8e9f42b82b454a9e0730a7cf2bd",
-    "shortSha": "f37ff364",
-    "branch": "fix/history-audit-actions-release-blocker"
+    "sha": "0f5a44a5af57681935c71777c869cf5fe712c7ff",
+    "shortSha": "0f5a44a5",
+    "branch": "feat/233-safe-taxonomy-retirement-final"
   },
   "screenshots": [
-    "visual-qa/receipts/v1.3__2026-08-25_221330__qa-receipt-local-ocr__receipt-local-captured.png",
-    "visual-qa/receipts/v1.3__2026-08-25_221330__qa-receipt-local-ocr__receipt-local-mobile-empty.png",
-    "visual-qa/receipts/v1.3__2026-08-25_221330__qa-receipt-local-ocr__receipt-local-ocr-proposal.png"
+    "visual-qa/receipts/v1.3__2026-08-25_010415__qa-receipt-local-ocr__receipt-local-captured.png",
+    "visual-qa/receipts/v1.3__2026-08-25_010415__qa-receipt-local-ocr__receipt-local-mobile-empty.png",
+    "visual-qa/receipts/v1.3__2026-08-25_010415__qa-receipt-local-ocr__receipt-local-ocr-proposal.png"
   ]
 }
