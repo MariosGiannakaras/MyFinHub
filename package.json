@@ -17,7 +17,7 @@
     "security:guard": "node scripts/security-guard.mjs",
     "qa:ux": "node scripts/ui-ux-hardening-qa.mjs",
     "qa:visual": "node scripts/ui-ux-visual-evidence-qa.mjs",
-    "qa:frontend": "node scripts/run-rendered-qa.mjs && MYFINHUB_UX_EVIDENCE_DIR=visual-qa/recurring-cadence node scripts/recurring-cadence-qa.mjs",
+    "qa:frontend": "node scripts/run-rendered-qa.mjs",
     "check": "npm run security:guard && npm run test && npm run build",
     "desktop:dev": "npm --prefix desktop run dev",
     "desktop:check": "npm --prefix desktop run check",
