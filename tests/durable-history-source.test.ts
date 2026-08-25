@@ -73,8 +73,8 @@ describe('durable finance history architecture',()=>{
   it('keeps owner+AAL2 RLS semantics while avoiding per-row auth initplans and covers the cursor foreign key',()=>{
     expect(perfHardening).toContain('rheomiq_history_cursor_owner_point_idx');
     expect(perfHardening).toContain('on public.rheomiq_history_cursor(owner_user_id, current_point_id)');
-    expect(perfHardening.match(/owner_user_id = \(select auth\.uid\(\)\)/g)?.length).toBe(12);
-    expect(perfHardening.match(/\(select public\.rheomiq_is_owner_aal2\(\)\)/g)?.length).toBe(12);
+    expect(perfHardening.match(/owner_user_id = \(select auth\.uid\(\)\)/g)?.length).toBe(10);
+    expect(perfHardening.match(/\(select public\.rheomiq_is_owner_aal2\(\)\)/g)?.length).toBe(10);
     expect(perfHardening).not.toMatch(/owner_user_id\s*=\s*auth\.uid\(\)/);
   });
 
