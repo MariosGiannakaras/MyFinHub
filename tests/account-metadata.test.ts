@@ -5,6 +5,7 @@ import { parseAccountMetadataExpectedRevision, parseAccountMetadataWrite } from 
 import { assertValidIban, formatIban, isValidIban, normalizeIban } from '../src/lib/iban.js';
 
 const migration=readFileSync(new URL('../supabase/migrations/20260824205000_add_account_metadata.sql',import.meta.url),'utf8');
+const grantHardening=readFileSync(new URL('../supabase/migrations/20260825201500_tighten_account_metadata_function_grants.sql',import.meta.url),'utf8');
 const financeTypes=readFileSync(new URL('../src/types.ts',import.meta.url),'utf8');
 const financeHook=readFileSync(new URL('../src/hooks/useFinance.ts',import.meta.url),'utf8');
 const dashboardSource=readFileSync(new URL('../src/pages/DashboardPage.tsx',import.meta.url),'utf8');
@@ -51,6 +52,10 @@ describe('account IBAN metadata',()=>{
     expect(migration).toContain("raise exception 'REVISION_CONFLICT'");
     expect(migration).toContain('revision = rheomiq_account_metadata.revision + 1');
     expect(migration).not.toContain('rheomiq_backups');
+    expect(grantHardening).toContain('revoke all on function public.rheomiq_upsert_account_metadata(text, text, bigint)');
+    expect(grantHardening).toContain('from public, anon, authenticated');
+    expect(grantHardening).toContain('grant execute on function public.rheomiq_upsert_account_metadata(text, text, bigint)');
+    expect(grantHardening).toContain('to authenticated');
   });
 
   it('keeps IBAN outside FinanceData and finance Undo/Redo while exposing it on Dashboard and Settings',()=>{

@@ -5,6 +5,8 @@ const migration=readFileSync('supabase/migrations/20260825005000_add_durable_his
 const hardening=readFileSync('supabase/migrations/20260825063500_harden_durable_history.sql','utf8');
 const pruning=readFileSync('supabase/migrations/20260825064000_bound_durable_history_pruning.sql','utf8');
 const auditActions=readFileSync('supabase/migrations/20260825191000_allow_history_audit_actions.sql','utf8');
+const grantHardening=readFileSync('supabase/migrations/20260825195500_tighten_history_metadata_grants.sql','utf8');
+const perfHardening=readFileSync('supabase/migrations/20260825200500_optimize_durable_history_rls.sql','utf8');
 const storage=readFileSync('server/storage.ts','utf8');
 const api=readFileSync('src/lib/api.ts','utf8');
 const hook=readFileSync('src/hooks/useFinance.ts','utf8');
@@ -52,6 +54,28 @@ describe('durable finance history architecture',()=>{
     expect(auditActions).toContain("'undo'::text");
     expect(auditActions).toContain("'redo'::text");
     expect(auditActions).toContain('rheomiq_audit_log_action_check');
+  });
+
+  it('removes inherited/default ACLs that could bypass the owner RLS boundary',()=>{
+    expect(grantHardening).toContain('revoke all on table public.rheomiq_account_metadata from public, anon, authenticated');
+    expect(grantHardening).toContain('grant select, insert, update on table public.rheomiq_account_metadata to authenticated');
+    expect(grantHardening).toContain('revoke all on table public.rheomiq_history_points from public, anon, authenticated');
+    expect(grantHardening).toContain('grant select, insert, update, delete on table public.rheomiq_history_points to authenticated');
+    expect(grantHardening).toContain('revoke all on table public.rheomiq_history_cursor from public, anon, authenticated');
+    expect(grantHardening).toContain('grant select, insert, update, delete on table public.rheomiq_history_cursor to authenticated');
+    expect(grantHardening).toContain('revoke all on sequence public.rheomiq_history_points_id_seq from public, anon, authenticated');
+    expect(grantHardening).toContain('grant usage, select on sequence public.rheomiq_history_points_id_seq to authenticated');
+    expect(grantHardening).not.toMatch(/\bgrant\s+[^\n;]*\btruncate\b/i);
+    expect(grantHardening).not.toMatch(/\bgrant\s+[^\n;]*\btrigger\b/i);
+    expect(grantHardening).not.toMatch(/\bgrant\s+[^\n;]*\breferences\b/i);
+  });
+
+  it('keeps owner+AAL2 RLS semantics while avoiding per-row auth initplans and covers the cursor foreign key',()=>{
+    expect(perfHardening).toContain('rheomiq_history_cursor_owner_point_idx');
+    expect(perfHardening).toContain('on public.rheomiq_history_cursor(owner_user_id, current_point_id)');
+    expect(perfHardening.match(/owner_user_id = \(select auth\.uid\(\)\)/g)?.length).toBe(10);
+    expect(perfHardening.match(/\(select public\.rheomiq_is_owner_aal2\(\)\)/g)?.length).toBe(10);
+    expect(perfHardening).not.toMatch(/owner_user_id\s*=\s*auth\.uid\(\)/);
   });
 
   it('enforces the 10-day and strict 100-point retention contract while preserving the current point',()=>{
