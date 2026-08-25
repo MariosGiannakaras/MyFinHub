@@ -1,5 +1,7 @@
 import type { EventKind, FinanceSettings, Loan, RecurringItem, SplitPart } from '../types.js';
 
+type RecurringCadenceDraft=RecurringItem&{recurrenceUnit?:'month'|'year';recurrenceInterval?:number};
+
 export function entryDefaults(kind: EventKind, settings: FinanceSettings, fallbackAccount: string) {
   if (kind === 'income') {
     return {
@@ -37,8 +39,13 @@ export function loanDraftError(loan: Loan) {
 }
 
 export function recurringDraftError(item: RecurringItem) {
+  const cadence=item as RecurringCadenceDraft;
   if (!item.name.trim()) return 'Συμπλήρωσε όνομα.';
   if (!Number.isFinite(item.amount) || item.amount <= 0) return 'Το ποσό πρέπει να είναι θετικό.';
   if (item.day !== undefined && item.day !== null && (!Number.isInteger(item.day) || item.day < 1 || item.day > 31)) return 'Η ημέρα πρέπει να είναι ακέραιος από 1 έως 31.';
+  const interval=Number(cadence.recurrenceInterval??1);
+  if(!Number.isInteger(interval)||interval<1||interval>120)return 'Η συχνότητα επανάληψης πρέπει να είναι ακέραιος από 1 έως 120.';
+  if(cadence.recurrenceUnit!==undefined&&cadence.recurrenceUnit!=='month'&&cadence.recurrenceUnit!=='year')return 'Η μονάδα επανάληψης δεν είναι έγκυρη.';
+  if(item.active&&(cadence.recurrenceUnit==='year'||interval>1)&&!item.firstExpectedDate)return 'Για μη μηνιαίο πάγιο χρειάζεται ημερομηνία αναφοράς για τον επόμενο κύκλο.';
   return null;
 }
