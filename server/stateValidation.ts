@@ -34,18 +34,28 @@ export function validateFinanceState(value: unknown): asserts value is FinanceDa
   validateCategoryIdentityState(value);
 }
 
-export function parseMutableWrite(value: unknown): { state: FinanceData['state']; updatedAt: string } {
+export function parseMutableWrite(value: unknown): { state: FinanceData['state']; updatedAt: string; historyLabel?: string } {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw new ApiError(400, 'INVALID_DATA', 'The finance data is invalid.');
   }
   const body = value as Record<string, unknown>;
-  const allowed = new Set(['state', 'updatedAt']);
+  const allowed = new Set(['state', 'updatedAt', 'historyLabel']);
   if (Object.keys(body).some((key) => !allowed.has(key))) {
     throw new ApiError(400, 'INVALID_DATA', 'The finance data is invalid.');
   }
   if (typeof body.updatedAt !== 'string' || !body.updatedAt || body.updatedAt.length > 64) {
     throw new ApiError(400, 'INVALID_DATA', 'The finance data is invalid.');
   }
+  let historyLabel: string | undefined;
+  if (body.historyLabel !== undefined) {
+    if (typeof body.historyLabel !== 'string') throw new ApiError(400, 'INVALID_HISTORY', 'The change-history label is invalid.');
+    historyLabel = body.historyLabel.trim();
+    if (!historyLabel || historyLabel.length > 180 || /[\u0000-\u001f\u007f]/.test(historyLabel)) {
+      throw new ApiError(400, 'INVALID_HISTORY', 'The change-history label is invalid.');
+    }
+  }
   validateFinanceState(body.state);
-  return { state: body.state, updatedAt: body.updatedAt };
+  return historyLabel === undefined
+    ? { state: body.state, updatedAt: body.updatedAt }
+    : { state: body.state, updatedAt: body.updatedAt, historyLabel };
 }
