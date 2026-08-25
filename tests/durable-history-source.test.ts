@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 const migration=readFileSync('supabase/migrations/20260825005000_add_durable_history.sql','utf8');
 const hardening=readFileSync('supabase/migrations/20260825063500_harden_durable_history.sql','utf8');
 const pruning=readFileSync('supabase/migrations/20260825064000_bound_durable_history_pruning.sql','utf8');
+const auditActions=readFileSync('supabase/migrations/20260825191000_allow_history_audit_actions.sql','utf8');
 const storage=readFileSync('server/storage.ts','utf8');
 const api=readFileSync('src/lib/api.ts','utf8');
 const hook=readFileSync('src/hooks/useFinance.ts','utf8');
@@ -41,6 +42,16 @@ describe('durable finance history architecture',()=>{
     expect(moveBody).not.toContain('insert into public.rheomiq_history_points');
     expect(moveBody).toContain("p_direction = 'undo'");
     expect(moveBody).toContain("p_direction not in ('undo', 'redo')");
+  });
+
+  it('allows the canonical Undo/Redo cursor moves through the audit-log constraint',()=>{
+    expect(hardening).toContain("values(auth.uid(), p_direction, v_result_revision)");
+    expect(auditActions).toContain("'save'::text");
+    expect(auditActions).toContain("'import'::text");
+    expect(auditActions).toContain("'backup'::text");
+    expect(auditActions).toContain("'undo'::text");
+    expect(auditActions).toContain("'redo'::text");
+    expect(auditActions).toContain('rheomiq_audit_log_action_check');
   });
 
   it('enforces the 10-day and strict 100-point retention contract while preserving the current point',()=>{
