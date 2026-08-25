@@ -17,6 +17,7 @@ export type HistoryPointSummary = {
 export type HistoryEnvelope = {
   available: boolean;
   generation: string;
+  financeRevision: string;
   currentPointId: string | null;
   canUndo: boolean;
   canRedo: boolean;
@@ -106,7 +107,8 @@ function historyEnvelope(value: unknown): HistoryEnvelope {
   }
   const raw = value as Record<string, unknown>;
   const generation = typeof raw.generation === 'string' ? raw.generation : String(raw.generation ?? '0');
-  if (!/^\d+$/.test(generation)) throw new ApiError(502, 'HISTORY_RESPONSE_INVALID', 'Change history could not be read.', false);
+  const financeRevision = typeof raw.financeRevision === 'string' ? raw.financeRevision : String(raw.financeRevision ?? '');
+  if (!/^\d+$/.test(generation) || !/^\d+$/.test(financeRevision)) throw new ApiError(502, 'HISTORY_RESPONSE_INVALID', 'Change history could not be read.', false);
   const pointsRaw = Array.isArray(raw.points) ? raw.points : [];
   const points: HistoryPointSummary[] = pointsRaw.map((point) => {
     if (!point || typeof point !== 'object' || Array.isArray(point)) throw new ApiError(502, 'HISTORY_RESPONSE_INVALID', 'Change history could not be read.', false);
@@ -125,6 +127,7 @@ function historyEnvelope(value: unknown): HistoryEnvelope {
   return {
     available: raw.available === true,
     generation,
+    financeRevision,
     currentPointId,
     canUndo: raw.canUndo === true,
     canRedo: raw.canRedo === true,
