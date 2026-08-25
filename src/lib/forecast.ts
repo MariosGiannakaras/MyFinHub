@@ -1,6 +1,7 @@
 import { accountBalances, allAccounts } from './domain.js';
 import { isSelfLoan, loanRemainingInstallments, typicalLoanPaymentDay } from './loans.js';
 import { activeRecurringItems, nextRecurringDate } from './recurring.js';
+import { addRecurringInterval } from './recurringCadence.js';
 import { pendingScheduled } from './scheduled.js';
 import type { FinanceData, LedgerLeg, Loan } from '../types.js';
 
@@ -105,7 +106,6 @@ function recurringMovements(data: FinanceData, asOf: string, endDate: string, id
       omitted.push(`Το πάγιο «${item.name}» δεν προβλήθηκε επειδή δεν υπάρχει αρκετή πληροφορία ημερομηνίας.`);
       continue;
     }
-    const day = Number(first.slice(8, 10));
     let date = first;
     let index = 0;
     while (date <= endDate) {
@@ -116,9 +116,11 @@ function recurringMovements(data: FinanceData, asOf: string, endDate: string, id
         source: 'recurring',
         legs: [{ accountId: item.accountId, amount: -Math.abs(Number(item.amount || 0)) }],
       }, ids);
-      date = followingMonthlyDate(date, day);
+      const next = addRecurringInterval(date, item);
+      if (!next || next <= date) break;
+      date = next;
       index += 1;
-      if (index > 4) break;
+      if (index > 120) break;
     }
   }
   return result;
