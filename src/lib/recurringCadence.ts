@@ -1,12 +1,4 @@
-import type { RecurringItem } from '../types.js';
-
-export type RecurrenceUnit = 'month' | 'year';
-export type RecurringCadenceFields = {
-  recurrenceUnit?: RecurrenceUnit;
-  recurrenceInterval?: number;
-};
-
-export type RecurringWithCadence = RecurringItem & RecurringCadenceFields;
+import type { RecurrenceUnit, RecurringItem } from '../types.js';
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -16,9 +8,8 @@ function normalizedInterval(value: unknown) {
 }
 
 export function recurringCadence(item: RecurringItem) {
-  const raw = item as RecurringWithCadence;
-  const unit: RecurrenceUnit = raw.recurrenceUnit === 'year' ? 'year' : 'month';
-  const interval = normalizedInterval(raw.recurrenceInterval);
+  const unit: RecurrenceUnit = item.recurrenceUnit === 'year' ? 'year' : 'month';
+  const interval = normalizedInterval(item.recurrenceInterval);
   return { unit, interval, months: unit === 'year' ? interval * 12 : interval };
 }
 
