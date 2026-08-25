@@ -4,18 +4,18 @@
   "appVersion": "v1.3",
   "suite": "credit-statements",
   "surface": "credit",
-  "generatedAt": "2026-08-24T22:04:15.932Z",
+  "generatedAt": "2026-08-25T21:47:42.538Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "0f5a44a5af57681935c71777c869cf5fe712c7ff",
-    "shortSha": "0f5a44a5",
-    "branch": "feat/233-safe-taxonomy-retirement-final"
+    "sha": "712a4eeeb8f4c01e58203aa8f3676c0df42d2a56",
+    "shortSha": "712a4eee",
+    "branch": "dependabot/github_actions/github-actions-b632086d0b"
   },
   "screenshots": [
-    "visual-qa/credit/v1.3__2026-08-25_010415__qa-credit-statements__credit-deleted-statement-history-desktop.png",
-    "visual-qa/credit/v1.3__2026-08-25_010415__qa-credit-statements__credit-deleted-statement-history-mobile.png",
-    "visual-qa/credit/v1.3__2026-08-25_010415__qa-credit-statements__credit-statement-payment-desktop.png",
-    "visual-qa/credit/v1.3__2026-08-25_010415__qa-credit-statements__credit-statements-active-desktop.png",
-    "visual-qa/credit/v1.3__2026-08-25_010415__qa-credit-statements__credit-statements-active-mobile.png"
+    "visual-qa/credit/v1.3__2026-08-26_004742__qa-credit-statements__credit-deleted-statement-history-desktop.png",
+    "visual-qa/credit/v1.3__2026-08-26_004742__qa-credit-statements__credit-deleted-statement-history-mobile.png",
+    "visual-qa/credit/v1.3__2026-08-26_004742__qa-credit-statements__credit-statement-payment-desktop.png",
+    "visual-qa/credit/v1.3__2026-08-26_004742__qa-credit-statements__credit-statements-active-desktop.png",
+    "visual-qa/credit/v1.3__2026-08-26_004742__qa-credit-statements__credit-statements-active-mobile.png"
   ]
 }
