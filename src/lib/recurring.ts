@@ -1,5 +1,5 @@
 import type { FinanceData, FinanceEvent, RecurringItem, RecurringStatus } from '../types.js';
-import { advanceRecurringDate, recurringCadence, recurringMonthlyEquivalent, validRecurringAnchor } from './recurringCadence.js';
+import { addRecurringInterval, advanceRecurringDate, recurringCadence, recurringMonthlyEquivalent, validRecurringAnchor } from './recurringCadence.js';
 
 export function recurringStatus(item:RecurringItem):RecurringStatus{
   if(!item.active)return item.status==='paused'?'paused':'stopped';
@@ -60,8 +60,8 @@ export function nextRecurringDate(data:FinanceData,item:RecurringItem,asOf:strin
 
   const lastPayment=recurringPayments(data,item.id)[0]?.date;
   if(lastPayment){
-    const firstAfterPayment=advanceRecurringDate(lastPayment,item,'9999-12-31');
-    if(firstAfterPayment&&firstAfterPayment!==lastPayment)return advanceRecurringDate(firstAfterPayment,item,asOf);
+    const firstAfterPayment=addRecurringInterval(lastPayment,item);
+    return firstAfterPayment?advanceRecurringDate(firstAfterPayment,item,asOf):null;
   }
 
   return null;
