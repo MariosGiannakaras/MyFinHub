@@ -15,8 +15,19 @@ describe('Needs Attention deterministic engine',()=>{
     expect(items.some(item=>item.id==='scheduled:qa-scheduled-transfer'&&item.scheduledId==='qa-scheduled-transfer')).toBe(true);
   });
 
-  it('uses exact card identity and actual utilization without clamping',()=>{
-    const data=clone();data.state.cards=(data.state.cards??[]).map(card=>card.id==='qa-card'?{...card,creditLimit:100}:card);
+  it('uses statement due data and carries the exact statement payment target',()=>{
+    const upcoming=allAttentionItems(clone(),'2026-08-17').find(row=>row.id==='credit-statement:qa-card:2026-08-12');
+    expect(upcoming?.cardId).toBe('qa-card');
+    expect(upcoming?.statementId).toBe('qa-card:2026-08-12');
+    expect(upcoming?.dueDate).toBe('2026-08-20');
+    expect(upcoming?.amount).toBe(90);
+    expect(upcoming?.severity).toBe('info');
+    const due=allAttentionItems(clone(),'2026-08-20').find(row=>row.id==='credit-statement:qa-card:2026-08-12');
+    expect(due?.severity).toBe('danger');
+  });
+
+  it('keeps exact card utilization fallback when there is no payable persisted statement',()=>{
+    const data=clone();data.state.creditStatements=[];data.state.events=(data.state.events??[]).map(event=>({...event,statementId:undefined}));data.state.cards=(data.state.cards??[]).map(card=>card.id==='qa-card'?{...card,creditLimit:100}:card);
     const item=allAttentionItems(data,'2026-08-17').find(row=>row.id==='credit:qa-card');
     expect(item?.severity).toBe('danger');expect(item?.cardId).toBe('qa-card');expect(item?.reason).toContain('135%');
   });

@@ -1,8 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { AppShell, type PageId } from './components/AppShell';
 import { AppSkeleton, PageSkeleton } from './components/AppSkeleton';
-import { CommandPalette } from './components/CommandPalette';
-import { ContextualQuickAdd, type QuickActionContext } from './components/ContextualQuickAdd';
+import type { QuickActionContext } from './components/ContextualQuickAdd';
 import { LoginScreen } from './components/LoginScreen';
 import { MfaScreen } from './components/MfaScreen';
 import { PageErrorBoundary } from './components/PageErrorBoundary';
@@ -13,10 +12,15 @@ import { useFinance } from './hooks/useFinance';
 import { useLocalDate } from './hooks/useLocalDate';
 import { useSession } from './hooks/useSession';
 import type { AttentionItem } from './lib/attention';
-import { archiveCardRecord } from './lib/cards';
+import { archiveCardRecord, canPermanentlyDeleteCreditCard, withCardProfileDeleted } from './lib/cards';
+import { deleteCardSecret } from './lib/cardVaultClient';
 import type { RankedCommandSearchItem } from './lib/commandSearch';
+import { prepareCreditStatementEvent } from './lib/creditStatements';
 import { accountBalances, allAccounts } from './lib/domain';
+import { withLegacyOverride, withLegacyTombstone } from './lib/legacyTransactions';
+import { deleteLocalCvv } from './lib/localCvvVault';
 import { reportingMonthForDate } from './lib/localDate';
+import type { TaxonomyOperation } from './lib/taxonomyManagement';
 import { applyTransactionRules } from './lib/transactionRules';
 import type {
   AttentionDecision,
@@ -24,6 +28,7 @@ import type {
   EventKind,
   FinanceData,
   FinanceEvent,
+  LegacyTransaction,
   Loan,
   MonthlyBudget,
   PaymentCard,
@@ -33,6 +38,9 @@ import type {
   TransactionRule,
 } from './types';
 
+const CommandPalette = lazy(() => import('./components/CommandPalette').then((module) => ({ default: module.CommandPalette })));
+const ContextualQuickAdd = lazy(() => import('./components/ContextualQuickAdd').then((module) => ({ default: module.ContextualQuickAdd })));
+const ConfirmDialog = lazy(() => import('./components/ConfirmDialog').then((module) => ({ default: module.ConfirmDialog })));
 const DashboardPage = lazy(() => import('./pages/DashboardPage').then((module) => ({ default: module.DashboardPage })));
 const TransactionsPage = lazy(() => import('./pages/TransactionsPage').then((module) => ({ default: module.TransactionsPage })));
 const ReviewPage = lazy(() => import('./pages/ReviewPage').then((module) => ({ default: module.ReviewPage })));
@@ -79,6 +87,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   const [quickContext, setQuickContext] = useState<QuickActionContext | null>(null);
   const [month, setMonth] = useState(() => today.slice(0,7));
   const [monthIsManual, setMonthIsManual] = useState(false);
+  const [recoverOpen,setRecoverOpen]=useState(false);
 
   const navigate = (next: PageId, replace = false) => {
     const hash = pageHash(next);
@@ -132,8 +141,10 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   const addEvent = (event: FinanceEvent) => finance.update((current) => {
     const events = current.state.events ?? [];
     const exists = events.some((existing) => existing.id === event.id);
-    const nextEvent = exists ? event : applyTransactionRules(current,event);
-    return { ...current, state: { ...current.state, events: exists ? events.map((existing) => existing.id === event.id ? nextEvent : existing) : [...events, nextEvent] } };
+    const ruledEvent = exists ? event : applyTransactionRules(current,event);
+    const prepared=prepareCreditStatementEvent(current,ruledEvent);
+    const nextEvent=prepared.event;
+    return { ...current, state: { ...current.state, creditStatements:prepared.statements, events: exists ? events.map((existing) => existing.id === event.id ? nextEvent : existing) : [...events, nextEvent] } };
   });
   const deleteEvent = (id: string) => finance.update((current) => ({ ...current, state: { ...current.state, events: (current.state.events ?? []).filter((event) => event.id !== id) } }));
   const editEvent = (id: string) => {
@@ -142,6 +153,8 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
     setQuickContext({ token: quickToken(), mode: 'generic', kind: event?.kind || 'expense', prefill: null });
     setQuickOpen(true);
   };
+  const editLegacy = (transaction: LegacyTransaction) => finance.update((current) => withLegacyOverride(current, transaction));
+  const deleteLegacy = (id: string) => finance.update((current) => withLegacyTombstone(current, id));
   const upsertRecurring = (item: RecurringItem) => finance.update((current) => {
     const seeded = current.seed.recurring.some((existing) => existing.id === item.id);
     if (seeded) return { ...current, state: { ...current.state, recurringOverrides: { ...current.state.recurringOverrides, [item.id]: item } } };
@@ -172,6 +185,12 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
     return { ...current, state: { ...current.state, cards: exists ? cards.map((item) => item.id === card.id ? card : item) : [...cards, card] } };
   });
   const archiveCard = (card: PaymentCard) => upsertCard(archiveCardRecord(card));
+  const deleteCard = async(card:PaymentCard) => {
+    if(card.kind==='credit'&&!canPermanentlyDeleteCreditCard(data,card.id,today))throw new Error('CREDIT_CARD_HAS_OUTSTANDING_BALANCE');
+    await deleteLocalCvv(card.id);
+    await deleteCardSecret(card.id);
+    finance.update(current=>withCardProfileDeleted(current,card,new Date().toISOString(),today));
+  };
   const upsertScheduled = (item: ScheduledTransaction) => finance.update((current) => {
     const items = current.state.scheduled ?? [];
     const exists = items.some((existing) => existing.id === item.id);
@@ -187,13 +206,17 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   const deleteBudget=(id:string)=>finance.update(current=>({...current,state:{...current.state,budgets:(current.state.budgets??[]).filter(item=>item.id!==id)}}));
   const upsertRule=(rule:TransactionRule)=>finance.update(current=>{const rows=current.state.transactionRules??[];const exists=rows.some(item=>item.id===rule.id);return {...current,state:{...current.state,transactionRules:exists?rows.map(item=>item.id===rule.id?rule:item):[...rows,rule]}}});
   const deleteRule=(id:string)=>finance.update(current=>({...current,state:{...current.state,transactionRules:(current.state.transactionRules??[]).filter(item=>item.id!==id)}}));
+  const updateTaxonomy=async(operation:TaxonomyOperation)=>{
+    const {applyTaxonomyOperation}=await import('./lib/taxonomyManagement');
+    finance.update(current=>applyTaxonomyOperation(current,operation,today));
+  };
   const decide = (id: string, decision: ReviewDecision) => finance.update((current) => ({ ...current, state: { ...current.state, reviewDecisions: { ...(current.state.reviewDecisions ?? {}), [id]: decision } } }));
   const decideAttention = (id: string, decision: AttentionDecision) => finance.update((current) => ({ ...current, state: { ...current.state, attentionDecisions: { ...(current.state.attentionDecisions ?? {}), [id]: decision } } }));
 
   const handleAttention = (item: AttentionItem) => {
     if (item.action === 'pay_recurring' && item.recurringId) { openSpecial({ mode: 'recurring', recurringId: item.recurringId, amount: item.amount, accountId: item.accountId }); return; }
     if (item.action === 'pay_loan' && item.loanId) { openSpecial({ mode: 'loan', loanId: item.loanId, amount: item.amount, accountId: item.accountId }); return; }
-    if (item.action === 'pay_credit' && item.cardId) { openSpecial({ mode: 'credit', action: 'payment', cardId: item.cardId, amount: item.amount }); return; }
+    if (item.action === 'pay_credit' && item.cardId) { openSpecial({ mode: 'credit', action: 'payment', cardId: item.cardId, statementId:item.statementId, amount: item.amount }); return; }
     if (item.action === 'collect_lending' && item.person) { openSpecial({ mode: 'lending', action: 'repay', person: item.person, amount: item.amount, accountId: data.state.settings.defaultIncomeAccount }); return; }
     if (item.action === 'complete_scheduled' && item.scheduledId) { openSpecial({ mode: 'scheduled', scheduledId: item.scheduledId }); return; }
     if (item.action === 'open_forecast') { navigate('planning'); return; }
@@ -216,24 +239,25 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
 
   const balance = (accountId: string) => accountBalances(data, today)[accountId] || 0;
   const recover = () => {
-    if ((finance.saveState === 'error' || finance.saveState === 'conflict') && !window.confirm('Η επαναφόρτωση θα απορρίψει τυχόν τοπικές αλλαγές που δεν αποθηκεύτηκαν. Να φορτωθεί η τελευταία έκδοση από τη βάση;')) return;
+    if (finance.saveState === 'error' || finance.saveState === 'conflict') { setRecoverOpen(true); return; }
     void finance.reload();
   };
+  const confirmRecover=()=>{setRecoverOpen(false);void finance.reload()};
 
   const content = page === 'dashboard'
     ? <DashboardPage data={data} month={month} asOf={today} motionMode="full" onQuickAdd={(prefill?: QuickPrefill) => openGeneric('expense', prefill || null)} onAccountQuickAdd={(accountId, kind) => kind === 'savings' ? openSpecial({ mode: 'savings', toAccountId: accountId, savingSource: 'manual_transfer' }) : openGeneric('expense', { note: '', amount: 0, accountId })} onTransactions={() => navigate('transactions')} onPlanning={() => navigate('planning')} onAttention={() => navigate('attention')} onReports={()=>navigate('reports')}/>
-    : page === 'transactions' ? <TransactionsPage data={data} month={month} onEditEvent={editEvent} onDeleteEvent={deleteEvent}/>
+    : page === 'transactions' ? <TransactionsPage data={data} month={month} onEditEvent={editEvent} onDeleteEvent={deleteEvent} onEditLegacy={editLegacy} onDeleteLegacy={deleteLegacy}/>
     : page === 'review' ? <ReviewPage data={data} onDecision={decide}/>
     : page === 'savings' ? <SavingsPage data={data} month={month} asOf={today} onCreate={addEvent} onQuickAdd={openSpecial}/>
-    : page === 'cards' ? <CardsPage data={data} onUpsertBank={upsertBank} onUpsertCard={upsertCard} onArchiveCard={archiveCard} onOpenCredit={() => navigate('credit')}/>
-    : page === 'credit' ? <CreditCardPage data={data} asOf={today} onCreateEvent={addEvent} onEditEvent={editEvent} onDeleteEvent={deleteEvent} onUpsertCard={upsertCard} onArchiveCard={archiveCard} onPayCard={(cardId)=>openSpecial({mode:'credit',action:'payment',cardId})}/>
+    : page === 'cards' ? <CardsPage data={data} onUpsertBank={upsertBank} onUpsertCard={upsertCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard}/>
+    : page === 'credit' ? <CreditCardPage data={data} asOf={today} onCreateEvent={addEvent} onEditEvent={editEvent} onDeleteEvent={deleteEvent} onUpsertCard={upsertCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard} onPayCard={(cardId,statementId)=>openSpecial({mode:'credit',action:'payment',cardId,statementId})}/>
     : page === 'loans' ? <LoansPage data={data} asOf={today} onUpsertLoan={upsertLoan} onCreateSelfLoan={createSelfLoan} onPayLoan={(loanId)=>openSpecial({mode:'loan',loanId})}/>
     : page === 'lending' ? <LendingPage data={data} asOf={today} onCreateEvent={addEvent} onQuickAdd={openSpecial}/>
-    : page === 'recurring' ? <RecurringPage data={data} asOf={today} onUpsert={upsertRecurring} onOpenLoans={() => navigate('loans')} onPayRecurring={(recurringId)=>openSpecial({mode:'recurring',recurringId})}/>
+    : page === 'recurring' ? <RecurringPage data={data} asOf={today} onUpsert={upsertRecurring} onOpenLoans={() => navigate('loans')} onPayLoan={(loanId)=>openSpecial({mode:'loan',loanId})} onPayRecurring={(recurringId)=>openSpecial({mode:'recurring',recurringId})}/>
     : page === 'planning' ? <PlanningPage data={data} asOf={today} onUpsertScheduled={upsertScheduled} onCompleteScheduled={completeScheduled}/>
     : page === 'attention' ? <AttentionPage data={data} asOf={today} onAction={handleAttention} onDecision={decideAttention}/>
     : page === 'reports' ? <ReportsPage data={data} month={month}/>
-    : <SettingsPage data={data} asOf={today} filePath={finance.filePath} lastSavedAt={finance.lastSavedAt} onImport={finance.importData} onBackup={finance.createBackup} onSettings={(settings) => finance.update((current) => ({ ...current, state: { ...current.state, settings: { ...settings, motion: 'full' } } }))} onUpsertBudget={upsertBudget} onDeleteBudget={deleteBudget} onUpsertRule={upsertRule} onDeleteRule={deleteRule}/>;
+    : <SettingsPage data={data} asOf={today} filePath={finance.filePath} lastSavedAt={finance.lastSavedAt} onImport={finance.importData} onBackup={finance.createBackup} onSettings={(settings) => finance.update((current) => ({ ...current, state: { ...current.state, settings: { ...settings, motion: 'full' } } }))} onTaxonomyOperation={updateTaxonomy} onUpsertBudget={upsertBudget} onDeleteBudget={deleteBudget} onUpsertRule={upsertRule} onDeleteRule={deleteRule}/>;
 
   return <>
     <AppShell page={page} onPage={navigate} onQuickAdd={() => openGeneric('expense')} onCommand={openCommand} onRefresh={() => { void finance.reload(); }} onUndo={() => { finance.undo(); }} onRedo={() => { finance.redo(); }} canUndo={finance.canUndo} canRedo={finance.canRedo} history={finance.changeHistory} saveState={finance.saveState} filePath={finance.filePath} motionMode="full" userEmail={userEmail} onLogout={onLogout}>
@@ -241,8 +265,9 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
       {PERIOD_PAGES.has(page) ? <div className="period-row"><PeriodControl month={month} onChange={(next) => { setMonth(next); setMonthIsManual(true); }}/><span>Στοιχεία περιόδου</span></div> : null}
       {finance.saveState === 'loading' ? <PageSkeleton/> : <PageErrorBoundary resetKey={page} onDashboard={() => navigate('dashboard')}><Suspense fallback={<PageLoading/>}>{content}</Suspense></PageErrorBoundary>}
     </AppShell>
-    <CommandPalette open={commandOpen} data={data} motionMode="full" onClose={()=>setCommandOpen(false)} onExecute={handleCommand}/>
-    <ContextualQuickAdd open={quickOpen} data={data} asOf={today} context={quickContext} motionMode="full" initial={(data.state.events ?? []).find((event) => event.id === editingEventId) || null} onClose={() => { setQuickOpen(false); setEditingEventId(null); setQuickContext(null); }} onCreate={addEvent} onCompleteScheduled={completeScheduled} currentBalance={balance}/>
+    {commandOpen ? <Suspense fallback={null}><CommandPalette open={commandOpen} data={data} motionMode="full" onClose={()=>setCommandOpen(false)} onExecute={handleCommand}/></Suspense> : null}
+    {quickOpen ? <Suspense fallback={null}><ContextualQuickAdd open={quickOpen} data={data} asOf={today} context={quickContext} motionMode="full" initial={(data.state.events ?? []).find((event) => event.id === editingEventId) || null} onClose={() => { setQuickOpen(false); setEditingEventId(null); setQuickContext(null); }} onCreate={addEvent} onCompleteScheduled={completeScheduled} currentBalance={balance}/></Suspense> : null}
+    {recoverOpen ? <Suspense fallback={null}><ConfirmDialog open title="Φόρτωση τελευταίας αποθηκευμένης έκδοσης;" description="Η επαναφόρτωση θα απορρίψει τυχόν τοπικές αλλαγές που δεν αποθηκεύτηκαν και θα φορτώσει την τελευταία έκδοση από τη βάση." confirmLabel="Επαναφόρτωση" tone="destructive" motionMode={data.state.settings.motion} onConfirm={confirmRecover} onCancel={()=>setRecoverOpen(false)}/></Suspense> : null}
   </>;
 }
 
@@ -250,7 +275,7 @@ export default function App() {
   const session = useSession();
   if (session.state === 'loading') return <div className="boot-screen"><img src="/brand/icon-192.png" alt="MyFinHub"/><div className="boot-pulse"/><b>MyFinHub</b><span>Έλεγχος ασφαλούς συνεδρίας…</span></div>;
   if (session.state === 'error') return <div className="boot-screen"><img src="/brand/icon-192.png" alt="MyFinHub"/><b>MyFinHub</b><span>{session.error || 'Δεν ήταν δυνατός ο έλεγχος της συνεδρίας.'}</span><button className="secondary" type="button" onClick={() => void session.refresh()}>Δοκιμή ξανά</button></div>;
-  if (session.state === 'mfa' || session.state === 'mfa-enroll') return <MfaScreen mode={session.state === 'mfa-enroll' ? 'enroll' : 'challenge'} email={session.email} error={session.error} onEnroll={session.enrollMfa} onVerify={session.verifyMfa} onLogout={async () => { await session.logout(); }}/>;
+  if (session.state === 'mfa' || session.state === 'mfa-enroll') return <MfaScreen mode={session.state === 'mfa-enroll' ? 'enroll' : 'challenge'} email={session.email} error={session.error} onEnroll={session.enrollMfa} onVerify={session.verifyMfa} onLogout={async () => { await session.logout(); }}/>
   if (session.state !== 'authenticated') return <LoginScreen onLogin={session.login} error={session.error}/>;
   return <><FinanceApp userEmail={session.email} onLogout={() => { void session.logout(); }}/>{session.error ? <div className="session-error-banner" role="alert">{session.error}</div> : null}</>;
 }

@@ -1,19 +1,20 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ApiError, createBackup, importData, loadData, saveData } from '../lib/api';
+import { ApiError, createBackup, importData, loadData, loadHistory, moveHistory, saveData, type HistoryEnvelope } from '../lib/api';
 import { describeFinanceChange } from '../lib/changeHistory';
-import { LatestValueQueue, remoteRevisionAction } from '../lib/persistenceQueue';
+import { SequentialQueue, remoteRevisionAction } from '../lib/persistenceQueue';
 import { migrateProductData } from '../lib/productMigration';
 import type { FinanceData } from '../types';
 
 export type SaveState = 'loading' | 'saved' | 'saving' | 'error' | 'conflict';
-export type ChangeHistoryEntry = { id:string; kind:'change'|'undo'|'redo'; label:string; at:string };
-export const SESSION_HISTORY_EVENT = 'myfinhub-session-change-history';
+export type ChangeHistoryEntry = { id:string; kind:'change'|'undo'|'redo'; label:string; at:string; current?:boolean };
+// Kept as a compatibility export for AppShell and rendered QA. Its payload is now
+// server-authoritative cross-session history rather than a session-only stack.
+export const SESSION_HISTORY_EVENT = 'myfinhub-durable-change-history';
 
 const REVISION_CHANNEL = 'rheomiq-finance-revision';
-const MAX_UNDO_STATES = 20;
-const MAX_HISTORY_ITEMS = 20;
-
+const MAX_CONSISTENT_RELOAD_ATTEMPTS = 3;
 type RevisionMessage = { type: 'revision'; revision: string };
+type QueuedMutation = { data:FinanceData; label:string };
 
 function productData(input:FinanceData):FinanceData{
   const migrated=migrateProductData(input);
@@ -27,6 +28,8 @@ function publishHistory(items:ChangeHistoryEntry[]){
   window.dispatchEvent(new CustomEvent<ChangeHistoryEntry[]>(SESSION_HISTORY_EVENT,{detail:items}));
 }
 
+function historyMatchesRevision(history:HistoryEnvelope,revision:string){return history.financeRevision===revision}
+
 export function useFinance() {
   const [data, setData] = useState<FinanceData | null>(null);
   const [revision, setRevision] = useState('');
@@ -36,41 +39,35 @@ export function useFinance() {
   const [undoDepth, setUndoDepth] = useState(0);
   const [redoDepth, setRedoDepth] = useState(0);
   const [changeHistory,setChangeHistory]=useState<ChangeHistoryEntry[]>([]);
+  const [historyAvailable,setHistoryAvailable]=useState(true);
   const revisionRef = useRef('');
+  const historyGenerationRef=useRef('0');
+  const historyAvailableRef=useRef(true);
   const dataRef = useRef<FinanceData | null>(null);
   const exclusiveOperation = useRef(false);
   const lastSaveFailed = useRef(false);
   const saveStateRef = useRef<SaveState>('loading');
   const channelRef = useRef<BroadcastChannel | null>(null);
   const remoteReloading = useRef(false);
-  const coordinatorRef = useRef<LatestValueQueue<FinanceData> | null>(null);
-  const undoStackRef = useRef<FinanceData[]>([]);
-  const redoStackRef = useRef<FinanceData[]>([]);
-  const historySequenceRef=useRef(0);
+  const coordinatorRef = useRef<SequentialQueue<QueuedMutation> | null>(null);
   const changeHistoryRef=useRef<ChangeHistoryEntry[]>([]);
   const initialLoadStartedRef=useRef(false);
 
   const assignData = useCallback((next: FinanceData | null) => { dataRef.current = next; setData(next); }, []);
   const setCurrentSaveState=useCallback((next:SaveState)=>{saveStateRef.current=next;setSaveState(next)},[]);
-  const clearHistory = useCallback(() => {
-    undoStackRef.current = [];
-    redoStackRef.current = [];
-    historySequenceRef.current=0;
-    changeHistoryRef.current=[];
-    setUndoDepth(0);
-    setRedoDepth(0);
-    setChangeHistory([]);
-    publishHistory([]);
-  }, []);
-  const recordHistory=useCallback((kind:ChangeHistoryEntry['kind'],label:string)=>{
-    const entry:ChangeHistoryEntry={id:`history-${Date.now()}-${++historySequenceRef.current}`,kind,label,at:new Date().toISOString()};
-    const next=[entry,...changeHistoryRef.current].slice(0,MAX_HISTORY_ITEMS);
+  const applyHistory=useCallback((history:HistoryEnvelope)=>{
+    historyGenerationRef.current=history.generation;
+    historyAvailableRef.current=history.available;
+    setHistoryAvailable(history.available);
+    const next:ChangeHistoryEntry[]=history.available?history.points.map(point=>({id:point.id,kind:'change',label:point.label,at:point.createdAt,current:point.current})):[];
     changeHistoryRef.current=next;
     setChangeHistory(next);
+    setUndoDepth(history.available?history.undoDepth:0);
+    setRedoDepth(history.available?history.redoDepth:0);
     publishHistory(next);
   },[]);
 
-  const applyEnvelope = useCallback((res: Awaited<ReturnType<typeof loadData>>) => {
+  const applyDataEnvelope = useCallback((res: Awaited<ReturnType<typeof loadData>>) => {
     const migrated = productData(res.data);
     assignData(migrated);
     revisionRef.current = res.revision;
@@ -78,41 +75,55 @@ export function useFinance() {
     setFilePath(res.filePath);
     setLastSavedAt(res.lastSavedAt);
     lastSaveFailed.current = false;
-    clearHistory();
-    setCurrentSaveState('saved');
-  }, [assignData, clearHistory,setCurrentSaveState]);
-
-  const reload = useCallback(async () => {
-    setCurrentSaveState('loading');
-    try {
-      applyEnvelope(await loadData());
-      return true;
-    } catch {
-      setCurrentSaveState('error');
-      return false;
-    }
-  }, [applyEnvelope,setCurrentSaveState]);
+  }, [assignData]);
 
   if (!coordinatorRef.current) {
-    coordinatorRef.current = new LatestValueQueue<FinanceData>(async (stamped) => {
+    coordinatorRef.current = new SequentialQueue<QueuedMutation>(async ({data:stamped,label}) => {
       try {
-        const res = await saveData(stamped, revisionRef.current);
+        const res = await saveData(stamped, revisionRef.current, historyGenerationRef.current, label);
+        if(!historyMatchesRevision(res.history,res.revision))throw new ApiError('Το ιστορικό αλλαγών δεν συμφωνεί με την τελευταία αποθήκευση.',409,'HISTORY_CURSOR_CONFLICT');
         revisionRef.current = res.revision;
         setRevision(res.revision);
         setFilePath(res.filePath);
         setLastSavedAt(res.lastSavedAt);
+        applyHistory(res.history);
         lastSaveFailed.current = false;
-        setCurrentSaveState('saved');
         channelRef.current?.postMessage({ type: 'revision', revision: res.revision } satisfies RevisionMessage);
       } catch (error) {
         lastSaveFailed.current = true;
-        if (error instanceof ApiError && (error.status === 409 || error.code === 'REVISION_CONFLICT')) setCurrentSaveState('conflict');
+        if (error instanceof ApiError && (error.status === 409 || error.code === 'REVISION_CONFLICT' || error.code === 'HISTORY_CURSOR_CONFLICT')) setCurrentSaveState('conflict');
         else setCurrentSaveState('error');
         throw error;
       }
     });
   }
   const coordinator = coordinatorRef.current!;
+
+  const reload = useCallback(async () => {
+    setCurrentSaveState('loading');
+    try {
+      for(let attempt=0;attempt<MAX_CONSISTENT_RELOAD_ATTEMPTS;attempt+=1){
+        const nextData=await loadData();
+        const nextHistory=await loadHistory();
+        if(!historyMatchesRevision(nextHistory,nextData.revision)){
+          if(attempt<MAX_CONSISTENT_RELOAD_ATTEMPTS-1)continue;
+          applyDataEnvelope(nextData);
+          applyHistory({...nextHistory,available:false});
+          setCurrentSaveState('conflict');
+          return false;
+        }
+        applyDataEnvelope(nextData);
+        applyHistory(nextHistory);
+        setCurrentSaveState(nextHistory.available?'saved':'conflict');
+        return nextHistory.available;
+      }
+      setCurrentSaveState('conflict');
+      return false;
+    } catch {
+      setCurrentSaveState('error');
+      return false;
+    }
+  }, [applyDataEnvelope,applyHistory,setCurrentSaveState]);
 
   useEffect(() => {
     if(initialLoadStartedRef.current)return;
@@ -148,60 +159,53 @@ export function useFinance() {
     };
   }, [coordinator, reload,setCurrentSaveState]);
 
-  const persist = useCallback((next: FinanceData) => {
+  const persist = useCallback((next: FinanceData,label:string) => {
     const stamped = { ...next, app: 'RheomIQ', schemaVersion: 3, updatedAt: new Date().toISOString() };
     assignData(stamped);
     setCurrentSaveState('saving');
-    coordinator.enqueue(stamped);
+    coordinator.enqueue({data:stamped,label});
+    const idle=coordinator.whenIdle();
+    void idle.then(()=>{
+      if(!lastSaveFailed.current&&!exclusiveOperation.current&&historyAvailableRef.current)setCurrentSaveState('saved');
+    });
     return stamped;
   }, [assignData, coordinator,setCurrentSaveState]);
-
-  const pushBounded = useCallback((stack: FinanceData[], current: FinanceData) => {
-    stack.push(current);
-    if (stack.length > MAX_UNDO_STATES) stack.splice(0, stack.length - MAX_UNDO_STATES);
-  }, []);
 
   const update = useCallback((recipe: (current: FinanceData) => FinanceData) => {
     const current = dataRef.current;
     const state = saveStateRef.current;
-    if (!current || state === 'conflict' || state === 'error' || state === 'loading' || exclusiveOperation.current) return;
+    if (!current || !historyAvailableRef.current || state === 'conflict' || state === 'error' || state === 'loading' || exclusiveOperation.current) return;
     const next = recipe(current);
     if (next === current) return;
-    pushBounded(undoStackRef.current, current);
-    setUndoDepth(undoStackRef.current.length);
-    redoStackRef.current = [];
-    setRedoDepth(0);
-    recordHistory('change',financeChangeLabel(current,next));
-    persist(next);
-  }, [persist, pushBounded,recordHistory]);
+    persist(next,financeChangeLabel(current,next));
+  }, [persist]);
 
-  const undo = useCallback(() => {
-    const state = saveStateRef.current;
-    const current = dataRef.current;
-    if (!current || state === 'conflict' || state === 'error' || state === 'loading' || exclusiveOperation.current) return false;
-    const previous = undoStackRef.current.pop();
-    if (!previous) return false;
-    pushBounded(redoStackRef.current, current);
-    setUndoDepth(undoStackRef.current.length);
-    setRedoDepth(redoStackRef.current.length);
-    recordHistory('undo',`Αναίρεση: ${financeChangeLabel(previous,current)}`);
-    persist(previous);
-    return true;
-  }, [persist, pushBounded,recordHistory]);
+  const move=useCallback(async(direction:'undo'|'redo')=>{
+    const current=dataRef.current;
+    const state=saveStateRef.current;
+    const allowed=direction==='undo'?undoDepth>0:redoDepth>0;
+    if(!current||!allowed||!historyAvailableRef.current||state!=='saved'||exclusiveOperation.current||coordinator.hasWork())return false;
+    exclusiveOperation.current=true;
+    setCurrentSaveState('saving');
+    try{
+      await coordinator.whenIdle();
+      const res=await moveHistory(direction,revisionRef.current,historyGenerationRef.current);
+      if(!historyMatchesRevision(res.history,res.revision))throw new ApiError('Το ιστορικό αλλαγών δεν συμφωνεί με την οικονομική κατάσταση.',409,'HISTORY_CURSOR_CONFLICT');
+      applyDataEnvelope(res);
+      applyHistory(res.history);
+      setCurrentSaveState('saved');
+      channelRef.current?.postMessage({type:'revision',revision:res.revision} satisfies RevisionMessage);
+      return true;
+    }catch(error){
+      lastSaveFailed.current=true;
+      if(error instanceof ApiError&&(error.status===409||error.code==='REVISION_CONFLICT'||error.code==='HISTORY_CURSOR_CONFLICT'||error.code==='HISTORY_UNAVAILABLE'))setCurrentSaveState('conflict');
+      else setCurrentSaveState('error');
+      return false;
+    }finally{exclusiveOperation.current=false}
+  },[applyDataEnvelope,applyHistory,coordinator,redoDepth,setCurrentSaveState,undoDepth]);
 
-  const redo = useCallback(() => {
-    const state = saveStateRef.current;
-    const current = dataRef.current;
-    if (!current || state === 'conflict' || state === 'error' || state === 'loading' || exclusiveOperation.current) return false;
-    const next = redoStackRef.current.pop();
-    if (!next) return false;
-    pushBounded(undoStackRef.current, current);
-    setUndoDepth(undoStackRef.current.length);
-    setRedoDepth(redoStackRef.current.length);
-    recordHistory('redo',`Επαναφορά: ${financeChangeLabel(current,next)}`);
-    persist(next);
-    return true;
-  }, [persist, pushBounded,recordHistory]);
+  const undo=useCallback(()=>move('undo'),[move]);
+  const redo=useCallback(()=>move('redo'),[move]);
 
   const doImport = useCallback(async (incoming: FinanceData) => {
     if (exclusiveOperation.current) throw new Error('Υπάρχει ήδη λειτουργία αποθήκευσης σε εξέλιξη.');
@@ -211,18 +215,22 @@ export function useFinance() {
       await coordinator.whenIdle();
       try {
         const res = await importData(productData(incoming));
-        applyEnvelope(res);
+        applyDataEnvelope(res);
+        const nextHistory=await loadHistory();
+        const consistent=historyMatchesRevision(nextHistory,res.revision);
+        applyHistory(consistent?nextHistory:{...nextHistory,available:false});
+        setCurrentSaveState(consistent&&nextHistory.available?'saved':'conflict');
         channelRef.current?.postMessage({ type: 'revision', revision: res.revision } satisfies RevisionMessage);
       } catch (error) {
         lastSaveFailed.current = true;
-        if (error instanceof ApiError && (error.status === 409 || error.code === 'REVISION_CONFLICT')) setCurrentSaveState('conflict');
+        if (error instanceof ApiError && (error.status === 409 || error.code === 'REVISION_CONFLICT' || error.code === 'HISTORY_CURSOR_CONFLICT')) setCurrentSaveState('conflict');
         else setCurrentSaveState('error');
         throw error;
       }
     } finally {
       exclusiveOperation.current = false;
     }
-  }, [applyEnvelope, coordinator,setCurrentSaveState]);
+  }, [applyDataEnvelope,applyHistory, coordinator,setCurrentSaveState]);
 
   const doBackup = useCallback(async () => {
     await coordinator.whenIdle();
@@ -232,8 +240,8 @@ export function useFinance() {
     return createBackup();
   }, [coordinator]);
 
-  const canUndo = undoDepth > 0 && saveState !== 'conflict' && saveState !== 'error' && saveState !== 'loading';
-  const canRedo = redoDepth > 0 && saveState !== 'conflict' && saveState !== 'error' && saveState !== 'loading';
+  const canUndo = historyAvailable && undoDepth > 0 && saveState === 'saved' && !coordinator.hasWork();
+  const canRedo = historyAvailable && redoDepth > 0 && saveState === 'saved' && !coordinator.hasWork();
 
-  return useMemo(() => ({ data, revision, filePath, lastSavedAt, saveState, update, reload, undo, redo, canUndo, canRedo, undoDepth, redoDepth, changeHistory, importData: doImport, createBackup: doBackup }), [data, revision, filePath, lastSavedAt, saveState, update, reload, undo, redo, canUndo, canRedo, undoDepth, redoDepth, changeHistory, doImport, doBackup]);
+  return useMemo(() => ({ data, revision, filePath, lastSavedAt, saveState, update, reload, undo, redo, canUndo, canRedo, undoDepth, redoDepth, changeHistory, historyAvailable, importData: doImport, createBackup: doBackup }), [data, revision, filePath, lastSavedAt, saveState, update, reload, undo, redo, canUndo, canRedo, undoDepth, redoDepth, changeHistory, historyAvailable, doImport, doBackup]);
 }

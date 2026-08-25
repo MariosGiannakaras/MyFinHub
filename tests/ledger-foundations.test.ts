@@ -58,26 +58,22 @@ describe('ledger foundations', () => {
     expect(netWorth(data,'2026-08-21')).toBeCloseTo(beforeWorth,2);
   });
 
-  it('tracks split allocation in cents without floating-point drift', () => {
-    const allocation=splitAllocation(0.3,[
+  it('derives split totals in cents without floating-point drift', () => {
+    const allocation=splitAllocation([
       {id:'a',label:'A',category:'Άλλο',amount:0.1},
       {id:'b',label:'B',category:'Άλλο',amount:0.2},
     ]);
     expect(allocation.totalCents).toBe(30);
-    expect(allocation.allocatedCents).toBe(30);
-    expect(allocation.remainingCents).toBe(0);
+    expect(allocation.total).toBe(0.3);
   });
 
-  it('reports remaining and overallocated split amounts directly to the user', () => {
+  it('creates one split parent whose amount and analytics come only from its parts', () => {
     const data=minimal();
-    expect(splitDraftError(data,{accountId:'bank',amount:100,parts:[{...splitParts()[0],amount:60},{...splitParts()[1],amount:30}]})).toContain('Απομένουν 10.00€');
-    expect(splitDraftError(data,{accountId:'bank',amount:100,parts:[{...splitParts()[0],amount:80},{...splitParts()[1],amount:30}]})).toContain('υπερβαίνουν το σύνολο κατά 10.00€');
-  });
-
-  it('creates one split parent while category analytics consume the parts exactly once', () => {
-    const data=minimal();
-    const event=createExpenseSplitEvent(data,{date:'2026-08-21',amount:100,note:'Μικτή αγορά',accountId:'bank',parts:splitParts()});
+    const event=createExpenseSplitEvent(data,{date:'2026-08-21',note:'Μικτή αγορά',accountId:'bank',parts:splitParts()});
     data.state.events=[event];
+    expect(event.amount).toBe(100);
+    expect(event.category).toBeUndefined();
+    expect(event.subcategory).toBeUndefined();
     expect(event.legs).toEqual([{accountId:'bank',amount:-100}]);
     expect(event.parts?.every(part=>part.kind==='expense')).toBe(true);
     expect(monthlyFlow(data,'2026-08').expense).toBe(100);
@@ -90,7 +86,8 @@ describe('ledger foundations', () => {
 
   it('requires at least two positive split parts and a current account', () => {
     const data=minimal();
-    expect(splitDraftError(data,{accountId:'bank',amount:10,parts:[{id:'a',label:'A',category:'Άλλο',amount:10}]})).toMatch(/τουλάχιστον δύο/);
-    expect(splitDraftError(data,{accountId:'missing',amount:10,parts:splitParts()})).toMatch(/υπαρκτό λογαριασμό πληρωμής/);
+    expect(splitDraftError(data,{accountId:'bank',parts:[{id:'a',label:'A',category:'Άλλο',amount:10}]})).toMatch(/τουλάχιστον δύο/);
+    expect(splitDraftError(data,{accountId:'bank',parts:[splitParts()[0],{...splitParts()[1],amount:0}]})).toMatch(/μέρος 2.*θετικό/);
+    expect(splitDraftError(data,{accountId:'missing',parts:splitParts()})).toMatch(/υπαρκτό λογαριασμό πληρωμής/);
   });
 });

@@ -1,0 +1,406 @@
+/* Only keep pagination dots underneath the stack. */
+
+#myfinhub-card-stack .meta{
+  display:grid;
+  place-items:center;
+  width:100%;
+  min-height:8px;
+  position:relative;
+  z-index:2;
+}
+
+#myfinhub-card-stack .meta b,#myfinhub-card-stack .meta small{
+  display:none;
+}
+
+#myfinhub-card-stack .dots{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+  flex-wrap:nowrap;
+}
+
+#myfinhub-card-stack .dot{
+  width:6px;
+  height:6px;
+  border-radius:999px;
+  background:#bdc9db;
+  transition:width .28s cubic-bezier(.2,.8,.2,1),background .28s ease,transform .28s ease;
+}
+
+#myfinhub-card-stack .dot.active{
+  width:22px;
+  background:#4777d6;
+  transform:scaleY(1.05);
+}
+
+#myfinhub-card-stack .delete-confirm{
+  position:absolute;
+  inset:0;
+  z-index:80;
+  padding:16px;
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-end;
+  gap:12px;
+  color:#fff;
+  background:linear-gradient(180deg,rgba(18,27,46,.20),rgba(31,22,33,.82));
+  backdrop-filter:blur(9px) saturate(.76);
+  transform:translateZ(72px);
+  animation:mfhDeleteConfirmIn 180ms ease-out both;
+  touch-action:none;
+  pointer-events:auto;
+}
+
+@keyframes mfhDeleteConfirmIn{
+  from{
+    opacity:0;
+    transform:translateZ(72px) scale(.985);
+  }
+
+  to{
+    opacity:1;
+    transform:translateZ(72px) scale(1);
+  }
+}
+
+#myfinhub-card-stack .payment-card.delete-armed .card-header,#myfinhub-card-stack .payment-card.delete-armed .card-body{
+  opacity:.12;
+  filter:blur(2px);
+  pointer-events:none;
+  transition:opacity .16s ease,filter .16s ease;
+}
+
+#myfinhub-card-stack .delete-confirm-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+}
+
+#myfinhub-card-stack .delete-confirm-copy{
+  min-width:0;
+  padding-top:2px;
+}
+
+#myfinhub-card-stack .delete-confirm-copy b{
+  display:block;
+  font-size:.82rem;
+  letter-spacing:-.015em;
+}
+
+#myfinhub-card-stack .delete-confirm-copy small{
+  display:block;
+  margin-top:4px;
+  font-size:.57rem;
+  line-height:1.42;
+  color:rgba(255,255,255,.76);
+  max-width:320px;
+}
+
+#myfinhub-card-stack .delete-cancel{
+  width:42px;
+  height:42px;
+  min-width:42px;
+  border:0;
+  border-radius:12px;
+  display:grid;
+  place-items:center;
+  background:rgba(255,255,255,.15);
+  color:#fff;
+  cursor:pointer;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.17),0 6px 16px rgba(0,0,0,.16);
+  touch-action:manipulation;
+}
+
+#myfinhub-card-stack .delete-cancel:active{
+  transform:scale(.94);
+  background:rgba(255,255,255,.22);
+}
+
+#myfinhub-card-stack .delete-cancel svg{
+  width:19px;
+  height:19px;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:2;
+  stroke-linecap:round;
+}
+
+#myfinhub-card-stack .delete-slider{
+  --p:0;
+  position:relative;
+  height:54px;
+  border-radius:16px;
+  padding:5px;
+  background:rgba(9,12,20,.38);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.13),inset 0 7px 18px rgba(0,0,0,.19);
+  overflow:hidden;
+  touch-action:none;
+  user-select:none;
+  cursor:grab;
+}
+
+#myfinhub-card-stack .delete-slider::before{
+  content:"";
+  position:absolute;
+  inset:5px auto 5px 5px;
+  width:calc((100% - 10px) * var(--p));
+  border-radius:12px;
+  background:linear-gradient(90deg,rgba(255,84,105,.34),rgba(255,53,82,.72));
+  box-shadow:0 0 22px rgba(255,55,83,.30);
+}
+
+#myfinhub-card-stack .delete-slider-label{
+  position:absolute;
+  inset:0;
+  display:grid;
+  place-items:center;
+  padding-left:43px;
+  font-size:.61rem;
+  font-weight:820;
+  letter-spacing:.065em;
+  color:rgba(255,255,255,.82);
+  opacity:calc(1 - var(--p) * .48);
+  pointer-events:none;
+}
+
+#myfinhub-card-stack .delete-slider-thumb{
+  position:absolute;
+  left:5px;
+  top:5px;
+  width:44px;
+  height:44px;
+  border:0;
+  border-radius:12px;
+  background:linear-gradient(145deg,#fff,#eceff5);
+  color:#d82d49;
+  display:grid;
+  place-items:center;
+  cursor:grab;
+  box-shadow:0 7px 17px rgba(0,0,0,.25);
+  transform:translateX(0);
+  will-change:transform;
+  pointer-events:none;
+}
+
+#myfinhub-card-stack .delete-slider:active{
+  cursor:grabbing;
+}
+
+#myfinhub-card-stack .delete-slider-thumb svg{
+  width:19px;
+  height:19px;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:2;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+
+#myfinhub-card-stack .payment-card.delete-armed{
+  transition:transform 180ms ease-out,box-shadow 180ms ease-out,filter 100ms linear;
+  filter:saturate(calc(1 - var(--delete-p,0) * .55)) brightness(calc(1 - var(--delete-p,0) * .12));
+}
+
+@media (max-width:640px){
+  #myfinhub-card-stack .delete-confirm{
+    padding:14px;
+    gap:10px;
+  }
+
+  #myfinhub-card-stack .delete-confirm-copy b{
+    font-size:.88rem;
+  }
+
+  #myfinhub-card-stack .delete-confirm-copy small{
+    font-size:.62rem;
+    max-width:250px;
+  }
+
+  #myfinhub-card-stack .delete-cancel{
+    width:46px;
+    height:46px;
+    min-width:46px;
+    border-radius:13px;
+  }
+
+  #myfinhub-card-stack .delete-slider{
+    height:58px;
+    border-radius:17px;
+  }
+
+  #myfinhub-card-stack .delete-slider-thumb{
+    width:48px;
+    height:48px;
+    border-radius:13px;
+  }
+
+  #myfinhub-card-stack .delete-slider-label{
+    padding-left:50px;
+    font-size:.62rem;
+  }
+}
+
+#myfinhub-card-stack .sr-status{
+  position:fixed;
+  width:1px;
+  height:1px;
+  padding:0;
+  margin:-1px;
+  overflow:hidden;
+  clip:rect(0,0,0,0);
+  white-space:nowrap;
+  border:0;
+}
+
+#myfinhub-card-stack .card-network[data-network="MASTERCARD"] .card-network-main{
+  font-style:normal;
+  font-size:.82rem;
+  letter-spacing:.015em;
+}
+
+#myfinhub-card-stack .mastercard-network{
+  min-width:82px;
+  display:grid;
+  justify-items:end;
+  line-height:1;
+}
+
+#myfinhub-card-stack .mastercard-symbol{
+  position:relative;
+  display:block;
+  width:38px;
+  height:22px;
+  margin-left:auto;
+}
+
+#myfinhub-card-stack .mastercard-symbol i{
+  position:absolute;
+  top:0;
+  width:22px;
+  height:22px;
+  border-radius:50%;
+}
+
+#myfinhub-card-stack .mastercard-symbol i:first-child{
+  left:0;
+  background:#eb001b;
+}
+
+#myfinhub-card-stack .mastercard-symbol i:last-child{
+  right:0;
+  background:#f79e1b;
+  mix-blend-mode:screen;
+}
+
+#myfinhub-card-stack .mastercard-word{
+  display:block;
+  margin-top:1px;
+  font-family:Arial,Helvetica,sans-serif;
+  font-size:.46rem;
+  letter-spacing:-.025em;
+  text-transform:lowercase;
+  color:var(--card-text);
+}
+
+#myfinhub-card-stack .mastercard-network .card-network-type{
+  margin-top:3px;
+}
+
+#myfinhub-card-stack .alpha-bonus-word{
+  font-size:1.06rem;
+  font-weight:620;
+  letter-spacing:.01em;
+}
+
+/* Brand surfaces — same geometry/field layout, only identity changes */
+
+#myfinhub-card-stack .card-revolut-gradient{
+  background:radial-gradient(circle at 15% 70%,rgba(224,38,146,.94),transparent 31%),
+    radial-gradient(circle at 15% 15%,rgba(85,210,255,.36),transparent 32%),
+    linear-gradient(135deg,#1599d2 0%,#0877bf 46%,#3d54c6 66%,#d22498 100%);
+}
+
+#myfinhub-card-stack .card-revolut-sage{
+  --card-text:#f7f4ed;
+  --card-muted:rgba(247,244,237,.68);
+  background:linear-gradient(112deg,rgba(255,255,255,.14),transparent 27%,transparent 64%,rgba(255,255,255,.07)),
+    linear-gradient(145deg,#8da996 0%,#759486 48%,#5d796f 100%);
+}
+
+#myfinhub-card-stack .card-revolut-midnight{
+  --card-text:#f6f4ed;
+  --card-muted:rgba(246,244,237,.65);
+  background:radial-gradient(circle at 80% 8%,rgba(122,146,195,.20),transparent 31%),
+    linear-gradient(145deg,#202a43 0%,#151e34 58%,#10172a 100%);
+}
+
+#myfinhub-card-stack .card-revolut-slate{
+  --card-text:#f8f6f0;
+  --card-muted:rgba(248,246,240,.65);
+  background:linear-gradient(120deg,rgba(255,255,255,.14),transparent 30%,transparent 70%,rgba(255,255,255,.06)),
+    linear-gradient(145deg,#6f7478 0%,#555b60 52%,#40464b 100%);
+}
+
+#myfinhub-card-stack .card-revolut-metal-black,#myfinhub-card-stack .card-revolut-metal-gold,#myfinhub-card-stack .card-revolut-metal-bronze,#myfinhub-card-stack .card-revolut-metal-silver,#myfinhub-card-stack .card-revolut-ultra{
+  background-size:100% 100%,6px 100%,100% 100%;
+}
+
+#myfinhub-card-stack .card-revolut-metal-black{
+  --card-text:#f4f3ef;
+  --card-muted:rgba(244,243,239,.62);
+  background:linear-gradient(115deg,rgba(255,255,255,.14),transparent 24%,transparent 70%,rgba(255,255,255,.06)),
+    repeating-linear-gradient(90deg,rgba(255,255,255,.025) 0 1px,rgba(0,0,0,.02) 1px 3px),
+    linear-gradient(145deg,#35373a,#18191b 62%,#0d0e10);
+}
+
+#myfinhub-card-stack .card-revolut-metal-gold{
+  --card-text:#342812;
+  --card-muted:rgba(52,40,18,.62);
+  background:linear-gradient(115deg,rgba(255,255,255,.35),transparent 28%,transparent 62%,rgba(111,78,20,.08)),
+    repeating-linear-gradient(90deg,rgba(255,255,255,.035) 0 1px,rgba(80,55,10,.02) 1px 3px),
+    linear-gradient(145deg,#d4b76f,#b08a3f 58%,#8d6c2d);
+}
+
+#myfinhub-card-stack .card-revolut-metal-bronze{
+  --card-text:#fff6e7;
+  --card-muted:rgba(255,246,231,.64);
+  background:linear-gradient(115deg,rgba(255,255,255,.18),transparent 28%,transparent 62%,rgba(69,30,12,.10)),
+    repeating-linear-gradient(90deg,rgba(255,255,255,.025) 0 1px,rgba(80,37,17,.025) 1px 3px),
+    linear-gradient(145deg,#9c6547,#754733 58%,#543125);
+}
+
+#myfinhub-card-stack .card-revolut-metal-silver{
+  --card-text:#283039;
+  --card-muted:rgba(40,48,57,.58);
+  background:linear-gradient(115deg,rgba(255,255,255,.55),transparent 31%,transparent 62%,rgba(55,65,77,.08)),
+    repeating-linear-gradient(90deg,rgba(255,255,255,.07) 0 1px,rgba(68,76,83,.025) 1px 3px),
+    linear-gradient(145deg,#e2e6e7,#b9c0c4 55%,#949da3);
+}
+
+#myfinhub-card-stack .card-revolut-ultra{
+  --card-text:#25262a;
+  --card-muted:rgba(37,38,42,.57);
+  background:radial-gradient(circle at 18% 18%,rgba(255,255,255,.85),transparent 28%),
+    linear-gradient(110deg,rgba(180,210,220,.16),transparent 30%,rgba(226,205,237,.18) 61%,transparent 78%),
+    linear-gradient(145deg,#f3f2ee,#d9d9d6 52%,#c6c7c8);
+}
+
+#myfinhub-card-stack .card-revolut-lilac{
+  --card-text:#fff;
+  --card-muted:rgba(255,255,255,.69);
+  background:radial-gradient(circle at 14% 18%,rgba(255,255,255,.16),transparent 22%),
+    linear-gradient(120deg,rgba(255,255,255,.12),transparent 28%,transparent 68%,rgba(255,255,255,.06)),
+    linear-gradient(145deg,#b07cff 0%,#8a63ef 52%,#6147c8 100%);
+}
+
+#myfinhub-card-stack .card-revolut-arctic{
+  --card-text:#22354a;
+  --card-muted:rgba(34,53,74,.60);
+  background:radial-gradient(circle at 84% 12%,rgba(255,255,255,.70),transparent 22%),
+    linear-gradient(120deg,rgba(255,255,255,.44),transparent 34%,transparent 64%,rgba(93,123,160,.07)),
+    linear-gradient(145deg,#f7fbff 0%,#ddebf7 54%,#bfd7ea 100%);
+}
+

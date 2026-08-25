@@ -1,6 +1,6 @@
 /* Owned-control integration hardening discovered during final PR review. */
-.column-filter .owned-input-shell{min-width:118px;width:100%}
-.column-filter .owned-input-shell>.owned-input{height:32px;border:1px solid #d7e1ef;border-radius:9px;background:#f8fbff;color:var(--ink);padding:0 30px 0 8px;font-size:8px;font-weight:700}
+.column-filter .owned-input-shell,.transaction-filter-controls .owned-input-shell{min-width:118px;width:100%}
+.column-filter .owned-input-shell>.owned-input,.transaction-filter-controls .owned-input-shell>.owned-input{height:32px;border:1px solid #d7e1ef;border-radius:9px;background:#f8fbff;color:var(--ink);padding:0 30px 0 8px;font-size:8px;font-weight:700}
 .review-part .owned-input-shell,.settings-form .owned-input-shell,.modal-field .owned-input-shell{width:100%;min-width:0}
 .credit-usage.over-limit i{background:var(--red)!important}
 .lending-person-field{display:grid;gap:6px;min-width:0}

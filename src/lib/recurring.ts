@@ -1,4 +1,5 @@
 import type { FinanceData, FinanceEvent, RecurringItem, RecurringStatus } from '../types.js';
+import { addRecurringInterval, advanceRecurringDate, recurringCadence, recurringMonthlyEquivalent, validRecurringAnchor } from './recurringCadence.js';
 
 export function recurringStatus(item:RecurringItem):RecurringStatus{
   if(!item.active)return item.status==='paused'?'paused':'stopped';
@@ -39,10 +40,9 @@ export function typicalPaymentDay(data:FinanceData,item:RecurringItem):number|nu
   return item.day??null;
 }
 
-export function nextRecurringDate(data:FinanceData,item:RecurringItem,asOf:string):string|null{
-  if(recurringStatus(item)!=='active')return null;
+function monthlyNextDate(data:FinanceData,item:RecurringItem,asOf:string){
   const day=typicalPaymentDay(data,item);
-  if(!day)return item.firstExpectedDate??null;
+  if(!day)return validRecurringAnchor(item.firstExpectedDate);
   const base=new Date(`${asOf}T12:00:00Z`);
   const build=(year:number,monthIndex:number)=>{const last=new Date(Date.UTC(year,monthIndex+1,0)).getUTCDate();return new Date(Date.UTC(year,monthIndex,Math.min(day,last),12))};
   let due=build(base.getUTCFullYear(),base.getUTCMonth());
@@ -50,7 +50,24 @@ export function nextRecurringDate(data:FinanceData,item:RecurringItem,asOf:strin
   return due.toISOString().slice(0,10);
 }
 
-export function recurringMonthlyTotal(data:FinanceData){return activeRecurringItems(data).reduce((sum,item)=>sum+Number(item.amount||0),0)}
+export function nextRecurringDate(data:FinanceData,item:RecurringItem,asOf:string):string|null{
+  if(recurringStatus(item)!=='active')return null;
+  const cadence=recurringCadence(item);
+  if(cadence.months===1)return monthlyNextDate(data,item,asOf);
+
+  const explicitAnchor=validRecurringAnchor(item.firstExpectedDate);
+  if(explicitAnchor)return advanceRecurringDate(explicitAnchor,item,asOf);
+
+  const lastPayment=recurringPayments(data,item.id)[0]?.date;
+  if(lastPayment){
+    const firstAfterPayment=addRecurringInterval(lastPayment,item);
+    return firstAfterPayment?advanceRecurringDate(firstAfterPayment,item,asOf):null;
+  }
+
+  return null;
+}
+
+export function recurringMonthlyTotal(data:FinanceData){return activeRecurringItems(data).reduce((sum,item)=>sum+recurringMonthlyEquivalent(item),0)}
 
 export function recurringUpcoming(data:FinanceData,asOf:string){
   return activeRecurringItems(data).map(item=>({item,nextDate:nextRecurringDate(data,item,asOf),typicalDay:typicalPaymentDay(data,item),lastPayment:recurringPayments(data,item.id)[0]??null})).sort((a,b)=>(a.nextDate??'9999').localeCompare(b.nextDate??'9999')||a.item.name.localeCompare(b.item.name,'el'));

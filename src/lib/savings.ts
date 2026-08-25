@@ -14,6 +14,27 @@ export type SavingsHistoryRow = {
 
 const payAndSavePattern=/\bpay\s*&?\s*save\b/i;
 
+export const SAVING_SOURCE_LABELS:Record<SavingSource,string>={
+  pay_and_save:'Pay & Save',
+  manual_transfer:'Μεταφορά στην αποταμίευση',
+  cash_offset:'Σύνθετη αποταμίευση',
+};
+
+const LEGACY_MECHANISM_NOTES:Record<SavingSource,string[]>={
+  pay_and_save:['Pay & Save'],
+  manual_transfer:['Μεταφορά στην άκρη','Μεταφορά στην αποταμίευση'],
+  cash_offset:['Σύνθετη αποταμίευση','Σύνθετη αποταμίευση με μετρητά'],
+};
+
+const mechanismOnlyNote=(source:SavingSource,note:string)=>LEGACY_MECHANISM_NOTES[source].some(label=>label.localeCompare(note.trim(),'el',{sensitivity:'base'})===0);
+
+export function savingsHistoryPresentation(row:Pick<SavingsHistoryRow,'source'|'note'>){
+  const sourceLabel=SAVING_SOURCE_LABELS[row.source];
+  const note=row.note.trim();
+  const hasUserNote=Boolean(note&&!mechanismOnlyNote(row.source,note));
+  return {primary:hasUserNote?note:sourceLabel,sourceLabel,hasUserNote};
+}
+
 export function isLegacyPayAndSave(tx:LegacyTransaction){
   return payAndSavePattern.test(`${tx.note||''} ${tx.category||''}`);
 }
@@ -53,9 +74,3 @@ export function operationalMonthlyFlow(data:FinanceData,month:string){
   }
   return {income:Math.max(0,income),expense:Math.max(0,expense),saving,refunds,net:income-expense};
 }
-
-export const SAVING_SOURCE_LABELS:Record<SavingSource,string>={
-  pay_and_save:'Pay & Save',
-  manual_transfer:'Μεταφορά στην αποταμίευση',
-  cash_offset:'Σύνθετη αποταμίευση με μετρητά',
-};

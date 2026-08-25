@@ -68,10 +68,13 @@ try{
   assert(await c.call("function(){return [...document.querySelectorAll('.contextual-quick-modal input')].some(input=>(input.value||'').includes('Δόση:'))}"),'loan context preserves exact obligation note');
   await closeModal();
 
-  console.log('Action Center QA: exact credit card context');
+  console.log('Action Center QA: exact credit statement context');
   await navigate('attention','overlimit');
-  await clickAttention('credit:qa-card');await waitModal('Πληρωμή πιστωτικής');
+  const creditAttentionId=await c.call("function(){const row=[...document.querySelectorAll('.attention-row')].find(node=>{const id=node.getAttribute('data-attention-id')||'';return id.startsWith('credit-statement:')&&(node.textContent||'').includes('Δήλωση')});return row?.getAttribute('data-attention-id')||''}");
+  assert(Boolean(creditAttentionId),'statement-aware credit attention item exists');
+  await clickAttention(creditAttentionId);await waitModal('Πληρωμή δήλωσης πιστωτικής');
   assert(await c.call("function(){return Boolean(document.querySelector('.contextual-quick-modal input[role=combobox]'))}"),'credit payment exposes constrained source account');
+  assert(await c.call("function(){return Boolean(document.querySelector('[data-credit-statement-payment-preview]'))}"),'credit attention opens statement-aware payment preview');
   await closeModal();
 
   console.log('Action Center QA: exact scheduled completion is atomic');

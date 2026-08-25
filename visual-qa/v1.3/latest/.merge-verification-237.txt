@@ -1,0 +1,8 @@
+Human verification for #237 / PR #265
+
+Production source SHA: 16580f5a1ce2dec4083e356960394b52e0fb7add
+Visual QA snapshot SHA: 11bd16660b03d4fd34f8937712d453cbacbc0a54
+Visual QA artifact: CI #1147 / artifact 9510900522
+Manual review: 24 full-page v1.3 desktop/mobile screenshots inspected after exact-head production gates passed.
+Result: no #237 regression found. Dashboard hierarchy, single global Quick Entry per form factor, reporting-period guard and quiet saved-state chrome are visually acceptable.
+Known follow-up density work remains scoped to #238 Transactions and #239 Loans/Recurring.

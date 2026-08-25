@@ -17,9 +17,9 @@ describe('live summary amount transitions',()=>{
     expect(read('src/pages/ReportsPage.tsx')).toContain('money.format(row.income)');
   });
 
-  it('animates long-term recurring loan installments',()=>{
+  it('animates the canonical next amount for long-term linked loan obligations',()=>{
     const source=read('src/components/LongTermLoanSummary.tsx');
     expect(source).toContain('AnimatedAmount');
-    expect(source).toContain('value={loan.installment}');
+    expect(source).toContain('value={nextAmount}');
   });
 });

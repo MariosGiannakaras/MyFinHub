@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 2,
+  "layout": "surface-first-latest-only",
+  "appVersion": "v1.3",
+  "suite": "ledger-foundations",
+  "surface": "ledger",
+  "generatedAt": "2026-08-24T22:04:15.932Z",
+  "timeZone": "Europe/Athens",
+  "source": {
+    "sha": "0f5a44a5af57681935c71777c869cf5fe712c7ff",
+    "shortSha": "0f5a44a5",
+    "branch": "feat/233-safe-taxonomy-retirement-final"
+  },
+  "screenshots": [
+    "visual-qa/ledger/v1.3__2026-08-25_010415__qa-ledger-foundations__ledger-foundations-mobile.png",
+    "visual-qa/ledger/v1.3__2026-08-25_010415__qa-ledger-foundations__ledger-foundations-transactions.png"
+  ]
+}

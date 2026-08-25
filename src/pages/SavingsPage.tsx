@@ -4,35 +4,94 @@ import { AnimatedAmount } from '../components/AnimatedAmount';
 import { AppDateInput } from '../components/AppDateInput';
 import { AppSelectInput } from '../components/AppSelectInput';
 import { FormError } from '../components/FormError';
+import { MoneyInput } from '../components/MoneyInput';
 import type { QuickActionContext } from '../components/ContextualQuickAdd';
 import { useModalFocus } from '../hooks/useModalFocus';
 import { accountBalances, allAccounts, createEvent } from '../lib/domain';
 import { money, shortDate } from '../lib/format';
-import { SAVING_SOURCE_LABELS, operationalMonthlyFlow, savingsBreakdown } from '../lib/savings';
+import { SAVING_SOURCE_LABELS, operationalMonthlyFlow, savingsBreakdown, savingsHistoryPresentation } from '../lib/savings';
 import { accountDisplayName, ratioPercent } from '../lib/ui';
 import { userErrorMessage } from '../lib/userMessage';
 import type { FinanceData, FinanceEvent, SavingSource } from '../types';
 
 const ACTIONS:Array<{source:SavingSource;title:string;description:string;icon:typeof PiggyBank}>=[
- {source:'pay_and_save',title:'Pay & Save',description:'Στρογγυλοποίηση αγοράς της Πειραιώς που μεταφέρεται στην αποταμίευση.',icon:Sparkles},
- {source:'manual_transfer',title:'Μεταφορά στην άκρη',description:'Χειροκίνητη μεταφορά ποσού από λογαριασμό προς τον αποταμιευτικό.',icon:Repeat2},
- {source:'cash_offset',title:'Σύνθετη αποταμίευση',description:'Η συμφωνημένη κίνηση μετρητών και ψηφιακής μεταφοράς ως μία ενέργεια, χωρίς διπλομέτρηση.',icon:BanknoteArrowDown},
+  {source:'pay_and_save',title:'Pay & Save',description:'Στρογγυλοποίηση αγοράς της Πειραιώς που μεταφέρεται στην αποταμίευση.',icon:Sparkles},
+  {source:'manual_transfer',title:'Μεταφορά στην άκρη',description:'Χειροκίνητη μεταφορά ποσού από λογαριασμό προς τον αποταμιευτικό.',icon:Repeat2},
+  {source:'cash_offset',title:'Σύνθετη αποταμίευση',description:'Η συμφωνημένη κίνηση μετρητών και ψηφιακής μεταφοράς ως μία ενέργεια, χωρίς διπλομέτρηση.',icon:BanknoteArrowDown},
 ];
+
 type SavingsQuickContext=Omit<Extract<QuickActionContext,{mode:'savings'}>,'token'>;
 
 export function SavingsPage({data,month,asOf,onCreate,onQuickAdd}:{data:FinanceData;month:string;asOf:string;onCreate:(event:FinanceEvent)=>void;onQuickAdd?:(context:SavingsQuickContext)=>void}){
- const balances=accountBalances(data,asOf);const flow=operationalMonthlyFlow(data,month);const breakdown=savingsBreakdown(data,month);const target=data.state.settings.savingsTargetRate??.2;const rate=flow.income?flow.saving/flow.income:0;const progress=ratioPercent(rate,target);
- const accounts=allAccounts(data).filter(account=>account.kind!=='credit');const savingsAccounts=accounts.filter(account=>account.kind==='savings');const sourceAccounts=accounts.filter(account=>account.kind!=='savings');
- const defaultFrom=sourceAccounts.some(account=>account.id==='piraeus-payroll')?'piraeus-payroll':sourceAccounts[0]?.id||'';const defaultTo=savingsAccounts.some(account=>account.id==='piraeus-savings')?'piraeus-savings':savingsAccounts[0]?.id||'';
- const payrollName=accountDisplayName(data,'piraeus-payroll');const savingsName=accountDisplayName(data,'piraeus-savings');
- const [open,setOpen]=useState(false);const [source,setSource]=useState<SavingSource>('manual_transfer');const [amount,setAmount]=useState('');const [date,setDate]=useState(asOf);const [from,setFrom]=useState(defaultFrom);const [to,setTo]=useState(defaultTo);const [note,setNote]=useState('');const [error,setError]=useState('');const modalRef=useModalFocus<HTMLElement>(open,'[data-autofocus="true"]',()=>setOpen(false));
- const start=(next:SavingSource)=>{if(next==='manual_transfer'&&onQuickAdd){onQuickAdd({mode:'savings',fromAccountId:defaultFrom,toAccountId:defaultTo,note:'Μεταφορά στην άκρη',savingSource:'manual_transfer'});return}setSource(next);setAmount('');setDate(asOf);setFrom(defaultFrom);setTo(defaultTo);setNote(next==='pay_and_save'?'Pay & Save':next==='cash_offset'?'Σύνθετη αποταμίευση με μετρητά':'');setError('');setOpen(true)};
- const close=()=>{setOpen(false);setError('')};
- const submit=()=>{const numeric=Number(amount.replace(',','.'));if(!Number.isFinite(numeric)||numeric<=0){setError('Έλεγξε το ποσό αποταμίευσης — πρέπει να είναι μεγαλύτερο από μηδέν.');return}if(!sourceAccounts.some(account=>account.id===from)){setError(sourceAccounts.length?'Ο λογαριασμός προέλευσης δεν είναι πλέον διαθέσιμος. Επίλεξε έναν από τους διαθέσιμους λογαριασμούς.':'Δεν υπάρχει διαθέσιμος λογαριασμός προέλευσης για αυτή την αποταμίευση.');return}if(!savingsAccounts.some(account=>account.id===to)){setError(savingsAccounts.length?'Ο λογαριασμός αποταμίευσης δεν είναι πλέον διαθέσιμος. Επίλεξε έναν από τους διαθέσιμους αποταμιευτικούς λογαριασμούς.':'Δεν υπάρχει διαθέσιμος αποταμιευτικός λογαριασμός. Πρόσθεσε ή ενεργοποίησε έναν και δοκίμασε ξανά.');return}if(from===to){setError('Επίλεξε διαφορετικό λογαριασμό προέλευσης και αποταμίευσης.');return}try{const event=createEvent({kind:'saving_cash_offset',date,amount:numeric,note:note.trim()||SAVING_SOURCE_LABELS[source],fromAccountId:from,toAccountId:to});event.savingSource=source;onCreate(event);close()}catch(e){setError(userErrorMessage(e,'Δεν μπορέσαμε να καταχωρίσουμε την αποταμίευση. Έλεγξε τα στοιχεία και δοκίμασε ξανά.'))}};
- return <div className="page-stack"><section className="page-heading"><div><span className="eyebrow">ΑΠΟΤΑΜΙΕΥΣΗ</span><h1>Αποταμίευση</h1><p>Pay & Save, απλή μεταφορά και σύνθετη αποταμίευση παραμένουν ξεχωριστές πηγές αλλά μετρούν όλες στην πραγματική αποταμίευση.</p></div></section>
- <section className="savings-hero neo-raised"><div className="savings-gauge"><div className="gauge-ring" role="progressbar" aria-label={target>0?'Πρόοδος προς τον στόχο αποταμίευσης':'Δεν έχει οριστεί στόχος αποταμίευσης'} aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress===null?0:Math.round(progress)} style={{'--progress':`${progress??0}%`} as CSSProperties}><div><b>{Math.round(rate*100)}%</b><span>{target>0?'των εσόδων':'χωρίς στόχο'}</span></div></div></div><div><span className="eyebrow">ΑΥΤΟΣ Ο ΜΗΝΑΣ</span><h2><AnimatedAmount value={flow.saving}/></h2><p>{target>0?`Στόχος: ${Math.round(target*100)}% των πραγματικών εσόδων.`:'Δεν έχει οριστεί ποσοστιαίος στόχος αποταμίευσης.'} Οι κινήσεις αποταμίευσης δεν μετρούν ως έξοδο.</p><div className="saving-route"><span><Wallet/> {payrollName} <b><AnimatedAmount value={balances['piraeus-payroll']||0}/></b></span><ArrowRight/><span><PiggyBank/> {savingsName} <b><AnimatedAmount value={balances['piraeus-savings']||0}/></b></span></div></div></section>
- <section className="savings-action-grid">{ACTIONS.map(action=>{const Icon=action.icon;return <button type="button" className="panel neo-raised savings-action" key={action.source} onClick={()=>start(action.source)}><span className="savings-action-icon"><Icon/></span><div><b>{action.title}</b><small>{action.description}</small></div><strong>+ Νέα</strong></button>})}</section>
- <section className="savings-breakdown-grid"><article className="panel neo-raised"><div className="panel-head"><div><span>Πηγές αποταμίευσης</span><small>Σύνολο για την επιλεγμένη περίοδο</small></div></div><div className="savings-source-list">{ACTIONS.map(action=><div key={action.source}><span>{action.title}</span><b><AnimatedAmount value={breakdown.bySource[action.source]}/></b></div>)}</div></article><article className="panel neo-raised"><div className="panel-head"><div><span>Πρόσφατη αποταμίευση</span><small>Pay & Save και χειροκίνητες κινήσεις</small></div></div>{breakdown.rows.length?<div className="saving-history">{breakdown.rows.slice(0,12).map(row=><div key={`${row.origin}-${row.id}`}><span>{shortDate(row.date)}</span><div><b>{SAVING_SOURCE_LABELS[row.source]}</b><small>{row.note||'—'}</small></div><strong>{money.format(row.amount)}</strong></div>)}</div>:<div className="empty-state">Δεν υπάρχουν κινήσεις αποταμίευσης για αυτή την περίοδο.</div>}</article></section>
- <div className="logic-note compact"><PiggyBank/><div><b>Σύνθετη αποταμίευση με μετρητά</b><span>Η ενέργεια καταγράφει τη συμφωνημένη ψηφιακή μεταφορά προς τον αποταμιευτικό χωρίς να προσθέτει ή να αφαιρεί δεύτερη φορά τα φυσικά μετρητά.</span></div></div>
- {open?<div className="editor-backdrop" onMouseDown={close}><section ref={modalRef} className="panel neo-raised editor-dialog savings-dialog" role="dialog" aria-modal="true" aria-labelledby="saving-editor-title" aria-describedby={error?'saving-editor-error':undefined} tabIndex={-1} onMouseDown={e=>e.stopPropagation()}><div className="panel-head"><div><span id="saving-editor-title">{SAVING_SOURCE_LABELS[source]}</span><small>{ACTIONS.find(action=>action.source===source)?.description}</small></div><button type="button" className="icon-button" aria-label="Κλείσιμο αποταμίευσης" onClick={close}><X/></button></div><div className="settings-form editor-grid"><label><span>Ποσό</span><input data-autofocus="true" inputMode="decimal" value={amount} onChange={e=>setAmount(e.target.value.replace(',','.'))} placeholder="0,00" aria-invalid={Boolean(error)} aria-describedby={error?'saving-editor-error':undefined}/></label><label><span>Ημερομηνία</span><AppDateInput value={date} onChange={e=>setDate(e.target.value)}/></label><label><span>Από</span><AppSelectInput value={from} onChange={e=>setFrom(e.target.value)}>{sourceAccounts.map(account=><option key={account.id} value={account.id}>{accountDisplayName(data,account.id)}</option>)}</AppSelectInput></label><label><span>Προς αποταμίευση</span><AppSelectInput value={to} onChange={e=>setTo(e.target.value)}>{savingsAccounts.map(account=><option key={account.id} value={account.id}>{accountDisplayName(data,account.id)}</option>)}</AppSelectInput></label><label className="wide"><span>Σχόλιο <em>προαιρετικό</em></span><input value={note} onChange={e=>setNote(e.target.value)} placeholder={SAVING_SOURCE_LABELS[source]}/></label></div>{source==='cash_offset'?<div className="logic-note compact"><BanknoteArrowDown/><div><b>Μία σύνθετη κίνηση</b><span>Το MyFinHub καταγράφει τη μεταφορά προς την αποταμίευση ως μία ενιαία κίνηση, ώστε να μη μετρηθούν δύο φορές η ανάληψη, τα μετρητά ή το έξοδο.</span></div></div>:null}{error?<FormError id="saving-editor-error">{error}</FormError>:null}<div className="editor-actions"><button type="button" className="secondary" onClick={close}>Ακύρωση</button><button type="button" className="save-button" onClick={submit}>Καταχώριση αποταμίευσης</button></div></section></div>:null}</div>;
+  const balances=accountBalances(data,asOf);
+  const flow=operationalMonthlyFlow(data,month);
+  const breakdown=savingsBreakdown(data,month);
+  const target=data.state.settings.savingsTargetRate??.2;
+  const rate=flow.income?flow.saving/flow.income:0;
+  const progress=ratioPercent(rate,target);
+  const accounts=allAccounts(data).filter(account=>account.kind!=='credit');
+  const savingsAccounts=accounts.filter(account=>account.kind==='savings');
+  const sourceAccounts=accounts.filter(account=>account.kind!=='savings');
+  const defaultFrom=sourceAccounts.some(account=>account.id==='piraeus-payroll')?'piraeus-payroll':sourceAccounts[0]?.id||'';
+  const defaultTo=savingsAccounts.some(account=>account.id==='piraeus-savings')?'piraeus-savings':savingsAccounts[0]?.id||'';
+  const payrollName=accountDisplayName(data,'piraeus-payroll');
+  const savingsName=accountDisplayName(data,'piraeus-savings');
+  const [open,setOpen]=useState(false);
+  const [source,setSource]=useState<SavingSource>('manual_transfer');
+  const [amount,setAmount]=useState('');
+  const [date,setDate]=useState(asOf);
+  const [from,setFrom]=useState(defaultFrom);
+  const [to,setTo]=useState(defaultTo);
+  const [note,setNote]=useState('');
+  const [error,setError]=useState('');
+  const modalRef=useModalFocus<HTMLElement>(open,'[data-autofocus="true"]',()=>setOpen(false));
+
+  const start=(next:SavingSource)=>{
+    if(next==='manual_transfer'&&onQuickAdd){
+      onQuickAdd({mode:'savings',fromAccountId:defaultFrom,toAccountId:defaultTo,note:'',savingSource:'manual_transfer'});
+      return;
+    }
+    setSource(next);
+    setAmount('');
+    setDate(asOf);
+    setFrom(defaultFrom);
+    setTo(defaultTo);
+    setNote('');
+    setError('');
+    setOpen(true);
+  };
+  const close=()=>{setOpen(false);setError('')};
+  const submit=()=>{
+    const numeric=Number(amount.replace(',','.'));
+    if(!Number.isFinite(numeric)||numeric<=0){setError('Έλεγξε το ποσό αποταμίευσης — πρέπει να είναι μεγαλύτερο από μηδέν.');return}
+    if(!sourceAccounts.some(account=>account.id===from)){setError(sourceAccounts.length?'Ο λογαριασμός προέλευσης δεν είναι πλέον διαθέσιμος. Επίλεξε έναν από τους διαθέσιμους λογαριασμούς.':'Δεν υπάρχει διαθέσιμος λογαριασμός προέλευσης για αυτή την αποταμίευση.');return}
+    if(!savingsAccounts.some(account=>account.id===to)){setError(savingsAccounts.length?'Ο λογαριασμός αποταμίευσης δεν είναι πλέον διαθέσιμος. Επίλεξε έναν από τους διαθέσιμους αποταμιευτικούς λογαριασμούς.':'Δεν υπάρχει διαθέσιμος αποταμιευτικός λογαριασμός. Πρόσθεσε ή ενεργοποίησε έναν και δοκίμασε ξανά.');return}
+    if(from===to){setError('Επίλεξε διαφορετικό λογαριασμό προέλευσης και αποταμίευσης.');return}
+    try{
+      const event=createEvent({kind:'saving_cash_offset',date,amount:numeric,note:note.trim()||SAVING_SOURCE_LABELS[source],fromAccountId:from,toAccountId:to});
+      event.savingSource=source;
+      onCreate(event);
+      close();
+    }catch(e){setError(userErrorMessage(e,'Δεν μπορέσαμε να καταχωρίσουμε την αποταμίευση. Έλεγξε τα στοιχεία και δοκίμασε ξανά.'))}
+  };
+
+  return <div className="page-stack">
+    <section className="page-heading"><div><span className="eyebrow">ΑΠΟΤΑΜΙΕΥΣΗ</span><h1>Αποταμίευση</h1><p>Διάλεξε πρώτα τι θέλεις να κάνεις. Pay & Save, απλή μεταφορά και σύνθετη αποταμίευση παραμένουν ξεχωριστές πηγές αλλά μετρούν όλες μία φορά στην πραγματική αποταμίευση.</p></div></section>
+
+    <section className="savings-action-section" aria-labelledby="savings-actions-title">
+      <div className="section-title"><div><span id="savings-actions-title">Πώς θέλεις να αποταμιεύσεις;</span><b>Οι τρεις επιλογές χρησιμοποιούν το ίδιο canonical savings flow, με διαφορετική πηγή.</b></div></div>
+      <div className="savings-action-grid">{ACTIONS.map(action=>{const Icon=action.icon;return <button type="button" className="panel neo-raised savings-action" key={action.source} aria-label={`Νέα αποταμίευση: ${action.title}`} onClick={()=>start(action.source)}><span className="savings-action-icon"><Icon aria-hidden="true"/></span><div><b>{action.title}</b><small>{action.description}</small></div><strong>Νέα κίνηση</strong></button>})}</div>
+    </section>
+
+    <section className="savings-hero neo-raised"><div className="savings-gauge"><div className="gauge-ring" role="progressbar" aria-label={target>0?'Πρόοδος προς τον στόχο αποταμίευσης':'Δεν έχει οριστεί στόχος αποταμίευσης'} aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress===null?0:Math.round(progress)} style={{'--progress':`${progress??0}%`} as CSSProperties}><div><b>{Math.round(rate*100)}%</b><span>{target>0?'των εσόδων':'χωρίς στόχο'}</span></div></div></div><div><span className="eyebrow">ΑΥΤΟΣ Ο ΜΗΝΑΣ</span><h2><AnimatedAmount value={flow.saving}/></h2><p>{target>0?`Στόχος: ${Math.round(target*100)}% των πραγματικών εσόδων.`:'Δεν έχει οριστεί ποσοστιαίος στόχος αποταμίευσης.'} Οι κινήσεις αποταμίευσης δεν μετρούν ως έξοδο.</p><div className="saving-route"><span><Wallet/> {payrollName} <b><AnimatedAmount value={balances['piraeus-payroll']||0}/></b></span><ArrowRight/><span><PiggyBank/> {savingsName} <b><AnimatedAmount value={balances['piraeus-savings']||0}/></b></span></div></div></section>
+
+    <section className="savings-breakdown-grid">
+      <article className="panel neo-raised"><div className="panel-head"><div><span>Πηγές αποταμίευσης</span><small>Σύνολο για την επιλεγμένη περίοδο</small></div></div><div className="savings-source-list">{ACTIONS.map(action=><div key={action.source}><span>{action.title}</span><b><AnimatedAmount value={breakdown.bySource[action.source]}/></b></div>)}</div></article>
+      <article className="panel neo-raised"><div className="panel-head"><div><span>Πρόσφατη αποταμίευση</span><small>Το σχόλιό σου εμφανίζεται πρώτο· η πηγή παραμένει δευτερεύουσα πληροφορία.</small></div></div>{breakdown.rows.length?<div className="saving-history">{breakdown.rows.slice(0,12).map(row=>{const presentation=savingsHistoryPresentation(row);return <div key={`${row.origin}-${row.id}`}><span>{shortDate(row.date)}</span><div><b>{presentation.primary}</b><small>{presentation.hasUserNote?`Τύπος: ${presentation.sourceLabel}`:'Χωρίς ξεχωριστό σχόλιο'}</small></div><strong>{money.format(row.amount)}</strong></div>})}</div>:<div className="empty-state">Δεν υπάρχουν κινήσεις αποταμίευσης για αυτή την περίοδο.</div>}</article>
+    </section>
+
+    <div className="logic-note compact"><PiggyBank/><div><b>Σύνθετη αποταμίευση</b><span>Η ενέργεια καταγράφει τη συμφωνημένη ψηφιακή μεταφορά προς τον αποταμιευτικό χωρίς να προσθέτει ή να αφαιρεί δεύτερη φορά τα φυσικά μετρητά.</span></div></div>
+
+    {open?<div className="editor-backdrop" onMouseDown={close}><section ref={modalRef} className="panel neo-raised editor-dialog savings-dialog" role="dialog" aria-modal="true" aria-labelledby="saving-editor-title" aria-describedby={error?'saving-editor-error':undefined} tabIndex={-1} onMouseDown={e=>e.stopPropagation()}><div className="panel-head"><div><span id="saving-editor-title">{SAVING_SOURCE_LABELS[source]}</span><small>{ACTIONS.find(action=>action.source===source)?.description}</small></div><button type="button" className="icon-button" aria-label="Κλείσιμο αποταμίευσης" onClick={close}><X/></button></div><div className="settings-form editor-grid"><label><span>Ποσό</span><MoneyInput data-autofocus="true" value={amount} onValueChange={setAmount} placeholder="0,00" invalid={Boolean(error)} aria-describedby={error?'saving-editor-error':undefined}/></label><label><span>Ημερομηνία</span><AppDateInput value={date} onChange={e=>setDate(e.target.value)}/></label><label><span>Από</span><AppSelectInput value={from} onChange={e=>setFrom(e.target.value)}>{sourceAccounts.map(account=><option key={account.id} value={account.id}>{accountDisplayName(data,account.id)}</option>)}</AppSelectInput></label><label><span>Προς αποταμίευση</span><AppSelectInput value={to} onChange={e=>setTo(e.target.value)}>{savingsAccounts.map(account=><option key={account.id} value={account.id}>{accountDisplayName(data,account.id)}</option>)}</AppSelectInput></label><label className="wide"><span>Σχόλιο / λόγος <em>προαιρετικό</em></span><input value={note} onChange={e=>setNote(e.target.value)} placeholder="π.χ. Ταξίδι, μαξιλάρι ασφαλείας"/></label></div>{source==='cash_offset'?<div className="logic-note compact"><BanknoteArrowDown/><div><b>Μία σύνθετη κίνηση</b><span>Το MyFinHub καταγράφει τη μεταφορά προς την αποταμίευση ως μία ενιαία κίνηση, ώστε να μη μετρηθούν δύο φορές η ανάληψη, τα μετρητά ή το έξοδο.</span></div></div>:null}{error?<FormError id="saving-editor-error">{error}</FormError>:null}<div className="editor-actions"><button type="button" className="secondary" onClick={close}>Ακύρωση</button><button type="button" className="save-button" onClick={submit}>Καταχώριση αποταμίευσης</button></div></section></div>:null}
+  </div>;
 }

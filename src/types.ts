@@ -1,6 +1,7 @@
 export type AccountKind = 'cash' | 'bank' | 'savings' | 'credit';
 export type SavingSource = 'pay_and_save' | 'manual_transfer' | 'cash_offset';
 export type RecurringStatus = 'active' | 'paused' | 'stopped';
+export type RecurrenceUnit = 'month' | 'year';
 export type CardKind = 'debit' | 'prepaid' | 'credit';
 export type CardNetwork = 'visa' | 'mastercard' | 'other';
 export type CardFormFactor = 'physical' | 'virtual';
@@ -9,6 +10,8 @@ export type TextSizePreference = 'compact' | 'normal' | 'large';
 export type ScheduledKind = 'expense' | 'income' | 'transfer';
 export type ScheduledTransactionStatus = 'pending' | 'completed' | 'skipped' | 'cancelled';
 export type TransactionRuleScope = 'manual' | 'imported' | 'review';
+export type StatementBoundaryRule = 'include-closing-day' | 'next-cycle';
+export type CreditStatementStatus = 'open' | 'closed' | 'due' | 'paid';
 
 export interface Account {
   id: string;
@@ -21,6 +24,15 @@ export interface Account {
 export interface CategoryDefinition {
   name: string;
   subcategories: string[];
+}
+
+export interface CategoryIdentityRecord {
+  id: string;
+  kind: 'expense' | 'income';
+  label: string;
+  aliases: string[];
+  parentId?: string;
+  parentAliases?: string[];
 }
 
 export interface CardBank {
@@ -42,8 +54,29 @@ export interface PaymentCard {
   last4?: string;
   vaultRef?: string;
   creditLimit?: number;
+  statementClosingDay?: number;
+  statementDueDay?: number;
+  statementBoundaryRule?: StatementBoundaryRule;
   active: boolean;
   archivedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DeletedCardReference {
+  id: string;
+  kind: 'credit';
+  createdAt: string;
+  deletedAt: string;
+}
+
+export interface CreditStatementRecord {
+  id: string;
+  cardId: string;
+  openDate: string;
+  closeDate: string;
+  dueDate: string;
+  boundaryRule: StatementBoundaryRule;
   createdAt: string;
   updatedAt: string;
 }
@@ -116,8 +149,10 @@ export interface FinanceEvent {
   createdAt: string;
   updatedAt: string;
   loanId?: string;
+  installmentCount?: number;
   recurringId?: string;
   cardId?: string;
+  statementId?: string;
 }
 
 export interface ScheduledTransaction {
@@ -227,6 +262,8 @@ export interface FinanceData {
     settings: FinanceSettings;
     cardBanks?: CardBank[];
     cards?: PaymentCard[];
+    deletedCards?: DeletedCardReference[];
+    creditStatements?: CreditStatementRecord[];
     events?: FinanceEvent[];
     scheduled?: ScheduledTransaction[];
     reviewDecisions?: Record<string, ReviewDecision>;
@@ -244,6 +281,9 @@ export interface FinanceSettings {
   incomeCategories: string[];
   expenseCategoryTree?: CategoryDefinition[];
   incomeCategoryTree?: CategoryDefinition[];
+  categoryIdentities?: Record<string, CategoryIdentityRecord>;
+  categoryIcons?: Record<string, string>;
+  subcategoryIcons?: Record<string, string>;
   customPresets: string[];
   pinnedPresets: string[];
   defaultExpenseAccount: string;
@@ -262,6 +302,8 @@ export interface RecurringItem {
   amount: number;
   day?: number | null;
   firstExpectedDate?: string | null;
+  recurrenceUnit?: RecurrenceUnit;
+  recurrenceInterval?: number;
   accountId: string;
   category: string;
   active: boolean;

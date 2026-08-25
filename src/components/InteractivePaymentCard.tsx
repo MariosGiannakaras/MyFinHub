@@ -1,4 +1,4 @@
-import { Copy, Eye, EyeOff, Trash2, X } from 'lucide-react';
+import { Archive, Copy, Eye, EyeOff, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { BankBrandMark } from './BankBrandMark';
 import { cardThemeClass } from '../lib/cardDesigns';
@@ -9,7 +9,7 @@ import type { CardBank, PaymentCard } from '../types';
 
 type Secrets={pan?:string;expiry?:string;cvv?:string};
 
-function formatPan(value:string){return value.replace(/\D/g,'').slice(0,16).replace(/(.{4})/g,'$1 ').trim();}
+function formatPan(value:string){return value.replace(/\D/g,'').replace(/(.{4})/g,'$1 ').trim();}
 function formatExpiry(value:string){const d=value.replace(/\D/g,'').slice(0,4);return d.length>2?`${d.slice(0,2)}/${d.slice(2)}`:d;}
 function maskedPan(card:PaymentCard){return card.last4?`•••• •••• •••• ${card.last4}`:'•••• •••• •••• ••••';}
 function kindLabel(card:PaymentCard){return card.kind==='credit'?'Credit':card.kind==='prepaid'?'Prepaid':card.formFactor==='virtual'?'Virtual':'Debit';}
@@ -21,11 +21,8 @@ function localCvvMessage(error:unknown){
 
 function PrototypeBrand({card,bank}:{card:PaymentCard;bank:CardBank}){
   const design=card.designId??'';
-  if(design.startsWith('revolut'))return <span className="card-bank-name revolut-wordmark">Revolut</span>;
-  if(design.startsWith('piraeus-'))return <span className={`card-bank-name piraeus-logo ${design==='piraeus-green'?'is-green':''}`}><span className="piraeus-slashes"><i/><i/><i/></span>Piraeus</span>;
-  if(design.startsWith('alpha'))return <><span className="card-bank-name">ALPHA BANK</span>{design==='alpha'?<span className="alpha-enter">enter</span>:<span className="alpha-bonus-word">bonus</span>}</>;
-  if(design.startsWith('payzy')||design.startsWith('viva'))return <BankBrandMark id={bank.id} name={bank.name} compact={false}/>;
-  return <><span className="brand-mark custom-mark">{bank.name.trim().slice(0,1).toUpperCase()}</span><span className="card-bank-name">{bank.name}</span></>;
+  const alphaVariant=design==='alpha'?'enter':design.startsWith('alpha')?'bonus':null;
+  return <><BankBrandMark id={bank.id} name={bank.name} compact={false}/>{alphaVariant?<span className={alphaVariant==='enter'?'alpha-enter':'alpha-bonus-word'}>{alphaVariant}</span>:null}</>;
 }
 
 function PrototypeNetwork({card}:{card:PaymentCard}){
@@ -81,13 +78,15 @@ export function InteractivePaymentCard({
   };
   const saveInline=async()=>{
     const digits=pan.replace(/\D/g,'');const normalizedExpiry=formatExpiry(expiry);let normalizedCvv='';
-    if(digits.length!==16||!/^\d{2}\/\d{2}$/.test(normalizedExpiry)){setMessage('Έλεγξε αριθμό και λήξη.');return}
+    if(!digits||!/^\d{2}\/\d{2}$/.test(normalizedExpiry)){setMessage('Έλεγξε αριθμό και λήξη.');return}
     try{normalizedCvv=normalizeLocalCvv(cvv)}catch(error){setMessage(localCvvMessage(error));return}
     setBusy(true);setMessage('');
     try{
       const receipt=await saveCardSecret(card.id,{pan:digits,expiry:normalizedExpiry});
       await saveLocalCvv(card.id,normalizedCvv);
-      const next={...card,last4:receipt.last4??digits.slice(-4),vaultRef:card.id,updatedAt:new Date().toISOString()};
+      const candidateLast4=receipt.last4??(digits.length>=4?digits.slice(-4):null);
+      const last4=candidateLast4&&/^\d{4}$/.test(candidateLast4)?candidateLast4:undefined;
+      const next={...card,last4,vaultRef:card.id,updatedAt:new Date().toISOString()};
       onUpsert?.(next);setRevealed({});setEditing(false);setMessage('Η κάρτα αποθηκεύτηκε.');onEditingComplete?.();
     }catch(error){setMessage(error instanceof Error&&error.message.startsWith('LOCAL_')?localCvvMessage(error):cardVaultErrorMessage(error))}
     finally{setBusy(false)}
@@ -118,10 +117,10 @@ export function InteractivePaymentCard({
       <div className="card-inner">
         <header className="card-header">
           <div className="card-brand-block"><div className="card-brand"><PrototypeBrand card={card} bank={bank}/></div><div className="card-nickname">{card.nickname}</div></div>
-          {!editing?<div className="card-toolbar"><button className="card-icon-btn" type="button" disabled={busy} aria-pressed={visible} aria-label={visible?'Απόκρυψη στοιχείων':'Εμφάνιση στοιχείων'} title={visible?'Απόκρυψη στοιχείων':'Εμφάνιση στοιχείων'} onClick={()=>void toggleReveal()}>{visible?<EyeOff/>:<Eye/>}</button>{onArchive?<button className="card-icon-btn" type="button" disabled={busy||archiveDisabled} aria-label="Αρχειοθέτηση κάρτας" title="Διαγραφή" onClick={()=>{setDeleteProgress(0);setDeleteOffset(0);setDeleteOpen(true)}}><Trash2/></button>:null}</div>:null}
+          {!editing?<div className="card-toolbar"><button className="card-icon-btn" type="button" disabled={busy} aria-pressed={visible} aria-label={visible?'Απόκρυψη στοιχείων':'Εμφάνιση στοιχείων'} title={visible?'Απόκρυψη στοιχείων':'Εμφάνιση στοιχείων'} onClick={()=>void toggleReveal()}>{visible?<EyeOff/>:<Eye/>}</button>{onArchive?<button className="card-icon-btn" type="button" disabled={busy||archiveDisabled} aria-label="Αρχειοθέτηση κάρτας" title="Αρχειοθέτηση κάρτας" onClick={()=>{setDeleteProgress(0);setDeleteOffset(0);setDeleteOpen(true)}}><Archive/></button>:null}</div>:null}
         </header>
         <div className="card-body">
-          <div className="card-number-wrap">{editing?<input className="card-edit-input edit-number inline-number" value={pan} inputMode="numeric" maxLength={19} placeholder="1234 5678 9012 3456" aria-label="Αριθμός κάρτας" onChange={e=>setPan(formatPan(e.target.value))}/>:<><div className={`card-number ${visible?'':'masked'}`}>{number}</div><button className="copy-mini" type="button" disabled={busy} aria-label="Αντιγραφή αριθμού" title="Αντιγραφή αριθμού" onClick={()=>void copy('pan','Ο αριθμός κάρτας')}><Copy/></button></>}</div>
+          <div className="card-number-wrap">{editing?<input className="card-edit-input edit-number inline-number" value={pan} inputMode="numeric" placeholder="Αριθμός κάρτας" aria-label="Αριθμός κάρτας" onChange={e=>setPan(formatPan(e.target.value))}/>:<><div className={`card-number ${visible?'':'masked'}`}>{number}</div><button className="copy-mini" type="button" disabled={busy} aria-label="Αντιγραφή αριθμού" title="Αντιγραφή αριθμού" onClick={()=>void copy('pan','Ο αριθμός κάρτας')}><Copy/></button></>}</div>
           <div className="card-fields">
             <div className="card-field"><span className="card-field-label">VALID THRU</span>{editing?<input className="card-edit-input edit-small inline-expiry" value={expiry} inputMode="numeric" maxLength={5} placeholder="MM/YY" aria-label="Ημερομηνία λήξης" onChange={e=>setExpiry(formatExpiry(e.target.value))}/>:<div className="card-field-line"><span className={`card-field-value ${visible?'':'masked'}`}>{shownExpiry}</span><button className="copy-mini" type="button" disabled={busy} aria-label="Αντιγραφή λήξης" title="Αντιγραφή λήξης" onClick={()=>void copy('expiry','Η λήξη')}><Copy/></button></div>}</div>
             <div className="card-field"><span className="card-field-label">CVV</span>{editing?<input className="card-edit-input edit-small inline-cvv" value={cvv} inputMode="numeric" maxLength={4} placeholder="CVV" aria-label="CVV" onChange={e=>setCvv(e.target.value.replace(/\D/g,'').slice(0,4))}/>:<div className="card-field-line"><span className={`card-field-value ${visible?'':'masked'}`}>{shownCvv}</span><button className="copy-mini" type="button" disabled={busy} aria-label="Αντιγραφή CVV" title="Αντιγραφή CVV" onClick={()=>void copy('cvv','Το CVV')}><Copy/></button></div>}</div>
@@ -129,7 +128,7 @@ export function InteractivePaymentCard({
           </div>
         </div>
         {editing?<div className="card-edit-actions"><button className="card-action" type="button" disabled={busy} onClick={cancelInline}>Ακύρωση</button><button className="card-action primary" type="button" disabled={busy} onClick={()=>void saveInline()}>Αποθήκευση</button></div>:null}
-        {deleteOpen?<div className="delete-confirm r-card-archive-confirm"><div className="delete-confirm-head"><div className="delete-confirm-copy"><b>Διαγραφή κάρτας;</b><small>Σύρε μέχρι τέρμα για επιβεβαίωση. Η κάρτα θα αρχειοθετηθεί ώστε να μπορεί να επανέλθει με το ίδιο ιστορικό και τα ίδια vault στοιχεία.</small></div><button className="delete-cancel" type="button" aria-label="Ακύρωση διαγραφής" onClick={resetDelete}><X/></button></div><div ref={sliderRef} className="delete-slider" style={{'--p':deleteProgress} as React.CSSProperties}><span className="delete-slider-label">ΣΥΡΕ ΓΙΑ ΔΙΑΓΡΑΦΗ</span><button className="delete-slider-thumb r-card-archive-keyboard" type="button" aria-label="Σύρε για διαγραφή" style={{transform:`translateX(${deleteOffset}px)`}} onClick={e=>{if(e.detail===0)void commitArchive()}} onPointerDown={e=>{e.currentTarget.setPointerCapture(e.pointerId);moveDelete(e.clientX)}} onPointerMove={e=>{if(e.currentTarget.hasPointerCapture(e.pointerId))moveDelete(e.clientX)}} onPointerUp={e=>{try{e.currentTarget.releasePointerCapture(e.pointerId)}catch{}if(deleteProgress>=.92){setDeleteProgress(1);void commitArchive()}else{setDeleteProgress(0);setDeleteOffset(0)}}} onPointerCancel={()=>{setDeleteProgress(0);setDeleteOffset(0)}}><Trash2/><span className="sr-only">Αρχειοθέτηση</span></button></div></div>:null}
+        {deleteOpen?<div className="delete-confirm r-card-archive-confirm"><div className="delete-confirm-head"><div className="delete-confirm-copy"><b>Αρχειοθέτηση κάρτας;</b><small>Σύρε μέχρι τέρμα για επιβεβαίωση. Η κάρτα θα μεταφερθεί στο αρχείο και μπορεί να επανέλθει με τα ίδια στοιχεία.</small></div><button className="delete-cancel" type="button" aria-label="Ακύρωση αρχειοθέτησης" title="Ακύρωση αρχειοθέτησης" onClick={resetDelete}><X/></button></div><div ref={sliderRef} className="delete-slider" style={{'--p':deleteProgress} as React.CSSProperties}><span className="delete-slider-label">ΣΥΡΕ ΓΙΑ ΑΡΧΕΙΟΘΕΤΗΣΗ</span><button className="delete-slider-thumb r-card-archive-keyboard" type="button" aria-label="Σύρε για αρχειοθέτηση" title="Αρχειοθέτηση κάρτας" style={{transform:`translateX(${deleteOffset}px)`}} onClick={e=>{if(e.detail===0)void commitArchive()}} onPointerDown={e=>{e.currentTarget.setPointerCapture(e.pointerId);moveDelete(e.clientX)}} onPointerMove={e=>{if(e.currentTarget.hasPointerCapture(e.pointerId))moveDelete(e.clientX)}} onPointerUp={e=>{try{e.currentTarget.releasePointerCapture(e.pointerId)}catch{}if(deleteProgress>=.92){setDeleteProgress(1);void commitArchive()}else{setDeleteProgress(0);setDeleteOffset(0)}}} onPointerCancel={()=>{setDeleteProgress(0);setDeleteOffset(0)}}><Archive/><span className="sr-only">Αρχειοθέτηση</span></button></div></div>:null}
       </div>
     </article>
     {message?<div className="r-card-status" role="status" aria-live="polite">{message}</div>:null}

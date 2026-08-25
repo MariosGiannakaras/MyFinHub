@@ -15,6 +15,7 @@ const settings: FinanceSettings = {
 };
 
 const part = { id: 'p1', label: 'part', category: 'Έξοδα', amount: 10 };
+const secondPart = { id: 'p2', label: 'part 2', category: 'Έξοδα', amount: 5 };
 
 describe('finance input semantics', () => {
   it('uses income-specific account and category defaults', () => {
@@ -26,7 +27,7 @@ describe('finance input semantics', () => {
     expect(entryDraftError('lending', { amount: '10', person: ' ', actualBalance: '', parts: [part] })).toMatch(/πρόσωπο/i);
     expect(entryDraftError('reconciliation', { amount: '', person: '', actualBalance: '', parts: [part] })).toMatch(/υπόλοιπο/i);
     expect(entryDraftError('split', { amount: '10', person: '', actualBalance: '', parts: [{ ...part, amount: 0 }] })).toMatch(/επιμέρους/i);
-    expect(entryDraftError('split', { amount: '10', person: '', actualBalance: '', parts: [part] })).toBeNull();
+    expect(entryDraftError('split', { amount: '', person: '', actualBalance: '', parts: [part, secondPart] })).toBeNull();
   });
 
   it('rejects invalid loan installment counts and paid baselines', () => {

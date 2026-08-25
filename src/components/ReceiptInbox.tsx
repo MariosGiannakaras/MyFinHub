@@ -1,5 +1,6 @@
 import { Camera, Check, FileImage, LoaderCircle, ReceiptText, ScanLine, Trash2, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { ConfirmDialog } from './ConfirmDialog';
 import { useModalFocus } from '../hooks/useModalFocus';
 import { money } from '../lib/format';
 import { normalizeReceiptFile } from '../lib/receiptImage';
@@ -18,6 +19,7 @@ import {
 import type { FinanceData } from '../types';
 
 type ReceiptOcrModule = typeof import('../lib/receiptOcr');
+type DeleteRequest={mode:'one';draft:ReceiptDraft}|{mode:'many';ids:string[]};
 let receiptOcrModulePromise: Promise<ReceiptOcrModule> | null = null;
 
 const loadReceiptOcr = () => {
@@ -93,6 +95,8 @@ export function ReceiptInbox({
   const [drafts, setDrafts] = useState<ReceiptDraft[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [deleteSelection, setDeleteSelection] = useState<Set<string>>(new Set());
+  const [deleteRequest,setDeleteRequest]=useState<DeleteRequest|null>(null);
+  const [deleting,setDeleting]=useState(false);
   const [loading, setLoading] = useState(false);
   const [scanningId, setScanningId] = useState<string | null>(null);
   const [progress, setProgress] = useState<ReceiptOcrProgress | null>(null);
@@ -101,7 +105,7 @@ export function ReceiptInbox({
   const cameraRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const scanToken = useRef(0);
-  const modalRef = useModalFocus<HTMLElement>(open, 'button', onClose);
+  const modalRef = useModalFocus<HTMLElement>(open&&!deleteRequest, 'button', onClose);
 
   const selected = useMemo(() => drafts.find((draft) => draft.id === selectedId) ?? null, [drafts, selectedId]);
 
@@ -122,6 +126,8 @@ export function ReceiptInbox({
       scanToken.current += 1;
       setScanningId(null);
       setProgress(null);
+      setDeleteRequest(null);
+      setDeleting(false);
       void disposeReceiptOcrIfLoaded();
       return;
     }
@@ -190,24 +196,26 @@ export function ReceiptInbox({
     await module.cancelReceiptOcr();
   };
 
-  const removeOne = async (draft: ReceiptDraft) => {
-    if (!window.confirm('Να διαγραφεί αυτή η τοπική απόδειξη σε αναμονή; Δεν θα δημιουργηθεί συναλλαγή.')) return;
-    if (scanningId === draft.id) await cancelScan();
-    await deleteReceiptDraft(draft.id);
-    setDeleteSelection((current) => { const next = new Set(current); next.delete(draft.id); return next; });
-    await refresh();
-    setMessage('Η τοπική απόδειξη διαγράφηκε.');
-  };
-
-  const removeSelected = async () => {
-    const ids = [...deleteSelection];
-    if (!ids.length) return;
-    if (!window.confirm(`Να διαγραφούν ${ids.length} επιλεγμένες αποδείξεις σε αναμονή;`)) return;
-    if (scanningId && deleteSelection.has(scanningId)) await cancelScan();
-    await deleteReceiptDrafts(ids);
-    setDeleteSelection(new Set());
-    await refresh();
-    setMessage('Οι επιλεγμένες τοπικές αποδείξεις διαγράφηκαν.');
+  const requestRemoveOne=(draft:ReceiptDraft)=>setDeleteRequest({mode:'one',draft});
+  const requestRemoveSelected=()=>{const ids=[...deleteSelection];if(ids.length)setDeleteRequest({mode:'many',ids})};
+  const confirmRemove=async()=>{
+    const request=deleteRequest;if(!request||deleting)return;setDeleting(true);
+    try{
+      if(request.mode==='one'){
+        if(scanningId===request.draft.id)await cancelScan();
+        await deleteReceiptDraft(request.draft.id);
+        setDeleteSelection((current)=>{const next=new Set(current);next.delete(request.draft.id);return next});
+        await refresh();
+        setMessage('Η τοπική απόδειξη διαγράφηκε.');
+      }else{
+        if(scanningId&&request.ids.includes(scanningId))await cancelScan();
+        await deleteReceiptDrafts(request.ids);
+        setDeleteSelection(new Set());
+        await refresh();
+        setMessage('Οι επιλεγμένες τοπικές αποδείξεις διαγράφηκαν.');
+      }
+      setDeleteRequest(null);
+    }finally{setDeleting(false)}
   };
 
   const toggleDelete = (id: string) => setDeleteSelection((current) => {
@@ -221,8 +229,10 @@ export function ReceiptInbox({
   const proposal = selected?.proposal;
   const nonEur = Boolean(proposal?.currency && proposal.currency !== 'EUR');
   const scanning = Boolean(scanningId);
+  const deleteCount=deleteRequest?.mode==='many'?deleteRequest.ids.length:1;
 
-  return <div className="modal-backdrop receipt-inbox-backdrop" onMouseDown={onClose}>
+  return <>
+  <div className="modal-backdrop receipt-inbox-backdrop" onMouseDown={onClose}>
     <section ref={modalRef} className="receipt-inbox neo-raised" role="dialog" aria-modal="true" aria-labelledby="receipt-inbox-title" tabIndex={-1} onMouseDown={(event) => event.stopPropagation()}>
       <header className="receipt-inbox-header"><div><small>LOCAL-ONLY OCR</small><h2 id="receipt-inbox-title"><ReceiptText size={21}/> Αποδείξεις σε αναμονή</h2><p>Η φωτογραφία αποθηκεύεται μόνο σε αυτή τη συσκευή. Μπορείς να τη σαρώσεις τώρα ή αργότερα και να κλείσεις την εφαρμογή μόλις επιβεβαιωθεί η αποθήκευση.</p></div><button type="button" className="icon-button" aria-label="Κλείσιμο αποδείξεων σε αναμονή" onClick={onClose}><X/></button></header>
 
@@ -240,7 +250,7 @@ export function ReceiptInbox({
 
       <div className="receipt-inbox-layout">
         <aside className="receipt-draft-list" aria-label="Τοπικές αποδείξεις σε αναμονή">
-          <div className="receipt-list-head"><span>{drafts.length} σε αναμονή</span>{deleteSelection.size ? <button type="button" className="text-button danger" onClick={() => void removeSelected()}><Trash2 size={14}/> Διαγραφή ({deleteSelection.size})</button> : null}</div>
+          <div className="receipt-list-head"><span>{drafts.length} σε αναμονή</span>{deleteSelection.size ? <button type="button" className="text-button danger" onClick={requestRemoveSelected}><Trash2 size={14}/> Διαγραφή ({deleteSelection.size})</button> : null}</div>
           {drafts.length ? drafts.map((draft) => <div key={draft.id} className={`receipt-draft-row ${selectedId === draft.id ? 'active' : ''}`}>
             <label className="receipt-select-check" title="Επιλογή για διαγραφή"><input type="checkbox" checked={deleteSelection.has(draft.id)} onChange={() => toggleDelete(draft.id)}/><span className="sr-only">Επιλογή απόδειξης</span></label>
             <button type="button" className="receipt-draft-open" onClick={() => { setSelectedId(draft.id); setError(''); setMessage(''); }}>
@@ -256,7 +266,7 @@ export function ReceiptInbox({
             {scanningId === selected.id ? <div className="receipt-scan-progress" role="status" aria-live="polite"><div><LoaderCircle className="is-spinning" size={18}/><b>Τοπική OCR σάρωση</b><span>{Math.round((progress?.progress ?? 0) * 100)}%</span></div><progress max="1" value={progress?.progress ?? 0}/><small>{progress?.status || 'Αναγνώριση κειμένου στη συσκευή…'}</small><button type="button" className="secondary" onClick={() => void cancelScan()}>Διακοπή</button></div> : null}
             {proposal ? <div className="receipt-proposal" aria-label="Προτεινόμενα στοιχεία απόδειξης"><h3>Πρόταση OCR</h3><dl><div><dt>Κατάστημα</dt><dd>{proposal.merchant || '—'} <small>{confidenceLabel(proposal.confidence?.merchant)}</small></dd></div><div><dt>Ημερομηνία</dt><dd>{proposal.date || '—'} <small>{confidenceLabel(proposal.confidence?.date)}</small></dd></div><div><dt>Σύνολο</dt><dd>{typeof proposal.total === 'number' ? money.format(proposal.total) : '—'} <small>{confidenceLabel(proposal.confidence?.total)}</small></dd></div><div><dt>Νόμισμα</dt><dd>{proposal.currency || 'Δεν εντοπίστηκε'} <small>{confidenceLabel(proposal.confidence?.currency)}</small></dd></div>{proposal.category ? <div><dt>Προτεινόμενη κατηγορία</dt><dd>{proposal.category}<small>από προηγούμενες κινήσεις</small></dd></div> : null}</dl>{nonEur ? <div className="receipt-currency-warning" role="alert">Η απόδειξη φαίνεται να είναι σε {proposal.currency}. Το MyFinHub παραμένει EUR-only, οπότε το ποσό δεν θα συμπληρωθεί αυτόματα.</div> : null}</div> : <div className="receipt-proposal receipt-proposal-empty"><ScanLine size={22}/><b>Δεν έχει γίνει ακόμη OCR</b><span>Η φωτογραφία είναι ήδη ασφαλώς αποθηκευμένη τοπικά. Η σάρωση είναι προαιρετική και μπορεί να γίνει αργότερα.</span></div>}
             <div className="receipt-review-actions">
-              <button type="button" className="secondary danger" disabled={scanning} onClick={() => void removeOne(selected)}><Trash2 size={16}/> Διαγραφή</button>
+              <button type="button" className="secondary danger" disabled={scanning} onClick={() => requestRemoveOne(selected)}><Trash2 size={16}/> Διαγραφή</button>
               {!scanning ? <button type="button" className="secondary" onClick={() => void scan(selected)}><ScanLine size={16}/> {selected.status === 'ready' ? 'Νέα σάρωση' : 'Σάρωση τώρα'}</button> : null}
               <button type="button" className="secondary" disabled={scanning} onClick={() => onApply(selected.id, {})}>Χειροκίνητη καταχώριση</button>
               {proposal ? <button type="button" className="save-button" disabled={scanning} onClick={() => onApply(selected.id, proposal)}><Check size={16}/> Χρήση στη Γρήγορη Κίνηση</button> : null}
@@ -265,5 +275,7 @@ export function ReceiptInbox({
         </div>
       </div>
     </section>
-  </div>;
+  </div>
+  <ConfirmDialog open={Boolean(deleteRequest)} title={deleteRequest?.mode==='many'?`Διαγραφή ${deleteCount} αποδείξεων;`:'Διαγραφή τοπικής απόδειξης;'} description={deleteRequest?.mode==='many'?'Οι επιλεγμένες τοπικές αποδείξεις θα διαγραφούν από αυτή τη συσκευή. Δεν θα δημιουργηθεί καμία συναλλαγή.':'Η τοπική απόδειξη θα διαγραφεί από αυτή τη συσκευή. Δεν θα δημιουργηθεί συναλλαγή.'} confirmLabel="Διαγραφή" tone="destructive" busy={deleting} motionMode={data.state.settings.motion} onConfirm={()=>void confirmRemove()} onCancel={()=>{if(!deleting)setDeleteRequest(null)}}/>
+  </>;
 }

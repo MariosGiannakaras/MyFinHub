@@ -37,6 +37,9 @@ button{min-width:24px;min-height:24px}
 .sidebar nav button.active{color:white;background:linear-gradient(105deg,#2f6fed,#5a8cff);box-shadow:0 7px 17px rgba(47,111,237,.24),inset 0 1px 0 rgba(255,255,255,.34)}
 .count-badge{margin-left:auto;min-width:22px;height:22px;border-radius:10px;background:#fff;color:#2f6fed;display:grid;place-items:center;font-size:10px}
 .file-panel{margin-top:auto;border-radius:17px;padding:13px}
+.file-panel.is-quiet{padding:8px 9px;background:transparent;border:1px solid transparent;box-shadow:none;opacity:.72}
+.file-panel.is-quiet .file-line{gap:6px}.file-panel.is-quiet .status-dot.saved{width:6px;height:6px;box-shadow:none}.file-panel.is-quiet small{display:none}
+.file-panel.is-active{border-color:rgba(213,224,239,.72)}
 .file-line{display:flex;align-items:center;gap:7px;font-size:10px}
 .status-dot{width:8px;height:8px;border-radius:99px;background:#95a3ba}
 .status-dot.saved{background:#20aa6d;box-shadow:0 0 0 5px rgba(32,170,109,.09)}
@@ -45,9 +48,7 @@ button{min-width:24px;min-height:24px}
 .file-panel small{display:block;color:var(--muted);margin-top:8px;font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sidebar-foot{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:9px;padding:13px 7px 0}
 .topbar{height:62px;border-radius:20px;display:grid;grid-template-columns:1fr auto;align-items:center;padding:0 15px;position:sticky;top:14px;z-index:25}
-.command-pill{height:38px;justify-self:start;display:flex;align-items:center;gap:9px;background:#f2f5fa;box-shadow:var(--shadow-inset);border-radius:12px;padding:0 11px;color:var(--muted);font-size:11px}
-.command-pill kbd{margin-left:14px;border:1px solid #d7e0ec;background:#fff;border-radius:6px;padding:2px 5px;font-size:9px}
-.top-actions{display:flex;align-items:center;gap:8px}
+.top-actions{grid-column:2;display:flex;align-items:center;gap:8px}
 .top-actions button,.icon-button{border:1px solid rgba(255,255,255,.85);background:linear-gradient(145deg,#fff,#ecf2f9);box-shadow:var(--shadow-soft);width:36px;height:36px;border-radius:12px;display:grid;place-items:center;cursor:pointer;transition:.15s}
 .top-actions button:hover,.icon-button:hover{transform:translateY(-1px);color:var(--blue)}
 .has-dot{position:relative}

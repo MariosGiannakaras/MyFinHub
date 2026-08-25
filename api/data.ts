@@ -17,6 +17,11 @@ function setServerTiming(res: any, timings: { session: number; owner: number; da
   ].join(', '));
 }
 
+function header(req: any, name: string) {
+  const value = req.headers?.[name];
+  return String(Array.isArray(value) ? value[0] ?? '' : value ?? '');
+}
+
 export default async function handler(req: any, res: any) {
   await handleApi(res, async () => {
     if (req.method !== 'GET' && req.method !== 'PUT') return methodNotAllowed(res, ['GET', 'PUT']);
@@ -44,12 +49,12 @@ export default async function handler(req: any, res: any) {
     }
 
     assertMutationSessionOrigin(req, session);
-    const expectedHeader = Array.isArray(req.headers?.['if-match']) ? req.headers['if-match'][0] : req.headers?.['if-match'];
-    const expectedRevision = String(parseExpectedRevision(typeof expectedHeader === 'string' ? expectedHeader : undefined));
+    const expectedRevision = String(parseExpectedRevision(header(req, 'if-match')));
+    const expectedHistoryGeneration = header(req, 'x-rheomiq-history-generation');
     const body = parseMutableWrite(await readJsonBody(req, MAX_FINANCE_DOCUMENT_BYTES));
 
     const dataStarted = Date.now();
-    const result = await writeMutableState(body.state, body.updatedAt, expectedRevision, session.accessToken);
+    const result = await writeMutableState(body.state, body.updatedAt, expectedRevision, expectedHistoryGeneration, body.historyLabel ?? 'Οικονομική αλλαγή', session.accessToken);
     const dataMs = duration(dataStarted);
     setServerTiming(res, { session: sessionMs, owner: ownerMs, data: dataMs, total: duration(totalStarted) });
     return sendJson(res, 200, result);
