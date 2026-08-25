@@ -2,6 +2,7 @@ import express from 'express';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { accessTokenAal, assertMutationSessionOrigin, beginTotpEnrollment, challengeTotp, clearSessionCookies, clearSessionCookiesIfCookie, getTotpFactors, requireSession, revokeSession, setSessionCookies, signInWithPassword, verifyTotp } from './auth.js';
+import { handleAccountMetadataRequest } from './accountMetadataHandler.js';
 import { handleCardVaultRequest } from './cardVaultHandler.js';
 import { ApiError, assertSameOrigin, handleApi, methodNotAllowed, requestHeader, sendJson } from './http.js';
 import { backupStore, DATA_SOURCE, isOwner, readStore, writeMutableState, writeStore } from './storage.js';
@@ -160,6 +161,7 @@ app.put('/api/data', (req, res) => void handleApi(res, async () => {
   sendJson(res, 200, await writeMutableState(body.state, body.updatedAt, requestHeader(req, 'if-match'), session.accessToken));
 }));
 
+app.all('/api/account-metadata', (req, res) => void handleAccountMetadataRequest(req, res));
 app.all('/api/card-secrets', (req, res) => void handleCardVaultRequest(req, res));
 
 app.post('/api/import', (req, res) => void handleApi(res, async () => {

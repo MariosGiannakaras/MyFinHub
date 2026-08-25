@@ -1,0 +1,51 @@
+.account-iban{display:flex;align-items:center;gap:7px;min-width:0;margin-top:7px;color:var(--muted)}
+.account-iban-label{flex:0 0 auto;font-size:8px;font-weight:820;letter-spacing:.08em;color:var(--muted-2)}
+.account-iban-value{min-width:0;font-size:9px;line-height:1.35;font-weight:680;letter-spacing:.015em;color:var(--ink-2);overflow-wrap:anywhere}
+.account-iban-value.muted{font-weight:600;color:var(--muted-2)}
+.account-iban-copy{flex:0 0 32px;width:32px;height:32px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.55);display:grid;place-items:center;color:var(--blue-2);cursor:pointer}
+.account-iban-copy:hover{background:rgba(255,255,255,.82);color:var(--blue)}
+
+.account-metadata-settings .panel-head{align-items:flex-start}
+.account-metadata-settings .panel-head>.secondary{flex:0 0 auto}
+.account-metadata-list{display:grid;gap:9px;margin-top:13px}
+.account-metadata-row{display:grid;grid-template-columns:minmax(150px,.8fr) minmax(260px,1.5fr) auto;align-items:end;gap:10px 12px;padding:12px;border:1px solid var(--line);border-radius:14px;background:rgba(248,251,255,.62)}
+.account-metadata-identity{align-self:center;min-width:0}
+.account-metadata-identity b{display:block;font-size:11px;line-height:1.3}
+.account-metadata-identity small{display:block;margin-top:3px;color:var(--muted);font-size:8.5px;line-height:1.35}
+.account-metadata-row label{display:grid;gap:5px;min-width:0}
+.account-metadata-row label>span{font-size:8.5px;font-weight:760;color:var(--muted)}
+.account-metadata-row input{width:100%;min-height:42px;border:1px solid var(--line);border-radius:11px;background:#f7faff;color:var(--ink);padding:9px 11px;font-size:10px;letter-spacing:.02em}
+.account-metadata-row input[aria-invalid="true"]{border-color:color-mix(in srgb,var(--red) 62%,var(--line));box-shadow:0 0 0 3px color-mix(in srgb,var(--red) 10%,transparent)}
+.account-metadata-row>.save-button{min-height:42px;white-space:nowrap}
+.account-metadata-row>small{grid-column:2/-1;min-height:14px;color:var(--muted);font-size:8.5px;line-height:1.35}
+.account-metadata-row>small.form-error{color:var(--red)}
+
+.primary-balance-card .account-iban{padding-right:2px}
+.compact-account-row .account-iban{margin-top:4px;gap:5px}
+.compact-account-row .account-iban-label{font-size:7px}
+.compact-account-row .account-iban-value{font-size:7.5px;line-height:1.3}
+.compact-account-row .account-iban-copy{width:28px;height:28px;flex-basis:28px;border-radius:9px}
+
+@media(max-width:900px){
+  .account-metadata-row{grid-template-columns:minmax(135px,.75fr) minmax(220px,1.25fr)}
+  .account-metadata-row>.save-button{grid-column:2;justify-self:start}
+  .account-metadata-row>small{grid-column:2}
+}
+
+@media(max-width:680px){
+  .primary-balance-card{min-height:146px}
+  .primary-balance-card .account-iban{margin-top:8px;max-width:100%}
+  .primary-balance-card .account-iban-value{font-size:8.5px}
+  .account-iban-copy{width:40px;height:40px;flex-basis:40px;border-radius:12px}
+  .compact-account-row{min-height:112px;align-items:flex-start}
+  .compact-account-row .account-iban{align-items:flex-start}
+  .compact-account-row .account-iban-copy{width:40px;height:40px;flex-basis:40px}
+  .account-metadata-settings .panel-head{display:grid;grid-template-columns:1fr;gap:10px}
+  .account-metadata-settings .panel-head>.secondary{justify-self:start;min-height:44px}
+  .account-metadata-list{gap:10px}
+  .account-metadata-row{grid-template-columns:1fr;align-items:stretch;padding:12px;gap:9px}
+  .account-metadata-row>.save-button,.account-metadata-row>small{grid-column:1}
+  .account-metadata-row>.save-button{justify-self:stretch;min-height:44px}
+  .account-metadata-row input{min-height:44px;font-size:10px}
+  .account-metadata-identity b{font-size:10px}
+}

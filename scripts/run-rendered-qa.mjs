@@ -24,6 +24,7 @@ const scripts=[
   {path:'scripts/ui-ux-visual-evidence-qa.mjs',key:'full-page',surface:'pages',profiles:['/tmp/myfinhub-ui-visual-evidence-chrome'],persist:false},
   {path:'scripts/shell-dashboard-hierarchy-qa.mjs',key:'shell-dashboard-hierarchy',surface:'dashboard',profiles:['/tmp/myfinhub-shell-dashboard-hierarchy-chrome']},
   {path:'scripts/taxonomy-management-qa.mjs',key:'taxonomy-management',surface:'taxonomy',profiles:['/tmp/myfinhub-taxonomy-management-qa-chrome']},
+  {path:'scripts/account-metadata-qa.mjs',key:'account-metadata',surface:'accounts',profiles:['/tmp/myfinhub-account-metadata-qa-chrome']},
   {path:'scripts/category-icon-adoption-qa.mjs',key:'category-icons',surface:'categories',profiles:['/tmp/myfinhub-category-icon-adoption-qa-chrome']},
   {path:'scripts/legacy-transaction-management-qa.mjs',key:'legacy-transactions',surface:'transactions',profiles:['/tmp/myfinhub-legacy-transaction-management-qa-chrome']},
   {path:'scripts/transactions-scanability-qa.mjs',key:'transactions-scanability',surface:'transactions',profiles:['/tmp/myfinhub-transactions-scanability-qa-chrome']},
