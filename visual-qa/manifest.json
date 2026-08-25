@@ -2,18 +2,18 @@
   "schemaVersion": 2,
   "layout": "surface-first-latest-only",
   "appVersion": "v1.3",
-  "captureId": "2026-08-25_010853__0f5a44a5",
-  "generatedAt": "2026-08-24T22:08:53.191Z",
+  "captureId": "2026-08-25_221814__f37ff364",
+  "generatedAt": "2026-08-25T19:18:14.539Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "0f5a44a5af57681935c71777c869cf5fe712c7ff",
-    "shortSha": "0f5a44a5",
-    "branch": "feat/233-safe-taxonomy-retirement-final"
+    "sha": "f37ff364c924b8e9f42b82b454a9e0730a7cf2bd",
+    "shortSha": "f37ff364",
+    "branch": "fix/history-audit-actions-release-blocker"
   },
   "baseUrl": "http://127.0.0.1:5173/qa.html",
   "screenshots": [
     {
-      "file": "visual-qa/dashboard/v1.3__2026-08-25_010853__full-page__desktop-1440x1000.png",
+      "file": "visual-qa/dashboard/v1.3__2026-08-25_221814__full-page__desktop-1440x1000.png",
       "page": "dashboard",
       "state": "LATEST",
       "viewport": {
@@ -23,11 +23,11 @@
       },
       "capture": {
         "width": 1425,
-        "height": 1767
+        "height": 1806
       }
     },
     {
-      "file": "visual-qa/transactions/v1.3__2026-08-25_010853__full-page__desktop-1440x1000.png",
+      "file": "visual-qa/transactions/v1.3__2026-08-25_221814__full-page__desktop-1440x1000.png",
       "page": "transactions",
       "state": "LATEST",
       "viewport": {
@@ -41,7 +41,7 @@
       }
     },
     {
-      "file": "visual-qa/review/v1.3__2026-08-25_010853__full-page__desktop-1440x1000.png",
+      "file": "visual-qa/review/v1.3__2026-08-25_221814__full-page__desktop-1440x1000.png",
       "page": "review",
       "state": "LATEST",
       "viewport": {
@@ -55,7 +55,7 @@
       }
     },
     {
-      "file": "visual-qa/savings/v1.3__2026-08-25_010853__full-page__desktop-1440x1000.png",
+      "file": "visual-qa/savings/v1.3__2026-08-25_221814__full-page__desktop-1440x1000.png",
       "page": "savings",
       "state": "LATEST",
       "viewport": {
@@ -69,7 +69,7 @@
       }
     },
     {
-      "file": "visual-qa/cards/v1.3__2026-08-25_010853__full-page__desktop-1440x1000.png",
+      "file": "visual-qa/cards/v1.3__2026-08-25_221814__full-page__desktop-1440x1000.png",
       "page": "cards",
       "state": "LATEST",
       "viewport": {
@@ -83,7 +83,7 @@
       }
     },
     {
-      "file": "visual-qa/credit/v1.3__2026-08-25_010853__full-page__desktop-1440x1000.png",
+      "file": "visual-qa/credit/v1.3__2026-08-25_221814__full-page__desktop-1440x1000.png",
       "page": "credit",
       "state": "LATEST",
       "viewport": {
@@ -97,7 +97,7 @@
       }
     },
     {
-      "file": "visual-qa/loans/v1.3__2026-08-25_010853__full-page__desktop-1440x1000.png",
+      "file": "visual-qa/loans/v1.3__2026-08-25_221814__full-page__desktop-1440x1000.png",
       "page": "loans",
       "state": "LATEST",
       "viewport": {
@@ -111,7 +111,7 @@
       }
     },
     {
-      "file": "visual-qa/lending/v1.3__2026-08-25_010853__full-page__desktop-1440x1000.png",
+      "file": "visual-qa/lending/v1.3__2026-08-25_221814__full-page__desktop-1440x1000.png",
       "page": "lending",
       "state": "LATEST",
       "viewport": {
@@ -125,7 +125,7 @@
       }
     },
     {
-      "file": "visual-qa/recurring/v1.3__2026-08-25_010853__full-page__desktop-1440x1000.png",
+      "file": "visual-qa/recurring/v1.3__2026-08-25_221814__full-page__desktop-1440x1000.png",
       "page": "recurring",
       "state": "LATEST",
       "viewport": {
@@ -139,7 +139,7 @@
       }
     },
     {
-      "file": "visual-qa/planning/v1.3__2026-08-25_010853__full-page__desktop-1440x1000.png",
+      "file": "visual-qa/planning/v1.3__2026-08-25_221814__full-page__desktop-1440x1000.png",
       "page": "planning",
       "state": "LATEST",
       "viewport": {
@@ -153,7 +153,7 @@
       }
     },
     {
-      "file": "visual-qa/reports/v1.3__2026-08-25_010853__full-page__desktop-1440x1000.png",
+      "file": "visual-qa/reports/v1.3__2026-08-25_221814__full-page__desktop-1440x1000.png",
       "page": "reports",
       "state": "LATEST",
       "viewport": {
@@ -167,7 +167,7 @@
       }
     },
     {
-      "file": "visual-qa/settings/v1.3__2026-08-25_010853__full-page__desktop-1440x1000.png",
+      "file": "visual-qa/settings/v1.3__2026-08-25_221814__full-page__desktop-1440x1000.png",
       "page": "settings",
       "state": "LATEST",
       "viewport": {
@@ -177,11 +177,11 @@
       },
       "capture": {
         "width": 1425,
-        "height": 4698
+        "height": 5076
       }
     },
     {
-      "file": "visual-qa/dashboard/v1.3__2026-08-25_010853__full-page__mobile-375x812.png",
+      "file": "visual-qa/dashboard/v1.3__2026-08-25_221814__full-page__mobile-375x812.png",
       "page": "dashboard",
       "state": "LATEST",
       "viewport": {
@@ -191,11 +191,11 @@
       },
       "capture": {
         "width": 375,
-        "height": 3147
+        "height": 3266
       }
     },
     {
-      "file": "visual-qa/transactions/v1.3__2026-08-25_010853__full-page__mobile-375x812.png",
+      "file": "visual-qa/transactions/v1.3__2026-08-25_221814__full-page__mobile-375x812.png",
       "page": "transactions",
       "state": "LATEST",
       "viewport": {
@@ -209,7 +209,7 @@
       }
     },
     {
-      "file": "visual-qa/review/v1.3__2026-08-25_010853__full-page__mobile-375x812.png",
+      "file": "visual-qa/review/v1.3__2026-08-25_221814__full-page__mobile-375x812.png",
       "page": "review",
       "state": "LATEST",
       "viewport": {
@@ -223,7 +223,7 @@
       }
     },
     {
-      "file": "visual-qa/savings/v1.3__2026-08-25_010853__full-page__mobile-375x812.png",
+      "file": "visual-qa/savings/v1.3__2026-08-25_221814__full-page__mobile-375x812.png",
       "page": "savings",
       "state": "LATEST",
       "viewport": {
@@ -237,7 +237,7 @@
       }
     },
     {
-      "file": "visual-qa/cards/v1.3__2026-08-25_010853__full-page__mobile-375x812.png",
+      "file": "visual-qa/cards/v1.3__2026-08-25_221814__full-page__mobile-375x812.png",
       "page": "cards",
       "state": "LATEST",
       "viewport": {
@@ -251,7 +251,7 @@
       }
     },
     {
-      "file": "visual-qa/credit/v1.3__2026-08-25_010853__full-page__mobile-375x812.png",
+      "file": "visual-qa/credit/v1.3__2026-08-25_221814__full-page__mobile-375x812.png",
       "page": "credit",
       "state": "LATEST",
       "viewport": {
@@ -265,7 +265,7 @@
       }
     },
     {
-      "file": "visual-qa/loans/v1.3__2026-08-25_010853__full-page__mobile-375x812.png",
+      "file": "visual-qa/loans/v1.3__2026-08-25_221814__full-page__mobile-375x812.png",
       "page": "loans",
       "state": "LATEST",
       "viewport": {
@@ -279,7 +279,7 @@
       }
     },
     {
-      "file": "visual-qa/lending/v1.3__2026-08-25_010853__full-page__mobile-375x812.png",
+      "file": "visual-qa/lending/v1.3__2026-08-25_221814__full-page__mobile-375x812.png",
       "page": "lending",
       "state": "LATEST",
       "viewport": {
@@ -293,7 +293,7 @@
       }
     },
     {
-      "file": "visual-qa/recurring/v1.3__2026-08-25_010853__full-page__mobile-375x812.png",
+      "file": "visual-qa/recurring/v1.3__2026-08-25_221814__full-page__mobile-375x812.png",
       "page": "recurring",
       "state": "LATEST",
       "viewport": {
@@ -303,11 +303,11 @@
       },
       "capture": {
         "width": 375,
-        "height": 1380
+        "height": 1434
       }
     },
     {
-      "file": "visual-qa/planning/v1.3__2026-08-25_010853__full-page__mobile-375x812.png",
+      "file": "visual-qa/planning/v1.3__2026-08-25_221814__full-page__mobile-375x812.png",
       "page": "planning",
       "state": "LATEST",
       "viewport": {
@@ -321,7 +321,7 @@
       }
     },
     {
-      "file": "visual-qa/reports/v1.3__2026-08-25_010853__full-page__mobile-375x812.png",
+      "file": "visual-qa/reports/v1.3__2026-08-25_221814__full-page__mobile-375x812.png",
       "page": "reports",
       "state": "LATEST",
       "viewport": {
@@ -335,7 +335,7 @@
       }
     },
     {
-      "file": "visual-qa/settings/v1.3__2026-08-25_010853__full-page__mobile-375x812.png",
+      "file": "visual-qa/settings/v1.3__2026-08-25_221814__full-page__mobile-375x812.png",
       "page": "settings",
       "state": "LATEST",
       "viewport": {
@@ -345,7 +345,7 @@
       },
       "capture": {
         "width": 375,
-        "height": 7477
+        "height": 8240
       }
     }
   ]

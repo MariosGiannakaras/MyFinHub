@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 2,
+  "layout": "surface-first-latest-only",
+  "appVersion": "v1.3",
+  "suite": "account-metadata",
+  "surface": "accounts",
+  "generatedAt": "2026-08-25T19:13:30.227Z",
+  "timeZone": "Europe/Athens",
+  "source": {
+    "sha": "f37ff364c924b8e9f42b82b454a9e0730a7cf2bd",
+    "shortSha": "f37ff364",
+    "branch": "fix/history-audit-actions-release-blocker"
+  },
+  "screenshots": [
+    "visual-qa/accounts/v1.3__2026-08-25_221330__qa-account-metadata__account-metadata-dashboard-desktop.png",
+    "visual-qa/accounts/v1.3__2026-08-25_221330__qa-account-metadata__account-metadata-dashboard-mobile.png",
+    "visual-qa/accounts/v1.3__2026-08-25_221330__qa-account-metadata__account-metadata-settings-desktop.png",
+    "visual-qa/accounts/v1.3__2026-08-25_221330__qa-account-metadata__account-metadata-settings-mobile.png"
+  ]
+}
