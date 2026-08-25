@@ -5,7 +5,28 @@ import type { FinanceData, RecurringItem } from '../src/types.js';
 type CadencedRecurring=RecurringItem&{recurrenceUnit?:'month'|'year';recurrenceInterval?:number};
 
 const item=(extra:Partial<CadencedRecurring>={}):CadencedRecurring=>({id:'rec',name:'Plan',amount:10,day:5,accountId:'bank',category:'Συνδρομές',active:true,status:'active',...extra});
-const state=(items:CadencedRecurring[]):FinanceData['state']=>({customTransactions:[],overrides:{},deleted:[],recurringCustom:items,recurringOverrides:{},loanExtra:{},loanOverrides:{},customLoans:[],lendingCustom:[],settings:{excludedFromAvailable:[],accountNames:{},expenseCategories:['Συνδρομές'],incomeCategories:['Μισθός'],customPresets:[],pinnedPresets:[],defaultExpenseAccount:'bank',defaultIncomeAccount:'bank',defaultLoanAccount:'bank'}} as FinanceData['state'];
+const state=(items:CadencedRecurring[]):FinanceData['state']=>({
+  customTransactions:[],
+  overrides:{},
+  deleted:[],
+  recurringCustom:items,
+  recurringOverrides:{},
+  loanExtra:{},
+  loanOverrides:{},
+  customLoans:[],
+  lendingCustom:[],
+  settings:{
+    excludedFromAvailable:[],
+    accountNames:{},
+    expenseCategories:['Συνδρομές'],
+    incomeCategories:['Μισθός'],
+    customPresets:[],
+    pinnedPresets:[],
+    defaultExpenseAccount:'bank',
+    defaultIncomeAccount:'bank',
+    defaultLoanAccount:'bank',
+  },
+} as FinanceData['state']);
 
 describe('recurring cadence validation',()=>{
   it('accepts legacy monthly items without new fields',()=>{expect(()=>validateRecurringCadenceState(state([item()]))).not.toThrow()});
