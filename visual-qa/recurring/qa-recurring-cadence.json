@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 2,
+  "layout": "surface-first-latest-only",
+  "appVersion": "v1.3",
+  "suite": "recurring-cadence",
+  "surface": "recurring",
+  "generatedAt": "2026-08-25T19:54:44.750Z",
+  "timeZone": "Europe/Athens",
+  "source": {
+    "sha": "24d4c011d816fba0f2048a3e11ab8c4c1f30e31e",
+    "shortSha": "24d4c011",
+    "branch": "fix/289-tighten-new-table-grants"
+  },
+  "screenshots": [
+    "visual-qa/recurring/v1.3__2026-08-25_225444__qa-recurring-cadence__recurring-cadence-desktop.png",
+    "visual-qa/recurring/v1.3__2026-08-25_225444__qa-recurring-cadence__recurring-cadence-editor-desktop.png",
+    "visual-qa/recurring/v1.3__2026-08-25_225444__qa-recurring-cadence__recurring-cadence-editor-mobile.png"
+  ]
+}
