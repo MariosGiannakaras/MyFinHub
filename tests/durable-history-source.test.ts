@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 const migration=readFileSync('supabase/migrations/20260825005000_add_durable_history.sql','utf8');
 const hardening=readFileSync('supabase/migrations/20260825063500_harden_durable_history.sql','utf8');
+const pruning=readFileSync('supabase/migrations/20260825064000_bound_durable_history_pruning.sql','utf8');
 const storage=readFileSync('server/storage.ts','utf8');
 const api=readFileSync('src/lib/api.ts','utf8');
 const hook=readFileSync('src/hooks/useFinance.ts','utf8');
@@ -42,10 +43,11 @@ describe('durable finance history architecture',()=>{
     expect(moveBody).toContain("p_direction not in ('undo', 'redo')");
   });
 
-  it('enforces the 10-day and 100-point retention contract and refreshes an expired current baseline before a new mutation',()=>{
+  it('enforces the 10-day and strict 100-point retention contract while preserving the current point',()=>{
     expect(migration).toContain("interval '10 days'");
-    expect(migration).toContain('limit 100');
-    expect(migration).toMatch(/id <> v_current[\s\S]*expires_at <= now\(\)/);
+    expect(pruning).toMatch(/id <> v_current[\s\S]*expires_at <= now\(\)/);
+    expect(pruning).toContain('where owner_user_id = p_owner and id <> v_current');
+    expect(pruning).toContain('limit 99');
     expect(hardening).toContain('select expires_at <= now() into v_current_expired');
     expect(hardening).toContain("'Αρχική κατάσταση ιστορικού', true, v_current.revision");
     expect(hardening).toContain('values(v_owner, v_parent_point, p_state, v_label, v_result_revision)');
