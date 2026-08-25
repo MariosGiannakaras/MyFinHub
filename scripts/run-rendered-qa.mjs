@@ -29,6 +29,7 @@ const scripts=[
   {path:'scripts/legacy-transaction-management-qa.mjs',key:'legacy-transactions',surface:'transactions',profiles:['/tmp/myfinhub-legacy-transaction-management-qa-chrome']},
   {path:'scripts/transactions-scanability-qa.mjs',key:'transactions-scanability',surface:'transactions',profiles:['/tmp/myfinhub-transactions-scanability-qa-chrome']},
   {path:'scripts/obligation-lifecycle-qa.mjs',key:'obligation-lifecycle',surface:'obligations',profiles:['/tmp/myfinhub-obligation-lifecycle-qa-chrome']},
+  {path:'scripts/recurring-cadence-qa.mjs',key:'recurring-cadence',surface:'recurring',profiles:['/tmp/myfinhub-recurring-cadence-qa-chrome']},
   {path:'scripts/receipt-local-ocr-qa.mjs',key:'receipt-local-ocr',surface:'receipts',profiles:['/tmp/myfinhub-receipt-local-ocr-qa-chrome']},
   {path:'scripts/final-ux-reconciliation-qa.mjs',key:'final-ux-reconciliation',surface:'app-shell',profiles:['/tmp/myfinhub-final-ux-reconciliation-qa-chrome']},
   {path:'scripts/ledger-foundations-qa.mjs',key:'ledger-foundations',surface:'ledger',profiles:['/tmp/myfinhub-ledger-foundations-qa-chrome']},
