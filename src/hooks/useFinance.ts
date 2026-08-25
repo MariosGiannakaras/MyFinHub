@@ -12,6 +12,7 @@ export type ChangeHistoryEntry = { id:string; kind:'change'|'undo'|'redo'; label
 export const SESSION_HISTORY_EVENT = 'myfinhub-durable-change-history';
 
 const REVISION_CHANNEL = 'rheomiq-finance-revision';
+const MAX_CONSISTENT_RELOAD_ATTEMPTS = 3;
 type RevisionMessage = { type: 'revision'; revision: string };
 type QueuedMutation = { data:FinanceData; label:string };
 
@@ -26,6 +27,8 @@ function publishHistory(items:ChangeHistoryEntry[]){
   if(typeof window==='undefined')return;
   window.dispatchEvent(new CustomEvent<ChangeHistoryEntry[]>(SESSION_HISTORY_EVENT,{detail:items}));
 }
+
+function historyMatchesRevision(history:HistoryEnvelope,revision:string){return history.financeRevision===revision}
 
 export function useFinance() {
   const [data, setData] = useState<FinanceData | null>(null);
@@ -78,6 +81,7 @@ export function useFinance() {
     coordinatorRef.current = new SequentialQueue<QueuedMutation>(async ({data:stamped,label}) => {
       try {
         const res = await saveData(stamped, revisionRef.current, historyGenerationRef.current, label);
+        if(!historyMatchesRevision(res.history,res.revision))throw new ApiError('Το ιστορικό αλλαγών δεν συμφωνεί με την τελευταία αποθήκευση.',409,'HISTORY_CURSOR_CONFLICT');
         revisionRef.current = res.revision;
         setRevision(res.revision);
         setFilePath(res.filePath);
@@ -98,12 +102,23 @@ export function useFinance() {
   const reload = useCallback(async () => {
     setCurrentSaveState('loading');
     try {
-      const nextData=await loadData();
-      const nextHistory=await loadHistory();
-      applyDataEnvelope(nextData);
-      applyHistory(nextHistory);
-      setCurrentSaveState(nextHistory.available?'saved':'conflict');
-      return nextHistory.available;
+      for(let attempt=0;attempt<MAX_CONSISTENT_RELOAD_ATTEMPTS;attempt+=1){
+        const nextData=await loadData();
+        const nextHistory=await loadHistory();
+        if(!historyMatchesRevision(nextHistory,nextData.revision)){
+          if(attempt<MAX_CONSISTENT_RELOAD_ATTEMPTS-1)continue;
+          applyDataEnvelope(nextData);
+          applyHistory({...nextHistory,available:false});
+          setCurrentSaveState('conflict');
+          return false;
+        }
+        applyDataEnvelope(nextData);
+        applyHistory(nextHistory);
+        setCurrentSaveState(nextHistory.available?'saved':'conflict');
+        return nextHistory.available;
+      }
+      setCurrentSaveState('conflict');
+      return false;
     } catch {
       setCurrentSaveState('error');
       return false;
@@ -175,6 +190,7 @@ export function useFinance() {
     try{
       await coordinator.whenIdle();
       const res=await moveHistory(direction,revisionRef.current,historyGenerationRef.current);
+      if(!historyMatchesRevision(res.history,res.revision))throw new ApiError('Το ιστορικό αλλαγών δεν συμφωνεί με την οικονομική κατάσταση.',409,'HISTORY_CURSOR_CONFLICT');
       applyDataEnvelope(res);
       applyHistory(res.history);
       setCurrentSaveState('saved');
@@ -201,8 +217,9 @@ export function useFinance() {
         const res = await importData(productData(incoming));
         applyDataEnvelope(res);
         const nextHistory=await loadHistory();
-        applyHistory(nextHistory);
-        setCurrentSaveState(nextHistory.available?'saved':'conflict');
+        const consistent=historyMatchesRevision(nextHistory,res.revision);
+        applyHistory(consistent?nextHistory:{...nextHistory,available:false});
+        setCurrentSaveState(consistent&&nextHistory.available?'saved':'conflict');
         channelRef.current?.postMessage({ type: 'revision', revision: res.revision } satisfies RevisionMessage);
       } catch (error) {
         lastSaveFailed.current = true;
