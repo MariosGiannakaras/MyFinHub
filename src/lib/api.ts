@@ -5,6 +5,7 @@ export interface HistoryPointSummary { id:string; parentId:string|null; label:st
 export interface HistoryEnvelope {
   available:boolean;
   generation:string;
+  financeRevision:string;
   currentPointId:string|null;
   canUndo:boolean;
   canRedo:boolean;
