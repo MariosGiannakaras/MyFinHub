@@ -1,6 +1,7 @@
 export type AccountKind = 'cash' | 'bank' | 'savings' | 'credit';
 export type SavingSource = 'pay_and_save' | 'manual_transfer' | 'cash_offset';
 export type RecurringStatus = 'active' | 'paused' | 'stopped';
+export type RecurrenceUnit = 'month' | 'year';
 export type CardKind = 'debit' | 'prepaid' | 'credit';
 export type CardNetwork = 'visa' | 'mastercard' | 'other';
 export type CardFormFactor = 'physical' | 'virtual';
@@ -301,6 +302,8 @@ export interface RecurringItem {
   amount: number;
   day?: number | null;
   firstExpectedDate?: string | null;
+  recurrenceUnit?: RecurrenceUnit;
+  recurrenceInterval?: number;
   accountId: string;
   category: string;
   active: boolean;

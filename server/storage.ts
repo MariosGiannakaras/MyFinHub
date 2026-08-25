@@ -1,6 +1,7 @@
 import type { FinanceData } from '../src/types.js';
 import { migrateProductData } from '../src/lib/productMigration.js';
 import { ApiError } from './http.js';
+import { validateRecurringCadenceData } from './recurringCadenceValidation.js';
 import { fetchUpstream } from './upstream.js';
 import { validateFinanceState } from './stateValidation.js';
 import { validateFinanceData } from './validation.js';
@@ -92,6 +93,7 @@ function envelope(row: StateRow) {
   if (!row) throw new ApiError(500, 'EMPTY_DATABASE', 'RheomIQ database is empty.', false);
   const migrated = migrateProductData(row.data);
   validateFinanceData(migrated);
+  validateRecurringCadenceData(migrated);
   validateFinanceState(migrated.state);
   return {
     data: migrated,
@@ -252,9 +254,11 @@ export async function moveHistory(
 
 export async function writeStore(data: FinanceData, expectedRevision?: string, force = false, accessToken?: string) {
   validateFinanceData(data);
+  validateRecurringCadenceData(data);
   validateFinanceState(data.state);
   const next = migrateProductData({ ...data, app: 'RheomIQ', schemaVersion: 3, updatedAt: new Date().toISOString() });
   validateFinanceData(next);
+  validateRecurringCadenceData(next);
   validateFinanceState(next.state);
 
   const path = force ? 'rpc/rheomiq_import_state' : 'rpc/rheomiq_save_state';
