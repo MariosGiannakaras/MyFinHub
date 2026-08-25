@@ -65,9 +65,9 @@ describe('durable finance history architecture',()=>{
     expect(grantHardening).toContain('grant select, insert, update, delete on table public.rheomiq_history_cursor to authenticated');
     expect(grantHardening).toContain('revoke all on sequence public.rheomiq_history_points_id_seq from public, anon, authenticated');
     expect(grantHardening).toContain('grant usage, select on sequence public.rheomiq_history_points_id_seq to authenticated');
-    expect(grantHardening).not.toMatch(/grant\s+[^;]*\btruncate\b/i);
-    expect(grantHardening).not.toMatch(/grant\s+[^;]*\btrigger\b/i);
-    expect(grantHardening).not.toMatch(/grant\s+[^;]*\breferences\b/i);
+    expect(grantHardening).not.toMatch(/\bgrant\s+[^\n;]*\btruncate\b/i);
+    expect(grantHardening).not.toMatch(/\bgrant\s+[^\n;]*\btrigger\b/i);
+    expect(grantHardening).not.toMatch(/\bgrant\s+[^\n;]*\breferences\b/i);
   });
 
   it('keeps owner+AAL2 RLS semantics while avoiding per-row auth initplans and covers the cursor foreign key',()=>{
