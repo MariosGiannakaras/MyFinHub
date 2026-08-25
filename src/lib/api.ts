@@ -1,8 +1,20 @@
 import type { FinanceData } from '../types';
 import { mutableSavePayload } from './persistencePayload';
 
+export interface HistoryPointSummary { id:string; parentId:string|null; label:string; createdAt:string; current:boolean }
+export interface HistoryEnvelope {
+  available:boolean;
+  generation:string;
+  currentPointId:string|null;
+  canUndo:boolean;
+  canRedo:boolean;
+  undoDepth:number;
+  redoDepth:number;
+  points:HistoryPointSummary[];
+}
 export interface DataEnvelope { data: FinanceData; revision: string; filePath: string; lastSavedAt: string | null }
-export interface WriteReceipt { revision: string; filePath: string; lastSavedAt: string | null }
+export interface WriteReceipt { revision: string; filePath: string; lastSavedAt: string | null; history:HistoryEnvelope }
+export interface HistoryMoveEnvelope extends DataEnvelope { history:HistoryEnvelope }
 export interface SessionInfo {
   authenticated: boolean;
   email: string | null;
@@ -85,11 +97,23 @@ export async function loadData(): Promise<DataEnvelope> {
   }
 }
 
-export async function saveData(data: FinanceData, revision: string): Promise<WriteReceipt> {
+export async function loadHistory(): Promise<HistoryEnvelope> {
+  return json(await request('/api/history', { cache:'no-store' }));
+}
+
+export async function saveData(data: FinanceData, revision: string, historyGeneration:string, historyLabel:string): Promise<WriteReceipt> {
   return json(await request('/api/data', {
     method: 'PUT',
-    headers: { 'content-type': 'application/json', 'if-match': revision },
-    body: JSON.stringify(mutableSavePayload(data)),
+    headers: { 'content-type': 'application/json', 'if-match': revision, 'x-rheomiq-history-generation':historyGeneration },
+    body: JSON.stringify({ ...mutableSavePayload(data), historyLabel }),
+  }));
+}
+
+export async function moveHistory(direction:'undo'|'redo',revision:string,historyGeneration:string):Promise<HistoryMoveEnvelope>{
+  return json(await request('/api/history',{
+    method:'POST',
+    headers:{'content-type':'application/json','if-match':revision,'x-rheomiq-history-generation':historyGeneration},
+    body:JSON.stringify({action:direction,updatedAt:new Date().toISOString()}),
   }));
 }
 

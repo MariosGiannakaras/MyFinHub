@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LatestValueQueue, remoteRevisionAction } from '../src/lib/persistenceQueue.js';
+import { LatestValueQueue, SequentialQueue, remoteRevisionAction } from '../src/lib/persistenceQueue.js';
 
 function deferred() {
   let resolve!: () => void;
@@ -50,6 +50,43 @@ describe('LatestValueQueue', () => {
     queue.enqueue('explicit-later-change');
     await queue.whenIdle();
     expect(seen).toEqual(['first', 'explicit-later-change']);
+  });
+});
+
+describe('SequentialQueue', () => {
+  it('preserves every accepted finance mutation in FIFO order', async () => {
+    const first = deferred();
+    const seen:string[]=[];
+    const queue=new SequentialQueue<string>(async value=>{seen.push(value);if(value==='first')await first.promise});
+
+    queue.enqueue('first');
+    await Promise.resolve();
+    queue.enqueue('second');
+    queue.enqueue('third');
+    expect(queue.hasWork()).toBe(true);
+    first.resolve();
+    await queue.whenIdle();
+
+    expect(seen).toEqual(['first','second','third']);
+    expect(queue.hasWork()).toBe(false);
+  });
+
+  it('fails closed and discards dependent pending mutations after the first persistence failure', async () => {
+    const first=deferred();
+    const seen:string[]=[];
+    const queue=new SequentialQueue<string>(async value=>{seen.push(value);if(value==='first')await first.promise});
+
+    queue.enqueue('first');
+    await Promise.resolve();
+    queue.enqueue('must-not-run');
+    first.reject(new Error('revision conflict'));
+    await queue.whenIdle();
+    expect(seen).toEqual(['first']);
+    expect(queue.hasWork()).toBe(false);
+
+    queue.enqueue('explicit-later-change');
+    await queue.whenIdle();
+    expect(seen).toEqual(['first','explicit-later-change']);
   });
 });
 
