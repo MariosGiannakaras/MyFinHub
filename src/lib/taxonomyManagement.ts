@@ -1,4 +1,4 @@
-import type { CategoryDefinition, FinanceData, FinanceSettings } from '../types.js';
+import type { CategoryDefinition, FinanceData, FinanceSettings, RecurringItem } from '../types.js';
 import { categoryKey, categoryTree } from './categories.js';
 import {
   categoryIdentityLabelAvailable,
@@ -8,6 +8,8 @@ import {
   renameSubcategoryIdentity,
   resolveCategoryIdentity,
   resolveSubcategoryIdentity,
+  retireCategoryIdentity,
+  retireSubcategoryIdentity,
   subcategoryIdentityLabelAvailable,
   type CategoryKind,
 } from './categoryIdentity.js';
@@ -20,7 +22,17 @@ export type TaxonomyOperation=
   | {type:'rename-subcategory';kind:CategoryKind;identityId:string;label:string}
   | {type:'reorder-category';kind:CategoryKind;identityId:string;direction:TaxonomyDirection}
   | {type:'reorder-subcategory';kind:CategoryKind;identityId:string;direction:TaxonomyDirection}
-  | {type:'move-subcategory';kind:CategoryKind;identityId:string;targetCategoryId:string};
+  | {type:'move-subcategory';kind:CategoryKind;identityId:string;targetCategoryId:string}
+  | {type:'retire-category';kind:CategoryKind;identityId:string}
+  | {type:'retire-subcategory';kind:CategoryKind;identityId:string};
+
+export type TaxonomyRetirementDependency={
+  kind:'subcategory'|'recurring'|'scheduled'|'rule'|'budget';
+  id:string;
+  label:string;
+};
+
+type RetirementOperation=Extract<TaxonomyOperation,{type:'retire-category'|'retire-subcategory'}>;
 
 const clean=(value:string)=>value.trim().replace(/\s+/g,' ');
 const same=(left?:string,right?:string)=>Boolean(left&&right&&categoryKey(left)===categoryKey(right));
@@ -41,6 +53,75 @@ function swap<T>(items:T[],index:number,direction:TaxonomyDirection){
   const next=[...items];
   [next[index],next[target]]=[next[target],next[index]];
   return next;
+}
+
+function effectiveRecurringItems(data:FinanceData):RecurringItem[]{
+  const seeded=(data.seed.recurring??[]).map(item=>data.state.recurringOverrides?.[item.id]??item);
+  return [...seeded,...(data.state.recurringCustom??[])];
+}
+
+function recurringIsLive(item:RecurringItem){
+  return item.active!==false&&item.status!=='stopped';
+}
+
+function dependency(kind:TaxonomyRetirementDependency['kind'],id:string,label:string):TaxonomyRetirementDependency{
+  return {kind,id,label};
+}
+
+function dependencySummary(items:TaxonomyRetirementDependency[]){
+  const labels=items.slice(0,4).map(item=>item.label).join(', ');
+  return `Η απόσυρση μπλοκάρεται από ${items.length} ενεργές ή μελλοντικές αναφορές${labels?`: ${labels}`:''}${items.length>4?'…':''}. Τακτοποίησέ τες ρητά πριν συνεχίσεις.`;
+}
+
+export function taxonomyRetirementDependencies(data:FinanceData,operation:RetirementOperation,asOf:string):TaxonomyRetirementDependency[]{
+  const settings=ensureCategoryIdentities(data.state.settings);
+  const record=settings.categoryIdentities?.[operation.identityId];
+  if(!record||record.kind!==operation.kind)throw new Error(operation.type==='retire-category'?'Η κατηγορία δεν βρέθηκε.':'Η υποκατηγορία δεν βρέθηκε.');
+  if(operation.type==='retire-category'&&record.parentId)throw new Error('Η κατηγορία δεν βρέθηκε.');
+  if(operation.type==='retire-subcategory'&&!record.parentId)throw new Error('Η υποκατηγορία δεν βρέθηκε.');
+
+  const result:TaxonomyRetirementDependency[]=[];
+  const currentMonth=asOf.slice(0,7);
+
+  if(operation.type==='retire-category'){
+    const treeEntry=categoryTree(settings,operation.kind).find(item=>resolveCategoryIdentity(settings,operation.kind,item.name)?.id===record.id);
+    if(!treeEntry)throw new Error('Η κατηγορία έχει ήδη αποσυρθεί από το ενεργό δέντρο.');
+    for(const childLabel of treeEntry.subcategories){
+      const child=resolveSubcategoryIdentity(settings,operation.kind,treeEntry.name,childLabel);
+      result.push(dependency('subcategory',child?.id??childLabel,`Υποκατηγορία «${childLabel}»`));
+    }
+    for(const item of effectiveRecurringItems(data)){
+      if(!recurringIsLive(item))continue;
+      if(resolveCategoryIdentity(settings,operation.kind,item.category)?.id===record.id)result.push(dependency('recurring',item.id,`Recurring «${item.name}»`));
+    }
+    for(const item of data.state.scheduled??[]){
+      if(item.status!=='pending'||!item.category)continue;
+      if(resolveCategoryIdentity(settings,operation.kind,item.category)?.id===record.id)result.push(dependency('scheduled',item.id,`Προγραμματισμένη «${item.note||item.id}»`));
+    }
+    for(const rule of data.state.transactionRules??[]){
+      if(!rule.enabled||!rule.action.category)continue;
+      if(resolveCategoryIdentity(settings,operation.kind,rule.action.category)?.id===record.id)result.push(dependency('rule',rule.id,`Κανόνας «${rule.name}»`));
+    }
+    for(const budget of data.state.budgets??[]){
+      if(budget.scope!=='category'||budget.month<currentMonth||!budget.category)continue;
+      if(resolveCategoryIdentity(settings,operation.kind,budget.category)?.id===record.id)result.push(dependency('budget',budget.id,`Budget ${budget.month}`));
+    }
+  }else{
+    const parent=record.parentId?settings.categoryIdentities?.[record.parentId]:undefined;
+    if(!parent)throw new Error('Η γονική κατηγορία δεν βρέθηκε.');
+    const parentTree=categoryTree(settings,operation.kind).find(item=>resolveCategoryIdentity(settings,operation.kind,item.name)?.id===parent.id);
+    if(!parentTree||!parentTree.subcategories.some(label=>resolveSubcategoryIdentity(settings,operation.kind,parentTree.name,label)?.id===record.id))throw new Error('Η υποκατηγορία έχει ήδη αποσυρθεί από το ενεργό δέντρο.');
+    for(const item of data.state.scheduled??[]){
+      if(item.status!=='pending'||!item.category||!item.subcategory)continue;
+      if(resolveSubcategoryIdentity(settings,operation.kind,item.category,item.subcategory)?.id===record.id)result.push(dependency('scheduled',item.id,`Προγραμματισμένη «${item.note||item.id}»`));
+    }
+    for(const rule of data.state.transactionRules??[]){
+      if(!rule.enabled||!rule.action.category||!rule.action.subcategory)continue;
+      if(resolveSubcategoryIdentity(settings,operation.kind,rule.action.category,rule.action.subcategory)?.id===record.id)result.push(dependency('rule',rule.id,`Κανόνας «${rule.name}»`));
+    }
+  }
+
+  return result.sort((a,b)=>a.kind.localeCompare(b.kind)||a.label.localeCompare(b.label,'el')||a.id.localeCompare(b.id));
 }
 
 export function applyTaxonomyOperationToSettings(settings:FinanceSettings,operation:TaxonomyOperation):FinanceSettings{
@@ -69,6 +150,8 @@ export function applyTaxonomyOperationToSettings(settings:FinanceSettings,operat
   if(operation.type==='rename-category')return renameCategoryIdentity(normalized,operation.kind,operation.identityId,label);
   if(operation.type==='rename-subcategory')return renameSubcategoryIdentity(normalized,operation.kind,operation.identityId,label);
   if(operation.type==='move-subcategory')return moveSubcategoryIdentity(normalized,operation.kind,operation.identityId,operation.targetCategoryId);
+  if(operation.type==='retire-category')return retireCategoryIdentity(normalized,operation.kind,operation.identityId);
+  if(operation.type==='retire-subcategory')return retireSubcategoryIdentity(normalized,operation.kind,operation.identityId);
 
   if(operation.type==='reorder-category'){
     const record=normalized.categoryIdentities?.[operation.identityId];
@@ -124,6 +207,10 @@ function reconcileBudgets(data:FinanceData,asOf:string,fromCategory:string,toCat
 }
 
 export function applyTaxonomyOperation(data:FinanceData,operation:TaxonomyOperation,asOf:string):FinanceData{
+  if(operation.type==='retire-category'||operation.type==='retire-subcategory'){
+    const dependencies=taxonomyRetirementDependencies(data,operation,asOf);
+    if(dependencies.length)throw new Error(dependencySummary(dependencies));
+  }
   const before=ensureCategoryIdentities(data.state.settings);
   const nextSettings=applyTaxonomyOperationToSettings(before,operation);
   let nextState={...data.state,settings:nextSettings};

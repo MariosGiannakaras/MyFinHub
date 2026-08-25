@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, MoveRight, Pencil, Plus, X } from 'lucide-react';
+import { Archive, ArrowDown, ArrowUp, MoveRight, Pencil, Plus, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { categoryTree } from '../lib/categories';
 import {
@@ -13,25 +13,31 @@ import { ensureCategoryIdentities } from '../lib/categoryIdentity';
 import {
   taxonomyCategoryId,
   taxonomyOperationPreview,
+  taxonomyRetirementDependencies,
   taxonomySubcategoryId,
   type TaxonomyOperation,
+  type TaxonomyRetirementDependency,
 } from '../lib/taxonomyManagement';
-import type { FinanceSettings } from '../types';
+import type { FinanceData, FinanceSettings } from '../types';
 import { AppSelectInput } from './AppSelectInput';
 import { CategoryIconGlyph } from './CategoryIconGlyph';
 import { CategoryIconPicker } from './CategoryIconPicker';
+import { ConfirmDialog } from './ConfirmDialog';
 
 const errorMessage=(reason:unknown)=>reason instanceof Error?reason.message:'Η αλλαγή κατηγορίας δεν μπορεί να ολοκληρωθεί.';
 
 type EditingState={type:'category'|'subcategory';id:string;value:string}|null;
 type MovingState={id:string;targetCategoryId:string}|null;
+type RetirementOperation=Extract<TaxonomyOperation,{type:'retire-category'|'retire-subcategory'}>;
+type RetirementState={operation:RetirementOperation;label:string;dependencies:TaxonomyRetirementDependency[]}|null;
 
-export function CategoryIconsWorkspace({settings,onChange,onTaxonomyOperation}:{settings:FinanceSettings;onChange:(settings:FinanceSettings)=>void;onTaxonomyOperation:(operation:TaxonomyOperation)=>void}){
+export function CategoryIconsWorkspace({data,asOf,settings,onChange,onTaxonomyOperation}:{data:FinanceData;asOf:string;settings:FinanceSettings;onChange:(settings:FinanceSettings)=>void;onTaxonomyOperation:(operation:TaxonomyOperation)=>void}){
   const[kind,setKind]=useState<CategoryKind>('expense');
   const[categoryDraft,setCategoryDraft]=useState('');
   const[subcategoryDrafts,setSubcategoryDrafts]=useState<Record<string,string>>({});
   const[editing,setEditing]=useState<EditingState>(null);
   const[moving,setMoving]=useState<MovingState>(null);
+  const[retirement,setRetirement]=useState<RetirementState>(null);
   const[error,setError]=useState('');
   const normalized=useMemo(()=>ensureCategoryIdentities(settings),[settings]);
   const tree=categoryTree(normalized,kind);
@@ -45,7 +51,7 @@ export function CategoryIconsWorkspace({settings,onChange,onTaxonomyOperation}:{
       return true;
     }catch(reason){setError(errorMessage(reason));return false}
   };
-  const changeKind=(next:CategoryKind)=>{setKind(next);setEditing(null);setMoving(null);setError('')};
+  const changeKind=(next:CategoryKind)=>{setKind(next);setEditing(null);setMoving(null);setRetirement(null);setError('')};
   const addCategory=()=>{if(perform({type:'add-category',kind,label:categoryDraft}))setCategoryDraft('')};
   const addSubcategory=(parentId:string)=>{const value=subcategoryDrafts[parentId]??'';if(perform({type:'add-subcategory',kind,parentId,label:value}))setSubcategoryDrafts(current=>({...current,[parentId]:''}))};
   const saveEdit=()=>{
@@ -56,10 +62,22 @@ export function CategoryIconsWorkspace({settings,onChange,onTaxonomyOperation}:{
     if(perform(operation))setEditing(null);
   };
   const saveMove=()=>{if(moving&&perform({type:'move-subcategory',kind,identityId:moving.id,targetCategoryId:moving.targetCategoryId}))setMoving(null)};
+  const requestRetirement=(operation:RetirementOperation,label:string)=>{
+    try{
+      const snapshot:FinanceData={...data,state:{...data.state,settings:normalized}};
+      const dependencies=taxonomyRetirementDependencies(snapshot,operation,asOf);
+      setRetirement({operation,label,dependencies});
+      setError('');
+    }catch(reason){setRetirement(null);setError(errorMessage(reason))}
+  };
+  const confirmRetirement=()=>{
+    if(!retirement||retirement.dependencies.length)return;
+    if(perform(retirement.operation))setRetirement(null);
+  };
 
   return <section className="panel neo-raised category-icons-workspace" aria-labelledby="category-icons-title">
     <div className="panel-head">
-      <div><span id="category-icons-title">Κατηγορίες & εικονίδια</span><small>Πρόσθεσε, μετονόμασε, ταξινόμησε ή μετέφερε υποκατηγορίες χωρίς σύνταξη κειμένου. Δεν υπάρχει διαγραφή: η stable ταυτότητα και τα ιστορικά δεδομένα διατηρούνται.</small></div>
+      <div><span id="category-icons-title">Κατηγορίες & εικονίδια</span><small>Πρόσθεσε, μετονόμασε, ταξινόμησε ή μετέφερε κατηγορίες με stable ταυτότητα. Η «Απόσυρση» τις αφαιρεί μόνο από τις νέες επιλογές, αφού τακτοποιήσεις ρητά κάθε ενεργή ή μελλοντική εξάρτηση· το ιστορικό δεν διαγράφεται.</small></div>
     </div>
     <div className="segmented-control" role="group" aria-label="Τύπος κατηγοριών">
       <button type="button" className={kind==='expense'?'active':''} aria-pressed={kind==='expense'} onClick={()=>changeKind('expense')}>Έξοδα</button>
@@ -71,6 +89,10 @@ export function CategoryIconsWorkspace({settings,onChange,onTaxonomyOperation}:{
       <button type="button" className="save-button" onClick={addCategory}><Plus size={16} aria-hidden="true"/> Προσθήκη</button>
     </div>
     {error?<div className="form-error taxonomy-error" role="alert">{error}</div>:null}
+    {retirement?.dependencies.length?<div className="logic-note compact taxonomy-retirement-blockers" role="status" aria-live="polite" data-taxonomy-retirement-blockers>
+      <Archive size={18} aria-hidden="true"/>
+      <div><b>Η «{retirement.label}» δεν μπορεί ακόμη να αποσυρθεί.</b><p>Τακτοποίησε εσύ τις παρακάτω ενεργές ή μελλοντικές αναφορές. Δεν θα γίνει αυτόματη μεταφορά, διαγραφή ή αλλαγή σε «Άλλο».</p><ul>{retirement.dependencies.map(item=><li key={`${item.kind}:${item.id}`}>{item.label}</li>)}</ul><button type="button" className="secondary" onClick={()=>setRetirement(null)}>Κλείσιμο</button></div>
+    </div>:null}
 
     <div className="category-icon-category-list taxonomy-category-list">
       {tree.map((category,categoryIndex)=>{
@@ -82,6 +104,7 @@ export function CategoryIconsWorkspace({settings,onChange,onTaxonomyOperation}:{
         const categoryUpLabel=`Μετακίνηση ${category.name} προς τα πάνω`;
         const categoryDownLabel=`Μετακίνηση ${category.name} προς τα κάτω`;
         const categoryRenameLabel=`Μετονομασία ${category.name}`;
+        const categoryRetireLabel=`Απόσυρση κατηγορίας ${category.name}`;
         return <article className="category-taxonomy-card" key={categoryId} data-category-id={categoryId}>
           <div className="category-taxonomy-head">
             <span className="category-taxonomy-glyph"><CategoryIconGlyph iconKey={resolvedParent} size={20}/></span>
@@ -90,6 +113,7 @@ export function CategoryIconsWorkspace({settings,onChange,onTaxonomyOperation}:{
               <button type="button" disabled={categoryIndex===0} aria-label={categoryUpLabel} title={categoryUpLabel} onClick={()=>perform({type:'reorder-category',kind,identityId:categoryId,direction:'up'})}><ArrowUp size={15} aria-hidden="true"/></button>
               <button type="button" disabled={categoryIndex===tree.length-1} aria-label={categoryDownLabel} title={categoryDownLabel} onClick={()=>perform({type:'reorder-category',kind,identityId:categoryId,direction:'down'})}><ArrowDown size={15} aria-hidden="true"/></button>
               <button type="button" aria-label={categoryRenameLabel} title={categoryRenameLabel} onClick={()=>setEditing({type:'category',id:categoryId,value:category.name})}><Pencil size={15} aria-hidden="true"/></button>
+              <button type="button" aria-label={categoryRetireLabel} title={categoryRetireLabel} onClick={()=>requestRetirement({type:'retire-category',kind,identityId:categoryId},category.name)}><Archive size={15} aria-hidden="true"/></button>
             </div>
           </div>
 
@@ -117,6 +141,7 @@ export function CategoryIconsWorkspace({settings,onChange,onTaxonomyOperation}:{
                 const subcategoryDownLabel=`Μετακίνηση ${subcategory} προς τα κάτω`;
                 const subcategoryRenameLabel=`Μετονομασία ${subcategory}`;
                 const subcategoryMoveLabel=`Μεταφορά ${subcategory} σε άλλη κατηγορία`;
+                const subcategoryRetireLabel=`Απόσυρση υποκατηγορίας ${subcategory}`;
                 return <article className="taxonomy-subcategory-row" role="listitem" key={subcategoryId} data-subcategory-id={subcategoryId}>
                   <div className="taxonomy-subcategory-main"><CategoryIconGlyph iconKey={resolved} size={17}/><div><b>{subcategory}</b><small>{override?'Δικό της εικονίδιο':`Κληρονομεί από «${category.name}»`}</small></div></div>
                   <div className="taxonomy-row-actions" aria-label={`Ενέργειες υποκατηγορίας ${subcategory}`}>
@@ -124,6 +149,7 @@ export function CategoryIconsWorkspace({settings,onChange,onTaxonomyOperation}:{
                     <button type="button" disabled={subcategoryIndex===category.subcategories.length-1} aria-label={subcategoryDownLabel} title={subcategoryDownLabel} onClick={()=>perform({type:'reorder-subcategory',kind,identityId:subcategoryId,direction:'down'})}><ArrowDown size={14} aria-hidden="true"/></button>
                     <button type="button" aria-label={subcategoryRenameLabel} title={subcategoryRenameLabel} onClick={()=>setEditing({type:'subcategory',id:subcategoryId,value:subcategory})}><Pencil size={14} aria-hidden="true"/></button>
                     {otherCategories.length?<button type="button" aria-label={subcategoryMoveLabel} title={subcategoryMoveLabel} onClick={()=>setMoving({id:subcategoryId,targetCategoryId:otherCategories[0].id})}><MoveRight size={14} aria-hidden="true"/></button>:null}
+                    <button type="button" aria-label={subcategoryRetireLabel} title={subcategoryRetireLabel} onClick={()=>requestRetirement({type:'retire-subcategory',kind,identityId:subcategoryId},subcategory)}><Archive size={14} aria-hidden="true"/></button>
                   </div>
 
                   {editing?.type==='subcategory'&&editing.id===subcategoryId?<div className="taxonomy-inline-editor taxonomy-subcategory-editor" role="group" aria-label={`Μετονομασία υποκατηγορίας ${subcategory}`}><input autoFocus value={editing.value} onChange={event=>setEditing({...editing,value:event.target.value})} onKeyDown={event=>{if(event.key==='Enter'){event.preventDefault();saveEdit()}if(event.key==='Escape')setEditing(null)}}/><button type="button" className="save-button" onClick={saveEdit}>Αποθήκευση</button><button type="button" className="secondary" aria-label="Ακύρωση μετονομασίας" title="Ακύρωση μετονομασίας" onClick={()=>setEditing(null)}><X size={14} aria-hidden="true"/></button></div>:null}
@@ -139,5 +165,13 @@ export function CategoryIconsWorkspace({settings,onChange,onTaxonomyOperation}:{
       })}
     </div>
     {!tree.length?<p className="empty-inline">Δεν υπάρχουν κατηγορίες {noun}.</p>:null}
+    <ConfirmDialog
+      open={Boolean(retirement&&!retirement.dependencies.length)}
+      title={`Απόσυρση «${retirement?.label??''}»`}
+      description="Θα αφαιρεθεί από τις ενεργές επιλογές για νέες κινήσεις. Η stable ταυτότητα, τα παλιά ονόματα και όλες οι ιστορικές οικονομικές αναφορές θα παραμείνουν ανέπαφα."
+      confirmLabel="Απόσυρση"
+      onConfirm={confirmRetirement}
+      onCancel={()=>setRetirement(null)}
+    />
   </section>;
 }
