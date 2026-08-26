@@ -14,9 +14,30 @@
     right:371px!important;
     width:142px!important;
   }
-  .app-shell:has(.dashboard-approved) .period-row{
-    position:absolute!important;
-    top:-51px!important;
+  /* Approved desktop topbar keeps History + Refresh beside the reporting month. */
+  .app-shell:has(.dashboard-approved) .top-actions>.app-tooltip:has(button[aria-label="Ανανέωση δεδομένων"]),
+  .app-shell:has(.sidebar nav button:first-child[aria-current="page"]) .top-actions>.app-tooltip:has(button[aria-label="Ανανέωση δεδομένων"]){
+    display:inline-flex!important;
+    position:static!important;
+    left:auto!important;
+    right:auto!important;
+    top:auto!important;
+    bottom:auto!important;
+    z-index:auto!important;
+  }
+  .app-shell:has(.dashboard-approved) .top-actions>.app-tooltip:has(button[aria-label="Ανανέωση δεδομένων"])>button,
+  .app-shell:has(.sidebar nav button:first-child[aria-current="page"]) .top-actions>.app-tooltip:has(button[aria-label="Ανανέωση δεδομένων"])>button{
+    width:40px!important;
+    height:40px!important;
+    min-width:40px!important;
+    min-height:40px!important;
+    border-radius:9px!important;
+    background:#fff!important;
+  }
+  .app-shell:has(.dashboard-approved) .period-row,
+  .app-shell:has(.sidebar nav button:first-child[aria-current="page"]) .period-row{
+    position:fixed!important;
+    top:9px!important;
     right:12px!important;
     width:190px!important;
     height:40px!important;
@@ -26,9 +47,10 @@
     border-radius:9px!important;
     background:#fbfdff!important;
     box-shadow:0 3px 10px rgba(34,65,105,.05)!important;
-    z-index:72;
+    z-index:72!important;
   }
-  .app-shell:has(.dashboard-approved) .period-row>[data-qa-crash]{display:none!important}
+  .app-shell:has(.dashboard-approved) .period-row>[data-qa-crash],
+  .app-shell:has(.sidebar nav button:first-child[aria-current="page"]) .period-row>[data-qa-crash]{display:none!important}
   .dashboard-approved{padding-top:0}
   .dashboard-approved-heading{min-height:73px}
   .dashboard-approved .approved-primary-grid{grid-template-columns:1.05fr 1fr 1.07fr!important}
