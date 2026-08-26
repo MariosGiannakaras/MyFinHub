@@ -14,12 +14,45 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   snapshot:
-    if: ${{ false }}
-    name: temporarily-disabled-for-owner-no-image-contract
+    name: persist-latest-surface-visual-qa
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - run: echo "Visual QA intentionally disabled for this branch task because the owner explicitly prohibited image creation."
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Run complete rendered QA and refresh latest evidence
+        shell: bash
+        run: |
+          npm run dev:web > /tmp/myfinhub-visual-qa-vite.log 2>&1 &
+          VITE_PID=$!
+          trap 'kill $VITE_PID || true' EXIT
+          ready=0
+          for attempt in {1..30}; do
+            if curl --fail --silent --show-error http://127.0.0.1:5173/qa.html > /dev/null; then ready=1; break; fi
+            sleep 1
+          done
+          if [ "$ready" -ne 1 ]; then cat /tmp/myfinhub-visual-qa-vite.log; exit 1; fi
+          npm run qa:frontend
+      - name: Persist only latest surface/object snapshots
+        shell: bash
+        run: |
+          VERSION="$(tr -d '\r\n' < visual-qa/current-version.txt)"
+          git add visual-qa
+          if git diff --cached --quiet; then echo "No visual QA changes to persist."; exit 0; fi
+          git fetch origin "${GITHUB_REF_NAME}"
+          REMOTE_SHA="$(git rev-parse FETCH_HEAD)"
+          if [ "$REMOTE_SHA" != "$GITHUB_SHA" ]; then echo "Branch advanced from $GITHUB_SHA to $REMOTE_SHA while visual QA was running; skipping stale snapshot commit."; exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore(visual-qa): refresh ${VERSION} ${GITHUB_SHA::8}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"

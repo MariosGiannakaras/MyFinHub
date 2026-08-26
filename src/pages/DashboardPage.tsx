@@ -33,10 +33,10 @@ import {
   YAxis,
 } from 'recharts';
 import { AnimatedAmount } from '../components/AnimatedAmount';
+import { AccountIban } from '../components/AccountIban';
 import { BankBrandMark } from '../components/BankBrandMark';
 import { FinanceIcon } from '../components/FinanceIcon';
 import type { QuickPrefill } from '../components/QuickAdd';
-import { useAccountMetadata } from '../hooks/useAccountMetadata';
 import {
   allAccounts,
   effectiveLegacyTransactions,
@@ -55,7 +55,7 @@ import {
 import { accountDisplayName, effectiveRecurringItems } from '../lib/ui';
 import type { FinanceData } from '../types';
 
-const PRIMARY_ACCOUNTS = ['cash', 'piraeus-payroll', 'piraeus-savings'];
+const PRIMARY_ACCOUNTS=['cash','piraeus-payroll','piraeus-savings'];
 const chartColors = ['#39c77b', '#438ff1', '#ffb52e', '#a45de7', '#d95cc5', '#98a5b7'];
 
 type DashboardProps = {
@@ -98,13 +98,6 @@ function percentChange(current: number, previous: number) {
 function trendCopy(change: number | null) {
   if (change === null) return 'χωρίς συγκρίσιμη βάση';
   return `${Math.abs(Math.round(change))}% από προηγ.`;
-}
-
-function maskIban(value?: string | null) {
-  if (!value) return 'Δεν έχει οριστεί';
-  const clean = value.replace(/\s+/g, '');
-  if (clean.length <= 8) return clean;
-  return `${clean.slice(0, 4)}  ••••  ••••  ${clean.slice(-4)}`;
 }
 
 function eventLabel(kind: string) {
@@ -259,8 +252,6 @@ export function DashboardPage({
   const systemReduced = useReducedMotion();
   const reduce = Boolean(systemReduced) || motionMode === 'reduced';
   const [balancesVisible, setBalancesVisible] = useState(false);
-  const metadata = useAccountMetadata();
-
   const flow = selectMonthlyFlow(data, month);
   const previousMonth = shiftMonth(month, -1);
   const previousFlow = selectMonthlyFlow(data, previousMonth);
@@ -329,9 +320,7 @@ export function DashboardPage({
                 <BankBrandMark id={account.id} name={accountDisplayName(data, account.id)} />
                 <div className="dashboard-account-name">
                   <b>{accountDisplayName(data, account.id)}</b>
-                  <span title={metadata.records[account.id]?.iban ? 'IBAN αποθηκευμένο' : 'Δεν έχει οριστεί IBAN'}>
-                    {maskIban(metadata.records[account.id]?.iban)}
-                  </span>
+                  <AccountIban accountId={account.id}/>
                 </div>
                 {account.kind === 'savings' ? (
                   <span className="dashboard-goal-pill">
@@ -373,6 +362,7 @@ export function DashboardPage({
                 <button
                   type="button"
                   data-account-quick-entry={account.id}
+                  aria-label={`Νέα κίνηση για ${accountDisplayName(data, account.id)}`}
                   onClick={() => onAccountQuickAdd(account.id, account.kind)}
                 >
                   <ArrowRight size={15} /> Κίνηση
@@ -448,7 +438,7 @@ export function DashboardPage({
           <div className="dashboard-upcoming-groups">
             {scheduled.length ? (
               <section>
-                <h3>Προγραμματισμένα</h3>
+                <h3 aria-label="Προγραμματισμένα one-off">Προγραμματισμένα</h3>
                 {scheduled.map((item) => (
                   <button type="button" key={item.id} className="dashboard-upcoming-row" onClick={onPlanning}>
                     <span className="dashboard-list-icon"><CalendarDays size={16} /></span>

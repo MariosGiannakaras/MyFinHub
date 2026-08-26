@@ -39,6 +39,9 @@
 .dashboard-account-name{min-width:0;display:grid;gap:2px}
 .dashboard-account-name b{font-size:11px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dashboard-account-name span{font-size:8.5px;color:var(--dash-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dashboard-account-name .account-iban{margin:1px 0 0;gap:0;min-width:0}
+.dashboard-account-name .account-iban-label,.dashboard-account-name .account-iban-copy{display:none}
+.dashboard-account-name .account-iban-value{font-size:8.5px;color:var(--dash-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dashboard-goal-pill{
   justify-self:end;display:inline-flex;align-items:center;gap:5px;min-height:25px;padding:4px 7px;border:1px solid #dce9f8;
   border-radius:8px;background:#f5faff;color:#2776cb;font-size:8px;font-weight:750;white-space:nowrap;
