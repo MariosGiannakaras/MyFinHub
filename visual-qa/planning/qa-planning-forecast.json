@@ -4,16 +4,16 @@
   "appVersion": "v1.3",
   "suite": "planning-forecast",
   "surface": "planning",
-  "generatedAt": "2026-08-24T22:04:15.932Z",
+  "generatedAt": "2026-08-26T21:01:39.506Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "0f5a44a5af57681935c71777c869cf5fe712c7ff",
-    "shortSha": "0f5a44a5",
-    "branch": "feat/233-safe-taxonomy-retirement-final"
+    "sha": "edf2343203748b50c5f7acd823d86af2916bd067",
+    "shortSha": "edf23432",
+    "branch": "ui/300-dashboard-approved-target"
   },
   "screenshots": [
-    "visual-qa/planning/v1.3__2026-08-25_010415__qa-planning-forecast__planning-forecast-desktop.png",
-    "visual-qa/planning/v1.3__2026-08-25_010415__qa-planning-forecast__planning-forecast-mobile.png",
-    "visual-qa/planning/v1.3__2026-08-25_010415__qa-planning-forecast__planning-forecast-negative.png"
+    "visual-qa/planning/v1.3__2026-08-27_000139__qa-planning-forecast__planning-forecast-desktop.png",
+    "visual-qa/planning/v1.3__2026-08-27_000139__qa-planning-forecast__planning-forecast-mobile.png",
+    "visual-qa/planning/v1.3__2026-08-27_000139__qa-planning-forecast__planning-forecast-negative.png"
   ]
 }

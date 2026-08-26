@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 2,
+  "layout": "surface-first-latest-only",
+  "appVersion": "v1.3",
+  "suite": "account-metadata",
+  "surface": "accounts",
+  "generatedAt": "2026-08-26T21:01:39.506Z",
+  "timeZone": "Europe/Athens",
+  "source": {
+    "sha": "edf2343203748b50c5f7acd823d86af2916bd067",
+    "shortSha": "edf23432",
+    "branch": "ui/300-dashboard-approved-target"
+  },
+  "screenshots": [
+    "visual-qa/accounts/v1.3__2026-08-27_000139__qa-account-metadata__account-metadata-dashboard-desktop.png",
+    "visual-qa/accounts/v1.3__2026-08-27_000139__qa-account-metadata__account-metadata-dashboard-mobile.png",
+    "visual-qa/accounts/v1.3__2026-08-27_000139__qa-account-metadata__account-metadata-settings-desktop.png",
+    "visual-qa/accounts/v1.3__2026-08-27_000139__qa-account-metadata__account-metadata-settings-mobile.png"
+  ]
+}
