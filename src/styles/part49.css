@@ -41,6 +41,8 @@
   .app-shell:has(.sidebar nav button:first-child[aria-current="page"]) .top-actions>*.app-tooltip:nth-child(3){display:none}
   .app-shell:has(.sidebar nav button:first-child[aria-current="page"]) .top-actions button{width:40px;height:40px;border-radius:9px;border:1px solid #e2eaf4;background:#fff;box-shadow:0 3px 10px rgba(34,65,105,.055)}
   .app-shell:has(.sidebar nav button:first-child[aria-current="page"]) .workspace{position:relative;padding:8px 14px 12px;max-width:none}
+  .app-shell:has(.dashboard-approved) .period-row{position:fixed;top:9px;right:14px;z-index:72;margin:0;padding:0;background:transparent!important;border:0!important;box-shadow:none!important}
+  .app-shell:has(.dashboard-approved) .period-row>span{display:none}
   .app-shell:has(.sidebar nav button:first-child[aria-current="page"]) .top-actions>*.app-tooltip:last-child,
   .app-shell:has(.dashboard-approved) .top-actions>*.app-tooltip:last-child{display:inline-flex;position:fixed;left:162px;bottom:18px;z-index:75}
   .app-shell:has(.sidebar nav button:first-child[aria-current="page"]) .top-actions>*.app-tooltip:last-child>button,
