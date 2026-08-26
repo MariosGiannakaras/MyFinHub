@@ -40,6 +40,13 @@ jobs:
           "$BROWSER" --headless=new --no-sandbox --disable-gpu --hide-scrollbars --force-device-scale-factor=1 --window-size=1440,1000 --virtual-time-budget=8000 --screenshot=/tmp/dashboard-result.png 'http://127.0.0.1:5173/qa.html?page=dashboard'
           test -s /tmp/dashboard-result.png
           cp /tmp/dashboard-result.png visual-qa/dashboard/issue-298-dashboard-result-desktop-1440x1000.png
+      - name: Upload result image
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: issue-298-dashboard-result
+          path: visual-qa/dashboard/issue-298-dashboard-result-desktop-1440x1000.png
+          if-no-files-found: error
+          retention-days: 14
       - name: Persist result image
         shell: bash
         run: |
