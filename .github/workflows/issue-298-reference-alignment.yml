@@ -13,101 +13,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           fetch-depth: 0
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - name: Tighten visual fidelity
-        shell: bash
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-
-          p=Path('src/pages/DashboardPage.tsx')
-          s=p.read_text()
-          s=s.replace('  Cell,\n','').replace('  Pie,\n','').replace('  PieChart,\n','')
-          if 'function conicSegments' not in s:
-              anchor="const chartColors = ['#39c77b', '#438ff1', '#ffb52e', '#a45de7', '#d95cc5', '#98a5b7'];\n"
-              helper="""
-function conicSegments(rows: { value: number }[], total: number) {
-  if (!rows.length || total <= 0) return 'conic-gradient(#e6edf6 0 100%)';
-  let cursor = 0;
-  const parts = rows.map((row, index) => {
-    const start = cursor;
-    cursor = Math.min(100, cursor + (row.value / total) * 100);
-    return `${chartColors[index % chartColors.length]} ${start.toFixed(2)}% ${cursor.toFixed(2)}%`;
-  });
-  if (cursor < 100) parts.push(`#e6edf6 ${cursor.toFixed(2)}% 100%`);
-  return `conic-gradient(${parts.join(', ')})`;
-}
-"""
-              if anchor not in s: raise SystemExit('chart colors anchor missing')
-              s=s.replace(anchor,anchor+helper,1)
-          anchor='  const topCategoryShare = flow.expense > 0 && topCategory ? topCategory.value / flow.expense : 0;\n'
-          if 'const flowVolume =' not in s:
-              addition="  const flowVolume = flow.income + flow.expense;\n  const incomeShare = flowVolume > 0 ? flow.income / flowVolume : 0;\n  const categoryGradient = conicSegments(categories, flow.expense);\n"
-              if anchor not in s: raise SystemExit('share anchor missing')
-              s=s.replace(anchor,anchor+addition,1)
-
-          old='''              <ResponsiveContainer width="100%" height={60}>\n                <LineChart data={cumulative}><Line type="monotone" dataKey="income" stroke="currentColor" strokeWidth={2} dot={false} isAnimationActive={!reduce} /></LineChart>\n              </ResponsiveContainer>'''
-          new='''              <ResponsiveContainer width="100%" height={60}>\n                <AreaChart data={cumulative}>\n                  <defs><linearGradient id="summary-income-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="currentColor" stopOpacity=".22"/><stop offset="100%" stopColor="currentColor" stopOpacity="0"/></linearGradient></defs>\n                  <YAxis hide domain={[0, (max: number) => Math.max(1, max * 1.08)]}/><Area type="monotone" dataKey="income" stroke="currentColor" strokeWidth={2} fill="url(#summary-income-fill)" dot={false} isAnimationActive={!reduce}/></AreaChart>\n              </ResponsiveContainer>'''
-          if old not in s: raise SystemExit('income summary chart anchor missing')
-          s=s.replace(old,new,1)
-          old='''              <ResponsiveContainer width="100%" height={60}>\n                <LineChart data={cumulative}><Line type="monotone" dataKey="expense" stroke="currentColor" strokeWidth={2} dot={false} isAnimationActive={!reduce} /></LineChart>\n              </ResponsiveContainer>'''
-          new='''              <ResponsiveContainer width="100%" height={60}>\n                <AreaChart data={cumulative}>\n                  <defs><linearGradient id="summary-expense-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="currentColor" stopOpacity=".2"/><stop offset="100%" stopColor="currentColor" stopOpacity="0"/></linearGradient></defs>\n                  <YAxis hide domain={[0, (max: number) => Math.max(1, max * 1.08)]}/><Area type="monotone" dataKey="expense" stroke="currentColor" strokeWidth={2} fill="url(#summary-expense-fill)" dot={false} isAnimationActive={!reduce}/></AreaChart>\n              </ResponsiveContainer>'''
-          if old not in s: raise SystemExit('expense summary chart anchor missing')
-          s=s.replace(old,new,1)
-
-          old='''            <div className="dashboard-save-ring" style={{ '--saving-rate': `${Math.max(0, Math.min(100, saveRate * 100)) * 3.6}deg` } as CSSProperties}>\n              <span>{Math.round(saveRate * 100)}%</span>\n            </div>'''
-          new='''            <div className="dashboard-summary-composition">\n              <div className="dashboard-summary-donut" style={{ '--income-share': `${Math.max(0, Math.min(1, incomeShare)) * 360}deg` } as CSSProperties}><span className="sr-only">Έσοδα {Math.round(incomeShare * 100)}%, έξοδα {Math.round((1 - incomeShare) * 100)}%</span></div>\n              <div className="dashboard-summary-legend"><span className="income">Έσοδα <b>{Math.round(incomeShare * 100)}%</b></span><span className="expense">Έξοδα <b>{Math.round((1 - incomeShare) * 100)}%</b></span></div>\n            </div>'''
-          if old not in s: raise SystemExit('summary donut anchor missing')
-          s=s.replace(old,new,1)
-
-          old='''                <ResponsiveContainer width="100%" height={160}>\n                  <PieChart>\n                    <Pie data={categories} dataKey="value" nameKey="name" innerRadius={50} outerRadius={73} paddingAngle={1.5} isAnimationActive={!reduce}>\n                      {categories.map((_, index) => <Cell key={index} fill={chartColors[index % chartColors.length]} />)}\n                    </Pie>\n                    <Tooltip formatter={(value) => money.format(Number(value))} />\n                  </PieChart>\n                </ResponsiveContainer>'''
-          new='''                <div className="dashboard-category-donut" style={{ background: categoryGradient }} />'''
-          if old not in s: raise SystemExit('category donut anchor missing')
-          s=s.replace(old,new,1)
-          p.write_text(s)
-          PY
-
-          if ! grep -q 'issue-298-reference-alignment-v4' src/styles/part48.css; then
-            cat >> src/styles/part48.css <<'CSS'
-
-          /* issue-298-reference-alignment-v4 */
-          @media(min-width:1180px){
-            .app-shell:has(.dashboard-target){--dashboard-sidebar:200px}
-            .app-shell:has(.dashboard-target) .top-actions{margin-right:238px}
-            .app-shell:has(.dashboard-target) .period-row{right:14px;width:220px}
-            .dashboard-account-balance .animated-amount{font-size:25px}
-            .dashboard-summary-row{grid-template-columns:minmax(110px,.78fr) 1.22fr}
-            .dashboard-summary-spark{height:52px}
-            .dashboard-net-row{grid-template-columns:minmax(120px,.8fr) 1.2fr}
-            .dashboard-summary-composition{display:flex;align-items:center;justify-content:flex-end;gap:10px;min-width:0}
-            .dashboard-summary-donut{--income-share:0deg;width:50px;height:50px;flex:0 0 50px;border-radius:50%;position:relative;background:conic-gradient(#39c77b 0 var(--income-share),#ff5f68 var(--income-share) 360deg)}
-            .dashboard-summary-donut::after{content:"";position:absolute;inset:10px;border-radius:50%;background:#fff}
-            .dashboard-summary-legend{display:grid;gap:6px;font-size:7.4px;color:#71819a;white-space:nowrap}
-            .dashboard-summary-legend span{display:flex;align-items:center;gap:5px;color:#71819a;font-weight:650}
-            .dashboard-summary-legend span::before{content:"";width:7px;height:7px;border-radius:50%;background:#39c77b}
-            .dashboard-summary-legend .expense::before{background:#ff5f68}
-            .dashboard-summary-legend b{color:#54647d;font-size:7.5px}
-            .dashboard-category-layout{grid-template-columns:210px minmax(0,1fr)}
-            .dashboard-donut-wrap{height:155px;display:grid;place-items:center}
-            .dashboard-category-donut{width:146px;height:146px;border-radius:50%;position:relative;box-shadow:inset 0 0 0 1px rgba(22,48,85,.03)}
-            .dashboard-category-donut::after{content:"";position:absolute;inset:31px;border-radius:50%;background:#fff;box-shadow:0 0 0 1px #edf2f7}
-            .dashboard-donut-wrap>div:last-child{z-index:2}
-            .dashboard-flow-panel{position:relative;min-height:190px}
-            .dashboard-flow-panel .chart-alt{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
-            .dashboard-analytics-grid .dashboard-panel{min-height:190px}
-            .dashboard-kpi-grid article{min-height:60px}
-          }
-          CSS
-          fi
-      - name: Focused source validation
-        run: npx vitest run tests/shell-dashboard-hierarchy-source.test.ts tests/account-metadata.test.ts tests/final-ux-reconciliation-source.test.ts tests/time-aware-source.test.ts tests/selectors.test.ts
+      - run: python scripts/issue298-fidelity.py
+      - run: npx vitest run tests/shell-dashboard-hierarchy-source.test.ts tests/account-metadata.test.ts tests/final-ux-reconciliation-source.test.ts tests/time-aware-source.test.ts tests/selectors.test.ts
       - run: npm run security:guard
       - run: npm run build
       - name: Capture aligned Dashboard
@@ -116,25 +31,22 @@ function conicSegments(rows: { value: number }[], total: number) {
           npm run dev:web > /tmp/myfinhub-vite.log 2>&1 &
           VITE_PID=$!
           trap 'kill $VITE_PID || true' EXIT
-          ready=0
           for attempt in {1..40}; do
-            if curl --fail --silent --show-error http://127.0.0.1:5173/qa.html > /dev/null; then ready=1; break; fi
+            if curl --fail --silent http://127.0.0.1:5173/qa.html > /dev/null; then break; fi
             sleep 1
           done
-          if [ "$ready" -ne 1 ]; then cat /tmp/myfinhub-vite.log; exit 1; fi
           BROWSER="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
-          "$BROWSER" --headless=new --no-sandbox --disable-gpu --hide-scrollbars --force-device-scale-factor=1 --window-size=1440,1000 --virtual-time-budget=10000 --screenshot=/tmp/dashboard-aligned-v4.png 'http://127.0.0.1:5173/qa.html?page=dashboard'
-          test -s /tmp/dashboard-aligned-v4.png
-      - name: Upload aligned result
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+          "$BROWSER" --headless=new --no-sandbox --disable-gpu --hide-scrollbars --force-device-scale-factor=1 --window-size=1440,1000 --virtual-time-budget=10000 --screenshot=/tmp/dashboard-aligned-v5.png 'http://127.0.0.1:5173/qa.html?page=dashboard'
+          test -s /tmp/dashboard-aligned-v5.png
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:
-          name: issue-298-dashboard-reference-aligned-v4
-          path: /tmp/dashboard-aligned-v4.png
+          name: issue-298-dashboard-reference-aligned-v5
+          path: /tmp/dashboard-aligned-v5.png
           retention-days: 14
-      - name: Commit alignment
+      - name: Commit fidelity changes
         shell: bash
         run: |
-          cp /tmp/dashboard-aligned-v4.png visual-qa/dashboard/issue-298-dashboard-reference-aligned-desktop-1440x1000.png
+          cp /tmp/dashboard-aligned-v5.png visual-qa/dashboard/issue-298-dashboard-reference-aligned-desktop-1440x1000.png
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/pages/DashboardPage.tsx src/styles/part48.css visual-qa/dashboard/issue-298-dashboard-reference-aligned-desktop-1440x1000.png
