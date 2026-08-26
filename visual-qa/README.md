@@ -44,3 +44,14 @@ This keeps repository checkout size bounded while still leaving the exact merged
 Visual assertions are not enough by themselves. After every visual QA run used for implementation acceptance, the generated PNGs must also be opened and visually inspected for layout inconsistencies, clipping, overlap, stale QA instrumentation, responsive problems and deviations from the agreed visual references. A visual implementation is not considered complete merely because DOM/browser assertions are green.
 
 The images contain deterministic QA fixture data only. Real personal finance data, PAN, expiry, CVV or other secrets must never be captured here.
+
+## Desktop redesign integration
+
+The Phase 1 desktop redesign uses this archive as the **single current-state screenshot source**. Do not create a duplicate current-baseline screenshot tree under `docs/ui-redesign/`.
+
+- Resolve the latest full-page desktop file for a page through `manifest.json`; filenames are intentionally version/timestamp-qualified.
+- Owner-approved redesign targets are separate assets under `docs/ui-redesign/references/approved/<surface>/desktop.png`.
+- The design-direction references live under `docs/ui-redesign/references/direction/`.
+- During Phase 1, desktop captures are the visual-approval baseline. Existing mobile/focused evidence remains useful as regression evidence but does not create a mobile redesign obligation.
+
+The `Visual QA Snapshots` workflow refreshes this bounded archive on non-`main`/non-`develop` branch pushes and persists only the latest useful evidence.
