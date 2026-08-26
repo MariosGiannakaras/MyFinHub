@@ -1,5 +1,5 @@
 import { execFileSync, spawn } from 'node:child_process';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 
 const baseUrl=process.env.RHEOMIQ_QA_URL||'http://127.0.0.1:5173/qa.html';
 const evidenceDir=process.env.MYFINHUB_UX_EVIDENCE_DIR||'/tmp/myfinhub-ui-ux-qa';
@@ -7,7 +7,9 @@ mkdirSync(evidenceDir,{recursive:true});
 const chrome=execFileSync('bash',['-lc','command -v google-chrome || command -v chromium || command -v chromium-browser'],{encoding:'utf8'}).trim();
 if(!chrome)throw new Error('Chrome/Chromium is required for ledger foundations QA.');
 const port=9239;
-const child=spawn(chrome,['--headless=new',`--remote-debugging-port=${port}`,'--remote-debugging-address=127.0.0.1','--user-data-dir=/tmp/myfinhub-ledger-foundations-qa-chrome','--no-sandbox','--disable-gpu','about:blank'],{stdio:'ignore'});
+const profile='/tmp/myfinhub-ledger-foundations-qa-chrome';
+rmSync(profile,{recursive:true,force:true,maxRetries:5,retryDelay:100});
+const child=spawn(chrome,['--headless=new',`--remote-debugging-port=${port}`,'--remote-debugging-address=127.0.0.1',`--user-data-dir=${profile}`,'--no-sandbox','--disable-gpu','about:blank'],{stdio:'ignore'});
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function waitHttp(url){for(let i=0;i<100;i++){try{const response=await fetch(url);if(response.ok)return}catch{}await sleep(150)}throw new Error(`Timed out waiting for ${url}`)}
 class Cdp{constructor(url){this.url=url;this.id=0;this.pending=new Map()}async open(){await new Promise((resolve,reject)=>{this.ws=new WebSocket(this.url);this.ws.onopen=resolve;this.ws.onerror=reject;this.ws.onmessage=event=>{const message=JSON.parse(event.data);if(!message.id)return;const pending=this.pending.get(message.id);if(!pending)return;this.pending.delete(message.id);message.error?pending.reject(new Error(message.error.message)):pending.resolve(message.result)}})}send(method,params={}){const id=++this.id;return new Promise((resolve,reject)=>{this.pending.set(id,{resolve,reject});this.ws.send(JSON.stringify({id,method,params}))})}async call(functionDeclaration,args=[]){const root=await this.send('Runtime.evaluate',{expression:'globalThis'});const result=await this.send('Runtime.callFunctionOn',{objectId:root.result.objectId,functionDeclaration,arguments:args.map(value=>({value})),returnByValue:true,awaitPromise:true});if(result.exceptionDetails)throw new Error(result.exceptionDetails.text||'Runtime function call failed');return result.result.value}close(){this.ws?.close()}}
@@ -43,7 +45,8 @@ try{
   assert(transferRow,'transfer row is rendered');assert(transferRow.accounts.includes('→'),'transfer row shows account direction');assert(transferRow.amount.includes('↔'),'transfer amount is visually neutral');
 
   console.log('Ledger QA: edit, undo and redo transfer atomically');
-  await c.call("function(){document.querySelector('[data-transaction-kind=transfer] button[aria-label^=\"Επεξεργασία\"]')?.click()}");await waitFor("function(){return !!document.querySelector('.quick-modal')}",'transfer edit');
+  await c.call("function(){document.querySelector('[data-transaction-kind=transfer] button[aria-label^=\"Επεξεργασία\"]')?.click()}");
+  await waitFor("function(){return [...document.querySelectorAll('.quick-modal footer button')].some(button=>(button.textContent||'').includes('Εφαρμογή αλλαγών'))}",'transfer edit mode');
   await setLabelInput('Ποσό','55.25');await clickText('.quick-modal footer button','Εφαρμογή αλλαγών');await waitFor("function(){return !document.querySelector('.quick-modal')}",'transfer edit close');
   let transferText=await c.call("function(){return document.querySelector('[data-transaction-kind=transfer]')?.textContent||''}");assert(transferText.includes('55,25'),'edited transfer amount is visible');
   await c.call("function(){document.querySelector('button[aria-label=\"Αναίρεση τελευταίας αλλαγής\"]')?.click()}");await sleep(180);transferText=await c.call("function(){return document.querySelector('[data-transaction-kind=transfer]')?.textContent||''}");assert(transferText.includes('42,50'),'undo restores the whole previous transfer');
@@ -63,7 +66,9 @@ try{
   await expandSplit('[data-transaction-kind=split]');split=await splitState('[data-transaction-kind=split]');assert(split.parts===2&&split.text.includes('Σούπερ μάρκετ')&&split.text.includes('Σπίτι'),'expanded split shows both authoritative portions');
 
   console.log('Ledger QA: split edit derives a new total and rejects non-positive parts');
-  await c.call("function(){document.querySelector('[data-transaction-kind=split] button[aria-label^=\"Επεξεργασία\"]')?.click()}");await waitFor("function(){return !!document.querySelector('.quick-modal')}",'split edit');await setAriaInput('Ποσό μέρους 2','0');await clickText('.quick-modal footer button','Εφαρμογή αλλαγών');const splitError=await c.call("function(){return document.querySelector('.quick-modal .form-error')?.textContent||''}");assert(splitError.includes('θετικό'),'zero split part is rejected with direct feedback');
+  await c.call("function(){document.querySelector('[data-transaction-kind=split] button[aria-label^=\"Επεξεργασία\"]')?.click()}");
+  await waitFor("function(){return [...document.querySelectorAll('.quick-modal footer button')].some(button=>(button.textContent||'').includes('Εφαρμογή αλλαγών'))}",'split edit mode');
+  await setAriaInput('Ποσό μέρους 2','0');await clickText('.quick-modal footer button','Εφαρμογή αλλαγών');const splitError=await c.call("function(){return document.querySelector('.quick-modal .form-error')?.textContent||''}");assert(splitError.includes('θετικό'),'zero split part is rejected with direct feedback');
   await setAriaInput('Ποσό μέρους 2','20');const editedTotal=await c.call("function(){return document.querySelector('.split-head [aria-live=polite]')?.textContent||''}");assert(editedTotal.includes('90,00'),'split edit derives the new parent total live');await clickText('.quick-modal footer button','Εφαρμογή αλλαγών');await waitFor("function(){return !document.querySelector('.quick-modal')}",'split corrected close');split=await splitState('[data-transaction-kind=split]');assert(split.amount.includes('90,00')&&!split.expanded&&split.parts===0,'saved split amount follows edited parts and returns compact');await expandSplit('[data-transaction-kind=split]');split=await splitState('[data-transaction-kind=split]');assert(split.parts===2,'edited split keeps both authoritative portions');
 
   console.log('Ledger QA: delete and undo split atomically');
@@ -75,4 +80,4 @@ try{
   const shot=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});writeFileSync(`${evidenceDir}/ledger-foundations-transactions.png`,Buffer.from(shot.data,'base64'));
   await c.send('Emulation.setDeviceMetricsOverride',{width:375,height:812,deviceScaleFactor:1,mobile:true});await sleep(180);let mobile=await splitState('[data-mobile-transaction-kind=split]');const mobileBase=await c.call("function(){return {transfer:!!document.querySelector('[data-mobile-transaction-kind=transfer]'),split:!!document.querySelector('[data-mobile-transaction-kind=split]'),overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+2}}");assert(mobileBase.transfer&&mobileBase.split&&mobile.toggle&&!mobile.expanded,'mobile transaction list preserves transfer and compact split disclosure');assert(!mobileBase.overflow,'ledger transaction mobile view has no horizontal overflow');await expandSplit('[data-mobile-transaction-kind=split]');mobile=await splitState('[data-mobile-transaction-kind=split]');assert(mobile.parts===2,'mobile disclosure exposes both split portions on demand');const mobileShot=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});writeFileSync(`${evidenceDir}/ledger-foundations-mobile.png`,Buffer.from(mobileShot.data,'base64'));
   c.close();console.log('Ledger foundations rendered QA passed.');
-}finally{child.kill('SIGTERM')}
+}finally{child.kill('SIGTERM');rmSync(profile,{recursive:true,force:true,maxRetries:5,retryDelay:100})}
