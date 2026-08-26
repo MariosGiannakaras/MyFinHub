@@ -2,8 +2,6 @@
 .dashboard-approved-heading p{color:#60708b!important}
 
 @media(min-width:1410px){
-  html:has(.dashboard-approved){scrollbar-width:none}
-  html:has(.dashboard-approved)::-webkit-scrollbar{display:none}
   .app-shell:has(.dashboard-approved) #main-workspace>div{transform:none!important}
   .app-shell:has(.dashboard-approved) .workspace{padding-top:0!important}
   .app-shell:has(.dashboard-approved) .command-search-action{
