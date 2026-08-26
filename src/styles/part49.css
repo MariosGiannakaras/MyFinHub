@@ -1,15 +1,32 @@
 @media(min-width:981px){
   .app-shell:has(.dashboard-approved) .sidebar nav button.active{background-color:#086de9}
+  .app-shell:has(.dashboard-approved) .sidebar .primary-action span{display:block;position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
   .app-shell:has(.dashboard-approved) .top-actions>*.app-tooltip:last-child{display:inline-flex;position:fixed;left:162px;bottom:18px;z-index:75}
   .app-shell:has(.dashboard-approved) .top-actions>*.app-tooltip:last-child>button{width:32px;height:32px;min-width:32px;min-height:32px;border-radius:8px;background:rgba(255,255,255,.82)}
 }
-@media(min-width:681px) and (max-width:900px){
+@media(max-width:980px){
+  .dashboard-approved,
+  .dashboard-approved .approved-primary-grid,
+  .dashboard-approved .approved-mid-grid,
+  .dashboard-approved .approved-chart-grid,
+  .dashboard-approved .approved-panel,
+  .dashboard-approved .approved-account-card,
+  .dashboard-approved .approved-account-body,
+  .dashboard-approved .approved-account-chart,
+  .dashboard-approved .approved-category-layout,
+  .dashboard-approved .approved-summary{min-width:0;width:100%;max-width:100%;box-sizing:border-box}
+  .dashboard-approved .approved-secondary-grid{min-width:0;max-width:100%;box-sizing:border-box}
+  .dashboard-approved .dashboard-sparkline{display:block;width:100%;max-width:100%}
+}
+@media(min-width:681px) and (max-width:980px){
   .dashboard-approved{min-width:0}
   .dashboard-approved .approved-primary-grid{grid-template-columns:1fr!important}
   .dashboard-approved .approved-mid-grid,.dashboard-approved .approved-chart-grid{grid-template-columns:1fr}
   .dashboard-approved .approved-primary-grid>*,.dashboard-approved .approved-mid-grid>*,.dashboard-approved .approved-chart-grid>*{min-width:0;max-width:100%}
 }
 @media(max-width:680px){
+  .dashboard-approved .approved-account-body{grid-template-columns:minmax(0,1fr)}
+  .dashboard-approved .approved-account-chart{min-width:0;width:100%;max-width:100%}
   .dashboard-approved .approved-account-actions button{height:44px;min-height:44px}
   .dashboard-approved .approved-account-actions button:last-child{width:44px;min-width:44px;justify-self:end}
 }
