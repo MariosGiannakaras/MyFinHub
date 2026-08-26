@@ -37,6 +37,38 @@
   .dashboard-approved .approved-kpi-strip article{height:75px}
 }
 
+@media(min-width:981px){
+  .dashboard-approved .account-tone-0 .approved-account-icon>.finance-icon{display:none}
+  .dashboard-approved .account-tone-0 .approved-account-icon::before{
+    content:"";
+    width:22px;
+    height:22px;
+    background:currentColor;
+    -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cg fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m3 10 9-7 9 7'/%3E%3Cpath d='M5 10v9M9 10v9M15 10v9M19 10v9M3 21h18'/%3E%3C/g%3E%3C/svg%3E") center/contain no-repeat;
+    mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cg fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m3 10 9-7 9 7'/%3E%3Cpath d='M5 10v9M9 10v9M15 10v9M19 10v9M3 21h18'/%3E%3C/g%3E%3C/svg%3E") center/contain no-repeat;
+  }
+  .dashboard-approved .account-tone-2 .approved-account-icon .bank-brand-mark{
+    width:30px;
+    height:26px;
+    min-width:30px;
+    background:transparent;
+    border:0;
+    box-shadow:none;
+  }
+  .dashboard-approved .account-tone-2 .approved-account-icon .bank-logo-text{font-size:0;line-height:1}
+  .dashboard-approved .account-tone-2 .approved-account-icon .bank-logo-text::before{
+    content:"///";
+    display:block;
+    color:#17345f;
+    font-family:Arial Black,Arial,sans-serif;
+    font-size:21px;
+    font-weight:900;
+    letter-spacing:-6px;
+    line-height:1;
+    transform:skewX(-18deg);
+  }
+}
+
 @media(min-width:981px) and (max-width:1179px){
   .app-shell:has(.dashboard-approved) .period-row{
     position:absolute!important;
