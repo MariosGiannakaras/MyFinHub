@@ -38,18 +38,21 @@ Both roles must ignore and never mutate META issue #266.
 1. **Resolve current baseline**
    - Read `visual-qa/manifest.json` and locate the latest desktop full-page capture for the surface.
    - Inspect the corresponding page/component implementation and directly relevant states/dependencies.
+   - If the connected repository tools can resolve the PNG path but cannot visually render/download the binary in the chat, the owner attaches that exact latest PNG to Chat A. Do not substitute an older screenshot or recreate the current state manually.
 
 2. **Design**
-   - Chat A creates one desktop redesign target using the current implementation, the design-direction references and already approved patterns.
-   - The Dashboard direction image is a quality bar, not a universal layout template.
+   - Chat A creates one desktop redesign target using the current implementation, the owner-supplied OLD/NEW direction attachments, already approved patterns and the latest current-state screenshot.
+   - The NEW Dashboard direction image is a quality bar, not a universal layout template and not a source of product functionality.
 
 3. **Owner review**
    - The design remains `DESIGNING` until the owner explicitly approves it.
    - Requested revisions should preserve already accepted decisions and change only what is necessary.
 
-4. **Persist approved target**
-   - The exact approved image becomes `docs/ui-redesign/references/approved/<surface>/desktop.png`.
-   - Do not save rejected iterations as permanent reference files; Git history is sufficient for prior approved revisions.
+4. **Handoff approved target**
+   - The owner supplies the exact approved generated image to Chat B.
+   - Chat B persists that exact binary as `docs/ui-redesign/references/approved/<surface>/desktop.png` when its workspace exposes the attachment bytes.
+   - Never redraw, recompress, regenerate or approximate an approved target merely to create the repository file.
+   - If the implementation environment cannot access the approved attachment bytes, it must report that storage limitation rather than fabricate a substitute; the exact attached image still remains the implementation target.
 
 5. **Implement**
    - Chat B inspects repository state and implements the smallest coherent delta that reproduces the approved target while preserving product behavior.
@@ -77,21 +80,25 @@ Both roles must ignore and never mutate META issue #266.
 
 `visual-qa/` is the single persistent current-state archive. Do not create a duplicate `current/` screenshot tree under `docs/ui-redesign/`.
 
+Resolve the exact latest desktop screenshot through `visual-qa/manifest.json`. If Chat A cannot visually consume the repository binary through its connector, attach that resolved PNG to the chat; this is a transport limitation, not permission to use stale evidence.
+
 ### Direction references
 
-`references/direction/` contains the two permanent owner-supplied starting references. They are not implementation snapshots and do not define product functionality.
+The exact OLD and NEW owner-supplied images remain conversation attachments. Their expected dimensions and SHA-256 identities are recorded in `references/direction/README.md`.
+
+Attach both originals once when starting the long-lived Design Director chat. That chat should reuse them throughout Phase 1. Do not replace them with a reconstructed repository derivative.
 
 ### Approved targets
 
 Only owner-approved desktop targets belong under `references/approved/`.
 
-Recommended canonical path:
+Canonical path:
 
 ```text
 docs/ui-redesign/references/approved/<surface>/desktop.png
 ```
 
-Use stable surface names matching repository/visual-QA naming where practical.
+Use stable surface names matching repository/visual-QA naming where practical. Do not save rejected drafts or numbered `final` variants; Git history preserves prior approved revisions.
 
 ## Design order
 
@@ -120,7 +127,7 @@ The actual repository inventory remains authoritative. Add a surface to `REDESIG
 A surface is `VERIFIED` only when:
 
 - the owner explicitly approved its desktop design;
-- the approved target is durably stored;
+- the exact approved target is available to the implementation workflow and is persisted when technically possible without reconstruction;
 - implementation preserves existing functionality;
 - relevant accessibility and responsive-regression constraints hold;
 - relevant tests/checks pass;
