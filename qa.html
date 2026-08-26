@@ -12,6 +12,10 @@
       await import('/src/styles.css');
       await import('/src/styles/part47.css');
       await import('/src/qa.tsx');
+      for(let attempt=0;attempt<120&&!document.querySelector('#root>*');attempt+=1){
+        await new Promise(resolve=>setTimeout(resolve,16));
+      }
+      if(!document.querySelector('#root>*'))throw new Error('QA React surface did not mount before document readiness.');
     </script>
   </body>
 </html>
