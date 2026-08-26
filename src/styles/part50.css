@@ -1,0 +1,16 @@
+/* Final owner-approved Dashboard desktop geometry refinements. */
+@media(min-width:1180px){
+  .app-shell:has(.dashboard-approved) .command-search-action{
+    width:min(670px,calc(100vw - 760px));
+    min-width:0;
+    max-width:670px;
+  }
+}
+
+@media(min-width:981px) and (max-width:1179px){
+  .app-shell:has(.dashboard-approved) .command-search-action{
+    width:max(190px,calc(100vw - 790px));
+    min-width:0;
+    max-width:360px;
+  }
+}
