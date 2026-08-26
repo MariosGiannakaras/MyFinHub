@@ -18,7 +18,7 @@ Read these files in order:
 ## Visual sources
 
 - **Current implementation:** use `visual-qa/manifest.json` to locate the latest full-page desktop captures produced from deterministic QA data. Do not duplicate those images under this directory.
-- **Design direction:** `references/direction/` contains the owner-supplied OLD and NEW dashboard references.
+- **Design direction:** `references/direction/README.md` records the two owner-supplied OLD/NEW reference identities and the one-time handoff rule for the Design Director chat.
 - **Approved targets:** `references/approved/<surface>/desktop.png` contains only designs explicitly approved by the owner.
 
 Current implementation evidence and approved target images have different purposes and must never be treated as interchangeable.
