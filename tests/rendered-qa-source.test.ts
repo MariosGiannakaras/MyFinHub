@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 const coordinator = readFileSync('scripts/run-rendered-qa.mjs', 'utf8');
+const hardening = readFileSync('scripts/ui-ux-hardening-qa.mjs', 'utf8');
 const ci = readFileSync('.github/workflows/ci.yml', 'utf8');
 const qaHtml = readFileSync('qa.html', 'utf8');
 
@@ -28,10 +29,10 @@ describe('rendered browser QA reliability contract', () => {
     expect(coordinator).toContain("/tmp/myfinhub-primitives-adoption-qa-chrome");
   });
 
-  it('makes QA document readiness represent the newly mounted React surface',()=>{
+  it('waits for the committed URL and mounted React root before rendered assertions',()=>{
+    expect(hardening).toContain("location.href===target&&Boolean(document.querySelector('#root>*'))");
     expect(qaHtml).toContain("document.querySelector('#root>*')");
     expect(qaHtml).toContain('QA React surface did not mount before document readiness.');
-    expect(qaHtml).toContain("addEventListener('beforeunload',()=>document.body?.remove())");
   });
 
   it('enforces primary Chromium in pull-request CI', () => {
