@@ -1,0 +1,3 @@
+@media(max-width:680px){
+  .dashboard-approved .approved-account-actions button:last-child{width:40px;min-width:40px;justify-self:end}
+}
