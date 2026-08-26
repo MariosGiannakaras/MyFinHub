@@ -1,7 +1,11 @@
 /* Final owner-approved Dashboard desktop alignment. Loaded last on purpose. */
-.dashboard-approved-heading p{color:#66758f}
+.dashboard-approved-heading p{color:#60708b!important}
 
 @media(min-width:1410px){
+  html:has(.dashboard-approved){scrollbar-width:none}
+  html:has(.dashboard-approved)::-webkit-scrollbar{display:none}
+  .app-shell:has(.dashboard-approved) #main-workspace>div{transform:none!important}
+  .app-shell:has(.dashboard-approved) .workspace{padding-top:0!important}
   .app-shell:has(.dashboard-approved) .command-search-action{
     left:226px!important;
     width:662px!important;
@@ -27,15 +31,17 @@
     z-index:72;
   }
   .app-shell:has(.dashboard-approved) .period-row>[data-qa-crash]{display:none!important}
-  .dashboard-approved{padding-top:13px}
+  .dashboard-approved{padding-top:0}
+  .dashboard-approved-heading{min-height:73px}
   .dashboard-approved .approved-primary-grid{grid-template-columns:1.05fr 1fr 1.07fr!important}
   .dashboard-approved .approved-account-card{height:170px;min-height:170px!important}
-  .dashboard-approved .approved-secondary-panel{height:84px}
+  .dashboard-approved .approved-account-card:before,.dashboard-approved .approved-account-card:after{display:none!important}
+  .dashboard-approved .approved-secondary-panel{height:91px}
   .dashboard-approved .approved-mid-grid{grid-template-columns:1fr .96fr 1fr}
-  .dashboard-approved .approved-mid-grid>.approved-panel{height:252px}
+  .dashboard-approved .approved-mid-grid>.approved-panel{height:260px}
   .dashboard-approved .approved-chart-grid{grid-template-columns:.91fr 1.09fr}
-  .dashboard-approved .approved-chart-grid>.approved-panel{height:199px}
-  .dashboard-approved .approved-bar-wrap{height:157px}
+  .dashboard-approved .approved-chart-grid>.approved-panel{height:202px}
+  .dashboard-approved .approved-bar-wrap{height:160px}
   .dashboard-approved .approved-kpi-strip article{height:75px}
 }
 
