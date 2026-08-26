@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 2,
+  "layout": "surface-first-latest-only",
+  "appVersion": "v1.3",
+  "suite": "account-metadata",
+  "surface": "accounts",
+  "generatedAt": "2026-08-26T07:14:11.835Z",
+  "timeZone": "Europe/Athens",
+  "source": {
+    "sha": "c6c639f9a2924aec7228c3c3e1ac894325bf03b2",
+    "shortSha": "c6c639f9",
+    "branch": "chore/296-desktop-redesign-bootstrap"
+  },
+  "screenshots": [
+    "visual-qa/accounts/v1.3__2026-08-26_101411__qa-account-metadata__account-metadata-dashboard-desktop.png",
+    "visual-qa/accounts/v1.3__2026-08-26_101411__qa-account-metadata__account-metadata-dashboard-mobile.png",
+    "visual-qa/accounts/v1.3__2026-08-26_101411__qa-account-metadata__account-metadata-settings-desktop.png",
+    "visual-qa/accounts/v1.3__2026-08-26_101411__qa-account-metadata__account-metadata-settings-mobile.png"
+  ]
+}
