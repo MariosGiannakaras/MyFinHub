@@ -54,6 +54,7 @@ import {
 } from '../lib/selectors';
 import { accountDisplayName, effectiveRecurringItems } from '../lib/ui';
 import type { FinanceData } from '../types';
+import '../styles/part48.css';
 
 const PRIMARY_ACCOUNTS=['cash','piraeus-payroll','piraeus-savings'];
 const chartColors = ['#39c77b', '#438ff1', '#ffb52e', '#a45de7', '#d95cc5', '#98a5b7'];
@@ -251,7 +252,7 @@ export function DashboardPage({
 }: DashboardProps) {
   const systemReduced = useReducedMotion();
   const reduce = Boolean(systemReduced) || motionMode === 'reduced';
-  const [balancesVisible, setBalancesVisible] = useState(false);
+  const [balancesVisible, setBalancesVisible] = useState(true);
   const flow = selectMonthlyFlow(data, month);
   const previousMonth = shiftMonth(month, -1);
   const previousFlow = selectMonthlyFlow(data, previousMonth);
@@ -264,6 +265,7 @@ export function DashboardPage({
   const frequent = selectFrequentDescriptions(data, 'expense', 5);
   const rows = useMemo(() => buildMonthRows(data, month), [data, month]);
   const daily = useMemo(() => buildDailyFlow(data, month), [data, month]);
+  const cumulative = useMemo(() => { let income = 0; let expense = 0; return daily.map((row) => ({ ...row, income: (income += row.income), expense: (expense += row.expense) })); }, [daily]);
   const scheduled = pendingScheduled(data)
     .filter((item) => item.dueDate >= `${month}-01`)
     .sort((a, b) => a.dueDate.localeCompare(b.dueDate))
@@ -320,7 +322,7 @@ export function DashboardPage({
                 <BankBrandMark id={account.id} name={accountDisplayName(data, account.id)} />
                 <div className="dashboard-account-name">
                   <b>{accountDisplayName(data, account.id)}</b>
-                  <AccountIban accountId={account.id}/>
+                  <AccountIban accountId={account.id} masked/>
                 </div>
                 {account.kind === 'savings' ? (
                   <span className="dashboard-goal-pill">
@@ -399,6 +401,12 @@ export function DashboardPage({
               </button>
             ) : null}
           </div>
+        </section>
+      ) : null}
+      {!remaining.length ? (
+        <section className="dashboard-other-accounts dashboard-other-empty-section" data-dashboard-section="other-balances" aria-label="Λοιποί λογαριασμοί">
+          <h2>Λοιποί λογαριασμοί</h2>
+          <div className="dashboard-other-empty">Δεν υπάρχουν άλλοι λογαριασμοί για την τρέχουσα προβολή.</div>
         </section>
       ) : null}
 
@@ -481,7 +489,7 @@ export function DashboardPage({
             <div><span>Έσοδα</span><b>{money.format(flow.income)}</b><small><ArrowUpRight size={13} /> {trendCopy(incomeChange)}</small></div>
             <div className="dashboard-summary-spark" aria-hidden="true">
               <ResponsiveContainer width="100%" height={60}>
-                <LineChart data={daily}><Line type="monotone" dataKey="income" stroke="currentColor" strokeWidth={2} dot={false} isAnimationActive={!reduce} /></LineChart>
+                <LineChart data={cumulative}><Line type="monotone" dataKey="income" stroke="currentColor" strokeWidth={2} dot={false} isAnimationActive={!reduce} /></LineChart>
               </ResponsiveContainer>
             </div>
           </div>
@@ -489,7 +497,7 @@ export function DashboardPage({
             <div><span>Έξοδα</span><b>{money.format(-flow.expense)}</b><small><ArrowDownRight size={13} /> {trendCopy(expenseChange)}</small></div>
             <div className="dashboard-summary-spark" aria-hidden="true">
               <ResponsiveContainer width="100%" height={60}>
-                <LineChart data={daily}><Line type="monotone" dataKey="expense" stroke="currentColor" strokeWidth={2} dot={false} isAnimationActive={!reduce} /></LineChart>
+                <LineChart data={cumulative}><Line type="monotone" dataKey="expense" stroke="currentColor" strokeWidth={2} dot={false} isAnimationActive={!reduce} /></LineChart>
               </ResponsiveContainer>
             </div>
           </div>
@@ -517,7 +525,7 @@ export function DashboardPage({
           {daily.some((row) => row.income || row.expense) ? (
             <>
               <div className="dashboard-bar-chart" aria-hidden="true">
-                <ResponsiveContainer width="100%" height={165}>
+                <ResponsiveContainer width="100%" height={140}>
                   <BarChart data={daily} barGap={1}>
                     <CartesianGrid stroke="#dfe8f3" vertical={false} />
                     <XAxis dataKey="day" tick={{ fontSize: 9, fill: '#71819a' }} axisLine={false} tickLine={false} interval={4} />
@@ -547,7 +555,7 @@ export function DashboardPage({
           {categories.length ? (
             <div className="dashboard-category-layout">
               <div className="dashboard-donut-wrap" aria-hidden="true">
-                <ResponsiveContainer width="100%" height={180}>
+                <ResponsiveContainer width="100%" height={160}>
                   <PieChart>
                     <Pie data={categories} dataKey="value" nameKey="name" innerRadius={50} outerRadius={73} paddingAngle={1.5} isAnimationActive={!reduce}>
                       {categories.map((_, index) => <Cell key={index} fill={chartColors[index % chartColors.length]} />)}

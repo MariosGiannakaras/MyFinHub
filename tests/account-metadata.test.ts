@@ -61,7 +61,7 @@ describe('account IBAN metadata',()=>{
   it('keeps IBAN outside FinanceData and finance Undo/Redo while exposing it on Dashboard and Settings',()=>{
     expect(financeTypes.toLowerCase()).not.toContain('iban');
     expect(financeHook.toLowerCase()).not.toContain('iban');
-    expect(dashboardSource).toContain('<AccountIban accountId={account.id}/>');
+    expect(dashboardSource).toContain('<AccountIban accountId={account.id} masked/>');
     expect(settingsSource).toContain('<AccountMetadataSettings data={data}/>');
   });
 });

@@ -328,3 +328,45 @@
 @media(prefers-reduced-motion:reduce){
   .dashboard-target *{scroll-behavior:auto}
 }
+
+/* issue-298-reference-alignment-v2 */
+@media(min-width:1180px){
+  .app-shell:has(.dashboard-target) .brand-mark-icon{width:40px;height:40px;min-width:40px;border-radius:9px;background:linear-gradient(145deg,#087ff4,#24a9f3);box-shadow:0 5px 12px rgba(5,116,225,.18);display:grid;place-items:center;overflow:hidden;position:relative}
+  .app-shell:has(.dashboard-target) .brand-mark-icon img{display:none!important}
+  .app-shell:has(.dashboard-target) .brand-mark-icon::before{content:"MF";color:#fff;font-size:17px;font-weight:760;letter-spacing:-.04em}
+  .app-shell:has(.dashboard-target) .brand-word{font-size:20px;font-weight:820;letter-spacing:-.035em}
+  .app-shell:has(.dashboard-target) .brand-block small{font-size:8.2px;margin-top:1px}
+  .app-shell:has(.dashboard-target) .sidebar nav button{font-size:11.5px;min-height:37px;padding:8px 10px}
+  .app-shell:has(.dashboard-target) .sidebar>.primary-action[data-global-quick-entry="desktop"],.app-shell:has(.dashboard-target) .sidebar>.command-search-action{display:none!important}
+  .app-shell:has(.dashboard-target) .dashboard-shell-topbar{display:flex;align-items:center;position:sticky}
+  .app-shell:has(.dashboard-target) .dashboard-shell-tools{position:absolute;left:18px;top:9px;display:flex;align-items:center;gap:16px;z-index:44}
+  .app-shell:has(.dashboard-target) .dashboard-shell-search{width:min(660px,calc(100vw - 760px));height:39px;padding:0 14px;border:1px solid #dce7f2;border-radius:10px;background:rgba(255,255,255,.86);box-shadow:0 2px 8px rgba(49,75,111,.045);display:flex;align-items:center;gap:9px;color:#203d72;cursor:pointer;text-align:left}
+  .app-shell:has(.dashboard-target) .dashboard-shell-search span{font-size:10px;font-weight:570;color:#7889a4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .app-shell:has(.dashboard-target) .dashboard-shell-quick{width:145px;height:40px;padding:0 12px;border:0;border-radius:9px;background:linear-gradient(180deg,#0c8bfb,#0878e8);color:#fff;box-shadow:0 5px 12px rgba(0,118,235,.2);display:flex;align-items:center;justify-content:center;gap:8px;font-size:10px;font-weight:760;cursor:pointer}
+  .app-shell:has(.dashboard-target) .dashboard-heading h1{font-size:27px}
+  .app-shell:has(.dashboard-target) .dashboard-heading p{font-size:10.5px}
+  .dashboard-account-card{min-height:158px;padding:10px 12px 9px}
+  .dashboard-account-head .bank-brand-mark{width:42px;height:36px;border-radius:9px}
+  .dashboard-account-green .bank-brand-mark{background:#e7fbef;color:#13af68}
+  .dashboard-account-violet .bank-brand-mark{background:#f5e8ff;color:#a12fe8}
+  .dashboard-account-blue .bank-brand-mark{background:#ffe02b;color:#102d64}
+  .dashboard-account-body{grid-template-columns:minmax(145px,.82fr) minmax(120px,1fr);gap:6px}
+  .dashboard-account-balance .animated-amount{font-size:23px}
+  .dashboard-account-actions{padding-top:7px;gap:6px}
+  .dashboard-account-actions button{min-height:30px}
+  .dashboard-other-accounts{min-height:62px;padding:6px 9px 8px}
+  .dashboard-other-empty-section{display:grid;grid-template-rows:auto 1fr}
+  .dashboard-other-empty{min-height:34px;border:1px dashed #dce7f2;border-radius:8px;background:rgba(250,253,255,.72);display:flex;align-items:center;padding:0 10px;color:#7b8ba3;font-size:8.5px}
+  .dashboard-panel{padding:8px 11px}
+  .dashboard-panel>header{min-height:23px;margin-bottom:4px}
+  .dashboard-transaction-row{min-height:32px;padding:4px 2px}
+  .dashboard-upcoming-row{min-height:36px;padding:3px 0}
+  .dashboard-summary-row{min-height:50px}
+  .dashboard-summary-spark{height:44px}
+  .dashboard-save-ring{width:48px;height:48px;background:conic-gradient(#37c97d 0 var(--saving-rate),#ff5f68 var(--saving-rate) 360deg)}
+  .dashboard-flow-panel,.dashboard-category-panel{min-height:184px}
+  .dashboard-bar-chart{height:140px}
+  .dashboard-category-layout{grid-template-columns:200px minmax(0,1fr);gap:13px}
+  .dashboard-donut-wrap{height:160px}
+  .dashboard-kpi-grid article{min-height:62px;padding:7px 8px}
+}
