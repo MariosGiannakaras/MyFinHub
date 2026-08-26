@@ -173,6 +173,7 @@ try {
   await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}", 'workspace after reload');
   assert((await receiptCount()) === 1, 'receipt remains in IndexedDB after reload');
   await openReceiptInbox();
+  await waitFor("function(){return document.querySelectorAll('.receipt-draft-row').length===1}", 'reopened inbox hydration');
   assert((await c.call("function(){return document.querySelectorAll('.receipt-draft-row').length}")) === 1, 'reopened inbox restores receipt');
 
   console.log('Receipt OCR QA: self-hosted OCR scans locally and creates proposal');
