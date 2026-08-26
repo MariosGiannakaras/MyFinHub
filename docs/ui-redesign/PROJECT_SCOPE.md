@@ -55,7 +55,7 @@ When sources conflict, use this order:
 5. `DESIGN_SYSTEM.md`;
 6. `PAGE_PATTERNS.md`;
 7. `MASTER_PROMPT.md`;
-8. `references/direction/dashboard-new-direction.webp` as a quality/design-direction reference;
+8. the owner-supplied NEW redesign-direction image described in `references/direction/README.md`;
 9. current/old screenshots as evidence of the existing presentation.
 
 An approved image controls intended presentation. It does not silently override business logic, security, accounting semantics or an explicit later owner decision.
