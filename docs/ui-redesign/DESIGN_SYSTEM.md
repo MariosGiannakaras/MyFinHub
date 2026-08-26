@@ -16,7 +16,7 @@ The redesign must preserve the accessibility/interaction requirements in `docs/U
 - Avoid generic AI-dashboard styling, gratuitous glassmorphism/gradients, excessive shadows, oversized cards/typography, decorative noise and unnecessary whitespace.
 - Cards are grouping tools, not the default container for every datum.
 - Financial information hierarchy and scanning efficiency take priority over decoration.
-- `references/direction/dashboard-new-direction.webp` is a quality/design-language reference, not a rigid composition template.
+- The owner-supplied NEW redesign-direction image described in `references/direction/README.md` is a quality/design-language reference, not a rigid composition template.
 
 ## Decisions to populate as pages are approved
 
