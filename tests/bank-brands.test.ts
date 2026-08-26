@@ -13,7 +13,9 @@ describe('bank brand identity',()=>{
     expect(bankBrandKey('alpha-main','Alpha Bank')).toBe('alpha');
     expect(bankBrandKey('national-main','Εθνική Τράπεζα')).toBe('national');
     expect(bankBrandKey('nbg-main','National Bank of Greece')).toBe('national');
+    expect(bankBrandKey(undefined,'Εθνική Τράπεζα')).toBe('national');
     expect(bankBrandKey('eurobank-main','Eurobank')).toBe('eurobank');
+    expect(bankBrandKey(undefined,'Eurobank')).toBe('eurobank');
     expect(bankBrandKey('payzy','payzy')).toBe('payzy');
     expect(bankBrandKey('viva','Viva.com')).toBe('viva');
   });
