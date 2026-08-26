@@ -5,10 +5,11 @@ const coordinator = readFileSync('scripts/run-rendered-qa.mjs', 'utf8');
 const ci = readFileSync('.github/workflows/ci.yml', 'utf8');
 
 describe('rendered browser QA reliability contract', () => {
-  it('preflights primary Chromium through a dynamic CDP endpoint with diagnostics', () => {
-    expect(coordinator).toContain("'--remote-debugging-port=0'");
+  it('preflights primary Chromium through an isolated fixed CDP endpoint with diagnostics', () => {
+    expect(coordinator).toContain('const port=9300+attempt');
+    expect(coordinator).toContain('`--remote-debugging-port=${port}`');
     expect(coordinator).toContain("'--remote-debugging-address=127.0.0.1'");
-    expect(coordinator).toContain('DevToolsActivePort');
+    expect(coordinator).not.toContain('DevToolsActivePort');
     expect(coordinator).toContain('trimDiagnostics');
     expect(coordinator).toContain('Primary Chromium preflight passed');
   });
