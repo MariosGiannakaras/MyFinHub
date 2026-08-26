@@ -28,9 +28,10 @@ describe('rendered browser QA reliability contract', () => {
     expect(coordinator).toContain("/tmp/myfinhub-primitives-adoption-qa-chrome");
   });
 
-  it('holds document readiness until the QA React surface has mounted',()=>{
+  it('makes QA document readiness represent the newly mounted React surface',()=>{
     expect(qaHtml).toContain("document.querySelector('#root>*')");
     expect(qaHtml).toContain('QA React surface did not mount before document readiness.');
+    expect(qaHtml).toContain("addEventListener('beforeunload',()=>document.body?.remove())");
   });
 
   it('enforces primary Chromium in pull-request CI', () => {
