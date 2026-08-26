@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 const coordinator = readFileSync('scripts/run-rendered-qa.mjs', 'utf8');
 const ci = readFileSync('.github/workflows/ci.yml', 'utf8');
+const qaHtml = readFileSync('qa.html', 'utf8');
 
 describe('rendered browser QA reliability contract', () => {
   it('preflights primary Chromium through an isolated fixed headless CDP endpoint with diagnostics', () => {
@@ -25,6 +26,11 @@ describe('rendered browser QA reliability contract', () => {
   it('keeps the shared primitive adoption suite in the rendered merge gate',()=>{
     expect(coordinator).toContain("scripts/primitives-adoption-qa.mjs");
     expect(coordinator).toContain("/tmp/myfinhub-primitives-adoption-qa-chrome");
+  });
+
+  it('holds document readiness until the QA React surface has mounted',()=>{
+    expect(qaHtml).toContain("document.querySelector('#root>*')");
+    expect(qaHtml).toContain('QA React surface did not mount before document readiness.');
   });
 
   it('enforces primary Chromium in pull-request CI', () => {
