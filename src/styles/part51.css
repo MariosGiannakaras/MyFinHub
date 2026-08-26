@@ -38,6 +38,32 @@
 }
 
 @media(min-width:981px){
+  .app-shell:has(.dashboard-approved) .brand-block .brand-mark-icon{
+    position:relative;
+    width:39px;
+    height:39px;
+    min-width:39px;
+    border-radius:9px;
+    overflow:hidden;
+    display:grid;
+    place-items:center;
+    background:linear-gradient(145deg,#1b9cff 0%,#0876ed 58%,#075dcc 100%);
+    box-shadow:0 3px 8px rgba(11,108,218,.22);
+  }
+  .app-shell:has(.dashboard-approved) .brand-block .brand-mark-icon .brand-mark-image{display:none!important}
+  .app-shell:has(.dashboard-approved) .brand-block .brand-mark-icon::before{
+    content:"MF";
+    color:#fff;
+    font-family:Arial,Helvetica,sans-serif;
+    font-size:17px;
+    font-weight:760;
+    line-height:1;
+    letter-spacing:-.04em;
+  }
+  .app-shell:has(.dashboard-approved) .brand-block .brand-mark-copy{gap:1px}
+  .app-shell:has(.dashboard-approved) .brand-block .brand-word{font-size:21px;line-height:1.05;letter-spacing:-.035em}
+  .app-shell:has(.dashboard-approved) .brand-block .brand-mark-copy small{font-size:8.5px;line-height:1.2;color:#61708a}
+
   .dashboard-approved .account-tone-0 .approved-account-icon>.finance-icon{display:none}
   .dashboard-approved .account-tone-0 .approved-account-icon::before{
     content:"";
