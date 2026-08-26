@@ -22,11 +22,8 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  Cell,
   Line,
   LineChart,
-  Pie,
-  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -58,6 +55,18 @@ import '../styles/part48.css';
 
 const PRIMARY_ACCOUNTS=['cash','piraeus-payroll','piraeus-savings'];
 const chartColors = ['#39c77b', '#438ff1', '#ffb52e', '#a45de7', '#d95cc5', '#98a5b7'];
+
+function conicSegments(rows: { value: number }[], total: number) {
+  if (!rows.length || total <= 0) return 'conic-gradient(#e6edf6 0 100%)';
+  let cursor = 0;
+  const parts = rows.map((row, index) => {
+    const start = cursor;
+    cursor = Math.min(100, cursor + (row.value / total) * 100);
+    return `${chartColors[index % chartColors.length]} ${start.toFixed(2)}% ${cursor.toFixed(2)}%`;
+  });
+  if (cursor < 100) parts.push(`#e6edf6 ${cursor.toFixed(2)}% 100%`);
+  return `conic-gradient(${parts.join(', ')})`;
+}
 
 type DashboardProps = {
   data: FinanceData;
@@ -287,6 +296,9 @@ export function DashboardPage({
   const endTotal = accounts.reduce((sum, account) => sum + (balances[account.id] ?? 0), 0);
   const topCategory = categories[0];
   const topCategoryShare = flow.expense > 0 && topCategory ? topCategory.value / flow.expense : 0;
+  const flowVolume = flow.income + flow.expense;
+  const incomeShare = flowVolume > 0 ? flow.income / flowVolume : 0;
+  const categoryGradient = conicSegments(categories, flow.expense);
 
   return (
     <div className="page-stack dashboard-target">
@@ -489,7 +501,9 @@ export function DashboardPage({
             <div><span>Έσοδα</span><b>{money.format(flow.income)}</b><small><ArrowUpRight size={13} /> {trendCopy(incomeChange)}</small></div>
             <div className="dashboard-summary-spark" aria-hidden="true">
               <ResponsiveContainer width="100%" height={60}>
-                <LineChart data={cumulative}><Line type="monotone" dataKey="income" stroke="currentColor" strokeWidth={2} dot={false} isAnimationActive={!reduce} /></LineChart>
+                <AreaChart data={cumulative}>
+                  <defs><linearGradient id="summary-income-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="currentColor" stopOpacity=".22"/><stop offset="100%" stopColor="currentColor" stopOpacity="0"/></linearGradient></defs>
+                  <YAxis hide domain={[0, (max: number) => Math.max(1, max * 1.08)]}/><Area type="monotone" dataKey="income" stroke="currentColor" strokeWidth={2} fill="url(#summary-income-fill)" dot={false} isAnimationActive={!reduce}/></AreaChart>
               </ResponsiveContainer>
             </div>
           </div>
@@ -497,7 +511,9 @@ export function DashboardPage({
             <div><span>Έξοδα</span><b>{money.format(-flow.expense)}</b><small><ArrowDownRight size={13} /> {trendCopy(expenseChange)}</small></div>
             <div className="dashboard-summary-spark" aria-hidden="true">
               <ResponsiveContainer width="100%" height={60}>
-                <LineChart data={cumulative}><Line type="monotone" dataKey="expense" stroke="currentColor" strokeWidth={2} dot={false} isAnimationActive={!reduce} /></LineChart>
+                <AreaChart data={cumulative}>
+                  <defs><linearGradient id="summary-expense-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="currentColor" stopOpacity=".2"/><stop offset="100%" stopColor="currentColor" stopOpacity="0"/></linearGradient></defs>
+                  <YAxis hide domain={[0, (max: number) => Math.max(1, max * 1.08)]}/><Area type="monotone" dataKey="expense" stroke="currentColor" strokeWidth={2} fill="url(#summary-expense-fill)" dot={false} isAnimationActive={!reduce}/></AreaChart>
               </ResponsiveContainer>
             </div>
           </div>
@@ -507,8 +523,9 @@ export function DashboardPage({
               <b>{money.format(net)}</b>
               <small>{trendCopy(netChange)}</small>
             </div>
-            <div className="dashboard-save-ring" style={{ '--saving-rate': `${Math.max(0, Math.min(100, saveRate * 100)) * 3.6}deg` } as CSSProperties}>
-              <span>{Math.round(saveRate * 100)}%</span>
+            <div className="dashboard-summary-composition">
+              <div className="dashboard-summary-donut" style={{ '--income-share': `${Math.max(0, Math.min(1, incomeShare)) * 360}deg` } as CSSProperties}><span className="sr-only">Έσοδα {Math.round(incomeShare * 100)}%, έξοδα {Math.round((1 - incomeShare) * 100)}%</span></div>
+              <div className="dashboard-summary-legend"><span className="income">Έσοδα <b>{Math.round(incomeShare * 100)}%</b></span><span className="expense">Έξοδα <b>{Math.round((1 - incomeShare) * 100)}%</b></span></div>
             </div>
           </div>
         </article>
@@ -555,14 +572,7 @@ export function DashboardPage({
           {categories.length ? (
             <div className="dashboard-category-layout">
               <div className="dashboard-donut-wrap" aria-hidden="true">
-                <ResponsiveContainer width="100%" height={160}>
-                  <PieChart>
-                    <Pie data={categories} dataKey="value" nameKey="name" innerRadius={50} outerRadius={73} paddingAngle={1.5} isAnimationActive={!reduce}>
-                      {categories.map((_, index) => <Cell key={index} fill={chartColors[index % chartColors.length]} />)}
-                    </Pie>
-                    <Tooltip formatter={(value) => money.format(Number(value))} />
-                  </PieChart>
-                </ResponsiveContainer>
+                <div className="dashboard-category-donut" style={{ background: categoryGradient }} />
                 <div><b>{compactMoney.format(flow.expense)}</b><span>Σύνολο εξόδων</span></div>
               </div>
               <div className="dashboard-category-table">
