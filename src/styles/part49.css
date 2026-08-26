@@ -82,4 +82,5 @@
   .dashboard-approved .approved-account-chart{min-width:0;width:100%;max-width:100%}
   .dashboard-approved .approved-account-actions button{height:44px;min-height:44px}
   .dashboard-approved .approved-account-actions button:last-child{width:44px;min-width:44px;justify-self:end}
+  .dashboard-approved .approved-panel-head button,.dashboard-approved .approved-footer-link{min-height:44px}
 }
