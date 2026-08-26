@@ -36,7 +36,7 @@ jobs:
                   raise SystemExit('AppShell topbar anchor missing')
               s = s.replace(old, new, 1)
               old = '</button></div><div className="top-actions">'
-              new = '''</button></div>{page==='dashboard'?<div className="dashboard-shell-tools"><button type="button" className="dashboard-shell-search" aria-label="Αναζήτηση συναλλαγών, λογαριασμών και κατηγοριών" onClick={onCommand}><Search size={17}/><span>Αναζήτηση συναλλαγών, λογαριασμών, κατηγοριών...</span></button><button type="button" className="dashboard-shell-quick" data-global-quick-entry="dashboard-header" onClick={onQuickAdd}><Plus size={17}/><span>Γρήγορη κίνηση</span></button></div>:null}<div className="top-actions">'''
+              new = '''</button></div>{page==='dashboard'?<div className="dashboard-shell-tools"><button type="button" className="dashboard-shell-search" aria-label="Αναζήτηση συναλλαγών, λογαριασμών και κατηγοριών" onClick={onCommand}><Search size={17}/><span>Αναζήτηση συναλλαγών, λογαριασμών, κατηγοριών...</span></button><button type="button" className="dashboard-shell-quick" onClick={onQuickAdd}><Plus size={17}/><span>Γρήγορη κίνηση</span></button></div>:null}<div className="top-actions">'''
               if old not in s:
                   raise SystemExit('AppShell tools anchor missing')
               s = s.replace(old, new, 1)
@@ -78,6 +78,9 @@ jobs:
                   ("includes('GR16 0110 1250 0000 0001 2300 695')", "includes('GR16 •••• •••• 0695')"),
                   ('configured payroll IBAN is fully visible', 'configured payroll IBAN is masked on Dashboard'),
                   ('mobile payroll IBAN is not truncated from the DOM', 'mobile payroll IBAN stays masked on Dashboard'),
+              ],
+              'tests/account-metadata.test.ts': [
+                  ('<AccountIban accountId={account.id}/>', '<AccountIban accountId={account.id} masked/>'),
               ],
           }
           for name, reps in replacements.items():
@@ -165,6 +168,6 @@ jobs:
           cp /tmp/dashboard-aligned.png visual-qa/dashboard/issue-298-dashboard-reference-aligned-desktop-1440x1000.png
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/components/AppShell.tsx src/pages/DashboardPage.tsx src/styles/part48.css scripts/frontend-qa.mjs scripts/brand-visual-qa.mjs scripts/frontend-redesign-qa.mjs scripts/account-metadata-qa.mjs visual-qa/dashboard/issue-298-dashboard-reference-aligned-desktop-1440x1000.png
+          git add src/components/AppShell.tsx src/pages/DashboardPage.tsx src/styles/part48.css scripts/frontend-qa.mjs scripts/brand-visual-qa.mjs scripts/frontend-redesign-qa.mjs scripts/account-metadata-qa.mjs tests/account-metadata.test.ts visual-qa/dashboard/issue-298-dashboard-reference-aligned-desktop-1440x1000.png
           git commit -m "fix(dashboard): align approved reference (#298) [skip ci]"
           git push origin "HEAD:${GITHUB_REF_NAME}"
