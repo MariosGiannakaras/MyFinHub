@@ -1,0 +1,175 @@
+name: Issue 298 reference alignment
+
+on:
+  push:
+    branches: [issue-298-dashboard-redesign]
+
+permissions:
+  contents: write
+
+jobs:
+  align:
+    if: ${{ contains(github.event.head_commit.message, 'run reference alignment') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Align Dashboard to approved reference
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          shell = Path('src/components/AppShell.tsx')
+          s = shell.read_text()
+          if 'dashboard-shell-tools' not in s:
+              old = '<header className="topbar neo-flat"><div className="mobile-brand">'
+              new = '<header className={`topbar neo-flat ${page===\'dashboard\'?\'dashboard-shell-topbar\':\'\'}`}><div className="mobile-brand">'
+              if old not in s: raise SystemExit('AppShell topbar anchor missing')
+              s = s.replace(old, new, 1)
+              old = '</button></div><div className="top-actions">'
+              new = '''</button></div>{page==='dashboard'?<div className="dashboard-shell-tools"><button type="button" className="dashboard-shell-search" aria-label="Αναζήτηση συναλλαγών, λογαριασμών και κατηγοριών" onClick={onCommand}><Search size={17}/><span>Αναζήτηση συναλλαγών, λογαριασμών, κατηγοριών...</span></button><button type="button" className="dashboard-shell-quick" data-global-quick-entry="dashboard-header" onClick={onQuickAdd}><Plus size={17}/><span>Γρήγορη κίνηση</span></button></div>:null}<div className="top-actions">'''
+              if old not in s: raise SystemExit('AppShell tools anchor missing')
+              s = s.replace(old, new, 1)
+              shell.write_text(s)
+
+          dashboard = Path('src/pages/DashboardPage.tsx')
+          s = dashboard.read_text()
+          if "import '../styles/part48.css';" not in s:
+              anchor = "import type { FinanceData } from '../types';\n"
+              if anchor not in s: raise SystemExit('Dashboard style import anchor missing')
+              s = s.replace(anchor, anchor + "import '../styles/part48.css';\n", 1)
+          s = s.replace('const [balancesVisible, setBalancesVisible] = useState(false);','const [balancesVisible, setBalancesVisible] = useState(true);')
+          s = s.replace('<AccountIban accountId={account.id}/>','<AccountIban accountId={account.id} masked/>')
+          if 'const cumulative = useMemo' not in s:
+              anchor = '  const daily = useMemo(() => buildDailyFlow(data, month), [data, month]);\n'
+              addition = "  const cumulative = useMemo(() => { let income = 0; let expense = 0; return daily.map((row) => ({ ...row, income: (income += row.income), expense: (expense += row.expense) })); }, [daily]);\n"
+              if anchor not in s: raise SystemExit('Dashboard cumulative anchor missing')
+              s = s.replace(anchor, anchor + addition, 1)
+          s = s.replace('<LineChart data={daily}>','<LineChart data={cumulative}>')
+          s = s.replace('<ResponsiveContainer width="100%" height={165}>','<ResponsiveContainer width="100%" height={140}>')
+          s = s.replace('<ResponsiveContainer width="100%" height={180}>','<ResponsiveContainer width="100%" height={160}>')
+          if 'dashboard-other-empty-section' not in s:
+              anchor = '''        </section>\n      ) : null}\n\n      <section className="dashboard-middle-grid"'''
+              addition = '''        </section>\n      ) : null}\n      {!remaining.length ? (\n        <section className="dashboard-other-accounts dashboard-other-empty-section" data-dashboard-section="other-balances" aria-label="Λοιποί λογαριασμοί">\n          <h2>Λοιποί λογαριασμοί</h2>\n          <div className="dashboard-other-empty">Δεν υπάρχουν άλλοι λογαριασμοί για την τρέχουσα προβολή.</div>\n        </section>\n      ) : null}\n\n      <section className="dashboard-middle-grid"'''
+              if anchor not in s: raise SystemExit('Dashboard other accounts anchor missing')
+              s = s.replace(anchor, addition, 1)
+          dashboard.write_text(s)
+
+          css = Path('src/styles/part48.css')
+          s = css.read_text()
+          marker = '/* issue-298-reference-alignment-v2 */'
+          if marker not in s:
+              s += r'''
+
+/* issue-298-reference-alignment-v2 */
+@media(min-width:1180px){
+  .app-shell:has(.dashboard-target) .brand-mark-icon{
+    width:40px;height:40px;min-width:40px;border-radius:9px;background:linear-gradient(145deg,#087ff4,#24a9f3);
+    box-shadow:0 5px 12px rgba(5,116,225,.18);display:grid;place-items:center;overflow:hidden;position:relative;
+  }
+  .app-shell:has(.dashboard-target) .brand-mark-icon img{display:none!important}
+  .app-shell:has(.dashboard-target) .brand-mark-icon::before{content:"MF";color:#fff;font-size:17px;font-weight:760;letter-spacing:-.04em}
+  .app-shell:has(.dashboard-target) .brand-word{font-size:20px;font-weight:820;letter-spacing:-.035em}
+  .app-shell:has(.dashboard-target) .brand-block small{font-size:8.2px;margin-top:1px}
+  .app-shell:has(.dashboard-target) .sidebar nav button{font-size:11.5px;min-height:37px;padding:8px 10px}
+  .app-shell:has(.dashboard-target) .sidebar>.primary-action[data-global-quick-entry="desktop"],
+  .app-shell:has(.dashboard-target) .sidebar>.command-search-action{display:none!important}
+  .app-shell:has(.dashboard-target) .dashboard-shell-topbar{display:flex;align-items:center;position:sticky}
+  .app-shell:has(.dashboard-target) .dashboard-shell-tools{position:absolute;left:18px;top:9px;display:flex;align-items:center;gap:16px;z-index:44}
+  .app-shell:has(.dashboard-target) .dashboard-shell-search{
+    width:min(660px,calc(100vw - 760px));height:39px;padding:0 14px;border:1px solid #dce7f2;border-radius:10px;background:rgba(255,255,255,.86);
+    box-shadow:0 2px 8px rgba(49,75,111,.045);display:flex;align-items:center;gap:9px;color:#203d72;cursor:pointer;text-align:left;
+  }
+  .app-shell:has(.dashboard-target) .dashboard-shell-search span{font-size:10px;font-weight:570;color:#7889a4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .app-shell:has(.dashboard-target) .dashboard-shell-quick{
+    width:145px;height:40px;padding:0 12px;border:0;border-radius:9px;background:linear-gradient(180deg,#0c8bfb,#0878e8);color:#fff;
+    box-shadow:0 5px 12px rgba(0,118,235,.2);display:flex;align-items:center;justify-content:center;gap:8px;font-size:10px;font-weight:760;cursor:pointer;
+  }
+  .app-shell:has(.dashboard-target) .dashboard-heading h1{font-size:27px}
+  .app-shell:has(.dashboard-target) .dashboard-heading p{font-size:10.5px}
+  .dashboard-account-card{min-height:158px;padding:10px 12px 9px}
+  .dashboard-account-head .bank-brand-mark{width:42px;height:36px;border-radius:9px}
+  .dashboard-account-green .bank-brand-mark{background:#e7fbef;color:#13af68}
+  .dashboard-account-violet .bank-brand-mark{background:#f5e8ff;color:#a12fe8}
+  .dashboard-account-blue .bank-brand-mark{background:#ffe02b;color:#102d64}
+  .dashboard-account-body{grid-template-columns:minmax(145px,.82fr) minmax(120px,1fr);gap:6px}
+  .dashboard-account-balance .animated-amount{font-size:23px}
+  .dashboard-account-actions{padding-top:7px;gap:6px}
+  .dashboard-account-actions button{min-height:30px}
+  .dashboard-other-accounts{min-height:62px;padding:6px 9px 8px}
+  .dashboard-other-empty-section{display:grid;grid-template-rows:auto 1fr}
+  .dashboard-other-empty{min-height:34px;border:1px dashed #dce7f2;border-radius:8px;background:rgba(250,253,255,.72);display:flex;align-items:center;padding:0 10px;color:#7b8ba3;font-size:8.5px}
+  .dashboard-panel{padding:8px 11px}
+  .dashboard-panel>header{min-height:23px;margin-bottom:4px}
+  .dashboard-transaction-row{min-height:32px;padding:4px 2px}
+  .dashboard-upcoming-row{min-height:36px;padding:3px 0}
+  .dashboard-summary-row{min-height:50px}
+  .dashboard-summary-spark{height:44px}
+  .dashboard-save-ring{width:48px;height:48px;background:conic-gradient(#37c97d 0 var(--saving-rate),#ff5f68 var(--saving-rate) 360deg)}
+  .dashboard-flow-panel,.dashboard-category-panel{min-height:184px}
+  .dashboard-bar-chart{height:140px}
+  .dashboard-category-layout{grid-template-columns:200px minmax(0,1fr);gap:13px}
+  .dashboard-donut-wrap{height:160px}
+  .dashboard-kpi-grid article{min-height:62px;padding:7px 8px}
+}
+'''
+              css.write_text(s)
+
+          replacements = {
+            'scripts/frontend-qa.mjs': [('.primary-balance-card .bank-brand-mark','.dashboard-account-card .bank-brand-mark')],
+            'scripts/brand-visual-qa.mjs': [('.primary-balance-card .bank-brand-mark','.dashboard-account-card .bank-brand-mark')],
+            'scripts/frontend-redesign-qa.mjs': [('.primary-balance-grid','.dashboard-primary-grid'),('.primary-balance-card','.dashboard-account-card')],
+            'scripts/account-metadata-qa.mjs': [
+              ('.primary-balance-card','.dashboard-account-card'),('.primary-balance-grid','.dashboard-primary-grid'),
+              ("includes('GR16 0110 1250 0000 0001 2300 695')","includes('GR16 •••• •••• 0695')"),
+              ('configured payroll IBAN is fully visible','configured payroll IBAN is masked on Dashboard'),
+              ('mobile payroll IBAN is not truncated from the DOM','mobile payroll IBAN stays masked on Dashboard')
+            ],
+          }
+          for name, reps in replacements.items():
+              p=Path(name); text=p.read_text()
+              for old,new in reps: text=text.replace(old,new)
+              p.write_text(text)
+          PY
+      - name: Focused source validation
+        run: npx vitest run tests/shell-dashboard-hierarchy-source.test.ts tests/account-metadata.test.ts tests/final-ux-reconciliation-source.test.ts tests/time-aware-source.test.ts tests/selectors.test.ts
+      - run: npm run security:guard
+      - run: npm run build
+      - name: Capture aligned Dashboard
+        shell: bash
+        run: |
+          npm run dev:web > /tmp/myfinhub-vite.log 2>&1 &
+          VITE_PID=$!
+          trap 'kill $VITE_PID || true' EXIT
+          ready=0
+          for attempt in {1..40}; do
+            if curl --fail --silent --show-error http://127.0.0.1:5173/qa.html > /dev/null; then ready=1; break; fi
+            sleep 1
+          done
+          if [ "$ready" -ne 1 ]; then cat /tmp/myfinhub-vite.log; exit 1; fi
+          BROWSER="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          "$BROWSER" --headless=new --no-sandbox --disable-gpu --hide-scrollbars --force-device-scale-factor=1 --window-size=1440,1000 --virtual-time-budget=10000 --screenshot=/tmp/dashboard-aligned.png 'http://127.0.0.1:5173/qa.html?page=dashboard'
+          test -s /tmp/dashboard-aligned.png
+      - name: Upload aligned result
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: issue-298-dashboard-reference-aligned
+          path: /tmp/dashboard-aligned.png
+          retention-days: 14
+      - name: Commit alignment
+        shell: bash
+        run: |
+          cp /tmp/dashboard-aligned.png visual-qa/dashboard/issue-298-dashboard-reference-aligned-desktop-1440x1000.png
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/components/AppShell.tsx src/pages/DashboardPage.tsx src/styles/part48.css scripts/frontend-qa.mjs scripts/brand-visual-qa.mjs scripts/frontend-redesign-qa.mjs scripts/account-metadata-qa.mjs visual-qa/dashboard/issue-298-dashboard-reference-aligned-desktop-1440x1000.png
+          git commit -m "fix(dashboard): align approved reference (#298) [skip ci]"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
