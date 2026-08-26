@@ -1,4 +1,6 @@
 /* Final owner-approved Dashboard desktop alignment. Loaded last on purpose. */
+.dashboard-approved-heading p{color:#66758f}
+
 @media(min-width:1410px){
   .app-shell:has(.dashboard-approved) .command-search-action{
     left:226px!important;
