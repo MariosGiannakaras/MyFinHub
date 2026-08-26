@@ -1,5 +1,5 @@
 @media(min-width:981px){
-  .app-shell:has(.dashboard-approved) .sidebar nav button.active{background-color:#0874ec}
+  .app-shell:has(.dashboard-approved) .sidebar nav button.active{background-color:#086de9}
   .app-shell:has(.dashboard-approved) .top-actions>*.app-tooltip:last-child{display:inline-flex;position:fixed;left:162px;bottom:18px;z-index:75}
   .app-shell:has(.dashboard-approved) .top-actions>*.app-tooltip:last-child>button{width:32px;height:32px;min-width:32px;min-height:32px;border-radius:8px;background:rgba(255,255,255,.82)}
 }
