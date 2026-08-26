@@ -1,5 +1,5 @@
 /* Final owner-approved Dashboard desktop alignment. Loaded last on purpose. */
-@media(min-width:1180px){
+@media(min-width:1410px){
   .app-shell:has(.dashboard-approved) .command-search-action{
     left:226px!important;
     width:662px!important;
