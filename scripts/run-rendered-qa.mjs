@@ -44,7 +44,7 @@ async function preflightBrowser(browser,attempt){
   const port=9300+attempt;
   cleanPaths([profile]);
   let diagnostics='',spawnError='';
-  const child=spawn(browser,[`--remote-debugging-port=${port}`,'--remote-debugging-address=127.0.0.1',`--user-data-dir=${profile}`,'--no-sandbox','--disable-gpu','--disable-dev-shm-usage','--no-first-run','--no-default-browser-check','about:blank'],{stdio:['ignore','pipe','pipe']});
+  const child=spawn(browser,['--headless=new',`--remote-debugging-port=${port}`,'--remote-debugging-address=127.0.0.1',`--user-data-dir=${profile}`,'--no-sandbox','--disable-gpu','--disable-dev-shm-usage','--no-first-run','--no-default-browser-check','about:blank'],{stdio:['ignore','pipe','pipe']});
   const capture=stream=>stream?.on('data',chunk=>{diagnostics+=chunk.toString();if(diagnostics.length>12000)diagnostics=diagnostics.slice(-12000)});
   capture(child.stdout);capture(child.stderr);child.on('error',error=>{spawnError=error.stack||error.message});
   try{
