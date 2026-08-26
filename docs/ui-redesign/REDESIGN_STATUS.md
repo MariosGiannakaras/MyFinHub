@@ -8,6 +8,16 @@ Implementation states: `NOT STARTED` · `IMPLEMENTING` · `IMPLEMENTED` · `VERI
 
 Current full-page baselines are resolved dynamically from `visual-qa/manifest.json`; filenames contain version/timestamp and must not be hard-coded here.
 
+## Automatic progression contract
+
+The owner does not choose or retrieve the next redesign surface manually.
+
+Chat A owns the ordered design queue defined in `WORKFLOW.md`. After the owner explicitly approves a target, Chat A must automatically advance to the next eligible surface, retrieve its latest current desktop evidence, inspect the relevant repository implementation and generate the next redesign without waiting for `next`, `continue`, or another page name.
+
+Primary page order below is stable unless repository evidence requires a dependency-aware supporting surface to be inserted according to `WORKFLOW.md` (for example Quick Entry after Transactions). Supporting/global surfaces are reviewed automatically when they require an independent desktop target.
+
+Chat B updates durable design/implementation states as approved targets move through implementation. Chat A may continue designing later surfaces while Chat B implements earlier approved targets.
+
 ## Primary page surfaces
 
 | Order | Surface | Repository source | Current desktop baseline | Design | Implementation |
@@ -28,7 +38,7 @@ Current full-page baselines are resolved dynamically from `visual-qa/manifest.js
 
 ## Supporting/global surfaces
 
-These may need independent desktop approval targets when inspection shows their layout is not sufficiently defined by the parent page target.
+These may need independent desktop approval targets when inspection shows their layout is not sufficiently defined by the parent page target. Chat A determines this from repository evidence and schedules them according to `WORKFLOW.md`; the owner does not need to inventory them manually.
 
 | Surface | Current evidence/source | Design | Implementation |
 | --- | --- | --- | --- |
