@@ -58,10 +58,10 @@ describe('account IBAN metadata',()=>{
     expect(grantHardening).toContain('to authenticated');
   });
 
-  it('keeps IBAN outside FinanceData and finance Undo/Redo while exposing it on Dashboard and Settings',()=>{
+  it('keeps IBAN outside FinanceData and finance Undo/Redo while exposing a masked Dashboard view and editable Settings view',()=>{
     expect(financeTypes.toLowerCase()).not.toContain('iban');
     expect(financeHook.toLowerCase()).not.toContain('iban');
-    expect(dashboardSource).toContain('<AccountIban accountId={account.id}/>');
+    expect(dashboardSource).toContain('<AccountIban accountId={account.id} masked/>');
     expect(settingsSource).toContain('<AccountMetadataSettings data={data}/>');
   });
 });
