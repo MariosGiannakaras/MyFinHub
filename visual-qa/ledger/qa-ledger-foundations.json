@@ -4,15 +4,15 @@
   "appVersion": "v1.3",
   "suite": "ledger-foundations",
   "surface": "ledger",
-  "generatedAt": "2026-08-26T07:14:11.835Z",
+  "generatedAt": "2026-08-26T07:42:38.466Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "c6c639f9a2924aec7228c3c3e1ac894325bf03b2",
-    "shortSha": "c6c639f9",
+    "sha": "c737c3c873f3697c71f65bf3eb81ea177ff8b8e3",
+    "shortSha": "c737c3c8",
     "branch": "chore/296-desktop-redesign-bootstrap"
   },
   "screenshots": [
-    "visual-qa/ledger/v1.3__2026-08-26_101411__qa-ledger-foundations__ledger-foundations-mobile.png",
-    "visual-qa/ledger/v1.3__2026-08-26_101411__qa-ledger-foundations__ledger-foundations-transactions.png"
+    "visual-qa/ledger/v1.3__2026-08-26_104238__qa-ledger-foundations__ledger-foundations-mobile.png",
+    "visual-qa/ledger/v1.3__2026-08-26_104238__qa-ledger-foundations__ledger-foundations-transactions.png"
   ]
 }
