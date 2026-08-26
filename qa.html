@@ -16,6 +16,7 @@
         await new Promise(resolve=>setTimeout(resolve,16));
       }
       if(!document.querySelector('#root>*'))throw new Error('QA React surface did not mount before document readiness.');
+      addEventListener('beforeunload',()=>document.body?.remove());
     </script>
   </body>
 </html>
