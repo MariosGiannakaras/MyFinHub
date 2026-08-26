@@ -22,7 +22,7 @@ Chat B updates durable design/implementation states as approved targets move thr
 
 | Order | Surface | Repository source | Current desktop baseline | Design | Implementation |
 | ---: | --- | --- | --- | --- | --- |
-| 1 | Dashboard + application shell | `src/pages/DashboardPage.tsx`, `src/App.tsx` | `visual-qa/manifest.json` → `dashboard` | NOT STARTED | NOT STARTED |
+| 1 | Dashboard + application shell | `src/pages/DashboardPage.tsx`, `src/App.tsx` | `visual-qa/manifest.json` → `dashboard` | DESIGN APPROVED | IMPLEMENTING |
 | 2 | Transactions | `src/pages/TransactionsPage.tsx` | manifest → `transactions` | NOT STARTED | NOT STARTED |
 | 3 | Savings | `src/pages/SavingsPage.tsx` | manifest → `savings` | NOT STARTED | NOT STARTED |
 | 4 | Cards | `src/pages/CardsPage.tsx` | manifest → `cards` | NOT STARTED | NOT STARTED |
@@ -47,7 +47,7 @@ These may need independent desktop approval targets when inspection shows their 
 | Budgets / category-management UI | existing focused `visual-qa/` evidence + repository code | NOT STARTED | NOT STARTED |
 | Action center / attention interactions | existing focused `visual-qa/` evidence + Attention page | NOT STARTED | NOT STARTED |
 | Command palette | existing focused `visual-qa/` evidence + repository code | NOT STARTED | NOT STARTED |
-| Owned controls / dialogs / popovers | existing focused `visual-qa/` evidence + shared components | NOT STARTED | NOT STARTED |
+| Owned controls / dialogs / popovers | existing focused `visual-qa/` evidence + repository code | NOT STARTED | NOT STARTED |
 | Authentication/MFA and other secondary states | repository + rendered QA evidence | NOT STARTED | NOT STARTED |
 
 Add, merge or split supporting rows only when repository evidence justifies a distinct design-approval surface. Do not invent screens for tracking convenience.
