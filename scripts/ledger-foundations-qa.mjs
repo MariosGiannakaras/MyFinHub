@@ -80,4 +80,8 @@ try{
   const shot=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});writeFileSync(`${evidenceDir}/ledger-foundations-transactions.png`,Buffer.from(shot.data,'base64'));
   await c.send('Emulation.setDeviceMetricsOverride',{width:375,height:812,deviceScaleFactor:1,mobile:true});await sleep(180);let mobile=await splitState('[data-mobile-transaction-kind=split]');const mobileBase=await c.call("function(){return {transfer:!!document.querySelector('[data-mobile-transaction-kind=transfer]'),split:!!document.querySelector('[data-mobile-transaction-kind=split]'),overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+2}}");assert(mobileBase.transfer&&mobileBase.split&&mobile.toggle&&!mobile.expanded,'mobile transaction list preserves transfer and compact split disclosure');assert(!mobileBase.overflow,'ledger transaction mobile view has no horizontal overflow');await expandSplit('[data-mobile-transaction-kind=split]');mobile=await splitState('[data-mobile-transaction-kind=split]');assert(mobile.parts===2,'mobile disclosure exposes both split portions on demand');const mobileShot=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});writeFileSync(`${evidenceDir}/ledger-foundations-mobile.png`,Buffer.from(mobileShot.data,'base64'));
   c.close();console.log('Ledger foundations rendered QA passed.');
-}finally{child.kill('SIGTERM');rmSync(profile,{recursive:true,force:true,maxRetries:5,retryDelay:100})}
+}finally{
+  child.kill('SIGTERM');
+  if(child.exitCode===null)await Promise.race([new Promise(resolve=>child.once('exit',resolve)),sleep(2000)]);
+  rmSync(profile,{recursive:true,force:true,maxRetries:10,retryDelay:150});
+}
