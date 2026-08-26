@@ -1,0 +1,51 @@
+name: Issue 298 result capture
+
+on:
+  push:
+    branches: [issue-298-dashboard-redesign]
+
+permissions:
+  contents: write
+
+jobs:
+  capture:
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Verify production build
+        run: npm run build
+      - name: Capture actual Dashboard result
+        shell: bash
+        run: |
+          npm run dev:web > /tmp/myfinhub-result-vite.log 2>&1 &
+          VITE_PID=$!
+          trap 'kill $VITE_PID || true' EXIT
+          ready=0
+          for attempt in {1..40}; do
+            if curl --fail --silent --show-error http://127.0.0.1:5173/qa.html > /dev/null; then ready=1; break; fi
+            sleep 1
+          done
+          if [ "$ready" -ne 1 ]; then cat /tmp/myfinhub-result-vite.log; exit 1; fi
+          BROWSER="$(command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -n "$BROWSER"
+          "$BROWSER" --headless=new --no-sandbox --disable-gpu --hide-scrollbars --force-device-scale-factor=1 --window-size=1440,1000 --virtual-time-budget=8000 --screenshot=/tmp/dashboard-result.png 'http://127.0.0.1:5173/qa.html?page=dashboard'
+          test -s /tmp/dashboard-result.png
+          cp /tmp/dashboard-result.png visual-qa/dashboard/issue-298-dashboard-result-desktop-1440x1000.png
+      - name: Persist result image
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add visual-qa/dashboard/issue-298-dashboard-result-desktop-1440x1000.png
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m "chore(visual-qa): capture issue 298 dashboard result [skip ci]"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
