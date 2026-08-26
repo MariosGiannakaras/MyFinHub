@@ -64,6 +64,30 @@
   .app-shell:has(.dashboard-approved) .brand-block .brand-word{font-size:21px;line-height:1.05;letter-spacing:-.035em}
   .app-shell:has(.dashboard-approved) .brand-block .brand-mark-copy small{font-size:8.5px;line-height:1.2;color:#61708a}
 
+  .dashboard-approved .approved-secondary-account .bank-brand-mark.bankmark-alpha,
+  .dashboard-approved .approved-secondary-account .bank-brand-mark.bankmark-revolut,
+  .dashboard-approved .approved-secondary-account .bank-brand-mark.bankmark-national,
+  .dashboard-approved .approved-secondary-account .bank-brand-mark.bankmark-eurobank{
+    width:31px!important;
+    height:31px!important;
+    min-width:31px;
+    flex-basis:31px;
+    border:0;
+    box-shadow:none;
+  }
+  .dashboard-approved .approved-secondary-account .bankmark-alpha{border-radius:50%;background:#164aa6;color:#fff}
+  .dashboard-approved .approved-secondary-account .bankmark-revolut{border-radius:7px;background:#050505;color:#fff}
+  .dashboard-approved .approved-secondary-account .bankmark-national{border-radius:50%;background:#159a9f;color:#fff}
+  .dashboard-approved .approved-secondary-account .bankmark-eurobank{border-radius:50%;background:#ed1c2e;color:#fff}
+  .dashboard-approved .approved-secondary-account .bankmark-alpha .bank-logo-text,
+  .dashboard-approved .approved-secondary-account .bankmark-revolut .bank-logo-text,
+  .dashboard-approved .approved-secondary-account .bankmark-national .bank-logo-text,
+  .dashboard-approved .approved-secondary-account .bankmark-eurobank .bank-logo-text{font-size:0;padding:0}
+  .dashboard-approved .approved-secondary-account .bankmark-alpha::before{content:"A";font:900 16px/1 Arial,sans-serif;letter-spacing:-.08em}
+  .dashboard-approved .approved-secondary-account .bankmark-revolut::before{content:"R";font:900 19px/1 Arial,sans-serif;font-style:italic}
+  .dashboard-approved .approved-secondary-account .bankmark-national::before{content:"N";font:900 15px/1 Arial,sans-serif}
+  .dashboard-approved .approved-secondary-account .bankmark-eurobank::before{content:"";width:11px;height:11px;border:2px solid currentColor;border-radius:2px;transform:rotate(45deg)}
+
   .dashboard-approved .account-tone-0 .approved-account-icon>.finance-icon{display:none}
   .dashboard-approved .account-tone-0 .approved-account-icon::before{
     content:"";
