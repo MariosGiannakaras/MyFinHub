@@ -2,6 +2,8 @@
 .dashboard-approved-heading p{color:#60708b!important}
 
 @media(min-width:1410px){
+  html:has(.dashboard-approved),body:has(.dashboard-approved){scrollbar-width:none}
+  html:has(.dashboard-approved)::-webkit-scrollbar,body:has(.dashboard-approved)::-webkit-scrollbar{width:0;height:0}
   .app-shell:has(.dashboard-approved) #main-workspace>div{transform:none!important}
   .app-shell:has(.dashboard-approved) .workspace{padding-top:0!important}
   .app-shell:has(.dashboard-approved) .command-search-action{
@@ -53,11 +55,22 @@
   .app-shell:has(.sidebar nav button:first-child[aria-current="page"]) .period-row>[data-qa-crash]{display:none!important}
   .dashboard-approved{padding-top:0}
   .dashboard-approved-heading{min-height:73px}
+  .dashboard-approved-heading .privacy-toggle{min-width:136px;transform:translateY(7px)}
   .dashboard-approved .approved-primary-grid{grid-template-columns:1.05fr 1fr 1.07fr!important}
   .dashboard-approved .approved-account-card{height:170px;min-height:170px!important}
   .dashboard-approved .approved-account-card:before,.dashboard-approved .approved-account-card:after{display:none!important}
-  .dashboard-approved .approved-secondary-panel{height:91px}
-  .dashboard-approved .approved-mid-grid{grid-template-columns:1fr .96fr 1fr}
+  .dashboard-approved .approved-account-body{grid-template-columns:minmax(112px,.72fr) minmax(150px,1.28fr)!important}
+  .dashboard-approved .approved-account-identity>div{position:relative}
+  .dashboard-approved .account-iban{margin-top:3px;gap:4px;padding-right:0}
+  .dashboard-approved .account-iban-label{display:none}
+  .dashboard-approved .account-iban-value{max-width:188px;font-size:8px;line-height:1.3;color:#526987;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dashboard-approved .account-iban-copy{position:absolute;right:-29px;top:14px;width:26px;height:26px;min-width:26px;opacity:0;box-shadow:none;transition:opacity .12s ease}
+  .dashboard-approved .approved-account-identity:hover .account-iban-copy,.dashboard-approved .account-iban-copy:focus-visible{opacity:1}
+  .dashboard-approved .dashboard-sparkline.tone-green polyline{filter:drop-shadow(0 7px 5px rgba(49,199,123,.15))}
+  .dashboard-approved .dashboard-sparkline.tone-purple polyline{filter:drop-shadow(0 7px 5px rgba(171,54,232,.13))}
+  .dashboard-approved .dashboard-sparkline.tone-blue polyline{filter:drop-shadow(0 7px 5px rgba(63,141,245,.12))}
+  .dashboard-approved .approved-secondary-panel{height:88px;margin-top:3px}
+  .dashboard-approved .approved-mid-grid{grid-template-columns:1fr .95fr 1.02fr}
   .dashboard-approved .approved-mid-grid>.approved-panel{height:260px}
   .dashboard-approved .approved-chart-grid{grid-template-columns:.91fr 1.09fr}
   .dashboard-approved .approved-chart-grid>.approved-panel{height:202px}
