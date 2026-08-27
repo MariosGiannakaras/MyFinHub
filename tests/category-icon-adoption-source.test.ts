@@ -32,4 +32,9 @@ describe('cross-app category icon adoption',()=>{
     expect(resolver).toContain('return explicitSubcategoryIcon');
     expect(resolver).toContain('explicitCategoryIcon');
   });
+
+  it('keeps the representative coffee transaction in the food category fixture',()=>{
+    const fixture=read('src/qaFixture.ts');
+    expect(fixture).toMatch(/note:'Freddo espresso\\n[^']*',category:'Τρόφιμα'/);
+  });
 });

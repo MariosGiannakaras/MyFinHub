@@ -1,0 +1,171 @@
+/* Final owner-approved Dashboard desktop alignment. Loaded last on purpose. */
+.dashboard-approved-heading p{color:#60708b!important}
+
+@media(min-width:1410px){
+  html:has(.dashboard-approved),body:has(.dashboard-approved){scrollbar-width:none}
+  html:has(.dashboard-approved)::-webkit-scrollbar,body:has(.dashboard-approved)::-webkit-scrollbar{width:0;height:0}
+  .app-shell:has(.dashboard-approved) #main-workspace>div{transform:none!important}
+  .app-shell:has(.dashboard-approved) .workspace{padding-top:0!important}
+  .app-shell:has(.dashboard-approved) .command-search-action{
+    left:226px!important;
+    width:662px!important;
+    min-width:662px!important;
+    max-width:662px!important;
+  }
+  .app-shell:has(.dashboard-approved) .sidebar .primary-action{
+    right:371px!important;
+    width:142px!important;
+  }
+  /* Approved desktop topbar keeps History + Refresh beside the reporting month. */
+  .app-shell:has(.dashboard-approved) .top-actions>.app-tooltip:has(button[aria-label="Ανανέωση δεδομένων"]),
+  .app-shell:has(.sidebar nav button:first-child[aria-current="page"]) .top-actions>.app-tooltip:has(button[aria-label="Ανανέωση δεδομένων"]){
+    display:inline-flex!important;
+    position:static!important;
+    left:auto!important;
+    right:auto!important;
+    top:auto!important;
+    bottom:auto!important;
+    z-index:auto!important;
+  }
+  .app-shell:has(.dashboard-approved) .top-actions>.app-tooltip:has(button[aria-label="Ανανέωση δεδομένων"])>button,
+  .app-shell:has(.sidebar nav button:first-child[aria-current="page"]) .top-actions>.app-tooltip:has(button[aria-label="Ανανέωση δεδομένων"])>button{
+    width:40px!important;
+    height:40px!important;
+    min-width:40px!important;
+    min-height:40px!important;
+    border-radius:9px!important;
+    background:#fff!important;
+  }
+  .app-shell:has(.dashboard-approved) .period-row,
+  .app-shell:has(.sidebar nav button:first-child[aria-current="page"]) .period-row{
+    position:fixed!important;
+    top:9px!important;
+    right:12px!important;
+    width:190px!important;
+    height:40px!important;
+    margin:0!important;
+    padding:0!important;
+    border:1px solid #e2eaf4!important;
+    border-radius:9px!important;
+    background:#fbfdff!important;
+    box-shadow:0 3px 10px rgba(34,65,105,.05)!important;
+    z-index:72!important;
+  }
+  .app-shell:has(.dashboard-approved) .period-row>[data-qa-crash],
+  .app-shell:has(.sidebar nav button:first-child[aria-current="page"]) .period-row>[data-qa-crash]{display:none!important}
+  .dashboard-approved{padding-top:0}
+  .dashboard-approved-heading{min-height:73px}
+  .dashboard-approved-heading .privacy-toggle{min-width:136px;transform:translateY(7px)}
+  .dashboard-approved .approved-primary-grid{grid-template-columns:1.05fr 1fr 1.07fr!important}
+  .dashboard-approved .approved-account-card{height:170px;min-height:170px!important}
+  .dashboard-approved .approved-account-card:before,.dashboard-approved .approved-account-card:after{display:none!important}
+  .dashboard-approved .approved-account-body{grid-template-columns:minmax(112px,.72fr) minmax(150px,1.28fr)!important}
+  .dashboard-approved .approved-account-identity>div{position:relative}
+  .dashboard-approved .account-iban{margin-top:3px;gap:4px;padding-right:0}
+  .dashboard-approved .account-iban-label{display:none}
+  .dashboard-approved .account-iban-value{max-width:188px;font-size:8px;line-height:1.3;color:#526987;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dashboard-approved .account-iban-copy{position:absolute;right:-29px;top:14px;width:26px;height:26px;min-width:26px;opacity:0;box-shadow:none;transition:opacity .12s ease}
+  .dashboard-approved .approved-account-identity:hover .account-iban-copy,.dashboard-approved .account-iban-copy:focus-visible{opacity:1}
+  .dashboard-approved .dashboard-sparkline.tone-green polyline{filter:drop-shadow(0 7px 5px rgba(49,199,123,.15))}
+  .dashboard-approved .dashboard-sparkline.tone-purple polyline{filter:drop-shadow(0 7px 5px rgba(171,54,232,.13))}
+  .dashboard-approved .dashboard-sparkline.tone-blue polyline{filter:drop-shadow(0 7px 5px rgba(63,141,245,.12))}
+  .dashboard-approved .approved-secondary-panel{height:88px;margin-top:3px}
+  .dashboard-approved .approved-mid-grid{grid-template-columns:1fr .95fr 1.02fr}
+  .dashboard-approved .approved-mid-grid>.approved-panel{height:260px}
+  .dashboard-approved .approved-chart-grid{grid-template-columns:.91fr 1.09fr}
+  .dashboard-approved .approved-chart-grid>.approved-panel{height:202px}
+  .dashboard-approved .approved-bar-wrap{height:160px}
+  .dashboard-approved .approved-kpi-strip article{height:75px}
+}
+
+@media(min-width:981px){
+  .app-shell:has(.dashboard-approved) .brand-block .brand-mark-icon{
+    position:relative;
+    width:39px;
+    height:39px;
+    min-width:39px;
+    border-radius:9px;
+    overflow:hidden;
+    display:grid;
+    place-items:center;
+    background:linear-gradient(145deg,#1b9cff 0%,#0876ed 58%,#075dcc 100%);
+    box-shadow:0 3px 8px rgba(11,108,218,.22);
+  }
+  .app-shell:has(.dashboard-approved) .brand-block .brand-mark-icon .brand-mark-image{display:none!important}
+  .app-shell:has(.dashboard-approved) .brand-block .brand-mark-icon::before{
+    content:"MF";
+    color:#fff;
+    font-family:Arial,Helvetica,sans-serif;
+    font-size:17px;
+    font-weight:760;
+    line-height:1;
+    letter-spacing:-.04em;
+  }
+  .app-shell:has(.dashboard-approved) .brand-block .brand-mark-copy{gap:1px}
+  .app-shell:has(.dashboard-approved) .brand-block .brand-word{font-size:21px;line-height:1.05;letter-spacing:-.035em}
+  .app-shell:has(.dashboard-approved) .brand-block .brand-mark-copy small{font-size:8.5px;line-height:1.2;color:#61708a}
+
+  .dashboard-approved .approved-secondary-account .bank-brand-mark.bankmark-alpha,
+  .dashboard-approved .approved-secondary-account .bank-brand-mark.bankmark-revolut,
+  .dashboard-approved .approved-secondary-account .bank-brand-mark.bankmark-national,
+  .dashboard-approved .approved-secondary-account .bank-brand-mark.bankmark-eurobank{
+    width:31px!important;
+    height:31px!important;
+    min-width:31px;
+    flex-basis:31px;
+    border:0;
+    box-shadow:none;
+  }
+  .dashboard-approved .approved-secondary-account .bankmark-alpha{border-radius:50%;background:#164aa6;color:#fff}
+  .dashboard-approved .approved-secondary-account .bankmark-revolut{border-radius:7px;background:#050505;color:#fff}
+  .dashboard-approved .approved-secondary-account .bankmark-national{border-radius:50%;background:#159a9f;color:#fff}
+  .dashboard-approved .approved-secondary-account .bankmark-eurobank{border-radius:50%;background:#ed1c2e;color:#fff}
+  .dashboard-approved .approved-secondary-account .bankmark-alpha .bank-logo-text,
+  .dashboard-approved .approved-secondary-account .bankmark-revolut .bank-logo-text,
+  .dashboard-approved .approved-secondary-account .bankmark-national .bank-logo-text,
+  .dashboard-approved .approved-secondary-account .bankmark-eurobank .bank-logo-text{font-size:0;padding:0}
+  .dashboard-approved .approved-secondary-account .bankmark-alpha::before{content:"A";font:900 16px/1 Arial,sans-serif;letter-spacing:-.08em}
+  .dashboard-approved .approved-secondary-account .bankmark-revolut::before{content:"R";font:900 19px/1 Arial,sans-serif;font-style:italic}
+  .dashboard-approved .approved-secondary-account .bankmark-national::before{content:"N";font:900 15px/1 Arial,sans-serif}
+  .dashboard-approved .approved-secondary-account .bankmark-eurobank::before{content:"";width:11px;height:11px;border:2px solid currentColor;border-radius:2px;transform:rotate(45deg)}
+
+  .dashboard-approved .account-tone-0 .approved-account-icon>.finance-icon{display:none}
+  .dashboard-approved .account-tone-0 .approved-account-icon::before{
+    content:"";
+    width:22px;
+    height:22px;
+    background:currentColor;
+    -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cg fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m3 10 9-7 9 7'/%3E%3Cpath d='M5 10v9M9 10v9M15 10v9M19 10v9M3 21h18'/%3E%3C/g%3E%3C/svg%3E") center/contain no-repeat;
+    mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cg fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m3 10 9-7 9 7'/%3E%3Cpath d='M5 10v9M9 10v9M15 10v9M19 10v9M3 21h18'/%3E%3C/g%3E%3C/svg%3E") center/contain no-repeat;
+  }
+  .dashboard-approved .account-tone-2 .approved-account-icon .bank-brand-mark{
+    width:30px;
+    height:26px;
+    min-width:30px;
+    background:transparent;
+    border:0;
+    box-shadow:none;
+  }
+  .dashboard-approved .account-tone-2 .approved-account-icon .bank-logo-text{font-size:0;line-height:1}
+  .dashboard-approved .account-tone-2 .approved-account-icon .bank-logo-text::before{
+    content:"///";
+    display:block;
+    color:#17345f;
+    font-family:Arial Black,Arial,sans-serif;
+    font-size:21px;
+    font-weight:900;
+    letter-spacing:-6px;
+    line-height:1;
+    transform:skewX(-18deg);
+  }
+}
+
+@media(min-width:981px) and (max-width:1179px){
+  .app-shell:has(.dashboard-approved) .period-row{
+    position:absolute!important;
+    top:-51px!important;
+    right:12px!important;
+    margin:0!important;
+  }
+  .app-shell:has(.dashboard-approved) .period-row>[data-qa-crash]{display:none!important}
+}

@@ -29,7 +29,8 @@ describe('time-aware product integration', () => {
   });
 
   it('surfaces scheduled items on Dashboard without replacing actual transaction entry', () => {
-    expect(dashboard).toContain('Προγραμματισμένα one-off');
+    expect(dashboard).toContain("item.source==='recurring'?'Πάγια':item.source==='loan'?'Δόσεις / Δάνεια':'Προγραμματισμένα'");
+    expect(dashboard).toContain('cashFlowForecast(data,asOf,30)');
     expect(dashboard).toContain('onPlanning');
     expect(dashboard).toContain('Νέα κίνηση');
   });

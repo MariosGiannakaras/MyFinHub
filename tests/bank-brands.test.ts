@@ -11,6 +11,11 @@ describe('bank brand identity',()=>{
     expect(bankBrandKey('piraeus-payroll','Μισθοδοσίας')).toBe('piraeus');
     expect(bankBrandKey('revolut','Revolut')).toBe('revolut');
     expect(bankBrandKey('alpha-main','Alpha Bank')).toBe('alpha');
+    expect(bankBrandKey('national-main','Εθνική Τράπεζα')).toBe('national');
+    expect(bankBrandKey('nbg-main','National Bank of Greece')).toBe('national');
+    expect(bankBrandKey(undefined,'Εθνική Τράπεζα')).toBe('national');
+    expect(bankBrandKey('eurobank-main','Eurobank')).toBe('eurobank');
+    expect(bankBrandKey(undefined,'Eurobank')).toBe('eurobank');
     expect(bankBrandKey('payzy','payzy')).toBe('payzy');
     expect(bankBrandKey('viva','Viva.com')).toBe('viva');
   });
@@ -21,7 +26,7 @@ describe('bank brand identity',()=>{
   });
 
   it('keeps supported identity metadata local and reuses verified local image assets where available',()=>{
-    for(const key of ['piraeus','revolut','alpha','payzy','viva'] as const){
+    for(const key of ['piraeus','revolut','alpha','national','eurobank','payzy','viva'] as const){
       const asset=bankBrandAsset(key);
       expect(asset).not.toBeNull();
       expect(asset?.label.length).toBeGreaterThan(2);
@@ -36,10 +41,15 @@ describe('bank brand identity',()=>{
       }
     }
     const piraeus=bankBrandAsset('piraeus');
+    const national=bankBrandAsset('national');
+    const eurobank=bankBrandAsset('eurobank');
     const payzy=bankBrandAsset('payzy');
     const viva=bankBrandAsset('viva');
     expect(piraeus&&bankBrandFallbackMark(piraeus)).toBe('ΠΕΙΡΑΙΩΣ');
     expect(piraeus&&bankBrandCardMark(piraeus)).toBe('Piraeus');
+    expect(national&&bankBrandFallbackMark(national)).toBe('ΕΤΕ');
+    expect(national&&bankBrandCardMark(national)).toBe('NBG');
+    expect(eurobank&&bankBrandFallbackMark(eurobank)).toBe('EUROBANK');
     expect(payzy?.source).toBe('local-image');
     expect(viva?.source).toBe('local-image');
   });
