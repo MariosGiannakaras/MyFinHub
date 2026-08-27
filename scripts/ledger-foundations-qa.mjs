@@ -41,16 +41,16 @@ try{
   await clickText('.quick-modal footer button','Καταχώριση');
   await waitFor("function(){return !document.querySelector('.quick-modal')}",'transfer modal close');
   await navigate('Συναλλαγές','Συναλλαγές');
-  const transferRow=await c.call("function(){const row=document.querySelector('[data-transaction-kind=transfer]');return row?{text:row.textContent||'',accounts:row.children[3]?.textContent||'',amount:row.querySelector('.amount')?.textContent||''}:null}");
+  const transferRow=await c.call("function(){const row=document.querySelector('[data-transaction-kind=transfer][data-transaction-source=event]');return row?{text:row.textContent||'',accounts:row.children[3]?.textContent||'',amount:row.querySelector('.amount')?.textContent||''}:null}");
   assert(transferRow,'transfer row is rendered');assert(transferRow.accounts.includes('→'),'transfer row shows account direction');assert(transferRow.amount.includes('↔'),'transfer amount is visually neutral');
 
   console.log('Ledger QA: edit, undo and redo transfer atomically');
-  await c.call("function(){document.querySelector('[data-transaction-kind=transfer] button[aria-label^=\"Επεξεργασία\"]')?.click()}");
+  await c.call("function(){document.querySelector('[data-transaction-kind=transfer][data-transaction-source=event] button[aria-label^=\"Επεξεργασία\"]')?.click()}");
   await waitFor("function(){return [...document.querySelectorAll('.quick-modal footer button')].some(button=>(button.textContent||'').includes('Εφαρμογή αλλαγών'))}",'transfer edit mode');
   await setLabelInput('Ποσό','55.25');await clickText('.quick-modal footer button','Εφαρμογή αλλαγών');await waitFor("function(){return !document.querySelector('.quick-modal')}",'transfer edit close');
-  let transferText=await c.call("function(){return document.querySelector('[data-transaction-kind=transfer]')?.textContent||''}");assert(transferText.includes('55,25'),'edited transfer amount is visible');
-  await c.call("function(){document.querySelector('button[aria-label=\"Αναίρεση τελευταίας αλλαγής\"]')?.click()}");await sleep(180);transferText=await c.call("function(){return document.querySelector('[data-transaction-kind=transfer]')?.textContent||''}");assert(transferText.includes('42,50'),'undo restores the whole previous transfer');
-  await c.call("function(){document.querySelector('button[aria-label=\"Επαναφορά τελευταίας αναιρεμένης αλλαγής\"]')?.click()}");await sleep(180);transferText=await c.call("function(){return document.querySelector('[data-transaction-kind=transfer]')?.textContent||''}");assert(transferText.includes('55,25'),'redo restores the whole edited transfer');
+  let transferText=await c.call("function(){return document.querySelector('[data-transaction-kind=transfer][data-transaction-source=event]')?.textContent||''}");assert(transferText.includes('55,25'),'edited transfer amount is visible');
+  await c.call("function(){document.querySelector('button[aria-label=\"Αναίρεση τελευταίας αλλαγής\"]')?.click()}");await sleep(180);transferText=await c.call("function(){return document.querySelector('[data-transaction-kind=transfer][data-transaction-source=event]')?.textContent||''}");assert(transferText.includes('42,50'),'undo restores the whole previous transfer');
+  await c.call("function(){document.querySelector('button[aria-label=\"Επαναφορά τελευταίας αναιρεμένης αλλαγής\"]')?.click()}");await sleep(180);transferText=await c.call("function(){return document.querySelector('[data-transaction-kind=transfer][data-transaction-source=event]')?.textContent||''}");assert(transferText.includes('55,25'),'redo restores the whole edited transfer');
 
   console.log('Ledger QA: Reports remain neutral after internal transfer');
   await navigate('Αναφορές','οικονομική εικόνα');
