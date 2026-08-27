@@ -4,16 +4,16 @@
   "appVersion": "v1.3",
   "suite": "budget-rules",
   "surface": "budgets",
-  "generatedAt": "2026-08-27T15:50:16.768Z",
+  "generatedAt": "2026-08-27T18:12:55.698Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "905c8a72f6be18eeb09d5aa9993c991794ca766e",
-    "shortSha": "905c8a72",
-    "branch": "ui/300-dashboard-approved-target"
+    "sha": "f46b1652be235162e7e682ead06f25d007010657",
+    "shortSha": "f46b1652",
+    "branch": "ui/300-dashboard-fidelity-pass-2"
   },
   "screenshots": [
-    "visual-qa/budgets/v1.3__2026-08-27_185016__qa-budget-rules__advanced-automations-desktop.png",
-    "visual-qa/budgets/v1.3__2026-08-27_185016__qa-budget-rules__advanced-automations-mobile.png",
-    "visual-qa/budgets/v1.3__2026-08-27_185016__qa-budget-rules__advanced-automations-ordered-desktop.png"
+    "visual-qa/budgets/v1.3__2026-08-27_211255__qa-budget-rules__advanced-automations-desktop.png",
+    "visual-qa/budgets/v1.3__2026-08-27_211255__qa-budget-rules__advanced-automations-mobile.png",
+    "visual-qa/budgets/v1.3__2026-08-27_211255__qa-budget-rules__advanced-automations-ordered-desktop.png"
   ]
 }
