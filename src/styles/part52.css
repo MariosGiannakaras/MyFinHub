@@ -28,6 +28,8 @@
   .dashboard-approved .approved-trend small{font-size:9px}
   .dashboard-approved .savings-legend{font-size:8px}
   .dashboard-approved .approved-account-actions button{font-size:10px}
+  .dashboard-approved .account-tone-0 .dashboard-sparkline polyline{filter:drop-shadow(0 7px 5px rgba(49,199,123,.22)) drop-shadow(0 14px 9px rgba(49,199,123,.10))}
+  .dashboard-approved .account-tone-1 .dashboard-sparkline polyline{filter:drop-shadow(0 7px 5px rgba(171,54,232,.20)) drop-shadow(0 14px 9px rgba(171,54,232,.09))}
 
   .dashboard-approved .approved-section-title strong{font-size:12px}
   .dashboard-approved .approved-secondary-account small{font-size:9px}
@@ -53,8 +55,11 @@
   .dashboard-approved .summary-line b,.dashboard-approved .summary-net>div:first-child>b{font-size:18px}
   .dashboard-approved .summary-line span,.dashboard-approved .summary-net span{font-size:8.2px}
   .dashboard-approved .summary-donut>span{font-size:8px}
+  .dashboard-approved .summary-income .dashboard-sparkline polyline{filter:drop-shadow(0 8px 6px rgba(49,199,123,.22)) drop-shadow(0 17px 11px rgba(49,199,123,.09))}
+  .dashboard-approved .summary-expense .dashboard-sparkline polyline{filter:drop-shadow(0 8px 6px rgba(255,91,98,.21)) drop-shadow(0 17px 11px rgba(255,91,98,.09))}
 
   .dashboard-approved .flow-legend{font-size:8px}
+  .dashboard-approved .approved-flow-chart .recharts-cartesian-axis-tick-value{font-size:9px!important}
   .dashboard-approved .approved-category-donut>div:last-child b{font-size:14px}
   .dashboard-approved .approved-category-donut>div:last-child span{font-size:8px}
   .dashboard-approved .category-table-head,.dashboard-approved .category-table-row{font-size:8.3px}
