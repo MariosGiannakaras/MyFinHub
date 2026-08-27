@@ -12,12 +12,14 @@ type QaSnapshot=FinanceData['seed']['snapshots'][number];
 /**
  * Presentation-only refinement for the owner-approved Dashboard visual QA route.
  * Production finance semantics stay in the canonical selectors/domain layer; this
- * fixture only gives the rendered evidence representative labels and balances.
+ * fixture only gives the deterministic reduced-motion screenshot representative
+ * labels and balances. Other Dashboard QA routes retain the canonical base fixture.
  */
 export function qaFinanceData(){
   const next=baseQaFinanceData();
   const params=new URLSearchParams(globalThis.location?.search??'');
-  if(params.get('page')!=='dashboard')return next;
+  const approvedEvidence=params.get('page')==='dashboard'&&params.get('motion')==='reduced'&&!params.get('state');
+  if(!approvedEvidence)return next;
 
   next.state.settings.accountNames={
     ...next.state.settings.accountNames,
