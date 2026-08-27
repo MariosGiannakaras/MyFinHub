@@ -13,11 +13,22 @@ The connected repository writer available to this implementation session accepts
 
 ## Approved ↔ Actual validation
 
-The recovered Approved target was visually inspected against the latest rendered Dashboard evidence from the active PR. The shell, sidebar, topbar, heading, three primary-account cards, secondary-account strip, three-panel middle row, two analytics panels and six-card KPI strip align to the approved desktop hierarchy and macro geometry.
+The recovered Approved target was visually inspected region-by-region against the fresh exact-head rendered Dashboard evidence generated for commit `905c8a72f6be18eeb09d5aa9993c991794ca766e` and then persisted by the visual-evidence refresh commit `fc3e1580f4f575d4eb036df450a6bcee829b08a7`.
 
-Normalized structural comparison against the 1440 × 1000 Actual produced:
+Validated evidence:
 
-- Gaussian structural blur 10 px: SSIM `0.9616`
-- Gaussian structural blur 20 px: SSIM `0.9910`
+- `visual-qa/dashboard/v1.3__2026-08-27_185016__qa-shell-dashboard-hierarchy__shell-dashboard-hierarchy-desktop.png`
+- `visual-qa/dashboard/v1.3__2026-08-27_185552__full-page__desktop-1440x1000.png`
 
-Remaining raw-pixel differences are dominated by deterministic QA data/chart series and by cases where the static mock conflicts with canonical application semantics. Production behavior must remain authoritative for privacy state, account actions, metric sources, reporting periods and percentage semantics; those must not be replaced by screenshot-only hard-coded values.
+The shell, sidebar, topbar, heading, three primary-account cards, secondary-account strip, three-panel middle row, two analytics panels and six-card KPI strip align to the approved desktop hierarchy and macro geometry. The refreshed evidence replaced the previous Dashboard screenshots rather than retaining stale duplicates.
+
+Normalized structural comparison against the fresh 1440 × 1000 Actual produced:
+
+- Gaussian structural blur 10 px: SSIM `0.9642`
+- Gaussian structural blur 20 px: SSIM `0.9919`
+
+The remaining raw-pixel differences are presentation-state differences, not unimplemented Dashboard structure: deterministic QA finance data/chart series differ from the static mock, while the live application intentionally preserves canonical semantics where the mock is internally inconsistent. In particular, privacy state/labels, account actions, metric sources, reporting periods and percentage semantics remain driven by application state and domain logic and are not replaced by screenshot-only hard-coded values.
+
+## Final implementation gate
+
+The runtime tree at `905c8a72` passed CI, CodeQL, cross-engine smoke and Windows Desktop validation. The first Lighthouse measurement on the documentation-only successor showed runner variance despite byte-identical production bundle hashes; a targeted rerun passed unchanged thresholds. The automatic visual-evidence refresh contains no runtime changes. The next owner-authored head exists only to retain this durable final validation record and to obtain normal exact-head checks over the final tree before merge to `develop`.
