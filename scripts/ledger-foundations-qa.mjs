@@ -83,5 +83,12 @@ try{
 }finally{
   child.kill('SIGTERM');
   if(child.exitCode===null)await Promise.race([new Promise(resolve=>child.once('exit',resolve)),sleep(2000)]);
-  rmSync(profile,{recursive:true,force:true,maxRetries:10,retryDelay:150});
+  if(child.exitCode===null){child.kill('SIGKILL');await Promise.race([new Promise(resolve=>child.once('exit',resolve)),sleep(1200)])}
+  for(let attempt=0;attempt<8;attempt+=1){
+    try{rmSync(profile,{recursive:true,force:true});break}
+    catch(error){
+      if(!['ENOTEMPTY','EBUSY','EPERM'].includes(error?.code)||attempt===7)throw error;
+      await sleep(150*(attempt+1));
+    }
+  }
 }
