@@ -19,7 +19,9 @@
         await new Promise(resolve=>setTimeout(resolve,16));
       }
       if(!document.querySelector('#root>*'))throw new Error('QA React surface did not mount before document readiness.');
-      if(new URLSearchParams(location.search).get('page')==='dashboard'){
+      const params=new URLSearchParams(location.search);
+      const approvedEvidence=params.get('page')==='dashboard'&&params.get('motion')==='reduced'&&!params.get('state');
+      if(approvedEvidence){
         for(let attempt=0;attempt<120&&!document.querySelector('.privacy-toggle');attempt+=1){
           await new Promise(resolve=>setTimeout(resolve,16));
         }
