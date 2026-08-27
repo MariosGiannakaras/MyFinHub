@@ -1,0 +1,72 @@
+/* Final 1440px owner-approved Dashboard fidelity pass.
+   Geometry stays in part48/part51; this layer only restores the visual type scale
+   and information density visible in the approved desktop reference. */
+@media(min-width:981px){
+  .app-shell:has(.dashboard-approved) .sidebar nav:before{font-size:9px}
+  .app-shell:has(.dashboard-approved) .sidebar nav button{font-size:13px;font-weight:680}
+  .app-shell:has(.dashboard-approved) .sidebar nav button:nth-child(2):before,
+  .app-shell:has(.dashboard-approved) .sidebar nav button:nth-child(9):before,
+  .app-shell:has(.dashboard-approved) .sidebar nav button:nth-child(12):before{font-size:9px}
+  .app-shell:has(.dashboard-approved) .sidebar .primary-action:after{font-size:11.5px}
+  .app-shell:has(.dashboard-approved) .command-search-action span:after{font-size:11px}
+  .app-shell:has(.dashboard-approved) .file-panel .file-line b:after{font-size:10px}
+  .app-shell:has(.dashboard-approved) .file-panel small:after{font-size:9px}
+  .app-shell:has(.dashboard-approved) .period-control{font-size:11px}
+
+  .dashboard-approved-heading h1{font-size:28px}
+  .dashboard-approved-heading p{font-size:11.5px}
+  .dashboard-approved-heading .eyebrow{font-size:9px}
+  .dashboard-approved-heading .privacy-toggle{font-size:10.5px}
+
+  .dashboard-approved .approved-account-identity strong{font-size:12px}
+  .dashboard-approved .approved-account-identity small{font-size:9.5px}
+  .dashboard-approved .account-iban-value{max-width:205px!important;font-size:9.5px!important;line-height:1.3!important}
+  .dashboard-approved .savings-target{font-size:9px}
+  .dashboard-approved .approved-account-body{grid-template-columns:minmax(168px,1.02fr) minmax(132px,.98fr)!important;gap:10px}
+  .dashboard-approved .approved-balance{font-size:26px}
+  .dashboard-approved .approved-trend{font-size:10px}
+  .dashboard-approved .approved-trend small{font-size:9px}
+  .dashboard-approved .savings-legend{font-size:8px}
+  .dashboard-approved .approved-account-actions button{font-size:10px}
+
+  .dashboard-approved .approved-section-title strong{font-size:12px}
+  .dashboard-approved .approved-secondary-account small{font-size:9px}
+  .dashboard-approved .approved-secondary-account b{font-size:11.5px}
+  .dashboard-approved .approved-secondary-account button{font-size:8.5px}
+  .dashboard-approved .approved-secondary-more small{font-size:10px}
+
+  .dashboard-approved .approved-panel-head strong{font-size:12.5px}
+  .dashboard-approved .approved-panel-head button{font-size:9px}
+  .dashboard-approved .approved-panel-head>span{font-size:8.5px}
+  .dashboard-approved .movement-head{font-size:8px}
+  .dashboard-approved .movement-title b{font-size:9.5px}
+  .dashboard-approved .movement-row small{font-size:8.5px}
+  .dashboard-approved .movement-row>b{font-size:9.5px}
+  .dashboard-approved .approved-footer-link{font-size:9px}
+
+  .dashboard-approved .upcoming-row small{font-size:8px}
+  .dashboard-approved .upcoming-row b{font-size:9.7px}
+  .dashboard-approved .upcoming-row>span:nth-last-child(2){font-size:8.5px}
+  .dashboard-approved .upcoming-row>strong{font-size:9.2px}
+
+  .dashboard-approved .summary-line small,.dashboard-approved .summary-net small{font-size:8.8px}
+  .dashboard-approved .summary-line b,.dashboard-approved .summary-net>div:first-child>b{font-size:18px}
+  .dashboard-approved .summary-line span,.dashboard-approved .summary-net span{font-size:8.2px}
+  .dashboard-approved .summary-donut>span{font-size:8px}
+
+  .dashboard-approved .flow-legend{font-size:8px}
+  .dashboard-approved .approved-category-donut>div:last-child b{font-size:14px}
+  .dashboard-approved .approved-category-donut>div:last-child span{font-size:8px}
+  .dashboard-approved .category-table-head,.dashboard-approved .category-table-row{font-size:8.3px}
+  .dashboard-approved .category-table-row b{font-size:8.5px}
+
+  .dashboard-approved .approved-kpi-strip small{font-size:8px}
+  .dashboard-approved .approved-kpi-strip b{font-size:14px}
+  .dashboard-approved .approved-kpi-strip span:not(.kpi-icon){font-size:8px}
+  .dashboard-approved .approved-data-footer{font-size:7.5px}
+}
+
+@media(min-width:1410px){
+  .dashboard-approved .approved-account-body{grid-template-columns:minmax(176px,1.06fr) minmax(132px,.94fr)!important}
+  .dashboard-approved .approved-account-chart{padding-bottom:1px}
+}
