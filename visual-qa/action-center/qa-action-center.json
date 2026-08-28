@@ -4,15 +4,15 @@
   "appVersion": "v1.3",
   "suite": "action-center",
   "surface": "action-center",
-  "generatedAt": "2026-08-27T18:12:55.698Z",
+  "generatedAt": "2026-08-28T05:29:05.440Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "f46b1652be235162e7e682ead06f25d007010657",
-    "shortSha": "f46b1652",
+    "sha": "02c091edda5beaa05c8d9f54f94dd1a13058dc9c",
+    "shortSha": "02c091ed",
     "branch": "ui/300-dashboard-fidelity-pass-2"
   },
   "screenshots": [
-    "visual-qa/action-center/v1.3__2026-08-27_211255__qa-action-center__action-center-desktop.png",
-    "visual-qa/action-center/v1.3__2026-08-27_211255__qa-action-center__action-center-mobile.png"
+    "visual-qa/action-center/v1.3__2026-08-28_082905__qa-action-center__action-center-desktop.png",
+    "visual-qa/action-center/v1.3__2026-08-28_082905__qa-action-center__action-center-mobile.png"
   ]
 }
