@@ -1,8 +1,8 @@
-const piraeusLogo=new URL('../assets/bank-brands/piraeus-mark.svg',import.meta.url).href;
-const revolutLogo=new URL('../assets/bank-brands/revolut-mark.svg',import.meta.url).href;
-const alphaLogo=new URL('../assets/bank-brands/alpha-mark.svg',import.meta.url).href;
-const nationalLogo=new URL('../assets/bank-brands/national-mark.svg',import.meta.url).href;
-const eurobankLogo=new URL('../assets/bank-brands/eurobank-mark.svg',import.meta.url).href;
+const piraeusLogo='/brand/banks/piraeus-mark.svg';
+const revolutLogo='/brand/banks/revolut-mark.svg';
+const alphaLogo='/brand/banks/alpha-mark.svg';
+const nationalLogo='/brand/banks/national-mark.svg';
+const eurobankLogo='/brand/banks/eurobank-mark.svg';
 const payzyLogo=new URL('../assets/canonical-credit-card/payzy-logo.png',import.meta.url).href;
 const vivaLogo=new URL('../assets/canonical-credit-card/viva-logo.png',import.meta.url).href;
 
