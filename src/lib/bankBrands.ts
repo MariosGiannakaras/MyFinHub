@@ -1,3 +1,8 @@
+const piraeusLogo=new URL('../assets/bank-brands/piraeus-mark.svg',import.meta.url).href;
+const revolutLogo=new URL('../assets/bank-brands/revolut-mark.svg',import.meta.url).href;
+const alphaLogo=new URL('../assets/bank-brands/alpha-mark.svg',import.meta.url).href;
+const nationalLogo=new URL('../assets/bank-brands/national-mark.svg',import.meta.url).href;
+const eurobankLogo=new URL('../assets/bank-brands/eurobank-mark.svg',import.meta.url).href;
 const payzyLogo=new URL('../assets/canonical-credit-card/payzy-logo.png',import.meta.url).href;
 const vivaLogo=new URL('../assets/canonical-credit-card/viva-logo.png',import.meta.url).href;
 
@@ -8,11 +13,11 @@ export type BankBrandImageAsset={label:string;src:string;fallbackMark:string;car
 export type BankBrandAsset=BankBrandTextAsset|BankBrandImageAsset;
 
 const BRAND_ASSETS:Partial<Record<BankBrandKey,BankBrandAsset>>={
-  piraeus:{label:'Τράπεζα Πειραιώς',mark:'ΠΕΙΡΑΙΩΣ',cardMark:'Piraeus',source:'local-text'},
-  revolut:{label:'Revolut',mark:'REVOLUT',cardMark:'Revolut',source:'local-text'},
-  alpha:{label:'Alpha Bank',mark:'ALPHA',cardMark:'ALPHA BANK',source:'local-text'},
-  national:{label:'Εθνική Τράπεζα',mark:'ΕΤΕ',cardMark:'NBG',source:'local-text'},
-  eurobank:{label:'Eurobank',mark:'EUROBANK',cardMark:'Eurobank',source:'local-text'},
+  piraeus:{label:'Τράπεζα Πειραιώς',src:piraeusLogo,fallbackMark:'ΠΕΙΡΑΙΩΣ',cardMark:'Piraeus',source:'local-image'},
+  revolut:{label:'Revolut',src:revolutLogo,fallbackMark:'REVOLUT',cardMark:'Revolut',source:'local-image'},
+  alpha:{label:'Alpha Bank',src:alphaLogo,fallbackMark:'ALPHA',cardMark:'ALPHA BANK',source:'local-image'},
+  national:{label:'Εθνική Τράπεζα',src:nationalLogo,fallbackMark:'ΕΤΕ',cardMark:'NBG',source:'local-image'},
+  eurobank:{label:'Eurobank',src:eurobankLogo,fallbackMark:'EUROBANK',cardMark:'Eurobank',source:'local-image'},
   payzy:{label:'payzy by COSMOTE',src:payzyLogo,fallbackMark:'payzy',cardMark:'payzy',source:'local-image'},
   viva:{label:'Viva.com',src:vivaLogo,fallbackMark:'VIVA',cardMark:'VIVA',source:'local-image'},
 };

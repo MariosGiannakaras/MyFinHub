@@ -31,6 +31,8 @@ export function qaFinanceData(){
     ...snapshot,
     balances:{
       ...snapshot.balances,
+      'piraeus-payroll':3054.4,
+      'piraeus-savings':4544.01,
       'cash':1712.8,
       'alpha-main':1181.43,
       'revolut-main':810.2,

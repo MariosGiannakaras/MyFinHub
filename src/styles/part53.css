@@ -1,0 +1,74 @@
+/* Phase-1 Dashboard fidelity pass 2: local bank marks, chart curtain and attention shortcut. */
+.bank-brand-mark .bank-logo-image{display:block;width:78%;height:78%;object-fit:contain;object-position:center}
+.bank-brand-mark.wordmark .bank-logo-image{width:88%;height:72%}
+
+.dashboard-approved .approved-secondary-account .bank-brand-mark[data-bank-logo-source="local-image"]{
+  width:31px!important;
+  height:31px!important;
+  min-width:31px;
+  flex-basis:31px;
+  border:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+.dashboard-approved .approved-secondary-account .bank-brand-mark[data-bank-logo-source="local-image"]::before{content:none!important}
+.dashboard-approved .approved-secondary-account .bank-brand-mark[data-bank-logo-source="local-image"] .bank-logo-image{width:31px;height:31px}
+.dashboard-approved .account-tone-2 .approved-account-icon .bank-brand-mark[data-bank-logo-source="local-image"]{
+  width:30px!important;
+  height:27px!important;
+  min-width:30px;
+  border:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+.dashboard-approved .account-tone-2 .approved-account-icon .bank-brand-mark[data-bank-logo-source="local-image"]::before{content:none!important}
+.dashboard-approved .account-tone-2 .approved-account-icon .bank-brand-mark[data-bank-logo-source="local-image"] .bank-logo-image{width:29px;height:26px}
+
+.dashboard-approved .approved-account-chart{
+  --dashboard-spark-curtain:rgba(63,141,245,.19);
+  --dashboard-spark-curtain-soft:rgba(63,141,245,.07);
+  position:relative;
+  isolation:isolate;
+  overflow:hidden;
+  border-radius:7px;
+}
+.dashboard-approved .approved-account-chart::before{
+  content:"";
+  position:absolute;
+  z-index:0;
+  left:0;
+  right:0;
+  top:15px;
+  bottom:0;
+  pointer-events:none;
+  background:linear-gradient(180deg,var(--dashboard-spark-curtain) 0%,var(--dashboard-spark-curtain-soft) 48%,rgba(255,255,255,0) 100%);
+  filter:blur(1.8px);
+}
+.dashboard-approved .account-tone-0 .approved-account-chart{--dashboard-spark-curtain:rgba(49,199,123,.23);--dashboard-spark-curtain-soft:rgba(49,199,123,.08)}
+.dashboard-approved .account-tone-1 .approved-account-chart{--dashboard-spark-curtain:rgba(171,54,232,.21);--dashboard-spark-curtain-soft:rgba(171,54,232,.07)}
+.dashboard-approved .account-tone-2 .approved-account-chart{--dashboard-spark-curtain:rgba(63,141,245,.20);--dashboard-spark-curtain-soft:rgba(63,141,245,.07)}
+.dashboard-approved .approved-account-chart .dashboard-sparkline,
+.dashboard-approved .approved-account-chart .savings-legend{position:relative;z-index:1}
+
+.period-attention-shortcut{display:none}
+@media(min-width:981px){
+  body:has(.dashboard-approved) .period-attention-shortcut{
+    position:fixed;
+    z-index:74;
+    top:9px;
+    right:307px;
+    width:40px;
+    height:40px;
+    display:grid;
+    place-items:center;
+    border:1px solid #e2eaf4;
+    border-radius:9px;
+    background:#fff;
+    color:#254a80;
+    box-shadow:0 3px 10px rgba(34,65,105,.055);
+    text-decoration:none;
+  }
+  body:has(.dashboard-approved) .period-attention-shortcut:hover{background:#f8fbff;color:#0b6fe8}
+  body:has(.dashboard-approved) .period-attention-shortcut:focus-visible{outline:2px solid #2f7bea;outline-offset:2px}
+  body:has(.dashboard-approved) .period-attention-shortcut svg{width:17px;height:17px;stroke-width:1.9}
+}
