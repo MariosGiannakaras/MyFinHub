@@ -1,7 +1,6 @@
 import { BellRing, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { canAdvanceReportingMonth, localMonthKey, shiftReportingMonth } from '../lib/reportingPeriod';
-import '../styles/part53.css';
 import { Tooltip } from './Tooltip';
 
 function monthLabel(month:string){
