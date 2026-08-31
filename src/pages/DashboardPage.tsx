@@ -85,9 +85,9 @@ export function DashboardPage({ data, month, asOf, motionMode='system', onQuickA
   const recurringCategoryByName=useMemo(()=>new Map(activeRecurringItems(data).map(item=>[item.name,item.category])),[data]);
   const upcoming=useMemo<UpcomingItem[]>(()=>{
     const groupFor=(item:ReturnType<typeof cashFlowForecast>['movements'][number])=>{
-      if(item.source==='loan')return 'Δόσεις / Δάνεια';
-      if(item.source!=='recurring')return 'Προγραμματισμένα';
-      return /συνδρομ/i.test(recurringCategoryByName.get(item.label)??'')?'Συνδρομές':'Πάγια';
+      const defaultGroup=item.source==='recurring'?'Πάγια':item.source==='loan'?'Δόσεις / Δάνεια':'Προγραμματισμένα';
+      if(item.source==='recurring'&&/συνδρομ/i.test(recurringCategoryByName.get(item.label)??''))return 'Συνδρομές';
+      return defaultGroup;
     };
     const groupRank:Record<string,number>={'Συνδρομές':0,'Πάγια':1,'Δόσεις / Δάνεια':2,'Προγραμματισμένα':3};
     return cashFlowForecast(data,asOf,30).movements.filter(item=>item.portfolioDelta<-.005).sort((a,b)=>(groupRank[groupFor(a)]??9)-(groupRank[groupFor(b)]??9)).slice(0,4).map(item=>({
