@@ -81,8 +81,8 @@ export function qaFinanceData(){
 
   const headlineExpenses:LegacyTransaction[]=[
     transaction('approved-exp-supermarket','2026-08-20','expense',62.4,'Σούπερ Μάρκετ','Σούπερ Μάρκετ'),
-    transaction('approved-exp-shell','2026-08-19','expense',48.28,'Shell','Μεταφορές'),
-    transaction('approved-exp-coffee','2026-08-18','expense',3.8,'Coffee Island','Διασκέδαση'),
+    transaction('approved-exp-shell','2026-08-19','expense',48.28,'Shell','Καύσιμα'),
+    transaction('approved-exp-coffee','2026-08-18','expense',3.8,'Coffee Island','Καφέ/ες'),
     transaction('approved-exp-vasilopoulos','2026-08-16','expense',41.15,'Βασιλόπουλος','Σούπερ Μάρκετ'),
     transaction('approved-exp-public','2026-08-14','expense',89.9,'Public','Αγορές'),
   ];
@@ -120,18 +120,19 @@ export function qaFinanceData(){
   next.state.reviewDecisions={
     'approved-july-saving':{status:'confirmed',semanticKind:'saving_cash_offset',decidedAt:stamp},
     'approved-saving':{status:'confirmed',semanticKind:'saving_cash_offset',decidedAt:stamp},
+    'approved-exp-shell':{status:'kept',category:'Μεταφορές',decidedAt:stamp},
+    'approved-exp-coffee':{status:'kept',category:'Διασκέδαση',decidedAt:stamp},
     'approved-exp-public':{status:'kept',category:'Άλλα',decidedAt:stamp},
   };
 
   next.seed.recurring=[
     {id:'approved-cosmote',name:'Cosmote',amount:29.9,day:18,accountId:'piraeus-payroll',category:'Συνδρομές',active:true,status:'active',source:'qa'},
     {id:'approved-eydap',name:'ΕΥΔΑΠ',amount:27.4,day:22,accountId:'piraeus-payroll',category:'Πάγια',active:true,status:'active',source:'qa'},
+    {id:'approved-deh',name:'ΔΕΗ',amount:62.4,day:16,accountId:'piraeus-payroll',category:'Πάγια',active:true,status:'active',source:'qa'},
   ];
   next.state.recurringCustom=[];
   next.state.recurringOverrides={};
-  next.state.scheduled=[
-    {id:'approved-deh',dueDate:'2026-08-16',kind:'expense',amount:62.4,note:'ΔΕΗ',category:'Πάγια',accountId:'piraeus-payroll',status:'pending',createdAt:stamp,updatedAt:stamp},
-  ];
+  next.state.scheduled=[];
   next.seed.loans=[];
   next.state.customLoans=[
     {id:'approved-mortgage',name:'Στεγαστικό δάνειο',total:19849.6,installment:620.3,installments:32,paidCount:10,provider:'Πειραιώς',schedule:[],source:'qa',accountingMode:'expense-per-installment',kind:'loan',firstExpectedDate:'2026-08-20',defaultAccountId:'piraeus-payroll',forgivenAmount:0,longTermRecurring:true},
