@@ -10,6 +10,7 @@ import { budgetProgress } from '../lib/budgets';
 import { allAccounts, effectiveLegacyTransactions, flowImpactEvent, flowImpactLegacy, monthRange } from '../lib/domain';
 import { cashFlowForecast } from '../lib/forecast';
 import { money } from '../lib/format';
+import { activeRecurringItems } from '../lib/recurring';
 import { selectAccountBalances, selectCategoryTotals, selectMonthlyFlow } from '../lib/selectors';
 import { accountDisplayName } from '../lib/ui';
 import type { Account, FinanceData, FinanceEvent, LegacyTransaction } from '../types';
@@ -81,14 +82,23 @@ export function DashboardPage({ data, month, asOf, motionMode='system', onQuickA
   const comparisonText=(value:number|null)=>value===null?`— έναντι ${previousMonthLabel}`:`${value>0?'↑':value<0?'↓':'→'} ${Math.abs(value)}% από ${previousMonthLabel}`;
   const incomeCumulative=dailyFlow.reduce<number[]>((rows,row)=>{rows.push((rows.at(-1)??0)+row.income);return rows},[]);const expenseCumulative=dailyFlow.reduce<number[]>((rows,row)=>{rows.push((rows.at(-1)??0)+row.expense);return rows},[]);
 
-  const upcoming=useMemo<UpcomingItem[]>(()=>cashFlowForecast(data,asOf,30).movements.filter(item=>item.portfolioDelta<-.005).slice(0,4).map(item=>({
-    id:item.id,
-    group:item.source==='recurring'?'Πάγια':item.source==='loan'?'Δόσεις / Δάνεια':'Προγραμματισμένα',
-    name:item.label,
-    dateLabel:formatShortDay(item.date),
-    amount:Math.abs(item.portfolioDelta),
-    category:item.source==='loan'?'Δάνειο':undefined,
-  })),[data,asOf]);
+  const recurringCategoryByName=useMemo(()=>new Map(activeRecurringItems(data).map(item=>[item.name,item.category])),[data]);
+  const upcoming=useMemo<UpcomingItem[]>(()=>{
+    const groupFor=(item:ReturnType<typeof cashFlowForecast>['movements'][number])=>{
+      if(item.source==='loan')return 'Δόσεις / Δάνεια';
+      if(item.source!=='recurring')return 'Προγραμματισμένα';
+      return /συνδρομ/i.test(recurringCategoryByName.get(item.label)??'')?'Συνδρομές':'Πάγια';
+    };
+    const groupRank:Record<string,number>={'Συνδρομές':0,'Πάγια':1,'Δόσεις / Δάνεια':2,'Προγραμματισμένα':3};
+    return cashFlowForecast(data,asOf,30).movements.filter(item=>item.portfolioDelta<-.005).sort((a,b)=>(groupRank[groupFor(a)]??9)-(groupRank[groupFor(b)]??9)).slice(0,4).map(item=>({
+      id:item.id,
+      group:groupFor(item),
+      name:item.label,
+      dateLabel:formatShortDay(item.date),
+      amount:Math.abs(item.portfolioDelta),
+      category:item.source==='loan'?'Δάνειο':recurringCategoryByName.get(item.label),
+    }));
+  },[data,asOf,recurringCategoryByName]);
 
   const visibleSecondary=remaining.slice(0,4);const hiddenSecondary=Math.max(0,remaining.length-visibleSecondary.length);
   const largestCategory=categories[0];const daysElapsed=month===asOf.slice(0,7)?Math.max(1,Number(asOf.slice(-2))):Number(range.end.slice(-2));const previousDays=Math.max(1,Number(previousRange.end.slice(-2)));
@@ -101,7 +111,7 @@ export function DashboardPage({ data, month, asOf, motionMode='system', onQuickA
     <span className="sr-only">Νέα κίνηση διαθέσιμη από τη Γρήγορη κίνηση.</span>
     <section className="page-heading dashboard-approved-heading"><div><span className="eyebrow">ΕΠΙΣΚΟΠΗΣΗ</span><h1>Οι λογαριασμοί μου</h1><p>Πλήρης εικόνα των οικονομικών σας. Τα πιο σημαντικά στοιχεία με μια ματιά.</p></div><div className="heading-actions"><button type="button" className="secondary privacy-toggle" aria-pressed={balancesVisible} onClick={()=>setBalancesVisible(value=>!value)}>{balancesVisible?<EyeOff size={16}/>:<Eye size={16}/>} {balancesVisible?'Απόκρυψη ποσών':'Εμφάνιση ποσών'}</button></div></section>
 
-    <section className="primary-balance-grid approved-primary-grid" aria-label="Κύριοι λογαριασμοί" data-dashboard-section="primary-accounts">{primary.map((account,index)=>{const values=primaryTrends[account.id]??[balances[account.id]??0];const currentBalance=balances[account.id]??0;const pct=percentChange(currentBalance,balancePreviousBalances[account.id]??0);const savings=account.kind==='savings';const start=values[0]??currentBalance;const targetLine=savings?values.map((_,point)=>start+(targetSavings*(point/Math.max(1,values.length-1)))):undefined;const accountAction=savings?'Μεταφορά':'Νέα κίνηση';return <article className={`primary-balance-card approved-account-card account-tone-${index}`} key={account.id} data-account-id={account.id}><div className="approved-account-head"><div className="approved-account-identity"><span className="approved-account-icon">{savings?<BankBrandMark id={account.id} name={compactAccountLabel(account,data)}/>:index===1?<WalletCards size={20}/>:<FinanceIcon kind="cash" size={20}/>}</span><div><strong>{compactAccountLabel(account,data)}</strong><AccountIban accountId={account.id}/></div></div>{savings?<span className="savings-target"><Target size={13}/> Στόχος {Math.round(savingsTargetRate*100)}%</span>:null}</div><div className="approved-account-body"><div><b className="approved-balance">{privacyMoney(currentBalance)}</b><span className={`approved-trend ${pct===null?'':pct>=0?'positive':'negative'}`}>{pct===null?'—':`${pct>=0?'↑':'↓'} ${Math.abs(pct)}%`} <small>{pct===null?`χωρίς βάση ${balancePreviousMonthLabel}`:`από ${balancePreviousMonthLabel}`}</small></span></div><div className="approved-account-chart"><Sparkline values={values} tone={savings?'blue':index===1?'purple':'green'} target={targetLine} comparison={savings?previousSavings:undefined}/>{savings?<div className="savings-legend"><span className="current">Τρέχων μήνας</span><span className="previous">Προηγ. μήνας</span><span className="goal">Στόχος</span></div>:null}</div></div><div className="approved-account-actions"><button type="button" data-account-quick-entry={account.id} onClick={()=>onAccountQuickAdd(account.id,account.kind)}><ArrowRight size={15}/> {accountAction}</button><button type="button" onClick={onTransactions}><List size={15}/> Συναλλαγές</button><button type="button" className="account-context-action" aria-label={`${accountAction} για ${compactAccountLabel(account,data)}`} title={`${accountAction} για ${compactAccountLabel(account,data)}`} onClick={()=>onAccountQuickAdd(account.id,account.kind)}><MoreHorizontal size={16}/></button></div></article>})}</section>
+    <section className="primary-balance-grid approved-primary-grid" aria-label="Κύριοι λογαριασμοί" data-dashboard-section="primary-accounts">{primary.map((account,index)=>{const values=primaryTrends[account.id]??[balances[account.id]??0];const currentBalance=balances[account.id]??0;const pct=percentChange(currentBalance,balancePreviousBalances[account.id]??0);const savings=account.kind==='savings';const start=values[0]??currentBalance;const targetLine=savings?values.map((_,point)=>start+(targetSavings*(point/Math.max(1,values.length-1)))):undefined;const accountAction=savings?'Μεταφορά':'Νέα κίνηση';return <article className={`primary-balance-card approved-account-card account-tone-${index}`} key={account.id} data-account-id={account.id}><div className="approved-account-head"><div className="approved-account-identity"><span className="approved-account-icon">{savings?<BankBrandMark id={account.id} name={compactAccountLabel(account,data)}/>:index===1?<WalletCards size={20}/>:<FinanceIcon kind="cash" size={20}/>}</span><div><strong>{compactAccountLabel(account,data)}</strong><AccountIban accountId={account.id}/></div></div>{savings?<span className="savings-target"><Target size={13}/> Στόχος {Math.round(savingsTargetRate*100)}%</span>:null}</div><div className="approved-account-body"><div><b className="approved-balance">{privacyMoney(currentBalance)}</b>{!savings?<span className={`approved-trend ${pct===null?'':pct>=0?'positive':'negative'}`}>{pct===null?'—':`${pct>=0?'↑':'↓'} ${Math.abs(pct)}%`} <small>{pct===null?`χωρίς βάση ${balancePreviousMonthLabel}`:`από ${balancePreviousMonthLabel}`}</small></span>:null}</div><div className="approved-account-chart"><Sparkline values={values} tone={savings?'blue':index===1?'purple':'green'} target={targetLine} comparison={savings?previousSavings:undefined}/>{savings?<div className="savings-legend"><span className="current">Τρέχων μήνας</span><span className="previous">Προηγ. μήνας</span><span className="goal">Στόχος</span></div>:null}</div></div><div className="approved-account-actions"><button type="button" data-account-quick-entry={account.id} onClick={()=>onAccountQuickAdd(account.id,account.kind)}><ArrowRight size={15}/> {accountAction}</button><button type="button" onClick={onTransactions}><List size={15}/> Συναλλαγές</button><button type="button" className="account-context-action" aria-label={`${accountAction} για ${compactAccountLabel(account,data)}`} title={`${accountAction} για ${compactAccountLabel(account,data)}`} onClick={()=>onAccountQuickAdd(account.id,account.kind)}><MoreHorizontal size={16}/></button></div></article>})}</section>
 
     {remaining.length?<section className="approved-secondary-panel" data-dashboard-section="other-balances"><div className="approved-section-title"><strong>Λοιποί λογαριασμοί</strong></div><div className="approved-secondary-grid">{visibleSecondary.map(account=><article className="approved-secondary-account" key={account.id}><BankBrandMark id={account.id} name={compactAccountLabel(account,data)}/><div><small>{compactAccountLabel(account,data)}</small><b>{privacyMoney(balances[account.id]??0)}</b></div><button type="button" onClick={onTransactions}>Συναλλαγές</button></article>)}{hiddenSecondary>0?<article className="approved-secondary-account approved-secondary-more"><div><small>+ {hiddenSecondary} ακόμα</small></div><button type="button" onClick={onTransactions}>Συναλλαγές</button></article>:null}</div></section>:null}
 
