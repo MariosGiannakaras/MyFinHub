@@ -4,22 +4,22 @@
   "appVersion": "v1.3",
   "suite": "obligation-lifecycle",
   "surface": "obligations",
-  "generatedAt": "2026-08-28T05:29:05.440Z",
+  "generatedAt": "2026-08-31T07:58:51.335Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "02c091edda5beaa05c8d9f54f94dd1a13058dc9c",
-    "shortSha": "02c091ed",
+    "sha": "02699b5bdc3da22ec652017aa3599ea758ca0913",
+    "shortSha": "02699b5b",
     "branch": "ui/300-dashboard-fidelity-pass-2"
   },
   "screenshots": [
-    "visual-qa/obligations/v1.3__2026-08-28_082905__qa-obligation-lifecycle__loans-active-desktop.png",
-    "visual-qa/obligations/v1.3__2026-08-28_082905__qa-obligation-lifecycle__loans-completed-collapsed-desktop.png",
-    "visual-qa/obligations/v1.3__2026-08-28_082905__qa-obligation-lifecycle__loans-completed-history-desktop.png",
-    "visual-qa/obligations/v1.3__2026-08-28_082905__qa-obligation-lifecycle__loans-completed-history-mobile.png",
-    "visual-qa/obligations/v1.3__2026-08-28_082905__qa-obligation-lifecycle__recurring-active-desktop.png",
-    "visual-qa/obligations/v1.3__2026-08-28_082905__qa-obligation-lifecycle__recurring-extreme-mobile.png",
-    "visual-qa/obligations/v1.3__2026-08-28_082905__qa-obligation-lifecycle__recurring-inactive-collapsed-desktop.png",
-    "visual-qa/obligations/v1.3__2026-08-28_082905__qa-obligation-lifecycle__recurring-inactive-history-desktop.png",
-    "visual-qa/obligations/v1.3__2026-08-28_082905__qa-obligation-lifecycle__recurring-inactive-history-mobile.png"
+    "visual-qa/obligations/v1.3__2026-08-31_105851__qa-obligation-lifecycle__loans-active-desktop.png",
+    "visual-qa/obligations/v1.3__2026-08-31_105851__qa-obligation-lifecycle__loans-completed-collapsed-desktop.png",
+    "visual-qa/obligations/v1.3__2026-08-31_105851__qa-obligation-lifecycle__loans-completed-history-desktop.png",
+    "visual-qa/obligations/v1.3__2026-08-31_105851__qa-obligation-lifecycle__loans-completed-history-mobile.png",
+    "visual-qa/obligations/v1.3__2026-08-31_105851__qa-obligation-lifecycle__recurring-active-desktop.png",
+    "visual-qa/obligations/v1.3__2026-08-31_105851__qa-obligation-lifecycle__recurring-extreme-mobile.png",
+    "visual-qa/obligations/v1.3__2026-08-31_105851__qa-obligation-lifecycle__recurring-inactive-collapsed-desktop.png",
+    "visual-qa/obligations/v1.3__2026-08-31_105851__qa-obligation-lifecycle__recurring-inactive-history-desktop.png",
+    "visual-qa/obligations/v1.3__2026-08-31_105851__qa-obligation-lifecycle__recurring-inactive-history-mobile.png"
   ]
 }
