@@ -1,5 +1,6 @@
 import { Banknote, Landmark } from 'lucide-react';
 import { bankBrandAsset, bankBrandFallbackMark, bankBrandKey } from '../lib/bankBrands';
+import '../styles/part53.css';
 
 export function BankBrandMark({id,name,compact=true}:{id?:string;name?:string;compact?:boolean}){
   const key=bankBrandKey(id,name);
