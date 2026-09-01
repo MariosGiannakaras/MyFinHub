@@ -1,0 +1,163 @@
+/* Owner-approved Loans desktop target. Presentation only; loan accounting and handlers stay canonical. */
+@media (min-width:1100px){
+  .loan-toolbar{
+    min-height:68px;
+    padding:10px 18px;
+    border:1px solid var(--line);
+    border-radius:16px;
+    background:var(--surface);
+    box-shadow:var(--shadow-soft);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:18px;
+  }
+  .loan-toolbar>span{font-size:11px;color:var(--muted);white-space:nowrap}
+  .loan-sort-controls{display:flex;align-items:center;gap:10px}
+  .loan-sort-controls label{display:flex;align-items:center;gap:12px;font-size:11px;font-weight:760;color:var(--muted)}
+  .loan-sort-controls label>div,.loan-sort-controls label>select{min-width:245px}
+  .loan-sort-controls button{min-height:42px;min-width:64px;border-radius:10px}
+
+  .loan-toolbar+section{display:grid;gap:12px}
+  .loan-toolbar+section>.section-title{min-height:34px;padding:0 2px;display:flex;align-items:center}
+  .loan-toolbar+section>.section-title>div{display:flex;align-items:baseline;gap:8px}
+  .loan-toolbar+section>.section-title span{font-size:14px;font-weight:820;color:var(--ink)}
+  .loan-toolbar+section>.section-title b{font-size:10px;font-weight:560;color:var(--muted)}
+
+  .loan-list{display:grid;gap:16px}
+  .loan-list-row{
+    min-height:208px;
+    padding:22px 24px 20px;
+    border:1px solid var(--line);
+    border-radius:18px;
+    background:var(--surface);
+    box-shadow:var(--shadow-soft);
+    display:grid;
+    grid-template-columns:minmax(0,1fr) auto;
+    grid-template-areas:
+      "main main"
+      "progress progress"
+      "meta actions";
+    column-gap:20px;
+    row-gap:16px;
+    overflow:hidden;
+  }
+  .loan-list-row .loan-list-main{
+    grid-area:main;
+    display:grid;
+    grid-template-columns:58px minmax(0,1fr) auto;
+    gap:15px;
+    align-items:center;
+    min-width:0;
+  }
+  .loan-list-row .account-mark{
+    width:56px;
+    height:56px;
+    border-radius:50%;
+    display:grid;
+    place-items:center;
+    background:color-mix(in srgb,var(--blue) 10%,var(--surface));
+    color:var(--blue);
+  }
+  .loan-list-row .account-mark svg{width:28px;height:28px}
+  .loan-list-main h3{margin:0 0 4px;font-size:18px;line-height:1.15;letter-spacing:-.015em;color:var(--ink)}
+  .loan-list-main h3+small{font-size:11.5px;line-height:1.35;color:var(--muted)}
+  .loan-money{justify-self:end;display:grid;gap:4px;text-align:right}
+  .loan-money b{font-size:25px;line-height:1;font-weight:840;letter-spacing:-.025em;color:var(--ink)}
+  .loan-money small{font-size:10px;color:var(--muted)}
+
+  /* The full track owns one continuous gradient. Neutral unpaid segments cover it;
+     paid segments become transparent and progressively reveal the gradient from left to right. */
+  .loan-list-row .installment-segments{
+    grid-area:progress;
+    width:min(520px,62%);
+    height:10px;
+    margin:0;
+    padding:0;
+    display:flex;
+    align-items:stretch;
+    gap:0;
+    border-radius:999px;
+    overflow:hidden;
+    background:linear-gradient(90deg,#1287ff 0%,#20a4f3 24%,#6657e8 56%,#8b5cf6 72%,#22c55e 100%);
+    box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--line) 72%,transparent);
+  }
+  .loan-list-row .installment-segments i{
+    flex:1 1 0!important;
+    width:auto!important;
+    max-width:none!important;
+    min-width:0!important;
+    height:100%!important;
+    margin:0!important;
+    border:0!important;
+    border-left:4px solid var(--surface)!important;
+    border-radius:0!important;
+    background:color-mix(in srgb,var(--line) 76%,var(--surface))!important;
+    box-shadow:none!important;
+  }
+  .loan-list-row .installment-segments i:first-child{border-left:0!important}
+  .loan-list-row .installment-segments i.paid{background:transparent!important}
+
+  .loan-list-row .self-loan-progress{grid-area:progress;margin:0;min-height:38px;display:flex;align-items:center;gap:20px;padding:10px 14px;border-radius:12px;background:color-mix(in srgb,var(--blue) 6%,var(--surface))}
+  .loan-list-row .self-loan-progress span{font-size:10px;color:var(--muted)}
+
+  .loan-list-row .loan-list-meta{
+    grid-area:meta;
+    min-width:0;
+    margin:0;
+    display:flex;
+    align-items:stretch;
+    gap:0;
+  }
+  .loan-list-row .loan-list-meta>span{
+    min-width:126px;
+    padding:1px 20px 0;
+    border-left:1px solid var(--line);
+    font-size:9.5px;
+    line-height:1.35;
+    color:var(--muted);
+  }
+  .loan-list-row .loan-list-meta>span:first-child{padding-left:0;border-left:0}
+  .loan-list-row .loan-list-meta>span b{display:block;margin-bottom:3px;font-size:12px;line-height:1.2;font-weight:800;color:var(--ink)}
+
+  .loan-list-row .loan-list-actions{
+    grid-area:actions;
+    align-self:end;
+    justify-self:end;
+    margin:0;
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    gap:10px;
+  }
+  .loan-list-row .loan-list-actions button{
+    min-height:46px;
+    padding:0 18px;
+    border-radius:11px;
+    font-size:11px;
+    font-weight:760;
+  }
+  .loan-list-row .loan-list-actions .pay{min-width:164px;background:var(--blue);color:white;border-color:transparent;box-shadow:0 8px 18px color-mix(in srgb,var(--blue) 22%,transparent)}
+  .loan-list-row .loan-list-actions .forgive{min-width:156px}
+
+  .loan-history{
+    min-height:72px;
+    padding:0 20px;
+    border:1px solid var(--line);
+    border-radius:16px;
+    background:var(--surface);
+    box-shadow:var(--shadow-soft);
+  }
+  .loan-history>summary{min-height:70px;display:flex;align-items:center;justify-content:space-between;gap:16px;cursor:pointer}
+  .loan-history>summary>div{display:flex;align-items:baseline;gap:10px}
+  .loan-history>summary span{font-size:14px;font-weight:820;color:var(--ink)}
+  .loan-history>summary b{font-size:10px;font-weight:560;color:var(--muted)}
+  .loan-history>summary strong{font-size:14px;color:var(--ink)}
+
+  .loan-progress-note{min-height:72px;align-items:center;padding:13px 18px;border-radius:15px}
+  .loan-progress-note svg{width:20px;height:20px;color:var(--blue)}
+  .loan-progress-note b{font-size:10.5px;line-height:1.35}
+  .loan-progress-note span{font-size:9px;line-height:1.45;margin-top:4px}
+
+  .loan-editor-dialog{max-width:840px}
+}
