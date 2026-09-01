@@ -1,0 +1,90 @@
+/* Owner-approved Credit Card desktop target.
+ * Surrounding page presentation only: canonical card artwork/vault internals stay untouched.
+ */
+@media (min-width:1100px){
+  .credit-card-redesign-page{gap:16px}
+
+  .credit-card-redesign-page>.page-heading{min-height:88px;align-items:flex-start;padding-top:2px;order:0}
+  .credit-card-redesign-page>.page-heading h1{margin-top:3px;font-size:34px;line-height:1.05;letter-spacing:-.035em}
+  .credit-card-redesign-page>.page-heading p{max-width:760px;margin-top:7px;line-height:1.45}
+  .credit-card-redesign-page>.page-heading .heading-actions{align-self:flex-start;gap:8px}
+  .credit-card-redesign-page>.page-heading .heading-actions button{min-height:42px;border-radius:11px}
+
+  .credit-card-redesign-page>.credit-card-stage{
+    display:grid;grid-template-columns:minmax(0,1.72fr) minmax(330px,.92fr);gap:22px;
+    min-height:430px;padding:0;overflow:visible;border:0;background:transparent;box-shadow:none;order:1;
+  }
+
+  .credit-card-redesign-page>.credit-card-stage>.credit-card-stage-card{
+    position:relative;min-height:430px;padding:54px 34px 14px;border:1px solid var(--line);border-radius:18px;
+    background:var(--surface);box-shadow:var(--shadow-soft);display:grid;place-items:center;overflow:visible;
+  }
+  .credit-card-redesign-page>.credit-card-stage>.credit-card-stage-card #myfinhub-card-stack{width:min(100%,620px)}
+
+  .credit-card-view-controls{
+    position:absolute;left:18px;right:18px;top:14px;z-index:3;display:flex;align-items:center;justify-content:space-between;gap:12px;
+  }
+  .credit-card-view-mode,.credit-card-horizontal-nav{display:flex;align-items:center;gap:6px}
+  .credit-card-view-mode button,.credit-card-horizontal-nav button{
+    min-height:34px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);color:var(--muted);font-size:9.5px;font-weight:760;cursor:pointer;
+  }
+  .credit-card-view-mode button{padding:0 12px}
+  .credit-card-view-mode button.active{border-color:color-mix(in srgb,var(--blue) 42%,var(--line));background:color-mix(in srgb,var(--blue) 9%,var(--surface));color:var(--blue)}
+  .credit-card-horizontal-nav button{width:34px;padding:0;display:grid;place-items:center}
+  .credit-card-horizontal-nav button svg{width:15px;height:15px}
+  .credit-card-horizontal-nav span{min-width:42px;text-align:center;font-size:9.5px;font-weight:760;color:var(--muted)}
+
+  .credit-card-redesign-page>.credit-card-stage>.credit-card-stage-stats{
+    min-height:430px;padding:22px 24px;border:1px solid var(--line);border-radius:18px;background:var(--surface);box-shadow:var(--shadow-soft);
+    display:grid;grid-template-columns:1fr;align-content:start;gap:0;
+  }
+  .credit-card-redesign-page>.credit-card-stage>.credit-card-stage-stats::before{
+    content:"Υπόλοιπο & όριο";display:block;margin-bottom:10px;color:var(--ink);font-size:16px;line-height:1.2;font-weight:820;
+  }
+  .credit-card-redesign-page>.credit-card-stage>.credit-card-stage-stats>div{min-width:0;padding:10px 0;border:0;background:transparent;box-shadow:none}
+  .credit-card-redesign-page>.credit-card-stage>.credit-card-stage-stats>div+div{border-top:1px solid color-mix(in srgb,var(--line) 78%,transparent)}
+  .credit-card-redesign-page>.credit-card-stage>.credit-card-stage-stats span{display:block;margin-bottom:5px;color:var(--muted);font-size:10px;font-weight:760;letter-spacing:.015em}
+  .credit-card-redesign-page>.credit-card-stage>.credit-card-stage-stats b{display:block;color:var(--ink);font-size:27px;line-height:1.08;font-weight:840;letter-spacing:-.025em}
+  .credit-card-redesign-page>.credit-card-stage>.credit-card-stage-stats>div:nth-child(2)>b{color:var(--green)}
+  .credit-card-redesign-page>.credit-card-stage>.credit-card-stage-stats small{display:block;margin-top:5px;color:var(--muted);font-size:9.5px;line-height:1.4}
+  .credit-card-redesign-page>.credit-card-stage .credit-usage{height:10px;margin-top:9px;border-radius:999px;overflow:hidden}
+  .credit-card-redesign-page>.credit-card-stage .credit-usage>i{border-radius:999px}
+
+  .credit-card-next-payment{display:grid!important;grid-template-columns:minmax(0,1fr) auto;column-gap:12px;align-items:center}
+  .credit-card-next-payment>span,.credit-card-next-payment>b,.credit-card-next-payment>small{grid-column:1}
+  .credit-card-next-payment>b{font-size:13px!important;letter-spacing:0!important}
+  .credit-card-next-payment>.secondary{grid-column:2;grid-row:1/4;min-height:40px;align-self:center}
+  .credit-cycle-link{
+    min-height:38px;margin-top:2px;padding:0;border:0;border-top:1px solid color-mix(in srgb,var(--line) 78%,transparent);background:transparent;
+    display:flex;align-items:end;justify-content:space-between;gap:10px;color:var(--muted);font-size:9.5px;font-weight:760;cursor:pointer;
+  }
+  .credit-cycle-link svg{width:14px;height:14px}
+
+  .credit-card-redesign-page>[data-credit-statements],.credit-card-redesign-page>section.panel.neo-raised{
+    border:1px solid var(--line);border-radius:16px;background:var(--surface);box-shadow:var(--shadow-soft);
+  }
+  .credit-card-redesign-page>section.panel.neo-raised>.panel-head{min-height:50px;padding-bottom:10px;border-bottom:1px solid color-mix(in srgb,var(--line) 76%,transparent)}
+  .credit-card-redesign-page>section.panel.neo-raised>.panel-head span{font-size:15px;font-weight:820}
+  .credit-card-redesign-page .semantic-table-wrap{border-radius:12px}
+  .credit-card-redesign-page .semantic-table{font-size:10.5px}
+  .credit-card-redesign-page .semantic-table th{height:38px;font-size:9px;color:var(--muted);background:color-mix(in srgb,var(--surface-2) 72%,var(--surface))}
+  .credit-card-redesign-page .semantic-table td{min-height:46px;padding-block:10px}
+  .credit-card-redesign-page .credit-purchases-table td.amount,.credit-card-redesign-page .credit-payments-table td.amount{font-weight:820}
+  .credit-card-redesign-page [data-primary-credit-statement]{margin-top:10px;border-radius:14px}
+
+  /* Approved hierarchy: actual card activity comes before statement detail.
+   * Purchases and repayments stay separate because their existing sort/actions
+   * have different real handlers; visually merging them would make controls lie. */
+  .credit-card-redesign-page>.action-status{order:2}
+  .credit-card-redesign-page>section.panel.neo-raised:has(.credit-purchases-table){order:3}
+  .credit-card-redesign-page>section.panel.neo-raised:has(.credit-payments-table){order:4}
+  .credit-card-redesign-page>[data-credit-statements]{order:5}
+  .credit-card-redesign-page>.deleted-credit-history{order:6}
+}
+
+/* Phase 1 does not redesign mobile. Hide the desktop-only deck switcher and
+ * keep the newly exposed cycle action within the existing mobile touch contract. */
+@media (max-width:1099px){
+  .credit-card-view-controls{display:none}
+  .credit-cycle-link{min-height:44px;width:100%;padding-inline:0}
+}

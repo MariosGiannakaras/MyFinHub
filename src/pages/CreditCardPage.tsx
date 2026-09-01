@@ -1,4 +1,4 @@
-import { ArchiveRestore, CreditCard, Pencil, Plus, ReceiptText, Trash2, WalletCards, X } from 'lucide-react';
+import { ArchiveRestore, ChevronLeft, ChevronRight, CreditCard, Pencil, Plus, ReceiptText, Trash2, WalletCards, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { AnimatedAmount } from '../components/AnimatedAmount';
 import { AppDateInput } from '../components/AppDateInput';
@@ -24,6 +24,8 @@ import type { CreditStatementStatus, FinanceData, FinanceEvent, PaymentCard } fr
 const statementStatusLabel:Record<CreditStatementStatus,string>={open:'Ανοιχτή',closed:'Κλειστή',due:'Προς πληρωμή',paid:'Εξοφλημένη'};
 const boundaryLabel=(value:PaymentCard['statementBoundaryRule'])=>value==='include-closing-day'?'Η ημέρα κλεισίματος ανήκει στη δήλωση που κλείνει εκείνη την ημέρα':value==='next-cycle'?'Η ημέρα κλεισίματος ανήκει στον επόμενο κύκλο':'Αναμένει τελική επιλογή προϊόντος';
 
+type CardDeckMode='horizontal'|'stack';
+
 export function CreditCardPage({
   data,asOf,onCreateEvent,onEditEvent,onDeleteEvent,onUpsertCard,onArchiveCard,onDeleteCard,onPayCard,
 }:{
@@ -42,6 +44,7 @@ export function CreditCardPage({
     events:creditEventsForCard(data,reference.id).sort((a,b)=>b.date.localeCompare(a.date)||b.createdAt.localeCompare(a.createdAt)||b.id.localeCompare(a.id)),
   })).filter(item=>item.events.length>0||item.statements.length>0),[data,deletedCredit,asOf]);
   const [selectedCardId,setSelectedCardId]=useState('');
+  const [cardDeckMode,setCardDeckMode]=useState<CardDeckMode>('horizontal');
   const [purchaseSortDirection,setPurchaseSortDirection]=useState<SortDirection>('desc');
   const [paymentSortDirection,setPaymentSortDirection]=useState<SortDirection>('desc');
   useEffect(()=>{
@@ -49,6 +52,12 @@ export function CreditCardPage({
     setSelectedCardId(activeCredit[0]?.id??'');
   },[selectedCardId,activeCredit]);
   const card=activeCredit.find(item=>item.id===selectedCardId)??activeCredit[0];
+  const selectedCardIndex=card?Math.max(0,activeCredit.findIndex(item=>item.id===card.id)):0;
+  const selectRelativeCard=(step:number)=>{
+    if(activeCredit.length<2)return;
+    const next=(selectedCardIndex+step+activeCredit.length)%activeCredit.length;
+    setSelectedCardId(activeCredit[next].id);
+  };
   const bank=card?banks.find(item=>item.id===card.bankId):undefined;
   const debt=card?creditDebtForCard(data,card.id,asOf):0;
   const limit=card?creditLimitForCard(data,card):0;
@@ -140,7 +149,7 @@ export function CreditCardPage({
 
   return <div className="page-stack credit-card-redesign-page">
     <section className="page-heading">
-      <div><span className="eyebrow">ΠΙΣΤΩΤΙΚΗ ΚΑΡΤΑ</span><h1>Πιστωτική Κάρτα</h1><p>Η καθημερινή εικόνα ξεκινά από τη δήλωση της κάρτας: τι έκλεισε, πότε πληρώνεται και ποιες αγορές καλύπτει. Οι μεμονωμένες κινήσεις παραμένουν διαθέσιμες πιο κάτω.</p></div>
+      <div><span className="eyebrow">ΠΙΣΤΩΤΙΚΗ ΚΑΡΤΑ</span><h1>Πιστωτική Κάρτα</h1><p>Η κάρτα, το διαθέσιμο όριο και όλες οι πραγματικές κινήσεις της σε μία καθαρή εικόνα.</p></div>
       <div className="heading-actions">
         {archivedCredit.length?<button type="button" className="secondary" onClick={()=>setArchiveOpen(true)}><ArchiveRestore/> Αρχείο καρτών · {archivedCredit.length}</button>:null}
         <button type="button" className="secondary" disabled={!card||debt<=0||eligibleAccounts.length===0} onClick={openRepay}><ReceiptText/> Αποπληρωμή</button>
@@ -149,11 +158,22 @@ export function CreditCardPage({
     </section>
 
     {card&&bank?<section className="credit-card-stage neo-raised">
-      <div className="credit-card-stage-card"><CanonicalCreditCardStack cards={activeCredit} banks={banks} selectedCardId={card.id} onActiveCardChange={setSelectedCardId} onArchiveCard={archiveFromStack}/></div>
+      <div className="credit-card-stage-card" data-card-view={cardDeckMode}>
+        <div className="credit-card-view-controls" aria-label="Τρόπος προβολής πιστωτικών καρτών">
+          <div className="credit-card-view-mode" role="group" aria-label="Εμφάνιση καρτών">
+            <button type="button" className={cardDeckMode==='horizontal'?'active':''} aria-pressed={cardDeckMode==='horizontal'} onClick={()=>setCardDeckMode('horizontal')}>Οριζόντια</button>
+            <button type="button" className={cardDeckMode==='stack'?'active':''} aria-pressed={cardDeckMode==='stack'} onClick={()=>setCardDeckMode('stack')}>Στοίβα</button>
+          </div>
+          {activeCredit.length>1&&cardDeckMode==='horizontal'?<div className="credit-card-horizontal-nav" role="group" aria-label="Εναλλαγή πιστωτικής κάρτας"><button type="button" aria-label="Προηγούμενη πιστωτική κάρτα" onClick={()=>selectRelativeCard(-1)}><ChevronLeft/></button><span>{selectedCardIndex+1} / {activeCredit.length}</span><button type="button" aria-label="Επόμενη πιστωτική κάρτα" onClick={()=>selectRelativeCard(1)}><ChevronRight/></button></div>:null}
+        </div>
+        <CanonicalCreditCardStack cards={activeCredit} banks={banks} selectedCardId={card.id} onActiveCardChange={setSelectedCardId} onArchiveCard={archiveFromStack}/>
+      </div>
       <div className="credit-card-stage-stats">
-        <div><span>Οφειλή</span><b><AnimatedAmount value={debt}/></b><small>Μόνο για τη συγκεκριμένη κάρτα.</small></div>
-        <div><span>Διαθέσιμο</span><b><AnimatedAmount value={available}/></b><small>Όριο {money.format(limit)} <Tooltip label="Αλλαγή ορίου πιστωτικής" side="top"><button type="button" className="inline-icon-action" aria-label="Αλλαγή ορίου πιστωτικής" onClick={editLimit}><Pencil/></button></Tooltip></small></div>
+        <div><span>Χρησιμοποιημένο</span><b><AnimatedAmount value={debt}/></b><small>Πραγματική οφειλή της επιλεγμένης κάρτας.</small></div>
+        <div><span>Διαθέσιμο</span><b><AnimatedAmount value={available}/></b><small>Συνολικό όριο {money.format(limit)} <Tooltip label="Αλλαγή ορίου πιστωτικής" side="top"><button type="button" className="inline-icon-action" aria-label="Αλλαγή ορίου πιστωτικής" onClick={editLimit}><Pencil/></button></Tooltip></small></div>
         <div><span>Χρήση ορίου</span><b className={overLimit?'negative':''}>{Math.round(usage)}%</b><div className={`credit-usage ${overLimit?'over-limit':''}`.trim()} role="progressbar" aria-label="Χρήση πιστωτικού ορίου" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(usageBar)} aria-valuetext={`${Math.round(usage)}% χρήση πιστωτικού ορίου${overLimit?' — υπέρβαση ορίου':''}`}><i style={{width:`${usageBar}%`}}/></div>{overLimit?<small className="negative">Υπέρβαση ορίου κατά {money.format(overLimitAmount)}</small>:null}</div>
+        <div className="credit-card-next-payment"><span>Επόμενη πληρωμή</span><b>{primaryStatement?.remaining&&primaryStatement.remaining>.005?money.format(primaryStatement.remaining):debt>.005?money.format(debt):'—'}</b><small>{primaryStatement?`έως ${shortDate(primaryStatement.dueDate)}`:'Δεν υπάρχει ενεργό persisted statement.'}</small><button type="button" className="secondary" disabled={!card||debt<=0||eligibleAccounts.length===0} onClick={openRepay}>Αποπληρωμή</button></div>
+        <button type="button" className="credit-cycle-link" onClick={openStatementSetup}>Ρύθμιση κύκλου <ChevronRight/></button>
       </div>
     </section>:<section className="credit-card-empty neo-raised"><CreditCard/><h2>Δεν υπάρχει ενεργή πιστωτική κάρτα</h2><p>{archivedCredit.length?'Οι αρχειοθετημένες πιστωτικές παραμένουν στο ξεχωριστό αρχείο και δεν εμφανίζονται στην ενεργή στοίβα.':'Πρόσθεσε πιστωτική κάρτα για να συνδέσεις αγορές, αποπληρωμές, όριο και προστατευμένα στοιχεία.'}</p><div className="credit-card-empty-actions"><button type="button" className="save-button" onClick={()=>setCreateOpen(true)}><Plus/> Προσθήκη πιστωτικής</button>{archivedCredit.length?<button type="button" className="secondary" onClick={()=>setArchiveOpen(true)}><ArchiveRestore/> Αρχείο καρτών</button>:null}</div></section>}
 
