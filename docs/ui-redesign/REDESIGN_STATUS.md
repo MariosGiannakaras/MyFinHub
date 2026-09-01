@@ -12,7 +12,7 @@ Current full-page baselines are resolved from `visual-qa/manifest.json`. Current
 | 1 | Dashboard + application shell | DESIGN APPROVED | VERIFIED | merged to `develop` via #304 |
 | 2 | Transactions | DESIGN APPROVED | VERIFIED | merged to `develop` via #310 |
 | 3 | Quick Entry / transaction-entry patterns | DESIGN APPROVED | VERIFIED | merged to `develop` via #312 |
-| 4 | Savings | NOT STARTED | NOT STARTED | — |
+| 4 | Savings | DESIGN APPROVED | VERIFIED | merged to `develop` via #314 |
 | 5 | Cards | NOT STARTED | NOT STARTED | — |
 | 6 | Credit Card | NOT STARTED | NOT STARTED | — |
 | 7 | Loans | NOT STARTED | NOT STARTED | — |
@@ -29,6 +29,8 @@ Current full-page baselines are resolved from `visual-qa/manifest.json`. Current
 Transactions uses the owner-approved 1536×1064 reference tracked by SHA-256 `41fff086d1fd8e19e2eff597c2aeae6d368dec9d0256b870b6e11b759d478b5d` and was merged to `develop` via #310 after functional-parity, CI and fresh Approved ↔ Actual verification.
 
 Quick Entry / transaction-entry patterns uses the owner-approved 1536×1066 reference tracked by SHA-256 `df8dca7c0047981f027e3d799374aed4ee9e7cb3ce9ba3140b6f4a53af38ae49`. Product head `36c7b96` passed `npm run check`, API validation, rendered frontend QA, CodeQL, cross-engine smoke, performance smoke and Windows Desktop. Fresh final Approved ↔ Actual inspection passed for modal position/proportions, 4×2 intent hierarchy, frequent presets, form composition and footer action hierarchy while preserving the existing canonical QuickAdd engine, receipt/OCR flow, shared category icons and responsive behavior. It was squash-merged to `develop` via #312 as product commit `e03c7bd`.
+
+Savings uses the owner-approved 1536×1067 reference tracked by SHA-256 `511ab3ed38496c709b376f1a1b199bae0379e93a66399b9a7643b300034168fc`. Product head `b63aec2` passed `npm run check`, API validation, rendered frontend QA, CodeQL, cross-engine smoke, performance smoke and Windows Desktop. Fresh final Approved ↔ Actual inspection passed for the heading/action-card geometry, three-column monthly KPI + cumulative trend + sources/recent composition, truthful supported-target presentation, goals-area density and complex-savings explanatory bar while preserving canonical Savings handlers/accounting semantics and mobile regression safety. It was squash-merged to `develop` via #314 as product commit `2f31e13`.
 
 ## Protected exclusion
 
