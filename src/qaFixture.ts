@@ -42,7 +42,7 @@ const julyTransactions:LegacyTransaction[]=[
 
 const stamp=(date:string)=>`${date}T08:00:00.000Z`;
 const approvedRefund:FinanceEvent={id:'approved-refund',date:'2026-08-08',kind:'refund',amount:24.5,note:'Επιστροφή χρημάτων',category:'Άλλα',accountId:'alpha-main',legs:[{accountId:'alpha-main',amount:24.5}],source:'user',createdAt:stamp('2026-08-08'),updatedAt:stamp('2026-08-08')};
-const hiddenCardPayment=(id:string,date:string,fromAccountId:string,amount:number,statementId:string):FinanceEvent=>({id,date,kind:'card_payment',amount,note:'QA card settlement',fromAccountId,cardId:'qa-card',statementId,legs:[{accountId:fromAccountId,amount:-amount},{accountId:'credit-card',amount}],creditDelta:amount,source:'user',createdAt:stamp(date),updatedAt:stamp(date)});
+const hiddenCardPayment=(id:string,date:string,fromAccountId:string,amount:number):FinanceEvent=>({id,date,kind:'card_payment',amount,note:'QA balance-affecting card settlement',fromAccountId,legs:[{accountId:fromAccountId,amount:-amount},{accountId:'credit-card',amount}],creditDelta:amount,source:'user',createdAt:stamp(date),updatedAt:stamp(date)});
 
 export function qaFinanceData(): FinanceData {
   return {
@@ -62,7 +62,7 @@ export function qaFinanceData(): FinanceData {
         {id:'holiday-savings',name:'Ταξίδια',short:'TRIP',kind:'savings',excludeFromAvailable:true},
       ],
       months:['2026-07','2026-08'],
-      transactions:[...julyTransactions,...approvedAugustFiller,...approvedVisibleAugust],
+      transactions:[approvedAugustFiller[0]!,...julyTransactions,...approvedAugustFiller.slice(1),...approvedVisibleAugust],
       snapshots:[{date:'2026-08-01',balances:{'piraeus-payroll':1602.88,'piraeus-savings':2875,cash:235,'alpha-main':1592.28,'revolut-main':810.20,'national-main':87.80,'eurobank-main':1450,'viva-main':510,'payzy-main':280,'emergency-savings':950,'holiday-savings':575}}],
       recurring:[{id:'rec-1',name:'Internet',amount:32,day:12,accountId:'piraeus-payroll',category:'Σταθερά έξοδα',active:true,source:'qa'}],
       subscriptions:[],
@@ -98,9 +98,9 @@ export function qaFinanceData(): FinanceData {
         {id:'evt-card-payment',date:'2026-08-10',kind:'card_payment',amount:20,note:'Αποπληρωμή πιστωτικής',fromAccountId:'piraeus-payroll',cardId:'qa-card',statementId:'qa-card:2026-08-12',legs:[{accountId:'piraeus-payroll',amount:-20},{accountId:'credit-card',amount:20}],creditDelta:20,source:'user',createdAt:'2026-08-10T08:00:00.000Z',updatedAt:'2026-08-10T08:00:00.000Z'},
         {id:'evt-card-payment-later',date:'2026-08-16',kind:'card_payment',amount:10,note:'Δεύτερη αποπληρωμή πιστωτικής',fromAccountId:'piraeus-payroll',cardId:'qa-card',statementId:'qa-card:2026-08-12',legs:[{accountId:'piraeus-payroll',amount:-10},{accountId:'credit-card',amount:10}],creditDelta:10,source:'user',createdAt:'2026-08-16T08:00:00.000Z',updatedAt:'2026-08-16T08:00:00.000Z'},
         approvedRefund,
-        hiddenCardPayment('approved-alpha-payment-13','2026-08-13','alpha-main',200,'qa-card:2026-08-12'),
-        hiddenCardPayment('approved-alpha-payment-21','2026-08-21','alpha-main',1135.30,'qa-card:2026-09-12'),
-        hiddenCardPayment('approved-payroll-payment-24','2026-08-24','piraeus-payroll',1279.68,'qa-card:2026-09-12'),
+        hiddenCardPayment('approved-alpha-payment-13','2026-08-13','alpha-main',200),
+        hiddenCardPayment('approved-alpha-payment-21','2026-08-21','alpha-main',1135.30),
+        hiddenCardPayment('approved-payroll-payment-24','2026-08-24','piraeus-payroll',1279.68),
       ],
       scheduled:[
         {id:'qa-scheduled-expense',dueDate:'2026-08-25',kind:'expense',amount:75,note:'Ετήσια ασφάλεια',category:'Σταθερά έξοδα',accountId:'piraeus-payroll',status:'pending',createdAt:'2026-08-10T10:00:00.000Z',updatedAt:'2026-08-10T10:00:00.000Z'},
