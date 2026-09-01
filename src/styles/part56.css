@@ -3,10 +3,10 @@
 .savings-mobile-legacy{display:block}
 
 @media (min-width:1100px){
-  .savings-page{gap:14px}
+  .savings-page{gap:12px;margin-top:-55px}
   .savings-page>.page-heading{margin-bottom:2px}
   .savings-page>.page-heading p{max-width:760px}
-  .savings-desktop-target{display:grid;gap:14px}
+  .savings-desktop-target{display:grid;gap:12px}
   .savings-mobile-legacy{display:none}
   .savings-page>.savings-action-section{margin:0}
   .savings-page>.savings-action-section>.section-title{display:none}
@@ -55,11 +55,11 @@
   .savings-trend-chart .actual-dot{fill:var(--blue)}
 
   .savings-insight-column{display:grid;grid-template-rows:1fr 1fr}
-  .savings-insight-column>section{padding:18px 17px;min-height:0}
+  .savings-insight-column>section{padding:12px 14px;min-height:0}
   .savings-insight-column>section+section{border-top:1px solid var(--line)}
-  .savings-insight-column h2{margin-bottom:12px}
+  .savings-insight-column h2{margin-bottom:7px}
   .savings-sources-compact .savings-source-list{gap:0}
-  .savings-sources-compact .savings-source-list>div{min-height:36px;padding:7px 0;border-top:1px solid var(--line)}
+  .savings-sources-compact .savings-source-list>div{min-height:28px;padding:4px 0;border-top:1px solid var(--line)}
   .savings-sources-compact .savings-source-list>div:first-child{border-top:0}
   .savings-sources-compact .savings-source-list span,.savings-sources-compact .savings-source-list b{font-size:8.5px}
   .savings-recent-compact .saving-history>div{grid-template-columns:62px minmax(0,1fr) auto;gap:9px;padding:4px 0;border:0}
@@ -72,7 +72,7 @@
   .savings-goals>.panel-head span{font-size:12px}.savings-goals>.panel-head small{font-size:7.5px}
   .savings-goals-head,.savings-goal-row{display:grid;grid-template-columns:minmax(280px,1.65fr) minmax(210px,1.35fr) .78fr .7fr .8fr;align-items:center;column-gap:14px}
   .savings-goals-head{padding:0 10px 7px;font-size:7.5px;color:var(--muted)}
-  .savings-goal-row{min-height:52px;padding:8px 10px;border:1px solid var(--line);border-radius:11px}
+  .savings-goal-row{min-height:48px;padding:6px 10px;border:1px solid var(--line);border-radius:11px}
   .savings-goal-row+.savings-goal-row{margin-top:6px}
   .savings-goal-row>div:first-child{display:grid;grid-template-columns:32px minmax(0,1fr);align-items:center;gap:9px;min-width:0}
   .savings-goal-icon{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;background:color-mix(in srgb,var(--blue) 11%,transparent);color:var(--blue)}
