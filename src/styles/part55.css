@@ -1,0 +1,188 @@
+/* Owner-approved Phase-1 Quick Entry desktop composition. Keep <=1099px on the established responsive contract. */
+@media (min-width:1100px){
+  .modal-backdrop:has(.generic-kind-grid){
+    background:rgba(18,33,62,.34);
+    backdrop-filter:blur(3px);
+  }
+  .quick-modal:has(.generic-kind-grid){
+    width:min(1020px,calc(100vw - 40px));
+    margin-top:-24px;
+    border-radius:22px;
+    overflow:hidden;
+  }
+  .quick-modal:has(.generic-kind-grid)>header{
+    padding:22px 26px 14px;
+    align-items:flex-start;
+  }
+  .quick-modal:has(.generic-kind-grid)>header small{
+    font-size:10px;
+    letter-spacing:.11em;
+  }
+  .quick-modal:has(.generic-kind-grid)>header h2{
+    margin:5px 0 4px;
+    font-size:28px;
+    line-height:1.08;
+  }
+  .quick-modal:has(.generic-kind-grid)>header p{
+    max-width:780px;
+    font-size:11px;
+    line-height:1.45;
+  }
+  .quick-modal:has(.generic-kind-grid)>header .icon-button{
+    width:46px;
+    height:46px;
+    flex:0 0 46px;
+    border-radius:14px;
+  }
+  .quick-modal:has(.generic-kind-grid) .generic-kind-grid{
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:8px;
+    padding:0 26px 16px;
+  }
+  .quick-modal:has(.generic-kind-grid) .generic-kind-grid button{
+    min-height:94px;
+    padding:11px 13px;
+    border-radius:14px;
+  }
+  .quick-modal:has(.generic-kind-grid) .generic-kind-grid button>span{
+    width:34px;
+    height:34px;
+    border-radius:10px;
+  }
+  .quick-modal:has(.generic-kind-grid) .generic-kind-grid svg{width:18px;height:18px}
+  .quick-modal:has(.generic-kind-grid) .generic-kind-grid b{
+    margin-top:7px;
+    font-size:11.5px;
+    line-height:1.18;
+  }
+  .quick-modal:has(.generic-kind-grid) .generic-kind-grid small{
+    margin-top:3px;
+    font-size:9.5px;
+    line-height:1.25;
+  }
+  .quick-modal:has(.generic-kind-grid) .generic-kind-grid button:nth-child(1)>span{background:#fde7f0;color:#d73368}
+  .quick-modal:has(.generic-kind-grid) .generic-kind-grid button:nth-child(2)>span{background:#e1f7ed;color:#159b68}
+  .quick-modal:has(.generic-kind-grid) .generic-kind-grid button:nth-child(3)>span{background:#e4f4fb;color:#207fc3}
+  .quick-modal:has(.generic-kind-grid) .generic-kind-grid button:nth-child(4)>span{background:#efe7ff;color:#7650ce}
+  .quick-modal:has(.generic-kind-grid) .generic-kind-grid button:nth-child(5)>span{background:#e8f1ff;color:#3171d8}
+  .quick-modal:has(.generic-kind-grid) .generic-kind-grid button:nth-child(6)>span{background:#e6f0ff;color:#3478d7}
+  .quick-modal:has(.generic-kind-grid) .generic-kind-grid button:nth-child(7)>span{background:#e7f1ff;color:#2f73d9}
+  .quick-modal:has(.generic-kind-grid) .generic-kind-grid button:nth-child(8)>span{background:#eee8ff;color:#744ccc}
+  .quick-modal:has(.generic-kind-grid) .entry-body{
+    padding:15px 26px 14px;
+    background:rgba(246,249,253,.94);
+  }
+  .quick-modal:has(.generic-kind-grid) .frequent-strip{
+    display:grid;
+    grid-template-columns:repeat(6,minmax(0,1fr));
+    gap:9px;
+    overflow:visible;
+    padding-bottom:14px;
+  }
+  .quick-modal:has(.generic-kind-grid) .frequent-strip>span{display:none}
+  .quick-modal:has(.generic-kind-grid) .frequent-strip button{
+    min-width:0;
+    min-height:50px;
+    display:grid;
+    grid-template-columns:30px minmax(0,1fr);
+    grid-template-rows:auto auto;
+    column-gap:8px;
+    align-items:center;
+    padding:6px 9px;
+    text-align:left;
+    border-radius:12px;
+    white-space:normal;
+  }
+  .quick-modal:has(.generic-kind-grid) .frequent-strip button>.finance-icon{
+    grid-row:1/3;
+    width:30px;
+    height:30px;
+    border-radius:9px;
+    display:grid;
+    place-items:center;
+  }
+  .quick-modal:has(.generic-kind-grid) .frequent-strip button>span:not(.finance-icon){
+    min-width:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+    font-size:10px;
+    font-weight:800;
+  }
+  .quick-modal:has(.generic-kind-grid) .frequent-strip small{
+    margin:0;
+    font-size:9px;
+  }
+  .quick-modal:has(.generic-kind-grid) .form-grid{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:12px 14px;
+  }
+  .quick-modal:has(.generic-kind-grid) .form-grid .wide{grid-column:span 2}
+  .quick-modal:has(.generic-kind-grid) .form-grid label{gap:6px}
+  .quick-modal:has(.generic-kind-grid) .form-grid label>span{
+    font-size:11.5px;
+    line-height:1.2;
+  }
+  .quick-modal:has(.generic-kind-grid) .money-input,
+  .quick-modal:has(.generic-kind-grid) .owned-input-shell,
+  .quick-modal:has(.generic-kind-grid) .form-grid>label>input{
+    min-height:47px;
+    height:47px;
+    border-radius:12px;
+  }
+  .quick-modal:has(.generic-kind-grid) .money-input input,
+  .quick-modal:has(.generic-kind-grid) .owned-input,
+  .quick-modal:has(.generic-kind-grid) .form-grid>label>input{
+    font-size:14px;
+  }
+  .quick-modal:has(.generic-kind-grid)>footer{
+    min-height:74px;
+    padding:13px 26px 17px;
+    align-items:center;
+    gap:10px;
+    background:#fff;
+  }
+  .quick-modal:has(.generic-kind-grid)>footer .secondary,
+  .quick-modal:has(.generic-kind-grid)>footer .save-button{
+    min-height:46px;
+    padding:0 18px;
+    justify-content:center;
+    font-size:12px;
+    border-radius:12px;
+  }
+  .quick-modal:has(.generic-kind-grid)>footer .save-button{min-width:154px}
+  .quick-modal:has(.generic-kind-grid)>footer .receipt-quick-launch{
+    position:static!important;
+    inset:auto!important;
+    transform:none!important;
+    margin-right:auto;
+    min-height:46px;
+    display:grid;
+    grid-template-columns:24px auto;
+    grid-template-rows:auto auto;
+    column-gap:8px;
+    align-items:center;
+    padding:7px 12px;
+    border:1px solid #d8e2ef;
+    border-radius:12px;
+    background:#fff;
+    color:var(--ink);
+    cursor:pointer;
+    box-shadow:none;
+    text-align:left;
+  }
+  .quick-modal:has(.generic-kind-grid)>footer .receipt-quick-launch>svg{
+    grid-row:1/3;
+    color:#2f6fed;
+  }
+  .quick-modal:has(.generic-kind-grid)>footer .receipt-quick-launch>span{
+    font-size:11px;
+    font-weight:800;
+  }
+  .quick-modal:has(.generic-kind-grid)>footer .receipt-quick-launch:after{
+    content:'Σάρωση & αυτόματη συμπλήρωση';
+    font-size:8.5px;
+    color:var(--muted);
+    white-space:nowrap;
+  }
+}
