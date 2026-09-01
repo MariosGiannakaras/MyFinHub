@@ -20,7 +20,7 @@ const approvedVisibleAugust:LegacyTransaction[]=[
   expense('approved-03-gym','2026-08-03','alpha-main',42,'Γυμναστήριο','Υγεία'),
 ];
 
-const fillerExpenseAmounts=[85,72,60,58,95,110,77,66,120,45,89,101,83,74,92,68,595.90];
+const fillerExpenseAmounts=[85,72,60,58,95,110,77,66,120,45,89,101,83,74,92,68,380.90];
 const approvedAugustFiller:LegacyTransaction[]=[
   expense('legacy-1','2026-08-01','piraeus-payroll',24.5,'Supermarket','Σούπερ Μάρκετ'),
   income('legacy-2','2026-08-01','piraeus-payroll',1200,'Μισθός','Μισθός'),
@@ -63,7 +63,7 @@ export function qaFinanceData(): FinanceData {
       ],
       months:['2026-07','2026-08'],
       transactions:[approvedAugustFiller[0]!,...julyTransactions,...approvedAugustFiller.slice(1),...approvedVisibleAugust],
-      snapshots:[{date:'2026-08-01',balances:{'piraeus-payroll':1602.88,'piraeus-savings':2875,cash:235,'alpha-main':1592.28,'revolut-main':810.20,'national-main':100,'eurobank-main':1450,'viva-main':510,'payzy-main':280,'emergency-savings':950,'holiday-savings':575}}],
+      snapshots:[{date:'2026-08-01',balances:{'piraeus-payroll':905.67,'piraeus-savings':2875,cash:235,'alpha-main':2008.28,'revolut-main':810.20,'national-main':100,'eurobank-main':1450,'viva-main':510,'payzy-main':280,'emergency-savings':950,'holiday-savings':575}}],
       recurring:[{id:'rec-1',name:'Internet',amount:32,day:12,accountId:'piraeus-payroll',category:'Σταθερά έξοδα',active:true,source:'qa'}],
       subscriptions:[],
       loans:[{id:'loan-1',name:'Laptop',total:600,installment:100,installments:6,paidCount:2,provider:'QA Store',schedule:[],source:'qa',accountingMode:'expense-per-installment'}],
