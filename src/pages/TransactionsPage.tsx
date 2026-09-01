@@ -101,19 +101,23 @@ export function TransactionsPage({
   const trendClass=(value:number|null,betterWhenLower=false)=>value===null?'':(betterWhenLower?value<=0:value>=0)?'positive':'negative';
 
   const accountText=(ids:string[])=>ids.map(id=>accountDisplayName(data,id)).join(' → ')||'—';
-  const amountPrefix=(row:{kind:string;impact:{income:number;expense:number}})=>row.kind==='transfer'?'↔ ':row.impact.income>0?'+':row.impact.expense>0?'−':'';
-  const amountClass=(row:TransactionRow)=>row.impact.income>0?'positive':row.impact.expense>0?'negative':'neutral';
+  const amountPrefix=(row:{kind:string;impact:{income:number;expense:number;refund:number}})=>row.kind==='transfer'?'↔ ':row.impact.income>0||row.impact.refund>0||row.impact.expense<0?'+':row.impact.expense>0?'−':'';
+  const amountClass=(row:TransactionRow)=>row.impact.income>0||row.impact.refund>0||row.impact.expense<0?'positive':row.impact.expense>0?'negative':'neutral';
   const metadata=(row:TransactionRow)=>{const category=categoryLabel(row);if(row.source!=='legacy')return category;return `${category} · ${row.overridden?'Ιστορικό · override':'Ιστορικό'}`};
   const runningBalances=useMemo(()=>{
     const snapshotDate=data.seed.snapshots.filter(snapshot=>snapshot.date<=range.start).reduce<string|null>((latest,snapshot)=>!latest||snapshot.date>latest?snapshot.date:latest,null)??range.start;
     const balances={...selectAccountBalances(data,snapshotDate)};const byRow=new Map<string,number>();
-    const chronological=[...sourceRows].sort((a,b)=>a.date.localeCompare(b.date)||a.id.localeCompare(b.id));
-    for(const row of chronological){
-      if(row.date>snapshotDate)for(const [accountId,delta] of Object.entries(row.balanceDeltas))balances[accountId]=(balances[accountId]??0)+delta;
-      const accountId=row.accountIds[0];if(accountId)byRow.set(row.id,balances[accountId]??0);
+    const hiddenEvents=(data.state.events??[]).filter(event=>event.date.startsWith(month)&&event.date>snapshotDate&&['card_purchase','card_payment'].includes(event.kind));
+    const timeline=[
+      ...sourceRows.map(row=>({date:row.date,id:`row:${row.id}`,row,deltas:row.balanceDeltas})),
+      ...hiddenEvents.map(event=>({date:event.date,id:`hidden:${event.id}`,row:null,deltas:event.legs.reduce<Record<string,number>>((acc,leg)=>{if(leg.accountId!=='credit-card')acc[leg.accountId]=(acc[leg.accountId]??0)+leg.amount;return acc},{} as Record<string,number>)})),
+    ].sort((a,b)=>a.date.localeCompare(b.date)||a.id.localeCompare(b.id));
+    for(const item of timeline){
+      for(const [accountId,delta] of Object.entries(item.deltas))balances[accountId]=(balances[accountId]??0)+delta;
+      if(item.row){const accountId=item.row.accountIds[0];if(accountId)byRow.set(item.row.id,balances[accountId]??0)}
     }
     return byRow;
-  },[data,range.start,sourceRows]);
+  },[data,month,range.start,sourceRows]);
   const rowBalance=(row:TransactionRow)=>runningBalances.get(row.id)??null;
 
   const pageCount=Math.max(1,Math.ceil(rows.length/pageSize));const safePage=Math.min(page,pageCount);const pageStart=(safePage-1)*pageSize;const pageRows=rows.slice(pageStart,pageStart+pageSize);
