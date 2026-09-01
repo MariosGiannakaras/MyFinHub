@@ -22,10 +22,17 @@ function noteParts(note:string){
 }
 function shiftMonth(month:string,delta:number){const [year,rawMonth]=month.split('-').map(Number);const date=new Date(Date.UTC(year,rawMonth-1+delta,1));return `${date.getUTCFullYear()}-${String(date.getUTCMonth()+1).padStart(2,'0')}`}
 function percentChange(current:number,previous:number){return Math.abs(previous)>0.005?Math.round(((current-previous)/Math.abs(previous))*100):null}
+function legacyBalanceDeltas(transaction:LegacyTransaction){
+  const deltas:Record<string,number>={};const add=(id:string|undefined,amount:number)=>{if(id)deltas[id]=(deltas[id]??0)+amount};
+  if(transaction.type==='income'||transaction.type==='adjustment')add(transaction.accountId,transaction.amount);
+  else if(transaction.type==='expense')add(transaction.accountId,-transaction.amount);
+  else if(transaction.type==='transfer'){add(transaction.fromAccountId,-transaction.amount);add(transaction.toAccountId,transaction.amount)}
+  return deltas;
+}
 
 type TransactionRow={
   id:string;date:string;note:string;category:string;subcategory?:string;accountIds:string[];kind:string;amount:number;
-  impact:{income:number;expense:number;saving:number;refund:number};source:'legacy'|'event';parts:SplitPart[];legacy?:LegacyTransaction;overridden?:boolean;
+  impact:{income:number;expense:number;saving:number;refund:number};balanceDeltas:Record<string,number>;source:'legacy'|'event';parts:SplitPart[];legacy?:LegacyTransaction;overridden?:boolean;
 };
 type DeleteTarget={id:string;source:'legacy'|'event'};
 
@@ -60,12 +67,12 @@ export function TransactionsPage({
     const legacy=effectiveLegacyTransactions(data).filter(t=>t.date.startsWith(month)).map(t=>({
       id:t.id,date:t.date,note:cleanNote(t.note),category:t.category||'Άλλο',subcategory:t.subcategory,
       accountIds:[t.accountId,t.fromAccountId,t.toAccountId].filter(Boolean) as string[],kind:t.type,amount:t.amount,
-      impact:flowImpactLegacy(data,t),source:'legacy' as const,parts:[] as SplitPart[],legacy:t,overridden:Boolean(data.state.overrides?.[t.id]),
+      impact:flowImpactLegacy(data,t),balanceDeltas:legacyBalanceDeltas(t),source:'legacy' as const,parts:[] as SplitPart[],legacy:t,overridden:Boolean(data.state.overrides?.[t.id]),
     }));
     const events=(data.state.events??[]).filter(e=>e.date.startsWith(month)&&!['card_purchase','card_payment'].includes(e.kind)).map(e=>({
       id:e.id,date:e.date,note:e.note,category:e.kind==='split'?'Διαχωρισμός':(e.category||e.kind),subcategory:e.subcategory,
       accountIds:[...new Set(e.legs.map(l=>l.accountId).filter(id=>id!=='credit-card'))],kind:e.kind,amount:e.amount,
-      impact:flowImpactEvent(e),source:'event' as const,parts:e.kind==='split'?(e.parts??[]):[],
+      impact:flowImpactEvent(e),balanceDeltas:e.legs.reduce<Record<string,number>>((acc,leg)=>{acc[leg.accountId]=(acc[leg.accountId]??0)+leg.amount;return acc},{}),source:'event' as const,parts:e.kind==='split'?(e.parts??[]):[],
     }));
     return [...legacy,...events];
   },[data,month]);
@@ -89,15 +96,25 @@ export function TransactionsPage({
   const flow=selectMonthlyFlow(data,month);const previousMonth=shiftMonth(month,-1);const previousFlow=selectMonthlyFlow(data,previousMonth);
   const transactionCountFor=(targetMonth:string)=>effectiveLegacyTransactions(data).filter(t=>t.date.startsWith(targetMonth)).length+(data.state.events??[]).filter(e=>e.date.startsWith(targetMonth)&&!['card_purchase','card_payment'].includes(e.kind)).length;
   const previousCount=transactionCountFor(previousMonth);
-  const incomeDelta=percentChange(flow.income,previousFlow.income);const expenseDelta=percentChange(flow.expense,previousFlow.expense);const netDelta=percentChange(flow.saving,previousFlow.saving);const countDelta=sourceRows.length-previousCount;
+  const incomeDelta=percentChange(flow.income,previousFlow.income);const expenseDelta=percentChange(flow.expense,previousFlow.expense);const netDelta=percentChange(flow.net,previousFlow.net);const countDelta=sourceRows.length-previousCount;
   const trendText=(value:number|null)=>value===null?'— έναντι προηγ. μήνα':`${value>0?'↑':value<0?'↓':'→'} ${Math.abs(value)}% από προηγ. μήνα`;
   const trendClass=(value:number|null,betterWhenLower=false)=>value===null?'':(betterWhenLower?value<=0:value>=0)?'positive':'negative';
 
-  const accountText=(ids:string[])=>ids.map(id=>accounts.find(a=>a.id===id)?.short||accountDisplayName(data,id)).join(' → ')||'—';
+  const accountText=(ids:string[])=>ids.map(id=>accountDisplayName(data,id)).join(' → ')||'—';
   const amountPrefix=(row:{kind:string;impact:{income:number;expense:number}})=>row.kind==='transfer'?'↔ ':row.impact.income>0?'+':row.impact.expense>0?'−':'';
   const amountClass=(row:TransactionRow)=>row.impact.income>0?'positive':row.impact.expense>0?'negative':'neutral';
   const metadata=(row:TransactionRow)=>{const category=categoryLabel(row);if(row.source!=='legacy')return category;return `${category} · ${row.overridden?'Ιστορικό · override':'Ιστορικό'}`};
-  const rowBalance=(row:TransactionRow)=>{const accountId=row.accountIds[0];return accountId?(selectAccountBalances(data,row.date)[accountId]??null):null};
+  const runningBalances=useMemo(()=>{
+    const snapshotDate=data.seed.snapshots.filter(snapshot=>snapshot.date<=range.start).reduce<string|null>((latest,snapshot)=>!latest||snapshot.date>latest?snapshot.date:latest,null)??range.start;
+    const balances={...selectAccountBalances(data,snapshotDate)};const byRow=new Map<string,number>();
+    const chronological=[...sourceRows].sort((a,b)=>a.date.localeCompare(b.date)||a.id.localeCompare(b.id));
+    for(const row of chronological){
+      if(row.date>snapshotDate)for(const [accountId,delta] of Object.entries(row.balanceDeltas))balances[accountId]=(balances[accountId]??0)+delta;
+      const accountId=row.accountIds[0];if(accountId)byRow.set(row.id,balances[accountId]??0);
+    }
+    return byRow;
+  },[data,range.start,sourceRows]);
+  const rowBalance=(row:TransactionRow)=>runningBalances.get(row.id)??null;
 
   const pageCount=Math.max(1,Math.ceil(rows.length/pageSize));const safePage=Math.min(page,pageCount);const pageStart=(safePage-1)*pageSize;const pageRows=rows.slice(pageStart,pageStart+pageSize);
   const selected=pageRows.find(row=>row.id===selectedId)??pageRows[0]??null;
@@ -119,7 +136,7 @@ export function TransactionsPage({
     <section className="transactions-approved-summary desktop-finance-table" aria-label="Σύνοψη συναλλαγών μήνα">
       <article className="transactions-summary-card income"><span className="transactions-summary-icon"><TrendingUp size={24}/></span><div className="transactions-summary-copy"><small>Σύνολο εσόδων</small><strong>{money.format(flow.income)}</strong><span className={trendClass(incomeDelta)}>{trendText(incomeDelta)}</span></div></article>
       <article className="transactions-summary-card expense"><span className="transactions-summary-icon"><TrendingDown size={24}/></span><div className="transactions-summary-copy"><small>Σύνολο εξόδων</small><strong className="negative">−{money.format(flow.expense)}</strong><span className={trendClass(expenseDelta,true)}>{trendText(expenseDelta)}</span></div></article>
-      <article className="transactions-summary-card net"><span className="transactions-summary-icon"><TrendingUp size={24}/></span><div className="transactions-summary-copy"><small>Καθαρό αποτέλεσμα</small><strong className={flow.saving>=0?'positive':'negative'}>{flow.saving>=0?'+':'−'}{money.format(Math.abs(flow.saving))}</strong><span className={trendClass(netDelta)}>{trendText(netDelta)}</span></div></article>
+      <article className="transactions-summary-card net"><span className="transactions-summary-icon"><TrendingUp size={24}/></span><div className="transactions-summary-copy"><small>Καθαρό αποτέλεσμα</small><strong className={flow.net>=0?'positive':'negative'}>{flow.net>=0?'+':'−'}{money.format(Math.abs(flow.net))}</strong><span className={trendClass(netDelta)}>{trendText(netDelta)}</span></div></article>
       <article className="transactions-summary-card count"><span className="transactions-summary-icon"><List size={24}/></span><div className="transactions-summary-copy"><small>Συναλλαγές μήνα</small><strong>{sourceRows.length}</strong><span className={countDelta<=0?'positive':'negative'}>{countDelta===0?'→ ίδιο με προηγ. μήνα':`${countDelta>0?'↑':'↓'} ${Math.abs(countDelta)} από προηγ. μήνα`}</span></div></article>
     </section>
 
