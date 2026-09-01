@@ -15,7 +15,7 @@ Current full-page baselines are resolved from `visual-qa/manifest.json`. Current
 | 4 | Savings | DESIGN APPROVED | VERIFIED | merged to `develop` via #314 |
 | 5 | Cards | DESIGN APPROVED | VERIFIED | merged to `develop` via #319 |
 | 6 | Credit Card | NOT STARTED | NOT STARTED | — |
-| 7 | Loans | NOT STARTED | NOT STARTED | — |
+| 7 | Loans | DESIGN APPROVED | VERIFIED | merged to `develop` via #321 |
 | 8 | Lending / receivables | NOT STARTED | NOT STARTED | — |
 | 9 | Recurring | NOT STARTED | NOT STARTED | — |
 | 10 | Planning / forecast | NOT STARTED | NOT STARTED | — |
@@ -33,6 +33,8 @@ Quick Entry / transaction-entry patterns uses the owner-approved 1536×1066 refe
 Savings uses the owner-approved 1536×1067 reference tracked by SHA-256 `511ab3ed38496c709b376f1a1b199bae0379e93a66399b9a7643b300034168fc`. Product head `b63aec2` passed `npm run check`, API validation, rendered frontend QA, CodeQL, cross-engine smoke, performance smoke and Windows Desktop. Fresh final Approved ↔ Actual inspection passed for the heading/action-card geometry, three-column monthly KPI + cumulative trend + sources/recent composition, truthful supported-target presentation, goals-area density and complex-savings explanatory bar while preserving canonical Savings handlers/accounting semantics and mobile regression safety. It was squash-merged to `develop` via #314 as product commit `2f31e13`.
 
 Cards uses the owner-approved 1536×1024 reference tracked by SHA-256 `0d653b8bf040d453cda2b2b04636698b8e2abef4aac8008a467aff6648e01072`. Per explicit owner scope, the existing bank-by-bank card container, card visuals and all create/edit/archive/restore/delete/vault behavior were preserved unchanged. Product head `c17989c` passed `npm run check`, API validation, rendered frontend QA, CodeQL, cross-engine smoke, performance smoke and Windows Desktop. Fresh final Approved ↔ Actual inspection passed for the surrounding heading, truthful vault KPIs and recent canonical account activity. It was squash-merged to `develop` via #319 as product commit `e875df6`.
+
+Loans uses the owner-approved 1536×1067 reference tracked by SHA-256 `4a058633da08e66f32d5958eae364cf602cc0a10258e28bc00900c58f4ea8f59`, with the owner-requested completion-driven segmented blue→violet→green progress treatment. Final clean product head `ff9c5ca` passed `npm run check`, API validation, rendered frontend QA, CodeQL, cross-engine smoke, performance smoke and Windows Desktop. Fresh final Approved ↔ Actual inspection passed for heading/actions, sort toolbar, active obligation cards, truthful canonical metadata/actions, completed summary, progress explanation and the corrected segmented gradient coverage while preserving all canonical Loans accounting/payment/edit/self-loan/forgiveness semantics. It was squash-merged to `develop` via #321 as product commit `cd71411`.
 
 ## Protected exclusion
 
