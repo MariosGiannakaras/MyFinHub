@@ -8,56 +8,20 @@
   .savings-page>.page-heading p{max-width:760px}
   .savings-desktop-target{display:grid;gap:14px}
   .savings-mobile-legacy{display:none}
+  .savings-page>.savings-action-section{margin:0}
+  .savings-page>.savings-action-section>.section-title{display:none}
+  .savings-page>.savings-action-section .savings-action-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+  .savings-page>.savings-action-section .savings-action{min-height:142px;padding:20px 20px 17px;border-radius:17px;display:grid;grid-template-columns:50px minmax(0,1fr);grid-template-rows:auto 1fr auto;align-items:start;gap:0 16px;text-align:left}
+  .savings-page>.savings-action-section .savings-action-icon{grid-row:1/3;width:50px;height:50px;border-radius:13px;display:grid;place-items:center;background:color-mix(in srgb,var(--blue) 12%,transparent);color:var(--blue)}
+  .savings-page>.savings-action-section .savings-action:nth-child(2) .savings-action-icon{background:color-mix(in srgb,#7650ce 12%,transparent);color:#7650ce}
+  .savings-page>.savings-action-section .savings-action:nth-child(3) .savings-action-icon{background:color-mix(in srgb,#31b86a 12%,transparent);color:#249857}
+  .savings-page>.savings-action-section .savings-action-icon svg{width:25px;height:25px}
+  .savings-page>.savings-action-section .savings-action>div b{display:block;font-size:13px;line-height:1.25}
+  .savings-page>.savings-action-section .savings-action>div small{display:block;margin-top:7px;max-width:250px;font-size:10px;line-height:1.55;color:var(--muted)}
+  .savings-page>.savings-action-section .savings-action>strong{grid-column:2;justify-self:end;align-self:end;display:flex;align-items:center;gap:7px;color:var(--blue);font-size:10px;white-space:nowrap}
+  .savings-page>.savings-action-section .savings-action>strong svg{width:14px;height:14px}
 
-  .savings-desktop-target .savings-action-section{margin:0}
-  .savings-desktop-target .savings-action-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
-  .savings-desktop-target .savings-action{
-    min-height:142px;
-    padding:20px 20px 17px;
-    border-radius:17px;
-    display:grid;
-    grid-template-columns:50px minmax(0,1fr);
-    grid-template-rows:auto 1fr auto;
-    align-items:start;
-    gap:0 16px;
-    text-align:left;
-  }
-  .savings-desktop-target .savings-action-icon{
-    grid-row:1/3;
-    width:50px;
-    height:50px;
-    border-radius:13px;
-    display:grid;
-    place-items:center;
-    background:color-mix(in srgb,var(--blue) 12%,transparent);
-    color:var(--blue);
-  }
-  .savings-desktop-target .savings-action:nth-child(2) .savings-action-icon{background:color-mix(in srgb,#7650ce 12%,transparent);color:#7650ce}
-  .savings-desktop-target .savings-action:nth-child(3) .savings-action-icon{background:color-mix(in srgb,#31b86a 12%,transparent);color:#249857}
-  .savings-desktop-target .savings-action-icon svg{width:25px;height:25px}
-  .savings-desktop-target .savings-action>div b{display:block;font-size:13px;line-height:1.25}
-  .savings-desktop-target .savings-action>div small{display:block;margin-top:7px;max-width:250px;font-size:10px;line-height:1.55;color:var(--muted)}
-  .savings-desktop-target .savings-action>strong{
-    grid-column:2;
-    justify-self:end;
-    align-self:end;
-    display:flex;
-    align-items:center;
-    gap:7px;
-    color:var(--blue);
-    font-size:10px;
-    white-space:nowrap;
-  }
-  .savings-desktop-target .savings-action>strong svg{width:14px;height:14px}
-
-  .savings-dashboard{
-    min-height:286px;
-    display:grid;
-    grid-template-columns:minmax(270px,.88fr) minmax(400px,1.28fr) minmax(290px,.94fr);
-    padding:0;
-    overflow:hidden;
-    border-radius:18px;
-  }
+  .savings-dashboard{min-height:286px;display:grid;grid-template-columns:minmax(270px,.88fr) minmax(400px,1.28fr) minmax(290px,.94fr);padding:0;overflow:hidden;border-radius:18px}
   .savings-dashboard h2{margin:0;font-size:12px;line-height:1.3;letter-spacing:0}
   .savings-month-card,.savings-trend-card,.savings-insight-column{min-width:0}
   .savings-month-card{padding:19px 18px;border-right:1px solid var(--line)}
@@ -121,6 +85,5 @@
   .savings-goal-progress b{font-size:8px;text-align:right}
   .savings-goal-row.placeholder{opacity:.64}
   .savings-goal-progress.muted>span{background:color-mix(in srgb,var(--line) 72%,transparent)}
-
   .savings-target-note{min-height:55px;margin-top:0;border-radius:14px}
 }
