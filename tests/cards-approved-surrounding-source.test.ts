@@ -32,7 +32,7 @@ describe('approved Cards surrounding desktop target source contract',()=>{
     expect(source).toContain("import '../styles/cards-approved-surrounding.css';");
     expect(css).toContain('@media (min-width:1100px)');
     expect(css).toContain('.cards-surrounding-summary');
-    expect(css).toContain('.cards-surrounding-recent');
+    expect(css).toContain('.cards-surrounding-recent{display:block');
     expect(css).not.toContain('.cards-workspace');
     expect(css).not.toContain('.cards-grid');
     expect(css).not.toContain('.bank-column');
