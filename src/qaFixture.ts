@@ -20,7 +20,7 @@ const approvedVisibleAugust:LegacyTransaction[]=[
   expense('approved-03-gym','2026-08-03','alpha-main',42,'Γυμναστήριο','Υγεία'),
 ];
 
-const fillerExpenseAmounts=[85,72,60,58,95,110,77,66,120,45,89,101,83,74,92,68,380.90];
+const fillerExpenseAmounts=[85,72,60,58,95,110,77,66,120,45,89,101,83,74,92,68,595.90];
 const approvedAugustFiller:LegacyTransaction[]=[
   expense('legacy-1','2026-08-02','piraeus-payroll',24.5,'Supermarket','Σούπερ Μάρκετ'),
   income('legacy-2','2026-08-01','piraeus-payroll',1200,'Μισθός','Μισθός'),
@@ -42,7 +42,7 @@ const julyTransactions:LegacyTransaction[]=[
 
 const stamp=(date:string)=>`${date}T08:00:00.000Z`;
 const approvedRefund:FinanceEvent={id:'approved-refund',date:'2026-08-08',kind:'refund',amount:24.5,note:'Επιστροφή χρημάτων',category:'Άλλα',accountId:'alpha-main',legs:[{accountId:'alpha-main',amount:24.5}],source:'user',createdAt:stamp('2026-08-08'),updatedAt:stamp('2026-08-08')};
-const hiddenCardPayment=(id:string,date:string,fromAccountId:string,amount:number):FinanceEvent=>({id,date,kind:'card_payment',amount,note:'QA balance-affecting card settlement',fromAccountId,legs:[{accountId:fromAccountId,amount:-amount},{accountId:'credit-card',amount}],creditDelta:amount,source:'user',createdAt:stamp(date),updatedAt:stamp(date)});
+const hiddenCardPayment=(id:string,date:string,fromAccountId:string,amount:number):FinanceEvent=>({id,date,kind:'card_payment',amount,note:'QA balance-affecting settlement',fromAccountId,legs:[{accountId:fromAccountId,amount:-amount}],source:'user',createdAt:stamp(date),updatedAt:stamp(date)});
 
 export function qaFinanceData(): FinanceData {
   return {
