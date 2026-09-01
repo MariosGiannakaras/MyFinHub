@@ -13,6 +13,7 @@ describe('approved Savings desktop target source contract',()=>{
     expect(source).toContain("onQuickAdd({mode:'savings'");
     expect(source).toContain("createEvent({kind:'saving_cash_offset'");
     expect(source).toContain('event.savingSource=source');
+    expect(source.match(/\{actionGrid\}/g)).toHaveLength(1);
   });
 
   it('derives the desktop trend and supported target from canonical monthly savings data',()=>{
@@ -29,6 +30,7 @@ describe('approved Savings desktop target source contract',()=>{
   it('keeps the approved desktop composition isolated from the existing responsive layout',()=>{
     expect(source).toContain('className="savings-desktop-target"');
     expect(source).toContain('className="savings-mobile-legacy"');
+    expect(source).toContain('className="savings-action-section"');
     expect(css).toContain('.savings-desktop-target{display:none}');
     expect(css).toContain('@media (min-width:1100px)');
     expect(css).toContain('.savings-mobile-legacy{display:none}');
