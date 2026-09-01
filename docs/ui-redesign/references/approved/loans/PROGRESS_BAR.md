@@ -1,0 +1,1 @@
+Completion color refinement selected by owner: use a restrained gradient tied only to the real installment completion ratio. Preserve textual/numeric progress and ARIA as the authoritative state; color is supplemental presentation only.
