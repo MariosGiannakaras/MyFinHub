@@ -6,6 +6,7 @@ import { assertValidIban, formatIban, isValidIban, normalizeIban } from '../src/
 
 const migration=readFileSync(new URL('../supabase/migrations/20260824205000_add_account_metadata.sql',import.meta.url),'utf8');
 const grantHardening=readFileSync(new URL('../supabase/migrations/20260825201500_tighten_account_metadata_function_grants.sql',import.meta.url),'utf8');
+const conflictFix=readFileSync(new URL('../supabase/migrations/20260901132500_fix_account_metadata_upsert_conflict.sql',import.meta.url),'utf8');
 const financeTypes=readFileSync(new URL('../src/types.ts',import.meta.url),'utf8');
 const financeHook=readFileSync(new URL('../src/hooks/useFinance.ts',import.meta.url),'utf8');
 const dashboardSource=readFileSync(new URL('../src/pages/DashboardPage.tsx',import.meta.url),'utf8');
@@ -56,6 +57,13 @@ describe('account IBAN metadata',()=>{
     expect(grantHardening).toContain('from public, anon, authenticated');
     expect(grantHardening).toContain('grant execute on function public.rheomiq_upsert_account_metadata(text, text, bigint)');
     expect(grantHardening).toContain('to authenticated');
+  });
+
+  it('keeps first-write conflict handling unambiguous inside the table-returning PL/pgSQL function',()=>{
+    expect(conflictFix).toContain('on conflict on constraint rheomiq_account_metadata_pkey do nothing');
+    expect(conflictFix).not.toContain('on conflict (owner_user_id, account_id) do nothing');
+    expect(conflictFix).toContain('security invoker');
+    expect(conflictFix).toContain("raise exception 'REVISION_CONFLICT'");
   });
 
   it('keeps IBAN outside FinanceData and finance Undo/Redo while exposing it on Dashboard and Settings',()=>{
