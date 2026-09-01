@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, List, MessageSquareText, MoreHorizontal, Pencil, Search, SlidersHorizontal, Trash2, TrendingDown, TrendingUp, WalletCards, X } from 'lucide-react';
+import { ArrowUpDown, ChevronLeft, ChevronRight, List, MessageSquareText, MoreHorizontal, Pencil, Search, Trash2, TrendingDown, TrendingUp, WalletCards, X } from 'lucide-react';
 import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { AppDateInput } from '../components/AppDateInput';
 import { AppSelectInput } from '../components/AppSelectInput';
@@ -22,17 +22,10 @@ function noteParts(note:string){
 }
 function shiftMonth(month:string,delta:number){const [year,rawMonth]=month.split('-').map(Number);const date=new Date(Date.UTC(year,rawMonth-1+delta,1));return `${date.getUTCFullYear()}-${String(date.getUTCMonth()+1).padStart(2,'0')}`}
 function percentChange(current:number,previous:number){return Math.abs(previous)>0.005?Math.round(((current-previous)/Math.abs(previous))*100):null}
-function legacyBalanceDeltas(transaction:LegacyTransaction){
-  const deltas:Record<string,number>={};const add=(id:string|undefined,amount:number)=>{if(id)deltas[id]=(deltas[id]??0)+amount};
-  if(transaction.type==='income'||transaction.type==='adjustment')add(transaction.accountId,transaction.amount);
-  else if(transaction.type==='expense')add(transaction.accountId,-transaction.amount);
-  else if(transaction.type==='transfer'){add(transaction.fromAccountId,-transaction.amount);add(transaction.toAccountId,transaction.amount)}
-  return deltas;
-}
 
 type TransactionRow={
   id:string;date:string;note:string;category:string;subcategory?:string;accountIds:string[];kind:string;amount:number;
-  impact:{income:number;expense:number;saving:number;refund:number};balanceDeltas:Record<string,number>;source:'legacy'|'event';parts:SplitPart[];legacy?:LegacyTransaction;overridden?:boolean;
+  impact:{income:number;expense:number;saving:number;refund:number};source:'legacy'|'event';parts:SplitPart[];legacy?:LegacyTransaction;overridden?:boolean;
 };
 type DeleteTarget={id:string;source:'legacy'|'event'};
 
@@ -67,12 +60,12 @@ export function TransactionsPage({
     const legacy=effectiveLegacyTransactions(data).filter(t=>t.date.startsWith(month)).map(t=>({
       id:t.id,date:t.date,note:cleanNote(t.note),category:t.category||'Άλλο',subcategory:t.subcategory,
       accountIds:[t.accountId,t.fromAccountId,t.toAccountId].filter(Boolean) as string[],kind:t.type,amount:t.amount,
-      impact:flowImpactLegacy(data,t),balanceDeltas:legacyBalanceDeltas(t),source:'legacy' as const,parts:[] as SplitPart[],legacy:t,overridden:Boolean(data.state.overrides?.[t.id]),
+      impact:flowImpactLegacy(data,t),source:'legacy' as const,parts:[] as SplitPart[],legacy:t,overridden:Boolean(data.state.overrides?.[t.id]),
     }));
     const events=(data.state.events??[]).filter(e=>e.date.startsWith(month)&&!['card_purchase','card_payment'].includes(e.kind)).map(e=>({
       id:e.id,date:e.date,note:e.note,category:e.kind==='split'?'Διαχωρισμός':(e.category||e.kind),subcategory:e.subcategory,
       accountIds:[...new Set(e.legs.map(l=>l.accountId).filter(id=>id!=='credit-card'))],kind:e.kind,amount:e.amount,
-      impact:flowImpactEvent(e),balanceDeltas:e.legs.reduce<Record<string,number>>((acc,leg)=>{acc[leg.accountId]=(acc[leg.accountId]??0)+leg.amount;return acc},{}),source:'event' as const,parts:e.kind==='split'?(e.parts??[]):[],
+      impact:flowImpactEvent(e),source:'event' as const,parts:e.kind==='split'?(e.parts??[]):[],
     }));
     return [...legacy,...events];
   },[data,month]);
@@ -104,21 +97,7 @@ export function TransactionsPage({
   const amountPrefix=(row:{kind:string;impact:{income:number;expense:number;refund:number}})=>row.kind==='transfer'?'↔ ':row.impact.income>0||row.impact.refund>0||row.impact.expense<0?'+':row.impact.expense>0?'−':'';
   const amountClass=(row:TransactionRow)=>row.impact.income>0||row.impact.refund>0||row.impact.expense<0?'positive':row.impact.expense>0?'negative':'neutral';
   const metadata=(row:TransactionRow)=>{const category=categoryLabel(row);if(row.source!=='legacy')return category;return `${category} · ${row.overridden?'Ιστορικό · override':'Ιστορικό'}`};
-  const runningBalances=useMemo(()=>{
-    const snapshotDate=data.seed.snapshots.filter(snapshot=>snapshot.date<=range.start).reduce<string|null>((latest,snapshot)=>!latest||snapshot.date>latest?snapshot.date:latest,null)??range.start;
-    const balances={...selectAccountBalances(data,snapshotDate)};const byRow=new Map<string,number>();
-    const hiddenEvents=(data.state.events??[]).filter(event=>event.date.startsWith(month)&&event.date>snapshotDate&&['card_purchase','card_payment'].includes(event.kind));
-    const timeline=[
-      ...sourceRows.map(row=>({date:row.date,id:`row:${row.id}`,row,deltas:row.balanceDeltas})),
-      ...hiddenEvents.map(event=>({date:event.date,id:`hidden:${event.id}`,row:null,deltas:event.legs.reduce<Record<string,number>>((acc,leg)=>{if(leg.accountId!=='credit-card')acc[leg.accountId]=(acc[leg.accountId]??0)+leg.amount;return acc},{} as Record<string,number>)})),
-    ].sort((a,b)=>a.date.localeCompare(b.date)||a.id.localeCompare(b.id));
-    for(const item of timeline){
-      for(const [accountId,delta] of Object.entries(item.deltas))balances[accountId]=(balances[accountId]??0)+delta;
-      if(item.row){const accountId=item.row.accountIds[0];if(accountId)byRow.set(item.row.id,balances[accountId]??0)}
-    }
-    return byRow;
-  },[data,month,range.start,sourceRows]);
-  const rowBalance=(row:TransactionRow)=>runningBalances.get(row.id)??null;
+  const rowBalance=(row:TransactionRow)=>{const accountId=row.accountIds[0];if(!accountId)return null;return selectAccountBalances(data,row.date)[accountId]??null};
 
   const pageCount=Math.max(1,Math.ceil(rows.length/pageSize));const safePage=Math.min(page,pageCount);const pageStart=(safePage-1)*pageSize;const pageRows=rows.slice(pageStart,pageStart+pageSize);
   const selected=pageRows.find(row=>row.id===selectedId)??pageRows[0]??null;
@@ -151,7 +130,7 @@ export function TransactionsPage({
         <label className="filter-label"><span>Κατηγορία</span><AppSelectInput aria-label="Φίλτρο κατηγορίας" value={category} onChange={e=>{setCategory(e.target.value);setPage(1)}}><option value="all">Όλες οι κατηγορίες</option>{categories.map(value=><option key={value} value={value}>{value}</option>)}</AppSelectInput></label>
         <span className="desktop-finance-table transaction-filter-controls" style={{display:'contents'}}><label className="filter-label"><span>Τύπος</span><AppSelectInput aria-label="Φίλτρο τύπου κίνησης" value={type} onChange={e=>{setType(e.target.value);setPage(1)}}><option value="all">Όλοι οι τύποι</option>{types.map(value=><option key={value} value={value}>{eventKindLabel(value)}</option>)}</AppSelectInput></label></span>
         <label className="transactions-approved-date"><AppDateInput aria-label="Από ημερομηνία" value={dateStart} min={range.start} max={range.end} onChange={e=>{setDateStart(e.target.value);setPage(1)}}/><span>–</span><AppDateInput aria-label="Έως ημερομηνία" value={dateEnd} min={range.start} max={range.end} onChange={e=>{setDateEnd(e.target.value);setPage(1)}}/></label>
-        <span className="sort-direction-control" style={{display:'contents'}}><Tooltip label={`Σειρά: ${sortDirection==='desc'?'νεότερες πρώτα':'παλαιότερες πρώτα'}`} side="left"><button type="button" className="transactions-approved-filter-button" aria-label="Αλλαγή σειράς συναλλαγών" onClick={()=>setSortDirection(value=>value==='desc'?'asc':'desc')}><span className="sr-only">{sortDirection==='desc'?'ASC':'DESC'}</span><SlidersHorizontal size={17}/></button></Tooltip></span>
+        <span className="sort-direction-control" style={{display:'contents'}}><Tooltip label={`Σειρά: ${sortDirection==='desc'?'νεότερες πρώτα':'παλαιότερες πρώτα'}`} side="left"><button type="button" className="transactions-approved-filter-button" aria-label="Εναλλαγή ταξινόμησης κατά ημερομηνία" onClick={()=>setSortDirection(value=>value==='desc'?'asc':'desc')}><span className="sr-only">{sortDirection==='desc'?'ASC':'DESC'}</span><ArrowUpDown size={17}/></button></Tooltip></span>
       </div>
 
       <div className="filterbar transaction-searchbar mobile-only"><label className="filter-label search-filter"><span>Αναζήτηση</span><span className="searchbox"><Search size={16}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Περιγραφή, κατηγορία ή υποκατηγορία"/></span></label><div className="transaction-sort-summary"><SortDirectionControl value={sortDirection} onChange={setSortDirection} label="Σειρά συναλλαγών ανά ημερομηνία"/><span>{rows.length} κινήσεις</span></div></div>

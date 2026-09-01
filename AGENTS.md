@@ -42,3 +42,15 @@
 - Database DDL changes are made only through ordered files in `supabase/migrations/`. Never make an untracked production schema change and leave Git behind.
 - Production data is used only by the production runtime. Preview/development deployments must not receive credentials or configuration that can mutate the production finance database unless that access is explicitly reviewed and intended.
 - Before merging backend/auth/database changes, verify authorization failure paths as well as the successful path. Before merging finance-domain changes, run the domain regression suite and preserve the invariants above.
+
+## Phase-1 desktop redesign implementation
+
+- Read `docs/ui-redesign/IMPLEMENTATION_RULES.md` before redesign implementation or resume work.
+- GitHub issue #266 is a protected exclusion: do not open, inspect, quote, summarize, comment on, modify, relabel, close, reopen or use it for redesign tracking.
+- Recover the current issue/branch/PR/check state before changing a redesign surface. Resume an existing implementation from its latest pushed checkpoint instead of duplicating or restarting it.
+- Treat the exact owner-approved image as the structural/presentation/data-density target, not as a requirement to reproduce literal branding, names, categories, dates or amounts.
+- Require both Approved ↔ Actual visual verification and `develop` ↔ implementation functional parity. Preserve supported behavior and use canonical domain/selectors for finance semantics.
+- Reference-only controls may be represented when needed for the approved composition, but never wire a misleading handler or silently introduce backend/schema/API/persistence behavior.
+- Finance/category icons must use the shared registry and persisted Settings preference system rather than page-specific hard-coded icon logic.
+- Prefer narrow relevant validation before broad CI, batch coherent fixes, keep meaningful work pushed, and maintain the active PR continuation checkpoint.
+- A redesign surface is complete only after final fresh Actual inspection, relevant checks are green, redesign docs/status are synchronized, the PR is merged to `develop` when permitted, and the resulting `develop` state is verified.
