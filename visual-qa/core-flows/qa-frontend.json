@@ -4,15 +4,15 @@
   "appVersion": "v1.3",
   "suite": "frontend",
   "surface": "core-flows",
-  "generatedAt": "2026-09-01T09:22:31.537Z",
+  "generatedAt": "2026-09-01T09:52:39.621Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "8ddace5d8b367851cb0d9438f9e0caf8ae593a75",
-    "shortSha": "8ddace5d",
+    "sha": "b52a6761a9b72b20fda352f97790c55b62cabcc1",
+    "shortSha": "b52a6761",
     "branch": "feat/305-transactions-approved-target"
   },
   "screenshots": [
-    "visual-qa/core-flows/v1.3__2026-09-01_122231__qa-frontend__source-1__desktop-cards.png",
-    "visual-qa/core-flows/v1.3__2026-09-01_122231__qa-frontend__source-1__mobile-cards.png"
+    "visual-qa/core-flows/v1.3__2026-09-01_125239__qa-frontend__source-1__desktop-cards.png",
+    "visual-qa/core-flows/v1.3__2026-09-01_125239__qa-frontend__source-1__mobile-cards.png"
   ]
 }
