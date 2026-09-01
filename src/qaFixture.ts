@@ -22,15 +22,15 @@ const approvedVisibleAugust:LegacyTransaction[]=[
 
 const fillerExpenseAmounts=[85,72,60,58,95,110,77,66,120,45,89,101,83,74,92,68,595.90];
 const approvedAugustFiller:LegacyTransaction[]=[
-  expense('legacy-1','2026-08-02','piraeus-payroll',24.5,'Supermarket','Σούπερ Μάρκετ'),
+  expense('legacy-1','2026-08-01','piraeus-payroll',24.5,'Supermarket','Σούπερ Μάρκετ'),
   income('legacy-2','2026-08-01','piraeus-payroll',1200,'Μισθός','Μισθός'),
   expense('legacy-3','2026-08-01','piraeus-payroll',42,'Βενζίνη Shell','Μεταφορές','Βενζίνη'),
   expense('legacy-4','2026-08-01','piraeus-payroll',12.4,'Φαρμακείο','Υγεία'),
-  income('approved-fill-income-2','2026-08-01','piraeus-payroll',700,'Έσοδο έργου','Άλλο'),
-  income('approved-fill-income-3','2026-08-01','piraeus-payroll',500,'Bonus','Μισθός'),
-  income('approved-fill-income-4','2026-08-01','piraeus-payroll',394.01,'Επιστροφή εξόδων','Άλλο'),
-  ...fillerExpenseAmounts.map((amount,index)=>expense(`approved-fill-expense-${String(index+1).padStart(2,'0')}`,'2026-08-01',index%3===0?'alpha-main':'piraeus-payroll',amount,`Δοκιμαστική δαπάνη ${index+1}`,index%4===0?'Σούπερ Μάρκετ':index%4===1?'Μεταφορές':index%4===2?'Διασκέδαση':'Άλλα')),
-  ...Array.from({length:28},(_,index)=>transfer(`approved-fill-transfer-${String(index+1).padStart(2,'0')}`,'2026-08-01','piraeus-payroll',index%2===0?'cash':'piraeus-savings',10+index,`Μεταφορά QA ${index+1}`)),
+  income('z-approved-fill-income-2','2026-08-01','piraeus-payroll',700,'Έσοδο έργου','Άλλο'),
+  income('z-approved-fill-income-3','2026-08-01','piraeus-payroll',500,'Bonus','Μισθός'),
+  income('z-approved-fill-income-4','2026-08-01','piraeus-payroll',394.01,'Επιστροφή εξόδων','Άλλο'),
+  ...fillerExpenseAmounts.map((amount,index)=>expense(`z-approved-fill-expense-${String(index+1).padStart(2,'0')}`,'2026-08-01',index%3===0?'alpha-main':'piraeus-payroll',amount,`Δοκιμαστική δαπάνη ${index+1}`,index%4===0?'Σούπερ Μάρκετ':index%4===1?'Μεταφορές':index%4===2?'Διασκέδαση':'Άλλα')),
+  ...Array.from({length:28},(_,index)=>transfer(`z-approved-fill-transfer-${String(index+1).padStart(2,'0')}`,'2026-08-01','piraeus-payroll',index%2===0?'cash':'piraeus-savings',10+index,`Μεταφορά QA ${index+1}`)),
 ];
 
 const julyTransactions:LegacyTransaction[]=[
@@ -94,7 +94,7 @@ export function qaFinanceData(): FinanceData {
         {id:'evt-card-later',date:'2026-08-14',kind:'card_purchase',amount:45,note:'Βιβλία',category:'Διασκέδαση',cardId:'qa-card',statementId:'qa-card:2026-09-12',legs:[{accountId:'credit-card',amount:-45}],creditDelta:-45,source:'user',createdAt:'2026-08-14T08:00:00.000Z',updatedAt:'2026-08-14T08:00:00.000Z'},
         {id:'evt-settled-purchase',date:'2026-08-08',kind:'card_purchase',amount:50,note:'QA Settled Purchase',category:'Μεταφορές',cardId:'qa-settled-card',statementId:'qa-settled-card:2026-08-10',legs:[{accountId:'credit-card',amount:-50}],creditDelta:-50,source:'user',createdAt:'2026-08-08T08:00:00.000Z',updatedAt:'2026-08-08T08:00:00.000Z'},
         {id:'evt-settled-payment',date:'2026-08-11',kind:'card_payment',amount:50,note:'QA Settled Payment',fromAccountId:'piraeus-payroll',cardId:'qa-settled-card',statementId:'qa-settled-card:2026-08-10',legs:[{accountId:'piraeus-payroll',amount:-50},{accountId:'credit-card',amount:50}],creditDelta:50,source:'user',createdAt:'2026-08-11T08:00:00.000Z',updatedAt:'2026-08-11T08:00:00.000Z'},
-        {id:'evt-saving',date:'2026-08-01',kind:'saving_cash_offset',amount:100,note:'Αποταμίευση',fromAccountId:'piraeus-payroll',toAccountId:'piraeus-savings',legs:[{accountId:'piraeus-payroll',amount:-100},{accountId:'piraeus-savings',amount:100}],savingAmount:100,source:'user',createdAt:'2026-08-01T08:00:00.000Z',updatedAt:'2026-08-01T08:00:00.000Z'},
+        {id:'z-evt-saving',date:'2026-08-01',kind:'saving_cash_offset',amount:100,note:'Αποταμίευση',fromAccountId:'piraeus-payroll',toAccountId:'piraeus-savings',legs:[{accountId:'piraeus-payroll',amount:-100},{accountId:'piraeus-savings',amount:100}],savingAmount:100,source:'user',createdAt:'2026-08-01T08:00:00.000Z',updatedAt:'2026-08-01T08:00:00.000Z'},
         {id:'evt-card-payment',date:'2026-08-10',kind:'card_payment',amount:20,note:'Αποπληρωμή πιστωτικής',fromAccountId:'piraeus-payroll',cardId:'qa-card',statementId:'qa-card:2026-08-12',legs:[{accountId:'piraeus-payroll',amount:-20},{accountId:'credit-card',amount:20}],creditDelta:20,source:'user',createdAt:'2026-08-10T08:00:00.000Z',updatedAt:'2026-08-10T08:00:00.000Z'},
         {id:'evt-card-payment-later',date:'2026-08-16',kind:'card_payment',amount:10,note:'Δεύτερη αποπληρωμή πιστωτικής',fromAccountId:'piraeus-payroll',cardId:'qa-card',statementId:'qa-card:2026-08-12',legs:[{accountId:'piraeus-payroll',amount:-10},{accountId:'credit-card',amount:10}],creditDelta:10,source:'user',createdAt:'2026-08-16T08:00:00.000Z',updatedAt:'2026-08-16T08:00:00.000Z'},
         approvedRefund,
