@@ -13,7 +13,7 @@ Current full-page baselines are resolved from `visual-qa/manifest.json`. Current
 | 2 | Transactions | DESIGN APPROVED | VERIFIED | merged to `develop` via #310 |
 | 3 | Quick Entry / transaction-entry patterns | DESIGN APPROVED | VERIFIED | merged to `develop` via #312 |
 | 4 | Savings | DESIGN APPROVED | VERIFIED | merged to `develop` via #314 |
-| 5 | Cards | NOT STARTED | NOT STARTED | — |
+| 5 | Cards | DESIGN APPROVED | VERIFIED | merged to `develop` via #319 |
 | 6 | Credit Card | NOT STARTED | NOT STARTED | — |
 | 7 | Loans | NOT STARTED | NOT STARTED | — |
 | 8 | Lending / receivables | NOT STARTED | NOT STARTED | — |
@@ -31,6 +31,8 @@ Transactions uses the owner-approved 1536×1064 reference tracked by SHA-256 `41
 Quick Entry / transaction-entry patterns uses the owner-approved 1536×1066 reference tracked by SHA-256 `df8dca7c0047981f027e3d799374aed4ee9e7cb3ce9ba3140b6f4a53af38ae49`. Product head `36c7b96` passed `npm run check`, API validation, rendered frontend QA, CodeQL, cross-engine smoke, performance smoke and Windows Desktop. Fresh final Approved ↔ Actual inspection passed for modal position/proportions, 4×2 intent hierarchy, frequent presets, form composition and footer action hierarchy while preserving the existing canonical QuickAdd engine, receipt/OCR flow, shared category icons and responsive behavior. It was squash-merged to `develop` via #312 as product commit `e03c7bd`.
 
 Savings uses the owner-approved 1536×1067 reference tracked by SHA-256 `511ab3ed38496c709b376f1a1b199bae0379e93a66399b9a7643b300034168fc`. Product head `b63aec2` passed `npm run check`, API validation, rendered frontend QA, CodeQL, cross-engine smoke, performance smoke and Windows Desktop. Fresh final Approved ↔ Actual inspection passed for the heading/action-card geometry, three-column monthly KPI + cumulative trend + sources/recent composition, truthful supported-target presentation, goals-area density and complex-savings explanatory bar while preserving canonical Savings handlers/accounting semantics and mobile regression safety. It was squash-merged to `develop` via #314 as product commit `2f31e13`.
+
+Cards uses the owner-approved 1536×1024 reference tracked by SHA-256 `0d653b8bf040d453cda2b2b04636698b8e2abef4aac8008a467aff6648e01072`. Per explicit owner scope, the existing bank-by-bank card container, card visuals and all create/edit/archive/restore/delete/vault behavior were preserved unchanged. Product head `c17989c` passed `npm run check`, API validation, rendered frontend QA, CodeQL, cross-engine smoke, performance smoke and Windows Desktop. Fresh final Approved ↔ Actual inspection passed for the surrounding heading, truthful vault KPIs and recent canonical account activity. It was squash-merged to `develop` via #319 as product commit `e875df6`.
 
 ## Protected exclusion
 
