@@ -23,7 +23,7 @@
   .cards-surrounding-kpi strong{font-size:24px;line-height:1;color:var(--ink);letter-spacing:-.025em}
   .cards-surrounding-kpi div>span{font-size:9px;line-height:1.35;color:var(--muted);overflow-wrap:anywhere}
 
-  .cards-surrounding-recent{padding:0;border:1px solid var(--line);border-radius:18px;background:var(--surface);overflow:hidden}
+  .cards-surrounding-recent{display:block;padding:0;border:1px solid var(--line);border-radius:18px;background:var(--surface);overflow:hidden}
   .cards-surrounding-recent-head{min-height:62px;padding:14px 17px 11px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:16px}
   .cards-surrounding-recent-head h2{margin:0;font-size:17px;line-height:1.2}
   .cards-surrounding-recent-head p{margin:4px 0 0;font-size:9px;line-height:1.35;color:var(--muted)}
