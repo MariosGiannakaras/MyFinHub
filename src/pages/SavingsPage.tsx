@@ -99,11 +99,14 @@ export function SavingsPage({data,month,asOf,onCreate,onQuickAdd}:{data:FinanceD
   const actionGrid=<div className="savings-action-grid">{ACTIONS.map(action=>{const Icon=action.icon;return <button type="button" className="panel neo-raised savings-action" key={action.source} aria-label={`Νέα αποταμίευση: ${action.title}`} onClick={()=>start(action.source)}><span className="savings-action-icon"><Icon aria-hidden="true"/></span><div><b>{action.title}</b><small>{action.description}</small></div><strong>Νέα κίνηση <ArrowRight aria-hidden="true"/></strong></button>})}</div>;
 
   return <div className="page-stack savings-page">
-    <section className="page-heading"><div><span className="eyebrow">ΑΠΟΤΑΜΙΕΥΣΗ</span><h1>Αποταμίευση</h1><p>Διάλεξε πρώτα τι θέλεις να κάνεις Pay & Save, απλή μεταφορά ή σύνθετη αποταμίευση. Οι τρεις επιλογές μετρούν μία φορά στην πραγματική αποταμίευση.</p></div></section>
+    <section className="page-heading"><div><span className="eyebrow">ΑΠΟΤΑΜΙΕΥΣΗ</span><h1>Αποταμίευση</h1><p>Διάλεξε πρώτα τι θέλεις να κάνεις: Pay & Save, απλή μεταφορά ή σύνθετη αποταμίευση. Οι τρεις επιλογές μετρούν μία φορά στην πραγματική αποταμίευση.</p></div></section>
+
+    <section className="savings-action-section" aria-labelledby="savings-actions-title">
+      <div className="section-title"><div><span id="savings-actions-title">Πώς θέλεις να αποταμιεύσεις;</span><b>Οι τρεις επιλογές χρησιμοποιούν το ίδιο canonical savings flow, με διαφορετική πηγή.</b></div></div>
+      {actionGrid}
+    </section>
 
     <div className="savings-desktop-target">
-      <section className="savings-action-section" aria-label="Πώς θέλεις να αποταμιεύσεις;">{actionGrid}</section>
-
       <section className="savings-hero neo-raised savings-dashboard">
         <article className="savings-month-card">
           <h2>Αυτός ο μήνας</h2>
@@ -145,11 +148,6 @@ export function SavingsPage({data,month,asOf,onCreate,onQuickAdd}:{data:FinanceD
     </div>
 
     <div className="savings-mobile-legacy">
-      <section className="savings-action-section" aria-labelledby="savings-actions-title">
-        <div className="section-title"><div><span id="savings-actions-title">Πώς θέλεις να αποταμιεύσεις;</span><b>Οι τρεις επιλογές χρησιμοποιούν το ίδιο canonical savings flow, με διαφορετική πηγή.</b></div></div>
-        {actionGrid}
-      </section>
-
       <section className="savings-hero neo-raised"><div className="savings-gauge"><div className="gauge-ring" role="progressbar" aria-label={target>0?'Πρόοδος προς τον στόχο αποταμίευσης':'Δεν έχει οριστεί στόχος αποταμίευσης'} aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress===null?0:Math.round(progress)} style={{'--progress':`${progress??0}%`} as CSSProperties}><div><b>{Math.round(rate*100)}%</b><span>{target>0?'των εσόδων':'χωρίς στόχο'}</span></div></div></div><div><span className="eyebrow">ΑΥΤΟΣ Ο ΜΗΝΑΣ</span><h2><AnimatedAmount value={flow.saving}/></h2><p>{target>0?`Στόχος: ${Math.round(target*100)}% των πραγματικών εσόδων.`:'Δεν έχει οριστεί ποσοστιαίος στόχος αποταμίευσης.'} Οι κινήσεις αποταμίευσης δεν μετρούν ως έξοδο.</p><div className="saving-route"><span><Wallet/> {payrollName} <b><AnimatedAmount value={balances['piraeus-payroll']||0}/></b></span><ArrowRight/><span><PiggyBank/> {savingsName} <b><AnimatedAmount value={balances['piraeus-savings']||0}/></b></span></div></div></section>
 
       <section className="savings-breakdown-grid">
