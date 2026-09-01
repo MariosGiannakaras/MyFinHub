@@ -6,7 +6,7 @@
   }
   .quick-modal:has(.generic-kind-grid){
     width:min(1020px,calc(100vw - 40px));
-    margin-top:-24px;
+    margin-top:0;
     border-radius:22px;
     overflow:hidden;
   }
@@ -155,7 +155,9 @@
     position:static!important;
     inset:auto!important;
     transform:none!important;
+    order:-1;
     margin-right:auto;
+    min-width:280px;
     min-height:46px;
     display:grid;
     grid-template-columns:24px auto;
