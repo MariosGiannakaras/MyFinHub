@@ -1,0 +1,42 @@
+/* Owner-approved Cards surrounding desktop composition. The bank/card workspace is intentionally not targeted here. */
+.cards-heading-desktop,.cards-surrounding-summary,.cards-surrounding-recent{display:none}
+.cards-heading-mobile{display:block}
+
+@media (min-width:1100px){
+  .cards-prototype-page>.page-heading{margin-bottom:0;align-items:end}
+  .cards-prototype-page>.page-heading>div:first-child{max-width:760px}
+  .cards-prototype-page>.page-heading h1{font-size:30px;line-height:1.05;letter-spacing:-.025em}
+  .cards-prototype-page>.page-heading .eyebrow{margin-bottom:7px}
+  .cards-prototype-page>.page-heading .heading-actions{align-self:end}
+  .cards-heading-desktop{display:block;max-width:680px;margin-top:7px;font-size:13px;line-height:1.45;color:var(--muted)}
+  .cards-heading-mobile{display:none}
+
+  .cards-surrounding-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+  .cards-surrounding-kpi{min-width:0;min-height:108px;padding:16px 17px;border:1px solid var(--line);border-radius:17px;background:var(--surface);box-shadow:var(--shadow-soft);display:grid;grid-template-columns:48px minmax(0,1fr);gap:13px;align-items:center}
+  .cards-surrounding-kpi-icon{width:48px;height:48px;border-radius:13px;display:grid;place-items:center;background:color-mix(in srgb,var(--blue) 11%,transparent);color:var(--blue)}
+  .cards-surrounding-kpi-icon svg{width:23px;height:23px}
+  .cards-surrounding-kpi-icon.active{background:color-mix(in srgb,#f59e0b 12%,transparent);color:#d97706}
+  .cards-surrounding-kpi-icon.debit{background:color-mix(in srgb,#8b5cf6 12%,transparent);color:#7c3aed}
+  .cards-surrounding-kpi-icon.prepaid{background:color-mix(in srgb,#10b981 12%,transparent);color:#059669}
+  .cards-surrounding-kpi>div{min-width:0;display:grid;gap:4px}
+  .cards-surrounding-kpi small{font-size:10px;font-weight:760;color:var(--muted)}
+  .cards-surrounding-kpi strong{font-size:24px;line-height:1;color:var(--ink);letter-spacing:-.025em}
+  .cards-surrounding-kpi div>span{font-size:9px;line-height:1.35;color:var(--muted);overflow-wrap:anywhere}
+
+  .cards-surrounding-recent{display:block;padding:0;border:1px solid var(--line);border-radius:18px;background:var(--surface);overflow:hidden}
+  .cards-surrounding-recent-head{min-height:62px;padding:14px 17px 11px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:16px}
+  .cards-surrounding-recent-head h2{margin:0;font-size:17px;line-height:1.2}
+  .cards-surrounding-recent-head p{margin:4px 0 0;font-size:9px;line-height:1.35;color:var(--muted)}
+  .cards-surrounding-recent-list{padding:0 17px}
+  .cards-surrounding-recent-row{min-height:58px;display:grid;grid-template-columns:42px minmax(180px,1.25fr) minmax(150px,.8fr) auto;gap:13px;align-items:center;border-top:1px solid var(--line)}
+  .cards-surrounding-recent-row:first-child{border-top:0}
+  .cards-surrounding-recent-icon{width:40px;height:40px!important;border-radius:11px!important;display:grid!important;place-items:center!important}
+  .cards-surrounding-recent-main{min-width:0;display:grid;gap:3px}
+  .cards-surrounding-recent-main b{font-size:10px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cards-surrounding-recent-main small{font-size:8px;color:var(--muted)}
+  .cards-surrounding-recent-category{justify-self:start;max-width:100%;padding:5px 10px;border-radius:999px;background:color-mix(in srgb,var(--line) 55%,transparent);font-size:8.5px;color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cards-surrounding-recent-row>strong{font-size:10.5px;white-space:nowrap}
+  .cards-surrounding-recent-row>strong.positive{color:var(--positive,#119c6a)}
+  .cards-surrounding-recent-row>strong.negative{color:var(--ink)}
+  .cards-surrounding-recent-empty{min-height:116px;display:grid;place-items:center;text-align:center;font-size:10px;color:var(--muted)}
+}

@@ -1,14 +1,25 @@
-import { ArchiveRestore, Plus, Trash2 } from 'lucide-react';
+import { ArchiveRestore, CreditCard, Landmark, Plus, ShieldCheck, Trash2, WalletCards } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { CardCreateDialog } from '../components/CardCreateDialog';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { FinanceIcon } from '../components/FinanceIcon';
 import { FormError } from '../components/FormError';
 import { InteractivePaymentCard } from '../components/InteractivePaymentCard';
 import { Tooltip } from '../components/Tooltip';
 import { useModalFocus } from '../hooks/useModalFocus';
-import { archivedCardsForBank, cardBanks, cardsForBank, restoreCard } from '../lib/cards';
+import { cardBanks, archivedCardsForBank, cardsForBank, restoreCard } from '../lib/cards';
 import { cardVaultErrorMessage } from '../lib/cardVaultClient';
+import { categoryPath } from '../lib/categories';
+import { effectiveLegacyTransactions, flowImpactEvent, flowImpactLegacy } from '../lib/domain';
+import { cleanNote, money, shortDate } from '../lib/format';
+import { eventKindLabel } from '../lib/ui';
 import type { CardBank, FinanceData, PaymentCard } from '../types';
+import '../styles/cards-approved-surrounding.css';
+
+type RecentAccountRow={
+  id:string;date:string;note:string;category:string;subcategory?:string;kind:string;amount:number;
+  income:number;expense:number;refund:number;
+};
 
 export function CardsPage({
   data,onUpsertBank,onUpsertCard,onArchiveCard,onDeleteCard,
@@ -20,6 +31,30 @@ export function CardsPage({
   onDeleteCard:(card:PaymentCard)=>Promise<void>;
 }){
   const banks=useMemo(()=>cardBanks(data),[data]);
+  const activeCards=useMemo(()=>banks.flatMap(bank=>cardsForBank(data,bank.id)),[banks,data]);
+  const archivedCards=useMemo(()=>banks.flatMap(bank=>archivedCardsForBank(data,bank.id)),[banks,data]);
+  const debitCount=activeCards.filter(card=>card.kind==='debit').length;
+  const prepaidCount=activeCards.filter(card=>card.kind==='prepaid').length;
+  const recentAccountRows=useMemo<RecentAccountRow[]>(()=>{
+    const legacy=effectiveLegacyTransactions(data).map(transaction=>{
+      const impact=flowImpactLegacy(data,transaction);
+      return {
+        id:transaction.id,date:transaction.date,note:cleanNote(transaction.note),category:transaction.category||'Άλλο',subcategory:transaction.subcategory,
+        kind:transaction.type,amount:transaction.amount,income:impact.income,expense:impact.expense,refund:impact.refund,
+      };
+    });
+    const events=(data.state.events??[]).filter(event=>!['card_purchase','card_payment'].includes(event.kind)).map(event=>{
+      const impact=flowImpactEvent(event);
+      return {
+        id:event.id,date:event.date,note:cleanNote(event.note),category:event.kind==='split'?'Διαχωρισμός':(event.category||event.kind),subcategory:event.subcategory,
+        kind:event.kind,amount:event.amount,income:impact.income,expense:impact.expense,refund:impact.refund,
+      };
+    });
+    return [...legacy,...events]
+      .filter(row=>row.income>0||row.expense!==0||row.refund>0)
+      .sort((a,b)=>b.date.localeCompare(a.date)||b.id.localeCompare(a.id))
+      .slice(0,5);
+  },[data]);
   const [bankOpen,setBankOpen]=useState(false);
   const [bankName,setBankName]=useState('');
   const [cardBankId,setCardBankId]=useState<string|null>(null);
@@ -30,6 +65,9 @@ export function CardsPage({
   const [message,setMessage]=useState('');
   const bankRef=useModalFocus<HTMLElement>(bankOpen,'[data-autofocus="true"]',()=>{setBankOpen(false);setError('')});
   const cardBank=cardBankId?banks.find(bank=>bank.id===cardBankId):undefined;
+  const recentCategory=(row:RecentAccountRow)=>row.kind==='split'?'Διαχωρισμός':row.category===row.kind?eventKindLabel(row.kind):categoryPath(row.category,row.subcategory);
+  const recentTitle=(row:RecentAccountRow)=>row.note.split(/\r?\n/).map(part=>part.trim()).find(Boolean)||recentCategory(row);
+  const recentPositive=(row:RecentAccountRow)=>row.income>0||row.refund>0||row.expense<0;
 
   const saveBank=()=>{
     const name=bankName.trim();if(!name){setError('Γράψε το όνομα της τράπεζας για να μπορέσουμε να τη δημιουργήσουμε.');return}
@@ -55,7 +93,14 @@ export function CardsPage({
   };
 
   return <div className="page-stack cards-prototype-page">
-    <section className="page-heading"><div><span className="eyebrow">ΚΑΡΤΕΣ</span><h1>Κάρτες</h1><p>Χρεωστικές και προπληρωμένες κάρτες μόνο για ασφαλή αποθήκευση και προβολή των στοιχείων τους. Οι συναλλαγές καταχωρούνται στους αντίστοιχους λογαριασμούς, όχι στις κάρτες.</p></div><div className="heading-actions"><button type="button" className="save-button" onClick={()=>{setBankName('');setError('');setBankOpen(true)}}><Plus/> Προσθήκη τράπεζας</button></div></section>
+    <section className="page-heading"><div><span className="eyebrow">ΚΑΡΤΕΣ</span><h1>Κάρτες</h1><p className="cards-heading-desktop">Οι χρεωστικές και προπληρωμένες κάρτες σου, συγκεντρωμένες με ασφάλεια ανά τράπεζα.</p><p className="cards-heading-mobile">Χρεωστικές και προπληρωμένες κάρτες μόνο για ασφαλή αποθήκευση και προβολή των στοιχείων τους. Οι συναλλαγές καταχωρούνται στους αντίστοιχους λογαριασμούς, όχι στις κάρτες.</p></div><div className="heading-actions"><button type="button" className="save-button" onClick={()=>{setBankName('');setError('');setBankOpen(true)}}><Plus/> Προσθήκη τράπεζας</button></div></section>
+
+    <section className="cards-surrounding-summary" aria-label="Σύνοψη αποθηκευμένων καρτών">
+      <article className="cards-surrounding-kpi"><span className="cards-surrounding-kpi-icon banks"><Landmark/></span><div><small>Τράπεζες</small><strong>{banks.length}</strong><span>με ξεχωριστή στήλη καρτών</span></div></article>
+      <article className="cards-surrounding-kpi"><span className="cards-surrounding-kpi-icon active"><CreditCard/></span><div><small>Ενεργές κάρτες</small><strong>{activeCards.length}</strong><span>στο ασφαλές card vault</span></div></article>
+      <article className="cards-surrounding-kpi"><span className="cards-surrounding-kpi-icon debit"><ShieldCheck/></span><div><small>Χρεωστικές</small><strong>{debitCount}</strong><span>ενεργές και διαθέσιμες</span></div></article>
+      <article className="cards-surrounding-kpi"><span className="cards-surrounding-kpi-icon prepaid"><WalletCards/></span><div><small>Προπληρωμένες</small><strong>{prepaidCount}</strong><span>{archivedCards.length?`${archivedCards.length} αρχειοθετημένες συνολικά`:'χωρίς αρχειοθετημένες κάρτες'}</span></div></article>
+    </section>
 
     <section className="cards-workspace cards-prototype-workspace neo-raised" aria-label="Χρεωστικές και προπληρωμένες κάρτες ανά τράπεζα">
       <div className="cards-grid cards-prototype-grid" style={{'--bank-count':Math.max(1,banks.length)} as React.CSSProperties}>{banks.map(bank=>{
@@ -69,6 +114,19 @@ export function CardsPage({
     </section>
 
     {message?<div className="action-status" role="status" aria-live="polite">{message}</div>:null}
+
+    <section className="cards-surrounding-recent neo-raised" aria-label="Πρόσφατες συναλλαγές λογαριασμών">
+      <header className="cards-surrounding-recent-head"><div><h2>Πρόσφατες συναλλαγές</h2><p>Από τους λογαριασμούς σου — οι αποθηκευμένες κάρτες δεν δημιουργούν ξεχωριστό ιστορικό συναλλαγών.</p></div></header>
+      <div className="cards-surrounding-recent-list">{recentAccountRows.length?recentAccountRows.map(row=>{
+        const positive=recentPositive(row);
+        return <article className="cards-surrounding-recent-row" key={`${row.kind}-${row.id}`}>
+          <FinanceIcon kind={row.kind} category={row.category} subcategory={row.subcategory} note={row.note} settings={data.state.settings} size={19} className="cards-surrounding-recent-icon"/>
+          <div className="cards-surrounding-recent-main"><b>{recentTitle(row)}</b><small>{shortDate(row.date)}</small></div>
+          <span className="cards-surrounding-recent-category">{recentCategory(row)}</span>
+          <strong className={positive?'positive':'negative'}>{positive?'+':'−'} {money.format(Math.abs(row.amount))}</strong>
+        </article>;
+      }):<div className="cards-surrounding-recent-empty">Δεν υπάρχουν ακόμη πρόσφατες οικονομικές κινήσεις στους λογαριασμούς.</div>}</div>
+    </section>
 
     <CardCreateDialog open={Boolean(cardBank)} data={data} banks={cardBank?[cardBank]:banks.slice(0,1)} initialBankId={cardBank?.id} allowedKinds={['debit','prepaid']} onClose={()=>setCardBankId(null)} onSave={createCard}/>
 
