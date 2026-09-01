@@ -4,18 +4,18 @@
   "appVersion": "v1.3",
   "suite": "taxonomy-management",
   "surface": "taxonomy",
-  "generatedAt": "2026-08-31T07:58:51.335Z",
+  "generatedAt": "2026-09-01T09:52:39.621Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "02699b5bdc3da22ec652017aa3599ea758ca0913",
-    "shortSha": "02699b5b",
-    "branch": "ui/300-dashboard-fidelity-pass-2"
+    "sha": "b52a6761a9b72b20fda352f97790c55b62cabcc1",
+    "shortSha": "b52a6761",
+    "branch": "feat/305-transactions-approved-target"
   },
   "screenshots": [
-    "visual-qa/taxonomy/v1.3__2026-08-31_105851__qa-taxonomy-management__taxonomy-management-desktop.png",
-    "visual-qa/taxonomy/v1.3__2026-08-31_105851__qa-taxonomy-management__taxonomy-management-mobile.png",
-    "visual-qa/taxonomy/v1.3__2026-08-31_105851__qa-taxonomy-management__taxonomy-retirement-blocked-desktop.png",
-    "visual-qa/taxonomy/v1.3__2026-08-31_105851__qa-taxonomy-management__taxonomy-retirement-blocked-mobile.png",
-    "visual-qa/taxonomy/v1.3__2026-08-31_105851__qa-taxonomy-management__taxonomy-retirement-confirm-desktop.png"
+    "visual-qa/taxonomy/v1.3__2026-09-01_125239__qa-taxonomy-management__taxonomy-management-desktop.png",
+    "visual-qa/taxonomy/v1.3__2026-09-01_125239__qa-taxonomy-management__taxonomy-management-mobile.png",
+    "visual-qa/taxonomy/v1.3__2026-09-01_125239__qa-taxonomy-management__taxonomy-retirement-blocked-desktop.png",
+    "visual-qa/taxonomy/v1.3__2026-09-01_125239__qa-taxonomy-management__taxonomy-retirement-blocked-mobile.png",
+    "visual-qa/taxonomy/v1.3__2026-09-01_125239__qa-taxonomy-management__taxonomy-retirement-confirm-desktop.png"
   ]
 }

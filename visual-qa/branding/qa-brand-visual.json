@@ -4,24 +4,24 @@
   "appVersion": "v1.3",
   "suite": "brand-visual",
   "surface": "branding",
-  "generatedAt": "2026-08-31T07:58:51.335Z",
+  "generatedAt": "2026-09-01T09:52:39.621Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "02699b5bdc3da22ec652017aa3599ea758ca0913",
-    "shortSha": "02699b5b",
-    "branch": "ui/300-dashboard-fidelity-pass-2"
+    "sha": "b52a6761a9b72b20fda352f97790c55b62cabcc1",
+    "shortSha": "b52a6761",
+    "branch": "feat/305-transactions-approved-target"
   },
   "screenshots": [
-    "visual-qa/branding/v1.3__2026-08-31_105851__qa-brand-visual__bank-registry-cards-desktop.png",
-    "visual-qa/branding/v1.3__2026-08-31_105851__qa-brand-visual__bank-registry-cards-mobile.png",
-    "visual-qa/branding/v1.3__2026-08-31_105851__qa-brand-visual__bank-registry-credit-desktop.png",
-    "visual-qa/branding/v1.3__2026-08-31_105851__qa-brand-visual__bank-registry-credit-mobile.png",
-    "visual-qa/branding/v1.3__2026-08-31_105851__qa-brand-visual__bank-registry-dashboard-desktop.png",
-    "visual-qa/branding/v1.3__2026-08-31_105851__qa-brand-visual__bank-registry-dashboard-mobile.png",
-    "visual-qa/branding/v1.3__2026-08-31_105851__qa-brand-visual__brand-login-dark-contract.png",
-    "visual-qa/branding/v1.3__2026-08-31_105851__qa-brand-visual__brand-login-light.png",
-    "visual-qa/branding/v1.3__2026-08-31_105851__qa-brand-visual__brand-shell-desktop.png",
-    "visual-qa/branding/v1.3__2026-08-31_105851__qa-brand-visual__brand-shell-mobile.png",
-    "visual-qa/branding/v1.3__2026-08-31_105851__qa-brand-visual__brand-shell-tablet.png"
+    "visual-qa/branding/v1.3__2026-09-01_125239__qa-brand-visual__bank-registry-cards-desktop.png",
+    "visual-qa/branding/v1.3__2026-09-01_125239__qa-brand-visual__bank-registry-cards-mobile.png",
+    "visual-qa/branding/v1.3__2026-09-01_125239__qa-brand-visual__bank-registry-credit-desktop.png",
+    "visual-qa/branding/v1.3__2026-09-01_125239__qa-brand-visual__bank-registry-credit-mobile.png",
+    "visual-qa/branding/v1.3__2026-09-01_125239__qa-brand-visual__bank-registry-dashboard-desktop.png",
+    "visual-qa/branding/v1.3__2026-09-01_125239__qa-brand-visual__bank-registry-dashboard-mobile.png",
+    "visual-qa/branding/v1.3__2026-09-01_125239__qa-brand-visual__brand-login-dark-contract.png",
+    "visual-qa/branding/v1.3__2026-09-01_125239__qa-brand-visual__brand-login-light.png",
+    "visual-qa/branding/v1.3__2026-09-01_125239__qa-brand-visual__brand-shell-desktop.png",
+    "visual-qa/branding/v1.3__2026-09-01_125239__qa-brand-visual__brand-shell-mobile.png",
+    "visual-qa/branding/v1.3__2026-09-01_125239__qa-brand-visual__brand-shell-tablet.png"
   ]
 }
