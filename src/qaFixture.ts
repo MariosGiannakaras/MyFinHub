@@ -42,7 +42,7 @@ const julyTransactions:LegacyTransaction[]=[
 
 const stamp=(date:string)=>`${date}T08:00:00.000Z`;
 const approvedRefund:FinanceEvent={id:'approved-refund',date:'2026-08-08',kind:'refund',amount:24.5,note:'Επιστροφή χρημάτων',category:'Άλλα',accountId:'alpha-main',legs:[{accountId:'alpha-main',amount:24.5}],source:'user',createdAt:stamp('2026-08-08'),updatedAt:stamp('2026-08-08')};
-const hiddenCardPayment=(id:string,date:string,fromAccountId:string,amount:number):FinanceEvent=>({id,date,kind:'card_payment',amount,note:'QA balance-affecting settlement',fromAccountId,legs:[{accountId:fromAccountId,amount:-amount}],source:'user',createdAt:stamp(date),updatedAt:stamp(date)});
+const hiddenCardPayment=(id:string,date:string,fromAccountId:string,amount:number):FinanceEvent=>({id,date,kind:'card_payment',amount,note:'QA balance-affecting settlement',fromAccountId,cardId:'qa-settled-card',legs:[{accountId:fromAccountId,amount:-amount}],source:'user',createdAt:stamp(date),updatedAt:stamp(date)});
 
 export function qaFinanceData(): FinanceData {
   return {
