@@ -1,6 +1,6 @@
 import { Landmark, ReceiptText } from 'lucide-react';
 import { activeLongTermLoanObligations } from '../lib/loans';
-import { money, shortDate } from '../lib/format';
+import { shortDate } from '../lib/format';
 import { accountDisplayName } from '../lib/ui';
 import type { FinanceData } from '../types';
 import { AnimatedAmount } from './AnimatedAmount';
