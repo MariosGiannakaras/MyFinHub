@@ -1,0 +1,1 @@
+If implementation resumes in another chat, inspect the active Recurring issue/branch/PR and this approved-target metadata first. If the exact binary is not otherwise recoverable, request only the matching owner-approved image identified by SHA-256 e0d6faab90eacd9602b62a4eb034cbb5229a8da2e8ee84ca7eef5f794506fdc2.
