@@ -6,6 +6,7 @@ import { AppSelectInput } from '../components/AppSelectInput';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { FinanceIcon } from '../components/FinanceIcon';
 import { MoneyInput } from '../components/MoneyInput';
+import { PlanningApprovedDesktop } from '../components/PlanningApprovedDesktop';
 import { Tooltip } from '../components/Tooltip';
 import { useModalFocus } from '../hooks/useModalFocus';
 import { genericCategoryTree, subcategoriesFor } from '../lib/categories';
@@ -125,6 +126,8 @@ export function PlanningPage({ data, asOf, onUpsertScheduled, onCompleteSchedule
   return <div className="page-stack planning-page">
     <section className="page-heading"><div><span className="eyebrow">ΠΡΟΓΡΑΜΜΑΤΙΣΜΟΣ</span><h1>Προγραμματισμός & πρόβλεψη ρευστότητας</h1><p>Οι προγραμματισμένες κινήσεις είναι one-off σχέδια και δεν αλλάζουν τα πραγματικά υπόλοιπα. Η πρόβλεψη είναι ντετερμινιστική προβολή γνωστών ροών, όχι βεβαιότητα για το μέλλον.</p></div><button type="button" className="save-button" onClick={startNew}><Plus size={17}/> Νέα προγραμματισμένη</button></section>
     {message ? <div className="action-status" role="status" aria-live="polite">{message}</div> : null}
+
+    <PlanningApprovedDesktop data={data} asOf={asOf} pending={pending} history={history} onComplete={startComplete} onEdit={startEdit} onLifecycle={requestLifecycle}/>
 
     <section className="planning-summary-grid" aria-label="Σύνοψη προγραμματισμού">
       <article className="neo-raised"><span>Εκκρεμούν τώρα</span><b className={due.length ? 'negative' : ''}>{due.length}</b><small>{due.length ? 'Προγραμματισμένες κινήσεις με ημερομηνία έως σήμερα' : 'Δεν υπάρχει scheduled κίνηση που να εκκρεμεί τώρα'}</small></article>
