@@ -17,12 +17,11 @@
   .recurring-summary-card>div>b{display:block;margin:5px 0 3px;color:var(--ink);font-size:27px;line-height:1.05;font-weight:850;letter-spacing:-.025em}
   .recurring-summary-card>div>small{display:block;color:var(--muted);font-size:9px;line-height:1.35}
 
-  .recurring-active-workspace{padding:0;border:1px solid rgba(64,94,143,.13);border-radius:17px;background:rgba(250,252,255,.78);box-shadow:0 16px 34px rgba(45,78,130,.08);overflow:hidden}
-  .recurring-active-heading{min-height:58px;margin:0;padding:12px 18px 10px;border-bottom:1px solid rgba(69,98,145,.10)}
+  .recurring-active-workspace{margin-bottom:-14px;padding:0 12px 5px;border:1px solid rgba(64,94,143,.13);border-bottom-color:transparent;border-radius:17px 17px 0 0;background:rgba(250,252,255,.78);box-shadow:0 12px 28px rgba(45,78,130,.055);overflow:hidden}
+  .recurring-active-heading{min-height:58px;margin:0 -12px 0;padding:12px 18px 10px;border-bottom:1px solid rgba(69,98,145,.10)}
   .recurring-active-heading span{font-size:15px;font-weight:850}
   .recurring-active-heading small{margin-top:3px;font-size:8.5px;color:var(--muted)}
 
-  .recurring-active-recurring{padding:9px 12px 3px}
   .recurring-approved-table-wrap{overflow:visible;border:0;border-radius:0;background:transparent;box-shadow:none}
   .recurring-workspace-table{width:100%;table-layout:fixed;border-collapse:separate;border-spacing:0;font-size:9px}
   .recurring-workspace-table thead th{height:37px;padding:7px 10px;border:0;background:transparent;color:var(--muted);font-size:8px;font-weight:780;text-align:left;white-space:nowrap}
@@ -33,7 +32,7 @@
   .recurring-workspace-table thead th:nth-child(5){width:20%}
   .recurring-workspace-table tbody+tbody .recurring-group-row th{padding-top:10px}
   .recurring-workspace-table .recurring-group-row th{height:39px;padding:5px 10px;border:1px solid rgba(72,103,153,.10);border-bottom:0;border-radius:12px 12px 0 0;background:linear-gradient(90deg,rgba(234,243,255,.78),rgba(248,251,255,.65));color:var(--ink);font-size:10px;font-weight:840;text-align:left}
-  .recurring-group-row th>span,.recurring-group-heading>span{vertical-align:middle}
+  .recurring-group-row th>span{vertical-align:middle}
   .recurring-group-row th>[data-icon-key]{display:inline-flex;vertical-align:middle;margin-right:8px}
   .recurring-workspace-table tbody>tr[data-recurring-status="active"]>td{height:66px;padding:9px 10px;border-top:1px solid rgba(72,103,153,.08);border-bottom:1px solid rgba(72,103,153,.10);background:rgba(255,255,255,.56);vertical-align:middle}
   .recurring-workspace-table tbody>tr[data-recurring-status="active"]>td:first-child{border-left:1px solid rgba(72,103,153,.10)}
@@ -52,7 +51,7 @@
   .recurring-workspace-table .recurring-actions .pay-action{min-width:74px;display:inline-flex;align-items:center;justify-content:center;gap:5px;color:var(--blue)}
   .recurring-workspace-table .recurring-actions .pay-action span{font-size:8px;font-weight:800}
 
-  .recurring-active-workspace>.long-term-recurring{margin:6px 12px 12px;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none}
+  .recurring-approved-page>.long-term-recurring{margin:0;padding:7px 12px 12px;border:1px solid rgba(64,94,143,.13);border-top:0;border-radius:0 0 17px 17px;background:rgba(250,252,255,.78);box-shadow:0 16px 34px rgba(45,78,130,.08)}
   .recurring-group-heading{min-height:39px;display:flex;align-items:center;gap:9px;padding:8px 10px;border:1px solid rgba(98,75,184,.12);border-radius:12px 12px 0 0;background:linear-gradient(90deg,rgba(241,235,255,.82),rgba(250,248,255,.68));color:#5d3ac8}
   .recurring-group-heading>div{min-width:0}
   .recurring-group-heading span{display:block;color:var(--ink);font-size:10px;font-weight:840}
@@ -79,13 +78,12 @@
   .recurring-approved-page>.inactive-recurring[open]{padding-bottom:12px}
 }
 
-/* Phase 1 redesign is desktop-only. Preserve the established mobile cards, lifecycle menu and linked-loan flow. */
+/* Phase 1 redesign is desktop-only. Preserve established mobile cards, lifecycle controls and linked-loan flow. */
 @media (max-width:1099px){
-  .recurring-active-workspace{display:contents}
-  .recurring-active-heading{display:none}
-  .recurring-active-recurring{padding:12px;border:1px solid var(--line);border-radius:18px;background:var(--surface);box-shadow:var(--shadow-soft)}
+  .recurring-summary-icon{display:none}
+  .recurring-group-row{display:none}
   .recurring-group-heading{display:none}
-  .long-term-loan-obligation{display:grid}
   .long-term-loan-next,.long-term-loan-account,.long-term-loan-actions .linked-loan-open{display:none}
+  .long-term-loan-copy{display:block}
   .long-term-loans-open{display:inline-flex}
 }
