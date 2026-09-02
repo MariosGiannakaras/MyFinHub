@@ -16,7 +16,7 @@ Current full-page baselines are resolved from `visual-qa/manifest.json`. Current
 | 5 | Cards | DESIGN APPROVED | VERIFIED | merged to `develop` via #319 |
 | 6 | Credit Card | DESIGN APPROVED | VERIFIED | merged to `develop` via #323 |
 | 7 | Loans | DESIGN APPROVED | VERIFIED | merged to `develop` via #321 |
-| 8 | Lending / receivables | NOT STARTED | NOT STARTED | — |
+| 8 | Lending / receivables | DESIGN APPROVED | VERIFIED | merged to `develop` via #328 |
 | 9 | Recurring | NOT STARTED | NOT STARTED | — |
 | 10 | Planning / forecast | NOT STARTED | NOT STARTED | — |
 | 11 | Needs Attention | NOT STARTED | NOT STARTED | — |
@@ -37,6 +37,8 @@ Cards uses the owner-approved 1536×1024 reference tracked by SHA-256 `0d653b8bf
 Credit Card uses the owner-approved 1536×1067 reference tracked by SHA-256 `d3c480982cac07e1acab519fb9cf3861b70c157dbb510a7b6e55c9be1d880bd6`. Per explicit owner scope, the canonical credit-card artwork, PAN/expiry/CVV reveal/copy/archive behavior, vault boundaries and finance/statement semantics were preserved unchanged. Desktop adds an optional host-level Οριζόντια / Στοίβα card-navigation mode over the existing `selectedCardId`, while mobile keeps the original canonical card stack and card-switching behavior unchanged. Clean product head `37c0f6f` passed `npm run check`, API validation, rendered frontend QA, CodeQL, cross-engine smoke, performance smoke and Windows Desktop. Fresh final desktop/mobile Approved ↔ Actual inspection passed for the target-like card/limit hero, truthful summary, primary credit-activity hierarchy and mobile regression protection. It was squash-merged to `develop` via #323 as product commit `1162b0b`.
 
 Loans uses the owner-approved 1536×1067 reference tracked by SHA-256 `4a058633da08e66f32d5958eae364cf602cc0a10258e28bc00900c58f4ea8f59`, with the owner-requested completion-driven segmented blue→violet→green progress treatment. Final clean product head `ff9c5ca` passed `npm run check`, API validation, rendered frontend QA, CodeQL, cross-engine smoke, performance smoke and Windows Desktop. Fresh final Approved ↔ Actual inspection passed for heading/actions, sort toolbar, active obligation cards, truthful canonical metadata/actions, completed summary, progress explanation and the corrected segmented gradient coverage while preserving all canonical Loans accounting/payment/edit/self-loan/forgiveness semantics. It was squash-merged to `develop` via #321 as product commit `cd71411`.
+
+Lending / receivables uses the owner-approved 1536×1064 reference tracked by SHA-256 `5845fc650bf0d2ed48b076989ac18e168572d9db68d53762135961f52772a58b`. Exact product head `8813424` passed `npm run check`, API validation, rendered frontend QA, CodeQL, cross-engine smoke, performance smoke and Windows Desktop. Fresh final desktop/mobile Approved ↔ Actual inspection passed for the people navigator/search, selected-person receivable metrics and privacy state, canonical lending/repayment quick actions, selected-person movement hierarchy and mobile regression protection while preserving canonical receivable accounting, event creation, validation and quick-add semantics. It was squash-merged to `develop` via #328 as product commit `7a1c837`.
 
 ## Protected exclusion
 
