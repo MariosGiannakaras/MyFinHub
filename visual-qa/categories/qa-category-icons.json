@@ -4,18 +4,18 @@
   "appVersion": "v1.3",
   "suite": "category-icons",
   "surface": "categories",
-  "generatedAt": "2026-09-02T13:02:43.412Z",
+  "generatedAt": "2026-09-02T13:16:05.805Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "03eef5f0fb1ee85286bba74ca0e19b84af7d30a0",
-    "shortSha": "03eef5f0",
+    "sha": "1d97a94a9f9262c8c6ed0883a26d1bc7179e2a40",
+    "shortSha": "1d97a94a",
     "branch": "feat/332-planning-approved-target"
   },
   "screenshots": [
-    "visual-qa/categories/v1.3__2026-09-02_160243__qa-category-icons__category-icons-quick-entry-desktop.png",
-    "visual-qa/categories/v1.3__2026-09-02_160243__qa-category-icons__category-icons-recurring-desktop.png",
-    "visual-qa/categories/v1.3__2026-09-02_160243__qa-category-icons__category-icons-reports-desktop.png",
-    "visual-qa/categories/v1.3__2026-09-02_160243__qa-category-icons__category-icons-transactions-desktop.png",
-    "visual-qa/categories/v1.3__2026-09-02_160243__qa-category-icons__category-icons-transactions-mobile.png"
+    "visual-qa/categories/v1.3__2026-09-02_161605__qa-category-icons__category-icons-quick-entry-desktop.png",
+    "visual-qa/categories/v1.3__2026-09-02_161605__qa-category-icons__category-icons-recurring-desktop.png",
+    "visual-qa/categories/v1.3__2026-09-02_161605__qa-category-icons__category-icons-reports-desktop.png",
+    "visual-qa/categories/v1.3__2026-09-02_161605__qa-category-icons__category-icons-transactions-desktop.png",
+    "visual-qa/categories/v1.3__2026-09-02_161605__qa-category-icons__category-icons-transactions-mobile.png"
   ]
 }
