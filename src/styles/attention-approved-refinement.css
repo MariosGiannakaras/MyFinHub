@@ -1,0 +1,6 @@
+/* Accessibility/QA refinement after the first source audit. */
+@media (min-width:900px){
+  .attention-approved-actions>.save-button{min-height:40px}
+  .attention-approved-icon-action{width:40px;height:40px}
+  .attention-approved-row{min-height:74px}
+}
