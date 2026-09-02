@@ -10,6 +10,7 @@ import { categoryMomentum, operationalReportSnapshot, primaryAccountSeries, repo
 import { SAVING_SOURCE_LABELS } from '../lib/savings';
 import { accountDisplayName } from '../lib/ui';
 import type { FinanceData } from '../types';
+import './ReportsPage.css';
 
 const change=(current:number,previous:number)=>previous===0?(current===0?0:null):((current-previous)/Math.abs(previous))*100;
 const changeLabel=(value:number|null)=>value===null?'Νέα βάση':`${value>=0?'+':''}${Math.round(value)}%`;
