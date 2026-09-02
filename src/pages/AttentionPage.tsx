@@ -92,7 +92,7 @@ export function AttentionPage({data,asOf,onAction,onDecision}:{data:FinanceData;
     <div className="attention-approved-desktop">
       <section className="page-heading attention-approved-heading">
         <span className="attention-approved-heading-icon" aria-hidden="true"><AlertTriangle/></span>
-        <div><h1>Χρειάζεται προσοχή</h1><p>Σημεία που απαιτούν την προσοχή σου για τα οικονομικά σου.</p></div>
+        <div><h1>Τι χρειάζεται προσοχή</h1><p>Σημεία που απαιτούν την προσοχή σου για τα οικονομικά σου.</p></div>
         <button type="button" className="secondary privacy-toggle" aria-pressed={visible} onClick={()=>setVisible(value=>!value)}>{visible?<EyeOff size={17}/>:<Eye size={17}/>} {visible?'Απόκρυψη ποσών':'Εμφάνιση ποσών'}</button>
       </section>
 
