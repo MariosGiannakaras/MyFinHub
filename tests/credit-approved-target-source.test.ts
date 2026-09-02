@@ -24,14 +24,12 @@ describe('approved Credit Card desktop target boundary',()=>{
     expect(stack).toContain('archiveRef.current(card.source)');
   });
 
-  it('adds horizontal host navigation without duplicating card internals',()=>{
-    expect(page).toContain("type CardDeckMode='horizontal'|'stack'");
-    expect(page).toContain("useState<CardDeckMode>('horizontal')");
-    expect(page).toContain('selectRelativeCard');
-    expect(page).toContain('data-card-view={cardDeckMode}');
-    expect(page).toContain('Προηγούμενη πιστωτική κάρτα');
-    expect(page).toContain('Επόμενη πιστωτική κάρτα');
-    expect(page).toContain("setSelectedCardId(activeCredit[next].id)");
+  it('uses the canonical drag/restack interaction instead of rendering competing host navigation',()=>{
+    expect(stack).toContain("top.addEventListener('pointerdown',startDrag)");
+    expect(stack).toContain('animateRestack');
+    expect(stack).toContain('activeChangeRef.current?.(active)');
+    expect(page).toContain('onActiveCardChange={setSelectedCardId}');
+    expect(styles).toContain('.credit-card-view-controls{display:none}');
   });
 
   it('keeps the original full card stack on mobile',()=>{
@@ -52,9 +50,8 @@ describe('approved Credit Card desktop target boundary',()=>{
   it('limits approved target CSS to surrounding composition and protects mobile touch targets',()=>{
     expect(styles).toContain('@media (min-width:1100px)');
     expect(styles).toContain('.credit-card-redesign-page>.credit-card-stage');
-    expect(styles).toContain('.credit-card-view-controls');
-    expect(styles).toContain('@media (max-width:1099px)');
     expect(styles).toContain('.credit-card-view-controls{display:none}');
+    expect(styles).toContain('@media (max-width:1099px)');
     expect(styles).toContain('.credit-cycle-link{min-height:44px');
     expect(styles).not.toMatch(/\.payment-card\b/);
     expect(styles).not.toMatch(/\.card-inner\b/);

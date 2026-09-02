@@ -16,23 +16,14 @@
   }
 
   .credit-card-redesign-page>.credit-card-stage>.credit-card-stage-card{
-    position:relative;min-height:430px;padding:54px 34px 14px;border:1px solid var(--line);border-radius:18px;
+    position:relative;min-height:430px;padding:20px 34px 14px;border:1px solid var(--line);border-radius:18px;
     background:var(--surface);box-shadow:var(--shadow-soft);display:grid;place-items:center;overflow:visible;
   }
   .credit-card-redesign-page>.credit-card-stage>.credit-card-stage-card #myfinhub-card-stack{width:min(100%,620px)}
 
-  .credit-card-view-controls{
-    position:absolute;left:18px;right:18px;top:14px;z-index:3;display:flex;align-items:center;justify-content:space-between;gap:12px;
-  }
-  .credit-card-view-mode,.credit-card-horizontal-nav{display:flex;align-items:center;gap:6px}
-  .credit-card-view-mode button,.credit-card-horizontal-nav button{
-    min-height:34px;border:1px solid var(--line);border-radius:10px;background:var(--surface-2);color:var(--muted);font-size:9.5px;font-weight:760;cursor:pointer;
-  }
-  .credit-card-view-mode button{padding:0 12px}
-  .credit-card-view-mode button.active{border-color:color-mix(in srgb,var(--blue) 42%,var(--line));background:color-mix(in srgb,var(--blue) 9%,var(--surface));color:var(--blue)}
-  .credit-card-horizontal-nav button{width:34px;padding:0;display:grid;place-items:center}
-  .credit-card-horizontal-nav button svg{width:15px;height:15px}
-  .credit-card-horizontal-nav span{min-width:42px;text-align:center;font-size:9.5px;font-weight:760;color:var(--muted)}
+  /* The canonical stack already owns card switching through its drag/restack
+   * animation. Do not render a second competing navigation layer. */
+  .credit-card-view-controls{display:none}
 
   .credit-card-redesign-page>.credit-card-stage>.credit-card-stage-stats{
     min-height:430px;padding:22px 24px;border:1px solid var(--line);border-radius:18px;background:var(--surface);box-shadow:var(--shadow-soft);
@@ -82,8 +73,8 @@
   .credit-card-redesign-page>.deleted-credit-history{order:6}
 }
 
-/* Phase 1 does not redesign mobile. Hide the desktop-only deck switcher and
- * keep the newly exposed cycle action within the existing mobile touch contract. */
+/* Phase 1 does not redesign mobile. Keep the canonical mobile card stack and
+ * the newly exposed cycle action within the existing mobile touch contract. */
 @media (max-width:1099px){
   .credit-card-view-controls{display:none}
   .credit-cycle-link{min-height:44px;width:100%;padding-inline:0}
