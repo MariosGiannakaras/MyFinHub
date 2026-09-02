@@ -80,10 +80,18 @@
 
 /* Phase 1 redesign is desktop-only. Preserve established mobile cards, lifecycle controls and linked-loan flow. */
 @media (max-width:1099px){
+  .recurring-approved-heading h1 .sr-only{position:static!important;width:auto!important;height:auto!important;padding:0!important;margin:0!important;overflow:visible!important;clip:auto!important;white-space:normal!important;border:0!important}
   .recurring-summary-icon{display:none}
+  .recurring-summary-card>div{min-width:0}
+  .recurring-summary-card>div>b{display:block}
+  .recurring-summary-card>div>small{display:block}
   .recurring-group-row{display:none}
   .recurring-group-heading{display:none}
   .long-term-loan-next,.long-term-loan-account,.long-term-loan-actions .linked-loan-open{display:none}
   .long-term-loan-copy{display:block}
+  .long-term-loan-copy>.long-term-loan-icon{display:none}
+  .long-term-loan-copy>div{min-width:0}
+  .long-term-loan-copy>div>b,.long-term-loan-copy>div>small{display:block}
+  .long-term-loan-copy>div>small{margin-top:3px}
   .long-term-loans-open{display:inline-flex}
 }
