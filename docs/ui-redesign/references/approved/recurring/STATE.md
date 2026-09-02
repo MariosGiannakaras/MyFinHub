@@ -4,7 +4,8 @@ Implementation: COMPLETE
 Approved target SHA-256: e0d6faab90eacd9602b62a4eb034cbb5229a8da2e8ee84ca7eef5f794506fdc2
 Issue: #329
 Branch: feat/329-recurring-approved-target
-PR: #330
+PR: #331
+Superseded draft PR: #330
 
 Implementation: target-like desktop heading, two-card summary, category-grouped recurring workspace, aligned canonical linked-loan obligations and compact inactive history are implemented. Canonical recurring calculations, payment/lifecycle handlers, editor validation and shared FinanceIcon preferences remain authoritative.
 
