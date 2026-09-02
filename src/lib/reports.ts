@@ -2,6 +2,7 @@ import { accountBalances, effectiveLegacyTransactions, flowImpactEvent, flowImpa
 import { categoryPath } from './categories.js';
 import { creditCards, creditDebtForCard, creditLimitForCard } from './cards.js';
 import { lendingRows } from './lending.js';
+import { activeLongTermLoanObligations } from './loans.js';
 import { recurringMonthlyTotal } from './recurring.js';
 import { operationalMonthlyFlow, savingsBreakdown } from './savings.js';
 import type { FinanceData } from '../types.js';
@@ -29,6 +30,42 @@ export function categoryMomentum(data:FinanceData,month:string,limit=10){
   const current=subcategoryTotals(data,month);
   const previous=new Map(subcategoryTotals(data,shiftReportMonth(month,-1)).map(row=>[row.name,row.value]));
   return current.slice(0,limit).map(row=>{const previousValue=previous.get(row.name)??0;return {...row,previous:previousValue,change:relativeChange(row.value,previousValue)}});
+}
+
+export type ReportExpenseCounterparty={title:string;category:string;amount:number;share:number|null;count:number;lastDate:string};
+
+export function reportExpenseCounterparties(data:FinanceData,month:string,limit=5):ReportExpenseCounterparty[]{
+  const grouped=new Map<string,{title:string;category:string;amount:number;count:number;lastDate:string}>();
+  const add=(title:string,category:string,amount:number,date:string)=>{
+    if(!Number.isFinite(amount)||amount<=.005)return;
+    const safeTitle=title.trim()||category||'Συναλλαγή';
+    const safeCategory=category||'Χωρίς κατηγορία';
+    const key=`${safeTitle.toLocaleLowerCase('el-GR')}|${safeCategory.toLocaleLowerCase('el-GR')}`;
+    const current=grouped.get(key);
+    if(current){current.amount+=amount;current.count+=1;if(date>current.lastDate)current.lastDate=date;return}
+    grouped.set(key,{title:safeTitle,category:safeCategory,amount,count:1,lastDate:date});
+  };
+  for(const tx of effectiveLegacyTransactions(data)){
+    if(!tx.date.startsWith(`${month}-`))continue;
+    const impact=flowImpactLegacy(data,tx);
+    const category=categoryPath(tx.category,tx.subcategory);
+    add(tx.note||category,category,impact.expense,tx.date);
+  }
+  for(const event of data.state.events??[]){
+    if(!event.date.startsWith(`${month}-`))continue;
+    const impact=flowImpactEvent(event);
+    const partCategories=[...new Set((event.parts??[]).filter(part=>(part.kind??'expense')==='expense').map(part=>categoryPath(part.category,part.subcategory)))];
+    const category=partCategories.length===1?partCategories[0]:partCategories.length>1?'Διαχωρισμένη συναλλαγή':categoryPath(event.category,event.subcategory);
+    add(event.note||category,category,impact.expense,event.date);
+  }
+  const rows=[...grouped.values()].sort((a,b)=>b.amount-a.amount||b.lastDate.localeCompare(a.lastDate)||a.title.localeCompare(b.title,'el'));
+  const gross=rows.reduce((sum,row)=>sum+row.amount,0);
+  return rows.slice(0,Math.max(0,limit)).map(row=>({...row,share:gross>0?row.amount/gross:null}));
+}
+
+export function reportLoanBurden(data:FinanceData){
+  const rows=activeLongTermLoanObligations(data).map(row=>({id:row.loan.id,name:row.loan.name,amount:row.nextAmount,outstanding:row.outstanding,remainingInstallments:row.remainingInstallments}));
+  return {total:rows.reduce((sum,row)=>sum+row.amount,0),count:rows.length,rows};
 }
 
 export function creditCardSnapshots(data:FinanceData,asOf:string){
