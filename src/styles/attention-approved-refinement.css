@@ -1,0 +1,46 @@
+/* Approved ↔ Actual visual refinement after rendered comparison.
+ * Desktop-only: increase scanability/density toward the owner-approved target without changing behavior.
+ */
+@media (min-width:900px){
+  .attention-approved-heading p{font-size:11px}
+
+  .attention-approved-summary-card small{font-size:10px}
+  .attention-approved-summary-card em{font-size:8.6px}
+
+  .attention-approved-group-title h2{font-size:13px}
+  .attention-approved-group-title p{font-size:9px}
+  .attention-approved-group-count{font-size:9px}
+  .attention-approved-table-head{min-height:36px;font-size:8.5px}
+
+  .attention-approved-row{min-height:82px;padding-block:10px}
+  .attention-approved-kind small{font-size:8.5px}
+  .attention-approved-copy>b{font-size:10px}
+  .attention-approved-copy>p{font-size:8.4px}
+  .attention-approved-details>span{font-size:8.6px}
+  .attention-approved-details>b{font-size:10.4px}
+  .attention-approved-details>small{font-size:8px}
+  .attention-approved-date>b{font-size:9px}
+  .attention-approved-date>small{font-size:8px}
+
+  .attention-approved-actions>.save-button{min-height:40px;padding-inline:10px;font-size:8.5px}
+  .attention-approved-icon-action{width:40px;height:40px}
+  .attention-approved-empty-row{font-size:9px}
+
+  .attention-approved-shortcuts h2{font-size:12px}
+  .attention-approved-shortcuts p{font-size:8.8px}
+  .attention-approved-shortcut-grid>a>b{font-size:9.6px}
+  .attention-approved-shortcut-grid>a>small{font-size:8.2px}
+  .attention-approved-shortcut-grid>a>em{font-size:8.4px}
+
+  .attention-approved-clear-head b{font-size:11px}
+  .attention-approved-clear-head span{font-size:8.6px}
+  .attention-approved-tip b{font-size:9px}
+  .attention-approved-tip small{font-size:8px}
+  .attention-approved-tip>a{font-size:8.4px}
+}
+
+@media (min-width:900px) and (max-width:1120px){
+  .attention-approved-actions>.save-button{padding-inline:8px;font-size:8px}
+  .attention-approved-copy>b{font-size:9.5px}
+  .attention-approved-copy>p{font-size:8px}
+}

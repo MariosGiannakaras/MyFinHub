@@ -19,7 +19,7 @@ Current full-page baselines are resolved from `visual-qa/manifest.json`. Current
 | 8 | Lending / receivables | DESIGN APPROVED | VERIFIED | merged to `develop` via #328 |
 | 9 | Recurring | DESIGN APPROVED | VERIFIED | merged to `develop` via #331 |
 | 10 | Planning / forecast | DESIGN APPROVED | VERIFIED | merged to `develop` via #336 |
-| 11 | Needs Attention | NOT STARTED | NOT STARTED | — |
+| 11 | Needs Attention | DESIGN APPROVED | VERIFIED | PR #339 — final validation/merge |
 | 12 | Review | NOT STARTED | NOT STARTED | — |
 | 13 | Reports | NOT STARTED | NOT STARTED | — |
 | 14 | Settings | NOT STARTED | NOT STARTED | — |
@@ -43,6 +43,8 @@ Lending / receivables uses the owner-approved 1536×1064 reference tracked by SH
 Recurring uses the owner-approved 1536×1067 reference tracked by SHA-256 `e0d6faab90eacd9602b62a4eb034cbb5229a8da2e8ee84ca7eef5f794506fdc2`. Exact validated implementation passed application/API checks, rendered frontend QA, CodeQL, cross-engine smoke, performance smoke and Windows Desktop. Fresh desktop/mobile Approved ↔ Actual inspection passed after the mobile-preservation correction for the concise heading, two summary cards, category-grouped recurring workspace, canonical linked-loan payment path and compact inactive history while preserving recurrence cadence/editor/payment/lifecycle semantics. It was squash-merged to `develop` via #331.
 
 Planning / forecast uses the owner-approved 1536×1024 reference tracked by SHA-256 `d6090e0b8f532a71839d63542891d1f8d7f8118fd7fed06bd849cf4e34869079`. The implementation preserves canonical `cashFlowForecast`, scheduled creation/completion to real FinanceEvents, skip/cancel audit history, account/category primitives and established mobile behavior. Validated product ancestor `03eef5f0fb1ee85286bba74ca0e19b84af7d30a0` passed application/API checks, rendered frontend QA, CodeQL, cross-engine smoke, performance smoke and Windows Desktop. Fresh final desktop/mobile Approved ↔ Actual inspection passed after correcting the initial desktop heading/subtitle/CTA presentation, raising scheduled/forecast scanability and aligning account cards to the approved four-column desktop rhythm without hiding canonical accounts. The clean replacement was squash-merged to `develop` via #336 as product commit `3dfa381`.
+
+Needs Attention uses the owner-approved 1024×1536 reference tracked by SHA-256 `4ae37a0d3b795e97f3cf9f9eae2be3cbe137f666c002e457e18001856a4daa2e`. Validated product ancestor `ec9da3dcbe241094bd059f96b9661e1824c8714a` passed application/API checks, high-severity npm audits, rendered frontend QA, CodeQL, cross-engine smoke, performance smoke, Windows Desktop, Windows First Run and Windows Clean Launch. Fresh final desktop/mobile Approved ↔ Actual inspection passed after the desktop typography/row-density refinement for alert-led hierarchy, four KPIs, grouped risk workspaces, canonical item rows and truthful actions while preserving the established mobile surface and canonical attention routing/privacy/snooze/dismiss semantics. Delivery is through #339.
 
 ## Protected exclusion
 
