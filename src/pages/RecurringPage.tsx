@@ -51,31 +51,30 @@ export function RecurringPage({data,asOf,onUpsert,onOpenLoans,onPayLoan,onPayRec
 
     {message?<div className="action-status" role="status" aria-live="polite">{message}</div>:null}
 
-    <section className="panel neo-raised recurring-active-workspace" data-recurring-active-workspace>
+    <section className="panel neo-raised recurring-active-workspace" data-recurring-active-workspace data-active-recurring>
       <div className="panel-head recurring-active-heading"><div><span>Ενεργά</span><small>Οι ενεργές επαναλαμβανόμενες υποχρεώσεις, οργανωμένες ανά κατηγορία.</small></div></div>
-      <section className="recurring-active-recurring" data-active-recurring>
-        {upcoming.length?<>
-          <div className="semantic-table-wrap desktop-finance-table recurring-approved-table-wrap">
-            <table className="semantic-table recurring-workspace-table">
-              <caption className="sr-only">Ενεργά πάγια και συνδρομές</caption>
-              <thead><tr><th scope="col">Πάγιο</th><th scope="col">Επόμενη πληρωμή</th><th scope="col">Λογαριασμός</th><th scope="col" className="amount">Ποσό</th><th scope="col" className="actions">Ενέργειες</th></tr></thead>
-              {recurringGroups.map(group=><tbody key={group.category} data-recurring-group={group.category}>
-                <tr className="recurring-group-row"><th scope="rowgroup" colSpan={5}><FinanceIcon settings={data.state.settings} kind="expense" category={group.category} size={16}/><span>{group.category}</span></th></tr>
-                {group.rows.map(({item,nextDate,lastPayment})=>{const typical=typicalPaymentDay(data,item);return <tr key={item.id} data-recurring-status="active">
-                  <td><div className="semantic-list-title"><FinanceIcon settings={data.state.settings} kind="expense" note={item.name} category={item.category} size={17}/><div><b>{item.name}</b><small>{recurringCadenceLabel(item)}</small></div></div></td>
-                  <td><b>{nextDate?shortDate(nextDate):'—'}</b><small>{recurringCadenceLabel(item)}{typical?` · Συνήθης ημέρα ${typical}`:''}{lastPayment?` · Τελευταία ${shortDate(lastPayment.date)}`:''}</small></td>
-                  <td><b className="recurring-account-name">{accountDisplayName(data,item.accountId)}</b><small>Προεπιλεγμένος</small></td>
-                  <td className="amount"><b>{money.format(item.amount)}</b></td>
-                  <td className="actions"><span className="row-actions recurring-actions"><button type="button" className="pay-action" aria-label={`Πληρωμή ${item.name}`} onClick={()=>startPay(item)}><ReceiptText/><span>Πληρωμή</span></button><Tooltip label={`Επεξεργασία ${item.name}`} side="left"><button type="button" aria-label={`Επεξεργασία ${item.name}`} onClick={()=>startEdit(item)}><Pencil/></button></Tooltip><Tooltip label={`Παύση ${item.name}`} side="left"><button type="button" aria-label={`Παύση ${item.name}`} onClick={()=>setLifecycle(item,'paused')}><PauseCircle/></button></Tooltip><Tooltip label={`Διακοπή ${item.name}`} side="left"><button type="button" aria-label={`Διακοπή ${item.name}`} onClick={()=>setLifecycle(item,'stopped')}><Archive/></button></Tooltip></span></td>
-                </tr>})}
-              </tbody>)}
-            </table>
-          </div>
-          <div className="mobile-recurring-list" role="list" aria-label="Ενεργά πάγια και συνδρομές κινητού">{upcoming.map(({item,nextDate,lastPayment})=>{const typical=typicalPaymentDay(data,item);return <article className="mobile-recurring-row" role="listitem" data-mobile-recurring={item.id} data-recurring-status="active" key={item.id}><div className="mobile-recurring-head"><div className="semantic-list-title"><FinanceIcon settings={data.state.settings} kind="expense" note={item.name} category={item.category} size={17}/><div><b>{item.name}</b><small>{item.category} · {recurringCadenceLabel(item)}</small></div></div><strong>{money.format(item.amount)}</strong></div><div className="mobile-recurring-meta"><span><b>{nextDate?shortDate(nextDate):'—'}</b><small>{recurringCadenceLabel(item)}{typical?` · Συνήθης ημέρα ${typical}`:''}</small></span><span><b>{accountDisplayName(data,item.accountId)}</b><small>{lastPayment?`Τελευταία ${shortDate(lastPayment.date)} · ${money.format(lastPayment.amount)}`:'Δεν έχει πληρωμή'}</small></span></div><div className="mobile-recurring-actions"><button type="button" className="save-button mobile-pay-action" aria-label={`Πληρωμή ${item.name}`} onClick={()=>startPay(item)}><ReceiptText size={16}/> Πληρωμή</button><details className="mobile-action-menu"><summary aria-label={`Περισσότερες ενέργειες για ${item.name}`}><MoreHorizontal size={18}/><span className="sr-only">Περισσότερα</span></summary><div><button type="button" onClick={event=>{startEdit(item);(event.currentTarget.closest('details') as HTMLDetailsElement|null)?.removeAttribute('open')}}><Pencil size={15}/> Επεξεργασία</button><button type="button" onClick={event=>{setLifecycle(item,'paused');(event.currentTarget.closest('details') as HTMLDetailsElement|null)?.removeAttribute('open')}}><PauseCircle size={15}/> Παύση</button><button type="button" onClick={event=>{setLifecycle(item,'stopped');(event.currentTarget.closest('details') as HTMLDetailsElement|null)?.removeAttribute('open')}}><Archive size={15}/> Διακοπή</button></div></details></div></article>})}</div>
-        </>:<div className="empty-state">Δεν υπάρχουν ενεργά πάγια.</div>}
-      </section>
-      <LongTermLoanSummary data={data} onPayLoan={onPayLoan} onOpenLoans={onOpenLoans}/>
+      {upcoming.length?<>
+        <div className="semantic-table-wrap desktop-finance-table recurring-approved-table-wrap">
+          <table className="semantic-table recurring-workspace-table">
+            <caption className="sr-only">Ενεργά πάγια και συνδρομές</caption>
+            <thead><tr><th scope="col">Πάγιο</th><th scope="col">Επόμενη πληρωμή</th><th scope="col">Λογαριασμός</th><th scope="col" className="amount">Ποσό</th><th scope="col" className="actions">Ενέργειες</th></tr></thead>
+            {recurringGroups.map(group=><tbody key={group.category} data-recurring-group={group.category}>
+              <tr className="recurring-group-row"><th scope="rowgroup" colSpan={5}><FinanceIcon settings={data.state.settings} kind="expense" category={group.category} size={16}/><span>{group.category}</span></th></tr>
+              {group.rows.map(({item,nextDate,lastPayment})=>{const typical=typicalPaymentDay(data,item);return <tr key={item.id} data-recurring-status="active">
+                <td><div className="semantic-list-title"><FinanceIcon settings={data.state.settings} kind="expense" note={item.name} category={item.category} size={17}/><div><b>{item.name}</b><small>{recurringCadenceLabel(item)}</small></div></div></td>
+                <td><b>{nextDate?shortDate(nextDate):'—'}</b><small>{recurringCadenceLabel(item)}{typical?` · Συνήθης ημέρα ${typical}`:''}{lastPayment?` · Τελευταία ${shortDate(lastPayment.date)}`:''}</small></td>
+                <td><b className="recurring-account-name">{accountDisplayName(data,item.accountId)}</b><small>Προεπιλεγμένος</small></td>
+                <td className="amount"><b>{money.format(item.amount)}</b></td>
+                <td className="actions"><span className="row-actions recurring-actions"><button type="button" className="pay-action" aria-label={`Πληρωμή ${item.name}`} onClick={()=>startPay(item)}><ReceiptText/><span>Πληρωμή</span></button><Tooltip label={`Επεξεργασία ${item.name}`} side="left"><button type="button" aria-label={`Επεξεργασία ${item.name}`} onClick={()=>startEdit(item)}><Pencil/></button></Tooltip><Tooltip label={`Παύση ${item.name}`} side="left"><button type="button" aria-label={`Παύση ${item.name}`} onClick={()=>setLifecycle(item,'paused')}><PauseCircle/></button></Tooltip><Tooltip label={`Διακοπή ${item.name}`} side="left"><button type="button" aria-label={`Διακοπή ${item.name}`} onClick={()=>setLifecycle(item,'stopped')}><Archive/></button></Tooltip></span></td>
+              </tr>})}
+            </tbody>)}
+          </table>
+        </div>
+        <div className="mobile-recurring-list" role="list" aria-label="Ενεργά πάγια και συνδρομές κινητού">{upcoming.map(({item,nextDate,lastPayment})=>{const typical=typicalPaymentDay(data,item);return <article className="mobile-recurring-row" role="listitem" data-mobile-recurring={item.id} data-recurring-status="active" key={item.id}><div className="mobile-recurring-head"><div className="semantic-list-title"><FinanceIcon settings={data.state.settings} kind="expense" note={item.name} category={item.category} size={17}/><div><b>{item.name}</b><small>{item.category} · {recurringCadenceLabel(item)}</small></div></div><strong>{money.format(item.amount)}</strong></div><div className="mobile-recurring-meta"><span><b>{nextDate?shortDate(nextDate):'—'}</b><small>{recurringCadenceLabel(item)}{typical?` · Συνήθης ημέρα ${typical}`:''}</small></span><span><b>{accountDisplayName(data,item.accountId)}</b><small>{lastPayment?`Τελευταία ${shortDate(lastPayment.date)} · ${money.format(lastPayment.amount)}`:'Δεν έχει πληρωμή'}</small></span></div><div className="mobile-recurring-actions"><button type="button" className="save-button mobile-pay-action" aria-label={`Πληρωμή ${item.name}`} onClick={()=>startPay(item)}><ReceiptText size={16}/> Πληρωμή</button><details className="mobile-action-menu"><summary aria-label={`Περισσότερες ενέργειες για ${item.name}`}><MoreHorizontal size={18}/><span className="sr-only">Περισσότερα</span></summary><div><button type="button" onClick={event=>{startEdit(item);(event.currentTarget.closest('details') as HTMLDetailsElement|null)?.removeAttribute('open')}}><Pencil size={15}/> Επεξεργασία</button><button type="button" onClick={event=>{setLifecycle(item,'paused');(event.currentTarget.closest('details') as HTMLDetailsElement|null)?.removeAttribute('open')}}><PauseCircle size={15}/> Παύση</button><button type="button" onClick={event=>{setLifecycle(item,'stopped');(event.currentTarget.closest('details') as HTMLDetailsElement|null)?.removeAttribute('open')}}><Archive size={15}/> Διακοπή</button></div></details></div></article>})}</div>
+      </>:<div className="empty-state">Δεν υπάρχουν ενεργά πάγια.</div>}
     </section>
+
+    <LongTermLoanSummary data={data} onPayLoan={onPayLoan} onOpenLoans={onOpenLoans}/>
 
     <details className="panel neo-flat inactive-recurring" data-inactive-recurring-history>
       <summary className="panel-head" aria-label={`Παγωμένα και ανενεργά πάγια, ${inactive.length}`}><div><span>Παγωμένα & ανενεργά</span><small>Πάγια που είναι προσωρινά παγωμένα ή ανενεργά.</small></div><strong>{inactive.length}</strong></summary>
