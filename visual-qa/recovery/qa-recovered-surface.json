@@ -4,16 +4,16 @@
   "appVersion": "v1.3",
   "suite": "recovered-surface",
   "surface": "recovery",
-  "generatedAt": "2026-09-02T10:28:28.081Z",
+  "generatedAt": "2026-09-02T13:02:43.412Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "d73622001481a3e5ebf070425007755fc6ccd140",
-    "shortSha": "d7362200",
-    "branch": "feat/329-recurring-approved-target"
+    "sha": "03eef5f0fb1ee85286bba74ca0e19b84af7d30a0",
+    "shortSha": "03eef5f0",
+    "branch": "feat/332-planning-approved-target"
   },
   "screenshots": [
-    "visual-qa/recovery/v1.3__2026-09-02_132828__qa-recovered-surface__recovered-page-error-focus.png",
-    "visual-qa/recovery/v1.3__2026-09-02_132828__qa-recovered-surface__recovered-readability-large.png",
-    "visual-qa/recovery/v1.3__2026-09-02_132828__qa-recovered-surface__recovered-savings-action-first.png"
+    "visual-qa/recovery/v1.3__2026-09-02_160243__qa-recovered-surface__recovered-page-error-focus.png",
+    "visual-qa/recovery/v1.3__2026-09-02_160243__qa-recovered-surface__recovered-readability-large.png",
+    "visual-qa/recovery/v1.3__2026-09-02_160243__qa-recovered-surface__recovered-savings-action-first.png"
   ]
 }
