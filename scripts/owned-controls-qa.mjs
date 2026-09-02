@@ -22,7 +22,8 @@ try{
   c=new Cdp(target.webSocketDebuggerUrl);await c.open();await c.send('Page.enable');await c.send('Runtime.enable');
   const viewport=(width,height)=>c.send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<=680});
   const waitFor=async(fn,label,args=[])=>{for(let i=0;i<70;i++){if(await c.call(fn,args))return;await sleep(100)}throw new Error(`Timed out waiting for ${label}`)};
-  const clickText=async(selector,text)=>assert(await c.call("function(selector,text){const visible=item=>{const style=getComputedStyle(item),rect=item.getBoundingClientRect();return style.display!=='none'&&style.visibility!=='hidden'&&rect.width>0&&rect.height>0};const node=[...document.querySelectorAll(selector)].find(item=>visible(item)&&(item.textContent||'').includes(text));if(!node)return false;node.click();return true}",[selector,text]),`missing visible ${text}`);
+  const clickText=async(selector,text)=>assert(await c.call("function(selector,text){const node=[...document.querySelectorAll(selector)].find(item=>(item.textContent||'').includes(text));if(!node)return false;node.click();return true}",[selector,text]),`missing ${text}`);
+  const clickVisibleText=async(selector,text)=>assert(await c.call("function(selector,text){const visible=item=>{const style=getComputedStyle(item),rect=item.getBoundingClientRect();return style.display!=='none'&&style.visibility!=='hidden'&&rect.width>0&&rect.height>0};const node=[...document.querySelectorAll(selector)].find(item=>visible(item)&&(item.textContent||'').includes(text));if(!node)return false;node.click();return true}",[selector,text]),`missing visible ${text}`);
   const assertOwned=async(dialogClass,label)=>assert(await c.call("function(dialogClass){const dialog=document.querySelector('.'+dialogClass);if(!dialog)return false;const shells=[...dialog.querySelectorAll('.owned-input-shell')];return dialog.querySelectorAll('select,input[type=\"date\"]').length===0&&shells.length>0&&shells.every(shell=>{const input=shell.querySelector('input');return input&&parseFloat(getComputedStyle(input).fontSize)>=15.9&&((shell.classList.contains('owned-select-shell')&&input.getAttribute('role')==='combobox'&&input.getAttribute('aria-haspopup')==='listbox')||(shell.classList.contains('owned-date-shell')&&input.getAttribute('aria-haspopup')==='dialog'))})}",[dialogClass]),`${label} uses rendered app-owned controls`);
   const assertNoNativeSelects=async(label)=>assert(await c.call("function(){return document.querySelectorAll('.workspace select').length===0}"),`${label} has no native select controls`);
   const exerciseNestedSelect=async(dialogClass,label)=>{
@@ -55,7 +56,8 @@ try{
     if(selector.includes('mobile-more'))await openMore();
     await clickText(selector,label);await waitFor("function(heading){return (document.querySelector('#main-workspace h1')?.textContent||'').includes(heading)}",heading,[heading]);
     await assertNoNativeSelects(heading);
-    await clickText('button',action);await waitFor("function(dialogClass){return Boolean(document.querySelector('.'+dialogClass))}",`${heading} editor`,[dialogClass]);await assertOwned(dialogClass,heading);await exerciseNestedSelect(dialogClass,heading);
+    if(heading==='Δανεικά / Οφειλές')await clickVisibleText('button',action);else await clickText('button',action);
+    await waitFor("function(dialogClass){return Boolean(document.querySelector('.'+dialogClass))}",`${heading} editor`,[dialogClass]);await assertOwned(dialogClass,heading);await exerciseNestedSelect(dialogClass,heading);
     if(heading==='Δανεικά / Οφειλές')await exerciseLendingSuggestions();
     await c.call("function(dialogClass){const dialog=document.querySelector('.'+dialogClass);const close=dialog?.querySelector('.icon-button');if(!close)return false;close.click();return true}",[dialogClass]);await waitFor("function(dialogClass){return !document.querySelector('.'+dialogClass)}",`${heading} editor close`,[dialogClass]);
   }
