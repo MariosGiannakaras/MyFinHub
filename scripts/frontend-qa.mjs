@@ -50,7 +50,7 @@ try{
 
   await clickText('.sidebar nav button','Πάγια');await waitHeading('Πάγια & Συνδρομές');await audit('desktop recurring');assert(await c.eval("Boolean(document.querySelector('.long-term-recurring'))&&document.body.textContent.includes('QA Long Loan')"),'long-term loans surface in Recurring');assert(await c.eval("Boolean(document.querySelector('.recurring-workspace-table [data-icon-key]'))"),'recurring semantic icons');
 
-  await clickText('.sidebar nav button','Δανεικά / Οφειλές');await waitHeading('Δανεικά & επιστροφές');await audit('desktop lending');assert(await c.eval("Boolean(document.querySelector('.private-text'))"),'lending remains private by default');
+  await clickText('.sidebar nav button','Δανεικά / Οφειλές');await waitHeading('Δανεικά / Οφειλές');await audit('desktop lending');assert(await c.eval("Boolean(document.querySelector('.private-text'))"),'lending remains private by default');
   await clickText('.sidebar nav button','Αναφορές');await waitHeading('Αναφορές');await audit('desktop reports');assert(await c.eval("Boolean(document.querySelector('.report-operations-grid'))"),'reports operational grid');
   await clickText('.sidebar nav button','Ρυθμίσεις');await waitHeading('Ρυθμίσεις');await audit('desktop settings');assert(await c.eval("Boolean([...document.querySelectorAll('label span')].find(x=>x.textContent.includes('Πιστωτικό όριο')))"),'credit limit setting');
   await c.eval("document.querySelector('[data-qa-crash]').click()");await waitFor("function(){return Boolean(document.querySelector('.workspace-error[role=\"alert\"]'))}",'error boundary');await clickText('.workspace-error button','Dashboard');await waitHeading('Οι λογαριασμοί μου');
@@ -66,7 +66,7 @@ try{
   await clickText('.mobile-nav button','Κάρτες');await waitHeading('Κάρτες');await audit('mobile cards');await shot('mobile-cards');
   await morePage('Πιστωτική','Πιστωτική Κάρτα');await audit('mobile credit');assert(await c.eval("Boolean(document.querySelector('#myfinhub-card-stack .stack-card.top .payment-card'))"),'canonical credit card stack stays visible on mobile');assert(await c.eval("document.querySelector('.semantic-table-wrap').scrollWidth>=document.querySelector('.semantic-table-wrap').clientWidth"),'credit history remains contained');
   await morePage('Δόσεις & Δάνεια','Δόσεις & Δάνεια');await audit('mobile loans');await assertMobileControlFonts('mobile loans');
-  await morePage('Δανεικά / Οφειλές','Δανεικά & επιστροφές');await audit('mobile lending');
+  await morePage('Δανεικά / Οφειλές','Δανεικά / Οφειλές');await audit('mobile lending');
   await morePage('Πάγια','Πάγια & Συνδρομές');await audit('mobile recurring');assert(await c.eval("Boolean(document.querySelector('.mobile-pay-action'))"),'recurring primary payment action');
   await clickText('.long-term-recurring button','Άνοιγμα Δόσεων & Δανείων');await waitHeading('Δόσεις & Δάνεια');
   await morePage('Αναφορές','Αναφορές');await audit('mobile reports');
