@@ -12,4 +12,5 @@ Approved ↔ Actual: PASS. Fresh final desktop 1440×1000 evidence was personall
 
 Validation: exact validated product ancestor `ec9da3dcbe241094bd059f96b9661e1824c8714a` passed CI #1607 including high-severity npm audits, application/API checks and rendered frontend QA, plus CodeQL #1566, cross-engine smoke #824, performance smoke #839, Windows Desktop #1210, Windows First Run #236 and Windows Clean Launch #237.
 
-Next: final exact-head confirmation and squash merge to develop.
+Delivery: squash-merged to develop via #339 as product commit aae161c.
+Next: surface #12 Review remains NOT STARTED pending its approved target.
