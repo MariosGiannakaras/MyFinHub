@@ -49,14 +49,14 @@ try{
   await clickText('button','Γρήγορη προσθήκη');await waitFor("function(){return Boolean(document.querySelector('.quick-modal'))}",'Quick Entry');await assertOwned('quick-modal','Quick Entry');await exerciseNestedSelect('quick-modal','Quick Entry');
   await c.call("function(){const button=document.querySelector('button[aria-label=\"Κλείσιμο καταχώρισης\"]');if(!button)return false;button.click();return true}");await waitFor("function(){return !document.querySelector('.quick-modal')}",'Quick Entry close');
 
-  const routeChecks=[['.mobile-nav button','Αποταμίευση','Αποταμίευση','Νέα','savings-dialog'],['.mobile-more-menu button','Πιστωτική','Πιστωτική Κάρτα','Νέα αγορά','credit-dialog'],['.mobile-more-menu button','Δόσεις & Δάνεια','Δόσεις & Δάνεια','Νέο','loan-editor-dialog'],['.mobile-more-menu button','Δανεικά / Οφειλές','Δανεικά & επιστροφές','Νέα κίνηση','lending-dialog'],['.mobile-more-menu button','Πάγια','Πάγια & Συνδρομές','Νέο πάγιο','editor-dialog']];
+  const routeChecks=[['.mobile-nav button','Αποταμίευση','Αποταμίευση','Νέα','savings-dialog'],['.mobile-more-menu button','Πιστωτική','Πιστωτική Κάρτα','Νέα αγορά','credit-dialog'],['.mobile-more-menu button','Δόσεις & Δάνεια','Δόσεις & Δάνεια','Νέο','loan-editor-dialog'],['.mobile-more-menu button','Δανεικά / Οφειλές','Δανεικά / Οφειλές','Νέα κίνηση','lending-dialog'],['.mobile-more-menu button','Πάγια','Πάγια & Συνδρομές','Νέο πάγιο','editor-dialog']];
   for(const [selector,label,heading,action,dialogClass] of routeChecks){
     console.log(`Owned controls QA: ${heading}`);
     if(selector.includes('mobile-more'))await openMore();
     await clickText(selector,label);await waitFor("function(heading){return (document.querySelector('#main-workspace h1')?.textContent||'').includes(heading)}",heading,[heading]);
     await assertNoNativeSelects(heading);
     await clickText('button',action);await waitFor("function(dialogClass){return Boolean(document.querySelector('.'+dialogClass))}",`${heading} editor`,[dialogClass]);await assertOwned(dialogClass,heading);await exerciseNestedSelect(dialogClass,heading);
-    if(heading==='Δανεικά & επιστροφές')await exerciseLendingSuggestions();
+    if(heading==='Δανεικά / Οφειλές')await exerciseLendingSuggestions();
     await c.call("function(dialogClass){const dialog=document.querySelector('.'+dialogClass);const close=dialog?.querySelector('.icon-button');if(!close)return false;close.click();return true}",[dialogClass]);await waitFor("function(dialogClass){return !document.querySelector('.'+dialogClass)}",`${heading} editor close`,[dialogClass]);
   }
 
