@@ -17,8 +17,8 @@ Current full-page baselines are resolved from `visual-qa/manifest.json`. Current
 | 6 | Credit Card | DESIGN APPROVED | VERIFIED | merged via #323; navigation follow-up #327 |
 | 7 | Loans | DESIGN APPROVED | VERIFIED | merged to `develop` via #321 |
 | 8 | Lending / receivables | DESIGN APPROVED | VERIFIED | merged to `develop` via #328 |
-| 9 | Recurring | NOT STARTED | NOT STARTED | — |
-| 10 | Planning / forecast | NOT STARTED | NOT STARTED | — |
+| 9 | Recurring | DESIGN APPROVED | VERIFIED | merged to `develop` via #331 |
+| 10 | Planning / forecast | DESIGN APPROVED | VERIFIED | PR #335 — final validation/merge |
 | 11 | Needs Attention | NOT STARTED | NOT STARTED | — |
 | 12 | Review | NOT STARTED | NOT STARTED | — |
 | 13 | Reports | NOT STARTED | NOT STARTED | — |
@@ -39,6 +39,10 @@ Credit Card uses the owner-approved 1536×1067 reference tracked by SHA-256 `d3c
 Loans uses the owner-approved 1536×1067 reference tracked by SHA-256 `4a058633da08e66f32d5958eae364cf602cc0a10258e28bc00900c58f4ea8f59`, with the owner-requested completion-driven segmented blue→violet→green progress treatment. Final clean product head `ff9c5ca` passed `npm run check`, API validation, rendered frontend QA, CodeQL, cross-engine smoke, performance smoke and Windows Desktop. Fresh final Approved ↔ Actual inspection passed for heading/actions, sort toolbar, active obligation cards, truthful canonical metadata/actions, completed summary, progress explanation and the corrected segmented gradient coverage while preserving all canonical Loans accounting/payment/edit/self-loan/forgiveness semantics. It was squash-merged to `develop` via #321 as product commit `cd71411`.
 
 Lending / receivables uses the owner-approved 1536×1064 reference tracked by SHA-256 `5845fc650bf0d2ed48b076989ac18e168572d9db68d53762135961f52772a58b`. Exact product head `8813424` passed `npm run check`, API validation, rendered frontend QA, CodeQL, cross-engine smoke, performance smoke and Windows Desktop. Fresh final desktop/mobile Approved ↔ Actual inspection passed for the people navigator/search, selected-person receivable metrics and privacy state, canonical lending/repayment quick actions, selected-person movement hierarchy and mobile regression protection while preserving canonical receivable accounting, event creation, validation and quick-add semantics. It was squash-merged to `develop` via #328 as product commit `7a1c837`.
+
+Recurring uses the owner-approved 1536×1067 reference tracked by SHA-256 `e0d6faab90eacd9602b62a4eb034cbb5229a8da2e8ee84ca7eef5f794506fdc2`. Exact validated implementation passed application/API checks, rendered frontend QA, CodeQL, cross-engine smoke, performance smoke and Windows Desktop. Fresh desktop/mobile Approved ↔ Actual inspection passed after the mobile-preservation correction for the concise heading, two summary cards, category-grouped recurring workspace, canonical linked-loan payment path and compact inactive history while preserving recurrence cadence/editor/payment/lifecycle semantics. It was squash-merged to `develop` via #331.
+
+Planning / forecast uses the owner-approved 1536×1024 reference tracked by SHA-256 `d6090e0b8f532a71839d63542891d1f8d7f8118fd7fed06bd849cf4e34869079`. The implementation preserves canonical `cashFlowForecast`, scheduled creation/completion to real FinanceEvents, skip/cancel audit history, account/category primitives and established mobile behavior. Exact-head application/API checks, rendered frontend QA, CodeQL, cross-engine smoke, performance smoke and Windows Desktop passed. Fresh final desktop/mobile Approved ↔ Actual inspection passed after correcting the initial desktop heading/subtitle/CTA presentation, raising scheduled/forecast scanability and aligning account cards to the approved four-column desktop rhythm without hiding canonical accounts. Delivery is through #335.
 
 ## Protected exclusion
 
