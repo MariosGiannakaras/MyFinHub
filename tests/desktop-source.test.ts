@@ -103,7 +103,7 @@ describe('MyFinHub Windows desktop boundary', () => {
   });
 
   it('surfaces explicit in-app update controls only through the Electron bridge', () => {
-    expect(settings).toContain('<DesktopUpdatePanel/>');
+    expect(settings).toMatch(/<DesktopUpdatePanel\s*\/>/);
     expect(updatePanel).toContain('window.myFinHubDesktop');
     expect(updatePanel).toContain('Έλεγχος τώρα');
     expect(updatePanel).toContain('Λήψη ενημέρωσης');
