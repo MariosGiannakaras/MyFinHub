@@ -6,7 +6,8 @@ const read=(path:string)=>readFileSync(new URL(`../${path}`,import.meta.url),'ut
 describe('approved composite Reports source contract',()=>{
   it('keeps one long scrollable surface with in-page report navigation',()=>{
     const source=read('src/pages/ReportsPage.tsx');
-    const styles=read('src/styles/part34.css');
+    const styles=read('src/pages/ReportsPage.css');
+    expect(source).toContain("import './ReportsPage.css'");
     expect(source).toContain('report-section-nav');
     for(const anchor of ['#report-overview','#report-flow','#report-obligations','#report-expenses','#report-comparisons','#report-accounts'])expect(source).toContain(anchor);
     expect(styles).toContain('.report-section-nav{position:sticky');
