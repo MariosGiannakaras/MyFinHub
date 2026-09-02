@@ -70,6 +70,6 @@ describe('account IBAN metadata',()=>{
     expect(financeTypes.toLowerCase()).not.toContain('iban');
     expect(financeHook.toLowerCase()).not.toContain('iban');
     expect(dashboardSource).toContain('<AccountIban accountId={account.id}/>');
-    expect(settingsSource).toContain('<AccountMetadataSettings data={data}/>');
+    expect(settingsSource).toMatch(/<AccountMetadataSettings\s+data=\{data\}\s*\/>/);
   });
 });
