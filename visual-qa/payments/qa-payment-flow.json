@@ -4,20 +4,20 @@
   "appVersion": "v1.3",
   "suite": "payment-flow",
   "surface": "payments",
-  "generatedAt": "2026-09-02T15:30:51.758Z",
+  "generatedAt": "2026-09-02T17:01:32.269Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "f96d0aa315ebd00834e601404eb9ea9ecba0d824",
-    "shortSha": "f96d0aa3",
+    "sha": "bd3b8228950f72a5889ec120f54aebe31ed9c86e",
+    "shortSha": "bd3b8228",
     "branch": "feat/337-attention-approved-target"
   },
   "screenshots": [
-    "visual-qa/payments/v1.3__2026-09-02_183051__qa-payment-flow__payment-flow-credit.png",
-    "visual-qa/payments/v1.3__2026-09-02_183051__qa-payment-flow__payment-flow-loan-installments.png",
-    "visual-qa/payments/v1.3__2026-09-02_183051__qa-payment-flow__payment-flow-mobile-linked-loan.png",
-    "visual-qa/payments/v1.3__2026-09-02_183051__qa-payment-flow__payment-flow-mobile.png",
-    "visual-qa/payments/v1.3__2026-09-02_183051__qa-payment-flow__payment-flow-recurring-linked-loan.png",
-    "visual-qa/payments/v1.3__2026-09-02_183051__qa-payment-flow__payment-flow-recurring.png",
-    "visual-qa/payments/v1.3__2026-09-02_183051__qa-payment-flow__payment-flow-stale-id.png"
+    "visual-qa/payments/v1.3__2026-09-02_200132__qa-payment-flow__payment-flow-credit.png",
+    "visual-qa/payments/v1.3__2026-09-02_200132__qa-payment-flow__payment-flow-loan-installments.png",
+    "visual-qa/payments/v1.3__2026-09-02_200132__qa-payment-flow__payment-flow-mobile-linked-loan.png",
+    "visual-qa/payments/v1.3__2026-09-02_200132__qa-payment-flow__payment-flow-mobile.png",
+    "visual-qa/payments/v1.3__2026-09-02_200132__qa-payment-flow__payment-flow-recurring-linked-loan.png",
+    "visual-qa/payments/v1.3__2026-09-02_200132__qa-payment-flow__payment-flow-recurring.png",
+    "visual-qa/payments/v1.3__2026-09-02_200132__qa-payment-flow__payment-flow-stale-id.png"
   ]
 }
