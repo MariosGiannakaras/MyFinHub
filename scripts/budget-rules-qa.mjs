@@ -48,14 +48,13 @@ try{
   await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Αναφορές')}",'reports navigation');
   assert(await c.call("function(){const panel=document.querySelector('[data-budget-panel]');return Boolean(panel&&panel.querySelector('[role=progressbar]')&&panel.textContent.includes('Σταθερά έξοδα'))}"),'reports detailed budget progress');
 
-  console.log('Budget/Rules QA: Advanced Automations is secondary and human-facing');
+  console.log('Budget/Rules QA: dedicated Rules tab is human-facing');
   await navigate('settings');
-  await clickText('.settings-tablist button','Προϋπολογισμοί & Στόχοι');
-  assert(await c.call("function(){const details=document.querySelector('[data-advanced-automations]');return Boolean(details&&!details.open)}"),'advanced automations is collapsed by default');
+  await clickText('.settings-tablist button','Κανόνες');
+  await waitFor("function(){return Boolean(document.querySelector('.settings-rules-only [data-advanced-automations]'))}",'dedicated rules panel');
+  assert(await c.call("function(){const details=document.querySelector('.settings-rules-only [data-advanced-automations]');if(!details)return false;const rect=details.getBoundingClientRect();return rect.width>0&&rect.height>0}"),'dedicated rules panel is visible');
   const hiddenText=await c.call("function(){return document.querySelector('[data-advanced-automations]')?.textContent||''}");
   assert(!hiddenText.includes('First match wins')&&!hiddenText.includes('Προτεραιότητα'),'low-level rule-engine terminology is absent');
-  await clickText('[data-advanced-automations] summary','Προχωρημένα · Αυτοματισμοί');
-  await waitFor("function(){return Boolean(document.querySelector('[data-advanced-automations]')?.open)}",'advanced automations open');
   const builderLabels=await c.call("function(){const details=document.querySelector('[data-advanced-automations]');const text=details?.textContent||'';return text.includes('Όταν η περιγραφή')&&text.includes('Τότε βάλε κατηγορία')&&text.includes('Πότε να λειτουργεί')}" );
   assert(builderLabels,'human condition-action builder labels');
   assert((await ownedValue('Πότε να λειτουργεί'))==='Όταν την καταχωρίζω εγώ','human source-scope selection');
@@ -86,19 +85,19 @@ try{
   await clickAria('Διαγραφή αυτοματισμού QA Market first');
   await waitFor("function(){return !(document.querySelector('.rule-settings-list')?.textContent||'').includes('QA Market first')}",'automation deletion');
 
-  console.log('Budget/Rules QA: budgets still edit independently of Advanced Automations');
+  console.log('Budget/Rules QA: budgets remain independently editable in their dedicated tab');
+  await clickText('.settings-tablist button','Προϋπολογισμοί & Στόχοι');
+  await waitFor("function(){return Boolean(document.querySelector('.settings-budgets-only .budget-settings-panel'))}",'budgets tab');
   await setLabelInput('Όριο €','75');
   await clickText('.budget-settings-panel button','Αποθήκευση budget');
   await waitFor("function(){return (document.querySelector('.budget-settings-list')?.textContent||'').includes('75')}",'budget update');
   assert(!(await c.call("function(){return document.querySelector('.top-actions button[aria-label=\"Αναίρεση τελευταίας αλλαγής\"]')?.disabled??true}")),'budget update participates in undo');
   await clickAria('Αναίρεση τελευταίας αλλαγής');
 
-  console.log('Budget/Rules QA: mobile Advanced Automations accessibility and containment');
+  console.log('Budget/Rules QA: mobile dedicated Rules accessibility and containment');
   await navigate('settings','budget-rules',375,812);
-  await clickText('.settings-tablist button','Προϋπολογισμοί & Στόχοι');
-  await noOverflow('budget/rules mobile settings');await touchTargets('budget/rules mobile settings');
-  await clickText('[data-advanced-automations] summary','Προχωρημένα · Αυτοματισμοί');
-  await noOverflow('advanced automations mobile open');await touchTargets('advanced automations mobile open');
+  await clickText('.settings-tablist button','Κανόνες');
+  await noOverflow('rules mobile settings');await touchTargets('rules mobile settings');
   assert(await c.call("function(){const grid=document.querySelector('.rule-editor-grid');return Boolean(grid&&grid.getBoundingClientRect().width<=innerWidth)}"),'automation builder contained on mobile');
   await screenshot('advanced-automations-mobile');
   await navigate('reports','empty',320,700);
@@ -107,5 +106,5 @@ try{
   assert(runtimeErrors.length===0,`runtime exceptions: ${runtimeErrors.join(' | ')}`);
   assert(failedRequests.length===0,`network loading failures: ${failedRequests.join(' | ')}`);
   c.close();
-  console.log('Budget and Advanced Automations rendered QA passed.');
+  console.log('Budget and Rules rendered QA passed.');
 }finally{c?.close();child.kill('SIGTERM')}
