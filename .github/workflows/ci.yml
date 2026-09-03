@@ -69,5 +69,6 @@ jobs:
           path: |
             visual-qa/**/*.png
             visual-qa/**/*.json
+            /tmp/myfinhub-settings-tabs-qa/*.png
           if-no-files-found: warn
           retention-days: 14
