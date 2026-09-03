@@ -1,5 +1,4 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ApiError } from '../server/http.js';
 import { readLatestAndroidRelease } from '../server/androidUpdates.js';
 
 function upstream(status: number, body: unknown) {
@@ -56,12 +55,12 @@ describe('private Android release metadata reader', () => {
     await expect(readLatestAndroidRelease('owner-token')).resolves.toBeNull();
   });
 
-  it.each([
+  it.each<[Record<string, unknown>, string]>([
     [{ version_code: 0 }, 'invalid version'],
     [{ storage_path: '../escape.apk' }, 'unsafe path'],
     [{ sha256: 'not-a-digest' }, 'bad digest'],
     [{ size_bytes: 0 }, 'bad size'],
-  ])('rejects malformed release metadata (%s)', async (override) => {
+  ])('rejects malformed release metadata (%s)', async (override, _label) => {
     const row = {
       version_code: 2,
       version_name: '0.2.0',
@@ -75,12 +74,12 @@ describe('private Android release metadata reader', () => {
     };
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(upstream(200, [row])));
 
-    await expect(readLatestAndroidRelease('owner-token')).rejects.toMatchObject<ApiError>({
+    await expect(readLatestAndroidRelease('owner-token')).rejects.toMatchObject({
       code: 'UPDATE_METADATA_INVALID',
     });
   });
 
   it('does not accept update metadata without an authenticated bearer', async () => {
-    await expect(readLatestAndroidRelease('')).rejects.toMatchObject<ApiError>({ code: 'AUTH_REQUIRED' });
+    await expect(readLatestAndroidRelease('')).rejects.toMatchObject({ code: 'AUTH_REQUIRED' });
   });
 });
