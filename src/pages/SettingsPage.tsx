@@ -21,33 +21,16 @@ type SettingsTab = 'general' | 'profile' | 'accounts' | 'budgets' | 'categories'
 type SettingsTabDefinition = {
   id: SettingsTab;
   label: string;
-  disabled?: boolean;
-  disabledReason?: string;
 };
 
 const SETTINGS_TABS: SettingsTabDefinition[] = [
   { id: 'general', label: 'Γενικά' },
-  {
-    id: 'profile',
-    label: 'Λογαριασμός',
-    disabled: true,
-    disabledReason: 'Η αλλαγή email και κωδικού δεν υποστηρίζεται ακόμη από το υπάρχον Settings backend.',
-  },
+  { id: 'profile', label: 'Λογαριασμός' },
   { id: 'accounts', label: 'Λογαριασμοί' },
   { id: 'budgets', label: 'Προϋπολογισμοί & Στόχοι' },
   { id: 'categories', label: 'Κατηγορίες' },
-  {
-    id: 'icons',
-    label: 'Εικονίδια',
-    disabled: true,
-    disabledReason: 'Τα εικονίδια παραμένουν προσωρινά στο υπάρχον workspace Κατηγορίες μέχρι να εγκριθεί η ξεχωριστή καρτέλα.',
-  },
-  {
-    id: 'rules',
-    label: 'Κανόνες',
-    disabled: true,
-    disabledReason: 'Οι υπάρχοντες κανόνες παραμένουν προσωρινά στους Προϋπολογισμούς μέχρι να εγκριθεί η ξεχωριστή καρτέλα.',
-  },
+  { id: 'icons', label: 'Εικονίδια' },
+  { id: 'rules', label: 'Κανόνες' },
   { id: 'data', label: 'Δεδομένα' },
 ];
 
@@ -267,8 +250,6 @@ export function SettingsPage({
             role="tab"
             aria-selected={activeTab === tab.id}
             aria-controls={`settings-panel-${tab.id}`}
-            disabled={tab.disabled}
-            title={tab.disabledReason}
             className={activeTab === tab.id ? 'active' : ''}
             onClick={() => setActiveTab(tab.id)}
           >
@@ -286,14 +267,37 @@ export function SettingsPage({
           </div>
         ) : null}
 
+        {activeTab === 'profile' ? (
+          <div className="settings-tab-stack settings-profile-tab">
+            <section className="panel neo-raised settings-profile-card">
+              <div className="panel-head">
+                <div>
+                  <span>Λογαριασμός MyFinHub</span>
+                  <small>Η διαχείριση πρόσβασης παραμένει στην υπάρχουσα ασφαλή ροή σύνδεσης και δεν μεταφέρεται τεχνητά στις ρυθμίσεις.</small>
+                </div>
+                <ShieldCheck />
+              </div>
+              <div className="settings-profile-status">
+                <div><span>Πρόσβαση</span><b>Υπάρχουσα ασφαλής ροή σύνδεσης</b></div>
+                <div><span>Αλλαγή email</span><b>Δεν υποστηρίζεται από αυτή τη σελίδα</b></div>
+                <div><span>Αλλαγή κωδικού</span><b>Δεν υποστηρίζεται από αυτή τη σελίδα</b></div>
+              </div>
+              <div className="logic-note compact">
+                <ShieldCheck />
+                <span>Η καρτέλα είναι ενεργή και ειλικρινής: δεν εμφανίζει controls που δεν έχουν πραγματικό backend ή ασφαλή ροή εκτέλεσης.</span>
+              </div>
+            </section>
+          </div>
+        ) : null}
+
         {activeTab === 'accounts' ? (
-          <div className="settings-tab-stack">
+          <div className="settings-tab-stack settings-accounts-tab">
             <AccountMetadataSettings data={data} />
             <section className="panel neo-raised settings-account-defaults">
               <div className="panel-head">
                 <div>
                   <span>Λογαριασμοί & προεπιλογές</span>
-                  <small>Τα υπάρχοντα ονόματα και οι προεπιλογές παραμένουν ακριβώς όπως λειτουργούν σήμερα.</small>
+                  <small>Διαχειρίσου τις πραγματικές ονομασίες και τους λογαριασμούς που προτείνονται στις νέες κινήσεις.</small>
                 </div>
               </div>
               <div className="settings-form editor-grid">
@@ -329,18 +333,18 @@ export function SettingsPage({
         ) : null}
 
         {activeTab === 'budgets' ? (
-          <div className="settings-tab-stack">
+          <div className="settings-tab-stack settings-budgets-only">
             <BudgetRuleSettings data={data} asOf={asOf} onUpsertBudget={onUpsertBudget} onDeleteBudget={onDeleteBudget} onUpsertRule={onUpsertRule} onDeleteRule={onDeleteRule} />
             <section className="panel neo-raised settings-legacy-goals">
               <div className="panel-head">
                 <div>
-                  <span>Στόχοι συμβατότητας</span>
-                  <small>Οι υπάρχουσες τιμές διατηρούνται μέχρι να εγκριθεί το redesign αυτής της καρτέλας.</small>
+                  <span>Βασικοί στόχοι & όρια</span>
+                  <small>Οι υπάρχουσες τιμές παραμένουν στο ίδιο settings model και αποθηκεύονται με την ίδια συμπεριφορά.</small>
                 </div>
               </div>
               <div className="settings-form">
                 <label>
-                  <span>Γενικό budget συμβατότητας</span>
+                  <span>Γενικό μηνιαίο budget</span>
                   <input ref={budgetRef} inputMode="decimal" value={budgetText} onChange={(event) => { setBudgetText(event.target.value); void commitNumber('budget', event.target.value); }} onBlur={() => { if (!commitNumber('budget', budgetText)) rejectNumber('budget'); }} />
                 </label>
                 <label>
@@ -357,11 +361,33 @@ export function SettingsPage({
         ) : null}
 
         {activeTab === 'categories' ? (
-          <CategoryIconsWorkspace data={data} asOf={asOf} settings={draft} onChange={(next) => commit(next, '')} onTaxonomyOperation={runTaxonomyOperation} />
+          <div className="settings-categories-only">
+            <CategoryIconsWorkspace data={data} asOf={asOf} settings={draft} onChange={(next) => commit(next, '')} onTaxonomyOperation={runTaxonomyOperation} />
+          </div>
+        ) : null}
+
+        {activeTab === 'icons' ? (
+          <div className="settings-tab-stack settings-icons-only">
+            <section className="panel neo-raised settings-section-intro">
+              <div className="panel-head">
+                <div>
+                  <span>Εικονίδια κατηγοριών</span>
+                  <small>Άλλαξε μόνο την παρουσίαση των κατηγοριών και των υποκατηγοριών. Η stable ταυτότητα και το οικονομικό ιστορικό δεν αλλάζουν.</small>
+                </div>
+              </div>
+            </section>
+            <CategoryIconsWorkspace data={data} asOf={asOf} settings={draft} onChange={(next) => commit(next, '')} onTaxonomyOperation={runTaxonomyOperation} />
+          </div>
+        ) : null}
+
+        {activeTab === 'rules' ? (
+          <div className="settings-tab-stack settings-rules-only">
+            <BudgetRuleSettings data={data} asOf={asOf} onUpsertBudget={onUpsertBudget} onDeleteBudget={onDeleteBudget} onUpsertRule={onUpsertRule} onDeleteRule={onDeleteRule} />
+          </div>
         ) : null}
 
         {activeTab === 'data' ? (
-          <div className="settings-tab-stack">
+          <div className="settings-tab-stack settings-data-tab">
             <section className="panel neo-raised">
               <div className="panel-head">
                 <div>
