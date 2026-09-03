@@ -80,7 +80,8 @@ describe('private Android update API boundary', () => {
     expect(storage.isOwner).toHaveBeenCalledWith(token);
     expect(updates.readLatestAndroidRelease).toHaveBeenCalledWith(token);
     expect(JSON.parse(res.body)).toMatchObject({ available: true, release: { versionCode: 2 } });
-    expect(res.headers.get('cache-control')).toBe('private, no-store');
+    expect(res.headers.get('cache-control')).toBe('no-store, max-age=0');
+    expect(res.headers.get('pragma')).toBe('no-cache');
     expect(res.headers.get('vary')).toBe('authorization, cookie');
   });
 
