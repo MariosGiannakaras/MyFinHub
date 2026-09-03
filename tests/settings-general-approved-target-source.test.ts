@@ -52,12 +52,15 @@ describe('approved Settings source contract',()=>{
   it('separates existing rules and icon capabilities into dedicated tabs without duplicating domain logic',()=>{
     const source=read('src/pages/SettingsPage.tsx');
     const styles=read('src/pages/SettingsPage.css');
+    const budgetRules=read('src/components/BudgetRuleSettings.tsx');
     expect(source).toContain("activeTab === 'icons'");
     expect(source).toContain("activeTab === 'rules'");
     expect(source).toContain('settings-icons-only');
     expect(source).toContain('settings-rules-only');
-    expect(styles).toContain('.settings-budgets-only .rule-settings-panel{display:none}');
-    expect(styles).toContain('.settings-rules-only .budget-settings-panel{display:none}');
+    expect(source).toContain('view="budgets"');
+    expect(source).toContain('view="rules"');
+    expect(budgetRules).toContain("type BudgetRuleSettingsView='all'|'budgets'|'rules'");
+    expect(budgetRules).toContain("open={view==='rules'?true:undefined}");
     expect(styles).toContain('.settings-categories-only .taxonomy-icon-disclosure{display:none}');
     expect(styles).toContain('.settings-icons-only .taxonomy-row-actions');
   });
