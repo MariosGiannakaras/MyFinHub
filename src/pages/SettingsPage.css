@@ -58,7 +58,6 @@
 .settings-rules-only .budget-settings-panel{display:none}
 .settings-rules-only .rule-settings-panel{padding:18px}
 .settings-rules-only .rule-settings-panel>summary{display:none}
-.settings-rules-only .rule-settings-panel:not([open])>:not(summary){display:block}
 
 .settings-categories-only .taxonomy-icon-disclosure{display:none}
 .settings-icons-only .category-icons-workspace{padding:18px}
