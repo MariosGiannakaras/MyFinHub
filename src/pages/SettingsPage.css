@@ -45,8 +45,7 @@
 .keyboard-shortcut-row kbd{justify-self:end;padding:5px 8px;border:1px solid var(--line);border-bottom-color:rgba(16,35,77,.18);border-radius:8px;background:#fff;box-shadow:0 1px 1px rgba(16,35,77,.05);color:var(--ink);font:700 var(--ux-tiny-size)/1.1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:nowrap}
 .keyboard-shortcut-note{margin:10px 2px 0;color:var(--muted);font-size:var(--ux-tiny-size);line-height:1.5}
 
-.settings-account-defaults,.settings-legacy-goals,.settings-profile-card,.settings-section-intro{padding:18px}
-.settings-section-intro{margin:0}
+.settings-account-defaults,.settings-legacy-goals,.settings-profile-card{padding:18px}
 .settings-profile-status{display:grid;margin-top:4px;border:1px solid var(--line);border-radius:13px;overflow:hidden;background:rgba(248,250,253,.76)}
 .settings-profile-status>div{display:grid;grid-template-columns:minmax(150px,.45fr) minmax(0,1fr);gap:18px;align-items:center;padding:12px 13px;border-top:1px solid var(--line)}
 .settings-profile-status>div:first-child{border-top:0}
@@ -54,21 +53,9 @@
 .settings-profile-status b{font-size:var(--ux-small-size);font-weight:720;text-align:right}
 .settings-profile-card>.logic-note{margin-top:12px}
 
-.settings-budgets-only .rule-settings-panel{display:none}
-.settings-rules-only .budget-settings-panel{display:none}
 .settings-rules-only .rule-settings-panel{padding:18px}
 .settings-rules-only .rule-settings-panel>summary{display:none}
-
-.settings-categories-only .taxonomy-icon-disclosure{display:none}
 .settings-icons-only .category-icons-workspace{padding:18px}
-.settings-icons-only .category-icons-workspace>.panel-head,
-.settings-icons-only .taxonomy-add-row,
-.settings-icons-only .taxonomy-row-actions,
-.settings-icons-only .taxonomy-inline-editor,
-.settings-icons-only .taxonomy-move-editor,
-.settings-icons-only .taxonomy-retirement-blockers{display:none}
-.settings-icons-only .category-taxonomy-title small{color:var(--muted)}
-.settings-icons-only .taxonomy-subcategory-heading small{color:var(--muted)}
 .settings-icons-only .taxonomy-icon-disclosure{margin-top:10px}
 .settings-icons-only .taxonomy-icon-disclosure>summary{font-weight:720;color:var(--blue)}
 
