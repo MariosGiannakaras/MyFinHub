@@ -362,21 +362,13 @@ export function SettingsPage({
 
         {activeTab === 'categories' ? (
           <div className="settings-categories-only">
-            <CategoryIconsWorkspace data={data} asOf={asOf} settings={draft} onChange={(next) => commit(next, '')} onTaxonomyOperation={runTaxonomyOperation} />
+            <CategoryIconsWorkspace data={data} asOf={asOf} settings={draft} onChange={(next) => commit(next, '')} onTaxonomyOperation={runTaxonomyOperation} view="taxonomy" />
           </div>
         ) : null}
 
         {activeTab === 'icons' ? (
-          <div className="settings-tab-stack settings-icons-only">
-            <section className="panel neo-raised settings-section-intro">
-              <div className="panel-head">
-                <div>
-                  <span>Εικονίδια κατηγοριών</span>
-                  <small>Άλλαξε μόνο την παρουσίαση των κατηγοριών και των υποκατηγοριών. Η stable ταυτότητα και το οικονομικό ιστορικό δεν αλλάζουν.</small>
-                </div>
-              </div>
-            </section>
-            <CategoryIconsWorkspace data={data} asOf={asOf} settings={draft} onChange={(next) => commit(next, '')} onTaxonomyOperation={runTaxonomyOperation} />
+          <div className="settings-icons-only">
+            <CategoryIconsWorkspace data={data} asOf={asOf} settings={draft} onChange={(next) => commit(next, '')} onTaxonomyOperation={runTaxonomyOperation} view="icons" />
           </div>
         ) : null}
 
