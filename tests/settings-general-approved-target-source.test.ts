@@ -14,14 +14,16 @@ describe('approved Settings General source contract',()=>{
     expect(styles).toContain('.settings-general-grid{display:grid');
   });
 
-  it('uses only existing General capabilities and avoids duplicate or invented settings',()=>{
+  it('uses only existing General capabilities and renders each analysis once',()=>{
     const source=read('src/pages/SettingsPage.tsx');
+    const appShell=read('src/components/AppShell.tsx');
     const readability=read('src/components/ReadabilitySettings.tsx');
     const updates=read('src/components/DesktopUpdatePanel.tsx');
     const shortcuts=read('src/components/KeyboardShortcutsPanel.tsx');
     expect(source).toContain('<ReadabilitySettings');
     expect(source).toContain('<DesktopUpdatePanel />');
-    expect(source).toContain('<KeyboardShortcutsPanel />');
+    expect(source.match(/<KeyboardShortcutsPanel \/>/g)).toHaveLength(1);
+    expect(appShell).not.toContain('KeyboardShortcutsPanel');
     expect(readability).toContain('getThemePreference');
     expect(readability).toContain('setThemePreference');
     expect(updates).toContain('window.myFinHubDesktop');
