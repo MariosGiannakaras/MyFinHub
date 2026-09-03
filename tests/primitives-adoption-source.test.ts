@@ -43,7 +43,7 @@ describe('shared primitive adoption',()=>{
     expect(settings).toContain('<ConfirmDialog');
     expect(settings).toContain('pendingImportFile');
     expect(settings).toContain('await onImport(JSON.parse(await file.text()))');
-    expect(settings).toContain('file.size>MAX_FINANCE_DOCUMENT_BYTES');
+    expect(settings).toMatch(/file\.size\s*>\s*MAX_FINANCE_DOCUMENT_BYTES/);
   });
 
   it('uses app-owned local receipt deletion while preserving OCR cancellation ordering',()=>{

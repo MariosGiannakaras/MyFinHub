@@ -4,18 +4,18 @@
   "appVersion": "v1.3",
   "suite": "transactions-scanability",
   "surface": "transactions",
-  "generatedAt": "2026-09-02T10:28:28.081Z",
+  "generatedAt": "2026-09-03T09:19:03.399Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "d73622001481a3e5ebf070425007755fc6ccd140",
-    "shortSha": "d7362200",
-    "branch": "feat/329-recurring-approved-target"
+    "sha": "ef62e870e7bf20399fe684235c6d06e3a63451da",
+    "shortSha": "ef62e870",
+    "branch": "feat/343-settings-general-tab"
   },
   "screenshots": [
-    "visual-qa/transactions/v1.3__2026-09-02_132828__qa-transactions-scanability__transactions-baseline-desktop.png",
-    "visual-qa/transactions/v1.3__2026-09-02_132828__qa-transactions-scanability__transactions-empty-desktop.png",
-    "visual-qa/transactions/v1.3__2026-09-02_132828__qa-transactions-scanability__transactions-extreme-mobile.png",
-    "visual-qa/transactions/v1.3__2026-09-02_132828__qa-transactions-scanability__transactions-large-split-desktop.png",
-    "visual-qa/transactions/v1.3__2026-09-02_132828__qa-transactions-scanability__transactions-large-split-mobile.png"
+    "visual-qa/transactions/v1.3__2026-09-03_121903__qa-transactions-scanability__transactions-baseline-desktop.png",
+    "visual-qa/transactions/v1.3__2026-09-03_121903__qa-transactions-scanability__transactions-empty-desktop.png",
+    "visual-qa/transactions/v1.3__2026-09-03_121903__qa-transactions-scanability__transactions-extreme-mobile.png",
+    "visual-qa/transactions/v1.3__2026-09-03_121903__qa-transactions-scanability__transactions-large-split-desktop.png",
+    "visual-qa/transactions/v1.3__2026-09-03_121903__qa-transactions-scanability__transactions-large-split-mobile.png"
   ]
 }

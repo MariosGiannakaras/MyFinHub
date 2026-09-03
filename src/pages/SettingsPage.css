@@ -1,0 +1,72 @@
+.settings-tabs-page{gap:16px}
+.settings-page-heading{margin-bottom:0}
+.settings-page-heading p{max-width:680px}
+
+.settings-tablist{display:flex;align-items:center;gap:2px;overflow-x:auto;padding:4px 8px;border:1px solid var(--line);border-radius:16px;background:rgba(255,255,255,.76);box-shadow:var(--shadow-soft);scrollbar-width:thin}
+.settings-tablist button{position:relative;flex:0 0 auto;min-height:44px;padding:9px 14px;border:0;border-radius:11px;background:transparent;color:var(--muted);font:inherit;font-size:var(--ux-small-size);font-weight:720;cursor:pointer;white-space:nowrap}
+.settings-tablist button:hover:not(:disabled){background:rgba(47,111,237,.06);color:var(--blue)}
+.settings-tablist button.active{color:var(--blue);background:rgba(47,111,237,.09)}
+.settings-tablist button.active::after{content:"";position:absolute;left:14px;right:14px;bottom:2px;height:2px;border-radius:99px;background:var(--blue)}
+.settings-tablist button:disabled{cursor:not-allowed;opacity:.48}
+.settings-tab-panel{min-width:0}
+.settings-tab-stack{display:grid;gap:16px}
+
+.settings-general-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
+.settings-general-grid>.keyboard-shortcuts-panel{grid-column:1/-1}
+.settings-general-grid>.panel{margin:0;min-width:0}
+.settings-general-grid .panel-head{margin-bottom:12px}
+
+.settings-general-appearance{padding:18px}
+.settings-choice-group{display:grid;grid-template-columns:minmax(145px,.7fr) minmax(0,1.3fr);gap:18px;align-items:center;padding:16px 0;border-top:1px solid var(--line)}
+.settings-choice-group:first-of-type{border-top:0;padding-top:4px}
+.settings-choice-copy{display:grid;gap:4px;min-width:0}
+.settings-choice-copy>b{font-size:var(--ux-body-size)}
+.settings-choice-copy>small{color:var(--muted);line-height:1.45}
+.settings-general-appearance .text-size-picker{margin:0;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.settings-general-appearance .text-size-picker button{min-height:46px;padding:9px 11px;text-align:center;place-items:center;background:rgba(247,249,252,.82)}
+.settings-general-appearance .text-size-picker button b{font-size:var(--ux-small-size)}
+
+.settings-general-app{padding:18px}
+.settings-app-list{display:grid;border:1px solid var(--line);border-radius:13px;overflow:hidden;background:rgba(248,250,253,.76)}
+.settings-app-list>div{display:flex;align-items:center;justify-content:space-between;gap:18px;min-width:0;padding:11px 13px;border-top:1px solid var(--line)}
+.settings-app-list>div:first-child{border-top:0}
+.settings-app-list span{color:var(--muted);font-size:var(--ux-small-size)}
+.settings-app-list b{min-width:0;text-align:right;overflow-wrap:anywhere;font-size:var(--ux-small-size)}
+.settings-general-app .desktop-update-message{margin-top:12px}
+.settings-general-app .desktop-update-actions{display:flex;justify-content:flex-end;margin-top:12px}
+
+.keyboard-shortcuts-panel{padding:18px}
+.keyboard-shortcut-list{display:grid;border:1px solid var(--line);border-radius:13px;overflow:hidden;background:rgba(248,250,253,.76)}
+.keyboard-shortcut-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:16px;align-items:center;min-width:0;padding:11px 13px;border-top:1px solid var(--line)}
+.keyboard-shortcut-row:first-child{border-top:0}
+.keyboard-shortcut-row>div{display:grid;gap:2px;min-width:0}
+.keyboard-shortcut-row b{font-size:var(--ux-small-size)}
+.keyboard-shortcut-row small{color:var(--muted);line-height:1.35}
+.keyboard-shortcut-row kbd{justify-self:end;padding:5px 8px;border:1px solid var(--line);border-bottom-color:rgba(16,35,77,.18);border-radius:8px;background:#fff;box-shadow:0 1px 1px rgba(16,35,77,.05);color:var(--ink);font:700 var(--ux-tiny-size)/1.1 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:nowrap}
+.keyboard-shortcut-note{margin:10px 2px 0;color:var(--muted);font-size:var(--ux-tiny-size);line-height:1.5}
+
+.settings-account-defaults,.settings-legacy-goals{padding:18px}
+
+@media(max-width:980px){
+  .settings-general-grid{grid-template-columns:1fr}
+  .settings-general-grid>.keyboard-shortcuts-panel{grid-column:auto}
+}
+
+@media(max-width:720px){
+  .settings-tabs-page{gap:12px}
+  .settings-tablist{margin-inline:-2px;padding:4px;border-radius:13px}
+  .settings-tablist button{min-height:40px;padding:8px 11px}
+  .settings-choice-group{grid-template-columns:1fr;gap:10px;padding:14px 0}
+  .settings-general-appearance .text-size-picker{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .settings-general-appearance .text-size-picker button{min-height:42px;padding:8px 6px}
+  .settings-app-list>div{align-items:flex-start}
+  .keyboard-shortcut-row{grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:10px 11px}
+  .keyboard-shortcut-row small{display:none}
+}
+
+@media(max-width:420px){
+  .settings-general-appearance .text-size-picker{grid-template-columns:1fr}
+  .settings-general-appearance .text-size-picker button{text-align:left;place-items:start}
+  .settings-app-list>div{display:grid;gap:3px}
+  .settings-app-list b{text-align:left}
+}
