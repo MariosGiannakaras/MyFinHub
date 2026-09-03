@@ -50,6 +50,7 @@ try{
 
   console.log('Budget/Rules QA: Advanced Automations is secondary and human-facing');
   await navigate('settings');
+  await clickText('.settings-tablist button','Προϋπολογισμοί & Στόχοι');
   assert(await c.call("function(){const details=document.querySelector('[data-advanced-automations]');return Boolean(details&&!details.open)}"),'advanced automations is collapsed by default');
   const hiddenText=await c.call("function(){return document.querySelector('[data-advanced-automations]')?.textContent||''}");
   assert(!hiddenText.includes('First match wins')&&!hiddenText.includes('Προτεραιότητα'),'low-level rule-engine terminology is absent');
@@ -94,6 +95,7 @@ try{
 
   console.log('Budget/Rules QA: mobile Advanced Automations accessibility and containment');
   await navigate('settings','budget-rules',375,812);
+  await clickText('.settings-tablist button','Προϋπολογισμοί & Στόχοι');
   await noOverflow('budget/rules mobile settings');await touchTargets('budget/rules mobile settings');
   await clickText('[data-advanced-automations] summary','Προχωρημένα · Αυτοματισμοί');
   await noOverflow('advanced automations mobile open');await touchTargets('advanced automations mobile open');
