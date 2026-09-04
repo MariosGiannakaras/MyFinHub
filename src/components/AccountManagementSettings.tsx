@@ -41,7 +41,7 @@ function providerName(account:Account){
   const candidate=account.name.split(/\s[-–·]\s/)[0]?.trim();
   return candidate&&candidate!==account.name?candidate:'';
 }
-function maskedIban(value?:string){
+function maskedIban(value?:string|null){
   const normalized=(value??'').replace(/\s+/g,'').toUpperCase();
   if(!normalized)return '';
   if(normalized.length<=8)return formatIban(normalized);
@@ -69,6 +69,7 @@ export function AccountManagementSettings({data,settings,onChange}:{data:Finance
   const metadata=useAccountMetadata();
   const reduce=Boolean(useReducedMotion());
   const accounts=useMemo(()=>managedAccounts(data,settings),[data,settings]);
+  const defaultAccounts=useMemo(()=>accounts.filter(account=>account.showInQuickChoices!==false),[accounts]);
   const[editor,setEditor]=useState<EditorDraft|null>(null);
   const[message,setMessage]=useState('');
   const[busy,setBusy]=useState(false);
@@ -146,7 +147,7 @@ export function AccountManagementSettings({data,settings,onChange}:{data:Finance
       const remaining=(settings.customAccounts??[]).filter(item=>item.id!==id);
       const names={...settings.accountNames};delete names[id];
       const overrides={...(settings.accountOverrides??{})};delete overrides[id];
-      const active=accounts.filter(item=>item.id!==id);
+      const active=accounts.filter(item=>item.id!==id&&item.showInQuickChoices!==false);
       const fallback=active[0]?.id||'';
       const next:FinanceSettings={...settings,customAccounts:remaining,accountNames:names,accountOverrides:overrides,excludedFromAvailable:(settings.excludedFromAvailable??[]).filter(item=>item!==id),defaultExpenseAccount:settings.defaultExpenseAccount===id?fallback:settings.defaultExpenseAccount,defaultIncomeAccount:settings.defaultIncomeAccount===id?fallback:settings.defaultIncomeAccount,defaultLoanAccount:settings.defaultLoanAccount===id?fallback:settings.defaultLoanAccount};
       if(metadata.records[id]?.iban)await saveAccountMetadata(id,'');
@@ -155,13 +156,19 @@ export function AccountManagementSettings({data,settings,onChange}:{data:Finance
     finally{setBusy(false)}
   };
 
+  const defaultOptions=(current:string)=>{
+    const ids=new Set(defaultAccounts.map(account=>account.id));
+    const currentAccount=accounts.find(account=>account.id===current);
+    return current&&!ids.has(current)&&currentAccount?<><option value={current} disabled>{displayName(settings,currentAccount)}</option>{defaultAccounts.map(account=><option key={account.id} value={account.id}>{displayName(settings,account)}</option>)}</>:defaultAccounts.map(account=><option key={account.id} value={account.id}>{displayName(settings,account)}</option>);
+  };
+
   return <div className="account-management-settings settings-tab-stack settings-accounts-tab">
     <section className="panel neo-raised account-management-defaults">
       <div className="panel-head"><div><span>Προεπιλεγμένοι λογαριασμοί</span></div></div>
       <div className="account-management-default-grid">
-        <label><span>Έξοδα</span><AppSelectInput aria-label="Προεπιλεγμένος λογαριασμός εξόδων" value={settings.defaultExpenseAccount} onChange={event=>patch({defaultExpenseAccount:event.target.value})}>{accounts.map(account=><option key={account.id} value={account.id}>{displayName(settings,account)}</option>)}</AppSelectInput></label>
-        <label><span>Έσοδα</span><AppSelectInput aria-label="Προεπιλεγμένος λογαριασμός εσόδων" value={settings.defaultIncomeAccount} onChange={event=>patch({defaultIncomeAccount:event.target.value})}>{accounts.map(account=><option key={account.id} value={account.id}>{displayName(settings,account)}</option>)}</AppSelectInput></label>
-        <label><span>Πληρωμή δόσεων</span><AppSelectInput aria-label="Προεπιλεγμένος λογαριασμός πληρωμής δόσεων" value={settings.defaultLoanAccount} onChange={event=>patch({defaultLoanAccount:event.target.value})}>{accounts.map(account=><option key={account.id} value={account.id}>{displayName(settings,account)}</option>)}</AppSelectInput></label>
+        <label><span>Έξοδα</span><AppSelectInput aria-label="Προεπιλεγμένος λογαριασμός εξόδων" value={settings.defaultExpenseAccount} onChange={event=>patch({defaultExpenseAccount:event.target.value})}>{defaultOptions(settings.defaultExpenseAccount)}</AppSelectInput></label>
+        <label><span>Έσοδα</span><AppSelectInput aria-label="Προεπιλεγμένος λογαριασμός εσόδων" value={settings.defaultIncomeAccount} onChange={event=>patch({defaultIncomeAccount:event.target.value})}>{defaultOptions(settings.defaultIncomeAccount)}</AppSelectInput></label>
+        <label><span>Πληρωμή δόσεων</span><AppSelectInput aria-label="Προεπιλεγμένος λογαριασμός πληρωμής δόσεων" value={settings.defaultLoanAccount} onChange={event=>patch({defaultLoanAccount:event.target.value})}>{defaultOptions(settings.defaultLoanAccount)}</AppSelectInput></label>
       </div>
     </section>
 
