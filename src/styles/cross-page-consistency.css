@@ -1,33 +1,6 @@
-/* Cross-page consistency layer.
- * Keep legacy modal class names for layout/QA compatibility, but make their
- * visual states use the same semantic theme as the shared app controls.
- * This file intentionally does not alter page-specific workspace geometry.
+/* Minimal bridge for the remaining legacy card-picker close control.
+ * Shared modal actions now use save-button / secondary / icon-button directly.
  */
-.modal-primary{
-  background:var(--accent-gradient)!important;
-  color:var(--on-accent)!important;
-  border-color:transparent!important;
-  box-shadow:0 9px 18px color-mix(in srgb,var(--accent) 25%,transparent),inset 0 1px 0 color-mix(in srgb,var(--on-accent) 30%,transparent)!important;
-}
-.modal-secondary,.close-picker{
-  background:var(--control-gradient)!important;
-  color:var(--ink)!important;
-  border-color:var(--border-subtle)!important;
-  box-shadow:var(--shadow-soft)!important;
-}
-.modal-primary,.modal-secondary,.close-picker{
-  cursor:pointer;
-  transition:transform .15s ease,box-shadow .15s ease,color .15s ease,background-color .15s ease;
-}
-.modal-primary:hover,.modal-secondary:hover,.close-picker:hover{transform:translateY(-1px)}
-.modal-primary:active,.modal-secondary:active,.close-picker:active{transform:translateY(1px) scale(.99)}
-.modal-primary:disabled,.modal-secondary:disabled,.close-picker:disabled{opacity:.5;cursor:not-allowed;transform:none}
-
-/* The card pickers predate the shared button naming. Their action roles now
- * inherit the same visual hierarchy without changing modal dimensions. */
-.modal-actions .modal-primary{font-weight:750}
-.modal-actions .modal-secondary{font-weight:700}
-
-@media(prefers-reduced-motion:reduce){
-  .modal-primary,.modal-secondary,.close-picker{transition:none}
-}
+.close-picker{background:var(--control-gradient)!important;color:var(--ink)!important;border-color:var(--border-subtle)!important;box-shadow:var(--shadow-soft)!important;transition:transform .15s ease,color .15s ease}
+.close-picker:hover{transform:translateY(-1px);color:var(--blue)!important}
+@media(prefers-reduced-motion:reduce){.close-picker{transition:none}}
