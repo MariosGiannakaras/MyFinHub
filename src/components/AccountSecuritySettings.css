@@ -9,9 +9,9 @@
 .account-security-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
 .account-security-field{display:grid;gap:7px;min-width:0}
 .account-security-field>span{font-size:var(--ux-small-size);font-weight:680;color:var(--ink)}
-.account-security-field>input,.account-security-field select{width:100%;min-height:44px;padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:rgba(255,255,255,.92);color:var(--ink);font:inherit;outline:none;transition:border-color .15s ease,box-shadow .15s ease}
-.account-security-field>input:focus,.account-security-field select:focus{border-color:rgba(47,111,237,.6);box-shadow:0 0 0 3px rgba(47,111,237,.1)}
-.account-security-field>input:disabled,.account-security-field select:disabled{opacity:.58;cursor:not-allowed;background:rgba(244,246,249,.8)}
+.account-security-field>input{width:100%;min-height:44px;padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:rgba(255,255,255,.92);color:var(--ink);font:inherit;outline:none;transition:border-color .15s ease,box-shadow .15s ease}
+.account-security-field>input:focus{border-color:rgba(47,111,237,.6);box-shadow:0 0 0 3px rgba(47,111,237,.1)}
+.account-security-field>input:disabled{opacity:.58;cursor:not-allowed;background:rgba(244,246,249,.8)}
 .account-security-password-grid{display:grid;gap:10px}
 .account-security-hint{display:block;margin-top:9px;color:var(--muted);font-size:var(--ux-tiny-size);line-height:1.45}
 .account-security-actions{display:flex;justify-content:flex-end;gap:9px;flex-wrap:wrap;margin-top:14px}
@@ -36,8 +36,8 @@
 .account-security-idle-control span{display:grid;gap:3px}
 .account-security-idle-control b{font-size:var(--ux-small-size)}
 .account-security-idle-control small{color:var(--muted);font-size:var(--ux-tiny-size);line-height:1.4}
-.account-security-idle-control select{min-width:126px;min-height:40px;padding:7px 30px 7px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);font:inherit;font-size:var(--ux-small-size);font-weight:680;outline:none}
-.account-security-idle-control select:focus{border-color:rgba(47,111,237,.6);box-shadow:0 0 0 3px rgba(47,111,237,.1)}
+.account-security-idle-control .account-security-idle-select{min-width:126px;flex:0 0 126px}
+.account-security-idle-control .account-security-idle-select .owned-input{min-height:40px;font-size:var(--ux-small-size);font-weight:680}
 .account-security-inline-message{padding:10px 12px;border-radius:10px;background:rgba(47,111,237,.06);color:var(--ink);font-size:var(--ux-small-size);line-height:1.45}
 .danger-text{color:#b42318!important}
 
@@ -50,7 +50,7 @@
   .account-security-pin-preview{align-items:flex-start;flex-direction:column}
   .account-security-pin-grid{grid-template-columns:1fr}
   .account-security-idle-control{align-items:stretch;flex-direction:column}
-  .account-security-idle-control select{width:100%}
+  .account-security-idle-control .account-security-idle-select{width:100%;min-width:0;flex:0 0 auto}
   .account-security-actions{justify-content:stretch}
   .account-security-actions button{flex:1 1 180px;min-height:44px}
 }
