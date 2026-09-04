@@ -1,0 +1,71 @@
+name: Fetch Official Bank Brand Assets
+
+on:
+  push:
+    branches:
+      - feat/346-settings-tabs
+    paths:
+      - .github/workflows/fetch-official-bank-brand-assets.yml
+
+permissions:
+  contents: read
+
+jobs:
+  fetch:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Fetch official media-kit packages and candidates
+        shell: bash
+        run: |
+          set -u
+          ROOT=/tmp/official-bank-brand-assets
+          mkdir -p "$ROOT"/{nbg,alpha,piraeus,eurobank}
+
+          curl -fL --retry 2 --connect-timeout 20 -A 'Mozilla/5.0' \
+            'https://www.nbg.gr/-/jssmedia/Files/Rebranding---Multimedia-Material/Logos.zip' \
+            -o "$ROOT/nbg/Logos.zip" || true
+          if [ -s "$ROOT/nbg/Logos.zip" ]; then
+            unzip -l "$ROOT/nbg/Logos.zip" > "$ROOT/nbg/archive-list.txt" || true
+            mkdir -p "$ROOT/nbg/extracted"
+            unzip -oq "$ROOT/nbg/Logos.zip" -d "$ROOT/nbg/extracted" || true
+          fi
+
+          curl -fL --retry 2 --connect-timeout 20 -A 'Mozilla/5.0' \
+            'https://www.alpha.gr/-/media/AlphaGr/Files/Group/grafeiou-typou/Alpha-Bank-logos.rar' \
+            -o "$ROOT/alpha/Alpha-Bank-logos.rar" || true
+          if [ -s "$ROOT/alpha/Alpha-Bank-logos.rar" ]; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq p7zip-full
+            7z l "$ROOT/alpha/Alpha-Bank-logos.rar" > "$ROOT/alpha/archive-list.txt" || true
+            mkdir -p "$ROOT/alpha/extracted"
+            7z x -y -o"$ROOT/alpha/extracted" "$ROOT/alpha/Alpha-Bank-logos.rar" >/dev/null || true
+          fi
+
+          curl -fL --retry 2 --connect-timeout 20 -A 'Mozilla/5.0' \
+            'https://www.piraeusgroup.gr/grafeio-typoy/press-kit' \
+            -o "$ROOT/piraeus/press-kit.html" || true
+          if [ -s "$ROOT/piraeus/press-kit.html" ]; then
+            grep -Eoi 'https?[^"<> ]+\.(zip|rar|svg|png)(\?[^"<> ]*)?' "$ROOT/piraeus/press-kit.html" | sort -u > "$ROOT/piraeus/candidate-urls.txt" || true
+            grep -Eoi '(href|src)="[^"]*(logo|logos|logotyp)[^"]*"' "$ROOT/piraeus/press-kit.html" | sort -u >> "$ROOT/piraeus/candidate-urls.txt" || true
+          fi
+
+          curl -fL --retry 2 --connect-timeout 20 -A 'Mozilla/5.0' \
+            'https://www.eurobank.gr/el/omilos' \
+            -o "$ROOT/eurobank/group.html" || true
+          if [ -s "$ROOT/eurobank/group.html" ]; then
+            grep -Eoi 'https?[^"<> ]+\.(svg|png)(\?[^"<> ]*)?' "$ROOT/eurobank/group.html" | sort -u > "$ROOT/eurobank/candidate-urls.txt" || true
+            grep -Eoi '(href|src)="[^"]*(logo|eurobank)[^"]*\.(svg|png)[^"]*"' "$ROOT/eurobank/group.html" | sort -u >> "$ROOT/eurobank/candidate-urls.txt" || true
+          fi
+
+          find "$ROOT" -type f -printf '%P\t%s bytes\n' | sort > "$ROOT/manifest.txt"
+          cat "$ROOT/manifest.txt"
+
+      - name: Upload official-brand research artifact
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: official-bank-brand-assets-${{ github.sha }}
+          path: /tmp/official-bank-brand-assets
+          if-no-files-found: error
+          retention-days: 2
