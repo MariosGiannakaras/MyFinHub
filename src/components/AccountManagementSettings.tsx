@@ -97,11 +97,6 @@ function AccountIcon({account}:{account:ProviderAccount}){
   const providerId=accountProviderId(account);
   return <span className="account-management-brand-icon"><BankBrandMark id={providerId||account.id} name={accountProviderLabel(account)}/></span>;
 }
-function EditorIdentity({editor}:{editor:EditorDraft}){
-  if(editor.mode==='cash')return <span className="account-management-icon is-cash"><WalletCards/></span>;
-  const provider=financialProviderById(editor.providerId);
-  return <span className="account-management-brand-icon"><BankBrandMark id={editor.providerId||'generic'} name={provider?.displayName}/></span>;
-}
 
 export function AccountManagementSettings({data,settings,onChange}:{data:FinanceData;settings:FinanceSettings;onChange:(next:FinanceSettings)=>void}){
   const metadata=useAccountMetadata();
@@ -284,7 +279,7 @@ export function AccountManagementSettings({data,settings,onChange}:{data:Finance
       <motion.section ref={modalRef} className={`account-management-modal ${editor.source==='new'?'is-new':'is-edit'}`} role="dialog" aria-modal="true" aria-labelledby="account-editor-title" tabIndex={-1} initial={reduce?false:{opacity:0,scale:.975,y:12}} animate={{opacity:1,scale:1,y:0}} exit={reduce?undefined:{opacity:0,scale:.985,y:8}} transition={{duration:reduce?0:.18}} onMouseDown={event=>event.stopPropagation()}>
         <header><h2 id="account-editor-title">{editor.source==='new'?'Νέος λογαριασμός':'Επεξεργασία λογαριασμού'}</h2><button type="button" className="icon-button" aria-label="Κλείσιμο" disabled={busy} onClick={closeEditor}><X/></button></header>
         <div className="account-management-editor-body">
-          {editor.source==='new'?<fieldset className="account-management-segment"><legend>1. Τύπος λογαριασμού</legend><div><button type="button" data-autofocus="true" className={editor.mode==='bank'?'active':''} aria-pressed={editor.mode==='bank'} onClick={()=>setMode('bank')}><Landmark size={16}/> Τράπεζα</button><button type="button" className={editor.mode==='cash'?'active is-cash':''} aria-pressed={editor.mode==='cash'} onClick={()=>setMode('cash')}><WalletCards size={16}/> Μετρητά</button></div></fieldset>:<div className="account-management-edit-summary"><EditorIdentity editor={editor}/><div><b>{editor.name||'Λογαριασμός'}</b><span>{editor.mode==='cash'?cashAccountTypeLabel(editor.cashType):(selectedProvider?.displayName||'Τραπεζικός λογαριασμός')}</span></div></div>}
+          {editor.source==='new'?<fieldset className="account-management-segment"><legend>1. Τύπος λογαριασμού</legend><div><button type="button" data-autofocus="true" className={editor.mode==='bank'?'active':''} aria-pressed={editor.mode==='bank'} onClick={event=>{event.currentTarget.focus();setMode('bank')}}><Landmark size={16}/> Τράπεζα</button><button type="button" className={editor.mode==='cash'?'active is-cash':''} aria-pressed={editor.mode==='cash'} onClick={event=>{event.currentTarget.focus();setMode('cash')}}><WalletCards size={16}/> Μετρητά</button></div></fieldset>:null}
 
           {editor.mode==='bank'?<>
             {editor.source==='new'?<label className="account-management-field"><span>2. Τράπεζα / πάροχος</span><AppSelectInput aria-label="Τράπεζα ή πάροχος" value={editor.providerId} onChange={event=>setEditor({...editor,providerId:event.target.value})}><option value="">Επίλεξε τράπεζα</option>{providers.map(provider=><option key={provider.id} value={provider.id}>{provider.displayName}</option>)}</AppSelectInput></label>:null}
