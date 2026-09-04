@@ -184,7 +184,7 @@ export function AccountSecuritySettings({currentEmail}:{currentEmail?:string|nul
     {authMessage?<div className="logic-note compact account-security-message" role="status" aria-live="polite"><ShieldCheck/><span>{authMessage}</span></div>:null}
 
     <section className="panel neo-raised account-security-card account-security-pin-card">
-      <div className="panel-head"><div><span>PIN & αυτόματο κλείδωμα</span><small>Γρήγορο 4ψήφιο κλείδωμα της εφαρμογής Windows όταν παραμένεις συνδεδεμένος.</small></div><LockKeyhole/></div>
+      <div className="panel-head"><div><span>PIN & αυτόματο κλείδωμα</span><small>Γρήγορο PIN 4 ψηφίων για κλείδωμα της εφαρμογής Windows όταν παραμένεις συνδεδεμένος.</small></div><LockKeyhole/></div>
       <div className="account-security-pin-status">
         <div><span>Κατάσταση</span><b>{lockState.supported?(lockState.enabled?'Ενεργό':'Ανενεργό'):'Διαθέσιμο στην εφαρμογή Windows'}</b></div>
         <div className="account-security-pin-preview"><PinDots value={lockState.enabled?'1234':''}/><p>Το πραγματικό PIN δεν εμφανίζεται και δεν συγχρονίζεται. Αποθηκεύεται μόνο scrypt verifier προστατευμένος με Windows DPAPI.</p></div>
