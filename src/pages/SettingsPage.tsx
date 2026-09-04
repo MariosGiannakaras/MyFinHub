@@ -1,8 +1,7 @@
 import { Database, Download, FileJson, ShieldCheck } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { AccountMetadataSettings } from '../components/AccountMetadataSettings';
+import { AccountManagementSettings } from '../components/AccountManagementSettings';
 import { AccountSecuritySettings } from '../components/AccountSecuritySettings';
-import { AppSelectInput } from '../components/AppSelectInput';
 import { BudgetRuleSettings } from '../components/BudgetRuleSettings';
 import { CategoryIconsWorkspace } from '../components/CategoryIconsWorkspace';
 import { ConfirmDialog } from '../components/ConfirmDialog';
@@ -10,7 +9,6 @@ import { DesktopUpdatePanel } from '../components/DesktopUpdatePanel';
 import { KeyboardShortcutsPanel } from '../components/KeyboardShortcutsPanel';
 import { ReadabilitySettings } from '../components/ReadabilitySettings';
 import { categoryTree } from '../lib/categories';
-import { allAccounts } from '../lib/domain';
 import { MAX_FINANCE_DOCUMENT_BYTES } from '../lib/limits';
 import { taxonomyOperationPreview, type TaxonomyOperation } from '../lib/taxonomyManagement';
 import { userErrorMessage } from '../lib/userMessage';
@@ -40,6 +38,8 @@ function cloneSettings(settings: FinanceSettings): FinanceSettings {
     ...settings,
     motion: 'full',
     accountNames: { ...settings.accountNames },
+    customAccounts: (settings.customAccounts ?? []).map((account) => ({ ...account })),
+    accountOverrides: Object.fromEntries(Object.entries(settings.accountOverrides ?? {}).map(([id, account]) => [id, { ...account }])),
     expenseCategories: [...settings.expenseCategories],
     incomeCategories: [...settings.incomeCategories],
     expenseCategoryTree: categoryTree(settings, 'expense').map((item) => ({ ...item, subcategories: [...item.subcategories] })),
@@ -115,7 +115,6 @@ export function SettingsPage({
   const [budgetText, setBudgetText] = useState(String(data.state.settings.monthlyBudget ?? 0));
   const [targetText, setTargetText] = useState(String(Math.round((data.state.settings.savingsTargetRate ?? 0) * 100)));
   const [creditText, setCreditText] = useState(String(data.state.settings.creditLimit ?? 0));
-  const accounts = allAccounts(data).filter((account) => account.kind !== 'credit');
 
   useEffect(() => {
     draftRef.current = draft;
@@ -233,8 +232,6 @@ export function SettingsPage({
     }
   };
 
-  const labelFor = (id: string) => draft.accountNames[id]?.trim() || accounts.find((account) => account.id === id)?.name || id;
-
   return (
     <div className="page-stack settings-page settings-tabs-page">
       <section className="page-heading settings-page-heading">
@@ -272,47 +269,7 @@ export function SettingsPage({
 
         {activeTab === 'profile' ? <AccountSecuritySettings currentEmail={currentEmail} /> : null}
 
-        {activeTab === 'accounts' ? (
-          <div className="settings-tab-stack settings-accounts-tab">
-            <AccountMetadataSettings data={data} />
-            <section className="panel neo-raised settings-account-defaults">
-              <div className="panel-head">
-                <div>
-                  <span>Λογαριασμοί & προεπιλογές</span>
-                  <small>Διαχειρίσου τις πραγματικές ονομασίες και τους λογαριασμούς που προτείνονται στις νέες κινήσεις.</small>
-                </div>
-              </div>
-              <div className="settings-form editor-grid">
-                <label>
-                  <span>Προεπιλογή εξόδων</span>
-                  <AppSelectInput aria-label="Προεπιλεγμένος λογαριασμός εξόδων" value={draft.defaultExpenseAccount} onChange={(event) => change({ defaultExpenseAccount: event.target.value })}>
-                    {accounts.map((account) => <option key={account.id} value={account.id}>{labelFor(account.id)}</option>)}
-                  </AppSelectInput>
-                </label>
-                <label>
-                  <span>Προεπιλογή εσόδων</span>
-                  <AppSelectInput aria-label="Προεπιλεγμένος λογαριασμός εσόδων" value={draft.defaultIncomeAccount} onChange={(event) => change({ defaultIncomeAccount: event.target.value })}>
-                    {accounts.map((account) => <option key={account.id} value={account.id}>{labelFor(account.id)}</option>)}
-                  </AppSelectInput>
-                </label>
-                <label>
-                  <span>Προεπιλογή πληρωμής δόσεων</span>
-                  <AppSelectInput aria-label="Προεπιλεγμένος λογαριασμός πληρωμής δόσεων" value={draft.defaultLoanAccount} onChange={(event) => change({ defaultLoanAccount: event.target.value })}>
-                    {accounts.map((account) => <option key={account.id} value={account.id}>{labelFor(account.id)}</option>)}
-                  </AppSelectInput>
-                </label>
-              </div>
-              <div className="account-name-grid">
-                {accounts.map((account) => (
-                  <label key={account.id}>
-                    <span>Όνομα: {account.name}</span>
-                    <input value={draft.accountNames[account.id] ?? ''} placeholder={account.name} onChange={(event) => change({ accountNames: { ...draftRef.current.accountNames, [account.id]: event.target.value } })} />
-                  </label>
-                ))}
-              </div>
-            </section>
-          </div>
-        ) : null}
+        {activeTab === 'accounts' ? <AccountManagementSettings data={data} settings={draft} onChange={(next) => commit(next, '')} /> : null}
 
         {activeTab === 'budgets' ? (
           <div className="settings-tab-stack settings-budgets-only">
