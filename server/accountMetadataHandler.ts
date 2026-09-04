@@ -1,7 +1,7 @@
 import { accessTokenAal, assertMutationSessionOrigin, clearSessionCookiesIfCookie, requireSession } from './auth.js';
 import { ApiError, handleApi, methodNotAllowed, readJsonBody, requestHeader, sendJson } from './http.js';
 import { isOwner } from './storage.js';
-import { readAccountMetadata, writeAccountMetadata } from './accountMetadataStore.js';
+import { readAccountMetadata, readFinancialProviders, writeAccountMetadata } from './accountMetadataStore.js';
 import { assertValidIban } from '../src/lib/iban.js';
 
 export const MAX_ACCOUNT_METADATA_BODY_BYTES=4*1024;
@@ -10,6 +10,11 @@ function parseAccountId(value:unknown){
   const accountId=typeof value==='string'?value.trim():'';
   if(!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$/.test(accountId))throw new ApiError(400,'INVALID_ACCOUNT_ID','Μη έγκυρη αναφορά λογαριασμού.');
   return accountId;
+}
+
+function queryResource(req:any){
+  const value=req?.query?.resource;
+  return typeof value==='string'?value.trim():Array.isArray(value)&&typeof value[0]==='string'?value[0].trim():'';
 }
 
 export function parseAccountMetadataExpectedRevision(value:string|undefined){
@@ -36,7 +41,12 @@ export async function handleAccountMetadataRequest(req:any,res:any){
     const session=await requireSession(req,res,{allowBearer:true});
     if(!(await isOwner(session.accessToken))){clearSessionCookiesIfCookie(req,res,session);throw new ApiError(401,'AUTH_REQUIRED','Authentication required.');}
     if(accessTokenAal(session.accessToken)!=='aal2')throw new ApiError(403,'MFA_REQUIRED','Verification required.');
-    if(method==='GET')return sendJson(res,200,{records:await readAccountMetadata(session.accessToken)});
+    if(method==='GET'){
+      const resource=queryResource(req);
+      if(resource==='financial-providers')return sendJson(res,200,{providers:await readFinancialProviders(session.accessToken)});
+      if(resource)throw new ApiError(400,'INVALID_ACCOUNT_METADATA_RESOURCE','Μη έγκυρος πόρος metadata λογαριασμών.');
+      return sendJson(res,200,{records:await readAccountMetadata(session.accessToken)});
+    }
     assertMutationSessionOrigin(req,session);
     const body=parseAccountMetadataWrite(await readJsonBody(req,MAX_ACCOUNT_METADATA_BODY_BYTES));
     const expectedRevision=parseAccountMetadataExpectedRevision(requestHeader(req,'if-match'));
