@@ -1,5 +1,5 @@
 import { accessTokenAal, clearSessionCookiesIfCookie, requireSession } from '../server/auth.js';
-import { readLatestAndroidRelease } from '../server/androidUpdates.js';
+import { parseAndroidReleaseChannel, readLatestAndroidRelease } from '../server/androidUpdates.js';
 import { ApiError, handleApi, methodNotAllowed, sendJson } from '../server/http.js';
 import { isOwner } from '../server/storage.js';
 
@@ -16,9 +16,10 @@ export default async function handler(req: any, res: any) {
       throw new ApiError(403, 'MFA_REQUIRED', 'Verification required.');
     }
 
+    const channel = parseAndroidReleaseChannel(req.headers?.['x-myfinhub-android-update-channel']);
     res.setHeader('cache-control', 'private, no-store');
-    res.setHeader('vary', 'authorization, cookie');
-    const release = await readLatestAndroidRelease(session.accessToken);
+    res.setHeader('vary', 'authorization, cookie, x-myfinhub-android-update-channel');
+    const release = await readLatestAndroidRelease(session.accessToken, channel);
     return sendJson(res, 200, release ? { available: true, release } : { available: false });
   });
 }
