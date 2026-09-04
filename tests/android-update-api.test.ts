@@ -8,7 +8,10 @@ const updates = vi.hoisted(() => ({
 }));
 
 vi.mock('../server/storage.js', () => storage);
-vi.mock('../server/androidUpdates.js', () => updates);
+vi.mock('../server/androidUpdates.js', async importOriginal => {
+  const actual = await importOriginal<typeof import('../server/androidUpdates.js')>();
+  return { ...actual, readLatestAndroidRelease: updates.readLatestAndroidRelease };
+});
 
 import updateHandler from '../api/android-update.js';
 
@@ -36,11 +39,11 @@ function responseRecorder() {
   };
 }
 
-function request(method: string, token?: string) {
-  return {
-    method,
-    headers: token ? { authorization: `Bearer ${token}` } : {},
-  };
+function request(method: string, token?: string, channel?: string) {
+  const headers: Record<string, string> = {};
+  if (token) headers.authorization = `Bearer ${token}`;
+  if (channel) headers['x-myfinhub-android-update-channel'] = channel;
+  return { method, headers };
 }
 
 describe('private Android update API boundary', () => {
@@ -69,7 +72,7 @@ describe('private Android update API boundary', () => {
     if (originalKey === undefined) delete process.env.SUPABASE_PUBLISHABLE_KEY; else process.env.SUPABASE_PUBLISHABLE_KEY = originalKey;
   });
 
-  it('returns private release metadata to the owner AAL2 bearer and disables caching', async () => {
+  it('defaults legacy callers to production and disables caching', async () => {
     const token = tokenWithAal('aal2');
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(upstream(200, { id: 'owner-id' })));
     const res = responseRecorder();
@@ -78,20 +81,43 @@ describe('private Android update API boundary', () => {
 
     expect(res.statusCode).toBe(200);
     expect(storage.isOwner).toHaveBeenCalledWith(token);
-    expect(updates.readLatestAndroidRelease).toHaveBeenCalledWith(token);
+    expect(updates.readLatestAndroidRelease).toHaveBeenCalledWith(token, 'production');
     expect(JSON.parse(res.body)).toMatchObject({ available: true, release: { versionCode: 2 } });
     expect(res.headers.get('cache-control')).toBe('no-store, max-age=0');
     expect(res.headers.get('pragma')).toBe('no-cache');
-    expect(res.headers.get('vary')).toBe('authorization, cookie');
+    expect(res.headers.get('vary')).toBe('authorization, cookie, x-myfinhub-android-update-channel');
   });
 
-  it('returns an explicit no-release state when the private channel is empty', async () => {
+  it('routes Phase 6 test builds only to the isolated test channel', async () => {
+    const token = tokenWithAal('aal2');
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(upstream(200, { id: 'owner-id' })));
+    const res = responseRecorder();
+
+    await updateHandler(request('GET', token, 'phase6-test'), res);
+
+    expect(res.statusCode).toBe(200);
+    expect(updates.readLatestAndroidRelease).toHaveBeenCalledWith(token, 'phase6-test');
+  });
+
+  it('rejects unknown channels instead of falling back to production', async () => {
+    const token = tokenWithAal('aal2');
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(upstream(200, { id: 'owner-id' })));
+    const res = responseRecorder();
+
+    await updateHandler(request('GET', token, 'preview'), res);
+
+    expect(res.statusCode).toBe(400);
+    expect(JSON.parse(res.body)).toMatchObject({ code: 'UPDATE_CHANNEL_INVALID' });
+    expect(updates.readLatestAndroidRelease).not.toHaveBeenCalled();
+  });
+
+  it('returns an explicit no-release state when the selected private channel is empty', async () => {
     const token = tokenWithAal('aal2');
     updates.readLatestAndroidRelease.mockResolvedValue(null);
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(upstream(200, { id: 'owner-id' })));
     const res = responseRecorder();
 
-    await updateHandler(request('GET', token), res);
+    await updateHandler(request('GET', token, 'phase6-test'), res);
 
     expect(res.statusCode).toBe(200);
     expect(JSON.parse(res.body)).toEqual({ available: false });
