@@ -98,7 +98,7 @@ export function DesktopAppLockGate({children}:{children:ReactNode}){
       window.clearTimeout(timer);
       timer=window.setTimeout(()=>enterLockedState(lockState),delay);
     };
-    const events:Array<keyof WindowEventMap>=['pointerdown','keydown','touchstart','wheel'];
+    const events:Array<keyof WindowEventMap>=['pointerdown','pointermove','keydown','touchstart','wheel'];
     for(const name of events)window.addEventListener(name,schedule,{passive:true});
     schedule();
     return()=>{window.clearTimeout(timer);for(const name of events)window.removeEventListener(name,schedule)};
