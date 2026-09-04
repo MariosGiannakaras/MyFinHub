@@ -90,7 +90,8 @@ describe('financial provider registry',()=>{
     expect(accounts).toContain('cashType');
     expect(accounts).toContain("editor.cashType==='reserve'");
     expect(accounts).toContain("editor.bankAccountCategory==='term'");
-    expect(providerStyles).toContain('.account-management-modal.is-edit .account-management-edit-summary{display:none}');
+    expect(accounts).not.toContain('account-management-edit-summary');
+    expect(providerStyles).not.toContain('account-management-edit-summary');
     expect(providerStyles).toContain('.account-management-segment button:not(.active):focus-visible');
   });
 
@@ -112,7 +113,9 @@ describe('financial provider registry',()=>{
     expect(mark).toContain('logoAssetKey');
     expect(mark).toContain('wordmarkAssetKey');
     expect(mark).toContain("assetKey==='generic'?'generic'");
-    expect(mark).toContain("data-provider-registry={provider?'shared':'fallback'}");
+    expect(mark).toContain("const registrySource=provider?'shared':'fallback';");
+    expect(mark).toContain('data-provider-registry={registrySource}');
+    expect(mark).toContain('data-bank-logo-source="generic"');
     expect(dashboard).toContain('<BankBrandMark');
     expect(cards).toContain("from './financialProviders.js'");
   });
