@@ -4,15 +4,15 @@
   "appVersion": "v1.3",
   "suite": "reports-visual",
   "surface": "reports",
-  "generatedAt": "2026-08-24T22:04:15.932Z",
+  "generatedAt": "2026-09-04T17:16:02.291Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "0f5a44a5af57681935c71777c869cf5fe712c7ff",
-    "shortSha": "0f5a44a5",
-    "branch": "feat/233-safe-taxonomy-retirement-final"
+    "sha": "db7332785839e42e173b97f1a9f3cd6add6edfb9",
+    "shortSha": "db733278",
+    "branch": "fix/phase6-main-updater-bridge"
   },
   "screenshots": [
-    "visual-qa/reports/v1.3__2026-08-25_010415__qa-reports-visual__reports-restructure-desktop.png",
-    "visual-qa/reports/v1.3__2026-08-25_010415__qa-reports-visual__reports-restructure-mobile.png"
+    "visual-qa/reports/v1.3__2026-09-04_201602__qa-reports-visual__reports-restructure-desktop.png",
+    "visual-qa/reports/v1.3__2026-09-04_201602__qa-reports-visual__reports-restructure-mobile.png"
   ]
 }

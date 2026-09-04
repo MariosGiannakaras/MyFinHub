@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 2,
+  "layout": "surface-first-latest-only",
+  "appVersion": "v1.3",
+  "suite": "account-metadata",
+  "surface": "accounts",
+  "generatedAt": "2026-09-04T17:16:02.291Z",
+  "timeZone": "Europe/Athens",
+  "source": {
+    "sha": "db7332785839e42e173b97f1a9f3cd6add6edfb9",
+    "shortSha": "db733278",
+    "branch": "fix/phase6-main-updater-bridge"
+  },
+  "screenshots": [
+    "visual-qa/accounts/v1.3__2026-09-04_201602__qa-account-metadata__account-metadata-dashboard-desktop.png",
+    "visual-qa/accounts/v1.3__2026-09-04_201602__qa-account-metadata__account-metadata-dashboard-mobile.png",
+    "visual-qa/accounts/v1.3__2026-09-04_201602__qa-account-metadata__account-metadata-settings-desktop.png",
+    "visual-qa/accounts/v1.3__2026-09-04_201602__qa-account-metadata__account-metadata-settings-mobile.png"
+  ]
+}
