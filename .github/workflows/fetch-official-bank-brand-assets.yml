@@ -31,7 +31,13 @@ jobs:
             unzip -oq "$ROOT/nbg/Logos.zip" -d "$ROOT/nbg/extracted" || true
           fi
 
+          curl -sS -L -A 'Mozilla/5.0' -c "$ROOT/alpha/cookies.txt" \
+            'https://www.alpha.gr/en/Group/media-centre' \
+            -o "$ROOT/alpha/media-centre.html" || true
           curl -fL --retry 2 --connect-timeout 20 -A 'Mozilla/5.0' \
+            -e 'https://www.alpha.gr/en/Group/media-centre' \
+            -b "$ROOT/alpha/cookies.txt" \
+            -H 'Accept: application/octet-stream,application/x-rar-compressed,*/*' \
             'https://www.alpha.gr/-/media/AlphaGr/Files/Group/grafeiou-typou/Alpha-Bank-logos.rar' \
             -o "$ROOT/alpha/Alpha-Bank-logos.rar" || true
           if [ -s "$ROOT/alpha/Alpha-Bank-logos.rar" ]; then
@@ -49,8 +55,17 @@ jobs:
             grep -Eoi 'https?[^"<> ]+\.(zip|rar|svg|png)(\?[^"<> ]*)?' "$ROOT/piraeus/press-kit.html" | sort -u > "$ROOT/piraeus/candidate-urls.txt" || true
             grep -Eoi '(href|src)="[^"]*(logo|logos|logotyp)[^"]*"' "$ROOT/piraeus/press-kit.html" | sort -u >> "$ROOT/piraeus/candidate-urls.txt" || true
           fi
-
           curl -fL --retry 2 --connect-timeout 20 -A 'Mozilla/5.0' \
+            -e 'https://www.piraeusgroup.gr/grafeio-typoy/press-kit' \
+            'https://www.piraeusgroup.gr/-/jssmedia/Project/Piraeus/PiraeusBank/shared/Files/Holdings/grafeio-typoy/Banking.zip' \
+            -o "$ROOT/piraeus/Banking.zip" || true
+          if [ -s "$ROOT/piraeus/Banking.zip" ]; then
+            unzip -l "$ROOT/piraeus/Banking.zip" > "$ROOT/piraeus/archive-list.txt" || true
+            mkdir -p "$ROOT/piraeus/extracted"
+            unzip -oq "$ROOT/piraeus/Banking.zip" -d "$ROOT/piraeus/extracted" || true
+          fi
+
+          curl -sS -L -A 'Mozilla/5.0' -c "$ROOT/eurobank/cookies.txt" \
             'https://www.eurobank.gr/el/omilos' \
             -o "$ROOT/eurobank/group.html" || true
           if [ -s "$ROOT/eurobank/group.html" ]; then
