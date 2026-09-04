@@ -1,6 +1,6 @@
 .account-security-settings{min-width:0}
 .account-security-overview,.account-security-card{padding:18px;margin:0;min-width:0}
-.account-security-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.account-security-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
 .account-security-summary>div{display:grid;gap:5px;padding:13px 14px;border:1px solid var(--line);border-radius:13px;background:rgba(248,250,253,.76)}
 .account-security-summary span,.account-security-pin-status span{color:var(--muted);font-size:var(--ux-tiny-size);font-weight:650;letter-spacing:.01em}
 .account-security-summary b,.account-security-pin-status b{font-size:var(--ux-small-size);overflow-wrap:anywhere}
@@ -9,9 +9,9 @@
 .account-security-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
 .account-security-field{display:grid;gap:7px;min-width:0}
 .account-security-field>span{font-size:var(--ux-small-size);font-weight:680;color:var(--ink)}
-.account-security-field input{width:100%;min-height:44px;padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:rgba(255,255,255,.92);color:var(--ink);font:inherit;outline:none;transition:border-color .15s ease,box-shadow .15s ease}
-.account-security-field input:focus{border-color:rgba(47,111,237,.6);box-shadow:0 0 0 3px rgba(47,111,237,.1)}
-.account-security-field input:disabled{opacity:.58;cursor:not-allowed;background:rgba(244,246,249,.8)}
+.account-security-field>input,.account-security-field select{width:100%;min-height:44px;padding:10px 12px;border:1px solid var(--line);border-radius:11px;background:rgba(255,255,255,.92);color:var(--ink);font:inherit;outline:none;transition:border-color .15s ease,box-shadow .15s ease}
+.account-security-field>input:focus,.account-security-field select:focus{border-color:rgba(47,111,237,.6);box-shadow:0 0 0 3px rgba(47,111,237,.1)}
+.account-security-field>input:disabled,.account-security-field select:disabled{opacity:.58;cursor:not-allowed;background:rgba(244,246,249,.8)}
 .account-security-password-grid{display:grid;gap:10px}
 .account-security-hint{display:block;margin-top:9px;color:var(--muted);font-size:var(--ux-tiny-size);line-height:1.45}
 .account-security-actions{display:flex;justify-content:flex-end;gap:9px;flex-wrap:wrap;margin-top:14px}
@@ -19,22 +19,39 @@
 .account-security-message{margin:0}
 .account-security-pin-card{display:grid;gap:12px}
 .account-security-pin-card .panel-head{margin-bottom:0}
-.account-security-pin-status{display:grid;grid-template-columns:minmax(180px,.34fr) minmax(0,1fr);gap:14px;align-items:start;padding:13px 14px;border:1px solid var(--line);border-radius:13px;background:rgba(248,250,253,.76)}
-.account-security-pin-status>div{display:grid;gap:4px}
-.account-security-pin-status p{margin:0;color:var(--muted);font-size:var(--ux-small-size);line-height:1.5}
+.account-security-pin-status{display:grid;grid-template-columns:minmax(150px,.28fr) minmax(0,1fr);gap:14px;align-items:center;padding:13px 14px;border:1px solid var(--line);border-radius:13px;background:rgba(248,250,253,.76)}
+.account-security-pin-status>div:first-child{display:grid;gap:4px}
+.account-security-pin-preview{display:flex;align-items:center;gap:14px;min-width:0}
+.account-security-pin-preview p{margin:0;color:var(--muted);font-size:var(--ux-small-size);line-height:1.5}
 .account-security-pin-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-.account-security-pin-grid input{font-variant-numeric:tabular-nums;letter-spacing:.22em;text-align:center;font-weight:750}
+.account-security-pin-input{position:relative;min-height:48px;display:grid;place-items:center;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.92);overflow:hidden;transition:border-color .15s ease,box-shadow .15s ease}
+.account-security-pin-input:focus-within{border-color:rgba(47,111,237,.6);box-shadow:0 0 0 3px rgba(47,111,237,.1)}
+.account-security-pin-input>input{position:absolute;inset:0;z-index:2;width:100%;height:100%;padding:0;border:0;opacity:.01;cursor:text}
+.account-security-pin-dots{display:flex;justify-content:center;align-items:center;gap:9px;pointer-events:none}
+.account-security-pin-dots i{width:10px;height:10px;border-radius:999px;background:rgba(100,119,147,.17);transform:scale(.78);transition:background .15s ease,transform .15s cubic-bezier(.2,.9,.2,1.3),box-shadow .15s ease}
+.account-security-pin-dots i.is-filled{background:var(--blue);transform:scale(1);box-shadow:0 0 0 4px rgba(47,111,237,.07)}
+.account-security-idle-control{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 13px;border:1px solid var(--line);border-radius:13px;background:rgba(248,250,253,.72)}
+.account-security-idle-control>div{display:flex;gap:9px;align-items:flex-start;min-width:0}
+.account-security-idle-control svg{flex:0 0 auto;margin-top:2px;color:var(--blue)}
+.account-security-idle-control span{display:grid;gap:3px}
+.account-security-idle-control b{font-size:var(--ux-small-size)}
+.account-security-idle-control small{color:var(--muted);font-size:var(--ux-tiny-size);line-height:1.4}
+.account-security-idle-control select{min-width:126px;min-height:40px;padding:7px 30px 7px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);font:inherit;font-size:var(--ux-small-size);font-weight:680;outline:none}
+.account-security-idle-control select:focus{border-color:rgba(47,111,237,.6);box-shadow:0 0 0 3px rgba(47,111,237,.1)}
 .account-security-inline-message{padding:10px 12px;border-radius:10px;background:rgba(47,111,237,.06);color:var(--ink);font-size:var(--ux-small-size);line-height:1.45}
 .danger-text{color:#b42318!important}
 
-@media(max-width:980px){
-  .account-security-summary{grid-template-columns:1fr}
-  .account-security-grid{grid-template-columns:1fr}
-}
+@media(max-width:1100px){.account-security-summary{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:980px){.account-security-grid{grid-template-columns:1fr}}
 @media(max-width:720px){
   .account-security-overview,.account-security-card{padding:15px}
+  .account-security-summary{grid-template-columns:1fr}
   .account-security-pin-status{grid-template-columns:1fr;gap:8px}
+  .account-security-pin-preview{align-items:flex-start;flex-direction:column}
   .account-security-pin-grid{grid-template-columns:1fr}
+  .account-security-idle-control{align-items:stretch;flex-direction:column}
+  .account-security-idle-control select{width:100%}
   .account-security-actions{justify-content:stretch}
   .account-security-actions button{flex:1 1 180px;min-height:44px}
 }
+@media(prefers-reduced-motion:reduce){.account-security-pin-dots i,.account-security-pin-input{transition:none}}
