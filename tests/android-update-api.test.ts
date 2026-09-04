@@ -3,11 +3,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const storage = vi.hoisted(() => ({
   isOwner: vi.fn(),
 }));
+const devices = vi.hoisted(() => ({ ensureDeviceSessionAccess: vi.fn() }));
 const updates = vi.hoisted(() => ({
   readLatestAndroidRelease: vi.fn(),
 }));
 
 vi.mock('../server/storage.js', () => storage);
+vi.mock('../server/deviceSessionRegistry.js', () => devices);
 vi.mock('../server/androidUpdates.js', () => updates);
 
 import updateHandler from '../api/android-update.js';
@@ -51,6 +53,7 @@ describe('private Android update API boundary', () => {
   beforeEach(() => {
     process.env.SUPABASE_URL = 'https://project.example.supabase.co';
     process.env.SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_test';
+    devices.ensureDeviceSessionAccess.mockReset().mockResolvedValue({});
     storage.isOwner.mockReset().mockResolvedValue(true);
     updates.readLatestAndroidRelease.mockReset().mockResolvedValue({
       versionCode: 2,
@@ -78,6 +81,7 @@ describe('private Android update API boundary', () => {
     await updateHandler(request('GET', token), res);
 
     expect(res.statusCode).toBe(200);
+    expect(devices.ensureDeviceSessionAccess).toHaveBeenCalledWith(expect.anything(), token, 'owner-id');
     expect(storage.isOwner).toHaveBeenCalledWith(token);
     expect(updates.readLatestAndroidRelease).toHaveBeenCalledWith(token);
     expect(JSON.parse(res.body)).toMatchObject({ available: true, release: { versionCode: 2 } });
@@ -107,6 +111,7 @@ describe('private Android update API boundary', () => {
 
     expect(res.statusCode).toBe(403);
     expect(JSON.parse(res.body)).toMatchObject({ code: 'MFA_REQUIRED' });
+    expect(devices.ensureDeviceSessionAccess).not.toHaveBeenCalled();
     expect(updates.readLatestAndroidRelease).not.toHaveBeenCalled();
   });
 
