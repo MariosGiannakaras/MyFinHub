@@ -15,9 +15,10 @@ vi.mock('../server/cardVaultStore.js', () => vault);
 
 import { handleCardVaultRequest } from '../server/cardVaultHandler.js';
 
+const TEST_SESSION_ID = '123e4567-e89b-42d3-a456-426614174000';
 function tokenWithAal(aal: 'aal1' | 'aal2') {
   const header = Buffer.from(JSON.stringify({ alg: 'none', typ: 'JWT' })).toString('base64url');
-  const payload = Buffer.from(JSON.stringify({ aal })).toString('base64url');
+  const payload = Buffer.from(JSON.stringify({ aal, session_id: TEST_SESSION_ID })).toString('base64url');
   return `${header}.${payload}.test`;
 }
 
