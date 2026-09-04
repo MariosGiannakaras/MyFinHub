@@ -1,3 +1,4 @@
+import { existsSync, readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const storage = vi.hoisted(() => ({
@@ -7,13 +8,19 @@ const updates = vi.hoisted(() => ({
   readLatestAndroidRelease: vi.fn(),
 }));
 
-vi.mock('../server/storage.js', () => storage);
+vi.mock('../server/storage.js', async importOriginal => {
+  const actual = await importOriginal<typeof import('../server/storage.js')>();
+  return { ...actual, isOwner: storage.isOwner };
+});
 vi.mock('../server/androidUpdates.js', async importOriginal => {
   const actual = await importOriginal<typeof import('../server/androidUpdates.js')>();
   return { ...actual, readLatestAndroidRelease: updates.readLatestAndroidRelease };
 });
 
-import updateHandler from '../api/android-update.js';
+import dataHandler from '../api/data.js';
+import { handleAndroidUpdateApi } from '../server/androidUpdateApi.js';
+
+const updateHandler = handleAndroidUpdateApi;
 
 function tokenWithAal(aal: 'aal1' | 'aal2') {
   const header = Buffer.from(JSON.stringify({ alg: 'none', typ: 'JWT' })).toString('base64url');
@@ -87,6 +94,25 @@ describe('private Android update API boundary', () => {
     expect(res.headers.get('cache-control')).toBe('no-store, max-age=0');
     expect(res.headers.get('pragma')).toBe('no-cache');
     expect(res.headers.get('vary')).toBe('authorization, cookie, x-myfinhub-android-update-channel');
+  });
+
+  it('routes the public updater path through the existing data function without a standalone serverless function', async () => {
+    const config = JSON.parse(readFileSync(new URL('../vercel.json', import.meta.url), 'utf8'));
+    expect(config.rewrites).toContainEqual({
+      source: '/api/android-update',
+      destination: '/api/data?__myfinhub_route=android-update',
+    });
+    expect(existsSync(new URL('../api/android-update.ts', import.meta.url))).toBe(false);
+
+    const token = tokenWithAal('aal2');
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(upstream(200, { id: 'owner-id' })));
+    const res = responseRecorder();
+
+    await dataHandler({ ...request('GET', token, 'phase6-test'), query: { __myfinhub_route: 'android-update' } }, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(updates.readLatestAndroidRelease).toHaveBeenCalledWith(token, 'phase6-test');
+    expect(JSON.parse(res.body)).toMatchObject({ available: true, release: { versionCode: 2 } });
   });
 
   it('temporarily bridges a legacy no-header client to phase6-test only when production is empty', async () => {
