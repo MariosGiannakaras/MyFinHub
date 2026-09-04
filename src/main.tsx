@@ -4,7 +4,6 @@ import App from './App';
 import { DesktopAppLockGate } from './components/DesktopAppLockGate';
 import { initializeTheme } from './lib/theme';
 import './styles.css';
-import './styles/cross-page-consistency.css';
 
 initializeTheme();
 
