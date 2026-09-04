@@ -6,7 +6,7 @@ const eurobankLogo='/brand/banks/eurobank-mark.svg';
 const payzyLogo=new URL('../assets/canonical-credit-card/payzy-logo.png',import.meta.url).href;
 const vivaLogo=new URL('../assets/canonical-credit-card/viva-logo.png',import.meta.url).href;
 
-export type BankBrandKey='piraeus'|'revolut'|'alpha'|'national'|'eurobank'|'payzy'|'viva'|'cash'|'generic';
+export type BankBrandKey='piraeus'|'revolut'|'alpha'|'national'|'eurobank'|'payzy'|'viva'|'paypal'|'cash'|'generic';
 
 export type BankBrandTextAsset={label:string;mark:string;cardMark?:string;source:'local-text'};
 export type BankBrandImageAsset={label:string;src:string;fallbackMark:string;cardMark?:string;source:'local-image'};
@@ -20,6 +20,7 @@ const BRAND_ASSETS:Partial<Record<BankBrandKey,BankBrandAsset>>={
   eurobank:{label:'Eurobank',src:eurobankLogo,fallbackMark:'EUROBANK',cardMark:'Eurobank',source:'local-image'},
   payzy:{label:'payzy by COSMOTE',src:payzyLogo,fallbackMark:'payzy',cardMark:'payzy',source:'local-image'},
   viva:{label:'Viva.com',src:vivaLogo,fallbackMark:'VIVA',cardMark:'VIVA',source:'local-image'},
+  paypal:{label:'PayPal',mark:'PayPal',cardMark:'PayPal',source:'local-text'},
 };
 
 function normalize(value=''){return value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('el-GR')}
@@ -33,6 +34,7 @@ export function bankBrandKey(value?:string,name?:string):BankBrandKey{
   if(text.includes('eurobank'))return 'eurobank';
   if(text.includes('payzy'))return 'payzy';
   if(text.includes('viva'))return 'viva';
+  if(text.includes('paypal'))return 'paypal';
   if(text.includes('cash')||text.includes('μετρη'))return 'cash';
   return 'generic';
 }
