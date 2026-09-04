@@ -49,21 +49,23 @@ describe('account security settings',()=>{
     expect(appLock).toContain('safeStorage.decryptString');
     expect(appLock).toContain("'app-lock.json'");
     expect(appLock).toContain("'myfinhub:set-app-lock-timeout'");
+    expect(appLock).not.toContain('value?.currentPin');
     expect(appLock).not.toContain('localStorage');
     expect(appLock).not.toContain('indexedDB');
     expect(preload).toContain('getAppLockState: () =>');
     expect(preload).toContain('verifyAppPin: (pin) =>');
     expect(preload).toContain('setAppPin: (value) =>');
     expect(preload).toContain('setAppLockTimeout: (minutes) =>');
-    expect(preload).toContain('disableAppPin: (pin) =>');
+    expect(preload).toContain('disableAppPin: () =>');
     expect(bootstrap).toContain('registerAppLockIpc()');
     expect(desktopPackage).toContain('app-lock-main.cjs');
   });
 
-  it('renders a modern blurred PIN gate with automatic inactivity locking',()=>{
+  it('renders the approved compact access settings and modern PIN gate',()=>{
     const gate=read('src/components/DesktopAppLockGate.tsx');
-    const styles=read('src/components/DesktopAppLockGate.css');
+    const gateStyles=read('src/components/DesktopAppLockGate.css');
     const settings=read('src/components/AccountSecuritySettings.tsx');
+    const settingsStyles=read('src/components/AccountSecuritySettings.css');
     const main=read('src/main.tsx');
     expect(gate).toContain('const PIN_LENGTH=4');
     expect(gate).toContain('getAppLockState');
@@ -74,13 +76,18 @@ describe('account security settings',()=>{
     expect(gate).toContain('verifyAppPin');
     expect(gate).toContain('desktop-app-lock-digits');
     expect(gate).toContain('is-shaking');
-    expect(styles).toContain('backdrop-filter:blur(24px)');
-    expect(styles).toContain('@keyframes app-lock-shake');
-    expect(styles).toContain('@keyframes app-lock-dot-pop');
-    expect(styles).toContain('@media(prefers-reduced-motion:reduce)');
-    expect(settings).toContain('Νέο PIN 4 ψηφίων');
-    expect(settings).toContain('Προεπιλογή 5 λεπτά');
+    expect(gateStyles).toContain('backdrop-filter:blur(24px)');
+    expect(gateStyles).toContain('@keyframes app-lock-shake');
+    expect(gateStyles).toContain('@keyframes app-lock-dot-pop');
+    expect(gateStyles).toContain('@media(prefers-reduced-motion:reduce)');
+    expect(settings).toContain('const PIN_LENGTH=4');
+    expect(settings).toContain('Τρέχον email:');
+    expect(settings).toContain('account-security-current-email');
+    expect(settings).toContain('Κλείδωμα μετά από αδράνεια');
     expect(settings).toContain('setAppLockTimeout');
+    expect(settings).not.toContain('Τρέχον PIN');
+    expect(settingsStyles).toContain('.account-security-password-grid{display:grid;grid-template-columns:repeat(2');
+    expect(settingsStyles).toContain('.account-security-idle-select .owned-input');
     expect(main).toContain('<DesktopAppLockGate><App/></DesktopAppLockGate>');
   });
 });
