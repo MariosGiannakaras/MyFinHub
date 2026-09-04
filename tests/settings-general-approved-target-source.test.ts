@@ -60,13 +60,15 @@ describe('approved Settings source contract',()=>{
   it('preserves existing Settings functionality and exposes real account management',()=>{
     const source=read('src/pages/SettingsPage.tsx');
     const accounts=read('src/components/AccountManagementSettings.tsx');
+    const providerTaxonomy=read('src/lib/financialProviders.ts');
     const domain=read('src/lib/domain.ts');
     expect(source).toContain('<AccountManagementSettings');
     expect(accounts).toContain('Προεπιλεγμένοι λογαριασμοί');
     expect(accounts).toContain('Οι λογαριασμοί μου');
     expect(accounts).toContain('Νέος λογαριασμός');
-    expect(accounts).toContain('Καθημερινά μετρητά');
-    expect(accounts).toContain('Καβάτζα');
+    expect(accounts).toContain('CASH_ACCOUNT_TYPES.map');
+    expect(providerTaxonomy).toContain("{id:'cash',label:'Καθημερινά μετρητά'}");
+    expect(providerTaxonomy).toContain("{id:'reserve',label:'Καβάτζα'}");
     expect(accounts).not.toContain('RefreshCw');
     expect(domain).toContain('customAccounts');
     expect(domain).toContain('accountOverrides');
