@@ -69,9 +69,17 @@ export function DesktopAppLockGate({children}:{children:ReactNode}){
         enterLockedState(state);
       }catch{if(alive){setMessage('Δεν ήταν δυνατή η ενεργοποίηση του τοπικού κλειδώματος.');setPhase('error')}}
     };
+    const stateChanged=(event:Event)=>{
+      const next=(event as CustomEvent<AppLockState>).detail;
+      if(!alive||!next||typeof next.enabled!=='boolean')return;
+      setLockState(next);
+      setBlockedUntil(Date.now()+Math.max(0,next.retryAfterMs||0));
+      if(!next.enabled&&phase==='locked'){setPin('');setPhase('unlocked');setEverUnlocked(true)}
+    };
     window.addEventListener('myfinhub:app-lock-now',lockNow);
-    return()=>{alive=false;window.removeEventListener('myfinhub:app-lock-now',lockNow)};
-  },[bridge,enterLockedState]);
+    window.addEventListener('myfinhub:app-lock-state-changed',stateChanged);
+    return()=>{alive=false;window.removeEventListener('myfinhub:app-lock-now',lockNow);window.removeEventListener('myfinhub:app-lock-state-changed',stateChanged)};
+  },[bridge,enterLockedState,phase]);
 
   useEffect(()=>{
     if(retrySeconds<=0)return;
@@ -93,7 +101,7 @@ export function DesktopAppLockGate({children}:{children:ReactNode}){
       window.clearTimeout(timer);
       timer=window.setTimeout(()=>enterLockedState(lockState),delay);
     };
-    const events:Array<keyof WindowEventMap>=['pointerdown','keydown','touchstart','wheel'];
+    const events:Array<keyof WindowEventMap>=['pointerdown','pointermove','keydown','touchstart','wheel'];
     for(const name of events)window.addEventListener(name,schedule,{passive:true});
     schedule();
     return()=>{window.clearTimeout(timer);for(const name of events)window.removeEventListener(name,schedule)};
