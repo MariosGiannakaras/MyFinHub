@@ -1,7 +1,7 @@
 .device-access-settings{padding:18px;margin:0;min-width:0}
 .device-access-head-actions{display:flex;align-items:center;gap:8px}
 .device-access-count{display:inline-flex;align-items:center;min-height:30px;padding:5px 9px;border-radius:999px;background:rgba(47,111,237,.07);color:var(--blue);font-size:var(--ux-tiny-size);font-weight:750;white-space:nowrap}
-.device-access-head-actions .icon-button{width:38px;height:38px;min-height:38px}
+.device-access-head-actions .icon-button{width:40px;height:40px;min-height:40px}
 .device-access-list{display:grid;border:1px solid var(--line);border-radius:15px;overflow:hidden;background:rgba(248,250,253,.72)}
 .device-access-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:13px 14px;border-top:1px solid var(--line)}
 .device-access-row:first-child{border-top:0}
@@ -14,7 +14,7 @@
 .device-access-copy>span,.device-access-copy>small{color:var(--muted);font-size:var(--ux-tiny-size);line-height:1.35}
 .device-access-current{display:inline-flex;align-items:center;gap:4px;padding:3px 7px;border-radius:999px;background:rgba(17,142,91,.08);color:#08784a;font-size:.69rem;font-weight:750}
 .device-access-safe{padding:4px 8px;border-radius:999px;background:rgba(17,142,91,.07);color:#08784a;font-size:var(--ux-tiny-size);font-weight:720}
-.device-access-revoke{min-height:38px;padding:7px 10px}
+.device-access-revoke{min-height:40px;padding:7px 10px}
 .device-access-empty{display:flex;gap:11px;align-items:flex-start;padding:16px;border:1px dashed var(--line);border-radius:14px;background:rgba(248,250,253,.58);color:var(--muted)}
 .device-access-empty svg{flex:0 0 auto;margin-top:1px;color:var(--blue)}
 .device-access-empty>div{display:grid;gap:3px}
