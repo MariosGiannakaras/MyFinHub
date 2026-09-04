@@ -36,14 +36,10 @@ jobs:
           test "$changed" = "desktop/package-lock.json"
       - name: Verify high audit is clear
         run: npm audit --prefix desktop --audit-level=high
-      - name: Remove helper and commit audited lock
+      - name: Commit audited lock
         shell: bash
         run: |
           set -euo pipefail
-          git rm .github/workflows/_phase6-main-audit-fix.yml
-          changed="$(git diff --name-only | sort)"
-          expected="$(printf '%s\n' '.github/workflows/_phase6-main-audit-fix.yml' 'desktop/package-lock.json' | sort)"
-          test "$changed" = "$expected"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add desktop/package-lock.json
