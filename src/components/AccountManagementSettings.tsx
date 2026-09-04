@@ -34,6 +34,10 @@ function displayName(settings:FinanceSettings,account:Account){return settings.a
 function providerName(account:Account){
   if(account.provider?.trim())return account.provider.trim();
   if(account.kind==='cash')return '';
+  const lower=account.id.toLowerCase();
+  if(lower.includes('piraeus'))return 'Τράπεζα Πειραιώς';
+  if(lower.includes('eurobank'))return 'Eurobank';
+  if(lower.includes('alpha'))return 'Alpha Bank';
   const candidate=account.name.split(/\s[-–·]\s/)[0]?.trim();
   return candidate&&candidate!==account.name?candidate:'';
 }
@@ -151,7 +155,7 @@ export function AccountManagementSettings({data,settings,onChange}:{data:Finance
     finally{setBusy(false)}
   };
 
-  return <div className="account-management-settings settings-tab-stack">
+  return <div className="account-management-settings settings-tab-stack settings-accounts-tab">
     <section className="panel neo-raised account-management-defaults">
       <div className="panel-head"><div><span>Προεπιλεγμένοι λογαριασμοί</span></div></div>
       <div className="account-management-default-grid">
