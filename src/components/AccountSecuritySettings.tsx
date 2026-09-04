@@ -1,6 +1,6 @@
 import { KeyRound, LockKeyhole, Mail, ShieldCheck } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { ApiError, changeAccountEmail, changeAccountPassword } from '../lib/api';
+import { ApiError, changeAccountEmail, changeAccountPassword, getSession } from '../lib/api';
 import { userErrorMessage } from '../lib/userMessage';
 import './AccountSecuritySettings.css';
 
@@ -52,7 +52,12 @@ export function AccountSecuritySettings({currentEmail}:{currentEmail?:string|nul
   const[pinBusy,setPinBusy]=useState(false);
   const[lockState,setLockState]=useState<AppLockState>({supported:Boolean(bridge),enabled:false,failedAttempts:0,retryAfterMs:0});
 
-  useEffect(()=>setDisplayEmail(currentEmail||''),[currentEmail]);
+  useEffect(()=>{
+    if(currentEmail!==undefined){setDisplayEmail(currentEmail||'');return;}
+    let alive=true;
+    void getSession().then(session=>{if(alive)setDisplayEmail(session.email||'')}).catch(()=>{});
+    return()=>{alive=false};
+  },[currentEmail]);
   useEffect(()=>{
     if(!bridge){setLockState({supported:false,enabled:false,failedAttempts:0,retryAfterMs:0});return;}
     let alive=true;
