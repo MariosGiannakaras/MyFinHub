@@ -62,6 +62,7 @@ export function AccountSecuritySettings({currentEmail}:{currentEmail?:string|nul
   const[authBusy,setAuthBusy]=useState<'email'|'password'|null>(null);
   const[pinBusy,setPinBusy]=useState(false);
   const[lockState,setLockState]=useState<AppLockState>({supported:Boolean(bridge),enabled:false,idleMinutes:5,failedAttempts:0,retryAfterMs:0});
+  const publishLockState=(next:AppLockState)=>{setLockState(next);window.dispatchEvent(new CustomEvent<AppLockState>('myfinhub:app-lock-state-changed',{detail:next}))};
 
   useEffect(()=>{
     if(currentEmail!==undefined){setDisplayEmail(currentEmail||'');return;}
@@ -116,7 +117,7 @@ export function AccountSecuritySettings({currentEmail}:{currentEmail?:string|nul
     setPinBusy(true);setPinMessage('');
     try{
       const result=await bridge.setAppPin({pin:newPin,...(lockState.enabled?{currentPin}:{})});
-      setLockState(result);
+      publishLockState(result);
       if(!result.ok){setPinMessage(pinError(result));return;}
       setCurrentPin('');setNewPin('');setConfirmPin('');
       setPinMessage(lockState.enabled?'Το PIN της εφαρμογής άλλαξε.':`Το PIN ενεργοποιήθηκε. Το MyFinHub θα κλειδώνει μετά από ${idleLabel(result.idleMinutes)} αδράνειας.`);
@@ -128,7 +129,7 @@ export function AccountSecuritySettings({currentEmail}:{currentEmail?:string|nul
     if(!bridge||!lockState.enabled||pinBusy)return;
     setPinBusy(true);setPinMessage('');
     try{
-      const result=await bridge.setAppLockTimeout(minutes);setLockState(result);
+      const result=await bridge.setAppLockTimeout(minutes);publishLockState(result);
       setPinMessage(result.ok?`Το αυτόματο κλείδωμα ορίστηκε σε ${idleLabel(result.idleMinutes)}.`:pinError(result));
     }catch{setPinMessage('Δεν ήταν δυνατή η αλλαγή του αυτόματου κλειδώματος.')}
     finally{setPinBusy(false)}
@@ -139,7 +140,7 @@ export function AccountSecuritySettings({currentEmail}:{currentEmail?:string|nul
     if(currentPin.length!==PIN_LENGTH){setPinMessage('Συμπλήρωσε το τρέχον 4ψήφιο PIN για απενεργοποίηση.');return;}
     setPinBusy(true);setPinMessage('');
     try{
-      const result=await bridge.disableAppPin(currentPin);setLockState(result);
+      const result=await bridge.disableAppPin(currentPin);publishLockState(result);
       if(!result.ok){setPinMessage(pinError(result));return;}
       setCurrentPin('');setNewPin('');setConfirmPin('');setPinMessage('Το PIN της εφαρμογής απενεργοποιήθηκε.');
     }catch{setPinMessage('Η απενεργοποίηση του PIN δεν ολοκληρώθηκε.')}
