@@ -78,4 +78,4 @@ try{
     }
   }
   assert(runtimeErrors.length===0,`runtime exceptions: ${runtimeErrors.join(' | ')}`);assert(failedRequests.length===0,`network loading failures: ${failedRequests.join(' | ')}`);c.close();console.log('All Settings tabs rendered QA passed on desktop and mobile.');
-}finally{c?.close();child.kill('SIGTERM')
+}finally{c?.close();child.kill('SIGTERM')}
