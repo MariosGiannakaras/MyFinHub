@@ -12,7 +12,7 @@ class Cdp{constructor(url){this.url=url;this.id=0;this.pending=new Map();this.li
 const assert=(value,message)=>{if(!value)throw new Error(`Settings tabs QA assertion failed: ${message}`)};
 const tabs=[
   {id:'general',label:'Γενικά',selector:'.settings-general-grid'},
-  {id:'profile',label:'Λογαριασμός',selector:'.settings-profile-card'},
+  {id:'profile',label:'Λογαριασμός',selector:'.account-security-settings'},
   {id:'accounts',label:'Λογαριασμοί',selector:'.settings-accounts-tab'},
   {id:'budgets',label:'Προϋπολογισμοί & Στόχοι',selector:'.settings-budgets-only .budget-settings-panel'},
   {id:'categories',label:'Κατηγορίες',selector:'.settings-categories-only .category-icons-workspace'},
@@ -39,7 +39,7 @@ try{
     for(const tab of tabs){
       await clickTab(tab);await noPageOverflow(`${mode.name} ${tab.label}`);
       if(tab.id==='profile'){
-        const profile=await c.call("function(){const card=document.querySelector('.settings-profile-card');return {text:card?.textContent||'',buttons:card?.querySelectorAll('button').length||0}}");assert(profile.text.includes('Δεν υποστηρίζεται από αυτή τη σελίδα'),'Profile states unsupported mutations truthfully');assert(profile.buttons===0,'Profile does not invent account mutation controls');
+        const profile=await c.call("function(){const root=document.querySelector('.account-security-settings');const buttons=[...(root?.querySelectorAll('button')||[])];return {text:root?.textContent||'',inputs:root?.querySelectorAll('input').length||0,emailAction:buttons.some(button=>(button.textContent||'').includes('Αλλαγή email')&&!button.disabled),passwordAction:buttons.some(button=>(button.textContent||'').includes('Αλλαγή κωδικού')&&!button.disabled),pinDisabled:buttons.some(button=>(button.textContent||'').includes('Ενεργοποίηση PIN')&&button.disabled)}}");assert(profile.text.includes('Αλλαγή email'),'Profile exposes real email change');assert(profile.text.includes('Αλλαγή κωδικού'),'Profile exposes real password change');assert(profile.text.includes('PIN εφαρμογής'),'Profile exposes app PIN controls');assert(profile.inputs>=6,'Profile renders account-security inputs');assert(profile.emailAction&&profile.passwordAction,'Profile auth actions are actionable');assert(profile.pinDisabled,'Browser QA truthfully keeps Windows-only PIN mutation disabled');
       }
       if(tab.id==='budgets')assert(await c.call("function(){return !document.querySelector('.settings-budgets-only .rule-settings-panel')}") ,'Budgets does not render Rules UI');
       if(tab.id==='categories')assert(await c.call("function(){return ![...document.querySelectorAll('.settings-categories-only .taxonomy-icon-disclosure')].some(node=>node.getClientRects().length)}") ,'Categories keeps icon pickers out of the visible taxonomy workspace');
