@@ -13,74 +13,27 @@ permissions:
 jobs:
   fetch:
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 3
     steps:
-      - name: Fetch official media-kit packages and candidates
+      - name: Inspect official Piraeus press-kit logo candidates
         shell: bash
         run: |
-          set -u
+          set -euo pipefail
           ROOT=/tmp/official-bank-brand-assets
-          mkdir -p "$ROOT"/{nbg,alpha,piraeus,eurobank}
-
-          curl -fL --retry 2 --connect-timeout 20 -A 'Mozilla/5.0' \
-            'https://www.nbg.gr/-/jssmedia/Files/Rebranding---Multimedia-Material/Logos.zip' \
-            -o "$ROOT/nbg/Logos.zip" || true
-          if [ -s "$ROOT/nbg/Logos.zip" ]; then
-            unzip -l "$ROOT/nbg/Logos.zip" > "$ROOT/nbg/archive-list.txt" || true
-            mkdir -p "$ROOT/nbg/extracted"
-            unzip -oq "$ROOT/nbg/Logos.zip" -d "$ROOT/nbg/extracted" || true
-          fi
-
-          curl -sS -L -A 'Mozilla/5.0' -c "$ROOT/alpha/cookies.txt" \
-            'https://www.alpha.gr/en/Group/media-centre' \
-            -o "$ROOT/alpha/media-centre.html" || true
-          curl -fL --retry 2 --connect-timeout 20 -A 'Mozilla/5.0' \
-            -e 'https://www.alpha.gr/en/Group/media-centre' \
-            -b "$ROOT/alpha/cookies.txt" \
-            -H 'Accept: application/octet-stream,application/x-rar-compressed,*/*' \
-            'https://www.alpha.gr/-/media/AlphaGr/Files/Group/grafeiou-typou/Alpha-Bank-logos.rar' \
-            -o "$ROOT/alpha/Alpha-Bank-logos.rar" || true
-          if [ -s "$ROOT/alpha/Alpha-Bank-logos.rar" ]; then
-            sudo apt-get update -qq
-            sudo apt-get install -y -qq p7zip-full
-            7z l "$ROOT/alpha/Alpha-Bank-logos.rar" > "$ROOT/alpha/archive-list.txt" || true
-            mkdir -p "$ROOT/alpha/extracted"
-            7z x -y -o"$ROOT/alpha/extracted" "$ROOT/alpha/Alpha-Bank-logos.rar" >/dev/null || true
-          fi
-
+          mkdir -p "$ROOT/piraeus"
           curl -fL --retry 2 --connect-timeout 20 -A 'Mozilla/5.0' \
             'https://www.piraeusgroup.gr/grafeio-typoy/press-kit' \
-            -o "$ROOT/piraeus/press-kit.html" || true
-          if [ -s "$ROOT/piraeus/press-kit.html" ]; then
-            grep -Eoi 'https?[^"<> ]+\.(zip|rar|svg|png)(\?[^"<> ]*)?' "$ROOT/piraeus/press-kit.html" | sort -u > "$ROOT/piraeus/candidate-urls.txt" || true
-            grep -Eoi '(href|src)="[^"]*(logo|logos|logotyp)[^"]*"' "$ROOT/piraeus/press-kit.html" | sort -u >> "$ROOT/piraeus/candidate-urls.txt" || true
-          fi
-          curl -fL --retry 2 --connect-timeout 20 -A 'Mozilla/5.0' \
-            -e 'https://www.piraeusgroup.gr/grafeio-typoy/press-kit' \
-            'https://www.piraeusgroup.gr/-/jssmedia/Project/Piraeus/PiraeusBank/shared/Files/Holdings/grafeio-typoy/Banking.zip' \
-            -o "$ROOT/piraeus/Banking.zip" || true
-          if [ -s "$ROOT/piraeus/Banking.zip" ]; then
-            unzip -l "$ROOT/piraeus/Banking.zip" > "$ROOT/piraeus/archive-list.txt" || true
-            mkdir -p "$ROOT/piraeus/extracted"
-            unzip -oq "$ROOT/piraeus/Banking.zip" -d "$ROOT/piraeus/extracted" || true
-          fi
+            -o "$ROOT/piraeus/press-kit.html"
+          grep -Eoi 'https?[^"<> ]+\.(zip|rar|svg|png)(\?[^"<> ]*)?' "$ROOT/piraeus/press-kit.html" | sort -u > "$ROOT/piraeus/candidate-urls.txt" || true
+          grep -Eoi '(href|src)="[^"]*(logo|logos|logotyp)[^"]*"' "$ROOT/piraeus/press-kit.html" | sort -u >> "$ROOT/piraeus/candidate-urls.txt" || true
+          sort -u -o "$ROOT/piraeus/candidate-urls.txt" "$ROOT/piraeus/candidate-urls.txt"
+          echo '--- official Piraeus press-kit candidates ---'
+          cat "$ROOT/piraeus/candidate-urls.txt"
 
-          curl -sS -L -A 'Mozilla/5.0' -c "$ROOT/eurobank/cookies.txt" \
-            'https://www.eurobank.gr/el/omilos' \
-            -o "$ROOT/eurobank/group.html" || true
-          if [ -s "$ROOT/eurobank/group.html" ]; then
-            grep -Eoi 'https?[^"<> ]+\.(svg|png)(\?[^"<> ]*)?' "$ROOT/eurobank/group.html" | sort -u > "$ROOT/eurobank/candidate-urls.txt" || true
-            grep -Eoi '(href|src)="[^"]*(logo|eurobank)[^"]*\.(svg|png)[^"]*"' "$ROOT/eurobank/group.html" | sort -u >> "$ROOT/eurobank/candidate-urls.txt" || true
-          fi
-
-          find "$ROOT" -type f -printf '%P\t%s bytes\n' | sort > "$ROOT/manifest.txt"
-          cat "$ROOT/manifest.txt"
-
-      - name: Upload official-brand research artifact
-        if: always()
+      - name: Upload small research artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: official-bank-brand-assets-${{ github.sha }}
-          path: /tmp/official-bank-brand-assets
+          name: official-piraeus-logo-candidates-${{ github.sha }}
+          path: /tmp/official-bank-brand-assets/piraeus
           if-no-files-found: error
-          retention-days: 2
+          retention-days: 1
