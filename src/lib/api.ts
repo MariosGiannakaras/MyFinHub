@@ -23,6 +23,8 @@ export interface SessionInfo {
   mfaEnrollmentRequired?: boolean;
 }
 export interface MfaEnrollment { factorId: string; qrCode: string; secret: string }
+export interface EmailChangeReceipt { ok:true; email:string|null; pendingEmail:string|null }
+export interface PasswordChangeReceipt { ok:true }
 
 export class ApiError extends Error {
   status: number;
@@ -80,6 +82,22 @@ export async function verifyMfa(code: string, factorId?: string): Promise<Sessio
 
 export async function logout(): Promise<SessionInfo> {
   return json(await request('/api/auth/logout', { method: 'POST' }));
+}
+
+export async function changeAccountEmail(email:string):Promise<EmailChangeReceipt>{
+  return json(await request('/api/auth/account',{
+    method:'PATCH',
+    headers:{'content-type':'application/json'},
+    body:JSON.stringify({action:'email',email}),
+  }));
+}
+
+export async function changeAccountPassword(currentPassword:string,newPassword:string):Promise<PasswordChangeReceipt>{
+  return json(await request('/api/auth/account',{
+    method:'PATCH',
+    headers:{'content-type':'application/json'},
+    body:JSON.stringify({action:'password',currentPassword,newPassword}),
+  }));
 }
 
 export async function loadData(): Promise<DataEnvelope> {
