@@ -56,14 +56,16 @@ describe('cross-page UI consistency contracts',()=>{
     expect(hardening).toContain('min-height:44px');
   });
 
-  it('normalizes legacy card-modal controls through the existing approved style chain',()=>{
+  it('normalizes legacy card-modal controls globally without mutating approved style chains',()=>{
+    const main=read('src/main.tsx');
     const baseStyles=read('src/styles.css');
     const approvedChain=read('src/styles/part47.css');
     const consistency=read('src/styles/cross-page-consistency.css');
     const cardDialog=read('src/components/CardCreateDialog.tsx');
     const cards=read('src/pages/CardsPage.tsx');
     expect(baseStyles.trimEnd()).toMatch(/part46\.css';$/);
-    expect(approvedChain).toContain("@import './cross-page-consistency.css';");
+    expect(approvedChain).not.toContain('cross-page-consistency.css');
+    expect(main).toContain("import './styles.css';\nimport './styles/cross-page-consistency.css';");
     expect(cardDialog).toContain('modal-primary');
     expect(cardDialog).toContain('modal-secondary');
     expect(cards).toContain('modal-primary');
