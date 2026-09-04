@@ -8,7 +8,7 @@ describe('approved Settings source contract',()=>{
     const source=read('src/pages/SettingsPage.tsx');
     const styles=read('src/pages/SettingsPage.css');
     expect(source).toContain("import './SettingsPage.css'");
-    for(const label of ['Γενικά','Λογαριασμός','Λογαριασμοί','Προϋπολογισμοί & Στόχοι','Κατηγορίες','Εικονίδια','Κανόνες','Δεδομένα'])expect(source).toContain(label);
+    for(const label of ['Γενικά','Χρήστης & Πρόσβαση','Λογαριασμοί','Προϋπολογισμοί & Στόχοι','Κατηγορίες','Εικονίδια','Κανόνες','Δεδομένα'])expect(source).toContain(label);
     expect(source).toContain("useState<SettingsTab>('general')");
     expect(source).toContain('settings-general-grid');
     expect(styles).toContain('.settings-general-grid{display:grid');
@@ -35,18 +35,23 @@ describe('approved Settings source contract',()=>{
     expect(shortcuts).toContain('shortcutDisplay(id)');
   });
 
-  it('keeps the Account tab useful with real auth mutations and local app PIN controls',()=>{
+  it('keeps user access useful with real auth mutations, four-digit PIN and device controls',()=>{
     const source=read('src/pages/SettingsPage.tsx');
     const account=read('src/components/AccountSecuritySettings.tsx');
+    const devices=read('src/components/DeviceAccessSettings.tsx');
     expect(source).toContain('<AccountSecuritySettings');
+    expect(source).toContain("label: 'Χρήστης & Πρόσβαση'");
     expect(account).toContain('changeAccountEmail');
     expect(account).toContain('changeAccountPassword');
     expect(account).toContain('Αλλαγή email');
     expect(account).toContain('Αλλαγή κωδικού');
     expect(account).toContain('PIN εφαρμογής');
-    expect(account).toContain('Ενεργοποίηση PIN');
+    expect(account).toContain('Νέο PIN 4 ψηφίων');
+    expect(account).toContain('Προεπιλογή 5 λεπτά');
     expect(account).toContain('Κλείδωμα τώρα');
-    expect(account).toContain("new Event('myfinhub:app-lock-now')");
+    expect(account).toContain('<DeviceAccessSettings/>');
+    expect(devices).toContain('Συνδεδεμένες συσκευές');
+    expect(devices).toContain('Αφαίρεση όλων των άλλων');
     expect(source).not.toContain('Δεν υποστηρίζεται από αυτή τη σελίδα');
   });
 
