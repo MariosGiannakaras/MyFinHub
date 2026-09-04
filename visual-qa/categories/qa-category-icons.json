@@ -4,18 +4,18 @@
   "appVersion": "v1.3",
   "suite": "category-icons",
   "surface": "categories",
-  "generatedAt": "2026-09-04T21:15:18.783Z",
+  "generatedAt": "2026-09-04T22:25:58.489Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "abc6447ce68066ab5a64ecab711ceec98e3f6117",
-    "shortSha": "abc6447c",
+    "sha": "10ffb4cf648e26197b86aa05c7ecf7e78a4082ea",
+    "shortSha": "10ffb4cf",
     "branch": "feat/346-settings-tabs"
   },
   "screenshots": [
-    "visual-qa/categories/v1.3__2026-09-05_001518__qa-category-icons__category-icons-quick-entry-desktop.png",
-    "visual-qa/categories/v1.3__2026-09-05_001518__qa-category-icons__category-icons-recurring-desktop.png",
-    "visual-qa/categories/v1.3__2026-09-05_001518__qa-category-icons__category-icons-reports-desktop.png",
-    "visual-qa/categories/v1.3__2026-09-05_001518__qa-category-icons__category-icons-transactions-desktop.png",
-    "visual-qa/categories/v1.3__2026-09-05_001518__qa-category-icons__category-icons-transactions-mobile.png"
+    "visual-qa/categories/v1.3__2026-09-05_012558__qa-category-icons__category-icons-quick-entry-desktop.png",
+    "visual-qa/categories/v1.3__2026-09-05_012558__qa-category-icons__category-icons-recurring-desktop.png",
+    "visual-qa/categories/v1.3__2026-09-05_012558__qa-category-icons__category-icons-reports-desktop.png",
+    "visual-qa/categories/v1.3__2026-09-05_012558__qa-category-icons__category-icons-transactions-desktop.png",
+    "visual-qa/categories/v1.3__2026-09-05_012558__qa-category-icons__category-icons-transactions-mobile.png"
   ]
 }
