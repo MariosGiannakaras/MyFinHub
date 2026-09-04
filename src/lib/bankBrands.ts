@@ -1,8 +1,4 @@
-const piraeusLogo='/brand/banks/piraeus-mark.svg';
 const revolutLogo='/brand/banks/revolut-mark.svg';
-const alphaLogo='/brand/banks/alpha-mark.svg';
-const nationalLogo='/brand/banks/national-mark.svg';
-const eurobankLogo='/brand/banks/eurobank-mark.svg';
 const payzyLogo=new URL('../assets/canonical-credit-card/payzy-logo.png',import.meta.url).href;
 const vivaLogo=new URL('../assets/canonical-credit-card/viva-logo.png',import.meta.url).href;
 
@@ -13,11 +9,7 @@ export type BankBrandImageAsset={label:string;src:string;fallbackMark:string;car
 export type BankBrandAsset=BankBrandTextAsset|BankBrandImageAsset;
 
 const BRAND_ASSETS:Partial<Record<BankBrandKey,BankBrandAsset>>={
-  piraeus:{label:'Τράπεζα Πειραιώς',src:piraeusLogo,fallbackMark:'ΠΕΙΡΑΙΩΣ',cardMark:'Piraeus',source:'local-image'},
   revolut:{label:'Revolut',src:revolutLogo,fallbackMark:'REVOLUT',cardMark:'Revolut',source:'local-image'},
-  alpha:{label:'Alpha Bank',src:alphaLogo,fallbackMark:'ALPHA',cardMark:'ALPHA BANK',source:'local-image'},
-  national:{label:'Εθνική Τράπεζα',src:nationalLogo,fallbackMark:'ΕΤΕ',cardMark:'NBG',source:'local-image'},
-  eurobank:{label:'Eurobank',src:eurobankLogo,fallbackMark:'EUROBANK',cardMark:'Eurobank',source:'local-image'},
   payzy:{label:'payzy by COSMOTE',src:payzyLogo,fallbackMark:'payzy',cardMark:'payzy',source:'local-image'},
   viva:{label:'Viva.com',src:vivaLogo,fallbackMark:'VIVA',cardMark:'VIVA',source:'local-image'},
   paypal:{label:'PayPal',mark:'PayPal',cardMark:'PayPal',source:'local-text'},
