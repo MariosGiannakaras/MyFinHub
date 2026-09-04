@@ -26,7 +26,7 @@ type SettingsTabDefinition = {
 
 const SETTINGS_TABS: SettingsTabDefinition[] = [
   { id: 'general', label: 'Γενικά' },
-  { id: 'profile', label: 'Λογαριασμός' },
+  { id: 'profile', label: 'Χρήστης & Πρόσβαση' },
   { id: 'accounts', label: 'Λογαριασμοί' },
   { id: 'budgets', label: 'Προϋπολογισμοί & Στόχοι' },
   { id: 'categories', label: 'Κατηγορίες' },
