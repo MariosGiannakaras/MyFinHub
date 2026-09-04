@@ -8,7 +8,7 @@ export function BankBrandMark({id,name,compact=true}:{id?:string;name?:string;co
   const inferredKey=bankBrandKey(id,name);
   const provider=providerCatalog.providers.find(item=>item.id===id||item.id===inferredKey);
   const assetKey=compact?provider?.logoAssetKey:provider?.wordmarkAssetKey;
-  const key=bankBrandKey(assetKey||id,provider?.displayName||name);
+  const key=assetKey==='generic'?'generic':bankBrandKey(assetKey||id,provider?.displayName||name);
   const asset=bankBrandAsset(key);
 
   if(key==='cash')return <span className="bank-brand-mark bankmark-cash" aria-hidden="true"><Banknote/></span>;
