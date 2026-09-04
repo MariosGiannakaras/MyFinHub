@@ -2,6 +2,7 @@ import { Clock3, KeyRound, LockKeyhole, Mail, ShieldCheck } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { ApiError, changeAccountEmail, changeAccountPassword, getSession } from '../lib/api';
 import { userErrorMessage } from '../lib/userMessage';
+import { AppSelectInput } from './AppSelectInput';
 import { DeviceAccessSettings } from './DeviceAccessSettings';
 import './AccountSecuritySettings.css';
 
@@ -193,7 +194,7 @@ export function AccountSecuritySettings({currentEmail}:{currentEmail?:string|nul
         <label className="account-security-field"><span>{lockState.enabled?'Νέο PIN':'Νέο PIN 4 ψηφίων'}</span><div className="account-security-pin-input"><input aria-label="Νέο 4ψήφιο PIN" type="password" inputMode="numeric" autoComplete="off" maxLength={PIN_LENGTH} value={newPin} disabled={!lockState.supported} onChange={event=>setNewPin(digits(event.target.value))}/><PinDots value={newPin}/></div></label>
         <label className="account-security-field"><span>Επιβεβαίωση PIN</span><div className="account-security-pin-input"><input aria-label="Επιβεβαίωση 4ψήφιου PIN" type="password" inputMode="numeric" autoComplete="off" maxLength={PIN_LENGTH} value={confirmPin} disabled={!lockState.supported} onChange={event=>setConfirmPin(digits(event.target.value))}/><PinDots value={confirmPin}/></div></label>
       </div>
-      {lockState.enabled?<div className="account-security-idle-control"><div><Clock3 size={17}/><span><b>Κλείδωμα μετά από αδράνεια</b><small>Προεπιλογή 5 λεπτά. Η αλλαγή ισχύει μόνο σε αυτή τη συσκευή.</small></span></div><select aria-label="Χρόνος αυτόματου κλειδώματος" disabled={pinBusy} value={lockState.idleMinutes} onChange={event=>void setIdleTimeout(Number(event.target.value))}>{IDLE_OPTIONS.map(minutes=><option key={minutes} value={minutes}>{idleLabel(minutes)}</option>)}</select></div>:null}
+      {lockState.enabled?<div className="account-security-idle-control"><div><Clock3 size={17}/><span><b>Κλείδωμα μετά από αδράνεια</b><small>Προεπιλογή 5 λεπτά. Η αλλαγή ισχύει μόνο σε αυτή τη συσκευή.</small></span></div><AppSelectInput className="account-security-idle-select" aria-label="Χρόνος αυτόματου κλειδώματος" disabled={pinBusy} value={String(lockState.idleMinutes)} onChange={event=>void setIdleTimeout(Number(event.target.value))}>{IDLE_OPTIONS.map(minutes=><option key={minutes} value={String(minutes)}>{idleLabel(minutes)}</option>)}</AppSelectInput></div>:null}
       <div className="account-security-actions pin-actions">
         <button type="button" className="save-button" disabled={pinBusy||!lockState.supported} onClick={()=>void submitPin()}>{pinBusy?'Αποθήκευση…':lockState.enabled?'Αλλαγή PIN':'Ενεργοποίηση PIN'}</button>
         {lockState.enabled?<><button type="button" className="secondary" disabled={pinBusy} onClick={lockNow}>Κλείδωμα τώρα</button><button type="button" className="secondary danger-text" disabled={pinBusy} onClick={()=>void disablePin()}>Απενεργοποίηση PIN</button></>:null}
