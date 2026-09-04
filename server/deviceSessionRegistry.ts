@@ -74,6 +74,10 @@ async function rest<T>(path: string, accessToken: string, init: RequestInit = {}
   }, 'DATA');
   const payload = await response.json().catch(() => null) as T | { message?: string; code?: string } | null;
   if (!response.ok) {
+    const details = payload && typeof payload === 'object' ? payload as { message?: string; code?: string } : {};
+    if (response.status === 404 && (details.code === 'PGRST205' || /myfinhub_device_sessions/i.test(details.message || ''))) {
+      throw new ApiError(503, 'DEVICE_REGISTRY_NOT_MIGRATED', 'Device registry migration is not active yet.', false);
+    }
     if (response.status === 401 || response.status === 403) throw new ApiError(401, 'DEVICE_ACCESS_REVOKED', 'Η πρόσβαση αυτής της συσκευής δεν είναι ενεργή.');
     throw new ApiError(response.status >= 500 ? 503 : response.status, 'DEVICE_REGISTRY_UNAVAILABLE', 'Η διαχείριση συσκευών δεν είναι προσωρινά διαθέσιμη.', false);
   }
@@ -87,7 +91,13 @@ function rowPath(sessionId: string) {
 export async function ensureDeviceSessionAccess(req: any, accessToken: string, userId: string) {
   const sessionId = accessTokenSessionId(accessToken);
   if (!sessionId) throw new ApiError(401, 'AUTH_REQUIRED', 'Authentication required.');
-  const rows = await rest<DeviceSessionRecord[]>(rowPath(sessionId), accessToken);
+  let rows: DeviceSessionRecord[];
+  try {
+    rows = await rest<DeviceSessionRecord[]>(rowPath(sessionId), accessToken);
+  } catch (error) {
+    if (error instanceof ApiError && error.code === 'DEVICE_REGISTRY_NOT_MIGRATED') return null;
+    throw error;
+  }
   const existing = rows[0];
   if (existing?.revoked_at) throw new ApiError(401, 'DEVICE_ACCESS_REVOKED', 'Η πρόσβαση αυτής της συσκευής έχει αφαιρεθεί.');
   const metadata = clientMetadata(req);
