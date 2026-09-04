@@ -56,7 +56,7 @@ describe('cross-page UI consistency contracts',()=>{
     expect(hardening).toContain('min-height:44px');
   });
 
-  it('normalizes legacy card-modal controls globally without mutating approved style chains',()=>{
+  it('reuses shared modal action/error roles while keeping only a tiny legacy close-control bridge',()=>{
     const main=read('src/main.tsx');
     const baseStyles=read('src/styles.css');
     const approvedChain=read('src/styles/part47.css');
@@ -66,14 +66,17 @@ describe('cross-page UI consistency contracts',()=>{
     expect(baseStyles.trimEnd()).toMatch(/part46\.css';$/);
     expect(approvedChain).not.toContain('cross-page-consistency.css');
     expect(main).toContain("import './styles.css';\nimport './styles/cross-page-consistency.css';");
-    expect(cardDialog).toContain('modal-primary');
-    expect(cardDialog).toContain('modal-secondary');
-    expect(cards).toContain('modal-primary');
-    expect(cards).toContain('modal-secondary');
-    expect(consistency).toContain('.modal-primary{');
-    expect(consistency).toContain('.modal-secondary,.close-picker{');
-    expect(consistency).toContain('var(--accent-gradient)');
+    for(const source of [cardDialog,cards]){
+      expect(source).toContain('icon-button close-picker');
+      expect(source).toContain('secondary modal-secondary');
+      expect(source).toContain('save-button modal-primary');
+      expect(source).toContain('FormError');
+    }
+    expect(consistency).toContain('.close-picker{');
     expect(consistency).toContain('var(--control-gradient)');
-    expect(consistency).toContain('@media(prefers-reduced-motion:reduce)');
+    expect(consistency).toContain('var(--shadow-soft)');
+    expect(consistency).not.toContain('.modal-primary{');
+    expect(consistency).not.toContain('.modal-secondary,');
+    expect(consistency.length).toBeLessThan(700);
   });
 });
