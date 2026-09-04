@@ -212,7 +212,7 @@ if (serveDist) {
   const here = path.dirname(fileURLToPath(import.meta.url));
   const dist = configuredDist ? path.resolve(configuredDist) : path.resolve(here, '..', 'dist');
   app.use(express.static(dist, { index: false, maxAge: '1h' }));
-  app.get('/{*splat}', (_req, res) => res.sendFile(path.join(dist, 'index.html'));
+  app.get('/{*splat}', (_req, res) => res.sendFile(path.join(dist, 'index.html')));
 }
 
 const port = Number(process.env.RHEOMIQ_PORT || process.env.PORT || 4317);
