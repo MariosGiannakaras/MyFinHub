@@ -175,13 +175,9 @@ function registerAppLockIpc() {
     assertSender(event);
     requireSupported();
     const pin = String(value?.pin || '');
-    const currentPin = String(value?.currentPin || '');
     if (!PIN_PATTERN.test(pin)) return { ok: false, error: 'INVALID_PIN_FORMAT', ...publicState() };
     const existing = readEnvelope();
-    if (existing) {
-      if (!(await verifyPin(currentPin))) return { ok: false, error: retryAfterMs() > 0 ? 'PIN_RATE_LIMITED' : 'INVALID_CURRENT_PIN', ...publicState() };
-      if (currentPin === pin) return { ok: false, error: 'PIN_UNCHANGED', ...publicState() };
-    }
+    if (existing && await verifyPin(pin, false)) return { ok: false, error: 'PIN_UNCHANGED', ...publicState() };
     await writeVerifier(pin, existing?.idleMinutes ?? DEFAULT_IDLE_MINUTES);
     return { ok: true, ...publicState() };
   });
@@ -192,11 +188,10 @@ function registerAppLockIpc() {
     rewriteIdleMinutes(Number(minutes));
     return { ok: true, ...publicState() };
   });
-  ipcMain.handle('myfinhub:disable-app-pin', async (event, pin) => {
+  ipcMain.handle('myfinhub:disable-app-pin', event => {
     assertSender(event);
     requireSupported();
     if (!fs.existsSync(appLockPath())) return { ok: true, ...publicState() };
-    if (!(await verifyPin(String(pin || '')))) return { ok: false, error: retryAfterMs() > 0 ? 'PIN_RATE_LIMITED' : 'INVALID_CURRENT_PIN', ...publicState() };
     try { fs.unlinkSync(appLockPath()); } catch { /* already removed */ }
     failedAttempts = 0;
     blockedUntil = 0;
