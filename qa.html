@@ -12,6 +12,41 @@
   <body>
     <div id="root"></div>
     <script type="module">
+      const params=new URLSearchParams(location.search);
+      const settingsApproval=params.get('page')==='settings'&&params.get('state')==='settings-tabs';
+      if(settingsApproval){
+        const appLockState={supported:true,enabled:true,idleMinutes:5,failedAttempts:0,retryAfterMs:0};
+        const updateState={supported:true,currentVersion:'1.3.0',status:'up-to-date',availableVersion:null,progress:100,message:'Η εφαρμογή είναι ενημερωμένη.'};
+        Object.defineProperty(window,'myFinHubDesktop',{configurable:true,value:Object.freeze({
+          getInfo:async()=>({productName:'MyFinHub',version:'1.3.0',packaged:true}),
+          getUpdateState:async()=>updateState,
+          checkForUpdates:async()=>updateState,
+          downloadUpdate:async()=>updateState,
+          installUpdate:async()=>updateState,
+          onUpdateState:()=>()=>{},
+          getAppLockState:async()=>appLockState,
+          verifyAppPin:async()=>({ok:true,...appLockState}),
+          setAppPin:async()=>({ok:true,...appLockState}),
+          setAppLockTimeout:async minutes=>({ok:true,...appLockState,idleMinutes:Number(minutes)||5}),
+          disableAppPin:async()=>({ok:true,...appLockState,enabled:false}),
+        })});
+        const nativeFetch=window.fetch.bind(window);
+        window.fetch=async(input,init)=>{
+          const href=typeof input==='string'?input:input instanceof URL?input.href:input.url;
+          const url=new URL(href,location.origin);
+          if(url.origin===location.origin&&url.pathname==='/api/auth/session'){
+            return new Response(JSON.stringify({authenticated:true,email:'owner@myfinhub.app'}),{status:200,headers:{'content-type':'application/json'}});
+          }
+          if(url.origin===location.origin&&url.pathname==='/api/auth/devices'&&(!init?.method||String(init.method).toUpperCase()==='GET')){
+            const now=Date.now();
+            return new Response(JSON.stringify({devices:[
+              {sessionId:'123e4567-e89b-42d3-a456-426614174001',current:true,platform:'windows',label:'Windows · MyFinHub PC',appVersion:'1.3.0',firstSeenAt:new Date(now-86400000*12).toISOString(),lastSeenAt:new Date(now-45000).toISOString()},
+              {sessionId:'123e4567-e89b-42d3-a456-426614174002',current:false,platform:'android',label:'Android · Pixel',appVersion:'1.0.0',firstSeenAt:new Date(now-86400000*3).toISOString(),lastSeenAt:new Date(now-32*60000).toISOString()},
+            ]}),{status:200,headers:{'content-type':'application/json'}});
+          }
+          return nativeFetch(input,init);
+        };
+      }
       await import('/src/styles.css');
       await import('/src/styles/part47.css');
       await import('/src/qa.tsx');
@@ -19,7 +54,6 @@
         await new Promise(resolve=>setTimeout(resolve,16));
       }
       if(!document.querySelector('#root>*'))throw new Error('QA React surface did not mount before document readiness.');
-      const params=new URLSearchParams(location.search);
       const approvedEvidence=params.get('page')==='dashboard'&&params.get('motion')==='reduced'&&!params.get('state');
       if(approvedEvidence){
         for(let attempt=0;attempt<120&&!document.querySelector('.privacy-toggle');attempt+=1){
