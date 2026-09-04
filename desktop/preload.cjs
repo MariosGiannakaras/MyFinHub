@@ -19,6 +19,10 @@ contextBridge.exposeInMainWorld('myFinHubDesktop', Object.freeze({
     ipcRenderer.on(updateChannel, handler);
     return () => ipcRenderer.removeListener(updateChannel, handler);
   },
+  getAppLockState: () => ipcRenderer.invoke('myfinhub:get-app-lock-state'),
+  verifyAppPin: (pin) => ipcRenderer.invoke('myfinhub:verify-app-pin', pin),
+  setAppPin: (value) => ipcRenderer.invoke('myfinhub:set-app-pin', value),
+  disableAppPin: (pin) => ipcRenderer.invoke('myfinhub:disable-app-pin', pin),
   getRecoveryState: async () => {
     const state = await rawRecoveryState();
     return {
