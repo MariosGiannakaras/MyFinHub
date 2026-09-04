@@ -4,18 +4,18 @@
   "appVersion": "v1.3",
   "suite": "credit-statements",
   "surface": "credit",
-  "generatedAt": "2026-09-04T17:16:02.291Z",
+  "generatedAt": "2026-08-24T22:04:15.932Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "db7332785839e42e173b97f1a9f3cd6add6edfb9",
-    "shortSha": "db733278",
-    "branch": "fix/phase6-main-updater-bridge"
+    "sha": "0f5a44a5af57681935c71777c869cf5fe712c7ff",
+    "shortSha": "0f5a44a5",
+    "branch": "feat/233-safe-taxonomy-retirement-final"
   },
   "screenshots": [
-    "visual-qa/credit/v1.3__2026-09-04_201602__qa-credit-statements__credit-deleted-statement-history-desktop.png",
-    "visual-qa/credit/v1.3__2026-09-04_201602__qa-credit-statements__credit-deleted-statement-history-mobile.png",
-    "visual-qa/credit/v1.3__2026-09-04_201602__qa-credit-statements__credit-statement-payment-desktop.png",
-    "visual-qa/credit/v1.3__2026-09-04_201602__qa-credit-statements__credit-statements-active-desktop.png",
-    "visual-qa/credit/v1.3__2026-09-04_201602__qa-credit-statements__credit-statements-active-mobile.png"
+    "visual-qa/credit/v1.3__2026-08-25_010415__qa-credit-statements__credit-deleted-statement-history-desktop.png",
+    "visual-qa/credit/v1.3__2026-08-25_010415__qa-credit-statements__credit-deleted-statement-history-mobile.png",
+    "visual-qa/credit/v1.3__2026-08-25_010415__qa-credit-statements__credit-statement-payment-desktop.png",
+    "visual-qa/credit/v1.3__2026-08-25_010415__qa-credit-statements__credit-statements-active-desktop.png",
+    "visual-qa/credit/v1.3__2026-08-25_010415__qa-credit-statements__credit-statements-active-mobile.png"
   ]
 }
