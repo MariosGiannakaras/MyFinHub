@@ -57,9 +57,19 @@ describe('approved Settings source contract',()=>{
     expect(source).not.toContain('Δεν υποστηρίζεται από αυτή τη σελίδα');
   });
 
-  it('preserves existing Settings functionality',()=>{
+  it('preserves existing Settings functionality and exposes real account management',()=>{
     const source=read('src/pages/SettingsPage.tsx');
-    expect(source).toContain('<AccountMetadataSettings data={data} />');
+    const accounts=read('src/components/AccountManagementSettings.tsx');
+    const domain=read('src/lib/domain.ts');
+    expect(source).toContain('<AccountManagementSettings');
+    expect(accounts).toContain('Προεπιλεγμένοι λογαριασμοί');
+    expect(accounts).toContain('Οι λογαριασμοί μου');
+    expect(accounts).toContain('Νέος λογαριασμός');
+    expect(accounts).toContain('Καθημερινά μετρητά');
+    expect(accounts).toContain('Καβάτζα');
+    expect(accounts).not.toContain('RefreshCw');
+    expect(domain).toContain('customAccounts');
+    expect(domain).toContain('accountOverrides');
     expect(source).toContain('<BudgetRuleSettings');
     expect(source).toContain('<CategoryIconsWorkspace');
     expect(source).toContain('Εισαγωγή JSON');
