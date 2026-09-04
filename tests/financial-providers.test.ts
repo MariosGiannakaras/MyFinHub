@@ -8,6 +8,7 @@ import {
   financialProviderId,
 } from '../src/lib/financialProviders.js';
 import { bankBrandKey } from '../src/lib/bankBrands.js';
+import { DEFAULT_CARD_BANKS } from '../src/lib/cards.js';
 
 const root=process.cwd();
 const source=(relative:string)=>fs.readFileSync(path.join(root,relative),'utf8');
@@ -42,6 +43,21 @@ describe('financial provider registry',()=>{
     expect(migration).not.toMatch(/service[_-]?role|secret[_-]?key/i);
   });
 
+  it('reuses the existing metadata API instead of adding another Vercel function',()=>{
+    const handler=source('server/accountMetadataHandler.ts');
+    const store=source('server/accountMetadataStore.ts');
+    const client=source('src/lib/financialProviderClient.ts');
+    expect(handler).toContain("resource==='financial-providers'");
+    expect(handler).toContain('readFinancialProviders(session.accessToken)');
+    expect(store).toContain('rheomiq_financial_providers?select=');
+    expect(store).toContain('authorization:`Bearer ${accessToken}`');
+    expect(store).toContain('SUPABASE_PUBLISHABLE_KEY');
+    expect(store).not.toMatch(/service[_-]?role|secret[_-]?key/i);
+    expect(client).toContain("/api/account-metadata?resource=financial-providers");
+    expect(client).toContain('providers:FALLBACK');
+    expect(fs.existsSync(path.join(root,'api/financial-providers.ts'))).toBe(false);
+  });
+
   it('uses the shared brand registry in Account Management and preserves separate provider/category/cash semantics',()=>{
     const accounts=source('src/components/AccountManagementSettings.tsx');
     expect(accounts).toContain("from '../lib/financialProviders'");
@@ -54,5 +70,27 @@ describe('financial provider registry',()=>{
     expect(accounts).toContain('cashType');
     expect(accounts).toContain("editor.cashType==='reserve'");
     expect(accounts).toContain("editor.bankAccountCategory==='term'");
+  });
+
+  it('makes the shared provider set available to Cards without changing legacy bank labels',()=>{
+    const ids=DEFAULT_CARD_BANKS.map(bank=>bank.id);
+    expect(ids).toEqual(FINANCIAL_PROVIDERS.map(provider=>provider.id));
+    expect(DEFAULT_CARD_BANKS.find(bank=>bank.id==='piraeus')?.name).toBe('ΠΕΙΡΑΙΩΣ');
+    expect(DEFAULT_CARD_BANKS.find(bank=>bank.id==='revolut')?.name).toBe('REVOLUT');
+    expect(DEFAULT_CARD_BANKS.find(bank=>bank.id==='national')?.name).toBe('Εθνική Τράπεζα');
+    expect(DEFAULT_CARD_BANKS.find(bank=>bank.id==='eurobank')?.name).toBe('Eurobank');
+    expect(DEFAULT_CARD_BANKS.find(bank=>bank.id==='paypal')?.name).toBe('PayPal');
+  });
+
+  it('backs Dashboard and card marks with the provider catalog while preserving local assets',()=>{
+    const mark=source('src/components/BankBrandMark.tsx');
+    const dashboard=source('src/pages/DashboardPage.tsx');
+    const cards=source('src/lib/cards.ts');
+    expect(mark).toContain('useFinancialProviders');
+    expect(mark).toContain('logoAssetKey');
+    expect(mark).toContain('wordmarkAssetKey');
+    expect(mark).toContain("data-provider-registry={provider?'shared':'fallback'}");
+    expect(dashboard).toContain('<BankBrandMark');
+    expect(cards).toContain("from './financialProviders.js'");
   });
 });
