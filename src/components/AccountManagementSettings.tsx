@@ -77,7 +77,7 @@ function maskedIban(value?:string|null){
 }
 function newAccountId(mode:AccountMode,providerId:string){
   const prefix=mode==='bank'?(providerId||'bank'):'cash';
-  return `account-${prefix}-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+  return `account-${prefix}-${globalThis.crypto.randomUUID()}`;
 }
 function accountReferenced(data:FinanceData,id:string){
   const legacy=[...(data.seed.transactions??[]),...(data.state.customTransactions??[]),...Object.values(data.state.overrides??{})];
