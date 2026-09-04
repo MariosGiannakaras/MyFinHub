@@ -56,27 +56,19 @@ describe('cross-page UI consistency contracts',()=>{
     expect(hardening).toContain('min-height:44px');
   });
 
-  it('reuses shared modal action/error roles while keeping only a tiny legacy close-control bridge',()=>{
+  it('reuses existing shared controls in card creation without adding eager global CSS',()=>{
     const main=read('src/main.tsx');
-    const baseStyles=read('src/styles.css');
-    const approvedChain=read('src/styles/part47.css');
-    const consistency=read('src/styles/cross-page-consistency.css');
     const cardDialog=read('src/components/CardCreateDialog.tsx');
     const cards=read('src/pages/CardsPage.tsx');
-    expect(baseStyles.trimEnd()).toMatch(/part46\.css';$/);
-    expect(approvedChain).not.toContain('cross-page-consistency.css');
-    expect(main).toContain("import './styles.css';\nimport './styles/cross-page-consistency.css';");
+    const credit=read('src/pages/CreditCardPage.tsx');
+    expect(main).not.toContain('cross-page-consistency.css');
     for(const source of [cardDialog,cards]){
       expect(source).toContain('icon-button close-picker');
       expect(source).toContain('secondary modal-secondary');
       expect(source).toContain('save-button modal-primary');
       expect(source).toContain('FormError');
     }
-    expect(consistency).toContain('.close-picker{');
-    expect(consistency).toContain('var(--control-gradient)');
-    expect(consistency).toContain('var(--shadow-soft)');
-    expect(consistency).not.toContain('.modal-primary{');
-    expect(consistency).not.toContain('.modal-secondary,');
-    expect(consistency.length).toBeLessThan(700);
+    // The credit-card archive keeps its legacy close-picker hook isolated; it does not own global chrome or action styling.
+    expect(credit).toContain('className="close-picker" aria-label="Κλείσιμο αρχείου καρτών"');
   });
 });
