@@ -15,6 +15,12 @@
       "maxDuration": 30
     }
   },
+  "rewrites": [
+    {
+      "source": "/api/android-update",
+      "destination": "/api/data?__myfinhub_route=android-update"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",

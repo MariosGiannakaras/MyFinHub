@@ -1,9 +1,9 @@
-import { accessTokenAal, clearSessionCookiesIfCookie, requireSession } from '../server/auth.js';
-import { parseAndroidReleaseChannel, readLatestAndroidRelease } from '../server/androidUpdates.js';
-import { ApiError, handleApi, methodNotAllowed, sendJson } from '../server/http.js';
-import { isOwner } from '../server/storage.js';
+import { accessTokenAal, clearSessionCookiesIfCookie, requireSession } from './auth.js';
+import { parseAndroidReleaseChannel, readLatestAndroidRelease } from './androidUpdates.js';
+import { ApiError, handleApi, methodNotAllowed, sendJson } from './http.js';
+import { isOwner } from './storage.js';
 
-export default async function handler(req: any, res: any) {
+export async function handleAndroidUpdateApi(req: any, res: any) {
   await handleApi(res, async () => {
     if (req.method !== 'GET') return methodNotAllowed(res, ['GET']);
 
