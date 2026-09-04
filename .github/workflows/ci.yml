@@ -27,8 +27,8 @@ jobs:
           cache-dependency-path: |
             package-lock.json
             api/package-lock.json
-      - run: npm ci
-      - run: npm ci --prefix api
+      - run: npm ci --prefer-offline --no-audit --no-fund
+      - run: npm ci --prefix api --prefer-offline --no-audit --no-fund
       - run: npm audit --audit-level=high
       - run: npm audit --prefix api --audit-level=high
       - run: npm run check
