@@ -1,5 +1,5 @@
 import { accessTokenAal, clearSessionCookiesIfCookie, requireSession } from '../server/auth.js';
-import { readLatestAndroidRelease } from '../server/androidUpdates.js';
+import { parseAndroidReleaseChannel, readLatestAndroidRelease } from '../server/androidUpdates.js';
 import { ApiError, handleApi, methodNotAllowed, sendJson } from '../server/http.js';
 import { isOwner } from '../server/storage.js';
 
@@ -16,9 +16,18 @@ export default async function handler(req: any, res: any) {
       throw new ApiError(403, 'MFA_REQUIRED', 'Verification required.');
     }
 
+    const rawChannel = req.headers?.['x-myfinhub-android-update-channel'];
+    const channel = parseAndroidReleaseChannel(rawChannel);
     res.setHeader('cache-control', 'private, no-store');
-    res.setHeader('vary', 'authorization, cookie');
-    const release = await readLatestAndroidRelease(session.accessToken);
+    res.setHeader('vary', 'authorization, cookie, x-myfinhub-android-update-channel');
+
+    let release = await readLatestAndroidRelease(session.accessToken, channel);
+    // Temporary Phase 6 bootstrap: build 6009 predates the explicit channel header. Production
+    // metadata remains untouched. Once the first channel-aware build is installed this fallback
+    // can be removed; explicit production callers never fall through to test releases.
+    if (!release && (rawChannel === undefined || rawChannel === null || rawChannel === '')) {
+      release = await readLatestAndroidRelease(session.accessToken, 'phase6-test');
+    }
     return sendJson(res, 200, release ? { available: true, release } : { available: false });
   });
 }

@@ -4,6 +4,8 @@ import { fetchUpstream } from './upstream.js';
 const ANDROID_RELEASE_BUCKET = 'android-releases';
 const MAX_ANDROID_APK_BYTES = 300 * 1024 * 1024;
 
+export type AndroidReleaseChannel = 'production' | 'phase6-test';
+
 export type AndroidRelease = {
   versionCode: number;
   versionName: string;
@@ -107,10 +109,24 @@ function parseRelease(row: AndroidReleaseRow): AndroidRelease {
   };
 }
 
-export async function readLatestAndroidRelease(accessToken: string): Promise<AndroidRelease | null> {
+export function parseAndroidReleaseChannel(value: unknown): AndroidReleaseChannel {
+  if (value === undefined || value === null || value === '') return 'production';
+  if (Array.isArray(value)) {
+    if (value.length !== 1) throw new ApiError(400, 'UPDATE_CHANNEL_INVALID', 'Update channel is invalid.', false);
+    return parseAndroidReleaseChannel(value[0]);
+  }
+  if (value === 'production' || value === 'phase6-test') return value;
+  throw new ApiError(400, 'UPDATE_CHANNEL_INVALID', 'Update channel is invalid.', false);
+}
+
+export async function readLatestAndroidRelease(
+  accessToken: string,
+  channel: AndroidReleaseChannel = 'production',
+): Promise<AndroidRelease | null> {
   if (!accessToken) throw new ApiError(401, 'AUTH_REQUIRED', 'Authentication required.');
+  const encodedChannel = encodeURIComponent(channel);
   const rows = await updateData<AndroidReleaseRow[]>(
-    'rheomiq_android_releases?select=version_code,version_name,storage_path,sha256,size_bytes,mandatory,notes,published_at&enabled=eq.true&order=version_code.desc&limit=1',
+    `rheomiq_android_releases?select=version_code,version_name,storage_path,sha256,size_bytes,mandatory,notes,published_at&channel=eq.${encodedChannel}&enabled=eq.true&order=version_code.desc&limit=1`,
     accessToken,
   );
   if (!Array.isArray(rows)) throw new ApiError(502, 'UPDATE_METADATA_INVALID', 'Update information is invalid.', false);

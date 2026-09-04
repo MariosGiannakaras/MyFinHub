@@ -23,7 +23,7 @@ describe('private Android release metadata reader', () => {
     if (originalKey === undefined) delete process.env.SUPABASE_PUBLISHABLE_KEY; else process.env.SUPABASE_PUBLISHABLE_KEY = originalKey;
   });
 
-  it('maps a valid release to a bearer-authenticated private Storage URL', async () => {
+  it('maps a valid production release and filters the production channel', async () => {
     const fetchMock = vi.fn().mockResolvedValue(upstream(200, [{
       version_code: 17,
       version_name: '1.7.0',
@@ -45,9 +45,20 @@ describe('private Android release metadata reader', () => {
       sha256: 'abcdef0123456789'.repeat(4),
       sizeBytes: 42_000_000,
     });
-    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toContain('channel=eq.production');
     expect((init.headers as Record<string, string>).authorization).toBe('Bearer owner-token');
     expect((init.headers as Record<string, string>).apikey).toBe('sb_publishable_test');
+  });
+
+  it('isolates the Phase 6 test feed in the metadata query', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(upstream(200, []));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(readLatestAndroidRelease('owner-token', 'phase6-test')).resolves.toBeNull();
+
+    const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toContain('channel=eq.phase6-test');
   });
 
   it('returns null when no release has been published', async () => {
