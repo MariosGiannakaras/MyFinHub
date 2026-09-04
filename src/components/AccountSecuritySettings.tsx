@@ -10,9 +10,9 @@ type AppLockState={supported:boolean;enabled:boolean;idleMinutes:number;failedAt
 type AppLockResult=AppLockState&{ok:boolean;error?:string};
 type AppLockBridge={
   getAppLockState:()=>Promise<AppLockState>;
-  setAppPin:(value:{pin:string;currentPin?:string})=>Promise<AppLockResult>;
+  setAppPin:(value:{pin:string})=>Promise<AppLockResult>;
   setAppLockTimeout:(minutes:number)=>Promise<AppLockResult>;
-  disableAppPin:(pin:string)=>Promise<AppLockResult>;
+  disableAppPin:()=>Promise<AppLockResult>;
 };
 
 const PIN_LENGTH=4;
@@ -33,8 +33,6 @@ function authError(error:unknown,fallback:string){
 }
 
 function pinError(result:AppLockResult){
-  if(result.error==='INVALID_CURRENT_PIN')return 'Το τρέχον PIN δεν είναι σωστό.';
-  if(result.error==='PIN_RATE_LIMITED')return 'Έγιναν πολλές λανθασμένες προσπάθειες PIN. Δοκίμασε ξανά όταν λήξει η προσωρινή καθυστέρηση.';
   if(result.error==='PIN_UNCHANGED')return 'Το νέο PIN πρέπει να είναι διαφορετικό από το τρέχον.';
   if(result.error==='INVALID_PIN_FORMAT')return 'Το PIN πρέπει να έχει ακριβώς 4 ψηφία.';
   if(result.error==='INVALID_IDLE_TIMEOUT')return 'Το διάστημα αυτόματου κλειδώματος δεν είναι έγκυρο.';
@@ -53,7 +51,6 @@ export function AccountSecuritySettings({currentEmail}:{currentEmail?:string|nul
   const[currentPassword,setCurrentPassword]=useState('');
   const[newPassword,setNewPassword]=useState('');
   const[confirmPassword,setConfirmPassword]=useState('');
-  const[currentPin,setCurrentPin]=useState('');
   const[newPin,setNewPin]=useState('');
   const[confirmPin,setConfirmPin]=useState('');
   const[displayEmail,setDisplayEmail]=useState(currentEmail||'');
@@ -114,13 +111,12 @@ export function AccountSecuritySettings({currentEmail}:{currentEmail?:string|nul
     if(!bridge||!lockState.supported)return;
     if(newPin.length!==PIN_LENGTH||confirmPin.length!==PIN_LENGTH){setPinMessage('Το PIN πρέπει να έχει ακριβώς 4 ψηφία.');return;}
     if(newPin!==confirmPin){setPinMessage('Η επιβεβαίωση του PIN δεν ταιριάζει.');return;}
-    if(lockState.enabled&&currentPin.length!==PIN_LENGTH){setPinMessage('Συμπλήρωσε το τρέχον 4ψήφιο PIN πριν το αλλάξεις.');return;}
     setPinBusy(true);setPinMessage('');
     try{
-      const result=await bridge.setAppPin({pin:newPin,...(lockState.enabled?{currentPin}:{})});
+      const result=await bridge.setAppPin({pin:newPin});
       publishLockState(result);
       if(!result.ok){setPinMessage(pinError(result));return;}
-      setCurrentPin('');setNewPin('');setConfirmPin('');
+      setNewPin('');setConfirmPin('');
       setPinMessage(lockState.enabled?'Το PIN της εφαρμογής άλλαξε.':`Το PIN ενεργοποιήθηκε. Το MyFinHub θα κλειδώνει μετά από ${idleLabel(result.idleMinutes)} αδράνειας.`);
     }catch{setPinMessage('Η ασφαλής αποθήκευση του PIN δεν ολοκληρώθηκε.')}
     finally{setPinBusy(false)}
@@ -138,12 +134,11 @@ export function AccountSecuritySettings({currentEmail}:{currentEmail?:string|nul
 
   const disablePin=async()=>{
     if(!bridge||!lockState.supported||!lockState.enabled)return;
-    if(currentPin.length!==PIN_LENGTH){setPinMessage('Συμπλήρωσε το τρέχον 4ψήφιο PIN για απενεργοποίηση.');return;}
     setPinBusy(true);setPinMessage('');
     try{
-      const result=await bridge.disableAppPin(currentPin);publishLockState(result);
+      const result=await bridge.disableAppPin();publishLockState(result);
       if(!result.ok){setPinMessage(pinError(result));return;}
-      setCurrentPin('');setNewPin('');setConfirmPin('');setPinMessage('Το PIN της εφαρμογής απενεργοποιήθηκε.');
+      setNewPin('');setConfirmPin('');setPinMessage('Το PIN της εφαρμογής απενεργοποιήθηκε.');
     }catch{setPinMessage('Η απενεργοποίηση του PIN δεν ολοκληρώθηκε.')}
     finally{setPinBusy(false)}
   };
@@ -151,32 +146,27 @@ export function AccountSecuritySettings({currentEmail}:{currentEmail?:string|nul
   const lockNow=()=>{if(lockState.enabled)window.dispatchEvent(new Event('myfinhub:app-lock-now'))};
 
   return <div className="account-security-settings settings-tab-stack">
-    <section className="panel neo-raised account-security-overview">
-      <div className="panel-head"><div><span>Πρόσβαση & ασφάλεια</span><small>Διαχειρίσου την ταυτότητα, τον κωδικό, το τοπικό κλείδωμα και τις συσκευές που έχουν πρόσβαση στο MyFinHub.</small></div><ShieldCheck/></div>
-      <div className="account-security-summary">
-        <div><span>Email πρόσβασης</span><b>{displayEmail||'Συνδεδεμένος χρήστης'}</b></div>
-        <div><span>Επαλήθευση</span><b>Authenticator · MFA</b></div>
-        <div><span>PIN εφαρμογής</span><b>{lockState.supported?(lockState.enabled?'Ενεργό · 4 ψηφία':'Ανενεργό'):'Windows Desktop'}</b></div>
-        <div><span>Αυτόματο κλείδωμα</span><b>{lockState.enabled?idleLabel(lockState.idleMinutes):'—'}</b></div>
-      </div>
-      {pendingEmail?<div className="account-security-pending"><Mail size={16}/><span>Εκκρεμεί επιβεβαίωση αλλαγής email προς <b>{pendingEmail}</b>.</span></div>:null}
-    </section>
+    <div className="account-security-heading">
+      <h3>Χρήστης & Πρόσβαση</h3>
+      <p>Διαχειρίσου την πρόσβαση και την ασφάλεια του λογαριασμού σου στο MyFinHub.</p>
+    </div>
 
     <div className="account-security-grid">
-      <section className="panel neo-raised account-security-card">
-        <div className="panel-head"><div><span>Αλλαγή email</span><small>Το νέο email γίνεται ενεργό μόνο αφού ολοκληρωθεί η ασφαλής διαδικασία επιβεβαίωσης.</small></div><Mail/></div>
+      <section className="panel neo-raised account-security-card account-security-email-card">
+        <div className="panel-head"><div><span>Αλλαγή email</span></div><Mail/></div>
+        <div className="account-security-current-email"><span>Τρέχον email:</span><b>{displayEmail||'—'}</b></div>
         <label className="account-security-field"><span>Νέο email</span><input type="email" autoComplete="email" value={newEmail} placeholder="neo@example.com" onChange={event=>setNewEmail(event.target.value)}/></label>
+        {pendingEmail?<div className="account-security-pending"><Mail size={16}/><span>Εκκρεμεί επιβεβαίωση προς <b>{pendingEmail}</b>.</span></div>:null}
         <div className="account-security-actions"><button type="button" className="save-button" disabled={Boolean(authBusy)} onClick={()=>void submitEmail()}>{authBusy==='email'?'Αποθήκευση…':'Αλλαγή email'}</button></div>
       </section>
 
-      <section className="panel neo-raised account-security-card">
-        <div className="panel-head"><div><span>Αλλαγή κωδικού</span><small>Απαιτείται ο τρέχων κωδικός. Η επαλήθευση MFA παραμένει ενεργή.</small></div><KeyRound/></div>
+      <section className="panel neo-raised account-security-card account-security-password-card">
+        <div className="panel-head"><div><span>Αλλαγή κωδικού</span></div><KeyRound/></div>
         <div className="account-security-password-grid">
           <label className="account-security-field"><span>Τρέχων κωδικός</span><input type="password" autoComplete="current-password" value={currentPassword} onChange={event=>setCurrentPassword(event.target.value)}/></label>
           <label className="account-security-field"><span>Νέος κωδικός</span><input type="password" autoComplete="new-password" value={newPassword} onChange={event=>setNewPassword(event.target.value)}/></label>
-          <label className="account-security-field"><span>Επιβεβαίωση νέου κωδικού</span><input type="password" autoComplete="new-password" value={confirmPassword} onChange={event=>setConfirmPassword(event.target.value)}/></label>
+          <label className="account-security-field account-security-password-confirm"><span>Επιβεβαίωση νέου κωδικού</span><input type="password" autoComplete="new-password" value={confirmPassword} onChange={event=>setConfirmPassword(event.target.value)}/></label>
         </div>
-        <small className="account-security-hint">Ελάχιστο 8 χαρακτήρες· προτείνεται μοναδικός κωδικός 12+ χαρακτήρων από password manager.</small>
         <div className="account-security-actions"><button type="button" className="save-button" disabled={Boolean(authBusy)} onClick={()=>void submitPassword()}>{authBusy==='password'?'Αποθήκευση…':'Αλλαγή κωδικού'}</button></div>
       </section>
     </div>
@@ -184,17 +174,17 @@ export function AccountSecuritySettings({currentEmail}:{currentEmail?:string|nul
     {authMessage?<div className="logic-note compact account-security-message" role="status" aria-live="polite"><ShieldCheck/><span>{authMessage}</span></div>:null}
 
     <section className="panel neo-raised account-security-card account-security-pin-card">
-      <div className="panel-head"><div><span>PIN & αυτόματο κλείδωμα</span><small>Γρήγορο PIN 4 ψηφίων για κλείδωμα της εφαρμογής Windows όταν παραμένεις συνδεδεμένος.</small></div><LockKeyhole/></div>
-      <div className="account-security-pin-status">
-        <div><span>Κατάσταση</span><b>{lockState.supported?(lockState.enabled?'Ενεργό':'Ανενεργό'):'Διαθέσιμο στην εφαρμογή Windows'}</b></div>
-        <div className="account-security-pin-preview"><PinDots value={lockState.enabled?'1234':''}/><p>Το πραγματικό PIN δεν εμφανίζεται και δεν συγχρονίζεται. Αποθηκεύεται μόνο scrypt verifier προστατευμένος με Windows DPAPI.</p></div>
+      <div className="panel-head"><div><span>PIN & αυτόματο κλείδωμα</span></div><LockKeyhole/></div>
+      <div className="account-security-pin-status-compact">
+        <ShieldCheck size={17}/>
+        <b>{lockState.supported?(lockState.enabled?'Το PIN είναι ενεργό':'Το PIN είναι ανενεργό'):'Διαθέσιμο στην εφαρμογή Windows'}</b>
+        <PinDots value={lockState.enabled?'1234':''}/>
       </div>
       <div className="account-security-pin-grid">
-        {lockState.enabled?<label className="account-security-field"><span>Τρέχον PIN</span><div className="account-security-pin-input"><input aria-label="Τρέχον 4ψήφιο PIN" type="password" inputMode="numeric" autoComplete="off" maxLength={PIN_LENGTH} value={currentPin} onChange={event=>setCurrentPin(digits(event.target.value))}/><PinDots value={currentPin}/></div></label>:null}
-        <label className="account-security-field"><span>{lockState.enabled?'Νέο PIN':'Νέο PIN 4 ψηφίων'}</span><div className="account-security-pin-input"><input aria-label="Νέο 4ψήφιο PIN" type="password" inputMode="numeric" autoComplete="off" maxLength={PIN_LENGTH} value={newPin} disabled={!lockState.supported} onChange={event=>setNewPin(digits(event.target.value))}/><PinDots value={newPin}/></div></label>
+        <label className="account-security-field"><span>Νέο PIN</span><div className="account-security-pin-input"><input aria-label="Νέο 4ψήφιο PIN" type="password" inputMode="numeric" autoComplete="off" maxLength={PIN_LENGTH} value={newPin} disabled={!lockState.supported} onChange={event=>setNewPin(digits(event.target.value))}/><PinDots value={newPin}/></div></label>
         <label className="account-security-field"><span>Επιβεβαίωση PIN</span><div className="account-security-pin-input"><input aria-label="Επιβεβαίωση 4ψήφιου PIN" type="password" inputMode="numeric" autoComplete="off" maxLength={PIN_LENGTH} value={confirmPin} disabled={!lockState.supported} onChange={event=>setConfirmPin(digits(event.target.value))}/><PinDots value={confirmPin}/></div></label>
       </div>
-      {lockState.enabled?<div className="account-security-idle-control"><div><Clock3 size={17}/><span><b>Κλείδωμα μετά από αδράνεια</b><small>Προεπιλογή 5 λεπτά. Η αλλαγή ισχύει μόνο σε αυτή τη συσκευή.</small></span></div><AppSelectInput className="account-security-idle-select" aria-label="Χρόνος αυτόματου κλειδώματος" disabled={pinBusy} value={String(lockState.idleMinutes)} onChange={event=>void setIdleTimeout(Number(event.target.value))}>{IDLE_OPTIONS.map(minutes=><option key={minutes} value={String(minutes)}>{idleLabel(minutes)}</option>)}</AppSelectInput></div>:null}
+      {lockState.enabled?<div className="account-security-idle-control"><div><Clock3 size={17}/><b>Κλείδωμα μετά από αδράνεια</b></div><AppSelectInput className="account-security-idle-select" aria-label="Χρόνος αυτόματου κλειδώματος" disabled={pinBusy} value={String(lockState.idleMinutes)} onChange={event=>void setIdleTimeout(Number(event.target.value))}>{IDLE_OPTIONS.map(minutes=><option key={minutes} value={String(minutes)}>{idleLabel(minutes)}</option>)}</AppSelectInput></div>:null}
       <div className="account-security-actions pin-actions">
         <button type="button" className="save-button" disabled={pinBusy||!lockState.supported} onClick={()=>void submitPin()}>{pinBusy?'Αποθήκευση…':lockState.enabled?'Αλλαγή PIN':'Ενεργοποίηση PIN'}</button>
         {lockState.enabled?<><button type="button" className="secondary" disabled={pinBusy} onClick={lockNow}>Κλείδωμα τώρα</button><button type="button" className="secondary danger-text" disabled={pinBusy} onClick={()=>void disablePin()}>Απενεργοποίηση PIN</button></>:null}
