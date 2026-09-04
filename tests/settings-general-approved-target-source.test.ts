@@ -35,7 +35,22 @@ describe('approved Settings source contract',()=>{
     expect(shortcuts).toContain('shortcutDisplay(id)');
   });
 
-  it('preserves existing Settings functionality while unsupported account mutations stay truthful',()=>{
+  it('keeps the Account tab useful with real auth mutations and local app PIN controls',()=>{
+    const source=read('src/pages/SettingsPage.tsx');
+    const account=read('src/components/AccountSecuritySettings.tsx');
+    expect(source).toContain('<AccountSecuritySettings');
+    expect(account).toContain('changeAccountEmail');
+    expect(account).toContain('changeAccountPassword');
+    expect(account).toContain('Αλλαγή email');
+    expect(account).toContain('Αλλαγή κωδικού');
+    expect(account).toContain('PIN εφαρμογής');
+    expect(account).toContain('Ενεργοποίηση PIN');
+    expect(account).toContain('Κλείδωμα τώρα');
+    expect(account).toContain("new Event('myfinhub:app-lock-now')");
+    expect(source).not.toContain('Δεν υποστηρίζεται από αυτή τη σελίδα');
+  });
+
+  it('preserves existing Settings functionality',()=>{
     const source=read('src/pages/SettingsPage.tsx');
     expect(source).toContain('<AccountMetadataSettings data={data} />');
     expect(source).toContain('<BudgetRuleSettings');
@@ -43,10 +58,6 @@ describe('approved Settings source contract',()=>{
     expect(source).toContain('Εισαγωγή JSON');
     expect(source).toContain('Backup & λήψη');
     expect(source).toContain('technical-settings');
-    expect(source).toContain('settings-profile-card');
-    expect(source).toContain('Δεν υποστηρίζεται από αυτή τη σελίδα');
-    expect(source).not.toContain('Αλλαγή email</button>');
-    expect(source).not.toContain('Αλλαγή κωδικού</button>');
   });
 
   it('separates existing budgets, rules, taxonomy and icon capabilities into dedicated canonical views',()=>{
