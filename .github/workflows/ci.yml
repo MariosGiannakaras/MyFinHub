@@ -29,8 +29,6 @@ jobs:
             api/package-lock.json
       - run: npm ci --prefer-offline --no-audit --no-fund
       - run: npm ci --prefix api --prefer-offline --no-audit --no-fund
-      - run: npm audit --audit-level=high
-      - run: npm audit --prefix api --audit-level=high
       - run: npm run check
       - run: npm run check --prefix api
       - name: Rendered frontend QA
@@ -61,6 +59,8 @@ jobs:
           export PATH="/tmp/myfinhub-qa-browser-bin:$PATH"
           echo "Rendered QA enforced primary browser: $($PRIMARY_BROWSER --version)"
           npm run qa:frontend
+      - run: npm audit --audit-level=high
+      - run: npm audit --prefix api --audit-level=high
       - name: Upload latest surface-first UI/UX browser evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
