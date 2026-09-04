@@ -1,0 +1,17 @@
+.desktop-app-lock-screen{min-height:100vh;display:grid;place-items:center;padding:24px;background:radial-gradient(circle at 50% 0%,rgba(47,111,237,.12),transparent 34%),var(--bg,#f3f6fa);color:var(--ink,#10234d)}
+.desktop-app-lock-card{width:min(100%,460px);display:grid;justify-items:center;gap:12px;padding:30px;text-align:center;background:rgba(255,255,255,.94)}
+.desktop-app-lock-card>img{width:64px;height:64px;border-radius:16px}
+.desktop-app-lock-card>span:not(.eyebrow){color:var(--muted)}
+.desktop-app-lock-icon{width:54px;height:54px;display:grid;place-items:center;border-radius:17px;background:rgba(47,111,237,.09);color:var(--blue,#2f6fed)}
+.desktop-app-lock-icon svg{width:25px;height:25px}
+.desktop-app-lock-card h1{margin:0;font-size:clamp(1.55rem,4vw,2rem);line-height:1.12}
+.desktop-app-lock-card p{max-width:390px;margin:0;color:var(--muted);line-height:1.55}
+.desktop-app-lock-card form{width:100%;display:grid;gap:12px;margin-top:6px}
+.desktop-app-lock-card form label{display:grid;gap:7px;text-align:left;font-weight:680;font-size:var(--ux-small-size,.9rem)}
+.desktop-app-lock-card form input{width:100%;min-height:54px;padding:11px 14px;border:1px solid var(--line);border-radius:13px;background:#fff;color:var(--ink);font:750 1.2rem/1 system-ui;letter-spacing:.38em;text-align:center;font-variant-numeric:tabular-nums;outline:none}
+.desktop-app-lock-card form input:focus{border-color:rgba(47,111,237,.65);box-shadow:0 0 0 4px rgba(47,111,237,.1)}
+.desktop-app-lock-card form button,.desktop-app-lock-card>button{min-height:46px}
+.desktop-app-lock-status{padding:10px 12px;border-radius:10px;background:rgba(180,35,24,.06);color:#8b1d15;font-size:var(--ux-small-size,.9rem);line-height:1.4}
+.desktop-app-lock-card>small{display:flex;align-items:flex-start;gap:7px;margin-top:3px;color:var(--muted);font-size:var(--ux-tiny-size,.78rem);line-height:1.45;text-align:left}
+.desktop-app-lock-card>small svg{flex:0 0 auto;margin-top:2px;color:var(--blue,#2f6fed)}
+@media(max-width:520px){.desktop-app-lock-screen{padding:14px}.desktop-app-lock-card{padding:24px 18px;border-radius:18px}.desktop-app-lock-card form input{min-height:52px}}
