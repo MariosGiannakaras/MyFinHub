@@ -1,6 +1,7 @@
 import { Database, Download, FileJson, ShieldCheck } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { AccountMetadataSettings } from '../components/AccountMetadataSettings';
+import { AccountSecuritySettings } from '../components/AccountSecuritySettings';
 import { AppSelectInput } from '../components/AppSelectInput';
 import { BudgetRuleSettings } from '../components/BudgetRuleSettings';
 import { CategoryIconsWorkspace } from '../components/CategoryIconsWorkspace';
@@ -77,6 +78,7 @@ export function SettingsPage({
   asOf,
   filePath,
   lastSavedAt,
+  currentEmail,
   onImport,
   onBackup,
   onSettings,
@@ -90,6 +92,7 @@ export function SettingsPage({
   asOf: string;
   filePath: string;
   lastSavedAt: string | null;
+  currentEmail?: string | null;
   onImport: (d: FinanceData) => Promise<void>;
   onBackup: () => Promise<{ path: string }>;
   onSettings: (settings: FinanceData['state']['settings']) => void;
@@ -267,28 +270,7 @@ export function SettingsPage({
           </div>
         ) : null}
 
-        {activeTab === 'profile' ? (
-          <div className="settings-tab-stack settings-profile-tab">
-            <section className="panel neo-raised settings-profile-card">
-              <div className="panel-head">
-                <div>
-                  <span>Λογαριασμός MyFinHub</span>
-                  <small>Η διαχείριση πρόσβασης παραμένει στην υπάρχουσα ασφαλή ροή σύνδεσης και δεν μεταφέρεται τεχνητά στις ρυθμίσεις.</small>
-                </div>
-                <ShieldCheck />
-              </div>
-              <div className="settings-profile-status">
-                <div><span>Πρόσβαση</span><b>Υπάρχουσα ασφαλής ροή σύνδεσης</b></div>
-                <div><span>Αλλαγή email</span><b>Δεν υποστηρίζεται από αυτή τη σελίδα</b></div>
-                <div><span>Αλλαγή κωδικού</span><b>Δεν υποστηρίζεται από αυτή τη σελίδα</b></div>
-              </div>
-              <div className="logic-note compact">
-                <ShieldCheck />
-                <span>Η καρτέλα είναι ενεργή και ειλικρινής: δεν εμφανίζει controls που δεν έχουν πραγματικό backend ή ασφαλή ροή εκτέλεσης.</span>
-              </div>
-            </section>
-          </div>
-        ) : null}
+        {activeTab === 'profile' ? <AccountSecuritySettings currentEmail={currentEmail} /> : null}
 
         {activeTab === 'accounts' ? (
           <div className="settings-tab-stack settings-accounts-tab">
