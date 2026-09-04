@@ -72,7 +72,7 @@ describe('private Android update API boundary', () => {
     if (originalKey === undefined) delete process.env.SUPABASE_PUBLISHABLE_KEY; else process.env.SUPABASE_PUBLISHABLE_KEY = originalKey;
   });
 
-  it('defaults legacy callers to production and disables caching', async () => {
+  it('defaults legacy callers to production first and disables caching', async () => {
     const token = tokenWithAal('aal2');
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(upstream(200, { id: 'owner-id' })));
     const res = responseRecorder();
@@ -81,11 +81,52 @@ describe('private Android update API boundary', () => {
 
     expect(res.statusCode).toBe(200);
     expect(storage.isOwner).toHaveBeenCalledWith(token);
+    expect(updates.readLatestAndroidRelease).toHaveBeenCalledTimes(1);
     expect(updates.readLatestAndroidRelease).toHaveBeenCalledWith(token, 'production');
     expect(JSON.parse(res.body)).toMatchObject({ available: true, release: { versionCode: 2 } });
     expect(res.headers.get('cache-control')).toBe('no-store, max-age=0');
     expect(res.headers.get('pragma')).toBe('no-cache');
     expect(res.headers.get('vary')).toBe('authorization, cookie, x-myfinhub-android-update-channel');
+  });
+
+  it('temporarily bridges a legacy no-header client to phase6-test only when production is empty', async () => {
+    const token = tokenWithAal('aal2');
+    const testRelease = {
+      versionCode: 6010,
+      versionName: '0.1.0-phase6.10',
+      downloadUrl: 'https://project.example.supabase.co/storage/v1/object/authenticated/android-releases/phase6-test/6010/MyFinHub.apk',
+      sha256: 'b'.repeat(64),
+      sizeBytes: 2048,
+      mandatory: false,
+      notes: 'Phase 6 test',
+      publishedAt: '2026-09-04T12:00:00.000Z',
+    };
+    updates.readLatestAndroidRelease
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(testRelease);
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(upstream(200, { id: 'owner-id' })));
+    const res = responseRecorder();
+
+    await updateHandler(request('GET', token), res);
+
+    expect(updates.readLatestAndroidRelease.mock.calls).toEqual([
+      [token, 'production'],
+      [token, 'phase6-test'],
+    ]);
+    expect(JSON.parse(res.body)).toMatchObject({ available: true, release: { versionCode: 6010 } });
+  });
+
+  it('never lets an explicit production caller fall through to phase6-test', async () => {
+    const token = tokenWithAal('aal2');
+    updates.readLatestAndroidRelease.mockResolvedValue(null);
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(upstream(200, { id: 'owner-id' })));
+    const res = responseRecorder();
+
+    await updateHandler(request('GET', token, 'production'), res);
+
+    expect(updates.readLatestAndroidRelease).toHaveBeenCalledTimes(1);
+    expect(updates.readLatestAndroidRelease).toHaveBeenCalledWith(token, 'production');
+    expect(JSON.parse(res.body)).toEqual({ available: false });
   });
 
   it('routes Phase 6 test builds only to the isolated test channel', async () => {
