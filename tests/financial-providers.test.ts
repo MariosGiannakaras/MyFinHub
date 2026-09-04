@@ -7,7 +7,7 @@ import {
   FINANCIAL_PROVIDERS,
   financialProviderId,
 } from '../src/lib/financialProviders.js';
-import { bankBrandKey } from '../src/lib/bankBrands.js';
+import { bankBrandAsset, bankBrandKey } from '../src/lib/bankBrands.js';
 import { DEFAULT_CARD_BANKS } from '../src/lib/cards.js';
 
 const root=process.cwd();
@@ -28,6 +28,20 @@ describe('financial provider registry',()=>{
     expect(financialProviderId('PayPal')).toBe('paypal');
   });
 
+  it('never presents fabricated bank artwork as verified provider branding',()=>{
+    const genericProviders=['piraeus','alpha','national','eurobank'];
+    for(const id of genericProviders){
+      const provider=FINANCIAL_PROVIDERS.find(item=>item.id===id);
+      expect(provider?.logoAssetKey).toBe('generic');
+      expect(provider?.wordmarkAssetKey).toBe('generic');
+      expect(bankBrandAsset(id as 'piraeus'|'alpha'|'national'|'eurobank')).toBeNull();
+    }
+    expect(FINANCIAL_PROVIDERS.find(item=>item.id==='viva')?.logoAssetKey).toBe('generic');
+    expect(FINANCIAL_PROVIDERS.find(item=>item.id==='paypal')?.logoAssetKey).toBe('generic');
+    expect(bankBrandAsset('revolut')?.source).toBe('local-image');
+    expect(bankBrandAsset('payzy')?.source).toBe('local-image');
+  });
+
   it('keeps the account creation taxonomy compact and behavior-oriented',()=>{
     expect(BANK_ACCOUNT_CATEGORIES.map(item=>item.id)).toEqual(['payroll','current','savings','term','payment','other']);
     expect(CASH_ACCOUNT_TYPES.map(item=>item.id)).toEqual(['cash','reserve','other']);
@@ -35,12 +49,17 @@ describe('financial provider registry',()=>{
 
   it('stores provider identity in an authenticated read-only RLS registry',()=>{
     const migration=source('supabase/migrations/20260904191500_add_financial_provider_registry.sql');
+    const brandRefresh=source('supabase/migrations/20260905020000_refresh_financial_provider_brand_assets.sql');
     expect(migration).toContain('create table if not exists public.rheomiq_financial_providers');
     expect(migration).toContain('alter table public.rheomiq_financial_providers enable row level security');
     expect(migration).toContain('revoke all on table public.rheomiq_financial_providers from public, anon, authenticated');
     expect(migration).toContain('grant select on table public.rheomiq_financial_providers to authenticated');
     expect(migration).toContain('for select');
     expect(migration).not.toMatch(/service[_-]?role|secret[_-]?key/i);
+    expect(brandRefresh).toContain("when 'piraeus' then 'generic'");
+    expect(brandRefresh).toContain("when 'alpha' then 'generic'");
+    expect(brandRefresh).toContain("when 'national' then 'generic'");
+    expect(brandRefresh).toContain("when 'eurobank' then 'generic'");
   });
 
   it('reuses the existing metadata API instead of adding another Vercel function',()=>{
@@ -60,6 +79,7 @@ describe('financial provider registry',()=>{
 
   it('uses the shared brand registry in Account Management and preserves separate provider/category/cash semantics',()=>{
     const accounts=source('src/components/AccountManagementSettings.tsx');
+    const providerStyles=source('src/components/AccountManagementProvider.css');
     expect(accounts).toContain("from '../lib/financialProviders'");
     expect(accounts).toContain('<BankBrandMark');
     expect(accounts).toContain('1. Τύπος λογαριασμού');
@@ -70,6 +90,8 @@ describe('financial provider registry',()=>{
     expect(accounts).toContain('cashType');
     expect(accounts).toContain("editor.cashType==='reserve'");
     expect(accounts).toContain("editor.bankAccountCategory==='term'");
+    expect(providerStyles).toContain('.account-management-modal.is-edit .account-management-edit-summary{display:none}');
+    expect(providerStyles).toContain('.account-management-segment button:not(.active):focus-visible');
   });
 
   it('makes the shared provider set available to Cards without changing legacy bank labels',()=>{
@@ -89,6 +111,7 @@ describe('financial provider registry',()=>{
     expect(mark).toContain('useFinancialProviders');
     expect(mark).toContain('logoAssetKey');
     expect(mark).toContain('wordmarkAssetKey');
+    expect(mark).toContain("assetKey==='generic'?'generic'");
     expect(mark).toContain("data-provider-registry={provider?'shared':'fallback'}");
     expect(dashboard).toContain('<BankBrandMark');
     expect(cards).toContain("from './financialProviders.js'");
