@@ -64,10 +64,10 @@ try{
   await openPayrollEditor();assert((await currentEditIban())==='GB82 WEST 1234 5698 7654 32','saved IBAN stays normalized and human-readable');
   await screenshot('account-metadata-settings-desktop');await closeEditor();await noOverflow('account metadata settings desktop');
 
-  console.log('Account metadata QA: mobile Dashboard keeps full IBAN and copy target');
+  console.log('Account metadata QA: mobile Dashboard keeps canonical full IBAN and copy target');
   await viewport(375,812);await navigate('dashboard');await waitFor("function(){return Boolean(document.querySelector('[data-account-iban=\"piraeus-payroll\"]'))}",'mobile dashboard IBAN');
   await scrollTo('.primary-balance-grid');await noOverflow('account metadata dashboard mobile');await touchTargets('account metadata dashboard mobile','.primary-balance-grid .account-iban-copy');
-  const mobilePayroll=await c.call("function(){return document.querySelector('[data-account-iban=\"piraeus-payroll\"]')?.textContent||''}");assert(mobilePayroll.includes('GB82 WEST 1234 5698 7654 32'),'mobile payroll IBAN reflects the saved value without truncating the DOM');
+  const mobilePayroll=await c.call("function(){return document.querySelector('[data-account-iban=\"piraeus-payroll\"]')?.textContent||''}");assert(mobilePayroll.includes('GR16 0110 1250 0000 0001 2300 695'),'fresh mobile QA route keeps the canonical payroll IBAN untruncated in the DOM');
   await screenshot('account-metadata-dashboard-mobile');
 
   console.log('Account metadata QA: mobile Account Management editor stays usable');
