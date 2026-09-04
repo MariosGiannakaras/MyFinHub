@@ -70,7 +70,7 @@ try{
 
   console.log('Owned controls QA: Transactions and Settings page filters');
   await clickText('.mobile-nav button','Συναλλαγές');await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Συναλλαγές')}",'Transactions heading');await assertNoNativeSelects('Transactions');assert(await c.call("function(){return document.querySelectorAll('.mobile-transaction-filters .owned-select-shell').length>=2}"),'Transactions mobile filters use owned selects');
-  await openMore();await clickText('.mobile-more-menu button','Ρυθμίσεις');await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Ρυθμίσεις')}",'Settings heading');await clickText('.settings-tablist button','Λογαριασμοί');await assertNoNativeSelects('Settings accounts');assert(await c.call("function(){return document.querySelectorAll('.settings-form .owned-select-shell').length>=3}"),'Settings defaults use owned selects');
+  await openMore();await clickText('.mobile-more-menu button','Ρυθμίσεις');await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Ρυθμίσεις')}",'Settings heading');await clickText('.settings-tablist button','Λογαριασμοί');await assertNoNativeSelects('Settings accounts');assert(await c.call("function(){return document.querySelectorAll('.account-management-default-grid .owned-select-shell').length>=3}"),'Settings defaults use owned selects');
 
   console.log('Owned controls QA passed.');
 }finally{
