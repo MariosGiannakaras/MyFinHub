@@ -4,16 +4,16 @@
   "appVersion": "v1.3",
   "suite": "receipt-local-ocr",
   "surface": "receipts",
-  "generatedAt": "2026-09-04T20:11:22.034Z",
+  "generatedAt": "2026-09-04T21:15:18.783Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "bf975d6305a308f7af583c53e2be5e3e115f8db4",
-    "shortSha": "bf975d63",
+    "sha": "abc6447ce68066ab5a64ecab711ceec98e3f6117",
+    "shortSha": "abc6447c",
     "branch": "feat/346-settings-tabs"
   },
   "screenshots": [
-    "visual-qa/receipts/v1.3__2026-09-04_231122__qa-receipt-local-ocr__receipt-local-captured.png",
-    "visual-qa/receipts/v1.3__2026-09-04_231122__qa-receipt-local-ocr__receipt-local-mobile-empty.png",
-    "visual-qa/receipts/v1.3__2026-09-04_231122__qa-receipt-local-ocr__receipt-local-ocr-proposal.png"
+    "visual-qa/receipts/v1.3__2026-09-05_001518__qa-receipt-local-ocr__receipt-local-captured.png",
+    "visual-qa/receipts/v1.3__2026-09-05_001518__qa-receipt-local-ocr__receipt-local-mobile-empty.png",
+    "visual-qa/receipts/v1.3__2026-09-05_001518__qa-receipt-local-ocr__receipt-local-ocr-proposal.png"
   ]
 }
