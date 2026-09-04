@@ -2,6 +2,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Landmark, Pencil, Plus, Trash2, WalletCards, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useAccountMetadata } from '../hooks/useAccountMetadata';
+import { useFinancialProviders } from '../hooks/useFinancialProviders';
 import { useModalFocus } from '../hooks/useModalFocus';
 import { saveAccountMetadata } from '../lib/accountMetadataClient';
 import {
@@ -12,7 +13,6 @@ import {
   financialProviderById,
   financialProviderId,
   financialProviderLabel,
-  FINANCIAL_PROVIDERS,
   type BankAccountCategory,
   type CashAccountType,
 } from '../lib/financialProviders';
@@ -105,6 +105,8 @@ function EditorIdentity({editor}:{editor:EditorDraft}){
 
 export function AccountManagementSettings({data,settings,onChange}:{data:FinanceData;settings:FinanceSettings;onChange:(next:FinanceSettings)=>void}){
   const metadata=useAccountMetadata();
+  const providerCatalog=useFinancialProviders();
+  const providers=providerCatalog.providers;
   const reduce=Boolean(useReducedMotion());
   const accounts=useMemo(()=>managedAccounts(data,settings),[data,settings]);
   const defaultAccounts=useMemo(()=>accounts.filter(account=>account.showInQuickChoices!==false),[accounts]);
@@ -161,7 +163,7 @@ export function AccountManagementSettings({data,settings,onChange}:{data:Finance
     try{
       const isCustom=editor.source==='new'||editor.source==='custom';
       const id=editor.source==='new'?newAccountId(editor.mode,editor.providerId):editor.id;
-      const provider=editor.mode==='bank'?financialProviderById(editor.providerId):undefined;
+      const provider=editor.mode==='bank'?(providers.find(item=>item.id===editor.providerId)??financialProviderById(editor.providerId)):undefined;
       const effectiveKind=editor.mode==='cash'?'cash':editor.bankAccountCategory==='savings'||editor.bankAccountCategory==='term'?'savings':'bank';
       const reserveCash=editor.mode==='cash'&&editor.cashType==='reserve';
       const termDeposit=editor.mode==='bank'&&editor.bankAccountCategory==='term';
@@ -248,7 +250,7 @@ export function AccountManagementSettings({data,settings,onChange}:{data:Finance
   const editorAccount=editor&&editor.source!=='new'?accounts.find(account=>account.id===editor.id):undefined;
   const editorDeletable=Boolean(editorAccount&&editor?.source==='custom'&&!accountReferenced(data,editor.id));
   const editorCanBeDefault=Boolean(editor&&(editor.mode==='cash'?editor.cashType!=='reserve':editor.bankAccountCategory!=='term'));
-  const selectedProvider=editor?.mode==='bank'?financialProviderById(editor.providerId):undefined;
+  const selectedProvider=editor?.mode==='bank'?(providers.find(item=>item.id===editor.providerId)??financialProviderById(editor.providerId)):undefined;
 
   return <div className="account-management-settings settings-tab-stack settings-accounts-tab">
     <section className="panel neo-raised account-management-defaults">
@@ -285,7 +287,7 @@ export function AccountManagementSettings({data,settings,onChange}:{data:Finance
           {editor.source==='new'?<fieldset className="account-management-segment"><legend>1. Τύπος λογαριασμού</legend><div><button type="button" data-autofocus="true" className={editor.mode==='bank'?'active':''} aria-pressed={editor.mode==='bank'} onClick={()=>setMode('bank')}><Landmark size={16}/> Τράπεζα</button><button type="button" className={editor.mode==='cash'?'active is-cash':''} aria-pressed={editor.mode==='cash'} onClick={()=>setMode('cash')}><WalletCards size={16}/> Μετρητά</button></div></fieldset>:<div className="account-management-edit-summary"><EditorIdentity editor={editor}/><div><b>{editor.name||'Λογαριασμός'}</b><span>{editor.mode==='cash'?cashAccountTypeLabel(editor.cashType):(selectedProvider?.displayName||'Τραπεζικός λογαριασμός')}</span></div></div>}
 
           {editor.mode==='bank'?<>
-            {editor.source==='new'?<label className="account-management-field"><span>2. Τράπεζα / πάροχος</span><AppSelectInput aria-label="Τράπεζα ή πάροχος" value={editor.providerId} onChange={event=>setEditor({...editor,providerId:event.target.value})}><option value="">Επίλεξε τράπεζα</option>{FINANCIAL_PROVIDERS.map(provider=><option key={provider.id} value={provider.id}>{provider.displayName}</option>)}</AppSelectInput></label>:null}
+            {editor.source==='new'?<label className="account-management-field"><span>2. Τράπεζα / πάροχος</span><AppSelectInput aria-label="Τράπεζα ή πάροχος" value={editor.providerId} onChange={event=>setEditor({...editor,providerId:event.target.value})}><option value="">Επίλεξε τράπεζα</option>{providers.map(provider=><option key={provider.id} value={provider.id}>{provider.displayName}</option>)}</AppSelectInput></label>:null}
             {selectedProvider?<div className="account-management-provider-preview" aria-label={`Επιλεγμένος πάροχος ${selectedProvider.displayName}`}><BankBrandMark id={selectedProvider.id} name={selectedProvider.displayName}/><div><b>{selectedProvider.displayName}</b><span>{selectedProvider.kindLabel}</span></div></div>:null}
             <label className="account-management-field"><span>{editor.source==='new'?'3. ':''}Κατηγορία λογαριασμού</span><AppSelectInput aria-label="Κατηγορία λογαριασμού" value={editor.bankAccountCategory} onChange={event=>setEditor({...editor,bankAccountCategory:event.target.value as BankAccountCategory})}>{BANK_ACCOUNT_CATEGORIES.map(category=><option key={category.id} value={category.id}>{category.label}</option>)}</AppSelectInput></label>
             <label className="account-management-field"><span>Όνομα λογαριασμού</span><input data-autofocus={editor.source==='new'?undefined:'true'} value={editor.name} onChange={event=>setEditor({...editor,name:event.target.value})} placeholder="π.χ. Μισθοδοσία"/></label>
