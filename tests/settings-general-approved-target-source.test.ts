@@ -35,7 +35,7 @@ describe('approved Settings source contract',()=>{
     expect(shortcuts).toContain('shortcutDisplay(id)');
   });
 
-  it('keeps user access useful with real auth mutations, four-digit PIN and device controls',()=>{
+  it('keeps user access useful with real auth mutations, compact PIN controls and device controls',()=>{
     const source=read('src/pages/SettingsPage.tsx');
     const account=read('src/components/AccountSecuritySettings.tsx');
     const devices=read('src/components/DeviceAccessSettings.tsx');
@@ -44,11 +44,13 @@ describe('approved Settings source contract',()=>{
     expect(account).toContain('changeAccountEmail');
     expect(account).toContain('changeAccountPassword');
     expect(account).toContain('Αλλαγή email');
+    expect(account).toContain('Τρέχον email:');
     expect(account).toContain('Αλλαγή κωδικού');
-    expect(account).toContain('PIN εφαρμογής');
-    expect(account).toContain('Νέο PIN 4 ψηφίων');
-    expect(account).toContain('Προεπιλογή 5 λεπτά');
+    expect(account).toContain('const PIN_LENGTH=4');
+    expect(account).toContain('PIN & αυτόματο κλείδωμα');
+    expect(account).toContain('Κλείδωμα μετά από αδράνεια');
     expect(account).toContain('Κλείδωμα τώρα');
+    expect(account).not.toContain('Τρέχον PIN');
     expect(account).toContain('<DeviceAccessSettings/>');
     expect(devices).toContain('Συνδεδεμένες συσκευές');
     expect(devices).toContain('Αφαίρεση όλων των άλλων');
