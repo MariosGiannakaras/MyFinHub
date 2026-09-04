@@ -5,8 +5,10 @@ const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const PIN_PATTERN = /^\d{6}$/;
-const RECORD_VERSION = 1;
+const PIN_PATTERN = /^\d{4}$/;
+const RECORD_VERSION = 2;
+const DEFAULT_IDLE_MINUTES = 5;
+const ALLOWED_IDLE_MINUTES = new Set([1, 5, 15, 30, 60]);
 const MAX_FAILURES_BEFORE_DELAY = 5;
 const BASE_DELAY_MS = 30_000;
 const MAX_DELAY_MS = 5 * 60_000;
@@ -36,14 +38,37 @@ function requireSupported() {
   if (!supported()) throw new Error('APP_LOCK_UNAVAILABLE');
 }
 
+function normalizeIdleMinutes(value) {
+  const minutes = Number(value);
+  return ALLOWED_IDLE_MINUTES.has(minutes) ? minutes : DEFAULT_IDLE_MINUTES;
+}
+
 function retryAfterMs() {
   return Math.max(0, blockedUntil - Date.now());
 }
 
+function readEnvelope() {
+  const file = appLockPath();
+  if (!fs.existsSync(file)) return null;
+  try {
+    const envelope = JSON.parse(fs.readFileSync(file, 'utf8').replace(/^\uFEFF/, ''));
+    if (![1, RECORD_VERSION].includes(envelope?.version) || typeof envelope?.protectedVerifier !== 'string' || !envelope.protectedVerifier) throw new Error('invalid envelope');
+    return {
+      version: envelope.version,
+      protectedVerifier: envelope.protectedVerifier,
+      idleMinutes: normalizeIdleMinutes(envelope.idleMinutes),
+    };
+  } catch {
+    throw new Error('APP_LOCK_CORRUPT');
+  }
+}
+
 function publicState() {
+  const envelope = readEnvelope();
   return {
     supported: supported(),
-    enabled: fs.existsSync(appLockPath()),
+    enabled: Boolean(envelope),
+    idleMinutes: envelope?.idleMinutes ?? DEFAULT_IDLE_MINUTES,
     failedAttempts,
     retryAfterMs: retryAfterMs(),
   };
@@ -56,18 +81,16 @@ function writePrivateJson(file, value) {
 
 function readVerifier() {
   requireSupported();
-  const file = appLockPath();
-  if (!fs.existsSync(file)) return null;
+  const envelope = readEnvelope();
+  if (!envelope) return null;
   try {
-    const envelope = JSON.parse(fs.readFileSync(file, 'utf8').replace(/^\uFEFF/, ''));
-    if (envelope?.version !== RECORD_VERSION || typeof envelope?.protectedVerifier !== 'string' || !envelope.protectedVerifier) throw new Error('invalid envelope');
     const protectedBytes = Buffer.from(envelope.protectedVerifier, 'base64');
     const verifier = JSON.parse(safeStorage.decryptString(protectedBytes));
     if (typeof verifier?.salt !== 'string' || typeof verifier?.digest !== 'string') throw new Error('invalid verifier');
     const salt = Buffer.from(verifier.salt, 'base64');
     const digest = Buffer.from(verifier.digest, 'base64');
     if (salt.length !== 16 || digest.length !== 32) throw new Error('invalid verifier lengths');
-    return { salt, digest };
+    return { salt, digest, idleMinutes: envelope.idleMinutes };
   } catch {
     throw new Error('APP_LOCK_CORRUPT');
   }
@@ -79,7 +102,7 @@ function derivePin(pin, salt) {
   });
 }
 
-async function writeVerifier(pin) {
+async function writeVerifier(pin, idleMinutes = DEFAULT_IDLE_MINUTES) {
   requireSupported();
   if (!PIN_PATTERN.test(pin)) throw new Error('INVALID_PIN_FORMAT');
   const salt = crypto.randomBytes(16);
@@ -88,9 +111,24 @@ async function writeVerifier(pin) {
     salt: salt.toString('base64'),
     digest: digest.toString('base64'),
   })).toString('base64');
-  writePrivateJson(appLockPath(), { version: RECORD_VERSION, protectedVerifier });
+  writePrivateJson(appLockPath(), {
+    version: RECORD_VERSION,
+    protectedVerifier,
+    idleMinutes: normalizeIdleMinutes(idleMinutes),
+  });
   failedAttempts = 0;
   blockedUntil = 0;
+}
+
+function rewriteIdleMinutes(minutes) {
+  requireSupported();
+  const envelope = readEnvelope();
+  if (!envelope) throw new Error('APP_LOCK_NOT_CONFIGURED');
+  writePrivateJson(appLockPath(), {
+    version: RECORD_VERSION,
+    protectedVerifier: envelope.protectedVerifier,
+    idleMinutes: normalizeIdleMinutes(minutes),
+  });
 }
 
 function recordFailure() {
@@ -139,11 +177,19 @@ function registerAppLockIpc() {
     const pin = String(value?.pin || '');
     const currentPin = String(value?.currentPin || '');
     if (!PIN_PATTERN.test(pin)) return { ok: false, error: 'INVALID_PIN_FORMAT', ...publicState() };
-    if (fs.existsSync(appLockPath())) {
+    const existing = readEnvelope();
+    if (existing) {
       if (!(await verifyPin(currentPin))) return { ok: false, error: retryAfterMs() > 0 ? 'PIN_RATE_LIMITED' : 'INVALID_CURRENT_PIN', ...publicState() };
       if (currentPin === pin) return { ok: false, error: 'PIN_UNCHANGED', ...publicState() };
     }
-    await writeVerifier(pin);
+    await writeVerifier(pin, existing?.idleMinutes ?? DEFAULT_IDLE_MINUTES);
+    return { ok: true, ...publicState() };
+  });
+  ipcMain.handle('myfinhub:set-app-lock-timeout', (event, minutes) => {
+    assertSender(event);
+    requireSupported();
+    if (!ALLOWED_IDLE_MINUTES.has(Number(minutes))) return { ok: false, error: 'INVALID_IDLE_TIMEOUT', ...publicState() };
+    rewriteIdleMinutes(Number(minutes));
     return { ok: true, ...publicState() };
   });
   ipcMain.handle('myfinhub:disable-app-pin', async (event, pin) => {
