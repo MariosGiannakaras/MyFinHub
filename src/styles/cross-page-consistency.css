@@ -1,6 +1,0 @@
-/* Minimal bridge for the remaining legacy card-picker close control.
- * Shared modal actions now use save-button / secondary / icon-button directly.
- */
-.close-picker{background:var(--control-gradient)!important;color:var(--ink)!important;border-color:var(--border-subtle)!important;box-shadow:var(--shadow-soft)!important;transition:transform .15s ease,color .15s ease}
-.close-picker:hover{transform:translateY(-1px);color:var(--blue)!important}
-@media(prefers-reduced-motion:reduce){.close-picker{transition:none}}
