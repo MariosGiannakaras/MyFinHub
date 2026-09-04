@@ -67,7 +67,7 @@ describe('approved Settings source contract',()=>{
     expect(accounts).toContain('Οι λογαριασμοί μου');
     expect(accounts).toContain('Νέος λογαριασμός');
     expect(accounts).toContain('CASH_ACCOUNT_TYPES.map');
-    expect(providerTaxonomy).toContain("{id:'cash',label:'Καθημερινά μετρητά'}");
+    expect(providerTaxonomy).toContain("{id:'cash',label:'Μετρητά'}");
     expect(providerTaxonomy).toContain("{id:'reserve',label:'Καβάτζα'}");
     expect(accounts).not.toContain('RefreshCw');
     expect(domain).toContain('customAccounts');
