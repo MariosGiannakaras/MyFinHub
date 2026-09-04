@@ -3,6 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { accessTokenAal, assertMutationSessionOrigin, beginTotpEnrollment, challengeTotp, clearSessionCookies, clearSessionCookiesIfCookie, getTotpFactors, requireSession, revokeSession, setSessionCookies, signInWithPassword, verifyTotp } from './auth.js';
 import { handleAccountMetadataRequest } from './accountMetadataHandler.js';
+import { handleAccountSecurityRequest } from './accountSecurityHandler.js';
 import { handleCardVaultRequest } from './cardVaultHandler.js';
 import { ApiError, assertSameOrigin, handleApi, methodNotAllowed, requestHeader, sendJson } from './http.js';
 import { backupStore, DATA_SOURCE, isOwner, moveHistory, readHistory, readStore, writeMutableState, writeStore } from './storage.js';
@@ -149,6 +150,8 @@ app.post('/api/auth/logout', (req, res) => void handleApi(res, async () => {
   sendJson(res, 200, { authenticated: false });
 }));
 
+app.all('/api/auth/account', (req, res) => void handleAccountSecurityRequest(req, res));
+
 app.get('/api/data', (req, res) => void handleApi(res, async () => {
   const session = await requireFinanceSession(req, res);
   sendJson(res, 200, await readStore(session.accessToken));
@@ -202,7 +205,7 @@ if (serveDist) {
   const here = path.dirname(fileURLToPath(import.meta.url));
   const dist = configuredDist ? path.resolve(configuredDist) : path.resolve(here, '..', 'dist');
   app.use(express.static(dist, { index: false, maxAge: '1h' }));
-  app.get('/{*splat}', (_req, res) => res.sendFile(path.join(dist, 'index.html')));
+  app.get('/{*splat}', (_req, res) => res.sendFile(path.join(dist, 'index.html'));
 }
 
 const port = Number(process.env.RHEOMIQ_PORT || process.env.PORT || 4317);
