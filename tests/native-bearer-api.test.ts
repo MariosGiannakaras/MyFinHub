@@ -7,12 +7,13 @@ const storage = vi.hoisted(() => ({
   readStore: vi.fn(),
   writeMutableState: vi.fn(),
 }));
-
+const devices = vi.hoisted(() => ({ ensureDeviceSessionAccess: vi.fn() }));
 const stateValidation = vi.hoisted(() => ({
   parseMutableWrite: vi.fn((value: any) => value),
 }));
 
 vi.mock('../server/storage.js', () => storage);
+vi.mock('../server/deviceSessionRegistry.js', () => devices);
 vi.mock('../server/stateValidation.js', () => stateValidation);
 
 import dataHandler from '../api/data.js';
@@ -60,6 +61,7 @@ describe('native bearer finance API boundary', () => {
   beforeEach(() => {
     process.env.SUPABASE_URL = 'https://project.example.supabase.co';
     process.env.SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_test';
+    devices.ensureDeviceSessionAccess.mockReset().mockResolvedValue({});
     storage.isOwner.mockReset().mockResolvedValue(true);
     storage.parseExpectedRevision.mockReset().mockImplementation((value: string | undefined) => Number(value));
     storage.readStore.mockReset().mockResolvedValue({ data: { app: 'RheomIQ' }, revision: 7, updatedAt: '2026-08-22T00:00:00.000Z' });
@@ -81,6 +83,7 @@ describe('native bearer finance API boundary', () => {
     await dataHandler(bearerRequest('GET', token), res);
 
     expect(res.statusCode).toBe(200);
+    expect(devices.ensureDeviceSessionAccess).toHaveBeenCalledWith(expect.anything(), token, 'owner-id');
     expect(storage.isOwner).toHaveBeenCalledWith(token);
     expect(storage.readStore).toHaveBeenCalledWith(token);
     expect(res.headers.has('access-control-allow-origin')).toBe(false);
@@ -129,6 +132,7 @@ describe('native bearer finance API boundary', () => {
 
     expect(res.statusCode).toBe(403);
     expect(JSON.parse(res.body)).toMatchObject({ code: 'MFA_REQUIRED' });
+    expect(devices.ensureDeviceSessionAccess).not.toHaveBeenCalled();
     expect(storage.readStore).not.toHaveBeenCalled();
   });
 
