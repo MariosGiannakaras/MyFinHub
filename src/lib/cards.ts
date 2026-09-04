@@ -9,10 +9,21 @@ const LEGACY_CARD_BANK_LABELS:Record<string,string>={
   viva:'VIVA',
 };
 
+const CARD_BANK_ORDER:Record<string,number>={
+  piraeus:10,
+  revolut:20,
+  alpha:30,
+  payzy:40,
+  viva:50,
+  national:51,
+  eurobank:52,
+  paypal:53,
+};
+
 export const DEFAULT_CARD_BANKS:CardBank[]=FINANCIAL_PROVIDERS.map(provider=>({
   id:provider.id,
   name:LEGACY_CARD_BANK_LABELS[provider.id]??provider.displayName,
-  order:provider.sortOrder,
+  order:CARD_BANK_ORDER[provider.id]??54+provider.sortOrder/1000,
 }));
 
 export function cardBanks(data:FinanceData){
