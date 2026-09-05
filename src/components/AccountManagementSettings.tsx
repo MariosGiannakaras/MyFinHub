@@ -45,6 +45,8 @@ type EditorDraft={
   defaultLoan:boolean;
 };
 
+const VISIBLE_CASH_ACCOUNT_TYPES=CASH_ACCOUNT_TYPES.filter(type=>type.id!=='other');
+
 function managedAccounts(data:FinanceData,settings:FinanceSettings):ProviderAccount[]{
   const overrides=settings.accountOverrides??{};
   const seeded=(data.seed.accounts??[]).map(account=>({...account,...(overrides[account.id]??{}),id:account.id}) as ProviderAccount);
@@ -66,8 +68,15 @@ function inferBankCategory(account:ProviderAccount):BankAccountCategory{
   return 'current';
 }
 function inferCashType(account:ProviderAccount):CashAccountType{
-  if(account.cashType)return account.cashType;
-  return account.cashRole==='reserve'?'reserve':'cash';
+  if(account.cashType==='reserve'||account.cashRole==='reserve')return 'reserve';
+  return 'cash';
+}
+function accountDefaultRoles(settings:FinanceSettings,id:string){
+  return [
+    settings.defaultExpenseAccount===id?'Έξοδα':null,
+    settings.defaultIncomeAccount===id?'Έσοδα':null,
+    settings.defaultLoanAccount===id?'Δόσεις':null,
+  ].filter((role):role is string=>Boolean(role));
 }
 function maskedIban(value?:string|null){
   const normalized=(value??'').replace(/\s+/g,'').toUpperCase();
@@ -121,7 +130,7 @@ export function AccountManagementSettings({data,settings,onChange}:{data:Finance
       mode,
       providerId:mode==='bank'?editor.providerId:'',
       bankAccountCategory:mode==='bank'?editor.bankAccountCategory:'current',
-      cashType:mode==='cash'?editor.cashType:'cash',
+      cashType:mode==='cash'?(editor.cashType==='reserve'?'reserve':'cash'):'cash',
     });
   };
   const openNew=()=>{
@@ -251,9 +260,9 @@ export function AccountManagementSettings({data,settings,onChange}:{data:Finance
     <section className="panel neo-raised account-management-defaults">
       <div className="panel-head"><div><span>Προεπιλεγμένοι λογαριασμοί</span></div></div>
       <div className="account-management-default-grid">
-        <label><span>Έξοδα</span><AppSelectInput aria-label="Προεπιλεγμένος λογαριασμός εξόδων" value={settings.defaultExpenseAccount} onChange={event=>patch({defaultExpenseAccount:event.target.value})}>{defaultOptions(settings.defaultExpenseAccount)}</AppSelectInput></label>
-        <label><span>Έσοδα</span><AppSelectInput aria-label="Προεπιλεγμένος λογαριασμός εσόδων" value={settings.defaultIncomeAccount} onChange={event=>patch({defaultIncomeAccount:event.target.value})}>{defaultOptions(settings.defaultIncomeAccount)}</AppSelectInput></label>
-        <label><span>Πληρωμή δόσεων</span><AppSelectInput aria-label="Προεπιλεγμένος λογαριασμός πληρωμής δόσεων" value={settings.defaultLoanAccount} onChange={event=>patch({defaultLoanAccount:event.target.value})}>{defaultOptions(settings.defaultLoanAccount)}</AppSelectInput></label>
+        <label><span>Έξοδα</span><AppSelectInput className="account-management-select" aria-label="Προεπιλεγμένος λογαριασμός εξόδων" value={settings.defaultExpenseAccount} onChange={event=>patch({defaultExpenseAccount:event.target.value})}>{defaultOptions(settings.defaultExpenseAccount)}</AppSelectInput></label>
+        <label><span>Έσοδα</span><AppSelectInput className="account-management-select" aria-label="Προεπιλεγμένος λογαριασμός εσόδων" value={settings.defaultIncomeAccount} onChange={event=>patch({defaultIncomeAccount:event.target.value})}>{defaultOptions(settings.defaultIncomeAccount)}</AppSelectInput></label>
+        <label><span>Πληρωμή δόσεων</span><AppSelectInput className="account-management-select" aria-label="Προεπιλεγμένος λογαριασμός πληρωμής δόσεων" value={settings.defaultLoanAccount} onChange={event=>patch({defaultLoanAccount:event.target.value})}>{defaultOptions(settings.defaultLoanAccount)}</AppSelectInput></label>
       </div>
     </section>
 
@@ -265,9 +274,13 @@ export function AccountManagementSettings({data,settings,onChange}:{data:Finance
           const iban=maskedIban(metadata.records[account.id]?.iban);
           const cashType=inferCashType(account);
           const category=inferBankCategory(account);
+          const defaultRoles=accountDefaultRoles(settings,account.id);
           return <div className="account-management-row" role="listitem" key={account.id}>
             <AccountIcon account={account}/>
-            <div className="account-management-copy"><b>{displayName(settings,account)}</b>{account.kind==='cash'?<span>{cashAccountTypeLabel(cashType)}{cashType==='reserve'?' · εκτός καθημερινής χρήσης':''}</span>:<span>{accountProviderLabel(account)} · {bankAccountCategoryLabel(category)}{iban?` · ${iban}`:''}</span>}</div>
+            <div className="account-management-copy">
+              <div className="account-management-title-line"><b>{displayName(settings,account)}</b>{defaultRoles.length?<span className="account-management-default-badges" aria-label={`Προεπιλογές: ${defaultRoles.join(', ')}`}>{defaultRoles.map(role=><span className="account-management-default-badge" key={role}>{role}</span>)}</span>:null}</div>
+              {account.kind==='cash'?<span>{cashAccountTypeLabel(cashType)}{cashType==='reserve'?' · εκτός καθημερινής χρήσης':''}</span>:<span>{accountProviderLabel(account)} · {bankAccountCategoryLabel(category)}{iban?` · ${iban}`:''}</span>}
+            </div>
             <div className="account-management-row-actions"><button type="button" className="account-management-edit" onClick={()=>openEdit(account)}><Pencil size={15}/> Επεξεργασία</button><button type="button" className="icon-button danger-text" aria-label={`Διαγραφή ${displayName(settings,account)}`} title="Διαγραφή" onClick={()=>requestDelete(account)}><Trash2 size={16}/></button></div>
           </div>;
         })}
@@ -282,14 +295,14 @@ export function AccountManagementSettings({data,settings,onChange}:{data:Finance
           {editor.source==='new'?<fieldset className="account-management-segment"><legend>1. Τύπος λογαριασμού</legend><div><button type="button" data-autofocus="true" className={editor.mode==='bank'?'active':''} aria-pressed={editor.mode==='bank'} onClick={event=>{event.currentTarget.focus();setMode('bank')}}><Landmark size={16}/> Τράπεζα</button><button type="button" className={editor.mode==='cash'?'active is-cash':''} aria-pressed={editor.mode==='cash'} onClick={event=>{event.currentTarget.focus();setMode('cash')}}><WalletCards size={16}/> Μετρητά</button></div></fieldset>:null}
 
           {editor.mode==='bank'?<>
-            {editor.source==='new'?<label className="account-management-field"><span>2. Τράπεζα / πάροχος</span><AppSelectInput aria-label="Τράπεζα ή πάροχος" value={editor.providerId} onChange={event=>setEditor({...editor,providerId:event.target.value})}><option value="">Επίλεξε τράπεζα</option>{providers.map(provider=><option key={provider.id} value={provider.id}>{provider.displayName}</option>)}</AppSelectInput></label>:null}
+            {editor.source==='new'?<label className="account-management-field"><span>2. Τράπεζα / πάροχος</span><AppSelectInput className="account-management-select" aria-label="Τράπεζα ή πάροχος" value={editor.providerId} onChange={event=>setEditor({...editor,providerId:event.target.value})}><option value="">Επίλεξε τράπεζα</option>{providers.map(provider=><option key={provider.id} value={provider.id}>{provider.displayName}</option>)}</AppSelectInput></label>:null}
             {selectedProvider?<div className="account-management-provider-preview" aria-label={`Επιλεγμένος πάροχος ${selectedProvider.displayName}`}><BankBrandMark id={selectedProvider.id} name={selectedProvider.displayName}/><div><b>{selectedProvider.displayName}</b><span>{selectedProvider.kindLabel}</span></div></div>:null}
-            <label className="account-management-field"><span>{editor.source==='new'?'3. ':''}Κατηγορία λογαριασμού</span><AppSelectInput aria-label="Κατηγορία λογαριασμού" value={editor.bankAccountCategory} onChange={event=>setEditor({...editor,bankAccountCategory:event.target.value as BankAccountCategory})}>{BANK_ACCOUNT_CATEGORIES.map(category=><option key={category.id} value={category.id}>{category.label}</option>)}</AppSelectInput></label>
+            <label className="account-management-field"><span>{editor.source==='new'?'3. ':''}Κατηγορία λογαριασμού</span><AppSelectInput className="account-management-select" aria-label="Κατηγορία λογαριασμού" value={editor.bankAccountCategory} onChange={event=>setEditor({...editor,bankAccountCategory:event.target.value as BankAccountCategory})}>{BANK_ACCOUNT_CATEGORIES.map(category=><option key={category.id} value={category.id}>{category.label}</option>)}</AppSelectInput></label>
             <label className="account-management-field"><span>Όνομα λογαριασμού</span><input data-autofocus={editor.source==='new'?undefined:'true'} value={editor.name} onChange={event=>setEditor({...editor,name:event.target.value})} placeholder="π.χ. Μισθοδοσία"/></label>
             <label className="account-management-field"><span>IBAN</span><input inputMode="text" autoCapitalize="characters" autoCorrect="off" spellCheck={false} value={editor.iban} onChange={event=>setEditor({...editor,iban:event.target.value.toUpperCase()})} placeholder="GR16 0110 …"/></label>
           </>:<>
-            <fieldset className="account-management-segment compact account-management-cash-types"><legend>{editor.source==='new'?'2. Τύπος μετρητών':'Τύπος μετρητών'}</legend><div>{CASH_ACCOUNT_TYPES.map(type=><button key={type.id} type="button" className={editor.cashType===type.id?'active is-cash':''} aria-pressed={editor.cashType===type.id} onClick={()=>setEditor({...editor,cashType:type.id})}>{type.label}</button>)}</div></fieldset>
-            <label className="account-management-field"><span>Όνομα λογαριασμού</span><input data-autofocus={editor.source==='new'?undefined:'true'} value={editor.name} onChange={event=>setEditor({...editor,name:event.target.value})} placeholder={editor.cashType==='reserve'?'π.χ. Καβάτζα':editor.cashType==='other'?'π.χ. Φάκελος διακοπών':'π.χ. Πορτοφόλι'}/></label>
+            <fieldset className="account-management-segment compact account-management-cash-types"><legend>{editor.source==='new'?'2. Τύπος μετρητών':'Τύπος μετρητών'}</legend><div>{VISIBLE_CASH_ACCOUNT_TYPES.map(type=><button key={type.id} type="button" className={editor.cashType===type.id?'active is-cash':''} aria-pressed={editor.cashType===type.id} onClick={()=>setEditor({...editor,cashType:type.id})}>{type.label}</button>)}</div></fieldset>
+            <label className="account-management-field"><span>Όνομα λογαριασμού</span><input data-autofocus={editor.source==='new'?undefined:'true'} value={editor.name} onChange={event=>setEditor({...editor,name:event.target.value})} placeholder={editor.cashType==='reserve'?'π.χ. Καβάτζα':'π.χ. Πορτοφόλι'}/></label>
           </>}
 
           {editor.source!=='new'&&editorCanBeDefault?<fieldset className="account-management-edit-defaults"><legend>Προεπιλογές</legend><div>
