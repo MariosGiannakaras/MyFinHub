@@ -32,6 +32,9 @@ describe('category budget and rule integration source contracts',()=>{
     expect(reports).toContain('<BudgetRuleSettings');
     expect(reports).toContain('budgetMonth={month}');
     expect(reports).toContain('onUpsertBudget={onUpsertBudget}');
+    expect(reports).toContain('data-budget-overview');
+    expect(reports).toContain('Πρόβλεψη τέλους μήνα');
+    expect(reports).toContain('Τι χρειάζεται προσοχή');
     expect(reports).not.toContain('Γενικό budget');
     expect(reports).not.toContain('Ορίζεται από τις Ρυθμίσεις');
     expect(settings).not.toContain("id: 'budgets'");

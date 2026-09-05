@@ -34,6 +34,23 @@ export function ReportsPage({data,month,onUpsertBudget,onDeleteBudget,onUpsertRu
  const budgetRows=budgetProgress(data,month);
  const exceededBudgets=budgetRows.filter(row=>row.status==='exceeded').length;
  const nearBudgets=budgetRows.filter(row=>row.status==='near').length;
+ const overallBudget=budgetRows.find(row=>row.scope==='overall')??null;
+ const budgetSummaryRows=overallBudget?[overallBudget]:budgetRows.filter(row=>row.scope==='category');
+ const budgetLimit=budgetSummaryRows.reduce((sum,row)=>sum+row.limit,0);
+ const budgetUsed=budgetSummaryRows.reduce((sum,row)=>sum+row.used,0);
+ const budgetRemaining=budgetLimit-budgetUsed;
+ const budgetRatio=budgetLimit>0?budgetUsed/budgetLimit:0;
+ const budgetDataDate=data.updatedAt.slice(0,10);
+ const budgetDataMonth=budgetDataDate.slice(0,7);
+ const [budgetYear,budgetMonthNumber]=month.split('-').map(Number);
+ const budgetDaysInMonth=new Date(Date.UTC(budgetYear,budgetMonthNumber,0)).getUTCDate();
+ const budgetElapsedDays=month<budgetDataMonth?budgetDaysInMonth:month===budgetDataMonth?Math.min(budgetDaysInMonth,Math.max(1,Number(budgetDataDate.slice(8,10))||1)):0;
+ const budgetProjection=budgetElapsedDays>0?budgetUsed/(budgetElapsedDays/budgetDaysInMonth):null;
+ const budgetProjectionLabel=month<budgetDataMonth?'Τελική χρήση':month===budgetDataMonth?'Πρόβλεψη τέλους μήνα':'Πρόβλεψη τέλους μήνα';
+ const budgetProjectionDetail=month<budgetDataMonth?'Καταγεγραμμένο κλείσιμο περιόδου':month===budgetDataMonth?`Με βάση ${budgetElapsedDays} από ${budgetDaysInMonth} ημέρες`:'Θα εμφανιστεί όταν ξεκινήσει η περίοδος';
+ const budgetAttentionPool=budgetRows.some(row=>row.scope==='category')?budgetRows.filter(row=>row.scope==='category'):budgetRows;
+ const budgetAttentionRows=budgetAttentionPool.slice().sort((a,b)=>({exceeded:2,near:1,ok:0}[b.status]-{exceeded:2,near:1,ok:0}[a.status])||b.ratio-a.ratio).slice(0,3);
+ const budgetStatusText=!budgetRows.length?'Δεν υπάρχουν ενεργά όρια':exceededBudgets?`${exceededBudgets} ${exceededBudgets===1?'όριο είναι':'όρια είναι'} σε υπέρβαση`:nearBudgets?`${nearBudgets} ${nearBudgets===1?'όριο πλησιάζει':'όρια πλησιάζουν'} το σημείο προειδοποίησης`:'Όλα τα ενεργά όρια είναι εντός στόχου';
  const netFlow=snapshot.flow.income-snapshot.flow.expense;
  const previousNetFlow=snapshot.previous.income-snapshot.previous.expense;
  const creditPercent=snapshot.creditLimit>0?snapshot.creditUsage:null;
@@ -73,7 +90,7 @@ export function ReportsPage({data,month,onUpsertBudget,onDeleteBudget,onUpsertRu
 
   <nav className="report-section-nav" aria-label="Ενότητες αναφορών">
    <a href="#report-overview">Επισκόπηση</a>
-   <a href="#report-budgets">Προϋπολογισμοί</a>
+   <a href="#report-budget-overview">Προϋπολογισμοί</a>
    <a href="#report-flow">Ροή</a>
    <a href="#report-obligations">Υποχρεώσεις</a>
    <a href="#report-expenses">Έξοδα</a>
@@ -89,13 +106,37 @@ export function ReportsPage({data,month,onUpsertBudget,onDeleteBudget,onUpsertRu
   </section>
 
   <section className="report-kpis useful-report-kpis report-kpis-v2" aria-label="Δευτερεύοντες δείκτες">
-   <article className="neo-raised"><span>Προϋπολογισμοί</span><b>{budgetRows.length}</b><small>{!budgetRows.length?'Δεν έχεις ορίσει όρια για αυτή την περίοδο':exceededBudgets?`${exceededBudgets} πάνω από το όριο`:nearBudgets?`${nearBudgets} πλησιάζουν το όριο`:'Όλα τα ενεργά όρια είναι εντός στόχου'}</small></article>
+   <article className="neo-raised"><span>Budget · διαθέσιμο</span><b>{budgetLimit>0?money.format(budgetRemaining):'Δεν έχει οριστεί'}</b><small>{!budgetRows.length?'Πρόσθεσε όριο στην ενότητα προϋπολογισμών':budgetRemaining<0?`${money.format(Math.abs(budgetRemaining))} υπέρβαση`:budgetStatusText}</small></article>
    <article className="neo-raised"><span>Προς είσπραξη</span><b><AnimatedAmount value={snapshot.receivables}/></b><small>Καταγεγραμμένες απαιτήσεις</small></article>
    <article className="neo-raised"><span>Πάγια / μήνα</span><b><AnimatedAmount value={snapshot.recurring}/></b><small>{insights.recurringBurden===null?'Χωρίς βάση εσόδων':`${percent(insights.recurringBurden)} των εσόδων`}</small></article>
    <article className="neo-raised"><span>Πιστωτικές · οφειλή</span><b><AnimatedAmount value={snapshot.creditDebt}/></b><small>{creditPercent===null?'Χωρίς συνολικό όριο':`${Math.round(creditPercent*100)}% του συνολικού ορίου`}</small></article>
   </section>
 
-  <section id="report-budgets" aria-label="Διαχείριση προϋπολογισμών">
+  <section className="panel neo-raised report-budget-overview" id="report-budget-overview" data-budget-overview aria-labelledby="report-budget-overview-title">
+   <div className="panel-head"><div><span id="report-budget-overview-title">Προϋπολογισμοί · εικόνα περιόδου</span><small>Πρώτα η κατάσταση: πόσο όριο υπάρχει, πόσο έχει χρησιμοποιηθεί και ποια σημεία χρειάζονται προσοχή. Η διαχείριση παραμένει ακριβώς από κάτω.</small></div><ListChecks aria-hidden="true"/></div>
+   {budgetRows.length?<>
+    <div className="report-budget-summary-grid" aria-label="Σύνοψη προϋπολογισμών">
+     <article><span>Συνολικό όριο</span><b>{money.format(budgetLimit)}</b><small>{overallBudget?'Το συνολικό όριο είναι η κύρια βάση της περιόδου':`${budgetSummaryRows.length} όρια κατηγοριών`}</small></article>
+     <article><span>Χρήση ορίων</span><b>{money.format(budgetUsed)}</b><small>{budgetLimit>0?`${Math.round(budgetRatio*100)}% της διαθέσιμης βάσης`:'Χωρίς διαθέσιμη βάση'}</small></article>
+     <article className={budgetRemaining<0?'negative':budgetRatio>=.8?'warning':'positive'}><span>{budgetRemaining<0?'Υπέρβαση':'Διαθέσιμο'}</span><b>{money.format(Math.abs(budgetRemaining))}</b><small>{budgetRemaining<0?'Πάνω από τα ενεργά όρια':'Μέχρι να εξαντληθούν τα ενεργά όρια'}</small></article>
+     <article className={budgetProjection!==null&&budgetProjection>budgetLimit?'negative':undefined}><span>{budgetProjectionLabel}</span><b>{budgetProjection===null?'—':money.format(budgetProjection)}</b><small>{budgetProjectionDetail}</small></article>
+    </div>
+    <div className="report-budget-health-grid">
+     <article className="report-budget-health-card">
+      <div className="report-budget-health-copy"><span>Συνολική πορεία</span><b>{Math.round(budgetRatio*100)}%</b><small>{budgetStatusText}</small></div>
+      <div className="report-budget-meter" role="progressbar" aria-label="Συνολική χρήση ενεργών προϋπολογισμών" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(100,Math.round(budgetRatio*100))} aria-valuetext={`${Math.round(budgetRatio*100)}%`}><i style={{width:`${Math.min(100,budgetRatio*100)}%`}}/></div>
+      {budgetProjection!==null&&budgetLimit>0?<p className={budgetProjection>budgetLimit?'negative':'positive'}>{budgetProjection>budgetLimit?`Με τον τρέχοντα ρυθμό η περίοδος δείχνει πιθανή υπέρβαση ${money.format(budgetProjection-budgetLimit)}.`:`Με τον τρέχοντα ρυθμό η περίοδος δείχνει περιθώριο ${money.format(budgetLimit-budgetProjection)}.`}</p>:null}
+     </article>
+     <div className="report-budget-attention" aria-label="Προϋπολογισμοί που χρειάζονται προσοχή">
+      <div className="report-budget-attention-head"><span>Τι χρειάζεται προσοχή</span><small>Τα υψηλότερα ποσοστά χρήσης εμφανίζονται πρώτα.</small></div>
+      {budgetAttentionRows.map(row=><article key={row.id} className={`report-budget-attention-row ${row.status}`}><div><b>{row.scope==='overall'?'Συνολικό όριο':row.category}</b><small>{money.format(row.used)} από {money.format(row.limit)} · {row.remaining>=0?`${money.format(row.remaining)} διαθέσιμα`:`${money.format(Math.abs(row.remaining))} υπέρβαση`}</small></div><strong>{Math.round(row.ratio*100)}%</strong><div className="report-budget-meter" role="progressbar" aria-label={`Χρήση ${row.scope==='overall'?'συνολικού προϋπολογισμού':`προϋπολογισμού ${row.category}`}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(100,Math.round(row.ratio*100))}><i style={{width:`${Math.min(100,row.ratio*100)}%`}}/></div></article>)}
+     </div>
+    </div>
+   </>:<div className="empty-state report-budget-empty"><b>Δεν υπάρχουν ενεργοί προϋπολογισμοί για αυτή την περίοδο.</b><span>Η υπόλοιπη αναφορά παραμένει πλήρης. Μπορείς να προσθέσεις συνολικό ή ανά κατηγορία όριο από τη διαχείριση ακριβώς από κάτω.</span></div>}
+  </section>
+
+  <section id="report-budgets" className="report-budget-management" aria-label="Διαχείριση προϋπολογισμών">
+   <div className="report-budget-management-title"><span>Διαχείριση προϋπολογισμών</span><small>Νέο ή αλλαγή ορίου για την επιλεγμένη περίοδο. Οι επιστροφές μειώνουν τη χρήση και οι εσωτερικές μεταφορές δεν μετρούν ως έξοδα.</small></div>
    <BudgetRuleSettings data={data} asOf={`${month}-01`} budgetMonth={month} onUpsertBudget={onUpsertBudget} onDeleteBudget={onDeleteBudget} onUpsertRule={onUpsertRule} onDeleteRule={onDeleteRule} view="budgets"/>
   </section>
 
