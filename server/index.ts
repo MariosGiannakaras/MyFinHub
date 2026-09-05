@@ -3,7 +3,10 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { accessTokenAal, assertMutationSessionOrigin, beginTotpEnrollment, challengeTotp, clearSessionCookies, clearSessionCookiesIfCookie, getTotpFactors, requireSession, revokeSession, setSessionCookies, signInWithPassword, verifyTotp } from './auth.js';
 import { handleAccountMetadataRequest } from './accountMetadataHandler.js';
+import { handleAccountSecurityRequest } from './accountSecurityHandler.js';
 import { handleCardVaultRequest } from './cardVaultHandler.js';
+import { endCurrentDeviceSession } from './deviceSessionRegistry.js';
+import { handleDeviceSessionsRequest } from './deviceSessionsHandler.js';
 import { ApiError, assertSameOrigin, handleApi, methodNotAllowed, requestHeader, sendJson } from './http.js';
 import { backupStore, DATA_SOURCE, isOwner, moveHistory, readHistory, readStore, writeMutableState, writeStore } from './storage.js';
 import { parseMutableWrite } from './stateValidation.js';
@@ -53,7 +56,7 @@ async function requireFinanceSession(req: any, res: any) {
   return session;
 }
 
-app.get('/api/health', (req, res) => void handleApi(res, async () => sendJson(res, 200, { ok: true, app: 'RheomIQ' })));
+app.get('/api/health', (_req, res) => void handleApi(res, async () => sendJson(res, 200, { ok: true, app: 'RheomIQ' })));
 
 app.post('/api/auth/login', (req, res) => void handleApi(res, async () => {
   assertSameOrigin(req);
@@ -144,10 +147,17 @@ app.post('/api/auth/mfa/verify', (req, res) => void handleApi(res, async () => {
 
 app.post('/api/auth/logout', (req, res) => void handleApi(res, async () => {
   assertSameOrigin(req);
-  try { const session = await requireSession(req, res); await revokeSession(session.accessToken); } catch { /* idempotent */ }
+  try {
+    const session = await requireSession(req, res);
+    await endCurrentDeviceSession(session.accessToken, session.user.id);
+    await revokeSession(session.accessToken);
+  } catch { /* idempotent */ }
   clearSessionCookies(req, res);
   sendJson(res, 200, { authenticated: false });
 }));
+
+app.all('/api/auth/account', (req, res) => void handleAccountSecurityRequest(req, res));
+app.all('/api/auth/devices', (req, res) => void handleDeviceSessionsRequest(req, res));
 
 app.get('/api/data', (req, res) => void handleApi(res, async () => {
   const session = await requireFinanceSession(req, res);

@@ -1,7 +1,7 @@
 import { Database, Download, FileJson, ShieldCheck } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { AccountMetadataSettings } from '../components/AccountMetadataSettings';
-import { AppSelectInput } from '../components/AppSelectInput';
+import { AccountManagementSettings } from '../components/AccountManagementSettings';
+import { AccountSecuritySettings } from '../components/AccountSecuritySettings';
 import { BudgetRuleSettings } from '../components/BudgetRuleSettings';
 import { CategoryIconsWorkspace } from '../components/CategoryIconsWorkspace';
 import { ConfirmDialog } from '../components/ConfirmDialog';
@@ -9,45 +9,26 @@ import { DesktopUpdatePanel } from '../components/DesktopUpdatePanel';
 import { KeyboardShortcutsPanel } from '../components/KeyboardShortcutsPanel';
 import { ReadabilitySettings } from '../components/ReadabilitySettings';
 import { categoryTree } from '../lib/categories';
-import { allAccounts } from '../lib/domain';
 import { MAX_FINANCE_DOCUMENT_BYTES } from '../lib/limits';
 import { taxonomyOperationPreview, type TaxonomyOperation } from '../lib/taxonomyManagement';
 import { userErrorMessage } from '../lib/userMessage';
 import type { FinanceData, FinanceSettings, MonthlyBudget, TransactionRule } from '../types';
 import './SettingsPage.css';
 
-type SettingsTab = 'general' | 'profile' | 'accounts' | 'budgets' | 'categories' | 'icons' | 'rules' | 'data';
+type SettingsTab = 'general' | 'profile' | 'accounts' | 'categories' | 'icons' | 'rules' | 'data';
 
 type SettingsTabDefinition = {
   id: SettingsTab;
   label: string;
-  disabled?: boolean;
-  disabledReason?: string;
 };
 
 const SETTINGS_TABS: SettingsTabDefinition[] = [
   { id: 'general', label: 'Γενικά' },
-  {
-    id: 'profile',
-    label: 'Λογαριασμός',
-    disabled: true,
-    disabledReason: 'Η αλλαγή email και κωδικού δεν υποστηρίζεται ακόμη από το υπάρχον Settings backend.',
-  },
+  { id: 'profile', label: 'Χρήστης & Πρόσβαση' },
   { id: 'accounts', label: 'Λογαριασμοί' },
-  { id: 'budgets', label: 'Προϋπολογισμοί & Στόχοι' },
   { id: 'categories', label: 'Κατηγορίες' },
-  {
-    id: 'icons',
-    label: 'Εικονίδια',
-    disabled: true,
-    disabledReason: 'Τα εικονίδια παραμένουν προσωρινά στο υπάρχον workspace Κατηγορίες μέχρι να εγκριθεί η ξεχωριστή καρτέλα.',
-  },
-  {
-    id: 'rules',
-    label: 'Κανόνες',
-    disabled: true,
-    disabledReason: 'Οι υπάρχοντες κανόνες παραμένουν προσωρινά στους Προϋπολογισμούς μέχρι να εγκριθεί η ξεχωριστή καρτέλα.',
-  },
+  { id: 'icons', label: 'Εικονίδια' },
+  { id: 'rules', label: 'Κανόνες' },
   { id: 'data', label: 'Δεδομένα' },
 ];
 
@@ -56,6 +37,8 @@ function cloneSettings(settings: FinanceSettings): FinanceSettings {
     ...settings,
     motion: 'full',
     accountNames: { ...settings.accountNames },
+    customAccounts: (settings.customAccounts ?? []).map((account) => ({ ...account })),
+    accountOverrides: Object.fromEntries(Object.entries(settings.accountOverrides ?? {}).map(([id, account]) => [id, { ...account }])),
     expenseCategories: [...settings.expenseCategories],
     incomeCategories: [...settings.incomeCategories],
     expenseCategoryTree: categoryTree(settings, 'expense').map((item) => ({ ...item, subcategories: [...item.subcategories] })),
@@ -94,6 +77,7 @@ export function SettingsPage({
   asOf,
   filePath,
   lastSavedAt,
+  currentEmail,
   onImport,
   onBackup,
   onSettings,
@@ -107,6 +91,7 @@ export function SettingsPage({
   asOf: string;
   filePath: string;
   lastSavedAt: string | null;
+  currentEmail?: string | null;
   onImport: (d: FinanceData) => Promise<void>;
   onBackup: () => Promise<{ path: string }>;
   onSettings: (settings: FinanceData['state']['settings']) => void;
@@ -117,19 +102,12 @@ export function SettingsPage({
   onDeleteRule: (id: string) => void;
 }) {
   const fileRef = useRef<HTMLInputElement | null>(null);
-  const budgetRef = useRef<HTMLInputElement | null>(null);
-  const targetRef = useRef<HTMLInputElement | null>(null);
-  const creditRef = useRef<HTMLInputElement | null>(null);
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [pendingImportFile, setPendingImportFile] = useState<File | null>(null);
   const [draft, setDraft] = useState<FinanceSettings>(() => cloneSettings(data.state.settings));
   const draftRef = useRef(draft);
-  const [budgetText, setBudgetText] = useState(String(data.state.settings.monthlyBudget ?? 0));
-  const [targetText, setTargetText] = useState(String(Math.round((data.state.settings.savingsTargetRate ?? 0) * 100)));
-  const [creditText, setCreditText] = useState(String(data.state.settings.creditLimit ?? 0));
-  const accounts = allAccounts(data).filter((account) => account.kind !== 'credit');
 
   useEffect(() => {
     draftRef.current = draft;
@@ -139,9 +117,6 @@ export function SettingsPage({
     const next = cloneSettings(data.state.settings);
     draftRef.current = next;
     setDraft(next);
-    if (document.activeElement !== budgetRef.current) setBudgetText(String(next.monthlyBudget ?? 0));
-    if (document.activeElement !== targetRef.current) setTargetText(String(Math.round((next.savingsTargetRate ?? 0) * 100)));
-    if (document.activeElement !== creditRef.current) setCreditText(String(next.creditLimit ?? 0));
   }, [data.state.settings]);
 
   const commit = (next: FinanceSettings, feedback = 'Οι ρυθμίσεις αποθηκεύονται αυτόματα.') => {
@@ -163,41 +138,6 @@ export function SettingsPage({
       operation.type === 'retire-category' || operation.type === 'retire-subcategory'
         ? 'Η απόσυρση ολοκληρώθηκε. Η ιστορική ταυτότητα και οι παλιές οικονομικές αναφορές παραμένουν ανέπαφες.'
         : 'Η ταξινόμηση ενημερώθηκε μαζί με τις ενεργές και μελλοντικές αναφορές της.',
-    );
-  };
-
-  const commitNumber = (kind: 'budget' | 'target' | 'credit', raw: string) => {
-    const value = Number(raw.replace(',', '.'));
-    if (!Number.isFinite(value)) return false;
-    if (kind === 'budget') {
-      if (value < 0) return false;
-      change({ monthlyBudget: value });
-      return true;
-    }
-    if (kind === 'target') {
-      if (value < 0 || value > 100) return false;
-      change({ savingsTargetRate: value / 100 });
-      return true;
-    }
-    if (value < 0) return false;
-    change({ creditLimit: value });
-    return true;
-  };
-
-  const resetNumber = (kind: 'budget' | 'target' | 'credit') => {
-    if (kind === 'budget') setBudgetText(String(draftRef.current.monthlyBudget ?? 0));
-    else if (kind === 'target') setTargetText(String(Math.round((draftRef.current.savingsTargetRate ?? 0) * 100)));
-    else setCreditText(String(draftRef.current.creditLimit ?? 0));
-  };
-
-  const rejectNumber = (kind: 'budget' | 'target' | 'credit') => {
-    resetNumber(kind);
-    setMessage(
-      kind === 'target'
-        ? 'Έλεγξε τον στόχο αποταμίευσης — βάλε ποσοστό από 0 έως 100.'
-        : kind === 'budget'
-          ? 'Έλεγξε το μηνιαίο budget — βάλε αριθμό ίσο ή μεγαλύτερο από μηδέν.'
-          : 'Έλεγξε το πιστωτικό όριο — βάλε αριθμό ίσο ή μεγαλύτερο από μηδέν.',
     );
   };
 
@@ -247,8 +187,6 @@ export function SettingsPage({
     }
   };
 
-  const labelFor = (id: string) => draft.accountNames[id]?.trim() || accounts.find((account) => account.id === id)?.name || id;
-
   return (
     <div className="page-stack settings-page settings-tabs-page">
       <section className="page-heading settings-page-heading">
@@ -267,8 +205,6 @@ export function SettingsPage({
             role="tab"
             aria-selected={activeTab === tab.id}
             aria-controls={`settings-panel-${tab.id}`}
-            disabled={tab.disabled}
-            title={tab.disabledReason}
             className={activeTab === tab.id ? 'active' : ''}
             onClick={() => setActiveTab(tab.id)}
           >
@@ -286,82 +222,30 @@ export function SettingsPage({
           </div>
         ) : null}
 
-        {activeTab === 'accounts' ? (
-          <div className="settings-tab-stack">
-            <AccountMetadataSettings data={data} />
-            <section className="panel neo-raised settings-account-defaults">
-              <div className="panel-head">
-                <div>
-                  <span>Λογαριασμοί & προεπιλογές</span>
-                  <small>Τα υπάρχοντα ονόματα και οι προεπιλογές παραμένουν ακριβώς όπως λειτουργούν σήμερα.</small>
-                </div>
-              </div>
-              <div className="settings-form editor-grid">
-                <label>
-                  <span>Προεπιλογή εξόδων</span>
-                  <AppSelectInput aria-label="Προεπιλεγμένος λογαριασμός εξόδων" value={draft.defaultExpenseAccount} onChange={(event) => change({ defaultExpenseAccount: event.target.value })}>
-                    {accounts.map((account) => <option key={account.id} value={account.id}>{labelFor(account.id)}</option>)}
-                  </AppSelectInput>
-                </label>
-                <label>
-                  <span>Προεπιλογή εσόδων</span>
-                  <AppSelectInput aria-label="Προεπιλεγμένος λογαριασμός εσόδων" value={draft.defaultIncomeAccount} onChange={(event) => change({ defaultIncomeAccount: event.target.value })}>
-                    {accounts.map((account) => <option key={account.id} value={account.id}>{labelFor(account.id)}</option>)}
-                  </AppSelectInput>
-                </label>
-                <label>
-                  <span>Προεπιλογή πληρωμής δόσεων</span>
-                  <AppSelectInput aria-label="Προεπιλεγμένος λογαριασμός πληρωμής δόσεων" value={draft.defaultLoanAccount} onChange={(event) => change({ defaultLoanAccount: event.target.value })}>
-                    {accounts.map((account) => <option key={account.id} value={account.id}>{labelFor(account.id)}</option>)}
-                  </AppSelectInput>
-                </label>
-              </div>
-              <div className="account-name-grid">
-                {accounts.map((account) => (
-                  <label key={account.id}>
-                    <span>Όνομα: {account.name}</span>
-                    <input value={draft.accountNames[account.id] ?? ''} placeholder={account.name} onChange={(event) => change({ accountNames: { ...draftRef.current.accountNames, [account.id]: event.target.value } })} />
-                  </label>
-                ))}
-              </div>
-            </section>
-          </div>
-        ) : null}
+        {activeTab === 'profile' ? <AccountSecuritySettings currentEmail={currentEmail} /> : null}
 
-        {activeTab === 'budgets' ? (
-          <div className="settings-tab-stack">
-            <BudgetRuleSettings data={data} asOf={asOf} onUpsertBudget={onUpsertBudget} onDeleteBudget={onDeleteBudget} onUpsertRule={onUpsertRule} onDeleteRule={onDeleteRule} />
-            <section className="panel neo-raised settings-legacy-goals">
-              <div className="panel-head">
-                <div>
-                  <span>Στόχοι συμβατότητας</span>
-                  <small>Οι υπάρχουσες τιμές διατηρούνται μέχρι να εγκριθεί το redesign αυτής της καρτέλας.</small>
-                </div>
-              </div>
-              <div className="settings-form">
-                <label>
-                  <span>Γενικό budget συμβατότητας</span>
-                  <input ref={budgetRef} inputMode="decimal" value={budgetText} onChange={(event) => { setBudgetText(event.target.value); void commitNumber('budget', event.target.value); }} onBlur={() => { if (!commitNumber('budget', budgetText)) rejectNumber('budget'); }} />
-                </label>
-                <label>
-                  <span>Στόχος αποταμίευσης %</span>
-                  <input ref={targetRef} inputMode="decimal" value={targetText} onChange={(event) => { setTargetText(event.target.value); void commitNumber('target', event.target.value); }} onBlur={() => { if (!commitNumber('target', targetText)) rejectNumber('target'); }} />
-                </label>
-                <label>
-                  <span>Πιστωτικό όριο</span>
-                  <input ref={creditRef} inputMode="decimal" value={creditText} onChange={(event) => { setCreditText(event.target.value); void commitNumber('credit', event.target.value); }} onBlur={() => { if (!commitNumber('credit', creditText)) rejectNumber('credit'); }} />
-                </label>
-              </div>
-            </section>
-          </div>
-        ) : null}
+        {activeTab === 'accounts' ? <AccountManagementSettings data={data} settings={draft} onChange={(next) => commit(next, '')} /> : null}
 
         {activeTab === 'categories' ? (
-          <CategoryIconsWorkspace data={data} asOf={asOf} settings={draft} onChange={(next) => commit(next, '')} onTaxonomyOperation={runTaxonomyOperation} />
+          <div className="settings-categories-only">
+            <CategoryIconsWorkspace data={data} asOf={asOf} settings={draft} onChange={(next) => commit(next, '')} onTaxonomyOperation={runTaxonomyOperation} view="taxonomy" />
+          </div>
+        ) : null}
+
+        {activeTab === 'icons' ? (
+          <div className="settings-icons-only">
+            <CategoryIconsWorkspace data={data} asOf={asOf} settings={draft} onChange={(next) => commit(next, '')} onTaxonomyOperation={runTaxonomyOperation} view="icons" />
+          </div>
+        ) : null}
+
+        {activeTab === 'rules' ? (
+          <div className="settings-tab-stack settings-rules-only">
+            <BudgetRuleSettings data={data} asOf={asOf} onUpsertBudget={onUpsertBudget} onDeleteBudget={onDeleteBudget} onUpsertRule={onUpsertRule} onDeleteRule={onDeleteRule} view="rules" />
+          </div>
         ) : null}
 
         {activeTab === 'data' ? (
-          <div className="settings-tab-stack">
+          <div className="settings-tab-stack settings-data-tab">
             <section className="panel neo-raised">
               <div className="panel-head">
                 <div>

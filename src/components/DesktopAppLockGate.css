@@ -1,0 +1,45 @@
+.desktop-app-lock-root{position:relative;min-height:100vh}
+.desktop-app-lock-underlay{min-height:100vh;transition:filter .22s ease,transform .22s ease,opacity .22s ease}
+.desktop-app-lock-underlay.is-obscured{pointer-events:none;user-select:none;filter:blur(18px) saturate(.78);transform:scale(1.012);opacity:.62}
+.desktop-app-lock-preview{position:fixed;inset:0;display:grid;grid-template-columns:220px 1fr;grid-template-rows:72px 1fr;gap:18px;padding:20px;background:linear-gradient(145deg,#edf3fb,#f7f9fc)}
+.desktop-app-lock-preview>div{border-radius:24px;background:linear-gradient(135deg,rgba(255,255,255,.92),rgba(218,228,243,.72));box-shadow:0 20px 60px rgba(39,67,106,.08)}
+.desktop-app-lock-preview>div:first-child{grid-row:1/-1}
+.desktop-app-lock-preview>div:nth-child(2){border-radius:18px}
+.desktop-app-lock-preview>div:nth-child(3){background:radial-gradient(circle at 20% 10%,rgba(47,111,237,.12),transparent 34%),rgba(255,255,255,.9)}
+.desktop-app-lock-screen{position:fixed;inset:0;z-index:10000;display:grid;place-items:center;padding:24px;background:rgba(232,238,247,.48);backdrop-filter:blur(24px) saturate(1.12);-webkit-backdrop-filter:blur(24px) saturate(1.12);color:var(--ink,#10234d);animation:app-lock-fade .2s ease both}
+.desktop-app-lock-screen::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 50% 32%,rgba(47,111,237,.14),transparent 32%);pointer-events:none}
+.desktop-app-lock-card{position:relative;width:min(92vw,360px);display:grid;justify-items:center;gap:11px;padding:26px 24px 22px;border:1px solid rgba(255,255,255,.76);border-radius:26px;text-align:center;background:rgba(255,255,255,.83);box-shadow:0 30px 90px rgba(26,52,94,.18),inset 0 1px 0 rgba(255,255,255,.95);backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);animation:app-lock-card-in .26s cubic-bezier(.2,.8,.2,1) both}
+.desktop-app-lock-card.is-loading{width:min(88vw,310px);padding-block:28px}
+.desktop-app-lock-card>img{width:58px;height:58px;border-radius:17px;box-shadow:0 10px 24px rgba(47,111,237,.13)}
+.desktop-app-lock-card>span:not(.eyebrow){color:var(--muted)}
+.desktop-app-lock-card .eyebrow{font-size:.68rem;letter-spacing:.16em;color:var(--blue,#2f6fed)}
+.desktop-app-lock-icon{width:58px;height:58px;display:grid;place-items:center;border-radius:20px;background:linear-gradient(145deg,rgba(47,111,237,.13),rgba(47,111,237,.06));color:var(--blue,#2f6fed);box-shadow:inset 0 0 0 1px rgba(47,111,237,.08);animation:app-lock-icon-float 2.8s ease-in-out infinite}
+.desktop-app-lock-icon svg{width:25px;height:25px;transition:transform .2s ease}
+.desktop-app-lock-card.is-success .desktop-app-lock-icon{background:rgba(17,142,91,.1);color:#118e5b;animation:app-lock-success .28s ease both}
+.desktop-app-lock-card h1{margin:2px 0 0;font-size:1.42rem;line-height:1.12;letter-spacing:-.025em}
+.desktop-app-lock-card p{max-width:300px;margin:0;color:var(--muted);font-size:.92rem;line-height:1.5}
+.desktop-app-lock-card form{position:relative;width:100%;display:grid;gap:10px;margin-top:8px}
+.desktop-app-lock-input{position:absolute;left:50%;bottom:0;width:1px!important;height:1px!important;min-height:0!important;padding:0!important;border:0!important;opacity:.01;pointer-events:none}
+.desktop-app-lock-digits{display:flex!important;justify-content:center;align-items:center;gap:12px;width:100%;min-height:62px!important;padding:8px!important;border:0!important;background:transparent!important;box-shadow:none!important;cursor:text}
+.desktop-app-lock-digits:disabled{cursor:default;opacity:1}
+.desktop-app-lock-digits>span{width:45px;height:52px;display:grid;place-items:center;border:1px solid rgba(116,137,168,.28);border-radius:15px;background:rgba(248,250,253,.72);box-shadow:inset 0 1px 0 rgba(255,255,255,.92);transition:border-color .16s ease,background .16s ease,transform .16s ease,box-shadow .16s ease}
+.desktop-app-lock-digits>span i{width:10px;height:10px;border-radius:999px;background:rgba(100,119,147,.18);transform:scale(.72);transition:transform .16s cubic-bezier(.2,.9,.2,1.3),background .16s ease,box-shadow .16s ease}
+.desktop-app-lock-digits>span.is-filled{border-color:rgba(47,111,237,.34);background:rgba(47,111,237,.055);transform:translateY(-1px);box-shadow:0 8px 18px rgba(47,111,237,.06),inset 0 1px 0 rgba(255,255,255,.92)}
+.desktop-app-lock-digits>span.is-filled i{background:var(--blue,#2f6fed);transform:scale(1);box-shadow:0 0 0 5px rgba(47,111,237,.08);animation:app-lock-dot-pop .18s ease both}
+.desktop-app-lock-feedback{min-height:24px;display:grid;place-items:center;color:var(--muted);font-size:.79rem;line-height:1.35}
+.desktop-app-lock-feedback .is-error{color:#a72a20}
+.desktop-app-lock-feedback .is-good{color:#118e5b;font-weight:700}
+.desktop-app-lock-card>small{display:flex;align-items:flex-start;gap:7px;margin-top:1px;color:var(--muted);font-size:.74rem;line-height:1.4;text-align:left}
+.desktop-app-lock-card>small svg{flex:0 0 auto;margin-top:1px;color:var(--blue,#2f6fed)}
+.desktop-app-lock-card>button{min-height:42px;margin-top:4px}
+.desktop-app-lock-loader{width:24px;height:24px;margin-top:3px;border:2px solid rgba(47,111,237,.14);border-top-color:var(--blue,#2f6fed);border-radius:50%;animation:app-lock-spin .72s linear infinite}
+.desktop-app-lock-card.is-shaking{animation:app-lock-shake .38s ease both}
+@keyframes app-lock-fade{from{opacity:0}to{opacity:1}}
+@keyframes app-lock-card-in{from{opacity:0;transform:translateY(10px) scale(.975)}to{opacity:1;transform:none}}
+@keyframes app-lock-icon-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+@keyframes app-lock-dot-pop{0%{transform:scale(.55)}75%{transform:scale(1.12)}100%{transform:scale(1)}}
+@keyframes app-lock-shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(3px)}}
+@keyframes app-lock-success{0%{transform:scale(.9)}70%{transform:scale(1.08)}100%{transform:scale(1)}}
+@keyframes app-lock-spin{to{transform:rotate(360deg)}}
+@media(max-width:520px){.desktop-app-lock-screen{padding:14px}.desktop-app-lock-card{width:min(94vw,350px);padding:24px 18px 20px;border-radius:23px}.desktop-app-lock-digits{gap:9px}.desktop-app-lock-digits>span{width:42px;height:49px;border-radius:14px}}
+@media(prefers-reduced-motion:reduce){.desktop-app-lock-screen,.desktop-app-lock-card,.desktop-app-lock-icon,.desktop-app-lock-digits>span i,.desktop-app-lock-loader,.desktop-app-lock-underlay{animation:none!important;transition:none!important}}

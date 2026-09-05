@@ -82,8 +82,10 @@ async function desktopSmoke(){
     console.log('WebKit smoke: Reports and accessible chart alternative');
     await page.locator('.sidebar nav').getByRole('button',{name:'Αναφορές'}).click();
     await page.getByRole('heading',{name:/Αναφορές/}).waitFor();
-    assert(await page.locator('.report-chart-frame').isVisible(),'Reports chart renders in WebKit');
-    assert(await page.locator('details.chart-alt').count()>0,'Reports keeps text chart alternative');
+    const reportCharts=page.locator('.report-chart-frame');
+    assert(await reportCharts.count()>=2,'Reports renders the approved primary chart set in WebKit');
+    assert(await reportCharts.first().isVisible(),'Reports primary chart renders in WebKit');
+    assert(await page.locator('details.chart-alt').count()>=2,'Reports keeps text alternatives for primary charts');
     await noOverflow(page,'desktop Reports');
     await page.screenshot({path:`${evidenceDir}/webkit-desktop-reports.png`,fullPage:true});
     assertHealthy('desktop workspace');
@@ -112,7 +114,9 @@ async function mobileSmoke(){
     await more.waitFor();
     await more.getByRole('button',{name:'Αναφορές'}).click();
     await page.getByRole('heading',{name:/Αναφορές/}).waitFor();
-    assert(await page.locator('.report-chart-frame').isVisible(),'mobile Reports chart renders');
+    const reportCharts=page.locator('.report-chart-frame');
+    assert(await reportCharts.count()>=2,'mobile Reports retains the approved primary chart set');
+    assert(await reportCharts.first().isVisible(),'mobile Reports primary chart renders');
     await noOverflow(page,'mobile Reports');
     const targets=await page.locator('.mobile-nav button').evaluateAll(nodes=>nodes.map(node=>node.getBoundingClientRect().height));
     assert(targets.every(height=>height>=44),'mobile navigation touch targets stay >=44px');

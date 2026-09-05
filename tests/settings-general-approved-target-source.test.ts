@@ -3,15 +3,18 @@ import { describe, expect, it } from 'vitest';
 
 const read=(path:string)=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 
-describe('approved Settings General source contract',()=>{
-  it('implements the agreed tab architecture while keeping General as the first approved slice',()=>{
+describe('approved Settings source contract',()=>{
+  it('keeps the verified General architecture while exposing only configuration Settings tabs',()=>{
     const source=read('src/pages/SettingsPage.tsx');
     const styles=read('src/pages/SettingsPage.css');
     expect(source).toContain("import './SettingsPage.css'");
-    for(const label of ['Γενικά','Λογαριασμός','Λογαριασμοί','Προϋπολογισμοί & Στόχοι','Κατηγορίες','Εικονίδια','Κανόνες','Δεδομένα'])expect(source).toContain(label);
+    for(const label of ['Γενικά','Χρήστης & Πρόσβαση','Λογαριασμοί','Κατηγορίες','Εικονίδια','Κανόνες','Δεδομένα'])expect(source).toContain(label);
+    expect(source).not.toContain('Προϋπολογισμοί & Στόχοι');
+    expect(source).not.toContain("id: 'budgets'");
     expect(source).toContain("useState<SettingsTab>('general')");
     expect(source).toContain('settings-general-grid');
     expect(styles).toContain('.settings-general-grid{display:grid');
+    expect(source).not.toContain('disabledReason:');
   });
 
   it('uses only existing General capabilities and renders each analysis once',()=>{
@@ -34,16 +37,72 @@ describe('approved Settings General source contract',()=>{
     expect(shortcuts).toContain('shortcutDisplay(id)');
   });
 
-  it('preserves existing Settings functionality while future unsupported tabs stay truthful',()=>{
+  it('keeps user access useful with real auth mutations, compact PIN controls and device controls',()=>{
     const source=read('src/pages/SettingsPage.tsx');
-    expect(source).toContain('<AccountMetadataSettings data={data} />');
+    const account=read('src/components/AccountSecuritySettings.tsx');
+    const devices=read('src/components/DeviceAccessSettings.tsx');
+    expect(source).toContain('<AccountSecuritySettings');
+    expect(source).toContain("label: 'Χρήστης & Πρόσβαση'");
+    expect(account).toContain('changeAccountEmail');
+    expect(account).toContain('changeAccountPassword');
+    expect(account).toContain('Αλλαγή email');
+    expect(account).toContain('Τρέχον email:');
+    expect(account).toContain('Αλλαγή κωδικού');
+    expect(account).toContain('const PIN_LENGTH=4');
+    expect(account).toContain('PIN & αυτόματο κλείδωμα');
+    expect(account).toContain('Κλείδωμα μετά από αδράνεια');
+    expect(account).toContain('Κλείδωμα τώρα');
+    expect(account).not.toContain('Τρέχον PIN');
+    expect(account).toContain('<DeviceAccessSettings/>');
+    expect(devices).toContain('Συνδεδεμένες συσκευές');
+    expect(devices).toContain('Αφαίρεση όλων των άλλων');
+    expect(source).not.toContain('Δεν υποστηρίζεται από αυτή τη σελίδα');
+  });
+
+  it('preserves existing Settings functionality and exposes real account management',()=>{
+    const source=read('src/pages/SettingsPage.tsx');
+    const accounts=read('src/components/AccountManagementSettings.tsx');
+    const providerTaxonomy=read('src/lib/financialProviders.ts');
+    const domain=read('src/lib/domain.ts');
+    expect(source).toContain('<AccountManagementSettings');
+    expect(accounts).toContain('Προεπιλεγμένοι λογαριασμοί');
+    expect(accounts).toContain('Οι λογαριασμοί μου');
+    expect(accounts).toContain('Νέος λογαριασμός');
+    expect(accounts).toContain('CASH_ACCOUNT_TYPES.map');
+    expect(providerTaxonomy).toContain("{id:'cash',label:'Μετρητά'}");
+    expect(providerTaxonomy).toContain("{id:'reserve',label:'Καβάτζα'}");
+    expect(accounts).not.toContain('RefreshCw');
+    expect(domain).toContain('customAccounts');
+    expect(domain).toContain('accountOverrides');
     expect(source).toContain('<BudgetRuleSettings');
     expect(source).toContain('<CategoryIconsWorkspace');
     expect(source).toContain('Εισαγωγή JSON');
     expect(source).toContain('Backup & λήψη');
     expect(source).toContain('technical-settings');
-    expect(source).toContain("disabledReason: 'Η αλλαγή email και κωδικού δεν υποστηρίζεται ακόμη");
-    expect(source).not.toContain('Αλλαγή email</button>');
-    expect(source).not.toContain('Αλλαγή κωδικού</button>');
+  });
+
+  it('keeps Rules, taxonomy and icons in Settings while moving financial controls to their natural product surfaces',()=>{
+    const source=read('src/pages/SettingsPage.tsx');
+    const reports=read('src/pages/ReportsPage.tsx');
+    const savings=read('src/pages/SavingsPage.tsx');
+    const budgetRules=read('src/components/BudgetRuleSettings.tsx');
+    const categories=read('src/components/CategoryIconsWorkspace.tsx');
+    expect(source).toContain("activeTab === 'icons'");
+    expect(source).toContain("activeTab === 'rules'");
+    expect(source).not.toContain("activeTab === 'budgets'");
+    expect(source).not.toContain('settings-legacy-goals');
+    expect(source).toContain('view="rules"');
+    expect(source).toContain('view="taxonomy"');
+    expect(source).toContain('view="icons"');
+    expect(reports).toContain('view="budgets"');
+    expect(reports).toContain('budgetMonth={month}');
+    expect(reports).toContain('id="report-budgets"');
+    expect(savings).toContain('onSavingsTargetChange');
+    expect(savings).toContain('Αλλαγή στόχου αποταμίευσης');
+    expect(budgetRules).toContain("type BudgetRuleSettingsView='all'|'budgets'|'rules'");
+    expect(budgetRules).toContain("open={view==='rules'?true:undefined}");
+    expect(categories).toContain("type CategoryWorkspaceView='all'|'taxonomy'|'icons'");
+    expect(categories).toContain("const showTaxonomy=view!=='icons'");
+    expect(categories).toContain("const showIcons=view!=='taxonomy'");
   });
 });

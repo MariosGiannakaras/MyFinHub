@@ -1,6 +1,8 @@
 /* Phase-1 Dashboard fidelity pass 2: local bank marks, chart curtain and attention shortcut. */
 .bank-brand-mark .bank-logo-image{display:block;width:78%;height:78%;object-fit:contain;object-position:center}
 .bank-brand-mark.wordmark .bank-logo-image{width:88%;height:72%}
+.bank-brand-mark.bankmark-viva .bank-logo-image{filter:brightness(0) saturate(100%);opacity:.82}
+html[data-theme="dark"] .bank-brand-mark.bankmark-viva .bank-logo-image{filter:none;opacity:1}
 
 .dashboard-approved .approved-secondary-account .bank-brand-mark[data-bank-logo-source="local-image"]{
   width:31px!important;

@@ -8,6 +8,7 @@ const updates = vi.hoisted(() => ({
 }));
 
 vi.mock('../server/storage.js', () => storage);
+vi.mock('../server/deviceSessionRegistry.js', () => ({ ensureDeviceSessionAccess: vi.fn().mockResolvedValue({}) }));
 vi.mock('../server/androidUpdates.js', async importOriginal => {
   const actual = await importOriginal<typeof import('../server/androidUpdates.js')>();
   return { ...actual, readLatestAndroidRelease: updates.readLatestAndroidRelease };

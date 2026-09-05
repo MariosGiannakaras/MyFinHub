@@ -18,6 +18,7 @@ const scripts=[
   {path:'scripts/planning-forecast-qa.mjs',key:'planning-forecast',surface:'planning',profiles:['/tmp/myfinhub-planning-forecast-qa-chrome']},
   {path:'scripts/action-center-context-qa.mjs',key:'action-center',surface:'action-center',profiles:['/tmp/myfinhub-action-center-context-qa-chrome']},
   {path:'scripts/budget-rules-qa.mjs',key:'budget-rules',surface:'budgets',profiles:['/tmp/myfinhub-budget-rules-qa-chrome']},
+  {path:'scripts/settings-tabs-qa.mjs',key:'settings-tabs',surface:'settings',profiles:['/tmp/myfinhub-settings-tabs-qa-chrome']},
   {path:'scripts/command-palette-qa.mjs',key:'command-palette',surface:'command-palette',profiles:['/tmp/myfinhub-command-palette-qa-chrome']},
   {path:'scripts/payment-flow-normalization-qa.mjs',key:'payment-flow',surface:'payments',profiles:['/tmp/myfinhub-payment-flow-qa-chrome']},
   {path:'scripts/primitives-adoption-qa.mjs',key:'primitives-adoption',surface:'controls',profiles:['/tmp/myfinhub-primitives-adoption-qa-chrome']},

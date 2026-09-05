@@ -1,4 +1,5 @@
 export type AccountKind = 'cash' | 'bank' | 'savings' | 'credit';
+export type CashAccountRole = 'daily' | 'reserve';
 export type SavingSource = 'pay_and_save' | 'manual_transfer' | 'cash_offset';
 export type RecurringStatus = 'active' | 'paused' | 'stopped';
 export type RecurrenceUnit = 'month' | 'year';
@@ -19,6 +20,10 @@ export interface Account {
   short?: string;
   kind: AccountKind | string;
   excludeFromAvailable?: boolean;
+  provider?: string;
+  cashRole?: CashAccountRole;
+  showInQuickChoices?: boolean;
+  custom?: boolean;
 }
 
 export interface CategoryDefinition {
@@ -277,6 +282,8 @@ export interface FinanceData {
 export interface FinanceSettings {
   excludedFromAvailable: string[];
   accountNames: Record<string, string>;
+  customAccounts?: Account[];
+  accountOverrides?: Record<string, Account>;
   expenseCategories: string[];
   incomeCategories: string[];
   expenseCategoryTree?: CategoryDefinition[];

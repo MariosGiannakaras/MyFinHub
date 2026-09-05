@@ -80,7 +80,11 @@ function validateAccount(value: unknown, name: string) {
   text(value.name, `${name}.name`, 500);
   text(value.kind, `${name}.kind`, 100);
   optionalText(value.short, `${name}.short`, 100);
+  optionalText(value.provider, `${name}.provider`, 500);
+  if (value.cashRole !== undefined) oneOf(value.cashRole, ['daily','reserve'], `${name}.cashRole`);
   if (value.excludeFromAvailable !== undefined && typeof value.excludeFromAvailable !== 'boolean') invalid(`Invalid ${name}.excludeFromAvailable.`);
+  if (value.showInQuickChoices !== undefined && typeof value.showInQuickChoices !== 'boolean') invalid(`Invalid ${name}.showInQuickChoices.`);
+  if (value.custom !== undefined && typeof value.custom !== 'boolean') invalid(`Invalid ${name}.custom.`);
 }
 
 function validateCardBank(value: unknown, name: string) {
@@ -271,6 +275,19 @@ function validateSettings(value: unknown) {
   if (!object(value)) invalid('Missing settings.');
   stringArray(value.excludedFromAvailable, 'state.settings.excludedFromAvailable', 10_000, 200);
   validateStringRecord(value.accountNames, 'state.settings.accountNames');
+  if (value.customAccounts !== undefined) {
+    array(value.customAccounts, 'state.settings.customAccounts', 1_000);
+    value.customAccounts.forEach((item, index) => validateAccount(item, `state.settings.customAccounts[${index}]`));
+    ensureUniqueIds(value.customAccounts, 'state.settings.customAccounts');
+  }
+  if (value.accountOverrides !== undefined) {
+    record(value.accountOverrides, 'state.settings.accountOverrides', 1_000);
+    for (const [id, item] of Object.entries(value.accountOverrides)) {
+      text(id, 'state.settings.accountOverrides key', 100);
+      validateAccount(item, `state.settings.accountOverrides.${id}`);
+      if (object(item) && item.id !== id) invalid(`Invalid state.settings.accountOverrides.${id}.id.`);
+    }
+  }
   stringArray(value.expenseCategories, 'state.settings.expenseCategories', 10_000, 1_000);
   stringArray(value.incomeCategories, 'state.settings.incomeCategories', 10_000, 1_000);
   stringArray(value.customPresets, 'state.settings.customPresets', 10_000, 1_000);

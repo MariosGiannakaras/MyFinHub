@@ -1,12 +1,30 @@
 import type { CardBank, CardKind, FinanceData, FinanceEvent, PaymentCard } from '../types.js';
+import { FINANCIAL_PROVIDERS } from './financialProviders.js';
 
-export const DEFAULT_CARD_BANKS:CardBank[]=[
-  {id:'piraeus',name:'ΠΕΙΡΑΙΩΣ',order:10},
-  {id:'revolut',name:'REVOLUT',order:20},
-  {id:'alpha',name:'ALPHA BANK',order:30},
-  {id:'payzy',name:'PAYZY',order:40},
-  {id:'viva',name:'VIVA',order:50},
-];
+const LEGACY_CARD_BANK_LABELS:Record<string,string>={
+  piraeus:'ΠΕΙΡΑΙΩΣ',
+  revolut:'REVOLUT',
+  alpha:'ALPHA BANK',
+  payzy:'PAYZY',
+  viva:'VIVA',
+};
+
+const CARD_BANK_ORDER:Record<string,number>={
+  piraeus:10,
+  revolut:20,
+  alpha:30,
+  payzy:40,
+  viva:50,
+  national:51,
+  eurobank:52,
+  paypal:53,
+};
+
+export const DEFAULT_CARD_BANKS:CardBank[]=FINANCIAL_PROVIDERS.map(provider=>({
+  id:provider.id,
+  name:LEGACY_CARD_BANK_LABELS[provider.id]??provider.displayName,
+  order:CARD_BANK_ORDER[provider.id]??54+provider.sortOrder/1000,
+}));
 
 export function cardBanks(data:FinanceData){
   const custom=data.state.cardBanks??[];

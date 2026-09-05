@@ -46,6 +46,11 @@
 .keyboard-shortcut-note{margin:10px 2px 0;color:var(--muted);font-size:var(--ux-tiny-size);line-height:1.5}
 
 .settings-account-defaults,.settings-legacy-goals{padding:18px}
+.settings-rules-only .rule-settings-panel{padding:18px}
+.settings-rules-only .rule-settings-panel>summary{display:none}
+.settings-icons-only .category-icons-workspace{padding:18px}
+.settings-icons-only .taxonomy-icon-disclosure{margin-top:10px}
+.settings-icons-only .taxonomy-icon-disclosure>summary{font-weight:720;color:var(--blue)}
 
 @media(max-width:980px){
   .settings-general-grid{grid-template-columns:1fr}

@@ -23,6 +23,18 @@ export interface SessionInfo {
   mfaEnrollmentRequired?: boolean;
 }
 export interface MfaEnrollment { factorId: string; qrCode: string; secret: string }
+export interface EmailChangeReceipt { ok:true; email:string|null; pendingEmail:string|null }
+export interface PasswordChangeReceipt { ok:true }
+export interface ConnectedDevice {
+  sessionId:string;
+  platform:'windows'|'android'|'web'|'unknown';
+  label:string;
+  appVersion:string|null;
+  firstSeenAt:string;
+  lastSeenAt:string;
+  current:boolean;
+}
+export interface ConnectedDevicesEnvelope { count:number; devices:ConnectedDevice[] }
 
 export class ApiError extends Error {
   status: number;
@@ -41,7 +53,7 @@ async function json<T>(response: Response): Promise<T> {
   const payload = await response.json().catch(() => null) as { error?: string; code?: string; requestId?: string } | T | null;
   if (!response.ok) {
     const details = payload && typeof payload === 'object' ? payload as { error?: string; code?: string; requestId?: string } : {};
-    if (response.status === 401 && details.code === 'AUTH_REQUIRED' && typeof window !== 'undefined') {
+    if (response.status === 401 && (details.code === 'AUTH_REQUIRED' || details.code === 'DEVICE_ACCESS_REVOKED') && typeof window !== 'undefined') {
       window.dispatchEvent(new Event('rheomiq:auth-expired'));
     }
     throw new ApiError(details.error || response.statusText || 'Request failed', response.status, details.code, details.requestId);
@@ -80,6 +92,42 @@ export async function verifyMfa(code: string, factorId?: string): Promise<Sessio
 
 export async function logout(): Promise<SessionInfo> {
   return json(await request('/api/auth/logout', { method: 'POST' }));
+}
+
+export async function changeAccountEmail(email:string):Promise<EmailChangeReceipt>{
+  return json(await request('/api/auth/account',{
+    method:'PATCH',
+    headers:{'content-type':'application/json'},
+    body:JSON.stringify({action:'email',email}),
+  }));
+}
+
+export async function changeAccountPassword(currentPassword:string,newPassword:string):Promise<PasswordChangeReceipt>{
+  return json(await request('/api/auth/account',{
+    method:'PATCH',
+    headers:{'content-type':'application/json'},
+    body:JSON.stringify({action:'password',currentPassword,newPassword}),
+  }));
+}
+
+export async function getConnectedDevices():Promise<ConnectedDevicesEnvelope>{
+  return json(await request('/api/auth/devices',{cache:'no-store'}));
+}
+
+export async function revokeConnectedDevice(sessionId:string):Promise<ConnectedDevicesEnvelope>{
+  return json(await request('/api/auth/devices',{
+    method:'POST',
+    headers:{'content-type':'application/json'},
+    body:JSON.stringify({action:'revoke',sessionId}),
+  }));
+}
+
+export async function revokeOtherConnectedDevices():Promise<ConnectedDevicesEnvelope>{
+  return json(await request('/api/auth/devices',{
+    method:'POST',
+    headers:{'content-type':'application/json'},
+    body:JSON.stringify({action:'revoke-others'}),
+  }));
 }
 
 export async function loadData(): Promise<DataEnvelope> {
