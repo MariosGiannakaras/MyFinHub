@@ -4,11 +4,13 @@ import { describe, expect, it } from 'vitest';
 const read=(path:string)=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 
 describe('approved Settings source contract',()=>{
-  it('keeps the verified General architecture while exposing the full Settings tab set',()=>{
+  it('keeps the verified General architecture while exposing only configuration Settings tabs',()=>{
     const source=read('src/pages/SettingsPage.tsx');
     const styles=read('src/pages/SettingsPage.css');
     expect(source).toContain("import './SettingsPage.css'");
-    for(const label of ['Γενικά','Χρήστης & Πρόσβαση','Λογαριασμοί','Προϋπολογισμοί & Στόχοι','Κατηγορίες','Εικονίδια','Κανόνες','Δεδομένα'])expect(source).toContain(label);
+    for(const label of ['Γενικά','Χρήστης & Πρόσβαση','Λογαριασμοί','Κατηγορίες','Εικονίδια','Κανόνες','Δεδομένα'])expect(source).toContain(label);
+    expect(source).not.toContain('Προϋπολογισμοί & Στόχοι');
+    expect(source).not.toContain("id: 'budgets'");
     expect(source).toContain("useState<SettingsTab>('general')");
     expect(source).toContain('settings-general-grid');
     expect(styles).toContain('.settings-general-grid{display:grid');
@@ -79,16 +81,24 @@ describe('approved Settings source contract',()=>{
     expect(source).toContain('technical-settings');
   });
 
-  it('separates existing budgets, rules, taxonomy and icon capabilities into dedicated canonical views',()=>{
+  it('keeps Rules, taxonomy and icons in Settings while moving financial controls to their natural product surfaces',()=>{
     const source=read('src/pages/SettingsPage.tsx');
+    const reports=read('src/pages/ReportsPage.tsx');
+    const savings=read('src/pages/SavingsPage.tsx');
     const budgetRules=read('src/components/BudgetRuleSettings.tsx');
     const categories=read('src/components/CategoryIconsWorkspace.tsx');
     expect(source).toContain("activeTab === 'icons'");
     expect(source).toContain("activeTab === 'rules'");
-    expect(source).toContain('view="budgets"');
+    expect(source).not.toContain("activeTab === 'budgets'");
+    expect(source).not.toContain('settings-legacy-goals');
     expect(source).toContain('view="rules"');
     expect(source).toContain('view="taxonomy"');
     expect(source).toContain('view="icons"');
+    expect(reports).toContain('view="budgets"');
+    expect(reports).toContain('budgetMonth={month}');
+    expect(reports).toContain('id="report-budgets"');
+    expect(savings).toContain('onSavingsTargetChange');
+    expect(savings).toContain('Αλλαγή στόχου αποταμίευσης');
     expect(budgetRules).toContain("type BudgetRuleSettingsView='all'|'budgets'|'rules'");
     expect(budgetRules).toContain("open={view==='rules'?true:undefined}");
     expect(categories).toContain("type CategoryWorkspaceView='all'|'taxonomy'|'icons'");
