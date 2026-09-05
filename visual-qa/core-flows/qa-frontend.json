@@ -4,15 +4,15 @@
   "appVersion": "v1.3",
   "suite": "frontend",
   "surface": "core-flows",
-  "generatedAt": "2026-09-05T11:26:51.143Z",
+  "generatedAt": "2026-09-05T13:09:10.589Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "19315773d236b30ce609fb492d7a0f3040a47074",
-    "shortSha": "19315773",
+    "sha": "2878d76dbce501f19a4b363cc016d3a47855ec13",
+    "shortSha": "2878d76d",
     "branch": "feat/346-settings-tabs"
   },
   "screenshots": [
-    "visual-qa/core-flows/v1.3__2026-09-05_142651__qa-frontend__source-1__desktop-cards.png",
-    "visual-qa/core-flows/v1.3__2026-09-05_142651__qa-frontend__source-1__mobile-cards.png"
+    "visual-qa/core-flows/v1.3__2026-09-05_160910__qa-frontend__source-1__desktop-cards.png",
+    "visual-qa/core-flows/v1.3__2026-09-05_160910__qa-frontend__source-1__mobile-cards.png"
   ]
 }
