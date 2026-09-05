@@ -1,3 +1,7 @@
+const piraeusLogo=new URL('../assets/providers/piraeus-logo-green-on-yellow.jpg',import.meta.url).href;
+const piraeusWordmark=new URL('../assets/providers/piraeus-wordmark-green-on-white.jpg',import.meta.url).href;
+const alphaLogo=new URL('../assets/providers/alpha-logo-white-on-blue.jpg',import.meta.url).href;
+const alphaWordmark=new URL('../assets/providers/alpha-wordmark-color.jpg',import.meta.url).href;
 const revolutLogo='/brand/banks/revolut-mark.svg';
 const payzyLogo=new URL('../assets/canonical-credit-card/payzy-logo.png',import.meta.url).href;
 const vivaLogo=new URL('../assets/canonical-credit-card/viva-logo.png',import.meta.url).href;
@@ -5,10 +9,12 @@ const vivaLogo=new URL('../assets/canonical-credit-card/viva-logo.png',import.me
 export type BankBrandKey='piraeus'|'revolut'|'alpha'|'national'|'eurobank'|'payzy'|'viva'|'paypal'|'cash'|'generic';
 
 export type BankBrandTextAsset={label:string;mark:string;cardMark?:string;source:'local-text'};
-export type BankBrandImageAsset={label:string;src:string;fallbackMark:string;cardMark?:string;source:'local-image'};
+export type BankBrandImageAsset={label:string;src:string;wordmarkSrc?:string;fallbackMark:string;cardMark?:string;source:'local-image'};
 export type BankBrandAsset=BankBrandTextAsset|BankBrandImageAsset;
 
 const BRAND_ASSETS:Partial<Record<BankBrandKey,BankBrandAsset>>={
+  piraeus:{label:'Τράπεζα Πειραιώς',src:piraeusLogo,wordmarkSrc:piraeusWordmark,fallbackMark:'ΠΕΙΡΑΙΩΣ',cardMark:'Πειραιώς',source:'local-image'},
+  alpha:{label:'Alpha Bank',src:alphaLogo,wordmarkSrc:alphaWordmark,fallbackMark:'ALPHA',cardMark:'Alpha Bank',source:'local-image'},
   revolut:{label:'Revolut',src:revolutLogo,fallbackMark:'REVOLUT',cardMark:'Revolut',source:'local-image'},
   payzy:{label:'payzy by COSMOTE',src:payzyLogo,fallbackMark:'payzy',cardMark:'payzy',source:'local-image'},
   viva:{label:'Viva.com',src:vivaLogo,fallbackMark:'VIVA',cardMark:'VIVA',source:'local-image'},

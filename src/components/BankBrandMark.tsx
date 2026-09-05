@@ -18,7 +18,7 @@ export function BankBrandMark({id,name,compact=true}:{id?:string;name?:string;co
 
   return <span className={`bank-brand-mark bankmark-${identityKey} ${compact?'compact':'wordmark'}`} aria-hidden="true" data-bank-brand={identityKey} data-bank-logo-source={asset.source} data-provider-registry={registrySource}>
     {asset.source==='local-image'
-      ?<img className="bank-logo-image" src={asset.src} alt="" draggable={false}/>
+      ?<img className="bank-logo-image" src={compact?asset.src:(asset.wordmarkSrc??asset.src)} alt="" draggable={false}/>
       :<span className="bank-logo-text">{bankBrandFallbackMark(asset)}</span>}
   </span>;
 }

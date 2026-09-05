@@ -25,8 +25,8 @@ describe('bank brand identity',()=>{
     expect(bankBrandKey('custom-bank','CUSTOM')).toBe('generic');
   });
 
-  it('uses only verified local brand assets and deliberately falls back for unverified bank artwork',()=>{
-    for(const key of ['revolut','payzy','viva'] as const){
+  it('uses only owner-approved local brand assets and deliberately falls back where artwork is unavailable',()=>{
+    for(const key of ['piraeus','alpha','revolut','payzy','viva'] as const){
       const asset=bankBrandAsset(key);
       expect(asset).not.toBeNull();
       expect(asset?.label.length).toBeGreaterThan(2);
@@ -40,9 +40,15 @@ describe('bank brand identity',()=>{
         }
       }
     }
-    for(const key of ['piraeus','alpha','national','eurobank'] as const){
+    for(const key of ['national','eurobank'] as const){
       expect(bankBrandAsset(key)).toBeNull();
     }
+    const piraeus=bankBrandAsset('piraeus');
+    const alpha=bankBrandAsset('alpha');
+    expect(piraeus?.source).toBe('local-image');
+    expect(alpha?.source).toBe('local-image');
+    if(piraeus?.source==='local-image')expect(piraeus.wordmarkSrc).toBeTruthy();
+    if(alpha?.source==='local-image')expect(alpha.wordmarkSrc).toBeTruthy();
     expect(bankBrandAsset('payzy')?.source).toBe('local-image');
     expect(bankBrandAsset('viva')?.source).toBe('local-image');
   });
