@@ -46,4 +46,3 @@
  .transactions-workspace .mobile-transaction-filters{grid-template-columns:1fr}
 }
 @media(max-width:360px){.category-taxonomy-head{grid-template-columns:1fr}.taxonomy-row-actions{justify-content:flex-start}}
-.reports-composite .report-expense-grid,.reports-composite .report-secondary-grid{align-items:start}
