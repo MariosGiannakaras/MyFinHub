@@ -57,6 +57,18 @@ try{
       }
       if(mode.name==='mobile')await visibleTouchTargets(`${mode.name} ${tab.label}`);
       await screenshot(`settings-${tab.id}-${mode.name}`);
+      if(tab.id==='budgets'){
+        await screenshot(`settings-budgets-category-${mode.name}`);
+        const overallOpened=await c.call("function(){const label=[...document.querySelectorAll('.settings-budgets-only .budget-editor-grid label')].find(node=>(node.querySelector(':scope > span')?.textContent||'').trim()==='Τύπος ορίου');const input=label?.querySelector('[role=\"combobox\"]');if(!input)return false;input.click();return true}");assert(overallOpened,`Budget scope selector opens on ${mode.name}`);
+        await waitFor("function(){return Boolean(document.querySelector('.owned-select-popover [role=\"listbox\"]'))}",`budget scope options ${mode.name}`);
+        const overallSelected=await c.call("function(){const option=[...document.querySelectorAll('.owned-select-popover [role=\"option\"]')].find(node=>(node.textContent||'').includes('Συνολικό discretionary'));if(!option)return false;option.click();return true}");assert(overallSelected,`Overall budget scope can be selected on ${mode.name}`);
+        await waitFor("function(){const root=document.querySelector('.settings-budgets-only .budget-editor-grid');const labels=[...(root?.querySelectorAll('label>span')||[])].map(node=>(node.textContent||'').trim());const scope=[...(root?.querySelectorAll('[role=\"combobox\"]')||[])][0];return !labels.includes('Κατηγορία')&&scope?.value==='Συνολικό discretionary'}",`overall budget state ${mode.name}`);
+        await screenshot(`settings-budgets-overall-${mode.name}`);
+        const categoryOpened=await c.call("function(){const label=[...document.querySelectorAll('.settings-budgets-only .budget-editor-grid label')].find(node=>(node.querySelector(':scope > span')?.textContent||'').trim()==='Τύπος ορίου');const input=label?.querySelector('[role=\"combobox\"]');if(!input)return false;input.click();return true}");assert(categoryOpened,`Budget scope selector reopens on ${mode.name}`);
+        await waitFor("function(){return Boolean(document.querySelector('.owned-select-popover [role=\"listbox\"]'))}",`budget category scope options ${mode.name}`);
+        const categorySelected=await c.call("function(){const option=[...document.querySelectorAll('.owned-select-popover [role=\"option\"]')].find(node=>(node.textContent||'').trim()==='Κατηγορία');if(!option)return false;option.click();return true}");assert(categorySelected,`Category budget scope can be restored on ${mode.name}`);
+        await waitFor("function(){const root=document.querySelector('.settings-budgets-only .budget-editor-grid');const labels=[...(root?.querySelectorAll('label>span')||[])].map(node=>(node.textContent||'').trim());return labels.includes('Κατηγορία')}",`category budget state restored ${mode.name}`);
+      }
       if(mode.name==='desktop'&&tab.id==='profile')await fullScreenshot('settings-profile-desktop-full');
       if(mode.name==='desktop'&&tab.id==='accounts'){
         await fullScreenshot('settings-accounts-desktop-full');
