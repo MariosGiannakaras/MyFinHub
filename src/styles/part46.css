@@ -46,3 +46,7 @@
  .transactions-workspace .mobile-transaction-filters{grid-template-columns:1fr}
 }
 @media(max-width:360px){.category-taxonomy-head{grid-template-columns:1fr}.taxonomy-row-actions{justify-content:flex-start}}
+
+/* Reports-only layout refinement: keep unequal information panels at their natural height. */
+.reports-composite .report-expense-grid{align-items:start}
+.reports-composite .report-secondary-grid{align-items:start}
