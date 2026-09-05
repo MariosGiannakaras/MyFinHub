@@ -8,8 +8,11 @@ export function BankBrandMark({id,name,compact=true}:{id?:string;name?:string;co
   const inferredKey=bankBrandKey(id,name);
   const provider=providerCatalog.providers.find(item=>item.id===id||item.id===inferredKey);
   const identityKey=provider?.id||inferredKey;
+  const identityVisualKey=bankBrandKey(identityKey,provider?.displayName||name);
+  const identityAsset=bankBrandAsset(identityVisualKey);
   const assetKey=compact?provider?.logoAssetKey:provider?.wordmarkAssetKey;
-  const visualKey=assetKey==='generic'?'generic':bankBrandKey(assetKey||id,provider?.displayName||name);
+  const registryVisualKey=assetKey==='generic'?'generic':bankBrandKey(assetKey||id,provider?.displayName||name);
+  const visualKey=identityAsset?.source==='local-image'?identityVisualKey:registryVisualKey;
   const asset=visualKey==='generic'?null:bankBrandAsset(visualKey);
   const registrySource=provider?'shared':'fallback';
 
