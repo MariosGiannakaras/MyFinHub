@@ -97,7 +97,7 @@
   .settings-categories-only .taxonomy-add-row{padding:10px}
   .settings-categories-only .taxonomy-add-subcategory{padding:0}
   .settings-categories-only .taxonomy-row-actions button{width:44px;height:44px}
-  .settings-categories-only .taxonomy-add-subcategory input{min-height:46px}
+  .settings-categories-only .taxonomy-add-subcategory input,.settings-categories-only .taxonomy-add-subcategory button{min-height:46px}
 }
 
 @media(max-width:420px){
