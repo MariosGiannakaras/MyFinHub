@@ -1,3 +1,0 @@
-/* Reports-only layout refinement: keep unequal panels at their natural height. */
-.reports-composite .report-expense-grid{align-items:start}
-.reports-composite .report-secondary-grid{align-items:start}
