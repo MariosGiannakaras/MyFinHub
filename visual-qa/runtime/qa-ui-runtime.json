@@ -4,14 +4,14 @@
   "appVersion": "v1.3",
   "suite": "ui-runtime",
   "surface": "runtime",
-  "generatedAt": "2026-09-04T23:57:11.062Z",
+  "generatedAt": "2026-09-05T01:38:04.413Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "d58276291c1d541d13e7473db2d2a6b564dc78db",
-    "shortSha": "d5827629",
+    "sha": "fe2eb14069205f125f4a47b19319607e337ef6cc",
+    "shortSha": "fe2eb140",
     "branch": "feat/346-settings-tabs"
   },
   "screenshots": [
-    "visual-qa/runtime/v1.3__2026-09-05_025711__qa-ui-runtime__runtime-loading-state.png"
+    "visual-qa/runtime/v1.3__2026-09-05_043804__qa-ui-runtime__runtime-loading-state.png"
   ]
 }

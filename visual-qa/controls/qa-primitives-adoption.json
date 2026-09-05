@@ -4,16 +4,16 @@
   "appVersion": "v1.3",
   "suite": "primitives-adoption",
   "surface": "controls",
-  "generatedAt": "2026-09-04T23:57:11.062Z",
+  "generatedAt": "2026-09-05T01:38:04.413Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "d58276291c1d541d13e7473db2d2a6b564dc78db",
-    "shortSha": "d5827629",
+    "sha": "fe2eb14069205f125f4a47b19319607e337ef6cc",
+    "shortSha": "fe2eb140",
     "branch": "feat/346-settings-tabs"
   },
   "screenshots": [
-    "visual-qa/controls/v1.3__2026-09-05_025711__qa-primitives-adoption__primitives-contextual-payment-mobile.png",
-    "visual-qa/controls/v1.3__2026-09-05_025711__qa-primitives-adoption__primitives-credit-dialogs-mobile.png",
-    "visual-qa/controls/v1.3__2026-09-05_025711__qa-primitives-adoption__primitives-quick-entry-discard-mobile.png"
+    "visual-qa/controls/v1.3__2026-09-05_043804__qa-primitives-adoption__primitives-contextual-payment-mobile.png",
+    "visual-qa/controls/v1.3__2026-09-05_043804__qa-primitives-adoption__primitives-credit-dialogs-mobile.png",
+    "visual-qa/controls/v1.3__2026-09-05_043804__qa-primitives-adoption__primitives-quick-entry-discard-mobile.png"
   ]
 }
