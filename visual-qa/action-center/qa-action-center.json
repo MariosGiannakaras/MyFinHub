@@ -4,15 +4,15 @@
   "appVersion": "v1.3",
   "suite": "action-center",
   "surface": "action-center",
-  "generatedAt": "2026-09-05T05:45:21.817Z",
+  "generatedAt": "2026-09-05T11:26:51.143Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "5b6b232fdb74e6de1f011cee677c641c8a2f6ad8",
-    "shortSha": "5b6b232f",
+    "sha": "19315773d236b30ce609fb492d7a0f3040a47074",
+    "shortSha": "19315773",
     "branch": "feat/346-settings-tabs"
   },
   "screenshots": [
-    "visual-qa/action-center/v1.3__2026-09-05_084521__qa-action-center__action-center-desktop.png",
-    "visual-qa/action-center/v1.3__2026-09-05_084521__qa-action-center__action-center-mobile.png"
+    "visual-qa/action-center/v1.3__2026-09-05_142651__qa-action-center__action-center-desktop.png",
+    "visual-qa/action-center/v1.3__2026-09-05_142651__qa-action-center__action-center-mobile.png"
   ]
 }
