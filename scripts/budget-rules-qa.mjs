@@ -33,11 +33,12 @@ try{
   const urlFor=(page,state='budget-rules')=>{const url=new URL(baseUrl);url.searchParams.set('page',page);if(state)url.searchParams.set('state',state);return url.href};
   const waitFor=async(fn,label,args=[])=>{for(let i=0;i<120;i++){if(await c.call(fn,args))return;await sleep(100)}throw new Error(`Timed out waiting for ${label}`)};
   const navigate=async(page,state='budget-rules',width=1440,height=1000)=>{await viewport(width,height);await c.send('Page.navigate',{url:urlFor(page,state)});await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}",`${page} heading`);await sleep(140)};
-  const screenshot=async name=>{if(name==='advanced-automations-desktop'||name==='advanced-automations-mobile')await c.call("function(){document.querySelector('[data-advanced-automations]')?.scrollIntoView({block:'start'});return true}");if(name==='advanced-automations-ordered-desktop')await c.call("function(){document.querySelector('.rule-settings-list')?.scrollIntoView({block:'center'});return true}");await sleep(120);const shot=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(shot.data,'base64'))};
+  const screenshot=async name=>{if(name==='advanced-automations-desktop'||name==='advanced-automations-mobile')await c.call("function(){document.querySelector('[data-advanced-automations]')?.scrollIntoView({block:'start'});return true}");if(name==='advanced-automations-ordered-desktop')await c.call("function(){document.querySelector('.rule-settings-list')?.scrollIntoView({block:'center'});return true}");if(name.startsWith('reports-budget-'))await c.call("function(){document.querySelector('#report-budgets')?.scrollIntoView({block:'start'});window.scrollBy(0,-84);return true}");if(name.startsWith('savings-target-'))await c.call("function(){const node=[...document.querySelectorAll('[data-savings-target-editor]')].find(item=>item.getClientRects().length>0);node?.scrollIntoView({block:'center'});return true}");await sleep(120);const shot=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(shot.data,'base64'))};
   const clickText=async(selector,text)=>{const ok=await c.call("function(selector,text){const node=[...document.querySelectorAll(selector)].find(item=>(item.textContent||'').trim().includes(text)&&item.getClientRects().length>0);node?.click();return Boolean(node)}",[selector,text]);assert(ok,`missing clickable ${text}`);await sleep(100)};
-  const clickAria=async label=>{const ok=await c.call("function(label){const node=document.querySelector(`button[aria-label=\"${CSS.escape(label)}\"]`);node?.click();return Boolean(node)}",[label]);assert(ok,`missing aria control ${label}`);await sleep(100)};
-  const setLabelInput=async(label,value)=>{const ok=await c.call(`function(label,value){const row=[...document.querySelectorAll('label')].find(node=>(node.querySelector(':scope > span')?.textContent||'').trim().includes(label));const input=row?.querySelector('input');if(!input)return false;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(input,value);input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));return true}`,[label,value]);assert(ok,`missing input ${label}`);await sleep(80)};
-  const ownedValue=label=>c.call("function(label){const row=[...document.querySelectorAll('label')].find(node=>(node.querySelector(':scope > span')?.textContent||'').trim().includes(label));return row?.querySelector('input[role=\"combobox\"]')?.value||''}",[label]);
+  const clickAria=async label=>{const ok=await c.call("function(label){const node=[...document.querySelectorAll(`button[aria-label=\"${CSS.escape(label)}\"]`)].find(item=>item.getClientRects().length>0);node?.click();return Boolean(node)}",[label]);assert(ok,`missing aria control ${label}`);await sleep(100)};
+  const setLabelInput=async(label,value)=>{const ok=await c.call(`function(label,value){const row=[...document.querySelectorAll('label')].find(node=>(node.querySelector(':scope > span')?.textContent||'').trim().includes(label)&&node.getClientRects().length>0);const input=row?.querySelector('input');if(!input)return false;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(input,value);input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));return true}`,[label,value]);assert(ok,`missing input ${label}`);await sleep(80)};
+  const ownedValue=label=>c.call("function(label){const row=[...document.querySelectorAll('label')].find(node=>(node.querySelector(':scope > span')?.textContent||'').trim().includes(label)&&node.getClientRects().length>0);return row?.querySelector('input[role=\"combobox\"]')?.value||''}",[label]);
+  const selectBudgetScope=async(label)=>{const opened=await c.call("function(){const row=[...document.querySelectorAll('[data-budget-management] label')].find(node=>(node.querySelector(':scope > span')?.textContent||'').trim()==='Τύπος ορίου'&&node.getClientRects().length>0);const input=row?.querySelector('[role=\"combobox\"]');if(!input)return false;input.click();return true}");assert(opened,'budget scope selector opens');await waitFor("function(){return Boolean(document.querySelector('.owned-select-popover [role=\"listbox\"]'))}",'budget scope options');const selected=await c.call("function(label){const option=[...document.querySelectorAll('.owned-select-popover [role=\"option\"]')].find(node=>(node.textContent||'').trim()===label);if(!option)return false;option.click();return true}",[label]);assert(selected,`budget scope ${label} can be selected`);await sleep(100)};
   const noOverflow=async label=>{const value=await c.call("function(){return Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}");assert(value<=1,`${label} horizontal overflow ${value}px`)};
   const touchTargets=async label=>{const offenders=await c.call("function(){return [...document.querySelectorAll('#main-workspace button,#main-workspace summary,.mobile-nav button,.topbar button')].filter(el=>{const r=el.getBoundingClientRect();if(!r.width||!r.height||getComputedStyle(el).visibility==='hidden'||el.disabled)return false;return r.width<40||r.height<40}).map(el=>({name:el.getAttribute('aria-label')||(el.textContent||'').trim().slice(0,45),w:Math.round(el.getBoundingClientRect().width),h:Math.round(el.getBoundingClientRect().height)}))}");assert(offenders.length===0,`${label} touch targets below 40px: ${JSON.stringify(offenders.slice(0,8))}`)};
 
@@ -46,10 +47,12 @@ try{
   assert(await c.call("function(){return document.querySelector('[data-budget-panel]')?.textContent.includes('Σταθερά έξοδα')&&document.querySelector('[data-budget-panel]')?.textContent.includes('Υπέρβαση')}"),'dashboard shows exceeded category budget');
   await clickText('[data-budget-panel] button','Αναλυτική εικόνα budgets');
   await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Αναφορές')}",'reports navigation');
-  assert(await c.call("function(){const panel=document.querySelector('[data-budget-panel]');return Boolean(panel&&panel.querySelector('[role=progressbar]')&&panel.textContent.includes('Σταθερά έξοδα'))}"),'reports detailed budget progress');
+  assert(await c.call("function(){const panel=document.querySelector('[data-budget-management]');return Boolean(panel&&panel.querySelector('[role=progressbar]')&&panel.textContent.includes('Σταθερά έξοδα'))}"),'reports budget management shows current budget');
+  assert(await c.call("function(){return !document.querySelector('[data-budget-management] input[type=\"month\"]')}") ,'Reports period controls the budget month without duplicate month selector');
 
   console.log('Budget/Rules QA: dedicated Rules tab is human-facing');
   await navigate('settings');
+  assert(await c.call("function(){const labels=[...document.querySelectorAll('.settings-tablist button')].map(node=>(node.textContent||'').trim());return !labels.includes('Προϋπολογισμοί & Στόχοι')&&!document.querySelector('.settings-legacy-goals')}") ,'Settings no longer contains budget/goal management');
   await clickText('.settings-tablist button','Κανόνες');
   await waitFor("function(){return Boolean(document.querySelector('.settings-rules-only [data-advanced-automations]'))}",'dedicated rules panel');
   assert(await c.call("function(){const details=document.querySelector('.settings-rules-only [data-advanced-automations]');if(!details)return false;const rect=details.getBoundingClientRect();return rect.width>0&&rect.height>0}"),'dedicated rules panel is visible');
@@ -85,23 +88,56 @@ try{
   await clickAria('Διαγραφή αυτοματισμού QA Market first');
   await waitFor("function(){return !(document.querySelector('.rule-settings-list')?.textContent||'').includes('QA Market first')}",'automation deletion');
 
-  console.log('Budget/Rules QA: budgets remain independently editable in their dedicated tab');
-  await clickText('.settings-tablist button','Προϋπολογισμοί & Στόχοι');
-  await waitFor("function(){return Boolean(document.querySelector('.settings-budgets-only .budget-settings-panel'))}",'budgets tab');
+  console.log('Budget/Rules QA: budgets are managed in Reports');
+  await navigate('reports');
+  await waitFor("function(){return Boolean(document.querySelector('[data-budget-management]'))}",'reports budget management');
+  const reportText=await c.call("function(){return document.querySelector('#main-workspace')?.textContent||''}");assert(!reportText.includes('Γενικό budget')&&!reportText.includes('Ορίζεται από τις Ρυθμίσεις'),'Reports no longer exposes the legacy global budget UI');
+  await screenshot('reports-budget-category-desktop');
   await setLabelInput('Όριο €','75');
-  await clickText('.budget-settings-panel button','Αποθήκευση budget');
-  await waitFor("function(){return (document.querySelector('.budget-settings-list')?.textContent||'').includes('75')}",'budget update');
+  await clickText('[data-budget-management] button','Αποθήκευση προϋπολογισμού');
+  await waitFor("function(){return (document.querySelector('.budget-settings-list')?.textContent||'').includes('75')}",'budget update in Reports');
   assert(!(await c.call("function(){return document.querySelector('.top-actions button[aria-label=\"Αναίρεση τελευταίας αλλαγής\"]')?.disabled??true}")),'budget update participates in undo');
   await clickAria('Αναίρεση τελευταίας αλλαγής');
+  await selectBudgetScope('Συνολικό όριο');
+  await waitFor("function(){const root=document.querySelector('[data-budget-management] .budget-editor-grid');const labels=[...(root?.querySelectorAll('label>span')||[])].map(node=>(node.textContent||'').trim());return !labels.includes('Κατηγορία')}",'overall budget state');
+  await screenshot('reports-budget-overall-desktop');
+  await selectBudgetScope('Κατηγορία');
+  await waitFor("function(){return [...document.querySelectorAll('[data-budget-management] .budget-editor-grid label>span')].some(node=>(node.textContent||'').trim()==='Κατηγορία')}",'category budget restored');
 
-  console.log('Budget/Rules QA: mobile dedicated Rules accessibility and containment');
+  console.log('Budget/Rules QA: savings target is edited on Savings');
+  await navigate('savings');
+  await clickAria('Αλλαγή στόχου αποταμίευσης');
+  await waitFor("function(){return [...document.querySelectorAll('[data-savings-target-editor]')].some(node=>node.getClientRects().length>0)}",'savings target editor');
+  await screenshot('savings-target-editor-desktop');
+  await setLabelInput('Στόχος αποταμίευσης %','25');
+  await clickText('[data-savings-target-editor] button','Αποθήκευση στόχου');
+  await waitFor("function(){return (document.querySelector('#main-workspace')?.textContent||'').includes('Στόχος 25%')}",'savings target update');
+  assert(!(await c.call("function(){return document.querySelector('.top-actions button[aria-label=\"Αναίρεση τελευταίας αλλαγής\"]')?.disabled??true}")),'savings target update participates in undo');
+  await screenshot('savings-target-updated-desktop');
+
+  console.log('Budget/Rules QA: mobile relocated controls remain accessible and contained');
   await navigate('settings','budget-rules',375,812);
   await clickText('.settings-tablist button','Κανόνες');
   await noOverflow('rules mobile settings');await touchTargets('rules mobile settings');
   assert(await c.call("function(){const grid=document.querySelector('.rule-editor-grid');return Boolean(grid&&grid.getBoundingClientRect().width<=innerWidth)}"),'automation builder contained on mobile');
   await screenshot('advanced-automations-mobile');
+
+  await navigate('reports','budget-rules',375,812);
+  await waitFor("function(){return Boolean(document.querySelector('[data-budget-management]'))}",'mobile reports budget management');
+  await noOverflow('mobile reports budget management');await touchTargets('mobile reports budget management');
+  await screenshot('reports-budget-category-mobile');
+  await selectBudgetScope('Συνολικό όριο');
+  await waitFor("function(){const root=document.querySelector('[data-budget-management] .budget-editor-grid');const labels=[...(root?.querySelectorAll('label>span')||[])].map(node=>(node.textContent||'').trim());return !labels.includes('Κατηγορία')}",'mobile overall budget state');
+  await screenshot('reports-budget-overall-mobile');
+
+  await navigate('savings','budget-rules',375,812);
+  await clickAria('Αλλαγή στόχου αποταμίευσης');
+  await waitFor("function(){return [...document.querySelectorAll('[data-savings-target-editor]')].some(node=>node.getClientRects().length>0)}",'mobile savings target editor');
+  await noOverflow('mobile savings target editor');await touchTargets('mobile savings target editor');
+  await screenshot('savings-target-editor-mobile');
+
   await navigate('reports','empty',320,700);
-  assert(await c.call("function(){return (document.querySelector('[data-budget-panel]')?.textContent||'').includes('Δεν υπάρχουν budgets')}"),'reports no-budget state');
+  assert(await c.call("function(){return (document.querySelector('[data-budget-management]')?.textContent||'').includes('Δεν υπάρχουν προϋπολογισμοί')}"),'reports no-budget state');
   await noOverflow('budget/rules narrow reports');
   assert(runtimeErrors.length===0,`runtime exceptions: ${runtimeErrors.join(' | ')}`);
   assert(failedRequests.length===0,`network loading failures: ${failedRequests.join(' | ')}`);

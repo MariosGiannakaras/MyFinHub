@@ -2,14 +2,15 @@ import { Bar, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, 
 import { CircleCheck, CreditCard, Eye, EyeOff, HandCoins, Landmark, ListChecks, PiggyBank, TriangleAlert, WalletCards } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { AnimatedAmount } from '../components/AnimatedAmount';
-import { BudgetProgressPanel } from '../components/BudgetProgressPanel';
+import { BudgetRuleSettings } from '../components/BudgetRuleSettings';
 import { FinanceIcon } from '../components/FinanceIcon';
+import { budgetProgress } from '../lib/budgets';
 import { allAccounts } from '../lib/domain';
 import { money } from '../lib/format';
 import { categoryMomentum, operationalReportSnapshot, primaryAccountSeries, reportExpenseCounterparties, reportFlowSeries, reportInsightModel, reportLoanBurden } from '../lib/reports';
 import { SAVING_SOURCE_LABELS } from '../lib/savings';
 import { accountDisplayName } from '../lib/ui';
-import type { FinanceData } from '../types';
+import type { FinanceData, MonthlyBudget, TransactionRule } from '../types';
 import './ReportsPage.css';
 
 const change=(current:number,previous:number)=>previous===0?(current===0?0:null):((current-previous)/Math.abs(previous))*100;
@@ -20,7 +21,7 @@ const comparisonTone=(label:string,value:number|null)=>value===null?'neutral':((
 const CATEGORY_COLORS=['#2f6fed','#ff5068','#7a5af8','#ffb648','#27bfa5','#f59e0b','#8b95ad'];
 const ACCOUNT_COLORS=['#2f6fed','#14a77f','#7a5af8','#f59e0b'];
 
-export function ReportsPage({data,month}:{data:FinanceData;month:string}){
+export function ReportsPage({data,month,onUpsertBudget,onDeleteBudget,onUpsertRule,onDeleteRule}:{data:FinanceData;month:string;onUpsertBudget:(budget:MonthlyBudget)=>void;onDeleteBudget:(id:string)=>void;onUpsertRule:(rule:TransactionRule)=>void;onDeleteRule:(id:string)=>void}){
  const snapshot=operationalReportSnapshot(data,month);
  const insights=reportInsightModel(data,month);
  const series=reportFlowSeries(data,month,6);
@@ -30,8 +31,9 @@ export function ReportsPage({data,month}:{data:FinanceData;month:string}){
  const accountIds=allAccounts(data).filter(account=>account.kind!=='credit').slice(0,4).map(account=>account.id);
  const accountSeries=primaryAccountSeries(data,month,accountIds);
  const [accountsVisible,setAccountsVisible]=useState(false);
- const budget=snapshot.budget;
- const budgetValue=budget>0?snapshot.budgetRemaining:0;
+ const budgetRows=budgetProgress(data,month);
+ const exceededBudgets=budgetRows.filter(row=>row.status==='exceeded').length;
+ const nearBudgets=budgetRows.filter(row=>row.status==='near').length;
  const netFlow=snapshot.flow.income-snapshot.flow.expense;
  const previousNetFlow=snapshot.previous.income-snapshot.previous.expense;
  const creditPercent=snapshot.creditLimit>0?snapshot.creditUsage:null;
@@ -71,6 +73,7 @@ export function ReportsPage({data,month}:{data:FinanceData;month:string}){
 
   <nav className="report-section-nav" aria-label="Ενότητες αναφορών">
    <a href="#report-overview">Επισκόπηση</a>
+   <a href="#report-budgets">Προϋπολογισμοί</a>
    <a href="#report-flow">Ροή</a>
    <a href="#report-obligations">Υποχρεώσεις</a>
    <a href="#report-expenses">Έξοδα</a>
@@ -86,13 +89,15 @@ export function ReportsPage({data,month}:{data:FinanceData;month:string}){
   </section>
 
   <section className="report-kpis useful-report-kpis report-kpis-v2" aria-label="Δευτερεύοντες δείκτες">
-   <article className="neo-raised"><span>Γενικό budget</span><b>{budget>0?<AnimatedAmount value={budget}/>:<>Δεν έχει οριστεί</>}</b><small>{budget>0?(budgetValue>=0?`${money.format(budgetValue)} διαθέσιμα`:`${money.format(Math.abs(budgetValue))} υπέρβαση`):'Ορίζεται από τις Ρυθμίσεις'}</small></article>
+   <article className="neo-raised"><span>Προϋπολογισμοί</span><b>{budgetRows.length}</b><small>{!budgetRows.length?'Δεν έχεις ορίσει όρια για αυτή την περίοδο':exceededBudgets?`${exceededBudgets} πάνω από το όριο`:nearBudgets?`${nearBudgets} πλησιάζουν το όριο`:'Όλα τα ενεργά όρια είναι εντός στόχου'}</small></article>
    <article className="neo-raised"><span>Προς είσπραξη</span><b><AnimatedAmount value={snapshot.receivables}/></b><small>Καταγεγραμμένες απαιτήσεις</small></article>
    <article className="neo-raised"><span>Πάγια / μήνα</span><b><AnimatedAmount value={snapshot.recurring}/></b><small>{insights.recurringBurden===null?'Χωρίς βάση εσόδων':`${percent(insights.recurringBurden)} των εσόδων`}</small></article>
    <article className="neo-raised"><span>Πιστωτικές · οφειλή</span><b><AnimatedAmount value={snapshot.creditDebt}/></b><small>{creditPercent===null?'Χωρίς συνολικό όριο':`${Math.round(creditPercent*100)}% του συνολικού ορίου`}</small></article>
   </section>
 
-  <BudgetProgressPanel data={data} month={month}/>
+  <section id="report-budgets" aria-label="Διαχείριση προϋπολογισμών">
+   <BudgetRuleSettings data={data} asOf={`${month}-01`} budgetMonth={month} onUpsertBudget={onUpsertBudget} onDeleteBudget={onDeleteBudget} onUpsertRule={onUpsertRule} onDeleteRule={onDeleteRule} view="budgets"/>
+  </section>
 
   <section className="report-primary-grid" id="report-flow">
    <article className="panel neo-raised report-flow-panel"><div className="panel-head"><div><span>6μηνη οικονομική ροή</span><small>Έσοδα, έξοδα και αποταμίευση των τελευταίων 6 μηνών. Το γράφημα δείχνει κατεύθυνση και μέγεθος, όχι αιτιότητα.</small></div><div className="report-flow-legend" aria-hidden="true"><span><i className="income"/>Έσοδα</span><span><i className="expense"/>Έξοδα</span><span><i className="saving"/>Αποταμίευση</span></div></div><div className="report-chart-frame" aria-hidden="true"><ResponsiveContainer width="100%" height={340}><ComposedChart data={series} margin={{left:4,right:12,top:8,bottom:0}}><CartesianGrid stroke="#dbe4f0" strokeDasharray="3 3" vertical={false}/><XAxis dataKey="label" tick={{fontSize:11,fill:'#52627d'}}/><YAxis tick={{fontSize:10,fill:'#52627d'}}/><Tooltip formatter={(v)=>money.format(Number(v))}/><Bar dataKey="income" name="Έσοδα" fill="#20b892" radius={[6,6,0,0]}/><Bar dataKey="expense" name="Έξοδα" fill="#ff5068" radius={[6,6,0,0]}/><Line type="monotone" dataKey="saving" name="Αποταμίευση" stroke="#2f6fed" strokeWidth={3} dot={{r:3.5}}/></ComposedChart></ResponsiveContainer></div><details className="chart-alt"><summary>Ποσά 6 μηνών σε κείμενο</summary><ul className="chart-alt-list report-flow-alt">{series.map(row=><li key={row.month}><span>{row.label}</span><b>Έσοδα {money.format(row.income)} · Έξοδα {money.format(row.expense)} · Αποταμίευση {money.format(row.saving)}</b></li>)}</ul></details></article>

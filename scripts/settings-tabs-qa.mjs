@@ -14,7 +14,6 @@ const tabs=[
   {id:'general',label:'Γενικά',selector:'.settings-general-grid'},
   {id:'profile',label:'Χρήστης & Πρόσβαση',selector:'.account-security-settings'},
   {id:'accounts',label:'Λογαριασμοί',selector:'.settings-accounts-tab'},
-  {id:'budgets',label:'Προϋπολογισμοί & Στόχοι',selector:'.settings-budgets-only .budget-settings-panel'},
   {id:'categories',label:'Κατηγορίες',selector:'.settings-categories-only .category-icons-workspace'},
   {id:'icons',label:'Εικονίδια',selector:'.settings-icons-only .category-icons-workspace'},
   {id:'rules',label:'Κανόνες',selector:'.settings-rules-only .rule-settings-panel'},
@@ -34,7 +33,7 @@ try{
   const visibleTouchTargets=async label=>{const offenders=await c.call("function(){return [...document.querySelectorAll('#main-workspace button,#main-workspace summary,#main-workspace [role=combobox]')].filter(el=>{const r=el.getBoundingClientRect(),style=getComputedStyle(el);if(!r.width||!r.height||style.visibility==='hidden'||style.display==='none'||el.disabled)return false;return r.width<40||r.height<40}).map(el=>({name:el.getAttribute('aria-label')||(el.textContent||'').trim().slice(0,50),w:Math.round(el.getBoundingClientRect().width),h:Math.round(el.getBoundingClientRect().height)}))}");assert(offenders.length===0,`${label} touch targets below 40px: ${JSON.stringify(offenders.slice(0,8))}`)};
 
   await waitFor("function(){return Boolean(document.querySelector('.settings-tablist'))}",'Settings tabs');
-  const architecture=await c.call("function(){const tabs=[...document.querySelectorAll('.settings-tablist [role=tab]')];return {count:tabs.length,disabled:tabs.filter(tab=>tab.disabled).length,labels:tabs.map(tab=>(tab.textContent||'').trim())}}");assert(architecture.count===tabs.length,`expected ${tabs.length} tabs, got ${architecture.count}`);assert(architecture.disabled===0,'all Settings tabs are enabled');assert(JSON.stringify(architecture.labels)===JSON.stringify(tabs.map(tab=>tab.label)),'Settings tab order changed');
+  const architecture=await c.call("function(){const tabs=[...document.querySelectorAll('.settings-tablist [role=tab]')];return {count:tabs.length,disabled:tabs.filter(tab=>tab.disabled).length,labels:tabs.map(tab=>(tab.textContent||'').trim())}}");assert(architecture.count===tabs.length,`expected ${tabs.length} tabs, got ${architecture.count}`);assert(architecture.disabled===0,'all Settings tabs are enabled');assert(JSON.stringify(architecture.labels)===JSON.stringify(tabs.map(tab=>tab.label)),'Settings tab order changed');assert(!architecture.labels.includes('Προϋπολογισμοί & Στόχοι'),'Budgets & Goals no longer lives in Settings');assert(!(await c.call("function(){return Boolean(document.querySelector('.settings-budgets-only,.settings-legacy-goals'))}")),'legacy budgets/goals UI is absent from Settings');
 
   for(const mode of [{name:'desktop',width:1440,height:1000},{name:'mobile',width:375,height:812}]){
     await viewport(mode.width,mode.height);
@@ -47,7 +46,6 @@ try{
       if(tab.id==='accounts'){
         const accountState=await c.call("function(){const root=document.querySelector('.account-management-settings');const text=root?.textContent||'';const buttons=[...(root?.querySelectorAll('button')||[])];return {text,rows:root?.querySelectorAll('.account-management-row').length||0,create:buttons.some(button=>(button.textContent||'').includes('Νέος λογαριασμός')),refresh:buttons.some(button=>(button.textContent||'').includes('Ανανέωση')||button.getAttribute('title')==='Ανανέωση'),defaults:root?.querySelectorAll('.account-management-default-grid [role=combobox]').length||0,badges:root?.querySelectorAll('.account-management-default-badge').length||0}}");assert(accountState.text.includes('Προεπιλεγμένοι λογαριασμοί'),'Accounts exposes everyday defaults first');assert(accountState.text.includes('Οι λογαριασμοί μου'),'Accounts exposes the compact account list');assert(accountState.text.includes('Καβάτζα')&&accountState.text.includes('εκτός καθημερινής χρήσης'),'Accounts renders the reserve cash account as a simple row');assert(accountState.rows>=5,'Accounts renders representative account rows');assert(accountState.defaults===3,'Accounts keeps three owned default selectors');assert(accountState.badges>=3,'Accounts renders default-role badges on the configured account');assert(accountState.create,'Accounts exposes real create-account action');assert(!accountState.refresh,'Accounts does not expose the rejected refresh action');
       }
-      if(tab.id==='budgets')assert(await c.call("function(){return !document.querySelector('.settings-budgets-only .rule-settings-panel')}") ,'Budgets does not render Rules UI');
       if(tab.id==='categories')assert(await c.call("function(){return ![...document.querySelectorAll('.settings-categories-only .taxonomy-icon-disclosure')].some(node=>node.getClientRects().length)}") ,'Categories keeps icon pickers out of the visible taxonomy workspace');
       if(tab.id==='icons'){
         const iconState=await c.call("function(){const root=document.querySelector('.settings-icons-only');return {picker:[...(root?.querySelectorAll('.taxonomy-icon-disclosure')||[])].some(node=>node.getClientRects().length>0),management:[...(root?.querySelectorAll('.taxonomy-add-row,.taxonomy-row-actions')||[])].some(node=>node.getClientRects().length>0)}}");assert(iconState.picker,'Icons exposes real icon preference controls');assert(!iconState.management,'Icons does not duplicate taxonomy mutation controls');
@@ -57,18 +55,6 @@ try{
       }
       if(mode.name==='mobile')await visibleTouchTargets(`${mode.name} ${tab.label}`);
       await screenshot(`settings-${tab.id}-${mode.name}`);
-      if(tab.id==='budgets'){
-        await screenshot(`settings-budgets-category-${mode.name}`);
-        const overallOpened=await c.call("function(){const label=[...document.querySelectorAll('.settings-budgets-only .budget-editor-grid label')].find(node=>(node.querySelector(':scope > span')?.textContent||'').trim()==='Τύπος ορίου');const input=label?.querySelector('[role=\"combobox\"]');if(!input)return false;input.click();return true}");assert(overallOpened,`Budget scope selector opens on ${mode.name}`);
-        await waitFor("function(){return Boolean(document.querySelector('.owned-select-popover [role=\"listbox\"]'))}",`budget scope options ${mode.name}`);
-        const overallSelected=await c.call("function(){const option=[...document.querySelectorAll('.owned-select-popover [role=\"option\"]')].find(node=>(node.textContent||'').includes('Συνολικό discretionary'));if(!option)return false;option.click();return true}");assert(overallSelected,`Overall budget scope can be selected on ${mode.name}`);
-        await waitFor("function(){const root=document.querySelector('.settings-budgets-only .budget-editor-grid');const labels=[...(root?.querySelectorAll('label>span')||[])].map(node=>(node.textContent||'').trim());const scope=[...(root?.querySelectorAll('[role=\"combobox\"]')||[])][0];return !labels.includes('Κατηγορία')&&scope?.value==='Συνολικό discretionary'}",`overall budget state ${mode.name}`);
-        await screenshot(`settings-budgets-overall-${mode.name}`);
-        const categoryOpened=await c.call("function(){const label=[...document.querySelectorAll('.settings-budgets-only .budget-editor-grid label')].find(node=>(node.querySelector(':scope > span')?.textContent||'').trim()==='Τύπος ορίου');const input=label?.querySelector('[role=\"combobox\"]');if(!input)return false;input.click();return true}");assert(categoryOpened,`Budget scope selector reopens on ${mode.name}`);
-        await waitFor("function(){return Boolean(document.querySelector('.owned-select-popover [role=\"listbox\"]'))}",`budget category scope options ${mode.name}`);
-        const categorySelected=await c.call("function(){const option=[...document.querySelectorAll('.owned-select-popover [role=\"option\"]')].find(node=>(node.textContent||'').trim()==='Κατηγορία');if(!option)return false;option.click();return true}");assert(categorySelected,`Category budget scope can be restored on ${mode.name}`);
-        await waitFor("function(){const root=document.querySelector('.settings-budgets-only .budget-editor-grid');const labels=[...(root?.querySelectorAll('label>span')||[])].map(node=>(node.textContent||'').trim());return labels.includes('Κατηγορία')}",`category budget state restored ${mode.name}`);
-      }
       if(mode.name==='desktop'&&tab.id==='profile')await fullScreenshot('settings-profile-desktop-full');
       if(mode.name==='desktop'&&tab.id==='accounts'){
         await fullScreenshot('settings-accounts-desktop-full');

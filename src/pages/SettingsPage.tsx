@@ -15,7 +15,7 @@ import { userErrorMessage } from '../lib/userMessage';
 import type { FinanceData, FinanceSettings, MonthlyBudget, TransactionRule } from '../types';
 import './SettingsPage.css';
 
-type SettingsTab = 'general' | 'profile' | 'accounts' | 'budgets' | 'categories' | 'icons' | 'rules' | 'data';
+type SettingsTab = 'general' | 'profile' | 'accounts' | 'categories' | 'icons' | 'rules' | 'data';
 
 type SettingsTabDefinition = {
   id: SettingsTab;
@@ -26,7 +26,6 @@ const SETTINGS_TABS: SettingsTabDefinition[] = [
   { id: 'general', label: 'Γενικά' },
   { id: 'profile', label: 'Χρήστης & Πρόσβαση' },
   { id: 'accounts', label: 'Λογαριασμοί' },
-  { id: 'budgets', label: 'Προϋπολογισμοί & Στόχοι' },
   { id: 'categories', label: 'Κατηγορίες' },
   { id: 'icons', label: 'Εικονίδια' },
   { id: 'rules', label: 'Κανόνες' },
@@ -103,18 +102,12 @@ export function SettingsPage({
   onDeleteRule: (id: string) => void;
 }) {
   const fileRef = useRef<HTMLInputElement | null>(null);
-  const budgetRef = useRef<HTMLInputElement | null>(null);
-  const targetRef = useRef<HTMLInputElement | null>(null);
-  const creditRef = useRef<HTMLInputElement | null>(null);
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [pendingImportFile, setPendingImportFile] = useState<File | null>(null);
   const [draft, setDraft] = useState<FinanceSettings>(() => cloneSettings(data.state.settings));
   const draftRef = useRef(draft);
-  const [budgetText, setBudgetText] = useState(String(data.state.settings.monthlyBudget ?? 0));
-  const [targetText, setTargetText] = useState(String(Math.round((data.state.settings.savingsTargetRate ?? 0) * 100)));
-  const [creditText, setCreditText] = useState(String(data.state.settings.creditLimit ?? 0));
 
   useEffect(() => {
     draftRef.current = draft;
@@ -124,9 +117,6 @@ export function SettingsPage({
     const next = cloneSettings(data.state.settings);
     draftRef.current = next;
     setDraft(next);
-    if (document.activeElement !== budgetRef.current) setBudgetText(String(next.monthlyBudget ?? 0));
-    if (document.activeElement !== targetRef.current) setTargetText(String(Math.round((next.savingsTargetRate ?? 0) * 100)));
-    if (document.activeElement !== creditRef.current) setCreditText(String(next.creditLimit ?? 0));
   }, [data.state.settings]);
 
   const commit = (next: FinanceSettings, feedback = 'Οι ρυθμίσεις αποθηκεύονται αυτόματα.') => {
@@ -148,41 +138,6 @@ export function SettingsPage({
       operation.type === 'retire-category' || operation.type === 'retire-subcategory'
         ? 'Η απόσυρση ολοκληρώθηκε. Η ιστορική ταυτότητα και οι παλιές οικονομικές αναφορές παραμένουν ανέπαφες.'
         : 'Η ταξινόμηση ενημερώθηκε μαζί με τις ενεργές και μελλοντικές αναφορές της.',
-    );
-  };
-
-  const commitNumber = (kind: 'budget' | 'target' | 'credit', raw: string) => {
-    const value = Number(raw.replace(',', '.'));
-    if (!Number.isFinite(value)) return false;
-    if (kind === 'budget') {
-      if (value < 0) return false;
-      change({ monthlyBudget: value });
-      return true;
-    }
-    if (kind === 'target') {
-      if (value < 0 || value > 100) return false;
-      change({ savingsTargetRate: value / 100 });
-      return true;
-    }
-    if (value < 0) return false;
-    change({ creditLimit: value });
-    return true;
-  };
-
-  const resetNumber = (kind: 'budget' | 'target' | 'credit') => {
-    if (kind === 'budget') setBudgetText(String(draftRef.current.monthlyBudget ?? 0));
-    else if (kind === 'target') setTargetText(String(Math.round((draftRef.current.savingsTargetRate ?? 0) * 100)));
-    else setCreditText(String(draftRef.current.creditLimit ?? 0));
-  };
-
-  const rejectNumber = (kind: 'budget' | 'target' | 'credit') => {
-    resetNumber(kind);
-    setMessage(
-      kind === 'target'
-        ? 'Έλεγξε τον στόχο αποταμίευσης — βάλε ποσοστό από 0 έως 100.'
-        : kind === 'budget'
-          ? 'Έλεγξε το μηνιαίο budget — βάλε αριθμό ίσο ή μεγαλύτερο από μηδέν.'
-          : 'Έλεγξε το πιστωτικό όριο — βάλε αριθμό ίσο ή μεγαλύτερο από μηδέν.',
     );
   };
 
@@ -270,34 +225,6 @@ export function SettingsPage({
         {activeTab === 'profile' ? <AccountSecuritySettings currentEmail={currentEmail} /> : null}
 
         {activeTab === 'accounts' ? <AccountManagementSettings data={data} settings={draft} onChange={(next) => commit(next, '')} /> : null}
-
-        {activeTab === 'budgets' ? (
-          <div className="settings-tab-stack settings-budgets-only">
-            <BudgetRuleSettings data={data} asOf={asOf} onUpsertBudget={onUpsertBudget} onDeleteBudget={onDeleteBudget} onUpsertRule={onUpsertRule} onDeleteRule={onDeleteRule} view="budgets" />
-            <section className="panel neo-raised settings-legacy-goals">
-              <div className="panel-head">
-                <div>
-                  <span>Βασικοί στόχοι & όρια</span>
-                  <small>Οι υπάρχουσες τιμές παραμένουν στο ίδιο settings model και αποθηκεύονται με την ίδια συμπεριφορά.</small>
-                </div>
-              </div>
-              <div className="settings-form">
-                <label>
-                  <span>Γενικό μηνιαίο budget</span>
-                  <input ref={budgetRef} inputMode="decimal" value={budgetText} onChange={(event) => { setBudgetText(event.target.value); void commitNumber('budget', event.target.value); }} onBlur={() => { if (!commitNumber('budget', budgetText)) rejectNumber('budget'); }} />
-                </label>
-                <label>
-                  <span>Στόχος αποταμίευσης %</span>
-                  <input ref={targetRef} inputMode="decimal" value={targetText} onChange={(event) => { setTargetText(event.target.value); void commitNumber('target', event.target.value); }} onBlur={() => { if (!commitNumber('target', targetText)) rejectNumber('target'); }} />
-                </label>
-                <label>
-                  <span>Πιστωτικό όριο</span>
-                  <input ref={creditRef} inputMode="decimal" value={creditText} onChange={(event) => { setCreditText(event.target.value); void commitNumber('credit', event.target.value); }} onBlur={() => { if (!commitNumber('credit', creditText)) rejectNumber('credit'); }} />
-                </label>
-              </div>
-            </section>
-          </div>
-        ) : null}
 
         {activeTab === 'categories' ? (
           <div className="settings-categories-only">

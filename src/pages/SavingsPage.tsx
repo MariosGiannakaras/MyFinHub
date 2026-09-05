@@ -1,5 +1,5 @@
-import { ArrowRight, BanknoteArrowDown, PiggyBank, Repeat2, Sparkles, Wallet, X } from 'lucide-react';
-import { useState, type CSSProperties } from 'react';
+import { ArrowRight, BanknoteArrowDown, Pencil, PiggyBank, Repeat2, Sparkles, Wallet, X } from 'lucide-react';
+import { useEffect, useState, type CSSProperties } from 'react';
 import { AnimatedAmount } from '../components/AnimatedAmount';
 import { AppDateInput } from '../components/AppDateInput';
 import { AppSelectInput } from '../components/AppSelectInput';
@@ -24,7 +24,7 @@ const euroCompact=new Intl.NumberFormat('el-GR',{style:'currency',currency:'EUR'
 
 type SavingsQuickContext=Omit<Extract<QuickActionContext,{mode:'savings'}>,'token'>;
 
-export function SavingsPage({data,month,asOf,onCreate,onQuickAdd}:{data:FinanceData;month:string;asOf:string;onCreate:(event:FinanceEvent)=>void;onQuickAdd?:(context:SavingsQuickContext)=>void}){
+export function SavingsPage({data,month,asOf,onCreate,onQuickAdd,onSavingsTargetChange}:{data:FinanceData;month:string;asOf:string;onCreate:(event:FinanceEvent)=>void;onQuickAdd?:(context:SavingsQuickContext)=>void;onSavingsTargetChange:(rate:number)=>void}){
   const balances=accountBalances(data,asOf);
   const flow=operationalMonthlyFlow(data,month);
   const breakdown=savingsBreakdown(data,month);
@@ -65,7 +65,25 @@ export function SavingsPage({data,month,asOf,onCreate,onQuickAdd}:{data:FinanceD
   const [to,setTo]=useState(defaultTo);
   const [note,setNote]=useState('');
   const [error,setError]=useState('');
+  const [targetEditing,setTargetEditing]=useState(false);
+  const [targetText,setTargetText]=useState(String(Math.round(target*100)));
+  const [targetError,setTargetError]=useState('');
   const modalRef=useModalFocus<HTMLElement>(open,'[data-autofocus="true"]',()=>setOpen(false));
+
+  useEffect(()=>{if(!targetEditing)setTargetText(String(Math.round(target*100)))},[target,targetEditing]);
+
+  const startTargetEdit=()=>{setTargetText(String(Math.round(target*100)));setTargetError('');setTargetEditing(true)};
+  const cancelTargetEdit=()=>{setTargetText(String(Math.round(target*100)));setTargetError('');setTargetEditing(false)};
+  const saveTarget=()=>{
+    const numeric=Number(targetText.replace(',','.'));
+    if(!Number.isFinite(numeric)||numeric<0||numeric>100){setTargetError('Βάλε ποσοστό από 0 έως 100.');return}
+    onSavingsTargetChange(numeric/100);setTargetError('');setTargetEditing(false);
+  };
+  const renderTargetEditor=(surface:'desktop'|'mobile')=>targetEditing?<div className="settings-form savings-target-editor" data-savings-target-editor={surface}>
+    <label><span>Στόχος αποταμίευσης %</span><input inputMode="decimal" value={targetText} onChange={event=>setTargetText(event.target.value)} aria-invalid={Boolean(targetError)} /></label>
+    {targetError?<FormError id={`savings-target-error-${surface}`}>{targetError}</FormError>:null}
+    <div className="editor-actions"><button type="button" className="secondary" onClick={cancelTargetEdit}>Ακύρωση</button><button type="button" className="save-button" onClick={saveTarget}>Αποθήκευση στόχου</button></div>
+  </div>:null;
 
   const start=(next:SavingSource)=>{
     if(next==='manual_transfer'&&onQuickAdd){
@@ -86,7 +104,7 @@ export function SavingsPage({data,month,asOf,onCreate,onQuickAdd}:{data:FinanceD
     const numeric=Number(amount.replace(',','.'));
     if(!Number.isFinite(numeric)||numeric<=0){setError('Έλεγξε το ποσό αποταμίευσης — πρέπει να είναι μεγαλύτερο από μηδέν.');return}
     if(!sourceAccounts.some(account=>account.id===from)){setError(sourceAccounts.length?'Ο λογαριασμός προέλευσης δεν είναι πλέον διαθέσιμος. Επίλεξε έναν από τους διαθέσιμους λογαριασμούς.':'Δεν υπάρχει διαθέσιμος λογαριασμός προέλευσης για αυτή την αποταμίευση.');return}
-    if(!savingsAccounts.some(account=>account.id===to)){setError(savingsAccounts.length?'Ο λογαριασμός αποταμίευσης δεν είναι πλέον διαθέσιμος. Επίλεξε έναν από τους διαθέσιμους αποταμιευτικούς λογαριασμούς.':'Δεν υπάρχει διαθέσιμος αποταμιευτικός λογαριασμός. Πρόσθεσε ή ενεργοποίησε έναν και δοκίμασε ξανά.');return}
+    if(!savingsAccounts.some(account=>account.id===to)){setError(savingsAccounts.length?'Ο λογαριασμός αποταμίευσης δεν είναι πλέον διαθέσιμος. Επίλεξε έναν από τους διαθέσιμους αποταμιευτικούς λογαριασμούς.':'Δεν υπάρχει διαθέσιμος λογαριασμός αποταμίευσης. Πρόσθεσε ή ενεργοποίησε έναν και δοκίμασε ξανά.');return}
     if(from===to){setError('Επίλεξε διαφορετικό λογαριασμό προέλευσης και αποταμίευσης.');return}
     try{
       const event=createEvent({kind:'saving_cash_offset',date,amount:numeric,note:note.trim()||SAVING_SOURCE_LABELS[source],fromAccountId:from,toAccountId:to});
@@ -113,6 +131,8 @@ export function SavingsPage({data,month,asOf,onCreate,onQuickAdd}:{data:FinanceD
           <strong className="savings-month-amount"><AnimatedAmount value={flow.saving}/></strong>
           <div className="savings-rate"><b>{Math.round(rate*100)}%</b><span>των εσόδων</span></div>
           <div className="savings-rate-target"><span>Στόχος {target>0?`${Math.round(target*100)}%`:'—'}</span><b>{target>0?`${Math.round(progress??0)}%`:'—'}</b></div>
+          <button type="button" className="secondary" aria-label="Αλλαγή στόχου αποταμίευσης" onClick={startTargetEdit}><Pencil size={15}/> Αλλαγή στόχου</button>
+          {renderTargetEditor('desktop')}
           <div className="savings-target-track" role="progressbar" aria-label="Πρόοδος μηνιαίου στόχου αποταμίευσης" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress??0)}><span style={{width:`${Math.min(100,progress??0)}%`}}/></div>
           <div className="saving-route savings-route-target"><span><Wallet/> <small>Κύριος λογαριασμός</small><b>{payrollName}<em><AnimatedAmount value={balances['piraeus-payroll']||0}/></em></b></span><ArrowRight/><span><PiggyBank/> <small>Αποταμίευση</small><b>{savingsName}<em><AnimatedAmount value={balances['piraeus-savings']||0}/></em></b></span></div>
         </article>
@@ -148,7 +168,7 @@ export function SavingsPage({data,month,asOf,onCreate,onQuickAdd}:{data:FinanceD
     </div>
 
     <div className="savings-mobile-legacy">
-      <section className="savings-hero neo-raised"><div className="savings-gauge"><div className="gauge-ring" role="progressbar" aria-label={target>0?'Πρόοδος προς τον στόχο αποταμίευσης':'Δεν έχει οριστεί στόχος αποταμίευσης'} aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress===null?0:Math.round(progress)} style={{'--progress':`${progress??0}%`} as CSSProperties}><div><b>{Math.round(rate*100)}%</b><span>{target>0?'των εσόδων':'χωρίς στόχο'}</span></div></div></div><div><span className="eyebrow">ΑΥΤΟΣ Ο ΜΗΝΑΣ</span><h2><AnimatedAmount value={flow.saving}/></h2><p>{target>0?`Στόχος: ${Math.round(target*100)}% των πραγματικών εσόδων.`:'Δεν έχει οριστεί ποσοστιαίος στόχος αποταμίευσης.'} Οι κινήσεις αποταμίευσης δεν μετρούν ως έξοδο.</p><div className="saving-route"><span><Wallet/> {payrollName} <b><AnimatedAmount value={balances['piraeus-payroll']||0}/></b></span><ArrowRight/><span><PiggyBank/> {savingsName} <b><AnimatedAmount value={balances['piraeus-savings']||0}/></b></span></div></div></section>
+      <section className="savings-hero neo-raised"><div className="savings-gauge"><div className="gauge-ring" role="progressbar" aria-label={target>0?'Πρόοδος προς τον στόχο αποταμίευσης':'Δεν έχει οριστεί στόχος αποταμίευσης'} aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress===null?0:Math.round(progress)} style={{'--progress':`${progress??0}%`} as CSSProperties}><div><b>{Math.round(rate*100)}%</b><span>{target>0?'των εσόδων':'χωρίς στόχο'}</span></div></div></div><div><span className="eyebrow">ΑΥΤΟΣ Ο ΜΗΝΑΣ</span><h2><AnimatedAmount value={flow.saving}/></h2><p>{target>0?`Στόχος: ${Math.round(target*100)}% των πραγματικών εσόδων.`:'Δεν έχει οριστεί ποσοστιαίος στόχος αποταμίευσης.'} Οι κινήσεις αποταμίευσης δεν μετρούν ως έξοδο.</p><button type="button" className="secondary" aria-label="Αλλαγή στόχου αποταμίευσης" onClick={startTargetEdit}><Pencil size={15}/> Αλλαγή στόχου</button>{renderTargetEditor('mobile')}<div className="saving-route"><span><Wallet/> {payrollName} <b><AnimatedAmount value={balances['piraeus-payroll']||0}/></b></span><ArrowRight/><span><PiggyBank/> {savingsName} <b><AnimatedAmount value={balances['piraeus-savings']||0}/></b></span></div></div></section>
 
       <section className="savings-breakdown-grid">
         <article className="panel neo-raised"><div className="panel-head"><div><span>Πηγές αποταμίευσης</span><small>Σύνολο για την επιλεγμένη περίοδο</small></div></div><div className="savings-source-list">{ACTIONS.map(action=><div key={action.source}><span>{action.title}</span><b><AnimatedAmount value={breakdown.bySource[action.source]}/></b></div>)}</div></article>
