@@ -8,6 +8,7 @@ import {
   type CategoryIconPack,
 } from '../lib/categoryIconRegistry';
 import { CategoryIconGlyph } from './CategoryIconGlyph';
+import './CategoryIconPicker.css';
 
 export function CategoryIconPicker({
   value,
