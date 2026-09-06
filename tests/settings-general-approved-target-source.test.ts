@@ -74,7 +74,7 @@ describe('approved Settings source contract',()=>{
     expect(accounts).not.toContain('RefreshCw');
     expect(domain).toContain('customAccounts');
     expect(domain).toContain('accountOverrides');
-    expect(source).toContain('<BudgetRuleSettings');
+    expect(source).toContain('<TransactionRulesWorkspace');
     expect(source).toContain('<CategoryIconsWorkspace');
     expect(source).toContain('<CategoryIconAssignmentWorkspace');
     expect(source).toContain('Εισαγωγή JSON');
@@ -87,15 +87,19 @@ describe('approved Settings source contract',()=>{
     const reports=read('src/pages/ReportsPage.tsx');
     const savings=read('src/pages/SavingsPage.tsx');
     const budgetRules=read('src/components/BudgetRuleSettings.tsx');
+    const rules=read('src/components/TransactionRulesWorkspace.tsx');
     const categories=read('src/components/CategoryIconsWorkspace.tsx');
     const icons=read('src/components/CategoryIconAssignmentWorkspace.tsx');
     expect(source).toContain("activeTab === 'icons'");
     expect(source).toContain("activeTab === 'rules'");
     expect(source).not.toContain("activeTab === 'budgets'");
     expect(source).not.toContain('settings-legacy-goals');
-    expect(source).toContain('view="rules"');
+    expect(source).toContain('<TransactionRulesWorkspace');
+    expect(source).not.toContain('view="rules"');
     expect(source).toContain('view="taxonomy"');
     expect(source).toContain('<CategoryIconAssignmentWorkspace');
+    expect(rules).toContain('normalizeTransactionRule');
+    expect(rules).toContain('transactionRuleMatchingEvents');
     expect(icons).toContain("...categoryTree(settings,'expense')");
     expect(icons).toContain("...categoryTree(settings,'income')");
     expect(icons).not.toContain('segmented-control');
@@ -105,7 +109,6 @@ describe('approved Settings source contract',()=>{
     expect(savings).toContain('onSavingsTargetChange');
     expect(savings).toContain('Αλλαγή στόχου αποταμίευσης');
     expect(budgetRules).toContain("type BudgetRuleSettingsView='all'|'budgets'|'rules'");
-    expect(budgetRules).toContain("open={view==='rules'?true:undefined}");
     expect(categories).toContain("type CategoryWorkspaceView='all'|'taxonomy'|'icons'");
     expect(categories).toContain("const showTaxonomy=view!=='icons'");
     expect(categories).toContain("const showIcons=view!=='taxonomy'");
