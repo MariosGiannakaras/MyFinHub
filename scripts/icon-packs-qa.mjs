@@ -45,8 +45,8 @@ try{
   assert(JSON.stringify(packs.map(item=>item.license))===JSON.stringify(['ISC','MIT','MIT','MIT','MIT']),'pack licenses');
   assert(packs.every(item=>item.preview.length===3&&item.preview.every(pack=>Boolean(pack))),'each pack has three live preview glyphs');
   assert(packs[0].pressed==='true'&&packs.slice(1).every(item=>item.pressed==='false'),'Lucide is the default global pack');
-  assert((await c.call("function(){return document.querySelectorAll('.settings-icons-only .category-taxonomy-card').length}"))>=4,'dense category list is rendered below pack selector');
-  assert((await c.call("function(){return document.querySelectorAll('.settings-icons-only .taxonomy-subcategory-row').length}"))>=4,'dense subcategory rows are rendered');
+  await waitFor("function(){return document.querySelectorAll('.settings-icons-only .category-taxonomy-card').length>=4}",'dense category list below pack selector');
+  await waitFor("function(){return document.querySelectorAll('.settings-icons-only .taxonomy-subcategory-row').length>=4}",'dense subcategory rows');
   await noOverflow('icons desktop');
   await screenshot('icon-packs-desktop');
 
