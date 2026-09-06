@@ -1,4 +1,4 @@
-import { Search, Sparkles, X } from 'lucide-react';
+import { Search, Sparkles } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { categoryIconKeySupportedByPack } from '../lib/categoryIconPackSupport';
 import {
@@ -37,7 +37,7 @@ export function CategoryIconPicker({
   const choosePack=(next:CategoryIconPack)=>{
     if(selectedPack===undefined)setLocalPack(next);
     onPackChange?.(next);
-    if(value)onChange(encodeCategoryIconValue(next,decoded.key));
+    if(value&&categoryIconKeySupportedByPack(next,decoded.key))onChange(encodeCategoryIconValue(next,decoded.key));
   };
   return <div className="category-icon-picker">
     {showPackSwitcher?<div className="category-icon-pack-switcher" role="group" aria-label="Πακέτο εικονιδίων">
@@ -45,7 +45,6 @@ export function CategoryIconPicker({
     </div>:null}
     <div className="category-icon-picker-mode">
       <button type="button" className={!value?'category-icon-option active':'category-icon-option'} aria-pressed={!value} onClick={()=>onChange(null)}><Sparkles size={17} aria-hidden="true"/><span><b>Αυτόματο</b><small>{automaticLabel??inheritedLabel??'Σημασιολογική αντιστοίχιση'}</small></span></button>
-      {inheritedLabel&&value?<button type="button" className="category-icon-option" aria-pressed="false" onClick={()=>onChange(null)}><X size={17} aria-hidden="true"/><span><b>Καθαρισμός override</b><small>{inheritedLabel}</small></span></button>:null}
     </div>
     <label className="category-icon-search"><Search size={16} aria-hidden="true"/><span className="sr-only">Αναζήτηση εικονιδίου</span><input value={query} onChange={event=>setQuery(event.target.value)} placeholder="Αναζήτηση εικονιδίου…"/></label>
     <div className="category-icon-options" role="group" aria-label={`Εικονίδια ${CATEGORY_ICON_PACKS.find(item=>item.id===pack)?.label??pack}`}>
