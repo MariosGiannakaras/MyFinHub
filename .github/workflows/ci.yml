@@ -70,5 +70,6 @@ jobs:
             visual-qa/**/*.png
             visual-qa/**/*.json
             /tmp/myfinhub-settings-tabs-qa/*.png
+            /tmp/myfinhub-settings-rules-modal-qa/*.png
           if-no-files-found: warn
           retention-days: 14
