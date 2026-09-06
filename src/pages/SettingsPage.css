@@ -135,6 +135,7 @@
   .settings-icons-only .category-icons-workspace{padding:12px}
   .settings-icons-only .taxonomy-subcategory-list{grid-template-columns:1fr}
   .settings-icons-only .category-icon-options{grid-template-columns:repeat(2,minmax(0,1fr));max-height:300px}
+  .settings-icons-only .taxonomy-icon-disclosure>summary,.settings-icons-only .category-icon-search,.settings-icons-only .category-icon-option{min-height:44px}
   .category-icon-pack-switcher>button{min-height:44px}
 }
 
