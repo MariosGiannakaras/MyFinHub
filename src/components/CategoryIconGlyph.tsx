@@ -6,6 +6,8 @@ import {
   Sparkles, Split, Stethoscope, UtensilsCrossed, WalletCards, Wifi, Wrench, Zap,
   type LucideIcon,
 } from 'lucide-react';
+import { decodeCategoryIconValue } from '../lib/categoryIconRegistry';
+import { TablerCategoryGlyph } from './TablerCategoryGlyph';
 
 const ICONS:Record<string,LucideIcon>={
   coffee:Coffee,dining:UtensilsCrossed,groceries:ShoppingBasket,bakery:ShoppingBasket,takeaway:UtensilsCrossed,
@@ -23,6 +25,8 @@ const ICONS:Record<string,LucideIcon>={
 };
 
 export function CategoryIconGlyph({iconKey,size=18,label}:{iconKey:string;size?:number;label?:string}){
-  const Icon=ICONS[iconKey]??ReceiptText;
-  return <span className="category-icon-glyph" aria-label={label} aria-hidden={label?undefined:true} data-category-icon={iconKey}><Icon size={size}/></span>;
+  const decoded=decodeCategoryIconValue(iconKey);
+  if(decoded.pack==='tabler')return <span className="category-icon-glyph" aria-label={label} aria-hidden={label?undefined:true} data-category-icon={iconKey} data-icon-pack="tabler"><TablerCategoryGlyph iconKey={decoded.key} size={size}/></span>;
+  const Icon=ICONS[decoded.key]??ReceiptText;
+  return <span className="category-icon-glyph" aria-label={label} aria-hidden={label?undefined:true} data-category-icon={iconKey} data-icon-pack="lucide"><Icon size={size}/></span>;
 }
