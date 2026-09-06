@@ -1,4 +1,11 @@
+export type CategoryIconPack='lucide'|'tabler';
 export type CategoryIconDefinition={key:string;label:string;keywords:readonly string[]};
+export type CategoryIconPackDefinition={id:CategoryIconPack;label:string;license:string;description:string};
+
+export const CATEGORY_ICON_PACKS:readonly CategoryIconPackDefinition[]=[
+  {id:'lucide',label:'Lucide',license:'ISC',description:'Το υπάρχον πακέτο του MyFinHub · καθαρό outline ύφος.'},
+  {id:'tabler',label:'Tabler Icons',license:'MIT',description:'Δωρεάν open-source πακέτο 6.000+ outline εικονιδίων.'},
+] as const;
 
 export const CATEGORY_ICON_REGISTRY=[
   {key:'coffee',label:'Καφές',keywords:['coffee','cafe','espresso','καφες']},
@@ -89,7 +96,16 @@ export type CategoryIconKey=(typeof CATEGORY_ICON_REGISTRY)[number]['key'];
 
 function normalize(value:string){return value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('el-GR').replace(/[^a-z0-9α-ω]+/g,' ').trim()}
 
-export function categoryIconByKey(key:string){return CATEGORY_ICON_REGISTRY.find(item=>item.key===key)??null}
+export function categoryIconByKey(key:string){return CATEGORY_ICON_REGISTRY.find(item=>item.key===decodeCategoryIconValue(key).key)??null}
+
+export function encodeCategoryIconValue(pack:CategoryIconPack,key:string){return pack==='lucide'?key:`${pack}:${key}`}
+
+export function decodeCategoryIconValue(value:string|null|undefined):{pack:CategoryIconPack;key:string}{
+  if(!value)return{pack:'lucide',key:'other'};
+  const match=/^(lucide|tabler):(.+)$/.exec(value);
+  if(match)return{pack:match[1] as CategoryIconPack,key:match[2]};
+  return{pack:'lucide',key:value};
+}
 
 export function searchCategoryIcons(query:string,limit=40){
   const needle=normalize(query);
