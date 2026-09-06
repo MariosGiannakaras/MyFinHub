@@ -1,10 +1,13 @@
-export type CategoryIconPack='lucide'|'tabler';
+export type CategoryIconPack='lucide'|'tabler'|'phosphor'|'heroicons'|'bootstrap';
 export type CategoryIconDefinition={key:string;label:string;keywords:readonly string[]};
 export type CategoryIconPackDefinition={id:CategoryIconPack;label:string;license:string;description:string};
 
 export const CATEGORY_ICON_PACKS:readonly CategoryIconPackDefinition[]=[
   {id:'lucide',label:'Lucide',license:'ISC',description:'Το υπάρχον πακέτο του MyFinHub · καθαρό outline ύφος.'},
-  {id:'tabler',label:'Tabler Icons',license:'MIT',description:'Δωρεάν open-source πακέτο 6.000+ outline εικονιδίων.'},
+  {id:'tabler',label:'Tabler Icons',license:'MIT',description:'6.000+ εικονίδια · 24×24 outline, πολύ κοντά στη γλώσσα του Lucide.'},
+  {id:'phosphor',label:'Phosphor',license:'MIT',description:'Ευέλικτη οικογένεια με πολλαπλά weights και πολύ ευρύ λεξιλόγιο.'},
+  {id:'heroicons',label:'Heroicons',license:'MIT',description:'Δωρεάν εικονίδια από την Tailwind Labs · καθαρό UI-oriented outline.'},
+  {id:'bootstrap',label:'Bootstrap Icons',license:'MIT',description:'2.000+ open-source SVG icons με compact, ευανάγνωστο ύφος.'},
 ] as const;
 
 export const CATEGORY_ICON_REGISTRY=[
@@ -102,7 +105,7 @@ export function encodeCategoryIconValue(pack:CategoryIconPack,key:string){return
 
 export function decodeCategoryIconValue(value:string|null|undefined):{pack:CategoryIconPack;key:string}{
   if(!value)return{pack:'lucide',key:'other'};
-  const match=/^(lucide|tabler):(.+)$/.exec(value);
+  const match=/^(lucide|tabler|phosphor|heroicons|bootstrap):(.+)$/.exec(value);
   if(match)return{pack:match[1] as CategoryIconPack,key:match[2]};
   return{pack:'lucide',key:value};
 }
