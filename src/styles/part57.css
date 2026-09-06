@@ -1,0 +1,55 @@
+/* Shared UI primitive layer. Keep reusable control visuals here, never in page-local selectors. */
+.app-control{
+  box-sizing:border-box;
+  width:100%;
+  min-width:0;
+  min-height:40px;
+  border:1px solid var(--border-subtle);
+  border-radius:11px;
+  background:var(--control-bg);
+  color:var(--ink);
+  font:inherit;
+  font-size:var(--ux-body-size);
+  line-height:1.4;
+  padding:0 10px;
+  transition:border-color .12s ease,box-shadow .12s ease,background-color .12s ease;
+}
+.app-control::placeholder{color:var(--muted-2)}
+.app-control:hover:not(:disabled):not([aria-invalid="true"]){border-color:var(--border-strong)}
+.app-control:focus,.app-control:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{
+  outline:none!important;
+  outline-offset:0!important;
+  border-color:var(--focus-outline)!important;
+  box-shadow:var(--focus)!important;
+}
+.app-control:disabled{opacity:.55;cursor:not-allowed}
+.app-control[aria-invalid="true"]{border-color:var(--error)!important}
+.app-control[aria-invalid="true"]:focus,.app-control[aria-invalid="true"]:focus-visible{box-shadow:0 0 0 3px color-mix(in srgb,var(--error) 20%,transparent)!important}
+.app-textarea{min-height:96px;padding:10px;resize:vertical}
+.owned-select-shell>.app-control,.owned-date-shell>.app-control{padding-right:34px;cursor:pointer}
+.money-input>.app-control{padding-left:30px}
+
+/* One visual hierarchy for category taxonomy everywhere CategorySelectInput is used. */
+.owned-option-list>[role="option"][data-option-level="category"]{
+  margin-top:4px;
+  background:color-mix(in srgb,var(--surface-2) 78%,transparent);
+  color:var(--ink);
+  font-weight:800;
+}
+.owned-option-list>[role="option"][data-option-level="subcategory"]{
+  padding-left:30px;
+  color:var(--text-secondary);
+  font-weight:650;
+}
+.owned-option-list>[role="option"][data-option-level="subcategory"]>span{position:relative}
+.owned-option-list>[role="option"][data-option-level="subcategory"]>span:before{
+  content:'↳';
+  position:absolute;
+  right:calc(100% + 8px);
+  color:var(--muted-2);
+  font-weight:700;
+}
+.owned-option-list>[role="option"][data-option-level="invalid"]{color:var(--error)}
+
+@media(max-width:680px){.app-control{min-height:46px;font-size:16px}}
+@media(prefers-reduced-motion:reduce){.app-control{transition:none}}
