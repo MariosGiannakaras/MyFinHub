@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 2,
+  "layout": "surface-first-latest-only",
+  "appVersion": "v1.3",
+  "suite": "settings-rules-modal",
+  "surface": "settings",
+  "generatedAt": "2026-09-06T23:05:35.780Z",
+  "timeZone": "Europe/Athens",
+  "source": {
+    "sha": "f27b79d30d2f85cab4c0b454d7a7d103306e7391",
+    "shortSha": "f27b79d3",
+    "branch": "feat/346-settings-tabs"
+  },
+  "screenshots": [
+    "visual-qa/settings/v1.3__2026-09-07_020535__qa-settings-rules-modal__settings-rules-corrected-desktop.png",
+    "visual-qa/settings/v1.3__2026-09-07_020535__qa-settings-rules-modal__settings-rules-edit-modal-desktop.png",
+    "visual-qa/settings/v1.3__2026-09-07_020535__qa-settings-rules-modal__settings-rules-editor-category-dropdown-desktop.png",
+    "visual-qa/settings/v1.3__2026-09-07_020535__qa-settings-rules-modal__settings-rules-editor-desktop.png",
+    "visual-qa/settings/v1.3__2026-09-07_020535__qa-settings-rules-modal__settings-rules-editor-mobile.png"
+  ]
+}

@@ -4,16 +4,16 @@
   "appVersion": "v1.3",
   "suite": "icon-packs",
   "surface": "icons",
-  "generatedAt": "2026-09-06T15:17:52.480Z",
+  "generatedAt": "2026-09-06T23:05:35.780Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "d2eda89599fae3d4ce1a3fdc8238a9be359007bb",
-    "shortSha": "d2eda895",
+    "sha": "f27b79d30d2f85cab4c0b454d7a7d103306e7391",
+    "shortSha": "f27b79d3",
     "branch": "feat/346-settings-tabs"
   },
   "screenshots": [
-    "visual-qa/icons/v1.3__2026-09-06_181752__qa-icon-packs__icon-packs-desktop.png",
-    "visual-qa/icons/v1.3__2026-09-06_181752__qa-icon-packs__icon-picker-phosphor-desktop.png",
-    "visual-qa/icons/v1.3__2026-09-06_181752__qa-icon-packs__icon-selected-phosphor-desktop.png"
+    "visual-qa/icons/v1.3__2026-09-07_020535__qa-icon-packs__icon-packs-desktop.png",
+    "visual-qa/icons/v1.3__2026-09-07_020535__qa-icon-packs__icon-picker-phosphor-desktop.png",
+    "visual-qa/icons/v1.3__2026-09-07_020535__qa-icon-packs__icon-selected-phosphor-desktop.png"
   ]
 }
