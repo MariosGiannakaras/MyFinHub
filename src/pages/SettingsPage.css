@@ -53,6 +53,10 @@
 .settings-icons-only .category-icons-workspace>.panel-head{margin:0;padding-bottom:2px}
 .settings-icons-only .category-icons-workspace>.panel-head small{max-width:920px;line-height:1.4}
 .settings-icons-only .category-icons-workspace>.segmented-control{justify-self:start;margin:0}
+.settings-icons-only .category-icon-library{display:grid;gap:7px;padding:9px;border:1px solid var(--line);border-radius:12px;background:rgba(248,250,253,.68)}
+.settings-icons-only .category-icon-library-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;min-width:0}
+.settings-icons-only .category-icon-library-head>b{font-size:var(--ux-small-size)}
+.settings-icons-only .category-icon-library-head>small{color:var(--muted);font-size:var(--ux-tiny-size);text-align:right}
 .settings-icons-only .category-icon-category-list{display:grid;grid-template-columns:1fr;gap:6px}
 .settings-icons-only .category-taxonomy-card{gap:6px;padding:8px 10px;border-radius:11px;background:rgba(255,255,255,.5);box-shadow:none}
 .settings-icons-only .category-taxonomy-head{gap:8px}
@@ -78,9 +82,13 @@
 .settings-icons-only .category-icon-option{min-width:0;min-height:38px;padding:6px 7px;border-radius:8px}
 .settings-icons-only .category-icon-option>span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--ux-tiny-size)}
 .category-icon-pack-switcher{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.category-icon-pack-switcher-global{grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}
 .category-icon-pack-switcher>button{min-height:42px;padding:7px 9px;border:1px solid var(--line);border-radius:9px;background:var(--surface);color:var(--ink-2);text-align:left;cursor:pointer}
-.category-icon-pack-switcher>button>span{display:grid;gap:1px}
-.category-icon-pack-switcher b{font-size:var(--ux-small-size)}
+.category-icon-pack-switcher-global>button{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:7px;min-width:0;padding:7px 8px}
+.category-icon-pack-preview{display:flex!important;align-items:center;gap:2px;color:var(--blue-3)}
+.category-icon-pack-preview .category-icon-glyph{display:grid;place-items:center}
+.category-icon-pack-switcher>button>span:not(.category-icon-pack-preview){display:grid;gap:1px;min-width:0}
+.category-icon-pack-switcher b{font-size:var(--ux-small-size);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .category-icon-pack-switcher small{color:var(--muted);font-size:var(--ux-tiny-size)}
 .category-icon-pack-switcher>button.active{border-color:rgba(47,111,237,.42);background:rgba(47,111,237,.08);color:var(--blue)}
 .category-icon-pack-switcher>button:focus-visible{outline:2px solid var(--blue-3);outline-offset:2px}
@@ -115,6 +123,7 @@
   .settings-general-grid>.keyboard-shortcuts-panel{grid-column:auto}
   .settings-categories-only .taxonomy-category-list{grid-template-columns:1fr}
   .settings-icons-only .category-icon-options{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .category-icon-pack-switcher-global{grid-template-columns:repeat(3,minmax(0,1fr))}
 }
 
 @media(max-width:720px){
@@ -133,9 +142,12 @@
   .settings-categories-only .taxonomy-row-actions button{width:44px;height:44px}
   .settings-categories-only .taxonomy-add-subcategory input,.settings-categories-only .taxonomy-add-subcategory button{min-height:46px}
   .settings-icons-only .category-icons-workspace{padding:12px}
+  .settings-icons-only .category-icon-library-head{display:grid;gap:2px}
+  .settings-icons-only .category-icon-library-head>small{text-align:left}
   .settings-icons-only .taxonomy-subcategory-list{grid-template-columns:1fr}
   .settings-icons-only .category-icon-options{grid-template-columns:repeat(2,minmax(0,1fr));max-height:300px}
   .settings-icons-only .taxonomy-icon-disclosure>summary,.settings-icons-only .category-icon-search,.settings-icons-only .category-icon-option{min-height:44px}
+  .category-icon-pack-switcher-global{grid-template-columns:repeat(2,minmax(0,1fr))}
   .category-icon-pack-switcher>button{min-height:44px}
 }
 
