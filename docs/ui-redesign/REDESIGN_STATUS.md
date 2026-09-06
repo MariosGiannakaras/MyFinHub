@@ -22,7 +22,7 @@ Current full-page baselines are resolved from `visual-qa/manifest.json`. Current
 | 11 | Needs Attention | DESIGN APPROVED | VERIFIED | merged to `develop` via #339 |
 | 12 | Review | NOT STARTED | NOT STARTED | — |
 | 13 | Reports | DESIGN APPROVED | VERIFIED | merged to `develop` via #342 |
-| 14 | Settings | DESIGNING | IMPLEMENTING | General VERIFIED via #344; remaining tabs await separate approval |
+| 14 | Settings | DESIGNING | IMPLEMENTING | Rules correction pass in progress on #347; Data blocked until Rules approval |
 
 ## Verified delivery history
 
@@ -49,6 +49,10 @@ Needs Attention uses the owner-approved 1024×1536 reference tracked by SHA-256 
 Reports uses the owner-approved composite of two 1024×1536 references tracked by SHA-256 `54216800b26bdf506f23750726842886b707979ba19f04753575fa802d6640bf` and `57d82d3e7ff8db22c28121671220b8854c96a4583b0de18a4faac5b3534df6d3`, with duplicate analyses intentionally consolidated into the strongest single section on one vertically scrollable page. Exact product head `a013a3efd19b2d8e742f0d3b6e011de905db9bf4` passed CI #1618, CodeQL #1577, cross-engine smoke #834, performance smoke #849 and Windows Desktop #1221. Fresh final desktop/mobile Approved ↔ Actual inspection passed for the executive KPI hierarchy, six-month flow, insights, combined obligation pressure, visible category allocation/momentum donut with persisted FinanceIcon preferences, top expense counterparties, explicit month comparison, account privacy/history and savings-source analysis while preserving canonical report/accounting semantics and mobile list-first containment. Draft #341 was superseded without code changes because the connected GitHub Draft → Ready mutation failed at the connector schema layer; the exact same validated branch/head was squash-merged to `develop` via #342 as product commit `b36d192`.
 
 Settings → General uses the owner-approved 1505×1045 reference tracked by SHA-256 `68dbdffc15ce65c755fca648b45250c353d2ce2410617ce90008d1e126367718`. Exact product head `ef62e870e7bf20399fe684235c6d06e3a63451da` passed CI #1636, CodeQL #1595, cross-engine smoke #851, performance smoke #866, Windows Desktop #1239, Windows First Run #252 and Windows Clean Launch #253. Fresh final desktop/mobile Approved ↔ Actual inspection passed for the Settings tab shell, non-duplicative Appearance and Application/Updates panels, one canonical shortcut list and truthful runtime-dependent update state. Unsupported profile controls and a fabricated last-check timestamp were not introduced. Evidence was refreshed automatically in `b8094dad4bcd7137a5c20e8376540b77abff80e1`. The overall Settings surface remains in progress: only General is verified, while the remaining tabs require separate design approval and implementation.
+
+## Active Settings correction
+
+Settings → Rules is **DESIGNING / IMPLEMENTING**. The owner explicitly rejected the previous Rules Actual on 2026-09-07. The current correction pass removes the auto-open embedded editor, moves rule editing into the shared modal interaction pattern, keeps canonical transaction-rule semantics intact, and uses the shared `AppSelectInput` primitive without Rules-local dropdown appearance overrides. A fresh rendered Actual and owner approval are still required before Rules can become `VERIFIED` or Data can begin.
 
 ## Protected exclusion
 
