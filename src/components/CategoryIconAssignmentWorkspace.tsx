@@ -75,7 +75,7 @@ export function CategoryIconAssignmentWorkspace({settings,onChange}:{settings:Fi
       <CategoryIconPicker value={compatibleValue(editorValue)} selectedPack={iconPack} showPackSwitcher={false} automaticLabel="Χρήση σημασιολογικής αντιστοίχισης" onChange={updateEditorIcon}/>
     </section>:null}
 
-    <div className="category-icon-unified-list" data-icon-assignment-surface role="list" aria-label="Κατηγορίες και υποκατηγορίες">
+    <div className="category-icon-unified-list taxonomy-icon-disclosure" data-icon-assignment-surface role="list" aria-label="Κατηγορίες και υποκατηγορίες">
       {rows.map(row=>{
         const key=rowKey(row.kind,row.name);
         const explicit=explicitCategoryIcon(settings,row.kind,row.name);
