@@ -4,16 +4,16 @@
   "appVersion": "v1.3",
   "suite": "recurring-cadence",
   "surface": "recurring",
-  "generatedAt": "2026-09-06T13:56:18.096Z",
+  "generatedAt": "2026-09-06T15:17:52.480Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "80e3648b95af0b944dd2c0997bb3d86230e3e43e",
-    "shortSha": "80e3648b",
+    "sha": "d2eda89599fae3d4ce1a3fdc8238a9be359007bb",
+    "shortSha": "d2eda895",
     "branch": "feat/346-settings-tabs"
   },
   "screenshots": [
-    "visual-qa/recurring/v1.3__2026-09-06_165618__qa-recurring-cadence__recurring-cadence-desktop.png",
-    "visual-qa/recurring/v1.3__2026-09-06_165618__qa-recurring-cadence__recurring-cadence-editor-desktop.png",
-    "visual-qa/recurring/v1.3__2026-09-06_165618__qa-recurring-cadence__recurring-cadence-editor-mobile.png"
+    "visual-qa/recurring/v1.3__2026-09-06_181752__qa-recurring-cadence__recurring-cadence-desktop.png",
+    "visual-qa/recurring/v1.3__2026-09-06_181752__qa-recurring-cadence__recurring-cadence-editor-desktop.png",
+    "visual-qa/recurring/v1.3__2026-09-06_181752__qa-recurring-cadence__recurring-cadence-editor-mobile.png"
   ]
 }
