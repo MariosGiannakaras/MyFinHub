@@ -163,7 +163,7 @@ export function TransactionRulesWorkspace({
       <p><ListFilter size={16}/><span>Η σειρά έχει σημασία: χρησιμοποιείται ο πρώτος ενεργός κανόνας που ταιριάζει.</span></p>
     </div>:null}
 
-    <section className="rules-list-section rule-editor-grid" aria-labelledby="rules-order-title">
+    <section className="rules-list-section" aria-labelledby="rules-order-title">
       {rules.length?<header><div><b id="rules-order-title">Σειρά κανόνων</b><small>Μετακίνησέ τους πάνω ή κάτω για να αλλάξεις ποιος ελέγχεται πρώτος.</small></div></header>:null}
       {rules.length?<div className="rule-settings-list" aria-label="Σειρά αυτοματισμών">{rules.map((rule,index)=>{const invalid=invalidReason(rule);const state=invalid?'invalid':rule.enabled?'active':'paused';return <article key={rule.id} className={state==='paused'?'disabled':state} data-rule-invalid={invalid?'true':'false'}>
         <div className="rules-order-controls" aria-label={`Θέση ${index+1}`}><span>{index+1}</span><div><button type="button" className="icon-button" aria-label={`Μετακίνηση αυτοματισμού ${rule.name} προς τα πάνω`} disabled={index===0} onClick={()=>moveRule(index,-1)}><ChevronUp size={15}/></button><button type="button" className="icon-button" aria-label={`Μετακίνηση αυτοματισμού ${rule.name} προς τα κάτω`} disabled={index===rules.length-1} onClick={()=>moveRule(index,1)}><ChevronDown size={15}/></button></div></div>
