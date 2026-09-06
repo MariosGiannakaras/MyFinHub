@@ -18,4 +18,11 @@ describe('category icon picker accessibility contract',()=>{
     expect(source).toContain('aria-pressed={!value}');
     expect(source).toContain('role="status"');
   });
+
+  it('supports a workspace-selected pack without duplicating the pack switcher per row',()=>{
+    expect(source).toContain('selectedPack?:CategoryIconPack');
+    expect(source).toContain('showPackSwitcher?:boolean');
+    expect(source).toContain('const pack=selectedPack??localPack');
+    expect(source).toContain('{showPackSwitcher?<div className="category-icon-pack-switcher"');
+  });
 });
