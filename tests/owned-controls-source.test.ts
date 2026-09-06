@@ -48,7 +48,7 @@ describe('app-owned entry controls',()=>{
     expect(styles).toContain('.owned-popover-backdrop{position:fixed;inset:0');
     expect(styles).toContain('max-height:min(72dvh,620px)');
     expect(styles).toContain('.owned-option-list{overflow:auto');
-    expect(styles).toContain('.owned-input-shell>.owned-input{font-size:16px}');
+    expect(styles).toContain('.owned-input-shell>.owned-input{min-height:44px;border-radius:12px;font-size:16px}');
   });
   it('keeps browser-native select, date and datalist popups out of application pages and components',()=>{
     const sources=[...files('src/pages'),...files('src/components')].map(file=>({file,text:readFileSync(file,'utf8')}));
