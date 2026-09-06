@@ -46,8 +46,6 @@
 .keyboard-shortcut-note{margin:10px 2px 0;color:var(--muted);font-size:var(--ux-tiny-size);line-height:1.5}
 
 .settings-account-defaults,.settings-legacy-goals{padding:18px}
-.settings-rules-only .rule-settings-panel{padding:18px}
-.settings-rules-only .rule-settings-panel>summary{display:none}
 
 .settings-icons-only .category-icons-workspace{display:grid;gap:10px;padding:14px}
 .settings-icons-only .category-icons-workspace>.panel-head{margin:0;padding-bottom:2px}
