@@ -1,9 +1,12 @@
 import { useMemo, useState } from 'react';
 import { ChevronDown, ChevronUp, Gauge, ListFilter, Pencil, Plus, Trash2 } from 'lucide-react';
 import { AppSelectInput } from './AppSelectInput';
+import { AppTextInput } from './AppTextInput';
+import { CategorySelectInput } from './CategorySelectInput';
 import { FormError } from './FormError';
 import { MoneyInput } from './MoneyInput';
 import { budgetProgress, budgetStableId, normalizeBudget } from '../lib/budgets';
+import { categoryTree } from '../lib/categories';
 import { allAccounts } from '../lib/domain';
 import { normalizeTransactionRule, transactionRuleMatchingEvents } from '../lib/transactionRules';
 import { accountDisplayName } from '../lib/ui';
@@ -16,7 +19,8 @@ const scopeLabel=(scope:TransactionRuleScope)=>scope==='manual'?'χειροκί�
 type BudgetRuleSettingsView='all'|'budgets'|'rules';
 
 export function BudgetRuleSettings({data,asOf,budgetMonth,onUpsertBudget,onDeleteBudget,onUpsertRule,onDeleteRule,view='all'}:{data:FinanceData;asOf:string;budgetMonth?:string;onUpsertBudget:(budget:MonthlyBudget)=>void;onDeleteBudget:(id:string)=>void;onUpsertRule:(rule:TransactionRule)=>void;onDeleteRule:(id:string)=>void;view?:BudgetRuleSettingsView}){
-  const expenseFallback=data.state.settings.expenseCategories[0]||'Άλλο';
+  const expenseTree=categoryTree(data.state.settings,'expense');
+  const expenseFallback=expenseTree[0]?.name||data.state.settings.expenseCategories[0]||'Άλλο';
   const [internalMonth,setInternalMonth]=useState(asOf.slice(0,7));
   const month=budgetMonth??internalMonth;
   const [budgetScope,setBudgetScope]=useState<'category'|'overall'>('category');
@@ -39,7 +43,7 @@ export function BudgetRuleSettings({data,asOf,budgetMonth,onUpsertBudget,onDelet
   const [ruleError,setRuleError]=useState('');
   const accounts=allAccounts(data).filter(account=>account.kind!=='credit');
   const accountIds=new Set(accounts.map(account=>account.id));
-  const categoryNames=new Set(data.state.settings.expenseCategories);
+  const categoryNames=new Set(expenseTree.map(item=>item.name));
   const rules=(data.state.transactionRules??[]).slice().sort((a,b)=>a.priority-b.priority||a.id.localeCompare(b.id));
   const editingRule=rules.find(rule=>rule.id===editingRuleId);
   const nextPriority=rules.reduce((max,rule)=>Math.max(max,rule.priority),0)+100;
@@ -93,12 +97,14 @@ export function BudgetRuleSettings({data,asOf,budgetMonth,onUpsertBudget,onDelet
   const invalidReason=(rule:TransactionRule)=>{
     if(rule.match.accountId&&!accountIds.has(rule.match.accountId))return 'Ο λογαριασμός της συνθήκης δεν είναι πλέον διαθέσιμος.';
     if(rule.action.category&&!categoryNames.has(rule.action.category))return 'Η κατηγορία της ενέργειας δεν είναι πλέον διαθέσιμη.';
+    const category=rule.action.category?expenseTree.find(item=>item.name===rule.action.category):undefined;
+    if(rule.action.subcategory&&(!category||!category.subcategories.includes(rule.action.subcategory)))return 'Η υποκατηγορία της ενέργειας δεν είναι πλέον διαθέσιμη.';
     return '';
   };
 
   return <div className="budget-rule-settings">
     {view!=='rules'?<section className="panel neo-raised budget-settings-panel" data-budget-management><div className="panel-head"><div><span>Προϋπολογισμοί περιόδου</span><small>Όρισε συνολικό ή ανά κατηγορία όριο. Οι επιστροφές μειώνουν τη χρήση, τα split portions μετρώνται μία φορά και οι εσωτερικές μεταφορές εξαιρούνται.</small></div><Gauge/></div>
-      <div className="settings-form budget-editor-grid">{budgetMonth?null:<label><span>Μήνας</span><input type="month" value={month} onChange={event=>setInternalMonth(event.target.value)}/></label>}<label><span>Τύπος ορίου</span><AppSelectInput value={budgetScope} onChange={event=>setBudgetScope(event.target.value as 'category'|'overall')}><option value="category">Κατηγορία</option><option value="overall">Συνολικό όριο</option></AppSelectInput></label>{budgetScope==='category'?<label><span>Κατηγορία</span><AppSelectInput value={budgetCategory} onChange={event=>setBudgetCategory(event.target.value)}>{data.state.settings.expenseCategories.map(category=><option key={category} value={category}>{category}</option>)}</AppSelectInput></label>:null}<label><span>Όριο €</span><MoneyInput value={budgetAmount} onValueChange={setBudgetAmount} placeholder="0,00" invalid={Boolean(budgetError)}/></label><label><span>Προειδοποίηση %</span><input inputMode="decimal" value={budgetAlert} onChange={event=>setBudgetAlert(event.target.value.replace(',','.'))}/></label></div>
+      <div className="settings-form budget-editor-grid">{budgetMonth?null:<label><span>Μήνας</span><AppTextInput type="month" value={month} onChange={event=>setInternalMonth(event.target.value)}/></label>}<label><span>Τύπος ορίου</span><AppSelectInput value={budgetScope} onChange={event=>setBudgetScope(event.target.value as 'category'|'overall')}><option value="category">Κατηγορία</option><option value="overall">Συνολικό όριο</option></AppSelectInput></label>{budgetScope==='category'?<label><span>Κατηγορία</span><CategorySelectInput settings={data.state.settings} kind="expense" category={budgetCategory} includeSubcategories={false} onChange={selection=>setBudgetCategory(selection.category)}/></label>:null}<label><span>Όριο €</span><MoneyInput value={budgetAmount} onValueChange={setBudgetAmount} placeholder="0,00" invalid={Boolean(budgetError)}/></label><label><span>Προειδοποίηση %</span><AppTextInput inputMode="decimal" value={budgetAlert} onChange={event=>setBudgetAlert(event.target.value.replace(',','.'))}/></label></div>
       {budgetError?<FormError id="budget-editor-error">{budgetError}</FormError>:null}<button type="button" className="save-button" onClick={saveBudget}><Plus size={16}/> Αποθήκευση προϋπολογισμού</button>
       {budgets.length?<div className="budget-settings-list">{budgets.map(row=><article key={row.id} className={`budget-setting-row ${row.status}`}><div><b>{row.scope==='overall'?'Συνολικό όριο':row.category}</b><small>{money.format(row.used)} από {money.format(row.limit)} · {Math.round(row.ratio*100)}%</small></div><div className="budget-meter" role="progressbar" aria-label={`Χρήση προϋπολογισμού ${row.scope==='overall'?'συνολικά':row.category}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(100,Math.round(row.ratio*100))} aria-valuetext={`${Math.round(row.ratio*100)}%`}><i style={{width:`${Math.min(100,row.ratio*100)}%`}}/></div><button type="button" className="icon-button" aria-label={`Διαγραφή προϋπολογισμού ${row.scope==='overall'?'συνολικά':row.category}`} onClick={()=>onDeleteBudget(row.id)}><Trash2/></button></article>)}</div>:<div className="empty-inline">Δεν υπάρχουν προϋπολογισμοί για την επιλεγμένη περίοδο.</div>}
     </section>:null}
@@ -107,14 +113,13 @@ export function BudgetRuleSettings({data,asOf,budgetMonth,onUpsertBudget,onDelet
       <summary className={view==='rules'?'sr-only':undefined}><ListFilter size={16}/> Προχωρημένα · Αυτοματισμοί</summary>
       <div className="panel-head"><div><span>Αυτόματη ταξινόμηση νέων κινήσεων</span><small>Οι ενεργοί αυτοματισμοί ελέγχονται με τη σειρά που φαίνονται. Ο πρώτος που ταιριάζει εφαρμόζεται μόνο στη νέα κίνηση· το ιστορικό δεν αλλάζει.</small></div><ListFilter/></div>
       <div className="settings-form rule-editor-grid" aria-label="Δημιουργία αυτοματισμού συναλλαγών">
-        <label><span>Όνομα αυτοματισμού</span><input value={ruleName} placeholder="π.χ. Supermarket → Τρόφιμα" onChange={event=>setRuleName(event.target.value)}/></label>
+        <label><span>Όνομα αυτοματισμού</span><AppTextInput value={ruleName} placeholder="π.χ. Supermarket → Τρόφιμα" onChange={event=>setRuleName(event.target.value)}/></label>
         <label><span>Όταν η περιγραφή</span><AppSelectInput value={ruleMode} onChange={event=>setRuleMode(event.target.value as 'contains'|'equals')}><option value="contains">περιέχει</option><option value="equals">είναι ακριβώς</option></AppSelectInput></label>
-        <label><span>Κείμενο περιγραφής</span><input value={ruleDescription} placeholder="π.χ. supermarket" onChange={event=>setRuleDescription(event.target.value)}/></label>
-        <label><span>Και περιέχει επίσης <em>προαιρετικό</em></span><input value={ruleMerchant} placeholder="δεύτερη λέξη ή merchant" onChange={event=>setRuleMerchant(event.target.value)}/></label>
+        <label><span>Κείμενο περιγραφής</span><AppTextInput value={ruleDescription} placeholder="π.χ. supermarket" onChange={event=>setRuleDescription(event.target.value)}/></label>
+        <label><span>Και περιέχει επίσης <em>προαιρετικό</em></span><AppTextInput value={ruleMerchant} placeholder="δεύτερη λέξη ή merchant" onChange={event=>setRuleMerchant(event.target.value)}/></label>
         <label><span>Και ο λογαριασμός είναι <em>προαιρετικό</em></span><AppSelectInput value={ruleAccount} onChange={event=>setRuleAccount(event.target.value)}>{ruleAccount&&!accountIds.has(ruleAccount)?<option value={ruleAccount} disabled>Μη διαθέσιμος · {ruleAccount}</option>:null}<option value="">Οποιοσδήποτε λογαριασμός</option>{accounts.map(account=><option key={account.id} value={account.id}>{accountDisplayName(data,account.id)}</option>)}</AppSelectInput></label>
-        <label><span>Τότε βάλε κατηγορία</span><AppSelectInput value={ruleCategory} onChange={event=>setRuleCategory(event.target.value)}>{ruleCategory&&!categoryNames.has(ruleCategory)?<option value={ruleCategory} disabled>Μη διαθέσιμη · {ruleCategory}</option>:null}<option value="">Χωρίς αλλαγή κατηγορίας</option>{data.state.settings.expenseCategories.map(category=><option key={category} value={category}>{category}</option>)}</AppSelectInput></label>
-        <label><span>Και υποκατηγορία <em>προαιρετικό</em></span><input value={ruleSubcategory} placeholder="μόνο για νέα κίνηση" onChange={event=>setRuleSubcategory(event.target.value)}/></label>
-        <label><span>Και σχόλιο αν είναι κενό <em>προαιρετικό</em></span><input value={ruleDefaultNote} placeholder="δεν αντικαθιστά σχόλιο χρήστη" onChange={event=>setRuleDefaultNote(event.target.value)}/></label>
+        <label><span>Τότε βάλε κατηγορία / υποκατηγορία</span><CategorySelectInput settings={data.state.settings} kind="expense" category={ruleCategory} subcategory={ruleSubcategory} allowEmpty emptyLabel="Χωρίς αλλαγή κατηγορίας" aria-label="Κατηγορία ή υποκατηγορία αυτοματισμού" onChange={selection=>{setRuleCategory(selection.category);setRuleSubcategory(selection.subcategory)}}/></label>
+        <label><span>Και σχόλιο αν είναι κενό <em>προαιρετικό</em></span><AppTextInput value={ruleDefaultNote} placeholder="δεν αντικαθιστά σχόλιο χρήστη" onChange={event=>setRuleDefaultNote(event.target.value)}/></label>
         <label><span>Πότε να λειτουργεί</span><AppSelectInput value={ruleScope} onChange={event=>setRuleScope(event.target.value as 'all'|TransactionRuleScope)}><option value="manual">Όταν την καταχωρίζω εγώ</option><option value="imported">Όταν έρχεται από εισαγωγή</option><option value="review">Όταν επιβεβαιώνεται από έλεγχο</option><option value="all">Σε κάθε νέα υποστηριζόμενη κίνηση</option></AppSelectInput></label>
       </div>
       <div className="rule-preview" role="status" aria-live="polite"><div className="logic-note compact"><ListFilter/><span>Μόνο προεπισκόπηση: {previewMatches.length} υπάρχουσες κινήσεις θα ταίριαζαν με αυτές τις συνθήκες. Δεν αλλάζει καμία από αυτές.</span></div>{previewMatches.length?<ul>{previewMatches.slice(0,3).map(event=><li key={event.id}><span>{event.note}</span><b>{money.format(event.amount)}</b></li>)}</ul>:null}</div>
