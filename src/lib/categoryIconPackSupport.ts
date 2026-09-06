@@ -14,10 +14,10 @@ const MULTI_PACK_KEYS=new Set<CategoryIconKey>([
   'coffee','shopping','car','home','health','government','flight','other',
 ]);
 
-export function categoryIconKeySupportedByPack(pack:CategoryIconPack,key:CategoryIconKey){
+export function categoryIconKeySupportedByPack(pack:CategoryIconPack,key:string){
   if(pack==='lucide')return true;
-  if(pack==='tabler')return TABLER_KEYS.has(key);
-  return MULTI_PACK_KEYS.has(key);
+  if(pack==='tabler')return TABLER_KEYS.has(key as CategoryIconKey);
+  return MULTI_PACK_KEYS.has(key as CategoryIconKey);
 }
 
 export function categoryIconPackCoverage(pack:CategoryIconPack){
