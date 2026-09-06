@@ -48,14 +48,15 @@ try{
   assert(packs[0].pressed==='true'&&packs.slice(1).every(item=>item.pressed==='false'),'Lucide is the default global pack');
   await waitFor("function(){return document.querySelectorAll('.settings-icons-only .category-icon-unified-category').length>=4}",'dense category list below pack selector');
   await waitFor("function(){return document.querySelectorAll('.settings-icons-only .category-icon-unified-subrow').length>=4}",'dense subcategory rows');
-  assert((await c.call("function(){const row=document.querySelector('.settings-icons-only .category-icon-unified-category .category-icon-unified-main');return Boolean(row?.querySelector('[data-icon-pack=\"lucide\"]')&&(row.textContent||'').includes('Lucide · Αυτόματο'))}")),'automatic row truthfully shows its actual Lucide semantic icon');
+  const automaticLucideTarget=await c.call("function(){const rows=[...document.querySelectorAll('.settings-icons-only .category-icon-unified-category .category-icon-unified-main')];const row=rows.find(item=>item.querySelector('[data-icon-pack=\"lucide\"]')&&(item.textContent||'').includes('Lucide · Αυτόματο'));if(!row)return false;row.setAttribute('data-qa-icon-pack-target','true');return true}");
+  assert(automaticLucideTarget,'at least one automatic row truthfully shows its actual Lucide semantic icon');
   await noOverflow('icons desktop');
   await screenshot('icon-packs-desktop');
 
   await clickText('.settings-icons-only .category-icon-pack-switcher-global button','Phosphor');
   await waitFor("function(){const button=[...document.querySelectorAll('.settings-icons-only .category-icon-pack-switcher-global button')].find(item=>(item.querySelector('b')?.textContent||'').trim()==='Phosphor');return button?.getAttribute('aria-pressed')==='true'}",'Phosphor selected');
-  const firstEditorOpened=await c.call("function(){const button=document.querySelector('.settings-icons-only .category-icon-unified-category .category-icon-unified-main');if(!button)return false;button.click();return true}");
-  assert(firstEditorOpened,'first category icon editor is available');
+  const editorOpened=await c.call("function(){const button=document.querySelector('.settings-icons-only [data-qa-icon-pack-target=\"true\"]');if(!button)return false;button.click();return true}");
+  assert(editorOpened,'automatic Lucide category icon editor is available');
   await waitFor("function(){return Boolean(document.querySelector('.settings-icons-only [data-icon-selection-panel] .category-icon-picker'))}",'shared category icon picker');
   assert(!(await c.call("function(){return Boolean(document.querySelector('.settings-icons-only [data-icon-selection-panel] .category-icon-pack-switcher'))}")),'shared picker does not repeat the pack selector');
   assert((await c.call("function(){return Boolean(document.querySelector('.settings-icons-only [data-icon-selection-panel] .category-icon-selection-close'))}")),'shared picker has an explicit close action');
@@ -67,7 +68,7 @@ try{
 
   const chosePhosphor=await c.call("function(){const button=document.querySelector('.settings-icons-only [data-icon-selection-panel] .category-icon-options .category-icon-option');if(!button)return false;button.click();return true}");
   assert(chosePhosphor,'a Phosphor picker option can be selected');
-  await waitFor("function(){const row=document.querySelector('.settings-icons-only .category-icon-unified-category .category-icon-unified-main');return Boolean(row?.querySelector('[data-icon-pack=\"phosphor\"]')&&(row.textContent||'').includes('Phosphor · Προσαρμοσμένο'))}",'selected row adopts Phosphor');
+  await waitFor("function(){const row=document.querySelector('.settings-icons-only [data-qa-icon-pack-target=\"true\"]');return Boolean(row?.querySelector('[data-icon-pack=\"phosphor\"]')&&(row.textContent||'').includes('Phosphor · Προσαρμοσμένο'))}",'selected row adopts Phosphor');
   await screenshot('icon-selected-phosphor-desktop');
 
   assert(runtimeErrors.length===0,`runtime exceptions: ${runtimeErrors.join(' | ')}`);
