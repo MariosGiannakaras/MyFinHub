@@ -48,9 +48,42 @@
 .settings-account-defaults,.settings-legacy-goals{padding:18px}
 .settings-rules-only .rule-settings-panel{padding:18px}
 .settings-rules-only .rule-settings-panel>summary{display:none}
-.settings-icons-only .category-icons-workspace{padding:18px}
-.settings-icons-only .taxonomy-icon-disclosure{margin-top:10px}
-.settings-icons-only .taxonomy-icon-disclosure>summary{font-weight:720;color:var(--blue)}
+
+.settings-icons-only .category-icons-workspace{display:grid;gap:10px;padding:14px}
+.settings-icons-only .category-icons-workspace>.panel-head{margin:0;padding-bottom:2px}
+.settings-icons-only .category-icons-workspace>.panel-head small{max-width:920px;line-height:1.4}
+.settings-icons-only .category-icons-workspace>.segmented-control{justify-self:start;margin:0}
+.settings-icons-only .category-icon-category-list{display:grid;grid-template-columns:1fr;gap:6px}
+.settings-icons-only .category-taxonomy-card{gap:6px;padding:8px 10px;border-radius:11px;background:rgba(255,255,255,.5);box-shadow:none}
+.settings-icons-only .category-taxonomy-head{gap:8px}
+.settings-icons-only .category-taxonomy-glyph{width:30px;height:30px;border-radius:9px;background:rgba(247,249,252,.82)}
+.settings-icons-only .category-taxonomy-title{gap:0}
+.settings-icons-only .category-taxonomy-title b{font-size:var(--ux-small-size)}
+.settings-icons-only .category-taxonomy-title small{font-size:var(--ux-tiny-size)}
+.settings-icons-only .taxonomy-icon-disclosure{margin:0;border-radius:9px;background:rgba(248,250,253,.58)}
+.settings-icons-only .taxonomy-icon-disclosure>summary{min-height:34px;padding:6px 9px;font-size:var(--ux-tiny-size);font-weight:760;color:var(--blue)}
+.settings-icons-only .taxonomy-icon-disclosure>.category-icon-picker,.settings-icons-only .taxonomy-icon-disclosure>.category-icon-picker-block{padding:8px}
+.settings-icons-only .taxonomy-subcategory-section{gap:5px;padding-top:1px}
+.settings-icons-only .taxonomy-subcategory-heading b{font-size:var(--ux-tiny-size);letter-spacing:.02em;text-transform:uppercase}
+.settings-icons-only .taxonomy-subcategory-heading small{display:none}
+.settings-icons-only .taxonomy-subcategory-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
+.settings-icons-only .taxonomy-subcategory-row{padding:6px 8px;gap:5px;border-radius:9px;background:rgba(248,250,253,.5)}
+.settings-icons-only .taxonomy-subcategory-main{gap:6px}
+.settings-icons-only .taxonomy-subcategory-main b{font-size:var(--ux-tiny-size)}
+.settings-icons-only .taxonomy-subcategory-main small{font-size:calc(var(--ux-tiny-size) - 1px)}
+.settings-icons-only .taxonomy-subcategory-icon{margin-top:2px}
+.settings-icons-only .category-icon-picker{display:grid;gap:7px}
+.settings-icons-only .category-icon-search{min-height:38px}
+.settings-icons-only .category-icon-options{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px;max-height:230px;overflow:auto;padding-right:2px}
+.settings-icons-only .category-icon-option{min-width:0;min-height:38px;padding:6px 7px;border-radius:8px}
+.settings-icons-only .category-icon-option>span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--ux-tiny-size)}
+.category-icon-pack-switcher{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.category-icon-pack-switcher>button{min-height:42px;padding:7px 9px;border:1px solid var(--line);border-radius:9px;background:var(--surface);color:var(--ink-2);text-align:left;cursor:pointer}
+.category-icon-pack-switcher>button>span{display:grid;gap:1px}
+.category-icon-pack-switcher b{font-size:var(--ux-small-size)}
+.category-icon-pack-switcher small{color:var(--muted);font-size:var(--ux-tiny-size)}
+.category-icon-pack-switcher>button.active{border-color:rgba(47,111,237,.42);background:rgba(47,111,237,.08);color:var(--blue)}
+.category-icon-pack-switcher>button:focus-visible{outline:2px solid var(--blue-3);outline-offset:2px}
 
 .settings-categories-only .category-icons-workspace{display:grid;gap:14px;padding:18px}
 .settings-categories-only .category-icons-workspace>.panel-head{margin:0;padding-bottom:2px}
@@ -81,6 +114,7 @@
   .settings-general-grid{grid-template-columns:1fr}
   .settings-general-grid>.keyboard-shortcuts-panel{grid-column:auto}
   .settings-categories-only .taxonomy-category-list{grid-template-columns:1fr}
+  .settings-icons-only .category-icon-options{grid-template-columns:repeat(4,minmax(0,1fr))}
 }
 
 @media(max-width:720px){
@@ -98,6 +132,10 @@
   .settings-categories-only .taxonomy-add-subcategory{padding:0}
   .settings-categories-only .taxonomy-row-actions button{width:44px;height:44px}
   .settings-categories-only .taxonomy-add-subcategory input,.settings-categories-only .taxonomy-add-subcategory button{min-height:46px}
+  .settings-icons-only .category-icons-workspace{padding:12px}
+  .settings-icons-only .taxonomy-subcategory-list{grid-template-columns:1fr}
+  .settings-icons-only .category-icon-options{grid-template-columns:repeat(2,minmax(0,1fr));max-height:300px}
+  .category-icon-pack-switcher>button{min-height:44px}
 }
 
 @media(max-width:420px){
@@ -105,4 +143,5 @@
   .settings-general-appearance .text-size-picker button{text-align:left;place-items:start}
   .settings-app-list>div{display:grid;gap:3px}
   .settings-app-list b{text-align:left}
+  .category-icon-pack-switcher{grid-template-columns:1fr}
 }
