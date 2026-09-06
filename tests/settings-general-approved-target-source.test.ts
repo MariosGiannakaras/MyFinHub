@@ -76,6 +76,7 @@ describe('approved Settings source contract',()=>{
     expect(domain).toContain('accountOverrides');
     expect(source).toContain('<BudgetRuleSettings');
     expect(source).toContain('<CategoryIconsWorkspace');
+    expect(source).toContain('<CategoryIconAssignmentWorkspace');
     expect(source).toContain('Εισαγωγή JSON');
     expect(source).toContain('Backup & λήψη');
     expect(source).toContain('technical-settings');
@@ -87,13 +88,17 @@ describe('approved Settings source contract',()=>{
     const savings=read('src/pages/SavingsPage.tsx');
     const budgetRules=read('src/components/BudgetRuleSettings.tsx');
     const categories=read('src/components/CategoryIconsWorkspace.tsx');
+    const icons=read('src/components/CategoryIconAssignmentWorkspace.tsx');
     expect(source).toContain("activeTab === 'icons'");
     expect(source).toContain("activeTab === 'rules'");
     expect(source).not.toContain("activeTab === 'budgets'");
     expect(source).not.toContain('settings-legacy-goals');
     expect(source).toContain('view="rules"');
     expect(source).toContain('view="taxonomy"');
-    expect(source).toContain('view="icons"');
+    expect(source).toContain('<CategoryIconAssignmentWorkspace');
+    expect(icons).toContain("...categoryTree(settings,'expense')");
+    expect(icons).toContain("...categoryTree(settings,'income')");
+    expect(icons).not.toContain('segmented-control');
     expect(reports).toContain('view="budgets"');
     expect(reports).toContain('budgetMonth={month}');
     expect(reports).toContain('id="report-budgets"');
