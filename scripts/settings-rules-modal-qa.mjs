@@ -37,14 +37,19 @@ try{
   const clickRules=async()=>{const clicked=await c.call("function(){const button=[...document.querySelectorAll('.settings-tablist [role=tab]')].find(node=>(node.textContent||'').trim()==='Κανόνες');if(!button||button.disabled)return false;button.click();return true}");assert(clicked,'Rules tab is enabled and clickable');await waitFor("function(){const root=document.querySelector('.settings-rules-only [data-rules-workspace]');return Boolean(root&&root.getClientRects().length)}",'Rules workspace')};
   const openCreate=async()=>{const opened=await c.call("function(){const button=document.querySelector('.settings-rules-only .rules-new-button');if(!button)return false;button.click();return true}");assert(opened,'New rule action opens the editor');await waitFor("function(){const modal=document.querySelector('[data-rule-editor][role=dialog][aria-modal=true]');return Boolean(modal&&modal.getClientRects().length)}",'Rules editor modal');await sleep(120)};
   const closeEditor=async()=>{const closed=await c.call("function(){const button=document.querySelector('[data-rule-editor] button[aria-label=\"Κλείσιμο επεξεργασίας κανόνα\"]');if(!button)return false;button.click();return true}");assert(closed,'Rules editor close action works');await waitFor("function(){return !document.querySelector('[data-rule-editor]')}",'Rules editor close')};
+  const setLabelInput=async(label,value)=>{const changed=await c.call("function(label,value){const row=[...document.querySelectorAll('[data-rule-editor] label')].find(node=>(node.querySelector(':scope > span')?.textContent||'').trim().includes(label));const input=row?.querySelector('input:not([role=combobox])');if(!(input instanceof HTMLInputElement))return false;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')?.set;if(!setter)return false;setter.call(input,value);input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));return true}",[label,value]);assert(changed,`Rules editor exposes ${label}`);await sleep(80)};
+  const seedRule=async(name,description)=>{const before=await c.call("function(){return document.querySelectorAll('.rule-settings-list article').length}");await openCreate();await setLabelInput('Όνομα αυτοματισμού',name);await setLabelInput('Κείμενο περιγραφής',description);const saved=await c.call("function(){const button=[...document.querySelectorAll('[data-rule-editor] .rules-editor-actions .save-button')].find(node=>(node.textContent||'').includes('Δημιουργία κανόνα'));if(!button)return false;button.click();return true}");assert(saved,`Representative rule ${name} saves through the real modal`);await waitFor("function(){return !document.querySelector('[data-rule-editor]')}",`Representative rule ${name} editor closes`);await waitFor("function(before){return document.querySelectorAll('.rule-settings-list article').length===before+1}",`Representative rule ${name} appears`,[before])};
 
   await waitFor("function(){return Boolean(document.querySelector('.settings-tablist'))}",'Settings tabs');
   await viewport(1440,1000);
   await clickRules();
   await c.call("function(){window.scrollTo({top:0,left:0,behavior:'auto'});return true}");
   assert(await c.call("function(){return !document.querySelector('[data-rule-editor]')}") ,'Rules editor is closed on initial entry');
+  let initialRules=await c.call("function(){return document.querySelectorAll('.rule-settings-list article').length}");
+  if(initialRules<2){await seedRule('QA Supermarket','Supermarket');await seedRule('QA Utilities','ΔΕΗ');initialRules=await c.call("function(){return document.querySelectorAll('.rule-settings-list article').length}")}
+  assert(initialRules>=2,'Representative Rules setup renders existing rules');
   const closedState=await c.call("function(){const root=document.querySelector('.settings-rules-only [data-rules-workspace]');return {rules:root?.querySelectorAll('.rule-settings-list article').length||0,status:Boolean(root?.querySelector('.rules-status-strip')),newAction:Boolean(root?.querySelector('.rules-new-button')),overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}}");
-  assert(closedState.rules>=2,'Representative Rules fixture renders existing rules');
+  assert(closedState.rules>=2,'Representative Rules setup keeps existing rules visible');
   assert(closedState.status,'Rules status context remains visible');
   assert(closedState.newAction,'Rules exposes the primary new-rule action');
   assert(closedState.overflow<=1,`Rules closed state horizontal overflow ${closedState.overflow}px`);
@@ -87,6 +92,7 @@ try{
   const editState=await c.call("function(){const modal=document.querySelector('[data-rule-editor]');const title=modal?.querySelector('#rule-editor-title')?.textContent||'';const name=modal?.querySelector('.rules-name-field input')?.value||'';return {title,name}}");
   assert(editState.title.includes('Επεξεργασία κανόνα'),'Edit modal has edit identity');
   assert(Boolean(editState.name),'Edit modal loads the persisted rule name');
+  await screenshot('settings-rules-edit-modal-desktop');
   await closeEditor();
 
   await viewport(375,812);
