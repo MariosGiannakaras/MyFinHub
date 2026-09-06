@@ -1,3 +1,4 @@
+import { X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { categoryTree } from '../lib/categories';
 import { CATEGORY_ICON_PACKS, decodeCategoryIconValue, encodeCategoryIconValue, type CategoryIconPack } from '../lib/categoryIconRegistry';
@@ -16,10 +17,11 @@ import { CategoryIconPicker } from './CategoryIconPicker';
 import './CategoryIconAssignmentWorkspace.css';
 
 type Row={kind:CategoryKind;name:string;subcategories:string[]};
+type EditorTarget={kind:CategoryKind;category:string;subcategory?:string}|null;
 
 export function CategoryIconAssignmentWorkspace({settings,onChange}:{settings:FinanceSettings;onChange:(settings:FinanceSettings)=>void}){
   const[iconPack,setIconPack]=useState<CategoryIconPack>('lucide');
-  const[openKey,setOpenKey]=useState<string|null>(null);
+  const[editor,setEditor]=useState<EditorTarget>(null);
   const rows=useMemo<Row[]>(()=>[
     ...categoryTree(settings,'expense').map(item=>({kind:'expense' as const,...item})),
     ...categoryTree(settings,'income').map(item=>({kind:'income' as const,...item})),
@@ -30,10 +32,25 @@ export function CategoryIconAssignmentWorkspace({settings,onChange}:{settings:Fi
     return new Set([...counts].filter(([,count])=>count>1).map(([name])=>name));
   },[rows]);
   const rowKey=(kind:CategoryKind,name:string)=>`${kind}:${name}`;
+  const targetKey=(target:EditorTarget)=>target?`${target.kind}:${target.category}${target.subcategory?`:${target.subcategory}`:''}`:'';
   const compatibleValue=(value:string|null)=>{
     if(!value)return null;
     const decoded=decodeCategoryIconValue(value);
     return decoded.pack===iconPack&&categoryIconKeySupportedByPack(iconPack,decoded.key as never)?value:null;
+  };
+  const editorValue=editor
+    ?editor.subcategory
+      ?explicitSubcategoryIcon(settings,editor.kind,editor.category,editor.subcategory)
+      :explicitCategoryIcon(settings,editor.kind,editor.category)
+    :null;
+  const editorResolved=editor
+    ?resolvedCategoryIcon(settings,editor.kind,editor.category,editor.subcategory)||'other'
+    :'other';
+  const updateEditorIcon=(iconKey:string|null)=>{
+    if(!editor)return;
+    onChange(editor.subcategory
+      ?withSubcategoryIconOverride(settings,editor.kind,editor.category,editor.subcategory,iconKey)
+      :withCategoryIcon(settings,editor.kind,editor.category,iconKey));
   };
 
   return <section className="panel neo-raised category-icons-workspace category-icon-assignment-workspace" aria-labelledby="category-icons-title">
@@ -49,33 +66,38 @@ export function CategoryIconAssignmentWorkspace({settings,onChange}:{settings:Fi
       </div>
     </div>
 
-    <div className="category-icon-unified-list taxonomy-icon-disclosure" data-icon-assignment-surface role="list" aria-label="Κατηγορίες και υποκατηγορίες">
+    {editor?<section className="category-icon-selection-panel" aria-label={`Επιλογή εικονιδίου για ${editor.subcategory??editor.category}`} data-icon-selection-panel>
+      <header className="category-icon-selection-head">
+        <span className="category-icon-selection-current"><CategoryIconGlyph iconKey={editorResolved} size={20}/></span>
+        <div><b>Επιλογή εικονιδίου</b><small>{editor.subcategory?`${editor.category} › ${editor.subcategory}`:editor.category}{duplicateNames.has(editor.category)?` · ${editor.kind==='expense'?'Έξοδο':'Έσοδο'}`:''}</small></div>
+        <button type="button" className="icon-button category-icon-selection-close" aria-label="Κλείσιμο επιλογής εικονιδίου" title="Κλείσιμο" onClick={()=>setEditor(null)}><X size={17}/></button>
+      </header>
+      <CategoryIconPicker value={compatibleValue(editorValue)} selectedPack={iconPack} showPackSwitcher={false} automaticLabel="Χρήση σημασιολογικής αντιστοίχισης" onChange={updateEditorIcon}/>
+    </section>:null}
+
+    <div className="category-icon-unified-list" data-icon-assignment-surface role="list" aria-label="Κατηγορίες και υποκατηγορίες">
       {rows.map(row=>{
         const key=rowKey(row.kind,row.name);
         const explicit=explicitCategoryIcon(settings,row.kind,row.name);
         const resolved=resolvedCategoryIcon(settings,row.kind,row.name)||'other';
-        const isOpen=openKey===key;
+        const isOpen=targetKey(editor)===key;
         return <article className="category-icon-unified-category" role="listitem" key={key}>
-          <button type="button" className="category-icon-unified-main" aria-expanded={isOpen} onClick={()=>setOpenKey(isOpen?null:key)}>
+          <button type="button" className="category-icon-unified-main" aria-expanded={isOpen} onClick={()=>setEditor(isOpen?null:{kind:row.kind,category:row.name})}>
             <span className="category-taxonomy-glyph"><CategoryIconGlyph iconKey={resolved} size={20}/></span>
             <span className="category-icon-unified-copy"><b>{row.name}</b><small>{row.subcategories.length?`${row.subcategories.length} ${row.subcategories.length===1?'υποκατηγορία':'υποκατηγορίες'}`:'Χωρίς υποκατηγορίες'}{duplicateNames.has(row.name)?` · ${row.kind==='expense'?'Έξοδο':'Έσοδο'}`:''}</small></span>
             <span className="category-icon-unified-state">{explicit?'Προσαρμοσμένο':'Αυτόματο'}</span>
           </button>
-          {isOpen?<div className="category-icon-unified-editor">
-            <CategoryIconPicker value={compatibleValue(explicit)} selectedPack={iconPack} showPackSwitcher={false} automaticLabel="Χρήση σημασιολογικής αντιστοίχισης" onChange={iconKey=>onChange(withCategoryIcon(settings,row.kind,row.name,iconKey))}/>
-          </div>:null}
 
           {row.subcategories.length?<div className="category-icon-unified-sublist" role="list" aria-label={`Υποκατηγορίες ${row.name}`}>
             {row.subcategories.map(subcategory=>{
               const subKey=`${key}:${subcategory}`;
               const override=explicitSubcategoryIcon(settings,row.kind,row.name,subcategory);
               const subResolved=resolvedCategoryIcon(settings,row.kind,row.name,subcategory)||resolved;
-              const subOpen=openKey===subKey;
+              const subOpen=targetKey(editor)===subKey;
               return <div className="category-icon-unified-subrow" role="listitem" key={subKey}>
-                <button type="button" className="category-icon-unified-main category-icon-unified-submain" aria-expanded={subOpen} onClick={()=>setOpenKey(subOpen?null:subKey)}>
+                <button type="button" className="category-icon-unified-main category-icon-unified-submain" aria-expanded={subOpen} onClick={()=>setEditor(subOpen?null:{kind:row.kind,category:row.name,subcategory})}>
                   <CategoryIconGlyph iconKey={subResolved} size={17}/><span className="category-icon-unified-copy"><b>{subcategory}</b></span><span className="category-icon-unified-state">{override?'Προσαρμοσμένο':'Αυτόματο'}</span>
                 </button>
-                {subOpen?<div className="category-icon-unified-editor category-icon-unified-subeditor"><CategoryIconPicker value={compatibleValue(override)} selectedPack={iconPack} showPackSwitcher={false} automaticLabel="Χρήση σημασιολογικής αντιστοίχισης" onChange={iconKey=>onChange(withSubcategoryIconOverride(settings,row.kind,row.name,subcategory,iconKey))}/></div>:null}
               </div>;
             })}
           </div>:null}
