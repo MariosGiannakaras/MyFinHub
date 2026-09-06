@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 2,
+  "layout": "surface-first-latest-only",
+  "appVersion": "v1.3",
+  "suite": "icon-packs",
+  "surface": "icons",
+  "generatedAt": "2026-09-06T12:50:01.705Z",
+  "timeZone": "Europe/Athens",
+  "source": {
+    "sha": "f0141f56ccd48861ea370b058b5bad30c5e45756",
+    "shortSha": "f0141f56",
+    "branch": "feat/346-settings-tabs"
+  },
+  "screenshots": [
+    "visual-qa/icons/v1.3__2026-09-06_155001__qa-icon-packs__icon-packs-desktop.png",
+    "visual-qa/icons/v1.3__2026-09-06_155001__qa-icon-packs__icon-picker-phosphor-desktop.png"
+  ]
+}
