@@ -1,4 +1,4 @@
-import { Search, X } from 'lucide-react';
+import { Search, Sparkles, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import {
   CATEGORY_ICON_PACKS,
@@ -13,6 +13,7 @@ export function CategoryIconPicker({
   value,
   onChange,
   inheritedLabel,
+  automaticLabel,
   selectedPack,
   onPackChange,
   showPackSwitcher=true,
@@ -20,6 +21,7 @@ export function CategoryIconPicker({
   value:string|null;
   onChange:(iconKey:string|null)=>void;
   inheritedLabel?:string;
+  automaticLabel?:string;
   selectedPack?:CategoryIconPack;
   onPackChange?:(pack:CategoryIconPack)=>void;
   showPackSwitcher?:boolean;
@@ -39,8 +41,11 @@ export function CategoryIconPicker({
     {showPackSwitcher?<div className="category-icon-pack-switcher" role="group" aria-label="Πακέτο εικονιδίων">
       {CATEGORY_ICON_PACKS.map(item=><button type="button" key={item.id} className={pack===item.id?'active':''} aria-pressed={pack===item.id} onClick={()=>choosePack(item.id)} title={item.description}><span><b>{item.label}</b><small>{item.license}</small></span></button>)}
     </div>:null}
+    <div className="category-icon-picker-mode">
+      <button type="button" className={!value?'category-icon-option active':'category-icon-option'} aria-pressed={!value} onClick={()=>onChange(null)}><Sparkles size={17} aria-hidden="true"/><span><b>Αυτόματο</b><small>{automaticLabel??inheritedLabel??'Σημασιολογική αντιστοίχιση'}</small></span></button>
+      {inheritedLabel&&value?<button type="button" className="category-icon-option" aria-pressed="false" onClick={()=>onChange(null)}><X size={17} aria-hidden="true"/><span><b>Καθαρισμός override</b><small>{inheritedLabel}</small></span></button>:null}
+    </div>
     <label className="category-icon-search"><Search size={16} aria-hidden="true"/><span className="sr-only">Αναζήτηση εικονιδίου</span><input value={query} onChange={event=>setQuery(event.target.value)} placeholder="Αναζήτηση εικονιδίου…"/></label>
-    {inheritedLabel?<button type="button" className={!value?'category-icon-option active':'category-icon-option'} aria-pressed={!value} onClick={()=>onChange(null)}><X size={17} aria-hidden="true"/><span><b>Κληρονομεί</b><small>{inheritedLabel}</small></span></button>:null}
     <div className="category-icon-options" role="group" aria-label={`Εικονίδια ${CATEGORY_ICON_PACKS.find(item=>item.id===pack)?.label??pack}`}>
       {options.map(option=>{
         const iconValue=encodeCategoryIconValue(pack,option.key);
