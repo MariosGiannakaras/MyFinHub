@@ -54,9 +54,10 @@ try{
   await waitFor("function(){const button=[...document.querySelectorAll('.settings-icons-only .category-icon-pack-switcher-global button')].find(item=>(item.querySelector('b')?.textContent||'').trim()==='Phosphor');return button?.getAttribute('aria-pressed')==='true'}",'Phosphor selected');
   const firstEditorOpened=await c.call("function(){const button=document.querySelector('.settings-icons-only .category-icon-unified-category .category-icon-unified-main');if(!button)return false;button.click();return true}");
   assert(firstEditorOpened,'first category icon editor is available');
-  await waitFor("function(){return Boolean(document.querySelector('.settings-icons-only .category-icon-unified-category .category-icon-unified-editor .category-icon-picker'))}",'category icon picker');
-  assert(!(await c.call("function(){return Boolean(document.querySelector('.settings-icons-only .category-icon-unified-editor .category-icon-picker .category-icon-pack-switcher'))}")),'row picker does not repeat the pack selector');
-  const optionPack=await c.call("function(){return document.querySelector('.settings-icons-only .category-icon-unified-editor .category-icon-picker .category-icon-option [data-icon-pack]')?.getAttribute('data-icon-pack')||''}");
+  await waitFor("function(){return Boolean(document.querySelector('.settings-icons-only [data-icon-selection-panel] .category-icon-picker'))}",'shared category icon picker');
+  assert(!(await c.call("function(){return Boolean(document.querySelector('.settings-icons-only [data-icon-selection-panel] .category-icon-pack-switcher'))}")),'shared picker does not repeat the pack selector');
+  assert((await c.call("function(){return Boolean(document.querySelector('.settings-icons-only [data-icon-selection-panel] .category-icon-selection-close'))}")),'shared picker has an explicit close action');
+  const optionPack=await c.call("function(){return document.querySelector('.settings-icons-only [data-icon-selection-panel] .category-icon-option [data-icon-pack]')?.getAttribute('data-icon-pack')||''}");
   assert(optionPack==='phosphor',`expanded picker should use Phosphor, got ${optionPack}`);
   await noOverflow('icons picker desktop');
   await screenshot('icon-picker-phosphor-desktop');
