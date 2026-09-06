@@ -37,26 +37,26 @@ try{
 
   await waitFor("function(){return Boolean(document.querySelector('.settings-tablist'))}",'settings tabs');
   await clickText('.settings-tablist button','Εικονίδια');
-  await waitFor("function(){return Boolean(document.querySelector('.settings-icons-only .category-icon-library'))}",'icons workspace');
+  await waitFor("function(){return Boolean(document.querySelector('.settings-icons-only .category-icon-assignment-workspace .category-icon-library'))}",'icons workspace');
 
-  const packs=await c.call("function(){return [...document.querySelectorAll('.category-icon-pack-switcher-global button')].map(button=>({name:(button.querySelector('b')?.textContent||'').trim(),license:(button.querySelector('small')?.textContent||'').trim(),pressed:button.getAttribute('aria-pressed'),preview:[...button.querySelectorAll('[data-icon-pack]')].map(node=>node.getAttribute('data-icon-pack'))}))}");
+  const packs=await c.call("function(){return [...document.querySelectorAll('.settings-icons-only .category-icon-pack-switcher-global button')].map(button=>({name:(button.querySelector('b')?.textContent||'').trim(),license:(button.querySelector('small')?.textContent||'').trim(),pressed:button.getAttribute('aria-pressed'),preview:[...button.querySelectorAll('[data-icon-pack]')].map(node=>node.getAttribute('data-icon-pack'))}))}");
   assert(packs.length===5,`expected five icon packs, got ${packs.length}`);
   assert(JSON.stringify(packs.map(item=>item.name))===JSON.stringify(['Lucide','Tabler Icons','Phosphor','Heroicons','Bootstrap Icons']),'pack order and labels');
   assert(JSON.stringify(packs.map(item=>item.license))===JSON.stringify(['ISC','MIT','MIT','MIT','MIT']),'pack licenses');
   assert(packs.every(item=>item.preview.length===3&&item.preview.every(pack=>Boolean(pack))),'each pack has three live preview glyphs');
   assert(packs[0].pressed==='true'&&packs.slice(1).every(item=>item.pressed==='false'),'Lucide is the default global pack');
-  await waitFor("function(){return document.querySelectorAll('.settings-icons-only .category-taxonomy-card').length>=4}",'dense category list below pack selector');
-  await waitFor("function(){return document.querySelectorAll('.settings-icons-only .taxonomy-subcategory-row').length>=4}",'dense subcategory rows');
+  await waitFor("function(){return document.querySelectorAll('.settings-icons-only .category-icon-unified-category').length>=4}",'dense category list below pack selector');
+  await waitFor("function(){return document.querySelectorAll('.settings-icons-only .category-icon-unified-subrow').length>=4}",'dense subcategory rows');
   await noOverflow('icons desktop');
   await screenshot('icon-packs-desktop');
 
-  await clickText('.category-icon-pack-switcher-global button','Phosphor');
-  await waitFor("function(){const button=[...document.querySelectorAll('.category-icon-pack-switcher-global button')].find(item=>(item.querySelector('b')?.textContent||'').trim()==='Phosphor');return button?.getAttribute('aria-pressed')==='true'}",'Phosphor selected');
-  const firstDisclosure=await c.call("function(){const details=document.querySelector('.settings-icons-only .category-taxonomy-card .taxonomy-icon-disclosure');if(!details)return false;details.open=true;details.dispatchEvent(new Event('toggle'));return true}");
-  assert(firstDisclosure,'first category icon disclosure is available');
-  await waitFor("function(){return Boolean(document.querySelector('.settings-icons-only .category-taxonomy-card .category-icon-picker'))}",'category icon picker');
-  assert(!(await c.call("function(){return Boolean(document.querySelector('.settings-icons-only .category-taxonomy-card .category-icon-picker .category-icon-pack-switcher'))}")),'row picker does not repeat the pack selector');
-  const optionPack=await c.call("function(){return document.querySelector('.settings-icons-only .category-taxonomy-card .category-icon-picker .category-icon-option [data-icon-pack]')?.getAttribute('data-icon-pack')||''}");
+  await clickText('.settings-icons-only .category-icon-pack-switcher-global button','Phosphor');
+  await waitFor("function(){const button=[...document.querySelectorAll('.settings-icons-only .category-icon-pack-switcher-global button')].find(item=>(item.querySelector('b')?.textContent||'').trim()==='Phosphor');return button?.getAttribute('aria-pressed')==='true'}",'Phosphor selected');
+  const firstEditorOpened=await c.call("function(){const button=document.querySelector('.settings-icons-only .category-icon-unified-category .category-icon-unified-main');if(!button)return false;button.click();return true}");
+  assert(firstEditorOpened,'first category icon editor is available');
+  await waitFor("function(){return Boolean(document.querySelector('.settings-icons-only .category-icon-unified-category .category-icon-unified-editor .category-icon-picker'))}",'category icon picker');
+  assert(!(await c.call("function(){return Boolean(document.querySelector('.settings-icons-only .category-icon-unified-editor .category-icon-picker .category-icon-pack-switcher'))}")),'row picker does not repeat the pack selector');
+  const optionPack=await c.call("function(){return document.querySelector('.settings-icons-only .category-icon-unified-editor .category-icon-picker .category-icon-option [data-icon-pack]')?.getAttribute('data-icon-pack')||''}");
   assert(optionPack==='phosphor',`expanded picker should use Phosphor, got ${optionPack}`);
   await noOverflow('icons picker desktop');
   await screenshot('icon-picker-phosphor-desktop');
