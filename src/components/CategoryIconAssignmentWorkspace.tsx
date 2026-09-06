@@ -49,7 +49,7 @@ export function CategoryIconAssignmentWorkspace({settings,onChange}:{settings:Fi
       </div>
     </div>
 
-    <div className="category-icon-unified-list" role="list" aria-label="Κατηγορίες και υποκατηγορίες">
+    <div className="category-icon-unified-list taxonomy-icon-disclosure" data-icon-assignment-surface role="list" aria-label="Κατηγορίες και υποκατηγορίες">
       {rows.map(row=>{
         const key=rowKey(row.kind,row.name);
         const explicit=explicitCategoryIcon(settings,row.kind,row.name);
