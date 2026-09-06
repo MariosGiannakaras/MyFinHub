@@ -43,10 +43,12 @@ try{
   assert(packs.length===5,`expected five icon packs, got ${packs.length}`);
   assert(JSON.stringify(packs.map(item=>item.name))===JSON.stringify(['Lucide','Tabler Icons','Phosphor','Heroicons','Bootstrap Icons']),'pack order and labels');
   assert(JSON.stringify(packs.map(item=>item.license))===JSON.stringify(['ISC','MIT','MIT','MIT','MIT']),'pack licenses');
-  assert(packs.every(item=>item.preview.length===3&&item.preview.every(pack=>Boolean(pack))),'each pack has three live preview glyphs');
+  const expectedPackIds=['lucide','tabler','phosphor','heroicons','bootstrap'];
+  assert(packs.every((item,index)=>item.preview.length===3&&item.preview.every(pack=>pack===expectedPackIds[index])),'each library preview is rendered only by its own pack');
   assert(packs[0].pressed==='true'&&packs.slice(1).every(item=>item.pressed==='false'),'Lucide is the default global pack');
   await waitFor("function(){return document.querySelectorAll('.settings-icons-only .category-icon-unified-category').length>=4}",'dense category list below pack selector');
   await waitFor("function(){return document.querySelectorAll('.settings-icons-only .category-icon-unified-subrow').length>=4}",'dense subcategory rows');
+  assert((await c.call("function(){const row=document.querySelector('.settings-icons-only .category-icon-unified-category .category-icon-unified-main');return Boolean(row?.querySelector('[data-icon-pack=\"lucide\"]')&&(row.textContent||'').includes('Lucide · Αυτόματο'))}")),'automatic row truthfully shows its actual Lucide semantic icon');
   await noOverflow('icons desktop');
   await screenshot('icon-packs-desktop');
 
@@ -57,10 +59,16 @@ try{
   await waitFor("function(){return Boolean(document.querySelector('.settings-icons-only [data-icon-selection-panel] .category-icon-picker'))}",'shared category icon picker');
   assert(!(await c.call("function(){return Boolean(document.querySelector('.settings-icons-only [data-icon-selection-panel] .category-icon-pack-switcher'))}")),'shared picker does not repeat the pack selector');
   assert((await c.call("function(){return Boolean(document.querySelector('.settings-icons-only [data-icon-selection-panel] .category-icon-selection-close'))}")),'shared picker has an explicit close action');
-  const optionPack=await c.call("function(){return document.querySelector('.settings-icons-only [data-icon-selection-panel] .category-icon-option [data-icon-pack]')?.getAttribute('data-icon-pack')||''}");
-  assert(optionPack==='phosphor',`expanded picker should use Phosphor, got ${optionPack}`);
+  assert((await c.call("function(){const text=document.querySelector('.settings-icons-only [data-icon-selection-panel] .category-icon-selection-head')?.textContent||'';return text.includes('Τρέχον: Lucide')&&text.includes('Επιλογές: Phosphor')}")),'selection panel distinguishes current icon pack from picker library');
+  const optionPacks=await c.call("function(){return [...document.querySelectorAll('.settings-icons-only [data-icon-selection-panel] .category-icon-options [data-icon-pack]')].map(node=>node.getAttribute('data-icon-pack'))}");
+  assert(optionPacks.length>0&&optionPacks.every(pack=>pack==='phosphor'),'every visible picker glyph is Phosphor');
   await noOverflow('icons picker desktop');
   await screenshot('icon-picker-phosphor-desktop');
+
+  const chosePhosphor=await c.call("function(){const button=document.querySelector('.settings-icons-only [data-icon-selection-panel] .category-icon-options .category-icon-option');if(!button)return false;button.click();return true}");
+  assert(chosePhosphor,'a Phosphor picker option can be selected');
+  await waitFor("function(){const row=document.querySelector('.settings-icons-only .category-icon-unified-category .category-icon-unified-main');return Boolean(row?.querySelector('[data-icon-pack=\"phosphor\"]')&&(row.textContent||'').includes('Phosphor · Προσαρμοσμένο'))}",'selected row adopts Phosphor');
+  await screenshot('icon-selected-phosphor-desktop');
 
   assert(runtimeErrors.length===0,`runtime exceptions: ${runtimeErrors.join(' | ')}`);
   assert(failedRequests.length===0,`network loading failures: ${failedRequests.join(' | ')}`);
