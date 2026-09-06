@@ -7,6 +7,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { decodeCategoryIconValue } from '../lib/categoryIconRegistry';
+import { MultiPackCategoryGlyph } from './MultiPackCategoryGlyph';
 import { TablerCategoryGlyph } from './TablerCategoryGlyph';
 
 const ICONS:Record<string,LucideIcon>={
@@ -27,6 +28,7 @@ const ICONS:Record<string,LucideIcon>={
 export function CategoryIconGlyph({iconKey,size=18,label}:{iconKey:string;size?:number;label?:string}){
   const decoded=decodeCategoryIconValue(iconKey);
   if(decoded.pack==='tabler')return <span className="category-icon-glyph" aria-label={label} aria-hidden={label?undefined:true} data-category-icon={iconKey} data-icon-pack="tabler"><TablerCategoryGlyph iconKey={decoded.key} size={size}/></span>;
+  if(decoded.pack==='phosphor'||decoded.pack==='heroicons'||decoded.pack==='bootstrap')return <span className="category-icon-glyph" aria-label={label} aria-hidden={label?undefined:true} data-category-icon={iconKey} data-icon-pack={decoded.pack}><MultiPackCategoryGlyph pack={decoded.pack} iconKey={decoded.key} size={size}/></span>;
   const Icon=ICONS[decoded.key]??ReceiptText;
   return <span className="category-icon-glyph" aria-label={label} aria-hidden={label?undefined:true} data-category-icon={iconKey} data-icon-pack="lucide"><Icon size={size}/></span>;
 }
