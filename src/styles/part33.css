@@ -13,6 +13,5 @@
 @media(max-width:680px){
   .mobile-transaction-filters .owned-input-shell{width:100%;min-width:0}
   .mobile-transaction-filters .owned-input-shell>.owned-input{height:44px;border:1px solid #d7e1ef;border-radius:12px;background:#fbfdff;color:var(--ink);padding:0 34px 0 10px;font-size:16px}
-  .settings-form .owned-input-shell>.owned-input{min-height:46px;border-radius:12px;border-color:#d7e2ef;background:#fbfdff;padding-left:11px;padding-right:34px}
   .known-people-suggestions button{min-height:40px;padding:7px 10px;font-size:8.5px}
 }
