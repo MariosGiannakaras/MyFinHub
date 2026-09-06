@@ -15,9 +15,17 @@ describe('unified category icon assignment workspace',()=>{
 
   it('keeps kind only as identity disambiguation and applies edits through canonical preference helpers',()=>{
     expect(workspace).toContain("duplicateNames.has(row.name)");
-    expect(workspace).toContain('withCategoryIcon(settings,row.kind,row.name,iconKey)');
-    expect(workspace).toContain('withSubcategoryIconOverride(settings,row.kind,row.name,subcategory,iconKey)');
+    expect(workspace).toContain('withCategoryIcon(settings,editor.kind,editor.category,iconKey)');
+    expect(workspace).toContain('withSubcategoryIconOverride(settings,editor.kind,editor.category,editor.subcategory,iconKey)');
     expect(workspace).toContain('resolvedCategoryIcon(settings,row.kind,row.name,subcategory)');
+  });
+
+  it('uses one shared contextual picker instead of expanding a picker inside a single taxonomy card',()=>{
+    expect(workspace).toContain('data-icon-selection-panel');
+    expect(workspace).toContain('category-icon-selection-head');
+    expect(workspace).toContain('Κλείσιμο επιλογής εικονιδίου');
+    expect(workspace).toContain('showPackSwitcher={false}');
+    expect(workspace).not.toContain('category-icon-unified-editor');
   });
 
   it('is the Settings Icons surface while Categories keeps taxonomy management',()=>{
