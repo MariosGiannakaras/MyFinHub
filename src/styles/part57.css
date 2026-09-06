@@ -29,6 +29,38 @@
 .owned-select-shell>.app-control,.owned-date-shell>.app-control{padding-right:34px;cursor:pointer}
 .money-input>.app-control{padding-left:30px}
 
+.app-input-shell{
+  box-sizing:border-box;
+  width:100%;
+  min-width:0;
+  min-height:46px;
+  display:flex;
+  align-items:center;
+  gap:9px;
+  padding:0 12px;
+  border:1px solid var(--border-subtle);
+  border-radius:13px;
+  background:var(--surface-inset);
+  color:var(--muted);
+  box-shadow:var(--shadow-inset);
+  transition:border-color .12s ease,box-shadow .12s ease,background-color .12s ease;
+}
+.app-input-shell>.app-control{
+  flex:1;
+  width:auto;
+  min-height:42px;
+  padding:0;
+  border:0!important;
+  border-radius:0;
+  background:transparent!important;
+  box-shadow:none!important;
+}
+.app-input-shell>.app-control:focus,.app-input-shell>.app-control:focus-visible{box-shadow:none!important}
+.app-input-shell:focus-within{border-color:var(--focus-outline)!important;box-shadow:var(--focus),var(--shadow-inset)!important}
+.app-input-shell[data-invalid="true"]{border-color:var(--error)!important}
+.app-input-shell[data-invalid="true"]:focus-within{box-shadow:0 0 0 3px color-mix(in srgb,var(--error) 20%,transparent),var(--shadow-inset)!important}
+.app-input-shell-leading,.app-input-shell-trailing{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}
+
 /* One visual hierarchy for category taxonomy everywhere CategorySelectInput is used. */
 .owned-option-list>[role="option"][data-option-level="category"]{
   margin-top:4px;
@@ -51,5 +83,5 @@
 }
 .owned-option-list>[role="option"][data-option-level="invalid"]{color:var(--error)}
 
-@media(max-width:680px){.app-control{min-height:46px;font-size:16px}}
-@media(prefers-reduced-motion:reduce){.app-control{transition:none}}
+@media(max-width:680px){.app-control{min-height:46px;font-size:16px}.app-input-shell>.app-control{min-height:42px}}
+@media(prefers-reduced-motion:reduce){.app-control,.app-input-shell{transition:none}}
