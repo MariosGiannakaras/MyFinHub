@@ -48,6 +48,7 @@ describe('Settings Rules workspace source contract',()=>{
     expect(workspace).toContain('className="panel neo-raised editor-dialog rules-editor"');
     expect(workspace).toContain('<AppSelectInput');
     expect(workspace).not.toContain('<select');
+    expect(workspace).not.toContain('rules-list-section rule-editor-grid');
     expect(css).not.toContain('.owned-input{');
     expect(css).not.toContain('.owned-input-shell>.owned-input');
   });
