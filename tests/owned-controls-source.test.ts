@@ -39,6 +39,11 @@ describe('app-owned entry controls',()=>{
     expect(dateSource).toContain('querySelector<HTMLButtonElement>');
     expect(dateSource).toContain(':not(:disabled)');
   });
+  it('keeps owned select triggers self-contained instead of relying on page-local form CSS',()=>{
+    expect(styles).toContain('.owned-input-shell>.owned-input{box-sizing:border-box;width:100%;min-height:40px;border:1px solid #d7e1ef;border-radius:11px');
+    expect(styles).toContain('padding:0 34px 0 10px');
+    expect(styles).toContain('text-overflow:ellipsis');
+  });
   it('keeps owned popovers viewport-contained and mobile-safe',()=>{
     expect(styles).toContain('.owned-popover-backdrop{position:fixed;inset:0');
     expect(styles).toContain('max-height:min(72dvh,620px)');
