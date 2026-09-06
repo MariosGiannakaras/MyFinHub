@@ -20,6 +20,16 @@ It is not a literal data fixture or branding template. Dynamic amounts, dates, a
 
 Use representative deterministic QA data when the target demonstrates a dense supported state. Never hard-code screenshot values into production UI merely to reproduce the image.
 
+## Shared UI primitives and design-system ownership
+
+Before styling a form control or repeated interaction on a page, inspect the existing shared MyFinHub primitive. Reuse app-owned controls such as `AppSelectInput`, `AppDateInput`, `MoneyInput`, `FormError`, shared dialog/focus patterns and the common button/input/token styles whenever they cover the required behavior.
+
+The shared primitive owns the control's base visual language and behavior: typography, height, internal padding, border/radius, focus/hover/disabled state, dropdown/popover treatment, keyboard interaction and accessibility semantics. A page may control composition such as grid placement, available width, responsive arrangement and surrounding spacing, but must not independently redesign the same primitive with page-local selectors unless the approved target requires a genuinely distinct variant that cannot be expressed through the shared component API.
+
+If the same dropdown/input/button defect appears on multiple surfaces, fix the shared primitive or shared design-system layer once and verify representative adopters. Do not repeat equivalent CSS overrides page-by-page. When a legitimate variant is needed, prefer an explicit shared component variant/class contract over selectors tied to one page.
+
+Do not replace an existing app-owned control with a browser-native popup merely to match a screenshot. Preserve the established shared control behavior unless the owner explicitly approves a product-level interaction change.
+
 ## Functional parity and canonical finance logic
 
 Visual fidelity is not sufficient. Preserve current routes, actions, forms, validation, loading/empty/error states, accessibility, keyboard behavior, responsive regression safety, persistence/auth/security boundaries and finance semantics.
