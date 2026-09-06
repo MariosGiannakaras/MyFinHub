@@ -1,6 +1,7 @@
 import { Archive, ArrowDown, ArrowUp, MoveRight, Pencil, Plus, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { categoryTree } from '../lib/categories';
+import { CATEGORY_ICON_PACKS, encodeCategoryIconValue, type CategoryIconPack } from '../lib/categoryIconRegistry';
 import {
   explicitCategoryIcon,
   explicitSubcategoryIcon,
@@ -34,6 +35,7 @@ type CategoryWorkspaceView='all'|'taxonomy'|'icons';
 
 export function CategoryIconsWorkspace({data,asOf,settings,onChange,onTaxonomyOperation,view='all'}:{data:FinanceData;asOf:string;settings:FinanceSettings;onChange:(settings:FinanceSettings)=>void;onTaxonomyOperation:(operation:TaxonomyOperation)=>void;view?:CategoryWorkspaceView}){
   const[kind,setKind]=useState<CategoryKind>('expense');
+  const[iconPack,setIconPack]=useState<CategoryIconPack>('lucide');
   const[categoryDraft,setCategoryDraft]=useState('');
   const[subcategoryDrafts,setSubcategoryDrafts]=useState<Record<string,string>>({});
   const[editing,setEditing]=useState<EditingState>(null);
@@ -49,7 +51,7 @@ export function CategoryIconsWorkspace({data,asOf,settings,onChange,onTaxonomyOp
   const description=view==='taxonomy'
     ?'Πρόσθεσε, μετονόμασε, ταξινόμησε ή μετέφερε κατηγορίες με stable ταυτότητα. Η «Απόσυρση» τις αφαιρεί μόνο από τις νέες επιλογές αφού τακτοποιήσεις ρητά κάθε ενεργή ή μελλοντική εξάρτηση· το ιστορικό δεν διαγράφεται.'
     :view==='icons'
-      ?'Όρισε την οπτική ταυτότητα κατηγοριών και υποκατηγοριών. Οι επιλογές εικονιδίων αλλάζουν μόνο την παρουσίαση και δεν μεταβάλλουν stable IDs, ταξινόμηση ή οικονομικό ιστορικό.'
+      ?'Διάλεξε πρώτα βιβλιοθήκη εικονιδίων και μετά όρισε κατηγορία ή υποκατηγορία από τη συμπαγή λίστα. Οι επιλογές αλλάζουν μόνο την παρουσίαση.'
       :'Διαχειρίσου την ταξινόμηση και τα εικονίδια με stable ταυτότητα, χωρίς να αλλοιώνεται το οικονομικό ιστορικό.';
 
   const perform=(operation:TaxonomyOperation)=>{
@@ -88,6 +90,17 @@ export function CategoryIconsWorkspace({data,asOf,settings,onChange,onTaxonomyOp
     <div className="panel-head">
       <div><span id="category-icons-title">{title}</span><small>{description}</small></div>
     </div>
+
+    {view==='icons'?<div className="category-icon-library" aria-label="Βιβλιοθήκες εικονιδίων">
+      <div className="category-icon-library-head"><b>Βιβλιοθήκη εικονιδίων</b><small>Επίλεξε pack. Η επιλογή εφαρμόζεται στο picker που ανοίγεις από τη λίστα παρακάτω.</small></div>
+      <div className="category-icon-pack-switcher category-icon-pack-switcher-global" role="group" aria-label="Πακέτο εικονιδίων">
+        {CATEGORY_ICON_PACKS.map(item=><button type="button" key={item.id} className={iconPack===item.id?'active':''} aria-pressed={iconPack===item.id} onClick={()=>setIconPack(item.id)} title={item.description}>
+          <span className="category-icon-pack-preview" aria-hidden="true"><CategoryIconGlyph iconKey={encodeCategoryIconValue(item.id,'coffee')} size={16}/><CategoryIconGlyph iconKey={encodeCategoryIconValue(item.id,'home')} size={16}/><CategoryIconGlyph iconKey={encodeCategoryIconValue(item.id,'wallet')} size={16}/></span>
+          <span><b>{item.label}</b><small>{item.license}</small></span>
+        </button>)}
+      </div>
+    </div>:null}
+
     <div className="segmented-control" role="group" aria-label="Τύπος κατηγοριών">
       <button type="button" className={kind==='expense'?'active':''} aria-pressed={kind==='expense'} onClick={()=>changeKind('expense')}>Έξοδα</button>
       <button type="button" className={kind==='income'?'active':''} aria-pressed={kind==='income'} onClick={()=>changeKind('income')}>Έσοδα</button>
@@ -135,7 +148,7 @@ export function CategoryIconsWorkspace({data,asOf,settings,onChange,onTaxonomyOp
 
           {showIcons?<details className="taxonomy-icon-disclosure">
             <summary>Εικονίδιο κατηγορίας</summary>
-            <div className="category-icon-picker-block"><CategoryIconPicker value={parentKey} onChange={iconKey=>onChange(withCategoryIcon(normalized,kind,category.name,iconKey))}/></div>
+            <div className="category-icon-picker-block"><CategoryIconPicker value={parentKey} selectedPack={view==='icons'?iconPack:undefined} showPackSwitcher={view!=='icons'} onChange={iconKey=>onChange(withCategoryIcon(normalized,kind,category.name,iconKey))}/></div>
           </details>:null}
 
           <div className="taxonomy-subcategory-section">
@@ -170,7 +183,7 @@ export function CategoryIconsWorkspace({data,asOf,settings,onChange,onTaxonomyOp
 
                   {showTaxonomy&&moving?.id===subcategoryId?<div className="taxonomy-move-editor" role="group" aria-label={`Μεταφορά υποκατηγορίας ${subcategory}`}><label><span>Μεταφορά σε</span><AppSelectInput value={moving.targetCategoryId} onChange={event=>setMoving({...moving,targetCategoryId:event.target.value})}>{otherCategories.map(target=><option key={target.id} value={target.id}>{target.name}</option>)}</AppSelectInput></label><button type="button" className="save-button" onClick={saveMove}>Μεταφορά</button><button type="button" className="secondary" aria-label="Ακύρωση μεταφοράς" title="Ακύρωση μεταφοράς" onClick={()=>setMoving(null)}><X size={14} aria-hidden="true"/></button></div>:null}
 
-                  {showIcons?<details className="taxonomy-icon-disclosure taxonomy-subcategory-icon"><summary>Εικονίδιο</summary><CategoryIconPicker value={override} inheritedLabel={`Από «${category.name}»`} onChange={iconKey=>onChange(withSubcategoryIconOverride(normalized,kind,category.name,subcategory,iconKey))}/></details>:null}
+                  {showIcons?<details className="taxonomy-icon-disclosure taxonomy-subcategory-icon"><summary>Εικονίδιο</summary><CategoryIconPicker value={override} selectedPack={view==='icons'?iconPack:undefined} showPackSwitcher={view!=='icons'} inheritedLabel={`Από «${category.name}»`} onChange={iconKey=>onChange(withSubcategoryIconOverride(normalized,kind,category.name,subcategory,iconKey))}/></details>:null}
                 </article>;
               })}
             </div>:<p className="empty-inline">Η κατηγορία δεν έχει υποκατηγορίες.</p>}
