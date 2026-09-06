@@ -1,5 +1,6 @@
 import { Search, Sparkles, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { categoryIconKeySupportedByPack } from '../lib/categoryIconPackSupport';
 import {
   CATEGORY_ICON_PACKS,
   decodeCategoryIconValue,
@@ -31,7 +32,7 @@ export function CategoryIconPicker({
   const[localPack,setLocalPack]=useState<CategoryIconPack>(decoded.pack);
   const[query,setQuery]=useState('');
   const pack=selectedPack??localPack;
-  const options=useMemo(()=>searchCategoryIcons(query,120),[query]);
+  const options=useMemo(()=>searchCategoryIcons(query,120).filter(option=>categoryIconKeySupportedByPack(pack,option.key)),[query,pack]);
   useEffect(()=>{if(selectedPack===undefined&&value)setLocalPack(decodeCategoryIconValue(value).pack)},[selectedPack,value]);
   const choosePack=(next:CategoryIconPack)=>{
     if(selectedPack===undefined)setLocalPack(next);
@@ -53,6 +54,6 @@ export function CategoryIconPicker({
         return <button type="button" aria-pressed={value===iconValue} className={value===iconValue?'category-icon-option active':'category-icon-option'} key={option.key} onClick={()=>onChange(iconValue)}><CategoryIconGlyph iconKey={iconValue} size={18}/><span>{option.label}</span></button>;
       })}
     </div>
-    {!options.length?<p className="empty-inline" role="status">Δεν βρέθηκε εικονίδιο με αυτή την αναζήτηση.</p>:null}
+    {!options.length?<p className="empty-inline" role="status">Δεν υπάρχει ξεχωριστό εικονίδιο σε αυτό το pack για την αναζήτηση.</p>:null}
   </div>;
 }
