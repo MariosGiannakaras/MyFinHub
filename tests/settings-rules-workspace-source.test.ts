@@ -18,7 +18,7 @@ describe('Settings Rules workspace source contract',()=>{
   it('presents a human when-then builder and taxonomy-backed subcategories',()=>{
     expect(workspace).toContain('Κανόνες νέων κινήσεων');
     expect(workspace).toContain('Όταν η περιγραφή');
-    expect(workspace).toContain('Τότε βάλε κατηγορία');
+    expect(workspace).toContain('<span>Κατηγορία</span>');
     expect(workspace).toContain('Πότε να λειτουργεί');
     expect(workspace).toContain("categoryTree(data.state.settings,'expense')");
     expect(workspace).toContain('availableSubcategories.map');
@@ -41,10 +41,19 @@ describe('Settings Rules workspace source contract',()=>{
     expect(settings).not.toContain('view="rules"');
   });
 
-  it('keeps compact desktop controls at least 24px and touch controls at 44px',()=>{
-    expect(css).toContain('grid-template-rows:24px 24px');
+  it('uses the shared modal and app-owned select primitives instead of page-local dropdown styling',()=>{
+    expect(workspace).toContain("import { useModalFocus } from '../hooks/useModalFocus';");
+    expect(workspace).toContain("const[editorOpen,setEditorOpen]=useState(false)");
+    expect(workspace).toContain('className="editor-backdrop rules-editor-backdrop"');
+    expect(workspace).toContain('className="panel neo-raised editor-dialog rules-editor"');
+    expect(workspace).toContain('<AppSelectInput');
+    expect(workspace).not.toContain('<select');
+    expect(css).not.toContain('.owned-input{');
+    expect(css).not.toContain('.owned-input-shell>.owned-input');
+  });
+
+  it('keeps compact desktop order controls and 44px touch targets on mobile',()=>{
     expect(css).toContain('height:24px;min-height:24px');
-    expect(css).toContain('grid-template-rows:44px 44px');
-    expect(css).toContain('height:44px;min-height:44px');
+    expect(css).toContain('width:44px;height:44px;min-height:44px');
   });
 });
