@@ -12,8 +12,8 @@
 .category-icon-selection-head b{font-size:var(--ux-small-size)}
 .category-icon-selection-head small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted);font-size:var(--ux-tiny-size)}
 .category-icon-selection-close{justify-self:end}
-.category-icon-unified-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;align-items:start}
-.category-icon-unified-category{min-width:0;overflow:hidden;border:1px solid var(--line);border-radius:11px;background:rgba(255,255,255,.58)}
+.category-icon-unified-list{display:block;columns:2;column-gap:7px}
+.category-icon-unified-category{display:inline-block;width:100%;min-width:0;overflow:hidden;margin:0 0 7px;break-inside:avoid;border:1px solid var(--line);border-radius:11px;background:rgba(255,255,255,.58)}
 .category-icon-unified-main{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:8px;width:100%;min-height:42px;padding:6px 9px;border:0;background:transparent;color:var(--ink);text-align:left;cursor:pointer}
 .category-icon-unified-main:hover{background:rgba(47,111,237,.045)}
 .category-icon-unified-main[aria-expanded="true"]{background:rgba(47,111,237,.075)}
@@ -38,5 +38,5 @@
 .category-icon-assignment-workspace .category-icon-option{min-width:0;min-height:38px;padding:6px 7px;border-radius:8px}
 .category-icon-assignment-workspace .category-icon-option>span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--ux-tiny-size)}
 @media(max-width:1180px){.category-icon-assignment-workspace .category-icon-options{grid-template-columns:repeat(6,minmax(0,1fr))}}
-@media(max-width:980px){.category-icon-unified-list{grid-template-columns:1fr}.category-icon-assignment-workspace .category-icon-options{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:980px){.category-icon-unified-list{columns:1}.category-icon-assignment-workspace .category-icon-options{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:720px){.category-icon-assignment-workspace{padding:12px}.category-icon-assignment-workspace .category-icon-library-head{display:grid;gap:2px}.category-icon-assignment-workspace .category-icon-library-head>small{text-align:left}.category-icon-selection-panel{padding:9px}.category-icon-unified-main{min-height:44px}.category-icon-unified-sublist{grid-template-columns:1fr}.category-icon-unified-submain{min-height:44px}.category-icon-assignment-workspace .category-icon-search,.category-icon-assignment-workspace .category-icon-option{min-height:44px}.category-icon-assignment-workspace .category-icon-options{grid-template-columns:repeat(2,minmax(0,1fr));max-height:300px}.category-icon-assignment-workspace .category-icon-picker-mode .category-icon-option{min-height:40px}}
