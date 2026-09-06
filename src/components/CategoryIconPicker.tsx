@@ -8,6 +8,8 @@ import {
   searchCategoryIcons,
   type CategoryIconPack,
 } from '../lib/categoryIconRegistry';
+import { AppInputShell } from './AppInputShell';
+import { AppTextInput } from './AppTextInput';
 import { CategoryIconGlyph } from './CategoryIconGlyph';
 import './CategoryIconPicker.css';
 
@@ -46,7 +48,7 @@ export function CategoryIconPicker({
     <div className="category-icon-picker-mode">
       <button type="button" className={!value?'category-icon-option active':'category-icon-option'} aria-pressed={!value} onClick={()=>onChange(null)}><Sparkles size={17} aria-hidden="true"/><span><b>Αυτόματο</b><small>{automaticLabel??inheritedLabel??'Σημασιολογική αντιστοίχιση'}</small></span></button>
     </div>
-    <label className="category-icon-search"><Search size={16} aria-hidden="true"/><span className="sr-only">Αναζήτηση εικονιδίου</span><input value={query} onChange={event=>setQuery(event.target.value)} placeholder="Αναζήτηση εικονιδίου…"/></label>
+    <label className="category-icon-search"><span className="sr-only">Αναζήτηση εικονιδίου</span><AppInputShell leading={<Search size={16}/>}><AppTextInput value={query} onChange={event=>setQuery(event.target.value)} placeholder="Αναζήτηση εικονιδίου…" aria-label="Αναζήτηση εικονιδίου"/></AppInputShell></label>
     <div className="category-icon-options" role="group" aria-label={`Εικονίδια ${CATEGORY_ICON_PACKS.find(item=>item.id===pack)?.label??pack}`}>
       {options.map(option=>{
         const iconValue=encodeCategoryIconValue(pack,option.key);
