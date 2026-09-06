@@ -13,6 +13,7 @@ import {
 import type { FinanceSettings } from '../types';
 import { CategoryIconGlyph } from './CategoryIconGlyph';
 import { CategoryIconPicker } from './CategoryIconPicker';
+import './CategoryIconAssignmentWorkspace.css';
 
 type Row={kind:CategoryKind;name:string;subcategories:string[]};
 
