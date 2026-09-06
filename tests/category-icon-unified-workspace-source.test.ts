@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 const workspace=readFileSync(new URL('../src/components/CategoryIconAssignmentWorkspace.tsx',import.meta.url),'utf8');
 const settings=readFileSync(new URL('../src/pages/SettingsPage.tsx',import.meta.url),'utf8');
+const support=readFileSync(new URL('../src/lib/categoryIconPackSupport.ts',import.meta.url),'utf8');
 
 describe('unified category icon assignment workspace',()=>{
   it('renders expense and income taxonomies in one assignment list without a type toggle',()=>{
@@ -26,6 +27,16 @@ describe('unified category icon assignment workspace',()=>{
     expect(workspace).toContain('Κλείσιμο επιλογής εικονιδίου');
     expect(workspace).toContain('showPackSwitcher={false}');
     expect(workspace).not.toContain('category-icon-unified-editor');
+  });
+
+  it('keeps pack selector previews, stored selections and picker context truthful',()=>{
+    expect(workspace).toContain('categoryIconPackPreviewKeys(item.id).map');
+    expect(workspace).toContain('value={editorValue} selectedPack={iconPack}');
+    expect(workspace).not.toContain('compatibleValue');
+    expect(workspace).toContain('Τρέχον: {packLabel(editorResolved)}');
+    expect(workspace).toContain("{packLabel(resolved)} · {explicit?'Προσαρμοσμένο':'Αυτόματο'}");
+    expect(support).toContain('categoryIconPackPreviewKeys');
+    expect(support).toContain("if(pack==='heroicons'||pack==='bootstrap')return ['shopping','home','flight']");
   });
 
   it('is the Settings Icons surface while Categories keeps taxonomy management',()=>{
