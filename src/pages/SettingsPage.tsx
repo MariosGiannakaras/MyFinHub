@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { AccountManagementSettings } from '../components/AccountManagementSettings';
 import { AccountSecuritySettings } from '../components/AccountSecuritySettings';
 import { BudgetRuleSettings } from '../components/BudgetRuleSettings';
+import { CategoryIconAssignmentWorkspace } from '../components/CategoryIconAssignmentWorkspace';
 import { CategoryIconsWorkspace } from '../components/CategoryIconsWorkspace';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { DesktopUpdatePanel } from '../components/DesktopUpdatePanel';
@@ -234,7 +235,7 @@ export function SettingsPage({
 
         {activeTab === 'icons' ? (
           <div className="settings-icons-only">
-            <CategoryIconsWorkspace data={data} asOf={asOf} settings={draft} onChange={(next) => commit(next, '')} onTaxonomyOperation={runTaxonomyOperation} view="icons" />
+            <CategoryIconAssignmentWorkspace settings={draft} onChange={(next) => commit(next, '')} />
           </div>
         ) : null}
 
