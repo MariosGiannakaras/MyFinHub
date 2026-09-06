@@ -1,16 +1,35 @@
 import { Search, X } from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { searchCategoryIcons } from '../lib/categoryIconRegistry';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  CATEGORY_ICON_PACKS,
+  decodeCategoryIconValue,
+  encodeCategoryIconValue,
+  searchCategoryIcons,
+  type CategoryIconPack,
+} from '../lib/categoryIconRegistry';
 import { CategoryIconGlyph } from './CategoryIconGlyph';
 
 export function CategoryIconPicker({value,onChange,inheritedLabel}:{value:string|null;onChange:(iconKey:string|null)=>void;inheritedLabel?:string}){
+  const decoded=decodeCategoryIconValue(value);
+  const[pack,setPack]=useState<CategoryIconPack>(decoded.pack);
   const[query,setQuery]=useState('');
   const options=useMemo(()=>searchCategoryIcons(query,120),[query]);
+  useEffect(()=>{if(value)setPack(decodeCategoryIconValue(value).pack)},[value]);
+  const choosePack=(next:CategoryIconPack)=>{
+    setPack(next);
+    if(value)onChange(encodeCategoryIconValue(next,decoded.key));
+  };
   return <div className="category-icon-picker">
+    <div className="category-icon-pack-switcher" role="group" aria-label="Πακέτο εικονιδίων">
+      {CATEGORY_ICON_PACKS.map(item=><button type="button" key={item.id} className={pack===item.id?'active':''} aria-pressed={pack===item.id} onClick={()=>choosePack(item.id)} title={item.description}><span><b>{item.label}</b><small>{item.license}</small></span></button>)}
+    </div>
     <label className="category-icon-search"><Search size={16} aria-hidden="true"/><span className="sr-only">Αναζήτηση εικονιδίου</span><input value={query} onChange={event=>setQuery(event.target.value)} placeholder="Αναζήτηση εικονιδίου…"/></label>
     {inheritedLabel?<button type="button" className={!value?'category-icon-option active':'category-icon-option'} aria-pressed={!value} onClick={()=>onChange(null)}><X size={17} aria-hidden="true"/><span><b>Κληρονομεί</b><small>{inheritedLabel}</small></span></button>:null}
-    <div className="category-icon-options" role="group" aria-label="Εικονίδια κατηγορίας">
-      {options.map(option=><button type="button" aria-pressed={value===option.key} className={value===option.key?'category-icon-option active':'category-icon-option'} key={option.key} onClick={()=>onChange(option.key)}><CategoryIconGlyph iconKey={option.key} size={18}/><span>{option.label}</span></button>)}
+    <div className="category-icon-options" role="group" aria-label={`Εικονίδια ${CATEGORY_ICON_PACKS.find(item=>item.id===pack)?.label??pack}`}>
+      {options.map(option=>{
+        const iconValue=encodeCategoryIconValue(pack,option.key);
+        return <button type="button" aria-pressed={value===iconValue} className={value===iconValue?'category-icon-option active':'category-icon-option'} key={option.key} onClick={()=>onChange(iconValue)}><CategoryIconGlyph iconKey={iconValue} size={18}/><span>{option.label}</span></button>;
+      })}
     </div>
     {!options.length?<p className="empty-inline" role="status">Δεν βρέθηκε εικονίδιο με αυτή την αναζήτηση.</p>:null}
   </div>;
