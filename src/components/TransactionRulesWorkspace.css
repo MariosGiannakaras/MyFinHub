@@ -95,8 +95,8 @@
   .rule-row-actions{grid-column:1/-1;justify-content:flex-end;padding-top:3px}
   .rule-row-actions .secondary,.rule-row-actions .icon-button{min-height:44px}
   .rule-row-actions .icon-button{width:44px;height:44px}
-  .rules-order-controls{grid-template-columns:30px 44px;grid-template-rows:22px 22px}
-  .rules-order-controls button{width:44px;height:22px;min-height:22px}
+  .rules-order-controls{grid-template-columns:30px 44px;grid-template-rows:44px 44px}
+  .rules-order-controls button{width:44px;height:44px;min-height:44px}
   .rules-empty-state{grid-template-columns:auto minmax(0,1fr)}
   .rules-empty-state>button{grid-column:1/-1;justify-self:start;min-height:44px}
 }
