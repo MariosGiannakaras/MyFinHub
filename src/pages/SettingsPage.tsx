@@ -2,13 +2,13 @@ import { Database, Download, FileJson, ShieldCheck } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { AccountManagementSettings } from '../components/AccountManagementSettings';
 import { AccountSecuritySettings } from '../components/AccountSecuritySettings';
-import { BudgetRuleSettings } from '../components/BudgetRuleSettings';
 import { CategoryIconAssignmentWorkspace } from '../components/CategoryIconAssignmentWorkspace';
 import { CategoryIconsWorkspace } from '../components/CategoryIconsWorkspace';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { DesktopUpdatePanel } from '../components/DesktopUpdatePanel';
 import { KeyboardShortcutsPanel } from '../components/KeyboardShortcutsPanel';
 import { ReadabilitySettings } from '../components/ReadabilitySettings';
+import { TransactionRulesWorkspace } from '../components/TransactionRulesWorkspace';
 import { categoryTree } from '../lib/categories';
 import { MAX_FINANCE_DOCUMENT_BYTES } from '../lib/limits';
 import { taxonomyOperationPreview, type TaxonomyOperation } from '../lib/taxonomyManagement';
@@ -102,6 +102,8 @@ export function SettingsPage({
   onUpsertRule: (rule: TransactionRule) => void;
   onDeleteRule: (id: string) => void;
 }) {
+  void onUpsertBudget;
+  void onDeleteBudget;
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
   const [message, setMessage] = useState('');
@@ -241,7 +243,7 @@ export function SettingsPage({
 
         {activeTab === 'rules' ? (
           <div className="settings-tab-stack settings-rules-only">
-            <BudgetRuleSettings data={data} asOf={asOf} onUpsertBudget={onUpsertBudget} onDeleteBudget={onDeleteBudget} onUpsertRule={onUpsertRule} onDeleteRule={onDeleteRule} view="rules" />
+            <TransactionRulesWorkspace data={data} onUpsertRule={onUpsertRule} onDeleteRule={onDeleteRule} />
           </div>
         ) : null}
 
