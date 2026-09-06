@@ -15,13 +15,19 @@ describe('local category icon registry',()=>{
     expect(CATEGORY_ICON_REGISTRY.every(item=>item.label&&item.key&&!JSON.stringify(item).match(/https?:\/\//))).toBe(true);
   });
 
-  it('exposes connected free icon packs without breaking legacy Lucide values',()=>{
-    expect(CATEGORY_ICON_PACKS.map(item=>item.id)).toEqual(['lucide','tabler']);
-    expect(CATEGORY_ICON_PACKS.map(item=>item.license)).toEqual(['ISC','MIT']);
+  it('exposes five connected free icon packs without breaking legacy Lucide values',()=>{
+    expect(CATEGORY_ICON_PACKS.map(item=>item.id)).toEqual(['lucide','tabler','phosphor','heroicons','bootstrap']);
+    expect(CATEGORY_ICON_PACKS.map(item=>item.license)).toEqual(['ISC','MIT','MIT','MIT','MIT']);
     expect(encodeCategoryIconValue('lucide','coffee')).toBe('coffee');
     expect(encodeCategoryIconValue('tabler','coffee')).toBe('tabler:coffee');
+    expect(encodeCategoryIconValue('phosphor','coffee')).toBe('phosphor:coffee');
+    expect(encodeCategoryIconValue('heroicons','coffee')).toBe('heroicons:coffee');
+    expect(encodeCategoryIconValue('bootstrap','coffee')).toBe('bootstrap:coffee');
     expect(decodeCategoryIconValue('coffee')).toEqual({pack:'lucide',key:'coffee'});
     expect(decodeCategoryIconValue('tabler:coffee')).toEqual({pack:'tabler',key:'coffee'});
+    expect(decodeCategoryIconValue('phosphor:coffee')).toEqual({pack:'phosphor',key:'coffee'});
+    expect(decodeCategoryIconValue('heroicons:coffee')).toEqual({pack:'heroicons',key:'coffee'});
+    expect(decodeCategoryIconValue('bootstrap:coffee')).toEqual({pack:'bootstrap',key:'coffee'});
   });
 
   it('searches Greek and English synonyms without requiring accents',()=>{
@@ -34,6 +40,9 @@ describe('local category icon registry',()=>{
   it('resolves stable keys across packs and fails safely for retired or unknown keys',()=>{
     expect(categoryIconByKey('coffee')?.label).toBe('Καφές');
     expect(categoryIconByKey('tabler:coffee')?.label).toBe('Καφές');
+    expect(categoryIconByKey('phosphor:coffee')?.label).toBe('Καφές');
+    expect(categoryIconByKey('heroicons:coffee')?.label).toBe('Καφές');
+    expect(categoryIconByKey('bootstrap:coffee')?.label).toBe('Καφές');
     expect(categoryIconByKey('does-not-exist')).toBeNull();
   });
 });
