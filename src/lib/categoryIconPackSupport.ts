@@ -44,3 +44,12 @@ export function categoryIconPackCoverage(pack:CategoryIconPack){
   if(pack==='lucide')return null;
   return keysForPack(pack)?.size??0;
 }
+
+/* Selector previews must be real, distinct glyphs that the same pack can also
+ * expose inside the picker. Never rely on renderer fallbacks for these samples. */
+export function categoryIconPackPreviewKeys(pack:CategoryIconPack):readonly CategoryIconKey[]{
+  if(pack==='tabler')return ['coffee','home','wallet'];
+  if(pack==='phosphor')return ['coffee','home','flight'];
+  if(pack==='heroicons'||pack==='bootstrap')return ['shopping','home','flight'];
+  return ['coffee','home','wallet'];
+}
