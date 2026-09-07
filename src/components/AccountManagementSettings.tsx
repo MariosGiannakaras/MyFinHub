@@ -19,6 +19,7 @@ import {
 import { formatIban, isValidIban, normalizeIban } from '../lib/iban';
 import type { Account, FinanceData, FinanceSettings } from '../types';
 import { AppSelectInput } from './AppSelectInput';
+import { AppTextInput } from './AppTextInput';
 import { BankBrandMark } from './BankBrandMark';
 import { ConfirmDialog } from './ConfirmDialog';
 import './AccountManagementSettings.css';
@@ -298,11 +299,11 @@ export function AccountManagementSettings({data,settings,onChange}:{data:Finance
             {editor.source==='new'?<label className="account-management-field"><span>2. Τράπεζα / πάροχος</span><AppSelectInput className="account-management-select" aria-label="Τράπεζα ή πάροχος" value={editor.providerId} onChange={event=>setEditor({...editor,providerId:event.target.value})}><option value="">Επίλεξε τράπεζα</option>{providers.map(provider=><option key={provider.id} value={provider.id}>{provider.displayName}</option>)}</AppSelectInput></label>:null}
             {selectedProvider?<div className="account-management-provider-preview" aria-label={`Επιλεγμένος πάροχος ${selectedProvider.displayName}`}><BankBrandMark id={selectedProvider.id} name={selectedProvider.displayName}/><div><b>{selectedProvider.displayName}</b><span>{selectedProvider.kindLabel}</span></div></div>:null}
             <label className="account-management-field"><span>{editor.source==='new'?'3. ':''}Κατηγορία λογαριασμού</span><AppSelectInput className="account-management-select" aria-label="Κατηγορία λογαριασμού" value={editor.bankAccountCategory} onChange={event=>setEditor({...editor,bankAccountCategory:event.target.value as BankAccountCategory})}>{BANK_ACCOUNT_CATEGORIES.map(category=><option key={category.id} value={category.id}>{category.label}</option>)}</AppSelectInput></label>
-            <label className="account-management-field"><span>Όνομα λογαριασμού</span><input data-autofocus={editor.source==='new'?undefined:'true'} value={editor.name} onChange={event=>setEditor({...editor,name:event.target.value})} placeholder="π.χ. Μισθοδοσία"/></label>
-            <label className="account-management-field"><span>IBAN</span><input inputMode="text" autoCapitalize="characters" autoCorrect="off" spellCheck={false} value={editor.iban} onChange={event=>setEditor({...editor,iban:event.target.value.toUpperCase()})} placeholder="GR16 0110 …"/></label>
+            <label className="account-management-field"><span>Όνομα λογαριασμού</span><AppTextInput data-autofocus={editor.source==='new'?undefined:'true'} value={editor.name} onChange={event=>setEditor({...editor,name:event.target.value})} placeholder="π.χ. Μισθοδοσία"/></label>
+            <label className="account-management-field"><span>IBAN</span><AppTextInput inputMode="text" autoCapitalize="characters" autoCorrect="off" spellCheck={false} value={editor.iban} onChange={event=>setEditor({...editor,iban:event.target.value.toUpperCase()})} placeholder="GR16 0110 …"/></label>
           </>:<>
             <fieldset className="account-management-segment compact account-management-cash-types"><legend>{editor.source==='new'?'2. Τύπος μετρητών':'Τύπος μετρητών'}</legend><div>{VISIBLE_CASH_ACCOUNT_TYPES.map(type=><button key={type.id} type="button" className={editor.cashType===type.id?'active is-cash':''} aria-pressed={editor.cashType===type.id} onClick={()=>setEditor({...editor,cashType:type.id})}>{type.label}</button>)}</div></fieldset>
-            <label className="account-management-field"><span>Όνομα λογαριασμού</span><input data-autofocus={editor.source==='new'?undefined:'true'} value={editor.name} onChange={event=>setEditor({...editor,name:event.target.value})} placeholder={editor.cashType==='reserve'?'π.χ. Καβάτζα':'π.χ. Πορτοφόλι'}/></label>
+            <label className="account-management-field"><span>Όνομα λογαριασμού</span><AppTextInput data-autofocus={editor.source==='new'?undefined:'true'} value={editor.name} onChange={event=>setEditor({...editor,name:event.target.value})} placeholder={editor.cashType==='reserve'?'π.χ. Καβάτζα':'π.χ. Πορτοφόλι'}/></label>
           </>}
 
           {editor.source!=='new'&&editorCanBeDefault?<fieldset className="account-management-edit-defaults"><legend>Προεπιλογές</legend><div>
