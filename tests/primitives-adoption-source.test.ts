@@ -27,19 +27,28 @@ describe('shared primitive adoption',()=>{
     expect(credit).toContain('<AppTextInput value={note}');
   });
 
-  it('uses app-owned confirmation for self-loan forgiveness',()=>{
+  it('uses app-owned confirmation and shared generic text controls for Loans',()=>{
     expectNoNativeDialog(loans);
     expect(loans).toContain('<ConfirmDialog');
     expect(loans).toContain('motionMode={data.state.settings.motion}');
     expect(loans).toContain('forgivenAmount:Number(current.forgivenAmount||0)+remaining');
+    expect(loans).toContain("from '../components/AppTextInput'");
+    expect(loans).toContain('<AppTextInput data-autofocus="true" value={edit.name}');
+    expect(loans).toContain('<AppTextInput type="number" min="1" step="1"');
+    expect(loans).toContain('<AppTextInput value={edit.provider||\'\'}');
+    expect(loans.match(/<input\b/g)?.length).toBe(1);
+    expect(loans).toContain('<input type="checkbox" checked={Boolean(edit.longTermRecurring)}');
   });
 
-  it('uses shared confirmation and money fields in Planning',()=>{
+  it('uses shared confirmation, money and generic text fields in Planning',()=>{
     expectNoNativeDialog(planning);
     expect(planning).toContain('<ConfirmDialog');
     expect(planning).toContain('<MoneyInput data-autofocus="true" value={draft.amount}');
     expect(planning).toContain('<MoneyInput data-autofocus="true" value={actualAmount}');
     expect(planning).toContain("transitionScheduled(item,status)");
+    expect(planning).toContain("from '../components/AppTextInput'");
+    expect(planning).toContain('<AppTextInput value={draft.note}');
+    expect(planning).not.toMatch(/<input\b/);
   });
 
   it('keeps JSON import behind the app-owned confirmation without changing the import path',()=>{
