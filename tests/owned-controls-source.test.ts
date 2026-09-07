@@ -7,12 +7,14 @@ const dateSource=readFileSync(new URL('../src/components/AppDateInput.tsx',impor
 const textSource=readFileSync(new URL('../src/components/AppTextInput.tsx',import.meta.url),'utf8');
 const taxonomySource=readFileSync(new URL('../src/components/CategoryIconsWorkspace.tsx',import.meta.url),'utf8');
 const cardCreateSource=readFileSync(new URL('../src/components/CardCreateDialog.tsx',import.meta.url),'utf8');
+const accountSource=readFileSync(new URL('../src/components/AccountManagementSettings.tsx',import.meta.url),'utf8');
 const modalFocusSource=readFileSync(new URL('../src/hooks/useModalFocus.ts',import.meta.url),'utf8');
 const shortcutSource=readFileSync(new URL('../src/lib/shortcuts.ts',import.meta.url),'utf8');
 const styles=readFileSync(new URL('../src/styles/part25.css',import.meta.url),'utf8');
 const sharedStyles=readFileSync(new URL('../src/styles/part57.css',import.meta.url),'utf8');
 const integrationStyles=readFileSync(new URL('../src/styles/part33.css',import.meta.url),'utf8');
 const taxonomyStyles=readFileSync(new URL('../src/styles/part46.css',import.meta.url),'utf8');
+const accountStyles=readFileSync(new URL('../src/components/AccountManagementSettings.css',import.meta.url),'utf8');
 function files(path:string):string[]{return readdirSync(path).flatMap(name=>{const full=join(path,name);return statSync(full).isDirectory()?files(full):/\.tsx$/.test(name)?[full]:[]})}
 
 describe('app-owned entry controls',()=>{
@@ -61,6 +63,16 @@ describe('app-owned entry controls',()=>{
     expect(cardCreateSource).not.toMatch(/<input\b/);
     expect(taxonomyStyles).not.toContain('.taxonomy-add-row input');
     expect(taxonomyStyles).not.toContain('.taxonomy-inline-editor input');
+  });
+  it('keeps account editor text and select presentation shared while preserving semantic checkboxes',()=>{
+    expect(accountSource).toContain("import { AppTextInput } from './AppTextInput'");
+    expect(accountSource.match(/<AppTextInput/g)?.length).toBe(3);
+    const rawInputs=accountSource.match(/<input\b[^>]*>/g)??[];
+    expect(rawInputs).toHaveLength(3);
+    expect(rawInputs.every(input=>input.includes('type="checkbox"'))).toBe(true);
+    expect(accountStyles).not.toContain('.account-management-field input{');
+    expect(accountStyles).not.toContain('.account-management-select>.owned-input');
+    expect(accountStyles).not.toContain('.owned-select-popover:is(');
   });
   it('keeps owned popovers viewport-contained and mobile-safe',()=>{
     expect(styles).toContain('.owned-popover-backdrop{position:fixed;inset:0');
