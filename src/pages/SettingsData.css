@@ -24,5 +24,5 @@
   .settings-data-status-grid{grid-template-columns:1fr}
   .settings-data-action-grid{grid-template-columns:1fr;gap:12px}
   .settings-data-action-card{padding:14px}
-  .settings-data-action-button{width:100%;justify-content:center}
+  .settings-data-action-button{width:100%;min-height:44px;justify-content:center}
 }
