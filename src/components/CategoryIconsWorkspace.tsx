@@ -21,6 +21,7 @@ import {
 } from '../lib/taxonomyManagement';
 import type { FinanceData, FinanceSettings } from '../types';
 import { AppSelectInput } from './AppSelectInput';
+import { AppTextInput } from './AppTextInput';
 import { CategoryIconGlyph } from './CategoryIconGlyph';
 import { CategoryIconPicker } from './CategoryIconPicker';
 import { ConfirmDialog } from './ConfirmDialog';
@@ -107,7 +108,7 @@ export function CategoryIconsWorkspace({data,asOf,settings,onChange,onTaxonomyOp
     </div>
 
     {showTaxonomy?<div className="taxonomy-add-row" role="group" aria-label={`Νέα κατηγορία ${noun}`}>
-      <label><span>Νέα κατηγορία</span><input value={categoryDraft} onChange={event=>setCategoryDraft(event.target.value)} onKeyDown={event=>{if(event.key==='Enter'){event.preventDefault();addCategory()}}} placeholder="Όνομα κατηγορίας"/></label>
+      <label><span>Νέα κατηγορία</span><AppTextInput value={categoryDraft} onChange={event=>setCategoryDraft(event.target.value)} onKeyDown={event=>{if(event.key==='Enter'){event.preventDefault();addCategory()}}} placeholder="Όνομα κατηγορίας"/></label>
       <button type="button" className="save-button" onClick={addCategory}><Plus size={16} aria-hidden="true"/> Προσθήκη</button>
     </div>:null}
     {showTaxonomy&&error?<div className="form-error taxonomy-error" role="alert">{error}</div>:null}
@@ -144,7 +145,7 @@ export function CategoryIconsWorkspace({data,asOf,settings,onChange,onTaxonomyOp
             </div>:null}
           </div>
 
-          {showTaxonomy&&editing?.type==='category'&&editing.id===categoryId?<div className="taxonomy-inline-editor" role="group" aria-label={`Μετονομασία κατηγορίας ${category.name}`}><input autoFocus value={editing.value} onChange={event=>setEditing({...editing,value:event.target.value})} onKeyDown={event=>{if(event.key==='Enter'){event.preventDefault();saveEdit()}if(event.key==='Escape')setEditing(null)}}/><button type="button" className="save-button" onClick={saveEdit}>Αποθήκευση</button><button type="button" className="secondary" aria-label="Ακύρωση μετονομασίας" title="Ακύρωση μετονομασίας" onClick={()=>setEditing(null)}><X size={15} aria-hidden="true"/></button></div>:null}
+          {showTaxonomy&&editing?.type==='category'&&editing.id===categoryId?<div className="taxonomy-inline-editor" role="group" aria-label={`Μετονομασία κατηγορίας ${category.name}`}><AppTextInput autoFocus value={editing.value} onChange={event=>setEditing({...editing,value:event.target.value})} onKeyDown={event=>{if(event.key==='Enter'){event.preventDefault();saveEdit()}if(event.key==='Escape')setEditing(null)}}/><button type="button" className="save-button" onClick={saveEdit}>Αποθήκευση</button><button type="button" className="secondary" aria-label="Ακύρωση μετονομασίας" title="Ακύρωση μετονομασίας" onClick={()=>setEditing(null)}><X size={15} aria-hidden="true"/></button></div>:null}
 
           {showIcons?<details className="taxonomy-icon-disclosure">
             <summary>Εικονίδιο κατηγορίας</summary>
@@ -154,7 +155,7 @@ export function CategoryIconsWorkspace({data,asOf,settings,onChange,onTaxonomyOp
           <div className="taxonomy-subcategory-section">
             <div className="taxonomy-subcategory-heading"><div><b>Υποκατηγορίες</b><small>{view==='taxonomy'?'Διαχειρίσου τη δομή και τη σειρά των υποκατηγοριών.':'Κληρονομούν το εικονίδιο της κατηγορίας εκτός αν ορίσεις override.'}</small></div></div>
             {showTaxonomy?<div className="taxonomy-add-row taxonomy-add-subcategory" role="group" aria-label={`Νέα υποκατηγορία στην ${category.name}`}>
-              <label><span className="sr-only">Νέα υποκατηγορία στην {category.name}</span><input value={subcategoryDrafts[categoryId]??''} onChange={event=>setSubcategoryDrafts(current=>({...current,[categoryId]:event.target.value}))} onKeyDown={event=>{if(event.key==='Enter'){event.preventDefault();addSubcategory(categoryId)}}} placeholder={`Νέα υποκατηγορία στην «${category.name}»`}/></label>
+              <label><span className="sr-only">Νέα υποκατηγορία στην {category.name}</span><AppTextInput value={subcategoryDrafts[categoryId]??''} onChange={event=>setSubcategoryDrafts(current=>({...current,[categoryId]:event.target.value}))} onKeyDown={event=>{if(event.key==='Enter'){event.preventDefault();addSubcategory(categoryId)}}} placeholder={`Νέα υποκατηγορία στην «${category.name}»`}/></label>
               <button type="button" className="secondary" onClick={()=>addSubcategory(categoryId)}><Plus size={15} aria-hidden="true"/> Προσθήκη</button>
             </div>:null}
 
@@ -179,7 +180,7 @@ export function CategoryIconsWorkspace({data,asOf,settings,onChange,onTaxonomyOp
                     <button type="button" aria-label={subcategoryRetireLabel} title={subcategoryRetireLabel} onClick={()=>requestRetirement({type:'retire-subcategory',kind,identityId:subcategoryId},subcategory)}><Archive size={14} aria-hidden="true"/></button>
                   </div>:null}
 
-                  {showTaxonomy&&editing?.type==='subcategory'&&editing.id===subcategoryId?<div className="taxonomy-inline-editor taxonomy-subcategory-editor" role="group" aria-label={`Μετονομασία υποκατηγορίας ${subcategory}`}><input autoFocus value={editing.value} onChange={event=>setEditing({...editing,value:event.target.value})} onKeyDown={event=>{if(event.key==='Enter'){event.preventDefault();saveEdit()}if(event.key==='Escape')setEditing(null)}}/><button type="button" className="save-button" onClick={saveEdit}>Αποθήκευση</button><button type="button" className="secondary" aria-label="Ακύρωση μετονομασίας" title="Ακύρωση μετονομασίας" onClick={()=>setEditing(null)}><X size={14} aria-hidden="true"/></button></div>:null}
+                  {showTaxonomy&&editing?.type==='subcategory'&&editing.id===subcategoryId?<div className="taxonomy-inline-editor taxonomy-subcategory-editor" role="group" aria-label={`Μετονομασία υποκατηγορίας ${subcategory}`}><AppTextInput autoFocus value={editing.value} onChange={event=>setEditing({...editing,value:event.target.value})} onKeyDown={event=>{if(event.key==='Enter'){event.preventDefault();saveEdit()}if(event.key==='Escape')setEditing(null)}}/><button type="button" className="save-button" onClick={saveEdit}>Αποθήκευση</button><button type="button" className="secondary" aria-label="Ακύρωση μετονομασίας" title="Ακύρωση μετονομασίας" onClick={()=>setEditing(null)}><X size={14} aria-hidden="true"/></button></div>:null}
 
                   {showTaxonomy&&moving?.id===subcategoryId?<div className="taxonomy-move-editor" role="group" aria-label={`Μεταφορά υποκατηγορίας ${subcategory}`}><label><span>Μεταφορά σε</span><AppSelectInput value={moving.targetCategoryId} onChange={event=>setMoving({...moving,targetCategoryId:event.target.value})}>{otherCategories.map(target=><option key={target.id} value={target.id}>{target.name}</option>)}</AppSelectInput></label><button type="button" className="save-button" onClick={saveMove}>Μεταφορά</button><button type="button" className="secondary" aria-label="Ακύρωση μεταφοράς" title="Ακύρωση μεταφοράς" onClick={()=>setMoving(null)}><X size={14} aria-hidden="true"/></button></div>:null}
 
