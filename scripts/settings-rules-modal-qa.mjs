@@ -56,10 +56,11 @@ try{
   await screenshot('settings-rules-corrected-desktop');
 
   await openCreate();
-  const desktopModal=await c.call("function(){const modal=document.querySelector('[data-rule-editor]');const rect=modal?.getBoundingClientRect();const active=document.activeElement;const owned=[...(modal?.querySelectorAll('.owned-select-shell>.owned-input')||[])];return {title:modal?.querySelector('#rule-editor-title')?.textContent||'',nativeSelects:modal?.querySelectorAll('select').length||0,ownedSelects:owned.length,ownedMinHeights:owned.map(input=>parseFloat(getComputedStyle(input).minHeight)||input.getBoundingClientRect().height),ownedRadii:owned.map(input=>parseFloat(getComputedStyle(input).borderRadius)||0),bodyFixed:getComputedStyle(document.body).position==='fixed',focusedName:active instanceof HTMLInputElement&&active.closest('[data-rule-editor]')===modal&&!active.readOnly,width:rect?.width||0,height:rect?.height||0,left:rect?.left||0,top:rect?.top||0}}");
+  const desktopModal=await c.call("function(){const modal=document.querySelector('[data-rule-editor]');const rect=modal?.getBoundingClientRect();const active=document.activeElement;const owned=[...(modal?.querySelectorAll('.owned-select-shell>.owned-input')||[])];return {title:modal?.querySelector('#rule-editor-title')?.textContent||'',nativeSelects:modal?.querySelectorAll('select').length||0,ownedSelects:owned.length,hasHierarchicalCategory:Boolean(modal?.querySelector('input[aria-label=\"Κατηγορία ή υποκατηγορία κανόνα\"]')),ownedMinHeights:owned.map(input=>parseFloat(getComputedStyle(input).minHeight)||input.getBoundingClientRect().height),ownedRadii:owned.map(input=>parseFloat(getComputedStyle(input).borderRadius)||0),bodyFixed:getComputedStyle(document.body).position==='fixed',focusedName:active instanceof HTMLInputElement&&active.closest('[data-rule-editor]')===modal&&!active.readOnly,width:rect?.width||0,height:rect?.height||0,left:rect?.left||0,top:rect?.top||0}}");
   assert(desktopModal.title.includes('Νέος κανόνας'),'Create modal has the correct identity');
   assert(desktopModal.nativeSelects===0,'Rules editor contains no browser-native select controls');
-  assert(desktopModal.ownedSelects>=5,'Rules editor uses shared AppSelectInput controls');
+  assert(desktopModal.ownedSelects>=4,'Rules editor uses shared app-owned select controls');
+  assert(desktopModal.hasHierarchicalCategory,'Rules editor uses the shared hierarchical category selector');
   assert(desktopModal.ownedMinHeights.every(value=>value>=40),'Shared owned select triggers keep a usable base height');
   assert(desktopModal.ownedRadii.every(value=>value>=9),'Shared owned select triggers keep the common rounded control treatment');
   assert(desktopModal.bodyFixed,'Shared modal focus layer locks background scroll');
@@ -69,17 +70,20 @@ try{
   assert(desktopModal.left>=0&&desktopModal.top>=0,'Desktop Rules modal remains on-screen');
   await screenshot('settings-rules-editor-desktop');
 
-  const dropdownOpened=await c.call("function(){const input=document.querySelector('[data-rule-editor] input[aria-label=\"Κατηγορία κανόνα\"]');if(!input)return false;input.click();return true}");
-  assert(dropdownOpened,'Category shared dropdown opens from the Rules modal');
-  await waitFor("function(){return Boolean(document.querySelector('.owned-select-popover[aria-label=\"Κατηγορία κανόνα\"]'))}",'Rules category dropdown');
-  const dropdownState=await c.call("function(){const popover=document.querySelector('.owned-select-popover[aria-label=\"Κατηγορία κανόνα\"]');return {options:popover?.querySelectorAll('[role=option]').length||0,nativeSelects:document.querySelectorAll('select').length||0,modalCount:[...document.querySelectorAll('[aria-modal=true]')].filter(node=>node.getClientRects().length).length}}");
-  assert(dropdownState.options>=2,'Category dropdown exposes real category options');
+  const categoryLabel='Κατηγορία ή υποκατηγορία κανόνα';
+  const dropdownOpened=await c.call("function(label){const input=document.querySelector(`[data-rule-editor] input[aria-label=\"${label}\"]`);if(!input)return false;input.click();return true}",[categoryLabel]);
+  assert(dropdownOpened,'Shared hierarchical category dropdown opens from the Rules modal');
+  await waitFor("function(label){return Boolean(document.querySelector(`.owned-select-popover[aria-label=\"${label}\"]`))}",'Rules category dropdown',[categoryLabel]);
+  const dropdownState=await c.call("function(label){const popover=document.querySelector(`.owned-select-popover[aria-label=\"${label}\"]`);return {options:popover?.querySelectorAll('[role=option]').length||0,categories:popover?.querySelectorAll('[data-option-level=category]').length||0,subcategories:popover?.querySelectorAll('[data-option-level=subcategory]').length||0,nativeSelects:document.querySelectorAll('select').length||0,modalCount:[...document.querySelectorAll('[aria-modal=true]')].filter(node=>node.getClientRects().length).length}}");
+  assert(dropdownState.options>=2,'Category dropdown exposes real taxonomy options');
+  assert(dropdownState.categories>=1,'Category dropdown exposes category hierarchy rows');
+  assert(dropdownState.subcategories>=1,'Category dropdown exposes subcategory hierarchy rows');
   assert(dropdownState.nativeSelects===0,'Opening a dropdown does not introduce browser-native select UI');
   assert(dropdownState.modalCount>=2,'Shared dropdown remains the topmost modal layer over the Rules editor');
   await screenshot('settings-rules-editor-category-dropdown-desktop');
-  const dropdownClosed=await c.call("function(){const button=document.querySelector('.owned-select-popover[aria-label=\"Κατηγορία κανόνα\"] button[aria-label=\"Κλείσιμο επιλογών\"]');if(!button)return false;button.click();return true}");
+  const dropdownClosed=await c.call("function(label){const button=document.querySelector(`.owned-select-popover[aria-label=\"${label}\"] button[aria-label=\"Κλείσιμο επιλογών\"]`);if(!button)return false;button.click();return true}",[categoryLabel]);
   assert(dropdownClosed,'Category shared dropdown closes');
-  await waitFor("function(){return !document.querySelector('.owned-select-popover[aria-label=\"Κατηγορία κανόνα\"]')}",'Rules category dropdown close');
+  await waitFor("function(label){return !document.querySelector(`.owned-select-popover[aria-label=\"${label}\"]`)}",'Rules category dropdown close',[categoryLabel]);
 
   const escaped=await c.call("function(){document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true,cancelable:true}));return true}");
   assert(escaped,'Escape event dispatched');
