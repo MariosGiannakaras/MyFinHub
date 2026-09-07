@@ -11,7 +11,7 @@
 .taxonomy-add-row,.taxonomy-inline-editor,.taxonomy-move-editor{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:end}
 .taxonomy-add-row label,.taxonomy-move-editor label{min-width:0;display:grid;gap:5px}
 .taxonomy-add-row label>span,.taxonomy-move-editor label>span{font-weight:800;color:var(--muted)}
-.taxonomy-add-row input,.taxonomy-inline-editor input{width:100%;min-width:0;min-height:42px;border:1px solid var(--line);border-radius:11px;background:var(--surface);color:var(--ink);padding:0 11px}
+.taxonomy-add-row .app-control,.taxonomy-inline-editor .app-control{min-width:0}
 .taxonomy-inline-editor{grid-template-columns:minmax(0,1fr) auto 40px;padding:10px;border:1px solid var(--line);border-radius:12px}
 .taxonomy-inline-editor .secondary,.taxonomy-move-editor>.secondary{min-width:40px}
 .taxonomy-error{margin:0}
@@ -29,7 +29,7 @@
 .taxonomy-subcategory-main>div{min-width:0}
 .taxonomy-subcategory-editor,.taxonomy-move-editor,.taxonomy-subcategory-icon{grid-column:1/-1}
 .taxonomy-move-editor{grid-template-columns:minmax(180px,1fr) auto 40px;padding:10px;border:1px solid var(--line);border-radius:12px}
-.taxonomy-move-editor .owned-select-shell,.taxonomy-move-editor .owned-input{width:100%}
+.taxonomy-move-editor .owned-select-shell{width:100%;min-width:0}
 @media(max-width:680px){
  .category-taxonomy-card{padding:11px}
  .category-taxonomy-head{grid-template-columns:auto minmax(0,1fr);align-items:start}
@@ -42,7 +42,6 @@
  .taxonomy-subcategory-row{grid-template-columns:1fr}
  .taxonomy-subcategory-row>.taxonomy-row-actions{justify-content:flex-start}
  .taxonomy-subcategory-editor,.taxonomy-move-editor,.taxonomy-subcategory-icon{grid-column:1}
- .taxonomy-add-row input,.taxonomy-inline-editor input{min-height:46px;font-size:16px}
  .transactions-workspace .mobile-transaction-filters{grid-template-columns:1fr}
 }
 @media(max-width:360px){.category-taxonomy-head{grid-template-columns:1fr}.taxonomy-row-actions{justify-content:flex-start}}
