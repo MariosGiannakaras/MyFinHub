@@ -22,7 +22,7 @@ Current full-page baselines are resolved from `visual-qa/manifest.json`. Current
 | 11 | Needs Attention | DESIGN APPROVED | VERIFIED | merged to `develop` via #339 |
 | 12 | Review | NOT STARTED | NOT STARTED | — |
 | 13 | Reports | DESIGN APPROVED | VERIFIED | merged to `develop` via #342 |
-| 14 | Settings | DESIGNING | IMPLEMENTING | Rules correction pass in progress on #347; Data blocked until Rules approval |
+| 14 | Settings | DESIGNING | VALIDATING | Corrected Rules Actual internally validated on #347; owner approval still required; Data blocked |
 
 ## Verified delivery history
 
@@ -52,7 +52,7 @@ Settings → General uses the owner-approved 1505×1045 reference tracked by SHA
 
 ## Active Settings correction
 
-Settings → Rules is **DESIGNING / IMPLEMENTING**. The owner explicitly rejected the previous Rules Actual on 2026-09-07. The current correction pass removes the auto-open embedded editor, moves rule editing into the shared modal interaction pattern, keeps canonical transaction-rule semantics intact, and uses the shared `AppSelectInput` primitive without Rules-local dropdown appearance overrides. A fresh rendered Actual and owner approval are still required before Rules can become `VERIFIED` or Data can begin.
+Settings → Rules is **DESIGNING / VALIDATING**. The owner explicitly rejected the previous Rules Actual on 2026-09-07. The corrected implementation removes the auto-open embedded editor, moves create/edit into the shared modal interaction pattern, keeps canonical transaction-rule semantics intact, and uses shared control primitives without Rules-local dropdown appearance overrides. Product/QA head `9bffc196a024d0a4240fae8262e0e3c67aec98dd` passed CI including source/build/API checks, the full rendered frontend QA matrix and high-severity audits, plus CodeQL, cross-engine, performance, Windows Desktop, Windows First Run and Windows Clean Launch. Fresh desktop/mobile Rules list, create modal, category dropdown and supporting Settings Actual were personally inspected with no material containment, hierarchy, overlay, shared-control, touch-target or responsive defect. Evidence was refreshed automatically in `4addc0ddb7b3a59718b25688e3aa651d0be2a8ba`. Owner approval is still required before Rules can become `VERIFIED` or Data can begin.
 
 ## Protected exclusion
 
