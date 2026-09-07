@@ -26,8 +26,9 @@ describe('approved Quick Entry desktop target source contract',()=>{
     expect(receiptAware).toContain('deleteReceiptDraft(handledId)');
   });
 
-  it('extends the existing approved-style chain instead of replacing Dashboard or Transactions styles',()=>{
-    expect(baseStyles.trimEnd()).toMatch(/part46\.css';$/);
+  it('preserves the approved Quick Entry chain and appends only the shared primitive layer globally',()=>{
+    expect(baseStyles).toContain("@import './styles/part46.css';\n@import './styles/part57.css';");
+    expect(baseStyles.trimEnd()).toMatch(/part57\.css';$/);
     expect(approvedChain).toContain("@import './part48.css';");
     expect(approvedChain).toContain("@import './part49.css';");
     expect(approvedChain).toContain("@import './part50.css';");
