@@ -1,12 +1,1 @@
-/* Shared reusable controls. Page styles may size/layout wrappers, not reskin controls. */
-.app-control{box-sizing:border-box;width:100%;min-width:0;min-height:40px;border:1px solid #d7e1ef;border-radius:11px;background:var(--surface);color:var(--ink);font:inherit;font-size:var(--ux-body-size);line-height:1.4;padding:0 10px}
-.app-control::placeholder{color:var(--muted-2)}
-.app-control:disabled{opacity:.55;cursor:not-allowed}
-.app-control[aria-invalid="true"]{border-color:var(--error)!important}
-.app-textarea{min-height:96px;padding:10px;resize:vertical}
-.app-input-shell{display:flex;align-items:center;gap:9px;min-width:0}
-.app-input-shell>.app-control{flex:1}
-.owned-option-list>[role="option"][data-option-level="category"]{font-weight:800}
-.owned-option-list>[role="option"][data-option-level="subcategory"]{padding-left:30px;color:var(--muted)}
-.owned-option-list>[role="option"][data-option-level="invalid"]{color:var(--error)}
-@media(max-width:680px){.app-control{min-height:46px;font-size:16px}}
+.app-control{box-sizing:border-box;width:100%;min-width:0;min-height:40px;border:1px solid #d7e1ef;border-radius:11px;padding:0 10px;font:inherit}.app-control[aria-invalid="true"]{border-color:var(--error)!important}.app-textarea{min-height:96px;padding:10px}.owned-option-list>[data-option-level="category"]{font-weight:800}.owned-option-list>[data-option-level="subcategory"]{padding-left:30px;color:var(--muted)}.owned-option-list>[data-option-level="invalid"]{color:var(--error)}@media(max-width:680px){.app-control{min-height:46px;font-size:16px}}
