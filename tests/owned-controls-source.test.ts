@@ -15,6 +15,7 @@ const styles=readFileSync(new URL('../src/styles/part25.css',import.meta.url),'u
 const sharedStyles=readFileSync(new URL('../src/styles/part57.css',import.meta.url),'utf8');
 const integrationStyles=readFileSync(new URL('../src/styles/part33.css',import.meta.url),'utf8');
 const taxonomyStyles=readFileSync(new URL('../src/styles/part46.css',import.meta.url),'utf8');
+const settingsStyles=readFileSync(new URL('../src/pages/SettingsPage.css',import.meta.url),'utf8');
 const accountStyles=readFileSync(new URL('../src/components/AccountManagementSettings.css',import.meta.url),'utf8');
 function files(path:string):string[]{return readdirSync(path).flatMap(name=>{const full=join(path,name);return statSync(full).isDirectory()?files(full):/\.tsx$/.test(name)?[full]:[]})}
 
@@ -71,6 +72,12 @@ describe('app-owned entry controls',()=>{
     expect(cardCreateSource).not.toMatch(/<input\b/);
     expect(taxonomyStyles).not.toContain('.taxonomy-add-row input');
     expect(taxonomyStyles).not.toContain('.taxonomy-inline-editor input');
+    expect(settingsStyles).not.toContain('.taxonomy-add-subcategory input');
+  });
+  it('keeps Settings focus and mobile input presentation on shared primitives',()=>{
+    expect(settingsStyles).not.toContain('.category-icon-pack-switcher>button:focus-visible');
+    expect(settingsStyles).not.toMatch(/\.settings-[^\n{]*\b(?:input|textarea)\b[^\n{]*\{[^}]*\b(?:height|min-height|border|border-radius|padding|font-size|outline|box-shadow)\s*:/);
+    expect(sharedStyles).toContain('@media(max-width:680px){.app-control{min-height:46px;font-size:16px}');
   });
   it('keeps account editor text and select presentation shared while preserving semantic checkboxes',()=>{
     expect(accountSource).toContain("import { AppTextInput } from './AppTextInput'");
