@@ -4,11 +4,15 @@ import { describe, expect, it } from 'vitest';
 
 const selectSource=readFileSync(new URL('../src/components/AppSelectInput.tsx',import.meta.url),'utf8');
 const dateSource=readFileSync(new URL('../src/components/AppDateInput.tsx',import.meta.url),'utf8');
+const textSource=readFileSync(new URL('../src/components/AppTextInput.tsx',import.meta.url),'utf8');
+const taxonomySource=readFileSync(new URL('../src/components/CategoryIconsWorkspace.tsx',import.meta.url),'utf8');
+const cardCreateSource=readFileSync(new URL('../src/components/CardCreateDialog.tsx',import.meta.url),'utf8');
 const modalFocusSource=readFileSync(new URL('../src/hooks/useModalFocus.ts',import.meta.url),'utf8');
 const shortcutSource=readFileSync(new URL('../src/lib/shortcuts.ts',import.meta.url),'utf8');
 const styles=readFileSync(new URL('../src/styles/part25.css',import.meta.url),'utf8');
 const sharedStyles=readFileSync(new URL('../src/styles/part57.css',import.meta.url),'utf8');
 const integrationStyles=readFileSync(new URL('../src/styles/part33.css',import.meta.url),'utf8');
+const taxonomyStyles=readFileSync(new URL('../src/styles/part46.css',import.meta.url),'utf8');
 function files(path:string):string[]{return readdirSync(path).flatMap(name=>{const full=join(path,name);return statSync(full).isDirectory()?files(full):/\.tsx$/.test(name)?[full]:[]})}
 
 describe('app-owned entry controls',()=>{
@@ -46,6 +50,17 @@ describe('app-owned entry controls',()=>{
     expect(sharedStyles).toContain('.app-control{box-sizing:border-box;width:100%;min-height:40px');
     expect(styles).toContain('.owned-input-shell>.owned-input{padding-right:34px;cursor:pointer}');
     expect(integrationStyles).not.toContain('.settings-form .owned-input-shell>.owned-input');
+  });
+  it('keeps generic taxonomy and card-creation text fields on AppTextInput without page-local control skins',()=>{
+    expect(textSource).toContain('className={`app-control app-text-input ${className}`.trim()}');
+    expect(taxonomySource).toContain("import { AppTextInput } from './AppTextInput'");
+    expect(taxonomySource.match(/<AppTextInput/g)?.length).toBe(4);
+    expect(taxonomySource).not.toMatch(/<input\b/);
+    expect(cardCreateSource).toContain("import { AppTextInput } from './AppTextInput'");
+    expect(cardCreateSource).toContain('<AppTextInput data-autofocus="true"');
+    expect(cardCreateSource).not.toMatch(/<input\b/);
+    expect(taxonomyStyles).not.toContain('.taxonomy-add-row input');
+    expect(taxonomyStyles).not.toContain('.taxonomy-inline-editor input');
   });
   it('keeps owned popovers viewport-contained and mobile-safe',()=>{
     expect(styles).toContain('.owned-popover-backdrop{position:fixed;inset:0');
