@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 const panel=readFileSync(new URL('../src/components/BudgetRuleSettings.tsx',import.meta.url),'utf8');
+const categorySelect=readFileSync(new URL('../src/components/CategorySelectInput.tsx',import.meta.url),'utf8');
 const engine=readFileSync(new URL('../src/lib/transactionRules.ts',import.meta.url),'utf8');
 
 describe('Advanced transaction automations source contracts',()=>{
@@ -39,7 +40,10 @@ describe('Advanced transaction automations source contracts',()=>{
     expect(panel).toContain('Ο λογαριασμός της συνθήκης δεν είναι πλέον διαθέσιμος.');
     expect(panel).toContain('Η κατηγορία της ενέργειας δεν είναι πλέον διαθέσιμη.');
     expect(panel).toContain('Μη διαθέσιμος · {ruleAccount}');
-    expect(panel).toContain('Μη διαθέσιμη · {ruleCategory}');
+    expect(panel).toContain('<CategorySelectInput');
+    expect(categorySelect).toContain('!validCurrent&&category');
+    expect(categorySelect).toContain('data-option-level="invalid"');
+    expect(categorySelect).toContain('Μη διαθέσιμη · {categoryPath(category,includeSubcategories?subcategory:undefined)}');
   });
 
   it('preserves the existing new-event-only first-match engine and validation boundary',()=>{
