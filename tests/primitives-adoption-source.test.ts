@@ -16,11 +16,15 @@ function expectNoNativeDialog(source:string){
 }
 
 describe('shared primitive adoption',()=>{
-  it('uses app-owned dialogs and MoneyInput in Credit Card flows',()=>{
+  it('uses app-owned dialogs and shared editable controls in Credit Card flows',()=>{
     expectNoNativeDialog(credit);
     expect(credit).toContain('<MoneyEditDialog');
     expect(credit).toContain('<ConfirmDialog');
     expect(credit).toContain('<MoneyInput data-autofocus="true"');
+    expect(credit).toContain("from '../components/AppTextInput'");
+    expect(credit).toContain('<AppTextInput data-autofocus="true" inputMode="numeric" type="number"');
+    expect(credit).toContain('<AppTextInput inputMode="numeric" type="number"');
+    expect(credit).toContain('<AppTextInput value={note}');
   });
 
   it('uses app-owned confirmation for self-loan forgiveness',()=>{
