@@ -273,7 +273,7 @@ export function SettingsPage({
                   <p>Δημιούργησε το κανονικό backup του MyFinHub και κατέβασε παράλληλα ένα JSON στη συσκευή σου.</p>
                   <small>Δεν αλλάζει τα τρέχοντα οικονομικά δεδομένα.</small>
                 </div>
-                <button className="settings-data-action-button" type="button" disabled={busy} onClick={() => void backup()}><Download /> Backup & λήψη</button>
+                <button className="secondary settings-data-action-button" type="button" disabled={busy} onClick={() => void backup()}><Download /> Backup & λήψη</button>
               </section>
 
               <section className="panel neo-raised settings-data-action-card settings-data-import-card">
@@ -284,7 +284,7 @@ export function SettingsPage({
                   <p>Επίλεξε έγκυρο αντίγραφο MyFinHub. Η εισαγωγή αντικαθιστά τα τρέχοντα δεδομένα μόνο μετά από επιβεβαίωση.</p>
                   <small>Έως 4 MB · δημιουργείται αυτόματο backup πριν από την αντικατάσταση.</small>
                 </div>
-                <button className="settings-data-action-button" type="button" disabled={busy} onClick={() => fileRef.current?.click()}><FileJson /> Εισαγωγή JSON</button>
+                <button className="secondary settings-data-action-button" type="button" disabled={busy} onClick={() => fileRef.current?.click()}><FileJson /> Εισαγωγή JSON</button>
               </section>
             </div>
 
