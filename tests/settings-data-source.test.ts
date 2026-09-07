@@ -27,10 +27,11 @@ describe('Settings Data source contract',()=>{
     expect(settings).not.toContain('<div className="settings-actions">');
   });
 
-  it('keeps Data CSS composition-only and leaves reusable control paint to shared styles',()=>{
+  it('keeps Data CSS composition-only and touch-safe while leaving reusable control paint to shared styles',()=>{
     expect(css).toContain('.settings-data-action-grid');
     expect(css).toContain('.settings-data-status-grid');
     expect(css).toContain('@media(max-width:720px)');
+    expect(css).toContain('.settings-data-action-button{width:100%;min-height:44px;justify-content:center}');
     expect(css).not.toMatch(/\.settings-data[^\{]*button\s*\{[^}]*border:/s);
     expect(css).not.toMatch(/\.settings-data[^\{]*button\s*\{[^}]*background:/s);
     expect(css).not.toMatch(/\.settings-data[^\{]*input\s*\{/s);
