@@ -28,6 +28,7 @@ describe('Settings Data source contract',()=>{
   });
 
   it('keeps Data CSS composition-only and touch-safe while leaving reusable control paint to shared styles',()=>{
+    expect(settings.match(/className="secondary settings-data-action-button"/g)).toHaveLength(2);
     expect(css).toContain('.settings-data-action-grid');
     expect(css).toContain('.settings-data-status-grid');
     expect(css).toContain('@media(max-width:720px)');
