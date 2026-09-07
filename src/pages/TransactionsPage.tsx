@@ -1,7 +1,9 @@
 import { ArrowUpDown, ChevronLeft, ChevronRight, List, MessageSquareText, MoreHorizontal, Pencil, Search, Trash2, TrendingDown, TrendingUp, WalletCards, X } from 'lucide-react';
 import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { AppDateInput } from '../components/AppDateInput';
+import { AppInputShell } from '../components/AppInputShell';
 import { AppSelectInput } from '../components/AppSelectInput';
+import { AppTextInput } from '../components/AppTextInput';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { FinanceIcon } from '../components/FinanceIcon';
 import { LegacyTransactionEditor } from '../components/LegacyTransactionEditor';
@@ -125,7 +127,7 @@ export function TransactionsPage({
 
     <section className="transactions-approved-shell">
       <div className="transactions-approved-filters desktop-finance-table transaction-searchbar" aria-label="Φίλτρα συναλλαγών desktop">
-        <label className="filter-label"><span>Αναζήτηση</span><span className="searchbox"><Search size={17}/><input value={query} onChange={e=>{setQuery(e.target.value);setPage(1)}} placeholder="Αναζήτηση συναλλαγών..."/></span></label>
+        <label className="filter-label"><span>Αναζήτηση</span><AppInputShell className="searchbox" leading={<Search size={17}/>}><AppTextInput aria-label="Αναζήτηση συναλλαγών" value={query} onChange={e=>{setQuery(e.target.value);setPage(1)}} placeholder="Αναζήτηση συναλλαγών..."/></AppInputShell></label>
         <span className="desktop-finance-table transaction-filter-controls" style={{display:'contents'}}><label className="filter-label"><span>Λογαριασμός</span><AppSelectInput aria-label="Φίλτρο λογαριασμού" value={account} onChange={e=>{setAccount(e.target.value);setPage(1)}}><option value="all">Όλοι οι λογαριασμοί</option>{accounts.map(a=><option value={a.id} key={a.id}>{accountDisplayName(data,a.id)}</option>)}</AppSelectInput></label></span>
         <label className="filter-label"><span>Κατηγορία</span><AppSelectInput aria-label="Φίλτρο κατηγορίας" value={category} onChange={e=>{setCategory(e.target.value);setPage(1)}}><option value="all">Όλες οι κατηγορίες</option>{categories.map(value=><option key={value} value={value}>{value}</option>)}</AppSelectInput></label>
         <span className="desktop-finance-table transaction-filter-controls" style={{display:'contents'}}><label className="filter-label"><span>Τύπος</span><AppSelectInput aria-label="Φίλτρο τύπου κίνησης" value={type} onChange={e=>{setType(e.target.value);setPage(1)}}><option value="all">Όλοι οι τύποι</option>{types.map(value=><option key={value} value={value}>{eventKindLabel(value)}</option>)}</AppSelectInput></label></span>
@@ -133,7 +135,7 @@ export function TransactionsPage({
         <span className="sort-direction-control" style={{display:'contents'}}><Tooltip label={`Σειρά: ${sortDirection==='desc'?'νεότερες πρώτα':'παλαιότερες πρώτα'}`} side="left"><button type="button" className="transactions-approved-filter-button" aria-label="Εναλλαγή ταξινόμησης κατά ημερομηνία" onClick={()=>setSortDirection(value=>value==='desc'?'asc':'desc')}><span className="sr-only">{sortDirection==='desc'?'ASC':'DESC'}</span><ArrowUpDown size={17}/></button></Tooltip></span>
       </div>
 
-      <div className="filterbar transaction-searchbar mobile-only"><label className="filter-label search-filter"><span>Αναζήτηση</span><span className="searchbox"><Search size={16}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Περιγραφή, κατηγορία ή υποκατηγορία"/></span></label><div className="transaction-sort-summary"><SortDirectionControl value={sortDirection} onChange={setSortDirection} label="Σειρά συναλλαγών ανά ημερομηνία"/><span>{rows.length} κινήσεις</span></div></div>
+      <div className="filterbar transaction-searchbar mobile-only"><label className="filter-label search-filter"><span>Αναζήτηση</span><AppInputShell className="searchbox" leading={<Search size={16}/>}><AppTextInput aria-label="Αναζήτηση συναλλαγών" value={query} onChange={e=>setQuery(e.target.value)} placeholder="Περιγραφή, κατηγορία ή υποκατηγορία"/></AppInputShell></label><div className="transaction-sort-summary"><SortDirectionControl value={sortDirection} onChange={setSortDirection} label="Σειρά συναλλαγών ανά ημερομηνία"/><span>{rows.length} κινήσεις</span></div></div>
       {filterControls(true)}
       {message?<div className="action-status" role="status" aria-live="polite">{message}</div>:null}
 
