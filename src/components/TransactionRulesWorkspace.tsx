@@ -8,6 +8,8 @@ import { normalizeTransactionRule, transactionRuleMatchingEvents } from '../lib/
 import { accountDisplayName } from '../lib/ui';
 import type { FinanceData, TransactionRule, TransactionRuleScope } from '../types';
 import { AppSelectInput } from './AppSelectInput';
+import { AppTextInput } from './AppTextInput';
+import { CategorySelectInput } from './CategorySelectInput';
 import { FormError } from './FormError';
 import './TransactionRulesWorkspace.css';
 
@@ -24,12 +26,12 @@ export function TransactionRulesWorkspace({
   onUpsertRule:(rule:TransactionRule)=>void;
   onDeleteRule:(id:string)=>void;
 }){
-  const expenseFallback=data.state.settings.expenseCategories[0]||'Άλλο';
   const expenseTree=useMemo(()=>categoryTree(data.state.settings,'expense'),[data.state.settings]);
+  const expenseFallback=expenseTree[0]?.name||data.state.settings.expenseCategories[0]||'Άλλο';
   const categorySubcategories=useMemo(()=>new Map(expenseTree.map(item=>[item.name,new Set(item.subcategories)])),[expenseTree]);
   const accounts=allAccounts(data).filter(account=>account.kind!=='credit');
   const accountIds=new Set(accounts.map(account=>account.id));
-  const categoryNames=new Set(data.state.settings.expenseCategories);
+  const categoryNames=new Set(expenseTree.map(item=>item.name));
   const rules=(data.state.transactionRules??[]).slice().sort((a,b)=>a.priority-b.priority||a.id.localeCompare(b.id));
   const nextPriority=rules.reduce((max,rule)=>Math.max(max,rule.priority),0)+100;
 
@@ -63,7 +65,6 @@ export function TransactionRulesWorkspace({
 
   const editorRef=useModalFocus<HTMLElement>(editorOpen,'input:not([readonly]):not(:disabled)',()=>clearEditor(false));
   const editingRule=rules.find(rule=>rule.id===editingRuleId);
-  const availableSubcategories=expenseTree.find(item=>item.name===ruleCategory)?.subcategories??[];
   const draftRule=useMemo<TransactionRule>(()=>({
     id:editingRuleId||'preview',
     name:ruleName||'Προεπισκόπηση',
@@ -97,7 +98,7 @@ export function TransactionRulesWorkspace({
     setRuleMerchant(rule.match.merchant??'');
     setRuleAccount(rule.match.accountId??'');
     setRuleMode(rule.match.mode??'contains');
-    setRuleCategory(rule.action.category??expenseFallback);
+    setRuleCategory(rule.action.category??'');
     setRuleSubcategory(rule.action.subcategory??'');
     setRuleDefaultNote(rule.action.note??'');
     setRuleScope(rule.scopes.length===3?'all':rule.scopes[0]??'manual');
@@ -139,11 +140,6 @@ export function TransactionRulesWorkspace({
     const parts=[rule.action.category?`κατηγορία ${rule.action.category}`:'',rule.action.subcategory?`υποκατηγορία ${rule.action.subcategory}`:'',rule.action.note?`σχόλιο «${rule.action.note}» αν είναι κενό`:''].filter(Boolean);
     return parts.join(' · ')||'λείπει ενέργεια';
   };
-  const changeCategory=(category:string)=>{
-    setRuleCategory(category);
-    const next=expenseTree.find(item=>item.name===category)?.subcategories??[];
-    if(ruleSubcategory&&!next.includes(ruleSubcategory))setRuleSubcategory('');
-  };
 
   return <section className="panel neo-raised transaction-rules-workspace rule-settings-panel" data-advanced-automations data-rules-workspace>
     <header className="rules-workspace-head">
@@ -179,15 +175,15 @@ export function TransactionRulesWorkspace({
           <button type="button" className="icon-button" aria-label="Κλείσιμο επεξεργασίας κανόνα" title="Κλείσιμο" onClick={()=>clearEditor(false)}><X size={17}/></button>
         </header>
 
-        <label className="rules-name-field"><span>Όνομα αυτοματισμού</span><input value={ruleName} placeholder="π.χ. Supermarket → Τρόφιμα" onChange={event=>setRuleName(event.target.value)}/></label>
+        <label className="rules-name-field"><span>Όνομα αυτοματισμού</span><AppTextInput value={ruleName} placeholder="π.χ. Supermarket → Τρόφιμα" onChange={event=>setRuleName(event.target.value)}/></label>
 
         <div className="rules-builder-columns rule-editor-grid">
           <fieldset className="rules-builder-section">
             <legend><span>1</span> Όταν</legend>
             <div className="rules-builder-fields">
               <label><span>Όταν η περιγραφή</span><AppSelectInput aria-label="Τρόπος αντιστοίχισης περιγραφής" value={ruleMode} onChange={event=>setRuleMode(event.target.value as 'contains'|'equals')}><option value="contains">περιέχει</option><option value="equals">είναι ακριβώς</option></AppSelectInput></label>
-              <label><span>Κείμενο περιγραφής</span><input value={ruleDescription} placeholder="π.χ. supermarket" onChange={event=>setRuleDescription(event.target.value)}/></label>
-              <label><span>Επιπλέον λέξη <em>προαιρετικό</em></span><input value={ruleMerchant} placeholder="π.χ. market" onChange={event=>setRuleMerchant(event.target.value)}/></label>
+              <label><span>Κείμενο περιγραφής</span><AppTextInput value={ruleDescription} placeholder="π.χ. supermarket" onChange={event=>setRuleDescription(event.target.value)}/></label>
+              <label><span>Επιπλέον λέξη <em>προαιρετικό</em></span><AppTextInput value={ruleMerchant} placeholder="π.χ. market" onChange={event=>setRuleMerchant(event.target.value)}/></label>
               <label><span>Λογαριασμός <em>προαιρετικό</em></span><AppSelectInput aria-label="Λογαριασμός κανόνα" value={ruleAccount} onChange={event=>setRuleAccount(event.target.value)}>{ruleAccount&&!accountIds.has(ruleAccount)?<option value={ruleAccount} disabled>Μη διαθέσιμος · {ruleAccount}</option>:null}<option value="">Οποιοσδήποτε λογαριασμός</option>{accounts.map(account=><option key={account.id} value={account.id}>{accountDisplayName(data,account.id)}</option>)}</AppSelectInput></label>
             </div>
           </fieldset>
@@ -195,9 +191,8 @@ export function TransactionRulesWorkspace({
           <fieldset className="rules-builder-section">
             <legend><span>2</span> Τότε</legend>
             <div className="rules-builder-fields">
-              <label><span>Κατηγορία</span><AppSelectInput aria-label="Κατηγορία κανόνα" value={ruleCategory} onChange={event=>changeCategory(event.target.value)}>{ruleCategory&&!categoryNames.has(ruleCategory)?<option value={ruleCategory} disabled>Μη διαθέσιμη · {ruleCategory}</option>:null}<option value="">Χωρίς αλλαγή κατηγορίας</option>{data.state.settings.expenseCategories.map(category=><option key={category} value={category}>{category}</option>)}</AppSelectInput></label>
-              <label><span>Υποκατηγορία <em>προαιρετικό</em></span><AppSelectInput aria-label="Υποκατηγορία κανόνα" value={ruleSubcategory} onChange={event=>setRuleSubcategory(event.target.value)}>{ruleSubcategory&&!availableSubcategories.includes(ruleSubcategory)?<option value={ruleSubcategory} disabled>Μη διαθέσιμη · {ruleSubcategory}</option>:null}<option value="">Χωρίς αλλαγή υποκατηγορίας</option>{availableSubcategories.map(subcategory=><option key={subcategory} value={subcategory}>{subcategory}</option>)}</AppSelectInput></label>
-              <label className="rules-builder-note"><span>Σχόλιο αν είναι κενό <em>προαιρετικό</em></span><input value={ruleDefaultNote} placeholder="Δεν αντικαθιστά υπάρχον σχόλιο" onChange={event=>setRuleDefaultNote(event.target.value)}/></label>
+              <label className="rules-category-field"><span>Κατηγορία / υποκατηγορία</span><CategorySelectInput settings={data.state.settings} kind="expense" category={ruleCategory} subcategory={ruleSubcategory} allowEmpty emptyLabel="Χωρίς αλλαγή κατηγορίας" aria-label="Κατηγορία ή υποκατηγορία κανόνα" onChange={selection=>{setRuleCategory(selection.category);setRuleSubcategory(selection.subcategory)}}/></label>
+              <label className="rules-builder-note"><span>Σχόλιο αν είναι κενό <em>προαιρετικό</em></span><AppTextInput value={ruleDefaultNote} placeholder="Δεν αντικαθιστά υπάρχον σχόλιο" onChange={event=>setRuleDefaultNote(event.target.value)}/></label>
               <label><span>Πότε να λειτουργεί</span><AppSelectInput aria-label="Πεδίο εφαρμογής κανόνα" value={ruleScope} onChange={event=>setRuleScope(event.target.value as 'all'|TransactionRuleScope)}><option value="manual">Όταν την καταχωρίζω εγώ</option><option value="imported">Όταν έρχεται από εισαγωγή</option><option value="review">Όταν επιβεβαιώνεται από έλεγχο</option><option value="all">Σε κάθε νέα υποστηριζόμενη κίνηση</option></AppSelectInput></label>
             </div>
           </fieldset>
