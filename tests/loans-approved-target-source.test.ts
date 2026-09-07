@@ -41,9 +41,10 @@ describe('approved Loans desktop target source contract',()=>{
     expect(styles).toContain('.loan-progress-note{min-height:72px');
   });
 
-  it('extends the established approved-style chain without mutating the base chain',()=>{
+  it('extends the established approved-style chain and appends only the shared primitive layer',()=>{
     expect(styles).toContain('@media (min-width:1100px)');
-    expect(baseStyles.trimEnd()).toMatch(/part46\.css';$/);
+    expect(baseStyles).toContain("@import './styles/part46.css';\n@import './styles/part57.css';");
+    expect(baseStyles.trimEnd()).toMatch(/part57\.css';$/);
     expect(approvedChain).toContain("@import './loans-approved-target.css';");
     expect(styles).not.toContain('@media (max-width');
   });

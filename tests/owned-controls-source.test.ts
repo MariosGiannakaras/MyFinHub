@@ -4,9 +4,19 @@ import { describe, expect, it } from 'vitest';
 
 const selectSource=readFileSync(new URL('../src/components/AppSelectInput.tsx',import.meta.url),'utf8');
 const dateSource=readFileSync(new URL('../src/components/AppDateInput.tsx',import.meta.url),'utf8');
+const textSource=readFileSync(new URL('../src/components/AppTextInput.tsx',import.meta.url),'utf8');
+const textareaSource=readFileSync(new URL('../src/components/AppTextarea.tsx',import.meta.url),'utf8');
+const taxonomySource=readFileSync(new URL('../src/components/CategoryIconsWorkspace.tsx',import.meta.url),'utf8');
+const cardCreateSource=readFileSync(new URL('../src/components/CardCreateDialog.tsx',import.meta.url),'utf8');
+const accountSource=readFileSync(new URL('../src/components/AccountManagementSettings.tsx',import.meta.url),'utf8');
 const modalFocusSource=readFileSync(new URL('../src/hooks/useModalFocus.ts',import.meta.url),'utf8');
 const shortcutSource=readFileSync(new URL('../src/lib/shortcuts.ts',import.meta.url),'utf8');
 const styles=readFileSync(new URL('../src/styles/part25.css',import.meta.url),'utf8');
+const sharedStyles=readFileSync(new URL('../src/styles/part57.css',import.meta.url),'utf8');
+const integrationStyles=readFileSync(new URL('../src/styles/part33.css',import.meta.url),'utf8');
+const taxonomyStyles=readFileSync(new URL('../src/styles/part46.css',import.meta.url),'utf8');
+const settingsStyles=readFileSync(new URL('../src/pages/SettingsPage.css',import.meta.url),'utf8');
+const accountStyles=readFileSync(new URL('../src/components/AccountManagementSettings.css',import.meta.url),'utf8');
 function files(path:string):string[]{return readdirSync(path).flatMap(name=>{const full=join(path,name);return statSync(full).isDirectory()?files(full):/\.tsx$/.test(name)?[full]:[]})}
 
 describe('app-owned entry controls',()=>{
@@ -39,19 +49,62 @@ describe('app-owned entry controls',()=>{
     expect(dateSource).toContain('querySelector<HTMLButtonElement>');
     expect(dateSource).toContain(':not(:disabled)');
   });
+  it('keeps owned select triggers styled by the common app-control primitive instead of page-local form CSS',()=>{
+    expect(selectSource).toContain('className="app-control owned-input"');
+    expect(selectSource).toContain("density='default'");
+    expect(selectSource).toContain('data-density={density}');
+    expect(sharedStyles).toContain('.app-control{box-sizing:border-box;width:100%;min-height:40px');
+    expect(sharedStyles).toContain('padding:0 10px;font-size:var(--ux-body-size);line-height:1.4');
+    expect(sharedStyles).toContain('.owned-input-shell[data-density=compact]>.app-control{min-height:32px');
+    expect(sharedStyles).toContain(':where(button,input,select,textarea,summary,[tabindex]):focus-visible{outline:0;box-shadow:var(--focus)!important}');
+    expect(styles).toContain('.owned-input-shell>.owned-input{padding-right:34px;cursor:pointer}');
+    expect(integrationStyles).not.toContain('.settings-form .owned-input-shell>.owned-input');
+  });
+  it('keeps generic text and multiline controls on the shared app-control contract',()=>{
+    expect(textSource).toContain('className={`app-control app-text-input ${className}`.trim()}');
+    expect(textareaSource).toContain('className={`app-control app-textarea ${className}`.trim()}');
+    expect(sharedStyles).toContain('.app-textarea{padding:10px;resize:vertical}');
+    expect(taxonomySource).toContain("import { AppTextInput } from './AppTextInput'");
+    expect(taxonomySource.match(/<AppTextInput/g)?.length).toBe(4);
+    expect(taxonomySource).not.toMatch(/<input\b/);
+    expect(cardCreateSource).toContain("import { AppTextInput } from './AppTextInput'");
+    expect(cardCreateSource).toContain('<AppTextInput data-autofocus="true"');
+    expect(cardCreateSource).not.toMatch(/<input\b/);
+    expect(taxonomyStyles).not.toContain('.taxonomy-add-row input');
+    expect(taxonomyStyles).not.toContain('.taxonomy-inline-editor input');
+    expect(settingsStyles).not.toContain('.taxonomy-add-subcategory input');
+  });
+  it('keeps Settings focus and mobile input presentation on shared primitives',()=>{
+    expect(settingsStyles).not.toContain('.category-icon-pack-switcher>button:focus-visible');
+    expect(settingsStyles).not.toMatch(/\.settings-[^\n{]*\b(?:input|textarea)\b[^\n{]*\{[^}]*\b(?:height|min-height|border|border-radius|padding|font-size|outline|box-shadow)\s*:/);
+    expect(sharedStyles).toContain('@media(max-width:680px){.app-control{min-height:46px;font-size:16px}');
+  });
+  it('keeps account editor text and select presentation shared while preserving semantic checkboxes',()=>{
+    expect(accountSource).toContain("import { AppTextInput } from './AppTextInput'");
+    expect(accountSource.match(/<AppTextInput/g)?.length).toBe(3);
+    const rawInputs=accountSource.match(/<input\b[^>]*>/g)??[];
+    expect(rawInputs).toHaveLength(3);
+    expect(rawInputs.every(input=>input.includes('type="checkbox"'))).toBe(true);
+    expect(accountStyles).not.toContain('.account-management-field input{');
+    expect(accountStyles).not.toContain('.account-management-select>.owned-input');
+    expect(accountStyles).not.toContain('.owned-select-popover:is(');
+  });
   it('keeps owned popovers viewport-contained and mobile-safe',()=>{
     expect(styles).toContain('.owned-popover-backdrop{position:fixed;inset:0');
     expect(styles).toContain('max-height:min(72dvh,620px)');
     expect(styles).toContain('.owned-option-list{overflow:auto');
-    expect(styles).toContain('.owned-input-shell>.owned-input{font-size:16px}');
+    expect(sharedStyles).toContain('@media(max-width:680px){.app-control{min-height:46px;font-size:16px}');
+    expect(sharedStyles).toContain('.owned-input-shell[data-density=compact]>.app-control{min-height:44px;font-size:16px}');
   });
-  it('keeps browser-native select, date and datalist popups out of application pages and components',()=>{
+  it('keeps browser-native select, date, datalist and page-owned textarea controls out of application pages and components',()=>{
     const sources=[...files('src/pages'),...files('src/components')].map(file=>({file,text:readFileSync(file,'utf8')}));
     const nativeSelects=sources.filter(({text})=>/<select\b/.test(text)).map(({file})=>file);
     const nativeDates=sources.filter(({text})=>/<input\b[^>]*\btype\s*=\s*["']date["']/i.test(text)).map(({file})=>file);
     const nativeDatalists=sources.filter(({text})=>/<datalist\b/.test(text)).map(({file})=>file);
+    const pageOwnedTextareas=sources.filter(({file,text})=>/<textarea\b/.test(text)&&!file.endsWith('AppTextarea.tsx')).map(({file})=>file);
     expect(nativeSelects).toEqual([]);
     expect(nativeDates).toEqual([]);
     expect(nativeDatalists).toEqual([]);
+    expect(pageOwnedTextareas).toEqual([]);
   });
 });

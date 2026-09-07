@@ -6,6 +6,7 @@ import { allAccounts } from '../lib/domain';
 import { formatIban, isValidIban, normalizeIban } from '../lib/iban';
 import { accountDisplayName } from '../lib/ui';
 import type { FinanceData } from '../types';
+import { AppTextInput } from './AppTextInput';
 import '../styles/part47.css';
 
 export function AccountMetadataSettings({data}:{data:FinanceData}){
@@ -47,7 +48,7 @@ export function AccountMetadataSettings({data}:{data:FinanceData}){
         const invalid=Boolean(value.trim())&&!isValidIban(value);
         return <div className="account-metadata-row" key={account.id} data-account-metadata-row={account.id}>
           <div className="account-metadata-identity"><b>{accountDisplayName(data,account.id)}</b><small>{account.kind==='cash'?'Ο λογαριασμός μπορεί να μείνει χωρίς IBAN.':'Stable account metadata'}</small></div>
-          <label><span>IBAN</span><input inputMode="text" autoCapitalize="characters" autoCorrect="off" spellCheck={false} aria-invalid={invalid||undefined} value={value} placeholder="π.χ. GR16 0110 …" onChange={event=>{setDrafts(current=>({...current,[account.id]:event.target.value.toUpperCase()}));setDirty(current=>({...current,[account.id]:true}));setMessages(current=>({...current,[account.id]:''}))}}/></label>
+          <label><span>IBAN</span><AppTextInput inputMode="text" autoCapitalize="characters" autoCorrect="off" spellCheck={false} invalid={invalid} value={value} placeholder="π.χ. GR16 0110 …" onChange={event=>{setDrafts(current=>({...current,[account.id]:event.target.value.toUpperCase()}));setDirty(current=>({...current,[account.id]:true}));setMessages(current=>({...current,[account.id]:''}))}}/></label>
           <button type="button" className="save-button" disabled={Boolean(busy[account.id])||invalid||!dirty[account.id]} onClick={()=>void save(account.id)}><Save size={15} aria-hidden="true"/> Αποθήκευση</button>
           {messages[account.id]?<small className={invalid?'form-error':''} role="status" aria-live="polite">{messages[account.id]}</small>:null}
         </div>;

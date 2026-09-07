@@ -1,6 +1,8 @@
 import { AlertCircle, KeyRound, LoaderCircle, ShieldCheck } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import type { MfaEnrollment } from '../lib/api';
+import { AppInputShell } from './AppInputShell';
+import { AppTextInput } from './AppTextInput';
 import { BrandMark } from './BrandMark';
 
 export function MfaScreen({
@@ -60,7 +62,7 @@ export function MfaScreen({
       {(mode === 'challenge' || enrollment) ? <form onSubmit={submit} className="login-form">
         <div className="login-field">
           <label htmlFor="mfa-code">6ψήφιος κωδικός</label>
-          <div className="login-input neo-inset mfa-code-shell"><KeyRound size={17}/><input
+          <AppInputShell className="login-input mfa-code-shell" leading={<KeyRound size={17}/>} invalid={Boolean(error)}><AppTextInput
             id="mfa-code"
             className="mfa-code-input"
             type="text"
@@ -73,9 +75,9 @@ export function MfaScreen({
             disabled={busy}
             required
             autoFocus
-            aria-invalid={Boolean(error)}
+            invalid={Boolean(error)}
             aria-describedby={error?'mfa-error':undefined}
-          /></div>
+          /></AppInputShell>
           <div className="mfa-code-progress" aria-hidden="true">{Array.from({length:6},(_,index)=><i key={index} className={index<code.length?'filled':''}/>)}</div>
         </div>
         {error ? <div id="mfa-error" className="login-error" role="alert"><AlertCircle size={16}/><span>{error}</span></div> : null}

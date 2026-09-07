@@ -204,6 +204,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   });
   const upsertBudget=(budget:MonthlyBudget)=>finance.update(current=>{const rows=current.state.budgets??[];const exists=rows.some(item=>item.id===budget.id);return {...current,state:{...current.state,budgets:exists?rows.map(item=>item.id===budget.id?budget:item):[...rows,budget]}}});
   const deleteBudget=(id:string)=>finance.update(current=>({...current,state:{...current.state,budgets:(current.state.budgets??[]).filter(item=>item.id!==id)}}));
+  const updateSavingsTarget=(rate:number)=>finance.update(current=>({...current,state:{...current.state,settings:{...current.state.settings,savingsTargetRate:rate,motion:'full'}}}));
   const upsertRule=(rule:TransactionRule)=>finance.update(current=>{const rows=current.state.transactionRules??[];const exists=rows.some(item=>item.id===rule.id);return {...current,state:{...current.state,transactionRules:exists?rows.map(item=>item.id===rule.id?rule:item):[...rows,rule]}}});
   const deleteRule=(id:string)=>finance.update(current=>({...current,state:{...current.state,transactionRules:(current.state.transactionRules??[]).filter(item=>item.id!==id)}}));
   const updateTaxonomy=async(operation:TaxonomyOperation)=>{
@@ -248,7 +249,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
     ? <DashboardPage data={data} month={month} asOf={today} motionMode="full" onQuickAdd={(prefill?: QuickPrefill) => openGeneric('expense', prefill || null)} onAccountQuickAdd={(accountId, kind) => kind === 'savings' ? openSpecial({ mode: 'savings', toAccountId: accountId, savingSource: 'manual_transfer' }) : openGeneric('expense', { note: '', amount: 0, accountId })} onTransactions={() => navigate('transactions')} onPlanning={() => navigate('planning')} onAttention={() => navigate('attention')} onReports={()=>navigate('reports')}/>
     : page === 'transactions' ? <TransactionsPage data={data} month={month} onEditEvent={editEvent} onDeleteEvent={deleteEvent} onEditLegacy={editLegacy} onDeleteLegacy={deleteLegacy}/>
     : page === 'review' ? <ReviewPage data={data} onDecision={decide}/>
-    : page === 'savings' ? <SavingsPage data={data} month={month} asOf={today} onCreate={addEvent} onQuickAdd={openSpecial}/>
+    : page === 'savings' ? <SavingsPage data={data} month={month} asOf={today} onCreate={addEvent} onQuickAdd={openSpecial} onSavingsTargetChange={updateSavingsTarget}/>
     : page === 'cards' ? <CardsPage data={data} onUpsertBank={upsertBank} onUpsertCard={upsertCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard}/>
     : page === 'credit' ? <CreditCardPage data={data} asOf={today} onCreateEvent={addEvent} onEditEvent={editEvent} onDeleteEvent={deleteEvent} onUpsertCard={upsertCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard} onPayCard={(cardId,statementId)=>openSpecial({mode:'credit',action:'payment',cardId,statementId})}/>
     : page === 'loans' ? <LoansPage data={data} asOf={today} onUpsertLoan={upsertLoan} onCreateSelfLoan={createSelfLoan} onPayLoan={(loanId)=>openSpecial({mode:'loan',loanId})}/>
@@ -256,7 +257,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
     : page === 'recurring' ? <RecurringPage data={data} asOf={today} onUpsert={upsertRecurring} onOpenLoans={() => navigate('loans')} onPayLoan={(loanId)=>openSpecial({mode:'loan',loanId})} onPayRecurring={(recurringId)=>openSpecial({mode:'recurring',recurringId})}/>
     : page === 'planning' ? <PlanningPage data={data} asOf={today} onUpsertScheduled={upsertScheduled} onCompleteScheduled={completeScheduled}/>
     : page === 'attention' ? <AttentionPage data={data} asOf={today} onAction={handleAttention} onDecision={decideAttention}/>
-    : page === 'reports' ? <ReportsPage data={data} month={month}/>
+    : page === 'reports' ? <ReportsPage data={data} month={month} onUpsertBudget={upsertBudget} onDeleteBudget={deleteBudget} onUpsertRule={upsertRule} onDeleteRule={deleteRule}/>
     : <SettingsPage data={data} asOf={today} filePath={finance.filePath} lastSavedAt={finance.lastSavedAt} onImport={finance.importData} onBackup={finance.createBackup} onSettings={(settings) => finance.update((current) => ({ ...current, state: { ...current.state, settings: { ...settings, motion: 'full' } } }))} onTaxonomyOperation={updateTaxonomy} onUpsertBudget={upsertBudget} onDeleteBudget={deleteBudget} onUpsertRule={upsertRule} onDeleteRule={deleteRule}/>;
 
   return <>

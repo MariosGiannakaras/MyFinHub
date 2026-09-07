@@ -23,8 +23,14 @@ jobs:
       - name: Build production-mode performance fixture
         run: npx vite build --config vite.performance.config.ts --mode production
       - name: Install pinned Lighthouse runner
-        run: npm install --no-save --package-lock=false lighthouse@13.4.1
+        run: |
+          TOOL_ROOT=/tmp/myfinhub-lighthouse-tool
+          rm -rf "$TOOL_ROOT"
+          mkdir -p "$TOOL_ROOT"
+          npm install --prefix "$TOOL_ROOT" --package-lock=false lighthouse@13.4.1
       - name: Run Lighthouse and loading-shift regression audits
+        env:
+          MYFINHUB_LIGHTHOUSE_BIN: /tmp/myfinhub-lighthouse-tool/node_modules/.bin/lighthouse
         run: |
           npx vite preview --config vite.performance.config.ts --host 127.0.0.1 --port 4173 > /tmp/myfinhub-performance-vite.log 2>&1 &
           VITE_PID=$!

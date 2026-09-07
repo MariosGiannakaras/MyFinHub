@@ -10,7 +10,7 @@
     "dev": "node dev.mjs",
     "pack": "npm run prepare:bundle && electron-builder --win dir --x64",
     "dist": "npm run prepare:bundle && electron-builder --win nsis --x64 --publish never",
-    "check": "npm audit --audit-level=high && node --check bootstrap.cjs && node --check main.cjs && node --check preload.cjs && node --check setup-renderer.js && node --check startup-diagnostics.cjs && node --check runtime-defaults.cjs && node --check prepare-build.mjs && node --check dev.mjs"
+    "check": "npm audit --audit-level=high && node --check bootstrap.cjs && node --check main.cjs && node --check app-lock-main.cjs && node --check preload.cjs && node --check setup-renderer.js && node --check startup-diagnostics.cjs && node --check runtime-defaults.cjs && node --check prepare-build.mjs && node --check dev.mjs"
   },
   "devDependencies": {
     "electron": "43.3.0",
@@ -29,6 +29,7 @@
     "files": [
       "bootstrap.cjs",
       "main.cjs",
+      "app-lock-main.cjs",
       "preload.cjs",
       "setup.html",
       "setup-renderer.js",

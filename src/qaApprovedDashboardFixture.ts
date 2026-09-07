@@ -20,15 +20,27 @@ const splitAmounts=(total:number,count:number)=>{const cents=Math.round(total*10
 const spreadExpenses=(prefix:string,category:string,total:number,count:number,days:number[])=>splitAmounts(total,count).map((amount,index)=>transaction(`${prefix}-${index+1}`,`2026-08-${String(days[index%days.length]).padStart(2,'0')}`,'expense',amount,`${category} ${index+1}`,category));
 
 /**
- * Presentation-only refinement for the owner-approved Dashboard visual QA route.
- * Production finance semantics stay in the canonical selectors/domain layer; this
- * fixture only gives the deterministic reduced-motion screenshot representative
- * labels, balances and monthly activity. Other Dashboard QA routes retain the
- * canonical base fixture.
+ * Presentation-only refinement for deterministic owner-approval QA routes.
+ * Production finance semantics stay in the canonical selectors/domain layer.
  */
 export function qaFinanceData(){
   const next=baseQaFinanceData();
   const params=new URLSearchParams(globalThis.location?.search??'');
+  const settingsApproval=params.get('page')==='settings'&&params.get('state')==='settings-tabs';
+  if(settingsApproval){
+    next.state.settings.accountOverrides={
+      ...(next.state.settings.accountOverrides??{}),
+      cash:{id:'cash',name:'Μετρητά',short:'CASH',kind:'cash',cashRole:'daily',showInQuickChoices:true},
+    };
+    next.state.settings.customAccounts=[
+      ...(next.state.settings.customAccounts??[]).filter(account=>account.id!=='qa-cash-reserve'),
+      {id:'qa-cash-reserve',name:'Καβάτζα',short:'SAFE',kind:'cash',cashRole:'reserve',showInQuickChoices:false,excludeFromAvailable:true,custom:true},
+    ];
+    next.state.settings.accountNames={...next.state.settings.accountNames,cash:'Μετρητά','qa-cash-reserve':'Καβάτζα'};
+    next.state.settings.excludedFromAvailable=[...new Set([...(next.state.settings.excludedFromAvailable??[]),'qa-cash-reserve'])];
+    return next;
+  }
+
   const approvedEvidence=params.get('page')==='dashboard'&&params.get('motion')==='reduced'&&!params.get('state');
   if(!approvedEvidence)return next;
 

@@ -1,13 +1,14 @@
 import { X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useModalFocus } from '../hooks/useModalFocus';
-import { categoryTree, subcategoriesFor } from '../lib/categories';
 import { allAccounts } from '../lib/domain';
 import { normalizeLegacyOverride } from '../lib/legacyTransactions';
 import { accountDisplayName } from '../lib/ui';
 import type { FinanceData, LegacyTransaction } from '../types';
 import { AppDateInput } from './AppDateInput';
 import { AppSelectInput } from './AppSelectInput';
+import { AppTextarea } from './AppTextarea';
+import { CategorySelectInput } from './CategorySelectInput';
 import { FormError } from './FormError';
 import { MoneyInput } from './MoneyInput';
 
@@ -17,12 +18,6 @@ const typeLabels: Record<LegacyTransaction['type'], string> = {
   transfer: 'Μεταφορά',
   adjustment: 'Διόρθωση υπολοίπου',
 };
-
-function optionsWithCurrent(values: string[], current?: string) {
-  const result = [...values];
-  if (current && !result.includes(current)) result.unshift(current);
-  return result;
-}
 
 export function LegacyTransactionEditor({ data, transaction, onSave, onClose }: {
   data: FinanceData;
@@ -43,8 +38,6 @@ export function LegacyTransactionEditor({ data, transaction, onSave, onClose }: 
   const [error, setError] = useState('');
   const modalRef = useModalFocus<HTMLElement>(true, '[data-autofocus="true"]', onClose);
   const categoryKind = type === 'income' ? 'income' : 'expense';
-  const categories = useMemo(() => optionsWithCurrent(categoryTree(data.state.settings, categoryKind).map((item) => item.name), category), [data.state.settings, categoryKind, category]);
-  const subcategories = useMemo(() => optionsWithCurrent(subcategoriesFor(data.state.settings, categoryKind, category), subcategory), [data.state.settings, categoryKind, category, subcategory]);
 
   const changeType = (next: LegacyTransaction['type']) => {
     setType(next);
@@ -91,9 +84,8 @@ export function LegacyTransactionEditor({ data, transaction, onSave, onClose }: 
           <label><span>Από λογαριασμό</span><AppSelectInput aria-label="Λογαριασμός προέλευσης ιστορικής μεταφοράς" value={fromAccountId} onChange={(event) => setFromAccountId(event.target.value)}>{accounts.map((account) => <option key={account.id} value={account.id}>{accountDisplayName(data, account.id)}</option>)}</AppSelectInput></label>
           <label><span>Προς λογαριασμό</span><AppSelectInput aria-label="Λογαριασμός προορισμού ιστορικής μεταφοράς" value={toAccountId} onChange={(event) => setToAccountId(event.target.value)}>{accounts.map((account) => <option key={account.id} value={account.id}>{accountDisplayName(data, account.id)}</option>)}</AppSelectInput></label>
         </> : <label><span>Λογαριασμός</span><AppSelectInput aria-label="Λογαριασμός ιστορικής κίνησης" value={accountId} onChange={(event) => setAccountId(event.target.value)}>{accounts.map((account) => <option key={account.id} value={account.id}>{accountDisplayName(data, account.id)}</option>)}</AppSelectInput></label>}
-        <label><span>Κατηγορία</span><AppSelectInput aria-label="Κατηγορία ιστορικής κίνησης" value={category} onChange={(event) => { setCategory(event.target.value); setSubcategory(''); }}><option value="">Χωρίς κατηγορία</option>{categories.map((value) => <option key={value} value={value}>{value}</option>)}</AppSelectInput></label>
-        <label><span>Υποκατηγορία</span><AppSelectInput aria-label="Υποκατηγορία ιστορικής κίνησης" value={subcategory} onChange={(event) => setSubcategory(event.target.value)} disabled={!category}><option value="">Κληρονομεί / καμία</option>{subcategories.map((value) => <option key={value} value={value}>{value}</option>)}</AppSelectInput></label>
-        <label className="full"><span>Περιγραφή / σχόλιο</span><textarea aria-label="Περιγραφή ιστορικής κίνησης" value={note} onChange={(event) => setNote(event.target.value)} rows={4}/></label>
+        <label><span>Κατηγορία / υποκατηγορία</span><CategorySelectInput settings={data.state.settings} kind={categoryKind} category={category} subcategory={subcategory} allowEmpty emptyLabel="Χωρίς κατηγορία" aria-label="Κατηγορία ή υποκατηγορία ιστορικής κίνησης" onChange={(selection) => { setCategory(selection.category); setSubcategory(selection.subcategory); }}/></label>
+        <label className="full"><span>Περιγραφή / σχόλιο</span><AppTextarea aria-label="Περιγραφή ιστορικής κίνησης" value={note} onChange={(event) => setNote(event.target.value)} rows={4}/></label>
       </div>
       {error ? <FormError id="legacy-transaction-edit-error">{error}</FormError> : null}
       <footer className="editor-actions"><button type="button" className="secondary" onClick={onClose}>Ακύρωση</button><button type="button" className="save-button" onClick={submit}>Αποθήκευση override</button></footer>

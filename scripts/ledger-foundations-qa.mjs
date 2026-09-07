@@ -26,8 +26,8 @@ try{
   const splitState=selector=>c.call("function(selector){const row=document.querySelector(selector);const toggle=row?.querySelector('.transaction-split-toggle');return {exists:!!row,toggle:!!toggle,expanded:toggle?.getAttribute('aria-expanded')==='true',parts:row?.querySelectorAll('.transaction-split-part').length||0,text:row?.textContent||'',amount:row?.querySelector('.amount')?.textContent||row?.querySelector('.mobile-transaction-main>strong')?.textContent||''}}",[selector]);
   const expandSplit=async selector=>{assert(await c.call("function(selector){const toggle=document.querySelector(selector)?.querySelector('.transaction-split-toggle');if(!toggle)return false;if(toggle.getAttribute('aria-expanded')!=='true')toggle.click();return true}",[selector]),'split disclosure toggle exists');await waitFor("function(selector){const row=document.querySelector(selector);return row?.querySelector('.transaction-split-toggle')?.getAttribute('aria-expanded')==='true'&&row.querySelectorAll('.transaction-split-part').length>=2}",'split disclosure expands',[selector])};
 
-  await waitFor("function(){return !!document.querySelector('.report-kpis-v2')}",'Reports baseline');
-  const reportsBefore=await c.call("function(){return document.querySelector('.report-kpis-v2')?.textContent||''}");
+  await waitFor("function(){return !!document.querySelector('.report-kpi-strip')}",'Reports baseline');
+  const reportsBefore=await c.call("function(){return document.querySelector('.report-kpi-strip')?.textContent||''}");
 
   console.log('Ledger QA: create first-class transfer');
   await navigate('Dashboard','Οι λογαριασμοί μου');
@@ -53,8 +53,8 @@ try{
   await c.call("function(){document.querySelector('button[aria-label=\"Επαναφορά τελευταίας αναιρεμένης αλλαγής\"]')?.click()}");await sleep(180);transferText=await c.call("function(){return document.querySelector('[data-transaction-kind=transfer][data-transaction-source=event]')?.textContent||''}");assert(transferText.includes('55,25'),'redo restores the whole edited transfer');
 
   console.log('Ledger QA: Reports remain neutral after internal transfer');
-  await navigate('Αναφορές','οικονομική εικόνα');
-  const reportsAfter=await c.call("function(){return document.querySelector('.report-kpis-v2')?.textContent||''}");assert(reportsAfter===reportsBefore,'transfer does not alter income/expense KPI text');
+  await navigate('Αναφορές','Αναφορές');
+  const reportsAfter=await c.call("function(){return document.querySelector('.report-kpi-strip')?.textContent||''}");assert(reportsAfter===reportsBefore,'transfer does not alter income/expense KPI text');
 
   console.log('Ledger QA: create split transaction from authoritative parts');
   await navigate('Συναλλαγές','Συναλλαγές');await clickText('button.primary-action','Γρήγορη προσθήκη');await waitFor("function(){return !!document.querySelector('.quick-modal')}",'Quick Add split');await clickText('.generic-kind-grid button','Σύνθετη αγορά');

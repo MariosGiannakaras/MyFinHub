@@ -29,8 +29,7 @@
 .account-metadata-identity small{display:block;margin-top:3px;color:var(--muted);font-size:8.5px;line-height:1.35}
 .account-metadata-row label{display:grid;gap:5px;min-width:0}
 .account-metadata-row label>span{font-size:8.5px;font-weight:760;color:var(--muted)}
-.account-metadata-row input{width:100%;min-height:42px;border:1px solid var(--line);border-radius:11px;background:#f7faff;color:var(--ink);padding:9px 11px;font-size:10px;letter-spacing:.02em}
-.account-metadata-row input[aria-invalid="true"]{border-color:color-mix(in srgb,var(--red) 62%,var(--line));box-shadow:0 0 0 3px color-mix(in srgb,var(--red) 10%,transparent)}
+.account-metadata-row .app-text-input{width:100%;letter-spacing:.02em}
 .account-metadata-row>.save-button{min-height:42px;white-space:nowrap}
 .account-metadata-row>small{grid-column:2/-1;min-height:14px;color:var(--muted);font-size:8.5px;line-height:1.35}
 .account-metadata-row>small.form-error{color:var(--red)}
@@ -61,6 +60,5 @@
   .account-metadata-row{grid-template-columns:1fr;align-items:stretch;padding:12px;gap:9px}
   .account-metadata-row>.save-button,.account-metadata-row>small{grid-column:1}
   .account-metadata-row>.save-button{justify-self:stretch;min-height:44px}
-  .account-metadata-row input{min-height:44px;font-size:10px}
   .account-metadata-identity b{font-size:10px}
 }

@@ -52,7 +52,7 @@ try{
 
   await clickText('.sidebar nav button','Δανεικά / Οφειλές');await waitHeading('Δανεικά / Οφειλές');await audit('desktop lending');assert(await c.eval("Boolean(document.querySelector('.private-text'))"),'lending remains private by default');
   await clickText('.sidebar nav button','Αναφορές');await waitHeading('Αναφορές');await audit('desktop reports');assert(await c.eval("Boolean(document.querySelector('.report-operations-grid'))"),'reports operational grid');
-  await clickText('.sidebar nav button','Ρυθμίσεις');await waitHeading('Ρυθμίσεις');await audit('desktop settings general');assert(await c.eval("Boolean(document.querySelector('.settings-general-grid'))"),'settings General tab');await clickText('.settings-tablist button','Προϋπολογισμοί & Στόχοι');await audit('desktop settings budgets');assert(await c.eval("Boolean([...document.querySelectorAll('label span')].find(x=>x.textContent.includes('Πιστωτικό όριο')))"),'credit limit setting');
+  await clickText('.sidebar nav button','Ρυθμίσεις');await waitHeading('Ρυθμίσεις');await audit('desktop settings general');assert(await c.eval("Boolean(document.querySelector('.settings-general-grid'))"),'settings General tab');assert(await c.eval("(()=>{const labels=[...document.querySelectorAll('.settings-tablist button')].map(node=>(node.textContent||'').trim());return !labels.includes('Προϋπολογισμοί & Στόχοι')&&!document.querySelector('.settings-legacy-goals')})()"),'budget and goals settings tab removed');await clickText('.sidebar nav button','Αναφορές');await waitHeading('Αναφορές');await audit('desktop reports budgets');assert(await c.eval("Boolean(document.querySelector('[data-budget-management]'))"),'budget management lives in Reports');
   await c.eval("document.querySelector('[data-qa-crash]').click()");await waitFor("function(){return Boolean(document.querySelector('.workspace-error[role=\"alert\"]'))}",'error boundary');await clickText('.workspace-error button','Dashboard');await waitHeading('Οι λογαριασμοί μου');
 
   await viewport(430,800);await navigate(`${baseUrl}?save=conflict`);await waitFor("function(){return Boolean(document.querySelector('.persistence-notice.conflict[role=\"alert\"]'))}",'conflict notice');await audit('conflict notice');await clickText('.persistence-notice button','Φόρτωση τελευταίας έκδοσης');await waitFor("function(){return Boolean(document.querySelector('.persistence-notice.saved'))}",'conflict recovery');
@@ -73,6 +73,7 @@ try{
   await morePage('Ρυθμίσεις','Ρυθμίσεις');await audit('mobile settings');await assertMobileControlFonts('mobile settings');
 
   await viewport(667,375);await navigate();await waitHeading('Οι λογαριασμοί μου');await audit('landscape dashboard');await openMore();assert(await c.eval("document.querySelector('.mobile-more-menu').getBoundingClientRect().height<window.innerHeight"),'landscape More constrained');await clickAria('Κλείσιμο μενού');
+
   await viewport(430,800);await navigate(`${baseUrl}?motion=reduced`);await waitHeading('Οι λογαριασμοί μου');assert(await c.eval("document.documentElement.dataset.motion==='reduced'"),'reduced motion state');await audit('reduced motion');
 
   c.close();console.log('Rendered frontend QA passed.');

@@ -6,14 +6,23 @@ const source=readFileSync(new URL('../src/components/CategoryIconPicker.tsx',imp
 describe('category icon picker accessibility contract',()=>{
   it('uses native selectable buttons instead of an incomplete ARIA listbox pattern',()=>{
     expect(source).toContain('role="group"');
-    expect(source).toContain('aria-pressed={value===option.key}');
+    expect(source).toContain('aria-pressed={value===iconValue}');
     expect(source).not.toContain('role="listbox"');
     expect(source).not.toContain('role="option"');
   });
 
-  it('keeps search and inherited state textually exposed',()=>{
+  it('keeps search, inherited state and icon-pack selection textually exposed',()=>{
     expect(source).toContain('Αναζήτηση εικονιδίου');
+    expect(source).toContain('Πακέτο εικονιδίων');
+    expect(source).toContain('CATEGORY_ICON_PACKS');
     expect(source).toContain('aria-pressed={!value}');
     expect(source).toContain('role="status"');
+  });
+
+  it('supports a workspace-selected pack without duplicating the pack switcher per row',()=>{
+    expect(source).toContain('selectedPack?:CategoryIconPack');
+    expect(source).toContain('showPackSwitcher?:boolean');
+    expect(source).toContain('const pack=selectedPack??localPack');
+    expect(source).toContain('{showPackSwitcher?<div className="category-icon-pack-switcher"');
   });
 });

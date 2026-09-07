@@ -1,5 +1,7 @@
 import { AlertCircle, Eye, EyeOff, KeyRound, LoaderCircle, LockKeyhole, ShieldCheck } from 'lucide-react';
 import { useState, type FormEvent, type KeyboardEvent } from 'react';
+import { AppInputShell } from './AppInputShell';
+import { AppTextInput } from './AppTextInput';
 import { BrandMark } from './BrandMark';
 
 export function LoginScreen({ onLogin, error }:{ onLogin:(email:string,password:string)=>Promise<boolean>; error:string }) {
@@ -27,11 +29,11 @@ export function LoginScreen({ onLogin, error }:{ onLogin:(email:string,password:
       <form onSubmit={submit} className="login-form" noValidate={false}>
         <div className="login-field">
           <label htmlFor="login-email">Email</label>
-          <div className="login-input neo-inset"><KeyRound size={17}/><input id="login-email" type="email" autoComplete="username" inputMode="email" required maxLength={254} value={email} onChange={e=>setEmail(e.target.value)} disabled={busy} aria-invalid={Boolean(error)} aria-describedby={error?'login-error':undefined}/></div>
+          <AppInputShell className="login-input" leading={<KeyRound size={17}/>} invalid={Boolean(error)}><AppTextInput id="login-email" type="email" autoComplete="username" inputMode="email" required maxLength={254} value={email} onChange={e=>setEmail(e.target.value)} disabled={busy} invalid={Boolean(error)} aria-describedby={error?'login-error':undefined}/></AppInputShell>
         </div>
         <div className="login-field">
           <label htmlFor="login-password">Κωδικός</label>
-          <div className="login-input neo-inset"><LockKeyhole size={17}/><input id="login-password" type={showPassword?'text':'password'} autoComplete="current-password" required minLength={8} maxLength={512} value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={trackCaps} onKeyUp={trackCaps} onBlur={()=>setCapsLock(false)} disabled={busy} aria-invalid={Boolean(error)} aria-describedby={passwordDescription}/><button type="button" className="login-password-toggle" aria-label={showPassword?'Απόκρυψη κωδικού':'Εμφάνιση κωδικού'} title={showPassword?'Απόκρυψη κωδικού':'Εμφάνιση κωδικού'} aria-pressed={showPassword} onClick={()=>setShowPassword(value=>!value)} disabled={busy}>{showPassword?<EyeOff size={17}/>:<Eye size={17}/>}</button></div>
+          <AppInputShell className="login-input" leading={<LockKeyhole size={17}/>} invalid={Boolean(error)} trailing={<button type="button" className="login-password-toggle" aria-label={showPassword?'Απόκρυψη κωδικού':'Εμφάνιση κωδικού'} title={showPassword?'Απόκρυψη κωδικού':'Εμφάνιση κωδικού'} aria-pressed={showPassword} onClick={()=>setShowPassword(value=>!value)} disabled={busy}>{showPassword?<EyeOff size={17}/>:<Eye size={17}/>}</button>}><AppTextInput id="login-password" type={showPassword?'text':'password'} autoComplete="current-password" required minLength={8} maxLength={512} value={password} onChange={e=>setPassword(e.target.value)} onKeyDown={trackCaps} onKeyUp={trackCaps} onBlur={()=>setCapsLock(false)} disabled={busy} invalid={Boolean(error)} aria-describedby={passwordDescription}/></AppInputShell>
           {capsLock?<small id="login-caps-hint" className="login-field-hint" role="status">Το Caps Lock είναι ενεργό.</small>:null}
         </div>
         {error?<div id="login-error" className="login-error" role="alert"><AlertCircle size={16}/><span>{error}</span></div>:null}

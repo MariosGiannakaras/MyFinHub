@@ -2,6 +2,7 @@ import { CheckCircle2, Save } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { categoryTree, formatCategoryTree, parseCategoryTree } from '../lib/categories';
 import type { CategoryDefinition, FinanceSettings } from '../types';
+import { AppTextarea } from './AppTextarea';
 
 type CategoryKind='expense'|'income';
 
@@ -31,7 +32,7 @@ export function CategoryTreeEditor({kind,settings,onSave}:{kind:CategoryKind;set
 
   return <article className="panel neo-raised category-editor">
     <div className="panel-head"><div><span>{title}</span><small>Μία κατηγορία ανά γραμμή. Προαιρετικές υποκατηγορίες μετά από &gt;, χωρισμένες με κόμμα. Τα διπλότυπα ενοποιούνται χωρίς να αλλάζουν ιστορικές συναλλαγές.</small></div></div>
-    <textarea aria-label={title} aria-describedby={`category-help-${kind}`} value={text} onChange={event=>{setText(event.target.value);setDirty(true);setFeedback(null)}}/>
+    <AppTextarea aria-label={title} aria-describedby={`category-help-${kind}`} value={text} onChange={event=>{setText(event.target.value);setDirty(true);setFeedback(null)}}/>
     <div className="category-editor-footer" id={`category-help-${kind}`}>
       <span className={`category-save-state ${dirty?'dirty':'saved'}`}>{dirty?'Μη αποθηκευμένες αλλαγές':'Αποθηκευμένο'}</span>
       <button type="button" className="save-button category-save-button" disabled={!dirty} onClick={save}><Save size={16}/> Αποθήκευση {noun}</button>

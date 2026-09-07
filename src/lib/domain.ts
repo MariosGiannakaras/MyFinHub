@@ -40,6 +40,8 @@ export function migrateData(input: FinanceData): FinanceData {
       settings: {
         excludedFromAvailable: state.settings?.excludedFromAvailable ?? ['piraeus-savings'],
         accountNames: state.settings?.accountNames ?? {},
+        customAccounts: state.settings?.customAccounts ?? [],
+        accountOverrides: state.settings?.accountOverrides ?? {},
         expenseCategories: state.settings?.expenseCategories ?? [],
         incomeCategories: state.settings?.incomeCategories ?? [],
         customPresets: state.settings?.customPresets ?? [],
@@ -60,8 +62,16 @@ export function migrateData(input: FinanceData): FinanceData {
 }
 
 export function allAccounts(data: FinanceData): Account[] {
-  const accounts = data.seed.accounts ?? [];
+  const overrides = data.state.settings.accountOverrides ?? {};
+  const seeded = (data.seed.accounts ?? []).map((account) => ({ ...account, ...(overrides[account.id] ?? {}), id: account.id }));
+  const seededIds = new Set(seeded.map((account) => account.id));
+  const custom = (data.state.settings.customAccounts ?? []).filter((account) => !seededIds.has(account.id));
+  const accounts = [...seeded, ...custom];
   return accounts.some((a) => a.id === CREDIT_ACCOUNT.id) ? accounts : [...accounts, CREDIT_ACCOUNT];
+}
+
+export function quickChoiceAccounts(data: FinanceData): Account[] {
+  return allAccounts(data).filter((account) => account.kind !== 'credit' && account.showInQuickChoices !== false);
 }
 
 function deletedSet(data: FinanceData) {

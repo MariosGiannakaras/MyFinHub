@@ -9,7 +9,7 @@ describe('approved composite Reports source contract',()=>{
     const styles=read('src/pages/ReportsPage.css');
     expect(source).toContain("import './ReportsPage.css'");
     expect(source).toContain('report-section-nav');
-    for(const anchor of ['#report-overview','#report-flow','#report-obligations','#report-expenses','#report-comparisons','#report-accounts'])expect(source).toContain(anchor);
+    for(const anchor of ['#report-overview','#report-budget-overview','#report-flow','#report-obligations','#report-expenses','#report-comparisons','#report-accounts'])expect(source).toContain(anchor);
     expect(styles).toContain('.report-section-nav{position:sticky');
     expect(styles).toContain('.reports-composite .report-category-list{max-height:none;overflow:visible');
   });
@@ -27,6 +27,22 @@ describe('approved composite Reports source contract',()=>{
     expect(source).not.toContain('Εκτύπωση');
   });
 
+  it('keeps Reports information-first while budget management remains on the same main workspace surface',()=>{
+    const source=read('src/pages/ReportsPage.tsx');
+    const styles=read('src/pages/ReportsPage.css');
+    expect(source).toContain('data-budget-overview');
+    expect(source).toContain('Προϋπολογισμοί · εικόνα περιόδου');
+    expect(source).toContain('Συνολικό όριο');
+    expect(source).toContain('Χρήση ορίων');
+    expect(source).toContain('Πρόβλεψη τέλους μήνα');
+    expect(source).toContain('Τι χρειάζεται προσοχή');
+    expect(source).toContain('Διαχείριση προϋπολογισμών');
+    expect(source).toContain('<BudgetRuleSettings');
+    expect(source.indexOf('data-budget-overview')).toBeLessThan(source.indexOf('<BudgetRuleSettings'));
+    expect(styles).toContain('.report-budget-summary-grid{display:grid');
+    expect(styles).toContain('.report-budget-health-grid{display:grid');
+  });
+
   it('uses canonical report/domain functions and shared finance icons',()=>{
     const source=read('src/pages/ReportsPage.tsx');
     const reports=read('src/lib/reports.ts');
@@ -34,6 +50,7 @@ describe('approved composite Reports source contract',()=>{
     expect(source).toContain('reportInsightModel(data,month)');
     expect(source).toContain('reportExpenseCounterparties(data,month,5)');
     expect(source).toContain('reportLoanBurden(data)');
+    expect(source).toContain('budgetProgress(data,month)');
     expect(source).toContain('<FinanceIcon settings={data.state.settings}');
     expect(source).toContain('accountsVisible');
     expect(reports).toContain('flowImpactLegacy(data,tx)');

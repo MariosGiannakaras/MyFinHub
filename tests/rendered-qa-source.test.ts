@@ -30,7 +30,9 @@ describe('rendered browser QA reliability contract', () => {
   });
 
   it('waits for the committed URL and mounted React root before rendered assertions',()=>{
-    expect(hardening).toContain("location.href===target&&Boolean(document.querySelector('#root>*'))");
+    expect(hardening).toContain('location.href===target');
+    expect(hardening).toContain("document.readyState!=='loading'");
+    expect(hardening).toContain("Boolean(document.querySelector('#root>*'))");
     expect(qaHtml).toContain("document.querySelector('#root>*')");
     expect(qaHtml).toContain('QA React surface did not mount before document readiness.');
   });

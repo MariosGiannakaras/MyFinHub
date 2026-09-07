@@ -1,4 +1,5 @@
 import type { FinanceSettings } from '../types.js';
+import { inferredCategoryIcon } from './categoryIconInference.js';
 import { categoryIconByKey } from './categoryIconRegistry.js';
 
 export type CategoryKind='expense'|'income';
@@ -18,7 +19,13 @@ export function explicitSubcategoryIcon(settings:FinanceSettings,kind:CategoryKi
 }
 
 export function resolvedCategoryIcon(settings:FinanceSettings,kind:CategoryKind,category:string,subcategory?:string){
-  return (subcategory&&explicitSubcategoryIcon(settings,kind,category,subcategory))||explicitCategoryIcon(settings,kind,category)||null;
+  if(subcategory){
+    const explicitSubcategory=explicitSubcategoryIcon(settings,kind,category,subcategory);
+    if(explicitSubcategory)return explicitSubcategory;
+    const semanticSubcategory=inferredCategoryIcon(kind,subcategory);
+    if(semanticSubcategory)return semanticSubcategory;
+  }
+  return explicitCategoryIcon(settings,kind,category)||inferredCategoryIcon(kind,category)||null;
 }
 
 export function withCategoryIcon(settings:FinanceSettings,kind:CategoryKind,category:string,iconKey:string|null):FinanceSettings{

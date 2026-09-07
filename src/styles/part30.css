@@ -21,7 +21,6 @@ html[data-text-size="large"]{--ux-body-size:17px;--ux-small-size:14px;--ux-tiny-
 .settings-form label>span,.filter-label>span{font-size:var(--ux-small-size)}
 .settings-form input,.settings-form textarea,.owned-input,.filterbar input{font-size:var(--ux-body-size);min-height:40px}
 button,input,select,textarea{line-height:1.4}
-button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible,[tabindex]:focus-visible{outline:3px solid rgba(47,111,237,.38);outline-offset:3px}
 .chart-alt summary,.cards-archive>summary,.technical-settings>summary{min-height:36px;display:flex;align-items:center;padding-block:7px;cursor:pointer}
 
 /* Large account/category labels must never expand Settings beyond its workspace. */

@@ -65,7 +65,8 @@ describe('release-readiness source contracts',()=>{
 
   it('keeps WebKit compatibility coverage isolated, pinned and intentionally small',()=>{
     expect(webkitWorkflow).toContain('playwright@1.62.1');
-    expect(webkitWorkflow).toContain('playwright install --with-deps webkit');
+    expect(webkitWorkflow).toContain('TOOL_ROOT=/tmp/myfinhub-playwright-tool');
+    expect(webkitWorkflow).toContain('install --with-deps webkit');
     expect(webkitWorkflow).toContain('node scripts/webkit-smoke.mjs');
     expect(webkitWorkflow).not.toContain('npm run qa:frontend');
     expect(webkitWorkflow).not.toContain('playwright@latest');
@@ -83,6 +84,7 @@ describe('release-readiness source contracts',()=>{
     expect(performanceWorkflow).toContain('lighthouse@13.4.1');
     expect(performanceWorkflow).not.toContain('lighthouse@latest');
     expect(performanceWorkflow).toContain('vite build --config vite.performance.config.ts --mode production');
+    expect(performanceWorkflow).toContain('MYFINHUB_LIGHTHOUSE_BIN: /tmp/myfinhub-lighthouse-tool/node_modules/.bin/lighthouse');
     expect(performanceWorkflow).toContain('node scripts/performance-audit.mjs');
     expect(performanceWorkflow).toContain('node scripts/loading-shift-audit.mjs');
     expect(performanceWorkflow).not.toContain('npm run qa:frontend');
