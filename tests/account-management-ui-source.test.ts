@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 const source=readFileSync(new URL('../src/components/AccountManagementSettings.tsx',import.meta.url),'utf8');
 const styles=readFileSync(new URL('../src/components/AccountManagementSettings.css',import.meta.url),'utf8');
+const sharedStyles=readFileSync(new URL('../src/styles/part57.css',import.meta.url),'utf8');
 const qa=readFileSync(new URL('../scripts/settings-tabs-qa.mjs',import.meta.url),'utf8');
 
 describe('Accounts owner UI contract',()=>{
@@ -21,10 +22,14 @@ describe('Accounts owner UI contract',()=>{
     expect(styles).toContain('.account-management-default-badge{');
   });
 
-  it('keeps Accounts dropdown styling simple and scoped',()=>{
+  it('keeps Accounts controls on shared primitives with page CSS limited to composition',()=>{
     expect(source).toContain('className="account-management-select"');
-    expect(styles).toContain('.account-management-select>.owned-input{');
-    expect(styles).toContain('.owned-select-popover:is(');
+    expect(source).toContain("import { AppTextInput } from './AppTextInput'");
+    expect(sharedStyles).toContain('.app-control{box-sizing:border-box;width:100%;min-height:40px');
+    expect(styles).toContain('.account-management-select{width:100%;min-width:0}');
+    expect(styles).not.toContain('.account-management-select>.owned-input{');
+    expect(styles).not.toContain('.owned-select-popover:is(');
+    expect(styles).not.toContain('.account-management-field input{');
   });
 
   it('captures the choice-driven account states for owner review',()=>{
