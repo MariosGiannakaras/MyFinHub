@@ -7,6 +7,7 @@ const dateSource=readFileSync(new URL('../src/components/AppDateInput.tsx',impor
 const modalFocusSource=readFileSync(new URL('../src/hooks/useModalFocus.ts',import.meta.url),'utf8');
 const shortcutSource=readFileSync(new URL('../src/lib/shortcuts.ts',import.meta.url),'utf8');
 const styles=readFileSync(new URL('../src/styles/part25.css',import.meta.url),'utf8');
+const sharedStyles=readFileSync(new URL('../src/styles/part57.css',import.meta.url),'utf8');
 const integrationStyles=readFileSync(new URL('../src/styles/part33.css',import.meta.url),'utf8');
 function files(path:string):string[]{return readdirSync(path).flatMap(name=>{const full=join(path,name);return statSync(full).isDirectory()?files(full):/\.tsx$/.test(name)?[full]:[]})}
 
@@ -40,15 +41,17 @@ describe('app-owned entry controls',()=>{
     expect(dateSource).toContain('querySelector<HTMLButtonElement>');
     expect(dateSource).toContain(':not(:disabled)');
   });
-  it('keeps owned select triggers styled in the shared control layer instead of page-local form CSS',()=>{
-    expect(styles).toContain('.owned-input-shell>.owned-input{width:100%;min-height:40px;border:1px solid #d7e1ef;border-radius:11px;padding:0 34px 0 10px;cursor:pointer}');
+  it('keeps owned select triggers styled by the common app-control primitive instead of page-local form CSS',()=>{
+    expect(selectSource).toContain('className="app-control owned-input"');
+    expect(sharedStyles).toContain('.app-control{box-sizing:border-box;width:100%;min-width:0;min-height:40px');
+    expect(styles).toContain('.owned-input-shell>.owned-input{padding-right:34px;cursor:pointer}');
     expect(integrationStyles).not.toContain('.settings-form .owned-input-shell>.owned-input');
   });
   it('keeps owned popovers viewport-contained and mobile-safe',()=>{
     expect(styles).toContain('.owned-popover-backdrop{position:fixed;inset:0');
     expect(styles).toContain('max-height:min(72dvh,620px)');
     expect(styles).toContain('.owned-option-list{overflow:auto');
-    expect(styles).toContain('.owned-input-shell>.owned-input{min-height:46px;font-size:16px}');
+    expect(sharedStyles).toContain('@media(max-width:680px){.app-control{min-height:46px;font-size:16px}}');
   });
   it('keeps browser-native select, date and datalist popups out of application pages and components',()=>{
     const sources=[...files('src/pages'),...files('src/components')].map(file=>({file,text:readFileSync(file,'utf8')}));
