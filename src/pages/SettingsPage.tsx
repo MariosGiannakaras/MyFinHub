@@ -15,6 +15,7 @@ import { taxonomyOperationPreview, type TaxonomyOperation } from '../lib/taxonom
 import { userErrorMessage } from '../lib/userMessage';
 import type { FinanceData, FinanceSettings, MonthlyBudget, TransactionRule } from '../types';
 import './SettingsPage.css';
+import './SettingsData.css';
 
 type SettingsTab = 'general' | 'profile' | 'accounts' | 'categories' | 'icons' | 'rules' | 'data';
 
@@ -249,23 +250,48 @@ export function SettingsPage({
 
         {activeTab === 'data' ? (
           <div className="settings-tab-stack settings-data-tab">
-            <section className="panel neo-raised">
+            <section className="panel neo-raised settings-data-overview">
               <div className="panel-head">
                 <div>
-                  <span>Αντίγραφα & εισαγωγή</span>
-                  <small>Δημιούργησε αντίγραφο ασφαλείας ή επανάφερε δεδομένα από αρχείο JSON.</small>
+                  <span>Ασφάλεια & κατάσταση δεδομένων</span>
+                  <small>Έλεγξε την τρέχουσα κατάσταση πριν δημιουργήσεις αντίγραφο ασφαλείας ή αντικαταστήσεις δεδομένα από JSON.</small>
                 </div>
-                <Download />
+                <ShieldCheck />
               </div>
-              <div className="settings-actions">
-                <input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={(event) => requestImport(event.target.files?.[0])} />
-                <button type="button" disabled={busy} onClick={() => fileRef.current?.click()}><FileJson /> Εισαγωγή JSON</button>
-                <button type="button" disabled={busy} onClick={() => void backup()}><Download /> Backup & λήψη</button>
+              <div className="settings-data-status-grid">
+                <div><span>Μορφή δεδομένων</span><b>v{data.schemaVersion}</b></div>
+                <div><span>Τελευταία αποθήκευση</span><b>{lastSavedAt ? new Date(lastSavedAt).toLocaleString('el-GR') : '—'}</b></div>
+                <div><span>Καταγεγραμμένες κινήσεις</span><b>{data.state.events?.length || 0}</b></div>
               </div>
-              {message ? <div className="logic-note compact" role="status" aria-live="polite"><ShieldCheck /><span>{message}</span></div> : null}
             </section>
+
+            <div className="settings-data-action-grid">
+              <section className="panel neo-raised settings-data-action-card">
+                <div className="settings-data-action-icon" aria-hidden="true"><Download /></div>
+                <div className="settings-data-action-copy">
+                  <b>Δημιουργία αντιγράφου ασφαλείας</b>
+                  <p>Δημιούργησε το κανονικό backup του MyFinHub και κατέβασε παράλληλα ένα JSON στη συσκευή σου.</p>
+                  <small>Δεν αλλάζει τα τρέχοντα οικονομικά δεδομένα.</small>
+                </div>
+                <button className="settings-data-action-button" type="button" disabled={busy} onClick={() => void backup()}><Download /> Backup & λήψη</button>
+              </section>
+
+              <section className="panel neo-raised settings-data-action-card settings-data-import-card">
+                <input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={(event) => requestImport(event.target.files?.[0])} />
+                <div className="settings-data-action-icon" aria-hidden="true"><FileJson /></div>
+                <div className="settings-data-action-copy">
+                  <b>Επαναφορά από JSON</b>
+                  <p>Επίλεξε έγκυρο αντίγραφο MyFinHub. Η εισαγωγή αντικαθιστά τα τρέχοντα δεδομένα μόνο μετά από επιβεβαίωση.</p>
+                  <small>Έως 4 MB · δημιουργείται αυτόματο backup πριν από την αντικατάσταση.</small>
+                </div>
+                <button className="settings-data-action-button" type="button" disabled={busy} onClick={() => fileRef.current?.click()}><FileJson /> Επιλογή JSON για εισαγωγή</button>
+              </section>
+            </div>
+
+            {message ? <div className="logic-note compact" role="status" aria-live="polite"><ShieldCheck /><span>{message}</span></div> : null}
+
             <details className="panel neo-raised technical-settings">
-              <summary><Database size={16} /> Τεχνικές πληροφορίες δεδομένων</summary>
+              <summary><Database size={16} /> Προέλευση & τεχνικές πληροφορίες</summary>
               <div className="settings-list">
                 <div><span>Πηγή δεδομένων</span><b>{filePath}</b></div>
                 <div><span>Έκδοση μορφής</span><b>v{data.schemaVersion}</b></div>
