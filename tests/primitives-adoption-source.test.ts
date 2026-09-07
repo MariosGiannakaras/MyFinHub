@@ -55,21 +55,27 @@ describe('shared primitive adoption',()=>{
     expect(receipts).toContain('await deleteReceiptDrafts(request.ids)');
   });
 
-  it('uses app-owned dirty-close confirmation and shared money fields in Quick Entry',()=>{
+  it('uses app-owned dirty-close confirmation and shared editable controls in Quick Entry',()=>{
     expectNoNativeDialog(quickAdd);
     expect(quickAdd).toContain('<ConfirmDialog open={discardOpen}');
     expect(quickAdd).toContain("open&&!discardOpen");
     expect(quickAdd).toContain('<MoneyInput data-autofocus="true" value={amount}');
     expect(quickAdd).toContain('<MoneyInput data-autofocus="true" value={actualBalance}');
+    expect(quickAdd).toContain("from './AppTextInput'");
+    expect(quickAdd).toContain('<AppTextInput value={person}');
+    expect(quickAdd).toContain('<AppTextInput value={note}');
   });
 
-  it('uses MoneyInput for contextual payment amounts while preserving computed loan-plan read-only behavior',()=>{
+  it('uses shared contextual payment amounts and text controls while preserving computed loan-plan read-only behavior',()=>{
     expectNoNativeDialog(contextualQuickAdd);
     expect(contextualQuickAdd).toContain('<MoneyInput data-autofocus="true"');
     expect(contextualQuickAdd).toContain('value={loanPaymentPlan?String(loanPaymentPlan.amount):amount}');
     expect(contextualQuickAdd).toContain('readOnly={Boolean(loanPaymentPlan)}');
     expect(contextualQuickAdd).toContain('invalid={amountError}');
     expect(contextualQuickAdd).toContain('if(!loanPaymentPlan)setAmount(value)');
+    expect(contextualQuickAdd).toContain("from './AppTextInput'");
+    expect(contextualQuickAdd).toContain('<AppTextInput value={person}');
+    expect(contextualQuickAdd).toContain('<AppTextInput value={note}');
   });
 
   it('keeps conflict recovery behind an on-demand app-owned confirmation and the existing reload path',()=>{
