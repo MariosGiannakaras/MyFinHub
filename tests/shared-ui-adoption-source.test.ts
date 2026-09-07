@@ -27,10 +27,12 @@ describe('shared finance UI adoption contracts',()=>{
     expect(budgetRules).not.toMatch(/<input[^>]+inputMode=\"decimal\"[^>]+value=\{budgetAmount\}/);
   });
 
-  it('keeps non-money numeric controls separate from currency entry while rule order stays internal metadata',()=>{
-    expect(recurring).toMatch(/Συνηθισμένη ημέρα μήνα<\/span><input type=\"number\"/);
+  it('keeps non-money numeric controls semantically separate while adopting the shared visual primitive',()=>{
+    expect(recurring).toMatch(/Συνηθισμένη ημέρα μήνα<\/span><AppTextInput type=\"number\"/);
+    expect(recurring).toMatch(/<span>Κάθε<\/span><AppTextInput type=\"number\"/);
     expect(loans).toMatch(/Αριθμός δόσεων<\/span><input type=\"number\"/);
     expect(budgetRules).toContain('Προειδοποίηση %');
+    expect(budgetRules).toContain('<AppTextInput inputMode="decimal" value={budgetAlert}');
     expect(budgetRules).toContain('priority:editingRule?.priority??nextPriority');
     expect(budgetRules).not.toContain('<span>Προτεραιότητα</span>');
   });
