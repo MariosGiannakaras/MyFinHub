@@ -46,13 +46,16 @@ describe('cross-page UI consistency contracts',()=>{
     expect(hardening).toContain('.page-heading h1{font-size:var(--ux-heading-size)}');
   });
 
-  it('keeps shared theme and interaction states on the common control families',()=>{
+  it('uses shared theme and one common focus state across control families',()=>{
     const theme=read('src/lib/theme.ts');
     const hardening=read('src/styles/part30.css');
+    const sharedControls=read('src/styles/part57.css');
     expect(theme).toContain('.sidebar nav button.active,.mobile-nav button.active,.primary-action,.save-button');
     expect(theme).toContain('.top-actions button,.icon-button,.settings-actions button,.secondary');
     expect(theme).toContain('input,select,textarea{background-color:var(--control-bg)!important');
-    expect(hardening).toContain('button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible');
+    expect(theme).toContain("'--focus'");
+    expect(sharedControls).toContain(':where(button,input,select,textarea,summary,[tabindex]):focus-visible{outline:0;box-shadow:var(--focus)!important}');
+    expect(hardening).not.toContain('button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible');
     expect(hardening).toContain('min-height:44px');
   });
 
