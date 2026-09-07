@@ -89,7 +89,6 @@
 .category-icon-pack-switcher b{font-size:var(--ux-small-size);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .category-icon-pack-switcher small{color:var(--muted);font-size:var(--ux-tiny-size)}
 .category-icon-pack-switcher>button.active{border-color:rgba(47,111,237,.42);background:rgba(47,111,237,.08);color:var(--blue)}
-.category-icon-pack-switcher>button:focus-visible{outline:2px solid var(--blue-3);outline-offset:2px}
 
 .settings-categories-only .category-icons-workspace{display:grid;gap:14px;padding:18px}
 .settings-categories-only .category-icons-workspace>.panel-head{margin:0;padding-bottom:2px}
@@ -110,7 +109,7 @@
 .settings-categories-only .taxonomy-subcategory-heading b{font-size:var(--ux-small-size)}
 .settings-categories-only .taxonomy-subcategory-heading small{font-size:var(--ux-tiny-size);line-height:1.35}
 .settings-categories-only .taxonomy-add-subcategory{padding:0;border:0;border-radius:0;background:transparent}
-.settings-categories-only .taxonomy-add-subcategory input,.settings-categories-only .taxonomy-add-subcategory button{min-height:38px}
+.settings-categories-only .taxonomy-add-subcategory button{min-height:38px}
 .settings-categories-only .taxonomy-subcategory-list{gap:6px}
 .settings-categories-only .taxonomy-subcategory-row{padding:8px 9px;border-radius:11px;background:rgba(248,250,253,.6)}
 .settings-categories-only .taxonomy-subcategory-main b{font-size:var(--ux-small-size)}
@@ -138,7 +137,7 @@
   .settings-categories-only .taxonomy-add-row{padding:10px}
   .settings-categories-only .taxonomy-add-subcategory{padding:0}
   .settings-categories-only .taxonomy-row-actions button{width:44px;height:44px}
-  .settings-categories-only .taxonomy-add-subcategory input,.settings-categories-only .taxonomy-add-subcategory button{min-height:46px}
+  .settings-categories-only .taxonomy-add-subcategory button{min-height:46px}
   .settings-icons-only .category-icons-workspace{padding:12px}
   .settings-icons-only .category-icon-library-head{display:grid;gap:2px}
   .settings-icons-only .category-icon-library-head>small{text-align:left}
