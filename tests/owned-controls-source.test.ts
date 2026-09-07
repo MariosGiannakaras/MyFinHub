@@ -49,7 +49,11 @@ describe('app-owned entry controls',()=>{
   });
   it('keeps owned select triggers styled by the common app-control primitive instead of page-local form CSS',()=>{
     expect(selectSource).toContain('className="app-control owned-input"');
+    expect(selectSource).toContain("density='default'");
+    expect(selectSource).toContain('data-density={density}');
     expect(sharedStyles).toContain('.app-control{box-sizing:border-box;width:100%;min-height:40px');
+    expect(sharedStyles).toContain('.owned-input-shell[data-density=compact]>.app-control{min-height:32px');
+    expect(sharedStyles).toContain(':where(button,input,select,textarea,summary,[tabindex]):focus-visible{outline:0;box-shadow:var(--focus)!important}');
     expect(styles).toContain('.owned-input-shell>.owned-input{padding-right:34px;cursor:pointer}');
     expect(integrationStyles).not.toContain('.settings-form .owned-input-shell>.owned-input');
   });
@@ -79,6 +83,7 @@ describe('app-owned entry controls',()=>{
     expect(styles).toContain('max-height:min(72dvh,620px)');
     expect(styles).toContain('.owned-option-list{overflow:auto');
     expect(sharedStyles).toContain('@media(max-width:680px){.app-control{min-height:46px;font-size:16px}}');
+    expect(sharedStyles).toContain('@media(max-width:680px){.owned-input-shell[data-density=compact]>.app-control{min-height:44px;font-size:16px}}');
   });
   it('keeps browser-native select, date and datalist popups out of application pages and components',()=>{
     const sources=[...files('src/pages'),...files('src/components')].map(file=>({file,text:readFileSync(file,'utf8')}));
