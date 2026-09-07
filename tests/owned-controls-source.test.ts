@@ -43,7 +43,7 @@ describe('app-owned entry controls',()=>{
   });
   it('keeps owned select triggers styled by the common app-control primitive instead of page-local form CSS',()=>{
     expect(selectSource).toContain('className="app-control owned-input"');
-    expect(sharedStyles).toContain('.app-control{box-sizing:border-box;width:100%;min-width:0;min-height:40px');
+    expect(sharedStyles).toContain('.app-control{box-sizing:border-box;width:100%;min-height:40px');
     expect(styles).toContain('.owned-input-shell>.owned-input{padding-right:34px;cursor:pointer}');
     expect(integrationStyles).not.toContain('.settings-form .owned-input-shell>.owned-input');
   });
