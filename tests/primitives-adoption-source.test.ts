@@ -5,6 +5,8 @@ const app=readFileSync(new URL('../src/App.tsx',import.meta.url),'utf8');
 const credit=readFileSync(new URL('../src/pages/CreditCardPage.tsx',import.meta.url),'utf8');
 const loans=readFileSync(new URL('../src/pages/LoansPage.tsx',import.meta.url),'utf8');
 const planning=readFileSync(new URL('../src/pages/PlanningPage.tsx',import.meta.url),'utf8');
+const review=readFileSync(new URL('../src/pages/ReviewPage.tsx',import.meta.url),'utf8');
+const savings=readFileSync(new URL('../src/pages/SavingsPage.tsx',import.meta.url),'utf8');
 const settings=readFileSync(new URL('../src/pages/SettingsPage.tsx',import.meta.url),'utf8');
 const receipts=readFileSync(new URL('../src/components/ReceiptInbox.tsx',import.meta.url),'utf8');
 const quickAdd=readFileSync(new URL('../src/components/QuickAdd.tsx',import.meta.url),'utf8');
@@ -25,6 +27,9 @@ describe('shared primitive adoption',()=>{
     expect(credit).toContain('<AppTextInput data-autofocus="true" inputMode="numeric" type="number"');
     expect(credit).toContain('<AppTextInput inputMode="numeric" type="number"');
     expect(credit).toContain('<AppTextInput value={note}');
+    expect(credit).toContain("from '../components/CategorySelectInput'");
+    expect(credit).toContain('<CategorySelectInput settings={data.state.settings} kind="expense"');
+    expect(credit).not.toContain('subcategoriesFor');
   });
 
   it('uses app-owned confirmation and shared generic text controls for Loans',()=>{
@@ -49,6 +54,25 @@ describe('shared primitive adoption',()=>{
     expect(planning).toContain("from '../components/AppTextInput'");
     expect(planning).toContain('<AppTextInput value={draft.note}');
     expect(planning).not.toMatch(/<input\b/);
+  });
+
+  it('uses shared text controls throughout Savings while preserving savings semantics',()=>{
+    expect(savings).toContain("from '../components/AppTextInput'");
+    expect(savings).toContain('<AppTextInput inputMode="decimal" value={targetText}');
+    expect(savings).toContain('<AppTextInput value={note}');
+    expect(savings).toContain('event.savingSource=source');
+    expect(savings).not.toMatch(/<input\b/);
+  });
+
+  it('uses shared split controls in Review without changing the ReviewDecision payload',()=>{
+    expect(review).toContain("from '../components/AppTextInput'");
+    expect(review).toContain("from '../components/CategorySelectInput'");
+    expect(review).toContain("from '../components/MoneyInput'");
+    expect(review).toContain('<AppTextInput aria-label={`Περιγραφή μέρους ${i+1}`}');
+    expect(review).toContain('<CategorySelectInput settings={data.state.settings} kind="expense"');
+    expect(review).toContain('<MoneyInput aria-label={`Ποσό μέρους ${i+1}`}');
+    expect(review).toContain("semanticKind:'split',parts,decidedAt:new Date().toISOString()");
+    expect(review).not.toMatch(/<input\b/);
   });
 
   it('keeps JSON import behind the app-owned confirmation without changing the import path',()=>{
