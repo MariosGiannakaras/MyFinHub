@@ -284,7 +284,7 @@ export function SettingsPage({
                   <p>Επίλεξε έγκυρο αντίγραφο MyFinHub. Η εισαγωγή αντικαθιστά τα τρέχοντα δεδομένα μόνο μετά από επιβεβαίωση.</p>
                   <small>Έως 4 MB · δημιουργείται αυτόματο backup πριν από την αντικατάσταση.</small>
                 </div>
-                <button className="settings-data-action-button" type="button" disabled={busy} onClick={() => fileRef.current?.click()}><FileJson /> Επιλογή JSON για εισαγωγή</button>
+                <button className="settings-data-action-button" type="button" disabled={busy} onClick={() => fileRef.current?.click()}><FileJson /> Εισαγωγή JSON</button>
               </section>
             </div>
 
