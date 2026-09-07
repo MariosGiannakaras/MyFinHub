@@ -10,6 +10,7 @@ const recurring=read('src/pages/RecurringPage.tsx');
 const loans=read('src/pages/LoansPage.tsx');
 const budgetRules=read('src/components/BudgetRuleSettings.tsx');
 const hardening=read('src/styles/part30.css');
+const sharedControls=read('src/styles/part57.css');
 const baseStyles=read('src/styles/part1.css');
 const rendered=read('scripts/ui-ux-hardening-qa.mjs');
 
@@ -45,7 +46,8 @@ describe('shared finance UI adoption contracts',()=>{
   });
 
   it('keeps keyboard focus and pointer affordances visible without relying on hover alone',()=>{
-    expect(hardening).toContain('button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible,summary:focus-visible,[tabindex]:focus-visible');
+    expect(sharedControls).toContain(':where(button,input,select,textarea,summary,[tabindex]):focus-visible{outline:0;box-shadow:var(--focus)!important}');
+    expect(hardening).not.toContain('button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible');
     expect(hardening).toContain('.app-tooltip:hover .app-tooltip-bubble,.app-tooltip:focus-within .app-tooltip-bubble');
     expect(baseStyles).toContain('cursor:pointer');
   });
