@@ -2,6 +2,7 @@ import { ChevronRight, Eye, EyeOff, HandCoins, Info, Plus, RotateCcw, Search, Us
 import { useEffect, useMemo, useState } from 'react';
 import { AnimatedAmount } from '../components/AnimatedAmount';
 import { AppDateInput } from '../components/AppDateInput';
+import { AppInputShell } from '../components/AppInputShell';
 import { AppSelectInput } from '../components/AppSelectInput';
 import { AppTextInput } from '../components/AppTextInput';
 import { FormError } from '../components/FormError';
@@ -55,7 +56,7 @@ export function LendingPage({data,asOf,onCreateEvent,onQuickAdd}:{data:FinanceDa
       <section className="lending-approved-layout">
         <aside className="panel neo-raised lending-people-panel" aria-label="Άτομα με δανεικά">
           <div className="lending-people-head"><div><span>Τα άτομα μου</span><small>{rows.length} {rows.length===1?'πρόσωπο':'πρόσωπα'} με ιστορικό</small></div></div>
-          <label className="lending-people-search"><Search size={17}/><span className="sr-only">Αναζήτηση ατόμου</span><input value={peopleQuery} onChange={event=>setPeopleQuery(event.target.value)} placeholder="Αναζήτηση ατόμου…"/></label>
+          <AppInputShell className="lending-people-search" leading={<Search size={17}/>}><AppTextInput aria-label="Αναζήτηση ατόμου" value={peopleQuery} onChange={event=>setPeopleQuery(event.target.value)} placeholder="Αναζήτηση ατόμου…"/></AppInputShell>
           <div className="lending-people-list">
             {filteredPeople.length?filteredPeople.map(row=><button type="button" key={row.person} className={`lending-person-row ${selectedPerson===row.person?'active':''}`} aria-pressed={selectedPerson===row.person} onClick={()=>{setSelectedPerson(row.person);setHistoryFilter('all')}}>
               <span className="lending-person-avatar" aria-hidden="true">{personInitials(row.person)||<UserRound size={18}/>}</span>
