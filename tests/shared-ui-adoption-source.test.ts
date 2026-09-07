@@ -27,6 +27,13 @@ describe('shared finance UI adoption contracts',()=>{
     expect(budgetRules).not.toMatch(/<input[^>]+inputMode=\"decimal\"[^>]+value=\{budgetAmount\}/);
   });
 
+  it('uses the shared AppTextInput for Lending editable text fields without flattening the dedicated search shell',()=>{
+    expect(lending).toContain("from '../components/AppTextInput'");
+    expect(lending).toContain('<AppTextInput data-autofocus="true" value={person}');
+    expect(lending).toContain('<AppTextInput value={note}');
+    expect(lending).toContain('className="lending-people-search"');
+  });
+
   it('keeps non-money numeric controls semantically separate while adopting the shared visual primitive',()=>{
     expect(recurring).toMatch(/Συνηθισμένη ημέρα μήνα<\/span><AppTextInput type=\"number\"/);
     expect(recurring).toMatch(/<span>Κάθε<\/span><AppTextInput type=\"number\"/);
