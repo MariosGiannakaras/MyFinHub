@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 const selectSource=readFileSync(new URL('../src/components/AppSelectInput.tsx',import.meta.url),'utf8');
 const dateSource=readFileSync(new URL('../src/components/AppDateInput.tsx',import.meta.url),'utf8');
 const textSource=readFileSync(new URL('../src/components/AppTextInput.tsx',import.meta.url),'utf8');
+const textareaSource=readFileSync(new URL('../src/components/AppTextarea.tsx',import.meta.url),'utf8');
 const taxonomySource=readFileSync(new URL('../src/components/CategoryIconsWorkspace.tsx',import.meta.url),'utf8');
 const cardCreateSource=readFileSync(new URL('../src/components/CardCreateDialog.tsx',import.meta.url),'utf8');
 const accountSource=readFileSync(new URL('../src/components/AccountManagementSettings.tsx',import.meta.url),'utf8');
@@ -52,13 +53,16 @@ describe('app-owned entry controls',()=>{
     expect(selectSource).toContain("density='default'");
     expect(selectSource).toContain('data-density={density}');
     expect(sharedStyles).toContain('.app-control{box-sizing:border-box;width:100%;min-height:40px');
+    expect(sharedStyles).toContain('padding:0 10px;font-size:var(--ux-body-size);line-height:1.4');
     expect(sharedStyles).toContain('.owned-input-shell[data-density=compact]>.app-control{min-height:32px');
     expect(sharedStyles).toContain(':where(button,input,select,textarea,summary,[tabindex]):focus-visible{outline:0;box-shadow:var(--focus)!important}');
     expect(styles).toContain('.owned-input-shell>.owned-input{padding-right:34px;cursor:pointer}');
     expect(integrationStyles).not.toContain('.settings-form .owned-input-shell>.owned-input');
   });
-  it('keeps generic taxonomy and card-creation text fields on AppTextInput without page-local control skins',()=>{
+  it('keeps generic text and multiline controls on the shared app-control contract',()=>{
     expect(textSource).toContain('className={`app-control app-text-input ${className}`.trim()}');
+    expect(textareaSource).toContain('className={`app-control app-textarea ${className}`.trim()}');
+    expect(sharedStyles).toContain('.app-textarea{padding:10px;resize:vertical}');
     expect(taxonomySource).toContain("import { AppTextInput } from './AppTextInput'");
     expect(taxonomySource.match(/<AppTextInput/g)?.length).toBe(4);
     expect(taxonomySource).not.toMatch(/<input\b/);
@@ -82,16 +86,18 @@ describe('app-owned entry controls',()=>{
     expect(styles).toContain('.owned-popover-backdrop{position:fixed;inset:0');
     expect(styles).toContain('max-height:min(72dvh,620px)');
     expect(styles).toContain('.owned-option-list{overflow:auto');
-    expect(sharedStyles).toContain('@media(max-width:680px){.app-control{min-height:46px;font-size:16px}}');
-    expect(sharedStyles).toContain('@media(max-width:680px){.owned-input-shell[data-density=compact]>.app-control{min-height:44px;font-size:16px}}');
+    expect(sharedStyles).toContain('@media(max-width:680px){.app-control{min-height:46px;font-size:16px}');
+    expect(sharedStyles).toContain('.owned-input-shell[data-density=compact]>.app-control{min-height:44px;font-size:16px}');
   });
-  it('keeps browser-native select, date and datalist popups out of application pages and components',()=>{
+  it('keeps browser-native select, date, datalist and page-owned textarea controls out of application pages and components',()=>{
     const sources=[...files('src/pages'),...files('src/components')].map(file=>({file,text:readFileSync(file,'utf8')}));
     const nativeSelects=sources.filter(({text})=>/<select\b/.test(text)).map(({file})=>file);
     const nativeDates=sources.filter(({text})=>/<input\b[^>]*\btype\s*=\s*["']date["']/i.test(text)).map(({file})=>file);
     const nativeDatalists=sources.filter(({text})=>/<datalist\b/.test(text)).map(({file})=>file);
+    const pageOwnedTextareas=sources.filter(({file,text})=>/<textarea\b/.test(text)&&!file.endsWith('AppTextarea.tsx')).map(({file})=>file);
     expect(nativeSelects).toEqual([]);
     expect(nativeDates).toEqual([]);
     expect(nativeDatalists).toEqual([]);
+    expect(pageOwnedTextareas).toEqual([]);
   });
 });
