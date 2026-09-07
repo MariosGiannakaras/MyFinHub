@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 const read=(path:string)=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const workspace=read('src/components/TransactionRulesWorkspace.tsx');
+const categorySelect=read('src/components/CategorySelectInput.tsx');
 const settings=read('src/pages/SettingsPage.tsx');
 const css=read('src/components/TransactionRulesWorkspace.css');
 
@@ -15,13 +16,16 @@ describe('Settings Rules workspace source contract',()=>{
     expect(workspace).toContain('Δεν αλλάζει καμία από αυτές');
   });
 
-  it('presents a human when-then builder and taxonomy-backed subcategories',()=>{
+  it('presents a human when-then builder and one shared taxonomy-backed category control',()=>{
     expect(workspace).toContain('Κανόνες νέων κινήσεων');
     expect(workspace).toContain('Όταν η περιγραφή');
-    expect(workspace).toContain('<span>Κατηγορία</span>');
+    expect(workspace).toContain('<span>Κατηγορία / υποκατηγορία</span>');
+    expect(workspace).toContain('<CategorySelectInput');
+    expect(workspace).toContain('subcategory={ruleSubcategory}');
     expect(workspace).toContain('Πότε να λειτουργεί');
     expect(workspace).toContain("categoryTree(data.state.settings,'expense')");
-    expect(workspace).toContain('availableSubcategories.map');
+    expect(categorySelect).toContain('data-option-level="category"');
+    expect(categorySelect).toContain('data-option-level="subcategory"');
     expect(workspace).not.toContain('First match wins');
     expect(workspace).not.toContain('Προτεραιότητα');
   });
@@ -41,16 +45,19 @@ describe('Settings Rules workspace source contract',()=>{
     expect(settings).not.toContain('view="rules"');
   });
 
-  it('uses the shared modal and app-owned select primitives instead of page-local dropdown styling',()=>{
+  it('uses the shared modal and app-owned form primitives instead of page-local control styling',()=>{
     expect(workspace).toContain("import { useModalFocus } from '../hooks/useModalFocus';");
     expect(workspace).toContain("const[editorOpen,setEditorOpen]=useState(false)");
     expect(workspace).toContain('className="editor-backdrop rules-editor-backdrop"');
     expect(workspace).toContain('className="panel neo-raised editor-dialog rules-editor"');
     expect(workspace).toContain('<AppSelectInput');
+    expect(workspace).toContain('<AppTextInput');
+    expect(workspace).toContain('<CategorySelectInput');
     expect(workspace).not.toContain('<select');
     expect(workspace).not.toContain('rules-list-section rule-editor-grid');
     expect(css).not.toContain('.owned-input{');
     expect(css).not.toContain('.owned-input-shell>.owned-input');
+    expect(css).not.toMatch(/\.rules-(?:name-field|builder-fields)[^{]*input\s*\{[^}]*border:/);
   });
 
   it('keeps compact desktop order controls and 44px touch targets on mobile',()=>{
