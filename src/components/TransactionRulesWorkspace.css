@@ -55,7 +55,6 @@
 .rules-editor-head small{max-width:650px;color:var(--muted);font-size:var(--ux-tiny-size)}
 .rules-name-field{display:grid;gap:6px;min-width:0}
 .rules-name-field>span,.rules-builder-fields label>span{color:var(--ink-2);font-size:var(--ux-small-size);font-weight:720}
-.rules-name-field input{min-width:0;width:100%;min-height:42px}
 .rules-builder-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
 .rules-builder-section{min-width:0;margin:0;padding:12px;border:1px solid var(--line);border-radius:13px;background:rgba(248,250,253,.62)}
 .rules-builder-section legend{display:flex;align-items:center;gap:7px;padding:0 5px;font-size:var(--ux-small-size);font-weight:800;color:var(--ink-2)}
@@ -63,9 +62,8 @@
 .rules-builder-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:4px}
 .rules-builder-fields label{display:grid;gap:5px;min-width:0}
 .rules-builder-fields label em{color:var(--muted);font-size:var(--ux-tiny-size);font-weight:600}
-.rules-builder-fields input:not(.owned-input){min-width:0;width:100%;min-height:42px}
 .rules-builder-fields .owned-input-shell{width:100%;min-width:0}
-.rules-builder-note{grid-column:1/-1}
+.rules-category-field,.rules-builder-note{grid-column:1/-1}
 .rule-preview{display:grid;gap:8px;padding:10px 11px;border:1px solid rgba(24,137,168,.2);border-radius:11px;background:rgba(226,248,252,.5)}
 .rules-preview-summary{display:flex;align-items:flex-start;gap:8px;color:var(--ink-2);font-size:var(--ux-tiny-size);line-height:1.45}
 .rules-preview-summary svg{flex:0 0 auto;margin-top:1px;color:#0c7895}
@@ -99,7 +97,6 @@
   .rules-editor-backdrop{align-items:flex-end;padding:0}
   .rules-editor{width:100%;max-height:min(88dvh,760px);padding:14px 13px calc(14px + env(safe-area-inset-bottom,0px));gap:14px}
   .rules-builder-fields{grid-template-columns:1fr}
-  .rules-builder-note{grid-column:auto}
-  .rules-name-field input,.rules-builder-fields input:not(.owned-input){min-height:46px}
+  .rules-category-field,.rules-builder-note{grid-column:auto}
   .rules-editor-actions{position:sticky;bottom:0;margin:0 -2px -2px;padding:10px 2px 2px;background:var(--surface)}
 }
