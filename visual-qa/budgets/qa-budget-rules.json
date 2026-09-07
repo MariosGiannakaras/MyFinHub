@@ -4,25 +4,25 @@
   "appVersion": "v1.3",
   "suite": "budget-rules",
   "surface": "budgets",
-  "generatedAt": "2026-09-07T12:46:47.202Z",
+  "generatedAt": "2026-09-07T13:46:52.700Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "9bffc196a024d0a4240fae8262e0e3c67aec98dd",
-    "shortSha": "9bffc196",
+    "sha": "4bbdacf0fdcdf760bd48443a70ba2334d594a9e0",
+    "shortSha": "4bbdacf0",
     "branch": "feat/346-settings-tabs"
   },
   "screenshots": [
-    "visual-qa/budgets/v1.3__2026-09-07_154647__qa-budget-rules__advanced-automations-desktop.png",
-    "visual-qa/budgets/v1.3__2026-09-07_154647__qa-budget-rules__advanced-automations-mobile.png",
-    "visual-qa/budgets/v1.3__2026-09-07_154647__qa-budget-rules__advanced-automations-ordered-desktop.png",
-    "visual-qa/budgets/v1.3__2026-09-07_154647__qa-budget-rules__reports-budget-category-desktop.png",
-    "visual-qa/budgets/v1.3__2026-09-07_154647__qa-budget-rules__reports-budget-category-mobile.png",
-    "visual-qa/budgets/v1.3__2026-09-07_154647__qa-budget-rules__reports-budget-overall-desktop.png",
-    "visual-qa/budgets/v1.3__2026-09-07_154647__qa-budget-rules__reports-budget-overall-mobile.png",
-    "visual-qa/budgets/v1.3__2026-09-07_154647__qa-budget-rules__reports-budget-overview-desktop.png",
-    "visual-qa/budgets/v1.3__2026-09-07_154647__qa-budget-rules__reports-budget-overview-mobile.png",
-    "visual-qa/budgets/v1.3__2026-09-07_154647__qa-budget-rules__savings-target-editor-desktop.png",
-    "visual-qa/budgets/v1.3__2026-09-07_154647__qa-budget-rules__savings-target-editor-mobile.png",
-    "visual-qa/budgets/v1.3__2026-09-07_154647__qa-budget-rules__savings-target-updated-desktop.png"
+    "visual-qa/budgets/v1.3__2026-09-07_164652__qa-budget-rules__advanced-automations-desktop.png",
+    "visual-qa/budgets/v1.3__2026-09-07_164652__qa-budget-rules__advanced-automations-mobile.png",
+    "visual-qa/budgets/v1.3__2026-09-07_164652__qa-budget-rules__advanced-automations-ordered-desktop.png",
+    "visual-qa/budgets/v1.3__2026-09-07_164652__qa-budget-rules__reports-budget-category-desktop.png",
+    "visual-qa/budgets/v1.3__2026-09-07_164652__qa-budget-rules__reports-budget-category-mobile.png",
+    "visual-qa/budgets/v1.3__2026-09-07_164652__qa-budget-rules__reports-budget-overall-desktop.png",
+    "visual-qa/budgets/v1.3__2026-09-07_164652__qa-budget-rules__reports-budget-overall-mobile.png",
+    "visual-qa/budgets/v1.3__2026-09-07_164652__qa-budget-rules__reports-budget-overview-desktop.png",
+    "visual-qa/budgets/v1.3__2026-09-07_164652__qa-budget-rules__reports-budget-overview-mobile.png",
+    "visual-qa/budgets/v1.3__2026-09-07_164652__qa-budget-rules__savings-target-editor-desktop.png",
+    "visual-qa/budgets/v1.3__2026-09-07_164652__qa-budget-rules__savings-target-editor-mobile.png",
+    "visual-qa/budgets/v1.3__2026-09-07_164652__qa-budget-rules__savings-target-updated-desktop.png"
   ]
 }
