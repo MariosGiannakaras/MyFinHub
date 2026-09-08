@@ -51,9 +51,10 @@ try{
 
   console.log('Action Center QA: desktop hierarchy, privacy and deterministic queue');
   await navigate('attention');
-  assert(await c.call("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Τι χρειάζεται προσοχή')}") ,'attention heading');
+  assert(await c.call("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Έλεγχος')}") ,'attention heading');
   assert((await c.call("function(){return document.querySelectorAll('.attention-summary-grid>article').length}"))===3,'three severity summary cards');
   assert((await c.call("function(){return document.querySelectorAll('.attention-row').length}"))>0,'attention queue has actionable items');
+  assert(await c.call("function(){return Boolean(document.querySelector('[data-legacy-confirmation-panel]'))}"),'legacy confirmation is integrated into Έλεγχος');
   assert(await c.call("function(){const toggle=document.querySelector('.attention-page .privacy-toggle');return toggle?.getAttribute('aria-pressed')==='false'}") ,'privacy starts hidden');
   await clickText('.attention-page .privacy-toggle','Εμφάνιση ποσών');
   assert(await c.call("function(){return document.querySelector('.attention-page .privacy-toggle')?.getAttribute('aria-pressed')==='true'}"),'privacy toggle exposes values only on request');

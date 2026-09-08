@@ -7,12 +7,12 @@ const skeleton=fs.readFileSync(path.join(root,'src/components/AppSkeleton.tsx'),
 const css=fs.readFileSync(path.join(root,'src/styles/part42.css'),'utf8');
 const audit=fs.readFileSync(path.join(root,'scripts/loading-shift-audit.mjs'),'utf8');
 
-const routes=['dashboard','transactions','review','savings','cards','credit','loans','lending','recurring','planning','attention','reports','settings'];
+const routes=['dashboard','transactions','savings','cards','credit','loans','lending','recurring','planning','attention','reports','settings'];
 
 describe('route-shaped skeleton fidelity',()=>{
   it('defines a dedicated representative layout for every finance route',()=>{
     for(const route of routes)expect(skeleton).toContain(`page==='${route}'`);
-    for(const component of ['DashboardSkeletonContent','TransactionsSkeleton','ReviewSkeleton','SavingsSkeleton','CardsSkeleton','CreditSkeleton','LoansSkeleton','LendingSkeleton','RecurringSkeleton','PlanningSkeleton','AttentionSkeleton','ReportsSkeleton','SettingsSkeleton'])expect(skeleton).toContain(component);
+    for(const component of ['DashboardSkeletonContent','TransactionsSkeleton','SavingsSkeleton','CardsSkeleton','CreditSkeleton','LoansSkeleton','LendingSkeleton','RecurringSkeleton','PlanningSkeleton','AttentionSkeleton','ReportsSkeleton','SettingsSkeleton'])expect(skeleton).toContain(component);
   });
 
   it('uses representative cards, rows, controls, charts and forms instead of generic panel blocks',()=>{

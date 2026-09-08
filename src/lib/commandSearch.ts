@@ -5,7 +5,7 @@ import { loanRemainingInstallments } from './loans.js';
 import { allRecurringItems, recurringStatus } from './recurring.js';
 import type { FinanceData, FinanceEvent, Loan } from '../types.js';
 
-export type CommandPage='dashboard'|'transactions'|'review'|'savings'|'cards'|'credit'|'loans'|'lending'|'recurring'|'planning'|'attention'|'reports'|'settings';
+export type CommandPage='dashboard'|'transactions'|'savings'|'cards'|'credit'|'loans'|'lending'|'recurring'|'planning'|'attention'|'reports'|'settings';
 export type CommandResultKind='command'|'transaction'|'account'|'card'|'loan'|'lending'|'recurring'|'scheduled'|'budget';
 export type CommandAction=
  | {type:'navigate';page:CommandPage}
@@ -28,7 +28,7 @@ export interface CommandSearchItem{
 export interface RankedCommandSearchItem extends CommandSearchItem{score:number}
 
 const pageCommands:Array<[CommandPage,string,string,number]>=[
- ['dashboard','Dashboard','Επισκόπηση λογαριασμών',30],['transactions','Συναλλαγές','Ιστορικό και αναζήτηση κινήσεων',31],['savings','Αποταμίευση','Αποταμιευτικές κινήσεις και στόχοι',32],['cards','Κάρτες','Κάρτες και στοιχεία καρτών',33],['credit','Πιστωτική','Πιστωτικές κάρτες και πληρωμές',34],['loans','Δόσεις & Δάνεια','Δόσεις, δάνεια και αποπληρωμές',35],['lending','Δανεικά & επιστροφές','Πρόσωπα και επιστροφές χρημάτων',36],['recurring','Πάγια & Συνδρομές','Επαναλαμβανόμενες υποχρεώσεις',37],['planning','Προγραμματισμός','Scheduled κινήσεις και πρόβλεψη',38],['attention','Χρειάζεται προσοχή','Ενεργές οικονομικές εκκρεμότητες',39],['reports','Αναφορές','Αναλύσεις, budgets και τάσεις',40],['review','Έλεγχος παλιών κινήσεων','Review εισαγμένων κινήσεων',41],['settings','Ρυθμίσεις','Budgets, κανόνες και προτιμήσεις',42],
+ ['dashboard','Dashboard','Επισκόπηση λογαριασμών',30],['transactions','Συναλλαγές','Ιστορικό και αναζήτηση κινήσεων',31],['savings','Αποταμίευση','Αποταμιευτικές κινήσεις και στόχοι',32],['cards','Κάρτες','Κάρτες και στοιχεία καρτών',33],['credit','Πιστωτική','Πιστωτικές κάρτες και πληρωμές',34],['loans','Δόσεις & Δάνεια','Δόσεις, δάνεια και αποπληρωμές',35],['lending','Δανεικά & επιστροφές','Πρόσωπα και επιστροφές χρημάτων',36],['recurring','Πάγια & Συνδρομές','Επαναλαμβανόμενες υποχρεώσεις',37],['planning','Προγραμματισμός','Scheduled κινήσεις και πρόβλεψη',38],['attention','Έλεγχος','Εκκρεμότητες και κινήσεις προς επιβεβαίωση',39],['reports','Αναφορές','Αναλύσεις, budgets και τάσεις',40],['settings','Ρυθμίσεις','Budgets, κανόνες και προτιμήσεις',42],
 ];
 
 export function normalizeCommandText(value:string){return value.normalize('NFD').replace(/\p{M}/gu,'').toLocaleLowerCase('el-GR').replace(/[^\p{L}\p{N}]+/gu,' ').trim()}

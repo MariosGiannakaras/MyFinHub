@@ -19,7 +19,7 @@ const performanceConfig=readFileSync(new URL('../vite.performance.config.ts',imp
 describe('release-readiness source contracts',()=>{
   it('keeps large feature pages route-lazy and chart code out of the eager app shell',()=>{
     const lazyPages=[...app.matchAll(/const\s+\w+Page\s*=\s*lazy\(\(\)\s*=>\s*import\('\.\/pages\//g)];
-    expect(lazyPages.length).toBeGreaterThanOrEqual(13);
+    expect(lazyPages.length).toBeGreaterThanOrEqual(12);
     expect(app).toContain("const ReportsPage = lazy(() => import('./pages/ReportsPage')");
     expect(app).not.toContain("from 'recharts'");
     expect(reports).toContain("from 'recharts'");
@@ -102,7 +102,7 @@ describe('release-readiness source contracts',()=>{
     expect(loadingShiftAudit).toContain("PerformanceObserver");
     expect(loadingShiftAudit).toContain("type:'layout-shift'");
     expect(loadingShiftAudit).toContain("'.qa-loading-route'");
-    expect(loadingShiftAudit).toContain("const pages=['dashboard','transactions','review','savings','cards','credit','loans','lending','recurring','planning','attention','reports','settings']");
+    expect(loadingShiftAudit).toContain("const pages=['dashboard','transactions','savings','cards','credit','loans','lending','recurring','planning','attention','reports','settings']");
     expect(loadingShiftAudit).toContain("{name:'desktop',width:1280,height:900,mobile:false}");
     expect(loadingShiftAudit).toContain("{name:'mobile',width:375,height:812,mobile:true}");
     expect(loadingShiftAudit).toContain('assert(cls<=0.10');

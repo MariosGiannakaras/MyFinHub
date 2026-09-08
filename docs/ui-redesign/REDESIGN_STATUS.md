@@ -19,10 +19,9 @@ Current full-page baselines are resolved from `visual-qa/manifest.json`. Current
 | 8 | Lending / receivables | DESIGN APPROVED | VERIFIED | merged to `develop` via #328 |
 | 9 | Recurring | DESIGN APPROVED | VERIFIED | merged to `develop` via #331 |
 | 10 | Planning / forecast | DESIGN APPROVED | VERIFIED | merged to `develop` via #336 |
-| 11 | Needs Attention | DESIGN APPROVED | VERIFIED | merged to `develop` via #339 |
-| 12 | Review | NOT STARTED | NOT STARTED | — |
-| 13 | Reports | DESIGN APPROVED | VERIFIED | merged to `develop` via #342 |
-| 14 | Settings | DESIGN APPROVED | VERIFIED | Data owner-approved and merged to `develop` via #354 |
+| 11 | Έλεγχος | DESIGN APPROVED | VALIDATING | owner-approved Needs Attention baseline via #339; Review consolidation tracked by #355 |
+| 12 | Reports | DESIGN APPROVED | VERIFIED | merged to `develop` via #342 |
+| 13 | Settings | DESIGN APPROVED | VERIFIED | Data owner-approved and merged to `develop` via #354 |
 
 ## Verified delivery history
 
@@ -55,6 +54,10 @@ Settings → General uses the owner-approved 1505×1045 reference tracked by SHA
 Settings → Rules is **DESIGN APPROVED / VERIFIED**. The owner explicitly rejected the previous Rules Actual on 2026-09-07, then approved the corrected Rules Actual on 2026-09-07 after the shared-control and taxonomy correction pass. The corrected implementation removes the auto-open embedded editor, moves create/edit into the shared modal interaction pattern, keeps canonical transaction-rule semantics intact, and uses shared control primitives without Rules-local dropdown appearance overrides. Product/QA head `9bffc196a024d0a4240fae8262e0e3c67aec98dd` passed CI including source/build/API checks, the full rendered frontend QA matrix and high-severity audits, plus CodeQL, cross-engine, performance, Windows Desktop, Windows First Run and Windows Clean Launch. Fresh desktop/mobile Rules list, create modal, category dropdown and supporting Settings Actual were personally inspected with no material containment, hierarchy, overlay, shared-control, touch-target or responsive defect. The owner approved that corrected Actual. PR #347 was squash-merged to `develop` as `fbc7c9f3570fe3335b363847c814ac34b0ea6336`; the merge commit and approved branch head share Git tree `0d4bd58061875943fa75700cedfdb5a3f73c88ef`, and post-merge CI, CodeQL, Windows Desktop, Windows First Run and Windows Clean Launch all passed on `develop`.
 
 Settings → Data is **DESIGN APPROVED / VERIFIED**. After owner feedback that the status, schema/event counters and provenance/technical-information blocks had no useful product value, the surface was reduced to the two direct user actions: create/download a backup and restore from a MyFinHub JSON backup. Canonical backup/import safety behavior, JSON size limits, confirmation and automatic pre-import backup semantics remain unchanged. Product head `865f8263d0a4a4cfa4d2e40af9ba449fc2ac6a18` passed application/API checks, rendered frontend QA, high-severity audits, CodeQL, cross-engine smoke, performance smoke and Windows Desktop. The Visual QA Snapshots workflow passed and persisted fresh evidence in `86029b3a7174014393c92df91dc74732f6cd3585`. Fresh desktop/mobile Actuals were personally inspected and owner-approved on 2026-09-08. PR #354 was squash-merged to `develop` as `428c8d47fea8010d4ff3a2bc5698da04d60794c8`.
+
+## Έλεγχος consolidation
+
+The owner approved consolidating the former standalone Review concept into the already verified Needs Attention action center under the single owner-facing name **Έλεγχος**. Issue #355 removes Review as a separate route/surface, keeps the useful legacy semantic-confirmation workflow as a distinct **Προς επιβεβαίωση** section, and preserves compatibility-critical `reviewDecisions` plus the advisory confirmation semantics. The existing Needs Attention presentation remains the visual baseline while this consolidation is validated.
 
 ## Protected exclusion
 

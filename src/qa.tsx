@@ -21,7 +21,6 @@ import { applyTransactionRules } from './lib/transactionRules';
 import { qaFinanceData } from './qaFixture';
 import { DashboardPage } from './pages/DashboardPage';
 import { TransactionsPage } from './pages/TransactionsPage';
-import { ReviewPage } from './pages/ReviewPage';
 import { SavingsPage } from './pages/SavingsPage';
 import { CardsPage } from './pages/CardsPage';
 import { CreditCardPage } from './pages/CreditCardPage';
@@ -35,15 +34,15 @@ import { SettingsPage } from './pages/SettingsPage';
 import type { AttentionDecision, CardBank, EventKind, FinanceData, FinanceEvent, LegacyTransaction, Loan, MonthlyBudget, PaymentCard, RecurringItem, ScheduledTransaction, TextSizePreference, TransactionRule } from './types';
 import './styles.css';
 
-const QA_PAGES:PageId[]=['dashboard','transactions','review','savings','cards','credit','loans','lending','recurring','planning','attention','reports','settings'];
-const QA_PAGE_HEADINGS:Record<PageId,string>={dashboard:'Οι λογαριασμοί μου',transactions:'Συναλλαγές',review:'Έλεγχος παλιών κινήσεων',savings:'Αποταμίευση',cards:'Κάρτες',credit:'Πιστωτική Κάρτα',loans:'Δόσεις & Δάνεια',lending:'Δανεικά & επιστροφές',recurring:'Πάγια & Συνδρομές',planning:'Προγραμματισμός & πρόβλεψη ρευστότητας',attention:'Τι χρειάζεται προσοχή',reports:'Αναφορές · Η οικονομική εικόνα του μήνα',settings:'Ρυθμίσεις'};
+const QA_PAGES:PageId[]=['dashboard','transactions','savings','cards','credit','loans','lending','recurring','planning','attention','reports','settings'];
+const QA_PAGE_HEADINGS:Record<PageId,string>={dashboard:'Οι λογαριασμοί μου',transactions:'Συναλλαγές',savings:'Αποταμίευση',cards:'Κάρτες',credit:'Πιστωτική Κάρτα',loans:'Δόσεις & Δάνεια',lending:'Δανεικά & επιστροφές',recurring:'Πάγια & Συνδρομές',planning:'Προγραμματισμός & πρόβλεψη ρευστότητας',attention:'Έλεγχος',reports:'Αναφορές · Η οικονομική εικόνα του μήνα',settings:'Ρυθμίσεις'};
 const quickToken=()=>`qa-quick-${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
 type DistributiveOmit<T,K extends PropertyKey>=T extends unknown?Omit<T,K>:never;
 type SpecialQuickContext=DistributiveOmit<Exclude<QuickActionContext,{mode:'generic'}>,'token'>;
 
 function Crash(): never { throw new Error('synthetic-render-failure'); }
 function initialSaveState(raw:string|null):SaveState{return raw==='error'||raw==='conflict'||raw==='saving'||raw==='loading'?raw:'saved'}
-function initialPage(raw:string|null):PageId{return QA_PAGES.includes(raw as PageId)?raw as PageId:'dashboard'}
+function initialPage(raw:string|null):PageId{if(raw==='review')return 'attention';return QA_PAGES.includes(raw as PageId)?raw as PageId:'dashboard'}
 function initialTextSize(raw:string|null):TextSizePreference{return raw==='compact'||raw==='large'?raw:'normal'}
 function buildQaData(params:URLSearchParams){
   const next=qaFinanceData();
@@ -146,7 +145,6 @@ function QaWorkspace(){
   const content=page==='dashboard'
     ?<DashboardPage data={data} month={month} asOf={today} motionMode={data.state.settings.motion||'system'} onQuickAdd={(prefill?:QuickPrefill)=>openGeneric('expense',prefill||null)} onAccountQuickAdd={(accountId,kind)=>kind==='savings'?openSpecial({mode:'savings',toAccountId:accountId,savingSource:'manual_transfer'}):openGeneric('expense',{note:'',amount:0,accountId})} onTransactions={()=>setPage('transactions')} onPlanning={()=>setPage('planning')} onAttention={()=>setPage('attention')} onReports={()=>setPage('reports')}/>
     :page==='transactions'?<TransactionsPage data={data} month={month} onEditEvent={editEvent} onDeleteEvent={deleteEvent} onEditLegacy={editLegacy} onDeleteLegacy={deleteLegacy}/>
-    :page==='review'?<ReviewPage data={data} onDecision={(id,decision)=>update(current=>({...current,state:{...current.state,reviewDecisions:{...(current.state.reviewDecisions??{}),[id]:decision}}}))}/>
     :page==='savings'?<SavingsPage data={data} month={month} asOf={today} onCreate={addEvent} onQuickAdd={openSpecial} onSavingsTargetChange={updateSavingsTarget}/>
     :page==='cards'?<CardsPage data={data} onUpsertBank={upsertBank} onUpsertCard={upsertCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard}/>
     :page==='credit'?<CreditCardPage data={data} asOf={today} onCreateEvent={addEvent} onEditEvent={editEvent} onDeleteEvent={deleteEvent} onUpsertCard={upsertCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard} onPayCard={cardId=>openSpecial({mode:'credit',action:'payment',cardId})}/>
@@ -154,7 +152,7 @@ function QaWorkspace(){
     :page==='lending'?<LendingPage data={data} asOf={today} onCreateEvent={addEvent} onQuickAdd={openSpecial}/>
     :page==='recurring'?<RecurringPage data={data} asOf={today} onUpsert={upsertRecurring} onOpenLoans={()=>setPage('loans')} onPayLoan={loanId=>openSpecial({mode:'loan',loanId})} onPayRecurring={recurringId=>openSpecial({mode:'recurring',recurringId})}/>
     :page==='planning'?<PlanningPage data={data} asOf={today} onUpsertScheduled={upsertScheduled} onCompleteScheduled={completeScheduled}/>
-    :page==='attention'?<AttentionPage data={data} asOf={today} onAction={handleAttention} onDecision={decideAttention}/>
+    :page==='attention'?<AttentionPage data={data} asOf={today} onAction={handleAttention} onDecision={decideAttention} onReviewDecision={(id,decision)=>update(current=>({...current,state:{...current.state,reviewDecisions:{...(current.state.reviewDecisions??{}),[id]:decision}}}))}/>
     :page==='reports'?<ReportsPage data={data} month={month} onUpsertBudget={upsertBudget} onDeleteBudget={deleteBudget} onUpsertRule={upsertRule} onDeleteRule={deleteRule}/>
     :<SettingsPage data={data} asOf={today} filePath="Synthetic QA" lastSavedAt={data.updatedAt} onImport={async incoming=>importData(incoming)} onBackup={async()=>({path:'synthetic/backup.json'})} onSettings={settings=>update(current=>({...current,state:{...current.state,settings:{...settings,motion:'full'}}}))} onTaxonomyOperation={updateTaxonomy} onUpsertBudget={upsertBudget} onDeleteBudget={deleteBudget} onUpsertRule={upsertRule} onDeleteRule={deleteRule}/>;
   const periodVisible=['dashboard','transactions','savings','reports'].includes(page);

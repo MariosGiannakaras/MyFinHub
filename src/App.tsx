@@ -43,7 +43,6 @@ const ContextualQuickAdd = lazy(() => import('./components/ContextualQuickAdd').
 const ConfirmDialog = lazy(() => import('./components/ConfirmDialog').then((module) => ({ default: module.ConfirmDialog })));
 const DashboardPage = lazy(() => import('./pages/DashboardPage').then((module) => ({ default: module.DashboardPage })));
 const TransactionsPage = lazy(() => import('./pages/TransactionsPage').then((module) => ({ default: module.TransactionsPage })));
-const ReviewPage = lazy(() => import('./pages/ReviewPage').then((module) => ({ default: module.ReviewPage })));
 const SavingsPage = lazy(() => import('./pages/SavingsPage').then((module) => ({ default: module.SavingsPage })));
 const CardsPage = lazy(() => import('./pages/CardsPage').then((module) => ({ default: module.CardsPage })));
 const CreditCardPage = lazy(() => import('./pages/CreditCardPage').then((module) => ({ default: module.CreditCardPage })));
@@ -55,12 +54,13 @@ const AttentionPage = lazy(() => import('./pages/AttentionPage').then((module) =
 const ReportsPage = lazy(() => import('./pages/ReportsPage').then((module) => ({ default: module.ReportsPage })));
 const SettingsPage = lazy(() => import('./pages/SettingsPage').then((module) => ({ default: module.SettingsPage })));
 
-const PAGE_IDS: PageId[] = ['dashboard','transactions','review','savings','cards','credit','loans','lending','recurring','planning','attention','reports','settings'];
+const PAGE_IDS: PageId[] = ['dashboard','transactions','savings','cards','credit','loans','lending','recurring','planning','attention','reports','settings'];
 const PERIOD_PAGES = new Set<PageId>(['dashboard','transactions','savings','reports']);
 
 function routeFromHash() {
   const raw = location.hash.replace(/^#\/?/, '').trim();
   if (!raw) return { page: 'dashboard' as PageId, notFound: false };
+  if (raw === 'review') { history.replaceState(null, '', '#/attention'); return { page: 'attention' as PageId, notFound: false }; }
   if (PAGE_IDS.includes(raw as PageId)) return { page: raw as PageId, notFound: false };
   return { page: 'dashboard' as PageId, notFound: true };
 }
@@ -248,7 +248,6 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   const content = page === 'dashboard'
     ? <DashboardPage data={data} month={month} asOf={today} motionMode="full" onQuickAdd={(prefill?: QuickPrefill) => openGeneric('expense', prefill || null)} onAccountQuickAdd={(accountId, kind) => kind === 'savings' ? openSpecial({ mode: 'savings', toAccountId: accountId, savingSource: 'manual_transfer' }) : openGeneric('expense', { note: '', amount: 0, accountId })} onTransactions={() => navigate('transactions')} onPlanning={() => navigate('planning')} onAttention={() => navigate('attention')} onReports={()=>navigate('reports')}/>
     : page === 'transactions' ? <TransactionsPage data={data} month={month} onEditEvent={editEvent} onDeleteEvent={deleteEvent} onEditLegacy={editLegacy} onDeleteLegacy={deleteLegacy}/>
-    : page === 'review' ? <ReviewPage data={data} onDecision={decide}/>
     : page === 'savings' ? <SavingsPage data={data} month={month} asOf={today} onCreate={addEvent} onQuickAdd={openSpecial} onSavingsTargetChange={updateSavingsTarget}/>
     : page === 'cards' ? <CardsPage data={data} onUpsertBank={upsertBank} onUpsertCard={upsertCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard}/>
     : page === 'credit' ? <CreditCardPage data={data} asOf={today} onCreateEvent={addEvent} onEditEvent={editEvent} onDeleteEvent={deleteEvent} onUpsertCard={upsertCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard} onPayCard={(cardId,statementId)=>openSpecial({mode:'credit',action:'payment',cardId,statementId})}/>
@@ -256,7 +255,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
     : page === 'lending' ? <LendingPage data={data} asOf={today} onCreateEvent={addEvent} onQuickAdd={openSpecial}/>
     : page === 'recurring' ? <RecurringPage data={data} asOf={today} onUpsert={upsertRecurring} onOpenLoans={() => navigate('loans')} onPayLoan={(loanId)=>openSpecial({mode:'loan',loanId})} onPayRecurring={(recurringId)=>openSpecial({mode:'recurring',recurringId})}/>
     : page === 'planning' ? <PlanningPage data={data} asOf={today} onUpsertScheduled={upsertScheduled} onCompleteScheduled={completeScheduled}/>
-    : page === 'attention' ? <AttentionPage data={data} asOf={today} onAction={handleAttention} onDecision={decideAttention}/>
+    : page === 'attention' ? <AttentionPage data={data} asOf={today} onAction={handleAttention} onDecision={decideAttention} onReviewDecision={decide}/>
     : page === 'reports' ? <ReportsPage data={data} month={month} onUpsertBudget={upsertBudget} onDeleteBudget={deleteBudget} onUpsertRule={upsertRule} onDeleteRule={deleteRule}/>
     : <SettingsPage data={data} asOf={today} filePath={finance.filePath} lastSavedAt={finance.lastSavedAt} onImport={finance.importData} onBackup={finance.createBackup} onSettings={(settings) => finance.update((current) => ({ ...current, state: { ...current.state, settings: { ...settings, motion: 'full' } } }))} onTaxonomyOperation={updateTaxonomy} onUpsertBudget={upsertBudget} onDeleteBudget={deleteBudget} onUpsertRule={upsertRule} onDeleteRule={deleteRule}/>;
 

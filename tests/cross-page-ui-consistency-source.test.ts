@@ -5,7 +5,6 @@ const read=(path:string)=>readFileSync(new URL(`../${path}`,import.meta.url),'ut
 const routedPages=[
   'src/pages/DashboardPage.tsx',
   'src/pages/TransactionsPage.tsx',
-  'src/pages/ReviewPage.tsx',
   'src/pages/SavingsPage.tsx',
   'src/pages/CardsPage.tsx',
   'src/pages/CreditCardPage.tsx',

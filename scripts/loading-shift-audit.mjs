@@ -1,7 +1,7 @@
 import { execFileSync, spawn } from 'node:child_process';
 
 const baseUrl=process.env.MYFINHUB_PERF_URL||'http://127.0.0.1:4173/qa.html';
-const pages=['dashboard','transactions','review','savings','cards','credit','loans','lending','recurring','planning','attention','reports','settings'];
+const pages=['dashboard','transactions','savings','cards','credit','loans','lending','recurring','planning','attention','reports','settings'];
 const viewports=[{name:'desktop',width:1280,height:900,mobile:false},{name:'mobile',width:375,height:812,mobile:true}];
 const chrome=execFileSync('bash',['-lc','command -v google-chrome || command -v chromium || command -v chromium-browser'],{encoding:'utf8'}).trim();
 if(!chrome)throw new Error('Chrome/Chromium is required for loading-shift audit.');
