@@ -1,6 +1,7 @@
 import { budgetProgress } from './budgets.js';
 import { creditCards, creditDebtForCard, creditLimitForCard, cardLabel } from './cards.js';
 import { creditStatementViews } from './creditStatements.js';
+import { accountBalances, allAccounts, effectiveLegacyTransactions } from './domain.js';
 import { addDays, cashFlowForecast, LOW_BALANCE_THRESHOLD } from './forecast.js';
 import { lendingOutstandingFor } from './lending.js';
 import { isSelfLoan, loanPaymentEvents, loanRemainingInstallments, typicalLoanPaymentDay } from './loans.js';
@@ -9,7 +10,7 @@ import { pendingScheduled, scheduledLifecycle } from './scheduled.js';
 import type { AttentionDecision, FinanceData, FinanceEvent, Loan, RecurringItem } from '../types.js';
 
 export type AttentionSeverity = 'danger' | 'warning' | 'info';
-export type AttentionKind = 'scheduled' | 'recurring' | 'loan' | 'credit' | 'lending' | 'forecast' | 'budget';
+export type AttentionKind = 'scheduled' | 'recurring' | 'recurring_expiry' | 'loan' | 'credit' | 'lending' | 'forecast' | 'budget' | 'account_balance' | 'transaction' | 'duplicate';
 export type AttentionAction =
   | 'complete_scheduled'
   | 'pay_recurring'
@@ -17,7 +18,11 @@ export type AttentionAction =
   | 'pay_credit'
   | 'collect_lending'
   | 'open_forecast'
-  | 'open_budgets';
+  | 'open_budgets'
+  | 'open_dashboard'
+  | 'open_recurring'
+  | 'categorize_transaction'
+  | 'review_duplicate';
 
 export interface AttentionItem {
   id: string;
@@ -35,12 +40,17 @@ export interface AttentionItem {
   loanId?: string;
   scheduledId?: string;
   budgetId?: string;
+  transactionId?: string;
+  transactionSource?: 'legacy' | 'event';
   action: AttentionAction;
   fingerprint: string;
 }
 
 const UPCOMING_DAYS = 7;
+const EXPIRY_LOOKAHEAD_DAYS = 30;
 const CREDIT_WARNING_RATIO = .8;
+const MAX_TRANSACTION_ATTENTION = 50;
+const MAX_DUPLICATE_GROUPS = 20;
 
 function utc(value:string){return new Date(`${value}T12:00:00Z`)}
 function daysBetween(from:string,to:string){return Math.round((utc(to).getTime()-utc(from).getTime())/86400000)}
@@ -50,8 +60,11 @@ function monthDate(asOf:string,day:number,monthOffset=0){
 }
 function monthStart(value:string){return `${value.slice(0,7)}-01`}
 function fingerprint(parts:Array<string|number|undefined|null>){return parts.map(value=>String(value??'')).join('|')}
-function make(item:Omit<AttentionItem,'fingerprint'>):AttentionItem{return {...item,fingerprint:fingerprint([item.kind,item.id,item.severity,item.dueDate,item.amount,item.accountId,item.cardId,item.statementId,item.person,item.action,item.title,item.reason])}}
-function accountName(data:FinanceData,id:string){return data.state.settings.accountNames?.[id]??data.seed.accounts.find(account=>account.id===id)?.name??id}
+function make(item:Omit<AttentionItem,'fingerprint'>):AttentionItem{return {...item,fingerprint:fingerprint([item.kind,item.id,item.severity,item.dueDate,item.amount,item.accountId,item.cardId,item.statementId,item.person,item.recurringId,item.transactionId,item.transactionSource,item.action,item.title,item.reason])}}
+function accountName(data:FinanceData,id:string){return allAccounts(data).find(account=>account.id===id)?.name??data.state.settings.accountNames?.[id]??data.seed.accounts.find(account=>account.id===id)?.name??id}
+function descriptionTitle(note:string){return String(note??'').split(/\r?\n/)[0].trim()||'Συναλλαγή χωρίς περιγραφή'}
+function normalizedDescription(note:string){return descriptionTitle(note).normalize('NFKC').toLocaleLowerCase('el-GR').replace(/\s+/g,' ').trim()}
+function uncategorized(category?:string){const value=String(category??'').trim().toLocaleLowerCase('el-GR');return !value||value==='άλλο'||value==='χωρίς κατηγορία'||value==='uncategorized'}
 
 function effectiveLoans(data:FinanceData):Loan[]{
   const seeded=(data.seed.loans??[]).map(loan=>data.state.loanOverrides?.[loan.id]??loan);
@@ -91,6 +104,17 @@ function scheduledAttention(data:FinanceData,asOf:string):AttentionItem[]{
 
 function recurringAttention(data:FinanceData,asOf:string):AttentionItem[]{
   return activeRecurringItems(data).flatMap(item=>{const due=recurringDue(data,item,asOf);if(!due)return [];return [make({id:`recurring:${item.id}`,kind:'recurring',severity:due.severity,title:item.name,reason:due.overdue?'Δεν υπάρχει συνδεδεμένη πληρωμή για το πάγιο μέσα στον τρέχοντα μήνα και η γνωστή ημέρα έχει περάσει.':'Το επόμενο πάγιο πλησιάζει.',dueDate:due.date,amount:Number(item.amount||0),accountId:item.accountId,recurringId:item.id,action:'pay_recurring'})]});
+}
+
+function recurringExpiryAttention(data:FinanceData,asOf:string):AttentionItem[]{
+  return activeRecurringItems(data).flatMap(item=>{
+    const endDate=(item as RecurringItem&{endDate?:string|null}).endDate;
+    if(!endDate||!/^\d{4}-\d{2}-\d{2}$/.test(endDate))return [];
+    const distance=daysBetween(asOf,endDate);if(distance>EXPIRY_LOOKAHEAD_DAYS)return [];
+    const severity:AttentionSeverity=distance<0?'danger':distance<=UPCOMING_DAYS?'warning':'info';
+    const reason=distance<0?'Η δηλωμένη ημερομηνία λήξης/ανανέωσης έχει περάσει και το πάγιο παραμένει ενεργό.':distance===0?'Η δηλωμένη ημερομηνία λήξης/ανανέωσης είναι σήμερα.':`Η δηλωμένη ημερομηνία λήξης/ανανέωσης είναι σε ${distance} ημέρες.`;
+    return [make({id:`recurring-expiry:${item.id}`,kind:'recurring_expiry',severity,title:`Λήξη · ${item.name}`,reason,dueDate:endDate,amount:Number(item.amount||0),accountId:item.accountId,recurringId:item.id,action:'open_recurring'})];
+  });
 }
 
 function loanAttention(data:FinanceData,asOf:string):AttentionItem[]{
@@ -150,9 +174,43 @@ function forecastAttention(data:FinanceData,asOf:string):AttentionItem[]{
   });
 }
 
+function currentBalanceAttention(data:FinanceData,asOf:string):AttentionItem[]{
+  const balances=accountBalances(data,asOf);const excluded=new Set(data.state.settings.excludedFromAvailable??[]);
+  return allAccounts(data).flatMap(account=>{
+    const eligible=account.kind==='bank'||(account.kind==='cash'&&account.cashRole!=='reserve');
+    if(!eligible||excluded.has(account.id))return [];
+    const balance=balances[account.id];if(!Number.isFinite(balance)||balance>=LOW_BALANCE_THRESHOLD)return [];
+    if(Math.abs(balance)<.005&&account.id!==data.state.settings.defaultExpenseAccount)return [];
+    return [make({id:`current-balance:${account.id}`,kind:'account_balance',severity:'danger',title:`Χαμηλό υπόλοιπο · ${account.name}`,reason:`Το τρέχον υπόλοιπο είναι κάτω από το όριο προσοχής των ${LOW_BALANCE_THRESHOLD}€.`,dueDate:asOf,amount:balance,accountId:account.id,action:'open_dashboard'})];
+  });
+}
+
+type TransactionCandidate={id:string;source:'legacy'|'event';date:string;amount:number;accountId?:string;note:string;category?:string};
+function transactionCandidates(data:FinanceData,asOf:string):TransactionCandidate[]{
+  const legacy=effectiveLegacyTransactions(data).filter(item=>item.date<=asOf&&(item.type==='expense'||item.type==='income')).map(item=>({id:item.id,source:'legacy' as const,date:item.date,amount:item.amount,accountId:item.accountId,note:item.note,category:item.category}));
+  const events=(data.state.events??[]).filter(item=>item.date<=asOf&&(item.kind==='expense'||item.kind==='income')).map(item=>({id:item.id,source:'event' as const,date:item.date,amount:item.amount,accountId:item.accountId??item.legs.find(leg=>leg.accountId!=='credit-card')?.accountId,note:item.note,category:item.category}));
+  return [...legacy,...events];
+}
+
+function uncategorizedTransactionAttention(data:FinanceData,asOf:string):AttentionItem[]{
+  return transactionCandidates(data,asOf).filter(item=>uncategorized(item.category)).sort((a,b)=>b.date.localeCompare(a.date)||b.id.localeCompare(a.id)).slice(0,MAX_TRANSACTION_ATTENTION).map(item=>make({id:`uncategorized:${item.source}:${item.id}`,kind:'transaction',severity:'info',title:descriptionTitle(item.note),reason:'Η συναλλαγή δεν έχει σαφή κατηγορία και χρειάζεται δική σου κατηγοριοποίηση.',dueDate:item.date,amount:item.amount,accountId:item.accountId,transactionId:item.id,transactionSource:item.source,action:'categorize_transaction'}));
+}
+
+function duplicateTransactionAttention(data:FinanceData,asOf:string):AttentionItem[]{
+  const groups=new Map<string,TransactionCandidate[]>();
+  for(const item of transactionCandidates(data,asOf)){
+    const note=normalizedDescription(item.note);if(!item.accountId||note.length<3||!Number.isFinite(item.amount))continue;
+    const key=[item.date,item.accountId,item.amount.toFixed(2),note].join('|');const rows=groups.get(key)??[];rows.push(item);groups.set(key,rows);
+  }
+  return [...groups.entries()].filter(([,rows])=>rows.length>1).sort((a,b)=>b[1][0].date.localeCompare(a[1][0].date)||a[0].localeCompare(b[0])).slice(0,MAX_DUPLICATE_GROUPS).map(([key,rows])=>{
+    const primary=rows.slice().sort((a,b)=>a.id.localeCompare(b.id))[0];
+    return make({id:`duplicate:${key}`,kind:'duplicate',severity:'info',title:`Πιθανό διπλότυπο · ${descriptionTitle(primary.note)}`,reason:`Βρέθηκαν ${rows.length} κινήσεις με ίδια ημερομηνία, λογαριασμό, ποσό και περιγραφή. Χρειάζεται ανθρώπινος έλεγχος πριν αλλάξει οτιδήποτε.`,dueDate:primary.date,amount:primary.amount,accountId:primary.accountId,transactionId:primary.id,transactionSource:primary.source,action:'review_duplicate'});
+  });
+}
+
 function priority(item:AttentionItem){return item.severity==='danger'?0:item.severity==='warning'?1:2}
 export function allAttentionItems(data:FinanceData,asOf:string):AttentionItem[]{
-  const items=[...scheduledAttention(data,asOf),...recurringAttention(data,asOf),...loanAttention(data,asOf),...creditAttention(data,asOf),...lendingAttention(data,asOf),...forecastAttention(data,asOf),...budgetAttention(data,asOf)];
+  const items=[...currentBalanceAttention(data,asOf),...scheduledAttention(data,asOf),...recurringAttention(data,asOf),...recurringExpiryAttention(data,asOf),...loanAttention(data,asOf),...creditAttention(data,asOf),...lendingAttention(data,asOf),...forecastAttention(data,asOf),...budgetAttention(data,asOf),...uncategorizedTransactionAttention(data,asOf),...duplicateTransactionAttention(data,asOf)];
   const dedup=new Map<string,AttentionItem>();for(const item of items){const current=dedup.get(item.id);if(!current||priority(item)<priority(current))dedup.set(item.id,item)}
   return [...dedup.values()].sort((a,b)=>priority(a)-priority(b)||(a.dueDate??'9999').localeCompare(b.dueDate??'9999')||a.title.localeCompare(b.title,'el'));
 }

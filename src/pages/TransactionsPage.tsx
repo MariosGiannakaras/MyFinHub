@@ -57,6 +57,19 @@ export function TransactionsPage({
   const accounts=allAccounts(data).filter(item=>item.kind!=='credit');
 
   useEffect(()=>{const next=monthRange(month);setDateStart(next.start);setDateEnd(next.end);setPage(1);setSelectedId(null)},[month]);
+  useEffect(()=>{
+    const params=new URLSearchParams(location.search);const focusId=params.get('attentionTx');const focusSource=params.get('attentionSource');
+    if(!focusId||(focusSource!=='legacy'&&focusSource!=='event'))return;
+    const clearFocus=()=>{const url=new URL(location.href);url.searchParams.delete('attentionTx');url.searchParams.delete('attentionSource');history.replaceState(history.state,'',url.toString())};
+    if(focusSource==='legacy'){
+      const transaction=effectiveLegacyTransactions(data).find(item=>item.id===focusId);clearFocus();
+      if(!transaction){setMessage('Η συναλλαγή που ζήτησε ο Έλεγχος δεν είναι πλέον διαθέσιμη.');return}
+      setMessage('');setEditingLegacy(transaction);return;
+    }
+    const event=(data.state.events??[]).find(item=>item.id===focusId);clearFocus();
+    if(!event){setMessage('Η συναλλαγή που ζήτησε ο Έλεγχος δεν είναι πλέον διαθέσιμη.');return}
+    setMessage('');onEditEvent(event.id);
+  },[data,onEditEvent]);
 
   const sourceRows=useMemo<TransactionRow[]>(()=>{
     const legacy=effectiveLegacyTransactions(data).filter(t=>t.date.startsWith(month)).map(t=>({
