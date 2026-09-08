@@ -1,4 +1,4 @@
-import { Database, Download, FileJson, ShieldCheck } from 'lucide-react';
+import { Download, FileJson, ShieldCheck } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { AccountManagementSettings } from '../components/AccountManagementSettings';
 import { AccountSecuritySettings } from '../components/AccountSecuritySettings';
@@ -15,6 +15,7 @@ import { taxonomyOperationPreview, type TaxonomyOperation } from '../lib/taxonom
 import { userErrorMessage } from '../lib/userMessage';
 import type { FinanceData, FinanceSettings, MonthlyBudget, TransactionRule } from '../types';
 import './SettingsPage.css';
+import './SettingsData.css';
 
 type SettingsTab = 'general' | 'profile' | 'accounts' | 'categories' | 'icons' | 'rules' | 'data';
 
@@ -76,8 +77,6 @@ function downloadJson(data: FinanceData) {
 export function SettingsPage({
   data,
   asOf,
-  filePath,
-  lastSavedAt,
   currentEmail,
   onImport,
   onBackup,
@@ -249,31 +248,30 @@ export function SettingsPage({
 
         {activeTab === 'data' ? (
           <div className="settings-tab-stack settings-data-tab">
-            <section className="panel neo-raised">
-              <div className="panel-head">
-                <div>
-                  <span>Αντίγραφα & εισαγωγή</span>
-                  <small>Δημιούργησε αντίγραφο ασφαλείας ή επανάφερε δεδομένα από αρχείο JSON.</small>
+            <div className="settings-data-action-grid">
+              <section className="panel neo-raised settings-data-action-card">
+                <div className="settings-data-action-icon" aria-hidden="true"><Download /></div>
+                <div className="settings-data-action-copy">
+                  <b>Δημιουργία αντιγράφου ασφαλείας</b>
+                  <p>Δημιούργησε το κανονικό backup του MyFinHub και κατέβασε παράλληλα ένα JSON στη συσκευή σου.</p>
+                  <small>Δεν αλλάζει τα τρέχοντα οικονομικά δεδομένα.</small>
                 </div>
-                <Download />
-              </div>
-              <div className="settings-actions">
+                <button className="secondary settings-data-action-button" type="button" disabled={busy} onClick={() => void backup()}><Download /> Backup & λήψη</button>
+              </section>
+
+              <section className="panel neo-raised settings-data-action-card settings-data-import-card">
                 <input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={(event) => requestImport(event.target.files?.[0])} />
-                <button type="button" disabled={busy} onClick={() => fileRef.current?.click()}><FileJson /> Εισαγωγή JSON</button>
-                <button type="button" disabled={busy} onClick={() => void backup()}><Download /> Backup & λήψη</button>
-              </div>
-              {message ? <div className="logic-note compact" role="status" aria-live="polite"><ShieldCheck /><span>{message}</span></div> : null}
-            </section>
-            <details className="panel neo-raised technical-settings">
-              <summary><Database size={16} /> Τεχνικές πληροφορίες δεδομένων</summary>
-              <div className="settings-list">
-                <div><span>Πηγή δεδομένων</span><b>{filePath}</b></div>
-                <div><span>Έκδοση μορφής</span><b>v{data.schemaVersion}</b></div>
-                <div><span>Τελευταία αποθήκευση</span><b>{lastSavedAt ? new Date(lastSavedAt).toLocaleString('el-GR') : '—'}</b></div>
-                <div><span>Αρχικές συναλλαγές</span><b>{data.seed.stats.transactions || data.seed.transactions.length}</b></div>
-                <div><span>Καταγεγραμμένες κινήσεις</span><b>{data.state.events?.length || 0}</b></div>
-              </div>
-            </details>
+                <div className="settings-data-action-icon" aria-hidden="true"><FileJson /></div>
+                <div className="settings-data-action-copy">
+                  <b>Επαναφορά από JSON</b>
+                  <p>Επίλεξε έγκυρο αντίγραφο MyFinHub. Η εισαγωγή αντικαθιστά τα τρέχοντα δεδομένα μόνο μετά από επιβεβαίωση.</p>
+                  <small>Έως 4 MB · δημιουργείται αυτόματο backup πριν από την αντικατάσταση.</small>
+                </div>
+                <button className="secondary settings-data-action-button" type="button" disabled={busy} onClick={() => fileRef.current?.click()}><FileJson /> Εισαγωγή JSON</button>
+              </section>
+            </div>
+
+            {message ? <div className="logic-note compact" role="status" aria-live="polite"><ShieldCheck /><span>{message}</span></div> : null}
           </div>
         ) : null}
       </div>

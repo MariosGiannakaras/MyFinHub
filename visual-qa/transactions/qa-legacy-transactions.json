@@ -4,15 +4,15 @@
   "appVersion": "v1.3",
   "suite": "legacy-transactions",
   "surface": "transactions",
-  "generatedAt": "2026-09-07T13:46:52.700Z",
+  "generatedAt": "2026-09-08T12:40:59.912Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "4bbdacf0fdcdf760bd48443a70ba2334d594a9e0",
-    "shortSha": "4bbdacf0",
-    "branch": "feat/346-settings-tabs"
+    "sha": "865f8263d0a4a4cfa4d2e40af9ba449fc2ac6a18",
+    "shortSha": "865f8263",
+    "branch": "feat/346-settings-data"
   },
   "screenshots": [
-    "visual-qa/transactions/v1.3__2026-09-07_164652__qa-legacy-transactions__legacy-transaction-edit-desktop.png",
-    "visual-qa/transactions/v1.3__2026-09-07_164652__qa-legacy-transactions__legacy-transaction-edit-mobile.png"
+    "visual-qa/transactions/v1.3__2026-09-08_154059__qa-legacy-transactions__legacy-transaction-edit-desktop.png",
+    "visual-qa/transactions/v1.3__2026-09-08_154059__qa-legacy-transactions__legacy-transaction-edit-mobile.png"
   ]
 }
