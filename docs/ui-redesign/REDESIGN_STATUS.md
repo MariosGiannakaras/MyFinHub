@@ -19,7 +19,7 @@ Current full-page baselines are resolved from `visual-qa/manifest.json`. Current
 | 8 | Lending / receivables | DESIGN APPROVED | VERIFIED | merged to `develop` via #328 |
 | 9 | Recurring | DESIGN APPROVED | VERIFIED | merged to `develop` via #331 |
 | 10 | Planning / forecast | DESIGN APPROVED | VERIFIED | merged to `develop` via #336 |
-| 11 | Έλεγχος | DESIGN APPROVED | VALIDATING | owner-approved Needs Attention baseline via #339; Review consolidation tracked by #355 |
+| 11 | Έλεγχος | DESIGN APPROVED | VERIFIED | owner-approved consolidation via #355 / PR #356 |
 | 12 | Reports | DESIGN APPROVED | VERIFIED | merged to `develop` via #342 |
 | 13 | Settings | DESIGN APPROVED | VERIFIED | Data owner-approved and merged to `develop` via #354 |
 
@@ -57,7 +57,7 @@ Settings → Data is **DESIGN APPROVED / VERIFIED**. After owner feedback that t
 
 ## Έλεγχος consolidation
 
-The owner approved consolidating the former standalone Review concept into the already verified Needs Attention action center under the single owner-facing name **Έλεγχος**. Issue #355 removes Review as a separate route/surface, keeps the useful legacy semantic-confirmation workflow as a distinct **Προς επιβεβαίωση** section, and preserves compatibility-critical `reviewDecisions` plus the advisory confirmation semantics. The existing Needs Attention presentation remains the visual baseline while this consolidation is validated.
+The former standalone Review surface is removed and its useful advisory confirmation workflow now lives inside the single **Έλεγχος** action center as the secondary **Προς επιβεβαίωση** section. The owner approved the consolidated Actual on 2026-09-08 after a cross-page consistency pass against the other verified Phase-1 surfaces. Exact product head `ca84a8f16fbc9d037dabc30d6984de3153c4d8d0` passed application/API checks, rendered frontend QA, high-severity audits, CodeQL, cross-engine smoke, performance smoke, Windows Desktop, Windows First Run and Windows Clean Launch. Fresh desktop/mobile Actuals were personally inspected and approved. Canonical `reviewDecisions`, advisory review semantics, historical report/flow effects, attention snooze/dismiss behavior and finance invariants remain unchanged. Added concept-backed functionality is restricted to real canonical data: current low-balance signals, uncategorized-transaction routing, conservative duplicate review, optional recurring expiry metadata and real section expand/collapse; unsupported bank-sync/update states are not fabricated. Delivery tracked by issue #355 / PR #356.
 
 ## Protected exclusion
 
