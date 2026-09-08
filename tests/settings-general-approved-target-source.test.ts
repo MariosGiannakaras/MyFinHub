@@ -79,7 +79,7 @@ describe('approved Settings source contract',()=>{
     expect(source).toContain('<CategoryIconAssignmentWorkspace');
     expect(source).toContain('Εισαγωγή JSON');
     expect(source).toContain('Backup & λήψη');
-    expect(source).toContain('settings-data-technical');
+    expect(source).not.toContain('settings-data-technical');
   });
 
   it('keeps Rules, taxonomy and icons in Settings while moving financial controls to their natural product surfaces',()=>{

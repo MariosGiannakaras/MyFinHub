@@ -16,34 +16,23 @@ describe('Settings Data source contract',()=>{
     expect(settings).toContain('type="file" accept="application/json,.json" hidden');
   });
 
-  it('renders a structured data-status and action workspace instead of one generic action row',()=>{
-    expect(settings).toContain('settings-data-overview');
-    expect(settings).toContain('settings-data-status-grid');
+  it('keeps the Data tab focused on backup and restore actions only',()=>{
     expect(settings).toContain('settings-data-action-grid');
     expect(settings).toContain('Δημιουργία αντιγράφου ασφαλείας');
     expect(settings).toContain('Επαναφορά από JSON');
     expect(settings).toContain('Έως 4 MB');
-    expect(settings).toContain('Προέλευση & τεχνικές πληροφορίες');
-    expect(settings).not.toContain('<div className="settings-actions">');
-  });
-
-  it('keeps technical Data information visible, concise and non-duplicative',()=>{
-    expect(settings).toContain('settings-data-technical');
-    expect(settings).toContain('Πηγή αποθήκευσης και βασικά στοιχεία του αρχικού συνόλου δεδομένων.');
-    expect(settings).toContain('Πηγή δεδομένων');
-    expect(settings).toContain('Αρχικές συναλλαγές');
-    expect(settings.match(/Τελευταία αποθήκευση/g)).toHaveLength(1);
-    expect(settings.match(/Καταγεγραμμένες κινήσεις/g)).toHaveLength(1);
-    expect(settings).not.toContain('Έκδοση μορφής');
-    expect(settings).not.toContain('<details className="panel neo-raised technical-settings">');
-    expect(settings).not.toContain('<summary><Database');
+    expect(settings).not.toContain('settings-data-overview');
+    expect(settings).not.toContain('settings-data-status-grid');
+    expect(settings).not.toContain('settings-data-technical');
+    expect(settings).not.toContain('Ασφάλεια & κατάσταση δεδομένων');
+    expect(settings).not.toContain('Προέλευση & τεχνικές πληροφορίες');
   });
 
   it('keeps Data CSS composition-only and touch-safe while leaving reusable control paint to shared styles',()=>{
     expect(settings.match(/className="secondary settings-data-action-button"/g)).toHaveLength(2);
     expect(css).toContain('.settings-data-action-grid');
-    expect(css).toContain('.settings-data-status-grid');
-    expect(css).toContain('.settings-data-technical');
+    expect(css).not.toContain('.settings-data-status-grid');
+    expect(css).not.toContain('.settings-data-technical');
     expect(css).toContain('@media(max-width:720px)');
     expect(css).toContain('.settings-data-action-button{width:100%;min-height:44px;justify-content:center}');
     expect(css).not.toMatch(/\.settings-data[^\{]*button\s*\{[^}]*border:/s);

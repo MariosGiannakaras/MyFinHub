@@ -1,4 +1,4 @@
-import { Database, Download, FileJson, ShieldCheck } from 'lucide-react';
+import { Download, FileJson, ShieldCheck } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { AccountManagementSettings } from '../components/AccountManagementSettings';
 import { AccountSecuritySettings } from '../components/AccountSecuritySettings';
@@ -77,8 +77,6 @@ function downloadJson(data: FinanceData) {
 export function SettingsPage({
   data,
   asOf,
-  filePath,
-  lastSavedAt,
   currentEmail,
   onImport,
   onBackup,
@@ -250,21 +248,6 @@ export function SettingsPage({
 
         {activeTab === 'data' ? (
           <div className="settings-tab-stack settings-data-tab">
-            <section className="panel neo-raised settings-data-overview">
-              <div className="panel-head">
-                <div>
-                  <span>Ασφάλεια & κατάσταση δεδομένων</span>
-                  <small>Έλεγξε την τρέχουσα κατάσταση πριν δημιουργήσεις αντίγραφο ασφαλείας ή αντικαταστήσεις δεδομένα από JSON.</small>
-                </div>
-                <ShieldCheck />
-              </div>
-              <div className="settings-data-status-grid">
-                <div><span>Μορφή δεδομένων</span><b>v{data.schemaVersion}</b></div>
-                <div><span>Τελευταία αποθήκευση</span><b>{lastSavedAt ? new Date(lastSavedAt).toLocaleString('el-GR') : '—'}</b></div>
-                <div><span>Καταγεγραμμένες κινήσεις</span><b>{data.state.events?.length || 0}</b></div>
-              </div>
-            </section>
-
             <div className="settings-data-action-grid">
               <section className="panel neo-raised settings-data-action-card">
                 <div className="settings-data-action-icon" aria-hidden="true"><Download /></div>
@@ -289,20 +272,6 @@ export function SettingsPage({
             </div>
 
             {message ? <div className="logic-note compact" role="status" aria-live="polite"><ShieldCheck /><span>{message}</span></div> : null}
-
-            <section className="panel neo-raised settings-data-technical">
-              <div className="panel-head">
-                <div>
-                  <span>Προέλευση & τεχνικές πληροφορίες</span>
-                  <small>Πηγή αποθήκευσης και βασικά στοιχεία του αρχικού συνόλου δεδομένων.</small>
-                </div>
-                <Database size={18} />
-              </div>
-              <div className="settings-list">
-                <div><span>Πηγή δεδομένων</span><b>{filePath}</b></div>
-                <div><span>Αρχικές συναλλαγές</span><b>{data.seed.stats.transactions || data.seed.transactions.length}</b></div>
-              </div>
-            </section>
           </div>
         ) : null}
       </div>
