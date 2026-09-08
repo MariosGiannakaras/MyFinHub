@@ -31,6 +31,19 @@ describe('approved Needs Attention desktop target boundary',()=>{
     expect(page).not.toMatch(/48,20|62,00|320,00|620,00|Eurolife|Cosmote/);
   });
 
+  it('restores the approved compact table hierarchy without fabricating controls or values',()=>{
+    expect(page).toContain('Προβολή όλων');
+    expect(page).toContain('Λογαριασμός');
+    expect(page).toContain('Σχετικά');
+    expect(page).toContain('attention-approved-context');
+    expect(page).toContain('attention-approved-amount');
+    expect(page).toContain('accountDisplayName(data,item.accountId)');
+    expect(styles).toContain('.attention-approved-table-head.has-amount');
+    expect(styles).toContain('.attention-approved-table-head.no-amount');
+    expect(refinement).toContain('.attention-approved-row{min-height:64px');
+    expect(refinement).toContain('.attention-approved-actions>.save-button{min-height:34px');
+  });
+
   it('preserves truthful actions, privacy, snooze/dismiss and existing route shortcuts',()=>{
     expect(page).toContain('className="attention-actions attention-approved-actions"');
     expect(page).toContain('className="save-button compact"');
@@ -48,7 +61,6 @@ describe('approved Needs Attention desktop target boundary',()=>{
     expect(page).toContain('className="panel neo-raised attention-list-panel"');
     expect(styles).toContain('@media (min-width:900px)');
     expect(styles).toContain('@media (max-width:899px)');
-    expect(refinement).toContain('min-height:40px');
     expect(chain).toContain("@import './attention-approved-target.css';");
     expect(chain).toContain("@import './attention-approved-refinement.css';");
   });

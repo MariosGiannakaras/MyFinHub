@@ -33,4 +33,15 @@ describe('Review consolidation into Έλεγχος',()=>{
     expect(confirmation).toContain("semanticKind:'split'");
     expect(confirmation).toContain("Math.abs(splitSum-(active?.transaction.amount??0))<.01");
   });
+
+  it('keeps the approved action-center hierarchy primary and makes legacy review secondary',()=>{
+    const attention=read('src/pages/AttentionPage.tsx');
+    const confirmation=read('src/components/LegacyConfirmationPanel.tsx');
+    expect(attention.indexOf('attention-approved-all-clear')).toBeLessThan(attention.indexOf('idPrefix="desktop-confirmation"'));
+    expect(attention.indexOf('forecast-assumption-note')).toBeLessThan(attention.indexOf('idPrefix="mobile-confirmation"'));
+    expect(confirmation).toContain('const [expanded,setExpanded]=useState(false)');
+    expect(confirmation).toContain('aria-expanded={expanded}');
+    expect(confirmation).toContain("expanded?'Απόκρυψη':'Προβολή'");
+    expect(confirmation).toContain('if(!suggestions.length)return null');
+  });
 });
