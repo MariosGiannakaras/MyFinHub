@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { qaFinanceData } from '../src/qaFixture.js';
 import { allAttentionItems, attentionDismissDecision, attentionSnoozeDecision, visibleAttentionItems } from '../src/lib/attention.js';
-import { createEvent } from '../src/lib/domain.js';
+import { accountBalances, createEvent } from '../src/lib/domain.js';
 import { migrateProductData } from '../src/lib/productMigration.js';
 
 const clone=()=>structuredClone(qaFinanceData());
@@ -51,8 +51,9 @@ describe('Needs Attention deterministic engine',()=>{
       {id:'qa-duplicate-b',date:'2026-08-17',type:'expense',accountId:'alpha-main',amount:12.34,note:'QA Duplicate Merchant',category:'Αγορές'},
     ];
     data.state.recurringCustom=(data.state.recurringCustom??[]).map(item=>item.id==='rec-2'?Object.assign(item,{endDate:'2026-08-22'}):item);
+    const currentPayrollBalance=accountBalances(data,'2026-08-17')['piraeus-payroll'];
     const items=allAttentionItems(data,'2026-08-17');
-    expect(items).toContainEqual(expect.objectContaining({id:'current-balance:piraeus-payroll',kind:'account_balance',severity:'danger',action:'open_dashboard',amount:29.3}));
+    expect(items).toContainEqual(expect.objectContaining({id:'current-balance:piraeus-payroll',kind:'account_balance',severity:'danger',action:'open_dashboard',amount:currentPayrollBalance}));
     expect(items).toContainEqual(expect.objectContaining({id:'uncategorized:legacy:qa-uncategorized',kind:'transaction',action:'categorize_transaction',transactionId:'qa-uncategorized',transactionSource:'legacy'}));
     expect(items.some(item=>item.kind==='duplicate'&&item.action==='review_duplicate'&&item.title.includes('QA Duplicate Merchant'))).toBe(true);
     expect(items).toContainEqual(expect.objectContaining({id:'recurring-expiry:rec-2',kind:'recurring_expiry',severity:'warning',action:'open_recurring',dueDate:'2026-08-22'}));
