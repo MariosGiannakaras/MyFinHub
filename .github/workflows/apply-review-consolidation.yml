@@ -1,0 +1,47 @@
+name: Apply Review consolidation
+
+on:
+  push:
+    branches:
+      - feat/355-review-to-check
+    paths:
+      - 'scripts/apply-review-consolidation.py'
+      - '.github/workflows/apply-review-consolidation.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - name: Apply deterministic consolidation patch
+        run: python scripts/apply-review-consolidation.py
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit --no-fund
+      - name: Validate source, domain and build
+        run: npm run check
+      - name: Validate API boundary
+        run: npm ci --prefix api --prefer-offline --no-audit --no-fund && npm run check --prefix api
+      - name: Commit validated product changes
+        shell: bash
+        run: |
+          rm scripts/apply-review-consolidation.py .github/workflows/apply-review-consolidation.yml
+          git add -A
+          git diff --cached --check
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "feat(review): consolidate into check center"
+          git fetch origin "${GITHUB_REF_NAME}"
+          REMOTE_SHA="$(git rev-parse FETCH_HEAD)"
+          if [ "$REMOTE_SHA" != "$GITHUB_SHA" ]; then echo "Branch advanced while patch was validating; refusing stale push."; exit 1; fi
+          git push origin "HEAD:${GITHUB_REF_NAME}"
