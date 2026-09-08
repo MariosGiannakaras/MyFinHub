@@ -290,8 +290,14 @@ export function SettingsPage({
 
             {message ? <div className="logic-note compact" role="status" aria-live="polite"><ShieldCheck /><span>{message}</span></div> : null}
 
-            <details className="panel neo-raised technical-settings">
-              <summary><Database size={16} /> Προέλευση & τεχνικές πληροφορίες</summary>
+            <section className="panel neo-raised settings-data-technical">
+              <div className="panel-head">
+                <div>
+                  <span>Προέλευση & τεχνικές πληροφορίες</span>
+                  <small>Οι πληροφορίες εμφανίζονται πάντα, χωρίς επιπλέον άνοιγμα ή αλληλεπίδραση.</small>
+                </div>
+                <Database size={18} />
+              </div>
               <div className="settings-list">
                 <div><span>Πηγή δεδομένων</span><b>{filePath}</b></div>
                 <div><span>Έκδοση μορφής</span><b>v{data.schemaVersion}</b></div>
@@ -299,7 +305,7 @@ export function SettingsPage({
                 <div><span>Αρχικές συναλλαγές</span><b>{data.seed.stats.transactions || data.seed.transactions.length}</b></div>
                 <div><span>Καταγεγραμμένες κινήσεις</span><b>{data.state.events?.length || 0}</b></div>
               </div>
-            </details>
+            </section>
           </div>
         ) : null}
       </div>

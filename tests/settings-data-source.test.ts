@@ -27,10 +27,18 @@ describe('Settings Data source contract',()=>{
     expect(settings).not.toContain('<div className="settings-actions">');
   });
 
+  it('keeps technical Data information visible without a disclosure interaction',()=>{
+    expect(settings).toContain('settings-data-technical');
+    expect(settings).toContain('Οι πληροφορίες εμφανίζονται πάντα');
+    expect(settings).not.toContain('<details className="panel neo-raised technical-settings">');
+    expect(settings).not.toContain('<summary><Database');
+  });
+
   it('keeps Data CSS composition-only and touch-safe while leaving reusable control paint to shared styles',()=>{
     expect(settings.match(/className="secondary settings-data-action-button"/g)).toHaveLength(2);
     expect(css).toContain('.settings-data-action-grid');
     expect(css).toContain('.settings-data-status-grid');
+    expect(css).toContain('.settings-data-technical');
     expect(css).toContain('@media(max-width:720px)');
     expect(css).toContain('.settings-data-action-button{width:100%;min-height:44px;justify-content:center}');
     expect(css).not.toMatch(/\.settings-data[^\{]*button\s*\{[^}]*border:/s);
