@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { qaFinanceData } from '../src/qaFixture.js';
 import { allAttentionItems, attentionDismissDecision, attentionSnoozeDecision, visibleAttentionItems } from '../src/lib/attention.js';
-import { createEvent } from '../src/lib/domain.js';
+import { accountBalances, createEvent } from '../src/lib/domain.js';
 import { migrateProductData } from '../src/lib/productMigration.js';
 
 const clone=()=>structuredClone(qaFinanceData());
@@ -40,6 +40,24 @@ describe('Needs Attention deterministic engine',()=>{
     data.state.events=[...(data.state.events??[]),first,second,noDue];
     const lending=allAttentionItems(data,'2026-08-17').filter(item=>item.kind==='lending');
     expect(lending.filter(item=>item.person==='Μαρία')).toHaveLength(1);expect(lending.some(item=>item.person==='Άννα')).toBe(false);
+  });
+
+  it('restores concept-backed low balance, categorization, duplicate review and recurring expiry signals from real data',()=>{
+    const data=clone();
+    data.seed.snapshots=[{date:'2026-08-17',balances:{'piraeus-payroll':48.2,'piraeus-savings':2875,cash:235,'alpha-main':2008.28,'revolut-main':810.2,'national-main':100,'eurobank-main':1450,'viva-main':510,'payzy-main':280,'emergency-savings':950,'holiday-savings':575}}];
+    data.state.customTransactions=[
+      {id:'qa-uncategorized',date:'2026-08-17',type:'expense',accountId:'piraeus-payroll',amount:18.9,note:'Χωρίς κατηγορία',category:'Άλλο'},
+      {id:'qa-duplicate-a',date:'2026-08-17',type:'expense',accountId:'alpha-main',amount:12.34,note:'QA Duplicate Merchant',category:'Αγορές'},
+      {id:'qa-duplicate-b',date:'2026-08-17',type:'expense',accountId:'alpha-main',amount:12.34,note:'QA Duplicate Merchant',category:'Αγορές'},
+    ];
+    data.state.recurringCustom=(data.state.recurringCustom??[]).map(item=>item.id==='rec-2'?Object.assign(item,{endDate:'2026-08-22'}):item);
+    const currentPayrollBalance=accountBalances(data,'2026-08-17')['piraeus-payroll'];
+    const items=allAttentionItems(data,'2026-08-17');
+    expect(items).toContainEqual(expect.objectContaining({id:'current-balance:piraeus-payroll',kind:'account_balance',severity:'danger',action:'open_dashboard',amount:currentPayrollBalance}));
+    expect(items).toContainEqual(expect.objectContaining({id:'uncategorized:legacy:qa-uncategorized',kind:'transaction',action:'categorize_transaction',transactionId:'qa-uncategorized',transactionSource:'legacy'}));
+    expect(items.some(item=>item.kind==='duplicate'&&item.action==='review_duplicate'&&item.title.includes('QA Duplicate Merchant'))).toBe(true);
+    expect(items).toContainEqual(expect.objectContaining({id:'recurring-expiry:rec-2',kind:'recurring_expiry',severity:'warning',action:'open_recurring',dueDate:'2026-08-22'}));
+    expect(items.some(item=>item.title.toLocaleLowerCase('el-GR').includes('συγχρονισ'))).toBe(false);
   });
 
   it('snoozes danger temporarily but does not allow permanent dismissal',()=>{

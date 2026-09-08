@@ -5,7 +5,7 @@ const app=readFileSync(new URL('../src/App.tsx',import.meta.url),'utf8');
 const credit=readFileSync(new URL('../src/pages/CreditCardPage.tsx',import.meta.url),'utf8');
 const loans=readFileSync(new URL('../src/pages/LoansPage.tsx',import.meta.url),'utf8');
 const planning=readFileSync(new URL('../src/pages/PlanningPage.tsx',import.meta.url),'utf8');
-const review=readFileSync(new URL('../src/pages/ReviewPage.tsx',import.meta.url),'utf8');
+const confirmation=readFileSync(new URL('../src/components/LegacyConfirmationPanel.tsx',import.meta.url),'utf8');
 const savings=readFileSync(new URL('../src/pages/SavingsPage.tsx',import.meta.url),'utf8');
 const settings=readFileSync(new URL('../src/pages/SettingsPage.tsx',import.meta.url),'utf8');
 const receipts=readFileSync(new URL('../src/components/ReceiptInbox.tsx',import.meta.url),'utf8');
@@ -64,15 +64,15 @@ describe('shared primitive adoption',()=>{
     expect(savings).not.toMatch(/<input\b/);
   });
 
-  it('uses shared split controls in Review without changing the ReviewDecision payload',()=>{
-    expect(review).toContain("from '../components/AppTextInput'");
-    expect(review).toContain("from '../components/CategorySelectInput'");
-    expect(review).toContain("from '../components/MoneyInput'");
-    expect(review).toContain('<AppTextInput aria-label={`Περιγραφή μέρους ${i+1}`}');
-    expect(review).toContain('<CategorySelectInput settings={data.state.settings} kind="expense"');
-    expect(review).toContain('<MoneyInput aria-label={`Ποσό μέρους ${i+1}`}');
-    expect(review).toContain("semanticKind:'split',parts,decidedAt:new Date().toISOString()");
-    expect(review).not.toMatch(/<input\b/);
+  it('uses shared split controls in legacy confirmation without changing the ReviewDecision payload',()=>{
+    expect(confirmation).toContain("from './AppTextInput'");
+    expect(confirmation).toContain("from './CategorySelectInput'");
+    expect(confirmation).toContain("from './MoneyInput'");
+    expect(confirmation).toContain('<AppTextInput aria-label={`Περιγραφή μέρους ${index+1}`}');
+    expect(confirmation).toContain('<CategorySelectInput settings={data.state.settings} kind="expense"');
+    expect(confirmation).toContain('<MoneyInput aria-label={`Ποσό μέρους ${index+1}`}');
+    expect(confirmation).toContain("semanticKind:'split',parts,decidedAt:new Date().toISOString()");
+    expect(confirmation).not.toMatch(/<input\b/);
   });
 
   it('keeps JSON import behind the app-owned confirmation without changing the import path',()=>{

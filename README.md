@@ -45,8 +45,7 @@ The v1.2.2 Windows package owns its public Supabase client configuration, so a n
 - **Loans & lending:** personal loans, installments, receivables and repayment history with normalized payment flows.
 - **Planning:** scheduled transactions and deterministic 30/60/90-day cash-flow forecasting.
 - **Budgets & rules:** monthly category budgets plus deterministic transaction categorization rules.
-- **Needs Attention:** one action center for finance items that require review or follow-up.
-- **Review:** controlled proposals that do not affect reports until confirmed.
+- **Έλεγχος:** one action center for finance items that require follow-up or explicit confirmation, including legacy semantic candidates.
 - **Reports:** comparative KPIs, flow/trend views, commitment/credit pressure, category momentum and responsive drill-downs from the canonical finance state.
 - **Search & Command Palette:** privacy-safe navigation/search with app-wide keyboard shortcuts.
 - **Autosave + Undo/Redo + Change History:** normal edits persist automatically while remaining reversible, with session-only privacy-safe descriptions of recent changes.
@@ -108,7 +107,7 @@ MyFinHub preserves the existing Excel-derived behavior rather than flattening ev
 - **Reconciliation:** balance correction without polluting spending.
 - **Splits:** category parts must balance to the parent amount.
 - **Scheduled items:** do not affect current balances until explicit completion.
-- **Smart Review:** proposals affect reports only after confirmation.
+- **Legacy confirmation:** suggested reinterpretations affect reports only after explicit confirmation.
 
 ## Updates and release history
 

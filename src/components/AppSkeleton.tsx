@@ -38,7 +38,6 @@ function DashboardSkeletonContent(){
 }
 
 function TransactionsSkeleton(){return <div className="skeleton-page-stack"><Heading actions={1}/><div className="skeleton-toolbar"><span className="skeleton skeleton-control wide"/><span className="skeleton skeleton-control"/><span className="skeleton skeleton-control"/></div><Panel className="skeleton-ledger-panel"><div className="skeleton-table-head"><Line width="22%"/><Line width="18%"/><Line width="18%"/><Line width="14%"/></div><Rows count={7}/></Panel></div>}
-function ReviewSkeleton(){return <div className="skeleton-page-stack"><Heading actions={0}/><MetricGrid count={3}/><Panel button><Rows count={5}/></Panel></div>}
 function SavingsSkeleton(){return <div className="skeleton-page-stack"><Heading actions={2}/><MetricGrid count={3}/><div className="skeleton-two-column"><Panel button><Rows count={4}/></Panel><Panel><Chart height="220px"/></Panel></div><Panel><Rows count={4}/></Panel></div>}
 function CardsSkeleton(){return <div className="skeleton-page-stack"><Heading actions={1}/><Panel><div className="skeleton-card-gallery">{Array.from({length:4},(_,i)=><div className="skeleton-payment-card" key={i}><div className="skeleton-card-head"><Icon/><Line width="72px"/></div><Line width="56%" size="amount"/><Line width="38%"/><div className="skeleton-inline-actions"><Button/><Button/></div></div>)}</div></Panel><Panel><Rows count={3}/></Panel></div>}
 function CreditSkeleton(){return <div className="skeleton-page-stack"><Heading actions={1}/><MetricGrid count={4}/><div className="skeleton-two-column"><Panel button><div className="skeleton-credit-card"><Line width="42%"/><Line width="65%" size="amount"/><div className="skeleton-progress"/><Line width="54%"/></div></Panel><Panel><Rows count={5}/></Panel></div></div>}
@@ -53,7 +52,6 @@ function SettingsSkeleton(){return <div className="skeleton-page-stack"><Heading
 function RouteSkeletonContent({page}:{page:string}){
   if(page==='dashboard')return <DashboardSkeletonContent/>;
   if(page==='transactions')return <TransactionsSkeleton/>;
-  if(page==='review')return <ReviewSkeleton/>;
   if(page==='savings')return <SavingsSkeleton/>;
   if(page==='cards')return <CardsSkeleton/>;
   if(page==='credit')return <CreditSkeleton/>;
@@ -70,9 +68,9 @@ function RouteSkeletonContent({page}:{page:string}){
 function activePage(){
   if(typeof location==='undefined')return 'dashboard';
   const hash=location.hash.replace(/^#\/?/,'').trim();
-  if(hash)return hash;
+  if(hash)return hash==='review'?'attention':hash;
   const query=new URLSearchParams(location.search).get('page');
-  return query||'dashboard';
+  return query==='review'?'attention':query||'dashboard';
 }
 
 export function AppSkeleton(){

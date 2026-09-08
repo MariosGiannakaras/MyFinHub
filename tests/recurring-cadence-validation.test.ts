@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { validateRecurringCadenceData, validateRecurringCadenceState } from '../server/recurringCadenceValidation.js';
 import type { FinanceData, RecurringItem } from '../src/types.js';
 
-type CadencedRecurring=RecurringItem&{recurrenceUnit?:'month'|'year';recurrenceInterval?:number};
+type CadencedRecurring=RecurringItem&{recurrenceUnit?:'month'|'year';recurrenceInterval?:number;endDate?:string|null};
 
 const item=(extra:Partial<CadencedRecurring>={}):CadencedRecurring=>({id:'rec',name:'Plan',amount:10,day:5,accountId:'bank',category:'Συνδρομές',active:true,status:'active',...extra});
 const state=(items:CadencedRecurring[]):FinanceData['state']=>({
@@ -31,7 +31,8 @@ const state=(items:CadencedRecurring[]):FinanceData['state']=>({
 describe('recurring cadence validation',()=>{
   it('accepts legacy monthly items without new fields',()=>{expect(()=>validateRecurringCadenceState(state([item()]))).not.toThrow()});
   it('accepts anchored annual and multi-month items',()=>{expect(()=>validateRecurringCadenceState(state([item({recurrenceUnit:'year',recurrenceInterval:1,firstExpectedDate:'2026-09-03'}),item({id:'six',recurrenceUnit:'month',recurrenceInterval:6,firstExpectedDate:'2026-08-03'})]))).not.toThrow()});
+  it('accepts an optional ISO expiry/renewal date and rejects malformed values',()=>{expect(()=>validateRecurringCadenceState(state([item({endDate:'2026-09-30'})]))).not.toThrow();expect(()=>validateRecurringCadenceState(state([item({endDate:'30/09/2026'})]))).toThrow()});
   it('rejects invalid cadence intervals and missing active anchors',()=>{expect(()=>validateRecurringCadenceState(state([item({recurrenceUnit:'month',recurrenceInterval:0})]))).toThrow();expect(()=>validateRecurringCadenceState(state([item({recurrenceUnit:'year',recurrenceInterval:1,firstExpectedDate:null})]))).toThrow()});
   it('allows a stopped historical non-monthly item without an anchor',()=>{expect(()=>validateRecurringCadenceState(state([item({active:false,status:'stopped',recurrenceUnit:'year',recurrenceInterval:1,firstExpectedDate:null})]))).not.toThrow()});
-  it('checks cadence fields in seed data too',()=>{const data={app:'RheomIQ',schemaVersion:3,updatedAt:'2026-08-25',seed:{accounts:[],months:[],transactions:[],snapshots:[],recurring:[item({recurrenceUnit:'year',recurrenceInterval:1,firstExpectedDate:'2026-09-03'})],subscriptions:[],loans:[],lending:[],stats:{}},state:state([])} as FinanceData;expect(()=>validateRecurringCadenceData(data)).not.toThrow()});
+  it('checks cadence fields in seed data too',()=>{const data={app:'RheomIQ',schemaVersion:3,updatedAt:'2026-08-25',seed:{accounts:[],months:[],transactions:[],snapshots:[],recurring:[item({recurrenceUnit:'year',recurrenceInterval:1,firstExpectedDate:'2026-09-03',endDate:'2027-09-03'})],subscriptions:[],loans:[],lending:[],stats:{}},state:state([])} as FinanceData;expect(()=>validateRecurringCadenceData(data)).not.toThrow()});
 });
