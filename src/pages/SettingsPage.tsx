@@ -294,16 +294,13 @@ export function SettingsPage({
               <div className="panel-head">
                 <div>
                   <span>Προέλευση & τεχνικές πληροφορίες</span>
-                  <small>Οι πληροφορίες εμφανίζονται πάντα, χωρίς επιπλέον άνοιγμα ή αλληλεπίδραση.</small>
+                  <small>Πηγή αποθήκευσης και βασικά στοιχεία του αρχικού συνόλου δεδομένων.</small>
                 </div>
                 <Database size={18} />
               </div>
               <div className="settings-list">
                 <div><span>Πηγή δεδομένων</span><b>{filePath}</b></div>
-                <div><span>Έκδοση μορφής</span><b>v{data.schemaVersion}</b></div>
-                <div><span>Τελευταία αποθήκευση</span><b>{lastSavedAt ? new Date(lastSavedAt).toLocaleString('el-GR') : '—'}</b></div>
                 <div><span>Αρχικές συναλλαγές</span><b>{data.seed.stats.transactions || data.seed.transactions.length}</b></div>
-                <div><span>Καταγεγραμμένες κινήσεις</span><b>{data.state.events?.length || 0}</b></div>
               </div>
             </section>
           </div>

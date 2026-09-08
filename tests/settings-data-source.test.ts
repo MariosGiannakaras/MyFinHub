@@ -27,9 +27,14 @@ describe('Settings Data source contract',()=>{
     expect(settings).not.toContain('<div className="settings-actions">');
   });
 
-  it('keeps technical Data information visible without a disclosure interaction',()=>{
+  it('keeps technical Data information visible, concise and non-duplicative',()=>{
     expect(settings).toContain('settings-data-technical');
-    expect(settings).toContain('Οι πληροφορίες εμφανίζονται πάντα');
+    expect(settings).toContain('Πηγή αποθήκευσης και βασικά στοιχεία του αρχικού συνόλου δεδομένων.');
+    expect(settings).toContain('Πηγή δεδομένων');
+    expect(settings).toContain('Αρχικές συναλλαγές');
+    expect(settings.match(/Τελευταία αποθήκευση/g)).toHaveLength(1);
+    expect(settings.match(/Καταγεγραμμένες κινήσεις/g)).toHaveLength(1);
+    expect(settings).not.toContain('Έκδοση μορφής');
     expect(settings).not.toContain('<details className="panel neo-raised technical-settings">');
     expect(settings).not.toContain('<summary><Database');
   });
