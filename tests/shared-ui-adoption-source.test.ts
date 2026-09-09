@@ -18,6 +18,9 @@ const desktopUpdatePanel=read('src/components/DesktopUpdatePanel.tsx');
 const pageErrorBoundary=read('src/components/PageErrorBoundary.tsx');
 const persistenceNotice=read('src/components/PersistenceNotice.tsx');
 const accountMetadataSettings=read('src/components/AccountMetadataSettings.tsx');
+const appDateInput=read('src/components/AppDateInput.tsx');
+const appSelectInput=read('src/components/AppSelectInput.tsx');
+const commandPalette=read('src/components/CommandPalette.tsx');
 const modalFocus=read('src/hooks/useModalFocus.ts');
 const hardening=read('src/styles/part30.css');
 const sharedControls=read('src/styles/part57.css');
@@ -93,6 +96,22 @@ describe('shared finance UI adoption contracts',()=>{
     expect(persistenceNotice).toContain('<Button variant="secondary"');
     expect(accountMetadataSettings).toContain('<Button variant="secondary"');
     expect(accountMetadataSettings).toContain('<Button variant="primary"');
+  });
+
+  it('adopts shared IconButton in app-owned popovers and command overlay while preserving composite option buttons',()=>{
+    for(const source of [appDateInput,appSelectInput,commandPalette]){
+      expect(source).toContain("from './IconButton'");
+      expect(source).not.toContain('className="icon-button"');
+    }
+    expect(appDateInput.match(/<IconButton/g)).toHaveLength(3);
+    expect(appDateInput).toContain('<IconButton type="button" aria-label="Προηγούμενος μήνας"');
+    expect(appDateInput).toContain('<button type="button" role="gridcell"');
+    expect(appSelectInput.match(/<IconButton/g)).toHaveLength(1);
+    expect(appSelectInput).toContain('<IconButton type="button" aria-label="Κλείσιμο επιλογών"');
+    expect(appSelectInput).toContain('<button id={`${listboxId}-option-${index}`} type="button" role="option"');
+    expect(commandPalette.match(/<IconButton/g)).toHaveLength(1);
+    expect(commandPalette).toContain('<IconButton type="button" aria-label="Κλείσιμο αναζήτησης"');
+    expect(commandPalette).toContain('return <button id={optionId} role="option"');
   });
 
   it('keeps current dialogs on the shared modal-focus behavior contract',()=>{
