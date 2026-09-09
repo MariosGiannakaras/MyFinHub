@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { accessTokenSessionId } from '../server/deviceSessionRegistry.js';
 
@@ -41,7 +41,8 @@ describe('connected device access',()=>{
   it('enforces device access centrally and exposes owner-controlled revoke actions',()=>{
     const auth=read('server/auth.ts');
     const handler=read('server/deviceSessionsHandler.ts');
-    const route=read('api/auth/devices.ts');
+    const route=read('api/auth/session.ts');
+    const config=JSON.parse(read('vercel.json')) as {rewrites?:Array<{source:string;destination:string}>};
     const client=read('src/lib/api.ts');
     const ui=read('src/components/DeviceAccessSettings.tsx');
     expect(auth).toContain('ensureDeviceSessionAccess(req, accessToken, user.id)');
@@ -52,6 +53,9 @@ describe('connected device access',()=>{
     expect(handler).toContain("body?.action === 'revoke'");
     expect(handler).toContain("body?.action === 'revoke-others'");
     expect(route).toContain('handleDeviceSessionsRequest');
+    expect(route).toContain("marker === 'devices'");
+    expect(config.rewrites).toContainEqual({source:'/api/auth/devices',destination:'/api/auth/session?__myfinhub_route=devices'});
+    expect(existsSync(new URL('../api/auth/devices.ts',import.meta.url))).toBe(false);
     expect(client).toContain('getConnectedDevices');
     expect(client).toContain('revokeConnectedDevice');
     expect(client).toContain('revokeOtherConnectedDevices');
