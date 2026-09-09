@@ -15,6 +15,20 @@
       "maxDuration": 30
     }
   },
+  "rewrites": [
+    {
+      "source": "/api/android-update",
+      "destination": "/api/data?__myfinhub_route=android-update"
+    },
+    {
+      "source": "/api/auth/account",
+      "destination": "/api/auth/session?__myfinhub_route=account"
+    },
+    {
+      "source": "/api/auth/devices",
+      "destination": "/api/auth/session?__myfinhub_route=devices"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",

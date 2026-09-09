@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { ApiError } from '../server/http.js';
 import { parseAccountSecurityWrite } from '../server/accountSecurityHandler.js';
@@ -22,7 +22,8 @@ describe('account security settings',()=>{
 
   it('protects account mutations behind owner, AAL2 and same-origin session checks',()=>{
     const handler=read('server/accountSecurityHandler.ts');
-    const route=read('api/auth/account.ts');
+    const route=read('api/auth/session.ts');
+    const config=JSON.parse(read('vercel.json')) as {rewrites?:Array<{source:string;destination:string}>};
     expect(handler).toContain('requireSession(req, res)');
     expect(handler).toContain('isOwner(session.accessToken)');
     expect(handler).toContain("accessTokenAal(session.accessToken) !== 'aal2'");
@@ -30,6 +31,9 @@ describe('account security settings',()=>{
     expect(handler).toContain("current_password: change.currentPassword");
     expect(handler).toContain("`${url}/auth/v1/user`");
     expect(route).toContain('handleAccountSecurityRequest');
+    expect(route).toContain("marker === 'account'");
+    expect(config.rewrites).toContainEqual({source:'/api/auth/account',destination:'/api/auth/session?__myfinhub_route=account'});
+    expect(existsSync(new URL('../api/auth/account.ts',import.meta.url))).toBe(false);
     expect(handler).not.toContain('SUPABASE_SERVICE_ROLE_KEY');
     expect(handler).not.toContain('SUPABASE_SECRET_KEY');
   });
