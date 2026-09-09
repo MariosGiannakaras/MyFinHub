@@ -6,6 +6,7 @@ const receiptAware=readFileSync(new URL('../src/components/ReceiptAwareQuickAdd.
 const approvedCss=readFileSync(new URL('../src/styles/part55.css',import.meta.url),'utf8');
 const approvedChain=readFileSync(new URL('../src/styles/part47.css',import.meta.url),'utf8');
 const baseStyles=readFileSync(new URL('../src/styles.css',import.meta.url),'utf8');
+const normalizedBaseStyles=baseStyles.replace(/\r\n/g,'\n');
 
 describe('approved Quick Entry desktop target source contract',()=>{
   it('keeps the real eight-intent QuickAdd engine and canonical entry controls',()=>{
@@ -27,8 +28,8 @@ describe('approved Quick Entry desktop target source contract',()=>{
   });
 
   it('preserves the approved Quick Entry chain and appends only the shared primitive layer globally',()=>{
-    expect(baseStyles).toContain("@import './styles/part46.css';\n@import './styles/part57.css';");
-    expect(baseStyles.trimEnd()).toMatch(/part57\.css';$/);
+    expect(normalizedBaseStyles).toContain("@import './styles/part46.css';\n@import './styles/part57.css';");
+    expect(normalizedBaseStyles.trimEnd()).toMatch(/part57\.css';$/);
     expect(approvedChain).toContain("@import './part48.css';");
     expect(approvedChain).toContain("@import './part49.css';");
     expect(approvedChain).toContain("@import './part50.css';");
