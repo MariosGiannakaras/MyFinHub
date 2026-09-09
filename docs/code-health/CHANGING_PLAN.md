@@ -33,7 +33,7 @@ These are the current approved choices. Later stages should converge implementat
 | App frame | `AppShell` |
 | Page frame | `page-stack` + `page-heading` |
 | Theme | existing semantic light/dark tokens |
-| Buttons | future shared `Button` + `IconButton`, preserving the approved primary/secondary/danger/icon visual language |
+| Buttons | shared `Button` + `IconButton`, preserving approved primary/secondary/danger/text/icon compatibility classes while adoption is in progress |
 | Dialogs | future shared `DialogShell`, preserving the approved modal appearance |
 | Generic cards/surfaces | future shared `Surface` base with raised/flat/inset variants; domain cards remain semantic components |
 
@@ -64,17 +64,17 @@ These are the current approved choices. Later stages should converge implementat
 - [x] Record allowed exceptions where a domain component is intentionally specialized.
 - [x] Add source-level adoption guards only where they express durable behavior/ownership, not incidental file formatting.
 
-**Active delivery:** issue #357 / PR #359 / branch `chore/357-design-system-inventory`. Runtime/UI behavior is intentionally unchanged; validation and integration remain before Stage 1 can be considered complete on `develop`.
+**Completed delivery:** PR #359 / `develop@11f1e9995a332ee2b5b039281701db3db031e98d`. The exact merge head passed post-merge CI and CodeQL; the PR product/docs head had already passed CI, CodeQL, cross-engine and performance. Runtime/UI behavior was intentionally unchanged.
 
 ### Stage 2 — Canonical `Button` / `IconButton`
 
 **Goal:** replace the selector-net button contract with typed shared primitives while preserving visuals and behavior.
 
-- [ ] Introduce shared `Button` variants for primary, secondary, danger and appropriate ghost/text actions.
-- [ ] Introduce accessible `IconButton` with mandatory accessible naming.
-- [ ] Migrate bounded page groups incrementally.
-- [ ] Retain temporary compatibility aliases only while required; remove them once adoption is complete.
-- [ ] Verify keyboard/focus/disabled/loading/submit semantics and screenshots after each bounded migration.
+- [x] Introduce shared `Button` variants for primary, secondary, danger and text actions while mapping to the existing approved compatibility classes.
+- [x] Introduce accessible `IconButton` with mandatory accessible naming.
+- [ ] Migrate bounded page/component groups incrementally; domain-specific composite controls remain raw when they are not generic actions.
+- [x] Retain compatibility aliases while required; removal is deferred until adoption and Stage-7 usage proof are complete.
+- [ ] Verify keyboard/focus/disabled/loading/submit semantics and fresh rendered screenshots before merge.
 
 ### Stage 3 — Canonical `DialogShell`
 
@@ -97,7 +97,7 @@ These are the current approved choices. Later stages should converge implementat
 
 **Goal:** remove hidden loader coupling and make stylesheet ownership explicit.
 
-- [ ] Inventory the `partN.css` graph and document which approved rules each file owns before moving anything.
+- [x] Inventory the `partN.css` graph and document which approved rules each file owns before moving anything.
 - [ ] Eliminate unrelated component-as-stylesheet-loader coupling.
 - [ ] Replace numeric loader chains with named layers/owners in bounded steps: tokens/base/primitives/patterns/pages.
 - [ ] Reduce selector duplication and unnecessary `!important` reliance only when visual parity is proven.
@@ -140,15 +140,15 @@ These are the current approved choices. Later stages should converge implementat
 ## Current checkpoint — 2026-09-09
 
 - **Overall tracker:** #357 — OPEN.
-- **Completed stage:** Stage 0 — merged and verified on `develop@399253c35740a0c6666e60ec2d0eb131d82fb17d`; post-merge workflows include successful CodeQL and Windows gates on that exact integration head.
-- **Active stage:** Stage 1 — design-system contracts and ownership inventory.
-- **Active PR:** #359 — `Code health: persist UI design-system contracts`.
-- **Branch:** `chore/357-design-system-inventory`, based exactly on `develop@399253c35740a0c6666e60ec2d0eb131d82fb17d`.
-- **Implementation status:** 4/4 Stage-1 implementation tasks complete on the branch. `DESIGN_SYSTEM.md` and `PAGE_PATTERNS.md` now describe the approved Phase-1 contracts; `docs/code-health/UI_INVENTORY.md` records button/dialog/surface/CSS ownership and intentional domain exceptions; `tests/shared-ui-adoption-source.test.ts` adds a durable modal-focus ownership guard.
-- **CSS inventory finding:** `src/styles.css` directly loads `part1.css`–`part46.css` and `part57.css`. `AccountIban` / `AccountMetadataSettings` load `part47.css`, which in turn loads unrelated Dashboard/Transactions/Quick Entry/Savings and approved-target styles. This hidden component-as-global-stylesheet-loader coupling is documented for Stage 5 and intentionally unchanged in Stage 1.
-- **Theme inventory finding:** semantic Light/Dark token application is canonical, while the broad runtime selector stylesheet in `src/lib/theme.ts` is documented compatibility debt for Stage 5; no theme/runtime changes are made here.
-- **Validation state:** PR #359 is the bounded Stage-1 validation vehicle. Branch source changes are documentation plus a source-level test only; no runtime/CSS/component behavior changed.
-- **Next action:** complete PR #359 checks, fix only Stage-1 regressions, then merge and verify `develop` before starting Stage 2.
+- **Completed stages:** Stage 0 and Stage 1 — **2/9 stages complete**.
+- **Verified integration base:** `develop@11f1e9995a332ee2b5b039281701db3db031e98d`. Post-merge CI `34358913805` PASS and CodeQL `34358913885` PASS.
+- **Active stage:** Stage 2 — canonical Button / IconButton.
+- **Active branch:** `chore/357-button-primitives`, created exactly from `develop@11f1e9995a332ee2b5b039281701db3db031e98d`.
+- **Stage-2 progress:** **3/5 checklist items complete** (Button foundation, IconButton foundation, compatibility-alias policy); bounded adoption and validation remain.
+- **Implemented so far:** typed `Button` variants map to the existing `save-button`, `secondary`, `destructive-action` and `text-button` visual hooks; `IconButton` requires a `label` prop that owns `aria-label`; neither primitive silently changes native `type` semantics. `ConfirmDialog`, `MoneyEditDialog`, `CardCreateDialog` generic modal actions, `DesktopUpdatePanel`, and `PageErrorBoundary` are migrated. Card-design radio options remain intentionally domain-owned.
+- **Guards:** `tests/button-primitives-source.test.ts` protects variant mapping, accessible icon naming and native type behavior; `tests/cross-page-ui-consistency-source.test.ts` follows the new CardCreate ownership while retaining pending legacy expectations for non-migrated CardsPage actions.
+- **Visual contract:** no CSS rules or approved geometry have been changed; new primitives reuse existing compatibility classes. Fresh rendered QA is nevertheless mandatory before Stage-2 merge because markup ownership changed.
+- **Next action:** finish the bounded safe-adopter migration, open/resume the Stage-2 PR, run full PR gates, personally inspect fresh rendered evidence, then merge and verify `develop` before Stage 3.
 
 ## Resume procedure for a future chat
 
