@@ -142,11 +142,13 @@ These are the current approved choices. Later stages should converge implementat
 - **Active PR:** #358 — `Code health: restore production API function budget` — DRAFT.
 - **Branch:** `chore/357-code-health-foundation`.
 - **Base:** `develop@6d1cba01fc0880e06671067431919e72cad5339c`.
-- **Current human head before this documentation checkpoint:** `055416d630afeb90a9d1fb81ee63fa115ea1afc9`.
-- **Validated fixes already demonstrated:** Vercel regression test passes; Windows checkout now passes both approved-style EOL-sensitive tests; a Windows run reached 125/125 test files and 635/635 tests plus a successful production build/bundle budget; Desktop `js-yaml` is now locked to patched `4.3.2`, and the lock-refresh job passed `npm audit --audit-level=high --prefix desktop`.
+- **Validated product/evidence head:** `055416d630afeb90a9d1fb81ee63fa115ea1afc9`.
+- **Documentation-only checkpoint head:** `3f3a827848a06f245cf86fec25f1dcdc6c400fc3` (`[skip ci]`; no product/runtime changes).
+- **Validated fixes already demonstrated:** Vercel regression test passes; Windows checkout passes both approved-style EOL-sensitive tests; Windows validation reached 125/125 test files and 635/635 tests plus a successful production build/bundle budget; Desktop `js-yaml` is locked to patched `4.3.2`, and the lock-refresh job passed `npm audit --audit-level=high --prefix desktop`.
+- **Current green gates on `055416d6…`:** CodeQL, cross-engine smoke, performance smoke, Windows Desktop, Windows First Run and Windows Clean Launch. CI application/API checks are green; rendered frontend QA is still running, followed by the existing high-severity root/API audits and evidence upload.
 - **Visual evidence behavior:** feature-branch `visual-qa-snapshots.yml` intentionally replaces/persists latest rendered evidence and may add bot-authored evidence commits. This is repository policy, not accidental product churn; do not delete that evidence merely to shrink a PR.
-- **Current validation:** exact-head full gates are running after the EOL/audit fixes. Do not mark Stage 0 complete or merge until all required gates are green.
-- **Next action:** re-fetch PR #358, use the latest exact branch head, complete CI/CodeQL/cross-engine/performance/Windows Desktop/First Run/Clean Launch validation, fix only real regressions, then update this checkpoint and the PR. If green, merge Stage 0 to `develop` and verify the resulting `develop`; keep #357 open for Stage 1.
+- **Current validation:** Stage 0 is not complete until CI finishes green and the bounded PR is merged/verified on `develop`.
+- **Next action:** finish CI run `34344370569` for `055416d6…`; if green, update PR #358, mark it ready as appropriate, merge Stage 0 to `develop`, verify resulting `develop`, keep #357 open, and start Stage 1 in a new bounded branch/PR. Fix only real regressions if the remaining gate fails.
 
 ## Resume procedure for a future chat
 
