@@ -50,7 +50,7 @@ These are the current approved choices. Later stages should converge implementat
 - [x] Preserve the existing underlying account/device/update handlers and their security policy.
 - [x] Make approved-style source tests platform-safe without weakening their semantic assertions.
 - [x] Refresh the Desktop transitive `js-yaml` lock resolution to patched `4.3.2` while retaining the high-severity audit gate.
-- [ ] Complete exact-head CI, API/build/rendered QA, CodeQL, cross-engine, performance and all Windows gates.
+- [x] Complete exact-head CI, API/build/rendered QA, CodeQL, cross-engine, performance and all Windows gates.
 - [ ] Merge Stage 0 to `develop` and verify the resulting `develop` integration state.
 
 **Active delivery:** issue #357 / PR #358 / branch `chore/357-code-health-foundation`.
@@ -139,16 +139,15 @@ These are the current approved choices. Later stages should converge implementat
 
 - **Overall tracker:** #357 — OPEN.
 - **Active stage:** Stage 0 — production-hotfix back-sync.
-- **Active PR:** #358 — `Code health: restore production API function budget` — DRAFT.
+- **Active PR:** #358 — `Code health: restore production API function budget` — READY TO MERGE after this documentation-only checkpoint.
 - **Branch:** `chore/357-code-health-foundation`.
 - **Base:** `develop@6d1cba01fc0880e06671067431919e72cad5339c`.
 - **Validated product/evidence head:** `055416d630afeb90a9d1fb81ee63fa115ea1afc9`.
-- **Documentation-only checkpoint head:** `3f3a827848a06f245cf86fec25f1dcdc6c400fc3` (`[skip ci]`; no product/runtime changes).
-- **Validated fixes already demonstrated:** Vercel regression test passes; Windows checkout passes both approved-style EOL-sensitive tests; Windows validation reached 125/125 test files and 635/635 tests plus a successful production build/bundle budget; Desktop `js-yaml` is locked to patched `4.3.2`, and the lock-refresh job passed `npm audit --audit-level=high --prefix desktop`.
-- **Current green gates on `055416d6…`:** CodeQL, cross-engine smoke, performance smoke, Windows Desktop, Windows First Run and Windows Clean Launch. CI application/API checks are green; rendered frontend QA is still running, followed by the existing high-severity root/API audits and evidence upload.
+- **Validated fixes:** Vercel regression coverage passes; Windows checkout passes both approved-style EOL-sensitive tests; Windows validation reached 125/125 test files and 635/635 tests plus a successful production build/bundle budget; Desktop `js-yaml` is locked to patched `4.3.2` and passes the retained high-severity Desktop audit.
+- **Required gates on `055416d6…`:** CI `34344370569` PASS including application check, API check, rendered frontend QA, root/API high-severity audits and evidence upload; CodeQL `34344370544` PASS; cross-engine `34344370529` PASS; performance `34344370512` PASS; Windows Desktop `34344370619` PASS; Windows First Run `34344370624` PASS; Windows Clean Launch `34344370499` PASS.
 - **Visual evidence behavior:** feature-branch `visual-qa-snapshots.yml` intentionally replaces/persists latest rendered evidence and may add bot-authored evidence commits. This is repository policy, not accidental product churn; do not delete that evidence merely to shrink a PR.
-- **Current validation:** Stage 0 is not complete until CI finishes green and the bounded PR is merged/verified on `develop`.
-- **Next action:** finish CI run `34344370569` for `055416d6…`; if green, update PR #358, mark it ready as appropriate, merge Stage 0 to `develop`, verify resulting `develop`, keep #357 open, and start Stage 1 in a new bounded branch/PR. Fix only real regressions if the remaining gate fails.
+- **Current validation:** all Stage-0 product/evidence gates are green. Documentation-only `[skip ci]` commits above the validated product/evidence head do not change runtime behavior.
+- **Next action:** mark PR #358 ready, squash-merge it to `develop`, verify the resulting `develop` head and integration checks, keep #357 open, then start Stage 1 in a new bounded branch/PR.
 
 ## Resume procedure for a future chat
 
