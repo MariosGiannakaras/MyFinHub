@@ -9,6 +9,8 @@ const money=read('src/components/MoneyEditDialog.tsx');
 const cardCreate=read('src/components/CardCreateDialog.tsx');
 const desktopUpdate=read('src/components/DesktopUpdatePanel.tsx');
 const errorBoundary=read('src/components/PageErrorBoundary.tsx');
+const persistenceNotice=read('src/components/PersistenceNotice.tsx');
+const accountMetadata=read('src/components/AccountMetadataSettings.tsx');
 
 describe('canonical button primitives',()=>{
   it('maps typed variants onto the approved compatibility classes without changing native type semantics',()=>{
@@ -29,7 +31,7 @@ describe('canonical button primitives',()=>{
   });
 
   it('adopts shared actions in representative dialogs and cross-page system surfaces',()=>{
-    for(const source of [confirm,money,desktopUpdate,errorBoundary]){
+    for(const source of [confirm,money,desktopUpdate,errorBoundary,persistenceNotice,accountMetadata]){
       expect(source).toContain("import { Button }");
       expect(source).not.toMatch(/<button\b/);
     }
@@ -38,6 +40,9 @@ describe('canonical button primitives',()=>{
     expect(confirm).toContain('variant={tone===\'destructive\'?\'danger\':\'primary\'}');
     expect(money).toContain('<Button variant="primary"');
     expect(desktopUpdate).toContain('<Button variant="primary"');
+    expect(persistenceNotice).toContain('<Button variant="secondary"');
+    expect(accountMetadata).toContain('<Button variant="secondary"');
+    expect(accountMetadata).toContain('<Button variant="primary"');
   });
 
   it('keeps card-design radio options domain-owned while sharing generic modal actions',()=>{
