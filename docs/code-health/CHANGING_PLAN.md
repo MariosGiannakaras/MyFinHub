@@ -51,18 +51,20 @@ These are the current approved choices. Later stages should converge implementat
 - [x] Make approved-style source tests platform-safe without weakening their semantic assertions.
 - [x] Refresh the Desktop transitive `js-yaml` lock resolution to patched `4.3.2` while retaining the high-severity audit gate.
 - [x] Complete exact-head CI, API/build/rendered QA, CodeQL, cross-engine, performance and all Windows gates.
-- [ ] Merge Stage 0 to `develop` and verify the resulting `develop` integration state.
+- [x] Merge Stage 0 to `develop` and verify the resulting `develop` integration state.
 
-**Active delivery:** issue #357 / PR #358 / branch `chore/357-code-health-foundation`.
+**Completed delivery:** PR #358 / `develop@399253c35740a0c6666e60ec2d0eb131d82fb17d`.
 
 ### Stage 1 — Persist design-system contracts and inventory
 
 **Goal:** turn the approved UI into an explicit, durable design-system contract before broad refactors.
 
-- [ ] Update checked-in design-system/page-pattern documentation from bootstrap/TBD state.
-- [ ] Inventory raw buttons, modal/dialog shells, generic surface aliases and CSS ownership.
-- [ ] Record allowed exceptions where a domain component is intentionally specialized.
-- [ ] Add source-level adoption guards only where they express durable behavior/ownership, not incidental file formatting.
+- [x] Update checked-in design-system/page-pattern documentation from bootstrap/TBD state.
+- [x] Inventory raw buttons, modal/dialog shells, generic surface aliases and CSS ownership.
+- [x] Record allowed exceptions where a domain component is intentionally specialized.
+- [x] Add source-level adoption guards only where they express durable behavior/ownership, not incidental file formatting.
+
+**Active delivery:** issue #357 / PR #359 / branch `chore/357-design-system-inventory`. Runtime/UI behavior is intentionally unchanged; validation and integration remain before Stage 1 can be considered complete on `develop`.
 
 ### Stage 2 — Canonical `Button` / `IconButton`
 
@@ -138,16 +140,15 @@ These are the current approved choices. Later stages should converge implementat
 ## Current checkpoint — 2026-09-09
 
 - **Overall tracker:** #357 — OPEN.
-- **Active stage:** Stage 0 — production-hotfix back-sync.
-- **Active PR:** #358 — `Code health: restore production API function budget` — READY TO MERGE after this documentation-only checkpoint.
-- **Branch:** `chore/357-code-health-foundation`.
-- **Base:** `develop@6d1cba01fc0880e06671067431919e72cad5339c`.
-- **Validated product/evidence head:** `055416d630afeb90a9d1fb81ee63fa115ea1afc9`.
-- **Validated fixes:** Vercel regression coverage passes; Windows checkout passes both approved-style EOL-sensitive tests; Windows validation reached 125/125 test files and 635/635 tests plus a successful production build/bundle budget; Desktop `js-yaml` is locked to patched `4.3.2` and passes the retained high-severity Desktop audit.
-- **Required gates on `055416d6…`:** CI `34344370569` PASS including application check, API check, rendered frontend QA, root/API high-severity audits and evidence upload; CodeQL `34344370544` PASS; cross-engine `34344370529` PASS; performance `34344370512` PASS; Windows Desktop `34344370619` PASS; Windows First Run `34344370624` PASS; Windows Clean Launch `34344370499` PASS.
-- **Visual evidence behavior:** feature-branch `visual-qa-snapshots.yml` intentionally replaces/persists latest rendered evidence and may add bot-authored evidence commits. This is repository policy, not accidental product churn; do not delete that evidence merely to shrink a PR.
-- **Current validation:** all Stage-0 product/evidence gates are green. Documentation-only `[skip ci]` commits above the validated product/evidence head do not change runtime behavior.
-- **Next action:** mark PR #358 ready, squash-merge it to `develop`, verify the resulting `develop` head and integration checks, keep #357 open, then start Stage 1 in a new bounded branch/PR.
+- **Completed stage:** Stage 0 — merged and verified on `develop@399253c35740a0c6666e60ec2d0eb131d82fb17d`; post-merge workflows include successful CodeQL and Windows gates on that exact integration head.
+- **Active stage:** Stage 1 — design-system contracts and ownership inventory.
+- **Active PR:** #359 — `Code health: persist UI design-system contracts`.
+- **Branch:** `chore/357-design-system-inventory`, based exactly on `develop@399253c35740a0c6666e60ec2d0eb131d82fb17d`.
+- **Implementation status:** 4/4 Stage-1 implementation tasks complete on the branch. `DESIGN_SYSTEM.md` and `PAGE_PATTERNS.md` now describe the approved Phase-1 contracts; `docs/code-health/UI_INVENTORY.md` records button/dialog/surface/CSS ownership and intentional domain exceptions; `tests/shared-ui-adoption-source.test.ts` adds a durable modal-focus ownership guard.
+- **CSS inventory finding:** `src/styles.css` directly loads `part1.css`–`part46.css` and `part57.css`. `AccountIban` / `AccountMetadataSettings` load `part47.css`, which in turn loads unrelated Dashboard/Transactions/Quick Entry/Savings and approved-target styles. This hidden component-as-global-stylesheet-loader coupling is documented for Stage 5 and intentionally unchanged in Stage 1.
+- **Theme inventory finding:** semantic Light/Dark token application is canonical, while the broad runtime selector stylesheet in `src/lib/theme.ts` is documented compatibility debt for Stage 5; no theme/runtime changes are made here.
+- **Validation state:** PR #359 is the bounded Stage-1 validation vehicle. Branch source changes are documentation plus a source-level test only; no runtime/CSS/component behavior changed.
+- **Next action:** complete PR #359 checks, fix only Stage-1 regressions, then merge and verify `develop` before starting Stage 2.
 
 ## Resume procedure for a future chat
 
