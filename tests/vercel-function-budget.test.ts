@@ -1,11 +1,11 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { join, relative } from 'node:path';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 function apiFunctions(dir:string):string[]{
   return readdirSync(dir).flatMap(name=>{
     const full=join(dir,name);
-    return statSync(full).isDirectory()?apiFunctions(full):name.endsWith('.ts')?[relative(process.cwd(),full).replaceAll('\\','/')]:[];
+    return statSync(full).isDirectory()?apiFunctions(full):name.endsWith('.ts')?[full.replaceAll('\\','/')]:[];
   });
 }
 
