@@ -13,6 +13,6 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement>{
   variant?:ButtonVariant;
 }
 
-export const Button=forwardRef<HTMLButtonElement,ButtonProps>(function Button({variant='secondary',className='',type='button',...props},ref){
+export const Button=forwardRef<HTMLButtonElement,ButtonProps>(function Button({variant='secondary',className='',type,...props},ref){
   return <button ref={ref} type={type} className={`${variantClass[variant]} ${className}`.trim()} data-button-variant={variant} {...props}/>;
 });
