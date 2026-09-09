@@ -4,14 +4,14 @@
   "appVersion": "v1.3",
   "suite": "credit-overlimit",
   "surface": "credit",
-  "generatedAt": "2026-09-08T12:40:59.912Z",
+  "generatedAt": "2026-09-09T09:10:56.384Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "865f8263d0a4a4cfa4d2e40af9ba449fc2ac6a18",
-    "shortSha": "865f8263",
-    "branch": "feat/346-settings-data"
+    "sha": "6d3eb569092cfab34d07be14ea1a440e62dd19bb",
+    "shortSha": "6d3eb569",
+    "branch": "chore/357-code-health-foundation"
   },
   "screenshots": [
-    "visual-qa/credit/v1.3__2026-09-08_154059__qa-credit-overlimit__credit-overlimit-desktop.png"
+    "visual-qa/credit/v1.3__2026-09-09_121056__qa-credit-overlimit__credit-overlimit-desktop.png"
   ]
 }
