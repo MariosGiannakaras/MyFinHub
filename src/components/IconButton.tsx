@@ -4,6 +4,6 @@ export interface IconButtonProps extends Omit<ButtonHTMLAttributes<HTMLButtonEle
   label:string;
 }
 
-export const IconButton=forwardRef<HTMLButtonElement,IconButtonProps>(function IconButton({label,className='',type='button',...props},ref){
+export const IconButton=forwardRef<HTMLButtonElement,IconButtonProps>(function IconButton({label,className='',type,...props},ref){
   return <button ref={ref} type={type} className={`icon-button ${className}`.trim()} aria-label={label} data-button-variant="icon" {...props}/>;
 });
