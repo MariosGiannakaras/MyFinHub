@@ -63,11 +63,11 @@ Goal: replace the selector-net button contract with typed shared primitives with
 
 - [x] Introduce typed `Button` variants for primary, secondary, danger and ghost/text-compatible actions while preserving existing CSS class hooks.
 - [x] Introduce accessible `IconButton` with a required accessible `aria-label` and safe default `type="button"`.
-- [ ] Migrate bounded safe adopter groups incrementally. Batch 1 currently migrates `ConfirmDialog`, `MoneyEditDialog`, and reusable close/footer actions in `CardCreateDialog`; card-design radio buttons remain intentional domain controls.
+- [ ] Migrate bounded safe adopter groups incrementally. Batch 1 (`ConfirmDialog`, `MoneyEditDialog`, reusable `CardCreateDialog` actions) merged via PR #363. Batch 2 is active in PR #364 and covers `DesktopUpdatePanel`, `PageErrorBoundary`, `PersistenceNotice`, and `AccountMetadataSettings`.
 - [ ] Retain compatibility aliases only while active non-migrated code still depends on them; remove only after adoption is proven complete.
 - [ ] Verify keyboard/focus/disabled/loading/submit semantics and fresh rendered screenshots after each bounded migration.
 
-Active delivery: issue #357 / PR #363 / branch `chore/357-shared-buttons`.
+Active delivery: issue #357 / PR #364 / branch `chore/357-button-adopters-batch-2`.
 
 ### Stage 3 — Canonical `DialogShell`
 
@@ -123,13 +123,17 @@ Active delivery: issue #357 / PR #363 / branch `chore/357-shared-buttons`.
 - **Overall tracker:** #357 — OPEN.
 - **Completed stages:** 2/9 (Stage 0, Stage 1).
 - **Active stage:** Stage 2 — shared Button / IconButton.
-- **Active PR:** #363 — `Code health: add shared Button and IconButton foundation`.
-- **Branch/base:** `chore/357-shared-buttons`, based on verified `develop@11f1e9995a332ee2b5b039281701db3db031e98d`.
-- **Current product commit:** `76921ef06300a9735687569d454c922462fa2046` introduced `Button` / `IconButton`, migrated the first representative dialog-action batch and updated source guards.
-- **Stage-2 progress:** 2/5 checklist items complete; the bounded migration item is in progress.
-- **Validation state:** PR workflows for the product commit are running. Do not merge until exact-head application/API/rendered/security/desktop gates required for this UI-affecting refactor are green and fresh rendered evidence has been personally inspected.
-- **Known intentional exception in Batch 1:** `CardCreateDialog` card-design choices remain raw radio-role buttons because they are a domain selection composite, not ordinary action buttons.
-- **Next action:** finish PR #363 exact-head validation, inspect fresh rendered evidence, fix any real regression, merge to `develop` only when green, verify integration, then continue remaining safe Stage-2 adopters in a new bounded batch.
+- **Verified integration:** Batch 1 merged via PR #363 to `develop@c97a618d4b817bed1aed3d57c6f258dda32e0e18`. Exact integration push CI `34388151300`, CodeQL `34388151446`, and Windows Desktop `34388151376` passed.
+- **Superseded work:** stale pre-integration PR #360 was closed without merge; it diverged from the bounded Batch-1 path and is not the continuation branch.
+- **Active PR:** #364 — `Code health: migrate shared Button adopters batch 2`.
+- **Branch/base:** `chore/357-button-adopters-batch-2`, created exactly from `develop@c97a618d4b817bed1aed3d57c6f258dda32e0e18`.
+- **Current implementation commit:** `ac054a48fa43410111c449d8365eed80ae38d833` migrates `DesktopUpdatePanel`, `PageErrorBoundary`, `PersistenceNotice`, and `AccountMetadataSettings` to the existing shared `Button` primitive and extends the durable source guard.
+- **Stage-2 progress:** 2/5 checklist items complete; the bounded migration item is in progress across incremental batches.
+- **Validation evidence:** runtime head `1d120809ba1bfc34a3cbc71b7c91bb5bc7a28eea` passed CI `34393140923`, CodeQL `34393141089`, Cross-engine `34393140995`, Windows Desktop `34393140873`, and Performance `34393140860`. The first Performance attempt produced a borderline synthetic desktop-dashboard score of 74 against the unchanged 75 guard; a no-code-change rerun passed with desktop-dashboard performance 95, LCP 1359 ms, CLS 0.002 and TBT 99 ms, confirming runner variance rather than a product regression.
+- **Rendered evidence:** CI artifact `10120870599` for PR merge ref `b35449ce829438155a1ce64c54940a3735b0a67f` completed successfully. Fresh desktop Settings, account-metadata desktop/mobile, and PageErrorBoundary recovery screenshots were personally inspected; the shared-button migration preserves the approved Phase-1 geometry, action hierarchy, focus treatment and responsive composition with no material regression observed.
+- **Final-head gate:** this checkpoint synchronization is documentation-only. Its resulting PR head must complete the repository-required exact-head workflows before merge; no runtime/rendered rework is expected unless a new check provides contrary evidence.
+- **Intentional exceptions remain:** card-design radio options and other documented domain composites stay raw until a semantically equivalent typed API exists.
+- **Next action:** wait for the documentation-only final head to pass exact-head CI/CodeQL/cross-engine/performance/Windows gates, then mark PR #364 ready, squash-merge to `develop`, verify the integration push, and only then start the next bounded Stage-2 adopter batch.
 
 ## Resume procedure for a future chat
 

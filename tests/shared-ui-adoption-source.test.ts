@@ -14,6 +14,10 @@ const iconButton=read('src/components/IconButton.tsx');
 const confirmDialog=read('src/components/ConfirmDialog.tsx');
 const moneyEditDialog=read('src/components/MoneyEditDialog.tsx');
 const cardCreateDialog=read('src/components/CardCreateDialog.tsx');
+const desktopUpdatePanel=read('src/components/DesktopUpdatePanel.tsx');
+const pageErrorBoundary=read('src/components/PageErrorBoundary.tsx');
+const persistenceNotice=read('src/components/PersistenceNotice.tsx');
+const accountMetadataSettings=read('src/components/AccountMetadataSettings.tsx');
 const modalFocus=read('src/hooks/useModalFocus.ts');
 const hardening=read('src/styles/part30.css');
 const sharedControls=read('src/styles/part57.css');
@@ -75,6 +79,20 @@ describe('shared finance UI adoption contracts',()=>{
     expect(cardCreateDialog).toContain('<Button variant="secondary" className="modal-secondary"');
     expect(cardCreateDialog).toContain('<Button variant="primary" className="modal-primary"');
     expect(cardCreateDialog).toContain('<button key={item.id} type="button" className="design-option" role="radio"');
+  });
+
+  it('adopts shared Button in the next bounded safe-action batch without changing native button semantics',()=>{
+    for(const source of [desktopUpdatePanel,pageErrorBoundary,persistenceNotice,accountMetadataSettings]){
+      expect(source).toContain("from './Button'");
+      expect(source).not.toContain('<button');
+      expect(source).toContain('type="button"');
+    }
+    expect(desktopUpdatePanel).toContain('<Button variant="primary"');
+    expect(desktopUpdatePanel).toContain('<Button variant="secondary"');
+    expect(pageErrorBoundary.match(/<Button/g)).toHaveLength(3);
+    expect(persistenceNotice).toContain('<Button variant="secondary"');
+    expect(accountMetadataSettings).toContain('<Button variant="secondary"');
+    expect(accountMetadataSettings).toContain('<Button variant="primary"');
   });
 
   it('keeps current dialogs on the shared modal-focus behavior contract',()=>{
