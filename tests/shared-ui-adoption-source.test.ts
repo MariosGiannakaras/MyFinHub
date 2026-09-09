@@ -9,6 +9,8 @@ const lending=read('src/pages/LendingPage.tsx');
 const recurring=read('src/pages/RecurringPage.tsx');
 const loans=read('src/pages/LoansPage.tsx');
 const budgetRules=read('src/components/BudgetRuleSettings.tsx');
+const button=read('src/components/Button.tsx');
+const iconButton=read('src/components/IconButton.tsx');
 const confirmDialog=read('src/components/ConfirmDialog.tsx');
 const moneyEditDialog=read('src/components/MoneyEditDialog.tsx');
 const cardCreateDialog=read('src/components/CardCreateDialog.tsx');
@@ -47,6 +49,32 @@ describe('shared finance UI adoption contracts',()=>{
     expect(budgetRules).toContain('<AppTextInput inputMode="decimal" value={budgetAlert}');
     expect(budgetRules).toContain('priority:editingRule?.priority??nextPriority');
     expect(budgetRules).not.toContain('<span>Προτεραιότητα</span>');
+  });
+
+  it('defines typed Button and IconButton primitives without changing the approved class hooks',()=>{
+    expect(button).toContain("export type ButtonVariant='primary'|'secondary'|'danger'|'ghost'");
+    expect(button).toContain("primary:'save-button'");
+    expect(button).toContain("secondary:'secondary'");
+    expect(button).toContain("danger:'save-button destructive-action'");
+    expect(button).toContain("type='button'");
+    expect(iconButton).toContain("Omit<ButtonHTMLAttributes<HTMLButtonElement>,'aria-label'>");
+    expect(iconButton).toContain("'aria-label':string");
+    expect(iconButton).toContain("mergeClasses('icon-button',className)");
+    expect(iconButton).toContain("type='button'");
+  });
+
+  it('adopts shared action primitives in representative dialogs while preserving intentional domain buttons',()=>{
+    for(const source of [confirmDialog,moneyEditDialog,cardCreateDialog]){
+      expect(source).toContain('Button');
+      expect(source).toContain('IconButton');
+    }
+    expect(confirmDialog).not.toContain('<button');
+    expect(moneyEditDialog).not.toContain('<button');
+    expect(confirmDialog).toContain("variant={tone==='destructive'?'danger':'primary'}");
+    expect(cardCreateDialog).toContain('<IconButton className="close-picker" aria-label="Κλείσιμο"');
+    expect(cardCreateDialog).toContain('<Button variant="secondary" className="modal-secondary"');
+    expect(cardCreateDialog).toContain('<Button variant="primary" className="modal-primary"');
+    expect(cardCreateDialog).toContain('<button key={item.id} type="button" className="design-option" role="radio"');
   });
 
   it('keeps current dialogs on the shared modal-focus behavior contract',()=>{
