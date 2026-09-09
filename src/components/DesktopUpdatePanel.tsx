@@ -1,6 +1,7 @@
 import { CheckCircle2, Download, MonitorCog, RefreshCw, RotateCcw, ShieldCheck, TriangleAlert } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import packageJson from '../../package.json';
+import { Button } from './Button';
 
 type UpdateStatus = 'idle' | 'checking' | 'up-to-date' | 'available' | 'downloading' | 'ready' | 'installing' | 'error' | 'unsupported';
 type UpdateState = { supported: boolean; currentVersion: string; status: UpdateStatus; availableVersion: string | null; progress: number; message: string };
@@ -78,10 +79,10 @@ export function DesktopUpdatePanel() {
   const action = !bridge
     ? null
     : state.status === 'available'
-      ? <button type="button" className="save-button" disabled={busy} onClick={() => void run(bridge.downloadUpdate)}><Download size={16} /> Λήψη ενημέρωσης</button>
+      ? <Button variant="primary" type="button" disabled={busy} onClick={() => void run(bridge.downloadUpdate)}><Download size={16} /> Λήψη ενημέρωσης</Button>
       : state.status === 'ready'
-        ? <button type="button" className="save-button" disabled={busy} onClick={() => void run(bridge.installUpdate)}><RotateCcw size={16} /> Εγκατάσταση & επανεκκίνηση</button>
-        : <button type="button" className="secondary" disabled={busy || state.status === 'installing'} onClick={() => void run(bridge.checkForUpdates)}><RefreshCw size={16} className={state.status === 'checking' ? 'is-spinning' : ''} /> Έλεγχος τώρα</button>;
+        ? <Button variant="primary" type="button" disabled={busy} onClick={() => void run(bridge.installUpdate)}><RotateCcw size={16} /> Εγκατάσταση & επανεκκίνηση</Button>
+        : <Button variant="secondary" type="button" disabled={busy || state.status === 'installing'} onClick={() => void run(bridge.checkForUpdates)}><RefreshCw size={16} className={state.status === 'checking' ? 'is-spinning' : ''} /> Έλεγχος τώρα</Button>;
 
   const statusMessage = !desktop
     ? 'Ο έλεγχος και η εγκατάσταση ενημερώσεων είναι διαθέσιμα μόνο στην εφαρμογή MyFinHub για Windows.'
