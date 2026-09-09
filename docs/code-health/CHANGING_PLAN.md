@@ -63,11 +63,11 @@ Goal: replace the selector-net button contract with typed shared primitives with
 
 - [x] Introduce typed `Button` variants for primary, secondary, danger and ghost/text-compatible actions while preserving existing CSS class hooks.
 - [x] Introduce accessible `IconButton` with a required accessible `aria-label` and safe default `type="button"`.
-- [ ] Migrate bounded safe adopter groups incrementally. Batch 1 (`ConfirmDialog`, `MoneyEditDialog`, reusable `CardCreateDialog` actions) merged via PR #363. Batch 2 is active in PR #364 and covers `DesktopUpdatePanel`, `PageErrorBoundary`, `PersistenceNotice`, and `AccountMetadataSettings`.
+- [ ] Migrate bounded safe adopter groups incrementally. Batch 1 (`ConfirmDialog`, `MoneyEditDialog`, reusable `CardCreateDialog` actions) merged via PR #363. Batch 2 (`DesktopUpdatePanel`, `PageErrorBoundary`, `PersistenceNotice`, `AccountMetadataSettings`) merged via PR #364. Batch 3 is active in PR #365 and migrates generic icon-only controls in `AppDateInput`, `AppSelectInput`, and `CommandPalette` while preserving raw composite `gridcell` / `option` buttons.
 - [ ] Retain compatibility aliases only while active non-migrated code still depends on them; remove only after adoption is proven complete.
 - [ ] Verify keyboard/focus/disabled/loading/submit semantics and fresh rendered screenshots after each bounded migration.
 
-Active delivery: issue #357 / PR #364 / branch `chore/357-button-adopters-batch-2`.
+Active delivery: issue #357 / PR #365 / branch `chore/357-iconbutton-adopters-batch-3`.
 
 ### Stage 3 — Canonical `DialogShell`
 
@@ -123,17 +123,16 @@ Active delivery: issue #357 / PR #364 / branch `chore/357-button-adopters-batch-
 - **Overall tracker:** #357 — OPEN.
 - **Completed stages:** 2/9 (Stage 0, Stage 1).
 - **Active stage:** Stage 2 — shared Button / IconButton.
-- **Verified integration:** Batch 1 merged via PR #363 to `develop@c97a618d4b817bed1aed3d57c6f258dda32e0e18`. Exact integration push CI `34388151300`, CodeQL `34388151446`, and Windows Desktop `34388151376` passed.
-- **Superseded work:** stale pre-integration PR #360 was closed without merge; it diverged from the bounded Batch-1 path and is not the continuation branch.
-- **Active PR:** #364 — `Code health: migrate shared Button adopters batch 2`.
-- **Branch/base:** `chore/357-button-adopters-batch-2`, created exactly from `develop@c97a618d4b817bed1aed3d57c6f258dda32e0e18`.
-- **Current implementation commit:** `ac054a48fa43410111c449d8365eed80ae38d833` migrates `DesktopUpdatePanel`, `PageErrorBoundary`, `PersistenceNotice`, and `AccountMetadataSettings` to the existing shared `Button` primitive and extends the durable source guard.
+- **Verified Batch-1 integration:** PR #363 merged to `develop@c97a618d4b817bed1aed3d57c6f258dda32e0e18`; post-merge CI, CodeQL and Windows Desktop passed.
+- **Verified Batch-2 integration:** PR #364 squash-merged to `develop@fc6d38de49e9f235b03f2e0394e9f470daf16215`. Integration CI `34396227607`, CodeQL `34396227577`, and Windows Desktop `34396227578` all passed, including fresh rendered frontend QA and the Windows package/install/uninstall checks.
+- **Superseded work:** stale pre-integration PR #360 was closed without merge; it diverged from the bounded Batch-1 path and is not a continuation branch.
+- **Active PR:** #365 — `Code health: migrate shared IconButton adopters batch 3`.
+- **Branch/base:** `chore/357-iconbutton-adopters-batch-3`, created exactly from verified `develop@fc6d38de49e9f235b03f2e0394e9f470daf16215`.
+- **Current implementation commit:** `734dfdfb568f0923b7eb35f2edb3e9a8d85086ad` migrates the five generic icon-only actions in `AppDateInput`, `AppSelectInput`, and `CommandPalette` to shared `IconButton` and extends the source guard. Calendar day grid cells, select options and command result options remain intentional raw composite buttons.
 - **Stage-2 progress:** 2/5 checklist items complete; the bounded migration item is in progress across incremental batches.
-- **Validation evidence:** runtime head `1d120809ba1bfc34a3cbc71b7c91bb5bc7a28eea` passed CI `34393140923`, CodeQL `34393141089`, Cross-engine `34393140995`, Windows Desktop `34393140873`, and Performance `34393140860`. The first Performance attempt produced a borderline synthetic desktop-dashboard score of 74 against the unchanged 75 guard; a no-code-change rerun passed with desktop-dashboard performance 95, LCP 1359 ms, CLS 0.002 and TBT 99 ms, confirming runner variance rather than a product regression.
-- **Rendered evidence:** CI artifact `10120870599` for PR merge ref `b35449ce829438155a1ce64c54940a3735b0a67f` completed successfully. Fresh desktop Settings, account-metadata desktop/mobile, and PageErrorBoundary recovery screenshots were personally inspected; the shared-button migration preserves the approved Phase-1 geometry, action hierarchy, focus treatment and responsive composition with no material regression observed.
-- **Final-head gate:** this checkpoint synchronization is documentation-only. Its resulting PR head must complete the repository-required exact-head workflows before merge; no runtime/rendered rework is expected unless a new check provides contrary evidence.
+- **Validation state:** PR #365 exact-head workflows and fresh rendered evidence are required before merge. Existing QA covers app-owned date/select popovers, Escape/focus behavior and Command Palette interaction; inspect relevant fresh evidence rather than relying only on source assertions.
 - **Intentional exceptions remain:** card-design radio options and other documented domain composites stay raw until a semantically equivalent typed API exists.
-- **Next action:** wait for the documentation-only final head to pass exact-head CI/CodeQL/cross-engine/performance/Windows gates, then mark PR #364 ready, squash-merge to `develop`, verify the integration push, and only then start the next bounded Stage-2 adopter batch.
+- **Next action:** complete PR #365 exact-head application/API/CodeQL/cross-engine/performance/Windows/rendered validation, fix only real regressions, inspect fresh date/select/Command Palette evidence, then synchronize the final checkpoint and squash-merge to `develop` only if green.
 
 ## Resume procedure for a future chat
 
