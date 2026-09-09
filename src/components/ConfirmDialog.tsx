@@ -2,6 +2,8 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { X } from 'lucide-react';
 import { useId } from 'react';
 import { useModalFocus } from '../hooks/useModalFocus';
+import { Button } from './Button';
+import { IconButton } from './IconButton';
 import '../styles/confirm-dialog.css';
 
 export type ConfirmDialogTone='default'|'destructive';
@@ -35,10 +37,10 @@ export function ConfirmDialog({
       transition={{duration:reduce?0:.18}}
       onMouseDown={event=>event.stopPropagation()}
     >
-      <header><div><small>{tone==='destructive'?'ΕΠΙΒΕΒΑΙΩΣΗ ΕΝΕΡΓΕΙΑΣ':'ΕΠΙΒΕΒΑΙΩΣΗ'}</small><h2 id={titleId}>{title}</h2><p id={descriptionId}>{description}</p></div><button type="button" className="icon-button" aria-label="Κλείσιμο επιβεβαίωσης" disabled={busy} onClick={cancel}><X aria-hidden="true"/></button></header>
+      <header><div><small>{tone==='destructive'?'ΕΠΙΒΕΒΑΙΩΣΗ ΕΝΕΡΓΕΙΑΣ':'ΕΠΙΒΕΒΑΙΩΣΗ'}</small><h2 id={titleId}>{title}</h2><p id={descriptionId}>{description}</p></div><IconButton label="Κλείσιμο επιβεβαίωσης" disabled={busy} onClick={cancel}><X aria-hidden="true"/></IconButton></header>
       <footer>
-        <button type="button" className="secondary" data-autofocus="true" disabled={busy} onClick={cancel}>{cancelLabel}</button>
-        <button type="button" className={`save-button ${tone==='destructive'?'destructive-action':''}`.trim()} data-action-tone={tone} disabled={busy} onClick={confirm}>{confirmLabel}</button>
+        <Button variant="secondary" data-autofocus="true" disabled={busy} onClick={cancel}>{cancelLabel}</Button>
+        <Button variant={tone==='destructive'?'danger':'primary'} data-action-tone={tone} disabled={busy} onClick={confirm}>{confirmLabel}</Button>
       </footer>
     </motion.section>
   </motion.div>:null}</AnimatePresence>;
