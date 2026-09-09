@@ -24,9 +24,12 @@ jobs:
           cache: npm
           cache-dependency-path: desktop/package-lock.json
       - name: Refresh patched js-yaml resolution
-        run: npm install js-yaml@4.3.2 --package-lock-only --no-save --prefix desktop
-      - name: Verify desktop high-severity audit
-        run: npm audit --audit-level=high --prefix desktop
+        run: npm update js-yaml --package-lock-only --prefix desktop
+      - name: Verify patched resolution and desktop high-severity audit
+        shell: bash
+        run: |
+          node -e "const lock=require('./desktop/package-lock.json'); if(lock.packages['node_modules/js-yaml']?.version !== '4.3.2') process.exit(1)"
+          npm audit --audit-level=high --prefix desktop
       - name: Commit lock-only refresh
         shell: bash
         run: |
