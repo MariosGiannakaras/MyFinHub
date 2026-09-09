@@ -64,7 +64,7 @@ These are the current approved choices. Later stages should converge implementat
 - [x] Record allowed exceptions where a domain component is intentionally specialized.
 - [x] Add source-level adoption guards only where they express durable behavior/ownership, not incidental file formatting.
 
-**Active delivery:** issue #357 / branch `chore/357-design-system-inventory`. Runtime/UI behavior is intentionally unchanged; validation and PR delivery remain before Stage 1 can be considered integrated.
+**Active delivery:** issue #357 / PR #359 / branch `chore/357-design-system-inventory`. Runtime/UI behavior is intentionally unchanged; validation and integration remain before Stage 1 can be considered complete on `develop`.
 
 ### Stage 2 — Canonical `Button` / `IconButton`
 
@@ -142,12 +142,13 @@ These are the current approved choices. Later stages should converge implementat
 - **Overall tracker:** #357 — OPEN.
 - **Completed stage:** Stage 0 — merged and verified on `develop@399253c35740a0c6666e60ec2d0eb131d82fb17d`; post-merge workflows include successful CodeQL and Windows gates on that exact integration head.
 - **Active stage:** Stage 1 — design-system contracts and ownership inventory.
+- **Active PR:** #359 — `Code health: persist UI design-system contracts`.
 - **Branch:** `chore/357-design-system-inventory`, based exactly on `develop@399253c35740a0c6666e60ec2d0eb131d82fb17d`.
 - **Implementation status:** 4/4 Stage-1 implementation tasks complete on the branch. `DESIGN_SYSTEM.md` and `PAGE_PATTERNS.md` now describe the approved Phase-1 contracts; `docs/code-health/UI_INVENTORY.md` records button/dialog/surface/CSS ownership and intentional domain exceptions; `tests/shared-ui-adoption-source.test.ts` adds a durable modal-focus ownership guard.
 - **CSS inventory finding:** `src/styles.css` directly loads `part1.css`–`part46.css` and `part57.css`. `AccountIban` / `AccountMetadataSettings` load `part47.css`, which in turn loads unrelated Dashboard/Transactions/Quick Entry/Savings and approved-target styles. This hidden component-as-global-stylesheet-loader coupling is documented for Stage 5 and intentionally unchanged in Stage 1.
 - **Theme inventory finding:** semantic Light/Dark token application is canonical, while the broad runtime selector stylesheet in `src/lib/theme.ts` is documented compatibility debt for Stage 5; no theme/runtime changes are made here.
-- **Validation state:** branch source changes are documentation plus a source-level test only; no runtime/CSS/component behavior changed. PR/check validation is still required before integration.
-- **Next action:** open the bounded Stage-1 PR against `develop`, run required checks, fix only Stage-1 regressions, then merge and verify `develop` before starting Stage 2.
+- **Validation state:** PR #359 is the bounded Stage-1 validation vehicle. Branch source changes are documentation plus a source-level test only; no runtime/CSS/component behavior changed.
+- **Next action:** complete PR #359 checks, fix only Stage-1 regressions, then merge and verify `develop` before starting Stage 2.
 
 ## Resume procedure for a future chat
 
