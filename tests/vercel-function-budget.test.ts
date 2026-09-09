@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 function apiFunctions(dir:string):string[]{
   return readdirSync(dir).flatMap(name=>{
+    if(name==='node_modules'||name.startsWith('.'))return[];
     const full=join(dir,name);
     return statSync(full).isDirectory()?apiFunctions(full):name.endsWith('.ts')?[full.replaceAll('\\','/')]:[];
   });
