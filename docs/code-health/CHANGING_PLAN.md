@@ -1,166 +1,163 @@
-# MyFinHub code-health changing plan
+# MyFinHub Code Health — Changing Plan
 
-Status: **ACTIVE**
-Tracking issue: **#357 — Code health: canonical UI primitives and release-safe cleanup**
+## Purpose
 
-This file is the checked-in continuation source of truth for the post-Phase-1 cleanup. A future chat/session must read this file, root `AGENTS.md`, applicable checked-in rules and issue #357, then recover the live GitHub branch/PR/check state before changing code. Do not rely on prior chat memory.
+This file is the durable continuation plan for the post-Phase-1 code-health cleanup. It is intentionally self-contained so a future ChatGPT session can continue from GitHub without relying on chat memory.
 
 ## Protected constraints
 
-- GitHub issue #266 is excluded from this workflow. Do not open, inspect, quote, summarize, comment on, modify, relabel, close, reopen or use it.
+- Never inspect, open, quote, summarize, comment on, modify, or use GitHub issue #266.
 - `develop` is the integration branch. `main` is release-only.
-- Do not create or merge `develop -> main`, release or deploy without separate owner authorization.
-- Preserve owner-approved Phase-1 visuals, geometry, density and interaction semantics.
-- Preserve finance/accounting, authentication, MFA, RLS, persistence, API and database invariants unless a separately reviewed compatibility stage explicitly requires a change.
-- Prefer behavior-preserving refactors with narrow tests before broad CI.
-- Do not replace app-owned controls with browser-native popups.
-
-## Baseline recovered on 2026-09-09
-
-- `develop`: `6d1cba01fc0880e06671067431919e72cad5339c`
-- `main`: `4782fd3c6ab8f56661623cb36b3792a7ee7f7ee6`
-- `develop` vs `main`: diverged, 44 commits ahead and 2 commits behind.
-- Main-only production compatibility fix: `/api/android-update` is routed through the existing `api/data.ts` serverless function to keep the Vercel production function count inside the deployed plan limit.
-- Current `develop` still has a standalone `api/android-update.ts` plus newer account/device API routes, so the main-only routing fix must be reconciled into `develop` before routine cleanup continues.
-- Active implementation branch: `chore/357-code-health-foundation`, based on the exact `develop` SHA above.
+- Do not perform `develop -> main`, release, publish, deploy, or production migration without separate explicit owner authorization.
+- Preserve the owner-approved Phase-1 UI appearance unless a later owner-approved visual target explicitly changes it.
+- Preserve finance/accounting semantics, auth/MFA/RLS/security behavior, persistence, routes, APIs, database contracts and Windows/Desktop behavior unless a stage explicitly requires a compatible fix.
+- Code-health work is behavior-preserving refactoring by default. Do not weaken tests, audits, accessibility or security gates to make a change pass.
+- Keep native browser dialogs/controls out where current app-owned primitives already own the interaction.
+- Work in bounded stages and PRs. Do not combine unrelated cleanup into one large rewrite.
+- Before every write, recover the real GitHub branch/PR/head state and resume existing work rather than creating duplicates.
 
 ## Canonical UI contracts
 
-| Concern | Canonical contract | Notes |
-| --- | --- | --- |
-| Text input | `AppTextInput` | Base visual contract through `.app-control`. |
-| Multiline | `AppTextarea` | Base visual contract through `.app-control`. |
-| Select/dropdown | `AppSelectInput` | App-owned listbox/popover, keyboard and focus behavior. |
-| Date | `AppDateInput` | App-owned calendar; keep date bounds/keyboard behavior. |
-| Money | `MoneyInput` | Semantic specialization of the shared control contract. |
-| Category | `CategorySelectInput` | Category-specific specialization of shared selection. |
-| Validation | `FormError` | Shared visible/accessible validation surface. |
-| Focus/modal behavior | `useModalFocus` | Keep Escape, focus trap and focus restoration behavior centralized. |
-| Application shell | `AppShell` | No page-owned sidebar/topbar. |
-| Page frame | `page-stack` + `page-heading` | Retain common routed-page structure. |
-| Theme | semantic light/dark tokens | Runtime JS should own token application, not broad selector styling long-term. |
-| Buttons | shared `Button` + `IconButton` | Introduce typed variants while preserving current approved look. |
-| Dialogs | shared `DialogShell` | `ConfirmDialog`, `MoneyEditDialog`, `CardCreateDialog` remain semantic specializations. |
-| Generic surfaces | shared `Surface` base | Raised/flat/inset only; do not flatten semantically distinct finance cards. |
+These are the current approved choices. Later stages should converge implementations toward these contracts without redesigning their appearance.
 
-## Known cleanup findings
+| Concern | Canonical contract |
+| --- | --- |
+| Text input | `AppTextInput` |
+| Textarea | `AppTextarea` |
+| Select/dropdown | `AppSelectInput` |
+| Date | `AppDateInput` |
+| Money/amount | `MoneyInput` |
+| Category | `CategorySelectInput` |
+| Validation message | `FormError` |
+| Modal/focus behavior | `useModalFocus` |
+| App frame | `AppShell` |
+| Page frame | `page-stack` + `page-heading` |
+| Theme | existing semantic light/dark tokens |
+| Buttons | future shared `Button` + `IconButton`, preserving the approved primary/secondary/danger/icon visual language |
+| Dialogs | future shared `DialogShell`, preserving the approved modal appearance |
+| Generic cards/surfaces | future shared `Surface` base with raised/flat/inset variants; domain cards remain semantic components |
 
-1. Buttons are visually normalized by CSS selector groups rather than a typed shared React primitive.
-2. `ConfirmDialog` and `MoneyEditDialog` duplicate backdrop/motion/focus/header/footer structure; `CardCreateDialog` owns a third modal shell.
-3. Generic surface styling is spread across `neo-raised`, `neo-flat`, `neo-inset`, KPI/summary/page-specific classes.
-4. CSS ownership has hidden coupling: generic components import numeric `partNN.css` files that load unrelated page redesign layers.
-5. `AccountIban.tsx` currently imports `part47.css`, `part50.css`, `part52.css`; `part47.css` itself imports multiple later numeric files and page-specific approved-target styles.
-6. `BankBrandMark.tsx` imports `part53.css`, while that file also contains Dashboard-specific presentation.
-7. `src/lib/theme.ts` applies semantic tokens but also injects a large global selector stylesheet with many `!important` rules.
-8. `DESIGN_SYSTEM.md` and `PAGE_PATTERNS.md` remain bootstrap/TBD despite the completed Phase-1 approvals.
-9. Current `npm run check` covers security/tests/build but the repository does not yet have a dedicated lint/format/dead-export/dependency-cycle gate.
+## Stage plan
 
-## Staged implementation plan
+### Stage 0 — Production-hotfix back-sync into `develop`
 
-### Stage 0 — Production-hotfix back-sync into develop
-State: **IN PROGRESS**
+**Goal:** remove the known release blocker before routine cleanup.
 
-- [ ] Move the Android update request handler out of standalone `api/android-update.ts` into a non-serverless server module.
-- [ ] Route `/api/android-update` through `api/data.ts` using the reviewed main rewrite pattern.
-- [ ] Preserve the current develop owner + AAL2 + device-session behavior and release-channel isolation.
-- [ ] Remove the standalone API function after the route bridge is covered.
-- [ ] Add/retain regression coverage for the public route bridge and absence of standalone API function.
-- [ ] Verify Vercel config/function count constraint.
-- [ ] Run focused Android update/API tests, then full `npm run check` and relevant CI/CodeQL gates.
-- [ ] Merge the Stage-0 PR to `develop` only when current-head gates pass.
+- [x] Preserve `/api/android-update` while routing it through an existing Vercel function.
+- [x] Preserve `develop` account/device capabilities while routing their Vercel paths through an existing auth function.
+- [x] Reduce the Vercel TypeScript serverless entrypoint count from 15 to exactly 12.
+- [x] Add source-level regression coverage for the Vercel function budget and affected routes.
+- [x] Preserve the existing underlying account/device/update handlers and their security policy.
+- [x] Make approved-style source tests platform-safe without weakening their semantic assertions.
+- [x] Refresh the Desktop transitive `js-yaml` lock resolution to patched `4.3.2` while retaining the high-severity audit gate.
+- [ ] Complete exact-head CI, API/build/rendered QA, CodeQL, cross-engine, performance and all Windows gates.
+- [ ] Merge Stage 0 to `develop` and verify the resulting `develop` integration state.
 
-### Stage 1 — Persist approved design-system contracts and code inventory
-State: **NOT STARTED**
+**Active delivery:** issue #357 / PR #358 / branch `chore/357-code-health-foundation`.
 
-- [ ] Update `docs/ui-redesign/DESIGN_SYSTEM.md` from bootstrap/TBD to actual approved shared contracts.
-- [ ] Update `docs/ui-redesign/PAGE_PATTERNS.md` with established shell/page/input/data-density patterns.
-- [ ] Add an inventory of button/dialog/surface/CSS ownership and classify legitimate variants vs duplication.
-- [ ] No intended visual change.
+### Stage 1 — Persist design-system contracts and inventory
 
-### Stage 2 — Shared Button / IconButton foundation
-State: **NOT STARTED**
+**Goal:** turn the approved UI into an explicit, durable design-system contract before broad refactors.
 
-- [ ] Add typed `Button` and `IconButton` primitives.
-- [ ] Preserve existing class hooks/approved appearance during first migration.
-- [ ] Variants: primary, secondary, danger, ghost/text only where established; icon-only actions require accessible labels.
-- [ ] Migrate representative adopters first, then remaining safe adopters in bounded batches.
-- [ ] Add source/accessibility tests.
+- [ ] Update checked-in design-system/page-pattern documentation from bootstrap/TBD state.
+- [ ] Inventory raw buttons, modal/dialog shells, generic surface aliases and CSS ownership.
+- [ ] Record allowed exceptions where a domain component is intentionally specialized.
+- [ ] Add source-level adoption guards only where they express durable behavior/ownership, not incidental file formatting.
 
-### Stage 3 — Shared DialogShell
-State: **NOT STARTED**
+### Stage 2 — Canonical `Button` / `IconButton`
 
-- [ ] Extract common backdrop, ARIA, focus trap, Escape, reduced-motion, close/header/footer composition.
-- [ ] Keep confirmation, money edit and card creation domain behavior separate.
-- [ ] Preserve busy/destructive behavior and rendered appearance.
+**Goal:** replace the selector-net button contract with typed shared primitives while preserving visuals and behavior.
 
-### Stage 4 — Shared Surface foundation
-State: **NOT STARTED**
+- [ ] Introduce shared `Button` variants for primary, secondary, danger and appropriate ghost/text actions.
+- [ ] Introduce accessible `IconButton` with mandatory accessible naming.
+- [ ] Migrate bounded page groups incrementally.
+- [ ] Retain temporary compatibility aliases only while required; remove them once adoption is complete.
+- [ ] Verify keyboard/focus/disabled/loading/submit semantics and screenshots after each bounded migration.
 
-- [ ] Add `Surface` base with `raised`, `flat`, `inset` presentation.
-- [ ] Migrate only generic containers.
-- [ ] Keep KPI/account/payment/attention semantics distinct.
+### Stage 3 — Canonical `DialogShell`
+
+**Goal:** remove repeated overlay/focus/motion/header/footer mechanics.
+
+- [ ] Extract common dialog backdrop, ARIA, focus trapping, Escape/close, reduced-motion, header and footer behavior.
+- [ ] Migrate `ConfirmDialog`, `MoneyEditDialog`, create/edit dialogs and other eligible overlays incrementally.
+- [ ] Preserve specialized dialog body/form behavior.
+- [ ] Keep native `alert`/`confirm`/`prompt` prohibited.
+
+### Stage 4 — Canonical `Surface`
+
+**Goal:** centralize generic surface geometry/elevation without flattening semantic domain components.
+
+- [ ] Introduce raised/flat/inset base surface ownership.
+- [ ] Migrate generic panels/cards where the abstraction is genuinely shared.
+- [ ] Keep KPI, account, payment, attention and other domain cards as semantic components that may compose `Surface`.
 
 ### Stage 5 — CSS ownership cleanup
-State: **NOT STARTED**
 
-- [ ] Remove generic-component imports that act as hidden loaders for unrelated page CSS.
-- [ ] Replace numeric `partNN.css` chains incrementally with named base/primitives/patterns/page layers.
-- [ ] Move broad selector CSS out of runtime `theme.ts`; keep runtime token application.
-- [ ] Reduce `!important` dependence only where cascade ownership is explicit.
-- [ ] Never do a whole-stack CSS rewrite in one change.
+**Goal:** remove hidden loader coupling and make stylesheet ownership explicit.
+
+- [ ] Inventory the `partN.css` graph and document which approved rules each file owns before moving anything.
+- [ ] Eliminate unrelated component-as-stylesheet-loader coupling.
+- [ ] Replace numeric loader chains with named layers/owners in bounded steps: tokens/base/primitives/patterns/pages.
+- [ ] Reduce selector duplication and unnecessary `!important` reliance only when visual parity is proven.
+- [ ] Keep runtime theme code focused on semantic tokens rather than acting as a broad selector engine.
+- [ ] Maintain exact visual regression coverage throughout.
 
 ### Stage 6 — Code-hygiene tooling
-State: **NOT STARTED**
 
-- [ ] Compatibility-review lint/format/dead-code/dependency-cycle tooling before adoption.
-- [ ] Enable unused-code checks incrementally.
-- [ ] Do not mass-delete code based on one static-tool result.
-- [ ] Add CI gates only after the active tree passes reliably.
+**Goal:** make dead/duplicate code detectable rather than relying on CI build success alone.
 
-### Stage 7 — Full application cleanup verification
-State: **NOT STARTED**
+- [ ] Add an appropriate lint/static-analysis baseline without mass unrelated reformatting.
+- [ ] Add unused import/export and dependency-cycle checks where signal is reliable.
+- [ ] Add formatting enforcement only after establishing a low-noise baseline.
+- [ ] Review dependency/audit debt, including Desktop transitive packages, without relaxing severity gates.
 
-- [ ] Audit every routed page/shared component.
-- [ ] Remove confirmed dead code/CSS/exports/compatibility aliases only when active contracts do not depend on them.
-- [ ] Run full application/API/rendered/desktop/security gates.
-- [ ] Capture fresh representative screenshots and verify Phase-1 visual parity.
+### Stage 7 — Full cleanup verification
+
+**Goal:** prove the refactored implementation still behaves and looks like the verified Phase-1 product.
+
+- [ ] Full application/API checks.
+- [ ] Cross-page shared-control adoption checks.
+- [ ] Rendered desktop/mobile QA for every routed surface.
+- [ ] Keyboard/focus/accessibility pass.
+- [ ] Windows Desktop / First Run / Clean Launch gates.
+- [ ] CodeQL, cross-engine and performance gates.
+- [ ] Personally inspect representative fresh visual evidence.
+- [ ] Remove proven dead compatibility code and stale temporary aliases only after coverage confirms they are unused.
 
 ### Stage 8 — Release-readiness audit
-State: **NOT STARTED**
 
-- [ ] Recompare final `develop` with `main`.
-- [ ] Separate UI changes from backend/auth/database/Android/Desktop production-impacting differences.
-- [ ] Verify Vercel function count/routing, migrations and release/smoke prerequisites.
-- [ ] Stop before release; owner authorization is required for any `develop -> main` PR/merge/deploy.
+**Goal:** determine whether `develop` is safe to promote; this stage does **not** authorize promotion.
 
-## Resume procedure for any future chat/session
+- [ ] Compare current `develop` against `main` again.
+- [ ] Confirm the Vercel function budget and production routing are still compatible.
+- [ ] Review migrations/backend/auth/device/provider differences explicitly.
+- [ ] Verify there are no unresolved code-health blockers.
+- [ ] Produce a release-readiness checkpoint.
+- [ ] Wait for separate explicit owner authorization before any `develop -> main`, release or deploy action.
 
-1. Read `AGENTS.md`.
-2. Read applicable docs under `docs/ui-redesign/` and this file.
-3. Read issue #357.
-4. Fetch current `develop` and `main` heads and compare them.
-5. Find the active stage branch/PR by issue number; do not create duplicates.
-6. Read the latest PR checkpoint and current checks.
-7. Continue only the first incomplete stage.
-8. Before ending the session, update this file and issue #357 with:
-   - current stage/state,
-   - active branch/PR,
-   - latest product commit,
-   - checks run/result,
-   - exact next action,
-   - any blocker.
+## Current checkpoint — 2026-09-09
 
-## Validation baseline
+- **Overall tracker:** #357 — OPEN.
+- **Active stage:** Stage 0 — production-hotfix back-sync.
+- **Active PR:** #358 — `Code health: restore production API function budget` — DRAFT.
+- **Branch:** `chore/357-code-health-foundation`.
+- **Base:** `develop@6d1cba01fc0880e06671067431919e72cad5339c`.
+- **Current human head before this documentation checkpoint:** `055416d630afeb90a9d1fb81ee63fa115ea1afc9`.
+- **Validated fixes already demonstrated:** Vercel regression test passes; Windows checkout now passes both approved-style EOL-sensitive tests; a Windows run reached 125/125 test files and 635/635 tests plus a successful production build/bundle budget; Desktop `js-yaml` is now locked to patched `4.3.2`, and the lock-refresh job passed `npm audit --audit-level=high --prefix desktop`.
+- **Visual evidence behavior:** feature-branch `visual-qa-snapshots.yml` intentionally replaces/persists latest rendered evidence and may add bot-authored evidence commits. This is repository policy, not accidental product churn; do not delete that evidence merely to shrink a PR.
+- **Current validation:** exact-head full gates are running after the EOL/audit fixes. Do not mark Stage 0 complete or merge until all required gates are green.
+- **Next action:** re-fetch PR #358, use the latest exact branch head, complete CI/CodeQL/cross-engine/performance/Windows Desktop/First Run/Clean Launch validation, fix only real regressions, then update this checkpoint and the PR. If green, merge Stage 0 to `develop` and verify the resulting `develop`; keep #357 open for Stage 1.
 
-Use the narrowest relevant tests first. Before merging a behavior-preserving UI/code-health stage, the expected broad baseline remains at least:
+## Resume procedure for a future chat
 
-- `npm run check`
-- relevant rendered frontend QA when the stage can affect UI presentation/interactions
-- CodeQL and configured CI gates
-- desktop checks when shared renderer/runtime code is affected
-
-Do not weaken tests to make a refactor pass.
-
-## Completion rule
-
-Issue #357 is complete only when all stages are checked off, the checked-in design system matches the actual approved implementation, hidden CSS-loading dependencies are gone, common primitives have one documented canonical contract, confirmed dead redesign debris has been removed, hygiene gates are automated, full regression/visual verification is green, and final `develop` vs `main` release readiness has been documented without performing a release.
+1. Read root `AGENTS.md` and all directly applicable checked-in rules.
+2. Read this file completely.
+3. Read issue #357 and the active PR named in the current checkpoint. Do **not** inspect excluded issue #266.
+4. Fetch the real `develop`, `main`, active branch and PR heads; never trust a stale SHA in this file over GitHub.
+5. Inspect current workflow/check state and any unresolved review comments.
+6. Continue the first incomplete item in the active stage. Do not skip ahead to later stages while a blocker is open.
+7. Use the narrowest tests first, then the required full gates. Never weaken behavioral/security/audit tests to make them pass.
+8. For UI-affecting refactors, use fresh real rendered desktop/mobile evidence and personally compare against the approved Phase-1 appearance before merge.
+9. After every meaningful checkpoint, update this file and the active issue/PR with: last completed, exact head, validation state, blocker if any, and exact next action.
+10. After a bounded stage is merged and verified on `develop`, create/resume a new bounded branch/PR for the next stage. Do not pile all stages into one PR.
+11. Keep #357 open until all stages are complete. No `main`, release or deploy without separate explicit owner authorization.
