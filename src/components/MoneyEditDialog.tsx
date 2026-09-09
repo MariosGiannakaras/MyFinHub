@@ -2,6 +2,8 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { X } from 'lucide-react';
 import { useId } from 'react';
 import { useModalFocus } from '../hooks/useModalFocus';
+import { Button } from './Button';
+import { IconButton } from './IconButton';
 import { MoneyInput } from './MoneyInput';
 import '../styles/money-edit-dialog.css';
 
@@ -60,14 +62,14 @@ export function MoneyEditDialog({
       transition={{duration:reduce?0:.18}}
       onMouseDown={event=>event.stopPropagation()}
     >
-      <header><div><small>ΕΠΕΞΕΡΓΑΣΙΑ ΠΟΣΟΥ</small><h2 id={titleId}>{title}</h2><p id={descriptionId}>{description}</p></div><button type="button" className="icon-button" aria-label="Κλείσιμο επεξεργασίας ποσού" disabled={busy} onClick={cancel}><X aria-hidden="true"/></button></header>
+      <header><div><small>ΕΠΕΞΕΡΓΑΣΙΑ ΠΟΣΟΥ</small><h2 id={titleId}>{title}</h2><p id={descriptionId}>{description}</p></div><IconButton label="Κλείσιμο επεξεργασίας ποσού" disabled={busy} onClick={cancel}><X aria-hidden="true"/></IconButton></header>
       <div className="settings-form app-money-edit-dialog-body">
         <label><span>{label}</span><MoneyInput data-autofocus="true" aria-label={label} value={value} onValueChange={onValueChange} invalid={Boolean(error)} aria-describedby={error?errorId:undefined}/></label>
         {error?<div id={errorId} className="form-error" role="alert" aria-live="assertive">{error}</div>:null}
       </div>
       <footer>
-        <button type="button" className="secondary" disabled={busy} onClick={cancel}>{cancelLabel}</button>
-        <button type="button" className="save-button" disabled={busy} onClick={confirm}>{confirmLabel}</button>
+        <Button variant="secondary" disabled={busy} onClick={cancel}>{cancelLabel}</Button>
+        <Button variant="primary" disabled={busy} onClick={confirm}>{confirmLabel}</Button>
       </footer>
     </motion.section>
   </motion.div>:null}</AnimatePresence>;
