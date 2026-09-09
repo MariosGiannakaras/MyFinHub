@@ -9,6 +9,10 @@ const lending=read('src/pages/LendingPage.tsx');
 const recurring=read('src/pages/RecurringPage.tsx');
 const loans=read('src/pages/LoansPage.tsx');
 const budgetRules=read('src/components/BudgetRuleSettings.tsx');
+const confirmDialog=read('src/components/ConfirmDialog.tsx');
+const moneyEditDialog=read('src/components/MoneyEditDialog.tsx');
+const cardCreateDialog=read('src/components/CardCreateDialog.tsx');
+const modalFocus=read('src/hooks/useModalFocus.ts');
 const hardening=read('src/styles/part30.css');
 const sharedControls=read('src/styles/part57.css');
 const baseStyles=read('src/styles/part1.css');
@@ -43,6 +47,18 @@ describe('shared finance UI adoption contracts',()=>{
     expect(budgetRules).toContain('<AppTextInput inputMode="decimal" value={budgetAlert}');
     expect(budgetRules).toContain('priority:editingRule?.priority??nextPriority');
     expect(budgetRules).not.toContain('<span>Προτεραιότητα</span>');
+  });
+
+  it('keeps current dialogs on the shared modal-focus behavior contract',()=>{
+    for(const source of [confirmDialog,moneyEditDialog,cardCreateDialog]){
+      expect(source).toContain('useModalFocus');
+      expect(source).toContain('aria-modal="true"');
+    }
+    expect(modalFocus).toContain("shortcutMatches(event, 'dismiss')");
+    expect(modalFocus).toContain("event.key !== 'Tab'");
+    expect(modalFocus).toContain("document.querySelectorAll<HTMLElement>('[aria-modal=\"true\"]')");
+    expect(modalFocus).toContain('opener.current?.focus');
+    expect(modalFocus).toContain(".form-error[role=\"alert\"]");
   });
 
   it('keeps keyboard focus and pointer affordances visible without relying on hover alone',()=>{
