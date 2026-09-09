@@ -92,9 +92,13 @@ Important current ownership:
 - `part57.css`: canonical `.app-control`, compact input density variant and the common `:focus-visible` rule.
 - `part2.css`–`part46.css`: accumulated feature/page/responsive rules; ownership is historical rather than layer-oriented.
 
-### Hidden component-loader path
+### Hidden component-loader paths
 
-`src/components/AccountIban.tsx` and `src/components/AccountMetadataSettings.tsx` import `src/styles/part47.css`.
+The numbered Phase-1 tail is loaded through unrelated component modules instead of the root stylesheet:
+
+- `src/components/AccountIban.tsx` imports `part47.css`, `part50.css` and `part52.css`.
+- `src/components/AccountMetadataSettings.tsx` imports `part47.css`.
+- `src/components/BankBrandMark.tsx` imports `part53.css`.
 
 `part47.css` is not merely IBAN/account-metadata styling. Its first imports load:
 
@@ -107,19 +111,24 @@ Important current ownership:
 - `part56.css`
 - approved-target/refinement styles for Loans, Credit Card, Lending, Recurring, Planning and Έλεγχος.
 
-This means an account-metadata component currently acts as a stylesheet loader for unrelated approved route styling. That coupling is real but must **not** be removed in Stage 1 because doing so would change which CSS reaches production.
+Therefore the full `part47.css`–`part56.css` tail is reachable through component imports rather than an explicit root/layer owner. `part50.css` is additionally imported directly by `AccountIban` even though it is also transitively loaded by `part47.css`.
 
-Observed owners in that hidden chain:
+This means account-metadata/bank-brand components currently act as stylesheet loaders for unrelated approved route styling. That coupling is real but must **not** be removed in Stage 1 because doing so could change which CSS reaches production or its bundling/order.
 
+Observed ownership in the hidden tail:
+
+- `part47.css`: IBAN/account-metadata rules plus the transitive approved-style loader chain.
 - `part48.css`: owner-approved Phase-1 Dashboard target/shell overrides.
 - `part49.css`: Dashboard route/skeleton shell continuity rules.
 - `part50.css`: final approved Dashboard desktop geometry refinements.
 - `part51.css`: final owner-approved Dashboard desktop alignment.
+- `part52.css`: final 1440px Dashboard typography/density fidelity pass.
+- `part53.css`: bank-brand marks plus a Dashboard fidelity pass for bank marks/chart/attention treatment.
 - `part54.css`: owner-approved shared desktop shell treatment for Transactions.
 - `part55.css`: owner-approved Quick Entry desktop composition.
 - `part56.css`: owner-approved Savings desktop composition.
 
-`part52.css` and `part53.css` physically exist but are not imported by `src/styles.css` or the `part47.css` chain. No current import path was identified in this bounded inventory; Stage 5 must prove whether they are dead or loaded elsewhere before deletion/movement.
+Stage 5 must make these imports explicit and layer-owned before deleting, merging or reordering any tail file. The current component import graph is evidence of coupling, not evidence that any of these files are dead.
 
 ### Named approved stylesheets
 
