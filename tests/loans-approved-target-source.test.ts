@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 const source=readFileSync(new URL('../src/pages/LoansPage.tsx',import.meta.url),'utf8');
 const styles=readFileSync(new URL('../src/styles/loans-approved-target.css',import.meta.url),'utf8');
 const baseStyles=readFileSync(new URL('../src/styles.css',import.meta.url),'utf8');
+const normalizedBaseStyles=baseStyles.replace(/\r\n/g,'\n');
 const approvedChain=readFileSync(new URL('../src/styles/part47.css',import.meta.url),'utf8');
 
 describe('approved Loans desktop target source contract',()=>{
@@ -43,8 +44,8 @@ describe('approved Loans desktop target source contract',()=>{
 
   it('extends the established approved-style chain and appends only the shared primitive layer',()=>{
     expect(styles).toContain('@media (min-width:1100px)');
-    expect(baseStyles).toContain("@import './styles/part46.css';\n@import './styles/part57.css';");
-    expect(baseStyles.trimEnd()).toMatch(/part57\.css';$/);
+    expect(normalizedBaseStyles).toContain("@import './styles/part46.css';\n@import './styles/part57.css';");
+    expect(normalizedBaseStyles.trimEnd()).toMatch(/part57\.css';$/);
     expect(approvedChain).toContain("@import './loans-approved-target.css';");
     expect(styles).not.toContain('@media (max-width');
   });
