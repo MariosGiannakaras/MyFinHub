@@ -1,4 +1,5 @@
 import { Component, createRef, type ErrorInfo, type ReactNode } from 'react';
+import { Button } from './Button';
 
 export class PageErrorBoundary extends Component<{ resetKey: string; onDashboard: () => void; children: ReactNode }, { failed: boolean }> {
   state = { failed: false };
@@ -30,9 +31,9 @@ export class PageErrorBoundary extends Component<{ resetKey: string; onDashboard
       <h2 id="workspace-error-title">Η ενότητα δεν μπόρεσε να εμφανιστεί</h2>
       <p>Τα οικονομικά δεδομένα δεν τροποποιήθηκαν. Δοκίμασε ξανά την ενότητα ή, αν το πρόβλημα συνεχίζεται, επαναφόρτωσε την εφαρμογή.</p>
       <div className="editor-actions">
-        <button className="secondary" type="button" onClick={() => this.setState({ failed: false })}>Δοκιμή ξανά</button>
-        <button className="secondary" type="button" onClick={this.recoverDashboard}>Dashboard</button>
-        <button className="save-button" type="button" onClick={() => location.reload()}>Επαναφόρτωση εφαρμογής</button>
+        <Button variant="secondary" onClick={() => this.setState({ failed: false })}>Δοκιμή ξανά</Button>
+        <Button variant="secondary" onClick={this.recoverDashboard}>Dashboard</Button>
+        <Button variant="primary" onClick={() => location.reload()}>Επαναφόρτωση εφαρμογής</Button>
       </div>
     </section>;
   }
