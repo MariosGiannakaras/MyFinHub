@@ -64,12 +64,16 @@ describe('cross-page UI consistency contracts',()=>{
     const cards=read('src/pages/CardsPage.tsx');
     const credit=read('src/pages/CreditCardPage.tsx');
     expect(main).not.toContain('cross-page-consistency.css');
-    for(const source of [cardDialog,cards]){
-      expect(source).toContain('icon-button close-picker');
-      expect(source).toContain('secondary modal-secondary');
-      expect(source).toContain('save-button modal-primary');
-      expect(source).toContain('FormError');
-    }
+    expect(cardDialog).toContain("from './Button'");
+    expect(cardDialog).toContain("from './IconButton'");
+    expect(cardDialog).toContain('<IconButton className="close-picker" aria-label="Κλείσιμο"');
+    expect(cardDialog).toContain('<Button variant="secondary" className="modal-secondary"');
+    expect(cardDialog).toContain('<Button variant="primary" className="modal-primary"');
+    expect(cardDialog).toContain('FormError');
+    expect(cards).toContain('icon-button close-picker');
+    expect(cards).toContain('secondary modal-secondary');
+    expect(cards).toContain('save-button modal-primary');
+    expect(cards).toContain('FormError');
     // The credit-card archive keeps its legacy close-picker hook isolated; it does not own global chrome or action styling.
     expect(credit).toContain('className="close-picker" aria-label="Κλείσιμο αρχείου καρτών"');
   });
