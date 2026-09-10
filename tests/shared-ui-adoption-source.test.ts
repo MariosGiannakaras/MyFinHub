@@ -134,6 +134,24 @@ describe('shared finance UI adoption contracts',()=>{
     expect(lending).toContain('<button type="button" role="option"');
   });
 
+  it('adopts shared action primitives for Recurring generic actions while preserving row and menu composites',()=>{
+    expect(recurring).toContain("from '../components/Button'");
+    expect(recurring).toContain("from '../components/IconButton'");
+    expect(recurring.match(/<Button/g)).toHaveLength(4);
+    expect(recurring.match(/<IconButton/g)).toHaveLength(1);
+    expect(recurring.match(/<Button[^>]+variant="primary"/g)).toHaveLength(3);
+    expect(recurring.match(/<Button[^>]+variant="secondary"/g)).toHaveLength(1);
+    expect(recurring).toContain('<Button type="button" variant="primary" onClick={startNew}');
+    expect(recurring).toContain('variant="primary" className="mobile-pay-action"');
+    expect(recurring).toContain('<IconButton type="button" aria-label="Κλείσιμο επεξεργασίας παγίου"');
+    expect(recurring).not.toContain('className="save-button"');
+    expect(recurring).not.toContain('className="secondary"');
+    expect(recurring).not.toContain('className="icon-button"');
+    expect(recurring).toContain('className="pay-action"');
+    expect(recurring).toContain('<details className="mobile-action-menu">');
+    expect(recurring).toContain('<button type="button" aria-label={`Επεξεργασία ${item.name}`}');
+  });
+
   it('keeps current dialogs on the shared modal-focus behavior contract',()=>{
     for(const source of [confirmDialog,moneyEditDialog,cardCreateDialog]){
       expect(source).toContain('useModalFocus');
