@@ -152,6 +152,25 @@ describe('shared finance UI adoption contracts',()=>{
     expect(recurring).toContain('<button type="button" aria-label={`Επεξεργασία ${item.name}`}');
   });
 
+  it('adopts shared action primitives for Loans generic actions while preserving loan row controls',()=>{
+    expect(loans).toContain("from '../components/Button'");
+    expect(loans).toContain("from '../components/IconButton'");
+    expect(loans.match(/<Button/g)).toHaveLength(4);
+    expect(loans.match(/<IconButton/g)).toHaveLength(1);
+    expect(loans.match(/<button/g)).toHaveLength(3);
+    expect(loans.match(/<Button[^>]+variant="primary"/g)).toHaveLength(2);
+    expect(loans.match(/<Button[^>]+variant="secondary"/g)).toHaveLength(2);
+    expect(loans).toContain('<Button type="button" variant="secondary" onClick={()=>startNew(\'self-loan\')}');
+    expect(loans).toContain('<Button type="button" variant="primary" onClick={()=>startNew(\'installment\')}');
+    expect(loans).toContain('<IconButton type="button" aria-label="Κλείσιμο επεξεργασίας δόσεων"');
+    expect(loans).not.toContain('className="save-button"');
+    expect(loans).not.toContain('className="secondary"');
+    expect(loans).not.toContain('className="icon-button"');
+    expect(loans).toContain('<button type="button" onClick={()=>startEdit(loan)}');
+    expect(loans).toContain('<button type="button" className="pay"');
+    expect(loans).toContain('<button type="button" className="forgive"');
+  });
+
   it('keeps current dialogs on the shared modal-focus behavior contract',()=>{
     for(const source of [confirmDialog,moneyEditDialog,cardCreateDialog]){
       expect(source).toContain('useModalFocus');
