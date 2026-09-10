@@ -1,10 +1,12 @@
 import { ArchiveRestore, CreditCard, Landmark, Plus, ShieldCheck, Trash2, WalletCards } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { AppTextInput } from '../components/AppTextInput';
+import { Button } from '../components/Button';
 import { CardCreateDialog } from '../components/CardCreateDialog';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { FinanceIcon } from '../components/FinanceIcon';
 import { FormError } from '../components/FormError';
+import { IconButton } from '../components/IconButton';
 import { InteractivePaymentCard } from '../components/InteractivePaymentCard';
 import { Tooltip } from '../components/Tooltip';
 import { useModalFocus } from '../hooks/useModalFocus';
@@ -94,7 +96,7 @@ export function CardsPage({
   };
 
   return <div className="page-stack cards-prototype-page">
-    <section className="page-heading"><div><span className="eyebrow">ΚΑΡΤΕΣ</span><h1>Κάρτες</h1><p className="cards-heading-desktop">Οι χρεωστικές και προπληρωμένες κάρτες σου, συγκεντρωμένες με ασφάλεια ανά τράπεζα.</p><p className="cards-heading-mobile">Χρεωστικές και προπληρωμένες κάρτες μόνο για ασφαλή αποθήκευση και προβολή των στοιχείων τους. Οι συναλλαγές καταχωρούνται στους αντίστοιχους λογαριασμούς, όχι στις κάρτες.</p></div><div className="heading-actions"><button type="button" className="save-button" onClick={()=>{setBankName('');setError('');setBankOpen(true)}}><Plus/> Προσθήκη τράπεζας</button></div></section>
+    <section className="page-heading"><div><span className="eyebrow">ΚΑΡΤΕΣ</span><h1>Κάρτες</h1><p className="cards-heading-desktop">Οι χρεωστικές και προπληρωμένες κάρτες σου, συγκεντρωμένες με ασφάλεια ανά τράπεζα.</p><p className="cards-heading-mobile">Χρεωστικές και προπληρωμένες κάρτες μόνο για ασφαλή αποθήκευση και προβολή των στοιχείων τους. Οι συναλλαγές καταχωρούνται στους αντίστοιχους λογαριασμούς, όχι στις κάρτες.</p></div><div className="heading-actions"><Button type="button" variant="primary" onClick={()=>{setBankName('');setError('');setBankOpen(true)}}><Plus/> Προσθήκη τράπεζας</Button></div></section>
 
     <section className="cards-surrounding-summary" aria-label="Σύνοψη αποθηκευμένων καρτών">
       <article className="cards-surrounding-kpi"><span className="cards-surrounding-kpi-icon banks"><Landmark/></span><div><small>Τράπεζες</small><strong>{banks.length}</strong><span>με ξεχωριστή στήλη καρτών</span></div></article>
@@ -131,7 +133,7 @@ export function CardsPage({
 
     <CardCreateDialog open={Boolean(cardBank)} data={data} banks={cardBank?[cardBank]:banks.slice(0,1)} initialBankId={cardBank?.id} allowedKinds={['debit','prepaid']} onClose={()=>setCardBankId(null)} onSave={createCard}/>
 
-    {bankOpen?<div className="picker-backdrop open" aria-hidden="false" onMouseDown={()=>setBankOpen(false)}><section ref={bankRef} className="picker compact neo-raised" role="dialog" aria-modal="true" aria-labelledby="new-bank-title" aria-describedby={error?'new-bank-error':undefined} tabIndex={-1} onMouseDown={event=>event.stopPropagation()}><div className="picker-head"><div><h2 id="new-bank-title">Νέα τράπεζα</h2><p>Η νέα τράπεζα θα αποκτήσει δική της στήλη και ξεχωριστό κουμπί προσθήκης καρτών.</p></div><button type="button" className="icon-button close-picker" aria-label="Κλείσιμο" onClick={()=>setBankOpen(false)}>×</button></div><div className="modal-form-grid one"><div className="modal-field"><label>Όνομα τράπεζας</label><AppTextInput data-autofocus="true" maxLength={36} value={bankName} onChange={event=>setBankName(event.target.value)} placeholder="π.χ. N26" invalid={Boolean(error)} aria-describedby={error?'new-bank-error':undefined}/></div></div>{error?<FormError id="new-bank-error">{error}</FormError>:null}<div className="modal-actions"><button type="button" className="secondary modal-secondary" onClick={()=>setBankOpen(false)}>Ακύρωση</button><button type="button" className="save-button modal-primary" onClick={saveBank}><Plus/> Προσθήκη τράπεζας</button></div></section></div>:null}
+    {bankOpen?<div className="picker-backdrop open" aria-hidden="false" onMouseDown={()=>setBankOpen(false)}><section ref={bankRef} className="picker compact neo-raised" role="dialog" aria-modal="true" aria-labelledby="new-bank-title" aria-describedby={error?'new-bank-error':undefined} tabIndex={-1} onMouseDown={event=>event.stopPropagation()}><div className="picker-head"><div><h2 id="new-bank-title">Νέα τράπεζα</h2><p>Η νέα τράπεζα θα αποκτήσει δική της στήλη και ξεχωριστό κουμπί προσθήκης καρτών.</p></div><IconButton type="button" className="close-picker" aria-label="Κλείσιμο" onClick={()=>setBankOpen(false)}>×</IconButton></div><div className="modal-form-grid one"><div className="modal-field"><label>Όνομα τράπεζας</label><AppTextInput data-autofocus="true" maxLength={36} value={bankName} onChange={event=>setBankName(event.target.value)} placeholder="π.χ. N26" invalid={Boolean(error)} aria-describedby={error?'new-bank-error':undefined}/></div></div>{error?<FormError id="new-bank-error">{error}</FormError>:null}<div className="modal-actions"><Button type="button" variant="secondary" className="modal-secondary" onClick={()=>setBankOpen(false)}>Ακύρωση</Button><Button type="button" variant="primary" className="modal-primary" onClick={saveBank}><Plus/> Προσθήκη τράπεζας</Button></div></section></div>:null}
 
     <ConfirmDialog open={Boolean(deleteTarget)} title="Οριστική διαγραφή κάρτας;" description="Θα διαγραφεί η κάρτα και τα αποθηκευμένα PAN/λήξη/CVV. Δεν υπάρχει οικονομικό ιστορικό συνδεδεμένο με χρεωστικές ή προπληρωμένες κάρτες μέσα στο MyFinHub." confirmLabel="Οριστική διαγραφή" tone="destructive" busy={deleteBusy} motionMode={data.state.settings.motion} onConfirm={()=>void confirmDelete()} onCancel={()=>{if(!deleteBusy)setDeleteTarget(null)}}/>
   </div>;
