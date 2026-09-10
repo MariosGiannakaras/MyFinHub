@@ -8,8 +8,10 @@ import type { FinanceData, LegacyTransaction } from '../types';
 import { AppDateInput } from './AppDateInput';
 import { AppSelectInput } from './AppSelectInput';
 import { AppTextarea } from './AppTextarea';
+import { Button } from './Button';
 import { CategorySelectInput } from './CategorySelectInput';
 import { FormError } from './FormError';
+import { IconButton } from './IconButton';
 import { MoneyInput } from './MoneyInput';
 
 const typeLabels: Record<LegacyTransaction['type'], string> = {
@@ -75,7 +77,7 @@ export function LegacyTransactionEditor({ data, transaction, onSave, onClose }: 
 
   return <div className="modal-backdrop" onMouseDown={onClose}>
     <section ref={modalRef} className="quick-modal legacy-transaction-editor neo-raised" role="dialog" aria-modal="true" aria-labelledby="legacy-editor-title" tabIndex={-1} onMouseDown={(event) => event.stopPropagation()}>
-      <header><div><small>ΙΣΤΟΡΙΚΗ ΚΙΝΗΣΗ</small><h2 id="legacy-editor-title">Επεξεργασία συναλλαγής</h2><p>Η αλλαγή αποθηκεύεται ως override. Το αρχικό εισαγόμενο record παραμένει ανέπαφο.</p></div><button type="button" className="icon-button" aria-label="Κλείσιμο επεξεργασίας ιστορικής κίνησης" onClick={onClose}><X aria-hidden="true"/></button></header>
+      <header><div><small>ΙΣΤΟΡΙΚΗ ΚΙΝΗΣΗ</small><h2 id="legacy-editor-title">Επεξεργασία συναλλαγής</h2><p>Η αλλαγή αποθηκεύεται ως override. Το αρχικό εισαγόμενο record παραμένει ανέπαφο.</p></div><IconButton type="button" aria-label="Κλείσιμο επεξεργασίας ιστορικής κίνησης" onClick={onClose}><X aria-hidden="true"/></IconButton></header>
       <div className="form-grid">
         <label><span>Τύπος</span><AppSelectInput aria-label="Τύπος ιστορικής κίνησης" value={type} onChange={(event) => changeType(event.target.value as LegacyTransaction['type'])}>{(Object.keys(typeLabels) as LegacyTransaction['type'][]).map((value) => <option key={value} value={value}>{typeLabels[value]}</option>)}</AppSelectInput></label>
         <label><span>Ημερομηνία</span><AppDateInput aria-label="Ημερομηνία ιστορικής κίνησης" value={date} onChange={(event) => setDate(event.target.value)}/></label>
@@ -88,7 +90,7 @@ export function LegacyTransactionEditor({ data, transaction, onSave, onClose }: 
         <label className="full"><span>Περιγραφή / σχόλιο</span><AppTextarea aria-label="Περιγραφή ιστορικής κίνησης" value={note} onChange={(event) => setNote(event.target.value)} rows={4}/></label>
       </div>
       {error ? <FormError id="legacy-transaction-edit-error">{error}</FormError> : null}
-      <footer className="editor-actions"><button type="button" className="secondary" onClick={onClose}>Ακύρωση</button><button type="button" className="save-button" onClick={submit}>Αποθήκευση override</button></footer>
+      <footer className="editor-actions"><Button type="button" variant="secondary" onClick={onClose}>Ακύρωση</Button><Button type="button" variant="primary" onClick={submit}>Αποθήκευση override</Button></footer>
     </section>
   </div>;
 }
