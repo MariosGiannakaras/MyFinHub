@@ -4,17 +4,17 @@
   "appVersion": "v1.3",
   "suite": "account-metadata",
   "surface": "accounts",
-  "generatedAt": "2026-09-09T12:38:11.969Z",
+  "generatedAt": "2026-09-10T22:19:32.126Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "8752e7ea5e3b8a563c32421a962aa84dbed60fba",
-    "shortSha": "8752e7ea",
-    "branch": "chore/357-design-system-inventory"
+    "sha": "83c59f4f28c94d1e562473df7fb639a4ef3906d1",
+    "shortSha": "83c59f4f",
+    "branch": "chore/357-button-adopters-batch-10"
   },
   "screenshots": [
-    "visual-qa/accounts/v1.3__2026-09-09_153811__qa-account-metadata__account-metadata-dashboard-desktop.png",
-    "visual-qa/accounts/v1.3__2026-09-09_153811__qa-account-metadata__account-metadata-dashboard-mobile.png",
-    "visual-qa/accounts/v1.3__2026-09-09_153811__qa-account-metadata__account-metadata-settings-desktop.png",
-    "visual-qa/accounts/v1.3__2026-09-09_153811__qa-account-metadata__account-metadata-settings-mobile.png"
+    "visual-qa/accounts/v1.3__2026-09-11_011932__qa-account-metadata__account-metadata-dashboard-desktop.png",
+    "visual-qa/accounts/v1.3__2026-09-11_011932__qa-account-metadata__account-metadata-dashboard-mobile.png",
+    "visual-qa/accounts/v1.3__2026-09-11_011932__qa-account-metadata__account-metadata-settings-desktop.png",
+    "visual-qa/accounts/v1.3__2026-09-11_011932__qa-account-metadata__account-metadata-settings-mobile.png"
   ]
 }
