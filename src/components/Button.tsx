@@ -10,7 +10,7 @@ const variantClass:Record<ButtonVariant,string>={
   primary:'save-button',
   secondary:'secondary',
   danger:'save-button destructive-action',
-  ghost:'',
+  ghost:'text-button',
 };
 
 function mergeClasses(...values:Array<string|undefined|false>){return values.filter(Boolean).join(' ')}

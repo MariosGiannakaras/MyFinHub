@@ -63,11 +63,11 @@ Goal: replace the selector-net button contract with typed shared primitives with
 
 - [x] Introduce typed `Button` variants for primary, secondary, danger and ghost/text-compatible actions while preserving existing CSS class hooks.
 - [x] Introduce accessible `IconButton` with a required accessible `aria-label` and safe default `type="button"`.
-- [ ] Migrate bounded safe adopter groups incrementally. Batch 1 (`ConfirmDialog`, `MoneyEditDialog`, reusable `CardCreateDialog` actions) merged via PR #363. Batch 2 (`DesktopUpdatePanel`, `PageErrorBoundary`, `PersistenceNotice`, `AccountMetadataSettings`) merged via PR #364. Batch 3 is active in PR #365 and migrates generic icon-only controls in `AppDateInput`, `AppSelectInput`, and `CommandPalette` while preserving raw composite `gridcell` / `option` buttons.
+- [ ] Migrate bounded safe adopter groups incrementally. Batch 1 (`ConfirmDialog`, `MoneyEditDialog`, reusable `CardCreateDialog` actions) merged via PR #363. Batch 2 (`DesktopUpdatePanel`, `PageErrorBoundary`, `PersistenceNotice`, `AccountMetadataSettings`) merged via PR #364. Batch 3 (`AppDateInput`, `AppSelectInput`, `CommandPalette` generic icon actions) merged via PR #365. Batch 4 is active in PR #366 and migrates only Lending generic primary/secondary/ghost/icon actions while preserving the person selector, domain-specific quick actions and known-person option buttons as intentional raw domain/composite controls.
 - [ ] Retain compatibility aliases only while active non-migrated code still depends on them; remove only after adoption is proven complete.
 - [ ] Verify keyboard/focus/disabled/loading/submit semantics and fresh rendered screenshots after each bounded migration.
 
-Active delivery: issue #357 / PR #365 / branch `chore/357-iconbutton-adopters-batch-3`.
+Active delivery: issue #357 / PR #366 / branch `chore/357-button-adopters-batch-4`.
 
 ### Stage 3 — Canonical `DialogShell`
 
@@ -118,23 +118,22 @@ Active delivery: issue #357 / PR #365 / branch `chore/357-iconbutton-adopters-ba
 - [ ] Produce a release-readiness checkpoint.
 - [ ] Stop before `develop -> main`, release or deploy unless separately authorized by the owner.
 
-## Current checkpoint — 2026-09-09
+## Current checkpoint — 2026-09-10
 
 - **Overall tracker:** #357 — OPEN.
 - **Completed stages:** 2/9 (Stage 0, Stage 1).
 - **Active stage:** Stage 2 — shared Button / IconButton.
 - **Verified Batch-1 integration:** PR #363 merged to `develop@c97a618d4b817bed1aed3d57c6f258dda32e0e18`; post-merge CI, CodeQL and Windows Desktop passed.
 - **Verified Batch-2 integration:** PR #364 squash-merged to `develop@fc6d38de49e9f235b03f2e0394e9f470daf16215`. Integration CI `34396227607`, CodeQL `34396227577`, and Windows Desktop `34396227578` all passed, including fresh rendered frontend QA and the Windows package/install/uninstall checks.
+- **Verified Batch-3 integration:** PR #365 squash-merged to `develop@a664c31e8dd1327f6677a4d252ade611c7eba9ef`. PR exact-head CI `34399965066`, CodeQL `34399965089`, Cross-engine `34399965069`, Performance `34399965077`, and Windows Desktop `34399965067` passed. Post-merge integration CI `34401094200`, CodeQL `34401094220`, and Windows Desktop `34401094263` also passed, including fresh rendered frontend QA and Windows package/install/uninstall validation.
 - **Superseded work:** stale pre-integration PR #360 was closed without merge; it diverged from the bounded Batch-1 path and is not a continuation branch.
-- **Active PR:** #365 — `Code health: migrate shared IconButton adopters batch 3`.
-- **Branch/base:** `chore/357-iconbutton-adopters-batch-3`, created exactly from verified `develop@fc6d38de49e9f235b03f2e0394e9f470daf16215`.
-- **Current implementation commit:** `734dfdfb568f0923b7eb35f2edb3e9a8d85086ad` migrates the five generic icon-only actions in `AppDateInput`, `AppSelectInput`, and `CommandPalette` to shared `IconButton` and extends the source guard. Calendar day grid cells, select options and command result options remain intentional raw composite buttons.
+- **Active PR:** #366 — `Code health: migrate Lending shared Button adopters batch 4`.
+- **Branch/base:** `chore/357-button-adopters-batch-4`, created exactly from verified `develop@a664c31e8dd1327f6677a4d252ade611c7eba9ef`.
+- **Current implementation commit:** `b76d62e75744e191d95855daf9f6f65639714d6c` migrates eight Lending generic actions to shared `Button` and the Lending editor close action to shared `IconButton`, while preserving the existing primary/secondary/ghost/icon class hooks, explicit button types, `aria-pressed`, accessible close name and handlers. The person selector row, two domain-specific quick actions and known-person `role="option"` suggestions remain raw intentionally.
 - **Stage-2 progress:** 2/5 checklist items complete; the bounded migration item remains in progress across incremental batches.
-- **Validation evidence:** human checkpoint head `41fd978c892d1e2e542f8c2bda991490b11a56bb` passed CI `34397644510`, CodeQL `34397644533`, Cross-engine `34397644503`, Performance `34397644511`, and Windows Desktop `34397644585`. Application/API checks, rendered frontend QA, audits, cross-engine smoke, performance smoke, and Windows package/install/uninstall validation are all green.
-- **Rendered evidence:** CI artifact `10122570774` was downloaded and inspected. Fresh Command Palette desktop/mobile screenshots preserve the approved close-button geometry, focus treatment and responsive composition; the fresh Settings category dropdown preserves the shared select popover and close action; the fresh Recurring editor preserves the app-owned date-control presentation. The rendered/cross-engine suites also passed the app-owned date-popover open/Escape/focus path. No material visual or interaction regression was observed.
-- **Generated evidence:** snapshot commit `d91c2755e9a03743f47736b9b3817c162a1576d0` contains generated `visual-qa/**` refreshes only. As in Batch 2, these are inspection evidence and will be removed from the source diff before the final exact-head gate.
-- **Intentional exceptions remain:** card-design radio options and other documented domain composites stay raw until a semantically equivalent typed API exists.
-- **Next action:** remove generated `visual-qa/**` refreshes from the PR source diff without rewriting history, run the repository-required exact-head gates on that cleanup head, mark PR #365 ready and squash-merge to `develop` only when green, then verify the integration push before starting another bounded Stage-2 batch.
+- **Validation state:** PR #366 exact-head application/API/CodeQL/cross-engine/performance/Windows/rendered validation is required before merge. Inspect fresh Lending desktop/mobile/editor evidence and modal focus/close behavior rather than relying only on source assertions.
+- **Intentional exceptions remain:** card-design radio options, Lending domain/composite controls and other documented domain composites stay raw until a semantically equivalent typed API exists.
+- **Next action:** complete PR #366 exact-head required gates, inspect fresh Lending desktop/mobile/editor evidence, remove any generated `visual-qa/**` source churn while preserving artifacts as evidence, re-run final exact-head gates if the branch moves, resolve any real review/regression, then squash-merge to `develop` only if green and verify the integration push.
 
 ## Resume procedure for a future chat
 

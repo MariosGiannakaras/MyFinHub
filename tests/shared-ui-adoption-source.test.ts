@@ -114,6 +114,26 @@ describe('shared finance UI adoption contracts',()=>{
     expect(commandPalette).toContain('return <button id={optionId} role="option"');
   });
 
+  it('adopts shared action primitives for Lending generic actions while preserving domain and composite controls',()=>{
+    expect(lending).toContain("from '../components/Button'");
+    expect(lending).toContain("from '../components/IconButton'");
+    expect(lending.match(/<Button/g)).toHaveLength(8);
+    expect(lending.match(/<IconButton/g)).toHaveLength(1);
+    expect(lending.match(/<button/g)).toHaveLength(4);
+    expect(lending.match(/<Button variant="primary"/g)).toHaveLength(3);
+    expect(lending.match(/<Button variant="secondary"/g)).toHaveLength(3);
+    expect(lending.match(/<Button variant="ghost"/g)).toHaveLength(2);
+    expect(lending).toContain('<IconButton type="button" aria-label="Κλείσιμο κίνησης δανεικών"');
+    expect(lending).not.toContain('className="save-button"');
+    expect(lending).not.toContain('className="secondary privacy-toggle"');
+    expect(lending).not.toContain('className="icon-button"');
+    expect(lending).not.toContain('className="text-button"');
+    expect(lending).toContain('<button type="button" key={row.person} className={`lending-person-row');
+    expect(lending).toContain('className="lending-quick-action repayment"');
+    expect(lending).toContain('className="lending-quick-action lending"');
+    expect(lending).toContain('<button type="button" role="option"');
+  });
+
   it('keeps current dialogs on the shared modal-focus behavior contract',()=>{
     for(const source of [confirmDialog,moneyEditDialog,cardCreateDialog]){
       expect(source).toContain('useModalFocus');
