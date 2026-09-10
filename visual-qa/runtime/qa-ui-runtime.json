@@ -4,14 +4,14 @@
   "appVersion": "v1.3",
   "suite": "ui-runtime",
   "surface": "runtime",
-  "generatedAt": "2026-09-09T12:38:11.969Z",
+  "generatedAt": "2026-09-10T10:55:53.367Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "8752e7ea5e3b8a563c32421a962aa84dbed60fba",
-    "shortSha": "8752e7ea",
-    "branch": "chore/357-design-system-inventory"
+    "sha": "32eea24f267ecb7b2d5e9c284cf2142a9fa6dd2d",
+    "shortSha": "32eea24f",
+    "branch": "chore/357-button-adopters-batch-7"
   },
   "screenshots": [
-    "visual-qa/runtime/v1.3__2026-09-09_153811__qa-ui-runtime__runtime-loading-state.png"
+    "visual-qa/runtime/v1.3__2026-09-10_135553__qa-ui-runtime__runtime-loading-state.png"
   ]
 }
