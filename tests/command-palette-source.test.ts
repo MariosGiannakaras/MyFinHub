@@ -11,7 +11,8 @@ const search=readFileSync(new URL('../src/lib/commandSearch.ts',import.meta.url)
 describe('unified command palette source contracts',()=>{
   it('keeps Quick Add and unified search as distinct entry points',()=>{
     expect(shell).toContain('onQuickAdd:()=>void;onCommand:()=>void');
-    expect(shell).toContain('className="primary-action"');
+    expect(shell).toContain('data-global-quick-entry="desktop"');
+    expect(shell).not.toContain('primary-action');
     expect(shell).toContain('onClick={onQuickAdd}');
     expect(shell).toContain('className="command-search-action"');
     expect(shell).toContain('onClick={onCommand}');

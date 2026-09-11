@@ -44,7 +44,7 @@ to{transform:scaleX(1);opacity:1}
 .brand-block{justify-content:center;padding:0 0 12px}
 .brand-block>div{display:none}
 .brand-icon{width:46px;height:46px}
-.primary-action{font-size:0;width:48px;height:48px;padding:0;margin:auto}
+[data-global-quick-entry="desktop"]{font-size:0;width:48px;height:48px;padding:0;margin:auto}
 .sidebar nav button{justify-content:center;padding:11px}
 .sidebar nav button span,.sidebar-foot span,.file-panel{display:none}
 .count-badge{position:absolute;margin:0 0 22px 28px}

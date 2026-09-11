@@ -113,7 +113,7 @@ try {
     writeFileSync(`${evidenceDir}/${name}.png`, Buffer.from(shot.data, 'base64'));
   };
   const openReceiptInbox = async () => {
-    const opened = await c.call("function(){const button=document.querySelector('.primary-action')||document.querySelector('.mobile-quick-action');button?.click();return Boolean(button)}");
+    const opened = await c.call("function(){const button=document.querySelector('[data-global-quick-entry=\"desktop\"]')||document.querySelector('.mobile-quick-action');button?.click();return Boolean(button)}");
     assert(opened, 'generic Quick Entry launch exists');
     await waitFor("function(){return Boolean(document.querySelector('.quick-modal:not(.contextual-quick-modal)'))}", 'generic Quick Entry');
     const receipt = await c.call("function(){const button=document.querySelector('.receipt-quick-launch');button?.click();return Boolean(button)}");

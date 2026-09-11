@@ -48,7 +48,7 @@ try{
  await c.call("function(){const button=[...document.querySelectorAll('.sidebar nav button')].find(node=>node.textContent?.includes('Dashboard'));button?.click();return !!button}");await waitFor("function(){return !!document.querySelector('[data-dashboard-section=\"primary-accounts\"]')}",'return to dashboard');
 
  console.log('Final UX QA: visible privacy-safe durable change history');
- await c.call("function(){document.querySelector('.primary-action')?.click();return true}");await waitFor("function(){return !!document.querySelector('[aria-labelledby=\"quick-add-title\"]')}",'Quick Add');
+ await c.call("function(){document.querySelector('[data-global-quick-entry=\"desktop\"]')?.click();return true}");await waitFor("function(){return !!document.querySelector('[aria-labelledby=\"quick-add-title\"]')}",'Quick Add');
  assert(await setInput('[aria-labelledby="quick-add-title"] input[data-autofocus="true"]','12.34'),'amount input accepts QA value');
  assert(await setInput('[aria-labelledby="quick-add-title"] [placeholder="Σύντομη περιγραφή μόνο αν χρειάζεται"]','Final UX QA Expense'),'note input accepts QA value');
  await c.call("function(){const modal=document.querySelector('[aria-labelledby=\"quick-add-title\"]');const button=[...(modal?.querySelectorAll('button')||[])].find(item=>item.textContent?.trim()==='Καταχώριση');button?.click();return !!button}");
