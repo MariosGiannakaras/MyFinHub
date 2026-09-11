@@ -1,6 +1,8 @@
 import { Camera, Check, FileImage, LoaderCircle, ReceiptText, ScanLine, Trash2, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { Button } from './Button';
 import { ConfirmDialog } from './ConfirmDialog';
+import { IconButton } from './IconButton';
 import { useModalFocus } from '../hooks/useModalFocus';
 import { money } from '../lib/format';
 import { normalizeReceiptFile } from '../lib/receiptImage';
@@ -217,7 +219,6 @@ export function ReceiptInbox({
       setDeleteRequest(null);
     }finally{setDeleting(false)}
   };
-
   const toggleDelete = (id: string) => setDeleteSelection((current) => {
     const next = new Set(current);
     if (next.has(id)) next.delete(id); else next.add(id);
@@ -234,13 +235,13 @@ export function ReceiptInbox({
   return <>
   <div className="modal-backdrop receipt-inbox-backdrop" onMouseDown={onClose}>
     <section ref={modalRef} className="receipt-inbox neo-raised" role="dialog" aria-modal="true" aria-labelledby="receipt-inbox-title" tabIndex={-1} onMouseDown={(event) => event.stopPropagation()}>
-      <header className="receipt-inbox-header"><div><small>LOCAL-ONLY OCR</small><h2 id="receipt-inbox-title"><ReceiptText size={21}/> Αποδείξεις σε αναμονή</h2><p>Η φωτογραφία αποθηκεύεται μόνο σε αυτή τη συσκευή. Μπορείς να τη σαρώσεις τώρα ή αργότερα και να κλείσεις την εφαρμογή μόλις επιβεβαιωθεί η αποθήκευση.</p></div><button type="button" className="icon-button" aria-label="Κλείσιμο αποδείξεων σε αναμονή" onClick={onClose}><X/></button></header>
+      <header className="receipt-inbox-header"><div><small>LOCAL-ONLY OCR</small><h2 id="receipt-inbox-title"><ReceiptText size={21}/> Αποδείξεις σε αναμονή</h2><p>Η φωτογραφία αποθηκεύεται μόνο σε αυτή τη συσκευή. Μπορείς να τη σαρώσεις τώρα ή αργότερα και να κλείσεις την εφαρμογή μόλις επιβεβαιωθεί η αποθήκευση.</p></div><IconButton type="button" aria-label="Κλείσιμο αποδείξεων σε αναμονή" onClick={onClose}><X/></IconButton></header>
 
       <div className="receipt-capture-actions">
         <input ref={cameraRef} className="receipt-file-input" type="file" accept="image/jpeg,image/png" capture="environment" onChange={(event) => void capture(event.target.files?.[0])}/>
         <input ref={fileRef} className="receipt-file-input" type="file" accept="image/jpeg,image/png" onChange={(event) => void capture(event.target.files?.[0])}/>
-        <button type="button" className="save-button" disabled={loading || scanning} onClick={() => cameraRef.current?.click()}><Camera size={17}/> Φωτογράφιση</button>
-        <button type="button" className="secondary" disabled={loading || scanning} onClick={() => fileRef.current?.click()}><FileImage size={17}/> Επιλογή εικόνας</button>
+        <Button type="button" variant="primary" disabled={loading || scanning} onClick={() => cameraRef.current?.click()}><Camera size={17}/> Φωτογράφιση</Button>
+        <Button type="button" variant="secondary" disabled={loading || scanning} onClick={() => fileRef.current?.click()}><FileImage size={17}/> Επιλογή εικόνας</Button>
         <small>JPG/PNG · έως 12 MB · έως 30 πρόχειρες αποδείξεις / 60 MB τοπικά</small>
       </div>
 
@@ -263,13 +264,13 @@ export function ReceiptInbox({
         <div className="receipt-review-pane">
           {selected ? <>
             <div className="receipt-preview"><ReceiptPreview draft={selected}/><div><span>{statusLabel(selected)}</span><small>{capturedLabel(selected.capturedAt)}</small></div></div>
-            {scanningId === selected.id ? <div className="receipt-scan-progress" role="status" aria-live="polite"><div><LoaderCircle className="is-spinning" size={18}/><b>Τοπική OCR σάρωση</b><span>{Math.round((progress?.progress ?? 0) * 100)}%</span></div><progress max="1" value={progress?.progress ?? 0}/><small>{progress?.status || 'Αναγνώριση κειμένου στη συσκευή…'}</small><button type="button" className="secondary" onClick={() => void cancelScan()}>Διακοπή</button></div> : null}
+            {scanningId === selected.id ? <div className="receipt-scan-progress" role="status" aria-live="polite"><div><LoaderCircle className="is-spinning" size={18}/><b>Τοπική OCR σάρωση</b><span>{Math.round((progress?.progress ?? 0) * 100)}%</span></div><progress max="1" value={progress?.progress ?? 0}/><small>{progress?.status || 'Αναγνώριση κειμένου στη συσκευή…'}</small><Button type="button" variant="secondary" onClick={() => void cancelScan()}>Διακοπή</Button></div> : null}
             {proposal ? <div className="receipt-proposal" aria-label="Προτεινόμενα στοιχεία απόδειξης"><h3>Πρόταση OCR</h3><dl><div><dt>Κατάστημα</dt><dd>{proposal.merchant || '—'} <small>{confidenceLabel(proposal.confidence?.merchant)}</small></dd></div><div><dt>Ημερομηνία</dt><dd>{proposal.date || '—'} <small>{confidenceLabel(proposal.confidence?.date)}</small></dd></div><div><dt>Σύνολο</dt><dd>{typeof proposal.total === 'number' ? money.format(proposal.total) : '—'} <small>{confidenceLabel(proposal.confidence?.total)}</small></dd></div><div><dt>Νόμισμα</dt><dd>{proposal.currency || 'Δεν εντοπίστηκε'} <small>{confidenceLabel(proposal.confidence?.currency)}</small></dd></div>{proposal.category ? <div><dt>Προτεινόμενη κατηγορία</dt><dd>{proposal.category}<small>από προηγούμενες κινήσεις</small></dd></div> : null}</dl>{nonEur ? <div className="receipt-currency-warning" role="alert">Η απόδειξη φαίνεται να είναι σε {proposal.currency}. Το MyFinHub παραμένει EUR-only, οπότε το ποσό δεν θα συμπληρωθεί αυτόματα.</div> : null}</div> : <div className="receipt-proposal receipt-proposal-empty"><ScanLine size={22}/><b>Δεν έχει γίνει ακόμη OCR</b><span>Η φωτογραφία είναι ήδη ασφαλώς αποθηκευμένη τοπικά. Η σάρωση είναι προαιρετική και μπορεί να γίνει αργότερα.</span></div>}
             <div className="receipt-review-actions">
               <button type="button" className="secondary danger" disabled={scanning} onClick={() => requestRemoveOne(selected)}><Trash2 size={16}/> Διαγραφή</button>
-              {!scanning ? <button type="button" className="secondary" onClick={() => void scan(selected)}><ScanLine size={16}/> {selected.status === 'ready' ? 'Νέα σάρωση' : 'Σάρωση τώρα'}</button> : null}
-              <button type="button" className="secondary" disabled={scanning} onClick={() => onApply(selected.id, {})}>Χειροκίνητη καταχώριση</button>
-              {proposal ? <button type="button" className="save-button" disabled={scanning} onClick={() => onApply(selected.id, proposal)}><Check size={16}/> Χρήση στη Γρήγορη Κίνηση</button> : null}
+              {!scanning ? <Button type="button" variant="secondary" onClick={() => void scan(selected)}><ScanLine size={16}/> {selected.status === 'ready' ? 'Νέα σάρωση' : 'Σάρωση τώρα'}</Button> : null}
+              <Button type="button" variant="secondary" disabled={scanning} onClick={() => onApply(selected.id, {})}>Χειροκίνητη καταχώριση</Button>
+              {proposal ? <Button type="button" variant="primary" disabled={scanning} onClick={() => onApply(selected.id, proposal)}><Check size={16}/> Χρήση στη Γρήγορη Κίνηση</Button> : null}
             </div>
           </> : <div className="receipt-empty receipt-empty-main"><ReceiptText size={28}/><b>Γρήγορη λήψη, έλεγχος αργότερα</b><span>Η αποθήκευση είναι ανεξάρτητη από το OCR. Μόλις εμφανιστεί «Αποθηκεύτηκε για αργότερα», μπορείς να κλείσεις την εφαρμογή.</span></div>}
         </div>
