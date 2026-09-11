@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { categoryTree, formatCategoryTree, parseCategoryTree } from '../lib/categories';
 import type { CategoryDefinition, FinanceSettings } from '../types';
 import { AppTextarea } from './AppTextarea';
+import { Button } from './Button';
 
 type CategoryKind='expense'|'income';
 
@@ -35,7 +36,7 @@ export function CategoryTreeEditor({kind,settings,onSave}:{kind:CategoryKind;set
     <AppTextarea aria-label={title} aria-describedby={`category-help-${kind}`} value={text} onChange={event=>{setText(event.target.value);setDirty(true);setFeedback(null)}}/>
     <div className="category-editor-footer" id={`category-help-${kind}`}>
       <span className={`category-save-state ${dirty?'dirty':'saved'}`}>{dirty?'Μη αποθηκευμένες αλλαγές':'Αποθηκευμένο'}</span>
-      <button type="button" className="save-button category-save-button" disabled={!dirty} onClick={save}><Save size={16}/> Αποθήκευση {noun}</button>
+      <Button type="button" variant="primary" className="category-save-button" disabled={!dirty} onClick={save}><Save size={16}/> Αποθήκευση {noun}</Button>
     </div>
     {feedback?<div className={`category-save-feedback ${feedback.kind}`} role="status" aria-live="polite">{feedback.kind==='success'?<CheckCircle2 size={17}/>:null}<span>{feedback.text}</span></div>:null}
   </article>;
