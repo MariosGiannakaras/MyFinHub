@@ -4,15 +4,15 @@
   "appVersion": "v1.3",
   "suite": "command-palette",
   "surface": "command-palette",
-  "generatedAt": "2026-09-09T12:38:11.969Z",
+  "generatedAt": "2026-09-11T23:08:59.854Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "8752e7ea5e3b8a563c32421a962aa84dbed60fba",
-    "shortSha": "8752e7ea",
-    "branch": "chore/357-design-system-inventory"
+    "sha": "044540e0421c2aa91a66be34364204b5f693867b",
+    "shortSha": "044540e0",
+    "branch": "chore/357-stage-2-button-completion"
   },
   "screenshots": [
-    "visual-qa/command-palette/v1.3__2026-09-09_153811__qa-command-palette__command-palette-desktop.png",
-    "visual-qa/command-palette/v1.3__2026-09-09_153811__qa-command-palette__command-palette-mobile.png"
+    "visual-qa/command-palette/v1.3__2026-09-12_020859__qa-command-palette__command-palette-desktop.png",
+    "visual-qa/command-palette/v1.3__2026-09-12_020859__qa-command-palette__command-palette-mobile.png"
   ]
 }
