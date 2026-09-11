@@ -46,7 +46,7 @@ describe('approved Needs Attention desktop target boundary',()=>{
 
   it('preserves truthful actions, privacy, snooze/dismiss and existing route shortcuts',()=>{
     expect(page).toContain('className="attention-actions attention-approved-actions"');
-    expect(page).toContain('className="save-button compact"');
+    expect(page).toContain('<Button type="button" variant="primary" className="compact"');
     expect(page).toContain('<AnimatedAmount value={item.amount} hidden={!visible}/>');
     expect(page).toContain('aria-pressed={visible}');
     expect(page).toContain("decide(item,'snooze')");

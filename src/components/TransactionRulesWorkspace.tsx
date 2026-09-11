@@ -9,8 +9,10 @@ import { accountDisplayName } from '../lib/ui';
 import type { FinanceData, TransactionRule, TransactionRuleScope } from '../types';
 import { AppSelectInput } from './AppSelectInput';
 import { AppTextInput } from './AppTextInput';
+import { Button } from './Button';
 import { CategorySelectInput } from './CategorySelectInput';
 import { FormError } from './FormError';
+import { IconButton } from './IconButton';
 import './TransactionRulesWorkspace.css';
 
 const now=()=>new Date().toISOString();
@@ -148,7 +150,7 @@ export function TransactionRulesWorkspace({
         <h2>Κανόνες νέων κινήσεων</h2>
         <p>Όρισε απλούς κανόνες «όταν → τότε». Εφαρμόζονται μόνο σε νέες κινήσεις και δεν αλλάζουν το ιστορικό.</p>
       </div>
-      <button type="button" className="save-button rules-new-button" onClick={startCreate}><Plus size={17}/> Νέος κανόνας</button>
+      <Button type="button" variant="primary" className="rules-new-button" onClick={startCreate}><Plus size={17}/> Νέος κανόνας</Button>
     </header>
 
     {rules.length?<div className="rules-status-strip" aria-label="Κατάσταση κανόνων">
@@ -162,17 +164,17 @@ export function TransactionRulesWorkspace({
     <section className="rules-list-section" aria-labelledby="rules-order-title">
       {rules.length?<header><div><b id="rules-order-title">Σειρά κανόνων</b><small>Μετακίνησέ τους πάνω ή κάτω για να αλλάξεις ποιος ελέγχεται πρώτος.</small></div></header>:null}
       {rules.length?<div className="rule-settings-list" aria-label="Σειρά αυτοματισμών">{rules.map((rule,index)=>{const invalid=invalidReason(rule);const state=invalid?'invalid':rule.enabled?'active':'paused';return <article key={rule.id} className={state==='paused'?'disabled':state} data-rule-invalid={invalid?'true':'false'}>
-        <div className="rules-order-controls" aria-label={`Θέση ${index+1}`}><span>{index+1}</span><div><button type="button" className="icon-button" aria-label={`Μετακίνηση αυτοματισμού ${rule.name} προς τα πάνω`} disabled={index===0} onClick={()=>moveRule(index,-1)}><ChevronUp size={15}/></button><button type="button" className="icon-button" aria-label={`Μετακίνηση αυτοματισμού ${rule.name} προς τα κάτω`} disabled={index===rules.length-1} onClick={()=>moveRule(index,1)}><ChevronDown size={15}/></button></div></div>
+        <div className="rules-order-controls" aria-label={`Θέση ${index+1}`}><span>{index+1}</span><div><IconButton aria-label={`Μετακίνηση αυτοματισμού ${rule.name} προς τα πάνω`} disabled={index===0} onClick={()=>moveRule(index,-1)}><ChevronUp size={15}/></IconButton><IconButton aria-label={`Μετακίνηση αυτοματισμού ${rule.name} προς τα κάτω`} disabled={index===rules.length-1} onClick={()=>moveRule(index,1)}><ChevronDown size={15}/></IconButton></div></div>
         <div className="rules-row-copy"><div className="rules-row-title"><b>{rule.name}</b><span className={`rules-state ${state}`}>{invalid?<><AlertTriangle size={13}/> Χρειάζεται έλεγχο</>:rule.enabled?<><Check size={13}/> Ενεργός</>:<><CirclePause size={13}/> Σε παύση</>}</span></div><small><strong>Όταν</strong> {conditionLabel(rule)}</small><small><strong>Τότε</strong> {actionLabel(rule)} · {rule.scopes.length===3?'κάθε νέα υποστηριζόμενη κίνηση':rule.scopes.map(scopeLabel).join(', ')}</small>{invalid?<small className="rules-row-warning" role="alert">{invalid}</small>:null}</div>
-        <div className="rule-row-actions"><button type="button" className="secondary" onClick={()=>onUpsertRule({...rule,enabled:!rule.enabled,updatedAt:now()})}>{rule.enabled?'Παύση':'Ενεργοποίηση'}</button><button type="button" className="icon-button" aria-label={`Επεξεργασία αυτοματισμού ${rule.name}`} title="Επεξεργασία" onClick={()=>editRule(rule)}><Pencil size={17}/></button><button type="button" className="icon-button" aria-label={`Διαγραφή αυτοματισμού ${rule.name}`} title="Διαγραφή" onClick={()=>onDeleteRule(rule.id)}><Trash2 size={17}/></button></div>
-      </article>})}</div>:<div className="rules-empty-state"><ListFilter size={22}/><div><b>Δεν υπάρχουν ακόμη κανόνες</b><small>Οι νέες κινήσεις παραμένουν χειροκίνητες μέχρι να προσθέσεις έναν κανόνα.</small></div><button type="button" className="secondary" onClick={startCreate}><Plus size={16}/> Δημιουργία κανόνα</button></div>}
+        <div className="rule-row-actions"><Button type="button" variant="secondary" onClick={()=>onUpsertRule({...rule,enabled:!rule.enabled,updatedAt:now()})}>{rule.enabled?'Παύση':'Ενεργοποίηση'}</Button><IconButton aria-label={`Επεξεργασία αυτοματισμού ${rule.name}`} title="Επεξεργασία" onClick={()=>editRule(rule)}><Pencil size={17}/></IconButton><IconButton aria-label={`Διαγραφή αυτοματισμού ${rule.name}`} title="Διαγραφή" onClick={()=>onDeleteRule(rule.id)}><Trash2 size={17}/></IconButton></div>
+      </article>})}</div>:<div className="rules-empty-state"><ListFilter size={22}/><div><b>Δεν υπάρχουν ακόμη κανόνες</b><small>Οι νέες κινήσεις παραμένουν χειροκίνητες μέχρι να προσθέσεις έναν κανόνα.</small></div><Button type="button" variant="secondary" onClick={startCreate}><Plus size={16}/> Δημιουργία κανόνα</Button></div>}
     </section>
 
     {editorOpen?<div className="editor-backdrop rules-editor-backdrop" onMouseDown={()=>clearEditor(false)}>
       <section ref={editorRef} className="panel neo-raised editor-dialog rules-editor" data-rule-editor role="dialog" aria-modal="true" aria-labelledby="rule-editor-title" tabIndex={-1} onMouseDown={event=>event.stopPropagation()}>
         <header className="panel-head rules-editor-head">
           <div><span id="rule-editor-title">{editingRuleId?'Επεξεργασία κανόνα':'Νέος κανόνας'}</span><small>{editingRuleId?'Οι αλλαγές θα ισχύουν μόνο στις επόμενες υποστηριζόμενες κινήσεις.':'Συμπλήρωσε τουλάχιστον μία συνθήκη και μία ενέργεια.'}</small></div>
-          <button type="button" className="icon-button" aria-label="Κλείσιμο επεξεργασίας κανόνα" title="Κλείσιμο" onClick={()=>clearEditor(false)}><X size={17}/></button>
+          <IconButton aria-label="Κλείσιμο επεξεργασίας κανόνα" title="Κλείσιμο" onClick={()=>clearEditor(false)}><X size={17}/></IconButton>
         </header>
 
         <label className="rules-name-field"><span>Όνομα αυτοματισμού</span><AppTextInput value={ruleName} placeholder="π.χ. Supermarket → Τρόφιμα" onChange={event=>setRuleName(event.target.value)}/></label>
@@ -203,7 +205,7 @@ export function TransactionRulesWorkspace({
           {previewMatches.length?<ul>{previewMatches.slice(0,3).map(event=><li key={event.id}><span>{event.note}</span><b>{money.format(event.amount)}</b></li>)}</ul>:<small>Δεν βρέθηκαν παραδείγματα στο υπάρχον ιστορικό.</small>}
         </div>
         {ruleError?<FormError id="rule-editor-error">{ruleError}</FormError>:null}
-        <div className="editor-actions rules-editor-actions"><button type="button" className="secondary" onClick={()=>clearEditor(false)}>Ακύρωση</button><button type="button" className="save-button" onClick={saveRule}>{editingRuleId?'Αποθήκευση αλλαγών':'Δημιουργία κανόνα'}</button></div>
+        <div className="editor-actions rules-editor-actions"><Button type="button" variant="secondary" onClick={()=>clearEditor(false)}>Ακύρωση</Button><Button type="button" variant="primary" onClick={saveRule}>{editingRuleId?'Αποθήκευση αλλαγών':'Δημιουργία κανόνα'}</Button></div>
       </section>
     </div>:null}
   </section>;
