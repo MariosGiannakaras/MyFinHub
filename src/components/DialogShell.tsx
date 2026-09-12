@@ -8,38 +8,41 @@ type DialogDataAttributes=Readonly<Record<`data-${string}`,string|number|boolean
 
 export function DialogShell({
   open,
-  className,
+  className='',
   role='dialog',
   ariaLabelledBy,
   ariaDescribedBy,
   busy=false,
   motionMode='system',
   preferredFocus,
+  focusActive=true,
   onRequestClose,
   dataAttributes,
   children,
 }:{
   open:boolean;
-  className:string;
+  className?:string;
   role?:DialogShellRole;
   ariaLabelledBy:string;
   ariaDescribedBy?:string;
   busy?:boolean;
   motionMode?:DialogMotionMode;
   preferredFocus:string;
+  focusActive?:boolean;
   onRequestClose:()=>void;
   dataAttributes?:DialogDataAttributes;
   children:ReactNode;
 }){
   const systemReduced=useReducedMotion();
   const reduce=Boolean(systemReduced)||motionMode==='reduced';
-  const modalRef=useModalFocus<HTMLElement>(open,preferredFocus,onRequestClose);
+  const modalRef=useModalFocus<HTMLElement>(open&&focusActive,preferredFocus,onRequestClose);
+  const modalClassName=['quick-modal',className,'neo-raised'].filter(Boolean).join(' ');
 
   return <AnimatePresence>{open?<motion.div className="modal-backdrop" initial={reduce?false:{opacity:0}} animate={{opacity:1}} exit={reduce?undefined:{opacity:0}} onMouseDown={onRequestClose}>
     <motion.section
       {...dataAttributes}
       ref={modalRef}
-      className={`quick-modal ${className} neo-raised`}
+      className={modalClassName}
       role={role}
       aria-modal="true"
       aria-labelledby={ariaLabelledBy}

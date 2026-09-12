@@ -95,7 +95,7 @@ describe('shared primitive adoption',()=>{
   it('uses app-owned dirty-close confirmation and shared editable controls in Quick Entry',()=>{
     expectNoNativeDialog(quickAdd);
     expect(quickAdd).toContain('<ConfirmDialog open={discardOpen}');
-    expect(quickAdd).toContain("open&&!discardOpen");
+    expect(quickAdd).toContain('focusActive={!discardOpen}');
     expect(quickAdd).toContain('<MoneyInput data-autofocus="true" value={amount}');
     expect(quickAdd).toContain('<MoneyInput data-autofocus="true" value={actualBalance}');
     expect(quickAdd).toContain("from './AppTextInput'");

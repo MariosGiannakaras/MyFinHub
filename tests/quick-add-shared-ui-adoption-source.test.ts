@@ -31,10 +31,16 @@ describe('QuickAdd shared action primitive ownership',()=>{
     expect(quickAdd).toContain('<button type="button" className="text-button"');
   });
 
-  it('retains dirty-close and modal focus behavior',()=>{
-    expect(quickAdd).toContain("useModalFocus<HTMLElement>(open&&!discardOpen,'[data-autofocus=\"true\"]',requestClose)");
+  it('retains dirty-close and nested modal focus behavior through DialogShell',()=>{
+    expect(quickAdd).toContain("from './DialogShell'");
+    expect(quickAdd).toContain('<DialogShell open={open}');
+    expect(quickAdd).toContain("preferredFocus='[data-autofocus=\"true\"]'");
+    expect(quickAdd).toContain('focusActive={!discardOpen}');
+    expect(quickAdd).toContain('onRequestClose={requestClose}');
+    expect(quickAdd).not.toContain('useModalFocus');
     expect(quickAdd).toContain('const requestClose=()=>{if(dirty){setDiscardOpen(true);return}onClose()}');
     expect(quickAdd).toContain('<ConfirmDialog open={discardOpen}');
+    expect(quickAdd).toContain("document.getElementById('quick-add-title')?.closest<HTMLElement>('[role=\"dialog\"]')");
     expect(quickAdd).toContain('onCreate(event); reset(); onClose();');
   });
 });

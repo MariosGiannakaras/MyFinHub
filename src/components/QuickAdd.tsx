@@ -1,4 +1,3 @@
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { ArrowDownToLine, ArrowLeftRight, BanknoteArrowDown, Check, CircleDollarSign, PiggyBank, RotateCcw, Scale, Split, X } from 'lucide-react';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { AppDateInput } from './AppDateInput';
@@ -7,10 +6,10 @@ import { AppTextInput } from './AppTextInput';
 import { Button } from './Button';
 import { CategorySelectInput } from './CategorySelectInput';
 import { ConfirmDialog } from './ConfirmDialog';
+import { DialogShell } from './DialogShell';
 import { FinanceIcon } from './FinanceIcon';
 import { IconButton } from './IconButton';
 import { MoneyInput } from './MoneyInput';
-import { useModalFocus } from '../hooks/useModalFocus';
 import { genericCategoryTree, subcategoriesFor } from '../lib/categories';
 import { allAccounts, createEvent, frequentDescriptions } from '../lib/domain';
 import { ENTRY_INTENTS, structuredPresetFromFrequent, type EntryIntent } from '../lib/entryIntents';
@@ -45,8 +44,6 @@ const genericKinds=ENTRY_INTENTS.map(item=>({...item,icon:intentIcons[item.inten
 const labelForKind=(kind:EventKind)=>genericKinds.find(item=>item.kind===kind)?.label||'Κίνηση';
 
 export function QuickAdd({ open, data, asOf, initial, initialKind='expense', prefill=null, motionMode='system', onClose, onCreate, currentBalance }: { open:boolean; data:FinanceData; asOf:string; initial?:FinanceEvent|null; initialKind?:EventKind; prefill?:QuickPrefill|null; motionMode?:'system'|'reduced'|'full'; onClose:()=>void; onCreate:(event:FinanceEvent)=>void; currentBalance:(accountId:string)=>number }) {
-  const systemReduced = useReducedMotion();
-  const reduce = Boolean(systemReduced) || motionMode==='reduced';
   const accounts = allAccounts(data).filter(a=>a.kind!=='credit');
   const quickAccounts = accounts.filter(account=>account.showInQuickChoices!==false);
   const accountIds = useMemo(()=>new Set(accounts.map(account=>account.id)),[accounts]);
@@ -117,11 +114,10 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
   const mark=()=>setDirty(true);
   const requestClose=()=>{if(dirty){setDiscardOpen(true);return}onClose()};
   const confirmDiscard=()=>{setDiscardOpen(false);onClose()};
-  const modalRef=useModalFocus<HTMLElement>(open&&!discardOpen,'[data-autofocus="true"]',requestClose);
   useEffect(()=>{
     if(!open||discardOpen||kind!=='split')return;
-    queueMicrotask(()=>modalRef.current?.querySelector<HTMLInputElement>('input[aria-label="Ποσό μέρους 1"]')?.focus({preventScroll:true}));
-  },[open,discardOpen,kind,modalRef]);
+    queueMicrotask(()=>document.getElementById('quick-add-title')?.closest<HTMLElement>('[role="dialog"]')?.querySelector<HTMLInputElement>('input[aria-label="Ποσό μέρους 1"]')?.focus({preventScroll:true}));
+  },[open,discardOpen,kind]);
   const reset=()=>{setAmount('');setNote('');setSubcategory('');setError('');setActualBalance('');setDirty(false)};
   const chooseKind=(next:EventKind)=>{
     const defaults=entryDefaults(next,data.state.settings,fallbackAccount);
@@ -161,8 +157,7 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
     return current&&!poolIds.has(current)?<><option value={current} disabled>{accountIds.has(current)?accountDisplayName(data,current):`Μη διαθέσιμος · ${accountDisplayName(data,current)}`}</option>{pool.map(a=><option key={a.id} value={a.id}>{accountDisplayName(data,a.id)}</option>)}</>:pool.map(a=><option key={a.id} value={a.id}>{accountDisplayName(data,a.id)}</option>);
   };
 
-  return <><AnimatePresence>{open?<motion.div className="modal-backdrop" initial={reduce?false:{opacity:0}} animate={{opacity:1}} exit={reduce?undefined:{opacity:0}} onMouseDown={requestClose}>
-    <motion.section ref={modalRef} className="quick-modal neo-raised" role="dialog" aria-modal="true" aria-labelledby="quick-add-title" aria-describedby="quick-add-description" tabIndex={-1} initial={reduce?false:{opacity:0,scale:.97,y:12}} animate={{opacity:1,scale:1,y:0}} exit={reduce?undefined:{opacity:0,scale:.98,y:8}} transition={{duration:reduce?0:.18}} onMouseDown={e=>e.stopPropagation()}>
+  return <><DialogShell open={open} ariaLabelledBy="quick-add-title" ariaDescribedBy="quick-add-description" motionMode={motionMode} preferredFocus='[data-autofocus="true"]' focusActive={!discardOpen} onRequestClose={requestClose}>
       <header><div><small>{initial?'ΕΠΕΞΕΡΓΑΣΙΑ':'ΓΡΗΓΟΡΗ ΚΙΝΗΣΗ'}</small><h2 id="quick-add-title">{initial?'Επεξεργασία κίνησης':'Τι θέλεις να καταγράψεις;'}</h2><p id="quick-add-description">Διάλεξε την ενέργεια που έκανες. Εξειδικευμένες ροές για κάρτες, δόσεις, δάνεια και πάγια συνεχίζουν να ανοίγουν από το αντίστοιχο πλαίσιο.</p></div><IconButton type="button" aria-label="Κλείσιμο καταχώρισης" onClick={requestClose}><X/></IconButton></header>
       {genericKinds.some(item=>item.kind===kind)?<div className="kind-grid generic-kind-grid" role="group" aria-label="Τι θέλεις να καταγράψεις">{genericKinds.map(k=><button type="button" key={k.kind} className={kind===k.kind?'active':''} aria-pressed={kind===k.kind} onClick={()=>chooseKind(k.kind)}><span>{k.icon}</span><b>{k.label}</b><small>{k.description}</small></button>)}</div>:null}
       <div className="entry-body">
@@ -181,8 +176,7 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
         {error?<div className="form-error" role="alert" aria-live="assertive">{error}</div>:null}
       </div>
       <footer><Button type="button" variant="secondary" onClick={requestClose}>Ακύρωση</Button><Button type="button" variant="primary" onClick={submit}><Check size={17}/> {initial?'Εφαρμογή αλλαγών':'Καταχώριση'}</Button></footer>
-    </motion.section>
-  </motion.div>:null}</AnimatePresence>
+  </DialogShell>
   <ConfirmDialog open={discardOpen} title="Απόρριψη μη αποθηκευμένων αλλαγών;" description="Έχεις αλλαγές που δεν έχουν αποθηκευτεί. Αν κλείσεις τώρα την καταχώριση, αυτές οι αλλαγές θα χαθούν." confirmLabel="Απόρριψη" tone="destructive" motionMode={motionMode} onConfirm={confirmDiscard} onCancel={()=>setDiscardOpen(false)}/>
   </>;
 }
