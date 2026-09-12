@@ -5,12 +5,15 @@ const read=(path:string)=>readFileSync(new URL(`../${path}`,import.meta.url),'ut
 const shell=read('src/components/DialogShell.tsx');
 const confirm=read('src/components/ConfirmDialog.tsx');
 const money=read('src/components/MoneyEditDialog.tsx');
+const quickAdd=read('src/components/QuickAdd.tsx');
 
 describe('DialogShell source contract',()=>{
   it('owns shared modal focus, aria, dismissal and reduced-motion infrastructure',()=>{
     expect(shell).toContain("from 'framer-motion'");
     expect(shell).toContain('useReducedMotion');
-    expect(shell).toContain('useModalFocus<HTMLElement>(open,preferredFocus,onRequestClose)');
+    expect(shell).toContain('useModalFocus<HTMLElement>(open&&focusActive,preferredFocus,onRequestClose)');
+    expect(shell).toContain('focusActive=true');
+    expect(shell).toContain('focusActive?:boolean');
     expect(shell).toContain('className="modal-backdrop"');
     expect(shell).toContain('onMouseDown={onRequestClose}');
     expect(shell).toContain('role={role}');
@@ -27,13 +30,14 @@ describe('DialogShell source contract',()=>{
   it('keeps product semantics outside the shell while allowing data metadata only',()=>{
     expect(shell).toContain('dataAttributes?:DialogDataAttributes');
     expect(shell).toContain('{...dataAttributes}');
+    expect(shell).toContain("['quick-modal',className,'neo-raised'].filter(Boolean).join(' ')");
     expect(shell).not.toContain("from './Button'");
     expect(shell).not.toContain("from './IconButton'");
     expect(shell).not.toContain("from './MoneyInput'");
     expect(shell).not.toContain('destructive');
   });
 
-  it('has ConfirmDialog and MoneyEditDialog as the bounded first adopters',()=>{
+  it('keeps ConfirmDialog and MoneyEditDialog on the shared shell without changing their product semantics',()=>{
     for(const source of [confirm,money]){
       expect(source).toContain("from './DialogShell'");
       expect(source).toContain('<DialogShell');
@@ -51,5 +55,18 @@ describe('DialogShell source contract',()=>{
     expect(money).toContain('ariaLabelledBy={titleId}');
     expect(money).toContain('ariaDescribedBy={describedBy}');
     expect(money).toContain('<MoneyInput');
+  });
+
+  it('adopts QuickAdd while preserving its nested discard focus boundary',()=>{
+    expect(quickAdd).toContain("from './DialogShell'");
+    expect(quickAdd).toContain('<DialogShell open={open}');
+    expect(quickAdd).toContain('ariaLabelledBy="quick-add-title"');
+    expect(quickAdd).toContain('ariaDescribedBy="quick-add-description"');
+    expect(quickAdd).toContain("preferredFocus='[data-autofocus=\"true\"]'");
+    expect(quickAdd).toContain('focusActive={!discardOpen}');
+    expect(quickAdd).toContain('onRequestClose={requestClose}');
+    expect(quickAdd).not.toContain("from 'framer-motion'");
+    expect(quickAdd).not.toContain('useModalFocus');
+    expect(quickAdd).not.toContain('aria-modal="true"');
   });
 });
