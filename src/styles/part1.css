@@ -28,9 +28,9 @@ button{min-width:24px;min-height:24px}
 .brand-word{font-size:25px;font-weight:850;letter-spacing:-.05em;color:#142a68}
 .brand-word span{color:var(--cyan)}
 .brand-block small{display:block;color:var(--muted);font-size:9px;margin-top:2px}
-.primary-action,.save-button{border:0;border-radius:13px;background:linear-gradient(135deg,#2f6fed,#174ea6);color:white;font-weight:750;padding:11px 13px;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 9px 18px rgba(47,111,237,.25),inset 0 1px 0 rgba(255,255,255,.3);cursor:pointer;transition:transform .15s ease,box-shadow .15s ease}
-.primary-action:hover,.save-button:hover{transform:translateY(-1px);box-shadow:0 12px 23px rgba(47,111,237,.28)}
-.primary-action:active,.save-button:active{transform:translateY(1px) scale(.99)}
+.save-button{border:0;border-radius:13px;background:linear-gradient(135deg,#2f6fed,#174ea6);color:white;font-weight:750;padding:11px 13px;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 9px 18px rgba(47,111,237,.25),inset 0 1px 0 rgba(255,255,255,.3);cursor:pointer;transition:transform .15s ease,box-shadow .15s ease}
+.save-button:hover{transform:translateY(-1px);box-shadow:0 12px 23px rgba(47,111,237,.28)}
+.save-button:active{transform:translateY(1px) scale(.99)}
 .sidebar nav{display:grid;gap:4px;margin-top:13px}
 .sidebar nav button{border:0;background:transparent;border-radius:12px;padding:10px 11px;display:flex;align-items:center;gap:11px;color:#395077;font-size:12px;font-weight:620;cursor:pointer;transition:.15s ease;text-align:left}
 .sidebar nav button:hover{background:rgba(255,255,255,.65);transform:translateX(2px)}

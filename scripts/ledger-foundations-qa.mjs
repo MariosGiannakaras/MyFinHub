@@ -31,7 +31,7 @@ try{
 
   console.log('Ledger QA: create first-class transfer');
   await navigate('Dashboard','Οι λογαριασμοί μου');
-  await clickText('button.primary-action','Γρήγορη προσθήκη');
+  await clickText('[data-global-quick-entry="desktop"]','Γρήγορη προσθήκη');
   await waitFor("function(){return !!document.querySelector('.quick-modal')}",'Quick Add');
   await clickText('.generic-kind-grid button','Μεταφορά');
   await setLabelInput('Ποσό','42.50');
@@ -57,7 +57,7 @@ try{
   const reportsAfter=await c.call("function(){return document.querySelector('.report-kpi-strip')?.textContent||''}");assert(reportsAfter===reportsBefore,'transfer does not alter income/expense KPI text');
 
   console.log('Ledger QA: create split transaction from authoritative parts');
-  await navigate('Συναλλαγές','Συναλλαγές');await clickText('button.primary-action','Γρήγορη προσθήκη');await waitFor("function(){return !!document.querySelector('.quick-modal')}",'Quick Add split');await clickText('.generic-kind-grid button','Σύνθετη αγορά');
+  await navigate('Συναλλαγές','Συναλλαγές');await clickText('[data-global-quick-entry="desktop"]','Γρήγορη προσθήκη');await waitFor("function(){return !!document.querySelector('.quick-modal')}",'Quick Add split');await clickText('.generic-kind-grid button','Σύνθετη αγορά');
   const splitParentFields=await c.call("function(){const modal=document.querySelector('.quick-modal');const labels=[...modal.querySelectorAll('.form-grid label>span')].map(node=>(node.textContent||'').trim());return {hasAmount:labels.some(label=>label==='Ποσό'),hasCategory:labels.some(label=>label==='Κατηγορία'),focused:document.activeElement?.getAttribute('aria-label')||''}}");assert(!splitParentFields.hasAmount&&!splitParentFields.hasCategory,'split exposes no independent parent amount or category');assert(splitParentFields.focused==='Ποσό μέρους 1','split focuses the first authoritative part amount');
   await setAriaInput('Περιγραφή μέρους 1','Σούπερ μάρκετ');await setAriaInput('Ποσό μέρους 1','70');await setAriaInput('Περιγραφή μέρους 2','Σπίτι');await setAriaInput('Ποσό μέρους 2','30');
   const allocationText=await c.call("function(){return document.querySelector('.split-head [aria-live=polite]')?.textContent||''}");assert(allocationText.includes('Σύνολο')&&allocationText.includes('100,00'),'split editor derives exact total from parts before save');

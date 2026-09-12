@@ -38,7 +38,7 @@ export function LoginScreen({ onLogin, error }:{ onLogin:(email:string,password:
           {capsLock?<small id="login-caps-hint" className="login-field-hint" role="status">Το Caps Lock είναι ενεργό.</small>:null}
         </div>
         {error?<div id="login-error" className="login-error" role="alert"><AlertCircle size={16}/><span>{error}</span></div>:null}
-        <Button variant="primary" className="primary-action login-submit" type="submit" disabled={busy||!ready} aria-busy={busy} data-state={busy?'loading':ready?'ready':'idle'}>{busy?<LoaderCircle className="login-spinner" size={17} aria-hidden="true"/>:null}<span className="login-submit-label">{busy?'Έλεγχος…':'Σύνδεση'}</span></Button>
+        <Button variant="primary" className="login-submit" type="submit" disabled={busy||!ready} aria-busy={busy} data-state={busy?'loading':ready?'ready':'idle'}>{busy?<LoaderCircle className="login-spinner" size={17} aria-hidden="true"/>:null}<span className="login-submit-label">{busy?'Έλεγχος…':'Σύνδεση'}</span></Button>
       </form>
       <small className="login-footnote">Η σύνδεσή σου παραμένει προστατευμένη και τα οικονομικά δεδομένα ανοίγουν μόνο αφού ολοκληρωθεί και η δεύτερη επαλήθευση ασφαλείας.</small>
     </section>
