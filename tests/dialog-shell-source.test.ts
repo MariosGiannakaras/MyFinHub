@@ -6,11 +6,13 @@ const shell=read('src/components/DialogShell.tsx');
 const confirm=read('src/components/ConfirmDialog.tsx');
 const money=read('src/components/MoneyEditDialog.tsx');
 const quickAdd=read('src/components/QuickAdd.tsx');
+const legacy=read('src/components/LegacyTransactionEditor.tsx');
 
 describe('DialogShell source contract',()=>{
-  it('owns shared modal focus, aria, dismissal and reduced-motion infrastructure',()=>{
+  it('owns shared modal focus, aria, dismissal and motion infrastructure',()=>{
     expect(shell).toContain("from 'framer-motion'");
     expect(shell).toContain('useReducedMotion');
+    expect(shell).toContain("export type DialogMotionMode='system'|'reduced'|'full'|'none'");
     expect(shell).toContain('useModalFocus<HTMLElement>(open&&focusActive,preferredFocus,onRequestClose)');
     expect(shell).toContain('focusActive=true');
     expect(shell).toContain('focusActive?:boolean');
@@ -23,6 +25,7 @@ describe('DialogShell source contract',()=>{
     expect(shell).toContain('aria-busy={busy||undefined}');
     expect(shell).toContain('tabIndex={-1}');
     expect(shell).toContain('onMouseDown={event=>event.stopPropagation()}');
+    expect(shell).toContain("if(motionMode==='none')return open?<div className=\"modal-backdrop\"");
     expect(shell).toContain("motionMode==='reduced'");
     expect(shell).toContain('transition={{duration:reduce?0:.18}}');
   });
@@ -68,5 +71,19 @@ describe('DialogShell source contract',()=>{
     expect(quickAdd).not.toContain("from 'framer-motion'");
     expect(quickAdd).not.toContain('useModalFocus');
     expect(quickAdd).not.toContain('aria-modal="true"');
+  });
+
+  it('adopts the static legacy transaction editor without introducing motion',()=>{
+    expect(legacy).toContain("from './DialogShell'");
+    expect(legacy).toContain('<DialogShell');
+    expect(legacy).toContain('open={true}');
+    expect(legacy).toContain('className="legacy-transaction-editor"');
+    expect(legacy).toContain('ariaLabelledBy="legacy-editor-title"');
+    expect(legacy).toContain('motionMode="none"');
+    expect(legacy).toContain("preferredFocus='[data-autofocus=\"true\"]'");
+    expect(legacy).toContain('onRequestClose={onClose}');
+    expect(legacy).not.toContain('useModalFocus');
+    expect(legacy).not.toContain('aria-modal="true"');
+    expect(legacy).not.toContain("from 'framer-motion'");
   });
 });
