@@ -78,14 +78,17 @@ Goal: centralize common modal-shell mechanics only where presentation and behavi
 
 - [x] Establish shared `DialogShell` ownership for canonical backdrop, modal ARIA container, `useModalFocus`, Escape/dismiss behavior and reduced-motion transition policy.
 - [x] Batch 1: migrate `ConfirmDialog` and `MoneyEditDialog` while preserving alert/dialog roles, busy guards, validation relationships, actions and CSS/DOM contracts.
-- [ ] Batch 2: migrate `QuickAdd` while preserving dirty-close nested confirmation, parent/child focus ownership, split-field autofocus, form semantics and approved Quick Entry presentation.
+- [x] Batch 2: migrate `QuickAdd` while preserving dirty-close nested confirmation, parent/child focus ownership, split-field autofocus, form semantics and approved Quick Entry presentation.
+- [ ] Batch 3: add an explicit no-motion `DialogShell` path and migrate the static `LegacyTransactionEditor` shell without changing rendered backdrop/surface classes, ARIA, focus or dismissal behavior.
 - [ ] Continue with only eligible dialogs after a fresh contract audit; do not automatically migrate `CardCreateDialog`, `CommandPalette`, product-specific pickers or overlays whose presentation/motion semantics differ.
 - [ ] Add header/footer abstractions only if multiple later adopters prove a stable common contract; specialized body/form/destructive/busy behavior remains domain-owned.
 - [x] Keep native `alert`/`confirm`/`prompt` prohibited through existing guards.
 
 Batch 1 delivery: PR #380 squash-merged to `develop@490dec1badaf2e0b6571f59d01f3b3be01baaab7` (tree `52df6b2261c3ae4690901d06f5aeb008e87bd145`). Final exact-head CI `34682517666`, CodeQL `34682517632`, Cross-engine `34682517694`, Performance `34682517646`, Windows Desktop `34682517680`, plus ready-triggered Performance `34683083931` passed. Post-merge integration is 3/3 green: CI `34683195957`, CodeQL `34683195937`, Windows Desktop `34683195943`.
 
-Active Batch 2: draft PR #381, branch `chore/357-dialog-shell-batch-2`, based exactly on `develop@490dec1badaf2e0b6571f59d01f3b3be01baaab7`.
+Batch 2 delivery: PR #381 squash-merged to `develop@da82108b0ef8c552e958d241db4e8fd47a1e1574` (tree `8f771e132cbf497e6c814a95372d737e2db56565`). Final exact-head required gates and ready-triggered Performance passed. Post-merge integration is 3/3 green: CI `34701157385` attempt 2, CodeQL `34701157366`, Windows Desktop `34701157384`. CI attempt 1 had a non-reproducing compact-mobile subpixel touch-target result; the full targeted rerun passed on the identical tree without source or threshold changes.
+
+Active Batch 3: branch `chore/357-dialog-shell-batch-3`, based exactly on `develop@da82108b0ef8c552e958d241db4e8fd47a1e1574`.
 
 ### Stage 4 — Canonical `Surface`
 
@@ -134,14 +137,12 @@ Active Batch 2: draft PR #381, branch `chore/357-dialog-shell-batch-2`, based ex
 - **Overall tracker:** #357 — OPEN.
 - **Completed stages:** 3/9 (Stages 0, 1, 2).
 - **Active stage:** Stage 3 — shared `DialogShell`.
-- **Verified integration base:** `develop@490dec1badaf2e0b6571f59d01f3b3be01baaab7`; Batch-1 post-merge CI `34683195957`, CodeQL `34683195937`, Windows Desktop `34683195943` are green.
-- **Active delivery:** draft PR #381 / `chore/357-dialog-shell-batch-2`.
-- **Batch-2 source scope:** `DialogShell` gains only optional `focusActive` plus optional class composition; `QuickAdd` delegates canonical backdrop/ARIA/focus/motion ownership to the shell. Focused ownership guards are updated. No CSS or finance/auth/API/persistence/routing/database/Windows/release behavior changes.
-- **Nested focus contract:** while QuickAdd's dirty-close `ConfirmDialog` is open, QuickAdd stays rendered but supplies `focusActive={!discardOpen}` so the child confirmation owns modal focus. Existing rendered QA still verifies nested Escape behavior, focus return, viewport geometry, touch targets and overflow.
-- **Initial Batch-2 source milestone:** `3276bd5a2905a0aaa90eb66f2eb617eab3235bb9` had exactly four intended files. Initial CI `34696948272` ran 685 tests; 684 passed and the sole failure was a stale source assertion still requiring the old direct `open&&!discardOpen` ownership expression.
-- **Ownership-guard follow-up:** `bb786b56d5583cf8c83e4120d82ef020abb54255` changed only that stale guard to assert the equivalent `focusActive={!discardOpen}` shell contract. On that head, app and API checks passed before this durable-plan sync; rendered QA and the remaining required gates were still running.
-- **Excluded from Batch 2:** `CardCreateDialog` (`picker-*` shell, card preview/design-picker semantics), `CommandPalette` (different backdrop/palette motion contract), `ContextualQuickAdd`, and other product-specific overlays remain unchanged pending separate eligibility audits.
-- **Next action:** treat the current branch tip as authoritative; verify its net diff is limited to the intended Batch-2 code/tests plus this plan, wait for exact-head CI/CodeQL/Cross-engine/Performance/Windows 5/5, inspect fresh rendered evidence, clean any generated `visual-qa/**` persistence by fast-forward exact-tree restore if necessary, recheck review blockers, then mark ready and squash-merge to `develop` only. After merge, require fresh `develop` CI + CodeQL + Windows 3/3 before the next write branch.
+- **Verified integration base:** `develop@da82108b0ef8c552e958d241db4e8fd47a1e1574`; Batch-2 post-merge CI `34701157385` attempt 2, CodeQL `34701157366`, and Windows Desktop `34701157384` are green.
+- **Active delivery:** `chore/357-dialog-shell-batch-3`, based exactly on that verified integration commit.
+- **Batch-3 source scope:** extend `DialogMotionMode` with explicit `none`, where `DialogShell` renders the same plain `modal-backdrop` + `quick-modal ... neo-raised` DOM without Framer entry/exit motion; migrate only `LegacyTransactionEditor`, which already used that exact static shell/focus/dismiss contract. No CSS or finance/auth/API/persistence/routing/database/Windows/release behavior changes.
+- **Initial Batch-3 source milestone:** `f2fca35513968f0c1519a0d748d15c3c13511aef` has exactly three intended files before this plan sync: `DialogShell.tsx`, `LegacyTransactionEditor.tsx`, and `tests/dialog-shell-source.test.ts`; net diff is +61/−22. The focused source guard now requires the static shell path and verifies the legacy editor no longer owns `useModalFocus`/`aria-modal` directly.
+- **Eligibility audit:** `ContextualQuickAdd` is another static `modal-backdrop` + `quick-modal` candidate and can be considered only after this no-motion path is validated. The `editor-backdrop + panel neo-raised editor-dialog` family appears in Lending, Savings, Loans, Recurring, Planning and Credit Card but requires a separate presentation contract rather than being forced through the current quick-modal base. `CardCreateDialog` and `CommandPalette` remain excluded because their picker/palette backdrop and motion/presentation contracts differ.
+- **Next action:** open a draft PR to `develop`, verify the exact base→head diff, run the required CI/CodeQL/Cross-engine/Performance/Windows gates, inspect fresh rendered evidence for historical-transaction editing/backdrop/focus/Escape behavior, clean generated `visual-qa/**` persistence if necessary, resolve any review blockers, then mark ready and squash-merge only after exact-head gates are green. Require fresh post-merge `develop` CI + CodeQL + Windows 3/3 before the next write branch.
 
 ## Resume procedure for a future chat
 
