@@ -11,6 +11,7 @@ const loans=read('src/pages/LoansPage.tsx');
 const budgetRules=read('src/components/BudgetRuleSettings.tsx');
 const button=read('src/components/Button.tsx');
 const iconButton=read('src/components/IconButton.tsx');
+const dialogShell=read('src/components/DialogShell.tsx');
 const confirmDialog=read('src/components/ConfirmDialog.tsx');
 const moneyEditDialog=read('src/components/MoneyEditDialog.tsx');
 const cardCreateDialog=read('src/components/CardCreateDialog.tsx');
@@ -172,10 +173,15 @@ describe('shared finance UI adoption contracts',()=>{
   });
 
   it('keeps current dialogs on the shared modal-focus behavior contract',()=>{
-    for(const source of [confirmDialog,moneyEditDialog,cardCreateDialog]){
-      expect(source).toContain('useModalFocus');
-      expect(source).toContain('aria-modal="true"');
+    for(const source of [confirmDialog,moneyEditDialog]){
+      expect(source).toContain("from './DialogShell'");
+      expect(source).not.toContain('useModalFocus');
+      expect(source).not.toContain('aria-modal="true"');
     }
+    expect(dialogShell).toContain('useModalFocus');
+    expect(dialogShell).toContain('aria-modal="true"');
+    expect(cardCreateDialog).toContain('useModalFocus');
+    expect(cardCreateDialog).toContain('aria-modal="true"');
     expect(modalFocus).toContain("shortcutMatches(event, 'dismiss')");
     expect(modalFocus).toContain("event.key !== 'Tab'");
     expect(modalFocus).toContain("document.querySelectorAll<HTMLElement>('[aria-modal=\"true\"]')");
