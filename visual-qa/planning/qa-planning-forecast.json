@@ -4,16 +4,16 @@
   "appVersion": "v1.3",
   "suite": "planning-forecast",
   "surface": "planning",
-  "generatedAt": "2026-09-09T12:38:11.969Z",
+  "generatedAt": "2026-09-13T09:45:33.752Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "8752e7ea5e3b8a563c32421a962aa84dbed60fba",
-    "shortSha": "8752e7ea",
-    "branch": "chore/357-design-system-inventory"
+    "sha": "9e2be7e19d5b71b13330d46c9a89579b6eb92c43",
+    "shortSha": "9e2be7e1",
+    "branch": "chore/357-dialog-shell-editor-batch-5"
   },
   "screenshots": [
-    "visual-qa/planning/v1.3__2026-09-09_153811__qa-planning-forecast__planning-forecast-desktop.png",
-    "visual-qa/planning/v1.3__2026-09-09_153811__qa-planning-forecast__planning-forecast-mobile.png",
-    "visual-qa/planning/v1.3__2026-09-09_153811__qa-planning-forecast__planning-forecast-negative.png"
+    "visual-qa/planning/v1.3__2026-09-13_124533__qa-planning-forecast__planning-forecast-desktop.png",
+    "visual-qa/planning/v1.3__2026-09-13_124533__qa-planning-forecast__planning-forecast-mobile.png",
+    "visual-qa/planning/v1.3__2026-09-13_124533__qa-planning-forecast__planning-forecast-negative.png"
   ]
 }
