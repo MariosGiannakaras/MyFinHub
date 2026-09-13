@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getThemePreference, setThemePreference, subscribeThemePreference, type ThemePreference } from '../lib/theme';
 import type { TextSizePreference } from '../types';
+import { Surface } from './Surface';
 
 const OPTIONS: Array<{ value: TextSizePreference; label: string; description: string }> = [
   { value: 'compact', label: 'Συμπαγές', description: 'Περισσότερο περιεχόμενο στην οθόνη.' },
@@ -23,7 +24,7 @@ export function ReadabilitySettings({ value = 'normal', onChange }: { value?: Te
   };
 
   return (
-    <section className="panel neo-raised readability-settings settings-general-appearance" aria-labelledby="readability-title">
+    <Surface as="section" variant="raised" className="panel readability-settings settings-general-appearance" aria-labelledby="readability-title">
       <div className="panel-head">
         <div>
           <span id="readability-title">Εμφάνιση</span>
@@ -74,6 +75,6 @@ export function ReadabilitySettings({ value = 'normal', onChange }: { value?: Te
           ))}
         </div>
       </div>
-    </section>
+    </Surface>
   );
 }
