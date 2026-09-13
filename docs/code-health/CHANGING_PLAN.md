@@ -33,7 +33,7 @@ Durable continuation plan for the post-Phase-1 code-health cleanup. A future Cha
 | Page frame | `page-stack` + `page-heading` |
 | Theme | existing semantic light/dark tokens |
 | Buttons | shared `Button` + `IconButton`; intentional domain/composite controls may remain raw |
-| Generic surfaces | future shared `Surface` base (`raised` / `flat` / `inset`); domain cards remain semantic components |
+| Generic surfaces | shared `Surface` base (`raised` / `flat` / `inset`); domain cards remain semantic components |
 
 ## Stage plan
 
@@ -72,7 +72,7 @@ Delivery history: bounded PRs #363–#379. Final Stage-2 completion PR #379 squa
 
 Intentional raw exceptions remain where a button is a domain/composite control rather than a generic action primitive: card-design radios, payment-card interactions, row/domain navigation controls, segmented/sort controls, taxonomy/composite selectors, and comparable documented cases.
 
-### Stage 3 — Canonical `DialogShell` — ACTIVE
+### Stage 3 — Canonical `DialogShell` — COMPLETE
 
 Goal: centralize common modal-shell mechanics only where presentation and behavior contracts genuinely match; do not force pickers/popovers or specialized domain surfaces into one abstraction.
 
@@ -80,24 +80,32 @@ Goal: centralize common modal-shell mechanics only where presentation and behavi
 - [x] Batch 1: migrate `ConfirmDialog` and `MoneyEditDialog` while preserving alert/dialog roles, busy guards, validation relationships, actions and CSS/DOM contracts.
 - [x] Batch 2: migrate `QuickAdd` while preserving dirty-close nested confirmation, parent/child focus ownership, split-field autofocus, form semantics and approved Quick Entry presentation.
 - [x] Batch 3: add an explicit no-motion `DialogShell` path and migrate the static `LegacyTransactionEditor` shell without changing rendered backdrop/surface classes, ARIA, focus or dismissal behavior.
-- [ ] Batch 4: migrate only the special static `ContextualQuickAdd` modal to the validated no-motion shell while preserving its dynamic description/error relationship, generic QuickAdd route and all payment/domain semantics.
-- [ ] Continue with only eligible dialogs after a fresh contract audit; do not automatically migrate `CardCreateDialog`, `CommandPalette`, product-specific pickers or overlays whose presentation/motion semantics differ.
-- [ ] Add header/footer abstractions only if multiple later adopters prove a stable common contract; specialized body/form/destructive/busy behavior remains domain-owned.
+- [x] Batch 4: migrate only the special static `ContextualQuickAdd` modal to the validated no-motion shell while preserving its dynamic description/error relationship, generic QuickAdd route and all payment/domain semantics.
+- [x] Perform a final exact-tree contract audit and stop rather than forcing distinct picker, command, receipt, owned-popover or editor families through the quick-modal abstraction.
+- [x] Keep specialized body/form/destructive/busy behavior domain-owned; no unsupported header/footer generalization was added.
 - [x] Keep native `alert`/`confirm`/`prompt` prohibited through existing guards.
 
 Batch 1 delivery: PR #380 squash-merged to `develop@490dec1badaf2e0b6571f59d01f3b3be01baaab7` (tree `52df6b2261c3ae4690901d06f5aeb008e87bd145`). Final exact-head CI `34682517666`, CodeQL `34682517632`, Cross-engine `34682517694`, Performance `34682517646`, Windows Desktop `34682517680`, plus ready-triggered Performance `34683083931` passed. Post-merge integration is 3/3 green: CI `34683195957`, CodeQL `34683195937`, Windows Desktop `34683195943`.
 
 Batch 2 delivery: PR #381 squash-merged to `develop@da82108b0ef8c552e958d241db4e8fd47a1e1574` (tree `8f771e132cbf497e6c814a95372d737e2db56565`). Final exact-head required gates and ready-triggered Performance passed. Post-merge integration is 3/3 green: CI `34701157385` attempt 2, CodeQL `34701157366`, Windows Desktop `34701157384`. CI attempt 1 had a non-reproducing compact-mobile subpixel touch-target result; the full targeted rerun passed on the identical tree without source or threshold changes.
 
-Batch 3 delivery: PR #382 squash-merged to `develop@c962ee5ccc90036584aba16fe397ef0f097dee98` (tree `56ab592bf41dc38cd0f2d891e56af33fa478011c`). Final exact-head CI `34702873522`, CodeQL `34702873521`, Cross-engine `34702873518`, Performance `34702873514`, Windows Desktop `34702873530`, plus ready-triggered Performance `34703532465` passed. Fresh PR artifact `10300746480` (`sha256:4810c95fbbe24d3e2d7c128ae9b6c223943f5e7fe928816d151d79f6665fc3c6`) was inspected. Post-merge CodeQL `34703684736` and Windows Desktop `34703684715` passed. Post-merge CI `34703684734` attempt 1 hit an isolated Chromium/CDP `Cannot find context with specified id` failure in `icon-packs-qa.mjs` after source/build/API and preceding rendered suites had passed; the unchanged exact-tree rerun attempt 2 passed the full rendered matrix, audits and evidence upload. Fresh post-merge artifact `10304577099` has digest `sha256:b6c0a0eba4f28880a082812d03cf405cf2b685036b9b068764ed7948ca43aeaf`.
+Batch 3 delivery: PR #382 squash-merged to `develop@c962ee5ccc90036584aba16fe397ef0f097dee98` (tree `56ab592bf41dc38cd0f2d891e56af33fa478011c`). Final exact-head CI `34702873522`, CodeQL `34702873521`, Cross-engine `34702873518`, Performance `34702873514`, Windows Desktop `34702873530`, plus ready-triggered Performance `34703532465` passed. Fresh PR artifact `10300746480` (`sha256:4810c95fbbe24d3e2d7c128ae9b6c223943f5e7fe928816d151d79f6665fc3c6`) was inspected. Post-merge CodeQL `34703684736` and Windows Desktop `34703684715` passed. Post-merge CI `34703684734` attempt 1 hit an isolated Chromium/CDP `Cannot find context with specified id` failure in `icon-packs-qa.mjs`; the unchanged exact-tree rerun attempt 2 passed the full rendered matrix, audits and evidence upload.
 
-Active Batch 4: branch `chore/357-dialog-shell-batch-4`, based exactly on verified `develop@c962ee5ccc90036584aba16fe397ef0f097dee98`.
+Batch 4 delivery: PR #383 squash-merged to `develop@ee83da00b66f0d2dde7b23d817fe67ec3f5c6a03` (tree `ab1cadf1347d4f0d134ff7f702b129646685080b`). Final exact-head CI `34715186905`, CodeQL `34715186925`, Cross-engine `34715186930`, Performance `34715186910`, Windows Desktop `34715186953`, plus ready-triggered Performance `34728958901` passed. Fresh PR artifact `10304778189` (`sha256:3628be5882fc3d46bf0d02106ea57e5d23223063597011a7cf1bc01c5187ecb4`) was inspected across contextual/payment and Action Center evidence. Post-merge integration is 3/3 green: CI `34729068520`, CodeQL `34729068487`, Windows Desktop `34729068512`.
 
-### Stage 4 — Canonical `Surface`
+Final Stage-3 audit on the exact verified merge tree found no additional genuinely matching `DialogShell` adopter. Remaining modal owners are deliberate separate families: `command-backdrop`/`command-palette`, `picker-backdrop`/`picker`, `receipt-inbox`, `owned-popover-*`, and the page-level `editor-backdrop + panel neo-raised editor-dialog` family. These differ in motion geometry, composite semantics, async/nested behavior or presentation contracts and remain specialized rather than being forced through the current quick-modal shell.
 
-- [ ] Introduce raised/flat/inset generic surface ownership.
-- [ ] Migrate genuinely generic panels/cards only.
-- [ ] Keep KPI/account/payment/attention and other domain cards semantic.
+### Stage 4 — Canonical `Surface` — ACTIVE
+
+Goal: centralize only generic elevation ownership while preserving every existing semantic class, element, layout and approved visual. Stage 4 does not remove the `.neo-*` CSS aliases or clean up theme/CSS ownership; that remains Stage 5.
+
+- [ ] Introduce typed shared `Surface` ownership for `raised`, `flat` and `inset`, preserving the existing `.neo-raised`, `.neo-flat` and `.neo-inset` compatibility classes.
+- [ ] Batch 1: adopt `Surface` in low-risk generic Settings panels (`KeyboardShortcutsPanel` and `ReadabilitySettings`) while preserving semantic `<section>` elements, `panel`/domain classes and ARIA relationships.
+- [ ] Continue only with genuinely generic panels/cards after fresh source/rendered audits; do not mass-migrate by class name.
+- [ ] Keep KPI/account/payment/credit/loan/lending/recurring/planning/report/attention and other domain-semantic cards as domain components unless a later bounded audit proves safe composition.
+- [ ] Preserve all CSS selectors and runtime theme behavior during Stage 4; selector/layer cleanup is Stage 5 work.
+
+Active Batch 1: branch `chore/357-surface-batch-1`, based exactly on verified `develop@ee83da00b66f0d2dde7b23d817fe67ec3f5c6a03` (tree `ab1cadf1347d4f0d134ff7f702b129646685080b`). Planned source scope is one new `Surface` primitive, two generic Settings adopters, one focused source guard and this durable plan checkpoint. No CSS, finance/accounting, auth, API, persistence, routing, database, Windows packaging, release, deploy or production-data behavior is in scope.
 
 ### Stage 5 — CSS ownership cleanup
 
@@ -135,17 +143,16 @@ Active Batch 4: branch `chore/357-dialog-shell-batch-4`, based exactly on verifi
 - [ ] Produce a release-readiness checkpoint.
 - [ ] Stop before `develop -> main`, release or deploy unless separately authorized by the owner.
 
-## Current checkpoint — 2026-09-12
+## Current checkpoint — 2026-09-13
 
 - **Overall tracker:** #357 — OPEN.
-- **Completed stages:** 3/9 (Stages 0, 1, 2).
-- **Active stage:** Stage 3 — shared `DialogShell`.
-- **Verified integration base:** `develop@c962ee5ccc90036584aba16fe397ef0f097dee98` (tree `56ab592bf41dc38cd0f2d891e56af33fa478011c`); Batch-3 post-merge CI `34703684734` attempt 2, CodeQL `34703684736`, and Windows Desktop `34703684715` are green.
-- **Active delivery:** `chore/357-dialog-shell-batch-4`, based exactly on that verified integration commit.
-- **Batch-4 source scope:** migrate only the special `ContextModal` inside `ContextualQuickAdd` from direct `useModalFocus` plus manual `modal-backdrop`/`quick-modal contextual-quick-modal neo-raised` markup to `DialogShell` with `motionMode="none"`. Preserve exact rendered classes, `role="dialog"`, modal semantics, `context-quick-title`, dynamic description/error association, preferred autofocus, Escape/backdrop dismissal and static/no-motion behavior. Keep the generic `ReceiptAwareQuickAdd` / QuickAdd route and `motionMode` passthrough unchanged. No CSS or finance/accounting/auth/API/persistence/routing/database/Windows/release behavior changes.
-- **Initial Batch-4 source milestone:** `df0b01829447568e5a93f1234909cd64fb081b78` includes the adopter plus focused source guard after implementation commit `c6d4f9c239d3977ae0e70ced9fcdca516646ff26`. The production-component diff itself is only +11/−4 and changes shell ownership only; payment/event creation logic is untouched.
-- **Eligibility audit:** after Batch 4, the currently identified exact `modal-backdrop + quick-modal` static/animated family is exhausted. The `editor-backdrop + panel neo-raised editor-dialog` family in Lending, Savings, Loans, Recurring, Planning and Credit Card needs a separate presentation contract and must not be forced through the current quick-modal shell. `CardCreateDialog` and `CommandPalette` remain excluded because their picker/palette backdrop, composite semantics and/or motion geometry differ. App-owned select/date popovers also remain specialized controls rather than DialogShell adopters.
-- **Next action:** open a draft PR to `develop`, verify the exact base→head diff, run required CI/CodeQL/Cross-engine/Performance/Windows gates and inspect fresh contextual-action rendered evidence (especially payment flow, Action Center and mobile containment/focus). Resolve any generated visual persistence and review blockers, then mark ready and squash-merge only after exact-head gates are green. Require fresh post-merge `develop` CI + CodeQL + Windows 3/3. After integration, perform one final read-only Stage-3 audit; if no additional genuinely matching dialogs remain, mark Stage 3 complete rather than forcing unrelated families into the abstraction.
+- **Completed stages:** 4/9 (Stages 0, 1, 2, 3).
+- **Active stage:** Stage 4 — canonical `Surface`.
+- **Verified integration base:** `develop@ee83da00b66f0d2dde7b23d817fe67ec3f5c6a03` (tree `ab1cadf1347d4f0d134ff7f702b129646685080b`); Batch-4 post-merge CI `34729068520`, CodeQL `34729068487`, and Windows Desktop `34729068512` are green.
+- **Stage-3 closure:** final read-only audit confirmed the matching quick-modal family is exhausted. Picker, command, receipt, app-owned popover and editor-dialog families remain specialized by contract.
+- **Active delivery:** `chore/357-surface-batch-1`, based exactly on the verified integration commit.
+- **Batch-1 Surface scope:** introduce a typed semantic-container `Surface` that owns only the existing `neo-${variant}` compatibility class; migrate `KeyboardShortcutsPanel` and `ReadabilitySettings` while keeping their `panel` and domain classes, section semantics and ARIA unchanged. No CSS changes.
+- **Next action:** commit the bounded source/test/plan milestone, open a draft PR to `develop`, verify the exact diff, run required CI/CodeQL/Cross-engine/Performance/Windows gates and inspect fresh Settings desktop/mobile rendered evidence. Resolve any generated visual persistence/review blockers, then mark ready and squash-merge only after exact-head gates are green. Require fresh post-merge `develop` CI + CodeQL + Windows 3/3 before any next write batch.
 
 ## Resume procedure for a future chat
 
