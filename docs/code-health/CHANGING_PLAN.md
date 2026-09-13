@@ -101,12 +101,15 @@ Goal: centralize generic elevation ownership without erasing semantic/domain com
 
 - [x] Batch 1 foundation: introduce polymorphic `Surface` with explicit `raised` / `flat` / `inset` variants mapped to the existing `neo-*` compatibility hooks, with no CSS changes.
 - [x] Batch 1 adopters: move only the generic `KeyboardShortcutsPanel` and `ReadabilitySettings` outer shells to `Surface` while preserving semantic `section` hosts, ARIA relationships and existing panel-specific classes.
-- [ ] Validate Batch 1 with exact-head app/API checks, rendered Settings desktop/mobile evidence, cross-engine, performance and Windows gates; merge only to `develop` and require post-merge 3/3 integration.
+- [x] Validate Batch 1 with exact-head app/API checks, rendered Settings desktop/mobile evidence, cross-engine, performance and Windows gates; merge only to `develop` and require post-merge 3/3 integration.
+- [ ] Batch 2: migrate only the active Settings generic raised shells in `DesktopUpdatePanel` and the Data-tab backup/import action cards while preserving `article`/`section` semantics, ARIA, backup/import safety and Windows-update behavior.
 - [ ] Continue bounded adopter audits after integration; prefer genuinely generic shells and avoid migrating semantic domain cards solely because they use `neo-*` classes.
 - [ ] Keep KPI/account/payment/attention/loan/lending/recurring/planning/report and other domain surfaces semantic; composition with `Surface` is allowed only when it clarifies generic elevation ownership without flattening domain behavior.
 - [ ] Retain `neo-raised` / `neo-flat` / `neo-inset` as compatibility CSS hooks during Stage 4. CSS ownership/re-layering remains Stage 5 work.
 
-Active Batch 1: branch `chore/357-surface-batch-1`, based exactly on verified `develop@ee83da00b66f0d2dde7b23d817fe67ec3f5c6a03`. Initial implementation through `90cc6f532c377e241011b48ca2db3a4919d336f0` adds `Surface.tsx`, migrates the two generic Settings-facing shells, and adds focused source guards. No CSS, finance/accounting, auth, API, persistence, routing, database, Windows packaging, release/deploy or production-data behavior is changed.
+Batch 1 delivery: PR #384 squash-merged to `develop@f3d895736066ba689c8f20607cd2a52035a6826f` (tree `0c6d6ec0e3f46ebdd422c0a04002da7dbe4bc5d7`). Exact-head CI `34730999549`, CodeQL `34730999696`, Cross-engine `34730999589`, Performance `34730999623`, and Windows Desktop `34730999574` passed; fresh artifact `10309636017` (`sha256:145847c0d48183431e1e3acd43921c0d72af4e9c31e8696c269fc70c50f2edf0`) was inspected for Settings desktop/mobile parity. Post-merge integration is 3/3 green: CI `34731699612` attempt 3, CodeQL `34731699557`, Windows Desktop `34731699551`. The successful post-merge artifact is `10315576660` (`sha256:8cfba1c931b7f07ba68f6488c9313adf80902959718872faff89508133b73b56`).
+
+Active Batch 2: branch `chore/357-surface-batch-2`, based exactly on verified `develop@f3d895736066ba689c8f20607cd2a52035a6826f`. Initial source/test milestone `efbba52c04bfa6b032161cb240e4141a03e6b825` migrates the three active Settings generic raised hosts and extends the focused `Surface` source guard. No CSS, finance/accounting, auth, API, persistence, routing, database, Windows packaging, release/deploy or production-data behavior is changed. `PageErrorBoundary` remains excluded because its focus-restoration contract requires an outer DOM ref and the current `Surface` intentionally does not expose ref forwarding.
 
 ### Stage 5 — CSS ownership cleanup
 
@@ -149,12 +152,12 @@ Active Batch 1: branch `chore/357-surface-batch-1`, based exactly on verified `d
 - **Overall tracker:** #357 — OPEN.
 - **Completed stages:** 4/9 (Stages 0, 1, 2, 3).
 - **Active stage:** Stage 4 — canonical generic `Surface` ownership.
-- **Verified integration base:** `develop@ee83da00b66f0d2dde7b23d817fe67ec3f5c6a03` (tree `ab1cadf1347d4f0d134ff7f702b129646685080b`); Batch-4 post-merge CI `34729068520`, CodeQL `34729068487`, and Windows Desktop `34729068512` are green.
-- **Stage-3 completion audit:** no additional modal matches the current quick-modal `DialogShell` presentation/behavior contract; picker, palette, OCR, editor and app-owned popover/navigation families remain intentionally specialized.
-- **Active delivery:** `chore/357-surface-batch-1`, based exactly on that verified integration commit.
-- **Batch-1 source scope:** add typed polymorphic `Surface` ownership for existing `neo-raised` / `neo-flat` / `neo-inset` compatibility classes and migrate only `KeyboardShortcutsPanel` plus `ReadabilitySettings`. Preserve their semantic `section` elements, ARIA labels, child controls and route/settings behavior. No CSS change and no migration of domain-semantic cards.
-- **Initial Batch-1 source milestone:** commits through `90cc6f532c377e241011b48ca2db3a4919d336f0`; focused `surface-source.test.ts` requires all three variants, polymorphic semantic-host support and adoption without direct `neo-raised` ownership in the two adopters.
-- **Next action:** verify exact base→head scope, open a draft PR to `develop`, run required CI/CodeQL/Cross-engine/Performance/Windows gates and inspect fresh Settings desktop/mobile visual evidence. Resolve any source-test, generated visual persistence or review blockers at the root cause; then mark ready, wait for ready-triggered required checks, squash-merge only to `develop`, and require fresh post-merge CI + CodeQL + Windows 3/3 before Stage-4 Batch 2.
+- **Verified integration base:** `develop@f3d895736066ba689c8f20607cd2a52035a6826f` (tree `0c6d6ec0e3f46ebdd422c0a04002da7dbe4bc5d7`); Batch-1 post-merge CI `34731699612` attempt 3, CodeQL `34731699557`, and Windows Desktop `34731699551` are green.
+- **Active delivery:** `chore/357-surface-batch-2`, based exactly on that verified integration commit.
+- **Batch-2 source scope:** move `DesktopUpdatePanel` plus the two Settings Data backup/import action-card shells to `Surface variant="raised"`, retaining semantic hosts, existing panel/card classes, ARIA, update behavior, hidden file-input/ref behavior, destructive import confirmation and all backup/import safety semantics. No CSS change and no migration of domain-semantic cards.
+- **Initial Batch-2 milestone:** `efbba52c04bfa6b032161cb240e4141a03e6b825` (tree `891ae8119e4fe640548d116118683d56f4a5da55`); base→milestone is 3 intended files, +20/−6, 3 commits ahead / 0 behind before durable plan sync.
+- **Eligibility boundary:** `PageErrorBoundary` remains out because its focus-restoration ref contract would require deliberate `Surface` ref forwarding; finance/account/payment/attention/loan/lending/recurring/planning/report and security-semantic cards remain domain-owned rather than migration targets by class name alone.
+- **Next action:** open a draft Batch-2 PR to `develop`, verify exact base→head scope, run required CI/CodeQL/Cross-engine/Performance/Windows gates and inspect fresh Settings General/Data desktop/mobile evidence. Resolve source-test, generated visual persistence or review blockers at root cause; then mark ready, wait for ready-triggered required checks, squash-merge only to `develop`, and require fresh post-merge CI + CodeQL + Windows 3/3 before the next Stage-4 write batch.
 
 ## Resume procedure for a future chat
 
