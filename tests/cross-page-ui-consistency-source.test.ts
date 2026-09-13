@@ -20,8 +20,8 @@ const routedPages=[
 describe('cross-page UI consistency contracts',()=>{
   it('keeps the application chrome single-sourced in AppShell',()=>{
     const shell=read('src/components/AppShell.tsx');
-    expect(shell).toContain('className="sidebar neo-raised"');
-    expect(shell).toContain('className="topbar neo-flat"');
+    expect(shell).toContain('<Surface as="aside" variant="raised" className="sidebar">');
+    expect(shell).toContain('<Surface as="header" variant="flat" className="topbar">');
     expect(shell).toContain('className="workspace"');
     for(const file of routedPages){
       const source=read(file);

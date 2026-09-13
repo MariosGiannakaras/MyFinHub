@@ -57,7 +57,8 @@ describe('release-readiness source contracts',()=>{
     expect(appShell).toContain('data-global-quick-entry="desktop"');
     expect(appShell).toContain('className="mobile-quick-action"');
     expect(appShell).toContain('data-global-quick-entry="mobile"');
-    expect(appShell).toMatch(/<\/header>\{genericEntry\?<button type="button" className="mobile-quick-action"/);
+    expect(appShell).toContain('<Surface as="header" variant="flat" className="topbar">');
+    expect(appShell).toMatch(/<\/Surface>\{genericEntry\?<button type="button" className="mobile-quick-action"/);
     expect(commandStyles).toContain('.mobile-quick-action{display:none}');
     expect(commandStyles).toContain('.mobile-quick-action{display:flex');
     expect(commandStyles).toContain('position:fixed;right:16px;bottom:calc(82px + env(safe-area-inset-bottom,0px))');
