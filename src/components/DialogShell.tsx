@@ -4,6 +4,7 @@ import { useModalFocus } from '../hooks/useModalFocus';
 
 export type DialogShellRole='dialog'|'alertdialog';
 export type DialogMotionMode='system'|'reduced'|'full'|'none';
+export type DialogShellPresentation='quick'|'editor';
 type DialogDataAttributes=Readonly<Record<`data-${string}`,string|number|boolean|undefined>>;
 
 export function DialogShell({
@@ -14,6 +15,7 @@ export function DialogShell({
   ariaDescribedBy,
   busy=false,
   motionMode='system',
+  presentation='quick',
   preferredFocus,
   focusActive=true,
   onRequestClose,
@@ -27,6 +29,7 @@ export function DialogShell({
   ariaDescribedBy?:string;
   busy?:boolean;
   motionMode?:DialogMotionMode;
+  presentation?:DialogShellPresentation;
   preferredFocus:string;
   focusActive?:boolean;
   onRequestClose:()=>void;
@@ -36,9 +39,12 @@ export function DialogShell({
   const systemReduced=useReducedMotion();
   const reduce=Boolean(systemReduced)||motionMode==='reduced';
   const modalRef=useModalFocus<HTMLElement>(open&&focusActive,preferredFocus,onRequestClose);
-  const modalClassName=['quick-modal',className,'neo-raised'].filter(Boolean).join(' ');
+  const editorPresentation=presentation==='editor';
+  const modalClassName=editorPresentation
+    ?['panel','neo-raised','editor-dialog',className].filter(Boolean).join(' ')
+    :['quick-modal',className,'neo-raised'].filter(Boolean).join(' ');
 
-  if(motionMode==='none')return open?<div className="modal-backdrop" onMouseDown={onRequestClose}>
+  if(editorPresentation||motionMode==='none')return open?<div className={editorPresentation?'editor-backdrop':'modal-backdrop'} onMouseDown={onRequestClose}>
     <section
       {...dataAttributes}
       ref={modalRef}
