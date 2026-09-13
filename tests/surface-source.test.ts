@@ -11,6 +11,7 @@ const desktopUpdate=source('src/components/DesktopUpdatePanel.tsx');
 const settingsPage=source('src/pages/SettingsPage.tsx');
 const appShell=source('src/components/AppShell.tsx');
 const appSkeleton=source('src/components/AppSkeleton.tsx');
+const pageErrorBoundary=source('src/components/PageErrorBoundary.tsx');
 
 describe('canonical Surface primitive',()=>{
   it('owns the three compatibility elevation variants without styling changes',()=>{
@@ -20,9 +21,10 @@ describe('canonical Surface primitive',()=>{
     expect(surface).not.toContain('<style');
   });
 
-  it('preserves semantic element and native/ARIA props through the polymorphic host',()=>{
+  it('preserves semantic element, native/ARIA props and React 19 refs through the polymorphic host',()=>{
     expect(surface).toContain('as?:T');
-    expect(surface).toContain('ComponentPropsWithoutRef<T>');
+    expect(surface).toContain('ComponentPropsWithRef<T>');
+    expect(surface).not.toContain('ComponentPropsWithoutRef<T>');
     expect(surface).toContain("const component=(as??'div') as ElementType");
     expect(surface).toContain('return createElement(component,{...props,className:surfaceClassName})');
   });
@@ -52,6 +54,7 @@ describe('canonical Surface primitive',()=>{
     expect(settingsPage).toContain('<Surface as="section" variant="raised" className="panel settings-data-action-card settings-data-import-card">');
     expect(settingsPage).not.toContain('neo-raised');
   });
+
   it('moves only the generic application chrome surfaces while preserving specialized overlays',()=>{
     expect(appShell).toContain("import { Surface } from './Surface'");
     expect(appShell).toContain('<Surface as="aside" variant="raised" className="sidebar">');
@@ -69,4 +72,11 @@ describe('canonical Surface primitive',()=>{
     expect(appSkeleton).not.toContain('skeleton-sidebar neo-raised');
   });
 
+  it('moves the generic page-error host while preserving its focus-restoration ref and alert semantics',()=>{
+    expect(pageErrorBoundary).toContain("import { Surface } from './Surface'");
+    expect(pageErrorBoundary).toContain('private errorRef = createRef<HTMLElement>()');
+    expect(pageErrorBoundary).toContain('errorRef.current?.focus');
+    expect(pageErrorBoundary).toContain('<Surface as="section" ref={this.errorRef} variant="raised" className="panel workspace-error" role="alert" aria-labelledby="workspace-error-title" tabIndex={-1}>');
+    expect(pageErrorBoundary).not.toContain('panel neo-raised workspace-error');
+  });
 });

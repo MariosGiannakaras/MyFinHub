@@ -1,4 +1,4 @@
-import { createElement, type ComponentPropsWithoutRef, type ElementType, type ReactElement } from 'react';
+import { createElement, type ComponentPropsWithRef, type ElementType, type ReactElement } from 'react';
 
 export type SurfaceVariant='raised'|'flat'|'inset';
 
@@ -8,7 +8,7 @@ type SurfaceOwnProps<T extends ElementType>={
   className?:string;
 };
 
-type SurfaceProps<T extends ElementType>=SurfaceOwnProps<T>&Omit<ComponentPropsWithoutRef<T>,keyof SurfaceOwnProps<T>>;
+type SurfaceProps<T extends ElementType>=SurfaceOwnProps<T>&Omit<ComponentPropsWithRef<T>,keyof SurfaceOwnProps<T>>;
 
 export function Surface<T extends ElementType='div'>({
   as,
