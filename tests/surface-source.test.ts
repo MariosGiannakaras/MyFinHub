@@ -9,6 +9,8 @@ const shortcuts=source('src/components/KeyboardShortcutsPanel.tsx');
 const readability=source('src/components/ReadabilitySettings.tsx');
 const desktopUpdate=source('src/components/DesktopUpdatePanel.tsx');
 const settingsPage=source('src/pages/SettingsPage.tsx');
+const appShell=source('src/components/AppShell.tsx');
+const appSkeleton=source('src/components/AppSkeleton.tsx');
 
 describe('canonical Surface primitive',()=>{
   it('owns the three compatibility elevation variants without styling changes',()=>{
@@ -50,4 +52,21 @@ describe('canonical Surface primitive',()=>{
     expect(settingsPage).toContain('<Surface as="section" variant="raised" className="panel settings-data-action-card settings-data-import-card">');
     expect(settingsPage).not.toContain('neo-raised');
   });
+  it('moves only the generic application chrome surfaces while preserving specialized overlays',()=>{
+    expect(appShell).toContain("import { Surface } from './Surface'");
+    expect(appShell).toContain('<Surface as="aside" variant="raised" className="sidebar">');
+    expect(appShell).toContain('<Surface as="header" variant="flat" className="topbar">');
+    expect(appShell).toContain('<Surface as="nav" variant="raised" className="mobile-nav" aria-label="Κύρια πλοήγηση κινητού">');
+    expect(appShell).not.toContain('sidebar neo-raised');
+    expect(appShell).not.toContain('topbar neo-flat');
+    expect(appShell).not.toContain('mobile-nav neo-raised');
+    expect(appShell).toContain('className="command-palette neo-raised"');
+    expect(appShell).toContain('className="mobile-more-menu neo-raised"');
+    expect(appShell).toContain('className="neo-inset history-row"');
+    expect(appShell).toContain("saveState==='saved'?'is-quiet':'neo-inset is-active'");
+    expect(appSkeleton).toContain("import { Surface } from './Surface'");
+    expect(appSkeleton).toContain('<Surface as="aside" variant="raised" className="skeleton-sidebar">');
+    expect(appSkeleton).not.toContain('skeleton-sidebar neo-raised');
+  });
+
 });

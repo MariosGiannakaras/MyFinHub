@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Surface } from './Surface';
 
 type LineProps={width?:string;size?:'eyebrow'|'title'|'text'|'amount'};
 function Line({width='100%',size='text'}:LineProps){return <span className={`skeleton skeleton-line ${size}`} style={{width}}/>}
@@ -76,7 +77,7 @@ function activePage(){
 export function AppSkeleton(){
   const page=activePage();
   return <div className="skeleton-shell" aria-label="Φόρτωση οικονομικών δεδομένων" role="status">
-    <aside className="skeleton-sidebar neo-raised"><div className="skeleton-shell-brand"><span className="skeleton skeleton-brand-icon"/><div><Line width="118px" size="title"/><Line width="92px" size="eyebrow"/></div></div><Button wide/><div className="skeleton-command-row"><Icon/><Line width="92px"/><span className="skeleton skeleton-key-hint"/></div><div className="skeleton-nav-list">{Array.from({length:12},(_,i)=><div className="skeleton-nav-row" key={i}><Icon/><Line width={`${52+(i%4)*9}%`}/></div>)}</div><div className="skeleton-file-card"><Line width="62%"/><Line width="82%" size="eyebrow"/></div></aside>
+    <Surface as="aside" variant="raised" className="skeleton-sidebar"><div className="skeleton-shell-brand"><span className="skeleton skeleton-brand-icon"/><div><Line width="118px" size="title"/><Line width="92px" size="eyebrow"/></div></div><Button wide/><div className="skeleton-command-row"><Icon/><Line width="92px"/><span className="skeleton skeleton-key-hint"/></div><div className="skeleton-nav-list">{Array.from({length:12},(_,i)=><div className="skeleton-nav-row" key={i}><Icon/><Line width={`${52+(i%4)*9}%`}/></div>)}</div><div className="skeleton-file-card"><Line width="62%"/><Line width="82%" size="eyebrow"/></div></Surface>
     <main className="skeleton-main"><div className="skeleton-topbar"><span className="skeleton skeleton-topbar-pill"/><div className="skeleton-topbar-actions">{Array.from({length:6},(_,i)=><span className="skeleton skeleton-topbar-action" key={i}/>)}</div></div><div className="skeleton-workspace" data-skeleton-page={page}><RouteSkeletonContent page={page}/></div></main>
   </div>;
 }
