@@ -8,16 +8,20 @@ const money=read('src/components/MoneyEditDialog.tsx');
 const quickAdd=read('src/components/QuickAdd.tsx');
 const legacy=read('src/components/LegacyTransactionEditor.tsx');
 const contextual=read('src/components/ContextualQuickAdd.tsx');
+const lending=read('src/pages/LendingPage.tsx');
+const savings=read('src/pages/SavingsPage.tsx');
 
 describe('DialogShell source contract',()=>{
   it('owns shared modal focus, aria, dismissal and motion infrastructure',()=>{
     expect(shell).toContain("from 'framer-motion'");
     expect(shell).toContain('useReducedMotion');
     expect(shell).toContain("export type DialogMotionMode='system'|'reduced'|'full'|'none'");
+    expect(shell).toContain("export type DialogShellPresentation='quick'|'editor'");
     expect(shell).toContain('useModalFocus<HTMLElement>(open&&focusActive,preferredFocus,onRequestClose)');
     expect(shell).toContain('focusActive=true');
     expect(shell).toContain('focusActive?:boolean');
-    expect(shell).toContain('className="modal-backdrop"');
+    expect(shell).toContain("presentation='quick'");
+    expect(shell).toContain('presentation?:DialogShellPresentation');
     expect(shell).toContain('onMouseDown={onRequestClose}');
     expect(shell).toContain('role={role}');
     expect(shell).toContain('aria-modal="true"');
@@ -26,15 +30,19 @@ describe('DialogShell source contract',()=>{
     expect(shell).toContain('aria-busy={busy||undefined}');
     expect(shell).toContain('tabIndex={-1}');
     expect(shell).toContain('onMouseDown={event=>event.stopPropagation()}');
-    expect(shell).toContain("if(motionMode==='none')return open?<div className=\"modal-backdrop\"");
+    expect(shell).toContain("if(editorPresentation||motionMode==='none')return open?<div className={editorPresentation?'editor-backdrop':'modal-backdrop'}");
     expect(shell).toContain("motionMode==='reduced'");
     expect(shell).toContain('transition={{duration:reduce?0:.18}}');
   });
 
-  it('keeps product semantics outside the shell while allowing data metadata only',()=>{
+  it('keeps quick and editor presentation contracts explicit instead of exposing arbitrary shell props',()=>{
     expect(shell).toContain('dataAttributes?:DialogDataAttributes');
     expect(shell).toContain('{...dataAttributes}');
-    expect(shell).toContain("['quick-modal',className,'neo-raised'].filter(Boolean).join(' ')");
+    expect(shell).toContain("const editorPresentation=presentation==='editor'");
+    expect(shell).toContain("?['panel','neo-raised','editor-dialog',className].filter(Boolean).join(' ')");
+    expect(shell).toContain(":['quick-modal',className,'neo-raised'].filter(Boolean).join(' ')");
+    expect(shell).not.toContain('backdropClassName?:');
+    expect(shell).not.toContain('surfaceClassName?:');
     expect(shell).not.toContain("from './Button'");
     expect(shell).not.toContain("from './IconButton'");
     expect(shell).not.toContain("from './MoneyInput'");
@@ -103,5 +111,25 @@ describe('DialogShell source contract',()=>{
     expect(contextual).not.toContain("from 'framer-motion'");
     expect(contextual).toContain("if(context.mode==='generic')return <ReceiptAwareQuickAdd");
     expect(contextual).toContain('motionMode={motionMode}');
+  });
+
+  it('adopts the CSS-owned editor presentation in Lending and Savings without moving domain logic',()=>{
+    for(const source of [lending,savings]){
+      expect(source).toContain("from '../components/DialogShell'");
+      expect(source).toContain('<DialogShell open={open} presentation="editor"');
+      expect(source).toContain("preferredFocus='[data-autofocus=\"true\"]'");
+      expect(source).toContain('onRequestClose={close}');
+      expect(source).not.toContain('useModalFocus');
+      expect(source).not.toContain('className="editor-backdrop"');
+      expect(source).not.toContain('aria-modal="true"');
+    }
+    expect(lending).toContain('className="lending-dialog"');
+    expect(lending).toContain('ariaLabelledBy="lending-dialog-title"');
+    expect(lending).toContain("ariaDescribedBy={error?'lending-dialog-error':undefined}");
+    expect(lending).toContain('createEvent({kind,date,amount:numeric');
+    expect(savings).toContain('className="savings-dialog"');
+    expect(savings).toContain('ariaLabelledBy="saving-editor-title"');
+    expect(savings).toContain("ariaDescribedBy={error?'saving-editor-error':undefined}");
+    expect(savings).toContain('event.savingSource=source;');
   });
 });
