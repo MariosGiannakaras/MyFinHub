@@ -1,9 +1,10 @@
 import { Keyboard } from 'lucide-react';
 import { SHORTCUT_META, SHORTCUT_ORDER, shortcutDisplay } from '../lib/shortcuts';
+import { Surface } from './Surface';
 
 export function KeyboardShortcutsPanel() {
   return (
-    <section className="panel neo-raised keyboard-shortcuts-panel" aria-labelledby="keyboard-shortcuts-title">
+    <Surface as="section" variant="raised" className="panel keyboard-shortcuts-panel" aria-labelledby="keyboard-shortcuts-title">
       <div className="panel-head">
         <div>
           <span id="keyboard-shortcuts-title">Συντομεύσεις πληκτρολογίου</span>
@@ -20,6 +21,6 @@ export function KeyboardShortcutsPanel() {
         ))}
       </div>
       <p className="keyboard-shortcut-note">Μέσα σε input, textarea ή άλλο editable πεδίο διατηρούνται οι native συντομεύσεις επεξεργασίας. Το Esc χειρίζεται μόνο το επάνω dismissible παράθυρο.</p>
-    </section>
+    </Surface>
   );
 }
