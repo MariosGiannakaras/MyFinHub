@@ -1,5 +1,6 @@
 import { Component, createRef, type ErrorInfo, type ReactNode } from 'react';
 import { Button } from './Button';
+import { Surface } from './Surface';
 
 export class PageErrorBoundary extends Component<{ resetKey: string; onDashboard: () => void; children: ReactNode }, { failed: boolean }> {
   state = { failed: false };
@@ -27,7 +28,7 @@ export class PageErrorBoundary extends Component<{ resetKey: string; onDashboard
 
   render() {
     if (!this.state.failed) return this.props.children;
-    return <section ref={this.errorRef} className="panel neo-raised workspace-error" role="alert" aria-labelledby="workspace-error-title" tabIndex={-1}>
+    return <Surface as="section" ref={this.errorRef} variant="raised" className="panel workspace-error" role="alert" aria-labelledby="workspace-error-title" tabIndex={-1}>
       <h2 id="workspace-error-title">Η ενότητα δεν μπόρεσε να εμφανιστεί</h2>
       <p>Τα οικονομικά δεδομένα δεν τροποποιήθηκαν. Δοκίμασε ξανά την ενότητα ή, αν το πρόβλημα συνεχίζεται, επαναφόρτωσε την εφαρμογή.</p>
       <div className="editor-actions">
@@ -35,6 +36,6 @@ export class PageErrorBoundary extends Component<{ resetKey: string; onDashboard
         <Button variant="secondary" type="button" onClick={this.recoverDashboard}>Dashboard</Button>
         <Button variant="primary" type="button" onClick={() => location.reload()}>Επαναφόρτωση εφαρμογής</Button>
       </div>
-    </section>;
+    </Surface>;
   }
 }
