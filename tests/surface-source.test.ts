@@ -7,6 +7,8 @@ const source=(file:string)=>fs.readFileSync(path.join(root,file),'utf8');
 const surface=source('src/components/Surface.tsx');
 const shortcuts=source('src/components/KeyboardShortcutsPanel.tsx');
 const readability=source('src/components/ReadabilitySettings.tsx');
+const desktopUpdate=source('src/components/DesktopUpdatePanel.tsx');
+const settingsPage=source('src/pages/SettingsPage.tsx');
 
 describe('canonical Surface primitive',()=>{
   it('owns the three compatibility elevation variants without styling changes',()=>{
@@ -37,5 +39,15 @@ describe('canonical Surface primitive',()=>{
     expect(readability).toContain('role="radiogroup" aria-label="Μέγεθος κειμένου"');
     expect(readability).toContain('role="radiogroup" aria-label="Θέμα εμφάνισης"');
     expect(readability).not.toContain('neo-raised');
+  });
+
+  it('moves the active Settings generic raised shells without changing their semantic hosts',()=>{
+    expect(desktopUpdate).toContain("import { Surface } from './Surface'");
+    expect(desktopUpdate).toContain('<Surface as="article" variant="raised" className="panel desktop-update-panel settings-general-app" aria-labelledby="desktop-update-title">');
+    expect(desktopUpdate).not.toContain('neo-raised');
+    expect(settingsPage).toContain("import { Surface } from '../components/Surface'");
+    expect(settingsPage).toContain('<Surface as="section" variant="raised" className="panel settings-data-action-card">');
+    expect(settingsPage).toContain('<Surface as="section" variant="raised" className="panel settings-data-action-card settings-data-import-card">');
+    expect(settingsPage).not.toContain('neo-raised');
   });
 });
