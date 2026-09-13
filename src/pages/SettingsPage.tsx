@@ -8,6 +8,7 @@ import { ConfirmDialog } from '../components/ConfirmDialog';
 import { DesktopUpdatePanel } from '../components/DesktopUpdatePanel';
 import { KeyboardShortcutsPanel } from '../components/KeyboardShortcutsPanel';
 import { ReadabilitySettings } from '../components/ReadabilitySettings';
+import { Surface } from '../components/Surface';
 import { TransactionRulesWorkspace } from '../components/TransactionRulesWorkspace';
 import { categoryTree } from '../lib/categories';
 import { MAX_FINANCE_DOCUMENT_BYTES } from '../lib/limits';
@@ -249,7 +250,7 @@ export function SettingsPage({
         {activeTab === 'data' ? (
           <div className="settings-tab-stack settings-data-tab">
             <div className="settings-data-action-grid">
-              <section className="panel neo-raised settings-data-action-card">
+              <Surface as="section" variant="raised" className="panel settings-data-action-card">
                 <div className="settings-data-action-icon" aria-hidden="true"><Download /></div>
                 <div className="settings-data-action-copy">
                   <b>Δημιουργία αντιγράφου ασφαλείας</b>
@@ -257,9 +258,9 @@ export function SettingsPage({
                   <small>Δεν αλλάζει τα τρέχοντα οικονομικά δεδομένα.</small>
                 </div>
                 <button className="secondary settings-data-action-button" type="button" disabled={busy} onClick={() => void backup()}><Download /> Backup & λήψη</button>
-              </section>
+              </Surface>
 
-              <section className="panel neo-raised settings-data-action-card settings-data-import-card">
+              <Surface as="section" variant="raised" className="panel settings-data-action-card settings-data-import-card">
                 <input ref={fileRef} type="file" accept="application/json,.json" hidden onChange={(event) => requestImport(event.target.files?.[0])} />
                 <div className="settings-data-action-icon" aria-hidden="true"><FileJson /></div>
                 <div className="settings-data-action-copy">
@@ -268,7 +269,7 @@ export function SettingsPage({
                   <small>Έως 4 MB · δημιουργείται αυτόματο backup πριν από την αντικατάσταση.</small>
                 </div>
                 <button className="secondary settings-data-action-button" type="button" disabled={busy} onClick={() => fileRef.current?.click()}><FileJson /> Εισαγωγή JSON</button>
-              </section>
+              </Surface>
             </div>
 
             {message ? <div className="logic-note compact" role="status" aria-live="polite"><ShieldCheck /><span>{message}</span></div> : null}
