@@ -2,6 +2,7 @@ import { CheckCircle2, Download, MonitorCog, RefreshCw, RotateCcw, ShieldCheck, 
 import { useEffect, useState } from 'react';
 import packageJson from '../../package.json';
 import { Button } from './Button';
+import { Surface } from './Surface';
 
 type UpdateStatus = 'idle' | 'checking' | 'up-to-date' | 'available' | 'downloading' | 'ready' | 'installing' | 'error' | 'unsupported';
 type UpdateState = { supported: boolean; currentVersion: string; status: UpdateStatus; availableVersion: string | null; progress: number; message: string };
@@ -89,7 +90,7 @@ export function DesktopUpdatePanel() {
     : localError || state.message || 'Έτοιμο για ασφαλή έλεγχο ενημερώσεων.';
 
   return (
-    <article className="panel neo-raised desktop-update-panel settings-general-app" aria-labelledby="desktop-update-title">
+    <Surface as="article" variant="raised" className="panel desktop-update-panel settings-general-app" aria-labelledby="desktop-update-title">
       <div className="panel-head">
         <div>
           <span id="desktop-update-title">Εφαρμογή & Ενημερώσεις</span>
@@ -122,6 +123,6 @@ export function DesktopUpdatePanel() {
       </div>
 
       {action ? <div className="desktop-update-actions">{action}</div> : null}
-    </article>
+    </Surface>
   );
 }
