@@ -7,6 +7,7 @@ const confirm=read('src/components/ConfirmDialog.tsx');
 const money=read('src/components/MoneyEditDialog.tsx');
 const quickAdd=read('src/components/QuickAdd.tsx');
 const legacy=read('src/components/LegacyTransactionEditor.tsx');
+const contextual=read('src/components/ContextualQuickAdd.tsx');
 
 describe('DialogShell source contract',()=>{
   it('owns shared modal focus, aria, dismissal and motion infrastructure',()=>{
@@ -85,5 +86,22 @@ describe('DialogShell source contract',()=>{
     expect(legacy).not.toContain('useModalFocus');
     expect(legacy).not.toContain('aria-modal="true"');
     expect(legacy).not.toContain("from 'framer-motion'");
+  });
+
+  it('adopts the static contextual quick action shell without changing the generic QuickAdd path',()=>{
+    expect(contextual).toContain("from './DialogShell'");
+    expect(contextual).toContain('<DialogShell');
+    expect(contextual).toContain('open={true}');
+    expect(contextual).toContain('className="contextual-quick-modal"');
+    expect(contextual).toContain('ariaLabelledBy="context-quick-title"');
+    expect(contextual).toContain("ariaDescribedBy={error?'context-quick-error':'context-quick-description'}");
+    expect(contextual).toContain('motionMode="none"');
+    expect(contextual).toContain("preferredFocus='[data-autofocus=\"true\"]'");
+    expect(contextual).toContain('onRequestClose={onClose}');
+    expect(contextual).not.toContain('useModalFocus');
+    expect(contextual).not.toContain('aria-modal="true"');
+    expect(contextual).not.toContain("from 'framer-motion'");
+    expect(contextual).toContain("if(context.mode==='generic')return <ReceiptAwareQuickAdd");
+    expect(contextual).toContain('motionMode={motionMode}');
   });
 });

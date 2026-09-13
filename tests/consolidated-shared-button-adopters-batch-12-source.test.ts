@@ -24,7 +24,9 @@ describe('consolidated Stage 2 shared action adoption',()=>{
   });
 
   it('preserves ContextualQuickAdd focus and finance completion semantics',()=>{
-    expect(contextual).toContain("useModalFocus<HTMLElement>(true,'[data-autofocus=\"true\"]',onClose)");
+    expect(contextual).toContain('motionMode="none"');
+    expect(contextual).toContain("preferredFocus='[data-autofocus=\"true\"]'");
+    expect(contextual).toContain('onRequestClose={onClose}');
     expect(contextual).toContain("event=scheduledToEvent(data,scheduled,{date,amount:numeric,accountId,fromAccountId,toAccountId})");
     expect(contextual).toContain("onCompleteScheduled(transitionScheduled(scheduled,'completed',event.id),event);onClose();return;");
     expect(contextual).toContain('onCreate(event);onClose();');
