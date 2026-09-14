@@ -27,9 +27,9 @@ describe('approved Quick Entry desktop target source contract',()=>{
     expect(receiptAware).toContain('deleteReceiptDraft(handledId)');
   });
 
-  it('preserves the approved Quick Entry chain and appends only the shared primitive layer globally',()=>{
-    expect(normalizedBaseStyles).toContain("@import './styles/part46.css';\n@import './styles/part57.css';");
-    expect(normalizedBaseStyles.trimEnd()).toMatch(/part57\.css';$/);
+  it('preserves the approved Quick Entry chain behind the explicit Stage-5 global tail',()=>{
+    expect(normalizedBaseStyles).toContain("@import './styles/part46.css';\n@import './styles/part57.css';\n@import './styles/part47.css';\n@import './styles/part50.css';\n@import './styles/part52.css';\n@import './styles/part53.css';");
+    expect(normalizedBaseStyles.trimEnd()).toMatch(/part53\.css';$/);
     expect(approvedChain).toContain("@import './part48.css';");
     expect(approvedChain).toContain("@import './part49.css';");
     expect(approvedChain).toContain("@import './part50.css';");
