@@ -4,18 +4,31 @@ import { describe, expect, it } from 'vitest';
 
 const root=process.cwd();
 const read=(file:string)=>fs.readFileSync(path.join(root,file),'utf8');
-const imports=(source:string)=>[...source.matchAll(/@import\s+['"]([^'"]+)['"]/g)].map(match=>match[1]);
+const cssImports=(source:string)=>[...source.matchAll(/@import\s+['"]([^'"]+)['"]/g)].map(match=>match[1]);
+const tsStyleImports=(source:string)=>[...source.matchAll(/import\s+['"](\.\.\/styles\/[^'"]+)['"]/g)].map(match=>match[1]);
 
 const rootStyles=read('src/styles.css');
+const workspaceStyles=read('src/components/WorkspaceStyles.tsx');
+const workspaceLayer=read('src/components/WorkspaceStyleLayer.tsx');
+const pageBoundary=read('src/components/PageErrorBoundary.tsx');
 const accountIban=read('src/components/AccountIban.tsx');
 const accountMetadata=read('src/components/AccountMetadataSettings.tsx');
 const bankBrand=read('src/components/BankBrandMark.tsx');
 const tailLoader=read('src/styles/part47.css');
 
 describe('Stage 5 CSS ownership',()=>{
-  it('makes the Phase-1 global tail explicit after the existing root compatibility stack',()=>{
-    const expectedRoot=[...Array.from({length:46},(_,index)=>`./styles/part${index+1}.css`),'./styles/part57.css','./styles/part47.css','./styles/part50.css','./styles/part52.css','./styles/part53.css'];
-    expect(imports(rootStyles)).toEqual(expectedRoot);
+  it('keeps the login/root CSS budget boundary and loads the late tail through one lazy workspace owner',()=>{
+    const expectedRoot=[...Array.from({length:46},(_,index)=>`./styles/part${index+1}.css`),'./styles/part57.css'];
+    expect(cssImports(rootStyles)).toEqual(expectedRoot);
+    expect(tsStyleImports(workspaceLayer)).toEqual([
+      '../styles/part47.css',
+      '../styles/part50.css',
+      '../styles/part52.css',
+      '../styles/part53.css',
+    ]);
+    expect(workspaceStyles).toContain("lazy(()=>import('./WorkspaceStyleLayer')");
+    expect(workspaceStyles).toContain('Suspense fallback={<PageSkeleton/>}');
+    expect(pageBoundary).toContain('return <WorkspaceStyles>{this.props.children}</WorkspaceStyles>;');
   });
 
   it('removes unrelated domain components as global stylesheet loaders',()=>{
@@ -27,8 +40,8 @@ describe('Stage 5 CSS ownership',()=>{
     expect(bankBrand).toContain('export function BankBrandMark');
   });
 
-  it('preserves the existing transitive approved-style tail while ownership moves to the root entry',()=>{
-    expect(imports(tailLoader)).toEqual([
+  it('preserves the existing transitive approved-style tail behind the workspace owner',()=>{
+    expect(cssImports(tailLoader)).toEqual([
       './part48.css',
       './part49.css',
       './part50.css',
