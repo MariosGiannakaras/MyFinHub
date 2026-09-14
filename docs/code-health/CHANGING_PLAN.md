@@ -118,26 +118,28 @@ Stage-4 completion boundary: KPI/account/payment/attention/credit/loan/lending/r
 Goal: replace hidden global-style ownership and numeric loader coupling incrementally, while preserving exact CSS cascade, login/root budget boundaries, approved rendering and semantic theme behavior.
 
 - [x] Stage-1 inventory documented the current numbered-file graph and hidden loader coupling.
-- [ ] Batch 1: eliminate unrelated domain-components-as-global-stylesheet-loaders by giving the late compatibility tail one explicit lazy workspace owner.
+- [x] Batch 1: eliminate unrelated domain-components-as-global-stylesheet-loaders by giving the late compatibility tail one explicit lazy workspace owner.
+- [ ] Batch 2: give the preserved late-workspace compatibility sequence one named stylesheet entrypoint without changing the sequence or declarations.
 - [ ] Replace numeric loader chains incrementally with named tokens/base/primitives/patterns/pages ownership.
 - [ ] Reduce selector duplication and unnecessary `!important` only with proven visual parity.
 - [ ] Keep runtime theme code focused on semantic token application rather than broad selector styling.
 - [ ] Maintain deterministic visual regression evidence at every batch.
 
-Active Batch 1: PR #390, branch `chore/357-css-ownership-batch-1`, based exactly on verified `develop@d0e267790612c625b352a484cb2d79e00d4e0e42` (tree `3612f712e6f7f72ed25794a7290e75863459320e`).
+Batch 1 delivery: PR #390 squash-merged to `develop@167e30a9dd21e3436598263794d5aea512319afe` (tree `c7ddb6d4a9329bc0e1ad6dd080aa649170ba8251`). The root/login budget remains `part1.css`–`part46.css`, then `part57.css`; `WorkspaceStyleLayer` became the explicit lazy owner of the preserved late sequence; unrelated domain components no longer own global stylesheet side effects. Final exact-head CI `34824091916`, CodeQL `34824092106`, Cross-engine `34824092051`, Performance `34824092026`, Windows `34824091936` passed. Fresh artifact `10340640122` (`sha256:d33c769c8ccd10369f3850c7726dd5450f828078c10871784c16c6afe142bbcc`) was inspected. Post-merge integration is 3/3 green on the exact merge tree: CI `34825830962` attempt 2, CodeQL `34825831023`, Windows Desktop `34825830963`; CI attempt 1 had an isolated Chromium/CDP error in `ledger-foundations-qa.mjs` and the unchanged-tree targeted rerun passed.
 
-Final Batch-1 architecture:
-- keep `src/styles.css` root/login budget unchanged (`part1.css`–`part46.css`, then `part57.css`);
-- lazy-load `WorkspaceStyleLayer` through `WorkspaceStyles` with the existing `PageSkeleton` fallback;
-- `WorkspaceStyleLayer` owns the preserved late sequence `part47.css -> part50.css -> part52.css -> part53.css`;
-- successful `PageErrorBoundary` children are wrapped in `WorkspaceStyles`;
-- remove stylesheet side effects from `AccountIban`, `AccountMetadataSettings` and `BankBrandMark`;
-- preserve the `part47.css` transitive approved-target chain and intentionally retain the direct `part50.css` compatibility import for this batch;
-- update source guards only to follow the same approved styles through the explicit workspace owner.
+Active Batch 2: PR #391, branch `chore/357-css-ownership-batch-2`, based exactly on verified `develop@167e30a9dd21e3436598263794d5aea512319afe`.
 
-No CSS declaration or selector is changed in Batch 1. No finance/accounting/auth/security/API/persistence/routing/database/Windows/release/deploy/production-data behavior is in scope.
+Batch-2 architecture:
+- add `src/styles/workspace-compat.css` as the named owner for the exact preserved late sequence `part47.css -> part50.css -> part52.css -> part53.css`;
+- make `WorkspaceStyleLayer` import only `workspace-compat.css`;
+- keep the intentional direct `part50.css` compatibility import even though `part47.css` also reaches it transitively;
+- keep `src/styles.css` unchanged, so root/login loading remains `part1.css`–`part46.css`, then `part57.css`;
+- update source guards only to follow the named entrypoint while preserving the same approved-target requirements;
+- change no existing CSS declaration, selector, specificity, media query, theme token or finance/domain behavior.
 
-Validation milestone: source head `b0c80826aca293187a4a12363959a21e3d89069b` (tree `2029c945b9fda887c05a02eded00e142dec6ca4e`) passed CI `34811328535`, CodeQL `34811328637`, Cross-engine `34811328712`, Performance `34811328558`, Windows `34811328529`. Fresh artifact `10335195734` (`sha256:fc211bff7a9fd23e3f77caeae249c38adee397910fadbcd8ea817775ed613293`) was inspected across representative Loans, Settings, Recurring and shared-control/mobile evidence. Visual-QA bot commit `b88c61db345f925703fa11b08f356b70d6fca300` was verified generated-only; fast-forward cleanup `3ab0b135022fc42fad3f4e87b7d47438db82e209` restored the exact validated source tree without force-pushing. Documentation synchronization follows on the same bounded branch; final exact-head gates are required after the docs checkpoint.
+Batch-2 source implementation `05ef4447db234b8c2dc9644a1dbd0035d0af1f2f` has tree `5456fcb1b7fd13899dd8a849169f0e29e0ad838c`. Visual-QA run `34840347317` completed successfully and produced bot commit `f6d8367e90cb0a1ae6172e052729d9bdff1e6e3a`; source-to-bot comparison was generated-only under `visual-qa/**`. Fast-forward cleanup `50a71d837845764cf50545ebf5ca55ccd1d0aa8e` restored the exact source tree without force-pushing. Base-to-cleanup net scope is exactly five intended files, +24/−15.
+
+Cleanup-head validation on `50a71d837845764cf50545ebf5ca55ccd1d0aa8e`: CI `34860435186`, CodeQL `34860435413`, Cross-engine `34860435235`, and Performance `34860435272` passed. Fresh CI artifact `10353979802` (`sha256:4a01241b748948527f8712160945cf7581e2fe20f0c261e2534fdecfd89e498a`) was inspected across Loans desktop/mobile, Settings mobile, and Recurring editor mobile with no missing styles, cascade break, overflow or responsive regression. Windows Desktop `34860435164` is blocked by an external `electron-builder` HTTP 504 during asset download: both the initial job and one targeted unchanged-tree rerun passed 139/139 test files, 697/697 tests, production build, bundle budgets, desktop checks and installer validation before failing at the same external Gateway Time-out. No source/workflow threshold has been changed to mask the upstream failure.
 
 ### Stage 6 — Code-hygiene tooling
 
@@ -171,11 +173,11 @@ Validation milestone: source head `b0c80826aca293187a4a12363959a21e3d89069b` (tr
 - **Overall tracker:** #357 — OPEN.
 - **Completed stages:** 5/9 (Stages 0, 1, 2, 3, 4).
 - **Active stage:** Stage 5 — CSS ownership cleanup.
-- **Verified integration base:** `develop@d0e267790612c625b352a484cb2d79e00d4e0e42` (tree `3612f712e6f7f72ed25794a7290e75863459320e`); Batch-4 post-merge CI `34784419600`, CodeQL `34784419544`, Windows Desktop `34784419514` are green.
-- **Active delivery:** PR #390 / `chore/357-css-ownership-batch-1`.
-- **Validated source tree:** `2029c945b9fda887c05a02eded00e142dec6ca4e`; required source-head 5/5 gates are green and fresh rendered evidence has been inspected.
-- **Generated evidence cleanup:** bot commit `b88c61db345f925703fa11b08f356b70d6fca300` was generated-only; cleanup `3ab0b135022fc42fad3f4e87b7d47438db82e209` restored the validated source tree. Docs are being synchronized on top of that cleanup.
-- **Next action:** verify the final docs-synced base-to-head diff, wait for exact final-head CI/CodeQL/Cross-engine/Performance/Windows, inspect any fresh final-head evidence if the CI artifact changes, check reviews/threads, mark ready, wait for any ready-triggered required run, and squash-merge only to `develop` with an expected-head guard. Then require fresh post-merge `develop` CI + CodeQL + Windows 3/3 before the next Stage-5 write batch.
+- **Verified integration base:** `develop@167e30a9dd21e3436598263794d5aea512319afe` (tree `c7ddb6d4a9329bc0e1ad6dd080aa649170ba8251`); Batch-1 post-merge CI `34825830962` attempt 2, CodeQL `34825831023`, and Windows Desktop `34825830963` are green.
+- **Active delivery:** draft PR #391 / `chore/357-css-ownership-batch-2`.
+- **Validated cleanup tree before docs sync:** `5456fcb1b7fd13899dd8a849169f0e29e0ad838c` at cleanup head `50a71d837845764cf50545ebf5ca55ccd1d0aa8e`; CI, CodeQL, Cross-engine and Performance are green and fresh rendered evidence is inspected.
+- **Current blocker:** Windows run `34860435164` hit the same external `electron-builder` HTTP 504 Gateway Time-out on the original job and one targeted unchanged-tree rerun, after all application tests/build/budgets and desktop validation passed. Treat as upstream availability; do not weaken packaging checks or change source merely to bypass it.
+- **Next action:** this documentation synchronization creates a new exact head. Verify the resulting base-to-head scope, clean any generated-only Visual-QA bot commit if one appears, then require fresh exact-head CI/CodeQL/Cross-engine/Performance/Windows. If Windows is green, inspect the fresh CI artifact, check reviews/threads, mark ready, wait for any ready-triggered required run, and squash-merge only to `develop` with an expected-head guard. If the external 504 recurs, keep the PR draft and do not merge. After merge, require exact-merge `develop` CI + CodeQL + Windows 3/3 before the next Stage-5 write batch.
 
 ## Resume procedure for a future chat
 
