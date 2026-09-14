@@ -62,13 +62,12 @@ Completed delivery: PR #359, `develop@11f1e9995a332ee2b5b039281701db3db031e98d`.
 
 Goal: replace selector-net generic action ownership with typed shared primitives without changing approved visuals, geometry or behavior.
 
-- [x] Introduce typed `Button` variants for primary, secondary, danger and ghost/text-compatible actions while preserving approved CSS hooks.
-- [x] Introduce accessible `IconButton` with required accessible `aria-label` and safe default `type="button"`.
-- [x] Migrate bounded safe adopter groups incrementally while preserving intentional domain/composite raw controls.
+- [x] Introduce typed `Button` variants and accessible `IconButton` while preserving approved CSS hooks.
+- [x] Migrate bounded safe adopter groups while preserving intentional domain/composite raw controls.
 - [x] Remove compatibility aliases after active adopters no longer depend on them.
-- [x] Verify keyboard/focus/disabled/submit semantics plus fresh rendered evidence through the bounded migrations.
+- [x] Verify keyboard/focus/disabled/submit semantics and fresh rendered evidence.
 
-Delivery history: bounded PRs #363–#379. Final Stage-2 completion PR #379 squash-merged to `develop@84fc1c3b70533f0519b26a69f884fd756d7c965d`; post-merge CI `34679070861`, CodeQL `34679070828`, and Windows Desktop `34679070906` passed.
+Delivery history: bounded PRs #363–#379. Final Stage-2 completion PR #379 squash-merged to `develop@84fc1c3b70533f0519b26a69f884fd756d7c965d`; post-merge CI `34679070861`, CodeQL `34679070828`, Windows Desktop `34679070906` passed.
 
 Intentional raw exceptions remain where a button is a domain/composite control rather than a generic action primitive: card-design radios, payment-card interactions, row/domain navigation controls, segmented/sort controls, taxonomy/composite selectors, and comparable documented cases.
 
@@ -77,54 +76,68 @@ Intentional raw exceptions remain where a button is a domain/composite control r
 Goal: centralize common modal-shell mechanics only where presentation and behavior contracts genuinely match; do not force pickers/popovers or specialized domain surfaces into one abstraction.
 
 - [x] Establish shared `DialogShell` ownership for canonical backdrop, modal ARIA container, `useModalFocus`, Escape/dismiss behavior and reduced-motion transition policy.
-- [x] Batch 1: migrate `ConfirmDialog` and `MoneyEditDialog` while preserving alert/dialog roles, busy guards, validation relationships, actions and CSS/DOM contracts.
-- [x] Batch 2: migrate `QuickAdd` while preserving dirty-close nested confirmation, parent/child focus ownership, split-field autofocus, form semantics and approved Quick Entry presentation.
-- [x] Batch 3: add an explicit no-motion `DialogShell` path and migrate the static `LegacyTransactionEditor` shell without changing rendered backdrop/surface classes, ARIA, focus or dismissal behavior.
-- [x] Batch 4: migrate only the special static `ContextualQuickAdd` modal to the validated no-motion shell while preserving its dynamic description/error relationship, generic QuickAdd route and all payment/domain semantics.
-- [x] Perform a final exact-tree eligibility audit and stop when the matching quick-modal family is exhausted rather than forcing picker/palette/editor/OCR overlays through the abstraction.
-- [x] Defer header/footer abstractions because the completed adopter set did not prove a stable additional contract beyond shell ownership; specialized body/form/destructive/busy behavior remains domain-owned.
-- [x] Keep native `alert`/`confirm`/`prompt` prohibited through existing guards.
+- [x] Batch 1: migrate `ConfirmDialog` and `MoneyEditDialog`.
+- [x] Batch 2: migrate `QuickAdd` while preserving dirty-close nested confirmation and focus ownership.
+- [x] Batch 3: add explicit no-motion shell support and migrate `LegacyTransactionEditor`.
+- [x] Batch 4: migrate the special static `ContextualQuickAdd` modal.
+- [x] Complete an exact-tree eligibility audit and stop when the matching quick-modal family is exhausted.
+- [x] Keep specialized body/form/destructive/busy behavior domain-owned and keep native `alert`/`confirm`/`prompt` prohibited.
 
-Batch 1 delivery: PR #380 squash-merged to `develop@490dec1badaf2e0b6571f59d01f3b3be01baaab7` (tree `52df6b2261c3ae4690901d06f5aeb008e87bd145`). Final exact-head CI `34682517666`, CodeQL `34682517632`, Cross-engine `34682517694`, Performance `34682517646`, Windows Desktop `34682517680`, plus ready-triggered Performance `34683083931` passed. Post-merge integration is 3/3 green: CI `34683195957`, CodeQL `34683195937`, Windows Desktop `34683195943`.
+Delivery history:
+- PR #380 -> `develop@490dec1badaf2e0b6571f59d01f3b3be01baaab7`; post-merge CI `34683195957`, CodeQL `34683195937`, Windows `34683195943`.
+- PR #381 -> `develop@da82108b0ef8c552e958d241db4e8fd47a1e1574`; post-merge CI `34701157385` attempt 2, CodeQL `34701157366`, Windows `34701157384`.
+- PR #382 -> `develop@c962ee5ccc90036584aba16fe397ef0f097dee98`; post-merge CI `34703684734` attempt 2, CodeQL `34703684736`, Windows `34703684715`.
+- PR #383 -> `develop@ee83da00b66f0d2dde7b23d817fe67ec3f5c6a03`; post-merge CI `34729068520`, CodeQL `34729068487`, Windows `34729068512`.
 
-Batch 2 delivery: PR #381 squash-merged to `develop@da82108b0ef8c552e958d241db4e8fd47a1e1574` (tree `8f771e132cbf497e6c814a95372d737e2db56565`). Final exact-head required gates and ready-triggered Performance passed. Post-merge integration is 3/3 green: CI `34701157385` attempt 2, CodeQL `34701157366`, Windows Desktop `34701157384`. CI attempt 1 had a non-reproducing compact-mobile subpixel touch-target result; the full targeted rerun passed on the identical tree without source or threshold changes.
+Final Stage-3 audit found no additional current `DialogShell` adopter: card creation remains a picker/card-preview composite, command palette keeps palette-specific combobox/listbox and motion geometry, Receipt Inbox keeps OCR lifecycle plus nested-confirm ownership, routed finance editors remain a separate `editor-backdrop + editor-dialog` family, and app-owned select/date/navigation overlays remain specialized controls.
 
-Batch 3 delivery: PR #382 squash-merged to `develop@c962ee5ccc90036584aba16fe397ef0f097dee98` (tree `56ab592bf41dc38cd0f2d891e56af33fa478011c`). Final exact-head CI `34702873522`, CodeQL `34702873521`, Cross-engine `34702873518`, Performance `34702873514`, Windows Desktop `34702873530`, plus ready-triggered Performance `34703532465` passed. Fresh PR artifact `10300746480` (`sha256:4810c95fbbe24d3e2d7c128ae9b6c223943f5e7fe928816d151d79f6665fc3c6`) was inspected. Post-merge CodeQL `34703684736` and Windows Desktop `34703684715` passed. Post-merge CI `34703684734` attempt 1 hit an isolated Chromium/CDP `Cannot find context with specified id` failure in `icon-packs-qa.mjs`; the unchanged exact-tree rerun attempt 2 passed the full rendered matrix, audits and evidence upload. Fresh post-merge artifact `10304577099` has digest `sha256:b6c0a0eba4f28880a082812d03cf405cf2b685036b9b068764ed7948ca43aeaf`.
-
-Batch 4 delivery: PR #383 squash-merged to `develop@ee83da00b66f0d2dde7b23d817fe67ec3f5c6a03` (tree `ab1cadf1347d4f0d134ff7f702b129646685080b`). Final exact-head CI `34715186905`, CodeQL `34715186925`, Cross-engine `34715186930`, Performance `34715186910`, Windows Desktop `34715186953`, plus ready-triggered Performance `34728958901` passed. Fresh artifact `10304778189` (`sha256:3628be5882fc3d46bf0d02106ea57e5d23223063597011a7cf1bc01c5187ecb4`) was inspected for contextual payment/action flows and mobile containment. Post-merge integration is 3/3 green: CI `34729068520`, CodeQL `34729068487`, Windows Desktop `34729068512`.
-
-Final Stage-3 audit on exact `develop@ee83da00b66f0d2dde7b23d817fe67ec3f5c6a03` found no additional current `DialogShell` adopter: `CardCreateDialog` remains a picker/card-preview composite, `CommandPalette` keeps palette-specific combobox/listbox and motion geometry, `ReceiptInbox` keeps OCR lifecycle plus nested-confirm ownership, the routed lending/savings/loans/recurring/planning/credit forms remain a separate `editor-backdrop + editor-dialog` presentation family, and app-owned select/date/navigation overlays remain specialized controls.
-
-### Stage 4 — Canonical `Surface` — ACTIVE
+### Stage 4 — Canonical `Surface` — COMPLETE
 
 Goal: centralize generic elevation ownership without erasing semantic/domain component boundaries or changing approved rendering.
 
 - [x] Batch 1 foundation: introduce polymorphic `Surface` with explicit `raised` / `flat` / `inset` variants mapped to the existing `neo-*` compatibility hooks, with no CSS changes.
-- [x] Batch 1 adopters: move only the generic `KeyboardShortcutsPanel` and `ReadabilitySettings` outer shells to `Surface` while preserving semantic `section` hosts, ARIA relationships and existing panel-specific classes.
-- [x] Validate Batch 1 with exact-head app/API checks, rendered Settings desktop/mobile evidence, cross-engine, performance and Windows gates; merge only to `develop` and require post-merge 3/3 integration.
-- [x] Batch 2: migrate only the active Settings generic raised shells in `DesktopUpdatePanel` and the Data-tab backup/import action cards while preserving `article`/`section` semantics, ARIA, backup/import safety and Windows-update behavior.
-- [x] Batch 3: migrate only generic application-chrome elevation hosts in `AppShell` plus the matching loading-shell sidebar to `Surface`, preserving exact semantic tags/classes and leaving overlay/state-specific `neo-*` ownership specialized.
-- [ ] Batch 4: allow the polymorphic `Surface` to carry the host element's typed React 19 `ref`, then migrate only the generic `PageErrorBoundary` raised host while preserving its `section`, alert semantics, programmatic focus and same-route Dashboard recovery ordering.
-- [ ] Continue bounded adopter audits after integration; prefer genuinely generic shells and avoid migrating semantic domain cards solely because they use `neo-*` classes.
-- [ ] Keep KPI/account/payment/attention/loan/lending/recurring/planning/report and other domain surfaces semantic; composition with `Surface` is allowed only when it clarifies generic elevation ownership without flattening domain behavior.
-- [ ] Retain `neo-raised` / `neo-flat` / `neo-inset` as compatibility CSS hooks during Stage 4. CSS ownership/re-layering remains Stage 5 work.
+- [x] Batch 1 adopters: migrate `KeyboardShortcutsPanel` and `ReadabilitySettings` outer shells while preserving semantic hosts and ARIA.
+- [x] Batch 2: migrate active Settings generic raised shells in `DesktopUpdatePanel` and Data-tab backup/import cards while preserving safety and Windows-update behavior.
+- [x] Batch 3: migrate generic application-chrome elevation hosts in `AppShell` plus the matching loading-shell sidebar while leaving overlay/state-specific ownership specialized.
+- [x] Batch 4: extend polymorphic native props with React 19 `ComponentPropsWithRef<T>` and migrate only the generic `PageErrorBoundary` raised host while preserving focus, alert semantics and Dashboard recovery ordering.
+- [x] Complete a bounded adopter audit and stop rather than migrating semantic domain cards solely because they use `neo-*` classes.
+- [x] Retain `neo-raised` / `neo-flat` / `neo-inset` as compatibility hooks; CSS ownership/re-layering remains Stage 5 work.
 
-Batch 1 delivery: PR #384 squash-merged to `develop@f3d895736066ba689c8f20607cd2a52035a6826f` (tree `0c6d6ec0e3f46ebdd422c0a04002da7dbe4bc5d7`). Exact-head CI `34730999549`, CodeQL `34730999696`, Cross-engine `34730999589`, Performance `34730999623`, and Windows Desktop `34730999574` passed; fresh artifact `10309636017` (`sha256:145847c0d48183431e1e3acd43921c0d72af4e9c31e8696c269fc70c50f2edf0`) was inspected for Settings desktop/mobile parity. Post-merge integration is 3/3 green: CI `34731699612` attempt 3, CodeQL `34731699557`, Windows Desktop `34731699551`. The successful post-merge artifact is `10315576660` (`sha256:8cfba1c931b7f07ba68f6488c9313adf80902959718872faff89508133b73b56`).
+Batch 1 delivery: PR #384 squash-merged to `develop@f3d895736066ba689c8f20607cd2a52035a6826f`. Exact-head CI `34730999549`, CodeQL `34730999696`, Cross-engine `34730999589`, Performance `34730999623`, Windows `34730999574` passed; fresh artifact `10309636017` (`sha256:145847c0d48183431e1e3acd43921c0d72af4e9c31e8696c269fc70c50f2edf0`) was inspected. Post-merge CI `34731699612` attempt 3, CodeQL `34731699557`, Windows `34731699551` passed.
 
-Batch 2 delivery: PR #385 squash-merged to `develop@4a9743949f4499f4e45ac90b91a095030b54bb42` (tree `2781e41c6d10f3db582fa6cb5cf39fc20fa27992`). Exact cleanup-head CI `34750309313`, CodeQL `34750309377`, Cross-engine `34750309390`, Performance `34750309318`, Windows Desktop `34750309323`, plus ready-triggered Performance `34754456357` passed. Fresh artifact `10315820595` (`sha256:b1200075dee68db25637221419982e009b41bdb03e538dc3e7efe8a1e0a66e12`) was inspected for Settings General/Data desktop/mobile parity. Post-merge integration is 3/3 green: CI `34754599030`, CodeQL `34754599047`, Windows Desktop `34754599020`.
+Batch 2 delivery: PR #385 squash-merged to `develop@4a9743949f4499f4e45ac90b91a095030b54bb42`. Exact cleanup-head CI `34750309313`, CodeQL `34750309377`, Cross-engine `34750309390`, Performance `34750309318`, Windows `34750309323`, plus ready-triggered Performance `34754456357` passed. Fresh artifact `10315820595` (`sha256:b1200075dee68db25637221419982e009b41bdb03e538dc3e7efe8a1e0a66e12`) was inspected. Post-merge CI `34754599030`, CodeQL `34754599047`, Windows `34754599020` passed.
 
-Batch 3 delivery: PR #387 squash-merged to `develop@08be1340c369c676b3f3162f672010ae5bf8fdd5` (tree `dff7519b969a891fce1fe00bd29087efe76be81c`). Exact validated head `888c8b404f04fbe9dab7d4cc0266ea991a6a11d2` passed CI `34758351866` attempt 2, CodeQL `34758351882`, Cross-engine `34758351916`, Performance `34758351907`, Windows Desktop `34758351859`, plus ready-triggered Performance `34768656684`. Fresh artifact `10321174226` (`sha256:9359fd9c655401d99878dfb643b3b3b617daaf52f0e10e8a30da7bc5adae6dc4`) was inspected for desktop/mobile/loading-shell parity. Post-merge integration is 3/3 green: CI `34768843217`, CodeQL `34768843133`, Windows Desktop `34768843185`.
+Batch 3 delivery: PR #387 squash-merged to `develop@08be1340c369c676b3f3162f672010ae5bf8fdd5`. Validated head `888c8b404f04fbe9dab7d4cc0266ea991a6a11d2` passed CI `34758351866` attempt 2, CodeQL `34758351882`, Cross-engine `34758351916`, Performance `34758351907`, Windows `34758351859`, plus ready-triggered Performance `34768656684`. Fresh artifact `10321174226` (`sha256:9359fd9c655401d99878dfb643b3b3b617daaf52f0e10e8a30da7bc5adae6dc4`) was inspected. Post-merge CI `34768843217`, CodeQL `34768843133`, Windows `34768843185` passed.
 
-Active Batch 4: branch `chore/357-surface-batch-4`, based exactly on verified `develop@08be1340c369c676b3f3162f672010ae5bf8fdd5`. Source/test milestone `789133d5b6e3408177ba7b4075f4560821000b5a` changes only `Surface`, `PageErrorBoundary` and the focused Surface source guard: `Surface` now derives native props from `ComponentPropsWithRef<T>` so React 19 can pass the host's typed `ref` through the existing `createElement` spread, and `PageErrorBoundary` composes the canonical raised `Surface` while retaining its same `createRef<HTMLElement>`, focus callback, `role="alert"`, title relationship, `tabIndex=-1`, recovery ordering and buttons. No CSS or finance/accounting/auth/API/persistence/routing/database/Windows/release behavior changes.
+Batch 4 delivery: PR #389 squash-merged to `develop@d0e267790612c625b352a484cb2d79e00d4e0e42` (tree `3612f712e6f7f72ed25794a7290e75863459320e`). Exact cleanup-head `9423a8204801b41898f9db305d25d2d626c9a035` passed CI `34778535110`, CodeQL `34778535094`, Cross-engine `34778535100`, Performance `34778535097`, Windows `34778535096`, plus ready-triggered Performance `34784263050`. Fresh artifact `10322922717` (`sha256:9906b28cd80e34f96da1fd6bbf7616b0dfd7fa4ca4fc95a9e5d7f339b609b103`) was inspected for page-error focus/recovery parity. Post-merge integration is 3/3 green: CI `34784419600`, CodeQL `34784419544`, Windows Desktop `34784419514`.
 
-### Stage 5 — CSS ownership cleanup
+Stage-4 completion boundary: KPI/account/payment/attention/credit/loan/lending/recurring/planning/report and other domain surfaces remain semantic components. Specialized overlays and stateful domain cards are not migrated by `neo-*` class name. A stale duplicate PR #388 was closed without merge and must not be reused.
+
+### Stage 5 — CSS ownership cleanup — ACTIVE
+
+Goal: replace hidden global-style ownership and numeric loader coupling incrementally, while preserving exact CSS cascade, login/root budget boundaries, approved rendering and semantic theme behavior.
 
 - [x] Stage-1 inventory documented the current numbered-file graph and hidden loader coupling.
-- [ ] Eliminate unrelated component-as-global-stylesheet-loader coupling.
+- [ ] Batch 1: eliminate unrelated domain-components-as-global-stylesheet-loaders by giving the late compatibility tail one explicit lazy workspace owner.
 - [ ] Replace numeric loader chains incrementally with named tokens/base/primitives/patterns/pages ownership.
 - [ ] Reduce selector duplication and unnecessary `!important` only with proven visual parity.
 - [ ] Keep runtime theme code focused on semantic token application rather than broad selector styling.
 - [ ] Maintain deterministic visual regression evidence at every batch.
+
+Active Batch 1: PR #390, branch `chore/357-css-ownership-batch-1`, based exactly on verified `develop@d0e267790612c625b352a484cb2d79e00d4e0e42` (tree `3612f712e6f7f72ed25794a7290e75863459320e`).
+
+Final Batch-1 architecture:
+- keep `src/styles.css` root/login budget unchanged (`part1.css`–`part46.css`, then `part57.css`);
+- lazy-load `WorkspaceStyleLayer` through `WorkspaceStyles` with the existing `PageSkeleton` fallback;
+- `WorkspaceStyleLayer` owns the preserved late sequence `part47.css -> part50.css -> part52.css -> part53.css`;
+- successful `PageErrorBoundary` children are wrapped in `WorkspaceStyles`;
+- remove stylesheet side effects from `AccountIban`, `AccountMetadataSettings` and `BankBrandMark`;
+- preserve the `part47.css` transitive approved-target chain and intentionally retain the direct `part50.css` compatibility import for this batch;
+- update source guards only to follow the same approved styles through the explicit workspace owner.
+
+No CSS declaration or selector is changed in Batch 1. No finance/accounting/auth/security/API/persistence/routing/database/Windows/release/deploy/production-data behavior is in scope.
+
+Validation milestone: source head `b0c80826aca293187a4a12363959a21e3d89069b` (tree `2029c945b9fda887c05a02eded00e142dec6ca4e`) passed CI `34811328535`, CodeQL `34811328637`, Cross-engine `34811328712`, Performance `34811328558`, Windows `34811328529`. Fresh artifact `10335195734` (`sha256:fc211bff7a9fd23e3f77caeae249c38adee397910fadbcd8ea817775ed613293`) was inspected across representative Loans, Settings, Recurring and shared-control/mobile evidence. Visual-QA bot commit `b88c61db345f925703fa11b08f356b70d6fca300` was verified generated-only; fast-forward cleanup `3ab0b135022fc42fad3f4e87b7d47438db82e209` restored the exact validated source tree without force-pushing. Documentation synchronization follows on the same bounded branch; final exact-head gates are required after the docs checkpoint.
 
 ### Stage 6 — Code-hygiene tooling
 
@@ -153,17 +166,16 @@ Active Batch 4: branch `chore/357-surface-batch-4`, based exactly on verified `d
 - [ ] Produce a release-readiness checkpoint.
 - [ ] Stop before `develop -> main`, release or deploy unless separately authorized by the owner.
 
-## Current checkpoint — 2026-09-13
+## Current checkpoint — 2026-09-14
 
 - **Overall tracker:** #357 — OPEN.
-- **Completed stages:** 4/9 (Stages 0, 1, 2, 3).
-- **Active stage:** Stage 4 — canonical generic `Surface` ownership.
-- **Verified integration base:** `develop@08be1340c369c676b3f3162f672010ae5bf8fdd5` (tree `dff7519b969a891fce1fe00bd29087efe76be81c`); Batch-3 post-merge CI `34768843217`, CodeQL `34768843133`, and Windows Desktop `34768843185` are green.
-- **Active delivery:** `chore/357-surface-batch-4`, based exactly on that verified integration commit.
-- **Batch-4 scope:** expose the native host `ref` through `Surface` using React 19 typed props and migrate only `PageErrorBoundary` from raw `panel neo-raised workspace-error` to `Surface as="section" variant="raised"`. Preserve the existing `createRef<HTMLElement>`, programmatic error focus, alert/title semantics, safe user-facing copy, retry/Dashboard/reload actions and same-route recovery ordering.
-- **Source/test milestone:** `789133d5b6e3408177ba7b4075f4560821000b5a`; the existing `shared-ui-source` and rendered `recovered-surface-qa.mjs` contracts continue to guard focus and same-page Dashboard recovery, while `tests/surface-source.test.ts` now also guards typed ref ownership and the canonical adopter markup.
-- **Eligibility boundary:** domain cards and specialized overlays remain out of scope. No mass migration by `neo-*` class name. The stale duplicate PR #388 was closed without merge after concurrent integration was detected and must not be reused.
-- **Next action:** verify the exact base→head diff after plan sync, open a draft Batch-4 PR to `develop`, run required CI/CodeQL/Cross-engine/Performance/Windows gates and inspect fresh `recovered-page-error-focus` plus representative desktop/mobile shell evidence. Resolve any source-test, type, generated visual persistence or review blocker at root cause; then mark ready, wait for ready-triggered required checks, squash-merge only to `develop`, and require fresh post-merge CI + CodeQL + Windows 3/3 before another Stage-4 write batch.
+- **Completed stages:** 5/9 (Stages 0, 1, 2, 3, 4).
+- **Active stage:** Stage 5 — CSS ownership cleanup.
+- **Verified integration base:** `develop@d0e267790612c625b352a484cb2d79e00d4e0e42` (tree `3612f712e6f7f72ed25794a7290e75863459320e`); Batch-4 post-merge CI `34784419600`, CodeQL `34784419544`, Windows Desktop `34784419514` are green.
+- **Active delivery:** PR #390 / `chore/357-css-ownership-batch-1`.
+- **Validated source tree:** `2029c945b9fda887c05a02eded00e142dec6ca4e`; required source-head 5/5 gates are green and fresh rendered evidence has been inspected.
+- **Generated evidence cleanup:** bot commit `b88c61db345f925703fa11b08f356b70d6fca300` was generated-only; cleanup `3ab0b135022fc42fad3f4e87b7d47438db82e209` restored the validated source tree. Docs are being synchronized on top of that cleanup.
+- **Next action:** verify the final docs-synced base-to-head diff, wait for exact final-head CI/CodeQL/Cross-engine/Performance/Windows, inspect any fresh final-head evidence if the CI artifact changes, check reviews/threads, mark ready, wait for any ready-triggered required run, and squash-merge only to `develop` with an expected-head guard. Then require fresh post-merge `develop` CI + CodeQL + Windows 3/3 before the next Stage-5 write batch.
 
 ## Resume procedure for a future chat
 
