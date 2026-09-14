@@ -42,10 +42,10 @@ describe('approved Loans desktop target source contract',()=>{
     expect(styles).toContain('.loan-progress-note{min-height:72px');
   });
 
-  it('extends the established approved-style chain and appends only the shared primitive layer',()=>{
+  it('keeps the approved Loans chain behind the explicit Stage-5 global tail',()=>{
     expect(styles).toContain('@media (min-width:1100px)');
-    expect(normalizedBaseStyles).toContain("@import './styles/part46.css';\n@import './styles/part57.css';");
-    expect(normalizedBaseStyles.trimEnd()).toMatch(/part57\.css';$/);
+    expect(normalizedBaseStyles).toContain("@import './styles/part46.css';\n@import './styles/part57.css';\n@import './styles/part47.css';\n@import './styles/part50.css';\n@import './styles/part52.css';\n@import './styles/part53.css';");
+    expect(normalizedBaseStyles.trimEnd()).toMatch(/part53\.css';$/);
     expect(approvedChain).toContain("@import './loans-approved-target.css';");
     expect(styles).not.toContain('@media (max-width');
   });
