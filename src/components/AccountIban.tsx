@@ -2,9 +2,6 @@ import { Check, Copy } from 'lucide-react';
 import { useState } from 'react';
 import { useAccountMetadata } from '../hooks/useAccountMetadata';
 import { formatIban } from '../lib/iban';
-import '../styles/part47.css';
-import '../styles/part50.css';
-import '../styles/part52.css';
 
 async function copyText(value:string){
   if(navigator.clipboard?.writeText){
