@@ -8,6 +8,7 @@ const approvedChain=readFileSync(new URL('../src/styles/part47.css',import.meta.
 const baseStyles=readFileSync(new URL('../src/styles.css',import.meta.url),'utf8');
 const normalizedBaseStyles=baseStyles.replace(/\r\n/g,'\n');
 const workspaceLayer=readFileSync(new URL('../src/components/WorkspaceStyleLayer.tsx',import.meta.url),'utf8').replace(/\r\n/g,'\n');
+const workspaceCompat=readFileSync(new URL('../src/styles/workspace-compat.css',import.meta.url),'utf8').replace(/\r\n/g,'\n');
 
 describe('approved Quick Entry desktop target source contract',()=>{
   it('keeps the real eight-intent QuickAdd engine and canonical entry controls',()=>{
@@ -28,10 +29,11 @@ describe('approved Quick Entry desktop target source contract',()=>{
     expect(receiptAware).toContain('deleteReceiptDraft(handledId)');
   });
 
-  it('preserves the approved Quick Entry chain behind the lazy workspace style owner',()=>{
+  it('preserves the approved Quick Entry chain behind the named lazy workspace style owner',()=>{
     expect(normalizedBaseStyles).toContain("@import './styles/part46.css';\n@import './styles/part57.css';");
     expect(normalizedBaseStyles.trimEnd()).toMatch(/part57\.css';$/);
-    expect(workspaceLayer).toContain("import '../styles/part47.css';\nimport '../styles/part50.css';\nimport '../styles/part52.css';\nimport '../styles/part53.css';");
+    expect(workspaceLayer).toContain("import '../styles/workspace-compat.css';");
+    expect(workspaceCompat).toContain("@import './part47.css';\n@import './part50.css';\n@import './part52.css';\n@import './part53.css';");
     expect(approvedChain).toContain("@import './part48.css';");
     expect(approvedChain).toContain("@import './part49.css';");
     expect(approvedChain).toContain("@import './part50.css';");
