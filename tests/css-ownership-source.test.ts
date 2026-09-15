@@ -10,6 +10,7 @@ const tsStyleImports=(source:string)=>[...source.matchAll(/import\s+['"](\.\.\/s
 const rootStyles=read('src/styles.css');
 const workspaceStyles=read('src/components/WorkspaceStyles.tsx');
 const workspaceLayer=read('src/components/WorkspaceStyleLayer.tsx');
+const workspaceCompat=read('src/styles/workspace-compat.css');
 const pageBoundary=read('src/components/PageErrorBoundary.tsx');
 const accountIban=read('src/components/AccountIban.tsx');
 const accountMetadata=read('src/components/AccountMetadataSettings.tsx');
@@ -17,14 +18,15 @@ const bankBrand=read('src/components/BankBrandMark.tsx');
 const tailLoader=read('src/styles/part47.css');
 
 describe('Stage 5 CSS ownership',()=>{
-  it('keeps the login/root CSS budget boundary and loads the late tail through one lazy workspace owner',()=>{
+  it('keeps the login/root CSS budget boundary and loads the late tail through one named lazy workspace owner',()=>{
     const expectedRoot=[...Array.from({length:46},(_,index)=>`./styles/part${index+1}.css`),'./styles/part57.css'];
     expect(cssImports(rootStyles)).toEqual(expectedRoot);
-    expect(tsStyleImports(workspaceLayer)).toEqual([
-      '../styles/part47.css',
-      '../styles/part50.css',
-      '../styles/part52.css',
-      '../styles/part53.css',
+    expect(tsStyleImports(workspaceLayer)).toEqual(['../styles/workspace-compat.css']);
+    expect(cssImports(workspaceCompat)).toEqual([
+      './part47.css',
+      './part50.css',
+      './part52.css',
+      './part53.css',
     ]);
     expect(workspaceStyles).toContain("lazy(()=>import('./WorkspaceStyleLayer')");
     expect(workspaceStyles).toContain('Suspense fallback={<PageSkeleton/>}');
@@ -40,7 +42,7 @@ describe('Stage 5 CSS ownership',()=>{
     expect(bankBrand).toContain('export function BankBrandMark');
   });
 
-  it('preserves the existing transitive approved-style tail behind the workspace owner',()=>{
+  it('preserves the existing transitive approved-style tail behind the named workspace owner',()=>{
     expect(cssImports(tailLoader)).toEqual([
       './part48.css',
       './part49.css',
