@@ -8,6 +8,7 @@ const cssImports=(source:string)=>[...source.matchAll(/@import\s+['"]([^'"]+)['"
 const tsStyleImports=(source:string)=>[...source.matchAll(/import\s+['"](\.\.\/styles\/[^'"]+)['"]/g)].map(match=>match[1]);
 
 const rootStyles=read('src/styles.css');
+const rootCompat=read('src/styles/root-compat.css');
 const workspaceStyles=read('src/components/WorkspaceStyles.tsx');
 const workspaceLayer=read('src/components/WorkspaceStyleLayer.tsx');
 const workspaceCompat=read('src/styles/workspace-compat.css');
@@ -18,9 +19,10 @@ const bankBrand=read('src/components/BankBrandMark.tsx');
 const tailLoader=read('src/styles/part47.css');
 
 describe('Stage 5 CSS ownership',()=>{
-  it('keeps the login/root CSS budget boundary and loads the late tail through one named lazy workspace owner',()=>{
-    const expectedRoot=[...Array.from({length:46},(_,index)=>`./styles/part${index+1}.css`),'./styles/part57.css'];
-    expect(cssImports(rootStyles)).toEqual(expectedRoot);
+  it('keeps the root/login CSS budget behind one named owner and the late tail behind one lazy workspace owner',()=>{
+    const expectedRoot=[...Array.from({length:46},(_,index)=>`./part${index+1}.css`),'./part57.css'];
+    expect(cssImports(rootStyles)).toEqual(['./styles/root-compat.css']);
+    expect(cssImports(rootCompat)).toEqual(expectedRoot);
     expect(tsStyleImports(workspaceLayer)).toEqual(['../styles/workspace-compat.css']);
     expect(cssImports(workspaceCompat)).toEqual([
       './part47.css',
