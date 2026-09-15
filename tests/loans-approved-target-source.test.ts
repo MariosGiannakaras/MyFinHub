@@ -5,6 +5,7 @@ const source=readFileSync(new URL('../src/pages/LoansPage.tsx',import.meta.url),
 const styles=readFileSync(new URL('../src/styles/loans-approved-target.css',import.meta.url),'utf8');
 const baseStyles=readFileSync(new URL('../src/styles.css',import.meta.url),'utf8');
 const normalizedBaseStyles=baseStyles.replace(/\r\n/g,'\n');
+const rootCompat=readFileSync(new URL('../src/styles/root-compat.css',import.meta.url),'utf8').replace(/\r\n/g,'\n');
 const workspaceLayer=readFileSync(new URL('../src/components/WorkspaceStyleLayer.tsx',import.meta.url),'utf8').replace(/\r\n/g,'\n');
 const workspaceCompat=readFileSync(new URL('../src/styles/workspace-compat.css',import.meta.url),'utf8').replace(/\r\n/g,'\n');
 const approvedChain=readFileSync(new URL('../src/styles/part47.css',import.meta.url),'utf8');
@@ -44,10 +45,11 @@ describe('approved Loans desktop target source contract',()=>{
     expect(styles).toContain('.loan-progress-note{min-height:72px');
   });
 
-  it('keeps the approved Loans chain behind the named lazy workspace style owner',()=>{
+  it('keeps the approved Loans chain behind the named root and lazy workspace style owners',()=>{
     expect(styles).toContain('@media (min-width:1100px)');
-    expect(normalizedBaseStyles).toContain("@import './styles/part46.css';\n@import './styles/part57.css';");
-    expect(normalizedBaseStyles.trimEnd()).toMatch(/part57\.css';$/);
+    expect(normalizedBaseStyles.trim()).toBe("@import './styles/root-compat.css';");
+    expect(rootCompat).toContain("@import './part46.css';\n@import './part57.css';");
+    expect(rootCompat.trimEnd()).toMatch(/part57\.css';$/);
     expect(workspaceLayer).toContain("import '../styles/workspace-compat.css';");
     expect(workspaceCompat).toContain("@import './part47.css';\n@import './part50.css';\n@import './part52.css';\n@import './part53.css';");
     expect(approvedChain).toContain("@import './loans-approved-target.css';");
