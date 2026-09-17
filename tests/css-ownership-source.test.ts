@@ -20,7 +20,7 @@ const tailLoader=read('src/styles/part47.css');
 
 describe('Stage 5 CSS ownership',()=>{
   it('keeps the root/login CSS budget behind one named owner and the late tail behind one lazy workspace owner',()=>{
-    const expectedRoot=[...Array.from({length:46},(_,index)=>`./part${index+1}.css`),'./part57.css'];
+    const expectedRoot=[...Array.from({length:46},(_,index)=>`./part${index+1}.css`),'./app-controls.css'];
     expect(cssImports(rootStyles)).toEqual(['./styles/root-compat.css']);
     expect(cssImports(rootCompat)).toEqual(expectedRoot);
     expect(tsStyleImports(workspaceLayer)).toEqual(['../styles/workspace-compat.css']);

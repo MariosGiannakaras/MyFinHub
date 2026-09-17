@@ -48,8 +48,8 @@ describe('approved Loans desktop target source contract',()=>{
   it('keeps the approved Loans chain behind the named root and lazy workspace style owners',()=>{
     expect(styles).toContain('@media (min-width:1100px)');
     expect(normalizedBaseStyles.trim()).toBe("@import './styles/root-compat.css';");
-    expect(rootCompat).toContain("@import './part46.css';\n@import './part57.css';");
-    expect(rootCompat.trimEnd()).toMatch(/part57\.css';$/);
+    expect(rootCompat).toContain("@import './part46.css';\n@import './app-controls.css';");
+    expect(rootCompat.trimEnd()).toMatch(/app-controls\.css';$/);
     expect(workspaceLayer).toContain("import '../styles/workspace-compat.css';");
     expect(workspaceCompat).toContain("@import './part47.css';\n@import './part50.css';\n@import './part52.css';\n@import './part53.css';");
     expect(approvedChain).toContain("@import './loans-approved-target.css';");
