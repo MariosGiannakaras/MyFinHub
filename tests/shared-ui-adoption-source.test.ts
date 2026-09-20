@@ -24,7 +24,7 @@ const appSelectInput=read('src/components/AppSelectInput.tsx');
 const commandPalette=read('src/components/CommandPalette.tsx');
 const modalFocus=read('src/hooks/useModalFocus.ts');
 const hardening=read('src/styles/part30.css');
-const sharedControls=read('src/styles/part57.css');
+const sharedControls=read('src/styles/app-controls.css');
 const baseStyles=read('src/styles/part1.css');
 const rendered=read('scripts/ui-ux-hardening-qa.mjs');
 

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 const source=readFileSync(new URL('../src/components/AccountManagementSettings.tsx',import.meta.url),'utf8');
 const styles=readFileSync(new URL('../src/components/AccountManagementSettings.css',import.meta.url),'utf8');
-const sharedStyles=readFileSync(new URL('../src/styles/part57.css',import.meta.url),'utf8');
+const sharedStyles=readFileSync(new URL('../src/styles/app-controls.css',import.meta.url),'utf8');
 const qa=readFileSync(new URL('../scripts/settings-tabs-qa.mjs',import.meta.url),'utf8');
 
 describe('Accounts owner UI contract',()=>{

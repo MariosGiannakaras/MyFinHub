@@ -48,7 +48,7 @@ describe('cross-page UI consistency contracts',()=>{
   it('uses shared theme and one common focus state across control families',()=>{
     const theme=read('src/lib/theme.ts');
     const hardening=read('src/styles/part30.css');
-    const sharedControls=read('src/styles/part57.css');
+    const sharedControls=read('src/styles/app-controls.css');
     expect(theme).toContain('.sidebar nav button.active,.mobile-nav button.active,.save-button');
     expect(theme).toContain('.top-actions button,.icon-button,.settings-actions button,.secondary');
     expect(theme).toContain('input,select,textarea{background-color:var(--control-bg)!important');
