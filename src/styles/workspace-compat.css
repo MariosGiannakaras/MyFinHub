@@ -1,6 +1,6 @@
 /* Stage 5 named owner for the preserved late workspace compatibility sequence.
    Keep this import order stable until the numbered files are re-layered in later bounded batches. */
 @import './part47.css';
-@import './part50.css';
+@import './dashboard-command-search-geometry.css';
 @import './part52.css';
 @import './part53.css';
