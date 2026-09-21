@@ -65,19 +65,20 @@ Goal: replace hidden global-style ownership and numeric loader coupling incremen
 - [x] Batch 1: replace unrelated domain-components-as-global-style-loaders with one explicit lazy workspace owner. PR #390 merged to `develop@167e30a9dd21e3436598263794d5aea512319afe`; post-merge CI `34825830962` attempt 2, CodeQL `34825831023`, Windows `34825830963` green.
 - [x] Batch 2: name the preserved late-workspace compatibility sequence through `src/styles/workspace-compat.css` without changing its sequence or CSS declarations. PR #391 merged to `develop@2c963bbe41d600ff20a904a1a9482a80c874a852`; final validated head `6276c0a122688e8793bce038d95f2e67d9c43487` passed CI `34861930169`, CodeQL `34861930168`, Cross-engine `34861930034`, Performance `34861930053`, Windows `34861930076`; post-merge CI `34954236146`, CodeQL `34954236149`, Windows `34954236137` green.
 - [x] Batch 3: name the unchanged root/login compatibility sequence behind `src/styles/root-compat.css`. PR #394 merged to `develop@6aa86bcf4173999f0bfa992e0d1f12b5c097c3eb`; final cleanup head `97565d361c4a45484f0bbd6c75c70b67bbd96fed` passed CI `35088827003`, CodeQL `35088827013`, Cross-engine `35088827051`, Performance `35088827047`, Windows `35088827006`; post-merge CI `35263899309`, CodeQL `35263899322`, Windows `35263899320` green.
-- [ ] Batch 4: replace the coherent terminal numeric control/focus owner `part57.css` with named `app-controls.css`, reusing the exact blob and preserving its final root cascade position. Active branch `chore/357-css-ownership-batch-4`.
+- [x] Batch 4: name the coherent terminal app-control/focus owner as `app-controls.css` without changing CSS bytes or root cascade position. PR #395 merged to `develop@655c434071f501d484a7661556fc1765b90d262d`; final head `ea7754d7c26039ace77dc7e83a0e966b28375de1` passed CI `35367396491`, CodeQL `35367396377`, Cross-engine `35367396430`, Performance `35367396461`, Windows `35367396384`; post-merge CI `35527706593`, CodeQL `35527706580`, Windows `35527706606` green.
+- [ ] Batch 5: name the coherent 438-byte Dashboard command-search desktop geometry owner currently stored as `part50.css`, reusing the exact blob and preserving both existing workspace cascade positions. Active branch `chore/357-css-ownership-batch-5`.
 - [ ] Replace remaining numeric loader chains incrementally with accurate named tokens/base/primitives/patterns/pages ownership; do not give mixed legacy files misleading names.
 - [ ] Reduce selector duplication and unnecessary `!important` only with proven visual parity.
 - [ ] Keep runtime theme code focused on semantic token application rather than broad selector styling.
 - [ ] Maintain deterministic fresh visual regression evidence at every batch.
 
-#### Stage 5 Batch 4 checkpoint
+#### Stage 5 Batch 5 checkpoint
 
-Exact base is verified `develop@6aa86bcf4173999f0bfa992e0d1f12b5c097c3eb` after Batch-3 post-merge CI `35263899309`, CodeQL `35263899322`, and Windows Desktop `35263899320` passed.
+Exact base is verified `develop@655c434071f501d484a7661556fc1765b90d262d` after Batch-4 post-merge CI `35527706593`, CodeQL `35527706580`, and Windows Desktop `35527706606` passed.
 
-The bounded Batch-4 scope is intentionally limited to the coherent 687-byte `part57.css` app-control/focus layer. `app-controls.css` reuses the existing blob byte-for-byte, `root-compat.css` keeps it in the exact former terminal position after `part46.css`, and only the three existing ownership/approved-target guards plus Stage-5 documentation follow the new name. Mixed `part1.css` and `part30.css` remain untouched because their ownership is not yet clean enough for an accurate semantic rename.
+The bounded Batch-5 scope is intentionally limited to the coherent 438-byte `part50.css` Dashboard desktop command-search geometry owner. The new `dashboard-command-search-geometry.css` path reuses the exact existing blob `e890a280dee2dfa8968836d2756d049048d0159c`. The current compatibility graph loads this stylesheet both directly from `workspace-compat.css` and transitively from `part47.css`; this batch preserves both import sites and their existing order instead of removing the redundant load.
 
-No existing CSS declaration, selector, specificity, media query, theme token, workspace-tail import, runtime theme rule or finance/domain behavior changes in this batch. Require exact-head CI / CodeQL / Cross-engine / Performance / Windows, fresh rendered evidence, and clean reviews/threads before ready/merge. After merge, require exact-merge CI + CodeQL + Windows 3/3 before the next Stage-5 write batch.
+No CSS declaration, selector, specificity, media query, theme token, root/login import, runtime theme rule, finance/domain behavior, API, persistence, auth or Windows packaging behavior changes in this batch. Source guards are updated only to follow the semantic filename while preserving the same import-order assertions. Require exact-head CI / CodeQL / Cross-engine / Performance / Windows, fresh rendered evidence, and clean reviews/threads before ready/merge. After merge, require exact-merge CI + CodeQL + Windows 3/3 before another Stage-5 write batch.
 
 ### Stage 6 — Code-hygiene tooling
 
@@ -106,15 +107,15 @@ No existing CSS declaration, selector, specificity, media query, theme token, wo
 - [ ] Produce a release-readiness checkpoint.
 - [ ] Stop before `develop -> main`, release or deploy unless separately authorized.
 
-## Current checkpoint — 2026-09-17
+## Current checkpoint — 2026-09-21
 
 - **Overall tracker:** #357 — OPEN.
 - **Completed stages:** 5/9 (Stages 0–4).
 - **Active stage:** Stage 5 — CSS ownership cleanup.
-- **Verified integration base:** `develop@6aa86bcf4173999f0bfa992e0d1f12b5c097c3eb`; Batch-3 post-merge CI `35263899309`, CodeQL `35263899322`, Windows Desktop `35263899320` are green.
-- **Active delivery:** branch `chore/357-css-ownership-batch-4`, bounded to the named canonical app-control layer.
-- **Implementation contract:** reuse the exact `part57.css` blob as `app-controls.css`, preserve its terminal root import position, change no CSS rule, and update only focused guards/documentation.
-- **Next action:** validate the atomic Batch-4 head with narrow source checks followed by required CI / CodeQL / Cross-engine / Performance / Windows; inspect fresh rendered evidence; clean any generated-only Visual-QA bot commit non-force; re-check reviews/threads; then squash-merge only to `develop` with expected-head protection and verify exact-merge CI + CodeQL + Windows before another write batch.
+- **Verified integration base:** `develop@655c434071f501d484a7661556fc1765b90d262d`; Batch-4 post-merge CI `35527706593`, CodeQL `35527706580`, Windows Desktop `35527706606` are green.
+- **Active delivery:** branch `chore/357-css-ownership-batch-5`, bounded to the named Dashboard command-search desktop geometry owner.
+- **Implementation contract:** reuse the exact `part50.css` blob as `dashboard-command-search-geometry.css`; preserve both existing import sites and their order; change no CSS rule; update only focused guards and Stage-5 documentation.
+- **Next action:** validate the atomic Batch-5 head with narrow source checks followed by required CI / CodeQL / Cross-engine / Performance / Windows; inspect fresh rendered evidence; clean any generated-only Visual-QA bot commit non-force; re-check reviews/threads; then squash-merge only to `develop` with expected-head protection and verify exact-merge CI + CodeQL + Windows before another write batch.
 
 ## Resume procedure
 

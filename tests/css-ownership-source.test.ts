@@ -26,7 +26,7 @@ describe('Stage 5 CSS ownership',()=>{
     expect(tsStyleImports(workspaceLayer)).toEqual(['../styles/workspace-compat.css']);
     expect(cssImports(workspaceCompat)).toEqual([
       './part47.css',
-      './part50.css',
+      './dashboard-command-search-geometry.css',
       './part52.css',
       './part53.css',
     ]);
@@ -48,7 +48,7 @@ describe('Stage 5 CSS ownership',()=>{
     expect(cssImports(tailLoader)).toEqual([
       './part48.css',
       './part49.css',
-      './part50.css',
+      './dashboard-command-search-geometry.css',
       './part51.css',
       './part54.css',
       './part55.css',
