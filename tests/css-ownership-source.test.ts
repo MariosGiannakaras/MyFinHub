@@ -46,10 +46,10 @@ describe('Stage 5 CSS ownership',()=>{
 
   it('preserves the existing transitive approved-style tail behind the named workspace owner',()=>{
     expect(cssImports(tailLoader)).toEqual([
-      './part48.css',
-      './part49.css',
+      './dashboard-approved-target.css',
+      './dashboard-route-shell-continuity.css',
       './dashboard-command-search-geometry.css',
-      './part51.css',
+      './dashboard-desktop-alignment.css',
       './part54.css',
       './part55.css',
       './part56.css',
