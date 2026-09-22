@@ -27,7 +27,7 @@ describe('Stage 5 CSS ownership',()=>{
     expect(cssImports(workspaceCompat)).toEqual([
       './part47.css',
       './dashboard-command-search-geometry.css',
-      './part52.css',
+      './dashboard-desktop-fidelity.css',
       './part53.css',
     ]);
     expect(workspaceStyles).toContain("lazy(()=>import('./WorkspaceStyleLayer')");
