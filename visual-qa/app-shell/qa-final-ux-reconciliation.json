@@ -4,16 +4,16 @@
   "appVersion": "v1.3",
   "suite": "final-ux-reconciliation",
   "surface": "app-shell",
-  "generatedAt": "2026-09-21T11:09:51.958Z",
+  "generatedAt": "2026-09-09T12:38:11.969Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "6b57df8e7e2140b2b0be04c1fb234999eff53cfb",
-    "shortSha": "6b57df8e",
-    "branch": "chore/357-css-ownership-batch-6"
+    "sha": "8752e7ea5e3b8a563c32421a962aa84dbed60fba",
+    "shortSha": "8752e7ea",
+    "branch": "chore/357-design-system-inventory"
   },
   "screenshots": [
-    "visual-qa/app-shell/v1.3__2026-09-21_140951__qa-final-ux-reconciliation__final-ux-history-desktop.png",
-    "visual-qa/app-shell/v1.3__2026-09-21_140951__qa-final-ux-reconciliation__final-ux-history-mobile.png",
-    "visual-qa/app-shell/v1.3__2026-09-21_140951__qa-final-ux-reconciliation__final-ux-shortcuts-settings.png"
+    "visual-qa/app-shell/v1.3__2026-09-09_153811__qa-final-ux-reconciliation__final-ux-history-desktop.png",
+    "visual-qa/app-shell/v1.3__2026-09-09_153811__qa-final-ux-reconciliation__final-ux-history-mobile.png",
+    "visual-qa/app-shell/v1.3__2026-09-09_153811__qa-final-ux-reconciliation__final-ux-shortcuts-settings.png"
   ]
 }
