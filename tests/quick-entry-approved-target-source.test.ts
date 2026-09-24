@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 const quickAdd=readFileSync(new URL('../src/components/QuickAdd.tsx',import.meta.url),'utf8');
 const receiptAware=readFileSync(new URL('../src/components/ReceiptAwareQuickAdd.tsx',import.meta.url),'utf8');
-const approvedCss=readFileSync(new URL('../src/styles/part55.css',import.meta.url),'utf8');
+const approvedCss=readFileSync(new URL('../src/styles/quick-entry-desktop-composition.css',import.meta.url),'utf8');
 const approvedChain=readFileSync(new URL('../src/styles/part47.css',import.meta.url),'utf8');
 const baseStyles=readFileSync(new URL('../src/styles.css',import.meta.url),'utf8');
 const normalizedBaseStyles=baseStyles.replace(/\r\n/g,'\n');
@@ -40,8 +40,8 @@ describe('approved Quick Entry desktop target source contract',()=>{
     expect(approvedChain).toContain("@import './dashboard-route-shell-continuity.css';");
     expect(approvedChain).toContain("@import './dashboard-command-search-geometry.css';");
     expect(approvedChain).toContain("@import './dashboard-desktop-alignment.css';");
-    expect(approvedChain).toContain("@import './part54.css';");
-    expect(approvedChain).toContain("@import './part55.css';");
+    expect(approvedChain).toContain("@import './transactions-desktop-shell.css';");
+    expect(approvedChain).toContain("@import './quick-entry-desktop-composition.css';");
     expect(approvedCss).toContain('@media (min-width:1100px)');
     expect(approvedCss).toContain('grid-template-columns:repeat(4,minmax(0,1fr))');
     expect(approvedCss).toContain('.form-grid .wide{grid-column:span 2}');
