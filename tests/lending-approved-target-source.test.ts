@@ -43,7 +43,7 @@ describe('approved Lending desktop target source contract',()=>{
     expect(styles).toContain('.lending-metric-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr))');
     expect(styles).toContain('.lending-quick-actions{display:grid;grid-template-columns:1fr 1fr');
     expect(chain).toContain("@import './dashboard-approved-target.css';");
-    expect(chain).toContain("@import './part54.css';");
+    expect(chain).toContain("@import './transactions-desktop-shell.css';");
     expect(chain).toContain("@import './credit-approved-target.css';");
     expect(chain).toContain("@import './lending-approved-target.css';");
   });
