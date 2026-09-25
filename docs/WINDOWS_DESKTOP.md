@@ -22,9 +22,9 @@ A normal installed user is **not** asked for Supabase URLs, API keys, encryption
 
 `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` are public client configuration owned by the application and packaged with the controlled Windows release. They are not credentials and are not entered by the user.
 
-`CARD_VAULT_KEY` is a real server-side encryption secret and must **never** be packaged with the Windows client. Desktop PAN/expiry operations use the existing protected production `/api/card-secrets` boundary with the already authenticated owner `aal2` access token. The production server performs vault encryption/decryption, so the Windows application never needs or receives the vault key.
+`CARD_VAULT_KEY` is a real server-side encryption secret and must **never** be packaged with the Windows client. Desktop PAN/expiry/CVV operations use the existing protected production `/api/card-secrets` boundary with the already authenticated owner `aal2` access token. The production server performs vault encryption/decryption, so the Windows application never needs or receives the vault key.
 
-CVV remains device-local only and never enters the server-side desktop or production card-vault boundary.
+CVV uses the same server-side encrypted card-vault boundary as PAN/expiry, so the Windows client reads the synchronized value without receiving the vault encryption key.
 
 ## Startup recovery and diagnostics
 

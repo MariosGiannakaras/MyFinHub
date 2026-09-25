@@ -25,33 +25,26 @@ describe('card secure details',()=>{
     expect(normalizeCardDetailsInput({pan:'12345',expiry:'12/31',cvv:'123'},{requireCvv:true}).cvv).toBe('123');
   });
 
-  it('stores CVV locally before PAN/expiry and never sends CVV to the server',async()=>{
+  it('stores PAN/expiry/CVV together through the shared server vault',async()=>{
     const calls:string[]=[];
     const persistence:CardDetailsPersistence={
-      readCvv:async()=>null,
-      saveCvv:async(_id,value)=>{calls.push(`local:${value}`)},
-      deleteCvv:async()=>{calls.push('delete-local')},
       saveSecret:async(_id,secret)=>{calls.push(`server:${JSON.stringify(secret)}`);return {saved:true,last4:'2345'}},
       now:()=> '2026-09-25T10:00:00.000Z',
     };
     const updated=await saveCardDetails(card,{pan:'12345',expiry:'12/31',cvv:'123'},{requireCvv:true},persistence);
-    expect(calls).toEqual(['local:123','server:{"pan":"12345","expiry":"12/31"}']);
-    expect(calls.join(' ')).not.toContain('"cvv"');
+    expect(calls).toEqual(['server:{"pan":"12345","expiry":"12/31","cvv":"123"}']);
     expect(updated.last4).toBe('2345');
     expect(updated.vaultRef).toBe(card.id);
   });
 
-  it('rolls back a newly written local CVV when server vault save fails',async()=>{
+  it('surfaces a server-vault save failure without a second local persistence step',async()=>{
     const calls:string[]=[];
     const persistence:CardDetailsPersistence={
-      readCvv:async()=> '999',
-      saveCvv:async(_id,value)=>{calls.push(`save:${value}`)},
-      deleteCvv:async()=>{calls.push('delete')},
       saveSecret:async()=>{calls.push('server');throw new Error('server failed')},
       now:()=> 'never',
     };
     await expect(saveCardDetails(card,{pan:'12345',expiry:'12/31',cvv:'123'},{requireCvv:true},persistence)).rejects.toThrow('server failed');
-    expect(calls).toEqual(['save:123','server','save:999']);
+    expect(calls).toEqual(['server']);
   });
 
   it('routes both card surfaces through the shared editor and removes raw inline secret inputs',()=>{
