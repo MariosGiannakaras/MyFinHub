@@ -1,4 +1,4 @@
-export type CardVaultSecret={pan?:string;expiry?:string};
+export type CardVaultSecret={pan?:string;expiry?:string;cvv?:string};
 
 type ErrorPayload={code?:string;error?:string};
 
@@ -21,14 +21,14 @@ async function request<T>(method:'POST'|'PUT'|'DELETE',body:Record<string,unknow
 }
 
 export async function revealCardSecret(cardId:string):Promise<CardVaultSecret>{
-  const payload=await request<{pan:string|null;expiry:string|null}>('POST',{cardId});
-  return {pan:payload.pan||undefined,expiry:payload.expiry||undefined};
+  const payload=await request<{pan:string|null;expiry:string|null;cvv:string|null}>('POST',{cardId});
+  return {pan:payload.pan||undefined,expiry:payload.expiry||undefined,cvv:payload.cvv||undefined};
 }
 
 export async function saveCardSecret(cardId:string,secret:CardVaultSecret){
   // Runtime whitelist as well as TypeScript typing: an accidental extra field
   // on a structurally-compatible object can never be spread into the request.
-  return request<{saved:true;last4:string|null}>('PUT',{cardId,pan:secret.pan,expiry:secret.expiry});
+  return request<{saved:true;last4:string|null}>('PUT',{cardId,pan:secret.pan,expiry:secret.expiry,cvv:secret.cvv});
 }
 
 /** Explicit secret destruction only. Archiving a card must never call this. */
@@ -41,6 +41,7 @@ export function cardVaultErrorMessage(error:unknown){
     if(error.code==='CARD_SECRET_NOT_FOUND')return 'Δεν έχουν αποθηκευτεί ακόμη αριθμός και λήξη για αυτή την κάρτα.';
     if(error.code==='INVALID_CARD_PAN')return 'Γράψε έναν αριθμό κάρτας με αριθμητικά ψηφία.';
     if(error.code==='INVALID_CARD_EXPIRY')return 'Έλεγξε τη λήξη της κάρτας — χρησιμοποίησε μορφή MM/YY.';
+    if(error.code==='INVALID_CARD_CVV')return 'Το CVV πρέπει να έχει 3 ή 4 αριθμητικά ψηφία.';
     if(error.code==='MFA_REQUIRED')return 'Για να δεις ή να αλλάξεις τα ασφαλή στοιχεία της κάρτας, χρειάζεται να επαληθεύσεις ξανά τη σύνδεσή σου.';
     if(error.code==='CARD_VAULT_RATE_LIMITED')return 'Έγιναν πολλές προσπάθειες σε μικρό χρονικό διάστημα. Περίμενε λίγο και δοκίμασε ξανά.';
     return 'Δεν μπορέσαμε να ολοκληρώσουμε την ενέργεια στα ασφαλή στοιχεία της κάρτας. Δοκίμασε ξανά.';
