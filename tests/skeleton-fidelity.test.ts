@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 const root=process.cwd();
 const skeleton=fs.readFileSync(path.join(root,'src/components/AppSkeleton.tsx'),'utf8');
-const css=fs.readFileSync(path.join(root,'src/styles/part42.css'),'utf8');
+const css=fs.readFileSync(path.join(root,'src/styles/route-skeleton-system.css'),'utf8');
 const audit=fs.readFileSync(path.join(root,'scripts/loading-shift-audit.mjs'),'utf8');
 
 const routes=['dashboard','transactions','savings','cards','credit','loans','lending','recurring','planning','attention','reports','settings'];
