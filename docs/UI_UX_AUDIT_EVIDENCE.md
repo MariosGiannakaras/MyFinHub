@@ -121,7 +121,7 @@ Interaction suites additionally cover Quick Entry, owned editors, sorting, valid
 
 ## Reports / Analytics implementation
 
-The owner-approved large Reports/Analytics restructure is implemented in `src/pages/ReportsPage.tsx`, `src/lib/reports.ts` and `src/styles/part34.css`.
+The owner-approved large Reports/Analytics restructure is implemented in `src/pages/ReportsPage.tsx`, `src/lib/reports.ts` and `src/styles/reports-dashboard-layout.css`.
 
 The resulting hierarchy includes:
 

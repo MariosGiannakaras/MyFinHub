@@ -45,7 +45,7 @@ The Reports surface provides current-period income, expense, savings, budget pos
 
 ## Approved large Reports visual restructure
 
-The owner explicitly approved the large Reports/Analytics visual restructure. It is implemented in `src/pages/ReportsPage.tsx` with responsive layout rules in `src/styles/part34.css`.
+The owner explicitly approved the large Reports/Analytics visual restructure. It is implemented in `src/pages/ReportsPage.tsx` with responsive layout rules in `src/styles/reports-dashboard-layout.css`.
 
 Final information hierarchy:
 

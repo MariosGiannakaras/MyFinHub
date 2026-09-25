@@ -70,7 +70,8 @@ Goal: replace hidden global-style ownership and numeric loader coupling incremen
 - [x] Batch 6: name the coherent Dashboard desktop fidelity/type-scale owner as `dashboard-desktop-fidelity.css` without changing CSS bytes or cascade position. PR #397 merged to `develop@6cabfbeadae0a4c1043bce76a7134814ac08b9d1`; final head `c17f31847fdbe5aca3e42018fdc3ce13b9e2ded9` passed CI `35729312592`, CodeQL `35729312280`, Cross-engine `35729312016`, Performance `35729311994`, Windows `35729311856`; ready-triggered Performance `35795834975`; post-merge CI `35796034260`, CodeQL `35796034170`, Windows `35796034238` green.
 - [x] Batch 7: name the three remaining coherent Dashboard shell/route/alignment owners as `dashboard-approved-target.css`, `dashboard-route-shell-continuity.css`, and `dashboard-desktop-alignment.css` without changing CSS bytes or `part47.css` cascade order. PR #398 merged to `develop@88266ef3ee4a60d07924d301f5d5132d0945cd31`; final head `d36ad8c102eb70b108ec79408e07dc30892b8b24` passed CI `35798482719`, CodeQL `35798482720`, Cross-engine `35798482707`, Performance `35798482766`, Windows `35798482734`; ready-triggered Performance `35889132219`; post-merge CI `35889432260`, CodeQL `35889432337`, Windows `35889432372` green.
 - [x] Batch 8: name the three coherent route/composition owners as `transactions-desktop-shell.css`, `quick-entry-desktop-composition.css`, and `savings-desktop-composition.css` without changing CSS bytes or `part47.css` cascade order. PR #399 merged to `develop@588aed1b1fffa8a91af942223ee2360cbed55806`; final head `c48142fcfa75deb8fb31592f5a0122d8bed0c0fa` passed CI `35983012768`, CodeQL `35983012827`, Cross-engine `35983012505`, Performance `35983012503`, Windows `35983012957`; ready-triggered Performance `36110275493`; post-merge CI `36110560744`, CodeQL `36110560685`, Windows `36110561009` green.
-- [ ] Batch 9: name three coherent root owners `part32.css`, `part36.css`, and `part45.css` as navigation/action contrast, transaction split/editor visuals, and category-icon workspace while preserving exact blobs and root/login cascade positions. Active branch `chore/357-css-ownership-batch-9`.
+- [x] Batch 9: name `part32.css`, `part36.css`, and `part45.css` as navigation/action contrast, transaction split/editor visuals, and category-icon workspace. PR #402 merged to `develop@87f7e329c2bee5031e6250530f5bf273e135d2c1`; final head `66f295e723071bbc5440965b326f03a59285b487` passed CI `36113860264`, CodeQL `36113860274`, Cross-engine `36113860313`, Performance `36113860312`, Windows `36113860267`, ready-triggered Performance `36115493605`; post-merge CI `36115788288`, CodeQL `36115788300`, Windows `36115788226` green.
+- [ ] Batch 10: name 27 additional coherent root owners in one ownership-only batch, preserving every CSS blob and exact cascade slot; update all known direct source/doc references in the same atomic commit.
 - [ ] Replace remaining numeric loader chains incrementally with accurate named tokens/base/primitives/patterns/pages ownership; do not give mixed legacy files misleading names.
 - [ ] Reduce selector duplication and unnecessary `!important` only with proven visual parity.
 - [ ] Keep runtime theme code focused on semantic token application rather than broad selector styling.
@@ -90,7 +91,19 @@ The root import positions remain unchanged: semantic filenames replace only nume
 
 Mixed or cross-cutting candidates remain untouched: `part33.css` mixes owned-input sizing, credit over-limit, and lending-person suggestions; `part35.css` mixes brand-mark styling with privacy-toggle sizing; `part41.css` mixes Dashboard/history/mobile reconciliation; `part43.css` mixes brand-home and category-editor affordances; `part46.css` mixes category-taxonomy styling with a Transactions mobile-filter rule. No CSS declaration, selector, specificity, media query, theme token, root/login load budget, finance/domain behavior, API, persistence, auth or Windows packaging behavior changes in this batch.
 
-Require exact-head CI / CodeQL / Cross-engine / Performance / Windows, fresh rendered evidence for navigation/mobile command action, transaction split/editor surfaces, and category-icon workspace, plus clean reviews/threads before ready/merge. After merge, require exact-merge CI + CodeQL + Windows 3/3 before another Stage-5 write batch.
+Outcome: final head `66f295e723071bbc5440965b326f03a59285b487` passed the five exact-head gates plus ready-triggered Performance, fresh desktop/mobile evidence was inspected, PR #402 squash-merged to `develop@87f7e329c2bee5031e6250530f5bf273e135d2c1`, and exact-merge CI `36115788288`, CodeQL `36115788300`, and Windows `36115788226` passed.
+
+#### Stage 5 Batch 10 checkpoint
+
+Verified base is `develop@87f7e329c2bee5031e6250530f5bf273e135d2c1` after Batch-9 exact-merge CI `36115788288`, CodeQL `36115788300`, and Windows Desktop `36115788226` passed.
+
+To reduce redundant Actions without weakening gates, Batch 10 groups 27 coherent root owners into one ownership-only change. Every target stylesheet is moved byte-identically to an accurate semantic name and remains in its exact current root cascade slot. No CSS declaration, selector, specificity, media query, theme token, route behavior, finance logic, persistence, auth/security, API/database or Windows/Desktop behavior changes.
+
+The batch also updates every known direct source guard/document reference found before the first push: owned controls, shared UI hardening, Planning, release-readiness command styles, and the two Reports evidence documents. The full 47-entry root ownership sequence remains asserted; no test assertion is removed or weakened.
+
+Mixed/base files remain deliberately numeric when an accurate owner requires splitting, including `part1.css`–`part5.css`, `part9.css`, `part11.css`, `part13.css`, `part16.css`, `part31.css`, `part33.css`, `part35.css`, `part41.css`–`part43.css`, and `part46.css`; workspace `part47.css` and `part53.css` also still require accurate splitting/re-layering.
+
+Use one implementation push and one required exact-head CI / CodeQL / Cross-engine / Performance / Windows cycle. Inspect fresh representative rendered evidence across the broad affected surfaces before merge. Create the PR non-draft from the final implementation head so no redundant ready-for-review Performance cycle is introduced. After squash merge to `develop`, require exact-merge CI + CodeQL + Windows 3/3 before the next write batch.
 
 ### Stage 6 — Code-hygiene tooling
 
@@ -124,10 +137,11 @@ Require exact-head CI / CodeQL / Cross-engine / Performance / Windows, fresh ren
 - **Overall tracker:** #357 — OPEN.
 - **Completed stages:** 5/9 (Stages 0–4).
 - **Active stage:** Stage 5 — CSS ownership cleanup.
-- **Verified integration base:** `develop@588aed1b1fffa8a91af942223ee2360cbed55806`; Batch-8 post-merge CI `36110560744`, CodeQL `36110560685`, Windows Desktop `36110561009` are green.
-- **Active delivery:** branch `chore/357-css-ownership-batch-9`, bounded to three coherent root owners: navigation/action contrast, transaction split/editor visuals, and category-icon workspace.
-- **Implementation contract:** reuse exact `part32.css`, `part36.css`, and `part45.css` blobs under accurate semantic names; preserve exact root/login import positions; change no CSS rule; update only the root ownership guard plus Stage-5 documentation.
-- **Next action:** validate the atomic Batch-9 head with required CI / CodeQL / Cross-engine / Performance / Windows, inspect fresh affected-surface evidence, clean any generated-only Visual-QA bot commit non-force, re-check reviews/threads, then squash-merge only to `develop` with expected-head protection and verify exact-merge CI + CodeQL + Windows before another write batch.
+- **Verified integration base:** `develop@87f7e329c2bee5031e6250530f5bf273e135d2c1`; Batch-9 post-merge CI `36115788288`, CodeQL `36115788300`, Windows Desktop `36115788226` are green.
+- **Active delivery:** Batch 10, one large ownership-only commit covering 27 coherent numeric root owners plus all known direct source/doc path references.
+- **Implementation contract:** preserve exact CSS blobs and root import positions; make no CSS rule change; retain the complete root ownership guard and existing behavioral assertions.
+- **Validation economy:** one implementation branch push, one exact-head five-gate cycle, no draft-to-ready transition cycle, then only the required post-merge CI + CodeQL + Windows.
+- **Next action:** assemble and verify the atomic Batch-10 tree, create the branch directly at that commit, open the PR non-draft, then run the single required exact-head validation/evidence cycle.
 
 ## Resume procedure
 
