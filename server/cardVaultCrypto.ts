@@ -3,6 +3,7 @@ import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto';
 export type CardSecretPlaintext = {
   pan?: string;
   expiry?: string;
+  cvv?: string;
 };
 
 export type CardSecretEnvelope = {
@@ -30,19 +31,24 @@ function normalizeExpiry(value?: string) {
   return `${match[1]}/${year}`;
 }
 
+function normalizeCvv(value?: string) {
+  if (value == null || value.trim() === '') return undefined;
+  const normalized = value.trim();
+  if (!/^\d{3,4}$/.test(normalized)) throw new Error('INVALID_CARD_CVV');
+  return normalized;
+}
+
 export function normalizeCardSecrets(input: unknown): CardSecretPlaintext {
   if (!input || typeof input !== 'object' || Array.isArray(input)) throw new Error('INVALID_CARD_SECRET');
   const record = input as Record<string, unknown>;
   for (const key of Object.keys(record)) {
-    if (!['pan', 'expiry'].includes(key)) {
-      if (key.toLowerCase() === 'cvv' || key.toLowerCase() === 'cvc' || key.toLowerCase() === 'securitycode') throw new Error('CVV_PERSISTENCE_DISABLED');
-      throw new Error('INVALID_CARD_SECRET');
-    }
+    if (!['pan', 'expiry', 'cvv'].includes(key)) throw new Error('INVALID_CARD_SECRET');
   }
   const pan = typeof record.pan === 'string' ? normalizePan(record.pan) : record.pan == null ? undefined : (() => { throw new Error('INVALID_CARD_PAN'); })();
   const expiry = typeof record.expiry === 'string' ? normalizeExpiry(record.expiry) : record.expiry == null ? undefined : (() => { throw new Error('INVALID_CARD_EXPIRY'); })();
-  if (!pan && !expiry) throw new Error('EMPTY_CARD_SECRET');
-  return { pan, expiry };
+  const cvv = typeof record.cvv === 'string' ? normalizeCvv(record.cvv) : record.cvv == null ? undefined : (() => { throw new Error('INVALID_CARD_CVV'); })();
+  if (!pan && !expiry && !cvv) throw new Error('EMPTY_CARD_SECRET');
+  return { pan, expiry, cvv };
 }
 
 function parseKey(raw: string | undefined) {
@@ -92,7 +98,7 @@ export function decryptCardSecrets(envelope: CardSecretEnvelope, ownerUserId: st
     const plaintext = Buffer.concat([decipher.update(Buffer.from(envelope.ciphertext, 'base64')), decipher.final()]).toString('utf8');
     return normalizeCardSecrets(JSON.parse(plaintext));
   } catch (error) {
-    if (error instanceof Error && ['INVALID_CARD_PAN','INVALID_CARD_EXPIRY','EMPTY_CARD_SECRET','INVALID_CARD_SECRET'].includes(error.message)) throw error;
+    if (error instanceof Error && ['INVALID_CARD_PAN','INVALID_CARD_EXPIRY','INVALID_CARD_CVV','EMPTY_CARD_SECRET','INVALID_CARD_SECRET'].includes(error.message)) throw error;
     throw new Error('CARD_VAULT_DECRYPT_FAILED');
   }
 }
