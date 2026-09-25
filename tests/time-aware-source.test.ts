@@ -5,7 +5,7 @@ const app = readFileSync(new URL('../src/App.tsx', import.meta.url), 'utf8');
 const shell = readFileSync(new URL('../src/components/AppShell.tsx', import.meta.url), 'utf8');
 const dashboard = readFileSync(new URL('../src/pages/DashboardPage.tsx', import.meta.url), 'utf8');
 const planning = readFileSync(new URL('../src/pages/PlanningPage.tsx', import.meta.url), 'utf8');
-const planningStyles = readFileSync(new URL('../src/styles/part37.css', import.meta.url), 'utf8');
+const planningStyles = readFileSync(new URL('../src/styles/planning-forecast-workspace.css', import.meta.url), 'utf8');
 const runner = readFileSync(new URL('../scripts/run-rendered-qa.mjs', import.meta.url), 'utf8');
 const qa = readFileSync(new URL('../src/qa.tsx', import.meta.url), 'utf8');
 
