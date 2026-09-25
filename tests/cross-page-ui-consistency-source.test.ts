@@ -38,7 +38,7 @@ describe('cross-page UI consistency contracts',()=>{
     }
     const base=read('src/styles/part1.css');
     const responsive=read('src/styles/part4.css');
-    const hardening=read('src/styles/part30.css');
+    const hardening=read('src/styles/ui-hardening-foundations.css');
     expect(base).toContain('.page-stack{display:grid');
     expect(base).toContain('.page-heading{display:flex');
     expect(responsive).toContain('.page-heading{align-items:flex-start}');
