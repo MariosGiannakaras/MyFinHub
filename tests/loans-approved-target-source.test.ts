@@ -48,7 +48,7 @@ describe('approved Loans desktop target source contract',()=>{
   it('keeps the approved Loans chain behind the named root and lazy workspace style owners',()=>{
     expect(styles).toContain('@media (min-width:1100px)');
     expect(normalizedBaseStyles.trim()).toBe("@import './styles/root-compat.css';");
-    expect(rootCompat).toContain("@import './part46.css';\n@import './app-controls.css';");
+    expect(rootCompat).toContain("@import './category-taxonomy-editor.css';\n@import './transaction-mobile-filter-layout.css';\n@import './app-controls.css';");
     expect(rootCompat.trimEnd()).toMatch(/app-controls\.css';$/);
     expect(workspaceLayer).toContain("import '../styles/workspace-compat.css';");
     expect(workspaceCompat).toContain("@import './approved-workspace-targets.css';\n@import './account-metadata-surfaces.css';\n@import './dashboard-command-search-geometry.css';\n@import './dashboard-desktop-fidelity.css';\n@import './dashboard-bankmark-chart-attention.css';");
