@@ -58,8 +58,8 @@ describe('native bearer card-vault boundary', () => {
     process.env.SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_test';
     devices.ensureDeviceSessionAccess.mockReset().mockResolvedValue({});
     storage.isOwner.mockReset().mockResolvedValue(true);
-    vault.readCardSecrets.mockReset().mockResolvedValue({ pan: '4111111111111111', expiry: '12/30' });
-    vault.writeCardSecrets.mockReset().mockResolvedValue({ pan: '4111111111111111', expiry: '12/30' });
+    vault.readCardSecrets.mockReset().mockResolvedValue({ pan: '4111111111111111', expiry: '12/30', cvv: '123' });
+    vault.writeCardSecrets.mockReset().mockResolvedValue({ pan: '4111111111111111', expiry: '12/30', cvv: '123' });
     vault.deleteCardSecrets.mockReset().mockResolvedValue(undefined);
   });
 
@@ -79,7 +79,7 @@ describe('native bearer card-vault boundary', () => {
     expect(res.statusCode).toBe(200);
     expect(devices.ensureDeviceSessionAccess).toHaveBeenCalledWith(expect.anything(), token, 'owner-id');
     expect(vault.readCardSecrets).toHaveBeenCalledWith('owner-id', 'card-1', token);
-    expect(JSON.parse(res.body)).toEqual({ pan: '4111111111111111', expiry: '12/30' });
+    expect(JSON.parse(res.body)).toEqual({ pan: '4111111111111111', expiry: '12/30', cvv: '123' });
     expect(res.headers.has('access-control-allow-origin')).toBe(false);
   });
 
@@ -109,7 +109,7 @@ describe('native bearer card-vault boundary', () => {
     expect(vault.readCardSecrets).not.toHaveBeenCalled();
   });
 
-  it('keeps CVV persistence forbidden for native bearer requests', async () => {
+  it('accepts CVV persistence for owner AAL2 native bearer requests', async () => {
     const token = tokenWithAal('aal2');
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(upstream(200, { id: 'owner-id' })));
     const res = responseRecorder();
@@ -121,8 +121,8 @@ describe('native bearer card-vault boundary', () => {
       cvv: '123',
     }), res);
 
-    expect(res.statusCode).toBe(400);
-    expect(JSON.parse(res.body)).toMatchObject({ code: 'CVV_PERSISTENCE_DISABLED' });
-    expect(vault.writeCardSecrets).not.toHaveBeenCalled();
+    expect(res.statusCode).toBe(200);
+    expect(JSON.parse(res.body)).toMatchObject({ saved: true, last4: '1111' });
+    expect(vault.writeCardSecrets).toHaveBeenCalledWith('owner-id', 'card-1', { pan: '4111111111111111', expiry: '12/30', cvv: '123' }, token);
   });
 });
