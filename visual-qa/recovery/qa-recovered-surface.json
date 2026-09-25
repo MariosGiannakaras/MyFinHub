@@ -4,16 +4,16 @@
   "appVersion": "v1.3",
   "suite": "recovered-surface",
   "surface": "recovery",
-  "generatedAt": "2026-09-25T10:13:54.007Z",
+  "generatedAt": "2026-09-09T12:38:11.969Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "8bc9d9146a2587eeb1443f3d72186051b9547648",
-    "shortSha": "8bc9d914",
-    "branch": "chore/357-css-ownership-batch-10-bulk"
+    "sha": "8752e7ea5e3b8a563c32421a962aa84dbed60fba",
+    "shortSha": "8752e7ea",
+    "branch": "chore/357-design-system-inventory"
   },
   "screenshots": [
-    "visual-qa/recovery/v1.3__2026-09-25_131354__qa-recovered-surface__recovered-page-error-focus.png",
-    "visual-qa/recovery/v1.3__2026-09-25_131354__qa-recovered-surface__recovered-readability-large.png",
-    "visual-qa/recovery/v1.3__2026-09-25_131354__qa-recovered-surface__recovered-savings-action-first.png"
+    "visual-qa/recovery/v1.3__2026-09-09_153811__qa-recovered-surface__recovered-page-error-focus.png",
+    "visual-qa/recovery/v1.3__2026-09-09_153811__qa-recovered-surface__recovered-readability-large.png",
+    "visual-qa/recovery/v1.3__2026-09-09_153811__qa-recovered-surface__recovered-savings-action-first.png"
   ]
 }
