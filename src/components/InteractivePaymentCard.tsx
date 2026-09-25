@@ -56,7 +56,7 @@ export function InteractivePaymentCard({
       let server:Awaited<ReturnType<typeof revealCardSecret>>={};
       try{server=await revealCardSecret(card.id)}catch(error){if((error as {code?:string})?.code!=='CARD_SECRET_NOT_FOUND')throw error}
       let local:string|null=null;try{local=await readLocalCvv(card.id)}catch(error){setMessage(localCvvMessage(error))}
-      const result={...server,cvv:local||undefined};setRevealed(result);return result;
+      const result={...server,cvv:server.cvv??local??undefined};setRevealed(result);return result;
     }catch(error){setMessage(cardVaultErrorMessage(error));return null}
     finally{setBusy(false)}
   };
