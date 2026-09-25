@@ -164,7 +164,7 @@ export function CanonicalCreditCardStack({cards,banks,selectedCardId,onActiveCar
       let server:Awaited<ReturnType<typeof revealCardSecret>>={};
       try{server=await revealCardSecret(card.id)}catch(error){if(!(error instanceof CardVaultClientError&&error.code==='CARD_SECRET_NOT_FOUND')){announce(cardVaultErrorMessage(error));return null}}
       let local:string|null=null;try{local=await readLocalCvv(card.id)}catch{announce('Το τοπικό vault CVV δεν είναι διαθέσιμο σε αυτόν τον browser.')}
-      const result:Secrets={...server,cvv:local||undefined};secretsRef.current.set(card.id,result);return result;
+      const result:Secrets={...server,cvv:server.cvv??local??undefined};secretsRef.current.set(card.id,result);return result;
     }
 
     function renderCard(card:RuntimeCard,stackIndex:number){
