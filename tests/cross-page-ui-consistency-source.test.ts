@@ -36,8 +36,8 @@ describe('cross-page UI consistency contracts',()=>{
       expect(source,`${file} should use page-stack`).toContain('page-stack');
       expect(source,`${file} should use page-heading`).toContain('page-heading');
     }
-    const base=read('src/styles/part1.css');
-    const responsive=read('src/styles/part4.css');
+    const base=read('src/styles/workspace-heading-metrics.css');
+    const responsive=read('src/styles/root-responsive-coordination.css');
     const hardening=read('src/styles/ui-hardening-foundations.css');
     expect(base).toContain('.page-stack{display:grid');
     expect(base).toContain('.page-heading{display:flex');
