@@ -1,5 +1,4 @@
 import { saveCardSecret } from './cardVaultClient.js';
-import { deleteLocalCvv, normalizeLocalCvv, readLocalCvv, saveLocalCvv } from './localCvvVault.js';
 import type { PaymentCard } from '../types.js';
 
 export type CardDetailsField='pan'|'expiry'|'cvv';
