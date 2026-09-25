@@ -26,7 +26,7 @@ describe('Stage 5 CSS ownership',()=>{
       [6,'./auth-session-shell.css'],
       [7,'./mobile-more-navigation.css'],
       [8,'./frontend-audit-remediation.css'],
-      [9,['./mobile-more-menu-layout.css','./review-semantic-table-density.css','./card-history-layout.css']],
+      [9,['./mobile-more-menu-layout.css','./review-semantic-table-density.css','./card-history-layout.css','./navigation-review-card-mobile-layouts.css']],
       [10,'./semantic-color-contrast.css'],
       [11,'./account-shell-privacy-states.css'],
       [12,['./reporting-period-controls.css','./technical-settings-panel.css']],
@@ -48,7 +48,7 @@ describe('Stage 5 CSS ownership',()=>{
       [30,'./ui-hardening-foundations.css'],
       [31,'./visual-polish-overrides.css'],
       [32,'./navigation-action-contrast.css'],
-      [33,['./owned-input-density.css','./credit-overlimit-indicator.css','./lending-person-suggestions.css']],
+      [33,['./owned-input-density.css','./credit-overlimit-indicator.css','./lending-person-suggestions.css','./input-lending-mobile-density.css']],
       [34,'./reports-dashboard.css'],
       [35,['./brand-mark-system.css','./privacy-toggle-touch-target.css']],
       [36,'./transaction-split-editor.css'],
@@ -56,12 +56,12 @@ describe('Stage 5 CSS ownership',()=>{
       [38,'./attention-contextual-actions.css'],
       [39,'./budget-rule-settings.css'],
       [40,'./command-palette-contextual-entry.css'],
-      [41,['./reporting-period-state-overrides.css','./dashboard-reconciliation-layout.css','./durable-history-controls.css']],
+      [41,['./reporting-period-state-overrides.css','./dashboard-reconciliation-layout.css','./durable-history-controls.css','./dashboard-history-mobile-reconciliation.css']],
       [42,['./shortcut-history-controls.css','./route-skeleton-system.css']],
       [43,'./navigation-category-management-affordances.css'],
       [44,'./receipt-inbox.css'],
       [45,'./category-icon-workspace.css'],
-      [46,['./category-taxonomy-editor.css','./transaction-mobile-filter-layout.css']],
+      [46,['./category-taxonomy-editor.css','./taxonomy-transactions-mobile-layout.css']],
     ]);
     const expectedRoot=[...Array.from({length:46},(_,index)=>semanticRootOwners.get(index+1)??`./part${index+1}.css`).flatMap(owner=>Array.isArray(owner)?owner:[owner]),'./app-controls.css'];
     expect(cssImports(rootStyles)).toEqual(['./styles/root-compat.css']);

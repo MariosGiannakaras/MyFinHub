@@ -11,22 +11,25 @@
    - `mobile-more-menu-layout.css`
    - `review-semantic-table-density.css`
    - `card-history-layout.css`
+   - `navigation-review-card-mobile-layouts.css` (preserves the original shared mobile media block)
 2. Split `part33.css` into:
    - `owned-input-density.css`
    - `credit-overlimit-indicator.css`
    - `lending-person-suggestions.css`
+   - `input-lending-mobile-density.css` (preserves the original shared mobile media block)
 3. Split `part41.css` into:
    - `reporting-period-state-overrides.css`
    - `dashboard-reconciliation-layout.css`
    - `durable-history-controls.css`
+   - `dashboard-history-mobile-reconciliation.css` (preserves the original shared mobile media block)
 4. Split `part46.css` into:
    - `category-taxonomy-editor.css`
-   - `transaction-mobile-filter-layout.css`
+   - `taxonomy-transactions-mobile-layout.css` (preserves the original shared mobile media block)
 
 ## Invariants
 
 - Existing selectors, declarations, values and responsive behavior are preserved.
-- Shared media blocks are separated only by selector ownership; each new owner remains adjacent at the original root cascade slot.
+- Base semantic owners remain separate, while original shared responsive blocks stay grouped in explicit coordination owners. This preserves the original rule order, media-wrapper count, cascade slot and production CSS budget.
 - Existing source guards follow semantic owners without weakening assertions.
 - No finance/accounting, auth/MFA/RLS, persistence, API/database, Windows packaging, release, deploy or production-data change.
 
