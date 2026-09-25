@@ -69,25 +69,28 @@ Goal: replace hidden global-style ownership and numeric loader coupling incremen
 - [x] Batch 5: name the coherent Dashboard command-search desktop geometry owner as `dashboard-command-search-geometry.css` without changing CSS bytes or either existing workspace cascade position. PR #396 merged to `develop@cfccbe9ed637e2300f2692dbac3928cb7646f933`; final head `ae8aeb56ee29bc10a3c4270f3727d6f205bef1b5` passed CI `35579293676`, CodeQL `35579293667`, Cross-engine `35579293699`, Performance `35579293648`, Windows `35579293733`; ready-triggered Performance `35590833747`; post-merge CI `35591065324`, CodeQL `35591065346`, Windows `35591065317` green.
 - [x] Batch 6: name the coherent Dashboard desktop fidelity/type-scale owner as `dashboard-desktop-fidelity.css` without changing CSS bytes or cascade position. PR #397 merged to `develop@6cabfbeadae0a4c1043bce76a7134814ac08b9d1`; final head `c17f31847fdbe5aca3e42018fdc3ce13b9e2ded9` passed CI `35729312592`, CodeQL `35729312280`, Cross-engine `35729312016`, Performance `35729311994`, Windows `35729311856`; ready-triggered Performance `35795834975`; post-merge CI `35796034260`, CodeQL `35796034170`, Windows `35796034238` green.
 - [x] Batch 7: name the three remaining coherent Dashboard shell/route/alignment owners as `dashboard-approved-target.css`, `dashboard-route-shell-continuity.css`, and `dashboard-desktop-alignment.css` without changing CSS bytes or `part47.css` cascade order. PR #398 merged to `develop@88266ef3ee4a60d07924d301f5d5132d0945cd31`; final head `d36ad8c102eb70b108ec79408e07dc30892b8b24` passed CI `35798482719`, CodeQL `35798482720`, Cross-engine `35798482707`, Performance `35798482766`, Windows `35798482734`; ready-triggered Performance `35889132219`; post-merge CI `35889432260`, CodeQL `35889432337`, Windows `35889432372` green.
-- [ ] Batch 8: name the three coherent route/composition owners `part54.css`, `part55.css`, and `part56.css` as Transactions desktop shell, Quick Entry desktop composition, and Savings desktop composition while preserving exact blobs and transitive `part47.css` order. Active branch `chore/357-css-ownership-batch-8`.
+- [x] Batch 8: name the three coherent route/composition owners as `transactions-desktop-shell.css`, `quick-entry-desktop-composition.css`, and `savings-desktop-composition.css` without changing CSS bytes or `part47.css` cascade order. PR #399 merged to `develop@588aed1b1fffa8a91af942223ee2360cbed55806`; final head `c48142fcfa75deb8fb31592f5a0122d8bed0c0fa` passed CI `35983012768`, CodeQL `35983012827`, Cross-engine `35983012505`, Performance `35983012503`, Windows `35983012957`; ready-triggered Performance `36110275493`; post-merge CI `36110560744`, CodeQL `36110560685`, Windows `36110561009` green.
+- [ ] Batch 9: name three coherent root owners `part32.css`, `part36.css`, and `part45.css` as navigation/action contrast, transaction split/editor visuals, and category-icon workspace while preserving exact blobs and root/login cascade positions. Active branch `chore/357-css-ownership-batch-9`.
 - [ ] Replace remaining numeric loader chains incrementally with accurate named tokens/base/primitives/patterns/pages ownership; do not give mixed legacy files misleading names.
 - [ ] Reduce selector duplication and unnecessary `!important` only with proven visual parity.
 - [ ] Keep runtime theme code focused on semantic token application rather than broad selector styling.
 - [ ] Maintain deterministic fresh visual regression evidence at every batch.
 
-#### Stage 5 Batch 8 checkpoint
+#### Stage 5 Batch 9 checkpoint
 
-Exact base is verified `develop@88266ef3ee4a60d07924d301f5d5132d0945cd31` after Batch-7 post-merge CI `35889432260`, CodeQL `35889432337`, and Windows Desktop `35889432372` passed.
+Exact base is verified `develop@588aed1b1fffa8a91af942223ee2360cbed55806` after Batch-8 post-merge CI `36110560744`, CodeQL `36110560685`, and Windows Desktop `36110561009` passed.
 
-The bounded Batch-8 scope groups the three remaining coherent route/composition owners in the transitive `part47.css` chain:
+The bounded Batch-9 scope groups three coherent root/login compatibility owners that can be named without splitting mixed files or changing CSS bytes:
 
-- `part54.css -> transactions-desktop-shell.css`, exact blob `c511f57f979ae0734fb6efb66cadc7f9e90b5d00`;
-- `part55.css -> quick-entry-desktop-composition.css`, exact blob `42d37be54c50c613c2870fc3bb53c6a4f97c757e`;
-- `part56.css -> savings-desktop-composition.css`, exact blob `668c1f090c8ff40237576a44b12a8bbc10388bc2`.
+- `part32.css -> navigation-action-contrast.css`, exact blob `f1058585a369a13dc237c9f47650ada2f471ea70`;
+- `part36.css -> transaction-split-editor.css`, exact blob `abfa9640b084f9a81f560510bb6bfc04645c6c47`;
+- `part45.css -> category-icon-workspace.css`, exact blob `cf7a310c03a6d7453b8e28b32d9a013761441394`.
 
-The `part47.css` import order remains unchanged: the named Dashboard owners first, then Transactions, Quick Entry, Savings, then the existing named approved-target/refinement tail. The initial develop-tree scan identified three direct owner guards, and first-head CI exposed one additional chain guard in `lending-approved-target-source.test.ts`. All four active guards now follow only the new semantic paths: `css-ownership-source.test.ts`, `quick-entry-approved-target-source.test.ts`, `savings-approved-target-source.test.ts`, and `lending-approved-target-source.test.ts`. Assertions remain unchanged.
+The root import positions remain unchanged: semantic filenames replace only numeric names at slots 32, 36, and 45. The root ownership source guard continues to assert the complete 47-entry root sequence, now with a three-entry semantic substitution map rather than weakening order checks.
 
-Mixed `part53.css` remains untouched because it combines global bank-brand rules with Dashboard-specific fidelity. `part47.css` itself remains mixed because it owns account IBAN/account-metadata rules in addition to the transitive loader chain. No CSS declaration, selector, specificity, media query, theme token, root/login import, finance/domain behavior, API, persistence, auth or Windows packaging behavior changes in this batch. Require exact-head CI / CodeQL / Cross-engine / Performance / Windows, fresh rendered evidence, and clean reviews/threads before ready/merge. After merge, require exact-merge CI + CodeQL + Windows 3/3 before another Stage-5 write batch.
+Mixed or cross-cutting candidates remain untouched: `part33.css` mixes owned-input sizing, credit over-limit, and lending-person suggestions; `part35.css` mixes brand-mark styling with privacy-toggle sizing; `part41.css` mixes Dashboard/history/mobile reconciliation; `part43.css` mixes brand-home and category-editor affordances; `part46.css` mixes category-taxonomy styling with a Transactions mobile-filter rule. No CSS declaration, selector, specificity, media query, theme token, root/login load budget, finance/domain behavior, API, persistence, auth or Windows packaging behavior changes in this batch.
+
+Require exact-head CI / CodeQL / Cross-engine / Performance / Windows, fresh rendered evidence for navigation/mobile command action, transaction split/editor surfaces, and category-icon workspace, plus clean reviews/threads before ready/merge. After merge, require exact-merge CI + CodeQL + Windows 3/3 before another Stage-5 write batch.
 
 ### Stage 6 — Code-hygiene tooling
 
@@ -116,15 +119,15 @@ Mixed `part53.css` remains untouched because it combines global bank-brand rules
 - [ ] Produce a release-readiness checkpoint.
 - [ ] Stop before `develop -> main`, release or deploy unless separately authorized.
 
-## Current checkpoint — 2026-09-24
+## Current checkpoint — 2026-09-25
 
 - **Overall tracker:** #357 — OPEN.
 - **Completed stages:** 5/9 (Stages 0–4).
 - **Active stage:** Stage 5 — CSS ownership cleanup.
-- **Verified integration base:** `develop@88266ef3ee4a60d07924d301f5d5132d0945cd31`; Batch-7 post-merge CI `35889432260`, CodeQL `35889432337`, Windows Desktop `35889432372` are green.
-- **Active delivery:** branch `chore/357-css-ownership-batch-8`, bounded to Transactions desktop shell, Quick Entry desktop composition, and Savings desktop composition ownership.
-- **Implementation contract:** reuse exact `part54.css`, `part55.css`, and `part56.css` blobs under accurate semantic names; preserve exact `part47.css` import order; change no CSS rule; update all four identified active source guards plus Stage-5 documentation.
-- **Next action:** validate the atomic Batch-8 head with focused source contracts followed by required CI / CodeQL / Cross-engine / Performance / Windows; inspect fresh Transactions / Quick Entry / Savings desktop-mobile evidence; clean any generated-only Visual-QA bot commit non-force; re-check reviews/threads; then squash-merge only to `develop` with expected-head protection and verify exact-merge CI + CodeQL + Windows before another write batch.
+- **Verified integration base:** `develop@588aed1b1fffa8a91af942223ee2360cbed55806`; Batch-8 post-merge CI `36110560744`, CodeQL `36110560685`, Windows Desktop `36110561009` are green.
+- **Active delivery:** branch `chore/357-css-ownership-batch-9`, bounded to three coherent root owners: navigation/action contrast, transaction split/editor visuals, and category-icon workspace.
+- **Implementation contract:** reuse exact `part32.css`, `part36.css`, and `part45.css` blobs under accurate semantic names; preserve exact root/login import positions; change no CSS rule; update only the root ownership guard plus Stage-5 documentation.
+- **Next action:** validate the atomic Batch-9 head with required CI / CodeQL / Cross-engine / Performance / Windows, inspect fresh affected-surface evidence, clean any generated-only Visual-QA bot commit non-force, re-check reviews/threads, then squash-merge only to `develop` with expected-head protection and verify exact-merge CI + CodeQL + Windows before another write batch.
 
 ## Resume procedure
 
