@@ -4,14 +4,14 @@
   "appVersion": "v1.3",
   "suite": "ui-runtime",
   "surface": "runtime",
-  "generatedAt": "2026-09-09T12:38:11.969Z",
+  "generatedAt": "2026-09-25T08:48:17.010Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "8752e7ea5e3b8a563c32421a962aa84dbed60fba",
-    "shortSha": "8752e7ea",
-    "branch": "chore/357-design-system-inventory"
+    "sha": "33ab8fb663fe9ee72f02f15ea9fab8fe865ade6f",
+    "shortSha": "33ab8fb6",
+    "branch": "fix/400-card-secure-details"
   },
   "screenshots": [
-    "visual-qa/runtime/v1.3__2026-09-09_153811__qa-ui-runtime__runtime-loading-state.png"
+    "visual-qa/runtime/v1.3__2026-09-25_114817__qa-ui-runtime__runtime-loading-state.png"
   ]
 }
