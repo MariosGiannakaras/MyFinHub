@@ -35,17 +35,11 @@ export function normalizeCardDetailsInput(input:{pan:string;expiry:string;cvv?:s
 }
 
 export type CardDetailsPersistence={
-  readCvv:(cardId:string)=>Promise<string|null>;
-  saveCvv:(cardId:string,cvv:string)=>Promise<void>;
-  deleteCvv:(cardId:string)=>Promise<void>;
   saveSecret:(cardId:string,secret:{pan?:string;expiry?:string;cvv?:string})=>Promise<{saved:true;last4:string|null}>;
   now:()=>string;
 };
 
 const defaultPersistence:CardDetailsPersistence={
-  readCvv:readLocalCvv,
-  saveCvv:saveLocalCvv,
-  deleteCvv:deleteLocalCvv,
   saveSecret:saveCardSecret,
   now:()=>new Date().toISOString(),
 };
@@ -57,25 +51,11 @@ export async function saveCardDetails(
   persistence:CardDetailsPersistence=defaultPersistence,
 ):Promise<PaymentCard>{
   const normalized=normalizeCardDetailsInput(input,options);
-  let previousCvv:string|null|undefined;
-  if(normalized.cvv){
-    previousCvv=await persistence.readCvv(card.id);
-    await persistence.saveCvv(card.id,normalized.cvv);
-  }
-  let receipt:{saved:true;last4:string|null};
-  try{
-    receipt=await persistence.saveSecret(card.id,{pan:normalized.pan,expiry:normalized.expiry});
-  }catch(error){
-    if(normalized.cvv){
-      try{
-        if(previousCvv)await persistence.saveCvv(card.id,previousCvv);
-        else await persistence.deleteCvv(card.id);
-      }catch{
-        // Preserve the original server-side save error if best-effort local rollback fails.
-      }
-    }
-    throw error;
-  }
+  const receipt=await persistence.saveSecret(card.id,{
+    pan:normalized.pan,
+    expiry:normalized.expiry,
+    cvv:normalized.cvv,
+  });
   const candidateLast4=receipt.last4??(normalized.pan.length>=4?normalized.pan.slice(-4):null);
   const last4=candidateLast4&&/^\d{4}$/.test(candidateLast4)?candidateLast4:undefined;
   return {...card,last4,vaultRef:card.id,updatedAt:persistence.now()};
