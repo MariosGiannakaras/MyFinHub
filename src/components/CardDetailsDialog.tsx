@@ -39,7 +39,7 @@ export function CardDetailsDialog({
   useEffect(()=>{
     if(!open||!card)return;
     let cancelled=false;
-    setPan('');setExpiry('');setCvv('');setError('');
+    setPan('');setExpiry('');setCvv('');setError('');setLoading(false);
     if(requireCvv)return;
     setLoading(true);
     void (async()=>{
