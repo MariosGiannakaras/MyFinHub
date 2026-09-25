@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { AppTextInput } from '../components/AppTextInput';
 import { Button } from '../components/Button';
 import { CardCreateDialog } from '../components/CardCreateDialog';
+import { CardDetailsDialog } from '../components/CardDetailsDialog';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { FinanceIcon } from '../components/FinanceIcon';
 import { FormError } from '../components/FormError';
@@ -61,7 +62,8 @@ export function CardsPage({
   const [bankOpen,setBankOpen]=useState(false);
   const [bankName,setBankName]=useState('');
   const [cardBankId,setCardBankId]=useState<string|null>(null);
-  const [editingCardId,setEditingCardId]=useState<string|null>(null);
+  const [detailsCard,setDetailsCard]=useState<PaymentCard|null>(null);
+  const [detailsIsNew,setDetailsIsNew]=useState(false);
   const [deleteTarget,setDeleteTarget]=useState<PaymentCard|null>(null);
   const [deleteBusy,setDeleteBusy]=useState(false);
   const [error,setError]=useState('');
@@ -78,8 +80,9 @@ export function CardsPage({
     const now=Date.now();onUpsertBank({id:`custom-${now}`,name:name.toUpperCase(),order:Math.max(60,...banks.map(bank=>bank.order+10)),custom:true});
     setBankOpen(false);setBankName('');setError('');setMessage('Η τράπεζα προστέθηκε.');
   };
-  const saveCard=(card:PaymentCard)=>{onUpsertCard(card);setMessage(`Η «${card.nickname}» αποθηκεύτηκε.`)};
-  const createCard=(card:PaymentCard)=>{onUpsertCard(card);if(!card.vaultRef&&!card.last4)setEditingCardId(card.id);setMessage('Συμπλήρωσε αριθμό, λήξη και CVV απευθείας πάνω στη νέα κάρτα.')};
+  const editCardDetails=(card:PaymentCard)=>{setDetailsIsNew(false);setDetailsCard(card);setMessage('')};
+  const createCard=(card:PaymentCard)=>{setDetailsIsNew(true);setDetailsCard(card);setMessage('')};
+  const saveCardDetails=(card:PaymentCard)=>{const wasNew=detailsIsNew;onUpsertCard(card);setDetailsCard(null);setDetailsIsNew(false);setMessage(wasNew?`Η «${card.nickname}» δημιουργήθηκε με αποθηκευμένα ασφαλή στοιχεία.`:`Τα ασφαλή στοιχεία της «${card.nickname}» ενημερώθηκαν.`)};
   const archive=(card:PaymentCard)=>{onArchiveCard(card);setMessage(`Η «${card.nickname}» αρχειοθετήθηκε. Τα αποθηκευμένα στοιχεία της παραμένουν διαθέσιμα αν την επαναφέρεις.`)};
   const restore=(card:PaymentCard)=>{onUpsertCard(restoreCard(card));setMessage(`Η «${card.nickname}» επανήλθε με τα ίδια αποθηκευμένα στοιχεία.`)};
   const confirmDelete=async()=>{
@@ -110,7 +113,7 @@ export function CardsPage({
         const active=cardsForBank(data,bank.id);const archived=archivedCardsForBank(data,bank.id);
         return <section className="bank-column cards-bank-column" key={bank.id} data-bank={bank.id}>
           <header className="bank-column-head"><div className="bank-column-title"><b>{bank.name}</b><small>{active.length} {active.length===1?'κάρτα':'κάρτες'}</small></div><Tooltip label={`Προσθήκη κάρτας στην ${bank.name}`} side="left"><button type="button" className="bank-add-btn" aria-label={`Προσθήκη κάρτας στην ${bank.name}`} onClick={()=>setCardBankId(bank.id)}><Plus/></button></Tooltip></header>
-          <div className="bank-stack">{active.length?active.map(card=><InteractivePaymentCard key={card.id} card={card} bank={bank} onUpsert={saveCard} onArchive={archive} startEditing={editingCardId===card.id} onEditingComplete={()=>setEditingCardId(current=>current===card.id?null:current)}/>):<button type="button" className="bank-empty" onClick={()=>setCardBankId(bank.id)}>Δεν υπάρχουν χρεωστικές ή προπληρωμένες κάρτες</button>}</div>
+          <div className="bank-stack">{active.length?active.map(card=><InteractivePaymentCard key={card.id} card={card} bank={bank} onEditDetails={editCardDetails} onArchive={archive}/>):<button type="button" className="bank-empty" onClick={()=>setCardBankId(bank.id)}>Δεν υπάρχουν χρεωστικές ή προπληρωμένες κάρτες</button>}</div>
           {archived.length?<details className="cards-archive"><summary><ArchiveRestore/> Αρχειοθετημένες · {archived.length}</summary><div className="card-archive-list">{archived.map(card=><article className="card-archive-row" key={card.id}><div className="card-archive-identity"><b>{card.nickname}</b><small>{card.last4?`•••• ${card.last4} · `:''}{card.kind==='prepaid'?'Προπληρωμένη':'Χρεωστική'}</small></div><div className="card-archive-actions"><button type="button" className="save-button" onClick={()=>restore(card)}><ArchiveRestore/> Επαναφορά</button><button type="button" className="danger" onClick={()=>setDeleteTarget(card)}><Trash2/> Οριστική διαγραφή</button></div></article>)}</div></details>:null}
         </section>;
       })}</div>
@@ -132,6 +135,7 @@ export function CardsPage({
     </section>
 
     <CardCreateDialog open={Boolean(cardBank)} data={data} banks={cardBank?[cardBank]:banks.slice(0,1)} initialBankId={cardBank?.id} allowedKinds={['debit','prepaid']} onClose={()=>setCardBankId(null)} onSave={createCard}/>
+    <CardDetailsDialog open={Boolean(detailsCard)} card={detailsCard} requireCvv={detailsIsNew} motionMode={data.state.settings.motion} onSaved={saveCardDetails} onCancel={()=>{setDetailsCard(null);setDetailsIsNew(false)}}/>
 
     {bankOpen?<div className="picker-backdrop open" aria-hidden="false" onMouseDown={()=>setBankOpen(false)}><section ref={bankRef} className="picker compact neo-raised" role="dialog" aria-modal="true" aria-labelledby="new-bank-title" aria-describedby={error?'new-bank-error':undefined} tabIndex={-1} onMouseDown={event=>event.stopPropagation()}><div className="picker-head"><div><h2 id="new-bank-title">Νέα τράπεζα</h2><p>Η νέα τράπεζα θα αποκτήσει δική της στήλη και ξεχωριστό κουμπί προσθήκης καρτών.</p></div><IconButton type="button" className="close-picker" aria-label="Κλείσιμο" onClick={()=>setBankOpen(false)}>×</IconButton></div><div className="modal-form-grid one"><div className="modal-field"><label>Όνομα τράπεζας</label><AppTextInput data-autofocus="true" maxLength={36} value={bankName} onChange={event=>setBankName(event.target.value)} placeholder="π.χ. N26" invalid={Boolean(error)} aria-describedby={error?'new-bank-error':undefined}/></div></div>{error?<FormError id="new-bank-error">{error}</FormError>:null}<div className="modal-actions"><Button type="button" variant="secondary" className="modal-secondary" onClick={()=>setBankOpen(false)}>Ακύρωση</Button><Button type="button" variant="primary" className="modal-primary" onClick={saveBank}><Plus/> Προσθήκη τράπεζας</Button></div></section></div>:null}
 
