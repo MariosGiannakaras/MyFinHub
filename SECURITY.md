@@ -28,6 +28,6 @@ Approved native finance endpoints may explicitly opt in to `Authorization: Beare
 - rejecting a bearer owner check must not clear or mutate unrelated browser cookies;
 - browser auth/MFA/session endpoints remain cookie-oriented unless a separately reviewed change explicitly expands them.
 
-PAN/expiry remain protected by the existing server-side card vault. CVV remains device-local and is never accepted by server persistence boundaries.
+PAN/expiry/CVV remain protected by the existing server-side encrypted card vault. CVV is synchronized through the same owner+AAL2 boundary and remains excluded from FinanceData, logs and ordinary backups.
 
 Changes to authentication, authorization, session handling, Supabase policies/functions, native bearer routing, or production deployment configuration require explicit security verification in the pull request checklist before merge.
