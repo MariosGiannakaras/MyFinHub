@@ -23,18 +23,15 @@ function object(value:unknown):Record<string,unknown>{
 
 export function parseCardVaultRequest(value:unknown,method:'POST'|'PUT'|'DELETE'){
   const body=object(value);
-  for(const key of Object.keys(body)){
-    const normalized=key.replace(/[^a-z0-9]/gi,'').toLowerCase();
-    if(['cvv','cvc','securitycode','cardverificationvalue','cardverificationcode'].includes(normalized))throw new ApiError(400,'CVV_PERSISTENCE_DISABLED','Το CVV δεν αποθηκεύεται στον server.');
-  }
-  const allowed=method==='PUT'?new Set(['cardId','pan','expiry']):new Set(['cardId']);
+  const allowed=method==='PUT'?new Set(['cardId','pan','expiry','cvv']):new Set(['cardId']);
   if(Object.keys(body).some(key=>!allowed.has(key)))throw new ApiError(400,'INVALID_CARD_SECRET_REQUEST','Μη έγκυρο αίτημα στοιχείων κάρτας.');
   const cardId=typeof body.cardId==='string'?body.cardId.trim():'';
   if(!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$/.test(cardId))throw new ApiError(400,'INVALID_CARD_ID','Μη έγκυρη αναφορά κάρτας.');
   if(method!=='PUT')return {cardId};
   const pan=body.pan===undefined?undefined:typeof body.pan==='string'?body.pan: (()=>{throw new ApiError(400,'INVALID_CARD_PAN','Ο αριθμός κάρτας δεν είναι έγκυρος.');})();
   const expiry=body.expiry===undefined?undefined:typeof body.expiry==='string'?body.expiry: (()=>{throw new ApiError(400,'INVALID_CARD_EXPIRY','Η ημερομηνία λήξης δεν είναι έγκυρη.');})();
-  return {cardId,pan,expiry};
+  const cvv=body.cvv===undefined?undefined:typeof body.cvv==='string'?body.cvv: (()=>{throw new ApiError(400,'INVALID_CARD_CVV','Το CVV δεν είναι έγκυρο.');})();
+  return {cardId,pan,expiry,cvv};
 }
 
 export async function handleCardVaultRequest(req:any,res:any){
@@ -61,11 +58,11 @@ export async function handleCardVaultRequest(req:any,res:any){
     if(method==='POST'){
       const secret=await readCardSecrets(ownerUserId,body.cardId,session.accessToken);
       if(!secret)throw new ApiError(404,'CARD_SECRET_NOT_FOUND','Δεν υπάρχουν αποθηκευμένα στοιχεία για αυτή την κάρτα.');
-      return sendJson(res,200,{pan:secret.pan??null,expiry:secret.expiry??null});
+      return sendJson(res,200,{pan:secret.pan??null,expiry:secret.expiry??null,cvv:secret.cvv??null});
     }
     if(method==='PUT'){
-      const input=body as {cardId:string;pan?:string;expiry?:string};
-      const secret=await writeCardSecrets(ownerUserId,input.cardId,{pan:input.pan,expiry:input.expiry},session.accessToken);
+      const input=body as {cardId:string;pan?:string;expiry?:string;cvv?:string};
+      const secret=await writeCardSecrets(ownerUserId,input.cardId,{pan:input.pan,expiry:input.expiry,cvv:input.cvv},session.accessToken);
       return sendJson(res,200,{saved:true,last4:secret.pan?.slice(-4)??null});
     }
     await deleteCardSecrets(ownerUserId,body.cardId,session.accessToken);
