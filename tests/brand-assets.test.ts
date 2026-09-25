@@ -42,7 +42,7 @@ describe('MyFinHub light/dark brand assets', () => {
 
   it('keeps one theme-ready component contract and generates Windows artwork from the new source', () => {
     const component=text('src/components/BrandMark.tsx');
-    const styles=text('src/styles/part35.css');
+    const styles=text('src/styles/brand-mark-system.css');
     const desktop=text('desktop/prepare-build.mjs');
     expect(component).toContain('/brand/icon-light-192.png');
     expect(component).toContain('/brand/icon-dark-192.png');
