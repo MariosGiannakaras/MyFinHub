@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 const source=readFileSync(new URL('../src/pages/SavingsPage.tsx',import.meta.url),'utf8');
-const css=readFileSync(new URL('../src/styles/part56.css',import.meta.url),'utf8');
+const css=readFileSync(new URL('../src/styles/savings-desktop-composition.css',import.meta.url),'utf8');
 const chain=readFileSync(new URL('../src/styles/part47.css',import.meta.url),'utf8');
 
 describe('approved Savings desktop target source contract',()=>{
@@ -35,6 +35,6 @@ describe('approved Savings desktop target source contract',()=>{
     expect(css).toContain('@media (min-width:1100px)');
     expect(css).toContain('.savings-mobile-legacy{display:none}');
     expect(css).toContain('grid-template-columns:minmax(270px,.88fr) minmax(400px,1.28fr) minmax(290px,.94fr)');
-    expect(chain).toContain("@import './part56.css';");
+    expect(chain).toContain("@import './savings-desktop-composition.css';");
   });
 });
