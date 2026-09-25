@@ -1,0 +1,4 @@
+.review-row{grid-template-columns:72px minmax(0,1fr) 170px}
+.confidence-orb{width:auto;min-width:60px;padding:0 7px;font-size:9px}
+.semantic-table td:first-child .rec-icon{display:inline-grid;vertical-align:middle;margin-right:8px}
+@media(max-width:680px){.review-row{grid-template-columns:64px 1fr}}

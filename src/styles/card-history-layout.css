@@ -1,0 +1,3 @@
+.card-history>div{grid-template-columns:90px minmax(0,1fr) auto auto}
+.card-history>div>.text-button{white-space:nowrap}
+@media(max-width:680px){.card-history>div{grid-template-columns:72px minmax(0,1fr) auto}.card-history>div>.text-button{grid-column:2/-1;justify-self:start}}
