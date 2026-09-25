@@ -35,7 +35,7 @@ describe('approved Quick Entry desktop target source contract',()=>{
     expect(rootCompat).toContain("@import './part46.css';\n@import './app-controls.css';");
     expect(rootCompat.trimEnd()).toMatch(/app-controls\.css';$/);
     expect(workspaceLayer).toContain("import '../styles/workspace-compat.css';");
-    expect(workspaceCompat).toContain("@import './part47.css';\n@import './dashboard-command-search-geometry.css';\n@import './dashboard-desktop-fidelity.css';\n@import './part53.css';");
+    expect(workspaceCompat).toContain("@import './part47.css';\n@import './dashboard-command-search-geometry.css';\n@import './dashboard-desktop-fidelity.css';\n@import './dashboard-bankmark-chart-attention.css';");
     expect(approvedChain).toContain("@import './dashboard-approved-target.css';");
     expect(approvedChain).toContain("@import './dashboard-route-shell-continuity.css';");
     expect(approvedChain).toContain("@import './dashboard-command-search-geometry.css';");
