@@ -40,7 +40,7 @@ export function CardDetailsDialog({
     if(!open||!card)return;
     let cancelled=false;
     setPan('');setExpiry('');setCvv('');setError('');setLoading(false);
-    if(requireCvv)return;
+    if(requireCvv||!card.vaultRef)return;
     setLoading(true);
     void (async()=>{
       let nextPan='';let nextExpiry='';let nextCvv='';let loadMessage='';
