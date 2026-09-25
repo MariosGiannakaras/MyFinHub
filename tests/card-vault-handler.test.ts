@@ -3,9 +3,9 @@ import { parseCardVaultRequest } from '../server/cardVaultHandler.js';
 import { ApiError } from '../server/http.js';
 
 describe('card vault request boundary',()=>{
-  it('accepts reveal and save requests with card ids and PAN/expiry only',()=>{
+  it('accepts reveal and save requests with card ids and all card fields',()=>{
     expect(parseCardVaultRequest({cardId:'card-123'},'POST')).toEqual({cardId:'card-123'});
-    expect(parseCardVaultRequest({cardId:'card-123',pan:'4242 4242 4242 4242',expiry:'12/30'},'PUT')).toEqual({cardId:'card-123',pan:'4242 4242 4242 4242',expiry:'12/30'});
+    expect(parseCardVaultRequest({cardId:'card-123',pan:'4242 4242 4242 4242',expiry:'12/30',cvv:'123'},'PUT')).toEqual({cardId:'card-123',pan:'4242 4242 4242 4242',expiry:'12/30',cvv:'123'});
   });
   it('rejects CVV in every server request shape',()=>{
     for(const key of ['cvv','cvc','securityCode','card_verification_value']){
