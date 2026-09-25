@@ -26,8 +26,8 @@ export function normalizeCardDetailsInput(input:{pan:string;expiry:string;cvv?:s
   const rawCvv=input.cvv?.trim()??'';
   let cvv:string|undefined;
   if(rawCvv){
-    try{cvv=normalizeLocalCvv(rawCvv)}
-    catch{throw new CardDetailsInputError('cvv','Το CVV πρέπει να έχει 3 ή 4 αριθμητικά ψηφία.')}
+    if(!/^\d{3,4}$/.test(rawCvv))throw new CardDetailsInputError('cvv','Το CVV πρέπει να έχει 3 ή 4 αριθμητικά ψηφία.');
+    cvv=rawCvv;
   }else if(requireCvv){
     throw new CardDetailsInputError('cvv','Γράψε το CVV για να ολοκληρωθεί η νέα κάρτα.');
   }
