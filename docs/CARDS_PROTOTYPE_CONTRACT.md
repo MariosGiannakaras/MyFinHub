@@ -24,9 +24,8 @@ Do not redesign, simplify, replace icons, reorder controls, change card structur
 These differences are functional/security requirements and must not be used as justification for unrelated visual changes:
 
 - the prototype's destructive delete interaction is backed by soft archive in MyFinHub so the same `cardId`, finance history and vault association can be restored;
-- PAN and expiry persist only in the encrypted owner+AAL2 server card vault, never in ordinary FinanceData;
-- CVV remains encrypted in the device/browser-local vault and is not accepted by any server persistence boundary;
-- archiving does not erase the device-local CVV merely because the card is hidden; restoring the same `cardId` on the same device can reveal it again;
+- PAN, expiry and CVV persist only in the encrypted owner+AAL2 server card vault, never in ordinary FinanceData;
+- archiving preserves the encrypted server-vault row so restoring the same `cardId` recovers the same synchronized card secret;
 - credit cards use the same card presentation but have card-linked finance functionality, independent debt/limit views and card-specific purchase/payment history.
 
 ## Engineering rule

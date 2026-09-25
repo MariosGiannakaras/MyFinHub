@@ -20,7 +20,7 @@ describe('approved Credit Card desktop target boundary',()=>{
   it('keeps the canonical card stack as the one card surface',()=>{
     expect(page).toContain('<CanonicalCreditCardStack');
     expect(stack).toContain('revealCardSecret(card.id)');
-    expect(stack).toContain('readLocalCvv(card.id)');
+    expect(stack).not.toContain('readLocalCvv(card.id)');
     expect(stack).toContain('archiveRef.current(card.source)');
   });
 

@@ -4,11 +4,11 @@ import { decryptCardSecrets, encryptCardSecrets, normalizeCardSecrets } from '..
 const key=Buffer.alloc(32,7).toString('base64');
 
 describe('card secret crypto',()=>{
-  it('round-trips PAN and expiry with authenticated encryption',()=>{
-    const encrypted=encryptCardSecrets({pan:'4111 1111 1111 1111',expiry:'09/2030'},'owner-1','card-1',key,'3');
+  it('round-trips PAN, expiry and CVV with authenticated encryption',()=>{
+    const encrypted=encryptCardSecrets({pan:'4111 1111 1111 1111',expiry:'09/2030',cvv:'123'},'owner-1','card-1',key,'3');
     expect(encrypted.ciphertext).not.toContain('4111111111111111');
     expect(encrypted.keyVersion).toBe(3);
-    expect(decryptCardSecrets(encrypted,'owner-1','card-1',key)).toEqual({pan:'4111111111111111',expiry:'09/30'});
+    expect(decryptCardSecrets(encrypted,'owner-1','card-1',key)).toEqual({pan:'4111111111111111',expiry:'09/30',cvv:'123'});
   });
 
   it('normalizes digits without issuer-length or Luhn validation',()=>{
@@ -27,8 +27,10 @@ describe('card secret crypto',()=>{
     expect(()=>encryptCardSecrets({pan:'4111111111111111'},'owner-1','card-1','bad','1')).toThrow('CARD_VAULT_KEY_INVALID');
   });
 
-  it('rejects CVV persistence and PAN values without any digits',()=>{
-    expect(()=>normalizeCardSecrets({pan:'4111111111111111',cvv:'123'})).toThrow('CVV_PERSISTENCE_DISABLED');
+  it('accepts CVV-only partial updates and rejects malformed CVV/PAN values',()=>{
+    expect(normalizeCardSecrets({cvv:'1234'})).toEqual({cvv:'1234'});
+    expect(()=>normalizeCardSecrets({cvv:'12'})).toThrow('INVALID_CARD_CVV');
+    expect(()=>normalizeCardSecrets({cvv:'12x'})).toThrow('INVALID_CARD_CVV');
     expect(()=>normalizeCardSecrets({pan:'not-a-number'})).toThrow('INVALID_CARD_PAN');
   });
 });

@@ -4,7 +4,6 @@ import { BankBrandMark } from './BankBrandMark';
 import { cardThemeClass } from '../lib/cardDesigns';
 import { cardLabel } from '../lib/cards';
 import { cardVaultErrorMessage, revealCardSecret } from '../lib/cardVaultClient';
-import { readLocalCvv } from '../lib/localCvvVault';
 import type { CardBank, PaymentCard } from '../types';
 
 type Secrets={pan?:string;expiry?:string;cvv?:string};
@@ -12,12 +11,6 @@ type Secrets={pan?:string;expiry?:string;cvv?:string};
 function formatPan(value:string){return value.replace(/\D/g,'').replace(/(.{4})/g,'$1 ').trim();}
 function maskedPan(card:PaymentCard){return card.last4?`•••• •••• •••• ${card.last4}`:'•••• •••• •••• ••••';}
 function kindLabel(card:PaymentCard){return card.kind==='credit'?'Credit':card.kind==='prepaid'?'Prepaid':card.formFactor==='virtual'?'Virtual':'Debit';}
-function localCvvMessage(error:unknown){
-  if(error instanceof Error&&error.message==='INVALID_CVV')return 'Το CVV πρέπει να έχει 3 ή 4 αριθμητικά ψηφία.';
-  if(error instanceof Error&&error.message==='LOCAL_CVV_DECRYPT_FAILED')return 'Το τοπικό CVV δεν μπόρεσε να αποκρυπτογραφηθεί.';
-  return 'Το τοπικό vault CVV δεν είναι διαθέσιμο σε αυτόν τον browser.';
-}
-
 function PrototypeBrand({card,bank}:{card:PaymentCard;bank:CardBank}){
   const design=card.designId??'';
   const alphaVariant=design==='alpha'?'enter':design.startsWith('alpha')?'bonus':null;
@@ -55,8 +48,7 @@ export function InteractivePaymentCard({
     try{
       let server:Awaited<ReturnType<typeof revealCardSecret>>={};
       try{server=await revealCardSecret(card.id)}catch(error){if((error as {code?:string})?.code!=='CARD_SECRET_NOT_FOUND')throw error}
-      let local:string|null=null;try{local=await readLocalCvv(card.id)}catch(error){setMessage(localCvvMessage(error))}
-      const result={...server,cvv:local||undefined};setRevealed(result);return result;
+      setRevealed(server);return server;
     }catch(error){setMessage(cardVaultErrorMessage(error));return null}
     finally{setBusy(false)}
   };

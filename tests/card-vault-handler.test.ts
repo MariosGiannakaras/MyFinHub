@@ -3,14 +3,14 @@ import { parseCardVaultRequest } from '../server/cardVaultHandler.js';
 import { ApiError } from '../server/http.js';
 
 describe('card vault request boundary',()=>{
-  it('accepts reveal and save requests with card ids and PAN/expiry only',()=>{
+  it('accepts reveal and save requests with card ids and PAN/expiry/CVV',()=>{
     expect(parseCardVaultRequest({cardId:'card-123'},'POST')).toEqual({cardId:'card-123'});
-    expect(parseCardVaultRequest({cardId:'card-123',pan:'4242 4242 4242 4242',expiry:'12/30'},'PUT')).toEqual({cardId:'card-123',pan:'4242 4242 4242 4242',expiry:'12/30'});
+    expect(parseCardVaultRequest({cardId:'card-123',pan:'4242 4242 4242 4242',expiry:'12/30',cvv:'123'},'PUT')).toEqual({cardId:'card-123',pan:'4242 4242 4242 4242',expiry:'12/30',cvv:'123'});
   });
-  it('rejects CVV in every server request shape',()=>{
-    for(const key of ['cvv','cvc','securityCode','card_verification_value']){
+  it('keeps the request key whitelist narrow while allowing canonical cvv',()=>{
+    for(const key of ['cvc','securityCode','card_verification_value']){
       try{parseCardVaultRequest({cardId:'card-123',[key]:'123'},'PUT');throw new Error('expected failure')}
-      catch(error){expect(error).toBeInstanceOf(ApiError);expect((error as ApiError).code).toBe('CVV_PERSISTENCE_DISABLED')}
+      catch(error){expect(error).toBeInstanceOf(ApiError);expect((error as ApiError).code).toBe('INVALID_CARD_SECRET_REQUEST')}
     }
   });
   it('rejects unknown fields and malformed card ids',()=>{

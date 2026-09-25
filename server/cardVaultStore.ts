@@ -1,5 +1,5 @@
 import type { CardSecretEnvelope, CardSecretPlaintext } from './cardVaultCrypto.js';
-import { decryptCardSecrets, encryptCardSecrets } from './cardVaultCrypto.js';
+import { decryptCardSecrets, encryptCardSecrets, normalizeCardSecrets } from './cardVaultCrypto.js';
 import { ApiError } from './http.js';
 import { fetchUpstream } from './upstream.js';
 
@@ -56,8 +56,8 @@ function mapCryptoError(error:unknown):never{
   const code=error instanceof Error?error.message:'';
   if(code==='INVALID_CARD_PAN')throw new ApiError(400,'INVALID_CARD_PAN','Ο αριθμός κάρτας δεν είναι έγκυρος.');
   if(code==='INVALID_CARD_EXPIRY')throw new ApiError(400,'INVALID_CARD_EXPIRY','Η ημερομηνία λήξης δεν είναι έγκυρη.');
+  if(code==='INVALID_CARD_CVV')throw new ApiError(400,'INVALID_CARD_CVV','Το CVV πρέπει να έχει 3 ή 4 αριθμητικά ψηφία.');
   if(code==='EMPTY_CARD_SECRET'||code==='INVALID_CARD_SECRET')throw new ApiError(400,'INVALID_CARD_SECRET','Δεν δόθηκαν έγκυρα στοιχεία κάρτας.');
-  if(code==='CVV_PERSISTENCE_DISABLED')throw new ApiError(400,'CVV_PERSISTENCE_DISABLED','Το CVV δεν αποθηκεύεται στον server.');
   if(code==='CARD_VAULT_DECRYPT_FAILED')throw new ApiError(500,'CARD_VAULT_DECRYPT_FAILED','Το αποθηκευμένο στοιχείο κάρτας δεν μπόρεσε να αποκρυπτογραφηθεί.',false);
   if(code.startsWith('CARD_VAULT_KEY_')||code==='CARD_VAULT_KEY_NOT_CONFIGURED')throw new ApiError(503,'CARD_VAULT_UNAVAILABLE','Το ασφαλές vault καρτών δεν είναι διαθέσιμο.',false);
   throw error;
@@ -71,8 +71,12 @@ export async function readCardSecrets(ownerUserId:string,cardId:string,accessTok
 }
 
 export async function writeCardSecrets(ownerUserId:string,cardId:string,input:unknown,accessToken:string):Promise<CardSecretPlaintext>{
+  let update:CardSecretPlaintext;
+  try{update=normalizeCardSecrets(input)}catch(error){return mapCryptoError(error)}
+  const existing=await readCardSecrets(ownerUserId,cardId,accessToken);
+  const merged={...(existing??{}),...update};
   let encrypted:CardSecretEnvelope;
-  try{encrypted=encryptCardSecrets(input,ownerUserId,cardId)}catch(error){return mapCryptoError(error)}
+  try{encrypted=encryptCardSecrets(merged,ownerUserId,cardId)}catch(error){return mapCryptoError(error)}
   const normalized=await (async()=>{
     try{return decryptCardSecrets(encrypted,ownerUserId,cardId)}catch(error){return mapCryptoError(error)}
   })();

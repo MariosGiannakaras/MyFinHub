@@ -78,7 +78,7 @@ MyFinHub is intentionally a **single-owner** application. Supabase Auth uses ema
 
 Browser and Windows sessions retain the HttpOnly/Secure cookie model and same-origin mutation protection. Approved native finance/card-secret routes may explicitly opt into `Authorization: Bearer <Supabase access JWT>` for native clients; rejected bearer credentials fail closed without ambient-cookie fallback, and the same owner/AAL2/RLS/revision rules remain mandatory. This native path does not add permissive CORS and never uses a service-role credential.
 
-The online runtime uses the Supabase publishable key, never a service-role secret. Full PAN/expiry use a separate ciphertext-only card vault; CVV remains encrypted device-local state and is never included in ordinary finance backups or accepted by server persistence.
+The online runtime uses the Supabase publishable key, never a service-role secret. Full PAN/expiry/CVV use the separate ciphertext-only card vault and remain excluded from FinanceData and ordinary finance backups. Browser, Windows and approved native clients access those secrets only through the owner+AAL2 card-secret boundary.
 
 Receipt capture/OCR is local-only: pending images live in device-local IndexedDB, OCR uses self-hosted Tesseract worker/WASM/Greek-English language assets, raw OCR text is transient, and receipt content is not written to FinanceData, Supabase, normal backups, Change History or application logs.
 
