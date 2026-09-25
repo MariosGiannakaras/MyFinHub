@@ -8,7 +8,7 @@ const normalizedBaseStyles=baseStyles.replace(/\r\n/g,'\n');
 const rootCompat=readFileSync(new URL('../src/styles/root-compat.css',import.meta.url),'utf8').replace(/\r\n/g,'\n');
 const workspaceLayer=readFileSync(new URL('../src/components/WorkspaceStyleLayer.tsx',import.meta.url),'utf8').replace(/\r\n/g,'\n');
 const workspaceCompat=readFileSync(new URL('../src/styles/workspace-compat.css',import.meta.url),'utf8').replace(/\r\n/g,'\n');
-const approvedChain=readFileSync(new URL('../src/styles/part47.css',import.meta.url),'utf8');
+const approvedChain=readFileSync(new URL('../src/styles/approved-workspace-targets.css',import.meta.url),'utf8');
 
 describe('approved Loans desktop target source contract',()=>{
   it('keeps canonical loan calculations and existing handlers intact',()=>{
@@ -51,7 +51,7 @@ describe('approved Loans desktop target source contract',()=>{
     expect(rootCompat).toContain("@import './part46.css';\n@import './app-controls.css';");
     expect(rootCompat.trimEnd()).toMatch(/app-controls\.css';$/);
     expect(workspaceLayer).toContain("import '../styles/workspace-compat.css';");
-    expect(workspaceCompat).toContain("@import './part47.css';\n@import './dashboard-command-search-geometry.css';\n@import './dashboard-desktop-fidelity.css';\n@import './dashboard-bankmark-chart-attention.css';");
+    expect(workspaceCompat).toContain("@import './approved-workspace-targets.css';\n@import './account-metadata-surfaces.css';\n@import './dashboard-command-search-geometry.css';\n@import './dashboard-desktop-fidelity.css';\n@import './dashboard-bankmark-chart-attention.css';");
     expect(approvedChain).toContain("@import './loans-approved-target.css';");
     expect(styles).not.toContain('@media (max-width');
   });

@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 const quickAdd=readFileSync(new URL('../src/components/QuickAdd.tsx',import.meta.url),'utf8');
 const receiptAware=readFileSync(new URL('../src/components/ReceiptAwareQuickAdd.tsx',import.meta.url),'utf8');
 const approvedCss=readFileSync(new URL('../src/styles/quick-entry-desktop-composition.css',import.meta.url),'utf8');
-const approvedChain=readFileSync(new URL('../src/styles/part47.css',import.meta.url),'utf8');
+const approvedChain=readFileSync(new URL('../src/styles/approved-workspace-targets.css',import.meta.url),'utf8');
 const baseStyles=readFileSync(new URL('../src/styles.css',import.meta.url),'utf8');
 const normalizedBaseStyles=baseStyles.replace(/\r\n/g,'\n');
 const rootCompat=readFileSync(new URL('../src/styles/root-compat.css',import.meta.url),'utf8').replace(/\r\n/g,'\n');
@@ -35,7 +35,7 @@ describe('approved Quick Entry desktop target source contract',()=>{
     expect(rootCompat).toContain("@import './part46.css';\n@import './app-controls.css';");
     expect(rootCompat.trimEnd()).toMatch(/app-controls\.css';$/);
     expect(workspaceLayer).toContain("import '../styles/workspace-compat.css';");
-    expect(workspaceCompat).toContain("@import './part47.css';\n@import './dashboard-command-search-geometry.css';\n@import './dashboard-desktop-fidelity.css';\n@import './dashboard-bankmark-chart-attention.css';");
+    expect(workspaceCompat).toContain("@import './approved-workspace-targets.css';\n@import './account-metadata-surfaces.css';\n@import './dashboard-command-search-geometry.css';\n@import './dashboard-desktop-fidelity.css';\n@import './dashboard-bankmark-chart-attention.css';");
     expect(approvedChain).toContain("@import './dashboard-approved-target.css';");
     expect(approvedChain).toContain("@import './dashboard-route-shell-continuity.css';");
     expect(approvedChain).toContain("@import './dashboard-command-search-geometry.css';");
