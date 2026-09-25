@@ -39,7 +39,7 @@ export type CardDetailsPersistence={
   readCvv:(cardId:string)=>Promise<string|null>;
   saveCvv:(cardId:string,cvv:string)=>Promise<void>;
   deleteCvv:(cardId:string)=>Promise<void>;
-  saveSecret:(cardId:string,secret:{pan?:string;expiry?:string})=>Promise<{saved:true;last4:string|null}>;
+  saveSecret:(cardId:string,secret:{pan?:string;expiry?:string;cvv?:string})=>Promise<{saved:true;last4:string|null}>;
   now:()=>string;
 };
 
