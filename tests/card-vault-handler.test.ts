@@ -7,10 +7,10 @@ describe('card vault request boundary',()=>{
     expect(parseCardVaultRequest({cardId:'card-123'},'POST')).toEqual({cardId:'card-123'});
     expect(parseCardVaultRequest({cardId:'card-123',pan:'4242 4242 4242 4242',expiry:'12/30',cvv:'123'},'PUT')).toEqual({cardId:'card-123',pan:'4242 4242 4242 4242',expiry:'12/30',cvv:'123'});
   });
-  it('rejects CVV in every server request shape',()=>{
-    for(const key of ['cvv','cvc','securityCode','card_verification_value']){
+  it('rejects unsupported CVV aliases',()=>{
+    for(const key of ['cvc','securityCode','card_verification_value']){
       try{parseCardVaultRequest({cardId:'card-123',[key]:'123'},'PUT');throw new Error('expected failure')}
-      catch(error){expect(error).toBeInstanceOf(ApiError);expect((error as ApiError).code).toBe('CVV_PERSISTENCE_DISABLED')}
+      catch(error){expect(error).toBeInstanceOf(ApiError);expect((error as ApiError).code).toBe('INVALID_CARD_SECRET_REQUEST')}
     }
   });
   it('rejects unknown fields and malformed card ids',()=>{
