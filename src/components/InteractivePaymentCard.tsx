@@ -1,16 +1,15 @@
-import { Archive, Copy, Eye, EyeOff, X } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Archive, Copy, Eye, EyeOff, Pencil, X } from 'lucide-react';
+import { useMemo, useRef, useState } from 'react';
 import { BankBrandMark } from './BankBrandMark';
 import { cardThemeClass } from '../lib/cardDesigns';
 import { cardLabel } from '../lib/cards';
-import { cardVaultErrorMessage, revealCardSecret, saveCardSecret } from '../lib/cardVaultClient';
-import { normalizeLocalCvv, readLocalCvv, saveLocalCvv } from '../lib/localCvvVault';
+import { cardVaultErrorMessage, revealCardSecret } from '../lib/cardVaultClient';
+import { readLocalCvv } from '../lib/localCvvVault';
 import type { CardBank, PaymentCard } from '../types';
 
 type Secrets={pan?:string;expiry?:string;cvv?:string};
 
 function formatPan(value:string){return value.replace(/\D/g,'').replace(/(.{4})/g,'$1 ').trim();}
-function formatExpiry(value:string){const d=value.replace(/\D/g,'').slice(0,4);return d.length>2?`${d.slice(0,2)}/${d.slice(2)}`:d;}
 function maskedPan(card:PaymentCard){return card.last4?`•••• •••• •••• ${card.last4}`:'•••• •••• •••• ••••';}
 function kindLabel(card:PaymentCard){return card.kind==='credit'?'Credit':card.kind==='prepaid'?'Prepaid':card.formFactor==='virtual'?'Virtual':'Debit';}
 function localCvvMessage(error:unknown){
@@ -31,23 +30,17 @@ function PrototypeNetwork({card}:{card:PaymentCard}){
 }
 
 export function InteractivePaymentCard({
-  card,bank,large=false,onUpsert,onArchive,archiveDisabled=false,startEditing=false,onEditingComplete,
+  card,bank,large=false,onEditDetails,onArchive,archiveDisabled=false,
 }:{
   card:PaymentCard;bank:CardBank;large?:boolean;
-  onUpsert?:(card:PaymentCard)=>void;
+  onEditDetails?:(card:PaymentCard)=>void;
   onArchive?:(card:PaymentCard)=>void|Promise<void>;
   archiveDisabled?:boolean;
-  startEditing?:boolean;
-  onEditingComplete?:()=>void;
   onOpenCredit?:()=>void;
 }){
   const [revealed,setRevealed]=useState<Secrets>({});
   const [busy,setBusy]=useState(false);
   const [message,setMessage]=useState('');
-  const [editing,setEditing]=useState(startEditing||(!card.vaultRef&&!card.last4));
-  const [pan,setPan]=useState('');
-  const [expiry,setExpiry]=useState('');
-  const [cvv,setCvv]=useState('');
   const [deleteOpen,setDeleteOpen]=useState(false);
   const [deleteProgress,setDeleteProgress]=useState(0);
   const [deleteOffset,setDeleteOffset]=useState(0);
@@ -56,10 +49,6 @@ export function InteractivePaymentCard({
   const theme=cardThemeClass(card);
   const visible=Boolean(revealed.pan||revealed.expiry||revealed.cvv);
   const tiltEnabled=useMemo(()=>typeof window==='undefined'||!window.matchMedia('(prefers-reduced-motion: reduce)').matches,[]);
-
-  useEffect(()=>{
-    if(startEditing||(!card.vaultRef&&!card.last4)){setEditing(true);setPan('');setExpiry('');setCvv('')}
-  },[startEditing,card.id,card.vaultRef,card.last4]);
 
   const loadSecrets=async()=>{
     setBusy(true);setMessage('');
@@ -71,27 +60,12 @@ export function InteractivePaymentCard({
     }catch(error){setMessage(cardVaultErrorMessage(error));return null}
     finally{setBusy(false)}
   };
+
   const toggleReveal=async()=>{if(visible){setRevealed({});return}await loadSecrets()};
   const copy=async(field:keyof Secrets,label:string)=>{
     const current=revealed[field]||(await loadSecrets())?.[field];if(!current)return;
     try{await navigator.clipboard.writeText(current);setMessage(`${label} αντιγράφηκε.`)}catch{setMessage('Δεν ήταν δυνατή η αντιγραφή.')}
   };
-  const saveInline=async()=>{
-    const digits=pan.replace(/\D/g,'');const normalizedExpiry=formatExpiry(expiry);let normalizedCvv='';
-    if(!digits||!/^\d{2}\/\d{2}$/.test(normalizedExpiry)){setMessage('Έλεγξε αριθμό και λήξη.');return}
-    try{normalizedCvv=normalizeLocalCvv(cvv)}catch(error){setMessage(localCvvMessage(error));return}
-    setBusy(true);setMessage('');
-    try{
-      const receipt=await saveCardSecret(card.id,{pan:digits,expiry:normalizedExpiry});
-      await saveLocalCvv(card.id,normalizedCvv);
-      const candidateLast4=receipt.last4??(digits.length>=4?digits.slice(-4):null);
-      const last4=candidateLast4&&/^\d{4}$/.test(candidateLast4)?candidateLast4:undefined;
-      const next={...card,last4,vaultRef:card.id,updatedAt:new Date().toISOString()};
-      onUpsert?.(next);setRevealed({});setEditing(false);setMessage('Η κάρτα αποθηκεύτηκε.');onEditingComplete?.();
-    }catch(error){setMessage(error instanceof Error&&error.message.startsWith('LOCAL_')?localCvvMessage(error):cardVaultErrorMessage(error))}
-    finally{setBusy(false)}
-  };
-  const cancelInline=()=>{setEditing(false);setPan('');setExpiry('');setCvv('');onEditingComplete?.()};
   const resetDelete=()=>{setDeleteOpen(false);setDeleteProgress(0);setDeleteOffset(0)};
   const commitArchive=async()=>{
     if(!onArchive||archiveDisabled)return;
@@ -101,7 +75,7 @@ export function InteractivePaymentCard({
   };
 
   const pointerMove=(event:React.PointerEvent<HTMLElement>)=>{
-    if(!tiltEnabled||event.pointerType==='touch'||deleteOpen||editing)return;
+    if(!tiltEnabled||event.pointerType==='touch'||deleteOpen)return;
     const element=cardRef.current;if(!element)return;const rect=element.getBoundingClientRect();const x=(event.clientX-rect.left)/rect.width;const y=(event.clientY-rect.top)/rect.height;
     const ry=Math.max(-6.5,Math.min(6.5,(x-.5)*13));const rx=Math.max(-6.5,Math.min(6.5,-(y-.5)*13));element.style.transform=`perspective(1000px) rotateY(${ry}deg) rotateX(${rx}deg)`;
   };
@@ -113,21 +87,24 @@ export function InteractivePaymentCard({
   const shownCvv=visible&&revealed.cvv?revealed.cvv:'•••';
 
   return <div className={`card-slot r-card-slot prototype-card-slot ${large?'is-large':''}`}>
-    <article ref={cardRef} className={`payment-card r-payment-card prototype-payment-card ${theme} ${editing?'editing':''} ${deleteOpen?'delete-armed':''} ${large?'is-large':''}`} style={{'--delete-p':deleteProgress} as React.CSSProperties} onPointerMove={pointerMove} onPointerLeave={resetTilt} aria-label={`${cardLabel(card)} · ${bank.name}`}>
+    <article ref={cardRef} className={`payment-card r-payment-card prototype-payment-card ${theme} ${deleteOpen?'delete-armed':''} ${large?'is-large':''}`} style={{'--delete-p':deleteProgress} as React.CSSProperties} onPointerMove={pointerMove} onPointerLeave={resetTilt} aria-label={`${cardLabel(card)} · ${bank.name}`}>
       <div className="card-inner">
         <header className="card-header">
           <div className="card-brand-block"><div className="card-brand"><PrototypeBrand card={card} bank={bank}/></div><div className="card-nickname">{card.nickname}</div></div>
-          {!editing?<div className="card-toolbar"><button className="card-icon-btn" type="button" disabled={busy} aria-pressed={visible} aria-label={visible?'Απόκρυψη στοιχείων':'Εμφάνιση στοιχείων'} title={visible?'Απόκρυψη στοιχείων':'Εμφάνιση στοιχείων'} onClick={()=>void toggleReveal()}>{visible?<EyeOff/>:<Eye/>}</button>{onArchive?<button className="card-icon-btn" type="button" disabled={busy||archiveDisabled} aria-label="Αρχειοθέτηση κάρτας" title="Αρχειοθέτηση κάρτας" onClick={()=>{setDeleteProgress(0);setDeleteOffset(0);setDeleteOpen(true)}}><Archive/></button>:null}</div>:null}
+          <div className="card-toolbar">
+            <button className="card-icon-btn" type="button" disabled={busy} aria-pressed={visible} aria-label={visible?'Απόκρυψη στοιχείων':'Εμφάνιση στοιχείων'} title={visible?'Απόκρυψη στοιχείων':'Εμφάνιση στοιχείων'} onClick={()=>void toggleReveal()}>{visible?<EyeOff/>:<Eye/>}</button>
+            {onEditDetails?<button className="card-icon-btn" type="button" disabled={busy} aria-label={`Επεξεργασία ασφαλών στοιχείων ${card.nickname}`} title="Επεξεργασία στοιχείων κάρτας" onClick={()=>onEditDetails(card)}><Pencil/></button>:null}
+            {onArchive?<button className="card-icon-btn" type="button" disabled={busy||archiveDisabled} aria-label="Αρχειοθέτηση κάρτας" title="Αρχειοθέτηση κάρτας" onClick={()=>{setDeleteProgress(0);setDeleteOffset(0);setDeleteOpen(true)}}><Archive/></button>:null}
+          </div>
         </header>
         <div className="card-body">
-          <div className="card-number-wrap">{editing?<input className="card-edit-input edit-number inline-number" value={pan} inputMode="numeric" placeholder="Αριθμός κάρτας" aria-label="Αριθμός κάρτας" onChange={e=>setPan(formatPan(e.target.value))}/>:<><div className={`card-number ${visible?'':'masked'}`}>{number}</div><button className="copy-mini" type="button" disabled={busy} aria-label="Αντιγραφή αριθμού" title="Αντιγραφή αριθμού" onClick={()=>void copy('pan','Ο αριθμός κάρτας')}><Copy/></button></>}</div>
+          <div className="card-number-wrap"><div className={`card-number ${visible?'':'masked'}`}>{number}</div><button className="copy-mini" type="button" disabled={busy} aria-label="Αντιγραφή αριθμού" title="Αντιγραφή αριθμού" onClick={()=>void copy('pan','Ο αριθμός κάρτας')}><Copy/></button></div>
           <div className="card-fields">
-            <div className="card-field"><span className="card-field-label">VALID THRU</span>{editing?<input className="card-edit-input edit-small inline-expiry" value={expiry} inputMode="numeric" maxLength={5} placeholder="MM/YY" aria-label="Ημερομηνία λήξης" onChange={e=>setExpiry(formatExpiry(e.target.value))}/>:<div className="card-field-line"><span className={`card-field-value ${visible?'':'masked'}`}>{shownExpiry}</span><button className="copy-mini" type="button" disabled={busy} aria-label="Αντιγραφή λήξης" title="Αντιγραφή λήξης" onClick={()=>void copy('expiry','Η λήξη')}><Copy/></button></div>}</div>
-            <div className="card-field"><span className="card-field-label">CVV</span>{editing?<input className="card-edit-input edit-small inline-cvv" value={cvv} inputMode="numeric" maxLength={4} placeholder="CVV" aria-label="CVV" onChange={e=>setCvv(e.target.value.replace(/\D/g,'').slice(0,4))}/>:<div className="card-field-line"><span className={`card-field-value ${visible?'':'masked'}`}>{shownCvv}</span><button className="copy-mini" type="button" disabled={busy} aria-label="Αντιγραφή CVV" title="Αντιγραφή CVV" onClick={()=>void copy('cvv','Το CVV')}><Copy/></button></div>}</div>
+            <div className="card-field"><span className="card-field-label">VALID THRU</span><div className="card-field-line"><span className={`card-field-value ${visible?'':'masked'}`}>{shownExpiry}</span><button className="copy-mini" type="button" disabled={busy} aria-label="Αντιγραφή λήξης" title="Αντιγραφή λήξης" onClick={()=>void copy('expiry','Η λήξη')}><Copy/></button></div></div>
+            <div className="card-field"><span className="card-field-label">CVV</span><div className="card-field-line"><span className={`card-field-value ${visible?'':'masked'}`}>{shownCvv}</span><button className="copy-mini" type="button" disabled={busy} aria-label="Αντιγραφή CVV" title="Αντιγραφή CVV" onClick={()=>void copy('cvv','Το CVV')}><Copy/></button></div></div>
             <PrototypeNetwork card={card}/>
           </div>
         </div>
-        {editing?<div className="card-edit-actions"><button className="card-action" type="button" disabled={busy} onClick={cancelInline}>Ακύρωση</button><button className="card-action primary" type="button" disabled={busy} onClick={()=>void saveInline()}>Αποθήκευση</button></div>:null}
         {deleteOpen?<div className="delete-confirm r-card-archive-confirm"><div className="delete-confirm-head"><div className="delete-confirm-copy"><b>Αρχειοθέτηση κάρτας;</b><small>Σύρε μέχρι τέρμα για επιβεβαίωση. Η κάρτα θα μεταφερθεί στο αρχείο και μπορεί να επανέλθει με τα ίδια στοιχεία.</small></div><button className="delete-cancel" type="button" aria-label="Ακύρωση αρχειοθέτησης" title="Ακύρωση αρχειοθέτησης" onClick={resetDelete}><X/></button></div><div ref={sliderRef} className="delete-slider" style={{'--p':deleteProgress} as React.CSSProperties}><span className="delete-slider-label">ΣΥΡΕ ΓΙΑ ΑΡΧΕΙΟΘΕΤΗΣΗ</span><button className="delete-slider-thumb r-card-archive-keyboard" type="button" aria-label="Σύρε για αρχειοθέτηση" title="Αρχειοθέτηση κάρτας" style={{transform:`translateX(${deleteOffset}px)`}} onClick={e=>{if(e.detail===0)void commitArchive()}} onPointerDown={e=>{e.currentTarget.setPointerCapture(e.pointerId);moveDelete(e.clientX)}} onPointerMove={e=>{if(e.currentTarget.hasPointerCapture(e.pointerId))moveDelete(e.clientX)}} onPointerUp={e=>{try{e.currentTarget.releasePointerCapture(e.pointerId)}catch{}if(deleteProgress>=.92){setDeleteProgress(1);void commitArchive()}else{setDeleteProgress(0);setDeleteOffset(0)}}} onPointerCancel={()=>{setDeleteProgress(0);setDeleteOffset(0)}}><Archive/><span className="sr-only">Αρχειοθέτηση</span></button></div></div>:null}
       </div>
     </article>

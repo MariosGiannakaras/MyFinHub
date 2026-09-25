@@ -9,7 +9,8 @@ describe('approved Cards surrounding desktop target source contract',()=>{
     expect(source.match(/className="cards-workspace cards-prototype-workspace neo-raised"/g)).toHaveLength(1);
     expect(source.match(/className="cards-grid cards-prototype-grid"/g)).toHaveLength(1);
     expect(source).toContain('<InteractivePaymentCard');
-    expect(source).toContain('onUpsert={saveCard} onArchive={archive}');
+    expect(source).toContain('onEditDetails={editCardDetails} onArchive={archive}');
+    expect(source).toContain('<CardDetailsDialog');
     expect(source).toContain('onClick={()=>restore(card)}');
     expect(source).toContain('onClick={()=>setDeleteTarget(card)}');
     expect(source).toContain("allowedKinds={['debit','prepaid']}");
