@@ -1,0 +1,2 @@
+/* Final UX reconciliation: preserve semantic DOM order and keep History usable on narrow screens. */
+.period-control button:disabled{opacity:.38;cursor:not-allowed;box-shadow:none!important;transform:none!important}

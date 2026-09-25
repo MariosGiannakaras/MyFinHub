@@ -1,0 +1,6 @@
+@media(max-width:680px){
+  .review-row{grid-template-columns:64px 1fr}
+  .mobile-more-menu>nav{grid-template-columns:1fr 1fr}
+  .card-history>div{grid-template-columns:72px minmax(0,1fr) auto}
+  .card-history>div>.text-button{grid-column:2/-1;justify-self:start}
+}

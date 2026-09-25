@@ -13,8 +13,8 @@ const modalFocusSource=readFileSync(new URL('../src/hooks/useModalFocus.ts',impo
 const shortcutSource=readFileSync(new URL('../src/lib/shortcuts.ts',import.meta.url),'utf8');
 const styles=readFileSync(new URL('../src/styles/owned-entry-popovers.css',import.meta.url),'utf8');
 const sharedStyles=readFileSync(new URL('../src/styles/app-controls.css',import.meta.url),'utf8');
-const integrationStyles=readFileSync(new URL('../src/styles/part33.css',import.meta.url),'utf8');
-const taxonomyStyles=readFileSync(new URL('../src/styles/part46.css',import.meta.url),'utf8');
+const integrationStyles=readFileSync(new URL('../src/styles/owned-input-density.css',import.meta.url),'utf8');
+const taxonomyStyles=readFileSync(new URL('../src/styles/category-taxonomy-editor.css',import.meta.url),'utf8');
 const settingsStyles=readFileSync(new URL('../src/pages/SettingsPage.css',import.meta.url),'utf8');
 const accountStyles=readFileSync(new URL('../src/components/AccountManagementSettings.css',import.meta.url),'utf8');
 function files(path:string):string[]{return readdirSync(path).flatMap(name=>{const full=join(path,name);return statSync(full).isDirectory()?files(full):/\.tsx$/.test(name)?[full]:[]})}

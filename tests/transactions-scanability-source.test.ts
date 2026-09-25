@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 const page=readFileSync(new URL('../src/pages/TransactionsPage.tsx',import.meta.url),'utf8');
 const split=readFileSync(new URL('../src/components/TransactionSplitDetails.tsx',import.meta.url),'utf8');
-const responsiveStyles=readFileSync(new URL('../src/styles/part46.css',import.meta.url),'utf8');
+const responsiveStyles=readFileSync(new URL('../src/styles/taxonomy-transactions-mobile-layout.css',import.meta.url),'utf8');
 const ledgerQa=readFileSync(new URL('../scripts/ledger-foundations-qa.mjs',import.meta.url),'utf8');
 const focusedQa=readFileSync(new URL('../scripts/transactions-scanability-qa.mjs',import.meta.url),'utf8');
 const coordinator=readFileSync(new URL('../scripts/run-rendered-qa.mjs',import.meta.url),'utf8');

@@ -1,0 +1,8 @@
+@media(min-width:681px){
+  .primary-balance-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .primary-balance-card{min-height:158px;padding:15px 18px}
+  .dashboard-pending-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+  .dashboard-pending-grid>.panel,.dashboard-grid>.quick-panel{padding:14px;box-shadow:var(--shadow-soft)}
+  .dashboard-grid>.quick-panel{background:linear-gradient(145deg,#fafcff,#f0f5fb)}
+  .flow-metric-grid{gap:10px}.flow-metric-grid .metric-card{min-height:110px;padding:14px}
+}

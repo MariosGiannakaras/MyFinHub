@@ -74,7 +74,8 @@ Goal: replace hidden global-style ownership and numeric loader coupling incremen
 - [x] Batch 10: bulk-name 26 already-coherent numeric root owners. PR #405 merged to `develop@478a1cae07d6363c3b32cd9fa5a7e0d8cb48c96f`; final head `4b3268b242db5c687545ec6965cf36e5d135fee4` passed CI `36142885461`, CodeQL `36142885527`, Cross-engine `36142885530`, Performance `36142885533`, Windows `36142885614`; post-merge CI `36144156598`, CodeQL `36144156621`, Windows `36144156630` green.
 - [x] Batch 11: split mixed `part5.css` into three semantic owners and name coherent `part27.css` / `part53.css` owners. PR #409 merged to `develop@072665a4b391b85ef4355fa3ad28226cc9160962`; final head `6948d5820ed5b60ffa6a425db57dc11b0ff87385` passed CI `36151941082`, CodeQL `36151941190`, Cross-engine `36151940938`, Performance `36151940936`, Windows `36151940943`; post-merge CI `36158915409`, CodeQL `36158915229`, Windows `36158915239` green.
 - [x] Batch 12: split mixed `part42.css` and `part47.css` into semantic owners. PR #410 merged to `develop@a5f8f2713858a2ed8e5411ca6403e483fedb77f8`; final head `32c14ac2dd5df5f2ebc95298923fade27edf23cb` passed CI `36166371111`, CodeQL `36166371268`, Cross-engine `36166371060`, Performance `36166371094`, Windows `36166371123`; post-merge CI `36181339794`, CodeQL `36181339647`, Windows `36181339762` green.
-- [ ] Batch 13: split small mixed `part12.css`, `part16.css`, and `part35.css`, and name coherent `part43.css`, preserving their root cascade slots.
+- [x] Batch 13: split small mixed `part12.css`, `part16.css`, and `part35.css`, and name coherent `part43.css`. PR #411 merged to `develop@60c62bc14d47f9ef3b358cacf88c252d65fee550`; final head `6f13acef865dfb7ae026a15180f2447b705cb63f` passed CI `36185756631`, CodeQL `36185756615`, Cross-engine `36185756736`, Performance `36185756677`, Windows `36185756686`; post-merge CI `36187504193`, CodeQL `36187504036`, Windows `36187504422` green.
+- [ ] Batch 14: split residual small `part9.css`, `part33.css`, `part41.css`, and `part46.css` into semantic owners while preserving root cascade slots.
 - [ ] Replace remaining numeric loader chains incrementally with accurate named tokens/base/primitives/patterns/pages ownership; do not give mixed legacy files misleading names.
 - [ ] Reduce selector duplication and unnecessary `!important` only with proven visual parity.
 - [ ] Keep runtime theme code focused on semantic token application rather than broad selector styling.
@@ -125,7 +126,7 @@ Require one exact-head CI / CodeQL / Cross-engine / Performance / Windows cycle 
 - **Verified integration base:** `develop@478a1cae07d6363c3b32cd9fa5a7e0d8cb48c96f`; Batch-10 post-merge CI `36144156598`, CodeQL `36144156621`, Windows Desktop `36144156630` are green.
 - **Active delivery:** branch `chore/357-css-ownership-batch-11-split`, beginning deliberate split/re-layering of remaining numeric owners.
 - **Implementation contract:** preserve every CSS declaration and selector; keep the three former `part5.css` sections contiguous at their original cascade slot; keep `part27` and `part53` bytes unchanged; strengthen ownership guards without weakening assertions.
-- **Next action:** validate Batch 13 with narrow source checks, then one exact-head required-gate cycle and fresh representative evidence before merge to `develop`.
+- **Next action:** validate Batch 14 with narrow source checks, then one exact-head required-gate cycle and fresh representative evidence before merge to `develop`.
 
 ## Resume procedure
 
