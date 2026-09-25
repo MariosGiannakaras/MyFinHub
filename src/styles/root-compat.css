@@ -4,7 +4,9 @@
 @import './part2.css';
 @import './part3.css';
 @import './part4.css';
-@import './part5.css';
+@import './loan-action-editor.css';
+@import './split-review-editor.css';
+@import './reduced-motion-contract.css';
 @import './auth-session-shell.css';
 @import './mobile-more-navigation.css';
 @import './frontend-audit-remediation.css';
@@ -26,7 +28,7 @@
 @import './credit-loans-workspaces.css';
 @import './owned-entry-popovers.css';
 @import './part26.css';
-@import './part27.css';
+@import './credit-usage-archive-security.css';
 @import './desktop-update-panel.css';
 @import './part29.css';
 @import './ui-hardening-foundations.css';
