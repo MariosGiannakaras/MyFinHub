@@ -4,15 +4,16 @@
   "appVersion": "v1.3",
   "suite": "frontend",
   "surface": "core-flows",
-  "generatedAt": "2026-09-09T12:38:11.969Z",
+  "generatedAt": "2026-09-25T09:08:51.743Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "8752e7ea5e3b8a563c32421a962aa84dbed60fba",
-    "shortSha": "8752e7ea",
-    "branch": "chore/357-design-system-inventory"
+    "sha": "6851cb540c311a3b75c6ae9bd5093b9b0fbb3897",
+    "shortSha": "6851cb54",
+    "branch": "fix/400-card-secure-details-clean"
   },
   "screenshots": [
-    "visual-qa/core-flows/v1.3__2026-09-09_153811__qa-frontend__source-1__desktop-cards.png",
-    "visual-qa/core-flows/v1.3__2026-09-09_153811__qa-frontend__source-1__mobile-cards.png"
+    "visual-qa/core-flows/v1.3__2026-09-25_120851__qa-frontend__source-1__desktop-card-details-editor.png",
+    "visual-qa/core-flows/v1.3__2026-09-25_120851__qa-frontend__source-1__desktop-cards.png",
+    "visual-qa/core-flows/v1.3__2026-09-25_120851__qa-frontend__source-1__mobile-cards.png"
   ]
 }
