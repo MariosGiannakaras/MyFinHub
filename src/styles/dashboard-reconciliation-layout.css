@@ -1,4 +1,3 @@
-/* Final UX reconciliation: preserve semantic Dashboard order across breakpoints. */
 @media(min-width:681px){
   .primary-balance-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
   .primary-balance-card{min-height:158px;padding:15px 18px}
@@ -6,13 +5,4 @@
   .dashboard-pending-grid>.panel,.dashboard-grid>.quick-panel{padding:14px;box-shadow:var(--shadow-soft)}
   .dashboard-grid>.quick-panel{background:linear-gradient(145deg,#fafcff,#f0f5fb)}
   .flow-metric-grid{gap:10px}.flow-metric-grid .metric-card{min-height:110px;padding:14px}
-}
-@media(max-width:680px){
-  .page-stack>[data-dashboard-section],
-  .dashboard-grid>[data-dashboard-section]{order:initial!important;grid-row:auto!important;grid-column:auto!important}
-  .dashboard-grid{grid-auto-flow:row}
-  .dashboard-pending-grid>.panel{order:initial!important}
-  .frequent-grid>button{flex-basis:172px}
-  .top-actions button[aria-label="Αναίρεση τελευταίας αλλαγής"],
-  .top-actions button[aria-label="Επαναφορά τελευταίας αναιρεμένης αλλαγής"]{display:none}
 }

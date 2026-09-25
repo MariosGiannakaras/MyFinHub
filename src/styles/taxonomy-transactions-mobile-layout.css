@@ -1,0 +1,15 @@
+@media(max-width:680px){
+ .category-taxonomy-card{padding:11px}
+ .category-taxonomy-head{grid-template-columns:auto minmax(0,1fr);align-items:start}
+ .category-taxonomy-head>.taxonomy-row-actions{grid-column:1/-1;justify-content:flex-start}
+ .taxonomy-row-actions button{width:44px;height:44px}
+ .taxonomy-add-row,.taxonomy-inline-editor,.taxonomy-move-editor{grid-template-columns:1fr}
+ .taxonomy-add-row button,.taxonomy-inline-editor button,.taxonomy-move-editor button{min-height:44px;width:100%;justify-content:center}
+ .taxonomy-inline-editor .secondary,.taxonomy-move-editor>.secondary{width:100%;min-height:44px}
+ .taxonomy-icon-disclosure>summary{min-height:44px}
+ .taxonomy-subcategory-row{grid-template-columns:1fr}
+ .taxonomy-subcategory-row>.taxonomy-row-actions{justify-content:flex-start}
+ .taxonomy-subcategory-editor,.taxonomy-move-editor,.taxonomy-subcategory-icon{grid-column:1}
+ .transactions-workspace .mobile-transaction-filters{grid-template-columns:1fr}
+}
+@media(max-width:360px){.category-taxonomy-head{grid-template-columns:1fr}.taxonomy-row-actions{justify-content:flex-start}}
