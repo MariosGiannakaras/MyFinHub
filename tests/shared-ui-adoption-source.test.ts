@@ -25,7 +25,7 @@ const commandPalette=read('src/components/CommandPalette.tsx');
 const modalFocus=read('src/hooks/useModalFocus.ts');
 const hardening=read('src/styles/ui-hardening-foundations.css');
 const sharedControls=read('src/styles/app-controls.css');
-const baseStyles=read('src/styles/part1.css');
+const baseStyles=read('src/styles/shell-navigation-foundations.css');
 const rendered=read('scripts/ui-ux-hardening-qa.mjs');
 
 describe('shared finance UI adoption contracts',()=>{

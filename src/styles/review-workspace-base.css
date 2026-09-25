@@ -1,0 +1,21 @@
+.review-summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.summary-card{border-radius:18px;padding:16px;display:flex;align-items:center;gap:13px}
+.summary-card>svg{width:32px;height:32px;padding:7px;border-radius:10px;background:#e9f0ff;color:#2f6fed}
+.summary-card b{font-size:22px;display:block}
+.summary-card span{font-size:8px;color:var(--muted)}
+.review-list{padding-top:4px}
+.review-row{display:grid;grid-template-columns:42px minmax(0,1fr) 170px;gap:12px;padding:15px 2px;border-bottom:1px solid #dfe7f2}
+.confidence-orb{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;font-size:9px;font-weight:900}
+.confidence-orb.high{background:#e5f8ef;color:#187852}
+.confidence-orb.medium{background:#fff5db;color:#a66300}
+.confidence-orb.low{background:#eef2f7;color:#60708a}
+.review-meta{display:flex;gap:8px;align-items:center;font-size:7.5px;color:var(--muted)}
+.review-meta b{margin-left:auto;color:var(--ink)}
+.review-meta em{font-style:normal}
+.review-copy h3{font-size:10px;margin:5px 0}
+.review-copy p{font-size:8.4px;color:var(--muted);line-height:1.55;margin:0 0 7px}
+.suggestion-tag{display:inline-flex;align-items:center;gap:5px;font-size:7.5px;background:#edf3ff;color:#315fae;padding:4px 7px;border-radius:8px}
+.review-buttons{display:grid;gap:6px;align-content:center}
+.review-buttons button{border:1px solid #d8e2ef;background:#f7faff;border-radius:9px;padding:7px;font-size:8px;cursor:pointer;display:flex;gap:5px;align-items:center;justify-content:center}
+.review-buttons .approve{background:#e9f8f1;color:#16774f;border-color:#cdeedd}
+.review-buttons button:disabled{opacity:.45;cursor:not-allowed}

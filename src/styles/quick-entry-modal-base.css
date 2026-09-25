@@ -1,0 +1,15 @@
+.modal-backdrop{position:fixed;inset:0;background:rgba(18,33,62,.28);backdrop-filter:blur(8px);display:grid;place-items:center;z-index:100;padding:18px}
+.quick-modal{width:min(1050px,96vw);max-height:94vh;overflow:auto;border-radius:28px}
+.quick-modal>header{padding:20px 20px 12px;display:flex;justify-content:space-between;gap:20px}
+.quick-modal>header small{color:#4777d6;font-size:8px;letter-spacing:.14em;font-weight:850}
+.quick-modal>header h2{font-size:25px;margin:4px 0}
+.quick-modal>header p{font-size:9px;color:var(--muted);margin:0;max-width:630px}
+.kind-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:7px;padding:0 20px 14px}
+.kind-grid button{border:1px solid #d9e3f0;background:linear-gradient(145deg,#f9fbff,#edf3fa);border-radius:13px;padding:10px;text-align:left;cursor:pointer;transition:.15s}
+.kind-grid button:hover{transform:translateY(-2px);border-color:#a8c1f4}
+.kind-grid button.active{background:linear-gradient(145deg,#e9f1ff,#f8fbff);border-color:#80a8f5;box-shadow:inset 0 0 0 2px rgba(47,111,237,.09),var(--shadow-soft)}
+.kind-grid button>span{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;background:#eaf0fa;color:#2f6fed}
+.kind-grid svg{width:15px}
+.kind-grid b{display:block;font-size:8.5px;margin-top:7px}
+.kind-grid small{display:block;font-size:7px;color:var(--muted);line-height:1.35;margin-top:2px}
+
