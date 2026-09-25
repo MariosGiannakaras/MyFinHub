@@ -5,7 +5,7 @@ const page=readFileSync(new URL('../src/pages/AttentionPage.tsx',import.meta.url
 const engine=readFileSync(new URL('../src/lib/attention.ts',import.meta.url),'utf8');
 const styles=readFileSync(new URL('../src/styles/attention-approved-target.css',import.meta.url),'utf8');
 const refinement=readFileSync(new URL('../src/styles/attention-approved-refinement.css',import.meta.url),'utf8');
-const chain=readFileSync(new URL('../src/styles/part47.css',import.meta.url),'utf8');
+const chain=readFileSync(new URL('../src/styles/approved-workspace-targets.css',import.meta.url),'utf8');
 const state=readFileSync(new URL('../docs/ui-redesign/references/approved/attention/STATE.md',import.meta.url),'utf8');
 
 describe('approved Needs Attention desktop target boundary',()=>{

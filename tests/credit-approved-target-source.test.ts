@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 const page=readFileSync(new URL('../src/pages/CreditCardPage.tsx',import.meta.url),'utf8');
 const styles=readFileSync(new URL('../src/styles/credit-approved-target.css',import.meta.url),'utf8');
 const stack=readFileSync(new URL('../src/components/CanonicalCreditCardStack.tsx',import.meta.url),'utf8');
-const approvedChain=readFileSync(new URL('../src/styles/part47.css',import.meta.url),'utf8');
+const approvedChain=readFileSync(new URL('../src/styles/approved-workspace-targets.css',import.meta.url),'utf8');
 
 describe('approved Credit Card desktop target boundary',()=>{
   it('keeps canonical credit finance selectors and handlers',()=>{

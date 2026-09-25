@@ -6,7 +6,7 @@ const root=process.cwd();
 const source=(relative:string)=>readFileSync(path.join(root,relative),'utf8');
 const page=source('src/pages/LendingPage.tsx');
 const styles=source('src/styles/lending-approved-target.css');
-const chain=source('src/styles/part47.css');
+const chain=source('src/styles/approved-workspace-targets.css');
 
 describe('approved Lending desktop target source contract',()=>{
   it('keeps canonical receivable selectors and event creation authoritative',()=>{

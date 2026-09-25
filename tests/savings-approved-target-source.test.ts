@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 const source=readFileSync(new URL('../src/pages/SavingsPage.tsx',import.meta.url),'utf8');
 const css=readFileSync(new URL('../src/styles/savings-desktop-composition.css',import.meta.url),'utf8');
-const chain=readFileSync(new URL('../src/styles/part47.css',import.meta.url),'utf8');
+const chain=readFileSync(new URL('../src/styles/approved-workspace-targets.css',import.meta.url),'utf8');
 
 describe('approved Savings desktop target source contract',()=>{
   it('keeps the three real savings actions and canonical accounting handlers',()=>{

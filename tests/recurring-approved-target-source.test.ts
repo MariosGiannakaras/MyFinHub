@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 const page=readFileSync(new URL('../src/pages/RecurringPage.tsx',import.meta.url),'utf8');
 const linked=readFileSync(new URL('../src/components/LongTermLoanSummary.tsx',import.meta.url),'utf8');
 const styles=readFileSync(new URL('../src/styles/recurring-approved-target.css',import.meta.url),'utf8');
-const chain=readFileSync(new URL('../src/styles/part47.css',import.meta.url),'utf8');
+const chain=readFileSync(new URL('../src/styles/approved-workspace-targets.css',import.meta.url),'utf8');
 
 describe('approved Recurring desktop target boundary',()=>{
   it('keeps canonical recurring calculations, editor validation and payment/lifecycle handlers',()=>{
