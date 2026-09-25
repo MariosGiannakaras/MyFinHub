@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 const app=readFileSync(new URL('../src/App.tsx',import.meta.url),'utf8');
 const appShell=readFileSync(new URL('../src/components/AppShell.tsx',import.meta.url),'utf8');
 const reports=readFileSync(new URL('../src/pages/ReportsPage.tsx',import.meta.url),'utf8');
-const commandStyles=readFileSync(new URL('../src/styles/part40.css',import.meta.url),'utf8');
+const commandStyles=readFileSync(new URL('../src/styles/command-palette-contextual-entry.css',import.meta.url),'utf8');
 const index=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const manifest=JSON.parse(readFileSync(new URL('../public/manifest.webmanifest',import.meta.url),'utf8')) as {name:string;short_name:string;start_url:string;display:string;icons:Array<{src:string;sizes:string;type:string}>};
 const pkg=JSON.parse(readFileSync(new URL('../package.json',import.meta.url),'utf8')) as {scripts:Record<string,string>};
