@@ -1,0 +1,6 @@
+.loan-actions{display:flex;gap:7px;margin-top:14px}
+.loan-actions button{flex:1;border:1px solid #d7e1ee;background:#f7faff;border-radius:10px;padding:8px;font-size:8px;display:flex;align-items:center;justify-content:center;gap:5px;cursor:pointer}
+.loan-actions svg{width:13px}
+.loan-actions .pay{background:#eaf7ff;color:#1b63af;border-color:#cde3f5}
+.loan-actions button:disabled{opacity:.45;cursor:not-allowed}
+.editor-grid .wide{grid-column:1/-1}

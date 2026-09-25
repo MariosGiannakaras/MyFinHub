@@ -20,7 +20,8 @@ const tailLoader=read('src/styles/part47.css');
 
 describe('Stage 5 CSS ownership',()=>{
   it('keeps the root/login CSS budget behind one named owner and the late tail behind one lazy workspace owner',()=>{
-    const semanticRootOwners=new Map<number,string>([
+    const semanticRootOwners=new Map<number,string|string[]>([
+      [5,['./loan-action-editor.css','./split-review-editor.css','./reduced-motion-contract.css']],
       [6,'./auth-session-shell.css'],
       [7,'./mobile-more-navigation.css'],
       [8,'./frontend-audit-remediation.css'],
@@ -38,6 +39,7 @@ describe('Stage 5 CSS ownership',()=>{
       [23,'./mobile-reports-settings-editors.css'],
       [24,'./credit-loans-workspaces.css'],
       [25,'./owned-entry-popovers.css'],
+      [27,'./credit-usage-archive-security.css'],
       [28,'./desktop-update-panel.css'],
       [30,'./ui-hardening-foundations.css'],
       [31,'./visual-polish-overrides.css'],
@@ -51,7 +53,7 @@ describe('Stage 5 CSS ownership',()=>{
       [44,'./receipt-inbox.css'],
       [45,'./category-icon-workspace.css'],
     ]);
-    const expectedRoot=[...Array.from({length:46},(_,index)=>semanticRootOwners.get(index+1)??`./part${index+1}.css`),'./app-controls.css'];
+    const expectedRoot=[...Array.from({length:46},(_,index)=>semanticRootOwners.get(index+1)??`./part${index+1}.css`).flatMap(owner=>Array.isArray(owner)?owner:[owner]),'./app-controls.css'];
     expect(cssImports(rootStyles)).toEqual(['./styles/root-compat.css']);
     expect(cssImports(rootCompat)).toEqual(expectedRoot);
     expect(tsStyleImports(workspaceLayer)).toEqual(['../styles/workspace-compat.css']);
@@ -59,7 +61,7 @@ describe('Stage 5 CSS ownership',()=>{
       './part47.css',
       './dashboard-command-search-geometry.css',
       './dashboard-desktop-fidelity.css',
-      './part53.css',
+      './dashboard-bankmark-chart-attention.css',
     ]);
     expect(workspaceStyles).toContain("lazy(()=>import('./WorkspaceStyleLayer')");
     expect(workspaceStyles).toContain('Suspense fallback={<PageSkeleton/>}');

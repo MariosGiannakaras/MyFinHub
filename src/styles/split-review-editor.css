@@ -1,0 +1,6 @@
+.split-review-editor{position:sticky;bottom:12px;z-index:10}
+.split-review-summary{display:flex;gap:18px;font-size:9px;margin-bottom:10px}
+.review-part{display:grid;grid-template-columns:1.2fr 130px 180px 100px 34px;gap:7px;margin-bottom:7px}
+.review-part input,.review-part select{height:36px;border:1px solid #d7e1ef;border-radius:9px;background:#f8fbff;padding:0 8px;font-size:8px}
+.review-part button{border:0;border-radius:9px;display:grid;place-items:center}
+.review-part svg{width:14px}
