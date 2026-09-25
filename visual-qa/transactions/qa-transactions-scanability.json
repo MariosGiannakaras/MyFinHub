@@ -4,18 +4,18 @@
   "appVersion": "v1.3",
   "suite": "transactions-scanability",
   "surface": "transactions",
-  "generatedAt": "2026-09-09T12:38:11.969Z",
+  "generatedAt": "2026-09-25T20:03:15.853Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "8752e7ea5e3b8a563c32421a962aa84dbed60fba",
-    "shortSha": "8752e7ea",
-    "branch": "chore/357-design-system-inventory"
+    "sha": "195265580f9a5a61b9504c99741e170d23b9bae9",
+    "shortSha": "19526558",
+    "branch": "chore/357-css-ownership-batch-13-split"
   },
   "screenshots": [
-    "visual-qa/transactions/v1.3__2026-09-09_153811__qa-transactions-scanability__transactions-baseline-desktop.png",
-    "visual-qa/transactions/v1.3__2026-09-09_153811__qa-transactions-scanability__transactions-empty-desktop.png",
-    "visual-qa/transactions/v1.3__2026-09-09_153811__qa-transactions-scanability__transactions-extreme-mobile.png",
-    "visual-qa/transactions/v1.3__2026-09-09_153811__qa-transactions-scanability__transactions-large-split-desktop.png",
-    "visual-qa/transactions/v1.3__2026-09-09_153811__qa-transactions-scanability__transactions-large-split-mobile.png"
+    "visual-qa/transactions/v1.3__2026-09-25_230315__qa-transactions-scanability__transactions-baseline-desktop.png",
+    "visual-qa/transactions/v1.3__2026-09-25_230315__qa-transactions-scanability__transactions-empty-desktop.png",
+    "visual-qa/transactions/v1.3__2026-09-25_230315__qa-transactions-scanability__transactions-extreme-mobile.png",
+    "visual-qa/transactions/v1.3__2026-09-25_230315__qa-transactions-scanability__transactions-large-split-desktop.png",
+    "visual-qa/transactions/v1.3__2026-09-25_230315__qa-transactions-scanability__transactions-large-split-mobile.png"
   ]
 }
