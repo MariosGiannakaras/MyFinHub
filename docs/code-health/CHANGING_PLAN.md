@@ -94,8 +94,8 @@ Require one exact-head CI / CodeQL / Cross-engine / Performance / Windows cycle 
 
 ### Stage 6 — Code-hygiene tooling — ACTIVE
 
-- [ ] Add a low-noise lint/static-analysis baseline without mass unrelated reformatting. **Batch 1 active:** dependency-free cycle gate + TypeScript unused-import report baseline.
-- [ ] Add reliable unused import/export and dependency-cycle checks.
+- [x] Add a low-noise lint/static-analysis baseline without mass unrelated reformatting. Batch 1 / PR #415 merged to `develop@5ab3ef121502aa4e2dff2f18038acf1d6f8adb7c`; post-merge CI `36235115168`, CodeQL `36235115151`, Windows Desktop `36235115048`, Windows First Run `36235115060`, and Windows Clean Launch `36235115124` are green.
+- [ ] Add reliable unused import/export and dependency-cycle checks. **Batch 2 active:** classify and remove the three proven unused-symbol findings, replace the misleading Credit-card source sentinel with a semantic contract, and make TypeScript unused-local/import diagnostics blocking. Export-debt analysis remains a separate bounded follow-up so this enforcement does not introduce speculative mass cleanup.
 - [ ] Add formatting enforcement only after a low-noise baseline exists.
 - [ ] Review dependency/audit debt without relaxing severity gates.
 
@@ -124,10 +124,10 @@ Require one exact-head CI / CodeQL / Cross-engine / Performance / Windows cycle 
 - **Overall tracker:** #357 — OPEN.
 - **Completed stages:** 6/9 (Stages 0–5).
 - **Active stage:** Stage 6 — Code-hygiene tooling.
-- **Verified integration base:** `develop@dcca883b8c267e0e77be48bcf7379bd979e2cd68`; Stage-5 post-merge CI `36205978753`, CodeQL `36205978766`, Windows Desktop `36205978767` are green.
-- **Active delivery:** PR #415 / branch `chore/357-stage6-hygiene-baseline`, establishing a low-noise hygiene baseline with runtime dependency-cycle checking and report-only deduplicated unused-symbol diagnostics.
-- **Implementation contract:** no formatter/autofix, no package dependency churn, no production-source cleanup to satisfy the tooling, type-only relationships must not create runtime-cycle findings, and existing source/security contracts remain authoritative.
-- **Next action:** finish exact-head validation for Stage-6 Batch 1 and merge only to `develop`; then classify the three observed unused-symbol findings and add bounded reliable unused import/export enforcement in the next checkpoint.
+- **Verified integration base:** `develop@5ab3ef121502aa4e2dff2f18038acf1d6f8adb7c`; Stage-6 Batch-1 post-merge CI `36235115168`, CodeQL `36235115151`, Windows Desktop `36235115048`, Windows First Run `36235115060`, and Windows Clean Launch `36235115124` are green.
+- **Active delivery:** branch `chore/357-stage6-unused-enforcement`, converting the measured TypeScript unused-symbol baseline into a blocking low-noise gate.
+- **Implementation contract:** remove only the three demonstrated dead/sentinel symbols, keep the existing runtime cycle gate, preserve finance/UI behavior, add no dependency or formatter churn, and do not broaden this batch into speculative export deletion.
+- **Next action:** validate Stage-6 Batch 2 locally/source-contract-first, then run one exact-head required CI cycle; merge only to `develop` when green and verify the exact merge before the next export-debt checkpoint.
 
 ## Resume procedure
 

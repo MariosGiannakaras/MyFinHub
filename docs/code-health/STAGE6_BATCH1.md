@@ -43,3 +43,17 @@ The first exact-head CI observed three unique existing unused-symbol findings: `
 ## Validation
 
 Require the runtime cycle check to be green and capture the exact deduplicated unused-symbol baseline from CI. Only findings demonstrated to be low-noise and not protected by behavior/source contracts should become blocking in the next Stage-6 checkpoint.
+
+
+## Integration
+
+PR #415 merged to `develop@5ab3ef121502aa4e2dff2f18038acf1d6f8adb7c`.
+
+Post-merge exact-SHA integration gates are green:
+- CI `36235115168`
+- CodeQL `36235115151`
+- Windows Desktop `36235115048`
+- Windows First Run `36235115060`
+- Windows Clean Launch `36235115124`
+
+The measured baseline remained exactly three unique findings. Batch 2 owns their classification and the transition from report-only diagnostics to blocking enforcement.
