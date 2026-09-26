@@ -23,12 +23,12 @@ The finalization classification is exhaustive:
 - **24 confirmed dead findings:** remove 17 dead declarations from live modules plus 5 dead modules that contained the remaining 7 findings.
 - **7 analyzer/runtime cases:** keep the exports and fix the analyzer boundary instead:
   - `server/index.ts::default` is the server runtime entrypoint;
-  - five `src/lib/theme.ts` exports are consumed through the QA runtime's root-absolute dynamic module import;
-  - `src/qaApprovedDashboardFixture.ts::qaFinanceData` is consumed through a Vite query-suffixed module specifier.
+  - five `src/lib/theme.ts` exports are consumed through the QA runtime's root-absolute dynamic import from an `.mjs` rendered-QA script;
+  - `src/qaApprovedDashboardFixture.ts::qaFinanceData` is consumed through the `qa.html` import map that remaps `/src/qaFixture.ts`.
 
-After those three classes, the expected conservative unused-export finding count is zero.
+After those three classes, the expected conservative unused-export finding count is zero. The final analyzer also scans JavaScript/MJS/CJS consumers so rendered-QA runtime imports participate in the graph, while the HTML import-map-owned approved Dashboard fixture is explicitly framework-owned.
 
-The first exact-head CI attempt then exposed a second-order local cleanup in `src/lib/localCvvVault.ts`: removing the already-dead local CVV write API left `encryptLocalCvvValue`, `requestPersistentStorage`, and `IV_BYTES` unreachable. Those internal-only remnants are removed in the same Stage-6 finalization rather than starting another cleanup batch.
+The first exact-head CI attempt exposed a second-order local cleanup in `src/lib/localCvvVault.ts`: removing the already-dead local CVV write API left `encryptLocalCvvValue`, `requestPersistentStorage`, and `IV_BYTES` unreachable. Those internal-only remnants are removed in the same Stage-6 finalization rather than starting another cleanup batch.
 
 ## Enforcement
 
@@ -78,3 +78,8 @@ This keeps severity gates intact and avoids mixing upgrade risk into a behavior-
 ## Validation
 
 Open the PR only after the complete batch is committed. Run one exact-head CI / CodeQL / Cross-engine / Performance / Windows cycle for the full finalization. If green, squash-merge only to `develop` and verify the exact merge before Stage 7.
+
+
+## Exact-head analyzer correction
+
+The second CI attempt passed dependency-cycle and TypeScript unused-symbol enforcement with zero findings, then surfaced seven export-analyzer findings. Six were runtime consumers outside the original TypeScript-only consumer scan (five theme exports via `scripts/theme-system-qa.mjs` plus the approved Dashboard fixture owned by the `qa.html` import map); the seventh, `formatCategoryTree`, became genuinely dead after removal of the obsolete `CategoryTreeEditor`. The analyzer now scans JS/MJS/CJS consumers, explicitly preserves the import-map-owned fixture, and the dead formatter helper is removed.

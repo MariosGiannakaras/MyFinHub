@@ -60,6 +60,3 @@ export function parseCategoryTree(raw:string):CategoryDefinition[]{
   return normalizeCategoryTree(parsed);
 }
 
-export function formatCategoryTree(tree:CategoryDefinition[]){
-  return normalizeCategoryTree(tree).map(item=>item.subcategories.length?`${item.name} > ${item.subcategories.join(', ')}`:item.name).join('\n');
-}

@@ -5,7 +5,7 @@ const root=process.cwd();
 const candidateRoots=['src','server','api'];
 const consumerRoots=['src','server','api','tests','scripts','desktop'];
 const rootConsumers=['vite.config.ts'];
-const sourceExtensions=new Set(['.ts','.tsx','.mts','.cts']);
+const sourceExtensions=new Set(['.ts','.tsx','.mts','.cts','.js','.jsx','.mjs','.cjs']);
 
 function normalize(file){return path.normalize(file);}
 function isSourceFile(file){return sourceExtensions.has(path.extname(file))&&!file.endsWith('.d.ts');}
@@ -113,6 +113,7 @@ function resolveSpecifier(baseRoot,fromFile,specifier,fileSet){
 function frameworkOwnedExport(baseRoot,file,name){
   const relative=path.relative(baseRoot,file).replaceAll(path.sep,'/');
   if(relative==='server/index.ts'&&name==='default')return true;
+  if(relative==='src/qaApprovedDashboardFixture.ts'&&name==='qaFinanceData')return true;
   if(!relative.startsWith('api/'))return false;
   return name==='default'||name==='config'||name==='runtime'||name==='maxDuration';
 }
@@ -196,10 +197,11 @@ function selfTest(){
     [file('scripts','theme-qa.mts'),"const mod=await import('/src/theme.ts?qa=1'); console.log(mod.runtimeOnly);"],
     [file('src','fixture.ts'),"export const queryUsed=1;"],
     [file('src','query-consumer.ts'),"import {queryUsed} from './fixture.ts?canonical'; console.log(queryUsed);"],
+    [file('src','qaApprovedDashboardFixture.ts'),"export function qaFinanceData(){return {}}"],
     [file('server','index.ts'),"export default function app(){}"],
     [file('api','route.ts'),"export default function handler(){}; export const config={runtime:'nodejs'};"],
   ]);
-  const candidates=new Set([file('src','a.ts'),file('src','namespace.ts'),file('src','theme.ts'),file('src','fixture.ts'),file('server','index.ts'),file('api','route.ts')]);
+  const candidates=new Set([file('src','a.ts'),file('src','namespace.ts'),file('src','theme.ts'),file('src','fixture.ts'),file('src','qaApprovedDashboardFixture.ts'),file('server','index.ts'),file('api','route.ts')]);
   const actual=analyze(fixtureRoot,sources,candidates).map(item=>path.relative(fixtureRoot,item.file).replaceAll(path.sep,'/')+'::'+item.name);
   const expected=['src/a.ts::dead'];
   if(JSON.stringify(actual)!==JSON.stringify(expected))throw new Error('Unused-export analyzer sanity check failed: '+JSON.stringify(actual));
