@@ -1,8 +1,5 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { createRequire } from 'node:module';
-const require=createRequire(import.meta.url);
-const ts=require('typescript');
 
 const root=process.cwd();
 const sourceRoots=['src','server','api'];
@@ -26,9 +23,9 @@ const fileSet=new Set(files);
 function resolveRelative(fromFile,specifier){
   if(!specifier.startsWith('.'))return null;
   const base=path.resolve(path.dirname(fromFile),specifier);
-  const candidates=[];
   const ext=path.extname(base);
-  if(ext==='.js'||ext==='.jsx'||ext==='.mjs'||ext==='.cjs'){
+  const candidates=[];
+  if(['.js','.jsx','.mjs','.cjs'].includes(ext)){
     const stem=base.slice(0,-ext.length);
     candidates.push(stem+'.ts',stem+'.tsx');
   }else if(ext){
@@ -39,65 +36,84 @@ function resolveRelative(fromFile,specifier){
   return candidates.map(path.normalize).find(candidate=>fileSet.has(candidate))??null;
 }
 
-function moduleSpecifiers(sourceText,fileName){
-  const sf=ts.createSourceFile(fileName,sourceText,ts.ScriptTarget.Latest,true,fileName.endsWith('.tsx')?ts.ScriptKind.TSX:ts.ScriptKind.TS);
-  const specs=[];
-  function visit(node){
-    if((ts.isImportDeclaration(node)||ts.isExportDeclaration(node))&&node.moduleSpecifier&&ts.isStringLiteralLike(node.moduleSpecifier)){
-      specs.push(node.moduleSpecifier.text);
-    }else if(ts.isCallExpression(node)&&node.expression.kind===ts.SyntaxKind.ImportKeyword&&node.arguments.length===1&&ts.isStringLiteralLike(node.arguments[0])){
-      specs.push(node.arguments[0].text);
+function stripComments(source){
+  let out='',i=0,state='code',quote='';
+  while(i<source.length){
+    const c=source[i],n=source[i+1];
+    if(state==='code'){
+      if(c==='/'&&n==='/'){state='line';out+='  ';i+=2;continue;}
+      if(c==='/'&&n==='*'){state='block';out+='  ';i+=2;continue;}
+      if(c==="'"||c==='"'||c==='`'){state='string';quote=c;out+=c;i++;continue;}
+      out+=c;i++;continue;
     }
-    ts.forEachChild(node,visit);
+    if(state==='line'){
+      if(c==='\n'){state='code';out+='\n';}else out+=' ';
+      i++;continue;
+    }
+    if(state==='block'){
+      if(c==='*'&&n==='/'){state='code';out+='  ';i+=2;}else{out+=c==='\n'?'\n':' ';i++;}
+      continue;
+    }
+    if(state==='string'){
+      out+=c;
+      if(c==='\\'&&i+1<source.length){out+=source[i+1];i+=2;continue;}
+      if(c===quote){state='code';quote='';}
+      i++;continue;
+    }
   }
-  visit(sf);
+  return out;
+}
+
+function moduleSpecifiers(source){
+  const clean=stripComments(source);
+  const specs=[];
+  const staticRe=/\b(?:import|export)\s+(?:type\s+)?(?:[^'"\n;]*?\s+from\s+)?['"]([^'"]+)['"]/g;
+  const dynamicRe=/\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
+  for(const re of [staticRe,dynamicRe]){
+    let match;
+    while((match=re.exec(clean)))specs.push(match[1]);
+  }
   return specs;
 }
 
 const graph=new Map();
 for(const file of files){
-  const source=fs.readFileSync(file,'utf8');
   const deps=new Set();
-  for(const specifier of moduleSpecifiers(source,file)){
+  for(const specifier of moduleSpecifiers(fs.readFileSync(file,'utf8'))){
     const resolved=resolveRelative(file,specifier);
     if(resolved)deps.add(resolved);
   }
   graph.set(file,[...deps].sort());
 }
 
-const state=new Map();
-const stack=[];
-const cycles=[];
-const seenCycles=new Set();
-
+const state=new Map(),stack=[],cycles=[],seen=new Set();
+function display(file){return path.relative(root,file).replaceAll(path.sep,'/');}
 function canonicalCycle(nodes){
-  const cycle=nodes.slice(0,-1).map(file=>path.relative(root,file).replaceAll(path.sep,'/'));
-  const rotations=cycle.map((_,i)=>[...cycle.slice(i),...cycle.slice(0,i)]);
-  const canonical=rotations.map(items=>items.join(' -> ')).sort()[0];
+  const cycle=nodes.slice(0,-1).map(display);
+  const forward=cycle.map((_,i)=>[...cycle.slice(i),...cycle.slice(0,i)]);
+  const reversed=[...cycle].reverse();
+  const backward=reversed.map((_,i)=>[...reversed.slice(i),...reversed.slice(0,i)]);
+  const canonical=[...forward,...backward].map(items=>items.join(' -> ')).sort()[0];
   return canonical+' -> '+canonical.split(' -> ')[0];
 }
-
 function dfs(file){
-  state.set(file,1);
-  stack.push(file);
+  state.set(file,1);stack.push(file);
   for(const dep of graph.get(file)??[]){
-    const depState=state.get(dep)??0;
-    if(depState===0)dfs(dep);
-    else if(depState===1){
+    const s=state.get(dep)??0;
+    if(s===0)dfs(dep);
+    else if(s===1){
       const start=stack.lastIndexOf(dep);
-      const nodes=[...stack.slice(start),dep];
-      const key=canonicalCycle(nodes);
-      if(!seenCycles.has(key)){seenCycles.add(key);cycles.push(key);}
+      const key=canonicalCycle([...stack.slice(start),dep]);
+      if(!seen.has(key)){seen.add(key);cycles.push(key);}
     }
   }
-  stack.pop();
-  state.set(file,2);
+  stack.pop();state.set(file,2);
 }
 for(const file of [...files].sort())if((state.get(file)??0)===0)dfs(file);
 
 if(cycles.length){
-  console.error('Dependency cycles detected:');
+  console.error('Dependency cycles detected ('+cycles.length+'):');
   for(const cycle of cycles.sort())console.error(' - '+cycle);
   process.exit(1);
 }
-console.log(`Dependency-cycle check passed: ${files.length} TypeScript modules across ${sourceRoots.join(', ')}.`);
+console.log('Dependency-cycle check passed: '+files.length+' TypeScript modules across '+sourceRoots.join(', ')+'.');
