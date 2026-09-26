@@ -76,7 +76,7 @@ function moduleSpecifiers(source){
   const clean=stripComments(source);
   const specs=[];
 
-  const importFrom=/^\s*import\s+([\s\S]*?)\s+from\s+['"]([^'"]+)['"]\s*;?/gm;
+  const importFrom=/^\s*import\s+([^;]*?)\s+from\s+['"]([^'"]+)['"]\s*;?/gm;
   for(const match of clean.matchAll(importFrom)){
     const clause=match[1].trim();
     if(/^type\b/.test(clause)||namedClauseIsTypeOnly(clause))continue;
