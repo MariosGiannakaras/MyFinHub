@@ -1,6 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import * as ts from 'typescript';
+import * as tsModule from 'typescript';
+
+const ts=tsModule.default??tsModule;
 
 const root=process.cwd();
 const sourceRoots=['src','server','api'];
