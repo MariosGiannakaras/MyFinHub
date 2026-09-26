@@ -57,7 +57,7 @@ PRs #380–#383 completed shared canonical modal-shell ownership for eligible di
 
 PRs #384, #385, #387 and #389 completed bounded generic elevation ownership. Semantic finance/domain cards and specialized overlays remain domain-owned.
 
-### Stage 5 — CSS ownership cleanup — ACTIVE
+### Stage 5 — CSS ownership cleanup — COMPLETE
 
 Goal: replace hidden global-style ownership and numeric loader coupling incrementally while preserving exact cascade, root/login budget boundaries, approved rendering and semantic theme behavior.
 
@@ -76,7 +76,7 @@ Goal: replace hidden global-style ownership and numeric loader coupling incremen
 - [x] Batch 12: split mixed `part42.css` and `part47.css` into semantic owners. PR #410 merged to `develop@a5f8f2713858a2ed8e5411ca6403e483fedb77f8`; final head `32c14ac2dd5df5f2ebc95298923fade27edf23cb` passed CI `36166371111`, CodeQL `36166371268`, Cross-engine `36166371060`, Performance `36166371094`, Windows `36166371123`; post-merge CI `36181339794`, CodeQL `36181339647`, Windows `36181339762` green.
 - [x] Batch 13: split small mixed `part12.css`, `part16.css`, and `part35.css`, and name coherent `part43.css`. PR #411 merged to `develop@60c62bc14d47f9ef3b358cacf88c252d65fee550`; final head `6f13acef865dfb7ae026a15180f2447b705cb63f` passed CI `36185756631`, CodeQL `36185756615`, Cross-engine `36185756736`, Performance `36185756677`, Windows `36185756686`; post-merge CI `36187504193`, CodeQL `36187504036`, Windows `36187504422` green.
 - [x] Batch 14: split residual small `part9.css`, `part33.css`, `part41.css`, and `part46.css`. PR #412 merged to `develop@83d6b1a751c4ffc10bc763b3dc0c2657924358ed`; final head `7d99aafbb10aa39181ba2665b15c6f5976797d68` passed CI `36200428929`, CodeQL `36200428988`, Cross-engine `36200428928`, Performance `36200428986`, Windows `36200429183`; post-merge CI `36201674597`, CodeQL `36201674663`, Windows `36201674621` green.
-- [ ] Batch 15: finish numeric CSS ownership in one bulk checkpoint: split `part1.css`–`part4.css` into semantic foundations and byte-identically name coherent card-presentation owners `part26.css` / `part29.css`, preserving root cascade order and bundle budgets.
+- [x] Batch 15: finish numeric CSS ownership. PR #413 merged to `develop@dcca883b8c267e0e77be48bcf7379bd979e2cd68`; final head `5bb7f8b097582d284170353558cfc23afe214b6b` passed CI `36204577287`, CodeQL `36204577357`, Cross-engine `36204577302`, Performance `36204577424`, Windows `36204577310`; post-merge CI `36205978753`, CodeQL `36205978766`, Windows `36205978767` green.
 - [ ] Replace remaining numeric loader chains incrementally with accurate named tokens/base/primitives/patterns/pages ownership; do not give mixed legacy files misleading names.
 - [ ] Reduce selector duplication and unnecessary `!important` only with proven visual parity.
 - [ ] Keep runtime theme code focused on semantic token application rather than broad selector styling.
@@ -92,9 +92,9 @@ The batch intentionally leaves genuinely mixed owners numeric for later split/re
 
 Require one exact-head CI / CodeQL / Cross-engine / Performance / Windows cycle for the complete bulk batch, fresh representative desktop/mobile evidence across auth/navigation, mobile finance, reports/planning/attention, cards/credit/loans, budget/receipts and owned controls, then squash-merge only to `develop` and require exact-merge CI + CodeQL + Windows.
 
-### Stage 6 — Code-hygiene tooling
+### Stage 6 — Code-hygiene tooling — ACTIVE
 
-- [ ] Add a low-noise lint/static-analysis baseline without mass unrelated reformatting.
+- [ ] Add a low-noise lint/static-analysis baseline without mass unrelated reformatting. **Batch 1 active:** dependency-free cycle gate + TypeScript unused-import report baseline.
 - [ ] Add reliable unused import/export and dependency-cycle checks.
 - [ ] Add formatting enforcement only after a low-noise baseline exists.
 - [ ] Review dependency/audit debt without relaxing severity gates.

@@ -29,6 +29,7 @@ jobs:
             api/package-lock.json
       - run: npm ci --prefer-offline --no-audit --no-fund
       - run: npm ci --prefix api --prefer-offline --no-audit --no-fund
+      - run: npm run hygiene
       - run: npm run check
       - run: npm run check --prefix api
       - name: Rendered frontend QA
