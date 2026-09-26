@@ -4,7 +4,7 @@ import { isOwner } from './storage.js';
 import { deleteCardSecrets, readCardSecrets, writeCardSecrets } from './cardVaultStore.js';
 import { proxyDesktopCardVault } from './desktopCardVaultProxy.js';
 
-export const MAX_CARD_VAULT_BODY_BYTES=4*1024;
+const MAX_CARD_VAULT_BODY_BYTES=4*1024;
 const RATE_WINDOW_MS=60_000;
 const RATE_LIMIT=60;
 const rateByOwner=new Map<string,{startedAt:number;count:number}>();

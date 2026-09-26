@@ -100,4 +100,4 @@ export function searchCommandItems(data:FinanceData,query:string,{recentIds=[],l
  return ranked.sort((a,b)=>b.score-a.score||a.priority-b.priority||a.title.localeCompare(b.title,'el')||a.id.localeCompare(b.id)).slice(0,Math.max(1,limit));
 }
 
-export function commandActionKey(action:CommandAction){return JSON.stringify(action)}
+function commandActionKey(action:CommandAction){return JSON.stringify(action)}

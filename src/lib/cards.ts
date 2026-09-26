@@ -37,7 +37,7 @@ export function allCards(data:FinanceData){
   return [...(data.state.cards??[])].sort((a,b)=>a.createdAt.localeCompare(b.createdAt)||a.id.localeCompare(b.id));
 }
 
-export function storedCards(data:FinanceData,{includeArchived=false}:{includeArchived?:boolean}={}){
+function storedCards(data:FinanceData,{includeArchived=false}:{includeArchived?:boolean}={}){
   return allCards(data).filter(card=>card.kind!=='credit'&&(includeArchived||card.active!==false));
 }
 
@@ -116,7 +116,7 @@ export function creditLimitForCard(data:FinanceData,card:PaymentCard){
   return Number.isFinite(legacy)&&legacy>=0?legacy:0;
 }
 
-export function creditAvailableForCard(data:FinanceData,card:PaymentCard,asOf:string){
+function creditAvailableForCard(data:FinanceData,card:PaymentCard,asOf:string){
   return Math.max(0,creditLimitForCard(data,card)-creditDebtForCard(data,card.id,asOf));
 }
 
@@ -147,4 +147,4 @@ export function historicalCardLabel(data:FinanceData,cardId:string){
 
 export function cardLabel(card:PaymentCard){return card.nickname.trim()||`${card.kind==='credit'?'Πιστωτική':card.kind==='prepaid'?'Prepaid':'Χρεωστική'} ${card.last4?`•••• ${card.last4}`:''}`.trim()}
 export function cardKindLabel(card:PaymentCard){return card.kind==='credit'?'Πιστωτική':card.kind==='prepaid'?'Prepaid':'Χρεωστική'}
-export function cardNetworkLabel(card:PaymentCard){return card.network==='mastercard'?'Mastercard':card.network==='visa'?'Visa':'Κάρτα'}
+function cardNetworkLabel(card:PaymentCard){return card.network==='mastercard'?'Mastercard':card.network==='visa'?'Visa':'Κάρτα'}

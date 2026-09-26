@@ -11,7 +11,7 @@ import type {
 } from '../types.js';
 import { cleanNote } from './format.js';
 
-export const CREDIT_ACCOUNT: Account = {
+const CREDIT_ACCOUNT: Account = {
   id: 'credit-card',
   name: 'Πιστωτική κάρτα',
   short: 'CC',
@@ -70,7 +70,7 @@ export function allAccounts(data: FinanceData): Account[] {
   return accounts.some((a) => a.id === CREDIT_ACCOUNT.id) ? accounts : [...accounts, CREDIT_ACCOUNT];
 }
 
-export function quickChoiceAccounts(data: FinanceData): Account[] {
+function quickChoiceAccounts(data: FinanceData): Account[] {
   return allAccounts(data).filter((account) => account.kind !== 'credit' && account.showInQuickChoices !== false);
 }
 
@@ -287,11 +287,11 @@ export function accountBalances(data: FinanceData, asOf: string): Record<string,
   return balances;
 }
 
-export function legacyOutstandingReceivables(data: FinanceData) {
+function legacyOutstandingReceivables(data: FinanceData) {
   return (data.seed.lending ?? []).reduce((sum, p) => sum + Number(p.outstanding || 0), 0);
 }
 
-export function eventReceivables(data: FinanceData) {
+function eventReceivables(data: FinanceData) {
   return (data.state.events ?? []).reduce((sum, e) => sum + Number(e.receivableDelta || 0), 0);
 }
 

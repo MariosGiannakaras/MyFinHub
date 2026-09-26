@@ -40,7 +40,7 @@ export function categoryIconKeySupportedByPack(pack:CategoryIconPack,key:string)
   return Boolean(keysForPack(pack)?.has(key as CategoryIconKey));
 }
 
-export function categoryIconPackCoverage(pack:CategoryIconPack){
+function categoryIconPackCoverage(pack:CategoryIconPack){
   if(pack==='lucide')return null;
   return keysForPack(pack)?.size??0;
 }

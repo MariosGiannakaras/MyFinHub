@@ -68,7 +68,7 @@ export function categoryBudgetSpending(data: FinanceData, month: string) {
   return totals;
 }
 
-export function monthlyBudgets(data: FinanceData, month: string) {
+function monthlyBudgets(data: FinanceData, month: string) {
   return (data.state.budgets ?? [])
     .filter((budget) => budget.month === month && budget.amount > 0)
     .slice()
@@ -101,7 +101,7 @@ export function budgetProgress(data: FinanceData, month: string): BudgetProgress
   });
 }
 
-export function budgetSummary(data: FinanceData, month: string) {
+function budgetSummary(data: FinanceData, month: string) {
   const rows = budgetProgress(data, month);
   return {
     rows,

@@ -174,14 +174,14 @@ export async function signInWithPassword(email: string, password: string) {
   });
 }
 
-export async function refreshWithToken(refreshToken: string) {
+async function refreshWithToken(refreshToken: string) {
   return authRequest<TokenResponse>('token?grant_type=refresh_token', {
     method: 'POST',
     body: JSON.stringify({ refresh_token: refreshToken }),
   });
 }
 
-export async function getUser(accessToken: string) {
+async function getUser(accessToken: string) {
   if (!accessToken) throw new ApiError(401, 'AUTH_REQUIRED', 'Authentication required.');
   return authRequest<AuthUser>('user', {
     method: 'GET',

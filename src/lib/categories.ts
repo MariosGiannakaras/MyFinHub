@@ -10,7 +10,7 @@ const clean=(value:string)=>value.trim().replace(/\s+/g,' ');
 export const categoryKey=(value:string)=>clean(value).normalize('NFD').replace(/\p{M}/gu,'').toLocaleLowerCase('el-GR');
 const unique=(values:string[])=>{const seen=new Set<string>();const result:string[]=[];for(const value of values){const label=clean(value);if(!label)continue;const key=categoryKey(label);if(seen.has(key))continue;seen.add(key);result.push(label)}return result};
 
-export function normalizeCategoryTree(tree:CategoryDefinition[]):CategoryDefinition[]{
+function normalizeCategoryTree(tree:CategoryDefinition[]):CategoryDefinition[]{
   const result:CategoryDefinition[]=[];
   for(const item of tree){
     const name=clean(item.name);

@@ -215,7 +215,7 @@ export function allAttentionItems(data:FinanceData,asOf:string):AttentionItem[]{
   return [...dedup.values()].sort((a,b)=>priority(a)-priority(b)||(a.dueDate??'9999').localeCompare(b.dueDate??'9999')||a.title.localeCompare(b.title,'el'));
 }
 
-export function attentionDecisionVisible(item:AttentionItem,decision:AttentionDecision|undefined,asOf:string){
+function attentionDecisionVisible(item:AttentionItem,decision:AttentionDecision|undefined,asOf:string){
   if(!decision||decision.fingerprint!==item.fingerprint)return true;
   if(decision.status==='snoozed')return !decision.snoozedUntil||decision.snoozedUntil<=asOf;
   if(decision.status==='dismissed')return item.severity==='danger';
