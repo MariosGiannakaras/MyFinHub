@@ -95,7 +95,7 @@ Require one exact-head CI / CodeQL / Cross-engine / Performance / Windows cycle 
 ### Stage 6 — Code-hygiene tooling — ACTIVE
 
 - [x] Add a low-noise lint/static-analysis baseline without mass unrelated reformatting. Batch 1 / PR #415 merged to `develop@5ab3ef121502aa4e2dff2f18038acf1d6f8adb7c`; post-merge CI `36235115168`, CodeQL `36235115151`, Windows Desktop `36235115048`, Windows First Run `36235115060`, and Windows Clean Launch `36235115124` are green.
-- [ ] Add reliable unused import/export and dependency-cycle checks. **Batch 2 active:** classify and remove the three proven unused-symbol findings, replace the misleading Credit-card source sentinel with a semantic contract, and make TypeScript unused-local/import diagnostics blocking. Export-debt analysis remains a separate bounded follow-up so this enforcement does not introduce speculative mass cleanup.
+- [ ] Add reliable unused import/export and dependency-cycle checks. Batch 2 / PR #416 made TypeScript unused-local/import diagnostics blocking with zero findings and merged to `develop@9903288525917907e2883bb89b1240ebb6be8fb7`; post-merge CI `36240315073`, CodeQL `36240315077`, Windows Desktop `36240315093`, Windows First Run `36240315082`, and Windows Clean Launch `36240315114` are green. **Batch 3 active:** add a conservative report-only unused-export graph so export debt is measured before any removal or enforcement.
 - [ ] Add formatting enforcement only after a low-noise baseline exists.
 - [ ] Review dependency/audit debt without relaxing severity gates.
 
@@ -124,10 +124,10 @@ Require one exact-head CI / CodeQL / Cross-engine / Performance / Windows cycle 
 - **Overall tracker:** #357 — OPEN.
 - **Completed stages:** 6/9 (Stages 0–5).
 - **Active stage:** Stage 6 — Code-hygiene tooling.
-- **Verified integration base:** `develop@5ab3ef121502aa4e2dff2f18038acf1d6f8adb7c`; Stage-6 Batch-1 post-merge CI `36235115168`, CodeQL `36235115151`, Windows Desktop `36235115048`, Windows First Run `36235115060`, and Windows Clean Launch `36235115124` are green.
-- **Active delivery:** branch `chore/357-stage6-unused-enforcement`, converting the measured TypeScript unused-symbol baseline into a blocking low-noise gate.
-- **Implementation contract:** remove only the three demonstrated dead/sentinel symbols, keep the existing runtime cycle gate, preserve finance/UI behavior, add no dependency or formatter churn, and do not broaden this batch into speculative export deletion.
-- **Next action:** validate Stage-6 Batch 2 locally/source-contract-first, then run one exact-head required CI cycle; merge only to `develop` when green and verify the exact merge before the next export-debt checkpoint.
+- **Verified integration base:** `develop@9903288525917907e2883bb89b1240ebb6be8fb7`; Stage-6 Batch-2 post-merge CI `36240315073`, CodeQL `36240315077`, Windows Desktop `36240315093`, Windows First Run `36240315082`, and Windows Clean Launch `36240315114` are green.
+- **Active delivery:** branch `chore/357-stage6-unused-exports-baseline`, adding a conservative report-only unused-export graph across app/server/API modules with tests/scripts/desktop code treated as consumers.
+- **Implementation contract:** use a dependency-free conservative lexical analyzer aligned with the proven cycle parser, resolve only repository-local relative module edges, conservatively treat namespace/dynamic imports and star re-exports as using the full target surface, and exempt framework-owned API exports. Do not delete exports in the baseline batch.
+- **Next action:** run one exact-head CI cycle, capture the export baseline from the hygiene log, classify only high-confidence findings, then decide the next bounded enforcement/cleanup checkpoint without speculative bulk deletion.
 
 ## Resume procedure
 
