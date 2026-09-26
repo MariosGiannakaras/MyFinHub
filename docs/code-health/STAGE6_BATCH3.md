@@ -53,3 +53,8 @@ The follow-up normalizes the package namespace/default shape before accessing th
 The first two PR heads failed before baseline collection because the installed TypeScript 7 package does not expose the legacy JavaScript compiler parser API used by older compiler-API tooling. The existing CLI typecheck remains valid, but an in-process `createSourceFile` dependency is not available.
 
 Batch 3 therefore keeps the original no-dependency constraint and switches the export baseline to a conservative lexical analyzer derived from the already-proven cycle-parser approach. Comments and string bodies are masked for export declaration discovery; import/re-export module strings remain available for relative-edge resolution. The analyzer intentionally prefers false negatives over false positives and remains report-only.
+
+
+## Fixture hardening
+
+The dependency-free analyzer's first self-test run rejected the initial line-only export boundary assumption: the synthetic fixture placed multiple export declarations on one physical line, while the parser recognized only the first declaration. Export discovery now also recognizes semicolon and closing-brace statement boundaries, preserving the conservative top-level bias while covering compact source formatting.

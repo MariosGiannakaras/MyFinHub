@@ -66,20 +66,20 @@ function identifier(value){return /^[A-Za-z_$][\w$]*$/.test(value)||value==='def
 function collectExports(source){
   const code=mask(source,{strings:true});
   const names=new Set();
-  if(/^\s*export\s+default\b/m.test(code))names.add('default');
+  if(/(?:^|[;}\n])\s*export\s+default\b/m.test(code))names.add('default');
   const patterns=[
-    /^\s*export\s+(?:declare\s+)?(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\b/gm,
-    /^\s*export\s+(?:declare\s+)?(?:abstract\s+)?class\s+([A-Za-z_$][\w$]*)\b/gm,
-    /^\s*export\s+(?:declare\s+)?interface\s+([A-Za-z_$][\w$]*)\b/gm,
-    /^\s*export\s+(?:declare\s+)?type\s+([A-Za-z_$][\w$]*)\b/gm,
-    /^\s*export\s+(?:declare\s+)?enum\s+([A-Za-z_$][\w$]*)\b/gm,
-    /^\s*export\s+(?:declare\s+)?(?:namespace|module)\s+([A-Za-z_$][\w$]*)\b/gm,
-    /^\s*export\s+(?:declare\s+)?(?:const|let|var)\s+([A-Za-z_$][\w$]*)\b/gm,
-    /^\s*export\s*\*\s+as\s+([A-Za-z_$][\w$]*)\s+from\b/gm,
+    /(?:^|[;}\n])\s*export\s+(?:declare\s+)?(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\b/gm,
+    /(?:^|[;}\n])\s*export\s+(?:declare\s+)?(?:abstract\s+)?class\s+([A-Za-z_$][\w$]*)\b/gm,
+    /(?:^|[;}\n])\s*export\s+(?:declare\s+)?interface\s+([A-Za-z_$][\w$]*)\b/gm,
+    /(?:^|[;}\n])\s*export\s+(?:declare\s+)?type\s+([A-Za-z_$][\w$]*)\b/gm,
+    /(?:^|[;}\n])\s*export\s+(?:declare\s+)?enum\s+([A-Za-z_$][\w$]*)\b/gm,
+    /(?:^|[;}\n])\s*export\s+(?:declare\s+)?(?:namespace|module)\s+([A-Za-z_$][\w$]*)\b/gm,
+    /(?:^|[;}\n])\s*export\s+(?:declare\s+)?(?:const|let|var)\s+([A-Za-z_$][\w$]*)\b/gm,
+    /(?:^|[;}\n])\s*export\s*\*\s+as\s+([A-Za-z_$][\w$]*)\s+from\b/gm,
   ];
   for(const regex of patterns)for(const match of code.matchAll(regex))names.add(match[1]);
 
-  const named=/^\s*export\s+(?:type\s+)?\{([\s\S]*?)\}\s*(?:from\b|;|$)/gm;
+  const named=/(?:^|[;}\n])\s*export\s+(?:type\s+)?\{([\s\S]*?)\}\s*(?:from\b|;|$)/gm;
   for(const match of code.matchAll(named)){
     for(const item of splitSpecifiers(match[1])){
       const name=exportedName(item);
