@@ -4,18 +4,18 @@ import { describe, expect, it } from 'vitest';
 
 const root=process.cwd();
 const read=(relative:string)=>fs.readFileSync(path.join(root,relative),'utf8');
-const categoryEditor=read('src/components/CategoryTreeEditor.tsx');
+const categoryWorkspace=read('src/components/CategoryIconsWorkspace.tsx');
 const budgetRules=read('src/components/BudgetRuleSettings.tsx');
 
 describe('Stage 2 settings shared Button adoption batch 10',()=>{
-  it('uses the shared primary Button for explicit category saves without changing disabled or feedback behavior',()=>{
-    expect(categoryEditor).toContain("from './Button'");
-    expect(categoryEditor.match(/<Button/g)).toHaveLength(1);
-    expect(categoryEditor).not.toContain('<button');
-    expect(categoryEditor).toContain('<Button type="button" variant="primary" className="category-save-button" disabled={!dirty} onClick={save}>');
-    expect(categoryEditor).not.toContain('className="save-button category-save-button"');
-    expect(categoryEditor).toContain("setFeedback({kind:'success'");
-    expect(categoryEditor).toContain("setFeedback({kind:'error'");
+  it('keeps explicit taxonomy save actions on the shared Button while preserving composite row controls',()=>{
+    expect(categoryWorkspace).toContain("from './Button'");
+    expect(categoryWorkspace).toContain('<Button type="button" variant="primary" onClick={addCategory}>');
+    expect(categoryWorkspace).toContain('<Button type="button" variant="primary" onClick={saveEdit}>');
+    expect(categoryWorkspace).toContain('<Button type="button" variant="primary" onClick={saveMove}>');
+    expect(categoryWorkspace).toContain('className="taxonomy-row-actions"');
+    expect(categoryWorkspace).toContain('<button type="button" disabled={categoryIndex===0}');
+    expect(categoryWorkspace).toContain('<button type="button" aria-label={categoryRenameLabel}');
   });
 
   it('uses shared Buttons and IconButtons for generic budget/rule actions while preserving semantics',()=>{

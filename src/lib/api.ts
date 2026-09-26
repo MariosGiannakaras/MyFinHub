@@ -1,7 +1,7 @@
 import type { FinanceData } from '../types';
 import { mutableSavePayload } from './persistencePayload';
 
-export interface HistoryPointSummary { id:string; parentId:string|null; label:string; createdAt:string; current:boolean }
+interface HistoryPointSummary { id:string; parentId:string|null; label:string; createdAt:string; current:boolean }
 export interface HistoryEnvelope {
   available:boolean;
   generation:string;
@@ -13,9 +13,9 @@ export interface HistoryEnvelope {
   redoDepth:number;
   points:HistoryPointSummary[];
 }
-export interface DataEnvelope { data: FinanceData; revision: string; filePath: string; lastSavedAt: string | null }
-export interface WriteReceipt { revision: string; filePath: string; lastSavedAt: string | null; history:HistoryEnvelope }
-export interface HistoryMoveEnvelope extends DataEnvelope { history:HistoryEnvelope }
+interface DataEnvelope { data: FinanceData; revision: string; filePath: string; lastSavedAt: string | null }
+interface WriteReceipt { revision: string; filePath: string; lastSavedAt: string | null; history:HistoryEnvelope }
+interface HistoryMoveEnvelope extends DataEnvelope { history:HistoryEnvelope }
 export interface SessionInfo {
   authenticated: boolean;
   email: string | null;
@@ -23,8 +23,8 @@ export interface SessionInfo {
   mfaEnrollmentRequired?: boolean;
 }
 export interface MfaEnrollment { factorId: string; qrCode: string; secret: string }
-export interface EmailChangeReceipt { ok:true; email:string|null; pendingEmail:string|null }
-export interface PasswordChangeReceipt { ok:true }
+interface EmailChangeReceipt { ok:true; email:string|null; pendingEmail:string|null }
+interface PasswordChangeReceipt { ok:true }
 export interface ConnectedDevice {
   sessionId:string;
   platform:'windows'|'android'|'web'|'unknown';
@@ -34,7 +34,7 @@ export interface ConnectedDevice {
   lastSeenAt:string;
   current:boolean;
 }
-export interface ConnectedDevicesEnvelope { count:number; devices:ConnectedDevice[] }
+interface ConnectedDevicesEnvelope { count:number; devices:ConnectedDevice[] }
 
 export class ApiError extends Error {
   status: number;

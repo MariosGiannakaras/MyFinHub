@@ -1,5 +1,5 @@
 import { deleteLocalCvv, readLocalCvv } from './localCvvVault.js';
-export type CardVaultSecret={pan?:string;expiry?:string;cvv?:string};
+type CardVaultSecret={pan?:string;expiry?:string;cvv?:string};
 
 type ErrorPayload={code?:string;error?:string};
 

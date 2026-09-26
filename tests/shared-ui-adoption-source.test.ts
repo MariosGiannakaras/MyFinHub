@@ -18,7 +18,6 @@ const cardCreateDialog=read('src/components/CardCreateDialog.tsx');
 const desktopUpdatePanel=read('src/components/DesktopUpdatePanel.tsx');
 const pageErrorBoundary=read('src/components/PageErrorBoundary.tsx');
 const persistenceNotice=read('src/components/PersistenceNotice.tsx');
-const accountMetadataSettings=read('src/components/AccountMetadataSettings.tsx');
 const appDateInput=read('src/components/AppDateInput.tsx');
 const appSelectInput=read('src/components/AppSelectInput.tsx');
 const commandPalette=read('src/components/CommandPalette.tsx');
@@ -60,7 +59,8 @@ describe('shared finance UI adoption contracts',()=>{
   });
 
   it('defines typed Button and IconButton primitives without changing the approved class hooks',()=>{
-    expect(button).toContain("export type ButtonVariant='primary'|'secondary'|'danger'|'ghost'");
+    expect(button).toContain("type ButtonVariant='primary'|'secondary'|'danger'|'ghost'");
+    expect(button).not.toContain('export type ButtonVariant');
     expect(button).toContain("primary:'save-button'");
     expect(button).toContain("secondary:'secondary'");
     expect(button).toContain("danger:'save-button destructive-action'");
@@ -86,7 +86,7 @@ describe('shared finance UI adoption contracts',()=>{
   });
 
   it('adopts shared Button in the next bounded safe-action batch without changing native button semantics',()=>{
-    for(const source of [desktopUpdatePanel,pageErrorBoundary,persistenceNotice,accountMetadataSettings]){
+    for(const source of [desktopUpdatePanel,pageErrorBoundary,persistenceNotice]){
       expect(source).toContain("from './Button'");
       expect(source).not.toContain('<button');
       expect(source).toContain('type="button"');
@@ -95,8 +95,6 @@ describe('shared finance UI adoption contracts',()=>{
     expect(desktopUpdatePanel).toContain('<Button variant="secondary"');
     expect(pageErrorBoundary.match(/<Button/g)).toHaveLength(3);
     expect(persistenceNotice).toContain('<Button variant="secondary"');
-    expect(accountMetadataSettings).toContain('<Button variant="secondary"');
-    expect(accountMetadataSettings).toContain('<Button variant="primary"');
   });
 
   it('adopts shared IconButton in app-owned popovers and command overlay while preserving composite option buttons',()=>{

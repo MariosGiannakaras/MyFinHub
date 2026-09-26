@@ -1,6 +1,6 @@
 import { forwardRef, type ButtonHTMLAttributes } from 'react';
 
-export type IconButtonProps=Omit<ButtonHTMLAttributes<HTMLButtonElement>,'aria-label'>&{
+type IconButtonProps=Omit<ButtonHTMLAttributes<HTMLButtonElement>,'aria-label'>&{
   'aria-label':string;
 };
 

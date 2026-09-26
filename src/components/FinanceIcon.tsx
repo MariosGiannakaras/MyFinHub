@@ -67,6 +67,3 @@ export function FinanceIcon({kind,category,subcategory,note,settings,size=16,cla
   return <span className={`finance-icon tone-${spec.tone} ${className}`.trim()} data-icon-key={explicitKey??spec.key} data-icon-source={explicitKey?'category-preference':'heuristic'} aria-label={label} aria-hidden={label?undefined:true}>{explicitKey?<CategoryIconGlyph iconKey={explicitKey} size={size}/>:<Icon size={size}/>}</span>;
 }
 
-export function FinanceIconInline(props:FinanceIconProps){
-  return <FinanceIcon {...props} size={props.size??15} className="finance-icon-inline"/>;
-}

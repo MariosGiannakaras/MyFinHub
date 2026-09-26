@@ -6,11 +6,11 @@ const revolutLogo='/brand/banks/revolut-mark.svg';
 const payzyLogo=new URL('../assets/canonical-credit-card/payzy-logo.png',import.meta.url).href;
 const vivaLogo=new URL('../assets/canonical-credit-card/viva-logo.png',import.meta.url).href;
 
-export type BankBrandKey='piraeus'|'revolut'|'alpha'|'national'|'eurobank'|'payzy'|'viva'|'paypal'|'cash'|'generic';
+type BankBrandKey='piraeus'|'revolut'|'alpha'|'national'|'eurobank'|'payzy'|'viva'|'paypal'|'cash'|'generic';
 
-export type BankBrandTextAsset={label:string;mark:string;cardMark?:string;source:'local-text'};
-export type BankBrandImageAsset={label:string;src:string;wordmarkSrc?:string;fallbackMark:string;cardMark?:string;source:'local-image'};
-export type BankBrandAsset=BankBrandTextAsset|BankBrandImageAsset;
+type BankBrandTextAsset={label:string;mark:string;cardMark?:string;source:'local-text'};
+type BankBrandImageAsset={label:string;src:string;wordmarkSrc?:string;fallbackMark:string;cardMark?:string;source:'local-image'};
+type BankBrandAsset=BankBrandTextAsset|BankBrandImageAsset;
 
 const BRAND_ASSETS:Partial<Record<BankBrandKey,BankBrandAsset>>={
   piraeus:{label:'Τράπεζα Πειραιώς',src:piraeusLogo,wordmarkSrc:piraeusWordmark,fallbackMark:'ΠΕΙΡΑΙΩΣ',cardMark:'Πειραιώς',source:'local-image'},

@@ -1,8 +1,8 @@
 import { forwardRef, type ButtonHTMLAttributes } from 'react';
 
-export type ButtonVariant='primary'|'secondary'|'danger'|'ghost';
+type ButtonVariant='primary'|'secondary'|'danger'|'ghost';
 
-export type ButtonProps=ButtonHTMLAttributes<HTMLButtonElement>&{
+type ButtonProps=ButtonHTMLAttributes<HTMLButtonElement>&{
   variant?:ButtonVariant;
 };
 

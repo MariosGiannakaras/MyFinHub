@@ -29,7 +29,7 @@ async function decodeReceiptImage(blob: Blob) {
   }
 }
 
-export async function validateReceiptFile(file: File) {
+async function validateReceiptFile(file: File) {
   if (!['image/jpeg', 'image/png'].includes(file.type)) throw new Error('Υποστηρίζονται μόνο εικόνες JPG/JPEG και PNG.');
   if (!file.size || file.size > INPUT_MAX_BYTES) throw new Error('Η εικόνα απόδειξης πρέπει να είναι μικρότερη από 12 MB.');
   const signature = new Uint8Array(await file.slice(0, 12).arrayBuffer());

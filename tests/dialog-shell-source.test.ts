@@ -13,7 +13,8 @@ describe('DialogShell source contract',()=>{
   it('owns shared modal focus, aria, dismissal and motion infrastructure',()=>{
     expect(shell).toContain("from 'framer-motion'");
     expect(shell).toContain('useReducedMotion');
-    expect(shell).toContain("export type DialogMotionMode='system'|'reduced'|'full'|'none'");
+    expect(shell).toContain("type DialogMotionMode='system'|'reduced'|'full'|'none'");
+    expect(shell).not.toContain('export type DialogMotionMode');
     expect(shell).toContain('useModalFocus<HTMLElement>(open&&focusActive,preferredFocus,onRequestClose)');
     expect(shell).toContain('focusActive=true');
     expect(shell).toContain('focusActive?:boolean');

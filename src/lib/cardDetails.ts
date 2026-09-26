@@ -1,7 +1,7 @@
 import { saveCardSecret } from './cardVaultClient.js';
 import type { PaymentCard } from '../types.js';
 
-export type CardDetailsField='pan'|'expiry'|'cvv';
+type CardDetailsField='pan'|'expiry'|'cvv';
 
 export class CardDetailsInputError extends Error{
   field:CardDetailsField;

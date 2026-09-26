@@ -13,15 +13,18 @@ describe('local-only CVV vault',()=>{
     expect(()=>normalizeLocalCvv('12345')).toThrow('INVALID_CVV');
   });
 
-  it('keeps CVV storage browser-local and authenticated-encrypted by construction',()=>{
+  it('keeps legacy local CVV reads authenticated and browser-local while new writes stay out of this compatibility vault',()=>{
     const source=vaultSource();
     expect(source).toContain("const DB_NAME = 'rheomiq-local-card-vault'");
     expect(source).toContain("name: 'AES-GCM'");
     expect(source).toContain("length: 256");
-    expect(source).toContain("false,\n    ['encrypt', 'decrypt']");
-    expect(source).toContain('crypto.getRandomValues(new Uint8Array(IV_BYTES))');
+    expect(source).toContain('crypto.subtle.decrypt');
     expect(source).toContain('additionalData: aad(cardId)');
     expect(source).toContain('indexedDB.open');
+    expect(source).toContain('export async function readLocalCvv');
+    expect(source).toContain('export async function deleteLocalCvv');
+    expect(source).not.toContain('crypto.subtle.encrypt');
+    expect(source).not.toContain('saveLocalCvv');
   });
 
   it('contains no network or plaintext web-storage persistence path',()=>{

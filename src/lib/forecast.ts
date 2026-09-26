@@ -6,9 +6,9 @@ import { pendingScheduled } from './scheduled.js';
 import type { FinanceData, LedgerLeg, Loan } from '../types.js';
 
 export type ForecastHorizon = 30 | 60 | 90;
-export type ForecastSource = 'scheduled' | 'recurring' | 'loan' | 'dated_event';
+type ForecastSource = 'scheduled' | 'recurring' | 'loan' | 'dated_event';
 
-export interface ForecastMovement {
+interface ForecastMovement {
   id: string;
   date: string;
   label: string;
@@ -23,7 +23,7 @@ export interface ForecastPoint {
   balances: Record<string, number>;
 }
 
-export interface ForecastAccountSummary {
+interface ForecastAccountSummary {
   accountId: string;
   current: number;
   projected: number;

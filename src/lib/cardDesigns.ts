@@ -1,6 +1,6 @@
 import type { CardFormFactor, CardKind, CardNetwork, PaymentCard } from '../types.js';
 
-export interface CardDesign {
+interface CardDesign {
   id:string;
   bankId:string;
   label:string;
@@ -14,7 +14,7 @@ export interface CardDesign {
 
 const d=(bankId:string,id:string,label:string,note:string,themeClass:string,kind:CardKind,network:CardNetwork,formFactor:CardFormFactor,swatch:string):CardDesign=>({bankId,id,label,note,themeClass,kind,network,formFactor,swatch});
 
-export const CARD_DESIGNS:CardDesign[]=[
+const CARD_DESIGNS:CardDesign[]=[
   d('piraeus','piraeus-yellow','Visa Debit Yellow','Χρεωστική','r-card-piraeus-yellow','debit','visa','physical','linear-gradient(145deg,#ffe000,#f3c900)'),
   d('piraeus','piraeus-virtual','Virtual Debit','Virtual','r-card-piraeus-virtual','debit','visa','virtual','linear-gradient(145deg,#ffe99c,#f4d66d)'),
   d('piraeus','piraeus-green','Visa Classic','Πιστωτική','r-card-piraeus-green','credit','visa','physical','linear-gradient(145deg,#003c3b,#002f39)'),
@@ -63,7 +63,7 @@ export function designsForBank(bankId:string){
   return direct.length?direct:CARD_DESIGNS.filter(item=>item.bankId==='custom');
 }
 
-export function cardDesign(id?:string){return CARD_DESIGNS.find(item=>item.id===id)}
+function cardDesign(id?:string){return CARD_DESIGNS.find(item=>item.id===id)}
 
 export function defaultDesignForCard(card:Pick<PaymentCard,'bankId'|'kind'|'network'|'formFactor'|'designId'>){
   const explicit=cardDesign(card.designId);if(explicit)return explicit;

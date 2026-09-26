@@ -1,15 +1,12 @@
 import { normalizeLocalCvv } from './localCvvFormat.js';
-export { normalizeLocalCvv } from './localCvvFormat.js';
-
 const DB_NAME = 'rheomiq-local-card-vault';
 const DB_VERSION = 1;
 const KEY_STORE = 'keys';
 const CVV_STORE = 'cvv';
 const KEY_ID = 'cvv-aes-gcm-v1';
 const RECORD_VERSION = 1;
-const IV_BYTES = 12;
 
-export type LocalCvvRecord = {
+type LocalCvvRecord = {
   version: number;
   cardId: string;
   iv: Uint8Array;
@@ -118,18 +115,7 @@ function aad(cardId: string) {
   return new TextEncoder().encode(`rheomiq-local-cvv-v1:${origin}:${cardId}:${RECORD_VERSION}`);
 }
 
-export async function encryptLocalCvvValue(cardId: string, cvv: string, key: CryptoKey) {
-  const normalized = normalizeLocalCvv(cvv);
-  const iv = crypto.getRandomValues(new Uint8Array(IV_BYTES));
-  const ciphertext = await crypto.subtle.encrypt(
-    { name: 'AES-GCM', iv, additionalData: aad(cardId), tagLength: 128 },
-    key,
-    new TextEncoder().encode(normalized),
-  );
-  return { iv, ciphertext };
-}
-
-export async function decryptLocalCvvValue(cardId: string, record: Pick<LocalCvvRecord, 'iv' | 'ciphertext'>, key: CryptoKey) {
+async function decryptLocalCvvValue(cardId: string, record: Pick<LocalCvvRecord, 'iv' | 'ciphertext'>, key: CryptoKey) {
   try {
     const plaintext = await crypto.subtle.decrypt(
       { name: 'AES-GCM', iv: new Uint8Array(record.iv), additionalData: aad(cardId), tagLength: 128 },
@@ -143,28 +129,6 @@ export async function decryptLocalCvvValue(cardId: string, record: Pick<LocalCvv
   }
 }
 
-async function requestPersistentStorage() {
-  try {
-    if (navigator.storage?.persist) await navigator.storage.persist();
-  } catch {
-    // Persistence is best-effort. IndexedDB still remains available when the browser declines.
-  }
-}
-
-export async function saveLocalCvv(cardId: string, cvv: string) {
-  requireBrowserCrypto();
-  const key = await encryptionKey();
-  const encrypted = await encryptLocalCvvValue(cardId, cvv, key);
-  const record: LocalCvvRecord = {
-    version: RECORD_VERSION,
-    cardId,
-    iv: encrypted.iv,
-    ciphertext: encrypted.ciphertext,
-    updatedAt: new Date().toISOString(),
-  };
-  await writeStore(CVV_STORE, record);
-  await requestPersistentStorage();
-}
 
 export async function readLocalCvv(cardId: string) {
   requireBrowserCrypto();
@@ -174,10 +138,6 @@ export async function readLocalCvv(cardId: string) {
   return decryptLocalCvvValue(cardId, record, await encryptionKey());
 }
 
-export async function hasLocalCvv(cardId: string) {
-  requireBrowserCrypto();
-  return Boolean(await readStore<LocalCvvRecord>(CVV_STORE, cardId));
-}
 
 export async function deleteLocalCvv(cardId: string) {
   requireBrowserCrypto();

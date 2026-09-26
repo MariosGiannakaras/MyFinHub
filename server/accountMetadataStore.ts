@@ -1,8 +1,8 @@
 import { ApiError } from './http.js';
 import { fetchUpstream } from './upstream.js';
 
-export type AccountMetadataRow={accountId:string;iban:string|null;revision:number;updatedAt:string};
-export type FinancialProviderRow={
+type AccountMetadataRow={accountId:string;iban:string|null;revision:number;updatedAt:string};
+type FinancialProviderRow={
   id:string;
   displayName:string;
   shortName:string;

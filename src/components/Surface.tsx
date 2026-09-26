@@ -1,6 +1,6 @@
 import { createElement, type ComponentPropsWithRef, type ElementType, type ReactElement } from 'react';
 
-export type SurfaceVariant='raised'|'flat'|'inset';
+type SurfaceVariant='raised'|'flat'|'inset';
 
 type SurfaceOwnProps<T extends ElementType>={
   as?:T;

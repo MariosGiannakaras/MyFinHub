@@ -4,7 +4,7 @@ import { isOwner } from './storage.js';
 import { readAccountMetadata, readFinancialProviders, writeAccountMetadata } from './accountMetadataStore.js';
 import { assertValidIban } from '../src/lib/iban.js';
 
-export const MAX_ACCOUNT_METADATA_BODY_BYTES=4*1024;
+const MAX_ACCOUNT_METADATA_BODY_BYTES=4*1024;
 
 function parseAccountId(value:unknown){
   const accountId=typeof value==='string'?value.trim():'';

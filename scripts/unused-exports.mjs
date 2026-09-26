@@ -5,7 +5,7 @@ const root=process.cwd();
 const candidateRoots=['src','server','api'];
 const consumerRoots=['src','server','api','tests','scripts','desktop'];
 const rootConsumers=['vite.config.ts'];
-const sourceExtensions=new Set(['.ts','.tsx','.mts','.cts']);
+const sourceExtensions=new Set(['.ts','.tsx','.mts','.cts','.js','.jsx','.mjs','.cjs']);
 
 function normalize(file){return path.normalize(file);}
 function isSourceFile(file){return sourceExtensions.has(path.extname(file))&&!file.endsWith('.d.ts');}
@@ -88,9 +88,16 @@ function collectExports(source){
   }
   return names;
 }
-function resolveRelative(fromFile,specifier,fileSet){
-  if(!specifier.startsWith('.'))return null;
-  const base=path.resolve(path.dirname(fromFile),specifier);
+function resolveSpecifier(baseRoot,fromFile,specifier,fileSet){
+  const clean=specifier.replace(/[?#].*$/,'');
+  let base;
+  if(clean.startsWith('.'))base=path.resolve(path.dirname(fromFile),clean);
+  else if(clean.startsWith('/')){
+    const relative=clean.slice(1);
+    if(!consumerRoots.some(rootName=>relative===rootName||relative.startsWith(rootName+'/'))&&!rootConsumers.includes(relative))return null;
+    base=path.resolve(baseRoot,relative);
+  }else return null;
+
   const ext=path.extname(base);
   const candidates=[];
   if(['.js','.jsx','.mjs','.cjs'].includes(ext)){
@@ -105,6 +112,8 @@ function resolveRelative(fromFile,specifier,fileSet){
 }
 function frameworkOwnedExport(baseRoot,file,name){
   const relative=path.relative(baseRoot,file).replaceAll(path.sep,'/');
+  if(relative==='server/index.ts'&&name==='default')return true;
+  if(relative==='src/qaApprovedDashboardFixture.ts'&&name==='qaFinanceData')return true;
   if(!relative.startsWith('api/'))return false;
   return name==='default'||name==='config'||name==='runtime'||name==='maxDuration';
 }
@@ -130,7 +139,7 @@ function analyze(baseRoot,sources,candidateFiles){
     const importFrom=/^\s*import\s+([^;]*?)\s+from\s+['"]([^'"]+)['"]\s*;?/gm;
     for(const match of clean.matchAll(importFrom)){
       const clause=match[1].trim().replace(/^type\s+/,'').trim();
-      const target=resolveRelative(file,match[2],fileSet);
+      const target=resolveSpecifier(baseRoot,file,match[2],fileSet);
       if(!target)continue;
       if(/^\*/.test(clause)){useAll(target);continue;}
       if(clause.startsWith('{')){
@@ -152,7 +161,7 @@ function analyze(baseRoot,sources,candidateFiles){
     const exportFrom=/^\s*export\s+(?:type\s+)?(\*\s+as\s+[A-Za-z_$][\w$]*|\*|\{[\s\S]*?\})\s+from\s+['"]([^'"]+)['"]\s*;?/gm;
     for(const match of clean.matchAll(exportFrom)){
       const clause=match[1].trim();
-      const target=resolveRelative(file,match[2],fileSet);
+      const target=resolveSpecifier(baseRoot,file,match[2],fileSet);
       if(!target)continue;
       if(clause.startsWith('*')){useAll(target);continue;}
       const body=clause.slice(1,-1);
@@ -160,9 +169,9 @@ function analyze(baseRoot,sources,candidateFiles){
     }
 
     const dynamic=/\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
-    for(const match of clean.matchAll(dynamic))useAll(resolveRelative(file,match[1],fileSet));
+    for(const match of clean.matchAll(dynamic))useAll(resolveSpecifier(baseRoot,file,match[1],fileSet));
     const required=/\brequire\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
-    for(const match of clean.matchAll(required))useAll(resolveRelative(file,match[1],fileSet));
+    for(const match of clean.matchAll(required))useAll(resolveSpecifier(baseRoot,file,match[1],fileSet));
   }
 
   const findings=[];
@@ -184,9 +193,15 @@ function selfTest(){
     [file('src','consumer.ts'),"import main,{used,type Shape} from './a'; console.log(main,used); const value:Shape={x:1};"],
     [file('src','namespace.ts'),"export const x=1; export const y=2;"],
     [file('tests','namespace.test.ts'),"import * as values from '../src/namespace'; console.log(values.x);"],
+    [file('src','theme.ts'),"export const runtimeOnly=1;"],
+    [file('scripts','theme-qa.mts'),"const mod=await import('/src/theme.ts?qa=1'); console.log(mod.runtimeOnly);"],
+    [file('src','fixture.ts'),"export const queryUsed=1;"],
+    [file('src','query-consumer.ts'),"import {queryUsed} from './fixture.ts?canonical'; console.log(queryUsed);"],
+    [file('src','qaApprovedDashboardFixture.ts'),"export function qaFinanceData(){return {}}"],
+    [file('server','index.ts'),"export default function app(){}"],
     [file('api','route.ts'),"export default function handler(){}; export const config={runtime:'nodejs'};"],
   ]);
-  const candidates=new Set([file('src','a.ts'),file('src','namespace.ts'),file('api','route.ts')]);
+  const candidates=new Set([file('src','a.ts'),file('src','namespace.ts'),file('src','theme.ts'),file('src','fixture.ts'),file('src','qaApprovedDashboardFixture.ts'),file('server','index.ts'),file('api','route.ts')]);
   const actual=analyze(fixtureRoot,sources,candidates).map(item=>path.relative(fixtureRoot,item.file).replaceAll(path.sep,'/')+'::'+item.name);
   const expected=['src/a.ts::dead'];
   if(JSON.stringify(actual)!==JSON.stringify(expected))throw new Error('Unused-export analyzer sanity check failed: '+JSON.stringify(actual));
@@ -208,8 +223,8 @@ const sources=new Map([...allFiles].map(file=>[file,fs.readFileSync(file,'utf8')
 const findings=analyze(root,sources,candidateFiles);
 
 if(findings.length){
-  console.log('Unused-export baseline: '+findings.length+' conservative finding(s) across '+candidateFiles.size+' candidate module(s). Report-only until Stage-6 classification is complete.');
-  for(const finding of findings)console.log(' - '+path.relative(root,finding.file).replaceAll(path.sep,'/')+' :: '+finding.name);
-}else{
-  console.log('Unused-export baseline: 0 conservative findings across '+candidateFiles.size+' candidate module(s).');
+  console.error('Unused-export check failed: '+findings.length+' conservative finding(s) across '+candidateFiles.size+' candidate module(s).');
+  for(const finding of findings)console.error(' - '+path.relative(root,finding.file).replaceAll(path.sep,'/')+' :: '+finding.name);
+  process.exit(1);
 }
+console.log('Unused-export check passed: 0 conservative findings across '+candidateFiles.size+' candidate module(s).');

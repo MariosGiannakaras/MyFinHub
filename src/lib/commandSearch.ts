@@ -5,9 +5,9 @@ import { loanRemainingInstallments } from './loans.js';
 import { allRecurringItems, recurringStatus } from './recurring.js';
 import type { FinanceData, FinanceEvent, Loan } from '../types.js';
 
-export type CommandPage='dashboard'|'transactions'|'savings'|'cards'|'credit'|'loans'|'lending'|'recurring'|'planning'|'attention'|'reports'|'settings';
-export type CommandResultKind='command'|'transaction'|'account'|'card'|'loan'|'lending'|'recurring'|'scheduled'|'budget';
-export type CommandAction=
+type CommandPage='dashboard'|'transactions'|'savings'|'cards'|'credit'|'loans'|'lending'|'recurring'|'planning'|'attention'|'reports'|'settings';
+type CommandResultKind='command'|'transaction'|'account'|'card'|'loan'|'lending'|'recurring'|'scheduled'|'budget';
+type CommandAction=
  | {type:'navigate';page:CommandPage}
  | {type:'quick_add';kind:'expense'|'income'|'transfer'|'refund';accountId?:string}
  | {type:'credit_payment';cardId:string}
@@ -100,4 +100,3 @@ export function searchCommandItems(data:FinanceData,query:string,{recentIds=[],l
  return ranked.sort((a,b)=>b.score-a.score||a.priority-b.priority||a.title.localeCompare(b.title,'el')||a.id.localeCompare(b.id)).slice(0,Math.max(1,limit));
 }
 
-export function commandActionKey(action:CommandAction){return JSON.stringify(action)}

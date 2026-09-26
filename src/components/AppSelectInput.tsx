@@ -7,7 +7,7 @@ import { IconButton } from './IconButton';
 type OptionProps={value?:string;disabled?:boolean;children?:ReactNode;'data-option-level'?:string;'data-trigger-label'?:string};
 type ChangeLike={target:{value:string}};
 type OwnedOption={value:string;label:string;triggerLabel:string;disabled:boolean;level?:string};
-export type AppSelectDensity='default'|'compact';
+type AppSelectDensity='default'|'compact';
 type Props=Omit<InputHTMLAttributes<HTMLInputElement>,'value'|'onChange'|'children'|'readOnly'|'type'> & {value:string;onChange:(event:ChangeLike)=>void;children:ReactNode;density?:AppSelectDensity};
 
 function optionText(value:ReactNode){return typeof value==='string'||typeof value==='number'?String(value):Children.toArray(value).map(child=>typeof child==='string'||typeof child==='number'?String(child):'').join('');}

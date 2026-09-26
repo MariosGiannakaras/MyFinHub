@@ -14,7 +14,7 @@ const workspaceLayer=read('src/components/WorkspaceStyleLayer.tsx');
 const workspaceCompat=read('src/styles/workspace-compat.css');
 const pageBoundary=read('src/components/PageErrorBoundary.tsx');
 const accountIban=read('src/components/AccountIban.tsx');
-const accountMetadata=read('src/components/AccountMetadataSettings.tsx');
+const accountManagement=read('src/components/AccountManagementSettings.tsx');
 const bankBrand=read('src/components/BankBrandMark.tsx');
 const tailLoader=read('src/styles/approved-workspace-targets.css');
 const accountMetadataSurfaces=read('src/styles/account-metadata-surfaces.css');
@@ -86,11 +86,11 @@ describe('Stage 5 CSS ownership',()=>{
   });
 
   it('removes unrelated domain components as global stylesheet loaders',()=>{
-    for(const source of [accountIban,accountMetadata,bankBrand]){
+    for(const source of [accountIban,accountManagement,bankBrand]){
       expect(source).not.toMatch(/import\s+['"]\.\.\/styles\//);
     }
     expect(accountIban).toContain('export function AccountIban');
-    expect(accountMetadata).toContain('export function AccountMetadataSettings');
+    expect(accountManagement).toContain('export function AccountManagementSettings');
     expect(bankBrand).toContain('export function BankBrandMark');
     expect(accountMetadataSurfaces).toContain('.account-iban{');
     expect(accountMetadataSurfaces).toContain('.account-metadata-row{');

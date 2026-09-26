@@ -16,7 +16,7 @@ type AuthFactor = {
   friendly_name?: string | null;
 };
 type AuthUser = { id: string; email?: string | null; factors?: AuthFactor[] | null };
-export type TokenResponse = {
+type TokenResponse = {
   access_token: string;
   refresh_token: string;
   expires_in: number;
@@ -32,13 +32,13 @@ type TotpEnrollment = {
 type ChallengeResponse = { id: string; expires_at?: number };
 
 type JwtClaims = { aal?: string };
-export type SessionSource = 'cookie' | 'bearer';
-export type SessionContext = {
+type SessionSource = 'cookie' | 'bearer';
+type SessionContext = {
   accessToken: string;
   user: AuthUser;
   source: SessionSource;
 };
-export type RequireSessionOptions = {
+type RequireSessionOptions = {
   allowBearer?: boolean;
 };
 
@@ -174,14 +174,14 @@ export async function signInWithPassword(email: string, password: string) {
   });
 }
 
-export async function refreshWithToken(refreshToken: string) {
+async function refreshWithToken(refreshToken: string) {
   return authRequest<TokenResponse>('token?grant_type=refresh_token', {
     method: 'POST',
     body: JSON.stringify({ refresh_token: refreshToken }),
   });
 }
 
-export async function getUser(accessToken: string) {
+async function getUser(accessToken: string) {
   if (!accessToken) throw new ApiError(401, 'AUTH_REQUIRED', 'Authentication required.');
   return authRequest<AuthUser>('user', {
     method: 'GET',

@@ -8,7 +8,8 @@ describe('credit statement persistence foundation',()=>{
   it('keeps the exact closing-date boundary explicit instead of embedding a silent default',()=>{
     expect(types).toMatch(/StatementBoundaryRule\s*=\s*'include-closing-day'\s*\|\s*'next-cycle'/);
     expect(statements).toContain('statementCloseDateForPurchase(date:string,closingDay:number,boundary:StatementBoundaryRule)');
-    expect(statements).toContain('export type { StatementBoundaryRule }');
+    expect(statements).toMatch(/import type \{[^}]*StatementBoundaryRule[^}]*\} from '\.\.\/types\.js'/);
+    expect(statements).not.toContain('export type { StatementBoundaryRule }');
     expect(statements).not.toContain('DEFAULT_STATEMENT_BOUNDARY');
   });
 });
