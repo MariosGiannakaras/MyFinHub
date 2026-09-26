@@ -5,7 +5,6 @@ const KEY_STORE = 'keys';
 const CVV_STORE = 'cvv';
 const KEY_ID = 'cvv-aes-gcm-v1';
 const RECORD_VERSION = 1;
-const IV_BYTES = 12;
 
 type LocalCvvRecord = {
   version: number;
@@ -116,17 +115,6 @@ function aad(cardId: string) {
   return new TextEncoder().encode(`rheomiq-local-cvv-v1:${origin}:${cardId}:${RECORD_VERSION}`);
 }
 
-async function encryptLocalCvvValue(cardId: string, cvv: string, key: CryptoKey) {
-  const normalized = normalizeLocalCvv(cvv);
-  const iv = crypto.getRandomValues(new Uint8Array(IV_BYTES));
-  const ciphertext = await crypto.subtle.encrypt(
-    { name: 'AES-GCM', iv, additionalData: aad(cardId), tagLength: 128 },
-    key,
-    new TextEncoder().encode(normalized),
-  );
-  return { iv, ciphertext };
-}
-
 async function decryptLocalCvvValue(cardId: string, record: Pick<LocalCvvRecord, 'iv' | 'ciphertext'>, key: CryptoKey) {
   try {
     const plaintext = await crypto.subtle.decrypt(
@@ -138,14 +126,6 @@ async function decryptLocalCvvValue(cardId: string, record: Pick<LocalCvvRecord,
   } catch (error) {
     if (error instanceof Error && error.message === 'INVALID_CVV') throw error;
     throw new Error('LOCAL_CVV_DECRYPT_FAILED');
-  }
-}
-
-async function requestPersistentStorage() {
-  try {
-    if (navigator.storage?.persist) await navigator.storage.persist();
-  } catch {
-    // Persistence is best-effort. IndexedDB still remains available when the browser declines.
   }
 }
 

@@ -28,6 +28,8 @@ The finalization classification is exhaustive:
 
 After those three classes, the expected conservative unused-export finding count is zero.
 
+The first exact-head CI attempt then exposed a second-order local cleanup in `src/lib/localCvvVault.ts`: removing the already-dead local CVV write API left `encryptLocalCvvValue`, `requestPersistentStorage`, and `IV_BYTES` unreachable. Those internal-only remnants are removed in the same Stage-6 finalization rather than starting another cleanup batch.
+
 ## Enforcement
 
 `scripts/unused-exports.mjs` replaces the report-only command.
