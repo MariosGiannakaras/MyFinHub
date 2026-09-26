@@ -1,9 +1,10 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import * as tsNamespace from 'typescript';
+import { createRequire } from 'node:module';
 
-const ts=tsNamespace.ScriptTarget?tsNamespace:tsNamespace.default;
-if(!ts?.ScriptTarget||!ts?.createSourceFile)throw new Error(`TypeScript compiler API unavailable; exports: ${Object.keys(tsNamespace).slice(0,20).join(', ')}`);
+const require=createRequire(import.meta.url);
+const ts=require('typescript');
+if(!ts?.ScriptTarget||!ts?.createSourceFile)throw new Error('TypeScript compiler API unavailable from require("typescript")');
 
 const root=process.cwd();
 const baselinePath=path.join(root,'docs/code-health/code-hygiene-baseline.json');
