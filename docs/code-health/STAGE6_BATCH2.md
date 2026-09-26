@@ -45,3 +45,26 @@ Before one exact-head CI cycle:
 - inspect the final diff/scope against `develop`.
 
 Unused-export debt is intentionally left for the next bounded Stage-6 checkpoint because converting that class to blocking safely requires its own conservative baseline rather than speculative bulk deletion.
+
+
+## Integration
+
+PR #416 merged to `develop@9903288525917907e2883bb89b1240ebb6be8fb7`.
+
+Final exact-head gates on `4e0f536c3f991a1610512faa9124317b4baf1ea4` were green:
+- CI `36237408977`
+- CodeQL `36237409045`
+- Cross-engine `36237408998`
+- Performance `36237409058`
+- Windows Desktop `36237409041`
+- Windows First Run `36237408987`
+- Windows Clean Launch `36237408976`
+
+Post-merge exact-SHA integration gates were also green:
+- CI `36240315073`
+- CodeQL `36240315077`
+- Windows Desktop `36240315093`
+- Windows First Run `36240315082`
+- Windows Clean Launch `36240315114`
+
+The unused-local/import gate is now blocking with zero findings. Export debt remains intentionally unmodified pending the conservative Batch-3 baseline.
