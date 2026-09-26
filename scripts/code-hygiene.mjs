@@ -109,7 +109,7 @@ const exportedSpecifierName=item=>{
 for(const file of productionFiles){
   if(externalEntrypoint(file))continue;
   const source=stripComments(fs.readFileSync(file,'utf8'));
-  const declaration=/^\s*export\s+(?:declare\s+)?(?:async\s+)?(?:function|class|interface|type|enum|namespace|module|const|let|var)\s+([A-Za-z_$][\w$]*)/gm;
+  const declaration=/^\s*export\s+(?:declare\s+)?(?:async\s+)?(?:function|class|enum|const|let|var)\s+([A-Za-z_$][\w$]*)/gm;
   for(const match of source.matchAll(declaration))addExport(file,match[1]);
   const named=/^\s*export\s+(?:type\s+)?\{([\s\S]*?)\}\s*;?\s*$/gm;
   for(const match of source.matchAll(named)){
@@ -118,8 +118,11 @@ for(const file of productionFiles){
 }
 
 const usedExports=new Map();
+const referencedModules=new Set();
+const markReferenced=target=>{if(target&&productionSet.has(target))referencedModules.add(target)};
 const markUsed=(target,name)=>{
   if(!target||!productionSet.has(target))return;
+  markReferenced(target);
   if(!usedExports.has(target))usedExports.set(target,new Set());
   usedExports.get(target).add(name);
 };
@@ -137,6 +140,7 @@ for(const file of usageFiles){
   for(const match of source.matchAll(importFrom)){
     const clause=match[1].trim();
     const target=resolveRelative(file,match[3]);
+    markReferenced(target);
     const entireTypeOnly=/^type\b/.test(clause);
     if(/\*\s+as\s+/.test(clause))markUsed(target,'*');
     const braces=clause.match(/\{([\s\S]*?)\}/);
@@ -154,11 +158,12 @@ for(const file of usageFiles){
   }
 
   const sideEffect=/^\s*import\s+(['"])([^'"]+)\1\s*;?/gm;
-  for(const match of source.matchAll(sideEffect))addRuntimeEdge(file,resolveRelative(file,match[2]));
+  for(const match of source.matchAll(sideEffect)){const target=resolveRelative(file,match[2]);markReferenced(target);addRuntimeEdge(file,target);}
 
   const exportFrom=/^\s*export\s+(type\s+)?(\*|\{[\s\S]*?\})\s+from\s+(['"])([^'"]+)\3\s*;?/gm;
   for(const match of source.matchAll(exportFrom)){
     const target=resolveRelative(file,match[4]);
+    markReferenced(target);
     const typeOnly=Boolean(match[1]);
     if(match[2]==='*')markUsed(target,'*');
     else{
@@ -178,13 +183,15 @@ for(const file of usageFiles){
   const dynamic=/\b(import|require)\s*\(\s*(['"])([^'"]+)\2\s*\)/g;
   for(const match of source.matchAll(dynamic)){
     const target=resolveRelative(file,match[3]);
-    markUsed(target,'*');addRuntimeEdge(file,target);
+    markReferenced(target);markUsed(target,'*');addRuntimeEdge(file,target);
   }
 }
 
 const unusedExports=[];
 for(const [file,names] of exportedNames){
-  const used=usedExports.get(path.resolve(file))??new Set();
+  const fileAbs=path.resolve(file);
+  if(!referencedModules.has(fileAbs))continue;
+  const used=usedExports.get(fileAbs)??new Set();
   if(used.has('*'))continue;
   for(const name of names)if(!used.has(name))unusedExports.push(`${toRepoPath(file)}#${name}`);
 }
