@@ -58,3 +58,17 @@ Batch 3 therefore keeps the original no-dependency constraint and switches the e
 ## Fixture hardening
 
 The dependency-free analyzer's first self-test run rejected the initial line-only export boundary assumption: the synthetic fixture placed multiple export declarations on one physical line, while the parser recognized only the first declaration. Export discovery now also recognizes semicolon and closing-brace statement boundaries, preserving the conservative top-level bias while covering compact source formatting.
+
+
+## Integration
+
+PR #417 merged to `develop@f913a282dbca0935c8bfe98a921904382d8868cc`.
+
+Final exact-head validation completed on the cleaned PR head before integration, and the exact merge passed:
+- CI `36244331980`
+- CodeQL `36244332108`
+- Windows Desktop `36244331955`
+- Windows First Run `36244331957`
+- Windows Clean Launch `36244331936`
+
+The conservative analyzer measured 151 findings across 181 candidate modules. That measured set is the input to the single consolidated Stage-6 finalization batch rather than a sequence of one-finding CI loops.
