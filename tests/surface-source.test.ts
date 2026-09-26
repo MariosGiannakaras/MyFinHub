@@ -15,7 +15,8 @@ const pageErrorBoundary=source('src/components/PageErrorBoundary.tsx');
 
 describe('canonical Surface primitive',()=>{
   it('owns the three compatibility elevation variants without styling changes',()=>{
-    expect(surface).toContain("export type SurfaceVariant='raised'|'flat'|'inset'");
+    expect(surface).toContain("type SurfaceVariant='raised'|'flat'|'inset'");
+    expect(surface).not.toContain('export type SurfaceVariant');
     expect(surface).toContain("variant='raised'");
     expect(surface).toContain('`neo-${variant}`');
     expect(surface).not.toContain('<style');
