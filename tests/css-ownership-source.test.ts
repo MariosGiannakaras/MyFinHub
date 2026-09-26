@@ -22,6 +22,10 @@ const accountMetadataSurfaces=read('src/styles/account-metadata-surfaces.css');
 describe('Stage 5 CSS ownership',()=>{
   it('keeps the root/login CSS budget behind one named owner and the late tail behind one lazy workspace owner',()=>{
     const semanticRootOwners=new Map<number,string|string[]>([
+      [1,['./theme-surface-foundations.css','./shell-navigation-foundations.css','./workspace-heading-metrics.css']],
+      [2,['./dashboard-metric-accounts.css','./dashboard-panels-insights.css','./transaction-filter-table.css']],
+      [3,['./review-workspace-base.css','./savings-workspace-base.css','./credit-loans-workspace-base.css','./recurring-table-base.css','./reports-kpi-base.css','./settings-form-actions-base.css','./quick-entry-modal-base.css']],
+      [4,['./quick-entry-body-split.css','./boot-screen-motion.css','./root-responsive-coordination.css','./row-action-controls.css','./receivable-recurring-tail.css','./inline-editor-layout.css']],
       [5,['./loan-action-editor.css','./split-review-editor.css','./reduced-motion-contract.css']],
       [6,'./auth-session-shell.css'],
       [7,'./mobile-more-navigation.css'],
@@ -43,8 +47,10 @@ describe('Stage 5 CSS ownership',()=>{
       [23,'./mobile-reports-settings-editors.css'],
       [24,'./credit-loans-workspaces.css'],
       [25,'./owned-entry-popovers.css'],
+      [26,'./cards-prototype-presentation.css'],
       [27,'./credit-usage-archive-security.css'],
       [28,'./desktop-update-panel.css'],
+      [29,'./cards-v15-presentation.css'],
       [30,'./ui-hardening-foundations.css'],
       [31,'./visual-polish-overrides.css'],
       [32,'./navigation-action-contrast.css'],

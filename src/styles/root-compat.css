@@ -1,9 +1,23 @@
-/* Stage 5 named owner for the preserved root/login compatibility sequence.
-   Keep this import order stable until the numbered files are re-layered in later bounded batches. */
-@import './part1.css';
-@import './part2.css';
-@import './part3.css';
-@import './part4.css';
+/* Stage 5 named owner for the preserved root/login compatibility sequence. */
+@import './theme-surface-foundations.css';
+@import './shell-navigation-foundations.css';
+@import './workspace-heading-metrics.css';
+@import './dashboard-metric-accounts.css';
+@import './dashboard-panels-insights.css';
+@import './transaction-filter-table.css';
+@import './review-workspace-base.css';
+@import './savings-workspace-base.css';
+@import './credit-loans-workspace-base.css';
+@import './recurring-table-base.css';
+@import './reports-kpi-base.css';
+@import './settings-form-actions-base.css';
+@import './quick-entry-modal-base.css';
+@import './quick-entry-body-split.css';
+@import './boot-screen-motion.css';
+@import './root-responsive-coordination.css';
+@import './row-action-controls.css';
+@import './receivable-recurring-tail.css';
+@import './inline-editor-layout.css';
 @import './loan-action-editor.css';
 @import './split-review-editor.css';
 @import './reduced-motion-contract.css';
@@ -32,10 +46,10 @@
 @import './mobile-reports-settings-editors.css';
 @import './credit-loans-workspaces.css';
 @import './owned-entry-popovers.css';
-@import './part26.css';
+@import './cards-prototype-presentation.css';
 @import './credit-usage-archive-security.css';
 @import './desktop-update-panel.css';
-@import './part29.css';
+@import './cards-v15-presentation.css';
 @import './ui-hardening-foundations.css';
 @import './visual-polish-overrides.css';
 @import './navigation-action-contrast.css';

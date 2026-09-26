@@ -1,25 +1,3 @@
-.metric-card small{display:block;font-size:8.5px;color:var(--muted);margin-top:5px}
-.tone-blue{--tone:#2f6fed}
-.tone-cyan{--tone:#25b9d7}
-.tone-green{--tone:#1d9a68}
-.tone-red{--tone:#d64058}
-.tone-violet{--tone:#7656d6}
-.mini-progress{height:5px;border-radius:99px;background:#dce6f2;margin-top:10px;overflow:hidden}
-.mini-progress i{display:block;height:100%;border-radius:99px;background:var(--tone);transition:width .55s cubic-bezier(.2,.8,.2,1)}
-.account-strip{border-radius:20px;padding:14px}
-.section-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-.section-title span{font-weight:800;font-size:12px}
-.section-title b{font-size:9px;color:var(--muted);margin-left:9px}
-.text-button{border:0;background:transparent;color:var(--blue);font-size:9px;font-weight:750;cursor:pointer;padding:6px 8px;border-radius:8px}
-.text-button:hover{background:#e9f0ff}
-.account-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:9px}
-.account-chip{min-height:67px;border-radius:14px;padding:10px;background:linear-gradient(145deg,#fff,#eef3fa);box-shadow:var(--shadow-soft);display:grid;grid-template-columns:auto 1fr auto;gap:9px;align-items:center}
-.account-chip.credit{background:linear-gradient(145deg,#fff8fa,#f1eef4)}
-.account-mark{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;background:linear-gradient(145deg,#ddebff,#fff);box-shadow:var(--shadow-soft);color:var(--blue-2);font-size:9px;font-weight:850}
-.account-chip small{display:block;color:var(--muted);font-size:8px}
-.account-chip b{display:block;font-size:12px;margin-top:3px}
-.positive{color:var(--green)!important}
-.negative{color:var(--red)!important}
 .dashboard-grid{display:grid;grid-template-columns:.84fr 1.12fr 1.04fr;gap:11px}
 .panel{border-radius:20px;padding:16px;min-width:0}
 .panel-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:13px}
@@ -70,21 +48,3 @@
 .recent-list strong{font-size:9px}
 .empty-state{padding:32px 18px;text-align:center;color:var(--muted);font-size:10px;line-height:1.6}
 .empty-state.success{color:#187852}
-.filterbar{display:flex;gap:9px;align-items:center;margin-bottom:12px}
-.searchbox{flex:1;display:flex;align-items:center;gap:8px;border-radius:12px;padding:0 11px;background:#edf3fa;box-shadow:var(--shadow-inset)}
-.searchbox input{flex:1;height:38px;border:0;background:transparent;outline:none}
-.filterbar select,.form-grid select,.form-grid input,.settings-form input,.settings-form select,.split-line input,.split-line select{height:39px;border:1px solid #d7e1ef;border-radius:11px;background:#f8fbff;color:var(--ink);padding:0 10px;outline:none}
-.filterbar>select{height:39px;border:1px solid var(--line);border-radius:11px;background:#f8fbff;padding:0 10px}
-.filterbar>span{font-size:9px;color:var(--muted)}
-.transaction-table{overflow:auto}
-.tr{min-width:920px;display:grid;grid-template-columns:105px minmax(260px,1.8fr) 120px 190px 110px 72px;gap:10px;padding:10px;border-bottom:1px solid #dfe7f2;align-items:center;font-size:9px}
-.tr.th{font-size:8px;color:var(--muted);font-weight:800;background:#edf3fa;border-radius:10px}
-.tr b{display:block;font-size:9px}
-.tr small{display:block;color:var(--muted);margin-top:3px}
-.tr>span:last-child{text-align:right;font-weight:800}
-.flow-pill{font-style:normal;font-size:7.5px;border-radius:99px;background:#e9eff9;padding:4px 7px;color:#516889}
-.flow-pill.expense,.flow-pill.card_purchase{color:#b42d45;background:#ffedf0}
-.flow-pill.income,.flow-pill.refund{color:#187852;background:#e9f9f2}
-.flow-pill.transfer,.flow-pill.withdrawal,.flow-pill.saving_cash_offset{color:#1b5ec5;background:#eaf1ff}
-.review-summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-.summary-card{border-radius:18px;padding:16px;display:flex;align-items:center;gap:13px}
