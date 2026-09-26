@@ -7,8 +7,6 @@ const KEY_STORE = 'keys';
 const CVV_STORE = 'cvv';
 const KEY_ID = 'cvv-aes-gcm-v1';
 const RECORD_VERSION = 1;
-const IV_BYTES = 12;
-
 export type LocalCvvRecord = {
   version: number;
   cardId: string;
