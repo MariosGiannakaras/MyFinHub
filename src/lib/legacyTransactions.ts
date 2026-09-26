@@ -5,11 +5,11 @@ function deletedIds(value: FinanceData['state']['deleted']) {
   return new Set(Object.entries(value ?? {}).filter(([, deleted]) => deleted).map(([id]) => id));
 }
 
-export function legacyTransactionIsDeleted(data: FinanceData, id: string) {
+function legacyTransactionIsDeleted(data: FinanceData, id: string) {
   return deletedIds(data.state.deleted).has(id);
 }
 
-export function seedLegacyTransaction(data: FinanceData, id: string) {
+function seedLegacyTransaction(data: FinanceData, id: string) {
   return data.seed.transactions.find((transaction) => transaction.id === id);
 }
 

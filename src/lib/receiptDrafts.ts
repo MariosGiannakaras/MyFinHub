@@ -34,8 +34,8 @@ export type ReceiptDraft = {
 
 export type NormalizedReceiptImage = Pick<ReceiptDraft, 'image' | 'mimeType' | 'bytes' | 'width' | 'height'>;
 
-export const RECEIPT_DRAFT_LIMIT = 30;
-export const RECEIPT_STORAGE_BUDGET_BYTES = 60 * 1024 * 1024;
+const RECEIPT_DRAFT_LIMIT = 30;
+const RECEIPT_STORAGE_BUDGET_BYTES = 60 * 1024 * 1024;
 
 const DB_NAME = 'myfinhub-local-receipts-v1';
 const DB_VERSION = 1;
@@ -138,14 +138,14 @@ export async function listReceiptDrafts(): Promise<ReceiptDraft[]> {
   });
 }
 
-export async function getReceiptDraft(id: string): Promise<ReceiptDraft | null> {
+async function getReceiptDraft(id: string): Promise<ReceiptDraft | null> {
   return withStore('readonly', async (store) => {
     const row = await requestResult(store.get(id) as LocalRequest<ReceiptDraft | undefined>);
     return row ?? null;
   });
 }
 
-export async function requestPersistentReceiptStorage() {
+async function requestPersistentReceiptStorage() {
   try {
     const storage = localStorageManager();
     if (!storage?.persist) return false;

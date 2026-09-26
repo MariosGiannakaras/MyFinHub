@@ -3,8 +3,8 @@
 export type ThemePreference='system'|'light'|'dark';
 export type ResolvedTheme='light'|'dark';
 
-export const THEME_STORAGE_KEY='myfinhub.theme';
-export const THEME_EVENT='myfinhub-theme-change';
+const THEME_STORAGE_KEY='myfinhub.theme';
+const THEME_EVENT='myfinhub-theme-change';
 
 type ThemeTokens=Record<`--${string}`,string>;
 
@@ -75,14 +75,14 @@ let mediaListener:((event:MediaQueryListEvent)=>void)|null=null;
 
 export function normalizeThemePreference(value:string|null|undefined):ThemePreference{return value==='light'||value==='dark'||value==='system'?value:'system'}
 export function resolveThemePreference(preference:ThemePreference,systemDark:boolean):ResolvedTheme{return preference==='system'?(systemDark?'dark':'light'):preference}
-export function themeTokens(theme:ResolvedTheme):ThemeTokens{return theme==='dark'?DARK_THEME_TOKENS:LIGHT_THEME_TOKENS}
+function themeTokens(theme:ResolvedTheme):ThemeTokens{return theme==='dark'?DARK_THEME_TOKENS:LIGHT_THEME_TOKENS}
 
 function ensureThemeStyle(){if(document.getElementById(THEME_STYLE_ID))return;const style=document.createElement('style');style.id=THEME_STYLE_ID;style.textContent=THEME_STYLE;document.head.append(style)}
 function applyTokens(theme:ResolvedTheme){const root=document.documentElement;root.dataset.theme=theme;root.style.colorScheme=theme;for(const [name,value] of Object.entries(themeTokens(theme)))root.style.setProperty(name,value)}
 function systemIsDark(){return typeof matchMedia==='function'&&matchMedia('(prefers-color-scheme: dark)').matches}
 
 export function getThemePreference():ThemePreference{try{return normalizeThemePreference(localStorage.getItem(THEME_STORAGE_KEY))}catch{return 'system'}}
-export function applyThemePreference(preference:ThemePreference){ensureThemeStyle();applyTokens(resolveThemePreference(preference,systemIsDark()));document.documentElement.dataset.themePreference=preference}
+function applyThemePreference(preference:ThemePreference){ensureThemeStyle();applyTokens(resolveThemePreference(preference,systemIsDark()));document.documentElement.dataset.themePreference=preference}
 export function setThemePreference(preference:ThemePreference){try{localStorage.setItem(THEME_STORAGE_KEY,preference)}catch{}applyThemePreference(preference);window.dispatchEvent(new CustomEvent(THEME_EVENT,{detail:{preference}}))}
 export function subscribeThemePreference(listener:(preference:ThemePreference)=>void){const handler=()=>listener(getThemePreference());window.addEventListener(THEME_EVENT,handler);window.addEventListener('storage',handler);return()=>{window.removeEventListener(THEME_EVENT,handler);window.removeEventListener('storage',handler)}}
 export function initializeTheme(){const preference=getThemePreference();applyThemePreference(preference);mediaQuery=typeof matchMedia==='function'?matchMedia('(prefers-color-scheme: dark)'):null;if(mediaQuery){mediaListener=()=>{if(getThemePreference()==='system')applyThemePreference('system')};mediaQuery.addEventListener?.('change',mediaListener)}return()=>{if(mediaQuery&&mediaListener)mediaQuery.removeEventListener?.('change',mediaListener);mediaQuery=null;mediaListener=null}}

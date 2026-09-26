@@ -118,7 +118,7 @@ function aad(cardId: string) {
   return new TextEncoder().encode(`rheomiq-local-cvv-v1:${origin}:${cardId}:${RECORD_VERSION}`);
 }
 
-export async function encryptLocalCvvValue(cardId: string, cvv: string, key: CryptoKey) {
+async function encryptLocalCvvValue(cardId: string, cvv: string, key: CryptoKey) {
   const normalized = normalizeLocalCvv(cvv);
   const iv = crypto.getRandomValues(new Uint8Array(IV_BYTES));
   const ciphertext = await crypto.subtle.encrypt(
@@ -129,7 +129,7 @@ export async function encryptLocalCvvValue(cardId: string, cvv: string, key: Cry
   return { iv, ciphertext };
 }
 
-export async function decryptLocalCvvValue(cardId: string, record: Pick<LocalCvvRecord, 'iv' | 'ciphertext'>, key: CryptoKey) {
+async function decryptLocalCvvValue(cardId: string, record: Pick<LocalCvvRecord, 'iv' | 'ciphertext'>, key: CryptoKey) {
   try {
     const plaintext = await crypto.subtle.decrypt(
       { name: 'AES-GCM', iv: new Uint8Array(record.iv), additionalData: aad(cardId), tagLength: 128 },
@@ -151,7 +151,7 @@ async function requestPersistentStorage() {
   }
 }
 
-export async function saveLocalCvv(cardId: string, cvv: string) {
+async function saveLocalCvv(cardId: string, cvv: string) {
   requireBrowserCrypto();
   const key = await encryptionKey();
   const encrypted = await encryptLocalCvvValue(cardId, cvv, key);
@@ -174,7 +174,7 @@ export async function readLocalCvv(cardId: string) {
   return decryptLocalCvvValue(cardId, record, await encryptionKey());
 }
 
-export async function hasLocalCvv(cardId: string) {
+async function hasLocalCvv(cardId: string) {
   requireBrowserCrypto();
   return Boolean(await readStore<LocalCvvRecord>(CVV_STORE, cardId));
 }

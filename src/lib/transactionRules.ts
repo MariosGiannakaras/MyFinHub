@@ -23,14 +23,14 @@ function eventAccount(event: FinanceEvent) {
   return event.accountId || event.fromAccountId || '';
 }
 
-export function orderedTransactionRules(data: FinanceData) {
+function orderedTransactionRules(data: FinanceData) {
   return (data.state.transactionRules ?? [])
     .filter((rule) => rule.enabled)
     .slice()
     .sort((a, b) => a.priority - b.priority || a.id.localeCompare(b.id));
 }
 
-export function transactionRuleMatches(rule: TransactionRule, event: FinanceEvent) {
+function transactionRuleMatches(rule: TransactionRule, event: FinanceEvent) {
   if (!rule.enabled || !categorizedKind(event)) return false;
   if (!rule.scopes.includes(eventScope(event))) return false;
   const note = normalize(event.note);

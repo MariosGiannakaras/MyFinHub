@@ -1,8 +1,8 @@
 export const money = new Intl.NumberFormat('el-GR', { style: 'currency', currency: 'EUR' });
-export const compactMoney = new Intl.NumberFormat('el-GR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
-export const pct = new Intl.NumberFormat('el-GR', { style: 'percent', maximumFractionDigits: 1 });
+const compactMoney = new Intl.NumberFormat('el-GR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
+const pct = new Intl.NumberFormat('el-GR', { style: 'percent', maximumFractionDigits: 1 });
 
-export function monthLabel(month: string) {
+function monthLabel(month: string) {
   const [year, m] = month.split('-').map(Number);
   return new Intl.DateTimeFormat('el-GR', { month: 'long', year: 'numeric' }).format(new Date(year, m - 1, 1));
 }
@@ -17,6 +17,6 @@ export function cleanNote(note = '') {
   return note.replace(/\[Threaded comment\][\s\S]*?Comment:\n/i, '').trim();
 }
 
-export function clamp(n: number, min: number, max: number) {
+function clamp(n: number, min: number, max: number) {
   return Math.min(max, Math.max(min, n));
 }

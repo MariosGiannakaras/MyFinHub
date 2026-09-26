@@ -69,7 +69,7 @@ export function selectDailyExpenseSeries(data: FinanceData, month: string) {
   return memo(bucket(data).dailyExpense, month, () => dailyExpenseSeries(data, month));
 }
 
-export function selectFrequentDescriptions(data: FinanceData, kind: 'expense' | 'income', limit = 8) {
+function selectFrequentDescriptions(data: FinanceData, kind: 'expense' | 'income', limit = 8) {
   const key = `${kind}:${limit}`;
   return memo(bucket(data).frequent, key, () => frequentDescriptions(data, kind, limit));
 }

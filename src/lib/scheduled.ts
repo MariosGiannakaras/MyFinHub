@@ -6,7 +6,7 @@ export type ScheduledLifecycle = 'upcoming' | 'due' | 'completed' | 'skipped' | 
 
 const validDate = /^\d{4}-\d{2}-\d{2}$/;
 
-export function scheduledItems(data: FinanceData): ScheduledTransaction[] {
+function scheduledItems(data: FinanceData): ScheduledTransaction[] {
   return [...(data.state.scheduled ?? [])].sort((a, b) => a.dueDate.localeCompare(b.dueDate) || a.createdAt.localeCompare(b.createdAt));
 }
 
@@ -29,7 +29,7 @@ function eligibleAccountIds(data: FinanceData) {
   return new Set(allAccounts(data).filter((account) => account.kind !== 'credit').map((account) => account.id));
 }
 
-export function scheduledDraftError(data: FinanceData, draft: {
+function scheduledDraftError(data: FinanceData, draft: {
   kind: ScheduledKind;
   dueDate: string;
   amount: number;
