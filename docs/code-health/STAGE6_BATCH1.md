@@ -7,12 +7,12 @@
 
 ## Scope
 
-Add a no-new-dependency hygiene layer on top of the existing TypeScript toolchain:
+Add a dependency-free hygiene layer on top of the existing TypeScript toolchain:
 
 1. `scripts/dependency-cycles.mjs`
    - scans TypeScript modules in `src/`, `server/`, and `api/`;
-   - uses the installed TypeScript AST parser with built-in sanity fixtures, avoiding regex false positives from strings/comments;
-   - follows runtime-relevant relative imports, re-exports, literal dynamic imports and literal CommonJS `require` edges;
+   - uses a conservative import/export statement parser with built-in sanity fixtures;
+   - follows runtime-relevant relative imports, re-exports and literal dynamic imports;
    - resolves source `.ts/.tsx` targets including runtime `.js` specifiers;
    - excludes fully type-only import/export edges so type relationships cannot create false runtime cycles;
    - fails deterministically on runtime dependency cycles.
