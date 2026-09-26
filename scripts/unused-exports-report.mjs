@@ -1,11 +1,5 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { createRequire } from 'node:module';
-
-const require=createRequire(import.meta.url);
-const typescriptModule=require('typescript');
-const ts=typescriptModule?.createSourceFile?typescriptModule:typescriptModule?.default;
-if(!ts?.createSourceFile||!ts?.forEachChild)throw new Error('TypeScript parser API is unavailable through the package namespace or default export.');
 
 const root=process.cwd();
 const candidateRoots=['src','server','api'];
@@ -24,20 +18,75 @@ function walk(dir,target){
     else if(isSourceFile(full))target.add(normalize(full));
   }
 }
-function parse(file,source){
-  const kind=file.endsWith('.tsx')?ts.ScriptKind.TSX:file.endsWith('.mts')?ts.ScriptKind.MTS:file.endsWith('.cts')?ts.ScriptKind.CTS:ts.ScriptKind.TS;
-  return ts.createSourceFile(file,source,ts.ScriptTarget.Latest,true,kind);
-}
-function modifier(node,kind){
-  const modifiers=ts.canHaveModifiers(node)?ts.getModifiers(node):undefined;
-  return Boolean(modifiers?.some(item=>item.kind===kind));
-}
-function bindingNames(name,target){
-  if(ts.isIdentifier(name)){target.add(name.text);return;}
-  for(const element of name.elements){
-    if(ts.isOmittedExpression(element))continue;
-    bindingNames(element.name,target);
+function mask(source,{strings}){
+  let out='',i=0,state='code',quote='';
+  while(i<source.length){
+    const c=source[i],n=source[i+1];
+    if(state==='code'){
+      if(c==='/'&&n==='/'){state='line';out+='  ';i+=2;continue;}
+      if(c==='/'&&n==='*'){state='block';out+='  ';i+=2;continue;}
+      if(c==="'"||c==='"'||c==='`'){state='string';quote=c;out+=strings?' ':c;i++;continue;}
+      out+=c;i++;continue;
+    }
+    if(state==='line'){
+      if(c==='\n'){state='code';out+='\n';}else out+=' ';
+      i++;continue;
+    }
+    if(state==='block'){
+      if(c==='*'&&n==='/'){state='code';out+='  ';i+=2;}
+      else{out+=c==='\n'?'\n':' ';i++;}
+      continue;
+    }
+    if(state==='string'){
+      if(c==='\\'&&i+1<source.length){
+        out+=strings?'  ':c+source[i+1];
+        i+=2;continue;
+      }
+      if(c===quote){
+        out+=strings?' ':c;state='code';quote='';i++;continue;
+      }
+      out+=c==='\n'?'\n':strings?' ':c;
+      i++;continue;
+    }
   }
+  return out;
+}
+function splitSpecifiers(text){return text.split(',').map(item=>item.trim()).filter(Boolean);}
+function cleanSpecifier(item){return item.replace(/^type\s+/,'').trim();}
+function exportedName(item){
+  const parts=cleanSpecifier(item).split(/\s+as\s+/);
+  return (parts[1]??parts[0]).trim();
+}
+function importedName(item){
+  const parts=cleanSpecifier(item).split(/\s+as\s+/);
+  return parts[0].trim();
+}
+function identifier(value){return /^[A-Za-z_$][\w$]*$/.test(value)||value==='default';}
+
+function collectExports(source){
+  const code=mask(source,{strings:true});
+  const names=new Set();
+  if(/^\s*export\s+default\b/m.test(code))names.add('default');
+  const patterns=[
+    /^\s*export\s+(?:declare\s+)?(?:async\s+)?function\s+([A-Za-z_$][\w$]*)\b/gm,
+    /^\s*export\s+(?:declare\s+)?(?:abstract\s+)?class\s+([A-Za-z_$][\w$]*)\b/gm,
+    /^\s*export\s+(?:declare\s+)?interface\s+([A-Za-z_$][\w$]*)\b/gm,
+    /^\s*export\s+(?:declare\s+)?type\s+([A-Za-z_$][\w$]*)\b/gm,
+    /^\s*export\s+(?:declare\s+)?enum\s+([A-Za-z_$][\w$]*)\b/gm,
+    /^\s*export\s+(?:declare\s+)?(?:namespace|module)\s+([A-Za-z_$][\w$]*)\b/gm,
+    /^\s*export\s+(?:declare\s+)?(?:const|let|var)\s+([A-Za-z_$][\w$]*)\b/gm,
+    /^\s*export\s*\*\s+as\s+([A-Za-z_$][\w$]*)\s+from\b/gm,
+  ];
+  for(const regex of patterns)for(const match of code.matchAll(regex))names.add(match[1]);
+
+  const named=/^\s*export\s+(?:type\s+)?\{([\s\S]*?)\}\s*(?:from\b|;|$)/gm;
+  for(const match of code.matchAll(named)){
+    for(const item of splitSpecifiers(match[1])){
+      const name=exportedName(item);
+      if(identifier(name))names.add(name);
+    }
+  }
+  return names;
 }
 function resolveRelative(fromFile,specifier,fileSet){
   if(!specifier.startsWith('.'))return null;
@@ -50,44 +99,9 @@ function resolveRelative(fromFile,specifier,fileSet){
   }else if(ext){
     candidates.push(base);
   }else{
-    candidates.push(
-      base+'.ts',base+'.tsx',base+'.mts',base+'.cts',
-      path.join(base,'index.ts'),path.join(base,'index.tsx'),path.join(base,'index.mts'),path.join(base,'index.cts')
-    );
+    candidates.push(base+'.ts',base+'.tsx',base+'.mts',base+'.cts',path.join(base,'index.ts'),path.join(base,'index.tsx'),path.join(base,'index.mts'),path.join(base,'index.cts'));
   }
   return candidates.map(normalize).find(candidate=>fileSet.has(candidate))??null;
-}
-function moduleText(node){
-  return node&&ts.isStringLiteralLike(node)?node.text:null;
-}
-function collectExports(sourceFile){
-  const names=new Set();
-  for(const statement of sourceFile.statements){
-    if(ts.isExportAssignment(statement)){
-      if(!statement.isExportEquals)names.add('default');
-      continue;
-    }
-    if(ts.isExportDeclaration(statement)){
-      const clause=statement.exportClause;
-      if(clause&&ts.isNamedExports(clause)){
-        for(const item of clause.elements)names.add(item.name.text);
-      }else if(clause&&'name' in clause&&clause.name?.text){
-        names.add(clause.name.text);
-      }
-      continue;
-    }
-    if(!modifier(statement,ts.SyntaxKind.ExportKeyword))continue;
-    const isDefault=modifier(statement,ts.SyntaxKind.DefaultKeyword);
-    if(isDefault){names.add('default');continue;}
-    if(ts.isVariableStatement(statement)){
-      for(const declaration of statement.declarationList.declarations)bindingNames(declaration.name,names);
-      continue;
-    }
-    if((ts.isFunctionDeclaration(statement)||ts.isClassDeclaration(statement)||ts.isInterfaceDeclaration(statement)||ts.isTypeAliasDeclaration(statement)||ts.isEnumDeclaration(statement)||ts.isModuleDeclaration(statement))&&statement.name){
-      names.add(statement.name.text);
-    }
-  }
-  return names;
 }
 function frameworkOwnedExport(baseRoot,file,name){
   const relative=path.relative(baseRoot,file).replaceAll(path.sep,'/');
@@ -96,63 +110,59 @@ function frameworkOwnedExport(baseRoot,file,name){
 }
 function analyze(baseRoot,sources,candidateFiles){
   const fileSet=new Set(sources.keys());
-  const parsed=new Map([...sources].map(([file,source])=>[file,parse(file,source)]));
   const exportsByFile=new Map();
   const usedByFile=new Map();
   const usedAll=new Set();
 
   for(const file of candidateFiles){
-    exportsByFile.set(file,collectExports(parsed.get(file)));
+    exportsByFile.set(file,collectExports(sources.get(file)??''));
     usedByFile.set(file,new Set());
   }
   const use=(target,name)=>{
-    if(!target||!candidateFiles.has(target))return;
-    usedByFile.get(target).add(name);
+    if(target&&candidateFiles.has(target)&&identifier(name))usedByFile.get(target).add(name);
   };
   const useAll=(target)=>{
     if(target&&candidateFiles.has(target))usedAll.add(target);
   };
 
-  for(const [file,sourceFile] of parsed){
-    for(const statement of sourceFile.statements){
-      if(ts.isImportDeclaration(statement)){
-        const specifier=moduleText(statement.moduleSpecifier);
-        const target=specifier?resolveRelative(file,specifier,fileSet):null;
-        const clause=statement.importClause;
-        if(target&&clause){
-          if(clause.name)use(target,'default');
-          if(clause.namedBindings){
-            if(ts.isNamespaceImport(clause.namedBindings))useAll(target);
-            else for(const item of clause.namedBindings.elements)use(target,item.propertyName?.text??item.name.text);
-          }
-        }
-      }else if(ts.isExportDeclaration(statement)){
-        const specifier=moduleText(statement.moduleSpecifier);
-        const target=specifier?resolveRelative(file,specifier,fileSet):null;
-        if(target){
-          const clause=statement.exportClause;
-          if(!clause||!ts.isNamedExports(clause))useAll(target);
-          else for(const item of clause.elements)use(target,item.propertyName?.text??item.name.text);
-        }
-      }else if(ts.isImportEqualsDeclaration(statement)&&ts.isExternalModuleReference(statement.moduleReference)){
-        const specifier=moduleText(statement.moduleReference.expression);
-        if(specifier)useAll(resolveRelative(file,specifier,fileSet));
+  for(const [file,source] of sources){
+    const clean=mask(source,{strings:false});
+    const importFrom=/^\s*import\s+([^;]*?)\s+from\s+['"]([^'"]+)['"]\s*;?/gm;
+    for(const match of clean.matchAll(importFrom)){
+      const clause=match[1].trim().replace(/^type\s+/,'').trim();
+      const target=resolveRelative(file,match[2],fileSet);
+      if(!target)continue;
+      if(/^\*/.test(clause)){useAll(target);continue;}
+      if(clause.startsWith('{')){
+        const body=clause.match(/^\{([\s\S]*?)\}$/)?.[1]??'';
+        for(const item of splitSpecifiers(body))use(target,importedName(item));
+        continue;
       }
+      const comma=clause.indexOf(',');
+      if(comma<0){use(target,'default');continue;}
+      use(target,'default');
+      const rest=clause.slice(comma+1).trim();
+      if(rest.startsWith('*'))useAll(target);
+      else if(rest.startsWith('{')){
+        const body=rest.match(/^\{([\s\S]*?)\}$/)?.[1]??'';
+        for(const item of splitSpecifiers(body))use(target,importedName(item));
+      }else useAll(target);
     }
 
-    const visit=(node)=>{
-      if(ts.isCallExpression(node)&&node.arguments.length===1){
-        const specifier=moduleText(node.arguments[0]);
-        if(specifier&&(node.expression.kind===ts.SyntaxKind.ImportKeyword||(ts.isIdentifier(node.expression)&&node.expression.text==='require'))){
-          useAll(resolveRelative(file,specifier,fileSet));
-        }
-      }else if(ts.isImportTypeNode(node)){
-        const literal=ts.isLiteralTypeNode(node.argument)?moduleText(node.argument.literal):null;
-        if(literal)useAll(resolveRelative(file,literal,fileSet));
-      }
-      ts.forEachChild(node,visit);
-    };
-    ts.forEachChild(sourceFile,visit);
+    const exportFrom=/^\s*export\s+(?:type\s+)?(\*\s+as\s+[A-Za-z_$][\w$]*|\*|\{[\s\S]*?\})\s+from\s+['"]([^'"]+)['"]\s*;?/gm;
+    for(const match of clean.matchAll(exportFrom)){
+      const clause=match[1].trim();
+      const target=resolveRelative(file,match[2],fileSet);
+      if(!target)continue;
+      if(clause.startsWith('*')){useAll(target);continue;}
+      const body=clause.slice(1,-1);
+      for(const item of splitSpecifiers(body))use(target,importedName(item));
+    }
+
+    const dynamic=/\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
+    for(const match of clean.matchAll(dynamic))useAll(resolveRelative(file,match[1],fileSet));
+    const required=/\brequire\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
+    for(const match of clean.matchAll(required))useAll(resolveRelative(file,match[1],fileSet));
   }
 
   const findings=[];
@@ -166,7 +176,6 @@ function analyze(baseRoot,sources,candidateFiles){
   }
   return findings;
 }
-
 function selfTest(){
   const fixtureRoot=path.join(root,'__unused_exports_fixture__');
   const file=(...parts)=>normalize(path.join(fixtureRoot,...parts));
@@ -180,9 +189,7 @@ function selfTest(){
   const candidates=new Set([file('src','a.ts'),file('src','namespace.ts'),file('api','route.ts')]);
   const actual=analyze(fixtureRoot,sources,candidates).map(item=>path.relative(fixtureRoot,item.file).replaceAll(path.sep,'/')+'::'+item.name);
   const expected=['src/a.ts::dead'];
-  if(JSON.stringify(actual)!==JSON.stringify(expected)){
-    throw new Error('Unused-export analyzer sanity check failed: '+JSON.stringify(actual));
-  }
+  if(JSON.stringify(actual)!==JSON.stringify(expected))throw new Error('Unused-export analyzer sanity check failed: '+JSON.stringify(actual));
 }
 selfTest();
 
@@ -202,9 +209,7 @@ const findings=analyze(root,sources,candidateFiles);
 
 if(findings.length){
   console.log('Unused-export baseline: '+findings.length+' conservative finding(s) across '+candidateFiles.size+' candidate module(s). Report-only until Stage-6 classification is complete.');
-  for(const finding of findings){
-    console.log(' - '+path.relative(root,finding.file).replaceAll(path.sep,'/')+' :: '+finding.name);
-  }
+  for(const finding of findings)console.log(' - '+path.relative(root,finding.file).replaceAll(path.sep,'/')+' :: '+finding.name);
 }else{
   console.log('Unused-export baseline: 0 conservative findings across '+candidateFiles.size+' candidate module(s).');
 }

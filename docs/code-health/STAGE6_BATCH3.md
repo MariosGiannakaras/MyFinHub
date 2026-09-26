@@ -17,7 +17,7 @@ Measure repository-local unused export debt without deleting or suppressing anyt
 
 `scripts/unused-exports-report.mjs`:
 
-- uses the already-installed TypeScript parser for syntax-safe import/export discovery; no new dependency is added;
+- uses a dependency-free conservative lexical analyzer aligned with the proven runtime-cycle parser; no parser/compiler API or new dependency is required;
 - treats `src/`, `server/`, and `api/` as candidate export owners;
 - treats app/server/API/tests/scripts/desktop TypeScript plus `vite.config.ts` as possible consumers;
 - resolves only relative repository-local module specifiers, including runtime `.js/.mjs/.cjs` specifiers that map back to TypeScript source;
@@ -46,3 +46,10 @@ Run one exact-head required CI cycle for the complete report-only baseline. Capt
 The first PR head `c5fe13ea33d053d7d78ae320046eee7fe315cc40` reached the new export analyzer after the existing cycle and unused-symbol gates passed, but TypeScript 7 exposed the parser API through the package default export under Node 22's `createRequire` interop. The analyzer stopped before producing a baseline.
 
 The follow-up normalizes the package namespace/default shape before accessing the parser. No analyzer scope, source code, package dependency, or existing hygiene gate changed.
+
+
+## Analyzer implementation correction
+
+The first two PR heads failed before baseline collection because the installed TypeScript 7 package does not expose the legacy JavaScript compiler parser API used by older compiler-API tooling. The existing CLI typecheck remains valid, but an in-process `createSourceFile` dependency is not available.
+
+Batch 3 therefore keeps the original no-dependency constraint and switches the export baseline to a conservative lexical analyzer derived from the already-proven cycle-parser approach. Comments and string bodies are masked for export declaration discovery; import/re-export module strings remain available for relative-edge resolution. The analyzer intentionally prefers false negatives over false positives and remains report-only.

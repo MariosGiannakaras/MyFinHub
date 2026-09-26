@@ -126,7 +126,7 @@ Require one exact-head CI / CodeQL / Cross-engine / Performance / Windows cycle 
 - **Active stage:** Stage 6 — Code-hygiene tooling.
 - **Verified integration base:** `develop@9903288525917907e2883bb89b1240ebb6be8fb7`; Stage-6 Batch-2 post-merge CI `36240315073`, CodeQL `36240315077`, Windows Desktop `36240315093`, Windows First Run `36240315082`, and Windows Clean Launch `36240315114` are green.
 - **Active delivery:** branch `chore/357-stage6-unused-exports-baseline`, adding a conservative report-only unused-export graph across app/server/API modules with tests/scripts/desktop code treated as consumers.
-- **Implementation contract:** use the existing TypeScript parser only for syntax-safe module/export discovery, resolve only repository-local relative module edges, conservatively treat namespace/dynamic imports and star re-exports as using the full target surface, and exempt framework-owned API exports. Do not delete exports in the baseline batch.
+- **Implementation contract:** use a dependency-free conservative lexical analyzer aligned with the proven cycle parser, resolve only repository-local relative module edges, conservatively treat namespace/dynamic imports and star re-exports as using the full target surface, and exempt framework-owned API exports. Do not delete exports in the baseline batch.
 - **Next action:** run one exact-head CI cycle, capture the export baseline from the hygiene log, classify only high-confidence findings, then decide the next bounded enforcement/cleanup checkpoint without speculative bulk deletion.
 
 ## Resume procedure
