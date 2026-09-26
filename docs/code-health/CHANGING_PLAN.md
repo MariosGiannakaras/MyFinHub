@@ -119,15 +119,15 @@ Require one exact-head CI / CodeQL / Cross-engine / Performance / Windows cycle 
 - [ ] Produce a release-readiness checkpoint.
 - [ ] Stop before `develop -> main`, release or deploy unless separately authorized.
 
-## Current checkpoint — 2026-09-25
+## Current checkpoint — 2026-09-26
 
 - **Overall tracker:** #357 — OPEN.
-- **Completed stages:** 5/9 (Stages 0–4).
-- **Active stage:** Stage 5 — CSS ownership cleanup.
-- **Verified integration base:** `develop@478a1cae07d6363c3b32cd9fa5a7e0d8cb48c96f`; Batch-10 post-merge CI `36144156598`, CodeQL `36144156621`, Windows Desktop `36144156630` are green.
-- **Active delivery:** branch `chore/357-css-ownership-batch-11-split`, beginning deliberate split/re-layering of remaining numeric owners.
-- **Implementation contract:** preserve every CSS declaration and selector; keep the three former `part5.css` sections contiguous at their original cascade slot; keep `part27` and `part53` bytes unchanged; strengthen ownership guards without weakening assertions.
-- **Next action:** validate the expanded Batch 15 as the final numeric-owner checkpoint, then exact-head required gates, representative root/domain/card evidence, and post-merge barrier before closing Stage 5.
+- **Completed stages:** 6/9 (Stages 0–5).
+- **Active stage:** Stage 6 — Code-hygiene tooling.
+- **Verified integration base:** `develop@dcca883b8c267e0e77be48bcf7379bd979e2cd68`; Stage-5 post-merge CI `36205978753`, CodeQL `36205978766`, Windows Desktop `36205978767` are green.
+- **Active delivery:** PR #415 / branch `chore/357-stage6-hygiene-baseline`, establishing a low-noise hygiene baseline with runtime dependency-cycle checking and report-only deduplicated unused-symbol diagnostics.
+- **Implementation contract:** no formatter/autofix, no package dependency churn, no production-source cleanup to satisfy the tooling, type-only relationships must not create runtime-cycle findings, and existing source/security contracts remain authoritative.
+- **Next action:** finish exact-head validation for Stage-6 Batch 1 and merge only to `develop`; then classify the three observed unused-symbol findings and add bounded reliable unused import/export enforcement in the next checkpoint.
 
 ## Resume procedure
 
