@@ -39,3 +39,10 @@ Measure repository-local unused export debt without deleting or suppressing anyt
 ## Validation
 
 Run one exact-head required CI cycle for the complete report-only baseline. Capture the exact `Unused-export baseline` output from the CI hygiene step, then classify high-confidence findings into a later bounded cleanup/enforcement checkpoint.
+
+
+## First-head correction
+
+The first PR head `c5fe13ea33d053d7d78ae320046eee7fe315cc40` reached the new export analyzer after the existing cycle and unused-symbol gates passed, but TypeScript 7 exposed the parser API through the package default export under Node 22's `createRequire` interop. The analyzer stopped before producing a baseline.
+
+The follow-up normalizes the package namespace/default shape before accessing the parser. No analyzer scope, source code, package dependency, or existing hygiene gate changed.

@@ -3,8 +3,9 @@ import path from 'node:path';
 import { createRequire } from 'node:module';
 
 const require=createRequire(import.meta.url);
-const ts=require('typescript');
-if(!ts?.createSourceFile||!ts?.forEachChild)throw new Error('TypeScript parser API is unavailable.');
+const typescriptModule=require('typescript');
+const ts=typescriptModule?.createSourceFile?typescriptModule:typescriptModule?.default;
+if(!ts?.createSourceFile||!ts?.forEachChild)throw new Error('TypeScript parser API is unavailable through the package namespace or default export.');
 
 const root=process.cwd();
 const candidateRoots=['src','server','api'];
