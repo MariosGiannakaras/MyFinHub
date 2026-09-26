@@ -11,10 +11,10 @@ Establish a dependency-free hygiene baseline using the TypeScript toolchain alre
 
 1. `tsconfig.hygiene.app.json` enables `noUnusedLocals` for application TypeScript/TSX.
 2. `tsconfig.hygiene.node.json` enables the same low-noise diagnostic for server/API production TypeScript without pulling tests into the hygiene compile.
-3. `scripts/code-hygiene.mjs` builds a repository import graph with the TypeScript parser and checks:
+3. `scripts/code-hygiene.mjs` builds a conservative repository import graph with a dependency-free lexical module scanner and checks:
    - conservative definitely-unused named exports;
    - runtime dependency-cycle strongly connected components;
-   - relative static imports/re-exports plus dynamic imports / CommonJS require;
+   - relative static imports/re-exports plus literal dynamic imports / CommonJS require;
    - type-only edges are excluded from runtime-cycle findings.
 4. `scripts/run-code-hygiene.mjs` runs both compiler and graph checks even if one category fails, so the first validation cycle exposes the whole baseline instead of serial failures.
 5. `docs/code-health/code-hygiene-baseline.json` is the only accepted-debt ledger. It starts empty; CI findings must be reviewed before any entry is added.
@@ -22,7 +22,7 @@ Establish a dependency-free hygiene baseline using the TypeScript toolchain alre
 
 ## Noise controls
 
-- No ESLint/Prettier/Knip or other new dependency is added in this batch.
+- No ESLint/Prettier/Knip or other new dependency is added in this batch. TypeScript 7.0 does not expose the legacy in-process compiler API, so the graph check intentionally does not depend on it.
 - No formatter or mass source rewrite is introduced.
 - `noUnusedParameters` stays disabled to avoid callback/interface churn.
 - Default exports and platform entrypoints are not classified as unused named exports.
