@@ -82,10 +82,6 @@ function effectiveLoans(data: FinanceData): Loan[] {
   return [...seeded, ...(data.state.customLoans ?? [])];
 }
 
-function currentAccountIds(data: FinanceData) {
-  return new Set(allAccounts(data).filter((account) => account.kind !== 'credit').map((account) => account.id));
-}
-
 function portfolioDelta(legs: LedgerLeg[], ids: Set<string>) {
   return legs.reduce((sum, leg) => ids.has(leg.accountId) ? sum + Number(leg.amount || 0) : sum, 0);
 }

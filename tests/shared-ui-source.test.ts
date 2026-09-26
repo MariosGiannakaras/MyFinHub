@@ -22,12 +22,16 @@ describe('shared UI contracts',()=>{
     expect(hook).toContain('onCloseRef.current()');
   });
 
-  it('reuses the owned date/select controls across finance entry flows',()=>{
-    for(const file of ['src/pages/SavingsPage.tsx','src/pages/CreditCardPage.tsx','src/pages/LoansPage.tsx','src/pages/LendingPage.tsx','src/pages/RecurringPage.tsx']){
+  it('reuses owned date/select controls across finance entry flows without sentinel imports',()=>{
+    for(const file of ['src/pages/SavingsPage.tsx','src/pages/LoansPage.tsx','src/pages/LendingPage.tsx','src/pages/RecurringPage.tsx']){
       const text=source(file);
       expect(text,`${file} should use AppDateInput`).toContain('AppDateInput');
       expect(text,`${file} should use AppSelectInput`).toContain('AppSelectInput');
     }
+    const credit=source('src/pages/CreditCardPage.tsx');
+    expect(credit,'CreditCardPage should use AppDateInput').toContain('AppDateInput');
+    expect(credit,'CreditCardPage should use CategorySelectInput for purchase taxonomy').toContain('CategorySelectInput');
+    expect(credit,'CreditCardPage should not keep an unused AppSelectInput import only to satisfy this contract').not.toContain("from '../components/AppSelectInput'");
   });
 
   it('reuses one explicit ASC/DESC control wherever user-selectable sorting exists',()=>{
