@@ -28,7 +28,7 @@
     "db:import": "tsx scripts/migrate-json-to-supabase.ts",
     "db:verify": "tsx scripts/migrate-json-to-supabase.ts --verify-only",
     "hygiene:cycles": "node scripts/dependency-cycles.mjs",
-    "hygiene:unused:report": "node scripts/unused-imports-report.mjs",
+    "hygiene:unused:report": "node scripts/unused-symbols-report.mjs",
     "hygiene": "npm run hygiene:cycles && npm run hygiene:unused:report"
   },
   "dependencies": {

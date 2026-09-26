@@ -11,12 +11,15 @@ Add a dependency-free hygiene layer using the TypeScript compiler already presen
 
 1. `scripts/dependency-cycles.mjs`
    - scans TypeScript modules in `src/`, `server/`, and `api/`;
-   - follows relative static imports, re-exports and literal dynamic imports;
+   - uses the TypeScript AST rather than regex parsing;
+   - follows runtime-relevant relative imports, re-exports and literal dynamic imports;
    - resolves source `.ts/.tsx` targets including runtime `.js` specifiers;
-   - fails deterministically on dependency cycles.
-2. `scripts/unused-imports-report.mjs`
-   - uses the TypeScript compiler API with `noUnusedLocals`;
-   - reports import-only TS6133/TS6192/TS6196 diagnostics across app, node/server/tests and API configs;
+   - excludes fully type-only import/export edges so type relationships cannot create false runtime cycles;
+   - fails deterministically on runtime dependency cycles.
+2. `scripts/unused-symbols-report.mjs`
+   - runs the existing TypeScript compiler with `noUnusedLocals`;
+   - reports TS6133/TS6192/TS6196 diagnostics across app, node/server/tests and API configs;
+   - deduplicates the same source diagnostic emitted by multiple tsconfigs;
    - remains report-only for this first baseline so existing debt is measured before enforcement.
 3. Package scripts:
    - `hygiene:cycles`
@@ -24,9 +27,14 @@ Add a dependency-free hygiene layer using the TypeScript compiler already presen
    - `hygiene`
 4. CI runs `npm run hygiene` before the existing full `npm run check`.
 
+## Baseline evidence
+
+The first exact-head CI observed three unique existing unused-symbol findings: `BookOpen` in `FinanceIcon.tsx`, `currentAccountIds` in `forecast.ts`, and `AppSelectInput` in `CreditCardPage.tsx`. They stay report-only in Batch 1 because at least one is intentionally protected by an existing shared-control source contract.
+
 ## Guardrails
 
 - No formatter, autofix, source reformat or mass cleanup.
+- No production-source cleanup is required to satisfy the cycle checker; type-only edges are modeled correctly instead.
 - No new npm dependency or package-lock churn.
 - Existing tests, build, security guard and audit severity remain unchanged.
 - Unused findings are not suppressed or auto-removed in this batch.
@@ -34,4 +42,4 @@ Add a dependency-free hygiene layer using the TypeScript compiler already presen
 
 ## Validation
 
-Require the cycle check to be green and capture the exact unused-import baseline from CI. Only findings demonstrated to be low-noise should become blocking in the next Stage-6 checkpoint.
+Require the runtime cycle check to be green and capture the exact deduplicated unused-symbol baseline from CI. Only findings demonstrated to be low-noise and not protected by behavior/source contracts should become blocking in the next Stage-6 checkpoint.

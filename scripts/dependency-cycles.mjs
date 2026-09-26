@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import ts from 'typescript';
 
 const root=process.cwd();
 const sourceRoots=['src','server','api'];
@@ -36,50 +37,44 @@ function resolveRelative(fromFile,specifier){
   return candidates.map(path.normalize).find(candidate=>fileSet.has(candidate))??null;
 }
 
-function stripComments(source){
-  let out='',i=0,state='code',quote='';
-  while(i<source.length){
-    const c=source[i],n=source[i+1];
-    if(state==='code'){
-      if(c==='/'&&n==='/'){state='line';out+='  ';i+=2;continue;}
-      if(c==='/'&&n==='*'){state='block';out+='  ';i+=2;continue;}
-      if(c==="'"||c==='"'||c==='`'){state='string';quote=c;out+=c;i++;continue;}
-      out+=c;i++;continue;
-    }
-    if(state==='line'){
-      if(c==='\n'){state='code';out+='\n';}else out+=' ';
-      i++;continue;
-    }
-    if(state==='block'){
-      if(c==='*'&&n==='/'){state='code';out+='  ';i+=2;}else{out+=c==='\n'?'\n':' ';i++;}
-      continue;
-    }
-    if(state==='string'){
-      out+=c;
-      if(c==='\\'&&i+1<source.length){out+=source[i+1];i+=2;continue;}
-      if(c===quote){state='code';quote='';}
-      i++;continue;
-    }
-  }
-  return out;
+function namedBindingsAreTypeOnly(bindings){
+  return ts.isNamedImports(bindings)&&bindings.elements.length>0&&bindings.elements.every(element=>element.isTypeOnly);
 }
-
-function moduleSpecifiers(source){
-  const clean=stripComments(source);
+function runtimeImport(node){
+  if(!node.importClause)return true;
+  if(node.importClause.isTypeOnly)return false;
+  if(node.importClause.name)return true;
+  const bindings=node.importClause.namedBindings;
+  if(!bindings)return false;
+  if(ts.isNamespaceImport(bindings))return true;
+  return !namedBindingsAreTypeOnly(bindings);
+}
+function runtimeExport(node){
+  if(node.isTypeOnly)return false;
+  if(!node.exportClause)return true;
+  return !ts.isNamedExports(node.exportClause)||node.exportClause.elements.some(element=>!element.isTypeOnly);
+}
+function runtimeSpecifiers(file,source){
+  const sourceFile=ts.createSourceFile(file,source,ts.ScriptTarget.Latest,true,file.endsWith('.tsx')?ts.ScriptKind.TSX:ts.ScriptKind.TS);
   const specs=[];
-  const staticRe=/\b(?:import|export)\s+(?:type\s+)?(?:[^'"\n;]*?\s+from\s+)?['"]([^'"]+)['"]/g;
-  const dynamicRe=/\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
-  for(const re of [staticRe,dynamicRe]){
-    let match;
-    while((match=re.exec(clean)))specs.push(match[1]);
+  function visit(node){
+    if(ts.isImportDeclaration(node)&&ts.isStringLiteral(node.moduleSpecifier)&&runtimeImport(node)){
+      specs.push(node.moduleSpecifier.text);
+    }else if(ts.isExportDeclaration(node)&&node.moduleSpecifier&&ts.isStringLiteral(node.moduleSpecifier)&&runtimeExport(node)){
+      specs.push(node.moduleSpecifier.text);
+    }else if(ts.isCallExpression(node)&&node.expression.kind===ts.SyntaxKind.ImportKeyword&&node.arguments.length===1&&ts.isStringLiteral(node.arguments[0])){
+      specs.push(node.arguments[0].text);
+    }
+    ts.forEachChild(node,visit);
   }
+  visit(sourceFile);
   return specs;
 }
 
 const graph=new Map();
 for(const file of files){
   const deps=new Set();
-  for(const specifier of moduleSpecifiers(fs.readFileSync(file,'utf8'))){
+  for(const specifier of runtimeSpecifiers(file,fs.readFileSync(file,'utf8'))){
     const resolved=resolveRelative(file,specifier);
     if(resolved)deps.add(resolved);
   }
@@ -112,8 +107,8 @@ function dfs(file){
 for(const file of [...files].sort())if((state.get(file)??0)===0)dfs(file);
 
 if(cycles.length){
-  console.error('Dependency cycles detected ('+cycles.length+'):');
+  console.error('Runtime dependency cycles detected ('+cycles.length+'):');
   for(const cycle of cycles.sort())console.error(' - '+cycle);
   process.exit(1);
 }
-console.log('Dependency-cycle check passed: '+files.length+' TypeScript modules across '+sourceRoots.join(', ')+'.');
+console.log('Runtime dependency-cycle check passed: '+files.length+' TypeScript modules across '+sourceRoots.join(', ')+'. Type-only edges excluded.');

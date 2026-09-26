@@ -1,8 +1,8 @@
 import type { FinanceSettings } from '../types.js';
 import { inferredCategoryIcon } from './categoryIconInference.js';
 import { categoryIconByKey } from './categoryIconRegistry.js';
-import type { CategoryKind } from './categoryIconTypes.js';
-export type { CategoryKind } from './categoryIconTypes.js';
+
+export type CategoryKind='expense'|'income';
 
 const clean=(value:string)=>value.trim();
 export function categoryIconPreferenceKey(kind:CategoryKind,category:string){return `${kind}:${clean(category)}`}
