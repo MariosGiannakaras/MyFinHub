@@ -1,5 +1,5 @@
 import type { CategoryIconKey } from './categoryIconRegistry.js';
-import type { CategoryKind } from './categoryIconPreferences.js';
+import type { CategoryKind } from './categoryIconTypes.js';
 
 const normalize=(value:string)=>value
   .normalize('NFD')
