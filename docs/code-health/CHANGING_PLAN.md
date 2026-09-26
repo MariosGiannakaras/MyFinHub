@@ -77,10 +77,10 @@ Goal: replace hidden global-style ownership and numeric loader coupling incremen
 - [x] Batch 13: split small mixed `part12.css`, `part16.css`, and `part35.css`, and name coherent `part43.css`. PR #411 merged to `develop@60c62bc14d47f9ef3b358cacf88c252d65fee550`; final head `6f13acef865dfb7ae026a15180f2447b705cb63f` passed CI `36185756631`, CodeQL `36185756615`, Cross-engine `36185756736`, Performance `36185756677`, Windows `36185756686`; post-merge CI `36187504193`, CodeQL `36187504036`, Windows `36187504422` green.
 - [x] Batch 14: split residual small `part9.css`, `part33.css`, `part41.css`, and `part46.css`. PR #412 merged to `develop@83d6b1a751c4ffc10bc763b3dc0c2657924358ed`; final head `7d99aafbb10aa39181ba2665b15c6f5976797d68` passed CI `36200428929`, CodeQL `36200428988`, Cross-engine `36200428928`, Performance `36200428986`, Windows `36200429183`; post-merge CI `36201674597`, CodeQL `36201674663`, Windows `36201674621` green.
 - [x] Batch 15: finish numeric CSS ownership. PR #413 merged to `develop@dcca883b8c267e0e77be48bcf7379bd979e2cd68`; final head `5bb7f8b097582d284170353558cfc23afe214b6b` passed CI `36204577287`, CodeQL `36204577357`, Cross-engine `36204577302`, Performance `36204577424`, Windows `36204577310`; post-merge CI `36205978753`, CodeQL `36205978766`, Windows `36205978767` green.
-- [ ] Replace remaining numeric loader chains incrementally with accurate named tokens/base/primitives/patterns/pages ownership; do not give mixed legacy files misleading names.
-- [ ] Reduce selector duplication and unnecessary `!important` only with proven visual parity.
-- [ ] Keep runtime theme code focused on semantic token application rather than broad selector styling.
-- [ ] Maintain deterministic fresh visual regression evidence at every batch.
+- [x] Replace remaining numeric loader chains with semantic owners; `src/styles/` has no numeric `part*.css` ownership files remaining.
+- [x] Reduce selector duplication / unnecessary `!important` only where the completed bounded batches proved visual parity; no speculative global rewrite was introduced.
+- [x] Keep runtime theme code focused on semantic token application rather than broad selector styling.
+- [x] Maintain deterministic fresh visual regression evidence across the completed batches.
 
 #### Stage 5 Batch 10 checkpoint
 
@@ -92,7 +92,7 @@ The batch intentionally leaves genuinely mixed owners numeric for later split/re
 
 Require one exact-head CI / CodeQL / Cross-engine / Performance / Windows cycle for the complete bulk batch, fresh representative desktop/mobile evidence across auth/navigation, mobile finance, reports/planning/attention, cards/credit/loans, budget/receipts and owned controls, then squash-merge only to `develop` and require exact-merge CI + CodeQL + Windows.
 
-### Stage 6 — Code-hygiene tooling — COMPLETE
+### Stage 6 — Code-hygiene tooling — FINAL VALIDATION
 
 - [x] Add a low-noise lint/static-analysis baseline without mass unrelated reformatting. Batch 1 / PR #415 merged to `develop@5ab3ef121502aa4e2dff2f18038acf1d6f8adb7c`; post-merge CI `36235115168`, CodeQL `36235115151`, Windows Desktop `36235115048`, Windows First Run `36235115060`, and Windows Clean Launch `36235115124` are green.
 - [x] Add reliable unused import/export and dependency-cycle checks. Batch 2 / PR #416 made TypeScript unused-local/import diagnostics blocking with zero findings and merged to `develop@9903288525917907e2883bb89b1240ebb6be8fb7`. Batch 3 / PR #417 measured 151 conservative export findings and merged to `develop@f913a282dbca0935c8bfe98a921904382d8868cc`; post-merge CI `36244331980`, CodeQL `36244332108`, Windows Desktop `36244331955`, Windows First Run `36244331957`, and Windows Clean Launch `36244331936` are green. The finalization batch makes the export check blocking after collapsing 120 internal-only exports, removing 24 confirmed dead findings, and fixing the 7 known framework/runtime false positives.
@@ -122,7 +122,8 @@ Require one exact-head CI / CodeQL / Cross-engine / Performance / Windows cycle 
 ## Current checkpoint — 2026-09-26
 
 - **Overall tracker:** #357 — OPEN.
-- **Completed stages:** 7/9 (Stages 0–6).
+- **Completed stages:** 6/9 (Stages 0–5); Stage 6 implementation is complete and awaiting final required validation.
+- **Active stage:** Stage 6 — final hygiene validation.
 - **Verified integration base:** `develop@f913a282dbca0935c8bfe98a921904382d8868cc`; Stage-6 Batch-3 post-merge CI `36244331980`, CodeQL `36244332108`, Windows Desktop `36244331955`, Windows First Run `36244331957`, and Windows Clean Launch `36244331936` are green.
 - **Final Stage-6 delivery:** branch `chore/357-stage6-finalize-hygiene`, consolidating the full measured export debt, promoting unused-export checks to blocking zero-findings enforcement, adding a low-noise formatting guard, and recording dependency/audit policy in one large batch to avoid repeated CI cycles.
 - **Implementation contract:** module-surface cleanup only; preserve runtime/finance/auth/API/database/UI/Windows behavior, add no formatter/autofix dependency, weaken no test/audit/security gate, and make no release/deploy/production-data change.
