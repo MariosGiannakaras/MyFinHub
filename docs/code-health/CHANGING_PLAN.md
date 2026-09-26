@@ -76,7 +76,7 @@ Goal: replace hidden global-style ownership and numeric loader coupling incremen
 - [x] Batch 12: split mixed `part42.css` and `part47.css` into semantic owners. PR #410 merged to `develop@a5f8f2713858a2ed8e5411ca6403e483fedb77f8`; final head `32c14ac2dd5df5f2ebc95298923fade27edf23cb` passed CI `36166371111`, CodeQL `36166371268`, Cross-engine `36166371060`, Performance `36166371094`, Windows `36166371123`; post-merge CI `36181339794`, CodeQL `36181339647`, Windows `36181339762` green.
 - [x] Batch 13: split small mixed `part12.css`, `part16.css`, and `part35.css`, and name coherent `part43.css`. PR #411 merged to `develop@60c62bc14d47f9ef3b358cacf88c252d65fee550`; final head `6f13acef865dfb7ae026a15180f2447b705cb63f` passed CI `36185756631`, CodeQL `36185756615`, Cross-engine `36185756736`, Performance `36185756677`, Windows `36185756686`; post-merge CI `36187504193`, CodeQL `36187504036`, Windows `36187504422` green.
 - [x] Batch 14: split residual small `part9.css`, `part33.css`, `part41.css`, and `part46.css`. PR #412 merged to `develop@83d6b1a751c4ffc10bc763b3dc0c2657924358ed`; final head `7d99aafbb10aa39181ba2665b15c6f5976797d68` passed CI `36200428929`, CodeQL `36200428988`, Cross-engine `36200428928`, Performance `36200428986`, Windows `36200429183`; post-merge CI `36201674597`, CodeQL `36201674663`, Windows `36201674621` green.
-- [ ] Batch 15: split large root/base layers `part1.css`–`part4.css` into semantic foundations while preserving the original responsive coordination block and root cascade order.
+- [ ] Batch 15: finish numeric CSS ownership in one bulk checkpoint: split `part1.css`–`part4.css` into semantic foundations and byte-identically name coherent card-presentation owners `part26.css` / `part29.css`, preserving root cascade order and bundle budgets.
 - [ ] Replace remaining numeric loader chains incrementally with accurate named tokens/base/primitives/patterns/pages ownership; do not give mixed legacy files misleading names.
 - [ ] Reduce selector duplication and unnecessary `!important` only with proven visual parity.
 - [ ] Keep runtime theme code focused on semantic token application rather than broad selector styling.
@@ -127,7 +127,7 @@ Require one exact-head CI / CodeQL / Cross-engine / Performance / Windows cycle 
 - **Verified integration base:** `develop@478a1cae07d6363c3b32cd9fa5a7e0d8cb48c96f`; Batch-10 post-merge CI `36144156598`, CodeQL `36144156621`, Windows Desktop `36144156630` are green.
 - **Active delivery:** branch `chore/357-css-ownership-batch-11-split`, beginning deliberate split/re-layering of remaining numeric owners.
 - **Implementation contract:** preserve every CSS declaration and selector; keep the three former `part5.css` sections contiguous at their original cascade slot; keep `part27` and `part53` bytes unchanged; strengthen ownership guards without weakening assertions.
-- **Next action:** validate Batch 15 as one bulk root/base checkpoint, then exact-head required gates and representative shell/Dashboard/Quick Entry/domain evidence before merge to `develop`.
+- **Next action:** validate the expanded Batch 15 as the final numeric-owner checkpoint, then exact-head required gates, representative root/domain/card evidence, and post-merge barrier before closing Stage 5.
 
 ## Resume procedure
 
