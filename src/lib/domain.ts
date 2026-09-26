@@ -70,9 +70,6 @@ export function allAccounts(data: FinanceData): Account[] {
   return accounts.some((a) => a.id === CREDIT_ACCOUNT.id) ? accounts : [...accounts, CREDIT_ACCOUNT];
 }
 
-export function quickChoiceAccounts(data: FinanceData): Account[] {
-  return allAccounts(data).filter((account) => account.kind !== 'credit' && account.showInQuickChoices !== false);
-}
 
 function deletedSet(data: FinanceData) {
   const raw = data.state.deleted;

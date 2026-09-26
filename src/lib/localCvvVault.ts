@@ -149,20 +149,6 @@ async function requestPersistentStorage() {
   }
 }
 
-export async function saveLocalCvv(cardId: string, cvv: string) {
-  requireBrowserCrypto();
-  const key = await encryptionKey();
-  const encrypted = await encryptLocalCvvValue(cardId, cvv, key);
-  const record: LocalCvvRecord = {
-    version: RECORD_VERSION,
-    cardId,
-    iv: encrypted.iv,
-    ciphertext: encrypted.ciphertext,
-    updatedAt: new Date().toISOString(),
-  };
-  await writeStore(CVV_STORE, record);
-  await requestPersistentStorage();
-}
 
 export async function readLocalCvv(cardId: string) {
   requireBrowserCrypto();
@@ -172,10 +158,6 @@ export async function readLocalCvv(cardId: string) {
   return decryptLocalCvvValue(cardId, record, await encryptionKey());
 }
 
-export async function hasLocalCvv(cardId: string) {
-  requireBrowserCrypto();
-  return Boolean(await readStore<LocalCvvRecord>(CVV_STORE, cardId));
-}
 
 export async function deleteLocalCvv(cardId: string) {
   requireBrowserCrypto();

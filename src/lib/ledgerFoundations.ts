@@ -108,13 +108,3 @@ export function createExpenseSplitEvent(data: FinanceData, args: {
   });
 }
 
-export function splitCategorySummary(event: FinanceEvent) {
-  if (event.kind !== 'split' || !event.parts?.length) return [];
-  return event.parts.map((part) => ({
-    id: part.id,
-    label: part.label || part.category,
-    category: part.category,
-    subcategory: part.subcategory,
-    amount: part.amount,
-  }));
-}

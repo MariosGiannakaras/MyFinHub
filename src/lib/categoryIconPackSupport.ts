@@ -40,10 +40,6 @@ export function categoryIconKeySupportedByPack(pack:CategoryIconPack,key:string)
   return Boolean(keysForPack(pack)?.has(key as CategoryIconKey));
 }
 
-export function categoryIconPackCoverage(pack:CategoryIconPack){
-  if(pack==='lucide')return null;
-  return keysForPack(pack)?.size??0;
-}
 
 /* Selector previews must be real, distinct glyphs that the same pack can also
  * expose inside the picker. Never rely on renderer fallbacks for these samples. */

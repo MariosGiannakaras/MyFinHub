@@ -101,15 +101,6 @@ export function budgetProgress(data: FinanceData, month: string): BudgetProgress
   });
 }
 
-export function budgetSummary(data: FinanceData, month: string) {
-  const rows = budgetProgress(data, month);
-  return {
-    rows,
-    near: rows.filter((row) => row.status === 'near').length,
-    exceeded: rows.filter((row) => row.status === 'exceeded').length,
-    overall: rows.find((row) => row.scope === 'overall') ?? null,
-  };
-}
 
 export function normalizeBudget(input: MonthlyBudget): MonthlyBudget {
   const amount = Number(input.amount);
