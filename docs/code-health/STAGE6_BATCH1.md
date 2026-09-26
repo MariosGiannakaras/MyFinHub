@@ -7,11 +7,11 @@
 
 ## Scope
 
-Add a dependency-free hygiene layer using the TypeScript compiler already present in the repository:
+Add a dependency-free hygiene layer on top of the existing TypeScript toolchain:
 
 1. `scripts/dependency-cycles.mjs`
    - scans TypeScript modules in `src/`, `server/`, and `api/`;
-   - uses the TypeScript AST rather than regex parsing;
+   - uses a conservative import/export statement parser with built-in sanity fixtures;
    - follows runtime-relevant relative imports, re-exports and literal dynamic imports;
    - resolves source `.ts/.tsx` targets including runtime `.js` specifiers;
    - excludes fully type-only import/export edges so type relationships cannot create false runtime cycles;

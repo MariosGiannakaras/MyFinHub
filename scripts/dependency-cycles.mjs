@@ -1,6 +1,5 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import * as ts from 'typescript';
 
 const root=process.cwd();
 const sourceRoots=['src','server','api'];
@@ -37,44 +36,87 @@ function resolveRelative(fromFile,specifier){
   return candidates.map(path.normalize).find(candidate=>fileSet.has(candidate))??null;
 }
 
-function namedBindingsAreTypeOnly(bindings){
-  return ts.isNamedImports(bindings)&&bindings.elements.length>0&&bindings.elements.every(element=>element.isTypeOnly);
-}
-function runtimeImport(node){
-  if(!node.importClause)return true;
-  if(node.importClause.isTypeOnly)return false;
-  if(node.importClause.name)return true;
-  const bindings=node.importClause.namedBindings;
-  if(!bindings)return false;
-  if(ts.isNamespaceImport(bindings))return true;
-  return !namedBindingsAreTypeOnly(bindings);
-}
-function runtimeExport(node){
-  if(node.isTypeOnly)return false;
-  if(!node.exportClause)return true;
-  return !ts.isNamedExports(node.exportClause)||node.exportClause.elements.some(element=>!element.isTypeOnly);
-}
-function runtimeSpecifiers(file,source){
-  const sourceFile=ts.createSourceFile(file,source,ts.ScriptTarget.Latest,true,file.endsWith('.tsx')?ts.ScriptKind.TSX:ts.ScriptKind.TS);
-  const specs=[];
-  function visit(node){
-    if(ts.isImportDeclaration(node)&&ts.isStringLiteral(node.moduleSpecifier)&&runtimeImport(node)){
-      specs.push(node.moduleSpecifier.text);
-    }else if(ts.isExportDeclaration(node)&&node.moduleSpecifier&&ts.isStringLiteral(node.moduleSpecifier)&&runtimeExport(node)){
-      specs.push(node.moduleSpecifier.text);
-    }else if(ts.isCallExpression(node)&&node.expression.kind===ts.SyntaxKind.ImportKeyword&&node.arguments.length===1&&ts.isStringLiteral(node.arguments[0])){
-      specs.push(node.arguments[0].text);
+function stripComments(source){
+  let out='',i=0,state='code',quote='';
+  while(i<source.length){
+    const c=source[i],n=source[i+1];
+    if(state==='code'){
+      if(c==='/'&&n==='/'){state='line';out+='  ';i+=2;continue;}
+      if(c==='/'&&n==='*'){state='block';out+='  ';i+=2;continue;}
+      if(c==="'"||c==='"'||c==='`'){state='string';quote=c;out+=c;i++;continue;}
+      out+=c;i++;continue;
     }
-    ts.forEachChild(node,visit);
+    if(state==='line'){
+      if(c==='\n'){state='code';out+='\n';}else out+=' ';
+      i++;continue;
+    }
+    if(state==='block'){
+      if(c==='*'&&n==='/'){state='code';out+='  ';i+=2;}else{out+=c==='\n'?'\n':' ';i++;}
+      continue;
+    }
+    if(state==='string'){
+      out+=c;
+      if(c==='\\'&&i+1<source.length){out+=source[i+1];i+=2;continue;}
+      if(c===quote){state='code';quote='';}
+      i++;continue;
+    }
   }
-  visit(sourceFile);
+  return out;
+}
+
+function splitSpecifiers(text){return text.split(',').map(item=>item.trim()).filter(Boolean)}
+function namedClauseIsTypeOnly(clause){
+  const match=clause.match(/^\{([\s\S]*?)\}$/);
+  if(!match)return false;
+  const items=splitSpecifiers(match[1]);
+  return items.length>0&&items.every(item=>/^type\s+/.test(item));
+}
+
+function moduleSpecifiers(source){
+  const clean=stripComments(source);
+  const specs=[];
+
+  const importFrom=/^\s*import\s+([\s\S]*?)\s+from\s+['"]([^'"]+)['"]\s*;?/gm;
+  for(const match of clean.matchAll(importFrom)){
+    const clause=match[1].trim();
+    if(/^type\b/.test(clause)||namedClauseIsTypeOnly(clause))continue;
+    specs.push(match[2]);
+  }
+
+  const sideEffect=/^\s*import\s+['"]([^'"]+)['"]\s*;?/gm;
+  for(const match of clean.matchAll(sideEffect))specs.push(match[1]);
+
+  const exportFrom=/^\s*export\s+(type\s+)?(\*|\{[\s\S]*?\})\s+from\s+['"]([^'"]+)['"]\s*;?/gm;
+  for(const match of clean.matchAll(exportFrom)){
+    if(match[1]||(match[2]!=='*'&&namedClauseIsTypeOnly(match[2])))continue;
+    specs.push(match[3]);
+  }
+
+  const dynamicRe=/\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
+  for(const match of clean.matchAll(dynamicRe))specs.push(match[1]);
   return specs;
+}
+
+const parserFixture=[
+  "import type { A } from './type-a';",
+  "import { type B, type C } from './type-b';",
+  "export type { D } from './type-c';",
+  "export { type E } from './type-d';",
+  "import { type F, G } from './mixed';",
+  "import './side-effect';",
+  "export { H } from './runtime-export';",
+  "const lazy=import('./dynamic');",
+].join('\n');
+const fixtureSpecs=moduleSpecifiers(parserFixture).sort();
+const expectedFixture=['./dynamic','./mixed','./runtime-export','./side-effect'].sort();
+if(JSON.stringify(fixtureSpecs)!==JSON.stringify(expectedFixture)){
+  throw new Error('Dependency-cycle parser sanity check failed: '+JSON.stringify(fixtureSpecs));
 }
 
 const graph=new Map();
 for(const file of files){
   const deps=new Set();
-  for(const specifier of runtimeSpecifiers(file,fs.readFileSync(file,'utf8'))){
+  for(const specifier of moduleSpecifiers(fs.readFileSync(file,'utf8'))){
     const resolved=resolveRelative(file,specifier);
     if(resolved)deps.add(resolved);
   }
