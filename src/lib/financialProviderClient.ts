@@ -1,6 +1,6 @@
 import { FINANCIAL_PROVIDERS, type FinancialProvider, type FinancialProviderKind } from './financialProviders';
 
-export type FinancialProviderSnapshot={loaded:boolean;loading:boolean;providers:FinancialProvider[];error:string|null};
+type FinancialProviderSnapshot={loaded:boolean;loading:boolean;providers:FinancialProvider[];error:string|null};
 
 const QA_MODE=typeof location!=='undefined'&&location.pathname.endsWith('/qa.html');
 const FALLBACK=FINANCIAL_PROVIDERS.map(provider=>({...provider}));

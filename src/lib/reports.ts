@@ -7,9 +7,9 @@ import { recurringMonthlyTotal } from './recurring.js';
 import { operationalMonthlyFlow, savingsBreakdown } from './savings.js';
 import type { FinanceData } from '../types.js';
 
-export function shiftReportMonth(month:string,delta:number){const [year,m]=month.split('-').map(Number);const date=new Date(Date.UTC(year,m-1+delta,1));return `${date.getUTCFullYear()}-${String(date.getUTCMonth()+1).padStart(2,'0')}`}
-export function reportMonths(month:string,count=6){return Array.from({length:count},(_,index)=>shiftReportMonth(month,index-(count-1)))}
-export function reportMonthLabel(month:string){const [year,m]=month.split('-').map(Number);return new Intl.DateTimeFormat('el-GR',{month:'short',year:'2-digit',timeZone:'UTC'}).format(new Date(Date.UTC(year,m-1,1)))}
+function shiftReportMonth(month:string,delta:number){const [year,m]=month.split('-').map(Number);const date=new Date(Date.UTC(year,m-1+delta,1));return `${date.getUTCFullYear()}-${String(date.getUTCMonth()+1).padStart(2,'0')}`}
+function reportMonths(month:string,count=6){return Array.from({length:count},(_,index)=>shiftReportMonth(month,index-(count-1)))}
+function reportMonthLabel(month:string){const [year,m]=month.split('-').map(Number);return new Intl.DateTimeFormat('el-GR',{month:'short',year:'2-digit',timeZone:'UTC'}).format(new Date(Date.UTC(year,m-1,1)))}
 export function monthEnd(month:string){const [year,m]=month.split('-').map(Number);return new Date(Date.UTC(year,m,0,12)).toISOString().slice(0,10)}
 
 export function reportFlowSeries(data:FinanceData,month:string,count=6){return reportMonths(month,count).map(value=>{const flow=operationalMonthlyFlow(data,value);return {month:value,label:reportMonthLabel(value),income:flow.income,expense:flow.expense,saving:flow.saving}})}
@@ -32,7 +32,7 @@ export function categoryMomentum(data:FinanceData,month:string,limit=10){
   return current.slice(0,limit).map(row=>{const previousValue=previous.get(row.name)??0;return {...row,previous:previousValue,change:relativeChange(row.value,previousValue)}});
 }
 
-export type ReportExpenseCounterparty={title:string;category:string;amount:number;share:number|null;count:number;lastDate:string};
+type ReportExpenseCounterparty={title:string;category:string;amount:number;share:number|null;count:number;lastDate:string};
 
 export function reportExpenseCounterparties(data:FinanceData,month:string,limit=5):ReportExpenseCounterparty[]{
   const grouped=new Map<string,{title:string;category:string;amount:number;count:number;lastDate:string}>();
@@ -75,7 +75,7 @@ export function creditCardSnapshots(data:FinanceData,asOf:string){
   }).sort((a,b)=>b.debt-a.debt||a.nickname.localeCompare(b.nickname,'el'));
 }
 
-export function creditPortfolioSnapshot(data:FinanceData,asOf:string){
+function creditPortfolioSnapshot(data:FinanceData,asOf:string){
   const cards=creditCardSnapshots(data,asOf);
   const active=cards.filter(card=>card.active);
   const debt=cards.reduce((sum,card)=>sum+card.debt,0);

@@ -7,7 +7,7 @@ export type FinanceIconKey =
   | 'cash' | 'refund' | 'reconciliation' | 'lending' | 'card' | 'subscription'
   | 'installment' | 'split' | 'fallback';
 
-export type FinanceIconTone = 'red'|'green'|'blue'|'cyan'|'amber'|'violet'|'teal'|'gold'|'slate';
+type FinanceIconTone = 'red'|'green'|'blue'|'cyan'|'amber'|'violet'|'teal'|'gold'|'slate';
 
 export type FinanceIconInput = {
   kind?: string;
@@ -16,7 +16,7 @@ export type FinanceIconInput = {
   note?: string;
 };
 
-export type FinanceIconSpec = { key: FinanceIconKey; tone: FinanceIconTone };
+type FinanceIconSpec = { key: FinanceIconKey; tone: FinanceIconTone };
 
 const normalize=(value='')=>value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('el-GR').replace(/[^a-z0-9α-ω]+/g,' ').trim();
 const has=(text:string,patterns:string[])=>patterns.some(pattern=>text.includes(pattern));

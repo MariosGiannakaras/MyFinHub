@@ -1,6 +1,4 @@
 import { normalizeLocalCvv } from './localCvvFormat.js';
-export { normalizeLocalCvv } from './localCvvFormat.js';
-
 const DB_NAME = 'rheomiq-local-card-vault';
 const DB_VERSION = 1;
 const KEY_STORE = 'keys';
@@ -9,7 +7,7 @@ const KEY_ID = 'cvv-aes-gcm-v1';
 const RECORD_VERSION = 1;
 const IV_BYTES = 12;
 
-export type LocalCvvRecord = {
+type LocalCvvRecord = {
   version: number;
   cardId: string;
   iv: Uint8Array;
@@ -118,7 +116,7 @@ function aad(cardId: string) {
   return new TextEncoder().encode(`rheomiq-local-cvv-v1:${origin}:${cardId}:${RECORD_VERSION}`);
 }
 
-export async function encryptLocalCvvValue(cardId: string, cvv: string, key: CryptoKey) {
+async function encryptLocalCvvValue(cardId: string, cvv: string, key: CryptoKey) {
   const normalized = normalizeLocalCvv(cvv);
   const iv = crypto.getRandomValues(new Uint8Array(IV_BYTES));
   const ciphertext = await crypto.subtle.encrypt(
@@ -129,7 +127,7 @@ export async function encryptLocalCvvValue(cardId: string, cvv: string, key: Cry
   return { iv, ciphertext };
 }
 
-export async function decryptLocalCvvValue(cardId: string, record: Pick<LocalCvvRecord, 'iv' | 'ciphertext'>, key: CryptoKey) {
+async function decryptLocalCvvValue(cardId: string, record: Pick<LocalCvvRecord, 'iv' | 'ciphertext'>, key: CryptoKey) {
   try {
     const plaintext = await crypto.subtle.decrypt(
       { name: 'AES-GCM', iv: new Uint8Array(record.iv), additionalData: aad(cardId), tagLength: 128 },

@@ -1,7 +1,7 @@
 import { effectiveLegacyTransactions, flowImpactLegacy, monthlyFlow, reviewDecision } from './domain.js';
 import type { FinanceData, FinanceEvent, LegacyTransaction, SavingSource } from '../types.js';
 
-export type SavingsHistoryRow = {
+type SavingsHistoryRow = {
   id:string;
   date:string;
   amount:number;
@@ -35,18 +35,18 @@ export function savingsHistoryPresentation(row:Pick<SavingsHistoryRow,'source'|'
   return {primary:hasUserNote?note:sourceLabel,sourceLabel,hasUserNote};
 }
 
-export function isLegacyPayAndSave(tx:LegacyTransaction){
+function isLegacyPayAndSave(tx:LegacyTransaction){
   return payAndSavePattern.test(`${tx.note||''} ${tx.category||''}`);
 }
 
-export function savingSourceForEvent(event:FinanceEvent):SavingSource{
+function savingSourceForEvent(event:FinanceEvent):SavingSource{
   if(event.savingSource)return event.savingSource;
   if(payAndSavePattern.test(event.note||''))return 'pay_and_save';
   if(/μεταφορ/i.test(event.note||''))return 'manual_transfer';
   return 'cash_offset';
 }
 
-export function savingsHistory(data:FinanceData,month?:string):SavingsHistoryRow[]{
+function savingsHistory(data:FinanceData,month?:string):SavingsHistoryRow[]{
   const prefix=month?`${month}-`:'';
   const legacy=effectiveLegacyTransactions(data).filter(tx=>(!month||tx.date.startsWith(prefix))&&isLegacyPayAndSave(tx)).map(tx=>({id:tx.id,date:tx.date,amount:tx.amount,source:'pay_and_save' as const,note:tx.note||'Pay & Save',fromAccountId:tx.fromAccountId,toAccountId:tx.toAccountId,origin:'legacy' as const}));
   const events=(data.state.events??[]).filter(event=>event.kind==='saving_cash_offset'&&(!month||event.date.startsWith(prefix))).map(event=>({id:event.id,date:event.date,amount:event.savingAmount??event.amount,source:savingSourceForEvent(event),note:event.note,fromAccountId:event.fromAccountId,toAccountId:event.toAccountId,origin:'event' as const}));

@@ -1,13 +1,13 @@
 import type { FinanceData } from '../types.js';
 
-export interface LendingRow {
+interface LendingRow {
   person: string;
   outstanding: number;
   events: number;
 }
 
-export type LendingAction='lent'|'repaid'|'forgiven';
-export interface LendingHistoryRow {
+type LendingAction='lent'|'repaid'|'forgiven';
+interface LendingHistoryRow {
   id:string;
   person:string;
   date:string;

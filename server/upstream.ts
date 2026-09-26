@@ -1,6 +1,6 @@
 import { ApiError } from './http.js';
 
-export const SUPABASE_UPSTREAM_TIMEOUT_MS = 12_000;
+const SUPABASE_UPSTREAM_TIMEOUT_MS = 12_000;
 
 type Service = 'AUTH' | 'DATA';
 

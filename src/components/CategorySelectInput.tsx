@@ -10,7 +10,7 @@ const decodeSelection=(value:string)=>{
   return separator<0?{category:value,subcategory:''}:{category:value.slice(0,separator),subcategory:value.slice(separator+1)};
 };
 
-export type CategorySelection={category:string;subcategory:string};
+type CategorySelection={category:string;subcategory:string};
 
 type CategorySelectInputProps={
   settings:FinanceSettings;

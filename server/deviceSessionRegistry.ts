@@ -3,7 +3,7 @@ import os from 'node:os';
 import { ApiError, requestHeader } from './http.js';
 import { fetchUpstream } from './upstream.js';
 
-export type DeviceSessionRecord = {
+type DeviceSessionRecord = {
   session_id: string;
   user_id: string;
   platform: 'windows' | 'android' | 'web' | 'unknown';

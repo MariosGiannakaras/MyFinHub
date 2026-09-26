@@ -12,7 +12,7 @@ export function centsToMoney(value: number) {
   return Number((value / CENTS).toFixed(2));
 }
 
-export function transferEligibleAccounts(data: FinanceData) {
+function transferEligibleAccounts(data: FinanceData) {
   return allAccounts(data).filter((account) => account.kind !== 'credit');
 }
 
@@ -54,7 +54,7 @@ export function createTransferEvent(data: FinanceData, args: {
   });
 }
 
-export type SplitAllocation = {
+type SplitAllocation = {
   totalCents: number;
   total: number;
   normalizedParts: SplitPart[];

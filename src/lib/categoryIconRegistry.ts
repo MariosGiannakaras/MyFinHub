@@ -1,6 +1,6 @@
 export type CategoryIconPack='lucide'|'tabler'|'phosphor'|'heroicons'|'bootstrap';
-export type CategoryIconDefinition={key:string;label:string;keywords:readonly string[]};
-export type CategoryIconPackDefinition={id:CategoryIconPack;label:string;license:string;description:string};
+type CategoryIconDefinition={key:string;label:string;keywords:readonly string[]};
+type CategoryIconPackDefinition={id:CategoryIconPack;label:string;license:string;description:string};
 
 export const CATEGORY_ICON_PACKS:readonly CategoryIconPackDefinition[]=[
   {id:'lucide',label:'Lucide',license:'ISC',description:'Το υπάρχον πακέτο του MyFinHub · καθαρό outline ύφος.'},

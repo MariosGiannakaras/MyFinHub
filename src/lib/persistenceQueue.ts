@@ -1,4 +1,4 @@
-export type RemoteRevisionAction = 'ignore' | 'reload' | 'conflict';
+type RemoteRevisionAction = 'ignore' | 'reload' | 'conflict';
 
 function parseRevision(value: string) {
   if (!/^\d+$/.test(value)) return null;

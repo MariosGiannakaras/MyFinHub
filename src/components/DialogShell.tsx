@@ -2,8 +2,8 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import type { ReactNode } from 'react';
 import { useModalFocus } from '../hooks/useModalFocus';
 
-export type DialogShellRole='dialog'|'alertdialog';
-export type DialogMotionMode='system'|'reduced'|'full'|'none';
+type DialogShellRole='dialog'|'alertdialog';
+type DialogMotionMode='system'|'reduced'|'full'|'none';
 type DialogDataAttributes=Readonly<Record<`data-${string}`,string|number|boolean|undefined>>;
 
 export function DialogShell({

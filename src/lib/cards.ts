@@ -37,7 +37,7 @@ export function allCards(data:FinanceData){
   return [...(data.state.cards??[])].sort((a,b)=>a.createdAt.localeCompare(b.createdAt)||a.id.localeCompare(b.id));
 }
 
-export function storedCards(data:FinanceData,{includeArchived=false}:{includeArchived?:boolean}={}){
+function storedCards(data:FinanceData,{includeArchived=false}:{includeArchived?:boolean}={}){
   return allCards(data).filter(card=>card.kind!=='credit'&&(includeArchived||card.active!==false));
 }
 

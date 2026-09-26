@@ -1,5 +1,5 @@
-export type AccountKind = 'cash' | 'bank' | 'savings' | 'credit';
-export type CashAccountRole = 'daily' | 'reserve';
+type AccountKind = 'cash' | 'bank' | 'savings' | 'credit';
+type CashAccountRole = 'daily' | 'reserve';
 export type SavingSource = 'pay_and_save' | 'manual_transfer' | 'cash_offset';
 export type RecurringStatus = 'active' | 'paused' | 'stopped';
 export type RecurrenceUnit = 'month' | 'year';
@@ -68,7 +68,7 @@ export interface PaymentCard {
   updatedAt: string;
 }
 
-export interface DeletedCardReference {
+interface DeletedCardReference {
   id: string;
   kind: 'credit';
   createdAt: string;
@@ -207,14 +207,14 @@ export interface MonthlyBudget {
   updatedAt: string;
 }
 
-export interface TransactionRuleMatch {
+interface TransactionRuleMatch {
   description?: string;
   merchant?: string;
   accountId?: string;
   mode?: 'contains' | 'equals';
 }
 
-export interface TransactionRuleAction {
+interface TransactionRuleAction {
   category?: string;
   subcategory?: string;
   note?: string;
@@ -318,7 +318,7 @@ export interface RecurringItem {
   source?: string;
 }
 
-export interface Subscription {
+interface Subscription {
   id: string;
   name: string;
   due?: string;
@@ -345,14 +345,14 @@ export interface Loan {
   longTermRecurring?: boolean;
 }
 
-export interface LendingEntry {
+interface LendingEntry {
   date: string;
   lent: number;
   repaid: number;
   haircut?: number;
 }
 
-export interface LendingPerson {
+interface LendingPerson {
   person: string;
   entries: LendingEntry[];
   outstanding: number;

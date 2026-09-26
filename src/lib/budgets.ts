@@ -1,9 +1,9 @@
 import { effectiveLegacyTransactions, flowImpactEvent, flowImpactLegacy, reviewDecision } from './domain.js';
 import type { FinanceData, MonthlyBudget, SplitPart } from '../types.js';
 
-export type BudgetStatus = 'ok' | 'near' | 'exceeded';
+type BudgetStatus = 'ok' | 'near' | 'exceeded';
 
-export interface BudgetProgress {
+interface BudgetProgress {
   id: string;
   month: string;
   scope: 'category' | 'overall';
@@ -68,7 +68,7 @@ export function categoryBudgetSpending(data: FinanceData, month: string) {
   return totals;
 }
 
-export function monthlyBudgets(data: FinanceData, month: string) {
+function monthlyBudgets(data: FinanceData, month: string) {
   return (data.state.budgets ?? [])
     .filter((budget) => budget.month === month && budget.amount > 0)
     .slice()

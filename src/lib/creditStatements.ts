@@ -1,9 +1,7 @@
 import type { CreditStatementRecord, CreditStatementStatus, FinanceData, FinanceEvent, PaymentCard, StatementBoundaryRule } from '../types.js';
+const APPROVED_STATEMENT_BOUNDARY:StatementBoundaryRule='next-cycle';
 
-export type { StatementBoundaryRule } from '../types.js';
-export const APPROVED_STATEMENT_BOUNDARY:StatementBoundaryRule='next-cycle';
-
-export type CreditStatementCycle={
+type CreditStatementCycle={
   id:string;
   cardId:string;
   openDate:string;
@@ -12,7 +10,7 @@ export type CreditStatementCycle={
   purchaseTotal:number;
 };
 
-export type CreditStatementView=CreditStatementRecord&{
+type CreditStatementView=CreditStatementRecord&{
   purchaseIds:string[];
   paymentIds:string[];
   purchaseTotal:number;
@@ -34,7 +32,7 @@ function normalizedBillingDay(day:number){const value=Math.floor(Number(day));if
 function dateAtBillingDay(year:number,month:number,billingDay:number){return isoDate(year,month,Math.min(normalizedBillingDay(billingDay),lastDay(year,month)))}
 function roundMoney(value:number){return Math.round((value+Number.EPSILON)*100)/100}
 
-export function creditStatementId(cardId:string,closeDate:string){return `${cardId}:${closeDate}`}
+function creditStatementId(cardId:string,closeDate:string){return `${cardId}:${closeDate}`}
 
 export function statementCloseDateForPurchase(date:string,closingDay:number,boundary:StatementBoundaryRule){
   const parsed=parseDate(date);
@@ -82,7 +80,7 @@ export function cardStatementConfiguration(card:PaymentCard){
   return {closingDay:closing,dueDay:due,boundary:APPROVED_STATEMENT_BOUNDARY};
 }
 
-export function statementRecordForPurchase(card:PaymentCard,date:string,now=new Date().toISOString()):CreditStatementRecord|null{
+function statementRecordForPurchase(card:PaymentCard,date:string,now=new Date().toISOString()):CreditStatementRecord|null{
   const config=cardStatementConfiguration(card);if(!config)return null;
   const closeDate=statementCloseDateForPurchase(date,config.closingDay,config.boundary);
   return {id:creditStatementId(card.id,closeDate),cardId:card.id,openDate:statementOpenDateForClose(closeDate,config.closingDay,config.boundary),closeDate,dueDate:statementDueDateForClose(closeDate,config.dueDay),boundaryRule:config.boundary,createdAt:now,updatedAt:now};
@@ -104,7 +102,7 @@ export function prepareCreditStatementEvent(data:FinanceData,event:FinanceEvent,
   return {event:{...event,statementId:record.id},statements};
 }
 
-export function creditStatementRecords(data:FinanceData,cardId?:string){
+function creditStatementRecords(data:FinanceData,cardId?:string){
   return (data.state.creditStatements??[]).filter(item=>!cardId||item.cardId===cardId).slice().sort((a,b)=>b.closeDate.localeCompare(a.closeDate)||b.id.localeCompare(a.id));
 }
 
@@ -112,7 +110,7 @@ export function creditStatementEvents(data:FinanceData,statementId:string){
   return (data.state.events??[]).filter(event=>event.statementId===statementId&&(event.kind==='card_purchase'||event.kind==='card_payment')).slice().sort((a,b)=>a.date.localeCompare(b.date)||a.createdAt.localeCompare(b.createdAt)||a.id.localeCompare(b.id));
 }
 
-export function creditStatementStatus(record:CreditStatementRecord,remaining:number,asOf:string):CreditStatementStatus{
+function creditStatementStatus(record:CreditStatementRecord,remaining:number,asOf:string):CreditStatementStatus{
   if(remaining<=.005)return 'paid';
   if(asOf<record.closeDate)return 'open';
   if(asOf>=record.dueDate)return 'due';
