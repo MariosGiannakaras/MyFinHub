@@ -59,7 +59,8 @@ describe('shared finance UI adoption contracts',()=>{
   });
 
   it('defines typed Button and IconButton primitives without changing the approved class hooks',()=>{
-    expect(button).toContain("export type ButtonVariant='primary'|'secondary'|'danger'|'ghost'");
+    expect(button).toContain("type ButtonVariant='primary'|'secondary'|'danger'|'ghost'");
+    expect(button).not.toContain('export type ButtonVariant');
     expect(button).toContain("primary:'save-button'");
     expect(button).toContain("secondary:'secondary'");
     expect(button).toContain("danger:'save-button destructive-action'");
