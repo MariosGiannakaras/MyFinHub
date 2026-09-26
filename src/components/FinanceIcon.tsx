@@ -1,5 +1,5 @@
 import {
-  ArrowLeftRight, BadgeEuro, Banknote, BookOpen, Bot, CarFront, CircleParking, Coffee,
+  ArrowLeftRight, BadgeEuro, Banknote, Bot, CarFront, CircleParking, Coffee,
   CreditCard, Droplets, Dumbbell, Fuel, Gift, GraduationCap, HandCoins, HeartPulse, Home,
   Landmark, Music2, PawPrint, Pill, PiggyBank, Plane, Popcorn, ReceiptText, RotateCcw,
   Scissors, ShieldCheck, Shirt, ShoppingBag, ShoppingBasket, SlidersHorizontal, Smartphone,
