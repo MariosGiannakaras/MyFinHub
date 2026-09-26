@@ -70,6 +70,68 @@ export function allAccounts(data: FinanceData): Account[] {
   return accounts.some((a) => a.id === CREDIT_ACCOUNT.id) ? accounts : [...accounts, CREDIT_ACCOUNT];
 }
 
+from '../types.js';
+import { cleanNote } from './format.js';
+
+const CREDIT_ACCOUNT: Account = {
+  id: 'credit-card',
+  name: 'Πιστωτική κάρτα',
+  short: 'CC',
+  kind: 'credit',
+  excludeFromAvailable: true,
+};
+
+export function migrateData(input: FinanceData): FinanceData {
+  const fromSchema = Number(input.schemaVersion || 1);
+  const state = input.state ?? ({} as FinanceData['state']);
+  return {
+    ...input,
+    app: 'RheomIQ',
+    schemaVersion: 3,
+    updatedAt: input.updatedAt || new Date().toISOString(),
+    state: {
+      customTransactions: state.customTransactions ?? [],
+      overrides: state.overrides ?? {},
+      deleted: state.deleted ?? [],
+      recurringCustom: state.recurringCustom ?? [],
+      recurringOverrides: state.recurringOverrides ?? {},
+      loanExtra: state.loanExtra ?? {},
+      loanOverrides: state.loanOverrides ?? {},
+      customLoans: state.customLoans ?? [],
+      lendingCustom: state.lendingCustom ?? [],
+      settings: {
+        excludedFromAvailable: state.settings?.excludedFromAvailable ?? ['piraeus-savings'],
+        accountNames: state.settings?.accountNames ?? {},
+        customAccounts: state.settings?.customAccounts ?? [],
+        accountOverrides: state.settings?.accountOverrides ?? {},
+        expenseCategories: state.settings?.expenseCategories ?? [],
+        incomeCategories: state.settings?.incomeCategories ?? [],
+        customPresets: state.settings?.customPresets ?? [],
+        pinnedPresets: state.settings?.pinnedPresets ?? [],
+        defaultExpenseAccount: state.settings?.defaultExpenseAccount ?? 'piraeus-payroll',
+        defaultIncomeAccount: state.settings?.defaultIncomeAccount ?? 'piraeus-payroll',
+        defaultLoanAccount: state.settings?.defaultLoanAccount ?? 'piraeus-payroll',
+        monthlyBudget: state.settings?.monthlyBudget ?? 1200,
+        savingsTargetRate: state.settings?.savingsTargetRate ?? 0.2,
+        creditLimit: state.settings?.creditLimit ?? 0,
+        motion: state.settings?.motion ?? 'system',
+      },
+      events: state.events ?? [],
+      reviewDecisions: state.reviewDecisions ?? {},
+      migration: state.migration ?? (fromSchema < 3 ? { fromSchema, migratedAt: new Date().toISOString() } : undefined),
+    },
+  };
+}
+
+export function allAccounts(data: FinanceData): Account[] {
+  const overrides = data.state.settings.accountOverrides ?? {};
+  const seeded = (data.seed.accounts ?? []).map((account) => ({ ...account, ...(overrides[account.id] ?? {}), id: account.id }));
+  const seededIds = new Set(seeded.map((account) => account.id));
+  const custom = (data.state.settings.customAccounts ?? []).filter((account) => !seededIds.has(account.id));
+  const accounts = [...seeded, ...custom];
+  return accounts.some((a) => a.id === CREDIT_ACCOUNT.id) ? accounts : [...accounts, CREDIT_ACCOUNT];
+}
+
 function quickChoiceAccounts(data: FinanceData): Account[] {
   return allAccounts(data).filter((account) => account.kind !== 'credit' && account.showInQuickChoices !== false);
 }
