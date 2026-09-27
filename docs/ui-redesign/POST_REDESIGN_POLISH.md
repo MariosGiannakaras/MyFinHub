@@ -20,7 +20,7 @@ Use this checklist as the durable cross-app audit record. Mark a row complete on
 | Area | Status | Current checkpoint |
 | --- | --- | --- |
 | Generic close actions | COMPLETE | Batch 1 / PR #421 merged to `develop@26379521`. All current `close-picker` surfaces use shared `IconButton`; class, glyph, handler and accessibility contracts were preserved. Exact post-merge CI, CodeQL and Windows Desktop are green. |
-| Primary / secondary / destructive action hierarchy | IN PROGRESS | Exact canonical-class audit found seven generic raw actions that can move to shared `Button` with identical `save-button`, `secondary` or `text-button` hooks. Raw domain/composite `.danger` controls remain intentionally excluded. |
+| Primary / secondary / destructive action hierarchy | IN PROGRESS | Batch 2 / PR #422 integrated seven class-equivalent generic actions on shared `Button`. Follow-up audit found two final `text-button` class-equivalent candidates for Batch 3; domain/composite row actions remain intentionally excluded. |
 | Page heading / right-side action alignment | NOT STARTED | Requires a cross-route audit; visual changes need approval before implementation. |
 | Dialog / popover ownership, focus and Escape behavior | NOT STARTED | Existing shared `DialogShell`, owned inputs and `useModalFocus` remain the baseline. |
 | Loading / success / error feedback | NOT STARTED | Audit editable flows for concise and consistent status treatment. |
@@ -51,14 +51,16 @@ Validation:
 
 ## Batch 2 — canonical generic action ownership
 
-Branch: `chore/348-canonical-generic-actions`
+Branch: `chore/348-canonical-generic-actions`  
+PR: #422  
+Merged: `develop@d8f7639e27264ddc476c8e6efbcb68c307d2f500`
 
 Audit rule:
 - only migrate a raw button when its existing class hook maps exactly to an existing shared `Button` variant;
 - preserve type, handler, label/content, disabled state, inline sizing and extra class hooks;
 - leave raw domain/composite controls alone when adopting a shared variant would alter their class or visual contract.
 
-Current scope:
+Scope:
 - App session retry: `secondary` -> shared secondary `Button`;
 - Quick Entry split-part add: `text-button` -> shared ghost `Button`;
 - Receipt Inbox selected-delete: `text-button danger` -> shared ghost `Button` + `danger`;
@@ -74,14 +76,34 @@ Explicit exclusions:
 - Receipt draft-row selection composite;
 - QA-only controls.
 
+Validation:
+- final exact-head `8ebd845319ac672113fe14cd0de428f812d155c1` passed CI `36338329001`, CodeQL `36338328995`, Cross-engine `36338328962`, Performance `36338328981` and Windows Desktop `36338328964`;
+- required CI completed the full rendered matrix on the same head;
+- the separate push-only Visual QA persistence workflow hit the known isolated Chromium/CDP context race in receipt OCR and failed before persistence; no generated snapshot diff remained;
+- exact post-merge `develop@d8f7639e27264ddc476c8e6efbcb68c307d2f500` passed CI `36343600819`, CodeQL `36343600820` and Windows Desktop `36343600862`.
+
+## Batch 3 — final class-equivalent generic actions
+
+Branch: `chore/348-final-class-equivalent-actions`
+
+Scope:
+- Transactions compact delete: `text-button danger-text` -> shared ghost `Button` + `danger-text`, preserving the existing 44px minimum height, aria-label and delete handler;
+- Reports account-visibility toggle: `text-button report-eye` -> shared ghost `Button` + `report-eye`, preserving `aria-pressed`, label content and toggle handler;
+- add a focused source contract proving effective class ownership and retaining the desktop/domain raw row-action exclusions.
+
+Explicit exclusions:
+- Transactions desktop edit/delete icon controls;
+- page/domain navigation, pagination, segmented, row-context and destructive controls whose current geometry or class contract would change under a shared primitive;
+- page-heading/right-action presentation changes.
+
 Validation target:
-- one consolidated PR validation cycle after all Batch-2 implementation and source-contract changes are present;
+- one consolidated exact-head PR cycle;
 - no CSS change and no intended visual, finance, auth, persistence, routing, API, database or Windows behavior change;
-- generated Visual QA persistence, if produced by the workflow, must be cleaned from the final net diff after evidence inspection.
+- generated `visual-qa/**` files must not remain in the final net diff.
 
 ## Next audit slice
 
-After Batch 2 is merged and verified on `develop`:
-1. classify remaining raw action controls whose classes do not map exactly to shared variants; migrate only when presentation can be preserved;
+After Batch 3 is merged and verified on `develop`:
+1. treat the exact-class generic-action cleanup as exhausted unless a fresh audit proves another exact-compatible candidate;
 2. audit page-heading/right-side action alignment across routes as a separate visual-consistency slice;
 3. require an explicit visual proposal before implementing any change that alters an already approved composition, spacing, sizing or interaction treatment.
