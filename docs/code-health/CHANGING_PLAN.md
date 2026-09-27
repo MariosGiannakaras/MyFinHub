@@ -92,17 +92,18 @@ The batch intentionally leaves genuinely mixed owners numeric for later split/re
 
 Require one exact-head CI / CodeQL / Cross-engine / Performance / Windows cycle for the complete bulk batch, fresh representative desktop/mobile evidence across auth/navigation, mobile finance, reports/planning/attention, cards/credit/loans, budget/receipts and owned controls, then squash-merge only to `develop` and require exact-merge CI + CodeQL + Windows.
 
-### Stage 6 — Code-hygiene tooling — FINAL VALIDATION
+### Stage 6 — Code-hygiene tooling — COMPLETE
 
 - [x] Add a low-noise lint/static-analysis baseline without mass unrelated reformatting. Batch 1 / PR #415 merged to `develop@5ab3ef121502aa4e2dff2f18038acf1d6f8adb7c`; post-merge CI `36235115168`, CodeQL `36235115151`, Windows Desktop `36235115048`, Windows First Run `36235115060`, and Windows Clean Launch `36235115124` are green.
 - [x] Add reliable unused import/export and dependency-cycle checks. Batch 2 / PR #416 made TypeScript unused-local/import diagnostics blocking with zero findings and merged to `develop@9903288525917907e2883bb89b1240ebb6be8fb7`. Batch 3 / PR #417 measured 151 conservative export findings and merged to `develop@f913a282dbca0935c8bfe98a921904382d8868cc`; post-merge CI `36244331980`, CodeQL `36244332108`, Windows Desktop `36244331955`, Windows First Run `36244331957`, and Windows Clean Launch `36244331936` are green. The finalization batch makes the export check blocking after collapsing 120 internal-only exports, removing 24 confirmed dead findings, and fixing the 7 known framework/runtime false positives.
 - [x] Add low-noise formatting enforcement after the baseline exists: source hygiene now blocks trailing whitespace without formatter/autofix churn.
 - [x] Review dependency/audit debt without relaxing severity gates. Root/API high-severity audits remain in CI, Desktop high-severity audit remains in `desktop:check`, and major dependency upgrades remain explicit compatibility work rather than cleanup churn.
+- [x] Finalization PR #418 merged to `develop@e0545d27c0e98e0f6bfaf6cd30bad6075d8c25b2`; exact-merge CI `36263913482`, CodeQL `36263913514`, Windows Desktop `36263913479`, Windows First Run `36263913476`, and Windows Clean Launch `36263913483` are green.
 
-### Stage 7 — Full cleanup verification
+### Stage 7 — Full cleanup verification — ACTIVE
 
 - [ ] Full application/API checks.
-- [ ] Cross-page shared-control adoption audit for routed pages/shared components.
+- [ ] Cross-page shared-control adoption audit for routed pages/shared components. **Active batch:** close late Settings/security/device/account shared-control gaps, preserve intentional composite controls, and add a durable source-contract audit.
 - [ ] Rendered desktop/mobile QA for routed surfaces.
 - [ ] Keyboard/focus/accessibility pass.
 - [ ] Windows Desktop / First Run / Clean Launch.
@@ -119,15 +120,15 @@ Require one exact-head CI / CodeQL / Cross-engine / Performance / Windows cycle 
 - [ ] Produce a release-readiness checkpoint.
 - [ ] Stop before `develop -> main`, release or deploy unless separately authorized.
 
-## Current checkpoint — 2026-09-26
+## Current checkpoint — 2026-09-27
 
 - **Overall tracker:** #357 — OPEN.
-- **Completed stages:** 6/9 (Stages 0–5); Stage 6 implementation is complete and awaiting final required validation.
-- **Active stage:** Stage 6 — final hygiene validation.
-- **Verified integration base:** `develop@f913a282dbca0935c8bfe98a921904382d8868cc`; Stage-6 Batch-3 post-merge CI `36244331980`, CodeQL `36244332108`, Windows Desktop `36244331955`, Windows First Run `36244331957`, and Windows Clean Launch `36244331936` are green.
-- **Final Stage-6 delivery:** branch `chore/357-stage6-finalize-hygiene`, consolidating the full measured export debt, promoting unused-export checks to blocking zero-findings enforcement, adding a low-noise formatting guard, and recording dependency/audit policy in one large batch to avoid repeated CI cycles.
-- **Implementation contract:** module-surface cleanup only; preserve runtime/finance/auth/API/database/UI/Windows behavior, add no formatter/autofix dependency, weaken no test/audit/security gate, and make no release/deploy/production-data change.
-- **Next action:** run one exact-head required validation cycle for the complete final Stage-6 batch, merge only to `develop` when green, verify the exact merge, then continue Stage 7 full cleanup verification.
+- **Completed stages:** 7/9 (Stages 0–6).
+- **Active stage:** Stage 7 — Full cleanup verification.
+- **Verified integration base:** `develop@e0545d27c0e98e0f6bfaf6cd30bad6075d8c25b2`; Stage-6 exact-merge CI `36263913482`, CodeQL `36263913514`, Windows Desktop `36263913479`, Windows First Run `36263913476`, and Windows Clean Launch `36263913483` are green.
+- **Active delivery:** branch `chore/357-stage7-full-cleanup-verification`, grouping cross-page shared-control reconciliation, confirmed dead compatibility CSS removal, durable source-contract coverage, and the full Stage-7 validation pass before one mature PR CI cycle.
+- **Implementation contract:** preserve finance/auth/MFA/RLS/persistence/API/database/Windows behavior and approved UI appearance; migrate only generic controls whose class/semantic contract is preserved, retain intentional domain/composite controls raw, and remove only compatibility code proven unreachable by current routed/shared source ownership.
+- **Next action:** finish programmatic diff/source-contract validation on the complete Stage-7 batch, then open one PR and run the full exact-head CI / CodeQL / cross-engine / performance / Windows / rendered-QA cycle; inspect fresh representative visual evidence before any merge to `develop`.
 
 ## Resume procedure
 

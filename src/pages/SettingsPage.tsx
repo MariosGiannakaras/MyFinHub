@@ -4,6 +4,7 @@ import { AccountManagementSettings } from '../components/AccountManagementSettin
 import { AccountSecuritySettings } from '../components/AccountSecuritySettings';
 import { CategoryIconAssignmentWorkspace } from '../components/CategoryIconAssignmentWorkspace';
 import { CategoryIconsWorkspace } from '../components/CategoryIconsWorkspace';
+import { Button } from '../components/Button';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { DesktopUpdatePanel } from '../components/DesktopUpdatePanel';
 import { KeyboardShortcutsPanel } from '../components/KeyboardShortcutsPanel';
@@ -257,7 +258,7 @@ export function SettingsPage({
                   <p>Δημιούργησε το κανονικό backup του MyFinHub και κατέβασε παράλληλα ένα JSON στη συσκευή σου.</p>
                   <small>Δεν αλλάζει τα τρέχοντα οικονομικά δεδομένα.</small>
                 </div>
-                <button className="secondary settings-data-action-button" type="button" disabled={busy} onClick={() => void backup()}><Download /> Backup & λήψη</button>
+                <Button className="settings-data-action-button" variant="secondary" type="button" disabled={busy} onClick={() => void backup()}><Download /> Backup & λήψη</Button>
               </Surface>
 
               <Surface as="section" variant="raised" className="panel settings-data-action-card settings-data-import-card">
@@ -268,7 +269,7 @@ export function SettingsPage({
                   <p>Επίλεξε έγκυρο αντίγραφο MyFinHub. Η εισαγωγή αντικαθιστά τα τρέχοντα δεδομένα μόνο μετά από επιβεβαίωση.</p>
                   <small>Έως 4 MB · δημιουργείται αυτόματο backup πριν από την αντικατάσταση.</small>
                 </div>
-                <button className="secondary settings-data-action-button" type="button" disabled={busy} onClick={() => fileRef.current?.click()}><FileJson /> Εισαγωγή JSON</button>
+                <Button className="settings-data-action-button" variant="secondary" type="button" disabled={busy} onClick={() => fileRef.current?.click()}><FileJson /> Εισαγωγή JSON</Button>
               </Surface>
             </div>
 

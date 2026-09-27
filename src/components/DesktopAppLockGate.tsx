@@ -1,6 +1,8 @@
 import { Check, LockKeyhole, ShieldCheck } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ApiError, getSession } from '../lib/api';
+import { AppTextInput } from './AppTextInput';
+import { Button } from './Button';
 
 type AppLockState={supported:boolean;enabled:boolean;idleMinutes:number;failedAttempts:number;retryAfterMs:number};
 type VerifyResult=AppLockState&{ok:boolean};
@@ -140,14 +142,14 @@ export function DesktopAppLockGate({children}:{children:ReactNode}){
     {underlay}
     <div className="desktop-app-lock-screen" data-phase={phase}>
       {phase==='checking'?<section className="desktop-app-lock-card is-loading" aria-live="polite"><img src="/brand/icon-192.png" alt="MyFinHub"/><b>MyFinHub</b><span>Έλεγχος ασφαλούς κλειδώματος…</span><i className="desktop-app-lock-loader"/></section>:null}
-      {phase==='error'?<section className="desktop-app-lock-card" role="alert"><div className="desktop-app-lock-icon"><ShieldCheck/></div><h1>Το κλείδωμα δεν είναι διαθέσιμο</h1><p>{message||'Το MyFinHub δεν μπορεί να επαληθεύσει την ασφαλή αποθήκευση της συσκευής.'}</p><button type="button" className="secondary" onClick={()=>location.reload()}>Δοκιμή ξανά</button></section>:null}
+      {phase==='error'?<section className="desktop-app-lock-card" role="alert"><div className="desktop-app-lock-icon"><ShieldCheck/></div><h1>Το κλείδωμα δεν είναι διαθέσιμο</h1><p>{message||'Το MyFinHub δεν μπορεί να επαληθεύσει την ασφαλή αποθήκευση της συσκευής.'}</p><Button type="button" variant="secondary" onClick={()=>location.reload()}>Δοκιμή ξανά</Button></section>:null}
       {phase==='locked'?<section className={`desktop-app-lock-card ${shake?'is-shaking':''} ${success?'is-success':''}`} aria-labelledby="app-lock-title">
         <div className="desktop-app-lock-icon">{success?<Check/>:<LockKeyhole/>}</div>
         <span className="eyebrow">MYFINHUB LOCK</span>
         <h1 id="app-lock-title">Καλώς ήρθες ξανά</h1>
         <p>Βάλε το 4ψήφιο PIN για να συνεχίσεις.</p>
         <form onSubmit={event=>{event.preventDefault();void unlock(pin)}}>
-          <input ref={inputRef} className="desktop-app-lock-input" aria-label="4ψήφιο PIN εφαρμογής" type="password" inputMode="numeric" autoComplete="off" maxLength={PIN_LENGTH} value={pin} disabled={busy||retrySeconds>0||success} onChange={event=>setPin(digits(event.target.value))}/>
+          <AppTextInput ref={inputRef} className="desktop-app-lock-input" aria-label="4ψήφιο PIN εφαρμογής" type="password" inputMode="numeric" autoComplete="off" maxLength={PIN_LENGTH} value={pin} disabled={busy||retrySeconds>0||success} onChange={event=>setPin(digits(event.target.value))}/>
           <button type="button" className="desktop-app-lock-digits" aria-label="Εισαγωγή PIN" onClick={()=>inputRef.current?.focus()} disabled={retrySeconds>0||success}>
             {Array.from({length:PIN_LENGTH},(_,index)=><span key={index} className={index<pin.length?'is-filled':''}><i/></span>)}
           </button>
