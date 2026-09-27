@@ -9,7 +9,7 @@ describe('Credit Card shared Button ownership',()=>{
     expect(source).toContain("from '../components/Button'");
     expect(source).toContain("from '../components/IconButton'");
     expect(source.match(/<Button\b/g)).toHaveLength(15);
-    expect(source.match(/<IconButton\b/g)).toHaveLength(2);
+    expect(source.match(/<IconButton\b/g)).toHaveLength(3);
     expect(source.match(/<Button[^>]+variant=\"primary\"/g)).toHaveLength(6);
     expect(source.match(/<Button[^>]+variant=\"secondary\"/g)).toHaveLength(9);
     expect(source).not.toContain('className="save-button"');
@@ -17,9 +17,10 @@ describe('Credit Card shared Button ownership',()=>{
     expect(source).not.toContain('className="icon-button"');
   });
 
-  it('preserves the two dialog close contracts and explicit button types',()=>{
+  it('preserves the three close contracts and explicit button types',()=>{
     expect(source).toContain('<IconButton type="button" aria-label="Κλείσιμο ρύθμισης κύκλου"');
     expect(source).toContain('<IconButton type="button" aria-label="Κλείσιμο αγοράς πιστωτικής"');
+    expect(source).toContain('<IconButton type="button" className="close-picker" aria-label="Κλείσιμο αρχείου καρτών"');
     expect(source).toContain('<Button type="button" variant="primary" disabled={!card} onClick={openPurchase}');
     expect(source).toContain('<Button type="button" variant="secondary" onClick={openCardDetails}><Pencil/> Στοιχεία κάρτας</Button>');
     expect(source).toContain('<CardDetailsDialog');
@@ -45,7 +46,6 @@ describe('Credit Card shared Button ownership',()=>{
     expect(source).toContain('aria-label="Επόμενη πιστωτική κάρτα"');
     expect(source).toContain('className="inline-icon-action"');
     expect(source).toContain('className="credit-cycle-link"');
-    expect(source).toContain('className="close-picker"');
     expect(source).toContain('className="danger"');
     expect(source).toContain('className="row-actions"');
   });
