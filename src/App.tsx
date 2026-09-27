@@ -275,7 +275,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
 export default function App() {
   const session = useSession();
   if (session.state === 'loading') return <div className="boot-screen"><img src="/brand/icon-192.png" alt="MyFinHub"/><div className="boot-pulse"/><b>MyFinHub</b><span>Έλεγχος ασφαλούς συνεδρίας…</span></div>;
-  if (session.state === 'error') return <div className="boot-screen"><img src="/brand/icon-192.png" alt="MyFinHub"/><b>MyFinHub</b><span>{session.error || 'Δεν ήταν δυνατός ο έλεγχος της συνεδρίας.'}</span><button className="secondary" type="button" onClick={() => void session.refresh()}>Δοκιμή ξανά</button></div>;
+  if (session.state === 'error') return <div className="boot-screen"><img src="/brand/icon-192.png" alt="MyFinHub"/><b>MyFinHub</b><span>{session.error || 'Δεν ήταν δυνατός ο έλεγχος της συνεδρίας.'}</span><Button variant="secondary" type="button" onClick={() => void session.refresh()}>Δοκιμή ξανά</Button></div>;
   if (session.state === 'mfa' || session.state === 'mfa-enroll') return <MfaScreen mode={session.state === 'mfa-enroll' ? 'enroll' : 'challenge'} email={session.email} error={session.error} onEnroll={session.enrollMfa} onVerify={session.verifyMfa} onLogout={async () => { await session.logout(); }}/>
   if (session.state !== 'authenticated') return <LoginScreen onLogin={session.login} error={session.error}/>;
   return <><FinanceApp userEmail={session.email} onLogout={() => { void session.logout(); }}/>{session.error ? <div className="session-error-banner" role="alert">{session.error}</div> : null}</>;
