@@ -51,7 +51,7 @@ describe('approved Loans desktop target source contract',()=>{
     expect(rootCompat).toContain("@import './category-taxonomy-editor.css';\n@import './taxonomy-transactions-mobile-layout.css';\n@import './app-controls.css';");
     expect(rootCompat.trimEnd()).toMatch(/app-controls\.css';$/);
     expect(workspaceLayer).toContain("import '../styles/workspace-compat.css';");
-    expect(workspaceCompat).toContain("@import './approved-workspace-targets.css';\n@import './account-metadata-surfaces.css';\n@import './dashboard-command-search-geometry.css';\n@import './dashboard-desktop-fidelity.css';\n@import './dashboard-bankmark-chart-attention.css';");
+    expect(workspaceCompat).toContain("@import './approved-workspace-targets.css';\n@import './account-iban-surfaces.css';\n@import './dashboard-command-search-geometry.css';\n@import './dashboard-desktop-fidelity.css';\n@import './dashboard-bankmark-chart-attention.css';");
     expect(approvedChain).toContain("@import './loans-approved-target.css';");
     expect(styles).not.toContain('@media (max-width');
   });

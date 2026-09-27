@@ -52,3 +52,14 @@ Then run one exact-head cycle covering hygiene, full application/API checks, ren
 ## Guardrails
 
 No finance/accounting, auth/MFA/RLS, persistence, API, database, migration, Windows packaging, release, deploy or production-data behavior change is intended. No `main` action is authorized.
+
+
+## First exact-head validation correction
+
+The first consolidated PR cycle reached the full test suite with hygiene and the new Stage-7 source contract green. It exposed four stale references caused by the intentional CSS/control ownership changes in this batch:
+
+- `qa.html` still directly imported the retired `account-metadata-surfaces.css` path;
+- the Loans and Quick Entry source contracts still named that retired workspace import;
+- the Settings Data source contract still matched the old raw `secondary` button markup after migration to shared `Button`.
+
+These are ownership-contract corrections only. They are grouped in one skip-CI correction commit, followed by one fresh exact-head validation trigger after source/diff checks are complete.
