@@ -21,8 +21,8 @@ Use this checklist as the durable cross-app audit record. Mark a row complete on
 | --- | --- | --- |
 | Generic close actions | COMPLETE | Batch 1 / PR #421 merged to `develop@26379521`. All current `close-picker` surfaces use shared `IconButton`; class, glyph, handler and accessibility contracts were preserved. Exact post-merge CI, CodeQL and Windows Desktop are green. |
 | Primary / secondary / destructive action hierarchy | COMPLETE | Batches 2–3 / PRs #422–#423 exhausted the current exact-class generic action audit. Class-equivalent actions use shared `Button`; domain/composite raw controls remain intentionally excluded where geometry or semantics differ. |
-| Page heading / right-side action alignment | IN PROGRESS | Cross-route audit completed on `develop@eb5b4d08`: route-specific heading families are intentionally distinct. One lost shared invariant was found: generic `.heading-actions` no longer owns `display:flex;gap:8px`. Approved bounded restoration is in Batch 4. |
-| Dialog / popover ownership, focus and Escape behavior | NOT STARTED | Existing shared `DialogShell`, owned inputs and `useModalFocus` remain the baseline. |
+| Page heading / right-side action alignment | COMPLETE | Batch 4 / PR #424 restored the historical `.heading-actions{display:flex;gap:8px}` invariant without changing route-specific heading compositions. Exact post-merge CI, CodeQL and Windows Desktop are green on `develop@6d911a11`. |
+| Dialog / popover ownership, focus and Escape behavior | IN PROGRESS | Current-tree audit found no orphan modal surfaces: every `role="dialog"` / `alertdialog` is owned by `DialogShell` or `useModalFocus`, and multi-dialog pages have one focus owner per direct `aria-modal`. Batch 5 adds a cross-app source guard; no production UI refactor is needed. |
 | Loading / success / error feedback | NOT STARTED | Audit editable flows for concise and consistent status treatment. |
 | Hover / focus / pressed / disabled states | NOT STARTED | Verify shared primitives first, then only true one-off gaps. |
 | Motion / reduced-motion behavior | NOT STARTED | No decorative animation additions without a clear state/causality purpose. |
@@ -106,7 +106,9 @@ Validation:
 
 ## Batch 4 — restore generic heading-action layout ownership
 
-Branch: `chore/348-restore-heading-actions-layout`
+Branch: `chore/348-restore-heading-actions-layout`  
+PR: #424  
+Merged: `develop@6d911a11cda1aa771258355897c327929cc24564`
 
 Audit result:
 - generic grouped heading actions remain the correct pattern for Cards, Credit Card and Loans;
@@ -121,15 +123,38 @@ Approved bounded restoration:
 - keep all existing route markup, spacing values, button variants, sizes, colors and responsive specializations unchanged;
 - add a focused source guard so the generic grouped container cannot silently lose flex ownership again.
 
+Validation:
+- final exact-head `17f0417566347f9b5f5d552bbf94e915a383d927` passed CI `36349359129`, CodeQL `36349359181`, Cross-engine `36349359124`, Performance `36349359183` and Windows Desktop `36349359189`;
+- the separate Visual QA persistence run passed the relevant heading/full-page/UI suites and 24 full-page screenshots across 12 surfaces before hitting the known isolated receipt-OCR Chromium/CDP context race;
+- final net diff remained exactly three intended files with no `visual-qa/**` churn;
+- exact post-merge `develop@6d911a11cda1aa771258355897c327929cc24564` passed CI `36350256758`, CodeQL `36350256671` and Windows Desktop `36350256704`.
+
+## Batch 5 — dialog/popover focus ownership guard
+
+Branch: `chore/348-dialog-focus-ownership-guard`
+
+Audit result:
+- every current direct `aria-modal="true"` surface outside `DialogShell` already uses `useModalFocus`;
+- every current `role="dialog"` / `role="alertdialog"` surface is owned by either `DialogShell` or `useModalFocus`;
+- AppShell owns 2 dialogs with 2 distinct focus refs;
+- Planning owns 2 dialogs with 2 distinct focus refs;
+- Credit Card owns 3 dialogs with 3 distinct focus refs;
+- owned select/date popovers use portals, modal semantics and the same focus/Escape hook;
+- `useModalFocus` already enforces topmost-only Escape dismissal, Tab trapping, initial focus, scroll lock and opener focus restoration.
+
+Scope:
+- no production component or CSS change;
+- add a source contract preventing future direct modals/popovers from bypassing the shared focus/Escape ownership model;
+- preserve specialized visual shells where they are intentional.
+
 Validation target:
 - one consolidated exact-head PR cycle;
-- rendered desktop/mobile evidence for representative grouped headings;
-- no finance, auth, persistence, routing, API, database or Windows behavior change;
-- generated `visual-qa/**` files must not remain in the final net diff.
+- no visual, finance, auth, persistence, routing, API, database or Windows behavior change;
+- no `visual-qa/**` files in the net diff.
 
 ## Next audit slice
 
-After Batch 4 is merged and verified on `develop`:
-1. mark page-heading/right-side action alignment complete unless rendered QA exposes another concrete inconsistency;
-2. continue with dialog/popover ownership and focus/Escape consistency;
-3. keep loading/success/error, interaction-state, motion/reduced-motion and responsive/touch audits as separate bounded slices.
+After Batch 5 is merged and verified on `develop`:
+1. mark dialog/popover ownership, focus and Escape behavior complete;
+2. audit loading/success/error feedback across editable flows;
+3. keep interaction-state, motion/reduced-motion and responsive/touch audits as separate bounded slices.
