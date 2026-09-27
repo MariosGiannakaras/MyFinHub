@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 const source=readFileSync(new URL('../src/components/MoneyEditDialog.tsx',import.meta.url),'utf8');
 const shell=readFileSync(new URL('../src/components/DialogShell.tsx',import.meta.url),'utf8');
+const formError=readFileSync(new URL('../src/components/FormError.tsx',import.meta.url),'utf8');
 const styles=readFileSync(new URL('../src/styles/money-edit-dialog.css',import.meta.url),'utf8');
 
 describe('MoneyEditDialog source contract',()=>{
@@ -18,7 +19,10 @@ describe('MoneyEditDialog source contract',()=>{
   });
 
   it('supports validation, busy state and reduced motion',()=>{
-    expect(source).toContain('role="alert"');
+    expect(source).toContain("from './FormError'");
+    expect(source).toContain('<FormError id={errorId}>{error}</FormError>');
+    expect(formError).toContain('role="alert"');
+    expect(formError).toContain('aria-live="assertive"');
     expect(source).toContain('busy={busy}');
     expect(shell).toContain('aria-busy={busy||undefined}');
     expect(source).toContain('disabled={busy}');

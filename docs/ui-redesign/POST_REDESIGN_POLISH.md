@@ -23,7 +23,7 @@ Use this checklist as the durable cross-app audit record. Mark a row complete on
 | Primary / secondary / destructive action hierarchy | COMPLETE | Batches 2–3 / PRs #422–#423 exhausted the current exact-class generic action audit. Class-equivalent actions use shared `Button`; domain/composite raw controls remain intentionally excluded where geometry or semantics differ. |
 | Page heading / right-side action alignment | COMPLETE | Batch 4 / PR #424 restored the historical `.heading-actions{display:flex;gap:8px}` invariant without changing route-specific heading compositions. Exact post-merge CI, CodeQL and Windows Desktop are green on `develop@6d911a11`. |
 | Dialog / popover ownership, focus and Escape behavior | IN PROGRESS | Current-tree audit found no orphan modal surfaces: every `role="dialog"` / `alertdialog` is owned by `DialogShell` or `useModalFocus`, and multi-dialog pages have one focus owner per direct `aria-modal`. Batch 5 adds a cross-app source guard; no production UI refactor is needed. |
-| Loading / success / error feedback | NOT STARTED | Audit editable flows for concise and consistent status treatment. |
+| Loading / success / error feedback | IN PROGRESS | Global persistence and auth busy/error states already use appropriate polite/assertive live regions. Audit found generic finance form errors split between shared `FormError` and hand-built equivalent markup; Batch 6 canonicalizes only the exact-equivalent cases. |
 | Hover / focus / pressed / disabled states | NOT STARTED | Verify shared primitives first, then only true one-off gaps. |
 | Motion / reduced-motion behavior | NOT STARTED | No decorative animation additions without a clear state/causality purpose. |
 | Responsive / touch targets | NOT STARTED | Recheck desktop and mobile only after bounded control changes. |
@@ -131,7 +131,9 @@ Validation:
 
 ## Batch 5 — dialog/popover focus ownership guard
 
-Branch: `chore/348-dialog-focus-ownership-guard`
+Branch: `chore/348-dialog-focus-ownership-guard`  
+PR: #425  
+Merged: `develop@0a8608ad7bbb0451dcd9450ee628ed5d7e4913bb`
 
 Audit result:
 - every current direct `aria-modal="true"` surface outside `DialogShell` already uses `useModalFocus`;
@@ -147,14 +149,40 @@ Scope:
 - add a source contract preventing future direct modals/popovers from bypassing the shared focus/Escape ownership model;
 - preserve specialized visual shells where they are intentional.
 
+Validation:
+- exact PR head `2fc2a4c160e7ab6b21d9f672013f8601da1e2684` passed CI `36354356096`, CodeQL `36354356080`, Cross-engine `36354356081` and Performance `36354356035`;
+- Windows did not trigger because the diff was test/documentation only;
+- the separate Visual QA run passed the relevant modal/focus suites and 24 full-page screenshots across 12 surfaces before the known isolated receipt-OCR Chromium/CDP context race;
+- final diff remained exactly two intended files, with 0 unresolved threads and no `visual-qa/**` churn;
+- exact post-merge `develop@0a8608ad7bbb0451dcd9450ee628ed5d7e4913bb` passed CI `36355393951` and CodeQL `36355393938`.
+
+## Batch 6 — canonical finance form feedback ownership
+
+Branch: `chore/348-canonical-form-feedback`
+
+Audit result:
+- `PersistenceNotice` already owns global loading/saving/saved/error/conflict announcements with polite status vs assertive alert semantics;
+- Login/MFA already expose busy state via disabled controls, `aria-busy`, spinner state and explicit errors;
+- Cards, Savings, Loans and Lending already use shared `FormError`;
+- eight generic finance-editor error render sites still duplicated the same `.form-error` / alert markup in Money Edit, Quick Add, Receipt Inbox, Planning, Credit Card and Recurring;
+- page-level action acknowledgements on Cards, Planning, Credit Card, Recurring and Transactions already use polite `role="status"` live regions;
+- domain-specific warnings/statuses remain intentionally separate.
+
+Scope:
+- replace only exact-equivalent hand-built generic form errors with shared `FormError`;
+- preserve error text, existing CSS class, form flow, modal ownership and domain behavior;
+- add stable error ids where the old markup relied on modal-focus auto-association;
+- add a source guard for generic error ownership plus persistence/action-status live-region semantics;
+- no CSS or intended visual change.
+
 Validation target:
 - one consolidated exact-head PR cycle;
-- no visual, finance, auth, persistence, routing, API, database or Windows behavior change;
-- no `visual-qa/**` files in the net diff.
+- no finance, auth, persistence, routing, API, database or Windows behavior change;
+- no `visual-qa/**` files in the final net diff.
 
 ## Next audit slice
 
-After Batch 5 is merged and verified on `develop`:
-1. mark dialog/popover ownership, focus and Escape behavior complete;
-2. audit loading/success/error feedback across editable flows;
-3. keep interaction-state, motion/reduced-motion and responsive/touch audits as separate bounded slices.
+After Batch 6 is merged and verified on `develop`:
+1. mark loading/success/error feedback complete unless rendered QA exposes a concrete gap;
+2. audit hover/focus/pressed/disabled states across shared primitives and remaining domain controls;
+3. keep motion/reduced-motion and responsive/touch audits as separate bounded slices.

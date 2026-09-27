@@ -2,6 +2,7 @@ import { X } from 'lucide-react';
 import { useId } from 'react';
 import { Button } from './Button';
 import { DialogShell } from './DialogShell';
+import { FormError } from './FormError';
 import { IconButton } from './IconButton';
 import { MoneyInput } from './MoneyInput';
 import '../styles/money-edit-dialog.css';
@@ -56,7 +57,7 @@ export function MoneyEditDialog({
     <header><div><small>ΕΠΕΞΕΡΓΑΣΙΑ ΠΟΣΟΥ</small><h2 id={titleId}>{title}</h2><p id={descriptionId}>{description}</p></div><IconButton aria-label="Κλείσιμο επεξεργασίας ποσού" disabled={busy} onClick={cancel}><X aria-hidden="true"/></IconButton></header>
     <div className="settings-form app-money-edit-dialog-body">
       <label><span>{label}</span><MoneyInput data-autofocus="true" aria-label={label} value={value} onValueChange={onValueChange} invalid={Boolean(error)} aria-describedby={error?errorId:undefined}/></label>
-      {error?<div id={errorId} className="form-error" role="alert" aria-live="assertive">{error}</div>:null}
+      {error?<FormError id={errorId}>{error}</FormError>:null}
     </div>
     <footer>
       <Button variant="secondary" disabled={busy} onClick={cancel}>{cancelLabel}</Button>
