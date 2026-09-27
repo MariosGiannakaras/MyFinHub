@@ -4,6 +4,7 @@ import { AppDateInput } from '../components/AppDateInput';
 import { AppInputShell } from '../components/AppInputShell';
 import { AppSelectInput } from '../components/AppSelectInput';
 import { AppTextInput } from '../components/AppTextInput';
+import { Button } from '../components/Button';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { FinanceIcon } from '../components/FinanceIcon';
 import { LegacyTransactionEditor } from '../components/LegacyTransactionEditor';
@@ -124,7 +125,7 @@ export function TransactionsPage({
   const confirmDelete=()=>{if(!deleteTarget)return;if(deleteTarget.source==='event')onDeleteEvent(deleteTarget.id);else onDeleteLegacy(deleteTarget.id);setMessage(deleteTarget.source==='legacy'?'Η ιστορική κίνηση εξαιρέθηκε μέσω tombstone και η αλλαγή αποθηκεύεται.':'Η κίνηση αφαιρέθηκε και η αλλαγή αποθηκεύεται.');setDeleteTarget(null)};
   const saveLegacy=(transaction:LegacyTransaction)=>{onEditLegacy(transaction);setMessage('Η ιστορική κίνηση ενημερώθηκε μέσω override και η αλλαγή αποθηκεύεται.')};
   const rowActions=(row:TransactionRow,title:string,compact=false)=><div className={compact?'mobile-row-actions':'row-actions'}>
-    {compact?<button type="button" className="text-button" style={{minHeight:44}} aria-label={`Επεξεργασία ${title}`} onClick={()=>edit(row)}><Pencil size={15}/> Επεξεργασία</button>:<Tooltip label={`Επεξεργασία: ${title}`} side="left"><button type="button" aria-label={`Επεξεργασία ${title}`} onClick={()=>edit(row)}><Pencil/></button></Tooltip>}
+    {compact?<Button type="button" variant="ghost" style={{minHeight:44}} aria-label={`Επεξεργασία ${title}`} onClick={()=>edit(row)}><Pencil size={15}/> Επεξεργασία</Button>:<Tooltip label={`Επεξεργασία: ${title}`} side="left"><button type="button" aria-label={`Επεξεργασία ${title}`} onClick={()=>edit(row)}><Pencil/></button></Tooltip>}
     {compact?<button type="button" className="text-button danger-text" style={{minHeight:44}} aria-label={`Διαγραφή ${title}`} onClick={()=>askDelete(row)}><Trash2 size={15}/> Διαγραφή</button>:<Tooltip label={`Διαγραφή: ${title}`} side="left"><button type="button" aria-label={`Διαγραφή ${title}`} className="danger" onClick={()=>askDelete(row)}><Trash2/></button></Tooltip>}
   </div>;
 
