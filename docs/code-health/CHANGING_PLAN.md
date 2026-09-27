@@ -100,35 +100,37 @@ Require one exact-head CI / CodeQL / Cross-engine / Performance / Windows cycle 
 - [x] Review dependency/audit debt without relaxing severity gates. Root/API high-severity audits remain in CI, Desktop high-severity audit remains in `desktop:check`, and major dependency upgrades remain explicit compatibility work rather than cleanup churn.
 - [x] Finalization PR #418 merged to `develop@e0545d27c0e98e0f6bfaf6cd30bad6075d8c25b2`; exact-merge CI `36263913482`, CodeQL `36263913514`, Windows Desktop `36263913479`, Windows First Run `36263913476`, and Windows Clean Launch `36263913483` are green.
 
-### Stage 7 — Full cleanup verification — ACTIVE
+### Stage 7 — Full cleanup verification — COMPLETE
 
-- [ ] Full application/API checks.
-- [ ] Cross-page shared-control adoption audit for routed pages/shared components. **Active batch:** close late Settings/security/device/account shared-control gaps, preserve intentional composite controls, and add a durable source-contract audit.
-- [ ] Rendered desktop/mobile QA for routed surfaces.
-- [ ] Keyboard/focus/accessibility pass.
-- [ ] Windows Desktop / First Run / Clean Launch.
-- [ ] CodeQL, cross-engine and performance gates.
-- [ ] Personally inspect representative fresh visual evidence.
-- [ ] Remove only confirmed dead compatibility code, CSS, imports/exports and obsolete aliases.
+- [x] Full application/API checks: PR #419 final exact-head CI `36284784475` passed.
+- [x] Cross-page shared-control adoption audit for routed pages/shared components completed; late Settings/security/device/account generic controls moved to canonical primitives while intentional composites remain explicit.
+- [x] Rendered desktop/mobile QA passed in CI `36284784475`.
+- [x] Keyboard/focus/accessibility coverage passed through the existing source/rendered contracts and Performance smoke `36284784480`.
+- [x] Windows Desktop `36284784500` passed on the final PR head. First Run / Clean Launch were path-filtered because Stage 7 changed no desktop/server/package boundary; the final Stage-8 audit intentionally carries a comment-only server parity annotation so those installed-client workflows run once more on the final integration state.
+- [x] CodeQL `36284784528`, cross-engine `36284784450`, and performance `36284784480` passed.
+- [x] Representative fresh evidence from CI artifact `10920072516` was inspected across Settings profile desktop/mobile/full, Accounts desktop and Data mobile; no clipping, overlap, lost control affordance or obvious shared-control visual regression was observed.
+- [x] Removed only confirmed dead compatibility CSS and stale module/export surface while preserving intentional domain/composite controls.
+- [x] PR #419 merged as `develop@2646e0e222c334c496df88fe356b464526fa6963`. Its squash message inherited a prior `[skip ci]` marker, so GitHub did not create push runs for that merge SHA; the merge tree `413b7a29b82ce9e05a4f071852b8e742d7026c91` is byte-identical to the fully green final PR-head tree.
 
-### Stage 8 — Release-readiness audit — NO RELEASE AUTHORIZATION
+### Stage 8 — Release-readiness audit — FINAL VALIDATION / NO RELEASE AUTHORIZATION
 
-- [ ] Compare final `develop` against `main` again.
-- [ ] Confirm Vercel function budget and production routing compatibility.
-- [ ] Review migrations/backend/auth/device/provider differences explicitly.
-- [ ] Verify no unresolved code-health blockers.
-- [ ] Produce a release-readiness checkpoint.
-- [ ] Stop before `develop -> main`, release or deploy unless separately authorized.
+- [x] Compare final `develop` against `main` again: `main@4782fd3c6ab8f56661623cb36b3792a7ee7f7ee6` and `develop@2646e0e222c334c496df88fe356b464526fa6963` are diverged; develop is 93 commits ahead and 2 behind from merge-base `e31a4b166be825c7ea3eab43435f3c28750a1c74`.
+- [x] Confirm Vercel function budget and production routing compatibility: both branches have 12 TypeScript API entrypoints; the production Android rewrite is preserved and develop additionally reuses the existing auth-session entrypoint for account/device compatibility routes.
+- [x] Review migrations/backend/auth/device/provider differences explicitly, including the live Supabase migration ledger and schema state. This final audit batch reconciles repository migration filenames to the applied production versions and restores the one production-applied provider-assets schema migration missing from Git.
+- [x] Verify no unresolved code-health blockers in the merged code path. Remaining items are release-operations decisions, not hidden code-health debt: apply the pending device-session migration only after compatible code is live, apply/verify the pending provider-brand refresh deliberately, and explicitly accept or resolve the Supabase leaked-password-protection warning before any separately authorized production release.
+- [x] Produce a release-readiness checkpoint in `docs/code-health/STAGE8_RELEASE_READINESS.md`.
+- [x] Stop before `develop -> main`, release or deploy unless separately authorized.
 
 ## Current checkpoint — 2026-09-27
 
-- **Overall tracker:** #357 — OPEN.
-- **Completed stages:** 7/9 (Stages 0–6).
-- **Active stage:** Stage 7 — Full cleanup verification.
-- **Verified integration base:** `develop@e0545d27c0e98e0f6bfaf6cd30bad6075d8c25b2`; Stage-6 exact-merge CI `36263913482`, CodeQL `36263913514`, Windows Desktop `36263913479`, Windows First Run `36263913476`, and Windows Clean Launch `36263913483` are green.
-- **Active delivery:** branch `chore/357-stage7-full-cleanup-verification`, grouping cross-page shared-control reconciliation, confirmed dead compatibility CSS removal, durable source-contract coverage, and the full Stage-7 validation pass before one mature PR CI cycle.
-- **Implementation contract:** preserve finance/auth/MFA/RLS/persistence/API/database/Windows behavior and approved UI appearance; migrate only generic controls whose class/semantic contract is preserved, retain intentional domain/composite controls raw, and remove only compatibility code proven unreachable by current routed/shared source ownership.
-- **Next action:** finish programmatic diff/source-contract validation on the complete Stage-7 batch, then open one PR and run the full exact-head CI / CodeQL / cross-engine / performance / Windows / rendered-QA cycle; inspect fresh representative visual evidence before any merge to `develop`.
+- **Overall tracker:** #357 — OPEN until the final Stage-8 exact-head and post-merge barrier are green.
+- **Completed stages:** 8/9 (Stages 0–7).
+- **Active stage:** Stage 8 — release-readiness audit, final validation only; **no release authorization**.
+- **Verified code state:** Stage-7 PR #419 final head passed CI `36284784475`, CodeQL `36284784528`, Cross-engine `36284784450`, Performance `36284784480`, and Windows Desktop `36284784500`. Its merged `develop@2646e0e222c334c496df88fe356b464526fa6963` tree is byte-identical to that validated head; push workflows were suppressed only because the squash message inherited `[skip ci]`.
+- **Release audit finding:** production Supabase is healthy and already contains 27 applied migrations, including Android/provider/history changes, but the repository migration ledger had timestamp drift plus one production-applied provider-assets migration missing from Git. This Stage-8 batch reconciles those filenames/source records without applying any production DDL.
+- **Pending production-only boundary:** `20260904083000_add_device_session_registry.sql` is intentionally not applied to production yet and changes the canonical owner+AAL2 RLS predicate. Future release sequencing must put compatible code live first, then apply this migration, then verify device registration/revocation and finance access. `20260905020000_refresh_financial_provider_brand_assets.sql` is also pending and must be applied/verified deliberately.
+- **Operational warning:** Supabase security advisor reports leaked-password protection disabled. Stage 8 records it but does not change Auth behavior without separate authorization.
+- **Next action:** validate this one consolidated Stage-8 branch on exact head, including CI / CodeQL / Cross-engine / Performance / Windows Desktop / First Run / Clean Launch; merge only to `develop` when green, require a green exact post-merge barrier with no skip marker, then close #357. Stop before `main`, release, deploy, production migration or production-data mutation.
 
 ## Resume procedure
 

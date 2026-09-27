@@ -1,12 +1,12 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
-const migration=readFileSync('supabase/migrations/20260825005000_add_durable_history.sql','utf8');
-const hardening=readFileSync('supabase/migrations/20260825063500_harden_durable_history.sql','utf8');
-const pruning=readFileSync('supabase/migrations/20260825064000_bound_durable_history_pruning.sql','utf8');
-const auditActions=readFileSync('supabase/migrations/20260825191000_allow_history_audit_actions.sql','utf8');
-const grantHardening=readFileSync('supabase/migrations/20260825195500_tighten_history_metadata_grants.sql','utf8');
-const perfHardening=readFileSync('supabase/migrations/20260825200500_optimize_durable_history_rls.sql','utf8');
+const migration=readFileSync('supabase/migrations/20260825192943_add_durable_history.sql','utf8');
+const hardening=readFileSync('supabase/migrations/20260825194121_harden_durable_history.sql','utf8');
+const pruning=readFileSync('supabase/migrations/20260825194135_bound_durable_history_pruning.sql','utf8');
+const auditActions=readFileSync('supabase/migrations/20260825194146_allow_history_audit_actions.sql','utf8');
+const grantHardening=readFileSync('supabase/migrations/20260825194447_tighten_history_metadata_grants.sql','utf8');
+const perfHardening=readFileSync('supabase/migrations/20260825194800_optimize_durable_history_rls.sql','utf8');
 const storage=readFileSync('server/storage.ts','utf8');
 const api=readFileSync('src/lib/api.ts','utf8');
 const hook=readFileSync('src/hooks/useFinance.ts','utf8');

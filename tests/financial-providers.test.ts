@@ -54,7 +54,7 @@ describe('financial provider registry',()=>{
   });
 
   it('stores provider identity in an authenticated read-only RLS registry',()=>{
-    const migration=source('supabase/migrations/20260904191500_add_financial_provider_registry.sql');
+    const migration=source('supabase/migrations/20260904193923_add_financial_provider_registry.sql');
     const brandRefresh=source('supabase/migrations/20260905020000_refresh_financial_provider_brand_assets.sql');
     expect(migration).toContain('create table if not exists public.rheomiq_financial_providers');
     expect(migration).toContain('alter table public.rheomiq_financial_providers enable row level security');

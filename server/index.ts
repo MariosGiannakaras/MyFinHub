@@ -156,6 +156,7 @@ app.post('/api/auth/logout', (req, res) => void handleApi(res, async () => {
   sendJson(res, 200, { authenticated: false });
 }));
 
+// Keep the local/Desktop route surface aligned with Vercel's compatibility rewrites; the web deployment reuses existing entrypoints to stay inside the 12-function production budget.
 app.all('/api/auth/account', (req, res) => void handleAccountSecurityRequest(req, res));
 app.all('/api/auth/devices', (req, res) => void handleDeviceSessionsRequest(req, res));
 
