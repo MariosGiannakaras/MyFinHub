@@ -5,8 +5,8 @@ import { parseAccountMetadataExpectedRevision, parseAccountMetadataWrite } from 
 import { assertValidIban, formatIban, isValidIban, normalizeIban } from '../src/lib/iban.js';
 
 const migration=readFileSync(new URL('../supabase/migrations/20260824205000_add_account_metadata.sql',import.meta.url),'utf8');
-const grantHardening=readFileSync(new URL('../supabase/migrations/20260825201500_tighten_account_metadata_function_grants.sql',import.meta.url),'utf8');
-const conflictFix=readFileSync(new URL('../supabase/migrations/20260901132500_fix_account_metadata_upsert_conflict.sql',import.meta.url),'utf8');
+const grantHardening=readFileSync(new URL('../supabase/migrations/20260825195120_tighten_account_metadata_function_grants.sql',import.meta.url),'utf8');
+const conflictFix=readFileSync(new URL('../supabase/migrations/20260901133549_fix_account_metadata_upsert_conflict.sql',import.meta.url),'utf8');
 const financeTypes=readFileSync(new URL('../src/types.ts',import.meta.url),'utf8');
 const financeHook=readFileSync(new URL('../src/hooks/useFinance.ts',import.meta.url),'utf8');
 const dashboardSource=readFileSync(new URL('../src/pages/DashboardPage.tsx',import.meta.url),'utf8');
