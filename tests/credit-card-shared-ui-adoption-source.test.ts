@@ -9,7 +9,7 @@ describe('Credit Card shared Button ownership',()=>{
     expect(source).toContain("from '../components/Button'");
     expect(source).toContain("from '../components/IconButton'");
     expect(source.match(/<Button\b/g)).toHaveLength(15);
-    expect(source.match(/<IconButton\b/g)).toHaveLength(2);
+    expect(source.match(/<IconButton\b/g)).toHaveLength(3);
     expect(source.match(/<Button[^>]+variant=\"primary\"/g)).toHaveLength(6);
     expect(source.match(/<Button[^>]+variant=\"secondary\"/g)).toHaveLength(9);
     expect(source).not.toContain('className="save-button"');
