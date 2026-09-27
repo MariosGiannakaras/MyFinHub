@@ -11,6 +11,7 @@ const accounts=read('src/components/AccountManagementSettings.tsx');
 const desktopLock=read('src/components/DesktopAppLockGate.tsx');
 const settings=read('src/pages/SettingsPage.tsx');
 const workspaceCompat=read('src/styles/workspace-compat.css');
+const securityStyles=read('src/components/AccountSecuritySettings.css');
 const ibanStyles=read('src/styles/account-iban-surfaces.css');
 
 describe('Stage 7 shared-control and compatibility cleanup audit',()=>{
@@ -24,6 +25,9 @@ describe('Stage 7 shared-control and compatibility cleanup audit',()=>{
     expect(security).toContain('type="email"');
     expect(security).toContain('autoComplete="current-password"');
     expect(security).toContain('inputMode="numeric"');
+    expect(securityStyles).toContain('.account-security-field>.app-text-input');
+    expect(securityStyles).toContain('.account-security-pin-input>.app-text-input');
+    expect(securityStyles).not.toContain('.account-security-field>input');
   });
 
   it('moves generic device actions onto shared buttons without changing device semantics',()=>{
