@@ -126,7 +126,7 @@ export function TransactionsPage({
   const saveLegacy=(transaction:LegacyTransaction)=>{onEditLegacy(transaction);setMessage('Η ιστορική κίνηση ενημερώθηκε μέσω override και η αλλαγή αποθηκεύεται.')};
   const rowActions=(row:TransactionRow,title:string,compact=false)=><div className={compact?'mobile-row-actions':'row-actions'}>
     {compact?<Button type="button" variant="ghost" style={{minHeight:44}} aria-label={`Επεξεργασία ${title}`} onClick={()=>edit(row)}><Pencil size={15}/> Επεξεργασία</Button>:<Tooltip label={`Επεξεργασία: ${title}`} side="left"><button type="button" aria-label={`Επεξεργασία ${title}`} onClick={()=>edit(row)}><Pencil/></button></Tooltip>}
-    {compact?<button type="button" className="text-button danger-text" style={{minHeight:44}} aria-label={`Διαγραφή ${title}`} onClick={()=>askDelete(row)}><Trash2 size={15}/> Διαγραφή</button>:<Tooltip label={`Διαγραφή: ${title}`} side="left"><button type="button" aria-label={`Διαγραφή ${title}`} className="danger" onClick={()=>askDelete(row)}><Trash2/></button></Tooltip>}
+    {compact?<Button type="button" variant="ghost" className="danger-text" style={{minHeight:44}} aria-label={`Διαγραφή ${title}`} onClick={()=>askDelete(row)}><Trash2 size={15}/> Διαγραφή</Button>:<Tooltip label={`Διαγραφή: ${title}`} side="left"><button type="button" aria-label={`Διαγραφή ${title}`} className="danger" onClick={()=>askDelete(row)}><Trash2/></button></Tooltip>}
   </div>;
 
   return <div className="page-stack transactions-approved transactions-workspace">
