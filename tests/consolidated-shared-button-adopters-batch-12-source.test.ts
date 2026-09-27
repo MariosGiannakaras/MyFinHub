@@ -57,24 +57,27 @@ describe('consolidated Stage 2 shared action adoption',()=>{
     expect(taxonomy).toContain('<ConfirmDialog');
   });
 
-  it('moves six ReceiptInbox generic actions plus the close action to shared primitives',()=>{
+  it('moves eight ReceiptInbox generic actions plus the close action to shared primitives',()=>{
     expect(receipts).toContain("from './Button'");
     expect(receipts).toContain("from './IconButton'");
-    expect(receipts.match(/<Button/g)).toHaveLength(6);
+    expect(receipts.match(/<Button/g)).toHaveLength(8);
     expect(receipts.match(/<IconButton/g)).toHaveLength(1);
     expect(receipts.match(/<Button[^>]+variant="primary"/g)).toHaveLength(2);
-    expect(receipts.match(/<Button[^>]+variant="secondary"/g)).toHaveLength(4);
+    expect(receipts.match(/<Button[^>]+variant="secondary"/g)).toHaveLength(5);
+    expect(receipts.match(/<Button[^>]+variant="ghost"/g)).toHaveLength(1);
     expect(receipts).toContain('<IconButton type="button" aria-label="Κλείσιμο αποδείξεων σε αναμονή" onClick={onClose}>');
     expect(receipts).toContain('variant="primary" disabled={loading || scanning}');
     expect(receipts).toContain('variant="secondary" disabled={loading || scanning}');
     expect(receipts).toContain('variant="primary" disabled={scanning}');
+    expect(receipts).toContain('<Button type="button" variant="ghost" className="danger" onClick={requestRemoveSelected}>');
+    expect(receipts).toContain('<Button type="button" variant="secondary" className="danger" disabled={scanning} onClick={() => requestRemoveOne(selected)}>');
     expect(receipts).not.toContain('className="save-button"');
     expect(receipts).not.toContain('className="icon-button"');
   });
 
-  it('keeps ReceiptInbox destructive/domain controls raw and async OCR semantics intact',()=>{
-    expect(receipts).toContain('className="text-button danger"');
-    expect(receipts).toContain('className="secondary danger"');
+  it('keeps ReceiptInbox domain composites raw and async OCR semantics intact',()=>{
+    expect(receipts).not.toContain('<button type="button" className="text-button danger"');
+    expect(receipts).not.toContain('<button type="button" className="secondary danger"');
     expect(receipts).toContain('className="receipt-draft-open"');
     expect(receipts).toContain('await module.cancelReceiptOcr()');
     expect(receipts).toContain('await saveReceiptProposal(draft.id, proposal)');
