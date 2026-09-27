@@ -4,6 +4,7 @@
 .month-toolbar input{border:1px solid var(--line);background:#f6f9fd;border-radius:9px;padding:6px 8px;color:var(--ink)}
 .page-stack{display:grid;gap:15px}
 .page-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;padding:6px 4px 0}
+.heading-actions{display:flex;gap:8px}
 .page-heading h1{margin:3px 0 3px;font-size:27px;letter-spacing:-.045em}
 .page-heading p{margin:0;color:var(--muted);font-size:11px}
 .eyebrow{font-size:8px;letter-spacing:.13em;font-weight:820;color:#4777d6}

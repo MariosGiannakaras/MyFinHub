@@ -20,8 +20,8 @@ Use this checklist as the durable cross-app audit record. Mark a row complete on
 | Area | Status | Current checkpoint |
 | --- | --- | --- |
 | Generic close actions | COMPLETE | Batch 1 / PR #421 merged to `develop@26379521`. All current `close-picker` surfaces use shared `IconButton`; class, glyph, handler and accessibility contracts were preserved. Exact post-merge CI, CodeQL and Windows Desktop are green. |
-| Primary / secondary / destructive action hierarchy | IN PROGRESS | Batch 2 / PR #422 integrated seven class-equivalent generic actions on shared `Button`. Follow-up audit found two final `text-button` class-equivalent candidates for Batch 3; domain/composite row actions remain intentionally excluded. |
-| Page heading / right-side action alignment | NOT STARTED | Requires a cross-route audit; visual changes need approval before implementation. |
+| Primary / secondary / destructive action hierarchy | COMPLETE | Batches 2–3 / PRs #422–#423 exhausted the current exact-class generic action audit. Class-equivalent actions use shared `Button`; domain/composite raw controls remain intentionally excluded where geometry or semantics differ. |
+| Page heading / right-side action alignment | IN PROGRESS | Cross-route audit completed on `develop@eb5b4d08`: route-specific heading families are intentionally distinct. One lost shared invariant was found: generic `.heading-actions` no longer owns `display:flex;gap:8px`. Approved bounded restoration is in Batch 4. |
 | Dialog / popover ownership, focus and Escape behavior | NOT STARTED | Existing shared `DialogShell`, owned inputs and `useModalFocus` remain the baseline. |
 | Loading / success / error feedback | NOT STARTED | Audit editable flows for concise and consistent status treatment. |
 | Hover / focus / pressed / disabled states | NOT STARTED | Verify shared primitives first, then only true one-off gaps. |
@@ -84,7 +84,9 @@ Validation:
 
 ## Batch 3 — final class-equivalent generic actions
 
-Branch: `chore/348-final-class-equivalent-actions`
+Branch: `chore/348-final-class-equivalent-actions`  
+PR: #423  
+Merged: `develop@eb5b4d0875895a0f59c376c9c36cb6ae0a69508f`
 
 Scope:
 - Transactions compact delete: `text-button danger-text` -> shared ghost `Button` + `danger-text`, preserving the existing 44px minimum height, aria-label and delete handler;
@@ -96,14 +98,38 @@ Explicit exclusions:
 - page/domain navigation, pagination, segmented, row-context and destructive controls whose current geometry or class contract would change under a shared primitive;
 - page-heading/right-action presentation changes.
 
+Validation:
+- final clean head `f5c48fb0476a464f21cca30be05bc3e877637433` passed CI `36345389841`, CodeQL `36345389850`, Cross-engine `36345389860`, Performance `36345389967` and Windows Desktop `36345389797`;
+- runtime-equivalent Visual QA persistence `36344586604` passed before generated snapshot cleanup;
+- final net diff returned to exactly four intended files;
+- exact post-merge `develop@eb5b4d0875895a0f59c376c9c36cb6ae0a69508f` passed CI `36346310542`, CodeQL `36346310535` and Windows Desktop `36346310545`.
+
+## Batch 4 — restore generic heading-action layout ownership
+
+Branch: `chore/348-restore-heading-actions-layout`
+
+Audit result:
+- generic grouped heading actions remain the correct pattern for Cards, Credit Card and Loans;
+- Dashboard keeps the same shared container but retains its route-specific single privacy action treatment;
+- Planning and Attention are intentional custom grid headings;
+- Recurring uses a direct single CTA;
+- Reports uses a period-information chip;
+- Transactions, Savings, Lending and Settings do not need grouped heading actions.
+
+Approved bounded restoration:
+- restore the historical canonical rule `.heading-actions{display:flex;gap:8px}` in `workspace-heading-metrics.css`;
+- keep all existing route markup, spacing values, button variants, sizes, colors and responsive specializations unchanged;
+- add a focused source guard so the generic grouped container cannot silently lose flex ownership again.
+
 Validation target:
 - one consolidated exact-head PR cycle;
-- no CSS change and no intended visual, finance, auth, persistence, routing, API, database or Windows behavior change;
+- rendered desktop/mobile evidence for representative grouped headings;
+- no finance, auth, persistence, routing, API, database or Windows behavior change;
 - generated `visual-qa/**` files must not remain in the final net diff.
 
 ## Next audit slice
 
-After Batch 3 is merged and verified on `develop`:
-1. treat the exact-class generic-action cleanup as exhausted unless a fresh audit proves another exact-compatible candidate;
-2. audit page-heading/right-side action alignment across routes as a separate visual-consistency slice;
-3. require an explicit visual proposal before implementing any change that alters an already approved composition, spacing, sizing or interaction treatment.
+After Batch 4 is merged and verified on `develop`:
+1. mark page-heading/right-side action alignment complete unless rendered QA exposes another concrete inconsistency;
+2. continue with dialog/popover ownership and focus/Escape consistency;
+3. keep loading/success/error, interaction-state, motion/reduced-motion and responsive/touch audits as separate bounded slices.
