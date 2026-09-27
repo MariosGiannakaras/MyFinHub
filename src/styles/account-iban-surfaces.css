@@ -1,0 +1,22 @@
+.account-iban{display:flex;align-items:center;gap:7px;min-width:0;margin-top:7px;color:var(--muted)}
+.account-iban-label{flex:0 0 auto;font-size:8px;font-weight:820;letter-spacing:.08em;color:var(--muted-2)}
+.account-iban-value{min-width:0;font-size:9px;line-height:1.35;font-weight:680;letter-spacing:.015em;color:var(--ink-2);overflow-wrap:anywhere}
+.account-iban-value.muted{font-weight:600;color:var(--muted-2)}
+.account-iban-copy{flex:0 0 32px;width:32px;height:32px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.55);display:grid;place-items:center;color:var(--blue-2);cursor:pointer}
+.account-iban-copy:hover{background:rgba(255,255,255,.82);color:var(--blue)}
+
+.primary-balance-card .account-iban{padding-right:2px}
+.compact-account-row .account-iban{margin-top:4px;gap:5px}
+.compact-account-row .account-iban-label{font-size:7px}
+.compact-account-row .account-iban-value{font-size:7.5px;line-height:1.3}
+.compact-account-row .account-iban-copy{width:28px;height:28px;flex-basis:28px;border-radius:9px}
+
+@media(max-width:680px){
+  .primary-balance-card{min-height:146px}
+  .primary-balance-card .account-iban{margin-top:8px;max-width:100%}
+  .primary-balance-card .account-iban-value{font-size:8.5px}
+  .account-iban-copy{width:40px;height:40px;flex-basis:40px;border-radius:12px}
+  .compact-account-row{min-height:112px;align-items:flex-start}
+  .compact-account-row .account-iban{align-items:flex-start}
+  .compact-account-row .account-iban-copy{width:40px;height:40px;flex-basis:40px}
+}

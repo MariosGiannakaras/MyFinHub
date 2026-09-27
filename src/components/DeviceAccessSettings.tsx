@@ -2,6 +2,8 @@ import { Globe2, Monitor, RefreshCw, ShieldCheck, ShieldMinus, Smartphone } from
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError, getConnectedDevices, revokeConnectedDevice, revokeOtherConnectedDevices, type ConnectedDevice } from '../lib/api';
 import { ConfirmDialog } from './ConfirmDialog';
+import { Button } from './Button';
+import { IconButton } from './IconButton';
 import './DeviceAccessSettings.css';
 
 type PendingAction={kind:'single';device:ConnectedDevice}|{kind:'others'}|null;
@@ -70,7 +72,7 @@ export function DeviceAccessSettings(){
   return <section className="panel neo-raised device-access-settings" aria-labelledby="device-access-title">
     <div className="panel-head">
       <div><span id="device-access-title">Συνδεδεμένες συσκευές</span><small>Δες πού είναι ενεργή η πρόσβαση στο MyFinHub και αφαίρεσέ την από συσκευή που δεν αναγνωρίζεις.</small></div>
-      <div className="device-access-head-actions"><span className="device-access-count">{loading?'—':devices.length} ενεργές</span><button type="button" className="icon-button" aria-label="Ανανέωση συσκευών" title="Ανανέωση" disabled={loading||busy} onClick={()=>void load()}><RefreshCw size={16} className={loading?'is-spinning':''}/></button></div>
+      <div className="device-access-head-actions"><span className="device-access-count">{loading?'—':devices.length} ενεργές</span><IconButton type="button" aria-label="Ανανέωση συσκευών" title="Ανανέωση" disabled={loading||busy} onClick={()=>void load()}><RefreshCw size={16} className={loading?'is-spinning':''}/></IconButton></div>
     </div>
 
     {loading?<div className="device-access-skeleton" aria-live="polite"><i/><i/></div>:devices.length?<div className="device-access-list" role="list">
@@ -81,14 +83,14 @@ export function DeviceAccessSettings(){
           <span>{platformLabel(device.platform)}{device.appVersion?` · MyFinHub ${device.appVersion}`:''}</span>
           <small>Τελευταία δραστηριότητα: {activityLabel(device.lastSeenAt)}</small>
         </div>
-        {device.current?<span className="device-access-safe">Ενεργή</span>:<button type="button" className="secondary device-access-revoke" disabled={busy} onClick={()=>setPending({kind:'single',device})}><ShieldMinus size={15}/> Αφαίρεση</button>}
+        {device.current?<span className="device-access-safe">Ενεργή</span>:<Button type="button" variant="secondary" className="device-access-revoke" disabled={busy} onClick={()=>setPending({kind:'single',device})}><ShieldMinus size={15}/> Αφαίρεση</Button>}
       </div>)}
     </div>:<div className="device-access-empty"><Monitor size={20}/><div><b>Δεν εμφανίζονται ενεργές συσκευές</b><span>{message||'Μόλις ολοκληρωθεί μια ασφαλής συνεδρία, η συσκευή θα εμφανιστεί εδώ.'}</span></div></div>}
 
     {devices.length&&message?<div className="device-access-message" role="status" aria-live="polite">{message}</div>:null}
     <div className="device-access-footer">
       <span>Windows, Android και web συνεδρίες χρησιμοποιούν την ίδια ασφαλή βάση πρόσβασης.</span>
-      {others.length?<button type="button" className="secondary danger-text" disabled={busy} onClick={()=>setPending({kind:'others'})}>Αφαίρεση όλων των άλλων</button>:null}
+      {others.length?<Button type="button" variant="secondary" className="danger-text" disabled={busy} onClick={()=>setPending({kind:'others'})}>Αφαίρεση όλων των άλλων</Button>:null}
     </div>
 
     <ConfirmDialog open={Boolean(pending)} title={pending?.kind==='others'?'Αφαίρεση πρόσβασης από όλες τις άλλες συσκευές;':`Αφαίρεση πρόσβασης από ${pending?.kind==='single'?pending.device.label:'τη συσκευή'};`} description="Η συγκεκριμένη πρόσβαση στο MyFinHub θα ανακληθεί. Η συσκευή θα χρειαστεί νέα πλήρη σύνδεση και επαλήθευση MFA για να ξαναμπεί." confirmLabel="Αφαίρεση πρόσβασης" tone="destructive" busy={busy} motionMode="full" onConfirm={()=>void confirm()} onCancel={()=>{if(!busy)setPending(null)}}/>

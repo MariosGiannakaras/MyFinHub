@@ -21,6 +21,8 @@ import type { Account, FinanceData, FinanceSettings } from '../types';
 import { AppSelectInput } from './AppSelectInput';
 import { AppTextInput } from './AppTextInput';
 import { BankBrandMark } from './BankBrandMark';
+import { Button } from './Button';
+import { IconButton } from './IconButton';
 import { ConfirmDialog } from './ConfirmDialog';
 import './AccountManagementSettings.css';
 import './AccountManagementProvider.css';
@@ -268,7 +270,7 @@ export function AccountManagementSettings({data,settings,onChange}:{data:Finance
     </section>
 
     <section className="panel neo-raised account-management-list-card">
-      <div className="panel-head account-management-list-head"><div><span>Οι λογαριασμοί μου</span></div><button type="button" className="save-button account-management-create" onClick={openNew}><Plus size={17}/> Νέος λογαριασμός</button></div>
+      <div className="panel-head account-management-list-head"><div><span>Οι λογαριασμοί μου</span></div><Button type="button" variant="primary" className="account-management-create" onClick={openNew}><Plus size={17}/> Νέος λογαριασμός</Button></div>
       {metadata.error?<div className="logic-note compact" role="status">Τα IBAN δεν είναι προσωρινά διαθέσιμα. Οι υπόλοιπες ρυθμίσεις λογαριασμών λειτουργούν κανονικά.</div>:null}
       <div className="account-management-list" role="list">
         {accounts.map(account=>{
@@ -282,7 +284,7 @@ export function AccountManagementSettings({data,settings,onChange}:{data:Finance
               <div className="account-management-title-line"><b>{displayName(settings,account)}</b>{defaultRoles.length?<span className="account-management-default-badges" aria-label={`Προεπιλογές: ${defaultRoles.join(', ')}`}>{defaultRoles.map(role=><span className="account-management-default-badge" key={role}>{role}</span>)}</span>:null}</div>
               {account.kind==='cash'?<span>{cashAccountTypeLabel(cashType)}{cashType==='reserve'?' · εκτός καθημερινής χρήσης':''}</span>:<span>{accountProviderLabel(account)} · {bankAccountCategoryLabel(category)}{iban?` · ${iban}`:''}</span>}
             </div>
-            <div className="account-management-row-actions"><button type="button" className="account-management-edit" onClick={()=>openEdit(account)}><Pencil size={15}/> Επεξεργασία</button><button type="button" className="icon-button danger-text" aria-label={`Διαγραφή ${displayName(settings,account)}`} title="Διαγραφή" onClick={()=>requestDelete(account)}><Trash2 size={16}/></button></div>
+            <div className="account-management-row-actions"><button type="button" className="account-management-edit" onClick={()=>openEdit(account)}><Pencil size={15}/> Επεξεργασία</button><IconButton type="button" className="danger-text" aria-label={`Διαγραφή ${displayName(settings,account)}`} title="Διαγραφή" onClick={()=>requestDelete(account)}><Trash2 size={16}/></IconButton></div>
           </div>;
         })}
       </div>
@@ -291,7 +293,7 @@ export function AccountManagementSettings({data,settings,onChange}:{data:Finance
 
     <AnimatePresence>{editor?<motion.div className="account-management-backdrop" initial={reduce?false:{opacity:0}} animate={{opacity:1}} exit={reduce?undefined:{opacity:0}} onMouseDown={closeEditor}>
       <motion.section ref={modalRef} className={`account-management-modal ${editor.source==='new'?'is-new':'is-edit'}`} role="dialog" aria-modal="true" aria-labelledby="account-editor-title" tabIndex={-1} initial={reduce?false:{opacity:0,scale:.975,y:12}} animate={{opacity:1,scale:1,y:0}} exit={reduce?undefined:{opacity:0,scale:.985,y:8}} transition={{duration:reduce?0:.18}} onMouseDown={event=>event.stopPropagation()}>
-        <header><h2 id="account-editor-title">{editor.source==='new'?'Νέος λογαριασμός':'Επεξεργασία λογαριασμού'}</h2><button type="button" className="icon-button" aria-label="Κλείσιμο" disabled={busy} onClick={closeEditor}><X/></button></header>
+        <header><h2 id="account-editor-title">{editor.source==='new'?'Νέος λογαριασμός':'Επεξεργασία λογαριασμού'}</h2><IconButton type="button" aria-label="Κλείσιμο" disabled={busy} onClick={closeEditor}><X/></IconButton></header>
         <div className="account-management-editor-body">
           {editor.source==='new'?<fieldset className="account-management-segment"><legend>1. Τύπος λογαριασμού</legend><div><button type="button" data-autofocus="true" className={editor.mode==='bank'?'active':''} aria-pressed={editor.mode==='bank'} onClick={event=>{event.currentTarget.focus();setMode('bank')}}><Landmark size={16}/> Τράπεζα</button><button type="button" className={editor.mode==='cash'?'active is-cash':''} aria-pressed={editor.mode==='cash'} onClick={event=>{event.currentTarget.focus();setMode('cash')}}><WalletCards size={16}/> Μετρητά</button></div></fieldset>:null}
 
@@ -315,7 +317,7 @@ export function AccountManagementSettings({data,settings,onChange}:{data:Finance
         </div>
         <footer className="account-management-modal-footer">
           <div>{editor.source!=='new'?<button type="button" className="account-management-delete-modal" disabled={busy||!editorDeletable} title={editorDeletable?'Διαγραφή λογαριασμού':editor.source==='seed'?'Οι αρχικοί λογαριασμοί διατηρούνται για το ιστορικό.':'Ο λογαριασμός χρησιμοποιείται ήδη στο οικονομικό ιστορικό.'} onClick={()=>{if(!editorAccount||!editorDeletable)return;setEditor(null);requestDelete(editorAccount)}}><Trash2 size={16}/> Διαγραφή</button>:null}</div>
-          <div className="account-management-modal-actions"><button type="button" className="secondary" disabled={busy} onClick={closeEditor}>Ακύρωση</button><button type="button" className="save-button" disabled={busy} onClick={()=>void save()}>{busy?'Αποθήκευση…':editor.source==='new'?'Δημιουργία λογαριασμού':'Αποθήκευση'}</button></div>
+          <div className="account-management-modal-actions"><Button type="button" variant="secondary" disabled={busy} onClick={closeEditor}>Ακύρωση</Button><Button type="button" variant="primary" disabled={busy} onClick={()=>void save()}>{busy?'Αποθήκευση…':editor.source==='new'?'Δημιουργία λογαριασμού':'Αποθήκευση'}</Button></div>
         </footer>
       </motion.section>
     </motion.div>:null}</AnimatePresence>

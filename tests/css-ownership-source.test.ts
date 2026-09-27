@@ -17,7 +17,7 @@ const accountIban=read('src/components/AccountIban.tsx');
 const accountManagement=read('src/components/AccountManagementSettings.tsx');
 const bankBrand=read('src/components/BankBrandMark.tsx');
 const tailLoader=read('src/styles/approved-workspace-targets.css');
-const accountMetadataSurfaces=read('src/styles/account-metadata-surfaces.css');
+const accountIbanSurfaces=read('src/styles/account-iban-surfaces.css');
 
 describe('Stage 5 CSS ownership',()=>{
   it('keeps the root/login CSS budget behind one named owner and the late tail behind one lazy workspace owner',()=>{
@@ -75,7 +75,7 @@ describe('Stage 5 CSS ownership',()=>{
     expect(tsStyleImports(workspaceLayer)).toEqual(['../styles/workspace-compat.css']);
     expect(cssImports(workspaceCompat)).toEqual([
       './approved-workspace-targets.css',
-      './account-metadata-surfaces.css',
+      './account-iban-surfaces.css',
       './dashboard-command-search-geometry.css',
       './dashboard-desktop-fidelity.css',
       './dashboard-bankmark-chart-attention.css',
@@ -92,8 +92,9 @@ describe('Stage 5 CSS ownership',()=>{
     expect(accountIban).toContain('export function AccountIban');
     expect(accountManagement).toContain('export function AccountManagementSettings');
     expect(bankBrand).toContain('export function BankBrandMark');
-    expect(accountMetadataSurfaces).toContain('.account-iban{');
-    expect(accountMetadataSurfaces).toContain('.account-metadata-row{');
+    expect(accountIbanSurfaces).toContain('.account-iban{');
+    expect(accountIbanSurfaces).not.toMatch(/account-metadata-(?:settings|list|row|identity)/);
+    expect(fs.existsSync(path.join(root,'src/styles/account-metadata-surfaces.css'))).toBe(false);
   });
 
   it('preserves the existing transitive approved-style tail behind the named workspace owner',()=>{

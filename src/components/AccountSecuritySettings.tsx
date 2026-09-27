@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react';
 import { ApiError, changeAccountEmail, changeAccountPassword, getSession } from '../lib/api';
 import { userErrorMessage } from '../lib/userMessage';
 import { AppSelectInput } from './AppSelectInput';
+import { AppTextInput } from './AppTextInput';
+import { Button } from './Button';
 import { DeviceAccessSettings } from './DeviceAccessSettings';
 import './AccountSecuritySettings.css';
 
@@ -155,19 +157,19 @@ export function AccountSecuritySettings({currentEmail}:{currentEmail?:string|nul
       <section className="panel neo-raised account-security-card account-security-email-card">
         <div className="panel-head"><div><span>Αλλαγή email</span></div><Mail/></div>
         <div className="account-security-current-email"><span>Τρέχον email:</span><b>{displayEmail||'—'}</b></div>
-        <label className="account-security-field"><span>Νέο email</span><input type="email" autoComplete="email" value={newEmail} placeholder="neo@example.com" onChange={event=>setNewEmail(event.target.value)}/></label>
+        <label className="account-security-field"><span>Νέο email</span><AppTextInput type="email" autoComplete="email" value={newEmail} placeholder="neo@example.com" onChange={event=>setNewEmail(event.target.value)}/></label>
         {pendingEmail?<div className="account-security-pending"><Mail size={16}/><span>Εκκρεμεί επιβεβαίωση προς <b>{pendingEmail}</b>.</span></div>:null}
-        <div className="account-security-actions"><button type="button" className="save-button" disabled={Boolean(authBusy)} onClick={()=>void submitEmail()}>{authBusy==='email'?'Αποθήκευση…':'Αλλαγή email'}</button></div>
+        <div className="account-security-actions"><Button type="button" variant="primary" disabled={Boolean(authBusy)} onClick={()=>void submitEmail()}>{authBusy==='email'?'Αποθήκευση…':'Αλλαγή email'}</Button></div>
       </section>
 
       <section className="panel neo-raised account-security-card account-security-password-card">
         <div className="panel-head"><div><span>Αλλαγή κωδικού</span></div><KeyRound/></div>
         <div className="account-security-password-grid">
-          <label className="account-security-field"><span>Τρέχων κωδικός</span><input type="password" autoComplete="current-password" value={currentPassword} onChange={event=>setCurrentPassword(event.target.value)}/></label>
-          <label className="account-security-field"><span>Νέος κωδικός</span><input type="password" autoComplete="new-password" value={newPassword} onChange={event=>setNewPassword(event.target.value)}/></label>
-          <label className="account-security-field account-security-password-confirm"><span>Επιβεβαίωση νέου κωδικού</span><input type="password" autoComplete="new-password" value={confirmPassword} onChange={event=>setConfirmPassword(event.target.value)}/></label>
+          <label className="account-security-field"><span>Τρέχων κωδικός</span><AppTextInput type="password" autoComplete="current-password" value={currentPassword} onChange={event=>setCurrentPassword(event.target.value)}/></label>
+          <label className="account-security-field"><span>Νέος κωδικός</span><AppTextInput type="password" autoComplete="new-password" value={newPassword} onChange={event=>setNewPassword(event.target.value)}/></label>
+          <label className="account-security-field account-security-password-confirm"><span>Επιβεβαίωση νέου κωδικού</span><AppTextInput type="password" autoComplete="new-password" value={confirmPassword} onChange={event=>setConfirmPassword(event.target.value)}/></label>
         </div>
-        <div className="account-security-actions"><button type="button" className="save-button" disabled={Boolean(authBusy)} onClick={()=>void submitPassword()}>{authBusy==='password'?'Αποθήκευση…':'Αλλαγή κωδικού'}</button></div>
+        <div className="account-security-actions"><Button type="button" variant="primary" disabled={Boolean(authBusy)} onClick={()=>void submitPassword()}>{authBusy==='password'?'Αποθήκευση…':'Αλλαγή κωδικού'}</Button></div>
       </section>
     </div>
 
@@ -181,13 +183,13 @@ export function AccountSecuritySettings({currentEmail}:{currentEmail?:string|nul
         <PinDots value={lockState.enabled?'1234':''}/>
       </div>
       <div className="account-security-pin-grid">
-        <label className="account-security-field"><span>Νέο PIN</span><div className="account-security-pin-input"><input aria-label="Νέο 4ψήφιο PIN" type="password" inputMode="numeric" autoComplete="off" maxLength={PIN_LENGTH} value={newPin} disabled={!lockState.supported} onChange={event=>setNewPin(digits(event.target.value))}/><PinDots value={newPin}/></div></label>
-        <label className="account-security-field"><span>Επιβεβαίωση PIN</span><div className="account-security-pin-input"><input aria-label="Επιβεβαίωση 4ψήφιου PIN" type="password" inputMode="numeric" autoComplete="off" maxLength={PIN_LENGTH} value={confirmPin} disabled={!lockState.supported} onChange={event=>setConfirmPin(digits(event.target.value))}/><PinDots value={confirmPin}/></div></label>
+        <label className="account-security-field"><span>Νέο PIN</span><div className="account-security-pin-input"><AppTextInput aria-label="Νέο 4ψήφιο PIN" type="password" inputMode="numeric" autoComplete="off" maxLength={PIN_LENGTH} value={newPin} disabled={!lockState.supported} onChange={event=>setNewPin(digits(event.target.value))}/><PinDots value={newPin}/></div></label>
+        <label className="account-security-field"><span>Επιβεβαίωση PIN</span><div className="account-security-pin-input"><AppTextInput aria-label="Επιβεβαίωση 4ψήφιου PIN" type="password" inputMode="numeric" autoComplete="off" maxLength={PIN_LENGTH} value={confirmPin} disabled={!lockState.supported} onChange={event=>setConfirmPin(digits(event.target.value))}/><PinDots value={confirmPin}/></div></label>
       </div>
       {lockState.enabled?<div className="account-security-idle-control"><div><Clock3 size={17}/><b>Κλείδωμα μετά από αδράνεια</b></div><AppSelectInput className="account-security-idle-select" aria-label="Χρόνος αυτόματου κλειδώματος" disabled={pinBusy} value={String(lockState.idleMinutes)} onChange={event=>void setIdleTimeout(Number(event.target.value))}>{IDLE_OPTIONS.map(minutes=><option key={minutes} value={String(minutes)}>{idleLabel(minutes)}</option>)}</AppSelectInput></div>:null}
       <div className="account-security-actions pin-actions">
-        <button type="button" className="save-button" disabled={pinBusy||!lockState.supported} onClick={()=>void submitPin()}>{pinBusy?'Αποθήκευση…':lockState.enabled?'Αλλαγή PIN':'Ενεργοποίηση PIN'}</button>
-        {lockState.enabled?<><button type="button" className="secondary" disabled={pinBusy} onClick={lockNow}>Κλείδωμα τώρα</button><button type="button" className="secondary danger-text" disabled={pinBusy} onClick={()=>void disablePin()}>Απενεργοποίηση PIN</button></>:null}
+        <Button type="button" variant="primary" disabled={pinBusy||!lockState.supported} onClick={()=>void submitPin()}>{pinBusy?'Αποθήκευση…':lockState.enabled?'Αλλαγή PIN':'Ενεργοποίηση PIN'}</Button>
+        {lockState.enabled?<><Button type="button" variant="secondary" disabled={pinBusy} onClick={lockNow}>Κλείδωμα τώρα</Button><Button type="button" variant="secondary" className="danger-text" disabled={pinBusy} onClick={()=>void disablePin()}>Απενεργοποίηση PIN</Button></>:null}
       </div>
       {pinMessage?<div className="account-security-inline-message" role="status" aria-live="polite">{pinMessage}</div>:null}
     </section>

@@ -1,7 +1,7 @@
-/* Stage 5 named owner for the preserved late workspace compatibility sequence.
-   Keep this import order stable until the numbered files are re-layered in later bounded batches. */
+/* Stage 5 semantic owner for the preserved late workspace cascade.
+   Keep this import order stable; each imported file owns a distinct approved workspace layer. */
 @import './approved-workspace-targets.css';
-@import './account-metadata-surfaces.css';
+@import './account-iban-surfaces.css';
 @import './dashboard-command-search-geometry.css';
 @import './dashboard-desktop-fidelity.css';
 @import './dashboard-bankmark-chart-attention.css';
