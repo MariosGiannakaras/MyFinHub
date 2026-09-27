@@ -2,6 +2,7 @@ import { Camera, Check, FileImage, LoaderCircle, ReceiptText, ScanLine, Trash2, 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from './Button';
 import { ConfirmDialog } from './ConfirmDialog';
+import { FormError } from './FormError';
 import { IconButton } from './IconButton';
 import { useModalFocus } from '../hooks/useModalFocus';
 import { money } from '../lib/format';
@@ -247,7 +248,7 @@ export function ReceiptInbox({
 
       {loading ? <div className="receipt-live-state" role="status"><LoaderCircle className="is-spinning" size={17}/> Αποθήκευση φωτογραφίας στη συσκευή…</div> : null}
       {message ? <div className="receipt-live-state receipt-success" role="status" aria-live="polite"><Check size={17}/> {message}</div> : null}
-      {error ? <div className="form-error" role="alert" aria-live="assertive">{error}</div> : null}
+      {error ? <FormError id="receipt-inbox-error">{error}</FormError> : null}
 
       <div className="receipt-inbox-layout">
         <aside className="receipt-draft-list" aria-label="Τοπικές αποδείξεις σε αναμονή">
