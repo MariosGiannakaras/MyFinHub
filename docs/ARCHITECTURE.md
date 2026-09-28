@@ -4,7 +4,7 @@
 
 RheomIQ is a React/Vite client with a small TypeScript API boundary. Production API handlers run as Vercel Node.js Functions in Frankfurt (`fra1`); local development exposes the same server modules through Express. The repository runtime contract is Node.js 22.x.
 
-The browser is UI-only for durable finance state. Durable finance data lives in Supabase/PostgreSQL in `eu-central-1`, and finance data or access tokens are not persisted in `localStorage` or IndexedDB. The one deliberate exception is the separately classified **CVV device vault**: when the owner explicitly saves a CVV, it is encrypted by a non-extractable Web Crypto key and stored in origin-local IndexedDB. It never joins FinanceData and is not synchronized to the server.
+The browser is UI-only for durable finance state. Durable finance data lives in Supabase/PostgreSQL in `eu-central-1`, and finance data or access tokens are not persisted in `localStorage` or IndexedDB. PAN, expiry and CVV are also excluded from FinanceData: they use the separate owner+AAL2 encrypted server card vault. The former browser-local encrypted CVV store exists only as a legacy migration source and is deleted after confirmed server-vault persistence.
 
 Production browser requests authenticate through HttpOnly/Secure session cookies. API handlers use the Supabase publishable key together with the signed-in user's access JWT, so PostgreSQL RLS remains part of the online authorization boundary. The production web runtime does not require a Supabase secret/service-role key. Privileged keys are limited to offline/admin workflows where explicitly required.
 
@@ -25,7 +25,7 @@ The Electron renderer has Node integration disabled, context isolation enabled, 
 
 Desktop and Vercel therefore remain separate runtime hosts but share one Supabase source of truth, one owner+AAL2 authorization model and the same optimistic revision RPCs. Finance data is not copied to a desktop database. A stale desktop or web client still receives a revision conflict rather than silently overwriting a newer save.
 
-Desktop PAN/expiry operations require the same existing `CARD_VAULT_KEY` used by the server-side vault. The installer imports that key only through a one-time restricted per-user provisioning file; Electron immediately encrypts it with Windows-backed `safeStorage`/DPAPI and deletes the plaintext file. The key is never compiled into Electron, the React bundle or Git history.
+Desktop PAN/expiry/CVV operations use the authenticated owner+AAL2 production `/api/card-secrets` boundary. `CARD_VAULT_KEY` remains server-side encryption material and is never provisioned to, packaged in or persisted by the Windows application.
 
 Electron itself follows its supported release line independently of the application's Node 22 backend contract. Packaging copies the Node 22 executable that ran the deterministic build into desktop resources and uses that executable for Express at runtime, avoiding an accidental backend runtime upgrade when Electron's embedded Node major changes.
 
@@ -75,13 +75,13 @@ New `card_purchase` and `card_payment` events may carry `cardId`. This binds his
 
 The current product has one synthetic `credit-card` liability, so only one credit-card identity may be active at a time. Archiving that identity does not alter the liability or its ledger events. Repayment remains possible while archived; new purchases require an active card.
 
-### Server PAN / expiry vault
+### Server card-secret vault
 
 `/api/card-secrets` is the only online card-secret endpoint.
 
-- `POST`: reveal PAN/expiry for one `cardId`.
-- `PUT`: create/update PAN/expiry for one `cardId`.
-- `DELETE`: explicit permanent deletion of PAN/expiry for one `cardId`.
+- `POST`: reveal PAN/expiry/CVV for one `cardId`.
+- `PUT`: create/update PAN/expiry/CVV for one `cardId`, including partial secret updates.
+- `DELETE`: explicit permanent deletion of the encrypted card-secret row for one `cardId`.
 
 Every method requires same-origin, an authenticated owner session and AAL2. The server uses the existing authenticated owner's JWT plus the Supabase publishable key to access `rheomiq_card_secrets`, therefore table RLS remains authoritative.
 
@@ -101,7 +101,7 @@ Card removal from active UI is metadata-only archival (`active = false` plus arc
 - credit liability/debt;
 - repayment history;
 - other finance history associated by `cardId`;
-- the PAN/expiry server-vault row.
+- the encrypted PAN/expiry/CVV server-vault row.
 
 Restoring/re-adding the same card reactivates the original `PaymentCard` with the same `cardId` and vault reference. No history relinking or reconstruction is required.
 
@@ -126,7 +126,7 @@ Secondary finance pages are lazy-loaded so the authenticated shell does not eage
 3. Supabase Git integration applies production migrations from `main`.
 4. Vercel deploys the Git-connected `main` branch and the post-deploy Production Smoke workflow verifies the public surface, required security headers, unauthenticated API protection, `no-store` caching and Frankfurt routing.
 5. Windows desktop PRs additionally build on `windows-latest`, launch the packaged executable against its hidden local backend, build an NSIS installer and retain it only as CI evidence.
-6. Published desktop releases are allowed only from commits already on `main`, require a matching `desktop-v<version>` tag and valid Windows Authenticode signing credentials, and publish both the installer and a SHA-256 checksum.
+6. Published desktop releases are allowed only from commits already on `main`, require the matching `myfinhub-v<version>` tag, validate the installer and publish both the installer and a SHA-256 checksum. Authenticode signing is optional for the current personal-use release channel; if signing credentials are configured, both signing secrets must be present and the resulting signature must validate.
 7. Real personal finance JSON, `.env` files, card secrets and credentials are never committed.
 
 ## Ledger model
