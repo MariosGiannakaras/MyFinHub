@@ -1,7 +1,20 @@
+import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { CardVaultClientError, cardVaultErrorMessage, saveCardSecret } from '../src/lib/cardVaultClient.js';
 
 afterEach(()=>{vi.unstubAllGlobals()});
+
+describe('card vault client source contract',()=>{
+  it('uses legacy local CVV only as reveal fallback and never uploads it implicitly',()=>{
+    const source=readFileSync(new URL('../src/lib/cardVaultClient.ts',import.meta.url),'utf8');
+    const reveal=source.slice(source.indexOf('export async function revealCardSecret'),source.indexOf('export async function saveCardSecret'));
+    expect(reveal).toContain('readLocalCvv(cardId)');
+    expect(reveal).not.toContain('saveCardSecret(');
+    expect(reveal).not.toContain("request<");
+    expect(reveal).not.toContain("'PUT'");
+    expect(reveal).toContain('Explicit Save/Update is the migration boundary');
+  });
+});
 
 describe('card vault client',()=>{
   it('sends PAN, expiry and CVV through the card vault request',async()=>{
