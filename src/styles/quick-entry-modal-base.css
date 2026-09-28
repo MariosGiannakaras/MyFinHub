@@ -5,10 +5,10 @@
 .quick-modal>header h2{font-size:25px;margin:4px 0}
 .quick-modal>header p{font-size:9px;color:var(--muted);margin:0;max-width:630px}
 .kind-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:7px;padding:0 20px 14px}
-.kind-grid button{border:1px solid #d9e3f0;background:var(--surface);border-radius:12px;padding:10px;text-align:left;cursor:pointer;transition:.15s}
-.kind-grid button:hover{transform:translateY(-2px);border-color:#a8c1f4}
-.kind-grid button.active{background:linear-gradient(145deg,#e9f1ff,#f8fbff);border-color:#80a8f5;box-shadow:0 0 0 2px rgba(47,111,237,.09)}
-.kind-grid button>span{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;background:#eaf0fa;color:#2f6fed}
+.kind-grid button{border:1px solid var(--line);background:var(--surface);border-radius:var(--radius-sm);padding:10px;text-align:left;cursor:pointer;transition:.15s}
+.kind-grid button:hover{transform:translateY(-1px);border-color:var(--border-strong);background:var(--surface-hover)}
+.kind-grid button.active{background:var(--surface-selected);border-color:var(--focus-outline);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 12%,transparent)}
+.kind-grid button>span{width:28px;height:28px;border-radius:9px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent)}
 .kind-grid svg{width:15px}
 .kind-grid b{display:block;font-size:8.5px;margin-top:7px}
 .kind-grid small{display:block;font-size:7px;color:var(--muted);line-height:1.35;margin-top:2px}
