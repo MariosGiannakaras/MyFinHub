@@ -155,3 +155,12 @@
   .settings-app-list b{text-align:left}
   .category-icon-pack-switcher{grid-template-columns:1fr}
 }
+
+
+.support-diagnostics{padding:18px;min-width:0}
+.support-diagnostics-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.support-diagnostics-grid>span{display:grid;gap:3px;min-width:0;padding:10px;border:1px solid var(--line);border-radius:11px;background:color-mix(in srgb,var(--surface) 82%,transparent)}
+.support-diagnostics-grid small{color:var(--muted);font-size:var(--ux-tiny-size)}
+.support-diagnostics-grid b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--ux-small-size)}
+@media(max-width:900px){.support-diagnostics-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:540px){.support-diagnostics-grid{grid-template-columns:1fr}}
