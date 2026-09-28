@@ -31,10 +31,10 @@ Status target: documentation only.
 - [x] Add root `INTEGRATION_HANDOFF.md`.
 - [x] Add `START_HERE.md`.
 - [x] Add `DECISIONS.md`.
-- [ ] Add `PROGRESS.md`.
-- [ ] Add `RELEASE_CHECKLIST.md`.
-- [ ] Open a draft PR to `develop` so the handoff package has a durable GitHub checkpoint.
-- [ ] Record the PR/head SHA in `PROGRESS.md`.
+- [x] Add `PROGRESS.md`.
+- [x] Add `RELEASE_CHECKLIST.md`.
+- [x] Open a draft PR to `develop` so the handoff package has a durable GitHub checkpoint.
+- [x] Record the PR/head SHA in `PROGRESS.md`.
 
 ## Acceptance
 
@@ -53,11 +53,11 @@ Do this before editing product code.
 
 ## 1.1 Current refs and divergence
 
-- [ ] Fetch current `develop` and `main` heads.
-- [ ] Compare current refs, not historical counts from old docs.
-- [ ] Identify main-only commits/semantics that are still production-relevant.
-- [ ] Verify whether those semantics are already present in develop by file/behavior, not by commit ancestry alone.
-- [ ] Record the exact refs in `PROGRESS.md`.
+- [x] Fetch current `develop` and `main` heads.
+- [x] Compare current refs, not historical counts from old docs.
+- [x] Identify main-only commits/semantics that are still production-relevant.
+- [x] Verify whether those semantics are already present in develop by file/behavior, not by commit ancestry alone.
+- [x] Record the exact refs in `PROGRESS.md`.
 
 ### Required checks
 
@@ -72,11 +72,11 @@ At minimum re-check:
 
 Read live state before planning DDL:
 
-- [ ] applied migration ledger;
-- [ ] presence/absence of device-session registry;
-- [ ] current `rheomiq_is_owner_aal2()` behavior;
-- [ ] financial-provider registry/assets state;
-- [ ] auth/security advisor items relevant to release.
+- [x] applied migration ledger;
+- [x] presence/absence of device-session registry;
+- [x] current `rheomiq_is_owner_aal2()` behavior;
+- [x] financial-provider registry/assets state;
+- [x] auth/security advisor items relevant to release.
 
 No production mutation in this phase.
 
@@ -107,18 +107,18 @@ Goal: preserve required production behavior without restoring legacy product cod
 
 ## 2.1 Android updater / Vercel function budget
 
-- [ ] Verify develop still preserves the production `/api/android-update` compatibility route.
-- [ ] Verify updater remains owner+AAL2 protected.
-- [ ] Verify final API entrypoint count stays within the repository/platform budget.
-- [ ] Keep/update the function-budget regression test.
-- [ ] Do not add a standalone endpoint if the existing rewrite is the canonical constrained design.
+- [x] Verify develop still preserves the production `/api/android-update` compatibility route.
+- [x] Verify updater remains owner+AAL2 protected.
+- [x] Verify final API entrypoint count stays within the repository/platform budget.
+- [x] Keep/update the function-budget regression test.
+- [x] Do not add a standalone endpoint if the existing rewrite is the canonical constrained design.
 
 ## 2.2 Auth compatibility
 
-- [ ] Preserve unauthenticated fail-closed behavior for protected APIs.
-- [ ] Preserve same-origin protection for ambient-cookie mutations.
-- [ ] Preserve explicit bearer behavior only on already approved native paths.
-- [ ] Confirm no new backend work introduces a service-role runtime dependency.
+- [x] Preserve unauthenticated fail-closed behavior for protected APIs.
+- [x] Preserve same-origin protection for ambient-cookie mutations.
+- [x] Preserve explicit bearer behavior only on already approved native paths.
+- [x] Confirm no new backend work introduces a service-role runtime dependency.
 
 ## Acceptance
 
@@ -132,12 +132,12 @@ Goal: make backend/data contracts match the canonical develop app.
 
 ## 3.1 Configurable accounts/providers
 
-- [ ] Inspect the current `Account` / settings types and server validators.
-- [ ] Keep custom accounts, provider metadata, account overrides and quick-choice metadata.
-- [ ] Define/confirm semantic role metadata for UI defaults (for example operating/current vs savings/reserve) without hard-coding a specific bank.
+- [x] Inspect the current `Account` / settings types and server validators.
+- [x] Keep custom accounts, provider metadata, account overrides and quick-choice metadata.
+- [x] Define/confirm semantic role metadata for UI defaults (for example operating/current vs savings/reserve) without hard-coding a specific bank.
 - [ ] Migrate existing seed accounts to equivalent default roles in normalization/defaulting logic; do not rewrite historical events.
-- [ ] Replace presentation/business assumptions tied to `piraeus-payroll`, `piraeus-savings` or similar IDs where a role is intended.
-- [ ] Keep stable IDs for history/reference compatibility even when behavior becomes role-driven.
+- [x] Replace presentation/business assumptions tied to `piraeus-payroll`, `piraeus-savings` or similar IDs where a role is intended.
+- [x] Keep stable IDs for history/reference compatibility even when behavior becomes role-driven.
 - [ ] Add validation/normalization tests.
 
 ### Acceptance
@@ -148,12 +148,12 @@ A custom provider/account can become the effective primary/current/savings accou
 
 Code-first, migration-second.
 
-- [ ] Verify compatible code handles the missing registry as an explicit migration-pending state.
-- [ ] Verify session registration occurs before RLS begins requiring an active device row.
-- [ ] Verify device list/revoke endpoints remain owner+AAL2 protected.
-- [ ] Verify revoked sessions fail closed when registry exists.
+- [x] Verify compatible code handles the missing registry as an explicit migration-pending state.
+- [x] Verify session registration occurs before RLS begins requiring an active device row.
+- [x] Verify device list/revoke endpoints remain owner+AAL2 protected.
+- [x] Verify revoked sessions fail closed when registry exists.
 - [ ] Add/repair tests for missing schema, active session and revoked session.
-- [ ] Do **not** apply the production migration in implementation PRs.
+- [x] Do **not** apply the production migration in implementation PRs.
 
 ### Acceptance
 
@@ -165,13 +165,13 @@ Both states are safe:
 
 Canonical target: encrypted server-side owner+AAL2 vault for PAN/expiry/CVV.
 
-- [ ] Verify request validation accepts exactly the canonical secret fields.
-- [ ] Verify crypto/persistence handles CVV exactly like the other encrypted card secrets.
-- [ ] Verify no card secret is written to FinanceData, normal backup/history/logs.
-- [ ] Keep transitional local-CVV read support only as needed.
-- [ ] If server CVV is absent and a local CVV exists, allow it to be used/displayed under the existing local security boundary.
-- [ ] Migrate local CVV to server only on an explicit user Save/Update under a valid protected session.
-- [ ] Delete local CVV only after confirmed successful server persistence.
+- [x] Verify request validation accepts exactly the canonical secret fields.
+- [x] Verify crypto/persistence handles CVV exactly like the other encrypted card secrets.
+- [x] Verify no card secret is written to FinanceData, normal backup/history/logs.
+- [x] Keep transitional local-CVV read support only as needed.
+- [x] If server CVV is absent and a local CVV exists, allow it to be used/displayed under the existing local security boundary.
+- [x] Migrate local CVV to server only on an explicit user Save/Update under a valid protected session.
+- [x] Delete local CVV only after confirmed successful server persistence.
 - [ ] Test old-client/new-server and transition cases where practical; do not support an unsafe new-client/old-server state in release.
 
 ### Acceptance
@@ -180,13 +180,13 @@ No silent secret loss, no silent upload, no mixed contract at production release
 
 ## 3.4 Recurring end/renewal date
 
-- [ ] Add the date to the canonical recurring type/model.
-- [ ] Add server validation and normalization.
-- [ ] Ensure backup/import/persistence round-trips it.
-- [ ] Keep the current UI field.
-- [ ] Use the date for advisory expiry/renewal attention.
-- [ ] Do not auto-stop an obligation merely because the date passed.
-- [ ] Keep stop/pause as explicit lifecycle actions.
+- [x] Add the date to the canonical recurring type/model.
+- [x] Add server validation and normalization.
+- [x] Ensure backup/import/persistence round-trips it.
+- [x] Keep the current UI field.
+- [x] Use the date for advisory expiry/renewal attention.
+- [x] Do not auto-stop an obligation merely because the date passed.
+- [x] Keep stop/pause as explicit lifecycle actions.
 - [ ] Test attention lookahead and persisted values.
 
 ### Acceptance
@@ -195,9 +195,9 @@ The visible recurring date is no longer a frontend-only loose field.
 
 ## 3.5 Financial provider assets
 
-- [ ] Verify the current pending brand-key migration against current registry/storage.
-- [ ] Keep embedded/fallback provider rendering functional before migration.
-- [ ] Add no release dependency that makes finance unavailable if an asset is missing.
+- [x] Verify the current pending brand-key migration against current registry/storage.
+- [x] Keep embedded/fallback provider rendering functional before migration.
+- [x] Add no release dependency that makes finance unavailable if an asset is missing.
 
 ---
 
@@ -207,11 +207,11 @@ The visible recurring date is no longer a frontend-only loose field.
 
 Owner decision P-005.
 
-- [ ] Identify all current local privacy states/toggles.
-- [ ] Introduce one shared app/session privacy state using the existing app state architecture.
-- [ ] Reports, Lending and any other sensitive summary surfaces consume that same state.
-- [ ] Keep it presentation-only.
-- [ ] Do not persist it unless a later explicit decision changes scope.
+- [x] Identify all current local privacy states/toggles.
+- [x] Introduce one shared app/session privacy state using the existing app state architecture.
+- [x] Reports, Lending and any other sensitive summary surfaces consume that same state.
+- [x] Keep it presentation-only.
+- [x] Do not persist it unless a later explicit decision changes scope.
 - [ ] Add interaction tests for cross-page consistency.
 
 ### Acceptance
@@ -222,10 +222,10 @@ Toggle once; relevant values hide/show consistently across navigation during the
 
 Owner delegated exact placement.
 
-- [ ] Inspect the current approved Dashboard layout before editing.
-- [ ] Preserve global Quick Entry and Έλεγχος access.
-- [ ] Do not re-add legacy shortcut blocks.
-- [ ] Add an Έλεγχος contextual action only when there are actionable items.
+- [x] Inspect the current approved Dashboard layout before editing.
+- [x] Preserve global Quick Entry and Έλεγχος access.
+- [x] Do not re-add legacy shortcut blocks.
+- [x] Add an Έλεγχος contextual action only when there are actionable items.
 - [ ] Add Quick Entry only through an existing compatible redesigned action pattern if it improves access without duplicating controls.
 - [ ] Validate desktop and mobile visually.
 
@@ -239,18 +239,18 @@ Owner decision P-004.
 
 ### Domain model
 
-- [ ] Add/confirm an explicit stored rule on each relevant credit card/product.
-- [ ] Use a narrow enum/schema rather than an implicit boolean/string.
-- [ ] Preserve the existing effective rule for existing cards during compatibility normalization so current forward behavior does not unexpectedly change.
-- [ ] New cards must receive an explicit rule through the canonical create/edit flow.
+- [x] Add/confirm an explicit stored rule on each relevant credit card/product.
+- [x] Use a narrow enum/schema rather than an implicit boolean/string.
+- [x] Preserve the existing effective rule for existing cards during compatibility normalization so current forward behavior does not unexpectedly change.
+- [x] New cards must receive an explicit rule through the canonical create/edit flow.
 
 ### Calculation/history
 
-- [ ] Update statement calculation to read the stored rule.
-- [ ] Remove contradictory UI text/engine assumptions.
-- [ ] Do not recompute settled historical statements.
-- [ ] Open/future cycles use the explicit rule.
-- [ ] If statements store rule/version metadata, preserve it to keep history reproducible.
+- [x] Update statement calculation to read the stored rule.
+- [x] Remove contradictory UI text/engine assumptions.
+- [x] Do not recompute settled historical statements.
+- [x] Open/future cycles use the explicit rule.
+- [x] If statements store rule/version metadata, preserve it to keep history reproducible.
 
 ### Acceptance
 
@@ -260,10 +260,10 @@ The UI and engine describe/use the same rule, and old settled history is unchang
 
 Owner decision P-006.
 
-- [ ] Keep normal Settings clean.
-- [ ] Preserve useful counters/diagnostics behind a dev/support-only boundary.
+- [x] Keep normal Settings clean.
+- [x] Preserve useful counters/diagnostics behind a dev/support-only boundary.
 - [ ] Reuse existing safe redaction rules.
-- [ ] Never surface secrets/private finance text merely for diagnostics.
+- [x] Never surface secrets/private finance text merely for diagnostics.
 
 ---
 
@@ -288,27 +288,27 @@ Do not create a second savings ledger.
 
 ### Behavior
 
-- [ ] Create a goal.
-- [ ] Edit amount/date.
-- [ ] Delete/archive according to existing product deletion conventions.
-- [ ] Persist across reload/client synchronization.
-- [ ] Calculate progress from canonical savings/account state without fabricating values.
-- [ ] Define the balance source using account roles/defaults rather than a hard-coded bank.
-- [ ] No target date means no fake countdown.
-- [ ] No amount means no fake monetary target.
+- [x] Create a goal.
+- [x] Edit amount/date.
+- [x] Delete/archive according to existing product deletion conventions.
+- [x] Persist across reload/client synchronization.
+- [x] Calculate progress from canonical savings/account state without fabricating values.
+- [x] Define the balance source using account roles/defaults rather than a hard-coded bank.
+- [x] No target date means no fake countdown.
+- [x] No amount means no fake monetary target.
 
 ### Backend/data
 
-- [ ] Add type/schema/validation.
-- [ ] Include in backup/import where canonical user configuration/state belongs.
-- [ ] Preserve forward/backward normalization for existing data without goals.
+- [x] Add type/schema/validation.
+- [x] Include in backup/import where canonical user configuration/state belongs.
+- [x] Preserve forward/backward normalization for existing data without goals.
 - [ ] Add regression tests.
 
 ### UX
 
-- [ ] Replace current placeholders with real goal rows/cards using the existing redesign.
-- [ ] Keep empty state truthful.
-- [ ] Use shared form/dialog/input primitives.
+- [x] Replace current placeholders with real goal rows/cards using the existing redesign.
+- [x] Keep empty state truthful.
+- [x] Use shared form/dialog/input primitives.
 
 ### Acceptance
 
@@ -318,13 +318,13 @@ The two visible concepts — amount and deadline — are real, persisted and edi
 
 Owner decision P-002.
 
-- [ ] Reuse the existing canonical budget model/handlers.
-- [ ] Add create/edit/delete within Reports near the budget analysis section.
+- [x] Reuse the existing canonical budget model/handlers.
+- [x] Add create/edit/delete within Reports near the budget analysis section.
 - [ ] Use a shared editor/dialog, not the legacy Settings component.
-- [ ] Keep budget progress, Reports and Έλεγχος on the same stored budget data.
-- [ ] Remove/avoid duplicate editor in Settings.
+- [x] Keep budget progress, Reports and Έλεγχος on the same stored budget data.
+- [x] Remove/avoid duplicate editor in Settings.
 - [ ] Verify delete/edit updates report values immediately.
-- [ ] Preserve budget/category validation and historical finance data.
+- [x] Preserve budget/category validation and historical finance data.
 
 ### Acceptance
 
