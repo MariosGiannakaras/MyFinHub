@@ -132,7 +132,7 @@ export function TransactionsPage({
   </div>;
 
   return <div className="page-stack transactions-approved transactions-workspace">
-    <PageHeader className="transactions-approved-heading" eyebrow="ΣΥΝΑΛΛΑΓΕΣ" title="Οι συναλλαγές μου" description={<p>Δείτε και διαχειριστείτε όλες τις συναλλαγές σας. Αναζήτηση, φίλτρα, κατηγορίες και πλήρης έλεγχος.</p>}/>
+    <PageHeader className="transactions-approved-heading" eyebrow="ΣΥΝΑΛΛΑΓΕΣ" title="Συναλλαγές" description={<p>Δείτε και διαχειριστείτε όλες τις συναλλαγές σας. Αναζήτηση, φίλτρα, κατηγορίες και πλήρης έλεγχος.</p>}/>
 
     <section className="transactions-approved-summary desktop-finance-table" aria-label="Σύνοψη συναλλαγών μήνα">
       <article className="transactions-summary-card income"><span className="transactions-summary-icon"><TrendingUp size={24}/></span><div className="transactions-summary-copy"><small>Σύνολο εσόδων</small><strong>{money.format(flow.income)}</strong><span className={trendClass(incomeDelta)}>{trendText(incomeDelta)}</span></div></article>
