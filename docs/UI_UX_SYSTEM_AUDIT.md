@@ -13,8 +13,9 @@ The v1.3.0 information architecture and finance semantics are retained. The visu
 3. **Shared primitives exist but adoption is incomplete.** The 12 routed pages contain **65 raw `<button>` elements** even though `Button`/`IconButton` exist. `Surface` is used directly by only one routed page while most pages create their own panel/card shells.
 4. **Geometry is not single-sourced.** Radius, shadow, border, control height and local surface values are repeated across page-specific CSS layers.
 5. **Visual hierarchy relies too much on shadow/radius and too little on typography, spacing, borders and section structure.** This is most visible on Dashboard, Savings, Cards, Credit and mobile.
-6. **Auth is too low-contrast.** Login/MFA controls visually sink into the canvas; focus is stronger than the resting control state.
-7. **Mobile uses the correct navigation model but inherits too many desktop cards.** The result is long vertical stacks, excessive surface nesting and inconsistent density.
+6. **Global navigation was route-conditioned.** Dashboard-specific CSS changed sidebar width, branding/logo treatment, nav typography, quick-entry/search placement, topbar actions and period controls only on the Dashboard route. Global AppShell chrome is now required to remain route-invariant; pages may style only their workspace content.
+7. **Auth is too low-contrast.** Login/MFA controls visually sink into the canvas; focus is stronger than the resting control state.
+8. **Mobile uses the correct navigation model but inherits too many desktop cards.** The result is long vertical stacks, excessive surface nesting and inconsistent density.
 
 ## Target direction
 
@@ -91,13 +92,14 @@ Use a cleaner premium-fintech system inspired by the useful qualities of the arc
 ## Implementation guardrails
 
 1. Shared geometry/elevation tokens live at the theme foundation.
-2. New generic actions must use `Button`/`IconButton`.
-3. New generic section shells must use `Surface`.
-4. Generic text/select/date/textarea controls must use app-owned input primitives.
-5. Tests should reject new `neo-*` JSX usage and new raw generic controls on routed pages.
-6. Page-specific CSS may define domain layout, data visualization and semantic state, but not invent a parallel button/input/panel design system.
-7. Dark/light themes must resolve the same semantic tokens; theme switching must not require page-specific overrides.
-8. Final acceptance requires rendered desktop/tablet/mobile review across all canonical routes and auth states.
+2. AppShell navigation, branding, topbar, search/quick-entry chrome and mobile navigation are route-invariant; page-specific CSS must never target AppShell based on the active route.
+3. New generic actions must use `Button`/`IconButton`.
+4. New generic section shells must use `Surface`.
+5. Generic text/select/date/textarea controls must use app-owned input primitives.
+6. Tests should reject new `neo-*` JSX usage and new raw generic controls on routed pages.
+7. Page-specific CSS may define domain layout, data visualization and semantic state, but not invent a parallel button/input/panel design system.
+8. Dark/light themes must resolve the same semantic tokens; theme switching must not require page-specific overrides.
+9. Final acceptance requires rendered desktop/tablet/mobile review across all canonical routes and auth states.
 
 ## Migration order
 
