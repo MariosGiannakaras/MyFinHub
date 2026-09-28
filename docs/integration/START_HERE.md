@@ -71,3 +71,14 @@ Creating or updating these planning files does **not** authorize:
 - a release publication.
 
 Those actions require the release gates in `RELEASE_CHECKLIST.md`.
+
+
+## Execution cadence and progress reporting
+
+For issue #429 and any continuation chat:
+
+- Batch coherent implementation changes; avoid a full CI run for each small commit.
+- Use targeted checks while building. Run the full required gate on the final integrated head, unless an intermediate security/database/migration/dependency boundary requires a full gate before continuing.
+- Every user-facing progress update must include **Tasks x/y · Subtasks x/y**.
+- The counters must be derived from `IMPLEMENTATION_PLAN.md` / `PROGRESS.md`, not estimated from memory.
+- Keep implementation branches pushed and checkpointed even when no PR is open; open the final review PR when the coherent batch is ready for full CI.
