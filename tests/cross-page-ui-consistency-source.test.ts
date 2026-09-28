@@ -77,6 +77,7 @@ describe('cross-page UI consistency contracts',()=>{
     expect(desktopAlignment).not.toContain('.brand-block .brand-mark-icon');
     expect(desktopFidelity).not.toContain('.sidebar nav button');
     expect(routeContinuity).toContain('Global navigation, branding, topbar, search, period controls and quick-entry chrome');
+    expect(routeContinuity).not.toMatch(/\.app-shell(?:\b|>)/);
     const shell=read('src/components/AppShell.tsx');
     expect(shell).not.toContain('genericEntry');
     expect(shell).toContain('data-global-quick-entry="desktop"');
