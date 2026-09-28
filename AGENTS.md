@@ -26,6 +26,14 @@
 - UI motion must respect `prefers-reduced-motion`; interaction state cannot be conveyed only by motion or color.
 - CI/security checks are production gates. Keep tests, dependency audit, CodeQL, Dependabot, and security headers working when changing the app.
 
+## Cross-chat execution and progress rules
+
+- For substantial repository work, batch coherent changes together and avoid triggering full CI for every small edit. Prefer narrow/local/repository-specific checks while building the batch, then run the complete required CI/security/visual/release gates on the final integrated head. Use an intermediate full CI gate only when a security, database, migration, dependency, or architecture boundary makes proceeding without it materially unsafe.
+- When the owner explicitly asks to minimize CI runs, do not keep an implementation PR open during high-churn batching if that PR would trigger redundant CI on every push. Maintain a pushed implementation branch and open/update the review PR when the coherent batch is ready for final validation, unless repository protection or collaboration needs require an earlier PR.
+- Every progress update to the owner during a substantial task must include both counters in the form **Tasks x/y · Subtasks x/y** (localized to the conversation language when appropriate).
+- Repository-owned progress tracking must use the same two counters. The denominator must come from an explicit checklist/phase plan in the repository, not from an ad-hoc estimate.
+- Before handing work to another chat/agent, update the repository progress checkpoint with the exact counters, branch/ref, completed work, validation, blockers, and next safe action. A future chat must be able to continue from repository state without prior conversation memory.
+
 ## Delivery workflow
 
 - Implementation, infrastructure, dependency-policy, and database changes start from a tracked GitHub issue unless they are an emergency security fix.
