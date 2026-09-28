@@ -28,7 +28,7 @@ describe('obligation lifecycle hierarchy source contracts',()=>{
     expect(activeIndex).toBeGreaterThan(-1);
     expect(linkedIndex).toBeGreaterThan(activeIndex);
     expect(inactiveIndex).toBeGreaterThan(linkedIndex);
-    expect(recurring).toContain('<details className="panel neo-flat inactive-recurring"');
+    expect(recurring).toContain('<details className="panel surface-flat inactive-recurring"');
     expect(recurring).toContain('Ενεργοποίηση ${item.name}');
     expect(recurring).toContain('Επεξεργασία ${item.name}');
   });
@@ -36,7 +36,7 @@ describe('obligation lifecycle hierarchy source contracts',()=>{
     expect(linked).toContain('activeLongTermLoanObligations(data)');
     expect(linked).toContain('onPayLoan(loan.id)');
     expect(linked).toContain('data-linked-loan={loan.id}');
-    expect(linked).toContain('neo-flat long-term-recurring');
+    expect(linked).toContain('surface-flat long-term-recurring');
   });
   it('runs dedicated rendered desktop/mobile completed, inactive and extreme lifecycle coverage',()=>{
     expect(coordinator).toContain("path:'scripts/obligation-lifecycle-qa.mjs'");
