@@ -1,6 +1,4 @@
 import type { CreditStatementRecord, CreditStatementStatus, FinanceData, FinanceEvent, PaymentCard, StatementBoundaryRule } from '../types.js';
-const APPROVED_STATEMENT_BOUNDARY:StatementBoundaryRule='next-cycle';
-
 type CreditStatementCycle={
   id:string;
   cardId:string;
@@ -77,7 +75,9 @@ export function groupCardPurchasesByStatement(events:FinanceEvent[],cardId:strin
 export function cardStatementConfiguration(card:PaymentCard){
   const closing=Number(card.statementClosingDay);const due=Number(card.statementDueDay);
   if(card.kind!=='credit'||!Number.isInteger(closing)||closing<1||closing>31||!Number.isInteger(due)||due<1||due>31)return null;
-  return {closingDay:closing,dueDay:due,boundary:APPROVED_STATEMENT_BOUNDARY};
+  const boundary=card.statementBoundaryRule;
+  if(boundary!=='include-closing-day'&&boundary!=='next-cycle')return null;
+  return {closingDay:closing,dueDay:due,boundary};
 }
 
 function statementRecordForPurchase(card:PaymentCard,date:string,now=new Date().toISOString()):CreditStatementRecord|null{
