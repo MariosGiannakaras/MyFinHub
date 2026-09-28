@@ -9,28 +9,28 @@ export const THEME_EVENT='myfinhub-theme-change';
 type ThemeTokens=Record<`--${string}`,string>;
 
 export const LIGHT_THEME_TOKENS:ThemeTokens={
-  '--canvas':'#eef3fb','--canvas-strong':'#e7eef8','--canvas-gradient':'radial-gradient(circle at 13% 0%,#fbfdff 0,#eef3fb 36%,#e9f0f9 100%)',
-  '--surface':'#f4f7fc','--surface-2':'#edf2fa','--surface-elevated':'#f8faff','--surface-inset':'#eef3fa','--surface-hover':'#e9f0f8','--surface-selected':'#e8f0ff','--surface-translucent':'rgba(248,250,254,.9)',
-  '--control-bg':'#f8fbff','--control-gradient':'linear-gradient(145deg,#fff,#edf3fa)','--surface-elevated-gradient':'linear-gradient(145deg,#f8faff,#edf2f9)',
+  '--canvas':'#f4f7fb','--canvas-strong':'#edf2f8','--canvas-gradient':'linear-gradient(180deg,#f7f9fc 0%,#f1f5fa 100%)',
+  '--surface':'#ffffff','--surface-2':'#f8fafc','--surface-elevated':'#ffffff','--surface-inset':'#f3f6fa','--surface-hover':'#f3f6fb','--surface-selected':'#edf4ff','--surface-translucent':'rgba(255,255,255,.94)',
+  '--control-bg':'#ffffff','--control-gradient':'#ffffff','--surface-elevated-gradient':'#ffffff',
   '--ink':'#10234d','--ink-2':'#28416f','--text-primary':'#10234d','--text-secondary':'#516889','--muted':'#61728c','--muted-2':'#95a3ba','--text-disabled':'#8d9bb1','--on-accent':'#ffffff','--white':'#ffffff',
   '--line':'#d9e2f0','--border-subtle':'#d9e2f0','--border-strong':'#b8c8dc','--border-glass':'rgba(255,255,255,.86)',
   '--blue':'#2f6fed','--blue-2':'#174ea6','--blue-3':'#8fb4ff','--accent':'#2f6fed','--accent-hover':'#245fcf','--accent-selected':'#5a8cff','--accent-soft':'#e9f0ff','--accent-gradient':'linear-gradient(135deg,#2f6fed,#174ea6)','--cyan':'#25b9d7','--cyan-2':'#68d8dc','--violet':'#7656d6',
   '--green':'#1d9a68','--success':'#1d9a68','--success-bg':'#e9f8f1','--red':'#d64058','--error':'#d64058','--error-bg':'#ffedf0','--amber':'#d99117','--warning':'#a66300','--warning-bg':'#fff5db','--info':'#315fae','--info-bg':'#edf3ff','--neutral-bg':'#eef2f7',
   '--finance-positive':'#187852','--finance-negative':'#b42d45','--finance-neutral':'#516889','--chart-grid':'#dfe7f2','--overlay':'rgba(18,33,62,.28)',
-  '--shadow-raised':'10px 10px 24px rgba(38,62,106,.10),-9px -9px 22px rgba(255,255,255,.88),inset 0 1px 0 rgba(255,255,255,.85)',
-  '--shadow-soft':'5px 5px 13px rgba(45,69,108,.09),-5px -5px 12px rgba(255,255,255,.8)','--shadow-inset':'inset 4px 4px 10px rgba(42,65,105,.09),inset -4px -4px 10px rgba(255,255,255,.9)','--shadow-flat':'0 5px 24px rgba(34,59,98,.07)','--focus':'0 0 0 3px rgba(47,111,237,.22)','--focus-outline':'rgba(47,111,237,.52)'
+  '--shadow-raised':'0 12px 30px rgba(24,45,78,.08)',
+  '--shadow-soft':'0 4px 14px rgba(24,45,78,.07)','--shadow-inset':'inset 0 0 0 1px rgba(184,200,220,.48)','--shadow-flat':'0 1px 3px rgba(24,45,78,.06)','--focus':'0 0 0 3px rgba(47,111,237,.22)','--focus-outline':'rgba(47,111,237,.52)'
 };
 
 export const DARK_THEME_TOKENS:ThemeTokens={
-  '--canvas':'#0b1220','--canvas-strong':'#0f1728','--canvas-gradient':'radial-gradient(circle at 15% 0%,#17243a 0,#0d1626 34%,#08101c 100%)',
-  '--surface':'#121b2d','--surface-2':'#172238','--surface-elevated':'#18243a','--surface-inset':'#0f1828','--surface-hover':'#1c2942','--surface-selected':'#1d3153','--surface-translucent':'rgba(20,30,48,.94)',
-  '--control-bg':'#111c2e','--control-gradient':'linear-gradient(145deg,#19263d,#111a2b)','--surface-elevated-gradient':'linear-gradient(145deg,#1a273e,#111a2b)',
+  '--canvas':'#0b1220','--canvas-strong':'#0f1728','--canvas-gradient':'linear-gradient(180deg,#0f1828 0%,#0a111e 100%)',
+  '--surface':'#131d2f','--surface-2':'#172238','--surface-elevated':'#18243a','--surface-inset':'#0f1828','--surface-hover':'#1c2942','--surface-selected':'#1d3153','--surface-translucent':'rgba(20,30,48,.96)',
+  '--control-bg':'#111c2e','--control-gradient':'#162238','--surface-elevated-gradient':'#18243a',
   '--ink':'#e7eefb','--ink-2':'#c7d3e8','--text-primary':'#e7eefb','--text-secondary':'#b4c0d5','--muted':'#9aa9c2','--muted-2':'#7f8ea8','--text-disabled':'#6e7c94','--on-accent':'#ffffff','--white':'#ffffff',
   '--line':'#26354e','--border-subtle':'#26354e','--border-strong':'#3a4b68','--border-glass':'rgba(255,255,255,.075)',
   '--blue':'#79a6ff','--blue-2':'#9bbcff','--blue-3':'#4c78ca','--accent':'#79a6ff','--accent-hover':'#91b6ff','--accent-selected':'#4d78d0','--accent-soft':'#1d3153','--accent-gradient':'linear-gradient(135deg,#3769cf,#2455bb)','--cyan':'#55ccdf','--cyan-2':'#7edce6','--violet':'#a68cff',
   '--green':'#66d6a5','--success':'#66d6a5','--success-bg':'#163226','--red':'#ff7f94','--error':'#ff7f94','--error-bg':'#3a1b25','--amber':'#ffc56d','--warning':'#ffc56d','--warning-bg':'#3a2a12','--info':'#9abaff','--info-bg':'#1b2b4b','--neutral-bg':'#1b2638',
   '--finance-positive':'#70d7a8','--finance-negative':'#ff8799','--finance-neutral':'#aebbd1','--chart-grid':'#2a3953','--overlay':'rgba(2,7,18,.74)',
-  '--shadow-raised':'0 16px 38px rgba(0,0,0,.34),inset 0 1px 0 rgba(255,255,255,.045)','--shadow-soft':'0 8px 20px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.035)','--shadow-inset':'inset 4px 4px 10px rgba(0,0,0,.34),inset -1px -1px 0 rgba(255,255,255,.035)','--shadow-flat':'0 8px 24px rgba(0,0,0,.24)','--focus':'0 0 0 3px rgba(121,166,255,.34)','--focus-outline':'rgba(121,166,255,.72)'
+  '--shadow-raised':'0 14px 32px rgba(0,0,0,.28)','--shadow-soft':'0 5px 16px rgba(0,0,0,.24)','--shadow-inset':'inset 0 0 0 1px rgba(58,75,104,.55)','--shadow-flat':'0 2px 6px rgba(0,0,0,.20)','--focus':'0 0 0 3px rgba(121,166,255,.34)','--focus-outline':'rgba(121,166,255,.72)'
 };
 
 const THEME_STYLE_ID='myfinhub-semantic-theme';
@@ -38,9 +38,9 @@ const THEME_STYLE=`
 :root[data-theme]{background:var(--canvas);color:var(--ink);color-scheme:light}
 :root[data-theme="dark"]{color-scheme:dark}
 html,body,#root,.login-screen{background:var(--canvas-gradient)!important;color:var(--ink)!important}
-.neo-raised,.metric-card,.account-chip,.report-kpis>div,.summary-card{background:var(--surface-elevated-gradient)!important;border-color:var(--border-glass)!important;box-shadow:var(--shadow-raised)!important}
-.neo-inset,.searchbox,.saving-route>span,.reconcile-preview,.sort-direction-control{background:var(--surface-inset)!important;border-color:var(--border-subtle)!important;box-shadow:var(--shadow-inset)!important}
-.neo-flat{background:var(--surface-translucent)!important;border-color:var(--border-subtle)!important;box-shadow:var(--shadow-flat)!important}
+.surface-raised,.neo-raised,.metric-card,.account-chip,.report-kpis>div,.summary-card{background:var(--surface-elevated-gradient)!important;border-color:var(--border-glass)!important;box-shadow:var(--shadow-raised)!important}
+.surface-inset,.neo-inset,.searchbox,.saving-route>span,.reconcile-preview,.sort-direction-control{background:var(--surface-inset)!important;border-color:var(--border-subtle)!important;box-shadow:var(--shadow-inset)!important}
+.surface-flat,.neo-flat{background:var(--surface-translucent)!important;border-color:var(--border-subtle)!important;box-shadow:var(--shadow-flat)!important}
 .brand-word,.sidebar nav button,.mobile-nav button,.settings-form span,.form-grid label>span{color:var(--text-secondary)!important}.brand-word{color:var(--ink-2)!important}.brand-word span{color:var(--cyan)!important}
 .sidebar nav button:hover,.insight-list>button:hover{background:var(--surface-hover)!important}.sidebar nav button.active,.mobile-nav button.active,.save-button{background:var(--accent-gradient)!important;color:var(--on-accent)!important}
 .count-badge{background:var(--surface-elevated)!important;color:var(--accent)!important}
