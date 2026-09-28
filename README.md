@@ -41,14 +41,14 @@ The v1.2.2 Windows package owns its public Supabase client configuration, so a n
 - **Receipt capture & OCR:** camera/file JPG/PNG capture into a device-local pending inbox, Greek/English local OCR and deterministic reviewed suggestions into the existing Quick Entry flow. Receipt images and raw OCR are not cloud-synced or stored in FinanceData.
 - **Savings:** cash-offset saving and savings-account movements without corrupting spending totals.
 - **Recurring:** repeated obligations and long-term payment flows.
-- **Cards & credit:** unlimited cards per bank, protected PAN/expiry storage, same-device CVV recovery across archive/restore, and independent limits/debt/history for multiple credit cards.
+- **Cards & credit:** unlimited cards per bank, encrypted server-vault PAN/expiry/CVV synchronization across web, Windows and approved native clients, plus independent limits/debt/history for multiple credit cards.
 - **Loans & lending:** personal loans, installments, receivables and repayment history with normalized payment flows.
 - **Planning:** scheduled transactions and deterministic 30/60/90-day cash-flow forecasting.
 - **Budgets & rules:** monthly category budgets plus deterministic transaction categorization rules.
 - **Έλεγχος:** one action center for finance items that require follow-up or explicit confirmation, including legacy semantic candidates.
 - **Reports:** comparative KPIs, flow/trend views, commitment/credit pressure, category momentum and responsive drill-downs from the canonical finance state.
 - **Search & Command Palette:** privacy-safe navigation/search with app-wide keyboard shortcuts.
-- **Autosave + Undo/Redo + Change History:** normal edits persist automatically while remaining reversible, with session-only privacy-safe descriptions of recent changes.
+- **Autosave + Undo/Redo + Change History:** normal edits persist automatically while remaining reversible, with durable owner-only history stored outside FinanceData/backups and privacy-safe descriptions of recent changes.
 
 ## Keyboard shortcuts
 
@@ -82,7 +82,7 @@ The online runtime uses the Supabase publishable key, never a service-role secre
 
 Receipt capture/OCR is local-only: pending images live in device-local IndexedDB, OCR uses self-hosted Tesseract worker/WASM/Greek-English language assets, raw OCR text is transient, and receipt content is not written to FinanceData, Supabase, normal backups, Change History or application logs.
 
-Change History is session-only and deliberately excludes PAN, expiry secrets, CVV/CVC, vault references, transaction notes/descriptions and arbitrary private free-text.
+Change History is stored separately from FinanceData and normal backups under the owner+AAL2 boundary, and deliberately excludes PAN, expiry secrets, CVV/CVC, vault references, transaction notes/descriptions and arbitrary private free-text.
 
 Desktop updates are accepted only from the controlled MyFinHub GitHub Release channel. The app requires the exact versioned installer and `.sha256` asset pair, validates trusted GitHub URLs and verifies the downloaded installer hash before installation.
 
@@ -156,7 +156,7 @@ SUPABASE_URL=https://<project-ref>.supabase.co
 SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 ```
 
-Server-side/local-development PAN + expiry storage may additionally use the existing vault key. The packaged Windows application does **not** receive this key; its card-secret operations are proxied through the canonical protected production API:
+Server-side/local-development PAN/expiry/CVV storage uses the existing vault key. The packaged Windows application does **not** receive this key; its card-secret operations are proxied through the canonical protected production API:
 
 ```text
 CARD_VAULT_KEY=<server-side 64 hex chars or Base64 decoding to 32 bytes>
