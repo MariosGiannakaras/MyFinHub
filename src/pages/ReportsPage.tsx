@@ -5,6 +5,7 @@ import { AnimatedAmount } from '../components/AnimatedAmount';
 import { BudgetRuleSettings } from '../components/BudgetRuleSettings';
 import { Button } from '../components/Button';
 import { PageHeader } from '../components/PageHeader';
+import { Surface } from '../components/Surface';
 import { FinanceIcon } from '../components/FinanceIcon';
 import { budgetProgress } from '../lib/budgets';
 import { accountBalances, allAccounts, effectiveLegacyTransactions, flowImpactEvent, flowImpactLegacy } from '../lib/domain';
@@ -120,11 +121,11 @@ export function ReportsPage({data,month,privacyVisible,onPrivacyVisibleChange,on
   <nav className="report-section-nav" aria-label="Ενότητες αναφορών"><a href="#report-overview">Επισκόπηση</a><a href="#report-budget-overview">Προϋπολογισμοί</a><a href="#report-flow">Ροή</a><a href="#report-obligations">Υποχρεώσεις</a><a href="#report-expenses">Έξοδα</a><a href="#report-comparisons">Συγκρίσεις</a><a href="#report-accounts">Λογαριασμοί</a></nav>
 
   <section className="report-executive report-kpi-strip" aria-label="Κύριοι δείκτες περιόδου">
-   <article className="report-headline-card positive"><span>Συνολικά έσοδα</span><b><AnimatedAmount value={snapshot.flow.income}/></b><small>{changeLabel(change(snapshot.flow.income,snapshot.previous.income))} από τον προηγούμενο μήνα</small></article>
-   <article className="report-headline-card negative"><span>Συνολικά έξοδα</span><b><AnimatedAmount value={snapshot.flow.expense}/></b><small>{changeLabel(change(snapshot.flow.expense,snapshot.previous.expense))} από τον προηγούμενο μήνα</small></article>
+   <Surface as="article" variant="flat" className="report-headline-card positive"><span>Συνολικά έσοδα</span><b><AnimatedAmount value={snapshot.flow.income}/></b><small>{changeLabel(change(snapshot.flow.income,snapshot.previous.income))} από τον προηγούμενο μήνα</small></Surface>
+   <Surface as="article" variant="flat" className="report-headline-card negative"><span>Συνολικά έξοδα</span><b><AnimatedAmount value={snapshot.flow.expense}/></b><small>{changeLabel(change(snapshot.flow.expense,snapshot.previous.expense))} από τον προηγούμενο μήνα</small></Surface>
    <article className={`report-headline-card ${netFlow>=0?'positive':'negative'}`}><span>Καθαρό ισοζύγιο</span><b><AnimatedAmount value={netFlow}/></b><small>{changeLabel(change(netFlow,previousNetFlow))} από τον προηγούμενο μήνα</small></article>
-   <article className="report-headline-card"><span>Συνολικό budget</span><b>{budgetLimit>0?money.format(budgetLimit):'—'}</b><small>{budgetLimit>0?`${Math.round(budgetRatio*100)}% χρησιμοποιημένο`:'Δεν έχει οριστεί ενεργό όριο'}</small></article>
-   <article className="report-headline-card positive"><span>Αποταμίευση</span><b>{percent(insights.savingsRate,1)}</b><small>Στόχος {percent(savingsTarget,0)} · {savingsTargetProgress===null?'χωρίς συγκρίσιμη βάση':`${Math.round(savingsTargetProgress*100)}% προόδου`}</small></article>
+   <Surface as="article" variant="flat" className="report-headline-card"><span>Συνολικό budget</span><b>{budgetLimit>0?money.format(budgetLimit):'—'}</b><small>{budgetLimit>0?`${Math.round(budgetRatio*100)}% χρησιμοποιημένο`:'Δεν έχει οριστεί ενεργό όριο'}</small></Surface>
+   <Surface as="article" variant="flat" className="report-headline-card positive"><span>Αποταμίευση</span><b>{percent(insights.savingsRate,1)}</b><small>Στόχος {percent(savingsTarget,0)} · {savingsTargetProgress===null?'χωρίς συγκρίσιμη βάση':`${Math.round(savingsTargetProgress*100)}% προόδου`}</small></Surface>
   </section>
 
   <section className="report-analytics-grid" id="report-flow" aria-label="Βασικά γραφήματα">
