@@ -12,7 +12,7 @@ Issue: #429
 - Production mutation: **none**
 - Database mutation: **none**
 - Product/backend implementation changes: **in progress on the implementation branch**
-- Current goal: finish page-parity/source cleanup, then open one final PR and run the full validation gate
+- Current goal: open the single final integration PR and validate the exact PR head with the full repository gates
 
 ## Phase status
 
@@ -24,7 +24,7 @@ Issue: #429
 | 3 — backend/domain alignment | DONE | accounts/providers, device compatibility, vault transition, recurring contract and provider fallback aligned |
 | 4 — cross-cutting behavior | IN PROGRESS | shared privacy, Dashboard contextual action, statement boundary and diagnostics implemented; final visual validation remains |
 | 5 — product gaps/new features | DONE | persisted Savings goals implemented; canonical budget CRUD verified in Reports and removed from Settings props |
-| 6 — page parity/cleanup | NOT STARTED | |
+| 6 — page parity/cleanup | IN PROGRESS | source alignment complete; rendered desktop/mobile/focus verification remains in final QA gate |
 | 7 — validation gates | NOT STARTED | |
 | 8 — merge to develop | NOT STARTED | |
 | 9 — production promotion | NOT STARTED | separate authorization/release phase |
@@ -159,8 +159,8 @@ Append a new entry for every meaningful implementation checkpoint.
 ## 2026-09-28 — live baseline + first implementation batch
 
 **Progress counters**
-- Tasks: **2/10**
-- Subtasks: **41/133**
+- Tasks: **6/10**
+- Subtasks: **111/133**
 - Counter source: explicit checkboxes/phases in `IMPLEMENTATION_PLAN.md`; do not estimate from chat memory.
 
 **Branch / PR / head SHA**
@@ -284,3 +284,42 @@ Append a new entry for every meaningful implementation checkpoint.
 
 **Next safe action**
 - complete source/page parity cleanup, then open the final PR to `develop` and use that exact head for the full CI/security/visual validation gate.
+
+
+## 2026-09-28 — final pre-PR implementation checkpoint
+
+**Progress counters**
+- Tasks: **6/10**
+- Subtasks: **111/133**
+
+**Branch / exact baseline**
+- implementation branch: `feat/429-canonical-integration`
+- branch head before this progress-only checkpoint: `a06c75e7b9269690268869471627cdc9c4f6683f`
+- current `develop`: `bbe516b84b56fed0b149f608de8c30c06c762f68`
+- branch comparison: 0 commits behind develop; no conflict/rebase required
+- implementation PR: intentionally not open yet; the next action opens the single final PR and should not be followed by documentation-only pushes
+
+**Major completed implementation**
+- canonical persisted Savings goals with create/edit/delete/deadline/progress;
+- shared account-selection helper replacing bank-specific UI assumptions;
+- canonical recurring `endDate` contract and advisory expiry behavior;
+- explicit per-card credit statement boundary with migration-only compatibility default;
+- shared session privacy across Dashboard, Reports and Lending;
+- contextual Dashboard Έλεγχος action based on real attention state;
+- server-vault CVV compatibility changed to read-only fallback until explicit Save;
+- local CVV cleanup only after confirmed server persistence;
+- device-session pre-migration compatibility and revoked fail-closed test coverage;
+- Reports confirmed as canonical budget CRUD surface;
+- dev/support-only sanitized diagnostics;
+- production stylesheet now loads the approved redesign chain used by QA;
+- QA renderer and focused source/domain tests aligned to the new contracts.
+
+**Production/database actions**
+- none.
+
+**Next safe action**
+1. Open the single final PR to `develop` from the current branch.
+2. Let the final PR workflows run on the exact head.
+3. Fix only concrete failures/regressions surfaced by those gates.
+4. Complete rendered desktop/mobile verification.
+5. Merge to `develop` only when required gates are green.
