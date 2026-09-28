@@ -9,7 +9,8 @@ The interface uses a **flat, restrained premium-fintech surface system**. Hierar
 - `prefers-reduced-motion` disables non-essential animation.
 - Status feedback appears near the relevant task (save state, review confidence, split balance, reconciliation delta).
 - Dense finance data uses lists/tables/charts rather than turning every datum into a card.
-- Elevation is restrained and directional; shadows never replace semantic borders or focus rings.\n- New product JSX must use semantic `surface-*`/`Surface` primitives rather than `neo-*` classes. Legacy `neo-*` selectors are compatibility aliases only during migration.
+- Elevation is restrained and directional; shadows never replace semantic borders or focus rings.
+- Product JSX uses semantic `surface-*`/`Surface` primitives; legacy `neo-*` classes are not part of the active design system.
 
 Primary references used during redesign:
 - W3C WCAG 2.2: contrast, non-text contrast, target size, focus visibility.
