@@ -29,13 +29,13 @@ button:disabled{cursor:not-allowed}
 .sidebar nav button.active svg,.mobile-nav button.active svg{transform:scale(1.08)}
 
 /* Controls gain a visible container state in addition to the existing focus outline. */
-.searchbox,.login-input,.neo-inset,.filterbar select,.form-grid input,.form-grid select,.settings-form input,.settings-form select,.settings-form textarea,.split-line input,.split-line select,.column-filter select{
+.searchbox,.login-input,.neo-inset,.surface-inset,.filterbar select,.form-grid input,.form-grid select,.settings-form input,.settings-form select,.settings-form textarea,.split-line input,.split-line select,.column-filter select{
   transition:border-color var(--motion-base) ease,box-shadow var(--motion-base) ease,background-color var(--motion-base) ease,transform var(--motion-fast) var(--ease-out);
 }
 @media(hover:hover){
   .filterbar select:hover,.form-grid input:hover,.form-grid select:hover,.settings-form input:hover,.settings-form select:hover,.settings-form textarea:hover,.split-line input:hover,.split-line select:hover,.column-filter select:hover{border-color:#b7c9e5}
 }
-.searchbox:focus-within,.login-input:focus-within,.neo-inset:focus-within{border-color:rgba(47,111,237,.42);box-shadow:inset 3px 3px 8px rgba(42,65,105,.07),inset -3px -3px 8px rgba(255,255,255,.92),0 0 0 3px rgba(47,111,237,.10)}
+.searchbox:focus-within,.login-input:focus-within,.neo-inset,.surface-inset:focus-within{border-color:rgba(47,111,237,.42);box-shadow:inset 3px 3px 8px rgba(42,65,105,.07),inset -3px -3px 8px rgba(255,255,255,.92),0 0 0 3px rgba(47,111,237,.10)}
 .login-field:focus-within>label,.settings-form label:focus-within>span,.filter-label:focus-within>span{color:var(--blue-2)}
 
 /* Authentication: richer state feedback without turning login into an animation showcase. */
@@ -125,7 +125,7 @@ button:disabled{cursor:not-allowed}
 @media(prefers-reduced-motion:reduce){
   .login-card,.login-brand,.login-shield,.login-card>div:has(>h1),.login-form,.login-footnote,.login-error,.login-field-hint,.editor-backdrop,.editor-dialog,.action-status,.persistence-notice,.session-error-banner,.form-error[role="alert"],.bank-column,.bank-card-stack>.payment-card{animation:none!important}
   .login-spinner,.is-spinning{animation:none!important}
-  .secondary,.text-button,.wide-action,.row-actions button,.mobile-more-menu button,.mobile-nav button,.command-pill,.top-actions button,.icon-button,.login-logout,.empty-bank-card,.payment-card,.payment-card button,.searchbox,.login-input,.neo-inset,.semantic-table tbody tr,.flow-pill,.mfa-code-progress i{transition:none!important}
+  .secondary,.text-button,.wide-action,.row-actions button,.mobile-more-menu button,.mobile-nav button,.command-pill,.top-actions button,.icon-button,.login-logout,.empty-bank-card,.payment-card,.payment-card button,.searchbox,.login-input,.neo-inset,.surface-inset,.semantic-table tbody tr,.flow-pill,.mfa-code-progress i{transition:none!important}
   .sidebar nav button svg,.mobile-nav button svg,.mobile-more-menu nav button svg,.top-actions button svg,.row-actions button svg,.icon-button svg{transition:none!important}
 }
 html[data-motion="reduced"] .login-card,html[data-motion="reduced"] .login-brand,html[data-motion="reduced"] .login-shield,html[data-motion="reduced"] .login-form,html[data-motion="reduced"] .editor-backdrop,html[data-motion="reduced"] .editor-dialog,html[data-motion="reduced"] .action-status,html[data-motion="reduced"] .persistence-notice,html[data-motion="reduced"] .bank-column,html[data-motion="reduced"] .bank-card-stack>.payment-card{animation:none!important}
