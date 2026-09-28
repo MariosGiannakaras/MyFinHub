@@ -4,6 +4,35 @@ All notable MyFinHub changes are recorded here. Release artifacts remain availab
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-09-28
+
+### Added
+
+- Durable cross-session Undo/Redo and Change History stored outside FinanceData/backups under the owner+AAL2 boundary.
+- Owner-only account metadata management, including IBAN handling and provider/account metadata.
+- Cadence-aware recurring obligations with monthly, multi-month, annual and multi-year schedules.
+- Persisted savings goals, account/device management, per-card credit statement boundaries and the final redesigned desktop/mobile workspace.
+- Active-device session registry enforcement and refreshed financial-provider brand metadata in production.
+
+### Changed
+
+- Completed the canonical redesigned MyFinHub application and promoted it to production while preserving the established finance/accounting engine.
+- Consolidated privacy state, Reports budget ownership, contextual review actions, account/provider defaults and diagnostics into the canonical product surfaces.
+- PAN, expiry and CVV now synchronize through the existing encrypted owner+AAL2 server card vault across approved clients; the former local CVV store remains only as a migration fallback.
+- Final code-health work removed phase-only handoff/redesign artifacts and retained only the final 63-image visual evidence set.
+- Production recurring data was reconciled to the approved workbook semantics: 11 active + 5 stopped items, with lifetime purchases and canonical Loan duplicates excluded.
+
+### Security & reliability
+
+- Production device-session RLS now requires owner + AAL2 + an active device session, with safe first-request bootstrap.
+- Browser/Windows cookie authentication, approved native bearer boundaries, optimistic revisions, finance backups/audit history and card-secret isolation remain enforced.
+- Windows packaging continues to keep `CARD_VAULT_KEY` and privileged Supabase credentials out of the distributed application.
+- Final integrated validation passed CI, CodeQL, Cross-engine, Performance, Windows Desktop, Windows First Run and Windows Clean Launch gates before production promotion.
+
+### Notes
+
+- Web/production v1.3.0 is live. Windows installer publication is finalized through the controlled `myfinhub-v1.3.0` tag workflow, which verifies main ancestry, package version, installer integrity and the SHA-256 asset pair.
+
 ## [1.2.2] - 2026-08-22
 
 ### Fixed
@@ -205,7 +234,8 @@ All notable MyFinHub changes are recorded here. Release artifacts remain availab
 
 - v1.0.0 is an unsigned personal-use Windows build. Windows may display Unknown publisher / Microsoft Defender SmartScreen.
 
-[Unreleased]: https://github.com/MariosGiannakaras/MyFinHub/compare/myfinhub-v1.2.2...develop
+[Unreleased]: https://github.com/MariosGiannakaras/MyFinHub/compare/myfinhub-v1.3.0...develop
+[1.3.0]: https://github.com/MariosGiannakaras/MyFinHub/releases/tag/myfinhub-v1.3.0
 [1.2.2]: https://github.com/MariosGiannakaras/MyFinHub/releases/tag/myfinhub-v1.2.2
 [1.2.1]: https://github.com/MariosGiannakaras/MyFinHub/releases/tag/myfinhub-v1.2.1
 [1.2.0]: https://github.com/MariosGiannakaras/MyFinHub/releases/tag/myfinhub-v1.2.0
