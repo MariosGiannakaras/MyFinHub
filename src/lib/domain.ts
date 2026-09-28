@@ -36,6 +36,7 @@ export function migrateData(input: FinanceData): FinanceData {
     schemaVersion: 3,
     updatedAt: input.updatedAt || new Date().toISOString(),
     state: {
+      ...state,
       customTransactions: state.customTransactions ?? [],
       overrides: state.overrides ?? {},
       deleted: state.deleted ?? [],
@@ -46,6 +47,7 @@ export function migrateData(input: FinanceData): FinanceData {
       customLoans: state.customLoans ?? [],
       lendingCustom: state.lendingCustom ?? [],
       settings: {
+        ...(state.settings ?? {}),
         excludedFromAvailable: state.settings?.excludedFromAvailable ?? excludedDefaults,
         accountNames: state.settings?.accountNames ?? {},
         customAccounts: state.settings?.customAccounts ?? [],
