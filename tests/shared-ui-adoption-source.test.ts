@@ -119,9 +119,9 @@ describe('shared finance UI adoption contracts',()=>{
     expect(lending.match(/<Button/g)).toHaveLength(10);
     expect(lending.match(/<IconButton/g)).toHaveLength(1);
     expect(lending.match(/<button/g)).toHaveLength(2);
-    expect(lending.match(/<Button variant="primary"/g)).toHaveLength(3);
-    expect(lending.match(/<Button variant="secondary"/g)).toHaveLength(5);
-    expect(lending.match(/<Button variant="ghost"/g)).toHaveLength(2);
+    expect(lending.match(/<Button[^>]+variant="primary"/g)).toHaveLength(3);
+    expect(lending.match(/<Button[^>]+variant="secondary"/g)).toHaveLength(5);
+    expect(lending.match(/<Button[^>]+variant="ghost"/g)).toHaveLength(2);
     expect(lending).toContain('<IconButton type="button" aria-label="Κλείσιμο κίνησης δανεικών"');
     expect(lending).not.toContain('className="save-button"');
     expect(lending).not.toContain('className="secondary privacy-toggle"');
@@ -159,7 +159,7 @@ describe('shared finance UI adoption contracts',()=>{
     expect(loans).toContain("from '../components/IconButton'");
     expect(loans.match(/<Button/g)).toHaveLength(7);
     expect(loans.match(/<IconButton/g)).toHaveLength(1);
-    expect(loans.match(/<button/g)).toHaveLength(0);
+    expect(loans.match(/<button/g)??[]).toHaveLength(0);
     expect(loans.match(/<Button[^>]+variant="primary"/g)).toHaveLength(3);
     expect(loans.match(/<Button[^>]+variant="secondary"/g)).toHaveLength(4);
     expect(loans).toContain('<Button type="button" variant="secondary" onClick={()=>startNew(\'self-loan\')}');
