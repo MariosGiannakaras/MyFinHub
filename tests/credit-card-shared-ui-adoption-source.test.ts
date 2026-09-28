@@ -11,7 +11,9 @@ describe('Credit Card shared Button ownership',()=>{
     expect(source.match(/<Button\b/g)).toHaveLength(17);
     expect(source.match(/<IconButton\b/g)).toHaveLength(9);
     expect(source.match(/<Button[^>]+variant=\"primary\"/g)).toHaveLength(6);
-    expect(source.match(/<Button[^>]+variant=\"secondary\"/g)).toHaveLength(9);\n    expect(source.match(/<Button[^>]+variant=\"ghost\"/g)).toHaveLength(1);\n    expect(source.match(/<Button[^>]+variant=\"danger\"/g)).toHaveLength(1);
+    expect(source.match(/<Button[^>]+variant=\"secondary\"/g)).toHaveLength(9);
+    expect(source.match(/<Button[^>]+variant=\"ghost\"/g)).toHaveLength(1);
+    expect(source.match(/<Button[^>]+variant=\"danger\"/g)).toHaveLength(1);
     expect(source).not.toContain('className="save-button"');
     expect(source).not.toContain('className="secondary"');
     expect(source).not.toContain('className="icon-button"');
