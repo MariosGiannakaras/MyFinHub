@@ -70,6 +70,17 @@ describe('cross-page UI consistency contracts',()=>{
     }
   });
 
+  it('routes repeated KPI families through the shared Surface primitive',()=>{
+    const transactions=read('src/pages/TransactionsPage.tsx');
+    const recurring=read('src/pages/RecurringPage.tsx');
+    const reports=read('src/pages/ReportsPage.tsx');
+    const cards=read('src/pages/CardsPage.tsx');
+    expect(transactions.match(/<Surface as="article" variant="flat" className="transactions-summary-card/g)).toHaveLength(4);
+    expect(recurring.match(/<Surface as="article" variant="flat" className="recurring-summary-card/g)).toHaveLength(2);
+    expect(reports.match(/<Surface as="article" variant="flat" className=/g)).toHaveLength(5);
+    expect(cards.match(/<Surface as="article" variant="flat" className="cards-surrounding-kpi"/g)).toHaveLength(4);
+  });
+
   it('prevents raw generic action chrome from bypassing shared Button primitives',()=>{
     const genericRaw=/<button\b[^>]*className=(?:"[^"]*"|'[^']*'|\{`[^`]*`\})[^>]*\b(?:save-button|secondary|text-button|icon-button)\b/;
     for(const file of routedPages){
