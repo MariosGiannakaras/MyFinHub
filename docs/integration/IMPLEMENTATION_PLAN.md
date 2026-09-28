@@ -226,7 +226,7 @@ Owner delegated exact placement.
 - [x] Preserve global Quick Entry and Έλεγχος access.
 - [x] Do not re-add legacy shortcut blocks.
 - [x] Add an Έλεγχος contextual action only when there are actionable items.
-- [x] Add Quick Entry only through an existing compatible redesigned action pattern if it improves access without duplicating controls.
+- [x] Keep Quick Entry on the existing global/account contextual patterns; do not add a duplicate Dashboard control because it does not improve access enough to justify a second action surface.
 - [ ] Validate desktop and mobile visually.
 
 ### Acceptance
@@ -262,7 +262,7 @@ Owner decision P-006.
 
 - [x] Keep normal Settings clean.
 - [x] Preserve useful counters/diagnostics behind a dev/support-only boundary.
-- [x] Reuse existing safe redaction rules.
+- [x] Reuse the existing safe-diagnostics privacy contract; this browser panel is stricter by construction and copies only a fixed metadata/count whitelist, never arbitrary diagnostic text.
 - [x] Never surface secrets/private finance text merely for diagnostics.
 
 ---
