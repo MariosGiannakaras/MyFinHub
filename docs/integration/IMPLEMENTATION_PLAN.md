@@ -135,10 +135,10 @@ Goal: make backend/data contracts match the canonical develop app.
 - [x] Inspect the current `Account` / settings types and server validators.
 - [x] Keep custom accounts, provider metadata, account overrides and quick-choice metadata.
 - [x] Define/confirm semantic role metadata for UI defaults (for example operating/current vs savings/reserve) without hard-coding a specific bank.
-- [ ] Migrate existing seed accounts to equivalent default roles in normalization/defaulting logic; do not rewrite historical events.
+- [x] Migrate existing seed accounts to equivalent default roles in normalization/defaulting logic; do not rewrite historical events.
 - [x] Replace presentation/business assumptions tied to `piraeus-payroll`, `piraeus-savings` or similar IDs where a role is intended.
 - [x] Keep stable IDs for history/reference compatibility even when behavior becomes role-driven.
-- [ ] Add validation/normalization tests.
+- [x] Add validation/normalization tests.
 
 ### Acceptance
 
@@ -152,7 +152,7 @@ Code-first, migration-second.
 - [x] Verify session registration occurs before RLS begins requiring an active device row.
 - [x] Verify device list/revoke endpoints remain owner+AAL2 protected.
 - [x] Verify revoked sessions fail closed when registry exists.
-- [ ] Add/repair tests for missing schema, active session and revoked session.
+- [x] Add/repair tests for missing schema, active session and revoked session.
 - [x] Do **not** apply the production migration in implementation PRs.
 
 ### Acceptance
@@ -187,7 +187,7 @@ No silent secret loss, no silent upload, no mixed contract at production release
 - [x] Use the date for advisory expiry/renewal attention.
 - [x] Do not auto-stop an obligation merely because the date passed.
 - [x] Keep stop/pause as explicit lifecycle actions.
-- [ ] Test attention lookahead and persisted values.
+- [x] Test attention lookahead and persisted values.
 
 ### Acceptance
 
@@ -212,7 +212,7 @@ Owner decision P-005.
 - [x] Reports, Lending and any other sensitive summary surfaces consume that same state.
 - [x] Keep it presentation-only.
 - [x] Do not persist it unless a later explicit decision changes scope.
-- [ ] Add interaction tests for cross-page consistency.
+- [x] Add interaction tests for cross-page consistency.
 
 ### Acceptance
 
@@ -226,7 +226,7 @@ Owner delegated exact placement.
 - [x] Preserve global Quick Entry and Έλεγχος access.
 - [x] Do not re-add legacy shortcut blocks.
 - [x] Add an Έλεγχος contextual action only when there are actionable items.
-- [ ] Add Quick Entry only through an existing compatible redesigned action pattern if it improves access without duplicating controls.
+- [x] Add Quick Entry only through an existing compatible redesigned action pattern if it improves access without duplicating controls.
 - [ ] Validate desktop and mobile visually.
 
 ### Acceptance
@@ -262,7 +262,7 @@ Owner decision P-006.
 
 - [x] Keep normal Settings clean.
 - [x] Preserve useful counters/diagnostics behind a dev/support-only boundary.
-- [ ] Reuse existing safe redaction rules.
+- [x] Reuse existing safe redaction rules.
 - [x] Never surface secrets/private finance text merely for diagnostics.
 
 ---
@@ -302,7 +302,7 @@ Do not create a second savings ledger.
 - [x] Add type/schema/validation.
 - [x] Include in backup/import where canonical user configuration/state belongs.
 - [x] Preserve forward/backward normalization for existing data without goals.
-- [ ] Add regression tests.
+- [x] Add regression tests.
 
 ### UX
 
@@ -320,7 +320,7 @@ Owner decision P-002.
 
 - [x] Reuse the existing canonical budget model/handlers.
 - [x] Add create/edit/delete within Reports near the budget analysis section.
-- [ ] Use a shared editor/dialog, not the legacy Settings component.
+- [x] Use a shared editor/dialog, not the legacy Settings component.
 - [x] Keep budget progress, Reports and Έλεγχος on the same stored budget data.
 - [x] Remove/avoid duplicate editor in Settings.
 - [ ] Verify delete/edit updates report values immediately.
