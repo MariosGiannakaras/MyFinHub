@@ -115,6 +115,24 @@ describe('finance document validation', () => {
     expect(() => validateFinanceState(badAliases)).toThrowError(/aliases/i);
   });
 
+  it('accepts canonical provider account metadata and rejects unsupported categories', () => {
+    const full = validState();
+    full.state.settings.customAccounts=[{
+      id:'account-alpha-current',
+      name:'Alpha Current',
+      kind:'bank',
+      provider:'Alpha Bank',
+      providerId:'alpha',
+      bankAccountCategory:'current',
+      showInQuickChoices:true,
+      custom:true,
+    }];
+    expect(()=>validateFinanceData(full)).not.toThrow();
+
+    full.state.settings.customAccounts[0].bankAccountCategory='invalid';
+    expect(()=>validateFinanceData(full)).toThrowError(/bankAccountCategory/i);
+  });
+
   it('accepts cards and extended loan metadata used by current workspaces', () => {
     const full = validState();
     full.state.cardBanks.push({ id: 'bank-1', name: 'BANK', order: 10, custom: true });
