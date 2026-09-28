@@ -37,6 +37,17 @@ describe('card secure details',()=>{
     expect(updated.vaultRef).toBe(card.id);
   });
 
+  it('cleans a legacy local CVV only after an explicit successful server save',async()=>{
+    const calls:string[]=[];
+    const persistence:CardDetailsPersistence={
+      saveSecret:async()=>{calls.push('server');return {saved:true,last4:'2345'}},
+      cleanupLocalCvv:async()=>{calls.push('cleanup')},
+      now:()=> '2026-09-25T10:00:00.000Z',
+    };
+    await saveCardDetails(card,{pan:'12345',expiry:'12/31',cvv:'123'},{requireCvv:true},persistence);
+    expect(calls).toEqual(['server','cleanup']);
+  });
+
   it('surfaces a server-vault save failure without a second local persistence step',async()=>{
     const calls:string[]=[];
     const persistence:CardDetailsPersistence={
