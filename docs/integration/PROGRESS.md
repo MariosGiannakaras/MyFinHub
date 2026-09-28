@@ -12,13 +12,13 @@ Issue: #429
 - Production mutation: **none**
 - Database mutation: **none**
 - Product/backend implementation changes: **none yet**
-- Current goal: finish the repository-owned handoff package and open a draft PR to develop
+- Current goal: handoff foundation is complete; next work is Phase 1 live baseline recovery
 
 ## Phase status
 
 | Phase | Status | Notes |
 | --- | --- | --- |
-| 0 — handoff foundation | IN PROGRESS | issue/branch/root pointer/start/decisions/plan being created |
+| 0 — handoff foundation | DONE | issue #429, branch, handoff docs and draft PR #430 created |
 | 1 — live baseline recovery | NOT STARTED | must recover current refs/state before product edits |
 | 2 — production constraint reconciliation | NOT STARTED | |
 | 3 — backend/domain alignment | NOT STARTED | |
@@ -72,8 +72,9 @@ Planning only:
 ## PR / commit state
 
 - Issue: #429
-- Draft PR: **not yet created**
-- Last verified branch head: **record after PR creation**
+- Draft PR: **#430** — `chore/429-integration-handoff-plan` → `develop`
+- Base develop SHA at PR creation: `bbe516b84b56fed0b149f608de8c30c06c762f68`
+- Last verified branch head at PR creation: `8a4270be557b6c16251bd67ee1ed02ca5e157e8d`
 
 ## Blockers
 
@@ -81,11 +82,11 @@ None for the planning phase.
 
 ## Exact next action
 
-1. Finish/create `RELEASE_CHECKLIST.md`.
-2. Open a draft PR from `chore/429-integration-handoff-plan` to `develop`.
-3. Update this file with PR number and exact PR head SHA.
-4. Commit/push that update.
-5. Only then begin Phase 1 live baseline recovery.
+1. Recover current `develop` and `main` refs and compare them live.
+2. Re-check live Supabase migration/auth/device/provider state without mutating production.
+3. Build the current integration-sensitive file map from actual code.
+4. Record all recovered refs/state in this file.
+5. Only then begin product/backend edits from the first Phase 2/3 task whose dependencies are satisfied.
 
 ---
 
@@ -118,3 +119,38 @@ Append a new entry for every meaningful implementation checkpoint.
 
 **Next safe action**
 - ...
+
+
+## 2026-09-28 — repository-owned handoff foundation
+
+**Branch / PR / head SHA**
+- branch: `chore/429-integration-handoff-plan`
+- PR: #430 (draft, base `develop`)
+- develop base at PR creation: `bbe516b84b56fed0b149f608de8c30c06c762f68`
+- pre-checkpoint head: `8a4270be557b6c16251bd67ee1ed02ca5e157e8d`
+
+**Completed**
+- created issue #429;
+- recorded owner product direction and workbook choices;
+- added memory-independent START HERE, decisions, implementation plan, progress contract and release checklist;
+- opened draft PR #430.
+
+**Files changed**
+- `INTEGRATION_HANDOFF.md`
+- `docs/integration/START_HERE.md`
+- `docs/integration/DECISIONS.md`
+- `docs/integration/IMPLEMENTATION_PLAN.md`
+- `docs/integration/PROGRESS.md`
+- `docs/integration/RELEASE_CHECKLIST.md`
+
+**Validation**
+- documentation-only checkpoint; no product/backend test claim is made.
+
+**Database / production actions**
+- none.
+
+**Open blockers or owner decisions**
+- none for starting Phase 1.
+
+**Next safe action**
+- recover the live Git/database integration baseline and update this file before editing product code.
