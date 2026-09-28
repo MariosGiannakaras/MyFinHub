@@ -123,6 +123,24 @@ describe('finance document validation', () => {
     expect(() => validateFinanceData(full)).not.toThrow();
   });
 
+  it('accepts canonical recurring end dates, savings goals and explicit credit statement rules', () => {
+    const full = validState();
+    full.state.recurringCustom.push({ id:'rec-1',name:'Plan',amount:10,day:5,endDate:'2027-01-31',accountId:'bank',category:'Συνδρομές',active:true });
+    full.state.savingsGoals=[{id:'goal-1',name:'Ταξίδι',targetAmount:2500,targetDate:'2027-06-30',createdAt:full.updatedAt,updatedAt:full.updatedAt}];
+    full.state.cards.push({ id:'card-1',bankId:'bank',nickname:'Visa',kind:'credit',network:'visa',active:true,creditLimit:3000,statementClosingDay:12,statementDueDay:20,statementBoundaryRule:'include-closing-day',createdAt:full.updatedAt,updatedAt:full.updatedAt });
+    expect(() => validateFinanceData(full)).not.toThrow();
+    expect(() => validateFinanceState(full.state)).not.toThrow();
+  });
+
+  it('rejects malformed recurring end dates, savings goals and credit statement rules', () => {
+    const badRecurring=validState();badRecurring.state.recurringCustom.push({id:'rec-1',name:'Plan',amount:10,day:5,endDate:'31/01/2027',accountId:'bank',category:'Συνδρομές',active:true});
+    expect(()=>validateFinanceData(badRecurring)).toThrowError(/endDate/i);
+    const badGoal=validState();badGoal.state.savingsGoals=[{id:'goal-1',name:'Goal',targetAmount:0,targetDate:'2027-01-01',createdAt:badGoal.updatedAt,updatedAt:badGoal.updatedAt}];
+    expect(()=>validateFinanceData(badGoal)).toThrowError(/targetAmount/i);
+    const badCard=validState();badCard.state.cards.push({id:'card-1',bankId:'bank',nickname:'Visa',kind:'credit',network:'visa',active:true,statementClosingDay:12,statementDueDay:20,statementBoundaryRule:'guessed',createdAt:badCard.updatedAt,updatedAt:badCard.updatedAt});
+    expect(()=>validateFinanceData(badCard)).toThrowError(/statementBoundaryRule/i);
+  });
+
   it('accepts positive integer installment coverage on canonical finance events and mutable writes', () => {
     const full = validState();
     full.state.events.push({
