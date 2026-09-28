@@ -22,9 +22,12 @@ describe('approved Savings desktop target source contract',()=>{
     expect(source).toContain('const targetTotal=target>0&&flow.income>0?flow.income*target:0');
     expect(source).toContain('breakdown.rows.reduce');
     expect(source).toContain('className="savings-trend-chart"');
-    expect(source).toContain('className="panel neo-raised savings-goals"');
-    expect(source).not.toContain('savingsGoals:');
-    expect(source).not.toContain('targetAmount:');
+    expect(source).toContain('savings-goals');
+    expect(source).toContain('data.state.savingsGoals??[]');
+    expect(source).toContain('onUpsertGoal');
+    expect(source).toContain('onDeleteGoal');
+    expect(source).toContain('targetAmount');
+    expect(source).toContain('targetDate');
   });
 
   it('keeps the approved desktop composition isolated from the existing responsive layout',()=>{
