@@ -9,7 +9,7 @@ The v1.3.0 information architecture and finance semantics are retained. The visu
 ## Executive findings
 
 1. **The information architecture is stronger than the visual system.** Dashboard, Transactions, Credit, Planning, Attention and Settings generally expose the right information, but too many nested rounded surfaces compete for hierarchy.
-2. **Neumorphism is encoded at the foundation layer.** `Surface`, `DialogShell`, owned select/date popovers and the runtime theme all emit or style `neo-raised`, `neo-flat` and `neo-inset`.
+2. **The former neumorphic foundation was a root cause.** The implementation has now migrated `Surface`, dialogs, owned popovers and routed pages to semantic `surface-raised`, `surface-flat` and `surface-inset` primitives.
 3. **Shared primitives exist but adoption is incomplete.** The 12 routed pages contain **65 raw `<button>` elements** even though `Button`/`IconButton` exist. `Surface` is used directly by only one routed page while most pages create their own panel/card shells.
 4. **Geometry is not single-sourced.** Radius, shadow, border, control height and local surface values are repeated across page-specific CSS layers.
 5. **Visual hierarchy relies too much on shadow/radius and too little on typography, spacing, borders and section structure.** This is most visible on Dashboard, Savings, Cards, Credit and mobile.
@@ -46,7 +46,7 @@ Use a cleaner premium-fintech system inspired by the useful qualities of the arc
 - `Surface raised`: primary section/panel.
 - `Surface flat`: low-emphasis grouped content.
 - `Surface inset`: embedded state/preview area; visually uses border + tonal background rather than an embossed inset shadow.
-- Legacy `neo-*` selectors remain temporarily as compatibility aliases only; new JSX must not emit them.
+- Legacy `neo-*` selectors have been removed from the active source; semantic `surface-*` primitives are the only generic surface vocabulary.
 
 ### Form primitives
 
