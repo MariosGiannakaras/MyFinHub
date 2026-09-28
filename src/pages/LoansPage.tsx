@@ -5,6 +5,7 @@ import { AppDateInput } from '../components/AppDateInput';
 import { AppSelectInput } from '../components/AppSelectInput';
 import { AppTextInput } from '../components/AppTextInput';
 import { Button } from '../components/Button';
+import { PageHeader } from '../components/PageHeader';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { FormError } from '../components/FormError';
 import { IconButton } from '../components/IconButton';
@@ -94,7 +95,7 @@ export function LoansPage({data,asOf,onUpsertLoan,onCreateSelfLoan,onPayLoan}:{d
   };
 
   return <div className="page-stack">
-    <section className="page-heading"><div><span className="eyebrow">ΔΟΣΕΙΣ & ΔΑΝΕΙΑ</span><h1>Δόσεις & Δάνεια</h1><p>Οι πληρωμές γίνονται μόνο όταν τις καταχωρίζεις εσύ. Το προκαθορισμένο ποσό είναι αφετηρία και μπορεί να αλλάξει σε κάθε πληρωμή.</p></div><div className="heading-actions"><Button type="button" variant="secondary" onClick={()=>startNew('self-loan')}><HandCoins size={16}/> ΒΟΗΘΕΙΑ</Button><Button type="button" variant="primary" onClick={()=>startNew('installment')}><Plus size={17}/> Νέο</Button></div></section>
+    <PageHeader eyebrow="ΔΟΣΕΙΣ & ΔΑΝΕΙΑ" title="Δόσεις & Δάνεια" description={<p>Οι πληρωμές γίνονται μόνο όταν τις καταχωρίζεις εσύ. Το προκαθορισμένο ποσό είναι αφετηρία και μπορεί να αλλάξει σε κάθε πληρωμή.</p>} actions={<><Button type="button" variant="secondary" onClick={()=>startNew('self-loan')}><HandCoins size={16}/> ΒΟΗΘΕΙΑ</Button><Button type="button" variant="primary" onClick={()=>startNew('installment')}><Plus size={17}/> Νέο</Button></>}/>
     <section className="loan-toolbar surface-flat"><div className="loan-sort-controls"><label>Ταξινόμηση <AppSelectInput aria-label="Κριτήριο ταξινόμησης δόσεων και δανείων" value={sort} onChange={e=>setSort(e.target.value as SortKey)}><option value="remaining">Δόσεις που απομένουν</option><option value="amount">Υπόλοιπο</option><option value="next">Συνήθης ημέρα</option><option value="name">Όνομα</option></AppSelectInput></label><SortDirectionControl value={sortDirection} onChange={setSortDirection} label="Κατεύθυνση ταξινόμησης δόσεων και δανείων"/></div><span>{activeLoans.length} ενεργές · {completedLoans.length} ολοκληρωμένες</span></section>
     <section aria-labelledby="active-loans-title">
       <div className="section-title"><div><span id="active-loans-title">Ενεργές υποχρεώσεις</span><b>Υπόλοιπο, επόμενες δόσεις και άμεσες ενέργειες.</b></div></div>
