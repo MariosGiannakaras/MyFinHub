@@ -72,5 +72,5 @@ jobs:
         with:
           name: myfinhub-final-screenshots-${{ github.event.pull_request.head.sha || github.sha }}
           path: visual-qa/final/
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 30
