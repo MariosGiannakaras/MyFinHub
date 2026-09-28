@@ -22,6 +22,15 @@ describe('product migration category trees',()=>{
     expect(migrated.state.settings.incomeCategoryTree).toEqual(incomeTree);
   });
 
+  it('preserves savings goals and normalizes legacy credit cards to their previous effective next-cycle rule',()=>{
+    const data=qaFinanceData();
+    data.state.savingsGoals=[{id:'goal-1',name:'Emergency',targetAmount:5000,targetDate:null,createdAt:data.updatedAt,updatedAt:data.updatedAt}];
+    data.state.cards=(data.state.cards??[]).map(card=>card.kind==='credit'?{...card,statementBoundaryRule:undefined}:card);
+    const migrated=migrateProductData(data);
+    expect(migrated.state.savingsGoals).toEqual(data.state.savingsGoals);
+    expect((migrated.state.cards??[]).find(card=>card.kind==='credit')?.statementBoundaryRule).toBe('next-cycle');
+  });
+
   it('keeps older data without category trees backwards compatible',()=>{
     const data=qaFinanceData();
     delete data.state.settings.expenseCategoryTree;

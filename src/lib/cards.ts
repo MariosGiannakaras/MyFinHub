@@ -50,9 +50,7 @@ export function archivedCardsForBank(data:FinanceData,bankId:string){
 }
 
 export function creditCards(data:FinanceData,{includeArchived=false}:{includeArchived?:boolean}={}){
-  return allCards(data)
-    .filter(card=>card.kind==='credit'&&(includeArchived||card.active!==false))
-    .map(card=>card.statementBoundaryRule==='next-cycle'?card:{...card,statementBoundaryRule:'next-cycle' as const});
+  return allCards(data).filter(card=>card.kind==='credit'&&(includeArchived||card.active!==false));
 }
 
 export function deletedCreditCards(data:FinanceData){

@@ -10,6 +10,23 @@ const minimal = (): FinanceData => migrateData({
 
 describe('RheomIQ ledger invariants',()=>{
   it('migrates schema v2 without inventing browser storage state',()=>{const d=minimal();expect(d.schemaVersion).toBe(3);expect(d.app).toBe('RheomIQ');expect(d.state.events).toEqual([]);expect(d.state.reviewDecisions).toEqual({})});
+  it('derives migration defaults from account metadata without assuming a specific bank id',()=>{
+    const migrated=migrateData({
+      app:'MyFinHub',schemaVersion:2,updatedAt:'2026-08-17T00:00:00Z',
+      seed:{accounts:[
+        {id:'wallet',name:'Μετρητά',kind:'cash',cashRole:'daily'},
+        {id:'alpha-current',name:'Κύριος',kind:'bank',providerId:'alpha',bankAccountCategory:'current'},
+        {id:'reserve',name:'Reserve',kind:'savings',excludeFromAvailable:true,showInQuickChoices:false},
+      ],months:[],transactions:[],snapshots:[],recurring:[],subscriptions:[],loans:[],lending:[],stats:{}},
+      state:{customTransactions:[],overrides:{},deleted:[],recurringCustom:[],recurringOverrides:{},loanExtra:{},loanOverrides:{},customLoans:[],lendingCustom:[],settings:{accountNames:{},expenseCategories:[],incomeCategories:[],customPresets:[],pinnedPresets:[]},savingsGoals:[{id:'goal-1',name:'Goal',targetAmount:100,createdAt:'2026-08-17T00:00:00Z',updatedAt:'2026-08-17T00:00:00Z'}]}
+    } as unknown as FinanceData);
+    expect(migrated.state.settings.defaultExpenseAccount).toBe('alpha-current');
+    expect(migrated.state.settings.defaultIncomeAccount).toBe('alpha-current');
+    expect(migrated.state.settings.defaultLoanAccount).toBe('alpha-current');
+    expect(migrated.state.settings.excludedFromAvailable).toEqual(['reserve']);
+    expect(migrated.state.savingsGoals?.[0]?.id).toBe('goal-1');
+  });
+
   it('cash-offset saving never touches cash and preserves net worth',()=>{const d=minimal();const before=netWorth(d,'2026-08-17');const e=createEvent({kind:'saving_cash_offset',date:'2026-08-17',amount:80,note:'saving',fromAccountId:'piraeus-payroll',toAccountId:'piraeus-savings'});d.state.events=[e];const b=accountBalances(d,'2026-08-17');expect(b.cash).toBe(100);expect(b['piraeus-payroll']).toBe(920);expect(b['piraeus-savings']).toBe(580);expect(netWorth(d,'2026-08-17')).toBe(before)});
   it('withdrawal is a zero-sum transfer',()=>{const e=createEvent({kind:'withdrawal',date:'2026-08-17',amount:50,note:'cash',fromAccountId:'piraeus-payroll',toAccountId:'cash'});expect(e.legs.reduce((s,l)=>s+l.amount,0)).toBe(0)});
   it('credit purchase counts expense once while payment has zero cashflow impact',()=>{const d=minimal();const purchase=createEvent({kind:'card_purchase',date:'2026-08-17',amount:40,note:'card',category:'Άλλο'});const payment=createEvent({kind:'card_payment',date:'2026-08-17',amount:40,note:'pay',fromAccountId:'piraeus-payroll'});d.state.events=[purchase,payment];expect(monthlyFlow(d,'2026-08').expense).toBe(40);expect(accountBalances(d,'2026-08-17')['credit-card']).toBe(0)});

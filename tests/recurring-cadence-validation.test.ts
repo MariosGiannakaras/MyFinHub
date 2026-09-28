@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { validateRecurringCadenceData, validateRecurringCadenceState } from '../server/recurringCadenceValidation.js';
 import type { FinanceData, RecurringItem } from '../src/types.js';
 
-type CadencedRecurring=RecurringItem&{recurrenceUnit?:'month'|'year';recurrenceInterval?:number;endDate?:string|null};
+type CadencedRecurring=RecurringItem;
 
 const item=(extra:Partial<CadencedRecurring>={}):CadencedRecurring=>({id:'rec',name:'Plan',amount:10,day:5,accountId:'bank',category:'Συνδρομές',active:true,status:'active',...extra});
 const state=(items:CadencedRecurring[]):FinanceData['state']=>({

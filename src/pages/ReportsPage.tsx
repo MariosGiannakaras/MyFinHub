@@ -1,6 +1,6 @@
 import { Bar, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { CalendarClock, CircleCheck, CreditCard, Eye, EyeOff, Landmark, ListChecks, PiggyBank, TriangleAlert, WalletCards } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { AnimatedAmount } from '../components/AnimatedAmount';
 import { BudgetRuleSettings } from '../components/BudgetRuleSettings';
 import { Button } from '../components/Button';
@@ -25,7 +25,7 @@ const ACCOUNT_COLORS=['#2f6fed','#14a77f','#7a5af8','#f59e0b','#8b95ad'];
 
 type ActivityRow={id:string;date:string;title:string;category:string;subcategory?:string;amount:number};
 
-export function ReportsPage({data,month,onUpsertBudget,onDeleteBudget,onUpsertRule,onDeleteRule}:{data:FinanceData;month:string;onUpsertBudget:(budget:MonthlyBudget)=>void;onDeleteBudget:(id:string)=>void;onUpsertRule:(rule:TransactionRule)=>void;onDeleteRule:(id:string)=>void}){
+export function ReportsPage({data,month,privacyVisible,onPrivacyVisibleChange,onUpsertBudget,onDeleteBudget,onUpsertRule,onDeleteRule}:{data:FinanceData;month:string;privacyVisible:boolean;onPrivacyVisibleChange:(visible:boolean)=>void;onUpsertBudget:(budget:MonthlyBudget)=>void;onDeleteBudget:(id:string)=>void;onUpsertRule:(rule:TransactionRule)=>void;onDeleteRule:(id:string)=>void}){
  const snapshot=operationalReportSnapshot(data,month);
  const insights=reportInsightModel(data,month);
  const series=reportFlowSeries(data,month,6);
@@ -36,7 +36,6 @@ export function ReportsPage({data,month,onUpsertBudget,onDeleteBudget,onUpsertRu
  const accounts=allAccounts(data).filter(account=>account.kind!=='credit');
  const accountIds=accounts.slice(0,4).map(account=>account.id);
  const accountSeries=primaryAccountSeries(data,month,accountIds);
- const [accountsVisible,setAccountsVisible]=useState(false);
  const budgetRows=budgetProgress(data,month);
  const exceededBudgets=budgetRows.filter(row=>row.status==='exceeded').length;
  const nearBudgets=budgetRows.filter(row=>row.status==='near').length;
@@ -169,7 +168,7 @@ export function ReportsPage({data,month,onUpsertBudget,onDeleteBudget,onUpsertRu
   </section>
 
   <section className="report-accounts-grid" id="report-accounts">
-   <article className="panel neo-raised report-account-history"><div className="panel-head"><div><span>Εξέλιξη βασικών λογαριασμών</span><small>Έως τέσσερις μη πιστωτικοί λογαριασμοί.</small></div><Button type="button" variant="ghost" className="report-eye" aria-pressed={accountsVisible} onClick={()=>setAccountsVisible(value=>!value)}>{accountsVisible?<EyeOff size={15}/>:<Eye size={15}/>} {accountsVisible?'Απόκρυψη':'Εμφάνιση'}</Button></div>{accountsVisible&&accountIds.length?<><div className="report-account-legend">{accountIds.map((id,index)=><span key={id}><i style={{background:ACCOUNT_COLORS[index%ACCOUNT_COLORS.length]}}/>{accountDisplayName(data,id)}</span>)}</div><div aria-hidden="true"><ResponsiveContainer width="100%" height={230}><ComposedChart data={accountSeries}><CartesianGrid stroke="#dbe4f0" strokeDasharray="3 3" vertical={false}/><XAxis dataKey="label" tick={{fontSize:10,fill:'#52627d'}}/><YAxis tick={{fontSize:9,fill:'#52627d'}}/><Tooltip formatter={(v)=>money.format(Number(v))}/>{accountIds.map((id,index)=><Line key={id} type="monotone" dataKey={id} name={accountDisplayName(data,id)} stroke={ACCOUNT_COLORS[index%ACCOUNT_COLORS.length]} strokeWidth={2.4} dot={{r:2.5}}/>)}</ComposedChart></ResponsiveContainer></div></>:accountsVisible?<div className="empty-state">Δεν υπάρχουν διαθέσιμοι λογαριασμοί.</div>:<div className="private-report-placeholder"><Eye/><span>Τα υπόλοιπα είναι κρυμμένα. Πάτησε «Εμφάνιση».</span></div>}</article>
+   <article className="panel neo-raised report-account-history"><div className="panel-head"><div><span>Εξέλιξη βασικών λογαριασμών</span><small>Έως τέσσερις μη πιστωτικοί λογαριασμοί.</small></div><Button type="button" variant="ghost" className="report-eye" aria-pressed={privacyVisible} onClick={()=>onPrivacyVisibleChange(!privacyVisible)}>{privacyVisible?<EyeOff size={15}/>:<Eye size={15}/>} {privacyVisible?'Απόκρυψη':'Εμφάνιση'}</Button></div>{privacyVisible&&accountIds.length?<><div className="report-account-legend">{accountIds.map((id,index)=><span key={id}><i style={{background:ACCOUNT_COLORS[index%ACCOUNT_COLORS.length]}}/>{accountDisplayName(data,id)}</span>)}</div><div aria-hidden="true"><ResponsiveContainer width="100%" height={230}><ComposedChart data={accountSeries}><CartesianGrid stroke="#dbe4f0" strokeDasharray="3 3" vertical={false}/><XAxis dataKey="label" tick={{fontSize:10,fill:'#52627d'}}/><YAxis tick={{fontSize:9,fill:'#52627d'}}/><Tooltip formatter={(v)=>money.format(Number(v))}/>{accountIds.map((id,index)=><Line key={id} type="monotone" dataKey={id} name={accountDisplayName(data,id)} stroke={ACCOUNT_COLORS[index%ACCOUNT_COLORS.length]} strokeWidth={2.4} dot={{r:2.5}}/>)}</ComposedChart></ResponsiveContainer></div></>:privacyVisible?<div className="empty-state">Δεν υπάρχουν διαθέσιμοι λογαριασμοί.</div>:<div className="private-report-placeholder"><Eye/><span>Τα υπόλοιπα είναι κρυμμένα. Πάτησε «Εμφάνιση».</span></div>}</article>
    <article className="panel neo-raised savings-report-breakdown report-savings-sources"><div className="panel-head"><div><span>Πηγές αποταμίευσης</span><small>Πώς σχηματίστηκε η αποταμίευση.</small></div><PiggyBank aria-hidden="true"/></div>{Object.entries(snapshot.savings.bySource).map(([source,value])=><div key={source}><span>{SAVING_SOURCE_LABELS[source as keyof typeof SAVING_SOURCE_LABELS]}</span><b><AnimatedAmount value={value}/></b></div>)}<div className="savings-total-row"><span><WalletCards size={16} aria-hidden="true"/> Σύνολο</span><b><AnimatedAmount value={snapshot.savings.total}/></b></div></article>
   </section>
 

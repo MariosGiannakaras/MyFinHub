@@ -5,6 +5,8 @@ on:
     branches: [main, develop]
   pull_request:
     branches: [main, develop]
+    paths-ignore:
+      - 'visual-qa/**'
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -62,14 +64,14 @@ jobs:
           npm run qa:frontend
       - run: npm audit --audit-level=high
       - run: npm audit --prefix api --audit-level=high
-      - name: Upload latest surface-first UI/UX browser evidence
+      - name: Upload rendered UI QA evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: myfinhub-visual-qa-${{ github.sha }}
           path: |
-            visual-qa/**/*.png
-            visual-qa/**/*.json
+            .qa-artifacts/visual/**/*.png
+            .qa-artifacts/visual/**/*.json
             /tmp/myfinhub-settings-tabs-qa/*.png
             /tmp/myfinhub-settings-rules-modal-qa/*.png
           if-no-files-found: warn

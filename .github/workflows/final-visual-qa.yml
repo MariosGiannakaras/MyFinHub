@@ -1,0 +1,76 @@
+name: Final Visual QA
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [develop]
+    types: [edited]
+
+concurrency:
+  group: final-visual-qa-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  final-screenshots:
+    name: capture-and-persist-final-screenshots
+    if: github.event_name == 'workflow_dispatch' || (github.event.pull_request.head.repo.full_name == github.repository && contains(github.event.pull_request.body, '<!-- run-final-visual-qa -->'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci --prefer-offline --no-audit --no-fund
+      - name: Capture complete final visual set
+        shell: bash
+        run: |
+          rm -rf visual-qa
+          npm run dev:web > /tmp/myfinhub-final-visual-vite.log 2>&1 &
+          VITE_PID=$!
+          trap 'kill $VITE_PID || true' EXIT
+          ready=0
+          for attempt in {1..30}; do
+            if curl --fail --silent --show-error http://127.0.0.1:5173/qa.html > /dev/null; then ready=1; break; fi
+            sleep 1
+          done
+          if [ "$ready" -ne 1 ]; then cat /tmp/myfinhub-final-visual-vite.log; exit 1; fi
+          export MYFINHUB_QA_PRIMARY_BROWSER="$(command -v chromium || command -v chromium-browser || command -v google-chrome || true)"
+          if [ -z "$MYFINHUB_QA_PRIMARY_BROWSER" ]; then echo "Chromium is required."; exit 1; fi
+          export MYFINHUB_UX_EVIDENCE_ROOT="visual-qa/final"
+          export MYFINHUB_FINAL_SCREENSHOTS=1
+          npm run qa:final-screenshots
+          COUNT="$(find visual-qa/final -type f -name '*.png' | wc -l | tr -d ' ')"
+          if [ "$COUNT" -ne 63 ]; then echo "Expected 63 final PNGs, found $COUNT."; exit 1; fi
+          EXTRA="$(find visual-qa -type f ! -path 'visual-qa/final/*' -print -quit)"
+          if [ -n "$EXTRA" ]; then echo "Unexpected non-final visual evidence: $EXTRA"; exit 1; fi
+      - name: Persist only final screenshots
+        shell: bash
+        env:
+          TARGET_BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}
+          EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          git add -A visual-qa
+          if git diff --cached --quiet; then echo "Final screenshots are already current."; exit 0; fi
+          git fetch origin "$TARGET_BRANCH"
+          REMOTE_SHA="$(git rev-parse FETCH_HEAD)"
+          if [ "$REMOTE_SHA" != "$EXPECTED_HEAD_SHA" ]; then echo "Branch advanced while final screenshots were running; refusing stale evidence commit."; exit 1; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore(visual-qa): persist final screenshots"
+          git push origin "HEAD:$TARGET_BRANCH"
+      - name: Upload final screenshot set
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: myfinhub-final-screenshots-${{ github.event.pull_request.head.sha || github.sha }}
+          path: visual-qa/final/
+          if-no-files-found: warn
+          retention-days: 30

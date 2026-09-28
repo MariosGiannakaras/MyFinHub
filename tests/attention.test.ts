@@ -60,6 +60,15 @@ describe('Needs Attention deterministic engine',()=>{
     expect(items.some(item=>item.title.toLocaleLowerCase('el-GR').includes('συγχρονισ'))).toBe(false);
   });
 
+  it('shows recurring expiry only inside the 30-day advisory window and keeps it non-destructive',()=>{
+    const data=clone();
+    data.state.recurringCustom=(data.state.recurringCustom??[]).map(item=>item.id==='rec-2'?{...item,endDate:'2026-10-20'}:item);
+    expect(allAttentionItems(data,'2026-08-17').some(item=>item.id==='recurring-expiry:rec-2')).toBe(false);
+    const inside=allAttentionItems(data,'2026-09-25').find(item=>item.id==='recurring-expiry:rec-2');
+    expect(inside).toMatchObject({kind:'recurring_expiry',action:'open_recurring',dueDate:'2026-10-20'});
+    expect(inside?.action).not.toBe('pay_recurring');
+  });
+
   it('snoozes danger temporarily but does not allow permanent dismissal',()=>{
     const item=allAttentionItems(clone(),'2026-08-17').find(row=>row.severity==='danger')!;
     expect(attentionSnoozeDecision(item,'2026-08-17').snoozedUntil).toBe('2026-08-18');

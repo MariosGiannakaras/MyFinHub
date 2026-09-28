@@ -1,4 +1,4 @@
-import { deleteLocalCvv, readLocalCvv } from './localCvvVault.js';
+import { readLocalCvv } from './localCvvVault.js';
 type CardVaultSecret={pan?:string;expiry?:string;cvv?:string};
 
 type ErrorPayload={code?:string;error?:string};
@@ -31,19 +31,14 @@ export async function revealCardSecret(cardId:string):Promise<CardVaultSecret>{
   }
   const secret:CardVaultSecret={pan:payload.pan||undefined,expiry:payload.expiry||undefined,cvv:payload.cvv||undefined};
 
-  // One-time compatibility migration from the former browser-local CVV vault.
-  // The server vault is authoritative after a successful migration.
+  // Compatibility read only: never upload a legacy local CVV merely because the user revealed it.
+  // Explicit Save/Update is the migration boundary.
   if(!secret.cvv&&typeof indexedDB!=='undefined'){
     try{
       const legacy=await readLocalCvv(cardId);
-      if(legacy){
-        await saveCardSecret(cardId,{cvv:legacy});
-        await deleteLocalCvv(cardId);
-        secret.cvv=legacy;
-        missing=false;
-      }
+      if(legacy){secret.cvv=legacy;missing=false}
     }catch{
-      // Migration is best effort. Never discard a local value unless server persistence succeeded.
+      // Local compatibility read is best effort; server data remains authoritative.
     }
   }
   if(missing)throw new CardVaultClientError(404,'CARD_SECRET_NOT_FOUND','Δεν υπάρχουν αποθηκευμένα στοιχεία για αυτή την κάρτα.');

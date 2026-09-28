@@ -26,6 +26,16 @@
 - UI motion must respect `prefers-reduced-motion`; interaction state cannot be conveyed only by motion or color.
 - CI/security checks are production gates. Keep tests, dependency audit, CodeQL, Dependabot, and security headers working when changing the app.
 
+## Cross-chat execution and progress rules
+
+- For substantial repository work, batch coherent changes together and avoid triggering full CI for every small edit. Prefer narrow/local/repository-specific checks while building the batch, then run the complete required CI/security/visual/release gates on the final integrated head. Use an intermediate full CI gate only when a security, database, migration, dependency, or architecture boundary makes proceeding without it materially unsafe.
+- When the owner explicitly asks to minimize CI runs, do not keep an implementation PR open during high-churn batching if that PR would trigger redundant CI on every push. Maintain a pushed implementation branch and open/update the review PR when the coherent batch is ready for final validation, unless repository protection or collaboration needs require an earlier PR.
+- Every progress update to the owner during a substantial task must include both counters in the form **Tasks x/y · Subtasks x/y** (localized to the conversation language when appropriate).
+- Repository-owned progress tracking must use the same two counters. The denominator must come from an explicit checklist/phase plan in the repository, not from an ad-hoc estimate.
+- Before handing work to another chat/agent, update the repository progress checkpoint with the exact counters, branch/ref, completed work, validation, blockers, and next safe action. A future chat must be able to continue from repository state without prior conversation memory.
+
+- Persistent release screenshots belong only in `visual-qa/final/` and are produced by the dedicated Final Visual QA gate after normal validation is green. Routine rendered QA evidence stays ephemeral under `.qa-artifacts/` or GitHub Actions artifacts; do not commit concept, intermediate, superseded, or chat-specific screenshots.
+
 ## Delivery workflow
 
 - Implementation, infrastructure, dependency-policy, and database changes start from a tracked GitHub issue unless they are an emergency security fix.
@@ -43,14 +53,3 @@
 - Production data is used only by the production runtime. Preview/development deployments must not receive credentials or configuration that can mutate the production finance database unless that access is explicitly reviewed and intended.
 - Before merging backend/auth/database changes, verify authorization failure paths as well as the successful path. Before merging finance-domain changes, run the domain regression suite and preserve the invariants above.
 
-## Phase-1 desktop redesign implementation
-
-- Read `docs/ui-redesign/IMPLEMENTATION_RULES.md` before redesign implementation or resume work.
-- GitHub issue #266 is a protected exclusion: do not open, inspect, quote, summarize, comment on, modify, relabel, close, reopen or use it for redesign tracking.
-- Recover the current issue/branch/PR/check state before changing a redesign surface. Resume an existing implementation from its latest pushed checkpoint instead of duplicating or restarting it.
-- Treat the exact owner-approved image as the structural/presentation/data-density target, not as a requirement to reproduce literal branding, names, categories, dates or amounts.
-- Require both Approved ↔ Actual visual verification and `develop` ↔ implementation functional parity. Preserve supported behavior and use canonical domain/selectors for finance semantics.
-- Reference-only controls may be represented when needed for the approved composition, but never wire a misleading handler or silently introduce backend/schema/API/persistence behavior.
-- Finance/category icons must use the shared registry and persisted Settings preference system rather than page-specific hard-coded icon logic.
-- Prefer narrow relevant validation before broad CI, batch coherent fixes, keep meaningful work pushed, and maintain the active PR continuation checkpoint.
-- A redesign surface is complete only after final fresh Actual inspection, relevant checks are green, redesign docs/status are synchronized, the PR is merged to `develop` when permitted, and the resulting `develop` state is verified.

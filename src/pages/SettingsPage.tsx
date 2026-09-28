@@ -10,12 +10,13 @@ import { DesktopUpdatePanel } from '../components/DesktopUpdatePanel';
 import { KeyboardShortcutsPanel } from '../components/KeyboardShortcutsPanel';
 import { ReadabilitySettings } from '../components/ReadabilitySettings';
 import { Surface } from '../components/Surface';
+import { SupportDiagnosticsPanel } from '../components/SupportDiagnosticsPanel';
 import { TransactionRulesWorkspace } from '../components/TransactionRulesWorkspace';
 import { categoryTree } from '../lib/categories';
 import { MAX_FINANCE_DOCUMENT_BYTES } from '../lib/limits';
 import { taxonomyOperationPreview, type TaxonomyOperation } from '../lib/taxonomyManagement';
 import { userErrorMessage } from '../lib/userMessage';
-import type { FinanceData, FinanceSettings, MonthlyBudget, TransactionRule } from '../types';
+import type { FinanceData, FinanceSettings, TransactionRule } from '../types';
 import './SettingsPage.css';
 import './SettingsData.css';
 
@@ -79,13 +80,13 @@ function downloadJson(data: FinanceData) {
 export function SettingsPage({
   data,
   asOf,
+  filePath,
+  lastSavedAt,
   currentEmail,
   onImport,
   onBackup,
   onSettings,
   onTaxonomyOperation,
-  onUpsertBudget,
-  onDeleteBudget,
   onUpsertRule,
   onDeleteRule,
 }: {
@@ -98,14 +99,12 @@ export function SettingsPage({
   onBackup: () => Promise<{ path: string }>;
   onSettings: (settings: FinanceData['state']['settings']) => void;
   onTaxonomyOperation: (operation: TaxonomyOperation) => void;
-  onUpsertBudget: (budget: MonthlyBudget) => void;
-  onDeleteBudget: (id: string) => void;
   onUpsertRule: (rule: TransactionRule) => void;
   onDeleteRule: (id: string) => void;
 }) {
-  void onUpsertBudget;
-  void onDeleteBudget;
   const fileRef = useRef<HTMLInputElement | null>(null);
+  const runtimeEnv=(import.meta as unknown as {env?:{DEV?:boolean;VITE_MYFINHUB_SUPPORT_DIAGNOSTICS?:string}}).env;
+  const supportDiagnosticsEnabled=Boolean(runtimeEnv?.DEV)||runtimeEnv?.VITE_MYFINHUB_SUPPORT_DIAGNOSTICS==='1';
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
@@ -223,6 +222,7 @@ export function SettingsPage({
             <ReadabilitySettings value={draft.textSize ?? 'normal'} onChange={(textSize) => change({ textSize })} />
             <DesktopUpdatePanel />
             <KeyboardShortcutsPanel />
+            {supportDiagnosticsEnabled?<SupportDiagnosticsPanel data={data} filePath={filePath} lastSavedAt={lastSavedAt}/>:null}
           </div>
         ) : null}
 

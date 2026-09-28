@@ -1,5 +1,7 @@
 type AccountKind = 'cash' | 'bank' | 'savings' | 'credit';
 type CashAccountRole = 'daily' | 'reserve';
+export type BankAccountCategory = 'payroll' | 'current' | 'savings' | 'term' | 'payment' | 'other';
+export type CashAccountType = 'cash' | 'reserve' | 'other';
 export type SavingSource = 'pay_and_save' | 'manual_transfer' | 'cash_offset';
 export type RecurringStatus = 'active' | 'paused' | 'stopped';
 export type RecurrenceUnit = 'month' | 'year';
@@ -21,7 +23,10 @@ export interface Account {
   kind: AccountKind | string;
   excludeFromAvailable?: boolean;
   provider?: string;
+  providerId?: string;
+  bankAccountCategory?: BankAccountCategory;
   cashRole?: CashAccountRole;
+  cashType?: CashAccountType;
   showInQuickChoices?: boolean;
   custom?: boolean;
 }
@@ -207,6 +212,15 @@ export interface MonthlyBudget {
   updatedAt: string;
 }
 
+export interface SavingsGoal {
+  id: string;
+  name: string;
+  targetAmount: number;
+  targetDate?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface TransactionRuleMatch {
   description?: string;
   merchant?: string;
@@ -274,6 +288,7 @@ export interface FinanceData {
     reviewDecisions?: Record<string, ReviewDecision>;
     attentionDecisions?: Record<string, AttentionDecision>;
     budgets?: MonthlyBudget[];
+    savingsGoals?: SavingsGoal[];
     transactionRules?: TransactionRule[];
     migration?: { fromSchema: number; migratedAt: string };
   };
@@ -309,6 +324,7 @@ export interface RecurringItem {
   amount: number;
   day?: number | null;
   firstExpectedDate?: string | null;
+  endDate?: string | null;
   recurrenceUnit?: RecurrenceUnit;
   recurrenceInterval?: number;
   accountId: string;

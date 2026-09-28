@@ -56,7 +56,7 @@ export function CardCreateDialog({
   const submit=()=>{
     const name=nickname.trim();if(!name){setError('Γράψε ένα όνομα για την κάρτα ώστε να μπορείς να την ξεχωρίζεις.');return}if(!selected){setError('Διάλεξε σχέδιο ή χρώμα για να συνεχίσεις.');return}
     const now=new Date().toISOString();
-    onSave({id:`card-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,bankId:bank.id,nickname:name,kind:resolvedKind,network,formFactor:selected.formFactor,designId:selected.id,active:true,createdAt:now,updatedAt:now});onClose();
+    onSave({id:`card-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,bankId:bank.id,nickname:name,kind:resolvedKind,network,formFactor:selected.formFactor,designId:selected.id,...(resolvedKind==='credit'?{statementBoundaryRule:'next-cycle' as const}:{}),active:true,createdAt:now,updatedAt:now});onClose();
   };
 
   return <div className="picker-backdrop open prototype-card-picker" aria-hidden="false" onMouseDown={onClose}>

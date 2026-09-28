@@ -7,6 +7,14 @@ describe('card vault request boundary',()=>{
     expect(parseCardVaultRequest({cardId:'card-123'},'POST')).toEqual({cardId:'card-123'});
     expect(parseCardVaultRequest({cardId:'card-123',pan:'4242 4242 4242 4242',expiry:'12/30',cvv:'123'},'PUT')).toEqual({cardId:'card-123',pan:'4242 4242 4242 4242',expiry:'12/30',cvv:'123'});
   });
+  it('keeps old clients that save only PAN and expiry compatible with the new server vault',()=>{
+    expect(parseCardVaultRequest({cardId:'card-123',pan:'4242 4242 4242 4242',expiry:'12/30'},'PUT')).toEqual({
+      cardId:'card-123',
+      pan:'4242 4242 4242 4242',
+      expiry:'12/30',
+      cvv:undefined,
+    });
+  });
   it('keeps the request key whitelist narrow while allowing canonical cvv',()=>{
     for(const key of ['cvc','securityCode','card_verification_value']){
       try{parseCardVaultRequest({cardId:'card-123',[key]:'123'},'PUT');throw new Error('expected failure')}

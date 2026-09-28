@@ -22,12 +22,21 @@ const CREDIT_ACCOUNT: Account = {
 export function migrateData(input: FinanceData): FinanceData {
   const fromSchema = Number(input.schemaVersion || 1);
   const state = input.state ?? ({} as FinanceData['state']);
+  const seedAccounts=input.seed?.accounts??[];
+  const selectable=seedAccounts.filter(account=>account.kind!=='credit'&&account.showInQuickChoices!==false);
+  const fallbackOperating=selectable.find(account=>account.kind==='bank')
+    ??selectable.find(account=>account.kind==='cash'&&account.cashRole!=='reserve')
+    ??selectable.find(account=>account.kind!=='savings')
+    ??selectable[0];
+  const defaultAccountId=fallbackOperating?.id??'';
+  const excludedDefaults=seedAccounts.filter(account=>account.excludeFromAvailable).map(account=>account.id);
   return {
     ...input,
     app: 'RheomIQ',
     schemaVersion: 3,
     updatedAt: input.updatedAt || new Date().toISOString(),
     state: {
+      ...state,
       customTransactions: state.customTransactions ?? [],
       overrides: state.overrides ?? {},
       deleted: state.deleted ?? [],
@@ -38,7 +47,8 @@ export function migrateData(input: FinanceData): FinanceData {
       customLoans: state.customLoans ?? [],
       lendingCustom: state.lendingCustom ?? [],
       settings: {
-        excludedFromAvailable: state.settings?.excludedFromAvailable ?? ['piraeus-savings'],
+        ...(state.settings ?? {}),
+        excludedFromAvailable: state.settings?.excludedFromAvailable ?? excludedDefaults,
         accountNames: state.settings?.accountNames ?? {},
         customAccounts: state.settings?.customAccounts ?? [],
         accountOverrides: state.settings?.accountOverrides ?? {},
@@ -46,9 +56,9 @@ export function migrateData(input: FinanceData): FinanceData {
         incomeCategories: state.settings?.incomeCategories ?? [],
         customPresets: state.settings?.customPresets ?? [],
         pinnedPresets: state.settings?.pinnedPresets ?? [],
-        defaultExpenseAccount: state.settings?.defaultExpenseAccount ?? 'piraeus-payroll',
-        defaultIncomeAccount: state.settings?.defaultIncomeAccount ?? 'piraeus-payroll',
-        defaultLoanAccount: state.settings?.defaultLoanAccount ?? 'piraeus-payroll',
+        defaultExpenseAccount: state.settings?.defaultExpenseAccount ?? defaultAccountId,
+        defaultIncomeAccount: state.settings?.defaultIncomeAccount ?? defaultAccountId,
+        defaultLoanAccount: state.settings?.defaultLoanAccount ?? defaultAccountId,
         monthlyBudget: state.settings?.monthlyBudget ?? 1200,
         savingsTargetRate: state.settings?.savingsTargetRate ?? 0.2,
         creditLimit: state.settings?.creditLimit ?? 0,
