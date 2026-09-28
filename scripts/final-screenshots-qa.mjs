@@ -3,6 +3,11 @@ import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { relative, resolve } from 'node:path';
 import { visualEvidenceContext } from './visual-evidence-store.mjs';
 
+if(process.argv.includes('--validate-only')){
+  console.log('Final screenshot harness module validation passed.');
+  process.exit(0);
+}
+
 const context=visualEvidenceContext();
 const {repositoryRoot,appVersion,timeZone,timestamp,generatedAt,sourceSha,shortSha,sourceBranch,evidenceRoot}=context;
 if(process.env.MYFINHUB_FINAL_SCREENSHOTS!=='1')throw new Error('Final screenshot capture requires MYFINHUB_FINAL_SCREENSHOTS=1.');
