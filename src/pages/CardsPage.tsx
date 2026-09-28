@@ -108,7 +108,7 @@ export function CardsPage({
       <article className="cards-surrounding-kpi"><span className="cards-surrounding-kpi-icon prepaid"><WalletCards/></span><div><small>Προπληρωμένες</small><strong>{prepaidCount}</strong><span>{archivedCards.length?`${archivedCards.length} αρχειοθετημένες συνολικά`:'χωρίς αρχειοθετημένες κάρτες'}</span></div></article>
     </section>
 
-    <section className="cards-workspace cards-prototype-workspace neo-raised" aria-label="Χρεωστικές και προπληρωμένες κάρτες ανά τράπεζα">
+    <section className="cards-workspace cards-prototype-workspace surface-raised" aria-label="Χρεωστικές και προπληρωμένες κάρτες ανά τράπεζα">
       <div className="cards-grid cards-prototype-grid" style={{'--bank-count':Math.max(1,banks.length)} as React.CSSProperties}>{banks.map(bank=>{
         const active=cardsForBank(data,bank.id);const archived=archivedCardsForBank(data,bank.id);
         return <section className="bank-column cards-bank-column" key={bank.id} data-bank={bank.id}>
@@ -121,7 +121,7 @@ export function CardsPage({
 
     {message?<div className="action-status" role="status" aria-live="polite">{message}</div>:null}
 
-    <section className="cards-surrounding-recent neo-raised" aria-label="Πρόσφατες συναλλαγές λογαριασμών">
+    <section className="cards-surrounding-recent surface-raised" aria-label="Πρόσφατες συναλλαγές λογαριασμών">
       <header className="cards-surrounding-recent-head"><div><h2>Πρόσφατες συναλλαγές</h2><p>Από τους λογαριασμούς σου — οι αποθηκευμένες κάρτες δεν δημιουργούν ξεχωριστό ιστορικό συναλλαγών.</p></div></header>
       <div className="cards-surrounding-recent-list">{recentAccountRows.length?recentAccountRows.map(row=>{
         const positive=recentPositive(row);
@@ -137,7 +137,7 @@ export function CardsPage({
     <CardCreateDialog open={Boolean(cardBank)} data={data} banks={cardBank?[cardBank]:banks.slice(0,1)} initialBankId={cardBank?.id} allowedKinds={['debit','prepaid']} onClose={()=>setCardBankId(null)} onSave={createCard}/>
     <CardDetailsDialog open={Boolean(detailsCard)} card={detailsCard} requireCvv={detailsIsNew} motionMode={data.state.settings.motion} onSaved={saveCardDetails} onCancel={()=>{setDetailsCard(null);setDetailsIsNew(false)}}/>
 
-    {bankOpen?<div className="picker-backdrop open" aria-hidden="false" onMouseDown={()=>setBankOpen(false)}><section ref={bankRef} className="picker compact neo-raised" role="dialog" aria-modal="true" aria-labelledby="new-bank-title" aria-describedby={error?'new-bank-error':undefined} tabIndex={-1} onMouseDown={event=>event.stopPropagation()}><div className="picker-head"><div><h2 id="new-bank-title">Νέα τράπεζα</h2><p>Η νέα τράπεζα θα αποκτήσει δική της στήλη και ξεχωριστό κουμπί προσθήκης καρτών.</p></div><IconButton type="button" className="close-picker" aria-label="Κλείσιμο" onClick={()=>setBankOpen(false)}>×</IconButton></div><div className="modal-form-grid one"><div className="modal-field"><label>Όνομα τράπεζας</label><AppTextInput data-autofocus="true" maxLength={36} value={bankName} onChange={event=>setBankName(event.target.value)} placeholder="π.χ. N26" invalid={Boolean(error)} aria-describedby={error?'new-bank-error':undefined}/></div></div>{error?<FormError id="new-bank-error">{error}</FormError>:null}<div className="modal-actions"><Button type="button" variant="secondary" className="modal-secondary" onClick={()=>setBankOpen(false)}>Ακύρωση</Button><Button type="button" variant="primary" className="modal-primary" onClick={saveBank}><Plus/> Προσθήκη τράπεζας</Button></div></section></div>:null}
+    {bankOpen?<div className="picker-backdrop open" aria-hidden="false" onMouseDown={()=>setBankOpen(false)}><section ref={bankRef} className="picker compact surface-raised" role="dialog" aria-modal="true" aria-labelledby="new-bank-title" aria-describedby={error?'new-bank-error':undefined} tabIndex={-1} onMouseDown={event=>event.stopPropagation()}><div className="picker-head"><div><h2 id="new-bank-title">Νέα τράπεζα</h2><p>Η νέα τράπεζα θα αποκτήσει δική της στήλη και ξεχωριστό κουμπί προσθήκης καρτών.</p></div><IconButton type="button" className="close-picker" aria-label="Κλείσιμο" onClick={()=>setBankOpen(false)}>×</IconButton></div><div className="modal-form-grid one"><div className="modal-field"><label>Όνομα τράπεζας</label><AppTextInput data-autofocus="true" maxLength={36} value={bankName} onChange={event=>setBankName(event.target.value)} placeholder="π.χ. N26" invalid={Boolean(error)} aria-describedby={error?'new-bank-error':undefined}/></div></div>{error?<FormError id="new-bank-error">{error}</FormError>:null}<div className="modal-actions"><Button type="button" variant="secondary" className="modal-secondary" onClick={()=>setBankOpen(false)}>Ακύρωση</Button><Button type="button" variant="primary" className="modal-primary" onClick={saveBank}><Plus/> Προσθήκη τράπεζας</Button></div></section></div>:null}
 
     <ConfirmDialog open={Boolean(deleteTarget)} title="Οριστική διαγραφή κάρτας;" description="Θα διαγραφεί η κάρτα και τα αποθηκευμένα PAN/λήξη/CVV. Δεν υπάρχει οικονομικό ιστορικό συνδεδεμένο με χρεωστικές ή προπληρωμένες κάρτες μέσα στο MyFinHub." confirmLabel="Οριστική διαγραφή" tone="destructive" busy={deleteBusy} motionMode={data.state.settings.motion} onConfirm={()=>void confirmDelete()} onCancel={()=>{if(!deleteBusy)setDeleteTarget(null)}}/>
   </div>;
