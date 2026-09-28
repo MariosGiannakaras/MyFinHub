@@ -31,7 +31,7 @@
     "hygiene:unused": "node scripts/unused-symbols.mjs",
     "hygiene:exports": "node scripts/unused-exports.mjs",
     "hygiene:format": "node scripts/format-hygiene.mjs",
-    "hygiene": "npm run hygiene:cycles && npm run hygiene:unused && npm run hygiene:exports && npm run hygiene:format && node --check scripts/final-screenshots-qa.mjs",
+    "hygiene": "npm run hygiene:cycles && npm run hygiene:unused && npm run hygiene:exports && npm run hygiene:format && node scripts/final-screenshots-qa.mjs --validate-only",
     "qa:final-screenshots": "node scripts/final-screenshots-qa.mjs"
   },
   "dependencies": {
