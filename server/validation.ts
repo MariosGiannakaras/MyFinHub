@@ -81,7 +81,10 @@ function validateAccount(value: unknown, name: string) {
   text(value.kind, `${name}.kind`, 100);
   optionalText(value.short, `${name}.short`, 100);
   optionalText(value.provider, `${name}.provider`, 500);
+  optionalText(value.providerId, `${name}.providerId`, 100);
+  if (value.bankAccountCategory !== undefined) oneOf(value.bankAccountCategory, ['payroll','current','savings','term','payment','other'], `${name}.bankAccountCategory`);
   if (value.cashRole !== undefined) oneOf(value.cashRole, ['daily','reserve'], `${name}.cashRole`);
+  if (value.cashType !== undefined) oneOf(value.cashType, ['cash','reserve','other'], `${name}.cashType`);
   if (value.excludeFromAvailable !== undefined && typeof value.excludeFromAvailable !== 'boolean') invalid(`Invalid ${name}.excludeFromAvailable.`);
   if (value.showInQuickChoices !== undefined && typeof value.showInQuickChoices !== 'boolean') invalid(`Invalid ${name}.showInQuickChoices.`);
   if (value.custom !== undefined && typeof value.custom !== 'boolean') invalid(`Invalid ${name}.custom.`);
