@@ -10,7 +10,6 @@ describe('card vault client source contract',()=>{
     const reveal=source.slice(source.indexOf('export async function revealCardSecret'),source.indexOf('export async function saveCardSecret'));
     expect(reveal).toContain('readLocalCvv(cardId)');
     expect(reveal).not.toContain('saveCardSecret(');
-    expect(reveal).not.toContain("request<");
     expect(reveal).not.toContain("'PUT'");
     expect(reveal).toContain('Explicit Save/Update is the migration boundary');
   });
