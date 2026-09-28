@@ -12,7 +12,7 @@ Issue: #429
 - Production mutation: **none**
 - Database mutation: **none**
 - Product/backend implementation changes: **in progress on the implementation branch**
-- Current goal: finish the coherent implementation batch with targeted checks, then run the final full validation gate
+- Current goal: finish page-parity/source cleanup, then open one final PR and run the full validation gate
 
 ## Phase status
 
@@ -20,10 +20,10 @@ Issue: #429
 | --- | --- | --- |
 | 0 — handoff foundation | DONE | issue #429, branch, handoff docs and draft PR #430 created |
 | 1 — live baseline recovery | DONE | live Git/Supabase state and integration-sensitive code paths re-verified before edits |
-| 2 — production constraint reconciliation | IN PROGRESS | production updater/function/auth constraints being reconciled after product/domain batch |
-| 3 — backend/domain alignment | NOT STARTED | |
-| 4 — cross-cutting behavior | NOT STARTED | |
-| 5 — product gaps/new features | NOT STARTED | |
+| 2 — production constraint reconciliation | DONE | both main-only Android updater semantics already present in canonical develop; auth/function-budget constraints re-verified |
+| 3 — backend/domain alignment | DONE | accounts/providers, device compatibility, vault transition, recurring contract and provider fallback aligned |
+| 4 — cross-cutting behavior | IN PROGRESS | shared privacy, Dashboard contextual action, statement boundary and diagnostics implemented; final visual validation remains |
+| 5 — product gaps/new features | DONE | persisted Savings goals implemented; canonical budget CRUD verified in Reports and removed from Settings props |
 | 6 — page parity/cleanup | NOT STARTED | |
 | 7 — validation gates | NOT STARTED | |
 | 8 — merge to develop | NOT STARTED | |
@@ -227,3 +227,60 @@ Append a new entry for every meaningful implementation checkpoint.
 3. finish remaining domain/page parity tasks;
 4. run targeted local/repository checks only after the next coherent source batch;
 5. run one full CI/security/visual gate on the final integrated head before opening the final PR.
+
+
+## 2026-09-28 — canonical domain/product batch checkpoint
+
+**Progress counters**
+- Tasks: **5/10**
+- Subtasks: **106/133**
+- Counter source: checked phases/items in `docs/integration/IMPLEMENTATION_PLAN.md`.
+
+**Branch / PR / head SHA**
+- branch: `feat/429-canonical-integration`
+- PR: none intentionally during batching
+- implementation head before this progress checkpoint: `f6085524ea64ded71850fb78830a19c6b80138b9`
+- branch is ahead of baseline develop and was last compared with **0 commits behind**
+
+**Completed**
+- Phase 2 production-only updater/function/auth constraints re-verified as already present in canonical develop;
+- Phase 3 backend/domain alignment completed;
+- canonical account provider/category metadata formalized and validated;
+- hard-coded migration/dashboard/savings account assumptions replaced with configured metadata/defaults where they represented product behavior;
+- device-session compatibility and migration ordering re-verified without applying production DDL;
+- card vault transition now reads legacy local CVV without implicit upload and migrates it only on explicit Save/Update;
+- recurring end date is canonical and validated;
+- per-card credit statement boundary is explicit and historical settled statements remain untouched;
+- shared session privacy state wired through Dashboard, Reports and Lending;
+- persisted Savings goals implemented;
+- budget CRUD confirmed canonical in Reports; stale Settings/QA budget props removed;
+- diagnostics consolidated to one redacted dev/support-only component.
+
+**Focused regression coverage added/updated**
+- old PAN/expiry-only card-vault PUT remains accepted by the new server contract;
+- reveal path cannot implicitly PUT/upload a legacy CVV;
+- local CVV cleanup occurs only after successful explicit server Save;
+- savings goal validation/migration/domain behavior;
+- configurable account metadata/default migration;
+- explicit statement boundary behavior;
+- budget edit/delete canonical-state behavior;
+- shared privacy source contract;
+- Dashboard no longer requires fixed primary account IDs.
+
+**Validation**
+- full CI intentionally not run yet, per owner instruction to minimize CI churn;
+- attempted local Git checkout for targeted execution, but the execution runtime cannot resolve `github.com`, so no local test result is claimed;
+- final full validation remains required on the exact integrated head.
+
+**Database / production actions**
+- none.
+
+**Open work**
+- Phase 4: rendered desktop/mobile validation;
+- Phase 6: final page-by-page behavior/responsive/focus/dead-control/mock/duplicate-path pass;
+- Phase 7: one full exact-head validation gate;
+- Phase 8: final PR/merge to develop;
+- Phase 9: production promotion remains separate.
+
+**Next safe action**
+- complete source/page parity cleanup, then open the final PR to `develop` and use that exact head for the full CI/security/visual validation gate.
