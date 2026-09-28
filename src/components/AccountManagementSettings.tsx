@@ -28,11 +28,7 @@ import './AccountManagementSettings.css';
 import './AccountManagementProvider.css';
 
 type AccountMode='bank'|'cash';
-type ProviderAccount=Account&{
-  providerId?:string;
-  bankAccountCategory?:BankAccountCategory;
-  cashType?:CashAccountType;
-};
+type ProviderAccount=Account;
 type EditorDraft={
   id:string;
   source:'new'|'seed'|'custom';
