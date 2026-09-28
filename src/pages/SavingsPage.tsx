@@ -1,4 +1,4 @@
-import { ArrowRight, BanknoteArrowDown, Pencil, PiggyBank, Plus, Repeat2, Sparkles, Trash2, Wallet, X } from 'lucide-react';
+import { ArrowRight, BanknoteArrowDown, Pencil, PiggyBank, Plus, Repeat2, Sparkles, Wallet, X } from 'lucide-react';
 import { useEffect, useState, type CSSProperties } from 'react';
 import { AnimatedAmount } from '../components/AnimatedAmount';
 import { AppDateInput } from '../components/AppDateInput';
@@ -62,6 +62,7 @@ export function SavingsPage({data,month,asOf,onCreate,onQuickAdd,onSavingsTarget
   const targetPoints=targetSeries.map(trendPoint).join(' ');
   const goalProgress=targetTotal>0?Math.min(100,(flow.saving/targetTotal)*100):0;
   const goalDeadline=new Intl.DateTimeFormat('el-GR',{day:'2-digit',month:'2-digit',year:'numeric',timeZone:'UTC'}).format(new Date(Date.UTC(year,monthNumber,0)));
+  const trendMonthLabel=new Intl.DateTimeFormat('el-GR',{month:'short',timeZone:'UTC'}).format(new Date(Date.UTC(year,monthNumber-1,1)));
   const recent=breakdown.rows[0]??null;
   const recentPresentation=recent?savingsHistoryPresentation(recent):null;
   const [open,setOpen]=useState(false);
@@ -187,7 +188,7 @@ export function SavingsPage({data,month,asOf,onCreate,onQuickAdd,onSavingsTarget
             <polyline className="goal-line" points={targetPoints}/>
             <polyline className="actual-line" points={actualPoints}/>
             {actualSeries.map((value,index)=><circle className="actual-dot" key={trendDays[index]} cx={Number(trendPoint(value,index).split(',')[0])} cy={Number(trendPoint(value,index).split(',')[1])} r={index===actualSeries.length-1?4:2.2}/>)}
-            {trendDays.map((day,index)=><text className="x-label" key={day} x={Number(trendPoint(0,index).split(',')[0])} y="166" textAnchor={index===0?'start':index===trendDays.length-1?'end':'middle'}>{day} Αυγ</text>)}
+            {trendDays.map((day,index)=><text className="x-label" key={day} x={Number(trendPoint(0,index).split(',')[0])} y="166" textAnchor={index===0?'start':index===trendDays.length-1?'end':'middle'}>{day} {trendMonthLabel}</text>)}
           </svg>
         </article>
 
