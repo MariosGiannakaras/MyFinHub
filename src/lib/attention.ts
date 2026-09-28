@@ -108,7 +108,7 @@ function recurringAttention(data:FinanceData,asOf:string):AttentionItem[]{
 
 function recurringExpiryAttention(data:FinanceData,asOf:string):AttentionItem[]{
   return activeRecurringItems(data).flatMap(item=>{
-    const endDate=(item as RecurringItem&{endDate?:string|null}).endDate;
+    const endDate=item.endDate;
     if(!endDate||!/^\d{4}-\d{2}-\d{2}$/.test(endDate))return [];
     const distance=daysBetween(asOf,endDate);if(distance>EXPIRY_LOOKAHEAD_DAYS)return [];
     const severity:AttentionSeverity=distance<0?'danger':distance<=UPCOMING_DAYS?'warning':'info';
