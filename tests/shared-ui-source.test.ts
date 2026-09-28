@@ -31,7 +31,7 @@ describe('shared UI contracts',()=>{
     const credit=source('src/pages/CreditCardPage.tsx');
     expect(credit,'CreditCardPage should use AppDateInput').toContain('AppDateInput');
     expect(credit,'CreditCardPage should use CategorySelectInput for purchase taxonomy').toContain('CategorySelectInput');
-    expect(credit,'CreditCardPage should not keep an unused AppSelectInput import only to satisfy this contract').not.toContain("from '../components/AppSelectInput'");
+    expect(credit,'CreditCardPage should use AppSelectInput for the explicit statement-boundary rule').toContain('<AppSelectInput value={statementBoundary}');
   });
 
   it('reuses one explicit ASC/DESC control wherever user-selectable sorting exists',()=>{

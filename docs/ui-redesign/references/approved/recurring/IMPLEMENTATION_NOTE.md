@@ -1,1 +1,0 @@
-Implementation should not hard-code sample values from the approved reference. Preserve canonical recurring and loan payment semantics, lifecycle controls, account/category icon registry behavior, mobile recurring cards, and existing editor validation.
