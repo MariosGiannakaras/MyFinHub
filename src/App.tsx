@@ -35,6 +35,7 @@ import type {
   PaymentCard,
   RecurringItem,
   ReviewDecision,
+  SavingsGoal,
   ScheduledTransaction,
   TransactionRule,
 } from './types';
@@ -207,6 +208,8 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   const upsertBudget=(budget:MonthlyBudget)=>finance.update(current=>{const rows=current.state.budgets??[];const exists=rows.some(item=>item.id===budget.id);return {...current,state:{...current.state,budgets:exists?rows.map(item=>item.id===budget.id?budget:item):[...rows,budget]}}});
   const deleteBudget=(id:string)=>finance.update(current=>({...current,state:{...current.state,budgets:(current.state.budgets??[]).filter(item=>item.id!==id)}}));
   const updateSavingsTarget=(rate:number)=>finance.update(current=>({...current,state:{...current.state,settings:{...current.state.settings,savingsTargetRate:rate,motion:'full'}}}));
+  const upsertSavingsGoal=(goal:SavingsGoal)=>finance.update(current=>{const rows=current.state.savingsGoals??[];const exists=rows.some(item=>item.id===goal.id);return {...current,state:{...current.state,savingsGoals:exists?rows.map(item=>item.id===goal.id?goal:item):[...rows,goal]}}});
+  const deleteSavingsGoal=(id:string)=>finance.update(current=>({...current,state:{...current.state,savingsGoals:(current.state.savingsGoals??[]).filter(item=>item.id!==id)}}));
   const upsertRule=(rule:TransactionRule)=>finance.update(current=>{const rows=current.state.transactionRules??[];const exists=rows.some(item=>item.id===rule.id);return {...current,state:{...current.state,transactionRules:exists?rows.map(item=>item.id===rule.id?rule:item):[...rows,rule]}}});
   const deleteRule=(id:string)=>finance.update(current=>({...current,state:{...current.state,transactionRules:(current.state.transactionRules??[]).filter(item=>item.id!==id)}}));
   const updateTaxonomy=async(operation:TaxonomyOperation)=>{
@@ -250,7 +253,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   const content = page === 'dashboard'
     ? <DashboardPage data={data} month={month} asOf={today} motionMode="full" onQuickAdd={(prefill?: QuickPrefill) => openGeneric('expense', prefill || null)} onAccountQuickAdd={(accountId, kind) => kind === 'savings' ? openSpecial({ mode: 'savings', toAccountId: accountId, savingSource: 'manual_transfer' }) : openGeneric('expense', { note: '', amount: 0, accountId })} onTransactions={() => navigate('transactions')} onPlanning={() => navigate('planning')} onAttention={() => navigate('attention')} onReports={()=>navigate('reports')}/>
     : page === 'transactions' ? <TransactionsPage data={data} month={month} onEditEvent={editEvent} onDeleteEvent={deleteEvent} onEditLegacy={editLegacy} onDeleteLegacy={deleteLegacy}/>
-    : page === 'savings' ? <SavingsPage data={data} month={month} asOf={today} onCreate={addEvent} onQuickAdd={openSpecial} onSavingsTargetChange={updateSavingsTarget}/>
+    : page === 'savings' ? <SavingsPage data={data} month={month} asOf={today} onCreate={addEvent} onQuickAdd={openSpecial} onSavingsTargetChange={updateSavingsTarget} onUpsertGoal={upsertSavingsGoal} onDeleteGoal={deleteSavingsGoal}/>
     : page === 'cards' ? <CardsPage data={data} onUpsertBank={upsertBank} onUpsertCard={upsertCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard}/>
     : page === 'credit' ? <CreditCardPage data={data} asOf={today} onCreateEvent={addEvent} onEditEvent={editEvent} onDeleteEvent={deleteEvent} onUpsertCard={upsertCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard} onPayCard={(cardId,statementId)=>openSpecial({mode:'credit',action:'payment',cardId,statementId})}/>
     : page === 'loans' ? <LoansPage data={data} asOf={today} onUpsertLoan={upsertLoan} onCreateSelfLoan={createSelfLoan} onPayLoan={(loanId)=>openSpecial({mode:'loan',loanId})}/>
