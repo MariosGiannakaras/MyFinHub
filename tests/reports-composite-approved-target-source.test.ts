@@ -14,6 +14,14 @@ describe('approved composite Reports source contract',()=>{
     expect(styles).toContain('.reports-composite .report-category-list{max-height:none;overflow:visible');
   });
 
+  it('owns budget CRUD in Reports through the shared canonical budget component',()=>{
+    expect(source).toContain('<BudgetRuleSettings');
+    expect(source).toContain('view="budgets"');
+    expect(source).toContain('onUpsertBudget={onUpsertBudget}');
+    expect(source).toContain('onDeleteBudget={onDeleteBudget}');
+    expect(source).toContain('budgetProgress(data,month)');
+  });
+
   it('consolidates duplicate analytics while retaining the unique coverage from both references',()=>{
     const source=read('src/pages/ReportsPage.tsx');
     expect(source).toContain('6μηνη οικονομική ροή');
