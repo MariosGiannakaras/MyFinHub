@@ -67,8 +67,11 @@ describe('cross-page UI consistency contracts',()=>{
     const routeContinuity=read('src/styles/dashboard-route-shell-continuity.css');
     const desktopAlignment=read('src/styles/dashboard-desktop-alignment.css');
     const desktopFidelity=read('src/styles/dashboard-desktop-fidelity.css');
-    const dashboardLayers=routeContinuity+desktopAlignment+desktopFidelity;
+    const dashboardTarget=read('src/styles/dashboard-approved-target.css');
+    const transactionsTarget=read('src/styles/transactions-desktop-shell.css');
+    const dashboardLayers=routeContinuity+desktopAlignment+desktopFidelity+dashboardTarget+transactionsTarget;
     expect(dashboardLayers).not.toContain('.app-shell:has(');
+    expect(dashboardLayers).not.toContain('.app-shell:is(:has(');
     expect(dashboardLayers).not.toContain('html:has(.dashboard-approved)');
     expect(dashboardLayers).not.toContain('body:has(.dashboard-approved)');
     expect(desktopAlignment).not.toContain('.brand-block .brand-mark-icon');
