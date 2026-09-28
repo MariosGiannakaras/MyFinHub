@@ -2,38 +2,31 @@
 
 ## Current production
 
-MyFinHub v1.3.0 web/production integration is complete.
+MyFinHub v1.3.0 is the completed web/production and Windows release baseline.
 
-- Canonical redesigned application promoted to release-only `main`.
+- Canonical redesigned application is on release-only `main`.
 - Vercel production deployment is READY on the validated production tree.
 - Production device-session registry and provider-brand refresh migrations are applied.
 - Owner + AAL2 + active-device RLS/session enforcement is active.
+- Production recurring/workbook reconciliation is complete.
 - Final integration gates passed: CI, CodeQL, Cross-engine, Performance, Windows Desktop, Windows First Run and Windows Clean Launch.
 - Final persistent visual evidence contains 63 PNGs plus its manifest under `visual-qa/final/**`.
-- Production recurring/workbook reconciliation is complete.
 
-The stable published Windows installer remains v1.2.2 until the controlled v1.3.0 tag workflow finishes.
+## Windows v1.3.0 release
 
-Release-closeout tracker: **#288**.
+**Tasks 3/3 · Subtasks 9/9**
 
-## Windows v1.3.0 closeout
+- Release tag: `myfinhub-v1.3.0`.
+- Exact tagged release commit: `2673ce626c0e3db6c30fea04a46b6cf1ce9517df`.
+- Windows Desktop run #2029 completed successfully.
+- Published release: `MyFinHub Desktop myfinhub-v1.3.0`.
+- Installer: `MyFinHub-Setup-1.3.0-x64.exe`.
+- Installer size: `148992632` bytes.
+- GitHub asset digest: `sha256:a405189e016ddd03e31ab1ba92979b3991a64516edfa2a657eb7b9928fadc556`.
+- Matching `.sha256` asset is published in the same controlled GitHub Release.
+- Release is neither draft nor prerelease.
 
-**Tasks 0/3 · Subtasks 4/9**
-
-Completed:
-
-- verified root and desktop package version `1.3.0`;
-- verified the Windows release contract: `myfinhub-v1.3.0`, tag commit already on `main`, validated NSIS installer and SHA-256 asset pair;
-- corrected durable v1.3 documentation for the canonical server card vault, durable history and current production state;
-- prepared the v1.3.0 release notes and release-closeout metadata.
-
-Remaining:
-
-1. land this release-closeout metadata on the final `main` commit;
-2. create `myfinhub-v1.3.0` on that exact commit;
-3. require the Windows tag workflow to publish and verify `MyFinHub-Setup-1.3.0-x64.exe` plus its `.sha256`;
-4. update the README download/release links only after publication is independently verified;
-5. close #288.
+Release-closeout tracker: **#288 — complete**.
 
 ## Durable security and finance invariants
 
@@ -42,8 +35,7 @@ Remaining:
 - PAN/expiry/CVV are excluded from FinanceData and normal backups and live only in the encrypted owner+AAL2 server card vault.
 - `CARD_VAULT_KEY`, service-role credentials and other privileged secrets are never distributed in browser, Windows or Android clients.
 - Optimistic revisions, backups, audit/history boundaries and the canonical finance/accounting engine remain authoritative.
-- No database reset, destructive re-import or historical rewrite is part of the Windows release closeout.
 
-## Delivery workflow
+## Next work
 
-Routine implementation remains **Issue → short-lived branch → PR → required checks → squash merge into `develop`**. `main` is release-only. Windows desktop publication is allowed only from a matching `myfinhub-v<version>` tag that points to a commit already on `main`.
+Subsequent changes are product fixes against the completed v1.3.0 baseline. Routine implementation remains **Issue → short-lived branch → PR → required checks → squash merge into `develop`**. `main` remains release-only.
