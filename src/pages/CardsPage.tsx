@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { AppTextInput } from '../components/AppTextInput';
 import { Button } from '../components/Button';
 import { PageHeader } from '../components/PageHeader';
+import { Surface } from '../components/Surface';
 import { CardCreateDialog } from '../components/CardCreateDialog';
 import { CardDetailsDialog } from '../components/CardDetailsDialog';
 import { ConfirmDialog } from '../components/ConfirmDialog';
@@ -103,10 +104,10 @@ export function CardsPage({
     <PageHeader eyebrow="ΚΑΡΤΕΣ" title="Κάρτες" description={<><p className="cards-heading-desktop">Οι χρεωστικές και προπληρωμένες κάρτες σου, συγκεντρωμένες με ασφάλεια ανά τράπεζα.</p><p className="cards-heading-mobile">Χρεωστικές και προπληρωμένες κάρτες μόνο για ασφαλή αποθήκευση και προβολή των στοιχείων τους. Οι συναλλαγές καταχωρούνται στους αντίστοιχους λογαριασμούς, όχι στις κάρτες.</p></>} actions={<Button type="button" variant="primary" onClick={()=>{setBankName('');setError('');setBankOpen(true)}}><Plus/> Προσθήκη τράπεζας</Button>}/>
 
     <section className="cards-surrounding-summary" aria-label="Σύνοψη αποθηκευμένων καρτών">
-      <article className="cards-surrounding-kpi"><span className="cards-surrounding-kpi-icon banks"><Landmark/></span><div><small>Τράπεζες</small><strong>{banks.length}</strong><span>με ξεχωριστή στήλη καρτών</span></div></article>
-      <article className="cards-surrounding-kpi"><span className="cards-surrounding-kpi-icon active"><CreditCard/></span><div><small>Ενεργές κάρτες</small><strong>{activeCards.length}</strong><span>στο ασφαλές card vault</span></div></article>
-      <article className="cards-surrounding-kpi"><span className="cards-surrounding-kpi-icon debit"><ShieldCheck/></span><div><small>Χρεωστικές</small><strong>{debitCount}</strong><span>ενεργές και διαθέσιμες</span></div></article>
-      <article className="cards-surrounding-kpi"><span className="cards-surrounding-kpi-icon prepaid"><WalletCards/></span><div><small>Προπληρωμένες</small><strong>{prepaidCount}</strong><span>{archivedCards.length?`${archivedCards.length} αρχειοθετημένες συνολικά`:'χωρίς αρχειοθετημένες κάρτες'}</span></div></article>
+      <Surface as="article" variant="flat" className="cards-surrounding-kpi"><span className="cards-surrounding-kpi-icon banks"><Landmark/></span><div><small>Τράπεζες</small><strong>{banks.length}</strong><span>με ξεχωριστή στήλη καρτών</span></div></Surface>
+      <Surface as="article" variant="flat" className="cards-surrounding-kpi"><span className="cards-surrounding-kpi-icon active"><CreditCard/></span><div><small>Ενεργές κάρτες</small><strong>{activeCards.length}</strong><span>στο ασφαλές card vault</span></div></Surface>
+      <Surface as="article" variant="flat" className="cards-surrounding-kpi"><span className="cards-surrounding-kpi-icon debit"><ShieldCheck/></span><div><small>Χρεωστικές</small><strong>{debitCount}</strong><span>ενεργές και διαθέσιμες</span></div></Surface>
+      <Surface as="article" variant="flat" className="cards-surrounding-kpi"><span className="cards-surrounding-kpi-icon prepaid"><WalletCards/></span><div><small>Προπληρωμένες</small><strong>{prepaidCount}</strong><span>{archivedCards.length?`${archivedCards.length} αρχειοθετημένες συνολικά`:'χωρίς αρχειοθετημένες κάρτες'}</span></div></Surface>
     </section>
 
     <section className="cards-workspace cards-prototype-workspace surface-raised" aria-label="Χρεωστικές και προπληρωμένες κάρτες ανά τράπεζα">
