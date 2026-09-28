@@ -69,7 +69,7 @@ export function DeviceAccessSettings(){
   };
 
   const others=devices.filter(device=>!device.current);
-  return <section className="panel neo-raised device-access-settings" aria-labelledby="device-access-title">
+  return <section className="panel surface-raised device-access-settings" aria-labelledby="device-access-title">
     <div className="panel-head">
       <div><span id="device-access-title">Συνδεδεμένες συσκευές</span><small>Δες πού είναι ενεργή η πρόσβαση στο MyFinHub και αφαίρεσέ την από συσκευή που δεν αναγνωρίζεις.</small></div>
       <div className="device-access-head-actions"><span className="device-access-count">{loading?'—':devices.length} ενεργές</span><IconButton type="button" aria-label="Ανανέωση συσκευών" title="Ανανέωση" disabled={loading||busy} onClick={()=>void load()}><RefreshCw size={16} className={loading?'is-spinning':''}/></IconButton></div>
