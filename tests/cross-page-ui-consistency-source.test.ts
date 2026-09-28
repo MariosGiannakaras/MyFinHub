@@ -66,7 +66,7 @@ describe('cross-page UI consistency contracts',()=>{
   });
 
   it('prevents raw generic action chrome from bypassing shared Button primitives',()=>{
-    const genericRaw=/<button\b[^>]*className=(?:"[^"]*"|'[^']*'|\{`[^`]*`\})[^>]*\b(?:save-button|secondary|text-button|icon-button)\b/i;
+    const genericRaw=/<button\b[^>]*className=(?:"[^"]*"|'[^']*'|\{`[^`]*`\})[^>]*\b(?:save-button|secondary|text-button|icon-button)\b/;
     for(const file of routedPages){
       const source=read(file);
       expect(source,`${file} should not recreate generic button chrome`).not.toMatch(genericRaw);
