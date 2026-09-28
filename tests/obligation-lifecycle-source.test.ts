@@ -15,8 +15,8 @@ describe('obligation lifecycle hierarchy source contracts',()=>{
     expect(loans).toContain('data-loan-lifecycle={historical?\'completed\':\'active\'}');
   });
   it('removes payment actions from completed loan history while retaining editability and semantic progress',()=>{
-    expect(loans).toContain("!historical?<button type=\"button\" className=\"pay\"");
-    expect(loans).toContain('<button type="button" onClick={()=>startEdit(loan)}><Pencil');
+    expect(loans).toContain("!historical?<Button type=\"button\" variant=\"primary\" className=\"pay\"");
+    expect(loans).toContain('<Button type="button" variant="secondary" onClick={()=>startEdit(loan)}><Pencil');
     expect(loans).toContain('role="progressbar"');
     expect(loans).toContain('aria-valuenow={paid}');
     expect(loans).toContain('data-loan-history');
