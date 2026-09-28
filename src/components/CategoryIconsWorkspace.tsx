@@ -88,7 +88,7 @@ export function CategoryIconsWorkspace({data,asOf,settings,onChange,onTaxonomyOp
     if(perform(retirement.operation))setRetirement(null);
   };
 
-  return <section className="panel neo-raised category-icons-workspace" data-workspace-view={view} aria-labelledby="category-icons-title">
+  return <section className="panel surface-raised category-icons-workspace" data-workspace-view={view} aria-labelledby="category-icons-title">
     <div className="panel-head">
       <div><span id="category-icons-title">{title}</span><small>{description}</small></div>
     </div>
