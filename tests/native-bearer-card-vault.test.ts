@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const storage = vi.hoisted(() => ({
   isOwner: vi.fn(),
 }));
-
+const devices = vi.hoisted(() => ({ ensureDeviceSessionAccess: vi.fn() }));
 const vault = vi.hoisted(() => ({
   readCardSecrets: vi.fn(),
   writeCardSecrets: vi.fn(),
@@ -11,13 +11,15 @@ const vault = vi.hoisted(() => ({
 }));
 
 vi.mock('../server/storage.js', () => storage);
+vi.mock('../server/deviceSessionRegistry.js', () => devices);
 vi.mock('../server/cardVaultStore.js', () => vault);
 
 import { handleCardVaultRequest } from '../server/cardVaultHandler.js';
 
+const TEST_SESSION_ID = '123e4567-e89b-42d3-a456-426614174000';
 function tokenWithAal(aal: 'aal1' | 'aal2') {
   const header = Buffer.from(JSON.stringify({ alg: 'none', typ: 'JWT' })).toString('base64url');
-  const payload = Buffer.from(JSON.stringify({ aal })).toString('base64url');
+  const payload = Buffer.from(JSON.stringify({ aal, session_id: TEST_SESSION_ID })).toString('base64url');
   return `${header}.${payload}.test`;
 }
 
@@ -54,9 +56,10 @@ describe('native bearer card-vault boundary', () => {
   beforeEach(() => {
     process.env.SUPABASE_URL = 'https://project.example.supabase.co';
     process.env.SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_test';
+    devices.ensureDeviceSessionAccess.mockReset().mockResolvedValue({});
     storage.isOwner.mockReset().mockResolvedValue(true);
-    vault.readCardSecrets.mockReset().mockResolvedValue({ pan: '4111111111111111', expiry: '12/30' });
-    vault.writeCardSecrets.mockReset().mockResolvedValue({ pan: '4111111111111111', expiry: '12/30' });
+    vault.readCardSecrets.mockReset().mockResolvedValue({ pan: '4111111111111111', expiry: '12/30', cvv: '123' });
+    vault.writeCardSecrets.mockReset().mockResolvedValue({ pan: '4111111111111111', expiry: '12/30', cvv: '123' });
     vault.deleteCardSecrets.mockReset().mockResolvedValue(undefined);
   });
 
@@ -74,8 +77,9 @@ describe('native bearer card-vault boundary', () => {
     await handleCardVaultRequest(request('POST', token, { cardId: 'card-1' }), res);
 
     expect(res.statusCode).toBe(200);
+    expect(devices.ensureDeviceSessionAccess).toHaveBeenCalledWith(expect.anything(), token, 'owner-id');
     expect(vault.readCardSecrets).toHaveBeenCalledWith('owner-id', 'card-1', token);
-    expect(JSON.parse(res.body)).toEqual({ pan: '4111111111111111', expiry: '12/30' });
+    expect(JSON.parse(res.body)).toEqual({ pan: '4111111111111111', expiry: '12/30', cvv: '123' });
     expect(res.headers.has('access-control-allow-origin')).toBe(false);
   });
 
@@ -88,6 +92,7 @@ describe('native bearer card-vault boundary', () => {
 
     expect(res.statusCode).toBe(403);
     expect(JSON.parse(res.body)).toMatchObject({ code: 'MFA_REQUIRED' });
+    expect(devices.ensureDeviceSessionAccess).not.toHaveBeenCalled();
     expect(vault.readCardSecrets).not.toHaveBeenCalled();
   });
 
@@ -104,7 +109,7 @@ describe('native bearer card-vault boundary', () => {
     expect(vault.readCardSecrets).not.toHaveBeenCalled();
   });
 
-  it('keeps CVV persistence forbidden for native bearer requests', async () => {
+  it('allows owner AAL2 bearer to persist CVV in the shared encrypted vault', async () => {
     const token = tokenWithAal('aal2');
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(upstream(200, { id: 'owner-id' })));
     const res = responseRecorder();
@@ -116,8 +121,12 @@ describe('native bearer card-vault boundary', () => {
       cvv: '123',
     }), res);
 
-    expect(res.statusCode).toBe(400);
-    expect(JSON.parse(res.body)).toMatchObject({ code: 'CVV_PERSISTENCE_DISABLED' });
-    expect(vault.writeCardSecrets).not.toHaveBeenCalled();
+    expect(res.statusCode).toBe(200);
+    expect(vault.writeCardSecrets).toHaveBeenCalledWith(
+      'owner-id',
+      'card-1',
+      { pan: '4111111111111111', expiry: '12/30', cvv: '123' },
+      token,
+    );
   });
 });

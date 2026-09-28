@@ -11,6 +11,11 @@ describe('bank brand identity',()=>{
     expect(bankBrandKey('piraeus-payroll','Μισθοδοσίας')).toBe('piraeus');
     expect(bankBrandKey('revolut','Revolut')).toBe('revolut');
     expect(bankBrandKey('alpha-main','Alpha Bank')).toBe('alpha');
+    expect(bankBrandKey('national-main','Εθνική Τράπεζα')).toBe('national');
+    expect(bankBrandKey('nbg-main','National Bank of Greece')).toBe('national');
+    expect(bankBrandKey(undefined,'Εθνική Τράπεζα')).toBe('national');
+    expect(bankBrandKey('eurobank-main','Eurobank')).toBe('eurobank');
+    expect(bankBrandKey(undefined,'Eurobank')).toBe('eurobank');
     expect(bankBrandKey('payzy','payzy')).toBe('payzy');
     expect(bankBrandKey('viva','Viva.com')).toBe('viva');
   });
@@ -20,8 +25,8 @@ describe('bank brand identity',()=>{
     expect(bankBrandKey('custom-bank','CUSTOM')).toBe('generic');
   });
 
-  it('keeps supported identity metadata local and reuses verified local image assets where available',()=>{
-    for(const key of ['piraeus','revolut','alpha','payzy','viva'] as const){
+  it('uses only owner-approved local brand assets and deliberately falls back where artwork is unavailable',()=>{
+    for(const key of ['piraeus','alpha','revolut','payzy','viva'] as const){
       const asset=bankBrandAsset(key);
       expect(asset).not.toBeNull();
       expect(asset?.label.length).toBeGreaterThan(2);
@@ -35,13 +40,17 @@ describe('bank brand identity',()=>{
         }
       }
     }
+    for(const key of ['national','eurobank'] as const){
+      expect(bankBrandAsset(key)).toBeNull();
+    }
     const piraeus=bankBrandAsset('piraeus');
-    const payzy=bankBrandAsset('payzy');
-    const viva=bankBrandAsset('viva');
-    expect(piraeus&&bankBrandFallbackMark(piraeus)).toBe('ΠΕΙΡΑΙΩΣ');
-    expect(piraeus&&bankBrandCardMark(piraeus)).toBe('Piraeus');
-    expect(payzy?.source).toBe('local-image');
-    expect(viva?.source).toBe('local-image');
+    const alpha=bankBrandAsset('alpha');
+    expect(piraeus?.source).toBe('local-image');
+    expect(alpha?.source).toBe('local-image');
+    if(piraeus?.source==='local-image')expect(piraeus.wordmarkSrc).toBeTruthy();
+    if(alpha?.source==='local-image')expect(alpha.wordmarkSrc).toBeTruthy();
+    expect(bankBrandAsset('payzy')?.source).toBe('local-image');
+    expect(bankBrandAsset('viva')?.source).toBe('local-image');
   });
 
   it('keeps Dashboard, card preview and both rendered card implementations on one registry contract',()=>{

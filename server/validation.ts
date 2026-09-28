@@ -80,7 +80,14 @@ function validateAccount(value: unknown, name: string) {
   text(value.name, `${name}.name`, 500);
   text(value.kind, `${name}.kind`, 100);
   optionalText(value.short, `${name}.short`, 100);
+  optionalText(value.provider, `${name}.provider`, 500);
+  optionalText(value.providerId, `${name}.providerId`, 100);
+  if (value.bankAccountCategory !== undefined) oneOf(value.bankAccountCategory, ['payroll','current','savings','term','payment','other'], `${name}.bankAccountCategory`);
+  if (value.cashRole !== undefined) oneOf(value.cashRole, ['daily','reserve'], `${name}.cashRole`);
+  if (value.cashType !== undefined) oneOf(value.cashType, ['cash','reserve','other'], `${name}.cashType`);
   if (value.excludeFromAvailable !== undefined && typeof value.excludeFromAvailable !== 'boolean') invalid(`Invalid ${name}.excludeFromAvailable.`);
+  if (value.showInQuickChoices !== undefined && typeof value.showInQuickChoices !== 'boolean') invalid(`Invalid ${name}.showInQuickChoices.`);
+  if (value.custom !== undefined && typeof value.custom !== 'boolean') invalid(`Invalid ${name}.custom.`);
 }
 
 function validateCardBank(value: unknown, name: string) {
@@ -114,6 +121,15 @@ function validatePaymentCard(value: unknown, name: string) {
   optionalText(value.last4, `${name}.last4`, 4);
   if (value.last4 !== undefined && value.last4 !== null && !/^\d{4}$/.test(String(value.last4))) invalid(`Invalid ${name}.last4.`);
   optionalText(value.vaultRef, `${name}.vaultRef`, 500);
+  optionalNumber(value.creditLimit, `${name}.creditLimit`);
+  if (value.creditLimit !== undefined && value.creditLimit !== null && Number(value.creditLimit) < 0) invalid(`Invalid ${name}.creditLimit.`);
+  for (const [field, raw] of [['statementClosingDay', value.statementClosingDay], ['statementDueDay', value.statementDueDay]] as const) {
+    if (raw !== undefined && raw !== null) {
+      finiteNumber(raw, `${name}.${field}`, 31);
+      if (!Number.isInteger(raw) || raw < 1 || raw > 31) invalid(`Invalid ${name}.${field}.`);
+    }
+  }
+  if (value.statementBoundaryRule !== undefined) oneOf(value.statementBoundaryRule, ['include-closing-day','next-cycle'], `${name}.statementBoundaryRule`);
   if (typeof value.active !== 'boolean') invalid(`Invalid ${name}.active.`);
   text(value.createdAt, `${name}.createdAt`, 64);
   text(value.updatedAt, `${name}.updatedAt`, 64);
@@ -137,6 +153,8 @@ function validateRecurring(value: unknown, name: string) {
     if (!Number.isInteger(value.day) || value.day < 1 || value.day > 31) invalid(`Invalid ${name}.day.`);
   }
   optionalText(value.firstExpectedDate, `${name}.firstExpectedDate`, 64);
+  optionalText(value.endDate, `${name}.endDate`, 64);
+  if (typeof value.endDate === 'string' && value.endDate && !/^\d{4}-\d{2}-\d{2}$/.test(value.endDate)) invalid(`Invalid ${name}.endDate.`);
   text(value.accountId, `${name}.accountId`, 200, true);
   text(value.category, `${name}.category`, 1_000, true);
   if (typeof value.active !== 'boolean') invalid(`Invalid ${name}.active.`);
@@ -267,10 +285,35 @@ function validateReviewDecision(value: unknown, name: string) {
   }
 }
 
+function validateSavingsGoal(value: unknown, name: string) {
+  if (!object(value)) invalid(`Invalid ${name}.`);
+  text(value.id, `${name}.id`, 200);
+  text(value.name, `${name}.name`, 500);
+  finiteNumber(value.targetAmount, `${name}.targetAmount`);
+  if (value.targetAmount <= 0) invalid(`Invalid ${name}.targetAmount.`);
+  optionalText(value.targetDate, `${name}.targetDate`, 64);
+  if (typeof value.targetDate === 'string' && value.targetDate && !/^\d{4}-\d{2}-\d{2}$/.test(value.targetDate)) invalid(`Invalid ${name}.targetDate.`);
+  text(value.createdAt, `${name}.createdAt`, 64);
+  text(value.updatedAt, `${name}.updatedAt`, 64);
+}
+
 function validateSettings(value: unknown) {
   if (!object(value)) invalid('Missing settings.');
   stringArray(value.excludedFromAvailable, 'state.settings.excludedFromAvailable', 10_000, 200);
   validateStringRecord(value.accountNames, 'state.settings.accountNames');
+  if (value.customAccounts !== undefined) {
+    array(value.customAccounts, 'state.settings.customAccounts', 1_000);
+    value.customAccounts.forEach((item, index) => validateAccount(item, `state.settings.customAccounts[${index}]`));
+    ensureUniqueIds(value.customAccounts, 'state.settings.customAccounts');
+  }
+  if (value.accountOverrides !== undefined) {
+    record(value.accountOverrides, 'state.settings.accountOverrides', 1_000);
+    for (const [id, item] of Object.entries(value.accountOverrides)) {
+      text(id, 'state.settings.accountOverrides key', 100);
+      validateAccount(item, `state.settings.accountOverrides.${id}`);
+      if (object(item) && item.id !== id) invalid(`Invalid state.settings.accountOverrides.${id}.id.`);
+    }
+  }
   stringArray(value.expenseCategories, 'state.settings.expenseCategories', 10_000, 1_000);
   stringArray(value.incomeCategories, 'state.settings.incomeCategories', 10_000, 1_000);
   stringArray(value.customPresets, 'state.settings.customPresets', 10_000, 1_000);
@@ -387,5 +430,10 @@ export function validateFinanceData(value: unknown): asserts value is FinanceDat
   if (state.reviewDecisions !== undefined) {
     record(state.reviewDecisions, 'state.reviewDecisions', 100_000);
     Object.entries(state.reviewDecisions).forEach(([id, item]) => { text(id, 'state.reviewDecisions key', 200); validateReviewDecision(item, `state.reviewDecisions.${id}`); });
+  }
+  if (state.savingsGoals !== undefined) {
+    array(state.savingsGoals, 'state.savingsGoals', 1_000);
+    state.savingsGoals.forEach((item, index) => validateSavingsGoal(item, `state.savingsGoals[${index}]`));
+    ensureUniqueIds(state.savingsGoals, 'state.savingsGoals');
   }
 }

@@ -1,4 +1,5 @@
 import { Buffer } from 'node:buffer';
+import { ensureDeviceSessionAccess } from './deviceSessionRegistry.js';
 import { ApiError, assertSameOrigin, requestHeader } from './http.js';
 import { fetchUpstream, isAuthRejection } from './upstream.js';
 
@@ -15,7 +16,7 @@ type AuthFactor = {
   friendly_name?: string | null;
 };
 type AuthUser = { id: string; email?: string | null; factors?: AuthFactor[] | null };
-export type TokenResponse = {
+type TokenResponse = {
   access_token: string;
   refresh_token: string;
   expires_in: number;
@@ -31,13 +32,13 @@ type TotpEnrollment = {
 type ChallengeResponse = { id: string; expires_at?: number };
 
 type JwtClaims = { aal?: string };
-export type SessionSource = 'cookie' | 'bearer';
-export type SessionContext = {
+type SessionSource = 'cookie' | 'bearer';
+type SessionContext = {
   accessToken: string;
   user: AuthUser;
   source: SessionSource;
 };
-export type RequireSessionOptions = {
+type RequireSessionOptions = {
   allowBearer?: boolean;
 };
 
@@ -161,6 +162,11 @@ export function accessTokenAal(accessToken: string) {
   return aal === 'aal2' ? 'aal2' : 'aal1';
 }
 
+async function finalizeSession(req: any, accessToken: string, user: AuthUser, source: SessionSource): Promise<SessionContext> {
+  if (accessTokenAal(accessToken) === 'aal2') await ensureDeviceSessionAccess(req, accessToken, user.id);
+  return { accessToken, user, source };
+}
+
 export async function signInWithPassword(email: string, password: string) {
   return authRequest<TokenResponse>('token?grant_type=password', {
     method: 'POST',
@@ -168,14 +174,14 @@ export async function signInWithPassword(email: string, password: string) {
   });
 }
 
-export async function refreshWithToken(refreshToken: string) {
+async function refreshWithToken(refreshToken: string) {
   return authRequest<TokenResponse>('token?grant_type=refresh_token', {
     method: 'POST',
     body: JSON.stringify({ refresh_token: refreshToken }),
   });
 }
 
-export async function getUser(accessToken: string) {
+async function getUser(accessToken: string) {
   if (!accessToken) throw new ApiError(401, 'AUTH_REQUIRED', 'Authentication required.');
   return authRequest<AuthUser>('user', {
     method: 'GET',
@@ -250,8 +256,9 @@ export async function requireSession(req: any, res: any, options: RequireSession
     if (bearerToken !== null) {
       try {
         const user = await getUser(bearerToken);
-        return { accessToken: bearerToken, user, source: 'bearer' };
+        return await finalizeSession(req, bearerToken, user, 'bearer');
       } catch (error) {
+        if (error instanceof ApiError && error.code === 'DEVICE_ACCESS_REVOKED') throw error;
         if (!isAuthRejection(error)) throw error;
         // An explicit native credential is authoritative. Never fall back to ambient cookies.
         throw new ApiError(401, 'AUTH_REQUIRED', 'Authentication required.');
@@ -263,8 +270,12 @@ export async function requireSession(req: any, res: any, options: RequireSession
   if (tokens.accessToken) {
     try {
       const user = await getUser(tokens.accessToken);
-      return { accessToken: tokens.accessToken, user, source: 'cookie' };
+      return await finalizeSession(req, tokens.accessToken, user, 'cookie');
     } catch (error) {
+      if (error instanceof ApiError && error.code === 'DEVICE_ACCESS_REVOKED') {
+        clearSessionCookies(req, res);
+        throw error;
+      }
       if (!isAuthRejection(error)) throw error;
       // Only a genuine Auth rejection is eligible for refresh fallback.
     }
@@ -275,8 +286,12 @@ export async function requireSession(req: any, res: any, options: RequireSession
       const refreshed = await refreshWithToken(tokens.refreshToken);
       setSessionCookies(req, res, refreshed);
       const user = refreshed.user || await getUser(refreshed.access_token);
-      return { accessToken: refreshed.access_token, user, source: 'cookie' };
+      return await finalizeSession(req, refreshed.access_token, user, 'cookie');
     } catch (error) {
+      if (error instanceof ApiError && error.code === 'DEVICE_ACCESS_REVOKED') {
+        clearSessionCookies(req, res);
+        throw error;
+      }
       if (!isAuthRejection(error)) throw error;
       clearSessionCookies(req, res);
     }

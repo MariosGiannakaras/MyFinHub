@@ -1,4 +1,7 @@
-export type AccountKind = 'cash' | 'bank' | 'savings' | 'credit';
+type AccountKind = 'cash' | 'bank' | 'savings' | 'credit';
+type CashAccountRole = 'daily' | 'reserve';
+export type BankAccountCategory = 'payroll' | 'current' | 'savings' | 'term' | 'payment' | 'other';
+export type CashAccountType = 'cash' | 'reserve' | 'other';
 export type SavingSource = 'pay_and_save' | 'manual_transfer' | 'cash_offset';
 export type RecurringStatus = 'active' | 'paused' | 'stopped';
 export type RecurrenceUnit = 'month' | 'year';
@@ -19,6 +22,13 @@ export interface Account {
   short?: string;
   kind: AccountKind | string;
   excludeFromAvailable?: boolean;
+  provider?: string;
+  providerId?: string;
+  bankAccountCategory?: BankAccountCategory;
+  cashRole?: CashAccountRole;
+  cashType?: CashAccountType;
+  showInQuickChoices?: boolean;
+  custom?: boolean;
 }
 
 export interface CategoryDefinition {
@@ -63,7 +73,7 @@ export interface PaymentCard {
   updatedAt: string;
 }
 
-export interface DeletedCardReference {
+interface DeletedCardReference {
   id: string;
   kind: 'credit';
   createdAt: string;
@@ -202,14 +212,23 @@ export interface MonthlyBudget {
   updatedAt: string;
 }
 
-export interface TransactionRuleMatch {
+export interface SavingsGoal {
+  id: string;
+  name: string;
+  targetAmount: number;
+  targetDate?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface TransactionRuleMatch {
   description?: string;
   merchant?: string;
   accountId?: string;
   mode?: 'contains' | 'equals';
 }
 
-export interface TransactionRuleAction {
+interface TransactionRuleAction {
   category?: string;
   subcategory?: string;
   note?: string;
@@ -269,6 +288,7 @@ export interface FinanceData {
     reviewDecisions?: Record<string, ReviewDecision>;
     attentionDecisions?: Record<string, AttentionDecision>;
     budgets?: MonthlyBudget[];
+    savingsGoals?: SavingsGoal[];
     transactionRules?: TransactionRule[];
     migration?: { fromSchema: number; migratedAt: string };
   };
@@ -277,6 +297,8 @@ export interface FinanceData {
 export interface FinanceSettings {
   excludedFromAvailable: string[];
   accountNames: Record<string, string>;
+  customAccounts?: Account[];
+  accountOverrides?: Record<string, Account>;
   expenseCategories: string[];
   incomeCategories: string[];
   expenseCategoryTree?: CategoryDefinition[];
@@ -302,6 +324,7 @@ export interface RecurringItem {
   amount: number;
   day?: number | null;
   firstExpectedDate?: string | null;
+  endDate?: string | null;
   recurrenceUnit?: RecurrenceUnit;
   recurrenceInterval?: number;
   accountId: string;
@@ -311,7 +334,7 @@ export interface RecurringItem {
   source?: string;
 }
 
-export interface Subscription {
+interface Subscription {
   id: string;
   name: string;
   due?: string;
@@ -338,14 +361,14 @@ export interface Loan {
   longTermRecurring?: boolean;
 }
 
-export interface LendingEntry {
+interface LendingEntry {
   date: string;
   lent: number;
   repaid: number;
   haircut?: number;
 }
 
-export interface LendingPerson {
+interface LendingPerson {
   person: string;
   entries: LendingEntry[];
   outstanding: number;

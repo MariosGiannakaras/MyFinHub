@@ -1,0 +1,4 @@
+.report-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.report-kpis>div{border-radius:17px;padding:15px}
+.report-kpis span{display:block;font-size:8px;color:var(--muted)}
+.report-kpis b{display:block;font-size:21px;margin-top:5px}

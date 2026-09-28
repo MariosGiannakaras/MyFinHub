@@ -115,12 +115,48 @@ describe('finance document validation', () => {
     expect(() => validateFinanceState(badAliases)).toThrowError(/aliases/i);
   });
 
+  it('accepts canonical provider account metadata and rejects unsupported categories', () => {
+    const full = validState();
+    full.state.settings.customAccounts=[{
+      id:'account-alpha-current',
+      name:'Alpha Current',
+      kind:'bank',
+      provider:'Alpha Bank',
+      providerId:'alpha',
+      bankAccountCategory:'current',
+      showInQuickChoices:true,
+      custom:true,
+    }];
+    expect(()=>validateFinanceData(full)).not.toThrow();
+
+    full.state.settings.customAccounts[0].bankAccountCategory='invalid';
+    expect(()=>validateFinanceData(full)).toThrowError(/bankAccountCategory/i);
+  });
+
   it('accepts cards and extended loan metadata used by current workspaces', () => {
     const full = validState();
     full.state.cardBanks.push({ id: 'bank-1', name: 'BANK', order: 10, custom: true });
     full.state.cards.push({ id: 'card-1', bankId: 'bank-1', nickname: 'Visa', kind: 'credit', network: 'visa', last4: '4242', active: true, createdAt: full.updatedAt, updatedAt: full.updatedAt });
     full.state.customLoans.push({ id: 'loan-1', name: 'Loan', total: 1200, installment: 100, installments: 12, paidCount: 0, kind: 'loan', firstExpectedDate: '2026-09-01', defaultAccountId: 'bank', forgivenAmount: 0, longTermRecurring: true });
     expect(() => validateFinanceData(full)).not.toThrow();
+  });
+
+  it('accepts canonical recurring end dates, savings goals and explicit credit statement rules', () => {
+    const full = validState();
+    full.state.recurringCustom.push({ id:'rec-1',name:'Plan',amount:10,day:5,endDate:'2027-01-31',accountId:'bank',category:'Συνδρομές',active:true });
+    full.state.savingsGoals=[{id:'goal-1',name:'Ταξίδι',targetAmount:2500,targetDate:'2027-06-30',createdAt:full.updatedAt,updatedAt:full.updatedAt}];
+    full.state.cards.push({ id:'card-1',bankId:'bank',nickname:'Visa',kind:'credit',network:'visa',active:true,creditLimit:3000,statementClosingDay:12,statementDueDay:20,statementBoundaryRule:'include-closing-day',createdAt:full.updatedAt,updatedAt:full.updatedAt });
+    expect(() => validateFinanceData(full)).not.toThrow();
+    expect(() => validateFinanceState(full.state)).not.toThrow();
+  });
+
+  it('rejects malformed recurring end dates, savings goals and credit statement rules', () => {
+    const badRecurring=validState();badRecurring.state.recurringCustom.push({id:'rec-1',name:'Plan',amount:10,day:5,endDate:'31/01/2027',accountId:'bank',category:'Συνδρομές',active:true});
+    expect(()=>validateFinanceData(badRecurring)).toThrowError(/endDate/i);
+    const badGoal=validState();badGoal.state.savingsGoals=[{id:'goal-1',name:'Goal',targetAmount:0,targetDate:'2027-01-01',createdAt:badGoal.updatedAt,updatedAt:badGoal.updatedAt}];
+    expect(()=>validateFinanceData(badGoal)).toThrowError(/targetAmount/i);
+    const badCard=validState();badCard.state.cards.push({id:'card-1',bankId:'bank',nickname:'Visa',kind:'credit',network:'visa',active:true,statementClosingDay:12,statementDueDay:20,statementBoundaryRule:'guessed',createdAt:badCard.updatedAt,updatedAt:badCard.updatedAt});
+    expect(()=>validateFinanceData(badCard)).toThrowError(/statementBoundaryRule/i);
   });
 
   it('accepts positive integer installment coverage on canonical finance events and mutable writes', () => {

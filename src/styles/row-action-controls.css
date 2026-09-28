@@ -1,0 +1,4 @@
+.row-actions{display:flex;justify-content:flex-end;gap:5px}
+.row-actions button{width:28px;height:28px;border:1px solid #d7e1ee;border-radius:8px;background:#f7faff;display:grid;place-items:center;cursor:pointer}
+.row-actions svg{width:13px}
+.row-actions .danger{color:#c5364c;background:#fff1f3}

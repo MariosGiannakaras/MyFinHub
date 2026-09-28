@@ -7,7 +7,7 @@
 - Personal financial data and credentials must never be committed. The legacy compatibility path `data/rheomiq-data.json` remains ignored.
 - The online runtime must not require `SUPABASE_SECRET_KEY` or service-role credentials. Browser-facing and approved native finance requests use the publishable key plus the authenticated owner's JWT and PostgreSQL RLS. Admin/secret keys are offline emergency tooling only and must never be configured as `VITE_*` variables or embedded in native clients.
 - Windows desktop users must not be asked to provision infrastructure configuration. The canonical Supabase project URL and publishable key are application-owned public client configuration and may be packaged in a controlled desktop release; service-role/secret credentials must never be packaged.
-- `CARD_VAULT_KEY` is server-side encryption material and must never be embedded in the Windows installer, Electron ASAR, renderer bundle, runtime defaults, Android package, or other distributed client. Windows PAN/expiry operations must use the reviewed production `/api/card-secrets` bearer boundary so encryption/decryption remains server-side.
+- `CARD_VAULT_KEY` is server-side encryption material and must never be embedded in the Windows installer, Electron ASAR, renderer bundle, runtime defaults, Android package, or other distributed client. PAN/expiry/CVV operations on Windows and Android must use the reviewed production `/api/card-secrets` boundary so encryption/decryption remains server-side.
 - Every finance read/write/import/backup/card-secret path must require an authenticated session and database owner authorization. Ambient-cookie state-changing HTTP endpoints must enforce same-origin/CSRF checks and bounded JSON request sizes. An explicitly reviewed native bearer path may skip browser Origin metadata only after bearer authentication succeeds; it must remain owner + AAL2 + RLS/RPC protected and must not relax CORS.
 - Production browser/Windows authentication tokens must remain HttpOnly cookies. Never persist finance data, access tokens, refresh tokens, or TOTP enrollment secrets in browser localStorage/IndexedDB. Native-client token storage is a separate platform boundary and must use OS-backed secure storage rather than browser-storage rules.
 - Native bearer authentication must be explicit opt-in per approved finance endpoint, fail closed on malformed/rejected bearer credentials without cookie fallback, and preserve session provenance so bearer failures do not clear unrelated browser cookies.
@@ -26,6 +26,16 @@
 - UI motion must respect `prefers-reduced-motion`; interaction state cannot be conveyed only by motion or color.
 - CI/security checks are production gates. Keep tests, dependency audit, CodeQL, Dependabot, and security headers working when changing the app.
 
+## Cross-chat execution and progress rules
+
+- For substantial repository work, batch coherent changes together and avoid triggering full CI for every small edit. Prefer narrow/local/repository-specific checks while building the batch, then run the complete required CI/security/visual/release gates on the final integrated head. Use an intermediate full CI gate only when a security, database, migration, dependency, or architecture boundary makes proceeding without it materially unsafe.
+- When the owner explicitly asks to minimize CI runs, do not keep an implementation PR open during high-churn batching if that PR would trigger redundant CI on every push. Maintain a pushed implementation branch and open/update the review PR when the coherent batch is ready for final validation, unless repository protection or collaboration needs require an earlier PR.
+- Every progress update to the owner during a substantial task must include both counters in the form **Tasks x/y · Subtasks x/y** (localized to the conversation language when appropriate).
+- Repository-owned progress tracking must use the same two counters. The denominator must come from an explicit checklist/phase plan in the repository, not from an ad-hoc estimate.
+- Before handing work to another chat/agent, update the repository progress checkpoint with the exact counters, branch/ref, completed work, validation, blockers, and next safe action. A future chat must be able to continue from repository state without prior conversation memory.
+
+- Persistent release screenshots belong only in `visual-qa/final/` and are produced by the dedicated Final Visual QA gate after normal validation is green. Routine rendered QA evidence stays ephemeral under `.qa-artifacts/` or GitHub Actions artifacts; do not commit concept, intermediate, superseded, or chat-specific screenshots.
+
 ## Delivery workflow
 
 - Implementation, infrastructure, dependency-policy, and database changes start from a tracked GitHub issue unless they are an emergency security fix.
@@ -42,3 +52,4 @@
 - Database DDL changes are made only through ordered files in `supabase/migrations/`. Never make an untracked production schema change and leave Git behind.
 - Production data is used only by the production runtime. Preview/development deployments must not receive credentials or configuration that can mutate the production finance database unless that access is explicitly reviewed and intended.
 - Before merging backend/auth/database changes, verify authorization failure paths as well as the successful path. Before merging finance-domain changes, run the domain regression suite and preserve the invariants above.
+

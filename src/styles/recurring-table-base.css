@@ -1,0 +1,7 @@
+.recurring-table>div{display:grid;grid-template-columns:auto 1fr 100px 160px;gap:12px;align-items:center;padding:12px;border-bottom:1px solid #dfe7f2}
+.rec-icon{width:33px;height:33px;border-radius:10px;background:#edf3ff;color:#2f6fed;display:grid;place-items:center}
+.rec-icon svg{width:15px}
+.recurring-table b{font-size:10px}
+.recurring-table small{display:block;font-size:8px;color:var(--muted);margin-top:2px}
+.recurring-table strong{font-size:10px}
+.recurring-table em{font-size:8px;color:var(--muted);font-style:normal}

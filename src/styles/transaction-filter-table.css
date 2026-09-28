@@ -1,0 +1,16 @@
+.filterbar{display:flex;gap:9px;align-items:center;margin-bottom:12px}
+.searchbox{flex:1;display:flex;align-items:center;gap:8px;border-radius:12px;padding:0 11px;background:#edf3fa;box-shadow:var(--shadow-inset)}
+.searchbox input{flex:1;height:38px;border:0;background:transparent;outline:none}
+.filterbar select,.form-grid select,.form-grid input,.settings-form input,.settings-form select,.split-line input,.split-line select{height:39px;border:1px solid #d7e1ef;border-radius:11px;background:#f8fbff;color:var(--ink);padding:0 10px;outline:none}
+.filterbar>select{height:39px;border:1px solid var(--line);border-radius:11px;background:#f8fbff;padding:0 10px}
+.filterbar>span{font-size:9px;color:var(--muted)}
+.transaction-table{overflow:auto}
+.tr{min-width:920px;display:grid;grid-template-columns:105px minmax(260px,1.8fr) 120px 190px 110px 72px;gap:10px;padding:10px;border-bottom:1px solid #dfe7f2;align-items:center;font-size:9px}
+.tr.th{font-size:8px;color:var(--muted);font-weight:800;background:#edf3fa;border-radius:10px}
+.tr b{display:block;font-size:9px}
+.tr small{display:block;color:var(--muted);margin-top:3px}
+.tr>span:last-child{text-align:right;font-weight:800}
+.flow-pill{font-style:normal;font-size:7.5px;border-radius:99px;background:#e9eff9;padding:4px 7px;color:#516889}
+.flow-pill.expense,.flow-pill.card_purchase{color:#b42d45;background:#ffedf0}
+.flow-pill.income,.flow-pill.refund{color:#187852;background:#e9f9f2}
+.flow-pill.transfer,.flow-pill.withdrawal,.flow-pill.saving_cash_offset{color:#1b5ec5;background:#eaf1ff}

@@ -1,0 +1,6 @@
+.lending-person-field{display:grid;gap:6px;min-width:0}
+.lending-person-field>label{display:grid;gap:5px}
+.known-people-suggestions{display:flex;flex-wrap:wrap;gap:5px;min-width:0}
+.known-people-suggestions button{min-height:32px;max-width:100%;border:1px solid #d7e1ef;border-radius:999px;background:#f5f9fe;color:var(--ink-2);padding:5px 9px;font-size:8px;font-weight:750;display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+.known-people-suggestions button[aria-selected="true"]{border-color:#9bbcf5;background:#eaf2ff;color:#174ea6}
+.known-people-suggestions small{font-size:7px;color:var(--muted)}

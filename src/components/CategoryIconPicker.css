@@ -1,0 +1,41 @@
+/* Dense icon-management layout. Scoped to the Settings > Icons surface. */
+.settings-icons-only .category-icon-category-list{gap:5px}
+.settings-icons-only .category-taxonomy-card{display:grid;grid-template-columns:minmax(210px,.42fr) minmax(0,1.58fr);align-items:start;gap:6px 10px;padding:7px 9px}
+.settings-icons-only .category-taxonomy-head{min-height:34px;align-items:center}
+.settings-icons-only .category-taxonomy-glyph{width:28px;height:28px;border-radius:8px}
+.settings-icons-only .category-taxonomy-title small{line-height:1.2}
+.settings-icons-only .category-taxonomy-card>.taxonomy-icon-disclosure{grid-column:2;align-self:center}
+.settings-icons-only .category-taxonomy-card>.taxonomy-icon-disclosure>summary{min-height:32px;padding:5px 8px}
+.settings-icons-only .category-taxonomy-card>.taxonomy-icon-disclosure[open]{grid-column:1/-1}
+.settings-icons-only .taxonomy-subcategory-section{grid-column:1/-1;padding-top:0}
+.settings-icons-only .taxonomy-subcategory-heading{display:none}
+.settings-icons-only .taxonomy-subcategory-section:has(>.empty-inline){display:none}
+.settings-icons-only .taxonomy-subcategory-list{grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
+.settings-icons-only .taxonomy-subcategory-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:6px;padding:5px 7px;min-height:36px}
+.settings-icons-only .taxonomy-subcategory-main{min-width:0}
+.settings-icons-only .taxonomy-subcategory-main>div{min-width:0}
+.settings-icons-only .taxonomy-subcategory-main b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.settings-icons-only .taxonomy-subcategory-main small{display:none}
+.settings-icons-only .taxonomy-subcategory-icon{margin:0;min-width:74px;background:transparent}
+.settings-icons-only .taxonomy-subcategory-icon>summary{min-height:30px;padding:4px 7px;justify-content:center}
+.settings-icons-only .taxonomy-subcategory-row:has(.taxonomy-subcategory-icon[open]){grid-column:1/-1}
+.settings-icons-only .taxonomy-subcategory-icon[open]{grid-column:1/-1;width:100%}
+.settings-icons-only .category-icon-picker-mode{display:grid;grid-template-columns:minmax(0,220px);gap:5px}
+.settings-icons-only .category-icon-picker-mode .category-icon-option{min-height:36px}
+.settings-icons-only .category-icon-options{grid-template-columns:repeat(8,minmax(0,1fr));max-height:210px}
+
+@media(max-width:1180px){
+  .settings-icons-only .category-taxonomy-card{grid-template-columns:minmax(180px,.5fr) minmax(0,1.5fr)}
+  .settings-icons-only .taxonomy-subcategory-list{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .settings-icons-only .category-icon-options{grid-template-columns:repeat(6,minmax(0,1fr))}
+}
+
+@media(max-width:720px){
+  .settings-icons-only .category-taxonomy-card{grid-template-columns:1fr;gap:5px;padding:8px}
+  .settings-icons-only .category-taxonomy-card>.taxonomy-icon-disclosure,.settings-icons-only .category-taxonomy-card>.taxonomy-icon-disclosure[open]{grid-column:1}
+  .settings-icons-only .taxonomy-subcategory-list{grid-template-columns:1fr}
+  .settings-icons-only .taxonomy-subcategory-row{min-height:44px}
+  .settings-icons-only .taxonomy-subcategory-icon>summary{min-height:44px}
+  .settings-icons-only .category-icon-options{grid-template-columns:repeat(2,minmax(0,1fr));max-height:300px}
+  .settings-icons-only .category-icon-picker-mode{grid-template-columns:1fr}
+}

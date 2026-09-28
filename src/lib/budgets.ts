@@ -1,9 +1,9 @@
 import { effectiveLegacyTransactions, flowImpactEvent, flowImpactLegacy, reviewDecision } from './domain.js';
 import type { FinanceData, MonthlyBudget, SplitPart } from '../types.js';
 
-export type BudgetStatus = 'ok' | 'near' | 'exceeded';
+type BudgetStatus = 'ok' | 'near' | 'exceeded';
 
-export interface BudgetProgress {
+interface BudgetProgress {
   id: string;
   month: string;
   scope: 'category' | 'overall';
@@ -68,7 +68,7 @@ export function categoryBudgetSpending(data: FinanceData, month: string) {
   return totals;
 }
 
-export function monthlyBudgets(data: FinanceData, month: string) {
+function monthlyBudgets(data: FinanceData, month: string) {
   return (data.state.budgets ?? [])
     .filter((budget) => budget.month === month && budget.amount > 0)
     .slice()
@@ -101,15 +101,6 @@ export function budgetProgress(data: FinanceData, month: string): BudgetProgress
   });
 }
 
-export function budgetSummary(data: FinanceData, month: string) {
-  const rows = budgetProgress(data, month);
-  return {
-    rows,
-    near: rows.filter((row) => row.status === 'near').length,
-    exceeded: rows.filter((row) => row.status === 'exceeded').length,
-    overall: rows.find((row) => row.scope === 'overall') ?? null,
-  };
-}
 
 export function normalizeBudget(input: MonthlyBudget): MonthlyBudget {
   const amount = Number(input.amount);

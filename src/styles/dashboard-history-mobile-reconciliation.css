@@ -1,0 +1,11 @@
+@media(max-width:680px){
+  .page-stack>[data-dashboard-section],
+  .dashboard-grid>[data-dashboard-section]{order:initial!important;grid-row:auto!important;grid-column:auto!important}
+  .dashboard-grid{grid-auto-flow:row}
+  .dashboard-pending-grid>.panel{order:initial!important}
+  .frequent-grid>button{flex-basis:172px}
+  .top-actions button[aria-label="Αναίρεση τελευταίας αλλαγής"],
+  .top-actions button[aria-label="Επαναφορά τελευταίας αναιρεμένης αλλαγής"]{display:none}
+  .history-actions{width:100%;justify-content:flex-end}
+  .history-actions button{min-height:44px}
+}

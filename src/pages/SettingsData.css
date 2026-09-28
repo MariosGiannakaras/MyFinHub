@@ -1,0 +1,15 @@
+.settings-data-action-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.settings-data-action-card{display:grid;grid-template-columns:auto minmax(0,1fr);grid-template-areas:"icon copy" "action action";gap:12px 14px;align-items:start;min-width:0;padding:18px}
+.settings-data-action-icon{grid-area:icon;display:grid;place-items:center;width:42px;height:42px;border-radius:12px;background:rgba(47,111,237,.08);color:var(--blue)}
+.settings-data-action-copy{grid-area:copy;display:grid;gap:4px;min-width:0}
+.settings-data-action-copy>b{font-size:var(--ux-body-size)}
+.settings-data-action-copy>p{margin:0;color:var(--muted);font-size:var(--ux-small-size);line-height:1.45}
+.settings-data-action-copy>small{color:var(--muted);font-size:var(--ux-tiny-size);line-height:1.4}
+.settings-data-action-button{grid-area:action;justify-self:start}
+.settings-data-tab>.logic-note{margin:0}
+
+@media(max-width:720px){
+  .settings-data-action-grid{grid-template-columns:1fr;gap:12px}
+  .settings-data-action-card{padding:14px}
+  .settings-data-action-button{width:100%;min-height:44px;justify-content:center}
+}

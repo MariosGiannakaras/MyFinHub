@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { Surface } from './Surface';
 
 type LineProps={width?:string;size?:'eyebrow'|'title'|'text'|'amount'};
 function Line({width='100%',size='text'}:LineProps){return <span className={`skeleton skeleton-line ${size}`} style={{width}}/>}
@@ -38,7 +39,6 @@ function DashboardSkeletonContent(){
 }
 
 function TransactionsSkeleton(){return <div className="skeleton-page-stack"><Heading actions={1}/><div className="skeleton-toolbar"><span className="skeleton skeleton-control wide"/><span className="skeleton skeleton-control"/><span className="skeleton skeleton-control"/></div><Panel className="skeleton-ledger-panel"><div className="skeleton-table-head"><Line width="22%"/><Line width="18%"/><Line width="18%"/><Line width="14%"/></div><Rows count={7}/></Panel></div>}
-function ReviewSkeleton(){return <div className="skeleton-page-stack"><Heading actions={0}/><MetricGrid count={3}/><Panel button><Rows count={5}/></Panel></div>}
 function SavingsSkeleton(){return <div className="skeleton-page-stack"><Heading actions={2}/><MetricGrid count={3}/><div className="skeleton-two-column"><Panel button><Rows count={4}/></Panel><Panel><Chart height="220px"/></Panel></div><Panel><Rows count={4}/></Panel></div>}
 function CardsSkeleton(){return <div className="skeleton-page-stack"><Heading actions={1}/><Panel><div className="skeleton-card-gallery">{Array.from({length:4},(_,i)=><div className="skeleton-payment-card" key={i}><div className="skeleton-card-head"><Icon/><Line width="72px"/></div><Line width="56%" size="amount"/><Line width="38%"/><div className="skeleton-inline-actions"><Button/><Button/></div></div>)}</div></Panel><Panel><Rows count={3}/></Panel></div>}
 function CreditSkeleton(){return <div className="skeleton-page-stack"><Heading actions={1}/><MetricGrid count={4}/><div className="skeleton-two-column"><Panel button><div className="skeleton-credit-card"><Line width="42%"/><Line width="65%" size="amount"/><div className="skeleton-progress"/><Line width="54%"/></div></Panel><Panel><Rows count={5}/></Panel></div></div>}
@@ -53,7 +53,6 @@ function SettingsSkeleton(){return <div className="skeleton-page-stack"><Heading
 function RouteSkeletonContent({page}:{page:string}){
   if(page==='dashboard')return <DashboardSkeletonContent/>;
   if(page==='transactions')return <TransactionsSkeleton/>;
-  if(page==='review')return <ReviewSkeleton/>;
   if(page==='savings')return <SavingsSkeleton/>;
   if(page==='cards')return <CardsSkeleton/>;
   if(page==='credit')return <CreditSkeleton/>;
@@ -70,15 +69,15 @@ function RouteSkeletonContent({page}:{page:string}){
 function activePage(){
   if(typeof location==='undefined')return 'dashboard';
   const hash=location.hash.replace(/^#\/?/,'').trim();
-  if(hash)return hash;
+  if(hash)return hash==='review'?'attention':hash;
   const query=new URLSearchParams(location.search).get('page');
-  return query||'dashboard';
+  return query==='review'?'attention':query||'dashboard';
 }
 
 export function AppSkeleton(){
   const page=activePage();
   return <div className="skeleton-shell" aria-label="Φόρτωση οικονομικών δεδομένων" role="status">
-    <aside className="skeleton-sidebar neo-raised"><div className="skeleton-shell-brand"><span className="skeleton skeleton-brand-icon"/><div><Line width="118px" size="title"/><Line width="92px" size="eyebrow"/></div></div><Button wide/><div className="skeleton-command-row"><Icon/><Line width="92px"/><span className="skeleton skeleton-key-hint"/></div><div className="skeleton-nav-list">{Array.from({length:12},(_,i)=><div className="skeleton-nav-row" key={i}><Icon/><Line width={`${52+(i%4)*9}%`}/></div>)}</div><div className="skeleton-file-card"><Line width="62%"/><Line width="82%" size="eyebrow"/></div></aside>
+    <Surface as="aside" variant="raised" className="skeleton-sidebar"><div className="skeleton-shell-brand"><span className="skeleton skeleton-brand-icon"/><div><Line width="118px" size="title"/><Line width="92px" size="eyebrow"/></div></div><Button wide/><div className="skeleton-command-row"><Icon/><Line width="92px"/><span className="skeleton skeleton-key-hint"/></div><div className="skeleton-nav-list">{Array.from({length:12},(_,i)=><div className="skeleton-nav-row" key={i}><Icon/><Line width={`${52+(i%4)*9}%`}/></div>)}</div><div className="skeleton-file-card"><Line width="62%"/><Line width="82%" size="eyebrow"/></div></Surface>
     <main className="skeleton-main"><div className="skeleton-topbar"><span className="skeleton skeleton-topbar-pill"/><div className="skeleton-topbar-actions">{Array.from({length:6},(_,i)=><span className="skeleton skeleton-topbar-action" key={i}/>)}</div></div><div className="skeleton-workspace" data-skeleton-page={page}><RouteSkeletonContent page={page}/></div></main>
   </div>;
 }

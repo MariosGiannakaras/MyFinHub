@@ -1,0 +1,10 @@
+.settings-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:13px}
+.settings-list>div{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #dfe7f2;font-size:9px}
+.settings-list span{color:var(--muted)}
+.settings-actions{display:flex;gap:8px;margin-top:14px}
+.settings-actions button,.secondary{border:1px solid #d6e0ee;background:linear-gradient(145deg,#fff,#edf3fa);box-shadow:var(--shadow-soft);border-radius:11px;padding:9px 11px;font-size:9px;font-weight:700;display:flex;align-items:center;gap:6px;cursor:pointer}
+.settings-actions svg{width:15px}
+.settings-form{display:grid;gap:12px}
+.settings-form label,.form-grid label{display:grid;gap:5px}
+.settings-form span,.form-grid label>span{font-size:8px;font-weight:750;color:#526582}
+.form-grid em{font-weight:500;color:var(--muted)}

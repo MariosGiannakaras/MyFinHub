@@ -1,0 +1,7 @@
+.app-card-details-dialog{width:min(590px,calc(100vw - 36px));box-sizing:border-box}
+.app-card-details-dialog-body{padding:0 20px 4px;display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.app-card-details-dialog-body .wide,.app-card-details-security-note,.app-card-details-dialog-body .form-error{grid-column:1/-1}
+.app-card-details-dialog-body .app-control{width:100%;box-sizing:border-box;font-variant-numeric:tabular-nums;letter-spacing:.035em}
+.app-card-details-security-note{display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:14px;background:var(--surface-inset,rgba(127,127,127,.08));font-size:.86rem;line-height:1.45}
+.app-card-details-security-note svg{width:18px;height:18px;flex:0 0 auto;margin-top:1px}
+@media(max-width:680px){.app-card-details-dialog-body{grid-template-columns:1fr;padding-left:13px;padding-right:13px}.app-card-details-dialog-body .wide,.app-card-details-security-note,.app-card-details-dialog-body .form-error{grid-column:1}.app-card-details-dialog>footer button{min-height:44px;flex:1}}

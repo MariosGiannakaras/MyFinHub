@@ -1,0 +1,12 @@
+.credit-hero{border-radius:24px;padding:24px;background:linear-gradient(135deg,#132c69,#245ecc 65%,#25b9d7);color:white;display:flex;justify-content:space-between;align-items:center;box-shadow:0 18px 35px rgba(28,68,145,.2)}
+.credit-hero span,.credit-hero small{display:block;color:#cbdcff;font-size:9px}
+.credit-hero b{display:block;font-size:35px;margin:7px 0}
+.loan-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.loan-title{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center}
+.loan-title h3{font-size:10px;margin:0}
+.loan-title small{font-size:8px;color:var(--muted)}
+.loan-title b{font-size:11px}
+.loan-progress{height:7px;border-radius:99px;background:#dfe7f2;margin:15px 0;overflow:hidden}
+.loan-progress i{display:block;height:100%;background:linear-gradient(90deg,#2f6fed,#25b9d7);border-radius:99px;transition:width .45s}
+.loan-stats{display:flex;justify-content:space-between;font-size:8px;color:var(--muted)}
+.loan-stats b{color:var(--ink)}

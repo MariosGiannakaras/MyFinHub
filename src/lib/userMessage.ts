@@ -12,6 +12,3 @@ export function userErrorMessage(error: unknown, fallback: string): string {
   return message;
 }
 
-export function actionableMessage(whatHappened: string, nextStep?: string): string {
-  return nextStep ? `${whatHappened} ${nextStep}` : whatHappened;
-}

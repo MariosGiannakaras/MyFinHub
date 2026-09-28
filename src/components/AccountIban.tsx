@@ -2,7 +2,6 @@ import { Check, Copy } from 'lucide-react';
 import { useState } from 'react';
 import { useAccountMetadata } from '../hooks/useAccountMetadata';
 import { formatIban } from '../lib/iban';
-import '../styles/part47.css';
 
 async function copyText(value:string){
   if(navigator.clipboard?.writeText){
@@ -26,6 +25,6 @@ export function AccountIban({accountId}:{accountId:string}){
     <span className="account-iban-label">IBAN</span>
     {metadata.loading&&!metadata.loaded?<span className="account-iban-value">Φόρτωση…</span>:iban?<span className="account-iban-value" title={formattedIban}>{formattedIban}</span>:<span className="account-iban-value muted">Δεν έχει οριστεί</span>}
     {iban?<button type="button" className="inline-icon-action account-iban-copy" aria-label={copyLabel} title={copyLabel} onClick={()=>void copy()}>{copied?<Check size={14} aria-hidden="true"/>:<Copy size={14} aria-hidden="true"/>}</button>:null}
-    {copied?<span className="sr-only" role="status" aria-live="polite">Το IBAN αντιγράφηκε.</span>:null}
+    {copied?<span className="sr-only" role="status" aria-live="polite">Το IBAN αντιγράφηκε.</span> : null}
   </div>;
 }

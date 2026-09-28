@@ -5,7 +5,6 @@ import react from '@vitejs/plugin-react';
 const performanceRoutes = [
   'DashboardPage',
   'TransactionsPage',
-  'ReviewPage',
   'SavingsPage',
   'CardsPage',
   'CreditCardPage',

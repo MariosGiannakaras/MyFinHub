@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 const app=readFileSync(new URL('../src/App.tsx',import.meta.url),'utf8');
 const appShell=readFileSync(new URL('../src/components/AppShell.tsx',import.meta.url),'utf8');
 const reports=readFileSync(new URL('../src/pages/ReportsPage.tsx',import.meta.url),'utf8');
-const commandStyles=readFileSync(new URL('../src/styles/part40.css',import.meta.url),'utf8');
+const commandStyles=readFileSync(new URL('../src/styles/command-palette-contextual-entry.css',import.meta.url),'utf8');
 const index=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const manifest=JSON.parse(readFileSync(new URL('../public/manifest.webmanifest',import.meta.url),'utf8')) as {name:string;short_name:string;start_url:string;display:string;icons:Array<{src:string;sizes:string;type:string}>};
 const pkg=JSON.parse(readFileSync(new URL('../package.json',import.meta.url),'utf8')) as {scripts:Record<string,string>};
@@ -19,7 +19,7 @@ const performanceConfig=readFileSync(new URL('../vite.performance.config.ts',imp
 describe('release-readiness source contracts',()=>{
   it('keeps large feature pages route-lazy and chart code out of the eager app shell',()=>{
     const lazyPages=[...app.matchAll(/const\s+\w+Page\s*=\s*lazy\(\(\)\s*=>\s*import\('\.\/pages\//g)];
-    expect(lazyPages.length).toBeGreaterThanOrEqual(13);
+    expect(lazyPages.length).toBeGreaterThanOrEqual(12);
     expect(app).toContain("const ReportsPage = lazy(() => import('./pages/ReportsPage')");
     expect(app).not.toContain("from 'recharts'");
     expect(reports).toContain("from 'recharts'");
@@ -57,7 +57,8 @@ describe('release-readiness source contracts',()=>{
     expect(appShell).toContain('data-global-quick-entry="desktop"');
     expect(appShell).toContain('className="mobile-quick-action"');
     expect(appShell).toContain('data-global-quick-entry="mobile"');
-    expect(appShell).toMatch(/<\/header>\{genericEntry\?<button type="button" className="mobile-quick-action"/);
+    expect(appShell).toContain('<Surface as="header" variant="flat" className="topbar">');
+    expect(appShell).toMatch(/<\/Surface>\{genericEntry\?<button type="button" className="mobile-quick-action"/);
     expect(commandStyles).toContain('.mobile-quick-action{display:none}');
     expect(commandStyles).toContain('.mobile-quick-action{display:flex');
     expect(commandStyles).toContain('position:fixed;right:16px;bottom:calc(82px + env(safe-area-inset-bottom,0px))');
@@ -65,7 +66,8 @@ describe('release-readiness source contracts',()=>{
 
   it('keeps WebKit compatibility coverage isolated, pinned and intentionally small',()=>{
     expect(webkitWorkflow).toContain('playwright@1.62.1');
-    expect(webkitWorkflow).toContain('playwright install --with-deps webkit');
+    expect(webkitWorkflow).toContain('TOOL_ROOT=/tmp/myfinhub-playwright-tool');
+    expect(webkitWorkflow).toContain('install --with-deps webkit');
     expect(webkitWorkflow).toContain('node scripts/webkit-smoke.mjs');
     expect(webkitWorkflow).not.toContain('npm run qa:frontend');
     expect(webkitWorkflow).not.toContain('playwright@latest');
@@ -83,6 +85,7 @@ describe('release-readiness source contracts',()=>{
     expect(performanceWorkflow).toContain('lighthouse@13.4.1');
     expect(performanceWorkflow).not.toContain('lighthouse@latest');
     expect(performanceWorkflow).toContain('vite build --config vite.performance.config.ts --mode production');
+    expect(performanceWorkflow).toContain('MYFINHUB_LIGHTHOUSE_BIN: /tmp/myfinhub-lighthouse-tool/node_modules/.bin/lighthouse');
     expect(performanceWorkflow).toContain('node scripts/performance-audit.mjs');
     expect(performanceWorkflow).toContain('node scripts/loading-shift-audit.mjs');
     expect(performanceWorkflow).not.toContain('npm run qa:frontend');
@@ -100,7 +103,7 @@ describe('release-readiness source contracts',()=>{
     expect(loadingShiftAudit).toContain("PerformanceObserver");
     expect(loadingShiftAudit).toContain("type:'layout-shift'");
     expect(loadingShiftAudit).toContain("'.qa-loading-route'");
-    expect(loadingShiftAudit).toContain("const pages=['dashboard','transactions','review','savings','cards','credit','loans','lending','recurring','planning','attention','reports','settings']");
+    expect(loadingShiftAudit).toContain("const pages=['dashboard','transactions','savings','cards','credit','loans','lending','recurring','planning','attention','reports','settings']");
     expect(loadingShiftAudit).toContain("{name:'desktop',width:1280,height:900,mobile:false}");
     expect(loadingShiftAudit).toContain("{name:'mobile',width:375,height:812,mobile:true}");
     expect(loadingShiftAudit).toContain('assert(cls<=0.10');

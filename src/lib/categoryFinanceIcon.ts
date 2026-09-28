@@ -3,7 +3,7 @@ import { explicitCategoryIcon, explicitSubcategoryIcon, resolvedCategoryIcon, ty
 import { ensureCategoryIdentities, resolveCategoryIdentity, resolveSubcategoryIdentity } from './categoryIdentity.js';
 import type { FinanceIconInput } from './financeIcons.js';
 
-export function financeCategoryKind(input:FinanceIconInput):CategoryKind{
+function financeCategoryKind(input:FinanceIconInput):CategoryKind{
   return input.kind?.trim().toLocaleLowerCase('el-GR')==='income'?'income':'expense';
 }
 

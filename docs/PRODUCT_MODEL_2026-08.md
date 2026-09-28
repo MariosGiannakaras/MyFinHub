@@ -65,9 +65,9 @@ Bank order:
 
 Payment-card secrets never belong in the ordinary FinanceData document or normal JSON backups.
 
-- PAN and expiry are stored only in the dedicated `rheomiq_card_secrets` server vault, encrypted with AES-256-GCM using deployment key material outside PostgreSQL.
+- PAN, expiry and CVV are stored only in the dedicated `rheomiq_card_secrets` server vault, encrypted with AES-256-GCM using deployment key material outside PostgreSQL.
 - Server reads/writes require same-origin, authenticated owner and AAL2; the online path uses the owner's JWT plus the publishable Supabase key so RLS remains authoritative.
-- CVV/CVC is never sent to the server. If saved, it uses the browser/device-local encrypted IndexedDB vault only.
+- CVV/CVC is part of the same encrypted vault payload as PAN/expiry so approved clients can synchronize the card secret across devices; it never belongs in FinanceData or ordinary backups.
 - Revealed plaintext exists only in component memory while the user asks to see it.
 - Explicit server-secret deletion is distinct from card archival.
 

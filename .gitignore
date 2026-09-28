@@ -23,3 +23,6 @@ supabase/.temp/
 data/*.json
 !data/rheomiq-data.example.json
 data/backups/
+
+# Local/rendered QA evidence is ephemeral unless explicitly promoted by Final Visual QA.
+.qa-artifacts/

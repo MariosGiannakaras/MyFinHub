@@ -1,7 +1,10 @@
 import { AlertCircle, KeyRound, LoaderCircle, ShieldCheck } from 'lucide-react';
 import { useState, type FormEvent } from 'react';
 import type { MfaEnrollment } from '../lib/api';
+import { AppInputShell } from './AppInputShell';
+import { AppTextInput } from './AppTextInput';
 import { BrandMark } from './BrandMark';
+import { Button } from './Button';
 
 export function MfaScreen({
   mode,
@@ -48,9 +51,9 @@ export function MfaScreen({
           : `Άνοιξε το Authenticator και βάλε τον 6ψήφιο κωδικό${email ? ` για ${email}` : ''}.`}</p>
       </div>
 
-      {mode === 'enroll' && !enrollment ? <button className="primary-action login-submit" type="button" disabled={busy} aria-busy={busy} onClick={startEnrollment}>
+      {mode === 'enroll' && !enrollment ? <Button variant="primary" className="login-submit" type="button" disabled={busy} aria-busy={busy} onClick={startEnrollment}>
         {busy?<LoaderCircle className="login-spinner" size={17} aria-hidden="true"/>:null}<span className="login-submit-label">{busy ? 'Προετοιμασία…' : 'Εμφάνιση QR κωδικού'}</span>
-      </button> : null}
+      </Button> : null}
 
       {enrollment ? <div className="mfa-setup neo-inset">
         <img className="mfa-qr" src={enrollment.qrCode} alt="QR κωδικός για το MyFinHub Authenticator"/>
@@ -60,7 +63,7 @@ export function MfaScreen({
       {(mode === 'challenge' || enrollment) ? <form onSubmit={submit} className="login-form">
         <div className="login-field">
           <label htmlFor="mfa-code">6ψήφιος κωδικός</label>
-          <div className="login-input neo-inset mfa-code-shell"><KeyRound size={17}/><input
+          <AppInputShell className="login-input mfa-code-shell" leading={<KeyRound size={17}/>} invalid={Boolean(error)}><AppTextInput
             id="mfa-code"
             className="mfa-code-input"
             type="text"
@@ -73,13 +76,13 @@ export function MfaScreen({
             disabled={busy}
             required
             autoFocus
-            aria-invalid={Boolean(error)}
+            invalid={Boolean(error)}
             aria-describedby={error?'mfa-error':undefined}
-          /></div>
+          /></AppInputShell>
           <div className="mfa-code-progress" aria-hidden="true">{Array.from({length:6},(_,index)=><i key={index} className={index<code.length?'filled':''}/>)}</div>
         </div>
         {error ? <div id="mfa-error" className="login-error" role="alert"><AlertCircle size={16}/><span>{error}</span></div> : null}
-        <button className="primary-action login-submit" type="submit" disabled={busy || code.length !== 6} aria-busy={busy} data-state={busy?'loading':code.length===6?'ready':'idle'}>{busy?<LoaderCircle className="login-spinner" size={17} aria-hidden="true"/>:null}<span className="login-submit-label">{busy ? 'Επαλήθευση…' : 'Επαλήθευση'}</span></button>
+        <Button variant="primary" className="login-submit" type="submit" disabled={busy || code.length !== 6} aria-busy={busy} data-state={busy?'loading':code.length===6?'ready':'idle'}>{busy?<LoaderCircle className="login-spinner" size={17} aria-hidden="true"/>:null}<span className="login-submit-label">{busy ? 'Επαλήθευση…' : 'Επαλήθευση'}</span></Button>
       </form> : error ? <div id="mfa-error" className="login-error" role="alert"><AlertCircle size={16}/><span>{error}</span></div> : null}
 
       <button className="ghost-button login-logout" type="button" disabled={busy} onClick={()=>void onLogout()}>Αποσύνδεση</button>

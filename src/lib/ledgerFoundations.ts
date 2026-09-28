@@ -12,7 +12,7 @@ export function centsToMoney(value: number) {
   return Number((value / CENTS).toFixed(2));
 }
 
-export function transferEligibleAccounts(data: FinanceData) {
+function transferEligibleAccounts(data: FinanceData) {
   return allAccounts(data).filter((account) => account.kind !== 'credit');
 }
 
@@ -54,7 +54,7 @@ export function createTransferEvent(data: FinanceData, args: {
   });
 }
 
-export type SplitAllocation = {
+type SplitAllocation = {
   totalCents: number;
   total: number;
   normalizedParts: SplitPart[];
@@ -108,13 +108,3 @@ export function createExpenseSplitEvent(data: FinanceData, args: {
   });
 }
 
-export function splitCategorySummary(event: FinanceEvent) {
-  if (event.kind !== 'split' || !event.parts?.length) return [];
-  return event.parts.map((part) => ({
-    id: part.id,
-    label: part.label || part.category,
-    category: part.category,
-    subcategory: part.subcategory,
-    amount: part.amount,
-  }));
-}

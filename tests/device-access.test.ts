@@ -1,0 +1,94 @@
+import { existsSync, readFileSync } from 'node:fs';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { accessTokenSessionId, ensureDeviceSessionAccess } from '../server/deviceSessionRegistry.js';
+import { ApiError } from '../server/http.js';
+
+const read=(path:string)=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
+const token=(claims:Record<string,unknown>)=>`header.${Buffer.from(JSON.stringify(claims)).toString('base64url')}.signature`;
+
+afterEach(()=>{
+  vi.unstubAllGlobals();
+  delete process.env.SUPABASE_URL;
+  delete process.env.SUPABASE_PUBLISHABLE_KEY;
+});
+
+describe('connected device access',()=>{
+  it('uses the canonical Supabase session_id claim as the device-session identity',()=>{
+    const id='123e4567-e89b-42d3-a456-426614174000';
+    expect(accessTokenSessionId(token({session_id:id,aal:'aal2'}))).toBe(id);
+    expect(accessTokenSessionId(token({session_id:'not-a-uuid'}))).toBe('');
+    expect(accessTokenSessionId('invalid')).toBe('');
+  });
+
+  it('keeps AAL2 sessions usable before the registry migration exists',async()=>{
+    process.env.SUPABASE_URL='https://example.supabase.co';process.env.SUPABASE_PUBLISHABLE_KEY='publishable';
+    vi.stubGlobal('fetch',vi.fn(async()=>new Response(JSON.stringify({code:'PGRST205',message:"Could not find the table 'public.myfinhub_device_sessions'"}),{status:404,headers:{'content-type':'application/json'}})));
+    const access=token({session_id:'123e4567-e89b-42d3-a456-426614174000',aal:'aal2'});
+    await expect(ensureDeviceSessionAccess({headers:{}},access,'owner-1')).resolves.toBeNull();
+  });
+
+  it('registers a missing active device row and fails closed for a revoked row',async()=>{
+    process.env.SUPABASE_URL='https://example.supabase.co';process.env.SUPABASE_PUBLISHABLE_KEY='publishable';
+    const sessionId='123e4567-e89b-42d3-a456-426614174000';const access=token({session_id:sessionId,aal:'aal2'});
+    const fetchMock=vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify([]),{status:200,headers:{'content-type':'application/json'}}))
+      .mockResolvedValueOnce(new Response(JSON.stringify([{session_id:sessionId,user_id:'owner-1',platform:'web',device_label:'Web browser',app_version:null,first_seen_at:'2026-09-28T00:00:00.000Z',last_seen_at:'2026-09-28T00:00:00.000Z',revoked_at:null}]),{status:201,headers:{'content-type':'application/json'}}));
+    vi.stubGlobal('fetch',fetchMock);
+    await expect(ensureDeviceSessionAccess({headers:{}},access,'owner-1')).resolves.toMatchObject({session_id:sessionId,revoked_at:null});
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+
+    vi.stubGlobal('fetch',vi.fn(async()=>new Response(JSON.stringify([{session_id:sessionId,user_id:'owner-1',platform:'web',device_label:'Web browser',app_version:null,first_seen_at:'2026-09-28T00:00:00.000Z',last_seen_at:'2026-09-28T00:00:00.000Z',revoked_at:'2026-09-28T01:00:00.000Z'}]),{status:200,headers:{'content-type':'application/json'}})));
+    try{await ensureDeviceSessionAccess({headers:{}},access,'owner-1');throw new Error('expected revoked access to fail')}catch(error){expect(error).toBeInstanceOf(ApiError);expect((error as ApiError).code).toBe('DEVICE_ACCESS_REVOKED')}
+  });
+
+  it('keeps the registry owner/AAL2 scoped and folds active device access into finance RLS',()=>{
+    const migration=read('supabase/migrations/20260904083000_add_device_session_registry.sql');
+    expect(migration).toContain('create table if not exists public.myfinhub_device_sessions');
+    expect(migration).toContain('session_id uuid primary key');
+    expect(migration).toContain("session_id::text = coalesce((select auth.jwt() ->> 'session_id'), '')");
+    expect(migration).toContain('public.rheomiq_is_owner()');
+    expect(migration).toContain('public.rheomiq_has_aal2()');
+    expect(migration).toContain('create or replace function public.myfinhub_session_is_active()');
+    expect(migration).toContain('and public.myfinhub_session_is_active()');
+    expect(migration).toContain('alter table public.myfinhub_device_sessions enable row level security');
+    expect(migration).not.toMatch(/security\s+definer/i);
+  });
+
+  it('uses only publishable-key plus user JWT and supports Android device metadata',()=>{
+    const registry=read('server/deviceSessionRegistry.ts');
+    expect(registry).toContain('SUPABASE_PUBLISHABLE_KEY');
+    expect(registry).toContain('authorization: `Bearer ${accessToken}`');
+    expect(registry).toContain("'x-myfinhub-client-platform'");
+    expect(registry).toContain("'x-myfinhub-device-name'");
+    expect(registry).toContain("'x-myfinhub-app-version'");
+    expect(registry).toContain("platform === 'android'");
+    expect(registry).not.toContain('SUPABASE_SERVICE_ROLE_KEY');
+    expect(registry).not.toContain('SUPABASE_SECRET_KEY');
+  });
+
+  it('enforces device access centrally and exposes owner-controlled revoke actions',()=>{
+    const auth=read('server/auth.ts');
+    const handler=read('server/deviceSessionsHandler.ts');
+    const route=read('api/auth/session.ts');
+    const config=JSON.parse(read('vercel.json')) as {rewrites?:Array<{source:string;destination:string}>};
+    const client=read('src/lib/api.ts');
+    const ui=read('src/components/DeviceAccessSettings.tsx');
+    expect(auth).toContain('ensureDeviceSessionAccess(req, accessToken, user.id)');
+    expect(auth).toContain("accessTokenAal(accessToken) === 'aal2'");
+    expect(handler).toContain('isOwner(session.accessToken)');
+    expect(handler).toContain("accessTokenAal(session.accessToken) !== 'aal2'");
+    expect(handler).toContain('assertMutationSessionOrigin(req, session)');
+    expect(handler).toContain("body?.action === 'revoke'");
+    expect(handler).toContain("body?.action === 'revoke-others'");
+    expect(route).toContain('handleDeviceSessionsRequest');
+    expect(route).toContain("marker === 'devices'");
+    expect(config.rewrites).toContainEqual({source:'/api/auth/devices',destination:'/api/auth/session?__myfinhub_route=devices'});
+    expect(existsSync(new URL('../api/auth/devices.ts',import.meta.url))).toBe(false);
+    expect(client).toContain('getConnectedDevices');
+    expect(client).toContain('revokeConnectedDevice');
+    expect(client).toContain('revokeOtherConnectedDevices');
+    expect(ui).toContain('Συνδεδεμένες συσκευές');
+    expect(ui).toContain('Αφαίρεση όλων των άλλων');
+    expect(ui).toContain('Αυτή η συσκευή');
+  });
+});

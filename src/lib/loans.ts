@@ -1,7 +1,7 @@
 import type { FinanceData, FinanceEvent, Loan } from '../types.js';
 
-export type LoanInstallmentPaymentPlan={count:number;firstInstallment:number;lastInstallment:number;amount:number};
-export type LongTermLoanObligation={loan:Loan;outstanding:number;remainingInstallments:number;nextAmount:number;typicalDay:number|null;lastPayment:FinanceEvent|null};
+type LoanInstallmentPaymentPlan={count:number;firstInstallment:number;lastInstallment:number;amount:number};
+type LongTermLoanObligation={loan:Loan;outstanding:number;remainingInstallments:number;nextAmount:number;typicalDay:number|null;lastPayment:FinanceEvent|null};
 
 export function isSelfLoan(loan:Loan){return loan.kind==='self-loan'||loan.source==='self-loan'||/\bHELP\b|ΒΟΗΘΕΙΑ/i.test(`${loan.name} ${loan.provider||''}`)}
 

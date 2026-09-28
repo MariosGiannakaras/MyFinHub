@@ -18,8 +18,7 @@ The supplied HTML is the canonical visual and interaction contract. This documen
 - `PaymentCard.nickname` -> canonical card name/nickname
 - `PaymentCard.kind` + `formFactor` -> canonical compact card-kind label
 - `PaymentCard.network` -> canonical Visa/Mastercard rendering
-- PAN/expiry -> existing `/api/card-secrets` vault through `revealCardSecret`
-- CVV -> existing encrypted browser-local CVV vault through `readLocalCvv`
+- PAN/expiry/CVV -> existing `/api/card-secrets` encrypted server vault through `revealCardSecret`
 
 Demo `STACK_SELECTION` and `BANK_SECRETS` are never used in production.
 

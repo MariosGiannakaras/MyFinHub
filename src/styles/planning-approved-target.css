@@ -1,0 +1,120 @@
+/* Owner-approved Planning / Προγραμματισμός desktop composition.
+ * Desktop-only presentation; canonical forecast/scheduled logic and established mobile surfaces remain in PlanningPage.
+ */
+.planning-approved-desktop{display:none}
+
+@media (min-width:1100px){
+  .planning-page{gap:14px}
+  .planning-page>.planning-summary-grid,
+  .planning-page>.forecast-panel,
+  .planning-page>.scheduled-panel,
+  .planning-page>.planning-lower-grid{display:none!important}
+
+  .planning-page>.page-heading{min-height:76px;display:grid;grid-template-columns:48px minmax(0,1fr) auto;gap:14px;align-items:start;padding:0 2px}
+  .planning-page>.page-heading:before{content:"";width:42px;height:42px;margin-top:1px;border:3px solid #5b4ae8;border-radius:8px;background:linear-gradient(#5b4ae8,#5b4ae8) 7px 10px/22px 3px no-repeat,linear-gradient(#5b4ae8,#5b4ae8) 8px 20px/6px 6px no-repeat,linear-gradient(#5b4ae8,#5b4ae8) 18px 20px/6px 6px no-repeat,linear-gradient(#5b4ae8,#5b4ae8) 28px 20px/6px 6px no-repeat;box-shadow:0 8px 18px rgba(91,74,232,.12)}
+  .planning-page>.page-heading>div{grid-column:2;min-width:0}
+  .planning-page>.page-heading .eyebrow{display:none}
+  .planning-page>.page-heading h1{display:block;width:16ch;max-width:16ch;margin:0;white-space:nowrap;overflow:hidden;text-overflow:clip;line-height:1.05;letter-spacing:-.035em}
+  .planning-page>.page-heading p{max-width:760px;margin-top:7px;font-size:10px;line-height:1.45;color:var(--muted)}
+  .planning-page>.page-heading>.save-button{grid-column:3;min-height:42px;align-self:start;padding:0 15px;border-radius:10px;white-space:nowrap}
+
+  .planning-approved-desktop{display:grid;gap:14px;min-width:0}
+  .planning-approved-desktop>.panel{border:1px solid rgba(74,101,143,.13);background:rgba(251,253,255,.82);box-shadow:0 12px 28px rgba(45,78,130,.06)}
+
+  .planning-approved-forecast{min-height:112px;display:grid;grid-template-columns:minmax(330px,1.45fr) repeat(3,minmax(120px,.48fr)) minmax(148px,.56fr);align-items:center;padding:14px 14px 14px 16px;border-radius:16px!important;overflow:hidden}
+  .planning-forecast-intro{display:grid;grid-template-columns:54px minmax(0,1fr);align-items:center;gap:14px;padding-right:14px;min-width:0}
+  .planning-forecast-icon{width:54px;height:54px;display:grid;place-items:center;border-radius:12px;background:linear-gradient(145deg,#e7f0ff,#dce9ff);color:var(--blue);box-shadow:inset 0 0 0 1px rgba(47,111,237,.06)}
+  .planning-forecast-icon svg{width:25px;height:25px}
+  .planning-forecast-intro b{display:block;color:var(--ink);font-size:13px;line-height:1.25;font-weight:850}
+  .planning-forecast-intro small{display:block;max-width:390px;margin-top:4px;color:var(--muted);font-size:8.5px;line-height:1.4}
+  .planning-forecast-kpi{min-height:76px;display:flex;flex-direction:column;justify-content:center;padding:4px 14px;border-left:1px solid rgba(76,102,143,.11)}
+  .planning-forecast-kpi>span{color:var(--muted);font-size:9px;font-weight:720}
+  .planning-forecast-kpi>b{display:block;margin:6px 0 5px;color:var(--ink);font-size:20px;line-height:1;font-weight:850;letter-spacing:-.025em;white-space:nowrap}
+  .planning-forecast-kpi>small{align-self:flex-start;display:inline-flex;align-items:center;gap:3px;min-height:22px;padding:3px 6px;border-radius:999px;background:rgba(44,171,92,.10);font-size:8px;font-weight:820}
+  .planning-forecast-kpi>small.negative{background:rgba(198,52,78,.09)}
+  .planning-detail-toggle{min-height:38px;display:inline-flex;align-items:center;justify-content:center;gap:7px;margin-left:8px;padding:0 11px;border:1px solid rgba(70,98,143,.15);border-radius:9px;background:linear-gradient(145deg,#f8fbff,#eef4fb);color:var(--blue-2);font-size:8.5px;font-weight:780;white-space:nowrap;box-shadow:none}
+
+  .planning-approved-scheduled{padding:0;border-radius:16px!important;overflow:visible}
+  .planning-approved-panel-head{min-height:64px;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 13px 9px;border-bottom:1px solid rgba(76,102,143,.10)}
+  .planning-approved-title{display:flex;align-items:center;gap:9px;min-width:0}
+  .planning-section-icon{width:31px;height:31px;display:grid;place-items:center;flex:0 0 31px;border-radius:8px;background:rgba(47,111,237,.08);color:var(--blue)}
+  .planning-section-icon svg{width:17px;height:17px}
+  .planning-approved-title>div{min-width:0}
+  .planning-approved-title>div>span{display:block;color:var(--ink);font-size:13px;font-weight:850;line-height:1.2}
+  .planning-approved-title>div>small{display:block;margin-top:3px;color:var(--muted);font-size:8.3px;line-height:1.35}
+  .planning-approved-title>em{align-self:flex-start;margin-top:1px;padding:4px 7px;border-radius:999px;background:rgba(47,111,237,.08);color:var(--blue-2);font-size:7.5px;font-style:normal;font-weight:820;white-space:nowrap}
+  .planning-lifecycle-tabs{display:flex;gap:2px;padding:3px;border:1px solid rgba(76,102,143,.10);border-radius:10px;background:rgba(236,242,250,.72);flex:0 0 auto}
+  .planning-lifecycle-tabs button{min-height:34px;padding:0 9px;border:0;border-radius:8px;background:transparent;color:var(--muted);font-size:7.8px;font-weight:760;white-space:nowrap;box-shadow:none}
+  .planning-lifecycle-tabs button.active{background:linear-gradient(145deg,#6a91ef,#4f77df);color:white;box-shadow:0 4px 10px rgba(53,94,188,.18)}
+
+  .planning-approved-table-wrap{max-height:330px;overflow:auto;border-radius:0 0 16px 16px}
+  .planning-approved-table{width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed;font-size:8.5px}
+  .planning-approved-table thead th{position:sticky;top:0;z-index:2;height:34px;padding:7px 10px;border-bottom:1px solid rgba(76,102,143,.09);background:rgba(244,248,253,.96);color:var(--muted);font-size:7.5px;font-weight:780;text-align:left;white-space:nowrap}
+  .planning-approved-table thead th:nth-child(1){width:13%}.planning-approved-table thead th:nth-child(2){width:12%}.planning-approved-table thead th:nth-child(3){width:22%}.planning-approved-table thead th:nth-child(4){width:22%}.planning-approved-table thead th:nth-child(5){width:10%}.planning-approved-table thead th:nth-child(6){width:11%}.planning-approved-table thead th:nth-child(7){width:10%}
+  .planning-approved-table tbody td{height:56px;padding:8px 10px;border-bottom:1px solid rgba(76,102,143,.09);background:rgba(255,255,255,.35);vertical-align:middle;color:var(--ink-2)}
+  .planning-approved-table tbody tr:last-child td{border-bottom:0}
+  .planning-approved-table td>b{display:block;color:var(--ink);font-size:9.2px;line-height:1.25}
+  .planning-approved-table td>small,.planning-approved-table td b+small{display:block;margin-top:3px;color:var(--muted);font-size:7.3px;line-height:1.3}
+  .planning-approved-table th.amount,.planning-approved-table td.amount{text-align:left}
+  .planning-approved-table td.amount b{font-size:10.5px;white-space:nowrap}
+  .planning-kind-chip{display:inline-flex;align-items:center;gap:5px;min-height:28px;padding:4px 7px;border-radius:999px;background:rgba(47,111,237,.08);color:#2e63ca;font-size:7.7px;font-weight:790;white-space:nowrap}
+  .planning-kind-chip.expense{background:rgba(205,54,81,.08);color:#be3851}.planning-kind-chip.income{background:rgba(39,155,102,.09);color:#27835d}.planning-kind-chip.transfer{background:rgba(47,111,237,.08);color:#2d65ce}
+  .planning-account-route{display:flex;align-items:center;gap:6px;min-width:0}
+  .planning-account-route>span{display:flex;align-items:center;gap:6px;min-width:0}
+  .planning-account-route>span>b{font-size:8.4px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .planning-account-route .bank-brand-mark{width:26px;height:26px;flex:0 0 26px;border-radius:8px}
+  .planning-account-route.single>span{max-width:100%}
+  .planning-status-pill{display:inline-flex;align-items:center;gap:5px;min-height:26px;padding:4px 7px;border-radius:999px;background:rgba(75,96,128,.08);color:#566681;font-size:7.5px;font-weight:780;white-space:nowrap}
+  .planning-status-pill.upcoming,.planning-status-pill.due{background:rgba(240,157,37,.09);color:#b46a0a}
+  .planning-status-pill.completed{background:rgba(38,150,99,.09);color:#237e58}.planning-status-pill.skipped{background:rgba(170,124,28,.09);color:#86620d}.planning-status-pill.cancelled{background:rgba(96,106,124,.09);color:#5d6879}
+  .planning-status-pill i{width:6px;height:6px;border-radius:50%;background:#f2a11f;box-shadow:0 0 0 3px rgba(242,161,31,.08)}
+  .planning-approved-table td.actions{overflow:visible}
+  .planning-row-menu{position:relative;display:inline-block}
+  .planning-row-menu>summary{min-width:82px;min-height:32px;display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:0 8px;border:1px solid rgba(70,98,143,.15);border-radius:9px;background:rgba(248,251,255,.88);color:var(--blue-2);font-size:7.6px;font-weight:780;list-style:none;cursor:pointer}
+  .planning-row-menu>summary::-webkit-details-marker{display:none}
+  .planning-row-menu>div{position:absolute;right:0;top:36px;z-index:20;width:142px;padding:5px;border:1px solid rgba(70,98,143,.15);border-radius:10px;background:#fbfdff;box-shadow:0 12px 30px rgba(37,64,104,.18)}
+  .planning-row-menu>div button{width:100%;min-height:34px;display:flex;align-items:center;gap:7px;padding:0 8px;border:0;border-radius:7px;background:transparent;color:var(--ink-2);font-size:8px;text-align:left;box-shadow:none}
+  .planning-row-menu>div button:hover{background:#eef4fb}.planning-row-menu>div button.danger{color:var(--red)}
+  .planning-closed-row{color:var(--muted);font-size:7.7px}
+
+  .planning-approved-accounts{padding:0 11px 12px;border-radius:16px!important}
+  .planning-approved-accounts>.planning-approved-panel-head{margin:0 -11px;padding-inline:13px}
+  .planning-account-view{display:flex;gap:2px;padding:3px;border-radius:9px;background:rgba(236,242,250,.72)}
+  .planning-account-view button{min-height:32px;display:inline-flex;align-items:center;gap:5px;padding:0 9px;border:0;border-radius:7px;background:transparent;color:var(--muted);font-size:7.8px;font-weight:770;box-shadow:none}
+  .planning-account-view button.active{background:linear-gradient(145deg,#6a91ef,#4f77df);color:#fff;box-shadow:0 4px 10px rgba(53,94,188,.16)}
+  .planning-account-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:9px;margin-top:10px}
+  .planning-account-card{min-width:0;min-height:142px;display:grid;grid-template-columns:1fr 92px;grid-template-rows:auto 1fr auto;gap:4px 9px;padding:10px 10px 9px;border:1px solid rgba(76,102,143,.13);border-radius:12px;background:rgba(252,254,255,.9);box-shadow:0 5px 14px rgba(45,78,130,.045);color:#2f6fed}
+  .planning-account-card[data-tone="1"]{color:#17976f}.planning-account-card[data-tone="2"]{color:#d56c17}.planning-account-card[data-tone="3"]{color:#7b4ee4}
+  .planning-account-card>header{grid-column:1/-1;display:grid;grid-template-columns:28px minmax(0,1fr) auto;align-items:center;gap:7px;min-width:0}
+  .planning-account-card>header .bank-brand-mark{width:28px;height:28px;border-radius:8px}
+  .planning-account-card>header b{min-width:0;color:var(--ink);font-size:8.8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .planning-account-card>header>svg{color:var(--blue-2)}
+  .planning-account-today{align-self:center;display:flex;flex-direction:column;gap:3px;color:var(--ink)}
+  .planning-account-today span{font-size:7.2px;color:var(--muted)}
+  .planning-account-today strong{font-size:9.5px}
+  .planning-account-sparkline{width:100%;height:38px;align-self:center;overflow:visible}
+  .planning-account-sparkline polyline{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linejoin:round;stroke-linecap:round}
+  .planning-account-horizons{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:5px;padding-top:6px;border-top:1px solid rgba(76,102,143,.08)}
+  .planning-account-horizons span{min-width:0}
+  .planning-account-horizons small{display:block;color:var(--muted);font-size:6.4px;white-space:nowrap}
+  .planning-account-horizons b{display:block;margin-top:3px;color:var(--ink-2);font-size:7.8px;white-space:nowrap}
+  .planning-account-horizons b.negative{color:var(--red)!important}
+  .planning-account-table-wrap{margin-top:10px;border:1px solid rgba(76,102,143,.11);border-radius:11px;overflow:hidden}
+  .planning-account-table{width:100%;border-collapse:collapse;font-size:8px}
+  .planning-account-table th,.planning-account-table td{height:38px;padding:6px 9px;border-bottom:1px solid rgba(76,102,143,.08);text-align:right}
+  .planning-account-table thead th{background:rgba(242,247,252,.8);color:var(--muted);font-size:7.2px}
+  .planning-account-table th:first-child{text-align:left}.planning-account-table tbody th{display:flex;align-items:center;gap:7px;color:var(--ink);font-weight:790}.planning-account-table tbody th .bank-brand-mark{width:25px;height:25px;border-radius:7px}
+
+  .planning-approved-note{min-height:42px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:8px;padding:8px 11px;border:1px solid rgba(47,111,237,.13);border-radius:10px;background:rgba(237,244,255,.62);color:#526888}
+  .planning-approved-note>svg{color:var(--blue)}
+  .planning-approved-note>span{font-size:7.9px;line-height:1.35}
+  .planning-approved-note>button{min-height:30px;display:inline-flex;align-items:center;gap:5px;border:0;background:transparent;color:var(--blue);font-size:7.8px;font-weight:780;box-shadow:none;white-space:nowrap}
+  .planning-approved-details{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:12px;border:1px solid rgba(76,102,143,.12);border-radius:13px;background:rgba(249,252,255,.85)}
+  .planning-approved-details[hidden]{display:none!important}
+  .planning-approved-details>div{min-width:0;padding:9px;border-radius:10px;background:rgba(241,246,252,.72)}
+  .planning-approved-details h3{margin:0 0 5px;color:var(--ink);font-size:9px}.planning-approved-details p,.planning-approved-details li{margin:0;color:var(--muted);font-size:7.7px;line-height:1.45}.planning-approved-details ul{margin:5px 0 0;padding-left:16px}
+}
+
+@media (max-width:1099px){
+  .planning-approved-desktop{display:none!important}
+}

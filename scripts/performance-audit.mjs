@@ -4,7 +4,7 @@ import { resolve } from 'node:path';
 
 const baseUrl=process.env.MYFINHUB_PERF_URL||'http://127.0.0.1:4173/qa.html';
 const evidenceDir=process.env.MYFINHUB_PERF_EVIDENCE_DIR||'/tmp/myfinhub-performance';
-const lighthouseBin=resolve(process.cwd(),'node_modules/.bin/lighthouse');
+const lighthouseBin=process.env.MYFINHUB_LIGHTHOUSE_BIN||resolve(process.cwd(),'node_modules/.bin/lighthouse');
 mkdirSync(evidenceDir,{recursive:true});
 
 const cases=[

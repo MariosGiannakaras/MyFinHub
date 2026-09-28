@@ -14,7 +14,7 @@ export function MoneyInput({value,onValueChange,currency='€',invalid=false,wra
     <b aria-hidden="true">{currency}</b>
     <input
       {...inputProps}
-      className={className}
+      className={`app-control money-input-control ${className}`.trim()}
       type="text"
       inputMode="decimal"
       value={value}

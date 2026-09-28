@@ -12,6 +12,7 @@ vi.mock('../server/storage.js', async importOriginal => {
   const actual = await importOriginal<typeof import('../server/storage.js')>();
   return { ...actual, isOwner: storage.isOwner };
 });
+vi.mock('../server/deviceSessionRegistry.js', () => ({ ensureDeviceSessionAccess: vi.fn().mockResolvedValue({}) }));
 vi.mock('../server/androidUpdates.js', async importOriginal => {
   const actual = await importOriginal<typeof import('../server/androidUpdates.js')>();
   return { ...actual, readLatestAndroidRelease: updates.readLatestAndroidRelease };

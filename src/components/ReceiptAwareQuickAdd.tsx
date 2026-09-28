@@ -1,5 +1,6 @@
 import { ReceiptText } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { deleteReceiptDraft, type ReceiptProposal } from '../lib/receiptDrafts';
 import type { FinanceData, FinanceEvent, EventKind } from '../types';
 import { QuickAdd, type QuickPrefill } from './QuickAdd';
@@ -32,14 +33,25 @@ export function ReceiptAwareQuickAdd({
   const [receiptDraftId, setReceiptDraftId] = useState<string | null>(null);
   const [receiptProposal, setReceiptProposal] = useState<ReceiptProposal | null>(null);
   const [receiptSession, setReceiptSession] = useState(0);
+  const [receiptHost, setReceiptHost] = useState<HTMLElement | null>(null);
 
   useEffect(() => {
     if (!open) {
       setReceiptOpen(false);
       setReceiptDraftId(null);
       setReceiptProposal(null);
+      setReceiptHost(null);
     }
   }, [open]);
+
+  useEffect(() => {
+    if (!open || receiptOpen || initial) {
+      setReceiptHost(null);
+      return;
+    }
+    setReceiptHost(document.querySelector<HTMLElement>('[aria-labelledby="quick-add-title"] > footer'));
+    return () => setReceiptHost(null);
+  }, [open, receiptOpen, initial, receiptSession]);
 
   const receiptPrefill = useMemo<QuickPrefill | null>(() => {
     if (!receiptDraftId) return null;
@@ -85,7 +97,7 @@ export function ReceiptAwareQuickAdd({
         onCreate={create}
         currentBalance={currentBalance}
       />
-      {!initial ? <button type="button" className="receipt-quick-launch neo-raised" aria-label="Φωτογράφιση ή σάρωση απόδειξης" onClick={() => setReceiptOpen(true)}><ReceiptText size={18}/><span>Απόδειξη</span></button> : null}
+      {!initial && receiptHost ? createPortal(<button type="button" className="receipt-quick-launch neo-raised" aria-label="Φωτογράφιση ή σάρωση απόδειξης" onClick={() => setReceiptOpen(true)}><ReceiptText size={18}/><span>Απόδειξη</span></button>, receiptHost) : null}
     </> : null}
     <ReceiptInbox open={receiptOpen} data={data} onClose={() => setReceiptOpen(false)} onApply={applyReceipt}/>
   </>;

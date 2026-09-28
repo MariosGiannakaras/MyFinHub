@@ -2,7 +2,7 @@ import type { EventKind } from '../types.js';
 
 export type EntryIntent='expense'|'income'|'transfer'|'withdrawal'|'saving'|'refund'|'reconciliation'|'split';
 
-export type EntryIntentDefinition={
+type EntryIntentDefinition={
   intent:EntryIntent;
   kind:Extract<EventKind,'expense'|'income'|'transfer'|'withdrawal'|'saving_cash_offset'|'refund'|'reconciliation'|'split'>;
   label:string;
@@ -24,16 +24,15 @@ const BY_INTENT=new Map(ENTRY_INTENTS.map(item=>[item.intent,item]));
 
 export function entryKindForIntent(intent:EntryIntent){return BY_INTENT.get(intent)!.kind}
 export function entryIntentForKind(kind:EventKind):EntryIntent|null{return ENTRY_INTENTS.find(item=>item.kind===kind)?.intent??null}
-export function entryIntentDefinition(intent:EntryIntent){return BY_INTENT.get(intent)!}
 
-export type FrequentEntrySuggestion={
+type FrequentEntrySuggestion={
   lastAmount:number;
   category?:string;
   subcategory?:string;
   accountId?:string;
 };
 
-export type StructuredEntryPreset={
+type StructuredEntryPreset={
   amount:number;
   category?:string;
   subcategory?:string;

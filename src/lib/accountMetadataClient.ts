@@ -1,7 +1,7 @@
 import { assertValidIban, isValidIban } from './iban';
 
-export type AccountMetadataRecord={accountId:string;iban:string|null;revision:number;updatedAt:string};
-export type AccountMetadataSnapshot={loaded:boolean;loading:boolean;records:Record<string,AccountMetadataRecord>;error:string|null};
+type AccountMetadataRecord={accountId:string;iban:string|null;revision:number;updatedAt:string};
+type AccountMetadataSnapshot={loaded:boolean;loading:boolean;records:Record<string,AccountMetadataRecord>;error:string|null};
 
 const QA_MODE=typeof location!=='undefined'&&location.pathname.endsWith('/qa.html');
 const QA_UPDATED_AT='2026-08-17T12:00:00.000Z';

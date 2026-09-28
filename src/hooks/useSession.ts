@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ApiError, enrollMfa as enrollMfaApi, getSession, login as loginApi, logout as logoutApi, verifyMfa as verifyMfaApi, type MfaEnrollment, type SessionInfo } from '../lib/api';
 
-export type SessionState = 'loading' | 'authenticated' | 'anonymous' | 'mfa' | 'mfa-enroll' | 'error';
+type SessionState = 'loading' | 'authenticated' | 'anonymous' | 'mfa' | 'mfa-enroll' | 'error';
 
 function operationalMessage(error: unknown, fallback: string) {
   if (!(error instanceof ApiError)) return fallback;

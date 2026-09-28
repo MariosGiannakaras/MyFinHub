@@ -1,26 +1,51 @@
+import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { CardVaultClientError, cardVaultErrorMessage, saveCardSecret } from '../src/lib/cardVaultClient.js';
 
-afterEach(()=>{vi.unstubAllGlobals()});
+const {readLocalCvvMock}=vi.hoisted(()=>({readLocalCvvMock:vi.fn()}));
+vi.mock('../src/lib/localCvvVault.js',()=>({readLocalCvv:readLocalCvvMock}));
+
+import { CardVaultClientError, cardVaultErrorMessage, revealCardSecret, saveCardSecret } from '../src/lib/cardVaultClient.js';
+
+afterEach(()=>{vi.unstubAllGlobals();readLocalCvvMock.mockReset()});
+
+describe('card vault client source contract',()=>{
+  it('uses legacy local CVV only as reveal fallback and never uploads it implicitly',()=>{
+    const source=readFileSync(new URL('../src/lib/cardVaultClient.ts',import.meta.url),'utf8');
+    const reveal=source.slice(source.indexOf('export async function revealCardSecret'),source.indexOf('export async function saveCardSecret'));
+    expect(reveal).toContain('readLocalCvv(cardId)');
+    expect(reveal).not.toContain('saveCardSecret(');
+    expect(reveal).not.toContain("'PUT'");
+    expect(reveal).toContain('Explicit Save/Update is the migration boundary');
+  });
+});
 
 describe('card vault client',()=>{
-  it('whitelists PAN and expiry even when the runtime object carries a CVV-like extra property',async()=>{
+  it('sends PAN, expiry and CVV through the card vault request',async()=>{
     let sent='';
     vi.stubGlobal('fetch',vi.fn(async (_url:string,init?:RequestInit)=>{
       sent=String(init?.body||'');
       return new Response(JSON.stringify({saved:true,last4:'4242'}),{status:200,headers:{'content-type':'application/json'}});
     }));
-    const unsafeRuntimeObject={pan:'4242424242424242',expiry:'12/30',cvv:'123'} as unknown as {pan?:string;expiry?:string};
-    await saveCardSecret('card-1',unsafeRuntimeObject);
-    expect(JSON.parse(sent)).toEqual({cardId:'card-1',pan:'4242424242424242',expiry:'12/30'});
-    expect(sent.toLowerCase()).not.toContain('cvv');
-    expect(sent).not.toContain('123');
+    await saveCardSecret('card-1',{pan:'4242424242424242',expiry:'12/30',cvv:'123'});
+    expect(JSON.parse(sent)).toEqual({cardId:'card-1',pan:'4242424242424242',expiry:'12/30',cvv:'123'});
+  });
+
+  it('reveals a legacy local CVV without silently uploading it to the server',async()=>{
+    let method='';
+    const fetchMock=vi.fn(async(_url:string,init?:RequestInit)=>{method=String(init?.method||'');return new Response(JSON.stringify({code:'CARD_SECRET_NOT_FOUND',error:'missing'}),{status:404,headers:{'content-type':'application/json'}})});
+    vi.stubGlobal('fetch',fetchMock);vi.stubGlobal('indexedDB',{});
+    readLocalCvvMock.mockResolvedValue('123');
+    await expect(revealCardSecret('card-legacy')).resolves.toEqual({cvv:'123'});
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(method).toBe('POST');
+    expect(readLocalCvvMock).toHaveBeenCalledWith('card-legacy');
   });
 
   it('maps card-security failures to direct user-facing copy',()=>{
     const panMessage=cardVaultErrorMessage(new CardVaultClientError(400,'INVALID_CARD_PAN','raw internal message'));
     expect(panMessage).toContain('αριθμό κάρτας');
     expect(panMessage).not.toContain('16');
+    expect(cardVaultErrorMessage(new CardVaultClientError(400,'INVALID_CARD_CVV','raw internal message'))).toContain('3 ή 4');
     expect(cardVaultErrorMessage(new CardVaultClientError(401,'MFA_REQUIRED','raw internal message'))).toContain('επαληθεύσεις ξανά');
   });
 

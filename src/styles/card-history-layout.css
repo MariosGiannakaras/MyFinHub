@@ -1,0 +1,2 @@
+.card-history>div{grid-template-columns:90px minmax(0,1fr) auto auto}
+.card-history>div>.text-button{white-space:nowrap}

@@ -51,9 +51,10 @@ try{
 
   console.log('Action Center QA: desktop hierarchy, privacy and deterministic queue');
   await navigate('attention');
-  assert(await c.call("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Τι χρειάζεται προσοχή')}") ,'attention heading');
+  assert(await c.call("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Έλεγχος')}") ,'attention heading');
   assert((await c.call("function(){return document.querySelectorAll('.attention-summary-grid>article').length}"))===3,'three severity summary cards');
   assert((await c.call("function(){return document.querySelectorAll('.attention-row').length}"))>0,'attention queue has actionable items');
+  assert(await c.call("function(){return Boolean(document.querySelector('[data-legacy-confirmation-panel]'))}"),'legacy confirmation is integrated into Έλεγχος');
   assert(await c.call("function(){const toggle=document.querySelector('.attention-page .privacy-toggle');return toggle?.getAttribute('aria-pressed')==='false'}") ,'privacy starts hidden');
   await clickText('.attention-page .privacy-toggle','Εμφάνιση ποσών');
   assert(await c.call("function(){return document.querySelector('.attention-page .privacy-toggle')?.getAttribute('aria-pressed')==='true'}"),'privacy toggle exposes values only on request');
@@ -91,7 +92,7 @@ try{
   await navigate('dashboard');
   const payrollOpened=await c.call("function(){const node=document.querySelector('[data-account-id=\"piraeus-payroll\"] .account-context-action');node?.click();return Boolean(node)}");assert(payrollOpened,'dashboard payroll account context action');
   await waitFor("function(){return Boolean(document.querySelector('.quick-modal:not(.contextual-quick-modal)'))}",'payroll account-context generic quick add');
-  assert(await c.call("function(){return [...document.querySelectorAll('.quick-modal:not(.contextual-quick-modal) input[role=combobox]')].some(input=>(input.value||'').includes('Κύριος λογαριασμός'))}"),'payroll context preselects originating payroll account');
+  assert(await c.call("function(){return [...document.querySelectorAll('.quick-modal:not(.contextual-quick-modal) input[role=combobox]')].some(input=>(input.value||'').includes('Μισθοδοσία'))}"),'payroll context preselects originating payroll account');
   await closeGenericModal();
   const cashOpened=await c.call("function(){const node=document.querySelector('[data-account-id=\"cash\"] .account-context-action');node?.click();return Boolean(node)}");assert(cashOpened,'dashboard cash account context action');
   await waitFor("function(){return Boolean(document.querySelector('.quick-modal:not(.contextual-quick-modal)'))}",'cash account-context generic quick add');

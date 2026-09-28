@@ -1,0 +1,22 @@
+.metric-card small{display:block;font-size:8.5px;color:var(--muted);margin-top:5px}
+.tone-blue{--tone:#2f6fed}
+.tone-cyan{--tone:#25b9d7}
+.tone-green{--tone:#1d9a68}
+.tone-red{--tone:#d64058}
+.tone-violet{--tone:#7656d6}
+.mini-progress{height:5px;border-radius:99px;background:#dce6f2;margin-top:10px;overflow:hidden}
+.mini-progress i{display:block;height:100%;border-radius:99px;background:var(--tone);transition:width .55s cubic-bezier(.2,.8,.2,1)}
+.account-strip{border-radius:20px;padding:14px}
+.section-title{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.section-title span{font-weight:800;font-size:12px}
+.section-title b{font-size:9px;color:var(--muted);margin-left:9px}
+.text-button{border:0;background:transparent;color:var(--blue);font-size:9px;font-weight:750;cursor:pointer;padding:6px 8px;border-radius:8px}
+.text-button:hover{background:#e9f0ff}
+.account-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:9px}
+.account-chip{min-height:67px;border-radius:14px;padding:10px;background:linear-gradient(145deg,#fff,#eef3fa);box-shadow:var(--shadow-soft);display:grid;grid-template-columns:auto 1fr auto;gap:9px;align-items:center}
+.account-chip.credit{background:linear-gradient(145deg,#fff8fa,#f1eef4)}
+.account-mark{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;background:linear-gradient(145deg,#ddebff,#fff);box-shadow:var(--shadow-soft);color:var(--blue-2);font-size:9px;font-weight:850}
+.account-chip small{display:block;color:var(--muted);font-size:8px}
+.account-chip b{display:block;font-size:12px;margin-top:3px}
+.positive{color:var(--green)!important}
+.negative{color:var(--red)!important}

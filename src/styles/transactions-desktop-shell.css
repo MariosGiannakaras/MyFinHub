@@ -1,0 +1,56 @@
+/* Owner-approved Phase-1 shared desktop shell for Transactions. Keep the structural shell identical to Dashboard while preserving Transactions-specific quick-entry wording. */
+@media(min-width:981px){
+  .app-shell:is(:has(.transactions-approved),:has(.page-skeleton[data-skeleton-page="transactions"])){display:grid;grid-template-columns:210px minmax(0,1fr);gap:0;padding:0;min-height:100vh;background:#f5f9fd}
+  .app-shell:is(:has(.transactions-approved),:has(.page-skeleton[data-skeleton-page="transactions"])) .sidebar{height:100vh;top:0;border-radius:0;padding:16px 12px 14px;background:#fbfdff;border:0;border-right:1px solid #e4ecf5;box-shadow:none;overflow:visible;z-index:45}
+  .app-shell:is(:has(.transactions-approved),:has(.page-skeleton[data-skeleton-page="transactions"])) .brand-block{padding:2px 7px 19px;min-height:62px}
+  .app-shell:is(:has(.transactions-approved),:has(.page-skeleton[data-skeleton-page="transactions"])) .brand-home-button{justify-content:flex-start}
+  .app-shell:is(:has(.transactions-approved),:has(.page-skeleton[data-skeleton-page="transactions"])) .sidebar nav{position:relative;display:grid;gap:2px;margin-top:16px;padding-top:18px}
+  .app-shell:is(:has(.transactions-approved),:has(.page-skeleton[data-skeleton-page="transactions"])) .sidebar nav:before{content:'ΕΠΙΣΚΟΠΗΣΗ';position:absolute;left:9px;top:0;color:#7687a3;font-size:8px;font-weight:820;letter-spacing:.06em}
+  .app-shell:is(:has(.transactions-approved),:has(.page-skeleton[data-skeleton-page="transactions"])) .sidebar nav button{height:37px;min-height:37px;border-radius:9px;padding:0 10px;gap:10px;color:#334c78;font-size:11.5px;font-weight:660;transform:none}
+  .app-shell:is(:has(.transactions-approved),:has(.page-skeleton[data-skeleton-page="transactions"])) .sidebar nav button:hover{transform:none;background:#f2f7fc}
+  .app-shell:is(:has(.transactions-approved),:has(.page-skeleton[data-skeleton-page="transactions"])) .sidebar nav button.active{background:linear-gradient(100deg,#1188f4,#086de9);box-shadow:0 6px 14px rgba(19,119,236,.24);color:#fff}
+  .app-shell:is(:has(.transactions-approved),:has(.page-skeleton[data-skeleton-page="transactions"])) .sidebar nav button:nth-child(2),
+  .app-shell:is(:has(.transactions-approved),:has(.page-skeleton[data-skeleton-page="transactions"])) .sidebar nav button:nth-child(9),
+  .app-shell:is(:has(.transactions-approved),:has(.page-skeleton[data-skeleton-page="transactions"])) .sidebar nav button:nth-child(12){position:relative;margin-top:24px}
+  .app-shell:is(:has(.transactions-approved),:has(.page-skeleton[data-skeleton-page="transactions"])) .sidebar nav button:nth-child(2):before,
+  .app-shell:is(:has(.transactions-approved),:has(.page-skeleton[data-skeleton-page="transactions"])) .sidebar nav button:nth-child(9):before,
+  .app-shell:is(:has(.transactions-approved),:has(.page-skeleton[data-skeleton-page="transactions"])) .sidebar nav button:nth-child(12):before{position:absolute;left:9px;top:-18px;width:180px;color:#7687a3;font-size:8px;font-weight:820;letter-spacing:.04em;white-space:nowrap}
+  .app-shell:is(:has(.transactions-approved),:has(.page-skeleton[data-skeleton-page="transactions"])) .sidebar nav button:nth-child(2):before{content:'ΛΟΓΑΡΙΑΣΜΟΙ & ΠΛΗΡΩΜΕΣ'}
+  .app-shell:is(:has(.transactions-approved),:has(.page-skeleton[data-skeleton-page="transactions"])) .sidebar nav button:nth-child(9):before{content:'ΟΡΓΑΝΩΣΗ & ΠΡΟΓΡΑΜΜΑΤΙΣΜΟΣ'}
+  .app-shell:is(:has(.transactions-approved),:has(.page-skeleton[data-skeleton-page="transactions"])) .sidebar nav button:nth-child(12):before{content:'ΡΥΘΜΙΣΕΙΣ'}
+  .app-shell:is(:has(.transactions-approved),:has(.page-skeleton[data-skeleton-page="transactions"])) .sidebar .primary-action{position:fixed;z-index:70;top:9px;right:360px;width:145px;height:40px;min-height:40px;padding:0 14px;border-radius:9px;background:linear-gradient(105deg,#168bf5,#0874ec);box-shadow:0 6px 15px rgba(18,119,235,.2);font-size:0}
+  .app-shell:is(:has(.transactions-approved),:has(.page-skeleton[data-skeleton-page="transactions"])) .sidebar .primary-action span{display:none}
+  .app-shell:is(:has(.transactions-approved),:has(.page-skeleton[data-skeleton-page="transactions"])) .sidebar .primary-action:after{content:'Νέα συναλλαγή';font-size:10.5px;font-weight:800}
+  .app-shell:is(:has(.transactions-approved),:has(.page-skeleton[data-skeleton-page="transactions"])) .sidebar .primary-action kbd{display:none}
+  .app-shell:is(:has(.transactions-approved),:has(.page-skeleton[data-skeleton-page="transactions"])) .command-search-action{position:fixed;z-index:70;left:230px;top:9px;width:calc(100vw - 750px);min-width:420px;max-width:690px;height:40px;min-height:40px;border:1px solid #dfe8f2;border-radius:10px;background:#fbfdff;box-shadow:0 3px 12px rgba(35,71,115,.05);display:flex;align-items:center;justify-content:flex-start;gap:10px;padding:0 13px;color:#4c648c;cursor:pointer}
+  .app-shell:is(:has(.transactions-approved),:has(.page-skeleton[data-skeleton-page="transactions"])) .command-search-action span{font-size:0}
+  .app-shell:is(:has(.transactions-approved),:has(.page-skeleton[data-skeleton-page="transactions"])) .command-search-action span:after{content:'Αναζήτηση συναλλαγών, λογαριασμών, κατηγοριών...';font-size:10px;color:#667895;font-weight:560}
+  .app-shell:is(:has(.transactions-approved),:has(.page-skeleton[data-skeleton-page="transactions"])) .command-search-action kbd{display:none}
+  .app-shell:is(:has(.transactions-approved),:has(.page-skeleton[data-skeleton-page="transactions"])) .file-panel{margin-top:auto;border-radius:12px;padding:10px 9px!important;opacity:1!important;background:#f9fcff!important;border:1px solid #edf2f7!important;box-shadow:none!important}
+  .app-shell:is(:has(.transactions-approved),:has(.page-skeleton[data-skeleton-page="transactions"])) .file-panel .file-line{font-size:0;gap:8px}
+  .app-shell:is(:has(.transactions-approved),:has(.page-skeleton[data-skeleton-page="transactions"])) .file-panel .file-line b:after{content:'Συνδεδεμένος';font-size:9px;color:#536985;font-weight:650}
+  .app-shell:is(:has(.transactions-approved),:has(.page-skeleton[data-skeleton-page="transactions"])) .file-panel .status-dot.saved{width:8px;height:8px;box-shadow:0 0 0 4px rgba(32,170,109,.08)}
+  .app-shell:is(:has(.transactions-approved),:has(.page-skeleton[data-skeleton-page="transactions"])) .file-panel small{display:block!important;margin:6px 0 0 14px;font-size:0;color:#8795aa}
+  .app-shell:is(:has(.transactions-approved),:has(.page-skeleton[data-skeleton-page="transactions"])) .file-panel small:after{content:'Τελευταία ενημέρωση';font-size:8px}
+  .app-shell:is(:has(.transactions-approved),:has(.page-skeleton[data-skeleton-page="transactions"])) .sidebar-foot{display:none}
+  .app-shell:is(:has(.transactions-approved),:has(.page-skeleton[data-skeleton-page="transactions"]))>main{min-width:0;position:relative;background:linear-gradient(180deg,#f7fbff 0,#f3f8fc 100%)}
+  .app-shell:is(:has(.transactions-approved),:has(.page-skeleton[data-skeleton-page="transactions"])) .topbar{height:60px;top:0;border-radius:0;padding:0 12px;background:rgba(248,251,255,.96);border:0;border-bottom:1px solid #e5edf5;box-shadow:0 3px 12px rgba(31,62,100,.035);backdrop-filter:blur(12px)}
+  .app-shell:is(:has(.transactions-approved),:has(.page-skeleton[data-skeleton-page="transactions"])) .top-actions{position:absolute;right:210px;top:9px;gap:8px}
+  .app-shell:is(:has(.transactions-approved),:has(.page-skeleton[data-skeleton-page="transactions"])) .top-actions>.app-tooltip:first-child,
+  .app-shell:is(:has(.transactions-approved),:has(.page-skeleton[data-skeleton-page="transactions"])) .top-actions>.app-tooltip:has(button[aria-label='Ανανέωση δεδομένων']),
+  .app-shell:is(:has(.transactions-approved),:has(.page-skeleton[data-skeleton-page="transactions"])) .top-actions>.app-tooltip:last-child{display:none}
+  .app-shell:is(:has(.transactions-approved),:has(.page-skeleton[data-skeleton-page="transactions"])) .top-actions button{width:40px;height:40px;border-radius:9px;border:1px solid #e2eaf4;background:#fff;box-shadow:0 3px 10px rgba(34,65,105,.055)}
+  .app-shell:is(:has(.transactions-approved),:has(.page-skeleton[data-skeleton-page="transactions"])) .workspace{position:relative;padding:8px 14px 12px;max-width:none}
+  .app-shell:is(:has(.transactions-approved),:has(.page-skeleton[data-skeleton-page="transactions"])) .transactions-approved-heading>div{width:100%;min-width:0}
+  .app-shell:is(:has(.transactions-approved),:has(.page-skeleton[data-skeleton-page="transactions"])) .transactions-approved-heading p{white-space:nowrap}
+  .app-shell:is(:has(.transactions-approved),:has(.page-skeleton[data-skeleton-page="transactions"])) .period-row{position:fixed;z-index:72;top:9px;right:12px;width:186px;height:40px;margin:0;padding:0;border:1px solid #e2eaf4;border-radius:9px;background:#fbfdff;box-shadow:0 3px 10px rgba(34,65,105,.05);display:flex;align-items:center;justify-content:center}
+  .app-shell:is(:has(.transactions-approved),:has(.page-skeleton[data-skeleton-page="transactions"])) .period-row>span{display:none}
+  .app-shell:is(:has(.transactions-approved),:has(.page-skeleton[data-skeleton-page="transactions"])) .period-control{width:100%;height:100%;display:grid;grid-template-columns:34px minmax(0,1fr) 34px;align-items:center;color:#263e68;font-size:10px;font-weight:800}
+  .app-shell:is(:has(.transactions-approved),:has(.page-skeleton[data-skeleton-page="transactions"])) .period-control button{width:32px;height:32px;min-width:32px;min-height:32px;border:0;background:transparent;box-shadow:none;border-radius:8px}
+  .app-shell:is(:has(.transactions-approved),:has(.page-skeleton[data-skeleton-page="transactions"])) .period-control button:disabled{visibility:hidden}
+}
+
+@media(min-width:981px) and (max-width:1240px){
+  .app-shell:is(:has(.transactions-approved),:has(.page-skeleton[data-skeleton-page="transactions"])) .sidebar .primary-action{right:330px;width:132px}
+  .app-shell:is(:has(.transactions-approved),:has(.page-skeleton[data-skeleton-page="transactions"])) .command-search-action{width:calc(100vw - 920px);min-width:350px}
+}

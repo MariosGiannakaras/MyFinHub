@@ -3,7 +3,7 @@ import { ApiError } from './http.js';
 const TIMEOUT_MS=12_000;
 const CANONICAL_PRODUCTION_ORIGIN='https://mgfinhub.vercel.app';
 
-type RemotePayload={error?:string;code?:string;requestId?:string;pan?:string|null;expiry?:string|null;saved?:boolean;last4?:string|null;deleted?:boolean};
+type RemotePayload={error?:string;code?:string;requestId?:string;pan?:string|null;expiry?:string|null;cvv?:string|null;saved?:boolean;last4?:string|null;deleted?:boolean};
 
 function productionOrigin(){
   const raw=String(process.env.MYFINHUB_PRODUCTION_ORIGIN||'').trim().replace(/\/$/,'');

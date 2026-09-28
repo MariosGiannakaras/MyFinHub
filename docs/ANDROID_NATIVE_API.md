@@ -31,8 +31,8 @@ Current native-enabled boundaries:
 - `PUT /api/data`
 - `POST /api/backup`
 - `POST /api/import`
-- `POST /api/card-secrets` — reveal PAN/expiry for one card
-- `PUT /api/card-secrets` — save PAN/expiry for one card
+- `POST /api/card-secrets` — reveal PAN/expiry/CVV for one card
+- `PUT /api/card-secrets` — save PAN/expiry/CVV for one card
 - `DELETE /api/card-secrets` — delete PAN/expiry for one card
 
 Browser auth/session/MFA/login/logout endpoints are not native bearer endpoints. The Android application performs password/TOTP authentication through Supabase Auth and then consumes the finance API with the resulting user access JWT.
@@ -86,7 +86,7 @@ Bearer authentication is only the first gate. Existing authorization and integri
 5. `PUT /api/data` still requires `If-Match` and rejects stale revisions;
 6. existing server-side request validation, bounded bodies, backups and audit behavior remain unchanged;
 7. card-secret operations retain owner+AAL2 validation, body whitelisting, rate limiting and server-vault rules;
-8. CVV remains forbidden from server persistence.
+8. PAN/expiry/CVV remain inside the encrypted server card vault and outside FinanceData/backups.
 
 No service-role or Supabase secret key is required or allowed in the Android APK.
 
@@ -107,7 +107,7 @@ The Android app should:
 - treat `403 MFA_REQUIRED` as insufficient assurance and complete/repeat MFA as appropriate;
 - preserve the current revision returned by `/api/data` and send it through `If-Match` for mutations;
 - handle `409 REVISION_CONFLICT` by reloading/reconciling rather than overwriting;
-- never send CVV to a server endpoint.
+- send CVV only to the authenticated owner+AAL2 `/api/card-secrets` endpoint; never include it in FinanceData, logs or diagnostics.
 
 ## Regression contract
 
@@ -122,7 +122,7 @@ The merged native path is covered by tests for at least:
 - no permissive CORS header introduced;
 - stale revision conflict preserved;
 - existing cookie refresh/failure resilience preserved;
-- card-secret owner/AAL2/CVV restrictions preserved.
+- card-secret owner/AAL2 and encrypted-vault restrictions preserved.
 
 PR #197 passed CI #801, CodeQL #755, Cross-engine/WebKit #93, Performance #87 and Windows Desktop #453 on exact head `e0d4ee10ec42688008a4d8436c0df8e42f7a94f2`, with zero unresolved review threads before squash merge.
 

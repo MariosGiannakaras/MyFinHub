@@ -37,7 +37,7 @@ The database schema is owned by ordered SQL migrations under `supabase/migration
 - `rheomiq_backups`: immutable full-document snapshots created before imports, manually, and periodically during normal saves; retention is bounded to the newest 100 snapshots.
 - `rheomiq_audit_log`: append-only save/import/backup events without finance payloads.
 - `rheomiq_owner`: singleton owner identity used by the RLS/RPC authorization checks.
-- `rheomiq_card_secrets`: separate ciphertext-only PAN/expiry vault keyed by owner + shared card id. It is not embedded in `FinanceData` and is not included in normal finance backups.
+- `rheomiq_card_secrets`: separate ciphertext-only PAN/expiry/CVV vault keyed by owner + shared card id. It is not embedded in `FinanceData` and is not included in normal finance backups.
 
 The full finance document remains the compatibility read/import format because the imported Excel corpus contains 2,800+ legacy transactions whose historical meaning must not be reinterpreted casually.
 
@@ -85,15 +85,13 @@ The current product has one synthetic `credit-card` liability, so only one credi
 
 Every method requires same-origin, an authenticated owner session and AAL2. The server uses the existing authenticated owner's JWT plus the Supabase publishable key to access `rheomiq_card_secrets`, therefore table RLS remains authoritative.
 
-PAN/expiry are validated before encryption. Encryption is AES-256-GCM with a random 96-bit IV, AAD bound to owner id + card id + key version, and key material supplied only through the runtime `CARD_VAULT_KEY` environment boundary. PostgreSQL stores only ciphertext/IV/auth tag/key version and lookup metadata.
+PAN/expiry/CVV are validated before encryption. Encryption is AES-256-GCM with a random 96-bit IV, AAD bound to owner id + card id + key version, and key material supplied only through the runtime `CARD_VAULT_KEY` environment boundary. PostgreSQL stores only ciphertext/IV/auth tag/key version and lookup metadata.
 
-The API body is tightly bounded and key-whitelisted. CVV/CVC/security-code-like keys are rejected. The browser client also runtime-whitelists `pan` and `expiry` rather than spreading arbitrary objects into the request.
+The API body is tightly bounded and key-whitelisted to `cardId`, `pan`, `expiry` and canonical `cvv`. Aliases/unknown fields remain rejected, and browser/native clients explicitly serialize only the supported card-secret fields.
 
-### Device-local CVV vault
+### Legacy local CVV migration
 
-CVV save/reveal/delete uses the browser-local encrypted IndexedDB vault and Web Crypto. No CVV request is made to `/api/card-secrets` or any other server endpoint.
-
-Archiving a card removes its local CVV record from that browser/device but deliberately preserves its PAN/expiry server-vault row. Permanently removing PAN/expiry is a separate explicit secure-editor action.
+The former browser-local encrypted CVV vault is retained only as a compatibility migration source. When an approved client finds a legacy local CVV and no server CVV, it best-effort writes that value into `/api/card-secrets` and deletes the local copy only after the server write succeeds. The server vault is authoritative afterward.
 
 ### Soft archive / restore
 

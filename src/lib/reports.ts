@@ -2,13 +2,14 @@ import { accountBalances, effectiveLegacyTransactions, flowImpactEvent, flowImpa
 import { categoryPath } from './categories.js';
 import { creditCards, creditDebtForCard, creditLimitForCard } from './cards.js';
 import { lendingRows } from './lending.js';
+import { activeLongTermLoanObligations } from './loans.js';
 import { recurringMonthlyTotal } from './recurring.js';
 import { operationalMonthlyFlow, savingsBreakdown } from './savings.js';
 import type { FinanceData } from '../types.js';
 
-export function shiftReportMonth(month:string,delta:number){const [year,m]=month.split('-').map(Number);const date=new Date(Date.UTC(year,m-1+delta,1));return `${date.getUTCFullYear()}-${String(date.getUTCMonth()+1).padStart(2,'0')}`}
-export function reportMonths(month:string,count=6){return Array.from({length:count},(_,index)=>shiftReportMonth(month,index-(count-1)))}
-export function reportMonthLabel(month:string){const [year,m]=month.split('-').map(Number);return new Intl.DateTimeFormat('el-GR',{month:'short',year:'2-digit',timeZone:'UTC'}).format(new Date(Date.UTC(year,m-1,1)))}
+function shiftReportMonth(month:string,delta:number){const [year,m]=month.split('-').map(Number);const date=new Date(Date.UTC(year,m-1+delta,1));return `${date.getUTCFullYear()}-${String(date.getUTCMonth()+1).padStart(2,'0')}`}
+function reportMonths(month:string,count=6){return Array.from({length:count},(_,index)=>shiftReportMonth(month,index-(count-1)))}
+function reportMonthLabel(month:string){const [year,m]=month.split('-').map(Number);return new Intl.DateTimeFormat('el-GR',{month:'short',year:'2-digit',timeZone:'UTC'}).format(new Date(Date.UTC(year,m-1,1)))}
 export function monthEnd(month:string){const [year,m]=month.split('-').map(Number);return new Date(Date.UTC(year,m,0,12)).toISOString().slice(0,10)}
 
 export function reportFlowSeries(data:FinanceData,month:string,count=6){return reportMonths(month,count).map(value=>{const flow=operationalMonthlyFlow(data,value);return {month:value,label:reportMonthLabel(value),income:flow.income,expense:flow.expense,saving:flow.saving}})}
@@ -31,6 +32,42 @@ export function categoryMomentum(data:FinanceData,month:string,limit=10){
   return current.slice(0,limit).map(row=>{const previousValue=previous.get(row.name)??0;return {...row,previous:previousValue,change:relativeChange(row.value,previousValue)}});
 }
 
+type ReportExpenseCounterparty={title:string;category:string;amount:number;share:number|null;count:number;lastDate:string};
+
+export function reportExpenseCounterparties(data:FinanceData,month:string,limit=5):ReportExpenseCounterparty[]{
+  const grouped=new Map<string,{title:string;category:string;amount:number;count:number;lastDate:string}>();
+  const add=(title:string,category:string,amount:number,date:string)=>{
+    if(!Number.isFinite(amount)||amount<=.005)return;
+    const safeTitle=title.trim()||category||'Συναλλαγή';
+    const safeCategory=category||'Χωρίς κατηγορία';
+    const key=`${safeTitle.toLocaleLowerCase('el-GR')}|${safeCategory.toLocaleLowerCase('el-GR')}`;
+    const current=grouped.get(key);
+    if(current){current.amount+=amount;current.count+=1;if(date>current.lastDate)current.lastDate=date;return}
+    grouped.set(key,{title:safeTitle,category:safeCategory,amount,count:1,lastDate:date});
+  };
+  for(const tx of effectiveLegacyTransactions(data)){
+    if(!tx.date.startsWith(`${month}-`))continue;
+    const impact=flowImpactLegacy(data,tx);
+    const category=categoryPath(tx.category,tx.subcategory);
+    add(tx.note||category,category,impact.expense,tx.date);
+  }
+  for(const event of data.state.events??[]){
+    if(!event.date.startsWith(`${month}-`))continue;
+    const impact=flowImpactEvent(event);
+    const partCategories=[...new Set((event.parts??[]).filter(part=>(part.kind??'expense')==='expense').map(part=>categoryPath(part.category,part.subcategory)))];
+    const category=partCategories.length===1?partCategories[0]:partCategories.length>1?'Διαχωρισμένη συναλλαγή':categoryPath(event.category,event.subcategory);
+    add(event.note||category,category,impact.expense,event.date);
+  }
+  const rows=[...grouped.values()].sort((a,b)=>b.amount-a.amount||b.lastDate.localeCompare(a.lastDate)||a.title.localeCompare(b.title,'el'));
+  const gross=rows.reduce((sum,row)=>sum+row.amount,0);
+  return rows.slice(0,Math.max(0,limit)).map(row=>({...row,share:gross>0?row.amount/gross:null}));
+}
+
+export function reportLoanBurden(data:FinanceData){
+  const rows=activeLongTermLoanObligations(data).map(row=>({id:row.loan.id,name:row.loan.name,amount:row.nextAmount,outstanding:row.outstanding,remainingInstallments:row.remainingInstallments}));
+  return {total:rows.reduce((sum,row)=>sum+row.amount,0),count:rows.length,rows};
+}
+
 export function creditCardSnapshots(data:FinanceData,asOf:string){
   return creditCards(data,{includeArchived:true}).map(card=>{
     const debt=creditDebtForCard(data,card.id,asOf);const limit=card.active===false?0:creditLimitForCard(data,card);
@@ -38,7 +75,7 @@ export function creditCardSnapshots(data:FinanceData,asOf:string){
   }).sort((a,b)=>b.debt-a.debt||a.nickname.localeCompare(b.nickname,'el'));
 }
 
-export function creditPortfolioSnapshot(data:FinanceData,asOf:string){
+function creditPortfolioSnapshot(data:FinanceData,asOf:string){
   const cards=creditCardSnapshots(data,asOf);
   const active=cards.filter(card=>card.active);
   const debt=cards.reduce((sum,card)=>sum+card.debt,0);

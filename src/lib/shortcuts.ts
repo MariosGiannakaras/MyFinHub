@@ -1,4 +1,4 @@
-export type ShortcutId = 'commandPalette' | 'quickEntry' | 'undo' | 'redo' | 'dismiss';
+type ShortcutId = 'commandPalette' | 'quickEntry' | 'undo' | 'redo' | 'dismiss';
 
 export type ShortcutKeyEvent = {
   key:string;

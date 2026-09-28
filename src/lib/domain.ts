@@ -11,7 +11,7 @@ import type {
 } from '../types.js';
 import { cleanNote } from './format.js';
 
-export const CREDIT_ACCOUNT: Account = {
+const CREDIT_ACCOUNT: Account = {
   id: 'credit-card',
   name: 'Πιστωτική κάρτα',
   short: 'CC',
@@ -22,12 +22,21 @@ export const CREDIT_ACCOUNT: Account = {
 export function migrateData(input: FinanceData): FinanceData {
   const fromSchema = Number(input.schemaVersion || 1);
   const state = input.state ?? ({} as FinanceData['state']);
+  const seedAccounts=input.seed?.accounts??[];
+  const selectable=seedAccounts.filter(account=>account.kind!=='credit'&&account.showInQuickChoices!==false);
+  const fallbackOperating=selectable.find(account=>account.kind==='bank')
+    ??selectable.find(account=>account.kind==='cash'&&account.cashRole!=='reserve')
+    ??selectable.find(account=>account.kind!=='savings')
+    ??selectable[0];
+  const defaultAccountId=fallbackOperating?.id??'';
+  const excludedDefaults=seedAccounts.filter(account=>account.excludeFromAvailable).map(account=>account.id);
   return {
     ...input,
     app: 'RheomIQ',
     schemaVersion: 3,
     updatedAt: input.updatedAt || new Date().toISOString(),
     state: {
+      ...state,
       customTransactions: state.customTransactions ?? [],
       overrides: state.overrides ?? {},
       deleted: state.deleted ?? [],
@@ -38,15 +47,18 @@ export function migrateData(input: FinanceData): FinanceData {
       customLoans: state.customLoans ?? [],
       lendingCustom: state.lendingCustom ?? [],
       settings: {
-        excludedFromAvailable: state.settings?.excludedFromAvailable ?? ['piraeus-savings'],
+        ...(state.settings ?? {}),
+        excludedFromAvailable: state.settings?.excludedFromAvailable ?? excludedDefaults,
         accountNames: state.settings?.accountNames ?? {},
+        customAccounts: state.settings?.customAccounts ?? [],
+        accountOverrides: state.settings?.accountOverrides ?? {},
         expenseCategories: state.settings?.expenseCategories ?? [],
         incomeCategories: state.settings?.incomeCategories ?? [],
         customPresets: state.settings?.customPresets ?? [],
         pinnedPresets: state.settings?.pinnedPresets ?? [],
-        defaultExpenseAccount: state.settings?.defaultExpenseAccount ?? 'piraeus-payroll',
-        defaultIncomeAccount: state.settings?.defaultIncomeAccount ?? 'piraeus-payroll',
-        defaultLoanAccount: state.settings?.defaultLoanAccount ?? 'piraeus-payroll',
+        defaultExpenseAccount: state.settings?.defaultExpenseAccount ?? defaultAccountId,
+        defaultIncomeAccount: state.settings?.defaultIncomeAccount ?? defaultAccountId,
+        defaultLoanAccount: state.settings?.defaultLoanAccount ?? defaultAccountId,
         monthlyBudget: state.settings?.monthlyBudget ?? 1200,
         savingsTargetRate: state.settings?.savingsTargetRate ?? 0.2,
         creditLimit: state.settings?.creditLimit ?? 0,
@@ -60,9 +72,14 @@ export function migrateData(input: FinanceData): FinanceData {
 }
 
 export function allAccounts(data: FinanceData): Account[] {
-  const accounts = data.seed.accounts ?? [];
+  const overrides = data.state.settings.accountOverrides ?? {};
+  const seeded = (data.seed.accounts ?? []).map((account) => ({ ...account, ...(overrides[account.id] ?? {}), id: account.id }));
+  const seededIds = new Set(seeded.map((account) => account.id));
+  const custom = (data.state.settings.customAccounts ?? []).filter((account) => !seededIds.has(account.id));
+  const accounts = [...seeded, ...custom];
   return accounts.some((a) => a.id === CREDIT_ACCOUNT.id) ? accounts : [...accounts, CREDIT_ACCOUNT];
 }
+
 
 function deletedSet(data: FinanceData) {
   const raw = data.state.deleted;
@@ -277,11 +294,11 @@ export function accountBalances(data: FinanceData, asOf: string): Record<string,
   return balances;
 }
 
-export function legacyOutstandingReceivables(data: FinanceData) {
+function legacyOutstandingReceivables(data: FinanceData) {
   return (data.seed.lending ?? []).reduce((sum, p) => sum + Number(p.outstanding || 0), 0);
 }
 
-export function eventReceivables(data: FinanceData) {
+function eventReceivables(data: FinanceData) {
   return (data.state.events ?? []).reduce((sum, e) => sum + Number(e.receivableDelta || 0), 0);
 }
 
