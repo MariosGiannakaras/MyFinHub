@@ -5,6 +5,7 @@ import { AppDateInput } from '../components/AppDateInput';
 import { AppSelectInput } from '../components/AppSelectInput';
 import { AppTextInput } from '../components/AppTextInput';
 import { Button } from '../components/Button';
+import { PageHeader } from '../components/PageHeader';
 import { CategorySelectInput } from '../components/CategorySelectInput';
 import { FinanceIcon } from '../components/FinanceIcon';
 import { FormError } from '../components/FormError';
@@ -45,7 +46,7 @@ export function RecurringPage({data,asOf,onUpsert,onOpenLoans,onPayLoan,onPayRec
   const nextPayment=nextThree[0]??null;
 
   return <div className="page-stack recurring-approved-page">
-    <section className="page-heading recurring-approved-heading"><div><span className="eyebrow">ΠΑΓΙΑ & ΣΥΝΔΡΟΜΕΣ</span><h1>Πάγια<span className="sr-only"> & Συνδρομές</span></h1><p>Διαχειριστείτε τις επαναλαμβανόμενες πληρωμές σας και παρακολουθήστε τις επόμενες υποχρεώσεις.</p></div><Button type="button" variant="primary" onClick={startNew}><Plus size={17}/> Νέο πάγιο</Button></section>
+    <PageHeader className="recurring-approved-heading" eyebrow="ΠΑΓΙΑ & ΣΥΝΔΡΟΜΕΣ" title={<>Πάγια<span className="sr-only"> & Συνδρομές</span></>} description={<p>Διαχειριστείτε τις επαναλαμβανόμενες πληρωμές σας και παρακολουθήστε τις επόμενες υποχρεώσεις.</p>} trailing={<Button type="button" variant="primary" onClick={startNew}><Plus size={17}/> Νέο πάγιο</Button>}/>
 
     <section className="recurring-summary-grid" style={{gridTemplateColumns:'repeat(2,minmax(0,1fr))'}} aria-label="Σύνοψη παγίων">
       <article className="surface-raised recurring-summary-card"><span className="recurring-summary-icon"><ReceiptText size={24}/></span><div><span>Μηνιαίο ισοδύναμο ενεργών</span><b><AnimatedAmount value={monthlyTotal}/></b><small>{active.length} ενεργά πάγια / συνδρομές με την πραγματική περιοδικότητά τους</small></div></article>
