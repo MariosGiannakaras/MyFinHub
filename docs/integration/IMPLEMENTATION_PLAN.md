@@ -172,7 +172,7 @@ Canonical target: encrypted server-side owner+AAL2 vault for PAN/expiry/CVV.
 - [x] If server CVV is absent and a local CVV exists, allow it to be used/displayed under the existing local security boundary.
 - [x] Migrate local CVV to server only on an explicit user Save/Update under a valid protected session.
 - [x] Delete local CVV only after confirmed successful server persistence.
-- [ ] Test old-client/new-server and transition cases where practical; do not support an unsafe new-client/old-server state in release.
+- [x] Test old-client/new-server and transition cases where practical; do not support an unsafe new-client/old-server state in release.
 
 ### Acceptance
 
@@ -323,7 +323,7 @@ Owner decision P-002.
 - [x] Use a shared editor/dialog, not the legacy Settings component.
 - [x] Keep budget progress, Reports and Έλεγχος on the same stored budget data.
 - [x] Remove/avoid duplicate editor in Settings.
-- [ ] Verify delete/edit updates report values immediately.
+- [x] Verify delete/edit updates report values immediately.
 - [x] Preserve budget/category validation and historical finance data.
 
 ### Acceptance
