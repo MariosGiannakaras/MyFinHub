@@ -23,7 +23,7 @@ export const FINANCIAL_PROVIDERS:FinancialProvider[]=[
   {id:'paypal',displayName:'PayPal',shortName:'PayPal',kind:'wallet',kindLabel:'Ψηφιακό πορτοφόλι',countryCode:'US',logoAssetKey:'generic',wordmarkAssetKey:'paypal',sortOrder:80},
 ];
 
-export type { BankAccountCategory, CashAccountType } from '../types.js';
+export type { BankAccountCategory, CashAccountType };
 
 export const BANK_ACCOUNT_CATEGORIES:{id:BankAccountCategory;label:string;description:string}[]=[
   {id:'payroll',label:'Μισθοδοσίας',description:'Για μισθό ή σύνταξη.'},
