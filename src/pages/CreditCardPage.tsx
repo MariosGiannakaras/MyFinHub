@@ -5,6 +5,7 @@ import { AppDateInput } from '../components/AppDateInput';
 import { AppSelectInput } from '../components/AppSelectInput';
 import { AppTextInput } from '../components/AppTextInput';
 import { Button } from '../components/Button';
+import { PageHeader } from '../components/PageHeader';
 import { CanonicalCreditCardStack } from '../components/CanonicalCreditCardStack';
 import { CardCreateDialog } from '../components/CardCreateDialog';
 import { CardDetailsDialog } from '../components/CardDetailsDialog';
@@ -160,15 +161,17 @@ export function CreditCardPage({
   const statementEventRows=(statementId:string)=>creditStatementEvents(data,statementId);
 
   return <div className="page-stack credit-card-redesign-page">
-    <section className="page-heading">
-      <div><span className="eyebrow">ΠΙΣΤΩΤΙΚΗ ΚΑΡΤΑ</span><h1>Πιστωτική Κάρτα</h1><p>Η κάρτα, το διαθέσιμο όριο και όλες οι πραγματικές κινήσεις της σε μία καθαρή εικόνα.</p></div>
-      <div className="heading-actions">
+    <PageHeader
+      eyebrow="ΠΙΣΤΩΤΙΚΗ ΚΑΡΤΑ"
+      title="Πιστωτική Κάρτα"
+      description={<p>Η κάρτα, το διαθέσιμο όριο και όλες οι πραγματικές κινήσεις της σε μία καθαρή εικόνα.</p>}
+      actions={<>
         {archivedCredit.length?<Button type="button" variant="secondary" onClick={()=>setArchiveOpen(true)}><ArchiveRestore/> Αρχείο καρτών · {archivedCredit.length}</Button>:null}
         {card?<Button type="button" variant="secondary" onClick={openCardDetails}><Pencil/> Στοιχεία κάρτας</Button>:null}
         <Button type="button" variant="secondary" disabled={!card||debt<=0||eligibleAccounts.length===0} onClick={openRepay}><ReceiptText/> Αποπληρωμή</Button>
         <Button type="button" variant="primary" disabled={!card} onClick={openPurchase}><CreditCard/> Νέα αγορά</Button>
-      </div>
-    </section>
+      </>}
+    />
 
     {card&&bank?<section className="credit-card-stage surface-raised">
       <div className="credit-card-stage-card" data-card-view={cardDeckMode}>
