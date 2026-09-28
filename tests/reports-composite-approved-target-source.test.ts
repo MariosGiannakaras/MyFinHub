@@ -52,7 +52,7 @@ describe('approved composite Reports source contract',()=>{
     expect(source).toContain('reportLoanBurden(data)');
     expect(source).toContain('budgetProgress(data,month)');
     expect(source).toContain('<FinanceIcon settings={data.state.settings}');
-    expect(source).toContain('accountsVisible');
+    expect(source).toContain('privacyVisible');expect(source).toContain('onPrivacyVisibleChange');
     expect(reports).toContain('flowImpactLegacy(data,tx)');
     expect(reports).toContain('flowImpactEvent(event)');
     expect(reports).toContain('activeLongTermLoanObligations(data)');
