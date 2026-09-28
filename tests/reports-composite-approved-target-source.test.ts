@@ -15,6 +15,7 @@ describe('approved composite Reports source contract',()=>{
   });
 
   it('owns budget CRUD in Reports through the shared canonical budget component',()=>{
+    const source=read('src/pages/ReportsPage.tsx');
     expect(source).toContain('<BudgetRuleSettings');
     expect(source).toContain('view="budgets"');
     expect(source).toContain('onUpsertBudget={onUpsertBudget}');
