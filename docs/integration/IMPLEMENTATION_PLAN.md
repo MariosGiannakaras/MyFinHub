@@ -355,9 +355,9 @@ For each page:
 - [ ] desktop behavior;
 - [ ] mobile/responsive behavior;
 - [ ] keyboard/focus/disabled states where relevant;
-- [ ] no dead clickable controls;
-- [ ] no mock financial values;
-- [ ] no old duplicate component path left active.
+- [x] no dead clickable controls;
+- [x] no mock financial values;
+- [x] no old duplicate component path left active.
 
 ---
 
