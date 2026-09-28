@@ -207,6 +207,15 @@ export interface MonthlyBudget {
   updatedAt: string;
 }
 
+export interface SavingsGoal {
+  id: string;
+  name: string;
+  targetAmount: number;
+  targetDate?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface TransactionRuleMatch {
   description?: string;
   merchant?: string;
@@ -274,6 +283,7 @@ export interface FinanceData {
     reviewDecisions?: Record<string, ReviewDecision>;
     attentionDecisions?: Record<string, AttentionDecision>;
     budgets?: MonthlyBudget[];
+    savingsGoals?: SavingsGoal[];
     transactionRules?: TransactionRule[];
     migration?: { fromSchema: number; migratedAt: string };
   };
@@ -309,6 +319,7 @@ export interface RecurringItem {
   amount: number;
   day?: number | null;
   firstExpectedDate?: string | null;
+  endDate?: string | null;
   recurrenceUnit?: RecurrenceUnit;
   recurrenceInterval?: number;
   accountId: string;
