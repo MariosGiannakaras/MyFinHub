@@ -24,9 +24,9 @@ Use this checklist as the durable cross-app audit record. Mark a row complete on
 | Page heading / right-side action alignment | COMPLETE | Batch 4 / PR #424 restored the historical `.heading-actions{display:flex;gap:8px}` invariant without changing route-specific heading compositions. Exact post-merge CI, CodeQL and Windows Desktop are green on `develop@6d911a11`. |
 | Dialog / popover ownership, focus and Escape behavior | IN PROGRESS | Current-tree audit found no orphan modal surfaces: every `role="dialog"` / `alertdialog` is owned by `DialogShell` or `useModalFocus`, and multi-dialog pages have one focus owner per direct `aria-modal`. Batch 5 adds a cross-app source guard; no production UI refactor is needed. |
 | Loading / success / error feedback | COMPLETE | Batch 6 / PR #426 canonicalized exact-equivalent generic finance form errors onto shared `FormError`; persistence/auth/action-status live-region contracts remain intact. Exact post-merge CI, CodeQL and Windows Desktop are green on `develop@89f9ed63`. |
-| Hover / focus / pressed / disabled states | IN PROGRESS | Global focus-visible and pressed-state ownership are already present. Batch 7 applies the approved bounded fix so disabled primary/icon/top-action controls cannot inherit legacy hover/press transforms. |
-| Motion / reduced-motion behavior | NOT STARTED | No decorative animation additions without a clear state/causality purpose. |
-| Responsive / touch targets | NOT STARTED | Recheck desktop and mobile only after bounded control changes. |
+| Hover / focus / pressed / disabled states | IN PROGRESS | Global focus-visible and pressed-state ownership are already present. Final Batch 7 applies the approved disabled-safe interaction fix and guards the contract. |
+| Motion / reduced-motion behavior | IN PROGRESS | Parallel audit found global reduced-motion coverage for both OS preference and in-app reduced mode; Final Batch 7 adds a source guard with no production motion change. |
+| Responsive / touch targets | IN PROGRESS | Parallel audit found existing mobile sizing/safe-area contracts sufficient; Final Batch 7 adds a source guard and removes one redundant no-op mobile privacy-toggle declaration. |
 
 ## Batch 1 — shared close-control ownership
 
@@ -183,31 +183,45 @@ Validation:
 - final clean diff contained exactly nine intended files, 0 `visual-qa/**`, 0 unresolved threads and branch 0 behind;
 - exact post-merge `develop@89f9ed63ea735d939823ab050995681971a7be79` passed CI `36358526626`, CodeQL `36358526618` and Windows Desktop `36358526641`.
 
-## Batch 7 — disabled interaction-state guards
+## Batch 7 — final interaction, motion and responsive contracts
 
-Branch: `chore/348-disabled-interaction-state-guards`
+Branch: `chore/348-disabled-interaction-state-guards`  
+PR: #427
 
-Audit result:
+Interaction-state audit:
 - global keyboard focus ownership already exists through the shared `:focus-visible` contract;
-- secondary/ghost interaction selectors already gate hover/press behavior behind `:not(:disabled)`;
+- secondary/ghost interaction selectors already gate hover/press behavior behind disabled-safe selectors;
 - current `aria-pressed` controls expose explicit active styling or visible icon/label state;
 - legacy base selectors still allowed disabled primary `.save-button`, shared `.icon-button` and top-action buttons to inherit desktop hover/press transforms.
 
-Approved bounded visual fix:
-- `.save-button:hover` -> `.save-button:not(:disabled):hover`;
-- `.save-button:active` -> `.save-button:not(:disabled):active`;
-- `.top-actions button:hover,.icon-button:hover` -> disabled-safe `:not(:disabled)` equivalents;
-- preserve all enabled hover/press visuals, colors, sizing, spacing and semantics;
-- add a focused source guard for disabled inertness plus existing focus/pressed contracts.
+Approved bounded interaction fix:
+- `.save-button:hover` -> `.save-button:enabled:hover`;
+- `.save-button:active` -> `.save-button:enabled:active`;
+- `.top-actions button:hover,.icon-button:hover` -> disabled-safe `:enabled` equivalents;
+- preserve all enabled hover/press visuals, colors, sizing, spacing and semantics.
+
+Motion / reduced-motion audit:
+- `reduced-motion-contract.css` globally constrains animation duration, iteration count, transition duration and scroll behavior for in-app `data-motion="reduced"`;
+- `root-responsive-coordination.css` applies the same global contract for `prefers-reduced-motion: reduce`;
+- no orphan production animation requires a separate fix;
+- add a source guard only; no new animation or visual behavior.
+
+Responsive / touch audit:
+- phone form controls keep at least 46px control height and 16px input text;
+- major mobile actions keep explicit 44px+ targets, mobile navigation 50px and mobile-more destinations 56px;
+- compact icon actions retain the existing 40px accessibility floor while late workspace polish intentionally uses 42px where applicable;
+- safe-area inset handling is already present in shell/navigation/editor geometry;
+- remove the redundant mobile `.privacy-toggle{min-height:44px}` redeclaration because the identical unscoped rule already owns the value.
 
 Validation target:
-- one consolidated exact-head PR cycle;
+- one consolidated exact-head PR cycle for the final #348 batch;
+- keep CSS bundle within the existing budget; do not raise the budget;
 - no component markup, finance, auth, persistence, routing, API, database or Windows behavior change;
 - no `visual-qa/**` files in the final net diff.
 
-## Next audit slice
+## Final closure
 
-After Batch 7 is merged and verified on `develop`:
-1. mark hover/focus/pressed/disabled states complete unless rendered QA exposes a concrete gap;
-2. audit motion / reduced-motion behavior;
-3. keep responsive / touch targets as the final bounded slice.
+After PR #427 is merged and exact post-merge checks pass:
+1. mark interaction, motion/reduced-motion and responsive/touch rows complete;
+2. add the final #348 checkpoint comment;
+3. close #348 if no new concrete regression is reported by the final validation cycle.
