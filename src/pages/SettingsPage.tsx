@@ -1,4 +1,4 @@
-import { Database, Download, FileJson, ShieldCheck } from 'lucide-react';
+import { Download, FileJson, ShieldCheck } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { AccountManagementSettings } from '../components/AccountManagementSettings';
 import { AccountSecuritySettings } from '../components/AccountSecuritySettings';
@@ -16,7 +16,7 @@ import { categoryTree } from '../lib/categories';
 import { MAX_FINANCE_DOCUMENT_BYTES } from '../lib/limits';
 import { taxonomyOperationPreview, type TaxonomyOperation } from '../lib/taxonomyManagement';
 import { userErrorMessage } from '../lib/userMessage';
-import type { FinanceData, FinanceSettings, MonthlyBudget, TransactionRule } from '../types';
+import type { FinanceData, FinanceSettings, TransactionRule } from '../types';
 import './SettingsPage.css';
 import './SettingsData.css';
 
@@ -87,8 +87,6 @@ export function SettingsPage({
   onBackup,
   onSettings,
   onTaxonomyOperation,
-  onUpsertBudget,
-  onDeleteBudget,
   onUpsertRule,
   onDeleteRule,
 }: {
@@ -101,13 +99,9 @@ export function SettingsPage({
   onBackup: () => Promise<{ path: string }>;
   onSettings: (settings: FinanceData['state']['settings']) => void;
   onTaxonomyOperation: (operation: TaxonomyOperation) => void;
-  onUpsertBudget: (budget: MonthlyBudget) => void;
-  onDeleteBudget: (id: string) => void;
   onUpsertRule: (rule: TransactionRule) => void;
   onDeleteRule: (id: string) => void;
 }) {
-  void onUpsertBudget;
-  void onDeleteBudget;
   const fileRef = useRef<HTMLInputElement | null>(null);
   const runtimeEnv=(import.meta as unknown as {env?:{DEV?:boolean;VITE_MYFINHUB_SUPPORT_DIAGNOSTICS?:string}}).env;
   const supportDiagnosticsEnabled=Boolean(runtimeEnv?.DEV)||runtimeEnv?.VITE_MYFINHUB_SUPPORT_DIAGNOSTICS==='1';
@@ -279,18 +273,6 @@ export function SettingsPage({
               </Surface>
             </div>
 
-            {import.meta.env.DEV ? (
-              <details className="panel neo-raised technical-settings" data-dev-support-diagnostics>
-                <summary><Database size={16}/> Τεχνικές πληροφορίες δεδομένων</summary>
-                <div className="settings-list">
-                  <div><span>Πηγή δεδομένων</span><b>{filePath || '—'}</b></div>
-                  <div><span>Έκδοση μορφής</span><b>v{data.schemaVersion}</b></div>
-                  <div><span>Τελευταία αποθήκευση</span><b>{lastSavedAt ? new Date(lastSavedAt).toLocaleString('el-GR') : '—'}</b></div>
-                  <div><span>Αρχικές συναλλαγές</span><b>{data.seed.stats.transactions || data.seed.transactions.length}</b></div>
-                  <div><span>Καταγεγραμμένες κινήσεις</span><b>{data.state.events?.length || 0}</b></div>
-                </div>
-              </details>
-            ) : null}
             {message ? <div className="logic-note compact" role="status" aria-live="polite"><ShieldCheck /><span>{message}</span></div> : null}
           </div>
         ) : null}
