@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { AnimatedAmount } from '../components/AnimatedAmount';
 import { BudgetRuleSettings } from '../components/BudgetRuleSettings';
 import { Button } from '../components/Button';
+import { PageHeader } from '../components/PageHeader';
 import { FinanceIcon } from '../components/FinanceIcon';
 import { budgetProgress } from '../lib/budgets';
 import { accountBalances, allAccounts, effectiveLegacyTransactions, flowImpactEvent, flowImpactLegacy } from '../lib/domain';
@@ -114,7 +115,7 @@ export function ReportsPage({data,month,privacyVisible,onPrivacyVisibleChange,on
  },[data,loanBurden.rows,month]);
 
  return <div className="page-stack reports-dashboard reports-composite reports-dense">
-  <section className="page-heading report-heading" id="report-overview"><div><span className="eyebrow">ΑΝΑΦΟΡΕΣ · {monthLabel}</span><h1>Αναφορές</h1><p>Οικονομική εικόνα, τάσεις και προϋπολογισμοί σε μία πυκνή επισκόπηση.</p></div><div className="report-period-chip" aria-label={`Επιλεγμένη περίοδος ${monthLabel}`}><span>Περίοδος</span><b>{monthLabel}</b></div></section>
+  <PageHeader id="report-overview" className="report-heading" eyebrow={<>ΑΝΑΦΟΡΕΣ · {monthLabel}</>} title="Αναφορές" description={<p>Οικονομική εικόνα, τάσεις και προϋπολογισμοί σε μία πυκνή επισκόπηση.</p>} trailing={<div className="report-period-chip" aria-label={`Επιλεγμένη περίοδος ${monthLabel}`}><span>Περίοδος</span><b>{monthLabel}</b></div>}/>
 
   <nav className="report-section-nav" aria-label="Ενότητες αναφορών"><a href="#report-overview">Επισκόπηση</a><a href="#report-budget-overview">Προϋπολογισμοί</a><a href="#report-flow">Ροή</a><a href="#report-obligations">Υποχρεώσεις</a><a href="#report-expenses">Έξοδα</a><a href="#report-comparisons">Συγκρίσεις</a><a href="#report-accounts">Λογαριασμοί</a></nav>
 
