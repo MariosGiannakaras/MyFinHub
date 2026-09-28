@@ -6,6 +6,7 @@ import { AppSelectInput } from '../components/AppSelectInput';
 import { AppTextInput } from '../components/AppTextInput';
 import { Button } from '../components/Button';
 import { PageHeader } from '../components/PageHeader';
+import { Surface } from '../components/Surface';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { FinanceIcon } from '../components/FinanceIcon';
 import { IconButton } from '../components/IconButton';
@@ -135,10 +136,10 @@ export function TransactionsPage({
     <PageHeader className="transactions-approved-heading" eyebrow="ΣΥΝΑΛΛΑΓΕΣ" title="Συναλλαγές" description={<p>Δείτε και διαχειριστείτε όλες τις συναλλαγές σας. Αναζήτηση, φίλτρα, κατηγορίες και πλήρης έλεγχος.</p>}/>
 
     <section className="transactions-approved-summary desktop-finance-table" aria-label="Σύνοψη συναλλαγών μήνα">
-      <article className="transactions-summary-card income"><span className="transactions-summary-icon"><TrendingUp size={24}/></span><div className="transactions-summary-copy"><small>Σύνολο εσόδων</small><strong>{money.format(flow.income)}</strong><span className={trendClass(incomeDelta)}>{trendText(incomeDelta)}</span></div></article>
-      <article className="transactions-summary-card expense"><span className="transactions-summary-icon"><TrendingDown size={24}/></span><div className="transactions-summary-copy"><small>Σύνολο εξόδων</small><strong className="negative">−{money.format(flow.expense)}</strong><span className={trendClass(expenseDelta,true)}>{trendText(expenseDelta)}</span></div></article>
-      <article className="transactions-summary-card net"><span className="transactions-summary-icon"><TrendingUp size={24}/></span><div className="transactions-summary-copy"><small>Καθαρό αποτέλεσμα</small><strong className={flow.net>=0?'positive':'negative'}>{flow.net>=0?'+':'−'}{money.format(Math.abs(flow.net))}</strong><span className={trendClass(netDelta)}>{trendText(netDelta)}</span></div></article>
-      <article className="transactions-summary-card count"><span className="transactions-summary-icon"><List size={24}/></span><div className="transactions-summary-copy"><small>Συναλλαγές μήνα</small><strong>{sourceRows.length}</strong><span className={countDelta<=0?'positive':'negative'}>{countDelta===0?'→ ίδιο με προηγ. μήνα':`${countDelta>0?'↑':'↓'} ${Math.abs(countDelta)} από προηγ. μήνα`}</span></div></article>
+      <Surface as="article" variant="flat" className="transactions-summary-card income"><span className="transactions-summary-icon"><TrendingUp size={24}/></span><div className="transactions-summary-copy"><small>Σύνολο εσόδων</small><strong>{money.format(flow.income)}</strong><span className={trendClass(incomeDelta)}>{trendText(incomeDelta)}</span></div></Surface>
+      <Surface as="article" variant="flat" className="transactions-summary-card expense"><span className="transactions-summary-icon"><TrendingDown size={24}/></span><div className="transactions-summary-copy"><small>Σύνολο εξόδων</small><strong className="negative">−{money.format(flow.expense)}</strong><span className={trendClass(expenseDelta,true)}>{trendText(expenseDelta)}</span></div></Surface>
+      <Surface as="article" variant="flat" className="transactions-summary-card net"><span className="transactions-summary-icon"><TrendingUp size={24}/></span><div className="transactions-summary-copy"><small>Καθαρό αποτέλεσμα</small><strong className={flow.net>=0?'positive':'negative'}>{flow.net>=0?'+':'−'}{money.format(Math.abs(flow.net))}</strong><span className={trendClass(netDelta)}>{trendText(netDelta)}</span></div></Surface>
+      <Surface as="article" variant="flat" className="transactions-summary-card count"><span className="transactions-summary-icon"><List size={24}/></span><div className="transactions-summary-copy"><small>Συναλλαγές μήνα</small><strong>{sourceRows.length}</strong><span className={countDelta<=0?'positive':'negative'}>{countDelta===0?'→ ίδιο με προηγ. μήνα':`${countDelta>0?'↑':'↓'} ${Math.abs(countDelta)} από προηγ. μήνα`}</span></div></Surface>
     </section>
 
     <section className="transactions-approved-shell">
