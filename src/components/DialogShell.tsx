@@ -36,7 +36,7 @@ export function DialogShell({
   const systemReduced=useReducedMotion();
   const reduce=Boolean(systemReduced)||motionMode==='reduced';
   const modalRef=useModalFocus<HTMLElement>(open&&focusActive,preferredFocus,onRequestClose);
-  const modalClassName=['quick-modal',className,'neo-raised'].filter(Boolean).join(' ');
+  const modalClassName=['quick-modal',className,'surface-raised'].filter(Boolean).join(' ');
 
   if(motionMode==='none')return open?<div className="modal-backdrop" onMouseDown={onRequestClose}>
     <section
