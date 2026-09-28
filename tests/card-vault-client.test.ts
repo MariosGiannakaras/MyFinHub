@@ -31,12 +31,13 @@ describe('card vault client',()=>{
   });
 
   it('reveals a legacy local CVV without silently uploading it to the server',async()=>{
-    const fetchMock=vi.fn(async()=>new Response(JSON.stringify({code:'CARD_SECRET_NOT_FOUND',error:'missing'}),{status:404,headers:{'content-type':'application/json'}}));
+    let method='';
+    const fetchMock=vi.fn(async(_url:string,init?:RequestInit)=>{method=String(init?.method||'');return new Response(JSON.stringify({code:'CARD_SECRET_NOT_FOUND',error:'missing'}),{status:404,headers:{'content-type':'application/json'}})});
     vi.stubGlobal('fetch',fetchMock);vi.stubGlobal('indexedDB',{});
     readLocalCvvMock.mockResolvedValue('123');
     await expect(revealCardSecret('card-legacy')).resolves.toEqual({cvv:'123'});
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(String(fetchMock.mock.calls[0]?.[1]?.method)).toBe('POST');
+    expect(method).toBe('POST');
     expect(readLocalCvvMock).toHaveBeenCalledWith('card-legacy');
   });
 
