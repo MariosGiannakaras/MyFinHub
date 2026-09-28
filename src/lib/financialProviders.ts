@@ -1,7 +1,5 @@
+import type { BankAccountCategory, CashAccountType } from '../types.js';
 export type FinancialProviderKind='bank'|'fintech'|'wallet'|'payment';
-export type BankAccountCategory='payroll'|'current'|'savings'|'term'|'payment'|'other';
-export type CashAccountType='cash'|'reserve'|'other';
-
 export type FinancialProvider={
   id:string;
   displayName:string;
@@ -24,6 +22,8 @@ export const FINANCIAL_PROVIDERS:FinancialProvider[]=[
   {id:'payzy',displayName:'payzy by COSMOTE',shortName:'payzy',kind:'wallet',kindLabel:'Ψηφιακό πορτοφόλι',countryCode:'GR',logoAssetKey:'payzy',wordmarkAssetKey:'payzy',sortOrder:70},
   {id:'paypal',displayName:'PayPal',shortName:'PayPal',kind:'wallet',kindLabel:'Ψηφιακό πορτοφόλι',countryCode:'US',logoAssetKey:'generic',wordmarkAssetKey:'paypal',sortOrder:80},
 ];
+
+export type { BankAccountCategory, CashAccountType } from '../types.js';
 
 export const BANK_ACCOUNT_CATEGORIES:{id:BankAccountCategory;label:string;description:string}[]=[
   {id:'payroll',label:'Μισθοδοσίας',description:'Για μισθό ή σύνταξη.'},
