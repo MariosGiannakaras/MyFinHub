@@ -30,11 +30,16 @@ describe('cross-page UI consistency contracts',()=>{
     }
   });
 
-  it('uses the shared page frame across all routed finance/settings surfaces',()=>{
+  it('uses the shared page frame and PageHeader across all routed finance/settings surfaces',()=>{
+    const pageHeader=read('src/components/PageHeader.tsx');
+    expect(pageHeader).toContain("['page-heading',className]");
+    expect(pageHeader).toContain('<h1>{title}</h1>');
+    expect(pageHeader).toContain('className="heading-actions"');
     for(const file of routedPages){
       const source=read(file);
       expect(source,`${file} should use page-stack`).toContain('page-stack');
-      expect(source,`${file} should use page-heading`).toContain('page-heading');
+      expect(source,`${file} should use PageHeader`).toContain('<PageHeader');
+      expect(source,`${file} should import PageHeader`).toContain("components/PageHeader");
     }
     const base=read('src/styles/workspace-heading-metrics.css');
     const responsive=read('src/styles/root-responsive-coordination.css');
