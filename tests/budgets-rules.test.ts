@@ -45,6 +45,17 @@ describe('monthly category budgets',()=>{
     expect(budgetProgress(data,'2026-08').find(row=>row.id==='food')?.status).toBe('exceeded');
   });
 
+  it('reflects budget edits and deletion immediately from canonical state',()=>{
+    const data=clean();
+    data.state.events=[createEvent({kind:'expense',date:'2026-08-05',amount:90,note:'Food',category:'Τρόφιμα',accountId:'piraeus-payroll'})];
+    data.state.budgets=[budget('food','category',100,'Τρόφιμα')];
+    expect(budgetProgress(data,'2026-08').find(row=>row.id==='food')).toMatchObject({limit:100,used:90,status:'near'});
+    data.state.budgets=[budget('food','category',200,'Τρόφιμα')];
+    expect(budgetProgress(data,'2026-08').find(row=>row.id==='food')).toMatchObject({limit:200,used:90,status:'ok'});
+    data.state.budgets=[];
+    expect(budgetProgress(data,'2026-08')).toEqual([]);
+  });
+
   it('floors refund-heavy usage at zero instead of producing negative consumption',()=>{
     const data=clean();data.state.events=[createEvent({kind:'refund',date:'2026-08-05',amount:50,note:'Refund',category:'Τρόφιμα',accountId:'piraeus-payroll'})];data.state.budgets=[budget('food','category',100,'Τρόφιμα')];
     expect(budgetProgress(data,'2026-08')[0]).toMatchObject({rawUsed:-50,used:0,remaining:100,status:'ok'});
