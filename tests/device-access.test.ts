@@ -1,9 +1,16 @@
 import { existsSync, readFileSync } from 'node:fs';
-import { describe, expect, it } from 'vitest';
-import { accessTokenSessionId } from '../server/deviceSessionRegistry.js';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { accessTokenSessionId, ensureDeviceSessionAccess } from '../server/deviceSessionRegistry.js';
+import { ApiError } from '../server/http.js';
 
 const read=(path:string)=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const token=(claims:Record<string,unknown>)=>`header.${Buffer.from(JSON.stringify(claims)).toString('base64url')}.signature`;
+
+afterEach(()=>{
+  vi.unstubAllGlobals();
+  delete process.env.SUPABASE_URL;
+  delete process.env.SUPABASE_PUBLISHABLE_KEY;
+});
 
 describe('connected device access',()=>{
   it('uses the canonical Supabase session_id claim as the device-session identity',()=>{
@@ -11,6 +18,27 @@ describe('connected device access',()=>{
     expect(accessTokenSessionId(token({session_id:id,aal:'aal2'}))).toBe(id);
     expect(accessTokenSessionId(token({session_id:'not-a-uuid'}))).toBe('');
     expect(accessTokenSessionId('invalid')).toBe('');
+  });
+
+  it('keeps AAL2 sessions usable before the registry migration exists',async()=>{
+    process.env.SUPABASE_URL='https://example.supabase.co';process.env.SUPABASE_PUBLISHABLE_KEY='publishable';
+    vi.stubGlobal('fetch',vi.fn(async()=>new Response(JSON.stringify({code:'PGRST205',message:"Could not find the table 'public.myfinhub_device_sessions'"}),{status:404,headers:{'content-type':'application/json'}})));
+    const access=token({session_id:'123e4567-e89b-42d3-a456-426614174000',aal:'aal2'});
+    await expect(ensureDeviceSessionAccess({headers:{}},access,'owner-1')).resolves.toBeNull();
+  });
+
+  it('registers a missing active device row and fails closed for a revoked row',async()=>{
+    process.env.SUPABASE_URL='https://example.supabase.co';process.env.SUPABASE_PUBLISHABLE_KEY='publishable';
+    const sessionId='123e4567-e89b-42d3-a456-426614174000';const access=token({session_id:sessionId,aal:'aal2'});
+    const fetchMock=vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify([]),{status:200,headers:{'content-type':'application/json'}}))
+      .mockResolvedValueOnce(new Response(JSON.stringify([{session_id:sessionId,user_id:'owner-1',platform:'web',device_label:'Web browser',app_version:null,first_seen_at:'2026-09-28T00:00:00.000Z',last_seen_at:'2026-09-28T00:00:00.000Z',revoked_at:null}]),{status:201,headers:{'content-type':'application/json'}}));
+    vi.stubGlobal('fetch',fetchMock);
+    await expect(ensureDeviceSessionAccess({headers:{}},access,'owner-1')).resolves.toMatchObject({session_id:sessionId,revoked_at:null});
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+
+    vi.stubGlobal('fetch',vi.fn(async()=>new Response(JSON.stringify([{session_id:sessionId,user_id:'owner-1',platform:'web',device_label:'Web browser',app_version:null,first_seen_at:'2026-09-28T00:00:00.000Z',last_seen_at:'2026-09-28T00:00:00.000Z',revoked_at:'2026-09-28T01:00:00.000Z'}]),{status:200,headers:{'content-type':'application/json'}})));
+    try{await ensureDeviceSessionAccess({headers:{}},access,'owner-1');throw new Error('expected revoked access to fail')}catch(error){expect(error).toBeInstanceOf(ApiError);expect((error as ApiError).code).toBe('DEVICE_ACCESS_REVOKED')}
   });
 
   it('keeps the registry owner/AAL2 scoped and folds active device access into finance RLS',()=>{
