@@ -58,6 +58,20 @@ describe('cross-page UI consistency contracts',()=>{
     expect(hardening).toContain('min-height:44px');
   });
 
+  it('keeps routed pages off legacy neumorphic JSX hooks',()=>{
+    for(const file of routedPages){
+      const source=read(file);
+      expect(source,`${file} should use semantic surface classes`).not.toMatch(/\bneo-(?:raised|flat|inset)\b/);
+    }
+  });
+
+  it('prevents raw generic action chrome from bypassing shared Button primitives',()=>{
+    const genericRaw=/<button\b[^>]*className=(?:"[^"]*"|'[^']*'|\{`[^`]*`\})[^>]*\b(?:save-button|secondary|text-button|icon-button)\b/i;
+    for(const file of routedPages){
+      const source=read(file);
+      expect(source,`${file} should not recreate generic button chrome`).not.toMatch(genericRaw);
+    }
+  });
   it('reuses existing shared controls in card creation without adding eager global CSS',()=>{
     const main=read('src/main.tsx');
     const cardDialog=read('src/components/CardCreateDialog.tsx');
