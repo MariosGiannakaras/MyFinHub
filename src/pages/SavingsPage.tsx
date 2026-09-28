@@ -15,6 +15,7 @@ import { accountBalances, createEvent } from '../lib/domain';
 import { financeAccountChoices } from '../lib/accountSelection';
 import { money, shortDate } from '../lib/format';
 import { SAVING_SOURCE_LABELS, operationalMonthlyFlow, savingsBreakdown, savingsHistoryPresentation } from '../lib/savings';
+import { savingsGoalBalance, savingsGoalProgress } from '../lib/savingsGoals';
 import { accountDisplayName, ratioPercent } from '../lib/ui';
 import { userErrorMessage } from '../lib/userMessage';
 import type { FinanceData, FinanceEvent, SavingSource, SavingsGoal } from '../types';
@@ -43,7 +44,7 @@ export function SavingsPage({data,month,asOf,onCreate,onQuickAdd,onSavingsTarget
   const defaultTo=accountChoices.savings?.id??'';
   const sourceName=defaultFrom?accountDisplayName(data,defaultFrom):'Δεν έχει οριστεί';
   const savingsName=defaultTo?accountDisplayName(data,defaultTo):'Δεν έχει οριστεί';
-  const savingsBalance=savingsAccounts.reduce((sum,account)=>sum+Math.max(0,balances[account.id]||0),0);
+  const savingsBalance=savingsGoalBalance(data,asOf);
   const goals=data.state.savingsGoals??[];
   const [year,monthNumber]=month.split('-').map(Number);
   const daysInMonth=new Date(Date.UTC(year,monthNumber,0)).getUTCDate();
@@ -116,10 +117,7 @@ export function SavingsPage({data,month,asOf,onCreate,onQuickAdd,onSavingsTarget
     onUpsertGoal({...goalEdit,name,targetAmount,targetDate:goalEdit.targetDate||null,updatedAt:new Date().toISOString()});
     closeGoal();
   };
-  const goalRows=goals.map(goal=>{
-    const goalProgress=Math.min(100,goal.targetAmount>0?savingsBalance/goal.targetAmount*100:0);
-    return {goal,progress:goalProgress};
-  });
+  const goalRows=goals.map(goal=>({goal,progress:savingsGoalProgress(goal,savingsBalance)}));
   const renderGoals=(surface:'desktop'|'mobile')=><section className={`panel neo-raised savings-goals savings-goals-${surface}`} aria-labelledby={`savings-goals-title-${surface}`}>
     <div className="panel-head"><div><span id={`savings-goals-title-${surface}`}>Στόχοι αποταμίευσης</span><small>Οι προσωπικοί στόχοι συγκρίνονται με το συνολικό θετικό υπόλοιπο των αποταμιευτικών λογαριασμών· δεν δεσμεύουν ξεχωριστά χρήματα.</small></div><Button type="button" variant="secondary" onClick={()=>startGoal()}><Plus size={15}/> Νέος στόχος</Button></div>
     <div className="savings-goals-head"><span>Στόχος</span><span>Πρόοδος</span><span>Αποταμιευμένα</span><span>Στόχος</span><span>Προθεσμία</span></div>
