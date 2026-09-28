@@ -5,6 +5,7 @@ import { AppDateInput } from '../components/AppDateInput';
 import { AppSelectInput } from '../components/AppSelectInput';
 import { AppTextInput } from '../components/AppTextInput';
 import { Button } from '../components/Button';
+import { PageHeader } from '../components/PageHeader';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { FormError } from '../components/FormError';
 import { IconButton } from '../components/IconButton';
@@ -157,7 +158,7 @@ export function SavingsPage({data,month,asOf,onCreate,onQuickAdd,onSavingsTarget
   const actionGrid=<div className="savings-action-grid">{ACTIONS.map(action=>{const Icon=action.icon;return <button type="button" className="panel surface-raised savings-action" key={action.source} aria-label={`Νέα αποταμίευση: ${action.title}`} onClick={()=>start(action.source)}><span className="savings-action-icon"><Icon aria-hidden="true"/></span><div><b>{action.title}</b><small>{action.description}</small></div><strong>Νέα κίνηση <ArrowRight aria-hidden="true"/></strong></button>})}</div>;
 
   return <div className="page-stack savings-page">
-    <section className="page-heading"><div><span className="eyebrow">ΑΠΟΤΑΜΙΕΥΣΗ</span><h1>Αποταμίευση</h1><p>Διάλεξε πρώτα τι θέλεις να κάνεις: Pay & Save, απλή μεταφορά ή σύνθετη αποταμίευση. Οι τρεις επιλογές μετρούν μία φορά στην πραγματική αποταμίευση.</p></div></section>
+    <PageHeader eyebrow="ΑΠΟΤΑΜΙΕΥΣΗ" title="Αποταμίευση" description={<p>Διάλεξε πρώτα τι θέλεις να κάνεις: Pay & Save, απλή μεταφορά ή σύνθετη αποταμίευση. Οι τρεις επιλογές μετρούν μία φορά στην πραγματική αποταμίευση.</p>}/>
 
     <section className="savings-action-section" aria-labelledby="savings-actions-title">
       <div className="section-title"><div><span id="savings-actions-title">Πώς θέλεις να αποταμιεύσεις;</span><b>Οι τρεις επιλογές χρησιμοποιούν το ίδιο canonical savings flow, με διαφορετική πηγή.</b></div></div>
