@@ -63,6 +63,19 @@ describe('cross-page UI consistency contracts',()=>{
     expect(hardening).toContain('min-height:44px');
   });
 
+  it('keeps AppShell navigation and branding route-invariant',()=>{
+    const routeContinuity=read('src/styles/dashboard-route-shell-continuity.css');
+    const desktopAlignment=read('src/styles/dashboard-desktop-alignment.css');
+    const desktopFidelity=read('src/styles/dashboard-desktop-fidelity.css');
+    const dashboardLayers=routeContinuity+desktopAlignment+desktopFidelity;
+    expect(dashboardLayers).not.toContain('.app-shell:has(');
+    expect(dashboardLayers).not.toContain('html:has(.dashboard-approved)');
+    expect(dashboardLayers).not.toContain('body:has(.dashboard-approved)');
+    expect(desktopAlignment).not.toContain('.brand-block .brand-mark-icon');
+    expect(desktopFidelity).not.toContain('.sidebar nav button');
+    expect(routeContinuity).toContain('Global navigation, branding, topbar, search, period controls and quick-entry chrome');
+  });
+
   it('keeps routed pages off legacy neumorphic JSX hooks',()=>{
     for(const file of routedPages){
       const source=read(file);
