@@ -7,14 +7,14 @@ const controls=readFileSync(new URL('../src/styles/app-controls.css',import.meta
 
 describe('post-redesign disabled interaction state ownership',()=>{
   it('keeps primary actions inert while disabled',()=>{
-    expect(shell).toContain('.save-button:not(:disabled):hover');
-    expect(shell).toContain('.save-button:not(:disabled):active');
+    expect(shell).toContain('.save-button:enabled:hover');
+    expect(shell).toContain('.save-button:enabled:active');
     expect(shell).not.toContain('.save-button:hover{');
     expect(shell).not.toContain('.save-button:active{');
   });
 
   it('keeps shared icon and top actions inert while disabled',()=>{
-    expect(shell).toContain('.top-actions button:not(:disabled):hover,.icon-button:not(:disabled):hover');
+    expect(shell).toContain('.top-actions button:enabled:hover,.icon-button:enabled:hover');
     expect(shell).not.toContain('.top-actions button:hover,.icon-button:hover');
   });
 
