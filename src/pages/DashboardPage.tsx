@@ -9,7 +9,8 @@ import { FinanceIcon } from '../components/FinanceIcon';
 import type { QuickPrefill } from '../components/QuickAdd';
 import { budgetProgress } from '../lib/budgets';
 import { visibleAttentionItems } from '../lib/attention';
-import { allAccounts, effectiveLegacyTransactions, flowImpactEvent, flowImpactLegacy, monthRange } from '../lib/domain';
+import { effectiveLegacyTransactions, flowImpactEvent, flowImpactLegacy, monthRange } from '../lib/domain';
+import { financeAccountChoices } from '../lib/accountSelection';
 import { cashFlowForecast } from '../lib/forecast';
 import { money } from '../lib/format';
 import { activeRecurringItems } from '../lib/recurring';
@@ -52,18 +53,8 @@ function accountLegacyDelta(tx:LegacyTransaction,accountId:string){if(tx.type===
 
 export function DashboardPage({ data, month, asOf, motionMode='system', privacyVisible, onPrivacyVisibleChange, onQuickAdd: _onQuickAdd, onAccountQuickAdd, onTransactions, onPlanning, onAttention, onReports }: {data:FinanceData;month:string;asOf:string;motionMode?:'system'|'reduced'|'full';privacyVisible:boolean;onPrivacyVisibleChange:(visible:boolean)=>void;onQuickAdd:(prefill?:QuickPrefill)=>void;onAccountQuickAdd:(accountId:string,kind:string)=>void;onTransactions:()=>void;onPlanning:()=>void;onAttention:()=>void;onReports:()=>void}) {
   const systemReduced=useReducedMotion();const reduce=Boolean(systemReduced)||motionMode==='reduced';const animateCharts=motionMode==='full'&&!reduce;
-  const flow=selectMonthlyFlow(data,month);const balances=selectAccountBalances(data,asOf);const accounts=allAccounts(data).filter(account=>account.kind!=='credit');
-  const preferredIds=[
-    accounts.find(account=>account.kind==='cash'&&account.cashRole==='daily')?.id,
-    data.state.settings.defaultExpenseAccount,
-    accounts.find(account=>account.kind==='savings'&&account.showInQuickChoices!==false)?.id,
-  ].filter((id):id is string=>Boolean(id));
-  const primaryIds:string[]=[];
-  for(const id of preferredIds){if(accounts.some(account=>account.id===id)&&!primaryIds.includes(id))primaryIds.push(id)}
-  for(const account of accounts){if(primaryIds.length>=3)break;if(account.showInQuickChoices!==false&&!primaryIds.includes(account.id))primaryIds.push(account.id)}
-  for(const account of accounts){if(primaryIds.length>=3)break;if(!primaryIds.includes(account.id))primaryIds.push(account.id)}
-  const primary=primaryIds.map(id=>accounts.find(account=>account.id===id)).filter(Boolean) as Account[];
-  const primaryIdSet=new Set(primaryIds);const remaining=accounts.filter(account=>!primaryIdSet.has(account.id));
+  const flow=selectMonthlyFlow(data,month);const balances=selectAccountBalances(data,asOf);const accountChoices=financeAccountChoices(data);const accounts=accountChoices.accounts;
+  const primary=accountChoices.dashboardPrimary;const primaryIdSet=new Set(primary.map(account=>account.id));const remaining=accounts.filter(account=>!primaryIdSet.has(account.id));
   const categories=selectCategoryTotals(data,month).slice(0,6);const range=monthRange(month);const savingsTargetRate=data.state.settings.savingsTargetRate??.2;
   const previousMonth=shiftMonth(month,-1);const previousRange=monthRange(previousMonth);const previousMonthLabel=formatMonthLabel(previousMonth);const previousFlow=selectMonthlyFlow(data,previousMonth);
   const balanceMonth=asOf.slice(0,7);const balancePreviousMonth=shiftMonth(balanceMonth,-1);const balancePreviousRange=monthRange(balancePreviousMonth);const balancePreviousMonthLabel=formatMonthLabel(balancePreviousMonth);const balancePreviousBalances=selectAccountBalances(data,balancePreviousRange.end);const balanceFlow=selectMonthlyFlow(data,balanceMonth);
