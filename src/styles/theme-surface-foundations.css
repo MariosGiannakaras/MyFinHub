@@ -19,8 +19,7 @@ button{color:inherit}
 button:focus-visible,input:focus-visible,select:focus-visible{outline:none;box-shadow:var(--focus)!important}
 button{min-width:24px;min-height:24px}
 
-/* Canonical surfaces. Legacy neo-* names remain temporary aliases so older page hooks
-   inherit the same flat system while JSX migrates to Surface. */
-.surface-raised,.neo-raised{background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow-raised)}
-.surface-inset,.neo-inset{background:var(--surface-2);border:1px solid var(--line);box-shadow:none}
-.surface-flat,.neo-flat{background:rgba(255,255,255,.92);border:1px solid var(--line);box-shadow:0 1px 3px rgba(24,45,78,.05)}
+/* Canonical semantic surfaces. */
+.surface-raised{background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow-raised)}
+.surface-inset{background:var(--surface-2);border:1px solid var(--line);box-shadow:none}
+.surface-flat{background:rgba(255,255,255,.92);border:1px solid var(--line);box-shadow:0 1px 3px rgba(24,45,78,.05)}
