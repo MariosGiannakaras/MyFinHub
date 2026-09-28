@@ -69,9 +69,9 @@ try{
       await capture(page,'page',item.mode,item.width,item.height);
       if(page==='settings'){
         for(const tab of settingsTabs){
-          const clicked=await c.call("function(tab){const node=document.querySelector('[aria-controls="settings-panel-'+tab+'"]');if(!node)return false;node.click();return true}",[tab]);
+          const clicked=await c.call("function(tab){const node=[...document.querySelectorAll('[aria-controls]')].find(item=>item.getAttribute('aria-controls')==='settings-panel-'+tab);if(!node)return false;node.click();return true}",[tab]);
           if(!clicked)throw new Error(`Missing Settings tab ${tab}`);
-          await waitFor("function(tab){return document.querySelector('[aria-controls="settings-panel-'+tab+'"]')?.getAttribute('aria-selected')==='true'}",[tab],`settings tab ${tab}`);
+          await waitFor("function(tab){const node=[...document.querySelectorAll('[aria-controls]')].find(item=>item.getAttribute('aria-controls')==='settings-panel-'+tab);return node?.getAttribute('aria-selected')==='true'}",[tab],`settings tab ${tab}`);
           await sleep(80);
           await capture('settings',`tab-${tab}`,item.mode,item.width,item.height);
         }
