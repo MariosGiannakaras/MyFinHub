@@ -1,4 +1,5 @@
 import { saveCardSecret } from './cardVaultClient.js';
+import { deleteLocalCvv } from './localCvvVault.js';
 import type { PaymentCard } from '../types.js';
 
 type CardDetailsField='pan'|'expiry'|'cvv';
@@ -37,11 +38,13 @@ export function normalizeCardDetailsInput(input:{pan:string;expiry:string;cvv?:s
 export type CardDetailsPersistence={
   saveSecret:(cardId:string,secret:{pan?:string;expiry?:string;cvv?:string})=>Promise<{saved:true;last4:string|null}>;
   now:()=>string;
+  cleanupLocalCvv?:(cardId:string)=>Promise<void>;
 };
 
 const defaultPersistence:CardDetailsPersistence={
   saveSecret:saveCardSecret,
   now:()=>new Date().toISOString(),
+  cleanupLocalCvv:deleteLocalCvv,
 };
 
 export async function saveCardDetails(
@@ -52,6 +55,9 @@ export async function saveCardDetails(
 ):Promise<PaymentCard>{
   const normalized=normalizeCardDetailsInput(input,options);
   const receipt=await persistence.saveSecret(card.id,{pan:normalized.pan,expiry:normalized.expiry,cvv:normalized.cvv});
+  if(normalized.cvv&&persistence.cleanupLocalCvv){
+    try{await persistence.cleanupLocalCvv(card.id)}catch{/* Server persistence already succeeded; a stale local compatibility copy can be cleaned later. */}
+  }
   const candidateLast4=receipt.last4??(normalized.pan.length>=4?normalized.pan.slice(-4):null);
   const last4=candidateLast4&&/^\d{4}$/.test(candidateLast4)?candidateLast4:undefined;
   return {...card,last4,vaultRef:card.id,updatedAt:persistence.now()};
