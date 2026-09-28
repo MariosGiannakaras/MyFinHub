@@ -1,58 +1,7 @@
-/* Final owner-approved Dashboard desktop alignment. Loaded last on purpose. */
+/* Dashboard workspace alignment only. Global AppShell chrome is route-invariant. */
 .dashboard-approved-heading p{color:#60708b!important}
 
 @media(min-width:1410px){
-  html:has(.dashboard-approved),body:has(.dashboard-approved){scrollbar-width:none}
-  html:has(.dashboard-approved)::-webkit-scrollbar,body:has(.dashboard-approved)::-webkit-scrollbar{width:0;height:0}
-  .app-shell:has(.dashboard-approved) #main-workspace>div{transform:none!important}
-  .app-shell:has(.dashboard-approved) .workspace{padding-top:0!important}
-  .app-shell:has(.dashboard-approved) .command-search-action{
-    left:226px!important;
-    width:662px!important;
-    min-width:662px!important;
-    max-width:662px!important;
-  }
-  .app-shell:has(.dashboard-approved) .sidebar .primary-action{
-    right:371px!important;
-    width:142px!important;
-  }
-  /* Approved desktop topbar keeps History + Refresh beside the reporting month. */
-  .app-shell:has(.dashboard-approved) .top-actions>.app-tooltip:has(button[aria-label="Ανανέωση δεδομένων"]),
-  .app-shell:has(.sidebar nav button:first-child[aria-current="page"]) .top-actions>.app-tooltip:has(button[aria-label="Ανανέωση δεδομένων"]){
-    display:inline-flex!important;
-    position:static!important;
-    left:auto!important;
-    right:auto!important;
-    top:auto!important;
-    bottom:auto!important;
-    z-index:auto!important;
-  }
-  .app-shell:has(.dashboard-approved) .top-actions>.app-tooltip:has(button[aria-label="Ανανέωση δεδομένων"])>button,
-  .app-shell:has(.sidebar nav button:first-child[aria-current="page"]) .top-actions>.app-tooltip:has(button[aria-label="Ανανέωση δεδομένων"])>button{
-    width:40px!important;
-    height:40px!important;
-    min-width:40px!important;
-    min-height:40px!important;
-    border-radius:9px!important;
-    background:#fff!important;
-  }
-  .app-shell:has(.dashboard-approved) .period-row,
-  .app-shell:has(.sidebar nav button:first-child[aria-current="page"]) .period-row{
-    position:fixed!important;
-    top:9px!important;
-    right:12px!important;
-    width:190px!important;
-    height:40px!important;
-    margin:0!important;
-    padding:0!important;
-    border:1px solid #e2eaf4!important;
-    border-radius:9px!important;
-    background:#fbfdff!important;
-    box-shadow:0 3px 10px rgba(34,65,105,.05)!important;
-    z-index:72!important;
-  }
-  .app-shell:has(.dashboard-approved) .period-row>[data-qa-crash],
-  .app-shell:has(.sidebar nav button:first-child[aria-current="page"]) .period-row>[data-qa-crash]{display:none!important}
   .dashboard-approved{padding-top:0}
   .dashboard-approved-heading{min-height:73px}
   .dashboard-approved-heading .privacy-toggle{min-width:136px;transform:translateY(7px)}
@@ -79,32 +28,6 @@
 }
 
 @media(min-width:981px){
-  .app-shell:has(.dashboard-approved) .brand-block .brand-mark-icon{
-    position:relative;
-    width:39px;
-    height:39px;
-    min-width:39px;
-    border-radius:9px;
-    overflow:hidden;
-    display:grid;
-    place-items:center;
-    background:linear-gradient(145deg,#1b9cff 0%,#0876ed 58%,#075dcc 100%);
-    box-shadow:0 3px 8px rgba(11,108,218,.22);
-  }
-  .app-shell:has(.dashboard-approved) .brand-block .brand-mark-icon .brand-mark-image{display:none!important}
-  .app-shell:has(.dashboard-approved) .brand-block .brand-mark-icon::before{
-    content:"MF";
-    color:#fff;
-    font-family:Arial,Helvetica,sans-serif;
-    font-size:17px;
-    font-weight:760;
-    line-height:1;
-    letter-spacing:-.04em;
-  }
-  .app-shell:has(.dashboard-approved) .brand-block .brand-mark-copy{gap:1px}
-  .app-shell:has(.dashboard-approved) .brand-block .brand-word{font-size:21px;line-height:1.05;letter-spacing:-.035em}
-  .app-shell:has(.dashboard-approved) .brand-block .brand-mark-copy small{font-size:8.5px;line-height:1.2;color:#61708a}
-
   .dashboard-approved .approved-secondary-account .bank-brand-mark.bankmark-alpha,
   .dashboard-approved .approved-secondary-account .bank-brand-mark.bankmark-revolut,
   .dashboard-approved .approved-secondary-account .bank-brand-mark.bankmark-national,
@@ -158,14 +81,4 @@
     line-height:1;
     transform:skewX(-18deg);
   }
-}
-
-@media(min-width:981px) and (max-width:1179px){
-  .app-shell:has(.dashboard-approved) .period-row{
-    position:absolute!important;
-    top:-51px!important;
-    right:12px!important;
-    margin:0!important;
-  }
-  .app-shell:has(.dashboard-approved) .period-row>[data-qa-crash]{display:none!important}
 }
