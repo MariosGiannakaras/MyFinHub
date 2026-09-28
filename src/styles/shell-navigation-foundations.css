@@ -6,8 +6,8 @@
 .brand-word span{color:var(--cyan)}
 .brand-block small{display:block;color:var(--muted);font-size:9px;margin-top:2px}
 .save-button{border:0;border-radius:13px;background:linear-gradient(135deg,#2f6fed,#174ea6);color:white;font-weight:750;padding:11px 13px;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 9px 18px rgba(47,111,237,.25),inset 0 1px 0 rgba(255,255,255,.3);cursor:pointer;transition:transform .15s ease,box-shadow .15s ease}
-.save-button:hover{transform:translateY(-1px);box-shadow:0 12px 23px rgba(47,111,237,.28)}
-.save-button:active{transform:translateY(1px) scale(.99)}
+.save-button:enabled:hover{transform:translateY(-1px);box-shadow:0 12px 23px rgba(47,111,237,.28)}
+.save-button:enabled:active{transform:translateY(1px) scale(.99)}
 .sidebar nav{display:grid;gap:4px;margin-top:13px}
 .sidebar nav button{border:0;background:transparent;border-radius:12px;padding:10px 11px;display:flex;align-items:center;gap:11px;color:#395077;font-size:12px;font-weight:620;cursor:pointer;transition:.15s ease;text-align:left}
 .sidebar nav button:hover{background:rgba(255,255,255,.65);transform:translateX(2px)}
@@ -27,7 +27,7 @@
 .topbar{height:62px;border-radius:20px;display:grid;grid-template-columns:1fr auto;align-items:center;padding:0 15px;position:sticky;top:14px;z-index:25}
 .top-actions{grid-column:2;display:flex;align-items:center;gap:8px}
 .top-actions button,.icon-button{border:1px solid rgba(255,255,255,.85);background:linear-gradient(145deg,#fff,#ecf2f9);box-shadow:var(--shadow-soft);width:36px;height:36px;border-radius:12px;display:grid;place-items:center;cursor:pointer;transition:.15s}
-.top-actions button:hover,.icon-button:hover{transform:translateY(-1px);color:var(--blue)}
+.top-actions button:enabled:hover,.icon-button:enabled:hover{transform:translateY(-1px);color:var(--blue)}
 .has-dot{position:relative}
 .has-dot:after{content:"";width:7px;height:7px;background:#e4445b;border-radius:99px;position:absolute;right:7px;top:6px;border:2px solid white}
 .avatar{width:35px;height:35px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(135deg,#2f6fed,#24b8d5);color:white;font-weight:800;font-size:12px}

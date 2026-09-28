@@ -23,10 +23,10 @@ Use this checklist as the durable cross-app audit record. Mark a row complete on
 | Primary / secondary / destructive action hierarchy | COMPLETE | Batches 2–3 / PRs #422–#423 exhausted the current exact-class generic action audit. Class-equivalent actions use shared `Button`; domain/composite raw controls remain intentionally excluded where geometry or semantics differ. |
 | Page heading / right-side action alignment | COMPLETE | Batch 4 / PR #424 restored the historical `.heading-actions{display:flex;gap:8px}` invariant without changing route-specific heading compositions. Exact post-merge CI, CodeQL and Windows Desktop are green on `develop@6d911a11`. |
 | Dialog / popover ownership, focus and Escape behavior | IN PROGRESS | Current-tree audit found no orphan modal surfaces: every `role="dialog"` / `alertdialog` is owned by `DialogShell` or `useModalFocus`, and multi-dialog pages have one focus owner per direct `aria-modal`. Batch 5 adds a cross-app source guard; no production UI refactor is needed. |
-| Loading / success / error feedback | IN PROGRESS | Global persistence and auth busy/error states already use appropriate polite/assertive live regions. Audit found generic finance form errors split between shared `FormError` and hand-built equivalent markup; Batch 6 canonicalizes only the exact-equivalent cases. |
-| Hover / focus / pressed / disabled states | NOT STARTED | Verify shared primitives first, then only true one-off gaps. |
-| Motion / reduced-motion behavior | NOT STARTED | No decorative animation additions without a clear state/causality purpose. |
-| Responsive / touch targets | NOT STARTED | Recheck desktop and mobile only after bounded control changes. |
+| Loading / success / error feedback | COMPLETE | Batch 6 / PR #426 canonicalized exact-equivalent generic finance form errors onto shared `FormError`; persistence/auth/action-status live-region contracts remain intact. Exact post-merge CI, CodeQL and Windows Desktop are green on `develop@89f9ed63`. |
+| Hover / focus / pressed / disabled states | IN PROGRESS | Global focus-visible and pressed-state ownership are already present. Final Batch 7 applies the approved disabled-safe interaction fix and guards the contract. |
+| Motion / reduced-motion behavior | IN PROGRESS | Parallel audit found global reduced-motion coverage for both OS preference and in-app reduced mode; Final Batch 7 adds a source guard with no production motion change. |
+| Responsive / touch targets | IN PROGRESS | Parallel audit found existing mobile sizing/safe-area contracts sufficient; Final Batch 7 adds a source guard and removes one redundant no-op mobile privacy-toggle declaration. |
 
 ## Batch 1 — shared close-control ownership
 
@@ -158,7 +158,9 @@ Validation:
 
 ## Batch 6 — canonical finance form feedback ownership
 
-Branch: `chore/348-canonical-form-feedback`
+Branch: `chore/348-canonical-form-feedback`  
+PR: #426  
+Merged: `develop@89f9ed63ea735d939823ab050995681971a7be79`
 
 Audit result:
 - `PersistenceNotice` already owns global loading/saving/saved/error/conflict announcements with polite status vs assertive alert semantics;
@@ -175,14 +177,51 @@ Scope:
 - add a source guard for generic error ownership plus persistence/action-status live-region semantics;
 - no CSS or intended visual change.
 
+Validation:
+- final clean PR head `b57cd190d7e7e83c49fc7af8b788423e4b960891` passed CI `36357490865`, CodeQL `36357490804`, Cross-engine `36357490802`, Performance `36357490864` and Windows Desktop `36357490796`;
+- Visual QA persistence passed on the implementation head before generated snapshot churn was removed from the final net diff;
+- final clean diff contained exactly nine intended files, 0 `visual-qa/**`, 0 unresolved threads and branch 0 behind;
+- exact post-merge `develop@89f9ed63ea735d939823ab050995681971a7be79` passed CI `36358526626`, CodeQL `36358526618` and Windows Desktop `36358526641`.
+
+## Batch 7 — final interaction, motion and responsive contracts
+
+Branch: `chore/348-disabled-interaction-state-guards`  
+PR: #427
+
+Interaction-state audit:
+- global keyboard focus ownership already exists through the shared `:focus-visible` contract;
+- secondary/ghost interaction selectors already gate hover/press behavior behind disabled-safe selectors;
+- current `aria-pressed` controls expose explicit active styling or visible icon/label state;
+- legacy base selectors still allowed disabled primary `.save-button`, shared `.icon-button` and top-action buttons to inherit desktop hover/press transforms.
+
+Approved bounded interaction fix:
+- `.save-button:hover` -> `.save-button:enabled:hover`;
+- `.save-button:active` -> `.save-button:enabled:active`;
+- `.top-actions button:hover,.icon-button:hover` -> disabled-safe `:enabled` equivalents;
+- preserve all enabled hover/press visuals, colors, sizing, spacing and semantics.
+
+Motion / reduced-motion audit:
+- `reduced-motion-contract.css` globally constrains animation duration, iteration count, transition duration and scroll behavior for in-app `data-motion="reduced"`;
+- `root-responsive-coordination.css` applies the same global contract for `prefers-reduced-motion: reduce`;
+- no orphan production animation requires a separate fix;
+- add a source guard only; no new animation or visual behavior.
+
+Responsive / touch audit:
+- phone form controls keep at least 46px control height and 16px input text;
+- major mobile actions keep explicit 44px+ targets, mobile navigation 50px and mobile-more destinations 56px;
+- compact icon actions retain the existing 40px accessibility floor while late workspace polish intentionally uses 42px where applicable;
+- safe-area inset handling is already present in shell/navigation/editor geometry;
+- remove the redundant mobile `.privacy-toggle{min-height:44px}` redeclaration because the identical unscoped rule already owns the value.
+
 Validation target:
-- one consolidated exact-head PR cycle;
-- no finance, auth, persistence, routing, API, database or Windows behavior change;
+- one consolidated exact-head PR cycle for the final #348 batch;
+- keep CSS bundle within the existing budget; do not raise the budget;
+- no component markup, finance, auth, persistence, routing, API, database or Windows behavior change;
 - no `visual-qa/**` files in the final net diff.
 
-## Next audit slice
+## Final closure
 
-After Batch 6 is merged and verified on `develop`:
-1. mark loading/success/error feedback complete unless rendered QA exposes a concrete gap;
-2. audit hover/focus/pressed/disabled states across shared primitives and remaining domain controls;
-3. keep motion/reduced-motion and responsive/touch audits as separate bounded slices.
+After PR #427 is merged and exact post-merge checks pass:
+1. mark interaction, motion/reduced-motion and responsive/touch rows complete;
+2. add the final #348 checkpoint comment;
+3. close #348 if no new concrete regression is reported by the final validation cycle.
