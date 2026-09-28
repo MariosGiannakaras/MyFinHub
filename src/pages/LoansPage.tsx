@@ -86,9 +86,9 @@ export function LoansPage({data,asOf,onUpsertLoan,onCreateSelfLoan,onPayLoan}:{d
         {payments[0]?<span><b>{shortDate(payments[0].date)}</b> τελευταία</span>:null}
       </div>
       <div className="loan-list-actions">
-        <button type="button" onClick={()=>startEdit(loan)}><Pencil size={15}/> Επεξεργασία</button>
-        {!historical?<button type="button" className="pay" onClick={()=>startPay(loan)}><CheckCircle2 size={15}/> {self?'Επιστροφή':'Πληρωμή δόσης'}</button>:null}
-        {!historical&&self&&outstanding>.005?<button type="button" className="forgive" onClick={()=>requestForgive(loan)}><Scale size={15}/> Χάρισμα υπολοίπου</button>:null}
+        <Button type="button" variant="secondary" onClick={()=>startEdit(loan)}><Pencil size={15}/> Επεξεργασία</Button>
+        {!historical?<Button type="button" variant="primary" className="pay" onClick={()=>startPay(loan)}><CheckCircle2 size={15}/> {self?'Επιστροφή':'Πληρωμή δόσης'}</Button>:null}
+        {!historical&&self&&outstanding>.005?<Button type="button" variant="secondary" className="forgive" onClick={()=>requestForgive(loan)}><Scale size={15}/> Χάρισμα υπολοίπου</Button>:null}
       </div>
     </article>;
   };
