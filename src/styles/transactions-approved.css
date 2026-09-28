@@ -3,11 +3,11 @@
 .transactions-approved .transactions-approved-heading h1{font-size:30px;line-height:1.04;margin:3px 0 5px;color:#102365;letter-spacing:-.045em}
 .transactions-approved .transactions-approved-heading p{font-size:11px;color:#667896}
 .transactions-approved-summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;min-width:0}
-.transactions-summary-card{min-width:0;min-height:112px;border-radius:14px;padding:15px 16px;display:grid;grid-template-columns:48px minmax(0,1fr);gap:14px;align-items:center;background:rgba(250,252,255,.86);border:1px solid rgba(220,230,243,.78);box-shadow:0 5px 18px rgba(37,66,110,.055),inset 0 1px 0 rgba(255,255,255,.88)}
-.transactions-summary-icon{width:48px;height:48px;border-radius:12px;display:grid;place-items:center;background:#edf5ff;color:#1774db}
-.transactions-summary-card.income .transactions-summary-icon{background:#e7f8ef;color:#19aa69}
-.transactions-summary-card.expense .transactions-summary-icon{background:#fff0ef;color:#e03d39}
-.transactions-summary-card.net .transactions-summary-icon{background:#edf6ff;color:#1177dd}
+.transactions-summary-card{min-width:0;min-height:112px;border-radius:var(--radius-md);padding:15px 16px;display:grid;grid-template-columns:48px minmax(0,1fr);gap:14px;align-items:center;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow-soft)}
+.transactions-summary-icon{width:48px;height:48px;border-radius:var(--radius-sm);display:grid;place-items:center;background:var(--accent-soft);color:var(--accent)}
+.transactions-summary-card.income .transactions-summary-icon{background:var(--success-bg);color:var(--success)}
+.transactions-summary-card.expense .transactions-summary-icon{background:var(--error-bg);color:var(--error)}
+.transactions-summary-card.net .transactions-summary-icon{background:var(--info-bg);color:var(--info)}
 .transactions-summary-copy{min-width:0}
 .transactions-summary-copy small{display:block;color:#546987;font-size:10px;font-weight:700;margin-bottom:6px}
 .transactions-summary-copy strong{display:block;font-size:22px;line-height:1.1;letter-spacing:-.035em;color:#10265d}
@@ -32,7 +32,7 @@
 .transactions-approved-filter-button:hover{color:var(--blue);border-color:#b8ccee}
 .transactions-approved-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,310px);gap:10px;align-items:stretch;min-width:0;width:100%;box-sizing:border-box}
 .transactions-approved-grid.detail-closed{grid-template-columns:minmax(0,1fr)}
-.transactions-ledger-panel,.transactions-detail-panel{min-width:0;background:rgba(251,253,255,.9);border:1px solid rgba(218,228,241,.8);box-shadow:0 5px 18px rgba(35,63,104,.05);border-radius:14px;overflow:hidden}
+.transactions-ledger-panel,.transactions-detail-panel{min-width:0;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow-soft);border-radius:var(--radius-md);overflow:hidden}
 .transactions-approved-table-wrap{min-width:0;max-width:100%;overflow-x:auto}
 .transactions-approved-table{width:100%;max-width:100%;border-collapse:collapse;table-layout:fixed;font-size:10px;color:#405376}
 .transactions-approved-table th{height:38px;text-align:left;font-size:9px;font-weight:760;color:#4d6082;padding:0 8px;border-bottom:1px solid #dde5f0;background:#fbfdff;box-sizing:border-box}
