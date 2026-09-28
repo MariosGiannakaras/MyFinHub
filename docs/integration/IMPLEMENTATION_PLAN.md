@@ -392,8 +392,8 @@ Do not claim a gate passed based on an ancestor commit.
 
 # Phase 8 — Integration into develop
 
-- [ ] Ensure the implementation branch is up to date with current `develop`.
-- [ ] Resolve conflicts semantically in favor of the canonical design/decisions.
+- [x] Ensure the implementation branch is up to date with current `develop`.
+- [x] Resolve conflicts semantically in favor of the canonical design/decisions.
 - [ ] Re-run affected gates after conflict resolution.
 - [ ] Complete PR checklist.
 - [ ] Merge to `develop` only when all required checks are green.
