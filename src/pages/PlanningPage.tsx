@@ -5,6 +5,7 @@ import { AppDateInput } from '../components/AppDateInput';
 import { AppSelectInput } from '../components/AppSelectInput';
 import { AppTextInput } from '../components/AppTextInput';
 import { Button } from '../components/Button';
+import { PageHeader } from '../components/PageHeader';
 import { CategorySelectInput } from '../components/CategorySelectInput';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { FinanceIcon } from '../components/FinanceIcon';
@@ -126,7 +127,7 @@ export function PlanningPage({ data, asOf, onUpsertScheduled, onCompleteSchedule
   const lowAccounts = forecast.accounts.filter((row) => row.firstLowDate || row.firstNegativeDate);
 
   return <div className="page-stack planning-page">
-    <section className="page-heading"><div><span className="eyebrow">ΠΡΟΓΡΑΜΜΑΤΙΣΜΟΣ</span><h1>Προγραμματισμός & πρόβλεψη ρευστότητας</h1><p>Οι προγραμματισμένες κινήσεις είναι one-off σχέδια και δεν αλλάζουν τα πραγματικά υπόλοιπα. Η πρόβλεψη είναι ντετερμινιστική προβολή γνωστών ροών, όχι βεβαιότητα για το μέλλον.</p></div><Button type="button" variant="primary" onClick={startNew}><Plus size={17}/> Νέα προγραμματισμένη</Button></section>
+    <PageHeader eyebrow="ΠΡΟΓΡΑΜΜΑΤΙΣΜΟΣ" title="Προγραμματισμός & πρόβλεψη ρευστότητας" description={<p>Οι προγραμματισμένες κινήσεις είναι one-off σχέδια και δεν αλλάζουν τα πραγματικά υπόλοιπα. Η πρόβλεψη είναι ντετερμινιστική προβολή γνωστών ροών, όχι βεβαιότητα για το μέλλον.</p>} trailing={<Button type="button" variant="primary" onClick={startNew}><Plus size={17}/> Νέα προγραμματισμένη</Button>}/>
     {message ? <div className="action-status" role="status" aria-live="polite">{message}</div> : null}
 
     <PlanningApprovedDesktop data={data} asOf={asOf} pending={pending} history={history} onComplete={startComplete} onEdit={startEdit} onLifecycle={requestLifecycle}/>
