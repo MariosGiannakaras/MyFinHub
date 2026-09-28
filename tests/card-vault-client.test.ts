@@ -1,8 +1,12 @@
 import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { CardVaultClientError, cardVaultErrorMessage, saveCardSecret } from '../src/lib/cardVaultClient.js';
 
-afterEach(()=>{vi.unstubAllGlobals()});
+const {readLocalCvvMock}=vi.hoisted(()=>({readLocalCvvMock:vi.fn()}));
+vi.mock('../src/lib/localCvvVault.js',()=>({readLocalCvv:readLocalCvvMock}));
+
+import { CardVaultClientError, cardVaultErrorMessage, revealCardSecret, saveCardSecret } from '../src/lib/cardVaultClient.js';
+
+afterEach(()=>{vi.unstubAllGlobals();readLocalCvvMock.mockReset()});
 
 describe('card vault client source contract',()=>{
   it('uses legacy local CVV only as reveal fallback and never uploads it implicitly',()=>{
@@ -24,6 +28,16 @@ describe('card vault client',()=>{
     }));
     await saveCardSecret('card-1',{pan:'4242424242424242',expiry:'12/30',cvv:'123'});
     expect(JSON.parse(sent)).toEqual({cardId:'card-1',pan:'4242424242424242',expiry:'12/30',cvv:'123'});
+  });
+
+  it('reveals a legacy local CVV without silently uploading it to the server',async()=>{
+    const fetchMock=vi.fn(async()=>new Response(JSON.stringify({code:'CARD_SECRET_NOT_FOUND',error:'missing'}),{status:404,headers:{'content-type':'application/json'}}));
+    vi.stubGlobal('fetch',fetchMock);vi.stubGlobal('indexedDB',{});
+    readLocalCvvMock.mockResolvedValue('123');
+    await expect(revealCardSecret('card-legacy')).resolves.toEqual({cvv:'123'});
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(String(fetchMock.mock.calls[0]?.[1]?.method)).toBe('POST');
+    expect(readLocalCvvMock).toHaveBeenCalledWith('card-legacy');
   });
 
   it('maps card-security failures to direct user-facing copy',()=>{
