@@ -19,7 +19,7 @@ describe('RheomIQ ledger invariants',()=>{
         {id:'reserve',name:'Reserve',kind:'savings',excludeFromAvailable:true,showInQuickChoices:false},
       ],months:[],transactions:[],snapshots:[],recurring:[],subscriptions:[],loans:[],lending:[],stats:{}},
       state:{customTransactions:[],overrides:{},deleted:[],recurringCustom:[],recurringOverrides:{},loanExtra:{},loanOverrides:{},customLoans:[],lendingCustom:[],settings:{accountNames:{},expenseCategories:[],incomeCategories:[],customPresets:[],pinnedPresets:[]},savingsGoals:[{id:'goal-1',name:'Goal',targetAmount:100,createdAt:'2026-08-17T00:00:00Z',updatedAt:'2026-08-17T00:00:00Z'}]}
-    } as FinanceData);
+    } as unknown as FinanceData);
     expect(migrated.state.settings.defaultExpenseAccount).toBe('alpha-current');
     expect(migrated.state.settings.defaultIncomeAccount).toBe('alpha-current');
     expect(migrated.state.settings.defaultLoanAccount).toBe('alpha-current');
