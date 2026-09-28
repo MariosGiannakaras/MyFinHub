@@ -2,6 +2,7 @@ import { ArchiveRestore, CreditCard, Landmark, Plus, ShieldCheck, Trash2, Wallet
 import { useMemo, useState } from 'react';
 import { AppTextInput } from '../components/AppTextInput';
 import { Button } from '../components/Button';
+import { PageHeader } from '../components/PageHeader';
 import { CardCreateDialog } from '../components/CardCreateDialog';
 import { CardDetailsDialog } from '../components/CardDetailsDialog';
 import { ConfirmDialog } from '../components/ConfirmDialog';
@@ -99,7 +100,7 @@ export function CardsPage({
   };
 
   return <div className="page-stack cards-prototype-page">
-    <section className="page-heading"><div><span className="eyebrow">ΚΑΡΤΕΣ</span><h1>Κάρτες</h1><p className="cards-heading-desktop">Οι χρεωστικές και προπληρωμένες κάρτες σου, συγκεντρωμένες με ασφάλεια ανά τράπεζα.</p><p className="cards-heading-mobile">Χρεωστικές και προπληρωμένες κάρτες μόνο για ασφαλή αποθήκευση και προβολή των στοιχείων τους. Οι συναλλαγές καταχωρούνται στους αντίστοιχους λογαριασμούς, όχι στις κάρτες.</p></div><div className="heading-actions"><Button type="button" variant="primary" onClick={()=>{setBankName('');setError('');setBankOpen(true)}}><Plus/> Προσθήκη τράπεζας</Button></div></section>
+    <PageHeader eyebrow="ΚΑΡΤΕΣ" title="Κάρτες" description={<><p className="cards-heading-desktop">Οι χρεωστικές και προπληρωμένες κάρτες σου, συγκεντρωμένες με ασφάλεια ανά τράπεζα.</p><p className="cards-heading-mobile">Χρεωστικές και προπληρωμένες κάρτες μόνο για ασφαλή αποθήκευση και προβολή των στοιχείων τους. Οι συναλλαγές καταχωρούνται στους αντίστοιχους λογαριασμούς, όχι στις κάρτες.</p></>} actions={<Button type="button" variant="primary" onClick={()=>{setBankName('');setError('');setBankOpen(true)}}><Plus/> Προσθήκη τράπεζας</Button>}/>
 
     <section className="cards-surrounding-summary" aria-label="Σύνοψη αποθηκευμένων καρτών">
       <article className="cards-surrounding-kpi"><span className="cards-surrounding-kpi-icon banks"><Landmark/></span><div><small>Τράπεζες</small><strong>{banks.length}</strong><span>με ξεχωριστή στήλη καρτών</span></div></article>
