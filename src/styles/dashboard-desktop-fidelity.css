@@ -1,18 +1,7 @@
-/* Final 1440px owner-approved Dashboard fidelity pass.
-   Geometry stays in part48/part51; this layer only restores the visual type scale
-   and information density visible in the approved desktop reference. */
+/* Dashboard content-density pass.
+   AppShell/navigation typography is intentionally excluded so route changes never
+   alter global chrome, branding or navigation geometry. */
 @media(min-width:981px){
-  .app-shell:has(.dashboard-approved) .sidebar nav:before{font-size:9px}
-  .app-shell:has(.dashboard-approved) .sidebar nav button{font-size:13px;font-weight:680}
-  .app-shell:has(.dashboard-approved) .sidebar nav button:nth-child(2):before,
-  .app-shell:has(.dashboard-approved) .sidebar nav button:nth-child(9):before,
-  .app-shell:has(.dashboard-approved) .sidebar nav button:nth-child(12):before{font-size:9px}
-  .app-shell:has(.dashboard-approved) .sidebar .primary-action:after{font-size:11.5px}
-  .app-shell:has(.dashboard-approved) .command-search-action span:after{font-size:11px}
-  .app-shell:has(.dashboard-approved) .file-panel .file-line b:after{font-size:10px}
-  .app-shell:has(.dashboard-approved) .file-panel small:after{font-size:9px}
-  .app-shell:has(.dashboard-approved) .period-control{font-size:11px}
-
   .dashboard-approved-heading h1{font-size:28px}
   .dashboard-approved-heading p{font-size:11.5px}
   .dashboard-approved-heading .eyebrow{font-size:9px}
