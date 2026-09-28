@@ -7,31 +7,31 @@
 <p align="center">Private, single-owner personal finance workspace for Windows, web and mobile.</p>
 
 <p align="center">
-  <a href="https://github.com/MariosGiannakaras/MyFinHub/releases/download/myfinhub-v1.2.2/MyFinHub-Setup-1.2.2-x64.exe"><img alt="Download MyFinHub for Windows" src="https://img.shields.io/badge/Download%20for%20Windows-v1.2.2-2563EB?style=for-the-badge&logo=windows11&logoColor=white"></a>
-  <a href="https://github.com/MariosGiannakaras/MyFinHub/releases/latest"><img alt="Latest release" src="https://img.shields.io/badge/Release-v1.2.2-0F766E?style=for-the-badge"></a>
+  <a href="https://github.com/MariosGiannakaras/MyFinHub/releases/download/myfinhub-v1.3.0/MyFinHub-Setup-1.3.0-x64.exe"><img alt="Download MyFinHub for Windows" src="https://img.shields.io/badge/Download%20for%20Windows-v1.3.0-2563EB?style=for-the-badge&logo=windows11&logoColor=white"></a>
+  <a href="https://github.com/MariosGiannakaras/MyFinHub/releases/latest"><img alt="Latest release" src="https://img.shields.io/badge/Release-v1.3.0-0F766E?style=for-the-badge"></a>
   <a href="CHANGELOG.md"><img alt="Changelog" src="https://img.shields.io/badge/Changelog-View-475569?style=for-the-badge"></a>
 </p>
 
 <p align="center">
   <a href="https://github.com/MariosGiannakaras/MyFinHub/releases">All releases</a> ·
-  <a href="https://github.com/MariosGiannakaras/MyFinHub/releases/tag/myfinhub-v1.2.2">v1.2.2 release notes</a> ·
-  <a href="https://github.com/MariosGiannakaras/MyFinHub/releases/download/myfinhub-v1.2.2/MyFinHub-Setup-1.2.2-x64.exe.sha256">SHA-256</a> ·
+  <a href="https://github.com/MariosGiannakaras/MyFinHub/releases/tag/myfinhub-v1.3.0">v1.3.0 release notes</a> ·
+  <a href="https://github.com/MariosGiannakaras/MyFinHub/releases/download/myfinhub-v1.3.0/MyFinHub-Setup-1.3.0-x64.exe.sha256">SHA-256</a> ·
   <a href="docs/WINDOWS_DESKTOP.md">Windows documentation</a>
 </p>
 
-> **Windows release:** download only `MyFinHub-Setup-1.2.2-x64.exe`. You do not need to clone or download the repository. The current personal-use build may be unsigned, so Windows can display **Unknown publisher / Microsoft Defender SmartScreen**. Installer integrity is protected by the published SHA-256 checksum and controlled GitHub Release channel.
+> **Windows release:** download only `MyFinHub-Setup-1.3.0-x64.exe`. You do not need to clone or download the repository. The current personal-use build may be unsigned, so Windows can display **Unknown publisher / Microsoft Defender SmartScreen**. Installer integrity is protected by the published SHA-256 checksum and controlled GitHub Release channel.
 
 ## Download and install
 
 1. Click **Download for Windows** above.
-2. Run `MyFinHub-Setup-1.2.2-x64.exe`.
+2. Run `MyFinHub-Setup-1.3.0-x64.exe`.
 3. Choose the installation folder if desired; Setup creates Start Menu and Desktop shortcuts.
 4. On first launch, sign in with your MyFinHub account and complete TOTP verification. No Supabase or card-vault provisioning is required.
 5. Use **Ρυθμίσεις → Ενημερώσεις** for future desktop update checks.
 
 The installed application contains its own Electron host, bundled Node.js runtime and local backend. Normal use does not require Git, Node.js, a terminal or a browser.
 
-The v1.2.2 Windows package owns its public Supabase client configuration, so a normal user is never asked for infrastructure values. If the local backend cannot start, the recovery window remains available with a structured error code/stage, safe redacted diagnostics and retry capability rather than closing with a generic failure.
+The v1.3.0 Windows package owns its public Supabase client configuration, so a normal user is never asked for infrastructure values. If the local backend cannot start, the recovery window remains available with a structured error code/stage, safe redacted diagnostics and retry capability rather than closing with a generic failure.
 
 ## What MyFinHub manages
 
@@ -41,14 +41,14 @@ The v1.2.2 Windows package owns its public Supabase client configuration, so a n
 - **Receipt capture & OCR:** camera/file JPG/PNG capture into a device-local pending inbox, Greek/English local OCR and deterministic reviewed suggestions into the existing Quick Entry flow. Receipt images and raw OCR are not cloud-synced or stored in FinanceData.
 - **Savings:** cash-offset saving and savings-account movements without corrupting spending totals.
 - **Recurring:** repeated obligations and long-term payment flows.
-- **Cards & credit:** unlimited cards per bank, protected PAN/expiry storage, same-device CVV recovery across archive/restore, and independent limits/debt/history for multiple credit cards.
+- **Cards & credit:** unlimited cards per bank, encrypted server-vault PAN/expiry/CVV synchronization across web, Windows and approved native clients, plus independent limits/debt/history for multiple credit cards.
 - **Loans & lending:** personal loans, installments, receivables and repayment history with normalized payment flows.
 - **Planning:** scheduled transactions and deterministic 30/60/90-day cash-flow forecasting.
 - **Budgets & rules:** monthly category budgets plus deterministic transaction categorization rules.
 - **Έλεγχος:** one action center for finance items that require follow-up or explicit confirmation, including legacy semantic candidates.
 - **Reports:** comparative KPIs, flow/trend views, commitment/credit pressure, category momentum and responsive drill-downs from the canonical finance state.
 - **Search & Command Palette:** privacy-safe navigation/search with app-wide keyboard shortcuts.
-- **Autosave + Undo/Redo + Change History:** normal edits persist automatically while remaining reversible, with session-only privacy-safe descriptions of recent changes.
+- **Autosave + Undo/Redo + Change History:** normal edits persist automatically while remaining reversible, with durable owner-only history stored outside FinanceData/backups and privacy-safe descriptions of recent changes.
 
 ## Keyboard shortcuts
 
@@ -82,7 +82,7 @@ The online runtime uses the Supabase publishable key, never a service-role secre
 
 Receipt capture/OCR is local-only: pending images live in device-local IndexedDB, OCR uses self-hosted Tesseract worker/WASM/Greek-English language assets, raw OCR text is transient, and receipt content is not written to FinanceData, Supabase, normal backups, Change History or application logs.
 
-Change History is session-only and deliberately excludes PAN, expiry secrets, CVV/CVC, vault references, transaction notes/descriptions and arbitrary private free-text.
+Change History is stored separately from FinanceData and normal backups under the owner+AAL2 boundary, and deliberately excludes PAN, expiry secrets, CVV/CVC, vault references, transaction notes/descriptions and arbitrary private free-text.
 
 Desktop updates are accepted only from the controlled MyFinHub GitHub Release channel. The app requires the exact versioned installer and `.sha256` asset pair, validates trusted GitHub URLs and verifies the downloaded installer hash before installation.
 
@@ -111,7 +111,7 @@ MyFinHub preserves the existing Excel-derived behavior rather than flattening ev
 
 ## Updates and release history
 
-The current stable Windows release is **v1.2.2**. See [`CHANGELOG.md`](CHANGELOG.md) for released and unreleased changes, or browse the complete [GitHub Releases](https://github.com/MariosGiannakaras/MyFinHub/releases) history.
+The current stable Windows release is **v1.3.0**. See [`CHANGELOG.md`](CHANGELOG.md) for released and unreleased changes, or browse the complete [GitHub Releases](https://github.com/MariosGiannakaras/MyFinHub/releases) history.
 
 Desktop releases use `myfinhub-v<version>` tags. The Windows release workflow verifies that the tag is already on `main`, builds and smoke-tests `MyFinHub.exe`, creates the interactive NSIS installer, generates SHA-256 metadata and publishes the controlled GitHub Release.
 
@@ -156,7 +156,7 @@ SUPABASE_URL=https://<project-ref>.supabase.co
 SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 ```
 
-Server-side/local-development PAN + expiry storage may additionally use the existing vault key. The packaged Windows application does **not** receive this key; its card-secret operations are proxied through the canonical protected production API:
+Server-side/local-development PAN/expiry/CVV storage uses the existing vault key. The packaged Windows application does **not** receive this key; its card-secret operations are proxied through the canonical protected production API:
 
 ```text
 CARD_VAULT_KEY=<server-side 64 hex chars or Base64 decoding to 32 bytes>
