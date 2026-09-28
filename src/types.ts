@@ -1,5 +1,7 @@
-type AccountKind = 'cash' | 'bank' | 'savings' | 'credit';
-type CashAccountRole = 'daily' | 'reserve';
+export type AccountKind = 'cash' | 'bank' | 'savings' | 'credit';
+export type CashAccountRole = 'daily' | 'reserve';
+export type BankAccountCategory = 'payroll' | 'current' | 'savings' | 'term' | 'payment' | 'other';
+export type CashAccountType = 'cash' | 'reserve' | 'other';
 export type SavingSource = 'pay_and_save' | 'manual_transfer' | 'cash_offset';
 export type RecurringStatus = 'active' | 'paused' | 'stopped';
 export type RecurrenceUnit = 'month' | 'year';
@@ -21,7 +23,10 @@ export interface Account {
   kind: AccountKind | string;
   excludeFromAvailable?: boolean;
   provider?: string;
+  providerId?: string;
+  bankAccountCategory?: BankAccountCategory;
   cashRole?: CashAccountRole;
+  cashType?: CashAccountType;
   showInQuickChoices?: boolean;
   custom?: boolean;
 }
