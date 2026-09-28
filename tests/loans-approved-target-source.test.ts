@@ -11,6 +11,13 @@ const workspaceCompat=readFileSync(new URL('../src/styles/workspace-compat.css',
 const approvedChain=readFileSync(new URL('../src/styles/approved-workspace-targets.css',import.meta.url),'utf8');
 
 describe('approved Loans desktop target source contract',()=>{
+  it('uses configured account defaults instead of a fixed bank account for self-loans',()=>{
+    expect(source).not.toContain("'piraeus-payroll'");
+    expect(source).toContain('data.state.settings.defaultLoanAccount');
+    expect(source).toContain('data.state.settings.defaultExpenseAccount');
+    expect(source).toContain("account.kind!=='savings'");
+  });
+
   it('keeps canonical loan calculations and existing handlers intact',()=>{
     expect(source).toContain('loanOutstanding(data,loan)');
     expect(source).toContain('loanPaidCount(data,loan)');
