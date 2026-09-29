@@ -1,6 +1,7 @@
 # MyFinHub repository rules
 
 - MyFinHub is a **single-owner** personal finance application. The GitHub repository and compatibility-critical internals may retain the historical RheomIQ name; do not rename stable database/migration/protocol identifiers merely for branding.
+- This repository owns the **web application and Windows/desktop implementation only**. Do not implement, refactor, fix, or otherwise change Android product code from work scoped to this repository. Android implementation is owned by a separate chat/agent and repository workflow. Android work is permitted only when the owner explicitly requests it, or when an agent explicitly proposes a specific Android change and the owner explicitly approves it before implementation. Cross-platform analysis may identify Android implications, but must stop at documenting them unless that approval exists.
 - Do not add user selection, teams, tenant switching, roles UI, public registration, or multi-user product features.
 - Production authentication is email/password plus mandatory TOTP MFA. Finance access must require the configured owner UID and an `aal2` session at both the API and PostgreSQL RLS boundaries.
 - Do not add Google/social OAuth, SSO, magic-link login, phone auth, or another identity provider unless the owner explicitly requests that architectural change. No alternate login path may bypass the mandatory MFA boundary.
