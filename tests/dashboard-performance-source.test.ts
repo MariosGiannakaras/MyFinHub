@@ -12,7 +12,9 @@ describe('Dashboard first-paint performance contract',()=>{
   });
 
   it('defers below-the-fold analytics until after the first paint without removing their fixed wrappers',()=>{
-    expect(dashboard).toContain('requestAnimationFrame(()=>{secondFrame=requestAnimationFrame(()=>setRenderDeferredCharts(true))})');
+    expect(dashboard).toContain('requestAnimationFrame(()=>{secondFrame=requestAnimationFrame(reveal)})');
+    expect(dashboard).toContain('window.setTimeout(reveal,700)');
+    expect(dashboard).toContain('window.clearTimeout(fallback)');
     expect(dashboard).toContain('className="approved-bar-wrap"');
     expect(dashboard).toContain('className="approved-category-donut"');
     expect(dashboard).toContain('className="summary-donut"');
