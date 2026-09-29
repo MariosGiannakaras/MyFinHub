@@ -92,6 +92,9 @@ describe('cross-page UI consistency contracts',()=>{
     const mobileShell=read('src/styles/mobile-app-shell.css');
     expect(mobileShell).toContain('.page-heading:has(+.primary-balance-grid){display:grid;grid-template-columns:minmax(0,1fr);');
     expect(mobileShell).toContain('.page-heading:has(+.primary-balance-grid) .heading-actions{width:100%;');
+    const dashboardTarget=read('src/styles/dashboard-approved-target.css');
+    expect(dashboardTarget).not.toContain('.dashboard-approved-heading p{display:block!important}');
+    expect(mobileShell).toContain('.page-heading:has(+.primary-balance-grid) p{display:none}');
 
   });
 
