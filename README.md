@@ -88,9 +88,9 @@ Desktop updates are accepted only from the controlled MyFinHub GitHub Release ch
 
 ## Authentic branding
 
-The application mark in this repository is the **original project artwork**, recovered byte-for-byte from the pre-rebrand Git history. It is the blue wallet with the `R` mark used by the original RheomIQ application. MyFinHub keeps that authentic mark while the visible product name remains **MyFinHub**.
+MyFinHub uses the owner-approved Brand Kit v2 identity: the blue wallet with the `MF` symbol, with distinct light and dark application artwork. The canonical web/desktop deployment assets live under `assets/branding/myfinhub/`, with stable runtime copies under `public/brand/` and the Windows setup derivative under `desktop/`.
 
-`assets/branding/myfinhub/icon-192.png` is the historical 192×192 source-of-truth. The 32×32 favicon and 512×512 Windows/PWA variants are deterministic size derivatives of that source; they are not replacement artwork or a newly invented `MF` logo.
+The supplied Brand Kit v2 SVG files were validated, but they are raster PNG artwork embedded inside SVG containers rather than true vector paths. The runtime therefore keeps the compact PNG derivatives and the existing 512×512 SVG wrappers instead of duplicating large pseudo-vector containers. Duplicate `vertical` lockups that are byte-identical to the corresponding `horizontal` files are not retained separately.
 
 Compatibility-critical historical identifiers such as `rheomiq_*` database objects and `RHEOMIQ_*` desktop/backend protocol variables remain intentionally unchanged because they are persistence/protocol contracts, not visible product branding.
 

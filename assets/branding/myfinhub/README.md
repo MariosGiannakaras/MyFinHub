@@ -1,30 +1,53 @@
 # MyFinHub brand assets
 
-This folder contains the canonical runtime artwork for the current MyFinHub identity. The previous pre-rebrand RheomIQ wallet/`R` artwork is no longer a runtime source.
+This folder contains the canonical web/desktop deployment artwork for the current MyFinHub identity.
 
-## Owner-supplied source set
+## Brand Kit v2 source
 
-The four source images supplied during the 2026-08-21 branding pass are JPEG/JFIF byte streams even though the client upload names used `.png`. Their source dimensions and SHA-256 fingerprints are:
+The current artwork was selected from the owner-supplied `MyFinHub_Brand_Kit_v2_REPACKED.zip` reviewed on 2026-09-29.
 
-- light square — 1536×1536 — `7ea970d91a5d0a01eaec49b8546e6d555ae60ea099644bc6c7265aabcf6c3a02`
-- dark square — 1536×1536 — `02466161914d0836bb8336a043e402583751f5569ec360bf135d6bf0df059dc0`
-- light horizontal wordmark — 1536×512 — `a82df276af4a5319daf2259ff8e51f6b660444699bea04b432b18eb122e7e69a`
-- dark horizontal wordmark — 1536×512 — `8e3c3236ebd972d017de2c273623486e52ef8deb364c5b9e5b91a62047093d5d`
+The approved identity uses the blue wallet / `MF` symbol with explicit theme variants:
 
-The source files have no alpha channel. Transparent runtime derivatives were generated from the supplied artwork; the source fingerprints above are the provenance record and must not be replaced by regenerated files.
+- light application tile: near-white `#F6F8FB`;
+- dark application tile: charcoal/navy `#171B24`;
+- application icons are symbol-only;
+- logo lockups may combine the symbol with the `MyFinHub` wordmark.
 
-## Runtime contract
+The supplied PNG set was validated successfully and the light/dark artwork was visually inspected at native and small icon sizes.
 
-- `icon-light-32.png` / `icon-dark-32.png`: native favicon-size derivatives.
-- `icon-light-192.png` / `icon-dark-192.png`: native web/auth/setup derivatives.
+## Web/desktop runtime contract
+
+Stable runtime paths are intentionally preserved so branding can be replaced without changing application components:
+
+- `icon-light-32.png` / `icon-dark-32.png`: 32×32 browser derivatives.
+- `icon-light-192.png` / `icon-dark-192.png`: 192×192 web/auth/setup derivatives.
 - `icon-32.png` / `icon-192.png`: light-theme compatibility aliases.
-- `icon-512.svg` / `icon-dark-512.svg`: scalable 512 wrappers referencing the corresponding 192 derivative; the web manifest uses the light wrapper.
-- `public/brand/` contains the runtime copies.
-- `public/favicon.png` is byte-identical to the light 32 derivative.
-- `desktop/setup-brand.png` is byte-identical to the dark 192 derivative.
-- Windows packaging generates its 512×512 PNG icon from `public/brand/icon-light-192.png` using high-quality System.Drawing interpolation during the packaging job.
-- `src/components/BrandMark.tsx` is the application-wide light/dark presentation contract. Theme switching is explicit through `html[data-theme="light|dark"]`; it does not infer a dark logo from the operating-system preference while the application surface is still light.
+- `icon-512.svg` / `icon-dark-512.svg`: existing scalable wrappers referencing the corresponding 192×192 PNG.
+- `public/brand/`: runtime copies.
+- `public/favicon.png`: byte-identical to the light 32×32 derivative.
+- `desktop/setup-brand.png`: byte-identical to the dark 192×192 derivative.
+- Windows packaging continues to generate its 512×512 application PNG from `public/brand/icon-light-192.png`.
+- `src/components/BrandMark.tsx` remains the application-wide light/dark presentation contract.
 
-The supplied horizontal images remain the design reference for the MyFinHub lockup. Runtime shell/auth lockups use the new square artwork together with the product word treatment so they remain responsive and theme-safe at small application sizes.
+The 32×32 files are the supplied Brand Kit v2 web assets. The 192×192 deployment PNGs are visually equivalent 256-colour optimized derivatives of the supplied 192×192 web assets; geometry and theme selection are unchanged.
+
+### Provenance
+
+Supplied Brand Kit v2 inputs used for web/desktop:
+
+| Asset | Source SHA-256 | Deployment SHA-256 |
+| --- | --- | --- |
+| light 32×32 | `b7f0aa48d17ba4c28ee2ab5ce321f0d718b949c2a68537cc5c005f8ea487ba72` | same |
+| dark 32×32 | `8bc5766f9ffe2b5fea8f8d6533c44799e855bd7c840136f37fb8606b393a9696` | same |
+| light 192×192 | `cb4997bf177b192ad7dd5ff8d2980490f0f01c854163d354fe392847a6f43c3e` | `926880ef9b839da92f6ef526d63e8da7fbaa5ef2be66581d3c6b3d88c06f5bbf` |
+| dark 192×192 | `3493abbc2b07af4b2f48f76b9532b9abe2818ffc15751524964b954ef8e556c6` | `ddcfcb32b8984dec69a8dbf90fe92de609b3105ef9df40acbdcbe6a08ab1bf0a` |
+
+## SVG and duplicate audit
+
+The Brand Kit v2 SVG files are syntactically valid SVG/XML, but they are raster-in-SVG containers: each embeds PNG artwork through a data URI rather than describing the artwork with vector paths. They therefore do not provide a true vector source or a useful quality advantage for the current runtime, and the large supplied containers are not duplicated into the deployment set.
+
+The supplied `myfinhub-logo-vertical-light.png` is byte-identical to `myfinhub-logo-horizontal-light.png`, and the corresponding dark pair is also byte-identical. The mislabelled duplicate `vertical` copies are intentionally not retained as separate assets.
+
+iOS and Android packaging assets from the kit are outside this repository's branding scope. Android implementation and assets remain owned by the separate Android repository.
 
 Compatibility-critical legacy `rheomiq_*` database identifiers and `RHEOMIQ_*` local-backend protocol names are persistence/protocol contracts, not visual brand assets, and remain unchanged.
