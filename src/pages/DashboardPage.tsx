@@ -1,7 +1,7 @@
 import { useReducedMotion } from 'framer-motion';
 import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { ArrowRight, CalendarDays, Eye, EyeOff, List, PiggyBank, ShieldCheck, Target, WalletCards } from 'lucide-react';
-import { useId, useMemo } from 'react';
+import { useMemo } from 'react';
 import { AccountIban } from '../components/AccountIban';
 import { BankBrandMark } from '../components/BankBrandMark';
 import { Button } from '../components/Button';
@@ -51,7 +51,7 @@ function accountChartTarget(series:DashboardAccountPoint[],comparison:DashboardA
 }
 
 function AccountBalanceChart({series,comparison=[],tone,currentMonth,target,label}:{series:DashboardAccountPoint[];comparison?:DashboardAccountPoint[];tone:'blue'|'green'|'purple';currentMonth:string;target?:number;label:string}){
-  const rawId=useId().replace(/:/g,'');const width=360,height=76,padX=3,padY=5;const monthStart=`${currentMonth}-01`;
+  const width=360,height=76,padX=3,padY=5;const monthStart=`${currentMonth}-01`;
   const safeSeries=series.length?series:[{date:monthStart,value:0},{date:monthStart,value:0}];
   const visibleTarget=accountChartTarget(safeSeries,comparison,target);
   const values=[...safeSeries,...comparison].map(point=>point.value);if(visibleTarget!==undefined)values.push(visibleTarget);
@@ -66,8 +66,7 @@ function AccountBalanceChart({series,comparison=[],tone,currentMonth,target,labe
   const boundaryX=Math.max(padX,Math.min(width-padX,xForDate(monthStart)));const comparisonPoints=comparison.map((entry,index)=>[boundaryX+(index/Math.max(1,comparison.length-1))*(width-padX-boundaryX),yForValue(entry.value)] as const);
   const last=points.at(-1)!;const toneColor=tone==='green'?'#31C77B':tone==='purple'?'#A15CFF':'#2463F4';const comparisonColor=tone==='blue'?'#A9C5FF':'#B9C9E8';
   return <svg className={`dashboard-account-history tone-${tone}`} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" role="img" aria-label={label}>
-    <defs><linearGradient id={`account-fill-${rawId}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={toneColor} stopOpacity=".26"/><stop offset="32%" stopColor={toneColor} stopOpacity=".10"/><stop offset="70%" stopColor={toneColor} stopOpacity=".018"/><stop offset="100%" stopColor={toneColor} stopOpacity="0"/></linearGradient></defs>
-    <path className="account-history-area" d={area} fill={`url(#account-fill-${rawId})`}/>
+    <path className="account-history-area" d={area} fill={toneColor} fillOpacity=".075"/>
     {boundaryX>padX+1?<line className="account-month-boundary" x1={boundaryX} y1="2" x2={boundaryX} y2={height-2}/>:null}
     {[.25,.5,.75].map(ratio=>{const x=boundaryX+(width-padX-boundaryX)*ratio;return <line key={ratio} className="account-period-guide" x1={x} y1="4" x2={x} y2={height-4}/>})}
     {comparisonPoints.length>1?<path className="account-history-comparison" d={path(comparisonPoints)} stroke={comparisonColor}/>:null}
