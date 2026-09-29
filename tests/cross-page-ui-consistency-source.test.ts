@@ -92,7 +92,7 @@ describe('cross-page UI consistency contracts',()=>{
     const mobileShell=read('src/styles/mobile-app-shell.css');
     expect(mobileShell).toContain('.page-heading:has(+.primary-balance-grid){display:grid;grid-template-columns:minmax(0,1fr);');
     expect(mobileShell).toContain('.page-heading:has(+.primary-balance-grid) .heading-actions{width:100%;');
-  
+
   });
 
   it('keeps routed pages off legacy neumorphic JSX hooks',()=>{
