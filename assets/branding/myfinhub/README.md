@@ -21,8 +21,6 @@ The source kit's horizontal light/dark SVG lockups are byte-identical. Files lab
 
 Browser tabs use the true SVG light/dark favicons when supported, with 32×32 and 16×16 PNG fallbacks. `public/favicon.png` remains a 32×32 compatibility alias.
 
-Apple home-screen/web-clip presentation uses the supplied 180×180 `apple-touch-icon.png` rather than reusing the PWA 192×192 file.
-
 PWA installation keeps explicit 192×192 and 512×512 PNG `any` icons plus the scalable SVG icon. Dedicated `icon-maskable-192.png` and `icon-maskable-512.png` use the transparent PureVector symbol on a full-bleed `#F6F8FB` field with the artwork kept inside the maskable safe region. The normal precomposed app tile is deliberately not mislabeled as `maskable`.
 
 Windows packaging gives electron-builder the true-vector `public/brand/icon-512.svg`, allowing it to generate the Windows ICO size set from vector input. The packaged/runtime BrowserWindow icon remains `public/brand/icon-512.png`, byte-identical to the supplied light 512×512 export, because the runtime consumes a native bitmap path. `desktop/setup-brand.png` remains the dark 192×192 setup/recovery mark. No upscaling from 192×192 is performed.
@@ -33,6 +31,6 @@ Windows packaging gives electron-builder the true-vector `public/brand/icon-512.
 
 Stable paths `icon-32.png`, `icon-192.png`, `public/favicon.png` and `public/brand/icon-512.png` are retained where they protect existing browser/desktop call sites. They are exact aliases, not independent artwork.
 
-Android-specific adaptive/themed/store assets are maintained in `MariosGiannakaras/MyFinHub-Android-App`. The PureVector iOS export set is not copied into this repository because no iOS packaging target is owned here.
+Android-specific adaptive/themed/store assets are maintained in `MariosGiannakaras/MyFinHub-Android-App`. iOS assets are intentionally excluded: MyFinHub currently targets only web/PWA, Windows desktop and Android.
 
 Compatibility-critical `rheomiq_*` database identifiers and `RHEOMIQ_*` desktop/backend protocol variables are persistence/protocol contracts rather than visible branding and remain unchanged.

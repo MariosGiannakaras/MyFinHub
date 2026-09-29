@@ -39,7 +39,6 @@ describe('release-readiness source contracts',()=>{
     expect(manifest.display).toBe('standalone');
     expect(index).toContain('<title>MyFinHub</title>');
     expect(index).toContain('rel="manifest" href="/manifest.webmanifest"');
-    expect(index).toContain('rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"');
     expect(index).toContain('href="/brand/favicon-light.svg"');
     expect(index).toContain('href="/brand/favicon-dark.svg"');
     for(const icon of manifest.icons){

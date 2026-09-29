@@ -24,11 +24,10 @@ function expectTrueVector(relative:string){
 }
 
 describe('MyFinHub platform branding assets',()=>{
-  it('keeps browser favicon and Apple touch assets at their platform sizes',()=>{
+  it('keeps browser favicon assets at their platform sizes',()=>{
     expect(pngSize('public/brand/favicon-16.png')).toEqual([16,16]);
     expect(pngSize('public/brand/favicon-32.png')).toEqual([32,32]);
     expect(pngSize('public/favicon.png')).toEqual([32,32]);
-    expect(pngSize('public/apple-touch-icon.png')).toEqual([180,180]);
     expect(bytes('public/favicon.png').equals(bytes('public/brand/favicon-32.png'))).toBe(true);
     expect(bytes('public/brand/favicon-32.png').equals(bytes('public/brand/icon-light-32.png'))).toBe(true);
     expectTrueVector('public/brand/favicon-light.svg');
