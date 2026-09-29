@@ -39,13 +39,18 @@ describe('release-readiness source contracts',()=>{
     expect(manifest.display).toBe('standalone');
     expect(index).toContain('<title>MyFinHub</title>');
     expect(index).toContain('rel="manifest" href="/manifest.webmanifest"');
-    expect(index).toContain('rel="apple-touch-icon" href="/brand/icon-light-192.png"');
+    expect(index).toContain('rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png"');
+    expect(index).toContain('href="/brand/favicon-light.svg"');
+    expect(index).toContain('href="/brand/favicon-dark.svg"');
     for(const icon of manifest.icons){
       expect(icon.src.startsWith('/brand/')).toBe(true);
       expect(existsSync(new URL(`../public${icon.src}`,import.meta.url))).toBe(true);
     }
     expect(manifest.icons.some(icon=>icon.sizes==='192x192'&&icon.type==='image/png')).toBe(true);
-    expect(manifest.icons.some(icon=>icon.sizes==='512x512'&&(icon.type==='image/png'||icon.type==='image/svg+xml'))).toBe(true);
+    expect(manifest.icons.some(icon=>icon.sizes==='512x512'&&icon.type==='image/png'&&icon.purpose==='any')).toBe(true);
+    expect(manifest.icons.some(icon=>icon.sizes==='any'&&icon.type==='image/svg+xml'&&icon.purpose==='any')).toBe(true);
+    expect(manifest.icons.some(icon=>icon.sizes==='192x192'&&icon.purpose==='maskable')).toBe(true);
+    expect(manifest.icons.some(icon=>icon.sizes==='512x512'&&icon.purpose==='maskable')).toBe(true);
     const svg=readFileSync(new URL('../public/brand/icon-512.svg',import.meta.url),'utf8');
     expect(svg).toContain('width="512"');
     expect(svg).toContain('height="512"');

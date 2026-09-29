@@ -1,70 +1,38 @@
 # MyFinHub brand assets
 
-This folder contains the canonical web/desktop artwork for the current MyFinHub identity.
+This directory contains the canonical web/desktop artwork for the owner-approved MyFinHub PureVector identity.
 
-## Pure Vector source
+## Source and vector verification
 
-The current canonical artwork comes from the owner-supplied `MyFinHub_Brand_Kit_PureVector.zip`, reviewed on 2026-09-29.
+The source is `MyFinHub_Brand_Kit_PureVector.zip`, reviewed on 2026-09-29. The canonical SVGs are real self-contained vector artwork made from SVG paths/shapes, gradients and filters. They contain no `<image>` elements, embedded PNG/JPEG/base64 payloads, external image references, font dependencies or scripts. Rendering the supplied app-icon SVG masters at 32×32 matches the supplied 32×32 PNG exports pixel-for-pixel.
 
-The approved identity uses the blue wallet / `MF` symbol with explicit light and dark application tiles.
-
-## Vector verification
-
-The SVGs used here are true, self-contained vector artwork.
-
-Independent inspection confirmed that the canonical app/logo SVGs contain paths, shapes, gradients and SVG filters, with:
-
-- no `<image>` elements;
-- no embedded base64 PNG/JPEG payloads;
-- no external image/file references;
-- no text/font dependencies;
-- no scripts.
-
-The light and dark app-icon SVGs each contain 11 paths, 7 rectangles, 2 circles and 10 gradients. Rendering those SVG masters at 32×32 produces pixels identical to the supplied 32×32 PNG exports.
+The source kit's horizontal light/dark SVG lockups are byte-identical. Files labelled `vertical-light` and `vertical-dark` contain the same 1800×650 horizontal artwork, so those duplicate/mislabelled files are not retained.
 
 ## Canonical masters
 
-- `app-icon-light.svg`: exact supplied light application-icon vector master (1024×1024 viewBox).
-- `app-icon-dark.svg`: exact supplied dark application-icon vector master (1024×1024 viewBox).
-- `icon-512.svg` / `icon-dark-512.svg`: 512×512 runtime SVG presentations of those masters, still vector-only.
-- `symbol.svg`: transparent standalone wallet / MF symbol.
-- `logo-light.svg`: square light logo lockup.
-- `logo-dark.svg`: square dark logo lockup.
-- `logo-horizontal.svg`: transparent horizontal lockup usable on light or dark surfaces.
+- `app-icon-light.svg` / `app-icon-dark.svg`: exact supplied 1024×1024 light/dark app-icon vector masters.
+- `symbol.svg`: exact transparent wallet / MF symbol vector.
+- `logo-light.svg` / `logo-dark.svg`: square logo lockups.
+- `logo-horizontal.svg`: the single non-duplicate horizontal lockup.
+- `favicon-light.svg` / `favicon-dark.svg`: browser aliases of the corresponding true-vector app masters.
+- `icon-512.svg` / `icon-dark-512.svg`: true-vector 512×512 runtime presentations.
 
-The source kit's horizontal light/dark SVGs are byte-identical. Its files named `vertical-light` and `vertical-dark` are also byte-identical to that same horizontal artwork and use the same 1800×650 viewBox, so those mislabelled duplicates are intentionally not retained.
+## Platform asset matrix
 
-## Runtime derivatives
+Browser tabs use the true SVG light/dark favicons when supported, with 32×32 and 16×16 PNG fallbacks. `public/favicon.png` remains a 32×32 compatibility alias.
 
-Stable runtime paths are preserved so the branding refresh does not disturb unrelated application behavior:
+Apple home-screen/web-clip presentation uses the supplied 180×180 `apple-touch-icon.png` rather than reusing the PWA 192×192 file.
 
-- `icon-light-32.png` / `icon-dark-32.png`: supplied 32×32 vector exports.
-- `icon-light-192.png` / `icon-dark-192.png`: supplied 192×192 vector exports.
-- `icon-light-512.png` / `icon-dark-512.png`: supplied 512×512 vector exports.
-- `icon-32.png` / `icon-192.png`: light-theme compatibility aliases.
-- `public/brand/icon-512.svg` / `icon-dark-512.svg`: true-vector runtime copies with explicit 512×512 presentation geometry.
-- `public/favicon.png`: byte-identical to the light 32×32 export.
-- `desktop/setup-brand.png`: byte-identical to the dark 192×192 export.
-- `src/components/BrandMark.tsx`: renders the true vector light/dark app masters.
-- Windows packaging uses the supplied 512×512 light PNG export from the vector master instead of enlarging the 192×192 derivative.
+PWA installation keeps explicit 192×192 and 512×512 PNG `any` icons plus the scalable SVG icon. Dedicated `icon-maskable-192.png` and `icon-maskable-512.png` use the transparent PureVector symbol on a full-bleed `#F6F8FB` field with the artwork kept inside the maskable safe region. The normal precomposed app tile is deliberately not mislabeled as `maskable`.
 
-### Source SHA-256
+Windows/Electron uses `public/brand/icon-512.png` as the native packaging/runtime bitmap source. It is byte-identical to the supplied light 512×512 export from the vector master; electron-builder performs the Windows package conversion. `desktop/setup-brand.png` remains the dark 192×192 setup/recovery mark. No upscaling from 192×192 is performed.
 
-| Asset | SHA-256 |
-| --- | --- |
-| light app SVG | `47fbe6c11a2660cb0ea07e82fb17e4193a33d449e39f5dac54ab3b92c79c5b3a` |
-| dark app SVG | `77371a2d05a8e67528771a9b1fbf59e2b4c5b703c0e4f198bec6bb5268a42141` |
-| symbol SVG | `91e5d8058e4874bc21bde0d1ace80782df0c8ec5d6ef8edd9f10b6904100940c` |
-| light square logo SVG | `f8231c73d6f84d42b96d144ee4d1dff7d145553f9e629b985caa9bd99abe66dc` |
-| dark square logo SVG | `e2c3153f28c8ad91743e3688a97576bcae9dec88a777ff9a2108c6380205396d` |
-| horizontal logo SVG | `c564a01c7ea368f161e3f52201ac8e4449264e215a4358041003d6cdd3b693e5` |
-| light 32×32 PNG | `0f5e21c0b3e09ad744f5a3b9b2f7df4b88aea4aef8db5a3563374ca5c418028d` |
-| dark 32×32 PNG | `7dee23b9e7223d9a8351cf312958f4ab5ec42879ac5566fd22748ebcde539d46` |
-| light 192×192 PNG | `13ae3f111b9e03bd45a3622cc745abe4374c006c9888106b4117a8ac858377f2` |
-| dark 192×192 PNG | `43cc32b1540e03a1aedb827782d5e02c9b0a79ce0c445c27fb27aef2d1e53ac9` |
-| light 512×512 PNG | `5e1d00a9f73afd2986db24f766a2b1c7c6cd05165bfaa22b306c8bf21f4becde` |
-| dark 512×512 PNG | `22083c29f4be5ee0d8df075b330496846b2e52c6a6544b041d560ac8ced1f764` |
+`src/components/BrandMark.tsx` renders the light/dark true-vector app artwork for in-application branding.
 
-iOS and Android packaging assets from the kit are outside this repository's branding scope. Android implementation and assets remain owned by the separate Android repository.
+## Compatibility aliases
 
-Compatibility-critical legacy `rheomiq_*` database identifiers and `RHEOMIQ_*` local-backend protocol names are persistence/protocol contracts, not visual brand assets, and remain unchanged.
+Stable paths `icon-32.png`, `icon-192.png`, `public/favicon.png` and `public/brand/icon-512.png` are retained where they protect existing browser/desktop call sites. They are exact aliases, not independent artwork.
+
+Android-specific adaptive/themed/store assets are maintained in `MariosGiannakaras/MyFinHub-Android-App`. The PureVector iOS export set is not copied into this repository because no iOS packaging target is owned here.
+
+Compatibility-critical `rheomiq_*` database identifiers and `RHEOMIQ_*` desktop/backend protocol variables are persistence/protocol contracts rather than visible branding and remain unchanged.

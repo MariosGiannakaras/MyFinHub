@@ -52,7 +52,7 @@
         "to": "app/runtime/node.exe"
       },
       {
-        "from": ".build/icon-512.png",
+        "from": "../public/brand/icon-512.png",
         "to": "app/icon.png"
       }
     ],
@@ -65,7 +65,7 @@
           ]
         }
       ],
-      "icon": ".build/icon-512.png",
+      "icon": "../public/brand/icon-512.png",
       "executableName": "MyFinHub",
       "artifactName": "MyFinHub-Setup-${version}-${arch}.${ext}"
     },
