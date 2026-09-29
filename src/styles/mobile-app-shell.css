@@ -75,8 +75,8 @@
   /* Dashboard: accounts first, compact monthly pulse second, actions/history later. */
   .page-heading:has(+.primary-balance-grid) .eyebrow,
   .page-heading:has(+.primary-balance-grid) p{display:none}
-  .page-heading:has(+.primary-balance-grid){display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:9px}
-  .page-heading:has(+.primary-balance-grid) .heading-actions{width:auto;display:flex;align-items:center}
+  .page-heading:has(+.primary-balance-grid){display:grid;grid-template-columns:minmax(0,1fr);align-items:start;gap:9px}
+  .page-heading:has(+.primary-balance-grid) .heading-actions{width:100%;display:flex;align-items:center;justify-content:flex-start;flex-wrap:wrap}
   .page-heading:has(+.primary-balance-grid) .heading-actions>.save-button{display:none}
   .page-heading:has(+.primary-balance-grid) .privacy-toggle{min-height:40px;height:40px;padding:0 11px;border-radius:12px;font-size:8.5px;white-space:nowrap;box-shadow:none}
 
