@@ -1,8 +1,8 @@
-# RheomIQ architecture
+# MyFinHub architecture
 
 ## Runtime and trust boundary
 
-RheomIQ is a React/Vite client with a small TypeScript API boundary. Production API handlers run as Vercel Node.js Functions in Frankfurt (`fra1`); local development exposes the same server modules through Express. The repository runtime contract is Node.js 22.x.
+MyFinHub is a React/Vite client with a small TypeScript API boundary. Production API handlers run as Vercel Node.js Functions in Frankfurt (`fra1`); local development exposes the same server modules through Express. The repository runtime contract is Node.js 22.x.
 
 The browser is UI-only for durable finance state. Durable finance data lives in Supabase/PostgreSQL in `eu-central-1`, and finance data or access tokens are not persisted in `localStorage` or IndexedDB. PAN, expiry and CVV are also excluded from FinanceData: they use the separate owner+AAL2 encrypted server card vault. The former browser-local encrypted CVV store exists only as a legacy migration source and is deleted after confirmed server-vault persistence.
 
