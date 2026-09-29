@@ -29,7 +29,7 @@ Stable runtime paths are intentionally preserved so branding can be replaced wit
 - Windows packaging continues to generate its 512×512 application PNG from `public/brand/icon-light-192.png`.
 - `src/components/BrandMark.tsx` remains the application-wide light/dark presentation contract.
 
-The 32×32 files are the supplied Brand Kit v2 web assets. The 192×192 deployment PNGs are visually equivalent 256-colour optimized derivatives of the supplied 192×192 web assets; geometry and theme selection are unchanged.
+The 32×32 and 192×192 deployment PNGs are byte-for-byte copies of the corresponding supplied Brand Kit v2 web assets.
 
 ### Provenance
 
@@ -39,8 +39,8 @@ Supplied Brand Kit v2 inputs used for web/desktop:
 | --- | --- | --- |
 | light 32×32 | `b7f0aa48d17ba4c28ee2ab5ce321f0d718b949c2a68537cc5c005f8ea487ba72` | same |
 | dark 32×32 | `8bc5766f9ffe2b5fea8f8d6533c44799e855bd7c840136f37fb8606b393a9696` | same |
-| light 192×192 | `cb4997bf177b192ad7dd5ff8d2980490f0f01c854163d354fe392847a6f43c3e` | `926880ef9b839da92f6ef526d63e8da7fbaa5ef2be66581d3c6b3d88c06f5bbf` |
-| dark 192×192 | `3493abbc2b07af4b2f48f76b9532b9abe2818ffc15751524964b954ef8e556c6` | `ddcfcb32b8984dec69a8dbf90fe92de609b3105ef9df40acbdcbe6a08ab1bf0a` |
+| light 192×192 | `cb4997bf177b192ad7dd5ff8d2980490f0f01c854163d354fe392847a6f43c3e` | same |
+| dark 192×192 | `3493abbc2b07af4b2f48f76b9532b9abe2818ffc15751524964b954ef8e556c6` | same |
 
 ## SVG and duplicate audit
 
