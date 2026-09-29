@@ -32,26 +32,6 @@
   .top-actions button{width:38px;height:38px;border-radius:11px;border:1px solid rgba(211,222,236,.9);background:rgba(249,252,255,.8);box-shadow:none}
   .top-actions button:active{box-shadow:inset 2px 2px 6px rgba(42,65,99,.08);transform:scale(.96)}
 
-  .command-pill{
-    display:flex;
-    position:fixed;
-    right:16px;
-    bottom:calc(82px + env(safe-area-inset-bottom,0px));
-    z-index:68;
-    min-height:48px;
-    padding:0 16px;
-    gap:7px;
-    border:0;
-    border-radius:16px;
-    background:linear-gradient(135deg,#2f6fed,#4f84f1);
-    color:#fff;
-    box-shadow:0 10px 24px rgba(47,111,237,.28),inset 0 1px rgba(255,255,255,.22);
-    font-size:10px;
-    font-weight:800;
-  }
-  .command-pill span{display:inline}
-  .command-pill kbd{display:none}
-  .command-pill:active{transform:translateY(1px) scale(.97);box-shadow:0 6px 15px rgba(47,111,237,.25)}
 
   .mobile-nav{
     left:12px;
@@ -199,5 +179,5 @@
 }
 
 @media(max-width:680px) and (prefers-reduced-motion:reduce){
-  .mobile-nav button,.command-pill{transition:none}
+  .mobile-nav button{transition:none}
 }
