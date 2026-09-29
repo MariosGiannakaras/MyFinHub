@@ -26,7 +26,7 @@
   .mobile-transaction-filters label>span{font-size:8px;color:#6d7d95;font-weight:800}
   .mobile-transaction-filters select{height:44px;border-radius:12px;background:#fbfdff}
   .mobile-transaction-list{gap:8px}
-  .mobile-transaction-row{border-radius:17px;padding:12px 11px 10px;background:rgba(249,252,255,.86);box-shadow:var(--mobile-shadow-soft)}
+  .mobile-transaction-row{border-radius:var(--radius-md);padding:12px 11px 10px;background:var(--surface);box-shadow:var(--mobile-shadow-soft)}
   .mobile-transaction-row:before{top:12px;bottom:12px;width:3px}
   .mobile-transaction-identity b{font-size:12.5px;letter-spacing:-.01em}
   .mobile-transaction-identity small{font-size:9px}
@@ -37,7 +37,7 @@
   .mobile-row-actions .text-button{min-height:38px;font-size:8.5px;border-radius:10px;background:rgba(238,244,251,.74)}
 
   /* Savings: compact progress hero, actionable source rows and list-first history. */
-  .savings-hero{display:grid;grid-template-columns:92px minmax(0,1fr);gap:12px;padding:14px;border-radius:22px;background:linear-gradient(145deg,#f7fbff,#e9f3f4);border:1px solid rgba(255,255,255,.86);box-shadow:var(--mobile-shadow)}
+  .savings-hero{display:grid;grid-template-columns:92px minmax(0,1fr);gap:12px;padding:14px;border-radius:var(--radius-lg);background:var(--surface);border:1px solid var(--line);box-shadow:var(--mobile-shadow-soft)}
   .savings-gauge{display:grid;place-items:center}
   .gauge-ring{width:88px!important;height:88px!important}
   .gauge-ring>div b{font-size:18px}

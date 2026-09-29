@@ -15,8 +15,8 @@ describe('obligation lifecycle hierarchy source contracts',()=>{
     expect(loans).toContain('data-loan-lifecycle={historical?\'completed\':\'active\'}');
   });
   it('removes payment actions from completed loan history while retaining editability and semantic progress',()=>{
-    expect(loans).toContain("!historical?<button type=\"button\" className=\"pay\"");
-    expect(loans).toContain('<button type="button" onClick={()=>startEdit(loan)}><Pencil');
+    expect(loans).toContain("!historical?<Button type=\"button\" variant=\"primary\" className=\"pay\"");
+    expect(loans).toContain('<Button type="button" variant="secondary" onClick={()=>startEdit(loan)}><Pencil');
     expect(loans).toContain('role="progressbar"');
     expect(loans).toContain('aria-valuenow={paid}');
     expect(loans).toContain('data-loan-history');
@@ -28,7 +28,7 @@ describe('obligation lifecycle hierarchy source contracts',()=>{
     expect(activeIndex).toBeGreaterThan(-1);
     expect(linkedIndex).toBeGreaterThan(activeIndex);
     expect(inactiveIndex).toBeGreaterThan(linkedIndex);
-    expect(recurring).toContain('<details className="panel neo-flat inactive-recurring"');
+    expect(recurring).toContain('<details className="panel surface-flat inactive-recurring"');
     expect(recurring).toContain('Ενεργοποίηση ${item.name}');
     expect(recurring).toContain('Επεξεργασία ${item.name}');
   });
@@ -36,7 +36,7 @@ describe('obligation lifecycle hierarchy source contracts',()=>{
     expect(linked).toContain('activeLongTermLoanObligations(data)');
     expect(linked).toContain('onPayLoan(loan.id)');
     expect(linked).toContain('data-linked-loan={loan.id}');
-    expect(linked).toContain('neo-flat long-term-recurring');
+    expect(linked).toContain('surface-flat long-term-recurring');
   });
   it('runs dedicated rendered desktop/mobile completed, inactive and extreme lifecycle coverage',()=>{
     expect(coordinator).toContain("path:'scripts/obligation-lifecycle-qa.mjs'");

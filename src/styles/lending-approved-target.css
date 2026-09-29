@@ -7,7 +7,7 @@
   .lending-approved-heading h1{margin-top:2px;font-size:29px;line-height:1.08;letter-spacing:-.025em}
   .lending-approved-heading p{max-width:760px;margin-top:5px;font-size:10.5px;line-height:1.45}
   .lending-approved-layout{display:grid;grid-template-columns:minmax(320px,.72fr) minmax(0,1.48fr);gap:12px;align-items:stretch}
-  .lending-people-panel,.lending-selected-panel,.lending-quick-panel,.lending-selected-history{border:1px solid rgba(54,91,153,.13);background:rgba(250,252,255,.78);box-shadow:0 16px 34px rgba(45,78,130,.08);backdrop-filter:blur(10px)}
+  .lending-people-panel,.lending-selected-panel,.lending-quick-panel,.lending-selected-history{border:1px solid var(--line);background:var(--surface);box-shadow:var(--shadow-soft);backdrop-filter:none}
   .lending-people-panel{padding:11px 10px 10px;min-height:438px;overflow:hidden}
   .lending-people-head{display:flex;align-items:flex-start;justify-content:space-between;padding:1px 4px 9px}
   .lending-people-head span{display:block;font-size:15px;font-weight:850;color:var(--ink)}

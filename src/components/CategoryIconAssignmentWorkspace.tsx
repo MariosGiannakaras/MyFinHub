@@ -53,7 +53,7 @@ export function CategoryIconAssignmentWorkspace({settings,onChange}:{settings:Fi
       :withCategoryIcon(settings,editor.kind,editor.category,iconKey));
   };
 
-  return <section className="panel neo-raised category-icons-workspace category-icon-assignment-workspace" aria-labelledby="category-icons-title">
+  return <section className="panel surface-raised category-icons-workspace category-icon-assignment-workspace" aria-labelledby="category-icons-title">
     <div className="panel-head"><div><span id="category-icons-title">Εικονίδια κατηγοριών</span><small>Ένα εικονίδιο ανά κατηγορία ή υποκατηγορία. Η αλλαγή χρησιμοποιείται σε όλη την εφαρμογή όπου εμφανίζεται η ίδια taxonomy identity.</small></div></div>
 
     <div className="category-icon-library" aria-label="Βιβλιοθήκες εικονιδίων">

@@ -154,7 +154,7 @@ export function AccountSecuritySettings({currentEmail}:{currentEmail?:string|nul
     </div>
 
     <div className="account-security-grid">
-      <section className="panel neo-raised account-security-card account-security-email-card">
+      <section className="panel surface-raised account-security-card account-security-email-card">
         <div className="panel-head"><div><span>Αλλαγή email</span></div><Mail/></div>
         <div className="account-security-current-email"><span>Τρέχον email:</span><b>{displayEmail||'—'}</b></div>
         <label className="account-security-field"><span>Νέο email</span><AppTextInput type="email" autoComplete="email" value={newEmail} placeholder="neo@example.com" onChange={event=>setNewEmail(event.target.value)}/></label>
@@ -162,7 +162,7 @@ export function AccountSecuritySettings({currentEmail}:{currentEmail?:string|nul
         <div className="account-security-actions"><Button type="button" variant="primary" disabled={Boolean(authBusy)} onClick={()=>void submitEmail()}>{authBusy==='email'?'Αποθήκευση…':'Αλλαγή email'}</Button></div>
       </section>
 
-      <section className="panel neo-raised account-security-card account-security-password-card">
+      <section className="panel surface-raised account-security-card account-security-password-card">
         <div className="panel-head"><div><span>Αλλαγή κωδικού</span></div><KeyRound/></div>
         <div className="account-security-password-grid">
           <label className="account-security-field"><span>Τρέχων κωδικός</span><AppTextInput type="password" autoComplete="current-password" value={currentPassword} onChange={event=>setCurrentPassword(event.target.value)}/></label>
@@ -175,7 +175,7 @@ export function AccountSecuritySettings({currentEmail}:{currentEmail?:string|nul
 
     {authMessage?<div className="logic-note compact account-security-message" role="status" aria-live="polite"><ShieldCheck/><span>{authMessage}</span></div>:null}
 
-    <section className="panel neo-raised account-security-card account-security-pin-card">
+    <section className="panel surface-raised account-security-card account-security-pin-card">
       <div className="panel-head"><div><span>PIN & αυτόματο κλείδωμα</span></div><LockKeyhole/></div>
       <div className="account-security-pin-status-compact">
         <ShieldCheck size={17}/>

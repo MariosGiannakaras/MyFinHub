@@ -1,5 +1,5 @@
 /* Semantic finance icons and account brand marks. */
-.finance-icon{--icon-tone:#64748b;--icon-bg:rgba(100,116,139,.09);width:30px;height:30px;flex:0 0 30px;border-radius:10px;display:inline-grid;place-items:center;color:var(--icon-tone);background:linear-gradient(145deg,rgba(255,255,255,.86),var(--icon-bg));box-shadow:3px 3px 8px rgba(37,59,92,.09),-3px -3px 8px rgba(255,255,255,.8),inset 0 0 0 1px rgba(255,255,255,.45);transition:transform var(--motion-fast) var(--ease-out),box-shadow var(--motion-base) ease,background-color var(--motion-base) ease}
+.finance-icon{--icon-tone:#64748b;--icon-bg:rgba(100,116,139,.09);width:30px;height:30px;flex:0 0 30px;border-radius:var(--radius-sm);display:inline-grid;place-items:center;color:var(--icon-tone);background:color-mix(in srgb,var(--icon-bg) 82%,var(--surface));border:1px solid color-mix(in srgb,var(--icon-tone) 12%,var(--line));box-shadow:none;transition:transform var(--motion-fast) var(--ease-out),background-color var(--motion-base) ease,border-color var(--motion-base) ease}
 .finance-icon>svg{stroke-width:1.9}
 .finance-icon-inline{width:25px;height:25px;flex-basis:25px;border-radius:8px}
 .finance-icon.tone-red{--icon-tone:#b32942;--icon-bg:rgba(179,41,66,.09)}
@@ -11,7 +11,7 @@
 .finance-icon.tone-teal{--icon-tone:#177d71;--icon-bg:rgba(23,125,113,.10)}
 .finance-icon.tone-gold{--icon-tone:#986800;--icon-bg:rgba(211,163,44,.12)}
 .finance-icon.tone-slate{--icon-tone:#596b84;--icon-bg:rgba(89,107,132,.09)}
-@media(hover:hover){.transaction-row:hover .finance-icon,.semantic-table tbody tr:hover .finance-icon,.frequent-grid button:hover .finance-icon,.savings-action:hover .finance-icon{transform:translateY(-1px);box-shadow:4px 4px 10px rgba(37,59,92,.11),-4px -4px 10px rgba(255,255,255,.86)}}
+@media(hover:hover){.transaction-row:hover .finance-icon,.semantic-table tbody tr:hover .finance-icon,.frequent-grid button:hover .finance-icon,.savings-action:hover .finance-icon{transform:translateY(-1px);border-color:color-mix(in srgb,var(--icon-tone) 22%,var(--line))}}
 
 .transaction-title-line,.semantic-list-title{display:flex;align-items:center;gap:9px;min-width:0}
 .transaction-title-line>b,.semantic-list-title>b,.semantic-list-title>div{min-width:0}

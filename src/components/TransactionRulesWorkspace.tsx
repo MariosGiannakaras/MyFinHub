@@ -143,7 +143,7 @@ export function TransactionRulesWorkspace({
     return parts.join(' · ')||'λείπει ενέργεια';
   };
 
-  return <section className="panel neo-raised transaction-rules-workspace rule-settings-panel" data-advanced-automations data-rules-workspace>
+  return <section className="panel surface-raised transaction-rules-workspace rule-settings-panel" data-advanced-automations data-rules-workspace>
     <header className="rules-workspace-head">
       <div>
         <span className="rules-workspace-kicker">ΑΥΤΟΜΑΤΗ ΤΑΞΙΝΟΜΗΣΗ</span>
@@ -171,7 +171,7 @@ export function TransactionRulesWorkspace({
     </section>
 
     {editorOpen?<div className="editor-backdrop rules-editor-backdrop" onMouseDown={()=>clearEditor(false)}>
-      <section ref={editorRef} className="panel neo-raised editor-dialog rules-editor" data-rule-editor role="dialog" aria-modal="true" aria-labelledby="rule-editor-title" tabIndex={-1} onMouseDown={event=>event.stopPropagation()}>
+      <section ref={editorRef} className="panel surface-raised editor-dialog rules-editor" data-rule-editor role="dialog" aria-modal="true" aria-labelledby="rule-editor-title" tabIndex={-1} onMouseDown={event=>event.stopPropagation()}>
         <header className="panel-head rules-editor-head">
           <div><span id="rule-editor-title">{editingRuleId?'Επεξεργασία κανόνα':'Νέος κανόνας'}</span><small>{editingRuleId?'Οι αλλαγές θα ισχύουν μόνο στις επόμενες υποστηριζόμενες κινήσεις.':'Συμπλήρωσε τουλάχιστον μία συνθήκη και μία ενέργεια.'}</small></div>
           <IconButton aria-label="Κλείσιμο επεξεργασίας κανόνα" title="Κλείσιμο" onClick={()=>clearEditor(false)}><X size={17}/></IconButton>

@@ -6,7 +6,7 @@ const source=readFileSync(new URL('../src/pages/SavingsPage.tsx',import.meta.url
 describe('Savings page action hierarchy',()=>{
   it('renders the actionable savings choices before monthly reporting',()=>{
     const actions=source.indexOf('className="savings-action-section"');
-    const hero=source.indexOf('className="savings-hero neo-raised"');
+    const hero=source.indexOf('className="savings-hero surface-raised"');
     expect(actions).toBeGreaterThan(-1);
     expect(hero).toBeGreaterThan(actions);
     expect(source).toContain('Πώς θέλεις να αποταμιεύσεις;');

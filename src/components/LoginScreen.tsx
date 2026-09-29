@@ -23,7 +23,7 @@ export function LoginScreen({ onLogin, error }:{ onLogin:(email:string,password:
 
   const passwordDescription=[capsLock?'login-caps-hint':'',error?'login-error':''].filter(Boolean).join(' ')||undefined;
   return <main className="login-screen">
-    <section className="login-card neo-raised" aria-labelledby="login-title" data-busy={busy?'true':'false'}>
+    <section className="login-card surface-raised" aria-labelledby="login-title" data-busy={busy?'true':'false'}>
       <div className="login-brand"><BrandMark mode="lockup" size="lg" subtitle="Προσωπικός οικονομικός χώρος"/></div>
       <div className="login-shield"><ShieldCheck size={24}/><span>Προστατευμένη συνεδρία μοναδικού ιδιοκτήτη</span></div>
       <div><h1 id="login-title">Σύνδεση</h1><p>Τα οικονομικά δεδομένα είναι διαθέσιμα μόνο στον εξουσιοδοτημένο ιδιοκτήτη.</p></div>

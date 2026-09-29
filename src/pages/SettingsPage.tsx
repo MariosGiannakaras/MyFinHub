@@ -5,6 +5,7 @@ import { AccountSecuritySettings } from '../components/AccountSecuritySettings';
 import { CategoryIconAssignmentWorkspace } from '../components/CategoryIconAssignmentWorkspace';
 import { CategoryIconsWorkspace } from '../components/CategoryIconsWorkspace';
 import { Button } from '../components/Button';
+import { PageHeader } from '../components/PageHeader';
 import { ConfirmDialog } from '../components/ConfirmDialog';
 import { DesktopUpdatePanel } from '../components/DesktopUpdatePanel';
 import { KeyboardShortcutsPanel } from '../components/KeyboardShortcutsPanel';
@@ -192,13 +193,7 @@ export function SettingsPage({
 
   return (
     <div className="page-stack settings-page settings-tabs-page">
-      <section className="page-heading settings-page-heading">
-        <div>
-          <span className="eyebrow">ΡΥΘΜΙΣΕΙΣ</span>
-          <h1>Ρυθμίσεις</h1>
-          <p>Διαχειρίσου τις πραγματικές προτιμήσεις και τα εργαλεία του MyFinHub ανά ενότητα.</p>
-        </div>
-      </section>
+      <PageHeader className="settings-page-heading" eyebrow="ΡΥΘΜΙΣΕΙΣ" title="Ρυθμίσεις" description={<p>Διαχειρίσου τις πραγματικές προτιμήσεις και τα εργαλεία του MyFinHub ανά ενότητα.</p>}/>
 
       <div className="settings-tablist" role="tablist" aria-label="Ενότητες ρυθμίσεων">
         {SETTINGS_TABS.map((tab) => (

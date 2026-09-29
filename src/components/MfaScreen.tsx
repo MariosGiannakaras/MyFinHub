@@ -41,7 +41,7 @@ export function MfaScreen({
   };
 
   return <main className="login-screen">
-    <section className="login-card neo-raised" aria-labelledby="mfa-title" data-busy={busy?'true':'false'}>
+    <section className="login-card surface-raised" aria-labelledby="mfa-title" data-busy={busy?'true':'false'}>
       <div className="login-brand"><BrandMark mode="lockup" size="lg" subtitle="Προσωπικός οικονομικός χώρος"/></div>
       <div className="login-shield"><ShieldCheck size={24}/><span>Δεύτερη επαλήθευση ασφαλείας</span></div>
       <div>
@@ -55,7 +55,7 @@ export function MfaScreen({
         {busy?<LoaderCircle className="login-spinner" size={17} aria-hidden="true"/>:null}<span className="login-submit-label">{busy ? 'Προετοιμασία…' : 'Εμφάνιση QR κωδικού'}</span>
       </Button> : null}
 
-      {enrollment ? <div className="mfa-setup neo-inset">
+      {enrollment ? <div className="mfa-setup surface-inset">
         <img className="mfa-qr" src={enrollment.qrCode} alt="QR κωδικός για το MyFinHub Authenticator"/>
         <div><b>Αν δεν μπορείς να σκανάρεις το QR:</b><code className="mfa-secret">{enrollment.secret}</code></div>
       </div> : null}

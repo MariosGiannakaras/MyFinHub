@@ -256,7 +256,7 @@ export function AccountManagementSettings({data,settings,onChange}:{data:Finance
   const selectedProvider=editor?.mode==='bank'?(providers.find(item=>item.id===editor.providerId)??financialProviderById(editor.providerId)):undefined;
 
   return <div className="account-management-settings settings-tab-stack settings-accounts-tab">
-    <section className="panel neo-raised account-management-defaults">
+    <section className="panel surface-raised account-management-defaults">
       <div className="panel-head"><div><span>Προεπιλεγμένοι λογαριασμοί</span></div></div>
       <div className="account-management-default-grid">
         <label><span>Έξοδα</span><AppSelectInput className="account-management-select" aria-label="Προεπιλεγμένος λογαριασμός εξόδων" value={settings.defaultExpenseAccount} onChange={event=>patch({defaultExpenseAccount:event.target.value})}>{defaultOptions(settings.defaultExpenseAccount)}</AppSelectInput></label>
@@ -265,7 +265,7 @@ export function AccountManagementSettings({data,settings,onChange}:{data:Finance
       </div>
     </section>
 
-    <section className="panel neo-raised account-management-list-card">
+    <section className="panel surface-raised account-management-list-card">
       <div className="panel-head account-management-list-head"><div><span>Οι λογαριασμοί μου</span></div><Button type="button" variant="primary" className="account-management-create" onClick={openNew}><Plus size={17}/> Νέος λογαριασμός</Button></div>
       {metadata.error?<div className="logic-note compact" role="status">Τα IBAN δεν είναι προσωρινά διαθέσιμα. Οι υπόλοιπες ρυθμίσεις λογαριασμών λειτουργούν κανονικά.</div>:null}
       <div className="account-management-list" role="list">

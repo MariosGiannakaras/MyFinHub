@@ -17,6 +17,6 @@ export function Surface<T extends ElementType='div'>({
   ...props
 }:SurfaceProps<T>):ReactElement{
   const component=(as??'div') as ElementType;
-  const surfaceClassName=[className,`neo-${variant}`].filter(Boolean).join(' ');
+  const surfaceClassName=[className,`surface-${variant}`].filter(Boolean).join(' ');
   return createElement(component,{...props,className:surfaceClassName});
 }

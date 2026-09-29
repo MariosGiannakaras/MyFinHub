@@ -6,7 +6,7 @@ const css=readFileSync(new URL('../src/styles/cards-approved-surrounding.css',im
 
 describe('approved Cards surrounding desktop target source contract',()=>{
   it('keeps the existing bank-by-bank card workspace and card handlers intact',()=>{
-    expect(source.match(/className="cards-workspace cards-prototype-workspace neo-raised"/g)).toHaveLength(1);
+    expect(source.match(/className="cards-workspace cards-prototype-workspace surface-raised"/g)).toHaveLength(1);
     expect(source.match(/className="cards-grid cards-prototype-grid"/g)).toHaveLength(1);
     expect(source).toContain('<InteractivePaymentCard');
     expect(source).toContain('onEditDetails={editCardDetails} onArchive={archive}');
@@ -18,7 +18,7 @@ describe('approved Cards surrounding desktop target source contract',()=>{
 
   it('adds only truthful surrounding summaries and canonical account activity',()=>{
     expect(source).toContain('className="cards-surrounding-summary"');
-    expect(source).toContain('className="cards-surrounding-recent neo-raised"');
+    expect(source).toContain('className="cards-surrounding-recent surface-raised"');
     expect(source).toContain('effectiveLegacyTransactions(data)');
     expect(source).toContain('flowImpactLegacy(data,transaction)');
     expect(source).toContain('flowImpactEvent(event)');

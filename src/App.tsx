@@ -70,7 +70,7 @@ function routeFromHash() {
 function pageHash(page: PageId) { return `#/${page}`; }
 function PageLoading() { return <PageSkeleton/>; }
 function NotFound({ onHome }: { onHome: () => void }) {
-  return <main className="login-screen"><section className="not-found neo-raised" aria-labelledby="not-found-title"><span className="eyebrow">404 · PRIVATE ROUTE</span><h1 id="not-found-title">Η ενότητα δεν υπάρχει</h1><p>Η διεύθυνση δεν αντιστοιχεί σε ενότητα του MyFinHub. Δεν εμφανίζονται οικονομικά στοιχεία σε αυτή την οθόνη.</p><div className="editor-actions"><Button type="button" variant="primary" onClick={onHome}>Επιστροφή στο Dashboard</Button></div></section></main>;
+  return <main className="login-screen"><section className="not-found surface-raised" aria-labelledby="not-found-title"><span className="eyebrow">404 · PRIVATE ROUTE</span><h1 id="not-found-title">Η ενότητα δεν υπάρχει</h1><p>Η διεύθυνση δεν αντιστοιχεί σε ενότητα του MyFinHub. Δεν εμφανίζονται οικονομικά στοιχεία σε αυτή την οθόνη.</p><div className="editor-actions"><Button type="button" variant="primary" onClick={onHome}>Επιστροφή στο Dashboard</Button></div></section></main>;
 }
 const quickToken = () => `quick-${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
 

@@ -9,7 +9,7 @@ import { Button } from './Button';
 export function LongTermLoanSummary({data,onPayLoan,onOpenLoans}:{data:FinanceData;onPayLoan:(loanId:string)=>void;onOpenLoans:()=>void}){
   const obligations=activeLongTermLoanObligations(data);
   if(!obligations.length)return null;
-  return <section className="panel neo-flat long-term-recurring" aria-labelledby="linked-loan-obligations-title">
+  return <section className="panel surface-flat long-term-recurring" aria-labelledby="linked-loan-obligations-title">
     <div className="recurring-group-heading recurring-loan-group-heading"><Landmark size={16}/><div><span id="linked-loan-obligations-title">Δόσεις / Δάνεια</span><small>Συνδεδεμένες δανειακές υποχρεώσεις με την κανονική ροή πληρωμής δανείου.</small></div></div>
     <div className="long-term-recurring-list" role="list" aria-label="Ενεργές δανειακές υποχρεώσεις">
       {obligations.map(({loan,remainingInstallments,nextAmount,typicalDay,lastPayment})=><article className="long-term-loan-obligation" role="listitem" aria-label={`Δανειακή υποχρέωση ${loan.name}`} data-linked-loan={loan.id} key={loan.id}>

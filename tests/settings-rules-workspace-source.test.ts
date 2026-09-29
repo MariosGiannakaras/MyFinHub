@@ -49,7 +49,7 @@ describe('Settings Rules workspace source contract',()=>{
     expect(workspace).toContain("import { useModalFocus } from '../hooks/useModalFocus';");
     expect(workspace).toContain("const[editorOpen,setEditorOpen]=useState(false)");
     expect(workspace).toContain('className="editor-backdrop rules-editor-backdrop"');
-    expect(workspace).toContain('className="panel neo-raised editor-dialog rules-editor"');
+    expect(workspace).toContain('className="panel surface-raised editor-dialog rules-editor"');
     expect(workspace).toContain('<AppSelectInput');
     expect(workspace).toContain('<AppTextInput');
     expect(workspace).toContain('<CategorySelectInput');
