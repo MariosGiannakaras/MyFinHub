@@ -32,8 +32,8 @@ html[data-theme="dark"] .bank-brand-mark.bankmark-viva .bank-logo-image{filter:n
   border-radius:7px;
 }
 .dashboard-approved .approved-account-chart::before{content:none}
-.dashboard-approved .approved-account-chart .dashboard-account-history,
-.dashboard-approved .approved-account-chart .savings-legend{position:relative;z-index:1}
+.dashboard-approved .approved-account-chart .dashboard-account-history{position:relative;z-index:1}
+.dashboard-approved .approved-account-chart .savings-legend{z-index:5}
 
 .period-attention-shortcut{display:none}
 @media(min-width:981px){
