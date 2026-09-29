@@ -22,7 +22,7 @@
   .primary-balance-card .account-iban-value{font-size:10.5px}
   .account-iban-copy{width:40px;height:40px;flex-basis:40px;border-radius:12px}
   .account-iban-dashboard{height:20px;margin-top:1px}
-  .account-iban-dashboard .account-iban-copy{width:40px;height:40px;flex-basis:40px;margin:-10px 0 -10px -2px}
+  .account-iban-dashboard .account-iban-copy{width:48px;height:48px;flex-basis:48px;margin:-14px 0 -14px -3px}
   .compact-account-row{min-height:112px;align-items:flex-start}
   .compact-account-row .account-iban{align-items:flex-start}
   .compact-account-row .account-iban-copy{width:40px;height:40px;flex-basis:40px}

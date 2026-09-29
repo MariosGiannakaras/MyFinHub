@@ -49,7 +49,7 @@
   .dashboard-approved{min-width:0;width:100%;max-width:100%}
   .dashboard-approved .approved-account-body{grid-template-columns:minmax(0,1fr)}
   .dashboard-approved .approved-account-chart{min-width:0;width:100%;max-width:100%}
-  .dashboard-approved .approved-account-actions button{height:44px;min-height:44px;min-width:0;width:100%;max-width:100%}
+  .dashboard-approved .approved-account-actions button{height:48px;min-height:48px;min-width:0;width:100%;max-width:100%}
   .dashboard-approved .approved-secondary-account button{height:44px;min-height:44px}
   .dashboard-approved .approved-panel-head button,.dashboard-approved .approved-footer-link{min-height:44px}
 }
