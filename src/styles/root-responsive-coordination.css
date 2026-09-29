@@ -13,8 +13,11 @@
 .sidebar{height:calc(100vh - 16px);top:8px;padding:12px 8px}
 .brand-block{justify-content:center;padding:0 0 12px}
 .brand-block>div{display:none}
-.brand-icon{width:46px;height:46px}
-[data-global-quick-entry="desktop"]{font-size:0;width:48px;height:48px;padding:0;margin:auto}
+.topbar-primary [data-global-quick-entry="desktop"]{font-size:0;width:40px;height:40px;padding:0}
+.topbar-primary [data-global-quick-entry="desktop"] span{display:none}
+.sidebar nav{gap:4px}
+.nav-group{gap:4px}
+.nav-group-label{display:none}
 .sidebar nav button{justify-content:center;padding:11px}
 .sidebar nav button span,.sidebar-foot span,.file-panel{display:none}
 .count-badge{position:absolute;margin:0 0 22px 28px}
@@ -34,7 +37,7 @@
 .app-shell>main,.workspace,.page-stack{min-width:0;width:100%;max-width:100%}
 .sidebar{display:none}
 .topbar{top:6px;height:55px;border-radius:16px}
-.command-pill{display:none}
+.topbar-primary{display:none}
 .mobile-brand{display:flex;align-items:center;gap:7px}
 .mobile-brand img{width:32px;height:32px;border-radius:9px}
 .mobile-brand b{font-size:17px}
