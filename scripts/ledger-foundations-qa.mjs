@@ -20,7 +20,7 @@ try{
   const c=new Cdp(target.webSocketDebuggerUrl);await c.open();await c.send('Page.enable');await c.send('Runtime.enable');
   const waitFor=async(fn,label,args=[])=>{for(let i=0;i<100;i++){if(await c.call(fn,args))return;await sleep(100)}throw new Error(`Timed out waiting for ${label}`)};
   const clickText=async(selector,text)=>{const ok=await c.call("function(selector,text){const node=[...document.querySelectorAll(selector)].find(item=>(item.textContent||'').includes(text));if(!node)return false;node.click();return true}",[selector,text]);assert(ok,`could not click ${text}`);await sleep(120)};
-  const clickAria=async label=>{const ok=await c.call("function(label){const node=[...document.querySelectorAll('button')].find(item=>item.getAttribute('aria-label')===label);if(!node)return false;node.click();return true}",[label]);assert(ok,`could not click ${label}`);await sleep(120)};
+  const clickGlobalQuickEntry=async()=>{const ok=await c.call("function(){const visible=item=>{const rect=item.getBoundingClientRect(),style=getComputedStyle(item);return rect.width>0&&rect.height>0&&style.display!=='none'&&style.visibility!=='hidden'};const node=[...document.querySelectorAll('[data-global-quick-entry]')].find(visible);if(!node)return false;node.click();return true}");assert(ok,'could not click visible global Quick Add');await sleep(120)};
   const setLabelInput=async(label,value)=>{const ok=await c.call("function(label,value){const row=[...document.querySelectorAll('label')].find(item=>[...item.children].some(child=>child.tagName==='SPAN'&&(child.textContent||'').trim().startsWith(label)));const input=row?.querySelector('input');if(!input)return false;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(input,value);input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));return true}",[label,value]);assert(ok,`could not set ${label}`);await sleep(80)};
   const setAriaInput=async(label,value)=>{const ok=await c.call("function(label,value){const input=document.querySelector(`input[aria-label=\"${label}\"]`);if(!input)return false;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(input,value);input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));return true}",[label,value]);assert(ok,`could not set ${label}`);await sleep(80)};
   const navigate=async(label,heading)=>{await clickText('.sidebar nav button',label);await waitFor("function(heading){return (document.querySelector('#main-workspace h1')?.textContent||'').includes(heading)}",heading,[heading])};
@@ -32,7 +32,7 @@ try{
 
   console.log('Ledger QA: create first-class transfer');
   await navigate('Dashboard','Οι λογαριασμοί μου');
-  await clickAria('Γρήγορη προσθήκη');
+  await clickGlobalQuickEntry();
   await waitFor("function(){return !!document.querySelector('.quick-modal')}",'Quick Add');
   await clickText('.generic-kind-grid button','Μεταφορά');
   await setLabelInput('Ποσό','42.50');
