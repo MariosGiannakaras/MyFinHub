@@ -11,14 +11,14 @@ const buildDir=path.join(desktopDir,'.build');
 const serverDir=path.join(buildDir,'server');
 const runtimeDir=path.join(buildDir,'runtime');
 const distIndex=path.join(root,'dist','index.html');
-const sourceIcon=path.join(root,'public','brand','icon-light-192.png');
+const sourceIcon=path.join(root,'public','brand','icon-light-512.png');
 const generatedIcon=path.join(buildDir,'icon-512.png');
 const major=Number(process.versions.node.split('.')[0]);
 
 if(process.platform!=='win32')throw new Error('MyFinHub desktop packaging must run on Windows.');
 if(major!==22)throw new Error(`MyFinHub local backend must be packaged with Node 22.x; found ${process.version}.`);
 if(!fs.existsSync(distIndex))throw new Error('Frontend dist is missing. Run npm run build before preparing the desktop bundle.');
-if(!fs.existsSync(sourceIcon))throw new Error('MyFinHub light 192x192 brand source is missing.');
+if(!fs.existsSync(sourceIcon))throw new Error('MyFinHub light 512x512 brand source is missing.');
 
 fs.rmSync(buildDir,{recursive:true,force:true});
 fs.mkdirSync(serverDir,{recursive:true});
@@ -57,4 +57,4 @@ try{
 const stat=fs.statSync(runtimeExe);
 if(stat.size<10_000_000)throw new Error('Copied Node runtime is unexpectedly small.');
 if(!fs.existsSync(generatedIcon)||fs.statSync(generatedIcon).size<4_000)throw new Error('Generated Windows icon is invalid.');
-console.log(`MyFinHub desktop backend bundled with ${process.version} (${process.arch}); 512x512 Windows icon generated from the new light brand source.`);
+console.log(`MyFinHub desktop backend bundled with ${process.version} (${process.arch}); 512x512 Windows icon generated from the vector-master export.`);

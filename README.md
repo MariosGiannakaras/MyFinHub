@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/branding/myfinhub/icon-192.png" width="128" alt="MyFinHub authentic application mark" />
+  <img src="assets/branding/myfinhub/icon-512.svg" width="128" alt="MyFinHub authentic application mark" />
 </p>
 
 <h1 align="center">MyFinHub</h1>
@@ -88,9 +88,11 @@ Desktop updates are accepted only from the controlled MyFinHub GitHub Release ch
 
 ## Authentic branding
 
-MyFinHub uses the owner-approved Brand Kit v2 identity: the blue wallet with the `MF` symbol, with distinct light and dark application artwork. The canonical web/desktop deployment assets live under `assets/branding/myfinhub/`, with stable runtime copies under `public/brand/` and the Windows setup derivative under `desktop/`.
+MyFinHub uses the owner-approved Pure Vector identity: the blue wallet with the `MF` symbol, with distinct light and dark application artwork. The canonical web/desktop masters live under `assets/branding/myfinhub/`, with runtime copies under `public/brand/`.
 
-The supplied Brand Kit v2 SVG files were validated, but they are raster PNG artwork embedded inside SVG containers rather than true vector paths. The runtime therefore keeps the compact PNG derivatives and the existing 512×512 SVG wrappers instead of duplicating large pseudo-vector containers. Duplicate `vertical` lockups that are byte-identical to the corresponding `horizontal` files are not retained separately.
+The canonical app icons, standalone symbol and logo lockups are now true self-contained SVG vectors built from paths, shapes, gradients and SVG filters. They contain no embedded raster images, external assets, font dependencies or scripts. Browser/PWA branding uses the vector app masters where appropriate, while 32×32, 192×192 and 512×512 PNG files are platform exports rendered from those vectors.
+
+The source kit's horizontal light/dark lockups are identical, and the files labelled as vertical are the same 1800×650 horizontal artwork, so the repository keeps one canonical `logo-horizontal.svg` instead of duplicate or incorrectly named copies.
 
 Compatibility-critical historical identifiers such as `rheomiq_*` database objects and `RHEOMIQ_*` desktop/backend protocol variables remain intentionally unchanged because they are persistence/protocol contracts, not visible product branding.
 
