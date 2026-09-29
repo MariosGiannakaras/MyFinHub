@@ -7,7 +7,7 @@ const DAY=86_400_000;
 const parseDate=(value:string)=>Date.parse(`${value}T12:00:00Z`);
 const toIso=(value:number)=>new Date(value).toISOString().slice(0,10);
 
-export function shiftDashboardMonth(month:string,delta:number){
+function shiftDashboardMonth(month:string,delta:number){
   const [year,rawMonth]=month.split('-').map(Number);
   const date=new Date(Date.UTC(year,rawMonth-1+delta,1));
   return `${date.getUTCFullYear()}-${String(date.getUTCMonth()+1).padStart(2,'0')}`;
