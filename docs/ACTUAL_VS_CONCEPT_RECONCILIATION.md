@@ -48,7 +48,7 @@ The concept is a visual-direction reference, not a literal product contract. Cur
 
 **Concept/system direction:** keep the primary task/title legible first; secondary actions may wrap beneath it on narrow screens.
 
-**Decision:** keep the shared `PageHeader`, but switch the Dashboard mobile header to a single-column hierarchy with a full-width wrapping action row.
+**Decision:** keep the shared `PageHeader`, but switch the Dashboard mobile header to a single-column hierarchy with a full-width wrapping action row. Hide the supporting Dashboard description on phone viewports so primary account content reaches the viewport earlier; the same description remains available on desktop. Lighthouse identified that paragraph as the mobile LCP element, so this also removes avoidable render delay without changing finance behavior.
 
 ## Intentionally not copied from the concept
 
