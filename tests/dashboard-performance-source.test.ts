@@ -9,6 +9,8 @@ describe('Dashboard first-paint performance contract',()=>{
     expect(dashboard).not.toContain("from 'recharts'");
     expect(dashboard).toContain("lazy(()=>import('../components/DashboardRecharts')");
     expect(recharts).toContain("from 'recharts'");
+    expect(recharts).not.toContain('ResponsiveContainer');
+    expect(recharts).toContain('responsive style=');
   });
 
   it('defers below-the-fold analytics until after the first paint without removing their fixed wrappers',()=>{
