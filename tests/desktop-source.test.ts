@@ -185,7 +185,7 @@ describe('MyFinHub Windows desktop boundary', () => {
     expect(bytes('desktop/setup-brand.png').equals(bytes('public/brand/icon-dark-192.png'))).toBe(true);
     expect(prepareBuild).toContain("const sourceIcon=path.join(root,'public','brand','icon-512.png')");
     expect(prepareBuild).not.toContain('resize-icon.ps1');
-    expect(desktopPackage.build.win.icon).toBe('../public/brand/icon-512.png');
+    expect(desktopPackage.build.win.icon).toBe('../public/brand/icon-512.svg');
     expect(desktopPackage.build.extraResources).toContainEqual(expect.objectContaining({from:'../public/brand/icon-512.png',to:'app/icon.png'}));
     expect(workflow).toContain('assets/branding/myfinhub/**');
   });

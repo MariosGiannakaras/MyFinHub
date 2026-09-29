@@ -65,7 +65,7 @@
           ]
         }
       ],
-      "icon": "../public/brand/icon-512.png",
+      "icon": "../public/brand/icon-512.svg",
       "executableName": "MyFinHub",
       "artifactName": "MyFinHub-Setup-${version}-${arch}.${ext}"
     },

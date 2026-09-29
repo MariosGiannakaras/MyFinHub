@@ -25,7 +25,7 @@ Apple home-screen/web-clip presentation uses the supplied 180×180 `apple-touch-
 
 PWA installation keeps explicit 192×192 and 512×512 PNG `any` icons plus the scalable SVG icon. Dedicated `icon-maskable-192.png` and `icon-maskable-512.png` use the transparent PureVector symbol on a full-bleed `#F6F8FB` field with the artwork kept inside the maskable safe region. The normal precomposed app tile is deliberately not mislabeled as `maskable`.
 
-Windows/Electron uses `public/brand/icon-512.png` as the native packaging/runtime bitmap source. It is byte-identical to the supplied light 512×512 export from the vector master; electron-builder performs the Windows package conversion. `desktop/setup-brand.png` remains the dark 192×192 setup/recovery mark. No upscaling from 192×192 is performed.
+Windows packaging gives electron-builder the true-vector `public/brand/icon-512.svg`, allowing it to generate the Windows ICO size set from vector input. The packaged/runtime BrowserWindow icon remains `public/brand/icon-512.png`, byte-identical to the supplied light 512×512 export, because the runtime consumes a native bitmap path. `desktop/setup-brand.png` remains the dark 192×192 setup/recovery mark. No upscaling from 192×192 is performed.
 
 `src/components/BrandMark.tsx` renders the light/dark true-vector app artwork for in-application branding.
 

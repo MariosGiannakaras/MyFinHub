@@ -90,7 +90,7 @@ Desktop updates are accepted only from the controlled MyFinHub GitHub Release ch
 
 MyFinHub uses the owner-approved PureVector identity: the blue wallet / `MF` symbol and associated wordmark. The canonical web/desktop masters live under `assets/branding/myfinhub/`; runtime files under `public/brand/` are platform-specific derivatives or exact compatibility aliases.
 
-The repository intentionally does not use one image file for every platform. Browser tabs have SVG plus 16/32 PNG fallbacks, Apple web clips use a 180×180 touch icon, PWA installation has explicit 192/512 `any` and safe-zone `maskable` assets, and Windows packaging uses a native 512×512 PNG export from the same vector master. In-application light/dark branding continues to use true SVG vectors.
+The repository intentionally does not use one image file for every platform. Browser tabs have SVG plus 16/32 PNG fallbacks, Apple web clips use a 180×180 touch icon, PWA installation has explicit 192/512 `any` and safe-zone `maskable` assets, Windows packaging uses the true SVG master for ICO generation while the packaged runtime keeps an exact 512×512 PNG export for its native window icon. In-application light/dark branding continues to use true SVG vectors.
 
 The source SVGs are genuine vector artwork with no embedded raster payloads. Duplicate horizontal/vertical-labelled lockups from the source kit are not retained as separate canonical assets. Android adaptive/themed/store artwork is maintained in the dedicated Android repository from the same PureVector identity.
 
