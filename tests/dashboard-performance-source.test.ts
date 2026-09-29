@@ -1,0 +1,20 @@
+import { readFileSync } from 'node:fs';
+import { describe, expect, it } from 'vitest';
+
+const dashboard=readFileSync(new URL('../src/pages/DashboardPage.tsx',import.meta.url),'utf8');
+const recharts=readFileSync(new URL('../src/components/DashboardRecharts.tsx',import.meta.url),'utf8');
+
+describe('Dashboard first-paint performance contract',()=>{
+  it('keeps Recharts out of the initial Dashboard route module',()=>{
+    expect(dashboard).not.toContain("from 'recharts'");
+    expect(dashboard).toContain("lazy(()=>import('../components/DashboardRecharts')");
+    expect(recharts).toContain("from 'recharts'");
+  });
+
+  it('defers below-the-fold analytics until after the first paint without removing their fixed wrappers',()=>{
+    expect(dashboard).toContain('requestAnimationFrame(()=>{secondFrame=requestAnimationFrame(()=>setRenderDeferredCharts(true))})');
+    expect(dashboard).toContain('className="approved-bar-wrap"');
+    expect(dashboard).toContain('className="approved-category-donut"');
+    expect(dashboard).toContain('className="summary-donut"');
+  });
+});
