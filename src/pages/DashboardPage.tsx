@@ -69,10 +69,10 @@ function AccountBalanceChart({series,comparison=[],tone,currentMonth,target,labe
     <path className="account-history-area" d={area} fill={toneColor} fillOpacity=".075"/>
     {boundaryX>padX+1?<line className="account-month-boundary" x1={boundaryX} y1="2" x2={boundaryX} y2={height-2}/>:null}
     {[.25,.5,.75].map(ratio=>{const x=boundaryX+(width-padX-boundaryX)*ratio;return <line key={ratio} className="account-period-guide" x1={x} y1="4" x2={x} y2={height-4}/>})}
-    {comparisonPoints.length>1?<path className="account-history-comparison" d={path(comparisonPoints)} stroke={comparisonColor}/>:null}
+    {comparisonPoints.length>1?<path className="account-history-comparison" d={path(comparisonPoints)} fill="none" stroke={comparisonColor}/>:null}
     {visibleTarget!==undefined?<line className="account-history-target" x1={boundaryX} y1={yForValue(visibleTarget)} x2={width-padX} y2={yForValue(visibleTarget)} stroke={toneColor}/>:null}
-    {previousPoints.length>1?<path className="account-history-previous" d={path(previousPoints)} stroke={toneColor}/>:null}
-    {currentPoints.length>1?<path className="account-history-current" d={path(currentPoints)} stroke={toneColor}/>:null}
+    {previousPoints.length>1?<path className="account-history-previous" d={path(previousPoints)} fill="none" stroke={toneColor}/>:null}
+    {currentPoints.length>1?<path className="account-history-current" d={path(currentPoints)} fill="none" stroke={toneColor}/>:null}
     {previousPoints.length&&currentPoints.length?<line className="account-history-connector" x1={previousPoints.at(-1)![0]} y1={previousPoints.at(-1)![1]} x2={currentPoints[0]![0]} y2={currentPoints[0]![1]} stroke={toneColor}/>:null}
     <circle className="account-history-end" cx={last[0]} cy={last[1]} r="2.35" stroke={toneColor}/>
   </svg>;
