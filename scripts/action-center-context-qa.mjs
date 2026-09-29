@@ -90,11 +90,11 @@ try{
 
   console.log('Action Center QA: account, savings and lending invocation contexts');
   await navigate('dashboard');
-  const payrollOpened=await c.call("function(){const node=document.querySelector('[data-account-id=\"piraeus-payroll\"] .account-context-action');node?.click();return Boolean(node)}");assert(payrollOpened,'dashboard payroll account context action');
+  const payrollOpened=await c.call("function(){const node=document.querySelector('[data-account-id=\"piraeus-payroll\"] [data-account-quick-entry=\"piraeus-payroll\"]');node?.click();return Boolean(node)}");assert(payrollOpened,'dashboard payroll quick action');
   await waitFor("function(){return Boolean(document.querySelector('.quick-modal:not(.contextual-quick-modal)'))}",'payroll account-context generic quick add');
   assert(await c.call("function(){return [...document.querySelectorAll('.quick-modal:not(.contextual-quick-modal) input[role=combobox]')].some(input=>(input.value||'').includes('Μισθοδοσία'))}"),'payroll context preselects originating payroll account');
   await closeGenericModal();
-  const cashOpened=await c.call("function(){const node=document.querySelector('[data-account-id=\"cash\"] .account-context-action');node?.click();return Boolean(node)}");assert(cashOpened,'dashboard cash account context action');
+  const cashOpened=await c.call("function(){const node=document.querySelector('[data-account-id=\"cash\"] [data-account-quick-entry=\"cash\"]');node?.click();return Boolean(node)}");assert(cashOpened,'dashboard cash quick action');
   await waitFor("function(){return Boolean(document.querySelector('.quick-modal:not(.contextual-quick-modal)'))}",'cash account-context generic quick add');
   assert(await c.call("function(){return [...document.querySelectorAll('.quick-modal:not(.contextual-quick-modal) input[role=combobox]')].some(input=>(input.value||'').includes('Μετρητά'))}"),'cash context preselects originating cash account');
   await closeGenericModal();
