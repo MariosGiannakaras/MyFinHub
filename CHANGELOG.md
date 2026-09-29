@@ -4,6 +4,23 @@ All notable MyFinHub changes are recorded here. Release artifacts remain availab
 
 ## [Unreleased]
 
+### Changed
+
+- Reconciled the Dashboard shell and primary account cards with the approved design direction: the desktop Quick Add lives in the shared topbar, duplicate desktop command search was removed from the sidebar, account history uses realistic balance movement, Dashboard IBANs stay masked, non-savings cards show absolute 30-day balance movement and the redundant duplicate account action was removed.
+- Adopted the owner-supplied MyFinHub PureVector identity across web/PWA and Windows desktop, including true-vector masters, browser favicon fallbacks, explicit PWA install/maskable assets and vector-backed Windows icon packaging.
+- Deferred Dashboard Recharts until after first paint with a bounded fallback, while visual QA waits for steady-state chart rendering before capturing evidence.
+
+### Fixed
+
+- Enforced 48px Dashboard account-action and IBAN-copy interaction targets on mobile, and a real 48×48px IBAN copy hit area on wide desktop while keeping the visible icon compact.
+- Kept the wide-desktop Dashboard IBAN copy affordance visibly discoverable at rest without changing masking or full-value copy behavior.
+- Allowed long custom primary-account names to wrap to two lines and let cards grow safely without overlapping IBAN, chart or action content.
+
+### Security & reliability
+
+- Updated the Windows desktop host from Electron 43.3.0 to 43.7.0 on the existing 43.x line to clear newly published high-severity advisories and restore the required npm audit gate.
+- Extended rendered regression coverage for Dashboard account metadata, touch targets, long-name layout, copy interaction geometry, responsive overflow and deferred chart steady state.
+
 ## [1.3.0] - 2026-09-28
 
 ### Added
