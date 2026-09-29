@@ -12,7 +12,7 @@ import { budgetProgress } from '../lib/budgets';
 import { visibleAttentionItems } from '../lib/attention';
 import { effectiveLegacyTransactions, flowImpactEvent, flowImpactLegacy, monthRange } from '../lib/domain';
 import { financeAccountChoices } from '../lib/accountSelection';
-import { dashboardAccountHistory, dashboardBalanceChange, dashboardHistoryStart, dashboardPreviousMonthValues, type DashboardAccountPoint } from '../lib/dashboardAccounts';
+import { dashboardAccountHistory, dashboardBalanceChange, dashboardHistoryStart, dashboardPreviousMonthValues, dashboardSavingsGoal, type DashboardAccountPoint } from '../lib/dashboardAccounts';
 import { cashFlowForecast } from '../lib/forecast';
 import { money } from '../lib/format';
 import { activeRecurringItems } from '../lib/recurring';
@@ -112,8 +112,7 @@ export function DashboardPage({ data, month, asOf, motionMode='system', privacyV
   const savingsAccount=primary.find(account=>account.kind==='savings');
   const previousSavings=useMemo(()=>savingsAccount?dashboardPreviousMonthValues(data,savingsAccount.id,balanceMonth,asOf):[],[data,savingsAccount?.id,balanceMonth,asOf]);
   const savingsAccounts=accounts.filter(account=>account.kind==='savings');
-  const savingsGoal=(data.state.savingsGoals??[]).filter(goal=>Number.isFinite(goal.targetAmount)&&goal.targetAmount>0).slice().sort((a,b)=>(a.targetDate??'9999-12-31').localeCompare(b.targetDate??'9999-12-31')||a.createdAt.localeCompare(b.createdAt))[0];
-  const accountSavingsGoal=savingsAccounts.length===1?savingsGoal:undefined;
+  const accountSavingsGoal=dashboardSavingsGoal(data.state.savingsGoals,savingsAccounts.length);
   const savingAmount=flow.saving;const savingsRate=flow.income>0?savingAmount/flow.income:0;const previousSavingsRate=previousFlow.income>0?previousFlow.saving/previousFlow.income:null;
   const incomeComparison=percentChange(flow.income,previousFlow.income);const expenseComparison=percentChange(flow.expense,previousFlow.expense);const savingComparison=percentChange(savingAmount,previousFlow.saving);const savingsRateDelta=previousSavingsRate===null?null:safePercent((savingsRate-previousSavingsRate)*100);
   const comparisonText=(value:number|null)=>value===null?`— έναντι ${previousMonthLabel}`:`${value>0?'↑':value<0?'↓':'→'} ${Math.abs(value)}% από ${previousMonthLabel}`;
