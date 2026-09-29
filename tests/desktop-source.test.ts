@@ -153,7 +153,7 @@ describe('MyFinHub Windows desktop boundary', () => {
     expect(workflow).toContain('MyFinHub executable remains after silent uninstall.');
   });
 
-  it('keeps the new light/dark MyFinHub artwork and generates the Windows 512 size at build time', () => {
+  it('keeps the pure-vector-backed MyFinHub artwork and packages Windows from the 512 export', () => {
     for (const asset of [
       'public/favicon.png',
       'public/brand/icon-light-32.png',
@@ -161,12 +161,21 @@ describe('MyFinHub Windows desktop boundary', () => {
       'public/brand/icon-light-192.png',
       'public/brand/icon-dark-192.png',
       'public/brand/icon-512.svg',
+      'public/brand/icon-512.png',
+      'public/brand/icon-dark-512.svg',
+      'public/brand/icon-light-512.png',
+      'public/brand/icon-dark-512.png',
       'desktop/setup-brand.png',
       'assets/branding/myfinhub/icon-light-32.png',
       'assets/branding/myfinhub/icon-dark-32.png',
       'assets/branding/myfinhub/icon-light-192.png',
       'assets/branding/myfinhub/icon-dark-192.png',
       'assets/branding/myfinhub/icon-512.svg',
+      'assets/branding/myfinhub/icon-dark-512.svg',
+      'assets/branding/myfinhub/icon-light-512.png',
+      'assets/branding/myfinhub/icon-dark-512.png',
+      'assets/branding/myfinhub/symbol.svg',
+      'assets/branding/myfinhub/logo-horizontal.svg',
       'assets/branding/myfinhub/README.md',
     ]) expect(exists(asset)).toBe(true);
     const favicon=bytes('public/favicon.png');
@@ -174,8 +183,10 @@ describe('MyFinHub Windows desktop boundary', () => {
     expect(favicon.readUInt32BE(16)).toBe(32);
     expect(favicon.readUInt32BE(20)).toBe(32);
     expect(bytes('desktop/setup-brand.png').equals(bytes('public/brand/icon-dark-192.png'))).toBe(true);
-    expect(prepareBuild).toContain("const sourceIcon=path.join(root,'public','brand','icon-light-192.png')");
-    expect(prepareBuild).toContain('[Drawing.Bitmap]::new(512,512)');
+    expect(prepareBuild).toContain("const sourceIcon=path.join(root,'public','brand','icon-512.png')");
+    expect(prepareBuild).not.toContain('resize-icon.ps1');
+    expect(desktopPackage.build.win.icon).toBe('../public/brand/icon-512.svg');
+    expect(desktopPackage.build.extraResources).toContainEqual(expect.objectContaining({from:'../public/brand/icon-512.png',to:'app/icon.png'}));
     expect(workflow).toContain('assets/branding/myfinhub/**');
   });
 

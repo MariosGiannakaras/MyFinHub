@@ -1,30 +1,36 @@
 # MyFinHub brand assets
 
-This folder contains the canonical runtime artwork for the current MyFinHub identity. The previous pre-rebrand RheomIQ wallet/`R` artwork is no longer a runtime source.
+This directory contains the canonical web/desktop artwork for the owner-approved MyFinHub PureVector identity.
 
-## Owner-supplied source set
+## Source and vector verification
 
-The four source images supplied during the 2026-08-21 branding pass are JPEG/JFIF byte streams even though the client upload names used `.png`. Their source dimensions and SHA-256 fingerprints are:
+The source is `MyFinHub_Brand_Kit_PureVector.zip`, reviewed on 2026-09-29. The canonical SVGs are real self-contained vector artwork made from SVG paths/shapes, gradients and filters. They contain no `<image>` elements, embedded PNG/JPEG/base64 payloads, external image references, font dependencies or scripts. Rendering the supplied app-icon SVG masters at 32×32 matches the supplied 32×32 PNG exports pixel-for-pixel.
 
-- light square — 1536×1536 — `7ea970d91a5d0a01eaec49b8546e6d555ae60ea099644bc6c7265aabcf6c3a02`
-- dark square — 1536×1536 — `02466161914d0836bb8336a043e402583751f5569ec360bf135d6bf0df059dc0`
-- light horizontal wordmark — 1536×512 — `a82df276af4a5319daf2259ff8e51f6b660444699bea04b432b18eb122e7e69a`
-- dark horizontal wordmark — 1536×512 — `8e3c3236ebd972d017de2c273623486e52ef8deb364c5b9e5b91a62047093d5d`
+The source kit's horizontal light/dark SVG lockups are byte-identical. Files labelled `vertical-light` and `vertical-dark` contain the same 1800×650 horizontal artwork, so those duplicate/mislabelled files are not retained.
 
-The source files have no alpha channel. Transparent runtime derivatives were generated from the supplied artwork; the source fingerprints above are the provenance record and must not be replaced by regenerated files.
+## Canonical masters
 
-## Runtime contract
+- `app-icon-light.svg` / `app-icon-dark.svg`: exact supplied 1024×1024 light/dark app-icon vector masters.
+- `symbol.svg`: exact transparent wallet / MF symbol vector.
+- `logo-light.svg` / `logo-dark.svg`: square logo lockups.
+- `logo-horizontal.svg`: the single non-duplicate horizontal lockup.
+- `favicon-light.svg` / `favicon-dark.svg`: browser aliases of the corresponding true-vector app masters.
+- `icon-512.svg` / `icon-dark-512.svg`: true-vector 512×512 runtime presentations.
 
-- `icon-light-32.png` / `icon-dark-32.png`: native favicon-size derivatives.
-- `icon-light-192.png` / `icon-dark-192.png`: native web/auth/setup derivatives.
-- `icon-32.png` / `icon-192.png`: light-theme compatibility aliases.
-- `icon-512.svg` / `icon-dark-512.svg`: scalable 512 wrappers referencing the corresponding 192 derivative; the web manifest uses the light wrapper.
-- `public/brand/` contains the runtime copies.
-- `public/favicon.png` is byte-identical to the light 32 derivative.
-- `desktop/setup-brand.png` is byte-identical to the dark 192 derivative.
-- Windows packaging generates its 512×512 PNG icon from `public/brand/icon-light-192.png` using high-quality System.Drawing interpolation during the packaging job.
-- `src/components/BrandMark.tsx` is the application-wide light/dark presentation contract. Theme switching is explicit through `html[data-theme="light|dark"]`; it does not infer a dark logo from the operating-system preference while the application surface is still light.
+## Platform asset matrix
 
-The supplied horizontal images remain the design reference for the MyFinHub lockup. Runtime shell/auth lockups use the new square artwork together with the product word treatment so they remain responsive and theme-safe at small application sizes.
+Browser tabs use the true SVG light/dark favicons when supported, with 32×32 and 16×16 PNG fallbacks. `public/favicon.png` remains a 32×32 compatibility alias.
 
-Compatibility-critical legacy `rheomiq_*` database identifiers and `RHEOMIQ_*` local-backend protocol names are persistence/protocol contracts, not visual brand assets, and remain unchanged.
+PWA installation keeps explicit 192×192 and 512×512 PNG `any` icons plus the scalable SVG icon. Dedicated `icon-maskable-192.png` and `icon-maskable-512.png` use the transparent PureVector symbol on a full-bleed `#F6F8FB` field with the artwork kept inside the maskable safe region. The normal precomposed app tile is deliberately not mislabeled as `maskable`.
+
+Windows packaging gives electron-builder the true-vector `public/brand/icon-512.svg`, allowing it to generate the Windows ICO size set from vector input. The packaged/runtime BrowserWindow icon remains `public/brand/icon-512.png`, byte-identical to the supplied light 512×512 export, because the runtime consumes a native bitmap path. `desktop/setup-brand.png` remains the dark 192×192 setup/recovery mark. No upscaling from 192×192 is performed.
+
+`src/components/BrandMark.tsx` renders the light/dark true-vector app artwork for in-application branding.
+
+## Compatibility aliases
+
+Stable paths `icon-32.png`, `icon-192.png`, `public/favicon.png` and `public/brand/icon-512.png` are retained where they protect existing browser/desktop call sites. They are exact aliases, not independent artwork.
+
+Android-specific adaptive/themed/store assets are maintained in `MariosGiannakaras/MyFinHub-Android-App`. iOS assets are intentionally excluded: MyFinHub currently targets only web/PWA, Windows desktop and Android.
+
+Compatibility-critical `rheomiq_*` database identifiers and `RHEOMIQ_*` desktop/backend protocol variables are persistence/protocol contracts rather than visible branding and remain unchanged.
