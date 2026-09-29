@@ -82,6 +82,13 @@ describe('cross-page UI consistency contracts',()=>{
     expect(shell).not.toContain('genericEntry');
     expect(shell).toContain('data-global-quick-entry="desktop"');
     expect(shell).toContain('data-global-quick-entry="mobile"');
+    expect(shell).toContain('className="topbar-primary"');
+    expect(shell).not.toContain('className="command-search-action"');
+    expect(shell).toContain("label:'ΕΠΙΣΚΟΠΗΣΗ'");
+    expect(shell).toContain("label:'ΛΟΓΑΡΙΑΣΜΟΙ & ΠΛΗΡΩΜΕΣ'");
+    expect(shell).toContain("label:'ΟΡΓΑΝΩΣΗ & ΠΡΟΓΡΑΜΜΑΤΙΣΜΟΣ'");
+    expect(shell).toContain("label:'ΡΥΘΜΙΣΕΙΣ'");
+    expect(shell).toContain('className="nav-group-label"');
   });
 
   it('keeps routed pages off legacy neumorphic JSX hooks',()=>{
