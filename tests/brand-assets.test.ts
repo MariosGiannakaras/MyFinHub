@@ -45,6 +45,8 @@ describe('MyFinHub light/dark brand assets', () => {
     for(const asset of [
       'public/brand/icon-512.svg',
       'public/brand/icon-dark-512.svg',
+      'assets/branding/myfinhub/app-icon-light.svg',
+      'assets/branding/myfinhub/app-icon-dark.svg',
       'assets/branding/myfinhub/icon-512.svg',
       'assets/branding/myfinhub/icon-dark-512.svg',
       'assets/branding/myfinhub/symbol.svg',

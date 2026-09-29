@@ -24,8 +24,9 @@ The light and dark app-icon SVGs each contain 11 paths, 7 rectangles, 2 circles 
 
 ## Canonical masters
 
-- `icon-512.svg`: light application icon, true vector master.
-- `icon-dark-512.svg`: dark application icon, true vector master.
+- `app-icon-light.svg`: exact supplied light application-icon vector master (1024×1024 viewBox).
+- `app-icon-dark.svg`: exact supplied dark application-icon vector master (1024×1024 viewBox).
+- `icon-512.svg` / `icon-dark-512.svg`: 512×512 runtime SVG presentations of those masters, still vector-only.
 - `symbol.svg`: transparent standalone wallet / MF symbol.
 - `logo-light.svg`: square light logo lockup.
 - `logo-dark.svg`: square dark logo lockup.
@@ -41,7 +42,7 @@ Stable runtime paths are preserved so the branding refresh does not disturb unre
 - `icon-light-192.png` / `icon-dark-192.png`: supplied 192×192 vector exports.
 - `icon-light-512.png` / `icon-dark-512.png`: supplied 512×512 vector exports.
 - `icon-32.png` / `icon-192.png`: light-theme compatibility aliases.
-- `public/brand/icon-512.svg` / `icon-dark-512.svg`: runtime copies of the true vector app masters.
+- `public/brand/icon-512.svg` / `icon-dark-512.svg`: true-vector runtime copies with explicit 512×512 presentation geometry.
 - `public/favicon.png`: byte-identical to the light 32×32 export.
 - `desktop/setup-brand.png`: byte-identical to the dark 192×192 export.
 - `src/components/BrandMark.tsx`: renders the true vector light/dark app masters.
