@@ -61,12 +61,10 @@ function AccountBalanceChart({series,comparison=[],tone,currentMonth,target,labe
   const yForValue=(value:number)=>padY+(1-(value-min)/Math.max(1,max-min))*(height-padY*2);
   const point=(entry:DashboardAccountPoint)=>[xForDate(entry.date),yForValue(entry.value)] as const;
   const points=safeSeries.map(point);const path=(rows:ReadonlyArray<readonly[number,number]>)=>rows.map((item,index)=>`${index?'L':'M'} ${item[0].toFixed(2)} ${item[1].toFixed(2)}`).join(' ');
-  const area=`${path(points)} L ${points.at(-1)![0].toFixed(2)} ${height} L ${points[0]![0].toFixed(2)} ${height} Z`;
   const previousPoints=safeSeries.filter(entry=>entry.date<monthStart).map(point);const currentPoints=safeSeries.filter(entry=>entry.date>=monthStart).map(point);
   const boundaryX=Math.max(padX,Math.min(width-padX,xForDate(monthStart)));const comparisonPoints=comparison.map((entry,index)=>[boundaryX+(index/Math.max(1,comparison.length-1))*(width-padX-boundaryX),yForValue(entry.value)] as const);
   const last=points.at(-1)!;const toneColor=tone==='green'?'#31C77B':tone==='purple'?'#A15CFF':'#2463F4';const comparisonColor=tone==='blue'?'#A9C5FF':'#B9C9E8';
   return <svg className={`dashboard-account-history tone-${tone}`} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" role="img" aria-label={label}>
-    <path className="account-history-area" d={area} fill={toneColor} fillOpacity=".075"/>
     {boundaryX>padX+1?<line className="account-month-boundary" x1={boundaryX} y1="2" x2={boundaryX} y2={height-2}/>:null}
     {[.25,.5,.75].map(ratio=>{const x=boundaryX+(width-padX-boundaryX)*ratio;return <line key={ratio} className="account-period-guide" x1={x} y1="4" x2={x} y2={height-4}/>})}
     {comparisonPoints.length>1?<path className="account-history-comparison" d={path(comparisonPoints)} fill="none" stroke={comparisonColor}/>:null}
