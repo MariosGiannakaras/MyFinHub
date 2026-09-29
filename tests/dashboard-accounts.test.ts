@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { migrateData } from '../src/lib/domain.js';
-import { dashboardAccountHistory, dashboardBalanceChange, dashboardHistoryStart, dashboardPreviousMonthValues } from '../src/lib/dashboardAccounts.js';
+import { dashboardAccountHistory, dashboardBalanceChange, dashboardHistoryStart, dashboardPreviousMonthValues, dashboardSavingsGoal } from '../src/lib/dashboardAccounts.js';
 import type { FinanceData } from '../src/types.js';
 
 function fixture():FinanceData{
@@ -48,4 +48,26 @@ describe('Dashboard account history',()=>{
   it('reports the movement-derived 30-day balance change in account currency',()=>{
     expect(dashboardBalanceChange(fixture(),'bank','2026-08-12')).toBe(10);
   });
+
+  it('resets the reconstructed curve at an authoritative snapshot inside the visible window',()=>{
+    const data=fixture();
+    data.seed.snapshots=[
+      {date:'2026-07-01',balances:{bank:1000,save:300}},
+      {date:'2026-08-09',balances:{bank:900,save:325}},
+      {date:'2026-08-11',balances:{bank:1010,save:350}},
+    ];
+    const rows=dashboardAccountHistory(data,['bank'],'2026-08-04','2026-08-11').bank;
+    expect(rows.find(point=>point.date==='2026-08-08')?.value).toBe(1060);
+    expect(rows.find(point=>point.date==='2026-08-09')?.value).toBe(900);
+    expect(rows.at(-1)?.value).toBe(1010);
+  });
+
+  it('only returns a card-level savings goal when both the account and goal are unambiguous',()=>{
+    const goal={id:'goal-1',name:'Emergency',targetAmount:3000,createdAt:'2026-08-01T00:00:00Z',updatedAt:'2026-08-01T00:00:00Z'};
+    expect(dashboardSavingsGoal([goal],1)?.id).toBe('goal-1');
+    expect(dashboardSavingsGoal([goal],2)).toBeUndefined();
+    expect(dashboardSavingsGoal([goal,{...goal,id:'goal-2',name:'Trip'}],1)).toBeUndefined();
+    expect(dashboardSavingsGoal([{...goal,targetAmount:0}],1)).toBeUndefined();
+  });
+
 });
