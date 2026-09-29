@@ -27,30 +27,13 @@ html[data-theme="dark"] .bank-brand-mark.bankmark-viva .bank-logo-image{filter:n
 .dashboard-approved .account-tone-2 .approved-account-icon .bank-brand-mark[data-bank-logo-source="local-image"] .bank-logo-image{width:29px;height:26px}
 
 .dashboard-approved .approved-account-chart{
-  --dashboard-spark-curtain:rgba(63,141,245,.19);
-  --dashboard-spark-curtain-soft:rgba(63,141,245,.07);
-  position:relative;
   isolation:isolate;
   overflow:hidden;
   border-radius:7px;
 }
-.dashboard-approved .approved-account-chart::before{
-  content:"";
-  position:absolute;
-  z-index:0;
-  left:0;
-  right:0;
-  top:15px;
-  bottom:0;
-  pointer-events:none;
-  background:linear-gradient(180deg,var(--dashboard-spark-curtain) 0%,var(--dashboard-spark-curtain-soft) 48%,rgba(255,255,255,0) 100%);
-  filter:blur(1.8px);
-}
-.dashboard-approved .account-tone-0 .approved-account-chart{--dashboard-spark-curtain:rgba(49,199,123,.23);--dashboard-spark-curtain-soft:rgba(49,199,123,.08)}
-.dashboard-approved .account-tone-1 .approved-account-chart{--dashboard-spark-curtain:rgba(171,54,232,.21);--dashboard-spark-curtain-soft:rgba(171,54,232,.07)}
-.dashboard-approved .account-tone-2 .approved-account-chart{--dashboard-spark-curtain:rgba(63,141,245,.20);--dashboard-spark-curtain-soft:rgba(63,141,245,.07)}
-.dashboard-approved .approved-account-chart .dashboard-sparkline,
-.dashboard-approved .approved-account-chart .savings-legend{position:relative;z-index:1}
+.dashboard-approved .approved-account-chart::before{content:none}
+.dashboard-approved .approved-account-chart .dashboard-account-history{position:relative;z-index:1}
+.dashboard-approved .approved-account-chart .savings-legend{z-index:5}
 
 .period-attention-shortcut{display:none}
 @media(min-width:981px){

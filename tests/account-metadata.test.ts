@@ -12,6 +12,7 @@ const financeHook=readFileSync(new URL('../src/hooks/useFinance.ts',import.meta.
 const dashboardSource=readFileSync(new URL('../src/pages/DashboardPage.tsx',import.meta.url),'utf8');
 const settingsSource=readFileSync(new URL('../src/pages/SettingsPage.tsx',import.meta.url),'utf8');
 const accountManagerSource=readFileSync(new URL('../src/components/AccountManagementSettings.tsx',import.meta.url),'utf8');
+const accountIbanSource=readFileSync(new URL('../src/components/AccountIban.tsx',import.meta.url),'utf8');
 
 describe('account IBAN metadata',()=>{
   it('normalizes, validates and formats real IBAN checksums without inventing issuer restrictions',()=>{
@@ -70,7 +71,9 @@ describe('account IBAN metadata',()=>{
   it('keeps IBAN outside FinanceData and finance Undo/Redo while exposing it on Dashboard and Settings',()=>{
     expect(financeTypes.toLowerCase()).not.toContain('iban');
     expect(financeHook.toLowerCase()).not.toContain('iban');
-    expect(dashboardSource).toContain('<AccountIban accountId={account.id}/>');
+    expect(dashboardSource).toContain('<AccountIban accountId={account.id} variant="dashboard"');
+    expect(accountIbanSource).toContain("variant?:'default'|'dashboard'");
+    expect(accountIbanSource).toContain('••••');
     expect(settingsSource).toContain('<AccountManagementSettings');
     expect(accountManagerSource).toContain('useAccountMetadata');
     expect(accountManagerSource).toContain('saveAccountMetadata');

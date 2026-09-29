@@ -14,7 +14,8 @@ describe('unified command palette source contracts',()=>{
     expect(shell).toContain('data-global-quick-entry="desktop"');
     expect(shell).not.toContain('primary-action');
     expect(shell).toContain('onClick={onQuickAdd}');
-    expect(shell).toContain('className="command-search-action"');
+    expect(shell).not.toContain('className="command-search-action"');
+    expect(shell).toContain('className="topbar-primary"');
     expect(shell).toContain('onClick={onCommand}');
     expect(shell).toContain('aria-label="Αναζήτηση και εντολές"');
     expect(app).toContain('onQuickAdd={() => openGeneric(\'expense\')} onCommand={openCommand}');
