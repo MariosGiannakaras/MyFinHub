@@ -51,11 +51,12 @@ try{
   console.log('Account metadata QA: Dashboard configured, missing and copyable IBAN');
   await viewport(1440,1000);await navigate('dashboard');
   await waitFor("function(){return Boolean(document.querySelector('[data-account-iban=\"piraeus-payroll\"]'))}",'dashboard IBAN');
-  const dashboardState=await c.call("function(){const payroll=document.querySelector('[data-account-iban=\"piraeus-payroll\"]')?.textContent||'';const cash=document.querySelector('[data-account-iban=\"cash\"]')?.textContent||'';return {payroll,cash,copies:document.querySelectorAll('.account-iban-copy').length}}");
+  const dashboardState=await c.call("function(){const payroll=document.querySelector('[data-account-iban=\"piraeus-payroll\"]')?.textContent||'';const cash=document.querySelector('[data-account-iban=\"cash\"]')?.textContent||'';const copy=document.querySelector('.primary-balance-card[data-account-id=\"piraeus-payroll\"] .account-iban-copy');const rect=copy?.getBoundingClientRect();const style=copy?getComputedStyle(copy):null;return {payroll,cash,copies:document.querySelectorAll('.account-iban-copy').length,copyOpacity:Number(style?.opacity||0),copyVisible:Boolean(copy&&rect&&rect.width>=47.5&&rect.height>=47.5&&style?.display!=='none'&&style?.visibility!=='hidden')}}");
   assert(dashboardState.payroll.includes('GR16 •••• •••• •••• 0695'),'configured payroll IBAN is masked on Dashboard');
   assert(!dashboardState.payroll.includes('0110 1250 0000 0001 2300 695'),'Dashboard does not expose the full payroll IBAN');
   assert(dashboardState.cash.includes('Πορτοφόλι'),'cash account uses a wallet label instead of implying a missing IBAN');
   assert(dashboardState.copies>=2,'configured IBANs expose copy controls');
+  assert(dashboardState.copyVisible&&dashboardState.copyOpacity>=.99,'wide-desktop Dashboard keeps the 48px IBAN copy affordance visibly discoverable before hover/focus');
   await expandedHitClick('.primary-balance-card[data-account-id="piraeus-payroll"] .account-iban-copy');
   await waitFor("function(){return Boolean(document.querySelector('.primary-balance-card[data-account-id=\"piraeus-payroll\"] [role=status]'))}",'copy confirmation through expanded desktop hit area');
   await noOverflow('account metadata dashboard desktop');await screenshot('account-metadata-dashboard-desktop');
