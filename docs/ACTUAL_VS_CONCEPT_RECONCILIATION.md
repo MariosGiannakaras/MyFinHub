@@ -42,6 +42,14 @@ The concept is a visual-direction reference, not a literal product contract. Cur
 
 **Decision:** introduce Dashboard-local semantic type tokens and raise the smallest desktop labels to an 8.5–9.5 px compact range while preserving the existing grids/card dimensions.
 
+### 4. Mobile Dashboard header collapsed into a narrow text column
+
+**Actual:** the Dashboard title and description shared a row with two actions, forcing the H1 into three short lines and making the explanatory copy unusually narrow on a 375 px viewport.
+
+**Concept/system direction:** keep the primary task/title legible first; secondary actions may wrap beneath it on narrow screens.
+
+**Decision:** keep the shared `PageHeader`, but switch the Dashboard mobile header to a single-column hierarchy with a full-width wrapping action row.
+
 ## Intentionally not copied from the concept
 
 - no reintroduction of neumorphic bilateral shadows;
