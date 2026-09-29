@@ -9,8 +9,7 @@
 
 .account-iban-dashboard{height:18px;margin-top:1px;gap:4px;align-items:center;max-width:220px}
 .account-iban-dashboard .account-iban-value{font-size:10.5px;line-height:16px;font-weight:600;letter-spacing:.005em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted)}
-.account-iban-dashboard .account-iban-copy{position:relative;width:32px;height:32px;flex-basis:32px;margin:-7px 0 -7px -2px;border:0;border-radius:999px;background:transparent;color:var(--muted)}
-.account-iban-dashboard .account-iban-copy::after{content:"";position:absolute;left:50%;top:50%;width:48px;height:48px;transform:translate(-50%,-50%);border-radius:999px}
+.account-iban-dashboard .account-iban-copy{width:32px;height:32px;flex-basis:32px;margin:-7px 0 -7px -2px;border:0;border-radius:999px;background:transparent;color:var(--muted)}
 .account-iban-dashboard .account-iban-copy:hover{background:var(--surface-2);color:var(--blue)}
 .compact-account-row .account-iban{margin-top:4px;gap:5px}
 .compact-account-row .account-iban-label{font-size:7px}
