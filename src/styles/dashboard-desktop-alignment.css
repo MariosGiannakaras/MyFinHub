@@ -6,7 +6,7 @@
   .dashboard-approved-heading{min-height:73px}
   .dashboard-approved-heading .privacy-toggle{min-width:136px;transform:translateY(7px)}
   .dashboard-approved .approved-primary-grid{grid-template-columns:1.05fr 1fr 1.07fr!important}
-  .dashboard-approved .approved-account-card{height:170px;min-height:170px!important}
+  .dashboard-approved .approved-account-card{height:auto;min-height:180px!important}
   .dashboard-approved .approved-account-card:before,.dashboard-approved .approved-account-card:after{display:none!important}
   .dashboard-approved .approved-account-body{grid-template-columns:minmax(112px,.72fr) minmax(150px,1.28fr)!important}
   .dashboard-approved .approved-account-identity>div{position:relative}
