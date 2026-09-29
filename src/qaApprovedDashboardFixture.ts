@@ -137,6 +137,8 @@ export function qaFinanceData(){
     'approved-exp-public':{status:'kept',category:'Άλλα',decidedAt:stamp},
   };
 
+  next.state.savingsGoals=[{id:'approved-emergency-goal',name:'Ταμείο ασφαλείας',targetAmount:6500,targetDate:'2027-06-30',createdAt:stamp,updatedAt:stamp}];
+
   next.seed.recurring=[
     {id:'approved-cosmote',name:'Cosmote',amount:29.9,day:18,accountId:'piraeus-payroll',category:'Συνδρομές',active:true,status:'active',source:'qa'},
     {id:'approved-eydap',name:'ΕΥΔΑΠ',amount:27.4,day:22,accountId:'piraeus-payroll',category:'Πάγια',active:true,status:'active',source:'qa'},
