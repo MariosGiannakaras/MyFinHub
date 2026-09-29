@@ -1,4 +1,4 @@
-import type { FinanceData, LegacyTransaction } from '../types.js';
+import type { FinanceData, LegacyTransaction, SavingsGoal } from '../types.js';
 import { accountBalances, effectiveLegacyTransactions, monthRange } from './domain.js';
 
 export type DashboardAccountPoint={date:string;value:number};
@@ -52,24 +52,56 @@ export function dashboardHistoryStart(month:string){
   return `${previousMonth}-${String(Math.max(1,lastDay-7)).padStart(2,'0')}`;
 }
 
+export function dashboardSavingsGoal(goals:SavingsGoal[]|undefined,savingsAccountCount:number){
+  if(savingsAccountCount!==1)return undefined;
+  const valid=(goals??[]).filter(goal=>Number.isFinite(goal.targetAmount)&&goal.targetAmount>0);
+  return valid.length===1?valid[0]:undefined;
+}
+
 /**
- * Reconstructs movement-shaped balance history while keeping the final point
- * anchored to the canonical accountBalances result. Imported seed transactions
- * therefore shape the history without being double-applied to the current balance.
+ * Builds movement-shaped daily balances while respecting authoritative snapshots.
+ * The first available anchor reconstructs the opening segment, every snapshot
+ * inside the window resets that day's closing balance, and the final point is
+ * always the same canonical balance returned by accountBalances(end).
  */
 export function dashboardAccountHistory(data:FinanceData,accountIds:string[],start:string,end:string){
   const rows:Record<string,DashboardAccountPoint[]>={};
   for(const accountId of accountIds)rows[accountId]=[];
   if(!accountIds.length||parseDate(end)<parseDate(start))return rows;
-  const deltas=dashboardAccountDeltas(data,accountIds,start,end);
+
+  const snapshots=(data.seed.snapshots??[]).filter(snapshot=>snapshot.date<=end).slice().sort((a,b)=>a.date.localeCompare(b.date));
+  const priorSnapshot=snapshots.filter(snapshot=>snapshot.date<start).at(-1);
+  const snapshotsInRange=snapshots.filter(snapshot=>snapshot.date>=start);
+  const firstSnapshot=snapshotsInRange[0];
+  const deltaStart=priorSnapshot?toIso(parseDate(priorSnapshot.date)+DAY):start;
+  const deltas=dashboardAccountDeltas(data,accountIds,deltaStart,end);
   const closing=accountBalances(data,end);
+  const snapshotBalances=new Map(snapshotsInRange.map(snapshot=>[snapshot.date,accountBalances(data,snapshot.date)]));
+
   for(const accountId of accountIds){
     const accountDeltas=deltas[accountId]!;
-    const total=[...accountDeltas.values()].reduce((sum,value)=>sum+value,0);
-    let running=(closing[accountId]??0)-total;
+    let running:number;
+
+    if(priorSnapshot){
+      running=accountBalances(data,priorSnapshot.date)[accountId]??0;
+      for(const [date,delta] of accountDeltas){
+        if(date<start)running+=delta;
+      }
+    }else if(firstSnapshot){
+      const canonical=snapshotBalances.get(firstSnapshot.date)?.[accountId]??0;
+      const throughFirst=[...accountDeltas.entries()].reduce((sum,[date,delta])=>date<=firstSnapshot.date?sum+delta:sum,0);
+      running=canonical-throughFirst;
+    }else{
+      const total=[...accountDeltas.values()].reduce((sum,value)=>sum+value,0);
+      running=(closing[accountId]??0)-total;
+    }
+
     for(let cursor=parseDate(start);cursor<=parseDate(end);cursor+=DAY){
       const date=toIso(cursor);
       running+=accountDeltas.get(date)??0;
+      const snapshotBalance=snapshotBalances.get(date)?.[accountId];
+      if(snapshotBalance!==undefined)running=snapshotBalance;
+      if(date===end)running=closing[accountId]??running;
       rows[accountId]!.push({date,value:Number(running.toFixed(2))});
     }
   }
