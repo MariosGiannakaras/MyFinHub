@@ -6,6 +6,8 @@ All notable MyFinHub changes are recorded here. Release artifacts remain availab
 
 ### Changed
 
+- Unified the app-wide UI system around flatter semantic premium-fintech surfaces and shared control/surface primitives, retiring generic neumorphic chrome while preserving finance/auth/data behavior and responsive information architecture.
+- Routed automated Dependabot maintenance for root npm, API npm and GitHub Actions through canonical `develop`, preserving `main` as release-only.
 - Reconciled the Dashboard shell and primary account cards with the approved design direction: the desktop Quick Add lives in the shared topbar, duplicate desktop command search was removed from the sidebar, account history uses realistic balance movement, Dashboard IBANs stay masked, non-savings cards show absolute 30-day balance movement and the redundant duplicate account action was removed.
 - Adopted the owner-supplied MyFinHub PureVector identity across web/PWA and Windows desktop, including true-vector masters, browser favicon fallbacks, explicit PWA install/maskable assets and vector-backed Windows icon packaging.
 - Deferred Dashboard Recharts until after first paint with a bounded fallback, while visual QA waits for steady-state chart rendering before capturing evidence.
