@@ -17,6 +17,8 @@ const recoveryRenderer = read('desktop/setup-renderer.js');
 const settings = read('src/pages/SettingsPage.tsx');
 const updatePanel = read('src/components/DesktopUpdatePanel.tsx');
 const workflow = read('.github/workflows/desktop-windows.yml');
+const firstRunWorkflow = read('.github/workflows/desktop-first-run.yml');
+const cleanLaunchWorkflow = read('.github/workflows/desktop-clean-launch.yml');
 const prepareBuild = read('desktop/prepare-build.mjs');
 const vaultHandler = read('server/cardVaultHandler.ts');
 const vaultProxy = read('server/desktopCardVaultProxy.ts');
@@ -126,6 +128,15 @@ describe('MyFinHub Windows desktop boundary', () => {
     expect(automatic).not.toContain('installDownloadedUpdate()');
     expect(main).toContain("buttons: ['Λήψη ενημέρωσης', 'Αργότερα']");
     expect(main).toContain("buttons: ['Εγκατάσταση & επανεκκίνηση', 'Αργότερα']");
+  });
+
+  it('reruns every Windows gate when the bundled Node runtime contract changes', () => {
+    for (const source of [workflow, firstRunWorkflow, cleanLaunchWorkflow]) {
+      expect(source).toContain('node-version-file: .nvmrc');
+      const pathEntries=(source.match(/- \.nvmrc/g)??[]).length;
+      expect(pathEntries).toBeGreaterThanOrEqual(2);
+    }
+    expect(prepareBuild).toContain('fs.copyFileSync(process.execPath,runtimeExe)');
   });
 
   it('publishes unsigned personal releases safely and keeps signing optional', () => {

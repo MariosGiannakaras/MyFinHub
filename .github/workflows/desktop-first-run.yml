@@ -9,6 +9,7 @@ on:
       - tests/desktop-*.test.ts
       - package.json
       - package-lock.json
+      - .nvmrc
       - .github/workflows/desktop-first-run.yml
       - .github/workflows/desktop-clean-launch.yml
   push:
@@ -19,6 +20,7 @@ on:
       - tests/desktop-*.test.ts
       - package.json
       - package-lock.json
+      - .nvmrc
       - .github/workflows/desktop-first-run.yml
       - .github/workflows/desktop-clean-launch.yml
   workflow_dispatch:

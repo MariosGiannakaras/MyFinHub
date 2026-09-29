@@ -15,6 +15,7 @@ on:
       - tests/desktop-source.test.ts
       - package.json
       - package-lock.json
+      - .nvmrc
       - .env.example
       - INSTALL_MYFINHUB_WINDOWS.bat
       - .github/workflows/desktop-windows.yml
@@ -33,6 +34,7 @@ on:
       - tests/desktop-source.test.ts
       - package.json
       - package-lock.json
+      - .nvmrc
       - .env.example
       - INSTALL_MYFINHUB_WINDOWS.bat
       - .github/workflows/desktop-windows.yml
