@@ -51,8 +51,9 @@ try{
   await viewport(1440,1000);await navigate('dashboard');
   await waitFor("function(){return Boolean(document.querySelector('[data-account-iban=\"piraeus-payroll\"]'))}",'dashboard IBAN');
   const dashboardState=await c.call("function(){const payroll=document.querySelector('[data-account-iban=\"piraeus-payroll\"]')?.textContent||'';const cash=document.querySelector('[data-account-iban=\"cash\"]')?.textContent||'';return {payroll,cash,copies:document.querySelectorAll('.account-iban-copy').length}}");
-  assert(dashboardState.payroll.includes('GR16 0110 1250 0000 0001 2300 695'),'configured payroll IBAN is fully visible');
-  assert(dashboardState.cash.includes('Δεν έχει οριστεί'),'missing IBAN is explicit');
+  assert(dashboardState.payroll.includes('GR16 •••• •••• •••• 0695'),'configured payroll IBAN is masked on Dashboard');
+  assert(!dashboardState.payroll.includes('0110 1250 0000 0001 2300 695'),'Dashboard does not expose the full payroll IBAN');
+  assert(dashboardState.cash.includes('Πορτοφόλι'),'cash account uses a wallet label instead of implying a missing IBAN');
   assert(dashboardState.copies>=2,'configured IBANs expose copy controls');
   await trustedClick('.primary-balance-card[data-account-id="piraeus-payroll"] .account-iban-copy');
   await waitFor("function(){return Boolean(document.querySelector('.primary-balance-card[data-account-id=\"piraeus-payroll\"] [role=status]'))}",'copy confirmation');
@@ -69,10 +70,10 @@ try{
   await openPayrollEditor();assert((await currentEditIban())==='GB82 WEST 1234 5698 7654 32','saved IBAN stays normalized and human-readable');
   await screenshot('account-metadata-settings-desktop');await closeEditor();await noOverflow('account metadata settings desktop');
 
-  console.log('Account metadata QA: mobile Dashboard keeps canonical full IBAN and copy target');
+  console.log('Account metadata QA: mobile Dashboard keeps masked IBAN and copy target');
   await viewport(375,812);await navigate('dashboard');await waitFor("function(){return Boolean(document.querySelector('[data-account-iban=\"piraeus-payroll\"]'))}",'mobile dashboard IBAN');
   await scrollTo('.primary-balance-grid');await noOverflow('account metadata dashboard mobile');await touchTargets('account metadata dashboard mobile','.primary-balance-grid .account-iban-copy');
-  const mobilePayroll=await c.call("function(){return document.querySelector('[data-account-iban=\"piraeus-payroll\"]')?.textContent||''}");assert(mobilePayroll.includes('GR16 0110 1250 0000 0001 2300 695'),'fresh mobile QA route keeps the canonical payroll IBAN untruncated in the DOM');
+  const mobilePayroll=await c.call("function(){return document.querySelector('[data-account-iban=\"piraeus-payroll\"]')?.textContent||''}");assert(mobilePayroll.includes('GR16 •••• •••• •••• 0695'),'fresh mobile QA route keeps the payroll IBAN masked');assert(!mobilePayroll.includes('0110 1250 0000 0001 2300 695'),'mobile Dashboard does not expose the full payroll IBAN');
   await screenshot('account-metadata-dashboard-mobile');
 
   console.log('Account metadata QA: mobile Account Management editor stays usable');
