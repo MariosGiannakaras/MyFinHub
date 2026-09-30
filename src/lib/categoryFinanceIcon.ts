@@ -1,5 +1,11 @@
 import type { FinanceSettings } from '../types.js';
-import { explicitCategoryIcon, explicitSubcategoryIcon, resolvedCategoryIcon, type CategoryKind } from './categoryIconPreferences.js';
+import {
+  explicitCategoryIcon,
+  explicitSubcategoryIcon,
+  resolvedCategoryIcon,
+  resolvedCategoryIconColor,
+  type CategoryKind,
+} from './categoryIconPreferences.js';
 import { ensureCategoryIdentities, resolveCategoryIdentity, resolveSubcategoryIdentity } from './categoryIdentity.js';
 import type { FinanceIconInput } from './financeIcons.js';
 
@@ -7,13 +13,13 @@ function financeCategoryKind(input:FinanceIconInput):CategoryKind{
   return input.kind?.trim().toLocaleLowerCase('el-GR')==='income'?'income':'expense';
 }
 
-export function explicitFinanceCategoryIcon(settings:FinanceSettings,input:FinanceIconInput):string|null{
+function canonicalTarget(settings:FinanceSettings,input:FinanceIconInput){
   const category=input.category?.trim();
   if(!category)return null;
   const kind=financeCategoryKind(input);
   const normalized=ensureCategoryIdentities(settings);
   const categoryIdentity=resolveCategoryIdentity(normalized,kind,category);
-  if(!categoryIdentity)return resolvedCategoryIcon(normalized,kind,category,input.subcategory?.trim()||undefined);
+  if(!categoryIdentity)return {settings:normalized,kind,category,subcategory:input.subcategory?.trim()||undefined};
 
   const subcategory=input.subcategory?.trim();
   if(subcategory){
@@ -21,13 +27,31 @@ export function explicitFinanceCategoryIcon(settings:FinanceSettings,input:Finan
     if(subcategoryIdentity?.parentId){
       const records=normalized.categoryIdentities??{};
       const currentParent=records[subcategoryIdentity.parentId];
-      if(currentParent){
-        return explicitSubcategoryIcon(normalized,kind,currentParent.label,subcategoryIdentity.label)
-          ?? explicitCategoryIcon(normalized,kind,currentParent.label)
-          ?? null;
-      }
+      if(currentParent)return {settings:normalized,kind,category:currentParent.label,subcategory:subcategoryIdentity.label};
     }
   }
+  return {settings:normalized,kind,category:categoryIdentity.label,subcategory:undefined};
+}
 
-  return explicitCategoryIcon(normalized,kind,categoryIdentity.label)??null;
+export function explicitFinanceCategoryIcon(settings:FinanceSettings,input:FinanceIconInput):string|null{
+  const target=canonicalTarget(settings,input);
+  if(!target)return null;
+  if(target.subcategory){
+    return explicitSubcategoryIcon(target.settings,target.kind,target.category,target.subcategory)
+      ?? explicitCategoryIcon(target.settings,target.kind,target.category)
+      ?? null;
+  }
+  return explicitCategoryIcon(target.settings,target.kind,target.category)??null;
+}
+
+export function resolvedFinanceCategoryIcon(settings:FinanceSettings,input:FinanceIconInput):string|null{
+  const target=canonicalTarget(settings,input);
+  if(!target)return null;
+  return resolvedCategoryIcon(target.settings,target.kind,target.category,target.subcategory)??null;
+}
+
+export function resolvedFinanceCategoryIconColor(settings:FinanceSettings,input:FinanceIconInput):string|null{
+  const target=canonicalTarget(settings,input);
+  if(!target)return null;
+  return resolvedCategoryIconColor(target.settings,target.kind,target.category,target.subcategory);
 }
