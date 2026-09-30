@@ -10,6 +10,7 @@ const migration=readFileSync(new URL('../supabase/migrations/20260930201200_mana
 const handler=readFileSync(new URL('../server/accountMetadataHandler.ts',import.meta.url),'utf8');
 const client=readFileSync(new URL('../src/lib/financialProviderClient.ts',import.meta.url),'utf8');
 const settings=readFileSync(new URL('../src/components/FinancialProviderManagementSettings.tsx',import.meta.url),'utf8');
+const accountMetadataEntry=readFileSync(new URL('../api/account-metadata.ts',import.meta.url),'utf8');
 
 function provider():FinancialProvider{
   return {
@@ -78,6 +79,7 @@ describe('provider branding management',()=>{
     expect(migration).toContain('rheomiq_register_financial_provider_asset');
     expect(migration).not.toMatch(/service[_-]?role|secret[_-]?key/i);
     expect(handler).toContain("resource==='financial-provider-assets'");
+    expect(accountMetadataEntry).toContain('bodyParser:false');
     expect(handler).toContain('readBinaryBody(req,MAX_PROVIDER_ASSET_BYTES)');
     expect(client).toContain("/api/account-metadata?resource=financial-providers");
     expect(client).toContain("resource:'financial-provider-assets'");
