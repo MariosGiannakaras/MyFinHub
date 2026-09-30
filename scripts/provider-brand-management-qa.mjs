@@ -50,10 +50,10 @@ try{
   await c.send('Page.navigate',{url:url.href});await waitFor("function(){return document.readyState==='complete'&&!!document.querySelector('.settings-tablist')}",'Settings create-provider ready');await applyTheme('light');await clickAccounts();
   const opened=await c.call("function(){const button=[...document.querySelectorAll('.provider-management button')].find(node=>(node.textContent||'').includes('Νέος πάροχος'));button?.click();return Boolean(button)}");assert(opened,'New provider action is available');
   await waitFor("function(){return !!document.querySelector('.provider-create')}",'create-provider form');
-  const createState=await c.call(`function(){const root=document.querySelector('.provider-create');return {fileInputs:root?.querySelectorAll('input[type=file]').length||0,comboboxes:root?.querySelectorAll('[role=combobox]').length||0,text:(root?.textContent||'').replace(/\s+/g,' ').trim(),overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}}`);
+  const createState=await c.call(`function(){const root=document.querySelector('.provider-create');return {fileInputs:root?.querySelectorAll('input[type=file]').length||0,comboboxes:root?.querySelectorAll('[role=combobox]').length||0,assetLabels:[...(root?.querySelectorAll('.provider-file-choice > span')||[])].map(node=>(node.textContent||'').trim()),overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}}`);
   assert(createState.fileInputs===7,'create-provider flow exposes seven artwork pickers');
   assert(createState.comboboxes>=1,'create-provider flow uses app-owned provider type select');
-  for(const label of ['Logo · Universal','Logo · Light','Logo · Dark','Wordmark · Light','Wordmark · Dark','Card mark · Light','Card mark · Dark'])assert(createState.text.includes(label),`create-provider artwork picker ${label} is visible`);
+  for(const label of ['Logo · Universal','Logo · Light','Logo · Dark','Wordmark · Light','Wordmark · Dark','Card mark · Light','Card mark · Dark'])assert(createState.assetLabels.includes(label),`create-provider artwork picker ${label} is visible`);
   assert(createState.overflow<=1,'create-provider desktop form stays viewport-contained');
   await shot('provider-create-light-desktop');
 
