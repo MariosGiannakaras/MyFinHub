@@ -161,3 +161,11 @@
   .savings-hero{grid-template-columns:82px minmax(0,1fr)}
   .gauge-ring{width:78px!important;height:78px!important}
 }
+
+
+@media(max-width:380px){
+  .savings-action{grid-template-columns:38px minmax(0,1fr) 30px;gap:8px}
+  .savings-action strong{width:30px;font-size:0;display:grid;place-items:center}
+  .savings-action strong svg{width:16px;height:16px}
+  .savings-action small{-webkit-line-clamp:3}
+}
