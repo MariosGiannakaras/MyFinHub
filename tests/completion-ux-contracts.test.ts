@@ -12,6 +12,10 @@ describe('completion UX contracts',()=>{
     expect(quick).toContain('.mobile-quick-action>span{position:absolute;width:1px');
     expect(shell).toContain('padding-bottom:calc(146px + env(safe-area-inset-bottom,0px))');
     expect(shell).toContain('scroll-padding-bottom:calc(146px + env(safe-area-inset-bottom,0px))');
+    const appShell=read('src/components/AppShell.tsx');
+    expect(appShell).toContain("{page!=='settings'?<button type=\"button\" className=\"mobile-quick-action\"");
+    const authShell=read('src/styles/auth-session-shell.css');
+    expect(authShell).toContain('bottom:calc(88px + env(safe-area-inset-bottom,0px))');
   });
 
   it('keeps Dashboard tablet cards compatible with their internal content minimums',()=>{
@@ -46,6 +50,9 @@ describe('completion UX contracts',()=>{
     expect(mobileTail).toContain('className="mobile-lending-history-row"');
     expect(mobileTail).not.toContain('className="semantic-table receivables-table"');
     expect(mobileTail).toContain('hidden={!privacyVisible}');
+    expect(source).toContain('const [mobileHistoryLimit,setMobileHistoryLimit]=useState(20)');
+    expect(source).toContain('const mobileHistory=useMemo(()=>history.slice(0,mobileHistoryLimit)');
+    expect(source).toContain('setMobileHistoryLimit(limit=>limit+20)');
   });
 
   it('makes Cards an explicit phone snap carousel and keeps the active Settings tab visible',()=>{
