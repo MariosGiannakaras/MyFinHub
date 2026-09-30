@@ -102,7 +102,8 @@ function mapFinancialProviderRow(value:unknown):FinancialProviderRow{
 function mapFinancialProviderAssetRow(value:unknown):StoredFinancialProviderAssetRow{
   const row=value as Partial<StoredFinancialProviderAssetRow>;
   const roles=['logo','wordmark','card-mark'] as const;
-  if(!row||typeof row.asset_key!=='string'||typeof row.provider_id!=='string'||!roles.includes(row.asset_role as any)||
+  const role=row?.asset_role;
+  if(!row||typeof row.asset_key!=='string'||typeof row.provider_id!=='string'||typeof role!=='string'||!roles.includes(role as any)||
     typeof row.variant!=='string'||!/^[a-z][a-z0-9-]{0,63}$/.test(row.variant)||row.storage_bucket!=='financial-provider-assets'||typeof row.storage_path!=='string'||
     !/^providers\/[a-z][a-z0-9-]{0,63}\/[A-Za-z0-9._/-]+$/.test(row.storage_path)||row.active!==true){
     throw new ApiError(500,'FINANCIAL_PROVIDER_ASSET_INVALID_ROW','Stored provider asset metadata is invalid.',false);
@@ -110,7 +111,7 @@ function mapFinancialProviderAssetRow(value:unknown):StoredFinancialProviderAsse
   return {
     asset_key:row.asset_key,
     provider_id:row.provider_id,
-    asset_role:row.asset_role,
+    asset_role:role,
     variant:row.variant,
     storage_bucket:row.storage_bucket,
     storage_path:row.storage_path,
