@@ -17,6 +17,7 @@ import {
   type CashAccountType,
 } from '../lib/financialProviders';
 import { formatIban, isValidIban, normalizeIban } from '../lib/iban';
+import { userErrorMessage } from '../lib/userMessage';
 import type { Account, FinanceData, FinanceSettings } from '../types';
 import { AppSelectInput } from './AppSelectInput';
 import { AppTextInput } from './AppTextInput';
@@ -218,7 +219,7 @@ export function AccountManagementSettings({data,settings,onChange}:{data:Finance
       onChange(next);
       setMessage(editor.source==='new'?'Ο λογαριασμός δημιουργήθηκε.':'Οι αλλαγές αποθηκεύτηκαν.');
       setEditor(null);
-    }catch{setEditorError('Δεν ήταν δυνατή η αποθήκευση του λογαριασμού. Δοκίμασε ξανά.')}
+    }catch(error){setEditorError(userErrorMessage(error,'Δεν ήταν δυνατή η αποθήκευση του λογαριασμού. Δοκίμασε ξανά.'))}
     finally{setBusy(false)}
   };
 
@@ -241,7 +242,7 @@ export function AccountManagementSettings({data,settings,onChange}:{data:Finance
       const next:FinanceSettings={...settings,customAccounts:remaining,accountNames:names,accountOverrides:overrides,excludedFromAvailable:(settings.excludedFromAvailable??[]).filter(item=>item!==id),defaultExpenseAccount:settings.defaultExpenseAccount===id?fallback:settings.defaultExpenseAccount,defaultIncomeAccount:settings.defaultIncomeAccount===id?fallback:settings.defaultIncomeAccount,defaultLoanAccount:settings.defaultLoanAccount===id?fallback:settings.defaultLoanAccount};
       if(metadata.records[id]?.iban)await saveAccountMetadata(id,'');
       onChange(next);setMessage('Ο λογαριασμός διαγράφηκε.');setPendingDelete(null);
-    }catch{setMessage('Δεν ήταν δυνατή η διαγραφή του λογαριασμού.')}
+    }catch(error){setMessage(userErrorMessage(error,'Δεν ήταν δυνατή η διαγραφή του λογαριασμού.'))}
     finally{setBusy(false)}
   };
 
