@@ -47,10 +47,19 @@ const productionApplied=[
   "20260930115252_fix_database_health_history_state_check.sql"
 ] as const;
 
+const releasePending=[
+  '20260930130000_relational_finance_ledger_cutover.sql',
+] as const;
+
 describe('production migration ledger source contract',()=>{
   it('keeps every production-applied migration represented by the exact applied version/name',()=>{
     const local=readdirSync('supabase/migrations').filter(name=>name.endsWith('.sql')).sort();
-    expect(local).toEqual([...productionApplied].sort());
+    expect(local).toEqual([...productionApplied,...releasePending].sort());
+  });
+
+  it('keeps the relational cutover explicitly pending until production application',()=>{
+    expect(productionApplied).not.toContain('20260930130000_relational_finance_ledger_cutover.sql' as any);
+    expect(releasePending).toContain('20260930130000_relational_finance_ledger_cutover.sql');
   });
 
   it('keeps formerly release-pending migrations represented as production-applied history',()=>{
