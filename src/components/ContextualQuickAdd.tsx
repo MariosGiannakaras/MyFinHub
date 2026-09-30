@@ -19,6 +19,7 @@ import { allRecurringItems, recurringAccountError } from '../lib/recurring';
 import { pendingScheduled, scheduledToEvent, transitionScheduled } from '../lib/scheduled';
 import { accountDisplayName } from '../lib/ui';
 import { money } from '../lib/format';
+import { accountMatchesFinancialProvider } from '../lib/financialProviders';
 import type { EventKind, FinanceData, FinanceEvent, SavingSource, ScheduledTransaction } from '../types';
 
 export type QuickActionContext =
@@ -45,7 +46,7 @@ function ContextModal({data,asOf,context,onClose,onCreate,onCompleteScheduled}:{
   const loans=useMemo(()=>[...(data.seed.loans??[]).map(item=>data.state.loanOverrides?.[item.id]??item),...(data.state.customLoans??[])],[data]);
   const loan=context.mode==='loan'?loans.find(item=>item.id===context.loanId):undefined;
   const scheduled=context.mode==='scheduled'?pendingScheduled(data).find(item=>item.id===context.scheduledId):undefined;
-  const sameBankAccounts=context.mode==='credit'&&card?accounts.filter(account=>account.id.startsWith(`${card.bankId}-`)):accounts;
+  const sameBankAccounts=context.mode==='credit'&&card?accounts.filter(account=>accountMatchesFinancialProvider(account,card.bankId)):accounts;
   const savingsTargets=accounts.filter(account=>account.kind==='savings');
   const savingsSources=accounts.filter(account=>account.kind!=='savings');
   const initialAccount=context.mode==='credit'
