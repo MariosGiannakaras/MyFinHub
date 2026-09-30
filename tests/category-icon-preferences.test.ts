@@ -59,6 +59,13 @@ describe('category icon preferences',()=>{
     expect(resolvedCategoryIcon(next,'expense','Φαγητό','Καφές')).toBe('heroicons:coffee');
   });
 
+  it('never renders an unsupported automatic semantic key for a selected icon family',()=>{
+    let next=withCategoryIconPack(settings(),'phosphor');
+    expect(resolvedCategoryIcon(next,'income','Μισθός')).toBe('phosphor:government');
+    next=withCategoryIconPack(next,'heroicons');
+    expect(resolvedCategoryIcon(next,'income','Μισθός')).toBe('heroicons:home');
+  });
+
   it('persists category color independently from the icon family and restores automatic color when cleared',()=>{
     let next=withCategoryIconPack(settings(),'tabler');
     next=withCategoryIconColor(next,'expense','Φαγητό','#d14c5a');
