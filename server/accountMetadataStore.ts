@@ -206,6 +206,24 @@ const PROVIDER_ASSET_EXTENSION:Record<string,string>={
   'image/svg+xml':'svg',
 };
 
+async function existingProviderAssetPath(assetKey:string,providerId:string,accessToken:string){
+  const payload=await request(`rheomiq_financial_provider_assets?select=provider_id,storage_path&asset_key=eq.${encodeURIComponent(assetKey)}&limit=1`,{method:'GET'},accessToken);
+  if(!Array.isArray(payload)||!payload.length)return null;
+  const row=payload[0] as {provider_id?:unknown;storage_path?:unknown};
+  if(row.provider_id!==providerId||typeof row.storage_path!=='string'||!/^providers\/[a-z][a-z0-9-]{0,63}\/[A-Za-z0-9._/-]+$/.test(row.storage_path))return null;
+  return row.storage_path;
+}
+
+async function removeProviderStorageObject(storagePath:string,accessToken:string){
+  const {url,apiKey,authorization}=config(accessToken);
+  const response=await fetchUpstream(`${url}/storage/v1/object/${encodeURIComponent(PROVIDER_ASSET_BUCKET)}`,{
+    method:'DELETE',
+    headers:{apikey:apiKey,authorization,'content-type':'application/json'},
+    body:JSON.stringify({prefixes:[storagePath]}),
+  },'DATA');
+  if(!response.ok)throw new Error(`Provider asset cleanup failed with status ${response.status}`);
+}
+
 export async function uploadFinancialProviderAsset(input:{
   providerId:string;
   role:'logo'|'wordmark'|'card-mark';
@@ -219,6 +237,7 @@ export async function uploadFinancialProviderAsset(input:{
   const assetKey=`${input.providerId}-${input.role}-${input.variant}`;
   const fileName=`${assetKey}.${extension}`;
   const storagePath=`providers/${input.providerId}/${fileName}`;
+  const previousStoragePath=await existingProviderAssetPath(assetKey,input.providerId,accessToken);
   const {url,apiKey,authorization}=config(accessToken);
   const encodedPath=storagePath.split('/').map(encodeURIComponent).join('/');
   const upload=await fetchUpstream(`${url}/storage/v1/object/${encodeURIComponent(PROVIDER_ASSET_BUCKET)}/${encodedPath}`,{
@@ -258,6 +277,10 @@ export async function uploadFinancialProviderAsset(input:{
   const row=Array.isArray(payload)?payload[0]:null;
   if(!row)throw new ApiError(500,'FINANCIAL_PROVIDER_ASSET_INVALID_RESPONSE','Provider image response is invalid.',false);
   const asset=mapFinancialProviderAssetRow(row);
+  if(previousStoragePath&&previousStoragePath!==storagePath){
+    try{await removeProviderStorageObject(previousStoragePath,accessToken)}
+    catch(error){console.warn('[MyFinHub provider asset cleanup]',{assetKey,message:error instanceof Error?error.message:String(error)})}
+  }
   return {
     assetKey:asset.asset_key,
     role:asset.asset_role as FinancialProviderAssetRow['role'],
