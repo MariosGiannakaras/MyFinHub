@@ -10,7 +10,7 @@
   }
 
   body{background:var(--canvas-gradient)}
-  .app-shell{padding-left:var(--mobile-gutter);padding-right:var(--mobile-gutter);padding-bottom:calc(92px + env(safe-area-inset-bottom,0px))}
+  .app-shell{padding-left:var(--mobile-gutter);padding-right:var(--mobile-gutter);padding-bottom:calc(146px + env(safe-area-inset-bottom,0px));scroll-padding-bottom:calc(146px + env(safe-area-inset-bottom,0px))}
   .workspace{padding-top:8px}
   .workspace>div{min-width:0}
   .page-stack{gap:13px}
