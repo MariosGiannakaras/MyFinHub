@@ -1,5 +1,12 @@
 import type { BankAccountCategory, CashAccountType } from '../types.js';
 export type FinancialProviderKind='bank'|'fintech'|'wallet'|'payment';
+export type FinancialProviderAssetRole='logo'|'wordmark'|'card-mark';
+export type FinancialProviderAsset={
+  assetKey:string;
+  role:FinancialProviderAssetRole;
+  variant:string;
+  url:string;
+};
 export type FinancialProvider={
   id:string;
   displayName:string;
@@ -11,6 +18,7 @@ export type FinancialProvider={
   wordmarkAssetKey:string|null;
   logoUrl?:string|null;
   wordmarkUrl?:string|null;
+  assets?:FinancialProviderAsset[];
   sortOrder:number;
 };
 
