@@ -97,6 +97,15 @@ describe('financial provider registry',()=>{
     expect(fs.existsSync(path.join(root,'api/financial-providers.ts'))).toBe(false);
   });
 
+  it('matches Settings-created accounts to credit payment flows by provider identity instead of legacy id prefixes',()=>{
+    const credit=source('src/pages/CreditCardPage.tsx');
+    const contextual=source('src/components/ContextualQuickAdd.tsx');
+    expect(credit).toContain("accountMatchesFinancialProvider(account,cardProviderId)");
+    expect(contextual).toContain("accountMatchesFinancialProvider(account,card.bankId)");
+    expect(credit).not.toContain("account.id.startsWith(`${bankPrefix}-`)");
+    expect(contextual).not.toContain("account.id.startsWith(`${card.bankId}-`)");
+  });
+
   it('uses the shared brand registry in Account Management and preserves separate provider/category/cash semantics',()=>{
     const accounts=source('src/components/AccountManagementSettings.tsx');
     const providerStyles=source('src/components/AccountManagementProvider.css');
