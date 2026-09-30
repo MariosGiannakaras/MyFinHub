@@ -297,6 +297,28 @@ function validateSavingsGoal(value: unknown, name: string) {
   text(value.updatedAt, `${name}.updatedAt`, 64);
 }
 
+const CATEGORY_ICON_PACKS=['lucide','tabler','phosphor','heroicons','bootstrap'] as const;
+
+function validateIconPackSelections(value:unknown,name:string){
+  record(value,name,10_000);
+  for(const [target,packs] of Object.entries(value)){
+    text(target,`${name} key`,2_000);
+    record(packs,`${name}.${target}`,CATEGORY_ICON_PACKS.length);
+    for(const [pack,iconKey] of Object.entries(packs)){
+      oneOf(pack,CATEGORY_ICON_PACKS,`${name}.${target} pack`);
+      text(iconKey,`${name}.${target}.${pack}`,200);
+    }
+  }
+}
+
+function validateIconColors(value:unknown,name:string){
+  record(value,name,10_000);
+  for(const [target,color] of Object.entries(value)){
+    text(target,`${name} key`,2_000);
+    if(typeof color!=='string'||!/^#[0-9a-fA-F]{6}$/.test(color))invalid(`Invalid ${name}.${target}.`);
+  }
+}
+
 function validateSettings(value: unknown) {
   if (!object(value)) invalid('Missing settings.');
   stringArray(value.excludedFromAvailable, 'state.settings.excludedFromAvailable', 10_000, 200);
@@ -316,6 +338,13 @@ function validateSettings(value: unknown) {
   }
   stringArray(value.expenseCategories, 'state.settings.expenseCategories', 10_000, 1_000);
   stringArray(value.incomeCategories, 'state.settings.incomeCategories', 10_000, 1_000);
+  if (value.categoryIcons !== undefined) validateStringRecord(value.categoryIcons, 'state.settings.categoryIcons');
+  if (value.subcategoryIcons !== undefined) validateStringRecord(value.subcategoryIcons, 'state.settings.subcategoryIcons');
+  if (value.categoryIconPack !== undefined) oneOf(value.categoryIconPack, CATEGORY_ICON_PACKS, 'state.settings.categoryIconPack');
+  if (value.categoryIconPackSelections !== undefined) validateIconPackSelections(value.categoryIconPackSelections, 'state.settings.categoryIconPackSelections');
+  if (value.subcategoryIconPackSelections !== undefined) validateIconPackSelections(value.subcategoryIconPackSelections, 'state.settings.subcategoryIconPackSelections');
+  if (value.categoryIconColors !== undefined) validateIconColors(value.categoryIconColors, 'state.settings.categoryIconColors');
+  if (value.subcategoryIconColors !== undefined) validateIconColors(value.subcategoryIconColors, 'state.settings.subcategoryIconColors');
   stringArray(value.customPresets, 'state.settings.customPresets', 10_000, 1_000);
   stringArray(value.pinnedPresets, 'state.settings.pinnedPresets', 10_000, 1_000);
   text(value.defaultExpenseAccount, 'state.settings.defaultExpenseAccount', 200, true);
