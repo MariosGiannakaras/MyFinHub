@@ -32,7 +32,8 @@ const productionApplied=[
   "20260904083000_add_device_session_registry.sql",
   "20260905020000_refresh_financial_provider_brand_assets.sql",
   "20260930062504_harden_active_device_sensitive_rls.sql",
-  "20260930062619_move_active_device_rls_helper_private.sql"
+  "20260930062619_move_active_device_rls_helper_private.sql",
+  "20260930075049_align_financial_provider_brand_assets.sql"
 ] as const;
 const pending=[] as const;
 
@@ -47,6 +48,7 @@ describe('production migration ledger source contract',()=>{
     const brandRefresh=readFileSync('supabase/migrations/20260905020000_refresh_financial_provider_brand_assets.sql','utf8');
     const hardening=readFileSync('supabase/migrations/20260930062504_harden_active_device_sensitive_rls.sql','utf8');
     const privateHelper=readFileSync('supabase/migrations/20260930062619_move_active_device_rls_helper_private.sql','utf8');
+    const alignedBrands=readFileSync('supabase/migrations/20260930075049_align_financial_provider_brand_assets.sql','utf8');
     expect(device).toContain('create table if not exists public.myfinhub_device_sessions');
     expect(device).toContain('and public.myfinhub_session_is_active()');
     expect(brandRefresh).toContain("when 'piraeus' then 'generic'");
@@ -55,6 +57,9 @@ describe('production migration ledger source contract',()=>{
     expect(hardening).toContain('rheomiq_account_metadata_owner_aal2_select');
     expect(privateHelper).toContain('create or replace function private.myfinhub_session_is_active()');
     expect(privateHelper).toContain('drop function if exists public.myfinhub_session_is_active()');
+    expect(alignedBrands).toContain("'piraeus-logo-green-on-yellow'");
+    expect(alignedBrands).toContain("'alpha-wordmark-color'");
+    expect(alignedBrands).toContain("else 'generic'");
   });
 
   it('back-syncs the production-only provider asset registry schema without embedding production asset bytes',()=>{
