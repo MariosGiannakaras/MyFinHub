@@ -242,6 +242,8 @@ The first exact-head validation wave exposed three additional validation blocker
 
 | FV-17 | UI/UX completion delete/undo fixture | Completion QA expected the `Freddo espresso` event to be present in the first rendered Transactions page before testing delete → undo → redo. Correct bounded pagination can legitimately place it outside page 1. | QA harness pagination-targeting defect | **Source-fixed, proof pending.** The harness now targets the fixture through the real Transactions search field, waits for the visible filtered row, then performs the same delete/undo/redo assertions. Product pagination and undo semantics are unchanged. |
 
+| FV-18 | Mobile Quick Entry redesign integration | Moving Quick Entry from a floating FAB into bottom navigation correctly removed the product overlap, but the first source cleanup left two tests asserting the retired FAB contract and accidentally removed the closing brace of the surrounding mobile command-palette media block. | Source/test integration defect | **Source-fixed, proof pending.** The mobile media block is closed, completion/release contracts now require the six-cell nav action and explicitly reject the retired floating FAB. No quality or performance threshold was changed. |
+
 Validation rule: FV items close only after the next exact-head wave proves the corrected interaction/performance/bootstrap behavior. No quality threshold or screenshot-count requirement was relaxed.
 
 ## 3. Page-by-page audit and required changes
