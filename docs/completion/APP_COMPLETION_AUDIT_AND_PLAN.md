@@ -139,6 +139,10 @@ The earlier completion assessment was reopened after owner-observed overlap/over
 5. **Generic horizontal-overflow checks were insufficient for overlap defects.**
    A page can have `scrollWidth === innerWidth` and still have a floating action button or fixed bottom navigation covering an actionable control. A new all-route geometry QA now checks desktop/tablet/mobile/narrow viewports, off-viewport interactive controls, and mobile fixed-chrome occlusion at top/middle/bottom scroll positions.
 
+### Temporary database freeze
+
+**2026-09-30:** Supabase/database work is intentionally paused because the database is being modified in a separate chat. Until the user explicitly lifts this freeze, this branch must not query, mutate, migrate, reconcile, backfill or validate the live database. Repo/application work may continue. Any DB-related finding stays tracked as pending and must be reconciled later against the then-current live schema/data before final validation.
+
 ## 2B. Live deep-audit findings tracker
 
 The following findings were discovered after the expanded audit was reopened. They are tracked here even when the implementation fix has already landed, so the repository preserves the defect history and the validation obligation.
@@ -175,6 +179,7 @@ The following findings were discovered after the expanded audit was reopened. Th
 | DA-28 | Card profile editor state | The edit dialog initialization effect depended on whole `initialCard` and `banks` object identities. A parent finance-data refresh while editing could rerun initialization and overwrite unsaved field changes. | P0 functional correctness | **Implemented.** Initialization is keyed to dialog-open/target identity rather than parent object identity; source regression contract added. |
 | DA-29 | Supabase Auth / leaked-password advisor | Production security advisor reports leaked-password protection disabled. Supabase currently reserves this control for Pro+; the project is intentionally staying on Free. | P1 residual auth risk / plan constraint | **Accepted Free-tier limitation, not an unfinished implementation.** Do not upgrade solely to clear the advisor. Keep the single-owner model, mandatory TOTP/AAL2, active-device revocation and strong password policy. Re-evaluate only if Supabase makes the feature available on Free or the product plan changes. Official reference: https://supabase.com/docs/guides/auth/password-security |
 | DA-30 | Account password change policy | With Free-tier leaked-password checking unavailable, MyFinHub's own password-change boundary accepted any distinct 8-character password. | P1 security hardening | **Implemented.** New password changes require 12+ characters with Unicode-aware lowercase, uppercase, numeric and symbol classes, enforced by one shared client/server validator. Existing login passwords are not invalidated. |
+| DA-13 | Cards / metadata editing | The visible pencil/action labelled as card editing opens only PAN/expiry/CVV. Existing cards have no user path to edit nickname, bank, network, design/form factor after creation, so “edit card” is functionally incomplete and misleading. | P1 functional/UX | **Open.** Split “card profile” editing from secure vault details, reuse one canonical card profile editor, preserve card id/history/vaultRef, and add rendered edit-save coverage. |
 Tracking rule for this batch: every new material defect found during the remaining deep audit must be added to this table (or a page-specific section below) before the batch is considered complete. A defect is not “closed” merely because source code changed; rendered/runtime proof remains required where noted.
 
 ## 3. Page-by-page audit and required changes
