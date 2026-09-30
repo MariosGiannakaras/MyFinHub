@@ -1,4 +1,8 @@
 @media(max-width:680px){
+  .dashboard-mobile-disclosure{display:flex;width:100%;min-height:44px;justify-content:center}
+  .dashboard-approved .approved-chart-grid.mobile-collapsed,
+  .dashboard-approved .approved-kpi-strip.mobile-collapsed{display:none!important}
+
   .page-stack>[data-dashboard-section],
   .dashboard-grid>[data-dashboard-section]{order:initial!important;grid-row:auto!important;grid-column:auto!important}
   .dashboard-grid{grid-auto-flow:row}
