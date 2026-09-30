@@ -60,21 +60,21 @@ type ProviderEditor={
 const ACCEPT='image/png,image/jpeg,image/webp,image/svg+xml,.png,.jpg,.jpeg,.webp,.svg';
 const MAX_BYTES=2*1024*1024;
 const SLOTS:SlotDefinition[]=[
-  {id:'logo-default',label:'Προεπιλεγμένο logo',shortLabel:'Default',description:'Βασικό σύμβολο του παρόχου.',role:'logo',variant:'universal',required:true,preview:'neutral'},
-  {id:'logo-light',label:'Logo σε light UI',shortLabel:'Light UI',description:'Προαιρετικό override για ανοιχτό περιβάλλον.',role:'logo',variant:'light',required:false,preview:'light'},
-  {id:'logo-dark',label:'Logo σε dark UI',shortLabel:'Dark UI',description:'Προαιρετικό override για σκούρο περιβάλλον.',role:'logo',variant:'dark',required:false,preview:'dark'},
-  {id:'wordmark-default',label:'Προεπιλεγμένο wordmark',shortLabel:'Default',description:'Βασική λεκτική υπογραφή / πλήρες σήμα.',role:'wordmark',variant:'universal',required:true,preview:'neutral'},
-  {id:'wordmark-light',label:'Wordmark σε light UI',shortLabel:'Light UI',description:'Προαιρετικό override για ανοιχτό περιβάλλον.',role:'wordmark',variant:'light',required:false,preview:'light'},
-  {id:'wordmark-dark',label:'Wordmark σε dark UI',shortLabel:'Dark UI',description:'Προαιρετικό override για σκούρο περιβάλλον.',role:'wordmark',variant:'dark',required:false,preview:'dark'},
-  {id:'card-default',label:'Προεπιλεγμένο card mark',shortLabel:'Default',description:'Χρησιμοποιείται στις κάρτες όταν δεν υπάρχει ειδικό override.',role:'card-mark',variant:'universal',required:false,preview:'neutral'},
-  {id:'card-light',label:'Σε ανοιχτή κάρτα',shortLabel:'Ανοιχτή κάρτα',description:'Override βάσει του background της κάρτας — όχι του app theme.',role:'card-mark',variant:'light',required:false,preview:'light'},
-  {id:'card-dark',label:'Σε σκούρα κάρτα',shortLabel:'Σκούρα κάρτα',description:'Override βάσει του background της κάρτας — όχι του app theme.',role:'card-mark',variant:'dark',required:false,preview:'dark'},
+  {id:'logo-default',label:'Βασικό λογότυπο',shortLabel:'Βασικό',description:'Η κύρια εικόνα του παρόχου.',role:'logo',variant:'universal',required:true,preview:'neutral'},
+  {id:'logo-light',label:'Σε ανοιχτό θέμα',shortLabel:'Ανοιχτό θέμα',description:'Προαιρετική εναλλακτική για ανοιχτό περιβάλλον.',role:'logo',variant:'light',required:false,preview:'light'},
+  {id:'logo-dark',label:'Σε σκούρο θέμα',shortLabel:'Σκούρο θέμα',description:'Προαιρετική εναλλακτική για σκούρο περιβάλλον.',role:'logo',variant:'dark',required:false,preview:'dark'},
+  {id:'wordmark-default',label:'Βασικό λεκτικό σήμα',shortLabel:'Βασικό',description:'Η κύρια λεκτική υπογραφή ή το πλήρες σήμα.',role:'wordmark',variant:'universal',required:true,preview:'neutral'},
+  {id:'wordmark-light',label:'Σε ανοιχτό θέμα',shortLabel:'Ανοιχτό θέμα',description:'Προαιρετική εναλλακτική για ανοιχτό περιβάλλον.',role:'wordmark',variant:'light',required:false,preview:'light'},
+  {id:'wordmark-dark',label:'Σε σκούρο θέμα',shortLabel:'Σκούρο θέμα',description:'Προαιρετική εναλλακτική για σκούρο περιβάλλον.',role:'wordmark',variant:'dark',required:false,preview:'dark'},
+  {id:'card-default',label:'Βασικό σήμα κάρτας',shortLabel:'Βασικό',description:'Χρησιμοποιείται όταν δεν έχει οριστεί ειδική εικόνα για το φόντο της κάρτας.',role:'card-mark',variant:'universal',required:false,preview:'neutral'},
+  {id:'card-light',label:'Σε ανοιχτή κάρτα',shortLabel:'Ανοιχτή κάρτα',description:'Προαιρετική εικόνα για κάρτες με ανοιχτό φόντο.',role:'card-mark',variant:'light',required:false,preview:'light'},
+  {id:'card-dark',label:'Σε σκούρα κάρτα',shortLabel:'Σκούρα κάρτα',description:'Προαιρετική εικόνα για κάρτες με σκούρο φόντο.',role:'card-mark',variant:'dark',required:false,preview:'dark'},
 ];
 const SLOT_BY_ID=new Map(SLOTS.map(slot=>[slot.id,slot] as const));
 const GROUPS=[
-  {title:'Logo εφαρμογής',description:'Το μικρό σύμβολο που εμφανίζεται κυρίως σε λογαριασμούς και compact surfaces.',ids:['logo-default','logo-light','logo-dark'] as SlotId[]},
-  {title:'Wordmark εφαρμογής',description:'Η πλήρης λεκτική υπογραφή όπου υπάρχει περισσότερος χώρος.',ids:['wordmark-default','wordmark-light','wordmark-dark'] as SlotId[]},
-  {title:'Κάρτες',description:'Η επιλογή γίνεται από το χρώμα της ίδιας της κάρτας. Το Light/Dark theme της εφαρμογής δεν συμμετέχει.',ids:['card-default','card-light','card-dark'] as SlotId[]},
+  {title:'Λογότυπο εφαρμογής',description:'Το μικρό σύμβολο που εμφανίζεται κυρίως σε λογαριασμούς και μικρές προβολές.',ids:['logo-default','logo-light','logo-dark'] as SlotId[]},
+  {title:'Λεκτικό σήμα εφαρμογής',description:'Η πλήρης λεκτική υπογραφή όπου υπάρχει περισσότερος χώρος.',ids:['wordmark-default','wordmark-light','wordmark-dark'] as SlotId[]},
+  {title:'Κάρτες',description:'Η επιλογή γίνεται από το φόντο της ίδιας της κάρτας. Το θέμα της εφαρμογής δεν επηρεάζει τις κάρτες.',ids:['card-default','card-light','card-dark'] as SlotId[]},
 ];
 
 function emptyAssignments():AssignmentMap{
@@ -217,7 +217,7 @@ export function FinancialProviderManagementSettings(){
   const save=async()=>{
     if(!editor||busy||!validateDetails())return;
     if(!editor.assignments['logo-default']||!editor.assignments['wordmark-default']){
-      setEditorError('Στις Εικόνες επίλεξε Προεπιλεγμένο logo και Προεπιλεγμένο wordmark. Μπορούν να χρησιμοποιούν το ίδιο αρχείο.');
+      setEditorError('Στις Εικόνες επίλεξε Βασικό λογότυπο και Βασικό λεκτικό σήμα. Μπορούν να χρησιμοποιούν το ίδιο αρχείο.');
       setEditor({...editor,tab:'branding',pickerSlot:null});return;
     }
     setBusy(true);setEditorError('');
@@ -282,7 +282,7 @@ export function FinancialProviderManagementSettings(){
         <div className="provider-list-identity"><span className="provider-list-logo"><BankBrandMark id={provider.id} name={provider.displayName}/></span><div><b>{provider.displayName}</b><span>{kindLabel(provider.kind)} · {provider.id}</span></div></div>
         <div className="provider-list-summary">
           <span><Images size={15}/>{assets.length} {assets.length===1?'εικόνα':'εικόνες'}</span>
-          <span>{bindings.length} αναθέσεις</span>
+          <span>{bindings.length} χρήσεις</span>
           <div className="provider-list-thumbs">{assets.slice(0,3).map(asset=><span key={asset.assetKey}><img src={asset.url} alt="" draggable={false}/></span>)}</div>
         </div>
         <button type="button" className="provider-edit-action" onClick={()=>openEdit(provider)}><Pencil size={15}/> Επεξεργασία</button>
@@ -311,13 +311,13 @@ export function FinancialProviderManagementSettings(){
             </div>
             <div className="provider-id-field"><span>Provider ID</span>{editor.source==='new'?<AppTextInput value={editor.id} onChange={event=>setEditor({...editor,id:providerSlug(event.target.value)})} placeholder="nea-trapeza"/>:<code>{editor.id}</code>}<small>{editor.source==='new'?'Σταθερό τεχνικό αναγνωριστικό. Μετά τη δημιουργία δεν αλλάζει.':'Το Provider ID παραμένει σταθερό ώστε να μη σπάνε λογαριασμοί και κάρτες.'}</small></div>
           </div>:<div className="provider-branding-panel" role="tabpanel">
-            <div className="provider-branding-intro"><div><h3>Branding</h3><p>Ανέβασε κάθε αρχείο μία φορά και χρησιμοποίησέ το σε όσες θέσεις χρειάζεται. Τα overrides είναι προαιρετικά.</p></div><span className="provider-library-count"><Images size={15}/>{library.length} στη βιβλιοθήκη</span></div>
+            <div className="provider-branding-intro"><div><h3>Εικόνες παρόχου</h3><p>Ανέβασε κάθε αρχείο μία φορά και χρησιμοποίησέ το σε όσες θέσεις χρειάζεται. Οι ειδικές εικόνες ανά θέμα ή κάρτα είναι προαιρετικές.</p></div><span className="provider-library-count"><Images size={15}/>{library.length} στη βιβλιοθήκη</span></div>
 
             {GROUPS.map(group=><section className="provider-brand-group" key={group.title}>
               <header><h4>{group.title}</h4><p>{group.description}</p></header>
               <div className="provider-slot-grid">{group.ids.map(id=>{const slot=SLOT_BY_ID.get(id)!,ref=editor.assignments[id],asset=resolveAsset(ref),uses=ref?usageCount(ref):0;return <article className="provider-slot-card" key={id}>
                 <div className={`provider-slot-preview ${slot.preview}`}>{asset?<img src={asset.url} alt="" draggable={false}/>:<ImagePlus aria-hidden="true"/>}</div>
-                <div className="provider-slot-copy"><div><b>{slot.label}</b>{slot.required?<span className="required-badge">Απαραίτητο</span>:null}</div><p>{slot.description}</p>{asset?<small title={asset.name}>{asset.name}{uses>1?` · χρησιμοποιείται σε ${uses} θέσεις`:''}</small>:<small>{slot.required?'Δεν έχει επιλεγεί εικόνα':'Χρήση προεπιλογής / fallback'}</small>}</div>
+                <div className="provider-slot-copy"><div><b>{slot.label}</b>{slot.required?<span className="required-badge">Απαραίτητο</span>:null}</div><p>{slot.description}</p>{asset?<small title={asset.name}>{asset.name}{uses>1?` · χρησιμοποιείται σε ${uses} θέσεις`:''}</small>:<small>{slot.required?'Δεν έχει επιλεγεί εικόνα':'Χρήση βασικής εικόνας'}</small>}</div>
                 <button type="button" className="provider-slot-select" disabled={busy} onClick={()=>chooseSlot(id)}>{asset?'Αλλαγή':'Επιλογή εικόνας'}</button>
               </article>})}</div>
             </section>)}
