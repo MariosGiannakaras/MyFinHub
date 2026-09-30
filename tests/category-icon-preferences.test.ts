@@ -81,4 +81,17 @@ describe('category icon preferences',()=>{
     const next={...settings(),categoryIcons:{'expense:Αδιαμόρφωτη':'missing-icon'}};
     expect(resolvedCategoryIcon(next,'expense','Αδιαμόρφωτη')).toBeNull();
   });
+
+  it('ignores remembered or legacy icon keys that the selected curated pack cannot render distinctly',()=>{
+    const stale=settings();
+    stale.categoryIconPack='heroicons';
+    stale.categoryIconPackSelections={'expense:Φαγητό':{heroicons:'dining'}};
+    stale.categoryIcons={'expense:Φαγητό':'heroicons:dining'};
+    expect(resolvedCategoryIcon(stale,'expense','Φαγητό')).not.toBe('heroicons:dining');
+    expect(resolvedCategoryIcon(stale,'expense','Φαγητό')).toMatch(/^heroicons:/);
+
+    const next=withCategoryIcon(stale,'expense','Φαγητό','heroicons:dining');
+    expect(next.categoryIconPackSelections?.['expense:Φαγητό']?.heroicons).toBeUndefined();
+  });
+
 });
