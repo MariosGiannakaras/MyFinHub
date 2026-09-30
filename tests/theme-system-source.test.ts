@@ -7,6 +7,7 @@ const settings=readFileSync('src/components/ReadabilitySettings.tsx','utf8');
 const types=readFileSync('src/types.ts','utf8');
 const runner=readFileSync('scripts/run-rendered-qa.mjs','utf8');
 const rendered=readFileSync('scripts/theme-system-qa.mjs','utf8');
+const darkSurfaces=readFileSync('src/styles/dark-theme-surfaces.css','utf8');
 
 describe('theme architecture source contract',()=>{
   it('initializes theme before React mounts',()=>{
@@ -34,6 +35,10 @@ describe('theme architecture source contract',()=>{
     expect(theme).toContain('.keyboard-shortcut-row kbd{background:var(--control-bg)!important');
     expect(rendered).toContain('dark control border contrast');
     expect(rendered).toContain('dark mobile More menu');
+    expect(darkSurfaces).toContain('html[data-theme="dark"] .approved-account-card');
+    expect(darkSurfaces).toContain('html[data-theme="dark"] .transactions-approved-table td');
+    expect(darkSurfaces).toContain('html[data-theme="dark"] .quick-modal:has(.generic-kind-grid)>footer');
+    expect(rendered).toContain('dark high-fidelity surface parity');
   });
 
   it('registers a dedicated rendered Light Dark matrix',()=>{
