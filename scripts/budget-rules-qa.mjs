@@ -95,6 +95,9 @@ try{
   await clickText('[data-rule-editor] .secondary','Ακύρωση');
   await waitFor("function(){return !document.querySelector('[data-rule-editor]')}",'automation edit cancel');
   await clickAria('Διαγραφή αυτοματισμού QA Market first');
+  await waitFor("function(){const dialog=document.querySelector('.app-confirm-dialog[role=\"alertdialog\"]');return Boolean(dialog&&(dialog.textContent||'').includes('Διαγραφή κανόνα'))}",'automation deletion confirmation');
+  assert(await c.call("function(){return [...document.querySelectorAll('.rule-settings-list article .rules-row-title b')].some(node=>(node.textContent||'').trim()==='QA Market first')}"),'rule remains until destructive confirmation');
+  await clickText('.app-confirm-dialog button','Διαγραφή κανόνα');
   await waitFor("function(){return ![...document.querySelectorAll('.rule-settings-list article .rules-row-title b')].some(node=>(node.textContent||'').trim()==='QA Market first')}",'automation deletion');
 
   console.log('Budget/Rules QA: budgets are managed in Reports');
