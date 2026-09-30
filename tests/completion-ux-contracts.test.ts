@@ -280,4 +280,13 @@ describe('completion UX contracts',()=>{
     expect(harness).toContain('prevents final actions from scrolling clear');
   });
 
+
+  it('uses native label associations and actionable CDP errors in dialog geometry QA',()=>{
+    const harness=read('scripts/completion-dialog-geometry-qa.mjs');
+    expect(harness).toContain("'labels' in node&&node.labels?.length");
+    expect(harness).not.toContain('CSS.escape(node.id)');
+    expect(harness).toContain("r.exceptionDetails.exception?.description");
+    expect(harness).toContain("r.exceptionDetails.stackTrace?.callFrames");
+  });
+
 });
