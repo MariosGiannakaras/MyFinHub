@@ -1,10 +1,13 @@
 import { accessTokenAal, assertMutationSessionOrigin, clearSessionCookiesIfCookie, requireSession } from './auth.js';
-import { ApiError, handleApi, methodNotAllowed, readJsonBody, requestHeader, sendJson } from './http.js';
+import { ApiError, handleApi, methodNotAllowed, readBinaryBody, readJsonBody, requestHeader, sendJson } from './http.js';
 import { isOwner } from './storage.js';
-import { readAccountMetadata, readFinancialProviders, writeAccountMetadata } from './accountMetadataStore.js';
+import { readAccountMetadata, readFinancialProviders, uploadFinancialProviderAsset, writeAccountMetadata, writeFinancialProvider } from './accountMetadataStore.js';
 import { assertValidIban } from '../src/lib/iban.js';
 
 const MAX_ACCOUNT_METADATA_BODY_BYTES=4*1024;
+const MAX_FINANCIAL_PROVIDER_BODY_BYTES=16*1024;
+const MAX_PROVIDER_ASSET_BYTES=2*1024*1024;
+const PROVIDER_ASSET_MIME_TYPES=new Set(['image/png','image/jpeg','image/webp','image/svg+xml']);
 
 function parseAccountId(value:unknown){
   const accountId=typeof value==='string'?value.trim():'';
@@ -12,9 +15,53 @@ function parseAccountId(value:unknown){
   return accountId;
 }
 
-function queryResource(req:any){
-  const value=req?.query?.resource;
+function queryValue(req:any,key:string){
+  const value=req?.query?.[key];
   return typeof value==='string'?value.trim():Array.isArray(value)&&typeof value[0]==='string'?value[0].trim():'';
+}
+function queryResource(req:any){return queryValue(req,'resource')}
+
+export function parseFinancialProviderWrite(value:unknown){
+  if(!value||typeof value!=='object'||Array.isArray(value))throw new ApiError(400,'INVALID_FINANCIAL_PROVIDER','Μη έγκυρα στοιχεία τράπεζας/παρόχου.');
+  const body=value as Record<string,unknown>;
+  if(Object.keys(body).some(key=>!['id','displayName','shortName','providerKind','countryCode','sortOrder'].includes(key)))throw new ApiError(400,'INVALID_FINANCIAL_PROVIDER','Μη έγκυρα στοιχεία τράπεζας/παρόχου.');
+  const id=typeof body.id==='string'?body.id.trim():'';
+  const displayName=typeof body.displayName==='string'?body.displayName.trim():'';
+  const shortName=typeof body.shortName==='string'?body.shortName.trim():'';
+  const providerKind=typeof body.providerKind==='string'?body.providerKind.trim():'';
+  const countryCode=body.countryCode===null||body.countryCode===undefined||body.countryCode===''?null:typeof body.countryCode==='string'?body.countryCode.trim().toUpperCase():'';
+  const sortOrder=Number(body.sortOrder);
+  if(!/^[a-z][a-z0-9-]{0,63}$/.test(id)||!displayName||displayName.length>120||!shortName||shortName.length>80||
+    !['bank','fintech','wallet','payment'].includes(providerKind)||countryCode!==null&&!/^[A-Z]{2}$/.test(countryCode)||
+    !Number.isSafeInteger(sortOrder)||sortOrder<0||sortOrder>100000){
+    throw new ApiError(400,'INVALID_FINANCIAL_PROVIDER','Μη έγκυρα στοιχεία τράπεζας/παρόχου.');
+  }
+  return {id,displayName,shortName,providerKind:providerKind as 'bank'|'fintech'|'wallet'|'payment',countryCode,sortOrder};
+}
+
+export function parseProviderAssetUpload(req:any){
+  const providerId=queryValue(req,'providerId');
+  const role=queryValue(req,'role');
+  const variant=queryValue(req,'variant');
+  const makePrimary=queryValue(req,'primary')==='1';
+  const mimeType=requestHeader(req,'content-type').split(';',1)[0].trim().toLowerCase();
+  if(!/^[a-z][a-z0-9-]{0,63}$/.test(providerId)||!['logo','wordmark','card-mark'].includes(role)||
+    !/^[a-z][a-z0-9-]{0,63}$/.test(variant)||!PROVIDER_ASSET_MIME_TYPES.has(mimeType)||
+    (role==='card-mark'&&makePrimary)){
+    throw new ApiError(400,'INVALID_PROVIDER_ASSET','Μη έγκυρα στοιχεία εικόνας παρόχου.');
+  }
+  return {providerId,role:role as 'logo'|'wordmark'|'card-mark',variant,mimeType,makePrimary};
+}
+
+export function validateProviderAssetContent(mimeType:string,content:Buffer){
+  if(!content.length)throw new ApiError(400,'EMPTY_PROVIDER_ASSET','Η εικόνα είναι κενή.');
+  if(content.length>MAX_PROVIDER_ASSET_BYTES)throw new ApiError(413,'PAYLOAD_TOO_LARGE','Η εικόνα πρέπει να είναι έως 2 MB.');
+  const valid=
+    mimeType==='image/png'&&content.length>=8&&content.subarray(0,8).equals(Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a]))||
+    mimeType==='image/jpeg'&&content.length>=3&&content[0]===0xff&&content[1]===0xd8&&content[2]===0xff||
+    mimeType==='image/webp'&&content.length>=12&&content.subarray(0,4).toString('ascii')==='RIFF'&&content.subarray(8,12).toString('ascii')==='WEBP'||
+    mimeType==='image/svg+xml'&&(()=>{const text=content.toString('utf8').replace(/^\uFEFF/,'').trim();return /^(?:<\?xml[^>]*>\s*)?<svg\b/i.test(text)&&!/<\s*(?:script|foreignObject)\b|\bon[a-z]+\s*=|javascript:/i.test(text)})();
+  if(!valid)throw new ApiError(400,'INVALID_PROVIDER_ASSET_CONTENT','Το αρχείο δεν ταιριάζει με τον δηλωμένο τύπο εικόνας.');
 }
 
 export function parseAccountMetadataExpectedRevision(value:string|undefined){
@@ -37,17 +84,33 @@ export function parseAccountMetadataWrite(value:unknown){
 export async function handleAccountMetadataRequest(req:any,res:any){
   await handleApi(res,async()=>{
     const method=String(req.method||'').toUpperCase();
-    if(method!=='GET'&&method!=='PUT')return methodNotAllowed(res,['GET','PUT']);
+    if(method!=='GET'&&method!=='PUT'&&method!=='POST')return methodNotAllowed(res,['GET','PUT','POST']);
     const session=await requireSession(req,res,{allowBearer:true});
     if(!(await isOwner(session.accessToken))){clearSessionCookiesIfCookie(req,res,session);throw new ApiError(401,'AUTH_REQUIRED','Authentication required.');}
     if(accessTokenAal(session.accessToken)!=='aal2')throw new ApiError(403,'MFA_REQUIRED','Verification required.');
+    const resource=queryResource(req);
     if(method==='GET'){
-      const resource=queryResource(req);
       if(resource==='financial-providers')return sendJson(res,200,{providers:await readFinancialProviders(session.accessToken)});
       if(resource)throw new ApiError(400,'INVALID_ACCOUNT_METADATA_RESOURCE','Μη έγκυρος πόρος metadata λογαριασμών.');
       return sendJson(res,200,{records:await readAccountMetadata(session.accessToken)});
     }
     assertMutationSessionOrigin(req,session);
+    if(method==='POST'&&resource==='financial-providers'){
+      const body=parseFinancialProviderWrite(await readJsonBody(req,MAX_FINANCIAL_PROVIDER_BODY_BYTES));
+      await writeFinancialProvider(body,session.accessToken);
+      const provider=(await readFinancialProviders(session.accessToken)).find(item=>item.id===body.id);
+      if(!provider)throw new ApiError(500,'FINANCIAL_PROVIDER_INVALID_RESPONSE','Financial provider response is invalid.',false);
+      return sendJson(res,200,{provider});
+    }
+    if(method==='PUT'&&resource==='financial-provider-assets'){
+      const input=parseProviderAssetUpload(req);
+      const content=await readBinaryBody(req,MAX_PROVIDER_ASSET_BYTES);
+      validateProviderAssetContent(input.mimeType,content);
+      const asset=await uploadFinancialProviderAsset({...input,content},session.accessToken);
+      return sendJson(res,200,{asset});
+    }
+    if(resource)throw new ApiError(400,'INVALID_ACCOUNT_METADATA_RESOURCE','Μη έγκυρος πόρος metadata λογαριασμών.');
+    if(method!=='PUT')return methodNotAllowed(res,['GET','PUT']);
     const body=parseAccountMetadataWrite(await readJsonBody(req,MAX_ACCOUNT_METADATA_BODY_BYTES));
     const expectedRevision=parseAccountMetadataExpectedRevision(requestHeader(req,'if-match'));
     const record=await writeAccountMetadata(body.accountId,body.iban,expectedRevision,session.accessToken);
