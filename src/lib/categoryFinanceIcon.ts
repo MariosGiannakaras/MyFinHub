@@ -39,7 +39,7 @@ function canonicalTarget(settings:FinanceSettings,input:FinanceIconInput){
   return {settings:normalized,kind,category:categoryIdentity.label,subcategory:undefined};
 }
 
-export type FinanceCategoryVisual={
+type FinanceCategoryVisual={
   explicitKey:string|null;
   resolvedKey:string|null;
   color:string|null;
@@ -63,12 +63,4 @@ export function resolveFinanceCategoryVisual(settings:FinanceSettings,input:Fina
 
 export function explicitFinanceCategoryIcon(settings:FinanceSettings,input:FinanceIconInput):string|null{
   return resolveFinanceCategoryVisual(settings,input).explicitKey;
-}
-
-export function resolvedFinanceCategoryIcon(settings:FinanceSettings,input:FinanceIconInput):string|null{
-  return resolveFinanceCategoryVisual(settings,input).resolvedKey;
-}
-
-export function resolvedFinanceCategoryIconColor(settings:FinanceSettings,input:FinanceIconInput):string|null{
-  return resolveFinanceCategoryVisual(settings,input).color;
 }
