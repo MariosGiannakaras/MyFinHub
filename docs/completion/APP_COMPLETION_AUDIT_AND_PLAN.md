@@ -252,6 +252,8 @@ The first exact-head validation wave exposed three additional validation blocker
 
 | FV-21 | Core frontend mobile navigation selectors | The first final integrated CI run on head `b3f852c6…` passed hygiene, source/type/unit/build and API checks, then rendered frontend QA failed because the core harness still targeted compact-nav items by the retired visible labels `Συναλλαγές` / `Αποταμίευση`. A follow-up sweep also found one remaining Transactions visible-label selector in owned-controls QA. | QA harness compatibility defect | **Source-fixed, proof pending.** Core frontend and owned-controls QA now navigate primary mobile routes by stable accessible names/aria labels; compact phone copy remains `Κινήσεις` / `Στόχοι`. Product navigation code is unchanged. |
 
+| FV-22 | Dialog geometry mobile More selector | The next final CI rerun passed source/type/unit/build and reached dialog geometry, where the harness still searched the bottom-nav button by retired visible text `Περισσότερα`; the current compact label is `Άλλα` while its stable accessible name is `Περισσότερες ενότητες`. | QA harness compatibility defect | **Source-fixed, proof pending.** Dialog geometry now opens More by its accessible name. A full rendered-script sweep found no other stale More-label selector. Product navigation code is unchanged. |
+
 Validation rule: FV items close only after the next exact-head wave proves the corrected interaction/performance/bootstrap behavior. No quality threshold or screenshot-count requirement was relaxed.
 
 ## 3. Page-by-page audit and required changes
