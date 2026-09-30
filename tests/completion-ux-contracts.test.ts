@@ -290,4 +290,17 @@ describe('completion UX contracts',()=>{
     expect(harness).toContain("r.exceptionDetails.stackTrace?.callFrames");
   });
 
+
+  it('hard-bounds mobile DialogShell surfaces and inspects their settled geometry',()=>{
+    const css=read('src/styles/mobile-reports-settings-editors.css');
+    const harness=read('scripts/completion-dialog-geometry-qa.mjs');
+    expect(css).toContain('.modal-backdrop{box-sizing:border-box;padding-left:10px;padding-right:10px}');
+    expect(css).toContain('.quick-modal{width:100%;max-width:100%;box-sizing:border-box}');
+    expect(harness).toContain('await sleep(220)');
+    expect(harness).toContain("style.overflowX==='auto'||style.overflowX==='scroll'");
+    expect(harness).toContain('parent.scrollWidth>parent.clientWidth+1');
+    expect(harness).toContain('hostRect.left<-1||hostRect.right>innerWidth+1');
+    expect(harness).toContain('result.left>=-1&&result.right<=result.viewportWidth+1');
+  });
+
 });
