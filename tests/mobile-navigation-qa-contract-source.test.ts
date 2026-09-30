@@ -33,7 +33,7 @@ describe('mobile navigation QA contracts',()=>{
     expect(receipt).not.toContain('.mobile-quick-action');
     expect(dialogGeometry).not.toContain('.mobile-quick-action');
     expect(geometry).not.toContain('.mobile-quick-action');
-    expect(receipt).toContain('[data-global-quick-entry="mobile"]');
+    expect(receipt).toContain("querySelectorAll('[data-global-quick-entry]')");
     expect(dialogGeometry).toContain('[data-global-quick-entry="mobile"]');
   });
 });
