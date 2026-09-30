@@ -12,6 +12,12 @@ on:
       - public/manifest.webmanifest
       - assets/branding/myfinhub/**
       - index.html
+      - vite.config.ts
+      - tsconfig.json
+      - tsconfig.app.json
+      - tsconfig.node.json
+      - scripts/sync-ocr-assets.mjs
+      - scripts/bundle-budget.mjs
       - tests/desktop-source.test.ts
       - package.json
       - package-lock.json
@@ -31,6 +37,12 @@ on:
       - public/manifest.webmanifest
       - assets/branding/myfinhub/**
       - index.html
+      - vite.config.ts
+      - tsconfig.json
+      - tsconfig.app.json
+      - tsconfig.node.json
+      - scripts/sync-ocr-assets.mjs
+      - scripts/bundle-budget.mjs
       - tests/desktop-source.test.ts
       - package.json
       - package-lock.json
