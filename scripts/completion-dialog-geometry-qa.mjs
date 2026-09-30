@@ -30,6 +30,7 @@ try{
   const click=async(selector,label)=>{const ok=await c.call(`function(selector){const visible=${visible};const node=[...document.querySelectorAll(selector)].find(visible);node?.click();return Boolean(node)}`,[selector]);assert(ok,`missing ${label}`);await sleep(100)};
   const clickText=async(selector,text)=>{const ok=await c.call(`function(selector,text){const visible=${visible};const node=[...document.querySelectorAll(selector)].find(n=>visible(n)&&(n.textContent||'').includes(text));node?.click();return Boolean(node)}`,[selector,text]);assert(ok,`missing ${text}`);await sleep(100)};
   const inspect=async(selector,label,{vertical=true}={})=>{
+    await sleep(220);
     const result=await c.call(`function(selector){
       const visible=node=>{
         if(!node)return false;
@@ -40,9 +41,22 @@ try{
       if(!root)return null;
       const rect=root.getBoundingClientRect();
       const controls=[...root.querySelectorAll('button,a,input,select,textarea,[role="button"],[role="radio"],[role="tab"]')].filter(visible);
+      const horizontalHost=node=>{
+        let parent=node.parentElement;
+        while(parent&&parent!==root){
+          const style=getComputedStyle(parent);
+          if((style.overflowX==='auto'||style.overflowX==='scroll')&&parent.scrollWidth>parent.clientWidth+1)return parent;
+          parent=parent.parentElement;
+        }
+        return null;
+      };
       const rogue=controls.filter(node=>{
         const controlRect=node.getBoundingClientRect();
-        return controlRect.left<-1||controlRect.right>innerWidth+1;
+        if(controlRect.left>=-1&&controlRect.right<=innerWidth+1)return false;
+        const host=horizontalHost(node);
+        if(!host)return true;
+        const hostRect=host.getBoundingClientRect();
+        return hostRect.left<-1||hostRect.right>innerWidth+1;
       }).map(node=>({tag:node.tagName,aria:node.getAttribute('aria-label'),text:(node.textContent||'').trim().slice(0,80)}));
       const accessible=node=>{
         const ariaLabel=(node.getAttribute('aria-label')||'').trim();
