@@ -2,9 +2,9 @@ import mastercardLogo from '../assets/card-networks/mastercard.svg';
 import visaLogo from '../assets/card-networks/visa.svg';
 import type { CardNetwork } from '../types.js';
 
-export type BrandedCardNetwork='visa'|'mastercard';
+type BrandedCardNetwork='visa'|'mastercard';
 
-export interface CardNetworkBrand {
+interface CardNetworkBrand {
   id:BrandedCardNetwork;
   label:'Visa'|'Mastercard';
   dataNetwork:'VISA'|'MASTERCARD';
