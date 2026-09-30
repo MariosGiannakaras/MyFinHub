@@ -142,6 +142,8 @@ describe('financial provider registry',()=>{
     const cards=source('src/lib/cards.ts');
     expect(mark).toContain('useFinancialProviders');
     expect(mark).toContain('logoAssetKey');
+    expect(mark).toContain("preferredAssetKey==='generic'");
+    expect(mark).toContain("provider?.logoAssetKey!=='generic'");
     expect(mark).toContain('wordmarkAssetKey');
     expect(mark).toContain("const registryVisualKey=assetKey==='generic'?'generic'");
     expect(mark).toContain('const visualKey=provider?registryVisualKey');
