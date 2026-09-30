@@ -248,6 +248,8 @@ The first exact-head validation wave exposed three additional validation blocker
 
 | FV-19 | Dialog geometry / Quick Entry trigger | The all-route geometry matrix passed 48/48 after the nav redesign, but dialog geometry still tried to launch Quick Entry through the removed `.mobile-quick-action` class and failed before inspecting the modal. | QA harness selector defect | **Source-fixed, proof pending.** Dialog QA now opens the canonical `[data-global-quick-entry="mobile"]` navigation action and keeps all existing containment/accessibility assertions unchanged. |
 
+| FV-20 | Downstream mobile QA navigation contracts | The DA-52/DA-53 navigation redesign left two downstream browser harnesses coupled to presentation details: OCR still had a second `.mobile-quick-action` lookup, and owned-controls QA targeted the old visible label `Αποταμίευση`. | QA harness compatibility defect | **Source-fixed, proof pending.** OCR now uses `[data-global-quick-entry="mobile"]`; owned-controls route selection uses full accessible page names/aria labels instead of compact visible labels. Product UI semantics are unchanged. |
+
 Validation rule: FV items close only after the next exact-head wave proves the corrected interaction/performance/bootstrap behavior. No quality threshold or screenshot-count requirement was relaxed.
 
 ## 3. Page-by-page audit and required changes
