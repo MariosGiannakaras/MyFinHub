@@ -64,7 +64,8 @@ export function CardCreateDialog({
     if(!networkTouched)setNetwork(item.network);
     setError('');
   };
-  const changeBank=(next:string)=>{setBankId(next);setDesignId('');setError('')};
+  const changeBank=(next:string)=>{setBankId(next);setDesignId('');setNetworkTouched(false);setError('')};
+  const changeKind=(next:CardKind)=>{setKind(next);setDesignId('');setNetworkTouched(false);setError('')};
   const submit=()=>{
     const name=nickname.trim();if(!name){setError('Γράψε ένα όνομα για την κάρτα ώστε να μπορείς να την ξεχωρίζεις.');return}if(!selected){setError('Διάλεξε σχέδιο ή χρώμα για να συνεχίσεις.');return}
     const now=new Date().toISOString();
@@ -83,7 +84,7 @@ export function CardCreateDialog({
       <div className="modal-form-grid">
         {banks.length>1?<div className="modal-field"><label>Τράπεζα</label><AppSelectInput aria-label="Τράπεζα κάρτας" value={bank.id} onChange={event=>changeBank(event.target.value)}>{banks.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}</AppSelectInput></div>:null}
         <div className="modal-field"><label>Όνομα κάρτας</label><AppTextInput data-autofocus="true" aria-label="Όνομα κάρτας" maxLength={36} value={nickname} onChange={event=>setNickname(event.target.value)} placeholder="π.χ. Blue Debit"/></div>
-        {!kindLock&&selectableKinds.length>1?<div className="modal-field"><label>Τύπος</label><AppSelectInput aria-label="Τύπος κάρτας" value={kind} onChange={event=>{setKind(event.target.value as CardKind);setDesignId('')}}>{selectableKinds.map(item=><option key={item} value={item}>{kindOptionLabel(item)}</option>)}</AppSelectInput></div>:null}
+        {!kindLock&&selectableKinds.length>1?<div className="modal-field"><label>Τύπος</label><AppSelectInput aria-label="Τύπος κάρτας" value={kind} onChange={event=>changeKind(event.target.value as CardKind)}>{selectableKinds.map(item=><option key={item} value={item}>{kindOptionLabel(item)}</option>)}</AppSelectInput></div>:null}
         <div className="modal-field"><label>Δίκτυο</label><AppSelectInput aria-label="Δίκτυο κάρτας" value={network} onChange={event=>{setNetwork(event.target.value as CardNetwork);setNetworkTouched(true)}}><option value="visa">Visa</option><option value="mastercard">Mastercard</option></AppSelectInput></div>
         <div className="modal-field design-field"><label>Σχέδιο / χρώμα</label><div className="design-picker" role="radiogroup" aria-label="Σχέδιο κάρτας">{displayedDesigns.map(item=><button key={item.id} type="button" className="design-option" role="radio" aria-checked={selected?.id===item.id} onClick={()=>pickDesign(item.id)}><span className="design-swatch" style={{background:item.swatch}}/><b>{item.label}</b><small>{item.note}</small></button>)}</div></div>
       </div>
