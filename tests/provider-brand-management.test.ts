@@ -122,7 +122,7 @@ describe('provider branding management',()=>{
     expect(settings).toContain('Βιβλιοθήκη εικόνων');
     expect(settings).toContain('Ανέβασμα νέας');
     expect(settings).toContain('Η ίδια εικόνα μπορεί να ανατεθεί σε πολλές θέσεις.');
-    expect(settings).toContain('Το Light/Dark theme της εφαρμογής δεν συμμετέχει.');
+    expect(settings).toContain('Το θέμα της εφαρμογής δεν επηρεάζει τις κάρτες.');
     expect(settings).toContain('type="file" accept={ACCEPT} hidden');
     expect(settings).not.toContain('Choose File');
     expect(settings).not.toContain('Δεν επιλέχθηκε αρχείο');
