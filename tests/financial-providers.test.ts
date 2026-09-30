@@ -56,6 +56,7 @@ describe('financial provider registry',()=>{
   it('stores provider identity in an authenticated read-only RLS registry',()=>{
     const migration=source('supabase/migrations/20260904193923_add_financial_provider_registry.sql');
     const brandRefresh=source('supabase/migrations/20260905020000_refresh_financial_provider_brand_assets.sql');
+    const storageMigration=source('supabase/migrations/20260930103651_provider_asset_storage_metadata.sql');
     expect(migration).toContain('create table if not exists public.rheomiq_financial_providers');
     expect(migration).toContain('alter table public.rheomiq_financial_providers enable row level security');
     expect(migration).toContain('revoke all on table public.rheomiq_financial_providers from public, anon, authenticated');
@@ -66,6 +67,13 @@ describe('financial provider registry',()=>{
     expect(brandRefresh).toContain("when 'alpha' then 'generic'");
     expect(brandRefresh).toContain("when 'national' then 'generic'");
     expect(brandRefresh).toContain("when 'eurobank' then 'generic'");
+    expect(storageMigration).toContain('rename column content to legacy_content');
+    expect(storageMigration).toContain('legacy_content is null');
+    expect(storageMigration).toContain("storage_bucket = 'financial-provider-assets'");
+    expect(storageMigration).toContain("source = 'official-provider'");
+    expect(storageMigration).toContain('verified_at is not null');
+    expect(storageMigration).toContain('foreign key (logo_asset_key)');
+    expect(storageMigration).toContain('foreign key (wordmark_asset_key)');
   });
 
   it('reuses the existing metadata API instead of adding another Vercel function',()=>{
@@ -75,6 +83,8 @@ describe('financial provider registry',()=>{
     expect(handler).toContain("resource==='financial-providers'");
     expect(handler).toContain('readFinancialProviders(session.accessToken)');
     expect(store).toContain('rheomiq_financial_providers?select=');
+    expect(store).toContain('rheomiq_financial_provider_assets?select=');
+    expect(store).toContain('storage/v1/object/public');
     expect(store).toContain('authorization:`Bearer ${accessToken}`');
     expect(store).toContain('SUPABASE_PUBLISHABLE_KEY');
     expect(store).not.toMatch(/service[_-]?role|secret[_-]?key/i);
@@ -118,6 +128,9 @@ describe('financial provider registry',()=>{
     expect(mark).toContain('useFinancialProviders');
     expect(mark).toContain('logoAssetKey');
     expect(mark).toContain('wordmarkAssetKey');
+    expect(mark).toContain('provider?.logoUrl');
+    expect(mark).toContain('provider?.wordmarkUrl');
+    expect(mark).toContain('data-bank-logo-source="provider-storage"');
     expect(mark).toContain("const registryVisualKey=assetKey==='generic'?'generic'");
     expect(mark).toContain("identityAsset?.source==='local-image'");
     expect(mark).toContain("const registrySource=provider?'shared':'fallback';");
