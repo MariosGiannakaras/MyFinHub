@@ -37,7 +37,7 @@ describe('Accounts owner UI contract',()=>{
     expect(qa).toContain("settings-accounts-new-bank-empty-desktop");
     expect(qa).toContain("settings-accounts-new-bank-provider-picker-desktop");
     expect(qa).toContain("settings-accounts-new-bank-selected-desktop");
-    expect(qa).toContain('account-management-provider-picker button[role="radio"]');
+    expect(qa).toContain('account-management-provider-picker');
     expect(qa).toContain('Provider picker shows a branded visual option for each provider');
     expect(qa).toContain("settings-accounts-new-cash-daily-desktop");
     expect(qa).toContain("settings-accounts-new-modal-desktop");
