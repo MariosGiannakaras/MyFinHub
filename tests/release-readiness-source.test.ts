@@ -65,8 +65,10 @@ describe('release-readiness source contracts',()=>{
     expect(appShell).toContain('</Surface><button type="button" className="mobile-quick-action"');
     expect(appShell).not.toContain('genericEntry');
     expect(commandStyles).toContain('.mobile-quick-action{display:none}');
-    expect(commandStyles).toContain('.mobile-quick-action{display:flex');
-    expect(commandStyles).toContain('position:fixed;right:16px;bottom:calc(82px + env(safe-area-inset-bottom,0px))');
+    expect(commandStyles).toContain('.mobile-quick-action{display:grid;place-items:center');
+    expect(commandStyles).toContain('position:fixed;right:16px;bottom:calc(84px + env(safe-area-inset-bottom,0px))');
+    expect(commandStyles).toContain('width:48px;height:48px');
+    expect(commandStyles).toContain('.mobile-quick-action>span{position:absolute;width:1px')
   });
 
   it('keeps WebKit compatibility coverage isolated, pinned and intentionally small',()=>{
