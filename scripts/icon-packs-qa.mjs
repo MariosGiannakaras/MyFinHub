@@ -97,6 +97,16 @@ try{
   assert(restored?.text.includes('χρώμα'),'category color remains independent of family switch');
   await screenshot('icon-phosphor-choice-restored-desktop');
 
+  await clickText('.sidebar nav button','Dashboard');
+  await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Οι λογαριασμοί μου')}",'Dashboard after icon auto-save');
+  await clickText('.sidebar nav button','Ρυθμίσεις');
+  await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Ρυθμίσεις')}",'Settings after navigation');
+  await clickText('.settings-tablist button','Εικονίδια');
+  await waitFor("function(){const button=[...document.querySelectorAll('.settings-icons-only .category-icon-pack-switcher-global button')].find(item=>(item.querySelector('b')?.textContent||'').trim()==='Phosphor');return button?.getAttribute('aria-pressed')==='true'}",'persisted Phosphor family after navigation');
+  const persisted=await rowState(targetLabel);
+  assert(persisted?.key===phosphorChoice,`auto-saved pack choice must survive navigation: ${JSON.stringify(persisted)}`);
+  assert(persisted?.text.includes('χρώμα'),'auto-saved category color survives navigation');
+
   await c.send('Emulation.setDeviceMetricsOverride',{width:375,height:812,deviceScaleFactor:1,mobile:true});
   await noOverflow('icons mobile');
   await openRow(targetLabel);
