@@ -152,7 +152,7 @@ try{
     await inspect('.planning-editor',`${viewport.name} planning editor`);
 
     await navigate('dashboard');
-    await clickText('.mobile-nav button','Περισσότερα');
+    await click('button[aria-label="Περισσότερες ενότητες"]','mobile more menu trigger');
     await waitFor("function(){return Boolean(document.querySelector('.mobile-more-menu'))}",'mobile more menu');
     await inspect('.mobile-more-menu',`${viewport.name} mobile more menu`);
 
