@@ -82,7 +82,17 @@ describe('production migration ledger source contract',()=>{
     expect(assets).not.toMatch(/insert\s+into\s+public\.rheomiq_financial_provider_assets/i);
   });
 
-  it('tracks provider artwork as user-managed Storage assets without mandatory provenance',()=>{\n    const assets=readFileSync('supabase/migrations/20260930195848_enable_user_managed_provider_assets.sql','utf8');\n    expect(assets).toContain("alter column legacy_content drop not null");\n    expect(assets).toContain("'user-managed'");\n    expect(assets).toContain("'card-mark'::text");\n    expect(assets).toContain("storage_bucket = 'financial-provider-assets'");\n    expect(assets).toContain("source/provenance metadata is optional");\n    expect(assets).toContain("magenta-pay-logo-universal");\n  });\n\n  it('keeps the final provider/history health contract represented as a forward migration',()=>{
+  it('tracks provider artwork as user-managed Storage assets without mandatory provenance',()=>{
+    const assets=readFileSync('supabase/migrations/20260930195848_enable_user_managed_provider_assets.sql','utf8');
+    expect(assets).toContain("alter column legacy_content drop not null");
+    expect(assets).toContain("'user-managed'");
+    expect(assets).toContain("'card-mark'::text");
+    expect(assets).toContain("storage_bucket = 'financial-provider-assets'");
+    expect(assets).toContain("source/provenance metadata is optional");
+    expect(assets).toContain("magenta-pay-logo-universal");
+  });
+
+  it('keeps the final provider/history health contract represented as a forward migration',()=>{
     const health=readFileSync('supabase/migrations/20260930115252_fix_database_health_history_state_check.sql','utf8');
     expect(health).toContain("'productionReady'");
     expect(health).toContain("'unbalanced_internal_events'");
