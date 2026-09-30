@@ -24,7 +24,9 @@ describe('Credit Card shared Button ownership',()=>{
     expect(source).toContain('<IconButton type="button" aria-label="Κλείσιμο αγοράς πιστωτικής"');
     expect(source).toContain('<IconButton type="button" className="close-picker" aria-label="Κλείσιμο αρχείου καρτών"');
     expect(source).toContain('<Button type="button" variant="primary" disabled={!card} onClick={openPurchase}');
-    expect(source).toContain('<Button type="button" variant="secondary" onClick={openCardDetails}><Pencil/> Στοιχεία κάρτας</Button>');
+    expect(source).toContain('<Button type="button" variant="secondary" onClick={openCardProfile}><Pencil/> Επεξεργασία κάρτας</Button>');
+    expect(source).toContain('<Button type="button" variant="secondary" onClick={openCardDetails}><KeyRound/> Ασφαλή στοιχεία</Button>');
+    expect(source).toContain('initialCard={profileCard}');
     expect(source).toContain('<CardDetailsDialog');
     expect(source).toContain('<Button type="button" variant="secondary" disabled={!card||debt<=0||eligibleAccounts.length===0} onClick={openRepay}');
     expect(source).toContain('<Button data-autofocus={index===0?\'true\':undefined} type="button" variant="primary" onClick={()=>restoreArchived(archived)}');
