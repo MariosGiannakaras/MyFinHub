@@ -57,7 +57,7 @@ export function parseAccountSecurityWrite(value: unknown): AccountSecurityWrite 
     if (Object.keys(body).some(key => key !== 'action' && key !== 'currentPassword' && key !== 'newPassword')) throw new ApiError(400, 'INVALID_ACCOUNT_CHANGE', 'Μη έγκυρη αλλαγή κωδικού.');
     const currentPassword = typeof body.currentPassword === 'string' ? body.currentPassword : '';
     const newPassword = typeof body.newPassword === 'string' ? body.newPassword : '';
-    if (currentPassword.length < 8 || currentPassword.length > 512) throw new ApiError(400, 'INVALID_CURRENT_PASSWORD', 'Ο τρέχων κωδικός δεν είναι έγκυρος.');
+    if (!currentPassword || currentPassword.length > 512) throw new ApiError(400, 'INVALID_CURRENT_PASSWORD', 'Ο τρέχων κωδικός δεν είναι έγκυρος.');
     const passwordError=accountPasswordPolicyError(newPassword);
     if (passwordError) throw new ApiError(400, 'INVALID_NEW_PASSWORD', passwordError);
     if (newPassword === currentPassword) throw new ApiError(400, 'PASSWORD_UNCHANGED', 'Ο νέος κωδικός πρέπει να είναι διαφορετικός από τον τρέχοντα.');
