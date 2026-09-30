@@ -27,6 +27,7 @@ import { attentionDismissDecision, attentionSnoozeDecision, visibleAttentionItem
 import { shortDate } from '../lib/format';
 import { accountDisplayName } from '../lib/ui';
 import type { AttentionDecision, FinanceData, ReviewDecision } from '../types';
+import './AttentionCompletion.css';
 
 const actionLabel=(item:AttentionItem)=>item.action==='complete_scheduled'?'Ολοκλήρωση':item.action==='pay_recurring'?'Πληρωμή παγίου':item.action==='pay_loan'?'Πληρωμή δόσης':item.action==='pay_credit'?'Πληρωμή κάρτας':item.action==='collect_lending'?'Καταγραφή επιστροφής':item.action==='open_budgets'?'Προβολή budgets':item.action==='open_forecast'?'Άνοιγμα πρόβλεψης':item.action==='categorize_transaction'?'Κατηγοριοποίηση':item.action==='review_duplicate'?'Έλεγχος':'Προβολή';
 const severityLabel=(severity:AttentionItem['severity'])=>severity==='danger'?'Άμεση προσοχή':severity==='warning'?'Σύντομα':'Ενημέρωση';
