@@ -177,4 +177,14 @@ describe('completion UX contracts',()=>{
     expect(receipts).not.toContain('@media(max-width:820px){.receipt-inbox{height:96dvh;width:98vw;border-radius:20px}.receipt-inbox-layout{grid-template-columns:1fr;overflow:auto}.receipt-draft-list{max-height:220px;border-right:0;border-bottom:1px solid #dce5f0}.receipt-review-pane{overflow:visible}.receipt-capture-actions{flex-wrap:wrap}.receipt-capture-actions>small{width:100%;margin-left:0}.receipt-preview{grid-template-columns:140px 1fr}.receipt-proposal dl{grid-template-columns:1fr}.receipt-quick-launch{right:16px;bottom:18px}');
   });
 
+
+  it('persists icon-family and color changes immediately across Settings tab switches',()=>{
+    const settings=read('src/pages/SettingsPage.tsx');
+    expect(settings).toContain('draftRef.current = normalized');
+    expect(settings).toContain('setDraft(normalized)');
+    expect(settings).toContain('onSettings(normalized)');
+    expect(settings).toContain("<CategoryIconAssignmentWorkspace settings={draft} onChange={(next) => commit(next, '')} />");
+    expect(settings).not.toContain('Αποθήκευση εικονιδίων');
+  });
+
 });
