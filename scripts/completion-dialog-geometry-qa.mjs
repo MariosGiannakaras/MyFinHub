@@ -29,10 +29,11 @@ try{
   const navigate=async page=>{const url=new URL(baseUrl);url.searchParams.set('page',page);await c.send('Page.navigate',{url:url.href});await waitFor("function(){return document.readyState==='complete'&&Boolean(document.querySelector('#main-workspace h1'))}",`${page} page`);await sleep(100)};
   const click=async(selector,label)=>{const ok=await c.call(`function(selector){const visible=${visible};const node=[...document.querySelectorAll(selector)].find(visible);node?.click();return Boolean(node)}`,[selector]);assert(ok,`missing ${label}`);await sleep(100)};
   const clickText=async(selector,text)=>{const ok=await c.call(`function(selector,text){const visible=${visible};const node=[...document.querySelectorAll(selector)].find(n=>visible(n)&&(n.textContent||'').includes(text));node?.click();return Boolean(node)}`,[selector,text]);assert(ok,`missing ${text}`);await sleep(100)};
-  const inspect=async(selector,label)=>{
-    const result=await c.call(`function(selector){const visible=${visible};const root=[...document.querySelectorAll(selector)].find(visible);if(!root)return null;const r=root.getBoundingClientRect();const controls=[...root.querySelectorAll('button,a,input,select,textarea,[role="button"],[role="radio"],[role="tab"]')].filter(visible);const rogue=controls.filter(node=>{const x=node.getBoundingClientRect();return x.left<-1||x.right>innerWidth+1}).map(node=>({tag:node.tagName,aria:node.getAttribute('aria-label'),text:(node.textContent||'').trim().slice(0,80)}));const footers=[...root.querySelectorAll('footer,.modal-actions,.editor-actions,.account-management-modal-footer')].filter(visible).map(node=>{const x=node.getBoundingClientRect();return {top:x.top,bottom:x.bottom,left:x.left,right:x.right}});return {viewportWidth:innerWidth,left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height,scrollWidth:root.scrollWidth,clientWidth:root.clientWidth,scrollHeight:root.scrollHeight,clientHeight:root.clientHeight,rogue,footers}};`,[selector]);
+  const inspect=async(selector,label,{vertical=true}={})=>{
+    const result=await c.call(`function(selector){const visible=${visible};const root=[...document.querySelectorAll(selector)].find(visible);if(!root)return null;const r=root.getBoundingClientRect();const controls=[...root.querySelectorAll('button,a,input,select,textarea,[role="button"],[role="radio"],[role="tab"]')].filter(visible);const rogue=controls.filter(node=>{const x=node.getBoundingClientRect();return x.left<-1||x.right>innerWidth+1}).map(node=>({tag:node.tagName,aria:node.getAttribute('aria-label'),text:(node.textContent||'').trim().slice(0,80)}));const footers=[...root.querySelectorAll('footer,.modal-actions,.editor-actions,.account-management-modal-footer')].filter(visible).map(node=>{const x=node.getBoundingClientRect();return {top:x.top,bottom:x.bottom,left:x.left,right:x.right}});return {viewportWidth:innerWidth,viewportHeight:innerHeight,left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height,scrollWidth:root.scrollWidth,clientWidth:root.clientWidth,scrollHeight:root.scrollHeight,clientHeight:root.clientHeight,rogue,footers}};`,[selector]);
     assert(result,`${label} is not visible`);
     assert(result.left>=-1&&result.right<=result.viewportWidth+1,`${label} escapes viewport horizontally: ${JSON.stringify(result)}`);
+    if(vertical)assert(result.top>=-1&&result.bottom<=result.viewportHeight+1,`${label} escapes viewport vertically: ${JSON.stringify(result)}`);
     assert(result.scrollWidth<=result.clientWidth+1,`${label} has internal horizontal overflow: ${result.scrollWidth}-${result.clientWidth}`);
     assert(result.rogue.length===0,`${label} has off-viewport controls: ${JSON.stringify(result.rogue)}`);
     for(const footer of result.footers)assert(footer.left>=-1&&footer.right<=result.viewportWidth+1,`${label} footer escapes horizontally`);
@@ -62,8 +63,38 @@ try{
     await clickText('[role="tab"]','Εικονίδια');
     await click('.category-icon-unified-main','icon assignment row');
     await waitFor("function(){return Boolean(document.querySelector('[data-icon-selection-panel]'))}",'icon selection panel');
-    const iconPanel=await inspect('[data-icon-selection-panel]',`${viewport.name} icon selection panel`);
+    const iconPanel=await inspect('[data-icon-selection-panel]',`${viewport.name} icon selection panel`,{vertical:false});
     assert(iconPanel.bottom>0,`${viewport.name} icon selection panel is not reachable`);
+
+    await navigate('cards');
+    await click('button[aria-label^="Ασφαλή στοιχεία"]','secure card details editor');
+    await waitFor("function(){return Boolean(document.querySelector('.app-card-details-dialog'))}",'secure card details editor');
+    await inspect('.app-card-details-dialog',`${viewport.name} secure card details editor`);
+
+    await navigate('savings');
+    await clickText('button','Νέος στόχος');
+    await waitFor("function(){return Boolean(document.querySelector('#savings-goal-editor-title'))}",'savings goal editor');
+    await inspect('.savings-dialog',`${viewport.name} savings goal editor`);
+
+    await navigate('loans');
+    await clickText('.page-heading button','Νέο');
+    await waitFor("function(){return Boolean(document.querySelector('#loan-editor-title'))}",'loan editor');
+    await inspect('.loan-editor-dialog',`${viewport.name} loan editor`);
+
+    await navigate('lending');
+    await clickText('.page-heading button','Νέα κίνηση');
+    await waitFor("function(){return Boolean(document.querySelector('#lending-dialog-title'))}",'lending editor');
+    await inspect('.lending-dialog',`${viewport.name} lending editor`);
+
+    await navigate('recurring');
+    await clickText('button','Νέο πάγιο');
+    await waitFor("function(){return Boolean(document.querySelector('#recurring-editor-title'))}",'recurring editor');
+    await inspect('.editor-dialog',`${viewport.name} recurring editor`);
+
+    await navigate('planning');
+    await clickText('button','Νέα προγραμματισμένη');
+    await waitFor("function(){return Boolean(document.querySelector('#scheduled-editor-title'))}",'planning editor');
+    await inspect('.planning-editor',`${viewport.name} planning editor`);
 
     await navigate('dashboard');
     await clickText('.mobile-nav button','Περισσότερα');
