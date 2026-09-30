@@ -100,7 +100,7 @@ export type FinancialProviderWriteInput={
   sortOrder:number;
 };
 
-async function writeFinancialProvider(input:FinancialProviderWriteInput,method:'POST'|'PATCH'){
+async function writeFinancialProvider(input:FinancialProviderWriteInput,method:'POST'|'PATCH',refreshCatalog=true){
   const response=await fetch('/api/account-metadata?resource=financial-providers',{
     method,
     credentials:'same-origin',
@@ -109,11 +109,11 @@ async function writeFinancialProvider(input:FinancialProviderWriteInput,method:'
   });
   const payload=await json(response);
   if(!response.ok)throw new Error(payload?.error||'Δεν ήταν δυνατή η αποθήκευση της τράπεζας/παρόχου.');
-  await refreshFinancialProviders(true);
+  if(refreshCatalog)await refreshFinancialProviders(true);
   return payload?.provider as FinancialProvider;
 }
-export function saveFinancialProvider(input:FinancialProviderWriteInput){return writeFinancialProvider(input,'POST')}
-export function updateFinancialProvider(input:FinancialProviderWriteInput){return writeFinancialProvider(input,'PATCH')}
+export function saveFinancialProvider(input:FinancialProviderWriteInput,refreshCatalog=true){return writeFinancialProvider(input,'POST',refreshCatalog)}
+export function updateFinancialProvider(input:FinancialProviderWriteInput,refreshCatalog=true){return writeFinancialProvider(input,'PATCH',refreshCatalog)}
 
 export async function uploadFinancialProviderAsset(input:{
   providerId:string;
