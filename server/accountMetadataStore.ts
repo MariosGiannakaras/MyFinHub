@@ -39,6 +39,7 @@ type StoredFinancialProviderAssetRow={
   variant:string;
   storage_bucket:string|null;
   storage_path:string|null;
+  updated_at:string;
   active:boolean;
 };
 
@@ -105,7 +106,7 @@ function mapFinancialProviderAssetRow(value:unknown):StoredFinancialProviderAsse
   const roles=['logo','wordmark','card-mark'] as const;
   const role=row?.asset_role;
   if(!row||typeof row.asset_key!=='string'||typeof row.provider_id!=='string'||typeof role!=='string'||!roles.includes(role as any)||
-    typeof row.variant!=='string'||!/^[a-z][a-z0-9-]{0,63}$/.test(row.variant)||row.storage_bucket!=='financial-provider-assets'||typeof row.storage_path!=='string'||
+    typeof row.variant!=='string'||!/^[a-z][a-z0-9-]{0,63}$/.test(row.variant)||row.storage_bucket!=='financial-provider-assets'||typeof row.storage_path!=='string'||typeof row.updated_at!=='string'||
     !/^providers\/[a-z][a-z0-9-]{0,63}\/[A-Za-z0-9._/-]+$/.test(row.storage_path)||row.active!==true){
     throw new ApiError(500,'FINANCIAL_PROVIDER_ASSET_INVALID_ROW','Stored provider asset metadata is invalid.',false);
   }
@@ -116,13 +117,14 @@ function mapFinancialProviderAssetRow(value:unknown):StoredFinancialProviderAsse
     variant:row.variant,
     storage_bucket:row.storage_bucket,
     storage_path:row.storage_path,
+    updated_at:row.updated_at,
     active:true,
   };
 }
 
 function publicStorageUrl(baseUrl:string,asset:StoredFinancialProviderAssetRow){
   const path=asset.storage_path!.split('/').map(encodeURIComponent).join('/');
-  return `${baseUrl}/storage/v1/object/public/${encodeURIComponent(asset.storage_bucket!)}/${path}`;
+  return `${baseUrl}/storage/v1/object/public/${encodeURIComponent(asset.storage_bucket!)}/${path}?v=${encodeURIComponent(asset.updated_at)}`;
 }
 
 export async function readAccountMetadata(accessToken:string):Promise<AccountMetadataRow[]>{
@@ -134,7 +136,7 @@ export async function readAccountMetadata(accessToken:string):Promise<AccountMet
 export async function readFinancialProviders(accessToken:string):Promise<FinancialProviderRow[]>{
   const [providerPayload,assetPayload]=await Promise.all([
     request('rheomiq_financial_providers?select=id,display_name,short_name,provider_kind,country_code,logo_asset_key,wordmark_asset_key,sort_order&active=eq.true&order=sort_order.asc,id.asc',{method:'GET'},accessToken),
-    request('rheomiq_financial_provider_assets?select=asset_key,provider_id,asset_role,variant,storage_bucket,storage_path,active&active=eq.true&order=provider_id.asc,asset_role.asc,variant.asc,asset_key.asc',{method:'GET'},accessToken),
+    request('rheomiq_financial_provider_assets?select=asset_key,provider_id,asset_role,variant,storage_bucket,storage_path,updated_at,active&active=eq.true&order=provider_id.asc,asset_role.asc,variant.asc,asset_key.asc',{method:'GET'},accessToken),
   ]);
   if(!Array.isArray(providerPayload)||!Array.isArray(assetPayload))throw new ApiError(500,'FINANCIAL_PROVIDER_INVALID_RESPONSE','Financial provider response is invalid.',false);
   const assetRows=assetPayload.map(mapFinancialProviderAssetRow);
