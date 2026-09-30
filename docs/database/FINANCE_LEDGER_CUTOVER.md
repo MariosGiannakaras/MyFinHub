@@ -23,6 +23,8 @@ The current JSON state remains authoritative until the cutover transaction compl
 
 ## Target relational model
 
+The canonical relational tables live in the non-exposed `private` schema. Authenticated access is still owner/AAL2 constrained by RLS, but normal clients reach finance data only through the established public RPC contract.
+
 ### rheomiq_accounts
 
 One row per financial account identity. Primary key: (owner_user_id, account_id). Fields cover account kind, provider, display name, active state and excluded-from-available semantics.
@@ -57,17 +59,17 @@ Pending/planned dated items with stable IDs and explicit status.
 
 ## What remains JSON
 
-UI/preferences such as visual settings, category/icon presentation, pinned presets and bounded non-ledger UI decisions may remain in rheomiq_app_state. The relational ledger is never duplicated into mutable JSON as a second source of truth.
+UI/preferences such as visual settings, category/icon presentation, pinned presets and bounded non-ledger UI decisions may remain in rheomiq_app_state. Immutable legacy/import seed data also remains in the compatibility envelope; the mutable live ledger arrays are not duplicated there. The relational ledger is never duplicated into mutable JSON as a second source of truth.
 
 ## Cutover stages
 
-### Stage A — dormant schema
+### Stage A — reviewed migration unit
 
-Create relational tables, constraints, indexes and RLS while JSON remains the only authority. No application read/write path touches the dormant tables yet, so there is no dual-write period.
+The table DDL, RLS, helper functions, verifier, compatibility RPC rewrites and authority switch are authored and reviewed together in one pending migration. The relational tables are **not** deployed as a dormant second ledger.
 
-### Stage B — dry-run migration verifier
+### Stage B — in-transaction verifier
 
-A database verifier converts the current canonical JSON state into relational-shaped temporary data and compares event count/IDs, amount/date/kind, ordered legs, final account balances, card purchase/payment totals, card/statement references and budget/recurring/scheduled IDs. Zero mismatches are required.
+When that migration is finally applied, it converts the locked canonical JSON state into relational rows and composes the FinanceData ledger arrays back from those rows. The JSONB round-trip for events/ordered legs, cards/tombstones, statements, budgets, recurring and scheduled items must be exact before the transaction is allowed to commit.
 
 ### Stage C — one atomic cutover transaction
 
@@ -79,7 +81,7 @@ Inside one transaction:
 4. Run the full verifier against persisted relational rows.
 5. Switch one storage-mode marker to relational_v1.
 6. Replace finance read/save RPC behavior so post-commit reads/writes use relational storage.
-7. Append one history/audit point describing the cutover.
+7. Preserve semantic finance revision/history state because the cutover changes storage representation, not user finance data.
 8. Commit.
 
 If any verification fails, the whole transaction rolls back and JSON remains authoritative.
