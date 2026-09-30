@@ -1,5 +1,6 @@
 import type { FinanceData } from '../types';
 import { mutableSavePayload } from './persistencePayload';
+import { notifyAuthExpired } from './authExpiry';
 
 interface HistoryPointSummary { id:string; parentId:string|null; label:string; createdAt:string; current:boolean }
 export interface HistoryEnvelope {
@@ -53,9 +54,7 @@ async function json<T>(response: Response): Promise<T> {
   const payload = await response.json().catch(() => null) as { error?: string; code?: string; requestId?: string } | T | null;
   if (!response.ok) {
     const details = payload && typeof payload === 'object' ? payload as { error?: string; code?: string; requestId?: string } : {};
-    if (response.status === 401 && (details.code === 'AUTH_REQUIRED' || details.code === 'DEVICE_ACCESS_REVOKED') && typeof window !== 'undefined') {
-      window.dispatchEvent(new Event('rheomiq:auth-expired'));
-    }
+    notifyAuthExpired(response.status, details.code);
     throw new ApiError(details.error || response.statusText || 'Request failed', response.status, details.code, details.requestId);
   }
   return payload as T;
