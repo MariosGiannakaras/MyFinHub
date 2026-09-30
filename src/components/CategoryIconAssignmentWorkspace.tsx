@@ -5,10 +5,10 @@ import { CATEGORY_ICON_PACKS, decodeCategoryIconValue, encodeCategoryIconValue }
 import { categoryIconPackPreviewKeys } from '../lib/categoryIconPackSupport';
 import {
   activeCategoryIconPack,
-  explicitCategoryIcon,
   explicitCategoryIconColor,
-  explicitSubcategoryIcon,
+  explicitCategoryIconForPack,
   explicitSubcategoryIconColor,
+  explicitSubcategoryIconForPack,
   resolvedCategoryIcon,
   resolvedCategoryIconColor,
   withCategoryIcon,
@@ -51,8 +51,8 @@ export function CategoryIconAssignmentWorkspace({settings,onChange}:{settings:Fi
   const targetKey=(target:EditorTarget)=>target?`${target.kind}:${target.category}${target.subcategory?`:${target.subcategory}`:''}`:'';
   const editorValue=editor
     ?editor.subcategory
-      ?explicitSubcategoryIcon(settings,editor.kind,editor.category,editor.subcategory)
-      :explicitCategoryIcon(settings,editor.kind,editor.category)
+      ?explicitSubcategoryIconForPack(settings,editor.kind,editor.category,editor.subcategory,iconPack)
+      :explicitCategoryIconForPack(settings,editor.kind,editor.category,iconPack)
     :null;
   const editorResolved=editor
     ?resolvedCategoryIcon(settings,editor.kind,editor.category,editor.subcategory)||encodeCategoryIconValue(iconPack,'other')
@@ -115,7 +115,7 @@ export function CategoryIconAssignmentWorkspace({settings,onChange}:{settings:Fi
     <div className="category-icon-unified-list taxonomy-icon-disclosure" data-icon-assignment-surface role="list" aria-label={`Κατηγορίες και υποκατηγορίες · προεπισκόπηση ${CATEGORY_ICON_PACKS.find(item=>item.id===iconPack)?.label}`}>
       {rows.map(row=>{
         const key=rowKey(row.kind,row.name);
-        const explicit=explicitCategoryIcon(settings,row.kind,row.name);
+        const explicit=explicitCategoryIconForPack(settings,row.kind,row.name,iconPack);
         const resolved=resolvedCategoryIcon(settings,row.kind,row.name)||encodeCategoryIconValue(iconPack,'other');
         const color=resolvedCategoryIconColor(settings,row.kind,row.name);
         const isOpen=targetKey(editor)===key;
@@ -129,7 +129,7 @@ export function CategoryIconAssignmentWorkspace({settings,onChange}:{settings:Fi
           {row.subcategories.length?<div className="category-icon-unified-sublist" role="list" aria-label={`Υποκατηγορίες ${row.name}`}>
             {row.subcategories.map(subcategory=>{
               const subKey=`${key}:${subcategory}`;
-              const override=explicitSubcategoryIcon(settings,row.kind,row.name,subcategory);
+              const override=explicitSubcategoryIconForPack(settings,row.kind,row.name,subcategory,iconPack);
               const subResolved=resolvedCategoryIcon(settings,row.kind,row.name,subcategory)||resolved;
               const subColor=resolvedCategoryIconColor(settings,row.kind,row.name,subcategory);
               const subOpen=targetKey(editor)===subKey;
