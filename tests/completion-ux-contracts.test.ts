@@ -169,4 +169,12 @@ describe('completion UX contracts',()=>{
     expect(receipts).toContain('.receipt-inbox{height:96dvh;width:98vw');
   });
 
+
+  it('keeps the Receipt launch inside the Quick Entry footer on phone and small tablet widths',()=>{
+    const receipts=read('src/styles/receipt-inbox.css');
+    expect(receipts).toContain('@media(max-width:820px)');
+    expect(receipts).toContain('.quick-modal>footer .receipt-quick-launch{position:static');
+    expect(receipts).not.toContain('@media(max-width:820px){.receipt-inbox{height:96dvh;width:98vw;border-radius:20px}.receipt-inbox-layout{grid-template-columns:1fr;overflow:auto}.receipt-draft-list{max-height:220px;border-right:0;border-bottom:1px solid #dce5f0}.receipt-review-pane{overflow:visible}.receipt-capture-actions{flex-wrap:wrap}.receipt-capture-actions>small{width:100%;margin-left:0}.receipt-preview{grid-template-columns:140px 1fr}.receipt-proposal dl{grid-template-columns:1fr}.receipt-quick-launch{right:16px;bottom:18px}');
+  });
+
 });
