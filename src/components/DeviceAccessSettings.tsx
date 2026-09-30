@@ -89,7 +89,7 @@ export function DeviceAccessSettings(){
 
     {devices.length&&message?<div className="device-access-message" role="status" aria-live="polite">{message}</div>:null}
     <div className="device-access-footer">
-      <span>Windows, Android και web συνεδρίες χρησιμοποιούν την ίδια ασφαλή βάση πρόσβασης.</span>
+      <span>Windows, Android και web συνεδρίες χρησιμοποιούν την ίδια ασφαλή βάση πρόσβασης. Μετά την αφαίρεση, η συνεδρία απορρίπτεται τόσο από το API όσο και από τα προστατευμένα δεδομένα.</span>
       {others.length?<Button type="button" variant="secondary" className="danger-text" disabled={busy} onClick={()=>setPending({kind:'others'})}>Αφαίρεση όλων των άλλων</Button>:null}
     </div>
 
