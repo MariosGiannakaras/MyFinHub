@@ -58,13 +58,21 @@ describe('card secure details',()=>{
     expect(calls).toEqual(['server']);
   });
 
-  it('routes both card surfaces through the shared editor and removes raw inline secret inputs',()=>{
+  it('separates card profile editing from secure PAN/expiry/CVV editing',()=>{
     const cards=readFileSync(new URL('../src/pages/CardsPage.tsx',import.meta.url),'utf8');
     const credit=readFileSync(new URL('../src/pages/CreditCardPage.tsx',import.meta.url),'utf8');
     const interactive=readFileSync(new URL('../src/components/InteractivePaymentCard.tsx',import.meta.url),'utf8');
     expect(cards).toContain('<CardDetailsDialog');
     expect(credit).toContain('<CardDetailsDialog');
+    const createDialog=readFileSync(new URL('../src/components/CardCreateDialog.tsx',import.meta.url),'utf8');
+    expect(cards).toContain('initialCard={profileCard}');
+    expect(credit).toContain('initialCard={profileCard}');
+    expect(interactive).toContain('onEditCard');
     expect(interactive).toContain('onEditDetails');
+    expect(interactive).toContain('Ασφαλή στοιχεία');
+    expect(createDialog).toContain('if(initialCard)');
+    expect(createDialog).toContain('onSave({...initialCard');
+    expect(createDialog).toContain('Τα κρυπτογραφημένα PAN, λήξη και CVV παραμένουν ανέπαφα');
     expect(interactive).not.toContain('card-edit-input');
     expect(interactive).not.toContain('saveCardSecret');
   });
