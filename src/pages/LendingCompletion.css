@@ -14,3 +14,7 @@
   .mobile-lending-history-balance span{font-size:8px;color:var(--muted)}
   .mobile-lending-history-balance b{font-size:10px;color:var(--ink-2);white-space:nowrap}
 }
+
+@media(max-width:680px){
+  .mobile-lending-history-more{width:100%;min-height:44px;margin-top:10px;justify-content:center}
+}
