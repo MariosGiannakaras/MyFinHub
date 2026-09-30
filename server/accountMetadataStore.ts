@@ -168,3 +168,98 @@ export async function writeAccountMetadata(accountId:string,iban:string|null,exp
   if(!row)throw new ApiError(500,'ACCOUNT_METADATA_INVALID_RESPONSE','Account metadata response is invalid.',false);
   return mapRow(row);
 }
+
+
+export type FinancialProviderWrite={
+  id:string;
+  displayName:string;
+  shortName:string;
+  providerKind:'bank'|'fintech'|'wallet'|'payment';
+  countryCode:string|null;
+  sortOrder:number;
+};
+
+export async function writeFinancialProvider(input:FinancialProviderWrite,accessToken:string):Promise<FinancialProviderRow>{
+  const payload=await request('rpc/rheomiq_upsert_financial_provider',{
+    method:'POST',
+    body:JSON.stringify({
+      p_id:input.id,
+      p_display_name:input.displayName,
+      p_short_name:input.shortName,
+      p_provider_kind:input.providerKind,
+      p_country_code:input.countryCode,
+      p_sort_order:input.sortOrder,
+    }),
+  },accessToken);
+  const row=Array.isArray(payload)?payload[0]:null;
+  if(!row)throw new ApiError(500,'FINANCIAL_PROVIDER_INVALID_RESPONSE','Financial provider response is invalid.',false);
+  return mapFinancialProviderRow(row);
+}
+
+const PROVIDER_ASSET_BUCKET='financial-provider-assets';
+const PROVIDER_ASSET_EXTENSION:Record<string,string>={
+  'image/png':'png',
+  'image/jpeg':'jpg',
+  'image/webp':'webp',
+  'image/svg+xml':'svg',
+};
+
+export async function uploadFinancialProviderAsset(input:{
+  providerId:string;
+  role:'logo'|'wordmark'|'card-mark';
+  variant:string;
+  mimeType:string;
+  makePrimary:boolean;
+  content:Buffer;
+},accessToken:string){
+  const extension=PROVIDER_ASSET_EXTENSION[input.mimeType];
+  if(!extension)throw new ApiError(415,'UNSUPPORTED_PROVIDER_ASSET_TYPE','Unsupported provider image type.');
+  const assetKey=`${input.providerId}-${input.role}-${input.variant}`;
+  const fileName=`${assetKey}.${extension}`;
+  const storagePath=`providers/${input.providerId}/${fileName}`;
+  const {url,apiKey,authorization}=config(accessToken);
+  const encodedPath=storagePath.split('/').map(encodeURIComponent).join('/');
+  const upload=await fetchUpstream(`${url}/storage/v1/object/${encodeURIComponent(PROVIDER_ASSET_BUCKET)}/${encodedPath}`,{
+    method:'POST',
+    headers:{
+      apikey:apiKey,
+      authorization,
+      'content-type':input.mimeType,
+      'x-upsert':'true',
+      'cache-control':'3600',
+    },
+    body:input.content,
+  },'DATA');
+  if(!upload.ok){
+    const payload=await upload.json().catch(()=>null) as any;
+    const marker=`${payload?.statusCode??''} ${payload?.error??''} ${payload?.message??''}`;
+    if(upload.status===401)throw new ApiError(401,'AUTH_REQUIRED','Authentication required.');
+    if(upload.status===403||/forbidden|42501/i.test(marker))throw new ApiError(403,'FORBIDDEN','Access denied.');
+    if(upload.status>=500)throw new ApiError(503,'PROVIDER_ASSET_STORAGE_UNAVAILABLE','Provider image storage is temporarily unavailable.');
+    throw new ApiError(502,'PROVIDER_ASSET_UPLOAD_FAILED','Δεν ήταν δυνατή η αποθήκευση της εικόνας.');
+  }
+
+  const payload=await request('rpc/rheomiq_register_financial_provider_asset',{
+    method:'POST',
+    body:JSON.stringify({
+      p_provider_id:input.providerId,
+      p_asset_key:assetKey,
+      p_asset_role:input.role,
+      p_variant:input.variant,
+      p_file_name:fileName,
+      p_mime_type:input.mimeType,
+      p_storage_path:storagePath,
+      p_size_bytes:input.content.length,
+      p_make_primary:input.makePrimary,
+    }),
+  },accessToken);
+  const row=Array.isArray(payload)?payload[0]:null;
+  if(!row)throw new ApiError(500,'FINANCIAL_PROVIDER_ASSET_INVALID_RESPONSE','Provider image response is invalid.',false);
+  const asset=mapFinancialProviderAssetRow(row);
+  return {
+    assetKey:asset.asset_key,
+    role:asset.asset_role as FinancialProviderAssetRow['role'],
+    variant:asset.variant,
+    url:publicStorageUrl(url,asset),
+  };
+}
