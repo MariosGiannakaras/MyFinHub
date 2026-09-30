@@ -135,12 +135,9 @@ export function FinancialProviderManagementSettings(){
     if(fileInput.current)fileInput.current.value='';
   };
   const closeEditor=()=>{if(!busy)releaseEditor()};
-  const modalRef=useModalFocus<HTMLElement>(Boolean(editor),'[data-autofocus="true"]',closeEditor);
-  const pickerRef=useModalFocus<HTMLElement>(Boolean(editor?.pickerSlot),'[data-picker-autofocus="true"]',()=>{
-    setEditor(current=>current?{...current,pickerSlot:null}:current);
-  });
   const closePicker=()=>{if(!busy&&editor?.pickerSlot)setEditor({...editor,pickerSlot:null})};
-  const pickerRef=useModalFocus<HTMLElement>(Boolean(editor?.pickerSlot),'.provider-picker-upload',closePicker);
+  const modalRef=useModalFocus<HTMLElement>(Boolean(editor),'[data-autofocus="true"]',closeEditor);
+  const pickerRef=useModalFocus<HTMLElement>(Boolean(editor?.pickerSlot),'[data-picker-autofocus="true"]',closePicker);
   const openNew=()=>{
     setMessage('');setEditorError('');
     const assignments=emptyAssignments();
