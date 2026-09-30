@@ -28,11 +28,12 @@ const productionApplied=[
   "20260904193923_add_financial_provider_registry.sql",
   "20260905004603_add_financial_provider_assets.sql",
   "20260905010544_add_financial_provider_assets_bucket.sql",
-  "20260905011145_fix_history_parent_fk_delete.sql"
-] as const;
-const pending=[
+  "20260905011145_fix_history_parent_fk_delete.sql",
   "20260904083000_add_device_session_registry.sql",
   "20260905020000_refresh_financial_provider_brand_assets.sql"
+] as const;
+const pending=[
+  "20260930030000_harden_active_device_sensitive_rls.sql"
 ] as const;
 
 describe('production migration ledger source contract',()=>{
@@ -41,13 +42,17 @@ describe('production migration ledger source contract',()=>{
     expect(local).toEqual([...productionApplied,...pending].sort());
   });
 
-  it('keeps the two release-pending migrations explicit and ordered without pretending they are already applied',()=>{
+  it('keeps current production migrations represented and the new hardening migration pending',()=>{
     const device=readFileSync('supabase/migrations/20260904083000_add_device_session_registry.sql','utf8');
     const brandRefresh=readFileSync('supabase/migrations/20260905020000_refresh_financial_provider_brand_assets.sql','utf8');
+    const hardening=readFileSync('supabase/migrations/20260930030000_harden_active_device_sensitive_rls.sql','utf8');
     expect(device).toContain('create table if not exists public.myfinhub_device_sessions');
     expect(device).toContain('and public.myfinhub_session_is_active()');
     expect(brandRefresh).toContain("when 'piraeus' then 'generic'");
     expect(brandRefresh).toContain("when 'eurobank' then 'generic'");
+    expect(hardening).toContain('security definer');
+    expect(hardening).toContain('rheomiq_card_secrets_owner_aal2_select');
+    expect(hardening).toContain('rheomiq_account_metadata_owner_aal2_select');
   });
 
   it('back-syncs the production-only provider asset registry schema without embedding production asset bytes',()=>{
