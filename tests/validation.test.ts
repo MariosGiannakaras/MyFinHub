@@ -234,6 +234,32 @@ describe('finance document validation', () => {
     expect(() => validateFinanceData(state)).toThrowError(/balances/i);
   });
 
+  it('accepts bounded icon family memory and category colors',()=>{
+    const full=validState();
+    full.state.settings.categoryIconPack='tabler';
+    full.state.settings.categoryIcons={'expense:Τρόφιμα':'tabler:shopping'};
+    full.state.settings.categoryIconPackSelections={'expense:Τρόφιμα':{lucide:'dining',tabler:'shopping'}};
+    full.state.settings.subcategoryIconPackSelections={'expense:Τρόφιμα:Καφές':{lucide:'coffee',phosphor:'coffee'}};
+    full.state.settings.categoryIconColors={'expense:Τρόφιμα':'#D14C5A'};
+    full.state.settings.subcategoryIconColors={'expense:Τρόφιμα:Καφές':'#2F6FED'};
+    expect(()=>validateFinanceData(full)).not.toThrow();
+    expect(()=>validateFinanceState(full.state)).not.toThrow();
+  });
+
+  it('rejects unknown icon families and malformed icon colors',()=>{
+    const badPack=validState();
+    badPack.state.settings.categoryIconPack='material';
+    expect(()=>validateFinanceData(badPack)).toThrowError(/categoryIconPack/i);
+
+    const badNested=validState();
+    badNested.state.settings.categoryIconPackSelections={'expense:Τρόφιμα':{material:'dining'}};
+    expect(()=>validateFinanceData(badNested)).toThrowError(/categoryIconPackSelections/i);
+
+    const badColor=validState();
+    badColor.state.settings.categoryIconColors={'expense:Τρόφιμα':'red'};
+    expect(()=>validateFinanceData(badColor)).toThrowError(/categoryIconColors/i);
+  });
+
   it('rejects unsupported settings values', () => {
     const state = validState();
     state.state.settings.motion = 'turbo';
