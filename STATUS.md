@@ -36,6 +36,15 @@ Release-closeout tracker: **#288 — complete**.
 - `CARD_VAULT_KEY`, service-role credentials and other privileged secrets are never distributed in browser, Windows or Android clients.
 - Optimistic revisions, backups, audit/history boundaries and the canonical finance/accounting engine remain authoritative.
 
+## Active provider-branding extension — #481
+
+**Tasks 0/4 · Subtasks 0/13**
+
+- Branch: `feat/481-provider-brand-management`, currently stacked on #479 because it depends on the Storage-first provider schema.
+- Goal: manage provider artwork from Settings, support context-aware logo/wordmark/card-mark variants, and create new providers together with their selected artwork.
+- Repository plan: `docs/PROVIDER_BRANDING_MANAGEMENT_PLAN.md`.
+- No new Vercel function, no service-role key in clients, no Android work.
+
 ## Next work
 
 Subsequent changes are product fixes against the completed v1.3.0 baseline. Routine implementation remains **Issue → short-lived branch → PR → required checks → squash merge into `develop`**. `main` remains release-only.
