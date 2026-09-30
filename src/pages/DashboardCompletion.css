@@ -10,3 +10,6 @@
   .dashboard-mobile-disclosure{display:flex;width:100%;min-height:44px;justify-content:center}
   .dashboard-approved .approved-chart-grid.mobile-collapsed,.dashboard-approved .approved-kpi-strip.mobile-collapsed{display:none!important}
 }
+
+.dashboard-mobile-summary-donut{position:relative;width:72px;height:72px;flex:0 0 72px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(49,76,115,.08)}
+.dashboard-mobile-summary-donut::after{content:"";position:absolute;inset:15px;border-radius:50%;background:var(--surface)}
