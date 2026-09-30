@@ -3,7 +3,7 @@
 
 grant insert (id,display_name,short_name,provider_kind,country_code,sort_order,active)
   on public.rheomiq_financial_providers to authenticated;
-grant update (display_name,short_name,provider_kind,country_code,sort_order,active,logo_asset_key,wordmark_asset_key,updated_at)
+grant update (logo_asset_key,wordmark_asset_key,updated_at)
   on public.rheomiq_financial_providers to authenticated;
 
 grant insert (asset_key,provider_id,asset_role,variant,file_name,mime_type,legacy_content,sha256,width,height,source,active,storage_bucket,storage_path,size_bytes,source_page_url,source_download_url,verified_at,usage_note,updated_at)
@@ -62,7 +62,7 @@ with check (
   and (select public.rheomiq_is_owner_aal2())
 );
 
-create or replace function public.rheomiq_upsert_financial_provider(
+create or replace function public.rheomiq_create_financial_provider(
   p_id text,
   p_display_name text,
   p_short_name text,
@@ -80,26 +80,22 @@ begin
     raise exception using errcode='42501', message='MFA_REQUIRED';
   end if;
 
+  if exists(select 1 from public.rheomiq_financial_providers p where p.id=p_id) then
+    raise exception using errcode='23505', message='PROVIDER_ID_CONFLICT';
+  end if;
+
   insert into public.rheomiq_financial_providers
     (id,display_name,short_name,provider_kind,country_code,sort_order,active)
   values
-    (p_id,btrim(p_display_name),btrim(p_short_name),p_provider_kind,nullif(upper(btrim(coalesce(p_country_code,''))),''),p_sort_order,true)
-  on conflict (id) do update set
-    display_name=excluded.display_name,
-    short_name=excluded.short_name,
-    provider_kind=excluded.provider_kind,
-    country_code=excluded.country_code,
-    sort_order=excluded.sort_order,
-    active=true,
-    updated_at=now();
+    (p_id,btrim(p_display_name),btrim(p_short_name),p_provider_kind,nullif(upper(btrim(coalesce(p_country_code,''))),''),p_sort_order,true);
 
   return query
     select p.* from public.rheomiq_financial_providers p where p.id=p_id;
 end;
 $$;
 
-revoke all on function public.rheomiq_upsert_financial_provider(text,text,text,text,text,integer) from public,anon,authenticated;
-grant execute on function public.rheomiq_upsert_financial_provider(text,text,text,text,text,integer) to authenticated;
+revoke all on function public.rheomiq_create_financial_provider(text,text,text,text,text,integer) from public,anon,authenticated;
+grant execute on function public.rheomiq_create_financial_provider(text,text,text,text,text,integer) to authenticated;
 
 create or replace function public.rheomiq_register_financial_provider_asset(
   p_provider_id text,
