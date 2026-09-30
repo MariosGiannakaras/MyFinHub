@@ -18,6 +18,7 @@ import { lendingHistory, lendingOutstandingFor, lendingRows } from '../lib/lendi
 import { accountDisplayName } from '../lib/ui';
 import { userErrorMessage } from '../lib/userMessage';
 import type { FinanceData, FinanceEvent } from '../types';
+import './LendingCompletion.css';
 
 type LendingQuickContext=Omit<Extract<QuickActionContext,{mode:'lending'}>,'token'>;
 type LendingHistoryFilter='all'|'lent'|'repaid'|'forgiven';
