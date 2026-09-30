@@ -12,7 +12,7 @@ function rankedVariant(asset:FinancialProviderAsset,tone:ProviderBrandSurfaceTon
 
 function pick(provider:FinancialProvider,role:FinancialProviderAssetRole,tone:ProviderBrandSurfaceTone){
   return [...(provider.assets??[])]
-    .filter(asset=>asset.role===role)
+    .filter(asset=>asset.role===role&&rankedVariant(asset,tone)<4)
     .sort((a,b)=>rankedVariant(a,tone)-rankedVariant(b,tone)||a.variant.localeCompare(b.variant)||a.assetKey.localeCompare(b.assetKey))[0]?.url??null;
 }
 
