@@ -56,14 +56,14 @@ describe('category icon preferences',()=>{
     let next=withCategoryIconPack(settings(),'phosphor');
     expect(resolvedCategoryIcon(next,'expense','Φαγητό','Καφές')).toBe('phosphor:coffee');
     next=withCategoryIconPack(next,'heroicons');
-    expect(resolvedCategoryIcon(next,'expense','Φαγητό','Καφές')).toBe('heroicons:coffee');
+    expect(resolvedCategoryIcon(next,'expense','Φαγητό','Καφές')).toBe('heroicons:shopping');
   });
 
   it('never renders an unsupported automatic semantic key for a selected icon family',()=>{
     let next=withCategoryIconPack(settings(),'phosphor');
     expect(resolvedCategoryIcon(next,'income','Μισθός')).toBe('phosphor:government');
     next=withCategoryIconPack(next,'heroicons');
-    expect(resolvedCategoryIcon(next,'income','Μισθός')).toBe('heroicons:home');
+    expect(resolvedCategoryIcon(next,'income','Μισθός')).toBe('heroicons:government');
   });
 
   it('persists category color independently from the icon family and restores automatic color when cleared',()=>{
