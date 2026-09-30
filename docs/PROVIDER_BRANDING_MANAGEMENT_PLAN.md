@@ -9,7 +9,7 @@ Make provider branding owner-managed from MyFinHub itself. Existing providers ca
 ## 1. Provider asset model + secure write API — 4/4
 
 - [x] Return every active provider asset (`logo`, `wordmark`, `card-mark`) with role, variant and public Storage URL while keeping the current primary `logoUrl` / `wordmarkUrl` compatibility fields.
-- [x] Add owner+AAL2 provider create/update mutation contract using the authenticated user's JWT; never use or expose a service-role key.
+- [x] Add owner+AAL2 create-only provider mutation plus explicit asset/primary updates using the authenticated user's JWT; duplicate provider IDs fail closed and never silently overwrite an existing provider.
 - [x] Add bounded binary upload/replace through the existing `/api/account-metadata` function family. Validate provider id, role, variant, MIME, filename, path and size before forwarding bytes to Supabase Storage.
 - [x] Register uploaded assets and safely update primary logo/wordmark selection. Existing primary assets remain valid until a replacement upload and metadata write both succeed.
 
@@ -22,7 +22,7 @@ Make provider branding owner-managed from MyFinHub itself. Existing providers ca
 ## 3. Settings provider management — 4/4
 
 - [x] Add provider-management UI with previews for current logo/wordmark/card variants and Replace actions.
-- [x] Support Logo, Wordmark Light, Wordmark Dark, Card Mark Light and Card Mark Dark uploads with progress/error/success states.
+- [x] Support Logo Universal/Light/Dark, Wordmark Light/Dark and Card Mark Light/Dark uploads with progress/error/success states.
 - [x] Add create-provider metadata flow for bank/fintech/wallet/payment.
 - [x] In the same creation flow, let the owner select the provider images before saving; create provider metadata first, upload the selected files sequentially, then refresh the shared provider catalog.
 
@@ -47,11 +47,14 @@ Create provider:
 3. Optional ISO country code.
 4. Stable provider id generated from the name, editable before creation, collision-checked.
 5. Artwork picker in the same form:
-   - Logo (recommended/required for polished result)
+   - Logo Universal
+   - Logo Light
+   - Logo Dark
    - Wordmark Light
    - Wordmark Dark
    - Card Mark Light
    - Card Mark Dark
+   - At least one Logo and one Wordmark are required; theme/card variants remain optional
 6. One Create action performs provider creation then selected image uploads; partial upload failure is surfaced explicitly and the provider remains editable rather than silently rolling back an already-created identity.
 
 ## Asset resolution contract
