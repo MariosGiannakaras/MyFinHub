@@ -1,6 +1,6 @@
 import { Bar, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { CalendarClock, CircleCheck, CreditCard, Eye, EyeOff, Landmark, ListChecks, PiggyBank, TriangleAlert, WalletCards } from 'lucide-react';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { AnimatedAmount } from '../components/AnimatedAmount';
 import { BudgetRuleSettings } from '../components/BudgetRuleSettings';
 import { Button } from '../components/Button';
@@ -115,6 +115,8 @@ export function ReportsPage({data,month,privacyVisible,onPrivacyVisibleChange,on
    return [...recurring,...loans].slice(0,5);
  },[data,loanBurden.rows,month]);
 
+ const [mobileSupportExpanded,setMobileSupportExpanded]=useState(false);
+
  return <div className="page-stack reports-dashboard reports-composite reports-dense">
   <PageHeader id="report-overview" className="report-heading" eyebrow={<>ΑΝΑΦΟΡΕΣ · {monthLabel}</>} title="Αναφορές" description={<p>Οικονομική εικόνα, τάσεις και προϋπολογισμοί σε μία πυκνή επισκόπηση.</p>} trailing={<div className="report-period-chip" aria-label={`Επιλεγμένη περίοδος ${monthLabel}`}><span>Περίοδος</span><b>{monthLabel}</b></div>}/>
 
@@ -151,7 +153,8 @@ export function ReportsPage({data,month,privacyVisible,onPrivacyVisibleChange,on
    <details id="report-budgets" data-budget-management className="report-budget-management"><summary>Διαχείριση προϋπολογισμών</summary><BudgetRuleSettings data={data} asOf={`${month}-01`} budgetMonth={month} onUpsertBudget={onUpsertBudget} onDeleteBudget={onDeleteBudget} onUpsertRule={onUpsertRule} onDeleteRule={onDeleteRule} view="budgets"/></details>
   </section>
 
-  <section className="report-support-grid report-support-grid-four" id="report-support">
+  <Button type="button" variant="secondary" className="report-mobile-disclosure" aria-expanded={mobileSupportExpanded} onClick={()=>setMobileSupportExpanded(value=>!value)}>{mobileSupportExpanded?'Λιγότερες αναλύσεις':'Περισσότερες αναλύσεις'}</Button>
+  <section className={`report-support-grid report-support-grid-four ${mobileSupportExpanded?'':'mobile-collapsed'}`} id="report-support">
    <article className="panel surface-raised report-activity-card"><div className="panel-head"><div><span>Πρόσφατες συναλλαγές</span><small>Οι τελευταίες κινήσεις που επηρεάζουν τη μηνιαία ροή.</small></div></div>{recentTransactions.length?<div className="report-activity-list">{recentTransactions.map(row=><div key={row.id}><FinanceIcon settings={data.state.settings} kind={row.amount>=0?'income':'expense'} category={row.category} subcategory={row.subcategory} note={row.title} size={17}/><span><b>{row.title}</b><small>{shortDate(row.date)} · {row.category}</small></span><strong className={row.amount>=0?'positive':'negative'}>{row.amount>=0?'+':''}{money.format(row.amount)}</strong></div>)}</div>:<div className="empty-state">Δεν υπάρχουν κινήσεις για την περίοδο.</div>}</article>
 
    <article className="panel surface-raised report-account-distribution"><div className="panel-head"><div><span>Κατανομή λογαριασμών</span><small>Θετικά υπόλοιπα στο τέλος της περιόδου.</small></div></div>{accountDistribution.length?<div className="report-account-distribution-list">{accountDistribution.map((row,index)=><div key={row.id}><span><i style={{background:ACCOUNT_COLORS[index%ACCOUNT_COLORS.length]}}/><b>{row.name}</b></span><div className="report-account-bar"><i style={{width:`${accountDistributionTotal>0?Math.max(4,row.balance/accountDistributionTotal*100):0}%`,background:ACCOUNT_COLORS[index%ACCOUNT_COLORS.length]}}/></div><strong>{money.format(row.balance)}</strong></div>)}</div>:<div className="empty-state">Δεν υπάρχουν θετικά υπόλοιπα για κατανομή.</div>}</article>
