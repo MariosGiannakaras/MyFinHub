@@ -1,6 +1,6 @@
 import type { CategoryDefinition, CategoryIdentityRecord, FinanceSettings } from '../types.js';
 import { categoryKey, categoryTree } from './categories.js';
-import { renameCategoryIconPreferences, subcategoryIconPreferenceKey } from './categoryIconPreferences.js';
+import { moveSubcategoryIconPreferences, renameCategoryIconPreferences } from './categoryIconPreferences.js';
 
 export type CategoryKind=CategoryIdentityRecord['kind'];
 
@@ -155,11 +155,8 @@ export function renameSubcategoryIdentity(settings:FinanceSettings,kind:Category
   const previousLabel=tree[parentIndex].subcategories[childIndex];
   tree[parentIndex].subcategories[childIndex]=nextLabel;
   records[identityId]=normalizedRecord(record,nextLabel);
-  const subcategoryIcons={...(normalized.subcategoryIcons??{})};
-  const oldIconKey=subcategoryIconPreferenceKey(kind,parent.label,previousLabel);
-  const newIconKey=subcategoryIconPreferenceKey(kind,parent.label,nextLabel);
-  if(subcategoryIcons[oldIconKey]){subcategoryIcons[newIconKey]=subcategoryIcons[oldIconKey];delete subcategoryIcons[oldIconKey]}
-  return withTree({...normalized,subcategoryIcons,categoryIdentities:records},kind,tree);
+  const iconMigrated=moveSubcategoryIconPreferences(normalized,kind,parent.label,previousLabel,parent.label,nextLabel);
+  return withTree({...iconMigrated,categoryIdentities:records},kind,tree);
 }
 
 export function moveSubcategoryIdentity(settings:FinanceSettings,kind:CategoryKind,identityId:string,targetCategoryId:string):FinanceSettings{
@@ -180,11 +177,8 @@ export function moveSubcategoryIdentity(settings:FinanceSettings,kind:CategoryKi
   tree[sourceIndex].subcategories=tree[sourceIndex].subcategories.filter(label=>!sameLabel(label,record.label));
   tree[targetIndex].subcategories=[...tree[targetIndex].subcategories,record.label];
   records[identityId]={...record,parentId:target.id,parentAliases:uniqueIds([...(record.parentAliases??[]),source.id]).filter(parentId=>parentId!==target.id)};
-  const subcategoryIcons={...(normalized.subcategoryIcons??{})};
-  const oldIconKey=subcategoryIconPreferenceKey(kind,source.label,record.label);
-  const newIconKey=subcategoryIconPreferenceKey(kind,target.label,record.label);
-  if(subcategoryIcons[oldIconKey]){subcategoryIcons[newIconKey]=subcategoryIcons[oldIconKey];delete subcategoryIcons[oldIconKey]}
-  return withTree({...normalized,subcategoryIcons,categoryIdentities:records},kind,tree);
+  const iconMigrated=moveSubcategoryIconPreferences(normalized,kind,source.label,record.label,target.label,record.label);
+  return withTree({...iconMigrated,categoryIdentities:records},kind,tree);
 }
 
 export function retireSubcategoryIdentity(settings:FinanceSettings,kind:CategoryKind,identityId:string):FinanceSettings{
