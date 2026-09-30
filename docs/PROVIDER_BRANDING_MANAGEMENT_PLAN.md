@@ -4,7 +4,7 @@
 
 Make provider branding owner-managed from MyFinHub itself. Existing providers can have their artwork replaced without a repo change or redeploy, and a newly created provider can be created together with the artwork required by account/card surfaces.
 
-**Tasks 3/4 · Subtasks 12/13**
+**Tasks 4/4 · Subtasks 13/13**
 
 ## 1. Provider asset model + secure write API — 4/4
 
@@ -26,10 +26,10 @@ Make provider branding owner-managed from MyFinHub itself. Existing providers ca
 - [x] Add create-provider metadata flow for bank/fintech/wallet/payment.
 - [x] In the same creation flow, let the owner select the provider images before saving; create provider metadata first, upload the selected files sequentially, then refresh the shared provider catalog.
 
-## 4. Validation and handoff — 1/2
+## 4. Validation and handoff — 2/2
 
 - [x] Add API/source/unit tests for owner+AAL2 boundaries, size/MIME/path validation, create/update semantics and runtime variant resolution.
-- [ ] Add rendered Settings/account/card evidence in light/dark, inspect it, update #481 + repository checkpoint, then run the appropriate integrated gates.
+- [x] Add rendered Settings/account/card evidence in light/dark, inspect it, update #481 + repository checkpoint, then run the appropriate integrated gates.
 
 ## UX contract
 
