@@ -1,4 +1,4 @@
-import { FINANCIAL_PROVIDERS, type FinancialProvider, type FinancialProviderAsset, type FinancialProviderAssetRole, type FinancialProviderKind } from './financialProviders';
+import { FINANCIAL_PROVIDERS, type FinancialProvider, type FinancialProviderAsset, type FinancialProviderAssetBinding, type FinancialProviderAssetRole, type FinancialProviderKind } from './financialProviders';
 
 type FinancialProviderSnapshot={loaded:boolean;loading:boolean;providers:FinancialProvider[];error:string|null};
 
@@ -41,15 +41,31 @@ function parseProvider(value:unknown):FinancialProvider|null{
     const role=typeof asset.role==='string'?asset.role as FinancialProviderAssetRole:'' as FinancialProviderAssetRole;
     const variant=typeof asset.variant==='string'?asset.variant.trim():'';
     const url=typeof asset.url==='string'?asset.url.trim():'';
+    const fileName=typeof asset.fileName==='string'?asset.fileName.trim():undefined;
+    const mimeType=typeof asset.mimeType==='string'?asset.mimeType.trim():undefined;
+    const sizeBytes=asset.sizeBytes===null||asset.sizeBytes===undefined?null:Number(asset.sizeBytes);
+    const updatedAt=typeof asset.updatedAt==='string'?asset.updatedAt:undefined;
     if(!/^[a-z][a-z0-9-]{0,95}$/.test(assetKey)||!roles.includes(role)||!/^[a-z][a-z0-9-]{0,63}$/.test(variant)||!/^https:\/\//.test(url))return null;
-    assets.push({assetKey,role,variant,url});
+    if(sizeBytes!==null&&(!Number.isFinite(sizeBytes)||sizeBytes<0))return null;
+    assets.push({assetKey,role,variant,url,fileName,mimeType,sizeBytes,updatedAt});
+  }
+  const rawBindings=Array.isArray(row.bindings)?row.bindings:[];
+  const bindings:FinancialProviderAssetBinding[]=[];
+  for(const value of rawBindings){
+    if(!value||typeof value!=='object'||Array.isArray(value))return null;
+    const binding=value as Record<string,unknown>;
+    const role=typeof binding.role==='string'?binding.role as FinancialProviderAssetRole:'' as FinancialProviderAssetRole;
+    const variant=typeof binding.variant==='string'?binding.variant.trim():'';
+    const assetKey=typeof binding.assetKey==='string'?binding.assetKey.trim():'';
+    if(!roles.includes(role)||!['universal','light','dark'].includes(variant)||!/^[a-z][a-z0-9-]{0,95}$/.test(assetKey))return null;
+    bindings.push({role,variant:variant as FinancialProviderAssetBinding['variant'],assetKey});
   }
   const sortOrder=Number(row.sortOrder);
   if(!/^[a-z][a-z0-9-]{0,63}$/.test(id)||!displayName||displayName.length>120||!shortName||shortName.length>80)return null;
   if(!['bank','fintech','wallet','payment'].includes(kind)||countryCode!==undefined&&!/^[A-Z]{2}$/.test(countryCode))return null;
   if(logoAssetKey!==null&&!/^[a-z][a-z0-9-]{0,95}$/.test(logoAssetKey)||wordmarkAssetKey!==null&&!/^[a-z][a-z0-9-]{0,95}$/.test(wordmarkAssetKey)||!Number.isSafeInteger(sortOrder))return null;
   if(logoUrl!==null&&!/^https:\/\//.test(logoUrl)||wordmarkUrl!==null&&!/^https:\/\//.test(wordmarkUrl))return null;
-  return {id,displayName,shortName,kind,kindLabel:kindLabels[kind],countryCode,logoAssetKey,wordmarkAssetKey,logoUrl,wordmarkUrl,assets,sortOrder};
+  return {id,displayName,shortName,kind,kindLabel:kindLabels[kind],countryCode,logoAssetKey,wordmarkAssetKey,logoUrl,wordmarkUrl,assets,bindings,sortOrder};
 }
 
 async function json(response:Response){return response.json().catch(()=>null) as Promise<any>}
@@ -84,9 +100,9 @@ export type FinancialProviderWriteInput={
   sortOrder:number;
 };
 
-export async function saveFinancialProvider(input:FinancialProviderWriteInput){
+async function writeFinancialProvider(input:FinancialProviderWriteInput,method:'POST'|'PATCH'){
   const response=await fetch('/api/account-metadata?resource=financial-providers',{
-    method:'POST',
+    method,
     credentials:'same-origin',
     headers:{accept:'application/json','content-type':'application/json'},
     body:JSON.stringify(input),
@@ -96,6 +112,8 @@ export async function saveFinancialProvider(input:FinancialProviderWriteInput){
   await refreshFinancialProviders(true);
   return payload?.provider as FinancialProvider;
 }
+export function saveFinancialProvider(input:FinancialProviderWriteInput){return writeFinancialProvider(input,'POST')}
+export function updateFinancialProvider(input:FinancialProviderWriteInput){return writeFinancialProvider(input,'PATCH')}
 
 export async function uploadFinancialProviderAsset(input:{
   providerId:string;
@@ -103,6 +121,7 @@ export async function uploadFinancialProviderAsset(input:{
   variant:string;
   file:File;
   makePrimary?:boolean;
+  refreshCatalog?:boolean;
 }){
   const params=new URLSearchParams({
     resource:'financial-provider-assets',
@@ -110,6 +129,7 @@ export async function uploadFinancialProviderAsset(input:{
     role:input.role,
     variant:input.variant,
     primary:input.makePrimary?'1':'0',
+    fileName:input.file.name,
   });
   const response=await fetch(`/api/account-metadata?${params.toString()}`,{
     method:'PUT',
@@ -119,6 +139,24 @@ export async function uploadFinancialProviderAsset(input:{
   });
   const payload=await json(response);
   if(!response.ok)throw new Error(payload?.error||'Δεν ήταν δυνατή η αποθήκευση της εικόνας.');
-  await refreshFinancialProviders(true);
+  if(input.refreshCatalog!==false)await refreshFinancialProviders(true);
   return payload?.asset as FinancialProviderAsset;
+}
+
+export async function setFinancialProviderAssetBinding(input:{
+  providerId:string;
+  role:FinancialProviderAssetRole;
+  variant:'universal'|'light'|'dark';
+  assetKey:string|null;
+  refreshCatalog?:boolean;
+}){
+  const response=await fetch('/api/account-metadata?resource=financial-provider-asset-binding',{
+    method:'PUT',
+    credentials:'same-origin',
+    headers:{accept:'application/json','content-type':'application/json'},
+    body:JSON.stringify({providerId:input.providerId,role:input.role,variant:input.variant,assetKey:input.assetKey}),
+  });
+  const payload=await json(response);
+  if(!response.ok)throw new Error(payload?.error||'Δεν ήταν δυνατή η ανάθεση της εικόνας.');
+  if(input.refreshCatalog!==false)await refreshFinancialProviders(true);
 }
