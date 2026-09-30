@@ -1,4 +1,4 @@
-import { FINANCIAL_PROVIDERS, type FinancialProvider, type FinancialProviderKind } from './financialProviders';
+import { FINANCIAL_PROVIDERS, type FinancialProvider, type FinancialProviderAsset, type FinancialProviderAssetRole, type FinancialProviderKind } from './financialProviders';
 
 type FinancialProviderSnapshot={loaded:boolean;loading:boolean;providers:FinancialProvider[];error:string|null};
 
@@ -31,12 +31,25 @@ function parseProvider(value:unknown):FinancialProvider|null{
   const wordmarkAssetKey=row.wordmarkAssetKey===null||row.wordmarkAssetKey===undefined?null:typeof row.wordmarkAssetKey==='string'?row.wordmarkAssetKey.trim():'';
   const logoUrl=row.logoUrl===null||row.logoUrl===undefined?null:typeof row.logoUrl==='string'?row.logoUrl.trim():'';
   const wordmarkUrl=row.wordmarkUrl===null||row.wordmarkUrl===undefined?null:typeof row.wordmarkUrl==='string'?row.wordmarkUrl.trim():'';
+  const rawAssets=Array.isArray(row.assets)?row.assets:[];
+  const roles:FinancialProviderAssetRole[]=['logo','wordmark','card-mark'];
+  const assets:FinancialProviderAsset[]=[];
+  for(const value of rawAssets){
+    if(!value||typeof value!=='object'||Array.isArray(value))return null;
+    const asset=value as Record<string,unknown>;
+    const assetKey=typeof asset.assetKey==='string'?asset.assetKey.trim():'';
+    const role=typeof asset.role==='string'?asset.role as FinancialProviderAssetRole:'' as FinancialProviderAssetRole;
+    const variant=typeof asset.variant==='string'?asset.variant.trim():'';
+    const url=typeof asset.url==='string'?asset.url.trim():'';
+    if(!/^[a-z][a-z0-9-]{0,95}$/.test(assetKey)||!roles.includes(role)||!/^[a-z][a-z0-9-]{0,63}$/.test(variant)||!/^https:\/\//.test(url))return null;
+    assets.push({assetKey,role,variant,url});
+  }
   const sortOrder=Number(row.sortOrder);
   if(!/^[a-z][a-z0-9-]{0,63}$/.test(id)||!displayName||displayName.length>120||!shortName||shortName.length>80)return null;
   if(!['bank','fintech','wallet','payment'].includes(kind)||countryCode!==undefined&&!/^[A-Z]{2}$/.test(countryCode))return null;
   if(logoAssetKey!==null&&!/^[a-z][a-z0-9-]{0,95}$/.test(logoAssetKey)||wordmarkAssetKey!==null&&!/^[a-z][a-z0-9-]{0,95}$/.test(wordmarkAssetKey)||!Number.isSafeInteger(sortOrder))return null;
   if(logoUrl!==null&&!/^https:\/\//.test(logoUrl)||wordmarkUrl!==null&&!/^https:\/\//.test(wordmarkUrl))return null;
-  return {id,displayName,shortName,kind,kindLabel:kindLabels[kind],countryCode,logoAssetKey,wordmarkAssetKey,logoUrl,wordmarkUrl,sortOrder};
+  return {id,displayName,shortName,kind,kindLabel:kindLabels[kind],countryCode,logoAssetKey,wordmarkAssetKey,logoUrl,wordmarkUrl,assets,sortOrder};
 }
 
 async function json(response:Response){return response.json().catch(()=>null) as Promise<any>}
