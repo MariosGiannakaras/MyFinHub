@@ -60,6 +60,12 @@ function buildQaData(params:URLSearchParams){
   }
   if(params.get('state')==='overlimit')next.state.cards=(next.state.cards??[]).map(card=>card.kind==='credit'?{...card,creditLimit:100}:card);
   if(params.get('state')==='forecast-negative')next.state.scheduled=[...(next.state.scheduled??[]),{id:'qa-negative-forecast',dueDate:'2026-08-18',kind:'expense',amount:3000,note:'Μεγάλη γνωστή υποχρέωση',category:'Σταθερά έξοδα',accountId:'piraeus-payroll',status:'pending',createdAt:'2026-08-10T10:00:00.000Z',updatedAt:'2026-08-10T10:00:00.000Z'}];
+  if(params.get('state')==='provider-account'){
+    next.state.settings.customAccounts=[
+      ...(next.state.settings.customAccounts??[]),
+      {id:'account-piraeus-qa-provider',name:'QA Settings Piraeus',short:'QA P',kind:'bank',providerId:'piraeus',bankAccountCategory:'current',custom:true},
+    ];
+  }
   if(params.get('state')==='large-history'){
     const stamp=(index:number)=>`2026-08-${String((index%28)+1).padStart(2,'0')}T${String(index%24).padStart(2,'0')}:00:00.000Z`;
     const lendingHistory:FinanceEvent[]=Array.from({length:45},(_,index):FinanceEvent=>{
