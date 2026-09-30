@@ -62,17 +62,17 @@ function buildQaData(params:URLSearchParams){
   if(params.get('state')==='forecast-negative')next.state.scheduled=[...(next.state.scheduled??[]),{id:'qa-negative-forecast',dueDate:'2026-08-18',kind:'expense',amount:3000,note:'Μεγάλη γνωστή υποχρέωση',category:'Σταθερά έξοδα',accountId:'piraeus-payroll',status:'pending',createdAt:'2026-08-10T10:00:00.000Z',updatedAt:'2026-08-10T10:00:00.000Z'}];
   if(params.get('state')==='large-history'){
     const stamp=(index:number)=>`2026-08-${String((index%28)+1).padStart(2,'0')}T${String(index%24).padStart(2,'0')}:00:00.000Z`;
-    const lendingHistory:FinanceEvent[]=Array.from({length:45},(_,index)=>{
+    const lendingHistory:FinanceEvent[]=Array.from({length:45},(_,index):FinanceEvent=>{
       const amount=5+(index%7);
       const date=`2026-08-${String((index%28)+1).padStart(2,'0')}`;
       return {id:`qa-large-lending-${index}`,date,kind:'lending',amount,note:`QA Lending history ${index+1}`,person:'QA Bulk Person',fromAccountId:'piraeus-payroll',legs:[{accountId:'piraeus-payroll',amount:-amount}],receivableDelta:amount,source:'user',createdAt:stamp(index),updatedAt:stamp(index)};
     });
-    const creditPurchases:FinanceEvent[]=Array.from({length:30},(_,index)=>{
+    const creditPurchases:FinanceEvent[]=Array.from({length:30},(_,index):FinanceEvent=>{
       const amount=2+(index%5);
       const date=`2026-08-${String((index%28)+1).padStart(2,'0')}`;
       return {id:`qa-large-card-purchase-${index}`,date,kind:'card_purchase',amount,note:`QA Bulk Purchase ${index+1}`,category:'Αγορές',cardId:'qa-card',statementId:'qa-card:2026-09-12',legs:[{accountId:'credit-card',amount:-amount}],creditDelta:-amount,source:'user',createdAt:stamp(index+50),updatedAt:stamp(index+50)};
     });
-    const creditPayments:FinanceEvent[]=Array.from({length:30},(_,index)=>{
+    const creditPayments:FinanceEvent[]=Array.from({length:30},(_,index):FinanceEvent=>{
       const amount=2+(index%5);
       const date=`2026-08-${String((index%28)+1).padStart(2,'0')}`;
       return {id:`qa-large-card-payment-${index}`,date,kind:'card_payment',amount,note:`QA Bulk Payment ${index+1}`,fromAccountId:'piraeus-payroll',cardId:'qa-card',statementId:'qa-card:2026-09-12',legs:[{accountId:'piraeus-payroll',amount:-amount},{accountId:'credit-card',amount}],creditDelta:amount,source:'user',createdAt:stamp(index+100),updatedAt:stamp(index+100)};
