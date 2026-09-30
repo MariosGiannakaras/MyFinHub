@@ -23,6 +23,7 @@ import { createScheduledTransaction, pendingScheduled, scheduledHistory, schedul
 import { accountDisplayName } from '../lib/ui';
 import { userErrorMessage } from '../lib/userMessage';
 import type { FinanceData, FinanceEvent, ScheduledKind, ScheduledTransaction } from '../types';
+import './PlanningCompletion.css';
 
 type Draft = {
   id?: string;
