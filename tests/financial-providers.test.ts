@@ -5,6 +5,8 @@ import {
   BANK_ACCOUNT_CATEGORIES,
   CASH_ACCOUNT_TYPES,
   FINANCIAL_PROVIDERS,
+  accountFinancialProviderId,
+  accountMatchesFinancialProvider,
   financialProviderId,
 } from '../src/lib/financialProviders.js';
 import { bankBrandAsset, bankBrandKey } from '../src/lib/bankBrands.js';
@@ -26,6 +28,17 @@ describe('financial provider registry',()=>{
     expect(financialProviderId('Τράπεζα Πειραιώς')).toBe('piraeus');
     expect(financialProviderId('NBG')).toBe('national');
     expect(financialProviderId('PayPal')).toBe('paypal');
+  });
+
+  it('matches Settings-created account ids by provider identity rather than legacy id prefixes',()=>{
+    const seed={id:'piraeus-payroll',name:'Μισθοδοσία',kind:'bank'} as const;
+    const created={id:'account-piraeus-1234',name:'Νέος λογαριασμός',kind:'bank',providerId:'piraeus'} as const;
+    const other={id:'account-alpha-1234',name:'Άλλος λογαριασμός',kind:'bank',providerId:'alpha'} as const;
+    expect(accountFinancialProviderId(seed)).toBe('piraeus');
+    expect(accountFinancialProviderId(created)).toBe('piraeus');
+    expect(accountMatchesFinancialProvider(seed,'piraeus')).toBe(true);
+    expect(accountMatchesFinancialProvider(created,'piraeus')).toBe(true);
+    expect(accountMatchesFinancialProvider(other,'piraeus')).toBe(false);
   });
 
   it('uses verified provider assets when available and remains generic when no canonical asset exists',()=>{
