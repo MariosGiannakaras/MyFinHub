@@ -38,22 +38,21 @@ html[data-theme="dark"] .bank-brand-mark.bankmark-viva .bank-logo-image{filter:n
 .period-attention-shortcut{display:none}
 @media(min-width:981px){
   body:has(.dashboard-approved) .period-attention-shortcut{
-    position:fixed;
-    z-index:74;
-    top:9px;
-    right:307px;
-    width:40px;
-    height:40px;
+    position:static;
+    z-index:auto;
+    width:36px;
+    height:36px;
+    flex:0 0 36px;
     display:grid;
     place-items:center;
-    border:1px solid #e2eaf4;
+    border:1px solid var(--border-subtle,#e2eaf4);
     border-radius:9px;
-    background:#fff;
-    color:#254a80;
-    box-shadow:0 3px 10px rgba(34,65,105,.055);
+    background:var(--control-bg,#fff);
+    color:var(--accent,#254a80);
+    box-shadow:var(--shadow-soft,0 3px 10px rgba(34,65,105,.055));
     text-decoration:none;
   }
-  body:has(.dashboard-approved) .period-attention-shortcut:hover{background:#f8fbff;color:#0b6fe8}
-  body:has(.dashboard-approved) .period-attention-shortcut:focus-visible{outline:2px solid #2f7bea;outline-offset:2px}
+  body:has(.dashboard-approved) .period-attention-shortcut:hover{background:var(--surface-hover,#f8fbff);color:var(--accent-hover,#0b6fe8)}
+  body:has(.dashboard-approved) .period-attention-shortcut:focus-visible{outline:2px solid var(--focus-outline,#2f7bea);outline-offset:2px}
   body:has(.dashboard-approved) .period-attention-shortcut svg{width:17px;height:17px;stroke-width:1.9}
 }
