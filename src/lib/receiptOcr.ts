@@ -23,9 +23,14 @@ async function assertLocalOcrAssets(){
     catch{throw new Error('OCR_ASSETS_UNAVAILABLE')}
     if(!response.ok)throw new Error('OCR_ASSETS_UNAVAILABLE');
     const manifest=await response.json().catch(()=>null) as {tesseractJs?:string;languages?:unknown;coreFiles?:unknown}|null;
-    const languages=Array.isArray(manifest?.languages)?manifest.languages:[];
-    const coreFiles=Array.isArray(manifest?.coreFiles)?manifest.coreFiles:[];
+    const languages=Array.isArray(manifest?.languages)?manifest.languages.filter((value):value is string=>typeof value==='string'):[];
+    const coreFiles=Array.isArray(manifest?.coreFiles)?manifest.coreFiles.filter((value):value is string=>typeof value==='string'):[];
     if(manifest?.tesseractJs!=='7.0.0'||!languages.includes('ell')||!languages.includes('eng')||!coreFiles.length)throw new Error('OCR_ASSETS_UNAVAILABLE');
+    const required=['/ocr/worker.min.js','/ocr/lang/ell.traineddata.gz','/ocr/lang/eng.traineddata.gz',...coreFiles.map(name=>`/ocr/core/${name}`)];
+    const probes=await Promise.all(required.map(async path=>{
+      try{return (await fetch(path,{method:'HEAD',credentials:'same-origin',cache:'no-store'})).ok}catch{return false}
+    }));
+    if(probes.some(ok=>!ok))throw new Error('OCR_ASSETS_UNAVAILABLE');
   })().catch(error=>{assetCheckPromise=null;throw error});
   return assetCheckPromise;
 }
