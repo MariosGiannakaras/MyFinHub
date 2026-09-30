@@ -26,6 +26,8 @@ describe('financial provider registry',()=>{
     expect(financialProviderId('Τράπεζα Πειραιώς')).toBe('piraeus');
     expect(financialProviderId('NBG')).toBe('national');
     expect(financialProviderId('PayPal')).toBe('paypal');
+    expect(financialProviderId('Magenta Pay')).toBe('payzy');
+    expect(FINANCIAL_PROVIDERS.find(item=>item.id==='payzy')?.displayName).toBe('Magenta Pay');
   });
 
   it('never presents fabricated bank artwork as verified provider branding',()=>{
@@ -116,6 +118,7 @@ describe('financial provider registry',()=>{
     expect(ids).toEqual(FINANCIAL_PROVIDERS.map(provider=>provider.id));
     expect(DEFAULT_CARD_BANKS.find(bank=>bank.id==='piraeus')?.name).toBe('ΠΕΙΡΑΙΩΣ');
     expect(DEFAULT_CARD_BANKS.find(bank=>bank.id==='revolut')?.name).toBe('REVOLUT');
+    expect(DEFAULT_CARD_BANKS.find(bank=>bank.id==='payzy')?.name).toBe('MAGENTA PAY');
     expect(DEFAULT_CARD_BANKS.find(bank=>bank.id==='national')?.name).toBe('Εθνική Τράπεζα');
     expect(DEFAULT_CARD_BANKS.find(bank=>bank.id==='eurobank')?.name).toBe('Eurobank');
     expect(DEFAULT_CARD_BANKS.find(bank=>bank.id==='paypal')?.name).toBe('PayPal');
