@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { bankBrandAsset, bankBrandCardMark, bankBrandKey } from '../lib/bankBrands';
 import { defaultDesignForCard } from '../lib/cardDesigns';
+import { cardNetworkBrand } from '../lib/cardNetworks';
 import { CardVaultClientError, cardVaultErrorMessage, revealCardSecret } from '../lib/cardVaultClient';
 import type { CardBank, PaymentCard } from '../types';
 import payzyProLogo from '../assets/canonical-credit-card/payzy-pro-logo.png';
@@ -103,8 +104,9 @@ function brandMarkup(card:RuntimeCard){
 }
 function networkMarkup(card:RuntimeCard){
   const type=esc(kindLabel(card));
-  if(card.network==='mastercard')return `<div class="card-network mastercard-network" data-network="MASTERCARD"><span class="mastercard-symbol" aria-label="Mastercard"><i></i><i></i></span><span class="mastercard-word">mastercard</span><span class="card-network-type">${type}</span></div>`;
-  return `<div class="card-network visa-network" data-network="VISA"><span class="card-network-main">VISA</span><span class="card-network-type">${type}</span></div>`;
+  const brand=cardNetworkBrand(card.network);
+  if(!brand)return `<div class="card-network other-network" data-network="OTHER"><span class="card-network-main">CARD</span><span class="card-network-type">${type}</span></div>`;
+  return `<div class="card-network card-network-assets ${brand.id}-network" data-network="${brand.dataNetwork}"><span class="card-network-badge"><img class="card-network-logo ${brand.id}-logo" src="${esc(brand.src)}" alt="${esc(brand.label)}" /></span><span class="card-network-type">${type}</span></div>`;
 }
 function stackLayout(i:number):StackLayout{
   return [
