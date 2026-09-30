@@ -78,13 +78,13 @@ try{
     await waitFor("function(text){return document.readyState==='complete'&&(document.querySelector('#main-workspace h1')?.textContent||'').includes(text)}",[heading],page);
     const visibleQaControl=await c.call("function(){const node=document.querySelector('[data-qa-crash]');if(!node)return false;const style=getComputedStyle(node),rect=node.getBoundingClientRect();return style.display!=='none'&&style.visibility!=='hidden'&&rect.width>0&&rect.height>0}");
     if(visibleQaControl)throw new Error(`QA-only crash control is visible in final capture for ${page}`);
-    await sleep(120);
+    await sleep(260);
   };
   const navigateAuth=async(screen)=>{
     const url=new URL(baseUrl);url.searchParams.set('screen',screen);url.searchParams.set('visual','1');
     await c.send('Page.navigate',{url:url.href});
     await waitFor("function(){return document.readyState==='complete'&&Boolean(document.querySelector('.login-card h1'))}",[],screen);
-    await sleep(120);
+    await sleep(220);
   };
   const capture=async(surface,state,mode,width,height)=>{
     const metrics=await c.send('Page.getLayoutMetrics');const size=metrics.cssContentSize||metrics.contentSize;
@@ -106,7 +106,7 @@ try{
           const clicked=await c.call('function(tab){const node=document.querySelector(\'[aria-controls="settings-panel-'+tab+'"]\');if(!node)return false;node.click();return true}',[tab]);
           if(!clicked)throw new Error(`Missing Settings tab ${tab}`);
           await waitFor('function(tab){return document.querySelector(\'[aria-controls="settings-panel-'+tab+'"]\')?.getAttribute("aria-selected")==="true"}',[tab],`settings tab ${tab}`);
-          await sleep(80);
+          await sleep(180);
           await capture('settings',`tab-${tab}`,item.mode,item.width,item.height);
         }
       }
