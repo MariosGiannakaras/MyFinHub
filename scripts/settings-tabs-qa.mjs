@@ -69,10 +69,11 @@ try{
         await waitFor("function(){return Boolean(document.querySelector('.account-management-modal.is-new'))}",'new account modal');
         await screenshot('settings-accounts-new-bank-empty-desktop');
 
-        const providerDropdownOpened=await c.call("function(){const input=document.querySelector('.account-management-modal.is-new input[aria-label=\"Τράπεζα ή πάροχος\"]');if(!input)return false;input.click();return true}");assert(providerDropdownOpened,'Bank provider dropdown opens');
-        await waitFor("function(){return Boolean(document.querySelector('.owned-select-popover[aria-label=\"Τράπεζα ή πάροχος\"]'))}",'bank provider dropdown');
-        await screenshot('settings-accounts-new-bank-provider-dropdown-desktop');
-        const providerSelected=await c.call("function(){const option=[...document.querySelectorAll('.owned-select-popover[aria-label=\"Τράπεζα ή πάροχος\"] [role=\"option\"]')].find(node=>(node.textContent||'').includes('Πειραιώς'));if(!option)return false;option.click();return true}");assert(providerSelected,'Piraeus can be selected as bank provider');
+        await waitFor("function(){return Boolean(document.querySelector('.account-management-provider-picker [role=\"radiogroup\"]'))}",'visual bank provider picker');
+        assert(await c.call("function(){const buttons=[...document.querySelectorAll('.account-management-provider-picker button[role=\"radio\"]')];return buttons.length>=6&&buttons.every(button=>Boolean(button.querySelector('.bank-brand-mark')))}"),'Provider picker shows a branded visual option for each provider');
+        await screenshot('settings-accounts-new-bank-provider-picker-desktop');
+        const providerSelected=await c.call("function(){const option=[...document.querySelectorAll('.account-management-provider-picker button[role=\"radio\"]')].find(node=>(node.textContent||'').includes('Πειραιώς'));if(!option)return false;option.click();return option.getAttribute('aria-checked')==='true'||true}");assert(providerSelected,'Piraeus can be selected as bank provider');
+        await waitFor("function(){const option=[...document.querySelectorAll('.account-management-provider-picker button[role=\"radio\"]')].find(node=>(node.textContent||'').includes('Πειραιώς'));return option?.getAttribute('aria-checked')==='true'}",'selected Piraeus provider state');
         await waitFor("function(){return Boolean(document.querySelector('.account-management-provider-preview'))}",'selected bank provider preview');
         await screenshot('settings-accounts-new-bank-selected-desktop');
 
