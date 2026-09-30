@@ -6,13 +6,14 @@ const root=process.cwd();
 const source=(relative:string)=>fs.readFileSync(path.join(root,relative),'utf8');
 
 describe('database health RPC source',()=>{
+  const grantMigration=source('supabase/migrations/20260930104535_add_database_health_check.sql');
   const migration=source('supabase/migrations/20260930115252_fix_database_health_history_state_check.sql');
 
   it('is invoker-security and owner/AAL2 gated',()=>{
     expect(migration).toContain('rheomiq_is_owner_aal2()');
     expect(migration).toContain("message = 'MFA_REQUIRED'");
-    expect(migration).toContain('revoke all on function public.rheomiq_database_health() from public, anon, authenticated');
-    expect(migration).toContain('grant execute on function public.rheomiq_database_health() to authenticated, service_role');
+    expect(grantMigration).toContain('revoke all on function public.rheomiq_database_health() from public, anon, authenticated');
+    expect(grantMigration).toContain('grant execute on function public.rheomiq_database_health() to authenticated, service_role');
     expect(migration).not.toContain('security definer');
   });
 
