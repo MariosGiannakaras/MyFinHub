@@ -40,6 +40,17 @@ try{
   console.log('Payment Flow QA: credit page uses shared statement-aware source-target-result model');
   await navigate('credit');await clickByText('.page-heading .heading-actions button','Αποπληρωμή');await waitModal('Πληρωμή δήλωσης πιστωτικής');await checkShared('QA Visa');assert(await c.call("function(){return Boolean(document.querySelector('[data-credit-statement-payment-preview]'))}"),'credit payment exposes statement preview');const creditText=await modalText();assert(!creditText.includes('4242')&&!creditText.includes('QA OWNER'),'credit payment does not expose sensitive card metadata');assert(!(await c.call("function(){return Boolean(document.querySelector('#credit-repay-title'))}")),'legacy credit repay modal absent');await screenshot('payment-flow-credit');await pressEscape();await assertNetwork('credit payment');
 
+  console.log('Payment Flow QA: Settings-style provider account is eligible for same-bank credit repayment');
+  await navigate('credit',1440,1000,{state:'provider-account'});
+  await clickByText('.page-heading .heading-actions button','Αποπληρωμή');await waitModal('Πληρωμή δήλωσης πιστωτικής');
+  const providerSelectOpened=await c.call("function(){const modal=document.querySelector('.contextual-quick-modal');const label=[...modal?.querySelectorAll('label')||[]].find(node=>(node.querySelector(':scope > span')?.textContent||'').includes('Πληρωμή από'));const input=label?.querySelector('input[role=\"combobox\"]');input?.click();return Boolean(input)}");
+  assert(providerSelectOpened,'credit repayment source account selector opens');
+  await waitFor("function(){return Boolean(document.querySelector('.owned-select-popover [role=listbox]'))}",'credit repayment source options');
+  const providerOption=await c.call("function(){return [...document.querySelectorAll('.owned-select-popover [role=option]')].some(node=>(node.textContent||'').includes('QA Settings Piraeus'))}");
+  assert(providerOption,'Settings-created account with providerId=piraeus is eligible for Piraeus credit repayment despite account-* id');
+  await screenshot('payment-flow-credit-settings-provider-account');
+  await pressEscape();await assertNetwork('Settings provider credit payment');
+
   console.log('Payment Flow QA: loan page uses computed multi-installment coverage');
   await navigate('loans');await clickRowAction('.loan-list-row','Laptop','.pay');await waitModal('Πληρωμή δόσης');await checkShared('Laptop');assert(!(await c.call("function(){return Boolean(document.querySelector('.loan-pay-dialog'))}")),'legacy loan payment modal absent');
   const loanState=await c.call("function(){const modal=document.querySelector('.contextual-quick-modal');const amount=modal?.querySelector('input[data-autofocus=true]');const label=[...modal?.querySelectorAll('label')||[]].find(item=>(item.querySelector('span')?.textContent||'').includes('Πόσες δόσεις'));const combobox=label?.querySelector('input[role=combobox]');return {readOnly:Boolean(amount?.readOnly),ariaReadOnly:amount?.getAttribute('aria-readonly'),effect:modal?.querySelector('.payment-effect-summary')?.textContent||'',hasCombobox:Boolean(combobox)}}");
