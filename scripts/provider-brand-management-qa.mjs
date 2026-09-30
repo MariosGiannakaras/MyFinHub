@@ -65,6 +65,11 @@ try{
   assert(brandingState.groups.includes('Logo εφαρμογής')&&brandingState.groups.includes('Wordmark εφαρμογής')&&brandingState.groups.includes('Κάρτες'),'branding groups are task-oriented');
   assert(brandingState.text.includes('Το Light/Dark theme της εφαρμογής δεν συμμετέχει.'),'card artwork is explicitly independent from app theme');
   await chooseSlot('Προεπιλεγμένο logo');
+  await waitFor("function(){const picker=document.querySelector('.provider-asset-picker[aria-modal=true]');return !!picker&&picker.contains(document.activeElement)}",'asset picker owns focus');
+  const escaped=await c.call("function(){document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));return true}");
+  assert(escaped,'Escape is dispatched to topmost asset picker');
+  await waitFor("function(){return !document.querySelector('.provider-asset-picker')&&!!document.querySelector('.provider-editor-modal')}",'Escape closes picker but preserves provider editor');
+  await chooseSlot('Προεπιλεγμένο logo');
   await uploadSyntheticSvg('qa-shared.svg');
   await waitFor("function(){return [...document.querySelectorAll('.provider-slot-card')].some(card=>(card.textContent||'').includes('Προεπιλεγμένο logo')&&(card.textContent||'').includes('qa-shared.svg'))}",'uploaded logo assigned once');
   assert(await c.call("function(){return document.querySelectorAll('.provider-library-item').length}")===1,'one upload creates one library asset');
