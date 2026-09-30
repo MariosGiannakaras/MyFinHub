@@ -15,7 +15,7 @@ describe('completion UX contracts',()=>{
   });
 
   it('bounds Dashboard primary account cards on tablet',()=>{
-    const css=read('src/styles/dashboard-bankmark-chart-attention.css');
+    const css=read('src/pages/DashboardCompletion.css');
     expect(css).toContain('@media(min-width:681px) and (max-width:980px)');
     expect(css).toContain('grid-auto-rows:max-content!important');
     expect(css).toContain('min-height:184px!important');
@@ -58,25 +58,28 @@ describe('completion UX contracts',()=>{
 
   it('keeps secondary mobile analysis behind explicit disclosure controls',()=>{
     const dashboard=read('src/pages/DashboardPage.tsx');
-    const dashboardCss=read('src/styles/dashboard-history-mobile-reconciliation.css');
+    const dashboardCss=read('src/pages/DashboardCompletion.css');
     const planning=read('src/pages/PlanningPage.tsx');
-    const planningCss=read('src/styles/planning-forecast-workspace.css');
+    const planningCss=read('src/pages/PlanningCompletion.css');
     const reports=read('src/pages/ReportsPage.tsx');
     const reportsCss=read('src/pages/ReportsPage.css');
     const attention=read('src/pages/AttentionPage.tsx');
+    expect(dashboard).toContain("import './DashboardCompletion.css';");
     expect(dashboard).toContain('dashboard-mobile-disclosure');
     expect(dashboard).toContain("mobileAnalyticsExpanded?'':'mobile-collapsed'");
     expect(dashboardCss).toContain('.approved-chart-grid.mobile-collapsed');
+    expect(planning).toContain("import './PlanningCompletion.css';");
     expect(planning).toContain('planning-mobile-disclosure');
     expect(planningCss).toContain('.planning-lower-grid.mobile-collapsed');
     expect(reports).toContain('report-mobile-disclosure');
     expect(reportsCss).toContain('.report-support-grid.mobile-collapsed>article:not(#report-obligations)');
+    expect(attention).toContain("import './AttentionCompletion.css';");
     expect(attention).toContain('const mobileItems=mobileExpanded?items:items.slice(0,6)');
     expect(attention).toContain('className="attention-mobile-more"');
   });
 
   it('keeps Savings action copy usable at narrow phone widths',()=>{
-    const css=read('src/styles/mobile-finance-domain-layouts.css');
+    const css=read('src/pages/SavingsCompletion.css');
     expect(css).toContain('@media(max-width:380px)');
     expect(css).toContain('.savings-action strong{width:30px;font-size:0');
     expect(css).toContain('.savings-action small{-webkit-line-clamp:3}');
