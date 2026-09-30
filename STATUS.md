@@ -38,7 +38,7 @@ Release-closeout tracker: **#288 — complete**.
 
 ## Active completion batch — #476
 
-**Implementations 5/8 completed · Sub-implementations 12/19 completed**
+**Implementations 5/8 completed · Sub-implementations 12/20 completed**
 
 - Branch: `feat/476-completion-audit-hardening`.
 - **54 deep-audit findings are now tracked.** DA-01..DA-53 retain their existing implementation/disposition state; DA-54 adds the owner-reported dark-theme color/contrast defect.
@@ -47,6 +47,7 @@ Release-closeout tracker: **#288 — complete**.
 - FV-24 records the prior exact-head Settings QA failure: the harness expected a removed duplicate provider preview. The source fix now validates the selected branded radio card itself; provider-management product code remains untouched.
 - FV-25 records the next Settings QA failure: edit mode intentionally supports correcting an existing account's provider, but the harness still required that field to be absent. The assertion is aligned with the accepted provider-correction behavior; product code remains untouched.
 - FV-26 records the bundle-budget failure introduced by loading the DA-54 remediation eagerly. The same dark rules now load through the existing lazy workspace style layer; the 240 KiB CSS budget is unchanged.
+- FV-27 records a real Dashboard regression exposed by final evidence: all three deferred Recharts panels were blank. The lazy-loading boundary is preserved, while the extracted charts now restore explicit `ResponsiveContainer` sizing; rendered proof remains pending.
 - The separate database workstream is complete by owner confirmation, including the relational ledger cutover. This branch will not touch the live database.
 - Manual installation/upload of final authentic provider logo binaries remains an external owner-side prerequisite. Provider/logo management UX continues separately in #481/#482 and is intentionally not duplicated here.
 - Remaining work: close the current rendered/runtime proof obligations including DA-54, inspect fresh screenshots, fix any failures, then run/finish the single exact-final-head CI/security/cross-engine/performance/Windows validation wave and squash-merge to `develop`.
