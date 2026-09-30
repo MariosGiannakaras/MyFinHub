@@ -5,6 +5,7 @@ import { persistSuiteEvidence, prepareSuiteEvidence, visualEvidenceContext } fro
 const scripts=[
   {path:'scripts/frontend-qa.mjs',key:'frontend',surface:'core-flows',profiles:['/tmp/rheomiq-qa-chrome'],extraEvidenceDirs:['/tmp/rheomiq-frontend-qa']},
   {path:'scripts/completion-geometry-qa.mjs',key:'completion-geometry',surface:'all-pages',profiles:['/tmp/myfinhub-geometry-overflow-qa-chrome']},
+  {path:'scripts/completion-dialog-geometry-qa.mjs',key:'completion-dialog-geometry',surface:'interaction-dialogs',profiles:['/tmp/myfinhub-dialog-geometry-qa-chrome']},
   {path:'scripts/completion-functional-crud-qa.mjs',key:'completion-functional',surface:'functional-flows',profiles:['/tmp/myfinhub-completion-functional-qa-chrome']},
   {path:'scripts/owned-controls-qa.mjs',key:'owned-controls',surface:'controls',profiles:['/tmp/rheomiq-owned-controls-qa']},
   {path:'scripts/ui-ux-hardening-qa.mjs',key:'ui-hardening',surface:'app-shell',profiles:['/tmp/myfinhub-ui-ux-qa-chrome']},
