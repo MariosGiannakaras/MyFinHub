@@ -1,6 +1,6 @@
 import type { CategoryDefinition, CategoryIdentityRecord, FinanceSettings } from '../types.js';
 import { categoryKey, categoryTree } from './categories.js';
-import { moveSubcategoryIconPreferences, renameCategoryIconPreferences } from './categoryIconPreferences.js';
+import { moveSubcategoryIconPreferences, removeCategoryIconPreferences, removeSubcategoryIconPreferences, renameCategoryIconPreferences } from './categoryIconPreferences.js';
 
 export type CategoryKind=CategoryIdentityRecord['kind'];
 
@@ -194,7 +194,8 @@ export function retireSubcategoryIdentity(settings:FinanceSettings,kind:Category
   const childIndex=tree[parentIndex].subcategories.findIndex(label=>sameLabel(label,record.label));
   if(childIndex<0)throw new Error('Η υποκατηγορία έχει ήδη αποσυρθεί από το ενεργό δέντρο.');
   tree[parentIndex]={...tree[parentIndex],subcategories:tree[parentIndex].subcategories.filter((_,index)=>index!==childIndex)};
-  return withTree({...normalized,categoryIdentities:records},kind,tree);
+  const cleaned=removeSubcategoryIconPreferences(normalized,kind,parent.label,record.label);
+  return withTree({...cleaned,categoryIdentities:records},kind,tree);
 }
 
 export function retireCategoryIdentity(settings:FinanceSettings,kind:CategoryKind,identityId:string):FinanceSettings{
@@ -207,5 +208,6 @@ export function retireCategoryIdentity(settings:FinanceSettings,kind:CategoryKin
   if(index<0)throw new Error('Η κατηγορία έχει ήδη αποσυρθεί από το ενεργό δέντρο.');
   if(tree[index].subcategories.length)throw new Error('Μετέφερε ή απέσυρε πρώτα όλες τις ενεργές υποκατηγορίες αυτής της κατηγορίας.');
   tree.splice(index,1);
-  return withTree({...normalized,categoryIdentities:records},kind,tree);
+  const cleaned=removeCategoryIconPreferences(normalized,kind,record.label);
+  return withTree({...cleaned,categoryIdentities:records},kind,tree);
 }
