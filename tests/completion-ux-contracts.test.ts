@@ -18,7 +18,8 @@ describe('completion UX contracts',()=>{
     const css=read('src/styles/dashboard-bankmark-chart-attention.css');
     expect(css).toContain('@media(min-width:681px) and (max-width:980px)');
     expect(css).toContain('grid-auto-rows:max-content!important');
-    expect(css).toContain('height:184px!important');
+    expect(css).toContain('min-height:184px!important');
+    expect(css).toContain('height:auto!important');
     expect(css).toContain('height:76px!important');
   });
 
@@ -69,7 +70,7 @@ describe('completion UX contracts',()=>{
     expect(planning).toContain('planning-mobile-disclosure');
     expect(planningCss).toContain('.planning-lower-grid.mobile-collapsed');
     expect(reports).toContain('report-mobile-disclosure');
-    expect(reportsCss).toContain('.report-support-grid.mobile-collapsed');
+    expect(reportsCss).toContain('.report-support-grid.mobile-collapsed>article:not(#report-obligations)');
     expect(attention).toContain('const mobileItems=mobileExpanded?items:items.slice(0,6)');
     expect(attention).toContain('className="attention-mobile-more"');
   });
