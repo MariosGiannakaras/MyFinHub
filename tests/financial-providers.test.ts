@@ -145,6 +145,7 @@ describe('financial provider registry',()=>{
     expect(mark).toContain('data-provider-registry={registrySource}');
     expect(mark).toContain('data-bank-logo-source="generic"');
     expect(dashboard).toContain('<BankBrandMark');
+    expect(dashboard).toContain('account.providerId??account.provider??account.id');
     expect(cards).toContain("from './financialProviders.js'");
   });
 });
