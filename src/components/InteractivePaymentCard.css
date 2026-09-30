@@ -122,9 +122,9 @@
   .prototype-payment-card .card-brand .bank-brand-mark{width:30px;height:30px;min-width:30px;flex-basis:30px}
   .prototype-payment-card .card-brand .bank-logo-image{max-width:26px;max-height:23px}
   .prototype-payment-card .card-nickname{max-width:112px;font-size:.58rem}
-  .prototype-payment-card .card-toolbar{gap:3px}
-  .prototype-payment-card .card-icon-btn{width:28px;height:28px;min-width:28px;border-radius:9px}
-  .prototype-payment-card .card-icon-btn svg{width:14px;height:14px}
+  .prototype-payment-card .card-toolbar{display:grid;grid-template-columns:repeat(2,40px);gap:4px}
+  .prototype-payment-card .card-icon-btn{width:40px;height:40px;min-width:40px;border-radius:10px}
+  .prototype-payment-card .card-icon-btn svg{width:16px;height:16px}
   .prototype-payment-card .card-body{gap:14px}
   .prototype-payment-card .card-number{font-size:.94rem;letter-spacing:.065em}
   .prototype-payment-card .card-fields{gap:8px}
@@ -140,9 +140,7 @@
 @media(max-width:360px){
   .prototype-payment-card .card-header{align-items:start}
   .prototype-payment-card .card-nickname{max-width:96px}
-  .prototype-payment-card .card-toolbar{
-    display:grid;grid-template-columns:repeat(2,28px);gap:3px;
-  }
+  .prototype-payment-card .card-toolbar{grid-template-columns:repeat(2,40px);gap:4px}
   .prototype-payment-card .card-body{gap:11px}
   .prototype-payment-card .card-fields{
     grid-template-columns:minmax(0,1fr) minmax(0,1fr);
