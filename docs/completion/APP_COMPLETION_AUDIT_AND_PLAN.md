@@ -254,6 +254,8 @@ The first exact-head validation wave exposed three additional validation blocker
 
 | FV-22 | Dialog geometry mobile More selector | The next final CI rerun passed source/type/unit/build and reached dialog geometry, where the harness still searched the bottom-nav button by retired visible text `Περισσότερα`; the current compact label is `Άλλα` while its stable accessible name is `Περισσότερες ενότητες`. | QA harness compatibility defect | **Source-fixed, proof pending.** Dialog geometry now opens More by its accessible name. A full rendered-script sweep found no other stale More-label selector. Product navigation code is unchanged. |
 
+| FV-23 | Planning extreme-state list cardinality | Exact-head rendered QA passed all 48 route/viewport geometry checks, dialog geometry, functional CRUD, owned controls, desktop/mobile/extreme/readability/auth/runtime/report/brand/theme suites and the main Planning lifecycle flows, then failed because Planning QA still required ≥18 scheduled rows to render simultaneously. The product intentionally bounds the initial scheduled list to 12 with explicit progressive expansion. | QA harness pagination/progressive-disclosure defect | **Source-fixed, proof pending.** Planning QA now requires a bounded non-empty initial slice, a visible remaining-items expansion control, and a verified row-count increase after “Προβολή περισσότερων”. Product pagination/progressive-disclosure behavior is unchanged. |
+
 Validation rule: FV items close only after the next exact-head wave proves the corrected interaction/performance/bootstrap behavior. No quality threshold or screenshot-count requirement was relaxed.
 
 ## 3. Page-by-page audit and required changes
