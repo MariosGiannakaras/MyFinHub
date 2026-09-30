@@ -237,4 +237,20 @@ describe('completion UX contracts',()=>{
     expect(harness).toContain('if(screenshots.length!==63)');
   });
 
+
+  it('keeps the Dashboard attention shortcut in normal flow instead of hard-coded over topbar controls',()=>{
+    const css=read('src/styles/dashboard-bankmark-chart-attention.css');
+    expect(css).toContain('body:has(.dashboard-approved) .period-attention-shortcut');
+    expect(css).toContain('position:static');
+    expect(css).toContain('flex:0 0 36px');
+    expect(css).not.toContain('right:307px');
+  });
+
+  it('keeps the secure card-details editor on an opaque elevated surface',()=>{
+    const css=read('src/styles/card-details-dialog.css');
+    expect(css).toContain('background:var(--surface-elevated-gradient,var(--surface,#fff))!important');
+    expect(css).toContain('isolation:isolate');
+    expect(css).toContain('box-shadow:0 24px 64px');
+  });
+
 });
