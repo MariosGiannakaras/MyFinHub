@@ -33,7 +33,9 @@ const productionApplied=[
   "20260905020000_refresh_financial_provider_brand_assets.sql",
   "20260930062504_harden_active_device_sensitive_rls.sql",
   "20260930062619_move_active_device_rls_helper_private.sql",
-  "20260930075049_align_financial_provider_brand_assets.sql"
+  "20260930075049_align_financial_provider_brand_assets.sql",
+  "20260930095835_backfill_verified_piraeus_wordmark.sql",
+  "20260930100713_backfill_canonical_payzy_viva_assets.sql"
 ] as const;
 const pending=[] as const;
 
@@ -60,6 +62,19 @@ describe('production migration ledger source contract',()=>{
     expect(alignedBrands).toContain("'piraeus-logo-green-on-yellow'");
     expect(alignedBrands).toContain("'alpha-wordmark-color'");
     expect(alignedBrands).toContain("else 'generic'");
+  });
+
+  it('keeps verified provider binary backfills hash-guarded and source-accurate',()=>{
+    const piraeus=readFileSync('supabase/migrations/20260930095835_backfill_verified_piraeus_wordmark.sql','utf8');
+    const canonical=readFileSync('supabase/migrations/20260930100713_backfill_canonical_payzy_viva_assets.sql','utf8');
+    expect(piraeus).toContain('PROVIDER_ASSET_HASH_MISMATCH');
+    expect(piraeus).toContain('73fc3353377d38ab00abbb97f2859da0f143595a80bf0f7e3c8b64611632b2ec');
+    expect(canonical).toContain('PROVIDER_ASSET_HASH_MISMATCH: payzy');
+    expect(canonical).toContain('0a22f6d45422e0086b018c5bbe8f6d6c1cfbd6f80ffd014dda699c8cdb2e74f1');
+    expect(canonical).toContain('c7aed8524a3d980dded8cb121371397208b13cf9bb21b362d176550fd10aea8e');
+    expect(canonical).toContain("file_name='payzy-logo-color.png'");
+    expect(canonical).toContain("file_name='viva-logo-navy-on-white.png'");
+    expect(canonical).toContain("source='repository-canonical'");
   });
 
   it('back-syncs the production-only provider asset registry schema without embedding production asset bytes',()=>{
