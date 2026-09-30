@@ -104,6 +104,9 @@ describe('card secure details',()=>{
     expect(createDialog).toContain('const [networkTouched,setNetworkTouched]=useState(false)');
     expect(createDialog).toContain('if(!networkTouched)setNetwork(item.network)');
     expect(createDialog).toContain('setNetworkTouched(true)');
+    expect(createDialog).toContain("const changeBank=(next:string)=>{setBankId(next);setDesignId('');setNetworkTouched(false)");
+    expect(createDialog).toContain("const changeKind=(next:CardKind)=>{setKind(next);setDesignId('');setNetworkTouched(false)");
+    expect(createDialog).toContain("onChange={event=>changeKind(event.target.value as CardKind)}");
     expect(createDialog).not.toContain('setDesignId(item.id);setNetwork(item.network)');
   });
 
