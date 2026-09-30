@@ -107,4 +107,21 @@ describe('card secure details',()=>{
     expect(createDialog).not.toContain('setDesignId(item.id);setNetwork(item.network)');
   });
 
+  it('keeps card profile and interactive card layouts owned by their actual component selectors',()=>{
+    const createDialog=readFileSync(new URL('../src/components/CardCreateDialog.tsx',import.meta.url),'utf8');
+    const createCss=readFileSync(new URL('../src/components/CardCreateDialog.css',import.meta.url),'utf8');
+    const interactive=readFileSync(new URL('../src/components/InteractivePaymentCard.tsx',import.meta.url),'utf8');
+    const interactiveCss=readFileSync(new URL('../src/components/InteractivePaymentCard.css',import.meta.url),'utf8');
+    expect(createDialog).toContain("import './CardCreateDialog.css'");
+    expect(createCss).toContain('.card-create-modal');
+    expect(createCss).toContain('.card-preview-stage');
+    expect(createCss).toContain('.design-picker');
+    expect(createCss).toContain('@media(max-width:360px)');
+    expect(interactive).toContain("import './InteractivePaymentCard.css'");
+    expect(interactiveCss).toContain('.prototype-payment-card .card-inner');
+    expect(interactiveCss).toContain('.prototype-payment-card .card-toolbar');
+    expect(interactiveCss).toContain('grid-template-columns:repeat(2,28px)');
+    expect(interactiveCss).not.toContain('#myfinhub-card-stack');
+  });
+
 });
