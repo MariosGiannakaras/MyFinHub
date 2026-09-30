@@ -2,6 +2,7 @@ import { Clock3, KeyRound, LockKeyhole, Mail, ShieldCheck } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { ApiError, changeAccountEmail, changeAccountPassword, getSession } from '../lib/api';
 import { userErrorMessage } from '../lib/userMessage';
+import { ACCOUNT_PASSWORD_MIN_LENGTH, accountPasswordPolicyError } from '../lib/passwordPolicy';
 import { AppSelectInput } from './AppSelectInput';
 import { AppTextInput } from './AppTextInput';
 import { Button } from './Button';
@@ -97,7 +98,7 @@ export function AccountSecuritySettings({currentEmail}:{currentEmail?:string|nul
 
   const submitPassword=async()=>{
     if(currentPassword.length<8){setAuthMessage('Συμπλήρωσε τον τρέχοντα κωδικό.');return;}
-    if(newPassword.length<8){setAuthMessage('Ο νέος κωδικός πρέπει να έχει τουλάχιστον 8 χαρακτήρες.');return;}
+    const passwordError=accountPasswordPolicyError(newPassword);if(passwordError){setAuthMessage(passwordError);return;}
     if(newPassword!==confirmPassword){setAuthMessage('Η επιβεβαίωση του νέου κωδικού δεν ταιριάζει.');return;}
     if(newPassword===currentPassword){setAuthMessage('Ο νέος κωδικός πρέπει να είναι διαφορετικός από τον τρέχοντα.');return;}
     setAuthBusy('password');setAuthMessage('');
@@ -166,7 +167,7 @@ export function AccountSecuritySettings({currentEmail}:{currentEmail?:string|nul
         <div className="panel-head"><div><span>Αλλαγή κωδικού</span></div><KeyRound/></div>
         <div className="account-security-password-grid">
           <label className="account-security-field"><span>Τρέχων κωδικός</span><AppTextInput type="password" autoComplete="current-password" value={currentPassword} onChange={event=>setCurrentPassword(event.target.value)}/></label>
-          <label className="account-security-field"><span>Νέος κωδικός</span><AppTextInput type="password" autoComplete="new-password" value={newPassword} onChange={event=>setNewPassword(event.target.value)}/></label>
+          <label className="account-security-field"><span>Νέος κωδικός</span><AppTextInput type="password" autoComplete="new-password" value={newPassword} onChange={event=>setNewPassword(event.target.value)}/><small>Τουλάχιστον {ACCOUNT_PASSWORD_MIN_LENGTH} χαρακτήρες με πεζό, κεφαλαίο, αριθμό και σύμβολο.</small></label>
           <label className="account-security-field account-security-password-confirm"><span>Επιβεβαίωση νέου κωδικού</span><AppTextInput type="password" autoComplete="new-password" value={confirmPassword} onChange={event=>setConfirmPassword(event.target.value)}/></label>
         </div>
         <div className="account-security-actions"><Button type="button" variant="primary" disabled={Boolean(authBusy)} onClick={()=>void submitPassword()}>{authBusy==='password'?'Αποθήκευση…':'Αλλαγή κωδικού'}</Button></div>
