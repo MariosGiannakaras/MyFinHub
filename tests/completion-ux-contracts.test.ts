@@ -152,10 +152,17 @@ describe('completion UX contracts',()=>{
     const more=read('src/styles/mobile-more-navigation.css');
     const shell=read('src/styles/root-responsive-coordination.css');
     expect(more).toContain('.mobile-more-backdrop{display:block;position:fixed;inset:0;z-index:80');
+    expect(more).toContain('.mobile-more-menu>header button{width:40px;height:40px;min-width:40px;min-height:40px');
     expect(shell).toContain('.mobile-nav{display:grid;position:fixed;z-index:70');
     const appShell=read('src/components/AppShell.tsx');
     expect(appShell).toContain('className="mobile-more-menu surface-raised" role="dialog" aria-modal="true"');
     expect(appShell).toContain('aria-label="Κλείσιμο μενού"');
+  });
+
+
+  it('keeps authentication password reveal touch-safe',()=>{
+    const motion=read('src/styles/interaction-motion-states.css');
+    expect(motion).toContain('.login-password-toggle{width:40px;height:40px;min-width:40px;min-height:40px');
   });
 
 
