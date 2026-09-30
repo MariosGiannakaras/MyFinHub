@@ -93,7 +93,7 @@ try{
     await c.send('Emulation.setDeviceMetricsOverride',{width:viewport.width,height:viewport.height,deviceScaleFactor:1,mobile:true});
 
     await navigate('dashboard');
-    await click('.mobile-quick-action','mobile Quick Entry');
+    await click('[data-global-quick-entry="mobile"]','mobile Quick Entry nav action');
     await waitFor("function(){return Boolean(document.querySelector('.quick-modal'))}",'Quick Entry dialog');
     await inspect('.quick-modal',`${viewport.name} Quick Entry`);
 
