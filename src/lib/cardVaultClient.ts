@@ -1,4 +1,4 @@
-import { notifyAuthExpired } from './authExpiry';
+import { notifyAuthExpired } from './authExpiry.js';
 import { readLocalCvv } from './localCvvVault.js';
 type CardVaultSecret={pan?:string;expiry?:string;cvv?:string};
 
