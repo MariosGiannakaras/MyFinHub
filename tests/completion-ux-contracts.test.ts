@@ -187,4 +187,19 @@ describe('completion UX contracts',()=>{
     expect(settings).not.toContain('Αποθήκευση εικονιδίων');
   });
 
+
+  it('bounds long-term Loans and personal Savings goal lists with explicit expansion',()=>{
+    const loans=read('src/pages/LoansPage.tsx');
+    expect(loans).toContain('const [activeLimit,setActiveLimit]=useState(20)');
+    expect(loans).toContain('const [historyLimit,setHistoryLimit]=useState(20)');
+    expect(loans).toContain('const visibleActiveLoans=activeLoans.slice(0,activeLimit)');
+    expect(loans).toContain('const visibleCompletedLoans=completedLoans.slice(0,historyLimit)');
+    expect(loans).toContain('setActiveLimit(limit=>limit+20)');
+    expect(loans).toContain('setHistoryLimit(limit=>limit+20)');
+    const savings=read('src/pages/SavingsPage.tsx');
+    expect(savings).toContain('const [goalLimit,setGoalLimit]=useState(12)');
+    expect(savings).toContain('const visibleGoalRows=goalRows.slice(0,goalLimit)');
+    expect(savings).toContain('setGoalLimit(limit=>limit+12)');
+  });
+
 });
