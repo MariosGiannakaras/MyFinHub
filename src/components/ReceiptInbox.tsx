@@ -10,7 +10,6 @@ import { FormError } from './FormError';
 import { IconButton } from './IconButton';
 import { MoneyInput } from './MoneyInput';
 import { useModalFocus } from '../hooks/useModalFocus';
-import { money } from '../lib/format';
 import { normalizeReceiptFile } from '../lib/receiptImage';
 import type { ReceiptOcrProgress } from '../lib/receiptOcr';
 import { suggestReceiptCategory } from '../lib/receiptParser';
