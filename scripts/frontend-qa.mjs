@@ -35,6 +35,7 @@ try{
   const shot=async name=>{await sleep(240);mkdirSync('/tmp/rheomiq-frontend-qa',{recursive:true});const result=await c.send('Page.captureScreenshot',{format:'png',fromSurface:true});writeFileSync(`/tmp/rheomiq-frontend-qa/${name}.png`,Buffer.from(result.data,'base64'))};
 
   await viewport(430,800);await navigate(`${baseUrl}?screen=login`);await waitFor("function(){return Boolean(document.querySelector('#login-title'))}",'login');await audit('login');await assertMobileControlFonts('login');
+  const loginRevealSize=await c.eval("(()=>{const node=document.querySelector('button[aria-label=\"Εμφάνιση κωδικού\"]');const r=node?.getBoundingClientRect();return r?{w:r.width,h:r.height}:null})()");assert(loginRevealSize&&loginRevealSize.w>=40&&loginRevealSize.h>=40,`login password reveal touch target too small ${JSON.stringify(loginRevealSize)}`);
   assert(await c.eval("document.querySelector('#login-password')?.type==='password'"),'password starts masked');await clickAria('Εμφάνιση κωδικού');assert(await c.eval("document.querySelector('#login-password')?.type==='text'"),'password reveal works');
 
   await viewport(1440,1000);await navigate();await waitHeading('Οι λογαριασμοί μου');await audit('desktop dashboard');assert(await c.eval("Boolean(document.querySelector('.primary-balance-card .bank-brand-mark'))"),'dashboard bank branding');
@@ -72,7 +73,7 @@ try{
   assert(await c.eval("[...document.querySelectorAll('.mobile-nav button')].every(node=>node.getBoundingClientRect().height>=44)"),'mobile navigation touch targets');
   await clickAria('Συναλλαγές');await waitHeading('Συναλλαγές');await audit('mobile transactions');await assertMobileControlFonts('mobile transactions');
   await clickAria('Αποταμίευση');await waitHeading('Αποταμίευση');await audit('mobile savings');
-  await clickAria('Κάρτες');await waitHeading('Κάρτες');await audit('mobile cards');await shot('mobile-cards');
+  await clickAria('Κάρτες');await waitHeading('Κάρτες');await audit('mobile cards');const copyTargets=await c.eval("(()=>[...document.querySelectorAll('.r-payment-card .copy-mini')].filter(node=>node.getClientRects().length>0).map(node=>{const r=node.getBoundingClientRect();return {aria:node.getAttribute('aria-label'),w:r.width,h:r.height}}))()");assert(copyTargets.length>0&&copyTargets.every(item=>item.w>=40&&item.h>=40),`mobile card copy targets below 40px ${JSON.stringify(copyTargets)}`);await shot('mobile-cards');
   await morePage('Πιστωτική','Πιστωτική Κάρτα');await audit('mobile credit');assert(await c.eval("Boolean(document.querySelector('#myfinhub-card-stack .stack-card.top .payment-card'))"),'canonical credit card stack stays visible on mobile');assert(await c.eval("document.querySelector('.semantic-table-wrap').scrollWidth>=document.querySelector('.semantic-table-wrap').clientWidth"),'credit history remains contained');
   await morePage('Δόσεις & Δάνεια','Δόσεις & Δάνεια');await audit('mobile loans');await assertMobileControlFonts('mobile loans');
   await morePage('Δανεικά / Οφειλές','Δανεικά / Οφειλές');await audit('mobile lending');
@@ -81,7 +82,7 @@ try{
   await morePage('Αναφορές','Αναφορές');await audit('mobile reports');
   await morePage('Ρυθμίσεις','Ρυθμίσεις');await audit('mobile settings');await assertMobileControlFonts('mobile settings');
 
-  await viewport(667,375);await navigate();await waitHeading('Οι λογαριασμοί μου');await audit('landscape dashboard');await openMore();assert(await c.eval("document.querySelector('.mobile-more-menu').getBoundingClientRect().height<window.innerHeight"),'landscape More constrained');await clickAria('Κλείσιμο μενού');
+  await viewport(667,375);await navigate();await waitHeading('Οι λογαριασμοί μου');await audit('landscape dashboard');await openMore();assert(await c.eval("document.querySelector('.mobile-more-menu').getBoundingClientRect().height<window.innerHeight"),'landscape More constrained');const moreCloseSize=await c.eval("(()=>{const node=document.querySelector('.mobile-more-menu button[aria-label=\"Κλείσιμο μενού\"]');const r=node?.getBoundingClientRect();return r?{w:r.width,h:r.height}:null})()");assert(moreCloseSize&&moreCloseSize.w>=40&&moreCloseSize.h>=40,`mobile More close target too small ${JSON.stringify(moreCloseSize)}`);await clickAria('Κλείσιμο μενού');
 
   await viewport(430,800);await navigate(`${baseUrl}?motion=reduced`);await waitHeading('Οι λογαριασμοί μου');assert(await c.eval("document.documentElement.dataset.motion==='reduced'"),'reduced motion state');await audit('reduced motion');
 
