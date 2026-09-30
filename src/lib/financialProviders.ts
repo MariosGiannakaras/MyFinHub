@@ -6,6 +6,15 @@ export type FinancialProviderAsset={
   role:FinancialProviderAssetRole;
   variant:string;
   url:string;
+  fileName?:string;
+  mimeType?:string;
+  sizeBytes?:number|null;
+  updatedAt?:string;
+};
+export type FinancialProviderAssetBinding={
+  role:FinancialProviderAssetRole;
+  variant:'universal'|'light'|'dark';
+  assetKey:string;
 };
 export type FinancialProvider={
   id:string;
@@ -19,6 +28,7 @@ export type FinancialProvider={
   logoUrl?:string|null;
   wordmarkUrl?:string|null;
   assets?:FinancialProviderAsset[];
+  bindings?:FinancialProviderAssetBinding[];
   sortOrder:number;
 };
 
