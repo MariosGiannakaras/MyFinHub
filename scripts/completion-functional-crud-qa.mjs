@@ -36,7 +36,20 @@ try{
   };
   const shot=async name=>{const result=await c.send('Page.captureScreenshot',{format:'png',fromSurface:true});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(result.data,'base64'))};
 
-  console.log('Completion functional QA: Savings create/edit/delete + transaction');
+  console.log('Completion functional QA: Modern transaction edit updates in place');
+  await navigate('transactions');
+  const editModern=await c.call(`function(){const visible=${visible};const row=[...document.querySelectorAll('[data-transaction-source="event"]')].find(item=>visible(item)&&(item.textContent||'').includes('Freddo espresso'));const button=row?.querySelector('button[aria-label^="Επεξεργασία"]');button?.click();return Boolean(button)}`);
+  assert(editModern,'modern event exposes edit action');
+  await waitFor("function(){return document.querySelector('#quick-add-title')?.textContent==='Επεξεργασία κίνησης'}",'modern event editor');
+  await setByLabel('Ποσό','21.75');
+  await setByLabel('Σχόλιο','QA Audit Modern Event');
+  await clickText('.quick-modal button','Εφαρμογή αλλαγών');
+  await waitFor("function(){const rows=[...document.querySelectorAll('[data-transaction-source=\"event\"]')].filter(row=>(row.textContent||'').includes('QA Audit Modern Event'));return rows.length>=1&&rows.some(row=>(row.textContent||'').includes('21,75'))}",'updated modern event row');
+  const modernCopies=await c.call("function(){const ids=[...document.querySelectorAll('[data-transaction-source=\"event\"]')].filter(row=>(row.textContent||'').includes('QA Audit Modern Event')).map(row=>row.getAttribute('data-transaction-kind')+'|'+(row.textContent||''));return ids.length}");
+  assert(modernCopies>=1&&modernCopies<=2,'modern edit updates the existing event instead of creating duplicate visible records');
+  await shot('transactions-modern-event-updated');
+
+    console.log('Completion functional QA: Savings create/edit/delete + transaction');
   await navigate('savings');
   await clickText('button','Νέος στόχος');
   await waitFor("function(){return Boolean(document.querySelector('#savings-goal-editor-title'))}",'savings goal editor');
