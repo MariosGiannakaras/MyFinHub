@@ -22,6 +22,14 @@ Final exact-head automated evidence for PR #182:
 - Windows Desktop #410: success.
 - Primary Chromium remains mandatory.
 
+## Validation cadence
+
+As of #483, high-churn implementation should stay on a pushed branch without an open PR until a coherent batch is ready for integrated review, unless collaboration or repository protection requires an earlier draft PR.
+
+Draft pull requests keep the core CI/source/security loop and CodeQL. The expensive rendered frontend QA step, WebKit cross-engine smoke, production-mode performance smoke, and Windows lifecycle jobs are gated until the PR is ready for review. Each affected workflow listens for `ready_for_review` so the same final head receives the deferred gates without requiring a synthetic code change.
+
+Cross-engine and performance workflows are path-scoped to browser/frontend inputs. Performance also uses per-PR concurrency with superseded-run cancellation and runs for both `develop` and release PRs targeting `main`. Root source/test/build validation remains owned by CI; Windows workflows retain only their Windows-specific checks and the builds needed for package/lifecycle verification.
+
 ## Bundle and loading architecture
 
 The production build enforces explicit budgets for the eager main application JS, chart chunk and application CSS through `scripts/bundle-budget.mjs`. A ceiling is a regression boundary, not a target to raise when a new eager import appears.
