@@ -15,6 +15,7 @@ import { recurringUpcoming } from '../lib/recurring';
 import { SAVING_SOURCE_LABELS } from '../lib/savings';
 import { accountDisplayName, eventKindLabel } from '../lib/ui';
 import type { FinanceData, MonthlyBudget, TransactionRule } from '../types';
+import '../styles/reports-dashboard.css';
 import './ReportsPage.css';
 
 const change=(current:number,previous:number)=>previous===0?(current===0?0:null):((current-previous)/Math.abs(previous))*100;
