@@ -1,3 +1,4 @@
+import { notifyAuthExpired } from './authExpiry';
 import { readLocalCvv } from './localCvvVault.js';
 type CardVaultSecret={pan?:string;expiry?:string;cvv?:string};
 
@@ -17,7 +18,11 @@ async function request<T>(method:'POST'|'PUT'|'DELETE',body:Record<string,unknow
     body:JSON.stringify(body),
   });
   const payload=await response.json().catch(()=>({})) as ErrorPayload&T;
-  if(!response.ok){throw new CardVaultClientError(response.status,payload.code||'CARD_VAULT_ERROR',payload.error||'Η ενέργεια ασφαλών στοιχείων απέτυχε.');}
+  if(!response.ok){
+    const code=payload.code||'CARD_VAULT_ERROR';
+    notifyAuthExpired(response.status,code);
+    throw new CardVaultClientError(response.status,code,payload.error||'Η ενέργεια ασφαλών στοιχείων απέτυχε.');
+  }
   return payload as T;
 }
 
@@ -62,6 +67,7 @@ export function cardVaultErrorMessage(error:unknown){
     if(error.code==='INVALID_CARD_EXPIRY')return 'Έλεγξε τη λήξη της κάρτας — χρησιμοποίησε μορφή MM/YY.';
     if(error.code==='INVALID_CARD_CVV')return 'Το CVV πρέπει να έχει 3 ή 4 αριθμητικά ψηφία.';
     if(error.code==='MFA_REQUIRED')return 'Για να δεις ή να αλλάξεις τα ασφαλή στοιχεία της κάρτας, χρειάζεται να επαληθεύσεις ξανά τη σύνδεσή σου.';
+    if(error.code==='DEVICE_ACCESS_REVOKED'||error.code==='AUTH_REQUIRED')return 'Η πρόσβαση αυτής της συσκευής έχει λήξει. Συνδέσου ξανά και ολοκλήρωσε την επαλήθευση MFA.';
     if(error.code==='CARD_VAULT_RATE_LIMITED')return 'Έγιναν πολλές προσπάθειες σε μικρό χρονικό διάστημα. Περίμενε λίγο και δοκίμασε ξανά.';
     return 'Δεν μπορέσαμε να ολοκληρώσουμε την ενέργεια στα ασφαλή στοιχεία της κάρτας. Δοκίμασε ξανά.';
   }
