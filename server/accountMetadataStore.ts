@@ -8,8 +8,10 @@ type FinancialProviderRow={
   shortName:string;
   providerKind:'bank'|'fintech'|'wallet'|'payment';
   countryCode:string|null;
-  logoAssetKey:string;
-  wordmarkAssetKey:string;
+  logoAssetKey:string|null;
+  wordmarkAssetKey:string|null;
+  logoUrl:string|null;
+  wordmarkUrl:string|null;
   sortOrder:number;
 };
 type StoredRow={account_id:string;iban:string|null;revision:number;updated_at:string};
@@ -19,9 +21,15 @@ type StoredFinancialProviderRow={
   short_name:string;
   provider_kind:string;
   country_code:string|null;
-  logo_asset_key:string;
-  wordmark_asset_key:string;
+  logo_asset_key:string|null;
+  wordmark_asset_key:string|null;
   sort_order:number;
+};
+type StoredFinancialProviderAssetRow={
+  asset_key:string;
+  storage_bucket:string|null;
+  storage_path:string|null;
+  active:boolean;
 };
 
 function config(accessToken:string){
@@ -61,8 +69,9 @@ function mapRow(value:unknown):AccountMetadataRow{
 function mapFinancialProviderRow(value:unknown):FinancialProviderRow{
   const row=value as Partial<StoredFinancialProviderRow>;
   const kinds=['bank','fintech','wallet','payment'] as const;
+  const validAssetKey=(value:unknown)=>value===null||value===undefined||typeof value==='string'&&/^[a-z][a-z0-9-]{0,95}$/.test(value);
   if(!row||typeof row.id!=='string'||typeof row.display_name!=='string'||typeof row.short_name!=='string'||!kinds.includes(row.provider_kind as any)||
-    (row.country_code!==null&&row.country_code!==undefined&&typeof row.country_code!=='string')||typeof row.logo_asset_key!=='string'||typeof row.wordmark_asset_key!=='string'||!Number.isInteger(row.sort_order)){
+    (row.country_code!==null&&row.country_code!==undefined&&typeof row.country_code!=='string')||!validAssetKey(row.logo_asset_key)||!validAssetKey(row.wordmark_asset_key)||!Number.isInteger(row.sort_order)){
     throw new ApiError(500,'FINANCIAL_PROVIDER_INVALID_ROW','Stored financial provider is invalid.',false);
   }
   return {
@@ -71,10 +80,26 @@ function mapFinancialProviderRow(value:unknown):FinancialProviderRow{
     shortName:row.short_name,
     providerKind:row.provider_kind as FinancialProviderRow['providerKind'],
     countryCode:row.country_code??null,
-    logoAssetKey:row.logo_asset_key,
-    wordmarkAssetKey:row.wordmark_asset_key,
+    logoAssetKey:row.logo_asset_key??null,
+    wordmarkAssetKey:row.wordmark_asset_key??null,
+    logoUrl:null,
+    wordmarkUrl:null,
     sortOrder:Number(row.sort_order),
   };
+}
+
+function mapFinancialProviderAssetRow(value:unknown):StoredFinancialProviderAssetRow{
+  const row=value as Partial<StoredFinancialProviderAssetRow>;
+  if(!row||typeof row.asset_key!=='string'||row.storage_bucket!=='financial-provider-assets'||typeof row.storage_path!=='string'||
+    !/^providers\/[a-z][a-z0-9-]{0,63}\/[A-Za-z0-9._/-]+$/.test(row.storage_path)||row.active!==true){
+    throw new ApiError(500,'FINANCIAL_PROVIDER_ASSET_INVALID_ROW','Stored provider asset metadata is invalid.',false);
+  }
+  return {asset_key:row.asset_key,storage_bucket:row.storage_bucket,storage_path:row.storage_path,active:true};
+}
+
+function publicStorageUrl(baseUrl:string,asset:StoredFinancialProviderAssetRow){
+  const path=asset.storage_path!.split('/').map(encodeURIComponent).join('/');
+  return `${baseUrl}/storage/v1/object/public/${encodeURIComponent(asset.storage_bucket!)}/${path}`;
 }
 
 export async function readAccountMetadata(accessToken:string):Promise<AccountMetadataRow[]>{
@@ -84,9 +109,23 @@ export async function readAccountMetadata(accessToken:string):Promise<AccountMet
 }
 
 export async function readFinancialProviders(accessToken:string):Promise<FinancialProviderRow[]>{
-  const payload=await request('rheomiq_financial_providers?select=id,display_name,short_name,provider_kind,country_code,logo_asset_key,wordmark_asset_key,sort_order&active=eq.true&order=sort_order.asc,id.asc',{method:'GET'},accessToken);
-  if(!Array.isArray(payload))throw new ApiError(500,'FINANCIAL_PROVIDER_INVALID_RESPONSE','Financial provider response is invalid.',false);
-  return payload.map(mapFinancialProviderRow);
+  const [providerPayload,assetPayload]=await Promise.all([
+    request('rheomiq_financial_providers?select=id,display_name,short_name,provider_kind,country_code,logo_asset_key,wordmark_asset_key,sort_order&active=eq.true&order=sort_order.asc,id.asc',{method:'GET'},accessToken),
+    request('rheomiq_financial_provider_assets?select=asset_key,storage_bucket,storage_path,active&active=eq.true&order=asset_key.asc',{method:'GET'},accessToken),
+  ]);
+  if(!Array.isArray(providerPayload)||!Array.isArray(assetPayload))throw new ApiError(500,'FINANCIAL_PROVIDER_INVALID_RESPONSE','Financial provider response is invalid.',false);
+  const assets=new Map(assetPayload.map(mapFinancialProviderAssetRow).map(asset=>[asset.asset_key,asset] as const));
+  const baseUrl=config(accessToken).url;
+  return providerPayload.map(value=>{
+    const provider=mapFinancialProviderRow(value);
+    const logo=provider.logoAssetKey?assets.get(provider.logoAssetKey):undefined;
+    const wordmark=provider.wordmarkAssetKey?assets.get(provider.wordmarkAssetKey):undefined;
+    return {
+      ...provider,
+      logoUrl:logo?publicStorageUrl(baseUrl,logo):null,
+      wordmarkUrl:wordmark?publicStorageUrl(baseUrl,wordmark):null,
+    };
+  });
 }
 
 export async function writeAccountMetadata(accountId:string,iban:string|null,expectedRevision:number,accessToken:string):Promise<AccountMetadataRow>{
