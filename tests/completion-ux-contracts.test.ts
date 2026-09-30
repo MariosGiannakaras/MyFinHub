@@ -202,4 +202,15 @@ describe('completion UX contracts',()=>{
     expect(savings).toContain('setGoalLimit(limit=>limit+12)');
   });
 
+
+  it('prevents shared PageHeader actions from overflowing tablets and phones',()=>{
+    const headings=read('src/styles/workspace-heading-metrics.css');
+    expect(headings).toContain('@media(max-width:980px)');
+    expect(headings).toContain('.page-heading{flex-wrap:wrap;align-items:flex-start}');
+    expect(headings).toContain('@media(max-width:680px)');
+    expect(headings).toContain('.page-heading{display:grid;grid-template-columns:minmax(0,1fr)');
+    expect(headings).toContain('.heading-actions{width:100%;display:flex;flex-wrap:wrap');
+    expect(headings).toContain('@media(max-width:420px)');
+  });
+
 });
