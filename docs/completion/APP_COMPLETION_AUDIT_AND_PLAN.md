@@ -222,6 +222,8 @@ The first exact-head validation wave exposed three additional validation blocker
 
 | FV-08 | Completion geometry / mobile fixed chrome | The geometry harness treated any transient intersection between scrollable content and fixed bottom navigation as a defect, including Dashboard actions that had substantial remaining scroll and could be moved fully clear. | QA harness defect | **Source-fixed, proof pending.** Mobile bottom-chrome overlap remains a hard failure at the maximum reachable scroll position (and on non-scrollable pages), proving that final actions can actually clear the fixed navigation/FAB while allowing normal content to scroll behind persistent chrome en route. |
 
+| FV-09 | Dialog geometry harness | After the full 48-combination page geometry sweep passed, the dialog inspector crashed on Quick Entry before making a geometry assertion. Its accessible-name helper manually constructed a CSS selector from control IDs and the CDP wrapper discarded the browser exception description. | QA harness defect | **Source-fixed, proof pending.** Inspector now uses native form-control `labels` associations and preserves browser exception descriptions/stacks for any future runtime failure; all geometry/accessibility assertions remain active. |
+
 Validation rule: FV items close only after the next exact-head wave proves the corrected interaction/performance/bootstrap behavior. No quality threshold or screenshot-count requirement was relaxed.
 
 ## 3. Page-by-page audit and required changes
