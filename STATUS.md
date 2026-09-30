@@ -36,6 +36,19 @@ Release-closeout tracker: **#288 — complete**.
 - `CARD_VAULT_KEY`, service-role credentials and other privileged secrets are never distributed in browser, Windows or Android clients.
 - Optimistic revisions, backups, audit/history boundaries and the canonical finance/accounting engine remain authoritative.
 
+## Active CI/workflow optimization — #483
+
+**Implementations 5/5 · Sub-implementations 15/15**
+
+- Branch: `chore/483-ci-workflow-optimization`.
+- Implementation complete: draft PRs keep core CI + CodeQL feedback while expensive rendered/cross-engine/performance/Windows lifecycle validation is deferred until ready-for-review.
+- Performance and cross-engine triggers are scoped to relevant frontend surfaces; Performance now cancels superseded runs and also covers release PRs targeting `main`.
+- Windows workflows no longer repeat the root `npm run check`; they retain Windows-specific/package/lifecycle validation while root validation remains owned by CI.
+- Production Smoke uses the canonical `https://mgfinhub.vercel.app` origin.
+- Repository instruction authority and progress terminology are consolidated around `AGENTS.md`, issue #266, and `Implementations/Sub-implementations`.
+- Repository plan: `docs/CI_WORKFLOW_OPTIMIZATION_PLAN.md`.
+- Integration status: implementation committed; final PR validation/merge remains required before this becomes the `develop` baseline.
+
 ## Next work
 
 Subsequent changes are product fixes against the completed v1.3.0 baseline. Routine implementation remains **Issue → short-lived branch → PR → required checks → squash merge into `develop`**. `main` remains release-only.
