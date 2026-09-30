@@ -136,7 +136,7 @@ describe('completion UX contracts',()=>{
 
   it('applies persisted category icon families to every Dashboard semantic icon',()=>{
     const dashboard=read('src/pages/DashboardPage.tsx');
-    const categoryIcons=[...dashboard.matchAll(/<FinanceIcon\\b[^>]*category=\\{[^>]+>/g)].map(match=>match[0]);
+    const categoryIcons=[...dashboard.matchAll(/<FinanceIcon\b[^>]*category=\{[^>]+>/g)].map(match=>match[0]);
     expect(categoryIcons.length).toBeGreaterThan(0);
     for(const icon of categoryIcons)expect(icon).toContain('settings={data.state.settings}');
   });
