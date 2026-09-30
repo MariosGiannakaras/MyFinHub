@@ -217,9 +217,20 @@ try {
   await waitFor(`async function(){return await new Promise((resolve,reject)=>{const request=indexedDB.open('myfinhub-local-receipts-v1',1);request.onsuccess=()=>{const db=request.result;const tx=db.transaction('receipts','readonly');const count=tx.objectStore('receipts').count();count.onsuccess=()=>{resolve(count.result===0);db.close()};count.onerror=()=>reject(count.error)};request.onerror=()=>reject(request.error)})}`, 'receipt cleanup after transaction');
   assert((await receiptCount()) === 0, 'receipt draft deleted only after normal submit');
 
-  console.log('Receipt OCR QA: mobile inbox remains usable');
+  console.log('Receipt OCR QA: mobile launcher stays inside Quick Entry footer and inbox remains usable');
   await c.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
-  await openReceiptInbox();
+  const mobileQuickOpened=await c.call("function(){const button=document.querySelector('.mobile-quick-action');button?.click();return Boolean(button)}");
+  assert(mobileQuickOpened,'mobile Quick Entry launch exists');
+  await waitFor("function(){return Boolean(document.querySelector('.quick-modal:not(.contextual-quick-modal)'))}",'mobile generic Quick Entry');
+  const launcherGeometry=await c.call("function(){const footer=document.querySelector('.quick-modal:not(.contextual-quick-modal)>footer'),receipt=footer?.querySelector('.receipt-quick-launch'),actions=[...footer?.querySelectorAll('button')||[]].filter(node=>node!==receipt);if(!footer||!receipt||actions.length<2)return null;const rr=receipt.getBoundingClientRect(),fr=footer.getBoundingClientRect(),ars=actions.map(node=>node.getBoundingClientRect()),style=getComputedStyle(receipt);const overlap=ars.some(r=>Math.max(0,Math.min(rr.right,r.right)-Math.max(rr.left,r.left))*Math.max(0,Math.min(rr.bottom,r.bottom)-Math.max(rr.top,r.top))>0);return {position:style.position,receipt:{left:rr.left,right:rr.right,top:rr.top,bottom:rr.bottom,width:rr.width,height:rr.height},footer:{left:fr.left,right:fr.right,top:fr.top,bottom:fr.bottom},overlap}}");
+  assert(launcherGeometry&&launcherGeometry.position==='static',`mobile receipt launcher must be a footer item: ${JSON.stringify(launcherGeometry)}`);
+  assert(!launcherGeometry.overlap,`mobile receipt launcher overlaps primary footer actions: ${JSON.stringify(launcherGeometry)}`);
+  assert(launcherGeometry.receipt.left>=launcherGeometry.footer.left-1&&launcherGeometry.receipt.right<=launcherGeometry.footer.right+1,'mobile receipt launcher stays within footer bounds');
+  assert(launcherGeometry.receipt.height>=40,'mobile receipt launcher is touch-safe');
+  await screenshot('receipt-local-mobile-quick-entry');
+  const mobileReceiptOpened=await c.call("function(){const button=document.querySelector('.receipt-quick-launch');button?.click();return Boolean(button)}");
+  assert(mobileReceiptOpened,'mobile receipt launcher opens inbox');
+  await waitFor("function(){return Boolean(document.querySelector('.receipt-inbox'))}",'mobile receipt inbox');
   const overflow = await c.call("function(){return Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}");
   assert(overflow <= 1, `mobile receipt inbox horizontal overflow ${overflow}px`);
   await screenshot('receipt-local-mobile-empty');
