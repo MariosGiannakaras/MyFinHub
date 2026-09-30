@@ -1,6 +1,6 @@
 /* Mobile-first finance-domain presentation. Desktop/tablet stay on the existing surfaces. */
 @media(max-width:680px){
-  .settings-actions button,.settings-draft-actions button{min-height:46px!important;height:auto!important}
+  .settings-actions button{min-height:46px!important;height:auto!important}
 
   /* Domain headings become concise task headers on phone. */
   .page-heading:has(+.savings-hero),
