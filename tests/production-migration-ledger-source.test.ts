@@ -45,7 +45,8 @@ const productionApplied=[
   "20260930114105_add_database_health_check.sql",
   "20260930114624_merge_database_health_contract.sql",
   "20260930115252_fix_database_health_history_state_check.sql",
-  "20260930122054_relational_finance_ledger_cutover.sql"
+  "20260930122054_relational_finance_ledger_cutover.sql",
+  "20260930122418_index_relational_finance_foreign_keys.sql"
 ] as const;
 
 const releasePending=[] as const;
