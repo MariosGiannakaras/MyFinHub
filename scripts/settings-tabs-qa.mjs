@@ -87,7 +87,7 @@ try{
         await screenshot('settings-accounts-new-bank-provider-picker-desktop');
         const providerSelected=await c.call("function(){const option=[...document.querySelectorAll('.account-management-provider-picker button[role=\"radio\"]')].find(node=>(node.textContent||'').includes('Πειραιώς'));if(!option)return false;option.click();return option.getAttribute('aria-checked')==='true'||true}");assert(providerSelected,'Piraeus can be selected as bank provider');
         await waitFor("function(){const option=[...document.querySelectorAll('.account-management-provider-picker button[role=\"radio\"]')].find(node=>(node.textContent||'').includes('Πειραιώς'));return option?.getAttribute('aria-checked')==='true'}",'selected Piraeus provider state');
-        await waitFor("function(){return Boolean(document.querySelector('.account-management-provider-preview'))}",'selected bank provider preview');
+        await waitFor("function(){const option=[...document.querySelectorAll('.account-management-provider-picker button[role=\"radio\"]')].find(node=>(node.textContent||'').includes('Πειραιώς'));return option?.getAttribute('aria-checked')==='true'&&option.classList.contains('active')&&Boolean(option.querySelector('.bank-brand-mark'))}",'selected Piraeus provider visual state');
         await screenshot('settings-accounts-new-bank-selected-desktop');
 
         const cash=await c.call("function(){const modal=document.querySelector('.account-management-modal');const button=[...(modal?.querySelectorAll('button')||[])].find(node=>(node.textContent||'').trim()==='Μετρητά');if(!button)return false;button.click();return true}");assert(cash,'New account modal can select cash');
