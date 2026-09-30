@@ -5,6 +5,7 @@ import { cardThemeClass } from '../lib/cardDesigns';
 import { cardLabel } from '../lib/cards';
 import { cardVaultErrorMessage, revealCardSecret } from '../lib/cardVaultClient';
 import type { CardBank, PaymentCard } from '../types';
+import './InteractivePaymentCard.css';
 
 type Secrets={pan?:string;expiry?:string;cvv?:string};
 
