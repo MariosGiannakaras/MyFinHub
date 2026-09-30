@@ -100,6 +100,8 @@
 
 
   /* Shared phone editor anatomy, including Quick Add: clear header, scroll body and persistent action zone. */
+  .modal-backdrop{box-sizing:border-box;padding-left:10px;padding-right:10px}
+  .quick-modal{width:100%;max-width:100%;box-sizing:border-box}
   .quick-modal{border-radius:22px 22px 0 0!important;background:rgba(248,251,255,.99)!important}
   .quick-modal:before{content:"";display:block;width:34px;height:4px;border-radius:999px;background:#ced8e6;margin:8px auto 2px}
   .quick-modal>header{position:sticky;top:0;z-index:4;background:rgba(248,251,255,.97);padding-top:10px!important;padding-bottom:9px!important}
