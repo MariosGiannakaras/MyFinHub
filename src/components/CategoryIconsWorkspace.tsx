@@ -1,12 +1,14 @@
 import { Archive, ArrowDown, ArrowUp, MoveRight, Pencil, Plus, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { categoryTree } from '../lib/categories';
-import { CATEGORY_ICON_PACKS, encodeCategoryIconValue, type CategoryIconPack } from '../lib/categoryIconRegistry';
+import { CATEGORY_ICON_PACKS, encodeCategoryIconValue } from '../lib/categoryIconRegistry';
 import {
+  activeCategoryIconPack,
   explicitCategoryIcon,
   explicitSubcategoryIcon,
   resolvedCategoryIcon,
   withCategoryIcon,
+  withCategoryIconPack,
   withSubcategoryIconOverride,
   type CategoryKind,
 } from '../lib/categoryIconPreferences';
@@ -37,7 +39,7 @@ type CategoryWorkspaceView='all'|'taxonomy'|'icons';
 
 export function CategoryIconsWorkspace({data,asOf,settings,onChange,onTaxonomyOperation,view='all'}:{data:FinanceData;asOf:string;settings:FinanceSettings;onChange:(settings:FinanceSettings)=>void;onTaxonomyOperation:(operation:TaxonomyOperation)=>void;view?:CategoryWorkspaceView}){
   const[kind,setKind]=useState<CategoryKind>('expense');
-  const[iconPack,setIconPack]=useState<CategoryIconPack>('lucide');
+  const iconPack=activeCategoryIconPack(settings);
   const[categoryDraft,setCategoryDraft]=useState('');
   const[subcategoryDrafts,setSubcategoryDrafts]=useState<Record<string,string>>({});
   const[editing,setEditing]=useState<EditingState>(null);
@@ -96,7 +98,7 @@ export function CategoryIconsWorkspace({data,asOf,settings,onChange,onTaxonomyOp
     {view==='icons'?<div className="category-icon-library" aria-label="Βιβλιοθήκες εικονιδίων">
       <div className="category-icon-library-head"><b>Βιβλιοθήκη εικονιδίων</b><small>Επίλεξε pack. Η επιλογή εφαρμόζεται στο picker που ανοίγεις από τη λίστα παρακάτω.</small></div>
       <div className="category-icon-pack-switcher category-icon-pack-switcher-global" role="group" aria-label="Πακέτο εικονιδίων">
-        {CATEGORY_ICON_PACKS.map(item=><button type="button" key={item.id} className={iconPack===item.id?'active':''} aria-pressed={iconPack===item.id} onClick={()=>setIconPack(item.id)} title={item.description}>
+        {CATEGORY_ICON_PACKS.map(item=><button type="button" key={item.id} className={iconPack===item.id?'active':''} aria-pressed={iconPack===item.id} onClick={()=>onChange(withCategoryIconPack(normalized,item.id))} title={item.description}>
           <span className="category-icon-pack-preview" aria-hidden="true"><CategoryIconGlyph iconKey={encodeCategoryIconValue(item.id,'coffee')} size={16}/><CategoryIconGlyph iconKey={encodeCategoryIconValue(item.id,'home')} size={16}/><CategoryIconGlyph iconKey={encodeCategoryIconValue(item.id,'wallet')} size={16}/></span>
           <span><b>{item.label}</b><small>{item.license}</small></span>
         </button>)}
