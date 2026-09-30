@@ -271,4 +271,13 @@ describe('completion UX contracts',()=>{
     expect(harness).toContain('if(shortcutIsTopmost)desktopChromeOverlaps.push');
   });
 
+
+  it('treats mobile fixed-chrome occlusion as a defect when final actions cannot scroll clear',()=>{
+    const harness=read('scripts/completion-geometry-qa.mjs');
+    expect(harness).toContain('const maxScroll=Math.max(0,result.scrollHeight-viewport.height)');
+    expect(harness).toContain('const atBottom=result.scrollY>=maxScroll-2');
+    expect(harness).toContain('if(viewport.mobile&&atBottom)assert(result.overlaps.length===0');
+    expect(harness).toContain('prevents final actions from scrolling clear');
+  });
+
 });
