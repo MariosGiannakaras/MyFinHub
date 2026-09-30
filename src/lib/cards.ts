@@ -5,7 +5,7 @@ const LEGACY_CARD_BANK_LABELS:Record<string,string>={
   piraeus:'ΠΕΙΡΑΙΩΣ',
   revolut:'REVOLUT',
   alpha:'ALPHA BANK',
-  payzy:'PAYZY',
+  payzy:'MAGENTA PAY',
   viva:'VIVA',
 };
 
