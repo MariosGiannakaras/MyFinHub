@@ -67,12 +67,12 @@ html[data-theme="dark"] .bank-brand-mark.bankmark-viva .bank-logo-image{filter:n
     grid-auto-rows:max-content!important;
   }
   .dashboard-approved .approved-account-card{
-    height:184px!important;
+    height:auto!important;
     min-height:184px!important;
-    max-height:184px!important;
+    max-height:none!important;
     align-self:start!important;
   }
-  .dashboard-approved .approved-account-body{height:72px!important;min-height:72px}
-  .dashboard-approved .approved-account-chart{height:76px!important;max-height:76px}
+  .dashboard-approved .approved-account-body{height:auto!important;min-height:72px}
+  .dashboard-approved .approved-account-chart{height:76px!important;min-height:76px;max-height:76px}
   .dashboard-approved .approved-account-actions{align-self:end}
 }
