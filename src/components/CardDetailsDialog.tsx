@@ -23,6 +23,7 @@ export function CardDetailsDialog({
   const titleId=useId();
   const descriptionId=useId();
   const errorId=useId();
+  const noticeId=useId();
   const [pan,setPan]=useState('');
   const [expiry,setExpiry]=useState('');
   const [cvv,setCvv]=useState('');
@@ -39,20 +40,21 @@ export function CardDetailsDialog({
     if(!card.vaultRef){setNotice(card.last4?`Η κάρτα έχει μόνο τα παλιότερα τελευταία 4 ψηφία •••• ${card.last4}. Τα πλήρη στοιχεία δεν υπάρχουν ακόμη στο card vault· συμπλήρωσέ τα μία φορά για ασφαλή συγχρονισμό.`:'Δεν υπάρχουν ακόμη πλήρη στοιχεία στο card vault. Συμπλήρωσέ τα και αποθήκευσε.');return}
     setLoading(true);
     void (async()=>{
-      let nextPan='';let nextExpiry='';let nextCvv='';let loadMessage='';
+      let nextPan='';let nextExpiry='';let nextCvv='';let loadMessage='';let loadNotice='';
       try{
         const secret=await revealCardSecret(card.id);
         nextPan=secret.pan??'';
         nextExpiry=secret.expiry??'';
         nextCvv=secret.cvv??'';
       }catch(loadError){
-        if(loadError instanceof CardVaultClientError&&loadError.code==='CARD_SECRET_NOT_FOUND')setNotice(card.last4?`Δεν βρέθηκαν πλήρη στοιχεία στο card vault. Τα •••• ${card.last4} είναι μόνο metadata· συμπλήρωσε ξανά PAN/λήξη και, αν θέλεις, CVV.`:'Δεν βρέθηκαν πλήρη στοιχεία στο card vault. Συμπλήρωσέ τα και αποθήκευσε.');
+        if(loadError instanceof CardVaultClientError&&loadError.code==='CARD_SECRET_NOT_FOUND')loadNotice=card.last4?`Δεν βρέθηκαν πλήρη στοιχεία στο card vault. Τα •••• ${card.last4} είναι μόνο metadata· συμπλήρωσε ξανά PAN/λήξη και, αν θέλεις, CVV.`:'Δεν βρέθηκαν πλήρη στοιχεία στο card vault. Συμπλήρωσέ τα και αποθήκευσε.';
         else loadMessage=cardVaultErrorMessage(loadError);
       }
       if(cancelled)return;
       setPan(formatCardNumberInput(nextPan));
       setExpiry(formatCardExpiryInput(nextExpiry));
       setCvv(nextCvv);
+      setNotice(loadNotice);
       setError(loadMessage);
     })().finally(()=>{if(!cancelled)setLoading(false)});
     return ()=>{cancelled=true};
@@ -79,7 +81,7 @@ export function CardDetailsDialog({
     className="app-card-details-dialog"
     role="dialog"
     ariaLabelledBy={titleId}
-    ariaDescribedBy={error?`${descriptionId} ${errorId}`:descriptionId}
+    ariaDescribedBy={[descriptionId,notice?noticeId:'',error?errorId:''].filter(Boolean).join(' ')}
     busy={busy}
     motionMode={motionMode}
     preferredFocus='[data-autofocus="true"]'
@@ -91,7 +93,7 @@ export function CardDetailsDialog({
       <label><span>Λήξη</span><AppTextInput autoComplete="cc-exp" inputMode="numeric" maxLength={5} value={expiry} disabled={loading} invalid={Boolean(error)} aria-label="Λήξη κάρτας" placeholder="MM/YY" onChange={event=>{setExpiry(formatCardExpiryInput(event.target.value));clearError()}}/></label>
       <label><span>CVV</span><AppTextInput autoComplete="cc-csc" inputMode="numeric" maxLength={4} value={cvv} disabled={loading} invalid={Boolean(error)} aria-label="CVV κάρτας" placeholder={requireCvv?'CVV':'Άφησέ το κενό για διατήρηση'} onChange={event=>{setCvv(event.target.value.replace(/\D/g,'').slice(0,4));clearError()}}/></label>
       <div className="app-card-details-security-note" role="note"><CreditCard aria-hidden="true"/><span>Δεν εφαρμόζεται Luhn ή σταθερό μήκος PAN. Κρατάμε μόνο αριθμητικά ψηφία, ώστε να μη μπλοκάρονται έγκυρες κάρτες διαφορετικών δικτύων.</span></div>
-      {notice?<div className="app-card-details-notice" role="status">{notice}</div>:null}
+      {notice?<div id={noticeId} className="app-card-details-notice" role="status">{notice}</div>:null}
       {error?<FormError id={errorId}>{error}</FormError>:null}
     </div>
     <footer>
