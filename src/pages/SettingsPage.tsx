@@ -51,6 +51,11 @@ function cloneSettings(settings: FinanceSettings): FinanceSettings {
     incomeCategoryTree: categoryTree(settings, 'income').map((item) => ({ ...item, subcategories: [...item.subcategories] })),
     categoryIcons: { ...(settings.categoryIcons ?? {}) },
     subcategoryIcons: { ...(settings.subcategoryIcons ?? {}) },
+    categoryIconPack: settings.categoryIconPack,
+    categoryIconPackSelections: Object.fromEntries(Object.entries(settings.categoryIconPackSelections ?? {}).map(([key, packs]) => [key, { ...packs }])),
+    subcategoryIconPackSelections: Object.fromEntries(Object.entries(settings.subcategoryIconPackSelections ?? {}).map(([key, packs]) => [key, { ...packs }])),
+    categoryIconColors: { ...(settings.categoryIconColors ?? {}) },
+    subcategoryIconColors: { ...(settings.subcategoryIconColors ?? {}) },
     categoryIdentities: Object.fromEntries(
       Object.entries(settings.categoryIdentities ?? {}).map(([id, record]) => [
         id,
