@@ -217,3 +217,8 @@
   .credit-card-redesign-page .deleted-credit-history .semantic-table td:nth-child(2)::before{content:"Τύπος"}
   .credit-card-redesign-page .deleted-credit-history .semantic-table td:nth-child(3)::before{content:"Περιγραφή"}
 }
+
+.credit-history-more{margin-top:10px;justify-self:start}
+@media(max-width:680px){
+  .credit-history-more{width:100%;min-height:44px;justify-content:center}
+}
