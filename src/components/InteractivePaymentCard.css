@@ -1,6 +1,6 @@
 /* InteractivePaymentCard owns its internal geometry.
- * Do not depend on #myfinhub-card-stack selectors: that component is a separate
- * credit-card renderer with the same visual vocabulary but a different DOM owner.
+ * Do not depend on the separate canonical credit-stack host selectors: that renderer
+ * shares the visual vocabulary but has a different DOM owner.
  */
 .prototype-payment-card .card-inner{
   position:absolute;inset:0;z-index:2;
