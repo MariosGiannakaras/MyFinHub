@@ -17,12 +17,40 @@ mkdirSync(evidenceRoot,{recursive:true});
 const baseUrl=process.env.RHEOMIQ_QA_URL||'http://127.0.0.1:5173/qa.html';
 const browser=process.env.MYFINHUB_QA_PRIMARY_BROWSER||execFileSync('bash',['-lc','command -v chromium || command -v chromium-browser || command -v google-chrome'],{encoding:'utf8'}).trim();
 if(!browser)throw new Error('Chrome/Chromium is required for final screenshots.');
-const port=9238;
-const profile='/tmp/myfinhub-final-screenshots-chrome';
-rmSync(profile,{recursive:true,force:true});
-const child=spawn(browser,['--headless=new',`--remote-debugging-port=${port}`,'--remote-debugging-address=127.0.0.1',`--user-data-dir=${profile}`,'--no-sandbox','--disable-gpu','--disable-dev-shm-usage','--no-first-run','--no-default-browser-check','about:blank'],{stdio:'ignore'});
+const basePort=9238;
+const profileBase='/tmp/myfinhub-final-screenshots-chrome';
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
-async function waitHttp(url){for(let i=0;i<100;i++){try{const response=await fetch(url);if(response.ok)return}catch{}await sleep(150)}throw new Error(`Timed out waiting for ${url}`)}
+const cleanProfile=profile=>{try{rmSync(profile,{recursive:true,force:true,maxRetries:8,retryDelay:150})}catch{}};
+const trimDiagnostics=value=>{const text=String(value||'').trim();return text?text.slice(-6000):'(no browser stderr/stdout captured)'};
+async function stopBrowser(child){if(!child||child.exitCode!==null)return;await new Promise(resolve=>{const timer=setTimeout(()=>{child.kill('SIGKILL');resolve()},2000);child.once('exit',()=>{clearTimeout(timer);resolve()});child.kill('SIGTERM')})}
+async function launchBrowser(){
+  let lastError=null;
+  for(let attempt=0;attempt<2;attempt+=1){
+    const port=basePort+attempt;
+    const profile=`${profileBase}-${attempt+1}`;
+    cleanProfile(profile);
+    let diagnostics='',spawnError='';
+    const child=spawn(browser,['--headless=new',`--remote-debugging-port=${port}`,'--remote-debugging-address=127.0.0.1',`--user-data-dir=${profile}`,'--no-sandbox','--disable-gpu','--disable-dev-shm-usage','--no-first-run','--no-default-browser-check','about:blank'],{stdio:['ignore','pipe','pipe']});
+    const capture=stream=>stream?.on('data',chunk=>{diagnostics+=chunk.toString();if(diagnostics.length>12000)diagnostics=diagnostics.slice(-12000)});
+    capture(child.stdout);capture(child.stderr);child.on('error',error=>{spawnError=error.stack||error.message});
+    try{
+      for(let i=0;i<100;i+=1){
+        if(spawnError)throw new Error(`Browser spawn failed: ${spawnError}`);
+        if(child.exitCode!==null)throw new Error(`Browser exited before CDP became ready (exit ${child.exitCode}).\n${trimDiagnostics(diagnostics)}`);
+        try{const response=await fetch(`http://127.0.0.1:${port}/json/version`);if(response.ok)return {child,port,profile}}catch{}
+        await sleep(200);
+      }
+      throw new Error(`Browser did not expose CDP port ${port} within 20s.\n${trimDiagnostics(diagnostics)}`);
+    }catch(error){
+      lastError=error;
+      await stopBrowser(child);
+      cleanProfile(profile);
+      if(attempt===0)await sleep(750);
+    }
+  }
+  throw lastError??new Error('Final screenshot browser bootstrap failed.');
+}
+let browserSession=null;
 class Cdp{
   constructor(url){this.url=url;this.id=0;this.pending=new Map()}
   async open(){await new Promise((resolve,reject)=>{this.ws=new WebSocket(this.url);this.ws.onopen=resolve;this.ws.onerror=reject;this.ws.onmessage=event=>{const message=JSON.parse(event.data);if(!message.id)return;const pending=this.pending.get(message.id);if(!pending)return;this.pending.delete(message.id);message.error?pending.reject(new Error(message.error.message)):pending.resolve(message.result)}})}
@@ -38,7 +66,8 @@ const screenshots=[];
 const clean=value=>String(value).replace(/[^A-Za-z0-9._-]+/g,'-').replace(/^-+|-+$/g,'')||'capture';
 
 try{
-  await waitHttp(`http://127.0.0.1:${port}/json/version`);
+  browserSession=await launchBrowser();
+  const {port}=browserSession;
   const target=await fetch(`http://127.0.0.1:${port}/json/new?${encodeURIComponent(baseUrl)}`,{method:'PUT'}).then(r=>r.json());
   const c=new Cdp(target.webSocketDebuggerUrl);await c.open();await c.send('Page.enable');
   const viewport=(width,height)=>c.send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<=680});
@@ -90,6 +119,8 @@ try{
   writeFileSync(resolve(evidenceRoot,'manifest.json'),`${JSON.stringify(manifest,null,2)}\n`);
   console.log(`Final screenshot QA passed: ${screenshots.length} screenshots across application pages, Settings tabs and auth states.`);
 }finally{
-  child.kill('SIGTERM');
-  rmSync(profile,{recursive:true,force:true});
+  if(browserSession){
+    await stopBrowser(browserSession.child);
+    cleanProfile(browserSession.profile);
+  }
 }
