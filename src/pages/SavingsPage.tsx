@@ -20,6 +20,7 @@ import { savingsGoalBalance, savingsGoalProgress } from '../lib/savingsGoals';
 import { accountDisplayName, ratioPercent } from '../lib/ui';
 import { userErrorMessage } from '../lib/userMessage';
 import type { FinanceData, FinanceEvent, SavingSource, SavingsGoal } from '../types';
+import './SavingsCompletion.css';
 
 const ACTIONS:Array<{source:SavingSource;title:string;description:string;icon:typeof PiggyBank}>=[
   {source:'pay_and_save',title:'Pay & Save',description:'Στρογγυλοποίηση αγοράς που μεταφέρεται στην αποταμίευση.',icon:Sparkles},
