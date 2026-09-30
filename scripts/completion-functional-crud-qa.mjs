@@ -137,8 +137,11 @@ try{
   assert(cardsEdit,'Cards exposes profile editing separately from secure details');
   await waitFor("function(){return Boolean(document.querySelector('#card-create-title'))&&document.querySelector('#card-create-title').textContent.includes('Επεξεργασία κάρτας')}",'Cards profile editor');
   await setByLabel('Όνομα κάρτας','QA Audit Card Profile');
+  await setByLabel('Δίκτυο','mastercard');
+  const alternateDesign=await c.call(`function(){const visible=${visible};const button=[...document.querySelectorAll('.card-create-modal .design-option')].find(item=>visible(item)&&item.getAttribute('aria-checked')!=='true');button?.click();return Boolean(button)}`);
+  assert(alternateDesign,'card profile exposes an alternate visual design');
   await clickText('.card-create-modal button','Αποθήκευση αλλαγών');
-  await waitFor("function(){return document.body.textContent.includes('QA Audit Card Profile')}",'updated Cards profile nickname');
+  await waitFor("function(){const card=[...document.querySelectorAll('.prototype-payment-card')].find(node=>(node.textContent||'').includes('QA Audit Card Profile'));return Boolean(card&&card.querySelector('[data-network=\"MASTERCARD\"]'))}",'updated Cards profile keeps explicit Mastercard network after design change');
   const secureStillSeparate=await c.call(`function(){const visible=${visible};return [...document.querySelectorAll('button[aria-label^="Ασφαλή στοιχεία"]')].some(visible)&&!document.querySelector('.app-card-details-dialog')}`);
   assert(secureStillSeparate,'Cards profile save does not open or merge the secure-details dialog');
   await shot('cards-profile-updated');
