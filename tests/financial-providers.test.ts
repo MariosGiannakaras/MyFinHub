@@ -19,10 +19,14 @@ describe('financial provider registry',()=>{
     expect(new Set(ids).size).toBe(ids.length);
     expect(ids).toEqual(expect.arrayContaining(['piraeus','alpha','national','eurobank','revolut','viva','payzy','paypal']));
     for(const provider of FINANCIAL_PROVIDERS){
-      expect(provider.logoAssetKey).toBeTruthy();
-      expect(provider.wordmarkAssetKey).toBeTruthy();
+      if(provider.id!=='payzy'){
+        expect(provider.logoAssetKey).toBeTruthy();
+        expect(provider.wordmarkAssetKey).toBeTruthy();
+      }
       expect(bankBrandKey(provider.id,provider.displayName)).toBe(provider.id);
     }
+    expect(FINANCIAL_PROVIDERS.find(item=>item.id==='payzy')?.logoAssetKey).toBeNull();
+    expect(FINANCIAL_PROVIDERS.find(item=>item.id==='payzy')?.wordmarkAssetKey).toBeNull();
     expect(financialProviderId('Τράπεζα Πειραιώς')).toBe('piraeus');
     expect(financialProviderId('NBG')).toBe('national');
     expect(financialProviderId('PayPal')).toBe('paypal');
