@@ -253,7 +253,6 @@ export function AccountManagementSettings({data,settings,onChange}:{data:Finance
   const editorAccount=editor&&editor.source!=='new'?accounts.find(account=>account.id===editor.id):undefined;
   const editorDeletable=Boolean(editorAccount&&editor?.source==='custom'&&!accountReferenced(data,editor.id));
   const editorCanBeDefault=Boolean(editor&&(editor.mode==='cash'?editor.cashType!=='reserve':editor.bankAccountCategory!=='term'));
-  const selectedProvider=editor?.mode==='bank'?(providers.find(item=>item.id===editor.providerId)??financialProviderById(editor.providerId)):undefined;
 
   return <div className="account-management-settings settings-tab-stack settings-accounts-tab">
     <section className="panel surface-raised account-management-defaults">
