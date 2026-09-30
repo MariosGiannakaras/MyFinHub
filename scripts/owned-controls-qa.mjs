@@ -55,7 +55,7 @@ try{
   for(const [selector,label,heading,action,dialogClass] of routeChecks){
     console.log(`Owned controls QA: ${heading}`);
     if(selector.includes('mobile-more'))await openMore();
-    await clickText(selector,label);await waitFor("function(heading){return (document.querySelector('#main-workspace h1')?.textContent||'').includes(heading)}",heading,[heading]);
+    if(selector==='.mobile-nav button')await clickAria(label);else await clickText(selector,label);await waitFor("function(heading){return (document.querySelector('#main-workspace h1')?.textContent||'').includes(heading)}",heading,[heading]);
     await assertNoNativeSelects(heading);
     if(heading==='Δανεικά / Οφειλές')await clickVisibleText('button',action);else await clickText('button',action);
     await waitFor("function(dialogClass){return Boolean(document.querySelector('.'+dialogClass))}",`${heading} editor`,[dialogClass]);await assertOwned(dialogClass,heading);await exerciseNestedSelect(dialogClass,heading);
@@ -64,7 +64,7 @@ try{
   }
 
   console.log('Owned controls QA: Cards creation');
-  await clickText('.mobile-nav button','Κάρτες');await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Κάρτες')}",'Cards heading');await assertNoNativeSelects('Cards');
+  await clickAria('Κάρτες');await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Κάρτες')}",'Cards heading');await assertNoNativeSelects('Cards');
   assert(await c.call("function(){const button=[...document.querySelectorAll('.bank-add-btn')].find(item=>!item.disabled);if(!button)return false;button.click();return true}"),'open card creation');
   await waitFor("function(){return Boolean(document.querySelector('.card-create-modal'))}",'card creation dialog');await assertOwned('card-create-modal','Card creation');await exerciseNestedSelect('card-create-modal','Card creation');
   assert(await c.call("function(){const button=document.querySelector('.card-create-modal .close-picker');if(!button)return false;button.click();return true}"),'close card creation');await waitFor("function(){return !document.querySelector('.card-create-modal')}",'card creation close');
