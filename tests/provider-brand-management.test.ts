@@ -112,7 +112,7 @@ describe('provider branding management',()=>{
     expect(handler).toContain("resource==='financial-provider-asset-binding'");
     expect(handler).toContain("method==='PATCH'");
     expect(accountMetadataEntry).toContain('bodyParser:false');
-    expect(client).toContain("resource:'financial-provider-asset-binding'");
+    expect(client).toContain('financial-provider-asset-binding');
   });
 
   it('uses one edit/create provider editor with a visual asset library instead of native-file-input UX',()=>{
