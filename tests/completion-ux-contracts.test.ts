@@ -4,16 +4,20 @@ import { describe, expect, it } from 'vitest';
 const read=(path:string)=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 
 describe('completion UX contracts',()=>{
-  it('keeps mobile Quick Entry compact and reserves scroll clearance above fixed chrome',()=>{
+  it('keeps mobile Quick Entry inside bottom navigation instead of overlaying page content',()=>{
     const quick=read('src/styles/command-palette-contextual-entry.css');
     const shell=read('src/styles/mobile-app-shell.css');
-    expect(quick).toContain('.mobile-quick-action{display:grid;place-items:center');
-    expect(quick).toContain('width:48px;height:48px');
-    expect(quick).toContain('.mobile-quick-action>span{position:absolute;width:1px');
-    expect(shell).toContain('padding-bottom:calc(146px + env(safe-area-inset-bottom,0px))');
-    expect(shell).toContain('scroll-padding-bottom:calc(146px + env(safe-area-inset-bottom,0px))');
+    const coordination=read('src/styles/root-responsive-coordination.css');
     const appShell=read('src/components/AppShell.tsx');
-    expect(appShell).toContain("{page!=='settings'?<button type=\"button\" className=\"mobile-quick-action\"");
+    expect(appShell).toContain('className="mobile-nav-quick"');
+    expect(appShell).toContain('data-global-quick-entry="mobile"');
+    expect(appShell).toContain('<span>Νέα</span>');
+    expect(appShell).not.toContain('className="mobile-quick-action"');
+    expect(quick).not.toContain('.mobile-quick-action{');
+    expect(coordination).toContain('grid-template-columns:repeat(6,minmax(0,1fr))');
+    expect(shell).toContain('.mobile-nav .mobile-nav-quick');
+    expect(shell).toContain('padding-bottom:calc(94px + env(safe-area-inset-bottom,0px))');
+    expect(shell).toContain('scroll-padding-bottom:calc(94px + env(safe-area-inset-bottom,0px))');
     const authShell=read('src/styles/auth-session-shell.css');
     expect(authShell).toContain('bottom:calc(88px + env(safe-area-inset-bottom,0px))');
   });
