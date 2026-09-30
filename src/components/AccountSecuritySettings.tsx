@@ -97,7 +97,7 @@ export function AccountSecuritySettings({currentEmail}:{currentEmail?:string|nul
   };
 
   const submitPassword=async()=>{
-    if(currentPassword.length<8){setAuthMessage('Συμπλήρωσε τον τρέχοντα κωδικό.');return;}
+    if(!currentPassword){setAuthMessage('Συμπλήρωσε τον τρέχοντα κωδικό.');return;}
     const passwordError=accountPasswordPolicyError(newPassword);if(passwordError){setAuthMessage(passwordError);return;}
     if(newPassword!==confirmPassword){setAuthMessage('Η επιβεβαίωση του νέου κωδικού δεν ταιριάζει.');return;}
     if(newPassword===currentPassword){setAuthMessage('Ο νέος κωδικός πρέπει να είναι διαφορετικός από τον τρέχοντα.');return;}
