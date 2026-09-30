@@ -12,20 +12,36 @@ function rankedVariant(asset:FinancialProviderAsset,tone:ProviderBrandSurfaceTon
   return 4;
 }
 
-function pick(provider:FinancialProvider,role:FinancialProviderAssetRole,tone:ProviderBrandSurfaceTone){
+function legacyPick(provider:FinancialProvider,role:FinancialProviderAssetRole,tone:ProviderBrandSurfaceTone){
   return [...(provider.assets??[])]
     .filter(asset=>asset.role===role&&Number.isFinite(rankedVariant(asset,tone)))
     .sort((a,b)=>rankedVariant(a,tone)-rankedVariant(b,tone)||a.variant.localeCompare(b.variant)||a.assetKey.localeCompare(b.assetKey))[0]?.url??null;
 }
 
+function boundAsset(provider:FinancialProvider,role:FinancialProviderAssetRole,variant:'universal'|'light'|'dark'){
+  const key=provider.bindings?.find(binding=>binding.role===role&&binding.variant===variant)?.assetKey;
+  return key?(provider.assets??[]).find(asset=>asset.assetKey===key):undefined;
+}
+
+function boundUrl(provider:FinancialProvider,role:FinancialProviderAssetRole,tone:ProviderBrandSurfaceTone){
+  return boundAsset(provider,role,tone)?.url??boundAsset(provider,role,'universal')?.url??null;
+}
+
+function logoUrl(provider:FinancialProvider,tone:ProviderBrandSurfaceTone){
+  return boundUrl(provider,'logo',tone)??legacyPick(provider,'logo',tone)??provider.logoUrl??null;
+}
+
+function wordmarkUrl(provider:FinancialProvider,tone:ProviderBrandSurfaceTone){
+  return boundUrl(provider,'wordmark',tone)??legacyPick(provider,'wordmark',tone)??provider.wordmarkUrl??logoUrl(provider,tone);
+}
+
 export function providerBrandUrl(provider:FinancialProvider|undefined,role:FinancialProviderAssetRole,tone:ProviderBrandSurfaceTone){
   if(!provider)return null;
-  if(role==='logo')return pick(provider,'logo',tone)??provider.logoUrl??null;
-  if(role==='wordmark')return pick(provider,'wordmark',tone)??provider.wordmarkUrl??pick(provider,'logo',tone)??provider.logoUrl??null;
-  return pick(provider,'card-mark',tone)
-    ??pick(provider,'wordmark',tone)
-    ??provider.wordmarkUrl
-    ??pick(provider,'logo',tone)
-    ??provider.logoUrl
-    ??null;
+  if(role==='logo')return logoUrl(provider,tone);
+  if(role==='wordmark')return wordmarkUrl(provider,tone);
+  // For cards, tone describes the card background itself. The application theme is irrelevant.
+  return boundUrl(provider,'card-mark',tone)
+    ??legacyPick(provider,'card-mark',tone)
+    ??wordmarkUrl(provider,tone)
+    ??logoUrl(provider,tone);
 }
