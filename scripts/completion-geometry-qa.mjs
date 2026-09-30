@@ -46,6 +46,18 @@ const analysisFn=`function(){
       if(ratio>.12)overlaps.push({chrome:selector(fixed),action:selector(action),ratio:Number(ratio.toFixed(2)),actionRect:rect(action)});
     }
   }
+  const navLabels=[...document.querySelectorAll('.mobile-nav button>span')].filter(visible);
+  const navLabelIssues=[];
+  for(let i=0;i<navLabels.length;i+=1){
+    const label=navLabels[i],lr=label.getBoundingClientRect(),button=label.closest('button'),br=button?.getBoundingClientRect();
+    if(br&&(lr.left<br.left-1||lr.right>br.right+1))navLabelIssues.push({kind:'outside-button',text:(label.textContent||'').trim(),label:rect(label),button:rect(button)});
+    for(let j=i+1;j<navLabels.length;j+=1){
+      const other=navLabels[j],or=other.getBoundingClientRect();
+      const width=Math.max(0,Math.min(lr.right,or.right)-Math.max(lr.left,or.left));
+      const height=Math.max(0,Math.min(lr.bottom,or.bottom)-Math.max(lr.top,or.top));
+      if(width>0.5&&height>0.5)navLabelIssues.push({kind:'label-overlap',a:(label.textContent||'').trim(),b:(other.textContent||'').trim(),width,height});
+    }
+  }
   const desktopShortcut=document.querySelector('.period-attention-shortcut');
   const desktopChromeOverlaps=[];
   if(desktopShortcut&&visible(desktopShortcut)){
@@ -64,7 +76,7 @@ const analysisFn=`function(){
   const docOverflow=Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth;
   const main=document.querySelector('#main-workspace');
   const mainRect=main?rect(main):null;
-  return {docOverflow,rogue,overlaps:overlaps.slice(0,20),desktopChromeOverlaps,mainRect,scrollY,scrollHeight:document.documentElement.scrollHeight};
+  return {docOverflow,rogue,overlaps:overlaps.slice(0,20),navLabelIssues,desktopChromeOverlaps,mainRect,scrollY,scrollHeight:document.documentElement.scrollHeight};
 }`;
 try{
   await waitHttp(`http://127.0.0.1:${port}/json/version`);
@@ -84,6 +96,7 @@ try{
         const result=await c.call(analysisFn);
         assert(result.docOverflow<=1,`${viewport.name}/${page}@${y}: document horizontal overflow ${result.docOverflow}px`);
         assert(result.rogue.length===0,`${viewport.name}/${page}@${y}: off-viewport controls ${JSON.stringify(result.rogue)}`);
+        if(viewport.mobile)assert(result.navLabelIssues.length===0,`${viewport.name}/${page}@${y}: bottom-nav label collision ${JSON.stringify(result.navLabelIssues)}`);
         const maxScroll=Math.max(0,result.scrollHeight-viewport.height);
         const atBottom=result.scrollY>=maxScroll-2;
         if(viewport.mobile&&atBottom)assert(result.overlaps.length===0,`${viewport.name}/${page}@${y}: fixed mobile chrome prevents final actions from scrolling clear ${JSON.stringify(result.overlaps)}`);
