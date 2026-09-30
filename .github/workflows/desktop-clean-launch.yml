@@ -9,6 +9,12 @@ on:
       - tests/desktop-*.test.ts
       - package.json
       - package-lock.json
+      - vite.config.ts
+      - tsconfig.json
+      - tsconfig.app.json
+      - tsconfig.node.json
+      - scripts/sync-ocr-assets.mjs
+      - scripts/bundle-budget.mjs
       - .nvmrc
       - .github/workflows/desktop-clean-launch.yml
   push:
@@ -19,6 +25,12 @@ on:
       - tests/desktop-*.test.ts
       - package.json
       - package-lock.json
+      - vite.config.ts
+      - tsconfig.json
+      - tsconfig.app.json
+      - tsconfig.node.json
+      - scripts/sync-ocr-assets.mjs
+      - scripts/bundle-budget.mjs
       - .nvmrc
       - .github/workflows/desktop-clean-launch.yml
 
