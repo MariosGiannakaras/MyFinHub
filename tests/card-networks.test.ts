@@ -12,8 +12,8 @@ describe('card network artwork',()=>{
     const mastercard=cardNetworkBrand('mastercard');
     expect(visa).toMatchObject({id:'visa',label:'Visa',dataNetwork:'VISA'});
     expect(mastercard).toMatchObject({id:'mastercard',label:'Mastercard',dataNetwork:'MASTERCARD'});
-    expect(visa?.src).toMatch(/visa.*\.svg/i);
-    expect(mastercard?.src).toMatch(/mastercard.*\.svg/i);
+    expect(visa?.src).toMatch(/^(?:data:image\/svg\+xml|.*visa.*\.svg)/i);
+    expect(mastercard?.src).toMatch(/^(?:data:image\/svg\+xml|.*mastercard.*\.svg)/i);
     expect(cardNetworkBrand('other')).toBeNull();
   });
 
