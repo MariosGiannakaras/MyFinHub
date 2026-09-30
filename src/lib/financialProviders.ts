@@ -21,7 +21,7 @@ export const FINANCIAL_PROVIDERS:FinancialProvider[]=[
   {id:'eurobank',displayName:'Eurobank',shortName:'Eurobank',kind:'bank',kindLabel:'Τράπεζα',countryCode:'GR',logoAssetKey:'generic',wordmarkAssetKey:'generic',sortOrder:40},
   {id:'revolut',displayName:'Revolut',shortName:'Revolut',kind:'fintech',kindLabel:'Ψηφιακός πάροχος',countryCode:'LT',logoAssetKey:'revolut',wordmarkAssetKey:'revolut',sortOrder:50},
   {id:'viva',displayName:'Viva.com',shortName:'Viva',kind:'payment',kindLabel:'Πάροχος πληρωμών',countryCode:'GR',logoAssetKey:'generic',wordmarkAssetKey:'viva',sortOrder:60},
-  {id:'payzy',displayName:'payzy by COSMOTE',shortName:'payzy',kind:'wallet',kindLabel:'Ψηφιακό πορτοφόλι',countryCode:'GR',logoAssetKey:'payzy',wordmarkAssetKey:'payzy',sortOrder:70},
+  {id:'payzy',displayName:'Magenta Pay',shortName:'Magenta Pay',kind:'wallet',kindLabel:'Ψηφιακό πορτοφόλι',countryCode:'GR',logoAssetKey:'payzy',wordmarkAssetKey:'payzy',sortOrder:70},
   {id:'paypal',displayName:'PayPal',shortName:'PayPal',kind:'wallet',kindLabel:'Ψηφιακό πορτοφόλι',countryCode:'US',logoAssetKey:'generic',wordmarkAssetKey:'paypal',sortOrder:80},
 ];
 
@@ -54,7 +54,7 @@ export function financialProviderId(...values:(string|undefined|null)[]){
   if(text.includes('eurobank'))return 'eurobank';
   if(text.includes('revolut'))return 'revolut';
   if(text.includes('viva'))return 'viva';
-  if(text.includes('payzy'))return 'payzy';
+  if(text.includes('payzy')||text.includes('magenta pay'))return 'payzy';
   if(text.includes('paypal'))return 'paypal';
   return '';
 }
