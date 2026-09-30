@@ -19,7 +19,7 @@ beforeEach(()=>{
       stored={ciphertext:row.ciphertext,iv:row.iv,auth_tag:row.auth_tag,key_version:row.key_version};
       return new Response('',{status:201,headers:{'content-type':'application/json'}});
     }
-    if(method==='DELETE'){stored=null;return new Response('',{status:204})}
+    if(method==='DELETE'){stored=null;return new Response(null,{status:204})}
     return new Response('{}',{status:405});
   }));
 });
