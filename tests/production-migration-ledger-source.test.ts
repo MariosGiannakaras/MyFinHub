@@ -43,7 +43,8 @@ const productionApplied=[
   "20260930105145_make_state_writes_history_atomic.sql",
   "20260930105508_index_provider_asset_foreign_keys.sql",
   "20260930114105_add_database_health_check.sql",
-  "20260930114624_merge_database_health_contract.sql"
+  "20260930114624_merge_database_health_contract.sql",
+  "20260930115252_fix_database_health_history_state_check.sql"
 ] as const;
 
 describe('production migration ledger source contract',()=>{
@@ -71,10 +72,10 @@ describe('production migration ledger source contract',()=>{
   });
 
   it('keeps the final provider/history health contract represented as a forward migration',()=>{
-    const health=readFileSync('supabase/migrations/20260930114624_merge_database_health_contract.sql','utf8');
+    const health=readFileSync('supabase/migrations/20260930115252_fix_database_health_history_state_check.sql','utf8');
     expect(health).toContain("'productionReady'");
     expect(health).toContain("'unbalanced_internal_events'");
-    expect(health).toContain("'history_current_point_revision_mismatches'");
+    expect(health).toContain("'history_current_point_state_mismatches'");
     expect(health).toContain('security invoker');
   });
 });
