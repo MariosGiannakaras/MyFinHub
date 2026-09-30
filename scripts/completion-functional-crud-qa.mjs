@@ -96,7 +96,29 @@ try{
   await waitFor("function(){return document.body.textContent.includes('QA Audit Person')&&document.body.textContent.includes('QA Audit Lending')}",'saved lending movement');
   await shot('lending-created');
 
-  console.log('Completion functional QA: Card profile edit stays separate from vault details');
+  console.log('Completion functional QA: Recurring create, edit, pause and reactivate');
+  await navigate('recurring');
+  await clickText('button','Νέο πάγιο');
+  await waitFor("function(){return Boolean(document.querySelector('#recurring-editor-title'))}",'new recurring editor');
+  await setByLabel('Όνομα','QA Audit Recurring');
+  await setByLabel('Προκαθορισμένο ποσό','19.90');
+  await clickText('.editor-dialog button','Αποθήκευση');
+  await waitFor("function(){return [...document.querySelectorAll('[data-recurring-status=active]')].some(row=>(row.textContent||'').includes('QA Audit Recurring'))}",'saved recurring item');
+  const editRecurring=await c.call(`function(){const visible=${visible};const row=[...document.querySelectorAll('[data-recurring-status=active]')].find(item=>visible(item)&&(item.textContent||'').includes('QA Audit Recurring'));const button=row?.querySelector('button[aria-label^="Επεξεργασία"]');button?.click();return Boolean(button)}`);
+  assert(editRecurring,'saved recurring item exposes edit');
+  await waitFor("function(){return Boolean(document.querySelector('#recurring-editor-title'))}",'recurring edit editor');
+  await setByLabel('Όνομα','QA Audit Recurring Updated');
+  await clickText('.editor-dialog button','Αποθήκευση');
+  await waitFor("function(){return [...document.querySelectorAll('[data-recurring-status=active]')].some(row=>(row.textContent||'').includes('QA Audit Recurring Updated'))}",'updated recurring item');
+  const pauseRecurring=await c.call(`function(){const visible=${visible};const row=[...document.querySelectorAll('[data-recurring-status=active]')].find(item=>visible(item)&&(item.textContent||'').includes('QA Audit Recurring Updated'));const button=row?.querySelector('button[aria-label^="Παύση"]');button?.click();return Boolean(button)}`);
+  assert(pauseRecurring,'recurring item can be paused');
+  await waitFor("function(){const root=document.querySelector('[data-inactive-recurring-history]');if(!root)return false;if(!root.open)root.open=true;return [...root.querySelectorAll('[data-recurring-status=paused]')].some(row=>(row.textContent||'').includes('QA Audit Recurring Updated'))}",'paused recurring history');
+  const reactivateRecurring=await c.call(`function(){const root=document.querySelector('[data-inactive-recurring-history]');if(root&&!root.open)root.open=true;const row=[...document.querySelectorAll('[data-recurring-status=paused]')].find(item=>(item.textContent||'').includes('QA Audit Recurring Updated'));const button=row?.querySelector('button[aria-label^="Ενεργοποίηση"]');button?.click();return Boolean(button)}`);
+  assert(reactivateRecurring,'paused recurring item can be reactivated');
+  await waitFor("function(){return [...document.querySelectorAll('[data-recurring-status=active]')].some(row=>(row.textContent||'').includes('QA Audit Recurring Updated'))}",'reactivated recurring item');
+  await shot('recurring-lifecycle-updated');
+
+    console.log('Completion functional QA: Card profile edit stays separate from vault details');
   await navigate('cards');
   const cardsEdit=await c.call(`function(){const visible=${visible};const button=[...document.querySelectorAll('button[aria-label^="Επεξεργασία κάρτας"]')].find(visible);button?.click();return Boolean(button)}`);
   assert(cardsEdit,'Cards exposes profile editing separately from secure details');
