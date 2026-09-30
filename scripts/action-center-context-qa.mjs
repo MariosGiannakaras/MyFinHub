@@ -116,6 +116,10 @@ try{
   await waitFor("function(id){return !document.querySelector(`[data-attention-id=\"${CSS.escape(id)}\"]`)}",'snoozed row removal',[snoozed]);
   const undone=await c.call("function(){const button=document.querySelector('.top-actions button[aria-label=\"Αναίρεση τελευταίας αλλαγής\"]');button?.click();return Boolean(button&&!button.disabled)}");assert(undone,'attention snooze exposes enabled undo');
   await waitFor("function(id){return Boolean(document.querySelector(`[data-attention-id=\"${CSS.escape(id)}\"]`))}",'snoozed row restored by undo',[snoozed]);
+  const dismissed=await c.call("function(){const row=[...document.querySelectorAll('.attention-row')].find(node=>!node.classList.contains('danger')&&Boolean(node.querySelector('button[aria-label^=\"Απόκρυψη\"]')));const button=row?.querySelector('button[aria-label^=\"Απόκρυψη\"]');const id=row?.getAttribute('data-attention-id');button?.click();return id||''}");assert(Boolean(dismissed),'non-danger item can be dismissed');
+  await waitFor("function(id){return !document.querySelector(`[data-attention-id=\"${CSS.escape(id)}\"]`)}",'dismissed row removal',[dismissed]);
+  const undoDismiss=await c.call("function(){const button=document.querySelector('.top-actions button[aria-label=\"Αναίρεση τελευταίας αλλαγής\"]');button?.click();return Boolean(button&&!button.disabled)}");assert(undoDismiss,'attention dismiss exposes enabled undo');
+  await waitFor("function(id){return Boolean(document.querySelector(`[data-attention-id=\"${CSS.escape(id)}\"]`))}",'dismissed row restored by undo',[dismissed]);
   await navigate('attention','empty');assert(await c.call("function(){return (document.querySelector('.attention-empty')?.textContent||'').includes('Δεν υπάρχει κάτι που χρειάζεται άμεση ενέργεια')}") ,'empty attention state');
   await navigate('attention','extreme',375,812);await noOverflow('attention mobile extreme');await noUnnamed('attention mobile extreme');await touchTargets('attention mobile extreme');await screenshot('action-center-mobile');
 
