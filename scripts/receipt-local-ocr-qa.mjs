@@ -135,6 +135,15 @@ try {
     });
   }`);
 
+  console.log('Receipt OCR QA: packaged local OCR assets are reachable');
+  const manifestUrl=new URL('/ocr/asset-manifest.json',baseUrl).href;
+  const manifestResponse=await fetch(manifestUrl);
+  assert(manifestResponse.ok,`OCR asset manifest unavailable: ${manifestResponse.status}`);
+  const manifest=await manifestResponse.json();
+  assert(manifest.tesseractJs==='7.0.0','OCR manifest pins Tesseract 7');
+  assert(Array.isArray(manifest.languages)&&manifest.languages.includes('ell')&&manifest.languages.includes('eng'),'OCR manifest includes Greek and English');
+  assert(Array.isArray(manifest.coreFiles)&&manifest.coreFiles.length>0,'OCR manifest includes local WASM core files');
+
   console.log('Receipt OCR QA: fast capture persists before OCR');
   await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}", 'QA workspace');
   await openReceiptInbox();
