@@ -126,4 +126,18 @@ describe('completion UX contracts',()=>{
     expect(planningCss).toContain('.planning-scheduled-more');
   });
 
+
+  it('applies persisted category icon families to every Dashboard semantic icon',()=>{
+    const dashboard=read('src/pages/DashboardPage.tsx');
+    const categoryIcons=[...dashboard.matchAll(/<FinanceIcon\\b[^>]*category=\\{[^>]+>/g)].map(match=>match[0]);
+    expect(categoryIcons.length).toBeGreaterThan(0);
+    for(const icon of categoryIcons)expect(icon).toContain('settings={data.state.settings}');
+  });
+
+  it('does not describe every card profile as an encrypted vault secret',()=>{
+    const cards=read('src/pages/CardsPage.tsx');
+    expect(cards).toContain('αποθηκευμένες στο προφίλ καρτών');
+    expect(cards).not.toContain('<small>Ενεργές κάρτες</small><strong>{activeCards.length}</strong><span>στο ασφαλές card vault</span>');
+  });
+
 });
