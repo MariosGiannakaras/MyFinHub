@@ -54,4 +54,43 @@ describe('completion UX contracts',()=>{
     expect(settingsCss).toContain('scroll-snap-type:x proximity');
     expect(settingsCss).toContain('mask-image:linear-gradient');
   });
+
+  it('keeps secondary mobile analysis behind explicit disclosure controls',()=>{
+    const dashboard=read('src/pages/DashboardPage.tsx');
+    const dashboardCss=read('src/styles/dashboard-history-mobile-reconciliation.css');
+    const planning=read('src/pages/PlanningPage.tsx');
+    const planningCss=read('src/styles/planning-forecast-workspace.css');
+    const reports=read('src/pages/ReportsPage.tsx');
+    const reportsCss=read('src/pages/ReportsPage.css');
+    const attention=read('src/pages/AttentionPage.tsx');
+    expect(dashboard).toContain('dashboard-mobile-disclosure');
+    expect(dashboard).toContain("mobileAnalyticsExpanded?'':'mobile-collapsed'");
+    expect(dashboardCss).toContain('.approved-chart-grid.mobile-collapsed');
+    expect(planning).toContain('planning-mobile-disclosure');
+    expect(planningCss).toContain('.planning-lower-grid.mobile-collapsed');
+    expect(reports).toContain('report-mobile-disclosure');
+    expect(reportsCss).toContain('.report-support-grid.mobile-collapsed');
+    expect(attention).toContain('const mobileItems=mobileExpanded?items:items.slice(0,6)');
+    expect(attention).toContain('className="attention-mobile-more"');
+  });
+
+  it('keeps Savings action copy usable at narrow phone widths',()=>{
+    const css=read('src/styles/mobile-finance-domain-layouts.css');
+    expect(css).toContain('@media(max-width:380px)');
+    expect(css).toContain('.savings-action strong{width:30px;font-size:0');
+    expect(css).toContain('.savings-action small{-webkit-line-clamp:3}');
+  });
+
+  it('routes revoked-session failures from finance-adjacent clients through the global auth expiry event',()=>{
+    const helper=read('src/lib/authExpiry.ts');
+    const api=read('src/lib/api.ts');
+    const cardVault=read('src/lib/cardVaultClient.ts');
+    const metadata=read('src/lib/accountMetadataClient.ts');
+    expect(helper).toContain("code==='AUTH_REQUIRED'||code==='DEVICE_ACCESS_REVOKED'");
+    expect(helper).toContain("window.dispatchEvent(new Event('rheomiq:auth-expired'))");
+    expect(api).toContain('notifyAuthExpired(response.status, details.code)');
+    expect(cardVault).toContain('notifyAuthExpired(response.status,code)');
+    expect(metadata).toContain('notifyAuthExpired(response.status,code)');
+  });
+
 });
