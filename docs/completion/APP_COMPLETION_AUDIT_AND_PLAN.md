@@ -244,6 +244,8 @@ The first exact-head validation wave exposed three additional validation blocker
 
 | FV-18 | Mobile Quick Entry redesign integration | Moving Quick Entry from a floating FAB into bottom navigation correctly removed the product overlap, but the first source cleanup left two tests asserting the retired FAB contract and accidentally removed the closing brace of the surrounding mobile command-palette media block. | Source/test integration defect | **Source-fixed, proof pending.** The mobile media block is closed, completion/release contracts now require the six-cell nav action and explicitly reject the retired floating FAB. No quality or performance threshold was changed. |
 
+| FV-19 | Dialog geometry / Quick Entry trigger | The all-route geometry matrix passed 48/48 after the nav redesign, but dialog geometry still tried to launch Quick Entry through the removed `.mobile-quick-action` class and failed before inspecting the modal. | QA harness selector defect | **Source-fixed, proof pending.** Dialog QA now opens the canonical `[data-global-quick-entry="mobile"]` navigation action and keeps all existing containment/accessibility assertions unchanged. |
+
 Validation rule: FV items close only after the next exact-head wave proves the corrected interaction/performance/bootstrap behavior. No quality threshold or screenshot-count requirement was relaxed.
 
 ## 3. Page-by-page audit and required changes
