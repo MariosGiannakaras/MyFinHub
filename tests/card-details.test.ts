@@ -99,4 +99,12 @@ describe('card secure details',()=>{
     expect(createDialog).toContain('updatedAt:now');
   });
 
+  it('keeps explicit card network authoritative over visual design presets',()=>{
+    const createDialog=readFileSync(new URL('../src/components/CardCreateDialog.tsx',import.meta.url),'utf8');
+    expect(createDialog).toContain('const [networkTouched,setNetworkTouched]=useState(false)');
+    expect(createDialog).toContain('if(!networkTouched)setNetwork(item.network)');
+    expect(createDialog).toContain('setNetworkTouched(true)');
+    expect(createDialog).not.toContain('setDesignId(item.id);setNetwork(item.network)');
+  });
+
 });
