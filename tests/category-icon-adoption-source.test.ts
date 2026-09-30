@@ -6,9 +6,8 @@ const read=(path:string)=>readFileSync(new URL(`../${path}`,import.meta.url),'ut
 describe('cross-app category icon adoption',()=>{
   it('lets the shared FinanceIcon prefer explicit category metadata while preserving heuristic fallback',()=>{
     const source=read('src/components/FinanceIcon.tsx');
-    expect(source).toContain('explicitFinanceCategoryIcon');
-    expect(source).toContain('resolvedFinanceCategoryIcon');
-    expect(source).toContain('resolvedFinanceCategoryIconColor');
+    expect(source).toContain('resolveFinanceCategoryVisual');
+    expect(source).toContain("const visual=settings?resolveFinanceCategoryVisual(settings,input)")
     expect(source).toContain("data-icon-source={explicitKey?'category-preference':resolvedKey?'category-family':'heuristic'}");
     expect(source).toContain('financeIconSpec(input)');
   });
@@ -31,9 +30,14 @@ describe('cross-app category icon adoption',()=>{
     expect(resolver).not.toContain('FinanceData');
     expect(resolver).not.toContain('events');
     expect(resolver).not.toContain('legs');
+    expect(resolver).toContain('resolveFinanceCategoryVisual');
+    expect(resolver).toContain('const target=canonicalTarget(settings,input)');
     expect(resolver).toContain('explicitSubcategoryIcon');
     expect(resolver).toContain('resolvedCategoryIconColor');
     expect(resolver).toContain('explicitCategoryIcon');
+    const identities=read('src/lib/categoryIdentity.ts');
+    expect(identities).toContain('const normalizedSettingsCache=new WeakMap<FinanceSettings,FinanceSettings>()');
+    expect(identities).toContain('const cached=normalizedSettingsCache.get(settings);if(cached)return cached');
   });
 
   it('keeps the representative coffee transaction in the food category fixture',()=>{
