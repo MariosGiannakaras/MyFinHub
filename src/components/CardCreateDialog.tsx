@@ -20,6 +20,7 @@ export function CardCreateDialog({
   onClose:()=>void;onSave:(card:PaymentCard)=>void;
 }){
   const allowedKindsKey=allowedKinds?.join('|')??'';
+  const initializationKey=open?`${initialCard?.id??'new'}|${initialBankId??''}|${kindLock??''}|${allowedKindsKey}`:'closed';
   const selectableKinds:CardKind[]=kindLock?[kindLock]:(allowedKinds?.length?allowedKinds:['debit','credit','prepaid']);
   const [bankId,setBankId]=useState(initialBankId||banks[0]?.id||'piraeus');
   const [nickname,setNickname]=useState('');
@@ -50,7 +51,7 @@ export function CardCreateDialog({
     const nextBank=initialBankId&&banks.some(item=>item.id===initialBankId)?initialBankId:banks[0]?.id||'piraeus';
     const nextKind=kindLock||(allowedKindsKey?allowedKindsKey.split('|')[0] as CardKind:'debit');
     setBankId(nextBank);setNickname('');setKind(nextKind);setNetwork('visa');setDesignId('');setError('');
-  },[open,initialBankId,initialCard,kindLock,banks,allowedKindsKey]);
+  },[initializationKey]);
 
   if(!open||!bank)return null;
   const preview:PaymentCard={id:'preview',bankId:bank.id,nickname:nickname.trim()||'Όνομα κάρτας',kind:resolvedKind,network,formFactor:selected?.formFactor,designId:selected?.id,active:true,createdAt:'',updatedAt:''};
