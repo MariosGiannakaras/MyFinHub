@@ -9,6 +9,7 @@ import { IconButton } from './IconButton';
 import { useModalFocus } from '../hooks/useModalFocus';
 import { cardThemeClass, defaultDesignForCard, designsForBank } from '../lib/cardDesigns';
 import type { CardBank, CardKind, CardNetwork, FinanceData, PaymentCard } from '../types';
+import './CardCreateDialog.css';
 
 function kindLabel(kind:CardKind,virtual=false){return virtual?'Virtual':kind==='credit'?'Credit':kind==='prepaid'?'Prepaid':'Debit'}
 function kindOptionLabel(kind:CardKind){return kind==='credit'?'Πιστωτική':kind==='prepaid'?'Προπληρωμένη':'Χρεωστική'}
