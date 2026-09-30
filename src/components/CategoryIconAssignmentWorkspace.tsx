@@ -1,5 +1,5 @@
 import { Palette, RotateCcw, X } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type CSSProperties } from 'react';
 import { categoryTree } from '../lib/categories';
 import { CATEGORY_ICON_PACKS, decodeCategoryIconValue, encodeCategoryIconValue } from '../lib/categoryIconRegistry';
 import { categoryIconPackPreviewKeys } from '../lib/categoryIconPackSupport';
@@ -104,7 +104,7 @@ export function CategoryIconAssignmentWorkspace({settings,onChange}:{settings:Fi
         <div className="category-icon-color-heading"><Palette size={16} aria-hidden="true"/><div><b>Χρώμα</b><small>{editorColorOverride?'Προσαρμοσμένο χρώμα':'Αυτόματο / κληρονομημένο χρώμα'}</small></div></div>
         <div className="category-icon-color-controls">
           <button type="button" className={!editorColorOverride?'active':''} aria-pressed={!editorColorOverride} onClick={()=>updateEditorColor(null)}><RotateCcw size={14} aria-hidden="true"/> Αυτόματο</button>
-          {COLOR_PRESETS.map(color=><button type="button" key={color} className={editorColorOverride===color?'active color-swatch':'color-swatch'} aria-label={`Χρώμα ${color}`} aria-pressed={editorColorOverride===color} style={{'--icon-swatch':color} as React.CSSProperties} onClick={()=>updateEditorColor(color)}/>)}
+          {COLOR_PRESETS.map(color=><button type="button" key={color} className={editorColorOverride===color?'active color-swatch':'color-swatch'} aria-label={`Χρώμα ${color}`} aria-pressed={editorColorOverride===color} style={{'--icon-swatch':color} as CSSProperties} onClick={()=>updateEditorColor(color)}/>)}
           <label className="category-icon-custom-color"><span>Προσαρμοσμένο</span><input type="color" value={editorColorOverride??editorResolvedColor??'#2F6FED'} aria-label="Προσαρμοσμένο χρώμα εικονιδίου" onChange={event=>updateEditorColor(event.target.value)}/></label>
         </div>
       </div>
