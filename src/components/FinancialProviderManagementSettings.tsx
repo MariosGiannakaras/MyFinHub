@@ -11,7 +11,7 @@ import {
   uploadFinancialProviderAsset,
   type FinancialProviderWriteInput,
 } from '../lib/financialProviderClient';
-import type { FinancialProvider, FinancialProviderAsset, FinancialProviderAssetRole, FinancialProviderKind } from '../lib/financialProviders';
+import type { FinancialProvider, FinancialProviderAssetRole, FinancialProviderKind } from '../lib/financialProviders';
 import { AppSelectInput } from './AppSelectInput';
 import { AppTextInput } from './AppTextInput';
 import { BankBrandMark } from './BankBrandMark';
