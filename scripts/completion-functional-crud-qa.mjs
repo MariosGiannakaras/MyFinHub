@@ -48,8 +48,8 @@ try{
   await clickText('.quick-modal button','Εφαρμογή αλλαγών');
   await setByLabel('Αναζήτηση συναλλαγών','QA Audit Modern Event');
   await waitFor("function(){const rows=[...document.querySelectorAll('[data-transaction-source=\"event\"]')].filter(row=>(row.textContent||'').includes('QA Audit Modern Event'));return rows.length>=1&&rows.some(row=>(row.textContent||'').includes('21,75'))}",'updated modern event row');
-  const modernCopies=await c.call("function(){return [...document.querySelectorAll('[data-transaction-source=\"event\"]')].filter(row=>(row.textContent||'').includes('QA Audit Modern Event')).length}");
-  assert(modernCopies===1,'modern edit updates the existing event instead of creating a duplicate');
+  const modernCopies=await c.call(`function(){const visible=${visible};return [...document.querySelectorAll('[data-transaction-source="event"]')].filter(row=>visible(row)&&(row.textContent||'').includes('QA Audit Modern Event')).length}`);
+  assert(modernCopies===1,'modern edit updates the existing event instead of creating a duplicate visible record');
   await shot('transactions-modern-event-updated');
 
     console.log('Completion functional QA: Savings create/edit/delete + transaction');
