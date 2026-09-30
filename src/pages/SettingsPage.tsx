@@ -193,7 +193,7 @@ export function SettingsPage({
     setBusy(true);
     try {
       await onBackup();
-      downloadJson(data);
+      downloadJson({...data,state:{...data.state,settings:cloneSettings(draftRef.current)}});
       setMessage('Το αντίγραφο ασφαλείας δημιουργήθηκε και κατέβηκε επίσης στη συσκευή σου.');
     } catch (error) {
       setMessage(userErrorMessage(error, 'Δεν μπορέσαμε να δημιουργήσουμε το αντίγραφο ασφαλείας. Έλεγξε τη σύνδεσή σου και δοκίμασε ξανά.'));
