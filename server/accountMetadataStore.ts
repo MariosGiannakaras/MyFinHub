@@ -171,7 +171,7 @@ export async function writeAccountMetadata(accountId:string,iban:string|null,exp
 }
 
 
-export type FinancialProviderWrite={
+type FinancialProviderWrite={
   id:string;
   displayName:string;
   shortName:string;
