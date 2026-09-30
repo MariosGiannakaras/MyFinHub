@@ -70,11 +70,11 @@ set search_path=public,auth
 as $$
 begin
   if not public.rheomiq_is_owner_aal2() then
-    raise exception using errcode='42501', message='MFA_REQUIRED';
+    raise exception using errcode = '42501', message = 'MFA_REQUIRED';
   end if;
 
   if exists(select 1 from public.rheomiq_financial_providers p where p.id=p_id) then
-    raise exception using errcode='23505', message='PROVIDER_ID_CONFLICT';
+    raise exception using errcode = '23505', message = 'PROVIDER_ID_CONFLICT';
   end if;
 
   insert into public.rheomiq_financial_providers
@@ -108,19 +108,19 @@ set search_path=public,auth,storage
 as $$
 begin
   if not public.rheomiq_is_owner_aal2() then
-    raise exception using errcode='42501', message='MFA_REQUIRED';
+    raise exception using errcode = '42501', message = 'MFA_REQUIRED';
   end if;
   if not exists(select 1 from public.rheomiq_financial_providers p where p.id=p_provider_id and p.active) then
-    raise exception using errcode='22023', message='INVALID_PROVIDER_ID';
+    raise exception using errcode = '22023', message = 'INVALID_PROVIDER_ID';
   end if;
   if exists(select 1 from public.rheomiq_financial_provider_assets a where a.asset_key=p_asset_key and a.provider_id<>p_provider_id) then
-    raise exception using errcode='23505', message='ASSET_KEY_CONFLICT';
+    raise exception using errcode = '23505', message = 'ASSET_KEY_CONFLICT';
   end if;
   if not exists(
     select 1 from storage.objects o
     where o.bucket_id='financial-provider-assets' and o.name=p_storage_path
   ) then
-    raise exception using errcode='22023', message='PROVIDER_ASSET_MISSING_STORAGE_OBJECT';
+    raise exception using errcode = '22023', message = 'PROVIDER_ASSET_MISSING_STORAGE_OBJECT';
   end if;
 
   update public.rheomiq_financial_provider_assets
@@ -194,11 +194,11 @@ set search_path=public,auth
 as $$
 begin
   if not public.rheomiq_is_owner_aal2() then
-    raise exception using errcode='42501', message='MFA_REQUIRED';
+    raise exception using errcode = '42501', message = 'MFA_REQUIRED';
   end if;
 
   if exists(select 1 from public.rheomiq_financial_providers p where p.id=p_id) then
-    raise exception using errcode='23505', message='PROVIDER_ID_CONFLICT';
+    raise exception using errcode = '23505', message = 'PROVIDER_ID_CONFLICT';
   end if;
 
   insert into public.rheomiq_financial_providers
@@ -232,19 +232,19 @@ set search_path=public,auth,storage
 as $$
 begin
   if not public.rheomiq_is_owner_aal2() then
-    raise exception using errcode='42501', message='MFA_REQUIRED';
+    raise exception using errcode = '42501', message = 'MFA_REQUIRED';
   end if;
   if not exists(select 1 from public.rheomiq_financial_providers p where p.id=p_provider_id and p.active) then
-    raise exception using errcode='22023', message='INVALID_PROVIDER_ID';
+    raise exception using errcode = '22023', message = 'INVALID_PROVIDER_ID';
   end if;
   if exists(select 1 from public.rheomiq_financial_provider_assets a where a.asset_key=p_asset_key and a.provider_id<>p_provider_id) then
-    raise exception using errcode='23505', message='ASSET_KEY_CONFLICT';
+    raise exception using errcode = '23505', message = 'ASSET_KEY_CONFLICT';
   end if;
   if not exists(
     select 1 from storage.objects o
     where o.bucket_id='financial-provider-assets' and o.name=p_storage_path
   ) then
-    raise exception using errcode='22023', message='PROVIDER_ASSET_MISSING_STORAGE_OBJECT';
+    raise exception using errcode = '22023', message = 'PROVIDER_ASSET_MISSING_STORAGE_OBJECT';
   end if;
 
   update public.rheomiq_financial_provider_assets
@@ -323,11 +323,11 @@ set search_path=public,auth
 as $$
 begin
   if not public.rheomiq_is_owner_aal2() then
-    raise exception using errcode='42501', message='MFA_REQUIRED';
+    raise exception using errcode = '42501', message = 'MFA_REQUIRED';
   end if;
 
   if exists(select 1 from public.rheomiq_financial_providers p where p.id=p_id) then
-    raise exception using errcode='23505', message='PROVIDER_ID_CONFLICT';
+    raise exception using errcode = '23505', message = 'PROVIDER_ID_CONFLICT';
   end if;
 
   insert into public.rheomiq_financial_providers
@@ -361,19 +361,19 @@ set search_path=public,auth,storage
 as $$
 begin
   if not public.rheomiq_is_owner_aal2() then
-    raise exception using errcode='42501', message='MFA_REQUIRED';
+    raise exception using errcode = '42501', message = 'MFA_REQUIRED';
   end if;
   if not exists(select 1 from public.rheomiq_financial_providers p where p.id=p_provider_id and p.active) then
-    raise exception using errcode='22023', message='INVALID_PROVIDER_ID';
+    raise exception using errcode = '22023', message = 'INVALID_PROVIDER_ID';
   end if;
   if exists(select 1 from public.rheomiq_financial_provider_assets a where a.asset_key=p_asset_key and a.provider_id<>p_provider_id) then
-    raise exception using errcode='23505', message='ASSET_KEY_CONFLICT';
+    raise exception using errcode = '23505', message = 'ASSET_KEY_CONFLICT';
   end if;
   if not exists(
     select 1 from storage.objects o
     where o.bucket_id='financial-provider-assets' and o.name=p_storage_path
   ) then
-    raise exception using errcode='22023', message='PROVIDER_ASSET_MISSING_STORAGE_OBJECT';
+    raise exception using errcode = '22023', message = 'PROVIDER_ASSET_MISSING_STORAGE_OBJECT';
   end if;
 
   update public.rheomiq_financial_provider_assets
@@ -444,11 +444,11 @@ set search_path=public,auth
 as $$
 begin
   if not public.rheomiq_is_owner_aal2() then
-    raise exception using errcode='42501', message='MFA_REQUIRED';
+    raise exception using errcode = '42501', message = 'MFA_REQUIRED';
   end if;
 
   if exists(select 1 from public.rheomiq_financial_providers p where p.id=p_id) then
-    raise exception using errcode='23505', message='PROVIDER_ID_CONFLICT';
+    raise exception using errcode = '23505', message = 'PROVIDER_ID_CONFLICT';
   end if;
 
   insert into public.rheomiq_financial_providers
@@ -482,19 +482,19 @@ set search_path=public,auth,storage
 as $$
 begin
   if not public.rheomiq_is_owner_aal2() then
-    raise exception using errcode='42501', message='MFA_REQUIRED';
+    raise exception using errcode = '42501', message = 'MFA_REQUIRED';
   end if;
   if not exists(select 1 from public.rheomiq_financial_providers p where p.id=p_provider_id and p.active) then
-    raise exception using errcode='22023', message='INVALID_PROVIDER_ID';
+    raise exception using errcode = '22023', message = 'INVALID_PROVIDER_ID';
   end if;
   if exists(select 1 from public.rheomiq_financial_provider_assets a where a.asset_key=p_asset_key and a.provider_id<>p_provider_id) then
-    raise exception using errcode='23505', message='ASSET_KEY_CONFLICT';
+    raise exception using errcode = '23505', message = 'ASSET_KEY_CONFLICT';
   end if;
   if not exists(
     select 1 from storage.objects o
     where o.bucket_id='financial-provider-assets' and o.name=p_storage_path
   ) then
-    raise exception using errcode='22023', message='PROVIDER_ASSET_MISSING_STORAGE_OBJECT';
+    raise exception using errcode = '22023', message = 'PROVIDER_ASSET_MISSING_STORAGE_OBJECT';
   end if;
 
   update public.rheomiq_financial_provider_assets
