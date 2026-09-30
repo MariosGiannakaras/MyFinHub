@@ -1,6 +1,7 @@
 import type { CategoryIconPackId, FinanceSettings } from '../types.js';
 import { inferredCategoryIcon } from './categoryIconInference.js';
 import { categoryIconByKey, decodeCategoryIconValue, encodeCategoryIconValue, type CategoryIconPack } from './categoryIconRegistry.js';
+import { categoryIconKeySupportedByPack } from './categoryIconPackSupport.js';
 
 export type CategoryKind='expense'|'income';
 
@@ -78,7 +79,9 @@ export function explicitSubcategoryIcon(settings:FinanceSettings,kind:CategoryKi
 
 function semanticIconForPack(pack:CategoryIconPack,key:string|null){
   if(!key||!categoryIconByKey(key))return null;
-  return encodeCategoryIconValue(pack,key);
+  if(categoryIconKeySupportedByPack(pack,key))return encodeCategoryIconValue(pack,key);
+  const fallback=pack==='tabler'?'other':pack==='phosphor'?'government':'home';
+  return encodeCategoryIconValue(pack,fallback);
 }
 
 export function resolvedCategoryIcon(settings:FinanceSettings,kind:CategoryKind,category:string,subcategory?:string){
