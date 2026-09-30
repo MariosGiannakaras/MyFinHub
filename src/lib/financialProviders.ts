@@ -1,4 +1,4 @@
-import type { BankAccountCategory, CashAccountType } from '../types.js';
+import type { Account, BankAccountCategory, CashAccountType } from '../types.js';
 export type FinancialProviderKind='bank'|'fintech'|'wallet'|'payment';
 export type FinancialProvider={
   id:string;
@@ -55,6 +55,15 @@ export function financialProviderId(...values:(string|undefined|null)[]){
   if(text.includes('payzy'))return 'payzy';
   if(text.includes('paypal'))return 'paypal';
   return '';
+}
+
+export function accountFinancialProviderId(account:Pick<Account,'providerId'|'provider'|'id'|'name'>){
+  return account.providerId?.trim()||financialProviderId(account.provider,account.id,account.name);
+}
+
+export function accountMatchesFinancialProvider(account:Pick<Account,'providerId'|'provider'|'id'|'name'>,providerId:string){
+  const target=providerId.trim();
+  return Boolean(target)&&accountFinancialProviderId(account)===target;
 }
 
 export function financialProviderLabel(id?:string){
