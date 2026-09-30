@@ -4,6 +4,8 @@ import { moveSubcategoryIconPreferences, removeCategoryIconPreferences, removeSu
 
 export type CategoryKind=CategoryIdentityRecord['kind'];
 
+const normalizedSettingsCache=new WeakMap<FinanceSettings,FinanceSettings>();
+
 const clean=(value:string)=>value.trim().replace(/\s+/g,' ');
 const sameLabel=(a:string,b:string)=>categoryKey(a)===categoryKey(b);
 const uniqueLabels=(values:string[])=>{
@@ -67,6 +69,7 @@ function normalizedRecord(record:CategoryIdentityRecord,label:string):CategoryId
 }
 
 export function ensureCategoryIdentities(settings:FinanceSettings):FinanceSettings{
+  const cached=normalizedSettingsCache.get(settings);if(cached)return cached;
   const records:Record<string,CategoryIdentityRecord>={};
   for(const [id,record] of Object.entries(settings.categoryIdentities??{})){
     if(!record||record.id!==id||(record.kind!=='expense'&&record.kind!=='income')||!clean(record.label))continue;
@@ -87,7 +90,10 @@ export function ensureCategoryIdentities(settings:FinanceSettings):FinanceSettin
       }
     }
   }
-  return {...settings,categoryIdentities:records};
+  const normalized={...settings,categoryIdentities:records};
+  normalizedSettingsCache.set(settings,normalized);
+  normalizedSettingsCache.set(normalized,normalized);
+  return normalized;
 }
 
 export function resolveCategoryIdentity(settings:FinanceSettings,kind:CategoryKind,category:string){
