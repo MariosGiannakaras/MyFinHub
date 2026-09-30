@@ -98,4 +98,11 @@ describe('completion UX contracts',()=>{
     expect(metadata).toContain('notifyAuthExpired(response.status,code)');
   });
 
+  it('keeps actionable Planning and budget status ahead of secondary analysis',()=>{
+    const planning=source('src/pages/PlanningPage.tsx');
+    expect(planning.indexOf('className="panel surface-raised scheduled-panel"')).toBeLessThan(planning.indexOf('className="panel surface-raised forecast-panel"'));
+    const reports=source('src/pages/ReportsPage.tsx');
+    expect(reports.indexOf('report-budget-overview')).toBeLessThan(reports.indexOf('report-analytics-grid'));
+  });
+
 });
