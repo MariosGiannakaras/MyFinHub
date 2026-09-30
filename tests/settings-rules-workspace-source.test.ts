@@ -12,7 +12,9 @@ describe('Settings Rules workspace source contract',()=>{
     expect(workspace).toContain('normalizeTransactionRule');
     expect(workspace).toContain('transactionRuleMatchingEvents');
     expect(workspace).toContain('onUpsertRule(next)');
-    expect(workspace).toContain('onDeleteRule(rule.id)');
+    expect(workspace).toContain('setDeleteRuleTarget(rule)');
+    expect(workspace).toContain('<ConfirmDialog');
+    expect(workspace).toContain('onDeleteRule(deleteRuleTarget.id)');
     expect(workspace).toContain('Δεν αλλάζει καμία από αυτές');
   });
 
@@ -37,6 +39,7 @@ describe('Settings Rules workspace source contract',()=>{
     expect(workspace).toContain('Χρειάζεται έλεγχο');
     expect(workspace).toContain('Επεξεργασία αυτοματισμού');
     expect(workspace).toContain('Διαγραφή αυτοματισμού');
+    expect(workspace).toContain('Διαγραφή κανόνα;');
   });
 
   it('is the dedicated Settings Rules surface while budgets remain elsewhere',()=>{
