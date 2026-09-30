@@ -14,13 +14,16 @@ describe('completion UX contracts',()=>{
     expect(shell).toContain('scroll-padding-bottom:calc(146px + env(safe-area-inset-bottom,0px))');
   });
 
-  it('bounds Dashboard primary account cards on tablet',()=>{
-    const css=read('src/pages/DashboardCompletion.css');
-    expect(css).toContain('@media(min-width:681px) and (max-width:980px)');
-    expect(css).toContain('grid-auto-rows:max-content!important');
-    expect(css).toContain('min-height:184px!important');
-    expect(css).toContain('height:auto!important');
-    expect(css).toContain('height:76px!important');
+  it('keeps Dashboard tablet cards compatible with their internal content minimums',()=>{
+    const fidelity=read('src/styles/dashboard-desktop-fidelity.css');
+    expect(fidelity).toContain('@media(min-width:681px) and (max-width:980px)');
+    expect(fidelity).toContain('grid-template-columns:repeat(2,minmax(0,1fr))!important');
+    expect(fidelity).toContain('grid-auto-rows:max-content');
+    expect(fidelity).toContain('height:auto!important');
+    expect(fidelity).toContain('min-height:180px!important');
+    expect(fidelity).toContain('grid-template-columns:minmax(100px,.82fr) minmax(120px,1.18fr)!important');
+    expect(fidelity).toContain('.dashboard-approved .approved-account-body>*');
+    expect(fidelity).toContain('.dashboard-approved .approved-account-chart{min-width:0}');
   });
 
   it('uses the existing bounded transaction page slice on mobile',()=>{
@@ -99,9 +102,9 @@ describe('completion UX contracts',()=>{
   });
 
   it('keeps actionable Planning and budget status ahead of secondary analysis',()=>{
-    const planning=source('src/pages/PlanningPage.tsx');
+    const planning=read('src/pages/PlanningPage.tsx');
     expect(planning.indexOf('className="panel surface-raised scheduled-panel"')).toBeLessThan(planning.indexOf('className="panel surface-raised forecast-panel"'));
-    const reports=source('src/pages/ReportsPage.tsx');
+    const reports=read('src/pages/ReportsPage.tsx');
     expect(reports.indexOf('report-budget-overview')).toBeLessThan(reports.indexOf('report-analytics-grid'));
   });
 
