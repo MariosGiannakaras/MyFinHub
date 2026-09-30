@@ -7,8 +7,10 @@ export type FinancialProvider={
   kind:FinancialProviderKind;
   kindLabel:string;
   countryCode?:string;
-  logoAssetKey:string;
-  wordmarkAssetKey:string;
+  logoAssetKey:string|null;
+  wordmarkAssetKey:string|null;
+  logoUrl?:string|null;
+  wordmarkUrl?:string|null;
   sortOrder:number;
 };
 
