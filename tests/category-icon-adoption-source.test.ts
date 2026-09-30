@@ -7,8 +7,10 @@ describe('cross-app category icon adoption',()=>{
   it('lets the shared FinanceIcon prefer explicit category metadata while preserving heuristic fallback',()=>{
     const source=read('src/components/FinanceIcon.tsx');
     expect(source).toContain('explicitFinanceCategoryIcon');
-    expect(source).toContain("data-icon-source={explicitKey?'category-preference':'heuristic'}");
-    expect(source).toContain('financeIconSpec({kind,category,subcategory,note})');
+    expect(source).toContain('resolvedFinanceCategoryIcon');
+    expect(source).toContain('resolvedFinanceCategoryIconColor');
+    expect(source).toContain("data-icon-source={explicitKey?'category-preference':resolvedKey?'category-family':'heuristic'}");
+    expect(source).toContain('financeIconSpec(input)');
   });
 
   it('passes persisted settings through the primary category-driven surfaces',()=>{
@@ -29,7 +31,8 @@ describe('cross-app category icon adoption',()=>{
     expect(resolver).not.toContain('FinanceData');
     expect(resolver).not.toContain('events');
     expect(resolver).not.toContain('legs');
-    expect(resolver).toContain('return explicitSubcategoryIcon');
+    expect(resolver).toContain('explicitSubcategoryIcon');
+    expect(resolver).toContain('resolvedCategoryIconColor');
     expect(resolver).toContain('explicitCategoryIcon');
   });
 
