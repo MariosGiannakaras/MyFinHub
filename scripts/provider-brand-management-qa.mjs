@@ -84,7 +84,7 @@ try{
   await viewport(375,812,true);await noOverflow('provider editor mobile');await shot('provider-editor-branding-dark-mobile');
 
   await viewport(1440,1000,false);
-  await c.call("function(){document.querySelector('.provider-editor-header button[aria-label=Κλείσιμο]')?.click();return true}");
+  await c.call("function(){document.querySelector('.provider-editor-header button[aria-label="Κλείσιμο"]')?.click();return true}");
   await waitFor("function(){return !document.querySelector('.provider-editor-modal')}",'existing editor closes');
   await clickText('.provider-management button','Νέος πάροχος');
   await waitFor("function(){return !!document.querySelector('.provider-editor-modal')}",'new provider editor');
