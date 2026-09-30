@@ -108,4 +108,22 @@ describe('completion UX contracts',()=>{
     expect(reports.indexOf('report-budget-overview')).toBeLessThan(reports.indexOf('report-analytics-grid'));
   });
 
+  it('bounds recurring and planning obligation lists outside the desktop-only approved table',()=>{
+    const recurring=read('src/pages/RecurringPage.tsx');
+    const recurringCss=read('src/pages/RecurringCompletion.css');
+    const planning=read('src/pages/PlanningPage.tsx');
+    const planningCss=read('src/pages/PlanningCompletion.css');
+    expect(recurring).toContain('const [mobileActiveLimit,setMobileActiveLimit]=useState(12)');
+    expect(recurring).toContain('const mobileUpcoming=upcoming.slice(0,mobileActiveLimit)');
+    expect(recurring).toContain('mobileUpcoming.map');
+    expect(recurring).toContain('setMobileActiveLimit(limit=>limit+12)');
+    expect(recurringCss).toContain('.mobile-recurring-more');
+    expect(planning).toContain('const [scheduledListLimit,setScheduledListLimit]=useState(12)');
+    expect(planning).toContain('const visiblePending=pending.slice(0,scheduledListLimit)');
+    expect(planning).toContain('visiblePending.map');
+    expect(planning).toContain('setScheduledListLimit(limit=>limit+12)');
+    expect(planningCss).toContain('@media(max-width:1099px)');
+    expect(planningCss).toContain('.planning-scheduled-more');
+  });
+
 });
