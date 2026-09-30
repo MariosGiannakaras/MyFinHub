@@ -53,7 +53,24 @@ on storage.objects
 for update to authenticated
 using (
   bucket_id='financial-provider-assets'
-  and name ~ '^providers/[a-z][a-z0-9-]{0,63}/[A-Za-z0-9._-]+
+  and name ~ '^providers/[a-z][a-z0-9-]{0,63}/[A-Za-z0-9._-]+$'
+  and (select public.rheomiq_is_owner_aal2())
+)
+with check (
+  bucket_id='financial-provider-assets'
+  and name ~ '^providers/[a-z][a-z0-9-]{0,63}/[A-Za-z0-9._-]+$'
+  and (select public.rheomiq_is_owner_aal2())
+);
+
+drop policy if exists rheomiq_provider_storage_owner_aal2_delete on storage.objects;
+create policy rheomiq_provider_storage_owner_aal2_delete
+on storage.objects
+for delete to authenticated
+using (
+  bucket_id='financial-provider-assets'
+  and name ~ '^providers/[a-z][a-z0-9-]{0,63}/[A-Za-z0-9._-]+$'
+  and (select public.rheomiq_is_owner_aal2())
+);
 
 create or replace function public.rheomiq_create_financial_provider(
   p_id text,
