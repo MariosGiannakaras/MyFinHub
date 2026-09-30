@@ -68,6 +68,7 @@ export function cardVaultErrorMessage(error:unknown){
     if(error.code==='INVALID_CARD_CVV')return 'Το CVV πρέπει να έχει 3 ή 4 αριθμητικά ψηφία.';
     if(error.code==='MFA_REQUIRED')return 'Για να δεις ή να αλλάξεις τα ασφαλή στοιχεία της κάρτας, χρειάζεται να επαληθεύσεις ξανά τη σύνδεσή σου.';
     if(error.code==='DEVICE_ACCESS_REVOKED'||error.code==='AUTH_REQUIRED')return 'Η πρόσβαση αυτής της συσκευής έχει λήξει. Συνδέσου ξανά και ολοκλήρωσε την επαλήθευση MFA.';
+    if(error.code==='CARD_VAULT_CONFIG_ERROR')return 'Η ασφαλής αποθήκευση καρτών δεν είναι διαθέσιμη λόγω ρύθμισης του διακομιστή. Τα υπόλοιπα στοιχεία της κάρτας δεν χάθηκαν.';
     if(error.code==='CARD_VAULT_RATE_LIMITED')return 'Έγιναν πολλές προσπάθειες σε μικρό χρονικό διάστημα. Περίμενε λίγο και δοκίμασε ξανά.';
     return 'Δεν μπορέσαμε να ολοκληρώσουμε την ενέργεια στα ασφαλή στοιχεία της κάρτας. Δοκίμασε ξανά.';
   }
