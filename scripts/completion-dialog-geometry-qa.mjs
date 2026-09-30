@@ -30,12 +30,14 @@ try{
   const click=async(selector,label)=>{const ok=await c.call(`function(selector){const visible=${visible};const node=[...document.querySelectorAll(selector)].find(visible);node?.click();return Boolean(node)}`,[selector]);assert(ok,`missing ${label}`);await sleep(100)};
   const clickText=async(selector,text)=>{const ok=await c.call(`function(selector,text){const visible=${visible};const node=[...document.querySelectorAll(selector)].find(n=>visible(n)&&(n.textContent||'').includes(text));node?.click();return Boolean(node)}`,[selector,text]);assert(ok,`missing ${text}`);await sleep(100)};
   const inspect=async(selector,label,{vertical=true}={})=>{
-    const result=await c.call(`function(selector){const visible=${visible};const root=[...document.querySelectorAll(selector)].find(visible);if(!root)return null;const r=root.getBoundingClientRect();const controls=[...root.querySelectorAll('button,a,input,select,textarea,[role="button"],[role="radio"],[role="tab"]')].filter(visible);const rogue=controls.filter(node=>{const x=node.getBoundingClientRect();return x.left<-1||x.right>innerWidth+1}).map(node=>({tag:node.tagName,aria:node.getAttribute('aria-label'),text:(node.textContent||'').trim().slice(0,80)}));const footers=[...root.querySelectorAll('footer,.modal-actions,.editor-actions,.account-management-modal-footer')].filter(visible).map(node=>{const x=node.getBoundingClientRect();return {top:x.top,bottom:x.bottom,left:x.left,right:x.right}});return {viewportWidth:innerWidth,viewportHeight:innerHeight,left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height,scrollWidth:root.scrollWidth,clientWidth:root.clientWidth,scrollHeight:root.scrollHeight,clientHeight:root.clientHeight,rogue,footers}};`,[selector]);
+    const result=await c.call(`function(selector){const visible=${visible};const root=[...document.querySelectorAll(selector)].find(visible);if(!root)return null;const r=root.getBoundingClientRect();const controls=[...root.querySelectorAll('button,a,input,select,textarea,[role="button"],[role="radio"],[role="tab"]')].filter(visible);const rogue=controls.filter(node=>{const x=node.getBoundingClientRect();return x.left<-1||x.right>innerWidth+1}).map(node=>({tag:node.tagName,aria:node.getAttribute('aria-label'),text:(node.textContent||'').trim().slice(0,80)}));const accessible=node=>Boolean((node.getAttribute('aria-label')||'').trim()||(node.getAttribute('aria-labelledby')||'').trim()||node.closest('label')||(node.id&&document.querySelector('label[for="'+CSS.escape(node.id)+'"]')));const unnamedButtons=[...root.querySelectorAll('button')].filter(visible).filter(node=>!((node.getAttribute('aria-label')||node.getAttribute('title')||node.textContent||'').trim())).map(node=>node.outerHTML.slice(0,140));const unnamedControls=[...root.querySelectorAll('input,select,textarea')].filter(visible).filter(node=>!accessible(node)).map(node=>node.outerHTML.slice(0,140));const footers=[...root.querySelectorAll('footer,.modal-actions,.editor-actions,.account-management-modal-footer')].filter(visible).map(node=>{const x=node.getBoundingClientRect();return {top:x.top,bottom:x.bottom,left:x.left,right:x.right}});return {viewportWidth:innerWidth,viewportHeight:innerHeight,left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height,scrollWidth:root.scrollWidth,clientWidth:root.clientWidth,scrollHeight:root.scrollHeight,clientHeight:root.clientHeight,rogue,unnamedButtons,unnamedControls,footers}};`,[selector]);
     assert(result,`${label} is not visible`);
     assert(result.left>=-1&&result.right<=result.viewportWidth+1,`${label} escapes viewport horizontally: ${JSON.stringify(result)}`);
     if(vertical)assert(result.top>=-1&&result.bottom<=result.viewportHeight+1,`${label} escapes viewport vertically: ${JSON.stringify(result)}`);
     assert(result.scrollWidth<=result.clientWidth+1,`${label} has internal horizontal overflow: ${result.scrollWidth}-${result.clientWidth}`);
     assert(result.rogue.length===0,`${label} has off-viewport controls: ${JSON.stringify(result.rogue)}`);
+    assert(result.unnamedButtons.length===0,`${label} has unnamed buttons: ${result.unnamedButtons.join(' | ')}`);
+    assert(result.unnamedControls.length===0,`${label} has unnamed form controls: ${result.unnamedControls.join(' | ')}`);
     for(const footer of result.footers)assert(footer.left>=-1&&footer.right<=result.viewportWidth+1,`${label} footer escapes horizontally`);
     return result;
   };
@@ -67,6 +69,12 @@ try{
     assert(iconPanel.bottom>0,`${viewport.name} icon selection panel is not reachable`);
 
     await navigate('cards');
+    await clickText('.page-heading button','Προσθήκη τράπεζας');
+    await waitFor("function(){return Boolean(document.querySelector('#new-bank-title'))}",'new bank dialog');
+    await inspect('.picker.compact',`${viewport.name} new bank dialog`);
+    await c.call("function(){document.querySelector('.picker.compact .close-picker')?.click()}");
+    await waitFor("function(){return !document.querySelector('#new-bank-title')}",'new bank dialog close');
+
     await click('button[aria-label^="Ασφαλή στοιχεία"]','secure card details editor');
     await waitFor("function(){return Boolean(document.querySelector('.app-card-details-dialog'))}",'secure card details editor');
     await inspect('.app-card-details-dialog',`${viewport.name} secure card details editor`);
