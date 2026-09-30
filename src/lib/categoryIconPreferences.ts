@@ -195,6 +195,24 @@ export function renameCategoryIconPreferences(settings:FinanceSettings,kind:Cate
   };
 }
 
+export function moveSubcategoryIconPreferences(
+  settings:FinanceSettings,
+  kind:CategoryKind,
+  fromCategory:string,
+  fromSubcategory:string,
+  toCategory:string,
+  toSubcategory:string,
+):FinanceSettings{
+  const from=subcategoryIconPreferenceKey(kind,fromCategory,fromSubcategory);
+  const to=subcategoryIconPreferenceKey(kind,toCategory,toSubcategory);
+  return {
+    ...settings,
+    subcategoryIcons:renameKey(settings.subcategoryIcons,from,to),
+    subcategoryIconPackSelections:renameKey(settings.subcategoryIconPackSelections,from,to),
+    subcategoryIconColors:renameKey(settings.subcategoryIconColors,from,to),
+  };
+}
+
 export function removeCategoryIconPreferences(settings:FinanceSettings,kind:CategoryKind,category:string):FinanceSettings{
   const categoryKey=categoryIconPreferenceKey(kind,category);
   const prefix=`${kind}:${clean(category)}:`;
