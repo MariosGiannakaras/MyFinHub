@@ -32,7 +32,7 @@ const analysisFn=`function(){
   const selector=node=>{const id=node.id?'#'+node.id:'';const cls=[...node.classList].slice(0,3).map(v=>'.'+v).join('');return (node.tagName.toLowerCase()+id+cls).slice(0,180)};
   const horizontalHost=node=>{let parent=node.parentElement;while(parent&&parent!==document.body){const s=getComputedStyle(parent);if(['auto','scroll'].includes(s.overflowX)&&parent.scrollWidth>parent.clientWidth+1)return parent;parent=parent.parentElement}return null};
   const rogue=[...document.querySelectorAll('button,a,input,select,textarea,[role="button"],[role="tab"],[role="radio"],[role="slider"]')].filter(visible).filter(node=>{const r=node.getBoundingClientRect();if(r.left>=-1&&r.right<=innerWidth+1)return false;const host=horizontalHost(node);if(!host)return true;const hr=host.getBoundingClientRect();return hr.left<-1||hr.right>innerWidth+1}).map(node=>({selector:selector(node),rect:rect(node)})).slice(0,20);
-  const chrome=[...document.querySelectorAll('.mobile-nav,.mobile-quick-action')].filter(visible);
+  const chrome=[...document.querySelectorAll('.mobile-nav')].filter(visible);
   const actions=[...document.querySelectorAll('button,a[href],input,select,textarea,[role="button"],[role="tab"],[role="radio"],[role="slider"]')].filter(visible).filter(node=>!chrome.some(item=>item===node||item.contains(node))).filter(node=>!node.hasAttribute('disabled'));
   const overlaps=[];
   for(const fixed of chrome){
