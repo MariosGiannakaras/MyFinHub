@@ -73,3 +73,52 @@ export async function refreshFinancialProviders(force=false){
   })();
   return pending;
 }
+
+
+export type FinancialProviderWriteInput={
+  id:string;
+  displayName:string;
+  shortName:string;
+  providerKind:FinancialProviderKind;
+  countryCode?:string|null;
+  sortOrder:number;
+};
+
+export async function saveFinancialProvider(input:FinancialProviderWriteInput){
+  const response=await fetch('/api/account-metadata?resource=financial-providers',{
+    method:'POST',
+    credentials:'same-origin',
+    headers:{accept:'application/json','content-type':'application/json'},
+    body:JSON.stringify(input),
+  });
+  const payload=await json(response);
+  if(!response.ok)throw new Error(payload?.error||'Δεν ήταν δυνατή η αποθήκευση της τράπεζας/παρόχου.');
+  await refreshFinancialProviders(true);
+  return payload?.provider as FinancialProvider;
+}
+
+export async function uploadFinancialProviderAsset(input:{
+  providerId:string;
+  role:FinancialProviderAssetRole;
+  variant:string;
+  file:File;
+  makePrimary?:boolean;
+}){
+  const params=new URLSearchParams({
+    resource:'financial-provider-assets',
+    providerId:input.providerId,
+    role:input.role,
+    variant:input.variant,
+    primary:input.makePrimary?'1':'0',
+  });
+  const response=await fetch(`/api/account-metadata?${params.toString()}`,{
+    method:'PUT',
+    credentials:'same-origin',
+    headers:{accept:'application/json','content-type':input.file.type},
+    body:input.file,
+  });
+  const payload=await json(response);
+  if(!response.ok)throw new Error(payload?.error||'Δεν ήταν δυνατή η αποθήκευση της εικόνας.');
+  await refreshFinancialProviders(true);
+  return payload?.asset as FinancialProviderAsset;
+}
