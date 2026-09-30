@@ -18,6 +18,7 @@ import { activeRecurringItems } from '../lib/recurring';
 import { selectAccountBalances, selectCategoryTotals, selectMonthlyFlow } from '../lib/selectors';
 import { accountDisplayName } from '../lib/ui';
 import type { Account, FinanceData, FinanceEvent, LegacyTransaction } from '../types';
+import './DashboardCompletion.css';
 
 const chartColors=['#36c978','#3f8df5','#ffb52e','#a65ad9','#d64fb6','#98a4b7','#25b9d7','#7656d6'];
 type DashboardMovement={id:string;date:string;note:string;category:string;kind:string;amount:number;accountId?:string;expense:boolean;neutral:boolean};
