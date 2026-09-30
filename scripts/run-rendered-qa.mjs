@@ -4,6 +4,7 @@ import { persistSuiteEvidence, prepareSuiteEvidence, visualEvidenceContext } fro
 
 const scripts=[
   {path:'scripts/frontend-qa.mjs',key:'frontend',surface:'core-flows',profiles:['/tmp/rheomiq-qa-chrome'],extraEvidenceDirs:['/tmp/rheomiq-frontend-qa']},
+  {path:'scripts/completion-geometry-qa.mjs',key:'completion-geometry',surface:'all-pages',profiles:['/tmp/myfinhub-geometry-overflow-qa-chrome']},
   {path:'scripts/owned-controls-qa.mjs',key:'owned-controls',surface:'controls',profiles:['/tmp/rheomiq-owned-controls-qa']},
   {path:'scripts/ui-ux-hardening-qa.mjs',key:'ui-hardening',surface:'app-shell',profiles:['/tmp/myfinhub-ui-ux-qa-chrome']},
   {path:'scripts/ui-ux-completion-qa.mjs',key:'ui-completion',surface:'app-shell',profiles:['/tmp/myfinhub-ui-completion-qa-chrome']},
