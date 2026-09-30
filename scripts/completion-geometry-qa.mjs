@@ -52,9 +52,13 @@ const analysisFn=`function(){
     const sr=desktopShortcut.getBoundingClientRect();
     for(const button of [...document.querySelectorAll('.topbar button')].filter(visible)){
       const br=button.getBoundingClientRect();
-      const width=Math.max(0,Math.min(sr.right,br.right)-Math.max(sr.left,br.left));
-      const height=Math.max(0,Math.min(sr.bottom,br.bottom)-Math.max(sr.top,br.top));
-      if(width&&height)desktopChromeOverlaps.push({shortcut:selector(desktopShortcut),button:selector(button),rect:rect(button)});
+      const left=Math.max(sr.left,br.left),right=Math.min(sr.right,br.right),top=Math.max(sr.top,br.top),bottom=Math.min(sr.bottom,br.bottom);
+      const width=Math.max(0,right-left),height=Math.max(0,bottom-top);
+      if(width&&height){
+        const hit=document.elementFromPoint((left+right)/2,(top+bottom)/2);
+        const shortcutIsTopmost=Boolean(hit&&(hit===desktopShortcut||desktopShortcut.contains(hit)));
+        if(shortcutIsTopmost)desktopChromeOverlaps.push({shortcut:selector(desktopShortcut),button:selector(button),rect:rect(button),hit:selector(hit)});
+      }
     }
   }
   const docOverflow=Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth;
