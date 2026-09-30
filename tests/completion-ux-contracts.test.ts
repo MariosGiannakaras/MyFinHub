@@ -246,6 +246,14 @@ describe('completion UX contracts',()=>{
     expect(css).not.toContain('right:307px');
   });
 
+  it('keeps mobile card copy actions at the app-wide touch target size without enlarging their visible glyph surface',()=>{
+    const css=read('src/components/InteractivePaymentCard.css');
+    expect(css).toContain('position:relative;width:40px;height:40px;min-width:40px;min-height:40px');
+    expect(css).toContain('width:23px;height:23px');
+    expect(css).toContain('.prototype-payment-card .copy-mini:hover::before');
+  });
+
+
   it('keeps the secure card-details editor on an opaque elevated surface',()=>{
     const css=read('src/styles/card-details-dialog.css');
     expect(css).toContain('background:var(--surface-elevated-gradient,var(--surface,#fff))!important');
