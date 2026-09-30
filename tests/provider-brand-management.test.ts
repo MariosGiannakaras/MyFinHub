@@ -66,7 +66,8 @@ describe('provider branding management',()=>{
     expect(migration).toContain('security invoker');
     expect(migration).toContain('rheomiq_provider_storage_owner_aal2_insert');
     expect(migration).toContain('rheomiq_provider_storage_owner_aal2_update');
-    expect(migration).toContain('rheomiq_upsert_financial_provider');
+    expect(migration).toContain('rheomiq_create_financial_provider');
+    expect(migration).toContain("message='PROVIDER_ID_CONFLICT'");
     expect(migration).toContain('rheomiq_register_financial_provider_asset');
     expect(migration).not.toMatch(/service[_-]?role|secret[_-]?key/i);
     expect(handler).toContain("resource==='financial-provider-assets'");
@@ -78,10 +79,14 @@ describe('provider branding management',()=>{
   it('exposes one Settings flow for replacement and provider creation with artwork',()=>{
     expect(settings).toContain('ΤΡΑΠΕΖΕΣ & ΠΑΡΟΧΟΙ');
     expect(settings).toContain('Νέος πάροχος');
+    expect(settings).toContain('Logo · Universal');
+    expect(settings).toContain('Logo · Light');
+    expect(settings).toContain('Logo · Dark');
     expect(settings).toContain('Wordmark · Light');
     expect(settings).toContain('Wordmark · Dark');
     expect(settings).toContain('Card mark · Light');
     expect(settings).toContain('Card mark · Dark');
+    expect(settings).toContain('Για νέο πάροχο επίλεξε τουλάχιστον ένα Logo και ένα Wordmark.');
     expect(settings).toContain('await saveFinancialProvider');
     expect(settings).toContain('await uploadFinancialProviderAsset');
   });
