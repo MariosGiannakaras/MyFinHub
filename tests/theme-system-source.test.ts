@@ -11,6 +11,7 @@ const darkSurfaces=readFileSync('src/styles/dark-theme-surfaces.css','utf8');
 const rootCompat=readFileSync('src/styles/root-compat.css','utf8');
 const workspaceCompat=readFileSync('src/styles/workspace-compat.css','utf8');
 const qaHtml=readFileSync('qa.html','utf8');
+const reportsStyles=readFileSync('src/pages/ReportsPage.css','utf8');
 
 describe('theme architecture source contract',()=>{
   it('initializes theme before React mounts',()=>{
@@ -45,6 +46,8 @@ describe('theme architecture source contract',()=>{
     expect(rootCompat).not.toContain("dark-theme-surfaces.css");
     expect(workspaceCompat).toContain("@import './dark-theme-surfaces.css';");
     expect(qaHtml).toContain("await import('/src/styles/dark-theme-surfaces.css');");
+    expect(reportsStyles).toContain('html[data-theme="dark"] .report-period-chip');
+    expect(rendered).toContain('dark Reports period chip is a dark surface');
   });
 
   it('registers a dedicated rendered Light Dark matrix',()=>{
