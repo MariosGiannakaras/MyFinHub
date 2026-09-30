@@ -4,31 +4,31 @@
 
 Make provider branding owner-managed from MyFinHub itself. Existing providers can have their artwork replaced without a repo change or redeploy, and a newly created provider can be created together with the artwork required by account/card surfaces.
 
-**Tasks 0/4 · Subtasks 0/13**
+**Tasks 3/4 · Subtasks 12/13**
 
-## 1. Provider asset model + secure write API — 0/4
+## 1. Provider asset model + secure write API — 4/4
 
-- [ ] Return every active provider asset (`logo`, `wordmark`, `card-mark`) with role, variant and public Storage URL while keeping the current primary `logoUrl` / `wordmarkUrl` compatibility fields.
-- [ ] Add owner+AAL2 provider create/update mutation contract using the authenticated user's JWT; never use or expose a service-role key.
-- [ ] Add bounded binary upload/replace through the existing `/api/account-metadata` function family. Validate provider id, role, variant, MIME, filename, path and size before forwarding bytes to Supabase Storage.
-- [ ] Register uploaded assets and safely update primary logo/wordmark selection. Existing primary assets remain valid until a replacement upload and metadata write both succeed.
+- [x] Return every active provider asset (`logo`, `wordmark`, `card-mark`) with role, variant and public Storage URL while keeping the current primary `logoUrl` / `wordmarkUrl` compatibility fields.
+- [x] Add owner+AAL2 provider create/update mutation contract using the authenticated user's JWT; never use or expose a service-role key.
+- [x] Add bounded binary upload/replace through the existing `/api/account-metadata` function family. Validate provider id, role, variant, MIME, filename, path and size before forwarding bytes to Supabase Storage.
+- [x] Register uploaded assets and safely update primary logo/wordmark selection. Existing primary assets remain valid until a replacement upload and metadata write both succeed.
 
-## 2. Runtime asset selection — 0/3
+## 2. Runtime asset selection — 3/3
 
-- [ ] Theme-aware account/provider surfaces: prefer universal, then resolved light/dark, then primary/fallback.
-- [ ] Card surfaces: select `card-mark` by the actual card background contrast rather than global app theme.
-- [ ] Keep graceful fallback order so incomplete custom providers never render a broken image.
+- [x] Theme-aware account/provider surfaces: prefer universal, then resolved light/dark, then primary/fallback.
+- [x] Card surfaces: select `card-mark` by the actual card background contrast rather than global app theme.
+- [x] Keep graceful fallback order so incomplete custom providers never render a broken image.
 
-## 3. Settings provider management — 0/4
+## 3. Settings provider management — 4/4
 
-- [ ] Add provider-management UI with previews for current logo/wordmark/card variants and Replace actions.
-- [ ] Support Logo, Wordmark Light, Wordmark Dark, Card Mark Light and Card Mark Dark uploads with progress/error/success states.
-- [ ] Add create-provider metadata flow for bank/fintech/wallet/payment.
-- [ ] In the same creation flow, let the owner select the provider images before saving; create provider metadata first, upload the selected files sequentially, then refresh the shared provider catalog.
+- [x] Add provider-management UI with previews for current logo/wordmark/card variants and Replace actions.
+- [x] Support Logo, Wordmark Light, Wordmark Dark, Card Mark Light and Card Mark Dark uploads with progress/error/success states.
+- [x] Add create-provider metadata flow for bank/fintech/wallet/payment.
+- [x] In the same creation flow, let the owner select the provider images before saving; create provider metadata first, upload the selected files sequentially, then refresh the shared provider catalog.
 
-## 4. Validation and handoff — 0/2
+## 4. Validation and handoff — 1/2
 
-- [ ] Add API/source/unit tests for owner+AAL2 boundaries, size/MIME/path validation, create/update semantics and runtime variant resolution.
+- [x] Add API/source/unit tests for owner+AAL2 boundaries, size/MIME/path validation, create/update semantics and runtime variant resolution.
 - [ ] Add rendered Settings/account/card evidence in light/dark, inspect it, update #481 + repository checkpoint, then run the appropriate integrated gates.
 
 ## UX contract
