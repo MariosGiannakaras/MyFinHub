@@ -60,5 +60,5 @@
 .report-mobile-disclosure{display:none}
 @media(max-width:680px){
   .report-mobile-disclosure{display:flex;width:100%;min-height:44px;justify-content:center}
-  .report-support-grid.mobile-collapsed{display:none!important}
+  .report-support-grid.mobile-collapsed>article:not(#report-obligations){display:none!important}
 }
