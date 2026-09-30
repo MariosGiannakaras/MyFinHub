@@ -24,6 +24,7 @@ import { categoryPath, genericCategoryTree } from '../lib/categories';
 import { cardStatementConfiguration, creditStatementEvents, creditStatementViews, recommendedPayableStatement, unlinkedCreditStatementEvents } from '../lib/creditStatements';
 import { allAccounts, createEvent } from '../lib/domain';
 import { money, shortDate } from '../lib/format';
+import { accountMatchesFinancialProvider } from '../lib/financialProviders';
 import { accountDisplayName } from '../lib/ui';
 import { userErrorMessage } from '../lib/userMessage';
 import type { CreditStatementStatus, FinanceData, FinanceEvent, PaymentCard } from '../types';
@@ -81,8 +82,8 @@ export function CreditCardPage({
   const payableStatement=card?recommendedPayableStatement(data,card.id,asOf):undefined;
   const primaryStatement=payableStatement??statements[0];
   const unlinkedStatementEvents=useMemo(()=>card?unlinkedCreditStatementEvents(data,card.id):[],[data,card]);
-  const bankPrefix=card?.bankId??'';
-  const eligibleAccounts=allAccounts(data).filter(account=>account.kind!=='credit'&&Boolean(bankPrefix)&&account.id.startsWith(`${bankPrefix}-`));
+  const cardProviderId=card?.bankId??'';
+  const eligibleAccounts=allAccounts(data).filter(account=>account.kind!=='credit'&&accountMatchesFinancialProvider(account,cardProviderId));
   const categories=genericCategoryTree(data.state.settings,'expense');
   const [createOpen,setCreateOpen]=useState(false);
   const [profileCard,setProfileCard]=useState<PaymentCard|null>(null);
