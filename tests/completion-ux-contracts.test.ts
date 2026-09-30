@@ -302,6 +302,9 @@ describe('completion UX contracts',()=>{
     expect(harness).toContain('const atBottom=result.scrollY>=maxScroll-2');
     expect(harness).toContain('if(viewport.mobile&&atBottom)assert(result.overlaps.length===0');
     expect(harness).toContain('prevents final actions from scrolling clear');
+    expect(harness).toContain("document.querySelectorAll('.mobile-nav button>span')");
+    expect(harness).toContain("kind:'label-overlap'");
+    expect(harness).toContain('bottom-nav label collision');
   });
 
 
