@@ -1,13 +1,15 @@
-export type CategoryIconPack='lucide'|'tabler'|'phosphor'|'heroicons'|'bootstrap';
+import type { CategoryIconPackId } from '../types.js';
+
+export type CategoryIconPack=CategoryIconPackId;
 type CategoryIconDefinition={key:string;label:string;keywords:readonly string[]};
 type CategoryIconPackDefinition={id:CategoryIconPack;label:string;license:string;description:string};
 
 export const CATEGORY_ICON_PACKS:readonly CategoryIconPackDefinition[]=[
   {id:'lucide',label:'Lucide',license:'ISC',description:'Το υπάρχον πακέτο του MyFinHub · καθαρό outline ύφος.'},
-  {id:'tabler',label:'Tabler Icons',license:'MIT',description:'6.000+ εικονίδια · 24×24 outline, πολύ κοντά στη γλώσσα του Lucide.'},
-  {id:'phosphor',label:'Phosphor',license:'MIT',description:'Ευέλικτη οικογένεια με πολλαπλά weights και πολύ ευρύ λεξιλόγιο.'},
-  {id:'heroicons',label:'Heroicons',license:'MIT',description:'Δωρεάν εικονίδια από την Tailwind Labs · καθαρό UI-oriented outline.'},
-  {id:'bootstrap',label:'Bootstrap Icons',license:'MIT',description:'2.000+ open-source SVG icons με compact, ευανάγνωστο ύφος.'},
+  {id:'tabler',label:'Tabler Icons',license:'MIT',description:'Τοπικό curated subset με διακριτά 24×24 outline glyphs για τις κατηγορίες του MyFinHub.'},
+  {id:'phosphor',label:'Phosphor',license:'MIT',description:'Τοπικό curated subset της οικογένειας Phosphor, χωρίς CDN ή διπλά οπτικά aliases.'},
+  {id:'heroicons',label:'Heroicons',license:'MIT',description:'Τοπικό curated subset της Tailwind Labs για καθαρό UI-oriented outline.'},
+  {id:'bootstrap',label:'Bootstrap Icons',license:'MIT',description:'Τοπικό curated subset με compact, ευανάγνωστα SVG glyphs για βασικές σημασιολογικές ομάδες.'},
 ] as const;
 
 export const CATEGORY_ICON_REGISTRY=[
