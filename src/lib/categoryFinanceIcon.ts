@@ -30,8 +30,11 @@ function canonicalTarget(settings:FinanceSettings,input:FinanceIconInput){
 
   const subcategory=input.subcategory?.trim();
   if(subcategory){
-    const child=Object.values(records).find(record=>record.kind===kind&&record.parentId===categoryIdentity.id&&matchesLabel(record,subcategory));
-    if(child)return {settings:normalized,kind,category:categoryIdentity.label,subcategory:child.label};
+    const child=Object.values(records).find(record=>record.kind===kind&&(record.parentId===categoryIdentity.id||(record.parentAliases??[]).includes(categoryIdentity.id))&&matchesLabel(record,subcategory));
+    if(child){
+      const currentParent=child.parentId?records[child.parentId]:undefined;
+      return {settings:normalized,kind,category:currentParent?.label??categoryIdentity.label,subcategory:child.label};
+    }
   }
   return {settings:normalized,kind,category:categoryIdentity.label,subcategory:undefined};
 }
