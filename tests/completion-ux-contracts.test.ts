@@ -253,4 +253,14 @@ describe('completion UX contracts',()=>{
     expect(css).toContain('box-shadow:0 24px 64px');
   });
 
+
+  it('captures final screenshots only after route and tab motion settles',()=>{
+    const harness=read('scripts/final-screenshots-qa.mjs');
+    expect(harness).toContain('await sleep(260)');
+    expect(harness).toContain('await sleep(220)');
+    expect(harness).toContain('await sleep(180)');
+    const shell=read('src/components/AppShell.tsx');
+    expect(shell).toContain("transition={{duration:reduce?0:.18}}");
+  });
+
 });
