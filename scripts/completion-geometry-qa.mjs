@@ -105,6 +105,29 @@ try{
       console.log(`${viewport.name}/${page}: geometry clean`);
     }
   }
+  await c.send('Emulation.setDeviceMetricsOverride',{width:375,height:812,deviceScaleFactor:1,mobile:true});
+  const sessionUrl=new URL(baseUrl);sessionUrl.searchParams.set('page','settings');
+  await c.send('Page.navigate',{url:sessionUrl.href});
+  for(let i=0;i<140;i+=1){if(await c.call("function(){return document.readyState==='complete'&&Boolean(document.querySelector('#main-workspace h1'))}"))break;await sleep(80)}
+  await sleep(120);
+  const sessionBanner=await c.call(`function(){
+    document.querySelector('[data-qa-session-error]')?.remove();
+    const banner=document.createElement('div');
+    banner.className='session-error-banner';
+    banner.dataset.qaSessionError='true';
+    banner.setAttribute('role','alert');
+    banner.textContent='QA revoked device session';
+    document.body.appendChild(banner);
+    const nav=document.querySelector('.mobile-nav');
+    const br=banner.getBoundingClientRect(),nr=nav?.getBoundingClientRect();
+    const overlap=nr?Math.max(0,Math.min(br.right,nr.right)-Math.max(br.left,nr.left))*Math.max(0,Math.min(br.bottom,nr.bottom)-Math.max(br.top,nr.top)):0;
+    const result={banner:{left:br.left,right:br.right,top:br.top,bottom:br.bottom},nav:nr?{left:nr.left,right:nr.right,top:nr.top,bottom:nr.bottom}:null,overlap,viewport:{width:innerWidth,height:innerHeight},bottom:getComputedStyle(banner).bottom};
+    banner.remove();
+    return result;
+  }`);
+  assert(sessionBanner.nav&&sessionBanner.overlap===0,`mobile session error banner overlaps bottom navigation: ${JSON.stringify(sessionBanner)}`);
+  assert(sessionBanner.banner.left>=-1&&sessionBanner.banner.right<=sessionBanner.viewport.width+1&&sessionBanner.banner.bottom<sessionBanner.nav.top,`mobile session error banner is not safely above bottom navigation: ${JSON.stringify(sessionBanner)}`);
+
   c.close();
   console.log('Completion geometry/overflow QA passed.');
 }finally{child.kill('SIGTERM');await sleep(200);rmSync(profile,{recursive:true,force:true,maxRetries:5,retryDelay:100})}
