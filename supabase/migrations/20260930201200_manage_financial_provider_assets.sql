@@ -81,9 +81,9 @@ begin
   end if;
 
   insert into public.rheomiq_financial_providers
-    (id,display_name,short_name,provider_kind,country_code,logo_asset_key,wordmark_asset_key,sort_order,active,updated_at)
+    (id,display_name,short_name,provider_kind,country_code,sort_order,active)
   values
-    (p_id,btrim(p_display_name),btrim(p_short_name),p_provider_kind,nullif(upper(btrim(coalesce(p_country_code,''))),''),null,null,p_sort_order,true,now())
+    (p_id,btrim(p_display_name),btrim(p_short_name),p_provider_kind,nullif(upper(btrim(coalesce(p_country_code,''))),''),p_sort_order,true)
   on conflict (id) do update set
     display_name=excluded.display_name,
     short_name=excluded.short_name,
