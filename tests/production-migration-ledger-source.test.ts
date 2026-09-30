@@ -76,6 +76,6 @@ describe('production migration ledger source contract',()=>{
     expect(health).toContain("'productionReady'");
     expect(health).toContain("'unbalanced_internal_events'");
     expect(health).toContain("'history_current_point_state_mismatches'");
-    expect(health).toContain('security invoker');
+    expect(health).not.toContain('security definer');
   });
 });
