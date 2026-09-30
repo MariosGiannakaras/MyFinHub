@@ -27,13 +27,16 @@ function parseProvider(value:unknown):FinancialProvider|null{
   const shortName=typeof row.shortName==='string'?row.shortName.trim():'';
   const kind=typeof row.providerKind==='string'?row.providerKind as FinancialProviderKind:'' as FinancialProviderKind;
   const countryCode=row.countryCode===null||row.countryCode===undefined?undefined:typeof row.countryCode==='string'?row.countryCode.trim():'';
-  const logoAssetKey=typeof row.logoAssetKey==='string'?row.logoAssetKey.trim():'';
-  const wordmarkAssetKey=typeof row.wordmarkAssetKey==='string'?row.wordmarkAssetKey.trim():'';
+  const logoAssetKey=row.logoAssetKey===null||row.logoAssetKey===undefined?null:typeof row.logoAssetKey==='string'?row.logoAssetKey.trim():'';
+  const wordmarkAssetKey=row.wordmarkAssetKey===null||row.wordmarkAssetKey===undefined?null:typeof row.wordmarkAssetKey==='string'?row.wordmarkAssetKey.trim():'';
+  const logoUrl=row.logoUrl===null||row.logoUrl===undefined?null:typeof row.logoUrl==='string'?row.logoUrl.trim():'';
+  const wordmarkUrl=row.wordmarkUrl===null||row.wordmarkUrl===undefined?null:typeof row.wordmarkUrl==='string'?row.wordmarkUrl.trim():'';
   const sortOrder=Number(row.sortOrder);
   if(!/^[a-z][a-z0-9-]{0,63}$/.test(id)||!displayName||displayName.length>120||!shortName||shortName.length>80)return null;
   if(!['bank','fintech','wallet','payment'].includes(kind)||countryCode!==undefined&&!/^[A-Z]{2}$/.test(countryCode))return null;
-  if(!/^[a-z][a-z0-9-]{0,63}$/.test(logoAssetKey)||!/^[a-z][a-z0-9-]{0,63}$/.test(wordmarkAssetKey)||!Number.isSafeInteger(sortOrder))return null;
-  return {id,displayName,shortName,kind,kindLabel:kindLabels[kind],countryCode,logoAssetKey,wordmarkAssetKey,sortOrder};
+  if(logoAssetKey!==null&&!/^[a-z][a-z0-9-]{0,95}$/.test(logoAssetKey)||wordmarkAssetKey!==null&&!/^[a-z][a-z0-9-]{0,95}$/.test(wordmarkAssetKey)||!Number.isSafeInteger(sortOrder))return null;
+  if(logoUrl!==null&&!/^https:\/\//.test(logoUrl)||wordmarkUrl!==null&&!/^https:\/\//.test(wordmarkUrl))return null;
+  return {id,displayName,shortName,kind,kindLabel:kindLabels[kind],countryCode,logoAssetKey,wordmarkAssetKey,logoUrl,wordmarkUrl,sortOrder};
 }
 
 async function json(response:Response){return response.json().catch(()=>null) as Promise<any>}
