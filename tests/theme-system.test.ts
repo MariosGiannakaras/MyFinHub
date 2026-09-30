@@ -5,7 +5,7 @@ function channel(value:number){const normalized=value/255;return normalized<=.04
 function luminance(hex:string){const value=hex.replace('#','');const [r,g,b]=[0,2,4].map(index=>Number.parseInt(value.slice(index,index+2),16));return .2126*channel(r)+.7152*channel(g)+.0722*channel(b)}
 function contrast(a:string,b:string){const [bright,dark]=[luminance(a),luminance(b)].sort((x,y)=>y-x);return (bright+.05)/(dark+.05)}
 
-const requiredRoles=['--canvas','--surface','--surface-elevated','--surface-inset','--ink','--muted','--line','--accent','--success','--warning','--error','--info','--finance-positive','--finance-negative','--finance-neutral','--chart-grid','--overlay','--focus-outline'] as const;
+const requiredRoles=['--canvas','--surface','--surface-elevated','--surface-inset','--ink','--muted','--line','--control-border','--accent','--success','--warning','--error','--info','--finance-positive','--finance-negative','--finance-neutral','--chart-grid','--overlay','--focus-outline'] as const;
 
 describe('semantic theme system',()=>{
   it('keeps the same semantic roles in Light and Dark',()=>{
@@ -25,6 +25,13 @@ describe('semantic theme system',()=>{
     expect(contrast(DARK_THEME_TOKENS['--ink'],DARK_THEME_TOKENS['--canvas'])).toBeGreaterThanOrEqual(7);
     expect(contrast(LIGHT_THEME_TOKENS['--muted'],LIGHT_THEME_TOKENS['--surface-elevated'])).toBeGreaterThanOrEqual(4.5);
     expect(contrast(DARK_THEME_TOKENS['--muted'],DARK_THEME_TOKENS['--surface-elevated'])).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('keeps interactive control boundaries and secondary dark text distinguishable',()=>{
+    expect(contrast(LIGHT_THEME_TOKENS['--control-border'],LIGHT_THEME_TOKENS['--control-bg'])).toBeGreaterThanOrEqual(3);
+    expect(contrast(DARK_THEME_TOKENS['--control-border'],DARK_THEME_TOKENS['--control-bg'])).toBeGreaterThanOrEqual(3);
+    expect(contrast(DARK_THEME_TOKENS['--muted-2'],DARK_THEME_TOKENS['--surface-elevated'])).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(DARK_THEME_TOKENS['--info'],DARK_THEME_TOKENS['--surface-elevated'])).toBeGreaterThanOrEqual(4.5);
   });
 
   it('keeps status colors distinguishable from their semantic backgrounds',()=>{

@@ -1,6 +1,6 @@
 # MyFinHub completion audit and implementation plan
 
-Status: expanded implementation complete; final validation rerun pending  
+Status: expanded implementation source-complete; dark-theme proof and final validation rerun pending  
 Tracker: #476  
 Target branch: `feat/476-completion-audit-hardening`  
 Integration target: `develop`  
@@ -209,6 +209,18 @@ The following findings were discovered after the expanded audit was reopened. Th
 | DA-52 | Mobile Quick Entry fixed overlay | Manual inspection of current 375px evidence showed the compact fixed Quick Entry button still covered ordinary page content during normal scrolling (including Lending history and Recurring/Transactions card content), even though max-scroll geometry proved final actions could eventually clear it. | P0 overlap/UX | **Source-fixed, proof pending.** Quick Entry is now a dedicated one-tap action inside the six-cell mobile bottom navigation, eliminating the floating overlay entirely while preserving Dashboard, Transactions, Savings, Cards and More navigation. Old FAB CSS/contracts were removed. |
 
 | DA-53 | Mobile bottom-nav label readability | Fresh 375px evidence after DA-52 proved the non-overlapping six-cell nav, but the original long labels (`Dashboard`, `Συναλλαγές`, `Αποταμίευση`, `Περισσότερα`) visually collided across adjacent cells. Geometry containment alone did not catch the readability defect. | P0 navigation UX | **Source-fixed, proof pending.** Visible phone labels are now concise (`Αρχική`, `Κινήσεις`, `Στόχοι`, `Νέα`, `Κάρτες`, `Άλλα`) while full page names remain accessible through aria labels; compact font size is also raised slightly. |
+
+| DA-54 | Cross-app / Dark theme | Dark mode had a semantic-coverage gap rather than a wholesale palette failure. Core text/status tokens were readable, but interactive borders were only ~1.38:1 against dark control backgrounds, `.eyebrow` retained a light-theme blue at ~2.5:1 on elevated dark surfaces, and mobile More / several Settings surfaces retained near-white literal backgrounds while inheriting light dark-theme foreground tokens. | P1 accessibility / visual consistency | **Source-fixed, proof pending.** Added a dedicated semantic control-border role (>=3:1 against control backgrounds), moved affected chrome to semantic dark surfaces/colors, and added token + computed-style rendered contrast assertions including the mobile More state. Fresh screenshots still require manual inspection. |
+
+### Dark-theme contrast analysis — DA-54
+
+The owner-reported dark-theme issue is confirmed. The correct response is targeted semantic hardening, not simply making the entire palette darker.
+
+- Existing dark body/text pairs are already strong: primary ink/canvas is ~16.1:1, secondary text/surface is ~9.2:1, muted/elevated is ~6.5:1 and muted-2/elevated is ~4.69:1.
+- Existing semantic success/error/warning/info foregrounds are also readable on their paired dark backgrounds (roughly 6.4:1–8.9:1).
+- The material failure was **component-boundary and selector coverage**: `--border-subtle` was only ~1.38:1 against `--control-bg`, so interactive controls could visually merge into surrounding surfaces; the hardcoded `#315fae` eyebrow was only ~2.5:1 on the elevated dark surface; and mobile More / Settings still contained light-biased literal backgrounds that could pair with dark-theme light foregrounds.
+- Remediation introduces `--control-border` specifically for interactive control boundaries (`#8096b3` Light and `#5a7092` Dark, both >=3:1 against their control background) while retaining subtle decorative dividers. Known light-biased chrome is mapped through semantic theme roles rather than duplicated per-theme component CSS.
+- Completion proof requires both static contrast tests and **computed rendered styles** on real controls, plus a rendered dark mobile More state and manual inspection of the existing desktop/tablet/mobile Light/Dark matrix. Source changes alone do not close DA-54.
 
 **Database coordination note — 2026-09-30:** the owner reports that the separate DB change set is complete. The only remaining DB-side action is the owner's manual logo upload. This branch will not run Supabase reads, mutations, migrations, backfills or advisor checks unless explicitly requested again.
 

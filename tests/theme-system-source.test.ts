@@ -27,6 +27,15 @@ describe('theme architecture source contract',()=>{
     expect(settings).toContain('aria-label="Θέμα εμφάνισης"');
   });
 
+  it('binds interactive borders and formerly light-biased chrome to semantic theme roles',()=>{
+    expect(theme).toContain("'--control-border':'#5a7092'");
+    expect(theme).toContain('.eyebrow,.quick-modal>header small{color:var(--info)!important}');
+    expect(theme).toContain('.mobile-more-menu{background:var(--surface-translucent)!important');
+    expect(theme).toContain('.keyboard-shortcut-row kbd{background:var(--control-bg)!important');
+    expect(rendered).toContain('dark control border contrast');
+    expect(rendered).toContain('dark mobile More menu');
+  });
+
   it('registers a dedicated rendered Light Dark matrix',()=>{
     expect(runner).toContain("scripts/theme-system-qa.mjs");
     expect(rendered).toContain("for(const theme of ['light','dark'])");
