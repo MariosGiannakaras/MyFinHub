@@ -1,6 +1,6 @@
 # MyFinHub completion audit and implementation plan
 
-Status: audit complete, implementation pending  
+Status: implementation complete, final validation pending  
 Tracker: #476  
 Target branch: `feat/476-completion-audit-hardening`  
 Integration target: `develop`  
@@ -22,7 +22,7 @@ Repository/source audit covered the routed pages, AppShell, Quick Entry/contextu
 Live Supabase audit covered:
 
 - all public tables and columns;
-- 29 applied canonical migrations;
+- 29 pre-existing applied canonical migrations at audit time; two completion hardening migrations were subsequently applied;
 - RLS policies and grants;
 - owner/AAL2/device-session predicates;
 - finance-state/history/card-vault/account-metadata functions;
@@ -277,54 +277,55 @@ Required:
 - retain local OCR/privacy boundary;
 - no server receipt-image store is to be added.
 
-## 4. Backend/API/database implementation plan
+## 4. Backend/API/database implementation result
 
-### 4.1 Active-device security migration
+### 4.1 Active-device security boundary — implemented
 
-Add one additive migration that:
+Two additive production migrations are now applied and mirrored exactly in the repository migration ledger:
 
-1. keeps device-session INSERT as the bootstrap exception: owner + AAL2 + JWT session id + not revoked;
-2. changes device-session SELECT and UPDATE to require the current request session itself to be active;
-3. changes `rheomiq_card_secrets` CRUD policies to require:
-   - row owner = `auth.uid()`;
-   - `rheomiq_is_owner_aal2()`, which includes active-device status;
-4. changes `rheomiq_account_metadata` SELECT/INSERT/UPDATE the same way;
-5. updates `rheomiq_upsert_account_metadata` to use the canonical active-device owner+AAL2 predicate;
-6. preserves service-role behavior where explicitly required by existing functions;
-7. does not alter finance data, card ciphertext, account metadata values or history.
+- `20260930062504_harden_active_device_sensitive_rls.sql`
+  - keeps device-session INSERT as the bootstrap exception: owner + AAL2 + JWT session id + not revoked;
+  - requires the current request session to be active for device-session SELECT/UPDATE;
+  - changes `rheomiq_card_secrets` CRUD and `rheomiq_account_metadata` SELECT/INSERT/UPDATE to the canonical owner + AAL2 + active-device predicate;
+  - changes `rheomiq_upsert_account_metadata` to the same canonical predicate;
+  - changes authorization only and does not rewrite finance state, history, card ciphertext or account metadata values.
 
-Acceptance:
-- a revoked AAL2 session cannot read/write finance state, card vault, account metadata or enumerate/revoke other sessions through direct Data API/RPC access;
-- a fresh AAL2 session can still bootstrap its own device row;
-- the current active session can list/revoke other devices;
-- no unrevocation path is introduced.
+- `20260930062619_move_active_device_rls_helper_private.sql`
+  - moves the RLS-only `SECURITY DEFINER` active-session helper into a non-exposed `private` schema;
+  - keeps the public `rheomiq_is_owner_aal2()` helper as `SECURITY INVOKER`;
+  - removes the exposed public active-session RPC;
+  - keeps direct Data API/RPC access fail-closed after device revocation.
 
-### 4.2 RLS performance cleanup
+Live read-back verification confirmed the final policies/functions match the repository migrations.
 
-- rewrite the INSERT policy JWT helper to a cached scalar subquery form accepted by the current Supabase advisor;
-- rerun security/performance advisors after the migration;
-- do not drop informational unused indexes in this batch.
+### 4.2 RLS performance/security advisor cleanup — implemented
 
-### 4.3 API consistency
+- the device-session INSERT JWT expression now uses the cached scalar-subquery form;
+- the previous `auth_rls_initplan` performance warning is gone;
+- the temporary exposed-security-definer advisor finding created by the first hardening step is also gone after moving the helper to `private`;
+- the remaining four unused-index findings are informational and are intentionally not removed without query evidence.
 
-- ensure card-vault/account-metadata/device endpoints consistently translate revoked-device failures into the same user-facing session-expired/revoked handling already used by finance endpoints;
-- keep same-origin mutation checks;
-- keep bearer support only where native clients require it;
-- do not expose service-role credentials to clients.
+### 4.3 API/client consistency — implemented
 
-### 4.4 Auth configuration
+- finance, card-vault and account-metadata clients now route `AUTH_REQUIRED` / `DEVICE_ACCESS_REVOKED` through one auth-expiry event;
+- revoked-device failures produce a re-login/MFA path rather than leaving finance-adjacent surfaces in a stale authenticated state;
+- same-origin mutation checks, bearer/native boundaries and service-role secrecy remain unchanged.
 
-External project configuration:
-- enable leaked-password protection if available on the current Supabase plan;
-- keep email/password + TOTP only;
-- do not add social OAuth, magic links or phone auth.
+### 4.4 Auth configuration — plan-limited
+
+The live advisor still reports leaked-password protection as disabled. Supabase documentation states that leaked-password protection is available on **Pro Plan and above**, while this organization is currently on the **Free** plan. Therefore:
+
+- no repository or database workaround is introduced;
+- email/password + mandatory TOTP/AAL2 remains the current product authentication model;
+- leaked-password protection should be enabled if/when the Supabase organization is upgraded to a plan that supports it.
 
 ### 4.5 PostgreSQL upgrade readiness
 
-Before a future 17.11 infrastructure upgrade:
+Before a future PostgreSQL 17.11 infrastructure upgrade:
+
 - rerun the official Supabase detection queries;
-- current audit result: `pgcrypto` installed, no `ltree`, no `btree_gist`, no custom operators detected;
-- MyFinHub does not use pgcrypto PGP functions for the card vault, so no re-encryption task is currently indicated.
+- current audit result remains: `pgcrypto` installed, no `ltree`, no `btree_gist`, no custom operators detected;
+- MyFinHub uses application-side AES-GCM rather than pgcrypto PGP functions for the card vault, so no finance/card-vault re-encryption task is currently indicated.
 
 Reference:
 - https://supabase.com/changelog/postgres-15-19-17-11-breaking-changes
@@ -369,3 +370,35 @@ The application is complete for this batch only when all are true:
 - the final integrated validation is green on the exact final head;
 - final changed-surface screenshots have been manually reviewed;
 - no Android work, production release or destructive data operation is included.
+
+
+## 7. Current implementation checkpoint
+
+Implementation is complete; validation/integration is the remaining phase.
+
+Completed in this batch:
+
+- compact mobile Quick Entry plus fixed-chrome clearance;
+- bounded/accessibility-safe Dashboard tablet account geometry;
+- bounded mobile Transactions pagination with filter/search/sort reset behavior;
+- semantic mobile Lending history cards with privacy-safe amounts;
+- intentional Cards phone snap carousel;
+- Settings active-tab auto-scroll and visible horizontal overflow affordance;
+- progressive disclosure for secondary Dashboard, Planning, Reports and Attention content on phones without hiding urgent/obligation actions;
+- narrow-phone Savings action layout;
+- consistent revoked-session handling across finance, card-vault and account-metadata clients;
+- active-device defense in depth for device administration, card secrets and account metadata at PostgreSQL RLS/RPC boundaries;
+- regression/source contracts for the changed UX/security behavior;
+- live Supabase advisor/read-back verification after both migrations.
+
+Current repository synchronization:
+- the feature branch is currently 0 commits behind `develop`;
+- no CI has been run for this implementation batch yet, by design.
+
+Remaining before merge:
+1. perform the final integrated validation wave on the completed implementation;
+2. generate rendered QA evidence for the changed surfaces;
+3. manually inspect the actual final screenshots at relevant desktop/tablet/mobile and light/dark states;
+4. fix any defects found and rerun affected validation;
+5. run the full exact-head CI/security/cross-engine/performance/Windows gates;
+6. squash-merge to `develop` only when the actual final head is green.
