@@ -46,10 +46,21 @@ const analysisFn=`function(){
       if(ratio>.12)overlaps.push({chrome:selector(fixed),action:selector(action),ratio:Number(ratio.toFixed(2)),actionRect:rect(action)});
     }
   }
+  const desktopShortcut=document.querySelector('.period-attention-shortcut');
+  const desktopChromeOverlaps=[];
+  if(desktopShortcut&&visible(desktopShortcut)){
+    const sr=desktopShortcut.getBoundingClientRect();
+    for(const button of [...document.querySelectorAll('.topbar button')].filter(visible)){
+      const br=button.getBoundingClientRect();
+      const width=Math.max(0,Math.min(sr.right,br.right)-Math.max(sr.left,br.left));
+      const height=Math.max(0,Math.min(sr.bottom,br.bottom)-Math.max(sr.top,br.top));
+      if(width&&height)desktopChromeOverlaps.push({shortcut:selector(desktopShortcut),button:selector(button),rect:rect(button)});
+    }
+  }
   const docOverflow=Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth;
   const main=document.querySelector('#main-workspace');
   const mainRect=main?rect(main):null;
-  return {docOverflow,rogue,overlaps:overlaps.slice(0,20),mainRect,scrollY,scrollHeight:document.documentElement.scrollHeight};
+  return {docOverflow,rogue,overlaps:overlaps.slice(0,20),desktopChromeOverlaps,mainRect,scrollY,scrollHeight:document.documentElement.scrollHeight};
 }`;
 try{
   await waitHttp(`http://127.0.0.1:${port}/json/version`);
@@ -70,6 +81,7 @@ try{
         assert(result.docOverflow<=1,`${viewport.name}/${page}@${y}: document horizontal overflow ${result.docOverflow}px`);
         assert(result.rogue.length===0,`${viewport.name}/${page}@${y}: off-viewport controls ${JSON.stringify(result.rogue)}`);
         if(viewport.mobile)assert(result.overlaps.length===0,`${viewport.name}/${page}@${y}: fixed mobile chrome overlaps actions ${JSON.stringify(result.overlaps)}`);
+        assert(result.desktopChromeOverlaps.length===0,`${viewport.name}/${page}@${y}: Dashboard shortcut overlaps topbar controls ${JSON.stringify(result.desktopChromeOverlaps)}`);
       }
       console.log(`${viewport.name}/${page}: geometry clean`);
     }
