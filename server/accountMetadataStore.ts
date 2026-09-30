@@ -61,6 +61,7 @@ async function request(path:string,init:RequestInit,accessToken:string){
     if(response.status===401)throw new ApiError(401,'AUTH_REQUIRED','Authentication required.');
     if(response.status===403||/42501|FORBIDDEN/i.test(marker))throw new ApiError(403,'FORBIDDEN','Access denied.');
     if(/40001|REVISION_CONFLICT/i.test(marker))throw new ApiError(409,'REVISION_CONFLICT','Account metadata changed on another client. Reload and try again.');
+    if(/23505|PROVIDER_ID_CONFLICT|ASSET_KEY_CONFLICT/i.test(marker))throw new ApiError(409,'PROVIDER_ID_CONFLICT','Υπάρχει ήδη πάροχος ή εικόνα με το ίδιο αναγνωριστικό.');
     if(/22023|INVALID_ACCOUNT_ID|INVALID_IBAN/i.test(marker))throw new ApiError(400,/INVALID_IBAN/i.test(marker)?'INVALID_IBAN':'INVALID_ACCOUNT_ID','Invalid account metadata.');
     if(response.status>=500)throw new ApiError(503,'ACCOUNT_METADATA_UNAVAILABLE','Account metadata is temporarily unavailable. Try again.');
     throw new ApiError(502,'ACCOUNT_METADATA_STORAGE_ERROR','Account metadata request failed.',false);
@@ -181,7 +182,7 @@ type FinancialProviderWrite={
 };
 
 export async function writeFinancialProvider(input:FinancialProviderWrite,accessToken:string):Promise<FinancialProviderRow>{
-  const payload=await request('rpc/rheomiq_upsert_financial_provider',{
+  const payload=await request('rpc/rheomiq_create_financial_provider',{
     method:'POST',
     body:JSON.stringify({
       p_id:input.id,
