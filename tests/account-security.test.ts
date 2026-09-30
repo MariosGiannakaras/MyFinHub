@@ -14,7 +14,7 @@ describe('account security settings',()=>{
     expect(code(()=>parseAccountSecurityWrite({action:'email',email:'owner@example.com',role:'admin'}))).toBe('INVALID_ACCOUNT_CHANGE');
   });
 
-  it('requires a distinct strong current/new password pair',()=>{
+  it('requires a present current password and a distinct strong new password',()=>{
     const strong='Νεος-Password-2026!';
     expect(ACCOUNT_PASSWORD_MIN_LENGTH).toBe(12);
     expect(accountPasswordPolicyError(strong)).toBe('');
@@ -23,7 +23,8 @@ describe('account security settings',()=>{
     expect(accountPasswordPolicyError('NoNumbersHere!')).not.toBe('');
     expect(accountPasswordPolicyError('NoSymbolsHere123')).not.toBe('');
     expect(parseAccountSecurityWrite({action:'password',currentPassword:'old-password',newPassword:strong})).toEqual({action:'password',currentPassword:'old-password',newPassword:strong});
-    expect(code(()=>parseAccountSecurityWrite({action:'password',currentPassword:'short',newPassword:strong}))).toBe('INVALID_CURRENT_PASSWORD');
+    expect(parseAccountSecurityWrite({action:'password',currentPassword:'short',newPassword:strong})).toEqual({action:'password',currentPassword:'short',newPassword:strong});
+    expect(code(()=>parseAccountSecurityWrite({action:'password',currentPassword:'',newPassword:strong}))).toBe('INVALID_CURRENT_PASSWORD');
     expect(code(()=>parseAccountSecurityWrite({action:'password',currentPassword:strong,newPassword:strong}))).toBe('PASSWORD_UNCHANGED');
     expect(code(()=>parseAccountSecurityWrite({action:'password',currentPassword:'old-password',newPassword:'short'}))).toBe('INVALID_NEW_PASSWORD');
   });
