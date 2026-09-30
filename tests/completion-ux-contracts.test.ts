@@ -12,6 +12,11 @@ describe('completion UX contracts',()=>{
     expect(appShell).toContain('className="mobile-nav-quick"');
     expect(appShell).toContain('data-global-quick-entry="mobile"');
     expect(appShell).toContain('<span>Νέα</span>');
+    expect(appShell).toContain("dashboard:'Αρχική'");
+    expect(appShell).toContain("transactions:'Κινήσεις'");
+    expect(appShell).toContain("savings:'Στόχοι'");
+    expect(appShell).toContain('<span>Άλλα</span>');
+    expect(appShell).toContain('aria-label={item.label}');
     expect(appShell).not.toContain('className="mobile-quick-action"');
     expect(quick).not.toContain('.mobile-quick-action{');
     expect(coordination).toContain('grid-template-columns:repeat(6,minmax(0,1fr))');
