@@ -217,6 +217,14 @@ export function moveSubcategoryIconPreferences(
   };
 }
 
+export function removeSubcategoryIconPreferences(settings:FinanceSettings,kind:CategoryKind,category:string,subcategory:string):FinanceSettings{
+  const key=subcategoryIconPreferenceKey(kind,category,subcategory);
+  const subcategoryIcons={...(settings.subcategoryIcons??{})};delete subcategoryIcons[key];
+  const subcategoryIconPackSelections={...(settings.subcategoryIconPackSelections??{})};delete subcategoryIconPackSelections[key];
+  const subcategoryIconColors={...(settings.subcategoryIconColors??{})};delete subcategoryIconColors[key];
+  return {...settings,subcategoryIcons,subcategoryIconPackSelections,subcategoryIconColors};
+}
+
 export function removeCategoryIconPreferences(settings:FinanceSettings,kind:CategoryKind,category:string):FinanceSettings{
   const categoryKey=categoryIconPreferenceKey(kind,category);
   const prefix=`${kind}:${clean(category)}:`;
