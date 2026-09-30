@@ -1,6 +1,6 @@
 # MyFinHub completion audit and implementation plan
 
-Status: implementation complete, final validation pending  
+Status: expanded completion audit reopened; implementation in progress  
 Tracker: #476  
 Target branch: `feat/476-completion-audit-hardening`  
 Integration target: `develop`  
@@ -10,7 +10,7 @@ Release target: none — `main` remains release-only
 
 This plan is based on the actual current product/repository state, not on the older redesign specification.
 
-Visual evidence inspected:
+Visual evidence inspected so far. The older v1.3.0 archive is historical evidence only; it is **not** accepted as proof that the current feature branch is visually complete:
 
 - the persistent v1.3.0 final archive: 63 PNGs covering 12 routed pages, 6 additional Settings states and 3 authentication states across desktop/tablet/mobile;
 - the post-v1.3 app-wide design-system QA from #439 / CI artifact `11004599074`, containing 240 PNGs plus 29 QA manifests (269 artifacts total);
@@ -80,6 +80,64 @@ No product code, database schema or production data was changed during this audi
 
 12. **Unused-index notices are not an implementation blocker.**
     Four indexes are currently reported as unused. At this scale, do not remove them solely from advisor telemetry; keep until query evidence proves they are unnecessary.
+
+## 2A. Expanded audit findings after owner review
+
+The earlier completion assessment was reopened after owner-observed overlap/overflow and functional defects. The following are now explicit completion blockers.
+
+1. **Provider branding registry and asset inventory were inconsistent.**
+   Production contained owner-provided asset rows for Piraeus, Alpha, Revolut, Viva and Payzy while several corresponding `rheomiq_financial_providers` rows still advertised `generic`. The UI could also bypass that registry decision through identity-based local artwork fallback. This meant the database was not the actual branding source of truth.
+
+   Implemented during the expanded audit:
+   - production migration `20260930075049_align_financial_provider_brand_assets.sql` now points provider rows only to asset roles that actually exist and are active;
+   - Piraeus, Alpha, Revolut, Viva and Payzy now use verified available logo assets as applicable;
+   - missing National Bank, Eurobank and PayPal assets remain generic instead of being fabricated;
+   - `BankBrandMark` now respects registry metadata before rendering local artwork;
+   - Settings account creation now presents providers as a visual brand picker instead of a text-only select.
+
+2. **Settings icon-family UX was not persistent or user-legible enough.**
+   Previously the selected library was transient UI state and each category effectively retained only one active icon value. Switching families therefore did not provide the expected “show me this whole taxonomy in the selected family and remember my choices per library” behavior.
+
+   Implemented during the expanded audit:
+   - selected icon family is persisted in FinanceSettings;
+   - the full category/subcategory preview changes immediately with the selected family;
+   - each category/subcategory remembers a separate selected semantic icon for Lucide, Tabler, Phosphor, Heroicons and Bootstrap;
+   - switching away and back restores that library's prior selection;
+   - icon color can be automatic, one of the presets or a custom hex color;
+   - colors persist per category/subcategory and render through shared `FinanceIcon` surfaces;
+   - taxonomy rename/move/delete operations migrate or clean the pack-specific selections and colors;
+   - server validation now bounds and validates the added settings;
+   - rendered icon-pack QA now asserts live family switching, per-family restoration, color preview and mobile geometry.
+
+3. **Card-details QA had a material functional gap.**
+   Existing browser QA opened and closed the card editor but never performed a real Save → persistence → Reveal round trip. Unit tests mocked the persistence layer, so an operational vault failure could escape both kinds of coverage.
+
+   Live-state evidence also shows seven card metadata records, five with `last4`, but currently zero rows in `rheomiq_card_secrets`. That is compatible with legacy metadata but proves that `last4` must not be treated as evidence that full PAN/expiry/CVV exists in the encrypted vault.
+
+   Implemented during the expanded audit:
+   - editor now explicitly distinguishes legacy `last4` metadata from a real vault record;
+   - server-side missing/invalid encryption configuration maps to a distinct safe `CARD_VAULT_CONFIG_ERROR`;
+   - client shows an actionable, non-secret error instead of a generic failure;
+   - a real store round-trip test now covers encryption, write, reveal, partial update and delete;
+   - rendered frontend QA now performs actual card-details Save and subsequent Reveal using the normal editor/client path with a deterministic QA vault boundary.
+
+   Still required before completion:
+   - verify the production server has valid card-vault encryption configuration through an authenticated runtime save attempt or equivalent owner-only operational evidence;
+   - do not create fake production card secrets merely to prove the path.
+
+4. **OCR exists in source, but source presence is not sufficient proof of working OCR.**
+   The repository contains Tesseract.js 7, local Greek/English trained data, worker/WASM synchronization, local IndexedDB receipt drafts, deterministic parsing and an end-to-end browser QA script. The expanded audit therefore treats OCR as an **operational verification** item rather than a missing feature.
+
+   Implemented during the expanded audit:
+   - OCR now preflights `/ocr/asset-manifest.json` before starting the worker;
+   - missing worker/WASM/language packaging produces explicit `OCR_ASSETS_UNAVAILABLE` user feedback;
+   - end-to-end OCR QA now verifies the packaged manifest before synthetic receipt capture → OCR → reviewed Quick Entry handoff.
+
+   Still required:
+   - run this on the actual current branch build and inspect the resulting receipt/OCR screenshots manually.
+
+5. **Generic horizontal-overflow checks were insufficient for overlap defects.**
+   A page can have `scrollWidth === innerWidth` and still have a floating action button or fixed bottom navigation covering an actionable control. A new all-route geometry QA now checks desktop/tablet/mobile/narrow viewports, off-viewport interactive controls, and mobile fixed-chrome occlusion at top/middle/bottom scroll positions.
 
 ## 3. Page-by-page audit and required changes
 
@@ -372,33 +430,28 @@ The application is complete for this batch only when all are true:
 - no Android work, production release or destructive data operation is included.
 
 
-## 7. Current implementation checkpoint
+## 7. Current expanded-audit checkpoint
 
-Implementation is complete; validation/integration is the remaining phase.
+The earlier “implementation complete” checkpoint is superseded. The branch remains **not merge-ready** until the expanded audit closes.
 
-Completed in this batch:
+Completed or implemented in the reopened audit:
+- active-device RLS/RPC hardening and revoked-session handling;
+- previously identified responsive fixes;
+- verified-provider branding alignment in live Supabase and corresponding UI source-of-truth changes;
+- visual provider selection in Settings;
+- persistent icon-family selection, separate per-library icon memory and per-category/subcategory colors;
+- real card-vault store round-trip coverage plus UI Save → Reveal rendered coverage;
+- explicit legacy-card/vault status in the card editor;
+- OCR packaged-asset preflight and stronger end-to-end QA;
+- all-route geometry/overflow/mobile-occlusion audit added to the final rendered suite.
 
-- compact mobile Quick Entry plus fixed-chrome clearance;
-- bounded/accessibility-safe Dashboard tablet account geometry;
-- bounded mobile Transactions pagination with filter/search/sort reset behavior;
-- semantic mobile Lending history cards with privacy-safe amounts;
-- intentional Cards phone snap carousel;
-- Settings active-tab auto-scroll and visible horizontal overflow affordance;
-- progressive disclosure for secondary Dashboard, Planning, Reports and Attention content on phones without hiding urgent/obligation actions;
-- narrow-phone Savings action layout;
-- consistent revoked-session handling across finance, card-vault and account-metadata clients;
-- active-device defense in depth for device administration, card secrets and account metadata at PostgreSQL RLS/RPC boundaries;
-- regression/source contracts for the changed UX/security behavior;
-- live Supabase advisor/read-back verification after both migrations.
+Still required before merge:
+1. finish the deep functional pass across remaining edit/save/delete/payment/settings flows;
+2. run the current-branch rendered suite including card-vault, icon-family, OCR and geometry checks;
+3. manually inspect fresh screenshots for every relevant page/state/viewport/theme, not just manifests;
+4. fix every visual or functional defect found;
+5. reconcile the branch with the current `develop`;
+6. run the exact-final-head CI/CodeQL/Cross-engine/Performance/Windows wave only after the implementation/audit batch is complete;
+7. squash-merge to `develop` only after the expanded audit and exact-head validation are green.
 
-Current repository synchronization:
-- the feature branch is currently 0 commits behind `develop`;
-- no CI has been run for this implementation batch yet, by design.
-
-Remaining before merge:
-1. perform the final integrated validation wave on the completed implementation;
-2. generate rendered QA evidence for the changed surfaces;
-3. manually inspect the actual final screenshots at relevant desktop/tablet/mobile and light/dark states;
-4. fix any defects found and rerun affected validation;
-5. run the full exact-head CI/security/cross-engine/performance/Windows gates;
-6. squash-merge to `develop` only when the actual final head is green.
+No `main` promotion/release is part of this work.
