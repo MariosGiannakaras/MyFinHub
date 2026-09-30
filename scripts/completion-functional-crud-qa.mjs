@@ -1,0 +1,107 @@
+import { execFileSync, spawn } from 'node:child_process';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
+
+const baseUrl=process.env.RHEOMIQ_QA_URL||'http://127.0.0.1:5173/qa.html';
+const evidenceDir=process.env.MYFINHUB_UX_EVIDENCE_DIR||'visual-qa/completion-functional';
+mkdirSync(evidenceDir,{recursive:true});
+const configured=process.env.MYFINHUB_QA_USE_FALLBACK==='1'?process.env.MYFINHUB_QA_FALLBACK_BROWSER:process.env.MYFINHUB_QA_PRIMARY_BROWSER;
+const chrome=configured||execFileSync('bash',['-lc','command -v google-chrome || command -v chromium || command -v chromium-browser'],{encoding:'utf8'}).trim();
+if(!chrome)throw new Error('Chrome/Chromium is required for completion functional QA.');
+const port=9272;
+const profile='/tmp/myfinhub-completion-functional-qa-chrome';
+rmSync(profile,{recursive:true,force:true,maxRetries:5,retryDelay:100});
+const child=spawn(chrome,['--headless=new',`--remote-debugging-port=${port}`,'--remote-debugging-address=127.0.0.1',`--user-data-dir=${profile}`,'--no-sandbox','--disable-gpu','--disable-dev-shm-usage','about:blank'],{stdio:'ignore'});
+const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+async function waitHttp(url){for(let i=0;i<120;i+=1){try{const response=await fetch(url);if(response.ok)return}catch{}await sleep(150)}throw new Error(`Timed out waiting for ${url}`)}
+class Cdp{
+  constructor(url){this.url=url;this.id=0;this.pending=new Map()}
+  async open(){await new Promise((resolve,reject)=>{this.ws=new WebSocket(this.url);this.ws.onopen=resolve;this.ws.onerror=reject;this.ws.onmessage=event=>{const message=JSON.parse(event.data);if(!message.id)return;const pending=this.pending.get(message.id);if(!pending)return;this.pending.delete(message.id);message.error?pending.reject(new Error(message.error.message)):pending.resolve(message.result)}})}
+  send(method,params={}){const id=++this.id;return new Promise((resolve,reject)=>{this.pending.set(id,{resolve,reject});this.ws.send(JSON.stringify({id,method,params}))})}
+  async call(fn,args=[]){const root=await this.send('Runtime.evaluate',{expression:'globalThis'});const result=await this.send('Runtime.callFunctionOn',{objectId:root.result.objectId,functionDeclaration:fn,arguments:args.map(value=>({value})),returnByValue:true,awaitPromise:true});if(result.exceptionDetails)throw new Error(result.exceptionDetails.text||'Runtime function call failed');return result.result.value}
+  close(){this.ws?.close()}
+}
+const assert=(value,message)=>{if(!value)throw new Error(`Completion functional QA assertion failed: ${message}`)};
+try{
+  await waitHttp(`http://127.0.0.1:${port}/json/version`);
+  const target=await fetch(`http://127.0.0.1:${port}/json/new?about:blank`,{method:'PUT'}).then(response=>response.json());
+  const c=new Cdp(target.webSocketDebuggerUrl);await c.open();await c.send('Page.enable');await c.send('Runtime.enable');
+  await c.send('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
+  const visible="function(node){if(!node)return false;const s=getComputedStyle(node),r=node.getBoundingClientRect();return s.display!=='none'&&s.visibility!=='hidden'&&Number(s.opacity)!==0&&r.width>0&&r.height>0}";
+  const waitFor=async(fn,label,args=[])=>{for(let i=0;i<140;i+=1){if(await c.call(fn,args))return;await sleep(80)}throw new Error(`Timed out waiting for ${label}`)};
+  const navigate=async page=>{const url=new URL(baseUrl);url.searchParams.set('page',page);await c.send('Page.navigate',{url:url.href});await waitFor("function(){return document.readyState==='complete'&&Boolean(document.querySelector('#main-workspace h1'))}",`${page} page`);await sleep(100)};
+  const clickText=async(selector,text)=>{const ok=await c.call(`function(selector,text){const visible=${visible};const node=[...document.querySelectorAll(selector)].find(item=>visible(item)&&(item.textContent||'').trim().includes(text));node?.click();return Boolean(node)}`,[selector,text]);assert(ok,`missing visible ${selector} containing ${text}`);await sleep(90)};
+  const setByLabel=async(label,value)=>{
+    const ok=await c.call(`function(label,value){const visible=${visible};const labels=[...document.querySelectorAll('label')].filter(visible);const wrapper=labels.find(item=>(item.textContent||'').replace(/\\s+/g,' ').includes(label));const control=wrapper?.querySelector('input,textarea,select');if(!control)return false;if(control instanceof HTMLSelectElement){control.value=value;control.dispatchEvent(new Event('change',{bubbles:true}));return true}const proto=control instanceof HTMLTextAreaElement?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;const setter=Object.getOwnPropertyDescriptor(proto,'value')?.set;if(setter)setter.call(control,value);else control.value=value;control.dispatchEvent(new Event('input',{bubbles:true}));control.dispatchEvent(new Event('change',{bubbles:true}));return true}`,[label,value]);
+    assert(ok,`missing control for label ${label}`);await sleep(60);
+  };
+  const shot=async name=>{const result=await c.send('Page.captureScreenshot',{format:'png',fromSurface:true});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(result.data,'base64'))};
+
+  console.log('Completion functional QA: Savings create/edit/delete + transaction');
+  await navigate('savings');
+  await clickText('button','Νέος στόχος');
+  await waitFor("function(){return Boolean(document.querySelector('#savings-goal-editor-title'))}",'savings goal editor');
+  await setByLabel('Όνομα στόχου','QA Audit Goal');
+  await setByLabel('Στόχος ποσού','1234');
+  await clickText('.savings-dialog button','Αποθήκευση στόχου');
+  await waitFor("function(){return [...document.querySelectorAll('.savings-goal-row.personal')].some(row=>(row.textContent||'').includes('QA Audit Goal'))}",'saved savings goal');
+  await shot('savings-goal-created');
+  const editGoal=await c.call(`function(){const visible=${visible};const row=[...document.querySelectorAll('.savings-goal-row.personal')].find(item=>visible(item)&&(item.textContent||'').includes('QA Audit Goal'));const button=[...row?.querySelectorAll('button')||[]].find(item=>(item.textContent||'').includes('Επεξεργασία'));button?.click();return Boolean(button)}`);
+  assert(editGoal,'saved goal exposes edit');
+  await waitFor("function(){return Boolean(document.querySelector('#savings-goal-editor-title'))}",'goal edit editor');
+  await setByLabel('Όνομα στόχου','QA Audit Goal Updated');
+  await clickText('.savings-dialog button','Αποθήκευση στόχου');
+  await waitFor("function(){return [...document.querySelectorAll('.savings-goal-row.personal')].some(row=>(row.textContent||'').includes('QA Audit Goal Updated'))}",'updated savings goal');
+  const deleteGoal=await c.call(`function(){const visible=${visible};const row=[...document.querySelectorAll('.savings-goal-row.personal')].find(item=>visible(item)&&(item.textContent||'').includes('QA Audit Goal Updated'));const button=[...row?.querySelectorAll('button')||[]].find(item=>(item.textContent||'').includes('Διαγραφή'));button?.click();return Boolean(button)}`);
+  assert(deleteGoal,'saved goal exposes delete');
+  await waitFor("function(){return Boolean(document.querySelector('.app-confirm-dialog[role=\"alertdialog\"]'))}",'goal delete confirm');
+  await clickText('.app-confirm-dialog button','Διαγραφή');
+  await waitFor("function(){return ![...document.querySelectorAll('.savings-goal-row.personal')].some(row=>(row.textContent||'').includes('QA Audit Goal Updated'))}",'deleted savings goal');
+
+  const savingAction=await c.call(`function(){const visible=${visible};const button=[...document.querySelectorAll('.savings-action')].find(item=>visible(item));button?.click();return Boolean(button)}`);
+  assert(savingAction,'savings action opens');
+  await waitFor("function(){return Boolean(document.querySelector('#saving-editor-title'))}",'savings transaction editor');
+  await setByLabel('Ποσό','25');
+  await setByLabel('Σχόλιο / λόγος','QA Audit Saving');
+  await clickText('.savings-dialog button','Καταχώριση αποταμίευσης');
+  await waitFor("function(){return document.body.textContent.includes('QA Audit Saving')}",'saved savings transaction');
+  await shot('savings-transaction-created');
+
+  console.log('Completion functional QA: Loan create and edit');
+  await navigate('loans');
+  const newLoan=await c.call(`function(){const visible=${visible};const header=document.querySelector('.page-heading,.page-header');const buttons=[...(header?.querySelectorAll('button')||[])];const button=buttons.find(item=>visible(item)&&(item.textContent||'').trim()==='Νέο');button?.click();return Boolean(button)}`);
+  if(!newLoan)await clickText('button','Νέο');
+  await waitFor("function(){return Boolean(document.querySelector('#loan-editor-title'))}",'new loan editor');
+  await setByLabel('Όνομα','QA Audit Loan');
+  await setByLabel('Συνολικό ποσό','600');
+  await setByLabel('Αριθμός δόσεων','6');
+  await clickText('.loan-editor-dialog button','Δημιουργία');
+  await waitFor("function(){return [...document.querySelectorAll('.loan-list-row')].some(row=>(row.textContent||'').includes('QA Audit Loan'))}",'saved loan');
+  await shot('loan-created');
+  const editLoan=await c.call(`function(){const visible=${visible};const row=[...document.querySelectorAll('.loan-list-row')].find(item=>visible(item)&&(item.textContent||'').includes('QA Audit Loan'));const button=[...row?.querySelectorAll('button')||[]].find(item=>(item.textContent||'').includes('Επεξεργασία'));button?.click();return Boolean(button)}`);
+  assert(editLoan,'saved loan exposes edit');
+  await waitFor("function(){return Boolean(document.querySelector('#loan-editor-title'))}",'loan edit editor');
+  await setByLabel('Όνομα','QA Audit Loan Updated');
+  await clickText('.loan-editor-dialog button','Εφαρμογή');
+  await waitFor("function(){return [...document.querySelectorAll('.loan-list-row')].some(row=>(row.textContent||'').includes('QA Audit Loan Updated'))}",'updated loan');
+  await shot('loan-updated');
+
+  console.log('Completion functional QA: Lending create');
+  await navigate('lending');
+  await clickText('button','Νέο άτομο');
+  await waitFor("function(){return Boolean(document.querySelector('#lending-dialog-title'))}",'lending editor');
+  await setByLabel('Πρόσωπο','QA Audit Person');
+  await setByLabel('Ποσό','42');
+  await setByLabel('Σχόλιο','QA Audit Lending');
+  await clickText('.lending-dialog button','Καταχώριση');
+  await waitFor("function(){return document.body.textContent.includes('QA Audit Person')&&document.body.textContent.includes('QA Audit Lending')}",'saved lending movement');
+  await shot('lending-created');
+
+  const overflow=await c.call("function(){return Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}");
+  assert(overflow<=1,`functional flows leave document overflow ${overflow}px`);
+  c.close();
+  console.log('Completion functional CRUD QA passed.');
+}finally{
+  child.kill('SIGTERM');
+  await sleep(200);
+  rmSync(profile,{recursive:true,force:true,maxRetries:5,retryDelay:100});
+}
