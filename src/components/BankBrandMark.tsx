@@ -7,6 +7,7 @@ export function BankBrandMark({id,name,compact=true}:{id?:string;name?:string;co
   const inferredKey=bankBrandKey(id,name);
   const provider=providerCatalog.providers.find(item=>item.id===id||item.id===inferredKey);
   const identityKey=provider?.id||inferredKey;
+  const remoteUrl=compact?provider?.logoUrl:provider?.wordmarkUrl;
   const identityVisualKey=bankBrandKey(identityKey,provider?.displayName||name);
   const identityAsset=bankBrandAsset(identityVisualKey);
   const assetKey=compact?provider?.logoAssetKey:provider?.wordmarkAssetKey;
@@ -16,6 +17,9 @@ export function BankBrandMark({id,name,compact=true}:{id?:string;name?:string;co
   const registrySource=provider?'shared':'fallback';
 
   if(identityKey==='cash')return <span className="bank-brand-mark bankmark-cash" aria-hidden="true"><Banknote/></span>;
+  if(remoteUrl)return <span className={`bank-brand-mark bankmark-${identityKey} ${compact?'compact':'wordmark'}`} aria-hidden="true" data-bank-brand={identityKey} data-bank-logo-source="provider-storage" data-provider-registry={registrySource}>
+    <img className="bank-logo-image" src={remoteUrl} alt="" draggable={false}/>
+  </span>;
   if(visualKey==='generic'||!asset)return <span className={`bank-brand-mark bankmark-${identityKey==='generic'?'generic':identityKey} bank-logo-fallback`} aria-hidden="true" data-bank-brand={identityKey} data-bank-logo-source="generic" data-provider-registry={registrySource}><Landmark/></span>;
 
   return <span className={`bank-brand-mark bankmark-${identityKey} ${compact?'compact':'wordmark'}`} aria-hidden="true" data-bank-brand={identityKey} data-bank-logo-source={asset.source} data-provider-registry={registrySource}>
