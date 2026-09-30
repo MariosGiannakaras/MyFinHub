@@ -42,7 +42,9 @@ try{
   const packs=await c.call("function(){return [...document.querySelectorAll('.settings-icons-only .category-icon-pack-switcher-global button')].map(button=>({name:(button.querySelector('b')?.textContent||'').trim(),license:(button.querySelector('small')?.textContent||'').trim(),pressed:button.getAttribute('aria-pressed'),preview:[...button.querySelectorAll('[data-icon-pack]')].map(node=>node.getAttribute('data-icon-pack'))}))}");
   assert(packs.length===5,`expected five icon packs, got ${packs.length}`);
   assert(JSON.stringify(packs.map(item=>item.name))===JSON.stringify(['Lucide','Tabler Icons','Phosphor','Heroicons','Bootstrap Icons']),'pack order and labels');
-  assert(JSON.stringify(packs.map(item=>item.license))===JSON.stringify(['ISC','MIT','MIT','MIT','MIT']),'pack licenses');
+  assert(packs[0].license.startsWith('ISC')&&packs.slice(1).every(item=>item.license.startsWith('MIT')),'pack licenses');
+  assert(packs[0].license.includes('πλήρες semantic set'),'Lucide discloses full semantic coverage');
+  assert(packs[1].license.includes('14 διαθέσιμα')&&packs[2].license.includes('7 διαθέσιμα')&&packs[3].license.includes('5 διαθέσιμα')&&packs[4].license.includes('5 διαθέσιμα'),'curated packs disclose their actual distinct glyph counts');
   const expectedPackIds=['lucide','tabler','phosphor','heroicons','bootstrap'];
   assert(packs.every((item,index)=>item.preview.length===3&&item.preview.every(pack=>pack===expectedPackIds[index])),'each library preview is rendered only by its own pack');
   assert(packs[0].pressed==='true'&&packs.slice(1).every(item=>item.pressed==='false'),'Lucide is the default global pack');
