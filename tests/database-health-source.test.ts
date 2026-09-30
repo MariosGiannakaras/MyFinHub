@@ -6,7 +6,7 @@ const root=process.cwd();
 const source=(relative:string)=>fs.readFileSync(path.join(root,relative),'utf8');
 
 describe('database health RPC source',()=>{
-  const migration=source('supabase/migrations/20260930104535_add_database_health_check.sql');
+  const migration=source('supabase/migrations/20260930115252_fix_database_health_history_state_check.sql');
 
   it('is invoker-security and owner/AAL2 gated',()=>{
     expect(migration).toContain('security invoker');
@@ -20,6 +20,7 @@ describe('database health RPC source',()=>{
   it('reports only integrity counts and checks core finance references',()=>{
     for(const marker of [
       'history_revision_mismatches',
+      'history_current_point_state_mismatches',
       'duplicate_event_ids',
       'events_without_legs',
       'unknown_leg_accounts',
