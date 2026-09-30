@@ -128,15 +128,14 @@ export function FinancialProviderManagementSettings(){
   const[editorError,setEditorError]=useState('');
   const fileInput=useRef<HTMLInputElement|null>(null);
   const objectUrls=useRef(new Set<string>());
-  const modalRef=useModalFocus<HTMLElement>(Boolean(editor),'[data-autofocus="true"]',()=>{if(!busy)closeEditor()});
-
-  const closeEditor=()=>{
-    if(busy)return;
+  const releaseEditor=()=>{
     for(const url of objectUrls.current)URL.revokeObjectURL(url);
     objectUrls.current.clear();
     setEditor(null);setEditorError('');
     if(fileInput.current)fileInput.current.value='';
   };
+  const closeEditor=()=>{if(!busy)releaseEditor()};
+  const modalRef=useModalFocus<HTMLElement>(Boolean(editor),'[data-autofocus="true"]',closeEditor);
   const openNew=()=>{
     setMessage('');setEditorError('');
     const assignments=emptyAssignments();
@@ -250,7 +249,7 @@ export function FinancialProviderManagementSettings(){
       }
       await refreshFinancialProviders(true);
       setMessage(editor.source==='new'?`Ο πάροχος «${editor.displayName}» δημιουργήθηκε.`:`Ο πάροχος «${editor.displayName}» ενημερώθηκε.`);
-      closeEditor();
+      releaseEditor();
     }catch(error){
       if(created&&editor.source==='new')setEditor(current=>current?{...current,source:'existing'}:current);
       setEditorError(error instanceof Error?error.message:'Δεν ήταν δυνατή η αποθήκευση του παρόχου.');
