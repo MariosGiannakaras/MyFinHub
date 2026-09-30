@@ -39,4 +39,10 @@ describe('Settings Data source contract',()=>{
     expect(css).not.toMatch(/\.settings-data[^\{]*button\s*\{[^}]*background:/s);
     expect(css).not.toMatch(/\.settings-data[^\{]*input\s*\{/s);
   });
+
+  it('downloads the latest auto-saved Settings draft after the serialized backup completes',()=>{
+    expect(settings).toContain('await onBackup()');
+    expect(settings).toContain('downloadJson({...data,state:{...data.state,settings:cloneSettings(draftRef.current)}})');
+  });
+
 });
