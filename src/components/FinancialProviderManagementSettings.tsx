@@ -7,6 +7,8 @@ import {
   type FinancialProviderWriteInput,
 } from '../lib/financialProviderClient';
 import type { FinancialProvider, FinancialProviderAssetRole, FinancialProviderKind } from '../lib/financialProviders';
+import { AppSelectInput } from './AppSelectInput';
+import { AppTextInput } from './AppTextInput';
 import { Button } from './Button';
 import { BankBrandMark } from './BankBrandMark';
 import './FinancialProviderManagementSettings.css';
@@ -141,11 +143,11 @@ export function FinancialProviderManagementSettings(){
 
     {createOpen?<div className="provider-create">
       <div className="provider-create-grid">
-        <label><span>Όνομα</span><input value={draft.displayName} onChange={event=>updateName(event.target.value)} placeholder="π.χ. Νέα Τράπεζα"/></label>
-        <label><span>Σύντομο όνομα</span><input value={draft.shortName} onChange={event=>setDraft({...draft,shortName:event.target.value})} placeholder="π.χ. Νέα"/></label>
-        <label><span>Provider ID</span><input value={draft.id} onChange={event=>setDraft({...draft,id:providerSlug(event.target.value)})} placeholder="nea-trapeza"/></label>
-        <label><span>Τύπος</span><select value={draft.providerKind} onChange={event=>setDraft({...draft,providerKind:event.target.value as FinancialProviderKind})}><option value="bank">Τράπεζα</option><option value="fintech">Ψηφιακός πάροχος</option><option value="wallet">Ψηφιακό πορτοφόλι</option><option value="payment">Πάροχος πληρωμών</option></select></label>
-        <label><span>Χώρα (ISO)</span><input maxLength={2} value={draft.countryCode??''} onChange={event=>setDraft({...draft,countryCode:event.target.value.toUpperCase()})} placeholder="GR"/></label>
+        <label><span>Όνομα</span><AppTextInput value={draft.displayName} onChange={event=>updateName(event.target.value)} placeholder="π.χ. Νέα Τράπεζα"/></label>
+        <label><span>Σύντομο όνομα</span><AppTextInput value={draft.shortName} onChange={event=>setDraft({...draft,shortName:event.target.value})} placeholder="π.χ. Νέα"/></label>
+        <label><span>Provider ID</span><AppTextInput value={draft.id} onChange={event=>setDraft({...draft,id:providerSlug(event.target.value)})} placeholder="nea-trapeza"/></label>
+        <label><span>Τύπος</span><AppSelectInput aria-label="Τύπος παρόχου" value={draft.providerKind} onChange={event=>setDraft({...draft,providerKind:event.target.value as FinancialProviderKind})}><option value="bank">Τράπεζα</option><option value="fintech">Ψηφιακός πάροχος</option><option value="wallet">Ψηφιακό πορτοφόλι</option><option value="payment">Πάροχος πληρωμών</option></AppSelectInput></label>
+        <label><span>Χώρα (ISO)</span><AppTextInput maxLength={2} value={draft.countryCode??''} onChange={event=>setDraft({...draft,countryCode:event.target.value.toUpperCase()})} placeholder="GR"/></label>
       </div>
       <div className="provider-create-assets">
         <b><ImagePlus size={17}/> Εικόνες κατά τη δημιουργία</b>
