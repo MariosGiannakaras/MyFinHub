@@ -1,52 +1,91 @@
-import { ImagePlus, Landmark, Plus } from 'lucide-react';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { Check, ImagePlus, Images, Pencil, Plus, Upload, X } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { useFinancialProviders } from '../hooks/useFinancialProviders';
+import { useModalFocus } from '../hooks/useModalFocus';
 import {
+  refreshFinancialProviders,
   saveFinancialProvider,
+  setFinancialProviderAssetBinding,
+  updateFinancialProvider,
   uploadFinancialProviderAsset,
   type FinancialProviderWriteInput,
 } from '../lib/financialProviderClient';
-import type { FinancialProvider, FinancialProviderAssetRole, FinancialProviderKind } from '../lib/financialProviders';
+import type { FinancialProvider, FinancialProviderAsset, FinancialProviderAssetRole, FinancialProviderKind } from '../lib/financialProviders';
 import { AppSelectInput } from './AppSelectInput';
 import { AppTextInput } from './AppTextInput';
-import { Button } from './Button';
 import { BankBrandMark } from './BankBrandMark';
+import { Button } from './Button';
+import { IconButton } from './IconButton';
 import './FinancialProviderManagementSettings.css';
 
-type AssetSlot={
-  id:'logo'|'logo-light'|'logo-dark'|'wordmark-light'|'wordmark-dark'|'card-light'|'card-dark';
+type SlotVariant='universal'|'light'|'dark';
+type SlotId=
+  |'logo-default'|'logo-light'|'logo-dark'
+  |'wordmark-default'|'wordmark-light'|'wordmark-dark'
+  |'card-default'|'card-light'|'card-dark';
+type SlotDefinition={
+  id:SlotId;
   label:string;
+  shortLabel:string;
+  description:string;
   role:FinancialProviderAssetRole;
-  variant:string;
-  makePrimary:boolean;
-  tone:'light'|'dark';
+  variant:SlotVariant;
+  required:boolean;
+  preview:'neutral'|'light'|'dark';
 };
-const ASSET_SLOTS:AssetSlot[]=[
-  {id:'logo',label:'Logo · Universal',role:'logo',variant:'universal',makePrimary:true,tone:'light'},
-  {id:'logo-light',label:'Logo · Light',role:'logo',variant:'light',makePrimary:false,tone:'light'},
-  {id:'logo-dark',label:'Logo · Dark',role:'logo',variant:'dark',makePrimary:false,tone:'dark'},
-  {id:'wordmark-light',label:'Wordmark · Light',role:'wordmark',variant:'light',makePrimary:true,tone:'light'},
-  {id:'wordmark-dark',label:'Wordmark · Dark',role:'wordmark',variant:'dark',makePrimary:false,tone:'dark'},
-  {id:'card-light',label:'Card mark · Light',role:'card-mark',variant:'light',makePrimary:false,tone:'light'},
-  {id:'card-dark',label:'Card mark · Dark',role:'card-mark',variant:'dark',makePrimary:false,tone:'dark'},
-];
+type PendingAsset={
+  ref:string;
+  file:File;
+  previewUrl:string;
+  originSlot:SlotId;
+  uploadedKey?:string;
+};
+type AssignmentMap=Record<SlotId,string|null>;
+type ProviderEditor={
+  source:'new'|'existing';
+  tab:'details'|'branding';
+  id:string;
+  displayName:string;
+  shortName:string;
+  providerKind:FinancialProviderKind;
+  countryCode:string;
+  sortOrder:number;
+  assignments:AssignmentMap;
+  originalAssignments:AssignmentMap;
+  pendingAssets:PendingAsset[];
+  pickerSlot:SlotId|null;
+};
+
 const ACCEPT='image/png,image/jpeg,image/webp,image/svg+xml,.png,.jpg,.jpeg,.webp,.svg';
 const MAX_BYTES=2*1024*1024;
+const SLOTS:SlotDefinition[]=[
+  {id:'logo-default',label:'Προεπιλεγμένο logo',shortLabel:'Default',description:'Βασικό σύμβολο του παρόχου.',role:'logo',variant:'universal',required:true,preview:'neutral'},
+  {id:'logo-light',label:'Logo σε light UI',shortLabel:'Light UI',description:'Προαιρετικό override για ανοιχτό περιβάλλον.',role:'logo',variant:'light',required:false,preview:'light'},
+  {id:'logo-dark',label:'Logo σε dark UI',shortLabel:'Dark UI',description:'Προαιρετικό override για σκούρο περιβάλλον.',role:'logo',variant:'dark',required:false,preview:'dark'},
+  {id:'wordmark-default',label:'Προεπιλεγμένο wordmark',shortLabel:'Default',description:'Βασική λεκτική υπογραφή / πλήρες σήμα.',role:'wordmark',variant:'universal',required:true,preview:'neutral'},
+  {id:'wordmark-light',label:'Wordmark σε light UI',shortLabel:'Light UI',description:'Προαιρετικό override για ανοιχτό περιβάλλον.',role:'wordmark',variant:'light',required:false,preview:'light'},
+  {id:'wordmark-dark',label:'Wordmark σε dark UI',shortLabel:'Dark UI',description:'Προαιρετικό override για σκούρο περιβάλλον.',role:'wordmark',variant:'dark',required:false,preview:'dark'},
+  {id:'card-default',label:'Προεπιλεγμένο card mark',shortLabel:'Default',description:'Χρησιμοποιείται στις κάρτες όταν δεν υπάρχει ειδικό override.',role:'card-mark',variant:'universal',required:false,preview:'neutral'},
+  {id:'card-light',label:'Σε ανοιχτή κάρτα',shortLabel:'Ανοιχτή κάρτα',description:'Override βάσει του background της κάρτας — όχι του app theme.',role:'card-mark',variant:'light',required:false,preview:'light'},
+  {id:'card-dark',label:'Σε σκούρα κάρτα',shortLabel:'Σκούρα κάρτα',description:'Override βάσει του background της κάρτας — όχι του app theme.',role:'card-mark',variant:'dark',required:false,preview:'dark'},
+];
+const SLOT_BY_ID=new Map(SLOTS.map(slot=>[slot.id,slot] as const));
+const GROUPS=[
+  {title:'Logo εφαρμογής',description:'Το μικρό σύμβολο που εμφανίζεται κυρίως σε λογαριασμούς και compact surfaces.',ids:['logo-default','logo-light','logo-dark'] as SlotId[]},
+  {title:'Wordmark εφαρμογής',description:'Η πλήρης λεκτική υπογραφή όπου υπάρχει περισσότερος χώρος.',ids:['wordmark-default','wordmark-light','wordmark-dark'] as SlotId[]},
+  {title:'Κάρτες',description:'Η επιλογή γίνεται από το χρώμα της ίδιας της κάρτας. Το Light/Dark theme της εφαρμογής δεν συμμετέχει.',ids:['card-default','card-light','card-dark'] as SlotId[]},
+];
 
+function emptyAssignments():AssignmentMap{
+  return Object.fromEntries(SLOTS.map(slot=>[slot.id,null])) as AssignmentMap;
+}
 function providerSlug(value:string){
   const greek:Record<string,string>={
     α:'a',β:'v',γ:'g',δ:'d',ε:'e',ζ:'z',η:'i',θ:'th',ι:'i',κ:'k',λ:'l',μ:'m',ν:'n',ξ:'x',ο:'o',π:'p',ρ:'r',σ:'s',ς:'s',τ:'t',υ:'y',φ:'f',χ:'ch',ψ:'ps',ω:'o',
   };
   return value.toLocaleLowerCase('el-GR').normalize('NFD').replace(/[\u0300-\u036f]/g,'').split('').map(char=>greek[char]??char).join('')
     .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,64);
-}
-function assetForSlot(provider:FinancialProvider,slot:AssetSlot){
-  const exact=(provider.assets??[]).find(asset=>asset.role===slot.role&&asset.variant===slot.variant);
-  if(exact)return exact;
-  if(slot.role==='wordmark'||slot.id==='logo-light'||slot.id==='logo-dark')return (provider.assets??[]).find(asset=>asset.role===slot.role&&asset.variant.startsWith(slot.variant+'-'));
-  if(slot.id==='logo')return (provider.assets??[]).find(asset=>asset.role==='logo'&&asset.variant==='universal')
-    ??(provider.assets??[]).find(asset=>asset.assetKey===provider.logoAssetKey);
-  return undefined;
 }
 function kindLabel(kind:FinancialProviderKind){
   return kind==='bank'?'Τράπεζα':kind==='fintech'?'Ψηφιακός πάροχος':kind==='wallet'?'Ψηφιακό πορτοφόλι':'Πάροχος πληρωμών';
@@ -56,123 +95,257 @@ function validateFile(file:File){
   if(!file.size||file.size>MAX_BYTES)return 'Κάθε εικόνα πρέπει να είναι έως 2 MB.';
   return '';
 }
+function slotId(role:FinancialProviderAssetRole,variant:SlotVariant):SlotId|undefined{
+  return SLOTS.find(slot=>slot.role===role&&slot.variant===variant)?.id;
+}
+function assignmentsForProvider(provider:FinancialProvider){
+  const result=emptyAssignments();
+  for(const binding of provider.bindings??[]){
+    const id=slotId(binding.role,binding.variant);
+    if(id)result[id]=binding.assetKey;
+  }
+  const assetKeys=new Set((provider.assets??[]).map(asset=>asset.assetKey));
+  if(!result['logo-default']&&provider.logoAssetKey&&assetKeys.has(provider.logoAssetKey))result['logo-default']=provider.logoAssetKey;
+  if(!result['wordmark-default']&&provider.wordmarkAssetKey&&assetKeys.has(provider.wordmarkAssetKey))result['wordmark-default']=provider.wordmarkAssetKey;
+  return result;
+}
+function formatBytes(bytes:number|null|undefined){
+  if(!bytes)return '';
+  return bytes<1024?`${bytes} B`:bytes<1024*1024?`${Math.round(bytes/1024)} KB`:`${(bytes/1024/1024).toFixed(1)} MB`;
+}
+function pendingRef(){
+  const value=globalThis.crypto?.randomUUID?.()??`${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  return `pending:${value}`;
+}
 
 export function FinancialProviderManagementSettings(){
+  const reduce=useReducedMotion();
   const catalog=useFinancialProviders();
   const providers=catalog.providers;
-  const replaceInput=useRef<HTMLInputElement|null>(null);
-  const [replaceTarget,setReplaceTarget]=useState<{provider:FinancialProvider;slot:AssetSlot}|null>(null);
-  const [busy,setBusy]=useState('');
-  const [message,setMessage]=useState('');
-  const [createOpen,setCreateOpen]=useState(false);
-  const [draft,setDraft]=useState<FinancialProviderWriteInput>({id:'',displayName:'',shortName:'',providerKind:'bank',countryCode:'GR',sortOrder:1000});
-  const [newFiles,setNewFiles]=useState<Partial<Record<AssetSlot['id'],File>>>({});
+  const[editor,setEditor]=useState<ProviderEditor|null>(null);
+  const[busy,setBusy]=useState(false);
+  const[message,setMessage]=useState('');
+  const[editorError,setEditorError]=useState('');
+  const fileInput=useRef<HTMLInputElement|null>(null);
+  const objectUrls=useRef(new Set<string>());
+  const modalRef=useModalFocus<HTMLElement>(Boolean(editor),'[data-autofocus="true"]',()=>{if(!busy)closeEditor()});
 
-  const chooseReplace=(provider:FinancialProvider,slot:AssetSlot)=>{
+  const closeEditor=()=>{
     if(busy)return;
-    setMessage('');
-    setReplaceTarget({provider,slot});
-    replaceInput.current?.click();
+    for(const url of objectUrls.current)URL.revokeObjectURL(url);
+    objectUrls.current.clear();
+    setEditor(null);setEditorError('');
+    if(fileInput.current)fileInput.current.value='';
   };
-  const replace=async(file?:File)=>{
-    const target=replaceTarget;
-    if(!file||!target)return;
-    const error=validateFile(file);
-    if(error){setMessage(error);return}
-    const key=`${target.provider.id}:${target.slot.id}`;
-    setBusy(key);setMessage('');
-    try{
-      await uploadFinancialProviderAsset({
-        providerId:target.provider.id,
-        role:target.slot.role,
-        variant:target.slot.variant,
-        file,
-        makePrimary:target.slot.makePrimary||(target.slot.role==='logo'&&!target.provider.logoAssetKey)||(target.slot.role==='wordmark'&&!target.provider.wordmarkAssetKey),
-      });
-      setMessage(`Η εικόνα «${target.slot.label}» του ${target.provider.displayName} ενημερώθηκε.`);
-    }catch(error){
-      setMessage(error instanceof Error?error.message:'Δεν ήταν δυνατή η ενημέρωση της εικόνας.');
-    }finally{
-      setBusy('');setReplaceTarget(null);
-      if(replaceInput.current)replaceInput.current.value='';
-    }
+  const openNew=()=>{
+    setMessage('');setEditorError('');
+    const assignments=emptyAssignments();
+    setEditor({
+      source:'new',tab:'details',id:'',displayName:'',shortName:'',providerKind:'bank',countryCode:'GR',
+      sortOrder:Math.max(1000,...providers.map(provider=>provider.sortOrder+10)),
+      assignments,originalAssignments:{...assignments},pendingAssets:[],pickerSlot:null,
+    });
   };
-
+  const openEdit=(provider:FinancialProvider)=>{
+    setMessage('');setEditorError('');
+    const assignments=assignmentsForProvider(provider);
+    setEditor({
+      source:'existing',tab:'details',id:provider.id,displayName:provider.displayName,shortName:provider.shortName,
+      providerKind:provider.kind,countryCode:provider.countryCode??'',sortOrder:provider.sortOrder,
+      assignments,originalAssignments:{...assignments},pendingAssets:[],pickerSlot:null,
+    });
+  };
   const updateName=(displayName:string)=>{
-    const previousAuto=providerSlug(draft.displayName);
-    const id=!draft.id||draft.id===previousAuto?providerSlug(displayName):draft.id;
-    setDraft({...draft,displayName,id,shortName:draft.shortName||displayName});
+    if(!editor)return;
+    const previousAuto=providerSlug(editor.displayName);
+    const id=editor.source==='new'&&(!editor.id||editor.id===previousAuto)?providerSlug(displayName):editor.id;
+    setEditor({...editor,displayName,id,shortName:editor.shortName||displayName});
   };
-  const create=async()=>{
-    if(busy)return;
-    if(!draft.displayName.trim()||!draft.shortName.trim()||!/^[a-z][a-z0-9-]{0,63}$/.test(draft.id)){
-      setMessage('Συμπλήρωσε όνομα, σύντομο όνομα και έγκυρο provider ID.');
-      return;
+  const providerForEditor=editor?.source==='existing'?providers.find(provider=>provider.id===editor.id):undefined;
+  const existingAssets=providerForEditor?.assets??[];
+
+  const resolveAsset=(ref:string|null)=>{
+    if(!ref)return null;
+    const pending=editor?.pendingAssets.find(asset=>asset.ref===ref);
+    if(pending)return {ref,url:pending.previewUrl,name:pending.file.name,meta:`${pending.file.type.replace('image/','').toUpperCase()} · ${formatBytes(pending.file.size)}`,pending:true};
+    const asset=existingAssets.find(item=>item.assetKey===ref);
+    if(!asset)return null;
+    return {ref,url:asset.url,name:asset.fileName||asset.assetKey,meta:[asset.mimeType?.replace('image/','').toUpperCase(),formatBytes(asset.sizeBytes)].filter(Boolean).join(' · '),pending:false};
+  };
+  const usageCount=(ref:string)=>editor?Object.values(editor.assignments).filter(value=>value===ref).length:0;
+
+  const chooseSlot=(id:SlotId)=>{if(editor)setEditor({...editor,pickerSlot:id})};
+  const assign=(id:SlotId,ref:string|null)=>{
+    if(!editor)return;
+    setEditor({...editor,assignments:{...editor.assignments,[id]:ref},pickerSlot:null});
+  };
+  const requestUpload=(id:SlotId)=>{
+    if(!editor||busy)return;
+    setEditor({...editor,pickerSlot:id});
+    fileInput.current?.click();
+  };
+  const handleUpload=(file?:File)=>{
+    if(!file||!editor?.pickerSlot)return;
+    const error=validateFile(file);
+    if(error){setEditorError(error);return}
+    const ref=pendingRef();
+    const previewUrl=URL.createObjectURL(file);objectUrls.current.add(previewUrl);
+    const pending:PendingAsset={ref,file,previewUrl,originSlot:editor.pickerSlot};
+    setEditor({...editor,pendingAssets:[...editor.pendingAssets,pending],assignments:{...editor.assignments,[editor.pickerSlot]:ref},pickerSlot:null});
+    setEditorError('');
+    if(fileInput.current)fileInput.current.value='';
+  };
+
+  const validateDetails=()=>{
+    if(!editor)return false;
+    if(!editor.displayName.trim()||!editor.shortName.trim()||!/^[a-z][a-z0-9-]{0,63}$/.test(editor.id)){
+      setEditorError('Συμπλήρωσε όνομα, σύντομο όνομα και έγκυρο Provider ID.');return false;
     }
-    if(providers.some(provider=>provider.id===draft.id)){
-      setMessage('Υπάρχει ήδη πάροχος με αυτό το provider ID.');
-      return;
+    if(editor.countryCode.trim()&&!/^[A-Za-z]{2}$/.test(editor.countryCode.trim())){
+      setEditorError('Η χώρα πρέπει να είναι διψήφιος ISO κωδικός, π.χ. GR.');return false;
     }
-    const hasLogo=Boolean(newFiles.logo||newFiles['logo-light']||newFiles['logo-dark']);
-    const hasWordmark=Boolean(newFiles['wordmark-light']||newFiles['wordmark-dark']);
-    if(!hasLogo||!hasWordmark){setMessage('Για νέο πάροχο επίλεξε τουλάχιστον ένα Logo και ένα Wordmark.');return}
-    for(const file of Object.values(newFiles)){
-      if(!file)continue;
-      const error=validateFile(file);
-      if(error){setMessage(error);return}
+    if(editor.source==='new'&&providers.some(provider=>provider.id===editor.id)){
+      setEditorError('Υπάρχει ήδη πάροχος με αυτό το Provider ID.');return false;
     }
-    setBusy('create');setMessage('');
+    return true;
+  };
+  const nextToBranding=()=>{
+    if(!validateDetails())return;
+    setEditorError('');setEditor(current=>current?{...current,tab:'branding'}:current);
+  };
+  const save=async()=>{
+    if(!editor||busy||!validateDetails())return;
+    if(!editor.assignments['logo-default']||!editor.assignments['wordmark-default']){
+      setEditorError('Στις Εικόνες επίλεξε Προεπιλεγμένο logo και Προεπιλεγμένο wordmark. Μπορούν να χρησιμοποιούν το ίδιο αρχείο.');
+      setEditor({...editor,tab:'branding',pickerSlot:null});return;
+    }
+    setBusy(true);setEditorError('');
+    let created=editor.source==='existing';
     try{
-      await saveFinancialProvider({...draft,countryCode:draft.countryCode?.trim().toUpperCase()||null});
-      for(const slot of ASSET_SLOTS){
-        const file=newFiles[slot.id];
-        if(!file)continue;
-        const makePrimary=slot.makePrimary
-          ||slot.id==='logo-light'&&!newFiles.logo
-          ||slot.id==='logo-dark'&&!newFiles.logo&&!newFiles['logo-light']
-          ||slot.id==='wordmark-dark'&&!newFiles['wordmark-light'];
-        await uploadFinancialProviderAsset({providerId:draft.id,role:slot.role,variant:slot.variant,file,makePrimary});
+      const payload:FinancialProviderWriteInput={
+        id:editor.id,displayName:editor.displayName.trim(),shortName:editor.shortName.trim(),providerKind:editor.providerKind,
+        countryCode:editor.countryCode.trim().toUpperCase()||null,sortOrder:editor.sortOrder,
+      };
+      if(editor.source==='new'){await saveFinancialProvider(payload,false);created=true}
+      else await updateFinancialProvider(payload,false);
+
+      const uploaded=new Map<string,string>();
+      for(const pending of editor.pendingAssets){
+        if(pending.uploadedKey){uploaded.set(pending.ref,pending.uploadedKey);continue}
+        const origin=SLOT_BY_ID.get(pending.originSlot)!;
+        const asset=await uploadFinancialProviderAsset({
+          providerId:editor.id,role:origin.role,variant:origin.variant,file:pending.file,makePrimary:false,refreshCatalog:false,
+        });
+        uploaded.set(pending.ref,asset.assetKey);
+        pending.uploadedKey=asset.assetKey;
       }
-      setMessage(`Ο πάροχος «${draft.displayName}» δημιουργήθηκε${Object.keys(newFiles).length?' μαζί με τις επιλεγμένες εικόνες.':'.'}`);
-      setDraft({id:'',displayName:'',shortName:'',providerKind:'bank',countryCode:'GR',sortOrder:Math.max(1000,...providers.map(provider=>provider.sortOrder+10))});
-      setNewFiles({});setCreateOpen(false);
+
+      for(const slot of SLOTS){
+        const ref=editor.assignments[slot.id];
+        const finalKey=ref?.startsWith('pending:')?(uploaded.get(ref)??editor.pendingAssets.find(item=>item.ref===ref)?.uploadedKey??null):ref;
+        const original=editor.originalAssignments[slot.id];
+        if(finalKey!==original){
+          await setFinancialProviderAssetBinding({providerId:editor.id,role:slot.role,variant:slot.variant,assetKey:finalKey,refreshCatalog:false});
+        }
+      }
+      await refreshFinancialProviders(true);
+      setMessage(editor.source==='new'?`Ο πάροχος «${editor.displayName}» δημιουργήθηκε.`:`Ο πάροχος «${editor.displayName}» ενημερώθηκε.`);
+      closeEditor();
     }catch(error){
-      setMessage(error instanceof Error?error.message:'Δεν ήταν δυνατή η δημιουργία του παρόχου.');
-    }finally{setBusy('')}
+      if(created&&editor.source==='new')setEditor(current=>current?{...current,source:'existing'}:current);
+      setEditorError(error instanceof Error?error.message:'Δεν ήταν δυνατή η αποθήκευση του παρόχου.');
+    }finally{setBusy(false)}
   };
+
+  const pickerSlot=editor?.pickerSlot?SLOT_BY_ID.get(editor.pickerSlot):undefined;
+  const pickerCurrent=editor&&pickerSlot?editor.assignments[pickerSlot.id]:null;
+  const library=[
+    ...existingAssets.map(asset=>({ref:asset.assetKey,url:asset.url,name:asset.fileName||asset.assetKey,meta:[asset.mimeType?.replace('image/','').toUpperCase(),formatBytes(asset.sizeBytes)].filter(Boolean).join(' · ')})),
+    ...(editor?.pendingAssets.map(asset=>({ref:asset.ref,url:asset.previewUrl,name:asset.file.name,meta:`${asset.file.type.replace('image/','').toUpperCase()} · ${formatBytes(asset.file.size)}`}))??[]),
+  ];
 
   return <section className="provider-management panel neo-raised" aria-labelledby="provider-management-title">
-    <input ref={replaceInput} type="file" accept={ACCEPT} hidden onChange={event=>void replace(event.target.files?.[0])}/>
+    <input ref={fileInput} type="file" accept={ACCEPT} hidden onChange={event=>handleUpload(event.target.files?.[0])}/>
     <header className="provider-management-head">
-      <div><span className="provider-management-kicker">ΤΡΑΠΕΖΕΣ & ΠΑΡΟΧΟΙ</span><h2 id="provider-management-title">Εικόνες παρόχων</h2><p>Τα logos χρησιμοποιούνται κοινά σε λογαριασμούς και κάρτες. Μπορείς να τα αντικαταστήσεις χωρίς αλλαγή κώδικα ή νέο build.</p></div>
-      <Button type="button" variant="secondary" onClick={()=>{setMessage('');setCreateOpen(value=>!value)}}><Plus/> Νέος πάροχος</Button>
+      <div><span className="provider-management-kicker">ΤΡΑΠΕΖΕΣ & ΠΑΡΟΧΟΙ</span><h2 id="provider-management-title">Τράπεζες & πάροχοι</h2><p>Τα στοιχεία και οι εικόνες κάθε παρόχου διαχειρίζονται από την ίδια επεξεργασία.</p></div>
+      <Button type="button" variant="secondary" onClick={openNew}><Plus/> Νέος πάροχος</Button>
     </header>
 
     {message?<div className="provider-management-message" role="status" aria-live="polite">{message}</div>:null}
 
-    {createOpen?<div className="provider-create">
-      <div className="provider-create-grid">
-        <label><span>Όνομα</span><AppTextInput value={draft.displayName} onChange={event=>updateName(event.target.value)} placeholder="π.χ. Νέα Τράπεζα"/></label>
-        <label><span>Σύντομο όνομα</span><AppTextInput value={draft.shortName} onChange={event=>setDraft({...draft,shortName:event.target.value})} placeholder="π.χ. Νέα"/></label>
-        <label><span>Provider ID</span><AppTextInput value={draft.id} onChange={event=>setDraft({...draft,id:providerSlug(event.target.value)})} placeholder="nea-trapeza"/></label>
-        <label><span>Τύπος</span><AppSelectInput aria-label="Τύπος παρόχου" value={draft.providerKind} onChange={event=>setDraft({...draft,providerKind:event.target.value as FinancialProviderKind})}><option value="bank">Τράπεζα</option><option value="fintech">Ψηφιακός πάροχος</option><option value="wallet">Ψηφιακό πορτοφόλι</option><option value="payment">Πάροχος πληρωμών</option></AppSelectInput></label>
-        <label><span>Χώρα (ISO)</span><AppTextInput maxLength={2} value={draft.countryCode??''} onChange={event=>setDraft({...draft,countryCode:event.target.value.toUpperCase()})} placeholder="GR"/></label>
-      </div>
-      <div className="provider-create-assets">
-        <b><ImagePlus size={17}/> Εικόνες κατά τη δημιουργία</b>
-        <p>Απαιτείται τουλάχιστον ένα Logo και ένα Wordmark. Τα theme/card variants μπορούν να προστεθούν ή να αλλάξουν και αργότερα.</p>
-        <div className="provider-create-assets-grid">{ASSET_SLOTS.map(slot=><label key={slot.id} className="provider-file-choice"><span>{slot.label}</span><input type="file" accept={ACCEPT} onChange={event=>{const file=event.target.files?.[0];setNewFiles(current=>({...current,[slot.id]:file}))}}/><small>{newFiles[slot.id]?.name??'Δεν επιλέχθηκε αρχείο'}</small></label>)}</div>
-      </div>
-      <div className="provider-create-actions"><Button type="button" variant="secondary" disabled={busy==='create'} onClick={()=>{setCreateOpen(false);setNewFiles({})}}>Ακύρωση</Button><Button type="button" variant="primary" disabled={busy==='create'} onClick={()=>void create()}>{busy==='create'?'Δημιουργία…':'Δημιουργία παρόχου'}</Button></div>
-    </div>:null}
+    <div className="provider-list">{providers.map(provider=>{
+      const assets=provider.assets??[],bindings=provider.bindings??[];
+      return <article className="provider-list-row" key={provider.id}>
+        <div className="provider-list-identity"><span className="provider-list-logo"><BankBrandMark id={provider.id} name={provider.displayName}/></span><div><b>{provider.displayName}</b><span>{kindLabel(provider.kind)} · {provider.id}</span></div></div>
+        <div className="provider-list-summary">
+          <span><Images size={15}/>{assets.length} {assets.length===1?'εικόνα':'εικόνες'}</span>
+          <span>{bindings.length} αναθέσεις</span>
+          <div className="provider-list-thumbs">{assets.slice(0,3).map(asset=><span key={asset.assetKey}><img src={asset.url} alt="" draggable={false}/></span>)}</div>
+        </div>
+        <button type="button" className="provider-edit-action" onClick={()=>openEdit(provider)}><Pencil size={15}/> Επεξεργασία</button>
+      </article>;
+    })}</div>
 
-    <div className="provider-management-list">{providers.map(provider=><article className="provider-management-card" key={provider.id}>
-      <div className="provider-management-identity"><BankBrandMark id={provider.id} name={provider.displayName}/><div><b>{provider.displayName}</b><span>{kindLabel(provider.kind)} · {provider.id}</span></div></div>
-      <div className="provider-asset-grid">{ASSET_SLOTS.map(slot=>{const asset=assetForSlot(provider,slot);const key=`${provider.id}:${slot.id}`;return <div className={`provider-asset-slot ${slot.tone}`} key={slot.id}>
-        <div className="provider-asset-preview">{asset?<img src={asset.url} alt="" draggable={false}/>:slot.id==='logo'?<BankBrandMark id={provider.id} name={provider.displayName}/>:<Landmark aria-hidden="true"/>}</div>
-        <div className="provider-asset-copy"><b>{slot.label}</b><small>{asset?.variant??'Δεν έχει οριστεί'}</small></div>
-        <button type="button" disabled={Boolean(busy)} onClick={()=>chooseReplace(provider,slot)}>{busy===key?'Ανέβασμα…':asset?'Αλλαγή':'Προσθήκη'}</button>
-      </div>})}</div>
-    </article>)}</div>
+    <AnimatePresence>{editor?<motion.div className="provider-editor-backdrop" initial={reduce?false:{opacity:0}} animate={{opacity:1}} exit={reduce?undefined:{opacity:0}} onMouseDown={closeEditor}>
+      <motion.section ref={modalRef} className="provider-editor-modal" role="dialog" aria-modal="true" aria-labelledby="provider-editor-title" tabIndex={-1} initial={reduce?false:{opacity:0,scale:.98,y:10}} animate={{opacity:1,scale:1,y:0}} exit={reduce?undefined:{opacity:0,scale:.985,y:6}} transition={{duration:reduce?0:.18}} onMouseDown={event=>event.stopPropagation()}>
+        <header className="provider-editor-header">
+          <div><span>{editor.source==='new'?'ΝΕΟΣ ΠΑΡΟΧΟΣ':'ΕΠΕΞΕΡΓΑΣΙΑ ΠΑΡΟΧΟΥ'}</span><h2 id="provider-editor-title">{editor.source==='new'?(editor.displayName||'Νέος πάροχος'):editor.displayName}</h2></div>
+          <IconButton type="button" aria-label="Κλείσιμο" disabled={busy} onClick={closeEditor}><X/></IconButton>
+        </header>
+
+        <div className="provider-editor-tabs" role="tablist" aria-label="Επεξεργασία παρόχου">
+          <button type="button" role="tab" aria-selected={editor.tab==='details'} className={editor.tab==='details'?'active':''} onClick={()=>setEditor({...editor,tab:'details',pickerSlot:null})}>Στοιχεία</button>
+          <button type="button" role="tab" aria-selected={editor.tab==='branding'} className={editor.tab==='branding'?'active':''} onClick={()=>{if(editor.source==='new'&&!validateDetails())return;setEditor({...editor,tab:'branding',pickerSlot:null});setEditorError('')}}>Εικόνες</button>
+        </div>
+
+        <div className="provider-editor-body">
+          {editor.tab==='details'?<div className="provider-details-panel" role="tabpanel">
+            <div className="provider-details-grid">
+              <label><span>Όνομα</span><AppTextInput data-autofocus="true" value={editor.displayName} onChange={event=>updateName(event.target.value)} placeholder="π.χ. Νέα Τράπεζα"/></label>
+              <label><span>Σύντομο όνομα</span><AppTextInput value={editor.shortName} onChange={event=>setEditor({...editor,shortName:event.target.value})} placeholder="π.χ. Νέα"/></label>
+              <label><span>Τύπος</span><AppSelectInput aria-label="Τύπος παρόχου" value={editor.providerKind} onChange={event=>setEditor({...editor,providerKind:event.target.value as FinancialProviderKind})}><option value="bank">Τράπεζα</option><option value="fintech">Ψηφιακός πάροχος</option><option value="wallet">Ψηφιακό πορτοφόλι</option><option value="payment">Πάροχος πληρωμών</option></AppSelectInput></label>
+              <label><span>Χώρα (ISO)</span><AppTextInput maxLength={2} value={editor.countryCode} onChange={event=>setEditor({...editor,countryCode:event.target.value.toUpperCase()})} placeholder="GR"/></label>
+            </div>
+            <div className="provider-id-field"><span>Provider ID</span>{editor.source==='new'?<AppTextInput value={editor.id} onChange={event=>setEditor({...editor,id:providerSlug(event.target.value)})} placeholder="nea-trapeza"/>:<code>{editor.id}</code>}<small>{editor.source==='new'?'Σταθερό τεχνικό αναγνωριστικό. Μετά τη δημιουργία δεν αλλάζει.':'Το Provider ID παραμένει σταθερό ώστε να μη σπάνε λογαριασμοί και κάρτες.'}</small></div>
+          </div>:<div className="provider-branding-panel" role="tabpanel">
+            <div className="provider-branding-intro"><div><h3>Branding</h3><p>Ανέβασε κάθε αρχείο μία φορά και χρησιμοποίησέ το σε όσες θέσεις χρειάζεται. Τα overrides είναι προαιρετικά.</p></div><span className="provider-library-count"><Images size={15}/>{library.length} στη βιβλιοθήκη</span></div>
+
+            {GROUPS.map(group=><section className="provider-brand-group" key={group.title}>
+              <header><h4>{group.title}</h4><p>{group.description}</p></header>
+              <div className="provider-slot-grid">{group.ids.map(id=>{const slot=SLOT_BY_ID.get(id)!,ref=editor.assignments[id],asset=resolveAsset(ref),uses=ref?usageCount(ref):0;return <article className="provider-slot-card" key={id}>
+                <div className={`provider-slot-preview ${slot.preview}`}>{asset?<img src={asset.url} alt="" draggable={false}/>:<ImagePlus aria-hidden="true"/>}</div>
+                <div className="provider-slot-copy"><div><b>{slot.label}</b>{slot.required?<span className="required-badge">Απαραίτητο</span>:null}</div><p>{slot.description}</p>{asset?<small title={asset.name}>{asset.name}{uses>1?` · χρησιμοποιείται σε ${uses} θέσεις`:''}</small>:<small>{slot.required?'Δεν έχει επιλεγεί εικόνα':'Χρήση προεπιλογής / fallback'}</small>}</div>
+                <button type="button" className="provider-slot-select" disabled={busy} onClick={()=>chooseSlot(id)}>{asset?'Αλλαγή':'Επιλογή εικόνας'}</button>
+              </article>})}</div>
+            </section>)}
+
+            {library.length?<section className="provider-library"><header><div><h4>Βιβλιοθήκη εικόνων</h4><p>Όλα τα ήδη ανεβασμένα assets του παρόχου. Η ίδια εικόνα μπορεί να ανατεθεί σε πολλές θέσεις.</p></div></header><div className="provider-library-strip">{library.map(asset=><div className="provider-library-item" key={asset.ref}><span><img src={asset.url} alt="" draggable={false}/></span><div><b title={asset.name}>{asset.name}</b><small>{usageCount(asset.ref)} {usageCount(asset.ref)===1?'χρήση':'χρήσεις'}</small></div></div>)}</div></section>:null}
+          </div>}
+
+          {editorError?<div className="provider-editor-error" role="alert" aria-live="assertive">{editorError}</div>:null}
+        </div>
+
+        <footer className="provider-editor-footer">
+          <Button type="button" variant="secondary" disabled={busy} onClick={closeEditor}>Ακύρωση</Button>
+          {editor.source==='new'&&editor.tab==='details'
+            ?<Button type="button" variant="primary" disabled={busy} onClick={nextToBranding}>Συνέχεια στις εικόνες</Button>
+            :<Button type="button" variant="primary" disabled={busy} onClick={()=>void save()}>{busy?'Αποθήκευση…':editor.source==='new'?'Δημιουργία παρόχου':'Αποθήκευση'}</Button>}
+        </footer>
+
+        {pickerSlot?<div className="provider-asset-picker-scrim" onMouseDown={()=>setEditor({...editor,pickerSlot:null})}>
+          <section className="provider-asset-picker" role="dialog" aria-label={`Επιλογή εικόνας για ${pickerSlot.label}`} onMouseDown={event=>event.stopPropagation()}>
+            <header><div><span>ΕΠΙΛΟΓΗ ΕΙΚΟΝΑΣ</span><h3>{pickerSlot.label}</h3><p>Διάλεξε από τη βιβλιοθήκη ή ανέβασε νέο αρχείο.</p></div><IconButton type="button" aria-label="Κλείσιμο επιλογής εικόνας" onClick={()=>setEditor({...editor,pickerSlot:null})}><X/></IconButton></header>
+            <div className="provider-asset-picker-grid">
+              <button type="button" className="provider-picker-upload" onClick={()=>requestUpload(pickerSlot.id)}><Upload/><b>Ανέβασμα νέας</b><small>PNG, JPG, WebP ή SVG · έως 2 MB</small></button>
+              {!pickerSlot.required?<button type="button" className={!pickerCurrent?'provider-picker-none selected':'provider-picker-none'} onClick={()=>assign(pickerSlot.id,null)}><span><ImagePlus/></span><b>Χωρίς override</b><small>Χρήση της προεπιλεγμένης εικόνας</small>{!pickerCurrent?<Check className="provider-picker-check"/>:null}</button>:null}
+              {library.map(asset=>{const uses=usageCount(asset.ref),selected=pickerCurrent===asset.ref;return <button type="button" className={selected?'provider-picker-asset selected':'provider-picker-asset'} key={asset.ref} onClick={()=>assign(pickerSlot.id,asset.ref)}>
+                <span className={`provider-picker-preview ${pickerSlot.preview}`}><img src={asset.url} alt="" draggable={false}/></span>
+                <b title={asset.name}>{asset.name}</b><small>{asset.meta||'Ανεβασμένη εικόνα'}{uses?` · ${uses} ${uses===1?'χρήση':'χρήσεις'}`:''}</small>{selected?<Check className="provider-picker-check"/>:null}
+              </button>})}
+            </div>
+          </section>
+        </div>:null}
+      </motion.section>
+    </motion.div>:null}</AnimatePresence>
   </section>;
 }
