@@ -213,4 +213,28 @@ describe('completion UX contracts',()=>{
     expect(headings).toContain('@media(max-width:420px)');
   });
 
+
+  it('keeps heavy Dashboard charts off the initial collapsed phone view',()=>{
+    const dashboard=read('src/pages/DashboardPage.tsx');
+    const css=read('src/pages/DashboardCompletion.css');
+    expect(dashboard).toContain("window.matchMedia('(max-width:680px)')");
+    expect(dashboard).toContain('const heavyChartsReady=renderDeferredCharts&&(!mobileViewport||mobileAnalyticsExpanded)');
+    expect(dashboard).toContain('heavyChartsReady?<Suspense fallback={null}><DashboardSummaryChart');
+    expect(dashboard).toContain('dashboard-mobile-summary-donut');
+    expect(dashboard).toContain('heavyChartsReady?<Suspense fallback={null}><DashboardFlowChart');
+    expect(dashboard).toContain('heavyChartsReady?<Suspense fallback={null}><DashboardCategoryChart');
+    expect(css).toContain('.dashboard-mobile-summary-donut');
+  });
+
+  it('keeps final screenshot browser bootstrap retryable and diagnosable',()=>{
+    const harness=read('scripts/final-screenshots-qa.mjs');
+    expect(harness).toContain('async function launchBrowser()');
+    expect(harness).toContain('for(let attempt=0;attempt<2;attempt+=1)');
+    expect(harness).toContain('Browser exited before CDP became ready');
+    expect(harness).toContain('Browser did not expose CDP port');
+    expect(harness).toContain("stdio:['ignore','pipe','pipe']");
+    expect(harness).toContain('await stopBrowser(browserSession.child)');
+    expect(harness).toContain('if(screenshots.length!==63)');
+  });
+
 });
