@@ -21,6 +21,11 @@ export function migrateProductData(input:FinanceData):FinanceData{
     categoryIdentities:sourceState.settings?.categoryIdentities??migrated.state.settings.categoryIdentities,
     categoryIcons:sourceState.settings?.categoryIcons??migrated.state.settings.categoryIcons,
     subcategoryIcons:sourceState.settings?.subcategoryIcons??migrated.state.settings.subcategoryIcons,
+    categoryIconPack:sourceState.settings?.categoryIconPack??migrated.state.settings.categoryIconPack,
+    categoryIconPackSelections:sourceState.settings?.categoryIconPackSelections??migrated.state.settings.categoryIconPackSelections,
+    subcategoryIconPackSelections:sourceState.settings?.subcategoryIconPackSelections??migrated.state.settings.subcategoryIconPackSelections,
+    categoryIconColors:sourceState.settings?.categoryIconColors??migrated.state.settings.categoryIconColors,
+    subcategoryIconColors:sourceState.settings?.subcategoryIconColors??migrated.state.settings.subcategoryIconColors,
   });
   return {
     ...migrated,
