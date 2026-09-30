@@ -45,6 +45,9 @@ export function explicitFinanceCategoryIcon(settings:FinanceSettings,input:Finan
 }
 
 export function resolvedFinanceCategoryIcon(settings:FinanceSettings,input:FinanceIconInput):string|null{
+  const explicit=explicitFinanceCategoryIcon(settings,input);
+  if(explicit)return explicit;
+  if(!settings.categoryIconPack)return null;
   const target=canonicalTarget(settings,input);
   if(!target)return null;
   return resolvedCategoryIcon(target.settings,target.kind,target.category,target.subcategory)??null;
