@@ -3,3 +3,5 @@ import { handleAccountMetadataRequest } from '../server/accountMetadataHandler.j
 export default async function handler(req:any,res:any){
   await handleAccountMetadataRequest(req,res);
 }
+
+export const config={api:{bodyParser:false}};
