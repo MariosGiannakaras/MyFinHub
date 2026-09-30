@@ -263,4 +263,12 @@ describe('completion UX contracts',()=>{
     expect(shell).toContain("transition={{duration:reduce?0:.18}}");
   });
 
+
+  it('distinguishes real Dashboard chrome overlays from normal content scrolling under the sticky topbar',()=>{
+    const harness=read('scripts/completion-geometry-qa.mjs');
+    expect(harness).toContain('document.elementFromPoint');
+    expect(harness).toContain('const shortcutIsTopmost');
+    expect(harness).toContain('if(shortcutIsTopmost)desktopChromeOverlaps.push');
+  });
+
 });
