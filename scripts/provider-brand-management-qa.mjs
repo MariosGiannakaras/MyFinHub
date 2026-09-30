@@ -38,8 +38,8 @@ try{
       const current=await state();
       assert(current.theme===theme,`${mode.name} ${theme} theme remains active`);
       assert(current.cards>=8,`${mode.name} renders provider cards`);
-      assert(current.slots===current.cards*5,`${mode.name} renders five asset slots per provider`);
-      for(const expected of ['Logo','Wordmark · Light','Wordmark · Dark','Card mark · Light','Card mark · Dark'])assert(current.labels.includes(expected),`asset slot ${expected} is present`);
+      assert(current.slots===current.cards*7,`${mode.name} renders seven asset slots per provider`);
+      for(const expected of ['Logo · Universal','Logo · Light','Logo · Dark','Wordmark · Light','Wordmark · Dark','Card mark · Light','Card mark · Dark'])assert(current.labels.includes(expected),`asset slot ${expected} is present`);
       assert(current.overflow<=1,`${mode.name} ${theme} has no horizontal page overflow: ${current.overflow}px`);
       assert(current.smallButtons.length===0,`${mode.name} ${theme} has no undersized provider buttons: ${JSON.stringify(current.smallButtons.slice(0,6))}`);
       await shot(`provider-management-${theme}-${mode.name}`);
@@ -51,9 +51,9 @@ try{
   const opened=await c.call("function(){const button=[...document.querySelectorAll('.provider-management button')].find(node=>(node.textContent||'').includes('Νέος πάροχος'));button?.click();return Boolean(button)}");assert(opened,'New provider action is available');
   await waitFor("function(){return !!document.querySelector('.provider-create')}",'create-provider form');
   const createState=await c.call(`function(){const root=document.querySelector('.provider-create');return {fileInputs:root?.querySelectorAll('input[type=file]').length||0,comboboxes:root?.querySelectorAll('[role=combobox]').length||0,text:(root?.textContent||'').replace(/\s+/g,' ').trim(),overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}}`);
-  assert(createState.fileInputs===5,'create-provider flow exposes five optional artwork pickers');
+  assert(createState.fileInputs===7,'create-provider flow exposes seven artwork pickers');
   assert(createState.comboboxes>=1,'create-provider flow uses app-owned provider type select');
-  for(const label of ['Logo','Wordmark · Light','Wordmark · Dark','Card mark · Light','Card mark · Dark'])assert(createState.text.includes(label),`create-provider artwork picker ${label} is visible`);
+  for(const label of ['Logo · Universal','Logo · Light','Logo · Dark','Wordmark · Light','Wordmark · Dark','Card mark · Light','Card mark · Dark'])assert(createState.text.includes(label),`create-provider artwork picker ${label} is visible`);
   assert(createState.overflow<=1,'create-provider desktop form stays viewport-contained');
   await shot('provider-create-light-desktop');
 
