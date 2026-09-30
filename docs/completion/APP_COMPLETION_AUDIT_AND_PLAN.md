@@ -218,6 +218,8 @@ The first exact-head validation wave exposed three additional validation blocker
 
 | FV-06 | Final visual evidence | Manual review of existing artifacts exposed that final screenshots could be captured during the 180ms route transition, producing faded evidence even when steady-state UI was correct. | QA evidence defect | **Source-fixed, proof pending.** Final capture waits now exceed the corresponding route/tab motion windows; screenshot quantity and viewport coverage remain unchanged. |
 
+| FV-07 | Completion geometry stacking | After DA-42 removed the fixed shortcut overlay, the geometry harness still failed when normal scrolling moved the shortcut rectangle underneath the sticky topbar. Rectangle intersection alone could not distinguish “shortcut overlays control” from “content scrolls behind sticky chrome”. | QA harness defect | **Source-fixed, proof pending.** Desktop chrome collision detection now uses center-point hit-testing and fails only when the shortcut is actually the topmost interactive element over a topbar control; the overlap check remains active. |
+
 Validation rule: FV items close only after the next exact-head wave proves the corrected interaction/performance/bootstrap behavior. No quality threshold or screenshot-count requirement was relaxed.
 
 ## 3. Page-by-page audit and required changes
