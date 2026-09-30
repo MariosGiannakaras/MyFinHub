@@ -158,4 +158,15 @@ describe('completion UX contracts',()=>{
     expect(appShell).toContain('aria-label="Κλείσιμο μενού"');
   });
 
+
+  it('keeps Quick Entry and OCR review within the dynamic mobile viewport',()=>{
+    const quick=read('src/styles/quick-entry-modal-base.css');
+    const coordination=read('src/styles/root-responsive-coordination.css');
+    const receipts=read('src/styles/receipt-inbox.css');
+    expect(quick).toContain('max-height:94dvh');
+    expect(coordination).toContain('.quick-modal{max-height:96dvh}');
+    expect(receipts).toContain('height:min(820px,94dvh)');
+    expect(receipts).toContain('.receipt-inbox{height:96dvh;width:98vw');
+  });
+
 });
