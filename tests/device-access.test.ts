@@ -54,6 +54,19 @@ describe('connected device access',()=>{
     expect(migration).not.toMatch(/security\s+definer/i);
   });
 
+  it('hardens sensitive RLS to the current active device without blocking session bootstrap',()=>{
+    const migration=read('supabase/migrations/20260930030000_harden_active_device_sensitive_rls.sql');
+    expect(migration).toContain('security definer');
+    expect(migration).toContain("coalesce(((select auth.jwt()) ->> 'session_id'), '')");
+    expect(migration).toContain('and (select public.myfinhub_session_is_active())');
+    expect(migration).toContain('rheomiq_card_secrets_owner_aal2_select');
+    expect(migration).toContain('rheomiq_account_metadata_owner_aal2_select');
+    expect(migration).toContain('and (select public.rheomiq_is_owner_aal2())');
+    expect(migration).toContain('if v_uid is null or not (select public.rheomiq_is_owner_aal2()) then');
+    const insertPolicy=migration.slice(migration.indexOf('create policy myfinhub_device_sessions_owner_insert'),migration.indexOf('create policy myfinhub_device_sessions_owner_update'));
+    expect(insertPolicy).not.toContain('myfinhub_session_is_active');
+  });
+
   it('uses only publishable-key plus user JWT and supports Android device metadata',()=>{
     const registry=read('server/deviceSessionRegistry.ts');
     expect(registry).toContain('SUPABASE_PUBLISHABLE_KEY');
