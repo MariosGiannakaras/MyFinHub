@@ -49,7 +49,7 @@ button:disabled{cursor:not-allowed}
 .login-input:focus-within>svg{color:var(--blue);transform:scale(1.08)}
 .login-input input::placeholder{color:#8c9ab0;transition:opacity var(--motion-fast) ease}
 .login-input:focus-within input::placeholder{opacity:.58}
-.login-password-toggle{width:34px;height:34px;min-width:34px;min-height:34px;border:0;border-radius:10px;background:transparent;color:var(--muted);display:grid;place-items:center;cursor:pointer;box-shadow:none;padding:0}
+.login-password-toggle{width:40px;height:40px;min-width:40px;min-height:40px;border:0;border-radius:10px;background:transparent;color:var(--muted);display:grid;place-items:center;cursor:pointer;box-shadow:none;padding:0}
 .login-password-toggle:hover:not(:disabled){background:rgba(47,111,237,.08);color:var(--blue-2)}
 .login-password-toggle:active:not(:disabled){transform:scale(.92)}
 .login-field-hint{display:flex;align-items:center;gap:5px;color:#83530c;font-size:9.5px;font-weight:650;animation:rh-hint-in var(--motion-fast) var(--ease-out) both}
