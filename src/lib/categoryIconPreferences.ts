@@ -58,7 +58,9 @@ export function explicitCategoryIcon(settings:FinanceSettings,kind:CategoryKind,
   const key=categoryIconPreferenceKey(kind,category);
   if(!settings.categoryIconPack){
     const legacy=settings.categoryIcons?.[key];
-    return legacy&&categoryIconByKey(legacy)?legacy:null;
+    if(!legacy)return null;
+    const decoded=decodeCategoryIconValue(legacy);
+    return categoryIconByKey(decoded.key)?legacy:null;
   }
   return explicitCategoryIconForPack(settings,kind,category,activeCategoryIconPack(settings));
 }
@@ -67,7 +69,9 @@ export function explicitSubcategoryIcon(settings:FinanceSettings,kind:CategoryKi
   const key=subcategoryIconPreferenceKey(kind,category,subcategory);
   if(!settings.categoryIconPack){
     const legacy=settings.subcategoryIcons?.[key];
-    return legacy&&categoryIconByKey(legacy)?legacy:null;
+    if(!legacy)return null;
+    const decoded=decodeCategoryIconValue(legacy);
+    return categoryIconByKey(decoded.key)?legacy:null;
   }
   return explicitSubcategoryIconForPack(settings,kind,category,subcategory,activeCategoryIconPack(settings));
 }
