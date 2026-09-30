@@ -42,6 +42,18 @@ describe('canonical credit-card stack adoption',()=>{
     expect(credit).toContain('initialCard={profileCard} kindLock="credit"');
   });
 
+  it('bounds growing credit ledgers while preserving explicit progressive access',()=>{
+    expect(credit).toContain('const [purchaseLimit,setPurchaseLimit]=useState(25)');
+    expect(credit).toContain('const [paymentLimit,setPaymentLimit]=useState(25)');
+    expect(credit).toContain('purchases.slice(0,purchaseLimit)');
+    expect(credit).toContain('payments.slice(0,paymentLimit)');
+    expect(credit).toContain('{visiblePurchases.map(event=>');
+    expect(credit).toContain('{visiblePayments.map(event=>');
+    expect(credit).toContain('Προβολή περισσότερων αγορών');
+    expect(credit).toContain('Προβολή περισσότερων αποπληρωμών');
+    expect(hostCss).toContain('.credit-history-more');
+  });
+
   it('keeps debit/prepaid cards out of the credit finance domain',()=>{
     expect(cards).toContain("allowedKinds={['debit','prepaid']}");
     expect(cards).toContain('Οι συναλλαγές καταχωρούνται στους αντίστοιχους λογαριασμούς, όχι στις κάρτες.');
