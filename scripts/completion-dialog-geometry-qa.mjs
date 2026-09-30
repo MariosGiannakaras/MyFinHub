@@ -30,7 +30,40 @@ try{
   const click=async(selector,label)=>{const ok=await c.call(`function(selector){const visible=${visible};const node=[...document.querySelectorAll(selector)].find(visible);node?.click();return Boolean(node)}`,[selector]);assert(ok,`missing ${label}`);await sleep(100)};
   const clickText=async(selector,text)=>{const ok=await c.call(`function(selector,text){const visible=${visible};const node=[...document.querySelectorAll(selector)].find(n=>visible(n)&&(n.textContent||'').includes(text));node?.click();return Boolean(node)}`,[selector,text]);assert(ok,`missing ${text}`);await sleep(100)};
   const inspect=async(selector,label,{vertical=true}={})=>{
-    const result=await c.call(`function(selector){const visible=${visible};const root=[...document.querySelectorAll(selector)].find(visible);if(!root)return null;const r=root.getBoundingClientRect();const controls=[...root.querySelectorAll('button,a,input,select,textarea,[role="button"],[role="radio"],[role="tab"]')].filter(visible);const rogue=controls.filter(node=>{const x=node.getBoundingClientRect();return x.left<-1||x.right>innerWidth+1}).map(node=>({tag:node.tagName,aria:node.getAttribute('aria-label'),text:(node.textContent||'').trim().slice(0,80)}));const accessible=node=>Boolean((node.getAttribute('aria-label')||'').trim()||(node.getAttribute('aria-labelledby')||'').trim()||node.closest('label')||('labels' in node&&node.labels?.length));const unnamedButtons=[...root.querySelectorAll('button')].filter(visible).filter(node=>!((node.getAttribute('aria-label')||node.getAttribute('title')||node.textContent||'').trim())).map(node=>node.outerHTML.slice(0,140));const unnamedControls=[...root.querySelectorAll('input,select,textarea')].filter(visible).filter(node=>!accessible(node)).map(node=>node.outerHTML.slice(0,140));const footers=[...root.querySelectorAll('footer,.modal-actions,.editor-actions,.account-management-modal-footer')].filter(visible).map(node=>{const x=node.getBoundingClientRect();return {top:x.top,bottom:x.bottom,left:x.left,right:x.right}});return {viewportWidth:innerWidth,viewportHeight:innerHeight,left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height,scrollWidth:root.scrollWidth,clientWidth:root.clientWidth,scrollHeight:root.scrollHeight,clientHeight:root.clientHeight,rogue,unnamedButtons,unnamedControls,footers}};`,[selector]);
+    const result=await c.call(`function(selector){
+      const visible=node=>{
+        if(!node)return false;
+        const style=getComputedStyle(node),rect=node.getBoundingClientRect();
+        return style.display!=='none'&&style.visibility!=='hidden'&&Number(style.opacity)!==0&&rect.width>0&&rect.height>0;
+      };
+      const root=[...document.querySelectorAll(selector)].find(visible);
+      if(!root)return null;
+      const rect=root.getBoundingClientRect();
+      const controls=[...root.querySelectorAll('button,a,input,select,textarea,[role="button"],[role="radio"],[role="tab"]')].filter(visible);
+      const rogue=controls.filter(node=>{
+        const controlRect=node.getBoundingClientRect();
+        return controlRect.left<-1||controlRect.right>innerWidth+1;
+      }).map(node=>({tag:node.tagName,aria:node.getAttribute('aria-label'),text:(node.textContent||'').trim().slice(0,80)}));
+      const accessible=node=>{
+        const ariaLabel=(node.getAttribute('aria-label')||'').trim();
+        const labelledBy=(node.getAttribute('aria-labelledby')||'').trim();
+        const wrapped=Boolean(node.closest('label'));
+        const labels=('labels' in node&&node.labels)?node.labels.length:0;
+        return Boolean(ariaLabel||labelledBy||wrapped||labels);
+      };
+      const unnamedButtons=[...root.querySelectorAll('button')].filter(visible).filter(node=>!((node.getAttribute('aria-label')||node.getAttribute('title')||node.textContent||'').trim())).map(node=>node.outerHTML.slice(0,140));
+      const unnamedControls=[...root.querySelectorAll('input,select,textarea')].filter(visible).filter(node=>!accessible(node)).map(node=>node.outerHTML.slice(0,140));
+      const footers=[...root.querySelectorAll('footer,.modal-actions,.editor-actions,.account-management-modal-footer')].filter(visible).map(node=>{
+        const footerRect=node.getBoundingClientRect();
+        return {top:footerRect.top,bottom:footerRect.bottom,left:footerRect.left,right:footerRect.right};
+      });
+      return {
+        viewportWidth:innerWidth,viewportHeight:innerHeight,
+        left:rect.left,right:rect.right,top:rect.top,bottom:rect.bottom,width:rect.width,height:rect.height,
+        scrollWidth:root.scrollWidth,clientWidth:root.clientWidth,scrollHeight:root.scrollHeight,clientHeight:root.clientHeight,
+        rogue,unnamedButtons,unnamedControls,footers
+      };
+    }`,[selector]);
     assert(result,`${label} is not visible`);
     assert(result.left>=-1&&result.right<=result.viewportWidth+1,`${label} escapes viewport horizontally: ${JSON.stringify(result)}`);
     if(vertical)assert(result.top>=-1&&result.bottom<=result.viewportHeight+1,`${label} escapes viewport vertically: ${JSON.stringify(result)}`);
