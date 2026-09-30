@@ -28,24 +28,21 @@ describe('financial provider registry',()=>{
     expect(financialProviderId('PayPal')).toBe('paypal');
   });
 
-  it('never presents fabricated bank artwork as verified provider branding',()=>{
-    const registryGenericProviders=['piraeus','alpha','national','eurobank'];
-    for(const id of registryGenericProviders){
+  it('uses verified provider assets when available and remains generic when no canonical asset exists',()=>{
+    expect(FINANCIAL_PROVIDERS.find(item=>item.id==='piraeus')?.logoAssetKey).toBe('piraeus-logo-green-on-yellow');
+    expect(FINANCIAL_PROVIDERS.find(item=>item.id==='piraeus')?.wordmarkAssetKey).toBe('piraeus-wordmark-green-on-white');
+    expect(FINANCIAL_PROVIDERS.find(item=>item.id==='alpha')?.logoAssetKey).toBe('alpha-logo-white-on-blue');
+    expect(FINANCIAL_PROVIDERS.find(item=>item.id==='alpha')?.wordmarkAssetKey).toBe('alpha-wordmark-color');
+    expect(FINANCIAL_PROVIDERS.find(item=>item.id==='revolut')?.logoAssetKey).toBe('revolut-logo-black-on-white');
+    expect(FINANCIAL_PROVIDERS.find(item=>item.id==='viva')?.logoAssetKey).toBe('viva-logo-navy-on-white');
+    expect(FINANCIAL_PROVIDERS.find(item=>item.id==='payzy')?.logoAssetKey).toBe('payzy-logo-color');
+    for(const id of ['national','eurobank','paypal'] as const){
       const provider=FINANCIAL_PROVIDERS.find(item=>item.id===id);
       expect(provider?.logoAssetKey).toBe('generic');
       expect(provider?.wordmarkAssetKey).toBe('generic');
     }
-    for(const id of ['piraeus','alpha'] as const){
-      expect(bankBrandAsset(id)?.source).toBe('local-image');
-    }
-    for(const id of ['national','eurobank'] as const){
-      expect(bankBrandAsset(id)).toBeNull();
-    }
-    expect(FINANCIAL_PROVIDERS.find(item=>item.id==='viva')?.logoAssetKey).toBe('generic');
-    expect(FINANCIAL_PROVIDERS.find(item=>item.id==='paypal')?.logoAssetKey).toBe('generic');
-    expect(bankBrandAsset('revolut')?.source).toBe('local-image');
-    expect(bankBrandAsset('payzy')?.source).toBe('local-image');
-    expect(bankBrandAsset('viva')?.source).toBe('local-image');
+    for(const id of ['piraeus','alpha','revolut','payzy','viva'] as const)expect(bankBrandAsset(id)?.source).toBe('local-image');
+    for(const id of ['national','eurobank'] as const)expect(bankBrandAsset(id)).toBeNull();
   });
 
   it('keeps the account creation taxonomy compact and behavior-oriented',()=>{
@@ -63,9 +60,13 @@ describe('financial provider registry',()=>{
     expect(migration).toContain('for select');
     expect(migration).not.toMatch(/service[_-]?role|secret[_-]?key/i);
     expect(brandRefresh).toContain("when 'piraeus' then 'generic'");
-    expect(brandRefresh).toContain("when 'alpha' then 'generic'");
-    expect(brandRefresh).toContain("when 'national' then 'generic'");
-    expect(brandRefresh).toContain("when 'eurobank' then 'generic'");
+    const aligned=source('supabase/migrations/20260930075049_align_financial_provider_brand_assets.sql');
+    expect(aligned).toContain("'piraeus-logo-green-on-yellow'");
+    expect(aligned).toContain("'alpha-logo-white-on-blue'");
+    expect(aligned).toContain("'revolut-wordmark-black-on-white'");
+    expect(aligned).toContain("'viva-logo-navy-on-white'");
+    expect(aligned).toContain("'payzy-logo-color'");
+    expect(aligned).toContain("else 'generic'");
   });
 
   it('reuses the existing metadata API instead of adding another Vercel function',()=>{
@@ -90,6 +91,8 @@ describe('financial provider registry',()=>{
     expect(accounts).toContain('<BankBrandMark');
     expect(accounts).toContain('1. Τύπος λογαριασμού');
     expect(accounts).toContain('2. Τράπεζα / πάροχος');
+    expect(accounts).toContain('className="account-management-provider-picker"');
+    expect(accounts).toContain('role="radiogroup" aria-label="Τράπεζα ή πάροχος"');
     expect(accounts).toContain('3. ');
     expect(accounts).toContain('bankAccountCategory');
     expect(accounts).toContain('providerId');
@@ -119,7 +122,7 @@ describe('financial provider registry',()=>{
     expect(mark).toContain('logoAssetKey');
     expect(mark).toContain('wordmarkAssetKey');
     expect(mark).toContain("const registryVisualKey=assetKey==='generic'?'generic'");
-    expect(mark).toContain("identityAsset?.source==='local-image'");
+    expect(mark).toContain('const visualKey=provider?registryVisualKey');
     expect(mark).toContain("const registrySource=provider?'shared':'fallback';");
     expect(mark).toContain('data-provider-registry={registrySource}');
     expect(mark).toContain('data-bank-logo-source="generic"');
