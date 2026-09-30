@@ -96,6 +96,27 @@ try{
   await waitFor("function(){return document.body.textContent.includes('QA Audit Person')&&document.body.textContent.includes('QA Audit Lending')}",'saved lending movement');
   await shot('lending-created');
 
+  console.log('Completion functional QA: Card profile edit stays separate from vault details');
+  await navigate('cards');
+  const cardsEdit=await c.call(`function(){const visible=${visible};const button=[...document.querySelectorAll('button[aria-label^="Επεξεργασία κάρτας"]')].find(visible);button?.click();return Boolean(button)}`);
+  assert(cardsEdit,'Cards exposes profile editing separately from secure details');
+  await waitFor("function(){return Boolean(document.querySelector('#card-create-title'))&&document.querySelector('#card-create-title').textContent.includes('Επεξεργασία κάρτας')}",'Cards profile editor');
+  await setByLabel('Όνομα κάρτας','QA Audit Card Profile');
+  await clickText('.card-create-modal button','Αποθήκευση αλλαγών');
+  await waitFor("function(){return document.body.textContent.includes('QA Audit Card Profile')}",'updated Cards profile nickname');
+  const secureStillSeparate=await c.call(`function(){const visible=${visible};return [...document.querySelectorAll('button[aria-label^="Ασφαλή στοιχεία"]')].some(visible)&&!document.querySelector('.app-card-details-dialog')}`);
+  assert(secureStillSeparate,'Cards profile save does not open or merge the secure-details dialog');
+  await shot('cards-profile-updated');
+
+  console.log('Completion functional QA: Credit-card profile edit');
+  await navigate('credit');
+  await clickText('button','Επεξεργασία κάρτας');
+  await waitFor("function(){return Boolean(document.querySelector('#card-create-title'))&&document.querySelector('#card-create-title').textContent.includes('Επεξεργασία κάρτας')}",'Credit profile editor');
+  await setByLabel('Όνομα κάρτας','QA Audit Credit Profile');
+  await clickText('.card-create-modal button','Αποθήκευση αλλαγών');
+  await waitFor("function(){return document.body.textContent.includes('QA Audit Credit Profile')}",'updated Credit profile nickname');
+  await shot('credit-profile-updated');
+
   const overflow=await c.call("function(){return Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}");
   assert(overflow<=1,`functional flows leave document overflow ${overflow}px`);
   c.close();
