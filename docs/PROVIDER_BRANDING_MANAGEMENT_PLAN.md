@@ -4,7 +4,7 @@
 
 Make provider branding owner-managed from MyFinHub itself. Existing providers can have their artwork replaced without a repo change or redeploy, and a newly created provider can be created together with the artwork required by account/card surfaces.
 
-**Tasks 4/5 · Subtasks 13/18**
+**Tasks 4/5 · Subtasks 17/18**
 
 ## 1. Provider asset model + secure write API — 4/4
 
@@ -108,14 +108,14 @@ Implementation branch: `feat/481-provider-brand-management`.
 It is currently stacked on `chore/478-db-production-readiness` / #479 because #481 depends on the Storage-first provider schema. After #479 lands, #481 must be reconciled onto current `develop` before final validation/merge.
 
 
-## 5. UX refinement — provider editor and reusable asset library — 0/5
+## 5. UX refinement — provider editor and reusable asset library — 4/5
 
 The first implementation proved the backend/runtime contract, but the rendered review exposed an interaction-design problem: artwork management was expanded directly inside Settings and the create flow exposed seven native file inputs. That is functionally valid but not the intended product UX.
 
-- [ ] Use one Provider Editor for both existing and new providers. The editor has two tabs: **Στοιχεία** and **Εικόνες**. Settings itself shows a compact provider list plus Edit/Create actions, not all artwork slots.
-- [ ] Introduce explicit **asset bindings**. An uploaded asset is stored once in the provider's asset library; logo/wordmark/card slots reference that asset. The same image can therefore be used in multiple slots without duplicate files.
-- [ ] In the **Εικόνες** tab, each slot can choose from already-uploaded assets or upload a new one. Uploads are app-owned controls; native browser file controls remain hidden.
-- [ ] App branding uses Default + optional Light UI / Dark UI overrides. Card branding uses Default + optional Light-card / Dark-card overrides; application theme is irrelevant to cards.
+- [x] Use one Provider Editor for both existing and new providers. The editor has two tabs: **Στοιχεία** and **Εικόνες**. Settings itself shows a compact provider list plus Edit/Create actions, not all artwork slots.
+- [x] Introduce explicit **asset bindings**. An uploaded asset is stored once in the provider's asset library; logo/wordmark/card slots reference that asset. The same image can therefore be used in multiple slots without duplicate files.
+- [x] In the **Εικόνες** tab, each slot can choose from already-uploaded assets or upload a new one. Uploads are app-owned controls; native browser file controls remain hidden.
+- [x] App branding uses Default + optional Light UI / Dark UI overrides. Card branding uses Default + optional Light-card / Dark-card overrides; application theme is irrelevant to cards.
 - [ ] Run a new UX-oriented rendered suite that verifies the actual edit/create task, asset picker, reuse semantics, mobile/desktop layout and light/dark presentation. Do not mark this phase complete from geometry-only checks.
 
 ### Refined slot model
