@@ -59,7 +59,7 @@ function mapCryptoError(error:unknown):never{
   if(code==='INVALID_CARD_CVV')throw new ApiError(400,'INVALID_CARD_CVV','Το CVV πρέπει να έχει 3 ή 4 αριθμητικά ψηφία.');
   if(code==='EMPTY_CARD_SECRET'||code==='INVALID_CARD_SECRET')throw new ApiError(400,'INVALID_CARD_SECRET','Δεν δόθηκαν έγκυρα στοιχεία κάρτας.');
   if(code==='CARD_VAULT_DECRYPT_FAILED')throw new ApiError(500,'CARD_VAULT_DECRYPT_FAILED','Το αποθηκευμένο στοιχείο κάρτας δεν μπόρεσε να αποκρυπτογραφηθεί.',false);
-  if(code.startsWith('CARD_VAULT_KEY_')||code==='CARD_VAULT_KEY_NOT_CONFIGURED')throw new ApiError(503,'CARD_VAULT_UNAVAILABLE','Το ασφαλές vault καρτών δεν είναι διαθέσιμο.',false);
+  if(code.startsWith('CARD_VAULT_KEY_')||code==='CARD_VAULT_KEY_NOT_CONFIGURED')throw new ApiError(503,'CARD_VAULT_CONFIG_ERROR','Το ασφαλές vault καρτών δεν είναι σωστά ρυθμισμένο στον διακομιστή.',false);
   throw error;
 }
 
