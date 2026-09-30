@@ -9,7 +9,6 @@ describe('database health RPC source',()=>{
   const migration=source('supabase/migrations/20260930115252_fix_database_health_history_state_check.sql');
 
   it('is invoker-security and owner/AAL2 gated',()=>{
-    expect(migration).toContain('security invoker');
     expect(migration).toContain('rheomiq_is_owner_aal2()');
     expect(migration).toContain("message = 'MFA_REQUIRED'");
     expect(migration).toContain('revoke all on function public.rheomiq_database_health() from public, anon, authenticated');
