@@ -49,7 +49,9 @@ const productionApplied=[
   "20260930122418_index_relational_finance_foreign_keys.sql"
 ] as const;
 
-const releasePending=[] as const;
+const releasePending=[
+  "20260930201200_manage_financial_provider_assets.sql"
+] as const;
 
 describe('production migration ledger source contract',()=>{
   it('keeps every production-applied migration represented by the exact applied version/name',()=>{
