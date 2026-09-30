@@ -29,14 +29,24 @@ describe('unified category icon assignment workspace',()=>{
     expect(workspace).not.toContain('category-icon-unified-editor');
   });
 
-  it('keeps pack selector previews, stored selections and picker context truthful',()=>{
+  it('changes the visible taxonomy preview with the selected family and persists that family',()=>{
+    expect(workspace).toContain('const iconPack=activeCategoryIconPack(settings)');
+    expect(workspace).toContain('onChange(withCategoryIconPack(settings,item.id))');
     expect(workspace).toContain('categoryIconPackPreviewKeys(item.id).map');
-    expect(workspace).toContain('value={editorValue} selectedPack={iconPack}');
-    expect(workspace).not.toContain('compatibleValue');
-    expect(workspace).toContain('Τρέχον: {packLabel(editorResolved)}');
+    expect(workspace).toContain('value={editorValue} color={editorResolvedColor} selectedPack={iconPack}');
+    expect(workspace).toContain('aria-label={`Κατηγορίες και υποκατηγορίες · προεπισκόπηση');
     expect(workspace).toContain("{packLabel(resolved)} · {explicit?'Προσαρμοσμένο':'Αυτόματο'}");
     expect(support).toContain('categoryIconPackPreviewKeys');
     expect(support).toContain("if(pack==='heroicons'||pack==='bootstrap')return ['shopping','home','flight']");
+  });
+
+  it('exposes persistent per-target color controls with automatic reset and live preview',()=>{
+    expect(workspace).toContain('withCategoryIconColor');
+    expect(workspace).toContain('withSubcategoryIconColor');
+    expect(workspace).toContain('type="color"');
+    expect(workspace).toContain('editorColorOverride');
+    expect(workspace).toContain('color={editorResolvedColor}');
+    expect(workspace).toContain('Αυτόματο');
   });
 
   it('is the Settings Icons surface while Categories keeps taxonomy management',()=>{
