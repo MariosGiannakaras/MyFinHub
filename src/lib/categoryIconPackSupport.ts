@@ -49,3 +49,9 @@ export function categoryIconPackPreviewKeys(pack:CategoryIconPack):readonly Cate
   if(pack==='heroicons'||pack==='bootstrap')return ['shopping','home','flight'];
   return ['coffee','home','wallet'];
 }
+
+
+export function categoryIconPackOptionCount(pack:CategoryIconPack){
+  if(pack==='lucide')return null;
+  return keysForPack(pack)?.size??0;
+}
