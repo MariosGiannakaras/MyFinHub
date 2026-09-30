@@ -76,13 +76,14 @@ describe('release-readiness source contracts',()=>{
   it('keeps one visible global Quick Add route per form factor and mobile viewport-fixed outside the topbar',()=>{
     expect(appShell).not.toContain('className="command-pill"');
     expect(appShell).toContain('data-global-quick-entry="desktop"');
-    expect(appShell).toContain('className="mobile-quick-action"');
+    expect(appShell).toContain('className="mobile-nav-quick"');
     expect(appShell).toContain('data-global-quick-entry="mobile"');
+    expect(appShell).not.toContain('className="mobile-quick-action"');
+    expect(commandStyles).not.toContain('.mobile-quick-action{');
     expect(appShell).toContain('<Surface as="header" variant="flat" className="topbar">');
     expect(appShell).toContain("</Surface>{page!=='settings'?<button type=\"button\" className=\"mobile-quick-action\"");
     expect(appShell).toContain("page!=='settings'");
     expect(appShell).not.toContain('genericEntry');
-    expect(commandStyles).toContain('.mobile-quick-action{display:none}');
     expect(commandStyles).toContain('.mobile-quick-action{display:grid;place-items:center');
     expect(commandStyles).toContain('position:fixed;right:16px;bottom:calc(84px + env(safe-area-inset-bottom,0px))');
     expect(commandStyles).toContain('width:48px;height:48px');
