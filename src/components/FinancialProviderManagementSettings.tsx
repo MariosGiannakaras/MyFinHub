@@ -136,6 +136,8 @@ export function FinancialProviderManagementSettings(){
   };
   const closeEditor=()=>{if(!busy)releaseEditor()};
   const modalRef=useModalFocus<HTMLElement>(Boolean(editor),'[data-autofocus="true"]',closeEditor);
+  const closePicker=()=>{if(!busy&&editor?.pickerSlot)setEditor({...editor,pickerSlot:null})};
+  const pickerRef=useModalFocus<HTMLElement>(Boolean(editor?.pickerSlot),'.provider-picker-upload',closePicker);
   const openNew=()=>{
     setMessage('');setEditorError('');
     const assignments=emptyAssignments();
@@ -332,7 +334,7 @@ export function FinancialProviderManagementSettings(){
         </footer>
 
         {pickerSlot?<div className="provider-asset-picker-scrim" onMouseDown={()=>setEditor({...editor,pickerSlot:null})}>
-          <section className="provider-asset-picker" role="dialog" aria-label={`Επιλογή εικόνας για ${pickerSlot.label}`} onMouseDown={event=>event.stopPropagation()}>
+          <section ref={pickerRef} className="provider-asset-picker" role="dialog" aria-modal="true" aria-label={`Επιλογή εικόνας για ${pickerSlot.label}`} tabIndex={-1} onMouseDown={event=>event.stopPropagation()}>
             <header><div><span>ΕΠΙΛΟΓΗ ΕΙΚΟΝΑΣ</span><h3>{pickerSlot.label}</h3><p>Διάλεξε από τη βιβλιοθήκη ή ανέβασε νέο αρχείο.</p></div><IconButton type="button" aria-label="Κλείσιμο επιλογής εικόνας" onClick={()=>setEditor({...editor,pickerSlot:null})}><X/></IconButton></header>
             <div className="provider-asset-picker-grid">
               <button type="button" className="provider-picker-upload" onClick={()=>requestUpload(pickerSlot.id)}><Upload/><b>Ανέβασμα νέας</b><small>PNG, JPG, WebP ή SVG · έως 2 MB</small></button>
