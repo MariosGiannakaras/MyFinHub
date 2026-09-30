@@ -394,7 +394,7 @@ begin
         r.account_id
       ) as display_name,
       coalesce(
-        (p_state#>'{settings,accountOverrides}'->r.account_id)->>'kind',
+        ((p_state#>'{settings,accountOverrides}')->r.account_id)->>'kind',
         case
           when r.account_id='credit-card' then 'credit'
           when r.account_id='cash' then 'cash'
@@ -403,10 +403,10 @@ begin
         end
       ) as account_kind,
       coalesce(
-        (p_state#>'{settings,accountOverrides}'->r.account_id)->>'providerId',
-        (p_state#>'{settings,accountOverrides}'->r.account_id)->>'provider'
+        ((p_state#>'{settings,accountOverrides}')->r.account_id)->>'providerId',
+        ((p_state#>'{settings,accountOverrides}')->r.account_id)->>'provider'
       ) as provider_id,
-      coalesce(p_state#>'{settings,accountOverrides}'->r.account_id,
+      coalesce((p_state#>'{settings,accountOverrides}')->r.account_id,
         jsonb_build_object(
           'id', r.account_id,
           'name', coalesce(p_state#>>array['settings','accountNames',r.account_id], r.account_id),
@@ -1132,6 +1132,20 @@ begin
     'events_missing_date',(select count(*) from events where coalesce(j->>'date','')=''),
     'events_nonpositive_amount',(select count(*) from events where jsonb_typeof(j->'amount')<>'number' or (j->>'amount')::numeric<=0),
     'events_without_legs',(select count(*) from events where jsonb_typeof(j->'legs')<>'array' or jsonb_array_length(case when jsonb_typeof(j->'legs')='array' then j->'legs' else '[]'::jsonb end)=0),
+    'unbalanced_internal_events',(
+      select count(*)
+      from events e
+      where e.j->>'kind' in ('transfer','withdrawal','saving_cash_offset','card_payment')
+        and (
+          jsonb_typeof(e.j->'legs')<>'array'
+          or jsonb_array_length(case when jsonb_typeof(e.j->'legs')='array' then e.j->'legs' else '[]'::jsonb end)<>2
+          or abs(coalesce((
+            select sum((l.value->>'amount')::numeric)
+            from jsonb_array_elements(case when jsonb_typeof(e.j->'legs')='array' then e.j->'legs' else '[]'::jsonb end) l(value)
+            where jsonb_typeof(l.value->'amount')='number'
+          ),0))>0.0001
+        )
+    ),
     'unknown_leg_accounts',(
       select count(*) from legs
       where coalesce(leg->>'accountId','')=''
@@ -1196,6 +1210,7 @@ begin
     and coalesce((v_checks->>'events_missing_date')::int,0)=0
     and coalesce((v_checks->>'events_nonpositive_amount')::int,0)=0
     and coalesce((v_checks->>'events_without_legs')::int,0)=0
+    and coalesce((v_checks->>'unbalanced_internal_events')::int,0)=0
     and coalesce((v_checks->>'unknown_leg_accounts')::int,0)=0
     and coalesce((v_checks->>'orphan_card_event_refs')::int,0)=0
     and coalesce((v_checks->>'orphan_statement_event_refs')::int,0)=0
