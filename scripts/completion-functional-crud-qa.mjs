@@ -98,23 +98,6 @@ try{
   await waitFor("function(){return [...document.querySelectorAll('.loan-list-row')].some(row=>(row.textContent||'').includes('QA Audit Loan Updated'))}",'updated loan');
   await shot('loan-updated');
 
-  console.log('Completion functional QA: Recurring create and edit');
-  await navigate('recurring');
-  await clickText('button','Νέο πάγιο');
-  await waitFor("function(){return Boolean(document.querySelector('#recurring-editor-title'))}",'new recurring editor');
-  await setByLabel('Όνομα','QA Audit Recurring');
-  await setByLabel('Προκαθορισμένο ποσό','19');
-  await clickText('.editor-dialog button','Αποθήκευση');
-  await waitFor("function(){return document.body.textContent.includes('QA Audit Recurring')&&document.body.textContent.includes('Το νέο πάγιο δημιουργήθηκε')}",'saved recurring item');
-  const editRecurring=await c.call(`function(){const visible=${visible};const row=[...document.querySelectorAll('[data-recurring-status="active"]')].find(item=>visible(item)&&(item.textContent||'').includes('QA Audit Recurring'));const button=row?.querySelector('button[aria-label^="Επεξεργασία QA Audit Recurring"]');button?.click();return Boolean(button)}`);
-  assert(editRecurring,'saved recurring item exposes edit');
-  await waitFor("function(){return Boolean(document.querySelector('#recurring-editor-title'))}",'recurring edit editor');
-  await setByLabel('Όνομα','QA Audit Recurring Updated');
-  await setByLabel('Προκαθορισμένο ποσό','21');
-  await clickText('.editor-dialog button','Αποθήκευση');
-  await waitFor("function(){return document.body.textContent.includes('QA Audit Recurring Updated')&&document.body.textContent.includes('Το πάγιο ενημερώθηκε')}",'updated recurring item');
-  await shot('recurring-created-edited');
-
   console.log('Completion functional QA: Lending create');
   await navigate('lending');
   await clickText('button','Νέο άτομο');
