@@ -62,21 +62,22 @@ try{
   await openBranding();
   const brandingState=await c.call(`function(){const groups=[...document.querySelectorAll('.provider-brand-group>header h4')].map(node=>(node.textContent||'').trim());const text=document.querySelector('.provider-branding-panel')?.textContent||'';return {groups,slots:document.querySelectorAll('.provider-slot-card').length,text}}`);
   assert(brandingState.slots===9,'branding editor exposes nine semantic slots');
-  assert(brandingState.groups.includes('Logo εφαρμογής')&&brandingState.groups.includes('Wordmark εφαρμογής')&&brandingState.groups.includes('Κάρτες'),'branding groups are task-oriented');
-  assert(brandingState.text.includes('Το Light/Dark theme της εφαρμογής δεν συμμετέχει.'),'card artwork is explicitly independent from app theme');
-  await chooseSlot('Προεπιλεγμένο logo');
+  assert(brandingState.groups.includes('Λογότυπο εφαρμογής')&&brandingState.groups.includes('Λεκτικό σήμα εφαρμογής')&&brandingState.groups.includes('Κάρτες'),'branding groups are task-oriented');
+  assert(brandingState.text.includes('Το θέμα της εφαρμογής δεν επηρεάζει τις κάρτες.'),'card artwork is explicitly independent from app theme');
+  await chooseSlot('Βασικό λογότυπο');
   await waitFor("function(){const picker=document.querySelector('.provider-asset-picker[aria-modal=true]');return !!picker&&picker.contains(document.activeElement)}",'asset picker owns focus');
   const escaped=await c.call("function(){document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));return true}");
   assert(escaped,'Escape is dispatched to topmost asset picker');
   await waitFor("function(){return !document.querySelector('.provider-asset-picker')&&!!document.querySelector('.provider-editor-modal')}",'Escape closes picker but preserves provider editor');
-  await chooseSlot('Προεπιλεγμένο logo');
+  await chooseSlot('Βασικό λογότυπο');
   await uploadSyntheticSvg('qa-shared.svg');
-  await waitFor("function(){return [...document.querySelectorAll('.provider-slot-card')].some(card=>(card.textContent||'').includes('Προεπιλεγμένο logo')&&(card.textContent||'').includes('qa-shared.svg'))}",'uploaded logo assigned once');
+  await waitFor("function(){return [...document.querySelectorAll('.provider-slot-card')].some(card=>(card.textContent||'').includes('Βασικό λογότυπο')&&(card.textContent||'').includes('qa-shared.svg'))}",'uploaded logo assigned once');
   assert(await c.call("function(){return document.querySelectorAll('.provider-library-item').length}")===1,'one upload creates one library asset');
 
-  await chooseSlot('Προεπιλεγμένο wordmark');
+  await chooseSlot('Βασικό λεκτικό σήμα');
   const pickerAssets=await c.call("function(){return [...document.querySelectorAll('.provider-picker-asset b')].map(node=>(node.textContent||'').trim())}");
   assert(pickerAssets.includes('qa-shared.svg'),'already-uploaded asset is available in picker');
+  await shot('provider-asset-picker-reuse-light-desktop');
   await clickText('.provider-picker-asset','qa-shared.svg');
   await waitFor("function(){return [...document.querySelectorAll('.provider-slot-card')].filter(card=>(card.textContent||'').includes('qa-shared.svg')).length>=2}",'same asset reused in second slot');
   const reuse=await c.call("function(){return [...document.querySelectorAll('.provider-slot-card')].some(card=>(card.textContent||'').includes('χρησιμοποιείται σε 2 θέσεις'))}");
@@ -89,6 +90,7 @@ try{
   await viewport(375,812,true);await noOverflow('provider editor mobile');await shot('provider-editor-branding-dark-mobile');
 
   await viewport(1440,1000,false);
+  assert(await applyTheme('light')==='light','create flow resets to light theme for desktop evidence');
   await c.call(`function(){document.querySelector('.provider-editor-header button[aria-label="Κλείσιμο"]')?.click();return true}`);
   await waitFor("function(){return !document.querySelector('.provider-editor-modal')}",'existing editor closes');
   await clickText('.provider-management button','Νέος πάροχος');
@@ -96,12 +98,13 @@ try{
   const details=await c.call(`function(){const set=(placeholder,value)=>{const input=[...document.querySelectorAll('.provider-details-panel input')].find(node=>node.getAttribute('placeholder')===placeholder);if(!input)return false;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(input,value);input.dispatchEvent(new Event('input',{bubbles:true}));return true};return set('π.χ. Νέα Τράπεζα','QA Bank')}`);
   assert(details,'new-provider details are editable through app-owned controls');
   await sleep(100);
+  await shot('provider-create-details-light-desktop');
   await clickText('.provider-editor-footer button','Συνέχεια στις εικόνες');
   await waitFor("function(){return !!document.querySelector('.provider-branding-panel')}",'new provider branding tab');
-  await chooseSlot('Προεπιλεγμένο logo');
+  await chooseSlot('Βασικό λογότυπο');
   await uploadSyntheticSvg('qa-new-provider.svg');
   await waitFor("function(){return document.querySelectorAll('.provider-library-item').length===1}",'new-provider upload enters local asset library');
-  await chooseSlot('Προεπιλεγμένο wordmark');
+  await chooseSlot('Βασικό λεκτικό σήμα');
   await clickText('.provider-picker-asset','qa-new-provider.svg');
   const createReuse=await c.call("function(){return document.querySelectorAll('.provider-library-item').length===1&&[...document.querySelectorAll('.provider-slot-card')].filter(card=>(card.textContent||'').includes('qa-new-provider.svg')).length>=2}");
   assert(createReuse,'create flow reuses one pending image for logo and wordmark');
