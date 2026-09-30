@@ -81,7 +81,7 @@ describe('provider branding management',()=>{
     expect(storeSource).toContain('previousStoragePath!==storagePath');
     expect(storeSource).toContain('encodeURIComponent(asset.updated_at)');
     expect(migration).toContain('rheomiq_create_financial_provider');
-    expect(migration).toContain("message='PROVIDER_ID_CONFLICT'");
+    expect(migration).toContain("message = 'PROVIDER_ID_CONFLICT'");
     expect(migration).toContain('rheomiq_register_financial_provider_asset');
     expect(migration).not.toMatch(/service[_-]?role|secret[_-]?key/i);
     expect(handler).toContain("resource==='financial-provider-assets'");
