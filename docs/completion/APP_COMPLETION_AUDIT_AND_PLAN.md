@@ -1,6 +1,6 @@
 # MyFinHub completion audit and implementation plan
 
-Status: expanded completion audit reopened; implementation in progress  
+Status: expanded implementation complete; final validation rerun pending  
 Tracker: #476  
 Target branch: `feat/476-completion-audit-hardening`  
 Integration target: `develop`  
@@ -197,6 +197,18 @@ The following findings were discovered after the expanded audit was reopened. Th
 **Database coordination note — 2026-09-30:** the owner reports that the separate DB change set is complete. The only remaining DB-side action is the owner's manual logo upload. This branch will not run Supabase reads, mutations, migrations, backfills or advisor checks unless explicitly requested again.
 
 Tracking rule for this batch: every new material defect found during the remaining deep audit must be added to this table (or a page-specific section below) before the batch is considered complete. A defect is not “closed” merely because source code changed; rendered/runtime proof remains required where noted.
+
+## 2C. Final-validation findings tracker
+
+The first exact-head validation wave exposed three additional validation blockers. These are tracked separately from DA-01..DA-41 because two are QA-infrastructure defects rather than product defects.
+
+| ID | Area | Finding | Classification | Status |
+| --- | --- | --- | --- | --- |
+| FV-01 | Cards rendered functional QA | The card profile QA treated `AppSelectInput` as a native `<select>`, so setting `.value='mastercard'` never invoked the owned combobox interaction. The resulting timeout did **not** prove the product save path was broken. | QA harness defect | **Source-fixed, proof pending.** QA now opens the combobox, selects the visible Mastercard option and then verifies the saved card renders Mastercard. |
+| FV-02 | Mobile Dashboard performance | Mobile Dashboard scored 62 (<65) with LCP ~4.8s/TBT ~674ms because the initial collapsed phone view still mounted `DashboardSummaryChart`, which pulled the shared Recharts chunk before the user requested secondary analytics. | Product performance defect | **Source-fixed, proof pending.** Initial phone view now uses a lightweight CSS donut and does not mount the shared Recharts chunk until the user expands analytics. Threshold is unchanged. |
+| FV-03 | Final screenshot capture | Final Visual QA failed before any screenshot because Chromium did not expose the fixed CDP port within the old blind 15s bootstrap. | QA infrastructure defect | **Source-fixed, proof pending.** Final screenshot harness now captures browser diagnostics, detects early exit/spawn failure, waits up to 20s and retries once on an isolated second port/profile. The 63-screenshot requirement is unchanged. |
+
+Validation rule: FV items close only after the next exact-head wave proves the corrected interaction/performance/bootstrap behavior. No quality threshold or screenshot-count requirement was relaxed.
 
 ## 3. Page-by-page audit and required changes
 
