@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 const root=process.cwd();
 const source=(relative:string)=>fs.readFileSync(path.join(root,relative),'utf8');
-const migration=source('supabase/migrations/20260930130000_relational_finance_ledger_cutover.sql');
+const migration=source('supabase/migrations/20260930122054_relational_finance_ledger_cutover.sql');
 
 describe('relational finance ledger cutover source',()=>{
   it('keeps the canonical relational ledger in the private schema and out of direct REST exposure',()=>{
