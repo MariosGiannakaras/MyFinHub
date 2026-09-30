@@ -34,6 +34,14 @@ try{
     const ok=await c.call(`function(label,value){const visible=${visible};const direct=[...document.querySelectorAll('input,textarea,select')].find(item=>visible(item)&&item.getAttribute('aria-label')===label);const labels=[...document.querySelectorAll('label')].filter(visible);const wrapper=labels.find(item=>(item.textContent||'').replace(/\\s+/g,' ').includes(label));const control=direct??wrapper?.querySelector('input,textarea,select')??wrapper?.parentElement?.querySelector('input,textarea,select');if(!control)return false;if(control instanceof HTMLSelectElement){control.value=value;control.dispatchEvent(new Event('change',{bubbles:true}));return true}const proto=control instanceof HTMLTextAreaElement?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;const setter=Object.getOwnPropertyDescriptor(proto,'value')?.set;if(setter)setter.call(control,value);else control.value=value;control.dispatchEvent(new Event('input',{bubbles:true}));control.dispatchEvent(new Event('change',{bubbles:true}));return true}`,[label,value]);
     assert(ok,`missing control for label ${label}`);await sleep(60);
   };
+  const selectOwnedByLabel=async(label,optionText)=>{
+    const opened=await c.call(`function(label){const visible=${visible};const input=[...document.querySelectorAll('input[role="combobox"]')].find(item=>visible(item)&&item.getAttribute('aria-label')===label);input?.click();return Boolean(input)}`,[label]);
+    assert(opened,`missing owned combobox ${label}`);
+    await waitFor("function(label){return [...document.querySelectorAll('.owned-select-popover[role=dialog]')].some(node=>node.getAttribute('aria-label')===label)}",`owned selector ${label}`,[label]);
+    const chosen=await c.call(`function(label,optionText){const visible=${visible};const dialog=[...document.querySelectorAll('.owned-select-popover[role=dialog]')].find(node=>node.getAttribute('aria-label')===label);const option=[...dialog?.querySelectorAll('[role=option]')||[]].find(node=>visible(node)&&(node.textContent||'').trim()===optionText);option?.click();return Boolean(option)}`,[label,optionText]);
+    assert(chosen,`missing owned option ${optionText} for ${label}`);
+    await waitFor("function(label,optionText){const input=[...document.querySelectorAll('input[role=combobox]')].find(item=>item.getAttribute('aria-label')===label);return Boolean(input&&input.value===optionText&&input.getAttribute('aria-expanded')==='false')}",`owned selector ${label}=${optionText}`,[label,optionText]);
+  };
   const shot=async name=>{const result=await c.send('Page.captureScreenshot',{format:'png',fromSurface:true});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(result.data,'base64'))};
 
   console.log('Completion functional QA: Modern transaction edit updates in place');
@@ -140,7 +148,7 @@ try{
   assert(cardsEdit,'Cards exposes profile editing separately from secure details');
   await waitFor("function(){return Boolean(document.querySelector('#card-create-title'))&&document.querySelector('#card-create-title').textContent.includes('Επεξεργασία κάρτας')}",'Cards profile editor');
   await setByLabel('Όνομα κάρτας','QA Audit Card Profile');
-  await setByLabel('Δίκτυο','mastercard');
+  await selectOwnedByLabel('Δίκτυο κάρτας','Mastercard');
   const alternateDesign=await c.call(`function(){const visible=${visible};const button=[...document.querySelectorAll('.card-create-modal .design-option')].find(item=>visible(item)&&item.getAttribute('aria-checked')!=='true');button?.click();return Boolean(button)}`);
   assert(alternateDesign,'card profile exposes an alternate visual design');
   await clickText('.card-create-modal button','Αποθήκευση αλλαγών');
