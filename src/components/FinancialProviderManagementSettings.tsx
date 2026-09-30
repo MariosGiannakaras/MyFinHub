@@ -14,7 +14,7 @@ import { BankBrandMark } from './BankBrandMark';
 import './FinancialProviderManagementSettings.css';
 
 type AssetSlot={
-  id:'logo'|'wordmark-light'|'wordmark-dark'|'card-light'|'card-dark';
+  id:'logo'|'logo-light'|'logo-dark'|'wordmark-light'|'wordmark-dark'|'card-light'|'card-dark';
   label:string;
   role:FinancialProviderAssetRole;
   variant:string;
@@ -22,7 +22,9 @@ type AssetSlot={
   tone:'light'|'dark';
 };
 const ASSET_SLOTS:AssetSlot[]=[
-  {id:'logo',label:'Logo',role:'logo',variant:'universal',makePrimary:true,tone:'light'},
+  {id:'logo',label:'Logo · Universal',role:'logo',variant:'universal',makePrimary:true,tone:'light'},
+  {id:'logo-light',label:'Logo · Light',role:'logo',variant:'light',makePrimary:false,tone:'light'},
+  {id:'logo-dark',label:'Logo · Dark',role:'logo',variant:'dark',makePrimary:false,tone:'dark'},
   {id:'wordmark-light',label:'Wordmark · Light',role:'wordmark',variant:'light',makePrimary:true,tone:'light'},
   {id:'wordmark-dark',label:'Wordmark · Dark',role:'wordmark',variant:'dark',makePrimary:false,tone:'dark'},
   {id:'card-light',label:'Card mark · Light',role:'card-mark',variant:'light',makePrimary:false,tone:'light'},
@@ -41,7 +43,7 @@ function providerSlug(value:string){
 function assetForSlot(provider:FinancialProvider,slot:AssetSlot){
   const exact=(provider.assets??[]).find(asset=>asset.role===slot.role&&asset.variant===slot.variant);
   if(exact)return exact;
-  if(slot.role==='wordmark')return (provider.assets??[]).find(asset=>asset.role==='wordmark'&&asset.variant.startsWith(slot.variant+'-'));
+  if(slot.role==='wordmark'||slot.id==='logo-light'||slot.id==='logo-dark')return (provider.assets??[]).find(asset=>asset.role===slot.role&&asset.variant.startsWith(slot.variant+'-'));
   if(slot.id==='logo')return (provider.assets??[]).find(asset=>asset.role==='logo'&&asset.variant==='universal')
     ??(provider.assets??[]).find(asset=>asset.assetKey===provider.logoAssetKey);
   return undefined;
@@ -85,7 +87,7 @@ export function FinancialProviderManagementSettings(){
         role:target.slot.role,
         variant:target.slot.variant,
         file,
-        makePrimary:target.slot.makePrimary,
+        makePrimary:target.slot.makePrimary||(target.slot.role==='logo'&&!target.provider.logoAssetKey)||(target.slot.role==='wordmark'&&!target.provider.wordmarkAssetKey),
       });
       setMessage(`Η εικόνα «${target.slot.label}» του ${target.provider.displayName} ενημερώθηκε.`);
     }catch(error){
@@ -111,6 +113,9 @@ export function FinancialProviderManagementSettings(){
       setMessage('Υπάρχει ήδη πάροχος με αυτό το provider ID.');
       return;
     }
+    const hasLogo=Boolean(newFiles.logo||newFiles['logo-light']||newFiles['logo-dark']);
+    const hasWordmark=Boolean(newFiles['wordmark-light']||newFiles['wordmark-dark']);
+    if(!hasLogo||!hasWordmark){setMessage('Για νέο πάροχο επίλεξε τουλάχιστον ένα Logo και ένα Wordmark.');return}
     for(const file of Object.values(newFiles)){
       if(!file)continue;
       const error=validateFile(file);
@@ -122,7 +127,11 @@ export function FinancialProviderManagementSettings(){
       for(const slot of ASSET_SLOTS){
         const file=newFiles[slot.id];
         if(!file)continue;
-        await uploadFinancialProviderAsset({providerId:draft.id,role:slot.role,variant:slot.variant,file,makePrimary:slot.makePrimary});
+        const makePrimary=slot.makePrimary
+          ||slot.id==='logo-light'&&!newFiles.logo
+          ||slot.id==='logo-dark'&&!newFiles.logo&&!newFiles['logo-light']
+          ||slot.id==='wordmark-dark'&&!newFiles['wordmark-light'];
+        await uploadFinancialProviderAsset({providerId:draft.id,role:slot.role,variant:slot.variant,file,makePrimary});
       }
       setMessage(`Ο πάροχος «${draft.displayName}» δημιουργήθηκε${Object.keys(newFiles).length?' μαζί με τις επιλεγμένες εικόνες.':'.'}`);
       setDraft({id:'',displayName:'',shortName:'',providerKind:'bank',countryCode:'GR',sortOrder:Math.max(1000,...providers.map(provider=>provider.sortOrder+10))});
@@ -151,7 +160,7 @@ export function FinancialProviderManagementSettings(){
       </div>
       <div className="provider-create-assets">
         <b><ImagePlus size={17}/> Εικόνες κατά τη δημιουργία</b>
-        <p>Διάλεξε όσες έχεις τώρα. Μπορείς να προσθέσεις ή να αλλάξεις τις υπόλοιπες αργότερα.</p>
+        <p>Απαιτείται τουλάχιστον ένα Logo και ένα Wordmark. Τα theme/card variants μπορούν να προστεθούν ή να αλλάξουν και αργότερα.</p>
         <div className="provider-create-assets-grid">{ASSET_SLOTS.map(slot=><label key={slot.id} className="provider-file-choice"><span>{slot.label}</span><input type="file" accept={ACCEPT} onChange={event=>{const file=event.target.files?.[0];setNewFiles(current=>({...current,[slot.id]:file}))}}/><small>{newFiles[slot.id]?.name??'Δεν επιλέχθηκε αρχείο'}</small></label>)}</div>
       </div>
       <div className="provider-create-actions"><Button type="button" variant="secondary" disabled={busy==='create'} onClick={()=>{setCreateOpen(false);setNewFiles({})}}>Ακύρωση</Button><Button type="button" variant="primary" disabled={busy==='create'} onClick={()=>void create()}>{busy==='create'?'Δημιουργία…':'Δημιουργία παρόχου'}</Button></div>
