@@ -70,6 +70,10 @@ try{
   const saved=await c.call("function(){const button=document.querySelector('.account-management-modal.is-edit .save-button');if(!button)return false;button.click();return true}");assert(saved,'Account Management saves edited IBAN');
   await waitFor("function(){return !document.querySelector('.account-management-modal.is-edit')&&((document.querySelector('.account-management-message')?.textContent||'').includes('Οι αλλαγές αποθηκεύτηκαν.'))}",'Account Management save confirmation');
   await openPayrollEditor();assert((await currentEditIban())==='GB82 WEST 1234 5698 7654 32','saved IBAN stays normalized and human-readable');
+  const providerChanged=await c.call("function(){const button=[...document.querySelectorAll('.account-management-modal.is-edit .account-management-provider-picker [role=radio]')].find(item=>(item.textContent||'').includes('Alpha Bank'));button?.click();return Boolean(button)}");assert(providerChanged,'existing account provider can be corrected');
+  const saveProvider=await c.call("function(){const button=document.querySelector('.account-management-modal.is-edit .save-button');button?.click();return Boolean(button)}");assert(saveProvider,'provider correction saves');
+  await waitFor("function(){const row=[...document.querySelectorAll('.account-management-row')].find(item=>(item.textContent||'').includes('Μισθοδοσία'));return Boolean(row&&(row.textContent||'').includes('Alpha Bank')&&row.querySelector('[data-bank-brand=alpha]'))}",'provider correction reflected in account row');
+  await openPayrollEditor();const alphaSelected=await c.call("function(){const button=[...document.querySelectorAll('.account-management-modal.is-edit .account-management-provider-picker [role=radio]')].find(item=>(item.textContent||'').includes('Alpha Bank'));return button?.getAttribute('aria-checked')==='true'}");assert(alphaSelected,'corrected provider reloads in edit mode');
   await screenshot('account-metadata-settings-desktop');await closeEditor();await noOverflow('account metadata settings desktop');
 
   console.log('Account metadata QA: mobile Dashboard keeps masked IBAN and copy target');
