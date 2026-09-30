@@ -1,7 +1,12 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { ApiError } from '../server/http.js';
-import { parseFinancialProviderWrite, parseProviderAssetUpload, validateProviderAssetContent } from '../server/accountMetadataHandler.js';
+import {
+  parseFinancialProviderWrite,
+  parseProviderAssetBindingWrite,
+  parseProviderAssetUpload,
+  validateProviderAssetContent,
+} from '../server/accountMetadataHandler.js';
 import { cardBrandSurfaceTone } from '../src/lib/cardDesigns.js';
 import { providerBrandUrl } from '../src/lib/providerBrandAssets.js';
 import type { FinancialProvider } from '../src/lib/financialProviders.js';
@@ -19,46 +24,67 @@ function provider():FinancialProvider{
     logoAssetKey:'demo-logo-light',wordmarkAssetKey:'demo-wordmark-light',
     logoUrl:'https://example.test/primary-logo.svg',wordmarkUrl:'https://example.test/primary-wordmark.svg',
     assets:[
+      {assetKey:'demo-shared',role:'logo',variant:'universal',url:'https://example.test/shared.svg',fileName:'shared.svg'},
       {assetKey:'demo-logo-light',role:'logo',variant:'light',url:'https://example.test/logo-light.svg'},
       {assetKey:'demo-logo-dark',role:'logo',variant:'dark',url:'https://example.test/logo-dark.svg'},
       {assetKey:'demo-wordmark-light',role:'wordmark',variant:'light',url:'https://example.test/wordmark-light.svg'},
       {assetKey:'demo-wordmark-dark',role:'wordmark',variant:'dark',url:'https://example.test/wordmark-dark.svg'},
       {assetKey:'demo-card-mark-dark',role:'card-mark',variant:'dark',url:'https://example.test/card-dark.svg'},
     ],
+    bindings:[
+      {role:'logo',variant:'universal',assetKey:'demo-shared'},
+      {role:'wordmark',variant:'universal',assetKey:'demo-shared'},
+      {role:'card-mark',variant:'universal',assetKey:'demo-shared'},
+      {role:'logo',variant:'light',assetKey:'demo-logo-light'},
+      {role:'logo',variant:'dark',assetKey:'demo-logo-dark'},
+      {role:'wordmark',variant:'light',assetKey:'demo-wordmark-light'},
+      {role:'wordmark',variant:'dark',assetKey:'demo-wordmark-dark'},
+      {role:'card-mark',variant:'dark',assetKey:'demo-card-mark-dark'},
+    ],
     sortOrder:1000,
   };
 }
 
 describe('provider branding management',()=>{
-  it('resolves theme and card variants before primary compatibility URLs',()=>{
+  it('resolves explicit slot bindings before compatibility fallbacks',()=>{
     const p=provider();
     expect(providerBrandUrl(p,'logo','light')).toBe('https://example.test/logo-light.svg');
     expect(providerBrandUrl(p,'logo','dark')).toBe('https://example.test/logo-dark.svg');
     expect(providerBrandUrl(p,'wordmark','dark')).toBe('https://example.test/wordmark-dark.svg');
     expect(providerBrandUrl(p,'card-mark','dark')).toBe('https://example.test/card-dark.svg');
-    expect(providerBrandUrl(p,'card-mark','light')).toBe('https://example.test/wordmark-light.svg');
+    expect(providerBrandUrl(p,'card-mark','light')).toBe('https://example.test/shared.svg');
   });
 
-  it('keeps neutral named card variants available without crossing to the opposite tone',()=>{
+  it('allows one uploaded asset to back several semantic slots',()=>{
     const p=provider();
-    p.assets=[...(p.assets??[]).filter(asset=>asset.role!=='card-mark'),{assetKey:'demo-card-telekom',role:'card-mark',variant:'telekom-t',url:'https://example.test/card-telekom.svg'}];
-    expect(providerBrandUrl(p,'card-mark','light')).toBe('https://example.test/card-telekom.svg');
-    expect(providerBrandUrl(p,'card-mark','dark')).toBe('https://example.test/card-telekom.svg');
+    p.bindings=[
+      {role:'logo',variant:'universal',assetKey:'demo-shared'},
+      {role:'wordmark',variant:'universal',assetKey:'demo-shared'},
+      {role:'card-mark',variant:'universal',assetKey:'demo-shared'},
+    ];
+    expect(providerBrandUrl(p,'logo','light')).toBe('https://example.test/shared.svg');
+    expect(providerBrandUrl(p,'wordmark','dark')).toBe('https://example.test/shared.svg');
+    expect(providerBrandUrl(p,'card-mark','light')).toBe('https://example.test/shared.svg');
+    expect(providerBrandUrl(p,'card-mark','dark')).toBe('https://example.test/shared.svg');
   });
 
-  it('derives artwork contrast from the card design rather than app theme',()=>{
+  it('derives card artwork from the card background rather than application theme',()=>{
     expect(cardBrandSurfaceTone({bankId:'piraeus',kind:'debit',network:'visa',formFactor:'physical',designId:'piraeus-yellow'})).toBe('light');
     expect(cardBrandSurfaceTone({bankId:'piraeus',kind:'credit',network:'visa',formFactor:'physical',designId:'piraeus-green'})).toBe('dark');
     expect(cardBrandSurfaceTone({bankId:'viva',kind:'debit',network:'mastercard',formFactor:'physical',designId:'viva'})).toBe('dark');
   });
 
-  it('validates provider writes and binary upload metadata at the API boundary',()=>{
+  it('validates provider metadata, uploads and asset bindings at the API boundary',()=>{
     expect(parseFinancialProviderWrite({id:'demo-bank',displayName:'Demo Bank',shortName:'Demo',providerKind:'bank',countryCode:'gr',sortOrder:900}))
       .toEqual({id:'demo-bank',displayName:'Demo Bank',shortName:'Demo',providerKind:'bank',countryCode:'GR',sortOrder:900});
     expect(()=>parseFinancialProviderWrite({id:'../bad',displayName:'Bad',shortName:'Bad',providerKind:'bank',sortOrder:1})).toThrow(ApiError);
-    expect(parseProviderAssetUpload({query:{providerId:'demo-bank',role:'card-mark',variant:'dark',primary:'0'},headers:{'content-type':'image/svg+xml'}}))
-      .toEqual({providerId:'demo-bank',role:'card-mark',variant:'dark',mimeType:'image/svg+xml',makePrimary:false});
-    expect(()=>parseProviderAssetUpload({query:{providerId:'demo-bank',role:'card-mark',variant:'dark',primary:'1'},headers:{'content-type':'image/svg+xml'}})).toThrow(ApiError);
+    expect(parseProviderAssetUpload({query:{providerId:'demo-bank',role:'card-mark',variant:'dark',primary:'0',fileName:'mark.svg'},headers:{'content-type':'image/svg+xml'}}))
+      .toEqual({providerId:'demo-bank',role:'card-mark',variant:'dark',mimeType:'image/svg+xml',fileName:'mark.svg',makePrimary:false});
+    expect(()=>parseProviderAssetUpload({query:{providerId:'demo-bank',role:'card-mark',variant:'dark',primary:'0'},headers:{'content-type':'image/svg+xml'}})).toThrow(ApiError);
+    expect(parseProviderAssetBindingWrite({providerId:'demo-bank',role:'logo',variant:'dark',assetKey:'demo-shared'}))
+      .toEqual({providerId:'demo-bank',role:'logo',variant:'dark',assetKey:'demo-shared'});
+    expect(parseProviderAssetBindingWrite({providerId:'demo-bank',role:'logo',variant:'dark',assetKey:null}).assetKey).toBeNull();
+    expect(()=>parseProviderAssetBindingWrite({providerId:'demo-bank',role:'logo',variant:'blue',assetKey:'demo-shared'})).toThrow(ApiError);
   });
 
   it('checks image signatures and rejects active SVG content',()=>{
@@ -70,39 +96,37 @@ describe('provider branding management',()=>{
     expect(()=>validateProviderAssetContent('image/png',Buffer.from('not png'))).toThrow(ApiError);
   });
 
-  it('keeps mutations owner+AAL2 and inside the existing API function budget',()=>{
-    expect(migration).toContain('rheomiq_is_owner_aal2()');
+  it('keeps reusable asset mutations owner+AAL2 and inside the existing API budget',()=>{
+    expect(migration).toContain('rheomiq_financial_provider_asset_bindings');
+    expect(migration).toContain('primary key (provider_id,asset_role,variant)');
+    expect(migration).toContain('rheomiq_set_financial_provider_asset_binding');
+    expect(migration).toContain('rheomiq_update_financial_provider');
     expect(migration).toContain('security invoker');
-    expect(migration).toContain('rheomiq_provider_storage_owner_aal2_insert');
-    expect(migration).toContain('rheomiq_provider_storage_owner_aal2_update');
-    expect(migration).toContain('rheomiq_provider_storage_owner_aal2_delete');
-    expect(storeSource).toContain("method:'DELETE'");
-    expect(storeSource).toContain('JSON.stringify({prefixes:[storagePath]})');
-    expect(storeSource).toContain('previousStoragePath!==storagePath');
-    expect(storeSource).toContain('encodeURIComponent(asset.updated_at)');
-    expect(migration).toContain('rheomiq_create_financial_provider');
-    expect(migration).toContain("message = 'PROVIDER_ID_CONFLICT'");
-    expect(migration).toContain('rheomiq_register_financial_provider_asset');
+    expect(migration).toContain('rheomiq_is_owner_aal2()');
+    expect(migration).toContain("case\n      when a.variant='universal' then 'universal'");
     expect(migration).not.toMatch(/service[_-]?role|secret[_-]?key/i);
-    expect(handler).toContain("resource==='financial-provider-assets'");
+    expect(storeSource).toContain('randomUUID');
+    expect(storeSource).toContain('rheomiq_financial_provider_asset_bindings?select=');
+    expect(storeSource).toContain('rheomiq_set_financial_provider_asset_binding');
+    expect(storeSource).not.toContain('previousStoragePath');
+    expect(handler).toContain("resource==='financial-provider-asset-binding'");
+    expect(handler).toContain("method==='PATCH'");
     expect(accountMetadataEntry).toContain('bodyParser:false');
-    expect(handler).toContain('readBinaryBody(req,MAX_PROVIDER_ASSET_BYTES)');
-    expect(client).toContain("/api/account-metadata?resource=financial-providers");
-    expect(client).toContain("resource:'financial-provider-assets'");
+    expect(client).toContain("resource:'financial-provider-asset-binding'");
   });
 
-  it('exposes one Settings flow for replacement and provider creation with artwork',()=>{
-    expect(settings).toContain('ΤΡΑΠΕΖΕΣ & ΠΑΡΟΧΟΙ');
-    expect(settings).toContain('Νέος πάροχος');
-    expect(settings).toContain('Logo · Universal');
-    expect(settings).toContain('Logo · Light');
-    expect(settings).toContain('Logo · Dark');
-    expect(settings).toContain('Wordmark · Light');
-    expect(settings).toContain('Wordmark · Dark');
-    expect(settings).toContain('Card mark · Light');
-    expect(settings).toContain('Card mark · Dark');
-    expect(settings).toContain('Για νέο πάροχο επίλεξε τουλάχιστον ένα Logo και ένα Wordmark.');
-    expect(settings).toContain('await saveFinancialProvider');
-    expect(settings).toContain('await uploadFinancialProviderAsset');
+  it('uses one edit/create provider editor with a visual asset library instead of native-file-input UX',()=>{
+    expect(settings).toContain('ΕΠΕΞΕΡΓΑΣΙΑ ΠΑΡΟΧΟΥ');
+    expect(settings).toContain('Στοιχεία');
+    expect(settings).toContain('Εικόνες');
+    expect(settings).toContain('Βιβλιοθήκη εικόνων');
+    expect(settings).toContain('Ανέβασμα νέας');
+    expect(settings).toContain('Η ίδια εικόνα μπορεί να ανατεθεί σε πολλές θέσεις.');
+    expect(settings).toContain('Το Light/Dark theme της εφαρμογής δεν συμμετέχει.');
+    expect(settings).toContain('type="file" accept={ACCEPT} hidden');
+    expect(settings).not.toContain('Choose File');
+    expect(settings).not.toContain('Δεν επιλέχθηκε αρχείο');
+    expect(settings).toContain('await setFinancialProviderAssetBinding');
+    expect(settings).toContain("editor.source==='new'?'Δημιουργία παρόχου':'Αποθήκευση'");
   });
 });
