@@ -6,7 +6,7 @@ import {
   Sparkles, Split, Stethoscope, UtensilsCrossed, WalletCards, Wifi, Wrench, Zap,
   type LucideIcon,
 } from 'lucide-react';
-import { explicitFinanceCategoryIcon, resolvedFinanceCategoryIcon, resolvedFinanceCategoryIconColor } from '../lib/categoryFinanceIcon';
+import { resolveFinanceCategoryVisual } from '../lib/categoryFinanceIcon';
 import { financeIconSpec, type FinanceIconInput, type FinanceIconKey } from '../lib/financeIcons';
 import type { FinanceSettings } from '../types';
 import { CategoryIconGlyph } from './CategoryIconGlyph';
@@ -63,9 +63,8 @@ type FinanceIconProps=FinanceIconInput&{settings?:FinanceSettings;size?:number;c
 export function FinanceIcon({kind,category,subcategory,note,settings,size=16,className='',label}:FinanceIconProps){
   const input={kind,category,subcategory,note};
   const spec=financeIconSpec(input);
-  const explicitKey=settings?explicitFinanceCategoryIcon(settings,input):null;
-  const resolvedKey=settings?resolvedFinanceCategoryIcon(settings,input):null;
-  const color=settings?resolvedFinanceCategoryIconColor(settings,input):null;
+  const visual=settings?resolveFinanceCategoryVisual(settings,input):{explicitKey:null,resolvedKey:null,color:null};
+  const {explicitKey,resolvedKey,color}=visual;
   const Icon=ICONS[spec.key];
   return <span className={`finance-icon tone-${spec.tone} ${className}`.trim()} style={color?{color}:undefined} data-icon-key={resolvedKey??spec.key} data-icon-source={explicitKey?'category-preference':resolvedKey?'category-family':'heuristic'} aria-label={label} aria-hidden={label?undefined:true}>{resolvedKey?<CategoryIconGlyph iconKey={resolvedKey} color={color} size={size}/>:<Icon size={size}/>}</span>;
 }
