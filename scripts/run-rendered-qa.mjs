@@ -7,6 +7,7 @@ const scripts=[
   {path:'scripts/completion-geometry-qa.mjs',key:'completion-geometry',surface:'all-pages',profiles:['/tmp/myfinhub-geometry-overflow-qa-chrome']},
   {path:'scripts/completion-dialog-geometry-qa.mjs',key:'completion-dialog-geometry',surface:'interaction-dialogs',profiles:['/tmp/myfinhub-dialog-geometry-qa-chrome']},
   {path:'scripts/completion-functional-crud-qa.mjs',key:'completion-functional',surface:'functional-flows',profiles:['/tmp/myfinhub-completion-functional-qa-chrome']},
+  {path:'scripts/bounded-history-qa.mjs',key:'bounded-history',surface:'bounded-histories',profiles:['/tmp/myfinhub-bounded-history-qa-chrome']},
   {path:'scripts/owned-controls-qa.mjs',key:'owned-controls',surface:'controls',profiles:['/tmp/rheomiq-owned-controls-qa']},
   {path:'scripts/ui-ux-hardening-qa.mjs',key:'ui-hardening',surface:'app-shell',profiles:['/tmp/myfinhub-ui-ux-qa-chrome']},
   {path:'scripts/ui-ux-completion-qa.mjs',key:'ui-completion',surface:'app-shell',profiles:['/tmp/myfinhub-ui-completion-qa-chrome']},
