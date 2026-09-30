@@ -41,6 +41,8 @@ describe('Accounts owner UI contract',()=>{
     expect(qa).toContain('Provider picker shows a branded visual option for each provider');
     expect(qa).toContain('selected Piraeus provider visual state');
     expect(qa).not.toContain('account-management-provider-preview');
+    expect(source).toContain("editor.source==='new'?'2. Τράπεζα / πάροχος':'Τράπεζα / πάροχος'");
+    expect(qa).toContain('Edit modal allows correcting the provider while retaining IBAN editing');
     expect(qa).toContain("settings-accounts-new-cash-daily-desktop");
     expect(qa).toContain("settings-accounts-new-modal-desktop");
   });

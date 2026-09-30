@@ -270,6 +270,8 @@ The first exact-head validation wave exposed three additional validation blocker
 
 | FV-24 | Settings provider-picker QA | The previous exact-head CI passed source/type/unit/build and all rendered suites through Planning/Budgets, then `settings-tabs-qa` timed out waiting for the removed `.account-management-provider-preview`. The current product intentionally uses the visual provider radio card itself as the selected preview, so the failure was a stale QA contract rather than a missing product state. | QA harness stale-selector defect | **Source-fixed, proof pending.** Settings QA now requires the selected Piraeus radio to remain `aria-checked`, active and branded with `BankBrandMark`, then captures the selected state. No provider-management product code or database work was changed. |
 
+| FV-25 | Settings existing-account provider correction QA | After FV-24, exact-head CI reached the existing-account edit state and failed because the harness still asserted that edit mode must hide “Τράπεζα / πάροχος”. The product intentionally added provider correction for existing bank accounts in commit `941287f`, so the assertion contradicted the accepted implementation. | QA harness stale-product-contract defect | **Source-fixed, proof pending.** Settings QA now requires provider correction and IBAN editing together while still requiring the creation-only account-type selector to stay absent. No account/provider product implementation changed. |
+
 Validation rule: FV items close only after the next exact-head wave proves the corrected interaction/performance/bootstrap behavior. No quality threshold or screenshot-count requirement was relaxed.
 
 ## 3. Page-by-page audit and required changes
