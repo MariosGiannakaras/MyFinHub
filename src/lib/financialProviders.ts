@@ -13,14 +13,14 @@ export type FinancialProvider={
 };
 
 export const FINANCIAL_PROVIDERS:FinancialProvider[]=[
-  {id:'piraeus',displayName:'Τράπεζα Πειραιώς',shortName:'Πειραιώς',kind:'bank',kindLabel:'Τράπεζα',countryCode:'GR',logoAssetKey:'generic',wordmarkAssetKey:'generic',sortOrder:10},
-  {id:'alpha',displayName:'Alpha Bank',shortName:'Alpha',kind:'bank',kindLabel:'Τράπεζα',countryCode:'GR',logoAssetKey:'generic',wordmarkAssetKey:'generic',sortOrder:20},
+  {id:'piraeus',displayName:'Τράπεζα Πειραιώς',shortName:'Πειραιώς',kind:'bank',kindLabel:'Τράπεζα',countryCode:'GR',logoAssetKey:'piraeus-logo-green-on-yellow',wordmarkAssetKey:'piraeus-wordmark-green-on-white',sortOrder:10},
+  {id:'alpha',displayName:'Alpha Bank',shortName:'Alpha',kind:'bank',kindLabel:'Τράπεζα',countryCode:'GR',logoAssetKey:'alpha-logo-white-on-blue',wordmarkAssetKey:'alpha-wordmark-color',sortOrder:20},
   {id:'national',displayName:'Εθνική Τράπεζα',shortName:'Εθνική',kind:'bank',kindLabel:'Τράπεζα',countryCode:'GR',logoAssetKey:'generic',wordmarkAssetKey:'generic',sortOrder:30},
   {id:'eurobank',displayName:'Eurobank',shortName:'Eurobank',kind:'bank',kindLabel:'Τράπεζα',countryCode:'GR',logoAssetKey:'generic',wordmarkAssetKey:'generic',sortOrder:40},
-  {id:'revolut',displayName:'Revolut',shortName:'Revolut',kind:'fintech',kindLabel:'Ψηφιακός πάροχος',countryCode:'LT',logoAssetKey:'revolut',wordmarkAssetKey:'revolut',sortOrder:50},
-  {id:'viva',displayName:'Viva.com',shortName:'Viva',kind:'payment',kindLabel:'Πάροχος πληρωμών',countryCode:'GR',logoAssetKey:'generic',wordmarkAssetKey:'viva',sortOrder:60},
-  {id:'payzy',displayName:'payzy by COSMOTE',shortName:'payzy',kind:'wallet',kindLabel:'Ψηφιακό πορτοφόλι',countryCode:'GR',logoAssetKey:'payzy',wordmarkAssetKey:'payzy',sortOrder:70},
-  {id:'paypal',displayName:'PayPal',shortName:'PayPal',kind:'wallet',kindLabel:'Ψηφιακό πορτοφόλι',countryCode:'US',logoAssetKey:'generic',wordmarkAssetKey:'paypal',sortOrder:80},
+  {id:'revolut',displayName:'Revolut',shortName:'Revolut',kind:'fintech',kindLabel:'Ψηφιακός πάροχος',countryCode:'LT',logoAssetKey:'revolut-logo-black-on-white',wordmarkAssetKey:'revolut-wordmark-black-on-white',sortOrder:50},
+  {id:'viva',displayName:'Viva.com',shortName:'Viva',kind:'payment',kindLabel:'Πάροχος πληρωμών',countryCode:'GR',logoAssetKey:'viva-logo-navy-on-white',wordmarkAssetKey:'generic',sortOrder:60},
+  {id:'payzy',displayName:'payzy by COSMOTE',shortName:'payzy',kind:'wallet',kindLabel:'Ψηφιακό πορτοφόλι',countryCode:'GR',logoAssetKey:'payzy-logo-color',wordmarkAssetKey:'generic',sortOrder:70},
+  {id:'paypal',displayName:'PayPal',shortName:'PayPal',kind:'wallet',kindLabel:'Ψηφιακό πορτοφόλι',countryCode:'US',logoAssetKey:'generic',wordmarkAssetKey:'generic',sortOrder:80},
 ];
 
 export type { BankAccountCategory, CashAccountType };
