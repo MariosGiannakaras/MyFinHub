@@ -1,3 +1,4 @@
+.dashboard-mobile-disclosure{display:none}
 @media(max-width:680px){
   .dashboard-mobile-disclosure{display:flex;width:100%;min-height:44px;justify-content:center}
   .dashboard-approved .approved-chart-grid.mobile-collapsed,
