@@ -37,6 +37,13 @@ describe('provider branding management',()=>{
     expect(providerBrandUrl(p,'card-mark','light')).toBe('https://example.test/wordmark-light.svg');
   });
 
+  it('keeps neutral named card variants available without crossing to the opposite tone',()=>{
+    const p=provider();
+    p.assets=[...(p.assets??[]).filter(asset=>asset.role!=='card-mark'),{assetKey:'demo-card-telekom',role:'card-mark',variant:'telekom-t',url:'https://example.test/card-telekom.svg'}];
+    expect(providerBrandUrl(p,'card-mark','light')).toBe('https://example.test/card-telekom.svg');
+    expect(providerBrandUrl(p,'card-mark','dark')).toBe('https://example.test/card-telekom.svg');
+  });
+
   it('derives artwork contrast from the card design rather than app theme',()=>{
     expect(cardBrandSurfaceTone({bankId:'piraeus',kind:'debit',network:'visa',formFactor:'physical',designId:'piraeus-yellow'})).toBe('light');
     expect(cardBrandSurfaceTone({bankId:'piraeus',kind:'credit',network:'visa',formFactor:'physical',designId:'piraeus-green'})).toBe('dark');
