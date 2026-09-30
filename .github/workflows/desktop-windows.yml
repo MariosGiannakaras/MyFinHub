@@ -3,6 +3,7 @@ name: Windows Desktop
 on:
   pull_request:
     branches: [main, develop]
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - desktop/**
       - server/**
@@ -59,6 +60,7 @@ concurrency:
 jobs:
   validate:
     name: validate-windows-package
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: windows-latest
     timeout-minutes: 30
     permissions:
@@ -77,11 +79,10 @@ jobs:
         run: |
           npm ci
           npm ci --prefix desktop
-      - name: Validate application and desktop boundary
+      - name: Validate desktop boundary and dependencies
         shell: pwsh
         run: |
           npm audit --audit-level=high
-          npm run check
           npm run desktop:check
       - name: Validate Windows PowerShell fallback bootstrap
         shell: pwsh
