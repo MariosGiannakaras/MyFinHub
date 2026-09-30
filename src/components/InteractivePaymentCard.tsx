@@ -1,4 +1,4 @@
-import { Archive, Copy, Eye, EyeOff, Pencil, X } from 'lucide-react';
+import { Archive, Copy, Eye, EyeOff, KeyRound, Pencil, X } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
 import { BankBrandMark } from './BankBrandMark';
 import { cardThemeClass } from '../lib/cardDesigns';
@@ -23,9 +23,10 @@ function PrototypeNetwork({card}:{card:PaymentCard}){
 }
 
 export function InteractivePaymentCard({
-  card,bank,large=false,onEditDetails,onArchive,archiveDisabled=false,
+  card,bank,large=false,onEditCard,onEditDetails,onArchive,archiveDisabled=false,
 }:{
   card:PaymentCard;bank:CardBank;large?:boolean;
+  onEditCard?:(card:PaymentCard)=>void;
   onEditDetails?:(card:PaymentCard)=>void;
   onArchive?:(card:PaymentCard)=>void|Promise<void>;
   archiveDisabled?:boolean;
@@ -85,7 +86,8 @@ export function InteractivePaymentCard({
           <div className="card-brand-block"><div className="card-brand"><PrototypeBrand card={card} bank={bank}/></div><div className="card-nickname">{card.nickname}</div></div>
           <div className="card-toolbar">
             <button className="card-icon-btn" type="button" disabled={busy} aria-pressed={visible} aria-label={visible?'Απόκρυψη στοιχείων':'Εμφάνιση στοιχείων'} title={visible?'Απόκρυψη στοιχείων':'Εμφάνιση στοιχείων'} onClick={()=>void toggleReveal()}>{visible?<EyeOff/>:<Eye/>}</button>
-            {onEditDetails?<button className="card-icon-btn" type="button" disabled={busy} aria-label={`Επεξεργασία ασφαλών στοιχείων ${card.nickname}`} title="Επεξεργασία στοιχείων κάρτας" onClick={()=>onEditDetails(card)}><Pencil/></button>:null}
+            {onEditCard?<button className="card-icon-btn" type="button" disabled={busy} aria-label={`Επεξεργασία κάρτας ${card.nickname}`} title="Επεξεργασία κάρτας" onClick={()=>onEditCard(card)}><Pencil/></button>:null}
+            {onEditDetails?<button className="card-icon-btn" type="button" disabled={busy} aria-label={`Ασφαλή στοιχεία ${card.nickname}`} title="Ασφαλή στοιχεία · PAN / λήξη / CVV" onClick={()=>onEditDetails(card)}><KeyRound/></button>:null}
             {onArchive?<button className="card-icon-btn" type="button" disabled={busy||archiveDisabled} aria-label="Αρχειοθέτηση κάρτας" title="Αρχειοθέτηση κάρτας" onClick={()=>{setDeleteProgress(0);setDeleteOffset(0);setDeleteOpen(true)}}><Archive/></button>:null}
           </div>
         </header>
