@@ -68,7 +68,7 @@ describe('consolidated Stage 2 shared action adoption',()=>{
     expect(receipts).toContain('<IconButton type="button" aria-label="Κλείσιμο αποδείξεων σε αναμονή" onClick={onClose}>');
     expect(receipts).toContain('variant="primary" disabled={loading || scanning}');
     expect(receipts).toContain('variant="secondary" disabled={loading || scanning}');
-    expect(receipts).toContain('variant="primary" disabled={scanning}');
+    expect(receipts).toContain('variant="primary" disabled={scanning||reviewSaving||reviewTotalInvalid}');
     expect(receipts).toContain('<Button type="button" variant="ghost" className="danger" onClick={requestRemoveSelected}>');
     expect(receipts).toContain('<Button type="button" variant="secondary" className="danger" disabled={scanning} onClick={() => requestRemoveOne(selected)}>');
     expect(receipts).toContain('onClick={()=>void saveReview(false)}>Αποθήκευση διορθώσεων</Button>');
