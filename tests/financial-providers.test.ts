@@ -135,8 +135,9 @@ describe('financial provider registry',()=>{
     expect(mark).toContain('useFinancialProviders');
     expect(mark).toContain('logoAssetKey');
     expect(mark).toContain('wordmarkAssetKey');
-    expect(mark).toContain('provider?.logoUrl');
-    expect(mark).toContain('provider?.wordmarkUrl');
+    expect(mark).toContain('providerBrandUrl');
+    expect(mark).toContain("role='auto'");
+    expect(mark).toContain("surfaceTone='app'");
     expect(mark).toContain('data-bank-logo-source="provider-storage"');
     expect(mark).toContain("const registryVisualKey=assetKey==='generic'?'generic'");
     expect(mark).toContain("identityAsset?.source==='local-image'");
