@@ -120,7 +120,8 @@ describe('card secure details',()=>{
     expect(interactive).toContain("import './InteractivePaymentCard.css'");
     expect(interactiveCss).toContain('.prototype-payment-card .card-inner');
     expect(interactiveCss).toContain('.prototype-payment-card .card-toolbar');
-    expect(interactiveCss).toContain('grid-template-columns:repeat(2,28px)');
+    expect(interactiveCss).toContain('grid-template-columns:repeat(2,40px)');
+    expect(interactiveCss).toContain('width:40px;height:40px;min-width:40px');
     expect(interactiveCss).not.toContain('#myfinhub-card-stack');
   });
 
