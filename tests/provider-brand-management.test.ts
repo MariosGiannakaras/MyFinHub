@@ -8,6 +8,7 @@ import type { FinancialProvider } from '../src/lib/financialProviders.js';
 
 const migration=readFileSync(new URL('../supabase/migrations/20260930201200_manage_financial_provider_assets.sql',import.meta.url),'utf8');
 const handler=readFileSync(new URL('../server/accountMetadataHandler.ts',import.meta.url),'utf8');
+const storeSource=readFileSync(new URL('../server/accountMetadataStore.ts',import.meta.url),'utf8');
 const client=readFileSync(new URL('../src/lib/financialProviderClient.ts',import.meta.url),'utf8');
 const settings=readFileSync(new URL('../src/components/FinancialProviderManagementSettings.tsx',import.meta.url),'utf8');
 const accountMetadataEntry=readFileSync(new URL('../api/account-metadata.ts',import.meta.url),'utf8');
@@ -74,6 +75,10 @@ describe('provider branding management',()=>{
     expect(migration).toContain('security invoker');
     expect(migration).toContain('rheomiq_provider_storage_owner_aal2_insert');
     expect(migration).toContain('rheomiq_provider_storage_owner_aal2_update');
+    expect(migration).toContain('rheomiq_provider_storage_owner_aal2_delete');
+    expect(storeSource).toContain("method:'DELETE'");
+    expect(storeSource).toContain('JSON.stringify({prefixes:[storagePath]})');
+    expect(storeSource).toContain('previousStoragePath!==storagePath');
     expect(migration).toContain('rheomiq_create_financial_provider');
     expect(migration).toContain("message='PROVIDER_ID_CONFLICT'");
     expect(migration).toContain('rheomiq_register_financial_provider_asset');
