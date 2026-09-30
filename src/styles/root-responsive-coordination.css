@@ -75,7 +75,7 @@
 .mobile-nav button{border:0;background:transparent;border-radius:11px;color:#6b7a96;padding:7px 2px;display:grid;place-items:center;gap:3px;font-size:6.5px}
 .mobile-nav button.active{background:linear-gradient(135deg,#2f6fed,#4f84f1);color:white;box-shadow:0 7px 15px rgba(47,111,237,.25)}
 .mobile-nav svg{width:16px}
-.quick-modal{max-height:96vh}
+.quick-modal{max-height:96dvh}
 .settings-actions{flex-direction:column}
 }
 
