@@ -38,15 +38,18 @@ try{
 
   console.log('Completion functional QA: Modern transaction edit updates in place');
   await navigate('transactions');
+  await setByLabel('Αναζήτηση συναλλαγών','Freddo espresso');
+  await waitFor("function(){return [...document.querySelectorAll('[data-transaction-source=\"event\"]')].some(row=>(row.textContent||'').includes('Freddo espresso'))}",'filtered modern event row');
   const editModern=await c.call(`function(){const visible=${visible};const row=[...document.querySelectorAll('[data-transaction-source="event"]')].find(item=>visible(item)&&(item.textContent||'').includes('Freddo espresso'));const button=row?.querySelector('button[aria-label^="Επεξεργασία"]');button?.click();return Boolean(button)}`);
-  assert(editModern,'modern event exposes edit action');
+  assert(editModern,'filtered modern event exposes edit action');
   await waitFor("function(){return document.querySelector('#quick-add-title')?.textContent==='Επεξεργασία κίνησης'}",'modern event editor');
   await setByLabel('Ποσό','21.75');
   await setByLabel('Σχόλιο','QA Audit Modern Event');
   await clickText('.quick-modal button','Εφαρμογή αλλαγών');
+  await setByLabel('Αναζήτηση συναλλαγών','QA Audit Modern Event');
   await waitFor("function(){const rows=[...document.querySelectorAll('[data-transaction-source=\"event\"]')].filter(row=>(row.textContent||'').includes('QA Audit Modern Event'));return rows.length>=1&&rows.some(row=>(row.textContent||'').includes('21,75'))}",'updated modern event row');
-  const modernCopies=await c.call("function(){const ids=[...document.querySelectorAll('[data-transaction-source=\"event\"]')].filter(row=>(row.textContent||'').includes('QA Audit Modern Event')).map(row=>row.getAttribute('data-transaction-kind')+'|'+(row.textContent||''));return ids.length}");
-  assert(modernCopies>=1&&modernCopies<=2,'modern edit updates the existing event instead of creating duplicate visible records');
+  const modernCopies=await c.call("function(){return [...document.querySelectorAll('[data-transaction-source=\"event\"]')].filter(row=>(row.textContent||'').includes('QA Audit Modern Event')).length}");
+  assert(modernCopies===1,'modern edit updates the existing event instead of creating a duplicate');
   await shot('transactions-modern-event-updated');
 
     console.log('Completion functional QA: Savings create/edit/delete + transaction');
