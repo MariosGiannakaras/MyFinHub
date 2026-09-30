@@ -130,8 +130,18 @@
   .prototype-payment-card .card-fields{gap:8px}
   .prototype-payment-card .card-field-value{font-size:.78rem}
   .prototype-payment-card .card-field-label{font-size:.46rem}
-  .prototype-payment-card .copy-mini{width:21px;height:21px;min-width:21px}
-  .prototype-payment-card .copy-mini svg{width:11px;height:11px}
+  .prototype-payment-card .copy-mini{
+    position:relative;width:40px;height:40px;min-width:40px;min-height:40px;
+    margin:-9.5px;padding:0;border-radius:10px;background:transparent;box-shadow:none;opacity:1;
+  }
+  .prototype-payment-card .copy-mini::before{
+    content:"";position:absolute;left:50%;top:50%;width:23px;height:23px;
+    transform:translate(-50%,-50%);border-radius:7px;background:rgba(255,255,255,.10);
+    opacity:.72;pointer-events:none;z-index:0;
+  }
+  .prototype-payment-card .copy-mini:hover{background:transparent;transform:none}
+  .prototype-payment-card .copy-mini:hover::before{background:rgba(255,255,255,.19);opacity:1}
+  .prototype-payment-card .copy-mini svg{position:relative;z-index:1;width:11px;height:11px;pointer-events:none}
   .prototype-payment-card .card-network{min-width:56px}
   .prototype-payment-card .card-network-main,
   .prototype-payment-card .mastercard-word{font-size:.82rem}
