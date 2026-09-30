@@ -136,6 +136,9 @@ export function FinancialProviderManagementSettings(){
   };
   const closeEditor=()=>{if(!busy)releaseEditor()};
   const modalRef=useModalFocus<HTMLElement>(Boolean(editor),'[data-autofocus="true"]',closeEditor);
+  const pickerRef=useModalFocus<HTMLElement>(Boolean(editor?.pickerSlot),'[data-picker-autofocus="true"]',()=>{
+    setEditor(current=>current?{...current,pickerSlot:null}:current);
+  });
   const closePicker=()=>{if(!busy&&editor?.pickerSlot)setEditor({...editor,pickerSlot:null})};
   const pickerRef=useModalFocus<HTMLElement>(Boolean(editor?.pickerSlot),'.provider-picker-upload',closePicker);
   const openNew=()=>{
@@ -339,7 +342,7 @@ export function FinancialProviderManagementSettings(){
           <section ref={pickerRef} className="provider-asset-picker" role="dialog" aria-modal="true" aria-label={`Επιλογή εικόνας για ${pickerSlot.label}`} tabIndex={-1} onMouseDown={event=>event.stopPropagation()}>
             <header><div><span>ΕΠΙΛΟΓΗ ΕΙΚΟΝΑΣ</span><h3>{pickerSlot.label}</h3><p>Διάλεξε από τη βιβλιοθήκη ή ανέβασε νέο αρχείο.</p></div><IconButton type="button" aria-label="Κλείσιμο επιλογής εικόνας" onClick={()=>setEditor({...editor,pickerSlot:null})}><X/></IconButton></header>
             <div className="provider-asset-picker-grid">
-              <button type="button" className="provider-picker-upload" onClick={()=>requestUpload(pickerSlot.id)}><Upload/><b>Ανέβασμα νέας</b><small>PNG, JPG, WebP ή SVG · έως 2 MB</small></button>
+              <button type="button" data-picker-autofocus="true" className="provider-picker-upload" onClick={()=>requestUpload(pickerSlot.id)}><Upload/><b>Ανέβασμα νέας</b><small>PNG, JPG, WebP ή SVG · έως 2 MB</small></button>
               {!pickerSlot.required?<button type="button" className={!pickerCurrent?'provider-picker-none selected':'provider-picker-none'} onClick={()=>assign(pickerSlot.id,null)}><span><ImagePlus/></span><b>Χωρίς override</b><small>Χρήση της προεπιλεγμένης εικόνας</small>{!pickerCurrent?<Check className="provider-picker-check"/>:null}</button>:null}
               {library.map(asset=>{const uses=usageCount(asset.ref),selected=pickerCurrent===asset.ref;return <button type="button" className={selected?'provider-picker-asset selected':'provider-picker-asset'} key={asset.ref} onClick={()=>assign(pickerSlot.id,asset.ref)}>
                 <span className={`provider-picker-preview ${pickerSlot.preview}`}><img src={asset.url} alt="" draggable={false}/></span>
