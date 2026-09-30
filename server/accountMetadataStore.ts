@@ -229,7 +229,7 @@ export async function uploadFinancialProviderAsset(input:{
       'x-upsert':'true',
       'cache-control':'3600',
     },
-    body:input.content,
+    body:Uint8Array.from(input.content),
   },'DATA');
   if(!upload.ok){
     const payload=await upload.json().catch(()=>null) as any;
