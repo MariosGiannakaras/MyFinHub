@@ -69,8 +69,8 @@ try{
 
   await viewport(375,812);await navigate();await waitHeading('Οι λογαριασμοί μου');
   assert(await c.eval("[...document.querySelectorAll('.mobile-nav button')].every(node=>node.getBoundingClientRect().height>=44)"),'mobile navigation touch targets');
-  await clickText('.mobile-nav button','Συναλλαγές');await waitHeading('Συναλλαγές');await audit('mobile transactions');await assertMobileControlFonts('mobile transactions');
-  await clickText('.mobile-nav button','Αποταμίευση');await waitHeading('Αποταμίευση');await audit('mobile savings');
+  await clickAria('Συναλλαγές');await waitHeading('Συναλλαγές');await audit('mobile transactions');await assertMobileControlFonts('mobile transactions');
+  await clickAria('Αποταμίευση');await waitHeading('Αποταμίευση');await audit('mobile savings');
   await clickText('.mobile-nav button','Κάρτες');await waitHeading('Κάρτες');await audit('mobile cards');await shot('mobile-cards');
   await morePage('Πιστωτική','Πιστωτική Κάρτα');await audit('mobile credit');assert(await c.eval("Boolean(document.querySelector('#myfinhub-card-stack .stack-card.top .payment-card'))"),'canonical credit card stack stays visible on mobile');assert(await c.eval("document.querySelector('.semantic-table-wrap').scrollWidth>=document.querySelector('.semantic-table-wrap').clientWidth"),'credit history remains contained');
   await morePage('Δόσεις & Δάνεια','Δόσεις & Δάνεια');await audit('mobile loans');await assertMobileControlFonts('mobile loans');
