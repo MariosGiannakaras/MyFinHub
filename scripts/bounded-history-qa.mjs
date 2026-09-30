@@ -41,7 +41,6 @@ try{
   await navigate('transactions','extreme',375,812);
   transactions=await c.call("function(){const rows=document.querySelectorAll('.mobile-transaction-list .mobile-transaction-row').length;const pager=document.querySelector('.mobile-transaction-pagination');return {rows,pagerVisible:Boolean(pager&&pager.getClientRects().length),text:pager?.textContent||''}}");
   assert(transactions.rows===14&&transactions.pagerVisible,`mobile Transactions must render one 14-row page with paginator: ${JSON.stringify(transactions)}`);
-  await clickText('.mobile-transaction-pagination button','');
   const nextClicked=await c.call("function(){const button=document.querySelector('.mobile-transaction-pagination button[aria-label=\"Επόμενη σελίδα συναλλαγών\"]');if(!button||button.disabled)return false;button.click();return true}");
   assert(nextClicked,'mobile Transactions next-page action is enabled');
   await waitFor("function(){return (document.querySelector('.mobile-transaction-pagination')?.textContent||'').includes('15–28')}",'Transactions second page');
