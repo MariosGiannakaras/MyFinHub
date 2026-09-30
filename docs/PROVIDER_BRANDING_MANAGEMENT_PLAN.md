@@ -4,7 +4,7 @@
 
 Make provider branding owner-managed from MyFinHub itself. Existing providers can have their artwork replaced without a repo change or redeploy, and a newly created provider can be created together with the artwork required by account/card surfaces.
 
-**Tasks 4/4 · Subtasks 13/13**
+**Tasks 4/5 · Subtasks 13/18**
 
 ## 1. Provider asset model + secure write API — 4/4
 
@@ -106,3 +106,46 @@ Here `light` / `dark` describe the background the artwork must work on. Card sel
 Implementation branch: `feat/481-provider-brand-management`.
 
 It is currently stacked on `chore/478-db-production-readiness` / #479 because #481 depends on the Storage-first provider schema. After #479 lands, #481 must be reconciled onto current `develop` before final validation/merge.
+
+
+## 5. UX refinement — provider editor and reusable asset library — 0/5
+
+The first implementation proved the backend/runtime contract, but the rendered review exposed an interaction-design problem: artwork management was expanded directly inside Settings and the create flow exposed seven native file inputs. That is functionally valid but not the intended product UX.
+
+- [ ] Use one Provider Editor for both existing and new providers. The editor has two tabs: **Στοιχεία** and **Εικόνες**. Settings itself shows a compact provider list plus Edit/Create actions, not all artwork slots.
+- [ ] Introduce explicit **asset bindings**. An uploaded asset is stored once in the provider's asset library; logo/wordmark/card slots reference that asset. The same image can therefore be used in multiple slots without duplicate files.
+- [ ] In the **Εικόνες** tab, each slot can choose from already-uploaded assets or upload a new one. Uploads are app-owned controls; native browser file controls remain hidden.
+- [ ] App branding uses Default + optional Light UI / Dark UI overrides. Card branding uses Default + optional Light-card / Dark-card overrides; application theme is irrelevant to cards.
+- [ ] Run a new UX-oriented rendered suite that verifies the actual edit/create task, asset picker, reuse semantics, mobile/desktop layout and light/dark presentation. Do not mark this phase complete from geometry-only checks.
+
+### Refined slot model
+
+```
+App identity
+  Logo
+    Default
+    Light UI override (optional)
+    Dark UI override (optional)
+
+  Wordmark
+    Default
+    Light UI override (optional)
+    Dark UI override (optional)
+
+Cards
+  Card mark
+    Default
+    Light-card override (optional)
+    Dark-card override (optional)
+```
+
+Default Logo and Default Wordmark are required for a complete provider, but they may reference the **same uploaded asset**. Card mark is optional and falls back to wordmark/logo.
+
+### Asset-library behavior
+
+- Upload once → receive one provider-scoped asset.
+- Assign the same asset to any number of slots.
+- Existing-provider picker shows all active uploaded assets for that provider.
+- Reassigning a slot does not delete the previous asset from the library.
+- An uploaded asset can be removed only when no slot references it; deletion UX is a later safe enhancement, not part of slot reassignment.
+- Existing production assets are backfilled into bindings so nothing is lost.
