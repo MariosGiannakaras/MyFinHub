@@ -107,6 +107,22 @@ try{
   assert(persisted?.key===phosphorChoice,`auto-saved pack choice must survive navigation: ${JSON.stringify(persisted)}`);
   assert(persisted?.text.includes('χρώμα'),'auto-saved category color survives navigation');
 
+  assert(targetLabel==='Τρόφιμα',`fixture category expected Τρόφιμα, got ${targetLabel}`);
+  await clickText('.sidebar nav button','Συναλλαγές');
+  await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Συναλλαγές')}",'Transactions after icon auto-save');
+  const searchSet=await c.call("function(){const input=document.querySelector('input[aria-label=\"Αναζήτηση συναλλαγών\"]');if(!input)return false;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')?.set;setter?.call(input,'Freddo espresso');input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));return true}");
+  assert(searchSet,'transaction search is available for icon adoption proof');
+  await waitFor("function(){return [...document.querySelectorAll('[data-transaction-kind]')].some(row=>row.getClientRects().length>0&&(row.textContent||'').includes('Freddo espresso'))}",'Freddo transaction visible');
+  const transactionVisual=await c.call("function(){const row=[...document.querySelectorAll('[data-transaction-kind]')].find(node=>node.getClientRects().length>0&&(node.textContent||'').includes('Freddo espresso'));const icon=row?.querySelector('.finance-icon');const glyph=icon?.querySelector('[data-icon-pack]');return icon&&glyph?{source:icon.getAttribute('data-icon-source'),key:icon.getAttribute('data-icon-key'),pack:glyph.getAttribute('data-icon-pack'),color:getComputedStyle(glyph).color}:null}");
+  assert(transactionVisual?.source==='category-preference',`transaction should use persisted explicit category icon: ${JSON.stringify(transactionVisual)}`);
+  assert(transactionVisual?.key===phosphorChoice&&transactionVisual?.pack==='phosphor',`transaction should render persisted Phosphor icon: ${JSON.stringify(transactionVisual)}`);
+  assert(transactionVisual?.color===persisted?.color,`transaction should render persisted category color: settings ${persisted?.color}, transaction ${transactionVisual?.color}`);
+
+  await clickText('.sidebar nav button','Ρυθμίσεις');
+  await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Ρυθμίσεις')}",'Settings after transaction icon proof');
+  await clickText('.settings-tablist button','Εικονίδια');
+  await waitFor("function(){return Boolean(document.querySelector('.settings-icons-only .category-icon-assignment-workspace'))}",'icons workspace restored');
+
   await c.send('Emulation.setDeviceMetricsOverride',{width:375,height:812,deviceScaleFactor:1,mobile:true});
   await noOverflow('icons mobile');
   await openRow(targetLabel);
