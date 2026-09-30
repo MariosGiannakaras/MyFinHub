@@ -55,7 +55,8 @@ describe('connected device access',()=>{
   });
 
   it('hardens sensitive RLS to the current active device without blocking session bootstrap',()=>{
-    const migration=read('supabase/migrations/20260930030000_harden_active_device_sensitive_rls.sql');
+    const migration=read('supabase/migrations/20260930062504_harden_active_device_sensitive_rls.sql');
+    const privateHelper=read('supabase/migrations/20260930062619_move_active_device_rls_helper_private.sql');
     expect(migration).toContain('security definer');
     expect(migration).toContain("coalesce(((select auth.jwt()) ->> 'session_id'), '')");
     expect(migration).toContain('and (select public.myfinhub_session_is_active())');
@@ -65,6 +66,11 @@ describe('connected device access',()=>{
     expect(migration).toContain('if v_uid is null or not (select public.rheomiq_is_owner_aal2()) then');
     const insertPolicy=migration.slice(migration.indexOf('create policy myfinhub_device_sessions_owner_insert'),migration.indexOf('create policy myfinhub_device_sessions_owner_update'));
     expect(insertPolicy).not.toContain('myfinhub_session_is_active');
+    expect(privateHelper).toContain('create schema if not exists private');
+    expect(privateHelper).toContain('create or replace function private.myfinhub_session_is_active()');
+    expect(privateHelper).toContain('security definer');
+    expect(privateHelper).toContain('and (select private.myfinhub_session_is_active())');
+    expect(privateHelper).toContain('drop function if exists public.myfinhub_session_is_active()');
   });
 
   it('uses only publishable-key plus user JWT and supports Android device metadata',()=>{
