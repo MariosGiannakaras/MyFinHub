@@ -50,6 +50,7 @@
       await import('/src/styles.css');
       await import('/src/styles/approved-workspace-targets.css');
       await import('/src/styles/account-iban-surfaces.css');
+      await import('/src/styles/dark-theme-surfaces.css');
       await import('/src/qa.tsx');
       for(let attempt=0;attempt<120&&!document.querySelector('#root>*');attempt+=1){
         await new Promise(resolve=>setTimeout(resolve,16));

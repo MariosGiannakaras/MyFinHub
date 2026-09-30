@@ -8,6 +8,9 @@ const types=readFileSync('src/types.ts','utf8');
 const runner=readFileSync('scripts/run-rendered-qa.mjs','utf8');
 const rendered=readFileSync('scripts/theme-system-qa.mjs','utf8');
 const darkSurfaces=readFileSync('src/styles/dark-theme-surfaces.css','utf8');
+const rootCompat=readFileSync('src/styles/root-compat.css','utf8');
+const workspaceCompat=readFileSync('src/styles/workspace-compat.css','utf8');
+const qaHtml=readFileSync('qa.html','utf8');
 
 describe('theme architecture source contract',()=>{
   it('initializes theme before React mounts',()=>{
@@ -39,6 +42,9 @@ describe('theme architecture source contract',()=>{
     expect(darkSurfaces).toContain('html[data-theme="dark"] .transactions-approved-table td');
     expect(darkSurfaces).toContain('html[data-theme="dark"] .quick-modal:has(.generic-kind-grid)>footer');
     expect(rendered).toContain('dark high-fidelity surface parity');
+    expect(rootCompat).not.toContain("dark-theme-surfaces.css");
+    expect(workspaceCompat).toContain("@import './dark-theme-surfaces.css';");
+    expect(qaHtml).toContain("await import('/src/styles/dark-theme-surfaces.css');");
   });
 
   it('registers a dedicated rendered Light Dark matrix',()=>{

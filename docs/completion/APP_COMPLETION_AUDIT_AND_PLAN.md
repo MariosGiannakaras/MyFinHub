@@ -273,6 +273,8 @@ The first exact-head validation wave exposed three additional validation blocker
 
 | FV-25 | Settings existing-account provider correction QA | After FV-24, exact-head CI reached the existing-account edit state and failed because the harness still asserted that edit mode must hide “Τράπεζα / πάροχος”. The product intentionally added provider correction for existing bank accounts in commit `941287f`, so the assertion contradicted the accepted implementation. | QA harness stale-product-contract defect | **Source-fixed, proof pending.** Settings QA now requires provider correction and IBAN editing together while still requiring the creation-only account-type selector to stay absent. No account/provider product implementation changed. |
 
+| FV-26 | Desktop/Windows bundle budget | The second DA-54 dark-surface remediation was initially imported through eager `root-compat.css`, growing the main application CSS to 243.5 KiB raw against the unchanged 240.0 KiB budget. Windows Desktop and Clean Launch therefore failed correctly even though gzip remained within budget. | Product packaging / loading architecture defect | **Source-fixed, proof pending.** The dark workspace remediation now loads through the existing lazy `WorkspaceStyleLayer` instead of the global root stylesheet; QA imports the same layer explicitly. No budget was raised and no dark-theme rule was removed. |
+
 Validation rule: FV items close only after the next exact-head wave proves the corrected interaction/performance/bootstrap behavior. No quality threshold or screenshot-count requirement was relaxed.
 
 ## 3. Page-by-page audit and required changes
