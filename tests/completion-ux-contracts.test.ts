@@ -283,7 +283,8 @@ describe('completion UX contracts',()=>{
 
   it('uses native label associations and actionable CDP errors in dialog geometry QA',()=>{
     const harness=read('scripts/completion-dialog-geometry-qa.mjs');
-    expect(harness).toContain("'labels' in node&&node.labels?.length");
+    expect(harness).toContain("const labels=('labels' in node&&node.labels)?node.labels.length:0");
+    expect(harness).toContain('return Boolean(ariaLabel||labelledBy||wrapped||labels)');
     expect(harness).not.toContain('CSS.escape(node.id)');
     expect(harness).toContain("r.exceptionDetails.exception?.description");
     expect(harness).toContain("r.exceptionDetails.stackTrace?.callFrames");
