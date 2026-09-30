@@ -58,6 +58,13 @@ describe('card secure details',()=>{
     expect(calls).toEqual(['server']);
   });
 
+  it('initializes card profile editing by stable dialog identity instead of parent object identity',()=>{
+    const createDialog=readFileSync(new URL('../src/components/CardCreateDialog.tsx',import.meta.url),'utf8');
+    expect(createDialog).toContain("const initializationKey=open?");
+    expect(createDialog).toContain("},[initializationKey]);");
+    expect(createDialog).not.toContain("[open,initialBankId,initialCard,kindLock,banks,allowedKindsKey]");
+  });
+
   it('separates card profile editing from secure PAN/expiry/CVV editing',()=>{
     const cards=readFileSync(new URL('../src/pages/CardsPage.tsx',import.meta.url),'utf8');
     const credit=readFileSync(new URL('../src/pages/CreditCardPage.tsx',import.meta.url),'utf8');
