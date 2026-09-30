@@ -12,4 +12,4 @@
 .account-management-provider-picker button b,.account-management-provider-picker button small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .account-management-provider-picker button b{font-size:var(--ux-small-size)}
 .account-management-provider-picker button small,.account-management-provider-fallback{font-size:var(--ux-tiny-size);color:var(--muted)}
-@media(max-width:620px){.account-management-provider-picker>div{grid-template-columns:1fr}.account-management-provider-picker button{min-height:58px}}
+@media(max-width:620px){.account-management-provider-picker>div{grid-template-columns:repeat(2,minmax(0,1fr))}.account-management-provider-picker button{min-height:58px;padding-inline:8px}.account-management-provider-picker button b,.account-management-provider-picker button small{font-size:var(--ux-tiny-size)}}@media(max-width:340px){.account-management-provider-picker>div{grid-template-columns:1fr}}
