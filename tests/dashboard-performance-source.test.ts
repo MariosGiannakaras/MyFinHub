@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 const dashboard=readFileSync(new URL('../src/pages/DashboardPage.tsx',import.meta.url),'utf8');
 const recharts=readFileSync(new URL('../src/components/DashboardRecharts.tsx',import.meta.url),'utf8');
+const visualEvidence=readFileSync(new URL('../scripts/ui-ux-visual-evidence-qa.mjs',import.meta.url),'utf8');
 
 describe('Dashboard first-paint performance contract',()=>{
   it('keeps Recharts out of the initial Dashboard route module',()=>{
@@ -22,5 +23,10 @@ describe('Dashboard first-paint performance contract',()=>{
     expect(dashboard).toContain('className="approved-bar-wrap"');
     expect(dashboard).toContain('className="approved-category-donut"');
     expect(dashboard).toContain('className="summary-donut"');
+    expect(visualEvidence).toContain('waitForDashboardSteadyState');
+    expect(visualEvidence).toContain('collapsed mobile Dashboard analytics');
+    expect(visualEvidence).toContain("charts?.classList.contains('mobile-collapsed')");
+    expect(visualEvidence).toContain("'.summary-donut .recharts-surface'");
+    expect(visualEvidence).toContain('deferred desktop Dashboard charts');
   });
 });
