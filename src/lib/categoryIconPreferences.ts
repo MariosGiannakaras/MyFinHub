@@ -38,11 +38,11 @@ function explicitForPack(
   pack:CategoryIconPack,
 ){
   const remembered=validSemanticKey(selections?.[preferenceKey]?.[pack]);
-  if(remembered)return encodeCategoryIconValue(pack,remembered);
+  if(remembered&&categoryIconKeySupportedByPack(pack,remembered))return encodeCategoryIconValue(pack,remembered);
   const previous=legacy?.[preferenceKey];
   if(previous){
     const decoded=decodeCategoryIconValue(previous);
-    if(decoded.pack===pack&&categoryIconByKey(decoded.key))return encodeCategoryIconValue(pack,decoded.key);
+    if(decoded.pack===pack&&categoryIconByKey(decoded.key)&&categoryIconKeySupportedByPack(pack,decoded.key))return encodeCategoryIconValue(pack,decoded.key);
   }
   return null;
 }
@@ -118,7 +118,7 @@ export function withCategoryIcon(settings:FinanceSettings,kind:CategoryKind,cate
   const legacy={...(settings.categoryIcons??{})};
   const decoded=iconKey?decodeCategoryIconValue(iconKey):null;
   const pack=decoded?.pack??activeCategoryIconPack(settings);
-  const semanticKey=decoded&&categoryIconByKey(decoded.key)?decoded.key:null;
+  const semanticKey=decoded&&categoryIconByKey(decoded.key)&&categoryIconKeySupportedByPack(pack,decoded.key)?decoded.key:null;
   if(semanticKey)legacy[key]=encodeCategoryIconValue(pack,semanticKey);
   else if(legacy[key]&&decodeCategoryIconValue(legacy[key]).pack===pack)delete legacy[key];
   return {
@@ -134,7 +134,7 @@ export function withSubcategoryIconOverride(settings:FinanceSettings,kind:Catego
   const legacy={...(settings.subcategoryIcons??{})};
   const decoded=iconKey?decodeCategoryIconValue(iconKey):null;
   const pack=decoded?.pack??activeCategoryIconPack(settings);
-  const semanticKey=decoded&&categoryIconByKey(decoded.key)?decoded.key:null;
+  const semanticKey=decoded&&categoryIconByKey(decoded.key)&&categoryIconKeySupportedByPack(pack,decoded.key)?decoded.key:null;
   if(semanticKey)legacy[key]=encodeCategoryIconValue(pack,semanticKey);
   else if(legacy[key]&&decodeCategoryIconValue(legacy[key]).pack===pack)delete legacy[key];
   return {
