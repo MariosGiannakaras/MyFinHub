@@ -231,7 +231,9 @@ export function FinancialProviderManagementSettings(){
       else await updateFinancialProvider(payload,false);
 
       const uploaded=new Map<string,string>();
+      const referencedPending=new Set(Object.values(editor.assignments).filter((ref):ref is string=>Boolean(ref?.startsWith('pending:'))));
       for(const pending of editor.pendingAssets){
+        if(!referencedPending.has(pending.ref))continue;
         if(pending.uploadedKey){uploaded.set(pending.ref,pending.uploadedKey);continue}
         const origin=SLOT_BY_ID.get(pending.originSlot)!;
         const asset=await uploadFinancialProviderAsset({
@@ -323,7 +325,7 @@ export function FinancialProviderManagementSettings(){
             {library.length?<section className="provider-library"><header><div><h4>Βιβλιοθήκη εικόνων</h4><p>Όλα τα ήδη ανεβασμένα assets του παρόχου. Η ίδια εικόνα μπορεί να ανατεθεί σε πολλές θέσεις.</p></div></header><div className="provider-library-strip">{library.map(asset=><div className="provider-library-item" key={asset.ref}><span><img src={asset.url} alt="" draggable={false}/></span><div><b title={asset.name}>{asset.name}</b><small>{usageCount(asset.ref)} {usageCount(asset.ref)===1?'χρήση':'χρήσεις'}</small></div></div>)}</div></section>:null}
           </div>}
 
-          {editorError?<div className="provider-editor-error" role="alert" aria-live="assertive">{editorError}</div>:null}
+          {editorError?<div className="provider-editor-error form-error" role="alert" aria-live="assertive">{editorError}</div>:null}
         </div>
 
         <footer className="provider-editor-footer">
