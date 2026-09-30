@@ -2,7 +2,7 @@ import { Palette, RotateCcw, X } from 'lucide-react';
 import { useMemo, useState, type CSSProperties } from 'react';
 import { categoryTree } from '../lib/categories';
 import { CATEGORY_ICON_PACKS, decodeCategoryIconValue, encodeCategoryIconValue } from '../lib/categoryIconRegistry';
-import { categoryIconPackPreviewKeys } from '../lib/categoryIconPackSupport';
+import { categoryIconPackOptionCount, categoryIconPackPreviewKeys } from '../lib/categoryIconPackSupport';
 import {
   activeCategoryIconPack,
   explicitCategoryIconColor,
@@ -87,10 +87,10 @@ export function CategoryIconAssignmentWorkspace({settings,onChange}:{settings:Fi
       <div className="category-icon-pack-switcher category-icon-pack-switcher-global" role="group" aria-label="Οικογένεια εικονιδίων">
         {CATEGORY_ICON_PACKS.map(item=><button type="button" key={item.id} className={iconPack===item.id?'active':''} aria-pressed={iconPack===item.id} onClick={()=>onChange(withCategoryIconPack(settings,item.id))} title={item.description}>
           <span className="category-icon-pack-preview" aria-hidden="true">{categoryIconPackPreviewKeys(item.id).map(key=><CategoryIconGlyph key={key} iconKey={encodeCategoryIconValue(item.id,key)} size={16}/>)}</span>
-          <span><b>{item.label}</b><small>{item.license}</small></span>
+          <span><b>{item.label}</b><small>{item.license}{categoryIconPackOptionCount(item.id)!==null?` · ${categoryIconPackOptionCount(item.id)} διαθέσιμα`:' · πλήρες semantic set'}</small></span>
         </button>)}
       </div>
-      <div className="category-icon-pack-status" role="status" aria-live="polite"><b>{CATEGORY_ICON_PACKS.find(item=>item.id===iconPack)?.label}</b><span>ενεργή οικογένεια · οι επιλογές της αποθηκεύονται ανεξάρτητα από τις υπόλοιπες.</span></div>
+      <div className="category-icon-pack-status" role="status" aria-live="polite"><b>{CATEGORY_ICON_PACKS.find(item=>item.id===iconPack)?.label}</b><span>ενεργή οικογένεια · {categoryIconPackOptionCount(iconPack)===null?'πλήρες semantic set':`${categoryIconPackOptionCount(iconPack)} διακριτά local glyphs`} · οι επιλογές της αποθηκεύονται ανεξάρτητα από τις υπόλοιπες.</span></div>
     </div>
 
     {editor?<section className="category-icon-selection-panel" aria-label={`Επιλογή εικονιδίου για ${editor.subcategory??editor.category}`} data-icon-selection-panel>
