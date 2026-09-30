@@ -147,4 +147,15 @@ describe('completion UX contracts',()=>{
     expect(cards).not.toContain('<small>Ενεργές κάρτες</small><strong>{activeCards.length}</strong><span>στο ασφαλές card vault</span>');
   });
 
+
+  it('keeps the mobile More dialog above all persistent bottom chrome',()=>{
+    const more=read('src/styles/mobile-more-navigation.css');
+    const shell=read('src/styles/root-responsive-coordination.css');
+    expect(more).toContain('.mobile-more-backdrop{display:block;position:fixed;inset:0;z-index:80');
+    expect(shell).toContain('.mobile-nav{display:grid;position:fixed;z-index:70');
+    const appShell=read('src/components/AppShell.tsx');
+    expect(appShell).toContain('className="mobile-more-menu surface-raised" role="dialog" aria-modal="true"');
+    expect(appShell).toContain('aria-label="Κλείσιμο μενού"');
+  });
+
 });
