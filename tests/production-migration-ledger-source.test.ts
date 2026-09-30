@@ -44,12 +44,11 @@ const productionApplied=[
   "20260930105508_index_provider_asset_foreign_keys.sql",
   "20260930114105_add_database_health_check.sql",
   "20260930114624_merge_database_health_contract.sql",
-  "20260930115252_fix_database_health_history_state_check.sql"
+  "20260930115252_fix_database_health_history_state_check.sql",
+  "20260930122054_relational_finance_ledger_cutover.sql"
 ] as const;
 
-const releasePending=[
-  '20260930130000_relational_finance_ledger_cutover.sql',
-] as const;
+const releasePending=[] as const;
 
 describe('production migration ledger source contract',()=>{
   it('keeps every production-applied migration represented by the exact applied version/name',()=>{
@@ -57,9 +56,9 @@ describe('production migration ledger source contract',()=>{
     expect(local).toEqual([...productionApplied,...releasePending].sort());
   });
 
-  it('keeps the relational cutover explicitly pending until production application',()=>{
-    expect(productionApplied).not.toContain('20260930130000_relational_finance_ledger_cutover.sql' as any);
-    expect(releasePending).toContain('20260930130000_relational_finance_ledger_cutover.sql');
+  it('tracks the relational cutover as production-applied history',()=>{
+    expect(productionApplied).toContain('20260930122054_relational_finance_ledger_cutover.sql');
+    expect(releasePending).toHaveLength(0);
   });
 
   it('keeps formerly release-pending migrations represented as production-applied history',()=>{
