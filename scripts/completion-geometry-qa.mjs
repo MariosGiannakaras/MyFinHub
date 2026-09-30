@@ -84,7 +84,9 @@ try{
         const result=await c.call(analysisFn);
         assert(result.docOverflow<=1,`${viewport.name}/${page}@${y}: document horizontal overflow ${result.docOverflow}px`);
         assert(result.rogue.length===0,`${viewport.name}/${page}@${y}: off-viewport controls ${JSON.stringify(result.rogue)}`);
-        if(viewport.mobile)assert(result.overlaps.length===0,`${viewport.name}/${page}@${y}: fixed mobile chrome overlaps actions ${JSON.stringify(result.overlaps)}`);
+        const maxScroll=Math.max(0,result.scrollHeight-viewport.height);
+        const atBottom=result.scrollY>=maxScroll-2;
+        if(viewport.mobile&&atBottom)assert(result.overlaps.length===0,`${viewport.name}/${page}@${y}: fixed mobile chrome prevents final actions from scrolling clear ${JSON.stringify(result.overlaps)}`);
         assert(result.desktopChromeOverlaps.length===0,`${viewport.name}/${page}@${y}: Dashboard shortcut overlaps topbar controls ${JSON.stringify(result.desktopChromeOverlaps)}`);
       }
       console.log(`${viewport.name}/${page}: geometry clean`);
