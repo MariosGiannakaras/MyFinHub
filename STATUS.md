@@ -36,6 +36,20 @@ Release-closeout tracker: **#288 — complete**.
 - `CARD_VAULT_KEY`, service-role credentials and other privileged secrets are never distributed in browser, Windows or Android clients.
 - Optimistic revisions, backups, audit/history boundaries and the canonical finance/accounting engine remain authoritative.
 
+## Active completion batch — #476
+
+**Workstreams 5/8 complete · Deep findings 40/41 repo-side complete**
+
+- Branch: `feat/476-completion-audit-hardening`.
+- Deep-audit tracker: **41 unique findings** after duplicate-ID cleanup.
+- **40/41** findings are implemented/dispositioned on the repo side.
+- **1/41** is external: owner manual upload of the remaining provider logo binaries; this branch must not touch the database.
+- **27 findings** still require final rendered/runtime proof before they can be considered fully closed.
+- Major implemented areas include responsive/overlap fixes, bounded mobile histories, card profile vs secure-details editing, real card-vault Save→Reveal QA, persistent per-library icon choices/colors, OCR runtime-asset preflight, provider presentation, CRUD/lifecycle browser coverage, and mobile modal geometry.
+- PR #477 is intentionally closed while the deep implementation/audit batch continues so intermediate commits do not trigger repeated CI.
+- Remaining work: fresh rendered QA + manual screenshot inspection, fix any defects found, reconcile with current `develop`, then one exact-final-head CI/security/cross-engine/performance/Windows wave and squash merge to `develop`.
+- No `main` promotion/release is included.
+
 ## Next work
 
 Subsequent changes are product fixes against the completed v1.3.0 baseline. Routine implementation remains **Issue → short-lived branch → PR → required checks → squash merge into `develop`**. `main` remains release-only.
