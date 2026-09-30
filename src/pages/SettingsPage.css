@@ -125,8 +125,9 @@
 
 @media(max-width:720px){
   .settings-tabs-page{gap:12px}
-  .settings-tablist{margin-inline:-2px;padding:4px;border-radius:13px}
-  .settings-tablist button{min-height:40px;padding:8px 11px}
+  .settings-tablist{margin-inline:-2px;padding:4px 12px;border-radius:13px;scroll-padding-inline:28px;scroll-snap-type:x proximity;scrollbar-width:none;-webkit-mask-image:linear-gradient(to right,transparent 0,#000 10px,#000 calc(100% - 10px),transparent 100%);mask-image:linear-gradient(to right,transparent 0,#000 10px,#000 calc(100% - 10px),transparent 100%)}
+  .settings-tablist::-webkit-scrollbar{display:none}
+  .settings-tablist button{min-height:40px;padding:8px 11px;scroll-snap-align:center}
   .settings-choice-group{grid-template-columns:1fr;gap:10px;padding:14px 0}
   .settings-general-appearance .text-size-picker{grid-template-columns:repeat(3,minmax(0,1fr))}
   .settings-general-appearance .text-size-picker button{min-height:42px;padding:8px 6px}
