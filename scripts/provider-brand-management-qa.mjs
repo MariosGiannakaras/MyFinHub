@@ -22,46 +22,88 @@ try{
   c=new Cdp(target.webSocketDebuggerUrl);await c.open();await c.send('Page.enable');await c.send('Runtime.enable');
   const viewport=(width,height,mobile=false)=>c.send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile});
   const waitFor=async(fn,label,args=[])=>{for(let i=0;i<120;i++){if(await c.call(fn,args))return;await sleep(100)}throw new Error(`Timed out waiting for ${label}`)};
-  const applyTheme=async preference=>c.call(`async function(pref){localStorage.setItem('myfinhub.theme',pref);const mod=await import('/src/lib/theme.ts');mod.applyThemePreference(pref);await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));return document.documentElement.dataset.theme}`,[preference]);
-  const clickAccounts=async()=>{const ok=await c.call("function(){const node=[...document.querySelectorAll('.settings-tablist button')].find(item=>(item.textContent||'').trim()==='Λογαριασμοί');if(!node)return false;node.click();return true}");assert(ok,'Accounts tab is available');await waitFor("function(){return !!document.querySelector('.provider-management')&&document.querySelectorAll('.provider-management-card').length>=8}",'provider management panel')};
-  const state=async()=>c.call(`function(){const cards=[...document.querySelectorAll('.provider-management-card')];const slots=[...document.querySelectorAll('.provider-asset-slot')];const buttons=[...document.querySelectorAll('.provider-management button')].filter(node=>{const r=node.getBoundingClientRect(),s=getComputedStyle(node);return r.width&&r.height&&s.display!=='none'&&s.visibility!=='hidden'});return {theme:document.documentElement.dataset.theme,cards:cards.length,slots:slots.length,labels:[...document.querySelectorAll('.provider-asset-copy b')].map(node=>(node.textContent||'').trim()),overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth,smallButtons:buttons.map(node=>{const r=node.getBoundingClientRect();return {label:(node.textContent||node.getAttribute('aria-label')||'').trim(),w:r.width,h:r.height}}).filter(item=>item.w<40||item.h<40)}}`);
-  const shot=async name=>{await c.call("function(){const active=document.activeElement;if(active instanceof HTMLElement)active.blur();window.scrollTo({top:0,left:0,behavior:'auto'});return true}");await sleep(180);const result=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(result.data,'base64'))};
-  const fullShot=async name=>{await c.call("function(){window.scrollTo({top:0,left:0,behavior:'auto'});return true}");await sleep(180);const metrics=await c.send('Page.getLayoutMetrics');const width=Math.ceil(metrics.cssContentSize?.width||1440),height=Math.ceil(metrics.cssContentSize?.height||1000);const result=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true,clip:{x:0,y:0,width,height,scale:1}});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(result.data,'base64'))};
-
-  for(const mode of [{name:'desktop',width:1440,height:1000,mobile:false},{name:'mobile',width:375,height:812,mobile:true}]){
-    await viewport(mode.width,mode.height,mode.mobile);
-    for(const theme of ['light','dark']){
-      await c.send('Page.navigate',{url:url.href});
-      await waitFor("function(){return document.readyState==='complete'&&!!document.querySelector('.settings-tablist')}",'Settings ready');
-      assert(await applyTheme(theme)===theme,`${theme} theme resolves`);
-      await clickAccounts();
-      const current=await state();
-      assert(current.theme===theme,`${mode.name} ${theme} theme remains active`);
-      assert(current.cards>=8,`${mode.name} renders provider cards`);
-      assert(current.slots===current.cards*7,`${mode.name} renders seven asset slots per provider`);
-      for(const expected of ['Logo · Universal','Logo · Light','Logo · Dark','Wordmark · Light','Wordmark · Dark','Card mark · Light','Card mark · Dark'])assert(current.labels.includes(expected),`asset slot ${expected} is present`);
-      assert(current.overflow<=1,`${mode.name} ${theme} has no horizontal page overflow: ${current.overflow}px`);
-      assert(current.smallButtons.length===0,`${mode.name} ${theme} has no undersized provider buttons: ${JSON.stringify(current.smallButtons.slice(0,6))}`);
-      await shot(`provider-management-${theme}-${mode.name}`);
-    }
-  }
+  const applyTheme=preference=>c.call(`async function(pref){localStorage.setItem('myfinhub.theme',pref);const mod=await import('/src/lib/theme.ts');mod.applyThemePreference(pref);await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));return document.documentElement.dataset.theme}`,[preference]);
+  const clickAccounts=async()=>{const ok=await c.call("function(){const node=[...document.querySelectorAll('.settings-tablist button')].find(item=>(item.textContent||'').trim()==='Λογαριασμοί');if(!node)return false;node.click();return true}");assert(ok,'Accounts tab is available');await waitFor("function(){return !!document.querySelector('.provider-management')&&document.querySelectorAll('.provider-list-row').length>=8}",'compact provider list')};
+  const noOverflow=async label=>{const value=await c.call("function(){return Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}");assert(value<=1,`${label} horizontal overflow ${value}px`)};
+  const shot=async name=>{await c.call("function(){const active=document.activeElement;if(active instanceof HTMLElement)active.blur();return true}");await sleep(160);const result=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(result.data,'base64'))};
+  const fullShot=async name=>{await sleep(120);const metrics=await c.send('Page.getLayoutMetrics');const width=Math.ceil(metrics.cssContentSize?.width||1440),height=Math.ceil(metrics.cssContentSize?.height||1000);const result=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true,clip:{x:0,y:0,width,height,scale:1}});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(result.data,'base64'))};
+  const clickText=async(selector,text)=>{const ok=await c.call("function(selector,text){const node=[...document.querySelectorAll(selector)].find(item=>(item.textContent||'').includes(text));if(!node)return false;node.click();return true}",[selector,text]);assert(ok,`${text} action is available`)};
+  const uploadSyntheticSvg=async name=>{
+    const ok=await c.call(`function(name){const input=document.querySelector('.provider-management > input[type="file"]');if(!input)return false;const svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 60"><rect width="120" height="60" rx="12" fill="#1d4ed8"/><path d="M20 42 36 18h12L32 42zm28 0 16-24h12L60 42z" fill="white"/></svg>';const file=new File([svg],name,{type:'image/svg+xml'});const transfer=new DataTransfer();transfer.items.add(file);input.files=transfer.files;input.dispatchEvent(new Event('change',{bubbles:true}));return true}`,[name]);
+    assert(ok,'hidden app-owned upload input accepts a synthetic file');
+  };
+  const openBranding=async()=>{
+    await clickText('.provider-editor-tabs button','Εικόνες');
+    await waitFor("function(){return document.querySelectorAll('.provider-slot-card').length===9}",'nine semantic branding slots');
+  };
+  const chooseSlot=async label=>{
+    const ok=await c.call("function(label){const card=[...document.querySelectorAll('.provider-slot-card')].find(item=>(item.textContent||'').includes(label));const button=card?.querySelector('.provider-slot-select');if(!button)return false;button.click();return true}",[label]);
+    assert(ok,`slot picker opens for ${label}`);
+    await waitFor("function(){return !!document.querySelector('.provider-asset-picker')}",'asset picker');
+  };
 
   await viewport(1440,1000,false);
-  await c.send('Page.navigate',{url:url.href});await waitFor("function(){return document.readyState==='complete'&&!!document.querySelector('.settings-tablist')}",'Settings create-provider ready');await applyTheme('light');await clickAccounts();
-  const opened=await c.call("function(){const button=[...document.querySelectorAll('.provider-management button')].find(node=>(node.textContent||'').includes('Νέος πάροχος'));button?.click();return Boolean(button)}");assert(opened,'New provider action is available');
-  await waitFor("function(){return !!document.querySelector('.provider-create')}",'create-provider form');
-  const createState=await c.call(`function(){const root=document.querySelector('.provider-create');return {fileInputs:root?.querySelectorAll('input[type=file]').length||0,comboboxes:root?.querySelectorAll('[role=combobox]').length||0,assetLabels:[...(root?.querySelectorAll('.provider-file-choice > span')||[])].map(node=>(node.textContent||'').trim()),overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}}`);
-  assert(createState.fileInputs===7,'create-provider flow exposes seven artwork pickers');
-  assert(createState.comboboxes>=1,'create-provider flow uses app-owned provider type select');
-  for(const label of ['Logo · Universal','Logo · Light','Logo · Dark','Wordmark · Light','Wordmark · Dark','Card mark · Light','Card mark · Dark'])assert(createState.assetLabels.includes(label),`create-provider artwork picker ${label} is visible`);
-  assert(createState.overflow<=1,'create-provider desktop form stays viewport-contained');
-  await shot('provider-create-light-desktop');
+  await c.send('Page.navigate',{url:url.href});
+  await waitFor("function(){return document.readyState==='complete'&&!!document.querySelector('.settings-tablist')}",'Settings ready');
+  assert(await applyTheme('light')==='light','light theme resolves');
+  await clickAccounts();
+  const listState=await c.call(`function(){const rows=[...document.querySelectorAll('.provider-list-row')];const expanded=document.querySelectorAll('.provider-slot-card').length;const nativeVisible=[...document.querySelectorAll('.provider-management input[type=file]')].filter(node=>{const s=getComputedStyle(node);return s.display!=='none'&&s.visibility!=='hidden'}).length;return {rows:rows.length,expanded,nativeVisible,editButtons:document.querySelectorAll('.provider-edit-action').length}}`);
+  assert(listState.rows>=8&&listState.editButtons===listState.rows,'provider list is compact and directly editable');
+  assert(listState.expanded===0,'Settings does not expand artwork slots outside edit');
+  assert(listState.nativeVisible===0,'native file controls are never visible');
+  await noOverflow('provider list desktop');
+  await shot('provider-list-light-desktop');
 
-  await viewport(375,812,true);assert(await applyTheme('dark')==='dark','dark theme applies to mobile create-provider form');
-  const mobileCreate=await c.call("function(){const root=document.querySelector('.provider-create');root?.scrollIntoView({block:'start'});return {visible:Boolean(root?.getClientRects().length),overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}}");
-  assert(mobileCreate.visible&&mobileCreate.overflow<=1,'mobile create-provider form stays visible and viewport-contained');
-  await shot('provider-create-dark-mobile');
-  await fullShot('provider-management-light-desktop-full');
+  const opened=await c.call("function(){const button=document.querySelector('.provider-edit-action');button?.click();return Boolean(button)}");assert(opened,'existing provider editor opens');
+  await waitFor("function(){return !!document.querySelector('.provider-editor-modal')}",'provider editor');
+  const tabs=await c.call("function(){return [...document.querySelectorAll('.provider-editor-tabs [role=tab]')].map(node=>(node.textContent||'').trim())}");
+  assert(JSON.stringify(tabs)===JSON.stringify(['Στοιχεία','Εικόνες']),'provider editor has Details and Images tabs');
+  await shot('provider-editor-details-light-desktop');
+  await openBranding();
+  const brandingState=await c.call(`function(){const groups=[...document.querySelectorAll('.provider-brand-group>header h4')].map(node=>(node.textContent||'').trim());const text=document.querySelector('.provider-branding-panel')?.textContent||'';return {groups,slots:document.querySelectorAll('.provider-slot-card').length,text}}`);
+  assert(brandingState.slots===9,'branding editor exposes nine semantic slots');
+  assert(brandingState.groups.includes('Logo εφαρμογής')&&brandingState.groups.includes('Wordmark εφαρμογής')&&brandingState.groups.includes('Κάρτες'),'branding groups are task-oriented');
+  assert(brandingState.text.includes('Το Light/Dark theme της εφαρμογής δεν συμμετέχει.'),'card artwork is explicitly independent from app theme');
+  await chooseSlot('Προεπιλεγμένο logo');
+  await uploadSyntheticSvg('qa-shared.svg');
+  await waitFor("function(){return [...document.querySelectorAll('.provider-slot-card')].some(card=>(card.textContent||'').includes('Προεπιλεγμένο logo')&&(card.textContent||'').includes('qa-shared.svg'))}",'uploaded logo assigned once');
+  assert(await c.call("function(){return document.querySelectorAll('.provider-library-item').length}")===1,'one upload creates one library asset');
 
-  console.log('Provider branding management QA passed.');
+  await chooseSlot('Προεπιλεγμένο wordmark');
+  const pickerAssets=await c.call("function(){return [...document.querySelectorAll('.provider-picker-asset b')].map(node=>(node.textContent||'').trim())}");
+  assert(pickerAssets.includes('qa-shared.svg'),'already-uploaded asset is available in picker');
+  await clickText('.provider-picker-asset','qa-shared.svg');
+  await waitFor("function(){return [...document.querySelectorAll('.provider-slot-card')].filter(card=>(card.textContent||'').includes('qa-shared.svg')).length>=2}",'same asset reused in second slot');
+  const reuse=await c.call("function(){return [...document.querySelectorAll('.provider-slot-card')].some(card=>(card.textContent||'').includes('χρησιμοποιείται σε 2 θέσεις'))}");
+  assert(reuse,'reuse count is visible to the user');
+  assert(await c.call("function(){return document.querySelectorAll('.provider-library-item').length}")===1,'reuse does not duplicate the asset library');
+  await shot('provider-editor-branding-reuse-light-desktop');
+
+  assert(await applyTheme('dark')==='dark','dark theme resolves while editor is open');
+  await shot('provider-editor-branding-reuse-dark-desktop');
+  await viewport(375,812,true);await noOverflow('provider editor mobile');await shot('provider-editor-branding-dark-mobile');
+
+  await viewport(1440,1000,false);
+  await c.call("function(){document.querySelector('.provider-editor-header button[aria-label=Κλείσιμο]')?.click();return true}");
+  await waitFor("function(){return !document.querySelector('.provider-editor-modal')}",'existing editor closes');
+  await clickText('.provider-management button','Νέος πάροχος');
+  await waitFor("function(){return !!document.querySelector('.provider-editor-modal')}",'new provider editor');
+  const details=await c.call(`function(){const set=(placeholder,value)=>{const input=[...document.querySelectorAll('.provider-details-panel input')].find(node=>node.getAttribute('placeholder')===placeholder);if(!input)return false;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(input,value);input.dispatchEvent(new Event('input',{bubbles:true}));return true};return set('π.χ. Νέα Τράπεζα','QA Bank')}`);
+  assert(details,'new-provider details are editable through app-owned controls');
+  await sleep(100);
+  await clickText('.provider-editor-footer button','Συνέχεια στις εικόνες');
+  await waitFor("function(){return !!document.querySelector('.provider-branding-panel')}",'new provider branding tab');
+  await chooseSlot('Προεπιλεγμένο logo');
+  await uploadSyntheticSvg('qa-new-provider.svg');
+  await waitFor("function(){return document.querySelectorAll('.provider-library-item').length===1}",'new-provider upload enters local asset library');
+  await chooseSlot('Προεπιλεγμένο wordmark');
+  await clickText('.provider-picker-asset','qa-new-provider.svg');
+  const createReuse=await c.call("function(){return document.querySelectorAll('.provider-library-item').length===1&&[...document.querySelectorAll('.provider-slot-card')].filter(card=>(card.textContent||'').includes('qa-new-provider.svg')).length>=2}");
+  assert(createReuse,'create flow reuses one pending image for logo and wordmark');
+  await shot('provider-create-branding-light-desktop');
+
+  await viewport(375,812,true);assert(await applyTheme('dark')==='dark','mobile create flow follows dark app theme');await noOverflow('new provider mobile');await shot('provider-create-branding-dark-mobile');
+  await viewport(1440,1000,false);await fullShot('provider-editor-branding-full-desktop');
+
+  console.log('Provider branding task-flow QA passed.');
 }finally{c?.close();child.kill('SIGTERM')}
