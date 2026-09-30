@@ -34,6 +34,14 @@ describe('canonical credit-card stack adoption',()=>{
     expect(cardDomain).toContain('creditDebtForCard(data,cardId,asOf)<=0.005');
   });
 
+  it('keeps credit profile edits separate from encrypted card details',()=>{
+    expect(credit).toContain('openCardProfile');
+    expect(credit).toContain('saveCreditCardProfile');
+    expect(credit).toContain('Επεξεργασία κάρτας');
+    expect(credit).toContain('Ασφαλή στοιχεία');
+    expect(credit).toContain('initialCard={profileCard} kindLock="credit"');
+  });
+
   it('keeps debit/prepaid cards out of the credit finance domain',()=>{
     expect(cards).toContain("allowedKinds={['debit','prepaid']}");
     expect(cards).toContain('Οι συναλλαγές καταχωρούνται στους αντίστοιχους λογαριασμούς, όχι στις κάρτες.');
