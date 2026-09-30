@@ -82,7 +82,10 @@ create table if not exists public.rheomiq_financial_provider_asset_bindings (
 );
 
 alter table public.rheomiq_financial_provider_asset_bindings enable row level security;
+revoke all on table public.rheomiq_financial_provider_asset_bindings from public,anon,authenticated;
 grant select,insert,update,delete on public.rheomiq_financial_provider_asset_bindings to authenticated;
+create index if not exists rheomiq_financial_provider_asset_bindings_asset_key_idx
+  on public.rheomiq_financial_provider_asset_bindings(asset_key);
 
 drop policy if exists rheomiq_financial_provider_asset_bindings_owner_aal2_select on public.rheomiq_financial_provider_asset_bindings;
 create policy rheomiq_financial_provider_asset_bindings_owner_aal2_select
