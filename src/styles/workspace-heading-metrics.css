@@ -14,3 +14,18 @@
 .metric-head{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:9px;font-weight:700}
 .metric-icon{width:29px;height:29px;border-radius:9px;display:grid;place-items:center;background:color-mix(in srgb,var(--tone) 11%,white);color:var(--tone)}
 .metric-card strong{display:block;font-size:23px;letter-spacing:-.045em;margin-top:12px}
+
+
+@media(max-width:980px){
+  .page-heading{flex-wrap:wrap;align-items:flex-start}
+  .page-heading>div{min-width:0}
+  .heading-actions{flex-wrap:wrap;max-width:100%}
+}
+@media(max-width:680px){
+  .page-heading{display:grid;grid-template-columns:minmax(0,1fr);align-items:start;justify-content:stretch}
+  .heading-actions{width:100%;display:flex;flex-wrap:wrap;justify-content:flex-start}
+  .page-heading>button{justify-self:start}
+}
+@media(max-width:420px){
+  .heading-actions>button{flex:1 1 min(140px,100%);justify-content:center}
+}
