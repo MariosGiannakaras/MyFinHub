@@ -27,6 +27,7 @@ describe('completion UX contracts',()=>{
     const source=read('src/pages/TransactionsPage.tsx');
     expect(source).toContain('className="mobile-transaction-list"');
     expect(source).toContain('{pageRows.map(r=>');
+    expect(source).toMatch(/transaction-semantic-table[\s\S]*?<tbody>\{pageRows\.map\(r=>/);
     expect(source).not.toContain('aria-label={`Κινήσεις για ${month}`}>{rows.map');
     expect(source).toContain('className="mobile-transaction-pagination"');
     expect(source).toContain('setQuery(e.target.value);setPage(1)');
