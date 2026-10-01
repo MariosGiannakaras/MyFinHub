@@ -631,3 +631,5 @@ Still required before merge:
 No `main` promotion/release is part of this work.
 
 - **FV-40 completed:** final visual run #73 passes the mobile Credit network-mark safe-area assertion after anchoring the lower card body inside mobile padding; manual review confirms mobile containment and unchanged tablet/desktop presentation.
+
+- **FV-41 source-fixed; exact-head proof pending:** the exact-final-head Settings rendered check found provider Edit actions at 38px high on mobile. The mobile provider-management rule now raises those actions to a 44px touch target while preserving desktop density and layout; exact-head rendered proof remains required before merge.
