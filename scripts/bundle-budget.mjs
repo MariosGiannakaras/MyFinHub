@@ -3,6 +3,12 @@ import { gzipSync } from 'node:zlib';
 import { resolve } from 'node:path';
 
 const assetsDir=resolve('dist/assets');
+const notFoundPath=resolve('dist/404.html');
+const notFoundHtml=readFileSync(notFoundPath,'utf8');
+if(!/<title>404 · MyFinHub<\/title>/.test(notFoundHtml)||!notFoundHtml.includes('Χάσαμε τη διαδρομή, όχι τα δεδομένα σου.')||/<script\b/i.test(notFoundHtml)){
+  console.error('Release-readiness 404 output check failed.');
+  process.exit(1);
+}
 const files=readdirSync(assetsDir);
 const kib=value=>value/1024;
 const format=value=>`${kib(value).toFixed(1)} KiB`;
