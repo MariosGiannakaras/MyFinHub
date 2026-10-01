@@ -38,10 +38,6 @@ function finiteNumber(value: unknown, name: string, maxAbs = 1_000_000_000): ass
   if (typeof value !== 'number' || !Number.isFinite(value) || Math.abs(value) > maxAbs) invalid(`Invalid ${name}.`);
 }
 
-function optionalNumber(value: unknown, name: string, maxAbs = 1_000_000_000) {
-  if (value !== undefined && value !== null) finiteNumber(value, name, maxAbs);
-}
-
 function moneyNumber(value:unknown,name:string){
   finiteNumber(value,name);
   if(!isSafeMoneyValue(value))invalid(`Invalid ${name}.`);
