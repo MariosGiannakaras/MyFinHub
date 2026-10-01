@@ -22,7 +22,9 @@ describe('Dashboard first-paint performance contract',()=>{
     expect(dashboard).toContain('window.setTimeout(reveal,700)');
     expect(dashboard).toContain('window.clearTimeout(fallback)');
     expect(dashboard).toContain('mobileAnalyticsChartsReady');
-    expect(dashboard).toContain('secondFrame=requestAnimationFrame(()=>setMobileAnalyticsChartsReady(true))');
+    expect(dashboard).toContain('const fallback=window.setTimeout(reveal,250)');
+    expect(dashboard).toContain('secondFrame=requestAnimationFrame(reveal)');
+    expect(dashboard).toContain('setMobileAnalyticsChartsReady(true)');
     expect(dashboard).toContain("const heavyChartsReady=renderDeferredCharts&&(!mobileViewport||mobileAnalyticsChartsReady)");
     expect(dashboard).toContain('className="approved-bar-wrap"');
     expect(dashboard).toContain('className="approved-category-donut"');
