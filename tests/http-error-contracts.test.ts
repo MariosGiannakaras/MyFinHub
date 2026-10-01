@@ -23,6 +23,11 @@ describe('shared HTTP error contracts',()=>{
     expect(res.payload).toMatchObject({code:'INTERNAL_ERROR',error:'Unexpected server error.',requestId:res.getHeader('x-request-id')});
     expect(JSON.stringify(res.payload)).not.toContain('password=secret');
     expect(spy).toHaveBeenCalled();
+    const logged=JSON.stringify(spy.mock.calls);
+    expect(logged).toContain('INTERNAL_ERROR');
+    expect(logged).toContain(String(res.getHeader('x-request-id')));
+    expect(logged).not.toContain('password=secret');
+    expect(logged).not.toContain('raw failure');
     spy.mockRestore();
   });
 
