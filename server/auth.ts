@@ -1,6 +1,6 @@
 import { Buffer } from 'node:buffer';
 import { ensureDeviceSessionAccess } from './deviceSessionRegistry.js';
-import { ApiError, assertSameOrigin, requestHeader } from './http.js';
+import { ApiError, assertSameOrigin, requestHeader, strictRequestHeader } from './http.js';
 import { fetchUpstream, isAuthRejection } from './upstream.js';
 
 const PROD_ACCESS = '__Host-rheomiq_access';
@@ -80,7 +80,7 @@ async function authRequest<T>(path: string, init: RequestInit = {}): Promise<T> 
 }
 
 function parseCookies(req: any) {
-  const raw = requestHeader(req, 'cookie');
+  const raw = strictRequestHeader(req, 'cookie');
   const out: Record<string, string> = {};
   for (const part of raw.split(';')) {
     const index = part.indexOf('=');
@@ -95,7 +95,7 @@ function parseCookies(req: any) {
 }
 
 function secureRuntime(req: any) {
-  return process.env.VERCEL === '1' || requestHeader(req, 'x-forwarded-proto') === 'https';
+  return process.env.VERCEL === '1' || strictRequestHeader(req, 'x-forwarded-proto') === 'https';
 }
 
 function serializeCookie(name: string, value: string, maxAge: number, secure: boolean) {
@@ -140,7 +140,7 @@ function tokenCookies(req: any) {
 }
 
 function bearerAccessToken(req: any): string | null {
-  const authorization = requestHeader(req, 'authorization').trim();
+  const authorization = strictRequestHeader(req, 'authorization').trim();
   if (!authorization) return null;
   const match = /^Bearer\s+(\S+)$/i.exec(authorization);
   if (!match?.[1]) throw new ApiError(401, 'AUTH_REQUIRED', 'Authentication required.');
