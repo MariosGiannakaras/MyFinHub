@@ -1,6 +1,11 @@
 import { Buffer } from 'node:buffer';
 import type { FinanceData } from '../src/types.js';
 import { MAX_FINANCE_DOCUMENT_BYTES } from '../src/lib/limits.js';
+import { isValidDateOnly, isValidMonthOnly } from '../src/lib/dateOnly.js';
+import { isSafeMoneyValue } from '../src/lib/money.js';
+import { validateCardStateExtensions } from './cardStateValidation.js';
+import { validateCategoryIdentityState } from './categoryIdentityValidation.js';
+import { validateRecurringCadenceData } from './recurringCadenceValidation.js';
 import { ApiError } from './http.js';
 
 function invalid(message: string): never {
@@ -37,6 +42,32 @@ function optionalNumber(value: unknown, name: string, maxAbs = 1_000_000_000) {
   if (value !== undefined && value !== null) finiteNumber(value, name, maxAbs);
 }
 
+function moneyNumber(value:unknown,name:string){
+  finiteNumber(value,name);
+  if(!isSafeMoneyValue(value))invalid(`Invalid ${name}.`);
+}
+
+function optionalMoney(value:unknown,name:string){
+  if(value!==undefined&&value!==null)moneyNumber(value,name);
+}
+
+function dateOnly(value:unknown,name:string){
+  if(!isValidDateOnly(value))invalid(`Invalid ${name}.`);
+}
+
+function optionalDateOnly(value:unknown,name:string){
+  if(value!==undefined&&value!==null&&value!=='')dateOnly(value,name);
+}
+
+function monthOnly(value:unknown,name:string){
+  if(!isValidMonthOnly(value))invalid(`Invalid ${name}.`);
+}
+
+function validateMoneyRecord(value:unknown,name:string,max=10_000){
+  record(value,name,max);
+  for(const child of Object.values(value))moneyNumber(child,`${name} value`);
+}
+
 function oneOf(value: unknown, allowed: readonly string[], name: string): asserts value is string {
   if (typeof value !== 'string' || !allowed.includes(value)) invalid(`Invalid ${name}.`);
 }
@@ -59,9 +90,9 @@ function validateNumberRecord(value: unknown, name: string, max = 10_000) {
 function validateLegacyTransaction(value: unknown, name: string) {
   if (!object(value)) invalid(`Invalid ${name}.`);
   text(value.id, `${name}.id`, 200);
-  text(value.date, `${name}.date`, 64);
+  dateOnly(value.date, `${name}.date`);
   oneOf(value.type, ['income', 'expense', 'transfer', 'adjustment'], `${name}.type`);
-  finiteNumber(value.amount, `${name}.amount`);
+  moneyNumber(value.amount, `${name}.amount`);
   text(value.note, `${name}.note`, 20_000, true);
   optionalText(value.accountId, `${name}.accountId`, 200);
   optionalText(value.fromAccountId, `${name}.fromAccountId`, 200);
@@ -121,7 +152,7 @@ function validatePaymentCard(value: unknown, name: string) {
   optionalText(value.last4, `${name}.last4`, 4);
   if (value.last4 !== undefined && value.last4 !== null && !/^\d{4}$/.test(String(value.last4))) invalid(`Invalid ${name}.last4.`);
   optionalText(value.vaultRef, `${name}.vaultRef`, 500);
-  optionalNumber(value.creditLimit, `${name}.creditLimit`);
+  optionalMoney(value.creditLimit, `${name}.creditLimit`);
   if (value.creditLimit !== undefined && value.creditLimit !== null && Number(value.creditLimit) < 0) invalid(`Invalid ${name}.creditLimit.`);
   for (const [field, raw] of [['statementClosingDay', value.statementClosingDay], ['statementDueDay', value.statementDueDay]] as const) {
     if (raw !== undefined && raw !== null) {
@@ -137,8 +168,8 @@ function validatePaymentCard(value: unknown, name: string) {
 
 function validateSnapshot(value: unknown, name: string) {
   if (!object(value)) invalid(`Invalid ${name}.`);
-  text(value.date, `${name}.date`, 64);
-  validateNumberRecord(value.balances, `${name}.balances`, 10_000);
+  dateOnly(value.date, `${name}.date`);
+  validateMoneyRecord(value.balances, `${name}.balances`, 10_000);
   optionalText(value.sheet, `${name}.sheet`, 500);
 }
 
@@ -146,15 +177,14 @@ function validateRecurring(value: unknown, name: string) {
   if (!object(value)) invalid(`Invalid ${name}.`);
   text(value.id, `${name}.id`, 200);
   text(value.name, `${name}.name`, 1_000);
-  finiteNumber(value.amount, `${name}.amount`);
+  moneyNumber(value.amount, `${name}.amount`);
   if (value.amount <= 0) invalid(`Invalid ${name}.amount.`);
   if (value.day !== undefined && value.day !== null) {
     finiteNumber(value.day, `${name}.day`, 31);
     if (!Number.isInteger(value.day) || value.day < 1 || value.day > 31) invalid(`Invalid ${name}.day.`);
   }
-  optionalText(value.firstExpectedDate, `${name}.firstExpectedDate`, 64);
-  optionalText(value.endDate, `${name}.endDate`, 64);
-  if (typeof value.endDate === 'string' && value.endDate && !/^\d{4}-\d{2}-\d{2}$/.test(value.endDate)) invalid(`Invalid ${name}.endDate.`);
+  optionalDateOnly(value.firstExpectedDate, `${name}.firstExpectedDate`);
+  optionalDateOnly(value.endDate, `${name}.endDate`);
   text(value.accountId, `${name}.accountId`, 200, true);
   text(value.category, `${name}.category`, 1_000, true);
   if (typeof value.active !== 'boolean') invalid(`Invalid ${name}.active.`);
@@ -166,7 +196,7 @@ function validateSubscription(value: unknown, name: string) {
   if (!object(value)) invalid(`Invalid ${name}.`);
   text(value.id, `${name}.id`, 200);
   text(value.name, `${name}.name`, 1_000);
-  finiteNumber(value.cost, `${name}.cost`);
+  moneyNumber(value.cost, `${name}.cost`);
   optionalText(value.due, `${name}.due`, 200);
   optionalText(value.period, `${name}.period`, 200);
 }
@@ -175,9 +205,9 @@ function validateLoan(value: unknown, name: string) {
   if (!object(value)) invalid(`Invalid ${name}.`);
   text(value.id, `${name}.id`, 200);
   text(value.name, `${name}.name`, 1_000);
-  finiteNumber(value.total, `${name}.total`);
+  moneyNumber(value.total, `${name}.total`);
   if (value.total <= 0) invalid(`Invalid ${name}.total.`);
-  finiteNumber(value.installment, `${name}.installment`);
+  moneyNumber(value.installment, `${name}.installment`);
   if (value.installment <= 0) invalid(`Invalid ${name}.installment.`);
   finiteNumber(value.installments, `${name}.installments`, 100_000);
   if (!Number.isInteger(value.installments) || value.installments <= 0) invalid(`Invalid ${name}.installments.`);
@@ -190,10 +220,10 @@ function validateLoan(value: unknown, name: string) {
   optionalText(value.source, `${name}.source`, 1_000);
   if (value.accountingMode !== undefined) oneOf(value.accountingMode, ['expense-per-installment', 'liability-repayment'], `${name}.accountingMode`);
   if (value.kind !== undefined) oneOf(value.kind, ['installment','loan','self-loan'], `${name}.kind`);
-  optionalText(value.firstExpectedDate, `${name}.firstExpectedDate`, 64);
+  optionalDateOnly(value.firstExpectedDate, `${name}.firstExpectedDate`);
   optionalText(value.defaultAccountId, `${name}.defaultAccountId`, 200);
   if (value.forgivenAmount !== undefined && value.forgivenAmount !== null) {
-    finiteNumber(value.forgivenAmount, `${name}.forgivenAmount`);
+    moneyNumber(value.forgivenAmount, `${name}.forgivenAmount`);
     if (value.forgivenAmount < 0 || value.forgivenAmount > value.total) invalid(`Invalid ${name}.forgivenAmount.`);
   }
   if (value.longTermRecurring !== undefined && typeof value.longTermRecurring !== 'boolean') invalid(`Invalid ${name}.longTermRecurring.`);
@@ -201,7 +231,7 @@ function validateLoan(value: unknown, name: string) {
     array(value.schedule, `${name}.schedule`, 100_000);
     for (const [index, item] of value.schedule.entries()) {
       if (!object(item)) invalid(`Invalid ${name}.schedule[${index}].`);
-      text(item.date, `${name}.schedule[${index}].date`, 64);
+      dateOnly(item.date, `${name}.schedule[${index}].date`);
       text(item.status, `${name}.schedule[${index}].status`, 200, true);
     }
   }
@@ -210,14 +240,14 @@ function validateLoan(value: unknown, name: string) {
 function validateLending(value: unknown, name: string) {
   if (!object(value)) invalid(`Invalid ${name}.`);
   text(value.person, `${name}.person`, 1_000);
-  finiteNumber(value.outstanding, `${name}.outstanding`);
+  moneyNumber(value.outstanding, `${name}.outstanding`);
   array(value.entries, `${name}.entries`, 100_000);
   for (const [index, entry] of value.entries.entries()) {
     if (!object(entry)) invalid(`Invalid ${name}.entries[${index}].`);
-    text(entry.date, `${name}.entries[${index}].date`, 64);
-    finiteNumber(entry.lent, `${name}.entries[${index}].lent`);
-    finiteNumber(entry.repaid, `${name}.entries[${index}].repaid`);
-    optionalNumber(entry.haircut, `${name}.entries[${index}].haircut`);
+    dateOnly(entry.date, `${name}.entries[${index}].date`);
+    moneyNumber(entry.lent, `${name}.entries[${index}].lent`);
+    moneyNumber(entry.repaid, `${name}.entries[${index}].repaid`);
+    optionalMoney(entry.haircut, `${name}.entries[${index}].haircut`);
   }
 }
 
@@ -230,16 +260,16 @@ function validateSplitPart(value: unknown, name: string) {
   text(value.label, `${name}.label`, 1_000, true);
   text(value.category, `${name}.category`, 1_000, true);
   optionalText(value.subcategory, `${name}.subcategory`, 1_000);
-  finiteNumber(value.amount, `${name}.amount`);
+  moneyNumber(value.amount, `${name}.amount`);
   if (value.kind !== undefined) oneOf(value.kind, PART_KINDS, `${name}.kind`);
 }
 
 function validateEvent(value: unknown, name: string) {
   if (!object(value)) invalid(`Invalid ${name}.`);
   text(value.id, `${name}.id`, 200);
-  text(value.date, `${name}.date`, 64);
+  dateOnly(value.date, `${name}.date`);
   oneOf(value.kind, EVENT_KINDS, `${name}.kind`);
-  finiteNumber(value.amount, `${name}.amount`);
+  moneyNumber(value.amount, `${name}.amount`);
   text(value.note, `${name}.note`, 20_000, true);
   optionalText(value.category, `${name}.category`, 1_000);
   optionalText(value.subcategory, `${name}.subcategory`, 1_000);
@@ -247,6 +277,7 @@ function validateEvent(value: unknown, name: string) {
   optionalText(value.fromAccountId, `${name}.fromAccountId`, 200);
   optionalText(value.toAccountId, `${name}.toAccountId`, 200);
   optionalText(value.person, `${name}.person`, 1_000);
+  optionalDateOnly(value.expectedReturnDate, `${name}.expectedReturnDate`);
   optionalText(value.source, `${name}.source`, 100);
   optionalText(value.createdAt, `${name}.createdAt`, 64);
   optionalText(value.updatedAt, `${name}.updatedAt`, 64);
@@ -257,14 +288,14 @@ function validateEvent(value: unknown, name: string) {
     if (!Number.isInteger(value.installmentCount) || value.installmentCount <= 0) invalid(`Invalid ${name}.installmentCount.`);
   }
   if (value.savingSource !== undefined) oneOf(value.savingSource, ['pay_and_save','manual_transfer','cash_offset'], `${name}.savingSource`);
-  optionalNumber(value.savingAmount, `${name}.savingAmount`);
-  optionalNumber(value.receivableDelta, `${name}.receivableDelta`);
-  optionalNumber(value.creditDelta, `${name}.creditDelta`);
+  optionalMoney(value.savingAmount, `${name}.savingAmount`);
+  optionalMoney(value.receivableDelta, `${name}.receivableDelta`);
+  optionalMoney(value.creditDelta, `${name}.creditDelta`);
   array(value.legs, `${name}.legs`, 50);
   for (const [index, leg] of value.legs.entries()) {
     if (!object(leg)) invalid(`Invalid ${name}.legs[${index}].`);
     text(leg.accountId, `${name}.legs[${index}].accountId`, 200);
-    finiteNumber(leg.amount, `${name}.legs[${index}].amount`);
+    moneyNumber(leg.amount, `${name}.legs[${index}].amount`);
   }
   if (value.parts !== undefined) {
     array(value.parts, `${name}.parts`, 1_000);
@@ -289,10 +320,9 @@ function validateSavingsGoal(value: unknown, name: string) {
   if (!object(value)) invalid(`Invalid ${name}.`);
   text(value.id, `${name}.id`, 200);
   text(value.name, `${name}.name`, 500);
-  finiteNumber(value.targetAmount, `${name}.targetAmount`);
+  moneyNumber(value.targetAmount, `${name}.targetAmount`);
   if (value.targetAmount <= 0) invalid(`Invalid ${name}.targetAmount.`);
-  optionalText(value.targetDate, `${name}.targetDate`, 64);
-  if (typeof value.targetDate === 'string' && value.targetDate && !/^\d{4}-\d{2}-\d{2}$/.test(value.targetDate)) invalid(`Invalid ${name}.targetDate.`);
+  optionalDateOnly(value.targetDate, `${name}.targetDate`);
   text(value.createdAt, `${name}.createdAt`, 64);
   text(value.updatedAt, `${name}.updatedAt`, 64);
 }
