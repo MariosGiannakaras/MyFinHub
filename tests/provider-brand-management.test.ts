@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { ApiError } from '../server/http.js';
+import { ApiError, copyBoundedBinaryValue } from '../server/http.js';
 import {
   parseFinancialProviderWrite,
   parseProviderAssetBindingWrite,
@@ -83,6 +83,7 @@ describe('provider branding management',()=>{
     expect(parseProviderAssetUpload({query:{providerId:'demo-bank',role:'card-mark',variant:'dark',primary:'0',fileName:'mark.svg'},headers:{'content-type':'image/svg+xml'}}))
       .toEqual({providerId:'demo-bank',role:'card-mark',variant:'dark',mimeType:'image/svg+xml',fileName:'mark.svg',makePrimary:false});
     expect(()=>parseProviderAssetUpload({query:{providerId:'demo-bank',role:'card-mark',variant:'dark',primary:'0'},headers:{'content-type':'image/svg+xml'}})).toThrow(ApiError);
+    expect(()=>parseProviderAssetUpload({query:{providerId:['demo-bank','other'],role:'logo',variant:'dark',fileName:'logo.png'},headers:{'content-type':'image/png'}})).toThrow(ApiError);
     expect(parseProviderAssetBindingWrite({providerId:'demo-bank',role:'logo',variant:'dark',assetKey:'demo-shared'}))
       .toEqual({providerId:'demo-bank',role:'logo',variant:'dark',assetKey:'demo-shared'});
     expect(parseProviderAssetBindingWrite({providerId:'demo-bank',role:'logo',variant:'dark',assetKey:null}).assetKey).toBeNull();
@@ -96,6 +97,10 @@ describe('provider branding management',()=>{
     expect(()=>validateProviderAssetContent('image/svg+xml',Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"><path d="M0 0"/></svg>'))).not.toThrow();
     expect(()=>validateProviderAssetContent('image/svg+xml',Buffer.from('<svg><script>alert(1)</script></svg>'))).toThrow(ApiError);
     expect(()=>validateProviderAssetContent('image/png',Buffer.from('not png'))).toThrow(ApiError);
+    expect(()=>validateProviderAssetContent('image/png',['not','binary'] as unknown)).toThrow(ApiError);
+    expect(copyBoundedBinaryValue(Buffer.from([1,2,3]),3)).toEqual(Buffer.from([1,2,3]));
+    expect(()=>copyBoundedBinaryValue({length:1},3)).toThrow(ApiError);
+    expect(()=>copyBoundedBinaryValue(Buffer.alloc(4),3)).toThrow(ApiError);
   });
 
   it('keeps reusable asset mutations owner+AAL2 and inside the existing API budget',()=>{
@@ -111,6 +116,8 @@ describe('provider branding management',()=>{
     expect(storeSource).toContain('rheomiq_financial_provider_asset_bindings?select=');
     expect(storeSource).toContain('rheomiq_set_financial_provider_asset_binding');
     expect(storeSource).not.toContain('previousStoragePath');
+    expect(storeSource).toContain("method:'DELETE'");
+    expect(storeSource).toContain('provider asset cleanup');
     expect(handler).toContain("resource==='financial-provider-asset-binding'");
     expect(handler).toContain("method==='PATCH'");
     expect(accountMetadataEntry).toContain('bodyParser:false');
