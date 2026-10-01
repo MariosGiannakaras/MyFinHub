@@ -1061,3 +1061,16 @@ Source implementation in this batch:
 - the production-like performance Vite fixture was updated for the new lazy-resource failure probe after the first heavy Performance run exposed a stale source-transform boundary.
 
 Proof remains pending until this batch is integrated into PR #477 and exact-head CI/rendered/CodeQL plus the relevant heavy gates are rerun. No completion counter advances from source-only work.
+
+
+### 8.28 Implementation batch N — local/Windows HTTP routing parity in progress
+
+Direct routing review found one local/Desktop parity gap while expanding the 404 audit: unknown `/api/*` paths already returned the canonical JSON 404, but unsupported methods on known local API paths fell through to that unknown-route handler and therefore returned 404 instead of the 405 contract already used by the Vercel handlers.
+
+Source implementation:
+- add ordered known-route method fallbacks for health, auth login/session/MFA/logout, data, history, import and backup before the unknown-API catch-all;
+- preserve exact `Allow` headers and the canonical JSON `METHOD_NOT_ALLOWED` envelope;
+- add a post-build local-server runtime QA that proves root 200, intentional MyFinHub HTTP 404s for unknown/malformed/static-asset paths, JSON `API_NOT_FOUND` for unknown API routes, and 405/Allow behavior for known API paths;
+- keep valid Android compatibility routing unchanged; no Android repository change is required.
+
+This work remains pending until integrated exact-head CI/rendered validation passes. It is inside the existing routing/404 sub-implementations and does not change the denominator.
