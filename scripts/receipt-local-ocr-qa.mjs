@@ -185,11 +185,20 @@ try {
   await waitFor("function(){return document.querySelectorAll('.receipt-draft-row').length===1}", 'reopened inbox hydration');
   assert((await c.call("function(){return document.querySelectorAll('.receipt-draft-row').length}")) === 1, 'reopened inbox restores receipt');
 
-  console.log('Receipt OCR QA: self-hosted OCR scans locally and creates proposal');
+  console.log('Receipt OCR QA: missing packaged asset fails recoverably without losing the local receipt');
+  await c.send('Network.setBlockedURLs',{urls:['*://*/ocr/asset-manifest.json']});
+  const failedScanClicked = await c.call("function(){const button=[...document.querySelectorAll('.receipt-review-actions button')].find(node=>(node.textContent||'').includes('Σάρωση τώρα'));button?.click();return Boolean(button)}");
+  assert(failedScanClicked,'scan now action exists for missing-asset recovery');
+  await waitFor("function(){const text=document.querySelector('.form-error')?.textContent||'';return text.includes('Λείπουν ή δεν φορτώνουν τα τοπικά αρχεία OCR')}",'missing OCR asset recovery message');
+  assert((await receiptCount())===1,'missing OCR assets do not delete the locally persisted receipt');
+  await screenshot('receipt-local-ocr-assets-unavailable');
+  await c.send('Network.setBlockedURLs',{urls:[]});
+
+  console.log('Receipt OCR QA: self-hosted OCR retries locally and creates proposal');
   externalRequests.length = 0;
   monitorOcrNetwork = true;
   const scanClicked = await c.call("function(){const button=[...document.querySelectorAll('.receipt-review-actions button')].find(node=>(node.textContent||'').includes('Σάρωση τώρα'));button?.click();return Boolean(button)}");
-  assert(scanClicked, 'scan now action exists');
+  assert(scanClicked, 'scan retry action exists after missing local asset failure');
   await waitFor("function(){return Boolean(document.querySelector('.receipt-proposal h3'))||Boolean(document.querySelector('.form-error'))}", 'OCR completion', [], 650);
   monitorOcrNetwork = false;
   const scanError = await c.call("function(){return document.querySelector('.form-error')?.textContent||''}");
