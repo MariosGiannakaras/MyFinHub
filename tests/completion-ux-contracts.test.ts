@@ -235,13 +235,25 @@ describe('completion UX contracts',()=>{
     const css=read('src/pages/DashboardCompletion.css');
     expect(dashboard).toContain("window.matchMedia('(max-width:680px)')");
     expect(dashboard).toContain('const [mobileAnalyticsChartsReady,setMobileAnalyticsChartsReady]=useState(false)');
-    expect(dashboard).toContain('secondFrame=requestAnimationFrame(()=>setMobileAnalyticsChartsReady(true))');
+    expect(dashboard).toContain('const fallback=window.setTimeout(reveal,250)');
+    expect(dashboard).toContain('secondFrame=requestAnimationFrame(reveal)');
+    expect(dashboard).toContain('setMobileAnalyticsChartsReady(true)');
+    expect(dashboard).toContain('window.clearTimeout(fallback)');
     expect(dashboard).toContain('const heavyChartsReady=renderDeferredCharts&&(!mobileViewport||mobileAnalyticsChartsReady)');
     expect(dashboard).toContain('heavyChartsReady?<Suspense fallback={null}><DashboardSummaryChart');
     expect(dashboard).toContain('dashboard-mobile-summary-donut');
     expect(dashboard).toContain('heavyChartsReady?<Suspense fallback={null}><DashboardFlowChart');
     expect(dashboard).toContain('heavyChartsReady?<Suspense fallback={null}><DashboardCategoryChart');
     expect(css).toContain('.dashboard-mobile-summary-donut');
+  });
+
+  it('keeps the final functional closeout inside the required rendered CRUD suite',()=>{
+    const harness=read('scripts/completion-functional-crud-qa.mjs');
+    expect(harness).toContain('Completion functional QA: Lending repayment round-trip');
+    expect(harness).toContain('lending repayment reduces outstanding exactly once');
+    expect(harness).toContain('Completion functional QA: Settings custom cash account create and delete');
+    expect(harness).toContain('QA Audit Temp Cash');
+    expect(harness).toContain('temporary cash account deleted');
   });
 
   it('keeps final screenshot browser bootstrap retryable and diagnosable',()=>{

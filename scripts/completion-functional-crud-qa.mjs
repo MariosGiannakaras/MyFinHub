@@ -120,6 +120,14 @@ try{
   await waitFor("function(){return document.body.textContent.includes('QA Audit Person')&&document.body.textContent.includes('QA Audit Lending')}",'saved lending movement');
   await shot('lending-created');
 
+  console.log('Completion functional QA: Lending repayment round-trip');
+  await clickText('.lending-quick-action.repayment','Νέα επιστροφή');
+  await waitFor("function(){return document.querySelector('#context-quick-title')?.textContent?.includes('Επιστροφή δανεικών')}",'lending repayment contextual editor');
+  await setByLabel('Ποσό','12');
+  await clickText('.contextual-quick-modal button','Καταχώριση');
+  await waitFor("function(){const panel=document.querySelector('.lending-selected-panel');const rows=[...document.querySelectorAll('.lending-approved-table tbody tr')];const repaymentRows=rows.filter(row=>row.querySelector('.receivable-action.repaid'));return !document.querySelector('.contextual-quick-modal')&&Boolean(panel&&(panel.textContent||'').includes('QA Audit Person')&&(panel.textContent||'').includes('30,00'))&&repaymentRows.length===1&&repaymentRows.some(row=>(row.textContent||'').includes('Μου δίνει')&&(row.textContent||'').includes('Επιστροφή δανεικών'))}",'lending repayment reduces outstanding exactly once');
+  await shot('lending-repayment-completed');
+
   console.log('Completion functional QA: Recurring create, edit, pause and reactivate');
   await navigate('recurring');
   await clickText('button','Νέο πάγιο');
@@ -165,6 +173,23 @@ try{
   await clickText('.card-create-modal button','Αποθήκευση αλλαγών');
   await waitFor("function(){return document.body.textContent.includes('QA Audit Credit Profile')}",'updated Credit profile nickname');
   await shot('credit-profile-updated');
+
+  console.log('Completion functional QA: Settings custom cash account create and delete');
+  await navigate('settings');
+  await clickText('.settings-tablist button','Λογαριασμοί');
+  await waitFor("function(){return Boolean(document.querySelector('.account-management-settings'))}",'Settings account management');
+  await clickText('.account-management-settings button','Νέος λογαριασμός');
+  await waitFor("function(){return Boolean(document.querySelector('.account-management-modal.is-new'))}",'new account editor');
+  await clickText('.account-management-modal.is-new button','Μετρητά');
+  await setByLabel('Όνομα λογαριασμού','QA Audit Temp Cash');
+  await clickText('.account-management-modal.is-new button','Δημιουργία λογαριασμού');
+  await waitFor("function(){return [...document.querySelectorAll('.account-management-row')].some(row=>(row.textContent||'').includes('QA Audit Temp Cash'))}",'created temporary cash account');
+  const requestedDelete=await c.call(`function(){const row=[...document.querySelectorAll('.account-management-row')].find(item=>(item.textContent||'').includes('QA Audit Temp Cash'));const button=row?.querySelector('button[aria-label="Διαγραφή QA Audit Temp Cash"]');button?.click();return Boolean(button)}`);
+  assert(requestedDelete,'temporary custom cash account exposes delete');
+  await waitFor("function(){return [...document.querySelectorAll('[role=dialog]')].some(dialog=>(dialog.textContent||'').includes('Διαγραφή λογαριασμού;')&&(dialog.textContent||'').includes('QA Audit Temp Cash'))}",'account delete confirmation');
+  await clickText('[role=dialog] button','Διαγραφή');
+  await waitFor("function(){const exists=[...document.querySelectorAll('.account-management-row')].some(row=>(row.textContent||'').includes('QA Audit Temp Cash'));const message=document.querySelector('.account-management-message')?.textContent||'';return !exists&&message.includes('Ο λογαριασμός διαγράφηκε.')}",'temporary cash account deleted');
+  await shot('settings-account-create-delete');
 
   const overflow=await c.call("function(){return Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}");
   assert(overflow<=1,`functional flows leave document overflow ${overflow}px`);
