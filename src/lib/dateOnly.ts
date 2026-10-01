@@ -5,13 +5,13 @@ function leapYear(year:number){
   return year%4===0&&(year%100!==0||year%400===0);
 }
 
-export function daysInCalendarMonth(year:number,month:number){
+function daysInCalendarMonth(year:number,month:number){
   if(!Number.isInteger(year)||year<1||year>9999||!Number.isInteger(month)||month<1||month>12)return 0;
   if(month===2)return leapYear(year)?29:28;
   return [4,6,9,11].includes(month)?30:31;
 }
 
-export function parseDateOnly(value:string){
+function parseDateOnly(value:string){
   const match=DATE_ONLY.exec(value);
   if(!match)return null;
   const year=Number(match[1]),month=Number(match[2]),day=Number(match[3]);
