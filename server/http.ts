@@ -13,8 +13,10 @@ export class ApiError extends Error {
   }
 }
 
-function firstHeader(value: unknown): string {
-  return Array.isArray(value) ? String(value[0] ?? '') : String(value ?? '');
+function firstHeader(value:unknown):string{
+  if(typeof value==='string')return value;
+  if(typeof value==='number'&&Number.isFinite(value))return String(value);
+  return '';
 }
 
 export function requestHeader(req: any, name: string): string {
