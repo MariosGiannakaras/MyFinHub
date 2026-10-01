@@ -1,12 +1,11 @@
 import { accessTokenAal, assertMutationSessionOrigin, clearSessionCookiesIfCookie, requireSession } from './auth.js';
-import { ApiError, handleApi, methodNotAllowed, readBinaryBody, readJsonBody, requestHeader, sendJson } from './http.js';
+import { ApiError, copyBoundedBinaryValue, handleApi, methodNotAllowed, readBinaryBody, readJsonBody, requestHeader, sendJson } from './http.js';
 import { isOwner } from './storage.js';
-import { readAccountMetadata, readFinancialProviders, setFinancialProviderAssetBinding, updateFinancialProvider, uploadFinancialProviderAsset, writeAccountMetadata, writeFinancialProvider } from './accountMetadataStore.js';
+import { MAX_PROVIDER_ASSET_BYTES, readAccountMetadata, readFinancialProviders, setFinancialProviderAssetBinding, updateFinancialProvider, uploadFinancialProviderAsset, writeAccountMetadata, writeFinancialProvider } from './accountMetadataStore.js';
 import { assertValidIban } from '../src/lib/iban.js';
 
 const MAX_ACCOUNT_METADATA_BODY_BYTES=4*1024;
 const MAX_FINANCIAL_PROVIDER_BODY_BYTES=16*1024;
-const MAX_PROVIDER_ASSET_BYTES=2*1024*1024;
 const PROVIDER_ASSET_MIME_TYPES=new Set(['image/png','image/jpeg','image/webp','image/svg+xml']);
 
 function parseAccountId(value:unknown){
@@ -16,8 +15,10 @@ function parseAccountId(value:unknown){
 }
 
 function queryValue(req:any,key:string){
-  const value=req?.query?.[key];
-  return typeof value==='string'?value.trim():Array.isArray(value)&&typeof value[0]==='string'?value[0].trim():'';
+  const query=req&&typeof req==='object'?(req as {query?:unknown}).query:undefined;
+  if(!query||typeof query!=='object'||Array.isArray(query))return '';
+  const value=(query as Record<string,unknown>)[key];
+  return typeof value==='string'?value.trim():'';
 }
 function queryResource(req:any){return queryValue(req,'resource')}
 
@@ -70,15 +71,16 @@ export function parseProviderAssetBindingWrite(value:unknown){
   return {providerId,role:role as 'logo'|'wordmark'|'card-mark',variant:variant as 'universal'|'light'|'dark',assetKey};
 }
 
-export function validateProviderAssetContent(mimeType:string,content:Buffer){
-  if(!content.length)throw new ApiError(400,'EMPTY_PROVIDER_ASSET','Η εικόνα είναι κενή.');
-  if(content.length>MAX_PROVIDER_ASSET_BYTES)throw new ApiError(413,'PAYLOAD_TOO_LARGE','Η εικόνα πρέπει να είναι έως 2 MB.');
+export function validateProviderAssetContent(mimeType:string,content:unknown):Buffer{
+  const bytes=copyBoundedBinaryValue(content,MAX_PROVIDER_ASSET_BYTES);
+  if(!bytes.byteLength)throw new ApiError(400,'EMPTY_PROVIDER_ASSET','Η εικόνα είναι κενή.');
   const valid=
-    mimeType==='image/png'&&content.length>=8&&content.subarray(0,8).equals(Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a]))||
-    mimeType==='image/jpeg'&&content.length>=3&&content[0]===0xff&&content[1]===0xd8&&content[2]===0xff||
-    mimeType==='image/webp'&&content.length>=12&&content.subarray(0,4).toString('ascii')==='RIFF'&&content.subarray(8,12).toString('ascii')==='WEBP'||
-    mimeType==='image/svg+xml'&&(()=>{const text=content.toString('utf8').replace(/^\uFEFF/,'').trim();return /^(?:<\?xml[^>]*>\s*)?<svg\b/i.test(text)&&!/<\s*(?:script|foreignObject)\b|\bon[a-z]+\s*=|javascript:/i.test(text)})();
+    mimeType==='image/png'&&bytes.byteLength>=8&&bytes.subarray(0,8).equals(Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a]))||
+    mimeType==='image/jpeg'&&bytes.byteLength>=3&&bytes.readUInt8(0)===0xff&&bytes.readUInt8(1)===0xd8&&bytes.readUInt8(2)===0xff||
+    mimeType==='image/webp'&&bytes.byteLength>=12&&bytes.subarray(0,4).toString('ascii')==='RIFF'&&bytes.subarray(8,12).toString('ascii')==='WEBP'||
+    mimeType==='image/svg+xml'&&(()=>{const text=bytes.toString('utf8').replace(/^\uFEFF/,'').trim();return /^(?:<\?xml[^>]*>\s*)?<svg\b/i.test(text)&&!/<\s*(?:script|foreignObject)\b|\bon[a-z]+\s*=|javascript:/i.test(text)})();
   if(!valid)throw new ApiError(400,'INVALID_PROVIDER_ASSET_CONTENT','Το αρχείο δεν ταιριάζει με τον δηλωμένο τύπο εικόνας.');
+  return bytes;
 }
 
 export function parseAccountMetadataExpectedRevision(value:string|undefined){
@@ -122,8 +124,7 @@ export async function handleAccountMetadataRequest(req:any,res:any){
     }
     if(method==='PUT'&&resource==='financial-provider-assets'){
       const input=parseProviderAssetUpload(req);
-      const content=await readBinaryBody(req,MAX_PROVIDER_ASSET_BYTES);
-      validateProviderAssetContent(input.mimeType,content);
+      const content=validateProviderAssetContent(input.mimeType,await readBinaryBody(req,MAX_PROVIDER_ASSET_BYTES));
       const asset=await uploadFinancialProviderAsset({...input,content},session.accessToken);
       return sendJson(res,200,{asset});
     }
