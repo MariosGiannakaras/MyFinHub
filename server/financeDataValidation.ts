@@ -2,6 +2,7 @@ import type { FinanceData } from '../src/types.js';
 import { validateCardStateExtensions } from './cardStateValidation.js';
 import { validateCategoryIdentityState } from './categoryIdentityValidation.js';
 import { validateRecurringCadenceData } from './recurringCadenceValidation.js';
+import { validateCompleteFinanceSemantics } from './financeSemanticValidation.js';
 import { validateFinanceData } from './validation.js';
 
 /**
@@ -18,4 +19,5 @@ export function validateCompleteFinanceData(value: unknown): asserts value is Fi
   validateCardStateExtensions(data.state);
   validateCategoryIdentityState(data.state);
   validateRecurringCadenceData(data);
+  validateCompleteFinanceSemantics(data);
 }
