@@ -47,6 +47,10 @@ try{
   await waitFor("function(){return document.readyState==='complete'&&!!document.querySelector('.settings-tablist')}",'Settings ready');
   assert(await applyTheme('light')==='light','light theme resolves');
   await clickAccounts();
+  await waitFor("function(){const mark=document.querySelector('[data-bank-brand=\\\"piraeus\\\"][data-bank-logo-source=\\\"provider-storage\\\"] img');return !!mark&&mark.complete&&mark.naturalWidth>0&&mark.src.includes('/financial-provider-assets/providers/piraeus/piraeus-logo-universal.svg')}",'production Piraeus logo');
+  await waitFor("function(){const images=[...document.querySelectorAll('.provider-list img[src*=\\\"financial-provider-assets\\\"]')];return images.length>=8&&images.every(img=>img.complete&&img.naturalWidth>0)}",'production provider artwork');
+  const piraeusSource=await c.call("function(){return document.querySelector('[data-bank-brand=\\\"piraeus\\\"] img')?.src||''}");
+  assert(piraeusSource.includes('/financial-provider-assets/providers/piraeus/piraeus-logo-universal.svg'),'Piraeus visual comes from production Storage fixture');
   const listState=await c.call(`function(){const rows=[...document.querySelectorAll('.provider-list-row')];const expanded=document.querySelectorAll('.provider-slot-card').length;const nativeVisible=[...document.querySelectorAll('.provider-management input[type=file]')].filter(node=>{const s=getComputedStyle(node);return s.display!=='none'&&s.visibility!=='hidden'}).length;return {rows:rows.length,expanded,nativeVisible,editButtons:document.querySelectorAll('.provider-edit-action').length}}`);
   assert(listState.rows>=8&&listState.editButtons===listState.rows,'provider list is compact and directly editable');
   assert(listState.expanded===0,'Settings does not expand artwork slots outside edit');
@@ -72,7 +76,7 @@ try{
   await chooseSlot('Βασικό λογότυπο');
   await uploadSyntheticSvg('qa-shared.svg');
   await waitFor("function(){return [...document.querySelectorAll('.provider-slot-card')].some(card=>(card.textContent||'').includes('Βασικό λογότυπο')&&(card.textContent||'').includes('qa-shared.svg'))}",'uploaded logo assigned once');
-  assert(await c.call("function(){return document.querySelectorAll('.provider-library-item').length}")===1,'one upload creates one library asset');
+  assert(await c.call("function(){return document.querySelectorAll('.provider-library-item').length}")===6,'one upload extends the five-asset Piraeus library to six');
 
   await chooseSlot('Βασικό λεκτικό σήμα');
   const pickerAssets=await c.call("function(){return [...document.querySelectorAll('.provider-picker-asset b')].map(node=>(node.textContent||'').trim())}");
@@ -82,11 +86,17 @@ try{
   await waitFor("function(){return [...document.querySelectorAll('.provider-slot-card')].filter(card=>(card.textContent||'').includes('qa-shared.svg')).length>=2}",'same asset reused in second slot');
   const reuse=await c.call("function(){return [...document.querySelectorAll('.provider-slot-card')].some(card=>(card.textContent||'').includes('χρησιμοποιείται σε 2 θέσεις'))}");
   assert(reuse,'reuse count is visible to the user');
-  assert(await c.call("function(){return document.querySelectorAll('.provider-library-item').length}")===1,'reuse does not duplicate the asset library');
+  assert(await c.call("function(){return document.querySelectorAll('.provider-library-item').length}")===6,'reuse does not duplicate the six-item asset library');
   await shot('provider-editor-branding-reuse-light-desktop');
 
   assert(await applyTheme('dark')==='dark','dark theme resolves while editor is open');
   await shot('provider-editor-branding-reuse-dark-desktop');
+  await c.call("function(){document.querySelector('.provider-editor-header button[aria-label=\\\"Κλείσιμο\\\"]')?.click();return true}");
+  await waitFor("function(){return !document.querySelector('.provider-editor-modal')}",'editor closes for dark provider-list evidence');
+  await shot('provider-list-dark-desktop');
+  const reopened=await c.call("function(){const button=document.querySelector('.provider-edit-action');button?.click();return Boolean(button)}");assert(reopened,'existing provider editor reopens');
+  await waitFor("function(){return !!document.querySelector('.provider-editor-modal')}",'provider editor reopens');
+  await openBranding();
   await viewport(375,812,true);await noOverflow('provider editor mobile');await shot('provider-editor-branding-dark-mobile');
 
   await viewport(1440,1000,false);
