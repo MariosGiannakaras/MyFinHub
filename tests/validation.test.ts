@@ -57,6 +57,19 @@ describe('finance document validation', () => {
     expect(() => validateFinanceData(validState())).not.toThrow();
   });
 
+  it.each([1, 2, 3])('accepts supported finance schema version %s', (schemaVersion) => {
+    const state = validState();
+    state.schemaVersion = schemaVersion;
+    expect(() => validateFinanceData(state)).not.toThrow();
+  });
+
+  it('rejects unsupported future finance schema versions before migration can normalize them', () => {
+    const state = validState();
+    state.schemaVersion = 4;
+    expect(() => validateFinanceData(state)).toThrowError(/unsupported schema version/i);
+    expect(() => validateCompleteFinanceData(state)).toThrowError(/unsupported schema version/i);
+  });
+
   it('accepts the mutable subtree through the canonical validator', () => {
     expect(() => validateFinanceState(validState().state)).not.toThrow();
   });
