@@ -1,10 +1,10 @@
-export const PAGE_IDS = [
+const PAGE_IDS = [
   'dashboard','transactions','savings','cards','credit','loans','lending','recurring','planning','attention','reports','settings',
 ] as const;
 
-export type AppRouteId = typeof PAGE_IDS[number];
+type AppRouteId = typeof PAGE_IDS[number];
 
-export type HashRouteResolution = {
+type HashRouteResolution = {
   page: AppRouteId;
   notFound: boolean;
   redirectHash?: string;
