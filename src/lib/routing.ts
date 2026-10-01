@@ -1,4 +1,4 @@
-import type { PageId } from '../components/AppShell';
+import type { PageId } from '../components/AppShell.js';
 
 export const PAGE_IDS: PageId[] = [
   'dashboard','transactions','savings','cards','credit','loans','lending','recurring','planning','attention','reports','settings',
