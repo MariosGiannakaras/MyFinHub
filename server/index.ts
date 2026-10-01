@@ -1,5 +1,6 @@
 import express from 'express';
 import path from 'node:path';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { accessTokenAal, assertMutationSessionOrigin, beginTotpEnrollment, challengeTotp, clearSessionCookies, clearSessionCookiesIfCookie, getTotpFactors, requireSession, revokeSession, setSessionCookies, signInWithPassword, verifyTotp } from './auth.js';
 import { handleAccountMetadataRequest } from './accountMetadataHandler.js';
@@ -212,11 +213,11 @@ if (serveDist) {
   const configuredDist = process.env.RHEOMIQ_DIST_DIR?.trim();
   const here = path.dirname(fileURLToPath(import.meta.url));
   const dist = configuredDist ? path.resolve(configuredDist) : path.resolve(here, '..', 'dist');
-  app.use(express.static(dist, { index: false, maxAge: '1h' }));
-  const indexFile = path.join(dist, 'index.html');
-  const notFoundFile = path.join(dist, '404.html');
-  app.get(['/', '/index.html'], (_req, res) => res.sendFile(indexFile));
-  app.get('/{*splat}', (_req, res) => res.status(404).sendFile(notFoundFile));
+  const notFoundHtml=readFileSync(path.join(dist,'404.html'),'utf8');
+  app.use(express.static(dist, { index: 'index.html', maxAge: '1h' }));
+  app.get('/{*splat}', (_req,res) => {
+    res.status(404).type('html').send(notFoundHtml);
+  });
 }
 
 const port = Number(process.env.RHEOMIQ_PORT || process.env.PORT || 4317);
