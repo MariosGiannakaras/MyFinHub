@@ -70,7 +70,7 @@ function buildQaData(params:URLSearchParams){
       category:index%3===0?'Τρόφιμα':index%3===1?'Μετακινήσεις':'Σταθερά έξοδα',
       accountId:'piraeus-payroll',
       legs:[{accountId:'piraeus-payroll',amount:-(1+(index%250)/10)}],
-      source:'qa' as const,createdAt:stamp,updatedAt:stamp,
+      source:'user' as const,createdAt:stamp,updatedAt:stamp,
     }))];
     next.state.recurringCustom=[...(next.state.recurringCustom??[]),...Array.from({length:120},(_,index)=>({
       id:`large-recurring-${index}`,name:`Large recurring ${index+1}`,amount:5+(index%25),day:(index%28)+1,
