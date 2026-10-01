@@ -1,4 +1,5 @@
 import type { FinanceData } from '../src/types.js';
+import { isValidDateOnly } from '../src/lib/dateOnly.js';
 import { ApiError } from './http.js';
 
 function invalid():never{throw new ApiError(400,'INVALID_DATA','The finance data is invalid.');}
