@@ -4,6 +4,7 @@ import { creditStatementViews } from './creditStatements.js';
 import { accountBalances, allAccounts, effectiveLegacyTransactions } from './domain.js';
 import { addDays, cashFlowForecast, LOW_BALANCE_THRESHOLD } from './forecast.js';
 import { lendingOutstandingFor } from './lending.js';
+import { isIsoCalendarDate } from './isoDate.js';
 import { isSelfLoan, loanPaymentEvents, loanRemainingInstallments, typicalLoanPaymentDay } from './loans.js';
 import { activeRecurringItems, recurringPayments, typicalPaymentDay } from './recurring.js';
 import { pendingScheduled, scheduledLifecycle } from './scheduled.js';
@@ -109,7 +110,7 @@ function recurringAttention(data:FinanceData,asOf:string):AttentionItem[]{
 function recurringExpiryAttention(data:FinanceData,asOf:string):AttentionItem[]{
   return activeRecurringItems(data).flatMap(item=>{
     const endDate=item.endDate;
-    if(!endDate||!/^\d{4}-\d{2}-\d{2}$/.test(endDate))return [];
+    if(!isIsoCalendarDate(endDate))return [];
     const distance=daysBetween(asOf,endDate);if(distance>EXPIRY_LOOKAHEAD_DAYS)return [];
     const severity:AttentionSeverity=distance<0?'danger':distance<=UPCOMING_DAYS?'warning':'info';
     const reason=distance<0?'Η δηλωμένη ημερομηνία λήξης/ανανέωσης έχει περάσει και το πάγιο παραμένει ενεργό.':distance===0?'Η δηλωμένη ημερομηνία λήξης/ανανέωσης είναι σήμερα.':`Η δηλωμένη ημερομηνία λήξης/ανανέωσης είναι σε ${distance} ημέρες.`;
@@ -154,7 +155,7 @@ function budgetAttention(data:FinanceData,asOf:string):AttentionItem[]{
 function latestOverdueLendingEvents(data:FinanceData,asOf:string){
   const byPerson=new Map<string,FinanceEvent>();
   for(const event of data.state.events??[]){
-    if(event.kind!=='lending'||!event.person||!event.expectedReturnDate||event.expectedReturnDate>=asOf)continue;
+    if(event.kind!=='lending'||!event.person||!isIsoCalendarDate(event.expectedReturnDate)||event.expectedReturnDate>=asOf)continue;
     if(lendingOutstandingFor(data,event.person)<=0)continue;
     const current=byPerson.get(event.person);if(!current||String(event.expectedReturnDate)<String(current.expectedReturnDate))byPerson.set(event.person,event);
   }
