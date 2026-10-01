@@ -40,7 +40,7 @@ export function isValidIsoTimestamp(value:unknown):value is string{
     const zoneMinute=Number(zone.slice(4,6));
     if(zoneHour>23||zoneMinute>59)return false;
   }
-  return Number.isFinite(Date.parse(value));
+  return true;
 }
 
 export function isValidDateStamp(value:unknown):value is string{
