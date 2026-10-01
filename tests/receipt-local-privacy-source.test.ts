@@ -24,6 +24,11 @@ describe('local-only receipt privacy boundary',()=>{
     expect(ocr).not.toMatch(/fetch\([^\n]*(image|blob|prepared|result\.data)/i);
   });
 
+  it('clears a failed worker bootstrap so OCR can retry after local assets recover',()=>{
+    expect(ocr).toContain('workerPromise = buildWorker().catch((error) => {');
+    expect(ocr).toContain('workerPromise = null;');
+  });
+
   it('never persists raw OCR text in the local draft schema',()=>{
     expect(drafts).not.toMatch(/rawOcr|ocrText|rawText/i);
     expect(ocr).toContain("parseReceiptText(result.data.text");
