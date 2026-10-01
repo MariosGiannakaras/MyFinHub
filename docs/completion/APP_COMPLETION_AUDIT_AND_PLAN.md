@@ -20,7 +20,7 @@ This checkpoint supersedes older "#482 reconciliation pending" notes below for c
 - FV-41/FV-42/FV-43 are completed on exact-head rendered CI. Their fixes were validation-harness/touch-target corrections and did not weaken product behavior.
 - FV-44 is completed on `9b25fb1…`: extreme Recurring mobile progressive disclosure, full expansion, collapsed inactive history and overflow safety all pass.
 - FV-45 exact-head rendered proof has passed: OCR persists raw `EUR`, while the owned currency select displays `EUR · Ευρώ`; stored semantics and visible presentation are validated separately. The expanded full-system audit below now governs closeout.
-- Current counters: **Implementations 7/20 completed · Sub-implementations 28/151 completed**. The denominator expanded on 2026-10-01 after the owner required exhaustive full-system verification across UI/UX, functional flows, backend, errors and canonical post-merge state.
+- Current counters: **Implementations 7/24 completed · Sub-implementations 28/189 completed**. The denominator expanded on 2026-10-01 after the owner required exhaustive full-system verification, direct assistant-led manual review, routing/404 coverage, temporal/data-boundary coverage and operational recovery proof.
 - Repository-admin hardening remains tracked separately in #485 and does not change this batch denominator.
 - No Android changes and no `main` release/promotion are part of this checkpoint.
 
@@ -652,7 +652,7 @@ The prior completion audit remains valuable evidence, but it does **not** by its
 
 **Overall completion scope: Implementations 7/24 completed · Sub-implementations 28/189 completed.**
 
-The denominator increased because 16 new verification implementations / 160 non-trivial sub-implementations are now accepted. Existing completed work retains its state; nothing previously proven is re-audited without a specific coverage gap, but prior evidence must be mapped to this matrix and reused where it proves the exact required contract.
+The denominator increased because 16 new verification implementations / 160 non-trivial sub-implementations are now accepted. Existing implementation-completion state is retained provisionally, but the expanded verification matrix has a stricter proof rule: prior evidence may be reused only after the responsible ChatGPT agent personally inspects it and confirms that it proves the exact required contract. Re-running unchanged automation is unnecessary when existing artifacts are sufficient, but no matrix cell is finally closed merely because an earlier workflow marked it green.
 
 ### 8.1 Canonical baseline, scope inventory and traceability — 0/7
 
