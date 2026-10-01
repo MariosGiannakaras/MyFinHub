@@ -1020,3 +1020,16 @@ Accepted new sub-implementation:
 - lock rewrite ordering and handler behavior in regression tests.
 
 This adds one material sub-implementation, increasing the overall denominator from 190 to 191. Exact-head CI and CodeQL are green on `6248658…`; this sub-implementation is complete. Deployed Vercel runtime proof remains part of the existing routing/404 verification item.
+
+
+### 8.25 Implementation batch K — release artifact privacy guard in progress
+
+Direct privacy review found that the tracked-file security guard covered repository secrets but did not independently inspect the built browser release for server-only secret markers or payment-card PAN-like payloads. This work is inside the existing secret/privacy verification item and does not add a new denominator item.
+
+Source implementation:
+- add a post-build privacy scanner over emitted text assets in `dist`;
+- fail the build if server-only secret variable names, Supabase secret/service-role credentials, credentialed PostgreSQL URLs, JWT-like credentials, private-key markers or Luhn-valid 13–19 digit PAN-like values appear in release artifacts;
+- keep the scan after Vite build and before bundle-budget approval;
+- lock the build ordering and guard coverage in release-readiness regression tests.
+
+The secret/privacy verification item remains pending until exact-head CI proves the generated production bundle passes this guard and the remaining backup/log/screenshot boundaries are directly reconciled.
