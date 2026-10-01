@@ -10,6 +10,7 @@ import type {
   SplitPart,
 } from '../types.js';
 import { cleanNote } from './format.js';
+import { calendarMonthRange, isValidDateOnly } from './dateOnly.js';
 
 const CREDIT_ACCOUNT: Account = {
   id: 'credit-card',
@@ -149,6 +150,8 @@ export function createEvent(args: {
   actualBalance?: number;
   currentBalance?: number;
 }): FinanceEvent {
+  if (!isValidDateOnly(args.date)) throw new Error('Διάλεξε έγκυρη ημερομηνία.');
+  if (args.expectedReturnDate && !isValidDateOnly(args.expectedReturnDate)) throw new Error('Διάλεξε έγκυρη αναμενόμενη ημερομηνία επιστροφής.');
   const now = new Date().toISOString();
   const id = `evt-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const amount = Number(args.amount);
@@ -232,9 +235,7 @@ export function createEvent(args: {
 }
 
 export function monthRange(month: string) {
-  const [y, m] = month.split('-').map(Number);
-  const last = new Date(y, m, 0).getDate();
-  return { start: `${month}-01`, end: `${month}-${String(last).padStart(2, '0')}` };
+  return calendarMonthRange(month);
 }
 
 export function monthlyFlow(data: FinanceData, month: string) {
