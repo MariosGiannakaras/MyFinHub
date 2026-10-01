@@ -24,6 +24,29 @@ export function isValidDateOnly(value:unknown):value is string{
   return typeof value==='string'&&parseDateOnly(value)!==null;
 }
 
+const RFC3339=/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d{1,9})?(Z|[+-]\d{2}:\d{2})$/;
+
+export function isValidIsoTimestamp(value:unknown):value is string{
+  if(typeof value!=='string')return false;
+  const match=RFC3339.exec(value);
+  if(!match)return false;
+  const datePart=`${match[1]}-${match[2]}-${match[3]}`;
+  if(!isValidDateOnly(datePart))return false;
+  const hour=Number(match[4]),minute=Number(match[5]),second=Number(match[6]);
+  if(hour>23||minute>59||second>59)return false;
+  const zone=match[7];
+  if(zone!=='Z'){
+    const zoneHour=Number(zone.slice(1,3));
+    const zoneMinute=Number(zone.slice(4,6));
+    if(zoneHour>23||zoneMinute>59)return false;
+  }
+  return Number.isFinite(Date.parse(value));
+}
+
+export function isValidDateStamp(value:unknown):value is string{
+  return isValidDateOnly(value)||isValidIsoTimestamp(value);
+}
+
 export function parseMonthOnly(value:string){
   const match=MONTH_ONLY.exec(value);
   if(!match)return null;
