@@ -10,6 +10,7 @@ import type {
   SplitPart,
 } from '../types.js';
 import { cleanNote } from './format.js';
+import { isIsoCalendarDate } from './isoDate.js';
 
 const CREDIT_ACCOUNT: Account = {
   id: 'credit-card',
@@ -149,9 +150,18 @@ export function createEvent(args: {
   actualBalance?: number;
   currentBalance?: number;
 }): FinanceEvent {
+  if(!isIsoCalendarDate(args.date))throw new Error('Διάλεξε έγκυρη ημερομηνία.');
+  if(args.expectedReturnDate!==undefined){
+    if(args.kind!=='lending')throw new Error('Η αναμενόμενη επιστροφή επιτρέπεται μόνο στα δανεικά.');
+    if(!isIsoCalendarDate(args.expectedReturnDate))throw new Error('Διάλεξε έγκυρη ημερομηνία αναμενόμενης επιστροφής.');
+    if(args.expectedReturnDate<args.date)throw new Error('Η αναμενόμενη επιστροφή δεν μπορεί να είναι πριν από την ημερομηνία της κίνησης.');
+  }
   const now = new Date().toISOString();
   const id = `evt-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const amount = Number(args.amount);
+  if(!Number.isFinite(amount)||(args.kind==='reconciliation'?amount<0:amount<=0)){
+    throw new Error(args.kind==='reconciliation'?'Η διόρθωση χρειάζεται έγκυρη διαφορά υπολοίπου.':'Συμπλήρωσε ποσό μεγαλύτερο από μηδέν.');
+  }
   const legs: FinanceEvent['legs'] = [];
   let savingAmount = 0;
   let receivableDelta = 0;
