@@ -1,5 +1,5 @@
 import { accessTokenAal, assertMutationSessionOrigin, clearSessionCookiesIfCookie, requireSession } from '../server/auth.js';
-import { handleApi, methodNotAllowed, readJsonBody, requestHeader, sendJson, ApiError } from '../server/http.js';
+import { handleApi, methodNotAllowed, readJsonBody, strictRequestHeader, sendJson, ApiError } from '../server/http.js';
 import { MAX_FINANCE_DOCUMENT_BYTES } from '../src/lib/limits.js';
 import { isOwner, writeStore } from '../server/storage.js';
 import { validateCompleteFinanceData } from '../server/financeDataValidation.js';
@@ -14,7 +14,7 @@ export default async function handler(req: any, res: any) {
       throw new ApiError(401, 'AUTH_REQUIRED', 'Authentication required.');
     }
     if (accessTokenAal(session.accessToken) !== 'aal2') throw new ApiError(403, 'MFA_REQUIRED', 'Verification required.');
-    if (requestHeader(req, 'x-rheomiq-confirm-import') !== 'replace') {
+    if (strictRequestHeader(req, 'x-rheomiq-confirm-import') !== 'replace') {
       throw new ApiError(400, 'IMPORT_CONFIRMATION_REQUIRED', 'Import confirmation is required.');
     }
     const body = await readJsonBody(req, MAX_FINANCE_DOCUMENT_BYTES);
