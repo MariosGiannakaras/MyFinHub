@@ -1,14 +1,5 @@
 import type { RecurrenceUnit, RecurringItem } from '../types.js';
-
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
-
-function parsedIsoDate(value:string){
-  if(!ISO_DATE.test(value))return null;
-  const [year,month,day]=value.split('-').map(Number);
-  const date=new Date(Date.UTC(year,month-1,day,12));
-  if(date.getUTCFullYear()!==year||date.getUTCMonth()!==month-1||date.getUTCDate()!==day)return null;
-  return date;
-}
+import { isIsoCalendarDate, parseIsoCalendarDateUtc } from './isoDate.js';
 
 function normalizedInterval(value: unknown) {
   const parsed = Number(value ?? 1);
@@ -38,7 +29,7 @@ export function recurringMonthlyEquivalent(item: RecurringItem) {
 }
 
 function utcDate(value:string){
-  return parsedIsoDate(value);
+  return parseIsoCalendarDateUtc(value);
 }
 
 function buildDate(year: number, monthIndex: number, day: number) {
@@ -81,5 +72,5 @@ export function advanceRecurringDate(anchor:string,item:RecurringItem,asOf:strin
 }
 
 export function validRecurringAnchor(value:string|null|undefined){
-  return typeof value==='string'&&parsedIsoDate(value)?value:null;
+  return isIsoCalendarDate(value)?value:null;
 }
