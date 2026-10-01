@@ -49,9 +49,9 @@ Release-closeout tracker: **#288 — complete**.
 
 ## Active completion batch — #476
 
-**Implementations 7/8 completed · Sub-implementations 21/26 completed**
+**Implementations 7/8 completed · Sub-implementations 25/27 completed**
 
-- The explicit accepted checklist was normalized to 20 items, increased through FV-40 to 24, to 25 for FV-41, and is now 26 because the exact-final-head Transactions scanability run exposed FV-42: the harness assumed a newly created split would remain on the visible ASC pagination page. The 500 KiB threshold remains unchanged.
+- The explicit accepted checklist was normalized to 20 items, increased through FV-40 to 24, to 25 for FV-41, to 26 for FV-42, and is now 27 because the next exact-head Transactions scanability stage exposed FV-43: the deliberately old extreme transaction is not guaranteed to be on mobile page 1. The 500 KiB threshold remains unchanged.
 
 - Branch: `feat/476-completion-audit-hardening`.
 - **54 deep-audit findings are now tracked.** DA-01..DA-53 retain their existing implementation/disposition state; DA-54 adds the owner-reported dark-theme color/contrast defect.
@@ -68,16 +68,17 @@ Release-closeout tracker: **#288 — complete**.
 - FV-32 is **completed** with no new product scope. Exact-head CRUD QA passes Lending 12/42 partial repayment plus protected Settings custom-account create/delete. Device revoke remains intentionally non-destructive in synthetic QA and is covered by API/security contracts.
 - FV-33 is **completed** with no product change. Exact-head CRUD QA passes the canonical destructive `role="alertdialog"` confirmation path.
 - The separate database workstream is complete by owner confirmation, including the relational ledger cutover. This branch will not touch the live database.
-- Owner confirms logos, backend/database work and owner-side Settings work are complete. The accepted #482 provider-management/API/Storage delta is now source-integrated into #477 at `98293e962b227336dc8f6f05cd5b65f89adb67bb`; exact-head validation is still required before this reconciliation is counted complete.
+- Owner confirms logos, backend/database work and owner-side Settings work are complete. The accepted #482 provider-management/API/Storage delta is source-integrated into #477, and exact-head rendered CI on `44c2fe2…` passed the provider-branding task-flow before the later Transactions-only FV-43 harness failure.
 - FV-34 is **completed** with no product change. Exact-head rendered validation passed Transactions/Recurring/Reports/Quick Entry icon adoption, narrow-mobile containment and the full icon-pack rendered suite.
 - FV-35 is **source-fixed; exact-head proof pending** with no product regression identified: legacy transaction management now waits for the visible Transactions search control on desktop and mobile before applying the `Supermarket` filter, so CI no longer races initial rendering while the real pagination/search behavior remains unchanged.no product regression identified: legacy transaction management now applies the real Transactions search control to `Supermarket` on desktop and mobile before edit/delete/undo/redo proof, so the target row is deterministic without bypassing or weakening the 14-row pagination contract.
 - FV-37 is **completed**: exact-head CI confirms the aggregate CSS budget is green without raising the 500 KiB raw / 100 KiB gzip ceiling after redundant legacy card/create-dialog CSS removal.
 - Draft CI on provider-reconciled head `98293e9…` reached 760/761 unit/source tests; the sole failure was a stale migration-source assertion expecting the pre-back-sync fallback text. Commit `8066c2a88899…` updates that assertion to the actual production-synced `else logo_asset_key` / `else wordmark_asset_key` contract without weakening behavior.
 - **FV-38 completed:** exact-head CI on `c95746b…` passes 761/761 tests and measures aggregate CSS at 499.7 KiB raw / 93.4 KiB gzip against the unchanged 500/100 KiB budget after provider-specific styling was consolidated onto shared UI surfaces.
-- **FV-41 source-fixed; exact-head proof pending:** Settings → Accounts provider Edit actions now use a 44px mobile touch target without changing desktop density or the provider-management layout.
-- **FV-42 source-fixed; exact-head proof pending:** the five-part split saves correctly; the rendered harness now finds it through the real Transactions search after save instead of assuming it remains visible on the current ASC pagination page, and it no longer mistakes the intentional visible + semantic desktop row pair for duplicate transactions. No product behavior changed.
+- **FV-41 completed:** exact-head rendered CI passes Settings tabs and provider branding with the 44px mobile provider Edit touch target.
+- **FV-42 completed:** exact-head rendered CI passes the five-part split disclosure and mobile hierarchy after locating the saved split through the real search control; the intentional visible + semantic desktop row pair is preserved.
+- **FV-43 source-fixed; exact-head proof pending:** the extreme long-content case now locates its deliberately old transaction through the visible mobile Transactions search before overlap/overflow assertions, avoiding a page-1 pagination assumption without product changes.
 - Current final-validation head: use the head SHA of PR #477 as the authoritative value.
-- Remaining work: rerun the exact-head rendered validation to prove FV-35, the source-integrated #482 provider-management flow, FV-41 and FV-42, then require all final-head CI/security/cross-engine/performance/Windows gates green and squash-merge to `develop`.
+- Remaining work: prove FV-43 in exact-head rendered CI, then require the final-head CI/security/cross-engine/performance/Windows gates green and squash-merge to `develop`.
 - No Android implementation and no `main` promotion/release are included.
 
 ## Next work
