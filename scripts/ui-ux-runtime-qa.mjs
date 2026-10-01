@@ -57,7 +57,11 @@ try{
   for(const screen of ['login','mfa','mfa-enroll'])await navigate({screen},null);
   await navigate({page:'dashboard',save:'loading'},null);await waitFor("function(){return Boolean(document.querySelector('.page-skeleton[role=\"status\"]'))}",'loading PageSkeleton');const shot=await c.send('Page.captureScreenshot',{format:'png',fromSurface:true});writeFileSync(`${evidenceDir}/runtime-loading-state.png`,Buffer.from(shot.data,'base64'));
   await navigate({page:'dashboard',save:'conflict'},PAGE_HEADINGS.dashboard);
+  assert(await c.call("function(){const notice=document.querySelector('.persistence-notice.conflict[role=alert]');const action=notice?.querySelector('button');return Boolean(notice&&(notice.textContent||'').includes('Υπάρχουν νεότερα δεδομένα')&&(notice.textContent||'').includes('Φόρτωση τελευταίας έκδοσης')&&action)}"),'conflict state is assertive and has explicit latest-version recovery');
+  const conflictShot=await c.send('Page.captureScreenshot',{format:'png',fromSurface:true});writeFileSync(`${evidenceDir}/runtime-conflict-recovery.png`,Buffer.from(conflictShot.data,'base64'));
   await navigate({page:'dashboard',save:'error'},PAGE_HEADINGS.dashboard);
+  assert(await c.call("function(){const notice=document.querySelector('.persistence-notice.error[role=alert]');const action=notice?.querySelector('button');return Boolean(notice&&(notice.textContent||'').includes('Η αποθήκευση δεν ολοκληρώθηκε')&&(notice.textContent||'').includes('δεν έχει επιβεβαιωθεί ως αποθηκευμένη')&&(notice.textContent||'').includes('Φόρτωση τελευταίας έκδοσης')&&action)}"),'save failure is assertive, avoids false success and exposes deterministic recovery');
+  const errorShot=await c.send('Page.captureScreenshot',{format:'png',fromSurface:true});writeFileSync(`${evidenceDir}/runtime-save-error-recovery.png`,Buffer.from(errorShot.data,'base64'));
 
   c.close();console.log('UI/UX runtime console/network QA passed.');
 }finally{child.kill('SIGTERM')}
