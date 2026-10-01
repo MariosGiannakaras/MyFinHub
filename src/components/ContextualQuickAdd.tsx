@@ -21,6 +21,7 @@ import { accountDisplayName } from '../lib/ui';
 import { money } from '../lib/format';
 import { accountMatchesFinancialProvider } from '../lib/financialProviders';
 import type { EventKind, FinanceData, FinanceEvent, SavingSource, ScheduledTransaction } from '../types';
+import { userErrorMessage } from '../lib/userMessage';
 
 export type QuickActionContext =
   | {token:string;mode:'generic';kind?:EventKind;prefill?:QuickPrefill|null}
@@ -152,7 +153,7 @@ function ContextModal({data,asOf,context,onClose,onCreate,onCompleteScheduled}:{
         event.savingSource=context.savingSource??'manual_transfer';
       }
       onCreate(event);onClose();
-    }catch(reason){setError(reason instanceof Error?reason.message:'Δεν μπορέσαμε να ολοκληρώσουμε την κίνηση. Έλεγξε τα στοιχεία και δοκίμασε ξανά.')}
+    }catch(reason){setError(userErrorMessage(reason,'Δεν μπορέσαμε να ολοκληρώσουμε την κίνηση. Έλεγξε τα στοιχεία και δοκίμασε ξανά.'))}
   };
 
   const title=context.mode==='credit'?(context.action==='payment'?(selectedStatement?'Πληρωμή δήλωσης πιστωτικής':'Πληρωμή πιστωτικής'):'Αγορά με πιστωτική'):context.mode==='lending'?(context.action==='repay'?'Επιστροφή δανεικών':'Νέα οφειλή προς εσένα'):context.mode==='loan'?(loan&&isSelfLoan(loan)?'Επιστροφή ΒΟΗΘΕΙΑΣ':installmentCount>1?'Πληρωμή δόσεων':'Πληρωμή δόσης'):context.mode==='scheduled'?'Ολοκλήρωση προγραμματισμένης':context.mode==='recurring'?'Πληρωμή παγίου':'Μεταφορά στην αποταμίευση';
