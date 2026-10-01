@@ -1,6 +1,6 @@
 import { accessTokenAal, assertMutationSessionOrigin, clearSessionCookiesIfCookie, requireSession } from '../server/auth.js';
 import { handleAndroidUpdateApi } from '../server/androidUpdateApi.js';
-import { ApiError, handleApi, methodNotAllowed, readJsonBody, requestQueryValue, sendJson } from '../server/http.js';
+import { ApiError, handleApi, methodNotAllowed, readJsonBody, requestHeader, requestQueryValue, sendJson } from '../server/http.js';
 import { MAX_FINANCE_DOCUMENT_BYTES } from '../src/lib/limits.js';
 import { parseMutableWrite } from '../server/stateValidation.js';
 import { isOwner, parseExpectedRevision, readStore, writeMutableState } from '../server/storage.js';
@@ -16,11 +16,6 @@ function setServerTiming(res: any, timings: { session: number; owner: number; da
     `data;dur=${timings.data}`,
     `total;dur=${timings.total}`,
   ].join(', '));
-}
-
-function header(req: any, name: string) {
-  const value = req.headers?.[name];
-  return String(Array.isArray(value) ? value[0] ?? '' : value ?? '');
 }
 
 function routeMarker(req:any){
@@ -59,8 +54,8 @@ export default async function handler(req: any, res: any) {
     }
 
     assertMutationSessionOrigin(req, session);
-    const expectedRevision = String(parseExpectedRevision(header(req, 'if-match')));
-    const expectedHistoryGeneration = header(req, 'x-rheomiq-history-generation');
+    const expectedRevision = String(parseExpectedRevision(requestHeader(req, 'if-match')));
+    const expectedHistoryGeneration = requestHeader(req, 'x-rheomiq-history-generation');
     const body = parseMutableWrite(await readJsonBody(req, MAX_FINANCE_DOCUMENT_BYTES));
 
     const dataStarted = Date.now();
