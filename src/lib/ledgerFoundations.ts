@@ -1,18 +1,8 @@
 import { allAccounts, createEvent } from './domain.js';
+import { centsToMoney, moneyToCents } from './money.js';
 import type { FinanceData, FinanceEvent, SplitPart } from '../types.js';
 
-const CENTS = 100;
-
-export function moneyToCents(value: number) {
-  if (!Number.isFinite(value)) return Number.NaN;
-  const cents = Math.round((value + Math.sign(value || 1) * Number.EPSILON) * CENTS);
-  return Number.isSafeInteger(cents) ? cents : Number.NaN;
-}
-
-export function centsToMoney(value: number) {
-  if (!Number.isSafeInteger(value)) return Number.NaN;
-  return Number((value / CENTS).toFixed(2));
-}
+export { centsToMoney, moneyToCents } from './money.js';
 
 function transferEligibleAccounts(data: FinanceData) {
   return allAccounts(data).filter((account) => account.kind !== 'credit');
