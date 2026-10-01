@@ -3,13 +3,21 @@ import { describe, expect, it } from 'vitest';
 
 const importSource=readFileSync(new URL('../api/import.ts',import.meta.url),'utf8');
 const stateValidationSource=readFileSync(new URL('../server/stateValidation.ts',import.meta.url),'utf8');
+const completeValidationSource=readFileSync(new URL('../server/financeDataValidation.ts',import.meta.url),'utf8');
+const storageSource=readFileSync(new URL('../server/storage.ts',import.meta.url),'utf8');
 
-describe('category identity persistence validation wiring',()=>{
-  it('validates category identity extensions on both mutable writes and full imports',()=>{
-    expect(stateValidationSource).toContain("import { validateCategoryIdentityState } from './categoryIdentityValidation.js'");
-    expect(stateValidationSource).toContain('validateCategoryIdentityState(value);');
-    expect(importSource).toContain("import { validateCategoryIdentityState } from '../server/categoryIdentityValidation.js'");
-    expect(importSource).toContain('validateFinanceData(body);');
-    expect(importSource).toContain('validateCategoryIdentityState(body.state);');
+describe('complete finance persistence validation wiring',()=>{
+  it('uses one extension-complete boundary for mutable writes, full imports and stored reads',()=>{
+    expect(completeValidationSource).toContain("validateCardStateExtensions(data.state)");
+    expect(completeValidationSource).toContain("validateCategoryIdentityState(data.state)");
+    expect(completeValidationSource).toContain("validateRecurringCadenceData(data)");
+    expect(stateValidationSource).toContain("import { validateCompleteFinanceData } from './financeDataValidation.js'");
+    expect(stateValidationSource).toContain('validateCompleteFinanceData({');
+    expect(importSource).toContain("import { validateCompleteFinanceData } from '../server/financeDataValidation.js'");
+    expect(importSource).toContain('validateCompleteFinanceData(body);');
+    expect(storageSource).toContain("import { validateCompleteFinanceData } from './financeDataValidation.js'");
+    expect(storageSource).toContain('validateCompleteFinanceData(migrated);');
+    expect(storageSource).toContain('validateCompleteFinanceData(data);');
+    expect(storageSource).toContain('validateCompleteFinanceData(next);');
   });
 });
