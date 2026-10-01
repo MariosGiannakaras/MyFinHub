@@ -49,7 +49,9 @@ Release-closeout tracker: **#288 — complete**.
 
 ## Active completion batch — #476
 
-**Implementations 5/8 completed · Sub-implementations 16/21 completed**
+**Implementations 6/8 completed · Sub-implementations 15/20 completed**
+
+- Counter denominator normalized from 21 to 20 because the active progress count now comes only from the explicit accepted checklist; #482 reconciliation is explicit and prior implicit/non-enumerated counting was removed.
 
 - Branch: `feat/476-completion-audit-hardening`.
 - **54 deep-audit findings are now tracked.** DA-01..DA-53 retain their existing implementation/disposition state; DA-54 adds the owner-reported dark-theme color/contrast defect.
