@@ -110,7 +110,9 @@ export function normalizeBudget(input: MonthlyBudget): MonthlyBudget {
   if (!isSafeMoneyValue(amount) || amount <= 0) throw new Error('Το όριο budget πρέπει να είναι μεγαλύτερο από μηδέν και εντός επιτρεπτού εύρους.');
   const category = input.scope === 'category' ? input.category?.trim() : undefined;
   if (input.scope === 'category' && !category) throw new Error('Διάλεξε κατηγορία για το συγκεκριμένο budget.');
-  const alertThreshold = Math.min(.99, Math.max(.5, Number(input.alertThreshold ?? DEFAULT_ALERT_THRESHOLD)));
+  const rawThreshold=Number(input.alertThreshold ?? DEFAULT_ALERT_THRESHOLD);
+  if(!Number.isFinite(rawThreshold)||rawThreshold<=0||rawThreshold>1)throw new Error('Το όριο ειδοποίησης budget δεν είναι έγκυρο.');
+  const alertThreshold = Math.min(.99, Math.max(.5, rawThreshold));
   return { ...input, amount, category, alertThreshold };
 }
 
