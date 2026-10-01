@@ -63,5 +63,31 @@ try{
   assert(await c.call("function(){const notice=document.querySelector('.persistence-notice.error[role=alert]');const action=notice?.querySelector('button');return Boolean(notice&&(notice.textContent||'').includes('Η αποθήκευση δεν ολοκληρώθηκε')&&(notice.textContent||'').includes('δεν έχει επιβεβαιωθεί ως αποθηκευμένη')&&(notice.textContent||'').includes('Φόρτωση τελευταίας έκδοσης')&&action)}"),'save failure is assertive, avoids false success and exposes deterministic recovery');
   const errorShot=await c.send('Page.captureScreenshot',{format:'png',fromSurface:true});writeFileSync(`${evidenceDir}/runtime-save-error-recovery.png`,Buffer.from(errorShot.data,'base64'));
 
+  console.log('Runtime QA: real finance persistence offline/pending recovery');
+  await navigate({screen:'persistence-probe'},null);
+  await waitFor("function(){return document.querySelector('[data-persistence-probe]')?.getAttribute('data-persistence-probe')==='ready'&&document.querySelector('[data-persistence-state]')?.getAttribute('data-persistence-state')==='saved'}",'persistence probe ready');
+  const baselineBudget=await c.call("function(){return Number(document.querySelector('[data-persistence-budget]')?.getAttribute('data-persistence-budget')||'0')}");
+  const cleanUnload=await c.call("function(){const event=new Event('beforeunload',{cancelable:true});const dispatched=window.dispatchEvent(event);return {defaultPrevented:event.defaultPrevented,dispatched}}");
+  assert(!cleanUnload.defaultPrevented&&cleanUnload.dispatched,'clean persisted state does not block unload');
+
+  await c.call("function(){globalThis.__myfinhubQaPersistenceMode?.('offline');document.querySelector('[data-persistence-mutate]')?.click();return true}");
+  await waitFor("function(){return document.querySelector('[data-persistence-state]')?.getAttribute('data-persistence-state')==='error'&&Boolean(document.querySelector('.persistence-notice.error[role=alert]'))}",'offline save failure');
+  const offlineCount=await c.call("function(){return globalThis.__myfinhubQaPersistencePutCount?.()||0}");
+  await sleep(500);
+  assert(offlineCount===1&&(await c.call("function(){return globalThis.__myfinhubQaPersistencePutCount?.()||0}"))===1,'failed save is not automatically retried');
+  const failedUnload=await c.call("function(){const event=new Event('beforeunload',{cancelable:true});const dispatched=window.dispatchEvent(event);return {defaultPrevented:event.defaultPrevented,dispatched}}");
+  assert(failedUnload.defaultPrevented&&!failedUnload.dispatched,'failed unconfirmed save guards hard reload/navigation');
+  const offlineShot=await c.send('Page.captureScreenshot',{format:'png',fromSurface:true});writeFileSync(`${evidenceDir}/runtime-real-offline-save-error.png`,Buffer.from(offlineShot.data,'base64'));
+
+  await c.call("function(){globalThis.__myfinhubQaPersistenceMode?.('success');document.querySelector('.persistence-notice.error button')?.click();return true}");
+  await waitFor("function(){return document.querySelector('[data-persistence-state]')?.getAttribute('data-persistence-state')==='saved'}",'explicit persisted-state recovery');
+  const recovered=await c.call("function(){return {puts:globalThis.__myfinhubQaPersistencePutCount?.()||0,budget:Number(document.querySelector('[data-persistence-budget]')?.getAttribute('data-persistence-budget')||'0')}}");
+  assert(recovered.puts===1&&recovered.budget===baselineBudget,'recovery reloads server-authoritative state without replaying the failed mutation');
+
+  await c.call("function(){globalThis.__myfinhubQaPersistenceMode?.('pending');document.querySelector('[data-persistence-mutate]')?.click();return true}");
+  await waitFor("function(){return document.querySelector('[data-persistence-state]')?.getAttribute('data-persistence-state')==='saving'}",'interrupted pending save');
+  const pendingUnload=await c.call("function(){const event=new Event('beforeunload',{cancelable:true});const dispatched=window.dispatchEvent(event);return {defaultPrevented:event.defaultPrevented,dispatched,puts:globalThis.__myfinhubQaPersistencePutCount?.()||0}}");
+  assert(pendingUnload.defaultPrevented&&!pendingUnload.dispatched&&pendingUnload.puts===2,'in-flight save guards hard reload and remains single-shot');
+
   c.close();console.log('UI/UX runtime console/network QA passed.');
 }finally{child.kill('SIGTERM')}
