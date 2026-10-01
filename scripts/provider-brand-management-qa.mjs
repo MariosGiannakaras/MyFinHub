@@ -123,5 +123,33 @@ try{
   await viewport(375,812,true);assert(await applyTheme('dark')==='dark','mobile create flow follows dark app theme');await noOverflow('new provider mobile');await shot('provider-create-branding-dark-mobile');
   await viewport(1440,1000,false);await fullShot('provider-editor-branding-full-desktop');
 
+  console.log('Provider branding task-flow QA: partial create/upload failure recovery');
+  await c.call(`function(){
+    globalThis.__myfinhubOriginalFetch=globalThis.fetch;
+    let count=0;
+    globalThis.fetch=async function(input,init){
+      const url=String(input);const method=String(init?.method||'GET');
+      if(url.startsWith('/api/account-metadata?resource=financial-providers')&&method==='POST'){
+        count+=1;
+        return new Response(JSON.stringify({provider:{id:'qa-bank',displayName:'QA Bank',shortName:'QA Bank',providerKind:'bank',sortOrder:1000}}),{status:200,headers:{'content-type':'application/json'}});
+      }
+      if(url.includes('/api/account-metadata?')&&url.includes('resource=financial-provider-assets')&&method==='PUT'){
+        count+=1;
+        return new Response(JSON.stringify({error:'Synthetic provider asset upload failure'}),{status:503,headers:{'content-type':'application/json'}});
+      }
+      return globalThis.__myfinhubOriginalFetch(input,init);
+    };
+    return true;
+  }`);
+  await clickText('.provider-editor-footer button','Δημιουργία παρόχου');
+  await waitFor("function(){const error=document.querySelector('.provider-editor-error');return Boolean(error)&&(error.textContent||'').includes('Synthetic provider asset upload failure')}",'partial provider failure error state');
+  const partialFailure=await c.call("function(){return {editorOpen:Boolean(document.querySelector('.provider-editor-modal')),success:(document.querySelector('.provider-management-message')?.textContent||'').trim(),saveLabel:(document.querySelector('.provider-editor-footer .primary')?.textContent||document.querySelector('.provider-editor-footer button:last-child')?.textContent||'').trim(),error:(document.querySelector('.provider-editor-error')?.textContent||'').trim()}}");
+  assert(partialFailure.editorOpen,'partial provider failure keeps the editor recoverable');
+  assert(!partialFailure.success,'partial provider failure never emits a false all-success message');
+  assert(partialFailure.error.includes('Synthetic provider asset upload failure'),'partial provider failure surfaces the actionable task-local error');
+  assert(partialFailure.saveLabel.includes('Αποθήκευση'),'new provider is treated as existing after the provider row was already created');
+  await shot('provider-create-partial-upload-error-desktop');
+  await c.call("function(){if(globalThis.__myfinhubOriginalFetch){globalThis.fetch=globalThis.__myfinhubOriginalFetch;delete globalThis.__myfinhubOriginalFetch}return true}");
+
   console.log('Provider branding task-flow QA passed.');
 }finally{c?.close();child.kill('SIGTERM')}
