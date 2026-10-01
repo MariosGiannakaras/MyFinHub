@@ -17,6 +17,8 @@ const storeSource=readFileSync(new URL('../server/accountMetadataStore.ts',impor
 const client=readFileSync(new URL('../src/lib/financialProviderClient.ts',import.meta.url),'utf8');
 const settings=readFileSync(new URL('../src/components/FinancialProviderManagementSettings.tsx',import.meta.url),'utf8');
 const accountMetadataEntry=readFileSync(new URL('../api/account-metadata.ts',import.meta.url),'utf8');
+const qaFinancialProviderSource=readFileSync(new URL('../src/qaFinancialProviders.ts',import.meta.url),'utf8');
+const financialProviderClientSource=readFileSync(new URL('../src/lib/financialProviderClient.ts',import.meta.url),'utf8');
 
 function provider():FinancialProvider{
   return {
@@ -113,6 +115,20 @@ describe('provider branding management',()=>{
     expect(handler).toContain("method==='PATCH'");
     expect(accountMetadataEntry).toContain('bodyParser:false');
     expect(client).toContain('financial-provider-asset-binding');
+  });
+
+  it('renders QA with the production provider asset registry instead of local bank-brand fallbacks',async()=>{
+    const fixture=await import('../src/qaFinancialProviders.js');
+    expect(fixture.QA_FINANCIAL_PROVIDER_ASSET_COUNT).toBe(26);
+    const piraeus=fixture.QA_FINANCIAL_PROVIDERS.find(provider=>provider.id==='piraeus');
+    expect(piraeus?.logoAssetKey).toBe('piraeus-logo-universal');
+    expect(piraeus?.logoUrl).toContain('/financial-provider-assets/providers/piraeus/piraeus-logo-universal.svg');
+    expect(piraeus?.assets?.map(asset=>asset.assetKey)).toEqual(expect.arrayContaining([
+      'piraeus-logo-universal','piraeus-wordmark-light','piraeus-wordmark-dark','piraeus-card-mark-light','piraeus-card-mark-dark',
+    ]));
+    expect(qaFinancialProviderSource).toContain("https://ahsukppxwaiagampsuzb.supabase.co");
+    expect(financialProviderClientSource).toContain('QA_FINANCIAL_PROVIDERS');
+    expect(financialProviderClientSource).toContain('providers:QA_MODE?QA_PROVIDERS:FALLBACK');
   });
 
   it('uses one edit/create provider editor with a visual asset library instead of native-file-input UX',()=>{
