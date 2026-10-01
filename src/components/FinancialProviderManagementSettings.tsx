@@ -18,6 +18,7 @@ import { BankBrandMark } from './BankBrandMark';
 import { Button } from './Button';
 import { IconButton } from './IconButton';
 import './FinancialProviderManagementSettings.css';
+import { userErrorMessage } from '../lib/userMessage';
 
 type SlotVariant='universal'|'light'|'dark';
 type SlotId=
@@ -256,7 +257,7 @@ export function FinancialProviderManagementSettings(){
       releaseEditor();
     }catch(error){
       if(created&&editor.source==='new')setEditor(current=>current?{...current,source:'existing'}:current);
-      setEditorError(error instanceof Error?error.message:'Δεν ήταν δυνατή η αποθήκευση του παρόχου.');
+      setEditorError(userErrorMessage(error,'Δεν ήταν δυνατή η αποθήκευση του παρόχου.'));
     }finally{setBusy(false)}
   };
 
