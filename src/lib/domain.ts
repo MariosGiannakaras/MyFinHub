@@ -11,7 +11,7 @@ import type {
 } from '../types.js';
 import { cleanNote } from './format.js';
 import { calendarMonthRange, isValidDateOnly } from './dateOnly.js';
-import { isSafeMoneyValue } from './money.js';
+import { centsToMoney, isSafeMoneyValue, moneyToCents } from './money.js';
 
 const CREDIT_ACCOUNT: Account = {
   id: 'credit-card',
@@ -153,12 +153,18 @@ export function createEvent(args: {
 }): FinanceEvent {
   if (!isValidDateOnly(args.date)) throw new Error('Διάλεξε έγκυρη ημερομηνία.');
   if (args.expectedReturnDate && !isValidDateOnly(args.expectedReturnDate)) throw new Error('Διάλεξε έγκυρη αναμενόμενη ημερομηνία επιστροφής.');
-  const amount = Number(args.amount);
-  if (!isSafeMoneyValue(amount) || (args.kind !== 'reconciliation' && amount <= 0) || amount < 0) throw new Error('Το ποσό είναι εκτός επιτρεπτού εύρους.');
+  const rawAmount = Number(args.amount);
+  const amountCents = moneyToCents(rawAmount);
+  if (!Number.isSafeInteger(amountCents) || amountCents < 0 || (args.kind !== 'reconciliation' && amountCents < 1)) throw new Error('Το ποσό είναι εκτός επιτρεπτού εύρους.');
+  const amount = centsToMoney(amountCents);
+  let reconciliationDelta:number|undefined;
   if (args.kind === 'reconciliation') {
-    const actual = Number(args.actualBalance);
-    const current = Number(args.currentBalance);
-    if (!isSafeMoneyValue(actual) || !isSafeMoneyValue(current)) throw new Error('Το υπόλοιπο είναι εκτός επιτρεπτού εύρους.');
+    const actualCents = moneyToCents(Number(args.actualBalance));
+    const currentCents = moneyToCents(Number(args.currentBalance));
+    if (!Number.isSafeInteger(actualCents) || !Number.isSafeInteger(currentCents)) throw new Error('Το υπόλοιπο είναι εκτός επιτρεπτού εύρους.');
+    const deltaCents=actualCents-currentCents;
+    if(!Number.isSafeInteger(deltaCents))throw new Error('Το υπόλοιπο είναι εκτός επιτρεπτού εύρους.');
+    reconciliationDelta=centsToMoney(deltaCents);
   }
   const now = new Date().toISOString();
   const id = `evt-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -203,8 +209,7 @@ export function createEvent(args: {
       creditDelta = amount;
       break;
     case 'reconciliation': {
-      const delta = Number(args.actualBalance ?? 0) - Number(args.currentBalance ?? 0);
-      legs.push({ accountId: requireAccount(args.accountId), amount: delta });
+      legs.push({ accountId: requireAccount(args.accountId), amount: reconciliationDelta ?? 0 });
       break;
     }
     case 'split': {
