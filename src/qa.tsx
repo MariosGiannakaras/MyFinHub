@@ -1,4 +1,4 @@
-import { StrictMode, useEffect, useState } from 'react';
+import { StrictMode, Suspense, lazy, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { AppShell, type PageId } from './components/AppShell';
 import { CommandPalette } from './components/CommandPalette';
@@ -42,6 +42,11 @@ type DistributiveOmit<T,K extends PropertyKey>=T extends unknown?Omit<T,K>:never
 type SpecialQuickContext=DistributiveOmit<Exclude<QuickActionContext,{mode:'generic'}>,'token'>;
 
 function Crash(): never { throw new Error('synthetic-render-failure'); }
+const QA_MISSING_LAZY_RESOURCE='/__myfinhub_missing_lazy_resource__.js';
+const LazyResourceFailure=lazy(async()=>{
+  await import(/* @vite-ignore */ QA_MISSING_LAZY_RESOURCE);
+  return {default:()=>null};
+});
 function initialSaveState(raw:string|null):SaveState{return raw==='error'||raw==='conflict'||raw==='saving'||raw==='loading'?raw:'saved'}
 function initialPage(raw:string|null):PageId{if(raw==='review')return 'attention';return QA_PAGES.includes(raw as PageId)?raw as PageId:'dashboard'}
 function initialTextSize(raw:string|null):TextSizePreference{return raw==='compact'||raw==='large'?raw:'normal'}
@@ -96,6 +101,7 @@ function buildQaData(params:URLSearchParams){
 
 function QaWorkspace(){
   const params=new URLSearchParams(location.search);
+  const lazyFailure=params.get('failure')==='lazy';
   const [data,setData]=useState<FinanceData>(()=>buildQaData(params));
   const [undoStack,setUndoStack]=useState<FinanceData[]>([]);
   const [redoStack,setRedoStack]=useState<FinanceData[]>([]);
@@ -188,7 +194,7 @@ function QaWorkspace(){
     <AppShell page={page} onPage={next=>{setCrash(false);setPage(next)}} onQuickAdd={()=>openGeneric()} onCommand={openCommand} onRefresh={refresh} onUndo={undo} onRedo={redo} canUndo={undoStack.length>0} canRedo={redoStack.length>0} history={changeHistory} saveState={saveState} filePath="Synthetic QA" motionMode={data.state.settings.motion||'system'} userEmail="qa@example.invalid" onLogout={()=>{}}>
       <PersistenceNotice saveState={saveState} onRecover={()=>setSaveState('saved')}/>
       {periodVisible?<div className="period-row"><PeriodControl month={month} onChange={setMonth}/><button type="button" className="text-button" data-qa-crash onClick={()=>setCrash(true)}>QA render failure</button></div>:<button type="button" className="text-button qa-crash-floating" data-qa-crash onClick={()=>setCrash(true)}>QA render failure</button>}
-      {saveState==='loading'?<div className="qa-loading-route"><h1 className="sr-only">{QA_PAGE_HEADINGS[page]}</h1><PageSkeleton/></div>:<PageErrorBoundary resetKey={page} onDashboard={()=>{setCrash(false);setPage('dashboard')}}>{crash?<Crash/>:content}</PageErrorBoundary>}
+      {saveState==='loading'?<div className="qa-loading-route"><h1 className="sr-only">{QA_PAGE_HEADINGS[page]}</h1><PageSkeleton/></div>:<PageErrorBoundary resetKey={page} onDashboard={()=>{setCrash(false);setPage('dashboard')}}>{lazyFailure?<Suspense fallback={<PageSkeleton/>}><LazyResourceFailure/></Suspense>:crash?<Crash/>:content}</PageErrorBoundary>}
     </AppShell>
     <CommandPalette open={commandOpen} data={data} motionMode={data.state.settings.motion||'system'} onClose={()=>setCommandOpen(false)} onExecute={handleCommand}/>
     <ContextualQuickAdd open={quickOpen} data={data} asOf={today} context={quickContext} initial={(data.state.events??[]).find(event=>event.id===editing)||null} motionMode={data.state.settings.motion||'system'} onClose={()=>{setQuickOpen(false);setEditing(null);setQuickContext(null)}} onCreate={addEvent} onCompleteScheduled={completeScheduled} currentBalance={id=>accountBalances(data,today)[id]||0}/>
