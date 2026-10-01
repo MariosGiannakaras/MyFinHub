@@ -21,9 +21,9 @@ describe('Stage 2 settings shared Button adoption batch 10',()=>{
   it('uses shared Buttons and IconButtons for generic budget/rule actions while preserving semantics',()=>{
     expect(budgetRules).toContain("from './Button'");
     expect(budgetRules).toContain("from './IconButton'");
-    expect(budgetRules.match(/<Button/g)).toHaveLength(4);
+    expect(budgetRules.match(/<Button/g)).toHaveLength(6);
     expect(budgetRules.match(/<Button[^>]+variant="primary"/g)).toHaveLength(2);
-    expect(budgetRules.match(/<Button[^>]+variant="secondary"/g)).toHaveLength(2);
+    expect(budgetRules.match(/<Button[^>]+variant="secondary"/g)).toHaveLength(4);
     expect(budgetRules.match(/<IconButton/g)).toHaveLength(5);
     expect(budgetRules).not.toContain('<button');
     expect(budgetRules).toContain('<Button type="button" variant="primary" onClick={saveBudget}>');
