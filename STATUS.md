@@ -38,7 +38,7 @@ Release-closeout tracker: **#288 — complete**.
 
 ## Active completion batch — #476
 
-**Implementations 5/8 completed · Sub-implementations 15/21 completed**
+**Implementations 5/8 completed · Sub-implementations 16/21 completed**
 
 - Branch: `feat/476-completion-audit-hardening`.
 - **54 deep-audit findings are now tracked.** DA-01..DA-53 retain their existing implementation/disposition state; DA-54 adds the owner-reported dark-theme color/contrast defect.
@@ -56,8 +56,9 @@ Release-closeout tracker: **#288 — complete**.
 - FV-33 is **completed** with no product change. Exact-head CRUD QA passes the canonical destructive `role="alertdialog"` confirmation path.
 - The separate database workstream is complete by owner confirmation, including the relational ledger cutover. This branch will not touch the live database.
 - Owner confirms logos, backend/database work and owner-side Settings work are complete. No external owner prerequisite remains; #482 is now an integration input that this workstream will reconcile/close as part of final validation.
-- FV-34 is **source-fixed, proof pending**: category-icon adoption now uses guaranteed visible first-page Transactions fixtures (desktop supermarket + salary; mobile salary) instead of the off-page Freddo event. No icon product logic changed.
-- Remaining work: prove FV-34, complete the final exact-head screenshot review, integrate/reconcile completed #482 with current `develop`/#477, then finish the exact-final-head CI/security/cross-engine/performance/Windows validation wave and squash-merge to `develop`.
+- FV-34 is **completed** with no product change. Exact-head rendered validation passed Transactions/Recurring/Reports/Quick Entry icon adoption, narrow-mobile containment and the full icon-pack rendered suite.
+- FV-35 is **pending source fix** with no product regression identified: legacy transaction management still hard-codes the 2026-08-01 `Supermarket` row on Transactions page 1, which the current 14-row pagination no longer guarantees. The harness must navigate/filter deterministically to a visible legacy row before edit/delete/undo/redo proof.
+- Remaining work: source-fix and prove FV-35, complete the final exact-head screenshot review, integrate/reconcile completed #482 with current `develop`/#477, resolve #482's remaining CodeQL failure, then finish the exact-final-head CI/security/cross-engine/performance/Windows validation wave and squash-merge to `develop`.
 - No Android implementation and no `main` promotion/release are included.
 
 ## Next work
