@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { pageHash, resolveHashRoute } from '../src/lib/routing.js';
 
 const app=readFileSync(new URL('../src/App.tsx',import.meta.url),'utf8');
+const notFoundPage=readFileSync(new URL('../src/pages/NotFoundPage.tsx',import.meta.url),'utf8');
 const qa=readFileSync(new URL('../src/qa.tsx',import.meta.url),'utf8');
 const server=readFileSync(new URL('../server/index.ts',import.meta.url),'utf8');
 const finalScreenshots=readFileSync(new URL('../scripts/final-screenshots-qa.mjs',import.meta.url),'utf8');
@@ -17,6 +18,11 @@ describe('routing and 404 contract',()=>{
     expect(resolveHashRoute('#/does-not-exist')).toEqual({page:'dashboard',notFound:true});
     expect(resolveHashRoute('#/%2Fweird')).toEqual({page:'dashboard',notFound:true});
     expect(pageHash('reports')).toBe('#/reports');
+    expect(resolveHashRoute('#/transactions/')).toEqual({page:'dashboard',notFound:true});
+    expect(resolveHashRoute('#/transactions?source=external')).toEqual({page:'dashboard',notFound:true});
+    expect(resolveHashRoute('#//transactions')).toEqual({page:'dashboard',notFound:true});
+    expect(resolveHashRoute('#/%E0%A4%A')).toEqual({page:'dashboard',notFound:true});
+    expect(resolveHashRoute('#/<script>alert(1)</script>')).toEqual({page:'dashboard',notFound:true});
   });
 
   it('uses the dedicated privacy-safe React 404 and exposes it to rendered QA',()=>{
@@ -43,6 +49,18 @@ describe('routing and 404 contract',()=>{
     expect(server).toContain("knownMethodFallback('/api/history', ['GET', 'POST'])");
     expect(server).toContain("knownMethodFallback('/api/import', ['POST'])");
     expect(server.indexOf("knownMethodFallback('/api/data'")).toBeLessThan(server.indexOf("app.all('/api/{*splat}'"));
+  });
+
+
+  it('keeps browser history recovery and focus behavior explicit for valid routes and 404 recovery',()=>{
+    expect(app).toContain("history.pushState(null, '', hash)");
+    expect(app).toContain("window.addEventListener('hashchange', sync)");
+    expect(app).toContain("window.addEventListener('popstate', sync)");
+    expect(app).toContain("heading.focus({ preventScroll: true })");
+    expect(app).toContain("onBack={() => { if (history.length > 1) history.back(); else navigate('dashboard', true); }}");
+    expect(notFoundPage).toContain("titleRef.current?.focus({ preventScroll: true })");
+    expect(notFoundPage).toContain('tabIndex={-1}');
+    expect(notFoundPage).toContain('onClick={onBack}');
   });
 
 });
