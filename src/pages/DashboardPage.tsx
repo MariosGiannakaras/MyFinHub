@@ -12,9 +12,11 @@ import { visibleAttentionItems } from '../lib/attention';
 import { effectiveLegacyTransactions, flowImpactEvent, flowImpactLegacy, monthRange } from '../lib/domain';
 import { financeAccountChoices } from '../lib/accountSelection';
 import { dashboardAccountHistory, dashboardBalanceChange, dashboardHistoryStart, dashboardPreviousMonthValues, dashboardSavingsGoal, type DashboardAccountPoint } from '../lib/dashboardAccounts';
+import { addCalendarDays } from '../lib/dateOnly';
 import { cashFlowForecast } from '../lib/forecast';
 import { money } from '../lib/format';
 import { activeRecurringItems } from '../lib/recurring';
+import { shiftReportingMonth } from '../lib/reportingPeriod';
 import { selectAccountBalances, selectCategoryTotals, selectMonthlyFlow } from '../lib/selectors';
 import { accountDisplayName } from '../lib/ui';
 import type { Account, FinanceData, FinanceEvent, LegacyTransaction } from '../types';
@@ -29,8 +31,7 @@ const DashboardSummaryChart=lazy(()=>import('../components/DashboardRecharts').t
 const DashboardFlowChart=lazy(()=>import('../components/DashboardRecharts').then(module=>({default:module.DashboardFlowChart})));
 const DashboardCategoryChart=lazy(()=>import('../components/DashboardRecharts').then(module=>({default:module.DashboardCategoryChart})));
 
-function shiftMonth(month:string,delta:number){const [year,rawMonth]=month.split('-').map(Number);const date=new Date(Date.UTC(year,rawMonth-1+delta,1));return `${date.getUTCFullYear()}-${String(date.getUTCMonth()+1).padStart(2,'0')}`}
-function previousDate(date:string){const current=new Date(`${date}T12:00:00Z`);current.setUTCDate(current.getUTCDate()-1);return current.toISOString().slice(0,10)}
+function previousDate(date:string){return addCalendarDays(date,-1)}
 function formatShortDay(date:string){return new Intl.DateTimeFormat('el-GR',{day:'numeric',month:'short',timeZone:'UTC'}).format(new Date(`${date}T12:00:00Z`)).replace('.','')}
 function formatMonthLabel(month:string){return new Intl.DateTimeFormat('el-GR',{month:'short',timeZone:'UTC'}).format(new Date(`${month}-01T12:00:00Z`)).replace('.','')}
 function formatRange(month:string){const {start,end}=monthRange(month);return `${new Intl.DateTimeFormat('el-GR',{day:'numeric',month:'short',timeZone:'UTC'}).format(new Date(`${start}T12:00:00Z`)).replace('.','')} – ${new Intl.DateTimeFormat('el-GR',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'}).format(new Date(`${end}T12:00:00Z`)).replace('.','')}`}
@@ -102,7 +103,7 @@ export function DashboardPage({ data, month, asOf, motionMode='system', privacyV
   const flow=selectMonthlyFlow(data,month);const balances=selectAccountBalances(data,asOf);const accountChoices=financeAccountChoices(data);const accounts=accountChoices.accounts;
   const primary=accountChoices.dashboardPrimary;const primaryIdSet=new Set(primary.map(account=>account.id));const remaining=accounts.filter(account=>!primaryIdSet.has(account.id));
   const categories=selectCategoryTotals(data,month).slice(0,6);const range=monthRange(month);const savingsTargetRate=data.state.settings.savingsTargetRate??.2;
-  const previousMonth=shiftMonth(month,-1);const previousRange=monthRange(previousMonth);const previousMonthLabel=formatMonthLabel(previousMonth);const previousFlow=selectMonthlyFlow(data,previousMonth);
+  const previousMonth=shiftReportingMonth(month,-1);const previousRange=monthRange(previousMonth);const previousMonthLabel=formatMonthLabel(previousMonth);const previousFlow=selectMonthlyFlow(data,previousMonth);
   const balanceMonth=asOf.slice(0,7);
 
   const movements=useMemo(()=>[
