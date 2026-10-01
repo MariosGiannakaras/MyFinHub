@@ -83,8 +83,8 @@ export function normalizeTransactionRule(rule: TransactionRule): TransactionRule
   const name = rule.name.trim();
   if (!name) throw new Error('Δώσε όνομα στον κανόνα.');
   const numericPriority=Number(rule.priority);
-  if (!Number.isFinite(numericPriority)) throw new Error('Η προτεραιότητα του κανόνα πρέπει να είναι έγκυρος αριθμός.');
-  const priority = Math.max(0, Math.trunc(numericPriority));
+  if (!Number.isFinite(numericPriority)||numericPriority<0||numericPriority>100_000) throw new Error('Η προτεραιότητα του κανόνα πρέπει να είναι ακέραιος αριθμός από 0 έως 100000.');
+  const priority = Math.trunc(numericPriority);
   const description = rule.match.description?.trim() || undefined;
   const merchant = rule.match.merchant?.trim() || undefined;
   const accountId = rule.match.accountId?.trim() || undefined;
