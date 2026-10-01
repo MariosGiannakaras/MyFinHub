@@ -8,7 +8,7 @@ Release target: none — `main` remains release-only
 
 ## Current integration checkpoint — 2026-10-01
 
-**Implementations 7/24 completed · Sub-implementations 29/189 completed**
+**Implementations 7/24 completed · Sub-implementations 32/189 completed**
 
 This checkpoint supersedes older "#482 reconciliation pending" notes below for current execution state.
 
@@ -20,7 +20,7 @@ This checkpoint supersedes older "#482 reconciliation pending" notes below for c
 - FV-41/FV-42/FV-43 are completed on exact-head rendered CI. Their fixes were validation-harness/touch-target corrections and did not weaken product behavior.
 - FV-44 is completed on `9b25fb1…`: extreme Recurring mobile progressive disclosure, full expansion, collapsed inactive history and overflow safety all pass.
 - FV-45 exact-head rendered proof has passed: OCR persists raw `EUR`, while the owned currency select displays `EUR · Ευρώ`; stored semantics and visible presentation are validated separately. The expanded full-system audit below now governs closeout.
-- Current counters: **Implementations 7/24 completed · Sub-implementations 29/189 completed**. The denominator expanded on 2026-10-01 after the owner required exhaustive full-system verification, direct assistant-led manual review, routing/404 coverage, temporal/data-boundary coverage and operational recovery proof.
+- Current counters: **Implementations 7/24 completed · Sub-implementations 32/189 completed**. The denominator expanded on 2026-10-01 after the owner required exhaustive full-system verification, direct assistant-led manual review, routing/404 coverage, temporal/data-boundary coverage and operational recovery proof.
 - Repository-admin hardening remains tracked separately in #485 and does not change this batch denominator.
 - No Android changes and no `main` release/promotion are part of this checkpoint.
 
@@ -648,9 +648,9 @@ No `main` promotion/release is part of this work.
 
 The prior completion audit remains valuable evidence, but it does **not** by itself prove that every visual element, every UX state, every user action/sub-action, every API/backend path and every error path has been exercised end-to-end against a canonical integrated tree. The owner has therefore expanded the accepted completion scope to require a full-system verification pass before the application is treated as fully closed.
 
-**New audit workstream: Implementations 0/16 completed · Sub-implementations 1/160 completed.**
+**New audit workstream: Implementations 0/16 completed · Sub-implementations 4/160 completed.**
 
-**Overall completion scope: Implementations 7/24 completed · Sub-implementations 29/189 completed.**
+**Overall completion scope: Implementations 7/24 completed · Sub-implementations 32/189 completed.**
 
 The denominator increased because 16 new verification implementations / 160 non-trivial sub-implementations are now accepted. Existing implementation-completion state is retained provisionally, but the expanded verification matrix has a stricter proof rule: prior evidence may be reused only after the responsible ChatGPT agent personally inspects it and confirms that it proves the exact required contract. Re-running unchanged automation is unnecessary when existing artifacts are sufficient, but no matrix cell is finally closed merely because an earlier workflow marked it green.
 
@@ -744,9 +744,9 @@ The denominator increased because 16 new verification implementations / 160 non-
 - [ ] Verify card-vault encryption/decryption boundary, ciphertext-only database storage, key absence from distributed clients and redaction of diagnostics/logs.
 - [ ] Verify account metadata/provider APIs, provider creation/update, Storage upload/replace, asset registration/bindings and partial-upload recovery semantics.
 - [ ] Verify Storage policies and object-path/MIME/size/signature/SVG safety rules, including replacement permissions and orphan-object/metadata handling.
-- [ ] Verify relational ledger constraints/FKs/RLS and canonical state↔relational consistency on the real schema without exposing sensitive finance content.
-- [ ] Run Supabase security/performance advisors and classify every finding; do not remove unused indexes without query evidence.
-- [ ] Inspect bounded production/staging backend logs for recurring 4xx/5xx/database/storage/auth failures and correlate actionable failures with tested paths without exposing sensitive data.
+- [x] Verify relational ledger constraints/FKs/RLS and canonical state↔relational consistency on the real schema without exposing sensitive finance content. Direct read-only proof on 2026-10-01: relational_v1 is active; events/cards/statements/budgets/recurring/scheduled/legs all match the composed canonical state counts; 0 orphan legs, 0 orphan statement→card refs, 0 orphan recurring→account refs and 0 invalid scheduled account refs; all 8 private ledger tables have RLS and owner+AAL2 policies.
+- [x] Run Supabase security/performance advisors and classify every finding; do not remove unused indexes without query evidence. Security advisor: only leaked-password protection disabled, documented as a Free-tier/external Auth-setting limitation. Performance advisor: 11 unused-index INFO findings retained because no query evidence justifies removal.
+- [x] Inspect bounded production/staging backend logs for recurring 4xx/5xx/database/storage/auth failures and correlate actionable failures with tested paths without exposing sensitive data. A privacy-safe 24h aggregate found 0 edge/auth 5xx. PostgreSQL errors were limited to expected owner/AAL2 denials plus management-audit query syntax/column mistakes from this verification session; no recurring production backend 5xx pattern was found.
 
 ### 8.7 Error handling and resilience matrix — 0/10
 
