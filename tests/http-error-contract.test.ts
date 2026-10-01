@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { ApiError, handleApi, readJsonBody, requestQueryValue, safeErrorDiagnostic } from '../server/http.js';
+import { ApiError, handleApi, readJsonBody, requestHeader, requestQueryValue, safeErrorDiagnostic } from '../server/http.js';
 
 function recorder(){
   const headers=new Map<string,unknown>();
@@ -14,6 +14,12 @@ function recorder(){
 }
 
 describe('HTTP error and request-metadata contracts',()=>{
+  it('accepts only scalar request headers and rejects ambiguous repeated header arrays',()=>{
+    expect(requestHeader({headers:{'if-match':'12'}},'if-match')).toBe('12');
+    expect(requestHeader({headers:{'if-match':['12','13']}},'if-match')).toBe('');
+    expect(requestHeader({headers:{'content-length':['2','2000']}},'content-length')).toBe('');
+  });
+
   it('accepts only scalar query values and rejects ambiguous duplicate parameter shapes',()=>{
     expect(requestQueryValue({query:{resource:' financial-providers '}},'resource')).toBe('financial-providers');
     expect(requestQueryValue({query:{resource:['financial-providers','other']}},'resource')).toBe('');
