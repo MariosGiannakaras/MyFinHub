@@ -1,6 +1,6 @@
 # MyFinHub completion audit and implementation plan
 
-Status: expanded implementation and final visual evidence complete; final integrated validation in progress  
+Status: owner-expanded exhaustive full-system verification accepted; execution pending  
 Tracker: #476  
 Target branch: `feat/476-completion-audit-hardening`  
 Integration target: `develop`  
@@ -19,7 +19,7 @@ This checkpoint supersedes older "#482 reconciliation pending" notes below for c
 - Final visual run #73 passed all 63 desktop/tablet/mobile captures and the resulting evidence was manually reviewed, including Dashboard, Credit, Settings/Providers, Lending and Transactions.
 - FV-41/FV-42/FV-43 are completed on exact-head rendered CI. Their fixes were validation-harness/touch-target corrections and did not weaken product behavior.
 - FV-44 is completed on `9b25fb1…`: extreme Recurring mobile progressive disclosure, full expansion, collapsed inactive history and overflow safety all pass.
-- FV-45 is source-fixed and exact-head proof pending: OCR persists raw `EUR`, while the owned currency select displays `EUR · Ευρώ`; the harness now validates stored semantics and visible presentation separately.
+- FV-45 exact-head rendered proof has passed: OCR persists raw `EUR`, while the owned currency select displays `EUR · Ευρώ`; stored semantics and visible presentation are validated separately. The expanded full-system audit below now governs closeout.
 - Current counters: **Implementations 7/20 completed · Sub-implementations 28/151 completed**. The denominator expanded on 2026-10-01 after the owner required exhaustive full-system verification across UI/UX, functional flows, backend, errors and canonical post-merge state.
 - Repository-admin hardening remains tracked separately in #485 and does not change this batch denominator.
 - No Android changes and no `main` release/promotion are part of this checkpoint.
