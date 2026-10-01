@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { qaFinanceData } from '../src/qaFixture.js';
 import { allAttentionItems } from '../src/lib/attention.js';
-import { budgetProgress, categoryBudgetSpending } from '../src/lib/budgets.js';
+import { budgetProgress, categoryBudgetSpending, normalizeBudget } from '../src/lib/budgets.js';
 import { createEvent } from '../src/lib/domain.js';
 import { createExpenseSplitEvent, createTransferEvent } from '../src/lib/ledgerFoundations.js';
 import { migrateProductData } from '../src/lib/productMigration.js';
-import { applyTransactionRules, previewTransactionRules, transactionRuleMatchingEvents, transactionRuleMatchCount } from '../src/lib/transactionRules.js';
+import { applyTransactionRules, normalizeTransactionRule, previewTransactionRules, transactionRuleMatchingEvents, transactionRuleMatchCount } from '../src/lib/transactionRules.js';
 import type { MonthlyBudget, TransactionRule } from '../src/types.js';
 
 const clone=()=>structuredClone(qaFinanceData());
@@ -16,6 +16,14 @@ const rule=(id:string,priority:number,description:string,category:string):Transa
 function clean(){const data=clone();data.seed.transactions=[];data.state.customTransactions=[];data.state.overrides={};data.state.deleted=[];data.state.events=[];data.state.budgets=[];data.state.transactionRules=[];data.state.reviewDecisions={};return data}
 
 describe('monthly category budgets',()=>{
+  it('rejects invalid calendar months, unsafe amounts and invalid alert thresholds before persistence',()=>{
+    expect(()=>normalizeBudget({...budget('bad','overall',100),month:'2026-13'})).toThrow(/μήνα/i);
+    expect(()=>normalizeBudget(budget('huge','overall',1_000_000_000.01))).toThrow(/εύρους/i);
+    expect(()=>normalizeBudget({...budget('threshold','overall',100),alertThreshold:Number.NaN})).toThrow(/ειδοποίησης/i);
+    expect(()=>normalizeBudget({...budget('threshold-high','overall',100),alertThreshold:1.1})).toThrow(/ειδοποίησης/i);
+    expect(normalizeBudget({...budget('threshold-low','overall',100),alertThreshold:.2}).alertThreshold).toBe(.5);
+  });
+
   it('counts split portions exactly once, excludes transfers and nets refunds deterministically',()=>{
     const data=clean();
     const expense=createEvent({kind:'expense',date:'2026-08-05',amount:100,note:'Food',category:'Τρόφιμα',accountId:'piraeus-payroll'});
@@ -77,6 +85,13 @@ describe('monthly category budgets',()=>{
 });
 
 describe('deterministic transaction rules',()=>{
+  it('rejects rule priorities that the server would reject and normalizes duplicate scopes',()=>{
+    const base=rule('bounded',10,'market','Τρόφιμα');
+    expect(()=>normalizeTransactionRule({...base,priority:-1})).toThrow(/100000/i);
+    expect(()=>normalizeTransactionRule({...base,priority:100001})).toThrow(/100000/i);
+    expect(normalizeTransactionRule({...base,scopes:['manual','manual','review']} as TransactionRule).scopes).toEqual(['manual','review']);
+  });
+
   it('uses priority then stable id and applies only the first matching rule',()=>{
     const data=clean();data.state.transactionRules=[rule('later',20,'market','Άλλο'),rule('winner',10,'market','Τρόφιμα'),rule('winner-b',10,'market','Μετακινήσεις')];
     const event=createEvent({kind:'expense',date:'2026-08-05',amount:20,note:'Corner Market',category:data.state.settings.expenseCategories[0],accountId:'piraeus-payroll'});
