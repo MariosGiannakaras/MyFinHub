@@ -1,11 +1,28 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fetchUpstream } from '../server/upstream.js';
-import { readStore } from '../server/storage.js';
+import { readStore, writeStore } from '../server/storage.js';
 import { readAccountMetadata } from '../server/accountMetadataStore.js';
 import { readCardSecrets } from '../server/cardVaultStore.js';
+import { migrateProductData } from '../src/lib/productMigration.js';
+import type { FinanceData } from '../src/types.js';
 
 function response(status:number,body:unknown={}){
   return new Response(JSON.stringify(body),{status,headers:{'content-type':'application/json'}});
+}
+
+function legacyDocument(schemaVersion:1|2|3=2):FinanceData{
+  return {
+    app:'RheomIQ',
+    schemaVersion,
+    updatedAt:'2026-08-17T00:00:00.000Z',
+    seed:{accounts:[],months:[],transactions:[],snapshots:[],recurring:[],subscriptions:[],loans:[],lending:[],stats:{}},
+    state:{
+      customTransactions:[],overrides:{},deleted:[],recurringCustom:[],recurringOverrides:{},
+      loanExtra:{},loanOverrides:{},customLoans:[],lendingCustom:[],
+      settings:{excludedFromAvailable:[],accountNames:{},expenseCategories:[],incomeCategories:[],customPresets:[],pinnedPresets:[],defaultExpenseAccount:'',defaultIncomeAccount:'',defaultLoanAccount:''},
+      events:[],reviewDecisions:{},
+    },
+  } as FinanceData;
 }
 
 describe('backend outage and rate-limit contracts',()=>{
@@ -41,6 +58,31 @@ describe('backend outage and rate-limit contracts',()=>{
       .rejects.toMatchObject({status:504,code:'DATA_TIMEOUT'});
     await expect(fetchUpstream('https://project.example/auth',{},'AUTH',1))
       .rejects.toMatchObject({status:504,code:'AUTH_TIMEOUT'});
+  });
+
+  it('imports supported legacy documents only after normalizing them to the current schema',async()=>{
+    const legacy=legacyDocument(2);
+    const normalized=migrateProductData(legacy);
+    const fetchMock=vi.fn().mockImplementation(async(_input:unknown,init?:RequestInit)=>{
+      const payload=JSON.parse(String(init?.body||'{}'));
+      expect(payload.p_data.schemaVersion).toBe(3);
+      expect(payload.p_data.state.migration?.fromSchema).toBe(2);
+      return response(200,[{data:normalized,revision:2,updated_at:'2026-08-17T00:00:01.000Z'}]);
+    });
+    vi.stubGlobal('fetch',fetchMock);
+    const result=await writeStore(legacy,undefined,true,'access-token');
+    expect(result.data.schemaVersion).toBe(3);
+    expect(result.data.state.migration?.fromSchema).toBe(2);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects unsupported future documents before any database request',async()=>{
+    const future={...legacyDocument(3),schemaVersion:4} as FinanceData;
+    const fetchMock=vi.fn();
+    vi.stubGlobal('fetch',fetchMock);
+    await expect(writeStore(future,undefined,true,'access-token'))
+      .rejects.toMatchObject({status:400,code:'INVALID_DATA'});
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('keeps data 429 distinct from generic upstream failure',async()=>{
