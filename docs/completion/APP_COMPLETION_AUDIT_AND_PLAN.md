@@ -1116,3 +1116,15 @@ Source/runtime scope:
 - the deterministic final matrix expands from 66 to 132 screenshots.
 
 This implements the existing exhaustive-visual sub-implementation and does not change the denominator. Completion requires execution on the final candidate head plus direct assistant inspection and disposition of the 132-image matrix.
+
+
+### 8.32 FV-46 — Reports dark-theme privacy placeholder defect in progress
+
+Direct assistant inspection of the expanded 132-image matrix found a real dark-theme inconsistency on Reports: the mobile privacy placeholder under “Εξέλιξη βασικών λογαριασμών” was forced to the light-only `#eef4fa` background by the mobile stylesheet, producing a conspicuous white card inside the dark surface.
+
+Required remediation:
+- replace the hard-coded light background with semantic theme tokens and preserve readable border/text contrast;
+- re-run the affected rendered Reports evidence in light/dark mobile/tablet/desktop;
+- re-run the final dual-theme matrix after all direct visual-review fixes are integrated.
+
+This is a defect inside the existing exhaustive visual/UI-UX verification item and does not change the denominator. It is not complete until rendered proof and direct assistant re-inspection pass.
