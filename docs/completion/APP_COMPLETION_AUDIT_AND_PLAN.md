@@ -8,7 +8,7 @@ Release target: none — `main` remains release-only
 
 ## Current integration checkpoint — 2026-10-01
 
-**Implementations 7/20 completed · Sub-implementations 28/151 completed**
+**Implementations 7/24 completed · Sub-implementations 28/189 completed**
 
 This checkpoint supersedes older "#482 reconciliation pending" notes below for current execution state.
 
@@ -648,11 +648,11 @@ No `main` promotion/release is part of this work.
 
 The prior completion audit remains valuable evidence, but it does **not** by itself prove that every visual element, every UX state, every user action/sub-action, every API/backend path and every error path has been exercised end-to-end against a canonical integrated tree. The owner has therefore expanded the accepted completion scope to require a full-system verification pass before the application is treated as fully closed.
 
-**New audit workstream: Implementations 0/12 completed · Sub-implementations 0/122 completed.**
+**New audit workstream: Implementations 0/16 completed · Sub-implementations 0/160 completed.**
 
-**Overall completion scope: Implementations 7/20 completed · Sub-implementations 28/151 completed.**
+**Overall completion scope: Implementations 7/24 completed · Sub-implementations 28/189 completed.**
 
-The denominator increased because 12 new verification implementations / 122 non-trivial sub-implementations are now accepted. Existing completed work retains its state; nothing previously proven is re-audited without a specific coverage gap, but prior evidence must be mapped to this matrix and reused where it proves the exact required contract.
+The denominator increased because 16 new verification implementations / 160 non-trivial sub-implementations are now accepted. Existing completed work retains its state; nothing previously proven is re-audited without a specific coverage gap, but prior evidence must be mapped to this matrix and reused where it proves the exact required contract.
 
 ### 8.1 Canonical baseline, scope inventory and traceability — 0/7
 
@@ -812,8 +812,64 @@ The denominator increased because 12 new verification implementations / 122 non-
 - [ ] Squash-merge only when every required exact-head gate is green and no unresolved critical/high defect remains; then prove the canonical post-merge tree.
 - [ ] If/when promoted to production, verify production deployment SHA, production smoke and privacy-safe backend integrity before declaring the release closed.
 
-### 8.13 Hard completion rule
+### 8.13 Independent assistant-led manual verification protocol — 0/10
 
-The application must **not** be described as fully verified merely because unit tests, rendered QA, final screenshots or CI pass independently. Full closeout requires traceable evidence across the UI/UX, functional, persistence, backend, error, security and canonical post-merge layers above. Synthetic QA remains useful but cannot substitute for real-stack E2E where persistence/backend behavior is part of the user-visible contract.
+The owner's definition of "checked" means personally inspected and reasoned about by the responsible ChatGPT agent, not merely reported green by GitHub Actions, a script or another automated system. Automation is evidence generation and regression protection; it is not the reviewer.
+
+- [ ] Do not mark any visual/UX/functional/backend/error item complete solely because a GitHub check, script or test suite reports success.
+- [ ] Personally inspect every required screenshot/evidence capture at useful resolution, page by page and state by state; do not substitute thumbnail contact-sheet spot checks for actual inspection.
+- [ ] Personally navigate the actual running application for every high-risk user flow that can be exercised safely, interacting with the real controls rather than inferring behavior from source code.
+- [ ] During manual browser checks, inspect browser console/runtime errors and relevant network requests/responses for silent failures, retries, unexpected 4xx/5xx and stale-resource problems.
+- [ ] Inspect the rendered DOM/accessibility representation for headings, landmarks, accessible names, roles, states, focus order and live/error messaging on representative controls and every novel component pattern.
+- [ ] Use source review to understand and explain behavior, but never use source presence alone as proof that runtime behavior, layout, persistence or error recovery works.
+- [ ] For backend-dependent flows, personally compare the user-visible result with privacy-safe API/database/Storage read-back evidence after the operation and after reload/new session.
+- [ ] Maintain an independent verification ledger tied to exact SHA with PASS/FAIL/BLOCKED, direct observation, reproduction steps and evidence reference for every matrix cell; GitHub status is recorded only as supporting evidence.
+- [ ] After each material fix, personally re-check the affected UI/flow/backend behavior instead of considering a rerun of the same automation sufficient.
+- [ ] The final closeout statement must be based on direct review of the evidence set and must explicitly name any residual unverified area; no blanket "all good" conclusion is allowed when evidence is incomplete.
+
+### 8.14 Routing, deep links and 404/error-page product behavior — 0/10
+
+Current source already contains an authenticated hash-route `NotFound` screen for unknown `#/<route>` values. It is intentionally privacy-safe, but it is minimal and does not by itself prove correct behavior for unknown real HTTP paths. The desktop server currently falls back to `index.html` for any non-API GET after static-file lookup, while Vercel has no explicit SPA catch-all or custom HTTP 404 contract. This must be treated as a distinct product surface.
+
+- [ ] Verify every valid hash route, the legacy `#/review` redirect, direct-load behavior, refresh and authenticated deep-link restoration.
+- [ ] Verify unknown/malformed hash routes produce the intended MyFinHub 404 surface and do not silently land on Dashboard.
+- [ ] Verify browser Back/Forward history across routes, 404 → valid route recovery, and focus restoration to the destination heading.
+- [ ] Verify real unknown HTTP paths on Vercel/production-like web hosting return an intentional MyFinHub experience with an appropriate HTTP status rather than a platform-generic page or silent Dashboard fallback.
+- [ ] Verify unknown HTTP paths in the local/Windows desktop server do not silently become Dashboard unless that is an explicitly accepted SPA contract.
+- [ ] Verify missing static assets/chunks/images return the correct failure response and are not incorrectly served `index.html` with status 200 by a broad catch-all.
+- [ ] Verify unknown/unsupported API routes and methods remain JSON API failures with correct 404/405 semantics and can never fall through into the HTML application shell.
+- [ ] Test trailing slashes, query strings, encoded characters, duplicated separators, malformed fragments and copy/pasted external deep links without routing loops or unsafe reflected content.
+- [ ] Review the 404 page manually in desktop/tablet/mobile, light/dark, keyboard-only, 200% zoom and reduced-motion modes; verify focus, contrast and safe no-financial-data behavior.
+- [ ] Refine the current 404 into a deliberate MyFinHub-branded, useful and interesting page if manual design review finds the current minimal card insufficient. Preferred contract: privacy-safe finance-themed illustration/microinteraction built from local/CSS assets, concise copy, visible "Dashboard" and "Back" actions, optional authenticated app search/command action when safe, no sensitive data, no external dependency, responsive and accessible.
+
+### 8.15 Temporal, numeric, locale and data-boundary edge cases — 0/10
+
+- [ ] Verify month-end/year-end transitions, January↔December reporting changes and February/leap-day behavior across transactions, recurring, scheduled, reports, budgets and forecasts.
+- [ ] Verify local-date/time-zone handling around midnight and DST changes so date-only finance events cannot shift day/month unexpectedly between browser, API and database.
+- [ ] Verify monetary precision/rounding for cents, aggregated totals, percentages, statements, repayments and split legs; UI totals and persisted numeric values must remain consistent.
+- [ ] Verify zero, negative, near-zero, maximum accepted and obviously excessive monetary inputs are either correctly supported or rejected with explicit validation.
+- [ ] Verify text boundaries using long Greek strings, long unbroken strings, Unicode combining characters, emoji and punctuation in notes/names where supported; no corruption, clipping, injection or persistence mismatch.
+- [ ] Verify ordering stability when multiple events share the same date/time or sort key and that pagination/load-more does not duplicate/skip rows during edits.
+- [ ] Verify duplicate identifiers, duplicate provider/category/account names and normalization/collision rules fail deterministically without overwriting unrelated data.
+- [ ] Verify archived/deleted entities remain historically referentially valid and cannot create dangling card/account/category/provider references.
+- [ ] Verify realistic large-data boundaries for transactions/history/budgets/recurring/scheduled entities: load time, filter/search, pagination, charts, mutation latency and memory remain usable without unbounded DOM/render work.
+- [ ] Verify backwards-compatible loading/import of every still-supported schema/version and explicit rejection/migration messaging for unsupported or malformed historical data.
+
+### 8.16 Operational reliability, observability, migration recovery and release rollback — 0/8
+
+- [ ] Rehearse every pending database migration on an isolated production-like Supabase environment before production application, including data-preservation and policy/grant verification.
+- [ ] Perform a real backup → restore/recovery exercise on isolated data, then verify finance state, history/audit boundaries and excluded secrets after restoration.
+- [ ] Add/verify a deterministic repository-vs-live migration drift check so production parity is known before and after releases rather than inferred from filenames.
+- [ ] Define and test roll-forward/recovery behavior for a partially failed or interrupted migration; never assume destructive rollback is safe for finance data.
+- [ ] Verify application rollback compatibility: if web/desktop code is rolled back one release while the database remains on the newer compatible schema, startup/read/write behavior must be understood and documented.
+- [ ] Exercise controlled backend/database/storage restart or temporary unavailability scenarios and verify health recovery, session behavior, retry strategy and no duplicate finance mutation after reconnection.
+- [ ] Review operational observability manually: health endpoints, bounded server/startup diagnostics, request IDs for unexpected failures, actionable log levels and redaction of tokens/secrets/financial content.
+- [ ] Verify release identity end-to-end: package/app version, Git SHA, web deployment SHA, Windows artifact/checksum, migration state and release metadata must refer to one coherent release candidate; document a tested rollback/stop-ship procedure.
+
+### 8.17 Hard completion rule
+
+The application must **not** be described as fully verified merely because unit tests, rendered QA, final screenshots or CI pass independently. Full closeout requires traceable evidence across the UI/UX, functional, persistence, backend, error, security, routing/404, temporal/data-boundary, operational-recovery and canonical post-merge layers above. Synthetic QA remains useful but cannot substitute for real-stack E2E where persistence/backend behavior is part of the user-visible contract.
+
+"Verified" additionally means the responsible ChatGPT agent has personally inspected the required runtime/visual/backend evidence and recorded an independent disposition; GitHub/CI is supporting evidence only.
 
 Production-destructive testing is prohibited. Real CRUD/backend verification must use an isolated non-production environment or narrowly controlled reversible test data approved for that purpose. Android remains out of scope; any compatibility impact discovered here is documented only.
