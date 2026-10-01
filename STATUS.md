@@ -47,6 +47,12 @@ Release-closeout tracker: **#288 — complete**.
 - Repository plan: `docs/PROVIDER_BRANDING_MANAGEMENT_PLAN.md`.
 - No new Vercel function, no service-role key in clients, no Android work.
 
+## Integration hold
+
+- **User hold active:** do not merge #479 or #482, do not release/deploy, and do not apply the release-pending provider-management migration while other MyFinHub workstreams are active.
+- Keep #482 draft and stacked as-is; perform only validation/read-only compatibility work unless a concrete regression requires a fix.
+- Resume rebase/reconciliation/integration only after the user explicitly lifts the hold.
+
 ## Next work
 
 Subsequent changes are product fixes against the completed v1.3.0 baseline. Routine implementation remains **Issue → short-lived branch → PR → required checks → squash merge into `develop`**. `main` remains release-only.
