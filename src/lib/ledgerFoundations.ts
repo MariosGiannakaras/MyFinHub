@@ -1,16 +1,8 @@
 import { allAccounts, createEvent } from './domain.js';
+import { centsToMoney, moneyToCents } from './money.js';
 import type { FinanceData, FinanceEvent, SplitPart } from '../types.js';
 
-const CENTS = 100;
-
-export function moneyToCents(value: number) {
-  if (!Number.isFinite(value)) return Number.NaN;
-  return Math.round((value + Number.EPSILON) * CENTS);
-}
-
-export function centsToMoney(value: number) {
-  return Number((value / CENTS).toFixed(2));
-}
+export { centsToMoney, moneyToCents } from './money.js';
 
 function transferEligibleAccounts(data: FinanceData) {
   return allAccounts(data).filter((account) => account.kind !== 'credit');
@@ -29,6 +21,7 @@ export function defaultTransferPair(data: FinanceData) {
 export function transferDraftError(data: FinanceData, draft: { fromAccountId: string; toAccountId: string; amount: number }) {
   const ids = new Set(transferEligibleAccounts(data).map((account) => account.id));
   if (!Number.isFinite(draft.amount) || draft.amount <= 0) return 'Συμπλήρωσε θετικό ποσό μεταφοράς.';
+  if (!Number.isSafeInteger(moneyToCents(draft.amount))) return 'Το ποσό μεταφοράς είναι εκτός επιτρεπτού εύρους.';
   if (!draft.fromAccountId || !ids.has(draft.fromAccountId)) return 'Διάλεξε υπαρκτό λογαριασμό προέλευσης.';
   if (!draft.toAccountId || !ids.has(draft.toAccountId)) return 'Διάλεξε υπαρκτό λογαριασμό προορισμού.';
   if (draft.fromAccountId === draft.toAccountId) return 'Ο λογαριασμός προέλευσης και προορισμού πρέπει να είναι διαφορετικοί.';

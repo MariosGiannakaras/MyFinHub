@@ -17,6 +17,7 @@ import { TransactionSplitDetails } from '../components/TransactionSplitDetails';
 import { categoryPath } from '../lib/categories';
 import { allAccounts, effectiveLegacyTransactions, flowImpactEvent, flowImpactLegacy, monthRange } from '../lib/domain';
 import { cleanNote, money, shortDate } from '../lib/format';
+import { shiftReportingMonth } from '../lib/reportingPeriod';
 import { selectAccountBalances, selectMonthlyFlow } from '../lib/selectors';
 import { accountDisplayName, eventKindLabel } from '../lib/ui';
 import type { FinanceData, LegacyTransaction, SplitPart } from '../types';
@@ -26,7 +27,6 @@ function noteParts(note:string){
   const lines=note.split(/\r?\n/).map(line=>line.trim()).filter(Boolean);
   return {title:lines[0]||'Χωρίς περιγραφή',comment:lines.slice(1).join('\n')};
 }
-function shiftMonth(month:string,delta:number){const [year,rawMonth]=month.split('-').map(Number);const date=new Date(Date.UTC(year,rawMonth-1+delta,1));return `${date.getUTCFullYear()}-${String(date.getUTCMonth()+1).padStart(2,'0')}`}
 function percentChange(current:number,previous:number){return Math.abs(previous)>0.005?Math.round(((current-previous)/Math.abs(previous))*100):null}
 
 type TransactionRow={
@@ -105,7 +105,7 @@ export function TransactionsPage({
   },[sourceRows,account,category,type,dateStart,dateEnd,deferred,sortDirection]);
   const firstComment=rows.map(row=>noteParts(row.note).comment).find(Boolean)||'';
 
-  const flow=selectMonthlyFlow(data,month);const previousMonth=shiftMonth(month,-1);const previousFlow=selectMonthlyFlow(data,previousMonth);
+  const flow=selectMonthlyFlow(data,month);const previousMonth=shiftReportingMonth(month,-1);const previousFlow=selectMonthlyFlow(data,previousMonth);
   const transactionCountFor=(targetMonth:string)=>effectiveLegacyTransactions(data).filter(t=>t.date.startsWith(targetMonth)).length+(data.state.events??[]).filter(e=>e.date.startsWith(targetMonth)&&!['card_purchase','card_payment'].includes(e.kind)).length;
   const previousCount=transactionCountFor(previousMonth);
   const incomeDelta=percentChange(flow.income,previousFlow.income);const expenseDelta=percentChange(flow.expense,previousFlow.expense);const netDelta=percentChange(flow.net,previousFlow.net);const countDelta=sourceRows.length-previousCount;

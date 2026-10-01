@@ -1,6 +1,5 @@
 import type { RecurrenceUnit, RecurringItem } from '../types.js';
-
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+import { isValidDateOnly } from './dateOnly.js';
 
 function normalizedInterval(value: unknown) {
   const parsed = Number(value ?? 1);
@@ -39,14 +38,14 @@ function buildDate(year: number, monthIndex: number, day: number) {
 }
 
 export function addRecurringInterval(date: string, item: RecurringItem) {
-  if (!ISO_DATE.test(date)) return null;
+  if (!isValidDateOnly(date)) return null;
   const parsed = utcDate(date);
   const months = recurringCadence(item).months;
   return buildDate(parsed.getUTCFullYear(), parsed.getUTCMonth() + months, parsed.getUTCDate());
 }
 
 export function advanceRecurringDate(anchor: string, item: RecurringItem, asOf: string) {
-  if (!ISO_DATE.test(anchor) || !ISO_DATE.test(asOf)) return null;
+  if (!isValidDateOnly(anchor) || !isValidDateOnly(asOf)) return null;
   let next = anchor;
   let guard = 0;
   while (next < asOf && guard < 240) {
@@ -59,5 +58,5 @@ export function advanceRecurringDate(anchor: string, item: RecurringItem, asOf: 
 }
 
 export function validRecurringAnchor(value: string | null | undefined) {
-  return typeof value === 'string' && ISO_DATE.test(value) ? value : null;
+  return isValidDateOnly(value) ? value : null;
 }

@@ -890,3 +890,22 @@ Source scope in this batch:
 - provider query parameters now reject ambiguous array/duplicate shapes instead of silently selecting the first value.
 
 These items remain **not completed** until narrow CI/CodeQL validation is green and the 404 is personally inspected in rendered runtime evidence. The full-system counters therefore remain unchanged at this checkpoint.
+
+
+### 8.19 Implementation batch B — temporal, locale and monetary boundaries in progress
+
+This batch is independent from the 404/security batch and is implemented while its CI runs in parallel.
+
+Source scope:
+- strict calendar-date validation rejects impossible dates such as 2026-02-31 while preserving real leap days;
+- date-only arithmetic is UTC/calendar based and covered across leap-day, month-end and year-end rollover;
+- report/month range calculations fail closed on malformed month keys;
+- recurring anchors and scheduled due dates now use real calendar validation rather than regex-only validation;
+- event creation rejects invalid transaction dates and invalid expected-return dates at the domain boundary;
+- a central safe-money boundary converts values to integer cents only when the result remains a safe integer;
+- Quick Entry semantics, loans, recurring items, scheduled items and domain events reject monetary values outside safe-cent range;
+- the custom date picker no longer silently renders an invalid stored date as “today”;
+- Dashboard, Transactions, Savings, Reports and PeriodControl now reuse strict reporting/calendar helpers instead of independent loose month arithmetic;
+- regression coverage includes leap years, month/year rollover, invalid month/date inputs, decimal rounding and unsafe monetary magnitudes.
+
+No completion counters advance until the batch passes CI and its user-facing date-picker/page behavior is directly inspected.

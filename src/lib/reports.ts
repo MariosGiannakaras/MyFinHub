@@ -1,16 +1,18 @@
 import { accountBalances, effectiveLegacyTransactions, flowImpactEvent, flowImpactLegacy } from './domain.js';
+import { calendarMonthRange, parseMonthOnly } from './dateOnly.js';
 import { categoryPath } from './categories.js';
 import { creditCards, creditDebtForCard, creditLimitForCard } from './cards.js';
 import { lendingRows } from './lending.js';
 import { activeLongTermLoanObligations } from './loans.js';
 import { recurringMonthlyTotal } from './recurring.js';
 import { operationalMonthlyFlow, savingsBreakdown } from './savings.js';
+import { shiftReportingMonth } from './reportingPeriod.js';
 import type { FinanceData } from '../types.js';
 
-function shiftReportMonth(month:string,delta:number){const [year,m]=month.split('-').map(Number);const date=new Date(Date.UTC(year,m-1+delta,1));return `${date.getUTCFullYear()}-${String(date.getUTCMonth()+1).padStart(2,'0')}`}
+function shiftReportMonth(month:string,delta:number){return shiftReportingMonth(month,delta)}
 function reportMonths(month:string,count=6){return Array.from({length:count},(_,index)=>shiftReportMonth(month,index-(count-1)))}
-function reportMonthLabel(month:string){const [year,m]=month.split('-').map(Number);return new Intl.DateTimeFormat('el-GR',{month:'short',year:'2-digit',timeZone:'UTC'}).format(new Date(Date.UTC(year,m-1,1)))}
-export function monthEnd(month:string){const [year,m]=month.split('-').map(Number);return new Date(Date.UTC(year,m,0,12)).toISOString().slice(0,10)}
+function reportMonthLabel(month:string){const parsed=parseMonthOnly(month);if(!parsed)throw new Error('Μη έγκυρος μήνας.');return new Intl.DateTimeFormat('el-GR',{month:'short',year:'2-digit',timeZone:'UTC'}).format(new Date(Date.UTC(parsed.year,parsed.month-1,1)))}
+export function monthEnd(month:string){return calendarMonthRange(month).end}
 
 export function reportFlowSeries(data:FinanceData,month:string,count=6){return reportMonths(month,count).map(value=>{const flow=operationalMonthlyFlow(data,value);return {month:value,label:reportMonthLabel(value),income:flow.income,expense:flow.expense,saving:flow.saving}})}
 
