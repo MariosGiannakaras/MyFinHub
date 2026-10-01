@@ -1128,3 +1128,16 @@ Required remediation:
 - re-run the final dual-theme matrix after all direct visual-review fixes are integrated.
 
 This is a defect inside the existing exhaustive visual/UI-UX verification item and does not change the denominator. It is not complete until rendered proof and direct assistant re-inspection pass.
+
+
+### 8.33 FV-47 — Settings Icons dark-theme surface/contrast defect in progress
+
+Direct assistant inspection of the expanded final matrix found a second real dark-theme defect in Settings → Icons: the unified category/subcategory cards and icon workspace used light-only translucent backgrounds, producing large pale-grey cards with low-contrast text in dark mode.
+
+Required remediation:
+- convert icon-library, category, subcategory, selection and color-editor surfaces from hard-coded light RGBA/white backgrounds to semantic theme tokens;
+- retain the intended light-theme hierarchy while restoring dark-theme contrast and consistent hover/expanded states;
+- re-run Settings Icons rendered evidence at desktop/tablet/mobile in light/dark and directly re-inspect it;
+- include the corrected surface in the final dual-theme matrix rerun.
+
+This is contained within the existing exhaustive visual/UI-UX item and does not change the denominator.
