@@ -42,6 +42,24 @@ describe('recurring cadence', () => {
     expect(addRecurringInterval('2024-02-29', annual)).toBe('2025-02-28');
   });
 
+  it('preserves the original anchor day after clamping through shorter months', () => {
+    const quarterly = recurring({ id: 'quarter-end', firstExpectedDate: '2026-01-31', recurrenceUnit: 'month', recurrenceInterval: 3 });
+    expect(addRecurringInterval('2026-01-31', quarterly)).toBe('2026-04-30');
+    expect(nextRecurringDate(dataWith([quarterly]), quarterly, '2026-05-01')).toBe('2026-07-31');
+    expect(nextRecurringDate(dataWith([quarterly]), quarterly, '2026-08-01')).toBe('2026-10-31');
+  });
+
+  it('rejects calendar-impossible anchors instead of normalizing them into another date', () => {
+    const invalid = recurring({ id: 'invalid-date', firstExpectedDate: '2026-02-31', recurrenceUnit: 'month', recurrenceInterval: 6 });
+    expect(addRecurringInterval('2026-02-31', invalid)).toBeNull();
+    expect(nextRecurringDate(dataWith([invalid]), invalid, '2026-08-25')).toBeNull();
+  });
+
+  it('can advance old cadences without a 240-iteration stale-date ceiling', () => {
+    const old = recurring({ id: 'old', firstExpectedDate: '2000-01-31', recurrenceUnit: 'month', recurrenceInterval: 2 });
+    expect(nextRecurringDate(dataWith([old]), old, '2050-08-01')).toBe('2050-09-30');
+  });
+
   it('uses monthly-equivalent totals for mixed recurrence intervals', () => {
     const monthly = recurring({ id: 'm', amount: 12, firstExpectedDate: '2026-08-05' });
     const annual = recurring({ id: 'y', amount: 120, recurrenceUnit: 'year', recurrenceInterval: 1 });
