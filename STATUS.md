@@ -49,7 +49,7 @@ Release-closeout tracker: **#288 — complete**.
 
 ## Active completion batch — #476
 
-**Implementations 7/24 completed · Sub-implementations 66/192 completed**
+**Implementations 7/24 completed · Sub-implementations 76/192 completed**
 
 - The completion definition has been expanded by the owner to a full-system verification matrix. Existing implementation findings remain tracked, but final closeout now requires direct assistant-led manual review plus UI/UX/accessibility, routing/404, every supported user mutation, real-stack persistence/backend proof, exhaustive failure handling, security/privacy, temporal/data-boundary coverage, operational recovery and canonical post-merge validation.
 
@@ -116,3 +116,5 @@ Release-closeout tracker: **#288 — complete**.
 Subsequent changes are product fixes against the completed v1.3.0 baseline. Routine implementation remains **Issue → short-lived branch → PR → required checks → squash merge into `develop`**. `main` remains release-only.
 
 - **FV-40 completed:** the mobile Credit canonical card now anchors its lower content inside the physical card padding. Final visual run #73 passes the explicit network-mark containment assertion, and manual review confirms the Visa badge remains fully inside the selected card on mobile while tablet/desktop presentation is unchanged.
+
+- Audit verification checkpoint 2026-10-02: directly verified temporal/month boundaries, local-date/DST-safe date-only handling, safe-cent precision/ranges, deterministic transaction ordering/pagination, archived/deleted reference preservation, exact-head CodeQL, exact-head privacy/security artifact guards, live migration parity and operational observability. Unsupported-future-schema rejection remains open.
