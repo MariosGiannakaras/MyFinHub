@@ -38,7 +38,7 @@ Release-closeout tracker: **#288 — complete**.
 
 ## Active completion batch — #476
 
-**Implementations 5/8 completed · Sub-implementations 12/20 completed**
+**Implementations 5/8 completed · Sub-implementations 12/21 completed**
 
 - Branch: `feat/476-completion-audit-hardening`.
 - **54 deep-audit findings are now tracked.** DA-01..DA-53 retain their existing implementation/disposition state; DA-54 adds the owner-reported dark-theme color/contrast defect.
@@ -51,6 +51,7 @@ Release-closeout tracker: **#288 — complete**.
 - FV-28 records the follow-up QA mismatch: final evidence incorrectly required desktop Recharts in the intentionally collapsed mobile Dashboard. The harness now proves desktop charts and mobile progressive-disclosure steady state separately; this does not add product scope or change the 12/20 counter.
 - FV-29 records the next hierarchy-QA mismatch at 375px: the compact layout hides the category donut below 381px and keeps the category table, while the previous assertion was still coupled to an exact Recharts count. QA now verifies the semantic expanded state—summary visualization, cash-flow chart, open KPI/analytics regions, hidden donut and visible category table—with per-state timeout diagnostics. Product CSS and thresholds are unchanged.
 - FV-30 records a dark-theme evidence timing defect: the mobile More screenshot was captured during its 160ms entrance animation, making the settled dark surface look falsely translucent. Theme QA now waits 220ms before measuring/capturing More; no product opacity or color token changed.
+- FV-31 records a real mobile Dashboard analytics regression: after disclosure expansion the cash-flow Recharts surface stayed absent even though the surrounding analytics/KPI layout was open. The lazy chart mount now waits two animation frames after mobile expansion so `ResponsiveContainer` measures an already-visible parent; first-paint lazy loading and budgets remain unchanged.
 - The separate database workstream is complete by owner confirmation, including the relational ledger cutover. This branch will not touch the live database.
 - Manual installation/upload of final authentic provider logo binaries remains an external owner-side prerequisite. Provider/logo management UX continues separately in #481/#482 and is intentionally not duplicated here.
 - Remaining work: close the current rendered/runtime proof obligations including DA-54, inspect fresh screenshots, fix any failures, then run/finish the single exact-final-head CI/security/cross-engine/performance/Windows validation wave and squash-merge to `develop`.

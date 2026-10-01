@@ -93,10 +93,12 @@ export function DashboardPage({ data, month, asOf, motionMode='system', privacyV
   const systemReduced=useReducedMotion();const reduce=Boolean(systemReduced)||motionMode==='reduced';const animateCharts=motionMode==='full'&&!reduce;
   const [renderDeferredCharts,setRenderDeferredCharts]=useState(false);
   const [mobileAnalyticsExpanded,setMobileAnalyticsExpanded]=useState(false);
+  const [mobileAnalyticsChartsReady,setMobileAnalyticsChartsReady]=useState(false);
   const [mobileViewport,setMobileViewport]=useState(()=>typeof window!=='undefined'&&window.matchMedia('(max-width:680px)').matches);
   useEffect(()=>{let secondFrame=0;let settled=false;const reveal=()=>{if(settled)return;settled=true;setRenderDeferredCharts(true)};const fallback=window.setTimeout(reveal,700);const firstFrame=requestAnimationFrame(()=>{secondFrame=requestAnimationFrame(reveal)});return()=>{settled=true;window.clearTimeout(fallback);cancelAnimationFrame(firstFrame);if(secondFrame)cancelAnimationFrame(secondFrame)}},[]);
   useEffect(()=>{const query=window.matchMedia('(max-width:680px)');const sync=()=>setMobileViewport(query.matches);sync();query.addEventListener('change',sync);return()=>query.removeEventListener('change',sync)},[]);
-  const heavyChartsReady=renderDeferredCharts&&(!mobileViewport||mobileAnalyticsExpanded);
+  useEffect(()=>{if(!mobileViewport||!mobileAnalyticsExpanded||!renderDeferredCharts){setMobileAnalyticsChartsReady(false);return}let secondFrame=0;const firstFrame=requestAnimationFrame(()=>{secondFrame=requestAnimationFrame(()=>setMobileAnalyticsChartsReady(true))});return()=>{cancelAnimationFrame(firstFrame);if(secondFrame)cancelAnimationFrame(secondFrame)}},[mobileViewport,mobileAnalyticsExpanded,renderDeferredCharts]);
+  const heavyChartsReady=renderDeferredCharts&&(!mobileViewport||mobileAnalyticsChartsReady);
   const flow=selectMonthlyFlow(data,month);const balances=selectAccountBalances(data,asOf);const accountChoices=financeAccountChoices(data);const accounts=accountChoices.accounts;
   const primary=accountChoices.dashboardPrimary;const primaryIdSet=new Set(primary.map(account=>account.id));const remaining=accounts.filter(account=>!primaryIdSet.has(account.id));
   const categories=selectCategoryTotals(data,month).slice(0,6);const range=monthRange(month);const savingsTargetRate=data.state.settings.savingsTargetRate??.2;
