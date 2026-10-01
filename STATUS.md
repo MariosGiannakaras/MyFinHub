@@ -124,3 +124,5 @@ Subsequent changes are product fixes against the completed v1.3.0 baseline. Rout
 - Provider partial-failure recovery is directly closed: rendered QA proves no false success and a recoverable editor when creation succeeds but asset upload fails; backend regression coverage proves Storage cleanup when post-upload metadata registration fails.
 
 - Batch N local/Windows routing parity is source-implemented: known API paths now preserve 405/Allow semantics before the JSON unknown-route 404, and post-build runtime QA covers real HTTP/static/API fallbacks. Exact-head proof is pending; Android valid-route behavior is unchanged.
+
+- Batch O real persistence-failure QA is source-implemented: the real useFinance hook now has rendered probes for one-shot offline failure, explicit server-state recovery and beforeunload protection while failed/in-flight writes remain unconfirmed. Exact-head rendered proof is pending.
