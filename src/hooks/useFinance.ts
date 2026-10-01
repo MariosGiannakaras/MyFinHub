@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ApiError, createBackup, importData, loadData, loadHistory, moveHistory, saveData, type HistoryEnvelope } from '../lib/api';
 import { describeFinanceChange } from '../lib/changeHistory';
-import { SequentialQueue, remoteRevisionAction } from '../lib/persistenceQueue';
+import { SequentialQueue, remoteRevisionAction, shouldWarnBeforeUnload } from '../lib/persistenceQueue';
 import { migrateProductData } from '../lib/productMigration';
 import type { FinanceData } from '../types';
 
@@ -98,6 +98,16 @@ export function useFinance() {
     });
   }
   const coordinator = coordinatorRef.current!;
+
+  useEffect(()=>{
+    const guardUnload = (event: BeforeUnloadEvent) => {
+      if(!shouldWarnBeforeUnload(coordinator.hasWork(),lastSaveFailed.current))return;
+      event.preventDefault();
+      event.returnValue='';
+    };
+    window.addEventListener('beforeunload',guardUnload);
+    return()=>window.removeEventListener('beforeunload',guardUnload);
+  },[coordinator]);
 
   const reload = useCallback(async () => {
     setCurrentSaveState('loading');
