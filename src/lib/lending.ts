@@ -1,4 +1,5 @@
 import type { FinanceData } from '../types.js';
+import { isIsoCalendarDate } from './isoDate.js';
 
 interface LendingRow {
   person: string;
@@ -21,7 +22,7 @@ interface LendingHistoryRow {
 
 const asArray=<T>(value:unknown):T[]=>Array.isArray(value)?value as T[]:[];
 const cleanString=(value:unknown)=>typeof value==='string'?value.trim():'';
-const cleanDate=(value:unknown)=>{const date=cleanString(value);return /^\d{4}-\d{2}-\d{2}$/.test(date)?date:''};
+const cleanDate=(value:unknown)=>{const date=cleanString(value);return isIsoCalendarDate(date)?date:''};
 const finiteNumber=(value:unknown)=>{const number=Number(value);return Number.isFinite(number)?number:0};
 
 export function lendingRows(data: FinanceData): LendingRow[] {
