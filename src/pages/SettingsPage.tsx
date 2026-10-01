@@ -1,6 +1,7 @@
 import { Download, FileJson, ShieldCheck } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { AccountManagementSettings } from '../components/AccountManagementSettings';
+import { FinancialProviderManagementSettings } from '../components/FinancialProviderManagementSettings';
 import { AccountSecuritySettings } from '../components/AccountSecuritySettings';
 import { CategoryIconAssignmentWorkspace } from '../components/CategoryIconAssignmentWorkspace';
 import { CategoryIconsWorkspace } from '../components/CategoryIconsWorkspace';
@@ -235,7 +236,7 @@ export function SettingsPage({
 
         {activeTab === 'profile' ? <AccountSecuritySettings currentEmail={currentEmail} /> : null}
 
-        {activeTab === 'accounts' ? <AccountManagementSettings data={data} settings={draft} onChange={(next) => commit(next, '')} /> : null}
+        {activeTab === 'accounts' ? <div className="settings-tab-stack settings-accounts-stack"><FinancialProviderManagementSettings/><AccountManagementSettings data={data} settings={draft} onChange={(next) => commit(next, '')} /></div> : null}
 
         {activeTab === 'categories' ? (
           <div className="settings-categories-only">

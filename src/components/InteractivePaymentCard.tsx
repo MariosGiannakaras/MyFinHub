@@ -2,7 +2,7 @@ import { Archive, Copy, Eye, EyeOff, KeyRound, Pencil, X } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
 import { BankBrandMark } from './BankBrandMark';
 import { CardNetworkMark } from './CardNetworkMark';
-import { cardThemeClass } from '../lib/cardDesigns';
+import { cardBrandSurfaceTone, cardThemeClass } from '../lib/cardDesigns';
 import { cardLabel } from '../lib/cards';
 import { cardVaultErrorMessage, revealCardSecret } from '../lib/cardVaultClient';
 import type { CardBank, PaymentCard } from '../types';
@@ -16,7 +16,7 @@ function kindLabel(card:PaymentCard){return card.kind==='credit'?'Credit':card.k
 function PrototypeBrand({card,bank}:{card:PaymentCard;bank:CardBank}){
   const design=card.designId??'';
   const alphaVariant=design==='alpha'?'enter':design.startsWith('alpha')?'bonus':null;
-  return <><BankBrandMark id={bank.id} name={bank.name} compact={false}/>{alphaVariant?<span className={alphaVariant==='enter'?'alpha-enter':'alpha-bonus-word'}>{alphaVariant}</span>:null}</>;
+  return <><BankBrandMark id={bank.id} name={bank.name} compact={false} role="card-mark" surfaceTone={cardBrandSurfaceTone(card)}/>{alphaVariant?<span className={alphaVariant==='enter'?'alpha-enter':'alpha-bonus-word'}>{alphaVariant}</span>:null}</>;
 }
 
 export function InteractivePaymentCard({
