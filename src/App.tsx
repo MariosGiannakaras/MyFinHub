@@ -58,6 +58,8 @@ const AttentionPage = lazy(() => import('./pages/AttentionPage').then((module) =
 const ReportsPage = lazy(() => import('./pages/ReportsPage').then((module) => ({ default: module.ReportsPage })));
 const SettingsPage = lazy(() => import('./pages/SettingsPage').then((module) => ({ default: module.SettingsPage })));
 
+const PERIOD_PAGES = new Set<PageId>(['dashboard','transactions','savings','reports']);
+
 function routeFromLocation() {
   const route = resolveHashRoute(location.hash);
   if (route.redirectHash && location.hash !== route.redirectHash) history.replaceState(null, '', route.redirectHash);
