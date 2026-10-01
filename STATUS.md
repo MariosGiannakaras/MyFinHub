@@ -87,6 +87,8 @@ Release-closeout tracker: **#288 — complete**.
 - Batch D persistence trust-boundary hardening is in progress: direct audit found missing canonical validators for scheduled/attention/budgets/rules, regex-only calendar checks and inconsistent full-import extension validation. A shared complete-document validator plus regression coverage is now on the completion branch. Counters remain unchanged until CI/runtime proof.
 - The 404 addition moved total raw CSS to 504.2 KiB while gzip remained 94.4 KiB. The aggregate raw CSS ceiling is narrowly adjusted from 500 to 512 KiB; the 100 KiB gzip ceiling and every JavaScript budget remain unchanged.
 - Batch F production backend parity is completed and counted: the live provider-management migration is applied, integrity checks are clean and the repository migration version is aligned with the live ledger.
+- Batch G finance semantic validation is source-implemented: persisted event legs/splits/deltas now have cent-exact accounting checks, while full documents additionally validate account references. Mutable writes intentionally avoid seed-dependent reference checks. CI proof is pending, so counters are unchanged.
+- Supabase leaked-password protection remains a blocked external Auth setting: the security advisor reports it disabled, but the connected Supabase control surface available here has no Auth-setting write action.
 - No Android implementation and no `main` promotion/release are included.
 
 ## Next work
