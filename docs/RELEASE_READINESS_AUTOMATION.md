@@ -30,6 +30,12 @@ Draft pull requests keep the core CI/source/security loop and CodeQL. The expens
 
 Cross-engine and performance workflows are path-scoped to browser/frontend inputs. Performance also uses per-PR concurrency with superseded-run cancellation and runs for both `develop` and release PRs targeting `main`. Root source/test/build validation remains owned by CI; Windows workflows retain only their Windows-specific checks and the builds needed for package/lifecycle verification.
 
+## CI stability and ownership
+
+Bundle and performance gates are designed to detect regressions without turning normal source growth or shared-runner noise into duplicate failures. The eager CSS gate keeps the compressed 46 KiB network ceiling while allowing a bounded 256 KiB raw ceiling, and a separate 500 KiB raw / 100 KiB gzip aggregate CSS gate prevents moving stylesheet growth into lazy chunks to evade measurement.
+
+Lighthouse keeps the existing thresholds but evaluates the median of three runs per fixture. Windows Desktop owns the desktop dependency audit; First Run and Clean Launch retain desktop source/contract checks without repeating the same audit. Windows Desktop builds the root production frontend once and reuses that dist for unpacked and NSIS packaging.
+
 ## Bundle and loading architecture
 
 The production build enforces explicit budgets for the eager main application JS, chart chunk and application CSS through `scripts/bundle-budget.mjs`. A ceiling is a regression boundary, not a target to raise when a new eager import appears.

@@ -38,7 +38,7 @@ Release-closeout tracker: **#288 — complete**.
 
 ## Active CI/workflow optimization — #483
 
-**Implementations 5/5 · Sub-implementations 15/15**
+**Implementations 9/9 · Sub-implementations 24/24**
 
 - Branch: `chore/483-ci-workflow-optimization`.
 - Implementation complete: draft PRs keep core CI + CodeQL feedback while expensive rendered/cross-engine/performance/Windows lifecycle validation is deferred until ready-for-review.
@@ -47,6 +47,7 @@ Release-closeout tracker: **#288 — complete**.
 - Production Smoke uses the canonical `https://mgfinhub.vercel.app` origin.
 - Repository instruction authority and progress terminology are consolidated around `AGENTS.md`, issue #266, and `Implementations/Sub-implementations`.
 - Repository plan: `docs/CI_WORKFLOW_OPTIMIZATION_PLAN.md`.
+- Follow-up hardening now uses explicit eager + total CSS budgets, median-of-three Lighthouse evidence with unchanged thresholds, one desktop-audit owner, one root build per Windows Desktop packaging wave, and patched desktop transitive dependency resolutions.
 - Integration status: implementation committed; final PR validation/merge remains required before this becomes the `develop` baseline.
 
 ## Next work
