@@ -49,9 +49,9 @@ Release-closeout tracker: **#288 — complete**.
 
 ## Active completion batch — #476
 
-**Implementations 6/8 completed · Sub-implementations 16/21 completed**
+**Implementations 6/8 completed · Sub-implementations 16/22 completed**
 
-- The explicit accepted checklist was normalized to 20 items, then increased to 21 after final CI exposed a new aggregate-CSS budget follow-up. FV-37 is source-fixed without raising the 500 KiB threshold.
+- The explicit accepted checklist was normalized to 20 items, increased to 21 for FV-37, and is now 22 after provider reconciliation exposed a second aggregate-CSS regression. The 500 KiB threshold remains unchanged.
 
 - Branch: `feat/476-completion-audit-hardening`.
 - **54 deep-audit findings are now tracked.** DA-01..DA-53 retain their existing implementation/disposition state; DA-54 adds the owner-reported dark-theme color/contrast defect.
@@ -73,7 +73,8 @@ Release-closeout tracker: **#288 — complete**.
 - FV-35 is **source-fixed; exact-head proof pending** with no product regression identified: legacy transaction management now applies the real Transactions search control to `Supermarket` on desktop and mobile before edit/delete/undo/redo proof, so the target row is deterministic without bypassing or weakening the 14-row pagination contract.
 - FV-37 is **source-fixed; exact-head proof pending**: #483's aggregate CSS gate exposed 507.3 KiB raw CSS against the unchanged 500 KiB ceiling. The completion branch now removes superseded card-renderer/create-dialog geometry from the eagerly loaded legacy stylesheet while preserving active card themes, current component-owned geometry and the existing budget.
 - Draft CI on provider-reconciled head `98293e9…` reached 760/761 unit/source tests; the sole failure was a stale migration-source assertion expecting the pre-back-sync fallback text. Commit `8066c2a88899…` updates that assertion to the actual production-synced `else logo_asset_key` / `else wordmark_asset_key` contract without weakening behavior.
-- Remaining work: prove FV-35/FV-37 and the #482 reconciliation on the next exact head, complete final rendered/manual evidence, then run the exact-final-head CI/security/cross-engine/performance/Windows validation wave and squash-merge to `develop`.
+- **FV-38 source-fixed; exact-head proof pending:** head `4f875f0…` passed 761/761 tests and all JS/eager-CSS budgets, but provider reconciliation raised aggregate raw CSS to 506.8 KiB. The provider stylesheet now reuses shared UI styling and retains only provider-specific layout/asset-picker rules; the 500 KiB raw / 100 KiB gzip budget is unchanged.
+- Remaining work: prove FV-35/FV-37/FV-38 and the #482 reconciliation on the next exact head, complete final rendered/manual evidence, then run the exact-final-head CI/security/cross-engine/performance/Windows validation wave and squash-merge to `develop`.
 - No Android implementation and no `main` promotion/release are included.
 
 ## Next work
