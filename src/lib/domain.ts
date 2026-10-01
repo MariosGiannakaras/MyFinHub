@@ -11,6 +11,7 @@ import type {
 } from '../types.js';
 import { cleanNote } from './format.js';
 import { calendarMonthRange, isValidDateOnly } from './dateOnly.js';
+import { isSafeMoneyValue } from './money.js';
 
 const CREDIT_ACCOUNT: Account = {
   id: 'credit-card',
@@ -152,9 +153,15 @@ export function createEvent(args: {
 }): FinanceEvent {
   if (!isValidDateOnly(args.date)) throw new Error('Διάλεξε έγκυρη ημερομηνία.');
   if (args.expectedReturnDate && !isValidDateOnly(args.expectedReturnDate)) throw new Error('Διάλεξε έγκυρη αναμενόμενη ημερομηνία επιστροφής.');
+  const amount = Number(args.amount);
+  if (!isSafeMoneyValue(amount) || (args.kind !== 'reconciliation' && amount <= 0) || amount < 0) throw new Error('Το ποσό είναι εκτός επιτρεπτού εύρους.');
+  if (args.kind === 'reconciliation') {
+    const actual = Number(args.actualBalance);
+    const current = Number(args.currentBalance);
+    if (!isSafeMoneyValue(actual) || !isSafeMoneyValue(current)) throw new Error('Το υπόλοιπο είναι εκτός επιτρεπτού εύρους.');
+  }
   const now = new Date().toISOString();
   const id = `evt-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-  const amount = Number(args.amount);
   const legs: FinanceEvent['legs'] = [];
   let savingAmount = 0;
   let receivableDelta = 0;
