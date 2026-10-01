@@ -42,7 +42,7 @@
 .rule-row-actions{display:flex;align-items:center;gap:5px;flex:0 0 auto}
 .rule-row-actions .secondary{min-height:36px;padding:7px 10px}
 .rule-row-actions .icon-button{width:36px;height:36px}
-.rules-empty-state{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:12px;padding:18px;border:1px dashed var(--line);border-radius:13px;background:rgba(248,250,253,.56);color:var(--muted)}
+.rules-empty-state{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:12px;padding:18px;border:1px dashed var(--line);border-radius:13px;background:var(--surface-inset);color:var(--text-secondary)}
 .rules-empty-state>svg{color:var(--blue-3)}
 .rules-empty-state>div{display:grid;gap:2px}
 .rules-empty-state b{color:var(--ink-2);font-size:var(--ux-small-size)}
