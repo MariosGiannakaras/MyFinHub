@@ -43,7 +43,7 @@ function responseRecorder() {
   };
 }
 
-function bearerRequest(method: 'GET' | 'PUT', token: string, extraHeaders: Record<string, string> = {}) {
+function bearerRequest(method: 'GET' | 'PUT', token: string, extraHeaders: Record<string, unknown> = {}) {
   return {
     method,
     headers: {
@@ -148,6 +148,42 @@ describe('native bearer finance API boundary', () => {
     expect(JSON.parse(res.body)).toMatchObject({ code: 'AUTH_REQUIRED' });
     expect(res.headers.has('set-cookie')).toBe(false);
     expect(storage.readStore).not.toHaveBeenCalled();
+  });
+
+  it('rejects ambiguous Authorization headers without falling back to ambient cookies', async () => {
+    const token = tokenWithAal('aal2');
+    const res = responseRecorder();
+    const req:any={
+      method:'GET',
+      headers:{
+        authorization:[`Bearer ${token}`,`Bearer ${token}`],
+        cookie:`rheomiq_access=${encodeURIComponent(token)}`,
+      },
+    };
+
+    await dataHandler(req,res);
+
+    expect(res.statusCode).toBe(400);
+    expect(JSON.parse(res.body)).toMatchObject({code:'INVALID_HEADER'});
+    expect(storage.isOwner).not.toHaveBeenCalled();
+    expect(storage.readStore).not.toHaveBeenCalled();
+  });
+
+  it('rejects ambiguous write-precondition headers rather than selecting the first value', async () => {
+    const token = tokenWithAal('aal2');
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(upstream(200, { id: 'owner-id' })));
+    const res = responseRecorder();
+    const req:any=bearerRequest('PUT',token,{
+      'if-match':['7','8'],
+      'x-rheomiq-history-generation':'4',
+    });
+
+    await dataHandler(req,res);
+
+    expect(res.statusCode).toBe(400);
+    expect(JSON.parse(res.body)).toMatchObject({code:'INVALID_HEADER'});
+    expect(storage.parseExpectedRevision).not.toHaveBeenCalled();
+    expect(storage.writeMutableState).not.toHaveBeenCalled();
   });
 
   it('preserves stale revision conflicts for bearer mutations', async () => {
