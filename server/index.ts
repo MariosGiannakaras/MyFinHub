@@ -11,7 +11,7 @@ import { ApiError, assertSameOrigin, handleApi, requestHeader, sendJson } from '
 import { backupStore, DATA_SOURCE, isOwner, moveHistory, readHistory, readStore, writeMutableState, writeStore } from './storage.js';
 import { parseMutableWrite } from './stateValidation.js';
 import { isAuthRejection } from './upstream.js';
-import { validateFinanceData } from './validation.js';
+import { validateCompleteFinanceData } from './financeDataValidation.js';
 import { MAX_FINANCE_DOCUMENT_BYTES } from '../src/lib/limits.js';
 
 const app = express();
@@ -195,7 +195,7 @@ app.post('/api/import', (req, res) => void handleApi(res, async () => {
   const session = await requireFinanceSession(req, res);
   assertMutationSessionOrigin(req, session);
   if (requestHeader(req, 'x-rheomiq-confirm-import') !== 'replace') throw new ApiError(400, 'IMPORT_CONFIRMATION_REQUIRED', 'Import confirmation is required.');
-  validateFinanceData(req.body);
+  validateCompleteFinanceData(req.body);
   sendJson(res, 200, await writeStore(req.body, undefined, true, session.accessToken));
 }));
 
