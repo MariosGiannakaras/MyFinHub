@@ -49,9 +49,9 @@ Release-closeout tracker: **#288 — complete**.
 
 ## Active completion batch — #476
 
-**Implementations 6/8 completed · Sub-implementations 18/23 completed**
+**Implementations 6/8 completed · Sub-implementations 18/24 completed**
 
-- The explicit accepted checklist was normalized to 20 items, increased to 21 for FV-37, and is now 23 because final visual review exposed FV-39: the Dashboard panel foundation was accidentally desktop-only below 981px. The 500 KiB threshold remains unchanged.
+- The explicit accepted checklist was normalized to 20 items, increased to 21 for FV-37, and is now 24 because final visual review also exposed FV-40: the mobile Credit card network badge is clipped at the lower-right edge. The 500 KiB threshold remains unchanged.
 
 - Branch: `feat/476-completion-audit-hardening`.
 - **54 deep-audit findings are now tracked.** DA-01..DA-53 retain their existing implementation/disposition state; DA-54 adds the owner-reported dark-theme color/contrast defect.
@@ -80,3 +80,5 @@ Release-closeout tracker: **#288 — complete**.
 ## Next work
 
 Subsequent changes are product fixes against the completed v1.3.0 baseline. Routine implementation remains **Issue → short-lived branch → PR → required checks → squash merge into `develop`**. `main` remains release-only.
+
+- **FV-40 in progress:** fresh final mobile Credit evidence shows the selected card's network badge clipped at the lower-right edge. Correct only the mobile canonical-card geometry, preserve desktop/tablet presentation and vault semantics, add rendered containment proof, then regenerate and manually inspect final evidence.
