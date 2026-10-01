@@ -234,7 +234,9 @@ describe('completion UX contracts',()=>{
     const dashboard=read('src/pages/DashboardPage.tsx');
     const css=read('src/pages/DashboardCompletion.css');
     expect(dashboard).toContain("window.matchMedia('(max-width:680px)')");
-    expect(dashboard).toContain('const heavyChartsReady=renderDeferredCharts&&(!mobileViewport||mobileAnalyticsExpanded)');
+    expect(dashboard).toContain('const [mobileAnalyticsChartsReady,setMobileAnalyticsChartsReady]=useState(false)');
+    expect(dashboard).toContain('secondFrame=requestAnimationFrame(()=>setMobileAnalyticsChartsReady(true))');
+    expect(dashboard).toContain('const heavyChartsReady=renderDeferredCharts&&(!mobileViewport||mobileAnalyticsChartsReady)');
     expect(dashboard).toContain('heavyChartsReady?<Suspense fallback={null}><DashboardSummaryChart');
     expect(dashboard).toContain('dashboard-mobile-summary-donut');
     expect(dashboard).toContain('heavyChartsReady?<Suspense fallback={null}><DashboardFlowChart');
