@@ -1,3 +1,4 @@
+import { isValidDateStamp } from '../src/lib/dateOnly.js';
 import { accessTokenAal, assertMutationSessionOrigin, clearSessionCookiesIfCookie, requireSession } from '../server/auth.js';
 import { ApiError, handleApi, methodNotAllowed, readJsonBody, sendJson } from '../server/http.js';
 import { isOwner, moveHistory, readHistory } from '../server/storage.js';
@@ -23,7 +24,7 @@ export default async function handler(req: any, res: any) {
     const body = await readJsonBody(req, 4096) as Record<string, unknown>;
     const action = body?.action;
     const updatedAt = body?.updatedAt;
-    if ((action !== 'undo' && action !== 'redo') || typeof updatedAt !== 'string' || !updatedAt || updatedAt.length > 64 || Object.keys(body).some(key=>key!=='action'&&key!=='updatedAt')) {
+    if ((action !== 'undo' && action !== 'redo') || !isValidDateStamp(updatedAt) || Object.keys(body).some(key=>key!=='action'&&key!=='updatedAt')) {
       throw new ApiError(400, 'INVALID_HISTORY', 'The change-history request is invalid.');
     }
     const result = await moveHistory(action, updatedAt, header(req, 'if-match'), header(req, 'x-rheomiq-history-generation'), session.accessToken);
