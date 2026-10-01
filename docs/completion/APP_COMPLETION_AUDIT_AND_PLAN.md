@@ -1045,3 +1045,16 @@ Accepted new sub-implementation:
 - add regression coverage for event dispatch and source wiring.
 
 This adds one material sub-implementation, increasing the overall denominator from 191 to 192. The existing 401/403 error-matrix item remains pending until this path is implemented and exact-head CI is green.
+
+### 8.27 Implementation batch M — cent-precision input boundary in progress
+
+Direct boundary review for the existing monetary-extremes verification item found that small positive values below one cent could pass client/domain draft checks and only fail later at server semantic validation. Generic `createEvent` also retained raw fractional-cent amounts instead of canonicalizing to the persisted/UI cent precision.
+
+Implementation scope inside the existing accepted boundary item:
+- canonicalize event monetary amounts to integer cents before constructing ledger legs;
+- reject non-reconciliation amounts that normalize below one cent;
+- calculate reconciliation deltas from cent-normalized balances;
+- reject transfer/split parts that normalize to zero cents before event construction;
+- add regression coverage for zero, negative, near-zero, fractional-cent rounding, maximum safe values and excessive values.
+
+No denominator change is required because this work is already explicitly covered by the pending monetary-boundary verification item. Completion remains pending until exact-head CI is green.
