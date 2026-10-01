@@ -6,6 +6,21 @@ Target branch: `feat/476-completion-audit-hardening`
 Integration target: `develop`  
 Release target: none — `main` remains release-only
 
+## Current integration checkpoint — 2026-10-01
+
+**Implementations 6/8 completed · Sub-implementations 16/21 completed**
+
+This checkpoint supersedes older "#482 reconciliation pending" notes below for current execution state.
+
+- #483 is already integrated into `develop`; #477 is based on that baseline.
+- The accepted #482 provider-management/API/Storage delta is source-integrated into #477 at `98293e962b227336dc8f6f05cd5b65f89adb67bb`, preserving the completion-audit fixes instead of merging the stacked branch wholesale.
+- Draft CI on that head reached 760/761 unit/source tests. The only failure was a stale source assertion against the back-synced provider migration; `8066c2a88899227ffe204e648a75a908ffbe0ae3` corrects the assertion to the migration's actual preserve-existing fallback contract.
+- The provider reconciliation remains **partially completed / validation pending** until the next exact head passes core CI and the provider rendered QA. It is not yet added to the completed sub-implementation count.
+- FV-35 and FV-37 remain source-fixed and exact-head proof pending.
+- Repository-admin hardening is tracked separately in #485 because the connected automation lacks admin-level ruleset/homepage writes; it does not alter this batch's 21-item denominator.
+- No Android changes and no `main` release/promotion are part of this checkpoint.
+
+
 ## 1. Audit scope and evidence
 
 This plan is based on the actual current product/repository state, not on the older redesign specification.
