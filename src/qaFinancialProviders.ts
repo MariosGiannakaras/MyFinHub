@@ -1,4 +1,4 @@
-import type { FinancialProvider, FinancialProviderAsset, FinancialProviderAssetBinding, FinancialProviderAssetRole, FinancialProviderKind } from './lib/financialProviders';
+import type { FinancialProvider, FinancialProviderAsset, FinancialProviderAssetBinding, FinancialProviderAssetRole, FinancialProviderKind } from './lib/financialProviders.js';
 
 const PROJECT_URL='https://ahsukppxwaiagampsuzb.supabase.co';
 const UPDATED_AT='2026-09-30 19:58:48.46408+00';
