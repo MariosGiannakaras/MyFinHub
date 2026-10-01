@@ -199,6 +199,7 @@ try {
   monitorOcrNetwork = true;
   const scanClicked = await c.call("function(){const button=[...document.querySelectorAll('.receipt-review-actions button')].find(node=>(node.textContent||'').includes('Σάρωση τώρα'));button?.click();return Boolean(button)}");
   assert(scanClicked, 'scan retry action exists after missing local asset failure');
+  await waitFor("function(){return !document.querySelector('.form-error')}", 'prior OCR asset error clears before retry');
   await waitFor("function(){return Boolean(document.querySelector('.receipt-proposal h3'))||Boolean(document.querySelector('.form-error'))}", 'OCR completion', [], 650);
   monitorOcrNetwork = false;
   const scanError = await c.call("function(){return document.querySelector('.form-error')?.textContent||''}");
