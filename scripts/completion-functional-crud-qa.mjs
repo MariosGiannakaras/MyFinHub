@@ -192,8 +192,8 @@ try{
   await waitFor("function(){return [...document.querySelectorAll('.account-management-row')].some(row=>(row.textContent||'').includes('QA Audit Temp Cash'))}",'created temporary cash account');
   const requestedDelete=await c.call(`function(){const row=[...document.querySelectorAll('.account-management-row')].find(item=>(item.textContent||'').includes('QA Audit Temp Cash'));const button=row?.querySelector('button[aria-label="Διαγραφή QA Audit Temp Cash"]');button?.click();return Boolean(button)}`);
   assert(requestedDelete,'temporary custom cash account exposes delete');
-  await waitFor("function(){return [...document.querySelectorAll('[role=dialog]')].some(dialog=>(dialog.textContent||'').includes('Διαγραφή λογαριασμού;')&&(dialog.textContent||'').includes('QA Audit Temp Cash'))}",'account delete confirmation');
-  await clickText('[role=dialog] button','Διαγραφή');
+  await waitFor("function(){return [...document.querySelectorAll('[role=alertdialog]')].some(dialog=>(dialog.textContent||'').includes('Διαγραφή λογαριασμού;')&&(dialog.textContent||'').includes('QA Audit Temp Cash'))}",'account delete confirmation');
+  await clickText('[role=alertdialog] button','Διαγραφή');
   await waitFor("function(){const exists=[...document.querySelectorAll('.account-management-row')].some(row=>(row.textContent||'').includes('QA Audit Temp Cash'));const message=document.querySelector('.account-management-message')?.textContent||'';return !exists&&message.includes('Ο λογαριασμός διαγράφηκε.')}",'temporary cash account deleted');
   await shot('settings-account-create-delete');
 
