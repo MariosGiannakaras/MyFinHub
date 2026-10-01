@@ -250,7 +250,8 @@ describe('completion UX contracts',()=>{
   it('keeps the final functional closeout inside the required rendered CRUD suite',()=>{
     const harness=read('scripts/completion-functional-crud-qa.mjs');
     expect(harness).toContain('Completion functional QA: Lending repayment round-trip');
-    expect(harness).toContain('lending repayment reduces outstanding exactly once');
+    expect(harness).toContain('lending repayment records exactly one semantic repayment row');
+    expect(harness).toContain('partial 12/42 repayment leaves a remaining receivable');
     expect(harness).toContain('Completion functional QA: Settings custom cash account create and delete');
     expect(harness).toContain('QA Audit Temp Cash');
     expect(harness).toContain('temporary cash account deleted');

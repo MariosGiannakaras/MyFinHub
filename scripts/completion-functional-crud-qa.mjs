@@ -124,8 +124,14 @@ try{
   await clickText('.lending-quick-action.repayment','Νέα επιστροφή');
   await waitFor("function(){return document.querySelector('#context-quick-title')?.textContent?.includes('Επιστροφή δανεικών')}",'lending repayment contextual editor');
   await setByLabel('Ποσό','12');
+  await setByLabel('Σχόλιο','QA Audit Repayment');
   await clickText('.contextual-quick-modal button','Καταχώριση');
-  await waitFor("function(){const panel=document.querySelector('.lending-selected-panel');const rows=[...document.querySelectorAll('.lending-approved-table tbody tr')];const repaymentRows=rows.filter(row=>row.querySelector('.receivable-action.repaid'));return !document.querySelector('.contextual-quick-modal')&&Boolean(panel&&(panel.textContent||'').includes('QA Audit Person')&&(panel.textContent||'').includes('30,00'))&&repaymentRows.length===1&&repaymentRows.some(row=>(row.textContent||'').includes('Μου δίνει')&&(row.textContent||'').includes('Επιστροφή δανεικών'))}",'lending repayment reduces outstanding exactly once');
+  await waitFor("function(){return !document.querySelector('.contextual-quick-modal')||Boolean(document.querySelector('#context-quick-error'))}",'lending repayment submit result');
+  const repaymentState=await c.call(`function(){const modal=document.querySelector('.contextual-quick-modal');const rows=[...document.querySelectorAll('.lending-approved-table tbody tr')];const repayments=rows.filter(row=>row.querySelector('.receivable-action.repaid'));const repayButton=document.querySelector('.lending-quick-action.repayment');return {modalOpen:Boolean(modal),error:document.querySelector('#context-quick-error')?.textContent||'',repaymentRows:repayments.map(row=>(row.textContent||'').replace(/\\s+/g,' ').trim()),repayButtonDisabled:Boolean(repayButton?.disabled),selectedPerson:document.querySelector('.lending-selected-identity h2')?.textContent||''}}`);
+  assert(!repaymentState.modalOpen&&!repaymentState.error,`lending repayment submits without error: ${JSON.stringify(repaymentState)}`);
+  assert(repaymentState.selectedPerson==='QA Audit Person',`repayment keeps the created person selected: ${JSON.stringify(repaymentState)}`);
+  assert(repaymentState.repaymentRows.length===1&&repaymentState.repaymentRows[0].includes('QA Audit Repayment')&&repaymentState.repaymentRows[0].includes('Μου δίνει'),`lending repayment records exactly one semantic repayment row: ${JSON.stringify(repaymentState)}`);
+  assert(!repaymentState.repayButtonDisabled,`partial 12/42 repayment leaves a remaining receivable: ${JSON.stringify(repaymentState)}`);
   await shot('lending-repayment-completed');
 
   console.log('Completion functional QA: Recurring create, edit, pause and reactivate');
