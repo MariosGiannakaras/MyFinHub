@@ -29,9 +29,24 @@ export function sendJson(res: any, status: number, body: unknown) {
   res.end(JSON.stringify(body));
 }
 
+function responseRequestId(res:any){
+  const value=typeof res?.getHeader==='function'?res.getHeader('x-request-id'):undefined;
+  return firstHeader(value).trim()||undefined;
+}
+
+function assertContentLengthWithinLimit(req:any,maxBytes:number){
+  const raw=requestHeader(req,'content-length').trim();
+  if(!raw)return;
+  if(!/^\d+$/.test(raw))throw new ApiError(400,'INVALID_CONTENT_LENGTH','Invalid Content-Length header.');
+  const value=Number(raw);
+  if(!Number.isSafeInteger(value)||value<0)throw new ApiError(400,'INVALID_CONTENT_LENGTH','Invalid Content-Length header.');
+  if(value>maxBytes)throw new ApiError(413,'PAYLOAD_TOO_LARGE','Request is too large.');
+}
+
 export function methodNotAllowed(res: any, allowed: string[]) {
   res.setHeader('allow', allowed.join(', '));
-  sendJson(res, 405, { error: 'Method not allowed', code: 'METHOD_NOT_ALLOWED' });
+  const requestId=responseRequestId(res);
+  sendJson(res, 405, { error: 'Method not allowed', code: 'METHOD_NOT_ALLOWED', ...(requestId?{requestId}:{}) });
 }
 
 export function assertSameOrigin(req: any) {
@@ -67,13 +82,12 @@ export async function readJsonBody<T = unknown>(req: any, maxBytes = 5 * 1024 * 
     throw new ApiError(415, 'UNSUPPORTED_MEDIA_TYPE', 'Expected application/json.');
   }
 
-  const contentLength = Number(requestHeader(req, 'content-length') || 0);
-  if (Number.isFinite(contentLength) && contentLength > maxBytes) {
-    throw new ApiError(413, 'PAYLOAD_TOO_LARGE', 'Request is too large.');
-  }
+  assertContentLengthWithinLimit(req,maxBytes);
 
   if (req.body !== undefined) {
-    const raw = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
+    let raw:string;
+    try{raw=typeof req.body==='string'?req.body:JSON.stringify(req.body);}
+    catch{throw new ApiError(400,'INVALID_JSON','Invalid JSON payload.');}
     if (Buffer.byteLength(raw, 'utf8') > maxBytes) throw new ApiError(413, 'PAYLOAD_TOO_LARGE', 'Request is too large.');
     try { return (typeof req.body === 'string' ? JSON.parse(req.body || '{}') : req.body) as T; }
     catch { throw new ApiError(400, 'INVALID_JSON', 'Invalid JSON payload.'); }
@@ -81,9 +95,9 @@ export async function readJsonBody<T = unknown>(req: any, maxBytes = 5 * 1024 * 
 
   const chunks: Buffer[] = [];
   let total = 0;
-  for await (const chunk of req) {
-    const buffer = Buffer.from(chunk);
-    total += buffer.length;
+  for await (const chunk of req as AsyncIterable<unknown>) {
+    const buffer=copyBoundedBinaryValue(chunk,maxBytes);
+    total += buffer.byteLength;
     if (total > maxBytes) throw new ApiError(413, 'PAYLOAD_TOO_LARGE', 'Request is too large.');
     chunks.push(buffer);
   }
@@ -104,13 +118,7 @@ export function copyBoundedBinaryValue(value:unknown,maxBytes:number):Buffer{
 }
 
 export async function readBinaryBody(req:any,maxBytes:number):Promise<Buffer>{
-  const rawContentLength=requestHeader(req,'content-length').trim();
-  if(rawContentLength){
-    if(!/^\d+$/.test(rawContentLength))throw new ApiError(400,'INVALID_CONTENT_LENGTH','Invalid Content-Length header.');
-    const contentLength=Number(rawContentLength);
-    if(!Number.isSafeInteger(contentLength)||contentLength<0)throw new ApiError(400,'INVALID_CONTENT_LENGTH','Invalid Content-Length header.');
-    if(contentLength>maxBytes)throw new ApiError(413,'PAYLOAD_TOO_LARGE','Request is too large.');
-  }
+  assertContentLengthWithinLimit(req,maxBytes);
 
   const body=req&&typeof req==='object'?(req as {body?:unknown}).body:undefined;
   if(body!==undefined)return copyBoundedBinaryValue(body,maxBytes);
