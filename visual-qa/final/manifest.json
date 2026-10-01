@@ -2,19 +2,19 @@
   "schemaVersion": 1,
   "kind": "final-release-screenshots",
   "appVersion": "v1.3.0",
-  "captureId": "2026-09-28_143707__2068fb42",
-  "generatedAt": "2026-09-28T11:37:07.659Z",
+  "captureId": "2026-10-01_170406__3e46dcc9",
+  "generatedAt": "2026-10-01T14:04:06.621Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "2068fb423b24f1593a84441fa2244ce5bfcacc67",
-    "shortSha": "2068fb42",
-    "branch": "feat/429-canonical-integration"
+    "sha": "3e46dcc9cb63d112ff6d4c730af90b8511d7f760",
+    "shortSha": "3e46dcc9",
+    "branch": "feat/476-completion-audit-hardening"
   },
   "baseUrl": "http://127.0.0.1:5173/qa.html",
   "count": 63,
   "screenshots": [
     {
-      "file": "visual-qa/final/dashboard/v1.3.0__2026-09-28_143707__page__desktop-1440x1000.png",
+      "file": "visual-qa/final/dashboard/v1.3.0__2026-10-01_170406__page__desktop-1440x1000.png",
       "surface": "dashboard",
       "state": "page",
       "viewport": {
@@ -23,12 +23,12 @@
         "height": 1000
       },
       "capture": {
-        "width": 1440,
-        "height": 1011
+        "width": 1425,
+        "height": 1149
       }
     },
     {
-      "file": "visual-qa/final/transactions/v1.3.0__2026-09-28_143707__page__desktop-1440x1000.png",
+      "file": "visual-qa/final/transactions/v1.3.0__2026-10-01_170406__page__desktop-1440x1000.png",
       "surface": "transactions",
       "state": "page",
       "viewport": {
@@ -38,11 +38,11 @@
       },
       "capture": {
         "width": 1425,
-        "height": 1027
+        "height": 1143
       }
     },
     {
-      "file": "visual-qa/final/savings/v1.3.0__2026-09-28_143707__page__desktop-1440x1000.png",
+      "file": "visual-qa/final/savings/v1.3.0__2026-10-01_170406__page__desktop-1440x1000.png",
       "surface": "savings",
       "state": "page",
       "viewport": {
@@ -56,7 +56,7 @@
       }
     },
     {
-      "file": "visual-qa/final/cards/v1.3.0__2026-09-28_143707__page__desktop-1440x1000.png",
+      "file": "visual-qa/final/cards/v1.3.0__2026-10-01_170406__page__desktop-1440x1000.png",
       "surface": "cards",
       "state": "page",
       "viewport": {
@@ -66,11 +66,11 @@
       },
       "capture": {
         "width": 1425,
-        "height": 1069
+        "height": 1073
       }
     },
     {
-      "file": "visual-qa/final/credit/v1.3.0__2026-09-28_143707__page__desktop-1440x1000.png",
+      "file": "visual-qa/final/credit/v1.3.0__2026-10-01_170406__page__desktop-1440x1000.png",
       "surface": "credit",
       "state": "page",
       "viewport": {
@@ -80,11 +80,11 @@
       },
       "capture": {
         "width": 1425,
-        "height": 1798
+        "height": 1813
       }
     },
     {
-      "file": "visual-qa/final/loans/v1.3.0__2026-09-28_143707__page__desktop-1440x1000.png",
+      "file": "visual-qa/final/loans/v1.3.0__2026-10-01_170406__page__desktop-1440x1000.png",
       "surface": "loans",
       "state": "page",
       "viewport": {
@@ -98,7 +98,7 @@
       }
     },
     {
-      "file": "visual-qa/final/lending/v1.3.0__2026-09-28_143707__page__desktop-1440x1000.png",
+      "file": "visual-qa/final/lending/v1.3.0__2026-10-01_170406__page__desktop-1440x1000.png",
       "surface": "lending",
       "state": "page",
       "viewport": {
@@ -112,7 +112,7 @@
       }
     },
     {
-      "file": "visual-qa/final/recurring/v1.3.0__2026-09-28_143707__page__desktop-1440x1000.png",
+      "file": "visual-qa/final/recurring/v1.3.0__2026-10-01_170406__page__desktop-1440x1000.png",
       "surface": "recurring",
       "state": "page",
       "viewport": {
@@ -126,7 +126,7 @@
       }
     },
     {
-      "file": "visual-qa/final/planning/v1.3.0__2026-09-28_143707__page__desktop-1440x1000.png",
+      "file": "visual-qa/final/planning/v1.3.0__2026-10-01_170406__page__desktop-1440x1000.png",
       "surface": "planning",
       "state": "page",
       "viewport": {
@@ -140,7 +140,7 @@
       }
     },
     {
-      "file": "visual-qa/final/attention/v1.3.0__2026-09-28_143707__page__desktop-1440x1000.png",
+      "file": "visual-qa/final/attention/v1.3.0__2026-10-01_170406__page__desktop-1440x1000.png",
       "surface": "attention",
       "state": "page",
       "viewport": {
@@ -154,7 +154,7 @@
       }
     },
     {
-      "file": "visual-qa/final/reports/v1.3.0__2026-09-28_143707__page__desktop-1440x1000.png",
+      "file": "visual-qa/final/reports/v1.3.0__2026-10-01_170406__page__desktop-1440x1000.png",
       "surface": "reports",
       "state": "page",
       "viewport": {
@@ -168,7 +168,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-09-28_143707__page__desktop-1440x1000.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_170406__page__desktop-1440x1000.png",
       "surface": "settings",
       "state": "page",
       "viewport": {
@@ -182,7 +182,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-09-28_143707__tab-profile__desktop-1440x1000.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_170406__tab-profile__desktop-1440x1000.png",
       "surface": "settings",
       "state": "tab-profile",
       "viewport": {
@@ -192,11 +192,11 @@
       },
       "capture": {
         "width": 1425,
-        "height": 1333
+        "height": 1375
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-09-28_143707__tab-accounts__desktop-1440x1000.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_170406__tab-accounts__desktop-1440x1000.png",
       "surface": "settings",
       "state": "tab-accounts",
       "viewport": {
@@ -206,11 +206,11 @@
       },
       "capture": {
         "width": 1425,
-        "height": 1350
+        "height": 2127
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-09-28_143707__tab-categories__desktop-1440x1000.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_170406__tab-categories__desktop-1440x1000.png",
       "surface": "settings",
       "state": "tab-categories",
       "viewport": {
@@ -224,7 +224,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-09-28_143707__tab-icons__desktop-1440x1000.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_170406__tab-icons__desktop-1440x1000.png",
       "surface": "settings",
       "state": "tab-icons",
       "viewport": {
@@ -234,11 +234,11 @@
       },
       "capture": {
         "width": 1425,
-        "height": 1181
+        "height": 1234
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-09-28_143707__tab-rules__desktop-1440x1000.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_170406__tab-rules__desktop-1440x1000.png",
       "surface": "settings",
       "state": "tab-rules",
       "viewport": {
@@ -252,7 +252,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-09-28_143707__tab-data__desktop-1440x1000.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_170406__tab-data__desktop-1440x1000.png",
       "surface": "settings",
       "state": "tab-data",
       "viewport": {
@@ -266,7 +266,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-09-28_143707__login__desktop-1440x1000.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-01_170406__login__desktop-1440x1000.png",
       "surface": "auth",
       "state": "login",
       "viewport": {
@@ -280,7 +280,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-09-28_143707__mfa__desktop-1440x1000.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-01_170406__mfa__desktop-1440x1000.png",
       "surface": "auth",
       "state": "mfa",
       "viewport": {
@@ -294,7 +294,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-09-28_143707__mfa-enroll__desktop-1440x1000.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-01_170406__mfa-enroll__desktop-1440x1000.png",
       "surface": "auth",
       "state": "mfa-enroll",
       "viewport": {
@@ -308,7 +308,7 @@
       }
     },
     {
-      "file": "visual-qa/final/dashboard/v1.3.0__2026-09-28_143707__page__tablet-834x1112.png",
+      "file": "visual-qa/final/dashboard/v1.3.0__2026-10-01_170406__page__tablet-834x1112.png",
       "surface": "dashboard",
       "state": "page",
       "viewport": {
@@ -318,11 +318,11 @@
       },
       "capture": {
         "width": 819,
-        "height": 3322
+        "height": 2676
       }
     },
     {
-      "file": "visual-qa/final/transactions/v1.3.0__2026-09-28_143707__page__tablet-834x1112.png",
+      "file": "visual-qa/final/transactions/v1.3.0__2026-10-01_170406__page__tablet-834x1112.png",
       "surface": "transactions",
       "state": "page",
       "viewport": {
@@ -336,7 +336,7 @@
       }
     },
     {
-      "file": "visual-qa/final/savings/v1.3.0__2026-09-28_143707__page__tablet-834x1112.png",
+      "file": "visual-qa/final/savings/v1.3.0__2026-10-01_170406__page__tablet-834x1112.png",
       "surface": "savings",
       "state": "page",
       "viewport": {
@@ -350,7 +350,7 @@
       }
     },
     {
-      "file": "visual-qa/final/cards/v1.3.0__2026-09-28_143707__page__tablet-834x1112.png",
+      "file": "visual-qa/final/cards/v1.3.0__2026-10-01_170406__page__tablet-834x1112.png",
       "surface": "cards",
       "state": "page",
       "viewport": {
@@ -364,7 +364,7 @@
       }
     },
     {
-      "file": "visual-qa/final/credit/v1.3.0__2026-09-28_143707__page__tablet-834x1112.png",
+      "file": "visual-qa/final/credit/v1.3.0__2026-10-01_170406__page__tablet-834x1112.png",
       "surface": "credit",
       "state": "page",
       "viewport": {
@@ -374,11 +374,11 @@
       },
       "capture": {
         "width": 819,
-        "height": 1946
+        "height": 2036
       }
     },
     {
-      "file": "visual-qa/final/loans/v1.3.0__2026-09-28_143707__page__tablet-834x1112.png",
+      "file": "visual-qa/final/loans/v1.3.0__2026-10-01_170406__page__tablet-834x1112.png",
       "surface": "loans",
       "state": "page",
       "viewport": {
@@ -392,7 +392,7 @@
       }
     },
     {
-      "file": "visual-qa/final/lending/v1.3.0__2026-09-28_143707__page__tablet-834x1112.png",
+      "file": "visual-qa/final/lending/v1.3.0__2026-10-01_170406__page__tablet-834x1112.png",
       "surface": "lending",
       "state": "page",
       "viewport": {
@@ -406,7 +406,7 @@
       }
     },
     {
-      "file": "visual-qa/final/recurring/v1.3.0__2026-09-28_143707__page__tablet-834x1112.png",
+      "file": "visual-qa/final/recurring/v1.3.0__2026-10-01_170406__page__tablet-834x1112.png",
       "surface": "recurring",
       "state": "page",
       "viewport": {
@@ -420,7 +420,7 @@
       }
     },
     {
-      "file": "visual-qa/final/planning/v1.3.0__2026-09-28_143707__page__tablet-834x1112.png",
+      "file": "visual-qa/final/planning/v1.3.0__2026-10-01_170406__page__tablet-834x1112.png",
       "surface": "planning",
       "state": "page",
       "viewport": {
@@ -430,11 +430,11 @@
       },
       "capture": {
         "width": 819,
-        "height": 2832
+        "height": 2858
       }
     },
     {
-      "file": "visual-qa/final/attention/v1.3.0__2026-09-28_143707__page__tablet-834x1112.png",
+      "file": "visual-qa/final/attention/v1.3.0__2026-10-01_170406__page__tablet-834x1112.png",
       "surface": "attention",
       "state": "page",
       "viewport": {
@@ -444,11 +444,11 @@
       },
       "capture": {
         "width": 819,
-        "height": 1965
+        "height": 1497
       }
     },
     {
-      "file": "visual-qa/final/reports/v1.3.0__2026-09-28_143707__page__tablet-834x1112.png",
+      "file": "visual-qa/final/reports/v1.3.0__2026-10-01_170406__page__tablet-834x1112.png",
       "surface": "reports",
       "state": "page",
       "viewport": {
@@ -462,7 +462,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-09-28_143707__page__tablet-834x1112.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_170406__page__tablet-834x1112.png",
       "surface": "settings",
       "state": "page",
       "viewport": {
@@ -476,7 +476,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-09-28_143707__tab-profile__tablet-834x1112.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_170406__tab-profile__tablet-834x1112.png",
       "surface": "settings",
       "state": "tab-profile",
       "viewport": {
@@ -486,11 +486,11 @@
       },
       "capture": {
         "width": 819,
-        "height": 1351
+        "height": 1412
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-09-28_143707__tab-accounts__tablet-834x1112.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_170406__tab-accounts__tablet-834x1112.png",
       "surface": "settings",
       "state": "tab-accounts",
       "viewport": {
@@ -500,11 +500,11 @@
       },
       "capture": {
         "width": 819,
-        "height": 2004
+        "height": 3188
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-09-28_143707__tab-categories__tablet-834x1112.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_170406__tab-categories__tablet-834x1112.png",
       "surface": "settings",
       "state": "tab-categories",
       "viewport": {
@@ -518,7 +518,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-09-28_143707__tab-icons__tablet-834x1112.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_170406__tab-icons__tablet-834x1112.png",
       "surface": "settings",
       "state": "tab-icons",
       "viewport": {
@@ -528,11 +528,11 @@
       },
       "capture": {
         "width": 819,
-        "height": 1909
+        "height": 1944
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-09-28_143707__tab-rules__tablet-834x1112.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_170406__tab-rules__tablet-834x1112.png",
       "surface": "settings",
       "state": "tab-rules",
       "viewport": {
@@ -546,7 +546,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-09-28_143707__tab-data__tablet-834x1112.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_170406__tab-data__tablet-834x1112.png",
       "surface": "settings",
       "state": "tab-data",
       "viewport": {
@@ -560,7 +560,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-09-28_143707__login__tablet-834x1112.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-01_170406__login__tablet-834x1112.png",
       "surface": "auth",
       "state": "login",
       "viewport": {
@@ -574,7 +574,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-09-28_143707__mfa__tablet-834x1112.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-01_170406__mfa__tablet-834x1112.png",
       "surface": "auth",
       "state": "mfa",
       "viewport": {
@@ -588,7 +588,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-09-28_143707__mfa-enroll__tablet-834x1112.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-01_170406__mfa-enroll__tablet-834x1112.png",
       "surface": "auth",
       "state": "mfa-enroll",
       "viewport": {
@@ -602,7 +602,7 @@
       }
     },
     {
-      "file": "visual-qa/final/dashboard/v1.3.0__2026-09-28_143707__page__mobile-375x812.png",
+      "file": "visual-qa/final/dashboard/v1.3.0__2026-10-01_170406__page__mobile-375x812.png",
       "surface": "dashboard",
       "state": "page",
       "viewport": {
@@ -612,11 +612,11 @@
       },
       "capture": {
         "width": 375,
-        "height": 3327
+        "height": 2246
       }
     },
     {
-      "file": "visual-qa/final/transactions/v1.3.0__2026-09-28_143707__page__mobile-375x812.png",
+      "file": "visual-qa/final/transactions/v1.3.0__2026-10-01_170406__page__mobile-375x812.png",
       "surface": "transactions",
       "state": "page",
       "viewport": {
@@ -626,11 +626,11 @@
       },
       "capture": {
         "width": 375,
-        "height": 13847
+        "height": 3370
       }
     },
     {
-      "file": "visual-qa/final/savings/v1.3.0__2026-09-28_143707__page__mobile-375x812.png",
+      "file": "visual-qa/final/savings/v1.3.0__2026-10-01_170406__page__mobile-375x812.png",
       "surface": "savings",
       "state": "page",
       "viewport": {
@@ -640,11 +640,11 @@
       },
       "capture": {
         "width": 375,
-        "height": 2067
+        "height": 2151
       }
     },
     {
-      "file": "visual-qa/final/cards/v1.3.0__2026-09-28_143707__page__mobile-375x812.png",
+      "file": "visual-qa/final/cards/v1.3.0__2026-10-01_170406__page__mobile-375x812.png",
       "surface": "cards",
       "state": "page",
       "viewport": {
@@ -658,7 +658,7 @@
       }
     },
     {
-      "file": "visual-qa/final/credit/v1.3.0__2026-09-28_143707__page__mobile-375x812.png",
+      "file": "visual-qa/final/credit/v1.3.0__2026-10-01_170406__page__mobile-375x812.png",
       "surface": "credit",
       "state": "page",
       "viewport": {
@@ -672,7 +672,7 @@
       }
     },
     {
-      "file": "visual-qa/final/loans/v1.3.0__2026-09-28_143707__page__mobile-375x812.png",
+      "file": "visual-qa/final/loans/v1.3.0__2026-10-01_170406__page__mobile-375x812.png",
       "surface": "loans",
       "state": "page",
       "viewport": {
@@ -682,11 +682,11 @@
       },
       "capture": {
         "width": 375,
-        "height": 1340
+        "height": 1342
       }
     },
     {
-      "file": "visual-qa/final/lending/v1.3.0__2026-09-28_143707__page__mobile-375x812.png",
+      "file": "visual-qa/final/lending/v1.3.0__2026-10-01_170406__page__mobile-375x812.png",
       "surface": "lending",
       "state": "page",
       "viewport": {
@@ -696,11 +696,11 @@
       },
       "capture": {
         "width": 375,
-        "height": 812
+        "height": 888
       }
     },
     {
-      "file": "visual-qa/final/recurring/v1.3.0__2026-09-28_143707__page__mobile-375x812.png",
+      "file": "visual-qa/final/recurring/v1.3.0__2026-10-01_170406__page__mobile-375x812.png",
       "surface": "recurring",
       "state": "page",
       "viewport": {
@@ -710,11 +710,11 @@
       },
       "capture": {
         "width": 375,
-        "height": 1324
+        "height": 1326
       }
     },
     {
-      "file": "visual-qa/final/planning/v1.3.0__2026-09-28_143707__page__mobile-375x812.png",
+      "file": "visual-qa/final/planning/v1.3.0__2026-10-01_170406__page__mobile-375x812.png",
       "surface": "planning",
       "state": "page",
       "viewport": {
@@ -724,11 +724,11 @@
       },
       "capture": {
         "width": 375,
-        "height": 4767
+        "height": 3860
       }
     },
     {
-      "file": "visual-qa/final/attention/v1.3.0__2026-09-28_143707__page__mobile-375x812.png",
+      "file": "visual-qa/final/attention/v1.3.0__2026-10-01_170406__page__mobile-375x812.png",
       "surface": "attention",
       "state": "page",
       "viewport": {
@@ -738,11 +738,11 @@
       },
       "capture": {
         "width": 375,
-        "height": 3228
+        "height": 2514
       }
     },
     {
-      "file": "visual-qa/final/reports/v1.3.0__2026-09-28_143707__page__mobile-375x812.png",
+      "file": "visual-qa/final/reports/v1.3.0__2026-10-01_170406__page__mobile-375x812.png",
       "surface": "reports",
       "state": "page",
       "viewport": {
@@ -752,11 +752,11 @@
       },
       "capture": {
         "width": 375,
-        "height": 5323
+        "height": 4416
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-09-28_143707__page__mobile-375x812.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_170406__page__mobile-375x812.png",
       "surface": "settings",
       "state": "page",
       "viewport": {
@@ -766,11 +766,11 @@
       },
       "capture": {
         "width": 375,
-        "height": 3047
+        "height": 3049
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-09-28_143707__tab-profile__mobile-375x812.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_170406__tab-profile__mobile-375x812.png",
       "surface": "settings",
       "state": "tab-profile",
       "viewport": {
@@ -780,11 +780,11 @@
       },
       "capture": {
         "width": 375,
-        "height": 1658
+        "height": 1735
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-09-28_143707__tab-accounts__mobile-375x812.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_170406__tab-accounts__mobile-375x812.png",
       "surface": "settings",
       "state": "tab-accounts",
       "viewport": {
@@ -794,11 +794,11 @@
       },
       "capture": {
         "width": 375,
-        "height": 2186
+        "height": 3678
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-09-28_143707__tab-categories__mobile-375x812.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_170406__tab-categories__mobile-375x812.png",
       "surface": "settings",
       "state": "tab-categories",
       "viewport": {
@@ -808,11 +808,11 @@
       },
       "capture": {
         "width": 375,
-        "height": 7349
+        "height": 7351
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-09-28_143707__tab-icons__mobile-375x812.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_170406__tab-icons__mobile-375x812.png",
       "surface": "settings",
       "state": "tab-icons",
       "viewport": {
@@ -822,11 +822,11 @@
       },
       "capture": {
         "width": 375,
-        "height": 2365
+        "height": 3032
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-09-28_143707__tab-rules__mobile-375x812.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_170406__tab-rules__mobile-375x812.png",
       "surface": "settings",
       "state": "tab-rules",
       "viewport": {
@@ -840,7 +840,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-09-28_143707__tab-data__mobile-375x812.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_170406__tab-data__mobile-375x812.png",
       "surface": "settings",
       "state": "tab-data",
       "viewport": {
@@ -854,7 +854,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-09-28_143707__login__mobile-375x812.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-01_170406__login__mobile-375x812.png",
       "surface": "auth",
       "state": "login",
       "viewport": {
@@ -868,7 +868,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-09-28_143707__mfa__mobile-375x812.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-01_170406__mfa__mobile-375x812.png",
       "surface": "auth",
       "state": "mfa",
       "viewport": {
@@ -882,7 +882,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-09-28_143707__mfa-enroll__mobile-375x812.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-01_170406__mfa-enroll__mobile-375x812.png",
       "surface": "auth",
       "state": "mfa-enroll",
       "viewport": {
