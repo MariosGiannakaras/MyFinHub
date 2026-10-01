@@ -53,7 +53,12 @@ async function buildWorker() {
 }
 
 async function getWorker() {
-  if (!workerPromise) workerPromise = buildWorker();
+  if (!workerPromise) {
+    workerPromise = buildWorker().catch((error) => {
+      workerPromise = null;
+      throw error;
+    });
+  }
   return workerPromise;
 }
 
