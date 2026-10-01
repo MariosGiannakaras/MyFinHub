@@ -273,7 +273,7 @@ jobs:
           npm ci --prefix desktop
           npm run build
           npm run desktop:check
-          npm run desktop:dist
+          npm run desktop:dist:from-dist
       - name: Verify installer integrity and optional Authenticode
         shell: pwsh
         run: |
