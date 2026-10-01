@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LatestValueQueue, SequentialQueue, remoteRevisionAction } from '../src/lib/persistenceQueue.js';
+import { LatestValueQueue, SequentialQueue, remoteRevisionAction, shouldWarnBeforeUnload } from '../src/lib/persistenceQueue.js';
 
 function deferred() {
   let resolve!: () => void;
@@ -104,4 +104,12 @@ describe('remoteRevisionAction', () => {
     expect(remoteRevisionAction('12', '13', true, false)).toBe('conflict');
     expect(remoteRevisionAction('12', '13', false, true)).toBe('conflict');
   });
+
+  it('keeps hard reload guarded while a write is pending or the last save failed', () => {
+    expect(shouldWarnBeforeUnload(false,false)).toBe(false);
+    expect(shouldWarnBeforeUnload(true,false)).toBe(true);
+    expect(shouldWarnBeforeUnload(false,true)).toBe(true);
+    expect(shouldWarnBeforeUnload(true,true)).toBe(true);
+  });
+
 });
