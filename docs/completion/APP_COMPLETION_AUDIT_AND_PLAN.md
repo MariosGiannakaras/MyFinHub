@@ -8,7 +8,7 @@ Release target: none — `main` remains release-only
 
 ## Current integration checkpoint — 2026-10-01
 
-**Implementations 7/24 completed · Sub-implementations 62/192 completed**
+**Implementations 7/24 completed · Sub-implementations 66/192 completed**
 
 This checkpoint supersedes older "#482 reconciliation pending" notes below for current execution state.
 
@@ -20,7 +20,7 @@ This checkpoint supersedes older "#482 reconciliation pending" notes below for c
 - FV-41/FV-42/FV-43 are completed on exact-head rendered CI. Their fixes were validation-harness/touch-target corrections and did not weaken product behavior.
 - FV-44 is completed on `9b25fb1…`: extreme Recurring mobile progressive disclosure, full expansion, collapsed inactive history and overflow safety all pass.
 - FV-45 exact-head rendered proof has passed: OCR persists raw `EUR`, while the owned currency select displays `EUR · Ευρώ`; stored semantics and visible presentation are validated separately. The expanded full-system audit below now governs closeout.
-- Current counters: **Implementations 7/24 completed · Sub-implementations 62/192 completed**. The denominator expanded on 2026-10-01 after the owner required exhaustive full-system verification, direct assistant-led manual review, routing/404 coverage, temporal/data-boundary coverage and operational recovery proof.
+- Current counters: **Implementations 7/24 completed · Sub-implementations 66/192 completed**. The denominator expanded on 2026-10-01 after the owner required exhaustive full-system verification, direct assistant-led manual review, routing/404 coverage, temporal/data-boundary coverage and operational recovery proof.
 - Repository-admin hardening remains tracked separately in #485 and does not change this batch denominator.
 - No Android changes and no `main` release/promotion are part of this checkpoint.
 
@@ -648,9 +648,9 @@ No `main` promotion/release is part of this work.
 
 The prior completion audit remains valuable evidence, but it does **not** by itself prove that every visual element, every UX state, every user action/sub-action, every API/backend path and every error path has been exercised end-to-end against a canonical integrated tree. The owner has therefore expanded the accepted completion scope to require a full-system verification pass before the application is treated as fully closed.
 
-**New audit workstream: Implementations 0/16 completed · Sub-implementations 34/163 completed.**
+**New audit workstream: Implementations 0/16 completed · Sub-implementations 38/163 completed.**
 
-**Overall completion scope: Implementations 7/24 completed · Sub-implementations 62/192 completed.**
+**Overall completion scope: Implementations 7/24 completed · Sub-implementations 66/192 completed.**
 
 The denominator increased because 16 new verification implementations / 160 non-trivial sub-implementations are now accepted. Existing implementation-completion state is retained provisionally, but the expanded verification matrix has a stricter proof rule: prior evidence may be reused only after the responsible ChatGPT agent personally inspects it and confirms that it proves the exact required contract. Re-running unchanged automation is unnecessary when existing artifacts are sufficient, but no matrix cell is finally closed merely because an earlier workflow marked it green.
 
@@ -721,13 +721,13 @@ The denominator increased because 16 new verification implementations / 160 non-
 - [ ] Data management/history: backup, export/import, validation rejection, history points, undo/redo across supported scope, refresh/reload and conflict handling.
 - [ ] Receipt OCR + global tools: local receipt capture/inbox/OCR/proposal correction → Quick Entry, command palette actions, keyboard shortcuts, global refresh and page error recovery.
 
-### 8.5 Data integrity, persistence and finance invariants — 4/9
+### 8.5 Data integrity, persistence and finance invariants — 8/9
 
 - [ ] For every successful mutation, verify UI state, domain state, persisted state and relational representation agree after hard reload/new session.
-- [ ] Verify internal transfer/withdrawal/savings-transfer/card-payment/reconciliation semantics do not double-count spending and all transaction legs balance.
-- [ ] Verify credit purchase versus liability payment semantics, statement references, limits/debt/available credit and archived-card historical references.
-- [ ] Verify lending receivables and repayments update net worth and outstanding balances correctly.
-- [ ] Verify split totals, recurring/scheduled completion semantics, budget/report calculations and time/period boundaries.
+- [x] Verify internal transfer/withdrawal/savings-transfer/card-payment/reconciliation semantics do not double-count spending and all transaction legs balance. Direct source/test audit confirms transfer/withdrawal/savings events are portfolio-neutral, card payments are cash-flow neutral while purchases count once, reconciliation is budget/spending neutral, exact semantic ledger legs are server-validated, and the executed invariant suites are green.
+- [x] Verify credit purchase versus liability payment semantics, statement references, limits/debt/available credit and archived-card historical references. Direct executed tests cover purchase/payment debt math, independent card limits/available credit including over-limit state, deterministic statement assignment/payment/deletion, archive/restore/delete constraints, and historical event identity through neutral deleted-card tombstones.
+- [x] Verify lending receivables and repayments update net worth and outstanding balances correctly. Direct executed tests show lending reduces cash while adding an equal receivable asset, repayments reverse receivable delta while restoring cash, repeated legacy/person history aggregates deterministically, malformed history fails safely, and net worth remains correct.
+- [x] Verify split totals, recurring/scheduled completion semantics, budget/report calculations and time/period boundaries. Direct executed tests cover safe-cent split totals/rejection, scheduled completion into actual events plus skip/cancel forecast exclusion, recurring monthly/6-month/annual/leap-day cadence, budget split/refund/transfer/reconciliation treatment, report category/credit/period calculations and short-month statement boundaries.
 - [x] Verify optimistic revision conflicts, multi-tab/newer-revision behavior, sequential mutation ordering and fail-closed persistence queues. Direct executed tests prove FIFO persistence ordering, discard of dependent queued mutations after failure, deterministic reload/conflict selection for newer remote revisions and preserved 409 conflicts; production save/history RPCs independently enforce revision + history-generation preconditions before mutation.
 - [x] Verify history/audit/undo-redo atomicity and bounded retention; failed writes must not create misleading success/history state. Direct production function inspection confirms save/undo/redo lock the canonical state and history cursor, reject revision/generation conflicts before mutation, update ledger/state/history/audit inside one PostgreSQL function transaction, prune expired history, cap visible/history storage at 100 points, and keep failed function executions transactional.
 - [x] Verify backup/import round-trip preserves supported finance state while excluding card-vault secrets and other prohibited sensitive material. Direct production evidence shows a current-revision backup exactly matches the canonical effective FinanceData, 0 backup documents contain sensitive card/token/TOTP key names, backup creation composes relational state without referencing the card-secret table, import uses the relational ledger apply path with an explicit `LEDGER_ROUNDTRIP_MISMATCH` guard, and pre-import backups are created transactionally.
