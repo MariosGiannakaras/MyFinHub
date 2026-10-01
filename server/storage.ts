@@ -91,6 +91,7 @@ function first<T>(value: T | T[]): T {
 
 function envelope(row: StateRow) {
   if (!row) throw new ApiError(500, 'EMPTY_DATABASE', 'RheomIQ database is empty.', false);
+  validateCompleteFinanceData(row.data);
   const migrated = migrateProductData(row.data);
   validateCompleteFinanceData(migrated);
   return {
