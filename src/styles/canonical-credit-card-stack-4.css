@@ -151,9 +151,15 @@
     padding:17px;
   }
 
-  /* Touch layouts do not use pointer tilt. Keeping the desktop translateZ(38px)
-   * on the bottom content projects the network mark beyond the clipped card edge. */
+  /* Touch layouts do not use pointer tilt. Keep the lower card content anchored
+   * inside the physical card bounds so intrinsic brand/header height cannot push
+   * the network mark below the clipped edge. */
   #myfinhub-card-stack .card-body{
+    position:absolute;
+    left:17px;
+    right:17px;
+    bottom:17px;
+    margin-top:0;
     transform:none;
   }
 
