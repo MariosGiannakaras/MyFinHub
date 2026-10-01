@@ -28,6 +28,7 @@ import { shortDate } from '../lib/format';
 import { accountDisplayName } from '../lib/ui';
 import type { AttentionDecision, FinanceData, ReviewDecision } from '../types';
 import './AttentionCompletion.css';
+import { userErrorMessage } from '../lib/userMessage';
 
 const actionLabel=(item:AttentionItem)=>item.action==='complete_scheduled'?'Ολοκλήρωση':item.action==='pay_recurring'?'Πληρωμή παγίου':item.action==='pay_loan'?'Πληρωμή δόσης':item.action==='pay_credit'?'Πληρωμή κάρτας':item.action==='collect_lending'?'Καταγραφή επιστροφής':item.action==='open_budgets'?'Προβολή budgets':item.action==='open_forecast'?'Άνοιγμα πρόβλεψης':item.action==='categorize_transaction'?'Κατηγοριοποίηση':item.action==='review_duplicate'?'Έλεγχος':'Προβολή';
 const severityLabel=(severity:AttentionItem['severity'])=>severity==='danger'?'Άμεση προσοχή':severity==='warning'?'Σύντομα':'Ενημέρωση';
@@ -101,7 +102,7 @@ export function AttentionPage({data,asOf,onAction,onDecision,onReviewDecision}:{
     const pending=info.filter(item=>item.kind!=='forecast'&&item.kind!=='budget');
     return {danger,warning,pending,notices};
   },[items]);
-  const decide=(item:AttentionItem,kind:'snooze'|'dismiss')=>{try{const decision=kind==='snooze'?attentionSnoozeDecision(item,asOf):attentionDismissDecision(item);onDecision(item.id,decision);setMessage(kind==='snooze'?`Η υπενθύμιση «${item.title}» αναβλήθηκε προσωρινά.`:`Η ενημέρωση «${item.title}» κρύφτηκε όσο δεν αλλάζει η κατάστασή της.`)}catch(reason){setMessage(reason instanceof Error?reason.message:'Δεν ήταν δυνατή η αλλαγή της υπενθύμισης.')}};
+  const decide=(item:AttentionItem,kind:'snooze'|'dismiss')=>{try{const decision=kind==='snooze'?attentionSnoozeDecision(item,asOf):attentionDismissDecision(item);onDecision(item.id,decision);setMessage(kind==='snooze'?`Η υπενθύμιση «${item.title}» αναβλήθηκε προσωρινά.`:`Η ενημέρωση «${item.title}» κρύφτηκε όσο δεν αλλάζει η κατάστασή της.`)}catch(reason){setMessage(userErrorMessage(reason,'Δεν ήταν δυνατή η αλλαγή της υπενθύμισης.'))}};
   const activate=(item:AttentionItem)=>{
     if(item.action==='open_dashboard'){location.hash='#/dashboard';return}
     if(item.action==='open_recurring'){location.hash='#/recurring';return}
