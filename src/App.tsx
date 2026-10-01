@@ -65,6 +65,7 @@ function routeFromLocation() {
 }
 
 function PageLoading() { return <PageSkeleton/>; }
+const PERIOD_PAGES = new Set<PageId>(['dashboard','transactions','savings','reports']);
 const quickToken = () => `quick-${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
 
 type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;
