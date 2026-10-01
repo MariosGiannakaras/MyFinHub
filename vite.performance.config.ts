@@ -32,9 +32,21 @@ function productionLikeQaLazyRoutes() {
         if (!next.includes(source)) throw new Error(`Performance fixture route import not found: ${component}`);
         next = next.replace(source, `const ${component}=lazy(()=>import('./pages/${component}').then(module=>({default:module.${component}})));`);
       }
-      const content = '{crash?<Crash/>:content}';
-      if (!next.includes(content)) throw new Error('Performance fixture content boundary not found.');
-      next = next.replace(content, '{crash?<Crash/>:<Suspense fallback={<PageSkeleton/>}>{content}</Suspense>}');
+      const contentBoundary = "lazyFailure?<Suspense fallback={<PageSkeleton/>}><LazyResourceFailure/></Suspense>:crash?<Crash/>:content";
+      const legacyContentBoundary = 'crash?<Crash/>:content';
+      if (next.includes(contentBoundary)) {
+        next = next.replace(
+          contentBoundary,
+          "lazyFailure?<Suspense fallback={<PageSkeleton/>}><LazyResourceFailure/></Suspense>:crash?<Crash/>:<Suspense fallback={<PageSkeleton/>}>{content}</Suspense>",
+        );
+      } else if (next.includes(legacyContentBoundary)) {
+        next = next.replace(
+          legacyContentBoundary,
+          'crash?<Crash/>:<Suspense fallback={<PageSkeleton/>}>{content}</Suspense>',
+        );
+      } else {
+        throw new Error('Performance fixture content boundary not found.');
+      }
       return { code: next, map: null };
     },
   };
