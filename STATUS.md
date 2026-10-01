@@ -49,9 +49,9 @@ Release-closeout tracker: **#288 — complete**.
 
 ## Active completion batch — #476
 
-**Implementations 6/8 completed · Sub-implementations 15/20 completed**
+**Implementations 6/8 completed · Sub-implementations 16/21 completed**
 
-- Counter denominator normalized from 21 to 20 because the active progress count now comes only from the explicit accepted checklist; #482 reconciliation is explicit and prior implicit/non-enumerated counting was removed.
+- The explicit accepted checklist was normalized to 20 items, then increased to 21 after final CI exposed a new aggregate-CSS budget follow-up. FV-37 is source-fixed without raising the 500 KiB threshold.
 
 - Branch: `feat/476-completion-audit-hardening`.
 - **54 deep-audit findings are now tracked.** DA-01..DA-53 retain their existing implementation/disposition state; DA-54 adds the owner-reported dark-theme color/contrast defect.
@@ -71,7 +71,8 @@ Release-closeout tracker: **#288 — complete**.
 - Owner confirms logos, backend/database work and owner-side Settings work are complete. No external owner prerequisite remains; #482 is now an integration input that this workstream will reconcile/close as part of final validation.
 - FV-34 is **completed** with no product change. Exact-head rendered validation passed Transactions/Recurring/Reports/Quick Entry icon adoption, narrow-mobile containment and the full icon-pack rendered suite.
 - FV-35 is **source-fixed; exact-head proof pending** with no product regression identified: legacy transaction management now applies the real Transactions search control to `Supermarket` on desktop and mobile before edit/delete/undo/redo proof, so the target row is deterministic without bypassing or weakening the 14-row pagination contract.
-- Remaining work: prove FV-35 on the synchronized branch, complete the final exact-head screenshot review, reconcile completed #482 into #477, then finish the exact-final-head CI/security/cross-engine/performance/Windows validation wave and squash-merge to `develop`.
+- FV-37 is **source-fixed; exact-head proof pending**: #483's aggregate CSS gate exposed 507.3 KiB raw CSS against the unchanged 500 KiB ceiling. The completion branch now removes superseded card-renderer/create-dialog geometry from the eagerly loaded legacy stylesheet while preserving active card themes, current component-owned geometry and the existing budget.
+- Remaining work: prove FV-35/FV-37 on the synchronized branch, complete the final exact-head screenshot review, reconcile completed #482 into #477, then finish the exact-final-head CI/security/cross-engine/performance/Windows validation wave and squash-merge to `develop`.
 - No Android implementation and no `main` promotion/release are included.
 
 ## Next work
