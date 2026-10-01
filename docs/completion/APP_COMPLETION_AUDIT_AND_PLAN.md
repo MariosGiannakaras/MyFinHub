@@ -953,3 +953,25 @@ Source implementation now in this batch:
 - bounded raw CSS budget headroom only; gzip CSS and JavaScript budgets remain unchanged.
 
 No completion counter advances from this source batch until narrow CI/security validation is green and the relevant runtime/import behavior is directly verified.
+
+
+### 8.20 Implementation batch G — persistence semantic invariants in progress
+
+Direct audit found that structural persistence validation still did not independently enforce the accounting semantics already guaranteed by the client/domain constructors. A malformed import or tampered mutable state could therefore encode a structurally valid but economically impossible event.
+
+Source implementation in this batch:
+
+- state-local semantic validation mirrors the existing domain event constructor in integer cents for expense/income/refund, transfer/withdrawal/saving, lending/repayment, card purchase/payment, reconciliation and split events;
+- ledger legs must match the event meaning exactly, with no duplicate ledger account legs;
+- split events require at least two positive unique parts and exact cent-level balance to the parent amount;
+- optional saving/receivable/credit deltas must agree with the event kind and amount when present;
+- full-document validation additionally rejects dangling account references in defaults, excluded-account settings, recurring items, loans, scheduled transactions, transaction-rule account matches and event legs;
+- the synthetic `credit-card` liability is accepted only where the accounting model allows it and cannot become a normal default account;
+- mutable-state validation deliberately performs only state-local accounting checks because that API does not carry seed accounts; full reference integrity remains a full-document/import/read concern;
+- regression coverage exercises canonical events plus tampered transfer legs, duplicate legs, split corruption, delta tampering and dangling account references.
+
+This batch also folds in source-test maintenance discovered by CI after the already-approved 512 KiB raw CSS ceiling and production-applied provider migration version change. No completion counter advances until the integrated CI proves these contracts.
+
+### 8.21 External Auth setting blocker
+
+Supabase security advisor still reports `auth_leaked_password_protection` disabled. The connected Supabase capability exposes read-only advisor/doc access but no project Auth-setting mutation action, so this item is **blocked on an external project setting** rather than silently treated as complete. Mandatory TOTP/AAL2 remains active; leaked-password protection is additive credential hardening.
