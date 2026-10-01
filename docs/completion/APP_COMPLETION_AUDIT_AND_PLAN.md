@@ -1101,4 +1101,18 @@ Source/runtime scope:
 - rendered QA verifies bounded DOM counts, progressive-disclosure controls, no horizontal overflow, contained Reports charts, the 100-point history ceiling and a conservative renderer-heap guard;
 - normal-sized datasets remain visually unchanged because the disclosure controls appear only beyond the initial limits.
 
-This remains pending integrated exact-head rendered/performance validation. It is part of the existing large-data sub-implementation and does not change the denominator.
+Batch P validation follow-up: the first integrated CI reached the source-contract suite and failed only because the two newly added shared `Button` disclosure controls changed stale exact component-count assertions in the shared-UI tests. Those assertions are synchronized to the intended new controls; no product behavior was reverted. This remains pending integrated exact-head rendered/performance validation. It is part of the existing large-data sub-implementation and does not change the denominator.
+
+
+### 8.31 Implementation batch Q — live client auth-state recovery proof in progress
+
+The existing source contracts already fail closed for 401/403 at API, owner/AAL2 and active-device boundaries. The remaining client-shell risk is now exercised through the real session hook rather than inferred from event wiring.
+
+Rendered/runtime scope:
+- start from a real authenticated `useSession` QA shell;
+- switch the backing session to an MFA-required state and emit the same `403 MFA_REQUIRED` signal used by failed protected API calls;
+- verify the authenticated shell disappears and the real OTP challenge takes ownership instead of leaving stale signed-in finance UI;
+- reload to a fresh authenticated state, emit the same hard-expiry signal used for `401 DEVICE_ACCESS_REVOKED`, and verify the shell returns to the real login screen;
+- retain the existing anonymous/non-owner/AAL1/revoked-device API/RLS negative evidence as backend proof.
+
+This is part of the existing 401/403 resilience sub-implementation. Exact-head rendered CI is required before completion; no Android repository change is needed.
