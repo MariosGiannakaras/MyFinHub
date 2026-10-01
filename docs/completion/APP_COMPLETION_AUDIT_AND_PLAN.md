@@ -1141,3 +1141,17 @@ Required remediation:
 - include the corrected surface in the final dual-theme matrix rerun.
 
 This is contained within the existing exhaustive visual/UI-UX item and does not change the denominator.
+
+
+### 8.34 FV-48/FV-49 — Settings Rules and Access dark-theme contrast defects in progress
+
+Direct assistant inspection found two additional systemic dark-theme regressions caused by light-only component backgrounds:
+- **FV-48:** Settings → Rules empty state rendered as a large pale card with low-contrast copy.
+- **FV-49:** Settings → User & Access used light-only backgrounds for desktop PIN controls and the no-active-devices state; the same CSS also affected account-security inputs/idle-control surfaces.
+
+Required remediation:
+- move these surfaces to semantic control/inset theme tokens rather than fixed white/light RGBA fills;
+- preserve focus, disabled and skeleton state distinctions without reducing dark-theme legibility;
+- re-run the affected Settings rendered states in all required viewports/themes and directly re-inspect before visual closeout.
+
+These defects belong to the existing visual/UI-UX verification scope and do not change the denominator.
