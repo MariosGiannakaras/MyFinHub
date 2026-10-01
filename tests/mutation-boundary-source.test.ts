@@ -7,7 +7,7 @@ const directJsonMutations=[
   {path:'api/auth/login.ts',origin:'assertSameOrigin(req)',body:'readJsonBody',limit:'16 * 1024'},
   {path:'api/auth/mfa/verify.ts',origin:'assertSameOrigin(req)',body:'readJsonBody',limit:'8 * 1024'},
   {path:'api/data.ts',origin:'assertMutationSessionOrigin(req, session)',body:'readJsonBody',limit:'MAX_FINANCE_DOCUMENT_BYTES'},
-  {path:'api/history.ts',origin:'assertMutationSessionOrigin(req, session)',body:'readJsonBody',limit:'MAX_HISTORY_ACTION_BODY_BYTES'},
+  {path:'api/history.ts',origin:'assertMutationSessionOrigin(req, session)',body:'readJsonBody',limit:'4096'},
   {path:'api/import.ts',origin:'assertMutationSessionOrigin(req, session)',body:'readJsonBody',limit:'MAX_FINANCE_DOCUMENT_BYTES'},
   {path:'server/accountSecurityHandler.ts',origin:'assertMutationSessionOrigin(req, session)',body:'readJsonBody',limit:'MAX_ACCOUNT_SECURITY_BODY_BYTES'},
   {path:'server/deviceSessionsHandler.ts',origin:'assertMutationSessionOrigin(req, session)',body:'readJsonBody',limit:'MAX_DEVICE_ACTION_BODY_BYTES'},
