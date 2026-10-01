@@ -1,6 +1,6 @@
 import { Buffer } from 'node:buffer';
 import { ensureDeviceSessionAccess } from './deviceSessionRegistry.js';
-import { ApiError, assertSameOrigin, requestHeader, strictRequestHeader } from './http.js';
+import { ApiError, assertSameOrigin, strictRequestHeader } from './http.js';
 import { fetchUpstream, isAuthRejection } from './upstream.js';
 
 const PROD_ACCESS = '__Host-rheomiq_access';
