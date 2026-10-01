@@ -7,12 +7,16 @@ const completeValidationSource=readFileSync(new URL('../server/financeDataValida
 const storageSource=readFileSync(new URL('../server/storage.ts',import.meta.url),'utf8');
 
 describe('complete finance persistence validation wiring',()=>{
-  it('uses one extension-complete boundary for mutable writes, full imports and stored reads',()=>{
+  it('uses a complete full-document boundary and scoped mutable-state validators',()=>{
     expect(completeValidationSource).toContain("validateCardStateExtensions(data.state)");
     expect(completeValidationSource).toContain("validateCategoryIdentityState(data.state)");
     expect(completeValidationSource).toContain("validateRecurringCadenceData(data)");
-    expect(stateValidationSource).toContain("import { validateCompleteFinanceData } from './financeDataValidation.js'");
-    expect(stateValidationSource).toContain('validateCompleteFinanceData({');
+    expect(completeValidationSource).toContain("validateCompleteFinanceSemantics(data)");
+    expect(stateValidationSource).toContain("validateCardStateExtensions(state)");
+    expect(stateValidationSource).toContain("validateCategoryIdentityState(state)");
+    expect(stateValidationSource).toContain("validateRecurringCadenceState(state)");
+    expect(stateValidationSource).toContain("validateFinanceStateSemantics(state)");
+    expect(stateValidationSource).not.toContain("validateCompleteFinanceData");
     expect(importSource).toContain("import { validateCompleteFinanceData } from '../server/financeDataValidation.js'");
     expect(importSource).toContain('validateCompleteFinanceData(body);');
     expect(storageSource).toContain("import { validateCompleteFinanceData } from './financeDataValidation.js'");
