@@ -1,10 +1,12 @@
+import { QA_FINANCIAL_PROVIDERS } from '../qaFinancialProviders';
 import { FINANCIAL_PROVIDERS, type FinancialProvider, type FinancialProviderAsset, type FinancialProviderAssetBinding, type FinancialProviderAssetRole, type FinancialProviderKind } from './financialProviders';
 
 type FinancialProviderSnapshot={loaded:boolean;loading:boolean;providers:FinancialProvider[];error:string|null};
 
 const QA_MODE=typeof location!=='undefined'&&location.pathname.endsWith('/qa.html');
 const FALLBACK=FINANCIAL_PROVIDERS.map(provider=>({...provider}));
-let snapshot:FinancialProviderSnapshot={loaded:false,loading:false,providers:FALLBACK,error:null};
+const QA_PROVIDERS=QA_FINANCIAL_PROVIDERS.map(provider=>({...provider,assets:provider.assets?.map(asset=>({...asset})),bindings:provider.bindings?.map(binding=>({...binding}))}));
+let snapshot:FinancialProviderSnapshot={loaded:QA_MODE,loading:false,providers:QA_MODE?QA_PROVIDERS:FALLBACK,error:null};
 let pending:Promise<FinancialProviderSnapshot>|null=null;
 const listeners=new Set<()=>void>();
 
@@ -73,7 +75,7 @@ async function json(response:Response){return response.json().catch(()=>null) as
 export async function refreshFinancialProviders(force=false){
   if(snapshot.loaded&&!force)return snapshot;
   if(pending)return pending;
-  if(QA_MODE)return publish({loaded:true,loading:false,providers:FALLBACK,error:null});
+  if(QA_MODE)return publish({loaded:true,loading:false,providers:QA_PROVIDERS,error:null});
   publish({...snapshot,loading:true,error:null});
   pending=(async()=>{
     try{
