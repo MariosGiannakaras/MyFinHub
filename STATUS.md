@@ -38,12 +38,12 @@ Release-closeout tracker: **#288 — complete**.
 
 ## Active provider-branding extension — #481
 
-**Tasks 4/5 · Subtasks 17/18**
+**Tasks 5/5 · Subtasks 18/18**
 
 - Branch: `feat/481-provider-brand-management`, currently stacked on #479 because it depends on the Storage-first provider schema.
 - Goal: manage provider artwork from Settings, support context-aware logo/wordmark/card-mark variants, and create new providers together with their selected artwork.
 - Implemented on branch: variant-aware provider API/catalog, owner+AAL2 provider writes, bounded Storage upload/replace, context-aware app/card artwork resolution, Settings management UI, create-provider-with-images flow, and live provider adoption by both card pages.
-- Previous functional validation passed, but user review identified UX shortcomings in the provider branding screens. Phase 5 implementation is complete except for final task-flow visual QA: create/edit now share one Provider Editor, artwork uses reusable asset bindings, and image selection uses a visual asset library/picker with hidden native file input. The write migration remains release-pending and has not been applied to production.
+- Previous functional validation passed, but user review identified UX shortcomings in the provider branding screens. Phase 5 complete: create/edit share one Provider Editor, artwork uses reusable asset bindings, image selection uses a visual asset library/picker, and task-flow rendered QA passed on desktop/mobile light/dark with asset reuse and picker focus/escape behavior. The write migration remains release-pending and has not been applied to production.
 - Repository plan: `docs/PROVIDER_BRANDING_MANAGEMENT_PLAN.md`.
 - No new Vercel function, no service-role key in clients, no Android work.
 
