@@ -59,6 +59,29 @@ function buildQaData(params:URLSearchParams){
     next.state.recurringCustom=[...(next.state.recurringCustom??[]),...Array.from({length:18},(_,index)=>({id:`rec-extreme-${index}`,name:`Συνδρομή με μεγάλο όνομα ${index+1}`,amount:10+index,day:(index%28)+1,accountId:'piraeus-payroll',category:'Σταθερά έξοδα',active:true,status:'active' as const,source:'qa'}))];
     next.state.scheduled=[...(next.state.scheduled??[]),...Array.from({length:18},(_,index)=>({id:`scheduled-extreme-${index}`,dueDate:`2026-${String(8+Math.floor((index+1)/28)).padStart(2,'0')}-${String((index%27)+1).padStart(2,'0')}`,kind:'expense' as const,amount:index===0?123456.78:20+index,note:index===0?'Πολύ μεγάλη περιγραφή προγραμματισμένης πληρωμής για έλεγχο αναδίπλωσης χωρίς overlap στα actions και στο ποσό':`Προγραμματισμένη κίνηση ${index+1}`,category:'Σταθερά έξοδα',accountId:'piraeus-payroll',status:'pending' as const,createdAt:'2026-08-10T10:00:00.000Z',updatedAt:'2026-08-10T10:00:00.000Z'}))];
   }
+  if(params.get('state')==='large'){
+    const stamp='2026-08-17T12:00:00.000Z';
+    next.state.events=[...(next.state.events??[]),...Array.from({length:1500},(_,index)=>({
+      id:`large-event-${String(index).padStart(4,'0')}`,
+      date:`2026-08-${String((index%28)+1).padStart(2,'0')}`,
+      kind:'expense' as const,
+      amount:1+(index%250)/10,
+      note:index===1499?'Large dataset unique search target':`Large dataset transaction ${index+1}`,
+      category:index%3===0?'Τρόφιμα':index%3===1?'Μετακινήσεις':'Σταθερά έξοδα',
+      accountId:'piraeus-payroll',
+      legs:[{accountId:'piraeus-payroll',amount:-(1+(index%250)/10)}],
+      source:'qa' as const,createdAt:stamp,updatedAt:stamp,
+    }))];
+    next.state.recurringCustom=[...(next.state.recurringCustom??[]),...Array.from({length:120},(_,index)=>({
+      id:`large-recurring-${index}`,name:`Large recurring ${index+1}`,amount:5+(index%25),day:(index%28)+1,
+      accountId:'piraeus-payroll',category:'Σταθερά έξοδα',active:true,status:'active' as const,source:'qa',
+    }))];
+    next.state.scheduled=[...(next.state.scheduled??[]),...Array.from({length:120},(_,index)=>({
+      id:`large-scheduled-${index}`,dueDate:`2026-08-${String((index%28)+1).padStart(2,'0')}`,kind:'expense' as const,
+      amount:10+(index%40),note:`Large scheduled ${index+1}`,category:'Σταθερά έξοδα',accountId:'piraeus-payroll',
+      status:'pending' as const,createdAt:stamp,updatedAt:stamp,
+    }))];
+  }
   if(params.get('state')==='overlimit')next.state.cards=(next.state.cards??[]).map(card=>card.kind==='credit'?{...card,creditLimit:100}:card);
   if(params.get('state')==='forecast-negative')next.state.scheduled=[...(next.state.scheduled??[]),{id:'qa-negative-forecast',dueDate:'2026-08-18',kind:'expense',amount:3000,note:'Μεγάλη γνωστή υποχρέωση',category:'Σταθερά έξοδα',accountId:'piraeus-payroll',status:'pending',createdAt:'2026-08-10T10:00:00.000Z',updatedAt:'2026-08-10T10:00:00.000Z'}];
   if(params.get('state')==='budget-rules'){
