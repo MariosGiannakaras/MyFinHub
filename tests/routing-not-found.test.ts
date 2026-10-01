@@ -23,8 +23,8 @@ describe('routing and 404 contract',()=>{
     expect(app).toContain('<NotFoundPage');
     expect(qa).toContain("screen==='404'");
     expect(finalScreenshots).toContain("const utilityScreens=['404']");
-    expect(finalScreenshots).toContain('screenshots.length!==66');
-    expect(finalWorkflow).toContain('Expected 66 final PNGs');
+    expect(finalScreenshots).toContain('screenshots.length!==132');
+    expect(finalWorkflow).toContain('Expected 132 final PNGs');
   });
 
   it('serves only the hash-routed app entry at root and returns a real static 404 for unknown HTTP paths',()=>{
