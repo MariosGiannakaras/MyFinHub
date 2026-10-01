@@ -49,7 +49,7 @@ Release-closeout tracker: **#288 — complete**.
 
 ## Active completion batch — #476
 
-**Implementations 7/24 completed · Sub-implementations 56/191 completed**
+**Implementations 7/24 completed · Sub-implementations 57/191 completed**
 
 - The completion definition has been expanded by the owner to a full-system verification matrix. Existing implementation findings remain tracked, but final closeout now requires direct assistant-led manual review plus UI/UX/accessibility, routing/404, every supported user mutation, real-stack persistence/backend proof, exhaustive failure handling, security/privacy, temporal/data-boundary coverage, operational recovery and canonical post-merge validation.
 
@@ -103,7 +103,7 @@ Release-closeout tracker: **#288 — complete**.
 - Batch H error/timestamp hardening is source-implemented: unexpected server exceptions no longer log raw messages, persisted lifecycle/audit date stamps use a deterministic date/RFC3339 contract, and Batch G's two test-fixture/source-contract mismatches are folded into the same validation checkpoint. Counters remain unchanged pending green exact-head proof.
 - Batch I provider-image CSP hardening is completed: the CSP now allows only the canonical Supabase Storage image origin beyond self/data/blob, obsolete legacy image hosts are removed, and exact-head CI + CodeQL are green.
 - Batch J Vercel unknown-API hardening is completed at source/CI level: the final `/api/(.*)` rewrite returns canonical JSON 404s through the existing health function slot, and exact-head CI + CodeQL are green. Deployed runtime proof remains part of the existing routing/404 verification item.
-- Batch K release-artifact privacy guard is in progress: production builds now scan emitted browser assets for server-only secret markers, credential patterns and PAN-like values before bundle-budget approval. This remains inside the existing privacy verification item, so counters are unchanged pending exact-head proof.
+- Batch K release-artifact privacy guard is completed: CI proves tracked-file and generated-release scans pass; backup/log/screenshot/card-vault privacy boundaries are directly reconciled. Final pre-merge guard rerun remains separately pending.
 - No Android implementation and no `main` promotion/release are included.
 
 ## Next work
