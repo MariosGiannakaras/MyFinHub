@@ -8,7 +8,7 @@ Release target: none — `main` remains release-only
 
 ## Current integration checkpoint — 2026-10-01
 
-**Implementations 7/24 completed · Sub-implementations 38/191 completed**
+**Implementations 7/24 completed · Sub-implementations 39/191 completed**
 
 This checkpoint supersedes older "#482 reconciliation pending" notes below for current execution state.
 
@@ -20,7 +20,7 @@ This checkpoint supersedes older "#482 reconciliation pending" notes below for c
 - FV-41/FV-42/FV-43 are completed on exact-head rendered CI. Their fixes were validation-harness/touch-target corrections and did not weaken product behavior.
 - FV-44 is completed on `9b25fb1…`: extreme Recurring mobile progressive disclosure, full expansion, collapsed inactive history and overflow safety all pass.
 - FV-45 exact-head rendered proof has passed: OCR persists raw `EUR`, while the owned currency select displays `EUR · Ευρώ`; stored semantics and visible presentation are validated separately. The expanded full-system audit below now governs closeout.
-- Current counters: **Implementations 7/24 completed · Sub-implementations 38/191 completed**. The denominator expanded on 2026-10-01 after the owner required exhaustive full-system verification, direct assistant-led manual review, routing/404 coverage, temporal/data-boundary coverage and operational recovery proof.
+- Current counters: **Implementations 7/24 completed · Sub-implementations 39/191 completed**. The denominator expanded on 2026-10-01 after the owner required exhaustive full-system verification, direct assistant-led manual review, routing/404 coverage, temporal/data-boundary coverage and operational recovery proof.
 - Repository-admin hardening remains tracked separately in #485 and does not change this batch denominator.
 - No Android changes and no `main` release/promotion are part of this checkpoint.
 
@@ -648,9 +648,9 @@ No `main` promotion/release is part of this work.
 
 The prior completion audit remains valuable evidence, but it does **not** by itself prove that every visual element, every UX state, every user action/sub-action, every API/backend path and every error path has been exercised end-to-end against a canonical integrated tree. The owner has therefore expanded the accepted completion scope to require a full-system verification pass before the application is treated as fully closed.
 
-**New audit workstream: Implementations 0/16 completed · Sub-implementations 10/162 completed.**
+**New audit workstream: Implementations 0/16 completed · Sub-implementations 11/162 completed.**
 
-**Overall completion scope: Implementations 7/24 completed · Sub-implementations 38/191 completed.**
+**Overall completion scope: Implementations 7/24 completed · Sub-implementations 39/191 completed.**
 
 The denominator increased because 16 new verification implementations / 160 non-trivial sub-implementations are now accepted. Existing implementation-completion state is retained provisionally, but the expanded verification matrix has a stricter proof rule: prior evidence may be reused only after the responsible ChatGPT agent personally inspects it and confirms that it proves the exact required contract. Re-running unchanged automation is unnecessary when existing artifacts are sufficient, but no matrix cell is finally closed merely because an earlier workflow marked it green.
 
@@ -768,7 +768,7 @@ The denominator increased because 16 new verification implementations / 160 non-
 - [ ] Verify security headers/CSP, no unsafe inline/executable receipt/provider content and no unexpected external resource dependency.
 - [ ] Verify no service-role/secret key, `CARD_VAULT_KEY`, access/refresh token, TOTP secret, PAN/expiry/CVV or personal finance data leaks to bundles, logs, screenshots, backups or repository artifacts.
 - [ ] Verify session cookie attributes, logout/revocation behavior and active-device enforcement at sensitive boundaries.
-- [ ] Verify RLS/grants/function security-invoker/definer posture and exposed-schema tables; no accidental broad authenticated/anon access.
+- [x] Verify RLS/grants/function security-invoker/definer posture and exposed-schema tables; no accidental broad authenticated/anon access. Direct production SQL proof confirms all relevant public/private finance tables have RLS where exposed, anon has no finance table grants or executable finance RPCs, the only relevant SECURITY DEFINER helper is `private.myfinhub_session_is_active` with no anon execute, and owner+AAL2+active-session contexts see the expected rows while AAL1/non-owner/unknown-session contexts see none.
 - [ ] Verify provider/receipt image handling against malicious filenames, MIME confusion, active SVG content, oversized files and path traversal attempts.
 - [ ] Re-run secret/security guards and review generated artifacts before final merge/release.
 
