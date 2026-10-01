@@ -16,6 +16,11 @@ describe('routing and 404 contract',()=>{
     expect(resolveHashRoute('#review')).toEqual({page:'attention',notFound:false,redirectHash:'#/attention'});
     expect(resolveHashRoute('#/does-not-exist')).toEqual({page:'dashboard',notFound:true});
     expect(resolveHashRoute('#/%2Fweird')).toEqual({page:'dashboard',notFound:true});
+    expect(resolveHashRoute('#/reports/')).toEqual({page:'reports',notFound:false,redirectHash:'#/reports'});
+    expect(resolveHashRoute('#//reports?source=shared')).toEqual({page:'reports',notFound:false,redirectHash:'#/reports'});
+    expect(resolveHashRoute('#/%72eports')).toEqual({page:'reports',notFound:false,redirectHash:'#/reports'});
+    expect(resolveHashRoute('#/reports%2Fextra')).toEqual({page:'dashboard',notFound:true});
+    expect(resolveHashRoute('#/%E0%A4%A')).toEqual({page:'dashboard',notFound:true});
     expect(pageHash('reports')).toBe('#/reports');
   });
 
