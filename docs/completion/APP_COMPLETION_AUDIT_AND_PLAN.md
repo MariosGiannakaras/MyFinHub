@@ -8,7 +8,7 @@ Release target: none — `main` remains release-only
 
 ## Current integration checkpoint — 2026-10-01
 
-**Implementations 7/8 completed · Sub-implementations 27/28 completed**
+**Implementations 7/8 completed · Sub-implementations 28/29 completed**
 
 This checkpoint supersedes older "#482 reconciliation pending" notes below for current execution state.
 
@@ -18,8 +18,9 @@ This checkpoint supersedes older "#482 reconciliation pending" notes below for c
 - FV-37/FV-38 remain completed with the unchanged bundle/CSS budgets.
 - Final visual run #73 passed all 63 desktop/tablet/mobile captures and the resulting evidence was manually reviewed, including Dashboard, Credit, Settings/Providers, Lending and Transactions.
 - FV-41/FV-42/FV-43 are completed on exact-head rendered CI. Their fixes were validation-harness/touch-target corrections and did not weaken product behavior.
-- FV-44 is source-fixed and exact-head proof pending: the extreme Recurring mobile contract intentionally renders 12 active items initially and exposes `Προβολή περισσότερων`; the harness now verifies bounded disclosure, full progressive expansion, collapsed inactive history and no overflow.
-- Current counters: **Implementations 7/8 completed · Sub-implementations 27/28 completed**.
+- FV-44 is completed on `9b25fb1…`: extreme Recurring mobile progressive disclosure, full expansion, collapsed inactive history and overflow safety all pass.
+- FV-45 is source-fixed and exact-head proof pending: OCR persists raw `EUR`, while the owned currency select displays `EUR · Ευρώ`; the harness now validates stored semantics and visible presentation separately.
+- Current counters: **Implementations 7/8 completed · Sub-implementations 28/29 completed**.
 - Repository-admin hardening remains tracked separately in #485 and does not change this batch denominator.
 - No Android changes and no `main` release/promotion are part of this checkpoint.
 
@@ -622,7 +623,7 @@ Completed or implemented in the reopened audit:
 - all-route geometry/overflow/mobile-occlusion audit added to the final rendered suite.
 
 Still required before merge:
-1. prove FV-44 in exact-head rendered CI;
+1. prove FV-45 in exact-head rendered CI;
 2. require the exact-final-head CI, CodeQL, Cross-engine, Performance and Windows gates to be green;
 3. squash-merge the completed work to `develop`.
 
@@ -638,4 +639,6 @@ No `main` promotion/release is part of this work.
 - **FV-43 source-fixed; exact-head proof pending:** after FV-42 passed, the same Transactions scanability suite reached its extreme long-content case and exposed another pagination-only harness assumption: the deliberately old extreme transaction is not guaranteed to be on mobile page 1. The harness now uses the visible Transactions search control to locate that unique long-content row before asserting overlap and overflow. No product behavior changed.
 
 
-- **FV-44 source-fixed; exact-head proof pending:** exact-head CI reached the extreme Recurring mobile lifecycle case after Transactions/legacy/provider validation had passed. The product intentionally shows 12 active recurring rows first and an explicit `Προβολή περισσότερων` control. The harness now proves that bounded initial state, the collapsed inactive-history state, expansion to all active rows and post-expansion overflow safety. No product behavior changed.
+- **FV-44 completed:** exact-head rendered CI on `9b25fb1…` reached and passed the extreme Recurring mobile lifecycle case after Transactions/legacy/provider validation had passed. The product keeps its intentional 12-row progressive disclosure and `Προβολή περισσότερων` behavior.
+
+- **FV-45 source-fixed; exact-head proof pending:** the receipt OCR proposal persisted the correct raw currency `EUR`, but the owned select renders the user-facing trigger label `EUR · Ευρώ`. The rendered harness now asserts the persisted IndexedDB proposal is exactly `EUR` and separately accepts the visible EUR label. No OCR/parser/product behavior changed.

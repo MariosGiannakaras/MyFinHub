@@ -49,9 +49,9 @@ Release-closeout tracker: **#288 — complete**.
 
 ## Active completion batch — #476
 
-**Implementations 7/8 completed · Sub-implementations 27/28 completed**
+**Implementations 7/8 completed · Sub-implementations 28/29 completed**
 
-- The explicit accepted checklist was normalized to 20 items and expanded through FV-44 as final-head validation exposed harness assumptions. The denominator is now 28. FV-35 and FV-43 are proven complete on `c852d3a…`; FV-44 is the only newly added proof item. No product/CSS threshold changed.
+- The explicit accepted checklist was normalized to 20 items and expanded through FV-45 as final-head validation exposed harness assumptions. The denominator is now 29. FV-44 is proven complete on `9b25fb1…`; FV-45 is the only newly added proof item. No product/CSS threshold changed.
 
 - Branch: `feat/476-completion-audit-hardening`.
 - **54 deep-audit findings are now tracked.** DA-01..DA-53 retain their existing implementation/disposition state; DA-54 adds the owner-reported dark-theme color/contrast defect.
@@ -77,9 +77,10 @@ Release-closeout tracker: **#288 — complete**.
 - **FV-41 completed:** exact-head rendered CI passes Settings tabs and provider branding with the 44px mobile provider Edit touch target.
 - **FV-42 completed:** exact-head rendered CI passes the five-part split disclosure and mobile hierarchy after locating the saved split through the real search control; the intentional visible + semantic desktop row pair is preserved.
 - **FV-43 completed:** exact-head rendered CI on `c852d3a…` passes the extreme long-content Transactions case after locating the deliberately old transaction through the visible mobile search, with overlap/overflow assertions intact.
-- **FV-44 source-fixed; exact-head proof pending:** the extreme Recurring mobile fixture intentionally uses progressive disclosure (12 visible rows, then `Προβολή περισσότερων`). The obligation lifecycle harness incorrectly required all 20+ active rows to be rendered initially. It now proves the bounded initial list, collapsed inactive history, actionable show-more control, full expansion and no overflow. No product behavior changed.
+- **FV-44 completed:** exact-head rendered CI on `9b25fb1…` passes the extreme Recurring mobile lifecycle case, proving 12-row bounded disclosure, collapsed inactive history, actionable `Προβολή περισσότερων`, full expansion and no overflow.
+- **FV-45 source-fixed; exact-head proof pending:** receipt OCR correctly stores `currency='EUR'`, while the owned select intentionally displays the human label `EUR · Ευρώ`. The OCR harness incorrectly compared the visible combobox label to the raw stored value. It now proves the persisted proposal remains exactly `EUR` and separately verifies the visible EUR label. No product behavior changed.
 - Current final-validation head: use the head SHA of PR #477 as the authoritative value.
-- Remaining work: prove FV-44 on the new exact head, require the final-head CI/security/cross-engine/performance/Windows gates green, then squash-merge #477 to `develop`.
+- Remaining work: prove FV-45 on the new exact head, require the final-head CI/security/cross-engine/performance/Windows gates green, then squash-merge #477 to `develop`.
 - No Android implementation and no `main` promotion/release are included.
 
 ## Next work
