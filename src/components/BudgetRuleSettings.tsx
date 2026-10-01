@@ -75,7 +75,7 @@ export function BudgetRuleSettings({data,asOf,budgetMonth,onUpsertBudget,onDelet
       const existing=(data.state.transactionRules??[]).find(item=>item.id===editingRuleId);const timestamp=now();
       const next=normalizeTransactionRule({...draftRule,id:existing?.id??ruleId(),enabled:existing?.enabled??true,createdAt:existing?.createdAt??timestamp,updatedAt:timestamp});
       onUpsertRule(next);resetRule();
-    }catch(error){setRuleError(error instanceof Error?error.message:'Δεν μπορέσαμε να αποθηκεύσουμε τον αυτοματισμό. Έλεγξε τις συνθήκες και την ενέργεια και δοκίμασε ξανά.')}
+    }catch(error){setRuleError(userErrorMessage(error,'Δεν μπορέσαμε να αποθηκεύσουμε τον αυτοματισμό. Έλεγξε τις συνθήκες και την ενέργεια και δοκίμασε ξανά.'))}
   };
   const moveRule=(index:number,direction:-1|1)=>{
     const target=index+direction;if(target<0||target>=rules.length)return;
