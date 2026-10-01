@@ -305,6 +305,7 @@ describe('finance document validation', () => {
 
   it('validates additive planning, attention, budget and rule state on mutable and full-document boundaries', () => {
     const full = validState();
+    full.seed.accounts=[{id:'bank',name:'Bank',kind:'bank'}];
     full.state.scheduled=[{
       id:'scheduled-1',dueDate:'2028-02-29',kind:'expense',amount:25,note:'Insurance',accountId:'bank',
       status:'pending',createdAt:full.updatedAt,updatedAt:full.updatedAt,
