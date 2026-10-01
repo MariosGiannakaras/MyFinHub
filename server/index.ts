@@ -7,7 +7,7 @@ import { handleAccountSecurityRequest } from './accountSecurityHandler.js';
 import { handleCardVaultRequest } from './cardVaultHandler.js';
 import { endCurrentDeviceSession } from './deviceSessionRegistry.js';
 import { handleDeviceSessionsRequest } from './deviceSessionsHandler.js';
-import { ApiError, assertSameOrigin, handleApi, methodNotAllowed, requestHeader, sendJson } from './http.js';
+import { ApiError, assertSameOrigin, handleApi, requestHeader, sendJson } from './http.js';
 import { backupStore, DATA_SOURCE, isOwner, moveHistory, readHistory, readStore, writeMutableState, writeStore } from './storage.js';
 import { parseMutableWrite } from './stateValidation.js';
 import { isAuthRejection } from './upstream.js';
