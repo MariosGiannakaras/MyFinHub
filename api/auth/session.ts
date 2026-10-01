@@ -1,12 +1,11 @@
 import { handleAccountSecurityRequest } from '../../server/accountSecurityHandler.js';
 import { accessTokenAal, clearSessionCookies, getTotpFactors, requireSession } from '../../server/auth.js';
 import { handleDeviceSessionsRequest } from '../../server/deviceSessionsHandler.js';
-import { ApiError, handleApi, methodNotAllowed, sendJson } from '../../server/http.js';
+import { ApiError, handleApi, methodNotAllowed, sendJson, strictQueryValue } from '../../server/http.js';
 import { isOwner } from '../../server/storage.js';
 
-function routeMarker(req: any) {
-  const value = req?.query?.__myfinhub_route;
-  return String(Array.isArray(value) ? value[0] ?? '' : value ?? '');
+function routeMarker(req:any){
+  return strictQueryValue(req,'__myfinhub_route');
 }
 
 export default async function handler(req: any, res: any) {
