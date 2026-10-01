@@ -230,6 +230,20 @@ describe('finance document validation', () => {
     expect(() => validateFinanceState(state)).toThrowError(/savingsTargetRate/i);
   });
 
+  it('rejects mismatched override identities', () => {
+    const full=validState();
+    full.state.overrides={row:{id:'other',date:'2026-10-01',type:'expense',amount:10,note:'Mismatch',accountId:'bank'}};
+    expect(()=>validateFinanceData(full)).toThrowError(/state\.overrides\.row\.id/i);
+    expect(()=>validateFinanceState(full.state)).toThrowError(/state\.overrides\.row\.id/i);
+
+    const recurring=validState();
+    recurring.state.recurringOverrides={row:{id:'other',name:'Recurring',amount:10,day:1,accountId:'bank',category:'Άλλο',active:true}};
+    expect(()=>validateFinanceState(recurring.state)).toThrowError(/state\.recurringOverrides\.row\.id/i);
+
+    const loan=validState();
+    loan.state.loanOverrides={row:{id:'other',name:'Loan',total:100,installment:10,installments:10,defaultAccountId:'bank'}};
+    expect(()=>validateFinanceState(loan.state)).toThrowError(/state\.loanOverrides\.row\.id/i);
+  });
   it('rejects malformed nested transaction fields', () => {
     const state = validState();
     state.seed.transactions.push({
