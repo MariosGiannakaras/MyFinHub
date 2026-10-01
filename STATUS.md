@@ -49,9 +49,9 @@ Release-closeout tracker: **#288 — complete**.
 
 ## Active completion batch — #476
 
-**Implementations 7/8 completed · Sub-implementations 25/27 completed**
+**Implementations 7/8 completed · Sub-implementations 27/28 completed**
 
-- The explicit accepted checklist was normalized to 20 items, increased through FV-40 to 24, to 25 for FV-41, to 26 for FV-42, and is now 27 because the next exact-head Transactions scanability stage exposed FV-43: the deliberately old extreme transaction is not guaranteed to be on mobile page 1. The 500 KiB threshold remains unchanged.
+- The explicit accepted checklist was normalized to 20 items and expanded through FV-44 as final-head validation exposed harness assumptions. The denominator is now 28. FV-35 and FV-43 are proven complete on `c852d3a…`; FV-44 is the only newly added proof item. No product/CSS threshold changed.
 
 - Branch: `feat/476-completion-audit-hardening`.
 - **54 deep-audit findings are now tracked.** DA-01..DA-53 retain their existing implementation/disposition state; DA-54 adds the owner-reported dark-theme color/contrast defect.
@@ -70,15 +70,16 @@ Release-closeout tracker: **#288 — complete**.
 - The separate database workstream is complete by owner confirmation, including the relational ledger cutover. This branch will not touch the live database.
 - Owner confirms logos, backend/database work and owner-side Settings work are complete. The accepted #482 provider-management/API/Storage delta is source-integrated into #477, and exact-head rendered CI on `44c2fe2…` passed the provider-branding task-flow before the later Transactions-only FV-43 harness failure.
 - FV-34 is **completed** with no product change. Exact-head rendered validation passed Transactions/Recurring/Reports/Quick Entry icon adoption, narrow-mobile containment and the full icon-pack rendered suite.
-- FV-35 is **source-fixed; exact-head proof pending** with no product regression identified: legacy transaction management now waits for the visible Transactions search control on desktop and mobile before applying the `Supermarket` filter, so CI no longer races initial rendering while the real pagination/search behavior remains unchanged.no product regression identified: legacy transaction management now applies the real Transactions search control to `Supermarket` on desktop and mobile before edit/delete/undo/redo proof, so the target row is deterministic without bypassing or weakening the 14-row pagination contract.
+- **FV-35 completed:** exact-head rendered CI on `c852d3a…` passes legacy transaction edit/delete/undo/redo on desktop and mobile using the real Transactions search/pagination behavior.
 - FV-37 is **completed**: exact-head CI confirms the aggregate CSS budget is green without raising the 500 KiB raw / 100 KiB gzip ceiling after redundant legacy card/create-dialog CSS removal.
 - Draft CI on provider-reconciled head `98293e9…` reached 760/761 unit/source tests; the sole failure was a stale migration-source assertion expecting the pre-back-sync fallback text. Commit `8066c2a88899…` updates that assertion to the actual production-synced `else logo_asset_key` / `else wordmark_asset_key` contract without weakening behavior.
 - **FV-38 completed:** exact-head CI on `c95746b…` passes 761/761 tests and measures aggregate CSS at 499.7 KiB raw / 93.4 KiB gzip against the unchanged 500/100 KiB budget after provider-specific styling was consolidated onto shared UI surfaces.
 - **FV-41 completed:** exact-head rendered CI passes Settings tabs and provider branding with the 44px mobile provider Edit touch target.
 - **FV-42 completed:** exact-head rendered CI passes the five-part split disclosure and mobile hierarchy after locating the saved split through the real search control; the intentional visible + semantic desktop row pair is preserved.
-- **FV-43 source-fixed; exact-head proof pending:** the extreme long-content case now locates its deliberately old transaction through the visible mobile Transactions search before overlap/overflow assertions, avoiding a page-1 pagination assumption without product changes.
+- **FV-43 completed:** exact-head rendered CI on `c852d3a…` passes the extreme long-content Transactions case after locating the deliberately old transaction through the visible mobile search, with overlap/overflow assertions intact.
+- **FV-44 source-fixed; exact-head proof pending:** the extreme Recurring mobile fixture intentionally uses progressive disclosure (12 visible rows, then `Προβολή περισσότερων`). The obligation lifecycle harness incorrectly required all 20+ active rows to be rendered initially. It now proves the bounded initial list, collapsed inactive history, actionable show-more control, full expansion and no overflow. No product behavior changed.
 - Current final-validation head: use the head SHA of PR #477 as the authoritative value.
-- Remaining work: prove FV-43 in exact-head rendered CI, then require the final-head CI/security/cross-engine/performance/Windows gates green and squash-merge to `develop`.
+- Remaining work: prove FV-44 on the new exact head, require the final-head CI/security/cross-engine/performance/Windows gates green, then squash-merge #477 to `develop`.
 - No Android implementation and no `main` promotion/release are included.
 
 ## Next work
