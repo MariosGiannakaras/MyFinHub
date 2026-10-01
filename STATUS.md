@@ -49,7 +49,7 @@ Release-closeout tracker: **#288 — complete**.
 
 ## Active completion batch — #476
 
-**Implementations 7/24 completed · Sub-implementations 77/192 completed**
+**Implementations 7/24 completed · Sub-implementations 81/192 completed**
 
 - The completion definition has been expanded by the owner to a full-system verification matrix. Existing implementation findings remain tracked, but final closeout now requires direct assistant-led manual review plus UI/UX/accessibility, routing/404, every supported user mutation, real-stack persistence/backend proof, exhaustive failure handling, security/privacy, temporal/data-boundary coverage, operational recovery and canonical post-merge validation.
 
@@ -128,3 +128,5 @@ Subsequent changes are product fixes against the completed v1.3.0 baseline. Rout
 - Batch O real persistence-failure QA is source-implemented: the real useFinance hook now has rendered probes for one-shot offline failure, explicit server-state recovery and beforeunload protection while failed/in-flight writes remain unconfirmed. Exact-head rendered proof is pending.
 
 - Batch P large-data containment is source-implemented: Planning/Recurring/budget/rule collections now use progressive disclosure, and the synthetic large fixture covers 1,500 events plus 120 recurring, 120 scheduled, 80 budgets, 80 rules and 100 history points. Rendered/performance proof is pending.
+
+- Exact-head `81bff44…` closes four expanded-audit sub-items: Unicode/long-text rendering, stable-ID/normalization collision semantics, supported-schema migration/future-schema rejection, and render/lazy/OCR failure recovery. CI, CodeQL, Cross-engine, Performance and all Windows gates are green on that checkpoint.
