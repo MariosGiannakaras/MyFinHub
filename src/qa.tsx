@@ -143,6 +143,21 @@ function buildQaData(params:URLSearchParams){
       amount:10+(index%40),note:`Large scheduled ${index+1}`,category:'Σταθερά έξοδα',accountId:'piraeus-payroll',
       status:'pending' as const,createdAt:stamp,updatedAt:stamp,
     }))];
+    const largeCategories=Array.from({length:80},(_,index)=>`QA Κατηγορία ${String(index+1).padStart(3,'0')}`);
+    next.state.settings.expenseCategories=[...new Set([...(next.state.settings.expenseCategories??[]),...largeCategories])];
+    next.state.settings.expenseCategoryTree=[
+      ...(next.state.settings.expenseCategoryTree??next.state.settings.expenseCategories.filter(name=>!largeCategories.includes(name)).map(name=>({name,subcategories:[]}))),
+      ...largeCategories.map(name=>({name,subcategories:[]})),
+    ];
+    next.state.budgets=[...(next.state.budgets??[]),...largeCategories.map((category,index)=>({
+      id:`large-budget-${index}`,month:'2026-08',scope:'category' as const,category,amount:100+(index%20)*5,
+      alertThreshold:.8,createdAt:stamp,updatedAt:stamp,
+    }))];
+    next.state.transactionRules=[...(next.state.transactionRules??[]),...Array.from({length:80},(_,index)=>({
+      id:`large-rule-${index}`,name:`Large rule ${index+1}`,enabled:true,priority:index,scopes:['manual' as const],
+      match:{description:`large-rule-token-${index}`,mode:'contains' as const},action:{category:largeCategories[index]},
+      createdAt:stamp,updatedAt:stamp,
+    }))];
   }
   if(params.get('state')==='overlimit')next.state.cards=(next.state.cards??[]).map(card=>card.kind==='credit'?{...card,creditLimit:100}:card);
   if(params.get('state')==='forecast-negative')next.state.scheduled=[...(next.state.scheduled??[]),{id:'qa-negative-forecast',dueDate:'2026-08-18',kind:'expense',amount:3000,note:'Μεγάλη γνωστή υποχρέωση',category:'Σταθερά έξοδα',accountId:'piraeus-payroll',status:'pending',createdAt:'2026-08-10T10:00:00.000Z',updatedAt:'2026-08-10T10:00:00.000Z'}];
@@ -162,7 +177,9 @@ function QaWorkspace(){
   const [data,setData]=useState<FinanceData>(()=>buildQaData(params));
   const [undoStack,setUndoStack]=useState<FinanceData[]>([]);
   const [redoStack,setRedoStack]=useState<FinanceData[]>([]);
-  const [changeHistory,setChangeHistory]=useState<ChangeHistoryEntry[]>([]);
+  const [changeHistory,setChangeHistory]=useState<ChangeHistoryEntry[]>(()=>params.get('state')==='large'
+    ?Array.from({length:100},(_,index)=>({id:`qa-large-history-${index+1}`,kind:'change' as const,label:`Large history change ${index+1}`,at:`2026-08-17T${String(11-Math.floor(index/60)).padStart(2,'0')}:${String(59-index%60).padStart(2,'0')}:00.000Z`,current:index===0}))
+    :[]);
   const [saveState,setSaveState]=useState<SaveState>(()=>initialSaveState(params.get('save')));
   const [page,setPage]=useState<PageId>(()=>initialPage(params.get('page')));
   const [quickOpen,setQuickOpen]=useState(false);
