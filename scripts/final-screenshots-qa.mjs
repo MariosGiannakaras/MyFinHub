@@ -79,7 +79,8 @@ try{
   const navigatePage=async(page,heading)=>{
     const url=new URL(baseUrl);url.searchParams.set('page',page);url.searchParams.set('visual','1');
     await c.send('Page.navigate',{url:url.href});
-    await waitFor("function(text,theme){return document.readyState==='complete'&&document.documentElement.dataset.theme===theme&&(document.querySelector('#main-workspace h1')?.textContent||'').includes(text)}",[heading,activeTheme],page);
+    await waitFor("function(text){return document.readyState==='complete'&&(document.querySelector('#main-workspace h1')?.textContent||'').includes(text)}",[heading],page);
+    await applyTheme(activeTheme);
     if(page==='dashboard'){
       await waitFor("function(){if(innerWidth<=680)return true;const selectors=['.summary-donut .recharts-surface','.approved-bar-wrap .recharts-surface','.approved-category-donut .recharts-surface'];return selectors.every(selector=>Boolean(document.querySelector(selector)))}",[],'Dashboard deferred charts');
       await waitFor("function(){if(innerWidth<=680)return true;const visibleShape=selector=>[...document.querySelectorAll(selector)].some(node=>{try{const box=node.getBBox();return box.width>2&&box.height>2}catch{return false}});return visibleShape('.approved-bar-wrap .recharts-rectangle')&&visibleShape('.summary-donut .recharts-sector')&&visibleShape('.approved-category-donut .recharts-sector')}",[],'Dashboard painted charts');
@@ -95,13 +96,15 @@ try{
   const navigateAuth=async(screen)=>{
     const url=new URL(baseUrl);url.searchParams.set('screen',screen);url.searchParams.set('visual','1');
     await c.send('Page.navigate',{url:url.href});
-    await waitFor("function(theme){return document.readyState==='complete'&&document.documentElement.dataset.theme===theme&&Boolean(document.querySelector('.login-card h1'))}",[activeTheme],screen);
+    await waitFor("function(){return document.readyState==='complete'&&Boolean(document.querySelector('.login-card h1'))}",[],screen);
+    await applyTheme(activeTheme);
     await sleep(220);
   };
   const navigateUtility=async(screen)=>{
     const url=new URL(baseUrl);url.searchParams.set('screen',screen);url.searchParams.set('visual','1');
     await c.send('Page.navigate',{url:url.href});
-    await waitFor("function(theme){return document.readyState==='complete'&&document.documentElement.dataset.theme===theme&&Boolean(document.querySelector('#not-found-title'))}",[activeTheme],screen);
+    await waitFor("function(){return document.readyState==='complete'&&Boolean(document.querySelector('#not-found-title'))}",[],screen);
+    await applyTheme(activeTheme);
     await sleep(220);
   };
   const capture=async(surface,state,theme,mode,width,height)=>{
