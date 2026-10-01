@@ -205,7 +205,7 @@ app.post('/api/backup', (req, res) => void handleApi(res, async () => {
   sendJson(res, 200, { path: await backupStore(session.accessToken) });
 }));
 
-app.all('/api/{*splat}', (_req, res) => methodNotAllowed(res, []));
+app.all('/api/{*splat}', (_req, res) => void handleApi(res, (requestId) => sendJson(res, 404, { error: 'API route not found', code: 'API_NOT_FOUND', requestId })));
 
 const serveDist = process.argv.includes('--serve-dist') || process.env.NODE_ENV === 'production';
 if (serveDist) {
