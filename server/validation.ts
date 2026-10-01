@@ -4,6 +4,8 @@ import { isValidDateOnly, isValidDateStamp, isValidMonthOnly } from '../src/lib/
 import { MAX_FINANCE_DOCUMENT_BYTES } from '../src/lib/limits.js';
 import { ApiError } from './http.js';
 
+const SUPPORTED_FINANCE_SCHEMA_VERSION = 3;
+
 function invalid(message: string): never {
   throw new ApiError(400, 'INVALID_DATA', message);
 }
@@ -495,7 +497,7 @@ export function validateFinanceData(value: unknown): asserts value is FinanceDat
   if (!object(value)) invalid('Finance state must be a JSON object.');
   validateDocumentSize(value);
   text(value.app, 'app identifier', 64);
-  if (!Number.isInteger(value.schemaVersion) || Number(value.schemaVersion) < 1 || Number(value.schemaVersion) > 100) invalid('Invalid schema version.');
+  if (!Number.isInteger(value.schemaVersion) || Number(value.schemaVersion) < 1 || Number(value.schemaVersion) > SUPPORTED_FINANCE_SCHEMA_VERSION) invalid('Unsupported schema version.');
   dateStamp(value.updatedAt, 'updatedAt value');
   if (!object(value.seed)) invalid('Missing seed data.');
   if (!object(value.state)) invalid('Missing application state.');
