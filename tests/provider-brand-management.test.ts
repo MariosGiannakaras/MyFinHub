@@ -84,6 +84,8 @@ describe('provider branding management',()=>{
       .toEqual({providerId:'demo-bank',role:'card-mark',variant:'dark',mimeType:'image/svg+xml',fileName:'mark.svg',makePrimary:false});
     expect(()=>parseProviderAssetUpload({query:{providerId:'demo-bank',role:'card-mark',variant:'dark',primary:'0'},headers:{'content-type':'image/svg+xml'}})).toThrow(ApiError);
     expect(()=>parseProviderAssetUpload({query:{providerId:['demo-bank','other'],role:'logo',variant:'dark',fileName:'logo.png'},headers:{'content-type':'image/png'}})).toThrow(ApiError);
+    expect(()=>parseProviderAssetUpload({query:{providerId:'../escape',role:'logo',variant:'dark',fileName:'logo.png'},headers:{'content-type':'image/png'}})).toThrow(ApiError);
+    expect(()=>parseProviderAssetUpload({query:{providerId:'demo-bank',role:'logo',variant:'dark',fileName:'logo.pdf'},headers:{'content-type':'application/pdf'}})).toThrow(ApiError);
     expect(parseProviderAssetBindingWrite({providerId:'demo-bank',role:'logo',variant:'dark',assetKey:'demo-shared'}))
       .toEqual({providerId:'demo-bank',role:'logo',variant:'dark',assetKey:'demo-shared'});
     expect(parseProviderAssetBindingWrite({providerId:'demo-bank',role:'logo',variant:'dark',assetKey:null}).assetKey).toBeNull();
@@ -98,6 +100,7 @@ describe('provider branding management',()=>{
     expect(()=>validateProviderAssetContent('image/svg+xml',Buffer.from('<svg><script>alert(1)</script></svg>'))).toThrow(ApiError);
     expect(()=>validateProviderAssetContent('image/png',Buffer.from('not png'))).toThrow(ApiError);
     expect(()=>validateProviderAssetContent('image/png',['not','binary'] as unknown)).toThrow(ApiError);
+    expect(()=>validateProviderAssetContent('image/png',Buffer.alloc(2*1024*1024+1))).toThrow(ApiError);
     expect(copyBoundedBinaryValue(Buffer.from([1,2,3]),3)).toEqual(Buffer.from([1,2,3]));
     expect(()=>copyBoundedBinaryValue({length:1},3)).toThrow(ApiError);
     expect(()=>copyBoundedBinaryValue(Buffer.alloc(4),3)).toThrow(ApiError);
