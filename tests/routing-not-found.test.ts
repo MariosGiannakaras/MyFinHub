@@ -36,4 +36,13 @@ describe('routing and 404 contract',()=>{
     expect(static404).toContain('href="/#/dashboard"');
     expect(static404.toLowerCase()).not.toContain('<script');
   });
+
+  it('keeps known local API routes on 405 before the unknown-route JSON 404 fallback',()=>{
+    expect(server).toContain("knownMethodFallback('/api/health', ['GET'])");
+    expect(server).toContain("knownMethodFallback('/api/data', ['GET', 'PUT'])");
+    expect(server).toContain("knownMethodFallback('/api/history', ['GET', 'POST'])");
+    expect(server).toContain("knownMethodFallback('/api/import', ['POST'])");
+    expect(server.indexOf("knownMethodFallback('/api/data'")).toBeLessThan(server.indexOf("app.all('/api/{*splat}'"));
+  });
+
 });
