@@ -873,3 +873,20 @@ The application must **not** be described as fully verified merely because unit 
 "Verified" additionally means the responsible ChatGPT agent has personally inspected the required runtime/visual/backend evidence and recorded an independent disposition; GitHub/CI is supporting evidence only.
 
 Production-destructive testing is prohibited. Real CRUD/backend verification must use an isolated non-production environment or narrowly controlled reversible test data approved for that purpose. Android remains out of scope; any compatibility impact discovered here is documented only.
+
+
+### 8.18 Implementation batch A — source implementation in progress
+
+A coherent first implementation batch has started without claiming verification completion. PR #477 is kept in draft during high-churn work so pushes use the lighter CI + CodeQL feedback loop; expensive rendered/cross-engine/performance/Windows gates remain deferred until a stable integrated head.
+
+Source scope in this batch:
+- dedicated reusable, privacy-safe MyFinHub 404 component with responsive/light-dark/reduced-motion treatment and Dashboard/Back recovery actions;
+- standalone static `404.html` for real HTTP-path failures plus desktop/local server behavior that no longer turns every unknown GET into `index.html`/Dashboard;
+- explicit 404 inclusion in the final screenshot matrix (target 66 captures rather than the previous 63);
+- pure hash-route resolver + regression tests for valid, legacy and unknown routes;
+- HTTP binary-body normalization that rejects ambiguous request-body types and malformed Content-Length values before provider-asset processing;
+- provider upload validation now returns a bounded copied Buffer instead of relying on request-derived runtime type assumptions;
+- provider Storage upload cleanup is attempted when the subsequent metadata-registration RPC fails, preventing a known partial-write orphan case;
+- provider query parameters now reject ambiguous array/duplicate shapes instead of silently selecting the first value.
+
+These items remain **not completed** until narrow CI/CodeQL validation is green and the 404 is personally inspected in rendered runtime evidence. The full-system counters therefore remain unchanged at this checkpoint.
