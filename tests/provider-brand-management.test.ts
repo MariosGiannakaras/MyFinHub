@@ -1,5 +1,5 @@
 import { readFileSync } from 'node:fs';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, copyBoundedBinaryValue } from '../server/http.js';
 import {
   parseFinancialProviderWrite,
@@ -7,6 +7,7 @@ import {
   parseProviderAssetUpload,
   validateProviderAssetContent,
 } from '../server/accountMetadataHandler.js';
+import { uploadFinancialProviderAsset } from '../server/accountMetadataStore.js';
 import { cardBrandSurfaceTone } from '../src/lib/cardDesigns.js';
 import { providerBrandUrl } from '../src/lib/providerBrandAssets.js';
 import type { FinancialProvider } from '../src/lib/financialProviders.js';
@@ -48,6 +49,14 @@ function provider():FinancialProvider{
 }
 
 describe('provider branding management',()=>{
+  const originalUrl=process.env.SUPABASE_URL;
+  const originalKey=process.env.SUPABASE_PUBLISHABLE_KEY;
+  afterEach(()=>{
+    vi.unstubAllGlobals();
+    if(originalUrl===undefined)delete process.env.SUPABASE_URL;else process.env.SUPABASE_URL=originalUrl;
+    if(originalKey===undefined)delete process.env.SUPABASE_PUBLISHABLE_KEY;else process.env.SUPABASE_PUBLISHABLE_KEY=originalKey;
+  });
+
   it('resolves explicit slot bindings before compatibility fallbacks',()=>{
     const p=provider();
     expect(providerBrandUrl(p,'logo','light')).toBe('https://example.test/logo-light.svg');
@@ -155,4 +164,32 @@ describe('provider branding management',()=>{
     expect(settings).toContain('await setFinancialProviderAssetBinding');
     expect(settings).toContain("editor.source==='new'?'Δημιουργία παρόχου':'Αποθήκευση'");
   });
+
+  it('cleans up the uploaded Storage object when provider asset registration fails',async()=>{
+    process.env.SUPABASE_URL='https://project.example.supabase.co';
+    process.env.SUPABASE_PUBLISHABLE_KEY='sb_publishable_test';
+    const calls:Array<{url:string;method:string}>=[];
+    const fetchMock=vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+      const url=String(input);const method=String(init?.method||'GET');calls.push({url,method});
+      if(calls.length===1)return new Response('{}',{status:200,headers:{'content-type':'application/json'}});
+      if(calls.length===2)return new Response(JSON.stringify({message:'temporary registration failure'}),{status:503,headers:{'content-type':'application/json'}});
+      if(calls.length===3)return new Response('{}',{status:200,headers:{'content-type':'application/json'}});
+      throw new Error('unexpected provider asset request');
+    });
+    vi.stubGlobal('fetch',fetchMock);
+
+    await expect(uploadFinancialProviderAsset({
+      providerId:'demo-bank',role:'logo',variant:'light',mimeType:'image/png',fileName:'logo.png',makePrimary:true,
+      content:Buffer.from([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a,0,0]),
+    },'access-token')).rejects.toMatchObject({status:503,code:'ACCOUNT_METADATA_UNAVAILABLE'});
+
+    expect(calls).toHaveLength(3);
+    expect(calls[0]).toMatchObject({method:'POST'});
+    expect(calls[0].url).toContain('/storage/v1/object/financial-provider-assets/providers/demo-bank/');
+    expect(calls[1]).toMatchObject({method:'POST'});
+    expect(calls[1].url).toContain('/rest/v1/rpc/rheomiq_register_financial_provider_asset');
+    expect(calls[2]).toMatchObject({method:'DELETE'});
+    expect(calls[2].url).toBe(calls[0].url);
+  });
+
 });
