@@ -49,7 +49,7 @@ Release-closeout tracker: **#288 — complete**.
 
 ## Active completion batch — #476
 
-**Implementations 7/24 completed · Sub-implementations 61/192 completed**
+**Implementations 7/24 completed · Sub-implementations 62/192 completed**
 
 - The completion definition has been expanded by the owner to a full-system verification matrix. Existing implementation findings remain tracked, but final closeout now requires direct assistant-led manual review plus UI/UX/accessibility, routing/404, every supported user mutation, real-stack persistence/backend proof, exhaustive failure handling, security/privacy, temporal/data-boundary coverage, operational recovery and canonical post-merge validation.
 
@@ -107,6 +107,7 @@ Release-closeout tracker: **#288 — complete**.
 - Batch L runtime AAL2 downgrade recovery is in progress: direct error-path review found that protected-endpoint `403 MFA_REQUIRED` did not re-synchronize the mounted session shell. One accepted sub-implementation was added, increasing the denominator to 192.
 - 413/429/5xx error-contract verification is directly closed with green CI exercising body/upload rejection, rate limiting, transport outages, stable codes and redacted 500/502 handling.
 - 409 revision/conflict handling is directly closed: stale writes fail closed, pending dependent writes are discarded, cross-tab revisions reconcile deterministically and the UI exposes explicit recovery.
+- Persistence concurrency invariant is also closed: sequential ordering, cross-tab newer-revision handling and fail-closed queue behavior are directly exercised and backed by database preconditions.
 - No Android implementation and no `main` promotion/release are included.
 
 ## Next work
