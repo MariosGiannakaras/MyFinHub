@@ -63,6 +63,7 @@ const settingsTabs=['profile','accounts','categories','icons','rules','data'];
 const authScreens=['login','mfa','mfa-enroll'];
 const utilityScreens=['404'];
 const viewports=[{mode:'desktop',width:1440,height:1000},{mode:'tablet',width:834,height:1112},{mode:'mobile',width:375,height:812}];
+const themes=['light','dark'];
 const screenshots=[];
 const clean=value=>String(value).replace(/[^A-Za-z0-9._-]+/g,'-').replace(/^-+|-+$/g,'')||'capture';
 
@@ -71,12 +72,14 @@ try{
   const {port}=browserSession;
   const target=await fetch(`http://127.0.0.1:${port}/json/new?${encodeURIComponent(baseUrl)}`,{method:'PUT'}).then(r=>r.json());
   const c=new Cdp(target.webSocketDebuggerUrl);await c.open();await c.send('Page.enable');
+  let activeTheme='light';
+  const applyTheme=async preference=>{const resolved=await c.call(`async function(pref){localStorage.setItem('myfinhub.theme',pref);const mod=await import('/src/lib/theme.ts');mod.applyThemePreference(pref);await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));return document.documentElement.dataset.theme}`,[preference]);if(resolved!==preference)throw new Error(`Theme ${preference} did not resolve before final capture (got ${resolved}).`);activeTheme=preference};
   const viewport=(width,height)=>c.send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<=680});
   const waitFor=async(fn,args=[],label='page')=>{for(let i=0;i<120;i++){if(await c.call(fn,args))return;await sleep(100)}throw new Error(`Timed out waiting for ${label}`)};
   const navigatePage=async(page,heading)=>{
     const url=new URL(baseUrl);url.searchParams.set('page',page);url.searchParams.set('visual','1');
     await c.send('Page.navigate',{url:url.href});
-    await waitFor("function(text){return document.readyState==='complete'&&(document.querySelector('#main-workspace h1')?.textContent||'').includes(text)}",[heading],page);
+    await waitFor("function(text,theme){return document.readyState==='complete'&&document.documentElement.dataset.theme===theme&&(document.querySelector('#main-workspace h1')?.textContent||'').includes(text)}",[heading,activeTheme],page);
     if(page==='dashboard'){
       await waitFor("function(){if(innerWidth<=680)return true;const selectors=['.summary-donut .recharts-surface','.approved-bar-wrap .recharts-surface','.approved-category-donut .recharts-surface'];return selectors.every(selector=>Boolean(document.querySelector(selector)))}",[],'Dashboard deferred charts');
       await waitFor("function(){if(innerWidth<=680)return true;const visibleShape=selector=>[...document.querySelectorAll(selector)].some(node=>{try{const box=node.getBBox();return box.width>2&&box.height>2}catch{return false}});return visibleShape('.approved-bar-wrap .recharts-rectangle')&&visibleShape('.summary-donut .recharts-sector')&&visibleShape('.approved-category-donut .recharts-sector')}",[],'Dashboard painted charts');
@@ -92,48 +95,51 @@ try{
   const navigateAuth=async(screen)=>{
     const url=new URL(baseUrl);url.searchParams.set('screen',screen);url.searchParams.set('visual','1');
     await c.send('Page.navigate',{url:url.href});
-    await waitFor("function(){return document.readyState==='complete'&&Boolean(document.querySelector('.login-card h1'))}",[],screen);
+    await waitFor("function(theme){return document.readyState==='complete'&&document.documentElement.dataset.theme===theme&&Boolean(document.querySelector('.login-card h1'))}",[activeTheme],screen);
     await sleep(220);
   };
   const navigateUtility=async(screen)=>{
     const url=new URL(baseUrl);url.searchParams.set('screen',screen);url.searchParams.set('visual','1');
     await c.send('Page.navigate',{url:url.href});
-    await waitFor("function(){return document.readyState==='complete'&&Boolean(document.querySelector('#not-found-title'))}",[],screen);
+    await waitFor("function(theme){return document.readyState==='complete'&&document.documentElement.dataset.theme===theme&&Boolean(document.querySelector('#not-found-title'))}",[activeTheme],screen);
     await sleep(220);
   };
-  const capture=async(surface,state,mode,width,height)=>{
+  const capture=async(surface,state,theme,mode,width,height)=>{
     const metrics=await c.send('Page.getLayoutMetrics');const size=metrics.cssContentSize||metrics.contentSize;
     const captureWidth=Math.max(1,Math.ceil(size.width));const captureHeight=Math.max(1,Math.min(16000,Math.ceil(size.height)));
     const shot=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true,clip:{x:0,y:0,width:captureWidth,height:captureHeight,scale:1}});
     const dir=resolve(evidenceRoot,clean(surface));mkdirSync(dir,{recursive:true});
-    const fileName=`${appVersion}__${timestamp}__${clean(state)}__${mode}-${width}x${height}.png`;
+    const fileName=`${appVersion}__${timestamp}__${clean(state)}-${theme}__${mode}-${width}x${height}.png`;
     const path=resolve(dir,fileName);writeFileSync(path,Buffer.from(shot.data,'base64'));
-    screenshots.push({file:relative(repositoryRoot,path).replaceAll('\\','/'),surface,state,viewport:{mode,width,height},capture:{width:captureWidth,height:captureHeight}});
+    screenshots.push({file:relative(repositoryRoot,path).replaceAll('\\','/'),surface,state,theme,viewport:{mode,width,height},capture:{width:captureWidth,height:captureHeight}});
   };
 
-  for(const item of viewports){
-    await viewport(item.width,item.height);
-    for(const [page,heading] of Object.entries(pages)){
-      await navigatePage(page,heading);
-      await capture(page,'page',item.mode,item.width,item.height);
-      if(page==='settings'){
-        for(const tab of settingsTabs){
-          const clicked=await c.call('function(tab){const node=document.querySelector(\'[aria-controls="settings-panel-'+tab+'"]\');if(!node)return false;node.click();return true}',[tab]);
-          if(!clicked)throw new Error(`Missing Settings tab ${tab}`);
-          await waitFor('function(tab){return document.querySelector(\'[aria-controls="settings-panel-'+tab+'"]\')?.getAttribute("aria-selected")==="true"}',[tab],`settings tab ${tab}`);
-          await sleep(180);
-          await capture('settings',`tab-${tab}`,item.mode,item.width,item.height);
+  for(const theme of themes){
+    await applyTheme(theme);
+    for(const item of viewports){
+      await viewport(item.width,item.height);
+      for(const [page,heading] of Object.entries(pages)){
+        await navigatePage(page,heading);
+        await capture(page,'page',theme,item.mode,item.width,item.height);
+        if(page==='settings'){
+          for(const tab of settingsTabs){
+            const clicked=await c.call('function(tab){const node=document.querySelector(\'[aria-controls="settings-panel-'+tab+'"]\');if(!node)return false;node.click();return true}',[tab]);
+            if(!clicked)throw new Error(`Missing Settings tab ${tab}`);
+            await waitFor('function(tab){return document.querySelector(\'[aria-controls="settings-panel-'+tab+'"]\')?.getAttribute("aria-selected")==="true"}',[tab],`settings tab ${tab}`);
+            await sleep(180);
+            await capture('settings',`tab-${tab}`,theme,item.mode,item.width,item.height);
+          }
         }
       }
+      for(const screen of authScreens){await navigateAuth(screen);await capture('auth',screen,theme,item.mode,item.width,item.height)}
+      for(const screen of utilityScreens){await navigateUtility(screen);await capture('not-found','route-404',theme,item.mode,item.width,item.height)}
     }
-    for(const screen of authScreens){await navigateAuth(screen);await capture('auth',screen,item.mode,item.width,item.height)}
-    for(const screen of utilityScreens){await navigateUtility(screen);await capture('not-found','route-404',item.mode,item.width,item.height)}
   }
   c.close();
-  if(screenshots.length!==66)throw new Error(`Expected 66 final screenshots, captured ${screenshots.length}.`);
+  if(screenshots.length!==132)throw new Error(`Expected 132 final screenshots, captured ${screenshots.length}.`);
   const manifest={schemaVersion:1,kind:'final-release-screenshots',appVersion,captureId:`${timestamp}__${shortSha}`,generatedAt,timeZone,source:{sha:sourceSha,shortSha,branch:sourceBranch},baseUrl,count:screenshots.length,screenshots};
   writeFileSync(resolve(evidenceRoot,'manifest.json'),`${JSON.stringify(manifest,null,2)}\n`);
-  console.log(`Final screenshot QA passed: ${screenshots.length} screenshots across application pages, Settings tabs, auth states and the 404 surface.`);
+  console.log(`Final screenshot QA passed: ${screenshots.length} screenshots across light/dark application pages, Settings tabs, auth states and the 404 surface.`);
 }finally{
   if(browserSession){
     await stopBrowser(browserSession.child);
