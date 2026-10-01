@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { ApiError, handleApi, methodNotAllowed, readJsonBody, sendJson } from '../server/http.js';
+import { ApiError, handleApi, methodNotAllowed, readJsonBody, sendJson, strictQueryValue } from '../server/http.js';
 import { readFileSync } from 'node:fs';
 
 function response(){
@@ -47,6 +47,15 @@ describe('shared HTTP error contracts',()=>{
     expect(res.getHeader('content-type')).toBe('application/json; charset=utf-8');
     expect(res.getHeader('cache-control')).toBe('no-store, max-age=0');
     expect(res.getHeader('pragma')).toBe('no-cache');
+  });
+});
+
+describe('strict query boundaries',()=>{
+  it('accepts one string value and rejects ambiguous array/object query shapes',()=>{
+    expect(strictQueryValue({query:{resource:' financial-providers '}},'resource')).toBe('financial-providers');
+    expect(strictQueryValue({query:{resource:['financial-providers','other']}},'resource')).toBe('');
+    expect(strictQueryValue({query:['not-an-object']},'resource')).toBe('');
+    expect(strictQueryValue({},'resource')).toBe('');
   });
 });
 
