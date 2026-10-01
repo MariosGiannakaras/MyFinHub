@@ -11,7 +11,7 @@ import { cardBrandSurfaceTone } from '../src/lib/cardDesigns.js';
 import { providerBrandUrl } from '../src/lib/providerBrandAssets.js';
 import type { FinancialProvider } from '../src/lib/financialProviders.js';
 
-const migration=readFileSync(new URL('../supabase/migrations/20260930201200_manage_financial_provider_assets.sql',import.meta.url),'utf8');
+const migration=readFileSync(new URL('../supabase/migrations/20261001192135_manage_financial_provider_assets.sql',import.meta.url),'utf8');
 const handler=readFileSync(new URL('../server/accountMetadataHandler.ts',import.meta.url),'utf8');
 const storeSource=readFileSync(new URL('../server/accountMetadataStore.ts',import.meta.url),'utf8');
 const client=readFileSync(new URL('../src/lib/financialProviderClient.ts',import.meta.url),'utf8');
