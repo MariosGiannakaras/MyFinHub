@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { MAX_FINANCE_DOCUMENT_BYTES } from '../src/lib/limits.js';
 import { parseMutableWrite, validateFinanceState } from '../server/stateValidation.js';
 import { validateFinanceData } from '../server/validation.js';
+import { validateCompleteFinanceData } from '../server/financeDataValidation.js';
 
 function validState(): any {
   return {
@@ -301,4 +302,86 @@ describe('finance document validation', () => {
       expect(error).toMatchObject({ status: 413, code: 'PAYLOAD_TOO_LARGE' });
     }
   });
+
+  it('validates additive planning, attention, budget and rule state on mutable and full-document boundaries', () => {
+    const full = validState();
+    full.state.scheduled=[{
+      id:'scheduled-1',dueDate:'2028-02-29',kind:'expense',amount:25,note:'Insurance',accountId:'bank',
+      status:'pending',createdAt:full.updatedAt,updatedAt:full.updatedAt,
+    }];
+    full.state.attentionDecisions={
+      'scheduled:scheduled-1':{status:'snoozed',fingerprint:'scheduled|scheduled-1',decidedAt:full.updatedAt,snoozedUntil:'2026-08-20'},
+    };
+    full.state.budgets=[{
+      id:'budget:2026-08:overall',month:'2026-08',scope:'overall',amount:500,alertThreshold:.8,
+      createdAt:full.updatedAt,updatedAt:full.updatedAt,
+    }];
+    full.state.transactionRules=[{
+      id:'rule-1',name:'Market',enabled:true,priority:10,scopes:['manual'],
+      match:{description:'market',mode:'contains'},action:{category:'Τρόφιμα'},
+      createdAt:full.updatedAt,updatedAt:full.updatedAt,
+    }];
+    expect(()=>validateFinanceState(full.state)).not.toThrow();
+    expect(()=>validateCompleteFinanceData(full)).not.toThrow();
+  });
+
+  it.each([
+    ['legacy transaction', (full:any)=>full.seed.transactions.push({id:'bad-date',date:'2026-02-31',type:'expense',amount:1,note:'bad'})],
+    ['snapshot', (full:any)=>full.seed.snapshots.push({date:'2026-04-31',balances:{}})],
+    ['event', (full:any)=>full.state.events.push({id:'bad-event',date:'2026-13-01',kind:'expense',amount:1,note:'bad',accountId:'bank',legs:[{accountId:'bank',amount:-1}],createdAt:full.updatedAt,updatedAt:full.updatedAt})],
+    ['expected return date', (full:any)=>full.state.events.push({id:'bad-return',date:'2026-08-17',kind:'lending',amount:1,note:'bad',accountId:'bank',person:'Alex',expectedReturnDate:'2026-02-30',legs:[{accountId:'bank',amount:-1}],createdAt:full.updatedAt,updatedAt:full.updatedAt})],
+    ['scheduled due date', (full:any)=>{full.state.scheduled=[{id:'bad-scheduled',dueDate:'2026-02-30',kind:'expense',amount:1,note:'bad',accountId:'bank',status:'pending',createdAt:full.updatedAt,updatedAt:full.updatedAt}]}],
+    ['savings target date', (full:any)=>{full.state.savingsGoals=[{id:'goal-bad',name:'Goal',targetAmount:10,targetDate:'2027-02-29',createdAt:full.updatedAt,updatedAt:full.updatedAt}]}],
+  ])('rejects impossible calendar date in %s', (_label, mutate) => {
+    const full=validState();
+    mutate(full);
+    expect(()=>validateCompleteFinanceData(full)).toThrowError(/date|invalid/i);
+  });
+
+  it('rejects malformed scheduled account semantics and duplicate scheduled ids', () => {
+    const full=validState();
+    full.state.scheduled=[
+      {id:'scheduled-1',dueDate:'2026-08-20',kind:'transfer',amount:10,note:'Move',fromAccountId:'bank',toAccountId:'bank',status:'pending',createdAt:full.updatedAt,updatedAt:full.updatedAt},
+    ];
+    expect(()=>validateFinanceState(full.state)).toThrowError(/transfer accounts/i);
+
+    const duplicate=validState();
+    duplicate.state.scheduled=[
+      {id:'same',dueDate:'2026-08-20',kind:'expense',amount:10,note:'One',accountId:'bank',status:'pending',createdAt:duplicate.updatedAt,updatedAt:duplicate.updatedAt},
+      {id:'same',dueDate:'2026-08-21',kind:'income',amount:20,note:'Two',accountId:'bank',status:'pending',createdAt:duplicate.updatedAt,updatedAt:duplicate.updatedAt},
+    ];
+    expect(()=>validateFinanceState(duplicate.state)).toThrowError(/duplicate id/i);
+  });
+
+  it('rejects malformed budget, attention and transaction-rule state', () => {
+    const badMonth=validState();
+    badMonth.state.budgets=[{id:'budget-bad',month:'2026-13',scope:'overall',amount:100,createdAt:badMonth.updatedAt,updatedAt:badMonth.updatedAt}];
+    expect(()=>validateFinanceState(badMonth.state)).toThrowError(/month/i);
+
+    const badAttention=validState();
+    badAttention.state.attentionDecisions={x:{status:'snoozed',fingerprint:'x',decidedAt:badAttention.updatedAt,snoozedUntil:'2026-02-31'}};
+    expect(()=>validateFinanceState(badAttention.state)).toThrowError(/snoozedUntil/i);
+
+    const badRule=validState();
+    badRule.state.transactionRules=[{
+      id:'rule-bad',name:'No condition',enabled:true,priority:0,scopes:['manual'],
+      match:{},action:{category:'Τρόφιμα'},createdAt:badRule.updatedAt,updatedAt:badRule.updatedAt,
+    }];
+    expect(()=>validateFinanceState(badRule.state)).toThrowError(/match/i);
+  });
+
+  it('applies relational extension validation to full imports, not only mutable saves', () => {
+    const full=validState();
+    full.state.cards=[{
+      id:'credit-1',bankId:'bank',nickname:'Credit',kind:'credit',network:'visa',active:true,
+      createdAt:full.updatedAt,updatedAt:full.updatedAt,
+    }];
+    full.state.creditStatements=[{
+      id:'statement-1',cardId:'credit-1',openDate:'2026-02-01',closeDate:'2026-02-30',dueDate:'2026-03-10',
+      boundaryRule:'include-closing-day',createdAt:full.updatedAt,updatedAt:full.updatedAt,
+    }];
+    expect(()=>validateFinanceData(full)).not.toThrow();
+    expect(()=>validateCompleteFinanceData(full)).toThrowError();
+  });
+
 });
