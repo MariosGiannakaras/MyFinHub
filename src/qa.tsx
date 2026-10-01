@@ -105,6 +105,10 @@ function buildQaData(params:URLSearchParams){
       amount:10+(index%40),note:`Large scheduled ${index+1}`,category:'Σταθερά έξοδα',accountId:'piraeus-payroll',
       status:'pending' as const,createdAt:stamp,updatedAt:stamp,
     }))];
+    next.state.budgets=Array.from({length:120},(_,index)=>({
+      id:`large-budget-${index}`,month:'2026-08',scope:'category' as const,category:`QA Budget Category ${index+1}`,
+      amount:100+(index%50),alertThreshold:.8,createdAt:stamp,updatedAt:stamp,
+    }));
   }
   if(params.get('state')==='overlimit')next.state.cards=(next.state.cards??[]).map(card=>card.kind==='credit'?{...card,creditLimit:100}:card);
   if(params.get('state')==='forecast-negative')next.state.scheduled=[...(next.state.scheduled??[]),{id:'qa-negative-forecast',dueDate:'2026-08-18',kind:'expense',amount:3000,note:'Μεγάλη γνωστή υποχρέωση',category:'Σταθερά έξοδα',accountId:'piraeus-payroll',status:'pending',createdAt:'2026-08-10T10:00:00.000Z',updatedAt:'2026-08-10T10:00:00.000Z'}];
@@ -124,7 +128,13 @@ function QaWorkspace(){
   const [data,setData]=useState<FinanceData>(()=>buildQaData(params));
   const [undoStack,setUndoStack]=useState<FinanceData[]>([]);
   const [redoStack,setRedoStack]=useState<FinanceData[]>([]);
-  const [changeHistory,setChangeHistory]=useState<ChangeHistoryEntry[]>([]);
+  const [changeHistory,setChangeHistory]=useState<ChangeHistoryEntry[]>(()=>params.get('state')==='large'
+    ?Array.from({length:100},(_,index)=>({
+      id:`large-history-${index}`,kind:'change' as const,label:`Large dataset saved change ${index+1}`,
+      at:`2026-08-17T${String(23-Math.floor(index/60)).padStart(2,'0')}:${String(index%60).padStart(2,'0')}:00.000Z`,
+      current:index===0,
+    }))
+    :[]);
   const [saveState,setSaveState]=useState<SaveState>(()=>initialSaveState(params.get('save')));
   const [page,setPage]=useState<PageId>(()=>initialPage(params.get('page')));
   const [quickOpen,setQuickOpen]=useState(false);
