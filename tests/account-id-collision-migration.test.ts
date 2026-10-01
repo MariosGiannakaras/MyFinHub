@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
-const migration=readFileSync('supabase/migrations/20261001213000_reject_cross_account_id_collisions.sql','utf8');
+const migration=readFileSync('supabase/migrations/20261001220945_reject_cross_account_id_collisions.sql','utf8');
 
 describe('cross-account identity database boundary',()=>{
   it('rejects seed/custom id collisions before canonical state writes commit',()=>{
