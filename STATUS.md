@@ -49,9 +49,9 @@ Release-closeout tracker: **#288 — complete**.
 
 ## Active completion batch — #476
 
-**Implementations 7/8 completed · Sub-implementations 28/29 completed**
+**Implementations 7/24 completed · Sub-implementations 28/189 completed**
 
-- The explicit accepted checklist was normalized to 20 items and expanded through FV-45 as final-head validation exposed harness assumptions. The denominator is now 29. FV-44 is proven complete on `9b25fb1…`; FV-45 is the only newly added proof item. No product/CSS threshold changed.
+- The completion definition has been expanded by the owner to a full-system verification matrix. Existing implementation findings remain tracked, but final closeout now requires direct assistant-led manual review plus UI/UX/accessibility, routing/404, every supported user mutation, real-stack persistence/backend proof, exhaustive failure handling, security/privacy, temporal/data-boundary coverage, operational recovery and canonical post-merge validation.
 
 - Branch: `feat/476-completion-audit-hardening`.
 - **54 deep-audit findings are now tracked.** DA-01..DA-53 retain their existing implementation/disposition state; DA-54 adds the owner-reported dark-theme color/contrast defect.
@@ -78,9 +78,9 @@ Release-closeout tracker: **#288 — complete**.
 - **FV-42 completed:** exact-head rendered CI passes the five-part split disclosure and mobile hierarchy after locating the saved split through the real search control; the intentional visible + semantic desktop row pair is preserved.
 - **FV-43 completed:** exact-head rendered CI on `c852d3a…` passes the extreme long-content Transactions case after locating the deliberately old transaction through the visible mobile search, with overlap/overflow assertions intact.
 - **FV-44 completed:** exact-head rendered CI on `9b25fb1…` passes the extreme Recurring mobile lifecycle case, proving 12-row bounded disclosure, collapsed inactive history, actionable `Προβολή περισσότερων`, full expansion and no overflow.
-- **FV-45 source-fixed; exact-head proof pending:** receipt OCR correctly stores `currency='EUR'`, while the owned select intentionally displays the human label `EUR · Ευρώ`. The OCR harness incorrectly compared the visible combobox label to the raw stored value. It now proves the persisted proposal remains exactly `EUR` and separately verifies the visible EUR label. No product behavior changed.
+- **FV-45 completed:** exact-head rendered validation now proves receipt OCR persists raw `currency='EUR'` while the owned select displays the user-facing `EUR · Ευρώ` label. This closes FV-45 but does not close the expanded full-system audit.
 - Current final-validation head: use the head SHA of PR #477 as the authoritative value.
-- Remaining work: prove FV-45 on the new exact head, require the final-head CI/security/cross-engine/performance/Windows gates green, then squash-merge #477 to `develop`.
+- Remaining work is governed by `docs/completion/APP_COMPLETION_AUDIT_AND_PLAN.md`: 16 new verification implementations / 160 sub-implementations are pending. The current custom 404 covers unknown authenticated hash routes but the web/desktop HTTP-path 404 contract and the 404 design itself require direct review. Do not merge #477 solely from the earlier gate set.
 - No Android implementation and no `main` promotion/release are included.
 
 ## Next work
