@@ -1,4 +1,6 @@
 import { effectiveLegacyTransactions, flowImpactEvent, flowImpactLegacy, reviewDecision } from './domain.js';
+import { isValidMonthOnly } from './dateOnly.js';
+import { isSafeMoneyValue } from './money.js';
 import type { FinanceData, MonthlyBudget, SplitPart } from '../types.js';
 
 type BudgetStatus = 'ok' | 'near' | 'exceeded';
@@ -104,8 +106,8 @@ export function budgetProgress(data: FinanceData, month: string): BudgetProgress
 
 export function normalizeBudget(input: MonthlyBudget): MonthlyBudget {
   const amount = Number(input.amount);
-  if (!/^\d{4}-\d{2}$/.test(input.month)) throw new Error('Διάλεξε έγκυρο μήνα για το budget.');
-  if (!Number.isFinite(amount) || amount <= 0) throw new Error('Το όριο budget πρέπει να είναι μεγαλύτερο από μηδέν.');
+  if (!isValidMonthOnly(input.month)) throw new Error('Διάλεξε έγκυρο μήνα για το budget.');
+  if (!isSafeMoneyValue(amount) || amount <= 0) throw new Error('Το όριο budget πρέπει να είναι μεγαλύτερο από μηδέν και εντός επιτρεπτού εύρους.');
   const category = input.scope === 'category' ? input.category?.trim() : undefined;
   if (input.scope === 'category' && !category) throw new Error('Διάλεξε κατηγορία για το συγκεκριμένο budget.');
   const alertThreshold = Math.min(.99, Math.max(.5, Number(input.alertThreshold ?? DEFAULT_ALERT_THRESHOLD)));
