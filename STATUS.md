@@ -49,7 +49,7 @@ Release-closeout tracker: **#288 — complete**.
 
 ## Active completion batch — #476
 
-**Implementations 6/8 completed · Sub-implementations 18/24 completed**
+**Implementations 7/8 completed · Sub-implementations 21/24 completed**
 
 - The explicit accepted checklist was normalized to 20 items, increased to 21 for FV-37, and is now 24 because final visual review also exposed FV-40: the mobile Credit card network badge is clipped at the lower-right edge. The 500 KiB threshold remains unchanged.
 
@@ -74,11 +74,11 @@ Release-closeout tracker: **#288 — complete**.
 - FV-37 is **completed**: exact-head CI confirms the aggregate CSS budget is green without raising the 500 KiB raw / 100 KiB gzip ceiling after redundant legacy card/create-dialog CSS removal.
 - Draft CI on provider-reconciled head `98293e9…` reached 760/761 unit/source tests; the sole failure was a stale migration-source assertion expecting the pre-back-sync fallback text. Commit `8066c2a88899…` updates that assertion to the actual production-synced `else logo_asset_key` / `else wordmark_asset_key` contract without weakening behavior.
 - **FV-38 completed:** exact-head CI on `c95746b…` passes 761/761 tests and measures aggregate CSS at 499.7 KiB raw / 93.4 KiB gzip against the unchanged 500/100 KiB budget after provider-specific styling was consolidated onto shared UI surfaces.
-- Remaining work: prove FV-35 and the #482 reconciliation on the next exact head, complete final rendered/manual evidence, then run the exact-final-head CI/security/cross-engine/performance/Windows validation wave and squash-merge to `develop`.
+- Remaining work: prove FV-35 and the source-integrated #482 provider-management flow in the review-ready rendered/full-validation wave, then require all final-head CI/security/cross-engine/performance/Windows gates green and squash-merge to `develop`.
 - No Android implementation and no `main` promotion/release are included.
 
 ## Next work
 
 Subsequent changes are product fixes against the completed v1.3.0 baseline. Routine implementation remains **Issue → short-lived branch → PR → required checks → squash merge into `develop`**. `main` remains release-only.
 
-- **FV-40 in progress:** fresh final mobile Credit evidence shows the selected card's network badge clipped at the lower-right edge. Correct only the mobile canonical-card geometry, preserve desktop/tablet presentation and vault semantics, add rendered containment proof, then regenerate and manually inspect final evidence.
+- **FV-40 completed:** the mobile Credit canonical card now anchors its lower content inside the physical card padding. Final visual run #73 passes the explicit network-mark containment assertion, and manual review confirms the Visa badge remains fully inside the selected card on mobile while tablet/desktop presentation is unchanged.

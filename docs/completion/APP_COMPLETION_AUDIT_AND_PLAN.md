@@ -1,6 +1,6 @@
 # MyFinHub completion audit and implementation plan
 
-Status: expanded implementation source-complete; final rendered/integrated validation in progress  
+Status: expanded implementation and final visual evidence complete; final integrated validation in progress  
 Tracker: #476  
 Target branch: `feat/476-completion-audit-hardening`  
 Integration target: `develop`  
@@ -8,7 +8,7 @@ Release target: none — `main` remains release-only
 
 ## Current integration checkpoint — 2026-10-01
 
-**Implementations 6/8 completed · Sub-implementations 18/24 completed**
+**Implementations 7/8 completed · Sub-implementations 21/24 completed**
 
 This checkpoint supersedes older "#482 reconciliation pending" notes below for current execution state.
 
@@ -18,6 +18,7 @@ This checkpoint supersedes older "#482 reconciliation pending" notes below for c
 - The provider reconciliation remains **partially completed / validation pending** until the next exact head passes core CI and the provider rendered QA. It is not yet added to the completed sub-implementation count.
 - FV-35 remains source-fixed and rendered proof pending.
 - FV-37 and FV-38 are completed: exact-head CI on `c95746b…` passes 761/761 tests and the aggregate CSS gate at 499.7 KiB raw / 93.4 KiB gzip without changing the 500/100 KiB limits.
+- Final visual run #73 passed all 63 desktop/tablet/mobile captures on source head `7ab8b215…` and persisted the reviewed evidence as `47ac2eab…`. Manual review confirms FV-39/FV-40 and the final changed-surface presentation.
 - Repository-admin hardening is tracked separately in #485 because the connected automation lacks admin-level ruleset/homepage writes; it does not alter this batch's 24-item denominator.
 - No Android changes and no `main` release/promotion are part of this checkpoint.
 
@@ -629,4 +630,4 @@ Still required before merge:
 
 No `main` promotion/release is part of this work.
 
-- **FV-40 in progress:** fresh final mobile Credit evidence shows the selected card's network badge clipped at the lower-right edge. Correct only the mobile canonical-card geometry, preserve desktop/tablet presentation and vault semantics, add rendered containment proof, then regenerate and manually inspect final evidence.
+- **FV-40 completed:** final visual run #73 passes the mobile Credit network-mark safe-area assertion after anchoring the lower card body inside mobile padding; manual review confirms mobile containment and unchanged tablet/desktop presentation.
