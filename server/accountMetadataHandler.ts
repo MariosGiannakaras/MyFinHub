@@ -1,5 +1,5 @@
 import { accessTokenAal, assertMutationSessionOrigin, clearSessionCookiesIfCookie, requireSession } from './auth.js';
-import { ApiError, copyBoundedBinaryValue, handleApi, methodNotAllowed, readBinaryBody, readJsonBody, requestHeader, sendJson, strictQueryValue } from './http.js';
+import { ApiError, copyBoundedBinaryValue, handleApi, methodNotAllowed, readBinaryBody, readJsonBody, sendJson, strictQueryValue, strictRequestHeader } from './http.js';
 import { isOwner } from './storage.js';
 import { MAX_PROVIDER_ASSET_BYTES, readAccountMetadata, readFinancialProviders, setFinancialProviderAssetBinding, updateFinancialProvider, uploadFinancialProviderAsset, writeAccountMetadata, writeFinancialProvider } from './accountMetadataStore.js';
 import { assertValidIban } from '../src/lib/iban.js';
@@ -40,7 +40,7 @@ export function parseProviderAssetUpload(req:any){
   const variant=strictQueryValue(req,'variant');
   const makePrimary=strictQueryValue(req,'primary')==='1';
   const fileName=strictQueryValue(req,'fileName');
-  const mimeType=requestHeader(req,'content-type').split(';',1)[0].trim().toLowerCase();
+  const mimeType=strictRequestHeader(req,'content-type').split(';',1)[0].trim().toLowerCase();
   if(!/^[a-z][a-z0-9-]{0,63}$/.test(providerId)||!['logo','wordmark','card-mark'].includes(role)||
     !/^[a-z][a-z0-9-]{0,63}$/.test(variant)||!PROVIDER_ASSET_MIME_TYPES.has(mimeType)||
     !fileName||fileName.length>160||/[\u0000-\u001f\u007f]/.test(fileName)||
@@ -130,7 +130,7 @@ export async function handleAccountMetadataRequest(req:any,res:any){
     if(resource)throw new ApiError(400,'INVALID_ACCOUNT_METADATA_RESOURCE','Μη έγκυρος πόρος metadata λογαριασμών.');
     if(method!=='PUT')return methodNotAllowed(res,['GET','PUT']);
     const body=parseAccountMetadataWrite(await readJsonBody(req,MAX_ACCOUNT_METADATA_BODY_BYTES));
-    const expectedRevision=parseAccountMetadataExpectedRevision(requestHeader(req,'if-match'));
+    const expectedRevision=parseAccountMetadataExpectedRevision(strictRequestHeader(req,'if-match'));
     const record=await writeAccountMetadata(body.accountId,body.iban,expectedRevision,session.accessToken);
     return sendJson(res,200,{record});
   });
