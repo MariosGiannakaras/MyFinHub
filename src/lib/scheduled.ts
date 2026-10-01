@@ -38,6 +38,7 @@ function scheduledDraftError(data: FinanceData, draft: {
 }) {
   if (!isValidDateOnly(draft.dueDate)) return 'Διάλεξε έγκυρη ημερομηνία προγραμματισμένης κίνησης.';
   if (!Number.isFinite(draft.amount) || draft.amount <= 0) return 'Συμπλήρωσε θετικό ποσό.';
+  if (!Number.isSafeInteger(moneyToCents(draft.amount))) return 'Το ποσό είναι εκτός επιτρεπτού εύρους.';
   if (draft.kind === 'transfer') return transferDraftError(data, { fromAccountId: draft.fromAccountId ?? '', toAccountId: draft.toAccountId ?? '', amount: draft.amount });
   const ids = eligibleAccountIds(data);
   if (!draft.accountId || !ids.has(draft.accountId)) return 'Ο επιλεγμένος λογαριασμός δεν είναι πλέον διαθέσιμος. Διάλεξε έναν ενεργό λογαριασμό.';
