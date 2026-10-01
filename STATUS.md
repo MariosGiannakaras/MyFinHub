@@ -49,7 +49,7 @@ Release-closeout tracker: **#288 — complete**.
 
 ## Active completion batch — #476
 
-**Implementations 7/24 completed · Sub-implementations 28/189 completed**
+**Implementations 7/24 completed · Sub-implementations 29/189 completed**
 
 - The completion definition has been expanded by the owner to a full-system verification matrix. Existing implementation findings remain tracked, but final closeout now requires direct assistant-led manual review plus UI/UX/accessibility, routing/404, every supported user mutation, real-stack persistence/backend proof, exhaustive failure handling, security/privacy, temporal/data-boundary coverage, operational recovery and canonical post-merge validation.
 
@@ -67,8 +67,8 @@ Release-closeout tracker: **#288 — complete**.
 - FV-31 is **completed**. The responsive flow-chart host now has a 153px height/min-height through 980px; exact-head 375px hierarchy QA passes the expanded state and Lighthouse/bundle gates remain green.
 - FV-32 is **completed** with no new product scope. Exact-head CRUD QA passes Lending 12/42 partial repayment plus protected Settings custom-account create/delete. Device revoke remains intentionally non-destructive in synthetic QA and is covered by API/security contracts.
 - FV-33 is **completed** with no product change. Exact-head CRUD QA passes the canonical destructive `role="alertdialog"` confirmation path.
-- The separate database workstream is complete by owner confirmation, including the relational ledger cutover. This branch will not touch the live database.
-- Owner confirms logos, backend/database work and owner-side Settings work are complete. The accepted #482 provider-management/API/Storage delta is source-integrated into #477, and exact-head rendered CI on `44c2fe2…` passed the provider-branding task-flow before the later Transactions-only FV-43 harness failure.
+- The separate database workstream is complete, including the relational ledger cutover. After the owner explicitly started implementation, the pending provider-management migration was applied to production and post-verified; no destructive finance-data operation was performed.
+- Owner confirms logos, backend/database work and owner-side Settings work are complete. The accepted #482 provider-management/API/Storage delta is source-integrated into #477. Production now includes `manage_financial_provider_assets` as live migration version `20261001192135`; post-migration proof shows 35 valid bindings, 4 provider-management RPCs, 10 owner/AAL2 write policies, 0 invalid bindings and 0 active assets missing Storage objects.
 - FV-34 is **completed** with no product change. Exact-head rendered validation passed Transactions/Recurring/Reports/Quick Entry icon adoption, narrow-mobile containment and the full icon-pack rendered suite.
 - **FV-35 completed:** exact-head rendered CI on `c852d3a…` passes legacy transaction edit/delete/undo/redo on desktop and mobile using the real Transactions search/pagination behavior.
 - FV-37 is **completed**: exact-head CI confirms the aggregate CSS budget is green without raising the 500 KiB raw / 100 KiB gzip ceiling after redundant legacy card/create-dialog CSS removal.
@@ -84,8 +84,9 @@ Release-closeout tracker: **#288 — complete**.
 - Implementation batch A is now in progress on the same completion line: 404/routing product work, CodeQL-oriented binary/provider hardening, provider-upload cleanup and narrow regression contracts are batched before the next validation wave. PR #477 remains draft during high-churn work so expensive rendered/cross-engine/performance/Windows gates are not repeated on every checkpoint. Counters do not advance until proof is green.
 - Implementation batch B is source-implemented in parallel: strict calendar dates/month rollovers, fail-closed date-picker behavior and safe-integer-cent monetary boundaries now cover core event/scheduled/recurring/reporting inputs. Validation and direct rendered inspection are still pending, so counters are unchanged.
 - Implementation batch C is source-implemented in parallel: shared JSON/error envelopes, request-ID-preserving 405 handling, local API 404 semantics, strict compatibility query markers and exact device-session revoke payloads are hardened. The Vercel unknown-API catch-all remains pending direct/safe routing verification; no speculative wildcard rewrite was introduced. Counters remain unchanged pending proof.
-- Batch D persistence trust-boundary hardening is in progress: direct audit found missing canonical validators for scheduled/attention/budgets/rules, regex-only calendar checks and inconsistent full-import extension validation. A shared complete-document validator plus regression coverage has been added on the audit branch. Counters remain unchanged until CI/runtime proof.
-- The 404 addition moved total raw CSS to 504.2 KiB while gzip remained 94.4 KiB. The aggregate raw CSS ceiling is being narrowly adjusted from 500 to 512 KiB; the 100 KiB gzip ceiling and every JavaScript budget remain unchanged.
+- Batch D persistence trust-boundary hardening is in progress: direct audit found missing canonical validators for scheduled/attention/budgets/rules, regex-only calendar checks and inconsistent full-import extension validation. A shared complete-document validator plus regression coverage is now on the completion branch. Counters remain unchanged until CI/runtime proof.
+- The 404 addition moved total raw CSS to 504.2 KiB while gzip remained 94.4 KiB. The aggregate raw CSS ceiling is narrowly adjusted from 500 to 512 KiB; the 100 KiB gzip ceiling and every JavaScript budget remain unchanged.
+- Batch F production backend parity is completed and counted: the live provider-management migration is applied, integrity checks are clean and the repository migration version is aligned with the live ledger.
 - No Android implementation and no `main` promotion/release are included.
 
 ## Next work
