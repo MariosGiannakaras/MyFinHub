@@ -120,36 +120,6 @@ export function validateFinanceStateSemantics(state:FinanceData['state']){
   for(const event of state.events??[])validateEvent(event);
 }
 
-function assertUniqueDomainIds(name:string,groups:Array<Array<{id:string}>>){
-  const ids=new Set<string>();
-  for(const group of groups){
-    for(const item of group){
-      if(ids.has(item.id))invalid(`Duplicate ${name} id across persisted collections.`);
-      ids.add(item.id);
-    }
-  }
-}
-
-function validatePersistentIdentityNamespaces(data:FinanceData){
-  assertUniqueDomainIds('account',[data.seed.accounts,data.state.settings.customAccounts??[]]);
-  assertUniqueDomainIds('transaction',[data.seed.transactions,data.state.customTransactions??[]]);
-  assertUniqueDomainIds('recurring',[data.seed.recurring,data.state.recurringCustom??[]]);
-  assertUniqueDomainIds('loan',[data.seed.loans,data.state.customLoans??[]]);
-
-  const seededTransactions=new Set(data.seed.transactions.map(item=>item.id));
-  for(const [id,item] of Object.entries(data.state.overrides??{})){
-    if(item.id!==id||!seededTransactions.has(id))invalid('Invalid transaction override identity.');
-  }
-  const seededRecurring=new Set(data.seed.recurring.map(item=>item.id));
-  for(const [id,item] of Object.entries(data.state.recurringOverrides??{})){
-    if(item.id!==id||!seededRecurring.has(id))invalid('Invalid recurring override identity.');
-  }
-  const seededLoans=new Set(data.seed.loans.map(item=>item.id));
-  for(const [id,item] of Object.entries(data.state.loanOverrides??{})){
-    if(item.id!==id||!seededLoans.has(id))invalid('Invalid loan override identity.');
-  }
-}
-
 function accountIds(data:FinanceData){
   const ids=new Set<string>(data.seed.accounts.map(account=>account.id));
   for(const account of data.state.settings.customAccounts??[])ids.add(account.id);
@@ -208,7 +178,6 @@ function validateRuleAccounts(data:FinanceData,ids:Set<string>){
 
 export function validateCompleteFinanceSemantics(data:FinanceData){
   validateFinanceStateSemantics(data.state);
-  validatePersistentIdentityNamespaces(data);
   const ids=accountIds(data);
   validateSettingsAccounts(data,ids);
   validateRecurringAccounts(data,ids);
