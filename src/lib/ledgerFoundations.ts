@@ -5,10 +5,12 @@ const CENTS = 100;
 
 export function moneyToCents(value: number) {
   if (!Number.isFinite(value)) return Number.NaN;
-  return Math.round((value + Number.EPSILON) * CENTS);
+  const cents = Math.round((value + Math.sign(value || 1) * Number.EPSILON) * CENTS);
+  return Number.isSafeInteger(cents) ? cents : Number.NaN;
 }
 
 export function centsToMoney(value: number) {
+  if (!Number.isSafeInteger(value)) return Number.NaN;
   return Number((value / CENTS).toFixed(2));
 }
 
@@ -29,6 +31,7 @@ export function defaultTransferPair(data: FinanceData) {
 export function transferDraftError(data: FinanceData, draft: { fromAccountId: string; toAccountId: string; amount: number }) {
   const ids = new Set(transferEligibleAccounts(data).map((account) => account.id));
   if (!Number.isFinite(draft.amount) || draft.amount <= 0) return 'Συμπλήρωσε θετικό ποσό μεταφοράς.';
+  if (!Number.isSafeInteger(moneyToCents(draft.amount))) return 'Το ποσό μεταφοράς είναι εκτός επιτρεπτού εύρους.';
   if (!draft.fromAccountId || !ids.has(draft.fromAccountId)) return 'Διάλεξε υπαρκτό λογαριασμό προέλευσης.';
   if (!draft.toAccountId || !ids.has(draft.toAccountId)) return 'Διάλεξε υπαρκτό λογαριασμό προορισμού.';
   if (draft.fromAccountId === draft.toAccountId) return 'Ο λογαριασμός προέλευσης και προορισμού πρέπει να είναι διαφορετικοί.';
