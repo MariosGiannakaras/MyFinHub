@@ -8,7 +8,7 @@ Release target: none — `main` remains release-only
 
 ## Current integration checkpoint — 2026-10-01
 
-**Implementations 7/8 completed · Sub-implementations 28/29 completed**
+**Implementations 7/20 completed · Sub-implementations 28/151 completed**
 
 This checkpoint supersedes older "#482 reconciliation pending" notes below for current execution state.
 
@@ -20,7 +20,7 @@ This checkpoint supersedes older "#482 reconciliation pending" notes below for c
 - FV-41/FV-42/FV-43 are completed on exact-head rendered CI. Their fixes were validation-harness/touch-target corrections and did not weaken product behavior.
 - FV-44 is completed on `9b25fb1…`: extreme Recurring mobile progressive disclosure, full expansion, collapsed inactive history and overflow safety all pass.
 - FV-45 is source-fixed and exact-head proof pending: OCR persists raw `EUR`, while the owned currency select displays `EUR · Ευρώ`; the harness now validates stored semantics and visible presentation separately.
-- Current counters: **Implementations 7/8 completed · Sub-implementations 28/29 completed**.
+- Current counters: **Implementations 7/20 completed · Sub-implementations 28/151 completed**. The denominator expanded on 2026-10-01 after the owner required exhaustive full-system verification across UI/UX, functional flows, backend, errors and canonical post-merge state.
 - Repository-admin hardening remains tracked separately in #485 and does not change this batch denominator.
 - No Android changes and no `main` release/promotion are part of this checkpoint.
 
@@ -642,3 +642,178 @@ No `main` promotion/release is part of this work.
 - **FV-44 completed:** exact-head rendered CI on `9b25fb1…` reached and passed the extreme Recurring mobile lifecycle case after Transactions/legacy/provider validation had passed. The product keeps its intentional 12-row progressive disclosure and `Προβολή περισσότερων` behavior.
 
 - **FV-45 source-fixed; exact-head proof pending:** the receipt OCR proposal persisted the correct raw currency `EUR`, but the owned select renders the user-facing trigger label `EUR · Ευρώ`. The rendered harness now asserts the persisted IndexedDB proposal is exactly `EUR` and separately accepts the visible EUR label. No OCR/parser/product behavior changed.
+
+
+## 8. Full-system exhaustive verification plan — owner-expanded scope 2026-10-01
+
+The prior completion audit remains valuable evidence, but it does **not** by itself prove that every visual element, every UX state, every user action/sub-action, every API/backend path and every error path has been exercised end-to-end against a canonical integrated tree. The owner has therefore expanded the accepted completion scope to require a full-system verification pass before the application is treated as fully closed.
+
+**New audit workstream: Implementations 0/12 completed · Sub-implementations 0/122 completed.**
+
+**Overall completion scope: Implementations 7/20 completed · Sub-implementations 28/151 completed.**
+
+The denominator increased because 12 new verification implementations / 122 non-trivial sub-implementations are now accepted. Existing completed work retains its state; nothing previously proven is re-audited without a specific coverage gap, but prior evidence must be mapped to this matrix and reused where it proves the exact required contract.
+
+### 8.1 Canonical baseline, scope inventory and traceability — 0/7
+
+- [ ] Freeze the exact candidate source SHA and record `main`, `develop`, open implementation PRs/branches, migration ledger, production deployment SHA and desktop release SHA. Do not treat a PR-only head as canonical after merge.
+- [ ] Inventory every routed page, Settings tab, authentication screen, modal, sheet, popover, command surface, global action, keyboard shortcut and persistent desktop-only control from source.
+- [ ] Inventory every user-visible capability and every mutation/read operation: create, edit, delete, archive, restore, activate/deactivate, pay/repay, complete, skip/cancel, import/export/backup, upload/replace, copy, search/filter/sort/page, undo/redo and refresh.
+- [ ] Inventory every API endpoint, HTTP method, auth mode, Supabase RPC/table/storage dependency and database mutation path.
+- [ ] Inventory every stateful entity and relationship in legacy/mutable state and relational ledger storage, including history/audit/backup/card-vault/account/provider metadata boundaries.
+- [ ] Build one traceability matrix mapping Product capability → UI control → domain operation → persistence/API/backend path → success test → failure tests → visual states → accessibility checks.
+- [ ] Mark every prior test/screenshot/evidence item as reusable, partial or insufficient against the matrix; uncovered cells become explicit pending work rather than inferred coverage.
+
+### 8.2 Exhaustive visual inspection — 0/12
+
+- [ ] Capture and manually inspect every primary route at desktop, tablet and narrow-phone widths in both light and dark themes.
+- [ ] Capture and inspect every Settings tab and nested editor, including accounts, providers/assets, categories, icons, rules, data, security/device sessions and appearance/readability surfaces.
+- [ ] Capture and inspect authentication states: login, validation failure, MFA enrollment, MFA challenge, invalid MFA, expired/revoked session and auth-unavailable feedback.
+- [ ] Capture and inspect every dialog/sheet/popover/picker/confirmation surface in closed, opening, focused, populated, validation-error, saving, success and failure states where applicable.
+- [ ] Inspect every interactive component state: default, hover, keyboard focus, pressed, selected, disabled, loading/saving, destructive, error, conflict and success.
+- [ ] Inspect empty, minimal, normal, dense and extreme-content states for every data-heavy page; include long Greek copy, long account/provider/category names, large monetary values and multi-line notes.
+- [ ] Inspect responsive breakpoints around actual layout transitions, not only 1440/834/375 snapshots; verify no breakpoint cliff, horizontal overflow, clipped action or fixed-chrome occlusion.
+- [ ] Inspect tables, cards, charts, legends, tooltips, carousels, progressive disclosure, pagination/load-more and sticky controls for containment and readable hierarchy.
+- [ ] Inspect typography, spacing, alignment, icon optical size, border/elevation consistency, semantic color usage, contrast, truncation/wrapping and visual rhythm component by component.
+- [ ] Inspect 200% browser zoom, increased app text-size/readability settings, reduced-motion mode and system theme changes without reload regressions.
+- [ ] Inspect Windows/Electron rendering separately for any host-specific chrome, update UI, first-run/lock/startup diagnostics and scaling differences.
+- [ ] Maintain a screenshot manifest with explicit human-review disposition for every required capture; no capture is considered passed merely because automation produced a PNG.
+
+### 8.3 Professional UI/UX and accessibility audit — 0/12
+
+- [ ] Review global information architecture and navigation: grouping, labels, route discoverability, back/close behavior and mobile More-menu prioritization.
+- [ ] Review each page for visual hierarchy, primary/secondary action priority, scanability, density, progressive disclosure and finance-specific comprehension.
+- [ ] Review every create/edit form for field order, labels, defaults, helper text, validation timing, error placement, destructive separation and save/cancel clarity.
+- [ ] Review feedback architecture for loading, saving, optimistic updates, success, warning, conflict, empty state, retry and irreversible action confirmation.
+- [ ] Review consistency of shared primitives versus one-off controls; equivalent actions must look and behave equivalently across pages.
+- [ ] Review mobile ergonomics: touch targets, thumb reach, bottom-navigation/FAB conflicts, keyboard viewport behavior, modal sizing and horizontally dense financial data.
+- [ ] Review desktop ergonomics: information density, pointer targets, keyboard efficiency, table behavior, shortcuts, command palette and window resizing.
+- [ ] Verify keyboard-only operation for all interactive flows: logical tab order, no focus traps outside modals, modal focus trap, focus restoration and visible focus.
+- [ ] Verify semantic accessibility: headings, landmarks, labels, names/roles/values, table semantics, dialog names, live/status messaging and non-color-only communication.
+- [ ] Verify WCAG-relevant contrast for text, controls, focus/borders and states in light/dark themes; verify reduced motion and animation does not block interaction.
+- [ ] Review Greek localization/content quality: terminology consistency, grammar, capitalization, amount/date formatting, wrapping and avoidance of ambiguous financial wording.
+- [ ] Produce a designer/developer defect log with severity, affected surfaces, systemic root cause and preferred component/design-system-level remediation.
+
+### 8.4 Complete functional user-flow / CRUD verification — 0/24
+
+- [ ] Authentication: valid/invalid email-password login, logout and session restoration.
+- [ ] MFA: enrollment, challenge, wrong code, successful verification and post-AAL2 bootstrap.
+- [ ] Device sessions: list, current-device state, revoke another device, revoke-others, revoked-device re-authentication and stale-session handling.
+- [ ] Dashboard: account rendering, privacy toggle, IBAN copy, primary shortcuts, period changes and navigation to contextual destinations.
+- [ ] Modern transactions: create, edit, delete, search, filters, sorting, pagination/load-more, reload persistence and derived balance/report updates.
+- [ ] Legacy transactions: edit override, delete tombstone, undo, redo, filtering/search and reload persistence.
+- [ ] Split transactions: create balanced split, edit split, inspect disclosure, reject imbalance, delete and verify reporting/ledger effects.
+- [ ] Generic Quick Entry: income, expense, transfer, withdrawal, refund/reconciliation-supported paths, validation and contextual prefills.
+- [ ] Savings: savings transfer, target-rate change, goal create/edit/delete, planned-saving interactions and history/report effects.
+- [ ] Cards profile lifecycle: bank/provider selection, card create/edit, archive, restore/reactivate where supported, delete, network rendering and provider artwork.
+- [ ] Card vault: save/reveal/update/delete secret material through server boundary, reload behavior, invalid secret input and no plaintext leakage into FinanceData/backups.
+- [ ] Credit: purchase lifecycle, statement association, payment, over-limit state, statement history, card edit/archive and resulting balances.
+- [ ] Loans/installments: create, edit, payment, multi-installment coverage, completion/history, linked recurring behavior and self-loan semantics.
+- [ ] Lending/receivables: lend, partial repayment, full repayment, person aggregation, history, privacy and outstanding/net-worth effects.
+- [ ] Recurring: create/edit, cadence variants, pause/reactivate/stop, pay, bounded disclosure/history and linked-loan boundaries.
+- [ ] Planning/scheduled: create/edit, complete into real event, skip/cancel where supported, load-more, forecast update and negative forecast state.
+- [ ] Attention/Review: open actions, decision states, snooze/dismiss/keep semantics where supported, contextual navigation and no unintended report mutation before confirmation.
+- [ ] Reports/analytics: period changes, KPI/category/flow consistency, table/chart parity, privacy and recalculation after mutations.
+- [ ] Budgets: create/edit/delete, thresholds, category/overall scopes, alert state and report reconciliation.
+- [ ] Transaction rules: create/edit/delete, matching, rule application to new transactions and no retroactive mutation unless explicitly designed.
+- [ ] Settings account/provider metadata: account create/edit/delete, IBAN/provider correction, provider create/edit, asset upload/reuse/binding/replace and cross-surface refresh.
+- [ ] Taxonomy/icons/preferences: category/subcategory create/rename/move/retire/blockers, icon pack/assignment persistence, theme, text-size, motion and other settings persistence.
+- [ ] Data management/history: backup, export/import, validation rejection, history points, undo/redo across supported scope, refresh/reload and conflict handling.
+- [ ] Receipt OCR + global tools: local receipt capture/inbox/OCR/proposal correction → Quick Entry, command palette actions, keyboard shortcuts, global refresh and page error recovery.
+
+### 8.5 Data integrity, persistence and finance invariants — 0/9
+
+- [ ] For every successful mutation, verify UI state, domain state, persisted state and relational representation agree after hard reload/new session.
+- [ ] Verify internal transfer/withdrawal/savings-transfer/card-payment/reconciliation semantics do not double-count spending and all transaction legs balance.
+- [ ] Verify credit purchase versus liability payment semantics, statement references, limits/debt/available credit and archived-card historical references.
+- [ ] Verify lending receivables and repayments update net worth and outstanding balances correctly.
+- [ ] Verify split totals, recurring/scheduled completion semantics, budget/report calculations and time/period boundaries.
+- [ ] Verify optimistic revision conflicts, multi-tab/newer-revision behavior, sequential mutation ordering and fail-closed persistence queues.
+- [ ] Verify history/audit/undo-redo atomicity and bounded retention; failed writes must not create misleading success/history state.
+- [ ] Verify backup/import round-trip preserves supported finance state while excluding card-vault secrets and other prohibited sensitive material.
+- [ ] Run aggregate database integrity checks after test flows: FK/orphan checks, duplicate identifiers, account references, provider/storage references and history cursor/state consistency.
+
+### 8.6 Backend, API, Supabase and Storage audit — 0/12
+
+- [ ] Reconcile repository migrations against live/staging migration ledger and classify every drift item before claiming backend parity; specifically resolve the current missing `20260930201200_manage_financial_provider_assets` production migration before provider-management production verification.
+- [ ] Verify every API route and allowed HTTP method on valid requests, including response schema/status/header contracts.
+- [ ] Verify cookie-auth and explicitly approved bearer-auth boundaries independently; malformed/rejected bearer auth must fail closed without cookie fallback.
+- [ ] Verify owner + AAL2 + active-device authorization at API and PostgreSQL RLS/RPC layers with negative tests for anonymous, non-owner/AAL1 and revoked-device contexts.
+- [ ] Verify same-origin/CSRF policy, CORS behavior, request-size limits, content-type validation and malformed body/query handling on state-changing endpoints.
+- [ ] Verify optimistic-revision preconditions, atomic finance write + history behavior, backups and import transactionality.
+- [ ] Verify card-vault encryption/decryption boundary, ciphertext-only database storage, key absence from distributed clients and redaction of diagnostics/logs.
+- [ ] Verify account metadata/provider APIs, provider creation/update, Storage upload/replace, asset registration/bindings and partial-upload recovery semantics.
+- [ ] Verify Storage policies and object-path/MIME/size/signature/SVG safety rules, including replacement permissions and orphan-object/metadata handling.
+- [ ] Verify relational ledger constraints/FKs/RLS and canonical state↔relational consistency on the real schema without exposing sensitive finance content.
+- [ ] Run Supabase security/performance advisors and classify every finding; do not remove unused indexes without query evidence.
+- [ ] Inspect bounded production/staging backend logs for recurring 4xx/5xx/database/storage/auth failures and correlate actionable failures with tested paths without exposing sensitive data.
+
+### 8.7 Error handling and resilience matrix — 0/10
+
+- [ ] Exercise 400/validation failures for every mutating form/API and verify field/task-local actionable messages.
+- [ ] Exercise 401 auth expiry, 403 owner/AAL2/device denial and revoked-session behavior; verify safe redirect/re-auth without data loss or misleading signed-in UI.
+- [ ] Exercise 409 revision/conflict behavior and verify conflict messaging, no silent overwrite and deterministic recovery.
+- [ ] Exercise 413 oversized payload/upload and invalid MIME/signature/file-path failures.
+- [ ] Exercise 429/rate-limit paths for auth and any rate-limited backend operation with retry guidance that does not encourage request storms.
+- [ ] Exercise 500/502/503 upstream/database/storage/auth outages and verify stable public error codes/messages, request IDs where appropriate and no raw upstream leakage.
+- [ ] Exercise network timeout/offline/interrupted-save behavior, browser reload during save and retry/idempotency semantics.
+- [ ] Exercise partial multi-step failures such as provider created but one asset upload/binding fails; verify recoverable state and no false all-success message.
+- [ ] Exercise client render errors, lazy-chunk/resource failure, OCR asset failure and error-boundary recovery.
+- [ ] Audit every user-facing error/warning/success message for accuracy, persistence, accessibility announcement, redaction and appropriate recovery action.
+
+### 8.8 Security and privacy verification — 0/8
+
+- [ ] Resolve all current CodeQL alerts on the exact candidate head and require CodeQL green without dismissing valid findings.
+- [ ] Run dependency audits for root/API/desktop and review high/critical advisories plus transitive desktop/runtime exposure.
+- [ ] Verify security headers/CSP, no unsafe inline/executable receipt/provider content and no unexpected external resource dependency.
+- [ ] Verify no service-role/secret key, `CARD_VAULT_KEY`, access/refresh token, TOTP secret, PAN/expiry/CVV or personal finance data leaks to bundles, logs, screenshots, backups or repository artifacts.
+- [ ] Verify session cookie attributes, logout/revocation behavior and active-device enforcement at sensitive boundaries.
+- [ ] Verify RLS/grants/function security-invoker/definer posture and exposed-schema tables; no accidental broad authenticated/anon access.
+- [ ] Verify provider/receipt image handling against malicious filenames, MIME confusion, active SVG content, oversized files and path traversal attempts.
+- [ ] Re-run secret/security guards and review generated artifacts before final merge/release.
+
+### 8.9 Browser, responsive, performance and Windows verification — 0/8
+
+- [ ] Chromium full rendered suite on exact head.
+- [ ] WebKit compatibility suite on exact head; infrastructure/bootstrap cancellation is not a product pass and must be rerun to completion.
+- [ ] Additional supported-engine/browser smoke where product support requires it, including Edge/Chromium host behavior.
+- [ ] Responsive geometry/overflow sweep across representative intermediate widths, orientation/resize transitions and mobile virtual-keyboard conditions.
+- [ ] Performance/Lighthouse budget gate plus large realistic dataset interaction checks for navigation, filtering, tables/charts and modal opening.
+- [ ] Bundle/CSS budgets, lazy-loading/deferred chart steady state and no performance regression from audit fixes.
+- [ ] Windows Desktop package validation, startup/lock/update proxy boundaries and clean installed-user launch.
+- [ ] Windows first-run/clean-launch validation on the exact final packaging head with no runtime provisioning requirement.
+
+### 8.10 Real-stack integrated E2E and canonical-tree proof — 0/8
+
+- [ ] Create/use an isolated non-production test backend with the same schema/policies for destructive CRUD/E2E; never use production personal finance data as a disposable test fixture.
+- [ ] Run browser → real API → real Supabase/Storage end-to-end flows for the mutation matrix, not only synthetic QA handlers.
+- [ ] Run reload/new-session persistence checks after representative operations in every product domain.
+- [ ] Run concurrent/revision-conflict and auth/device-revocation scenarios against the real integration stack.
+- [ ] After all fixes are merged, rerun the complete required suite on the exact canonical `develop` commit outside feature-branch assumptions.
+- [ ] For a release candidate, run `develop -> main` release validation on the exact merge candidate before production promotion.
+- [ ] After production deployment, verify deployed SHA equality and run non-destructive production smoke/read-only integrity checks plus only explicitly safe owner actions.
+- [ ] Treat branch/PR-only validation as supporting evidence, not final proof of the post-merge canonical tree.
+
+### 8.11 Defect remediation and revalidation loop — 0/6
+
+- [ ] Every discovered defect is recorded before fixing with severity, reproduction, affected matrix cells and whether it is systemic or local.
+- [ ] Fix systemic design/component/domain/backend causes at the shared layer where safe instead of patching screenshots or one page.
+- [ ] Add the narrowest regression test that would have caught each material defect before/with the fix.
+- [ ] Re-run narrow affected tests first, then all matrix cells invalidated by the change.
+- [ ] Re-run full CI/security/rendered/cross-engine/performance/Windows gates whenever final-head rules require them.
+- [ ] Do not mark an item complete from source change alone; required runtime/visual/backend proof must also pass.
+
+### 8.12 Final closeout and evidence package — 0/6
+
+- [ ] Close every traceability-matrix cell as passed, intentionally unsupported/out-of-scope with rationale, or blocked; no silent blanks.
+- [ ] Produce final route/state screenshot manifest and manual-review ledger with no unresolved visual/UI/UX defects.
+- [ ] Produce final functional/backend/error/security evidence summary tied to exact commit SHA and backend migration state.
+- [ ] Confirm repository plan/status/PR tracking matches reality and update counters only for fully proven items.
+- [ ] Squash-merge only when every required exact-head gate is green and no unresolved critical/high defect remains; then prove the canonical post-merge tree.
+- [ ] If/when promoted to production, verify production deployment SHA, production smoke and privacy-safe backend integrity before declaring the release closed.
+
+### 8.13 Hard completion rule
+
+The application must **not** be described as fully verified merely because unit tests, rendered QA, final screenshots or CI pass independently. Full closeout requires traceable evidence across the UI/UX, functional, persistence, backend, error, security and canonical post-merge layers above. Synthetic QA remains useful but cannot substitute for real-stack E2E where persistence/backend behavior is part of the user-visible contract.
+
+Production-destructive testing is prohibited. Real CRUD/backend verification must use an isolated non-production environment or narrowly controlled reversible test data approved for that purpose. Android remains out of scope; any compatibility impact discovered here is documented only.
