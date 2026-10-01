@@ -8,20 +8,20 @@ Release target: none — `main` remains release-only
 
 ## Current integration checkpoint — 2026-10-01
 
-**Implementations 7/8 completed · Sub-implementations 21/24 completed**
+**Implementations 7/8 completed · Sub-implementations 27/28 completed**
 
 This checkpoint supersedes older "#482 reconciliation pending" notes below for current execution state.
 
-- #483 is already integrated into `develop`; #477 is based on that baseline.
-- The accepted #482 provider-management/API/Storage delta is source-integrated into #477 at `98293e962b227336dc8f6f05cd5b65f89adb67bb`, preserving the completion-audit fixes instead of merging the stacked branch wholesale.
-- Draft CI on that head reached 760/761 unit/source tests. The only failure was a stale source assertion against the back-synced provider migration; `8066c2a88899227ffe204e648a75a908ffbe0ae3` corrects the assertion to the migration's actual preserve-existing fallback contract.
-- The provider reconciliation remains **partially completed / validation pending** until the next exact head passes core CI and the provider rendered QA. It is not yet added to the completed sub-implementation count.
-- FV-35 remains source-fixed and rendered proof pending.
-- FV-37 and FV-38 are completed: exact-head CI on `c95746b…` passes 761/761 tests and the aggregate CSS gate at 499.7 KiB raw / 93.4 KiB gzip without changing the 500/100 KiB limits.
-- Final visual run #73 passed all 63 desktop/tablet/mobile captures on source head `7ab8b215…` and persisted the reviewed evidence as `47ac2eab…`. Manual review confirms FV-39/FV-40 and the final changed-surface presentation.
-- Repository-admin hardening is tracked separately in #485 because the connected automation lacks admin-level ruleset/homepage writes; it does not alter this batch's 24-item denominator.
+- #483 is integrated into `develop`; #477 is based on that baseline and is ready for review.
+- The accepted #482 provider-management/API/Storage delta is source-integrated into #477. Exact-head rendered CI has passed Settings tabs and the provider-branding task flow, so provider reconciliation is completed for this batch.
+- FV-35 is completed on `c852d3a…`: legacy transaction edit/delete/undo/redo passes on desktop and mobile using the real search/pagination behavior.
+- FV-37/FV-38 remain completed with the unchanged bundle/CSS budgets.
+- Final visual run #73 passed all 63 desktop/tablet/mobile captures and the resulting evidence was manually reviewed, including Dashboard, Credit, Settings/Providers, Lending and Transactions.
+- FV-41/FV-42/FV-43 are completed on exact-head rendered CI. Their fixes were validation-harness/touch-target corrections and did not weaken product behavior.
+- FV-44 is source-fixed and exact-head proof pending: the extreme Recurring mobile contract intentionally renders 12 active items initially and exposes `Προβολή περισσότερων`; the harness now verifies bounded disclosure, full progressive expansion, collapsed inactive history and no overflow.
+- Current counters: **Implementations 7/8 completed · Sub-implementations 27/28 completed**.
+- Repository-admin hardening remains tracked separately in #485 and does not change this batch denominator.
 - No Android changes and no `main` release/promotion are part of this checkpoint.
-
 
 ## 1. Audit scope and evidence
 
@@ -622,11 +622,9 @@ Completed or implemented in the reopened audit:
 - all-route geometry/overflow/mobile-occlusion audit added to the final rendered suite.
 
 Still required before merge:
-1. prove FV-34 in the required rendered suite;
-2. manually inspect the fresh exact-head screenshots for every relevant page/state/viewport/theme;
-3. integrate/reconcile the completed provider/logo branch (#482) with #477 and current `develop`;
-4. run the exact-final-head CI/CodeQL/Cross-engine/Performance/Windows wave;
-5. squash-merge the completed work to `develop` only after exact-head validation and manual evidence review are green.
+1. prove FV-44 in exact-head rendered CI;
+2. require the exact-final-head CI, CodeQL, Cross-engine, Performance and Windows gates to be green;
+3. squash-merge the completed work to `develop`.
 
 No `main` promotion/release is part of this work.
 
@@ -638,3 +636,6 @@ No `main` promotion/release is part of this work.
 
 
 - **FV-43 source-fixed; exact-head proof pending:** after FV-42 passed, the same Transactions scanability suite reached its extreme long-content case and exposed another pagination-only harness assumption: the deliberately old extreme transaction is not guaranteed to be on mobile page 1. The harness now uses the visible Transactions search control to locate that unique long-content row before asserting overlap and overflow. No product behavior changed.
+
+
+- **FV-44 source-fixed; exact-head proof pending:** exact-head CI reached the extreme Recurring mobile lifecycle case after Transactions/legacy/provider validation had passed. The product intentionally shows 12 active recurring rows first and an explicit `Προβολή περισσότερων` control. The harness now proves that bounded initial state, the collapsed inactive-history state, expansion to all active rows and post-expansion overflow safety. No product behavior changed.
