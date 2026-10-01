@@ -9,6 +9,7 @@ import { Surface } from '../components/Surface';
 import { FinanceIcon } from '../components/FinanceIcon';
 import { budgetProgress } from '../lib/budgets';
 import { accountBalances, allAccounts, effectiveLegacyTransactions, flowImpactEvent, flowImpactLegacy } from '../lib/domain';
+import { calendarMonthRange, monthOnlyToUtcDate } from '../lib/dateOnly';
 import { cleanNote, money, shortDate } from '../lib/format';
 import { categoryMomentum, monthEnd, operationalReportSnapshot, primaryAccountSeries, reportExpenseCounterparties, reportFlowSeries, reportInsightModel, reportLoanBurden } from '../lib/reports';
 import { recurringUpcoming } from '../lib/recurring';
@@ -50,8 +51,8 @@ export function ReportsPage({data,month,privacyVisible,onPrivacyVisibleChange,on
  const budgetRatio=budgetLimit>0?budgetUsed/budgetLimit:0;
  const budgetDataDate=data.updatedAt.slice(0,10);
  const budgetDataMonth=budgetDataDate.slice(0,7);
- const [budgetYear,budgetMonthNumber]=month.split('-').map(Number);
- const budgetDaysInMonth=new Date(Date.UTC(budgetYear,budgetMonthNumber,0)).getUTCDate();
+ const budgetMonthRange=calendarMonthRange(month);
+ const budgetDaysInMonth=Number(budgetMonthRange.end.slice(8,10));
  const budgetElapsedDays=month<budgetDataMonth?budgetDaysInMonth:month===budgetDataMonth?Math.min(budgetDaysInMonth,Math.max(1,Number(budgetDataDate.slice(8,10))||1)):0;
  const budgetProjection=budgetElapsedDays>0?budgetUsed/(budgetElapsedDays/budgetDaysInMonth):null;
  const budgetProjectionDetail=month<budgetDataMonth?'Καταγεγραμμένο κλείσιμο περιόδου':month===budgetDataMonth?`Με βάση ${budgetElapsedDays} από ${budgetDaysInMonth} ημέρες`:'Θα εμφανιστεί όταν ξεκινήσει η περίοδος';
@@ -63,7 +64,7 @@ export function ReportsPage({data,month,privacyVisible,onPrivacyVisibleChange,on
  const creditPercent=snapshot.creditLimit>0?snapshot.creditUsage:null;
  const savingsTarget=data.state.settings.savingsTargetRate??.2;
  const savingsTargetProgress=insights.savingsRate!==null&&savingsTarget>0?insights.savingsRate/savingsTarget:null;
- const monthDate=(()=>{const [year,number]=month.split('-').map(Number);return new Date(Date.UTC(year,number-1,1))})();
+ const monthDate=monthOnlyToUtcDate(month)!;
  const monthLabel=new Intl.DateTimeFormat('el-GR',{month:'long',year:'numeric',timeZone:'UTC'}).format(monthDate);
  const categoryTop=momentum.slice(0,6);
  const categoryRest=momentum.slice(6).reduce((sum,row)=>sum+row.value,0);
