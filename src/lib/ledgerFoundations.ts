@@ -21,7 +21,8 @@ export function defaultTransferPair(data: FinanceData) {
 export function transferDraftError(data: FinanceData, draft: { fromAccountId: string; toAccountId: string; amount: number }) {
   const ids = new Set(transferEligibleAccounts(data).map((account) => account.id));
   if (!Number.isFinite(draft.amount) || draft.amount <= 0) return 'Συμπλήρωσε θετικό ποσό μεταφοράς.';
-  if (!Number.isSafeInteger(moneyToCents(draft.amount))) return 'Το ποσό μεταφοράς είναι εκτός επιτρεπτού εύρους.';
+  const amountCents=moneyToCents(draft.amount);
+  if (!Number.isSafeInteger(amountCents) || amountCents < 1) return 'Το ποσό μεταφοράς πρέπει να είναι τουλάχιστον 0,01€ και εντός επιτρεπτού εύρους.';
   if (!draft.fromAccountId || !ids.has(draft.fromAccountId)) return 'Διάλεξε υπαρκτό λογαριασμό προέλευσης.';
   if (!draft.toAccountId || !ids.has(draft.toAccountId)) return 'Διάλεξε υπαρκτό λογαριασμό προορισμού.';
   if (draft.fromAccountId === draft.toAccountId) return 'Ο λογαριασμός προέλευσης και προορισμού πρέπει να είναι διαφορετικοί.';
@@ -74,8 +75,8 @@ export function splitDraftError(data: FinanceData, draft: { accountId: string; p
   const accountIds = new Set(transferEligibleAccounts(data).map((account) => account.id));
   if (!draft.accountId || !accountIds.has(draft.accountId)) return 'Διάλεξε υπαρκτό λογαριασμό πληρωμής.';
   if (draft.parts.length < 2) return 'Ο διαχωρισμός χρειάζεται τουλάχιστον δύο μέρη.';
-  const invalidPartIndex=draft.parts.findIndex((part) => !Number.isFinite(Number(part.amount)) || Number(part.amount) <= 0);
-  if (invalidPartIndex >= 0) return `Το ποσό στο μέρος ${invalidPartIndex + 1} πρέπει να είναι θετικό.`;
+  const invalidPartIndex=draft.parts.findIndex((part) => !Number.isFinite(Number(part.amount)) || Number(part.amount) <= 0 || moneyToCents(Number(part.amount)) < 1);
+  if (invalidPartIndex >= 0) return `Το ποσό στο μέρος ${invalidPartIndex + 1} πρέπει να είναι τουλάχιστον 0,01€.`;
   const allocation = splitAllocation(draft.parts);
   if (!Number.isFinite(allocation.totalCents) || allocation.normalizedParts.some((part) => !Number.isFinite(moneyToCents(part.amount)))) return 'Έλεγξε τα επιμέρους ποσά.';
   if (allocation.totalCents <= 0) return 'Το σύνολο των επιμέρους ποσών πρέπει να είναι θετικό.';
