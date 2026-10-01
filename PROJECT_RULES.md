@@ -1,23 +1,24 @@
-# MyFinHub — persistent project rules
+# MyFinHub — instruction discovery and precedence
 
-**FIRST READ before changing this repository.**
+**Read before changing this repository.**
 
-The canonical standing owner instructions for MyFinHub live in the permanently-open GitHub issue:
+1. Read `AGENTS.md`. It is the canonical version-controlled repository execution contract for implementation behavior, Git/PR workflow, validation cadence, progress tracking, safety boundaries, and delivery discipline.
+2. Read GitHub issue **#266 — `META: Persistent MyFinHub operating rules — NEVER CLOSE`** for durable owner/product decisions and cross-chat continuity that are not execution mechanics.
+3. Verify the actual current GitHub branch / PR / issue state relevant to the task.
+4. Read the relevant task issue, implementation plan, status checkpoint, and owner-supplied canonical/reference artifact.
+5. Continue from current implementation state; do not restart completed work.
 
-- **#266 — `META: Persistent MyFinHub operating rules & chat handoff — NEVER CLOSE`**
-- https://github.com/MariosGiannakaras/MyFinHub/issues/266
+## Precedence
 
-Every new ChatGPT/Codex/AI workstream must fetch and read issue #266 in full before making implementation, PR, branch, release, migration, QA, data, or product decisions.
+For repository work, apply instructions in this order:
 
-## Startup protocol
+1. explicit current-task owner instruction;
+2. `AGENTS.md` for repository execution and technical safety rules;
+3. durable owner/product decisions in issue #266;
+4. task-specific issue/plan/status documentation.
 
-1. Read issue #266 in full.
-2. Verify the actual current GitHub branch / PR / issue state relevant to the task.
-3. Read any owner-supplied canonical/reference artifact relevant to the work.
-4. Continue from current implementation state; do not restart completed work.
-5. Apply #266 unless the owner explicitly overrides a rule in the current task.
-6. If the owner gives a new **standing** rule, update #266 so future chats inherit it.
+More-specific safety constraints remain binding unless the owner explicitly supersedes them.
 
-## Source-of-truth rule
+## Source-of-truth discipline
 
-This file is only a stable discovery pointer. **Do not duplicate the full instruction set here.** Issue #266 is the canonical mutable source of truth so the project never develops two conflicting rule documents.
+Do not duplicate the full standing instruction set in this file or in issue #266. Keep repository execution mechanics in `AGENTS.md`, durable owner/product decisions in #266, and changing implementation state in the relevant issue/plan/`STATUS.md`.
