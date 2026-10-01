@@ -8,7 +8,7 @@ Release target: none — `main` remains release-only
 
 ## Current integration checkpoint — 2026-10-01
 
-**Implementations 6/8 completed · Sub-implementations 16/22 completed**
+**Implementations 6/8 completed · Sub-implementations 18/22 completed**
 
 This checkpoint supersedes older "#482 reconciliation pending" notes below for current execution state.
 
@@ -16,8 +16,8 @@ This checkpoint supersedes older "#482 reconciliation pending" notes below for c
 - The accepted #482 provider-management/API/Storage delta is source-integrated into #477 at `98293e962b227336dc8f6f05cd5b65f89adb67bb`, preserving the completion-audit fixes instead of merging the stacked branch wholesale.
 - Draft CI on that head reached 760/761 unit/source tests. The only failure was a stale source assertion against the back-synced provider migration; `8066c2a88899227ffe204e648a75a908ffbe0ae3` corrects the assertion to the migration's actual preserve-existing fallback contract.
 - The provider reconciliation remains **partially completed / validation pending** until the next exact head passes core CI and the provider rendered QA. It is not yet added to the completed sub-implementation count.
-- FV-35, FV-37 and FV-38 remain source-fixed and exact-head proof pending.
-- FV-38 was added after reconciled provider-management code passed 761/761 tests but raised aggregate raw CSS to 506.8 KiB against the unchanged 500 KiB ceiling. Its source fix removes provider-specific decorative duplication and reuses shared surfaces/controls; exact-head proof remains pending.
+- FV-35 remains source-fixed and rendered proof pending.
+- FV-37 and FV-38 are completed: exact-head CI on `c95746b…` passes 761/761 tests and the aggregate CSS gate at 499.7 KiB raw / 93.4 KiB gzip without changing the 500/100 KiB limits.
 - Repository-admin hardening is tracked separately in #485 because the connected automation lacks admin-level ruleset/homepage writes; it does not alter this batch's 22-item denominator.
 - No Android changes and no `main` release/promotion are part of this checkpoint.
 
@@ -309,8 +309,8 @@ The first exact-head validation wave exposed three additional validation blocker
 
 | FV-35 | Legacy transaction management pagination readiness | After FV-34 and the rest of the rendered suites passed, legacy transaction management timed out before its first action because it hard-coded the August `Supermarket` legacy row on Transactions page 1. The current 14-row pagination and newer August fixtures do not guarantee that old 2026-08-01 row is on the first page, so waiting cannot make the target appear. | QA pagination/fixture mismatch | **Source-fixed; exact-head proof pending, no product defect identified.** The harness now uses the real Transactions search field to filter to `Supermarket` on desktop and mobile before edit/delete/undo/redo proof, preserving the actual 14-row pagination and user-facing filtering behavior. |
 | FV-36 | Provider-branding integration reconciliation | PR #482 is implementation-complete but remains a stacked draft branch with provider-management/API/Storage changes that overlap the completion branch. It must not be merged independently in its current stacked form. | Integration dependency | **Pending.** Reconcile the accepted #482 delta into #477 on top of current `develop`, preserve completion-audit fixes and #483 CI contracts, then close/supersede the stacked PR only after the reconciled branch validates. |
-| FV-37 | Aggregate CSS budget after #483 baseline | Core CI on the synchronized completion branch built successfully but measured 507.3 KiB raw CSS against the new 500 KiB aggregate ceiling. The excess came from superseded card-renderer/create-dialog geometry still loaded beside the current component-owned and v15 card styles. | Redundant legacy CSS | **Source-fixed; exact-head proof pending.** Remove only superseded geometry/selectors, preserve active `r-card-*` theme surfaces and current component styles, and keep the 500 KiB raw / 100 KiB gzip aggregate budget unchanged. |
-| FV-38 | Aggregate CSS budget after provider reconciliation | Provider reconciliation passes 761/761 unit/source tests, but its dedicated Settings stylesheet raises aggregate raw CSS to 506.8 KiB while gzip remains below budget. | Provider UI stylesheet duplication | **Source-fixed; exact-head proof pending.** Reuse shared panel/button/input/surface styling and retain only provider-specific layout, previews and asset-picker rules. Keep the 500 KiB raw / 100 KiB gzip aggregate budget unchanged. |
+| FV-37 | Aggregate CSS budget after #483 baseline | Core CI on the synchronized completion branch built successfully but measured 507.3 KiB raw CSS against the new 500 KiB aggregate ceiling. The excess came from superseded card-renderer/create-dialog geometry still loaded beside the current component-owned and v15 card styles. | Redundant legacy CSS | **Completed.** Exact-head CI proves the reconciled tree stays below the unchanged 500 KiB raw / 100 KiB gzip aggregate budget after removing only superseded geometry/selectors. |
+| FV-38 | Aggregate CSS budget after provider reconciliation | Provider reconciliation passes 761/761 unit/source tests, but its dedicated Settings stylesheet raises aggregate raw CSS to 506.8 KiB while gzip remains below budget. | Provider UI stylesheet duplication | **Completed.** Exact-head CI on `c95746b…` reports 499.7 KiB raw / 93.4 KiB gzip after reusing shared surfaces/controls and retaining only provider-specific layout/preview/picker rules. |
 
 Validation rule: FV items close only after the next exact-head wave proves the corrected interaction/performance/bootstrap behavior. No quality threshold or screenshot-count requirement was relaxed.
 
