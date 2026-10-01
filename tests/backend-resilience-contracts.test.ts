@@ -5,6 +5,9 @@ import { readAccountMetadata } from '../server/accountMetadataStore.js';
 import { readCardSecrets } from '../server/cardVaultStore.js';
 import { migrateProductData } from '../src/lib/productMigration.js';
 import type { FinanceData } from '../src/types.js';
+import { readFileSync } from 'node:fs';
+
+const useFinanceSource=readFileSync(new URL('../src/hooks/useFinance.ts',import.meta.url),'utf8');
 
 function response(status:number,body:unknown={}){
   return new Response(JSON.stringify(body),{status,headers:{'content-type':'application/json'}});
@@ -108,4 +111,13 @@ describe('backend outage and rate-limit contracts',()=>{
     await expect(readCardSecrets('owner-1','card-1','access-token'))
       .rejects.toMatchObject({status:429,code:'CARD_VAULT_RATE_LIMITED'});
   });
+
+  it('keeps the client import boundary ahead of migration so future schemas cannot be silently normalized',()=>{
+    const check=useFinanceSource.indexOf('isSupportedFinanceSchemaVersion(incoming.schemaVersion)');
+    const migrate=useFinanceSource.indexOf('importData(productData(incoming))');
+    expect(check).toBeGreaterThan(-1);
+    expect(migrate).toBeGreaterThan(check);
+    expect(useFinanceSource).toContain('νεότερη ή μη υποστηριζόμενη έκδοση');
+  });
+
 });
