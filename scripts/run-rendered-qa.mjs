@@ -3,6 +3,7 @@ import { rmSync } from 'node:fs';
 import { persistSuiteEvidence, prepareSuiteEvidence, visualEvidenceContext } from './visual-evidence-store.mjs';
 
 const scripts=[
+  {path:'scripts/local-server-routing-qa.mjs',key:'server-routing',surface:'routing',profiles:[],persist:false},
   {path:'scripts/frontend-qa.mjs',key:'frontend',surface:'core-flows',profiles:['/tmp/rheomiq-qa-chrome'],extraEvidenceDirs:['/tmp/rheomiq-frontend-qa']},
   {path:'scripts/completion-geometry-qa.mjs',key:'completion-geometry',surface:'all-pages',profiles:['/tmp/myfinhub-geometry-overflow-qa-chrome']},
   {path:'scripts/completion-dialog-geometry-qa.mjs',key:'completion-dialog-geometry',surface:'interaction-dialogs',profiles:['/tmp/myfinhub-dialog-geometry-qa-chrome']},
