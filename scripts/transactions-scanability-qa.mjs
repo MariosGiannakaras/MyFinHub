@@ -26,6 +26,7 @@ try{
   const waitFor=async(fn,label,args=[])=>{for(let i=0;i<100;i++){if(await c.call(fn,args))return;await sleep(100)}throw new Error(`Timed out waiting for ${label}`)};
   const viewport=(width,height)=>c.send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<=680});
   const navigate=async(url,width=1280,height=900)=>{await viewport(width,height);await c.send('Page.navigate',{url});await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Συναλλαγές')&&Boolean(document.querySelector('.transactions-workspace'))}",'Transactions workspace')};
+  const navigatePage=async(page,heading,width=1280,height=900)=>{await viewport(width,height);const url=new URL(baseUrl);url.searchParams.set('page',page);url.searchParams.set('state','large');await c.send('Page.navigate',{url:url.href});await waitFor("function(text){return (document.querySelector('#main-workspace h1')?.textContent||'').includes(text)}",`${page} large workspace`,[heading]);await sleep(120)};
   const clickText=async(selector,text)=>{const ok=await c.call("function(selector,text){const node=[...document.querySelectorAll(selector)].find(item=>(item.textContent||'').includes(text)&&item.getClientRects().length>0);if(!node)return false;node.click();return true}",[selector,text]);assert(ok,`could not click ${text}`);await sleep(100)};
   const clickAria=async label=>{const ok=await c.call("function(label){const node=[...document.querySelectorAll('button')].find(item=>item.getAttribute('aria-label')===label&&item.getClientRects().length>0);if(!node)return false;node.click();return true}",[label]);assert(ok,`could not click ${label}`);await sleep(100)};
   const setInput=async(selector,value)=>{const ok=await c.call("function(selector,value){const input=[...document.querySelectorAll(selector)].find(item=>item.getClientRects().length>0);if(!(input instanceof HTMLInputElement))return false;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')?.set;setter?.call(input,value);input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));return true}",[selector,value]);assert(ok,`could not set ${selector}`);await sleep(100)};
@@ -92,6 +93,34 @@ try{
   const largeMobile=await c.call("function(){return {rows:document.querySelectorAll('.mobile-transaction-row').length,overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+2}}");
   assert(largeMobile.rows===1&&!largeMobile.overflow,'large dataset filtered result remains bounded and readable on mobile');
 
+  console.log('Transactions QA: large recurring/planning/budget/rule/history boundaries');
+  await navigatePage('recurring','Πάγια',1280,900);
+  const largeRecurring=await c.call("function(){return {rows:document.querySelectorAll('.recurring-workspace-table tr[data-recurring-status=\"active\"]').length,more:Boolean(document.querySelector('.desktop-recurring-more')),nodes:document.querySelectorAll('*').length,overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+2}}");
+  assert(largeRecurring.rows===24&&largeRecurring.more&&largeRecurring.nodes<5000&&!largeRecurring.overflow,'desktop recurring keeps a bounded first page and progressive disclosure');
+  await viewport(375,812);await sleep(120);
+  const largeRecurringMobile=await c.call("function(){return {rows:document.querySelectorAll('.mobile-recurring-row').length,more:Boolean(document.querySelector('.mobile-recurring-more')),overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+2}}");
+  assert(largeRecurringMobile.rows===12&&largeRecurringMobile.more&&!largeRecurringMobile.overflow,'mobile recurring keeps the existing 12-row progressive disclosure');
+
+  await navigatePage('planning','Προγραμματισμός',1280,900);
+  const largePlanning=await c.call("function(){return {rows:document.querySelectorAll('.planning-approved-table [data-planning-row]').length,more:Boolean(document.querySelector('.planning-approved-scheduled-more')),mobileRows:document.querySelectorAll('.scheduled-row').length,nodes:document.querySelectorAll('*').length,overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+2}}");
+  assert(largePlanning.rows===24&&largePlanning.more&&largePlanning.nodes<5000&&!largePlanning.overflow,'desktop planning bounds scheduled rows while preserving progressive disclosure');
+
+  await navigatePage('reports','Αναφορές',1280,900);
+  const largeReports=await c.call("function(){const budgets=document.querySelectorAll('.budget-setting-row').length;const more=Boolean(document.querySelector('.budget-settings-more'));const svgNodes=[...document.querySelectorAll('.report-chart-frame svg')].reduce((sum,svg)=>sum+svg.querySelectorAll('*').length,0);return {budgets,more,svgNodes,nodes:document.querySelectorAll('*').length,overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+2}}");
+  assert(largeReports.budgets===24&&largeReports.more&&largeReports.svgNodes<1500&&largeReports.nodes<5000&&!largeReports.overflow,'large Reports bounds budget DOM while keeping charts contained');
+  assert(await c.call("function(){const button=document.querySelector('button[aria-label=\"Ιστορικό αλλαγών\"]');button?.click();return Boolean(button)}"),'large history dialog opens');
+  await waitFor("function(){return document.querySelectorAll('.command-results [role=listitem]').length===100}",'100-point bounded history');
+  const historyState=await c.call("function(){return {rows:document.querySelectorAll('.command-results [role=listitem]').length,text:document.querySelector('.command-result-meta')?.textContent||'',overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+2}}");
+  assert(historyState.rows===100&&historyState.text.includes('100 πρόσφατες εγγραφές')&&!historyState.overflow,'durable history UI remains bounded at the supported 100 points');
+  await c.call("function(){document.querySelector('button[aria-label=\"Κλείσιμο ιστορικού\"]')?.click();return true}");
+
+  await navigatePage('settings','Ρυθμίσεις',1280,900);
+  assert(await c.call("function(){const button=[...document.querySelectorAll('.settings-tablist button')].find(item=>(item.textContent||'').trim()==='Κανόνες');button?.click();return Boolean(button)}"),'large Rules settings tab opens');
+  await waitFor("function(){return document.querySelectorAll('.rule-settings-list>article').length===24}",'bounded large rule list');
+  const largeRules=await c.call("function(){return {rows:document.querySelectorAll('.rule-settings-list>article').length,more:Boolean(document.querySelector('.rule-settings-more')),nodes:document.querySelectorAll('*').length,overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+2}}");
+  assert(largeRules.rows===24&&largeRules.more&&largeRules.nodes<5000&&!largeRules.overflow,'large transaction-rule management uses progressive disclosure');
+  const heap=await c.send('Runtime.getHeapUsage');
+  assert(Number(heap.usedSize)<256*1024*1024,`large-data QA keeps renderer heap below 256 MiB (used ${Math.round(Number(heap.usedSize)/1024/1024)} MiB)`);
 
   console.log('Transactions QA: empty state');
   await navigate(`${baseUrl}?page=transactions&state=empty`,1280,900);
