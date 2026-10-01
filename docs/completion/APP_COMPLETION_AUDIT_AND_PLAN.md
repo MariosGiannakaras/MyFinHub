@@ -1074,3 +1074,17 @@ Source implementation:
 - keep valid Android compatibility routing unchanged; no Android repository change is required.
 
 This work remains pending until integrated exact-head CI/rendered validation passes. It is inside the existing routing/404 sub-implementations and does not change the denominator.
+
+
+### 8.29 Implementation batch O — real client persistence failure runtime proof in progress
+
+The existing fail-closed queue and unload guard are now exercised through the real `useFinance` hook rather than only static error-state fixtures.
+
+Source/runtime QA:
+- a QA-only persistence backend supplies consistent data/history envelopes without touching production data;
+- an offline save is allowed exactly one PUT attempt, enters the real assertive save-error state and is not replayed automatically;
+- explicit recovery reloads the server-authoritative state and discards the unconfirmed local mutation instead of duplicating it;
+- both a failed save and an in-flight/pending save prevent hard unload, while a clean saved state does not;
+- a pending interrupted write remains single-shot, preserving optimistic revision/idempotency semantics.
+
+This remains inside the existing network timeout/offline/interrupted-save sub-implementation. Completion requires integrated exact-head rendered CI; no denominator change.
