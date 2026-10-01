@@ -130,3 +130,6 @@ Subsequent changes are product fixes against the completed v1.3.0 baseline. Rout
 - Batch P large-data containment is source-implemented: Planning/Recurring/budget/rule collections now use progressive disclosure, and the synthetic large fixture covers 1,500 events plus 120 recurring, 120 scheduled, 80 budgets, 80 rules and 100 history points. Rendered/performance proof is pending.
 
 - Exact-head `81bff44…` closes four expanded-audit sub-items: Unicode/long-text rendering, stable-ID/normalization collision semantics, supported-schema migration/future-schema rejection, and render/lazy/OCR failure recovery. CI, CodeQL, Cross-engine, Performance and all Windows gates are green on that checkpoint.
+
+- Batch Q auth-state recovery QA is source-implemented: the real session hook is exercised through MFA downgrade and revoked-device hard expiry, proving stale authenticated UI is replaced by the MFA/login surfaces. Exact-head rendered proof is pending; Android is unchanged.
+- Batch P first integrated CI follow-up: product code reached tests, but two stale shared-Button count assertions failed after adding the new progressive-disclosure controls; the expected counts are synchronized and revalidation is pending.
