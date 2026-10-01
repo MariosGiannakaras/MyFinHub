@@ -24,65 +24,81 @@ const productionApplied=[
   "20260825195120_tighten_account_metadata_function_grants.sql",
   "20260901133549_fix_account_metadata_upsert_conflict.sql",
   "20260903141314_add_private_android_releases.sql",
+  "20260904083000_add_device_session_registry.sql",
   "20260904144018_add_android_release_channels.sql",
   "20260904193923_add_financial_provider_registry.sql",
   "20260905004603_add_financial_provider_assets.sql",
   "20260905010544_add_financial_provider_assets_bucket.sql",
   "20260905011145_fix_history_parent_fk_delete.sql",
-  "20260904083000_add_device_session_registry.sql",
   "20260905020000_refresh_financial_provider_brand_assets.sql",
   "20260930062504_harden_active_device_sensitive_rls.sql",
   "20260930062619_move_active_device_rls_helper_private.sql",
   "20260930075049_align_financial_provider_brand_assets.sql",
   "20260930095835_backfill_verified_piraeus_wordmark.sql",
-  "20260930100713_backfill_canonical_payzy_viva_assets.sql"
+  "20260930100713_backfill_canonical_payzy_viva_assets.sql",
+  "20260930103651_provider_asset_storage_metadata.sql",
+  "20260930104343_rename_payzy_provider_to_magenta_pay.sql",
+  "20260930104535_add_database_health_check.sql",
+  "20260930104721_remove_empty_legacy_provider_assets.sql",
+  "20260930105145_make_state_writes_history_atomic.sql",
+  "20260930105508_index_provider_asset_foreign_keys.sql",
+  "20260930114105_add_database_health_check.sql",
+  "20260930114624_merge_database_health_contract.sql",
+  "20260930115252_fix_database_health_history_state_check.sql",
+  "20260930122054_relational_finance_ledger_cutover.sql",
+  "20260930122418_index_relational_finance_foreign_keys.sql",
+  "20260930195848_enable_user_managed_provider_assets.sql"
 ] as const;
-const pending=[] as const;
+
+const releasePending=[
+  "20260930201200_manage_financial_provider_assets.sql"
+] as const;
 
 describe('production migration ledger source contract',()=>{
   it('keeps every production-applied migration represented by the exact applied version/name',()=>{
     const local=readdirSync('supabase/migrations').filter(name=>name.endsWith('.sql')).sort();
-    expect(local).toEqual([...productionApplied,...pending].sort());
+    expect(local).toEqual([...productionApplied,...releasePending].sort());
   });
 
-  it('keeps current production security hardening represented by the exact applied ledger',()=>{
+  it('tracks the relational cutover as production-applied history while provider management remains release-pending',()=>{
+    expect(productionApplied).toContain('20260930122054_relational_finance_ledger_cutover.sql');
+    expect(productionApplied).toContain('20260930195848_enable_user_managed_provider_assets.sql');
+    expect(releasePending).toEqual(['20260930201200_manage_financial_provider_assets.sql']);
+  });
+
+  it('keeps formerly release-pending migrations represented as production-applied history',()=>{
     const device=readFileSync('supabase/migrations/20260904083000_add_device_session_registry.sql','utf8');
     const brandRefresh=readFileSync('supabase/migrations/20260905020000_refresh_financial_provider_brand_assets.sql','utf8');
-    const hardening=readFileSync('supabase/migrations/20260930062504_harden_active_device_sensitive_rls.sql','utf8');
-    const privateHelper=readFileSync('supabase/migrations/20260930062619_move_active_device_rls_helper_private.sql','utf8');
-    const alignedBrands=readFileSync('supabase/migrations/20260930075049_align_financial_provider_brand_assets.sql','utf8');
     expect(device).toContain('create table if not exists public.myfinhub_device_sessions');
     expect(device).toContain('and public.myfinhub_session_is_active()');
     expect(brandRefresh).toContain("when 'piraeus' then 'generic'");
     expect(brandRefresh).toContain("when 'eurobank' then 'generic'");
-    expect(hardening).toContain('rheomiq_card_secrets_owner_aal2_select');
-    expect(hardening).toContain('rheomiq_account_metadata_owner_aal2_select');
-    expect(privateHelper).toContain('create or replace function private.myfinhub_session_is_active()');
-    expect(privateHelper).toContain('drop function if exists public.myfinhub_session_is_active()');
-    expect(alignedBrands).toContain("'piraeus-logo-green-on-yellow'");
-    expect(alignedBrands).toContain("'alpha-wordmark-color'");
-    expect(alignedBrands).toContain("else 'generic'");
   });
 
-  it('keeps verified provider binary backfills hash-guarded and source-accurate',()=>{
-    const piraeus=readFileSync('supabase/migrations/20260930095835_backfill_verified_piraeus_wordmark.sql','utf8');
-    const canonical=readFileSync('supabase/migrations/20260930100713_backfill_canonical_payzy_viva_assets.sql','utf8');
-    expect(piraeus).toContain('PROVIDER_ASSET_HASH_MISMATCH');
-    expect(piraeus).toContain('73fc3353377d38ab00abbb97f2859da0f143595a80bf0f7e3c8b64611632b2ec');
-    expect(canonical).toContain('PROVIDER_ASSET_HASH_MISMATCH: payzy');
-    expect(canonical).toContain('0a22f6d45422e0086b018c5bbe8f6d6c1cfbd6f80ffd014dda699c8cdb2e74f1');
-    expect(canonical).toContain('c7aed8524a3d980dded8cb121371397208b13cf9bb21b362d176550fd10aea8e');
-    expect(canonical).toContain("file_name='payzy-logo-color.png'");
-    expect(canonical).toContain("file_name='viva-logo-navy-on-white.png'");
-    expect(canonical).toContain("source='repository-canonical'");
-  });
-
-  it('back-syncs the production-only provider asset registry schema without embedding production asset bytes',()=>{
+  it('back-syncs the production-only provider asset registry schema without embedding production asset bytes in its original schema migration',()=>{
     const assets=readFileSync('supabase/migrations/20260905004603_add_financial_provider_assets.sql','utf8');
     expect(assets).toContain('create table if not exists public.rheomiq_financial_provider_assets');
     expect(assets).toContain('content bytea not null');
     expect(assets).toContain('enable row level security');
     expect(assets).toContain('grant select on table public.rheomiq_financial_provider_assets to authenticated');
     expect(assets).not.toMatch(/insert\s+into\s+public\.rheomiq_financial_provider_assets/i);
+  });
+
+  it('tracks provider artwork as user-managed Storage assets without mandatory provenance',()=>{
+    const assets=readFileSync('supabase/migrations/20260930195848_enable_user_managed_provider_assets.sql','utf8');
+    expect(assets).toContain("alter column legacy_content drop not null");
+    expect(assets).toContain("'user-managed'");
+    expect(assets).toContain("'card-mark'::text");
+    expect(assets).toContain("storage_bucket = 'financial-provider-assets'");
+    expect(assets).toContain("source/provenance metadata is optional");
+    expect(assets).toContain("magenta-pay-logo-universal");
+  });
+
+  it('keeps the final provider/history health contract represented as a forward migration',()=>{
+    const health=readFileSync('supabase/migrations/20260930115252_fix_database_health_history_state_check.sql','utf8');
+    expect(health).toContain("'productionReady'");
+    expect(health).toContain("'unbalanced_internal_events'");
+    expect(health).toContain("'history_current_point_state_mismatches'");
+    expect(health).not.toContain('security definer');
   });
 });

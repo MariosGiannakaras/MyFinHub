@@ -1,39 +1,30 @@
--- Align provider registry metadata with the owner-provided brand assets that
--- actually exist in the canonical asset registry. Missing roles remain generic;
--- the UI must never infer/fabricate verified branding from a provider name alone.
-with desired(provider_id,logo_key,wordmark_key) as (
-  values
-    ('piraeus','piraeus-logo-green-on-yellow','piraeus-wordmark-green-on-white'),
-    ('alpha','alpha-logo-white-on-blue','alpha-wordmark-color'),
-    ('national',null,null),
-    ('eurobank',null,null),
-    ('revolut','revolut-logo-black-on-white','revolut-wordmark-black-on-white'),
-    ('viva','viva-logo-navy-on-white',null),
-    ('payzy','payzy-logo-color',null),
-    ('paypal',null,null)
-)
-update public.rheomiq_financial_providers provider
+-- Back-synced source for the production-applied provider-brand alignment.
+-- Production migration ledger already contains this version. This file restores Git
+-- as the complete migration source for fresh/local environments.
+
+update public.rheomiq_financial_providers
 set
-  logo_asset_key=case
-    when desired.logo_key is not null and exists(
-      select 1 from public.rheomiq_financial_provider_assets asset
-      where asset.asset_key=desired.logo_key
-        and asset.provider_id=provider.id
-        and asset.asset_role='logo'
-        and asset.active
-    ) then desired.logo_key
-    else 'generic'
+  logo_asset_key = case id
+    when 'piraeus' then 'piraeus-logo-green-on-yellow'
+    when 'alpha' then 'alpha-logo-white-on-blue'
+    when 'national' then 'generic'
+    when 'eurobank' then 'generic'
+    when 'revolut' then 'revolut-logo-black-on-white'
+    when 'viva' then 'viva-logo-navy-on-white'
+    when 'payzy' then 'payzy-logo-color'
+    when 'paypal' then 'generic'
+    else logo_asset_key
   end,
-  wordmark_asset_key=case
-    when desired.wordmark_key is not null and exists(
-      select 1 from public.rheomiq_financial_provider_assets asset
-      where asset.asset_key=desired.wordmark_key
-        and asset.provider_id=provider.id
-        and asset.asset_role='wordmark'
-        and asset.active
-    ) then desired.wordmark_key
-    else 'generic'
+  wordmark_asset_key = case id
+    when 'piraeus' then 'piraeus-wordmark-green-on-white'
+    when 'alpha' then 'alpha-wordmark-color'
+    when 'national' then 'generic'
+    when 'eurobank' then 'generic'
+    when 'revolut' then 'revolut-wordmark-black-on-white'
+    when 'viva' then 'generic'
+    when 'payzy' then 'generic'
+    when 'paypal' then 'generic'
+    else wordmark_asset_key
   end,
-  updated_at=now()
-from desired
-where provider.id=desired.provider_id;
+  updated_at = now()
+where id in ('piraeus','alpha','national','eurobank','revolut','viva','payzy','paypal');
