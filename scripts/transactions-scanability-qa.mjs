@@ -78,6 +78,21 @@ try{
   assert(!unicode.overflow&&!unicode.hasUnexpectedMarkup,'Unicode/unbroken transaction remains contained and text-only');
 
 
+  console.log('Transactions QA: realistic large-data pagination/search boundary');
+  await navigate(`${baseUrl}?page=transactions&state=large`,1280,900);
+  const large=await c.call("function(){const visible=[...document.querySelectorAll('.transactions-approved-table tbody .transaction-row')];const semantic=[...document.querySelectorAll('.transaction-semantic-table tbody .transaction-row')];const footer=document.querySelector('.transactions-ledger-footer')?.textContent||'';return {visible:visible.length,semantic:semantic.length,first:visible[0]?.textContent||'',footer,domRows:document.querySelectorAll('.transaction-row,.mobile-transaction-row').length,overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+2}}");
+  assert(large.visible===14&&large.semantic===14,'large dataset keeps desktop transaction DOM bounded to the configured page size');
+  assert(large.footer.includes('από 1500')||/από 15\d\d/.test(large.footer),'large dataset reports the full transaction count without rendering it all');
+  assert(large.domRows<50&&!large.overflow,'large dataset avoids unbounded row DOM and horizontal overflow');
+  await clickAria('Επόμενη σελίδα');await waitFor("function(before){const row=document.querySelector('.transactions-approved-table tbody .transaction-row');return Boolean(row)&&!((row.textContent||'')===before)}",'large dataset next page',[large.first]);
+  await setInput('.transaction-searchbar input','Large dataset unique search target');await waitFor("function(){const rows=document.querySelectorAll('.transactions-approved-table tbody .transaction-row');return rows.length===1&&(rows[0].textContent||'').includes('Large dataset unique search target')}",'large dataset unique search');
+  const largeSearch=await c.call("function(){return {visible:document.querySelectorAll('.transactions-approved-table tbody .transaction-row').length,mobile:document.querySelectorAll('.mobile-transaction-row').length,footer:document.querySelector('.transactions-ledger-footer')?.textContent||''}}");
+  assert(largeSearch.visible===1&&largeSearch.footer.includes('από 1'),'large dataset search collapses deterministically to one row');
+  await viewport(375,812);await sleep(160);
+  const largeMobile=await c.call("function(){return {rows:document.querySelectorAll('.mobile-transaction-row').length,overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+2}}");
+  assert(largeMobile.rows===1&&!largeMobile.overflow,'large dataset filtered result remains bounded and readable on mobile');
+
+
   console.log('Transactions QA: empty state');
   await navigate(`${baseUrl}?page=transactions&state=empty`,1280,900);
   const empty=await c.call("function(){return {state:(document.querySelector('.transaction-empty-state')?.textContent||'').trim(),desktopRows:document.querySelectorAll('.transaction-semantic-table tbody .transaction-row').length,mobileRows:document.querySelectorAll('.mobile-transaction-row').length}}");assert(empty.state.includes('Δεν υπάρχουν κινήσεις')&&empty.desktopRows===0&&empty.mobileRows===0,'empty state replaces empty transaction structures');await shot('transactions-empty-desktop');
