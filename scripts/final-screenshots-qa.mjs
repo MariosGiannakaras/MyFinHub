@@ -76,7 +76,14 @@ try{
     const url=new URL(baseUrl);url.searchParams.set('page',page);url.searchParams.set('visual','1');
     await c.send('Page.navigate',{url:url.href});
     await waitFor("function(text){return document.readyState==='complete'&&(document.querySelector('#main-workspace h1')?.textContent||'').includes(text)}",[heading],page);
-    if(page==='dashboard')await waitFor("function(){if(innerWidth<=680)return true;const selectors=['.summary-donut .recharts-surface','.approved-bar-wrap .recharts-surface','.approved-category-donut .recharts-surface'];return selectors.every(selector=>Boolean(document.querySelector(selector)))}",[],'Dashboard deferred charts');
+    if(page==='dashboard'){
+      await waitFor("function(){if(innerWidth<=680)return true;const selectors=['.summary-donut .recharts-surface','.approved-bar-wrap .recharts-surface','.approved-category-donut .recharts-surface'];return selectors.every(selector=>Boolean(document.querySelector(selector)))}",[],'Dashboard deferred charts');
+      await waitFor("function(){if(innerWidth<=680)return true;const visibleShape=selector=>[...document.querySelectorAll(selector)].some(node=>{try{const box=node.getBBox();return box.width>2&&box.height>2}catch{return false}});return visibleShape('.approved-bar-wrap .recharts-rectangle')&&visibleShape('.summary-donut .recharts-sector')&&visibleShape('.approved-category-donut .recharts-sector')}",[],'Dashboard painted charts');
+    }
+    if(page==='credit'&&await c.call("function(){return innerWidth<=680}")){
+      const geometry=await c.call("function(){const card=document.querySelector('#myfinhub-card-stack .stack-card.top .payment-card'),network=card?.querySelector('.card-network.card-network-assets');if(!card||!network)return null;const outer=card.getBoundingClientRect(),inner=network.getBoundingClientRect();return {card:{left:outer.left,top:outer.top,right:outer.right,bottom:outer.bottom,width:outer.width,height:outer.height},network:{left:inner.left,top:inner.top,right:inner.right,bottom:inner.bottom,width:inner.width,height:inner.height},bottomInset:outer.bottom-inner.bottom,rightInset:outer.right-inner.right}}");
+      if(!geometry||geometry.bottomInset<4||geometry.rightInset<0)throw new Error(`Mobile Credit network mark escapes card safe area: ${JSON.stringify(geometry)}`);
+    }
     const visibleQaControl=await c.call("function(){const node=document.querySelector('[data-qa-crash]');if(!node)return false;const style=getComputedStyle(node),rect=node.getBoundingClientRect();return style.display!=='none'&&style.visibility!=='hidden'&&rect.width>0&&rect.height>0}");
     if(visibleQaControl)throw new Error(`QA-only crash control is visible in final capture for ${page}`);
     await sleep(260);
