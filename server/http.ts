@@ -85,12 +85,18 @@ export async function readJsonBody<T = unknown>(req: any, maxBytes = 5 * 1024 * 
   assertContentLengthWithinLimit(req,maxBytes);
 
   if (req.body !== undefined) {
+    const body=req.body as unknown;
+    if(typeof body==='string'||Buffer.isBuffer(body)||body instanceof Uint8Array){
+      const raw=typeof body==='string'?body:Buffer.from(body).toString('utf8');
+      if(Buffer.byteLength(raw,'utf8')>maxBytes)throw new ApiError(413,'PAYLOAD_TOO_LARGE','Request is too large.');
+      try{return (raw?JSON.parse(raw):{}) as T;}
+      catch{throw new ApiError(400,'INVALID_JSON','Invalid JSON payload.');}
+    }
     let raw:string;
-    try{raw=typeof req.body==='string'?req.body:JSON.stringify(req.body);}
+    try{raw=JSON.stringify(body);}
     catch{throw new ApiError(400,'INVALID_JSON','Invalid JSON payload.');}
-    if (Buffer.byteLength(raw, 'utf8') > maxBytes) throw new ApiError(413, 'PAYLOAD_TOO_LARGE', 'Request is too large.');
-    try { return (typeof req.body === 'string' ? JSON.parse(req.body || '{}') : req.body) as T; }
-    catch { throw new ApiError(400, 'INVALID_JSON', 'Invalid JSON payload.'); }
+    if(Buffer.byteLength(raw,'utf8')>maxBytes)throw new ApiError(413,'PAYLOAD_TOO_LARGE','Request is too large.');
+    return body as T;
   }
 
   const chunks: Buffer[] = [];
