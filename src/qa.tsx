@@ -11,6 +11,7 @@ import { PageErrorBoundary } from './components/PageErrorBoundary';
 import { PersistenceNotice } from './components/PersistenceNotice';
 import type { QuickPrefill } from './components/QuickAdd';
 import { financeChangeLabel, type ChangeHistoryEntry, type SaveState } from './hooks/useFinance';
+import { useSession } from './hooks/useSession';
 import type { AttentionItem } from './lib/attention';
 import { archiveCardRecord, withCardProfileDeleted } from './lib/cards';
 import type { RankedCommandSearchItem } from './lib/commandSearch';
@@ -34,6 +35,24 @@ import { SettingsPage } from './pages/SettingsPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 import type { AttentionDecision, CardBank, EventKind, FinanceData, FinanceEvent, LegacyTransaction, Loan, MonthlyBudget, PaymentCard, RecurringItem, SavingsGoal, ScheduledTransaction, TextSizePreference, TransactionRule } from './types';
 import './styles.css';
+
+const QA_SESSION_SIGNAL_SCREEN=new URLSearchParams(location.search).get('screen')==='session-signal';
+if(QA_SESSION_SIGNAL_SCREEN){
+  const originalFetch=globalThis.fetch.bind(globalThis);
+  let mode:'authenticated'|'mfa'='authenticated';
+  (globalThis as typeof globalThis & {__myfinhubQaSessionMode?:(next:'authenticated'|'mfa')=>void}).__myfinhubQaSessionMode=(next)=>{mode=next};
+  globalThis.fetch=async(input:RequestInfo|URL,init?:RequestInit)=>{
+    const raw=typeof input==='string'?input:input instanceof URL?input.href:input.url;
+    const url=new URL(raw,location.href);
+    if(url.pathname==='/api/auth/session'){
+      const payload=mode==='mfa'
+        ?{authenticated:false,email:'qa@example.invalid',mfaRequired:true,mfaEnrollmentRequired:false}
+        :{authenticated:true,email:'qa@example.invalid',mfaRequired:false,mfaEnrollmentRequired:false};
+      return new Response(JSON.stringify(payload),{status:200,headers:{'content-type':'application/json'}});
+    }
+    return originalFetch(input,init);
+  };
+}
 
 const QA_PAGES:PageId[]=['dashboard','transactions','savings','cards','credit','loans','lending','recurring','planning','attention','reports','settings'];
 const QA_PAGE_HEADINGS:Record<PageId,string>={dashboard:'Οι λογαριασμοί μου',transactions:'Συναλλαγές',savings:'Αποταμίευση',cards:'Κάρτες',credit:'Πιστωτική Κάρτα',loans:'Δόσεις & Δάνεια',lending:'Δανεικά & επιστροφές',recurring:'Πάγια & Συνδρομές',planning:'Προγραμματισμός & πρόβλεψη ρευστότητας',attention:'Έλεγχος',reports:'Αναφορές · Η οικονομική εικόνα του μήνα',settings:'Ρυθμίσεις'};
@@ -201,6 +220,14 @@ function QaWorkspace(){
   </>;
 }
 
-function QaApp(){const params=new URLSearchParams(location.search);const screen=params.get('screen');if(screen==='404')return <NotFoundPage onHome={()=>{}} onBack={()=>{}}/>;if(screen==='login')return <LoginScreen error={params.get('error')==='1'?'Τα στοιχεία σύνδεσης δεν είναι σωστά.':''} onLogin={async()=>false}/>;if(screen==='mfa'||screen==='mfa-enroll')return <MfaScreen mode={screen==='mfa-enroll'?'enroll':'challenge'} email="qa@example.invalid" error={params.get('error')==='1'?'Ο κωδικός επαλήθευσης δεν είναι σωστός.':''} onEnroll={async()=>({factorId:'qa-factor',qrCode:'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%22120%22/%3E',secret:'QA-ONLY-SECRET'})} onVerify={async()=>false} onLogout={async()=>{}}/>;return <QaWorkspace/>}
+function QaSessionSignalProbe(){
+  const session=useSession();
+  if(session.state==='loading')return <div className="boot-screen" data-session-probe="loading">Έλεγχος συνεδρίας…</div>;
+  if(session.state==='mfa'||session.state==='mfa-enroll')return <MfaScreen mode={session.state==='mfa-enroll'?'enroll':'challenge'} email={session.email} error={session.error} onEnroll={session.enrollMfa} onVerify={session.verifyMfa} onLogout={async()=>{await session.logout()}}/>;
+  if(session.state==='authenticated')return <main className="boot-screen" data-session-probe="authenticated"><h1>Authenticated QA shell</h1></main>;
+  return <LoginScreen onLogin={session.login} error={session.error}/>;
+}
+
+function QaApp(){const params=new URLSearchParams(location.search);const screen=params.get('screen');if(screen==='session-signal')return <QaSessionSignalProbe/>;if(screen==='404')return <NotFoundPage onHome={()=>{}} onBack={()=>{}}/>;if(screen==='login')return <LoginScreen error={params.get('error')==='1'?'Τα στοιχεία σύνδεσης δεν είναι σωστά.':''} onLogin={async()=>false}/>;if(screen==='mfa'||screen==='mfa-enroll')return <MfaScreen mode={screen==='mfa-enroll'?'enroll':'challenge'} email="qa@example.invalid" error={params.get('error')==='1'?'Ο κωδικός επαλήθευσης δεν είναι σωστός.':''} onEnroll={async()=>({factorId:'qa-factor',qrCode:'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%22120%22/%3E',secret:'QA-ONLY-SECRET'})} onVerify={async()=>false} onLogout={async()=>{}}/>;return <QaWorkspace/>}
 
 createRoot(document.getElementById('root')!).render(<StrictMode><QaApp/></StrictMode>);
