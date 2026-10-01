@@ -13,4 +13,14 @@ describe('local receipt OCR CSP boundary', () => {
       expect(source).not.toMatch(/script-src[^;]*\s'unsafe-eval'(?:\s|;)/);
     }
   });
+
+  it('allows only the canonical Supabase provider-image origin beyond self/data/blob', () => {
+    for (const source of [vercel, desktop]) {
+      expect(source).toContain("img-src 'self' data: blob: https://ahsukppxwaiagampsuzb.supabase.co");
+      expect(source).not.toContain('https://upload.wikimedia.org');
+      expect(source).not.toContain('https://www.neukunden-rabatt.de');
+      expect(source).not.toContain('https://cdn.asp.events');
+    }
+  });
+
 });
