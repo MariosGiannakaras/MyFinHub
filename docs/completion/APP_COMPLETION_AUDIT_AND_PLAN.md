@@ -931,3 +931,25 @@ The Vercel unknown-`/api/*` catch-all remains an explicit verification item. No 
 Android compatibility impact: the existing legitimate `__myfinhub_route=android-update` compatibility marker is unchanged; only ambiguous duplicate/array marker shapes are now rejected. No Android repository change is made.
 
 No completion counters advance until CI/CodeQL validation and the relevant runtime failure paths are directly inspected.
+
+
+### 8.19 Implementation batch D — persistence trust-boundary hardening in progress
+
+Direct source audit of the canonical persistence validator found material gaps that were not covered by the earlier UI/domain validation work:
+
+- several finance date fields were validated as arbitrary strings or regex-shaped YYYY-MM-DD values rather than real Gregorian calendar dates;
+- `state.scheduled`, `state.attentionDecisions`, `state.budgets` and `state.transactionRules` were present in the product schema but lacked equivalent canonical server-side structural/semantic validation;
+- full imports and stored-document reads did not consistently execute the same card/category/recurring extension invariants used by normal mutable writes;
+- credit-statement and recurring-cadence extension validators accepted impossible regex-shaped dates;
+- the bundle gate exposed the intentionally added 404 surface as a small total raw-CSS increase; the total raw CSS ceiling is being moved from 500 KiB to 512 KiB while the compressed 100 KiB CSS ceiling and all JS ceilings remain unchanged.
+
+Source implementation now in this batch:
+
+- real calendar-date validation wired into legacy transactions, snapshots, events, lending history, loan schedules, recurring anchors/end dates, savings goals and expected-return dates;
+- canonical validators for persisted scheduled transactions, attention decisions, budgets, transaction rules and migration metadata;
+- canonical `validateCompleteFinanceData` trust boundary shared by full web import, Desktop import, storage reads/writes and the mutable-state validator;
+- strict credit-statement and recurring-cadence date validation;
+- regression coverage for impossible dates, scheduled transfer semantics/duplicate IDs, malformed budget/attention/rule state and full-import extension bypass;
+- bounded raw CSS budget headroom only; gzip CSS and JavaScript budgets remain unchanged.
+
+No completion counter advances from this source batch until narrow CI/security validation is green and the relevant runtime/import behavior is directly verified.
