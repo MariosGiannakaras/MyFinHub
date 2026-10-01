@@ -21,6 +21,13 @@ export function requestHeader(req: any, name: string): string {
   return firstHeader(req?.headers?.[name.toLowerCase()]);
 }
 
+export function strictQueryValue(req:any,key:string):string{
+  const query=req&&typeof req==='object'?(req as {query?:unknown}).query:undefined;
+  if(!query||typeof query!=='object'||Array.isArray(query))return '';
+  const value=(query as Record<string,unknown>)[key];
+  return typeof value==='string'?value.trim():'';
+}
+
 export function sendJson(res: any, status: number, body: unknown) {
   res.statusCode = status;
   res.setHeader('content-type', 'application/json; charset=utf-8');
