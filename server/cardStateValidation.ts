@@ -1,10 +1,10 @@
 import type { FinanceData } from '../src/types.js';
+import { isIsoCalendarDate } from '../src/lib/isoDate.js';
 import { ApiError } from './http.js';
 
 function invalid():never{throw new ApiError(400,'INVALID_DATA','The finance data is invalid.');}
 function text(value:unknown,max:number){return typeof value==='string'&&value.length>0&&value.length<=max;}
 function billingDay(value:unknown){return Number.isInteger(value)&&Number(value)>=1&&Number(value)<=31;}
-function isoDate(value:unknown){return typeof value==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(value);}
 
 export function validateCardStateExtensions(state:FinanceData['state']){
   for(const card of state.cards??[]){
@@ -39,7 +39,7 @@ export function validateCardStateExtensions(state:FinanceData['state']){
   for(const statement of state.creditStatements??[]){
     if(!statement||typeof statement!=='object'||Array.isArray(statement))invalid();
     if(Object.keys(statement).some(key=>!['id','cardId','openDate','closeDate','dueDate','boundaryRule','createdAt','updatedAt'].includes(key)))invalid();
-    if(!text(statement.id,300)||!text(statement.cardId,200)||!isoDate(statement.openDate)||!isoDate(statement.closeDate)||!isoDate(statement.dueDate))invalid();
+    if(!text(statement.id,300)||!text(statement.cardId,200)||!isIsoCalendarDate(statement.openDate)||!isIsoCalendarDate(statement.closeDate)||!isIsoCalendarDate(statement.dueDate))invalid();
     if(statement.openDate>statement.closeDate||statement.dueDate<=statement.closeDate)invalid();
     if(!['include-closing-day','next-cycle'].includes(String(statement.boundaryRule))||!text(statement.createdAt,64)||!text(statement.updatedAt,64))invalid();
     if(statementsById.has(statement.id))invalid();
