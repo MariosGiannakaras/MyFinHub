@@ -2,19 +2,19 @@
   "schemaVersion": 1,
   "kind": "final-release-screenshots",
   "appVersion": "v1.3.0",
-  "captureId": "2026-10-01_172429__506eab3b",
-  "generatedAt": "2026-10-01T14:24:29.618Z",
+  "captureId": "2026-10-01_174107__796588b1",
+  "generatedAt": "2026-10-01T14:41:07.301Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "506eab3b7dbe569d62acb9b7f83ce52f70a30a73",
-    "shortSha": "506eab3b",
+    "sha": "796588b1751540602b3c4d5b2d0a8a8ced1346e0",
+    "shortSha": "796588b1",
     "branch": "feat/476-completion-audit-hardening"
   },
   "baseUrl": "http://127.0.0.1:5173/qa.html",
   "count": 63,
   "screenshots": [
     {
-      "file": "visual-qa/final/dashboard/v1.3.0__2026-10-01_172429__page__desktop-1440x1000.png",
+      "file": "visual-qa/final/dashboard/v1.3.0__2026-10-01_174107__page__desktop-1440x1000.png",
       "surface": "dashboard",
       "state": "page",
       "viewport": {
@@ -28,7 +28,7 @@
       }
     },
     {
-      "file": "visual-qa/final/transactions/v1.3.0__2026-10-01_172429__page__desktop-1440x1000.png",
+      "file": "visual-qa/final/transactions/v1.3.0__2026-10-01_174107__page__desktop-1440x1000.png",
       "surface": "transactions",
       "state": "page",
       "viewport": {
@@ -42,7 +42,7 @@
       }
     },
     {
-      "file": "visual-qa/final/savings/v1.3.0__2026-10-01_172429__page__desktop-1440x1000.png",
+      "file": "visual-qa/final/savings/v1.3.0__2026-10-01_174107__page__desktop-1440x1000.png",
       "surface": "savings",
       "state": "page",
       "viewport": {
@@ -56,7 +56,7 @@
       }
     },
     {
-      "file": "visual-qa/final/cards/v1.3.0__2026-10-01_172429__page__desktop-1440x1000.png",
+      "file": "visual-qa/final/cards/v1.3.0__2026-10-01_174107__page__desktop-1440x1000.png",
       "surface": "cards",
       "state": "page",
       "viewport": {
@@ -70,7 +70,7 @@
       }
     },
     {
-      "file": "visual-qa/final/credit/v1.3.0__2026-10-01_172429__page__desktop-1440x1000.png",
+      "file": "visual-qa/final/credit/v1.3.0__2026-10-01_174107__page__desktop-1440x1000.png",
       "surface": "credit",
       "state": "page",
       "viewport": {
@@ -84,7 +84,7 @@
       }
     },
     {
-      "file": "visual-qa/final/loans/v1.3.0__2026-10-01_172429__page__desktop-1440x1000.png",
+      "file": "visual-qa/final/loans/v1.3.0__2026-10-01_174107__page__desktop-1440x1000.png",
       "surface": "loans",
       "state": "page",
       "viewport": {
@@ -98,7 +98,7 @@
       }
     },
     {
-      "file": "visual-qa/final/lending/v1.3.0__2026-10-01_172429__page__desktop-1440x1000.png",
+      "file": "visual-qa/final/lending/v1.3.0__2026-10-01_174107__page__desktop-1440x1000.png",
       "surface": "lending",
       "state": "page",
       "viewport": {
@@ -112,7 +112,7 @@
       }
     },
     {
-      "file": "visual-qa/final/recurring/v1.3.0__2026-10-01_172429__page__desktop-1440x1000.png",
+      "file": "visual-qa/final/recurring/v1.3.0__2026-10-01_174107__page__desktop-1440x1000.png",
       "surface": "recurring",
       "state": "page",
       "viewport": {
@@ -126,7 +126,7 @@
       }
     },
     {
-      "file": "visual-qa/final/planning/v1.3.0__2026-10-01_172429__page__desktop-1440x1000.png",
+      "file": "visual-qa/final/planning/v1.3.0__2026-10-01_174107__page__desktop-1440x1000.png",
       "surface": "planning",
       "state": "page",
       "viewport": {
@@ -140,7 +140,7 @@
       }
     },
     {
-      "file": "visual-qa/final/attention/v1.3.0__2026-10-01_172429__page__desktop-1440x1000.png",
+      "file": "visual-qa/final/attention/v1.3.0__2026-10-01_174107__page__desktop-1440x1000.png",
       "surface": "attention",
       "state": "page",
       "viewport": {
@@ -154,7 +154,7 @@
       }
     },
     {
-      "file": "visual-qa/final/reports/v1.3.0__2026-10-01_172429__page__desktop-1440x1000.png",
+      "file": "visual-qa/final/reports/v1.3.0__2026-10-01_174107__page__desktop-1440x1000.png",
       "surface": "reports",
       "state": "page",
       "viewport": {
@@ -168,7 +168,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_172429__page__desktop-1440x1000.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_174107__page__desktop-1440x1000.png",
       "surface": "settings",
       "state": "page",
       "viewport": {
@@ -182,7 +182,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_172429__tab-profile__desktop-1440x1000.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_174107__tab-profile__desktop-1440x1000.png",
       "surface": "settings",
       "state": "tab-profile",
       "viewport": {
@@ -196,7 +196,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_172429__tab-accounts__desktop-1440x1000.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_174107__tab-accounts__desktop-1440x1000.png",
       "surface": "settings",
       "state": "tab-accounts",
       "viewport": {
@@ -210,7 +210,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_172429__tab-categories__desktop-1440x1000.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_174107__tab-categories__desktop-1440x1000.png",
       "surface": "settings",
       "state": "tab-categories",
       "viewport": {
@@ -224,7 +224,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_172429__tab-icons__desktop-1440x1000.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_174107__tab-icons__desktop-1440x1000.png",
       "surface": "settings",
       "state": "tab-icons",
       "viewport": {
@@ -238,7 +238,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_172429__tab-rules__desktop-1440x1000.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_174107__tab-rules__desktop-1440x1000.png",
       "surface": "settings",
       "state": "tab-rules",
       "viewport": {
@@ -252,7 +252,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_172429__tab-data__desktop-1440x1000.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_174107__tab-data__desktop-1440x1000.png",
       "surface": "settings",
       "state": "tab-data",
       "viewport": {
@@ -266,7 +266,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-01_172429__login__desktop-1440x1000.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-01_174107__login__desktop-1440x1000.png",
       "surface": "auth",
       "state": "login",
       "viewport": {
@@ -280,7 +280,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-01_172429__mfa__desktop-1440x1000.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-01_174107__mfa__desktop-1440x1000.png",
       "surface": "auth",
       "state": "mfa",
       "viewport": {
@@ -294,7 +294,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-01_172429__mfa-enroll__desktop-1440x1000.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-01_174107__mfa-enroll__desktop-1440x1000.png",
       "surface": "auth",
       "state": "mfa-enroll",
       "viewport": {
@@ -308,7 +308,7 @@
       }
     },
     {
-      "file": "visual-qa/final/dashboard/v1.3.0__2026-10-01_172429__page__tablet-834x1112.png",
+      "file": "visual-qa/final/dashboard/v1.3.0__2026-10-01_174107__page__tablet-834x1112.png",
       "surface": "dashboard",
       "state": "page",
       "viewport": {
@@ -322,7 +322,7 @@
       }
     },
     {
-      "file": "visual-qa/final/transactions/v1.3.0__2026-10-01_172429__page__tablet-834x1112.png",
+      "file": "visual-qa/final/transactions/v1.3.0__2026-10-01_174107__page__tablet-834x1112.png",
       "surface": "transactions",
       "state": "page",
       "viewport": {
@@ -336,7 +336,7 @@
       }
     },
     {
-      "file": "visual-qa/final/savings/v1.3.0__2026-10-01_172429__page__tablet-834x1112.png",
+      "file": "visual-qa/final/savings/v1.3.0__2026-10-01_174107__page__tablet-834x1112.png",
       "surface": "savings",
       "state": "page",
       "viewport": {
@@ -350,7 +350,7 @@
       }
     },
     {
-      "file": "visual-qa/final/cards/v1.3.0__2026-10-01_172429__page__tablet-834x1112.png",
+      "file": "visual-qa/final/cards/v1.3.0__2026-10-01_174107__page__tablet-834x1112.png",
       "surface": "cards",
       "state": "page",
       "viewport": {
@@ -364,7 +364,7 @@
       }
     },
     {
-      "file": "visual-qa/final/credit/v1.3.0__2026-10-01_172429__page__tablet-834x1112.png",
+      "file": "visual-qa/final/credit/v1.3.0__2026-10-01_174107__page__tablet-834x1112.png",
       "surface": "credit",
       "state": "page",
       "viewport": {
@@ -378,7 +378,7 @@
       }
     },
     {
-      "file": "visual-qa/final/loans/v1.3.0__2026-10-01_172429__page__tablet-834x1112.png",
+      "file": "visual-qa/final/loans/v1.3.0__2026-10-01_174107__page__tablet-834x1112.png",
       "surface": "loans",
       "state": "page",
       "viewport": {
@@ -392,7 +392,7 @@
       }
     },
     {
-      "file": "visual-qa/final/lending/v1.3.0__2026-10-01_172429__page__tablet-834x1112.png",
+      "file": "visual-qa/final/lending/v1.3.0__2026-10-01_174107__page__tablet-834x1112.png",
       "surface": "lending",
       "state": "page",
       "viewport": {
@@ -406,7 +406,7 @@
       }
     },
     {
-      "file": "visual-qa/final/recurring/v1.3.0__2026-10-01_172429__page__tablet-834x1112.png",
+      "file": "visual-qa/final/recurring/v1.3.0__2026-10-01_174107__page__tablet-834x1112.png",
       "surface": "recurring",
       "state": "page",
       "viewport": {
@@ -420,7 +420,7 @@
       }
     },
     {
-      "file": "visual-qa/final/planning/v1.3.0__2026-10-01_172429__page__tablet-834x1112.png",
+      "file": "visual-qa/final/planning/v1.3.0__2026-10-01_174107__page__tablet-834x1112.png",
       "surface": "planning",
       "state": "page",
       "viewport": {
@@ -434,7 +434,7 @@
       }
     },
     {
-      "file": "visual-qa/final/attention/v1.3.0__2026-10-01_172429__page__tablet-834x1112.png",
+      "file": "visual-qa/final/attention/v1.3.0__2026-10-01_174107__page__tablet-834x1112.png",
       "surface": "attention",
       "state": "page",
       "viewport": {
@@ -448,7 +448,7 @@
       }
     },
     {
-      "file": "visual-qa/final/reports/v1.3.0__2026-10-01_172429__page__tablet-834x1112.png",
+      "file": "visual-qa/final/reports/v1.3.0__2026-10-01_174107__page__tablet-834x1112.png",
       "surface": "reports",
       "state": "page",
       "viewport": {
@@ -462,7 +462,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_172429__page__tablet-834x1112.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_174107__page__tablet-834x1112.png",
       "surface": "settings",
       "state": "page",
       "viewport": {
@@ -476,7 +476,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_172429__tab-profile__tablet-834x1112.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_174107__tab-profile__tablet-834x1112.png",
       "surface": "settings",
       "state": "tab-profile",
       "viewport": {
@@ -490,7 +490,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_172429__tab-accounts__tablet-834x1112.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_174107__tab-accounts__tablet-834x1112.png",
       "surface": "settings",
       "state": "tab-accounts",
       "viewport": {
@@ -504,7 +504,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_172429__tab-categories__tablet-834x1112.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_174107__tab-categories__tablet-834x1112.png",
       "surface": "settings",
       "state": "tab-categories",
       "viewport": {
@@ -518,7 +518,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_172429__tab-icons__tablet-834x1112.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_174107__tab-icons__tablet-834x1112.png",
       "surface": "settings",
       "state": "tab-icons",
       "viewport": {
@@ -532,7 +532,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_172429__tab-rules__tablet-834x1112.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_174107__tab-rules__tablet-834x1112.png",
       "surface": "settings",
       "state": "tab-rules",
       "viewport": {
@@ -546,7 +546,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_172429__tab-data__tablet-834x1112.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_174107__tab-data__tablet-834x1112.png",
       "surface": "settings",
       "state": "tab-data",
       "viewport": {
@@ -560,7 +560,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-01_172429__login__tablet-834x1112.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-01_174107__login__tablet-834x1112.png",
       "surface": "auth",
       "state": "login",
       "viewport": {
@@ -574,7 +574,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-01_172429__mfa__tablet-834x1112.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-01_174107__mfa__tablet-834x1112.png",
       "surface": "auth",
       "state": "mfa",
       "viewport": {
@@ -588,7 +588,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-01_172429__mfa-enroll__tablet-834x1112.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-01_174107__mfa-enroll__tablet-834x1112.png",
       "surface": "auth",
       "state": "mfa-enroll",
       "viewport": {
@@ -602,7 +602,7 @@
       }
     },
     {
-      "file": "visual-qa/final/dashboard/v1.3.0__2026-10-01_172429__page__mobile-375x812.png",
+      "file": "visual-qa/final/dashboard/v1.3.0__2026-10-01_174107__page__mobile-375x812.png",
       "surface": "dashboard",
       "state": "page",
       "viewport": {
@@ -616,7 +616,7 @@
       }
     },
     {
-      "file": "visual-qa/final/transactions/v1.3.0__2026-10-01_172429__page__mobile-375x812.png",
+      "file": "visual-qa/final/transactions/v1.3.0__2026-10-01_174107__page__mobile-375x812.png",
       "surface": "transactions",
       "state": "page",
       "viewport": {
@@ -630,7 +630,7 @@
       }
     },
     {
-      "file": "visual-qa/final/savings/v1.3.0__2026-10-01_172429__page__mobile-375x812.png",
+      "file": "visual-qa/final/savings/v1.3.0__2026-10-01_174107__page__mobile-375x812.png",
       "surface": "savings",
       "state": "page",
       "viewport": {
@@ -644,7 +644,7 @@
       }
     },
     {
-      "file": "visual-qa/final/cards/v1.3.0__2026-10-01_172429__page__mobile-375x812.png",
+      "file": "visual-qa/final/cards/v1.3.0__2026-10-01_174107__page__mobile-375x812.png",
       "surface": "cards",
       "state": "page",
       "viewport": {
@@ -658,7 +658,7 @@
       }
     },
     {
-      "file": "visual-qa/final/credit/v1.3.0__2026-10-01_172429__page__mobile-375x812.png",
+      "file": "visual-qa/final/credit/v1.3.0__2026-10-01_174107__page__mobile-375x812.png",
       "surface": "credit",
       "state": "page",
       "viewport": {
@@ -672,7 +672,7 @@
       }
     },
     {
-      "file": "visual-qa/final/loans/v1.3.0__2026-10-01_172429__page__mobile-375x812.png",
+      "file": "visual-qa/final/loans/v1.3.0__2026-10-01_174107__page__mobile-375x812.png",
       "surface": "loans",
       "state": "page",
       "viewport": {
@@ -686,7 +686,7 @@
       }
     },
     {
-      "file": "visual-qa/final/lending/v1.3.0__2026-10-01_172429__page__mobile-375x812.png",
+      "file": "visual-qa/final/lending/v1.3.0__2026-10-01_174107__page__mobile-375x812.png",
       "surface": "lending",
       "state": "page",
       "viewport": {
@@ -700,7 +700,7 @@
       }
     },
     {
-      "file": "visual-qa/final/recurring/v1.3.0__2026-10-01_172429__page__mobile-375x812.png",
+      "file": "visual-qa/final/recurring/v1.3.0__2026-10-01_174107__page__mobile-375x812.png",
       "surface": "recurring",
       "state": "page",
       "viewport": {
@@ -714,7 +714,7 @@
       }
     },
     {
-      "file": "visual-qa/final/planning/v1.3.0__2026-10-01_172429__page__mobile-375x812.png",
+      "file": "visual-qa/final/planning/v1.3.0__2026-10-01_174107__page__mobile-375x812.png",
       "surface": "planning",
       "state": "page",
       "viewport": {
@@ -728,7 +728,7 @@
       }
     },
     {
-      "file": "visual-qa/final/attention/v1.3.0__2026-10-01_172429__page__mobile-375x812.png",
+      "file": "visual-qa/final/attention/v1.3.0__2026-10-01_174107__page__mobile-375x812.png",
       "surface": "attention",
       "state": "page",
       "viewport": {
@@ -742,7 +742,7 @@
       }
     },
     {
-      "file": "visual-qa/final/reports/v1.3.0__2026-10-01_172429__page__mobile-375x812.png",
+      "file": "visual-qa/final/reports/v1.3.0__2026-10-01_174107__page__mobile-375x812.png",
       "surface": "reports",
       "state": "page",
       "viewport": {
@@ -756,7 +756,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_172429__page__mobile-375x812.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_174107__page__mobile-375x812.png",
       "surface": "settings",
       "state": "page",
       "viewport": {
@@ -770,7 +770,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_172429__tab-profile__mobile-375x812.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_174107__tab-profile__mobile-375x812.png",
       "surface": "settings",
       "state": "tab-profile",
       "viewport": {
@@ -784,7 +784,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_172429__tab-accounts__mobile-375x812.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_174107__tab-accounts__mobile-375x812.png",
       "surface": "settings",
       "state": "tab-accounts",
       "viewport": {
@@ -798,7 +798,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_172429__tab-categories__mobile-375x812.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_174107__tab-categories__mobile-375x812.png",
       "surface": "settings",
       "state": "tab-categories",
       "viewport": {
@@ -812,7 +812,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_172429__tab-icons__mobile-375x812.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_174107__tab-icons__mobile-375x812.png",
       "surface": "settings",
       "state": "tab-icons",
       "viewport": {
@@ -826,7 +826,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_172429__tab-rules__mobile-375x812.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_174107__tab-rules__mobile-375x812.png",
       "surface": "settings",
       "state": "tab-rules",
       "viewport": {
@@ -840,7 +840,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_172429__tab-data__mobile-375x812.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-01_174107__tab-data__mobile-375x812.png",
       "surface": "settings",
       "state": "tab-data",
       "viewport": {
@@ -854,7 +854,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-01_172429__login__mobile-375x812.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-01_174107__login__mobile-375x812.png",
       "surface": "auth",
       "state": "login",
       "viewport": {
@@ -868,7 +868,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-01_172429__mfa__mobile-375x812.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-01_174107__mfa__mobile-375x812.png",
       "surface": "auth",
       "state": "mfa",
       "viewport": {
@@ -882,7 +882,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-01_172429__mfa-enroll__mobile-375x812.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-01_174107__mfa-enroll__mobile-375x812.png",
       "surface": "auth",
       "state": "mfa-enroll",
       "viewport": {
