@@ -1046,3 +1046,18 @@ Accepted new sub-implementation:
 - add regression coverage for event dispatch and source wiring.
 
 This adds one material sub-implementation, increasing the overall denominator from 191 to 192. The existing 401/403 error-matrix item remains pending until this path is implemented and exact-head CI is green.
+
+
+### 8.26 Implementation batch M — resilience/runtime proof expansion in progress
+
+Independent review after the first ready-for-review gate exposed proof gaps and one performance-fixture integration regression. The accepted scope is unchanged; these changes implement existing pending verification cells rather than adding new plan items.
+
+Source implementation in this batch:
+- pending/failed finance writes now install a hard-reload `beforeunload` guard; automatic persistence still never retries a failed mutation and optimistic revision checks remain authoritative;
+- runtime QA now asserts conflict/save-error surfaces are assertive, avoid false success and expose deterministic latest-version recovery;
+- a real `useSession` QA probe exercises runtime AAL2→MFA downgrade and hard auth expiry, proving the stale authenticated shell is removed before MFA/login recovery;
+- client import now rejects unsupported future FinanceData schemas **before** product migration can normalize them, using a shared supported-schema boundary also consumed by server validation;
+- duplicate-label identity semantics now have focused regression coverage: account/provider labels may repeat safely because stable IDs own identity, normalized taxonomy aliases remain ambiguity-rejecting, and the production account-ID collision trigger separately rejects cross seed/custom ID collisions atomically;
+- the production-like performance Vite fixture was updated for the new lazy-resource failure probe after the first heavy Performance run exposed a stale source-transform boundary.
+
+Proof remains pending until this batch is integrated into PR #477 and exact-head CI/rendered/CodeQL plus the relevant heavy gates are rerun. No completion counter advances from source-only work.
