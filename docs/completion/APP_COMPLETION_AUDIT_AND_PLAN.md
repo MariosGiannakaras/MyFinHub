@@ -8,7 +8,7 @@ Release target: none — `main` remains release-only
 
 ## Current integration checkpoint — 2026-10-01
 
-**Implementations 7/24 completed · Sub-implementations 43/191 completed**
+**Implementations 7/24 completed · Sub-implementations 46/191 completed**
 
 This checkpoint supersedes older "#482 reconciliation pending" notes below for current execution state.
 
@@ -20,7 +20,7 @@ This checkpoint supersedes older "#482 reconciliation pending" notes below for c
 - FV-41/FV-42/FV-43 are completed on exact-head rendered CI. Their fixes were validation-harness/touch-target corrections and did not weaken product behavior.
 - FV-44 is completed on `9b25fb1…`: extreme Recurring mobile progressive disclosure, full expansion, collapsed inactive history and overflow safety all pass.
 - FV-45 exact-head rendered proof has passed: OCR persists raw `EUR`, while the owned currency select displays `EUR · Ευρώ`; stored semantics and visible presentation are validated separately. The expanded full-system audit below now governs closeout.
-- Current counters: **Implementations 7/24 completed · Sub-implementations 43/191 completed**. The denominator expanded on 2026-10-01 after the owner required exhaustive full-system verification, direct assistant-led manual review, routing/404 coverage, temporal/data-boundary coverage and operational recovery proof.
+- Current counters: **Implementations 7/24 completed · Sub-implementations 46/191 completed**. The denominator expanded on 2026-10-01 after the owner required exhaustive full-system verification, direct assistant-led manual review, routing/404 coverage, temporal/data-boundary coverage and operational recovery proof.
 - Repository-admin hardening remains tracked separately in #485 and does not change this batch denominator.
 - No Android changes and no `main` release/promotion are part of this checkpoint.
 
@@ -648,9 +648,9 @@ No `main` promotion/release is part of this work.
 
 The prior completion audit remains valuable evidence, but it does **not** by itself prove that every visual element, every UX state, every user action/sub-action, every API/backend path and every error path has been exercised end-to-end against a canonical integrated tree. The owner has therefore expanded the accepted completion scope to require a full-system verification pass before the application is treated as fully closed.
 
-**New audit workstream: Implementations 0/16 completed · Sub-implementations 15/162 completed.**
+**New audit workstream: Implementations 0/16 completed · Sub-implementations 18/162 completed.**
 
-**Overall completion scope: Implementations 7/24 completed · Sub-implementations 43/191 completed.**
+**Overall completion scope: Implementations 7/24 completed · Sub-implementations 46/191 completed.**
 
 The denominator increased because 16 new verification implementations / 160 non-trivial sub-implementations are now accepted. Existing implementation-completion state is retained provisionally, but the expanded verification matrix has a stricter proof rule: prior evidence may be reused only after the responsible ChatGPT agent personally inspects it and confirms that it proves the exact required contract. Re-running unchanged automation is unnecessary when existing artifacts are sufficient, but no matrix cell is finally closed merely because an earlier workflow marked it green.
 
@@ -729,9 +729,9 @@ The denominator increased because 16 new verification implementations / 160 non-
 - [ ] Verify lending receivables and repayments update net worth and outstanding balances correctly.
 - [ ] Verify split totals, recurring/scheduled completion semantics, budget/report calculations and time/period boundaries.
 - [ ] Verify optimistic revision conflicts, multi-tab/newer-revision behavior, sequential mutation ordering and fail-closed persistence queues.
-- [ ] Verify history/audit/undo-redo atomicity and bounded retention; failed writes must not create misleading success/history state.
+- [x] Verify history/audit/undo-redo atomicity and bounded retention; failed writes must not create misleading success/history state. Direct production function inspection confirms save/undo/redo lock the canonical state and history cursor, reject revision/generation conflicts before mutation, update ledger/state/history/audit inside one PostgreSQL function transaction, prune expired history, cap visible/history storage at 100 points, and keep failed function executions transactional.
 - [ ] Verify backup/import round-trip preserves supported finance state while excluding card-vault secrets and other prohibited sensitive material.
-- [ ] Run aggregate database integrity checks after test flows: FK/orphan checks, duplicate identifiers, account references, provider/storage references and history cursor/state consistency.
+- [x] Run aggregate database integrity checks after test flows: FK/orphan checks, duplicate identifiers, account references, provider/storage references and history cursor/state consistency. Direct production aggregate SQL reports 0 duplicate account/card/event/scheduled/recurring/budget identifiers, 0 orphan ledger/card/recurring references, 0 invalid provider bindings, 0 missing active provider Storage objects, and a history cursor whose finance revision/current point matches canonical state.
 
 ### 8.6 Backend, API, Supabase and Storage audit — 1/12
 
@@ -740,7 +740,7 @@ The denominator increased because 16 new verification implementations / 160 non-
 - [x] Verify cookie-auth and explicitly approved bearer-auth boundaries independently; malformed/rejected bearer auth must fail closed without cookie fallback. Direct source/test review confirms bearer auth is explicit opt-in, rejected bearer credentials never fall back to ambient cookies, cookie-only endpoints ignore Authorization, bearer flows never set browser cookies, and native finance/vault requests keep CORS closed.
 - [x] Verify owner + AAL2 + active-device authorization at API and PostgreSQL RLS/RPC layers with negative tests for anonymous, non-owner/AAL1 and revoked-device contexts. Direct production probes return unauthenticated 401s on protected finance/metadata/history APIs; source inspection confirms every sensitive handler requires session→owner→AAL2 and active-device enforcement is centralized in session finalization; direct production SQL proves an active owner+AAL2 session sees finance rows while AAL1, non-owner and unknown-session contexts see none; revoked-device behavior is covered by the exercised device-registry contract.
 - [x] Verify same-origin/CSRF policy, CORS behavior, request-size limits, content-type validation and malformed body/query handling on state-changing endpoints. Direct endpoint inventory plus exact-head regression coverage confirms cookie mutations require same-origin, approved bearer mutations do not add CORS, JSON/binary bodies have explicit byte ceilings and Content-Length validation, unsupported media types/malformed JSON are controlled 4xx responses, and duplicate/array query shapes fail closed.
-- [ ] Verify optimistic-revision preconditions, atomic finance write + history behavior, backups and import transactionality.
+- [x] Verify optimistic-revision preconditions, atomic finance write + history behavior, backups and import transactionality. Direct production function definitions confirm `FOR UPDATE` locking, revision/history-generation preconditions, automatic/pre-import backups, relational-ledger apply + app-state update + history cursor/point + audit insertion within single PL/pgSQL transactions, and rollback-on-exception semantics for failed saves/imports/undo-redo.
 - [x] Verify card-vault encryption/decryption boundary, ciphertext-only database storage, key absence from distributed clients and redaction of diagnostics/logs. Direct review confirms AES-256-GCM with owner/card/version AAD, 12-byte random IVs and authenticated tags; the live table contains only ciphertext/iv/auth_tag/key_version fields under owner+AAL2 RLS; backups do not reference the card-secret table; the packaged Desktop entrypoint deletes legacy CARD_VAULT_KEY material before loading the host and runtime defaults contain no vault key; generic 5xx logging records only requestId/code/status/error type.
 - [ ] Verify account metadata/provider APIs, provider creation/update, Storage upload/replace, asset registration/bindings and partial-upload recovery semantics.
 - [x] Verify Storage policies and object-path/MIME/size/signature/SVG safety rules, including replacement permissions and orphan-object/metadata handling. Direct source/live-policy review confirms owner+AAL2 INSERT/SELECT/UPDATE/DELETE permissions, provider-scoped path regexes, a 2 MiB byte ceiling, PNG/JPEG/WebP signatures, restricted SVG active-content patterns, strict asset/query shapes, bounded binary parsing and cleanup of an uploaded object when metadata registration fails; live integrity shows 0 missing Storage objects and 0 invalid bindings.
