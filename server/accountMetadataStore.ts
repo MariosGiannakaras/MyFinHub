@@ -1,6 +1,8 @@
 import { randomUUID } from 'node:crypto';
-import { ApiError } from './http.js';
+import { ApiError, copyBoundedBinaryValue } from './http.js';
 import { fetchUpstream } from './upstream.js';
+
+export const MAX_PROVIDER_ASSET_BYTES=2*1024*1024;
 
 type AccountMetadataRow={accountId:string;iban:string|null;revision:number;updatedAt:string};
 type FinancialProviderAssetRow={
@@ -272,8 +274,9 @@ export async function uploadFinancialProviderAsset(input:{
   mimeType:string;
   fileName:string;
   makePrimary:boolean;
-  content:Buffer;
+  content:unknown;
 },accessToken:string){
+  const content=copyBoundedBinaryValue(input.content,MAX_PROVIDER_ASSET_BYTES);
   const extension=PROVIDER_ASSET_EXTENSION[input.mimeType];
   if(!extension)throw new ApiError(415,'UNSUPPORTED_PROVIDER_ASSET_TYPE','Unsupported provider image type.');
   const suffix=randomUUID().replace(/-/g,'').slice(0,12);
@@ -285,7 +288,7 @@ export async function uploadFinancialProviderAsset(input:{
   const upload=await fetchUpstream(`${url}/storage/v1/object/${encodeURIComponent(PROVIDER_ASSET_BUCKET)}/${encodedPath}`,{
     method:'POST',
     headers:{apikey:apiKey,authorization,'content-type':input.mimeType,'cache-control':'31536000, immutable'},
-    body:Uint8Array.from(input.content),
+    body:Uint8Array.from(content),
   },'DATA');
   if(!upload.ok){
     const payload=await upload.json().catch(()=>null) as any;
@@ -296,20 +299,34 @@ export async function uploadFinancialProviderAsset(input:{
     throw new ApiError(502,'PROVIDER_ASSET_UPLOAD_FAILED','Δεν ήταν δυνατή η αποθήκευση της εικόνας.');
   }
 
-  const payload=await request('rpc/rheomiq_register_financial_provider_asset',{
-    method:'POST',
-    body:JSON.stringify({
-      p_provider_id:input.providerId,
-      p_asset_key:assetKey,
-      p_asset_role:input.role,
-      p_variant:input.variant,
-      p_file_name:input.fileName,
-      p_mime_type:input.mimeType,
-      p_storage_path:storagePath,
-      p_size_bytes:input.content.length,
-      p_make_primary:input.makePrimary,
-    }),
-  },accessToken);
+  let payload:unknown;
+  try{
+    payload=await request('rpc/rheomiq_register_financial_provider_asset',{
+      method:'POST',
+      body:JSON.stringify({
+        p_provider_id:input.providerId,
+        p_asset_key:assetKey,
+        p_asset_role:input.role,
+        p_variant:input.variant,
+        p_file_name:input.fileName,
+        p_mime_type:input.mimeType,
+        p_storage_path:storagePath,
+        p_size_bytes:content.byteLength,
+        p_make_primary:input.makePrimary,
+      }),
+    },accessToken);
+  }catch(error){
+    try{
+      const cleanup=await fetchUpstream(`${url}/storage/v1/object/${encodeURIComponent(PROVIDER_ASSET_BUCKET)}/${encodedPath}`,{
+        method:'DELETE',
+        headers:{apikey:apiKey,authorization},
+      },'DATA');
+      if(!cleanup.ok)console.error('[RheomIQ provider asset cleanup]',{status:cleanup.status});
+    }catch{
+      console.error('[RheomIQ provider asset cleanup]',{status:'request-failed'});
+    }
+    throw error;
+  }
   const row=Array.isArray(payload)?payload[0]:null;
   if(!row)throw new ApiError(500,'FINANCIAL_PROVIDER_ASSET_INVALID_RESPONSE','Provider image response is invalid.',false);
   const asset=mapFinancialProviderAssetRow(row);
