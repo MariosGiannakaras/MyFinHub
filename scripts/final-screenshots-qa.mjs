@@ -76,6 +76,7 @@ try{
     const url=new URL(baseUrl);url.searchParams.set('page',page);url.searchParams.set('visual','1');
     await c.send('Page.navigate',{url:url.href});
     await waitFor("function(text){return document.readyState==='complete'&&(document.querySelector('#main-workspace h1')?.textContent||'').includes(text)}",[heading],page);
+    if(page==='dashboard')await waitFor("function(){if(innerWidth<=680)return true;const selectors=['.summary-donut .recharts-surface','.approved-bar-wrap .recharts-surface','.approved-category-donut .recharts-surface'];return selectors.every(selector=>Boolean(document.querySelector(selector)))}",[],'Dashboard deferred charts');
     const visibleQaControl=await c.call("function(){const node=document.querySelector('[data-qa-crash]');if(!node)return false;const style=getComputedStyle(node),rect=node.getBoundingClientRect();return style.display!=='none'&&style.visibility!=='hidden'&&rect.width>0&&rect.height>0}");
     if(visibleQaControl)throw new Error(`QA-only crash control is visible in final capture for ${page}`);
     await sleep(260);
