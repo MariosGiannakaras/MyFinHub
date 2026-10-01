@@ -890,3 +890,28 @@ Source scope in this batch:
 - provider query parameters now reject ambiguous array/duplicate shapes instead of silently selecting the first value.
 
 These items remain **not completed** until narrow CI/CodeQL validation is green and the 404 is personally inspected in rendered runtime evidence. The full-system counters therefore remain unchanged at this checkpoint.
+
+
+### 8.19 Implementation batch B — source implementation in progress
+
+Batch A's single draft CI/CodeQL checkpoint produced useful early feedback without triggering the deferred expensive gates. Its two source-integration failures and two new CodeQL findings are addressed in this batch, together with additional material defects found by direct source/runtime review.
+
+Direct findings and source work in Batch B:
+- Batch A integration regression fixed: the extracted routing contract now preserves the period-page set and uses NodeNext-compatible type imports.
+- The two new CodeQL filesystem findings caused by request-time `sendFile()` calls are removed by loading the static 404 once at server startup and serving cached HTML; the normal root/index path remains owned by static middleware.
+- Request metadata is fail-closed for ambiguous repeated query/header shapes. Finance/history compatibility headers and route markers now use one strict scalar parser instead of selecting the first array element.
+- JSON and binary body readers share bounded Content-Length handling; malformed lengths and non-serializable direct JSON bodies map to stable 4xx errors instead of runtime TypeErrors.
+- Unexpected backend diagnostics now redact Bearer credentials, JWT-like values, Supabase keys and card-like long numbers before logging, while public 5xx responses remain stable and request-ID based.
+- Unknown local/desktop `/api/*` routes now return JSON 404 `API_NOT_FOUND`; known routes with unsupported methods continue to return 405.
+- Direct production inspection confirmed that an unknown web pathname currently returns a real HTTP 404 but the generic Vercel NOT_FOUND surface rather than MyFinHub branding. The new static `404.html` still requires deployed/preview proof before that item can close.
+- Direct production inspection also confirmed the live CSP does not yet allow the canonical Supabase Storage origin used by provider artwork. Web and desktop CSP source now allow only the exact canonical Storage origin for `img-src`; `connect-src` remains self-only.
+- A real recurring-date defect was found: chained end-of-month clamping could drift an original day-31 anchor after a shorter month, and the old iterative advance path could stop after 240 occurrences. Recurrence advancement now derives each candidate from the original anchor and supports long-lived schedules without that stale ceiling.
+- A shared calendar-valid ISO-date validator now rejects impossible dates such as `2026-02-31`; recurring, scheduled, lending, legacy transaction, statement, attention and server persistence boundaries use it where date-only semantics apply.
+- The canonical finance document validator was missing the newer mutable collections `scheduled`, `attentionDecisions`, `budgets` and `transactionRules`. These are now validated at the persistence/import boundary with size, shape, enum, amount, month/date and semantic constraints plus duplicate-ID checks.
+- Event creation now rejects impossible dates, non-finite/non-positive ordinary amounts, invalid lending return dates, and `expectedReturnDate` on non-lending events before local state mutation.
+- Import/save validator parity was checked: `writeStore()` and mutable writes both pass the canonical document/state validators, so the new invariants protect both paths rather than only one surface.
+- Vercel observability reports a historical `CARD_VAULT_UNAVAILABLE` error group on card-secrets/account-metadata routes. Available runtime-log retention is insufficient to establish current root cause, so this remains an open observability/reliability item rather than being declared fixed.
+
+Regression coverage added/expanded for the above contracts includes routing/404, binary and JSON bodies, request metadata and redaction, provider Storage CSP, strict calendar dates, recurring anchor preservation, modern mutable-state validation and event-creation boundaries.
+
+These items remain **not completed** until the next exact-head core CI/CodeQL wave is green and any runtime/visual proof required by the matrix has been personally inspected. Counters remain **Implementations 7/24 completed · Sub-implementations 28/189 completed** at this source checkpoint.
