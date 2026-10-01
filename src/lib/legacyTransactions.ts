@@ -1,4 +1,5 @@
 import type { FinanceData, LegacyTransaction } from '../types.js';
+import { isIsoCalendarDate } from './isoDate.js';
 
 function deletedIds(value: FinanceData['state']['deleted']) {
   if (Array.isArray(value)) return new Set(value);
@@ -20,10 +21,6 @@ export function effectiveLegacyTransaction(data: FinanceData, id: string): Legac
   return data.state.overrides?.[id] ?? seed;
 }
 
-function validIsoDate(value: string) {
-  return /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(new Date(`${value}T00:00:00.000Z`).getTime());
-}
-
 function requireKnownAccount(data: FinanceData, id: string | undefined, label: string) {
   if (!id || !data.seed.accounts.some((account) => account.id === id)) throw new Error(`${label} δεν είναι πλέον διαθέσιμος.`);
   return id;
@@ -32,7 +29,7 @@ function requireKnownAccount(data: FinanceData, id: string | undefined, label: s
 export function normalizeLegacyOverride(data: FinanceData, input: LegacyTransaction): LegacyTransaction {
   const original = seedLegacyTransaction(data, input.id);
   if (!original) throw new Error('Η ιστορική κίνηση δεν υπάρχει πλέον στο αρχικό εισαγόμενο αρχείο.');
-  if (!validIsoDate(input.date)) throw new Error('Διάλεξε έγκυρη ημερομηνία.');
+  if (!isIsoCalendarDate(input.date)) throw new Error('Διάλεξε έγκυρη ημερομηνία.');
   const amount = Number(input.amount);
   if (!Number.isFinite(amount) || (input.type === 'adjustment' ? amount === 0 : amount <= 0)) {
     throw new Error(input.type === 'adjustment' ? 'Η διόρθωση δεν μπορεί να έχει μηδενικό ποσό.' : 'Συμπλήρωσε ποσό μεγαλύτερο από μηδέν.');
