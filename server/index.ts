@@ -13,6 +13,7 @@ import { parseMutableWrite } from './stateValidation.js';
 import { isAuthRejection } from './upstream.js';
 import { validateCompleteFinanceData } from './financeDataValidation.js';
 import { MAX_FINANCE_DOCUMENT_BYTES } from '../src/lib/limits.js';
+import { isValidDateStamp } from '../src/lib/dateOnly.js';
 
 const app = express();
 app.disable('x-powered-by');
@@ -182,7 +183,7 @@ app.post('/api/history', (req, res) => void handleApi(res, async () => {
   assertMutationSessionOrigin(req, session);
   const action = req.body?.action;
   const updatedAt = req.body?.updatedAt;
-  if ((action !== 'undo' && action !== 'redo') || typeof updatedAt !== 'string' || !updatedAt || updatedAt.length > 64 || Object.keys(req.body || {}).some(key => key !== 'action' && key !== 'updatedAt')) {
+  if ((action !== 'undo' && action !== 'redo') || !isValidDateStamp(updatedAt) || Object.keys(req.body || {}).some(key => key !== 'action' && key !== 'updatedAt')) {
     throw new ApiError(400, 'INVALID_HISTORY', 'The change-history request is invalid.');
   }
   sendJson(res, 200, await moveHistory(action, updatedAt, requestHeader(req, 'if-match'), requestHeader(req, 'x-rheomiq-history-generation'), session.accessToken));
