@@ -15,6 +15,7 @@ import { ConfirmDialog } from './ConfirmDialog';
 import { FormError } from './FormError';
 import { IconButton } from './IconButton';
 import './TransactionRulesWorkspace.css';
+import { userErrorMessage } from '../lib/userMessage';
 
 const now=()=>new Date().toISOString();
 const ruleId=()=>`rule-${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
@@ -117,7 +118,7 @@ export function TransactionRulesWorkspace({
       onUpsertRule(next);
       clearEditor(false);
     }catch(error){
-      setRuleError(error instanceof Error?error.message:'Δεν μπορέσαμε να αποθηκεύσουμε τον κανόνα. Έλεγξε τις συνθήκες και την ενέργεια και δοκίμασε ξανά.');
+      setRuleError(userErrorMessage(error,'Δεν μπορέσαμε να αποθηκεύσουμε τον κανόνα. Έλεγξε τις συνθήκες και την ενέργεια και δοκίμασε ξανά.'));
     }
   };
   const moveRule=(index:number,direction:-1|1)=>{
