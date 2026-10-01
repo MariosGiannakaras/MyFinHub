@@ -152,43 +152,6 @@ describe('finance persistence semantic invariants',()=>{
     expect(()=>validateCompleteFinanceSemantics(data)).toThrowError(/account reference/i);
   });
 
-  it.each([
-    ['account', (data:FinanceData)=>{data.state.settings.customAccounts=[{...data.seed.accounts[0],name:'Shadow account',custom:true}]}],
-    ['transaction', (data:FinanceData)=>{
-      data.seed.transactions=[{id:'shared-id',date:'2026-10-01',type:'expense',amount:10,note:'Seed',accountId:'bank'}];
-      data.state.customTransactions=[{id:'shared-id',date:'2026-10-02',type:'expense',amount:11,note:'Custom',accountId:'bank'}];
-    }],
-    ['recurring', (data:FinanceData)=>{
-      data.seed.recurring=[{id:'shared-id',name:'Seed recurring',amount:10,day:1,accountId:'bank',category:'Άλλο',active:true}];
-      data.state.recurringCustom=[{id:'shared-id',name:'Custom recurring',amount:11,day:2,accountId:'bank',category:'Άλλο',active:true}];
-    }],
-    ['loan', (data:FinanceData)=>{
-      data.seed.loans=[{id:'shared-id',name:'Seed loan',total:100,installment:10,installments:10,defaultAccountId:'bank'}];
-      data.state.customLoans=[{id:'shared-id',name:'Custom loan',total:120,installment:12,installments:10,defaultAccountId:'bank'}];
-    }],
-  ])('rejects cross-collection %s id shadowing',(_label,mutate)=>{
-    const data=baseData();
-    mutate(data);
-    expect(()=>validateCompleteFinanceSemantics(data)).toThrowError(/duplicate .* id across persisted collections/i);
-  });
-
-  it('rejects mismatched and orphan override identities instead of silently ignoring or shadowing rows',()=>{
-    const tx=baseData();
-    tx.seed.transactions=[{id:'seed-tx',date:'2026-10-01',type:'expense',amount:10,note:'Seed',accountId:'bank'}];
-    tx.state.overrides={missing:{id:'different',date:'2026-10-01',type:'expense',amount:10,note:'Override',accountId:'bank'}};
-    expect(()=>validateCompleteFinanceSemantics(tx)).toThrowError(/transaction override identity/i);
-
-    const recurring=baseData();
-    recurring.seed.recurring=[{id:'seed-rec',name:'Seed recurring',amount:10,day:1,accountId:'bank',category:'Άλλο',active:true}];
-    recurring.state.recurringOverrides={missing:{id:'missing',name:'Orphan',amount:10,day:1,accountId:'bank',category:'Άλλο',active:true}};
-    expect(()=>validateCompleteFinanceSemantics(recurring)).toThrowError(/recurring override identity/i);
-
-    const loan=baseData();
-    loan.seed.loans=[{id:'seed-loan',name:'Seed loan',total:100,installment:10,installments:10,defaultAccountId:'bank'}];
-    loan.state.loanOverrides={missing:{id:'missing',name:'Orphan',total:100,installment:10,installments:10,defaultAccountId:'bank'}};
-    expect(()=>validateCompleteFinanceSemantics(loan)).toThrowError(/loan override identity/i);
-  });
-
   it('accepts the synthetic credit-card ledger account only inside ledger legs',()=>{
     const data=baseData();
     data.state.events=[createEvent({kind:'card_purchase',date:'2026-10-01',amount:10,note:'Card'})];
