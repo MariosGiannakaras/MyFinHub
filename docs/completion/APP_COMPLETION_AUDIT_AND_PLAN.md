@@ -1102,3 +1102,17 @@ Source/runtime scope:
 - normal-sized datasets remain visually unchanged because the disclosure controls appear only beyond the initial limits.
 
 This remains pending integrated exact-head rendered/performance validation. It is part of the existing large-data sub-implementation and does not change the denominator.
+
+
+### 8.31 Implementation batch Q — complete dual-theme final visual matrix in progress
+
+The expanded visual audit explicitly requires every primary route at desktop, tablet and narrow-phone widths in both light and dark themes. The prior final screenshot harness captured the complete route/Settings/auth/404 surface set at all three viewports, but only one resolved theme per run.
+
+Source/runtime scope:
+- final screenshot capture now iterates explicit `light` and `dark` themes rather than relying on ambient/system state;
+- every primary route, every tracked Settings tab, login/MFA/MFA-enrollment and the MyFinHub 404 surface are captured at 1440×1000, 834×1112 and 375×812 in both themes;
+- screenshot filenames and manifest rows carry the resolved theme so human review cannot confuse light/dark evidence;
+- theme resolution is asserted before each capture set;
+- the deterministic final matrix expands from 66 to 132 screenshots.
+
+This implements the existing exhaustive-visual sub-implementation and does not change the denominator. Completion requires execution on the final candidate head plus direct assistant inspection and disposition of the 132-image matrix.
