@@ -1,10 +1,11 @@
 import type { FinanceData } from '../src/types.js';
+import { isValidDateOnly } from '../src/lib/dateOnly.js';
 import { ApiError } from './http.js';
 
 function invalid():never{throw new ApiError(400,'INVALID_DATA','The finance data is invalid.');}
 function text(value:unknown,max:number){return typeof value==='string'&&value.length>0&&value.length<=max;}
 function billingDay(value:unknown){return Number.isInteger(value)&&Number(value)>=1&&Number(value)<=31;}
-function isoDate(value:unknown){return typeof value==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(value);}
+function isoDate(value:unknown){return isValidDateOnly(value);}
 
 export function validateCardStateExtensions(state:FinanceData['state']){
   for(const card of state.cards??[]){
