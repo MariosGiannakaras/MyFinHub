@@ -56,7 +56,7 @@ jobs:
       - name: Validate application-owned first-run contract
         shell: pwsh
         run: |
-          npm run desktop:check
+          npm run desktop:check:source
           npx vitest run tests/desktop-first-run-source.test.ts tests/desktop-startup-diagnostics.test.ts tests/desktop-card-vault-proxy.test.ts
       - name: Verify release entrypoint and no legacy provisioning contract
         shell: pwsh

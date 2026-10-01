@@ -92,9 +92,12 @@ jobs:
           CARD_VAULT_KEY: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
           CARD_VAULT_KEY_VERSION: "1"
         run: powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File desktop\install-windows.ps1 -ValidateOnly
+      - name: Build production frontend once
+        shell: pwsh
+        run: npm run build
       - name: Build unpacked Windows desktop app
         shell: pwsh
-        run: npm run desktop:pack
+        run: npm run desktop:pack:from-dist
       - name: Smoke packaged executable and hidden local backend
         shell: pwsh
         env:
@@ -117,7 +120,7 @@ jobs:
           }
       - name: Build interactive NSIS Setup
         shell: pwsh
-        run: npm run desktop:dist
+        run: npm run desktop:dist:from-dist
       - name: Install, launch and uninstall NSIS package
         shell: pwsh
         env:

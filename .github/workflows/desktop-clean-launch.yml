@@ -63,7 +63,7 @@ jobs:
           npm ci --prefix desktop
       - name: Validate desktop source
         shell: pwsh
-        run: npm run desktop:check
+        run: npm run desktop:check:source
       - name: Isolate CI from production Supabase config
         shell: pwsh
         run: |

@@ -10,6 +10,7 @@ const windows=read('.github/workflows/desktop-windows.yml');
 const firstRun=read('.github/workflows/desktop-first-run.yml');
 const cleanLaunch=read('.github/workflows/desktop-clean-launch.yml');
 const production=read('.github/workflows/production-smoke.yml');
+const desktopPackage=JSON.parse(read('desktop/package.json')) as {scripts:Record<string,string>};
 const agents=read('AGENTS.md');
 const projectRules=read('PROJECT_RULES.md');
 
@@ -35,13 +36,23 @@ describe('CI workflow optimization contracts',()=>{
     expect(cross).not.toContain('paths-ignore:');
   });
 
-  it('keeps Windows lifecycle gates review-ready without repeating the root check suite',()=>{
+  it('keeps Windows lifecycle gates review-ready, owns dependency audit once, and avoids duplicate root builds',()=>{
     for(const workflow of [windows,firstRun,cleanLaunch]){
       expect(workflow).toContain('types: [opened, synchronize, reopened, ready_for_review]');
       expect(workflow).toContain("if: github.event_name != 'pull_request' || github.event.pull_request.draft == false");
       expect(workflow).not.toMatch(/^\s*npm run check\s*$/m);
-      expect(workflow).toContain('npm run desktop:check');
     }
+    expect(windows).toMatch(/^\s*npm run desktop:check\s*$/m);
+    expect(firstRun).toMatch(/^\s*npm run desktop:check:source\s*$/m);
+    expect(cleanLaunch).toContain('run: npm run desktop:check:source');
+    expect(firstRun).not.toMatch(/^\s*npm run desktop:check\s*$/m);
+    expect(cleanLaunch).not.toMatch(/^\s*run: npm run desktop:check\s*$/m);
+    expect(desktopPackage.scripts.check).toBe('npm run audit && npm run check:source');
+    expect(windows).toContain('run: npm run build');
+    expect(windows).toContain('run: npm run desktop:pack:from-dist');
+    expect(windows).toContain('run: npm run desktop:dist:from-dist');
+    expect(windows).not.toMatch(/^\s*run: npm run desktop:pack\s*$/m);
+    expect(windows).not.toMatch(/^\s*run: npm run desktop:dist\s*$/m);
   });
 
   it('targets the canonical production origin and preserves deployment-status gating',()=>{
