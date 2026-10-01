@@ -14,6 +14,7 @@ import { normalizeTransactionRule, transactionRuleMatchingEvents } from '../lib/
 import { accountDisplayName } from '../lib/ui';
 import { money } from '../lib/format';
 import type { FinanceData, MonthlyBudget, TransactionRule, TransactionRuleScope } from '../types';
+import { userErrorMessage } from '../lib/userMessage';
 
 const now=()=>new Date().toISOString();
 const ruleId=()=>`rule-${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
@@ -64,7 +65,7 @@ export function BudgetRuleSettings({data,asOf,budgetMonth,onUpsertBudget,onDelet
       const existing=(data.state.budgets??[]).find(item=>item.id===id);const timestamp=now();
       const next=normalizeBudget({id,month,scope:budgetScope,category:budgetScope==='category'?budgetCategory:undefined,amount:Number(budgetAmount.replace(',','.')),alertThreshold:Number(budgetAlert.replace(',','.'))/100,createdAt:existing?.createdAt??timestamp,updatedAt:timestamp});
       onUpsertBudget(next);setBudgetAmount('');setBudgetError('');
-    }catch(error){setBudgetError(error instanceof Error?error.message:'Δεν μπορέσαμε να αποθηκεύσουμε τον προϋπολογισμό. Έλεγξε τα στοιχεία και δοκίμασε ξανά.')}
+    }catch(error){setBudgetError(userErrorMessage(error,'Δεν μπορέσαμε να αποθηκεύσουμε τον προϋπολογισμό. Έλεγξε τα στοιχεία και δοκίμασε ξανά.'))}
   };
 
   const resetRule=()=>{setEditingRuleId(null);setRuleName('');setRuleDescription('');setRuleMerchant('');setRuleAccount('');setRuleMode('contains');setRuleCategory(expenseFallback);setRuleSubcategory('');setRuleDefaultNote('');setRuleScope('manual');setRuleError('')};
