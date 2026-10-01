@@ -1,4 +1,6 @@
 import type { CreditStatementRecord, CreditStatementStatus, FinanceData, FinanceEvent, PaymentCard, StatementBoundaryRule } from '../types.js';
+import { dateOnlyToUtcDate, daysInCalendarMonth, parseDateOnly } from './dateOnly.js';
+import { centsToMoney, moneyToCents } from './money.js';
 type CreditStatementCycle={
   id:string;
   cardId:string;
@@ -17,23 +19,22 @@ type CreditStatementView=CreditStatementRecord&{
   status:CreditStatementStatus;
 };
 
-function parseDate(date:string){
-  const match=/^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
-  if(!match)throw new Error('Invalid statement date.');
-  return {year:Number(match[1]),month:Number(match[2]),day:Number(match[3])};
+function statementDate(date:string){
+  const parsed=parseDateOnly(date);
+  if(!parsed)throw new Error('Invalid statement date.');
+  return parsed;
 }
 
-function isoDate(year:number,month:number,day:number){return `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`}
-function monthShift(year:number,month:number,delta:number){const date=new Date(Date.UTC(year,month-1+delta,1));return {year:date.getUTCFullYear(),month:date.getUTCMonth()+1}}
-function lastDay(year:number,month:number){return new Date(Date.UTC(year,month,0)).getUTCDate()}
+function isoDate(year:number,month:number,day:number){return `${String(year).padStart(4,'0')}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`}
+function monthShift(year:number,month:number,delta:number){const absolute=year*12+(month-1)+delta;const nextYear=Math.floor(absolute/12);const nextMonth=((absolute%12)+12)%12+1;if(nextYear<1||nextYear>9999)throw new Error('Invalid statement month.');return {year:nextYear,month:nextMonth}}
 function normalizedBillingDay(day:number){const value=Math.floor(Number(day));if(!Number.isFinite(value)||value<1||value>31)throw new Error('Billing day must be between 1 and 31.');return value}
-function dateAtBillingDay(year:number,month:number,billingDay:number){return isoDate(year,month,Math.min(normalizedBillingDay(billingDay),lastDay(year,month)))}
-function roundMoney(value:number){return Math.round((value+Number.EPSILON)*100)/100}
+function dateAtBillingDay(year:number,month:number,billingDay:number){return isoDate(year,month,Math.min(normalizedBillingDay(billingDay),daysInCalendarMonth(year,month)))}
+function roundMoney(value:number){const cents=moneyToCents(value);if(!Number.isSafeInteger(cents))throw new Error('Statement amount is outside the supported range.');return centsToMoney(cents)}
 
 function creditStatementId(cardId:string,closeDate:string){return `${cardId}:${closeDate}`}
 
 export function statementCloseDateForPurchase(date:string,closingDay:number,boundary:StatementBoundaryRule){
-  const parsed=parseDate(date);
+  const parsed=statementDate(date);
   const closeThisMonth=dateAtBillingDay(parsed.year,parsed.month,closingDay);
   const belongsThisMonth=boundary==='include-closing-day'?date<=closeThisMonth:date<closeThisMonth;
   if(belongsThisMonth)return closeThisMonth;
@@ -42,16 +43,18 @@ export function statementCloseDateForPurchase(date:string,closingDay:number,boun
 }
 
 export function statementOpenDateForClose(closeDate:string,closingDay:number,boundary:StatementBoundaryRule='include-closing-day'){
-  const parsed=parseDate(closeDate);
+  const parsed=statementDate(closeDate);
   const previous=monthShift(parsed.year,parsed.month,-1);
-  const previousClose=parseDate(dateAtBillingDay(previous.year,previous.month,closingDay));
+  const previousClose=statementDate(dateAtBillingDay(previous.year,previous.month,closingDay));
   const offsetDays=boundary==='next-cycle'?0:1;
-  const openDate=new Date(Date.UTC(previousClose.year,previousClose.month-1,previousClose.day+offsetDays));
-  return isoDate(openDate.getUTCFullYear(),openDate.getUTCMonth()+1,openDate.getUTCDate());
+  const previousCloseDate=dateOnlyToUtcDate(isoDate(previousClose.year,previousClose.month,previousClose.day));
+  if(!previousCloseDate)throw new Error('Invalid statement date.');
+  previousCloseDate.setUTCDate(previousCloseDate.getUTCDate()+offsetDays);
+  return isoDate(previousCloseDate.getUTCFullYear(),previousCloseDate.getUTCMonth()+1,previousCloseDate.getUTCDate());
 }
 
 export function statementDueDateForClose(closeDate:string,dueDay:number){
-  const parsed=parseDate(closeDate);
+  const parsed=statementDate(closeDate);
   const sameMonth=dateAtBillingDay(parsed.year,parsed.month,dueDay);
   if(sameMonth>closeDate)return sameMonth;
   const next=monthShift(parsed.year,parsed.month,1);
@@ -61,7 +64,7 @@ export function statementDueDateForClose(closeDate:string,dueDay:number){
 export function groupCardPurchasesByStatement(events:FinanceEvent[],cardId:string,closingDay:number,boundary:StatementBoundaryRule):CreditStatementCycle[]{
   const groups=new Map<string,CreditStatementCycle>();
   for(const event of events){
-    if(event.kind!=='card_purchase'||event.cardId!==cardId||!/^\d{4}-\d{2}-\d{2}$/.test(event.date)||!Number.isFinite(event.amount)||event.amount<=0)continue;
+    if(event.kind!=='card_purchase'||event.cardId!==cardId||!parseDateOnly(event.date)||!Number.isSafeInteger(moneyToCents(event.amount))||event.amount<=0)continue;
     const closeDate=statementCloseDateForPurchase(event.date,closingDay,boundary);
     const id=creditStatementId(cardId,closeDate);
     const group=groups.get(id)??{id,cardId,openDate:statementOpenDateForClose(closeDate,closingDay,boundary),closeDate,purchaseIds:[],purchaseTotal:0};
