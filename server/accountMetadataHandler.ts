@@ -1,5 +1,5 @@
 import { accessTokenAal, assertMutationSessionOrigin, clearSessionCookiesIfCookie, requireSession } from './auth.js';
-import { ApiError, copyBoundedBinaryValue, handleApi, methodNotAllowed, readBinaryBody, readJsonBody, requestHeader, sendJson } from './http.js';
+import { ApiError, copyBoundedBinaryValue, handleApi, methodNotAllowed, readBinaryBody, readJsonBody, requestHeader, sendJson, strictQueryValue } from './http.js';
 import { isOwner } from './storage.js';
 import { MAX_PROVIDER_ASSET_BYTES, readAccountMetadata, readFinancialProviders, setFinancialProviderAssetBinding, updateFinancialProvider, uploadFinancialProviderAsset, writeAccountMetadata, writeFinancialProvider } from './accountMetadataStore.js';
 import { assertValidIban } from '../src/lib/iban.js';
@@ -14,13 +14,7 @@ function parseAccountId(value:unknown){
   return accountId;
 }
 
-function queryValue(req:any,key:string){
-  const query=req&&typeof req==='object'?(req as {query?:unknown}).query:undefined;
-  if(!query||typeof query!=='object'||Array.isArray(query))return '';
-  const value=(query as Record<string,unknown>)[key];
-  return typeof value==='string'?value.trim():'';
-}
-function queryResource(req:any){return queryValue(req,'resource')}
+function queryResource(req:any){return strictQueryValue(req,'resource')}
 
 export function parseFinancialProviderWrite(value:unknown){
   if(!value||typeof value!=='object'||Array.isArray(value))throw new ApiError(400,'INVALID_FINANCIAL_PROVIDER','Μη έγκυρα στοιχεία τράπεζας/παρόχου.');
@@ -41,11 +35,11 @@ export function parseFinancialProviderWrite(value:unknown){
 }
 
 export function parseProviderAssetUpload(req:any){
-  const providerId=queryValue(req,'providerId');
-  const role=queryValue(req,'role');
-  const variant=queryValue(req,'variant');
-  const makePrimary=queryValue(req,'primary')==='1';
-  const fileName=queryValue(req,'fileName');
+  const providerId=strictQueryValue(req,'providerId');
+  const role=strictQueryValue(req,'role');
+  const variant=strictQueryValue(req,'variant');
+  const makePrimary=strictQueryValue(req,'primary')==='1';
+  const fileName=strictQueryValue(req,'fileName');
   const mimeType=requestHeader(req,'content-type').split(';',1)[0].trim().toLowerCase();
   if(!/^[a-z][a-z0-9-]{0,63}$/.test(providerId)||!['logo','wordmark','card-mark'].includes(role)||
     !/^[a-z][a-z0-9-]{0,63}$/.test(variant)||!PROVIDER_ASSET_MIME_TYPES.has(mimeType)||

@@ -266,7 +266,7 @@ describe('completion UX contracts',()=>{
     expect(harness).toContain('Browser did not expose CDP port');
     expect(harness).toContain("stdio:['ignore','pipe','pipe']");
     expect(harness).toContain('await stopBrowser(browserSession.child)');
-    expect(harness).toContain('if(screenshots.length!==63)');
+    expect(harness).toContain('if(screenshots.length!==66)');
   });
 
 

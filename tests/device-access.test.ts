@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { accessTokenSessionId, ensureDeviceSessionAccess } from '../server/deviceSessionRegistry.js';
+import { parseDeviceSessionAction } from '../server/deviceSessionsHandler.js';
 import { ApiError } from '../server/http.js';
 
 const read=(path:string)=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
@@ -13,6 +14,19 @@ afterEach(()=>{
 });
 
 describe('connected device access',()=>{
+  it('accepts only exact device revoke payloads with canonical session ids',()=>{
+    const id='123e4567-e89b-42d3-a456-426614174000';
+    expect(parseDeviceSessionAction({action:'revoke',sessionId:id})).toEqual({action:'revoke',sessionId:id});
+    expect(parseDeviceSessionAction({action:'revoke-others'})).toEqual({action:'revoke-others'});
+    for(const value of [
+      {action:'revoke',sessionId:'not-a-uuid'},
+      {action:'revoke',sessionId:id,extra:true},
+      {action:'revoke-others',sessionId:id},
+      {action:'unknown'},
+      [],
+    ])expect(()=>parseDeviceSessionAction(value)).toThrow(ApiError);
+  });
+
   it('uses the canonical Supabase session_id claim as the device-session identity',()=>{
     const id='123e4567-e89b-42d3-a456-426614174000';
     expect(accessTokenSessionId(token({session_id:id,aal:'aal2'}))).toBe(id);
@@ -97,8 +111,8 @@ describe('connected device access',()=>{
     expect(handler).toContain('isOwner(session.accessToken)');
     expect(handler).toContain("accessTokenAal(session.accessToken) !== 'aal2'");
     expect(handler).toContain('assertMutationSessionOrigin(req, session)');
-    expect(handler).toContain("body?.action === 'revoke'");
-    expect(handler).toContain("body?.action === 'revoke-others'");
+    expect(handler).toContain('parseDeviceSessionAction');
+    expect(handler).toContain("action.action==='revoke'");
     expect(route).toContain('handleDeviceSessionsRequest');
     expect(route).toContain("marker === 'devices'");
     expect(config.rewrites).toContainEqual({source:'/api/auth/devices',destination:'/api/auth/session?__myfinhub_route=devices'});
