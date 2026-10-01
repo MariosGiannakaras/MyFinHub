@@ -98,25 +98,37 @@ export async function readJsonBody<T = unknown>(req: any, maxBytes = 5 * 1024 * 
 
   boundedContentLength(req,maxBytes);
 
-  if (req.body !== undefined) {
-    const raw = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
-    if (Buffer.byteLength(raw, 'utf8') > maxBytes) throw new ApiError(413, 'PAYLOAD_TOO_LARGE', 'Request is too large.');
-    try { return (typeof req.body === 'string' ? JSON.parse(req.body || '{}') : req.body) as T; }
-    catch { throw new ApiError(400, 'INVALID_JSON', 'Invalid JSON payload.'); }
+  const body=req&&typeof req==='object'?(req as {body?:unknown}).body:undefined;
+  if(body!==undefined){
+    let raw:string;
+    try{
+      if(typeof body==='string')raw=body;
+      else{
+        const encoded=JSON.stringify(body);
+        if(typeof encoded!=='string')throw new Error('Body is not JSON serializable.');
+        raw=encoded;
+      }
+    }catch{
+      throw new ApiError(400,'INVALID_JSON','Invalid JSON payload.');
+    }
+    if(Buffer.byteLength(raw,'utf8')>maxBytes)throw new ApiError(413,'PAYLOAD_TOO_LARGE','Request is too large.');
+    if(typeof body!=='string')return body as T;
+    try{return (raw?JSON.parse(raw):{}) as T}
+    catch{throw new ApiError(400,'INVALID_JSON','Invalid JSON payload.')}
   }
 
-  const chunks: Buffer[] = [];
-  let total = 0;
-  for await (const chunk of req) {
-    const buffer = Buffer.from(chunk);
-    total += buffer.length;
-    if (total > maxBytes) throw new ApiError(413, 'PAYLOAD_TOO_LARGE', 'Request is too large.');
+  const chunks:Buffer[]=[];
+  let total=0;
+  for await(const chunk of req as AsyncIterable<unknown>){
+    const buffer=copyBoundedBinaryValue(chunk,maxBytes);
+    total+=buffer.byteLength;
+    if(total>maxBytes)throw new ApiError(413,'PAYLOAD_TOO_LARGE','Request is too large.');
     chunks.push(buffer);
   }
 
-  const raw = Buffer.concat(chunks).toString('utf8');
-  try { return (raw ? JSON.parse(raw) : {}) as T; }
-  catch { throw new ApiError(400, 'INVALID_JSON', 'Invalid JSON payload.'); }
+  const raw=Buffer.concat(chunks,total).toString('utf8');
+  try{return (raw?JSON.parse(raw):{}) as T}
+  catch{throw new ApiError(400,'INVALID_JSON','Invalid JSON payload.')}
 }
 
 export function copyBoundedBinaryValue(value:unknown,maxBytes:number):Buffer{
