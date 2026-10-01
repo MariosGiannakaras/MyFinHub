@@ -384,4 +384,52 @@ describe('finance document validation', () => {
     expect(()=>validateCompleteFinanceData(full)).toThrowError();
   });
 
+
+  it('accepts compatible date-only and RFC3339 persistence audit stamps',()=>{
+    const full=validState();
+    full.updatedAt='2026-10-01T22:15:59.123456789+03:00';
+    full.state.budgets=[{
+      id:'budget:2026-10:overall',month:'2026-10',scope:'overall',amount:100,
+      createdAt:'2026-10-01',updatedAt:'2026-10-01',
+    }];
+    full.state.events=[{
+      id:'event-1',date:'2026-10-01',kind:'expense',amount:10,note:'Valid',
+      accountId:'bank',legs:[{accountId:'bank',amount:-10}],
+      createdAt:'2026-10-01T10:00:00Z',updatedAt:'2026-10-01T10:05:00+03:00',
+    }];
+    expect(()=>validateFinanceData(full)).not.toThrow();
+  });
+
+  it.each([
+    ['document updatedAt',(full:any)=>{full.updatedAt='2026-02-31T10:00:00Z'}],
+    ['event createdAt',(full:any)=>{full.state.events=[{id:'event-bad-stamp',date:'2026-10-01',kind:'expense',amount:10,note:'Bad',accountId:'bank',legs:[{accountId:'bank',amount:-10}],createdAt:'not-a-date',updatedAt:full.updatedAt}]}],
+    ['scheduled completedAt',(full:any)=>{full.state.scheduled=[{id:'scheduled-bad-stamp',dueDate:'2026-10-01',kind:'expense',amount:10,note:'Bad',accountId:'bank',status:'completed',completedAt:'2026-13-01',createdAt:full.updatedAt,updatedAt:full.updatedAt}]}],
+    ['review decidedAt',(full:any)=>{full.state.reviewDecisions={bad:{status:'kept',decidedAt:'2026-10-01T25:00:00Z'}}}],
+    ['migration migratedAt',(full:any)=>{full.state.migration={fromSchema:2,migratedAt:'yesterday'}}],
+  ])('rejects invalid persistence timestamp in %s',(_label,mutate)=>{
+    const full=validState();
+    mutate(full);
+    expect(()=>validateFinanceData(full)).toThrowError(/invalid/i);
+  });
+
+  it('rejects invalid card lifecycle and statement audit stamps at the complete boundary',()=>{
+    const archived=validState();
+    archived.state.cards=[{
+      id:'card-archived',bankId:'bank',nickname:'Archived',kind:'credit',network:'visa',active:false,
+      archivedAt:'2026-02-30T00:00:00Z',createdAt:archived.updatedAt,updatedAt:archived.updatedAt,
+    }];
+    expect(()=>validateCompleteFinanceData(archived)).toThrowError();
+
+    const statement=validState();
+    statement.state.cards=[{
+      id:'card-1',bankId:'bank',nickname:'Credit',kind:'credit',network:'visa',active:true,
+      createdAt:statement.updatedAt,updatedAt:statement.updatedAt,
+    }];
+    statement.state.creditStatements=[{
+      id:'statement-1',cardId:'card-1',openDate:'2026-09-01',closeDate:'2026-09-30',dueDate:'2026-10-10',
+      boundaryRule:'include-closing-day',createdAt:'bad-stamp',updatedAt:statement.updatedAt,
+    }];
+    expect(()=>validateCompleteFinanceData(statement)).toThrowError();
+  });
+
 });
