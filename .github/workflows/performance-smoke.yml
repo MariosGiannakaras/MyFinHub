@@ -71,6 +71,7 @@ jobs:
           fi
           node scripts/performance-audit.mjs
           node scripts/loading-shift-audit.mjs
+          node scripts/scale-interaction-audit.mjs
       - name: Upload Lighthouse evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
