@@ -29,8 +29,9 @@ import { Button } from './Button';
 import { CategoryIconGlyph } from './CategoryIconGlyph';
 import { CategoryIconPicker } from './CategoryIconPicker';
 import { ConfirmDialog } from './ConfirmDialog';
+import { userErrorMessage } from '../lib/userMessage';
 
-const errorMessage=(reason:unknown)=>reason instanceof Error?reason.message:'Η αλλαγή κατηγορίας δεν μπορεί να ολοκληρωθεί.';
+const errorMessage=(reason:unknown)=>userErrorMessage(reason,'Η αλλαγή κατηγορίας δεν μπορεί να ολοκληρωθεί.');
 
 type EditingState={type:'category'|'subcategory';id:string;value:string}|null;
 type MovingState={id:string;targetCategoryId:string}|null;
