@@ -130,3 +130,5 @@ Subsequent changes are product fixes against the completed v1.3.0 baseline. Rout
 - Batch P large-data containment is source-implemented: Planning/Recurring/budget/rule collections now use progressive disclosure, and the synthetic large fixture covers 1,500 events plus 120 recurring, 120 scheduled, 80 budgets, 80 rules and 100 history points. Rendered/performance proof is pending.
 
 - Exact-head `81bff44…` closes four expanded-audit sub-items: Unicode/long-text rendering, stable-ID/normalization collision semantics, supported-schema migration/future-schema rejection, and render/lazy/OCR failure recovery. CI, CodeQL, Cross-engine, Performance and all Windows gates are green on that checkpoint.
+
+- The final visual harness now targets a 132-capture dual-theme matrix: every primary route, tracked Settings tab, auth state and 404 surface at desktop/tablet/mobile in both light and dark. Execution + direct assistant review remain pending.
