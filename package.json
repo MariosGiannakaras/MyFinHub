@@ -32,7 +32,11 @@
     "hygiene:exports": "node scripts/unused-exports.mjs",
     "hygiene:format": "node scripts/format-hygiene.mjs",
     "hygiene": "npm run hygiene:cycles && npm run hygiene:unused && npm run hygiene:exports && npm run hygiene:format && node scripts/final-screenshots-qa.mjs --validate-only",
-    "qa:final-screenshots": "node scripts/final-screenshots-qa.mjs"
+    "qa:final-screenshots": "node scripts/final-screenshots-qa.mjs",
+    "desktop:audit": "npm --prefix desktop run audit",
+    "desktop:check:source": "npm --prefix desktop run check:source",
+    "desktop:pack:from-dist": "npm --prefix desktop run pack",
+    "desktop:dist:from-dist": "npm --prefix desktop run dist"
   },
   "dependencies": {
     "@tesseract.js-data/ell": "1.0.0",

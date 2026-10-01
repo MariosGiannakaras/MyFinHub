@@ -36,7 +36,10 @@ describe('release-readiness source contracts',()=>{
     expect(pkg.scripts.build).toContain('node scripts/bundle-budget.mjs');
     expect(budget).toContain("label:'main application JS'");
     expect(budget).toContain("label:'chart JS'");
-    expect(budget).toContain("label:'application CSS'");
+    expect(budget).toContain("label:'eager application CSS'");
+    expect(budget).toContain("label:'total application CSS'");
+    expect(budget).toContain("raw:256*1024,gzip:46*1024");
+    expect(budget).toContain("raw:500*1024,gzip:100*1024");
   });
 
   it('reruns Windows package validation when root production-build inputs change',()=>{
@@ -44,8 +47,9 @@ describe('release-readiness source contracts',()=>{
     expect(pkg.scripts.build).toContain('tsc -b');
     expect(pkg.scripts.build).toContain('vite build');
     expect(pkg.scripts.build).toContain('scripts/bundle-budget.mjs');
-    expect(desktopWorkflow).toContain('run: npm run desktop:pack');
-    expect(desktopWorkflow).toContain('run: npm run desktop:dist');
+    expect(desktopWorkflow).toContain('run: npm run build');
+    expect(desktopWorkflow).toContain('run: npm run desktop:pack:from-dist');
+    expect(desktopWorkflow).toContain('run: npm run desktop:dist:from-dist');
     expect(cleanLaunchWorkflow).toContain('run: npm run desktop:dist');
     const required=['vite.config.ts','tsconfig.json','tsconfig.app.json','tsconfig.node.json','scripts/sync-ocr-assets.mjs','scripts/bundle-budget.mjs'];
     for(const path of required){
@@ -130,6 +134,8 @@ describe('release-readiness source contracts',()=>{
     expect(performanceAudit).toContain('total-blocking-time');
     expect(performanceAudit).toContain("--only-categories=performance,accessibility,best-practices");
     expect(performanceAudit).toContain('state=extreme');
+    expect(performanceAudit).toContain("MYFINHUB_LIGHTHOUSE_RUNS||'3'");
+    expect(performanceAudit).toContain('median(samples.map');
     expect(loadingShiftAudit).toContain("PerformanceObserver");
     expect(loadingShiftAudit).toContain("type:'layout-shift'");
     expect(loadingShiftAudit).toContain("'.qa-loading-route'");

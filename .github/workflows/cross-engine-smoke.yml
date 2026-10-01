@@ -3,8 +3,22 @@ name: Cross-engine smoke
 on:
   pull_request:
     branches: [main, develop]
-    paths-ignore:
-      - 'visual-qa/**'
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'assets/branding/myfinhub/**'
+      - 'index.html'
+      - 'qa.html'
+      - 'payment-flow-qa.html'
+      - 'vite.config.ts'
+      - 'tsconfig.json'
+      - 'tsconfig.app.json'
+      - 'tsconfig.node.json'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'scripts/webkit-smoke.mjs'
+      - '.github/workflows/cross-engine-smoke.yml'
   workflow_dispatch:
 
 concurrency:
@@ -17,6 +31,7 @@ permissions:
 jobs:
   webkit-smoke:
     name: WebKit compatibility smoke
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

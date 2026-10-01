@@ -22,6 +22,20 @@ Final exact-head automated evidence for PR #182:
 - Windows Desktop #410: success.
 - Primary Chromium remains mandatory.
 
+## Validation cadence
+
+As of #483, high-churn implementation should stay on a pushed branch without an open PR until a coherent batch is ready for integrated review, unless collaboration or repository protection requires an earlier draft PR.
+
+Draft pull requests keep the core CI/source/security loop and CodeQL. The expensive rendered frontend QA step, WebKit cross-engine smoke, production-mode performance smoke, and Windows lifecycle jobs are gated until the PR is ready for review. Each affected workflow listens for `ready_for_review` so the same final head receives the deferred gates without requiring a synthetic code change.
+
+Cross-engine and performance workflows are path-scoped to browser/frontend inputs. Performance also uses per-PR concurrency with superseded-run cancellation and runs for both `develop` and release PRs targeting `main`. Root source/test/build validation remains owned by CI; Windows workflows retain only their Windows-specific checks and the builds needed for package/lifecycle verification.
+
+## CI stability and ownership
+
+Bundle and performance gates are designed to detect regressions without turning normal source growth or shared-runner noise into duplicate failures. The eager CSS gate keeps the compressed 46 KiB network ceiling while allowing a bounded 256 KiB raw ceiling, and a separate 500 KiB raw / 100 KiB gzip aggregate CSS gate prevents moving stylesheet growth into lazy chunks to evade measurement.
+
+Lighthouse keeps the existing thresholds but evaluates the median of three runs per fixture. Windows Desktop owns the desktop dependency audit; First Run and Clean Launch retain desktop source/contract checks without repeating the same audit. Windows Desktop builds the root production frontend once and reuses that dist for unpacked and NSIS packaging.
+
 ## Bundle and loading architecture
 
 The production build enforces explicit budgets for the eager main application JS, chart chunk and application CSS through `scripts/bundle-budget.mjs`. A ceiling is a regression boundary, not a target to raise when a new eager import appears.

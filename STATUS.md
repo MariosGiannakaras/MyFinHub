@@ -36,6 +36,17 @@ Release-closeout tracker: **#288 — complete**.
 - `CARD_VAULT_KEY`, service-role credentials and other privileged secrets are never distributed in browser, Windows or Android clients.
 - Optimistic revisions, backups, audit/history boundaries and the canonical finance/accounting engine remain authoritative.
 
+## Completed CI/workflow optimization — #483
+
+**Implementations 9/9 · Sub-implementations 24/24**
+
+- PR #484 passed exact-head CI, CodeQL, Cross-engine Smoke, median-of-three Performance Smoke, Windows Desktop, Windows First Run and Windows Clean Launch on `4d129c05ee4d0f0110dc86d801cf3e359c301e50`.
+- PR #484 squash-merged into `develop` as `a752e417d339bce3eb2aab0a0b3918140533318e`.
+- Draft PRs now keep core CI + CodeQL feedback while expensive rendered/cross-engine/performance/Windows lifecycle work is deferred until review-ready.
+- Production Smoke targets the canonical `https://mgfinhub.vercel.app` origin.
+- Repository execution authority is consolidated in `AGENTS.md`; issue #266 remains the durable owner/product decision ledger.
+- GitHub admin-only follow-up is tracked in #485: protect `develop` with an integration ruleset and update the repository homepage to the canonical production URL.
+
 ## Active completion batch — #476
 
 **Implementations 5/8 completed · Sub-implementations 16/21 completed**
@@ -58,7 +69,7 @@ Release-closeout tracker: **#288 — complete**.
 - Owner confirms logos, backend/database work and owner-side Settings work are complete. No external owner prerequisite remains; #482 is now an integration input that this workstream will reconcile/close as part of final validation.
 - FV-34 is **completed** with no product change. Exact-head rendered validation passed Transactions/Recurring/Reports/Quick Entry icon adoption, narrow-mobile containment and the full icon-pack rendered suite.
 - FV-35 is **pending source fix** with no product regression identified: legacy transaction management still hard-codes the 2026-08-01 `Supermarket` row on Transactions page 1, which the current 14-row pagination no longer guarantees. The harness must navigate/filter deterministically to a visible legacy row before edit/delete/undo/redo proof.
-- Remaining work: source-fix and prove FV-35, complete the final exact-head screenshot review, integrate/reconcile completed #482 with current `develop`/#477, resolve #482's remaining CodeQL failure, then finish the exact-final-head CI/security/cross-engine/performance/Windows validation wave and squash-merge to `develop`.
+- Remaining work: source-fix and prove FV-35, complete the final exact-head screenshot review, reconcile completed #482 into #477 on top of current `develop`, then finish the exact-final-head CI/security/cross-engine/performance/Windows validation wave and squash-merge to `develop`.
 - No Android implementation and no `main` promotion/release are included.
 
 ## Next work
