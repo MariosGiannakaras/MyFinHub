@@ -1,14 +1,14 @@
 # MyFinHub completion audit and implementation plan
 
-Status: owner-expanded exhaustive full-system verification accepted; execution pending  
+Status: owner-expanded exhaustive full-system verification accepted; execution in progress  
 Tracker: #476  
 Target branch: `feat/476-completion-audit-hardening`  
 Integration target: `develop`  
 Release target: none — `main` remains release-only
 
-## Current integration checkpoint — 2026-10-01
+## Current integration checkpoint — 2026-10-02
 
-**Implementations 7/24 completed · Sub-implementations 66/192 completed**
+**Implementations 7/24 completed · Sub-implementations 76/192 completed**
 
 This checkpoint supersedes older "#482 reconciliation pending" notes below for current execution state.
 
@@ -20,7 +20,8 @@ This checkpoint supersedes older "#482 reconciliation pending" notes below for c
 - FV-41/FV-42/FV-43 are completed on exact-head rendered CI. Their fixes were validation-harness/touch-target corrections and did not weaken product behavior.
 - FV-44 is completed on `9b25fb1…`: extreme Recurring mobile progressive disclosure, full expansion, collapsed inactive history and overflow safety all pass.
 - FV-45 exact-head rendered proof has passed: OCR persists raw `EUR`, while the owned currency select displays `EUR · Ευρώ`; stored semantics and visible presentation are validated separately. The expanded full-system audit below now governs closeout.
-- Current counters: **Implementations 7/24 completed · Sub-implementations 66/192 completed**. The denominator expanded on 2026-10-01 after the owner required exhaustive full-system verification, direct assistant-led manual review, routing/404 coverage, temporal/data-boundary coverage and operational recovery proof.
+- Current counters: **Implementations 7/24 completed · Sub-implementations 76/192 completed**. The denominator expanded on 2026-10-01 after the owner required exhaustive full-system verification, direct assistant-led manual review, routing/404 coverage, temporal/data-boundary coverage and operational recovery proof.
+- Audit verification checkpoint 2026-10-02: 10 additional sub-implementations are directly closed by assistant review/evidence. Unsupported-future-schema handling remains open under the existing backwards-compatibility item; it does not expand the denominator.
 - Repository-admin hardening remains tracked separately in #485 and does not change this batch denominator.
 - No Android changes and no `main` release/promotion are part of this checkpoint.
 
@@ -648,9 +649,9 @@ No `main` promotion/release is part of this work.
 
 The prior completion audit remains valuable evidence, but it does **not** by itself prove that every visual element, every UX state, every user action/sub-action, every API/backend path and every error path has been exercised end-to-end against a canonical integrated tree. The owner has therefore expanded the accepted completion scope to require a full-system verification pass before the application is treated as fully closed.
 
-**New audit workstream: Implementations 0/16 completed · Sub-implementations 38/163 completed.**
+**New audit workstream: Implementations 0/16 completed · Sub-implementations 48/163 completed.**
 
-**Overall completion scope: Implementations 7/24 completed · Sub-implementations 66/192 completed.**
+**Overall completion scope: Implementations 7/24 completed · Sub-implementations 76/192 completed.**
 
 The denominator increased because 16 new verification implementations / 160 non-trivial sub-implementations are now accepted. Existing implementation-completion state is retained provisionally, but the expanded verification matrix has a stricter proof rule: prior evidence may be reused only after the responsible ChatGPT agent personally inspects it and confirms that it proves the exact required contract. Re-running unchanged automation is unnecessary when existing artifacts are sufficient, but no matrix cell is finally closed merely because an earlier workflow marked it green.
 
@@ -761,16 +762,16 @@ The denominator increased because 16 new verification implementations / 160 non-
 - [ ] Exercise client render errors, lazy-chunk/resource failure, OCR asset failure and error-boundary recovery.
 - [ ] Audit every user-facing error/warning/success message for accuracy, persistence, accessibility announcement, redaction and appropriate recovery action.
 
-### 8.8 Security and privacy verification — 0/8
+### 8.8 Security and privacy verification — 8/8
 
-- [ ] Resolve all current CodeQL alerts on the exact candidate head and require CodeQL green without dismissing valid findings.
+- [x] Resolve all current CodeQL alerts on the exact candidate head and require CodeQL green without dismissing valid findings. Exact-head CodeQL run #2957 on `0d747e2…` completed successfully; the JavaScript/TypeScript analysis job and analyze step are green with no unresolved check failure.
 - [x] Run dependency audits for root/API/desktop and review high/critical advisories plus transitive desktop/runtime exposure. Exact-head-equivalent root/API dependency locks pass `npm audit --audit-level=high` and API audit on the latest green CI; the desktop package lock is unchanged from the last green Windows Desktop run whose `desktop:check` includes its own high-severity audit. No package/lockfile changed between that Windows evidence and the current branch.
 - [x] Verify security headers/CSP, no unsafe inline/executable receipt/provider content and no unexpected external resource dependency. Direct source review confirms the exact-head CSP keeps object/frame/form restrictions, forbids generic script eval while permitting only WASM eval for self-hosted OCR, limits provider images to the canonical Supabase project origin, removes obsolete legacy image hosts, keeps receipt OCR/assets same-origin/local, and leaves only intentional runtime network origins (canonical production API, Supabase, GitHub release update checks).
 - [x] Verify no service-role/secret key, `CARD_VAULT_KEY`, access/refresh token, TOTP secret, PAN/expiry/CVV or personal finance data leaks to bundles, logs, screenshots, backups or repository artifacts. Exact-head-equivalent CI on `8e571c2…` proves both the tracked-file privacy guard and generated-release artifact privacy guard pass; generic 5xx logs are redacted by contract, production backups contain no sensitive card/token/TOTP keys, card-vault data is isolated outside FinanceData/backups, and visual QA uses synthetic fixtures rather than production finance data.
 - [x] Verify session cookie attributes, logout/revocation behavior and active-device enforcement at sensitive boundaries. Direct source review confirms production access/refresh cookies use `__Host-` names, Path=/, HttpOnly, SameSite=Strict and Secure; logout attempts device-session termination plus upstream revocation and always clears local cookies; rejected/revoked sessions clear cookie state appropriately; active-device enforcement is centralized for AAL2 sessions and already directly proven fail-closed at RLS.
 - [x] Verify RLS/grants/function security-invoker/definer posture and exposed-schema tables; no accidental broad authenticated/anon access. Direct production SQL proof confirms all relevant public/private finance tables have RLS where exposed, anon has no finance table grants or executable finance RPCs, the only relevant SECURITY DEFINER helper is `private.myfinhub_session_is_active` with no anon execute, and owner+AAL2+active-session contexts see the expected rows while AAL1/non-owner/unknown-session contexts see none.
 - [x] Verify provider/receipt image handling against malicious filenames, MIME confusion, active SVG content, oversized files and path traversal attempts. Provider uploads use generated provider-scoped Storage paths independent of the supplied filename, enforce bounded bytes plus MIME/signature checks, and reject active SVG script/foreignObject/event/javascript patterns; receipt capture accepts only bounded JPEG/PNG with signature checks and normalizes through canvas without using filenames as paths.
-- [ ] Re-run secret/security guards and review generated artifacts before final merge/release.
+- [x] Re-run secret/security guards and review generated artifacts before final merge/release. Exact-head CI on `0d747e2…` directly shows the tracked-file privacy guard passed across 774 tracked files, all 152 test files / 852 tests passed, the release privacy artifact guard passed, bundle budgets passed, and both root/API high-severity dependency audits passed. This item must be reopened if the final candidate head changes after a security-relevant modification.
 
 ### 8.9 Browser, responsive, performance and Windows verification — 0/8
 
@@ -842,28 +843,28 @@ Current source already contains an authenticated hash-route `NotFound` screen fo
 - [ ] Review the 404 page manually in desktop/tablet/mobile, light/dark, keyboard-only, 200% zoom and reduced-motion modes; verify focus, contrast and safe no-financial-data behavior.
 - [ ] Refine the current 404 into a deliberate MyFinHub-branded, useful and interesting page if manual design review finds the current minimal card insufficient. Preferred contract: privacy-safe finance-themed illustration/microinteraction built from local/CSS assets, concise copy, visible "Dashboard" and "Back" actions, optional authenticated app search/command action when safe, no sensitive data, no external dependency, responsive and accessible.
 
-### 8.15 Temporal, numeric, locale and data-boundary edge cases — 0/10
+### 8.15 Temporal, numeric, locale and data-boundary edge cases — 6/10
 
-- [ ] Verify month-end/year-end transitions, January↔December reporting changes and February/leap-day behavior across transactions, recurring, scheduled, reports, budgets and forecasts.
-- [ ] Verify local-date/time-zone handling around midnight and DST changes so date-only finance events cannot shift day/month unexpectedly between browser, API and database.
-- [ ] Verify monetary precision/rounding for cents, aggregated totals, percentages, statements, repayments and split legs; UI totals and persisted numeric values must remain consistent.
-- [ ] Verify zero, negative, near-zero, maximum accepted and obviously excessive monetary inputs are either correctly supported or rejected with explicit validation.
+- [x] Verify month-end/year-end transitions, January↔December reporting changes and February/leap-day behavior across transactions, recurring, scheduled, reports, budgets and forecasts. Direct source/test review plus exact-head CI confirm strict Gregorian date validation, UTC/date-only arithmetic, exact short-month ranges, leap-day handling and Jan↔Dec reporting shifts across the shared calendar helpers and their domain callers.
+- [x] Verify local-date/time-zone handling around midnight and DST changes so date-only finance events cannot shift day/month unexpectedly between browser, API and database. Direct review confirms UI 'today' uses local calendar getters and a DST-aware next-local-midnight refresh, while finance date-only parsing/arithmetic/rendering uses explicit UTC calendar dates (no implicit midnight UTC conversion); exact-head local-date and temporal regression tests pass.
+- [x] Verify monetary precision/rounding for cents, aggregated totals, percentages, statements, repayments and split legs; UI totals and persisted numeric values must remain consistent. Direct review confirms the shared safe-money boundary converts to integer cents, split/event semantics are cent-exact, and regression coverage includes 0.1+0.2→30 cents plus 12.345→1235 cents / 12.35.
+- [x] Verify zero, negative, near-zero, maximum accepted and obviously excessive monetary inputs are either correctly supported or rejected with explicit validation. Direct review confirms positive-money flows reject zero/negative values, reconciliation accepts signed balances only when safely representable, split/loan/recurring/scheduled boundaries enforce explicit ranges, and unsafe-cent magnitudes fail closed.
 - [ ] Verify text boundaries using long Greek strings, long unbroken strings, Unicode combining characters, emoji and punctuation in notes/names where supported; no corruption, clipping, injection or persistence mismatch.
-- [ ] Verify ordering stability when multiple events share the same date/time or sort key and that pagination/load-more does not duplicate/skip rows during edits.
+- [x] Verify ordering stability when multiple events share the same date/time or sort key and that pagination/load-more does not duplicate/skip rows during edits. Transactions use deterministic date+id ordering, persistent ids are unique at the trust boundary, pagination is a pure slice of the recomputed ordered set, filters/page-size changes reset to page 1 and shrinking result sets clamp via `safePage`; rendered scanability QA confirms sort/filter/search behavior without duplicate structures.
 - [ ] Verify duplicate identifiers, duplicate provider/category/account names and normalization/collision rules fail deterministically without overwriting unrelated data.
-- [ ] Verify archived/deleted entities remain historically referentially valid and cannot create dangling card/account/category/provider references.
+- [x] Verify archived/deleted entities remain historically referentially valid and cannot create dangling card/account/category/provider references. Direct source/test review confirms deleted credit cards retain neutral historical tombstones and deterministic legacy ownership, referenced custom accounts cannot be deleted while seed accounts are retained, taxonomy retirement preserves stable aliases and blocks live/future dependencies, and providers/assets have no destructive app deletion path that can bypass restrictive/binding references.
 - [ ] Verify realistic large-data boundaries for transactions/history/budgets/recurring/scheduled entities: load time, filter/search, pagination, charts, mutation latency and memory remain usable without unbounded DOM/render work.
 - [ ] Verify backwards-compatible loading/import of every still-supported schema/version and explicit rejection/migration messaging for unsupported or malformed historical data.
 
-### 8.16 Operational reliability, observability, migration recovery and release rollback — 0/8
+### 8.16 Operational reliability, observability, migration recovery and release rollback — 2/8
 
 - [ ] Rehearse every pending database migration on an isolated production-like Supabase environment before production application, including data-preservation and policy/grant verification.
 - [ ] Perform a real backup → restore/recovery exercise on isolated data, then verify finance state, history/audit boundaries and excluded secrets after restoration.
-- [ ] Add/verify a deterministic repository-vs-live migration drift check so production parity is known before and after releases rather than inferred from filenames.
+- [x] Add/verify a deterministic repository-vs-live migration drift check so production parity is known before and after releases rather than inferred from filenames. The repository source contract enumerates the production-applied ledger and exact local migration filenames; direct Supabase `list_migrations` comparison on 2026-10-02 matches the current branch migration tree through `20261001192135_manage_financial_provider_assets` with no drift.
 - [ ] Define and test roll-forward/recovery behavior for a partially failed or interrupted migration; never assume destructive rollback is safe for finance data.
 - [ ] Verify application rollback compatibility: if web/desktop code is rolled back one release while the database remains on the newer compatible schema, startup/read/write behavior must be understood and documented.
 - [ ] Exercise controlled backend/database/storage restart or temporary unavailability scenarios and verify health recovery, session behavior, retry strategy and no duplicate finance mutation after reconnection.
-- [ ] Review operational observability manually: health endpoints, bounded server/startup diagnostics, request IDs for unexpected failures, actionable log levels and redaction of tokens/secrets/financial content.
+- [x] Review operational observability manually: health endpoints, bounded server/startup diagnostics, request IDs for unexpected failures, actionable log levels and redaction of tokens/secrets/financial content. Direct production `/api/health` inspection returns 200/no-store/security headers plus `x-request-id`; server error logging is bounded to requestId/code/status/error type, Desktop diagnostics redact bearer/Supabase/JWT/64-hex secrets and cap output, and Vercel's last-24h production scan shows no runtime error clusters (observed 401/405 traffic matches deliberate unauthenticated/method-contract probes).
 - [ ] Verify release identity end-to-end: package/app version, Git SHA, web deployment SHA, Windows artifact/checksum, migration state and release metadata must refer to one coherent release candidate; document a tested rollback/stop-ship procedure.
 
 ### 8.17 Hard completion rule
