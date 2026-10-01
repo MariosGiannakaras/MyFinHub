@@ -1,4 +1,4 @@
-import type { FinanceData, FinanceEvent, FinanceState, SplitPart } from '../src/types.js';
+import type { FinanceData, FinanceEvent, SplitPart } from '../src/types.js';
 import { moneyToCents } from '../src/lib/money.js';
 import { ApiError } from './http.js';
 
