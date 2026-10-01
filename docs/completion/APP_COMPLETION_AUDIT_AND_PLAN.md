@@ -8,7 +8,7 @@ Release target: none — `main` remains release-only
 
 ## Current integration checkpoint — 2026-10-01
 
-**Implementations 7/24 completed · Sub-implementations 50/191 completed**
+**Implementations 7/24 completed · Sub-implementations 56/191 completed**
 
 This checkpoint supersedes older "#482 reconciliation pending" notes below for current execution state.
 
@@ -20,7 +20,7 @@ This checkpoint supersedes older "#482 reconciliation pending" notes below for c
 - FV-41/FV-42/FV-43 are completed on exact-head rendered CI. Their fixes were validation-harness/touch-target corrections and did not weaken product behavior.
 - FV-44 is completed on `9b25fb1…`: extreme Recurring mobile progressive disclosure, full expansion, collapsed inactive history and overflow safety all pass.
 - FV-45 exact-head rendered proof has passed: OCR persists raw `EUR`, while the owned currency select displays `EUR · Ευρώ`; stored semantics and visible presentation are validated separately. The expanded full-system audit below now governs closeout.
-- Current counters: **Implementations 7/24 completed · Sub-implementations 50/191 completed**. The denominator expanded on 2026-10-01 after the owner required exhaustive full-system verification, direct assistant-led manual review, routing/404 coverage, temporal/data-boundary coverage and operational recovery proof.
+- Current counters: **Implementations 7/24 completed · Sub-implementations 56/191 completed**. The denominator expanded on 2026-10-01 after the owner required exhaustive full-system verification, direct assistant-led manual review, routing/404 coverage, temporal/data-boundary coverage and operational recovery proof.
 - Repository-admin hardening remains tracked separately in #485 and does not change this batch denominator.
 - No Android changes and no `main` release/promotion are part of this checkpoint.
 
@@ -648,21 +648,21 @@ No `main` promotion/release is part of this work.
 
 The prior completion audit remains valuable evidence, but it does **not** by itself prove that every visual element, every UX state, every user action/sub-action, every API/backend path and every error path has been exercised end-to-end against a canonical integrated tree. The owner has therefore expanded the accepted completion scope to require a full-system verification pass before the application is treated as fully closed.
 
-**New audit workstream: Implementations 0/16 completed · Sub-implementations 22/162 completed.**
+**New audit workstream: Implementations 0/16 completed · Sub-implementations 28/162 completed.**
 
-**Overall completion scope: Implementations 7/24 completed · Sub-implementations 50/191 completed.**
+**Overall completion scope: Implementations 7/24 completed · Sub-implementations 56/191 completed.**
 
 The denominator increased because 16 new verification implementations / 160 non-trivial sub-implementations are now accepted. Existing implementation-completion state is retained provisionally, but the expanded verification matrix has a stricter proof rule: prior evidence may be reused only after the responsible ChatGPT agent personally inspects it and confirms that it proves the exact required contract. Re-running unchanged automation is unnecessary when existing artifacts are sufficient, but no matrix cell is finally closed merely because an earlier workflow marked it green.
 
 ### 8.1 Canonical baseline, scope inventory and traceability — 0/7
 
 - [ ] Freeze the exact candidate source SHA and record `main`, `develop`, open implementation PRs/branches, migration ledger, production deployment SHA and desktop release SHA. Do not treat a PR-only head as canonical after merge.
-- [ ] Inventory every routed page, Settings tab, authentication screen, modal, sheet, popover, command surface, global action, keyboard shortcut and persistent desktop-only control from source.
-- [ ] Inventory every user-visible capability and every mutation/read operation: create, edit, delete, archive, restore, activate/deactivate, pay/repay, complete, skip/cancel, import/export/backup, upload/replace, copy, search/filter/sort/page, undo/redo and refresh.
-- [ ] Inventory every API endpoint, HTTP method, auth mode, Supabase RPC/table/storage dependency and database mutation path.
-- [ ] Inventory every stateful entity and relationship in legacy/mutable state and relational ledger storage, including history/audit/backup/card-vault/account/provider metadata boundaries.
-- [ ] Build one traceability matrix mapping Product capability → UI control → domain operation → persistence/API/backend path → success test → failure tests → visual states → accessibility checks.
-- [ ] Mark every prior test/screenshot/evidence item as reusable, partial or insufficient against the matrix; uncovered cells become explicit pending work rather than inferred coverage.
+- [x] Inventory every routed page, Settings tab, authentication screen, modal, sheet, popover, command surface, global action, keyboard shortcut and persistent desktop-only control from source. Completed in `docs/completion/FULL_SYSTEM_TRACEABILITY_MATRIX.md`.
+- [x] Inventory every user-visible capability and every mutation/read operation: create, edit, delete, archive, restore, activate/deactivate, pay/repay, complete, skip/cancel, import/export/backup, upload/replace, copy, search/filter/sort/page, undo/redo and refresh. Completed in the full-system traceability matrix.
+- [x] Inventory every API endpoint, HTTP method, auth mode, Supabase RPC/table/storage dependency and database mutation path. Completed in the full-system traceability matrix.
+- [x] Inventory every stateful entity and relationship in legacy/mutable state and relational ledger storage, including history/audit/backup/card-vault/account/provider metadata boundaries. Completed in the full-system traceability matrix.
+- [x] Build one traceability matrix mapping Product capability → UI control → domain operation → persistence/API/backend path → success test → failure tests → visual states → accessibility checks. Completed in `docs/completion/FULL_SYSTEM_TRACEABILITY_MATRIX.md`; incomplete proof cells remain explicitly classified rather than assumed.
+- [x] Mark every prior test/screenshot/evidence item as reusable, partial or insufficient against the matrix; uncovered cells become explicit pending work rather than inferred coverage. The traceability matrix records the disposition and remaining proof class for every capability row.
 
 ### 8.2 Exhaustive visual inspection — 0/12
 
