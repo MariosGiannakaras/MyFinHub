@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 const read=(path:string)=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
+const rendered=read('scripts/category-icon-adoption-qa.mjs');
 
 describe('cross-app category icon adoption',()=>{
   it('lets the shared FinanceIcon prefer explicit category metadata while preserving heuristic fallback',()=>{
@@ -43,5 +44,15 @@ describe('cross-app category icon adoption',()=>{
   it('keeps the representative coffee transaction in the food category fixture',()=>{
     const fixture=read('src/qaFixture.ts');
     expect(fixture).toMatch(/note:'Freddo espresso\\n[^']*',category:'Τρόφιμα'/);
+  });
+
+  it('waits for stable icon-ready rows instead of coupling adoption proof to page-one paint timing',()=>{
+    expect(rendered).toContain('const waitForIcon=');
+    expect(rendered).toContain("const transactionSemanticRows='.transaction-semantic-table .transaction-row'");
+    expect(rendered).toContain("waitForIcon(transactionSemanticRows,'Freddo espresso'");
+    expect(rendered).toContain("waitForIcon('.recurring-workspace-table tbody tr','Internet'");
+    expect(rendered).toContain("waitForIcon('.report-category-list > div','Σούπερ Μάρκετ'");
+    expect(rendered).toContain("waitForIcon('.mobile-transaction-row','Σούπερ Μάρκετ'");
+    expect(rendered).toContain("mobileFood.key==='groceries'");
   });
 });

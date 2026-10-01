@@ -38,7 +38,7 @@ Release-closeout tracker: **#288 — complete**.
 
 ## Active completion batch — #476
 
-**Implementations 5/8 completed · Sub-implementations 13/21 completed**
+**Implementations 5/8 completed · Sub-implementations 15/21 completed**
 
 - Branch: `feat/476-completion-audit-hardening`.
 - **54 deep-audit findings are now tracked.** DA-01..DA-53 retain their existing implementation/disposition state; DA-54 adds the owner-reported dark-theme color/contrast defect.
@@ -47,16 +47,17 @@ Release-closeout tracker: **#288 — complete**.
 - FV-24 records the prior exact-head Settings QA failure: the harness expected a removed duplicate provider preview. The source fix now validates the selected branded radio card itself; provider-management product code remains untouched.
 - FV-25 records the next Settings QA failure: edit mode intentionally supports correcting an existing account's provider, but the harness still required that field to be absent. The assertion is aligned with the accepted provider-correction behavior; product code remains untouched.
 - FV-26 records the bundle-budget failure introduced by loading the DA-54 remediation eagerly. The same dark rules now load through the existing lazy workspace style layer; the 240 KiB CSS budget is unchanged.
-- FV-27 records a real Dashboard regression exposed by final evidence: all three deferred Recharts panels were blank. The lazy-loading boundary is preserved, the extracted charts restore explicit `ResponsiveContainer` sizing, and both performance/source contracts now assert that architecture. The latest desktop full-page artifact visibly confirms all three charts render; final exact-head proof remains pending.
-- FV-28 records the follow-up QA mismatch: final evidence incorrectly required desktop Recharts in the intentionally collapsed mobile Dashboard. The harness now proves desktop charts and mobile progressive-disclosure steady state separately; this does not add product scope or change the 12/20 counter.
-- FV-29 records the next hierarchy-QA mismatch at 375px: the compact layout hides the category donut below 381px and keeps the category table, while the previous assertion was still coupled to an exact Recharts count. QA now verifies the semantic expanded state—summary visualization, cash-flow chart, open KPI/analytics regions, hidden donut and visible category table—with per-state timeout diagnostics. Product CSS and thresholds are unchanged.
-- FV-30 records a dark-theme evidence timing defect: the mobile More screenshot was captured during its 160ms entrance animation, making the settled dark surface look falsely translucent. Theme QA now waits 220ms before measuring/capturing More; no product opacity or color token changed.
-- FV-31 records a real mobile Dashboard analytics regression. The final root cause is sizing, not timing: `.approved-bar-wrap` had its 153px height only in the desktop >=981px stylesheet, leaving mobile/tablet `ResponsiveContainer` with a zero-height host. DashboardCompletion now supplies a 153px height/min-height through 980px while retaining the lazy post-layout fallback; source coverage protects both contracts and budgets remain unchanged.
-- FV-32 closes the two remaining rendered functional-coverage gaps without adding product scope: Lending repayment now proves one explicit 12/42 repayment row while a remaining receivable stays actionable, and Settings creates then protected-deletes an unreferenced custom cash account. Device revoke is not exercised destructively because QA mocks only device-list GET; revoke POST remains covered by API/security contracts.
-- FV-33 records the Settings account-delete QA mismatch: the shared destructive `ConfirmDialog` correctly uses `role="alertdialog"`, while FV-32 initially waited for `role="dialog"`. The harness now targets the canonical alertdialog role; product behavior and accessibility semantics are unchanged.
+- FV-27 is **completed**. Explicit `ResponsiveContainer` sizing remains inside the lazy chunk; exact-head full-page evidence passed 24/24 and Dashboard hierarchy QA passed, proving deferred charts render while performance remains green.
+- FV-28 is **completed**. Exact-head full-page evidence passed with separate desktop deferred-chart and mobile collapsed-state contracts; no product scope or threshold changed.
+- FV-29 is **completed**. Exact-head hierarchy QA passed the semantic compact-mobile expanded state with summary/cash-flow readiness, open KPI/analytics regions, hidden category donut and visible category table.
+- FV-30 is **completed**. Theme QA passes after the 220ms settle window and manual review confirms the settled mobile More sheet is opaque/readable; product opacity/color tokens were unchanged.
+- FV-31 is **completed**. The responsive flow-chart host now has a 153px height/min-height through 980px; exact-head 375px hierarchy QA passes the expanded state and Lighthouse/bundle gates remain green.
+- FV-32 is **completed** with no new product scope. Exact-head CRUD QA passes Lending 12/42 partial repayment plus protected Settings custom-account create/delete. Device revoke remains intentionally non-destructive in synthetic QA and is covered by API/security contracts.
+- FV-33 is **completed** with no product change. Exact-head CRUD QA passes the canonical destructive `role="alertdialog"` confirmation path.
 - The separate database workstream is complete by owner confirmation, including the relational ledger cutover. This branch will not touch the live database.
 - Manual installation/upload of final authentic provider logo binaries remains an external owner-side prerequisite. Provider/logo management UX continues separately in #481/#482 and is intentionally not duplicated here.
-- Remaining work: prove FV-31/FV-32 in rendered QA, complete the final exact-head screenshot review, reconcile with current `develop`, then finish the exact-final-head CI/security/cross-engine/performance/Windows validation wave and squash-merge to `develop`.
+- FV-34 is **source-fixed, proof pending**: category-icon adoption now waits for icon-ready semantic/visible rows instead of relying on route-heading timing or an off-page mobile fixture; no icon product logic changed.
+- Remaining work: prove FV-34, complete the final exact-head screenshot review, reconcile with current `develop` / provider-logo merge order, then finish the exact-final-head CI/security/cross-engine/performance/Windows validation wave and squash-merge to `develop`.
 - No Android implementation and no `main` promotion/release are included.
 
 ## Next work
