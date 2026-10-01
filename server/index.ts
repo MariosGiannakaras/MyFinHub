@@ -7,7 +7,7 @@ import { handleAccountSecurityRequest } from './accountSecurityHandler.js';
 import { handleCardVaultRequest } from './cardVaultHandler.js';
 import { endCurrentDeviceSession } from './deviceSessionRegistry.js';
 import { handleDeviceSessionsRequest } from './deviceSessionsHandler.js';
-import { ApiError, assertSameOrigin, handleApi, requestHeader, sendJson } from './http.js';
+import { ApiError, assertSameOrigin, handleApi, methodNotAllowed, requestHeader, sendJson } from './http.js';
 import { backupStore, DATA_SOURCE, isOwner, moveHistory, readHistory, readStore, writeMutableState, writeStore } from './storage.js';
 import { parseMutableWrite } from './stateValidation.js';
 import { isAuthRejection } from './upstream.js';
@@ -205,6 +205,22 @@ app.post('/api/backup', (req, res) => void handleApi(res, async () => {
   assertMutationSessionOrigin(req, session);
   sendJson(res, 200, { path: await backupStore(session.accessToken) });
 }));
+
+// Known API paths must stay distinguishable from unknown routes. Vercel handlers
+// already return 405 for unsupported methods; keep the local/Windows host aligned.
+const knownMethodFallback = (route: string, allowed: string[]) => {
+  app.all(route, (_req, res) => void handleApi(res, async () => methodNotAllowed(res, allowed)));
+};
+knownMethodFallback('/api/health', ['GET']);
+knownMethodFallback('/api/auth/login', ['POST']);
+knownMethodFallback('/api/auth/session', ['GET']);
+knownMethodFallback('/api/auth/mfa/enroll', ['POST']);
+knownMethodFallback('/api/auth/mfa/verify', ['POST']);
+knownMethodFallback('/api/auth/logout', ['POST']);
+knownMethodFallback('/api/data', ['GET', 'PUT']);
+knownMethodFallback('/api/history', ['GET', 'POST']);
+knownMethodFallback('/api/import', ['POST']);
+knownMethodFallback('/api/backup', ['POST']);
 
 app.all('/api/{*splat}', (_req, res) => void handleApi(res, async () => { throw new ApiError(404, 'API_NOT_FOUND', 'API route not found.'); }));
 
