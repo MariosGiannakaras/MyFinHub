@@ -53,3 +53,20 @@ export function addCalendarDays(value:string,days:number){
   const day=String(date.getUTCDate()).padStart(2,'0');
   return `${year}-${month}-${day}`;
 }
+
+
+export function dateOnlyToUtcDate(value:string){
+  const parsed=parseDateOnly(value);
+  if(!parsed)return null;
+  const date=new Date(Date.UTC(2000,parsed.month-1,parsed.day,12));
+  date.setUTCFullYear(parsed.year);
+  return date;
+}
+
+export function monthOnlyToUtcDate(value:string){
+  const parsed=parseMonthOnly(value);
+  if(!parsed)return null;
+  const date=new Date(Date.UTC(2000,parsed.month-1,1,12));
+  date.setUTCFullYear(parsed.year);
+  return date;
+}
