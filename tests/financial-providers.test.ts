@@ -87,7 +87,8 @@ describe('financial provider registry',()=>{
     expect(aligned).toContain("'revolut-wordmark-black-on-white'");
     expect(aligned).toContain("'viva-logo-navy-on-white'");
     expect(aligned).toContain("'payzy-logo-color'");
-    expect(aligned).toContain("else 'generic'");
+    expect(aligned).toContain('else logo_asset_key');
+    expect(aligned).toContain('else wordmark_asset_key');
     expect(storageMigration).toContain("storage_bucket = 'financial-provider-assets'");
     expect(storageMigration).toContain('foreign key (logo_asset_key)');
     expect(storageMigration).toContain('foreign key (wordmark_asset_key)');
