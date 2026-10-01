@@ -2,9 +2,8 @@ import { Buffer } from 'node:buffer';
 import type { FinanceData } from '../src/types.js';
 import { isValidDateOnly, isValidDateStamp, isValidMonthOnly } from '../src/lib/dateOnly.js';
 import { MAX_FINANCE_DOCUMENT_BYTES } from '../src/lib/limits.js';
+import { SUPPORTED_FINANCE_SCHEMA_VERSION } from '../src/lib/schemaVersion.js';
 import { ApiError } from './http.js';
-
-const SUPPORTED_FINANCE_SCHEMA_VERSION = 3;
 
 function invalid(message: string): never {
   throw new ApiError(400, 'INVALID_DATA', message);
