@@ -1,6 +1,6 @@
 import { Buffer } from 'node:buffer';
 import type { FinanceData } from '../src/types.js';
-import { isValidDateOnly, isValidMonthOnly } from '../src/lib/dateOnly.js';
+import { isValidDateOnly, isValidDateStamp, isValidMonthOnly } from '../src/lib/dateOnly.js';
 import { MAX_FINANCE_DOCUMENT_BYTES } from '../src/lib/limits.js';
 import { ApiError } from './http.js';
 
@@ -36,6 +36,14 @@ function dateOnly(value: unknown, name: string): asserts value is string {
 
 function optionalDateOnly(value: unknown, name: string) {
   if (value !== undefined && value !== null && value !== '') dateOnly(value, name);
+}
+
+function dateStamp(value: unknown, name: string): asserts value is string {
+  if (!isValidDateStamp(value)) invalid(`Invalid ${name}.`);
+}
+
+function optionalDateStamp(value: unknown, name: string) {
+  if (value !== undefined && value !== null && value !== '') dateStamp(value, name);
 }
 
 function monthOnly(value: unknown, name: string): asserts value is string {
@@ -144,8 +152,8 @@ function validatePaymentCard(value: unknown, name: string) {
   }
   if (value.statementBoundaryRule !== undefined) oneOf(value.statementBoundaryRule, ['include-closing-day','next-cycle'], `${name}.statementBoundaryRule`);
   if (typeof value.active !== 'boolean') invalid(`Invalid ${name}.active.`);
-  text(value.createdAt, `${name}.createdAt`, 64);
-  text(value.updatedAt, `${name}.updatedAt`, 64);
+  dateStamp(value.createdAt, `${name}.createdAt`);
+  dateStamp(value.updatedAt, `${name}.updatedAt`);
 }
 
 function validateSnapshot(value: unknown, name: string) {
@@ -261,8 +269,8 @@ function validateEvent(value: unknown, name: string) {
   optionalText(value.person, `${name}.person`, 1_000);
   optionalDateOnly(value.expectedReturnDate, `${name}.expectedReturnDate`);
   optionalText(value.source, `${name}.source`, 100);
-  optionalText(value.createdAt, `${name}.createdAt`, 64);
-  optionalText(value.updatedAt, `${name}.updatedAt`, 64);
+  optionalDateStamp(value.createdAt, `${name}.createdAt`);
+  optionalDateStamp(value.updatedAt, `${name}.updatedAt`);
   optionalText(value.loanId, `${name}.loanId`, 200);
   optionalText(value.recurringId, `${name}.recurringId`, 200);
   if (value.installmentCount !== undefined && value.installmentCount !== null) {
@@ -290,8 +298,8 @@ function validateReviewDecision(value: unknown, name: string) {
   oneOf(value.status, ['confirmed','kept','snoozed'], `${name}.status`);
   if (value.semanticKind !== undefined) oneOf(value.semanticKind, [...EVENT_KINDS, 'split_required'], `${name}.semanticKind`);
   optionalText(value.category, `${name}.category`, 1_000);
-  text(value.decidedAt, `${name}.decidedAt`, 64);
-  optionalText(value.snoozedUntil, `${name}.snoozedUntil`, 64);
+  dateStamp(value.decidedAt, `${name}.decidedAt`);
+  optionalDateStamp(value.snoozedUntil, `${name}.snoozedUntil`);
   if (value.parts !== undefined) {
     array(value.parts, `${name}.parts`, 1_000);
     value.parts.forEach((part, index) => validateSplitPart(part, `${name}.parts[${index}]`));
@@ -305,8 +313,8 @@ function validateSavingsGoal(value: unknown, name: string) {
   finiteNumber(value.targetAmount, `${name}.targetAmount`);
   if (value.targetAmount <= 0) invalid(`Invalid ${name}.targetAmount.`);
   optionalDateOnly(value.targetDate, `${name}.targetDate`);
-  text(value.createdAt, `${name}.createdAt`, 64);
-  text(value.updatedAt, `${name}.updatedAt`, 64);
+  dateStamp(value.createdAt, `${name}.createdAt`);
+  dateStamp(value.updatedAt, `${name}.updatedAt`);
 }
 
 
@@ -325,11 +333,11 @@ function validateScheduledTransaction(value: unknown, name: string) {
   optionalText(value.toAccountId, `${name}.toAccountId`, 200);
   oneOf(value.status, ['pending','completed','skipped','cancelled'], `${name}.status`);
   optionalText(value.completedEventId, `${name}.completedEventId`, 200);
-  optionalText(value.completedAt, `${name}.completedAt`, 64);
-  optionalText(value.skippedAt, `${name}.skippedAt`, 64);
-  optionalText(value.cancelledAt, `${name}.cancelledAt`, 64);
-  text(value.createdAt, `${name}.createdAt`, 64);
-  text(value.updatedAt, `${name}.updatedAt`, 64);
+  optionalDateStamp(value.completedAt, `${name}.completedAt`);
+  optionalDateStamp(value.skippedAt, `${name}.skippedAt`);
+  optionalDateStamp(value.cancelledAt, `${name}.cancelledAt`);
+  dateStamp(value.createdAt, `${name}.createdAt`);
+  dateStamp(value.updatedAt, `${name}.updatedAt`);
   if (value.kind === 'transfer') {
     if (typeof value.fromAccountId !== 'string' || !value.fromAccountId || typeof value.toAccountId !== 'string' || !value.toAccountId || value.fromAccountId === value.toAccountId) {
       invalid(`Invalid ${name} transfer accounts.`);
@@ -343,7 +351,7 @@ function validateAttentionDecision(value: unknown, name: string) {
   if (!object(value)) invalid(`Invalid ${name}.`);
   oneOf(value.status, ['snoozed','dismissed'], `${name}.status`);
   text(value.fingerprint, `${name}.fingerprint`, 2_000);
-  text(value.decidedAt, `${name}.decidedAt`, 64);
+  dateStamp(value.decidedAt, `${name}.decidedAt`);
   optionalDateOnly(value.snoozedUntil, `${name}.snoozedUntil`);
 }
 
@@ -360,8 +368,8 @@ function validateBudget(value: unknown, name: string) {
     finiteNumber(value.alertThreshold, `${name}.alertThreshold`, 1);
     if (value.alertThreshold < .5 || value.alertThreshold > .99) invalid(`Invalid ${name}.alertThreshold.`);
   }
-  text(value.createdAt, `${name}.createdAt`, 64);
-  text(value.updatedAt, `${name}.updatedAt`, 64);
+  dateStamp(value.createdAt, `${name}.createdAt`);
+  dateStamp(value.updatedAt, `${name}.updatedAt`);
 }
 
 function validateTransactionRule(value: unknown, name: string) {
@@ -392,8 +400,8 @@ function validateTransactionRule(value: unknown, name: string) {
   optionalText(value.action.note, `${name}.action.note`, 20_000);
   const hasAction = [value.action.category,value.action.subcategory,value.action.note].some((item)=>typeof item === 'string' && item.trim());
   if (!hasAction) invalid(`Invalid ${name}.action.`);
-  text(value.createdAt, `${name}.createdAt`, 64);
-  text(value.updatedAt, `${name}.updatedAt`, 64);
+  dateStamp(value.createdAt, `${name}.createdAt`);
+  dateStamp(value.updatedAt, `${name}.updatedAt`);
 }
 
 const CATEGORY_ICON_PACKS=['lucide','tabler','phosphor','heroicons','bootstrap'] as const;
@@ -488,7 +496,7 @@ export function validateFinanceData(value: unknown): asserts value is FinanceDat
   validateDocumentSize(value);
   text(value.app, 'app identifier', 64);
   if (!Number.isInteger(value.schemaVersion) || Number(value.schemaVersion) < 1 || Number(value.schemaVersion) > 100) invalid('Invalid schema version.');
-  text(value.updatedAt, 'updatedAt value', 64);
+  dateStamp(value.updatedAt, 'updatedAt value');
   if (!object(value.seed)) invalid('Missing seed data.');
   if (!object(value.state)) invalid('Missing application state.');
 
@@ -590,6 +598,6 @@ export function validateFinanceData(value: unknown): asserts value is FinanceDat
     if (!object(state.migration)) invalid('Invalid state.migration.');
     finiteNumber(state.migration.fromSchema, 'state.migration.fromSchema', 100);
     if (!Number.isInteger(state.migration.fromSchema) || state.migration.fromSchema < 1) invalid('Invalid state.migration.fromSchema.');
-    text(state.migration.migratedAt, 'state.migration.migratedAt', 64);
+    dateStamp(state.migration.migratedAt, 'state.migration.migratedAt');
   }
 }
