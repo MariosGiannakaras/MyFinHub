@@ -27,6 +27,13 @@ describe('HTTP error and request-metadata contracts',()=>{
     expect(requestQueryValue({query:null},'resource')).toBe('');
   });
 
+  it('maps non-serializable direct JSON bodies to a stable INVALID_JSON error',async()=>{
+    await expect(readJsonBody({headers:{'content-type':'application/json'},body:1n},100))
+      .rejects.toMatchObject({status:400,code:'INVALID_JSON'});
+    await expect(readJsonBody({headers:{'content-type':'application/json'},body:Symbol('bad')},100))
+      .rejects.toMatchObject({status:400,code:'INVALID_JSON'});
+  });
+
   it('rejects malformed and oversized JSON Content-Length values before parsing',async()=>{
     await expect(readJsonBody({headers:{'content-length':'3x'},body:'{}'},100))
       .rejects.toMatchObject({status:400,code:'INVALID_CONTENT_LENGTH'});
