@@ -122,3 +122,5 @@ Subsequent changes are product fixes against the completed v1.3.0 baseline. Rout
 - Batch M resilience/runtime proof is in progress on the isolated audit branch: unload protection for pending/failed writes, rendered auth downgrade recovery, client-side future-schema rejection, duplicate-label identity contracts and the performance-fixture/lazy-probe integration fix are implemented. Counters remain unchanged pending exact-head proof.
 
 - Provider partial-failure recovery is directly closed: rendered QA proves no false success and a recoverable editor when creation succeeds but asset upload fails; backend regression coverage proves Storage cleanup when post-upload metadata registration fails.
+
+- Batch N local/Windows routing parity is source-implemented: known API paths now preserve 405/Allow semantics before the JSON unknown-route 404, and post-build runtime QA covers real HTTP/static/API fallbacks. Exact-head proof is pending; Android valid-route behavior is unchanged.
