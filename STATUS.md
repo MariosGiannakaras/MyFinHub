@@ -109,6 +109,7 @@ Release-closeout tracker: **#288 — complete**.
 - 409 revision/conflict handling is directly closed: stale writes fail closed, pending dependent writes are discarded, cross-tab revisions reconcile deterministically and the UI exposes explicit recovery.
 - Persistence concurrency invariant is also closed: sequential ordering, cross-tab newer-revision handling and fail-closed queue behavior are directly exercised and backed by database preconditions.
 - Core finance semantic invariants are directly closed: neutral internal movements, credit liability/statement math, lending receivables, split/cadence/scheduled/budget/report/time boundaries all have reviewed green executable coverage.
+- Batch M cent-precision input hardening is in progress under the existing monetary-boundary item: near-zero/fractional-cent values are being normalized/rejected before optimistic state reaches server validation. Counters are unchanged pending CI proof.
 - No Android implementation and no `main` promotion/release are included.
 
 ## Next work
