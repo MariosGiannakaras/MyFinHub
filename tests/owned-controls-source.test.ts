@@ -45,7 +45,8 @@ describe('app-owned entry controls',()=>{
   it('uses local today and refuses keyboard focus outside date bounds',()=>{
     expect(dateSource).toContain("import { localDateString } from '../lib/localDate'");
     expect(dateSource).toContain('const today=localDateString()');
-    expect(dateSource).toContain("if((min&&next<min)||(max&&next>max))return");
+    expect(dateSource).toContain("if((safeMin&&next<safeMin)||(safeMax&&next>safeMax))return");
+    expect(dateSource).toContain('isValidDateOnly(value)?value:today');
     expect(dateSource).toContain('querySelector<HTMLButtonElement>');
     expect(dateSource).toContain(':not(:disabled)');
   });
