@@ -81,6 +81,7 @@ Release-closeout tracker: **#288 — complete**.
 - **FV-45 completed:** exact-head rendered validation now proves receipt OCR persists raw `currency='EUR'` while the owned select displays the user-facing `EUR · Ευρώ` label. This closes FV-45 but does not close the expanded full-system audit.
 - Current final-validation head: use the head SHA of PR #477 as the authoritative value.
 - Remaining work is governed by `docs/completion/APP_COMPLETION_AUDIT_AND_PLAN.md`: 16 new verification implementations / 160 sub-implementations are pending. The current custom 404 covers unknown authenticated hash routes but the web/desktop HTTP-path 404 contract and the 404 design itself require direct review. Do not merge #477 solely from the earlier gate set.
+- Implementation batch A is now in progress on the same completion line: 404/routing product work, CodeQL-oriented binary/provider hardening, provider-upload cleanup and narrow regression contracts are batched before the next validation wave. PR #477 remains draft during high-churn work so expensive rendered/cross-engine/performance/Windows gates are not repeated on every checkpoint. Counters do not advance until proof is green.
 - No Android implementation and no `main` promotion/release are included.
 
 ## Next work
