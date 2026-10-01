@@ -21,6 +21,13 @@ export function requestHeader(req: any, name: string): string {
   return firstHeader(req?.headers?.[name.toLowerCase()]);
 }
 
+export function strictRequestHeader(req:any,name:string):string{
+  const value=req&&typeof req==='object'?(req as {headers?:Record<string,unknown>}).headers?.[name.toLowerCase()]:undefined;
+  if(value===undefined||value===null)return '';
+  if(Array.isArray(value)||typeof value==='object')throw new ApiError(400,'INVALID_HEADER','Invalid request header.');
+  return String(value);
+}
+
 export function strictQueryValue(req:any,key:string):string{
   const query=req&&typeof req==='object'?(req as {query?:unknown}).query:undefined;
   if(!query||typeof query!=='object'||Array.isArray(query))return '';
@@ -42,7 +49,7 @@ function responseRequestId(res:any){
 }
 
 function assertContentLengthWithinLimit(req:any,maxBytes:number){
-  const raw=requestHeader(req,'content-length').trim();
+  const raw=strictRequestHeader(req,'content-length').trim();
   if(!raw)return;
   if(!/^\d+$/.test(raw))throw new ApiError(400,'INVALID_CONTENT_LENGTH','Invalid Content-Length header.');
   const value=Number(raw);
@@ -57,20 +64,20 @@ export function methodNotAllowed(res: any, allowed: string[]) {
 }
 
 export function assertSameOrigin(req: any) {
-  const site = requestHeader(req, 'sec-fetch-site');
+  const site = strictRequestHeader(req, 'sec-fetch-site');
   if (site && site !== 'same-origin' && site !== 'none') {
     throw new ApiError(403, 'CROSS_SITE_REQUEST', 'Cross-site request blocked.');
   }
 
-  const origin = requestHeader(req, 'origin');
+  const origin = strictRequestHeader(req, 'origin');
   if (!origin) {
     if (site === 'same-origin' || site === 'none') return;
     throw new ApiError(403, 'ORIGIN_REQUIRED', 'Request origin is required.');
   }
 
-  const forwardedHost = requestHeader(req, 'x-forwarded-host');
-  const host = forwardedHost || requestHeader(req, 'host');
-  const forwardedProto = requestHeader(req, 'x-forwarded-proto');
+  const forwardedHost = strictRequestHeader(req, 'x-forwarded-host');
+  const host = forwardedHost || strictRequestHeader(req, 'host');
+  const forwardedProto = strictRequestHeader(req, 'x-forwarded-proto');
   const proto = forwardedProto || (process.env.NODE_ENV === 'production' ? 'https' : 'http');
   if (!host) throw new ApiError(403, 'ORIGIN_INVALID', 'Request origin is invalid.');
 
@@ -84,7 +91,7 @@ export function assertSameOrigin(req: any) {
 }
 
 export async function readJsonBody<T = unknown>(req: any, maxBytes = 5 * 1024 * 1024): Promise<T> {
-  const contentType = requestHeader(req, 'content-type').toLowerCase();
+  const contentType = strictRequestHeader(req, 'content-type').toLowerCase();
   if (contentType && !contentType.startsWith('application/json')) {
     throw new ApiError(415, 'UNSUPPORTED_MEDIA_TYPE', 'Expected application/json.');
   }
