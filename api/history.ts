@@ -1,12 +1,8 @@
 import { isValidDateStamp } from '../src/lib/dateOnly.js';
 import { accessTokenAal, assertMutationSessionOrigin, clearSessionCookiesIfCookie, requireSession } from '../server/auth.js';
-import { ApiError, handleApi, methodNotAllowed, readJsonBody, sendJson } from '../server/http.js';
+import { ApiError, handleApi, methodNotAllowed, readJsonBody, sendJson, strictRequestHeader } from '../server/http.js';
 import { isOwner, moveHistory, readHistory } from '../server/storage.js';
 
-function header(req: any, name: string) {
-  const value = req.headers?.[name];
-  return String(Array.isArray(value) ? value[0] ?? '' : value ?? '');
-}
 
 export default async function handler(req: any, res: any) {
   await handleApi(res, async () => {
@@ -27,7 +23,7 @@ export default async function handler(req: any, res: any) {
     if ((action !== 'undo' && action !== 'redo') || !isValidDateStamp(updatedAt) || Object.keys(body).some(key=>key!=='action'&&key!=='updatedAt')) {
       throw new ApiError(400, 'INVALID_HISTORY', 'The change-history request is invalid.');
     }
-    const result = await moveHistory(action, updatedAt, header(req, 'if-match'), header(req, 'x-rheomiq-history-generation'), session.accessToken);
+    const result = await moveHistory(action, updatedAt, strictRequestHeader(req, 'if-match'), strictRequestHeader(req, 'x-rheomiq-history-generation'), session.accessToken);
     return sendJson(res, 200, result);
   });
 }
