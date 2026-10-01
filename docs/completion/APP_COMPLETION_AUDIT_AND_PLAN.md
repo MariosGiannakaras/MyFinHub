@@ -1088,3 +1088,17 @@ Source/runtime QA:
 - a pending interrupted write remains single-shot, preserving optimistic revision/idempotency semantics.
 
 This remains inside the existing network timeout/offline/interrupted-save sub-implementation. Completion requires integrated exact-head rendered CI; no denominator change.
+
+
+### 8.30 Implementation batch P — realistic large-data containment in progress
+
+Direct large-dataset review found that Transactions already paginated safely, but several secondary finance-management surfaces still rendered their complete collections on desktop or inside management panels. This is now hardened inside the existing large-data verification item.
+
+Source/runtime scope:
+- the QA large fixture now includes 1,500 events, 120 recurring items, 120 scheduled items, 80 category budgets, 80 transaction rules and a full 100-point history view;
+- desktop Planning schedules, desktop/inactive Recurring lists, budget management and transaction-rule management use 24-row progressive disclosure rather than unbounded collection rendering;
+- the existing 12-row mobile Recurring contract is preserved;
+- rendered QA verifies bounded DOM counts, progressive-disclosure controls, no horizontal overflow, contained Reports charts, the 100-point history ceiling and a conservative renderer-heap guard;
+- normal-sized datasets remain visually unchanged because the disclosure controls appear only beyond the initial limits.
+
+This remains pending integrated exact-head rendered/performance validation. It is part of the existing large-data sub-implementation and does not change the denominator.
