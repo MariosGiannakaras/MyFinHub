@@ -93,32 +93,37 @@ export async function readJsonBody<T = unknown>(req: any, maxBytes = 5 * 1024 * 
   catch { throw new ApiError(400, 'INVALID_JSON', 'Invalid JSON payload.'); }
 }
 
+export function copyBoundedBinaryValue(value:unknown,maxBytes:number):Buffer{
+  let buffer:Buffer;
+  if(Buffer.isBuffer(value))buffer=Buffer.from(value);
+  else if(value instanceof Uint8Array)buffer=Buffer.from(value);
+  else if(typeof value==='string')buffer=Buffer.from(value,'utf8');
+  else throw new ApiError(400,'INVALID_BINARY_BODY','Invalid binary payload.');
+  if(buffer.byteLength>maxBytes)throw new ApiError(413,'PAYLOAD_TOO_LARGE','Request is too large.');
+  return buffer;
+}
+
 export async function readBinaryBody(req:any,maxBytes:number):Promise<Buffer>{
-  const contentLength=Number(requestHeader(req,'content-length')||0);
-  if(Number.isFinite(contentLength)&&contentLength>maxBytes)throw new ApiError(413,'PAYLOAD_TOO_LARGE','Request is too large.');
-  if(Buffer.isBuffer(req.body)){
-    if(req.body.length>maxBytes)throw new ApiError(413,'PAYLOAD_TOO_LARGE','Request is too large.');
-    return req.body;
+  const rawContentLength=requestHeader(req,'content-length').trim();
+  if(rawContentLength){
+    if(!/^\d+$/.test(rawContentLength))throw new ApiError(400,'INVALID_CONTENT_LENGTH','Invalid Content-Length header.');
+    const contentLength=Number(rawContentLength);
+    if(!Number.isSafeInteger(contentLength)||contentLength<0)throw new ApiError(400,'INVALID_CONTENT_LENGTH','Invalid Content-Length header.');
+    if(contentLength>maxBytes)throw new ApiError(413,'PAYLOAD_TOO_LARGE','Request is too large.');
   }
-  if(req.body instanceof Uint8Array){
-    const buffer=Buffer.from(req.body);
-    if(buffer.length>maxBytes)throw new ApiError(413,'PAYLOAD_TOO_LARGE','Request is too large.');
-    return buffer;
-  }
-  if(typeof req.body==='string'){
-    const buffer=Buffer.from(req.body,'utf8');
-    if(buffer.length>maxBytes)throw new ApiError(413,'PAYLOAD_TOO_LARGE','Request is too large.');
-    return buffer;
-  }
+
+  const body=req&&typeof req==='object'?(req as {body?:unknown}).body:undefined;
+  if(body!==undefined)return copyBoundedBinaryValue(body,maxBytes);
+
   const chunks:Buffer[]=[];
   let total=0;
-  for await(const chunk of req){
-    const buffer=Buffer.from(chunk);
-    total+=buffer.length;
+  for await(const chunk of req as AsyncIterable<unknown>){
+    const buffer=copyBoundedBinaryValue(chunk,maxBytes);
+    total+=buffer.byteLength;
     if(total>maxBytes)throw new ApiError(413,'PAYLOAD_TOO_LARGE','Request is too large.');
     chunks.push(buffer);
   }
-  return Buffer.concat(chunks);
+  return Buffer.concat(chunks,total);
 }
 
 export async function handleApi(res: any, fn: (requestId: string) => Promise<void> | void) {
