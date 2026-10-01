@@ -7,7 +7,7 @@ import { handleAccountSecurityRequest } from './accountSecurityHandler.js';
 import { handleCardVaultRequest } from './cardVaultHandler.js';
 import { endCurrentDeviceSession } from './deviceSessionRegistry.js';
 import { handleDeviceSessionsRequest } from './deviceSessionsHandler.js';
-import { ApiError, assertSameOrigin, handleApi, requestHeader, sendJson } from './http.js';
+import { ApiError, assertSameOrigin, handleApi, sendJson, strictRequestHeader } from './http.js';
 import { backupStore, DATA_SOURCE, isOwner, moveHistory, readHistory, readStore, writeMutableState, writeStore } from './storage.js';
 import { parseMutableWrite } from './stateValidation.js';
 import { isAuthRejection } from './upstream.js';
@@ -170,7 +170,7 @@ app.put('/api/data', (req, res) => void handleApi(res, async () => {
   const session = await requireFinanceSession(req, res);
   assertMutationSessionOrigin(req, session);
   const body = parseMutableWrite(req.body);
-  sendJson(res, 200, await writeMutableState(body.state, body.updatedAt, requestHeader(req, 'if-match'), requestHeader(req, 'x-rheomiq-history-generation'), body.historyLabel ?? 'Οικονομική αλλαγή', session.accessToken));
+  sendJson(res, 200, await writeMutableState(body.state, body.updatedAt, strictRequestHeader(req, 'if-match'), strictRequestHeader(req, 'x-rheomiq-history-generation'), body.historyLabel ?? 'Οικονομική αλλαγή', session.accessToken));
 }));
 
 app.get('/api/history', (req, res) => void handleApi(res, async () => {
@@ -186,7 +186,7 @@ app.post('/api/history', (req, res) => void handleApi(res, async () => {
   if ((action !== 'undo' && action !== 'redo') || !isValidDateStamp(updatedAt) || Object.keys(req.body || {}).some(key => key !== 'action' && key !== 'updatedAt')) {
     throw new ApiError(400, 'INVALID_HISTORY', 'The change-history request is invalid.');
   }
-  sendJson(res, 200, await moveHistory(action, updatedAt, requestHeader(req, 'if-match'), requestHeader(req, 'x-rheomiq-history-generation'), session.accessToken));
+  sendJson(res, 200, await moveHistory(action, updatedAt, strictRequestHeader(req, 'if-match'), strictRequestHeader(req, 'x-rheomiq-history-generation'), session.accessToken));
 }));
 
 app.all('/api/account-metadata', (req, res) => void handleAccountMetadataRequest(req, res));
@@ -195,7 +195,7 @@ app.all('/api/card-secrets', (req, res) => void handleCardVaultRequest(req, res)
 app.post('/api/import', (req, res) => void handleApi(res, async () => {
   const session = await requireFinanceSession(req, res);
   assertMutationSessionOrigin(req, session);
-  if (requestHeader(req, 'x-rheomiq-confirm-import') !== 'replace') throw new ApiError(400, 'IMPORT_CONFIRMATION_REQUIRED', 'Import confirmation is required.');
+  if (strictRequestHeader(req, 'x-rheomiq-confirm-import') !== 'replace') throw new ApiError(400, 'IMPORT_CONFIRMATION_REQUIRED', 'Import confirmation is required.');
   validateCompleteFinanceData(req.body);
   sendJson(res, 200, await writeStore(req.body, undefined, true, session.accessToken));
 }));
