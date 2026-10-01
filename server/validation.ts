@@ -1,6 +1,7 @@
 import { Buffer } from 'node:buffer';
 import type { FinanceData } from '../src/types.js';
 import { MAX_FINANCE_DOCUMENT_BYTES } from '../src/lib/limits.js';
+import { isIsoCalendarDate } from '../src/lib/isoDate.js';
 import { ApiError } from './http.js';
 
 function invalid(message: string): never {
@@ -27,6 +28,15 @@ function text(value: unknown, name: string, max = 1_000, allowEmpty = false): as
 
 function optionalText(value: unknown, name: string, max = 1_000) {
   if (value !== undefined && value !== null) text(value, name, max, true);
+}
+
+function calendarDate(value:unknown,name:string){
+  if(!isIsoCalendarDate(value))invalid(`Invalid ${name}.`);
+}
+
+function optionalCalendarDate(value:unknown,name:string){
+  if(value===undefined||value===null||value==='')return;
+  calendarDate(value,name);
 }
 
 function finiteNumber(value: unknown, name: string, maxAbs = 1_000_000_000): asserts value is number {
@@ -59,7 +69,7 @@ function validateNumberRecord(value: unknown, name: string, max = 10_000) {
 function validateLegacyTransaction(value: unknown, name: string) {
   if (!object(value)) invalid(`Invalid ${name}.`);
   text(value.id, `${name}.id`, 200);
-  text(value.date, `${name}.date`, 64);
+  calendarDate(value.date, `${name}.date`);
   oneOf(value.type, ['income', 'expense', 'transfer', 'adjustment'], `${name}.type`);
   finiteNumber(value.amount, `${name}.amount`);
   text(value.note, `${name}.note`, 20_000, true);
@@ -137,7 +147,7 @@ function validatePaymentCard(value: unknown, name: string) {
 
 function validateSnapshot(value: unknown, name: string) {
   if (!object(value)) invalid(`Invalid ${name}.`);
-  text(value.date, `${name}.date`, 64);
+  calendarDate(value.date, `${name}.date`);
   validateNumberRecord(value.balances, `${name}.balances`, 10_000);
   optionalText(value.sheet, `${name}.sheet`, 500);
 }
@@ -152,9 +162,8 @@ function validateRecurring(value: unknown, name: string) {
     finiteNumber(value.day, `${name}.day`, 31);
     if (!Number.isInteger(value.day) || value.day < 1 || value.day > 31) invalid(`Invalid ${name}.day.`);
   }
-  optionalText(value.firstExpectedDate, `${name}.firstExpectedDate`, 64);
-  optionalText(value.endDate, `${name}.endDate`, 64);
-  if (typeof value.endDate === 'string' && value.endDate && !/^\d{4}-\d{2}-\d{2}$/.test(value.endDate)) invalid(`Invalid ${name}.endDate.`);
+  optionalCalendarDate(value.firstExpectedDate, `${name}.firstExpectedDate`);
+  optionalCalendarDate(value.endDate, `${name}.endDate`);
   text(value.accountId, `${name}.accountId`, 200, true);
   text(value.category, `${name}.category`, 1_000, true);
   if (typeof value.active !== 'boolean') invalid(`Invalid ${name}.active.`);
@@ -190,7 +199,7 @@ function validateLoan(value: unknown, name: string) {
   optionalText(value.source, `${name}.source`, 1_000);
   if (value.accountingMode !== undefined) oneOf(value.accountingMode, ['expense-per-installment', 'liability-repayment'], `${name}.accountingMode`);
   if (value.kind !== undefined) oneOf(value.kind, ['installment','loan','self-loan'], `${name}.kind`);
-  optionalText(value.firstExpectedDate, `${name}.firstExpectedDate`, 64);
+  optionalCalendarDate(value.firstExpectedDate, `${name}.firstExpectedDate`);
   optionalText(value.defaultAccountId, `${name}.defaultAccountId`, 200);
   if (value.forgivenAmount !== undefined && value.forgivenAmount !== null) {
     finiteNumber(value.forgivenAmount, `${name}.forgivenAmount`);
@@ -201,7 +210,7 @@ function validateLoan(value: unknown, name: string) {
     array(value.schedule, `${name}.schedule`, 100_000);
     for (const [index, item] of value.schedule.entries()) {
       if (!object(item)) invalid(`Invalid ${name}.schedule[${index}].`);
-      text(item.date, `${name}.schedule[${index}].date`, 64);
+      calendarDate(item.date, `${name}.schedule[${index}].date`);
       text(item.status, `${name}.schedule[${index}].status`, 200, true);
     }
   }
@@ -214,7 +223,7 @@ function validateLending(value: unknown, name: string) {
   array(value.entries, `${name}.entries`, 100_000);
   for (const [index, entry] of value.entries.entries()) {
     if (!object(entry)) invalid(`Invalid ${name}.entries[${index}].`);
-    text(entry.date, `${name}.entries[${index}].date`, 64);
+    calendarDate(entry.date, `${name}.entries[${index}].date`);
     finiteNumber(entry.lent, `${name}.entries[${index}].lent`);
     finiteNumber(entry.repaid, `${name}.entries[${index}].repaid`);
     optionalNumber(entry.haircut, `${name}.entries[${index}].haircut`);
@@ -237,7 +246,7 @@ function validateSplitPart(value: unknown, name: string) {
 function validateEvent(value: unknown, name: string) {
   if (!object(value)) invalid(`Invalid ${name}.`);
   text(value.id, `${name}.id`, 200);
-  text(value.date, `${name}.date`, 64);
+  calendarDate(value.date, `${name}.date`);
   oneOf(value.kind, EVENT_KINDS, `${name}.kind`);
   finiteNumber(value.amount, `${name}.amount`);
   text(value.note, `${name}.note`, 20_000, true);
@@ -252,6 +261,7 @@ function validateEvent(value: unknown, name: string) {
   optionalText(value.updatedAt, `${name}.updatedAt`, 64);
   optionalText(value.loanId, `${name}.loanId`, 200);
   optionalText(value.recurringId, `${name}.recurringId`, 200);
+  optionalCalendarDate(value.expectedReturnDate, `${name}.expectedReturnDate`);
   if (value.installmentCount !== undefined && value.installmentCount !== null) {
     finiteNumber(value.installmentCount, `${name}.installmentCount`, 100_000);
     if (!Number.isInteger(value.installmentCount) || value.installmentCount <= 0) invalid(`Invalid ${name}.installmentCount.`);
@@ -278,7 +288,7 @@ function validateReviewDecision(value: unknown, name: string) {
   if (value.semanticKind !== undefined) oneOf(value.semanticKind, [...EVENT_KINDS, 'split_required'], `${name}.semanticKind`);
   optionalText(value.category, `${name}.category`, 1_000);
   text(value.decidedAt, `${name}.decidedAt`, 64);
-  optionalText(value.snoozedUntil, `${name}.snoozedUntil`, 64);
+  optionalCalendarDate(value.snoozedUntil, `${name}.snoozedUntil`);
   if (value.parts !== undefined) {
     array(value.parts, `${name}.parts`, 1_000);
     value.parts.forEach((part, index) => validateSplitPart(part, `${name}.parts[${index}]`));
@@ -291,8 +301,7 @@ function validateSavingsGoal(value: unknown, name: string) {
   text(value.name, `${name}.name`, 500);
   finiteNumber(value.targetAmount, `${name}.targetAmount`);
   if (value.targetAmount <= 0) invalid(`Invalid ${name}.targetAmount.`);
-  optionalText(value.targetDate, `${name}.targetDate`, 64);
-  if (typeof value.targetDate === 'string' && value.targetDate && !/^\d{4}-\d{2}-\d{2}$/.test(value.targetDate)) invalid(`Invalid ${name}.targetDate.`);
+  optionalCalendarDate(value.targetDate, `${name}.targetDate`);
   text(value.createdAt, `${name}.createdAt`, 64);
   text(value.updatedAt, `${name}.updatedAt`, 64);
 }
