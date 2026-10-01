@@ -6,6 +6,7 @@ import { entryDraftError, loanDraftError, recurringDraftError } from '../src/lib
 import { centsToMoney, isSafeMoneyValue, moneyToCents } from '../src/lib/money.js';
 import { validRecurringAnchor } from '../src/lib/recurringCadence.js';
 import { monthEnd } from '../src/lib/reports.js';
+import { shiftReportingMonth } from '../src/lib/reportingPeriod.js';
 import { createScheduledTransaction } from '../src/lib/scheduled.js';
 import { qaFinanceData } from '../src/qaFixture.js';
 
@@ -35,6 +36,9 @@ describe('strict calendar boundaries',()=>{
     expect(monthEnd('2024-02')).toBe('2024-02-29');
     expect(()=>monthRange('2026-13')).toThrow(/μήνας/i);
     expect(()=>monthEnd('not-a-month')).toThrow(/μήνας/i);
+    expect(shiftReportingMonth('2026-12',1)).toBe('2027-01');
+    expect(shiftReportingMonth('2027-01',-1)).toBe('2026-12');
+    expect(()=>shiftReportingMonth('2026-13',1)).toThrow(/invalid reporting month/i);
   });
 
   it('rejects impossible user event, scheduled and recurring dates at domain boundaries',()=>{
