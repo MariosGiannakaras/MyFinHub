@@ -10,6 +10,7 @@ const index=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const manifest=JSON.parse(readFileSync(new URL('../public/manifest.webmanifest',import.meta.url),'utf8')) as {name:string;short_name:string;start_url:string;display:string;icons:Array<{src:string;sizes:string;type:string;purpose:string}>};
 const pkg=JSON.parse(readFileSync(new URL('../package.json',import.meta.url),'utf8')) as {scripts:Record<string,string>};
 const budget=readFileSync(new URL('../scripts/bundle-budget.mjs',import.meta.url),'utf8');
+const privacyArtifactGuard=readFileSync(new URL('../scripts/privacy-artifact-guard.mjs',import.meta.url),'utf8');
 const webkitWorkflow=readFileSync(new URL('../.github/workflows/cross-engine-smoke.yml',import.meta.url),'utf8');
 const webkitSmoke=readFileSync(new URL('../scripts/webkit-smoke.mjs',import.meta.url),'utf8');
 const performanceWorkflow=readFileSync(new URL('../.github/workflows/performance-smoke.yml',import.meta.url),'utf8');
@@ -144,4 +145,15 @@ describe('release-readiness source contracts',()=>{
     expect(loadingShiftAudit).toContain("{name:'mobile',width:375,height:812,mobile:true}");
     expect(loadingShiftAudit).toContain('assert(cls<=0.10');
   });
+
+  it('keeps a release-artifact privacy scan in the production build',()=>{
+    expect(pkg.scripts.build).toContain('node scripts/privacy-artifact-guard.mjs');
+    expect(pkg.scripts.build.indexOf('privacy-artifact-guard.mjs')).toBeGreaterThan(pkg.scripts.build.indexOf('vite build'));
+    expect(privacyArtifactGuard).toContain("'SUPABASE_SECRET_KEY'");
+    expect(privacyArtifactGuard).toContain("'SUPABASE_SERVICE_ROLE_KEY'");
+    expect(privacyArtifactGuard).toContain("'CARD_VAULT_KEY'");
+    expect(privacyArtifactGuard).toContain("possible payment-card PAN ending");
+    expect(privacyArtifactGuard).toContain("Release privacy artifact guard passed.");
+  });
+
 });
