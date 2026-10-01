@@ -49,7 +49,7 @@ Release-closeout tracker: **#288 — complete**.
 
 ## Active completion batch — #476
 
-**Implementations 7/24 completed · Sub-implementations 34/189 completed**
+**Implementations 7/24 completed · Sub-implementations 36/190 completed**
 
 - The completion definition has been expanded by the owner to a full-system verification matrix. Existing implementation findings remain tracked, but final closeout now requires direct assistant-led manual review plus UI/UX/accessibility, routing/404, every supported user mutation, real-stack persistence/backend proof, exhaustive failure handling, security/privacy, temporal/data-boundary coverage, operational recovery and canonical post-merge validation.
 
@@ -92,6 +92,7 @@ Release-closeout tracker: **#288 — complete**.
 - Batch G finance semantic validation is source-implemented: persisted event legs/splits/deltas now have cent-exact accounting checks, while full documents additionally validate account references. Mutable writes intentionally avoid seed-dependent reference checks. CI proof is pending, so counters are unchanged.
 - Supabase leaked-password protection remains a blocked external Auth setting: the security advisor reports it disabled, but the connected Supabase control surface available here has no Auth-setting write action.
 - Batch H error/timestamp hardening is source-implemented: unexpected server exceptions no longer log raw messages, persisted lifecycle/audit date stamps use a deterministic date/RFC3339 contract, and Batch G's two test-fixture/source-contract mismatches are folded into the same validation checkpoint. Counters remain unchanged pending green exact-head proof.
+- Batch I provider-image CSP hardening is in progress: direct review found the real Supabase Storage image origin missing from CSP while three obsolete legacy image hosts remained allowlisted. This adds one accepted sub-implementation, increasing the denominator to 190. Exact-head proof is pending.
 - No Android implementation and no `main` promotion/release are included.
 
 ## Next work
