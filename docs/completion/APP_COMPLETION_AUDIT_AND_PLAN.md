@@ -633,3 +633,5 @@ No `main` promotion/release is part of this work.
 - **FV-40 completed:** final visual run #73 passes the mobile Credit network-mark safe-area assertion after anchoring the lower card body inside mobile padding; manual review confirms mobile containment and unchanged tablet/desktop presentation.
 
 - **FV-41 source-fixed; exact-head proof pending:** the exact-final-head Settings rendered check found provider Edit actions at 38px high on mobile. The mobile provider-management rule now raises those actions to a 44px touch target while preserving desktop density and layout; exact-head rendered proof remains required before merge.
+
+- **FV-42 source-fixed; exact-head proof pending:** the final Transactions scanability run created the five-part split successfully but then looked only at the currently paginated ASC page, where a newly created transaction is not guaranteed to be visible. The harness now waits for the real save to close Quick Entry and then uses the visible Transactions search control to locate the unique split before validating disclosure/amount/mobile behavior. No product behavior or pagination rule changed.

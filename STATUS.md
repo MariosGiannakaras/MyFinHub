@@ -49,9 +49,9 @@ Release-closeout tracker: **#288 — complete**.
 
 ## Active completion batch — #476
 
-**Implementations 7/8 completed · Sub-implementations 21/25 completed**
+**Implementations 7/8 completed · Sub-implementations 21/26 completed**
 
-- The explicit accepted checklist was normalized to 20 items, increased through FV-40 to 24, and is now 25 because the exact-final-head rendered validation exposed FV-41: provider Edit actions in Settings → Accounts measured 38px high on mobile. The 500 KiB threshold remains unchanged.
+- The explicit accepted checklist was normalized to 20 items, increased through FV-40 to 24, to 25 for FV-41, and is now 26 because the exact-final-head Transactions scanability run exposed FV-42: the harness assumed a newly created split would remain on the visible ASC pagination page. The 500 KiB threshold remains unchanged.
 
 - Branch: `feat/476-completion-audit-hardening`.
 - **54 deep-audit findings are now tracked.** DA-01..DA-53 retain their existing implementation/disposition state; DA-54 adds the owner-reported dark-theme color/contrast defect.
@@ -75,8 +75,9 @@ Release-closeout tracker: **#288 — complete**.
 - Draft CI on provider-reconciled head `98293e9…` reached 760/761 unit/source tests; the sole failure was a stale migration-source assertion expecting the pre-back-sync fallback text. Commit `8066c2a88899…` updates that assertion to the actual production-synced `else logo_asset_key` / `else wordmark_asset_key` contract without weakening behavior.
 - **FV-38 completed:** exact-head CI on `c95746b…` passes 761/761 tests and measures aggregate CSS at 499.7 KiB raw / 93.4 KiB gzip against the unchanged 500/100 KiB budget after provider-specific styling was consolidated onto shared UI surfaces.
 - **FV-41 source-fixed; exact-head proof pending:** Settings → Accounts provider Edit actions now use a 44px mobile touch target without changing desktop density or the provider-management layout.
-- Current final-validation head: `a3595635babda04d05cc4159f9b1a6da7264ee00`.
-- Remaining work: rerun the exact-head rendered validation to prove FV-35, the source-integrated #482 provider-management flow and FV-41, then require all final-head CI/security/cross-engine/performance/Windows gates green and squash-merge to `develop`.
+- **FV-42 source-fixed; exact-head proof pending:** the five-part split saves correctly; the rendered harness now finds it through the real Transactions search after save instead of assuming it remains visible on the current ASC pagination page. No product behavior changed.
+- Current final-validation head: use the head SHA of PR #477 as the authoritative value.
+- Remaining work: rerun the exact-head rendered validation to prove FV-35, the source-integrated #482 provider-management flow, FV-41 and FV-42, then require all final-head CI/security/cross-engine/performance/Windows gates green and squash-merge to `develop`.
 - No Android implementation and no `main` promotion/release are included.
 
 ## Next work
