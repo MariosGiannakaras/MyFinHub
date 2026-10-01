@@ -252,7 +252,7 @@ export async function moveHistory(
 
 export async function writeStore(data: FinanceData, expectedRevision?: string, force = false, accessToken?: string) {
   validateCompleteFinanceData(data);
-  const next = migrateProductData({ ...data, app: 'RheomIQ', schemaVersion: 3, updatedAt: new Date().toISOString() });
+  const next = migrateProductData({ ...data, app: 'RheomIQ', updatedAt: new Date().toISOString() });
   validateCompleteFinanceData(next);
 
   const path = force ? 'rpc/rheomiq_import_state' : 'rpc/rheomiq_save_state';
