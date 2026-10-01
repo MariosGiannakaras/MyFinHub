@@ -61,6 +61,7 @@ class Cdp{
 const pages={dashboard:'Οι λογαριασμοί μου',transactions:'Συναλλαγές',savings:'Αποταμίευση',cards:'Κάρτες',credit:'Πιστωτική Κάρτα',loans:'Δόσεις & Δάνεια',lending:'Δανεικά / Οφειλές',recurring:'Πάγια & Συνδρομές',planning:'Προγραμματισμός & πρόβλεψη ρευστότητας',attention:'Έλεγχος',reports:'Αναφορές',settings:'Ρυθμίσεις'};
 const settingsTabs=['profile','accounts','categories','icons','rules','data'];
 const authScreens=['login','mfa','mfa-enroll'];
+const utilityScreens=['404'];
 const viewports=[{mode:'desktop',width:1440,height:1000},{mode:'tablet',width:834,height:1112},{mode:'mobile',width:375,height:812}];
 const screenshots=[];
 const clean=value=>String(value).replace(/[^A-Za-z0-9._-]+/g,'-').replace(/^-+|-+$/g,'')||'capture';
@@ -94,6 +95,12 @@ try{
     await waitFor("function(){return document.readyState==='complete'&&Boolean(document.querySelector('.login-card h1'))}",[],screen);
     await sleep(220);
   };
+  const navigateUtility=async(screen)=>{
+    const url=new URL(baseUrl);url.searchParams.set('screen',screen);url.searchParams.set('visual','1');
+    await c.send('Page.navigate',{url:url.href});
+    await waitFor("function(){return document.readyState==='complete'&&Boolean(document.querySelector('#not-found-title'))}",[],screen);
+    await sleep(220);
+  };
   const capture=async(surface,state,mode,width,height)=>{
     const metrics=await c.send('Page.getLayoutMetrics');const size=metrics.cssContentSize||metrics.contentSize;
     const captureWidth=Math.max(1,Math.ceil(size.width));const captureHeight=Math.max(1,Math.min(16000,Math.ceil(size.height)));
@@ -120,12 +127,13 @@ try{
       }
     }
     for(const screen of authScreens){await navigateAuth(screen);await capture('auth',screen,item.mode,item.width,item.height)}
+    for(const screen of utilityScreens){await navigateUtility(screen);await capture('not-found','route-404',item.mode,item.width,item.height)}
   }
   c.close();
-  if(screenshots.length!==63)throw new Error(`Expected 63 final screenshots, captured ${screenshots.length}.`);
+  if(screenshots.length!==66)throw new Error(`Expected 66 final screenshots, captured ${screenshots.length}.`);
   const manifest={schemaVersion:1,kind:'final-release-screenshots',appVersion,captureId:`${timestamp}__${shortSha}`,generatedAt,timeZone,source:{sha:sourceSha,shortSha,branch:sourceBranch},baseUrl,count:screenshots.length,screenshots};
   writeFileSync(resolve(evidenceRoot,'manifest.json'),`${JSON.stringify(manifest,null,2)}\n`);
-  console.log(`Final screenshot QA passed: ${screenshots.length} screenshots across application pages, Settings tabs and auth states.`);
+  console.log(`Final screenshot QA passed: ${screenshots.length} screenshots across application pages, Settings tabs, auth states and the 404 surface.`);
 }finally{
   if(browserSession){
     await stopBrowser(browserSession.child);
