@@ -39,6 +39,7 @@ describe('theme architecture source contract',()=>{
     expect(theme).toContain('.keyboard-shortcut-row kbd{background:var(--control-bg)!important');
     expect(rendered).toContain('dark control border contrast');
     expect(rendered).toContain('dark mobile More menu');
+    expect(rendered).toContain("await sleep(220);const darkMoreMenu=");
     expect(darkSurfaces).toContain('html[data-theme="dark"] .approved-account-card');
     expect(darkSurfaces).toContain('html[data-theme="dark"] .transactions-approved-table td');
     expect(darkSurfaces).toContain('html[data-theme="dark"] .quick-modal:has(.generic-kind-grid)>footer');
