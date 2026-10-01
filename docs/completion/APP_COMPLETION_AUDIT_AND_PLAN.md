@@ -8,7 +8,7 @@ Release target: none — `main` remains release-only
 
 ## Current integration checkpoint — 2026-10-01
 
-**Implementations 6/8 completed · Sub-implementations 18/22 completed**
+**Implementations 6/8 completed · Sub-implementations 18/23 completed**
 
 This checkpoint supersedes older "#482 reconciliation pending" notes below for current execution state.
 
@@ -18,7 +18,7 @@ This checkpoint supersedes older "#482 reconciliation pending" notes below for c
 - The provider reconciliation remains **partially completed / validation pending** until the next exact head passes core CI and the provider rendered QA. It is not yet added to the completed sub-implementation count.
 - FV-35 remains source-fixed and rendered proof pending.
 - FV-37 and FV-38 are completed: exact-head CI on `c95746b…` passes 761/761 tests and the aggregate CSS gate at 499.7 KiB raw / 93.4 KiB gzip without changing the 500/100 KiB limits.
-- Repository-admin hardening is tracked separately in #485 because the connected automation lacks admin-level ruleset/homepage writes; it does not alter this batch's 22-item denominator.
+- Repository-admin hardening is tracked separately in #485 because the connected automation lacks admin-level ruleset/homepage writes; it does not alter this batch's 23-item denominator.
 - No Android changes and no `main` release/promotion are part of this checkpoint.
 
 
