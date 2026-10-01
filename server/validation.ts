@@ -531,7 +531,7 @@ export function validateFinanceData(value: unknown): asserts value is FinanceDat
   state.customTransactions.forEach((item, index) => validateLegacyTransaction(item, `state.customTransactions[${index}]`));
   ensureUniqueIds(state.customTransactions, 'state.customTransactions');
   record(state.overrides, 'state.overrides');
-  Object.entries(state.overrides).forEach(([id, item]) => { text(id, 'state.overrides key', 200); validateLegacyTransaction(item, `state.overrides.${id}`); });
+  Object.entries(state.overrides).forEach(([id, item]) => { text(id, 'state.overrides key', 200); validateLegacyTransaction(item, `state.overrides.${id}`); if (object(item) && item.id !== id) invalid(`Invalid state.overrides.${id}.id.`); });
   if (Array.isArray(state.deleted)) stringArray(state.deleted, 'state.deleted', 100_000, 200);
   else {
     record(state.deleted, 'state.deleted', 100_000);
@@ -541,10 +541,10 @@ export function validateFinanceData(value: unknown): asserts value is FinanceDat
   state.recurringCustom.forEach((item, index) => validateRecurring(item, `state.recurringCustom[${index}]`));
   ensureUniqueIds(state.recurringCustom, 'state.recurringCustom');
   record(state.recurringOverrides, 'state.recurringOverrides', 10_000);
-  Object.entries(state.recurringOverrides).forEach(([id, item]) => validateRecurring(item, `state.recurringOverrides.${id}`));
+  Object.entries(state.recurringOverrides).forEach(([id, item]) => { validateRecurring(item, `state.recurringOverrides.${id}`); if (object(item) && item.id !== id) invalid(`Invalid state.recurringOverrides.${id}.id.`); });
   validateNumberRecord(state.loanExtra, 'state.loanExtra', 10_000);
   record(state.loanOverrides, 'state.loanOverrides', 10_000);
-  Object.entries(state.loanOverrides).forEach(([id, item]) => validateLoan(item, `state.loanOverrides.${id}`));
+  Object.entries(state.loanOverrides).forEach(([id, item]) => { validateLoan(item, `state.loanOverrides.${id}`); if (object(item) && item.id !== id) invalid(`Invalid state.loanOverrides.${id}.id.`); });
   array(state.customLoans, 'state.customLoans', 10_000);
   state.customLoans.forEach((item, index) => validateLoan(item, `state.customLoans[${index}]`));
   ensureUniqueIds(state.customLoans, 'state.customLoans');
