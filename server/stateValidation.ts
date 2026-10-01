@@ -1,6 +1,10 @@
 import type { FinanceData } from '../src/types.js';
 import { ApiError } from './http.js';
-import { validateCompleteFinanceData } from './financeDataValidation.js';
+import { validateCardStateExtensions } from './cardStateValidation.js';
+import { validateCategoryIdentityState } from './categoryIdentityValidation.js';
+import { validateFinanceStateSemantics } from './financeSemanticValidation.js';
+import { validateRecurringCadenceState } from './recurringCadenceValidation.js';
+import { validateFinanceData } from './validation.js';
 
 const EMPTY_SEED: FinanceData['seed'] = {
   accounts: [],
@@ -21,13 +25,18 @@ const EMPTY_SEED: FinanceData['seed'] = {
  * same code path used for full imports and stored-state reads.
  */
 export function validateFinanceState(value: unknown): asserts value is FinanceData['state'] {
-  validateCompleteFinanceData({
+  validateFinanceData({
     app: 'RheomIQ',
     schemaVersion: 3,
     updatedAt: '1970-01-01T00:00:00.000Z',
     seed: EMPTY_SEED,
     state: value,
   });
+  const state=value as FinanceData['state'];
+  validateCardStateExtensions(state);
+  validateCategoryIdentityState(state);
+  validateRecurringCadenceState(state);
+  validateFinanceStateSemantics(state);
 }
 
 export function parseMutableWrite(value: unknown): { state: FinanceData['state']; updatedAt: string; historyLabel?: string } {
