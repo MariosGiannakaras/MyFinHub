@@ -3,6 +3,7 @@ import { ApiError, createBackup, importData, loadData, loadHistory, moveHistory,
 import { describeFinanceChange } from '../lib/changeHistory';
 import { SequentialQueue, remoteRevisionAction, shouldWarnBeforeUnload } from '../lib/persistenceQueue';
 import { migrateProductData } from '../lib/productMigration';
+import { isSupportedFinanceSchemaVersion } from '../lib/schemaVersion';
 import type { FinanceData } from '../types';
 
 export type SaveState = 'loading' | 'saved' | 'saving' | 'error' | 'conflict';
@@ -219,6 +220,7 @@ export function useFinance() {
 
   const doImport = useCallback(async (incoming: FinanceData) => {
     if (exclusiveOperation.current) throw new Error('Υπάρχει ήδη λειτουργία αποθήκευσης σε εξέλιξη.');
+    if (!isSupportedFinanceSchemaVersion(incoming.schemaVersion)) throw new Error('Το αρχείο δημιουργήθηκε από νεότερη ή μη υποστηριζόμενη έκδοση του MyFinHub και δεν μπορεί να εισαχθεί με ασφάλεια.');
     exclusiveOperation.current = true;
     setCurrentSaveState('saving');
     try {
