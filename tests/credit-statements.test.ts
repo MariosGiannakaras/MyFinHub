@@ -11,6 +11,22 @@ describe('credit-card statement cycles',()=>{
     expect(statementOpenDateForClose('2026-02-28',31)).toBe('2026-02-01');
   });
 
+  it('uses real calendar dates and rejects impossible statement inputs',()=>{
+    expect(statementCloseDateForPurchase('2024-02-29',31,'include-closing-day')).toBe('2024-02-29');
+    expect(()=>statementCloseDateForPurchase('2026-02-31',25,'include-closing-day')).toThrow(/statement date/i);
+    expect(()=>statementDueDateForClose('2026-13-01',20)).toThrow(/statement date/i);
+  });
+
+  it('ignores malformed or unsafe purchases instead of creating corrupt statement cycles',()=>{
+    const unsafe=Number.MAX_SAFE_INTEGER;
+    const cycles=groupCardPurchasesByStatement([
+      purchase('good','2026-08-10',20),
+      purchase('bad-date','2026-02-31',30),
+      purchase('unsafe','2026-08-11',unsafe),
+    ],'card-1',25,'include-closing-day');
+    expect(cycles.flatMap(item=>item.purchaseIds)).toEqual(['good']);
+  });
+
   it('keeps historical boundary helpers explicit while production configuration is locked separately',()=>{
     expect(statementCloseDateForPurchase('2026-08-25',25,'include-closing-day')).toBe('2026-08-25');
     expect(statementCloseDateForPurchase('2026-08-25',25,'next-cycle')).toBe('2026-09-25');
