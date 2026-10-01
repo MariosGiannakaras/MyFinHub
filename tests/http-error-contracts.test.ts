@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { ApiError, handleApi, methodNotAllowed, readJsonBody, sendJson, strictQueryValue } from '../server/http.js';
+import { ApiError, handleApi, methodNotAllowed, readJsonBody, sendJson, strictQueryValue, strictRequestHeader } from '../server/http.js';
 import { readFileSync } from 'node:fs';
 
 function response(){
@@ -55,12 +55,21 @@ describe('shared HTTP error contracts',()=>{
   });
 });
 
-describe('strict query boundaries',()=>{
-  it('accepts one string value and rejects ambiguous array/object query shapes',()=>{
+describe('strict query and header boundaries',()=>{
+  it('accepts one string query value and rejects ambiguous array/object query shapes',()=>{
     expect(strictQueryValue({query:{resource:' financial-providers '}},'resource')).toBe('financial-providers');
     expect(strictQueryValue({query:{resource:['financial-providers','other']}},'resource')).toBe('');
     expect(strictQueryValue({query:['not-an-object']},'resource')).toBe('');
     expect(strictQueryValue({},'resource')).toBe('');
+  });
+
+  it('accepts one scalar request header and rejects array/object header shapes',()=>{
+    expect(strictRequestHeader({headers:{authorization:'Bearer token'}},'authorization')).toBe('Bearer token');
+    expect(strictRequestHeader({headers:{}},'authorization')).toBe('');
+    expect(()=>strictRequestHeader({headers:{authorization:['Bearer one','Bearer two']}},'authorization'))
+      .toThrowError(expect.objectContaining({status:400,code:'INVALID_HEADER'}));
+    expect(()=>strictRequestHeader({headers:{authorization:{value:'Bearer token'}}},'authorization'))
+      .toThrowError(expect.objectContaining({status:400,code:'INVALID_HEADER'}));
   });
 });
 
