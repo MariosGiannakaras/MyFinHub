@@ -49,9 +49,9 @@ Release-closeout tracker: **#288 — complete**.
 
 ## Active completion batch — #476
 
-**Implementations 6/8 completed · Sub-implementations 18/22 completed**
+**Implementations 6/8 completed · Sub-implementations 18/23 completed**
 
-- The explicit accepted checklist was normalized to 20 items, increased to 21 for FV-37, and is now 22 after provider reconciliation exposed a second aggregate-CSS regression. The 500 KiB threshold remains unchanged.
+- The explicit accepted checklist was normalized to 20 items, increased to 21 for FV-37, and is now 23 because final visual review exposed FV-39: the Dashboard panel foundation was accidentally desktop-only below 981px. The 500 KiB threshold remains unchanged.
 
 - Branch: `feat/476-completion-audit-hardening`.
 - **54 deep-audit findings are now tracked.** DA-01..DA-53 retain their existing implementation/disposition state; DA-54 adds the owner-reported dark-theme color/contrast defect.
