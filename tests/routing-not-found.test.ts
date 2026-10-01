@@ -17,6 +17,11 @@ describe('routing and 404 contract',()=>{
     expect(resolveHashRoute('#/does-not-exist')).toEqual({page:'dashboard',notFound:true});
     expect(resolveHashRoute('#/%2Fweird')).toEqual({page:'dashboard',notFound:true});
     expect(pageHash('reports')).toBe('#/reports');
+    expect(resolveHashRoute('#/transactions/')).toEqual({page:'dashboard',notFound:true});
+    expect(resolveHashRoute('#/transactions?source=external')).toEqual({page:'dashboard',notFound:true});
+    expect(resolveHashRoute('#//transactions')).toEqual({page:'dashboard',notFound:true});
+    expect(resolveHashRoute('#/%E0%A4%A')).toEqual({page:'dashboard',notFound:true});
+    expect(resolveHashRoute('#/<script>alert(1)</script>')).toEqual({page:'dashboard',notFound:true});
   });
 
   it('uses the dedicated privacy-safe React 404 and exposes it to rendered QA',()=>{
