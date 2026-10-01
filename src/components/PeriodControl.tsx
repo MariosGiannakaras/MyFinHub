@@ -1,11 +1,13 @@
 import { BellRing, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { monthOnlyToUtcDate } from '../lib/dateOnly';
 import { canAdvanceReportingMonth, localMonthKey, shiftReportingMonth } from '../lib/reportingPeriod';
 import { Tooltip } from './Tooltip';
 
 function monthLabel(month:string){
-  const [year,rawMonth]=month.split('-').map(Number);
-  const text=new Intl.DateTimeFormat('el-GR',{month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(Date.UTC(year,rawMonth-1,1)));
+  const date=monthOnlyToUtcDate(month);
+  if(!date)return month;
+  const text=new Intl.DateTimeFormat('el-GR',{month:'long',year:'numeric',timeZone:'UTC'}).format(date);
   return text.charAt(0).toUpperCase()+text.slice(1);
 }
 
