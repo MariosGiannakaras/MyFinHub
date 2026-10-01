@@ -41,18 +41,20 @@ describe('cross-app category icon adoption',()=>{
     expect(identities).toContain('const cached=normalizedSettingsCache.get(settings);if(cached)return cached');
   });
 
-  it('keeps the representative coffee transaction in the food category fixture',()=>{
+  it('keeps deterministic first-page icon fixtures for the Transactions proof',()=>{
     const fixture=read('src/qaFixture.ts');
-    expect(fixture).toMatch(/note:'Freddo espresso\\n[^']*',category:'Τρόφιμα'/);
+    expect(fixture).toContain("expense('approved-26-supermarket','2026-08-26','piraeus-payroll',62.40,'Σούπερ Μάρκετ','Σούπερ Μάρκετ')");
+    expect(fixture).toContain("income('approved-25-salary','2026-08-25','piraeus-payroll',1850,'Μισθοδοσία Αυγούστου','Μισθοδοσία')");
   });
 
   it('waits for stable icon-ready rows instead of coupling adoption proof to page-one paint timing',()=>{
     expect(rendered).toContain('const waitForIcon=');
-    expect(rendered).toContain("const transactionSemanticRows='.transaction-semantic-table .transaction-row'");
-    expect(rendered).toContain("waitForIcon(transactionSemanticRows,'Freddo espresso'");
+    expect(rendered).toContain("const transactionVisibleRows='.transactions-approved-table tbody tr'");
+    expect(rendered).toContain("waitForIcon(transactionVisibleRows,'Σούπερ Μάρκετ'");
+    expect(rendered).toContain("waitForIcon(transactionVisibleRows,'Μισθοδοσία Αυγούστου'");
     expect(rendered).toContain("waitForIcon('.recurring-workspace-table tbody tr','Internet'");
     expect(rendered).toContain("waitForIcon('.report-category-list > div','Σούπερ Μάρκετ'");
-    expect(rendered).toContain("waitForIcon('.mobile-transaction-row','Σούπερ Μάρκετ'");
-    expect(rendered).toContain("mobileFood.key==='groceries'");
+    expect(rendered).toContain("waitForIcon('.mobile-transaction-row','Μισθοδοσία Αυγούστου'");
+    expect(rendered).toContain("mobileSalary.key==='salary'");
   });
 });

@@ -141,7 +141,7 @@ The earlier completion assessment was reopened after owner-observed overlap/over
 
 ### Database coordination boundary
 
-**2026-09-30 owner checkpoint:** database changes are complete in the separate database workstream. The only remaining database-side owner action is the **manual logo upload**. This completion branch must not query, mutate, migrate, backfill or otherwise touch the live database unless the owner explicitly asks for it again. Repo/application work continues independently; final validation will treat the manual logo upload as an external prerequisite rather than a branch implementation task.
+**2026-10-01 owner checkpoint:** logos, backend/database work and owner-side Settings work are complete. There is no remaining owner prerequisite for this completion batch. This branch still will not query, mutate, migrate, backfill or otherwise touch the live database unless explicitly requested; repository integration and final verification of the already-completed provider/logo work are now owned by this workstream.
 
 ## 2B. Live deep-audit findings tracker
 
@@ -149,7 +149,7 @@ The following findings were discovered after the expanded audit was reopened. Th
 
 | ID | Area | Finding | Severity | Status / required proof |
 | --- | --- | --- | --- | --- |
-| DA-01 | Financial-provider assets / Supabase | Database-side provider/logo work is now owned by the separate completed DB workstream. The only remaining DB-side step reported by the owner is manual upload of the final logo binaries. | External prerequisite | **Repo-side complete / owner action pending.** This branch will not touch the database. After the owner uploads the logos manually, only UI/rendered verification remains here. |
+| DA-01 | Financial-provider assets / Supabase | Owner-side provider/logo, backend/database and Settings work is complete as of 2026-10-01. | Completed prerequisite | **Completed.** No owner action remains. This branch will not touch live database state unless explicitly requested; repository integration/rendered verification of the completed provider/logo work is part of the remaining closeout. |
 | DA-02 | Financial-provider branding | Provider registry metadata and UI fallback were previously inconsistent; some provider rows advertised generic assets while owner-provided logo metadata existed, and the UI could bypass registry intent with local identity fallback. | P1 | **Implemented, proof pending.** Registry alignment migration + registry-aware rendering + visual provider picker. Final rendered/provider QA still required. |
 | DA-03 | Settings / icon libraries | Icon-family choice was transient and one icon value was effectively shared across libraries, so switching Lucide/Tabler/Phosphor/Heroicons/Bootstrap did not behave as a persistent per-library preference. | P1 | **Implemented, proof pending.** Persist selected family, separate per-pack selections, per-category/subcategory colors, taxonomy migration/cleanup, server validation, rendered family-memory QA. |
 | DA-04 | Settings / legacy icon path | `CategoryIconsWorkspace` retained an older icon-only mode with local `useState` pack selection, which could diverge from the new persistent icon-family model if reused. | P2 consistency | **Implemented.** Legacy icon-only path now reads/writes the persisted active family. |
@@ -223,7 +223,7 @@ The owner-reported dark-theme issue is confirmed. The correct response is target
 - Completion proof required both static contrast tests and **computed rendered styles** on real controls, plus rendered dark mobile More/Dashboard/Transactions/Quick Entry states and manual inspection of the existing desktop/tablet/mobile Light/Dark matrix. That proof is now complete: the settled More capture no longer shows transition-opacity bleed-through and the representative route surfaces are consistently dark/readable.
 - Manual review of the first DA-54 exact-head artifact found residual high-impact light islands that numerical control checks did not cover: the approved Dashboard composition stayed white inside the dark shell, the desktop Transactions ledger retained light/gray rows and low-contrast text, Quick Entry retained a white footer, the mobile Transactions filter group remained visibly light, and the Reports period chip retained its explicit semi-white background. Dashboard/Transactions/Quick Entry now use a lazy dark workspace layer; the Reports chip is fixed route-locally so it stays code-split. Rendered QA explicitly measures these surfaces.
 
-**Database coordination note — 2026-09-30:** the owner reports that the separate DB change set is complete. The only remaining DB-side action is the owner's manual logo upload. This branch will not run Supabase reads, mutations, migrations, backfills or advisor checks unless explicitly requested again.
+**Database coordination note — 2026-10-01:** the owner confirms logos, backend/database work and owner-side Settings work are complete. No external owner prerequisite remains. This branch will not run live Supabase reads, mutations, migrations, backfills or advisor checks unless explicitly requested again; remaining work is repository/rendered/integration closeout.
 
 Tracking rule for this batch: every new material defect found during the remaining deep audit must be added to this table (or a page-specific section below) before the batch is considered complete. A defect is not “closed” merely because source code changed; rendered/runtime proof remains required where noted.
 
@@ -289,7 +289,7 @@ The first exact-head validation wave exposed three additional validation blocker
 
 | FV-33 | Settings account-delete confirmation selector | The new FV-32 Settings delete round-trip created the temporary custom account and triggered its protected confirmation correctly, but the harness waited for `role="dialog"`. The canonical shared `ConfirmDialog` intentionally renders destructive confirmations as `role="alertdialog"`, so rendered validation timed out before the confirm action. | QA contract mismatch | **Completed; no product change.** Exact-head completion CRUD QA passes using the canonical destructive `alertdialog`; product delete semantics and accessibility role remain unchanged. |
 
-| FV-34 | Category-icon adoption route readiness | After exact-head functional, theme, payment, full-page and Dashboard hierarchy suites passed, category-icon adoption queried Transactions immediately after route heading readiness and received `null` for the `Freddo espresso` icon. Source inspection confirmed Transactions still renders Settings-aware `FinanceIcon` and the fixture still maps `Τρόφιμα→dining` / `Μισθός→salary`; the harness was coupled to page-one paint timing and later mobile coverage targeted an off-page coffee event. | QA readiness/pagination mismatch | **Source-fixed, proof pending; no product change.** Desktop icon proof now waits for FinanceIcon-ready rows in the complete semantic transaction ledger, Recurring/Reports wait for their actual icon-ready targets, and mobile uses a visible page-one `Σούπερ Μάρκετ→groceries` fixture. Semantic source/key assertions remain unchanged. |
+| FV-34 | Category-icon adoption route readiness | After the rest of the rendered matrix passed, category-icon adoption kept targeting `Freddo espresso`, an event that is valid fixture data but is not guaranteed to be on Transactions page 1 with the 14-row pagination. The hidden semantic table mirrors `pageRows`, so waiting longer could never make that off-page row appear. | QA pagination/fixture mismatch | **Source-fixed, proof pending; no product change.** Desktop proof now uses the guaranteed visible first-page `Σούπερ Μάρκετ→groceries` and `Μισθοδοσία Αυγούστου→salary` rows in the actual visible desktop table. Mobile uses the guaranteed first-page salary row so the later Settings expense-icon mutation cannot invalidate the final assertion. Recurring/Reports continue to wait for their actual icon-ready targets. |
 
 Validation rule: FV items close only after the next exact-head wave proves the corrected interaction/performance/bootstrap behavior. No quality threshold or screenshot-count requirement was relaxed.
 
@@ -600,12 +600,10 @@ Completed or implemented in the reopened audit:
 - all-route geometry/overflow/mobile-occlusion audit added to the final rendered suite.
 
 Still required before merge:
-1. finish the deep functional pass across remaining edit/save/delete/payment/settings flows;
-2. run the current-branch rendered suite including card-vault, icon-family, OCR and geometry checks;
-3. manually inspect fresh screenshots for every relevant page/state/viewport/theme, not just manifests;
-4. fix every visual or functional defect found;
-5. reconcile the branch with the current `develop`;
-6. run the exact-final-head CI/CodeQL/Cross-engine/Performance/Windows wave only after the implementation/audit batch is complete;
-7. squash-merge to `develop` only after the expanded audit and exact-head validation are green.
+1. prove FV-34 in the required rendered suite;
+2. manually inspect the fresh exact-head screenshots for every relevant page/state/viewport/theme;
+3. integrate/reconcile the completed provider/logo branch (#482) with #477 and current `develop`;
+4. run the exact-final-head CI/CodeQL/Cross-engine/Performance/Windows wave;
+5. squash-merge the completed work to `develop` only after exact-head validation and manual evidence review are green.
 
 No `main` promotion/release is part of this work.
