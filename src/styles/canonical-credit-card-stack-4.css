@@ -148,7 +148,13 @@
   }
 
   #myfinhub-card-stack .card-inner{
-    padding:17px 17px 23px;
+    padding:17px;
+  }
+
+  /* Touch layouts do not use pointer tilt. Keeping the desktop translateZ(38px)
+   * on the bottom content projects the network mark beyond the clipped card edge. */
+  #myfinhub-card-stack .card-body{
+    transform:none;
   }
 
   #myfinhub-card-stack .card-fields{
