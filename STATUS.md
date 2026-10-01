@@ -89,6 +89,7 @@ Release-closeout tracker: **#288 — complete**.
 - Batch F production backend parity is completed and counted: the live provider-management migration is applied, integrity checks are clean and the repository migration version is aligned with the live ledger.
 - Batch G finance semantic validation is source-implemented: persisted event legs/splits/deltas now have cent-exact accounting checks, while full documents additionally validate account references. Mutable writes intentionally avoid seed-dependent reference checks. CI proof is pending, so counters are unchanged.
 - Supabase leaked-password protection remains a blocked external Auth setting: the security advisor reports it disabled, but the connected Supabase control surface available here has no Auth-setting write action.
+- Batch H error/timestamp hardening is source-implemented: unexpected server exceptions no longer log raw messages, persisted lifecycle/audit date stamps use a deterministic date/RFC3339 contract, and Batch G's two test-fixture/source-contract mismatches are folded into the same validation checkpoint. Counters remain unchanged pending green exact-head proof.
 - No Android implementation and no `main` promotion/release are included.
 
 ## Next work
