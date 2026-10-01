@@ -19,13 +19,19 @@ describe('financial provider registry',()=>{
     expect(new Set(ids).size).toBe(ids.length);
     expect(ids).toEqual(expect.arrayContaining(['piraeus','alpha','national','eurobank','revolut','viva','payzy','paypal']));
     for(const provider of FINANCIAL_PROVIDERS){
-      expect(provider.logoAssetKey).toBeTruthy();
-      expect(provider.wordmarkAssetKey).toBeTruthy();
+      if(provider.id!=='payzy'){
+        expect(provider.logoAssetKey).toBeTruthy();
+        expect(provider.wordmarkAssetKey).toBeTruthy();
+      }
       expect(bankBrandKey(provider.id,provider.displayName)).toBe(provider.id);
     }
+    expect(FINANCIAL_PROVIDERS.find(item=>item.id==='payzy')?.logoAssetKey).toBeNull();
+    expect(FINANCIAL_PROVIDERS.find(item=>item.id==='payzy')?.wordmarkAssetKey).toBeNull();
     expect(financialProviderId('Τράπεζα Πειραιώς')).toBe('piraeus');
     expect(financialProviderId('NBG')).toBe('national');
     expect(financialProviderId('PayPal')).toBe('paypal');
+    expect(financialProviderId('Magenta Pay')).toBe('payzy');
+    expect(FINANCIAL_PROVIDERS.find(item=>item.id==='payzy')?.displayName).toBe('Magenta Pay');
   });
 
   it('never presents fabricated bank artwork as verified provider branding',()=>{
@@ -56,6 +62,7 @@ describe('financial provider registry',()=>{
   it('stores provider identity in an authenticated read-only RLS registry',()=>{
     const migration=source('supabase/migrations/20260904193923_add_financial_provider_registry.sql');
     const brandRefresh=source('supabase/migrations/20260905020000_refresh_financial_provider_brand_assets.sql');
+    const storageMigration=source('supabase/migrations/20260930103651_provider_asset_storage_metadata.sql');
     expect(migration).toContain('create table if not exists public.rheomiq_financial_providers');
     expect(migration).toContain('alter table public.rheomiq_financial_providers enable row level security');
     expect(migration).toContain('revoke all on table public.rheomiq_financial_providers from public, anon, authenticated');
@@ -66,6 +73,13 @@ describe('financial provider registry',()=>{
     expect(brandRefresh).toContain("when 'alpha' then 'generic'");
     expect(brandRefresh).toContain("when 'national' then 'generic'");
     expect(brandRefresh).toContain("when 'eurobank' then 'generic'");
+    expect(storageMigration).toContain('rename column content to legacy_content');
+    expect(storageMigration).toContain('legacy_content is null');
+    expect(storageMigration).toContain("storage_bucket = 'financial-provider-assets'");
+    expect(storageMigration).toContain("source = 'official-provider'");
+    expect(storageMigration).toContain('verified_at is not null');
+    expect(storageMigration).toContain('foreign key (logo_asset_key)');
+    expect(storageMigration).toContain('foreign key (wordmark_asset_key)');
   });
 
   it('reuses the existing metadata API instead of adding another Vercel function',()=>{
@@ -75,6 +89,8 @@ describe('financial provider registry',()=>{
     expect(handler).toContain("resource==='financial-providers'");
     expect(handler).toContain('readFinancialProviders(session.accessToken)');
     expect(store).toContain('rheomiq_financial_providers?select=');
+    expect(store).toContain('rheomiq_financial_provider_assets?select=');
+    expect(store).toContain('storage/v1/object/public');
     expect(store).toContain('authorization:`Bearer ${accessToken}`');
     expect(store).toContain('SUPABASE_PUBLISHABLE_KEY');
     expect(store).not.toMatch(/service[_-]?role|secret[_-]?key/i);
@@ -106,6 +122,7 @@ describe('financial provider registry',()=>{
     expect(ids).toEqual(FINANCIAL_PROVIDERS.map(provider=>provider.id));
     expect(DEFAULT_CARD_BANKS.find(bank=>bank.id==='piraeus')?.name).toBe('ΠΕΙΡΑΙΩΣ');
     expect(DEFAULT_CARD_BANKS.find(bank=>bank.id==='revolut')?.name).toBe('REVOLUT');
+    expect(DEFAULT_CARD_BANKS.find(bank=>bank.id==='payzy')?.name).toBe('MAGENTA PAY');
     expect(DEFAULT_CARD_BANKS.find(bank=>bank.id==='national')?.name).toBe('Εθνική Τράπεζα');
     expect(DEFAULT_CARD_BANKS.find(bank=>bank.id==='eurobank')?.name).toBe('Eurobank');
     expect(DEFAULT_CARD_BANKS.find(bank=>bank.id==='paypal')?.name).toBe('PayPal');
@@ -118,6 +135,9 @@ describe('financial provider registry',()=>{
     expect(mark).toContain('useFinancialProviders');
     expect(mark).toContain('logoAssetKey');
     expect(mark).toContain('wordmarkAssetKey');
+    expect(mark).toContain('provider?.logoUrl');
+    expect(mark).toContain('provider?.wordmarkUrl');
+    expect(mark).toContain('data-bank-logo-source="provider-storage"');
     expect(mark).toContain("const registryVisualKey=assetKey==='generic'?'generic'");
     expect(mark).toContain("identityAsset?.source==='local-image'");
     expect(mark).toContain("const registrySource=provider?'shared':'fallback';");
