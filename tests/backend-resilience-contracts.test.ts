@@ -88,6 +88,22 @@ describe('backend outage and rate-limit contracts',()=>{
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+
+
+  it.each([1,2,3] as const)('loads supported schema v%s documents and migrates them to the current schema',async(schemaVersion)=>{
+    const legacy=legacyDocument(schemaVersion);
+    vi.stubGlobal('fetch',vi.fn().mockResolvedValue(response(200,[{data:legacy,revision:7,updated_at:'2026-08-17T00:00:01.000Z'}])));
+    const result=await readStore('access-token');
+    expect(result.data.schemaVersion).toBe(3);
+    if(schemaVersion<3)expect(result.data.state.migration?.fromSchema).toBe(schemaVersion);
+  });
+
+  it('rejects an unsupported future stored schema before it can be normalized',async()=>{
+    const future={...legacyDocument(3),schemaVersion:4} as FinanceData;
+    vi.stubGlobal('fetch',vi.fn().mockResolvedValue(response(200,[{data:future,revision:7,updated_at:'2026-08-17T00:00:01.000Z'}])));
+    await expect(readStore('access-token')).rejects.toMatchObject({status:400,code:'INVALID_DATA'});
+  });
+
   it('keeps data 429 distinct from generic upstream failure',async()=>{
     vi.stubGlobal('fetch',vi.fn().mockResolvedValue(response(429,{message:'busy'})));
     await expect(readStore('access-token'))
