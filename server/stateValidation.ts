@@ -1,4 +1,5 @@
 import type { FinanceData } from '../src/types.js';
+import { isValidDateStamp } from '../src/lib/dateOnly.js';
 import { ApiError } from './http.js';
 import { validateCardStateExtensions } from './cardStateValidation.js';
 import { validateCategoryIdentityState } from './categoryIdentityValidation.js';
@@ -48,7 +49,7 @@ export function parseMutableWrite(value: unknown): { state: FinanceData['state']
   if (Object.keys(body).some((key) => !allowed.has(key))) {
     throw new ApiError(400, 'INVALID_DATA', 'The finance data is invalid.');
   }
-  if (typeof body.updatedAt !== 'string' || !body.updatedAt || body.updatedAt.length > 64) {
+  if (!isValidDateStamp(body.updatedAt)) {
     throw new ApiError(400, 'INVALID_DATA', 'The finance data is invalid.');
   }
   let historyLabel: string | undefined;
