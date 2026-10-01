@@ -167,7 +167,7 @@ The following findings were discovered after the expanded audit was reopened. Th
 
 | ID | Area | Finding | Severity | Status / required proof |
 | --- | --- | --- | --- | --- |
-| DA-01 | Financial-provider assets / Supabase | Owner-side provider/logo, backend/database and Settings work is complete as of 2026-10-01. | Completed prerequisite | **Completed.** No owner action remains. This branch will not touch live database state unless explicitly requested; repository integration/rendered verification of the completed provider/logo work is part of the remaining closeout. |
+| DA-01 | Financial-provider assets / Supabase | Owner-side provider/logo, backend/database and Settings work is complete as of 2026-10-01. | Completed prerequisite | **Completed.** No owner action remains. The owner subsequently explicitly started implementation. The provider-management migration was applied and post-verified; further production-destructive testing remains prohibited, while privacy-safe read-only verification is allowed where needed for this audit. |
 | DA-02 | Financial-provider branding | Provider registry metadata and UI fallback were previously inconsistent; some provider rows advertised generic assets while owner-provided logo metadata existed, and the UI could bypass registry intent with local identity fallback. | P1 | **Implemented, proof pending.** Registry alignment migration + registry-aware rendering + visual provider picker. Final rendered/provider QA still required. |
 | DA-03 | Settings / icon libraries | Icon-family choice was transient and one icon value was effectively shared across libraries, so switching Lucide/Tabler/Phosphor/Heroicons/Bootstrap did not behave as a persistent per-library preference. | P1 | **Implemented, proof pending.** Persist selected family, separate per-pack selections, per-category/subcategory colors, taxonomy migration/cleanup, server validation, rendered family-memory QA. |
 | DA-04 | Settings / legacy icon path | `CategoryIconsWorkspace` retained an older icon-only mode with local `useState` pack selection, which could diverge from the new persistent icon-family model if reused. | P2 consistency | **Implemented.** Legacy icon-only path now reads/writes the persisted active family. |
@@ -241,7 +241,7 @@ The owner-reported dark-theme issue is confirmed. The correct response is target
 - Completion proof required both static contrast tests and **computed rendered styles** on real controls, plus rendered dark mobile More/Dashboard/Transactions/Quick Entry states and manual inspection of the existing desktop/tablet/mobile Light/Dark matrix. That proof is now complete: the settled More capture no longer shows transition-opacity bleed-through and the representative route surfaces are consistently dark/readable.
 - Manual review of the first DA-54 exact-head artifact found residual high-impact light islands that numerical control checks did not cover: the approved Dashboard composition stayed white inside the dark shell, the desktop Transactions ledger retained light/gray rows and low-contrast text, Quick Entry retained a white footer, the mobile Transactions filter group remained visibly light, and the Reports period chip retained its explicit semi-white background. Dashboard/Transactions/Quick Entry now use a lazy dark workspace layer; the Reports chip is fixed route-locally so it stays code-split. Rendered QA explicitly measures these surfaces.
 
-**Database coordination note — 2026-10-01:** the owner confirms logos, backend/database work and owner-side Settings work are complete. No external owner prerequisite remains. This branch will not run live Supabase reads, mutations, migrations, backfills or advisor checks unless explicitly requested again; remaining work is repository/rendered/integration closeout.
+**Database coordination note — 2026-10-01:** the owner confirms logos, backend/database work and owner-side Settings work are complete. The later explicit instruction to start implementation authorized the pending additive provider-management migration, which is now applied and post-verified. No destructive production testing is permitted; privacy-safe read-only integrity/advisor checks may continue as verification evidence.
 
 Tracking rule for this batch: every new material defect found during the remaining deep audit must be added to this table (or a page-specific section below) before the batch is considered complete. A defect is not “closed” merely because source code changed; rendered/runtime proof remains required where noted.
 
@@ -975,3 +975,23 @@ This batch also folds in source-test maintenance discovered by CI after the alre
 ### 8.21 External Auth setting blocker
 
 Supabase security advisor still reports `auth_leaked_password_protection` disabled. The connected Supabase capability exposes read-only advisor/doc access but no project Auth-setting mutation action, so this item is **blocked on an external project setting** rather than silently treated as complete. Mandatory TOTP/AAL2 remains active; leaked-password protection is additive credential hardening.
+
+
+### 8.22 Implementation batch H — error-log and persistence-timestamp hardening in progress
+
+Direct error/persistence review found two additional trust-boundary gaps:
+
+- unexpected API errors were correctly redacted from the client response but the generic server error logger still emitted the raw exception message, which could place a token, password, upstream detail or private value into operational logs if such content were embedded in an exception;
+- many persistence lifecycle/audit fields were bounded as strings but not validated as real dates/timestamps, allowing impossible or garbage metadata into imports/history/state.
+
+Source implementation in this batch:
+
+- generic API failure logging now records only request ID, safe error code, HTTP status and error type; raw unexpected exception messages are not logged;
+- regression coverage explicitly proves a secret-bearing synthetic exception is absent from both the client response and serialized server log arguments;
+- a deterministic persisted date-stamp contract accepts real YYYY-MM-DD dates for legacy compatibility and RFC3339 timestamps with explicit timezone, including fractional seconds;
+- impossible Gregorian dates, invalid clock values and timezone-free timestamp strings are rejected;
+- document/state audit fields, event/card/scheduled/budget/rule/review/migration lifecycle timestamps, mutable-write timestamps, history action timestamps and persisted history-point timestamps are wired to the new contract;
+- card archive/deletion and credit-statement audit timestamps are validated at the card extension boundary;
+- the two Batch G CI fixture/source-contract mismatches are corrected in this same batch so no standalone CI cycle is spent on test maintenance.
+
+This batch is not counted complete until integrated CI/CodeQL is green and the error/timestamp contracts are confirmed on the exact branch head.
