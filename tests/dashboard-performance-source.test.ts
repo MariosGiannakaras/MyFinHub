@@ -29,8 +29,10 @@ describe('Dashboard first-paint performance contract',()=>{
     expect(visualEvidence).toContain("charts?.classList.contains('mobile-collapsed')");
     expect(visualEvidence).toContain("'.summary-donut .recharts-surface'");
     expect(visualEvidence).toContain('deferred desktop Dashboard charts');
-    expect(shellDashboard).toContain('mobile deferred Dashboard charts');
-    expect(shellDashboard).toContain("getComputedStyle(category).display==='none'");
-    expect(shellDashboard).toContain('state.deferredCharts===2&&!state.categoryDonutVisible&&state.categoryTableVisible');
+    expect(shellDashboard).toContain('waitForMobileDashboardAnalytics');
+    expect(shellDashboard).toContain('summaryReady');
+    expect(shellDashboard).toContain('flowReady');
+    expect(shellDashboard).toContain('categoryTableVisible');
+    expect(shellDashboard).toContain('Timed out waiting for mobile Dashboard analytics');
   });
 });
