@@ -1,5 +1,9 @@
 type RemoteRevisionAction = 'ignore' | 'reload' | 'conflict';
 
+export function shouldWarnBeforeUnload(hasWork:boolean,lastSaveFailed:boolean){
+  return hasWork||lastSaveFailed;
+}
+
 function parseRevision(value: string) {
   if (!/^\d+$/.test(value)) return null;
   try { return BigInt(value); }
