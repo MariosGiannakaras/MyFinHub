@@ -245,6 +245,7 @@ describe('completion UX contracts',()=>{
     expect(dashboard).toContain('heavyChartsReady?<Suspense fallback={null}><DashboardFlowChart');
     expect(dashboard).toContain('heavyChartsReady?<Suspense fallback={null}><DashboardCategoryChart');
     expect(css).toContain('.dashboard-mobile-summary-donut');
+    expect(css).toContain('.dashboard-approved .approved-bar-wrap{height:153px;min-height:153px}');
   });
 
   it('keeps the final functional closeout inside the required rendered CRUD suite',()=>{

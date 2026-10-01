@@ -6,6 +6,9 @@
   .dashboard-approved .approved-account-chart{height:auto!important;min-height:76px;max-height:none}
   .dashboard-approved .approved-account-actions{align-self:end}
 }
+@media(max-width:980px){
+  .dashboard-approved .approved-bar-wrap{height:153px;min-height:153px}
+}
 @media(max-width:680px){
   .dashboard-mobile-disclosure{display:flex;width:100%;min-height:44px;justify-content:center}
   .dashboard-approved .approved-chart-grid.mobile-collapsed,.dashboard-approved .approved-kpi-strip.mobile-collapsed{display:none!important}
