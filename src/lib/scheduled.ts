@@ -1,10 +1,9 @@
 import { allAccounts, createEvent } from './domain.js';
 import { createTransferEvent, centsToMoney, moneyToCents, transferDraftError } from './ledgerFoundations.js';
 import type { FinanceData, FinanceEvent, ScheduledKind, ScheduledTransaction, ScheduledTransactionStatus } from '../types.js';
+import { isIsoCalendarDate } from './isoDate.js';
 
 type ScheduledLifecycle = 'upcoming' | 'due' | 'completed' | 'skipped' | 'cancelled';
-
-const validDate = /^\d{4}-\d{2}-\d{2}$/;
 
 function scheduledItems(data: FinanceData): ScheduledTransaction[] {
   return [...(data.state.scheduled ?? [])].sort((a, b) => a.dueDate.localeCompare(b.dueDate) || a.createdAt.localeCompare(b.createdAt));
@@ -37,7 +36,7 @@ function scheduledDraftError(data: FinanceData, draft: {
   fromAccountId?: string;
   toAccountId?: string;
 }) {
-  if (!validDate.test(draft.dueDate)) return 'Διάλεξε έγκυρη ημερομηνία προγραμματισμένης κίνησης.';
+  if (!isIsoCalendarDate(draft.dueDate)) return 'Διάλεξε έγκυρη ημερομηνία προγραμματισμένης κίνησης.';
   if (!Number.isFinite(draft.amount) || draft.amount <= 0) return 'Συμπλήρωσε θετικό ποσό.';
   if (draft.kind === 'transfer') return transferDraftError(data, { fromAccountId: draft.fromAccountId ?? '', toAccountId: draft.toAccountId ?? '', amount: draft.amount });
   const ids = eligibleAccountIds(data);
