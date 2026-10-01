@@ -1,5 +1,6 @@
 import { assertValidIban, isValidIban } from './iban';
 import { notifyAuthExpired } from './authExpiry';
+import { userErrorMessage } from './userMessage';
 
 type AccountMetadataRecord={accountId:string;iban:string|null;revision:number;updatedAt:string};
 type AccountMetadataSnapshot={loaded:boolean;loading:boolean;records:Record<string,AccountMetadataRecord>;error:string|null};
@@ -20,8 +21,7 @@ export function getAccountMetadataSnapshot(){return snapshot}
 export function subscribeAccountMetadata(listener:()=>void){listeners.add(listener);return()=>{listeners.delete(listener)}}
 
 function errorMessage(error:unknown){
-  if(error instanceof Error&&error.message)return error.message;
-  return 'Τα στοιχεία λογαριασμών δεν είναι διαθέσιμα αυτή τη στιγμή.';
+  return userErrorMessage(error,'Τα στοιχεία λογαριασμών δεν είναι διαθέσιμα αυτή τη στιγμή.');
 }
 
 function parseRecord(value:unknown):AccountMetadataRecord|null{
