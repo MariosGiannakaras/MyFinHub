@@ -13,6 +13,7 @@ import {
   financialProviderById,
   financialProviderId,
   financialProviderLabel,
+  type FinancialProvider,
   type BankAccountCategory,
   type CashAccountType,
 } from '../lib/financialProviders';
@@ -56,9 +57,9 @@ function managedAccounts(data:FinanceData,settings:FinanceSettings):ProviderAcco
 
 function displayName(settings:FinanceSettings,account:Account){return settings.accountNames[account.id]?.trim()||account.name}
 function accountProviderId(account:ProviderAccount){return account.providerId?.trim()||financialProviderId(account.provider,account.id,account.name)}
-function accountProviderLabel(account:ProviderAccount){
+function accountProviderLabel(account:ProviderAccount,providers:FinancialProvider[]){
   const id=accountProviderId(account);
-  return id?financialProviderLabel(id):account.provider?.trim()||'Τραπεζικός λογαριασμός';
+  return id?(providers.find(provider=>provider.id===id)?.displayName??financialProviderLabel(id)):account.provider?.trim()||'Τραπεζικός λογαριασμός';
 }
 function inferBankCategory(account:ProviderAccount):BankAccountCategory{
   if(account.bankAccountCategory)return account.bankAccountCategory;
@@ -100,10 +101,10 @@ function accountReferenced(data:FinanceData,id:string){
   return false;
 }
 
-function AccountIcon({account}:{account:ProviderAccount}){
+function AccountIcon({account,providers}:{account:ProviderAccount;providers:FinancialProvider[]}){
   if(account.kind==='cash')return <span className="account-management-icon is-cash"><WalletCards/></span>;
   const providerId=accountProviderId(account);
-  return <span className="account-management-brand-icon"><BankBrandMark id={providerId||account.id} name={accountProviderLabel(account)}/></span>;
+  return <span className="account-management-brand-icon"><BankBrandMark id={providerId||account.id} name={accountProviderLabel(account,providers)}/></span>;
 }
 
 export function AccountManagementSettings({data,settings,onChange}:{data:FinanceData;settings:FinanceSettings;onChange:(next:FinanceSettings)=>void}){
@@ -275,10 +276,10 @@ export function AccountManagementSettings({data,settings,onChange}:{data:Finance
           const category=inferBankCategory(account);
           const defaultRoles=accountDefaultRoles(settings,account.id);
           return <div className="account-management-row" role="listitem" key={account.id}>
-            <AccountIcon account={account}/>
+            <AccountIcon account={account} providers={providers}/>
             <div className="account-management-copy">
               <div className="account-management-title-line"><b>{displayName(settings,account)}</b>{defaultRoles.length?<span className="account-management-default-badges" aria-label={`Προεπιλογές: ${defaultRoles.join(', ')}`}>{defaultRoles.map(role=><span className="account-management-default-badge" key={role}>{role}</span>)}</span>:null}</div>
-              {account.kind==='cash'?<span>{cashAccountTypeLabel(cashType)}{cashType==='reserve'?' · εκτός καθημερινής χρήσης':''}</span>:<span>{accountProviderLabel(account)} · {bankAccountCategoryLabel(category)}{iban?` · ${iban}`:''}</span>}
+              {account.kind==='cash'?<span>{cashAccountTypeLabel(cashType)}{cashType==='reserve'?' · εκτός καθημερινής χρήσης':''}</span>:<span>{accountProviderLabel(account,providers)} · {bankAccountCategoryLabel(category)}{iban?` · ${iban}`:''}</span>}
             </div>
             <div className="account-management-row-actions"><button type="button" className="account-management-edit" onClick={()=>openEdit(account)}><Pencil size={15}/> Επεξεργασία</button><IconButton type="button" className="danger-text" aria-label={`Διαγραφή ${displayName(settings,account)}`} title="Διαγραφή" onClick={()=>requestDelete(account)}><Trash2 size={16}/></IconButton></div>
           </div>;

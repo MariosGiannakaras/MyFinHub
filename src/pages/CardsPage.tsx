@@ -12,6 +12,7 @@ import { FormError } from '../components/FormError';
 import { IconButton } from '../components/IconButton';
 import { InteractivePaymentCard } from '../components/InteractivePaymentCard';
 import { Tooltip } from '../components/Tooltip';
+import { useFinancialProviders } from '../hooks/useFinancialProviders';
 import { useModalFocus } from '../hooks/useModalFocus';
 import { cardBanks, archivedCardsForBank, cardsForBank, restoreCard } from '../lib/cards';
 import { cardVaultErrorMessage } from '../lib/cardVaultClient';
@@ -36,7 +37,8 @@ export function CardsPage({
   onArchiveCard:(card:PaymentCard)=>void;
   onDeleteCard:(card:PaymentCard)=>Promise<void>;
 }){
-  const banks=useMemo(()=>cardBanks(data),[data]);
+  const providerCatalog=useFinancialProviders();
+  const banks=useMemo(()=>cardBanks(data,providerCatalog.providers),[data,providerCatalog.providers]);
   const activeCards=useMemo(()=>banks.flatMap(bank=>cardsForBank(data,bank.id)),[banks,data]);
   const archivedCards=useMemo(()=>banks.flatMap(bank=>archivedCardsForBank(data,bank.id)),[banks,data]);
   const debitCount=activeCards.filter(card=>card.kind==='debit').length;

@@ -17,6 +17,7 @@ import { MoneyEditDialog } from '../components/MoneyEditDialog';
 import { MoneyInput } from '../components/MoneyInput';
 import { SortDirectionControl, type SortDirection } from '../components/SortDirectionControl';
 import { Tooltip } from '../components/Tooltip';
+import { useFinancialProviders } from '../hooks/useFinancialProviders';
 import { useModalFocus } from '../hooks/useModalFocus';
 import { canPermanentlyDeleteCreditCard, cardBanks, creditCards, creditDebtForCard, creditEventsForCard, creditLimitForCard, deletedCreditCards, restoreCard } from '../lib/cards';
 import { cardVaultErrorMessage } from '../lib/cardVaultClient';
@@ -40,7 +41,8 @@ export function CreditCardPage({
   onCreateEvent:(event:FinanceEvent)=>void;onEditEvent:(id:string)=>void;onDeleteEvent:(id:string)=>void;
   onUpsertCard:(card:PaymentCard)=>void;onArchiveCard:(card:PaymentCard)=>void;onDeleteCard:(card:PaymentCard)=>Promise<void>;onPayCard:(cardId:string,statementId?:string)=>void;
 }){
-  const banks=useMemo(()=>cardBanks(data),[data]);
+  const providerCatalog=useFinancialProviders();
+  const banks=useMemo(()=>cardBanks(data,providerCatalog.providers),[data,providerCatalog.providers]);
   const allCredit=useMemo(()=>creditCards(data,{includeArchived:true}),[data]);
   const activeCredit=useMemo(()=>allCredit.filter(card=>card.active!==false),[allCredit]);
   const archivedCredit=useMemo(()=>allCredit.filter(card=>card.active===false),[allCredit]);
