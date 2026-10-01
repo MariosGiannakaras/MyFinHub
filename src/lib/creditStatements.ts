@@ -1,4 +1,5 @@
 import type { CreditStatementRecord, CreditStatementStatus, FinanceData, FinanceEvent, PaymentCard, StatementBoundaryRule } from '../types.js';
+import { isIsoCalendarDate } from './isoDate.js';
 type CreditStatementCycle={
   id:string;
   cardId:string;
@@ -18,8 +19,8 @@ type CreditStatementView=CreditStatementRecord&{
 };
 
 function parseDate(date:string){
-  const match=/^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
-  if(!match)throw new Error('Invalid statement date.');
+  if(!isIsoCalendarDate(date))throw new Error('Invalid statement date.');
+  const match=/^(\d{4})-(\d{2})-(\d{2})$/.exec(date)!;
   return {year:Number(match[1]),month:Number(match[2]),day:Number(match[3])};
 }
 
@@ -61,7 +62,7 @@ export function statementDueDateForClose(closeDate:string,dueDay:number){
 export function groupCardPurchasesByStatement(events:FinanceEvent[],cardId:string,closingDay:number,boundary:StatementBoundaryRule):CreditStatementCycle[]{
   const groups=new Map<string,CreditStatementCycle>();
   for(const event of events){
-    if(event.kind!=='card_purchase'||event.cardId!==cardId||!/^\d{4}-\d{2}-\d{2}$/.test(event.date)||!Number.isFinite(event.amount)||event.amount<=0)continue;
+    if(event.kind!=='card_purchase'||event.cardId!==cardId||!isIsoCalendarDate(event.date)||!Number.isFinite(event.amount)||event.amount<=0)continue;
     const closeDate=statementCloseDateForPurchase(event.date,closingDay,boundary);
     const id=creditStatementId(cardId,closeDate);
     const group=groups.get(id)??{id,cardId,openDate:statementOpenDateForClose(closeDate,closingDay,boundary),closeDate,purchaseIds:[],purchaseTotal:0};
