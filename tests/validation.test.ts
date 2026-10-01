@@ -306,6 +306,26 @@ describe('finance document validation', () => {
     expect(() => validateFinanceData(state)).toThrowError(/Duplicate id/i);
   });
 
+  it('preserves bounded Unicode finance text exactly and rejects overlong notes', () => {
+    const full=validState();
+    full.seed.accounts=[{id:'bank',name:'Τράπεζα 👩🏽‍💻',kind:'bank'}];
+    const note=`Cafe\u0301 · «ειδικά» / σύμβολα — ${'Α'.repeat(180)} 👩🏽‍💻`;
+    full.state.events=[{
+      id:'unicode-event',date:'2026-10-01',kind:'expense',amount:10,note,category:'Άλλο',
+      accountId:'bank',legs:[{accountId:'bank',amount:-10}],createdAt:full.updatedAt,updatedAt:full.updatedAt,
+    }];
+    const before=JSON.stringify(full);
+    expect(()=>validateCompleteFinanceData(full)).not.toThrow();
+    expect(JSON.stringify(full)).toBe(before);
+    expect(full.state.events[0].note).toBe(note);
+
+    const max=validState();
+    max.seed.transactions=[{id:'max-note',date:'2026-10-01',type:'expense',amount:1,note:'x'.repeat(20_000)}];
+    expect(()=>validateFinanceData(max)).not.toThrow();
+    max.seed.transactions[0].note='x'.repeat(20_001);
+    expect(()=>validateFinanceData(max)).toThrowError(/note/i);
+  });
+
   it('rejects finance documents beyond the production-safe size budget', () => {
     const state = { ...validState(), source: { padding: 'x'.repeat(MAX_FINANCE_DOCUMENT_BYTES) } };
     try {
