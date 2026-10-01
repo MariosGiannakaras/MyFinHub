@@ -49,7 +49,7 @@ Release-closeout tracker: **#288 — complete**.
 
 ## Active completion batch — #476
 
-**Implementations 7/24 completed · Sub-implementations 50/191 completed**
+**Implementations 7/24 completed · Sub-implementations 56/191 completed**
 
 - The completion definition has been expanded by the owner to a full-system verification matrix. Existing implementation findings remain tracked, but final closeout now requires direct assistant-led manual review plus UI/UX/accessibility, routing/404, every supported user mutation, real-stack persistence/backend proof, exhaustive failure handling, security/privacy, temporal/data-boundary coverage, operational recovery and canonical post-merge validation.
 
@@ -97,6 +97,7 @@ Release-closeout tracker: **#288 — complete**.
 - Root/API/Desktop dependency-audit verification is closed: current root/API audits are green and desktop dependency locks are unchanged from the last green Windows audit/package run.
 - Session-cookie/logout/revocation verification is closed: production cookies are `__Host-`/HttpOnly/SameSite=Strict/Secure and active-device revocation remains enforced at session/RLS boundaries.
 - Backup/import round-trip and sensitive-data exclusion verification is directly closed against production functions/backups; no destructive import was performed.
+- Full-system source inventory and traceability matrix are completed: routes, Settings/auth/overlay surfaces, user capabilities, API/backend dependencies, stateful entities and evidence reuse/insufficiency are explicitly mapped.
 - Batch G finance semantic validation is source-implemented: persisted event legs/splits/deltas now have cent-exact accounting checks, while full documents additionally validate account references. Mutable writes intentionally avoid seed-dependent reference checks. CI proof is pending, so counters are unchanged.
 - Supabase leaked-password protection remains a blocked external Auth setting: the security advisor reports it disabled, but the connected Supabase control surface available here has no Auth-setting write action.
 - Batch H error/timestamp hardening is source-implemented: unexpected server exceptions no longer log raw messages, persisted lifecycle/audit date stamps use a deterministic date/RFC3339 contract, and Batch G's two test-fixture/source-contract mismatches are folded into the same validation checkpoint. Counters remain unchanged pending green exact-head proof.
