@@ -21,6 +21,33 @@ export function requestHeader(req: any, name: string): string {
   return firstHeader(req?.headers?.[name.toLowerCase()]);
 }
 
+export function requestQueryValue(req:any,name:string):string{
+  const query=req&&typeof req==='object'?(req as {query?:unknown}).query:undefined;
+  if(!query||typeof query!=='object'||Array.isArray(query))return '';
+  const value=(query as Record<string,unknown>)[name];
+  return typeof value==='string'?value.trim():'';
+}
+
+function boundedContentLength(req:any,maxBytes:number):number|null{
+  const raw=requestHeader(req,'content-length').trim();
+  if(!raw)return null;
+  if(!/^\d+$/.test(raw))throw new ApiError(400,'INVALID_CONTENT_LENGTH','Invalid Content-Length header.');
+  const value=Number(raw);
+  if(!Number.isSafeInteger(value)||value<0)throw new ApiError(400,'INVALID_CONTENT_LENGTH','Invalid Content-Length header.');
+  if(value>maxBytes)throw new ApiError(413,'PAYLOAD_TOO_LARGE','Request is too large.');
+  return value;
+}
+
+export function safeErrorDiagnostic(error:unknown):string{
+  const raw=error instanceof Error?error.message:String(error);
+  return raw
+    .replace(/Bearer\s+[A-Za-z0-9._~-]+/gi,'Bearer [REDACTED]')
+    .replace(/\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/g,'[REDACTED_JWT]')
+    .replace(/\bsb_(?:secret|publishable)_[A-Za-z0-9_-]+\b/gi,'[REDACTED_SUPABASE_KEY]')
+    .replace(/\b\d{13,19}\b/g,'[REDACTED_NUMBER]')
+    .slice(0,512);
+}
+
 export function sendJson(res: any, status: number, body: unknown) {
   res.statusCode = status;
   res.setHeader('content-type', 'application/json; charset=utf-8');
@@ -67,10 +94,7 @@ export async function readJsonBody<T = unknown>(req: any, maxBytes = 5 * 1024 * 
     throw new ApiError(415, 'UNSUPPORTED_MEDIA_TYPE', 'Expected application/json.');
   }
 
-  const contentLength = Number(requestHeader(req, 'content-length') || 0);
-  if (Number.isFinite(contentLength) && contentLength > maxBytes) {
-    throw new ApiError(413, 'PAYLOAD_TOO_LARGE', 'Request is too large.');
-  }
+  boundedContentLength(req,maxBytes);
 
   if (req.body !== undefined) {
     const raw = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
@@ -104,13 +128,7 @@ export function copyBoundedBinaryValue(value:unknown,maxBytes:number):Buffer{
 }
 
 export async function readBinaryBody(req:any,maxBytes:number):Promise<Buffer>{
-  const rawContentLength=requestHeader(req,'content-length').trim();
-  if(rawContentLength){
-    if(!/^\d+$/.test(rawContentLength))throw new ApiError(400,'INVALID_CONTENT_LENGTH','Invalid Content-Length header.');
-    const contentLength=Number(rawContentLength);
-    if(!Number.isSafeInteger(contentLength)||contentLength<0)throw new ApiError(400,'INVALID_CONTENT_LENGTH','Invalid Content-Length header.');
-    if(contentLength>maxBytes)throw new ApiError(413,'PAYLOAD_TOO_LARGE','Request is too large.');
-  }
+  boundedContentLength(req,maxBytes);
 
   const body=req&&typeof req==='object'?(req as {body?:unknown}).body:undefined;
   if(body!==undefined)return copyBoundedBinaryValue(body,maxBytes);
@@ -140,7 +158,7 @@ export async function handleApi(res: any, fn: (requestId: string) => Promise<voi
       console.error('[RheomIQ API]', {
         requestId,
         code: apiError.code,
-        message: error instanceof Error ? error.message : String(error),
+        message: safeErrorDiagnostic(error),
       });
     }
 
