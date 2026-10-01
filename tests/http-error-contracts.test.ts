@@ -66,10 +66,14 @@ describe('strict query and header boundaries',()=>{
   it('accepts one scalar request header and rejects array/object header shapes',()=>{
     expect(strictRequestHeader({headers:{authorization:'Bearer token'}},'authorization')).toBe('Bearer token');
     expect(strictRequestHeader({headers:{}},'authorization')).toBe('');
-    expect(()=>strictRequestHeader({headers:{authorization:['Bearer one','Bearer two']}},'authorization'))
-      .toThrowError(expect.objectContaining({status:400,code:'INVALID_HEADER'}));
-    expect(()=>strictRequestHeader({headers:{authorization:{value:'Bearer token'}}},'authorization'))
-      .toThrowError(expect.objectContaining({status:400,code:'INVALID_HEADER'}));
+    for(const value of [['Bearer one','Bearer two'],{value:'Bearer token'}]){
+      try{
+        strictRequestHeader({headers:{authorization:value}},'authorization');
+        throw new Error('expected strict header failure');
+      }catch(error){
+        expect(error).toMatchObject({status:400,code:'INVALID_HEADER'});
+      }
+    }
   });
 });
 
