@@ -22,7 +22,9 @@ const singleBudgets=[
 
 const aggregateBudgets=[
   // Prevent route-level code splitting from hiding total stylesheet growth.
-  {label:'total application CSS',match:file=>/\.css$/.test(file),raw:500*1024,gzip:100*1024},
+  // The 404/error-route product surface adds a small, intentional stylesheet.
+  // Keep compressed CSS unchanged at 100 KiB and grant only 12 KiB raw headroom.
+  {label:'total application CSS',match:file=>/\.css$/.test(file),raw:512*1024,gzip:100*1024},
 ];
 
 let failed=false;
