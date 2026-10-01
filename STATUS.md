@@ -49,7 +49,7 @@ Release-closeout tracker: **#288 — complete**.
 
 ## Active completion batch — #476
 
-**Implementations 7/24 completed · Sub-implementations 57/192 completed**
+**Implementations 7/24 completed · Sub-implementations 60/192 completed**
 
 - The completion definition has been expanded by the owner to a full-system verification matrix. Existing implementation findings remain tracked, but final closeout now requires direct assistant-led manual review plus UI/UX/accessibility, routing/404, every supported user mutation, real-stack persistence/backend proof, exhaustive failure handling, security/privacy, temporal/data-boundary coverage, operational recovery and canonical post-merge validation.
 
@@ -105,6 +105,7 @@ Release-closeout tracker: **#288 — complete**.
 - Batch J Vercel unknown-API hardening is completed at source/CI level: the final `/api/(.*)` rewrite returns canonical JSON 404s through the existing health function slot, and exact-head CI + CodeQL are green. Deployed runtime proof remains part of the existing routing/404 verification item.
 - Batch K release-artifact privacy guard is completed: CI proves tracked-file and generated-release scans pass; backup/log/screenshot/card-vault privacy boundaries are directly reconciled. Final pre-merge guard rerun remains separately pending.
 - Batch L runtime AAL2 downgrade recovery is in progress: direct error-path review found that protected-endpoint `403 MFA_REQUIRED` did not re-synchronize the mounted session shell. One accepted sub-implementation was added, increasing the denominator to 192.
+- 413/429/5xx error-contract verification is directly closed with green CI exercising body/upload rejection, rate limiting, transport outages, stable codes and redacted 500/502 handling.
 - No Android implementation and no `main` promotion/release are included.
 
 ## Next work
