@@ -1,4 +1,5 @@
 const CENTS=100;
+export const MAX_MONEY_ABS=1_000_000_000;
 
 export function moneyToCents(value:number){
   if(!Number.isFinite(value))return Number.NaN;
@@ -12,5 +13,5 @@ export function centsToMoney(value:number){
 }
 
 export function isSafeMoneyValue(value:number){
-  return Number.isFinite(value)&&Number.isSafeInteger(moneyToCents(value));
+  return Number.isFinite(value)&&Math.abs(value)<=MAX_MONEY_ABS&&Number.isSafeInteger(moneyToCents(value));
 }
