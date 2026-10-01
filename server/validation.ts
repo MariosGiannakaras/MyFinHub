@@ -327,6 +327,88 @@ function validateSavingsGoal(value: unknown, name: string) {
   text(value.updatedAt, `${name}.updatedAt`, 64);
 }
 
+function validateScheduled(value:unknown,name:string){
+  if(!object(value))invalid(`Invalid ${name}.`);
+  text(value.id,`${name}.id`,200);
+  dateOnly(value.dueDate,`${name}.dueDate`);
+  oneOf(value.kind,['expense','income','transfer'],`${name}.kind`);
+  moneyNumber(value.amount,`${name}.amount`);
+  if(value.amount<=0)invalid(`Invalid ${name}.amount.`);
+  text(value.note,`${name}.note`,20_000,true);
+  optionalText(value.category,`${name}.category`,1_000);
+  optionalText(value.subcategory,`${name}.subcategory`,1_000);
+  optionalText(value.accountId,`${name}.accountId`,200);
+  optionalText(value.fromAccountId,`${name}.fromAccountId`,200);
+  optionalText(value.toAccountId,`${name}.toAccountId`,200);
+  oneOf(value.status,['pending','completed','skipped','cancelled'],`${name}.status`);
+  optionalText(value.completedEventId,`${name}.completedEventId`,200);
+  optionalText(value.completedAt,`${name}.completedAt`,64);
+  optionalText(value.skippedAt,`${name}.skippedAt`,64);
+  optionalText(value.cancelledAt,`${name}.cancelledAt`,64);
+  text(value.createdAt,`${name}.createdAt`,64);
+  text(value.updatedAt,`${name}.updatedAt`,64);
+  if(value.kind==='transfer'){
+    if(typeof value.fromAccountId!=='string'||!value.fromAccountId||typeof value.toAccountId!=='string'||!value.toAccountId||value.fromAccountId===value.toAccountId)invalid(`Invalid ${name} transfer accounts.`);
+  }else if(typeof value.accountId!=='string'||!value.accountId){
+    invalid(`Invalid ${name}.accountId.`);
+  }
+}
+
+function validateAttentionDecision(value:unknown,name:string){
+  if(!object(value))invalid(`Invalid ${name}.`);
+  oneOf(value.status,['snoozed','dismissed'],`${name}.status`);
+  text(value.fingerprint,`${name}.fingerprint`,20_000);
+  text(value.decidedAt,`${name}.decidedAt`,64);
+  optionalDateOnly(value.snoozedUntil,`${name}.snoozedUntil`);
+  if(value.status==='dismissed'&&value.snoozedUntil!==undefined&&value.snoozedUntil!==null&&value.snoozedUntil!=='')invalid(`Invalid ${name}.snoozedUntil.`);
+}
+
+function validateBudget(value:unknown,name:string){
+  if(!object(value))invalid(`Invalid ${name}.`);
+  text(value.id,`${name}.id`,500);
+  monthOnly(value.month,`${name}.month`);
+  oneOf(value.scope,['category','overall'],`${name}.scope`);
+  if(value.scope==='category')text(value.category,`${name}.category`,1_000);
+  else if(value.category!==undefined&&value.category!==null&&value.category!=='')invalid(`Invalid ${name}.category.`);
+  moneyNumber(value.amount,`${name}.amount`);
+  if(value.amount<=0)invalid(`Invalid ${name}.amount.`);
+  if(value.alertThreshold!==undefined&&value.alertThreshold!==null){
+    finiteNumber(value.alertThreshold,`${name}.alertThreshold`,1);
+    if(value.alertThreshold<=0||value.alertThreshold>1)invalid(`Invalid ${name}.alertThreshold.`);
+  }
+  text(value.createdAt,`${name}.createdAt`,64);
+  text(value.updatedAt,`${name}.updatedAt`,64);
+}
+
+const RULE_SCOPES=['manual','imported','review'] as const;
+function validateTransactionRule(value:unknown,name:string){
+  if(!object(value))invalid(`Invalid ${name}.`);
+  text(value.id,`${name}.id`,200);
+  text(value.name,`${name}.name`,500);
+  if(typeof value.enabled!=='boolean')invalid(`Invalid ${name}.enabled.`);
+  finiteNumber(value.priority,`${name}.priority`,100_000);
+  if(!Number.isInteger(value.priority)||value.priority<0)invalid(`Invalid ${name}.priority.`);
+  array(value.scopes,`${name}.scopes`,RULE_SCOPES.length);
+  if(!value.scopes.length)invalid(`Invalid ${name}.scopes.`);
+  const scopeSet=new Set<string>();
+  for(const scope of value.scopes){oneOf(scope,RULE_SCOPES,`${name}.scopes item`);if(scopeSet.has(scope))invalid(`Invalid ${name}.scopes.`);scopeSet.add(scope)}
+  if(!object(value.match))invalid(`Invalid ${name}.match.`);
+  if(Object.keys(value.match).some(key=>!['description','merchant','accountId','mode'].includes(key)))invalid(`Invalid ${name}.match.`);
+  optionalText(value.match.description,`${name}.match.description`,2_000);
+  optionalText(value.match.merchant,`${name}.match.merchant`,2_000);
+  optionalText(value.match.accountId,`${name}.match.accountId`,200);
+  if(value.match.mode!==undefined)oneOf(value.match.mode,['contains','equals'],`${name}.match.mode`);
+  if(![value.match.description,value.match.merchant,value.match.accountId].some(item=>typeof item==='string'&&item.trim()))invalid(`Invalid ${name}.match.`);
+  if(!object(value.action))invalid(`Invalid ${name}.action.`);
+  if(Object.keys(value.action).some(key=>!['category','subcategory','note'].includes(key)))invalid(`Invalid ${name}.action.`);
+  optionalText(value.action.category,`${name}.action.category`,1_000);
+  optionalText(value.action.subcategory,`${name}.action.subcategory`,1_000);
+  optionalText(value.action.note,`${name}.action.note`,20_000);
+  if(![value.action.category,value.action.subcategory,value.action.note].some(item=>typeof item==='string'&&item.trim()))invalid(`Invalid ${name}.action.`);
+  text(value.createdAt,`${name}.createdAt`,64);
+  text(value.updatedAt,`${name}.updatedAt`,64);
+}
+
 const CATEGORY_ICON_PACKS=['lucide','tabler','phosphor','heroicons','bootstrap'] as const;
 
 function validateIconPackSelections(value:unknown,name:string){
@@ -381,7 +463,7 @@ function validateSettings(value: unknown) {
   text(value.defaultIncomeAccount, 'state.settings.defaultIncomeAccount', 200, true);
   text(value.defaultLoanAccount, 'state.settings.defaultLoanAccount', 200, true);
   if (value.monthlyBudget !== undefined) {
-    finiteNumber(value.monthlyBudget, 'state.settings.monthlyBudget');
+    moneyNumber(value.monthlyBudget, 'state.settings.monthlyBudget');
     if (value.monthlyBudget < 0) invalid('Invalid state.settings.monthlyBudget.');
   }
   if (value.savingsTargetRate !== undefined) {
@@ -389,7 +471,7 @@ function validateSettings(value: unknown) {
     if (value.savingsTargetRate < 0 || value.savingsTargetRate > 1) invalid('Invalid state.settings.savingsTargetRate.');
   }
   if (value.creditLimit !== undefined) {
-    finiteNumber(value.creditLimit, 'state.settings.creditLimit');
+    moneyNumber(value.creditLimit, 'state.settings.creditLimit');
     if (value.creditLimit < 0) invalid('Invalid state.settings.creditLimit.');
   }
   if (value.motion !== undefined) oneOf(value.motion, ['system','reduced','full'], 'state.settings.motion');
@@ -430,6 +512,7 @@ export function validateFinanceData(value: unknown): asserts value is FinanceDat
   seed.accounts.forEach((item, index) => validateAccount(item, `seed.accounts[${index}]`));
   ensureUniqueIds(seed.accounts, 'seed.accounts');
   stringArray(seed.months, 'seed.months', 1_200, 64);
+  seed.months.forEach((item,index)=>monthOnly(item,`seed.months[${index}]`));
   array(seed.transactions, 'seed.transactions', 100_000);
   seed.transactions.forEach((item, index) => validateLegacyTransaction(item, `seed.transactions[${index}]`));
   ensureUniqueIds(seed.transactions, 'seed.transactions');
@@ -452,7 +535,7 @@ export function validateFinanceData(value: unknown): asserts value is FinanceDat
   state.customTransactions.forEach((item, index) => validateLegacyTransaction(item, `state.customTransactions[${index}]`));
   ensureUniqueIds(state.customTransactions, 'state.customTransactions');
   record(state.overrides, 'state.overrides');
-  Object.entries(state.overrides).forEach(([id, item]) => { text(id, 'state.overrides key', 200); validateLegacyTransaction(item, `state.overrides.${id}`); });
+  Object.entries(state.overrides).forEach(([id, item]) => { text(id, 'state.overrides key', 200); validateLegacyTransaction(item, `state.overrides.${id}`); if(object(item)&&item.id!==id)invalid(`Invalid state.overrides.${id}.id.`); });
   if (Array.isArray(state.deleted)) stringArray(state.deleted, 'state.deleted', 100_000, 200);
   else {
     record(state.deleted, 'state.deleted', 100_000);
@@ -462,10 +545,10 @@ export function validateFinanceData(value: unknown): asserts value is FinanceDat
   state.recurringCustom.forEach((item, index) => validateRecurring(item, `state.recurringCustom[${index}]`));
   ensureUniqueIds(state.recurringCustom, 'state.recurringCustom');
   record(state.recurringOverrides, 'state.recurringOverrides', 10_000);
-  Object.entries(state.recurringOverrides).forEach(([id, item]) => validateRecurring(item, `state.recurringOverrides.${id}`));
-  validateNumberRecord(state.loanExtra, 'state.loanExtra', 10_000);
+  Object.entries(state.recurringOverrides).forEach(([id, item]) => {validateRecurring(item, `state.recurringOverrides.${id}`);if(object(item)&&item.id!==id)invalid(`Invalid state.recurringOverrides.${id}.id.`)});
+  validateMoneyRecord(state.loanExtra, 'state.loanExtra', 10_000);
   record(state.loanOverrides, 'state.loanOverrides', 10_000);
-  Object.entries(state.loanOverrides).forEach(([id, item]) => validateLoan(item, `state.loanOverrides.${id}`));
+  Object.entries(state.loanOverrides).forEach(([id, item]) => {validateLoan(item, `state.loanOverrides.${id}`);if(object(item)&&item.id!==id)invalid(`Invalid state.loanOverrides.${id}.id.`)});
   array(state.customLoans, 'state.customLoans', 10_000);
   state.customLoans.forEach((item, index) => validateLoan(item, `state.customLoans[${index}]`));
   ensureUniqueIds(state.customLoans, 'state.customLoans');
@@ -490,9 +573,33 @@ export function validateFinanceData(value: unknown): asserts value is FinanceDat
     record(state.reviewDecisions, 'state.reviewDecisions', 100_000);
     Object.entries(state.reviewDecisions).forEach(([id, item]) => { text(id, 'state.reviewDecisions key', 200); validateReviewDecision(item, `state.reviewDecisions.${id}`); });
   }
+  if(state.scheduled!==undefined){
+    array(state.scheduled,'state.scheduled',100_000);
+    state.scheduled.forEach((item,index)=>validateScheduled(item,`state.scheduled[${index}]`));
+    ensureUniqueIds(state.scheduled,'state.scheduled');
+  }
+  if(state.attentionDecisions!==undefined){
+    record(state.attentionDecisions,'state.attentionDecisions',100_000);
+    Object.entries(state.attentionDecisions).forEach(([id,item])=>{text(id,'state.attentionDecisions key',2_000);validateAttentionDecision(item,`state.attentionDecisions.${id}`)});
+  }
+  if(state.budgets!==undefined){
+    array(state.budgets,'state.budgets',10_000);
+    state.budgets.forEach((item,index)=>validateBudget(item,`state.budgets[${index}]`));
+    ensureUniqueIds(state.budgets,'state.budgets');
+  }
+  if(state.transactionRules!==undefined){
+    array(state.transactionRules,'state.transactionRules',10_000);
+    state.transactionRules.forEach((item,index)=>validateTransactionRule(item,`state.transactionRules[${index}]`));
+    ensureUniqueIds(state.transactionRules,'state.transactionRules');
+  }
   if (state.savingsGoals !== undefined) {
     array(state.savingsGoals, 'state.savingsGoals', 1_000);
     state.savingsGoals.forEach((item, index) => validateSavingsGoal(item, `state.savingsGoals[${index}]`));
     ensureUniqueIds(state.savingsGoals, 'state.savingsGoals');
   }
+
+  const data=value as unknown as FinanceData;
+  validateCardStateExtensions(data.state);
+  validateCategoryIdentityState(data.state);
+  validateRecurringCadenceData(data);
 }
