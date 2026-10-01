@@ -161,7 +161,8 @@ export async function handleApi(res: any, fn: (requestId: string) => Promise<voi
       console.error('[RheomIQ API]', {
         requestId,
         code: apiError.code,
-        message: error instanceof Error ? error.message : String(error),
+        status: apiError.status,
+        errorType: error instanceof Error ? error.name : typeof error,
       });
     }
 
