@@ -123,7 +123,7 @@ describe('provider branding management',()=>{
     const piraeus=fixture.QA_FINANCIAL_PROVIDERS.find(provider=>provider.id==='piraeus');
     expect(piraeus?.logoAssetKey).toBe('piraeus-logo-universal');
     expect(piraeus?.logoUrl).toContain('/financial-provider-assets/providers/piraeus/piraeus-logo-universal.svg');
-    expect(piraeus?.assets?.map(asset=>asset.assetKey)).toEqual(expect.arrayContaining([
+    expect(piraeus?.assets?.map((asset:{assetKey:string})=>asset.assetKey)).toEqual(expect.arrayContaining([
       'piraeus-logo-universal','piraeus-wordmark-light','piraeus-wordmark-dark','piraeus-card-mark-light','piraeus-card-mark-dark',
     ]));
     expect(qaFinancialProviderSource).toContain("https://ahsukppxwaiagampsuzb.supabase.co");
