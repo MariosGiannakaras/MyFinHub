@@ -10,7 +10,7 @@ import { MfaScreen } from './components/MfaScreen';
 import { PageErrorBoundary } from './components/PageErrorBoundary';
 import { PersistenceNotice } from './components/PersistenceNotice';
 import type { QuickPrefill } from './components/QuickAdd';
-import { financeChangeLabel, type ChangeHistoryEntry, type SaveState } from './hooks/useFinance';
+import { financeChangeLabel, useFinance, type ChangeHistoryEntry, type SaveState } from './hooks/useFinance';
 import { useSession } from './hooks/useSession';
 import type { AttentionItem } from './lib/attention';
 import { archiveCardRecord, withCardProfileDeleted } from './lib/cards';
@@ -49,6 +49,44 @@ if(QA_SESSION_SIGNAL_SCREEN){
         ?{authenticated:false,email:'qa@example.invalid',mfaRequired:true,mfaEnrollmentRequired:false}
         :{authenticated:true,email:'qa@example.invalid',mfaRequired:false,mfaEnrollmentRequired:false};
       return new Response(JSON.stringify(payload),{status:200,headers:{'content-type':'application/json'}});
+    }
+    return originalFetch(input,init);
+  };
+}
+
+const QA_PERSISTENCE_PROBE_SCREEN=new URLSearchParams(location.search).get('screen')==='persistence-probe';
+if(QA_PERSISTENCE_PROBE_SCREEN){
+  const originalFetch=globalThis.fetch.bind(globalThis);
+  const backend=qaFinanceData();
+  let mode:'success'|'offline'|'pending'='success';
+  let revision=1;
+  let putCount=0;
+  const control=globalThis as typeof globalThis & {
+    __myfinhubQaPersistenceMode?:(next:'success'|'offline'|'pending')=>void;
+    __myfinhubQaPersistencePutCount?:()=>number;
+  };
+  control.__myfinhubQaPersistenceMode=(next)=>{mode=next};
+  control.__myfinhubQaPersistencePutCount=()=>putCount;
+  const history=()=>({
+    available:true,generation:String(revision),financeRevision:String(revision),currentPointId:String(revision),
+    canUndo:false,canRedo:false,undoDepth:0,redoDepth:0,
+    points:[{id:String(revision),parentId:null,label:'QA persistence baseline',createdAt:'2026-08-17T12:00:00.000Z',current:true}],
+  });
+  globalThis.fetch=async(input:RequestInfo|URL,init?:RequestInit)=>{
+    const raw=typeof input==='string'?input:input instanceof URL?input.href:input.url;
+    const url=new URL(raw,location.href);
+    if(url.pathname==='/api/data'&&(!init?.method||init.method==='GET')){
+      return new Response(JSON.stringify({data:backend,revision:String(revision),filePath:'QA persistence backend',lastSavedAt:'2026-08-17T12:00:00.000Z'}),{status:200,headers:{'content-type':'application/json'}});
+    }
+    if(url.pathname==='/api/history'&&(!init?.method||init.method==='GET')){
+      return new Response(JSON.stringify(history()),{status:200,headers:{'content-type':'application/json'}});
+    }
+    if(url.pathname==='/api/data'&&init?.method==='PUT'){
+      putCount+=1;
+      if(mode==='offline')throw new TypeError('Synthetic offline finance save');
+      if(mode==='pending')return await new Promise<Response>(()=>{});
+      revision+=1;
+      return new Response(JSON.stringify({revision:String(revision),filePath:'QA persistence backend',lastSavedAt:'2026-08-17T12:00:01.000Z',history:history()}),{status:200,headers:{'content-type':'application/json'}});
     }
     return originalFetch(input,init);
   };
@@ -220,6 +258,20 @@ function QaWorkspace(){
   </>;
 }
 
+function QaPersistenceProbe(){
+  const finance=useFinance();
+  if(!finance.data)return <main className="boot-screen" data-persistence-probe="loading">Φόρτωση persistence probe…</main>;
+  const budget=finance.data.state.settings.monthlyBudget??0;
+  return <main className="boot-screen" data-persistence-probe="ready">
+    <h1>Persistence QA probe</h1>
+    <output data-persistence-state={finance.saveState}>{finance.saveState}</output>
+    <output data-persistence-budget={budget}>{budget}</output>
+    <button type="button" data-persistence-mutate onClick={()=>finance.update(current=>({...current,state:{...current.state,settings:{...current.state.settings,monthlyBudget:(current.state.settings.monthlyBudget??0)+1}}}))}>Synthetic finance change</button>
+    <button type="button" data-persistence-reload onClick={()=>{void finance.reload()}}>Reload persisted state</button>
+    <PersistenceNotice saveState={finance.saveState} onRecover={()=>{void finance.reload()}}/>
+  </main>;
+}
+
 function QaSessionSignalProbe(){
   const session=useSession();
   if(session.state==='loading')return <div className="boot-screen" data-session-probe="loading">Έλεγχος συνεδρίας…</div>;
@@ -228,6 +280,6 @@ function QaSessionSignalProbe(){
   return <LoginScreen onLogin={session.login} error={session.error}/>;
 }
 
-function QaApp(){const params=new URLSearchParams(location.search);const screen=params.get('screen');if(screen==='session-signal')return <QaSessionSignalProbe/>;if(screen==='404')return <NotFoundPage onHome={()=>{}} onBack={()=>{}}/>;if(screen==='login')return <LoginScreen error={params.get('error')==='1'?'Τα στοιχεία σύνδεσης δεν είναι σωστά.':''} onLogin={async()=>false}/>;if(screen==='mfa'||screen==='mfa-enroll')return <MfaScreen mode={screen==='mfa-enroll'?'enroll':'challenge'} email="qa@example.invalid" error={params.get('error')==='1'?'Ο κωδικός επαλήθευσης δεν είναι σωστός.':''} onEnroll={async()=>({factorId:'qa-factor',qrCode:'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%22120%22/%3E',secret:'QA-ONLY-SECRET'})} onVerify={async()=>false} onLogout={async()=>{}}/>;return <QaWorkspace/>}
+function QaApp(){const params=new URLSearchParams(location.search);const screen=params.get('screen');if(screen==='persistence-probe')return <QaPersistenceProbe/>;if(screen==='session-signal')return <QaSessionSignalProbe/>;if(screen==='404')return <NotFoundPage onHome={()=>{}} onBack={()=>{}}/>;if(screen==='login')return <LoginScreen error={params.get('error')==='1'?'Τα στοιχεία σύνδεσης δεν είναι σωστά.':''} onLogin={async()=>false}/>;if(screen==='mfa'||screen==='mfa-enroll')return <MfaScreen mode={screen==='mfa-enroll'?'enroll':'challenge'} email="qa@example.invalid" error={params.get('error')==='1'?'Ο κωδικός επαλήθευσης δεν είναι σωστός.':''} onEnroll={async()=>({factorId:'qa-factor',qrCode:'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%22120%22/%3E',secret:'QA-ONLY-SECRET'})} onVerify={async()=>false} onLogout={async()=>{}}/>;return <QaWorkspace/>}
 
 createRoot(document.getElementById('root')!).render(<StrictMode><QaApp/></StrictMode>);
