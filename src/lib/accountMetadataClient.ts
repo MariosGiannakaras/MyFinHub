@@ -38,7 +38,8 @@ function requestError(response:Response,payload:any,fallback:string){
   const code=typeof payload?.code==='string'?payload.code:'ACCOUNT_METADATA_ERROR';
   notifyAuthExpired(response.status,code);
   if(code==='DEVICE_ACCESS_REVOKED'||code==='AUTH_REQUIRED')return new Error('Η πρόσβαση αυτής της συσκευής έχει λήξει. Συνδέσου ξανά και ολοκλήρωσε την επαλήθευση MFA.');
-  return new Error(payload?.error||payload?.message||fallback);
+  const candidate=typeof payload?.error==='string'?payload.error:typeof payload?.message==='string'?payload.message:'';
+  return new Error(userErrorMessage(candidate?new Error(candidate):null,fallback));
 }
 
 export async function refreshAccountMetadata(force=false){
