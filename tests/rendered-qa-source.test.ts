@@ -50,4 +50,10 @@ describe('rendered browser QA reliability contract', () => {
     expect(coordinator).toContain('Promise.all(Array.from({length:Math.min(parallelism,scripts.length)}');
   });
 
+
+  it('keeps focused 404 accessibility verification in the rendered gate',()=>{
+    expect(coordinator).toContain("scripts/not-found-accessibility-qa.mjs");
+    expect(coordinator).toContain("/tmp/myfinhub-not-found-accessibility-qa-chrome");
+  });
+
 });
