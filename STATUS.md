@@ -49,7 +49,7 @@ Release-closeout tracker: **#288 — complete**.
 
 ## Active completion batch — #476
 
-**Implementations 7/24 completed · Sub-implementations 115/193 completed**
+**Implementations 7/24 completed · Sub-implementations 116/193 completed**
 
 - The completion definition has been expanded by the owner to a full-system verification matrix. Existing implementation findings remain tracked, but final closeout now requires direct assistant-led manual review plus UI/UX/accessibility, routing/404, every supported user mutation, real-stack persistence/backend proof, exhaustive failure handling, security/privacy, temporal/data-boundary coverage, operational recovery and canonical post-merge validation.
 
@@ -173,3 +173,5 @@ Subsequent changes are product fixes against the completed v1.3.0 baseline. Rout
 - 404/Settings/Auth accessibility batch is integrated for exact-head rendered proof; counters remain unchanged until the rendered accessibility suite passes and is directly reviewed.
 
 - Focused visual-component review directly closes two additional visual-audit sub-items: containment/hierarchy across data-display controls and component-level typography/spacing/alignment/semantic-surface consistency. Evidence: assistant-inspected 85-image rendered artifact `11228136368`; dense/extreme/breakpoint edge cases remain separately pending.
+
+- UI/UX designer/developer defect ledger is completed: severity, affected surfaces, systemic causes, preferred shared-layer remediation and proof state are tracked in `docs/completion/UI_UX_DEFECT_LEDGER.md`.
