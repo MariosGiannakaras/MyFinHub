@@ -8,7 +8,7 @@ Release target: none — `main` remains release-only
 
 ## Current integration checkpoint — 2026-10-02
 
-**Implementations 7/24 completed · Sub-implementations 122/193 completed**
+**Implementations 11/24 completed · Sub-implementations 122/193 completed**
 
 This checkpoint supersedes older "#482 reconciliation pending" notes below for current execution state.
 
@@ -20,7 +20,7 @@ This checkpoint supersedes older "#482 reconciliation pending" notes below for c
 - FV-41/FV-42/FV-43 are completed on exact-head rendered CI. Their fixes were validation-harness/touch-target corrections and did not weaken product behavior.
 - FV-44 is completed on `9b25fb1…`: extreme Recurring mobile progressive disclosure, full expansion, collapsed inactive history and overflow safety all pass.
 - FV-45 exact-head rendered proof has passed: OCR persists raw `EUR`, while the owned currency select displays `EUR · Ευρώ`; stored semantics and visible presentation are validated separately. The expanded full-system audit below now governs closeout.
-- Current counters: **Implementations 7/24 completed · Sub-implementations 122/193 completed**. The denominator expanded on 2026-10-01 after the owner required exhaustive full-system verification, direct assistant-led manual review, routing/404 coverage, temporal/data-boundary coverage and operational recovery proof.
+- Current counters: **Implementations 11/24 completed · Sub-implementations 122/193 completed**. Implementation-level counters synchronized on 2026-10-02: audit implementations 8.1, 8.6, 8.8 and 8.15 are fully closed; partial sections remain in progress. The denominator expanded on 2026-10-01 after the owner required exhaustive full-system verification, direct assistant-led manual review, routing/404 coverage, temporal/data-boundary coverage and operational recovery proof.
 - Audit verification checkpoint 2026-10-02: 10 additional sub-implementations are directly closed by assistant review/evidence. Unsupported-future-schema handling remains open under the existing backwards-compatibility item; it does not expand the denominator.
 - Repository-admin hardening remains tracked separately in #485 and does not change this batch denominator.
 - No Android changes and no `main` release/promotion are part of this checkpoint.
@@ -649,13 +649,13 @@ No `main` promotion/release is part of this work.
 
 The prior completion audit remains valuable evidence, but it does **not** by itself prove that every visual element, every UX state, every user action/sub-action, every API/backend path and every error path has been exercised end-to-end against a canonical integrated tree. The owner has therefore expanded the accepted completion scope to require a full-system verification pass before the application is treated as fully closed.
 
-**New audit workstream: Implementations 0/16 completed · Sub-implementations 81/164 completed.**
+**New audit workstream: Implementations 4/16 completed · Sub-implementations 81/164 completed.**
 
-**Overall completion scope: Implementations 7/24 completed · Sub-implementations 122/193 completed.**
+**Overall completion scope: Implementations 11/24 completed · Sub-implementations 122/193 completed.**
 
 The denominator increased because 16 new verification implementations / 160 non-trivial sub-implementations are now accepted. Existing implementation-completion state is retained provisionally, but the expanded verification matrix has a stricter proof rule: prior evidence may be reused only after the responsible ChatGPT agent personally inspects it and confirms that it proves the exact required contract. Re-running unchanged automation is unnecessary when existing artifacts are sufficient, but no matrix cell is finally closed merely because an earlier workflow marked it green.
 
-### 8.1 Canonical baseline, scope inventory and traceability — 0/7
+### 8.1 Canonical baseline, scope inventory and traceability — 7/7
 
 - [x] Freeze the exact candidate source SHA and record `main`, `develop`, open implementation PRs/branches, migration ledger, production deployment SHA and desktop release SHA. Do not treat a PR-only head as canonical after merge. Candidate baseline frozen 2026-10-02 for this verification checkpoint: feature candidate `e3647e22224f8940f4ba71ebe5197a98947aec70`; `develop` `a752e417d339bce3eb2aab0a0b3918140533318e`; `main`/current production deployment `3333b73330c5431c052edcb6e4d1b792a89445a7`; open PR heads #477 `e3647e2…`, #482 `7aa7466…`, #479 `5bd521e…`, #465 `f3e0cfe…`; live Supabase ledger through `20261001220945_reject_cross_account_id_collisions`; Windows release tag `myfinhub-v1.3.0` at `2673ce626c0e3db6c30fea04a46b6cf1ce9517df` with installer SHA-256 `a405189e016ddd03e31ab1ba92979b3991a64516edfa2a657eb7b9928fadc556`.
 - [x] Inventory every routed page, Settings tab, authentication screen, modal, sheet, popover, command surface, global action, keyboard shortcut and persistent desktop-only control from source. Completed in `docs/completion/FULL_SYSTEM_TRACEABILITY_MATRIX.md`.
@@ -665,7 +665,7 @@ The denominator increased because 16 new verification implementations / 160 non-
 - [x] Build one traceability matrix mapping Product capability → UI control → domain operation → persistence/API/backend path → success test → failure tests → visual states → accessibility checks. Completed in `docs/completion/FULL_SYSTEM_TRACEABILITY_MATRIX.md`; incomplete proof cells remain explicitly classified rather than assumed.
 - [x] Mark every prior test/screenshot/evidence item as reusable, partial or insufficient against the matrix; uncovered cells become explicit pending work rather than inferred coverage. The traceability matrix records the disposition and remaining proof class for every capability row.
 
-### 8.2 Exhaustive visual inspection — 0/12
+### 8.2 Exhaustive visual inspection — 5/12
 
 - [x] Capture and manually inspect every primary route at desktop, tablet and narrow-phone widths in both light and dark themes. Direct assistant review opened and inspected all 132 images from Final Visual QA artifact `11217096254` (22 groups × light/dark × desktop/tablet/mobile); primary routes show no material clipping, overlap, unreadable baseline contrast or broken responsive containment. Disposition ledger: `docs/completion/FINAL_VISUAL_MANUAL_REVIEW.md`.
 - [x] Capture and inspect every Settings tab and nested editor, including accounts, providers/assets, categories, icons, rules, data, security/device sessions and appearance/readability surfaces. Direct assistant visual review completed across all 42 committed Settings captures (7 surfaces × light/dark × desktop/tablet/mobile); layout hierarchy, provider/account management, categories, icon libraries, rules, data tools and profile/security surfaces were inspected individually.
@@ -680,7 +680,7 @@ The denominator increased because 16 new verification implementations / 160 non-
 - [ ] Inspect Windows/Electron rendering separately for any host-specific chrome, update UI, first-run/lock/startup diagnostics and scaling differences.
 - [x] Maintain a screenshot manifest with explicit human-review disposition for every required capture; no capture is considered passed merely because automation produced a PNG. `docs/completion/FINAL_VISUAL_MANUAL_REVIEW.md` records direct assistant inspection of every one of the 132 captured images, grouped into the 22 six-capture surface/state sets, with explicit PASS/PASS_WITH_FOLLOWUP dispositions and scope boundaries.
 
-### 8.3 Professional UI/UX and accessibility audit — 0/12
+### 8.3 Professional UI/UX and accessibility audit — 10/12
 
 - [x] Review global information architecture and navigation: grouping, labels, route discoverability, back/close behavior and mobile More-menu prioritization. Direct assistant visual review across the complete primary-route light/dark desktop/tablet/mobile capture set found coherent primary navigation, stable route grouping and no captured navigation/chrome regression; source/routing review separately proves deterministic hash navigation/back recovery.
 - [x] Review each page for visual hierarchy, primary/secondary action priority, scanability, density, progressive disclosure and finance-specific comprehension. Direct assistant inspection of all 132 baseline captures found no material hierarchy/scanability defect across Dashboard, Transactions, Savings, Cards/Credit, Loans/Lending, Recurring, Planning, Attention, Reports, Settings, Auth and 404; targeted dense/extreme/state checks remain tracked separately.
@@ -695,7 +695,7 @@ The denominator increased because 16 new verification implementations / 160 non-
 - [x] Review Greek localization/content quality: terminology consistency, grammar, capitalization, amount/date formatting, wrapping and avoidance of ambiguous financial wording. Direct assistant review combines the complete 132-image Greek UI matrix with source inspection across auth, navigation, finance forms, Settings, errors and recovery. Greek is the default product language; intentionally retained technical/brand terms are documented in `docs/completion/CONTENT_AND_FEEDBACK_AUDIT.md`, finance dates/currency use the shared Greek locale contracts, and no material mixed-language or ambiguous finance wording defect remains in the reviewed surfaces.
 - [x] Produce a designer/developer defect log with severity, affected surfaces, systemic root cause and preferred component/design-system-level remediation. `docs/completion/UI_UX_DEFECT_LEDGER.md` is the assistant-owned defect ledger and records the current systemic visual/interaction findings, severity, root causes, remediation layer and proof state.
 
-### 8.4 Complete functional user-flow / CRUD verification — 0/24
+### 8.4 Complete functional user-flow / CRUD verification — 2/24
 
 - [ ] Authentication: valid/invalid email-password login, logout and session restoration.
 - [ ] MFA: enrollment, challenge, wrong code, successful verification and post-AAL2 bootstrap.
@@ -734,7 +734,7 @@ The denominator increased because 16 new verification implementations / 160 non-
 - [x] Verify backup/import round-trip preserves supported finance state while excluding card-vault secrets and other prohibited sensitive material. Direct production evidence shows a current-revision backup exactly matches the canonical effective FinanceData, 0 backup documents contain sensitive card/token/TOTP key names, backup creation composes relational state without referencing the card-secret table, import uses the relational ledger apply path with an explicit `LEDGER_ROUNDTRIP_MISMATCH` guard, and pre-import backups are created transactionally.
 - [x] Run aggregate database integrity checks after test flows: FK/orphan checks, duplicate identifiers, account references, provider/storage references and history cursor/state consistency. Direct production aggregate SQL reports 0 duplicate account/card/event/scheduled/recurring/budget identifiers, 0 orphan ledger/card/recurring references, 0 invalid provider bindings, 0 missing active provider Storage objects, and a history cursor whose finance revision/current point matches canonical state.
 
-### 8.6 Backend, API, Supabase and Storage audit — 1/12
+### 8.6 Backend, API, Supabase and Storage audit — 12/12
 
 - [x] Reconcile repository migrations against the live migration ledger. `manage_financial_provider_assets` was applied to production on 2026-10-01 and recorded by Supabase as version `20261001192135`; the repository migration filename was aligned to the live ledger. Post-migration read-only proof: bindings table exists with 35 rows, 4 provider-management RPCs exist, 10 owner/AAL2 write policies exist, 0 invalid bindings and 0 active assets missing Storage objects.
 - [x] Verify every API route and allowed HTTP method on valid requests, including response schema/status/header contracts. Direct assistant inventory covered all 12 Vercel API entrypoints plus delegated account-metadata, card-vault, account-security and device-session handlers. Every route has an explicit allowed-method contract, successful paths return controlled JSON envelopes through `sendJson`/shared handlers, JSON responses are privacy-safe `no-store`, known unsupported methods return 405 with `Allow`, and unknown API routes remain JSON 404 rather than falling into HTML.
@@ -749,7 +749,7 @@ The denominator increased because 16 new verification implementations / 160 non-
 - [x] Run Supabase security/performance advisors and classify every finding; do not remove unused indexes without query evidence. Security advisor: only leaked-password protection disabled, documented as a Free-tier/external Auth-setting limitation. Performance advisor: 11 unused-index INFO findings retained because no query evidence justifies removal.
 - [x] Inspect bounded production/staging backend logs for recurring 4xx/5xx/database/storage/auth failures and correlate actionable failures with tested paths without exposing sensitive data. A privacy-safe 24h aggregate found 0 edge/auth 5xx. PostgreSQL errors were limited to expected owner/AAL2 denials plus management-audit query syntax/column mistakes from this verification session; no recurring production backend 5xx pattern was found.
 
-### 8.7 Error handling and resilience matrix — 6/10
+### 8.7 Error handling and resilience matrix — 9/10
 
 - [ ] Exercise 400/validation failures for every mutating form/API and verify field/task-local actionable messages.
 - [x] Exercise 401 auth expiry, 403 owner/AAL2/device denial and revoked-session behavior; verify safe redirect/re-auth without data loss or misleading signed-in UI. Direct assistant review confirms all failed API responses feed the shared auth-expiry dispatcher; 401 auth/device revocation clears client session state, 403 `MFA_REQUIRED` refreshes session state instead of leaving stale authenticated UI, revoked AAL2 device sessions fail closed at the server boundary, and transient Auth 503/504 errors preserve cookies rather than forcing logout.
@@ -773,7 +773,7 @@ The denominator increased because 16 new verification implementations / 160 non-
 - [x] Verify provider/receipt image handling against malicious filenames, MIME confusion, active SVG content, oversized files and path traversal attempts. Provider uploads use generated provider-scoped Storage paths independent of the supplied filename, enforce bounded bytes plus MIME/signature checks, and reject active SVG script/foreignObject/event/javascript patterns; receipt capture accepts only bounded JPEG/PNG with signature checks and normalizes through canvas without using filenames as paths.
 - [x] Re-run secret/security guards and review generated artifacts before final merge/release. Exact-head CI on `0d747e2…` directly shows the tracked-file privacy guard passed across 774 tracked files, all 152 test files / 852 tests passed, the release privacy artifact guard passed, bundle budgets passed, and both root/API high-severity dependency audits passed. This item must be reopened if the final candidate head changes after a security-relevant modification.
 
-### 8.9 Browser, responsive, performance and Windows verification — 0/8
+### 8.9 Browser, responsive, performance and Windows verification — 6/8
 
 - [ ] Chromium full rendered suite on exact head.
 - [x] WebKit compatibility suite on exact head; direct assistant log review confirms WebKit 26.5 installed successfully and the exact-head smoke completed login/MFA semantics, owned controls/modal focus, mutation+undo, Reports accessible chart alternative and narrow-mobile containment with uploaded evidence.
@@ -828,7 +828,7 @@ The owner's definition of "checked" means personally inspected and reasoned abou
 - [ ] After each material fix, personally re-check the affected UI/flow/backend behavior instead of considering a rerun of the same automation sufficient.
 - [ ] The final closeout statement must be based on direct review of the evidence set and must explicitly name any residual unverified area; no blanket "all good" conclusion is allowed when evidence is incomplete.
 
-### 8.14 Routing, deep links and 404/error-page product behavior — 0/10
+### 8.14 Routing, deep links and 404/error-page product behavior — 8/10
 
 Current source already contains an authenticated hash-route `NotFound` screen for unknown `#/<route>` values. It is intentionally privacy-safe, but it is minimal and does not by itself prove correct behavior for unknown real HTTP paths. The desktop server currently falls back to `index.html` for any non-API GET after static-file lookup, while Vercel has no explicit SPA catch-all or custom HTTP 404 contract. This must be treated as a distinct product surface.
 
@@ -843,7 +843,7 @@ Current source already contains an authenticated hash-route `NotFound` screen fo
 - [ ] Review the 404 page manually in desktop/tablet/mobile, light/dark, keyboard-only, 200% zoom and reduced-motion modes; verify focus, contrast and safe no-financial-data behavior.
 - [x] Refine the current 404 into a deliberate MyFinHub-branded, useful and interesting page if manual design review finds the current minimal card insufficient. Direct assistant review of all six 404 captures confirms the current implementation satisfies this design contract: privacy-safe finance-route illustration, concise Greek copy, Dashboard/Back recovery actions, no finance data/external dependency and responsive light/dark treatment. A separate exact-head visual item remains pending for the later focus-halo fix.
 
-### 8.15 Temporal, numeric, locale and data-boundary edge cases — 9/10
+### 8.15 Temporal, numeric, locale and data-boundary edge cases — 10/10
 
 - [x] Verify month-end/year-end transitions, January↔December reporting changes and February/leap-day behavior across transactions, recurring, scheduled, reports, budgets and forecasts. Direct source/test review plus exact-head CI confirm strict Gregorian date validation, UTC/date-only arithmetic, exact short-month ranges, leap-day handling and Jan↔Dec reporting shifts across the shared calendar helpers and their domain callers.
 - [x] Verify local-date/time-zone handling around midnight and DST changes so date-only finance events cannot shift day/month unexpectedly between browser, API and database. Direct review confirms UI 'today' uses local calendar getters and a DST-aware next-local-midnight refresh, while finance date-only parsing/arithmetic/rendering uses explicit UTC calendar dates (no implicit midnight UTC conversion); exact-head local-date and temporal regression tests pass.
@@ -856,7 +856,7 @@ Current source already contains an authenticated hash-route `NotFound` screen fo
 - [x] Verify realistic large-data boundaries for transactions/history/budgets/recurring/scheduled entities: load time, filter/search, pagination, charts, mutation latency and memory remain usable without unbounded DOM/render work. Direct rendered proof covers 1,500 transactions, 120 recurring, 120 scheduled, 80 budgets, 80 rules and 100 history rows with bounded progressive disclosure/DOM, deterministic transaction pagination/search, no horizontal overflow, budget mutation under 1.5 s, max route readiness under 5 s and conservative reports/history heap guards under 256 MiB. Observed proof was materially below the guards (3116 ms max readiness, 724 ms budget mutation, 41.8/62.7 MiB heap).
 - [x] Verify backwards-compatible loading/import of every still-supported schema/version and explicit rejection/migration messaging for unsupported or malformed historical data. The canonical boundary accepts supported schema versions 1–3, preserves the incoming version through migration, validates stored documents before migration can normalize them, migrates supported legacy reads/imports to v3 and rejects future v4+ documents before database mutation or read normalization. Exact-head CI/CodeQL on `81bff44…` passes the parameterized v1/v2/v3 read contracts, legacy import contract and future-schema rejection paths.
 
-### 8.16 Operational reliability, observability, migration recovery and release rollback — 2/8
+### 8.16 Operational reliability, observability, migration recovery and release rollback — 4/8
 
 - [ ] Rehearse every pending database migration on an isolated production-like Supabase environment before production application, including data-preservation and policy/grant verification.
 - [ ] Perform a real backup → restore/recovery exercise on isolated data, then verify finance state, history/audit boundaries and excluded secrets after restoration.
