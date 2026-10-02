@@ -49,7 +49,7 @@ Release-closeout tracker: **#288 — complete**.
 
 ## Active completion batch — #476
 
-**Implementations 7/24 completed · Sub-implementations 120/193 completed**
+**Implementations 7/24 completed · Sub-implementations 121/193 completed**
 
 - The completion definition has been expanded by the owner to a full-system verification matrix. Existing implementation findings remain tracked, but final closeout now requires direct assistant-led manual review plus UI/UX/accessibility, routing/404, every supported user mutation, real-stack persistence/backend proof, exhaustive failure handling, security/privacy, temporal/data-boundary coverage, operational recovery and canonical post-merge validation.
 
@@ -181,3 +181,5 @@ Subsequent changes are product fixes against the completed v1.3.0 baseline. Rout
 - Batch R responsive transition proof is in progress: intermediate 1024/681/680 widths, tablet/phone landscape resize transitions and a 375×500 virtual-keyboard-equivalent dialog viewport are now part of rendered geometry QA. Counters do not advance until rendered proof is green and directly reviewed.
 
 - Large-data and production-mode performance verification are completed from directly reviewed rendered/Lighthouse evidence; realistic transaction/report/planning/history/budget/rule workloads remain bounded and responsive.
+
+- Responsive geometry verification is directly closed from Chromium runtime evidence across canonical/intermediate/orientation/resize and virtual-keyboard profiles.
