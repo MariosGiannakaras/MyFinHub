@@ -261,7 +261,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
 
   return <>
     <AppShell page={page} onPage={navigate} onQuickAdd={() => openGeneric('expense')} onCommand={openCommand} onRefresh={() => { void finance.reload(); }} onUndo={() => { finance.undo(); }} onRedo={() => { finance.redo(); }} canUndo={finance.canUndo} canRedo={finance.canRedo} history={finance.changeHistory} saveState={finance.saveState} filePath={finance.filePath} motionMode="full" userEmail={userEmail} onLogout={onLogout}>
-      <PersistenceNotice saveState={finance.saveState} onRecover={recover}/>
+      <PersistenceNotice saveState={finance.saveState} errorMessage={finance.saveErrorMessage} onRecover={recover}/>
       {PERIOD_PAGES.has(page) ? <div className="period-row"><PeriodControl month={month} onChange={(next) => { setMonth(next); setMonthIsManual(true); }}/><span>Στοιχεία περιόδου</span></div> : null}
       {finance.saveState === 'loading' ? <PageSkeleton/> : <PageErrorBoundary resetKey={page} onDashboard={() => navigate('dashboard')}><Suspense fallback={<PageLoading/>}>{content}</Suspense></PageErrorBoundary>}
     </AppShell>
