@@ -118,3 +118,14 @@
 @media (max-width:1099px){
   .planning-approved-desktop{display:none!important}
 }
+
+@media (min-width:1100px) and (max-width:1199px){
+  .planning-approved-forecast{grid-template-columns:minmax(246px,1.35fr) repeat(3,minmax(88px,.46fr)) minmax(110px,.5fr);padding-inline:12px 10px}
+  .planning-forecast-intro{grid-template-columns:44px minmax(0,1fr);gap:10px;padding-right:8px}
+  .planning-forecast-icon{width:44px;height:44px}
+  .planning-forecast-icon svg{width:21px;height:21px}
+  .planning-forecast-kpi{padding-inline:8px}
+  .planning-forecast-kpi>b{font-size:18px}
+  .planning-detail-toggle{min-width:0;margin-left:3px;padding-inline:7px;white-space:normal;line-height:1.15;text-align:center}
+}
+
