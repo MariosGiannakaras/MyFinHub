@@ -8,7 +8,7 @@ Release target: none — `main` remains release-only
 
 ## Current integration checkpoint — 2026-10-02
 
-**Implementations 7/24 completed · Sub-implementations 85/192 completed**
+**Implementations 7/24 completed · Sub-implementations 92/192 completed**
 
 This checkpoint supersedes older "#482 reconciliation pending" notes below for current execution state.
 
@@ -20,7 +20,7 @@ This checkpoint supersedes older "#482 reconciliation pending" notes below for c
 - FV-41/FV-42/FV-43 are completed on exact-head rendered CI. Their fixes were validation-harness/touch-target corrections and did not weaken product behavior.
 - FV-44 is completed on `9b25fb1…`: extreme Recurring mobile progressive disclosure, full expansion, collapsed inactive history and overflow safety all pass.
 - FV-45 exact-head rendered proof has passed: OCR persists raw `EUR`, while the owned currency select displays `EUR · Ευρώ`; stored semantics and visible presentation are validated separately. The expanded full-system audit below now governs closeout.
-- Current counters: **Implementations 7/24 completed · Sub-implementations 85/192 completed**. The denominator expanded on 2026-10-01 after the owner required exhaustive full-system verification, direct assistant-led manual review, routing/404 coverage, temporal/data-boundary coverage and operational recovery proof.
+- Current counters: **Implementations 7/24 completed · Sub-implementations 92/192 completed**. The denominator expanded on 2026-10-01 after the owner required exhaustive full-system verification, direct assistant-led manual review, routing/404 coverage, temporal/data-boundary coverage and operational recovery proof.
 - Audit verification checkpoint 2026-10-02: 10 additional sub-implementations are directly closed by assistant review/evidence. Unsupported-future-schema handling remains open under the existing backwards-compatibility item; it does not expand the denominator.
 - Repository-admin hardening remains tracked separately in #485 and does not change this batch denominator.
 - No Android changes and no `main` release/promotion are part of this checkpoint.
@@ -651,7 +651,7 @@ The prior completion audit remains valuable evidence, but it does **not** by its
 
 **New audit workstream: Implementations 0/16 completed · Sub-implementations 57/163 completed.**
 
-**Overall completion scope: Implementations 7/24 completed · Sub-implementations 85/192 completed.**
+**Overall completion scope: Implementations 7/24 completed · Sub-implementations 92/192 completed.**
 
 The denominator increased because 16 new verification implementations / 160 non-trivial sub-implementations are now accepted. Existing implementation-completion state is retained provisionally, but the expanded verification matrix has a stricter proof rule: prior evidence may be reused only after the responsible ChatGPT agent personally inspects it and confirms that it proves the exact required contract. Re-running unchanged automation is unnecessary when existing artifacts are sufficient, but no matrix cell is finally closed merely because an earlier workflow marked it green.
 
@@ -832,14 +832,14 @@ The owner's definition of "checked" means personally inspected and reasoned abou
 
 Current source already contains an authenticated hash-route `NotFound` screen for unknown `#/<route>` values. It is intentionally privacy-safe, but it is minimal and does not by itself prove correct behavior for unknown real HTTP paths. The desktop server currently falls back to `index.html` for any non-API GET after static-file lookup, while Vercel has no explicit SPA catch-all or custom HTTP 404 contract. This must be treated as a distinct product surface.
 
-- [ ] Verify every valid hash route, the legacy `#/review` redirect, direct-load behavior, refresh and authenticated deep-link restoration.
-- [ ] Verify unknown/malformed hash routes produce the intended MyFinHub 404 surface and do not silently land on Dashboard.
-- [ ] Verify browser Back/Forward history across routes, 404 → valid route recovery, and focus restoration to the destination heading.
+- [x] Verify every valid hash route, the legacy `#/review` redirect, direct-load behavior, refresh and authenticated deep-link restoration. Direct assistant source review confirms initial routing is derived from `location.hash`, the legacy review route is replaced with `#/attention`, valid navigation uses deterministic page hashes, and refresh/direct load rehydrates from the current hash; exact-head CI covers the routing contract.
+- [x] Verify unknown/malformed hash routes produce the intended MyFinHub 404 surface and do not silently land on Dashboard. Direct assistant review confirms unknown hashes set `notFound=true` while preserving Dashboard only as an internal fallback page id; malformed/encoded/script-like fragments remain 404 and never render finance data.
+- [x] Verify browser Back/Forward history across routes, 404 → valid route recovery, and focus restoration to the destination heading. Direct assistant review confirms push/replace state navigation, hashchange+popstate synchronization, dedicated 404 Back/Dashboard recovery and explicit focus restoration to the destination H1 / 404 title.
 - [ ] Verify real unknown HTTP paths on Vercel/production-like web hosting return an intentional MyFinHub experience with an appropriate HTTP status rather than a platform-generic page or silent Dashboard fallback.
-- [ ] Verify unknown HTTP paths in the local/Windows desktop server do not silently become Dashboard unless that is an explicitly accepted SPA contract.
-- [ ] Verify missing static assets/chunks/images return the correct failure response and are not incorrectly served `index.html` with status 200 by a broad catch-all.
-- [ ] Verify unknown/unsupported API routes and methods remain JSON API failures with correct 404/405 semantics and can never fall through into the HTML application shell.
-- [ ] Test trailing slashes, query strings, encoded characters, duplicated separators, malformed fragments and copy/pasted external deep links without routing loops or unsafe reflected content.
+- [x] Verify unknown HTTP paths in the local/Windows desktop server do not silently become Dashboard unless that is an explicitly accepted SPA contract. Direct assistant review confirms only `/` and `/index.html` serve the app shell; all other non-API GET paths return `404.html` with HTTP 404.
+- [x] Verify missing static assets/chunks/images return the correct failure response and are not incorrectly served `index.html` with status 200 by a broad catch-all. Direct assistant review confirms `express.static(...,{index:false})` runs before the terminal 404 and the previous broad `index.html` fallback is absent; missing asset paths therefore terminate at HTTP 404 rather than the app shell.
+- [x] Verify unknown/unsupported API routes and methods remain JSON API failures with correct 404/405 semantics and can never fall through into the HTML application shell. Direct assistant review confirms known local API routes have explicit 405 fallbacks, unknown local `/api/*` routes hit JSON `API_NOT_FOUND` before static serving, and Vercel's final `/api/(.*)` rewrite reuses the health handler to return the same JSON 404 contract.
+- [x] Test trailing slashes, query strings, encoded characters, duplicated separators, malformed fragments and copy/pasted external deep links without routing loops or unsafe reflected content. Direct assistant review of the route resolver plus exact-head regression coverage confirms these variants fail closed to the privacy-safe 404 and route input is not reflected into the page.
 - [ ] Review the 404 page manually in desktop/tablet/mobile, light/dark, keyboard-only, 200% zoom and reduced-motion modes; verify focus, contrast and safe no-financial-data behavior.
 - [ ] Refine the current 404 into a deliberate MyFinHub-branded, useful and interesting page if manual design review finds the current minimal card insufficient. Preferred contract: privacy-safe finance-themed illustration/microinteraction built from local/CSS assets, concise copy, visible "Dashboard" and "Back" actions, optional authenticated app search/command action when safe, no sensitive data, no external dependency, responsive and accessible.
 
