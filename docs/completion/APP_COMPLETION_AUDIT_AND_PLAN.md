@@ -1223,3 +1223,16 @@ This adds one material sub-implementation, increasing the overall denominator fr
 - 404 accessibility coverage is source-implemented on the next validation head: title focus, Dashboard/Back keyboard order, reduced-motion animation suppression and a 720×500 200%-equivalent effective viewport overflow/touch-target contract are now part of rendered accessibility QA. All Settings tabs plus login/MFA error states are also added to the same keyboard/semantic audit. Completion remains pending exact-head rendered CI.
 
 - 404/Settings/Auth accessibility batch is integrated for exact-head proof: rendered keyboard-semantic QA now covers the 404 title focus, Dashboard/Back tab order, reduced-motion suppression and a 720×500 200%-equivalent viewport, plus every Settings tab and login/MFA normal+error states on desktop/mobile. No verification counter advances until rendered CI passes and its evidence is directly reviewed.
+
+
+### 8.39 Implementation batch R — responsive transition and virtual-keyboard proof in progress
+
+Direct review of the geometry harness found that the canonical 1440/834/375/320 viewports were strong but did not explicitly exercise the exact 680/681 breakpoint transition, landscape resize behavior or a shortened viewport equivalent to a mobile virtual keyboard.
+
+Source/runtime scope:
+- dynamically resize representative high-density routes through 1024 desktop, 1112×834 tablet landscape, 681 px desktop-side breakpoint, 680 px mobile-side breakpoint and 812×375 phone landscape without relying on a fresh page load for each transition;
+- continue enforcing zero document overflow, no off-viewport controls, no bottom-navigation label collision and no global-chrome overlap after each resize;
+- run the full interaction-dialog geometry suite at a 375×500 virtual-keyboard-equivalent viewport in addition to the existing 375×812 and 320×700 profiles;
+- keep existing canonical route geometry coverage unchanged.
+
+This implements the existing responsive/intermediate-width/orientation/virtual-keyboard verification cell and does not change the denominator. Completion requires integrated rendered CI plus direct review of the resulting QA log/evidence.
