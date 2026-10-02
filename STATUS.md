@@ -169,3 +169,5 @@ Subsequent changes are product fixes against the completed v1.3.0 baseline. Rout
 
 - Batch Q is completed: regenerated Final Visual QA produced 132 captures and the manifest now records the actual checked-out source head instead of the pull-request merge-event SHA.
 - 404/Settings/Auth keyboard-semantic coverage has been expanded on the next validation head; counters do not advance for those items until rendered CI passes.
+
+- 404/Settings/Auth accessibility batch is integrated for exact-head rendered proof; counters remain unchanged until the rendered accessibility suite passes and is directly reviewed.
