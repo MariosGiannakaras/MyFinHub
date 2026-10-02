@@ -30,8 +30,11 @@ describe('routing and 404 contract',()=>{
     expect(app).toContain('<NotFoundPage');
     expect(qa).toContain("screen==='404'");
     expect(finalScreenshots).toContain("const utilityScreens=['404']");
-    expect(finalScreenshots).toContain('screenshots.length!==132');
-    expect(finalWorkflow).toContain('Expected 132 final PNGs');
+    expect(finalScreenshots).toContain('screenshots.length!==168');
+    expect(finalWorkflow).toContain('Expected 168 final PNGs');
+    expect(finalScreenshots).toContain("{screen:'auth-unavailable',state:'auth-unavailable'}");
+    expect(finalScreenshots).toContain("{screen:'session-revoked',state:'session-revoked'}");
+    expect(finalScreenshots).toContain("{screen:'mfa-error',state:'mfa-error'}");
   });
 
   it('serves only the hash-routed app entry at root and returns a real static 404 for unknown HTTP paths',()=>{
