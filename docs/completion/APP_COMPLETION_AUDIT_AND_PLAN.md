@@ -1181,3 +1181,16 @@ Required remediation:
 - re-run Lending desktop/tablet/mobile light/dark evidence and directly re-inspect it before visual closeout.
 
 This defect belongs to the existing exhaustive visual/UI-UX verification scope and does not change the denominator.
+
+
+### 8.37 FV-52 — Recurring desktop dark-theme table contrast defect in progress
+
+Direct assistant inspection of the integrated dual-theme matrix found a dark-theme regression on Recurring: the desktop recurring groups/rows and the tablet table heading retain fixed light backgrounds. In dark mode the desktop active-obligation rows become large pale-grey bands with dark-theme text, making recurring names, cadence, account and amount details low-contrast or unreadable.
+
+Required remediation:
+- convert recurring desktop group/row and responsive table-heading backgrounds to semantic surface/inset tokens;
+- preserve category grouping, loan-linked recurring distinction, row actions and mobile card presentation;
+- add a narrow source regression preventing fixed light-only recurring ledger surfaces from returning;
+- re-run Recurring desktop/tablet/mobile light/dark evidence and directly re-inspect it before visual closeout.
+
+This defect belongs to the existing exhaustive visual/UI-UX verification scope and does not change the denominator.
