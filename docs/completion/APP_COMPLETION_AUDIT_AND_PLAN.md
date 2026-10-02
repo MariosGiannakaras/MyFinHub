@@ -8,7 +8,7 @@ Release target: none — `main` remains release-only
 
 ## Current integration checkpoint — 2026-10-02
 
-**Implementations 7/24 completed · Sub-implementations 95/192 completed**
+**Implementations 7/24 completed · Sub-implementations 96/192 completed**
 
 This checkpoint supersedes older "#482 reconciliation pending" notes below for current execution state.
 
@@ -20,7 +20,7 @@ This checkpoint supersedes older "#482 reconciliation pending" notes below for c
 - FV-41/FV-42/FV-43 are completed on exact-head rendered CI. Their fixes were validation-harness/touch-target corrections and did not weaken product behavior.
 - FV-44 is completed on `9b25fb1…`: extreme Recurring mobile progressive disclosure, full expansion, collapsed inactive history and overflow safety all pass.
 - FV-45 exact-head rendered proof has passed: OCR persists raw `EUR`, while the owned currency select displays `EUR · Ευρώ`; stored semantics and visible presentation are validated separately. The expanded full-system audit below now governs closeout.
-- Current counters: **Implementations 7/24 completed · Sub-implementations 95/192 completed**. The denominator expanded on 2026-10-01 after the owner required exhaustive full-system verification, direct assistant-led manual review, routing/404 coverage, temporal/data-boundary coverage and operational recovery proof.
+- Current counters: **Implementations 7/24 completed · Sub-implementations 96/192 completed**. The denominator expanded on 2026-10-01 after the owner required exhaustive full-system verification, direct assistant-led manual review, routing/404 coverage, temporal/data-boundary coverage and operational recovery proof.
 - Audit verification checkpoint 2026-10-02: 10 additional sub-implementations are directly closed by assistant review/evidence. Unsupported-future-schema handling remains open under the existing backwards-compatibility item; it does not expand the denominator.
 - Repository-admin hardening remains tracked separately in #485 and does not change this batch denominator.
 - No Android changes and no `main` release/promotion are part of this checkpoint.
@@ -649,9 +649,9 @@ No `main` promotion/release is part of this work.
 
 The prior completion audit remains valuable evidence, but it does **not** by itself prove that every visual element, every UX state, every user action/sub-action, every API/backend path and every error path has been exercised end-to-end against a canonical integrated tree. The owner has therefore expanded the accepted completion scope to require a full-system verification pass before the application is treated as fully closed.
 
-**New audit workstream: Implementations 0/16 completed · Sub-implementations 60/163 completed.**
+**New audit workstream: Implementations 0/16 completed · Sub-implementations 61/163 completed.**
 
-**Overall completion scope: Implementations 7/24 completed · Sub-implementations 95/192 completed.**
+**Overall completion scope: Implementations 7/24 completed · Sub-implementations 96/192 completed.**
 
 The denominator increased because 16 new verification implementations / 160 non-trivial sub-implementations are now accepted. Existing implementation-completion state is retained provisionally, but the expanded verification matrix has a stricter proof rule: prior evidence may be reused only after the responsible ChatGPT agent personally inspects it and confirms that it proves the exact required contract. Re-running unchanged automation is unnecessary when existing artifacts are sufficient, but no matrix cell is finally closed merely because an earlier workflow marked it green.
 
@@ -737,7 +737,7 @@ The denominator increased because 16 new verification implementations / 160 non-
 ### 8.6 Backend, API, Supabase and Storage audit — 1/12
 
 - [x] Reconcile repository migrations against the live migration ledger. `manage_financial_provider_assets` was applied to production on 2026-10-01 and recorded by Supabase as version `20261001192135`; the repository migration filename was aligned to the live ledger. Post-migration read-only proof: bindings table exists with 35 rows, 4 provider-management RPCs exist, 10 owner/AAL2 write policies exist, 0 invalid bindings and 0 active assets missing Storage objects.
-- [ ] Verify every API route and allowed HTTP method on valid requests, including response schema/status/header contracts.
+- [x] Verify every API route and allowed HTTP method on valid requests, including response schema/status/header contracts. Direct assistant inventory covered all 12 Vercel API entrypoints plus delegated account-metadata, card-vault, account-security and device-session handlers. Every route has an explicit allowed-method contract, successful paths return controlled JSON envelopes through `sendJson`/shared handlers, JSON responses are privacy-safe `no-store`, known unsupported methods return 405 with `Allow`, and unknown API routes remain JSON 404 rather than falling into HTML.
 - [x] Verify cookie-auth and explicitly approved bearer-auth boundaries independently; malformed/rejected bearer auth must fail closed without cookie fallback. Direct source/test review confirms bearer auth is explicit opt-in, rejected bearer credentials never fall back to ambient cookies, cookie-only endpoints ignore Authorization, bearer flows never set browser cookies, and native finance/vault requests keep CORS closed.
 - [x] Verify owner + AAL2 + active-device authorization at API and PostgreSQL RLS/RPC layers with negative tests for anonymous, non-owner/AAL1 and revoked-device contexts. Direct production probes return unauthenticated 401s on protected finance/metadata/history APIs; source inspection confirms every sensitive handler requires session→owner→AAL2 and active-device enforcement is centralized in session finalization; direct production SQL proves an active owner+AAL2 session sees finance rows while AAL1, non-owner and unknown-session contexts see none; revoked-device behavior is covered by the exercised device-registry contract.
 - [x] Verify same-origin/CSRF policy, CORS behavior, request-size limits, content-type validation and malformed body/query handling on state-changing endpoints. Direct endpoint inventory plus exact-head regression coverage confirms cookie mutations require same-origin, approved bearer mutations do not add CORS, JSON/binary bodies have explicit byte ceilings and Content-Length validation, unsupported media types/malformed JSON are controlled 4xx responses, and duplicate/array query shapes fail closed.
