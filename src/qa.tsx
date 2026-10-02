@@ -285,7 +285,7 @@ function QaPersistenceProbe(){
     <output data-persistence-budget={budget}>{budget}</output>
     <button type="button" data-persistence-mutate onClick={()=>finance.update(current=>({...current,state:{...current.state,settings:{...current.state.settings,monthlyBudget:(current.state.settings.monthlyBudget??0)+1}}}))}>Synthetic finance change</button>
     <button type="button" data-persistence-reload onClick={()=>{void finance.reload()}}>Reload persisted state</button>
-    <PersistenceNotice saveState={finance.saveState} onRecover={()=>{void finance.reload()}}/>
+    <PersistenceNotice saveState={finance.saveState} errorMessage={finance.saveErrorMessage} onRecover={()=>{void finance.reload()}}/>
   </main>;
 }
 
