@@ -30,8 +30,15 @@ describe('routing and 404 contract',()=>{
     expect(app).toContain('<NotFoundPage');
     expect(qa).toContain("screen==='404'");
     expect(finalScreenshots).toContain("const utilityScreens=['404']");
-    expect(finalScreenshots).toContain('screenshots.length!==168');
-    expect(finalWorkflow).toContain('Expected 168 final PNGs');
+    expect(finalScreenshots).toContain('const settingsNestedStateCount=8');
+    expect(finalScreenshots).toContain("provider-editor-details");
+    expect(finalScreenshots).toContain("provider-asset-picker");
+    expect(finalScreenshots).toContain("account-editor-new");
+    expect(finalScreenshots).toContain("category-rename-editor");
+    expect(finalScreenshots).toContain("icon-selection-editor");
+    expect(finalScreenshots).toContain("rule-editor-new");
+    expect(finalScreenshots).toContain("data-import-confirmation");
+    expect(finalWorkflow).toContain('Expected 216 final PNGs');
     expect(finalScreenshots).toContain("{screen:'auth-unavailable',state:'auth-unavailable'}");
     expect(finalScreenshots).toContain("{screen:'session-revoked',state:'session-revoked'}");
     expect(finalScreenshots).toContain("{screen:'mfa-error',state:'mfa-error'}");
