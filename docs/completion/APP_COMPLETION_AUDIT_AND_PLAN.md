@@ -8,7 +8,7 @@ Release target: none — `main` remains release-only
 
 ## Current integration checkpoint — 2026-10-02
 
-**Implementations 12/24 completed · Sub-implementations 125/193 completed**
+**Implementations 12/24 completed · Sub-implementations 126/193 completed**
 
 This checkpoint supersedes older "#482 reconciliation pending" notes below for current execution state.
 
@@ -21,7 +21,7 @@ This checkpoint supersedes older "#482 reconciliation pending" notes below for c
 - FV-44 is completed on `9b25fb1…`: extreme Recurring mobile progressive disclosure, full expansion, collapsed inactive history and overflow safety all pass.
 - FV-45 exact-head rendered proof has passed: OCR persists raw `EUR`, while the owned currency select displays `EUR · Ευρώ`; stored semantics and visible presentation are validated separately. The expanded full-system audit below now governs closeout.
 - FV-54 completed on `b602617…`: the local/Windows static host preloads `index.html` and `404.html` once at startup instead of performing `sendFile()` filesystem access per document request; exact-head CodeQL #3125 is green and the prior rate-limiting review threads are resolved. No dependency, API, finance, Supabase or Android behavior changed.
-- Current counters: **Implementations 12/24 completed · Sub-implementations 125/193 completed**. Implementations 8.1, 8.6, 8.7, 8.8 and 8.15 are fully closed; the responsive transition/virtual-keyboard cell in 8.2 is also complete from directly reviewed rendered evidence. The denominator remains 193.
+- Current counters: **Implementations 12/24 completed · Sub-implementations 126/193 completed**. Implementations 8.1, 8.6, 8.7, 8.8 and 8.15 are fully closed; the responsive-transition and complete auth-state visual cells in 8.2 are also complete from directly reviewed evidence. The denominator remains 193.
 - Audit verification checkpoint 2026-10-02: 10 additional sub-implementations are directly closed by assistant review/evidence. Unsupported-future-schema handling remains open under the existing backwards-compatibility item; it does not expand the denominator.
 - Repository-admin hardening remains tracked separately in #485 and does not change this batch denominator.
 - No Android changes and no `main` release/promotion are part of this checkpoint.
@@ -650,9 +650,9 @@ No `main` promotion/release is part of this work.
 
 The prior completion audit remains valuable evidence, but it does **not** by itself prove that every visual element, every UX state, every user action/sub-action, every API/backend path and every error path has been exercised end-to-end against a canonical integrated tree. The owner has therefore expanded the accepted completion scope to require a full-system verification pass before the application is treated as fully closed.
 
-**New audit workstream: Implementations 6/16 completed · Sub-implementations 84/164 completed.**
+**New audit workstream: Implementations 6/16 completed · Sub-implementations 85/164 completed.**
 
-**Overall completion scope: Implementations 12/24 completed · Sub-implementations 125/193 completed.**
+**Overall completion scope: Implementations 12/24 completed · Sub-implementations 126/193 completed.**
 
 The denominator increased because 16 new verification implementations / 160 non-trivial sub-implementations are now accepted. Existing implementation-completion state is retained provisionally, but the expanded verification matrix has a stricter proof rule: prior evidence may be reused only after the responsible ChatGPT agent personally inspects it and confirms that it proves the exact required contract. Re-running unchanged automation is unnecessary when existing artifacts are sufficient, but no matrix cell is finally closed merely because an earlier workflow marked it green.
 
@@ -666,11 +666,11 @@ The denominator increased because 16 new verification implementations / 160 non-
 - [x] Build one traceability matrix mapping Product capability → UI control → domain operation → persistence/API/backend path → success test → failure tests → visual states → accessibility checks. Completed in `docs/completion/FULL_SYSTEM_TRACEABILITY_MATRIX.md`; incomplete proof cells remain explicitly classified rather than assumed.
 - [x] Mark every prior test/screenshot/evidence item as reusable, partial or insufficient against the matrix; uncovered cells become explicit pending work rather than inferred coverage. The traceability matrix records the disposition and remaining proof class for every capability row.
 
-### 8.2 Exhaustive visual inspection — 6/12
+### 8.2 Exhaustive visual inspection — 7/12
 
 - [x] Capture and manually inspect every primary route at desktop, tablet and narrow-phone widths in both light and dark themes. Direct assistant review opened and inspected all 132 images from Final Visual QA artifact `11217096254` (22 groups × light/dark × desktop/tablet/mobile); primary routes show no material clipping, overlap, unreadable baseline contrast or broken responsive containment. Disposition ledger: `docs/completion/FINAL_VISUAL_MANUAL_REVIEW.md`.
 - [x] Capture and inspect every Settings tab and nested editor, including accounts, providers/assets, categories, icons, rules, data, security/device sessions and appearance/readability surfaces. Direct assistant visual review completed across all 42 committed Settings captures (7 surfaces × light/dark × desktop/tablet/mobile); layout hierarchy, provider/account management, categories, icon libraries, rules, data tools and profile/security surfaces were inspected individually.
-- [ ] Capture and inspect authentication states: login, validation failure, MFA enrollment, MFA challenge, invalid MFA, expired/revoked session and auth-unavailable feedback.
+- [x] Capture and inspect authentication states: login, validation failure, MFA enrollment, MFA challenge, invalid MFA, expired/revoked session and auth-unavailable feedback. Direct assistant review of Final Visual QA artifact `11252454113` from source head `2bed84e…` opened all **54/54 auth captures** at useful resolution: 9 auth states × light/dark × desktop/tablet/mobile. Every state passed for readable hierarchy, theme-safe error/recovery treatment, visible focused MFA control where present, and no material clipping, horizontal overflow or hidden recovery action. The expanded disposition is recorded in `docs/completion/FINAL_VISUAL_MANUAL_REVIEW.md`.
 - [ ] Capture and inspect every dialog/sheet/popover/picker/confirmation surface in closed, opening, focused, populated, validation-error, saving, success and failure states where applicable.
 - [ ] Inspect every interactive component state: default, hover, keyboard focus, pressed, selected, disabled, loading/saving, destructive, error, conflict and success.
 - [ ] Inspect empty, minimal, normal, dense and extreme-content states for every data-heavy page; include long Greek copy, long account/provider/category names, large monetary values and multi-line notes.

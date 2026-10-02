@@ -43,3 +43,30 @@ The captured 404 is a deliberate MyFinHub-branded, privacy-safe product surface 
 ## Scope boundaries
 
 This ledger closes the baseline route/state visual review only. It does **not** silently close nested editor/modal/error/loading/hover/focus matrices, 200% zoom, reduced-motion behavior, intermediate breakpoints, virtual-keyboard behavior or exact-current-head final evidence. Those remain separate checklist items until directly verified.
+
+## Expanded authentication-state review — 216-image matrix
+
+Reviewed by: ChatGPT (direct visual inspection)  
+Artifact: `myfinhub-final-screenshots-2bed84e4438285ca109dcdc2cdf638b8a652c5a3`  
+GitHub Actions artifact ID: `11252454113`  
+Capture source: PR head `2bed84e4438285ca109dcdc2cdf638b8a652c5a3`  
+Review date: 2026-10-03
+
+The expanded final matrix contains 54 authentication captures: 9 states × light/dark × desktop/tablet/mobile. Every auth image was opened and inspected at useful resolution rather than accepted from the manifest or thumbnail output alone.
+
+| Authentication state | Captures reviewed | Disposition |
+| --- | ---: | --- |
+| Login | 6/6 | PASS |
+| Login validation failure | 6/6 | PASS |
+| Auth unavailable | 6/6 | PASS |
+| Session expired | 6/6 | PASS |
+| Session revoked | 6/6 | PASS |
+| MFA challenge | 6/6 | PASS |
+| MFA invalid code | 6/6 | PASS |
+| MFA enrollment | 6/6 | PASS |
+| MFA enrollment failure | 6/6 | PASS |
+
+Direct observations: error/recovery messages remain inside their owning auth card; light/dark semantic surfaces and error contrast remain readable; the MFA code control keeps a visible focus treatment; desktop/tablet/mobile layouts show no material clipping, horizontal overflow or hidden recovery action. The prior evidence-timing concern that could make auth transition captures appear washed out was not present in this settled expanded capture set.
+
+This review closes only the exhaustive auth-state visual-capture cell. It does not by itself close the separate real-auth functional lifecycle, keyboard/semantic accessibility, isolated-backend or canonical post-merge proof items.
+
