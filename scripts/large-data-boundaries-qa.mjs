@@ -84,7 +84,7 @@ try{
   results.dashboardLoadMs=await navigate('dashboard','Οι λογαριασμοί μου');
   assert(await c.call("function(){const button=document.querySelector('.top-actions button[aria-label=\"Ιστορικό αλλαγών\"]');button?.click();return Boolean(button)}"),'change history action exists');
   await waitFor("function(){return Boolean(document.querySelector('#change-history-title'))}",'large change history dialog');
-  const history=await c.call("function(){return {rows:document.querySelectorAll('.history-row').length,meta:(document.querySelector('.command-result-meta')?.textContent||''),dom:document.getElementsByTagName('*').length,dialogFocused:Boolean(document.querySelector('#change-history-title')?.closest('[role=dialog')===document.activeElement)}}");
+  const history=await c.call("function(){return {rows:document.querySelectorAll('.history-row').length,meta:(document.querySelector('.command-result-meta')?.textContent||''),dom:document.getElementsByTagName('*').length,dialogFocused:Boolean(document.querySelector('#change-history-title')?.closest('[role=dialog]')===document.activeElement)}}");
   assert(history.rows===100,`durable history is capped at 100 rows (${history.rows})`);
   assert(history.meta.includes('100')&&history.meta.includes('10 ημέρες'),'history retention contract is visible');
   assert(history.dom<7000,`history dialog DOM remains bounded (${history.dom})`);
