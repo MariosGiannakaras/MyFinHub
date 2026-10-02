@@ -1,4 +1,5 @@
 import { QA_FINANCIAL_PROVIDERS } from '../qaFinancialProviders';
+import { apiRequest } from './api.js';
 import { FINANCIAL_PROVIDERS, type FinancialProvider, type FinancialProviderAsset, type FinancialProviderAssetBinding, type FinancialProviderAssetRole, type FinancialProviderKind } from './financialProviders';
 
 type FinancialProviderSnapshot={loaded:boolean;loading:boolean;providers:FinancialProvider[];error:string|null};
@@ -79,7 +80,7 @@ export async function refreshFinancialProviders(force=false){
   publish({...snapshot,loading:true,error:null});
   pending=(async()=>{
     try{
-      const response=await fetch('/api/account-metadata?resource=financial-providers',{credentials:'same-origin',headers:{accept:'application/json'},cache:'no-store'});
+      const response=await apiRequest('/api/account-metadata?resource=financial-providers',{credentials:'same-origin',headers:{accept:'application/json'},cache:'no-store'});
       const payload=await json(response);
       if(!response.ok)throw new Error(payload?.message||'Δεν ήταν δυνατή η φόρτωση των τραπεζών.');
       const parsed=(Array.isArray(payload?.providers)?payload.providers:[]).map(parseProvider).filter(Boolean) as FinancialProvider[];
@@ -103,7 +104,7 @@ export type FinancialProviderWriteInput={
 };
 
 async function writeFinancialProvider(input:FinancialProviderWriteInput,method:'POST'|'PATCH',refreshCatalog=true){
-  const response=await fetch('/api/account-metadata?resource=financial-providers',{
+  const response=await apiRequest('/api/account-metadata?resource=financial-providers',{
     method,
     credentials:'same-origin',
     headers:{accept:'application/json','content-type':'application/json'},
@@ -133,7 +134,7 @@ export async function uploadFinancialProviderAsset(input:{
     primary:input.makePrimary?'1':'0',
     fileName:input.file.name,
   });
-  const response=await fetch(`/api/account-metadata?${params.toString()}`,{
+  const response=await apiRequest(`/api/account-metadata?${params.toString()}`,{
     method:'PUT',
     credentials:'same-origin',
     headers:{accept:'application/json','content-type':input.file.type},
@@ -152,7 +153,7 @@ export async function setFinancialProviderAssetBinding(input:{
   assetKey:string|null;
   refreshCatalog?:boolean;
 }){
-  const response=await fetch('/api/account-metadata?resource=financial-provider-asset-binding',{
+  const response=await apiRequest('/api/account-metadata?resource=financial-provider-asset-binding',{
     method:'PUT',
     credentials:'same-origin',
     headers:{accept:'application/json','content-type':'application/json'},
