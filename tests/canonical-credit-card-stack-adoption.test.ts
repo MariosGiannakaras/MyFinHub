@@ -101,5 +101,10 @@ describe('canonical credit-card stack adoption',()=>{
     expect(hostCss).toContain('.credit-purchases-table td:nth-child(5)::before');
     expect(hostCss).toContain('.credit-payments-table td:nth-child(4)::before');
     expect(hostCss).toContain('.deleted-credit-history .semantic-table td:nth-child(4)::before');
+    const mobileRows=hostCss.slice(hostCss.indexOf('.credit-card-redesign-page .semantic-table tr{'),hostCss.indexOf('.credit-card-redesign-page .semantic-table td{'));
+    expect(mobileRows).toContain('border:1px solid var(--border-subtle)');
+    expect(mobileRows).toContain('background:var(--surface-2)');
+    expect(mobileRows).toContain('color:var(--ink)');
+    expect(mobileRows).not.toMatch(/#dce5ef|rgba\(249,252,255/);
   });
 });
