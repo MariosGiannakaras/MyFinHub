@@ -26,4 +26,11 @@ describe('user-facing error hardening',()=>{
     expect(source).toContain('userErrorMessage');
     expect(source).not.toMatch(/instanceof Error\s*\?\s*\w+\.message/);
   });
+
+  it('sanitizes account metadata server copy before it can reach the Settings UI',()=>{
+    const source=readFileSync('src/lib/accountMetadataClient.ts','utf8');
+    expect(source).toContain("return new Error(userErrorMessage(candidate?new Error(candidate):null,fallback))");
+    expect(source).not.toContain("return new Error(payload?.error||payload?.message||fallback)");
+  });
+
 });
