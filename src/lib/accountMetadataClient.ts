@@ -71,7 +71,7 @@ export async function saveAccountMetadata(accountId:string,iban:string|null){
     publish({...snapshot,loaded:true,loading:false,error:null,records:{...snapshot.records,[accountId]:record}});
     return record;
   }
-  const response=await fetch('/api/account-metadata',{
+  const response=await apiRequest('/api/account-metadata',{
     method:'PUT',credentials:'same-origin',headers:{'content-type':'application/json',accept:'application/json','if-match':String(current?.revision??0)},
     body:JSON.stringify({accountId,iban:normalized}),
   });
