@@ -42,6 +42,7 @@ const scripts=[
   {path:'scripts/receipt-local-ocr-qa.mjs',key:'receipt-local-ocr',surface:'receipts',profiles:['/tmp/myfinhub-receipt-local-ocr-qa-chrome']},
   {path:'scripts/ledger-foundations-qa.mjs',key:'ledger-foundations',surface:'ledger',profiles:['/tmp/myfinhub-ledger-foundations-qa-chrome']},
   {path:'scripts/large-data-boundaries-qa.mjs',key:'large-data-boundaries',surface:'large-data',profiles:['/tmp/myfinhub-large-data-boundaries-qa-chrome']},
+  {path:'scripts/responsive-transition-qa.mjs',key:'responsive-transition',surface:'responsive',profiles:['/tmp/myfinhub-responsive-transition-qa-chrome']},
   {path:'scripts/keyboard-semantic-accessibility-qa.mjs',key:'keyboard-semantic-a11y',surface:'accessibility',profiles:['/tmp/myfinhub-keyboard-semantic-a11y-chrome']},
 ];
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
