@@ -131,8 +131,42 @@ try{
   await waitFor("function(){return Boolean(document.querySelector('[data-rule-editor]'))}",'Rule editor');
   await clickText('[data-rule-editor] button','Δημιουργία κανόνα');
   await assertAlert('[data-rule-editor]','Rule invalid draft');
+
+  console.log('Mutation validation QA: Settings category taxonomy');
+  await navigate('settings');
+  await clickText('.settings-tablist button','Κατηγορίες');
+  await waitFor("function(){return Boolean(document.querySelector('.settings-categories-only .taxonomy-add-row'))}",'Category Settings');
+  await clickText('.settings-categories-only .taxonomy-add-row button','Προσθήκη');
+  await assertAlert('.settings-categories-only','Category invalid draft');
+
+  console.log('Mutation validation QA: Settings account security');
+  await navigate('settings');
+  await clickText('.settings-tablist button','Χρήστης & Πρόσβαση');
+  await waitFor("function(){return Boolean(document.querySelector('.account-security-settings'))}",'Account Security Settings');
+  await clickText('.account-security-email-card button','Αλλαγή email');
+  let securityError=await assertAlert('.account-security-settings','Invalid account email');
+  assert(securityError.text.includes('email'),'invalid email message is task-local');
+  await clickText('.account-security-password-card button','Αλλαγή κωδικού');
+  securityError=await assertAlert('.account-security-settings','Invalid account password');
+  assert(securityError.text.includes('τρέχοντα κωδικό'),'invalid password message is task-local');
+
+  console.log('Mutation validation QA: Cards bank');
+  await navigate('cards');
+  await clickText('.page-heading button','Προσθήκη τράπεζας');
+  await waitFor("function(){return Boolean(document.querySelector('#new-bank-title'))}",'New bank editor');
+  await clickText('.picker.compact button','Προσθήκη τράπεζας');
+  await assertAlert('.picker.compact','Bank invalid draft');
+
+  console.log('Mutation validation QA: Reports budget');
+  await navigate('reports');
+  const budgetOpened=await c.call("function(){const details=document.querySelector('[data-budget-management]');if(!details)return false;details.open=true;details.dispatchEvent(new Event('toggle',{bubbles:false}));return true}");
+  assert(budgetOpened,'budget management exists');
+  await waitFor("function(){return Boolean(document.querySelector('[data-budget-management] .budget-editor-grid'))}",'Budget editor');
+  await clickText('[data-budget-management] button','Αποθήκευση προϋπολογισμού');
+  await assertAlert('[data-budget-management]','Budget invalid draft');
+
   await shot('validation-settings-mutators');
 
-  console.log('Mutation validation rendered QA passed for primary finance, card and Settings mutating forms.');
+  console.log('Mutation validation rendered QA passed for finance, cards, Reports and Settings mutating forms.');
   c.close();
 }finally{child.kill('SIGTERM');await sleep(200);rmSync(profile,{recursive:true,force:true,maxRetries:5,retryDelay:100})}
