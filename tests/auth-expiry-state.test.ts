@@ -36,4 +36,13 @@ describe('client auth-state expiry signals',()=>{
     expect(source).toContain('const mfaRequired = () => { void refresh(); };');
     expect(source).toContain("window.removeEventListener('rheomiq:mfa-required', mfaRequired)");
   });
+
+  it('keeps rendered MFA downgrade verification aligned with the current MFA challenge contract',()=>{
+    const runtime=readFileSync('scripts/ui-ux-runtime-qa.mjs','utf8');
+    expect(runtime).toContain("document.querySelector('#mfa-title')");
+    expect(runtime).toContain("document.querySelector('#mfa-code')");
+    expect(runtime).toContain("includes('Επαλήθευση')");
+    expect(runtime).not.toContain("Έλεγχος δύο παραγόντων");
+  });
+
 });
