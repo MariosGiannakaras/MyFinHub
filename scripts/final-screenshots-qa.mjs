@@ -117,6 +117,73 @@ try{
     await applyTheme(activeTheme);
     await sleep(220);
   };
+  const captureSettingsNestedStates=async(tab,theme,item)=>{
+    const captureNested=state=>capture('settings',state,theme,item.mode,item.width,item.height);
+    const closeAndWait=async(selector,closeSelector,label)=>{
+      const closed=await c.call("function(rootSelector,buttonSelector){const root=document.querySelector(rootSelector);const button=root?.querySelector(buttonSelector);button?.click();return Boolean(button)}",[selector,closeSelector]);
+      if(!closed)throw new Error('Missing close action for '+label);
+      await waitFor("function(selector){return !document.querySelector(selector)}",[selector],label+' close');
+    };
+    if(tab==='accounts'){
+      const providerOpened=await c.call("function(){const button=document.querySelector('.provider-edit-action');button?.click();return Boolean(button)}");
+      if(!providerOpened)throw new Error('Missing provider edit action for final nested Settings evidence');
+      await waitFor("function(){return Boolean(document.querySelector('.provider-editor-modal'))}",[],'provider editor');
+      await captureNested('provider-editor-details');
+      const brandingOpened=await c.call("function(){const button=[...document.querySelectorAll('.provider-editor-tabs [role=tab]')].find(node=>(node.textContent||'').trim()==='Εικόνες');button?.click();return Boolean(button)}");
+      if(!brandingOpened)throw new Error('Missing provider branding tab');
+      await waitFor("function(){return document.querySelector('.provider-editor-tabs [role=tab][aria-selected=true]')?.textContent?.trim()==='Εικόνες'}",[],'provider branding tab');
+      await captureNested('provider-editor-branding');
+      const pickerOpened=await c.call("function(){const button=document.querySelector('.provider-editor-modal .provider-slot-select');button?.click();return Boolean(button)}");
+      if(!pickerOpened)throw new Error('Missing provider asset slot action');
+      await waitFor("function(){return Boolean(document.querySelector('.provider-asset-picker[role=dialog]'))}",[],'provider asset picker');
+      await captureNested('provider-asset-picker');
+      await closeAndWait('.provider-asset-picker','button[aria-label=\"Κλείσιμο επιλογής εικόνας\"]','provider asset picker');
+      await closeAndWait('.provider-editor-modal','button[aria-label=\"Κλείσιμο\"]','provider editor');
+
+      const accountOpened=await c.call("function(){const button=document.querySelector('.account-management-create');button?.click();return Boolean(button)}");
+      if(!accountOpened)throw new Error('Missing new-account action');
+      await waitFor("function(){return Boolean(document.querySelector('.account-management-modal.is-new'))}",[],'new account editor');
+      await captureNested('account-editor-new');
+      await closeAndWait('.account-management-modal','button[aria-label=\"Κλείσιμο\"]','account editor');
+    }
+    if(tab==='categories'){
+      const opened=await c.call("function(){const button=document.querySelector('.settings-categories-only button[aria-label^=\"Μετονομασία κατηγορίας\"]');button?.click();return Boolean(button)}");
+      if(!opened)throw new Error('Missing category rename action');
+      await waitFor("function(){return Boolean(document.querySelector('.settings-categories-only .taxonomy-inline-editor'))}",[],'category rename editor');
+      await captureNested('category-rename-editor');
+      const cancel=await c.call("function(){const button=document.querySelector('.settings-categories-only .taxonomy-inline-editor button[aria-label=\"Ακύρωση μετονομασίας\"]');button?.click();return Boolean(button)}");
+      if(!cancel)throw new Error('Missing category rename cancel action');
+      await waitFor("function(){return !document.querySelector('.settings-categories-only .taxonomy-inline-editor')}",[],'category rename close');
+    }
+    if(tab==='icons'){
+      const opened=await c.call("function(){const button=document.querySelector('.settings-icons-only .category-icon-unified-main');button?.click();return Boolean(button)}");
+      if(!opened)throw new Error('Missing icon assignment row');
+      await waitFor("function(){return Boolean(document.querySelector('.settings-icons-only [data-icon-selection-panel]'))}",[],'icon selection editor');
+      await captureNested('icon-selection-editor');
+      const close=await c.call("function(){const button=document.querySelector('.settings-icons-only .category-icon-selection-close');button?.click();return Boolean(button)}");
+      if(!close)throw new Error('Missing icon selection close action');
+      await waitFor("function(){return !document.querySelector('.settings-icons-only [data-icon-selection-panel]')}",[],'icon selection close');
+    }
+    if(tab==='rules'){
+      const opened=await c.call("function(){const button=document.querySelector('.settings-rules-only .rules-new-button');button?.click();return Boolean(button)}");
+      if(!opened)throw new Error('Missing new-rule action');
+      await waitFor("function(){return Boolean(document.querySelector('.settings-rules-only [data-rule-editor]'))}",[],'rule editor');
+      await captureNested('rule-editor-new');
+      const close=await c.call("function(){const button=document.querySelector('.settings-rules-only [data-rule-editor] button[aria-label=\"Κλείσιμο επεξεργασίας κανόνα\"]');button?.click();return Boolean(button)}");
+      if(!close)throw new Error('Missing rule editor close action');
+      await waitFor("function(){return !document.querySelector('.settings-rules-only [data-rule-editor]')}",[],'rule editor close');
+    }
+    if(tab==='data'){
+      const opened=await c.call("function(){const input=document.querySelector('.settings-data-import-card input[type=file]');if(!(input instanceof HTMLInputElement))return false;const transfer=new DataTransfer();transfer.items.add(new File(['{}'],'myfinhub-visual-evidence.json',{type:'application/json'}));input.files=transfer.files;input.dispatchEvent(new Event('change',{bubbles:true}));return true}");
+      if(!opened)throw new Error('Missing Settings data import input');
+      await waitFor("function(){const dialog=document.querySelector('.app-confirm-dialog[role=alertdialog]');return Boolean(dialog&&(dialog.textContent||'').includes('Εισαγωγή δεδομένων από JSON'))}",[],'data import confirmation');
+      await captureNested('data-import-confirmation');
+      const cancel=await c.call("function(){const dialog=document.querySelector('.app-confirm-dialog[role=alertdialog]');const button=[...(dialog?.querySelectorAll('button')||[])].find(node=>(node.textContent||'').trim()==='Ακύρωση');button?.click();return Boolean(button)}");
+      if(!cancel)throw new Error('Missing data import cancel action');
+      await waitFor("function(){return !document.querySelector('.app-confirm-dialog[role=alertdialog]')}",[],'data import confirmation close');
+    }
+  };
+
   const capture=async(surface,state,theme,mode,width,height)=>{
     const metrics=await c.send('Page.getLayoutMetrics');const size=metrics.cssContentSize||metrics.contentSize;
     const captureWidth=Math.max(1,Math.ceil(size.width));const captureHeight=Math.max(1,Math.min(16000,Math.ceil(size.height)));
@@ -141,6 +208,7 @@ try{
             await waitFor('function(tab){return document.querySelector(\'[aria-controls="settings-panel-'+tab+'"]\')?.getAttribute("aria-selected")==="true"}',[tab],`settings tab ${tab}`);
             await sleep(180);
             await capture('settings',`tab-${tab}`,theme,item.mode,item.width,item.height);
+            await captureSettingsNestedStates(tab,theme,item);
           }
         }
       }
@@ -149,10 +217,12 @@ try{
     }
   }
   c.close();
-  if(screenshots.length!==168)throw new Error(`Expected 168 final screenshots, captured ${screenshots.length}.`);
+  const settingsNestedStateCount=8;
+  const expectedScreenshots=themes.length*viewports.length*(Object.keys(pages).length+settingsTabs.length+authScreens.length+utilityScreens.length+settingsNestedStateCount);
+  if(screenshots.length!==expectedScreenshots)throw new Error(`Expected ${expectedScreenshots} final screenshots, captured ${screenshots.length}.`);
   const manifest={schemaVersion:1,kind:'final-release-screenshots',appVersion,captureId:`${timestamp}__${shortSha}`,generatedAt,timeZone,source:{sha:sourceSha,shortSha,branch:sourceBranch},baseUrl,count:screenshots.length,screenshots};
   writeFileSync(resolve(evidenceRoot,'manifest.json'),`${JSON.stringify(manifest,null,2)}\n`);
-  console.log(`Final screenshot QA passed: ${screenshots.length} screenshots across light/dark application pages, Settings tabs, auth success/failure states and the 404 surface.`);
+  console.log(`Final screenshot QA passed: ${screenshots.length} screenshots across light/dark application pages, Settings tabs and nested editors, auth success/failure states and the 404 surface.`);
 }finally{
   if(browserSession){
     await stopBrowser(browserSession.child);
