@@ -193,3 +193,5 @@ Subsequent changes are product fixes against the completed v1.3.0 baseline. Rout
 - Batch T mutating validation matrix is source-implemented; account/PIN/device-access failure feedback was also corrected to assertive alert semantics while success remains polite status: canonical API 400 boundaries plus rendered invalid-submit coverage for seventeen finance/card/Reports/Settings flows are wired into `qa:frontend`. Counters remain unchanged until exact-head CI/rendered proof passes and uncovered mutation surfaces are reconciled.
 
 - Supported-engine/host verification is closed: the declared automated browser contract is Chromium + WebKit, and the supported Windows host is Electron/Chromium; no Edge-specific product support contract exists beyond that engine family.
+
+- Accessibility rendered proof is infrastructure-blocked on the current PR head: every earlier rendered suite passed, but Chromium failed to expose CDP for the final keyboard/semantic suite on two attempts. `audit/476-a11y-bootstrap-fix` adds isolated multi-attempt launch diagnostics/cleanup; product accessibility assertions have not failed.
