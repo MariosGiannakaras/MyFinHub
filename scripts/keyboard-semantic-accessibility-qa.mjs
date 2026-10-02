@@ -120,8 +120,39 @@ try{
  await pressEscape();await waitFor("function(){return !document.querySelector('.mobile-more-menu[role=dialog]')}",'mobile More Escape close');
  assert(await c.call("function(){return document.activeElement===document.querySelector('button[aria-label=\"Περισσότερες ενότητες\"]')}"),'mobile More restores focus to opener');
  await shot('keyboard-semantic-mobile-dashboard');
+
+ console.log('Keyboard/semantic accessibility QA: 404 focus, keyboard, reduced-motion and 200%-equivalent viewport');
+ await c.send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
+ await viewport(720,500,false);
+ const notFoundUrl=new URL(baseUrl);notFoundUrl.searchParams.set('screen','404');
+ await c.send('Page.navigate',{url:notFoundUrl.href});
+ await waitFor("function(){return Boolean(document.querySelector('#not-found-title'))}",'404 title');
+ await waitFor("function(){return document.activeElement?.id==='not-found-title'}",'404 title focus');
+ const notFoundState=await c.call(`function(){
+   const main=document.querySelector('.not-found-screen'),card=document.querySelector('.not-found-card'),missing=document.querySelector('.not-found-route-node.is-missing');
+   const buttons=[...document.querySelectorAll('.not-found-actions button')];
+   const rect=card?.getBoundingClientRect();
+   return {
+     main:Boolean(main),overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth,
+     card:rect?{left:rect.left,right:rect.right,width:rect.width}:null,
+     animation:missing?getComputedStyle(missing).animationName:'',
+     buttons:buttons.map(button=>({text:(button.textContent||'').trim(),w:button.getBoundingClientRect().width,h:button.getBoundingClientRect().height}))
+   };
+ }`);
+ assert(notFoundState.main,'404 main surface exists');
+ assert(notFoundState.overflow<=1,`404 200%-equivalent viewport has horizontal overflow: ${JSON.stringify(notFoundState)}`);
+ assert(notFoundState.card&&notFoundState.card.left>=0&&notFoundState.card.right<=720+1,`404 card escapes effective 200% viewport: ${JSON.stringify(notFoundState.card)}`);
+ assert(notFoundState.animation==='none',`404 missing-route pulse must be disabled under reduced motion: ${notFoundState.animation}`);
+ assert(notFoundState.buttons.length===2&&notFoundState.buttons.every(button=>button.h>=44),`404 actions are not keyboard/touch safe: ${JSON.stringify(notFoundState.buttons)}`);
+ await pressTab();
+ assert(await c.call("function(){return (document.activeElement?.textContent||'').trim().includes('Dashboard')}"),'404 first Tab reaches Dashboard recovery');
+ await pressTab();
+ assert(await c.call("function(){return (document.activeElement?.textContent||'').trim()==='Πίσω'}"),'404 second Tab reaches Back recovery');
+ await shot('keyboard-semantic-404-zoom-reduced');
+
+ await c.send('Emulation.setEmulatedMedia',{features:[]});
  writeFileSync(`${evidenceDir}/summary.json`,JSON.stringify(summary,null,2));
- console.log('Keyboard and semantic accessibility QA passed across all primary routes on desktop/mobile plus shared modal focus-trap/restoration checks.');
+ console.log('Keyboard and semantic accessibility QA passed across all primary routes on desktop/mobile, shared modal focus contracts and the 404 recovery surface.');
 }finally{
  try{c?.close()}catch{}
  child.kill('SIGTERM');
