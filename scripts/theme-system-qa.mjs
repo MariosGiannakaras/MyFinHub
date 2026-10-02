@@ -77,13 +77,13 @@ try{
   }
   await shot('dark-mobile-reports-semantic-surfaces');
   await navigate('settings',pages.settings);await applyTheme('dark');
-  const darkMobileSettingsPanel=await computedContrast('.settings-grid>.panel');
-  const darkMobileSettingsAction=await computedContrast('.settings-actions button');
-  const darkMobileTechnical=await computedContrast('.technical-settings');
+  const darkMobileSettingsPanel=await computedContrast('.settings-general-grid>.panel');
+  const darkMobileSettingsAction=await computedContrast('.text-size-picker button');
+  const darkMobileTechnical=await computedContrast('.keyboard-shortcuts-panel');
   assert(darkMobileSettingsPanel&&darkMobileSettingsPanel.backgroundLuminance<.12,`dark mobile Settings panel uses a dark semantic surface: ${JSON.stringify(darkMobileSettingsPanel)}`);
   assert(darkMobileSettingsAction&&darkMobileSettingsAction.backgroundLuminance<.12,`dark mobile Settings action uses a dark semantic surface: ${JSON.stringify(darkMobileSettingsAction)}`);
   assert(darkMobileSettingsAction&&darkMobileSettingsAction.textContrast>=4.5,`dark mobile Settings action text contrast is readable: ${JSON.stringify(darkMobileSettingsAction)}`);
-  assert(darkMobileTechnical&&darkMobileTechnical.backgroundLuminance<.12,`dark mobile technical settings uses a dark semantic surface: ${JSON.stringify(darkMobileTechnical)}`);
+  assert(darkMobileTechnical&&darkMobileTechnical.backgroundLuminance<.12,`dark mobile keyboard/settings support panel uses a dark semantic surface: ${JSON.stringify(darkMobileTechnical)}`);
   await shot('dark-mobile-settings-semantic-surfaces');
 
   console.log('Theme system QA: dark high-fidelity surface parity');
