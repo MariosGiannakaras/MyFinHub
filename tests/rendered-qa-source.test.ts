@@ -41,4 +41,18 @@ describe('rendered browser QA reliability contract', () => {
     expect(ci).toContain('export MYFINHUB_QA_REQUIRE_PRIMARY=1');
     expect(ci).toContain('${MYFINHUB_QA_REQUIRE_PRIMARY:-0}');
   });
+
+  it('supports deterministic rendered QA sharding for bounded CI wall time', () => {
+    expect(coordinator).toContain('MYFINHUB_QA_SHARD');
+    expect(coordinator).toContain('const selectedScripts=scripts.filter');
+    expect(coordinator).toContain('index%shard.total===shard.index');
+    expect(coordinator).toContain('Rendered browser QA shard');
+    expect(ci).toContain("shard: '1/3'");
+    expect(ci).toContain("shard: '2/3'");
+    expect(ci).toContain("shard: '3/3'");
+    expect(ci).toContain('needs: validate');
+    expect(ci).toContain('timeout-minutes: 18');
+    expect(ci).toContain('myfinhub-visual-qa-${{ github.sha }}-shard-${{ matrix.artifact }}');
+  });
+
 });
