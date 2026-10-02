@@ -1236,3 +1236,19 @@ Source/runtime scope:
 - keep existing canonical route geometry coverage unchanged.
 
 This implements the existing responsive/intermediate-width/orientation/virtual-keyboard verification cell and does not change the denominator. Completion requires integrated rendered CI plus direct review of the resulting QA log/evidence.
+
+### 8.40 Implementation batch S — nested Settings visual-state evidence in progress
+
+The exhaustive visual matrix still required direct evidence for nested Settings editors rather than only tab-level surfaces. The final visual harness now captures the non-destructive nested states that were previously missing:
+
+- existing provider editor details and branding tabs plus the provider asset picker;
+- new account editor/provider picker;
+- category rename inline editor;
+- category icon selection editor;
+- transaction-rule editor;
+- data-import destructive confirmation without executing the import.
+
+These states are captured at desktop/tablet/mobile in both light and dark themes. The deterministic Final Visual QA matrix therefore expands from 168 to 216 screenshots. No finance mutation, provider upload, import, Android change or production deployment is performed by these captures.
+
+This work implements the existing Settings nested-editor visual verification cell and does not change the denominator. Completion remains pending exact-head Final Visual QA execution plus direct assistant review of the 48 newly added captures.
+
