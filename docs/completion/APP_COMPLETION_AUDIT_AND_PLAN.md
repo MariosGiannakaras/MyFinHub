@@ -1251,7 +1251,7 @@ The exhaustive visual matrix still required direct evidence for nested Settings 
 
 These states are captured at desktop/tablet/mobile in both light and dark themes. The deterministic Final Visual QA matrix therefore expands from 168 to 216 screenshots. No finance mutation, provider upload, import, Android change or production deployment is performed by these captures.
 
-This work implements the existing Settings nested-editor visual verification cell and does not change the denominator. Completion remains pending exact-head Final Visual QA execution plus direct assistant review of the 48 newly added captures.
+This work implements the existing Settings nested-editor visual verification cell and does not change the denominator. Direct inspection of the first 48 nested captures from artifact `11252454113` found a harness evidence-timing defect: provider/account/rule/import editors were captured immediately after DOM appearance while their 180 ms entrance animations were still changing opacity, creating false background bleed-through. The harness now waits 240 ms before every nested-state capture. Completion remains pending one fresh Final Visual QA recapture and direct assistant review of the corrected 48 images.
 
 ### 8.41 Implementation batch T — mutating validation-error matrix completed
 
@@ -1313,3 +1313,15 @@ Source remediation and proof expansion:
 - run that 200%-equivalent profile with the existing extreme-data fixture, Large readability mode and reduced motion, enforcing no document overflow, rogue off-viewport controls or desktop-chrome occlusion.
 
 FV-56 belongs to the existing keyboard/semantic accessibility item and the 200%/readability visual-verification item, so the denominator does not change. Completion remains pending integrated rendered proof. No finance persistence, Supabase or Android behavior changes.
+
+### 8.45 QA-NESTED-ANIM — nested Settings evidence timing follow-up in progress
+
+Direct inspection of the 48 expanded nested Settings captures in Final Visual QA artifact `11252454113` showed provider/account/rule/import overlays with apparent background bleed-through. Source review disproved a product-surface defect: the provider surface is `var(--surface)`, the account editor uses `rgba(255,255,255,.96)`, and both provider/account editors animate from opacity 0 to 1 over 180 ms. The final screenshot harness captured nested states immediately after DOM presence without waiting for that finite entrance motion.
+
+Evidence remediation:
+- make the shared nested-state capture helper wait 240 ms before every nested Settings screenshot;
+- apply the same settling boundary to provider details/branding/asset picker, new-account editor, category rename, icon selection, rule editor and import confirmation;
+- keep product animation and product surface styling unchanged;
+- require a fresh 48-image nested-state recapture and direct inspection before closing implementation batch S.
+
+This is a QA evidence defect inside the existing nested-editor visual verification item and does not change the denominator. No finance, Supabase, API or Android behavior changes.

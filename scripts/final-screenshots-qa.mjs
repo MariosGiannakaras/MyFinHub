@@ -118,7 +118,7 @@ try{
     await sleep(220);
   };
   const captureSettingsNestedStates=async(tab,theme,item)=>{
-    const captureNested=state=>capture('settings',state,theme,item.mode,item.width,item.height);
+    const captureNested=async state=>{await sleep(240);return capture('settings',state,theme,item.mode,item.width,item.height)};
     const closeAndWait=async(selector,closeSelector,label)=>{
       const closed=await c.call("function(rootSelector,buttonSelector){const root=document.querySelector(rootSelector);const button=root?.querySelector(buttonSelector);button?.click();return Boolean(button)}",[selector,closeSelector]);
       if(!closed)throw new Error('Missing close action for '+label);

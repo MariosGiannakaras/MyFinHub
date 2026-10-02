@@ -301,6 +301,7 @@ describe('completion UX contracts',()=>{
     expect(harness).toContain('await sleep(260)');
     expect(harness).toContain('await sleep(220)');
     expect(harness).toContain('await sleep(180)');
+    expect(harness).toContain("const captureNested=async state=>{await sleep(240)");
     const shell=read('src/components/AppShell.tsx');
     expect(shell).toContain("transition={{duration:reduce?0:.18}}");
   });
