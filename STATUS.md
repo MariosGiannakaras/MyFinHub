@@ -49,7 +49,7 @@ Release-closeout tracker: **#288 — complete**.
 
 ## Active completion batch — #476
 
-**Implementations 11/24 completed · Sub-implementations 122/193 completed**
+**Implementations 11/24 completed · Sub-implementations 123/193 completed**
 
 - The completion definition has been expanded by the owner to a full-system verification matrix. Existing implementation findings remain tracked, but final closeout now requires direct assistant-led manual review plus UI/UX/accessibility, routing/404, every supported user mutation, real-stack persistence/backend proof, exhaustive failure handling, security/privacy, temporal/data-boundary coverage, operational recovery and canonical post-merge validation.
 
@@ -191,3 +191,5 @@ Subsequent changes are product fixes against the completed v1.3.0 baseline. Rout
 - Batch S nested Settings evidence is source-implemented: provider details/branding/asset picker, new-account editor, category rename, icon selection, rule editor and import confirmation now expand Final Visual QA from 168 to 216 captures across light/dark desktop/tablet/mobile. Counters remain unchanged until exact-head capture and direct review pass.
 
 - Batch T mutating validation matrix is source-implemented; account/PIN/device-access failure feedback was also corrected to assertive alert semantics while success remains polite status: canonical API 400 boundaries plus rendered invalid-submit coverage for seventeen finance/card/Reports/Settings flows are wired into `qa:frontend`. Counters remain unchanged until exact-head CI/rendered proof passes and uncovered mutation surfaces are reconciled.
+
+- Supported-engine/host verification is closed: the declared automated browser contract is Chromium + WebKit, and the supported Windows host is Electron/Chromium; no Edge-specific product support contract exists beyond that engine family.
