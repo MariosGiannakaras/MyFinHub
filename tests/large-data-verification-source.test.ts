@@ -5,6 +5,10 @@ const qa=readFileSync(new URL('../src/qa.tsx',import.meta.url),'utf8');
 const large=readFileSync(new URL('../scripts/large-data-boundaries-qa.mjs',import.meta.url),'utf8');
 const rendered=readFileSync(new URL('../scripts/run-rendered-qa.mjs',import.meta.url),'utf8');
 const perf=readFileSync(new URL('../scripts/performance-audit.mjs',import.meta.url),'utf8');
+const planning=readFileSync(new URL('../src/pages/PlanningPage.tsx',import.meta.url),'utf8');
+const recurring=readFileSync(new URL('../src/pages/RecurringPage.tsx',import.meta.url),'utf8');
+const budgets=readFileSync(new URL('../src/components/BudgetRuleSettings.tsx',import.meta.url),'utf8');
+const shell=readFileSync(new URL('../src/components/AppShell.tsx',import.meta.url),'utf8');
 
 describe('large-data verification contract',()=>{
   it('keeps the synthetic large state broad enough to cover finance-heavy domains',()=>{
@@ -24,6 +28,19 @@ describe('large-data verification contract',()=>{
     expect(large).toContain('budgetDeleteLatencyMs<1500');
     expect(large).toContain('results.reportsHeapMb<256');
     expect(large).toContain('results.historyHeapMb<256');
+  });
+
+  it('keeps high-cardinality component lists explicitly bounded in product source',()=>{
+    expect(planning).toContain('const [scheduledListLimit,setScheduledListLimit]=useState(12)');
+    expect(planning).toContain('const visiblePending=pending.slice(0,scheduledListLimit)');
+    expect(planning).toContain('className="planning-scheduled-more"');
+    expect(recurring).toContain('setDesktopActiveLimit');
+    expect(recurring).toContain('setMobileActiveLimit');
+    expect(recurring).toContain('className="desktop-recurring-more"');
+    expect(recurring).toContain('className="mobile-recurring-more"');
+    expect(budgets).toContain('budgetListLimit');
+    expect(budgets).toContain('ruleListLimit');
+    expect(shell).toContain('sessionHistory.slice(0,100)');
   });
 
   it('runs the large-data audit in rendered QA and keeps dedicated Lighthouse cases',()=>{
