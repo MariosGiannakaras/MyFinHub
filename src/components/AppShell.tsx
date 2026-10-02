@@ -41,7 +41,8 @@ export function AppShell({ page,onPage,onQuickAdd,onCommand,onRefresh,onUndo,onR
  const historyRef=useModalFocus<HTMLElement>(historyOpen,'button',()=>setHistoryOpen(false));
  const moreActive=mobileMore.some(item=>item.id===page);
  const effectiveHistory=history.length?history:sessionHistory;
- const visibleHistory:ChangeHistoryEntry[]=effectiveHistory.length?effectiveHistory:canUndo?[{id:'undo-available',kind:'change',label:'Υπάρχει αλλαγή διαθέσιμη για αναίρεση',at:''}]:canRedo?[{id:'redo-available',kind:'redo',label:'Υπάρχει αναιρεμένη αλλαγή διαθέσιμη για επαναφορά',at:''}]:[];
+ const boundedHistory=effectiveHistory.slice(0,100);
+ const visibleHistory:ChangeHistoryEntry[]=boundedHistory.length?boundedHistory:canUndo?[{id:'undo-available',kind:'change',label:'Υπάρχει αλλαγή διαθέσιμη για αναίρεση',at:''}]:canRedo?[{id:'redo-available',kind:'redo',label:'Υπάρχει αναιρεμένη αλλαγή διαθέσιμη για επαναφορά',at:''}]:[];
  const commandShortcut=shortcutDisplay('commandPalette');const quickShortcut=shortcutDisplay('quickEntry');const undoShortcut=shortcutDisplay('undo');const redoShortcut=shortcutDisplay('redo');const dismissShortcut=shortcutDisplay('dismiss');
  useAppShortcuts({onCommand,onQuickEntry:onQuickAdd,onUndo,onRedo,canUndo,canRedo});
  useEffect(()=>{if(previousPage.current===page)return;previousPage.current=page;window.scrollTo({top:0,left:0,behavior:'auto'})},[page]);
