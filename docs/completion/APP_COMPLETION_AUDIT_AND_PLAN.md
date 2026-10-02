@@ -8,7 +8,7 @@ Release target: none — `main` remains release-only
 
 ## Current integration checkpoint — 2026-10-02
 
-**Implementations 12/24 completed · Sub-implementations 124/193 completed**
+**Implementations 12/24 completed · Sub-implementations 125/193 completed**
 
 This checkpoint supersedes older "#482 reconciliation pending" notes below for current execution state.
 
@@ -21,7 +21,7 @@ This checkpoint supersedes older "#482 reconciliation pending" notes below for c
 - FV-44 is completed on `9b25fb1…`: extreme Recurring mobile progressive disclosure, full expansion, collapsed inactive history and overflow safety all pass.
 - FV-45 exact-head rendered proof has passed: OCR persists raw `EUR`, while the owned currency select displays `EUR · Ευρώ`; stored semantics and visible presentation are validated separately. The expanded full-system audit below now governs closeout.
 - FV-54 completed on `b602617…`: the local/Windows static host preloads `index.html` and `404.html` once at startup instead of performing `sendFile()` filesystem access per document request; exact-head CodeQL #3125 is green and the prior rate-limiting review threads are resolved. No dependency, API, finance, Supabase or Android behavior changed.
-- Current counters: **Implementations 12/24 completed · Sub-implementations 124/193 completed**. Implementations 8.1, 8.6, 8.7, 8.8 and 8.15 are fully closed. FV-54 is exact-head CodeQL-proven on `b602617…`; the denominator remains 193.
+- Current counters: **Implementations 12/24 completed · Sub-implementations 125/193 completed**. Implementations 8.1, 8.6, 8.7, 8.8 and 8.15 are fully closed; the responsive transition/virtual-keyboard cell in 8.2 is also complete from directly reviewed rendered evidence. The denominator remains 193.
 - Audit verification checkpoint 2026-10-02: 10 additional sub-implementations are directly closed by assistant review/evidence. Unsupported-future-schema handling remains open under the existing backwards-compatibility item; it does not expand the denominator.
 - Repository-admin hardening remains tracked separately in #485 and does not change this batch denominator.
 - No Android changes and no `main` release/promotion are part of this checkpoint.
@@ -650,9 +650,9 @@ No `main` promotion/release is part of this work.
 
 The prior completion audit remains valuable evidence, but it does **not** by itself prove that every visual element, every UX state, every user action/sub-action, every API/backend path and every error path has been exercised end-to-end against a canonical integrated tree. The owner has therefore expanded the accepted completion scope to require a full-system verification pass before the application is treated as fully closed.
 
-**New audit workstream: Implementations 6/16 completed · Sub-implementations 83/164 completed.**
+**New audit workstream: Implementations 6/16 completed · Sub-implementations 84/164 completed.**
 
-**Overall completion scope: Implementations 12/24 completed · Sub-implementations 124/193 completed.**
+**Overall completion scope: Implementations 12/24 completed · Sub-implementations 125/193 completed.**
 
 The denominator increased because 16 new verification implementations / 160 non-trivial sub-implementations are now accepted. Existing implementation-completion state is retained provisionally, but the expanded verification matrix has a stricter proof rule: prior evidence may be reused only after the responsible ChatGPT agent personally inspects it and confirms that it proves the exact required contract. Re-running unchanged automation is unnecessary when existing artifacts are sufficient, but no matrix cell is finally closed merely because an earlier workflow marked it green.
 
@@ -666,7 +666,7 @@ The denominator increased because 16 new verification implementations / 160 non-
 - [x] Build one traceability matrix mapping Product capability → UI control → domain operation → persistence/API/backend path → success test → failure tests → visual states → accessibility checks. Completed in `docs/completion/FULL_SYSTEM_TRACEABILITY_MATRIX.md`; incomplete proof cells remain explicitly classified rather than assumed.
 - [x] Mark every prior test/screenshot/evidence item as reusable, partial or insufficient against the matrix; uncovered cells become explicit pending work rather than inferred coverage. The traceability matrix records the disposition and remaining proof class for every capability row.
 
-### 8.2 Exhaustive visual inspection — 5/12
+### 8.2 Exhaustive visual inspection — 6/12
 
 - [x] Capture and manually inspect every primary route at desktop, tablet and narrow-phone widths in both light and dark themes. Direct assistant review opened and inspected all 132 images from Final Visual QA artifact `11217096254` (22 groups × light/dark × desktop/tablet/mobile); primary routes show no material clipping, overlap, unreadable baseline contrast or broken responsive containment. Disposition ledger: `docs/completion/FINAL_VISUAL_MANUAL_REVIEW.md`.
 - [x] Capture and inspect every Settings tab and nested editor, including accounts, providers/assets, categories, icons, rules, data, security/device sessions and appearance/readability surfaces. Direct assistant visual review completed across all 42 committed Settings captures (7 surfaces × light/dark × desktop/tablet/mobile); layout hierarchy, provider/account management, categories, icon libraries, rules, data tools and profile/security surfaces were inspected individually.
@@ -674,7 +674,7 @@ The denominator increased because 16 new verification implementations / 160 non-
 - [ ] Capture and inspect every dialog/sheet/popover/picker/confirmation surface in closed, opening, focused, populated, validation-error, saving, success and failure states where applicable.
 - [ ] Inspect every interactive component state: default, hover, keyboard focus, pressed, selected, disabled, loading/saving, destructive, error, conflict and success.
 - [ ] Inspect empty, minimal, normal, dense and extreme-content states for every data-heavy page; include long Greek copy, long account/provider/category names, large monetary values and multi-line notes.
-- [ ] Inspect responsive breakpoints around actual layout transitions, not only 1440/834/375 snapshots; verify no breakpoint cliff, horizontal overflow, clipped action or fixed-chrome occlusion.
+- [x] Inspect responsive breakpoints around actual layout transitions, not only 1440/834/375 snapshots; verify no breakpoint cliff, horizontal overflow, clipped action or fixed-chrome occlusion. Direct assistant review of CI #3169 confirms the geometry suite passed all canonical profiles plus 1024px desktop, 1112×834 tablet landscape, both sides of the 681/680px transition and 812×375 phone landscape after live resize; the interaction suite also passed the 375×500 virtual-keyboard profile. Every profile enforced <=1px document overflow and no rogue/off-viewport controls or fixed-chrome occlusion.
 - [x] Inspect tables, cards, charts, legends, tooltips, carousels, progressive disclosure, pagination/load-more and sticky controls for containment and readable hierarchy. Direct assistant inspection of the exact-branch rendered artifact `11228136368` covered 85 focused screenshots across AppShell routes, Reports, functional CRUD states, Cards/Credit, Planning, Action Center, auth/session, recovery and branding. Table/card/chart hierarchy remains contained and readable on desktop/mobile; Reports KPI/chart/account/privacy surfaces, Transactions tables/detail rails, Cards carousels, Planning forecast cards and progressive disclosure states show no material clipping/overlap. The same artifact's rendered QA logs additionally prove viewport-contained tooltips, deterministic pagination/sorting and disclosure interactions rather than inferring them from source alone.
 - [x] Inspect typography, spacing, alignment, icon optical size, border/elevation consistency, semantic color usage, contrast, truncation/wrapping and visual rhythm component by component. Direct assistant review of the 85 focused current-branch screenshots, together with the already completed 132-image light/dark desktop/tablet/mobile baseline review, found no material typography/alignment/elevation inconsistency or broken wrapping/truncation on the inspected surfaces. Semantic color and contrast are separately backed by the computed-theme checks; long/dense/extreme-content edge cases remain tracked by their dedicated pending item rather than being hidden here.
 - [ ] Inspect 200% browser zoom, increased app text-size/readability settings, reduced-motion mode and system theme changes without reload regressions.
@@ -1226,7 +1226,7 @@ This adds one material sub-implementation, increasing the overall denominator fr
 - 404/Settings/Auth accessibility batch is integrated for exact-head proof: rendered keyboard-semantic QA now covers the 404 title focus, Dashboard/Back tab order, reduced-motion suppression and a 720×500 200%-equivalent viewport, plus every Settings tab and login/MFA normal+error states on desktop/mobile. No verification counter advances until rendered CI passes and its evidence is directly reviewed.
 
 
-### 8.39 Implementation batch R — responsive transition and virtual-keyboard proof in progress
+### 8.39 Implementation batch R — responsive transition and virtual-keyboard proof completed
 
 Direct review of the geometry harness found that the canonical 1440/834/375/320 viewports were strong but did not explicitly exercise the exact 680/681 breakpoint transition, landscape resize behavior or a shortened viewport equivalent to a mobile virtual keyboard.
 
@@ -1236,7 +1236,7 @@ Source/runtime scope:
 - run the full interaction-dialog geometry suite at a 375×500 virtual-keyboard-equivalent viewport in addition to the existing 375×812 and 320×700 profiles;
 - keep existing canonical route geometry coverage unchanged.
 
-This implements the existing responsive/intermediate-width/orientation/virtual-keyboard verification cell and does not change the denominator. Completion requires integrated rendered CI plus direct review of the resulting QA log/evidence.
+This implements the existing responsive/intermediate-width/orientation/virtual-keyboard verification cell and does not change the denominator. **Completed:** direct assistant review of CI #3169 verifies both geometry suites passed the intermediate, resize-transition, landscape and virtual-keyboard profiles before the later unrelated accessibility stop.
 
 ### 8.40 Implementation batch S — nested Settings visual-state evidence in progress
 
