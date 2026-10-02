@@ -24,7 +24,7 @@ const PAGE_IDS=Object.keys(PAGE_HEADINGS);
 try{
   await waitHttp(`http://127.0.0.1:${port}/json/version`);
   const target=await fetch(`http://127.0.0.1:${port}/json/new?${encodeURIComponent(baseUrl)}`,{method:'PUT'}).then(response=>response.json());
-  const c=new Cdp(target.webSocketDebuggerUrl);await c.open();await c.send('Page.enable');await c.send('Runtime.enable');
+  const c=new Cdp(target.webSocketDebuggerUrl);await c.open();await c.send('Page.enable');await c.send('Runtime.enable');await c.send('Network.enable');
   await c.send('Page.addScriptToEvaluateOnNewDocument',{source:`globalThis.__MYFINHUB_QA_ERRORS=[];addEventListener('error',event=>{globalThis.__MYFINHUB_QA_ERRORS.push(String(event.error?.message||event.message||'window error'))});addEventListener('unhandledrejection',event=>{globalThis.__MYFINHUB_QA_ERRORS.push(String(event.reason?.message||event.reason||'unhandled rejection'))});`});
   const viewport=(width,height)=>c.send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<=680});
   const waitFor=async(fn,label,args=[])=>{for(let i=0;i<100;i++){if(await c.call(fn,args))return;await sleep(100)}throw new Error(`Timed out waiting for ${label}`)};
@@ -54,8 +54,13 @@ try{
   for(const text of ['compact','large'])for(const page of PAGE_IDS){await auditPage({page,width:1440,height:1000,text});await auditPage({page,width:375,height:812,text})}
   console.log('UI/UX QA: authentication screens');
   await viewport(375,812);for(const screen of ['login','mfa','mfa-enroll']){await navigate({screen},null);await noOverflow(`${screen} 375`);await noUnnamedControls(`${screen} 375`);await touchTargets(`${screen} 375`);await noRuntimeErrors(`${screen} 375`);await screenshot(`mobile-${screen}`)}
-  await navigate({screen:'login',error:'1'},null);assert(await c.eval("Boolean(document.querySelector('[role=alert]'))"),'login error is announced');
-  await navigate({screen:'mfa',error:'1'},null);assert(await c.eval("Boolean(document.querySelector('[role=alert]'))"),'MFA error is announced');
+  await navigate({screen:'login',error:'1'},null);assert(await c.eval("Boolean(document.querySelector('[role=alert]'))"),'login error is announced');await screenshot('mobile-login-invalid');
+  await navigate({screen:'mfa',error:'1'},null);assert(await c.eval("Boolean(document.querySelector('[role=alert]'))"),'MFA error is announced');await screenshot('mobile-mfa-invalid');
+  await c.send('Network.setBlockedURLs',{urls:['*/api/auth/session*']});
+  await c.send('Page.navigate',{url:new URL('/',baseUrl).href});
+  await waitFor("function(){const screen=document.querySelector('.boot-screen');return Boolean(screen&&screen.textContent.includes('Δεν ήταν δυνατός ο έλεγχος της συνεδρίας')&&screen.querySelector('button'))}",'actual app auth unavailable state');
+  await noOverflow('auth unavailable 375');await screenshot('mobile-auth-unavailable');
+  await c.send('Network.setBlockedURLs',{urls:[]});
 
   console.log('UI/UX QA: persistence and error states');
   await viewport(1440,1000);await navigate({page:'dashboard',save:'error'},PAGE_HEADINGS.dashboard);assert(await c.eval("document.querySelector('.persistence-notice.error')?.textContent.includes('Η αποθήκευση δεν ολοκληρώθηκε')"),'friendly persistence error copy');
