@@ -189,3 +189,5 @@ Subsequent changes are product fixes against the completed v1.3.0 baseline. Rout
 - Implementation-level tracking was synchronized with the actual audit sections: baseline/traceability, backend/API/Supabase, security/privacy and temporal/data-boundary implementations are fully complete.
 
 - Batch S nested Settings evidence is source-implemented: provider details/branding/asset picker, new-account editor, category rename, icon selection, rule editor and import confirmation now expand Final Visual QA from 168 to 216 captures across light/dark desktop/tablet/mobile. Counters remain unchanged until exact-head capture and direct review pass.
+
+- Batch T mutating validation matrix is source-implemented: canonical API 400 boundaries plus rendered invalid-submit coverage for twelve finance/card/Settings forms are wired into `qa:frontend`. Counters remain unchanged until exact-head CI/rendered proof passes and uncovered mutation surfaces are reconciled.
