@@ -22,13 +22,13 @@ describe('client API network resilience',()=>{
       init?.signal?.addEventListener('abort',()=>reject(new Error('aborted')),{once:true});
     })));
 
-    const pending=getSession();
-    await vi.advanceTimersByTimeAsync(API_REQUEST_TIMEOUT_MS);
-    await expect(pending).rejects.toMatchObject({
+    const rejection=expect(getSession()).rejects.toMatchObject({
       name:'ApiError',
       status:0,
       code:'NETWORK_TIMEOUT',
     } satisfies Partial<ApiError>);
+    await vi.advanceTimersByTimeAsync(API_REQUEST_TIMEOUT_MS);
+    await rejection;
   });
 
   it('clears the timeout after a normal response',async()=>{
