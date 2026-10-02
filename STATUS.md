@@ -49,7 +49,7 @@ Release-closeout tracker: **#288 — complete**.
 
 ## Active completion batch — #476
 
-**Implementations 7/24 completed · Sub-implementations 81/192 completed**
+**Implementations 7/24 completed · Sub-implementations 85/192 completed**
 
 - The completion definition has been expanded by the owner to a full-system verification matrix. Existing implementation findings remain tracked, but final closeout now requires direct assistant-led manual review plus UI/UX/accessibility, routing/404, every supported user mutation, real-stack persistence/backend proof, exhaustive failure handling, security/privacy, temporal/data-boundary coverage, operational recovery and canonical post-merge validation.
 
@@ -132,3 +132,5 @@ Subsequent changes are product fixes against the completed v1.3.0 baseline. Rout
 - Exact-head `81bff44…` closes four expanded-audit sub-items: Unicode/long-text rendering, stable-ID/normalization collision semantics, supported-schema migration/future-schema rejection, and render/lazy/OCR failure recovery. CI, CodeQL, Cross-engine, Performance and all Windows gates are green on that checkpoint.
 
 - The final visual harness now targets a 132-capture dual-theme matrix: every primary route, tracked Settings tab, auth state and 404 surface at desktop/tablet/mobile in both light and dark. Execution + direct assistant review remain pending.
+
+- Exact-head WebKit, bundle/performance budget, Windows package and first-run/clean-launch verification are directly closed from reviewed run logs/evidence.
