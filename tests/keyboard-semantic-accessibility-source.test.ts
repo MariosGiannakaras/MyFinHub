@@ -56,7 +56,7 @@ describe('keyboard and semantic accessibility verification contract',()=>{
   });
 
   it('keeps a shared visible keyboard focus treatment and runs in rendered QA',()=>{
-    expect(controls).toContain(':where(button,input,select,textarea,summary,[tabindex]):focus-visible');
+    expect(controls).toContain(':where(button,a[href],input,select,textarea,summary,[tabindex]):focus-visible');
     expect(runner).toContain("scripts/keyboard-semantic-accessibility-qa.mjs");
   });
 });

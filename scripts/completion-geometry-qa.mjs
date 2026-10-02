@@ -129,6 +129,20 @@ try{
       assert(result.desktopChromeOverlaps.length===0,`${profile.name}/${page}: chrome overlap ${JSON.stringify(result.desktopChromeOverlaps)}`);
     }
   }
+  console.log('Completion geometry/overflow QA: 200%-equivalent desktop reflow across every primary route');
+  const zoomWidth=720;
+  const zoomHeight=500;
+  await c.send('Emulation.setDeviceMetricsOverride',{width:zoomWidth,height:zoomHeight,deviceScaleFactor:1,mobile:false});
+  for(const page of pages){
+    const url=new URL(baseUrl);url.searchParams.set('page',page);url.searchParams.set('state','extreme');url.searchParams.set('text','large');url.searchParams.set('motion','reduced');
+    await c.send('Page.navigate',{url:url.href});
+    for(let i=0;i<140;i+=1){if(await c.call("function(){return document.readyState==='complete'&&Boolean(document.querySelector('#main-workspace h1'))}"))break;await sleep(80)}
+    await sleep(120);
+    const result=await c.call(analysisFn);
+    assert(result.docOverflow<=1,`zoom-200pct/${page}: document horizontal overflow ${result.docOverflow}px`);
+    assert(result.rogue.length===0,`zoom-200pct/${page}: off-viewport controls ${JSON.stringify(result.rogue)}`);
+    assert(result.desktopChromeOverlaps.length===0,`zoom-200pct/${page}: chrome overlap ${JSON.stringify(result.desktopChromeOverlaps)}`);
+  }
   c.close();
-  console.log('Completion geometry/overflow QA passed across canonical, intermediate, resize-transition and landscape profiles.');
+  console.log('Completion geometry/overflow QA passed across canonical, intermediate, resize-transition, landscape and 200%-equivalent profiles.');
 }finally{child.kill('SIGTERM');await sleep(200);rmSync(profile,{recursive:true,force:true,maxRetries:5,retryDelay:100})}

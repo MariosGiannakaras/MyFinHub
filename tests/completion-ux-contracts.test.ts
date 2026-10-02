@@ -314,6 +314,18 @@ describe('completion UX contracts',()=>{
   });
 
 
+  it('covers every primary route at a 200%-equivalent desktop viewport with large text and reduced motion',()=>{
+    const harness=read('scripts/completion-geometry-qa.mjs');
+    expect(harness).toContain("Completion geometry/overflow QA: 200%-equivalent desktop reflow across every primary route");
+    expect(harness).toContain('const zoomWidth=720');
+    expect(harness).toContain('const zoomHeight=500');
+    expect(harness).toContain("url.searchParams.set('text','large')");
+    expect(harness).toContain("url.searchParams.set('motion','reduced')");
+    expect(harness).toContain('for(const page of pages)');
+    expect(harness).toContain('zoom-200pct/');
+  });
+
+
   it('treats mobile fixed-chrome occlusion as a defect when final actions cannot scroll clear',()=>{
     const harness=read('scripts/completion-geometry-qa.mjs');
     expect(harness).toContain('const maxScroll=Math.max(0,result.scrollHeight-viewport.height)');

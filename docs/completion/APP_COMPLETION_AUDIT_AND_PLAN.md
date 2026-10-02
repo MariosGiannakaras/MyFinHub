@@ -1301,3 +1301,15 @@ Source remediation:
 - add a narrow source regression for the historical-statement caption/header structure while retaining the rendered route-wide semantic audit.
 
 This defect belongs to the existing semantic-accessibility verification item in 8.3 and does not change the denominator. Completion remains pending the rendered keyboard/semantic audit on an integrated exact head. No finance persistence, Supabase or Android behavior changes.
+
+### 8.44 FV-56 — shared anchor focus visibility and 200%-equivalent route proof in progress
+
+Exact-head CI #3172 on `bb953ee…` advanced beyond FV-55 and exposed the next accessibility defect on Reports: keyboard focus reached the in-page `Επισκόπηση` anchor, but the shared focus-visible selector did not include ordinary `a[href]` elements, leaving the focused link without the app-wide visible focus treatment.
+
+Source remediation and proof expansion:
+- extend the shared interactive focus-visible contract from buttons/form controls/summaries/tabindex elements to ordinary links via `a[href]` rather than adding a Reports-only patch;
+- retain the route-wide keyboard-semantic audit so the fix is exercised wherever links appear in the tab order;
+- extend the existing geometry harness with a 720×500 non-mobile effective viewport, equivalent to a 1440×1000 desktop at 200% browser zoom, across every primary route;
+- run that 200%-equivalent profile with the existing extreme-data fixture, Large readability mode and reduced motion, enforcing no document overflow, rogue off-viewport controls or desktop-chrome occlusion.
+
+FV-56 belongs to the existing keyboard/semantic accessibility item and the 200%/readability visual-verification item, so the denominator does not change. Completion remains pending integrated rendered proof. No finance persistence, Supabase or Android behavior changes.
