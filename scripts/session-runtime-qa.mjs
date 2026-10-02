@@ -26,7 +26,7 @@ try{
 
   const mfaSignal=await c.call("function(){globalThis.__myfinhubQaSessionMode?.('mfa');dispatchEvent(new Event('rheomiq:mfa-required'));return true}");
   assert(mfaSignal,'MFA downgrade signal dispatched');
-  await waitFor("function(){return (document.querySelector('#mfa-title')?.textContent||'').includes('Επαλήθευση')&&!document.querySelector('[data-session-probe=\"authenticated\"]')}",'MFA challenge after downgrade');
+  await waitFor("function(){return (document.querySelector('#mfa-title')?.textContent||'').includes('Επαλήθευση')&&!document.querySelector('[data-session-probe=\"authenticated\"]')}",'MFA challenge after downgrade');await sleep(430);
   const mfaState=await c.call("function(){const input=document.querySelector('#mfa-code');return {heading:document.querySelector('#mfa-title')?.textContent||'',focused:document.activeElement===input,locked:(document.querySelector('.login-footnote')?.textContent||'').includes('παραμένουν κλειδωμένα')}}");
   assert(mfaState.heading.includes('Επαλήθευση'),'MFA challenge is explicit');
   assert(mfaState.focused,'MFA code receives focus after downgrade');
@@ -34,7 +34,7 @@ try{
   await shot('session-mfa-downgrade');
 
   await c.call("function(){dispatchEvent(new Event('rheomiq:auth-expired'));return true}");
-  await waitFor("function(){return (document.querySelector('#login-title')?.textContent||'').includes('Σύνδεση')&&!document.querySelector('#mfa-title')&&!document.querySelector('[data-session-probe=\"authenticated\"]')}",'login after hard auth expiry');
+  await waitFor("function(){return (document.querySelector('#login-title')?.textContent||'').includes('Σύνδεση')&&!document.querySelector('#mfa-title')&&!document.querySelector('[data-session-probe=\"authenticated\"]')}",'login after hard auth expiry');await sleep(430);
   const loginState=await c.call("function(){return {heading:document.querySelector('#login-title')?.textContent||'',password:document.querySelector('#login-password')?.getAttribute('type')||'',financeShell:Boolean(document.querySelector('#main-workspace'))}}");
   assert(loginState.heading.includes('Σύνδεση'),'hard expiry returns to login');
   assert(loginState.password==='password','login password remains masked');
