@@ -44,6 +44,7 @@ const scripts=[
   {path:'scripts/large-data-boundaries-qa.mjs',key:'large-data-boundaries',surface:'large-data',profiles:['/tmp/myfinhub-large-data-boundaries-qa-chrome']},
   {path:'scripts/keyboard-semantic-accessibility-qa.mjs',key:'keyboard-semantic-a11y',surface:'accessibility',profiles:['/tmp/myfinhub-keyboard-semantic-a11y-chrome']},
   {path:'scripts/not-found-accessibility-qa.mjs',key:'not-found-accessibility',surface:'not-found',profiles:['/tmp/myfinhub-not-found-accessibility-qa-chrome']},
+  {path:'scripts/readability-runtime-qa.mjs',key:'readability-runtime',surface:'accessibility',profiles:['/tmp/myfinhub-readability-runtime-qa-chrome']},
 ];
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 function cleanPaths(paths){for(const path of paths){try{rmSync(path,{recursive:true,force:true,maxRetries:8,retryDelay:150})}catch(error){console.warn(`Rendered QA cleanup skipped for ${path}: ${error instanceof Error?error.message:String(error)}`)}}}
