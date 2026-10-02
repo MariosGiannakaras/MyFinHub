@@ -8,11 +8,42 @@ const configured=process.env.MYFINHUB_QA_USE_FALLBACK==='1'?process.env.MYFINHUB
 const chrome=configured||execFileSync('bash',['-lc','command -v google-chrome || command -v chromium || command -v chromium-browser'],{encoding:'utf8'}).trim();
 if(!chrome)throw new Error('Chrome/Chromium is required for keyboard/semantic accessibility QA.');
 const port=9347;
-const profile='/tmp/myfinhub-keyboard-semantic-a11y-chrome';
-rmSync(profile,{recursive:true,force:true,maxRetries:5,retryDelay:100});
-const child=spawn(chrome,['--headless=new',`--remote-debugging-port=${port}`,'--remote-debugging-address=127.0.0.1',`--user-data-dir=${profile}`,'--no-sandbox','--disable-gpu','--disable-dev-shm-usage','about:blank'],{stdio:'ignore'});
+const profileBase='/tmp/myfinhub-keyboard-semantic-a11y-chrome';
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
-async function waitHttp(url){for(let i=0;i<300;i++){try{const response=await fetch(url);if(response.ok)return}catch{}await sleep(100)}throw new Error(`Timed out waiting for ${url}`)}
+const cleanProfile=profile=>{try{rmSync(profile,{recursive:true,force:true,maxRetries:8,retryDelay:150})}catch{}};
+const diagnostics=value=>{const text=String(value||'').trim();return text?text.slice(-5000):'(no browser diagnostics)'};
+async function stopBrowser(child){
+ if(!child||child.exitCode!==null)return;
+ await new Promise(resolve=>{const timer=setTimeout(()=>{child.kill('SIGKILL');resolve()},1800);child.once('exit',()=>{clearTimeout(timer);resolve()});child.kill('SIGTERM')});
+}
+async function launchBrowser(){
+ let lastError=null;
+ for(let attempt=0;attempt<3;attempt+=1){
+   const activePort=port+attempt;
+   const profile=`${profileBase}-${attempt+1}`;
+   cleanProfile(profile);
+   let output='',spawnError='';
+   const child=spawn(chrome,['--headless=new',`--remote-debugging-port=${activePort}`,'--remote-debugging-address=127.0.0.1',`--user-data-dir=${profile}`,'--no-sandbox','--disable-gpu','--disable-dev-shm-usage','--no-first-run','--no-default-browser-check','about:blank'],{stdio:['ignore','pipe','pipe']});
+   const capture=stream=>stream?.on('data',chunk=>{output+=chunk.toString();if(output.length>10000)output=output.slice(-10000)});
+   capture(child.stdout);capture(child.stderr);child.on('error',error=>{spawnError=error.stack||error.message});
+   try{
+     for(let i=0;i<120;i++){
+       if(spawnError)throw new Error(`Browser spawn failed: ${spawnError}`);
+       if(child.exitCode!==null)throw new Error(`Browser exited before CDP became ready (exit ${child.exitCode}).\n${diagnostics(output)}`);
+       try{const response=await fetch(`http://127.0.0.1:${activePort}/json/version`);if(response.ok)return {child,port:activePort,profile}}catch{}
+       await sleep(150);
+     }
+     throw new Error(`Timed out waiting for http://127.0.0.1:${activePort}/json/version\n${diagnostics(output)}`);
+   }catch(error){
+     lastError=error;
+     await stopBrowser(child);
+     cleanProfile(profile);
+     if(attempt<2)await sleep(1200*(attempt+1));
+   }
+ }
+ throw lastError??new Error('Keyboard accessibility browser bootstrap failed.');
+}
+let browserSession=null;
 class Cdp{
  constructor(url){this.url=url;this.id=0;this.pending=new Map()}
  async open(){await new Promise((resolve,reject)=>{this.ws=new WebSocket(this.url);this.ws.onopen=resolve;this.ws.onerror=reject;this.ws.onmessage=event=>{const message=JSON.parse(event.data);if(!message.id)return;const pending=this.pending.get(message.id);if(!pending)return;this.pending.delete(message.id);message.error?pending.reject(new Error(message.error.message)):pending.resolve(message.result)}})}
@@ -27,8 +58,9 @@ const pages={
 };
 let c=null;
 try{
- await waitHttp(`http://127.0.0.1:${port}/json/version`);
- const target=await fetch(`http://127.0.0.1:${port}/json/new?${encodeURIComponent('about:blank')}`,{method:'PUT'}).then(response=>response.json());
+ browserSession=await launchBrowser();
+ const activePort=browserSession.port;
+ const target=await fetch(`http://127.0.0.1:${activePort}/json/new?${encodeURIComponent('about:blank')}`,{method:'PUT'}).then(response=>response.json());
  c=new Cdp(target.webSocketDebuggerUrl);await c.open();await c.send('Page.enable');await c.send('Runtime.enable');
  const waitFor=async(fn,label,args=[])=>{for(let i=0;i<120;i++){if(await c.call(fn,args))return;await sleep(75)}throw new Error(`Timed out waiting for ${label}`)};
  const viewport=(width,height,mobile=false)=>c.send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile});
@@ -204,7 +236,7 @@ try{
  console.log('Keyboard and semantic accessibility QA passed across all primary routes on desktop/mobile, shared modal focus contracts and the 404 recovery surface.');
 }finally{
  try{c?.close()}catch{}
- child.kill('SIGTERM');
+ await stopBrowser(browserSession?.child);
+ if(browserSession?.profile)cleanProfile(browserSession.profile);
  await sleep(200);
- rmSync(profile,{recursive:true,force:true,maxRetries:5,retryDelay:100});
 }
