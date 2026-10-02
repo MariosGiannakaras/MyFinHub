@@ -85,6 +85,21 @@ try{
   assert(large.visible===14&&large.semantic===14,'large dataset keeps desktop transaction DOM bounded to the configured page size');
   assert(large.footer.includes('από 1500')||/από 15\d\d/.test(large.footer),'large dataset reports the full transaction count without rendering it all');
   assert(large.domRows<50&&!large.overflow,'large dataset avoids unbounded row DOM and horizontal overflow');
+
+  console.log('Transactions QA: large-data mutation latency remains interactive');
+  await clickAria('Γρήγορη προσθήκη');await waitFor("function(){return Boolean(document.querySelector('.quick-modal'))}",'large-data Quick Entry');
+  await clickText('.generic-kind-grid button','Έξοδο');
+  await setInput('.quick-modal input[inputmode="decimal"]','1.23');
+  await setInput('.quick-modal input[placeholder="Σύντομη περιγραφή μόνο αν χρειάζεται"]','Large dataset mutation latency target');
+  assert(await c.call("function(){globalThis.__myfinhubLargeMutationStarted=performance.now();const button=[...document.querySelectorAll('.quick-modal footer button')].find(node=>(node.textContent||'').includes('Καταχώριση'));button?.click();return Boolean(button)}"),'large-data mutation submit exists');
+  await waitFor("function(){return !document.querySelector('.quick-modal')}",'large-data mutation completion');
+  const mutationLatency=await c.call("function(){return performance.now()-Number(globalThis.__myfinhubLargeMutationStarted||performance.now())}");
+  assert(mutationLatency<2000,`large-data mutation remains interactive (<2s, observed ${Math.round(mutationLatency)}ms)`);
+  await setInput('.transaction-searchbar input','Large dataset mutation latency target');
+  await waitFor("function(){const rows=document.querySelectorAll('.transactions-approved-table tbody .transaction-row');return rows.length===1&&(rows[0].textContent||'').includes('Large dataset mutation latency target')}",'large-data mutation visible after save');
+  await setInput('.transaction-searchbar input','');
+  await waitFor("function(){return document.querySelectorAll('.transactions-approved-table tbody .transaction-row').length===14}",'large dataset page restored after mutation');
+
   await clickAria('Επόμενη σελίδα');await waitFor("function(before){const row=document.querySelector('.transactions-approved-table tbody .transaction-row');return Boolean(row)&&!((row.textContent||'')===before)}",'large dataset next page',[large.first]);
   await setInput('.transaction-searchbar input','Large dataset unique search target');await waitFor("function(){const rows=document.querySelectorAll('.transactions-approved-table tbody .transaction-row');return rows.length===1&&(rows[0].textContent||'').includes('Large dataset unique search target')}",'large dataset unique search');
   const largeSearch=await c.call("function(){return {visible:document.querySelectorAll('.transactions-approved-table tbody .transaction-row').length,mobile:document.querySelectorAll('.mobile-transaction-row').length,footer:document.querySelector('.transactions-ledger-footer')?.textContent||''}}");
