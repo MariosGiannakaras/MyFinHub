@@ -297,6 +297,35 @@ function QaSessionSignalProbe(){
   return <LoginScreen onLogin={session.login} error={session.error}/>;
 }
 
-function QaApp(){const params=new URLSearchParams(location.search);const screen=params.get('screen');if(screen==='persistence-probe')return <QaPersistenceProbe/>;if(screen==='session-signal')return <QaSessionSignalProbe/>;if(screen==='404')return <NotFoundPage onHome={()=>{}} onBack={()=>{}}/>;if(screen==='login')return <LoginScreen error={params.get('error')==='1'?'Τα στοιχεία σύνδεσης δεν είναι σωστά.':''} onLogin={async()=>false}/>;if(screen==='mfa'||screen==='mfa-enroll')return <MfaScreen mode={screen==='mfa-enroll'?'enroll':'challenge'} email="qa@example.invalid" error={params.get('error')==='1'?'Ο κωδικός επαλήθευσης δεν είναι σωστός.':''} onEnroll={async()=>({factorId:'qa-factor',qrCode:'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%22120%22/%3E',secret:'QA-ONLY-SECRET'})} onVerify={async()=>false} onLogout={async()=>{}}/>;return <QaWorkspace/>}
+function QaAuthScreen({screen}:{screen:string}){
+  const loginErrors:Record<string,string>={
+    'login-error':'Τα στοιχεία σύνδεσης δεν είναι σωστά.',
+    'auth-unavailable':'Η υπηρεσία σύνδεσης δεν είναι διαθέσιμη προσωρινά. Δοκίμασε ξανά σε λίγο.',
+    'session-expired':'Η συνεδρία έληξε. Συνδέσου ξανά για να συνεχίσεις.',
+    'session-revoked':'Η πρόσβαση αυτής της συσκευής έχει ανακληθεί. Συνδέσου ξανά.',
+  };
+  if(screen==='login'||screen in loginErrors)return <LoginScreen error={loginErrors[screen]??''} onLogin={async()=>false}/>;
+  if(screen==='mfa'||screen==='mfa-error'||screen==='mfa-enroll'||screen==='mfa-enroll-error'){
+    const enroll=screen.startsWith('mfa-enroll');
+    const error=screen==='mfa-error'
+      ?'Ο κωδικός επαλήθευσης δεν είναι σωστός.'
+      :screen==='mfa-enroll-error'
+        ?'Δεν ήταν δυνατή η έναρξη ρύθμισης Authenticator. Δοκίμασε ξανά.'
+        :'';
+    return <MfaScreen mode={enroll?'enroll':'challenge'} email="qa@example.invalid" error={error} onEnroll={async()=>({factorId:'qa-factor',qrCode:'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%22120%22/%3E',secret:'QA-ONLY-SECRET'})} onVerify={async()=>false} onLogout={async()=>{}}/>;
+  }
+  return null;
+}
+
+function QaApp(){
+  const params=new URLSearchParams(location.search);
+  const screen=params.get('screen')??'';
+  if(screen==='persistence-probe')return <QaPersistenceProbe/>;
+  if(screen==='session-signal')return <QaSessionSignalProbe/>;
+  if(screen==='404')return <NotFoundPage onHome={()=>{}} onBack={()=>{}}/>;
+  const auth=<QaAuthScreen screen={screen}/>;
+  if(screen.startsWith('login')||screen.startsWith('mfa')||screen==='auth-unavailable'||screen.startsWith('session-'))return auth;
+  return <QaWorkspace/>;
+}
 
 createRoot(document.getElementById('root')!).render(<StrictMode><QaApp/></StrictMode>);
