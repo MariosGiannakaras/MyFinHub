@@ -24,6 +24,13 @@ describe('keyboard and semantic accessibility verification contract',()=>{
     expect(qa).toContain('focused control has no visible focus indicator');
   });
 
+  it('audits every Settings tab and auth/error surface on desktop and mobile',()=>{
+    expect(qa).toContain("const settingsTabs=['profile','accounts','categories','icons','rules','data']");
+    expect(qa).toContain("Keyboard/semantic accessibility QA: auth and auth-error states");
+    expect(qa).toContain("['login',false],['login',true],['mfa',false],['mfa',true],['mfa-enroll',false]");
+    expect(qa).toContain("error state must expose an alert");
+  });
+
   it('checks shared modal focus trapping, escape and opener restoration',()=>{
     expect(qa).toContain('Quick Entry focus trap');
     expect(qa).toContain('Command Palette focus trap');
@@ -31,6 +38,15 @@ describe('keyboard and semantic accessibility verification contract',()=>{
     expect(qa).toContain('restores focus to opener');
     expect(modalFocus).toContain("event.key !== 'Tab'");
     expect(modalFocus).toContain('opener.current?.focus');
+  });
+
+  it('covers the 404 recovery surface at a 200%-equivalent viewport with reduced motion',()=>{
+    expect(qa).toContain("notFoundUrl.searchParams.set('screen','404')");
+    expect(qa).toContain("prefers-reduced-motion");
+    expect(qa).toContain("await viewport(720,500,false)");
+    expect(qa).toContain("404 title focus");
+    expect(qa).toContain("404 first Tab reaches Dashboard recovery");
+    expect(qa).toContain("404 second Tab reaches Back recovery");
   });
 
   it('keeps a shared visible keyboard focus treatment and runs in rendered QA',()=>{

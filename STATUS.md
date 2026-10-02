@@ -49,7 +49,7 @@ Release-closeout tracker: **#288 — complete**.
 
 ## Active completion batch — #476
 
-**Implementations 7/24 completed · Sub-implementations 112/193 completed**
+**Implementations 7/24 completed · Sub-implementations 113/193 completed**
 
 - The completion definition has been expanded by the owner to a full-system verification matrix. Existing implementation findings remain tracked, but final closeout now requires direct assistant-led manual review plus UI/UX/accessibility, routing/404, every supported user mutation, real-stack persistence/backend proof, exhaustive failure handling, security/privacy, temporal/data-boundary coverage, operational recovery and canonical post-merge validation.
 
@@ -165,4 +165,7 @@ Subsequent changes are product fixes against the completed v1.3.0 baseline. Rout
 
 - WCAG-relevant contrast/reduced-motion review is directly closed using the Light/Dark manual evidence matrix, computed text/control/border contrast checks, shared focus treatment and reduced-motion interaction contracts; no formal conformance certification is claimed.
 
-- Batch Q visual evidence provenance is in progress: the fresh final artifact exposed that PR manifests preferred the GitHub merge-event SHA over the actually checked-out PR head. The harness now records `git rev-parse HEAD` first and has a regression contract; one new sub-implementation increases the denominator to 193 pending regenerated exact-head proof.
+- Batch Q visual evidence provenance is completed: the fresh final artifact exposed that PR manifests preferred the GitHub merge-event SHA over the actually checked-out PR head. The harness now records `git rev-parse HEAD` first and has a regression contract; one new sub-implementation increases the denominator to 193 pending regenerated exact-head proof.
+
+- Batch Q is completed: regenerated Final Visual QA produced 132 captures and the manifest now records the actual checked-out source head instead of the pull-request merge-event SHA.
+- 404/Settings/Auth keyboard-semantic coverage has been expanded on the next validation head; counters do not advance for those items until rendered CI passes.

@@ -49,7 +49,7 @@ try{
    const unnamed=controls.filter(el=>!labelText(el)).map(el=>el.outerHTML.slice(0,180));
    const positiveTab=[...document.querySelectorAll('[tabindex]')].filter(el=>Number(el.getAttribute('tabindex'))>0).map(el=>el.outerHTML.slice(0,160));
    const hiddenFocusable=[...document.querySelectorAll('[aria-hidden=true]')].filter(el=>el.matches('button,a[href],input,select,textarea,[tabindex]:not([tabindex="-1"])')&&visible(el)).map(el=>el.outerHTML.slice(0,160));
-   const h1=[...document.querySelectorAll('#main-workspace h1')].filter(visible);
+   const h1=[...document.querySelectorAll('h1')].filter(visible);
    const imgs=[...document.querySelectorAll('img')].filter(visible).filter(img=>!img.hasAttribute('alt')).map(img=>img.outerHTML.slice(0,160));
    const tables=[...document.querySelectorAll('table')].filter(visible).map(table=>({caption:Boolean(table.querySelector('caption')||table.getAttribute('aria-label')||table.getAttribute('aria-labelledby')),headers:table.querySelectorAll('th').length}));
    const progress=[...document.querySelectorAll('[role=progressbar]')].filter(visible).map(el=>({name:labelText(el),hasNow:el.hasAttribute('aria-valuenow')||el.hasAttribute('aria-valuetext')}));
@@ -97,6 +97,46 @@ try{
    }
  }
 
+ const assertAudit=(audit,label)=>{
+   assert(audit.main===1,`${label}: expected one main landmark, got ${audit.main}`);
+   assert(audit.h1===1,`${label}: expected one visible H1, got ${audit.h1}`);
+   assert(audit.unnamed.length===0,`${label}: unnamed controls ${audit.unnamed.join(' | ')}`);
+   assert(audit.positiveTab.length===0,`${label}: positive tabindex ${audit.positiveTab.join(' | ')}`);
+   assert(audit.hiddenFocusable.length===0,`${label}: aria-hidden focusable controls ${audit.hiddenFocusable.join(' | ')}`);
+   assert(audit.imgs.length===0,`${label}: visible images without alt attribute ${audit.imgs.join(' | ')}`);
+   assert(audit.tables.every(row=>row.caption&&row.headers>0),`${label}: visible table missing caption/header semantics ${JSON.stringify(audit.tables)}`);
+   assert(audit.progress.every(row=>row.name&&row.hasNow),`${label}: incomplete progressbar semantics ${JSON.stringify(audit.progress)}`);
+ };
+
+ console.log('Keyboard/semantic accessibility QA: every Settings tab on desktop/mobile');
+ const settingsTabs=['profile','accounts','categories','icons','rules','data'];
+ for(const [mode,width,height,mobile] of [['desktop',1440,1000,false],['mobile',375,812,true]]){
+   await navigate('settings',pages.settings,width,height,mobile);
+   for(const tab of settingsTabs){
+     const clicked=await c.call("function(tab){const node=document.querySelector('[aria-controls=\"settings-panel-'+tab+'\"]');node?.click();return Boolean(node)}",[tab]);
+     assert(clicked,`${mode}/settings/${tab}: tab exists`);
+     await waitFor("function(tab){return document.querySelector('[aria-controls=\"settings-panel-'+tab+'\"]')?.getAttribute('aria-selected')==='true'}",`${mode} settings tab ${tab}`,[tab]);
+     const audit=await semanticAudit();assertAudit(audit,`${mode}/settings/${tab}`);
+     await tabSweep(`${mode}/settings/${tab}`);
+   }
+ }
+
+ console.log('Keyboard/semantic accessibility QA: auth and auth-error states');
+ const authStates=[
+   ['login',false],['login',true],['mfa',false],['mfa',true],['mfa-enroll',false],
+ ];
+ for(const [mode,width,height,mobile] of [['desktop',1440,1000,false],['mobile',375,812,true]]){
+   await viewport(width,height,mobile);
+   for(const [screen,error] of authStates){
+     const url=new URL(baseUrl);url.searchParams.set('screen',screen);if(error)url.searchParams.set('error','1');
+     await c.send('Page.navigate',{url:url.href});
+     await waitFor("function(){return Boolean(document.querySelector('.login-card h1'))}",`${mode} auth ${screen}`);
+     const audit=await semanticAudit();assertAudit(audit,`${mode}/auth/${screen}${error?'/error':''}`);
+     if(error)assert(audit.statuses.some(item=>item.role==='alert'),`${mode}/auth/${screen}: error state must expose an alert`);
+     await tabSweep(`${mode}/auth/${screen}${error?'/error':''}`);
+   }
+ }
+
  await navigate('dashboard',pages.dashboard,1440,1000,false);
  const opener=await c.call("function(){const button=document.querySelector('[data-global-quick-entry=desktop]');button?.focus();button?.click();return button?.getAttribute('aria-label')||button?.textContent||''}");
  assert(opener,'Quick Entry keyboard opener exists');
@@ -120,8 +160,39 @@ try{
  await pressEscape();await waitFor("function(){return !document.querySelector('.mobile-more-menu[role=dialog]')}",'mobile More Escape close');
  assert(await c.call("function(){return document.activeElement===document.querySelector('button[aria-label=\"Περισσότερες ενότητες\"]')}"),'mobile More restores focus to opener');
  await shot('keyboard-semantic-mobile-dashboard');
+
+ console.log('Keyboard/semantic accessibility QA: 404 focus, keyboard, reduced-motion and 200%-equivalent viewport');
+ await c.send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
+ await viewport(720,500,false);
+ const notFoundUrl=new URL(baseUrl);notFoundUrl.searchParams.set('screen','404');
+ await c.send('Page.navigate',{url:notFoundUrl.href});
+ await waitFor("function(){return Boolean(document.querySelector('#not-found-title'))}",'404 title');
+ await waitFor("function(){return document.activeElement?.id==='not-found-title'}",'404 title focus');
+ const notFoundState=await c.call(`function(){
+   const main=document.querySelector('.not-found-screen'),card=document.querySelector('.not-found-card'),missing=document.querySelector('.not-found-route-node.is-missing');
+   const buttons=[...document.querySelectorAll('.not-found-actions button')];
+   const rect=card?.getBoundingClientRect();
+   return {
+     main:Boolean(main),overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth,
+     card:rect?{left:rect.left,right:rect.right,width:rect.width}:null,
+     animation:missing?getComputedStyle(missing).animationName:'',
+     buttons:buttons.map(button=>({text:(button.textContent||'').trim(),w:button.getBoundingClientRect().width,h:button.getBoundingClientRect().height}))
+   };
+ }`);
+ assert(notFoundState.main,'404 main surface exists');
+ assert(notFoundState.overflow<=1,`404 200%-equivalent viewport has horizontal overflow: ${JSON.stringify(notFoundState)}`);
+ assert(notFoundState.card&&notFoundState.card.left>=0&&notFoundState.card.right<=720+1,`404 card escapes effective 200% viewport: ${JSON.stringify(notFoundState.card)}`);
+ assert(notFoundState.animation==='none',`404 missing-route pulse must be disabled under reduced motion: ${notFoundState.animation}`);
+ assert(notFoundState.buttons.length===2&&notFoundState.buttons.every(button=>button.h>=44),`404 actions are not keyboard/touch safe: ${JSON.stringify(notFoundState.buttons)}`);
+ await pressTab();
+ assert(await c.call("function(){return (document.activeElement?.textContent||'').trim().includes('Dashboard')}"),'404 first Tab reaches Dashboard recovery');
+ await pressTab();
+ assert(await c.call("function(){return (document.activeElement?.textContent||'').trim()==='Πίσω'}"),'404 second Tab reaches Back recovery');
+ await shot('keyboard-semantic-404-zoom-reduced');
+
+ await c.send('Emulation.setEmulatedMedia',{features:[]});
  writeFileSync(`${evidenceDir}/summary.json`,JSON.stringify(summary,null,2));
- console.log('Keyboard and semantic accessibility QA passed across all primary routes on desktop/mobile plus shared modal focus-trap/restoration checks.');
+ console.log('Keyboard and semantic accessibility QA passed across all primary routes on desktop/mobile, shared modal focus contracts and the 404 recovery surface.');
 }finally{
  try{c?.close()}catch{}
  child.kill('SIGTERM');
