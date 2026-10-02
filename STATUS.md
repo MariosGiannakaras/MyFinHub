@@ -49,7 +49,7 @@ Release-closeout tracker: **#288 — complete**.
 
 ## Active completion batch — #476
 
-**Implementations 7/24 completed · Sub-implementations 98/192 completed**
+**Implementations 7/24 completed · Sub-implementations 103/192 completed**
 
 - The completion definition has been expanded by the owner to a full-system verification matrix. Existing implementation findings remain tracked, but final closeout now requires direct assistant-led manual review plus UI/UX/accessibility, routing/404, every supported user mutation, real-stack persistence/backend proof, exhaustive failure handling, security/privacy, temporal/data-boundary coverage, operational recovery and canonical post-merge validation.
 
@@ -146,3 +146,5 @@ Subsequent changes are product fixes against the completed v1.3.0 baseline. Rout
 - Temporary backend/auth/data outage recovery closes one operational sub-item.
 
 - Application rollback compatibility is directly proven in production: v1.3.0-era web code remains READY/healthy against the newer Supabase schema with no runtime-error cluster.
+
+- Direct manual visual review now covers all 132 Final Visual QA screenshots (22 groups × light/dark × desktop/tablet/mobile). Baseline primary-route visual review, human disposition ledger, global IA/navigation review, page hierarchy/scanability review and branded 404 design review are closed; exact-head/nested-state/zoom/reduced-motion checks remain separate.
