@@ -46,9 +46,11 @@ try{
   const initialBudgets=await c.call("function(){return {count:document.querySelectorAll('.budget-setting-row').length,more:Boolean(document.querySelector('.budget-settings-more'))}}");
   assert(initialBudgets.count>0&&initialBudgets.count<=24,`budget DOM is initially bounded (${initialBudgets.count})`);
   assert(initialBudgets.more,'large budgets expose progressive disclosure');
+  const firstBudgetDeleteLabel=await c.call("function(){return document.querySelector('.budget-setting-row button[aria-label^=\"Διαγραφή προϋπολογισμού\"]')?.getAttribute('aria-label')||''}");
+  assert(firstBudgetDeleteLabel,'large budget delete action exists');
   const deleteLatencyStart=Date.now();
-  assert(await c.call("function(){const button=document.querySelector('.budget-setting-row button[aria-label^=\"Διαγραφή προϋπολογισμού\"]');if(!button)return false;button.click();return true}"),'large budget delete action exists');
-  await waitFor("function(count){return document.querySelectorAll('.budget-setting-row').length===count-1}",'large budget mutation',[initialBudgets.count]);
+  assert(await c.call("function(label){const button=[...document.querySelectorAll('.budget-setting-row button[aria-label^=\"Διαγραφή προϋπολογισμού\"]')].find(node=>node.getAttribute('aria-label')===label);if(!button)return false;button.click();return true}",[firstBudgetDeleteLabel]),'large budget delete action is actionable');
+  await waitFor("function(label){return ![...document.querySelectorAll('.budget-setting-row button[aria-label^=\"Διαγραφή προϋπολογισμού\"]')].some(node=>node.getAttribute('aria-label')===label)}",'large budget mutation',[firstBudgetDeleteLabel]);
   results.budgetDeleteLatencyMs=Date.now()-deleteLatencyStart;
   assert(results.budgetDeleteLatencyMs<1500,`large budget mutation latency ${results.budgetDeleteLatencyMs}ms`);
   results.reportsHeapMb=await heapMb();
