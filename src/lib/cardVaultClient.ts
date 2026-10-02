@@ -1,4 +1,5 @@
 import { notifyAuthExpired } from './authExpiry.js';
+import { ApiError, apiRequest } from './api.js';
 import { readLocalCvv } from './localCvvVault.js';
 type CardVaultSecret={pan?:string;expiry?:string;cvv?:string};
 
@@ -11,7 +12,7 @@ export class CardVaultClientError extends Error{
 }
 
 async function request<T>(method:'POST'|'PUT'|'DELETE',body:Record<string,unknown>):Promise<T>{
-  const response=await fetch('/api/card-secrets',{
+  const response=await apiRequest('/api/card-secrets',{
     method,
     credentials:'same-origin',
     headers:{'content-type':'application/json'},
@@ -61,6 +62,10 @@ export async function deleteCardSecret(cardId:string){
 }
 
 export function cardVaultErrorMessage(error:unknown){
+  if(error instanceof ApiError){
+    if(error.code==='NETWORK_TIMEOUT')return 'Η σύνδεση με το ασφαλές vault άργησε πολύ. Έλεγξε τη σύνδεσή σου και δοκίμασε ξανά.';
+    if(error.code==='NETWORK_ERROR'||error.code==='REQUEST_ABORTED')return 'Δεν ήταν δυνατή η σύνδεση με το ασφαλές vault. Τα αποθηκευμένα στοιχεία δεν άλλαξαν.';
+  }
   if(error instanceof CardVaultClientError){
     if(error.code==='CARD_SECRET_NOT_FOUND')return 'Δεν έχουν αποθηκευτεί ακόμη αριθμός και λήξη για αυτή την κάρτα.';
     if(error.code==='INVALID_CARD_PAN')return 'Γράψε έναν αριθμό κάρτας με αριθμητικά ψηφία.';
