@@ -1,4 +1,5 @@
 import express from 'express';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { accessTokenAal, assertMutationSessionOrigin, beginTotpEnrollment, challengeTotp, clearSessionCookies, clearSessionCookiesIfCookie, getTotpFactors, requireSession, revokeSession, setSessionCookies, signInWithPassword, verifyTotp } from './auth.js';
@@ -232,8 +233,12 @@ if (serveDist) {
   app.use(express.static(dist, { index: false, maxAge: '1h' }));
   const indexFile = path.join(dist, 'index.html');
   const notFoundFile = path.join(dist, '404.html');
-  app.get(['/', '/index.html'], (_req, res) => res.sendFile(indexFile));
-  app.get('/{*splat}', (_req, res) => res.status(404).sendFile(notFoundFile));
+  // Load the two HTML documents once at startup so repeated document requests do
+  // not perform filesystem work inside request handlers.
+  const indexDocument = readFileSync(indexFile, 'utf8');
+  const notFoundDocument = readFileSync(notFoundFile, 'utf8');
+  app.get(['/', '/index.html'], (_req, res) => res.type('html').send(indexDocument));
+  app.get('/{*splat}', (_req, res) => res.status(404).type('html').send(notFoundDocument));
 }
 
 const port = Number(process.env.RHEOMIQ_PORT || process.env.PORT || 4317);

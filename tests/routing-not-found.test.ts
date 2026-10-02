@@ -46,7 +46,12 @@ describe('routing and 404 contract',()=>{
 
   it('serves only the hash-routed app entry at root and returns a real static 404 for unknown HTTP paths',()=>{
     expect(server).toContain("app.get(['/', '/index.html']");
-    expect(server).toContain("res.status(404).sendFile(notFoundFile)");
+    expect(server).toContain("const indexDocument = readFileSync(indexFile, 'utf8')");
+    expect(server).toContain("const notFoundDocument = readFileSync(notFoundFile, 'utf8')");
+    expect(server).toContain("res.type('html').send(indexDocument)");
+    expect(server).toContain("res.status(404).type('html').send(notFoundDocument)");
+    expect(server).not.toContain("res.sendFile(indexFile)");
+    expect(server).not.toContain("res.status(404).sendFile(notFoundFile)");
     expect(server).not.toContain("app.get('/{*splat}', (_req, res) => res.sendFile(path.join(dist, 'index.html')))");
     expect(static404).toContain('<title>404 · MyFinHub</title>');
     expect(static404).toContain('Χάσαμε τη διαδρομή, όχι τα δεδομένα σου.');

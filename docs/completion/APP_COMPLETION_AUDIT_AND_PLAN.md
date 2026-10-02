@@ -8,7 +8,7 @@ Release target: none — `main` remains release-only
 
 ## Current integration checkpoint — 2026-10-02
 
-**Implementations 11/24 completed · Sub-implementations 123/193 completed**
+**Implementations 10/24 completed · Sub-implementations 122/193 completed**
 
 This checkpoint supersedes older "#482 reconciliation pending" notes below for current execution state.
 
@@ -20,7 +20,8 @@ This checkpoint supersedes older "#482 reconciliation pending" notes below for c
 - FV-41/FV-42/FV-43 are completed on exact-head rendered CI. Their fixes were validation-harness/touch-target corrections and did not weaken product behavior.
 - FV-44 is completed on `9b25fb1…`: extreme Recurring mobile progressive disclosure, full expansion, collapsed inactive history and overflow safety all pass.
 - FV-45 exact-head rendered proof has passed: OCR persists raw `EUR`, while the owned currency select displays `EUR · Ευρώ`; stored semantics and visible presentation are validated separately. The expanded full-system audit below now governs closeout.
-- Current counters: **Implementations 11/24 completed · Sub-implementations 123/193 completed**. Implementation-level counters synchronized on 2026-10-02: audit implementations 8.1, 8.6, 8.8 and 8.15 are fully closed; partial sections remain in progress. The denominator expanded on 2026-10-01 after the owner required exhaustive full-system verification, direct assistant-led manual review, routing/404 coverage, temporal/data-boundary coverage and operational recovery proof.
+- FV-54 is source-fixed on the next head: the local/Windows static host now preloads `index.html` and `404.html` once at startup instead of performing `sendFile()` filesystem access per document request. Exact-head CodeQL proof is pending; no dependency, API, finance, Supabase or Android behavior changed.
+- Current counters: **Implementations 10/24 completed · Sub-implementations 122/193 completed**. Security implementation 8.8 is temporarily reopened by FV-54 pending exact-head CodeQL proof; 8.1, 8.6 and 8.15 remain fully closed. The denominator remains 193 because FV-54 maps to the existing CodeQL/security verification item.
 - Audit verification checkpoint 2026-10-02: 10 additional sub-implementations are directly closed by assistant review/evidence. Unsupported-future-schema handling remains open under the existing backwards-compatibility item; it does not expand the denominator.
 - Repository-admin hardening remains tracked separately in #485 and does not change this batch denominator.
 - No Android changes and no `main` release/promotion are part of this checkpoint.
@@ -651,7 +652,7 @@ The prior completion audit remains valuable evidence, but it does **not** by its
 
 **New audit workstream: Implementations 4/16 completed · Sub-implementations 81/164 completed.**
 
-**Overall completion scope: Implementations 11/24 completed · Sub-implementations 123/193 completed.**
+**Overall completion scope: Implementations 10/24 completed · Sub-implementations 122/193 completed.**
 
 The denominator increased because 16 new verification implementations / 160 non-trivial sub-implementations are now accepted. Existing implementation-completion state is retained provisionally, but the expanded verification matrix has a stricter proof rule: prior evidence may be reused only after the responsible ChatGPT agent personally inspects it and confirms that it proves the exact required contract. Re-running unchanged automation is unnecessary when existing artifacts are sufficient, but no matrix cell is finally closed merely because an earlier workflow marked it green.
 
@@ -762,9 +763,9 @@ The denominator increased because 16 new verification implementations / 160 non-
 - [x] Exercise client render errors, lazy-chunk/resource failure, OCR asset failure and error-boundary recovery. Direct assistant review plus exact-head rendered CI on `81bff44…` proves synthetic render faults and rejected lazy resources reach the privacy-safe focused PageErrorBoundary without raw exception leakage; missing local OCR assets preserve the IndexedDB receipt and surface manual/retry guidance; the rejected OCR worker bootstrap is cleared so a later retry succeeds after the local asset becomes available. Recovered-surface and receipt-local-OCR suites both passed in the primary Chromium run.
 - [x] Audit every user-facing error/warning/success message for accuracy, persistence, accessibility announcement, redaction and appropriate recovery action. Direct assistant review of the shared message/error owners plus all domain form/error pathways confirms task-local validation, assertive errors/conflicts, polite progress/success status, technical-error redaction, explicit retry/reload/re-auth/manual-recovery actions and no false success after failed persistence. The audited message families and recovery contracts are recorded in `docs/completion/CONTENT_AND_FEEDBACK_AUDIT.md`.
 
-### 8.8 Security and privacy verification — 8/8
+### 8.8 Security and privacy verification — 7/8
 
-- [x] Resolve all current CodeQL alerts on the exact candidate head and require CodeQL green without dismissing valid findings. Exact-head CodeQL run #2957 on `0d747e2…` completed successfully; the JavaScript/TypeScript analysis job and analyze step are green with no unresolved check failure.
+- [ ] Resolve all current CodeQL alerts on the exact candidate head and require CodeQL green without dismissing valid findings. **Reopened 2026-10-03:** exact head `ebca273…` exposed two `js/missing-rate-limiting` alerts on the static `index.html`/`404.html` document handlers. FV-54 removes per-request filesystem access by preloading both bounded HTML documents once at startup; routing regression coverage locks the cached-document contract. Exact-head CodeQL proof is pending.
 - [x] Run dependency audits for root/API/desktop and review high/critical advisories plus transitive desktop/runtime exposure. Exact-head-equivalent root/API dependency locks pass `npm audit --audit-level=high` and API audit on the latest green CI; the desktop package lock is unchanged from the last green Windows Desktop run whose `desktop:check` includes its own high-severity audit. No package/lockfile changed between that Windows evidence and the current branch.
 - [x] Verify security headers/CSP, no unsafe inline/executable receipt/provider content and no unexpected external resource dependency. Direct source review confirms the exact-head CSP keeps object/frame/form restrictions, forbids generic script eval while permitting only WASM eval for self-hosted OCR, limits provider images to the canonical Supabase project origin, removes obsolete legacy image hosts, keeps receipt OCR/assets same-origin/local, and leaves only intentional runtime network origins (canonical production API, Supabase, GitHub release update checks).
 - [x] Verify no service-role/secret key, `CARD_VAULT_KEY`, access/refresh token, TOTP secret, PAN/expiry/CVV or personal finance data leaks to bundles, logs, screenshots, backups or repository artifacts. Exact-head-equivalent CI on `8e571c2…` proves both the tracked-file privacy guard and generated-release artifact privacy guard pass; generic 5xx logs are redacted by contract, production backups contain no sensitive card/token/TOTP keys, card-vault data is isolated outside FinanceData/backups, and visual QA uses synthetic fixtures rather than production finance data.
@@ -1277,3 +1278,15 @@ Follow-up source work on `audit/476-a11y-bootstrap-fix`:
 This follow-up belongs to the existing exact-head Chromium/accessibility proof obligations and does not add a new accepted product sub-implementation. It remains pending until the branch is integrated and the full rendered suite reaches/passes the keyboard/semantic accessibility assertions.
 
 The first expanded Final Visual QA attempt on `0daf708…` also exposed a harness-only selector drift: category rename buttons are labelled `Μετονομασία <name>`, while the new nested-state capture looked for the obsolete `Μετονομασία κατηγορίας…` prefix. The capture selector is now anchored to the category header/action row and current accessible-name contract. This remains part of the existing final visual proof obligation and does not change the denominator.
+
+### 8.42 FV-54 — static document filesystem DoS hardening in progress
+
+Exact-head CodeQL on `ebca273…` surfaced two `js/missing-rate-limiting` findings on the local/Windows document handlers because both root/index and the intentional HTTP 404 path performed `sendFile()` filesystem access directly inside request handlers.
+
+Source remediation:
+- preload the built `index.html` and privacy-safe `404.html` exactly once when the dist-serving host starts;
+- serve the cached HTML strings for root/index and unknown HTTP paths, eliminating request-amplified filesystem work rather than adding a dependency solely for throttling;
+- preserve root 200, real unknown-path 404 status, HTML content type, hash-router recovery and the existing `express.static` asset behavior;
+- add a routing source regression that requires startup caching and rejects a return to per-request `sendFile()` for these two documents.
+
+This is a security hardening defect inside the existing CodeQL/security verification item and does not change the denominator. Implementation 8.8 and its CodeQL sub-implementation remain reopened until exact-head CodeQL is green. No Supabase/database operation and no Android repository change are involved.
