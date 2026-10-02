@@ -59,6 +59,7 @@ export function AccountSecuritySettings({currentEmail}:{currentEmail?:string|nul
   const[displayEmail,setDisplayEmail]=useState(currentEmail||'');
   const[pendingEmail,setPendingEmail]=useState('');
   const[authMessage,setAuthMessage]=useState('');
+  const[authMessageTone,setAuthMessageTone]=useState<'status'|'error'>('status');
   const[pinMessage,setPinMessage]=useState('');
   const[authBusy,setAuthBusy]=useState<'email'|'password'|null>(null);
   const[pinBusy,setPinBusy]=useState(false);
@@ -80,33 +81,33 @@ export function AccountSecuritySettings({currentEmail}:{currentEmail?:string|nul
 
   const submitEmail=async()=>{
     const email=newEmail.trim().toLowerCase();
-    if(!email||!email.includes('@')){setAuthMessage('Συμπλήρωσε έγκυρο νέο email.');return;}
-    setAuthBusy('email');setAuthMessage('');
+    if(!email||!email.includes('@')){setAuthMessageTone('error');setAuthMessage('Συμπλήρωσε έγκυρο νέο email.');return;}
+    setAuthBusy('email');setAuthMessageTone('status');setAuthMessage('');
     try{
       const result=await changeAccountEmail(email);
       if(result.pendingEmail){
         setPendingEmail(result.pendingEmail);
-        setAuthMessage(`Η αλλαγή προς ${result.pendingEmail} καταχωρίστηκε. Ολοκλήρωσε τα email επιβεβαίωσης που θα σταλούν από την υπηρεσία σύνδεσης.`);
+        setAuthMessageTone('status');setAuthMessage(`Η αλλαγή προς ${result.pendingEmail} καταχωρίστηκε. Ολοκλήρωσε τα email επιβεβαίωσης που θα σταλούν από την υπηρεσία σύνδεσης.`);
       }else{
         setDisplayEmail(result.email||email);setPendingEmail('');
-        setAuthMessage('Το email πρόσβασης ενημερώθηκε.');
+        setAuthMessageTone('status');setAuthMessage('Το email πρόσβασης ενημερώθηκε.');
       }
       setNewEmail('');
-    }catch(error){setAuthMessage(authError(error,'Δεν ήταν δυνατή η αλλαγή email. Δοκίμασε ξανά.'))}
+    }catch(error){setAuthMessageTone('error');setAuthMessage(authError(error,'Δεν ήταν δυνατή η αλλαγή email. Δοκίμασε ξανά.'))}
     finally{setAuthBusy(null)}
   };
 
   const submitPassword=async()=>{
-    if(!currentPassword){setAuthMessage('Συμπλήρωσε τον τρέχοντα κωδικό.');return;}
-    const passwordError=accountPasswordPolicyError(newPassword);if(passwordError){setAuthMessage(passwordError);return;}
-    if(newPassword!==confirmPassword){setAuthMessage('Η επιβεβαίωση του νέου κωδικού δεν ταιριάζει.');return;}
-    if(newPassword===currentPassword){setAuthMessage('Ο νέος κωδικός πρέπει να είναι διαφορετικός από τον τρέχοντα.');return;}
-    setAuthBusy('password');setAuthMessage('');
+    if(!currentPassword){setAuthMessageTone('error');setAuthMessage('Συμπλήρωσε τον τρέχοντα κωδικό.');return;}
+    const passwordError=accountPasswordPolicyError(newPassword);if(passwordError){setAuthMessageTone('error');setAuthMessage(passwordError);return;}
+    if(newPassword!==confirmPassword){setAuthMessageTone('error');setAuthMessage('Η επιβεβαίωση του νέου κωδικού δεν ταιριάζει.');return;}
+    if(newPassword===currentPassword){setAuthMessageTone('error');setAuthMessage('Ο νέος κωδικός πρέπει να είναι διαφορετικός από τον τρέχοντα.');return;}
+    setAuthBusy('password');setAuthMessageTone('status');setAuthMessage('');
     try{
       await changeAccountPassword(currentPassword,newPassword);
-      setAuthMessage('Ο κωδικός πρόσβασης ενημερώθηκε.');
+      setAuthMessageTone('status');setAuthMessage('Ο κωδικός πρόσβασης ενημερώθηκε.');
       setCurrentPassword('');setNewPassword('');setConfirmPassword('');
-    }catch(error){setAuthMessage(authError(error,'Δεν ήταν δυνατή η αλλαγή κωδικού. Δοκίμασε ξανά.'));setCurrentPassword('');}
+    }catch(error){setAuthMessageTone('error');setAuthMessage(authError(error,'Δεν ήταν δυνατή η αλλαγή κωδικού. Δοκίμασε ξανά.'));setCurrentPassword('');}
     finally{setAuthBusy(null)}
   };
 
@@ -174,7 +175,7 @@ export function AccountSecuritySettings({currentEmail}:{currentEmail?:string|nul
       </section>
     </div>
 
-    {authMessage?<div className="logic-note compact account-security-message" role="status" aria-live="polite"><ShieldCheck/><span>{authMessage}</span></div>:null}
+    {authMessage?<div className="logic-note compact account-security-message" role={authMessageTone==='error'?'alert':'status'} aria-live={authMessageTone==='error'?'assertive':'polite'}><ShieldCheck/><span>{authMessage}</span></div>:null}
 
     <section className="panel surface-raised account-security-card account-security-pin-card">
       <div className="panel-head"><div><span>PIN & αυτόματο κλείδωμα</span></div><LockKeyhole/></div>
