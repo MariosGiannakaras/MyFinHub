@@ -248,6 +248,18 @@ describe('completion UX contracts',()=>{
     expect(css).toContain('.dashboard-approved .approved-bar-wrap{height:153px;min-height:153px}');
   });
 
+  it('closes the remaining budget and rule CRUD proof gaps in rendered QA',()=>{
+    const harness=read('scripts/budget-rules-qa.mjs');
+    expect(harness).toContain("selectOwnedOption('Κατηγορία / υποκατηγορία','Τρόφιμα')");
+    expect(harness).toContain('automation edit persists');
+    expect(harness).toContain('existing matching transaction remains unchanged');
+    expect(harness).toContain('new matching transaction receives rule category');
+    expect(harness).toContain('overall budget create with warning threshold');
+    expect(harness).toContain('overall budget edit updates stable row');
+    expect(harness).toContain('overall budget delete');
+  });
+
+
   it('executes app-wide Quick Entry, undo and redo shortcuts in rendered QA',()=>{
     const command=read('scripts/command-palette-qa.mjs');
     const functional=read('scripts/completion-functional-crud-qa.mjs');

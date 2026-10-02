@@ -1335,4 +1335,9 @@ Source/runtime proof expansion:
 - the completion functional CRUD suite reuses its existing modern-transaction delete/undo state to exercise `Ctrl+Y` redo and `Ctrl+Z` undo through the shared production shortcut hook;
 - no new workflow is introduced; these assertions run inside existing rendered suites in the next integrated CI wave.
 
-This implements an existing verification obligation and does not change the denominator. The combined Receipt OCR + global-tools cell remains pending until the expanded shortcut assertions pass on an integrated head and their evidence/logs are directly reviewed.
+Additional existing-cell coverage is batched into the same future rendered wave:
+- Budget/Rules QA now creates a new overall budget with an explicit warning threshold, verifies alert-state/report reconciliation, edits the same stable budget row and deletes it again;
+- transaction-rule QA now saves a real edit rather than cancelling edit mode, verifies a pre-existing matching transaction is not retroactively changed, creates a new matching Quick Entry transaction and requires the active rule to apply its `Τρόφιμα` category, then retains destructive rule deletion coverage;
+- these additions reuse the existing `budget-rules` fixture and rendered suite, with no new workflow.
+
+This implements existing verification obligations and does not change the denominator. Receipt OCR + global tools, Budgets and Transaction Rules remain pending until the expanded assertions pass on an integrated head and their evidence/logs are directly reviewed.
