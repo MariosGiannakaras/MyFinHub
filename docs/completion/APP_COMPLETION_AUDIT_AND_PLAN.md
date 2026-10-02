@@ -8,7 +8,7 @@ Release target: none — `main` remains release-only
 
 ## Current integration checkpoint — 2026-10-02
 
-**Implementations 10/24 completed · Sub-implementations 122/193 completed**
+**Implementations 11/24 completed · Sub-implementations 123/193 completed**
 
 This checkpoint supersedes older "#482 reconciliation pending" notes below for current execution state.
 
@@ -21,7 +21,7 @@ This checkpoint supersedes older "#482 reconciliation pending" notes below for c
 - FV-44 is completed on `9b25fb1…`: extreme Recurring mobile progressive disclosure, full expansion, collapsed inactive history and overflow safety all pass.
 - FV-45 exact-head rendered proof has passed: OCR persists raw `EUR`, while the owned currency select displays `EUR · Ευρώ`; stored semantics and visible presentation are validated separately. The expanded full-system audit below now governs closeout.
 - FV-54 is source-fixed on the next head: the local/Windows static host now preloads `index.html` and `404.html` once at startup instead of performing `sendFile()` filesystem access per document request. Exact-head CodeQL proof is pending; no dependency, API, finance, Supabase or Android behavior changed.
-- Current counters: **Implementations 10/24 completed · Sub-implementations 122/193 completed**. Security implementation 8.8 is temporarily reopened by FV-54 pending exact-head CodeQL proof; 8.1, 8.6 and 8.15 remain fully closed. The denominator remains 193 because FV-54 maps to the existing CodeQL/security verification item.
+- Current counters: **Implementations 11/24 completed · Sub-implementations 123/193 completed**. Security implementation 8.8 remains temporarily reopened by FV-54 pending exact-head CodeQL proof; implementation 8.7 is now fully closed from directly reviewed API/rendered validation evidence, while 8.1, 8.6 and 8.15 remain closed. The denominator remains 193.
 - Audit verification checkpoint 2026-10-02: 10 additional sub-implementations are directly closed by assistant review/evidence. Unsupported-future-schema handling remains open under the existing backwards-compatibility item; it does not expand the denominator.
 - Repository-admin hardening remains tracked separately in #485 and does not change this batch denominator.
 - No Android changes and no `main` release/promotion are part of this checkpoint.
@@ -650,9 +650,9 @@ No `main` promotion/release is part of this work.
 
 The prior completion audit remains valuable evidence, but it does **not** by itself prove that every visual element, every UX state, every user action/sub-action, every API/backend path and every error path has been exercised end-to-end against a canonical integrated tree. The owner has therefore expanded the accepted completion scope to require a full-system verification pass before the application is treated as fully closed.
 
-**New audit workstream: Implementations 4/16 completed · Sub-implementations 81/164 completed.**
+**New audit workstream: Implementations 5/16 completed · Sub-implementations 82/164 completed.**
 
-**Overall completion scope: Implementations 10/24 completed · Sub-implementations 122/193 completed.**
+**Overall completion scope: Implementations 11/24 completed · Sub-implementations 123/193 completed.**
 
 The denominator increased because 16 new verification implementations / 160 non-trivial sub-implementations are now accepted. Existing implementation-completion state is retained provisionally, but the expanded verification matrix has a stricter proof rule: prior evidence may be reused only after the responsible ChatGPT agent personally inspects it and confirms that it proves the exact required contract. Re-running unchanged automation is unnecessary when existing artifacts are sufficient, but no matrix cell is finally closed merely because an earlier workflow marked it green.
 
@@ -750,9 +750,9 @@ The denominator increased because 16 new verification implementations / 160 non-
 - [x] Run Supabase security/performance advisors and classify every finding; do not remove unused indexes without query evidence. Security advisor: only leaked-password protection disabled, documented as a Free-tier/external Auth-setting limitation. Performance advisor: 11 unused-index INFO findings retained because no query evidence justifies removal.
 - [x] Inspect bounded production/staging backend logs for recurring 4xx/5xx/database/storage/auth failures and correlate actionable failures with tested paths without exposing sensitive data. A privacy-safe 24h aggregate found 0 edge/auth 5xx. PostgreSQL errors were limited to expected owner/AAL2 denials plus management-audit query syntax/column mistakes from this verification session; no recurring production backend 5xx pattern was found.
 
-### 8.7 Error handling and resilience matrix — 9/10
+### 8.7 Error handling and resilience matrix — 10/10
 
-- [ ] Exercise 400/validation failures for every mutating form/API and verify field/task-local actionable messages.
+- [x] Exercise 400/validation failures for every mutating form/API and verify field/task-local actionable messages. Direct assistant review of CI #3169 for PR head `2bed84e…` confirms the 7-case mutating API validation matrix passed and the rendered validation suite completed 16 invalid-submit flows across Quick Entry, Savings, Loans, Lending, Recurring, Planning, Cards/card vault, Credit, account/provider/rule/category/security Settings, bank creation and Reports budgets. Every rendered flow remained in its task surface and required a non-empty task-local `role="alert"`; the relevant validation sources are unchanged on the current integration/staging heads.
 - [x] Exercise 401 auth expiry, 403 owner/AAL2/device denial and revoked-session behavior; verify safe redirect/re-auth without data loss or misleading signed-in UI. Direct assistant review confirms all failed API responses feed the shared auth-expiry dispatcher; 401 auth/device revocation clears client session state, 403 `MFA_REQUIRED` refreshes session state instead of leaving stale authenticated UI, revoked AAL2 device sessions fail closed at the server boundary, and transient Auth 503/504 errors preserve cookies rather than forcing logout.
 - [x] Exercise 409 revision/conflict behavior and verify conflict messaging, no silent overwrite and deterministic recovery. Existing executed regression coverage proves stale revision conflicts stay 409, queued dependent mutations are discarded after the first failed save, remote newer revisions become reload/conflict deterministically, and the UI enters an assertive conflict state with an explicit latest-version recovery action; production RPCs enforce revision/history-generation preconditions before mutation.
 - [x] Exercise 413 oversized payload/upload and invalid MIME/signature/file-path failures. Direct regression execution covers bounded JSON/binary bodies, provider uploads over the 2 MiB ceiling, unsupported MIME, signature mismatch, active SVG rejection and traversal-shaped provider identifiers; CI is green on `3f8867b…`.
@@ -1253,7 +1253,7 @@ These states are captured at desktop/tablet/mobile in both light and dark themes
 
 This work implements the existing Settings nested-editor visual verification cell and does not change the denominator. Completion remains pending exact-head Final Visual QA execution plus direct assistant review of the 48 newly added captures.
 
-### 8.41 Implementation batch T — mutating validation-error matrix in progress
+### 8.41 Implementation batch T — mutating validation-error matrix completed
 
 The 400/validation-error verification cell now has executable coverage instead of relying on scattered source assertions.
 
@@ -1261,7 +1261,7 @@ Source/API validation coverage now exercises canonical failure boundaries for mu
 
 Rendered validation coverage now drives invalid submissions through seventeen invalid-submit flows across user-facing mutators: Quick Entry, Savings goals, Loans, Lending, Recurring, Planning, card profiles, card secure details, Credit purchases, bank creation, Settings account/provider/category/rule creation, account email/password changes and Reports budgets. Each flow must remain open, expose a non-empty task-local `role="alert"` error and avoid a successful mutation.
 
-The validation review also found and fixed a shared feedback-semantics defect: account email/password/PIN failures and device-access failures now use assertive `role="alert"` semantics, while successful changes remain polite `role="status"` messages. The rendered suite is wired into the canonical `qa:frontend` runner and persists focused validation evidence. This implements the existing 400/validation failure matrix without changing its denominator. Completion remains pending green exact-head unit/source tests and rendered Chromium proof; any uncovered mutating surface discovered by that proof stays pending rather than being inferred.
+The validation review also found and fixed a shared feedback-semantics defect: account email/password/PIN failures and device-access failures now use assertive `role="alert"` semantics, while successful changes remain polite `role="status"` messages. **Completed:** direct assistant review of CI #3169 for PR head `2bed84e…` confirms the unit/API matrix and all 16 rendered invalid-submit flows passed before the later, unrelated Credit table-semantics failure. No validation implementation changed after that proof, so the existing 400/validation failure matrix is closed without an additional CI wave.
 
 
 
