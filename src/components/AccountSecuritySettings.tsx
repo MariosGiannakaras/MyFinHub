@@ -129,7 +129,7 @@ export function AccountSecuritySettings({currentEmail}:{currentEmail?:string|nul
 
   const setIdleTimeout=async(minutes:number)=>{
     if(!bridge||!lockState.enabled||pinBusy)return;
-    setPinBusy(true);setPinMessage('');
+    setPinBusy(true);setPinMessageTone('status');setPinMessage('');
     try{
       const result=await bridge.setAppLockTimeout(minutes);publishLockState(result);
       setPinMessageTone(result.ok?'status':'error');setPinMessage(result.ok?`Το αυτόματο κλείδωμα ορίστηκε σε ${idleLabel(result.idleMinutes)}.`:pinError(result));
@@ -139,10 +139,10 @@ export function AccountSecuritySettings({currentEmail}:{currentEmail?:string|nul
 
   const disablePin=async()=>{
     if(!bridge||!lockState.supported||!lockState.enabled)return;
-    setPinBusy(true);setPinMessage('');
+    setPinBusy(true);setPinMessageTone('status');setPinMessage('');
     try{
       const result=await bridge.disableAppPin();publishLockState(result);
-      if(!result.ok){setPinMessage(pinError(result));return;}
+      if(!result.ok){setPinMessageTone('error');setPinMessage(pinError(result));return;}
       setNewPin('');setConfirmPin('');setPinMessageTone('status');setPinMessage('Το PIN της εφαρμογής απενεργοποιήθηκε.');
     }catch{setPinMessageTone('error');setPinMessage('Η απενεργοποίηση του PIN δεν ολοκληρώθηκε.')}
     finally{setPinBusy(false)}
