@@ -64,7 +64,7 @@ describe('routing and 404 contract',()=>{
     expect(notFoundPage).toContain("titleRef.current?.focus({ preventScroll: true })");
     expect(notFoundPage).toContain('tabIndex={-1}');
     expect(notFoundPage).toContain('onClick={onBack}');
-    expect(notFoundStyles).toContain('.not-found-copy h1:focus-visible{outline:0;box-shadow:none!important}');
+    expect(notFoundStyles).toContain('.not-found-copy h1:focus,.not-found-copy h1:focus-visible{outline:none!important;box-shadow:none!important}');
   });
 
 });
