@@ -24,6 +24,8 @@ describe('large-data verification contract',()=>{
     expect(large).toContain("document.querySelectorAll('.recurring-workspace-table tbody tr[data-recurring-status=active]').length");
     expect(large).toContain("document.querySelectorAll('.scheduled-row').length");
     expect(large).toContain("document.querySelectorAll('.history-row').length");
+    expect(large).toContain("planning-approved-forecast");
+    expect(large).toContain("planning-forecast-kpi");
     expect(large).toContain("document.querySelectorAll('.rule-settings-list>article').length");
     expect(large).toContain('budgetDeleteLatencyMs<1500');
     expect(large).toContain('results.reportsHeapMb<256');
