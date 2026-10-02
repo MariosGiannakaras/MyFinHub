@@ -8,7 +8,7 @@ Release target: none — `main` remains release-only
 
 ## Current integration checkpoint — 2026-10-02
 
-**Implementations 7/24 completed · Sub-implementations 113/193 completed**
+**Implementations 7/24 completed · Sub-implementations 115/193 completed**
 
 This checkpoint supersedes older "#482 reconciliation pending" notes below for current execution state.
 
@@ -20,7 +20,7 @@ This checkpoint supersedes older "#482 reconciliation pending" notes below for c
 - FV-41/FV-42/FV-43 are completed on exact-head rendered CI. Their fixes were validation-harness/touch-target corrections and did not weaken product behavior.
 - FV-44 is completed on `9b25fb1…`: extreme Recurring mobile progressive disclosure, full expansion, collapsed inactive history and overflow safety all pass.
 - FV-45 exact-head rendered proof has passed: OCR persists raw `EUR`, while the owned currency select displays `EUR · Ευρώ`; stored semantics and visible presentation are validated separately. The expanded full-system audit below now governs closeout.
-- Current counters: **Implementations 7/24 completed · Sub-implementations 113/193 completed**. The denominator expanded on 2026-10-01 after the owner required exhaustive full-system verification, direct assistant-led manual review, routing/404 coverage, temporal/data-boundary coverage and operational recovery proof.
+- Current counters: **Implementations 7/24 completed · Sub-implementations 115/193 completed**. The denominator expanded on 2026-10-01 after the owner required exhaustive full-system verification, direct assistant-led manual review, routing/404 coverage, temporal/data-boundary coverage and operational recovery proof.
 - Audit verification checkpoint 2026-10-02: 10 additional sub-implementations are directly closed by assistant review/evidence. Unsupported-future-schema handling remains open under the existing backwards-compatibility item; it does not expand the denominator.
 - Repository-admin hardening remains tracked separately in #485 and does not change this batch denominator.
 - No Android changes and no `main` release/promotion are part of this checkpoint.
@@ -674,8 +674,8 @@ The denominator increased because 16 new verification implementations / 160 non-
 - [ ] Inspect every interactive component state: default, hover, keyboard focus, pressed, selected, disabled, loading/saving, destructive, error, conflict and success.
 - [ ] Inspect empty, minimal, normal, dense and extreme-content states for every data-heavy page; include long Greek copy, long account/provider/category names, large monetary values and multi-line notes.
 - [ ] Inspect responsive breakpoints around actual layout transitions, not only 1440/834/375 snapshots; verify no breakpoint cliff, horizontal overflow, clipped action or fixed-chrome occlusion.
-- [ ] Inspect tables, cards, charts, legends, tooltips, carousels, progressive disclosure, pagination/load-more and sticky controls for containment and readable hierarchy.
-- [ ] Inspect typography, spacing, alignment, icon optical size, border/elevation consistency, semantic color usage, contrast, truncation/wrapping and visual rhythm component by component.
+- [x] Inspect tables, cards, charts, legends, tooltips, carousels, progressive disclosure, pagination/load-more and sticky controls for containment and readable hierarchy. Direct assistant inspection of the exact-branch rendered artifact `11228136368` covered 85 focused screenshots across AppShell routes, Reports, functional CRUD states, Cards/Credit, Planning, Action Center, auth/session, recovery and branding. Table/card/chart hierarchy remains contained and readable on desktop/mobile; Reports KPI/chart/account/privacy surfaces, Transactions tables/detail rails, Cards carousels, Planning forecast cards and progressive disclosure states show no material clipping/overlap. The same artifact's rendered QA logs additionally prove viewport-contained tooltips, deterministic pagination/sorting and disclosure interactions rather than inferring them from source alone.
+- [x] Inspect typography, spacing, alignment, icon optical size, border/elevation consistency, semantic color usage, contrast, truncation/wrapping and visual rhythm component by component. Direct assistant review of the 85 focused current-branch screenshots, together with the already completed 132-image light/dark desktop/tablet/mobile baseline review, found no material typography/alignment/elevation inconsistency or broken wrapping/truncation on the inspected surfaces. Semantic color and contrast are separately backed by the computed-theme checks; long/dense/extreme-content edge cases remain tracked by their dedicated pending item rather than being hidden here.
 - [ ] Inspect 200% browser zoom, increased app text-size/readability settings, reduced-motion mode and system theme changes without reload regressions.
 - [ ] Inspect Windows/Electron rendering separately for any host-specific chrome, update UI, first-run/lock/startup diagnostics and scaling differences.
 - [x] Maintain a screenshot manifest with explicit human-review disposition for every required capture; no capture is considered passed merely because automation produced a PNG. `docs/completion/FINAL_VISUAL_MANUAL_REVIEW.md` records direct assistant inspection of every one of the 132 captured images, grouped into the 22 six-capture surface/state sets, with explicit PASS/PASS_WITH_FOLLOWUP dispositions and scope boundaries.
