@@ -1,7 +1,9 @@
 import { execFileSync, spawn } from 'node:child_process';
-import { rmSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 
 const baseUrl=process.env.RHEOMIQ_QA_URL||'http://127.0.0.1:5173/qa.html';
+const evidenceDir=process.env.MYFINHUB_UX_EVIDENCE_DIR||'/tmp/myfinhub-geometry-overflow-evidence';
+mkdirSync(evidenceDir,{recursive:true});
 const configured=process.env.MYFINHUB_QA_USE_FALLBACK==='1'?process.env.MYFINHUB_QA_FALLBACK_BROWSER:process.env.MYFINHUB_QA_PRIMARY_BROWSER;
 const chrome=configured||execFileSync('bash',['-lc','command -v google-chrome || command -v chromium || command -v chromium-browser'],{encoding:'utf8'}).trim();
 if(!chrome)throw new Error('Chrome/Chromium is required for geometry QA.');
@@ -82,6 +84,7 @@ try{
   await waitHttp(`http://127.0.0.1:${port}/json/version`);
   const target=await fetch(`http://127.0.0.1:${port}/json/new?about:blank`,{method:'PUT'}).then(r=>r.json());
   const c=new Cdp(target.webSocketDebuggerUrl);await c.open();await c.send('Page.enable');await c.send('Runtime.enable');
+  const shot=async name=>{const image=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(image.data,'base64'))};
   for(const viewport of viewports){
     await c.send('Emulation.setDeviceMetricsOverride',{width:viewport.width,height:viewport.height,deviceScaleFactor:1,mobile:viewport.mobile});
     for(const page of pages){
@@ -127,6 +130,7 @@ try{
       assert(result.rogue.length===0,`${profile.name}/${page}: off-viewport controls ${JSON.stringify(result.rogue)}`);
       if(profile.mobile)assert(result.navLabelIssues.length===0,`${profile.name}/${page}: bottom-nav label collision ${JSON.stringify(result.navLabelIssues)}`);
       assert(result.desktopChromeOverlaps.length===0,`${profile.name}/${page}: chrome overlap ${JSON.stringify(result.desktopChromeOverlaps)}`);
+      await shot(`responsive-transition-${page}-${profile.name}`);
     }
   }
   c.close();
