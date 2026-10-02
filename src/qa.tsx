@@ -297,17 +297,17 @@ function QaSessionSignalProbe(){
   return <LoginScreen onLogin={session.login} error={session.error}/>;
 }
 
-function QaAuthScreen({screen}:{screen:string}){
+function QaAuthScreen({screen,legacyError}:{screen:string;legacyError:boolean}){
   const loginErrors:Record<string,string>={
     'login-error':'Τα στοιχεία σύνδεσης δεν είναι σωστά.',
     'auth-unavailable':'Η υπηρεσία σύνδεσης δεν είναι διαθέσιμη προσωρινά. Δοκίμασε ξανά σε λίγο.',
     'session-expired':'Η συνεδρία έληξε. Συνδέσου ξανά για να συνεχίσεις.',
     'session-revoked':'Η πρόσβαση αυτής της συσκευής έχει ανακληθεί. Συνδέσου ξανά.',
   };
-  if(screen==='login'||screen in loginErrors)return <LoginScreen error={loginErrors[screen]??''} onLogin={async()=>false}/>;
+  if(screen==='login'||screen in loginErrors)return <LoginScreen error={screen==='login'&&legacyError?'Τα στοιχεία σύνδεσης δεν είναι σωστά.':loginErrors[screen]??''} onLogin={async()=>false}/>;
   if(screen==='mfa'||screen==='mfa-error'||screen==='mfa-enroll'||screen==='mfa-enroll-error'){
     const enroll=screen.startsWith('mfa-enroll');
-    const error=screen==='mfa-error'
+    const error=screen==='mfa-error'||(screen==='mfa'&&legacyError)
       ?'Ο κωδικός επαλήθευσης δεν είναι σωστός.'
       :screen==='mfa-enroll-error'
         ?'Δεν ήταν δυνατή η έναρξη ρύθμισης Authenticator. Δοκίμασε ξανά.'
@@ -323,7 +323,7 @@ function QaApp(){
   if(screen==='persistence-probe')return <QaPersistenceProbe/>;
   if(screen==='session-signal')return <QaSessionSignalProbe/>;
   if(screen==='404')return <NotFoundPage onHome={()=>{}} onBack={()=>{}}/>;
-  const auth=<QaAuthScreen screen={screen}/>;
+  const auth=<QaAuthScreen screen={screen} legacyError={params.get('error')==='1'}/>;
   if(screen.startsWith('login')||screen.startsWith('mfa')||screen==='auth-unavailable'||screen.startsWith('session-'))return auth;
   return <QaWorkspace/>;
 }
