@@ -1252,3 +1252,13 @@ These states are captured at desktop/tablet/mobile in both light and dark themes
 
 This work implements the existing Settings nested-editor visual verification cell and does not change the denominator. Completion remains pending exact-head Final Visual QA execution plus direct assistant review of the 48 newly added captures.
 
+### 8.41 Implementation batch T — mutating validation-error matrix in progress
+
+The 400/validation-error verification cell now has executable coverage instead of relying on scattered source assertions.
+
+Source/API validation coverage now exercises canonical failure boundaries for mutable finance envelopes/revisions, account metadata, provider metadata/uploads/bindings, account-security changes, device-session actions, card-vault writes, history moves, import confirmation and malformed JSON/import documents. History and import validation were factored into pure exported boundary functions without changing their HTTP behavior so the exact 400 codes remain directly testable.
+
+Rendered validation coverage now drives invalid submissions through twelve user-facing mutating forms: Quick Entry, Savings goals, Loans, Lending, Recurring, Planning, Cards profile, card secure details, Credit purchases, Settings account creation, provider creation and transaction-rule creation. Each flow must remain open, expose a non-empty task-local `role="alert"` error and avoid a successful mutation.
+
+The rendered suite is wired into the canonical `qa:frontend` runner and persists focused validation evidence. This implements the existing 400/validation failure matrix without changing its denominator. Completion remains pending green exact-head unit/source tests and rendered Chromium proof; any uncovered mutating surface discovered by that proof stays pending rather than being inferred.
+
