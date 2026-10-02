@@ -1,5 +1,5 @@
 import { spawn, execFileSync } from 'node:child_process';
-import { rmSync } from 'node:fs';
+import { readFileSync, rmSync } from 'node:fs';
 import { persistSuiteEvidence, prepareSuiteEvidence, visualEvidenceContext } from './visual-evidence-store.mjs';
 
 const scripts=[
@@ -75,5 +75,23 @@ function isBrowserBootstrapFailure(output){return /Timed out waiting for http:\/
 const primaryBrowser=resolvePrimaryBrowser();const fallbackBrowser=process.env.MYFINHUB_QA_FALLBACK_BROWSER||'';const hasDistinctFallback=Boolean(fallbackBrowser&&fallbackBrowser!==primaryBrowser);const requirePrimary=process.env.MYFINHUB_QA_REQUIRE_PRIMARY==='1';if(!primaryBrowser)throw new Error('Chrome/Chromium is required for rendered frontend QA.');
 let preflightError=null;for(let attempt=1;attempt<=2;attempt+=1){try{await preflightBrowser(primaryBrowser,attempt);preflightError=null;break}catch(error){preflightError=error;console.warn(`Primary Chromium preflight attempt ${attempt} failed: ${error instanceof Error?error.message:String(error)}`);if(attempt<2)await sleep(750)}}if(preflightError)throw preflightError;
 const evidenceContext=visualEvidenceContext();let primaryBootstrapRetries=0,fallbackActivations=0,persistedScreenshots=0;
-for(const item of scripts){cleanPaths(item.profiles);const evidenceDir=prepareSuiteEvidence(item.key);cleanPaths(item.extraEvidenceDirs||[]);let result=await runScript(item.path,false,evidenceDir);if(result.code!==0&&isBrowserBootstrapFailure(result.output)){primaryBootstrapRetries+=1;console.warn(`Rendered QA browser bootstrap failed for ${item.path}; cleaning the isolated profile and retrying once with primary Chromium.`);await sleep(750);cleanPaths(item.profiles);result=await runScript(item.path,false,evidenceDir)}if(result.code!==0&&isBrowserBootstrapFailure(result.output)&&!requirePrimary&&hasDistinctFallback){fallbackActivations+=1;console.warn(`FALLBACK ACTIVATED for ${item.path}: primary Chromium failed twice to expose CDP; retrying once with ${fallbackBrowser}.`);await sleep(750);cleanPaths(item.profiles);result=await runScript(item.path,true,evidenceDir)}await sleep(350);cleanPaths(item.profiles);if(result.code!==0)process.exit(result.code);if(item.persist!==false)persistedScreenshots+=persistSuiteEvidence({key:item.key,surface:item.surface,evidenceDirs:[evidenceDir,...(item.extraEvidenceDirs||[])],context:evidenceContext})}
-if(requirePrimary&&fallbackActivations!==0)throw new Error(`Primary-browser enforcement violated: ${fallbackActivations} fallback activation(s).`);console.log(`All rendered browser QA suites passed on primary Chromium. Primary bootstrap retries: ${primaryBootstrapRetries}; fallback activations: ${fallbackActivations}; persisted latest focused screenshots: ${persistedScreenshots}.`);
+const parallelism=Math.max(1,Math.min(4,Number(process.env.MYFINHUB_QA_PARALLELISM||3)||3));
+const activePorts=new Set();
+function scriptPort(path){try{const source=readFileSync(path,'utf8');const match=source.match(/\\bport\\s*=\\s*(\\d+)/);return match?Number(match[1]):null}catch{return null}}
+async function acquirePort(port){if(!port)return;while(activePorts.has(port))await sleep(100);activePorts.add(port)}
+function releasePort(port){if(port)activePorts.delete(port)}
+async function runRenderedItem(item){
+  const port=scriptPort(item.path);await acquirePort(port);
+  try{
+    cleanPaths(item.profiles);const evidenceDir=prepareSuiteEvidence(item.key);cleanPaths(item.extraEvidenceDirs||[]);
+    let result=await runScript(item.path,false,evidenceDir);
+    if(result.code!==0&&isBrowserBootstrapFailure(result.output)){primaryBootstrapRetries+=1;console.warn(`Rendered QA browser bootstrap failed for ${item.path}; cleaning the isolated profile and retrying once with primary Chromium.`);await sleep(750);cleanPaths(item.profiles);result=await runScript(item.path,false,evidenceDir)}
+    if(result.code!==0&&isBrowserBootstrapFailure(result.output)&&!requirePrimary&&hasDistinctFallback){fallbackActivations+=1;console.warn(`FALLBACK ACTIVATED for ${item.path}: primary Chromium failed twice to expose CDP; retrying once with ${fallbackBrowser}.`);await sleep(750);cleanPaths(item.profiles);result=await runScript(item.path,true,evidenceDir)}
+    await sleep(350);cleanPaths(item.profiles);if(result.code!==0)throw new Error(`Rendered QA suite failed: ${item.path} (exit ${result.code})`);
+    if(item.persist!==false)persistedScreenshots+=persistSuiteEvidence({key:item.key,surface:item.surface,evidenceDirs:[evidenceDir,...(item.extraEvidenceDirs||[])],context:evidenceContext});
+  }finally{releasePort(port)}
+}
+let cursor=0;
+async function worker(){while(true){const index=cursor++;if(index>=scripts.length)return;await runRenderedItem(scripts[index])}}
+await Promise.all(Array.from({length:Math.min(parallelism,scripts.length)},()=>worker()));
+if(requirePrimary&&fallbackActivations!==0)throw new Error(`Primary-browser enforcement violated: ${fallbackActivations} fallback activation(s).`);console.log(`All rendered browser QA suites passed on primary Chromium with parallelism ${parallelism}. Primary bootstrap retries: ${primaryBootstrapRetries}; fallback activations: ${fallbackActivations}; persisted latest focused screenshots: ${persistedScreenshots}.`);
