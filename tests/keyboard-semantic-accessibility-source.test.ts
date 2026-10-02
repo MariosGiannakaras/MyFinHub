@@ -5,6 +5,7 @@ const qa=readFileSync(new URL('../scripts/keyboard-semantic-accessibility-qa.mjs
 const runner=readFileSync(new URL('../scripts/run-rendered-qa.mjs',import.meta.url),'utf8');
 const modalFocus=readFileSync(new URL('../src/hooks/useModalFocus.ts',import.meta.url),'utf8');
 const controls=readFileSync(new URL('../src/styles/app-controls.css',import.meta.url),'utf8');
+const credit=readFileSync(new URL('../src/pages/CreditCardPage.tsx',import.meta.url),'utf8');
 
 describe('keyboard and semantic accessibility verification contract',()=>{
   it('audits every primary route on desktop and mobile',()=>{
@@ -29,6 +30,11 @@ describe('keyboard and semantic accessibility verification contract',()=>{
     expect(qa).toContain("Keyboard/semantic accessibility QA: auth and auth-error states");
     expect(qa).toContain("['login',false],['login',true],['mfa',false],['mfa',true],['mfa-enroll',false]");
     expect(qa).toContain("error state must expose an alert");
+  });
+
+  it('keeps historical credit statement tables semantically labelled',()=>{
+    expect(credit).toContain('<caption className="sr-only">Κινήσεις ιστορικής δήλωσης πιστωτικής</caption>');
+    expect(credit).toContain('<thead><tr><th>Ημερομηνία</th><th>Τύπος</th><th>Περιγραφή</th><th className="amount">Ποσό</th></tr></thead>');
   });
 
   it('checks shared modal focus trapping, escape and opener restoration',()=>{

@@ -1290,3 +1290,14 @@ Source remediation:
 - add a routing source regression that requires startup caching and rejects a return to per-request `sendFile()` for these two documents.
 
 This is a security hardening defect inside the existing CodeQL/security verification item and does not change the denominator. Implementation 8.8 and its CodeQL sub-implementation remain reopened until exact-head CodeQL is green. No Supabase/database operation and no Android repository change are involved.
+
+### 8.43 FV-55 — Credit historical statement table semantics in progress
+
+The expanded keyboard/semantic accessibility run on head `2bed84e…` reached the Credit route and found one visible historical-statement table without a caption or column headers. The other Credit tables already satisfy the semantic-table contract.
+
+Source remediation:
+- add an assistive caption and explicit Date / Type / Description / Amount header row to every historical credit-statement movement table;
+- preserve the existing visual layout, data ordering and statement disclosure behavior;
+- add a narrow source regression for the historical-statement caption/header structure while retaining the rendered route-wide semantic audit.
+
+This defect belongs to the existing semantic-accessibility verification item in 8.3 and does not change the denominator. Completion remains pending the rendered keyboard/semantic audit on an integrated exact head. No finance persistence, Supabase or Android behavior changes.
