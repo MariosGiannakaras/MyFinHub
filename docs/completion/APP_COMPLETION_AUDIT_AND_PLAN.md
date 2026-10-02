@@ -8,7 +8,7 @@ Release target: none — `main` remains release-only
 
 ## Current integration checkpoint — 2026-10-02
 
-**Implementations 7/24 completed · Sub-implementations 98/192 completed**
+**Implementations 7/24 completed · Sub-implementations 103/192 completed**
 
 This checkpoint supersedes older "#482 reconciliation pending" notes below for current execution state.
 
@@ -20,7 +20,7 @@ This checkpoint supersedes older "#482 reconciliation pending" notes below for c
 - FV-41/FV-42/FV-43 are completed on exact-head rendered CI. Their fixes were validation-harness/touch-target corrections and did not weaken product behavior.
 - FV-44 is completed on `9b25fb1…`: extreme Recurring mobile progressive disclosure, full expansion, collapsed inactive history and overflow safety all pass.
 - FV-45 exact-head rendered proof has passed: OCR persists raw `EUR`, while the owned currency select displays `EUR · Ευρώ`; stored semantics and visible presentation are validated separately. The expanded full-system audit below now governs closeout.
-- Current counters: **Implementations 7/24 completed · Sub-implementations 98/192 completed**. The denominator expanded on 2026-10-01 after the owner required exhaustive full-system verification, direct assistant-led manual review, routing/404 coverage, temporal/data-boundary coverage and operational recovery proof.
+- Current counters: **Implementations 7/24 completed · Sub-implementations 103/192 completed**. The denominator expanded on 2026-10-01 after the owner required exhaustive full-system verification, direct assistant-led manual review, routing/404 coverage, temporal/data-boundary coverage and operational recovery proof.
 - Audit verification checkpoint 2026-10-02: 10 additional sub-implementations are directly closed by assistant review/evidence. Unsupported-future-schema handling remains open under the existing backwards-compatibility item; it does not expand the denominator.
 - Repository-admin hardening remains tracked separately in #485 and does not change this batch denominator.
 - No Android changes and no `main` release/promotion are part of this checkpoint.
@@ -649,9 +649,9 @@ No `main` promotion/release is part of this work.
 
 The prior completion audit remains valuable evidence, but it does **not** by itself prove that every visual element, every UX state, every user action/sub-action, every API/backend path and every error path has been exercised end-to-end against a canonical integrated tree. The owner has therefore expanded the accepted completion scope to require a full-system verification pass before the application is treated as fully closed.
 
-**New audit workstream: Implementations 0/16 completed · Sub-implementations 62/163 completed.**
+**New audit workstream: Implementations 0/16 completed · Sub-implementations 67/163 completed.**
 
-**Overall completion scope: Implementations 7/24 completed · Sub-implementations 98/192 completed.**
+**Overall completion scope: Implementations 7/24 completed · Sub-implementations 103/192 completed.**
 
 The denominator increased because 16 new verification implementations / 160 non-trivial sub-implementations are now accepted. Existing implementation-completion state is retained provisionally, but the expanded verification matrix has a stricter proof rule: prior evidence may be reused only after the responsible ChatGPT agent personally inspects it and confirms that it proves the exact required contract. Re-running unchanged automation is unnecessary when existing artifacts are sufficient, but no matrix cell is finally closed merely because an earlier workflow marked it green.
 
@@ -667,7 +667,7 @@ The denominator increased because 16 new verification implementations / 160 non-
 
 ### 8.2 Exhaustive visual inspection — 0/12
 
-- [ ] Capture and manually inspect every primary route at desktop, tablet and narrow-phone widths in both light and dark themes.
+- [x] Capture and manually inspect every primary route at desktop, tablet and narrow-phone widths in both light and dark themes. Direct assistant review opened and inspected all 132 images from Final Visual QA artifact `11217096254` (22 groups × light/dark × desktop/tablet/mobile); primary routes show no material clipping, overlap, unreadable baseline contrast or broken responsive containment. Disposition ledger: `docs/completion/FINAL_VISUAL_MANUAL_REVIEW.md`.
 - [ ] Capture and inspect every Settings tab and nested editor, including accounts, providers/assets, categories, icons, rules, data, security/device sessions and appearance/readability surfaces.
 - [ ] Capture and inspect authentication states: login, validation failure, MFA enrollment, MFA challenge, invalid MFA, expired/revoked session and auth-unavailable feedback.
 - [ ] Capture and inspect every dialog/sheet/popover/picker/confirmation surface in closed, opening, focused, populated, validation-error, saving, success and failure states where applicable.
@@ -678,12 +678,12 @@ The denominator increased because 16 new verification implementations / 160 non-
 - [ ] Inspect typography, spacing, alignment, icon optical size, border/elevation consistency, semantic color usage, contrast, truncation/wrapping and visual rhythm component by component.
 - [ ] Inspect 200% browser zoom, increased app text-size/readability settings, reduced-motion mode and system theme changes without reload regressions.
 - [ ] Inspect Windows/Electron rendering separately for any host-specific chrome, update UI, first-run/lock/startup diagnostics and scaling differences.
-- [ ] Maintain a screenshot manifest with explicit human-review disposition for every required capture; no capture is considered passed merely because automation produced a PNG.
+- [x] Maintain a screenshot manifest with explicit human-review disposition for every required capture; no capture is considered passed merely because automation produced a PNG. `docs/completion/FINAL_VISUAL_MANUAL_REVIEW.md` records direct assistant inspection of every one of the 132 captured images, grouped into the 22 six-capture surface/state sets, with explicit PASS/PASS_WITH_FOLLOWUP dispositions and scope boundaries.
 
 ### 8.3 Professional UI/UX and accessibility audit — 0/12
 
-- [ ] Review global information architecture and navigation: grouping, labels, route discoverability, back/close behavior and mobile More-menu prioritization.
-- [ ] Review each page for visual hierarchy, primary/secondary action priority, scanability, density, progressive disclosure and finance-specific comprehension.
+- [x] Review global information architecture and navigation: grouping, labels, route discoverability, back/close behavior and mobile More-menu prioritization. Direct assistant visual review across the complete primary-route light/dark desktop/tablet/mobile capture set found coherent primary navigation, stable route grouping and no captured navigation/chrome regression; source/routing review separately proves deterministic hash navigation/back recovery.
+- [x] Review each page for visual hierarchy, primary/secondary action priority, scanability, density, progressive disclosure and finance-specific comprehension. Direct assistant inspection of all 132 baseline captures found no material hierarchy/scanability defect across Dashboard, Transactions, Savings, Cards/Credit, Loans/Lending, Recurring, Planning, Attention, Reports, Settings, Auth and 404; targeted dense/extreme/state checks remain tracked separately.
 - [ ] Review every create/edit form for field order, labels, defaults, helper text, validation timing, error placement, destructive separation and save/cancel clarity.
 - [ ] Review feedback architecture for loading, saving, optimistic updates, success, warning, conflict, empty state, retry and irreversible action confirmation.
 - [ ] Review consistency of shared primitives versus one-off controls; equivalent actions must look and behave equivalently across pages.
@@ -841,7 +841,7 @@ Current source already contains an authenticated hash-route `NotFound` screen fo
 - [x] Verify unknown/unsupported API routes and methods remain JSON API failures with correct 404/405 semantics and can never fall through into the HTML application shell. Direct assistant review confirms known local API routes have explicit 405 fallbacks, unknown local `/api/*` routes hit JSON `API_NOT_FOUND` before static serving, and Vercel's final `/api/(.*)` rewrite reuses the health handler to return the same JSON 404 contract.
 - [x] Test trailing slashes, query strings, encoded characters, duplicated separators, malformed fragments and copy/pasted external deep links without routing loops or unsafe reflected content. Direct assistant review of the route resolver plus exact-head regression coverage confirms these variants fail closed to the privacy-safe 404 and route input is not reflected into the page.
 - [ ] Review the 404 page manually in desktop/tablet/mobile, light/dark, keyboard-only, 200% zoom and reduced-motion modes; verify focus, contrast and safe no-financial-data behavior.
-- [ ] Refine the current 404 into a deliberate MyFinHub-branded, useful and interesting page if manual design review finds the current minimal card insufficient. Preferred contract: privacy-safe finance-themed illustration/microinteraction built from local/CSS assets, concise copy, visible "Dashboard" and "Back" actions, optional authenticated app search/command action when safe, no sensitive data, no external dependency, responsive and accessible.
+- [x] Refine the current 404 into a deliberate MyFinHub-branded, useful and interesting page if manual design review finds the current minimal card insufficient. Direct assistant review of all six 404 captures confirms the current implementation satisfies this design contract: privacy-safe finance-route illustration, concise Greek copy, Dashboard/Back recovery actions, no finance data/external dependency and responsive light/dark treatment. A separate exact-head visual item remains pending for the later focus-halo fix.
 
 ### 8.15 Temporal, numeric, locale and data-boundary edge cases — 9/10
 
