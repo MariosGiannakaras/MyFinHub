@@ -51,6 +51,18 @@ describe('backend outage and rate-limit contracts',()=>{
       .rejects.toMatchObject({status:503,code:'AUTH_UNAVAILABLE',expose:true});
   });
 
+  it('recovers on an explicit later read after a temporary data outage without replaying the failed request',async()=>{
+    const current=legacyDocument(3);
+    const fetchMock=vi.fn()
+      .mockRejectedValueOnce(new TypeError('temporary network loss'))
+      .mockResolvedValueOnce(response(200,[{data:current,revision:9,updated_at:'2026-08-17T00:00:02.000Z'}]));
+    vi.stubGlobal('fetch',fetchMock);
+
+    await expect(readStore('access-token')).rejects.toMatchObject({status:503,code:'DATA_UNAVAILABLE'});
+    await expect(readStore('access-token')).resolves.toMatchObject({revision:'9'});
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
   it('maps upstream timeouts to stable 504 contracts',async()=>{
     vi.stubGlobal('fetch',vi.fn((_input:unknown,init?:RequestInit)=>new Promise((_resolve,reject)=>{
       const signal=init?.signal;
