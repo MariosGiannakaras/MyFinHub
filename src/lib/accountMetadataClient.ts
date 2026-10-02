@@ -1,3 +1,4 @@
+import { apiRequest } from './api.js';
 import { assertValidIban, isValidIban } from './iban';
 import { notifyAuthExpired } from './authExpiry';
 import { userErrorMessage } from './userMessage';
@@ -49,7 +50,7 @@ export async function refreshAccountMetadata(force=false){
   publish({...snapshot,loading:true,error:null});
   pending=(async()=>{
     try{
-      const response=await fetch('/api/account-metadata',{credentials:'same-origin',headers:{accept:'application/json'},cache:'no-store'});
+      const response=await apiRequest('/api/account-metadata',{credentials:'same-origin',headers:{accept:'application/json'},cache:'no-store'});
       const payload=await json(response);
       if(!response.ok)throw requestError(response,payload,'Δεν ήταν δυνατή η φόρτωση των IBAN.');
       const records:Array<unknown>=Array.isArray(payload?.records)?payload.records:[];
