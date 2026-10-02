@@ -49,6 +49,8 @@ jobs:
           BROWSER_WRAPPER
           chmod +x /tmp/myfinhub-qa-browser-bin/google-chrome
           echo "/tmp/myfinhub-qa-browser-bin" >> "$GITHUB_PATH"
+      - name: Build application
+        run: npm run build
       - name: Run rendered frontend QA
         run: npm run qa:frontend
       - name: Capture final screenshot matrix
