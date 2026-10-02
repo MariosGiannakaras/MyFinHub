@@ -60,7 +60,7 @@ try{
   await navigate({screen:'session-signal'},null);
   await waitFor("function(){return document.querySelector('[data-session-probe]')?.getAttribute('data-session-probe')==='authenticated'}",'authenticated session probe');
   await c.call("function(){globalThis.__myfinhubQaSessionMode?.('mfa');window.dispatchEvent(new Event('rheomiq:mfa-required'));return true}");
-  await waitFor("function(){const title=document.querySelector('#mfa-title');const code=document.querySelector('#mfa-code');return Boolean(title&&code)&&(title.textContent||'').includes('Επαλήθευση')}",'MFA downgrade recovery');
+  await waitFor("function(){const title=document.querySelector('#mfa-title');const code=document.querySelector('#mfa-code');return Boolean(title&&code)&&(title.textContent||'').includes('Επαλήθευση')}",'MFA downgrade recovery');await sleep(430);
   const mfaDowngradeShot=await c.send('Page.captureScreenshot',{format:'png',fromSurface:true});writeFileSync(`${evidenceDir}/runtime-mfa-downgrade.png`,Buffer.from(mfaDowngradeShot.data,'base64'));
   await c.send('Page.reload');
   await waitFor("function(){return document.querySelector('[data-session-probe]')?.getAttribute('data-session-probe')==='authenticated'}",'authenticated session probe after reload');
