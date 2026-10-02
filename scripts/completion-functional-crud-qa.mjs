@@ -51,6 +51,11 @@ try{
   const editModern=await c.call(`function(){const visible=${visible};const row=[...document.querySelectorAll('[data-transaction-source="event"]')].find(item=>visible(item)&&(item.textContent||'').includes('Freddo espresso'));const button=row?.querySelector('button[aria-label^="Επεξεργασία"]');button?.click();return Boolean(button)}`);
   assert(editModern,'filtered modern event exposes edit action');
   await waitFor("function(){return document.querySelector('#quick-add-title')?.textContent==='Επεξεργασία κίνησης'}",'modern event editor');
+  await setByLabel('Ποσό','0');
+  await clickText('.quick-modal button','Εφαρμογή αλλαγών');
+  await waitFor("function(){const error=document.querySelector('#quick-add-error');return Boolean(error&&(error.textContent||'').trim())}",'modern event validation error');
+  assert(await c.call("function(){const error=document.querySelector('#quick-add-error');return error?.getAttribute('role')==='alert'&&(error.textContent||'').includes('ποσ') }"),'modern event invalid amount is task-local and actionable');
+
   await setByLabel('Ποσό','21.75');
   await setByLabel('Σχόλιο','QA Audit Modern Event');
   await clickText('.quick-modal button','Εφαρμογή αλλαγών');
@@ -170,6 +175,11 @@ try{
   const cardsEdit=await c.call(`function(){const visible=${visible};const button=[...document.querySelectorAll('button[aria-label^="Επεξεργασία κάρτας"]')].find(visible);button?.click();return Boolean(button)}`);
   assert(cardsEdit,'Cards exposes profile editing separately from secure details');
   await waitFor("function(){return Boolean(document.querySelector('#card-create-title'))&&document.querySelector('#card-create-title').textContent.includes('Επεξεργασία κάρτας')}",'Cards profile editor');
+  await setByLabel('Όνομα κάρτας','');
+  await clickText('.card-create-modal button','Αποθήκευση αλλαγών');
+  await waitFor("function(){const error=document.querySelector('#card-create-error');return Boolean(error&&(error.textContent||'').trim())}",'card profile validation error');
+  assert(await c.call("function(){return document.querySelector('#card-create-error')?.getAttribute('role')==='alert'}"),'card profile validation is announced');
+
   await setByLabel('Όνομα κάρτας','QA Audit Card Profile');
   await selectOwnedByLabel('Δίκτυο κάρτας','Mastercard');
   const alternateDesign=await c.call(`function(){const visible=${visible};const button=[...document.querySelectorAll('.card-create-modal .design-option')].find(item=>visible(item)&&item.getAttribute('aria-checked')!=='true');button?.click();return Boolean(button)}`);
