@@ -71,7 +71,7 @@ try{
   assert(!cleanUnload.defaultPrevented&&cleanUnload.dispatched,'clean persisted state does not block unload');
 
   await c.call("function(){globalThis.__myfinhubQaPersistenceMode?.('offline');document.querySelector('[data-persistence-mutate]')?.click();return true}");
-  await waitFor("function(){return document.querySelector('[data-persistence-state]')?.getAttribute('data-persistence-state')==='error'&&Boolean(document.querySelector('.persistence-notice.error[role=alert]'))}",'offline save failure');
+  await waitFor("function(){const notice=document.querySelector('.persistence-notice.error[role=alert]');return document.querySelector('[data-persistence-state]')?.getAttribute('data-persistence-state')==='error'&&Boolean(notice)&&(notice.textContent||'').includes('Δεν ήταν δυνατή η σύνδεση με το MyFinHub')}",'offline save failure with actionable network guidance');
   const offlineCount=await c.call("function(){return globalThis.__myfinhubQaPersistencePutCount?.()||0}");
   await sleep(500);
   assert(offlineCount===1&&(await c.call("function(){return globalThis.__myfinhubQaPersistencePutCount?.()||0}"))===1,'failed save is not automatically retried');
