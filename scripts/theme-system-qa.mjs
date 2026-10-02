@@ -67,9 +67,9 @@ try{
 
   console.log('Theme system QA: dark mobile Reports and Settings semantic surfaces');
   await viewport(375,812,true);await navigate('reports',pages.reports);await applyTheme('dark');
-  const darkMobileReportCard=await computedContrast('.useful-report-kpis>div');
-  const darkMobileComparison=await computedContrast('.report-comparison');
-  const darkMobileOperations=await computedContrast('.report-operations-grid>.panel');
+  const darkMobileReportCard=await computedContrast('.report-kpi-strip>.report-headline-card');
+  const darkMobileComparison=await computedContrast('.report-comparison-panel');
+  const darkMobileOperations=await computedContrast('.report-upcoming-card');
   const darkMobilePrivate=await computedContrast('.private-report-placeholder');
   for(const [label,state] of [['report KPI',darkMobileReportCard],['comparison',darkMobileComparison],['operations',darkMobileOperations],['privacy placeholder',darkMobilePrivate]]){
     assert(state&&state.backgroundLuminance<.12,`dark mobile Reports ${label} uses a dark semantic surface: ${JSON.stringify(state)}`);
