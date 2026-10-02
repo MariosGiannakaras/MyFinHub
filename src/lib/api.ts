@@ -1,6 +1,6 @@
-import type { FinanceData } from '../types';
-import { mutableSavePayload } from './persistencePayload';
-import { notifyAuthExpired } from './authExpiry';
+import type { FinanceData } from '../types.js';
+import { mutableSavePayload } from './persistencePayload.js';
+import { notifyAuthExpired } from './authExpiry.js';
 
 interface HistoryPointSummary { id:string; parentId:string|null; label:string; createdAt:string; current:boolean }
 export interface HistoryEnvelope {
