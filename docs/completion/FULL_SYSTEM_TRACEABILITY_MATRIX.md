@@ -215,7 +215,7 @@ Evidence classification:
 | Loans | LoansPage | create/edit/pay/self-loan | loan state + finance event | obligation lifecycle + finance semantic tests | full-page/dialog coverage | Partial — real-stack CRUD |
 | Lending | LendingPage | lend/partial/full repay | finance events/receivable semantics | completion CRUD partial repayment + semantic tests | full-page/privacy coverage | Partial — full lifecycle/reload |
 | Recurring | RecurringPage | create/edit/cadence/status/pay | recurring state + event save | recurring-cadence QA/tests | bounded disclosure/extreme mobile | Partial — real-stack CRUD/reload |
-| Planning | PlanningPage | schedule CRUD/complete/forecast | scheduled state + completed event | planning-forecast QA, date validation | full-page | Partial — skip/cancel/error states + reload |
+| Planning | PlanningPage | schedule CRUD/complete/forecast | scheduled state + completed event | exact-head planning-forecast QA + completion/undo-redo + skip/cancel/load-more/negative/empty states | direct desktop/mobile/negative evidence inspected | Partial — functional UI lifecycle is verified; isolated real-stack reload/persistence remains pending |
 | Attention | AttentionPage | action/snooze/dismiss/review | decision records + contextual action | action-center QA | full-page | Partial — every decision/failure path |
 | Reports | ReportsPage | period/KPI/charts/privacy | selectors over canonical state | reports visual + semantic/report tests | chart/full-page evidence | Partial — mutation reconciliation after real-stack flows |
 | Budgets | Reports budget UI | create/edit/delete/threshold | budgets state → relational budgets | budget-rules QA + persistence validation | Reports visual | Partial — real reload/reconciliation |

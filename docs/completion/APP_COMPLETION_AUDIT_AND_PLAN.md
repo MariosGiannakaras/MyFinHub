@@ -8,7 +8,7 @@ Release target: none — `main` remains release-only
 
 ## Current integration checkpoint — 2026-10-02
 
-**Implementations 12/24 completed · Sub-implementations 126/193 completed**
+**Implementations 12/24 completed · Sub-implementations 127/193 completed**
 
 This checkpoint supersedes older "#482 reconciliation pending" notes below for current execution state.
 
@@ -21,7 +21,7 @@ This checkpoint supersedes older "#482 reconciliation pending" notes below for c
 - FV-44 is completed on `9b25fb1…`: extreme Recurring mobile progressive disclosure, full expansion, collapsed inactive history and overflow safety all pass.
 - FV-45 exact-head rendered proof has passed: OCR persists raw `EUR`, while the owned currency select displays `EUR · Ευρώ`; stored semantics and visible presentation are validated separately. The expanded full-system audit below now governs closeout.
 - FV-54 completed on `b602617…`: the local/Windows static host preloads `index.html` and `404.html` once at startup instead of performing `sendFile()` filesystem access per document request; exact-head CodeQL #3125 is green and the prior rate-limiting review threads are resolved. No dependency, API, finance, Supabase or Android behavior changed.
-- Current counters: **Implementations 12/24 completed · Sub-implementations 126/193 completed**. Implementations 8.1, 8.6, 8.7, 8.8 and 8.15 are fully closed; the responsive-transition and complete auth-state visual cells in 8.2 are also complete from directly reviewed evidence. The denominator remains 193.
+- Current counters: **Implementations 12/24 completed · Sub-implementations 127/193 completed**. Planning/scheduled functional verification in 8.4 is now closed from directly reviewed exact-head rendered evidence; isolated real-stack persistence remains a separate pending obligation. Implementations 8.1, 8.6, 8.7, 8.8 and 8.15 are fully closed; the responsive-transition and complete auth-state visual cells in 8.2 are also complete from directly reviewed evidence. The denominator remains 193.
 - Audit verification checkpoint 2026-10-02: 10 additional sub-implementations are directly closed by assistant review/evidence. Unsupported-future-schema handling remains open under the existing backwards-compatibility item; it does not expand the denominator.
 - Repository-admin hardening remains tracked separately in #485 and does not change this batch denominator.
 - No Android changes and no `main` release/promotion are part of this checkpoint.
@@ -650,9 +650,9 @@ No `main` promotion/release is part of this work.
 
 The prior completion audit remains valuable evidence, but it does **not** by itself prove that every visual element, every UX state, every user action/sub-action, every API/backend path and every error path has been exercised end-to-end against a canonical integrated tree. The owner has therefore expanded the accepted completion scope to require a full-system verification pass before the application is treated as fully closed.
 
-**New audit workstream: Implementations 6/16 completed · Sub-implementations 85/164 completed.**
+**New audit workstream: Implementations 6/16 completed · Sub-implementations 86/164 completed.**
 
-**Overall completion scope: Implementations 12/24 completed · Sub-implementations 126/193 completed.**
+**Overall completion scope: Implementations 12/24 completed · Sub-implementations 127/193 completed.**
 
 The denominator increased because 16 new verification implementations / 160 non-trivial sub-implementations are now accepted. Existing implementation-completion state is retained provisionally, but the expanded verification matrix has a stricter proof rule: prior evidence may be reused only after the responsible ChatGPT agent personally inspects it and confirms that it proves the exact required contract. Re-running unchanged automation is unnecessary when existing artifacts are sufficient, but no matrix cell is finally closed merely because an earlier workflow marked it green.
 
@@ -696,7 +696,7 @@ The denominator increased because 16 new verification implementations / 160 non-
 - [x] Review Greek localization/content quality: terminology consistency, grammar, capitalization, amount/date formatting, wrapping and avoidance of ambiguous financial wording. Direct assistant review combines the complete 132-image Greek UI matrix with source inspection across auth, navigation, finance forms, Settings, errors and recovery. Greek is the default product language; intentionally retained technical/brand terms are documented in `docs/completion/CONTENT_AND_FEEDBACK_AUDIT.md`, finance dates/currency use the shared Greek locale contracts, and no material mixed-language or ambiguous finance wording defect remains in the reviewed surfaces.
 - [x] Produce a designer/developer defect log with severity, affected surfaces, systemic root cause and preferred component/design-system-level remediation. `docs/completion/UI_UX_DEFECT_LEDGER.md` is the assistant-owned defect ledger and records the current systemic visual/interaction findings, severity, root causes, remediation layer and proof state.
 
-### 8.4 Complete functional user-flow / CRUD verification — 2/24
+### 8.4 Complete functional user-flow / CRUD verification — 3/24
 
 - [ ] Authentication: valid/invalid email-password login, logout and session restoration.
 - [ ] MFA: enrollment, challenge, wrong code, successful verification and post-AAL2 bootstrap.
@@ -713,7 +713,7 @@ The denominator increased because 16 new verification implementations / 160 non-
 - [ ] Loans/installments: create, edit, payment, multi-installment coverage, completion/history, linked recurring behavior and self-loan semantics.
 - [ ] Lending/receivables: lend, partial repayment, full repayment, person aggregation, history, privacy and outstanding/net-worth effects.
 - [ ] Recurring: create/edit, cadence variants, pause/reactivate/stop, pay, bounded disclosure/history and linked-loan boundaries.
-- [ ] Planning/scheduled: create/edit, complete into real event, skip/cancel where supported, load-more, forecast update and negative forecast state.
+- [x] Planning/scheduled: create/edit, complete into real event, skip/cancel where supported, load-more, forecast update and negative forecast state. Direct assistant review of exact-head CI #3172 plus the corresponding rendered evidence verifies scheduled creation leaves current liquidity unchanged, edit updates the pending item, completion atomically creates the real event, undo/redo restore both sides, skip/cancel persist explicit history through owned confirmations, the extreme list expands through `Προβολή περισσότερων`, 30/60/90 horizons update, and negative/empty/extreme forecast states remain explicit. I directly inspected the desktop, mobile and negative-forecast captures from artifact `11254561873`; they are contained and readable with no material visual regression. Real-backend reload/persistence remains tracked separately in 8.12 and 8.5 rather than being inferred here.
 - [ ] Attention/Review: open actions, decision states, snooze/dismiss/keep semantics where supported, contextual navigation and no unintended report mutation before confirmation.
 - [ ] Reports/analytics: period changes, KPI/category/flow consistency, table/chart parity, privacy and recalculation after mutations.
 - [ ] Budgets: create/edit/delete, thresholds, category/overall scopes, alert state and report reconciliation.
