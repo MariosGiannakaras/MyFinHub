@@ -13,7 +13,7 @@ export function visualEvidenceContext(date=new Date()){
   const timeZone=process.env.MYFINHUB_QA_TIME_ZONE||'Europe/Athens';
   const parts=Object.fromEntries(new Intl.DateTimeFormat('en-GB',{timeZone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).formatToParts(date).filter(part=>part.type!=='literal').map(part=>[part.type,part.value]));
   const timestamp=`${parts.year}-${parts.month}-${parts.day}_${parts.hour}${parts.minute}${parts.second}`;
-  const sourceSha=(process.env.GITHUB_SHA||gitValue('rev-parse','HEAD')||'local').trim();
+  const sourceSha=(gitValue('rev-parse','HEAD')||process.env.GITHUB_SHA||'local').trim();
   const shortSha=sourceSha==='local'?'local':sourceSha.slice(0,8);
   const sourceBranch=(process.env.GITHUB_HEAD_REF||process.env.GITHUB_REF_NAME||gitValue('rev-parse','--abbrev-ref','HEAD')||'local').trim();
   const evidenceRoot=resolve(repositoryRoot,process.env.MYFINHUB_UX_EVIDENCE_ROOT||'.qa-artifacts/visual');
