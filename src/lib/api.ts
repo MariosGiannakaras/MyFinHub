@@ -60,10 +60,36 @@ async function json<T>(response: Response): Promise<T> {
   return payload as T;
 }
 
-const request = (input: RequestInfo | URL, init: RequestInit = {}) => fetch(input, {
-  credentials: 'same-origin',
-  ...init,
-});
+export const API_REQUEST_TIMEOUT_MS = 30_000;
+
+async function request(input: RequestInfo | URL, init: RequestInit = {}, timeoutMs = API_REQUEST_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const callerSignal = init.signal;
+  let timedOut = false;
+  const abortFromCaller = () => controller.abort();
+  if (callerSignal?.aborted) controller.abort();
+  else callerSignal?.addEventListener('abort', abortFromCaller, { once: true });
+  const timer = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, timeoutMs);
+
+  try {
+    return await fetch(input, {
+      credentials: 'same-origin',
+      ...init,
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (timedOut) throw new ApiError('Η σύνδεση με το MyFinHub άργησε πολύ. Έλεγξε τη σύνδεσή σου και δοκίμασε ξανά.', 0, 'NETWORK_TIMEOUT');
+    if (callerSignal?.aborted) throw new ApiError('Το αίτημα ακυρώθηκε.', 0, 'REQUEST_ABORTED');
+    if (error instanceof ApiError) throw error;
+    throw new ApiError('Δεν ήταν δυνατή η σύνδεση με το MyFinHub. Έλεγξε τη σύνδεσή σου και δοκίμασε ξανά.', 0, 'NETWORK_ERROR');
+  } finally {
+    clearTimeout(timer);
+    callerSignal?.removeEventListener('abort', abortFromCaller);
+  }
+}
 
 export async function getSession(): Promise<SessionInfo> {
   return json(await request('/api/auth/session', { cache: 'no-store' }));
