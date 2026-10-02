@@ -22,6 +22,7 @@ try{
   c=new Cdp(target.webSocketDebuggerUrl);await c.open();await c.send('Page.enable');await c.send('Runtime.enable');await c.send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
   for(let i=0;i<120;i+=1){if(await c.call("function(){return document.readyState==='complete'&&Boolean(document.querySelector('#not-found-title'))}"))break;await sleep(100)}
   assert(await c.call("function(){return document.activeElement?.id==='not-found-title'}"),'route title receives programmatic focus');
+  assert(await c.call("function(){const title=document.querySelector('#not-found-title');const s=getComputedStyle(title);return title===document.activeElement&&(s.outlineStyle==='none'||parseFloat(s.outlineWidth)===0)&&s.boxShadow==='none'}"),'programmatic title focus stays visually neutral');
   assert(await c.call("function(){const n=document.querySelector('.not-found-route-node.is-missing');return n&&getComputedStyle(n).animationName==='none'}"),'reduced-motion disables the missing-route pulse');
 
   await c.send('Input.dispatchKeyEvent',{type:'keyDown',key:'Tab',code:'Tab',windowsVirtualKeyCode:9});
