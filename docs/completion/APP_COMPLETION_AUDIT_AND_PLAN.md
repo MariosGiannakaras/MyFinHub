@@ -8,7 +8,7 @@ Release target: none — `main` remains release-only
 
 ## Current integration checkpoint — 2026-10-02
 
-**Implementations 7/24 completed · Sub-implementations 107/192 completed**
+**Implementations 7/24 completed · Sub-implementations 108/192 completed**
 
 This checkpoint supersedes older "#482 reconciliation pending" notes below for current execution state.
 
@@ -20,7 +20,7 @@ This checkpoint supersedes older "#482 reconciliation pending" notes below for c
 - FV-41/FV-42/FV-43 are completed on exact-head rendered CI. Their fixes were validation-harness/touch-target corrections and did not weaken product behavior.
 - FV-44 is completed on `9b25fb1…`: extreme Recurring mobile progressive disclosure, full expansion, collapsed inactive history and overflow safety all pass.
 - FV-45 exact-head rendered proof has passed: OCR persists raw `EUR`, while the owned currency select displays `EUR · Ευρώ`; stored semantics and visible presentation are validated separately. The expanded full-system audit below now governs closeout.
-- Current counters: **Implementations 7/24 completed · Sub-implementations 107/192 completed**. The denominator expanded on 2026-10-01 after the owner required exhaustive full-system verification, direct assistant-led manual review, routing/404 coverage, temporal/data-boundary coverage and operational recovery proof.
+- Current counters: **Implementations 7/24 completed · Sub-implementations 108/192 completed**. The denominator expanded on 2026-10-01 after the owner required exhaustive full-system verification, direct assistant-led manual review, routing/404 coverage, temporal/data-boundary coverage and operational recovery proof.
 - Audit verification checkpoint 2026-10-02: 10 additional sub-implementations are directly closed by assistant review/evidence. Unsupported-future-schema handling remains open under the existing backwards-compatibility item; it does not expand the denominator.
 - Repository-admin hardening remains tracked separately in #485 and does not change this batch denominator.
 - No Android changes and no `main` release/promotion are part of this checkpoint.
@@ -651,13 +651,13 @@ The prior completion audit remains valuable evidence, but it does **not** by its
 
 **New audit workstream: Implementations 0/16 completed · Sub-implementations 71/163 completed.**
 
-**Overall completion scope: Implementations 7/24 completed · Sub-implementations 107/192 completed.**
+**Overall completion scope: Implementations 7/24 completed · Sub-implementations 108/192 completed.**
 
 The denominator increased because 16 new verification implementations / 160 non-trivial sub-implementations are now accepted. Existing implementation-completion state is retained provisionally, but the expanded verification matrix has a stricter proof rule: prior evidence may be reused only after the responsible ChatGPT agent personally inspects it and confirms that it proves the exact required contract. Re-running unchanged automation is unnecessary when existing artifacts are sufficient, but no matrix cell is finally closed merely because an earlier workflow marked it green.
 
 ### 8.1 Canonical baseline, scope inventory and traceability — 0/7
 
-- [ ] Freeze the exact candidate source SHA and record `main`, `develop`, open implementation PRs/branches, migration ledger, production deployment SHA and desktop release SHA. Do not treat a PR-only head as canonical after merge.
+- [x] Freeze the exact candidate source SHA and record `main`, `develop`, open implementation PRs/branches, migration ledger, production deployment SHA and desktop release SHA. Do not treat a PR-only head as canonical after merge. Candidate baseline frozen 2026-10-02 for this verification checkpoint: feature candidate `e3647e22224f8940f4ba71ebe5197a98947aec70`; `develop` `a752e417d339bce3eb2aab0a0b3918140533318e`; `main`/current production deployment `3333b73330c5431c052edcb6e4d1b792a89445a7`; open PR heads #477 `e3647e2…`, #482 `7aa7466…`, #479 `5bd521e…`, #465 `f3e0cfe…`; live Supabase ledger through `20261001220945_reject_cross_account_id_collisions`; Windows release tag `myfinhub-v1.3.0` at `2673ce626c0e3db6c30fea04a46b6cf1ce9517df` with installer SHA-256 `a405189e016ddd03e31ab1ba92979b3991a64516edfa2a657eb7b9928fadc556`.
 - [x] Inventory every routed page, Settings tab, authentication screen, modal, sheet, popover, command surface, global action, keyboard shortcut and persistent desktop-only control from source. Completed in `docs/completion/FULL_SYSTEM_TRACEABILITY_MATRIX.md`.
 - [x] Inventory every user-visible capability and every mutation/read operation: create, edit, delete, archive, restore, activate/deactivate, pay/repay, complete, skip/cancel, import/export/backup, upload/replace, copy, search/filter/sort/page, undo/redo and refresh. Completed in the full-system traceability matrix.
 - [x] Inventory every API endpoint, HTTP method, auth mode, Supabase RPC/table/storage dependency and database mutation path. Completed in the full-system traceability matrix.
