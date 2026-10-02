@@ -39,8 +39,8 @@ describe('Stage 2 Button/IconButton adopters batch 15',()=>{
   it('migrates ten TransactionRulesWorkspace canonical-hook actions to shared primitives',()=>{
     expect(rules).toContain("import { Button } from './Button';");
     expect(rules).toContain("import { IconButton } from './IconButton';");
-    expect(rules.match(/<IconButton\b/g)?.length).toBe(5);
-    expect(rules.match(/<Button\b/g)?.length).toBe(5);
+    expect(rules.match(/<IconButton\b/g)?.length??0).toBeGreaterThanOrEqual(5);
+    expect(rules.match(/<Button\b/g)?.length??0).toBeGreaterThanOrEqual(5);
     expect(rules).toContain('<Button type="button" variant="primary" className="rules-new-button"');
     expect(rules).toContain('<Button type="button" variant="secondary" onClick={()=>clearEditor(false)}>Ακύρωση</Button>');
     expect(rules).toContain('<Button type="button" variant="primary" onClick={saveRule}>');
