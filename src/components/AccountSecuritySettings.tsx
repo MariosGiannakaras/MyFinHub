@@ -61,6 +61,7 @@ export function AccountSecuritySettings({currentEmail}:{currentEmail?:string|nul
   const[authMessage,setAuthMessage]=useState('');
   const[authMessageTone,setAuthMessageTone]=useState<'status'|'error'>('status');
   const[pinMessage,setPinMessage]=useState('');
+  const[pinMessageTone,setPinMessageTone]=useState<'status'|'error'>('status');
   const[authBusy,setAuthBusy]=useState<'email'|'password'|null>(null);
   const[pinBusy,setPinBusy]=useState(false);
   const[lockState,setLockState]=useState<AppLockState>({supported:Boolean(bridge),enabled:false,idleMinutes:5,failedAttempts:0,retryAfterMs:0});
@@ -75,7 +76,7 @@ export function AccountSecuritySettings({currentEmail}:{currentEmail?:string|nul
   useEffect(()=>{
     if(!bridge){setLockState({supported:false,enabled:false,idleMinutes:5,failedAttempts:0,retryAfterMs:0});return;}
     let alive=true;
-    void bridge.getAppLockState().then(state=>{if(alive)setLockState(state)}).catch(()=>{if(alive){setLockState({supported:false,enabled:false,idleMinutes:5,failedAttempts:0,retryAfterMs:0});setPinMessage('Δεν ήταν δυνατή η ανάγνωση της ασφαλούς αποθήκευσης Windows.')}});
+    void bridge.getAppLockState().then(state=>{if(alive)setLockState(state)}).catch(()=>{if(alive){setLockState({supported:false,enabled:false,idleMinutes:5,failedAttempts:0,retryAfterMs:0});setPinMessageTone('error');setPinMessage('Δεν ήταν δυνατή η ανάγνωση της ασφαλούς αποθήκευσης Windows.')}});
     return()=>{alive=false};
   },[bridge]);
 
@@ -113,16 +114,16 @@ export function AccountSecuritySettings({currentEmail}:{currentEmail?:string|nul
 
   const submitPin=async()=>{
     if(!bridge||!lockState.supported)return;
-    if(newPin.length!==PIN_LENGTH||confirmPin.length!==PIN_LENGTH){setPinMessage('Το PIN πρέπει να έχει ακριβώς 4 ψηφία.');return;}
-    if(newPin!==confirmPin){setPinMessage('Η επιβεβαίωση του PIN δεν ταιριάζει.');return;}
-    setPinBusy(true);setPinMessage('');
+    if(newPin.length!==PIN_LENGTH||confirmPin.length!==PIN_LENGTH){setPinMessageTone('error');setPinMessage('Το PIN πρέπει να έχει ακριβώς 4 ψηφία.');return;}
+    if(newPin!==confirmPin){setPinMessageTone('error');setPinMessage('Η επιβεβαίωση του PIN δεν ταιριάζει.');return;}
+    setPinBusy(true);setPinMessageTone('status');setPinMessage('');
     try{
       const result=await bridge.setAppPin({pin:newPin});
       publishLockState(result);
-      if(!result.ok){setPinMessage(pinError(result));return;}
+      if(!result.ok){setPinMessageTone('error');setPinMessage(pinError(result));return;}
       setNewPin('');setConfirmPin('');
-      setPinMessage(lockState.enabled?'Το PIN της εφαρμογής άλλαξε.':`Το PIN ενεργοποιήθηκε. Το MyFinHub θα κλειδώνει μετά από ${idleLabel(result.idleMinutes)} αδράνειας.`);
-    }catch{setPinMessage('Η ασφαλής αποθήκευση του PIN δεν ολοκληρώθηκε.')}
+      setPinMessageTone('status');setPinMessage(lockState.enabled?'Το PIN της εφαρμογής άλλαξε.':`Το PIN ενεργοποιήθηκε. Το MyFinHub θα κλειδώνει μετά από ${idleLabel(result.idleMinutes)} αδράνειας.`);
+    }catch{setPinMessageTone('error');setPinMessage('Η ασφαλής αποθήκευση του PIN δεν ολοκληρώθηκε.')}
     finally{setPinBusy(false)}
   };
 
@@ -131,8 +132,8 @@ export function AccountSecuritySettings({currentEmail}:{currentEmail?:string|nul
     setPinBusy(true);setPinMessage('');
     try{
       const result=await bridge.setAppLockTimeout(minutes);publishLockState(result);
-      setPinMessage(result.ok?`Το αυτόματο κλείδωμα ορίστηκε σε ${idleLabel(result.idleMinutes)}.`:pinError(result));
-    }catch{setPinMessage('Δεν ήταν δυνατή η αλλαγή του αυτόματου κλειδώματος.')}
+      setPinMessageTone(result.ok?'status':'error');setPinMessage(result.ok?`Το αυτόματο κλείδωμα ορίστηκε σε ${idleLabel(result.idleMinutes)}.`:pinError(result));
+    }catch{setPinMessageTone('error');setPinMessage('Δεν ήταν δυνατή η αλλαγή του αυτόματου κλειδώματος.')}
     finally{setPinBusy(false)}
   };
 
@@ -142,8 +143,8 @@ export function AccountSecuritySettings({currentEmail}:{currentEmail?:string|nul
     try{
       const result=await bridge.disableAppPin();publishLockState(result);
       if(!result.ok){setPinMessage(pinError(result));return;}
-      setNewPin('');setConfirmPin('');setPinMessage('Το PIN της εφαρμογής απενεργοποιήθηκε.');
-    }catch{setPinMessage('Η απενεργοποίηση του PIN δεν ολοκληρώθηκε.')}
+      setNewPin('');setConfirmPin('');setPinMessageTone('status');setPinMessage('Το PIN της εφαρμογής απενεργοποιήθηκε.');
+    }catch{setPinMessageTone('error');setPinMessage('Η απενεργοποίηση του PIN δεν ολοκληρώθηκε.')}
     finally{setPinBusy(false)}
   };
 
@@ -193,7 +194,7 @@ export function AccountSecuritySettings({currentEmail}:{currentEmail?:string|nul
         <Button type="button" variant="primary" disabled={pinBusy||!lockState.supported} onClick={()=>void submitPin()}>{pinBusy?'Αποθήκευση…':lockState.enabled?'Αλλαγή PIN':'Ενεργοποίηση PIN'}</Button>
         {lockState.enabled?<><Button type="button" variant="secondary" disabled={pinBusy} onClick={lockNow}>Κλείδωμα τώρα</Button><Button type="button" variant="secondary" className="danger-text" disabled={pinBusy} onClick={()=>void disablePin()}>Απενεργοποίηση PIN</Button></>:null}
       </div>
-      {pinMessage?<div className="account-security-inline-message" role="status" aria-live="polite">{pinMessage}</div>:null}
+      {pinMessage?<div className="account-security-inline-message" role={pinMessageTone==='error'?'alert':'status'} aria-live={pinMessageTone==='error'?'assertive':'polite'}>{pinMessage}</div>:null}
     </section>
 
     <DeviceAccessSettings/>
