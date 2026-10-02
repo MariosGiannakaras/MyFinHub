@@ -147,7 +147,7 @@ try{
       await closeAndWait('.account-management-modal','button[aria-label=\"Κλείσιμο\"]','account editor');
     }
     if(tab==='categories'){
-      const opened=await c.call("function(){const button=document.querySelector('.settings-categories-only button[aria-label^=\"Μετονομασία κατηγορίας\"]');button?.click();return Boolean(button)}");
+      const opened=await c.call("function(){const button=document.querySelector('.settings-categories-only .category-taxonomy-head .taxonomy-row-actions button[aria-label^=\"Μετονομασία \"]');button?.click();return Boolean(button)}");
       if(!opened)throw new Error('Missing category rename action');
       await waitFor("function(){return Boolean(document.querySelector('.settings-categories-only .taxonomy-inline-editor'))}",[],'category rename editor');
       await captureNested('category-rename-editor');
