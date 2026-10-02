@@ -1168,3 +1168,16 @@ Required remediation:
 - re-run Credit rendered evidence in desktop/tablet/mobile light/dark and directly re-inspect it before visual closeout.
 
 This defect belongs to the existing exhaustive visual/UI-UX verification scope and does not change the denominator.
+
+
+### 8.36 FV-51 — Lending desktop dark-theme surface/contrast defect in progress
+
+Direct assistant inspection of the integrated dual-theme matrix found a systemic dark-theme regression on the desktop Lending workspace: the selected-person row, search shell, three metric cards, information strip and table header still use light-only RGBA backgrounds. In dark mode those surfaces become pale-grey panels while their text follows dark-theme foreground tokens, materially reducing legibility. Tablet/mobile use a different presentation and are not affected in the same way.
+
+Required remediation:
+- convert desktop Lending search, selected/hover states, metric cards, note strip and table/pill surfaces to semantic control/surface/status tokens;
+- preserve the existing selected-person hierarchy, status color semantics and desktop information density;
+- add a narrow source regression preventing fixed light-only workspace surfaces from returning;
+- re-run Lending desktop/tablet/mobile light/dark evidence and directly re-inspect it before visual closeout.
+
+This defect belongs to the existing exhaustive visual/UI-UX verification scope and does not change the denominator.
