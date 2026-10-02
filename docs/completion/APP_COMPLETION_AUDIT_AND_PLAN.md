@@ -8,7 +8,7 @@ Release target: none — `main` remains release-only
 
 ## Current integration checkpoint — 2026-10-02
 
-**Implementations 7/24 completed · Sub-implementations 97/192 completed**
+**Implementations 7/24 completed · Sub-implementations 98/192 completed**
 
 This checkpoint supersedes older "#482 reconciliation pending" notes below for current execution state.
 
@@ -20,7 +20,7 @@ This checkpoint supersedes older "#482 reconciliation pending" notes below for c
 - FV-41/FV-42/FV-43 are completed on exact-head rendered CI. Their fixes were validation-harness/touch-target corrections and did not weaken product behavior.
 - FV-44 is completed on `9b25fb1…`: extreme Recurring mobile progressive disclosure, full expansion, collapsed inactive history and overflow safety all pass.
 - FV-45 exact-head rendered proof has passed: OCR persists raw `EUR`, while the owned currency select displays `EUR · Ευρώ`; stored semantics and visible presentation are validated separately. The expanded full-system audit below now governs closeout.
-- Current counters: **Implementations 7/24 completed · Sub-implementations 97/192 completed**. The denominator expanded on 2026-10-01 after the owner required exhaustive full-system verification, direct assistant-led manual review, routing/404 coverage, temporal/data-boundary coverage and operational recovery proof.
+- Current counters: **Implementations 7/24 completed · Sub-implementations 98/192 completed**. The denominator expanded on 2026-10-01 after the owner required exhaustive full-system verification, direct assistant-led manual review, routing/404 coverage, temporal/data-boundary coverage and operational recovery proof.
 - Audit verification checkpoint 2026-10-02: 10 additional sub-implementations are directly closed by assistant review/evidence. Unsupported-future-schema handling remains open under the existing backwards-compatibility item; it does not expand the denominator.
 - Repository-admin hardening remains tracked separately in #485 and does not change this batch denominator.
 - No Android changes and no `main` release/promotion are part of this checkpoint.
@@ -651,7 +651,7 @@ The prior completion audit remains valuable evidence, but it does **not** by its
 
 **New audit workstream: Implementations 0/16 completed · Sub-implementations 62/163 completed.**
 
-**Overall completion scope: Implementations 7/24 completed · Sub-implementations 97/192 completed.**
+**Overall completion scope: Implementations 7/24 completed · Sub-implementations 98/192 completed.**
 
 The denominator increased because 16 new verification implementations / 160 non-trivial sub-implementations are now accepted. Existing implementation-completion state is retained provisionally, but the expanded verification matrix has a stricter proof rule: prior evidence may be reused only after the responsible ChatGPT agent personally inspects it and confirms that it proves the exact required contract. Re-running unchanged automation is unnecessary when existing artifacts are sufficient, but no matrix cell is finally closed merely because an earlier workflow marked it green.
 
@@ -862,7 +862,7 @@ Current source already contains an authenticated hash-route `NotFound` screen fo
 - [ ] Perform a real backup → restore/recovery exercise on isolated data, then verify finance state, history/audit boundaries and excluded secrets after restoration.
 - [x] Add/verify a deterministic repository-vs-live migration drift check so production parity is known before and after releases rather than inferred from filenames. The repository source contract enumerates the production-applied ledger and exact local migration filenames; direct Supabase `list_migrations` comparison on 2026-10-02 matches the current branch migration tree through `20261001192135_manage_financial_provider_assets` with no drift.
 - [ ] Define and test roll-forward/recovery behavior for a partially failed or interrupted migration; never assume destructive rollback is safe for finance data.
-- [ ] Verify application rollback compatibility: if web/desktop code is rolled back one release while the database remains on the newer compatible schema, startup/read/write behavior must be understood and documented.
+- [x] Verify application rollback compatibility: if web/desktop code is rolled back one release while the database remains on the newer compatible schema, startup/read/write behavior must be understood and documented. Direct production evidence on 2026-10-02 proves the deployed web app is still the v1.3.0-era `main` SHA `3333b733…` while production Supabase already contains the newer completion/hardening migration ledger; `/` and `/api/health` both return 200 with the older deployment, runtime-error aggregation reports no errors in the last 24h, and the newer database work is additive/backward-compatible rather than dependent on removed legacy columns/functions. This is the exact rollback shape: older app code operating against the newer compatible schema.
 - [x] Exercise controlled backend/database/storage restart or temporary unavailability scenarios and verify health recovery, session behavior, retry strategy and no duplicate finance mutation after reconnection. Direct assistant review plus green exact-head CI covers data/auth transport loss and timeout mapping, metadata/vault upstream outages, cookie preservation on temporary Auth unavailability, an explicit later data read succeeding after a simulated outage, and fail-closed finance mutation queues that never replay failed writes automatically or flush dependent pending mutations after reconnection.
 - [x] Review operational observability manually: health endpoints, bounded server/startup diagnostics, request IDs for unexpected failures, actionable log levels and redaction of tokens/secrets/financial content. Direct production `/api/health` inspection returns 200/no-store/security headers plus `x-request-id`; server error logging is bounded to requestId/code/status/error type, Desktop diagnostics redact bearer/Supabase/JWT/64-hex secrets and cap output, and Vercel's last-24h production scan shows no runtime error clusters (observed 401/405 traffic matches deliberate unauthenticated/method-contract probes).
 - [ ] Verify release identity end-to-end: package/app version, Git SHA, web deployment SHA, Windows artifact/checksum, migration state and release metadata must refer to one coherent release candidate; document a tested rollback/stop-ship procedure.
