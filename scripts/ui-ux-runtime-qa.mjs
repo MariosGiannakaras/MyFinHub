@@ -55,6 +55,19 @@ try{
   await viewport(375,812);for(const [page,heading] of Object.entries(PAGE_HEADINGS))await navigate({page},heading);
   console.log('Runtime QA: auth, loading, conflict and error-state surfaces');
   for(const screen of ['login','mfa','mfa-enroll'])await navigate({screen},null);
+
+  console.log('Runtime QA: auth expiry and MFA downgrade recovery');
+  await navigate({screen:'session-signal'},null);
+  await waitFor("function(){return document.querySelector('[data-session-probe]')?.getAttribute('data-session-probe')==='authenticated'}",'authenticated session probe');
+  await c.call("function(){globalThis.__myfinhubQaSessionMode?.('mfa');window.dispatchEvent(new Event('rheomiq:mfa-required'));return true}");
+  await waitFor("function(){return Boolean(document.querySelector('.login-card h1'))&&(document.body.textContent||'').includes('Έλεγχος δύο παραγόντων')}",'MFA downgrade recovery');
+  const mfaDowngradeShot=await c.send('Page.captureScreenshot',{format:'png',fromSurface:true});writeFileSync(`${evidenceDir}/runtime-mfa-downgrade.png`,Buffer.from(mfaDowngradeShot.data,'base64'));
+  await c.send('Page.reload');
+  await waitFor("function(){return document.querySelector('[data-session-probe]')?.getAttribute('data-session-probe')==='authenticated'}",'authenticated session probe after reload');
+  await c.call("function(){window.dispatchEvent(new Event('rheomiq:auth-expired'));return true}");
+  await waitFor("function(){return Boolean(document.querySelector('.login-card h1'))&&(document.body.textContent||'').includes('Σύνδεση')}",'expired session recovery');
+  const authExpiredShot=await c.send('Page.captureScreenshot',{format:'png',fromSurface:true});writeFileSync(`${evidenceDir}/runtime-auth-expired.png`,Buffer.from(authExpiredShot.data,'base64'));
+
   await navigate({page:'dashboard',save:'loading'},null);await waitFor("function(){return Boolean(document.querySelector('.page-skeleton[role=\"status\"]'))}",'loading PageSkeleton');const shot=await c.send('Page.captureScreenshot',{format:'png',fromSurface:true});writeFileSync(`${evidenceDir}/runtime-loading-state.png`,Buffer.from(shot.data,'base64'));
   await navigate({page:'dashboard',save:'conflict'},PAGE_HEADINGS.dashboard);
   assert(await c.call("function(){const notice=document.querySelector('.persistence-notice.conflict[role=alert]');const action=notice?.querySelector('button');return Boolean(notice&&(notice.textContent||'').includes('Υπάρχουν νεότερα δεδομένα')&&(notice.textContent||'').includes('Φόρτωση τελευταίας έκδοσης')&&action)}"),'conflict state is assertive and has explicit latest-version recovery');
