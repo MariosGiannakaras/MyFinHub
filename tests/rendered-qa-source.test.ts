@@ -21,6 +21,7 @@ describe('rendered browser QA reliability contract', () => {
     expect(coordinator).toContain('isBrowserBootstrapFailure(result.output)');
     expect(coordinator).toContain('retrying once with primary Chromium');
     expect(coordinator).toContain('FALLBACK ACTIVATED');
+    expect(coordinator).toContain('127\\.0\\.0\\.1:9\\d{3}');
     expect(coordinator).toMatch(/process\.env\.MYFINHUB_QA_REQUIRE_PRIMARY\s*===\s*'1'/);
   });
 
