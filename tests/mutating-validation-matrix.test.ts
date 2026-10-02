@@ -39,7 +39,7 @@ describe('mutating API validation matrix',()=>{
 
   it('fails malformed account/provider metadata writes with stable task-local codes',()=>{
     expect400(()=>parseAccountMetadataWrite({accountId:'../../bad',iban:null}),'INVALID_ACCOUNT_ID');
-    expect400(()=>parseAccountMetadataExpectedRevision('-1'),'INVALID_REVISION');
+    expect400(()=>parseAccountMetadataExpectedRevision('9007199254740992'),'INVALID_REVISION');
     expect400(()=>parseFinancialProviderWrite({id:'../bad',displayName:'Bad',shortName:'Bad',providerKind:'bank',sortOrder:1}),'INVALID_FINANCIAL_PROVIDER');
     expect400(()=>parseProviderAssetUpload({query:{providerId:'demo-bank',role:'logo',variant:'dark'},headers:{'content-type':'image/png'}}),'INVALID_PROVIDER_ASSET');
     expect400(()=>parseProviderAssetBindingWrite({providerId:'demo-bank',role:'logo',variant:'blue',assetKey:'asset'}),'INVALID_PROVIDER_ASSET_BINDING');
