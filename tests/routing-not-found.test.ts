@@ -4,6 +4,7 @@ import { pageHash, resolveHashRoute } from '../src/lib/routing.js';
 
 const app=readFileSync(new URL('../src/App.tsx',import.meta.url),'utf8');
 const notFoundPage=readFileSync(new URL('../src/pages/NotFoundPage.tsx',import.meta.url),'utf8');
+const notFoundStyles=readFileSync(new URL('../src/styles/not-found-page.css',import.meta.url),'utf8');
 const qa=readFileSync(new URL('../src/qa.tsx',import.meta.url),'utf8');
 const server=readFileSync(new URL('../server/index.ts',import.meta.url),'utf8');
 const finalScreenshots=readFileSync(new URL('../scripts/final-screenshots-qa.mjs',import.meta.url),'utf8');
@@ -61,6 +62,7 @@ describe('routing and 404 contract',()=>{
     expect(notFoundPage).toContain("titleRef.current?.focus({ preventScroll: true })");
     expect(notFoundPage).toContain('tabIndex={-1}');
     expect(notFoundPage).toContain('onClick={onBack}');
+    expect(notFoundStyles).toContain('.not-found-copy h1:focus-visible{outline:0;box-shadow:none!important}');
   });
 
 });
