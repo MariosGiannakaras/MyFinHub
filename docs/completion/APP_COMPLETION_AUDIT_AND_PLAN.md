@@ -1194,3 +1194,16 @@ Required remediation:
 - re-run Recurring desktop/tablet/mobile light/dark evidence and directly re-inspect it before visual closeout.
 
 This defect belongs to the existing exhaustive visual/UI-UX verification scope and does not change the denominator.
+
+
+### 8.38 FV-53 — Planning desktop dark-theme forecast/table contrast defect in progress
+
+Direct assistant inspection of the integrated dual-theme matrix found a systemic dark-theme regression on the desktop Planning workspace: the scheduled-movement table body, forecast account cards, segmented controls and explanatory strip retain fixed light backgrounds. In dark mode these become large pale surfaces while most labels and values keep dark-theme foreground tokens, making substantial parts of the forecast and scheduled data unreadable.
+
+Required remediation:
+- convert desktop Planning scheduled-table rows, forecast account cards, segmented/status controls and informational strip to semantic surface/control/status tokens;
+- preserve forecast risk colors, account sparkline colors and current desktop information hierarchy;
+- add a narrow source regression preventing fixed light-only planning surfaces from returning;
+- re-run Planning desktop/tablet/mobile light/dark evidence and directly re-inspect it before visual closeout.
+
+This defect belongs to the existing exhaustive visual/UI-UX verification scope and does not change the denominator.
