@@ -105,6 +105,30 @@ try{
       console.log(`${viewport.name}/${page}: geometry clean`);
     }
   }
+  console.log('Completion geometry/overflow QA: intermediate breakpoints, resize transitions and landscape');
+  const transitionPages=['dashboard','transactions','credit','planning','settings'];
+  const transitionProfiles=[
+    {name:'intermediate-1024',width:1024,height:768,mobile:false},
+    {name:'tablet-landscape',width:1112,height:834,mobile:false},
+    {name:'breakpoint-wide-681',width:681,height:812,mobile:false},
+    {name:'breakpoint-mobile-680',width:680,height:812,mobile:true},
+    {name:'phone-landscape',width:812,height:375,mobile:true},
+  ];
+  for(const page of transitionPages){
+    const url=new URL(baseUrl);url.searchParams.set('page',page);url.searchParams.set('state','extreme');
+    await c.send('Page.navigate',{url:url.href});
+    for(let i=0;i<140;i+=1){if(await c.call("function(){return document.readyState==='complete'&&Boolean(document.querySelector('#main-workspace h1'))}"))break;await sleep(80)}
+    for(const profile of transitionProfiles){
+      await c.send('Emulation.setDeviceMetricsOverride',{width:profile.width,height:profile.height,deviceScaleFactor:1,mobile:profile.mobile});
+      await c.call("function(){scrollTo(0,0);dispatchEvent(new Event('resize'));return true}");
+      await sleep(120);
+      const result=await c.call(analysisFn);
+      assert(result.docOverflow<=1,`${profile.name}/${page}: document horizontal overflow ${result.docOverflow}px`);
+      assert(result.rogue.length===0,`${profile.name}/${page}: off-viewport controls ${JSON.stringify(result.rogue)}`);
+      if(profile.mobile)assert(result.navLabelIssues.length===0,`${profile.name}/${page}: bottom-nav label collision ${JSON.stringify(result.navLabelIssues)}`);
+      assert(result.desktopChromeOverlaps.length===0,`${profile.name}/${page}: chrome overlap ${JSON.stringify(result.desktopChromeOverlaps)}`);
+    }
+  }
   c.close();
-  console.log('Completion geometry/overflow QA passed.');
+  console.log('Completion geometry/overflow QA passed across canonical, intermediate, resize-transition and landscape profiles.');
 }finally{child.kill('SIGTERM');await sleep(200);rmSync(profile,{recursive:true,force:true,maxRetries:5,retryDelay:100})}
