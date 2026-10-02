@@ -1,5 +1,5 @@
 import { execFileSync, spawn } from 'node:child_process';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 
 const baseUrl=process.env.RHEOMIQ_QA_URL||'http://127.0.0.1:5173/qa.html';
 const evidenceDir=process.env.MYFINHUB_UX_EVIDENCE_DIR||'/tmp/myfinhub-keyboard-semantic-a11y';
@@ -9,9 +9,10 @@ const chrome=configured||execFileSync('bash',['-lc','command -v google-chrome ||
 if(!chrome)throw new Error('Chrome/Chromium is required for keyboard/semantic accessibility QA.');
 const port=9347;
 const profile='/tmp/myfinhub-keyboard-semantic-a11y-chrome';
+rmSync(profile,{recursive:true,force:true,maxRetries:5,retryDelay:100});
 const child=spawn(chrome,['--headless=new',`--remote-debugging-port=${port}`,'--remote-debugging-address=127.0.0.1',`--user-data-dir=${profile}`,'--no-sandbox','--disable-gpu','--disable-dev-shm-usage','about:blank'],{stdio:'ignore'});
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
-async function waitHttp(url){for(let i=0;i<100;i++){try{const response=await fetch(url);if(response.ok)return}catch{}await sleep(100)}throw new Error(`Timed out waiting for ${url}`)}
+async function waitHttp(url){for(let i=0;i<300;i++){try{const response=await fetch(url);if(response.ok)return}catch{}await sleep(100)}throw new Error(`Timed out waiting for ${url}`)}
 class Cdp{
  constructor(url){this.url=url;this.id=0;this.pending=new Map()}
  async open(){await new Promise((resolve,reject)=>{this.ws=new WebSocket(this.url);this.ws.onopen=resolve;this.ws.onerror=reject;this.ws.onmessage=event=>{const message=JSON.parse(event.data);if(!message.id)return;const pending=this.pending.get(message.id);if(!pending)return;this.pending.delete(message.id);message.error?pending.reject(new Error(message.error.message)):pending.resolve(message.result)}})}
@@ -204,4 +205,6 @@ try{
 }finally{
  try{c?.close()}catch{}
  child.kill('SIGTERM');
+ await sleep(200);
+ rmSync(profile,{recursive:true,force:true,maxRetries:5,retryDelay:100});
 }
