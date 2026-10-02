@@ -56,4 +56,11 @@ describe('rendered browser QA reliability contract', () => {
     expect(coordinator).toContain("/tmp/myfinhub-not-found-accessibility-qa-chrome");
   });
 
+  it('keeps mutating validation failures in the rendered merge gate',()=>{
+    expect(coordinator).toContain("scripts/mutation-validation-qa.mjs");
+    expect(coordinator).toContain("key:'mutation-validation'");
+    expect(coordinator).toContain("surface:'validation-errors'");
+    expect(coordinator).toContain("/tmp/myfinhub-mutation-validation-qa-chrome");
+  });
+
 });
