@@ -1275,3 +1275,5 @@ Follow-up source work on `audit/476-a11y-bootstrap-fix`:
 - keep the existing primary-browser enforcement and accessibility assertions unchanged.
 
 This follow-up belongs to the existing exact-head Chromium/accessibility proof obligations and does not add a new accepted product sub-implementation. It remains pending until the branch is integrated and the full rendered suite reaches/passes the keyboard/semantic accessibility assertions.
+
+The first expanded Final Visual QA attempt on `0daf708…` also exposed a harness-only selector drift: category rename buttons are labelled `Μετονομασία <name>`, while the new nested-state capture looked for the obsolete `Μετονομασία κατηγορίας…` prefix. The capture selector is now anchored to the category header/action row and current accessible-name contract. This remains part of the existing final visual proof obligation and does not change the denominator.
