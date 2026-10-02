@@ -74,10 +74,11 @@ try{
   await screenshot('large-recurring-mobile');
 
   results.planningLoadMs=await navigate('planning','Προγραμματισμός & πρόβλεψη ρευστότητας');
-  const planning=await c.call("function(){return {rows:document.querySelectorAll('.scheduled-row').length,more:Boolean(document.querySelector('.planning-scheduled-more')),charts:document.querySelectorAll('.recharts-wrapper').length,history:document.querySelectorAll('.scheduled-history-list>div').length,dom:document.getElementsByTagName('*').length}}");
+  const planning=await c.call("function(){return {rows:document.querySelectorAll('.scheduled-row').length,more:Boolean(document.querySelector('.planning-scheduled-more')),legacyCharts:document.querySelectorAll('.forecast-chart .recharts-wrapper').length,approvedForecast:Boolean(document.querySelector('[data-planning-approved-desktop] .planning-approved-forecast')),approvedKpis:document.querySelectorAll('[data-planning-approved-desktop] .planning-forecast-kpi').length,history:document.querySelectorAll('.scheduled-history-list>div').length,dom:document.getElementsByTagName('*').length}}");
   assert(planning.rows>0&&planning.rows<=12,`planning scheduled DOM is bounded (${planning.rows})`);
   assert(planning.more,'large planning exposes scheduled progressive disclosure');
-  assert(planning.charts>=1&&planning.charts<=3,`planning chart count is bounded (${planning.charts})`);
+  assert(planning.approvedForecast&&planning.approvedKpis===3,`approved planning forecast remains bounded and visible (${JSON.stringify(planning)})`);
+  assert(planning.legacyCharts<=1,`legacy planning chart DOM stays bounded when present (${planning.legacyCharts})`);
   assert(planning.history<=8,`scheduled audit history is bounded (${planning.history})`);
   assert(planning.dom<7000,`large planning DOM remains bounded (${planning.dom})`);
   await noOverflow('large planning desktop');
