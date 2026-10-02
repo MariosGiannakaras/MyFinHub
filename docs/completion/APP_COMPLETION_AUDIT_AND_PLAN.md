@@ -1155,3 +1155,16 @@ Required remediation:
 - re-run the affected Settings rendered states in all required viewports/themes and directly re-inspect before visual closeout.
 
 These defects belong to the existing visual/UI-UX verification scope and do not change the denominator.
+
+
+### 8.35 FV-50 — Credit mobile dark-theme ledger-card contrast defect in progress
+
+Direct assistant inspection of the integrated dual-theme matrix found a material dark-theme regression on the mobile Credit page: purchase and repayment rows are transformed from semantic tables into card rows, but that mobile rule still uses a hard-coded light border/background. In dark mode the row becomes a pale panel while its cell content keeps dark-theme foreground semantics, making date/description/category/account/amount text partially unreadable.
+
+Required remediation:
+- replace the mobile Credit ledger row hard-coded light border/background with semantic border/surface tokens;
+- preserve the existing mobile labelled-card layout and destructive/edit action hierarchy;
+- add a narrow regression/source contract preventing the light-only row surface from returning;
+- re-run Credit rendered evidence in desktop/tablet/mobile light/dark and directly re-inspect it before visual closeout.
+
+This defect belongs to the existing exhaustive visual/UI-UX verification scope and does not change the denominator.
