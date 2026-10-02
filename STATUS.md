@@ -49,7 +49,7 @@ Release-closeout tracker: **#288 — complete**.
 
 ## Active completion batch — #476
 
-**Implementations 7/24 completed · Sub-implementations 110/192 completed**
+**Implementations 7/24 completed · Sub-implementations 111/192 completed**
 
 - The completion definition has been expanded by the owner to a full-system verification matrix. Existing implementation findings remain tracked, but final closeout now requires direct assistant-led manual review plus UI/UX/accessibility, routing/404, every supported user mutation, real-stack persistence/backend proof, exhaustive failure handling, security/privacy, temporal/data-boundary coverage, operational recovery and canonical post-merge validation.
 
@@ -160,3 +160,5 @@ Subsequent changes are product fixes against the completed v1.3.0 baseline. Rout
 - Shared primitive consistency review is directly closed: equivalent generic controls/actions use the common primitives; remaining raw controls are intentional semantic composites rather than styling forks.
 
 - Feedback architecture review is directly closed: loading/saving/success/error/conflict/retry/destructive states use the shared live-region, recovery and confirmation contracts across representative finance flows.
+
+- Create/edit form UX review is directly closed across the finance, settings, provider, receipt and security editors; labels/defaults/helpers, validation/error placement, destructive separation and save/cancel hierarchy were reviewed against the shared form contracts.
