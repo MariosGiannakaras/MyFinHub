@@ -42,6 +42,8 @@ describe('routing and 404 contract',()=>{
     expect(static404).toContain('Χάσαμε τη διαδρομή, όχι τα δεδομένα σου.');
     expect(static404).toContain('href="/#/dashboard"');
     expect(static404.toLowerCase()).not.toContain('<script');
+    const notFoundCss=readFileSync(new URL('../src/styles/not-found-page.css',import.meta.url),'utf8');
+    expect(notFoundCss).toContain('.not-found-copy h1:focus,.not-found-copy h1:focus-visible{outline:none!important;box-shadow:none!important}');
   });
 
   it('keeps known local API routes on 405 before the unknown-route JSON 404 fallback',()=>{
