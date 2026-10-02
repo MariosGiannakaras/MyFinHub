@@ -10,5 +10,7 @@ describe('account security settings source contracts',()=>{
     expect(source).toContain('accountPasswordPolicyError(newPassword)');
     expect(source).toContain('newPassword!==confirmPassword');
     expect(source).toContain('newPassword===currentPassword');
+    expect(source).toContain("role={authMessageTone==='error'?'alert':'status'}");
+    expect(source).toContain("aria-live={authMessageTone==='error'?'assertive':'polite'}");
   });
 });
