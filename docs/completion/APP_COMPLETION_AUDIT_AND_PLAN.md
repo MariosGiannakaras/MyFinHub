@@ -1325,3 +1325,14 @@ Evidence remediation:
 - require a fresh 48-image nested-state recapture and direct inspection before closing implementation batch S.
 
 This is a QA evidence defect inside the existing nested-editor visual verification item and does not change the denominator. No finance, Supabase, API or Android behavior changes.
+
+### 8.46 Implementation batch U — global-tools and remaining CRUD proof expansion in progress
+
+Direct review of exact-head CI #3172 and artifact `11254561873` shows the combined Receipt OCR + global-tools cell already has rendered proof for local receipt capture/persistence/reload, OCR asset failure/retry/proposal correction → Quick Entry, Command Palette search/action/navigation/privacy, in-place refresh and focused PageErrorBoundary recovery. One proof gap remained: only `Ctrl+K` had been exercised as an app-wide shortcut in the current rendered completion matrix, while Quick Entry and undo/redo were covered only by source/unit contracts or button-driven flows.
+
+Source/runtime proof expansion:
+- Command Palette QA now dispatches the real `Ctrl+Shift+Space` chord, requires generic Quick Entry to open directly, verifies the Command Palette does not open, and closes it through Escape;
+- the completion functional CRUD suite reuses its existing modern-transaction delete/undo state to exercise `Ctrl+Y` redo and `Ctrl+Z` undo through the shared production shortcut hook;
+- no new workflow is introduced; these assertions run inside existing rendered suites in the next integrated CI wave.
+
+This implements an existing verification obligation and does not change the denominator. The combined Receipt OCR + global-tools cell remains pending until the expanded shortcut assertions pass on an integrated head and their evidence/logs are directly reviewed.

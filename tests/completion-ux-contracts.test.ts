@@ -248,6 +248,18 @@ describe('completion UX contracts',()=>{
     expect(css).toContain('.dashboard-approved .approved-bar-wrap{height:153px;min-height:153px}');
   });
 
+  it('executes app-wide Quick Entry, undo and redo shortcuts in rendered QA',()=>{
+    const command=read('scripts/command-palette-qa.mjs');
+    const functional=read('scripts/completion-functional-crud-qa.mjs');
+    expect(command).toContain("key:' ',ctrlKey:true,shiftKey:true");
+    expect(command).toContain('Quick Entry from global shortcut');
+    expect(functional).toContain("key:'y',ctrlKey:true");
+    expect(functional).toContain('Ctrl+Y redo reapplies modern delete');
+    expect(functional).toContain("key:'z',ctrlKey:true");
+    expect(functional).toContain('Ctrl+Z undo restores modern event again');
+  });
+
+
   it('keeps the final functional closeout inside the required rendered CRUD suite',()=>{
     const harness=read('scripts/completion-functional-crud-qa.mjs');
     expect(harness).toContain('Completion functional QA: Lending repayment round-trip');

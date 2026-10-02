@@ -68,6 +68,12 @@ try{
   assert(undoModern,'modern delete can be undone');
   await waitFor("function(){return [...document.querySelectorAll('[data-transaction-source=event]')].some(row=>(row.textContent||'').includes('QA Audit Modern Event'))}",'modern delete undo restores event');
   await shot('transactions-modern-event-delete-undo');
+  console.log('Completion functional QA: global undo/redo keyboard shortcuts');
+  await c.call("function(){document.querySelector('#main-workspace')?.focus();dispatchEvent(new KeyboardEvent('keydown',{key:'y',ctrlKey:true,bubbles:true,cancelable:true}));return true}");
+  await waitFor("function(){return ![...document.querySelectorAll('[data-transaction-source=event]')].some(row=>(row.textContent||'').includes('QA Audit Modern Event'))}",'Ctrl+Y redo reapplies modern delete');
+  await c.call("function(){document.querySelector('#main-workspace')?.focus();dispatchEvent(new KeyboardEvent('keydown',{key:'z',ctrlKey:true,bubbles:true,cancelable:true}));return true}");
+  await waitFor("function(){return [...document.querySelectorAll('[data-transaction-source=event]')].some(row=>(row.textContent||'').includes('QA Audit Modern Event'))}",'Ctrl+Z undo restores modern event again');
+
 
     console.log('Completion functional QA: Savings create/edit/delete + transaction');
   await navigate('savings');
