@@ -8,7 +8,7 @@ Release target: none — `main` remains release-only
 
 ## Current integration checkpoint — 2026-10-02
 
-**Implementations 7/24 completed · Sub-implementations 112/192 completed**
+**Implementations 7/24 completed · Sub-implementations 112/193 completed**
 
 This checkpoint supersedes older "#482 reconciliation pending" notes below for current execution state.
 
@@ -20,7 +20,7 @@ This checkpoint supersedes older "#482 reconciliation pending" notes below for c
 - FV-41/FV-42/FV-43 are completed on exact-head rendered CI. Their fixes were validation-harness/touch-target corrections and did not weaken product behavior.
 - FV-44 is completed on `9b25fb1…`: extreme Recurring mobile progressive disclosure, full expansion, collapsed inactive history and overflow safety all pass.
 - FV-45 exact-head rendered proof has passed: OCR persists raw `EUR`, while the owned currency select displays `EUR · Ευρώ`; stored semantics and visible presentation are validated separately. The expanded full-system audit below now governs closeout.
-- Current counters: **Implementations 7/24 completed · Sub-implementations 112/192 completed**. The denominator expanded on 2026-10-01 after the owner required exhaustive full-system verification, direct assistant-led manual review, routing/404 coverage, temporal/data-boundary coverage and operational recovery proof.
+- Current counters: **Implementations 7/24 completed · Sub-implementations 112/193 completed**. The denominator expanded on 2026-10-01 after the owner required exhaustive full-system verification, direct assistant-led manual review, routing/404 coverage, temporal/data-boundary coverage and operational recovery proof.
 - Audit verification checkpoint 2026-10-02: 10 additional sub-implementations are directly closed by assistant review/evidence. Unsupported-future-schema handling remains open under the existing backwards-compatibility item; it does not expand the denominator.
 - Repository-admin hardening remains tracked separately in #485 and does not change this batch denominator.
 - No Android changes and no `main` release/promotion are part of this checkpoint.
@@ -649,9 +649,9 @@ No `main` promotion/release is part of this work.
 
 The prior completion audit remains valuable evidence, but it does **not** by itself prove that every visual element, every UX state, every user action/sub-action, every API/backend path and every error path has been exercised end-to-end against a canonical integrated tree. The owner has therefore expanded the accepted completion scope to require a full-system verification pass before the application is treated as fully closed.
 
-**New audit workstream: Implementations 0/16 completed · Sub-implementations 75/163 completed.**
+**New audit workstream: Implementations 0/16 completed · Sub-implementations 75/164 completed.**
 
-**Overall completion scope: Implementations 7/24 completed · Sub-implementations 112/192 completed.**
+**Overall completion scope: Implementations 7/24 completed · Sub-implementations 112/193 completed.**
 
 The denominator increased because 16 new verification implementations / 160 non-trivial sub-implementations are now accepted. Existing implementation-completion state is retained provisionally, but the expanded verification matrix has a stricter proof rule: prior evidence may be reused only after the responsible ChatGPT agent personally inspects it and confirms that it proves the exact required contract. Re-running unchanged automation is unnecessary when existing artifacts are sufficient, but no matrix cell is finally closed merely because an earlier workflow marked it green.
 
@@ -1207,3 +1207,15 @@ Required remediation:
 - re-run Planning desktop/tablet/mobile light/dark evidence and directly re-inspect it before visual closeout.
 
 This defect belongs to the existing exhaustive visual/UI-UX verification scope and does not change the denominator.
+
+
+### 8.26 Implementation batch Q — visual evidence provenance in progress
+
+Direct assistant inspection of the fresh 132-image final visual artifact found a provenance defect: under GitHub pull-request events, the manifest recorded `GITHUB_SHA` (the ephemeral merge ref) even though the workflow explicitly checked out the PR head SHA. The screenshots were not stale, but the manifest could not truthfully identify the source commit.
+
+Accepted new sub-implementation:
+- visual evidence now derives `source.sha` from the actual checked-out Git `HEAD` first, with `GITHUB_SHA` only as a fallback;
+- a regression contract locks both the checked-out-SHA precedence and the workflow's stale-branch refusal;
+- the final 132-capture set must be regenerated once on the corrected harness and its manifest must equal the actual PR head used for capture.
+
+This adds one material sub-implementation, increasing the overall denominator from 192 to 193. It remains pending until exact-head CI is green and the regenerated manifest is directly reconciled.
