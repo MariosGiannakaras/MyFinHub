@@ -12,5 +12,7 @@ describe('account security settings source contracts',()=>{
     expect(source).toContain('newPassword===currentPassword');
     expect(source).toContain("role={authMessageTone==='error'?'alert':'status'}");
     expect(source).toContain("aria-live={authMessageTone==='error'?'assertive':'polite'}");
+    expect(source).toContain("role={pinMessageTone==='error'?'alert':'status'}");
+    expect(source).toContain("aria-live={pinMessageTone==='error'?'assertive':'polite'}");
   });
 });
