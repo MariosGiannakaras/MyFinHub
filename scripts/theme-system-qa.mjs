@@ -65,6 +65,27 @@ try{
   console.log('Theme system QA: dark mobile More menu semantic surface and control contrast');
   await viewport(375,812,true);await navigate('dashboard',pages.dashboard);await applyTheme('dark');const openedMore=await c.call("function(){const button=document.querySelector('button[aria-label=\"Περισσότερες ενότητες\"]');if(!button)return false;button.click();return true}");assert(openedMore,'dark mobile More menu trigger is available');await waitFor("function(){return !!document.querySelector('.mobile-more-menu')}",'dark mobile More menu');await sleep(220);const darkMoreMenu=await computedContrast('.mobile-more-menu');const darkMoreControl=await computedContrast('.mobile-more-menu nav button:not(.active),.mobile-more-menu>div>button:not(.active)');assert(darkMoreMenu&&darkMoreMenu.backgroundLuminance<.12,`dark mobile More menu uses a dark semantic surface: ${JSON.stringify(darkMoreMenu)}`);assert(darkMoreControl&&darkMoreControl.textContrast>=4.5,`dark mobile More menu text contrast is readable: ${JSON.stringify(darkMoreControl)}`);assert(darkMoreControl&&darkMoreControl.borderContrast>=3,`dark mobile More menu control border contrast is distinguishable: ${JSON.stringify(darkMoreControl)}`);await shot('dark-mobile-more-menu-contrast');
 
+  console.log('Theme system QA: dark mobile Reports and Settings semantic surfaces');
+  await viewport(375,812,true);await navigate('reports',pages.reports);await applyTheme('dark');
+  const darkMobileReportCard=await computedContrast('.useful-report-kpis>div');
+  const darkMobileComparison=await computedContrast('.report-comparison');
+  const darkMobileOperations=await computedContrast('.report-operations-grid>.panel');
+  const darkMobilePrivate=await computedContrast('.private-report-placeholder');
+  for(const [label,state] of [['report KPI',darkMobileReportCard],['comparison',darkMobileComparison],['operations',darkMobileOperations],['privacy placeholder',darkMobilePrivate]]){
+    assert(state&&state.backgroundLuminance<.12,`dark mobile Reports ${label} uses a dark semantic surface: ${JSON.stringify(state)}`);
+    assert(state&&state.textContrast>=4.5,`dark mobile Reports ${label} text contrast is readable: ${JSON.stringify(state)}`);
+  }
+  await shot('dark-mobile-reports-semantic-surfaces');
+  await navigate('settings',pages.settings);await applyTheme('dark');
+  const darkMobileSettingsPanel=await computedContrast('.settings-grid>.panel');
+  const darkMobileSettingsAction=await computedContrast('.settings-actions button');
+  const darkMobileTechnical=await computedContrast('.technical-settings');
+  assert(darkMobileSettingsPanel&&darkMobileSettingsPanel.backgroundLuminance<.12,`dark mobile Settings panel uses a dark semantic surface: ${JSON.stringify(darkMobileSettingsPanel)}`);
+  assert(darkMobileSettingsAction&&darkMobileSettingsAction.backgroundLuminance<.12,`dark mobile Settings action uses a dark semantic surface: ${JSON.stringify(darkMobileSettingsAction)}`);
+  assert(darkMobileSettingsAction&&darkMobileSettingsAction.textContrast>=4.5,`dark mobile Settings action text contrast is readable: ${JSON.stringify(darkMobileSettingsAction)}`);
+  assert(darkMobileTechnical&&darkMobileTechnical.backgroundLuminance<.12,`dark mobile technical settings uses a dark semantic surface: ${JSON.stringify(darkMobileTechnical)}`);
+  await shot('dark-mobile-settings-semantic-surfaces');
+
   console.log('Theme system QA: dark high-fidelity surface parity');
   await viewport(1440,900,false);await navigate('dashboard',pages.dashboard);await applyTheme('dark');const darkDashboardCard=await computedContrast('.approved-account-card');assert(darkDashboardCard&&darkDashboardCard.backgroundLuminance<.12,`dark Dashboard account card is a dark surface: ${JSON.stringify(darkDashboardCard)}`);assert(darkDashboardCard&&darkDashboardCard.textContrast>=4.5,`dark Dashboard account card text contrast is readable: ${JSON.stringify(darkDashboardCard)}`);await shot('dark-dashboard-surface-parity-desktop');
   await navigate('transactions',pages.transactions);await applyTheme('dark');const darkLedgerCell=await computedContrast('.transactions-approved-table tbody td');assert(darkLedgerCell&&darkLedgerCell.backgroundLuminance<.12,`dark Transactions ledger cell is a dark surface: ${JSON.stringify(darkLedgerCell)}`);assert(darkLedgerCell&&darkLedgerCell.textContrast>=4.5,`dark Transactions ledger cell text contrast is readable: ${JSON.stringify(darkLedgerCell)}`);await shot('dark-transactions-surface-parity-desktop');
