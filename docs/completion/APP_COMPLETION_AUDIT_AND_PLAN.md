@@ -8,7 +8,7 @@ Release target: none — `main` remains release-only
 
 ## Current integration checkpoint — 2026-10-02
 
-**Implementations 7/24 completed · Sub-implementations 111/192 completed**
+**Implementations 7/24 completed · Sub-implementations 112/192 completed**
 
 This checkpoint supersedes older "#482 reconciliation pending" notes below for current execution state.
 
@@ -20,7 +20,7 @@ This checkpoint supersedes older "#482 reconciliation pending" notes below for c
 - FV-41/FV-42/FV-43 are completed on exact-head rendered CI. Their fixes were validation-harness/touch-target corrections and did not weaken product behavior.
 - FV-44 is completed on `9b25fb1…`: extreme Recurring mobile progressive disclosure, full expansion, collapsed inactive history and overflow safety all pass.
 - FV-45 exact-head rendered proof has passed: OCR persists raw `EUR`, while the owned currency select displays `EUR · Ευρώ`; stored semantics and visible presentation are validated separately. The expanded full-system audit below now governs closeout.
-- Current counters: **Implementations 7/24 completed · Sub-implementations 111/192 completed**. The denominator expanded on 2026-10-01 after the owner required exhaustive full-system verification, direct assistant-led manual review, routing/404 coverage, temporal/data-boundary coverage and operational recovery proof.
+- Current counters: **Implementations 7/24 completed · Sub-implementations 112/192 completed**. The denominator expanded on 2026-10-01 after the owner required exhaustive full-system verification, direct assistant-led manual review, routing/404 coverage, temporal/data-boundary coverage and operational recovery proof.
 - Audit verification checkpoint 2026-10-02: 10 additional sub-implementations are directly closed by assistant review/evidence. Unsupported-future-schema handling remains open under the existing backwards-compatibility item; it does not expand the denominator.
 - Repository-admin hardening remains tracked separately in #485 and does not change this batch denominator.
 - No Android changes and no `main` release/promotion are part of this checkpoint.
@@ -649,9 +649,9 @@ No `main` promotion/release is part of this work.
 
 The prior completion audit remains valuable evidence, but it does **not** by itself prove that every visual element, every UX state, every user action/sub-action, every API/backend path and every error path has been exercised end-to-end against a canonical integrated tree. The owner has therefore expanded the accepted completion scope to require a full-system verification pass before the application is treated as fully closed.
 
-**New audit workstream: Implementations 0/16 completed · Sub-implementations 74/163 completed.**
+**New audit workstream: Implementations 0/16 completed · Sub-implementations 75/163 completed.**
 
-**Overall completion scope: Implementations 7/24 completed · Sub-implementations 111/192 completed.**
+**Overall completion scope: Implementations 7/24 completed · Sub-implementations 112/192 completed.**
 
 The denominator increased because 16 new verification implementations / 160 non-trivial sub-implementations are now accepted. Existing implementation-completion state is retained provisionally, but the expanded verification matrix has a stricter proof rule: prior evidence may be reused only after the responsible ChatGPT agent personally inspects it and confirms that it proves the exact required contract. Re-running unchanged automation is unnecessary when existing artifacts are sufficient, but no matrix cell is finally closed merely because an earlier workflow marked it green.
 
@@ -691,7 +691,7 @@ The denominator increased because 16 new verification implementations / 160 non-
 - [x] Review desktop ergonomics: information density, pointer targets, keyboard efficiency, table behavior, shortcuts, command palette and window resizing. Direct assistant review combines the desktop visual set with command-palette, Transactions/table and geometry contracts: Ctrl+K focus/keyboard navigation and contextual actions are exercised, semantic table sorting/actions are verified, desktop controls remain disclosed/contained, and all primary pages are geometry-audited at 1440px and tablet/resized widths without chrome overlap or rogue controls.
 - [ ] Verify keyboard-only operation for all interactive flows: logical tab order, no focus traps outside modals, modal focus trap, focus restoration and visible focus.
 - [ ] Verify semantic accessibility: headings, landmarks, labels, names/roles/values, table semantics, dialog names, live/status messaging and non-color-only communication.
-- [ ] Verify WCAG-relevant contrast for text, controls, focus/borders and states in light/dark themes; verify reduced motion and animation does not block interaction.
+- [x] Verify WCAG-relevant contrast for text, controls, focus/borders and states in light/dark themes; verify reduced motion and animation does not block interaction. Direct assistant review combines the full Light/Dark route screenshot matrix with rendered computed-contrast checks: representative text is >=4.5:1, interactive dark controls/borders are checked at >=4.5:1 text and >=3:1 boundary contrast, focus indicators use the shared semantic focus tokens, and grayscale review confirms important states are not color-only. Reduced-motion behavior is centralized through system/reduced motion handling in the shell/dialog/command/dashboard animation boundaries, and rendered reduced-motion interaction flows complete without relying on animation timing. This is a product accessibility verification, not a claim of formal WCAG certification.
 - [ ] Review Greek localization/content quality: terminology consistency, grammar, capitalization, amount/date formatting, wrapping and avoidance of ambiguous financial wording.
 - [ ] Produce a designer/developer defect log with severity, affected surfaces, systemic root cause and preferred component/design-system-level remediation.
 
