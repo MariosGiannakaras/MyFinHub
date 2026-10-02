@@ -8,6 +8,19 @@ function header(req: any, name: string) {
   return String(Array.isArray(value) ? value[0] ?? '' : value ?? '');
 }
 
+export function parseHistoryMoveRequest(value: unknown): { action: 'undo' | 'redo'; updatedAt: string } {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new ApiError(400, 'INVALID_HISTORY', 'The change-history request is invalid.');
+  }
+  const body = value as Record<string, unknown>;
+  const action = body.action;
+  const updatedAt = body.updatedAt;
+  if ((action !== 'undo' && action !== 'redo') || !isValidDateStamp(updatedAt) || Object.keys(body).some(key => key !== 'action' && key !== 'updatedAt')) {
+    throw new ApiError(400, 'INVALID_HISTORY', 'The change-history request is invalid.');
+  }
+  return { action, updatedAt };
+}
+
 export default async function handler(req: any, res: any) {
   await handleApi(res, async () => {
     if (req.method !== 'GET' && req.method !== 'POST') return methodNotAllowed(res, ['GET', 'POST']);
@@ -21,12 +34,7 @@ export default async function handler(req: any, res: any) {
     if (req.method === 'GET') return sendJson(res, 200, await readHistory(session.accessToken));
 
     assertMutationSessionOrigin(req, session);
-    const body = await readJsonBody(req, 4096) as Record<string, unknown>;
-    const action = body?.action;
-    const updatedAt = body?.updatedAt;
-    if ((action !== 'undo' && action !== 'redo') || !isValidDateStamp(updatedAt) || Object.keys(body).some(key=>key!=='action'&&key!=='updatedAt')) {
-      throw new ApiError(400, 'INVALID_HISTORY', 'The change-history request is invalid.');
-    }
+    const { action, updatedAt } = parseHistoryMoveRequest(await readJsonBody(req, 4096));
     const result = await moveHistory(action, updatedAt, header(req, 'if-match'), header(req, 'x-rheomiq-history-generation'), session.accessToken);
     return sendJson(res, 200, result);
   });
