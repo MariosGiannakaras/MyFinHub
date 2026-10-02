@@ -1340,4 +1340,8 @@ Additional existing-cell coverage is batched into the same future rendered wave:
 - transaction-rule QA now saves a real edit rather than cancelling edit mode, verifies a pre-existing matching transaction is not retroactively changed, creates a new matching Quick Entry transaction and requires the active rule to apply its `Τρόφιμα` category, then retains destructive rule deletion coverage;
 - these additions reuse the existing `budget-rules` fixture and rendered suite, with no new workflow.
 
-This implements existing verification obligations and does not change the denominator. Receipt OCR + global tools, Budgets and Transaction Rules remain pending until the expanded assertions pass on an integrated head and their evidence/logs are directly reviewed.
+The same rendered CRUD batch now also closes the known source-level gaps in two obligation cells:
+- Lending performs the remaining 30/42 repayment after the existing partial 12/42 repayment, requires a three-row aggregate history (one lend + two repayments), zero outstanding balance, disabled repayment action and privacy masking;
+- Recurring takes the created item through create → edit → pause → reactivate → stop and requires the stopped item to remain in inactive history with no payment action; existing cadence, payment, linked-loan and bounded-disclosure suites continue to cover the rest of that cell.
+
+This implements existing verification obligations and does not change the denominator. Receipt OCR + global tools, Budgets, Transaction Rules, Lending and Recurring remain pending until the expanded assertions pass on an integrated head and their evidence/logs are directly reviewed.

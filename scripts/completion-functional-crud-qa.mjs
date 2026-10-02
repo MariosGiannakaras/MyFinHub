@@ -149,6 +149,22 @@ try{
   assert(!repaymentState.repayButtonDisabled,`partial 12/42 repayment leaves a remaining receivable: ${JSON.stringify(repaymentState)}`);
   await shot('lending-repayment-completed');
 
+  console.log('Completion functional QA: Lending full repayment, aggregation and privacy');
+  await clickText('.lending-quick-action.repayment','Νέα επιστροφή');
+  await waitFor("function(){return document.querySelector('#context-quick-title')?.textContent?.includes('Επιστροφή δανεικών')}",'final lending repayment editor');
+  await setByLabel('Ποσό','30');
+  await setByLabel('Σχόλιο','QA Audit Final Repayment');
+  await clickText('.contextual-quick-modal button','Καταχώριση');
+  await waitFor("function(){return !document.querySelector('.contextual-quick-modal')}",'final lending repayment close');
+  const settledLending=await c.call(`function(){const rows=[...document.querySelectorAll('.lending-approved-table tbody tr')];const repayments=rows.filter(row=>row.querySelector('.receivable-action.repaid'));const selected=document.querySelector('.lending-selected-identity');const summary=document.querySelector('.lending-history-summary')?.textContent||'';const repayButton=document.querySelector('.lending-quick-action.repayment');return {rows:rows.length,repayments:repayments.map(row=>(row.textContent||'').replace(/\\s+/g,' ').trim()),settled:Boolean(selected&&(selected.textContent||'').includes('Η απαίτηση έχει εξοφληθεί')),summary,repayDisabled:Boolean(repayButton?.disabled)}}`);
+  assert(settledLending.rows===3&&settledLending.repayments.length===2&&settledLending.repayments.some(row=>row.includes('QA Audit Final Repayment')),`lending history aggregates one lend and two repayments: ${JSON.stringify(settledLending)}`);
+  assert(settledLending.settled&&settledLending.repayDisabled&&settledLending.summary.includes('0,00'),`full repayment settles outstanding balance: ${JSON.stringify(settledLending)}`);
+  const privacyToggled=await c.call("function(){const button=document.querySelector('.privacy-toggle');if(!(button instanceof HTMLButtonElement))return false;button.click();return true}");
+  assert(privacyToggled,'Lending privacy control is available');
+  await waitFor("function(){const button=document.querySelector('.privacy-toggle');return button?.getAttribute('aria-pressed')==='false'&&Boolean(document.querySelector('.lending-selected-identity .private-text'))}",'Lending privacy masks selected identity');
+  await shot('lending-full-repayment-private');
+
+
   console.log('Completion functional QA: Recurring create, edit, pause and reactivate');
   await navigate('recurring');
   await clickText('button','Νέο πάγιο');
@@ -169,6 +185,10 @@ try{
   const reactivateRecurring=await c.call(`function(){const root=document.querySelector('[data-inactive-recurring-history]');if(root&&!root.open)root.open=true;const row=[...document.querySelectorAll('[data-recurring-status=paused]')].find(item=>(item.textContent||'').includes('QA Audit Recurring Updated'));const button=row?.querySelector('button[aria-label^="Ενεργοποίηση"]');button?.click();return Boolean(button)}`);
   assert(reactivateRecurring,'paused recurring item can be reactivated');
   await waitFor("function(){return [...document.querySelectorAll('[data-recurring-status=active]')].some(row=>(row.textContent||'').includes('QA Audit Recurring Updated'))}",'reactivated recurring item');
+  const stopRecurring=await c.call(`function(){const visible="function(node){if(!node)return false;const row=[...document.querySelectorAll('[data-recurring-status=active]')].find(item=>visible(item)&&(item.textContent||'').includes('QA Audit Recurring Updated'));const button=row?.querySelector('button[aria-label^="Διακοπή"]');button?.click();return Boolean(button)}`);
+  assert(stopRecurring,'reactivated recurring item can be stopped');
+  await waitFor("function(){const root=document.querySelector('[data-inactive-recurring-history]');if(!root)return false;if(!root.open)root.open=true;const row=[...root.querySelectorAll('[data-recurring-status=stopped]')].find(item=>(item.textContent||'').includes('QA Audit Recurring Updated'));return Boolean(row&&!row.querySelector('.pay-action,.mobile-pay-action'))}",'stopped recurring item retained without payment action');
+  assert(!(await c.call("function(){return [...document.querySelectorAll('[data-recurring-status=active]')].some(row=>(row.textContent||'').includes('QA Audit Recurring Updated'))}")),'stopped recurring item leaves active list');
   await shot('recurring-lifecycle-updated');
 
     console.log('Completion functional QA: Card profile edit stays separate from vault details');

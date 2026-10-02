@@ -248,6 +248,17 @@ describe('completion UX contracts',()=>{
     expect(css).toContain('.dashboard-approved .approved-bar-wrap{height:153px;min-height:153px}');
   });
 
+  it('covers full Lending settlement/privacy and Recurring stop lifecycle in rendered CRUD QA',()=>{
+    const harness=read('scripts/completion-functional-crud-qa.mjs');
+    expect(harness).toContain('Lending full repayment, aggregation and privacy');
+    expect(harness).toContain('QA Audit Final Repayment');
+    expect(harness).toContain('full repayment settles outstanding balance');
+    expect(harness).toContain('Lending privacy masks selected identity');
+    expect(harness).toContain('reactivated recurring item can be stopped');
+    expect(harness).toContain('stopped recurring item retained without payment action');
+  });
+
+
   it('closes the remaining budget and rule CRUD proof gaps in rendered QA',()=>{
     const harness=read('scripts/budget-rules-qa.mjs');
     expect(harness).toContain("selectOwnedOption('Κατηγορία / υποκατηγορία','Τρόφιμα')");
