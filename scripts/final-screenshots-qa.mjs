@@ -60,7 +60,17 @@ class Cdp{
 }
 const pages={dashboard:'Οι λογαριασμοί μου',transactions:'Συναλλαγές',savings:'Αποταμίευση',cards:'Κάρτες',credit:'Πιστωτική Κάρτα',loans:'Δόσεις & Δάνεια',lending:'Δανεικά / Οφειλές',recurring:'Πάγια & Συνδρομές',planning:'Προγραμματισμός & πρόβλεψη ρευστότητας',attention:'Έλεγχος',reports:'Αναφορές',settings:'Ρυθμίσεις'};
 const settingsTabs=['profile','accounts','categories','icons','rules','data'];
-const authScreens=['login','mfa','mfa-enroll'];
+const authScreens=[
+  {screen:'login',state:'login'},
+  {screen:'login-error',state:'login-error'},
+  {screen:'auth-unavailable',state:'auth-unavailable'},
+  {screen:'session-expired',state:'session-expired'},
+  {screen:'session-revoked',state:'session-revoked'},
+  {screen:'mfa',state:'mfa'},
+  {screen:'mfa-error',state:'mfa-error'},
+  {screen:'mfa-enroll',state:'mfa-enroll'},
+  {screen:'mfa-enroll-error',state:'mfa-enroll-error'},
+];
 const utilityScreens=['404'];
 const viewports=[{mode:'desktop',width:1440,height:1000},{mode:'tablet',width:834,height:1112},{mode:'mobile',width:375,height:812}];
 const themes=['light','dark'];
@@ -134,15 +144,15 @@ try{
           }
         }
       }
-      for(const screen of authScreens){await navigateAuth(screen);await capture('auth',screen,theme,item.mode,item.width,item.height)}
+      for(const auth of authScreens){await navigateAuth(auth.screen);await capture('auth',auth.state,theme,item.mode,item.width,item.height)}
       for(const screen of utilityScreens){await navigateUtility(screen);await capture('not-found','route-404',theme,item.mode,item.width,item.height)}
     }
   }
   c.close();
-  if(screenshots.length!==132)throw new Error(`Expected 132 final screenshots, captured ${screenshots.length}.`);
+  if(screenshots.length!==168)throw new Error(`Expected 168 final screenshots, captured ${screenshots.length}.`);
   const manifest={schemaVersion:1,kind:'final-release-screenshots',appVersion,captureId:`${timestamp}__${shortSha}`,generatedAt,timeZone,source:{sha:sourceSha,shortSha,branch:sourceBranch},baseUrl,count:screenshots.length,screenshots};
   writeFileSync(resolve(evidenceRoot,'manifest.json'),`${JSON.stringify(manifest,null,2)}\n`);
-  console.log(`Final screenshot QA passed: ${screenshots.length} screenshots across light/dark application pages, Settings tabs, auth states and the 404 surface.`);
+  console.log(`Final screenshot QA passed: ${screenshots.length} screenshots across light/dark application pages, Settings tabs, auth success/failure states and the 404 surface.`);
 }finally{
   if(browserSession){
     await stopBrowser(browserSession.child);
