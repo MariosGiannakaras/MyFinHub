@@ -123,5 +123,8 @@ describe('connected device access',()=>{
     expect(ui).toContain('Συνδεδεμένες συσκευές');
     expect(ui).toContain('Αφαίρεση όλων των άλλων');
     expect(ui).toContain('Αυτή η συσκευή');
+    expect(ui).toContain("role={messageTone==='error'?'alert':'status'}");
+    expect(ui).toContain("aria-live={messageTone==='error'?'assertive':'polite'}");
+    expect(ui).toContain("role={message&&messageTone==='error'?'alert':undefined}");
   });
 });
