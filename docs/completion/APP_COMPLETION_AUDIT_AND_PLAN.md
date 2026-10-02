@@ -1262,3 +1262,16 @@ Rendered validation coverage now drives invalid submissions through seventeen in
 
 The validation review also found and fixed a shared feedback-semantics defect: account email/password/PIN failures and device-access failures now use assertive `role="alert"` semantics, while successful changes remain polite `role="status"` messages. The rendered suite is wired into the canonical `qa:frontend` runner and persists focused validation evidence. This implements the existing 400/validation failure matrix without changing its denominator. Completion remains pending green exact-head unit/source tests and rendered Chromium proof; any uncovered mutating surface discovered by that proof stays pending rather than being inferred.
 
+
+
+### 8.25 Validation follow-up — accessibility browser bootstrap reliability
+
+Exact-head rendered CI on `0daf708…` completed all rendered suites through 404 accessibility but failed before executing the final keyboard/semantic accessibility suite because Chromium did not expose its CDP port on two consecutive bootstrap attempts. This is an infrastructure/bootstrap failure, not a product accessibility assertion failure.
+
+Follow-up source work on `audit/476-a11y-bootstrap-fix`:
+- capture Chromium stderr/stdout and early-exit/spawn diagnostics rather than timing out silently;
+- retry the accessibility browser bootstrap internally up to three times with isolated profiles and successive CDP ports;
+- add graceful TERM→KILL cleanup so failed launch attempts cannot leave stale browser processes/profiles;
+- keep the existing primary-browser enforcement and accessibility assertions unchanged.
+
+This follow-up belongs to the existing exact-head Chromium/accessibility proof obligations and does not add a new accepted product sub-implementation. It remains pending until the branch is integrated and the full rendered suite reaches/passes the keyboard/semantic accessibility assertions.
