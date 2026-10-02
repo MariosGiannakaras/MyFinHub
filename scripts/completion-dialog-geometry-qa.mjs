@@ -5,7 +5,7 @@ const baseUrl=process.env.RHEOMIQ_QA_URL||'http://127.0.0.1:5173/qa.html';
 const configured=process.env.MYFINHUB_QA_USE_FALLBACK==='1'?process.env.MYFINHUB_QA_FALLBACK_BROWSER:process.env.MYFINHUB_QA_PRIMARY_BROWSER;
 const chrome=configured||execFileSync('bash',['-lc','command -v google-chrome || command -v chromium || command -v chromium-browser'],{encoding:'utf8'}).trim();
 if(!chrome)throw new Error('Chrome/Chromium is required for dialog geometry QA.');
-const viewports=[{name:'mobile',width:375,height:812},{name:'narrow',width:320,height:700}];
+const viewports=[{name:'mobile',width:375,height:812},{name:'narrow',width:320,height:700},{name:'virtual-keyboard',width:375,height:500}];
 const port=9273;
 const profile='/tmp/myfinhub-dialog-geometry-qa-chrome';
 rmSync(profile,{recursive:true,force:true,maxRetries:5,retryDelay:100});
