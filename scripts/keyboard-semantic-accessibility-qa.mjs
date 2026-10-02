@@ -57,9 +57,17 @@ try{
    return {unnamed,positiveTab,hiddenFocusable,h1:h1.length,main:document.querySelectorAll('main').length,imgs,tables,progress,statuses,controls:controls.length};
  }`);
  const tabSweep=async label=>{
-   await c.call("function(){const node=document.querySelector('.skip-link')||document.querySelector('button,a[href],input,select,textarea,summary,[tabindex]:not([tabindex=\"-1\"])');node?.focus();return true}");
+   const setup=await c.call(`function(){
+     const visible=el=>{const r=el.getBoundingClientRect(),s=getComputedStyle(el);return r.width>0&&r.height>0&&s.display!=='none'&&s.visibility!=='hidden'};
+     const nodes=[...document.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]):not([type=hidden]),select:not([disabled]),textarea:not([disabled]),summary,[tabindex]:not([tabindex="-1"])')].filter(visible);
+     const start=document.querySelector('.skip-link')&&visible(document.querySelector('.skip-link'))?document.querySelector('.skip-link'):nodes[0];
+     start?.focus();
+     return {count:nodes.length,started:Boolean(start)};
+   }`);
+   assert(setup.started&&setup.count>0,`${label}: no visible keyboard focus target`);
    const seen=[];
-   for(let i=0;i<24;i++){
+   const steps=Math.min(24,Math.max(0,setup.count-1));
+   for(let i=0;i<steps;i++){
      await c.send('Input.dispatchKeyEvent',{type:'keyDown',key:'Tab',code:'Tab'});
      await c.send('Input.dispatchKeyEvent',{type:'keyUp',key:'Tab',code:'Tab'});
      const state=await c.call(`function(){
