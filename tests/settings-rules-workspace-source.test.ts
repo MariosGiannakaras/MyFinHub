@@ -67,4 +67,12 @@ describe('Settings Rules workspace source contract',()=>{
     expect(css).toContain('height:24px;min-height:24px');
     expect(css).toContain('width:44px;height:44px;min-height:44px');
   });
+
+  it('bounds large rule collections with progressive disclosure',()=>{
+    expect(workspace).toContain('const RULE_PAGE_SIZE=24');
+    expect(workspace).toContain('const visibleRules=rules.slice(0,visibleRuleCount)');
+    expect(workspace).toContain('className="rule-settings-more"');
+    expect(workspace).toContain('setVisibleRuleCount(count=>Math.min(count+RULE_PAGE_SIZE,rules.length))');
+  });
+
 });
