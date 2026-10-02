@@ -41,4 +41,13 @@ describe('rendered browser QA reliability contract', () => {
     expect(ci).toContain('export MYFINHUB_QA_REQUIRE_PRIMARY=1');
     expect(ci).toContain('${MYFINHUB_QA_REQUIRE_PRIMARY:-0}');
   });
+
+  it('parallelizes independent rendered suites while serializing shared fixed CDP ports',()=>{
+    expect(coordinator).toContain("MYFINHUB_QA_PARALLELISM||3");
+    expect(coordinator).toContain('const activePorts=new Set()');
+    expect(coordinator).toContain('await acquirePort(port)');
+    expect(coordinator).toContain('releasePort(port)');
+    expect(coordinator).toContain('Promise.all(Array.from({length:Math.min(parallelism,scripts.length)}');
+  });
+
 });
