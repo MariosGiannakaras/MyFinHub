@@ -59,6 +59,15 @@ try{
   const modernCopies=await c.call(`function(){const visible=${visible};return [...document.querySelectorAll('[data-transaction-source="event"]')].filter(row=>visible(row)&&(row.textContent||'').includes('QA Audit Modern Event')).length}`);
   assert(modernCopies===1,'modern edit updates the existing event instead of creating a duplicate visible record');
   await shot('transactions-modern-event-updated');
+  const deleteModern=await c.call("function(){const row=[...document.querySelectorAll('[data-transaction-source=event]')].find(item=>item.getClientRects().length>0&&(item.textContent||'').includes('QA Audit Modern Event'));const button=row?.querySelector('button[aria-label^=\"Διαγραφή\"]');button?.click();return Boolean(button)}");
+  assert(deleteModern,'updated modern event exposes delete action');
+  await waitFor("function(){return Boolean(document.querySelector('.app-confirm-dialog[role=alertdialog]'))}",'modern event delete confirmation');
+  await clickText('.app-confirm-dialog button','Διαγραφή');
+  await waitFor("function(){return ![...document.querySelectorAll('[data-transaction-source=event]')].some(row=>(row.textContent||'').includes('QA Audit Modern Event'))}",'modern event deleted');
+  const undoModern=await c.call("function(){const button=document.querySelector('button[aria-label=\"Αναίρεση τελευταίας αλλαγής\"]');button?.click();return Boolean(button&&!button.disabled)}");
+  assert(undoModern,'modern delete can be undone');
+  await waitFor("function(){return [...document.querySelectorAll('[data-transaction-source=event]')].some(row=>(row.textContent||'').includes('QA Audit Modern Event'))}",'modern delete undo restores event');
+  await shot('transactions-modern-event-delete-undo');
 
     console.log('Completion functional QA: Savings create/edit/delete + transaction');
   await navigate('savings');
