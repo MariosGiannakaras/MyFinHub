@@ -40,7 +40,7 @@ describe('large-data verification contract',()=>{
     expect(recurring).toContain('className="mobile-recurring-more"');
     expect(budgets).toContain('budgetListLimit');
     expect(budgets).toContain('ruleListLimit');
-    expect(shell).toContain('sessionHistory.slice(0,100)');
+    expect(shell).toContain('const boundedHistory=effectiveHistory.slice(0,100)');
   });
 
   it('runs the large-data audit in rendered QA and keeps dedicated Lighthouse cases',()=>{
