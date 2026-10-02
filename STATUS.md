@@ -49,7 +49,7 @@ Release-closeout tracker: **#288 — complete**.
 
 ## Active completion batch — #476
 
-**Implementations 7/24 completed · Sub-implementations 94/192 completed**
+**Implementations 7/24 completed · Sub-implementations 95/192 completed**
 
 - The completion definition has been expanded by the owner to a full-system verification matrix. Existing implementation findings remain tracked, but final closeout now requires direct assistant-led manual review plus UI/UX/accessibility, routing/404, every supported user mutation, real-stack persistence/backend proof, exhaustive failure handling, security/privacy, temporal/data-boundary coverage, operational recovery and canonical post-merge validation.
 
@@ -138,3 +138,5 @@ Subsequent changes are product fixes against the completed v1.3.0 baseline. Rout
 - Direct routing/404 contract verification closes seven sub-items: hash/deep-link routing, malformed-hash 404, browser history/focus recovery, Desktop/local HTTP 404, missing-static-asset 404, API 404/405 isolation, and malformed/trailing/encoded route handling.
 
 - Auth-expiry/revocation and persistence timeout/offline/interrupted-save verification directly close two resilience sub-items.
+
+- Provider API/Storage/binding/partial-failure verification closes one backend sub-item.
