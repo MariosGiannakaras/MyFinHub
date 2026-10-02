@@ -8,7 +8,7 @@ Release target: none — `main` remains release-only
 
 ## Current integration checkpoint — 2026-10-02
 
-**Implementations 7/24 completed · Sub-implementations 116/193 completed**
+**Implementations 7/24 completed · Sub-implementations 118/193 completed**
 
 This checkpoint supersedes older "#482 reconciliation pending" notes below for current execution state.
 
@@ -20,7 +20,7 @@ This checkpoint supersedes older "#482 reconciliation pending" notes below for c
 - FV-41/FV-42/FV-43 are completed on exact-head rendered CI. Their fixes were validation-harness/touch-target corrections and did not weaken product behavior.
 - FV-44 is completed on `9b25fb1…`: extreme Recurring mobile progressive disclosure, full expansion, collapsed inactive history and overflow safety all pass.
 - FV-45 exact-head rendered proof has passed: OCR persists raw `EUR`, while the owned currency select displays `EUR · Ευρώ`; stored semantics and visible presentation are validated separately. The expanded full-system audit below now governs closeout.
-- Current counters: **Implementations 7/24 completed · Sub-implementations 116/193 completed**. The denominator expanded on 2026-10-01 after the owner required exhaustive full-system verification, direct assistant-led manual review, routing/404 coverage, temporal/data-boundary coverage and operational recovery proof.
+- Current counters: **Implementations 7/24 completed · Sub-implementations 118/193 completed**. The denominator expanded on 2026-10-01 after the owner required exhaustive full-system verification, direct assistant-led manual review, routing/404 coverage, temporal/data-boundary coverage and operational recovery proof.
 - Audit verification checkpoint 2026-10-02: 10 additional sub-implementations are directly closed by assistant review/evidence. Unsupported-future-schema handling remains open under the existing backwards-compatibility item; it does not expand the denominator.
 - Repository-admin hardening remains tracked separately in #485 and does not change this batch denominator.
 - No Android changes and no `main` release/promotion are part of this checkpoint.
@@ -649,9 +649,9 @@ No `main` promotion/release is part of this work.
 
 The prior completion audit remains valuable evidence, but it does **not** by itself prove that every visual element, every UX state, every user action/sub-action, every API/backend path and every error path has been exercised end-to-end against a canonical integrated tree. The owner has therefore expanded the accepted completion scope to require a full-system verification pass before the application is treated as fully closed.
 
-**New audit workstream: Implementations 0/16 completed · Sub-implementations 77/164 completed.**
+**New audit workstream: Implementations 0/16 completed · Sub-implementations 79/164 completed.**
 
-**Overall completion scope: Implementations 7/24 completed · Sub-implementations 116/193 completed.**
+**Overall completion scope: Implementations 7/24 completed · Sub-implementations 118/193 completed.**
 
 The denominator increased because 16 new verification implementations / 160 non-trivial sub-implementations are now accepted. Existing implementation-completion state is retained provisionally, but the expanded verification matrix has a stricter proof rule: prior evidence may be reused only after the responsible ChatGPT agent personally inspects it and confirms that it proves the exact required contract. Re-running unchanged automation is unnecessary when existing artifacts are sufficient, but no matrix cell is finally closed merely because an earlier workflow marked it green.
 
@@ -692,7 +692,7 @@ The denominator increased because 16 new verification implementations / 160 non-
 - [ ] Verify keyboard-only operation for all interactive flows: logical tab order, no focus traps outside modals, modal focus trap, focus restoration and visible focus.
 - [ ] Verify semantic accessibility: headings, landmarks, labels, names/roles/values, table semantics, dialog names, live/status messaging and non-color-only communication.
 - [x] Verify WCAG-relevant contrast for text, controls, focus/borders and states in light/dark themes; verify reduced motion and animation does not block interaction. Direct assistant review combines the full Light/Dark route screenshot matrix with rendered computed-contrast checks: representative text is >=4.5:1, interactive dark controls/borders are checked at >=4.5:1 text and >=3:1 boundary contrast, focus indicators use the shared semantic focus tokens, and grayscale review confirms important states are not color-only. Reduced-motion behavior is centralized through system/reduced motion handling in the shell/dialog/command/dashboard animation boundaries, and rendered reduced-motion interaction flows complete without relying on animation timing. This is a product accessibility verification, not a claim of formal WCAG certification.
-- [ ] Review Greek localization/content quality: terminology consistency, grammar, capitalization, amount/date formatting, wrapping and avoidance of ambiguous financial wording.
+- [x] Review Greek localization/content quality: terminology consistency, grammar, capitalization, amount/date formatting, wrapping and avoidance of ambiguous financial wording. Direct assistant review combines the complete 132-image Greek UI matrix with source inspection across auth, navigation, finance forms, Settings, errors and recovery. Greek is the default product language; intentionally retained technical/brand terms are documented in `docs/completion/CONTENT_AND_FEEDBACK_AUDIT.md`, finance dates/currency use the shared Greek locale contracts, and no material mixed-language or ambiguous finance wording defect remains in the reviewed surfaces.
 - [x] Produce a designer/developer defect log with severity, affected surfaces, systemic root cause and preferred component/design-system-level remediation. `docs/completion/UI_UX_DEFECT_LEDGER.md` is the assistant-owned defect ledger and records the current systemic visual/interaction findings, severity, root causes, remediation layer and proof state.
 
 ### 8.4 Complete functional user-flow / CRUD verification — 0/24
@@ -760,7 +760,7 @@ The denominator increased because 16 new verification implementations / 160 non-
 - [x] Exercise network timeout/offline/interrupted-save behavior, browser reload during save and retry/idempotency semantics. Direct assistant review confirms bounded request timeouts and explicit network/offline errors, sequential finance writes fail closed without automatic retry, dependent queued mutations are discarded after a failed save, later retries require an explicit new action/reload, beforeunload warns while work is pending or the last save failed, and remote revisions reload only clean tabs while unsafe local work becomes a conflict.
 - [x] Exercise partial multi-step failures such as provider created but one asset upload/binding fails; verify recoverable state and no false all-success message. Direct assistant review plus rendered Chromium QA on `987aab0…` proves the provider row can succeed before a subsequent asset upload failure while the editor remains open/recoverable, no success banner is emitted, the task-local upload error is shown, and the editor switches to existing-provider semantics. The lower-level upload path separately proves a successfully uploaded Storage object is deleted when the metadata-registration RPC fails.
 - [x] Exercise client render errors, lazy-chunk/resource failure, OCR asset failure and error-boundary recovery. Direct assistant review plus exact-head rendered CI on `81bff44…` proves synthetic render faults and rejected lazy resources reach the privacy-safe focused PageErrorBoundary without raw exception leakage; missing local OCR assets preserve the IndexedDB receipt and surface manual/retry guidance; the rejected OCR worker bootstrap is cleared so a later retry succeeds after the local asset becomes available. Recovered-surface and receipt-local-OCR suites both passed in the primary Chromium run.
-- [ ] Audit every user-facing error/warning/success message for accuracy, persistence, accessibility announcement, redaction and appropriate recovery action.
+- [x] Audit every user-facing error/warning/success message for accuracy, persistence, accessibility announcement, redaction and appropriate recovery action. Direct assistant review of the shared message/error owners plus all domain form/error pathways confirms task-local validation, assertive errors/conflicts, polite progress/success status, technical-error redaction, explicit retry/reload/re-auth/manual-recovery actions and no false success after failed persistence. The audited message families and recovery contracts are recorded in `docs/completion/CONTENT_AND_FEEDBACK_AUDIT.md`.
 
 ### 8.8 Security and privacy verification — 8/8
 
