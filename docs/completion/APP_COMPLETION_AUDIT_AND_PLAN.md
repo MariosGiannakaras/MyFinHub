@@ -1827,3 +1827,15 @@ The production read-only probe previously returned Vercel's generic `text/plain`
 - No production deployment is performed by this source batch; Git deployment remains `main`-only.
 
 Status: **source-fixed; draft/core validation pending, deployed runtime proof still required.** Counters remain **Implementations 15/24 completed · Sub-implementations 151/195 completed**.
+
+
+### 8.73 CI #3273 — stale unknown-API last-rewrite assertion — fixed, proof pending
+
+Draft CI #3273 on `0b623c96…` passed hygiene and the new Vercel 404 routing regression, then stopped in two older source-contract tests that assumed `/api/(.*)` must be the final rewrite. That assumption became stale when the intentional terminal branded web 404 fallback was appended.
+
+- Keep the exact unknown-API JSON fallback unchanged.
+- Update both tests to locate `/api/(.*)` explicitly and require it to precede the terminal `/(.*) -> /404.html` rewrite.
+- Continue requiring the API health function to emit `API_NOT_FOUND` JSON and the local server to keep its `/api/{*splat}` JSON boundary.
+- No routing/product/API behavior changed in this follow-up; only the regression contract now matches the accepted two-tier API-then-web fallback ordering.
+
+Status: **test-maintenance fixed; draft core proof pending.** Counters remain **Implementations 15/24 completed · Sub-implementations 151/195 completed**.

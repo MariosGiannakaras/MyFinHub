@@ -44,10 +44,15 @@ describe('complete API method matrix',()=>{
     expect(source).toContain("handleDeviceSessionsRequest(req,res)");
   });
 
-  it('unknown API paths stay JSON and cannot fall through to the HTML shell',()=>{
+  it('unknown API paths stay JSON and precede the terminal branded web 404',()=>{
     const health=read('api/health.ts');
-    const vercel=JSON.parse(read('vercel.json')) as {rewrites:Array<{source:string;destination:string}>};
-    expect(vercel.rewrites.at(-1)).toEqual({source:'/api/(.*)',destination:'/api/health?__myfinhub_route=api-not-found'});
+    const vercel=JSON.parse(read('vercel.json')) as {rewrites:Array<{source:string;destination:string;statusCode?:number}>};
+    const apiIndex=vercel.rewrites.findIndex(route=>route.source==='/api/(.*)');
+    const webIndex=vercel.rewrites.findIndex(route=>route.source==='/(.*)');
+    expect(vercel.rewrites[apiIndex]).toEqual({source:'/api/(.*)',destination:'/api/health?__myfinhub_route=api-not-found'});
+    expect(apiIndex).toBeGreaterThanOrEqual(0);
+    expect(webIndex).toBeGreaterThan(apiIndex);
+    expect(vercel.rewrites[webIndex]).toEqual({source:'/(.*)',destination:'/404.html',statusCode:404});
     expect(health).toContain("new ApiError(404,'API_NOT_FOUND','API route not found.')");
     expect(read('server/index.ts')).toContain("app.all('/api/{*splat}'");
   });

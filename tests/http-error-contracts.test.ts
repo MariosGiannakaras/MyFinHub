@@ -109,9 +109,13 @@ describe('Vercel API 404 routing contract',()=>{
   const vercel=JSON.parse(readFileSync(new URL('../vercel.json',import.meta.url),'utf8')) as {rewrites:Array<{source:string;destination:string}>};
   const health=readFileSync(new URL('../api/health.ts',import.meta.url),'utf8');
 
-  it('keeps a final unknown-API rewrite on an existing function slot and returns JSON 404',()=>{
-    const fallback=vercel.rewrites.at(-1);
-    expect(fallback).toEqual({source:'/api/(.*)',destination:'/api/health?__myfinhub_route=api-not-found'});
+  it('keeps unknown-API JSON routing ahead of the terminal branded web 404',()=>{
+    const apiFallback=vercel.rewrites.find(route=>route.source==='/api/(.*)');
+    const apiIndex=vercel.rewrites.findIndex(route=>route.source==='/api/(.*)');
+    const webIndex=vercel.rewrites.findIndex(route=>route.source==='/(.*)');
+    expect(apiFallback).toEqual({source:'/api/(.*)',destination:'/api/health?__myfinhub_route=api-not-found'});
+    expect(apiIndex).toBeGreaterThanOrEqual(0);
+    expect(webIndex).toBeGreaterThan(apiIndex);
     expect(health).toContain("strictQueryValue(req,'__myfinhub_route') === 'api-not-found'");
     expect(health).toContain("new ApiError(404,'API_NOT_FOUND','API route not found.')");
   });
