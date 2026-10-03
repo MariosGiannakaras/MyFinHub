@@ -252,6 +252,8 @@ describe('completion UX contracts',()=>{
     const harness=read('scripts/completion-functional-crud-qa.mjs');
     expect(harness).toContain('self-loan create, partial return and forgiveness');
     expect(harness).toContain('self-loan creation produces exactly one neutral savings-to-current transfer');
+    expect(harness).toContain("const selfCreateTransfer=await c.call(\`function(){const visible=\${visible};");
+    expect(harness).toContain("const selfTransfers=await c.call(\`function(){const visible=\${visible};");
     expect(harness).toContain('self-loan partial return updates outstanding');
     expect(harness).toContain('forgiven self-loan moves to completed history');
     expect(harness).toContain('forgiveness creates none');
