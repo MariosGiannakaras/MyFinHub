@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 const coordinator = readFileSync('scripts/run-rendered-qa.mjs', 'utf8');
 const hardening = readFileSync('scripts/ui-ux-hardening-qa.mjs', 'utf8');
+const mobileAppShell = readFileSync('src/styles/mobile-app-shell.css', 'utf8');
 const recovered = readFileSync('scripts/recovered-surface-qa.mjs', 'utf8');
 const completionFunctional = readFileSync('scripts/completion-functional-crud-qa.mjs', 'utf8');
 const largeData = readFileSync('scripts/large-data-boundaries-qa.mjs', 'utf8');
@@ -99,6 +100,9 @@ describe('rendered browser QA reliability contract', () => {
     expect(hardening).toContain("state:'minimal',shot:true");
     expect(hardening).toContain("state:'empty',shot:true");
     expect(hardening).toContain("state:'extreme',shot:true");
+    expect(mobileAppShell).toContain('.mobile-brand .brand-mark-copy{display:none}');
+    expect(hardening).toContain("document.querySelector('.mobile-brand .brand-mark')");
+    expect(hardening).toContain('mobile header brand/action collision');
   });
 
   it('keeps mutating validation failures in the rendered merge gate',()=>{
