@@ -11,6 +11,8 @@ const desktopPackage = JSON.parse(read('desktop/package.json'));
 const bootstrap = read('desktop/bootstrap.cjs');
 const defaults = read('desktop/runtime-defaults.cjs');
 const main = read('desktop/main.cjs');
+const rendererMain = read('src/main.tsx');
+const desktopTitlebar = read('src/styles/desktop-titlebar.css');
 const preload = read('desktop/preload.cjs');
 const recovery = read('desktop/setup.html');
 const recoveryRenderer = read('desktop/setup-renderer.js');
@@ -39,6 +41,32 @@ describe('MyFinHub Windows desktop boundary', () => {
     expect(desktopPackage.main).toBe('bootstrap.cjs');
     expect(main).toContain("const PRODUCT_NAME = 'MyFinHub'");
     expect(main).toContain('title: PRODUCT_NAME');
+  });
+
+  it('integrates the app topbar with native Windows caption controls without a frameless reimplementation', () => {
+    const mainWindowBlock=mainBlock('function createWindow(origin, runtime)', 'function createSetupWindow()');
+    const setupWindowBlock=mainBlock('function createSetupWindow()', 'function sanitizedUpdateState()');
+    expect(mainWindowBlock).toContain("process.platform === 'win32'");
+    expect(mainWindowBlock).toContain("titleBarStyle: 'hidden'");
+    expect(mainWindowBlock).toContain('titleBarOverlay: true');
+    expect(mainWindowBlock).not.toContain('frame: false');
+    expect(setupWindowBlock).not.toContain("titleBarStyle: 'hidden'");
+    expect(setupWindowBlock).not.toContain('titleBarOverlay');
+
+    expect(rendererMain).toContain("document.documentElement.dataset.myfinhubDesktop='true'");
+    expect(rendererMain).toContain("import('./styles/desktop-titlebar.css')");
+    expect(read('src/styles.css')).not.toContain('desktop-titlebar.css');
+
+    expect(desktopTitlebar).toContain('html[data-myfinhub-desktop="true"] .topbar');
+    expect(desktopTitlebar).toContain('app-region:drag');
+    expect(desktopTitlebar).toContain('-webkit-app-region:drag');
+    expect(desktopTitlebar).toContain('app-region:no-drag');
+    expect(desktopTitlebar).toContain('-webkit-app-region:no-drag');
+    expect(desktopTitlebar).toContain('--desktop-window-controls-reserve:152px');
+    expect(desktopTitlebar).toContain('padding-right:calc(15px + var(--desktop-window-controls-reserve))');
+    expect(desktopTitlebar).toContain('.topbar button');
+    expect(desktopTitlebar).toContain('.topbar input');
+    expect(desktopTitlebar).toContain('.topbar [role="button"]');
   });
 
   it('keeps the renderer sandboxed and exposes only narrow recovery/update IPC', () => {
