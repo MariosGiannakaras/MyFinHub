@@ -87,6 +87,8 @@ describe('MyFinHub Windows desktop boundary', () => {
     expect(desktopTitlebarQa).toContain("url.searchParams.set('desktop-titlebar','1')");
     expect(desktopTitlebarQa).toContain("applyTheme('light')");
     expect(desktopTitlebarQa).toContain("applyTheme('dark')");
+    expect(desktopTitlebarQa).toContain('document.documentElement.clientWidth');
+    expect(desktopTitlebarQa).toContain('scrollbarGutter');
     expect(desktopTitlebarQa).toContain('actionReserve');
     expect(desktopTitlebarQa).toContain('desktop-titlebar-light-1440');
     expect(desktopTitlebarQa).toContain('desktop-titlebar-dark-1440');
@@ -203,16 +205,20 @@ describe('MyFinHub Windows desktop boundary', () => {
     expect(workflow).not.toContain('Signed desktop releases require');
   });
 
-  it('validates native title-bar maximize, restore and resize states in the packaged Windows smoke', () => {
-    expect(workflow).toContain('MyFinHubWindowProbe');
-    expect(workflow).toContain('ShowWindowAsync');
-    expect(workflow).toContain('IsZoomed');
-    expect(workflow).toContain('GetWindowRect');
-    expect(workflow).toContain('SetWindowPos');
-    expect(workflow).toContain('main window handle is unavailable for native title-bar validation');
-    expect(workflow).toContain('did not maximize through native Windows window state');
-    expect(workflow).toContain('did not restore from maximized state');
-    expect(workflow).toContain('Native title-bar window states validated: maximize, restore, resize');
+  it('validates native title-bar maximize, restore and resize states from the packaged Electron BrowserWindow', () => {
+    expect(main).toContain("const WINDOW_STATE_PROBE_PATH = String(process.env.MYFINHUB_WINDOW_STATE_PROBE_PATH || '').trim()");
+    expect(main).toContain('async function runWindowStateProbe(window)');
+    expect(main).toContain('window.maximize()');
+    expect(main).toContain('window.isMaximized()');
+    expect(main).toContain('window.unmaximize()');
+    expect(main).toContain('window.setSize(1100, 760)');
+    expect(main).toContain('result.size = window.getSize()');
+    expect(main).toContain("fs.writeFileSync(WINDOW_STATE_PROBE_PATH, JSON.stringify(result, null, 2)");
+    expect(workflow).toContain('$env:MYFINHUB_WINDOW_STATE_PROBE_PATH = $probePath');
+    expect(workflow).toContain('titlebar-window-state.json');
+    expect(workflow).toContain('Electron BrowserWindow title-bar states validated');
+    expect(workflow).not.toContain('MyFinHubWindowProbe');
+    expect(workflow).not.toContain('ShowWindowAsync');
   });
 
   it('installs, launches, verifies identity and uninstalls the real NSIS package in Windows CI', () => {
