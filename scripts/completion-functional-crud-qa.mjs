@@ -200,7 +200,7 @@ try{
   await clickText('.sidebar nav button','Συναλλαγές');
   await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').trim()==='Συναλλαγές'}",'transactions after self-loan create');
   await setByLabel('Αναζήτηση συναλλαγών','QA Audit Self Loan');
-  const selfCreateTransfer=await c.call("function(){const rows=[...document.querySelectorAll('[data-transaction-kind=transfer][data-transaction-source=event]')].filter(node=>(node.textContent||'').includes('ΒΟΗΘΕΙΑ: QA Audit Self Loan'));return rows.map(row=>(row.textContent||'').replace(/\\s+/g,' ').trim())}");
+  const selfCreateTransfer=await c.call(`function(){const visible=${visible};const rows=[...document.querySelectorAll('[data-transaction-kind=transfer][data-transaction-source=event]')].filter(node=>visible(node)&&(node.textContent||'').includes('ΒΟΗΘΕΙΑ: QA Audit Self Loan'));return rows.map(row=>(row.textContent||'').replace(/\\s+/g,' ').trim())}`);
   assert(selfCreateTransfer.length===1&&selfCreateTransfer[0].includes('↔'),'self-loan creation produces exactly one neutral savings-to-current transfer');
   await clickText('.sidebar nav button','Δόσεις & Δάνεια');
   await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Δόσεις & Δάνεια')}",'Loans after self-loan transfer check');
@@ -220,7 +220,7 @@ try{
   await clickText('.sidebar nav button','Συναλλαγές');
   await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').trim()==='Συναλλαγές'}",'transactions after self-loan lifecycle');
   await setByLabel('Αναζήτηση συναλλαγών','QA Audit Self Loan');
-  const selfTransfers=await c.call("function(){return [...document.querySelectorAll('[data-transaction-kind=transfer][data-transaction-source=event]')].filter(node=>(node.textContent||'').includes('QA Audit Self Loan')).map(row=>(row.textContent||'').replace(/\\s+/g,' ').trim())}");
+  const selfTransfers=await c.call(`function(){const visible=${visible};return [...document.querySelectorAll('[data-transaction-kind=transfer][data-transaction-source=event]')].filter(node=>visible(node)&&(node.textContent||'').includes('QA Audit Self Loan')).map(row=>(row.textContent||'').replace(/\\s+/g,' ').trim())}`);
   assert(selfTransfers.length===2&&selfTransfers.some(row=>row.includes('ΒΟΗΘΕΙΑ: QA Audit Self Loan'))&&selfTransfers.some(row=>row.includes('ΕΠΙΣΤΡΟΦΗ: QA Audit Self Loan')),'self-loan lifecycle creates only the initial and actual-return money transfers; forgiveness creates none');
   await clickText('.sidebar nav button','Δανεικά');
   await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Δανεικά')}",'Lending after self-loan lifecycle');
