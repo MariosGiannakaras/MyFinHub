@@ -720,9 +720,11 @@ The original owner-expanded audit added 16 verification implementations / 160 no
 - [ ] Budgets: create/edit/delete, thresholds, category/overall scopes, alert state and report reconciliation.
 - [ ] Transaction rules: create/edit/delete, matching, rule application to new transactions and no retroactive mutation unless explicitly designed.
 - [ ] Settings account/provider metadata: account create/edit/delete, IBAN/provider correction, provider create/edit, asset upload/reuse/binding/replace and cross-surface refresh.
-- [ ] Taxonomy/icons/preferences: category/subcategory create/rename/move/retire/blockers, icon pack/assignment persistence, theme, text-size, motion and other settings persistence.
+- [ ] Taxonomy/icons/preferences: category/subcategory create/rename/move/retire/blockers, icon pack/assignment persistence, theme, text-size and other user-facing settings persistence; reduced-motion accessibility follows the accepted product contract via platform/CSS `prefers-reduced-motion` rather than a user-facing Motion preference.
 - [ ] Data management/history: backup, export/import, validation rejection, history points, undo/redo across supported scope, refresh/reload and conflict handling.
 - [ ] Receipt OCR + global tools: local receipt capture/inbox/OCR/proposal correction → Quick Entry, command palette actions, keyboard shortcuts, global refresh and page error recovery.
+
+**Motion preference scope alignment:** `docs/PRODUCT_MODEL_2026-08.md` explicitly requires removal of the Motion preference from Settings UI. MyFinHub stores/defaults to full motion while the UI continues to respect platform accessibility through `prefers-reduced-motion`. Verification must therefore prove OS/platform reduced-motion behavior, not invent a user-facing persistence control. This corrects stale checklist wording only and does not change the denominator.
 
 ### 8.5 Data integrity, persistence and finance invariants — 8/9
 
