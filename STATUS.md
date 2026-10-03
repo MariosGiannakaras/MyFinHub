@@ -49,7 +49,7 @@ Release-closeout tracker: **#288 — complete**.
 
 ## Active completion batch — #476
 
-**Implementations 12/24 completed · Sub-implementations 140/195 completed**
+**Implementations 12/24 completed · Sub-implementations 141/195 completed**
 
 - The completion definition has been expanded by the owner to a full-system verification matrix. Existing implementation findings remain tracked, but final closeout now requires direct assistant-led manual review plus UI/UX/accessibility, routing/404, every supported user mutation, real-stack persistence/backend proof, exhaustive failure handling, security/privacy, temporal/data-boundary coverage, operational recovery and canonical post-merge validation.
 
@@ -80,7 +80,7 @@ Release-closeout tracker: **#288 — complete**.
 - **FV-44 completed:** exact-head rendered CI on `9b25fb1…` passes the extreme Recurring mobile lifecycle case, proving 12-row bounded disclosure, collapsed inactive history, actionable `Προβολή περισσότερων`, full expansion and no overflow.
 - **FV-45 completed:** exact-head rendered validation now proves receipt OCR persists raw `currency='EUR'` while the owned select displays the user-facing `EUR · Ευρώ` label. This closes FV-45 but does not close the expanded full-system audit.
 - Current final-validation head: use the head SHA of PR #477 as the authoritative value.
-- CI #3196 on `01c392b8…` passed root/API checks and every individual rendered assertion. Provider Branding and Account Metadata passed, closing the Settings account/provider cell; Command Palette plus the full keyboard/semantic sweep also passed. The job itself later hit the 30-minute limit because final isolated Chromium processes could outlive their PASS line. FV-62 tracks awaited SIGTERM→SIGKILL teardown hardening; this new accepted item raises the denominator to 195 and remains proof-pending.
+- CI #3200 on `e3db955a…` again passed every rendered assertion, including the newly expanded complete Cards lifecycle, but the coordinator still timed out after all PASS lines. Cards profile lifecycle is therefore closed. FV-62 remains proof-pending and is now fixed systemically at the coordinator boundary: every rendered QA script preloads a test-only ChildProcess guard that preserves SIGTERM, bounds SIGKILL escalation and unrefs a child that still refuses to release its handle.
 - Remaining work is governed by `docs/completion/APP_COMPLETION_AUDIT_AND_PLAN.md`; its **12/24 implementations · 140/195 sub-implementations** checkpoint is authoritative. The current custom 404 covers unknown authenticated hash routes but the remaining HTTP-path/manual-mode obligations in the plan still require proof. Do not merge #477 solely from earlier gate sets.
 - Implementation batch A remains on the same completion line: 404/routing product work, CodeQL-oriented binary/provider hardening, provider-upload cleanup and narrow regression contracts are batched into the validation line. PR #477 is currently review-ready; exact-head proof, not PR state, governs completion. Counters do not advance until required proof is green.
 - Implementation batch B is source-implemented in parallel: strict calendar dates/month rollovers, fail-closed date-picker behavior and safe-integer-cent monetary boundaries now cover core event/scheduled/recurring/reporting inputs. Validation and direct rendered inspection are still pending, so counters are unchanged.
@@ -110,7 +110,7 @@ Release-closeout tracker: **#288 — complete**.
 - 409 revision/conflict handling is directly closed: stale writes fail closed, pending dependent writes are discarded, cross-tab revisions reconcile deterministically and the UI exposes explicit recovery.
 - Persistence concurrency invariant is also closed: sequential ordering, cross-tab newer-revision handling and fail-closed queue behavior are directly exercised and backed by database preconditions.
 - Core finance semantic invariants are directly closed: neutral internal movements, credit liability/statement math, lending receivables, split/cadence/scheduled/budget/report/time boundaries all have reviewed green executable coverage.
-- Cards lifecycle rendered coverage is source-expanded on the current branch: debit-card create through secure-details save, archive, restore, re-archive and permanent delete are now exercised; the existing Cards verification cell remains pending exact-head proof.
+- Cards profile lifecycle is completed from exact-head CI #3200: create through secure-details save, archive, restore with preserved metadata, re-archive, permanent delete, profile edit and explicit Mastercard rendering all passed in the Completion Functional CRUD suite.
 - No Android implementation and no `main` promotion/release are included.
 
 ## Next work
