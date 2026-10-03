@@ -85,6 +85,13 @@ describe('rendered browser QA reliability contract', () => {
     expect(desktopHostVisual).toContain('desktop-update-downloading-1100x760');
     expect(desktopHostVisual).toContain('desktop-startup-recovery-min-620x650');
     expect(desktopHostVisual).toContain('BACKEND_STARTUP_TIMEOUT');
+    expect(desktopHostVisual).toContain('desktop-update-up-to-date-1440x930');
+    expect(hardening).toContain('desktop-persistence-saving');
+    expect(hardening).toContain('desktop-refresh-hover-tooltip');
+    expect(hardening).toContain("matches(':active')");
+    expect(hardening).toContain('desktop-date-popover-open');
+    expect(hardening).toContain('desktop-dialog-credit');
+    expect(hardening).toContain('desktop-validation-bank');
   });
 
   it('keeps mutating validation failures in the rendered merge gate',()=>{

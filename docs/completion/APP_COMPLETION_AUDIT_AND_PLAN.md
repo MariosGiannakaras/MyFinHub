@@ -1688,3 +1688,17 @@ Source implementation in this batch:
 - source regression locks coordinator inclusion, QA bridge scoping and the real recovery-page path.
 
 Status: **source-implemented; exact-head rendered proof and direct screenshot inspection pending.** Counters remain **Implementations 14/24 completed · Sub-implementations 147/195 completed**. Existing Windows package/native-window gates remain authoritative for actual Electron host mechanics; this batch supplies the missing visual evidence without requiring physical-device testing.
+
+
+### 8.63 Interaction/dialog visual evidence expansion — source-implemented, proof pending
+
+Evidence inventory showed that several real runtime states were already asserted by `ui-ux-hardening-qa.mjs` but were not persisted for direct visual review. This left the existing 8.2 dialog/interactive-state cells uncloseable despite functional coverage.
+
+Source implementation in this batch:
+- persist the existing Dashboard persistence error, revision-conflict, loading and saving surfaces plus the safe page-error recovery surface;
+- capture the existing real Refresh hover tooltip and a CDP mouse-down `:active` pressed state before release, without adding test-only CSS/classes;
+- capture the real Quick Add focused dialog and owned date popover, plus the existing Savings, Cards bank picker, Credit purchase, Loans, Lending and Recurring editors while their existing containment/accessibility assertions are active;
+- persist existing Savings/Lending/bank validation-error states after real invalid submits;
+- add the real Desktop Update Panel `up-to-date` state as a clear success-state visual alongside available/downloading/ready/error host evidence.
+
+Status: **source-implemented; rendered proof and direct screenshot inspection pending.** Counters remain **Implementations 14/24 completed · Sub-implementations 147/195 completed**. This expands evidence only; it does not alter shared control styling, validation semantics, finance behavior, backend/Supabase behavior or Android code.

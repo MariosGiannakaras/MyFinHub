@@ -78,6 +78,9 @@ try{
   await navigate(updateUrl('error'));
   await waitFor("function(){const message=document.querySelector('.desktop-update-message.error');return Boolean(message&&(message.textContent||'').includes('Η ενημέρωση δεν ολοκληρώθηκε'))}","update error panel");
   await shot('desktop-update-error-1440x930');
+  await navigate(updateUrl('up-to-date'));
+  await waitFor("function(){const panel=document.querySelector('.desktop-update-panel');return panel&&(panel.textContent||'').includes('Ενημερωμένη')&&(panel.textContent||'').includes('Η εφαρμογή είναι ενημερωμένη.')}","up-to-date update panel");
+  await shot('desktop-update-up-to-date-1440x930');
 
   console.log('Desktop host QA: real startup recovery diagnostics surface');
   await c.send('Page.addScriptToEvaluateOnNewDocument',{source:"Object.defineProperty(window,'myFinHubDesktop',{configurable:true,value:Object.freeze({getRecoveryState:async()=>({progress:62,step:'backend-startup',message:'Ο τοπικός πυρήνας δεν απάντησε εγκαίρως.',error:{code:'BACKEND_STARTUP_TIMEOUT',stage:'backend-startup',message:'Η τοπική υπηρεσία δεν ξεκίνησε εγκαίρως.',detail:'Η υπηρεσία σταμάτησε πριν από το ασφαλές readiness marker. Δεν εκτίθενται credentials.'}}),onStartupProgress:()=>()=>{},retryStartup:async()=>({ok:false,error:{code:'BACKEND_STARTUP_TIMEOUT',stage:'backend-startup',message:'Η νέα προσπάθεια δεν ολοκληρώθηκε.',detail:'Ασφαλές diagnostic detail.'}}),copyStartupDiagnostics:async()=>({ok:true})})});"});
