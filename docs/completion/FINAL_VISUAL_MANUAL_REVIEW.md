@@ -70,3 +70,22 @@ Direct observations: error/recovery messages remain inside their owning auth car
 
 This review closes only the exhaustive auth-state visual-capture cell. It does not by itself close the separate real-auth functional lifecycle, keyboard/semantic accessibility, isolated-backend or canonical post-merge proof items.
 
+## Desktop/Electron title-bar direct evidence review — CI #3186 / Windows Desktop #2746
+
+Reviewed by: ChatGPT (direct visual inspection)  
+Rendered artifact: `myfinhub-visual-qa-88443aa4cde75b45691f852177b312a4d61e92f2`  
+GitHub Actions artifact ID: `11273778386`  
+Rendered source: PR merge ref `88443aa4cde75b45691f852177b312a4d61e92f2` for branch `feat/476-completion-audit-hardening`  
+Review date: 2026-10-03
+
+All three dedicated desktop-titlebar captures were opened directly at useful resolution:
+
+| Capture | Disposition |
+| --- | --- |
+| Light · 1440px | PASS — integrated topbar, caption reserve and action spacing remain coherent; no horizontal overlap or clipped interactive action. |
+| Dark · 1440px | PASS — semantic dark surface remains continuous across the integrated topbar and shell; action cluster stays clear of the native-caption reserve. |
+| Dark · 960px compact desktop | PASS — collapsed desktop shell preserves the reserved caption/control strip and topbar actions without collision or mobile-style regression. |
+
+The rendered browser harness intentionally validates application geometry rather than drawing Windows native caption buttons. Native host behavior is independently proven by successful Windows Desktop #2746 packaged execution: the Electron main process reported `maximize=True`, `restore=True`, and final resize `1100x760` through the controlled BrowserWindow state probe. Source regressions separately lock `titleBarStyle:'hidden'`, native `titleBarOverlay`, the absence of `frame:false`, setup-window exclusion and drag/no-drag boundaries.
+
+Disposition: the desktop/Electron custom-title-bar verification item is **PASS / completed**. No Android code is involved; the renderer styling remains Electron-bridge gated.
