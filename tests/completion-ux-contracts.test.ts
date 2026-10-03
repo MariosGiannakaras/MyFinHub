@@ -349,6 +349,12 @@ describe('completion UX contracts',()=>{
     const functional=read('scripts/completion-functional-crud-qa.mjs');
     expect(command).toContain("key:' ',ctrlKey:true,shiftKey:true");
     expect(command).toContain('Quick Entry from global shortcut');
+    expect(command).toContain("document.querySelectorAll('button[aria-label]')");
+    expect(command).toContain("item.getAttribute('aria-label')===label&&item.getClientRects().length>0");
+    expect(command).toContain('.quick-modal input[data-autofocus="true"]');
+    expect(command).toContain('.quick-modal input:not([type="hidden"])');
+    expect(command).toContain("clickAria('Γρήγορη προσθήκη')");
+    expect(command).not.toContain("clickAria('Άνοιγμα γρήγορης καταχώρισης');await waitFor");
     expect(functional).toContain("key:'y',ctrlKey:true");
     expect(functional).toContain('Ctrl+Y redo reapplies modern delete');
     expect(functional).toContain("key:'z',ctrlKey:true");
