@@ -52,7 +52,8 @@ function validateRenderedQaModules(){
     catch(error){
       const stdout=error?.stdout?.toString?.()||'';
       const stderr=error?.stderr?.toString?.()||'';
-      throw new Error(`Rendered QA module syntax check failed: ${item.path}\n${stderr||stdout||error instanceof Error?error.message:String(error)}`);
+      const detail=stderr||stdout||(error instanceof Error?error.message:String(error));
+      throw new Error(`Rendered QA module syntax check failed: ${item.path}\n${detail}`);
     }
   }
   console.log(`Rendered QA module syntax preflight passed for ${scripts.length} scripts.`);
