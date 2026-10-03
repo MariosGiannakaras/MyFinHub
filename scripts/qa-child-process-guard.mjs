@@ -2,8 +2,10 @@ import { ChildProcess } from 'node:child_process';
 
 const originalKill=ChildProcess.prototype.kill;
 const FORCE_AFTER_MS=2000;
-const UNREF_AFTER_FORCE_MS=750;
-const guarded=new WeakSet();
+const DRAIN_AFTER_MS=3000;
+const guarded=new Set();
+
+const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 
 ChildProcess.prototype.kill=function guardedKill(signal='SIGTERM'){
   const result=originalKill.call(this,signal);
@@ -12,15 +14,21 @@ ChildProcess.prototype.kill=function guardedKill(signal='SIGTERM'){
   const forceTimer=setTimeout(()=>{
     if(this.exitCode===null){
       try{originalKill.call(this,'SIGKILL')}catch{}
-      const unrefTimer=setTimeout(()=>{
-        if(this.exitCode===null){
-          try{this.unref()}catch{}
-        }
-      },UNREF_AFTER_FORCE_MS);
-      unrefTimer.unref();
     }
   },FORCE_AFTER_MS);
   forceTimer.unref();
-  this.once('exit',()=>clearTimeout(forceTimer));
+  this.once('exit',()=>{clearTimeout(forceTimer);guarded.delete(this)});
   return result;
 };
+
+export async function drainGuardedChildren(){
+  const deadline=Date.now()+DRAIN_AFTER_MS;
+  while([...guarded].some(child=>child.exitCode===null)&&Date.now()<deadline)await sleep(50);
+  for(const child of guarded){
+    if(child.exitCode===null){
+      try{originalKill.call(child,'SIGKILL')}catch{}
+      try{child.unref()}catch{}
+    }
+  }
+  guarded.clear();
+}

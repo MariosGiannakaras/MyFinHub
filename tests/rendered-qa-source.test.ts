@@ -7,6 +7,8 @@ const recovered = readFileSync('scripts/recovered-surface-qa.mjs', 'utf8');
 const completionFunctional = readFileSync('scripts/completion-functional-crud-qa.mjs', 'utf8');
 const largeData = readFileSync('scripts/large-data-boundaries-qa.mjs', 'utf8');
 const notFoundAccessibility = readFileSync('scripts/not-found-accessibility-qa.mjs', 'utf8');
+const cardVaultRuntime = readFileSync('scripts/card-vault-runtime-qa.mjs', 'utf8');
+const qaRunner = readFileSync('scripts/qa-script-runner.mjs', 'utf8');
 const ci = readFileSync('.github/workflows/ci.yml', 'utf8');
 const qaHtml = readFileSync('qa.html', 'utf8');
 
@@ -73,13 +75,25 @@ describe('rendered browser QA reliability contract', () => {
     expect(coordinator).toContain("/tmp/myfinhub-mutation-validation-qa-chrome");
   });
 
-  it('preloads a bounded child-process guard for every rendered QA suite',()=>{
-    expect(coordinator).toContain("['--import','./scripts/qa-child-process-guard.mjs',path]");
+  it('runs every rendered module through an explicit completion wrapper with bounded child cleanup',()=>{
+    expect(coordinator).toContain("['scripts/qa-script-runner.mjs',path]");
     const guard=readFileSync('scripts/qa-child-process-guard.mjs','utf8');
     expect(guard).toContain('ChildProcess.prototype.kill');
-    expect(guard).toContain("originalKill.call(this,'SIGKILL')");
-    expect(guard).toContain('this.unref()');
-    expect(guard).toContain('forceTimer.unref()');
+    expect(guard).toContain("originalKill.call(child,'SIGKILL')");
+    expect(guard).toContain('child.unref()');
+    expect(guard).toContain('drainGuardedChildren');
+    expect(qaRunner).toContain('await import(pathToFileURL(resolve(target)).href)');
+    expect(qaRunner).toContain('await drainGuardedChildren()');
+    expect(qaRunner).toContain('process.exit(code)');
+  });
+
+  it('keeps server-vault save/reveal/update/reload/delete in rendered QA',()=>{
+    expect(coordinator).toContain("scripts/card-vault-runtime-qa.mjs");
+    expect(cardVaultRuntime).toContain('Card Vault runtime QA: invalid input stays local and does not write');
+    expect(cardVaultRuntime).toContain('Page.addScriptToEvaluateOnNewDocument');
+    expect(cardVaultRuntime).toContain('hard reload re-reveals server secret');
+    expect(cardVaultRuntime).toContain("deleteCardSecret('qa-debit-card')");
+    expect(cardVaultRuntime).toContain("calls.some(call=>call.method==='DELETE')");
   });
 
   it('forces final isolated Chromium suites to finish teardown instead of hanging CI after assertions pass',()=>{
