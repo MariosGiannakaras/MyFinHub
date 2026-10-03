@@ -90,7 +90,7 @@ describe('rendered browser QA reliability contract', () => {
     expect(hardening).toContain('desktop-refresh-hover-tooltip');
     expect(hardening).toContain("matches(':active')");
     expect(hardening).toContain('desktop-date-popover-open');
-    expect(hardening).toContain('desktop-dialog-credit');
+    expect(hardening).toContain('desktop-dialog-${page}');
     expect(hardening).toContain('desktop-validation-bank');
     expect(qaWorkspace).toContain("params.get('state')==='minimal'");
     expect(qaWorkspace).toContain('onePerKind.slice(0,8)');

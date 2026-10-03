@@ -1714,3 +1714,13 @@ Source implementation in this batch:
 - keep the existing normal desktop/mobile captures, long Greek account name, Unicode/very-long note and large monetary-value extreme fixtures; the separate large-data suite remains authoritative for 1,500-event and 100-row history performance/density boundaries.
 
 Status: **source-implemented; exact-head rendered proof and direct visual inspection pending.** Counters remain **Implementations 14/24 completed · Sub-implementations 147/195 completed**. This is fixture/evidence expansion only and does not alter product data, persistence or finance semantics.
+
+
+### 8.65 CI #3221 — dynamic dialog evidence source-regression mismatch — fixed, proof pending
+
+Draft core CI #3221 on `a898ab95…` passed hygiene and 982/983 root tests, then stopped on one new source-contract assertion before build/rendered validation. The production/QA script was correct: dialog evidence filenames are emitted dynamically as `desktop-dialog-${page}` inside the existing six-page loop. The source regression incorrectly required the impossible literal `desktop-dialog-credit` string in source text.
+
+- Correct the regression to lock the actual dynamic filename template rather than one runtime expansion.
+- No product, fixture, visual assertion, finance, backend, Supabase, packaging or Android behavior changed.
+
+Status: **test-maintenance fixed; draft core CI proof pending.** Counters remain **Implementations 14/24 completed · Sub-implementations 147/195 completed**.
