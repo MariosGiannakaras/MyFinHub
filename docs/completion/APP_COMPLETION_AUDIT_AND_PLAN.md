@@ -1434,6 +1434,13 @@ Validation checkpoint: exact-head Windows Desktop #2744, Windows First Run #1295
 
 Additional validation is now staged without creating a new workflow: the existing Windows Desktop smoke requires real native maximize → restore → resize behavior, while a small `desktop-titlebar-qa.mjs` suite uses only the isolated `qa.html?desktop-titlebar=1` surface to load the same desktop CSS, verify top/right integration and caption-button action clearance at 1440px/960px, and persist light/dark screenshots for direct review. The production web entry never enables this QA query path.
 
+
+Validation findings from exact head `db4636f0…`:
+- **QA-DESKTOP-TITLEBAR-GUTTER:** CI #3185 reached the new desktop-titlebar rendered suite and proved `top:0`, 76px integrated height, 167px caption reserve plus drag/no-drag rules, but reported `rightGap:15`. That 15px equals the browser vertical-scrollbar gutter: layout uses `documentElement.clientWidth`, while the QA compared the topbar edge against `innerWidth`. The assertion must compare to the layout viewport/client edge rather than treating scrollbar chrome as product whitespace.
+- **WIN-TITLEBAR-PROBE:** Windows Desktop #2745 packaged and launched successfully but the external PowerShell/user32 `ShowWindowAsync` maximize assertion did not observe `IsZoomed` in the GitHub runner desktop session. Host-state validation should be executed by the packaged Electron main process against its own `BrowserWindow` API under an explicit CI-only probe environment variable, then persisted as JSON for the workflow to verify. The ordinary packaged launch/backend smoke remains unchanged.
+
+Both findings are validation-layer follow-ups inside the accepted custom-title-bar item; neither changes the denominator or Android/backend scope.
+
 Status: **Source implementation complete; strengthened Windows host-state + rendered desktop titlebar proof pending.** No Android repository changes are required; expected Android impact remains none because production renderer styling is gated by the Electron preload bridge. Counters remain **Implementations 12/24 completed · Sub-implementations 132/194 completed** until both validation layers and direct desktop evidence review complete.
 
 ### 8.49 CI #3178 / nested Settings direct-review follow-up — in progress
