@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 const source=readFileSync(new URL('../src/pages/SavingsPage.tsx',import.meta.url),'utf8');
 const composition=readFileSync(new URL('../src/styles/savings-desktop-composition.css',import.meta.url),'utf8');
+const functionalQa=readFileSync(new URL('../scripts/completion-functional-crud-qa.mjs',import.meta.url),'utf8');
 
 describe('Savings page action hierarchy',()=>{
   it('renders the actionable savings choices before monthly reporting',()=>{
@@ -33,4 +34,13 @@ describe('Savings page action hierarchy',()=>{
     expect(composition).toContain('.saving-route>span{min-width:0;max-width:100%;overflow:hidden}');
     expect(composition).toContain('text-overflow:ellipsis;white-space:nowrap');
   });
+
+  it('drives manual Savings transfer through the production contextual Quick Entry flow',()=>{
+    expect(functionalQa).toContain("document.querySelector('#context-quick-title')?.textContent?.includes('Μεταφορά στην αποταμίευση')");
+    expect(functionalQa).toContain("document.querySelectorAll('.contextual-quick-modal input[role=combobox]')");
+    expect(functionalQa).toContain("await setByLabel('Σχόλιο','QA Audit Saving')");
+    expect(functionalQa).toContain("await clickText('.contextual-quick-modal button','Καταχώριση')");
+    expect(functionalQa).toContain("savingsAfter.recent.includes('Μεταφορά στην αποταμίευση')");
+  });
+
 });
