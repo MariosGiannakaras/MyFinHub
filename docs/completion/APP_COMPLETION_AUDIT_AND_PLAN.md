@@ -1565,7 +1565,7 @@ Status: **Completed in CI #3190.** `Provider branding task-flow QA passed` after
 Current counters after closing Taxonomy/icons/preferences and Settings account/provider metadata are **Implementations 12/24 completed · Sub-implementations 140/194 completed**.
 
 
-### 8.54 CI #3191 — Command Palette focus-trap follow-up — source fix pending
+### 8.54 CI #3191 — Command Palette focus-trap follow-up — source-fixed, proof pending
 
 Exact-head CI #3191 on `eef0b761…` passed the complete route/settings/auth keyboard-semantic sweep, proving FV-60 resolved, then failed at **Command Palette focus trap step 2**.
 
@@ -1576,4 +1576,6 @@ Exact-head CI #3191 on `eef0b761…` passed the complete route/settings/auth key
 - Preserve Escape dismissal, nested/topmost modal ownership, preferred initial focus, dynamic error association and opener focus restoration.
 - Scope is shared modal-focus infrastructure plus source/runtime accessibility regression. No Command Palette search/result semantics, finance/domain behavior, backend/Supabase behavior, packaging or Android code changes are required.
 
-Status: **recorded; source fix pending integrated proof**. This follow-up belongs to the existing accessibility verification scope and does not change the denominator. Counters remain **Implementations 12/24 completed · Sub-implementations 140/194 completed**.
+**Source-fixed:** `useModalFocus` now treats only effective `tabIndex >= 0` descendants as sequential focus targets, prevents every Tab/Shift+Tab handled by the topmost modal and explicitly cycles to the next/previous current target. This preserves the Command Palette's arrow-key/listbox result model while keeping its close button/search input inside a deterministic modal cycle. Focused source regressions lock the effective-tabindex filter and forward/backward cyclic arithmetic.
+
+Status: **source-fixed; exact-head keyboard/semantic proof pending**. This follow-up belongs to the existing accessibility verification scope and does not change the denominator. Counters remain **Implementations 12/24 completed · Sub-implementations 140/194 completed**.
