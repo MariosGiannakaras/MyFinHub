@@ -23,6 +23,7 @@ const scripts=[
   {path:'scripts/brand-visual-qa.mjs',key:'brand-visual',surface:'branding',profiles:['/tmp/myfinhub-brand-visual-qa-chrome']},
   {path:'scripts/theme-system-qa.mjs',key:'theme-system',surface:'theme',profiles:['/tmp/myfinhub-theme-system-qa-chrome']},
   {path:'scripts/desktop-titlebar-qa.mjs',key:'desktop-titlebar',surface:'desktop-titlebar',profiles:['/tmp/myfinhub-desktop-titlebar-qa-chrome']},
+  {path:'scripts/desktop-host-visual-qa.mjs',key:'desktop-host-visual',surface:'desktop-host',profiles:['/tmp/myfinhub-desktop-host-visual-qa-chrome']},
   {path:'scripts/planning-forecast-qa.mjs',key:'planning-forecast',surface:'planning',profiles:['/tmp/myfinhub-planning-forecast-qa-chrome']},
   {path:'scripts/action-center-context-qa.mjs',key:'action-center',surface:'action-center',profiles:['/tmp/myfinhub-action-center-context-qa-chrome']},
   {path:'scripts/budget-rules-qa.mjs',key:'budget-rules',surface:'budgets',profiles:['/tmp/myfinhub-budget-rules-qa-chrome']},

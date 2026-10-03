@@ -8,6 +8,7 @@ const completionFunctional = readFileSync('scripts/completion-functional-crud-qa
 const largeData = readFileSync('scripts/large-data-boundaries-qa.mjs', 'utf8');
 const notFoundAccessibility = readFileSync('scripts/not-found-accessibility-qa.mjs', 'utf8');
 const cardVaultRuntime = readFileSync('scripts/card-vault-runtime-qa.mjs', 'utf8');
+const desktopHostVisual = readFileSync('scripts/desktop-host-visual-qa.mjs', 'utf8');
 const qaWorkspace = readFileSync('src/qa.tsx', 'utf8');
 const qaRunner = readFileSync('scripts/qa-script-runner.mjs', 'utf8');
 const ci = readFileSync('.github/workflows/ci.yml', 'utf8');
@@ -71,6 +72,19 @@ describe('rendered browser QA reliability contract', () => {
     expect(notFoundAccessibility).toContain("mod.applyThemePreference(pref)");
     expect(notFoundAccessibility).toContain("darkTheme.canvas!==lightTheme.canvas");
     expect(notFoundAccessibility).not.toContain("document.documentElement.dataset.theme='dark'");
+  });
+
+  it('keeps real Desktop lock, update and startup-recovery surfaces in focused rendered evidence',()=>{
+    expect(coordinator).toContain("scripts/desktop-host-visual-qa.mjs");
+    expect(coordinator).toContain("surface:'desktop-host'");
+    expect(qaHtml).toContain("params.get('screen')==='desktop-lock'");
+    expect(qaHtml).toContain("params.get('desktop-update')");
+    expect(qaWorkspace).toContain("screen==='desktop-lock'");
+    expect(desktopHostVisual).toContain("/desktop/setup.html");
+    expect(desktopHostVisual).toContain('desktop-app-lock-invalid-pin-1440x930');
+    expect(desktopHostVisual).toContain('desktop-update-downloading-1100x760');
+    expect(desktopHostVisual).toContain('desktop-startup-recovery-min-620x650');
+    expect(desktopHostVisual).toContain('BACKEND_STARTUP_TIMEOUT');
   });
 
   it('keeps mutating validation failures in the rendered merge gate',()=>{

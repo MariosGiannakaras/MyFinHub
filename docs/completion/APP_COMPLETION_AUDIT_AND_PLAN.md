@@ -1674,3 +1674,17 @@ Source head `74bdc0c…` completed the full review-ready validation wave.
 - A11Y-404-FOCUS, FV-55, FV-56 and FV-62 ledger states are reconciled to closed from current-head rendered/runtime evidence. No new product behavior or Android code is introduced by this checkpoint.
 
 Checkpoint: **Implementations 14/24 completed · Sub-implementations 147/195 completed.**
+
+
+### 8.62 Desktop host visual evidence expansion — source-implemented, proof pending
+
+Direct evidence-gap reconciliation found that the existing Windows gates prove package/install/launch/native BrowserWindow behavior but do not produce host-surface screenshots for App Lock, in-app update states or startup recovery diagnostics. Those are real Windows-only product surfaces required by the still-open 8.2 Windows/Electron visual-review cell.
+
+Source implementation in this batch:
+- extend the existing QA-only desktop bridge fixture so the real `DesktopAppLockGate` can render deterministic locked/wrong-PIN/rate-limit states and the real Settings `DesktopUpdatePanel` can render available/downloading/ready/error states;
+- add a scoped `desktop-lock` QA screen that wraps a protected workspace in the production `DesktopAppLockGate`; no production route/component behavior changes;
+- add `desktop-host-visual-qa.mjs` to the rendered coordinator. It captures App Lock at the production 1440×930 main-window size and the native-probe 1100×760 size, Update Panel states at both sizes, and the real `desktop/setup.html` recovery/diagnostics UI at the production 760×840 setup-window size plus its 620px minimum width;
+- the recovery proof injects only a QA bridge state before the real setup renderer executes, verifies the stable diagnostic code/progress, checks horizontal containment and rejects secret-shaped text in the captured surface;
+- source regression locks coordinator inclusion, QA bridge scoping and the real recovery-page path.
+
+Status: **source-implemented; exact-head rendered proof and direct screenshot inspection pending.** Counters remain **Implementations 14/24 completed · Sub-implementations 147/195 completed**. Existing Windows package/native-window gates remain authoritative for actual Electron host mechanics; this batch supplies the missing visual evidence without requiring physical-device testing.

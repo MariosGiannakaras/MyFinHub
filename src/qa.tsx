@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { AppShell, type PageId } from './components/AppShell';
 import { CommandPalette } from './components/CommandPalette';
 import { ContextualQuickAdd, type QuickActionContext } from './components/ContextualQuickAdd';
+import { DesktopAppLockGate } from './components/DesktopAppLockGate';
 import { PageSkeleton } from './components/AppSkeleton';
 import { PeriodControl } from './components/PeriodControl';
 import { LoginScreen } from './components/LoginScreen';
@@ -276,6 +277,10 @@ function QaWorkspace(){
   </>;
 }
 
+function QaDesktopLockProbe(){
+  return <DesktopAppLockGate><main className="boot-screen" data-desktop-lock-probe="protected"><h1>MyFinHub Windows protected workspace</h1></main></DesktopAppLockGate>;
+}
+
 function QaPersistenceProbe(){
   const finance=useFinance();
   if(!finance.data)return <main className="boot-screen" data-persistence-probe="loading">Φόρτωση persistence probe…</main>;
@@ -321,6 +326,7 @@ function QaAuthScreen({screen,legacyError}:{screen:string;legacyError:boolean}){
 function QaApp(){
   const params=new URLSearchParams(location.search);
   const screen=params.get('screen')??'';
+  if(screen==='desktop-lock')return <QaDesktopLockProbe/>;
   if(screen==='persistence-probe')return <QaPersistenceProbe/>;
   if(screen==='session-signal')return <QaSessionSignalProbe/>;
   if(screen==='404')return <NotFoundPage onHome={()=>{}} onBack={()=>{}}/>;
@@ -334,6 +340,10 @@ async function bootstrapQa(){
   if(params.get('desktop-titlebar')==='1'){
     document.documentElement.dataset.myfinhubDesktop='true';
     await import('./styles/desktop-titlebar.css');
+  }
+  if(params.get('screen')==='desktop-lock'){
+    document.documentElement.dataset.myfinhubDesktop='true';
+    await Promise.all([import('./components/DesktopAppLockGate.css'),import('./styles/desktop-titlebar.css')]);
   }
   createRoot(document.getElementById('root')!).render(<StrictMode><QaApp/></StrictMode>);
 }
