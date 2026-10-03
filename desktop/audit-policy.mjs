@@ -31,7 +31,7 @@ const allowedPackages=new Set([
 
 const viaIsAllowed=(via,seen)=>{
   if(typeof via==='string'){
-    if(seen.has(via))return true;
+    if(seen.has(via))return false;
     return vulnerabilityIsAllowed(via,new Set([...seen,via]));
   }
   if(!via||typeof via!=='object')return true;
