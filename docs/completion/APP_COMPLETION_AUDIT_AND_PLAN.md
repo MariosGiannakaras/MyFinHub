@@ -1437,3 +1437,21 @@ Direct review of CI #3178 and all 48 fresh nested Settings captures from the per
 
 The original QA-NESTED-ANIM timing defect is now proven resolved: all 48 recaptured states were directly inspected after the 240 ms settle boundary and no transition-opacity bleed-through remains. Implementation batch S stays open because FV-58/FV-59 are real product defects revealed by that valid evidence. These follow-ups do not change the denominator. No Android repository changes are involved.
 
+### 8.49 QA-SAVINGS-CONTEXT — Savings manual-transfer rendered proof mismatch in progress
+
+Exact-head CI #3178 advanced beyond the repaired 200%-equivalent geometry matrix and then failed inside `scripts/completion-functional-crud-qa.mjs` while waiting for the manual Savings transfer editor.
+
+Direct source/runtime-contract review shows this is a **QA harness mismatch, not a product regression**:
+- `SavingsPage` intentionally routes `Μεταφορά στην άκρη` through `onQuickAdd({mode:'savings', ...})`;
+- the production surface is the shared `.contextual-quick-modal` titled `Μεταφορά στην αποταμίευση`;
+- the stale completion harness incorrectly waited for `#saving-editor-title` / `.savings-dialog`, which belongs to the non-contextual Savings editor path used by the other savings actions;
+- the existing Action Center/context QA already exercises the same contextual Savings route and confirms its account selector remains user-editable.
+
+Required remediation:
+- update only the completion functional harness to wait for the contextual modal and use its real labels/actions (`Από`, `Προς αποταμίευση`, `Σχόλιο`, `Καταχώριση`);
+- retain the existing assertions for distinct source/destination accounts, saved note/source/amount, Savings target progress and Reports income/expense neutrality;
+- add a narrow source regression that rejects a return to the stale `.savings-dialog` contract for this flow;
+- rerun the integrated rendered suite and directly review the resulting functional evidence/logs before closing the Savings verification cell.
+
+This is an evidence-harness correction inside the already accepted Savings functional verification item; it does not change the denominator. No finance semantics, backend/Supabase behavior, desktop packaging or Android repository code is changed.
+
