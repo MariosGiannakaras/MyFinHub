@@ -10,6 +10,7 @@ const port=9341;
 const profile='/tmp/myfinhub-large-data-boundaries-qa-chrome';
 const child=spawn(chrome,['--headless=new',`--remote-debugging-port=${port}`,'--remote-debugging-address=127.0.0.1',`--user-data-dir=${profile}`,'--no-sandbox','--disable-gpu','--disable-dev-shm-usage','about:blank'],{stdio:'ignore'});
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+async function stopBrowser(process){if(!process||process.exitCode!==null)return;await new Promise(resolve=>{const timer=setTimeout(()=>{process.kill('SIGKILL');resolve()},2000);process.once('exit',()=>{clearTimeout(timer);resolve()});process.kill('SIGTERM')})}
 async function waitHttp(url){for(let i=0;i<100;i++){try{const response=await fetch(url);if(response.ok)return}catch{}await sleep(100)}throw new Error(`Timed out waiting for ${url}`)}
 class Cdp{
   constructor(url){this.url=url;this.id=0;this.pending=new Map()}
@@ -111,5 +112,5 @@ try{
   console.log(`Large-data boundaries QA passed: max route readiness ${results.maxLoadMs}ms, budget mutation ${results.budgetDeleteLatencyMs}ms, reports heap ${results.reportsHeapMb.toFixed(1)} MiB, history heap ${results.historyHeapMb.toFixed(1)} MiB.`);
 }finally{
   try{c?.close()}catch{}
-  child.kill('SIGTERM');
+  await stopBrowser(child);
 }
