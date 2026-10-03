@@ -1399,9 +1399,9 @@ Exact-head validation on `b2c2b0bc…` produced two independent blockers after f
 
 Both findings are follow-ups inside existing 200%/responsive, security and Windows validation obligations and did not themselves expand scope. The later owner-accepted desktop/Electron custom-title-bar item raises the current overall denominator to **194**. No finance persistence, Supabase/API semantics or Android repository code is changed.
 
-### 8.48 Planned desktop/Electron custom title bar — pending
+### 8.48 Desktop/Electron custom title bar — implementation in progress
 
-This future item is counted once in 8.9 and is intentionally **not implemented in the current batch**.
+This accepted item is counted once in 8.9 and is now being implemented as an isolated desktop/Electron batch.
 
 Accepted implementation contract:
 - integrate a custom desktop title bar into the existing MyFinHub application chrome rather than keeping a visually separate OS title strip;
@@ -1413,7 +1413,16 @@ Accepted implementation contract:
 - do **not** modify `MyFinHub-Android-App`; if the web/desktop shell change has any compatibility impact on Android, document it only;
 - update the relevant source tests and Windows/Electron validation so the implementation is proven for native window controls, drag/no-drag behavior, resize/maximize/restore, desktop light/dark presentation and regression-free startup/package behavior.
 
-Status: **Pending by owner request for later implementation.** No product code changes are part of this planning update. Adding this accepted sub-implementation increases the current counters to **Implementations 12/24 completed · Sub-implementations 128/194 completed**.
+Implementation approach now fixed:
+- configure only the main Electron `BrowserWindow` with `titleBarStyle:'hidden'` and native `titleBarOverlay:true`; keep the recovery/setup window on its existing native title bar;
+- use the existing `window.myFinHubDesktop` bridge only as a renderer capability signal, with no new IPC surface;
+- set a desktop-only root data attribute before React render and dynamically load a desktop title-bar stylesheet;
+- make the existing app `.topbar` the draggable title-bar region, reserve the native caption-button area, and mark all interactive descendants explicitly `no-drag`;
+- keep web/mobile/Android layouts unchanged because the stylesheet is loaded only when the Electron bridge exists;
+- add source regressions for native-overlay options, absence of `frame:false`, desktop-only style loading, drag/no-drag regions and caption-control spacing;
+- validate through root source/build checks plus Windows Desktop/First Run/Clean Launch before completion.
+
+Status: **Implementation in progress.** No Android repository changes are required; expected Android impact is none because the renderer styling is gated by the Electron bridge. Counters remain **Implementations 12/24 completed · Sub-implementations 128/194 completed** until implementation and required Windows validation are complete.
 
 ### 8.49 CI #3178 / nested Settings direct-review follow-up — in progress
 
