@@ -4,6 +4,17 @@ import { describe, expect, it } from 'vitest';
 const read=(path:string)=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 
 describe('completion UX contracts',()=>{
+
+  it('proves provider artwork replacement refreshes a real consumer surface',()=>{
+    const harness=read('scripts/provider-brand-management-qa.mjs');
+    expect(harness).toContain('uploaded provider asset replaces the prior base-logo binding');
+    expect(harness).toContain('Dashboard after provider artwork replacement');
+    expect(harness).toContain('Dashboard refreshes the replaced provider artwork binding');
+    expect(harness).toContain('provider-replaced-artwork-dashboard-dark-desktop');
+    expect(harness).toContain("image.src===expected");
+  });
+
+
   it('keeps mobile Quick Entry inside bottom navigation instead of overlaying page content',()=>{
     const quick=read('src/styles/command-palette-contextual-entry.css');
     const shell=read('src/styles/mobile-app-shell.css');
