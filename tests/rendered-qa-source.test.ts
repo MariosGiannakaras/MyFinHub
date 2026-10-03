@@ -10,6 +10,11 @@ const largeData = readFileSync('scripts/large-data-boundaries-qa.mjs', 'utf8');
 const notFoundAccessibility = readFileSync('scripts/not-found-accessibility-qa.mjs', 'utf8');
 const cardVaultRuntime = readFileSync('scripts/card-vault-runtime-qa.mjs', 'utf8');
 const desktopHostVisual = readFileSync('scripts/desktop-host-visual-qa.mjs', 'utf8');
+const frontendQa = readFileSync('scripts/frontend-qa.mjs', 'utf8');
+const planningQa = readFileSync('scripts/planning-forecast-qa.mjs', 'utf8');
+const primitivesQa = readFileSync('scripts/primitives-adoption-qa.mjs', 'utf8');
+const receiptQa = readFileSync('scripts/receipt-local-ocr-qa.mjs', 'utf8');
+const settingsTabsQa = readFileSync('scripts/settings-tabs-qa.mjs', 'utf8');
 const qaWorkspace = readFileSync('src/qa.tsx', 'utf8');
 const qaRunner = readFileSync('scripts/qa-script-runner.mjs', 'utf8');
 const ci = readFileSync('.github/workflows/ci.yml', 'utf8');
@@ -103,6 +108,22 @@ describe('rendered browser QA reliability contract', () => {
     expect(mobileAppShell).toContain('.mobile-brand .brand-mark-copy{display:none}');
     expect(hardening).toContain("document.querySelector('.mobile-brand .brand-mark')");
     expect(hardening).toContain('mobile header brand/action collision');
+    expect(hardening).toContain('desktop-dialog-${page}-opening');
+    expect(hardening).toContain('desktop-dialog-${page}-settled');
+    expect(completionFunctional).toContain('confirm-transaction-delete');
+    expect(completionFunctional).toContain('confirm-savings-goal-delete');
+    expect(completionFunctional).toContain('confirm-self-loan-forgiveness');
+    expect(completionFunctional).toContain('confirm-card-permanent-delete');
+    expect(completionFunctional).toContain('confirm-account-delete');
+    expect(planningQa).toContain('confirm-planning-skip');
+    expect(planningQa).toContain('confirm-planning-cancel');
+    expect(primitivesQa).toContain('confirm-quick-entry-discard');
+    expect(primitivesQa).toContain('dialog-money-edit-validation-mobile');
+    expect(primitivesQa).toContain('confirm-credit-event-delete-mobile');
+    expect(frontendQa).toContain('confirm-credit-card-total-delete');
+    expect(receiptQa).toContain('confirm-receipt-delete');
+    expect(settingsTabsQa).toContain('settings-device-revoke-confirm-desktop');
+    expect(settingsTabsQa).toContain('settings-json-import-confirm-desktop');
   });
 
   it('keeps mutating validation failures in the rendered merge gate',()=>{
