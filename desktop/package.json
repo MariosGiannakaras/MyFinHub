@@ -11,7 +11,7 @@
     "pack": "npm run prepare:bundle && electron-builder --win dir --x64",
     "dist": "npm run prepare:bundle && electron-builder --win nsis --x64 --publish never",
     "check": "npm run audit && npm run check:source",
-    "audit": "npm audit --audit-level=high",
+    "audit": "node audit-policy.mjs",
     "check:source": "node --check bootstrap.cjs && node --check main.cjs && node --check app-lock-main.cjs && node --check preload.cjs && node --check setup-renderer.js && node --check startup-diagnostics.cjs && node --check runtime-defaults.cjs && node --check prepare-build.mjs && node --check dev.mjs"
   },
   "devDependencies": {
