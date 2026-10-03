@@ -1576,7 +1576,9 @@ Exact-head CI #3192 on `4cc6a9fb…` passed the title-bar, Planning, Theme, Acti
 - Required remediation: submit the existing provider editor through its real `Αποθήκευση` action, wait for the editor to close and refreshed catalog to render, then compare the provider-list source and verify the same source on Dashboard before reopening Settings.
 - Scope is provider rendered QA + source contract only; no provider-management/product mutation semantics, backend/Supabase behavior or Android code changes are required.
 
-Status: **recorded; source fix in progress**. This is evidence-harness work inside the existing Settings account/provider cell and does not change the denominator.
+Source-fixed: the provider replacement proof now submits the real existing-provider `Αποθήκευση` action, waits for the successful-save editor close and only then compares the refreshed provider-list source and Dashboard consumer source. A focused source contract requires save-before-consumer verification.
+
+Status: **source-fixed; exact-head rendered proof pending**. This is evidence-harness work inside the existing Settings account/provider cell and does not change the denominator.
 
 ### 8.54 CI #3191 — Command Palette focus-trap follow-up — source-fixed, proof pending
 
