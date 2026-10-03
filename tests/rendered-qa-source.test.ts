@@ -93,6 +93,8 @@ describe('rendered browser QA reliability contract', () => {
     expect(hardening).toContain('desktop-dialog-${page}');
     expect(hardening).toContain('desktop-validation-bank');
     expect(qaWorkspace).toContain("params.get('state')==='minimal'");
+    expect(qaWorkspace).toContain('retainedCardIds.has(event.cardId)');
+    expect(qaWorkspace).toContain('retainedStatementIds.has(event.statementId)');
     expect(qaWorkspace).toContain('onePerKind.slice(0,8)');
     expect(hardening).toContain("state:'minimal',shot:true");
     expect(hardening).toContain("state:'empty',shot:true");

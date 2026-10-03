@@ -1709,7 +1709,7 @@ Status: **source-implemented; rendered proof and direct screenshot inspection pe
 The existing route-wide hardening suite already exercised empty and extreme fixtures across every primary route, but it did not persist those states for direct visual review and it had no distinct minimal-data fixture. That prevented closure of the existing 8.2 empty/minimal/normal/dense/extreme-content review item.
 
 Source implementation in this batch:
-- add a QA-only `minimal` fixture that retains a bounded representative slice of seed/domain collections, one event per event kind (bounded to eight), one scheduled/recurring/loan/lending/budget/goal/rule/statement record where available, and one debit + one credit card; IDs and production domain logic remain unchanged;
+- add a QA-only `minimal` fixture that retains a bounded representative slice of seed/domain collections, one event per event kind (bounded to eight), one scheduled/recurring/loan/lending/budget/goal/rule/statement record where available, and one debit + one credit card; card/statement events are filtered to the retained IDs before kind sampling so the visual fixture remains relationally coherent; production IDs/domain logic remain unchanged;
 - persist minimal, empty and extreme route captures for all twelve primary routes at desktop plus mobile/narrow-mobile sizes while retaining the existing overflow, accessible-name, touch-target and runtime-error assertions;
 - keep the existing normal desktop/mobile captures, long Greek account name, Unicode/very-long note and large monetary-value extreme fixtures; the separate large-data suite remains authoritative for 1,500-event and 100-row history performance/density boundaries.
 
