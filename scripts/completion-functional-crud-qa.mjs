@@ -43,7 +43,7 @@ try{
     await waitFor("function(label,optionText){const input=[...document.querySelectorAll('input[role=combobox]')].find(item=>item.getAttribute('aria-label')===label);return Boolean(input&&input.value===optionText&&input.getAttribute('aria-expanded')==='false')}",`owned selector ${label}=${optionText}`,[label,optionText]);
   };
   const shot=async name=>{const result=await c.send('Page.captureScreenshot',{format:'png',fromSurface:true});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(result.data,'base64'))};
-  const openGlobalQuickEntry=async()=>{const opened=await c.call(`function(){const visible="function(node){if(!node)return false;const button=[...document.querySelectorAll('[data-global-quick-entry]')].find(visible);button?.click();return Boolean(button)}`);assert(opened,'visible global Quick Entry trigger exists');await waitFor("function(){return Boolean(document.querySelector('.quick-modal:not(.contextual-quick-modal)'))}",'generic Quick Entry open');};
+  const openGlobalQuickEntry=async()=>{const opened=await c.call(`function(){const visible=${visible};const button=[...document.querySelectorAll('[data-global-quick-entry]')].find(visible);button?.click();return Boolean(button)}`);assert(opened,'visible global Quick Entry trigger exists');await waitFor("function(){return Boolean(document.querySelector('.quick-modal:not(.contextual-quick-modal)'))}",'generic Quick Entry open');};
 
 
   console.log('Completion functional QA: Modern transaction edit updates in place');
