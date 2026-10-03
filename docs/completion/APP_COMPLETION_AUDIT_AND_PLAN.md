@@ -1344,4 +1344,10 @@ The same rendered CRUD batch now also closes the known source-level gaps in two 
 - Lending performs the remaining 30/42 repayment after the existing partial 12/42 repayment, requires a three-row aggregate history (one lend + two repayments), zero outstanding balance, disabled repayment action and privacy masking;
 - Recurring takes the created item through create → edit → pause → reactivate → stop and requires the stopped item to remain in inactive history with no payment action; existing cadence, payment, linked-loan and bounded-disclosure suites continue to cover the rest of that cell.
 
-This implements existing verification obligations and does not change the denominator. Receipt OCR + global tools, Budgets, Transaction Rules, Lending and Recurring remain pending until the expanded assertions pass on an integrated head and their evidence/logs are directly reviewed.
+Action Center is also expanded inside its existing rendered suite:
+- capture the Reports KPI strip before any legacy review decision;
+- exercise a real `Κράτα ως είναι` decision in the integrated legacy-confirmation panel and require the suggestion to leave the pending list;
+- revisit Reports in-app and require the KPI strip to remain byte-for-byte equivalent, proving keep semantics do not silently rewrite reports;
+- existing Action Center coverage continues to verify contextual actions, scheduled completion, privacy, snooze/dismiss + undo, empty/extreme mobile states.
+
+This implements existing verification obligations and does not change the denominator. Receipt OCR + global tools, Budgets, Transaction Rules, Lending, Recurring and Attention/Review remain pending until the expanded assertions pass on an integrated head and their evidence/logs are directly reviewed.

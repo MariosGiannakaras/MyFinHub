@@ -248,6 +248,15 @@ describe('completion UX contracts',()=>{
     expect(css).toContain('.dashboard-approved .approved-bar-wrap{height:153px;min-height:153px}');
   });
 
+  it('exercises legacy review keep semantics without implicit report mutation',()=>{
+    const harness=read('scripts/action-center-context-qa.mjs');
+    expect(harness).toContain('legacy review keep semantics never mutate reports implicitly');
+    expect(harness).toContain('Κράτα ως είναι');
+    expect(harness).toContain('reportAfterKeep===reportBeforeKeep');
+    expect(harness).toContain('Keep as-is preserves report KPIs');
+  });
+
+
   it('covers full Lending settlement/privacy and Recurring stop lifecycle in rendered CRUD QA',()=>{
     const harness=read('scripts/completion-functional-crud-qa.mjs');
     expect(harness).toContain('Lending full repayment, aggregation and privacy');
