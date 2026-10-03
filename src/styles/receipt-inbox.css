@@ -1,6 +1,7 @@
 .receipt-quick-launch{position:fixed;z-index:115;right:32px;bottom:32px;border:1px solid #bfd1f6;background:linear-gradient(135deg,#2f6fed,#4f84f1);color:#fff;border-radius:14px;padding:10px 14px;display:flex;align-items:center;gap:7px;font-size:9px;font-weight:800;cursor:pointer;box-shadow:0 14px 30px rgba(47,111,237,.32)}
 .receipt-quick-launch:hover{transform:translateY(-1px)}
 .receipt-inbox-backdrop{z-index:130}
+.receipt-inbox-backdrop + .modal-backdrop{z-index:140}
 .receipt-inbox{width:min(1180px,97vw);height:min(820px,94dvh);overflow:hidden;border-radius:28px;background:#f4f8fd;display:grid;grid-template-rows:auto auto auto minmax(0,1fr)}
 .receipt-inbox-header{padding:18px 20px 12px;display:flex;justify-content:space-between;gap:20px;border-bottom:1px solid #dce5f0}
 .receipt-inbox-header small{color:#4777d6;font-size:8px;letter-spacing:.14em;font-weight:850}
