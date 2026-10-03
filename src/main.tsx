@@ -9,7 +9,10 @@ initializeTheme();
 
 async function bootstrap(){
   const desktopBridge=typeof window==='undefined'?undefined:(window as unknown as {myFinHubDesktop?:unknown}).myFinHubDesktop;
-  if(desktopBridge)await import('./components/DesktopAppLockGate.css');
+  if(desktopBridge){
+    document.documentElement.dataset.myfinhubDesktop='true';
+    await Promise.all([import('./components/DesktopAppLockGate.css'),import('./styles/desktop-titlebar.css')]);
+  }
   createRoot(document.getElementById('root')!).render(<StrictMode><DesktopAppLockGate><App/></DesktopAppLockGate></StrictMode>);
 }
 
