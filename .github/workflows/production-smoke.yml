@@ -96,6 +96,25 @@ jobs:
             exit 1
           }
 
+          unknown_status="$(fetch_path '/__myfinhub-unknown-route-probe' unknown)"
+          [[ "$unknown_status" == '404' ]] || {
+            echo "Expected unknown web path to return 404, got $unknown_status"
+            exit 1
+          }
+          unknown_type="$(header_value "$tmp/unknown.headers" 'content-type')"
+          [[ "$unknown_type" == *'text/html'* ]] || {
+            echo "Expected branded MyFinHub HTML 404; content-type was: $unknown_type"
+            exit 1
+          }
+          grep -Fq '404 · MYFINHUB' "$tmp/unknown.body" || {
+            echo "Expected branded MyFinHub HTML 404 marker"
+            exit 1
+          }
+          grep -Fq 'Χάσαμε τη διαδρομή, όχι τα δεδομένα σου.' "$tmp/unknown.body" || {
+            echo "Expected privacy-safe MyFinHub 404 copy"
+            exit 1
+          }
+
           for header in \
             Content-Security-Policy \
             Strict-Transport-Security \

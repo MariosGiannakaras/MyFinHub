@@ -33,6 +33,11 @@
     {
       "source": "/api/(.*)",
       "destination": "/api/health?__myfinhub_route=api-not-found"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/404.html",
+      "statusCode": 404
     }
   ],
   "headers": [
