@@ -361,6 +361,7 @@ function createWindow(origin, runtime) {
   Menu.setApplicationMenu(null);
   mainWindow = new BrowserWindow({
     title: PRODUCT_NAME, width: 1440, height: 930, minWidth: 960, minHeight: 650, show: false,
+    ...(process.platform === 'win32' ? { titleBarStyle: 'hidden', titleBarOverlay: true } : {}),
     backgroundColor: '#0f1720', icon: runtime.icon, autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true,
