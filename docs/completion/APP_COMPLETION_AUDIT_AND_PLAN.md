@@ -1460,7 +1460,8 @@ Direct review of CI #3178 and all 48 fresh nested Settings captures from the per
 - CI #3181 completed the full Completion functional CRUD suite, mutation-validation suite, geometry matrix, UI completion/runtime, Credit over-limit/statements, refresh/recovery and session runtime checks before failing when Node parsed `scripts/reports-visual-qa.mjs`.
 - The newly added period-navigation CDP calls used double-quoted JavaScript strings containing unescaped double quotes inside `aria-label="…"` selectors at both previous-month and next-month actions, producing `SyntaxError: missing ) after argument list` before the Reports suite could execute.
 - CI #3182 proved the new fail-fast preflight works: it stopped immediately before browser work and exposed one additional nested-quote parse error in the July-state reader that checks whether the next-month control is disabled.
-- The previous/next click selectors and rendered-suite `node --check` preflight are already implemented; the July-state reader must use the same syntax-safe function-string form.
-- Status: **follow-up source fix in progress**. This remains the same QA harness defect and does not change the denominator; no Reports product behavior has failed yet.
+- **Source-fixed:** previous-month click, July-state read and next-month click now all use syntax-safe template-literal CDP function strings; `run-rendered-qa.mjs` syntax-checks every rendered QA module before browser work.
+- Focused source contracts cover all three period-navigation blocks plus the fail-fast syntax preflight.
+- Status: **pending integrated rendered proof**. This remains the same QA harness defect and does not change the denominator; no Reports product behavior has failed yet.
 
 The original QA-NESTED-ANIM timing defect is now proven resolved: all 48 recaptured states were directly inspected after the 240 ms settle boundary and no transition-opacity bleed-through remains. Implementation batch S stays open because FV-58/FV-59 are real product defects revealed by that valid evidence. These follow-ups do not change the denominator. No Android repository changes are involved.
