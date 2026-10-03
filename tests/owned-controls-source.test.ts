@@ -32,7 +32,11 @@ describe('app-owned entry controls',()=>{
     expect(modalFocusSource).toContain('opener.current?.focus');
     expect(modalFocusSource).toContain("event.key !== 'Tab'");
     expect(modalFocusSource).toContain('canReceiveFocus(preferredTarget)');
+    expect(modalFocusSource).toContain('element.tabIndex>=0');
     expect(modalFocusSource).toContain('!root.contains(document.activeElement)');
+    expect(modalFocusSource).toContain('const currentIndex=current?items.indexOf(current):-1');
+    expect(modalFocusSource).toContain('(currentIndex+1)%items.length');
+    expect(modalFocusSource).toContain('(currentIndex-1+items.length)%items.length');
   });
   it('keeps accessible listbox and calendar roles',()=>{
     expect(selectSource).toContain('role="listbox"');
