@@ -8,7 +8,7 @@ Release target: none — `main` remains release-only
 
 ## Current integration checkpoint — 2026-10-02
 
-**Implementations 12/24 completed · Sub-implementations 140/194 completed**
+**Implementations 12/24 completed · Sub-implementations 139/194 completed**
 
 This checkpoint supersedes older "#482 reconciliation pending" notes below for current execution state.
 
@@ -21,7 +21,7 @@ This checkpoint supersedes older "#482 reconciliation pending" notes below for c
 - FV-44 is completed on `9b25fb1…`: extreme Recurring mobile progressive disclosure, full expansion, collapsed inactive history and overflow safety all pass.
 - FV-45 exact-head rendered proof has passed: OCR persists raw `EUR`, while the owned currency select displays `EUR · Ευρώ`; stored semantics and visible presentation are validated separately. The expanded full-system audit below now governs closeout.
 - FV-54 completed on `b602617…`: the local/Windows static host preloads `index.html` and `404.html` once at startup instead of performing `sendFile()` filesystem access per document request; exact-head CodeQL #3125 is green and the prior rate-limiting review threads are resolved. No dependency, API, finance, Supabase or Android behavior changed.
-- Current counters: **Implementations 12/24 completed · Sub-implementations 140/194 completed**. CI #3186 closed five functional verification cells plus the desktop/Electron custom-title-bar cell; the only new-run blocker was the separately tracked closed-`<details>` keyboard-order harness defect. Planning/scheduled functional verification in 8.4 is now closed from directly reviewed exact-head rendered evidence; isolated real-stack persistence remains a separate pending obligation. Implementations 8.1, 8.6, 8.7, 8.8 and 8.15 are fully closed; the responsive-transition and complete auth-state visual cells in 8.2 are also complete from directly reviewed evidence. The denominator is now 194 after the separately accepted desktop/Electron custom-title-bar item added on 2026-10-03.
+- Current counters: **Implementations 12/24 completed · Sub-implementations 139/194 completed**. CI #3186 closed five functional verification cells plus the desktop/Electron custom-title-bar cell; the only new-run blocker was the separately tracked closed-`<details>` keyboard-order harness defect. Planning/scheduled functional verification in 8.4 is now closed from directly reviewed exact-head rendered evidence; isolated real-stack persistence remains a separate pending obligation. Implementations 8.1, 8.6, 8.7, 8.8 and 8.15 are fully closed; the responsive-transition and complete auth-state visual cells in 8.2 are also complete from directly reviewed evidence. The denominator is now 194 after the separately accepted desktop/Electron custom-title-bar item added on 2026-10-03.
 - Exact-head validation follow-up on `b2c2b0bc…`: CI #3176 exposed FV-57, a real 144 px horizontal overflow on Savings at the 720×500 / Large-text 200%-equivalent profile. Windows Desktop #2736 is separately blocked by the upstream `http-cache-semantics` GHSA-2026 advisory in the `electron-builder` build-time chain; the other exact-head gates (CodeQL, Cross-engine, Performance, Windows First Run and Windows Clean Launch) passed. These two findings are tracked in 8.47 and do not change the denominator.
 - Audit verification checkpoint 2026-10-02: 10 additional sub-implementations are directly closed by assistant review/evidence. Unsupported-future-schema handling remains open under the existing backwards-compatibility item; it does not expand the denominator.
 - Repository-admin hardening remains tracked separately in #485 and does not change this batch denominator.
@@ -651,9 +651,9 @@ No `main` promotion/release is part of this work.
 
 The prior completion audit remains valuable evidence, but it does **not** by itself prove that every visual element, every UX state, every user action/sub-action, every API/backend path and every error path has been exercised end-to-end against a canonical integrated tree. The owner has therefore expanded the accepted completion scope to require a full-system verification pass before the application is treated as fully closed.
 
-**New audit workstream: Implementations 6/16 completed · Sub-implementations 99/165 completed.**
+**New audit workstream: Implementations 6/16 completed · Sub-implementations 98/165 completed.**
 
-**Overall completion scope: Implementations 12/24 completed · Sub-implementations 140/194 completed.**
+**Overall completion scope: Implementations 12/24 completed · Sub-implementations 139/194 completed.**
 
 The original owner-expanded audit added 16 verification implementations / 160 non-trivial sub-implementations. One additional accepted desktop/Electron title-bar sub-implementation was added on 2026-10-03, bringing the audit workstream denominator to 165 and the overall denominator to 194. Existing implementation-completion state is retained provisionally, but the expanded verification matrix has a stricter proof rule: prior evidence may be reused only after the responsible ChatGPT agent personally inspects it and confirms that it proves the exact required contract. Re-running unchanged automation is unnecessary when existing artifacts are sufficient, but no matrix cell is finally closed merely because an earlier workflow marked it green.
 
@@ -697,7 +697,7 @@ The original owner-expanded audit added 16 verification implementations / 160 no
 - [x] Review Greek localization/content quality: terminology consistency, grammar, capitalization, amount/date formatting, wrapping and avoidance of ambiguous financial wording. Direct assistant review combines the complete 132-image Greek UI matrix with source inspection across auth, navigation, finance forms, Settings, errors and recovery. Greek is the default product language; intentionally retained technical/brand terms are documented in `docs/completion/CONTENT_AND_FEEDBACK_AUDIT.md`, finance dates/currency use the shared Greek locale contracts, and no material mixed-language or ambiguous finance wording defect remains in the reviewed surfaces.
 - [x] Produce a designer/developer defect log with severity, affected surfaces, systemic root cause and preferred component/design-system-level remediation. `docs/completion/UI_UX_DEFECT_LEDGER.md` is the assistant-owned defect ledger and records the current systemic visual/interaction findings, severity, root causes, remediation layer and proof state.
 
-### 8.4 Complete functional user-flow / CRUD verification — 15/24
+### 8.4 Complete functional user-flow / CRUD verification — 14/24
 
 - [ ] Authentication: valid/invalid email-password login, logout and session restoration.
 - [ ] MFA: enrollment, challenge, wrong code, successful verification and post-AAL2 bootstrap.
@@ -719,7 +719,7 @@ The original owner-expanded audit added 16 verification implementations / 160 no
 - [x] Reports/analytics: period changes, KPI/category/flow consistency, table/chart parity, privacy and recalculation after mutations. Exact-head CI #3183 passed Reports visual QA after the syntax repair: desktop/mobile hierarchy, previous-month July recalculation and return to August, KPI/category/flow structure, dark-mobile privacy placeholder, empty and over-limit states; exact-head mutation validation and Action Center keep-semantics separately proved report recalculation/neutrality around mutations.
 - [x] Budgets: create/edit/delete, thresholds, category/overall scopes, alert state and report reconciliation. Exact-head CI #3184 passed the complete Budget/Rules rendered suite after the accessible-input harness repair: Dashboard/Reports budget integration, category + overall scope management, warning threshold/near-limit state, report reconciliation, create → stable-row edit → delete, Savings target relocation and mobile containment.
 - [x] Transaction rules: create/edit/delete, matching, rule application to new transactions and no retroactive mutation unless explicitly designed. Exact-head CI #3184 passed the human-facing Rules workspace flow: read-only preview, create/reorder/pause/edit/delete, existing `QA Market Match` retained its original category, and a newly created matching transaction received the rule-selected category.
-- [x] Settings account/provider metadata: account create/edit/delete, IBAN/provider correction, provider create/edit, asset upload/reuse/binding/replace and cross-surface refresh. Integrated CI #3190 passed Completion functional account create/delete, Account Metadata rendered QA and Provider Branding task-flow QA. Account Metadata proves IBAN edit plus provider correction and reload into edit mode; Provider Branding proves existing-provider edit, local asset upload, reuse/binding, replacement of the prior base-logo binding, immediate Dashboard refresh to the replaced artwork without page reload, provider create flow and recoverable partial create/upload failure.
+- [ ] Settings account/provider metadata: account create/edit/delete, IBAN/provider correction, provider create/edit, asset upload/reuse/binding/replace and cross-surface refresh.
 - [x] Taxonomy/icons/preferences: category/subcategory create/rename/move/retire/blockers, icon pack/assignment persistence, theme, text-size and other user-facing settings persistence; reduced-motion accessibility follows the accepted product contract via platform/CSS `prefers-reduced-motion` rather than a user-facing Motion preference. Exact-head CI #3190 passed Taxonomy management, cross-app category icon, Icon Packs, Theme System, Recovered Surface readability and UI/UX reduced-motion coverage. The rendered taxonomy suite proves category/subcategory add/rename/reorder/move/retire/blockers with stable identities; Icon Packs proves pack/icon/color persistence across navigation and transaction rendering; Theme System proves explicit/system theme persistence including real app startup; text-size is stored in Finance settings and rendered Large state; OS `prefers-reduced-motion` remains the accepted accessibility contract.
 - [ ] Data management/history: backup, export/import, validation rejection, history points, undo/redo across supported scope, refresh/reload and conflict handling.
 - [x] Receipt OCR + global tools: local receipt capture/inbox/OCR/proposal correction → Quick Entry, command palette actions, keyboard shortcuts, global refresh and page error recovery. CI #3186 passed packaged OCR asset reachability, capture persistence/reload, recoverable asset failure/retry, proposal correction → Quick Entry, Command Palette global/direct actions including `Ctrl+Shift+Space`, global undo/redo shortcuts, in-place refresh and focused PageErrorBoundary recovery.
@@ -1522,7 +1522,7 @@ Direct source review shows this is a QA visibility-model defect, not a Recurring
 
 **Source-fixed:** both semantic and Tab-order visibility helpers now exclude descendants of closed native `<details>` while still treating the direct `<summary>` as visible/focusable. The existing assertions for visible focus, positive `tabindex`, focus order, control naming, table semantics and modal traps remain unchanged for actual keyboard targets. A focused source regression locks the closed-details rule so this cannot be “fixed” later by weakening the accessibility gate.
 
-Status: **Completed on exact head `7dce0860…`.** CI #3190 progressed through the closed-`<details>` mobile Recurring route and reached the later mobile Planning tab sweep, so the corrected native disclosure visibility model is now proven. This item does not change the denominator and does not modify product UI/domain behavior, backend/Supabase code or Android. Current counters remain **Implementations 12/24 completed · Sub-implementations 140/194 completed**.
+Status: **Completed on exact head `7dce0860…`.** CI #3190 progressed through the closed-`<details>` mobile Recurring route and reached the later mobile Planning tab sweep, so the corrected native disclosure visibility model is now proven. This item does not change the denominator and does not modify product UI/domain behavior, backend/Supabase code or Android. Current counters remain **Implementations 12/24 completed · Sub-implementations 139/194 completed**.
 
 ### 8.51 CI #3188 — lazy-resource recovery focus timing follow-up — completed
 
@@ -1530,7 +1530,7 @@ CI #3188 passed source/type/unit/build and the rendered suites through runtime/e
 
 Direct source review therefore identifies a QA timing race rather than a product recovery regression: the same boundary/focus implementation had just passed in the preceding ordinary-crash case, and the rendered lazy boundary exposes only the fixed safe copy. **Source-fixed:** the lazy-resource path now waits explicitly for `document.activeElement === .workspace-error` before asserting that the raw missing-resource token is absent and the safe financial-data message is present. The redaction and focus requirements are both retained; they are no longer raced against each other. A source regression locks the dedicated lazy focus wait and rejects the former combined assertion.
 
-Status: **Completed on exact head `7dce0860…`.** CI #3190 passed the full Recovered Surface QA, including ordinary PageErrorBoundary focus/recovery and the delayed lazy-resource focus/redaction path. No product UI/domain behavior, finance persistence, backend/Supabase code or Android code changed. Counters remain **Implementations 12/24 completed · Sub-implementations 140/194 completed**.
+Status: **Completed on exact head `7dce0860…`.** CI #3190 passed the full Recovered Surface QA, including ordinary PageErrorBoundary focus/recovery and the delayed lazy-resource focus/redaction path. No product UI/domain behavior, finance persistence, backend/Supabase code or Android code changed. Counters remain **Implementations 12/24 completed · Sub-implementations 139/194 completed**.
 
 ### 8.52 CI #3190 — decorative chart keyboard-focus follow-up — completed
 
@@ -1546,9 +1546,9 @@ Exact-head CI #3190 on `7dce0860…` passed the source/unit/build phase and ever
 - The keyboard/semantic audit now inspects focusable descendants under every `aria-hidden` ancestor and reports any focused DOM `Element`, including SVG, instead of returning `null`.
 - Focused source regression locks both the decorative-chart contract and the strengthened audit.
 
-Status: **Completed on exact head `eef0b761…`.** CI #3191 passed the complete desktop/mobile primary-route sweep, every Settings tab and all auth/error states without the former hidden Recharts/SVG focus target; the same accessibility suite advanced beyond FV-60 and failed later in the independent Command Palette focus-trap check. This is an accessibility-presentation correction only; finance/domain behavior, backend/Supabase behavior and the Android repository are unchanged. Counters remain **Implementations 12/24 completed · Sub-implementations 140/194 completed**.
+Status: **Completed on exact head `eef0b761…`.** CI #3191 passed the complete desktop/mobile primary-route sweep, every Settings tab and all auth/error states without the former hidden Recharts/SVG focus target; the same accessibility suite advanced beyond FV-60 and failed later in the independent Command Palette focus-trap check. This is an accessibility-presentation correction only; finance/domain behavior, backend/Supabase behavior and the Android repository are unchanged. Counters remain **Implementations 12/24 completed · Sub-implementations 139/194 completed**.
 
-### 8.53 Provider artwork replacement / cross-surface refresh proof — completed
+### 8.53 Provider artwork replacement / cross-surface refresh proof — source-expanded, integrated proof pending
 
 Direct review of the Settings account/provider metadata verification row after CI #3190 shows that account CRUD, IBAN/provider correction, provider editor/create flows, asset upload, reuse and semantic slot binding are already covered. One requirement was not yet explicit enough to close the cell: **replacement of an existing provider artwork binding and refresh of a real consumer surface using that replacement**.
 
@@ -1560,9 +1560,9 @@ The existing provider branding rendered suite is expanded without product change
 - navigate back to Settings/Accounts and continue the existing reopen/mobile/create/failure-recovery provider checks;
 - source regression locks the replacement and cross-surface refresh assertions.
 
-Status: **Completed in CI #3190.** `Provider branding task-flow QA passed` after exercising the replacement/cross-surface sequence: the existing Piraeus base-logo binding was replaced, the provider list resolved the new loaded source, Dashboard resolved the exact same replacement source without page reload, and the suite continued through reopen/mobile/create/failure-recovery checks. Together with the passing Account Metadata and functional account CRUD flows, this closes the Settings account/provider metadata cell. This evidence expansion changed no backend/API semantics, packaging/security behavior or Android repository code.
+Status: **source-expanded, exact-head rendered proof pending.** The replacement/cross-surface assertions are part of the staging diff after `eef0b761…`, so CI #3190 cannot be used as proof for them even though the earlier provider task flow passed there. The Settings account/provider metadata cell remains unchecked until the expanded provider suite passes on the exact promoted head. This evidence expansion changes no backend/API semantics, packaging/security behavior or Android repository code.
 
-Current counters after closing Taxonomy/icons/preferences and Settings account/provider metadata are **Implementations 12/24 completed · Sub-implementations 140/194 completed**.
+Current counters after independently closing Taxonomy/icons/preferences from CI #3190 are **Implementations 12/24 completed · Sub-implementations 139/194 completed**.
 
 
 ### 8.54 CI #3191 — Command Palette focus-trap follow-up — source-fixed, proof pending
@@ -1578,4 +1578,4 @@ Exact-head CI #3191 on `eef0b761…` passed the complete route/settings/auth key
 
 **Source-fixed:** `useModalFocus` now treats only effective `tabIndex >= 0` descendants as sequential focus targets, prevents every Tab/Shift+Tab handled by the topmost modal and explicitly cycles to the next/previous current target. This preserves the Command Palette's arrow-key/listbox result model while keeping its close button/search input inside a deterministic modal cycle. Focused source regressions lock the effective-tabindex filter and forward/backward cyclic arithmetic.
 
-Status: **source-fixed; exact-head keyboard/semantic proof pending**. This follow-up belongs to the existing accessibility verification scope and does not change the denominator. Counters remain **Implementations 12/24 completed · Sub-implementations 140/194 completed**.
+Status: **source-fixed; exact-head keyboard/semantic proof pending**. This follow-up belongs to the existing accessibility verification scope and does not change the denominator. Counters remain **Implementations 12/24 completed · Sub-implementations 139/194 completed**.
