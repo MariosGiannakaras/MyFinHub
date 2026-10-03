@@ -62,7 +62,7 @@ try{
   const clickText=async(selector,text)=>{const ok=await c.call("function(selector,text){const button=[...document.querySelectorAll(selector)].find(node=>node.getClientRects().length>0&&(node.textContent||'').includes(text));button?.click();return Boolean(button)}",[selector,text]);assert(ok,`missing ${selector} containing ${text}`);await sleep(80)};
   const screenshot=async name=>{const shot=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(shot.data,'base64'))};
 
-  const url=new URL(baseUrl);url.searchParams.set('page','cards');
+  const url=new URL(baseUrl);url.searchParams.set('page','cards');url.searchParams.set('card-vault','ready');
   await c.send('Page.navigate',{url:url.href});
   await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').trim()==='Κάρτες'}",'Cards page');
   assert(await c.call(vaultFixture.toString(),[null]),'initial synthetic server vault installed');

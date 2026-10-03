@@ -109,6 +109,7 @@ function initialPage(raw:string|null):PageId{if(raw==='review')return 'attention
 function initialTextSize(raw:string|null):TextSizePreference{return raw==='compact'||raw==='large'?raw:'normal'}
 function buildQaData(params:URLSearchParams){
   const next=qaFinanceData();
+  if(params.get('card-vault')==='ready')next.state.cards=(next.state.cards??[]).map(card=>card.id==='qa-debit-card'?{...card,last4:'4242',vaultRef:'qa-debit-card'}:card);
   if(params.get('motion')==='reduced')next.state.settings.motion='reduced';
   next.state.settings.textSize=initialTextSize(params.get('text'));
   next.state.budgets=next.state.budgets??[];next.state.transactionRules=next.state.transactionRules??[];next.state.deletedCards=next.state.deletedCards??[];

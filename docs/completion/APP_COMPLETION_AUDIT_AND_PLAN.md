@@ -1608,3 +1608,16 @@ Exact-head CI #3196 on `01c392b8…` passed root/API source checks and every ren
 - The systemic remediation now loads one test-only ChildProcess guard into every coordinator-launched rendered suite. It preserves the script's requested SIGTERM, applies SIGKILL after 2 seconds only if the child remains alive, then unrefs the handle if necessary. A focused source regression requires the preload, bounded force-kill and unref contract.
 
 Status: **source-fixed; exact-head coordinator proof pending.** CI #3200 and #3204 proved that browser-child escalation alone was insufficient: every rendered assertion passed, but the suite Node processes could still retain CDP/WebSocket/event-loop handles after their top-level QA modules had finished. The coordinator now launches every QA module through `qa-script-runner.mjs`; the wrapper awaits module evaluation (so assertions/finally complete), drains guarded child processes, then exits with the exact module success/failure code. This makes module completion—not incidental event-loop handle lifetime—the suite boundary. The child guard still preserves SIGTERM first and bounded SIGKILL/unref cleanup. Focused regressions lock the wrapper/import/drain/exit contract. No assertion, threshold, product UI/domain logic, backend/Supabase behavior, packaging semantics or Android repository code changed.
+
+
+### 8.57 CI #3210 — Card Vault hard-reload metadata fixture mismatch — source-fixed, proof pending
+
+Exact-head CI #3210 on `60f7c3c…` proved the rendered-suite completion wrapper is now terminating completed modules correctly, then failed inside the dedicated Card Vault runtime suite after the real `Page.reload` step.
+
+**QA-CARD-VAULT-RELOAD-METADATA**
+- The synthetic encrypted-secret backend was preloaded correctly across the hard reload, but the QA FinanceData fixture recreated `QA Debit` without its persisted `vaultRef` metadata.
+- Product behavior was therefore correct: after reload, `CardDetailsDialog` saw a metadata-only card and intentionally did not issue the POST reveal request, so the harness timed out while waiting for server-secret fields that the product had no reason to request.
+- The QA-only fix adds a scoped `card-vault=ready` fixture state that reloads the card with the persisted `vaultRef`/last4 metadata while the separate preload retains the synthetic server-vault secret. The suite now models both real persistence boundaries instead of assuming the in-memory pre-reload card object survives navigation.
+- Focused source regression locks the query-state contract and persisted vault reference. No card-vault product behavior, FinanceData production schema, API/auth/Supabase behavior, packaging or Android code changed.
+
+Status: **source-fixed; exact-head rendered proof pending.** Counters remain **Implementations 13/24 completed · Sub-implementations 143/195 completed** until the full save → reveal → hard reload → reveal → update → delete runtime sequence passes and is directly reviewed.

@@ -8,6 +8,7 @@ const completionFunctional = readFileSync('scripts/completion-functional-crud-qa
 const largeData = readFileSync('scripts/large-data-boundaries-qa.mjs', 'utf8');
 const notFoundAccessibility = readFileSync('scripts/not-found-accessibility-qa.mjs', 'utf8');
 const cardVaultRuntime = readFileSync('scripts/card-vault-runtime-qa.mjs', 'utf8');
+const qaWorkspace = readFileSync('src/qa.tsx', 'utf8');
 const qaRunner = readFileSync('scripts/qa-script-runner.mjs', 'utf8');
 const ci = readFileSync('.github/workflows/ci.yml', 'utf8');
 const qaHtml = readFileSync('qa.html', 'utf8');
@@ -90,6 +91,9 @@ describe('rendered browser QA reliability contract', () => {
   it('keeps server-vault save/reveal/update/reload/delete in rendered QA',()=>{
     expect(coordinator).toContain("scripts/card-vault-runtime-qa.mjs");
     expect(cardVaultRuntime).toContain('Card Vault runtime QA: invalid input stays local and does not write');
+    expect(cardVaultRuntime).toContain("url.searchParams.set('card-vault','ready')");
+    expect(qaWorkspace).toContain("params.get('card-vault')==='ready'");
+    expect(qaWorkspace).toContain("vaultRef:'qa-debit-card'");
     expect(cardVaultRuntime).toContain('Page.addScriptToEvaluateOnNewDocument');
     expect(cardVaultRuntime).toContain('hard reload re-reveals server secret');
     expect(cardVaultRuntime).toContain("deleteCardSecret('qa-debit-card')");
