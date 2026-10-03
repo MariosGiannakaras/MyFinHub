@@ -89,3 +89,18 @@ All three dedicated desktop-titlebar captures were opened directly at useful res
 The rendered browser harness intentionally validates application geometry rather than drawing Windows native caption buttons. Native host behavior is independently proven by successful Windows Desktop #2746 packaged execution: the Electron main process reported `maximize=True`, `restore=True`, and final resize `1100x760` through the controlled BrowserWindow state probe. Source regressions separately lock `titleBarStyle:'hidden'`, native `titleBarOverlay`, the absence of `frame:false`, setup-window exclusion and drag/no-drag boundaries.
 
 Disposition: the desktop/Electron custom-title-bar verification item is **PASS / completed**. No Android code is involved; the renderer styling remains Electron-bridge gated.
+
+## Nested Settings defect follow-up review — Final Visual QA #92
+
+Reviewed by: ChatGPT (direct visual inspection)  
+Artifact: `myfinhub-final-screenshots-b90387f56ff10490aa768e7b6db1ab9d63d12a92`  
+GitHub Actions artifact ID: `11274439706`  
+Persisted matrix commit: `8fa2fee226a858b36752ba302d3362c889ae25c0`  
+Capture timestamp: `2026-10-03_160417`  
+Review date: 2026-10-03
+
+FV-58 Account Management editor: directly inspected all six new-account editor captures (light/dark × desktop/tablet/mobile). Dark mode now uses a coherent dark elevated modal/control surface with readable heading, field and provider copy; provider logos and selection treatment remain visible; mobile/tablet footer actions remain contained. Light mode remains unchanged in hierarchy and readability. **PASS / completed.**
+
+FV-59 Rules editor: directly inspected the dark mobile, tablet and desktop captures plus the light mobile comparator. The repaired mobile sheet no longer exposes a light sticky header/action strip in dark mode; editor body, header, grouped condition/action surfaces and sticky footer remain visually coherent. Tablet/desktop dark presentation and the light mobile presentation remain intact. **PASS / completed.**
+
+These reviews close the two product follow-ups exposed by the earlier animation-timing correction. They do not claim closure of the broader still-pending all-dialog/all-state matrix or final canonical post-merge proof.

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 const coordinator = readFileSync('scripts/run-rendered-qa.mjs', 'utf8');
 const hardening = readFileSync('scripts/ui-ux-hardening-qa.mjs', 'utf8');
+const recovered = readFileSync('scripts/recovered-surface-qa.mjs', 'utf8');
 const ci = readFileSync('.github/workflows/ci.yml', 'utf8');
 const qaHtml = readFileSync('qa.html', 'utf8');
 
@@ -51,6 +52,12 @@ describe('rendered browser QA reliability contract', () => {
     expect(coordinator).toContain('Promise.all(Array.from({length:Math.min(parallelism,scripts.length)}');
   });
 
+  it('waits for the lazy-resource error boundary to receive focus before checking redacted copy',()=>{
+    expect(recovered).toContain("'lazy resource error focus'");
+    expect(recovered).toContain('document.activeElement===error');
+    expect(recovered).toContain("'lazy resource failure is redacted'");
+    expect(recovered).not.toContain("'lazy resource failure is redacted and focusable'");
+  });
   it('keeps focused 404 accessibility verification in the rendered gate',()=>{
     expect(coordinator).toContain("scripts/not-found-accessibility-qa.mjs");
     expect(coordinator).toContain("/tmp/myfinhub-not-found-accessibility-qa-chrome");

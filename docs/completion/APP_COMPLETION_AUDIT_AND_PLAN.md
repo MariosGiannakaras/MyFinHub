@@ -651,9 +651,9 @@ No `main` promotion/release is part of this work.
 
 The prior completion audit remains valuable evidence, but it does **not** by itself prove that every visual element, every UX state, every user action/sub-action, every API/backend path and every error path has been exercised end-to-end against a canonical integrated tree. The owner has therefore expanded the accepted completion scope to require a full-system verification pass before the application is treated as fully closed.
 
-**New audit workstream: Implementations 6/16 completed · Sub-implementations 91/165 completed.**
+**New audit workstream: Implementations 6/16 completed · Sub-implementations 97/165 completed.**
 
-**Overall completion scope: Implementations 12/24 completed · Sub-implementations 132/194 completed.**
+**Overall completion scope: Implementations 12/24 completed · Sub-implementations 138/194 completed.**
 
 The original owner-expanded audit added 16 verification implementations / 160 non-trivial sub-implementations. One additional accepted desktop/Electron title-bar sub-implementation was added on 2026-10-03, bringing the audit workstream denominator to 165 and the overall denominator to 194. Existing implementation-completion state is retained provisionally, but the expanded verification matrix has a stricter proof rule: prior evidence may be reused only after the responsible ChatGPT agent personally inspects it and confirms that it proves the exact required contract. Re-running unchanged automation is unnecessary when existing artifacts are sufficient, but no matrix cell is finally closed merely because an earlier workflow marked it green.
 
@@ -1242,7 +1242,7 @@ Source/runtime scope:
 
 This implements the existing responsive/intermediate-width/orientation/virtual-keyboard verification cell and does not change the denominator. **Completed:** direct assistant review of CI #3169 verifies both geometry suites passed the intermediate, resize-transition, landscape and virtual-keyboard profiles before the later unrelated accessibility stop.
 
-### 8.40 Implementation batch S — nested Settings visual-state evidence in progress
+### 8.40 Implementation batch S — nested Settings visual-state evidence completed
 
 The exhaustive visual matrix still required direct evidence for nested Settings editors rather than only tab-level surfaces. The final visual harness now captures the non-destructive nested states that were previously missing:
 
@@ -1255,7 +1255,7 @@ The exhaustive visual matrix still required direct evidence for nested Settings 
 
 These states are captured at desktop/tablet/mobile in both light and dark themes. The deterministic Final Visual QA matrix therefore expands from 168 to 216 screenshots. No finance mutation, provider upload, import, Android change or production deployment is performed by these captures.
 
-This work implements the existing Settings nested-editor visual verification cell and does not change the denominator. Direct inspection of the first 48 nested captures from artifact `11252454113` found a harness evidence-timing defect: provider/account/rule/import editors were captured immediately after DOM appearance while their 180 ms entrance animations were still changing opacity, creating false background bleed-through. The harness now waits 240 ms before every nested-state capture. Completion remains pending one fresh Final Visual QA recapture and direct assistant review of the corrected 48 images.
+This work implements the existing Settings nested-editor visual verification cell and does not change the denominator. Direct inspection of the first 48 nested captures from artifact `11252454113` found a harness evidence-timing defect: provider/account/rule/import editors were captured immediately after DOM appearance while their 180 ms entrance animations were still changing opacity, creating false background bleed-through. The harness now waits 240 ms before every nested-state capture. **Completed:** Final Visual QA #92 succeeded from source head `b90387f…`, produced artifact `11274439706`, and persisted the settled `2026-10-03_160417` matrix in bot commit `8fa2fee…`. Direct assistant review confirms the Account editor light/dark desktop/tablet/mobile captures and Rules editor dark mobile/tablet/desktop captures no longer exhibit the FV-58/FV-59 contrast defects; the light mobile Rules comparator also remains correct.
 
 ### 8.41 Implementation batch T — mutating validation-error matrix completed
 
@@ -1459,14 +1459,14 @@ Direct review of CI #3178 and all 48 fresh nested Settings captures from the per
 - Root cause: `AccountManagementSettings.css` uses fixed white/light modal and segment backgrounds instead of semantic theme surfaces.
 - **Source-fixed:** Account Management modal and neutral segmented/default-choice controls now use semantic elevated/control surfaces while preserving layout, focus, animation and account semantics.
 - Focused source regression requires the semantic surface contract.
-- Status: **pending fresh dual-theme nested-state visual proof**.
+- **Completed:** Final Visual QA #92 artifact `11274439706` provides settled Account editor captures in both light and dark themes at desktop, tablet and 375×812 mobile. Direct assistant inspection of all six Account editor captures confirms semantic dark elevated/control surfaces, readable headings/labels/fields, preserved provider branding, contained footer actions and unchanged light-theme presentation. The focused source regression remains in place.
 
 **FV-59 — Rules editor mobile dark header contrast**
 - Fresh settled dark mobile capture shows the sticky Rules editor header as a light strip with dark-theme light text. Desktop/tablet Rules editor captures are correct.
 - Root cause: the shared <=680px `.editor-dialog` mobile anatomy hardcodes light body/header/action-zone backgrounds.
 - **Source-fixed:** the shared mobile `.editor-dialog` body, sticky header, drag indicator and sticky action zone now use semantic elevated/line tokens rather than hardcoded light surfaces.
 - Focused source regression rejects the prior light-only mobile editor chrome.
-- Status: **pending fresh dark-mobile rendered proof and cross-consumer regression review**.
+- **Completed:** Final Visual QA #92 directly proves the repaired 375×812 dark Rules editor has dark semantic body/header/action surfaces with readable controls and no light-strip regression. Direct review of the matching dark tablet/desktop captures confirms larger breakpoints remain correct, and the light mobile comparator remains visually intact. The shared mobile semantic-surface source regression remains active.
 
 **QA-SELFLOAN-PRESENTATION — self-loan transfer count includes hidden semantic mirror**
 - CI #3179 passed the repaired Savings manual-transfer flow, then failed at the first self-loan transfer-count assertion.
@@ -1507,7 +1507,7 @@ Direct review of CI #3178 and all 48 fresh nested Settings captures from the per
 - Focused source contracts lock both the visible-control lookup and the syntax-safe Quick Entry selectors.
 - **Completed in CI #3186:** the unified search/Command Palette rendered suite passed the real `Ctrl+Shift+Space` Quick Entry shortcut, visible desktop one-step action, mobile trigger, navigation/no-results/recents, ARIA/privacy and exact loan/Lending/recurring/scheduled actions. No Quick Entry or command-palette product defect was found.
 
-The original QA-NESTED-ANIM timing defect is now proven resolved: all 48 recaptured states were directly inspected after the 240 ms settle boundary and no transition-opacity bleed-through remains. Implementation batch S stays open because FV-58/FV-59 are real product defects revealed by that valid evidence. These follow-ups do not change the denominator. No Android repository changes are involved.
+The original QA-NESTED-ANIM timing defect and the two real product defects it exposed (FV-58/FV-59) are now proven resolved by the settled Final Visual QA #92 matrix and direct review above. Implementation batch S is closed. These follow-ups do not change the denominator. No Android repository changes are involved.
 
 ### 8.50 CI #3186 — closed `<details>` keyboard-order evidence follow-up — source-fixed, proof pending
 
@@ -1520,4 +1520,13 @@ Direct source review shows this is a QA visibility-model defect, not a Recurring
 
 **Source-fixed:** both semantic and Tab-order visibility helpers now exclude descendants of closed native `<details>` while still treating the direct `<summary>` as visible/focusable. The existing assertions for visible focus, positive `tabindex`, focus order, control naming, table semantics and modal traps remain unchanged for actual keyboard targets. A focused source regression locks the closed-details rule so this cannot be “fixed” later by weakening the accessibility gate.
 
-Status: **pending exact-head integrated rendered proof** on source head `9a3e4b2…`; CI #3187 is running. This follow-up does not change the denominator and does not modify product UI/domain behavior, backend/Supabase code or Android. Current counters are **Implementations 12/24 completed · Sub-implementations 138/194 completed** after closing the five functional cells and desktop-titlebar proof above.
+Status: **pending exact-head integrated rendered proof**. CI #3188 included the closed-`<details>` source fix but stopped earlier in `recovered-surface-qa.mjs`, before the keyboard/semantic suite could execute, so the accessibility follow-up is not falsely counted as proven. This item does not change the denominator and does not modify product UI/domain behavior, backend/Supabase code or Android. Current counters remain **Implementations 12/24 completed · Sub-implementations 138/194 completed**.
+
+### 8.51 CI #3188 — lazy-resource recovery focus timing follow-up — source-fixed, proof pending
+
+CI #3188 passed source/type/unit/build and the rendered suites through runtime/error states, Credit, statements and in-place refresh. In the recovered-surface suite it successfully proved the ordinary PageErrorBoundary receives focus and recovers to Dashboard, then mounted the same safe boundary for the synthetic rejected lazy resource. The harness immediately combined focus and redaction into one assertion after only waiting for the boundary DOM node, while `PageErrorBoundary.componentDidCatch()` intentionally transfers focus on the next animation frame.
+
+Direct source review therefore identifies a QA timing race rather than a product recovery regression: the same boundary/focus implementation had just passed in the preceding ordinary-crash case, and the rendered lazy boundary exposes only the fixed safe copy. **Source-fixed:** the lazy-resource path now waits explicitly for `document.activeElement === .workspace-error` before asserting that the raw missing-resource token is absent and the safe financial-data message is present. The redaction and focus requirements are both retained; they are no longer raced against each other. A source regression locks the dedicated lazy focus wait and rejects the former combined assertion.
+
+Status: **pending exact-head rendered proof**. No product UI/domain behavior, finance persistence, backend/Supabase code or Android code changed. Counters remain **Implementations 12/24 completed · Sub-implementations 138/194 completed**.
+
