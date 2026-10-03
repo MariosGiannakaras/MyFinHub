@@ -328,4 +328,13 @@ function QaApp(){
   return <QaWorkspace/>;
 }
 
-createRoot(document.getElementById('root')!).render(<StrictMode><QaApp/></StrictMode>);
+async function bootstrapQa(){
+  const params=new URLSearchParams(location.search);
+  if(params.get('desktop-titlebar')==='1'){
+    document.documentElement.dataset.myfinhubDesktop='true';
+    await import('./styles/desktop-titlebar.css');
+  }
+  createRoot(document.getElementById('root')!).render(<StrictMode><QaApp/></StrictMode>);
+}
+
+void bootstrapQa();
