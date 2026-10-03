@@ -384,7 +384,7 @@ async function runWindowStateProbe(window) {
     fs.mkdirSync(path.dirname(WINDOW_STATE_PROBE_PATH), { recursive: true });
     fs.writeFileSync(WINDOW_STATE_PROBE_PATH, JSON.stringify(result, null, 2), { mode: 0o600 });
   } catch (error) {
-    appendDiagnostic('window-state-probe-write-failed', error instanceof Error ? error.message : String(error));
+    console.error('Window-state probe write failed:', error instanceof Error ? error.message : String(error));
   }
 
   setTimeout(() => app.quit(), 120);
