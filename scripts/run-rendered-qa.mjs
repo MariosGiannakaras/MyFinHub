@@ -46,6 +46,18 @@ const scripts=[
   {path:'scripts/keyboard-semantic-accessibility-qa.mjs',key:'keyboard-semantic-a11y',surface:'accessibility',profiles:['/tmp/myfinhub-keyboard-semantic-a11y-chrome']},
   {path:'scripts/not-found-accessibility-qa.mjs',key:'not-found-accessibility',surface:'not-found',profiles:['/tmp/myfinhub-not-found-accessibility-qa-chrome']},
 ];
+function validateRenderedQaModules(){
+  for(const item of scripts){
+    try{execFileSync(process.execPath,['--check',item.path],{encoding:'utf8',stdio:['ignore','pipe','pipe']})}
+    catch(error){
+      const stdout=error?.stdout?.toString?.()||'';
+      const stderr=error?.stderr?.toString?.()||'';
+      throw new Error(`Rendered QA module syntax check failed: ${item.path}\n${stderr||stdout||error instanceof Error?error.message:String(error)}`);
+    }
+  }
+  console.log(`Rendered QA module syntax preflight passed for ${scripts.length} scripts.`);
+}
+validateRenderedQaModules();
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 function cleanPaths(paths){for(const path of paths){try{rmSync(path,{recursive:true,force:true,maxRetries:8,retryDelay:150})}catch(error){console.warn(`Rendered QA cleanup skipped for ${path}: ${error instanceof Error?error.message:String(error)}`)}}}
 function trimDiagnostics(text){const normalized=text.trim();if(!normalized)return '(no browser stderr/stdout captured)';return normalized.length>6000?normalized.slice(-6000):normalized}
