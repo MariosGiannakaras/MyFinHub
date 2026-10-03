@@ -20,6 +20,7 @@ const settings=readFileSync(new URL('../src/components/FinancialProviderManageme
 const accountMetadataEntry=readFileSync(new URL('../api/account-metadata.ts',import.meta.url),'utf8');
 const qaFinancialProviderSource=readFileSync(new URL('../src/qaFinancialProviders.ts',import.meta.url),'utf8');
 const financialProviderClientSource=readFileSync(new URL('../src/lib/financialProviderClient.ts',import.meta.url),'utf8');
+const providerBrandingQaSource=readFileSync(new URL('../scripts/provider-brand-management-qa.mjs',import.meta.url),'utf8');
 
 function provider():FinancialProvider{
   return {
@@ -134,6 +135,18 @@ describe('provider branding management',()=>{
     expect(handler).toContain("method==='PATCH'");
     expect(accountMetadataEntry).toContain('bodyParser:false');
     expect(client).toContain('financial-provider-asset-binding');
+  });
+
+  it('keeps provider replacement Save on a deterministic QA write backend before cross-surface refresh proof',()=>{
+    expect(providerBrandingQaSource).toContain('installProviderReplacementBackend');
+    expect(providerBrandingQaSource).toContain('__myfinhubProviderReplaceOriginalFetch');
+    expect(providerBrandingQaSource).toContain("resource==='financial-providers'&&method==='PATCH'");
+    expect(providerBrandingQaSource).toContain("resource==='financial-provider-assets'&&method==='PUT'");
+    expect(providerBrandingQaSource).toContain("resource==='financial-provider-asset-binding'&&method==='PUT'");
+    expect(providerBrandingQaSource).toContain('provider.assets=[');
+    expect(providerBrandingQaSource).toContain('provider.bindings=[');
+    expect(providerBrandingQaSource).toContain('restoreProviderReplacementBackend');
+    expect(providerBrandingQaSource).toContain('Dashboard refreshes the replaced provider artwork binding');
   });
 
   it('renders QA with the production provider asset registry instead of local bank-brand fallbacks',async()=>{
