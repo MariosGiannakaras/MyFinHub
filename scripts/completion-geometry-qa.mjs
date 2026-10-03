@@ -32,6 +32,7 @@ const analysisFn=`function(){
   const selector=node=>{const id=node.id?'#'+node.id:'';const cls=[...node.classList].slice(0,3).map(v=>'.'+v).join('');return (node.tagName.toLowerCase()+id+cls).slice(0,180)};
   const horizontalHost=node=>{let parent=node.parentElement;while(parent&&parent!==document.body){const s=getComputedStyle(parent);if(['auto','scroll'].includes(s.overflowX)&&parent.scrollWidth>parent.clientWidth+1)return parent;parent=parent.parentElement}return null};
   const rogue=[...document.querySelectorAll('button,a,input,select,textarea,[role="button"],[role="tab"],[role="radio"],[role="slider"]')].filter(visible).filter(node=>{const r=node.getBoundingClientRect();if(r.left>=-1&&r.right<=innerWidth+1)return false;const host=horizontalHost(node);if(!host)return true;const hr=host.getBoundingClientRect();return hr.left<-1||hr.right>innerWidth+1}).map(node=>({selector:selector(node),rect:rect(node)})).slice(0,20);
+  const overflowNodes=[...document.querySelectorAll('body *')].filter(visible).map(node=>({node,r:node.getBoundingClientRect()})).filter(({r})=>r.left<-1||r.right>innerWidth+1).map(({node,r})=>({selector:selector(node),rect:{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height},scrollWidth:node.scrollWidth,clientWidth:node.clientWidth})).slice(0,20);
   const chrome=[...document.querySelectorAll('.mobile-nav,.mobile-quick-action')].filter(visible);
   const actions=[...document.querySelectorAll('button,a[href],input,select,textarea,[role="button"],[role="tab"],[role="radio"],[role="slider"]')].filter(visible).filter(node=>!chrome.some(item=>item===node||item.contains(node))).filter(node=>!node.hasAttribute('disabled'));
   const overlaps=[];
@@ -76,7 +77,7 @@ const analysisFn=`function(){
   const docOverflow=Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth;
   const main=document.querySelector('#main-workspace');
   const mainRect=main?rect(main):null;
-  return {docOverflow,rogue,overlaps:overlaps.slice(0,20),navLabelIssues,desktopChromeOverlaps,mainRect,scrollY,scrollHeight:document.documentElement.scrollHeight};
+  return {docOverflow,rogue,overflowNodes,overlaps:overlaps.slice(0,20),navLabelIssues,desktopChromeOverlaps,mainRect,scrollY,scrollHeight:document.documentElement.scrollHeight};
 }`;
 try{
   await waitHttp(`http://127.0.0.1:${port}/json/version`);
@@ -94,7 +95,7 @@ try{
       for(const y of [...new Set(stops)]){
         await c.call("function(y){scrollTo(0,y);return true}",[y]);await sleep(60);
         const result=await c.call(analysisFn);
-        assert(result.docOverflow<=1,`${viewport.name}/${page}@${y}: document horizontal overflow ${result.docOverflow}px`);
+        assert(result.docOverflow<=1,`${viewport.name}/${page}@${y}: document horizontal overflow ${result.docOverflow}px; nodes ${JSON.stringify(result.overflowNodes)}`);
         assert(result.rogue.length===0,`${viewport.name}/${page}@${y}: off-viewport controls ${JSON.stringify(result.rogue)}`);
         if(viewport.mobile)assert(result.navLabelIssues.length===0,`${viewport.name}/${page}@${y}: bottom-nav label collision ${JSON.stringify(result.navLabelIssues)}`);
         const maxScroll=Math.max(0,result.scrollHeight-viewport.height);
@@ -123,7 +124,7 @@ try{
       await c.call("function(){scrollTo(0,0);dispatchEvent(new Event('resize'));return true}");
       await sleep(120);
       const result=await c.call(analysisFn);
-      assert(result.docOverflow<=1,`${profile.name}/${page}: document horizontal overflow ${result.docOverflow}px`);
+      assert(result.docOverflow<=1,`${profile.name}/${page}: document horizontal overflow ${result.docOverflow}px; nodes ${JSON.stringify(result.overflowNodes)}`);
       assert(result.rogue.length===0,`${profile.name}/${page}: off-viewport controls ${JSON.stringify(result.rogue)}`);
       if(profile.mobile)assert(result.navLabelIssues.length===0,`${profile.name}/${page}: bottom-nav label collision ${JSON.stringify(result.navLabelIssues)}`);
       assert(result.desktopChromeOverlaps.length===0,`${profile.name}/${page}: chrome overlap ${JSON.stringify(result.desktopChromeOverlaps)}`);
@@ -139,7 +140,7 @@ try{
     for(let i=0;i<140;i+=1){if(await c.call("function(){return document.readyState==='complete'&&Boolean(document.querySelector('#main-workspace h1'))}"))break;await sleep(80)}
     await sleep(120);
     const result=await c.call(analysisFn);
-    assert(result.docOverflow<=1,`zoom-200pct/${page}: document horizontal overflow ${result.docOverflow}px`);
+    assert(result.docOverflow<=1,`zoom-200pct/${page}: document horizontal overflow ${result.docOverflow}px; nodes ${JSON.stringify(result.overflowNodes)}`);
     assert(result.rogue.length===0,`zoom-200pct/${page}: off-viewport controls ${JSON.stringify(result.rogue)}`);
     assert(result.desktopChromeOverlaps.length===0,`zoom-200pct/${page}: chrome overlap ${JSON.stringify(result.desktopChromeOverlaps)}`);
   }
