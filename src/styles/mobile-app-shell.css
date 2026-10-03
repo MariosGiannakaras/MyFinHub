@@ -171,6 +171,8 @@
   .insight-list>div{padding:9px 0}
 
   @media(max-width:350px){
+    .mobile-brand .brand-home-button{padding-inline:3px}
+    .mobile-brand .brand-mark-copy{display:none}
     .mobile-nav button{font-size:6.5px}
     .app-shell{--mobile-gutter:9px}
     .page-heading:has(+.primary-balance-grid){grid-template-columns:1fr}
