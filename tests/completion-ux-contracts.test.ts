@@ -280,6 +280,17 @@ describe('completion UX contracts',()=>{
   });
 
 
+  it('covers the remaining generic Quick Entry intent paths and inline validation in rendered CRUD QA',()=>{
+    const harness=read('scripts/completion-functional-crud-qa.mjs');
+    expect(harness).toContain('Generic Quick Entry intents and validation');
+    expect(harness).toContain('generic expense validation error');
+    expect(harness).toContain('QA Generic Income');
+    expect(harness).toContain('QA Generic Withdrawal');
+    expect(harness).toContain('QA Generic Refund');
+    expect(harness).toContain('QA Generic Reconciliation');
+  });
+
+
   it('exercises legacy review keep semantics without implicit report mutation',()=>{
     const harness=read('scripts/action-center-context-qa.mjs');
     expect(harness).toContain('legacy review keep semantics never mutate reports implicitly');

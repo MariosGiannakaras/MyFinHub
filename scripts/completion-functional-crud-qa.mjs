@@ -43,6 +43,8 @@ try{
     await waitFor("function(label,optionText){const input=[...document.querySelectorAll('input[role=combobox]')].find(item=>item.getAttribute('aria-label')===label);return Boolean(input&&input.value===optionText&&input.getAttribute('aria-expanded')==='false')}",`owned selector ${label}=${optionText}`,[label,optionText]);
   };
   const shot=async name=>{const result=await c.send('Page.captureScreenshot',{format:'png',fromSurface:true});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(result.data,'base64'))};
+  const openGlobalQuickEntry=async()=>{const opened=await c.call(`function(){const visible="function(node){if(!node)return false;const button=[...document.querySelectorAll('[data-global-quick-entry]')].find(visible);button?.click();return Boolean(button)}`);assert(opened,'visible global Quick Entry trigger exists');await waitFor("function(){return Boolean(document.querySelector('.quick-modal:not(.contextual-quick-modal)'))}",'generic Quick Entry open');};
+
 
   console.log('Completion functional QA: Modern transaction edit updates in place');
   await navigate('transactions');
@@ -74,6 +76,50 @@ try{
   await c.call("function(){document.querySelector('#main-workspace')?.focus();dispatchEvent(new KeyboardEvent('keydown',{key:'z',ctrlKey:true,bubbles:true,cancelable:true}));return true}");
   await waitFor("function(){return [...document.querySelectorAll('[data-transaction-source=event]')].some(row=>(row.textContent||'').includes('QA Audit Modern Event'))}",'Ctrl+Z undo restores modern event again');
 
+  console.log('Completion functional QA: Generic Quick Entry intents and validation');
+  await setByLabel('Αναζήτηση συναλλαγών','');
+  await openGlobalQuickEntry();
+  await clickText('.generic-kind-grid button','Έξοδο');
+  await clickText('.quick-modal footer button','Καταχώριση');
+  await waitFor("function(){return Boolean(document.querySelector('.quick-modal .form-error'))}",'generic expense validation error');
+  const genericValidation=await c.call("function(){return document.querySelector('.quick-modal .form-error')?.textContent||''}");
+  assert(genericValidation.length>0,'generic Quick Entry exposes inline validation');
+  await setByLabel('Ποσό','11.11');
+  await setByLabel('Σχόλιο','QA Generic Expense');
+  await clickText('.quick-modal footer button','Καταχώριση');
+  await waitFor("function(){return !document.querySelector('.quick-modal')&&[...document.querySelectorAll('[data-transaction-kind=expense][data-transaction-source=event]')].some(row=>(row.textContent||'').includes('QA Generic Expense'))}",'generic expense created');
+
+  await openGlobalQuickEntry();
+  await clickText('.generic-kind-grid button','Έσοδο');
+  await setByLabel('Ποσό','22.22');
+  await setByLabel('Σχόλιο','QA Generic Income');
+  await clickText('.quick-modal footer button','Καταχώριση');
+  await waitFor("function(){return !document.querySelector('.quick-modal')&&[...document.querySelectorAll('[data-transaction-kind=income][data-transaction-source=event]')].some(row=>(row.textContent||'').includes('QA Generic Income'))}",'generic income created');
+
+  await openGlobalQuickEntry();
+  await clickText('.generic-kind-grid button','Ανάληψη');
+  await setByLabel('Ποσό','5.50');
+  await setByLabel('Σχόλιο','QA Generic Withdrawal');
+  const withdrawalRoute=await c.call("function(){return [...document.querySelectorAll('.quick-modal input[role=combobox]')].map(input=>input.value).filter(Boolean)}");
+  assert(withdrawalRoute.length>=2&&withdrawalRoute[0]!==withdrawalRoute[1],`withdrawal resolves distinct source/cash destination: ${JSON.stringify(withdrawalRoute)}`);
+  await clickText('.quick-modal footer button','Καταχώριση');
+  await waitFor("function(){return !document.querySelector('.quick-modal')&&[...document.querySelectorAll('[data-transaction-kind=withdrawal][data-transaction-source=event]')].some(row=>(row.textContent||'').includes('QA Generic Withdrawal'))}",'generic withdrawal created');
+
+  await openGlobalQuickEntry();
+  await clickText('.generic-kind-grid button','Επιστροφή');
+  await setByLabel('Ποσό','4.40');
+  await setByLabel('Σχόλιο','QA Generic Refund');
+  await clickText('.quick-modal footer button','Καταχώριση');
+  await waitFor("function(){return !document.querySelector('.quick-modal')&&[...document.querySelectorAll('[data-transaction-kind=refund][data-transaction-source=event]')].some(row=>(row.textContent||'').includes('QA Generic Refund'))}",'generic refund created');
+
+  await openGlobalQuickEntry();
+  await clickText('.generic-kind-grid button','Διόρθωση');
+  const reconciliationActual=await c.call("function(){const text=document.querySelector('.reconcile-preview b')?.textContent||'';const normalized=text.replace(/\./g,'').replace(',','.').replace(/[^0-9.-]/g,'');const base=Number(normalized);return Number.isFinite(base)?(base+1).toFixed(2):'1.00'}");
+  await setByLabel('Πραγματικό υπόλοιπο',reconciliationActual);
+  await setByLabel('Σχόλιο','QA Generic Reconciliation');
+  await clickText('.quick-modal footer button','Καταχώριση');
+  await waitFor("function(){return !document.querySelector('.quick-modal')&&[...document.querySelectorAll('[data-transaction-kind=reconciliation][data-transaction-source=event]')].some(row=>(row.textContent||'').includes('QA Generic Reconciliation'))}",'generic reconciliation created');
+  await shot('generic-quick-entry-intents');
 
     console.log('Completion functional QA: Savings create/edit/delete + transaction');
   await navigate('savings');

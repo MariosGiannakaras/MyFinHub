@@ -1365,4 +1365,11 @@ Loans is expanded without a new suite:
 - forgive the remaining balance through the owned destructive confirmation, require completion/history with no payment CTA and then verify only two money transfers exist (initial funding + actual return), proving forgiveness creates no synthetic cash movement;
 - normal create/edit already remains in the same functional suite, while the separately green payment-flow/obligation suites cover ordinary payment, multi-installment payment, completion/history and linked recurring behavior.
 
-This implements existing verification obligations and does not change the denominator. Loans, Savings plus Receipt OCR + global tools, Budgets, Transaction Rules, Lending, Recurring, Attention/Review and Reports/analytics remain pending until the expanded assertions pass on an integrated head and their evidence/logs are directly reviewed.
+Generic Quick Entry is now included in the same existing functional suite rather than a new harness:
+- exercise a visible global Quick Entry trigger and require inline validation before any successful save;
+- create rendered generic expense and income events;
+- create a withdrawal and require distinct resolved source/cash destination accounts;
+- create a refund and a reconciliation using a +1 € actual-balance correction derived from the rendered expected balance;
+- existing Ledger QA continues to own transfer/split proof, while Action Center/payment-flow suites already own account/context prefills.
+
+This implements existing verification obligations and does not change the denominator. Loans, Savings, Generic Quick Entry, Receipt OCR + global tools, Budgets, Transaction Rules, Lending, Recurring, Attention/Review and Reports/analytics remain pending until the expanded assertions pass on an integrated head and their evidence/logs are directly reviewed.
