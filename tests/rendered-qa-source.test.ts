@@ -4,6 +4,9 @@ import { describe, expect, it } from 'vitest';
 const coordinator = readFileSync('scripts/run-rendered-qa.mjs', 'utf8');
 const hardening = readFileSync('scripts/ui-ux-hardening-qa.mjs', 'utf8');
 const recovered = readFileSync('scripts/recovered-surface-qa.mjs', 'utf8');
+const completionFunctional = readFileSync('scripts/completion-functional-crud-qa.mjs', 'utf8');
+const largeData = readFileSync('scripts/large-data-boundaries-qa.mjs', 'utf8');
+const notFoundAccessibility = readFileSync('scripts/not-found-accessibility-qa.mjs', 'utf8');
 const ci = readFileSync('.github/workflows/ci.yml', 'utf8');
 const qaHtml = readFileSync('qa.html', 'utf8');
 
@@ -68,6 +71,25 @@ describe('rendered browser QA reliability contract', () => {
     expect(coordinator).toContain("key:'mutation-validation'");
     expect(coordinator).toContain("surface:'validation-errors'");
     expect(coordinator).toContain("/tmp/myfinhub-mutation-validation-qa-chrome");
+  });
+
+  it('forces final isolated Chromium suites to finish teardown instead of hanging CI after assertions pass',()=>{
+    expect(largeData).toContain('async function stopBrowser(process)');
+    expect(largeData).toContain('await stopBrowser(child)');
+    expect(notFoundAccessibility).toContain('async function stopBrowser(process)');
+    expect(notFoundAccessibility).toContain('await stopBrowser(child)');
+    expect(largeData).toContain("process.kill('SIGKILL')");
+    expect(notFoundAccessibility).toContain("process.kill('SIGKILL')");
+  });
+
+  it('keeps the complete Cards create/archive/restore/delete lifecycle in rendered functional QA',()=>{
+    expect(completionFunctional).toContain('Completion functional QA: Cards create, archive, restore and permanent delete');
+    expect(completionFunctional).toContain('__myfinhubCardLifecycleOriginalFetch');
+    expect(completionFunctional).toContain("url.pathname==='/api/card-secrets'&&method==='PUT'");
+    expect(completionFunctional).toContain('QA Audit Lifecycle Card');
+    expect(completionFunctional).toContain('archiveLifecycleCard');
+    expect(completionFunctional).toContain('Επαναφορά');
+    expect(completionFunctional).toContain('Οριστική διαγραφή');
   });
 
 });
