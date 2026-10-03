@@ -32,6 +32,51 @@ try{
     const ok=await c.call(`function(name){const input=document.querySelector('.provider-management > input[type="file"]');if(!input)return false;const svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 60"><rect width="120" height="60" rx="12" fill="#1d4ed8"/><path d="M20 42 36 18h12L32 42zm28 0 16-24h12L60 42z" fill="white"/></svg>';const file=new File([svg],name,{type:'image/svg+xml'});const transfer=new DataTransfer();transfer.items.add(file);input.files=transfer.files;input.dispatchEvent(new Event('change',{bubbles:true}));return true}`,[name]);
     assert(ok,'hidden app-owned upload input accepts a synthetic file');
   };
+  const installProviderReplacementBackend=async()=>{
+    const installed=await c.call(`async function(){
+      const control=globalThis;
+      if(control.__myfinhubProviderReplaceOriginalFetch)return true;
+      const mod=await import('/src/lib/financialProviderClient.ts');
+      const provider=mod.getFinancialProviderSnapshot().providers.find(item=>item.id==='piraeus');
+      if(!provider)return false;
+      const original=globalThis.fetch.bind(globalThis);
+      const svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 60"><rect width="120" height="60" rx="12" fill="#0f766e"/><path d="M18 42 34 18h12L30 42zm32 0 16-24h12L62 42z" fill="white"/></svg>';
+      const assetUrl='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+      const assetKey='qa-provider-replacement-logo';
+      control.__myfinhubProviderReplaceOriginalFetch=original;
+      globalThis.fetch=async function(input,init){
+        const raw=typeof input==='string'?input:input instanceof URL?input.href:input.url;
+        const requestUrl=new URL(raw,location.href);
+        const method=String(init?.method||'GET').toUpperCase();
+        const resource=requestUrl.searchParams.get('resource');
+        if(requestUrl.pathname==='/api/account-metadata'&&resource==='financial-providers'&&method==='PATCH'){
+          return new Response(JSON.stringify({provider:{id:provider.id}}),{status:200,headers:{'content-type':'application/json'}});
+        }
+        if(requestUrl.pathname==='/api/account-metadata'&&resource==='financial-provider-assets'&&method==='PUT'){
+          const asset={assetKey,role:requestUrl.searchParams.get('role')||'logo',variant:requestUrl.searchParams.get('variant')||'universal',url:assetUrl,fileName:requestUrl.searchParams.get('fileName')||'qa-shared.svg',mimeType:'image/svg+xml',sizeBytes:svg.length,updatedAt:'2026-10-03T00:00:00.000Z'};
+          provider.assets=[...(provider.assets||[]).filter(item=>item.assetKey!==assetKey),asset];
+          return new Response(JSON.stringify({asset}),{status:200,headers:{'content-type':'application/json'}});
+        }
+        if(requestUrl.pathname==='/api/account-metadata'&&resource==='financial-provider-asset-binding'&&method==='PUT'){
+          let body={};try{body=JSON.parse(typeof init?.body==='string'?init.body:'{}')}catch{}
+          const role=body.role,variant=body.variant,bindingKey=body.assetKey;
+          provider.bindings=[...(provider.bindings||[]).filter(item=>!(item.role===role&&item.variant===variant))];
+          if(bindingKey)provider.bindings.push({role,variant,assetKey:bindingKey});
+          if(role==='logo'&&variant==='universal'){provider.logoAssetKey=bindingKey||null;provider.logoUrl=bindingKey===assetKey?assetUrl:null}
+          if(role==='wordmark'&&variant==='universal'){provider.wordmarkAssetKey=bindingKey||null;provider.wordmarkUrl=bindingKey===assetKey?assetUrl:null}
+          return new Response(JSON.stringify({binding:{providerId:provider.id,role,variant,assetKey:bindingKey}}),{status:200,headers:{'content-type':'application/json'}});
+        }
+        return original(input,init);
+      };
+      return true;
+    }`);
+    assert(installed,'synthetic provider replacement backend installs');
+  };
+  const restoreProviderReplacementBackend=async()=>{
+    const restored=await c.call(`function(){const control=globalThis;const original=control.__myfinhubProviderReplaceOriginalFetch;if(typeof original!=='function')return false;globalThis.fetch=original;delete control.__myfinhubProviderReplaceOriginalFetch;return true}`);
+    assert(restored,'synthetic provider replacement backend restores original fetch');
+  };
+
   const openBranding=async()=>{
     await clickText('.provider-editor-tabs button','Εικόνες');
     await waitFor("function(){return document.querySelectorAll('.provider-slot-card').length===9}",'nine semantic branding slots');
@@ -91,6 +136,7 @@ try{
 
   assert(await applyTheme('dark')==='dark','dark theme resolves while editor is open');
   await shot('provider-editor-branding-reuse-dark-desktop');
+  await installProviderReplacementBackend();
   await clickText('.provider-editor-footer button','Αποθήκευση');
   await waitFor("function(){return !document.querySelector('.provider-editor-modal')}",'saved provider editor closes for dark provider-list evidence');
   await waitFor("function(){const image=document.querySelector('[data-bank-brand=\\\"piraeus\\\"] img');return !!image&&image.complete&&image.naturalWidth>0}",'rebound provider-list artwork');
@@ -101,6 +147,7 @@ try{
   await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Οι λογαριασμοί μου')}",'Dashboard after provider artwork replacement');
   await waitFor("function(expected){const image=document.querySelector('[data-bank-brand=\\\"piraeus\\\"] img');return !!image&&image.complete&&image.naturalWidth>0&&image.src===expected}",'Dashboard refreshes the replaced provider artwork binding',[replacedSource]);
   await shot('provider-replaced-artwork-dashboard-dark-desktop');
+  await restoreProviderReplacementBackend();
   await clickText('.sidebar nav button','Ρυθμίσεις');
   await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Ρυθμίσεις')&&!!document.querySelector('.settings-tablist')}",'Settings after cross-surface provider proof');
   await clickAccounts();
