@@ -57,7 +57,7 @@ describe('app-owned entry controls',()=>{
     expect(sharedStyles).toContain('.app-control{box-sizing:border-box;width:100%;min-height:40px');
     expect(sharedStyles).toContain('padding:0 10px;font-size:var(--ux-body-size);line-height:1.4');
     expect(sharedStyles).toContain('.owned-input-shell[data-density=compact]>.app-control{min-height:32px');
-    expect(sharedStyles).toContain(':where(button,input,select,textarea,summary,[tabindex]):focus-visible{outline:0;box-shadow:var(--focus)!important}');
+    expect(sharedStyles).toContain(':where(button,a[href],input,select,textarea,summary,[tabindex]):focus-visible{outline:0;box-shadow:var(--focus)!important}');
     expect(styles).toContain('.owned-input-shell>.owned-input{padding-right:34px;cursor:pointer}');
     expect(integrationStyles).not.toContain('.settings-form .owned-input-shell>.owned-input');
   });
