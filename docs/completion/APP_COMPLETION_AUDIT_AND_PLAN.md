@@ -1646,3 +1646,16 @@ Exact-head CI #3213 on `c9cee0c…` completed successfully with the full rendere
 - FV-62 is therefore completed. The 8.4 Card Vault functional cell is closed and the global checkpoint advances by exactly one accepted checklist item.
 
 Status: **completed. Implementations 13/24 completed · Sub-implementations 144/195 completed.**
+
+
+### 8.60 Focused 404 semantic dark-theme evidence — source-fixed, proof pending
+
+Direct inspection of the focused 200%-equivalent 404 artifact found that the file named `not-found-dark-200pct.png` was still visually light. The product 404 itself was not at fault: the focused harness changed only `document.documentElement.dataset.theme='dark'`, while MyFinHub's semantic theme system requires `applyThemePreference('dark')` to update the root token set.
+
+- The focused 404 QA now uses the real `src/lib/theme.ts` application path for both explicit Light and Dark states.
+- Runtime assertions require persisted preference, resolved theme, color-scheme and distinct canvas/ink semantic tokens before the screenshots are accepted.
+- The existing keyboard-order, visible-focus, 200%-equivalent containment and reduced-motion assertions remain unchanged.
+- Source regression explicitly rejects the old dataset-only theme mutation.
+- No product CSS/component, routing, finance, backend, Supabase, packaging or Android behavior changed.
+
+Status: **source-fixed; exact-head rendered proof and direct screenshot inspection pending.** Counters remain **Implementations 13/24 completed · Sub-implementations 144/195 completed**.

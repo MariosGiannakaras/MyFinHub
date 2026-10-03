@@ -67,6 +67,10 @@ describe('rendered browser QA reliability contract', () => {
   it('keeps focused 404 accessibility verification in the rendered gate',()=>{
     expect(coordinator).toContain("scripts/not-found-accessibility-qa.mjs");
     expect(coordinator).toContain("/tmp/myfinhub-not-found-accessibility-qa-chrome");
+    expect(notFoundAccessibility).toContain("import('/src/lib/theme.ts')");
+    expect(notFoundAccessibility).toContain("mod.applyThemePreference(pref)");
+    expect(notFoundAccessibility).toContain("darkTheme.canvas!==lightTheme.canvas");
+    expect(notFoundAccessibility).not.toContain("document.documentElement.dataset.theme='dark'");
   });
 
   it('keeps mutating validation failures in the rendered merge gate',()=>{

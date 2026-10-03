@@ -21,6 +21,7 @@ try{
   await waitHttp(`http://127.0.0.1:${port}/json/version`);
   const target=await fetch(`http://127.0.0.1:${port}/json/new?${encodeURIComponent(baseUrl)}`,{method:'PUT'}).then(r=>r.json());
   c=new Cdp(target.webSocketDebuggerUrl);await c.open();await c.send('Page.enable');await c.send('Runtime.enable');await c.send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
+  const applyTheme=async preference=>c.call("async function(pref){localStorage.setItem('myfinhub.theme',pref);const mod=await import('/src/lib/theme.ts');mod.applyThemePreference(pref);await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));const root=getComputedStyle(document.documentElement);return {theme:document.documentElement.dataset.theme,pref:document.documentElement.dataset.themePreference,stored:localStorage.getItem('myfinhub.theme'),canvas:root.getPropertyValue('--canvas').trim(),ink:root.getPropertyValue('--ink').trim(),colorScheme:root.colorScheme}}",[preference]);
   for(let i=0;i<120;i+=1){if(await c.call("function(){return document.readyState==='complete'&&Boolean(document.querySelector('#not-found-title'))}"))break;await sleep(100)}
   assert(await c.call("function(){return document.activeElement?.id==='not-found-title'}"),'route title receives programmatic focus');
   assert(await c.call("function(){const title=document.querySelector('#not-found-title');const s=getComputedStyle(title);return title===document.activeElement&&(s.outlineStyle==='none'||parseFloat(s.outlineWidth)===0)&&s.boxShadow==='none'}"),'programmatic title focus stays visually neutral');
@@ -38,10 +39,12 @@ try{
   await c.send('Emulation.setDeviceMetricsOverride',{width:720,height:500,deviceScaleFactor:1,mobile:false});
   await sleep(150);
   assert(await c.call("function(){const d=document.documentElement;return d.scrollWidth<=d.clientWidth+1}"),'200%-equivalent reflow does not create horizontal overflow');
+  const lightTheme=await applyTheme('light');
+  assert(lightTheme.theme==='light'&&lightTheme.pref==='light'&&lightTheme.stored==='light'&&lightTheme.colorScheme==='light','light 404 applies semantic theme tokens');
   const light=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true});writeFileSync(`${evidenceDir}/not-found-light-200pct.png`,Buffer.from(light.data,'base64'));
 
-  await c.call("function(){document.documentElement.dataset.theme='dark';return true}");
-  await sleep(120);
+  const darkTheme=await applyTheme('dark');
+  assert(darkTheme.theme==='dark'&&darkTheme.pref==='dark'&&darkTheme.stored==='dark'&&darkTheme.colorScheme==='dark'&&darkTheme.canvas!==lightTheme.canvas&&darkTheme.ink!==lightTheme.ink,'dark 404 applies distinct semantic theme tokens');
   assert(await c.call("function(){const d=document.documentElement;return d.scrollWidth<=d.clientWidth+1&&document.querySelector('.not-found-safety')&&document.querySelectorAll('.not-found-actions button').length===2}"),'dark 200%-equivalent 404 remains contained and complete');
   const dark=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true});writeFileSync(`${evidenceDir}/not-found-dark-200pct.png`,Buffer.from(dark.data,'base64'));
 
