@@ -53,6 +53,8 @@ Last updated: 2026-10-03
 
 | FV-61 | High | Command Palette · keyboard modal focus containment | CI #3191 passed all route/settings/auth accessibility checks, then failed at `Command Palette focus trap step 2`. | Shared `useModalFocus` counted enabled buttons with effective `tabIndex=-1` as sequential focus targets and only intercepted boundary Tab events; its computed order therefore diverged from the browser's real tab order. | Shared modal-focus hook + source/runtime accessibility regression. | **Source-fixed, proof pending.** Effective `tabIndex >= 0` now defines sequential targets and every topmost-modal Tab/Shift+Tab explicitly cycles inside the modal while preserving Escape/nested-modal/opener restoration. |
 
+| QA-PROVIDER-REPLACE-SAVE | Medium evidence blocker | Settings provider branding · replace/cross-surface refresh | CI #3192 uploaded/rebound the provider artwork but then closed the editor with X and expected the provider list to reflect the unsaved replacement. | The expanded harness omitted the real `Αποθήκευση` action before testing persistence/consumer refresh. | Provider branding rendered harness + source regression only. | **Recorded, remediation pending.** Save the existing provider edit first, then verify refreshed provider-list and Dashboard image source; no product defect identified. |
+
 ## Systemic causes
 
 1. **Theme-token bypass** — fixed white/light RGBA backgrounds inside page-specific responsive CSS. Fix shared semantic surface/control/inset/status tokens rather than accumulating dark-mode overrides.
