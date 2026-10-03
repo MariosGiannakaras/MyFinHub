@@ -1565,6 +1565,19 @@ Status: **source-expanded, exact-head rendered proof pending.** The replacement/
 Current counters after independently closing Taxonomy/icons/preferences from CI #3190 are **Implementations 12/24 completed · Sub-implementations 139/194 completed**.
 
 
+### 8.55 CI #3192 — provider replacement proof omitted save — source fix in progress
+
+Exact-head CI #3192 on `4cc6a9fb…` passed the title-bar, Planning, Theme, Action Center, Settings tabs and Budget/Rules rendered suites before failing in the newly expanded provider cross-surface replacement proof.
+
+**QA-PROVIDER-REPLACE-SAVE**
+- The existing provider editor successfully uploads `qa-shared.svg`, assigns it to `Βασικό λογότυπο` and reuses it for `Βασικό λεκτικό σήμα`.
+- The new proof then closed the editor with the header X and immediately asserted that the provider-list image source changed.
+- Product behavior is correct: closing the editor without `Αποθήκευση` discards the unsaved assignment. The harness therefore asserted persisted replacement without executing the save action.
+- Required remediation: submit the existing provider editor through its real `Αποθήκευση` action, wait for the editor to close and refreshed catalog to render, then compare the provider-list source and verify the same source on Dashboard before reopening Settings.
+- Scope is provider rendered QA + source contract only; no provider-management/product mutation semantics, backend/Supabase behavior or Android code changes are required.
+
+Status: **recorded; source fix in progress**. This is evidence-harness work inside the existing Settings account/provider cell and does not change the denominator.
+
 ### 8.54 CI #3191 — Command Palette focus-trap follow-up — source-fixed, proof pending
 
 Exact-head CI #3191 on `eef0b761…` passed the complete route/settings/auth keyboard-semantic sweep, proving FV-60 resolved, then failed at **Command Palette focus trap step 2**.
