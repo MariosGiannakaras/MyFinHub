@@ -93,7 +93,17 @@ try{
   await shot('provider-editor-branding-reuse-dark-desktop');
   await c.call("function(){document.querySelector('.provider-editor-header button[aria-label=\\\"Κλείσιμο\\\"]')?.click();return true}");
   await waitFor("function(){return !document.querySelector('.provider-editor-modal')}",'editor closes for dark provider-list evidence');
+  await waitFor("function(){const image=document.querySelector('[data-bank-brand=\\\"piraeus\\\"] img');return !!image&&image.complete&&image.naturalWidth>0}",'rebound provider-list artwork');
+  const replacedSource=await c.call("function(){return document.querySelector('[data-bank-brand=\\\"piraeus\\\"] img')?.src||''}");
+  assert(Boolean(replacedSource)&&replacedSource!==piraeusSource,'uploaded provider asset replaces the prior base-logo binding');
   await shot('provider-list-dark-desktop');
+  await clickText('.sidebar nav button','Dashboard');
+  await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Οι λογαριασμοί μου')}",'Dashboard after provider artwork replacement');
+  await waitFor("function(expected){const image=document.querySelector('[data-bank-brand=\\\"piraeus\\\"] img');return !!image&&image.complete&&image.naturalWidth>0&&image.src===expected}",'Dashboard refreshes the replaced provider artwork binding',[replacedSource]);
+  await shot('provider-replaced-artwork-dashboard-dark-desktop');
+  await clickText('.sidebar nav button','Ρυθμίσεις');
+  await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Ρυθμίσεις')&&!!document.querySelector('.settings-tablist')}",'Settings after cross-surface provider proof');
+  await clickAccounts();
   const reopened=await c.call("function(){const button=document.querySelector('.provider-edit-action');button?.click();return Boolean(button)}");assert(reopened,'existing provider editor reopens');
   await waitFor("function(){return !!document.querySelector('.provider-editor-modal')}",'provider editor reopens');
   await openBranding();
