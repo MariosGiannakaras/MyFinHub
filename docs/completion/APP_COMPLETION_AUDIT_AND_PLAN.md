@@ -1386,7 +1386,7 @@ Exact-head validation on `b2c2b0bc…` produced two independent blockers after f
 - Remediation on staging adds a narrow 681–820 reflow contract: a shrinkable Savings hero grid, bounded gauge, shrink-safe source/destination route, ellipsis for long account values, wrapped goal-header actions and a one-column action grid where the compact shell is too narrow for the desktop composition.
 - The geometry harness now reports generic overflowing DOM nodes in addition to the total overflow and rogue interactive controls so any remaining failure identifies its owning element.
 - Regression coverage locks the intermediate breakpoint and shrink-safe route contract.
-- **Proof pending:** FV-57 is not complete until integrated exact-head rendered geometry passes the full canonical/intermediate/landscape/200%-equivalent matrix.
+- **Completed on exact-head CI #3178 (`2074f125…`).** The rendered geometry suite passed the full canonical, intermediate, resize-transition, landscape and 200%-equivalent matrix, including Savings at 720×500 with extreme data, Large readability and reduced motion.
 
 **WIN-AUDIT-01 — unpatched build-time dependency advisory**
 - Windows Desktop #2736 stopped before packaging because `npm audit --audit-level=high` reports `GHSA-ch52-4w7c-c8xp` through the `electron-builder` toolchain (`http-cache-semantics -> cacheable-request -> got -> @electron/get -> app-builder-lib`).
@@ -1412,4 +1412,28 @@ Accepted implementation contract:
 - update the relevant source tests and Windows/Electron validation so the implementation is proven for native window controls, drag/no-drag behavior, resize/maximize/restore, desktop light/dark presentation and regression-free startup/package behavior.
 
 Status: **Pending by owner request for later implementation.** No product code changes are part of this planning update. Adding this accepted sub-implementation increases the current counters to **Implementations 12/24 completed · Sub-implementations 127/194 completed**.
+
+### 8.49 CI #3178 / nested Settings direct-review follow-up — in progress
+
+Direct review of CI #3178 and all 48 fresh nested Settings captures from the persisted `2026-10-03_085519` matrix produced three actionable follow-ups.
+
+**QA-FUNC-SAV-01 — Savings functional harness follows a retired editor path**
+- CI #3178 passed the full geometry/overflow suite, including FV-57, then timed out waiting for `#saving-editor-title` after selecting `Μεταφορά στην άκρη`.
+- Source and existing rendered coverage confirm this is a harness mismatch, not a product regression: the accepted production flow intentionally routes manual Savings transfer through `.contextual-quick-modal` / `ContextualQuickAdd`.
+- Required remediation: update the functional CRUD harness to wait for the contextual Savings title, read the `Από` / `Προς αποταμίευση` comboboxes, submit through the contextual `Καταχώριση` action and retain the same history/target/Reports semantic assertions.
+- Status: **pending integrated rendered proof** after the harness correction.
+
+**FV-58 — Account Management editor dark-theme contrast**
+- Fresh settled dark captures on desktop/tablet/mobile show the Account Management modal using a hardcoded near-white surface while headings/labels inherit dark-theme light ink, producing materially unreadable text.
+- Root cause: `AccountManagementSettings.css` uses fixed white/light modal and segment backgrounds instead of semantic theme surfaces.
+- Required remediation: move the modal and internal neutral controls to semantic surface/control tokens; preserve layout, focus, animation and account semantics.
+- Status: **product fix pending** plus fresh dual-theme nested-state visual proof.
+
+**FV-59 — Rules editor mobile dark header contrast**
+- Fresh settled dark mobile capture shows the sticky Rules editor header as a light strip with dark-theme light text. Desktop/tablet Rules editor captures are correct.
+- Root cause: the shared <=680px `.editor-dialog` mobile anatomy hardcodes light body/header/action-zone backgrounds.
+- Required remediation: use semantic elevated surface/line tokens for the mobile editor body, sticky header, drag indicator and sticky action zone rather than a Rules-only dark override.
+- Status: **product fix pending** plus fresh dark-mobile rendered proof and regression check across other `.editor-dialog` consumers.
+
+The original QA-NESTED-ANIM timing defect is now proven resolved: all 48 recaptured states were directly inspected after the 240 ms settle boundary and no transition-opacity bleed-through remains. Implementation batch S stays open because FV-58/FV-59 are real product defects revealed by that valid evidence. These follow-ups do not change the denominator. No Android repository changes are involved.
 
