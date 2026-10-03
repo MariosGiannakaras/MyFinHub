@@ -36,6 +36,8 @@ Last updated: 2026-10-03
 
 | QA-SAVINGS-CONTEXT | Medium evidence blocker | Savings · rendered functional CRUD QA | CI #3178 timed out waiting for the legacy Savings dialog after clicking `Μεταφορά στην άκρη`. | The new proof expansion targeted the wrong editor contract; production intentionally routes manual transfers through the shared contextual Quick Add modal. | Completion functional harness + narrow source regression only. | **Source-fixed, proof pending.** The harness now follows `.contextual-quick-modal` and its real labels/actions; integrated rendered proof is required. |
 
+| QA-SELFLOAN-PRESENTATION | Medium evidence blocker | Loans → self-loan lifecycle · Transactions verification | CI #3179 counted the visible desktop transfer row and its hidden semantic-table mirror as separate finance transfers. | The harness queried shared `data-transaction-*` attributes without filtering presentation visibility, despite Transactions intentionally rendering a hidden semantic table for the same `pageRows`. | Completion functional harness + source regression only. | **Recorded, remediation pending.** Product/domain source shows one event write; both initial and lifecycle transfer counts must use visible rows before integrated proof. |
+
 ## Systemic causes
 
 1. **Theme-token bypass** — fixed white/light RGBA backgrounds inside page-specific responsive CSS. Fix shared semantic surface/control/inset/status tokens rather than accumulating dark-mode overrides.
