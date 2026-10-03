@@ -49,7 +49,7 @@ Release-closeout tracker: **#288 — complete**.
 
 ## Active completion batch — #476
 
-**Implementations 14/24 completed · Sub-implementations 150/195 completed**
+**Implementations 15/24 completed · Sub-implementations 151/195 completed**
 
 - The completion definition has been expanded by the owner to a full-system verification matrix. Existing implementation findings remain tracked, but final closeout now requires direct assistant-led manual review plus UI/UX/accessibility, routing/404, every supported user mutation, real-stack persistence/backend proof, exhaustive failure handling, security/privacy, temporal/data-boundary coverage, operational recovery and canonical post-merge validation.
 
@@ -216,3 +216,5 @@ Subsequent changes are product fixes against the completed v1.3.0 baseline. Rout
 - CI #3234 on `b7d2a160…` passed the full rendered coordinator with the new ultra-narrow brand/action collision assertion; Cross-engine #2360, Performance #2395, Windows Desktop #2793, Windows First Run #1344 and Windows Clean Launch #1345 are green on the same source head. Direct assistant reinspection opened all twelve refreshed 320px extreme route captures individually and confirms FV-63 is closed.
 - The 8.2 data-heavy visual cell and the full interaction-state cell are now completed from direct evidence review. Overall checkpoint: **Implementations 14/24 completed · Sub-implementations 150/195 completed**; 8.2 is 11/12. The only remaining 8.2 item is exhaustive dialog/sheet/popover/picker/confirmation state coverage.
 - FV-64/FV-65/FV-66 are source-fixed for the final 8.2 dialog evidence cell: shared Confirm/MoneyEdit surfaces are explicitly opaque; Receipt Inbox confirmation layers above the inbox with a topmost hit-test assertion; Settings device-revoke failure evidence preserves the real alert in-view without screenshot scroll reset. Exact-head rendered recapture/direct inspection remain pending; counters stay **14/24 · 150/195**.
+
+- 8.2 exhaustive visual inspection is now 12/12 complete on exact source head `7321c591…`. CI #3271, Performance #2432, Cross-engine #2397, Windows Desktop #2830, Windows First Run #1381 and Windows Clean Launch #1382 all passed; CodeQL #3220 was already green on the same source head. Direct review of artifact `11287584011` closed FV-64/FV-65/FV-66 and the final dialog/sheet/popover/picker/confirmation cell. Current checkpoint: **Implementations 15/24 completed · Sub-implementations 151/195 completed**.

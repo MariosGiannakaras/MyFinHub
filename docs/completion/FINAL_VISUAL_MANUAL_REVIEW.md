@@ -183,3 +183,27 @@ Disposition: **FV-63 PASS / closed.** Combined with the prior individual minimal
 The targeted state evidence was also opened individually rather than inferred from green automation: baseline/default controls, Refresh hover tooltip, mouse-down pressed Refresh, Quick Add keyboard focus, command-palette selected/focused result, disabled updater during download, persistence loading and saving, taxonomy destructive confirmation, persistence and form-validation errors, revision-conflict banner, and updater up-to-date success. Each requested state category is visually distinct and contained.
 
 Disposition: the 8.2 interactive-state item is **PASS / completed**. The remaining 8.2 gap is the exhaustive dialog/sheet/popover/picker/confirmation surface-state matrix; source inventory identified several shared ConfirmDialog use-cases without direct screenshots, so that item remains intentionally open.
+
+
+## Final dialog regression review — CI #3271
+
+Reviewed by: ChatGPT (direct individual image inspection)  
+Source head: `7321c591c426e91d4232e86ef456d1fa54f75810`  
+Rendered CI: #3271 / artifact `11287584011`  
+Review date: 2026-10-04
+
+The full rendered coordinator passed and persisted 423 focused screenshots. The review did not rely on a contact sheet: each affected frame below was opened individually at useful resolution.
+
+| Evidence group | Disposition |
+| --- | --- |
+| `dialog-money-edit-validation-mobile` | PASS — opaque white semantic surface, validation copy/action hierarchy readable over Credit artwork. |
+| `confirm-credit-event-delete-mobile` | PASS — destructive confirmation opaque and fully separated from the colorful underlying card. |
+| `confirm-receipt-delete` | PASS — confirmation is topmost above the Receipt Inbox; no hidden/behind-inbox state remains. |
+| `settings-device-revoke-failure-desktop` | PASS — preserved Android device row and inline failure alert are simultaneously visible. |
+| Quick Entry discard; credit-card total delete; persistence recovery | PASS — common ConfirmDialog surface remains opaque/contained after shared CSS change. |
+| Account delete; card permanent delete; savings goal delete; self-loan forgiveness; transaction delete | PASS — destructive hierarchy/copy/focus treatment remains clear with no clipping. |
+| Planning cancel + skip | PASS — destructive and non-destructive confirmation variants remain visually distinct and contained. |
+| Device revoke confirm + busy; JSON import confirm | PASS — busy disabled treatment and destructive confirmations remain readable/contained. |
+| Taxonomy retirement confirmation + blocked desktop/mobile states | PASS — shared confirmation stays opaque; blocker guidance remains readable/responsive. |
+
+Disposition: **8.2 Exhaustive visual inspection = 12/12 complete.** FV-64, FV-65 and FV-66 are closed. This visual closure does not substitute for pending isolated real-stack auth/persistence/Supabase verification.
