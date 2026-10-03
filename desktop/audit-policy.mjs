@@ -29,23 +29,20 @@ const allowedPackages=new Set([
   'electron-builder',
 ]);
 
-const viaIsAllowed=(via,seen)=>{
-  if(typeof via==='string'){
-    if(seen.has(via))return false;
-    return vulnerabilityIsAllowed(via,new Set([...seen,via]));
-  }
+const viaIsAllowed=via=>{
+  if(typeof via==='string')return allowedPackages.has(via);
   if(!via||typeof via!=='object')return true;
   if(!blockedSeverities.has(String(via.severity||'').toLowerCase()))return true;
   const fingerprint=`${via.url||''} ${via.title||''} ${via.source||''}`;
   return fingerprint.includes(allowedAdvisory);
 };
 
-const vulnerabilityIsAllowed=(name,seen=new Set([name]))=>{
+const vulnerabilityIsAllowed=name=>{
   if(!allowedPackages.has(name))return false;
   const entry=vulnerabilities[name];
   if(!entry)return false;
   const highVia=(entry.via??[]).filter(via=>typeof via==='string'||blockedSeverities.has(String(via?.severity||'').toLowerCase()));
-  return highVia.length>0&&highVia.every(via=>viaIsAllowed(via,seen));
+  return highVia.length>0&&highVia.every(viaIsAllowed);
 };
 
 const blocking=Object.entries(vulnerabilities)
