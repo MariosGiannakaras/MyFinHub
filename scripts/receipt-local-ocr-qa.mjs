@@ -172,6 +172,15 @@ try {
   assert((await receiptCount()) === 1, 'one durable local receipt exists immediately after capture');
   assert((await c.call("function(){return document.querySelectorAll('.receipt-draft-row').length}")) === 1, 'pending inbox shows captured draft');
   await screenshot('receipt-local-captured');
+  const deleteReceiptRequested=await c.call("function(){const button=[...document.querySelectorAll('.receipt-review-actions button')].find(node=>(node.textContent||'').trim()==='Διαγραφή');button?.click();return Boolean(button)}");
+  assert(deleteReceiptRequested,'receipt exposes local delete action');
+  await waitFor("function(){const dialog=document.querySelector('[role=alertdialog]');return Boolean(dialog&&(dialog.textContent||'').includes('Διαγραφή τοπικής απόδειξης;'))}",'receipt delete confirmation');
+  await sleep(180);
+  await screenshot('confirm-receipt-delete');
+  const deleteCancel=await c.call("function(){const dialog=document.querySelector('[role=alertdialog]');const button=[...dialog?.querySelectorAll('button')||[]].find(node=>(node.textContent||'').trim()==='Ακύρωση');button?.click();return Boolean(button)}");
+  assert(deleteCancel,'receipt delete confirmation exposes safe cancel');
+  await waitFor("function(){return !document.querySelector('[role=alertdialog]')}",'receipt delete cancel');
+  assert((await receiptCount())===1,'cancelled receipt delete preserves local draft');
 
   console.log('Receipt OCR QA: receipt survives close and reload');
   await c.call("function(){document.querySelector('.receipt-inbox-header .icon-button')?.click();return true}");
