@@ -1395,7 +1395,7 @@ Exact-head validation on `b2c2b0bc…` produced two independent blockers after f
 - A source regression requires the exact GHSA allowlist, high/critical blocking behavior and the absence of an audit `--force` bypass.
 - **Proof pending:** WIN-AUDIT-01 remains open until Windows Desktop passes on the integrated exact head with the scoped policy, while CodeQL and the other security/release gates remain green.
 
-Both findings are follow-ups inside existing 200%/responsive, security and Windows validation obligations; the denominator remains **193**. No finance persistence, Supabase/API semantics or Android repository code is changed.
+Both findings are follow-ups inside existing 200%/responsive, security and Windows validation obligations and did not themselves expand scope. The later owner-accepted desktop/Electron custom-title-bar item raises the current overall denominator to **194**. No finance persistence, Supabase/API semantics or Android repository code is changed.
 
 ### 8.48 Planned desktop/Electron custom title bar — pending
 
