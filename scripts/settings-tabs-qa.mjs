@@ -46,8 +46,13 @@ try{
           const revokeOpened=await c.call("function(){const row=[...document.querySelectorAll('.device-access-row')].find(node=>(node.textContent||'').includes('Android · Pixel'));const button=row?.querySelector('.device-access-revoke');button?.click();return Boolean(button)}");assert(revokeOpened,'Remote device exposes revoke confirmation');
           await waitFor("function(){const dialog=document.querySelector('[role=alertdialog]');return Boolean(dialog&&(dialog.textContent||'').includes('Αφαίρεση πρόσβασης από Android · Pixel'))}",'device revoke confirmation');
           await screenshot('settings-device-revoke-confirm-desktop');
-          const revokeCancelled=await c.call("function(){const dialog=document.querySelector('[role=alertdialog]');const button=[...dialog?.querySelectorAll('button')||[]].find(node=>(node.textContent||'').trim()==='Ακύρωση');button?.click();return Boolean(button)}");assert(revokeCancelled,'Device revoke confirmation exposes safe cancel');
-          await waitFor("function(){return !document.querySelector('[role=alertdialog]')&&[...document.querySelectorAll('.device-access-row')].some(node=>(node.textContent||'').includes('Android · Pixel'))}",'device revoke cancel preserves remote device');
+          const revokeConfirmed=await c.call("function(){const dialog=document.querySelector('[role=alertdialog]');const button=[...dialog?.querySelectorAll('button')||[]].find(node=>(node.textContent||'').trim()==='Αφαίρεση πρόσβασης');button?.click();return Boolean(button)}");assert(revokeConfirmed,'Device revoke confirmation can enter busy state');
+          await waitFor("function(){const dialog=document.querySelector('[role=alertdialog]');const buttons=[...dialog?.querySelectorAll('button')||[]];return buttons.length>=2&&buttons.every(button=>button.disabled)}",'device revoke busy confirmation');
+          await screenshot('settings-device-revoke-busy-desktop');
+          await waitFor("function(){const dialog=document.querySelector('[role=alertdialog]');const message=document.querySelector('.device-access-message[role=alert]');return Boolean(dialog&&message&&(message.textContent||'').includes('Δεν ήταν δυνατή η αφαίρεση πρόσβασης')&&[...dialog.querySelectorAll('button')].some(button=>!button.disabled))}",'device revoke failure state');
+          const revokeCancelled=await c.call("function(){const dialog=document.querySelector('[role=alertdialog]');const button=[...dialog?.querySelectorAll('button')||[]].find(node=>(node.textContent||'').trim()==='Ακύρωση');button?.click();return Boolean(button)}");assert(revokeCancelled,'Failed device revoke confirmation exposes safe cancel');
+          await waitFor("function(){return !document.querySelector('[role=alertdialog]')&&[...document.querySelectorAll('.device-access-row')].some(node=>(node.textContent||'').includes('Android · Pixel'))}",'failed device revoke preserves remote device');
+          await screenshot('settings-device-revoke-failure-desktop');
         }
       }
       if(tab.id==='accounts'){
