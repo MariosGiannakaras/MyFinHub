@@ -1791,4 +1791,14 @@ Direct individual review of CI #3255 / source `68417aba…` found two material b
 - Affected matrix cells: 8.2 device-revoke failure visual proof only; functional revoke failure/recovery semantics already pass.
 - Root cause classification: QA evidence ordering/scroll targeting only. Preserve the failure alert in view and capture it without the generic scroll reset.
 
-Status: **recorded before fix.** Counters remain **Implementations 14/24 completed · Sub-implementations 150/195 completed**; the only open 8.2 cell remains exhaustive dialog/sheet/popover/picker/confirmation coverage.
+Status: **source-fixed; exact-head rendered recapture and direct review pending.** Counters remain **Implementations 14/24 completed · Sub-implementations 150/195 completed**; the only open 8.2 cell remains exhaustive dialog/sheet/popover/picker/confirmation coverage.
+
+
+### 8.70 FV-64/FV-65/FV-66 remediation — source-fixed, proof pending
+
+- **FV-64:** shared `ConfirmDialog` and `MoneyEditDialog` now own an explicit opaque semantic `var(--surface)` background with semantic border/text tokens. The mobile Credit rendered suite parses computed `backgroundColor` and requires alpha >= 0.99 before accepting MoneyEdit validation or destructive confirmation evidence.
+- **FV-65:** the Receipt Inbox sibling confirmation backdrop now layers above the inbox (`140 > 130`), preserving the shared `ConfirmDialog`. Receipt OCR QA additionally hit-tests the alertdialog center and fails unless the dialog itself is topmost before capture.
+- **FV-66:** after the synthetic device-revoke failure and safe cancel, Settings QA scrolls the real inline failure alert into view, verifies its text/geometry, and captures the current viewport without the generic top-of-page reset.
+- Source regression locks all three shared contracts. Finance semantics, receipt persistence, device revocation behavior, backend/Supabase boundaries and Android code are unchanged.
+
+Status: **source-fixed.** Draft core CI first; if green, run one exact-head review-ready rendered wave and directly reopen the four invalidated evidence frames (`dialog-money-edit-validation-mobile`, `confirm-credit-event-delete-mobile`, `confirm-receipt-delete`, `settings-device-revoke-failure-desktop`). Counters remain **Implementations 14/24 completed · Sub-implementations 150/195 completed** until all four pass direct review.
