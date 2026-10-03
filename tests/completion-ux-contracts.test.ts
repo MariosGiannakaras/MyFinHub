@@ -248,6 +248,16 @@ describe('completion UX contracts',()=>{
     expect(css).toContain('.dashboard-approved .approved-bar-wrap{height:153px;min-height:153px}');
   });
 
+  it('covers the self-loan money lifecycle and non-cash forgiveness semantics',()=>{
+    const harness=read('scripts/completion-functional-crud-qa.mjs');
+    expect(harness).toContain('self-loan create, partial return and forgiveness');
+    expect(harness).toContain('self-loan creation produces exactly one neutral savings-to-current transfer');
+    expect(harness).toContain('self-loan partial return updates outstanding');
+    expect(harness).toContain('forgiven self-loan moves to completed history');
+    expect(harness).toContain('forgiveness creates none');
+  });
+
+
   it('verifies Savings transfer, target progress, history and report neutrality in rendered CRUD QA',()=>{
     const harness=read('scripts/completion-functional-crud-qa.mjs');
     expect(harness).toContain('Savings manual transfer, target progress and report effects');

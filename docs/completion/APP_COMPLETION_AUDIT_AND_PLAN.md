@@ -1359,4 +1359,10 @@ Savings is also tightened inside the existing functional CRUD suite:
 - compare Reports before/after and require income/expense KPIs to remain unchanged while the savings KPI changes;
 - the already-green Budget/Rules rendered flow separately covers changing the savings target rate itself. No separate "planned saving" persistence entity exists; the accepted planned-target interaction is the Savings target/progress model, while scheduled transfers remain owned by Planning.
 
-This implements existing verification obligations and does not change the denominator. Savings plus Receipt OCR + global tools, Budgets, Transaction Rules, Lending, Recurring, Attention/Review and Reports/analytics remain pending until the expanded assertions pass on an integrated head and their evidence/logs are directly reviewed.
+Loans is expanded without a new suite:
+- create a real `ΒΟΗΘΕΙΑ` self-loan and require exactly one neutral savings→current transfer;
+- record a partial 30 € return through the normalized loan payment flow and require the self-loan outstanding/history state to update;
+- forgive the remaining balance through the owned destructive confirmation, require completion/history with no payment CTA and then verify only two money transfers exist (initial funding + actual return), proving forgiveness creates no synthetic cash movement;
+- normal create/edit already remains in the same functional suite, while the separately green payment-flow/obligation suites cover ordinary payment, multi-installment payment, completion/history and linked recurring behavior.
+
+This implements existing verification obligations and does not change the denominator. Loans, Savings plus Receipt OCR + global tools, Budgets, Transaction Rules, Lending, Recurring, Attention/Review and Reports/analytics remain pending until the expanded assertions pass on an integrated head and their evidence/logs are directly reviewed.
