@@ -62,8 +62,16 @@ describe('MyFinHub Windows desktop boundary', () => {
     expect(desktopTitlebar).toContain('-webkit-app-region:drag');
     expect(desktopTitlebar).toContain('app-region:no-drag');
     expect(desktopTitlebar).toContain('-webkit-app-region:no-drag');
+    expect(desktopTitlebar).toContain('--desktop-shell-top-gutter:14px');
+    expect(desktopTitlebar).toContain('--desktop-shell-right-gutter:14px');
     expect(desktopTitlebar).toContain('--desktop-window-controls-reserve:152px');
+    expect(desktopTitlebar).toContain('top:0');
+    expect(desktopTitlebar).toContain('height:calc(62px + var(--desktop-shell-top-gutter))');
+    expect(desktopTitlebar).toContain('margin-top:calc(-1 * var(--desktop-shell-top-gutter))');
+    expect(desktopTitlebar).toContain('margin-right:calc(-1 * var(--desktop-shell-right-gutter))');
+    expect(desktopTitlebar).toContain('padding-top:var(--desktop-shell-top-gutter)');
     expect(desktopTitlebar).toContain('padding-right:calc(15px + var(--desktop-window-controls-reserve))');
+    expect(desktopTitlebar).toContain('border-radius:0 0 16px 16px');
     expect(desktopTitlebar).toContain('.topbar button');
     expect(desktopTitlebar).toContain('.topbar input');
     expect(desktopTitlebar).toContain('.topbar [role="button"]');
