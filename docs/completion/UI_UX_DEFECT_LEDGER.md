@@ -40,7 +40,7 @@ Last updated: 2026-10-03
 
 | QA-LENDING-PRIVACY-STATE | Medium evidence blocker | Lending · full repayment/privacy rendered QA | CI #3180 reached a fully settled 42€ receivable but required visible `0,00` while the synthetic app starts with privacy hidden; the next toggle assertion also expected the wrong pressed state. | Harness state-order assumption diverged from the canonical QA initial privacy state (`privacyVisible=false`). | Completion functional harness + focused source regression only. | **Closed.** Exact-head CI #3181 passed masked settlement → revealed `0,00` → masked identity with the expected pressed-state transitions. |
 
-| QA-REPORTS-PERIOD-SYNTAX | Medium evidence blocker | Reports · period-navigation rendered QA | CI #3181 failed before Reports runtime execution with `SyntaxError: missing ) after argument list`. | CDP function strings used outer double quotes and unescaped inner double quotes in `aria-label="…"` selectors. | Reports visual harness + rendered-suite syntax preflight. | **Recorded, remediation pending.** Fix both selectors and fail fast on QA-script syntax before browser execution; no Reports product defect identified. |
+| QA-REPORTS-PERIOD-SYNTAX | Medium evidence blocker | Reports · period-navigation rendered QA | CI #3181 failed before Reports runtime execution with `SyntaxError: missing ) after argument list`. | CDP function strings used outer double quotes and unescaped inner double quotes in `aria-label="…"` selectors. | Reports visual harness + rendered-suite syntax preflight. | **Source-fixed, proof pending.** Both selectors are syntax-safe and all rendered QA modules now receive fail-fast `node --check` validation before browser work; integrated Reports proof remains required. |
 
 ## Systemic causes
 
