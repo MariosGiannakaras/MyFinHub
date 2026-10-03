@@ -175,6 +175,8 @@ try {
   const deleteReceiptRequested=await c.call("function(){const button=[...document.querySelectorAll('.receipt-review-actions button')].find(node=>(node.textContent||'').trim()==='Διαγραφή');button?.click();return Boolean(button)}");
   assert(deleteReceiptRequested,'receipt exposes local delete action');
   await waitFor("function(){const dialog=document.querySelector('[role=alertdialog]');return Boolean(dialog&&(dialog.textContent||'').includes('Διαγραφή τοπικής απόδειξης;'))}",'receipt delete confirmation');
+  const receiptConfirmTopmost=await c.call("function(){const dialog=document.querySelector('[role=alertdialog]');if(!dialog)return false;const r=dialog.getBoundingClientRect();const x=r.left+r.width/2,y=r.top+r.height/2;const top=document.elementFromPoint(x,y);return Boolean(r.width>0&&r.height>0&&top&&(top===dialog||dialog.contains(top)))}");
+  assert(receiptConfirmTopmost,'receipt delete confirmation renders above Receipt Inbox');
   await sleep(180);
   await screenshot('confirm-receipt-delete');
   const deleteCancel=await c.call("function(){const dialog=document.querySelector('[role=alertdialog]');const button=[...dialog?.querySelectorAll('button')||[]].find(node=>(node.textContent||'').trim()==='Ακύρωση');button?.click();return Boolean(button)}");
