@@ -73,6 +73,15 @@ describe('rendered browser QA reliability contract', () => {
     expect(coordinator).toContain("/tmp/myfinhub-mutation-validation-qa-chrome");
   });
 
+  it('preloads a bounded child-process guard for every rendered QA suite',()=>{
+    expect(coordinator).toContain("['--import','./scripts/qa-child-process-guard.mjs',path]");
+    const guard=readFileSync('scripts/qa-child-process-guard.mjs','utf8');
+    expect(guard).toContain('ChildProcess.prototype.kill');
+    expect(guard).toContain("originalKill.call(this,'SIGKILL')");
+    expect(guard).toContain('this.unref()');
+    expect(guard).toContain('forceTimer.unref()');
+  });
+
   it('forces final isolated Chromium suites to finish teardown instead of hanging CI after assertions pass',()=>{
     expect(largeData).toContain('async function stopBrowser(process)');
     expect(largeData).toContain('await stopBrowser(child)');
