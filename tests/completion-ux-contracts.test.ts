@@ -248,6 +248,16 @@ describe('completion UX contracts',()=>{
     expect(css).toContain('.dashboard-approved .approved-bar-wrap{height:153px;min-height:153px}');
   });
 
+  it('exercises Reports period navigation and KPI recalculation in rendered QA',()=>{
+    const harness=read('scripts/reports-visual-qa.mjs');
+    expect(harness).toContain('period navigation recalculates the active report');
+    expect(harness).toContain("Προηγούμενος μήνας");
+    expect(harness).toContain("Ιούλιος 2026");
+    expect(harness).toContain('Reports KPIs recalculate after period change');
+    expect(harness).toContain("Επόμενος μήνας");
+  });
+
+
   it('exercises legacy review keep semantics without implicit report mutation',()=>{
     const harness=read('scripts/action-center-context-qa.mjs');
     expect(harness).toContain('legacy review keep semantics never mutate reports implicitly');
