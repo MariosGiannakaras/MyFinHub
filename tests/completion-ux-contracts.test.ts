@@ -306,7 +306,10 @@ describe('completion UX contracts',()=>{
     const harness=read('scripts/completion-functional-crud-qa.mjs');
     expect(harness).toContain('Lending full repayment, aggregation and privacy');
     expect(harness).toContain('QA Audit Final Repayment');
-    expect(harness).toContain('full repayment settles outstanding balance');
+    expect(harness).toContain('full repayment settles while initial privacy remains masked');
+    expect(harness).toContain("privacyPressed==='false'");
+    expect(harness).toContain('Lending privacy reveals settled zero balance');
+    expect(harness).toContain("getAttribute('aria-pressed')==='true'");
     expect(harness).toContain('Lending privacy masks selected identity');
     expect(harness).toContain('reactivated recurring item can be stopped');
     expect(harness).toContain('stopped recurring item retained without payment action');
