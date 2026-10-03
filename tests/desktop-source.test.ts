@@ -12,7 +12,10 @@ const bootstrap = read('desktop/bootstrap.cjs');
 const defaults = read('desktop/runtime-defaults.cjs');
 const main = read('desktop/main.cjs');
 const rendererMain = read('src/main.tsx');
+const qaRenderer = read('src/qa.tsx');
 const desktopTitlebar = read('src/styles/desktop-titlebar.css');
+const desktopTitlebarQa = read('scripts/desktop-titlebar-qa.mjs');
+const renderedRunner = read('scripts/run-rendered-qa.mjs');
 const preload = read('desktop/preload.cjs');
 const recovery = read('desktop/setup.html');
 const recoveryRenderer = read('desktop/setup-renderer.js');
@@ -75,6 +78,21 @@ describe('MyFinHub Windows desktop boundary', () => {
     expect(desktopTitlebar).toContain('.topbar button');
     expect(desktopTitlebar).toContain('.topbar input');
     expect(desktopTitlebar).toContain('.topbar [role="button"]');
+  });
+
+  it('renders desktop-only titlebar geometry and theme evidence in the isolated QA surface', () => {
+    expect(qaRenderer).toContain("params.get('desktop-titlebar')==='1'");
+    expect(qaRenderer).toContain("document.documentElement.dataset.myfinhubDesktop='true'");
+    expect(qaRenderer).toContain("import('./styles/desktop-titlebar.css')");
+    expect(desktopTitlebarQa).toContain("url.searchParams.set('desktop-titlebar','1')");
+    expect(desktopTitlebarQa).toContain("applyTheme('light')");
+    expect(desktopTitlebarQa).toContain("applyTheme('dark')");
+    expect(desktopTitlebarQa).toContain('actionReserve');
+    expect(desktopTitlebarQa).toContain('desktop-titlebar-light-1440');
+    expect(desktopTitlebarQa).toContain('desktop-titlebar-dark-1440');
+    expect(desktopTitlebarQa).toContain('desktop-titlebar-dark-960');
+    expect(renderedRunner).toContain("path:'scripts/desktop-titlebar-qa.mjs'");
+    expect(renderedRunner).toContain("key:'desktop-titlebar'");
   });
 
   it('keeps the renderer sandboxed and exposes only narrow recovery/update IPC', () => {
