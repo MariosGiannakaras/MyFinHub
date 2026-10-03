@@ -123,6 +123,9 @@ describe('rendered browser QA reliability contract', () => {
     expect(frontendQa).toContain('confirm-credit-card-total-delete');
     expect(receiptQa).toContain('confirm-receipt-delete');
     expect(settingsTabsQa).toContain('settings-device-revoke-confirm-desktop');
+    expect(settingsTabsQa).toContain('settings-device-revoke-busy-desktop');
+    expect(settingsTabsQa).toContain('settings-device-revoke-failure-desktop');
+    expect(qaHtml).toContain("QA_DEVICE_REVOKE_UNAVAILABLE");
     expect(settingsTabsQa).toContain('settings-json-import-confirm-desktop');
     expect(frontendQa).toContain('confirm-persistence-recovery-mobile');
     expect(qaWorkspace).toContain('title="Φόρτωση τελευταίας αποθηκευμένης έκδοσης;"');
