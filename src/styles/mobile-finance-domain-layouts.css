@@ -146,12 +146,12 @@
   .inactive-recurring-list>article>strong{font-size:10px}
 
   /* Domain editors share the same bottom-sheet language and thumb-reachable actions. */
-  .editor-dialog{border-radius:22px 22px 0 0!important;padding:14px 13px calc(14px + env(safe-area-inset-bottom,0px))!important;background:rgba(248,251,255,.99)!important}
-  .editor-dialog:before{content:"";display:block;width:34px;height:4px;border-radius:999px;background:#ced8e6;margin:-4px auto 10px}
-  .editor-dialog .panel-head{position:sticky;top:0;z-index:2;background:rgba(248,251,255,.96);padding-bottom:8px}
+  .editor-dialog{border-radius:22px 22px 0 0!important;padding:14px 13px calc(14px + env(safe-area-inset-bottom,0px))!important;background:var(--surface-elevated)!important}
+  .editor-dialog:before{content:"";display:block;width:34px;height:4px;border-radius:999px;background:var(--line);margin:-4px auto 10px}
+  .editor-dialog .panel-head{position:sticky;top:0;z-index:2;background:var(--surface-elevated);padding-bottom:8px}
   .editor-dialog .panel-head>div>span{font-size:13px}
   .editor-dialog .panel-head>div>small{font-size:8px;line-height:1.35}
-  .editor-dialog .editor-actions{position:sticky;bottom:0;z-index:2;display:grid;grid-template-columns:1fr 1.25fr;gap:7px;margin:12px -2px -2px;padding:8px 2px 1px;background:linear-gradient(180deg,rgba(248,251,255,.2),rgba(248,251,255,.98) 28%)}
+  .editor-dialog .editor-actions{position:sticky;bottom:0;z-index:2;display:grid;grid-template-columns:1fr 1.25fr;gap:7px;margin:12px -2px -2px;padding:8px 2px 1px;background:linear-gradient(180deg,transparent,var(--surface-elevated) 28%)}
   .editor-dialog .editor-actions button{min-height:46px;width:100%;justify-content:center}
 }
 
