@@ -1316,7 +1316,7 @@ Source remediation and proof expansion:
 
 FV-56 belongs to the existing keyboard/semantic accessibility item and the 200%/readability visual-verification item, so the denominator does not change. Completion remains pending integrated rendered proof. No finance persistence, Supabase or Android behavior changes.
 
-### 8.45 QA-NESTED-ANIM — nested Settings evidence timing follow-up in progress
+### 8.45 QA-NESTED-ANIM — nested Settings evidence timing follow-up completed
 
 Direct inspection of the 48 expanded nested Settings captures in Final Visual QA artifact `11252454113` showed provider/account/rule/import overlays with apparent background bleed-through. Source review disproved a product-surface defect: the provider surface is `var(--surface)`, the account editor uses `rgba(255,255,255,.96)`, and both provider/account editors animate from opacity 0 to 1 over 180 ms. The final screenshot harness captured nested states immediately after DOM presence without waiting for that finite entrance motion.
 
@@ -1326,7 +1326,7 @@ Evidence remediation:
 - keep product animation and product surface styling unchanged;
 - require a fresh 48-image nested-state recapture and direct inspection before closing implementation batch S.
 
-This is a QA evidence defect inside the existing nested-editor visual verification item and does not change the denominator. No finance, Supabase, API or Android behavior changes.
+This QA evidence defect is **completed**: the fresh 48-image nested Settings recapture was directly reviewed after the 240 ms settle boundary and no transition-opacity bleed-through remains. The review exposed separate real product defects FV-58/FV-59, tracked independently below. This item does not change the denominator. No finance, Supabase, API or Android behavior changes.
 
 ### 8.46 Implementation batch U — global-tools and remaining CRUD proof expansion in progress
 
@@ -1417,41 +1417,25 @@ Status: **Pending by owner request for later implementation.** No product code c
 
 Direct review of CI #3178 and all 48 fresh nested Settings captures from the persisted `2026-10-03_085519` matrix produced three actionable follow-ups.
 
-**QA-FUNC-SAV-01 — Savings functional harness follows a retired editor path**
+**QA-SAVINGS-CONTEXT — Savings functional harness followed a retired editor path**
 - CI #3178 passed the full geometry/overflow suite, including FV-57, then timed out waiting for `#saving-editor-title` after selecting `Μεταφορά στην άκρη`.
 - Source and existing rendered coverage confirm this is a harness mismatch, not a product regression: the accepted production flow intentionally routes manual Savings transfer through `.contextual-quick-modal` / `ContextualQuickAdd`.
-- Required remediation: update the functional CRUD harness to wait for the contextual Savings title, read the `Από` / `Προς αποταμίευση` comboboxes, submit through the contextual `Καταχώριση` action and retain the same history/target/Reports semantic assertions.
-- Status: **pending integrated rendered proof** after the harness correction.
+- **Source-fixed:** the functional CRUD harness now waits for the contextual Savings title, reads the contextual account comboboxes, uses the real `Σχόλιο` field and submits through the contextual `Καταχώριση` action while retaining the same history/target/Reports semantic assertions.
+- A narrow source regression locks the contextual modal contract and rejects the retired Savings-dialog path.
+- Status: **pending integrated rendered proof**.
 
 **FV-58 — Account Management editor dark-theme contrast**
 - Fresh settled dark captures on desktop/tablet/mobile show the Account Management modal using a hardcoded near-white surface while headings/labels inherit dark-theme light ink, producing materially unreadable text.
 - Root cause: `AccountManagementSettings.css` uses fixed white/light modal and segment backgrounds instead of semantic theme surfaces.
-- Required remediation: move the modal and internal neutral controls to semantic surface/control tokens; preserve layout, focus, animation and account semantics.
-- Status: **product fix pending** plus fresh dual-theme nested-state visual proof.
+- **Source-fixed:** Account Management modal and neutral segmented/default-choice controls now use semantic elevated/control surfaces while preserving layout, focus, animation and account semantics.
+- Focused source regression requires the semantic surface contract.
+- Status: **pending fresh dual-theme nested-state visual proof**.
 
 **FV-59 — Rules editor mobile dark header contrast**
 - Fresh settled dark mobile capture shows the sticky Rules editor header as a light strip with dark-theme light text. Desktop/tablet Rules editor captures are correct.
 - Root cause: the shared <=680px `.editor-dialog` mobile anatomy hardcodes light body/header/action-zone backgrounds.
-- Required remediation: use semantic elevated surface/line tokens for the mobile editor body, sticky header, drag indicator and sticky action zone rather than a Rules-only dark override.
-- Status: **product fix pending** plus fresh dark-mobile rendered proof and regression check across other `.editor-dialog` consumers.
+- **Source-fixed:** the shared mobile `.editor-dialog` body, sticky header, drag indicator and sticky action zone now use semantic elevated/line tokens rather than hardcoded light surfaces.
+- Focused source regression rejects the prior light-only mobile editor chrome.
+- Status: **pending fresh dark-mobile rendered proof and cross-consumer regression review**.
 
 The original QA-NESTED-ANIM timing defect is now proven resolved: all 48 recaptured states were directly inspected after the 240 ms settle boundary and no transition-opacity bleed-through remains. Implementation batch S stays open because FV-58/FV-59 are real product defects revealed by that valid evidence. These follow-ups do not change the denominator. No Android repository changes are involved.
-
-### 8.49 QA-SAVINGS-CONTEXT — Savings manual-transfer rendered proof mismatch in progress
-
-Exact-head CI #3178 advanced beyond the repaired 200%-equivalent geometry matrix and then failed inside `scripts/completion-functional-crud-qa.mjs` while waiting for the manual Savings transfer editor.
-
-Direct source/runtime-contract review shows this is a **QA harness mismatch, not a product regression**:
-- `SavingsPage` intentionally routes `Μεταφορά στην άκρη` through `onQuickAdd({mode:'savings', ...})`;
-- the production surface is the shared `.contextual-quick-modal` titled `Μεταφορά στην αποταμίευση`;
-- the stale completion harness incorrectly waited for `#saving-editor-title` / `.savings-dialog`, which belongs to the non-contextual Savings editor path used by the other savings actions;
-- the existing Action Center/context QA already exercises the same contextual Savings route and confirms its account selector remains user-editable.
-
-Required remediation:
-- update only the completion functional harness to wait for the contextual modal and use its real labels/actions (`Από`, `Προς αποταμίευση`, `Σχόλιο`, `Καταχώριση`);
-- retain the existing assertions for distinct source/destination accounts, saved note/source/amount, Savings target progress and Reports income/expense neutrality;
-- add a narrow source regression that rejects a return to the stale `.savings-dialog` contract for this flow;
-- rerun the integrated rendered suite and directly review the resulting functional evidence/logs before closing the Savings verification cell.
-
-This is an evidence-harness correction inside the already accepted Savings functional verification item; it does not change the denominator. No finance semantics, backend/Supabase behavior, desktop packaging or Android repository code is changed.
-
