@@ -1391,7 +1391,7 @@ Exact-head validation on `b2c2b0bc…` produced two independent blockers after f
 **WIN-AUDIT-01 — unpatched build-time dependency advisory**
 - Windows Desktop #2736 stopped before packaging because `npm audit --audit-level=high` reports `GHSA-ch52-4w7c-c8xp` through the `electron-builder` toolchain (`http-cache-semantics -> cacheable-request -> got -> @electron/get -> app-builder-lib`).
 - Current upstream advisory data has no patched `http-cache-semantics` release, so dependency churn cannot honestly be recorded as a remediation.
-- The staging remediation does **not** disable npm audit and does not broadly ignore high findings. `desktop/audit-policy.mjs` consumes the real npm-audit JSON, permits only the exact advisory through an explicit build-time package chain, fails closed on dependency cycles, and exits non-zero for every other high/critical advisory. If the advisory disappears from the audit graph, no exception is exercised.
+- The staging remediation does **not** disable npm audit and does not broadly ignore high findings. `desktop/audit-policy.mjs` consumes the real npm-audit JSON, permits only the exact advisory through an explicit build-time package allowlist, accepts cyclic package references only when every high/critical edge stays inside that allowlist, and exits non-zero for every other high/critical advisory or package. If the advisory disappears from the audit graph, no exception is exercised.
 - A source regression requires the exact GHSA allowlist, high/critical blocking behavior and the absence of an audit `--force` bypass.
 - **Proof pending:** WIN-AUDIT-01 remains open until Windows Desktop passes on the integrated exact head with the scoped policy, while CodeQL and the other security/release gates remain green.
 
