@@ -1621,3 +1621,15 @@ Exact-head CI #3210 on `60f7c3c…` proved the rendered-suite completion wrapper
 - Focused source regression locks the query-state contract and persisted vault reference. No card-vault product behavior, FinanceData production schema, API/auth/Supabase behavior, packaging or Android code changed.
 
 Status: **source-fixed; exact-head rendered proof pending.** Counters remain **Implementations 13/24 completed · Sub-implementations 143/195 completed** until the full save → reveal → hard reload → reveal → update → delete runtime sequence passes and is directly reviewed.
+
+
+### 8.58 CI #3212 — Card Vault post-pass Chromium profile cleanup race — source-fixed, proof pending
+
+Exact-head CI #3212 on `42207eb…` completed the entire Card Vault runtime contract successfully: invalid input stayed local, save/reveal succeeded, a real hard reload re-revealed the synthetic server secret, update succeeded, and explicit DELETE left the next editor empty. The suite then exited non-zero during `finally` because its profile deletion raced Chromium's process-exit completion and hit `ENOTEMPTY` under `Default`.
+
+**FV-62/Card Vault teardown follow-up**
+- The browser shutdown helper now sends SIGTERM first, escalates to SIGKILL after two seconds, and waits for the actual child exit event with a bounded 3.5-second fallback instead of resolving immediately when SIGKILL is sent.
+- Profile deletion runs only after that shutdown wait plus a short settle interval, uses the existing bounded retry contract, and degrades a residual filesystem race to a cleanup warning because the coordinator also owns profile cleanup after module exit.
+- Focused source regression locks the bounded post-SIGKILL wait and deferred-cleanup diagnostic. No rendered assertion, Card Vault product/API behavior, security boundary, persistence schema, package behavior or Android code changed.
+
+Status: **source-fixed; exact-head coordinator proof pending.** The Card Vault functional cell has runtime assertion evidence from CI #3212, but counters remain **Implementations 13/24 completed · Sub-implementations 143/195 completed** until the coordinator itself completes successfully on the exact head.

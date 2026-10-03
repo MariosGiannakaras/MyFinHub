@@ -13,7 +13,18 @@ rmSync(profile,{recursive:true,force:true,maxRetries:5,retryDelay:100});
 const child=spawn(chrome,['--headless=new',`--remote-debugging-port=${port}`,'--remote-debugging-address=127.0.0.1',`--user-data-dir=${profile}`,'--no-sandbox','--disable-gpu','--disable-dev-shm-usage','about:blank'],{stdio:'ignore'});
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function waitHttp(url){for(let i=0;i<100;i+=1){try{const response=await fetch(url);if(response.ok)return}catch{}await sleep(120)}throw new Error(`Timed out waiting for ${url}`)}
-async function stopBrowser(process){if(!process||process.exitCode!==null)return;await new Promise(resolve=>{const timer=setTimeout(()=>{process.kill('SIGKILL');resolve()},2000);process.once('exit',()=>{clearTimeout(timer);resolve()});process.kill('SIGTERM')})}
+async function stopBrowser(process){
+  if(!process||process.exitCode!==null)return;
+  await new Promise(resolve=>{
+    let settled=false;
+    const finish=()=>{if(settled)return;settled=true;clearTimeout(forceTimer);clearTimeout(giveUpTimer);resolve()};
+    const forceTimer=setTimeout(()=>{if(process.exitCode===null){try{process.kill('SIGKILL')}catch{}}},2000);
+    const giveUpTimer=setTimeout(finish,3500);
+    process.once('exit',finish);
+    if(process.exitCode!==null){finish();return}
+    try{process.kill('SIGTERM')}catch{finish()}
+  });
+}
 class Cdp{
   constructor(url){this.url=url;this.id=0;this.pending=new Map()}
   async open(){await new Promise((resolve,reject)=>{this.ws=new WebSocket(this.url);this.ws.onopen=resolve;this.ws.onerror=reject;this.ws.onmessage=event=>{const message=JSON.parse(event.data);if(!message.id)return;const pending=this.pending.get(message.id);if(!pending)return;this.pending.delete(message.id);message.error?pending.reject(new Error(message.error.message)):pending.resolve(message.result)}})}
@@ -117,5 +128,7 @@ try{
 }finally{
   try{c?.close()}catch{}
   await stopBrowser(child);
-  rmSync(profile,{recursive:true,force:true,maxRetries:5,retryDelay:100});
+  await sleep(250);
+  try{rmSync(profile,{recursive:true,force:true,maxRetries:8,retryDelay:150})}
+  catch(error){console.warn(`Card Vault runtime QA profile cleanup deferred: ${error instanceof Error?error.message:String(error)}`)}
 }

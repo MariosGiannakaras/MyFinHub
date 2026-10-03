@@ -94,6 +94,8 @@ describe('rendered browser QA reliability contract', () => {
     expect(cardVaultRuntime).toContain("url.searchParams.set('card-vault','ready')");
     expect(qaWorkspace).toContain("params.get('card-vault')==='ready'");
     expect(qaWorkspace).toContain("vaultRef:'qa-debit-card'");
+    expect(cardVaultRuntime).toContain("const giveUpTimer=setTimeout(finish,3500)");
+    expect(cardVaultRuntime).toContain('Card Vault runtime QA profile cleanup deferred');
     expect(cardVaultRuntime).toContain('Page.addScriptToEvaluateOnNewDocument');
     expect(cardVaultRuntime).toContain('hard reload re-reveals server secret');
     expect(cardVaultRuntime).toContain("deleteCardSecret('qa-debit-card')");
