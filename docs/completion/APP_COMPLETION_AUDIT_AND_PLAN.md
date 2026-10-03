@@ -1444,7 +1444,8 @@ Direct review of CI #3178 and all 48 fresh nested Settings captures from the per
 - CI #3179 passed the repaired Savings manual-transfer flow, then failed at the first self-loan transfer-count assertion.
 - Direct source review confirms the product creates one finance event. Transactions deliberately renders the same current page into the visible desktop ledger and a hidden semantic table, and both representations expose `data-transaction-kind` / `data-transaction-source`.
 - The self-loan harness counted both representations without the existing visibility filter already used by other CRUD assertions, so one transfer appeared as two DOM rows; the later two-transfer lifecycle assertion has the same defect.
-- Required remediation: count only visible matching desktop transaction rows while retaining the exact note/kind/source/neutral-transfer checks; add a narrow source regression for both initial and lifecycle counts.
-- Status: **recorded, source fix pending**. No loan/domain/persistence behavior change is indicated by current evidence.
+- **Source-fixed:** both initial and lifecycle transfer counts now filter to the visible desktop transaction representation while retaining the exact note/kind/source/neutral-transfer checks.
+- A narrow source regression requires visibility-aware counting for both assertions.
+- Status: **pending integrated rendered proof**. No loan/domain/persistence behavior changed.
 
 The original QA-NESTED-ANIM timing defect is now proven resolved: all 48 recaptured states were directly inspected after the 240 ms settle boundary and no transition-opacity bleed-through remains. Implementation batch S stays open because FV-58/FV-59 are real product defects revealed by that valid evidence. These follow-ups do not change the denominator. No Android repository changes are involved.
