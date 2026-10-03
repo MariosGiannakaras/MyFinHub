@@ -1430,7 +1430,9 @@ Source implementation now complete:
 - the 960–980px collapsed-desktop range receives the matching 8px shell-gutter/native-control reserve without touching <=680 mobile rules;
 - focused desktop source regressions lock the native overlay, setup-window exclusion, desktop-only style loading, drag/no-drag boundaries and integrated caption geometry.
 
-Status: **Source implementation complete; exact-head Windows validation pending.** No Android repository changes are required; expected Android impact remains none because all renderer styling is gated by the Electron preload bridge. Counters remain **Implementations 12/24 completed · Sub-implementations 130/194 completed** until required Windows validation and desktop-specific review complete.
+Validation checkpoint: exact-head Windows Desktop #2744, Windows First Run #1295 and Windows Clean Launch #1296 already pass with the native-overlay source implementation, proving packaging/startup compatibility. The Windows Desktop packaged-app smoke is now strengthened to require a real main-window handle and exercise native maximize → restore → 1100×760 resize before teardown; source regression locks those host-state checks.
+
+Status: **Source implementation complete; strengthened exact-head Windows host-state validation pending.** No Android repository changes are required; expected Android impact remains none because all renderer styling is gated by the Electron preload bridge. Counters remain **Implementations 12/24 completed · Sub-implementations 130/194 completed** until the strengthened Windows gate and desktop-specific review complete.
 
 ### 8.49 CI #3178 / nested Settings direct-review follow-up — in progress
 
