@@ -7,6 +7,8 @@ describe('completion UX contracts',()=>{
 
   it('proves provider artwork replacement refreshes a real consumer surface',()=>{
     const harness=read('scripts/provider-brand-management-qa.mjs');
+    expect(harness).toContain("clickText('.provider-editor-footer button','Αποθήκευση')");
+    expect(harness).toContain('saved provider editor closes for dark provider-list evidence');
     expect(harness).toContain('uploaded provider asset replaces the prior base-logo binding');
     expect(harness).toContain('Dashboard after provider artwork replacement');
     expect(harness).toContain('Dashboard refreshes the replaced provider artwork binding');
