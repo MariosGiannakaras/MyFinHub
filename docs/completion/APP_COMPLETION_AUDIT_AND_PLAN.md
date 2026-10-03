@@ -1532,7 +1532,7 @@ Direct source review therefore identifies a QA timing race rather than a product
 
 Status: **Completed on exact head `7dce0860…`.** CI #3190 passed the full Recovered Surface QA, including ordinary PageErrorBoundary focus/recovery and the delayed lazy-resource focus/redaction path. No product UI/domain behavior, finance persistence, backend/Supabase code or Android code changed. Counters remain **Implementations 12/24 completed · Sub-implementations 140/194 completed**.
 
-### 8.52 CI #3190 — decorative chart keyboard-focus follow-up — source-fixed, proof pending
+### 8.52 CI #3190 — decorative chart keyboard-focus follow-up — completed
 
 Exact-head CI #3190 on `7dce0860…` passed the source/unit/build phase and every rendered suite through Receipt OCR, Ledger foundations, large-data boundaries and 404 accessibility. Keyboard/Semantic Accessibility then failed on **mobile Planning** at Tab step 18 because `document.activeElement` became a non-HTMLElement chart target.
 
@@ -1546,9 +1546,9 @@ Exact-head CI #3190 on `7dce0860…` passed the source/unit/build phase and ever
 - The keyboard/semantic audit now inspects focusable descendants under every `aria-hidden` ancestor and reports any focused DOM `Element`, including SVG, instead of returning `null`.
 - Focused source regression locks both the decorative-chart contract and the strengthened audit.
 
-Status: **pending exact-head integrated keyboard/semantic proof**. This is an accessibility-presentation correction only; finance/domain behavior, backend/Supabase behavior and the Android repository are unchanged. Counters remain **Implementations 12/24 completed · Sub-implementations 140/194 completed**.
+Status: **Completed on exact head `eef0b761…`.** CI #3191 passed the complete desktop/mobile primary-route sweep, every Settings tab and all auth/error states without the former hidden Recharts/SVG focus target; the same accessibility suite advanced beyond FV-60 and failed later in the independent Command Palette focus-trap check. This is an accessibility-presentation correction only; finance/domain behavior, backend/Supabase behavior and the Android repository are unchanged. Counters remain **Implementations 12/24 completed · Sub-implementations 140/194 completed**.
 
-### 8.53 Provider artwork replacement / cross-surface refresh proof — source-expanded, integrated proof pending
+### 8.53 Provider artwork replacement / cross-surface refresh proof — completed
 
 Direct review of the Settings account/provider metadata verification row after CI #3190 shows that account CRUD, IBAN/provider correction, provider editor/create flows, asset upload, reuse and semantic slot binding are already covered. One requirement was not yet explicit enough to close the cell: **replacement of an existing provider artwork binding and refresh of a real consumer surface using that replacement**.
 
@@ -1560,7 +1560,20 @@ The existing provider branding rendered suite is expanded without product change
 - navigate back to Settings/Accounts and continue the existing reopen/mobile/create/failure-recovery provider checks;
 - source regression locks the replacement and cross-surface refresh assertions.
 
-Status: **source-expanded, exact-head rendered proof pending**. The Settings account/provider metadata cell remains unchecked until this assertion passes. This is evidence expansion inside an existing accepted verification item, so the denominator does not change. No backend/API semantics, packaging/security behavior or Android repository code changed.
+Status: **Completed in CI #3190.** `Provider branding task-flow QA passed` after exercising the replacement/cross-surface sequence: the existing Piraeus base-logo binding was replaced, the provider list resolved the new loaded source, Dashboard resolved the exact same replacement source without page reload, and the suite continued through reopen/mobile/create/failure-recovery checks. Together with the passing Account Metadata and functional account CRUD flows, this closes the Settings account/provider metadata cell. This evidence expansion changed no backend/API semantics, packaging/security behavior or Android repository code.
 
-Current counters after independently closing Taxonomy/icons/preferences from CI #3190 are **Implementations 12/24 completed · Sub-implementations 140/194 completed**.
+Current counters after closing Taxonomy/icons/preferences and Settings account/provider metadata are **Implementations 12/24 completed · Sub-implementations 140/194 completed**.
 
+
+### 8.54 CI #3191 — Command Palette focus-trap follow-up — source fix pending
+
+Exact-head CI #3191 on `eef0b761…` passed the complete route/settings/auth keyboard-semantic sweep, proving FV-60 resolved, then failed at **Command Palette focus trap step 2**.
+
+**FV-61 — Command Palette modal focus can escape on sequential Tab**
+- The Command Palette correctly opens with focus inside the dialog, but its result buttons intentionally use `tabIndex={-1}` because Arrow Up/Down + `aria-activedescendant` own result navigation.
+- The shared `useModalFocus` helper currently treats every enabled button as a sequential focus target even when its effective `tabIndex` is negative, and only intercepts Tab at its computed first/last boundaries. That focus model disagrees with the browser's actual tab order and allows the second Tab to leave the dialog.
+- Required remediation: make shared modal focusability honor effective `tabIndex >= 0`, prevent every Tab/Shift+Tab handled by the topmost modal, and explicitly cycle through its current sequential focus targets.
+- Preserve Escape dismissal, nested/topmost modal ownership, preferred initial focus, dynamic error association and opener focus restoration.
+- Scope is shared modal-focus infrastructure plus source/runtime accessibility regression. No Command Palette search/result semantics, finance/domain behavior, backend/Supabase behavior, packaging or Android code changes are required.
+
+Status: **recorded; source fix pending integrated proof**. This follow-up belongs to the existing accessibility verification scope and does not change the denominator. Counters remain **Implementations 12/24 completed · Sub-implementations 140/194 completed**.
