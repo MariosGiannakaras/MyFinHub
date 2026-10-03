@@ -1,7 +1,10 @@
 import { spawnSync } from 'node:child_process';
 
-const npm=process.platform==='win32'?'npm.cmd':'npm';
-const result=spawnSync(npm,['audit','--audit-level=high','--json'],{encoding:'utf8',shell:false});
+const auditArgs=['audit','--audit-level=high','--json'];
+const npmCli=process.env.npm_execpath;
+const command=npmCli?process.execPath:(process.platform==='win32'?(process.env.ComSpec||'cmd.exe'):'npm');
+const args=npmCli?[npmCli,...auditArgs]:(process.platform==='win32'?['/d','/s','/c','npm audit --audit-level=high --json']:auditArgs);
+const result=spawnSync(command,args,{encoding:'utf8',shell:false});
 const raw=(result.stdout||'').trim();
 if(!raw){
   process.stderr.write(result.stderr||'npm audit produced no JSON output.\n');
