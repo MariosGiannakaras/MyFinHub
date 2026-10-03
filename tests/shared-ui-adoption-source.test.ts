@@ -188,6 +188,8 @@ describe('shared finance UI adoption contracts',()=>{
     expect(cardCreateDialog).toContain('aria-modal="true"');
     expect(modalFocus).toContain("shortcutMatches(event, 'dismiss')");
     expect(modalFocus).toContain("event.key !== 'Tab'");
+    expect(modalFocus).toContain('element.tabIndex>=0');
+    expect(modalFocus).toContain('const currentIndex=current?items.indexOf(current):-1');
     expect(modalFocus).toContain("document.querySelectorAll<HTMLElement>('[aria-modal=\"true\"]')");
     expect(modalFocus).toContain('opener.current?.focus');
     expect(modalFocus).toContain(".form-error[role=\"alert\"]");
