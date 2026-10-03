@@ -22,7 +22,7 @@ try{
   assert(await c.call(`function(){const button=document.querySelector('.period-control button[aria-label="Προηγούμενος μήνας"]');button?.click();return Boolean(button)}`),'previous reporting month control is available');
   await waitReports();
   await waitForPeriod();
-  const july=await c.call("function(){return {period:document.querySelector('.report-period-chip b')?.textContent||'',kpis:(document.querySelector('.report-kpi-strip')?.textContent||'').replace(/\\s+/g,' ').trim(),nextDisabled:Boolean(document.querySelector('.period-control button[aria-label^="Επόμενος μήνας"]')?.disabled)}}");
+  const july=await c.call(`function(){return {period:document.querySelector('.report-period-chip b')?.textContent||'',kpis:(document.querySelector('.report-kpi-strip')?.textContent||'').replace(/\\s+/g,' ').trim(),nextDisabled:Boolean(document.querySelector('.period-control button[aria-label^="Επόμενος μήνας"]')?.disabled)}}`);
   assert(july.period.includes('Ιούλιος 2026'),'Reports period moves to July 2026');
   assert(july.kpis&&july.kpis!==augustKpis,'Reports KPIs recalculate after period change');
   assert(!july.nextDisabled,'next reporting month becomes available after moving backward');
