@@ -1751,3 +1751,22 @@ Exact source head `b7d2a160…` completed the remediation validation wave.
 - The remaining 8.2 work is now only the exhaustive dialog/sheet/popover/picker/confirmation surface-state matrix. Source inventory confirms several destructive ConfirmDialog use-cases still lack direct captures, so that final cell is intentionally not credited yet.
 
 Checkpoint: **Implementations 14/24 completed · Sub-implementations 150/195 completed.**
+
+
+### 8.68 Exhaustive dialog/confirmation evidence expansion — source-implemented, proof pending
+
+The final open 8.2 cell requires direct evidence for dialog/sheet/popover/picker/confirmation surfaces and applicable opening, focused/populated, validation, saving/success/failure states. Source inventory showed that shared `ConfirmDialog` is reused across destructive and recovery flows, while several existing rendered suites already execute those exact flows without persisting the open confirmation state.
+
+This batch extends only those existing real flows:
+- completion CRUD captures transaction delete, savings-goal delete, self-loan forgiveness, permanent debit/prepaid-card delete and account delete confirmations before the already-tested confirm action;
+- Planning captures both non-destructive skip and destructive cancel confirmations;
+- primitive-adoption captures dirty Quick Entry discard, MoneyEditDialog validation and credit-event delete confirmation;
+- frontend QA captures total credit-card deletion and now mirrors the production persistence-recovery flow through the real shared `ConfirmDialog`, capturing it before explicit reload confirmation;
+- receipt OCR opens the real local receipt delete confirmation and cancels it, proving the durable local draft remains;
+- Settings opens the real remote-device revoke confirmation and JSON-import confirmation, then uses safe Cancel so no external/destructive mutation occurs;
+- the six existing finance-dialog captures are split into immediate `opening` and delayed `settled` frames. The settled frame now requires computed opacity >= .99 and non-zero geometry, eliminating the previously ambiguous translucent Loans screenshot;
+- source regressions lock all new evidence names plus the persistence-recovery parity contract.
+
+Existing evidence remains authoritative for owned date/select popovers, account/provider pickers, Settings account create/edit modals, command palette, mobile-more sheet, Change History, taxonomy retirement, receipt inbox, Card details/profile and other already-rendered shared surfaces.
+
+Status: **source-implemented; draft core CI, exact-head rendered proof and direct individual screenshot inspection pending.** Counters remain **Implementations 14/24 completed · Sub-implementations 150/195 completed**. No product finance semantics, backend/Supabase behavior, destructive external action or Android code changed.
