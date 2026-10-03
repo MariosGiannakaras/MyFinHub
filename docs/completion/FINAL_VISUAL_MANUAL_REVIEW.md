@@ -104,3 +104,25 @@ FV-58 Account Management editor: directly inspected all six new-account editor c
 FV-59 Rules editor: directly inspected the dark mobile, tablet and desktop captures plus the light mobile comparator. The repaired mobile sheet no longer exposes a light sticky header/action strip in dark mode; editor body, header, grouped condition/action surfaces and sticky footer remain visually coherent. Tablet/desktop dark presentation and the light mobile presentation remain intact. **PASS / completed.**
 
 These reviews close the two product follow-ups exposed by the earlier animation-timing correction. They do not claim closure of the broader still-pending all-dialog/all-state matrix or final canonical post-merge proof.
+
+
+## Focused 404 exact-head review — CI #3216 / Final Visual #98
+
+Reviewed by: ChatGPT (direct visual inspection)  
+Rendered artifact: `myfinhub-visual-qa-f62dc2416bf0e4718d9e1b0fef2bd3f5d830bf00`  
+GitHub Actions artifact ID: `11284071418`  
+Source head: `74bdc0c89b6a97c4a5f98a4dac892148d7cc48a9`  
+Final Visual persistence commit: `2f9181767e95c3c1dafda96063965265878dd618` with manifest source `74bdc0c…`  
+Review date: 2026-10-03
+
+The focused 404 evidence was opened directly at useful resolution after the semantic-theme harness correction.
+
+| Capture | Disposition |
+| --- | --- |
+| `not-found-light-200pct.png` | PASS — Light semantic canvas/card hierarchy is readable and contained at the 720×500 200%-equivalent profile; Dashboard/Back actions remain visible. |
+| `not-found-dark-200pct.png` | PASS — genuinely dark semantic canvas/card/tokens, not a mislabeled Light capture; heading/body/safety copy and actions remain readable with no horizontal clipping. |
+| `keyboard-semantic-404-zoom-reduced.png` | PASS — reduced-motion 200%-equivalent recovery surface remains contained and the keyboard-focused Back action has a clear interactive focus treatment. |
+
+The product 404 markup/styles did not change after the previously completed six-capture desktop/tablet/mobile Light/Dark review, so those directly inspected responsive captures remain valid. CI #3216 separately proves the programmatic H1 retains focus without interactive halo styling, sequential Tab reaches Dashboard then Back, reduced motion disables the missing-route pulse, and both actions remain touch/keyboard safe.
+
+Disposition: the manual 404 desktop/tablet/mobile + Light/Dark + keyboard-only + 200% + reduced-motion checklist item is **PASS / completed**. The distinct external Vercel unknown-HTTP-path deployment item remains open.
