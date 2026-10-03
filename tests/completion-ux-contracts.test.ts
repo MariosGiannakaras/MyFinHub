@@ -333,6 +333,9 @@ describe('completion UX contracts',()=>{
     const harness=read('scripts/budget-rules-qa.mjs');
     expect(harness).toContain("selectOwnedOption('Κατηγορία / υποκατηγορία','Τρόφιμα')");
     expect(harness).toContain('automation edit persists');
+    expect(harness).toContain("node.getAttribute('aria-label')===label");
+    expect(harness).toContain("document.querySelectorAll('input,textarea')");
+    expect(harness).toContain('const input=direct??row?.querySelector');
     expect(harness).toContain('existing matching transaction remains unchanged');
     expect(harness).toContain('new matching transaction receives rule category');
     expect(harness).toContain('overall budget create with warning threshold');
