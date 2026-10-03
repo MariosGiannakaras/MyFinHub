@@ -67,7 +67,7 @@ try{
  const navigate=async(page,heading,width,height,mobile)=>{await viewport(width,height,mobile);const url=new URL(baseUrl);url.searchParams.set('page',page);url.searchParams.set('motion','reduced');await c.send('Page.navigate',{url:url.href});await waitFor("function(text){return (document.querySelector('#main-workspace h1')?.textContent||'').includes(text)}",`${page} heading`,[heading]);await sleep(80)};
  const shot=async name=>{const image=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(image.data,'base64'))};
  const semanticAudit=()=>c.call(`function(){
-   const visible=el=>{const r=el.getBoundingClientRect(),s=getComputedStyle(el);return r.width>0&&r.height>0&&s.display!=='none'&&s.visibility!=='hidden'};
+   const visible=el=>{const closedDetails=el.closest?.('details:not([open])');if(closedDetails&&!(el.matches('summary')&&el.parentElement===closedDetails))return false;const r=el.getBoundingClientRect(),s=getComputedStyle(el);return r.width>0&&r.height>0&&s.display!=='none'&&s.visibility!=='hidden'};
    const labelText=el=>{
      const aria=(el.getAttribute('aria-label')||'').trim();if(aria)return aria;
      const by=(el.getAttribute('aria-labelledby')||'').split(/\\s+/).filter(Boolean).map(id=>document.getElementById(id)?.textContent||'').join(' ').trim();if(by)return by;
@@ -91,7 +91,7 @@ try{
  }`);
  const tabSweep=async label=>{
    const setup=await c.call(`function(){
-     const visible=el=>{const r=el.getBoundingClientRect(),s=getComputedStyle(el);return r.width>0&&r.height>0&&s.display!=='none'&&s.visibility!=='hidden'};
+     const visible=el=>{const closedDetails=el.closest?.('details:not([open])');if(closedDetails&&!(el.matches('summary')&&el.parentElement===closedDetails))return false;const r=el.getBoundingClientRect(),s=getComputedStyle(el);return r.width>0&&r.height>0&&s.display!=='none'&&s.visibility!=='hidden'};
      const nodes=[...document.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]):not([type=hidden]),select:not([disabled]),textarea:not([disabled]),summary,[tabindex]:not([tabindex="-1"])')].filter(visible);
      const start=document.querySelector('.skip-link')&&visible(document.querySelector('.skip-link'))?document.querySelector('.skip-link'):nodes[0];
      start?.focus();

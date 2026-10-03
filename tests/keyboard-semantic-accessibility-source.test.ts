@@ -25,6 +25,11 @@ describe('keyboard and semantic accessibility verification contract',()=>{
     expect(qa).toContain('focused control has no visible focus indicator');
   });
 
+  it('models closed native details descendants as outside the sequential tab order',()=>{
+    expect(qa).toContain("details:not([open])");
+    expect(qa).toContain("el.matches('summary')&&el.parentElement===closedDetails");
+  });
+
   it('audits every Settings tab and auth/error surface on desktop and mobile',()=>{
     expect(qa).toContain("const settingsTabs=['profile','accounts','categories','icons','rules','data']");
     expect(qa).toContain("Keyboard/semantic accessibility QA: auth and auth-error states");

@@ -1508,3 +1508,16 @@ Direct review of CI #3178 and all 48 fresh nested Settings captures from the per
 - Status: **pending integrated rendered proof**. No Quick Entry or command-palette product defect has been identified; the shortcut itself already opened Quick Entry before the prior harness exception.
 
 The original QA-NESTED-ANIM timing defect is now proven resolved: all 48 recaptured states were directly inspected after the 240 ms settle boundary and no transition-opacity bleed-through remains. Implementation batch S stays open because FV-58/FV-59 are real product defects revealed by that valid evidence. These follow-ups do not change the denominator. No Android repository changes are involved.
+
+### 8.50 CI #3186 — closed `<details>` keyboard-order evidence follow-up — source-fixed, proof pending
+
+Exact-head CI #3186 on `88095ca…` passed the full source/unit/build phase and all rendered suites before Keyboard/Semantic Accessibility reached the mobile Recurring route. The failure reported `document.activeElement === BODY` at Tab step 20 even though every previously reached real control had a visible focus indicator.
+
+Direct source review shows this is a QA visibility-model defect, not a Recurring focus-style regression:
+- the mobile Recurring action menu uses native closed `<details>` elements;
+- the harness counted descendants of closed `<details>` as visible candidates from geometry/CSS alone, but native sequential keyboard navigation correctly excludes those descendants until the disclosure is opened;
+- that inflated candidate count caused the sweep to continue after the last real focus target, where Chromium can move focus to `BODY` before wrapping.
+
+**Source-fixed:** both semantic and Tab-order visibility helpers now exclude descendants of closed native `<details>` while still treating the direct `<summary>` as visible/focusable. The existing assertions for visible focus, positive `tabindex`, focus order, control naming, table semantics and modal traps remain unchanged for actual keyboard targets. A focused source regression locks the closed-details rule so this cannot be “fixed” later by weakening the accessibility gate.
+
+Status: **pending exact-head integrated rendered proof**. This follow-up does not change the denominator and does not modify product UI/domain behavior, backend/Supabase code or Android. Counters remain **Implementations 12/24 completed · Sub-implementations 132/194 completed** until the existing proof obligations close.
