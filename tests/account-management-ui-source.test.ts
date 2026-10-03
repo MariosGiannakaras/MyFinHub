@@ -30,6 +30,9 @@ describe('Accounts owner UI contract',()=>{
     expect(styles).not.toContain('.account-management-select>.owned-input{');
     expect(styles).not.toContain('.owned-select-popover:is(');
     expect(styles).not.toContain('.account-management-field input{');
+    expect(styles).toContain('background:var(--surface-elevated)');
+    expect(styles).toContain('background:var(--control-bg)');
+    expect(styles).not.toContain('background:rgba(255,255,255,.96)');
   });
 
   it('captures the choice-driven account states for owner review',()=>{
