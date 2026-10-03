@@ -8,7 +8,7 @@ Release target: none — `main` remains release-only
 
 ## Current integration checkpoint — 2026-10-02
 
-**Implementations 12/24 completed · Sub-implementations 132/194 completed**
+**Implementations 12/24 completed · Sub-implementations 134/194 completed**
 
 This checkpoint supersedes older "#482 reconciliation pending" notes below for current execution state.
 
@@ -21,7 +21,7 @@ This checkpoint supersedes older "#482 reconciliation pending" notes below for c
 - FV-44 is completed on `9b25fb1…`: extreme Recurring mobile progressive disclosure, full expansion, collapsed inactive history and overflow safety all pass.
 - FV-45 exact-head rendered proof has passed: OCR persists raw `EUR`, while the owned currency select displays `EUR · Ευρώ`; stored semantics and visible presentation are validated separately. The expanded full-system audit below now governs closeout.
 - FV-54 completed on `b602617…`: the local/Windows static host preloads `index.html` and `404.html` once at startup instead of performing `sendFile()` filesystem access per document request; exact-head CodeQL #3125 is green and the prior rate-limiting review threads are resolved. No dependency, API, finance, Supabase or Android behavior changed.
-- Current counters: **Implementations 12/24 completed · Sub-implementations 132/194 completed**. Planning/scheduled functional verification in 8.4 is now closed from directly reviewed exact-head rendered evidence; isolated real-stack persistence remains a separate pending obligation. Implementations 8.1, 8.6, 8.7, 8.8 and 8.15 are fully closed; the responsive-transition and complete auth-state visual cells in 8.2 are also complete from directly reviewed evidence. The denominator is now 194 after the separately accepted desktop/Electron custom-title-bar item added on 2026-10-03.
+- Current counters: **Implementations 12/24 completed · Sub-implementations 134/194 completed**. Planning/scheduled functional verification in 8.4 is now closed from directly reviewed exact-head rendered evidence; isolated real-stack persistence remains a separate pending obligation. Implementations 8.1, 8.6, 8.7, 8.8 and 8.15 are fully closed; the responsive-transition and complete auth-state visual cells in 8.2 are also complete from directly reviewed evidence. The denominator is now 194 after the separately accepted desktop/Electron custom-title-bar item added on 2026-10-03.
 - Exact-head validation follow-up on `b2c2b0bc…`: CI #3176 exposed FV-57, a real 144 px horizontal overflow on Savings at the 720×500 / Large-text 200%-equivalent profile. Windows Desktop #2736 is separately blocked by the upstream `http-cache-semantics` GHSA-2026 advisory in the `electron-builder` build-time chain; the other exact-head gates (CodeQL, Cross-engine, Performance, Windows First Run and Windows Clean Launch) passed. These two findings are tracked in 8.47 and do not change the denominator.
 - Audit verification checkpoint 2026-10-02: 10 additional sub-implementations are directly closed by assistant review/evidence. Unsupported-future-schema handling remains open under the existing backwards-compatibility item; it does not expand the denominator.
 - Repository-admin hardening remains tracked separately in #485 and does not change this batch denominator.
@@ -651,9 +651,9 @@ No `main` promotion/release is part of this work.
 
 The prior completion audit remains valuable evidence, but it does **not** by itself prove that every visual element, every UX state, every user action/sub-action, every API/backend path and every error path has been exercised end-to-end against a canonical integrated tree. The owner has therefore expanded the accepted completion scope to require a full-system verification pass before the application is treated as fully closed.
 
-**New audit workstream: Implementations 6/16 completed · Sub-implementations 91/165 completed.**
+**New audit workstream: Implementations 6/16 completed · Sub-implementations 93/165 completed.**
 
-**Overall completion scope: Implementations 12/24 completed · Sub-implementations 132/194 completed.**
+**Overall completion scope: Implementations 12/24 completed · Sub-implementations 134/194 completed.**
 
 The original owner-expanded audit added 16 verification implementations / 160 non-trivial sub-implementations. One additional accepted desktop/Electron title-bar sub-implementation was added on 2026-10-03, bringing the audit workstream denominator to 165 and the overall denominator to 194. Existing implementation-completion state is retained provisionally, but the expanded verification matrix has a stricter proof rule: prior evidence may be reused only after the responsible ChatGPT agent personally inspects it and confirms that it proves the exact required contract. Re-running unchanged automation is unnecessary when existing artifacts are sufficient, but no matrix cell is finally closed merely because an earlier workflow marked it green.
 
@@ -697,7 +697,7 @@ The original owner-expanded audit added 16 verification implementations / 160 no
 - [x] Review Greek localization/content quality: terminology consistency, grammar, capitalization, amount/date formatting, wrapping and avoidance of ambiguous financial wording. Direct assistant review combines the complete 132-image Greek UI matrix with source inspection across auth, navigation, finance forms, Settings, errors and recovery. Greek is the default product language; intentionally retained technical/brand terms are documented in `docs/completion/CONTENT_AND_FEEDBACK_AUDIT.md`, finance dates/currency use the shared Greek locale contracts, and no material mixed-language or ambiguous finance wording defect remains in the reviewed surfaces.
 - [x] Produce a designer/developer defect log with severity, affected surfaces, systemic root cause and preferred component/design-system-level remediation. `docs/completion/UI_UX_DEFECT_LEDGER.md` is the assistant-owned defect ledger and records the current systemic visual/interaction findings, severity, root causes, remediation layer and proof state.
 
-### 8.4 Complete functional user-flow / CRUD verification — 8/24
+### 8.4 Complete functional user-flow / CRUD verification — 10/24
 
 - [ ] Authentication: valid/invalid email-password login, logout and session restoration.
 - [ ] MFA: enrollment, challenge, wrong code, successful verification and post-AAL2 bootstrap.
@@ -1376,7 +1376,7 @@ Generic Quick Entry is now included in the same existing functional suite rather
 - create a refund and a reconciliation using a +1 € actual-balance correction derived from the rendered expected balance;
 - existing Ledger QA continues to own transfer/split proof, while Action Center/payment-flow suites already own account/context prefills.
 
-This implements existing verification obligations and does not change the denominator. Lending, Attention/Review and Reports/analytics are now closed by exact-head rendered proof. Loans, Savings, Generic Quick Entry, Receipt OCR + global tools, Budgets, Transaction Rules and Recurring remain pending until their complete cell requirements receive integrated proof.
+This implements existing verification obligations and does not change the denominator. Lending, Attention/Review and Reports/analytics are now closed by exact-head rendered proof. Savings and Recurring are now also closed by exact-head rendered proof and direct evidence review. Loans, Generic Quick Entry and Receipt OCR + global tools remain pending until their complete cell requirements receive integrated proof.
 
 ### 8.47 CI #3176 / Windows Desktop #2736 follow-up — completed
 
@@ -1441,7 +1441,7 @@ Validation findings from exact head `db4636f0…`:
 
 Both findings are validation-layer follow-ups inside the accepted custom-title-bar item; neither changes the denominator or Android/backend scope.
 
-Status: **Source implementation complete; Windows host-state proof passed, rendered desktop titlebar proof/direct review pending.** No Android repository changes are required; expected Android impact remains none because production renderer styling is gated by the Electron preload bridge. Counters remain **Implementations 12/24 completed · Sub-implementations 132/194 completed** until both validation layers and direct desktop evidence review complete.
+Status: **Source implementation complete; Windows host-state proof passed, rendered desktop titlebar proof/direct review pending.** No Android repository changes are required; expected Android impact remains none because production renderer styling is gated by the Electron preload bridge. Counters remain **Implementations 12/24 completed · Sub-implementations 134/194 completed** until both validation layers and direct desktop evidence review complete.
 
 ### 8.49 CI #3178 / nested Settings direct-review follow-up — in progress
 
