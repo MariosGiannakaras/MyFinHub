@@ -126,3 +126,40 @@ The focused 404 evidence was opened directly at useful resolution after the sema
 The product 404 markup/styles did not change after the previously completed six-capture desktop/tablet/mobile Light/Dark review, so those directly inspected responsive captures remain valid. CI #3216 separately proves the programmatic H1 retains focus without interactive halo styling, sequential Tab reaches Dashboard then Back, reduced motion disables the missing-route pulse, and both actions remain touch/keyboard safe.
 
 Disposition: the manual 404 desktop/tablet/mobile + Light/Dark + keyboard-only + 200% + reduced-motion checklist item is **PASS / completed**. The distinct external Vercel unknown-HTTP-path deployment item remains open.
+
+
+## Desktop host + data-state exact-head review — CI #3224
+
+Reviewed by: ChatGPT (direct individual image inspection)  
+Source head: `41ff4d6a29d6239a346cad95a8dd786e90a1cc92`  
+Rendered CI: #3224 / artifact `11284966026`  
+Final Visual persistence commit: `92c5848b5d18fe412245361dae8b8b43bc3f8b5b` with manifest source `41ff4d6a…`  
+Review date: 2026-10-04
+
+### Windows / Electron host surfaces
+
+All 11 host captures were opened individually at useful resolution, not only through a contact sheet:
+
+| Evidence | Disposition |
+| --- | --- |
+| App Lock — locked 1440×930 | PASS — centered secure gate, protected workspace not exposed, focused PIN flow contained. |
+| App Lock — invalid PIN 1440×930 | PASS — actionable error feedback remains readable without layout shift/clipping. |
+| App Lock — rate-limited 1100×760 | PASS — countdown/disabled state remains contained at reduced native-window size. |
+| Update — available 1440×930 | PASS — version/status hierarchy and download action are clear. |
+| Update — downloading 1100×760 | PASS — progress and disabled busy action remain visible/contained. |
+| Update — ready 1100×760 | PASS — verified-ready state and install/restart action are clear. |
+| Update — error 1440×930 | PASS — retry/error treatment remains readable and non-destructive. |
+| Update — up-to-date 1440×930 | PASS — success state is distinct and readable. |
+| Startup recovery — error 760×840 | PASS — diagnostic code/stage/message/detail and retry/copy actions fit the production setup-window size. |
+| Startup recovery — copy success 760×840 | PASS — safe copy-success feedback remains visible with diagnostics. |
+| Startup recovery — minimum 620×650 | PASS — no horizontal overflow; vertical scrolling is required/expected and controls remain reachable. |
+
+Disposition: the 8.2 Windows/Electron host-specific visual cell is **PASS / completed**. Native package/install/window mechanics remain backed by the separate Windows Desktop, First Run and Clean Launch gates.
+
+### Data-heavy route matrix and dense states
+
+Minimal/empty/extreme screenshots were opened individually route-by-route for Dashboard, Transactions, Savings, Cards, Credit, Loans, Lending, Recurring, Planning, Attention, Reports and Settings at desktop plus mobile/narrow-mobile sizes. The current exact-head dense evidence was also opened individually for large Reports, Recurring desktop/mobile, Planning, 100-row Change History and 80-rule Settings.
+
+Desktop, 375px mobile and dense views pass containment/readability review. Long Greek account/recurring/scheduled text, large monetary values, multi-line descriptions, intentional horizontal carousels/tab strips and fixed bottom navigation remain contained. However, multiple 320px extreme captures (confirmed on Dashboard, Attention, Reports and Settings) show the same shared-shell defect: the full mobile MyFinHub wordmark collides with/is clipped beneath the Search action.
+
+Disposition: **BLOCKED by FV-63**, not passed. The defect was recorded before remediation in `UI_UX_DEFECT_LEDGER.md`. Source fix hides only visual wordmark copy at <=350px while retaining the canonical icon and full accessible Dashboard-button name, and adds a rendered brand/action separation assertion. Exact-head recapture and direct reinspection are required before the data-heavy 8.2 cell can close.
