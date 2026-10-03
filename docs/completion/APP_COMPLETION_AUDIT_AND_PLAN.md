@@ -8,7 +8,7 @@ Release target: none — `main` remains release-only
 
 ## Current integration checkpoint — 2026-10-02
 
-**Implementations 12/24 completed · Sub-implementations 127/194 completed**
+**Implementations 12/24 completed · Sub-implementations 128/194 completed**
 
 This checkpoint supersedes older "#482 reconciliation pending" notes below for current execution state.
 
@@ -21,7 +21,7 @@ This checkpoint supersedes older "#482 reconciliation pending" notes below for c
 - FV-44 is completed on `9b25fb1…`: extreme Recurring mobile progressive disclosure, full expansion, collapsed inactive history and overflow safety all pass.
 - FV-45 exact-head rendered proof has passed: OCR persists raw `EUR`, while the owned currency select displays `EUR · Ευρώ`; stored semantics and visible presentation are validated separately. The expanded full-system audit below now governs closeout.
 - FV-54 completed on `b602617…`: the local/Windows static host preloads `index.html` and `404.html` once at startup instead of performing `sendFile()` filesystem access per document request; exact-head CodeQL #3125 is green and the prior rate-limiting review threads are resolved. No dependency, API, finance, Supabase or Android behavior changed.
-- Current counters: **Implementations 12/24 completed · Sub-implementations 127/194 completed**. Planning/scheduled functional verification in 8.4 is now closed from directly reviewed exact-head rendered evidence; isolated real-stack persistence remains a separate pending obligation. Implementations 8.1, 8.6, 8.7, 8.8 and 8.15 are fully closed; the responsive-transition and complete auth-state visual cells in 8.2 are also complete from directly reviewed evidence. The denominator is now 194 after the separately accepted desktop/Electron custom-title-bar item added on 2026-10-03.
+- Current counters: **Implementations 12/24 completed · Sub-implementations 128/194 completed**. Planning/scheduled functional verification in 8.4 is now closed from directly reviewed exact-head rendered evidence; isolated real-stack persistence remains a separate pending obligation. Implementations 8.1, 8.6, 8.7, 8.8 and 8.15 are fully closed; the responsive-transition and complete auth-state visual cells in 8.2 are also complete from directly reviewed evidence. The denominator is now 194 after the separately accepted desktop/Electron custom-title-bar item added on 2026-10-03.
 - Exact-head validation follow-up on `b2c2b0bc…`: CI #3176 exposed FV-57, a real 144 px horizontal overflow on Savings at the 720×500 / Large-text 200%-equivalent profile. Windows Desktop #2736 is separately blocked by the upstream `http-cache-semantics` GHSA-2026 advisory in the `electron-builder` build-time chain; the other exact-head gates (CodeQL, Cross-engine, Performance, Windows First Run and Windows Clean Launch) passed. These two findings are tracked in 8.47 and do not change the denominator.
 - Audit verification checkpoint 2026-10-02: 10 additional sub-implementations are directly closed by assistant review/evidence. Unsupported-future-schema handling remains open under the existing backwards-compatibility item; it does not expand the denominator.
 - Repository-admin hardening remains tracked separately in #485 and does not change this batch denominator.
@@ -651,9 +651,9 @@ No `main` promotion/release is part of this work.
 
 The prior completion audit remains valuable evidence, but it does **not** by itself prove that every visual element, every UX state, every user action/sub-action, every API/backend path and every error path has been exercised end-to-end against a canonical integrated tree. The owner has therefore expanded the accepted completion scope to require a full-system verification pass before the application is treated as fully closed.
 
-**New audit workstream: Implementations 6/16 completed · Sub-implementations 86/165 completed.**
+**New audit workstream: Implementations 6/16 completed · Sub-implementations 87/165 completed.**
 
-**Overall completion scope: Implementations 12/24 completed · Sub-implementations 127/194 completed.**
+**Overall completion scope: Implementations 12/24 completed · Sub-implementations 128/194 completed.**
 
 The original owner-expanded audit added 16 verification implementations / 160 non-trivial sub-implementations. One additional accepted desktop/Electron title-bar sub-implementation was added on 2026-10-03, bringing the audit workstream denominator to 165 and the overall denominator to 194. Existing implementation-completion state is retained provisionally, but the expanded verification matrix has a stricter proof rule: prior evidence may be reused only after the responsible ChatGPT agent personally inspects it and confirms that it proves the exact required contract. Re-running unchanged automation is unnecessary when existing artifacts are sufficient, but no matrix cell is finally closed merely because an earlier workflow marked it green.
 
@@ -697,7 +697,7 @@ The original owner-expanded audit added 16 verification implementations / 160 no
 - [x] Review Greek localization/content quality: terminology consistency, grammar, capitalization, amount/date formatting, wrapping and avoidance of ambiguous financial wording. Direct assistant review combines the complete 132-image Greek UI matrix with source inspection across auth, navigation, finance forms, Settings, errors and recovery. Greek is the default product language; intentionally retained technical/brand terms are documented in `docs/completion/CONTENT_AND_FEEDBACK_AUDIT.md`, finance dates/currency use the shared Greek locale contracts, and no material mixed-language or ambiguous finance wording defect remains in the reviewed surfaces.
 - [x] Produce a designer/developer defect log with severity, affected surfaces, systemic root cause and preferred component/design-system-level remediation. `docs/completion/UI_UX_DEFECT_LEDGER.md` is the assistant-owned defect ledger and records the current systemic visual/interaction findings, severity, root causes, remediation layer and proof state.
 
-### 8.4 Complete functional user-flow / CRUD verification — 3/24
+### 8.4 Complete functional user-flow / CRUD verification — 4/24
 
 - [ ] Authentication: valid/invalid email-password login, logout and session restoration.
 - [ ] MFA: enrollment, challenge, wrong code, successful verification and post-AAL2 bootstrap.
@@ -712,7 +712,7 @@ The original owner-expanded audit added 16 verification implementations / 160 no
 - [ ] Card vault: save/reveal/update/delete secret material through server boundary, reload behavior, invalid secret input and no plaintext leakage into FinanceData/backups.
 - [ ] Credit: purchase lifecycle, statement association, payment, over-limit state, statement history, card edit/archive and resulting balances.
 - [ ] Loans/installments: create, edit, payment, multi-installment coverage, completion/history, linked recurring behavior and self-loan semantics.
-- [ ] Lending/receivables: lend, partial repayment, full repayment, person aggregation, history, privacy and outstanding/net-worth effects.
+- [x] Lending/receivables: lend, partial repayment, full repayment, person aggregation, history, privacy and outstanding/net-worth effects. Exact-head CI #3181 completed the rendered Lending create → partial 12/42 repayment → final 30 repayment lifecycle, proved one lend + two semantic repayments, settled/disabled repayment state, privacy reveal/hide behavior and history aggregation; the same exact-head check suite passed lending domain/invariant tests that verify receivable outstanding and net-worth treatment.
 - [ ] Recurring: create/edit, cadence variants, pause/reactivate/stop, pay, bounded disclosure/history and linked-loan boundaries.
 - [x] Planning/scheduled: create/edit, complete into real event, skip/cancel where supported, load-more, forecast update and negative forecast state. Direct assistant review of exact-head CI #3172 plus the corresponding rendered evidence verifies scheduled creation leaves current liquidity unchanged, edit updates the pending item, completion atomically creates the real event, undo/redo restore both sides, skip/cancel persist explicit history through owned confirmations, the extreme list expands through `Προβολή περισσότερων`, 30/60/90 horizons update, and negative/empty/extreme forecast states remain explicit. I directly inspected the desktop, mobile and negative-forecast captures from artifact `11254561873`; they are contained and readable with no material visual regression. Real-backend reload/persistence remains tracked separately in 8.12 and 8.5 rather than being inferred here.
 - [ ] Attention/Review: open actions, decision states, snooze/dismiss/keep semantics where supported, contextual navigation and no unintended report mutation before confirmation.
@@ -1413,7 +1413,7 @@ Accepted implementation contract:
 - do **not** modify `MyFinHub-Android-App`; if the web/desktop shell change has any compatibility impact on Android, document it only;
 - update the relevant source tests and Windows/Electron validation so the implementation is proven for native window controls, drag/no-drag behavior, resize/maximize/restore, desktop light/dark presentation and regression-free startup/package behavior.
 
-Status: **Pending by owner request for later implementation.** No product code changes are part of this planning update. Adding this accepted sub-implementation increases the current counters to **Implementations 12/24 completed · Sub-implementations 127/194 completed**.
+Status: **Pending by owner request for later implementation.** No product code changes are part of this planning update. Adding this accepted sub-implementation increases the current counters to **Implementations 12/24 completed · Sub-implementations 128/194 completed**.
 
 ### 8.49 CI #3178 / nested Settings direct-review follow-up — in progress
 
@@ -1424,7 +1424,7 @@ Direct review of CI #3178 and all 48 fresh nested Settings captures from the per
 - Source and existing rendered coverage confirm this is a harness mismatch, not a product regression: the accepted production flow intentionally routes manual Savings transfer through `.contextual-quick-modal` / `ContextualQuickAdd`.
 - **Source-fixed:** the functional CRUD harness now waits for the contextual Savings title, reads the contextual account comboboxes, uses the real `Σχόλιο` field and submits through the contextual `Καταχώριση` action while retaining the same history/target/Reports semantic assertions.
 - A narrow source regression locks the contextual modal contract and rejects the retired Savings-dialog path.
-- Status: **pending integrated rendered proof**.
+- **Completed on exact head `4252847a…`:** CI #3181 passed the repaired contextual Savings manual-transfer flow, including distinct accounts, history/target/report assertions.
 
 **FV-58 — Account Management editor dark-theme contrast**
 - Fresh settled dark captures on desktop/tablet/mobile show the Account Management modal using a hardcoded near-white surface while headings/labels inherit dark-theme light ink, producing materially unreadable text.
@@ -1446,7 +1446,7 @@ Direct review of CI #3178 and all 48 fresh nested Settings captures from the per
 - The self-loan harness counted both representations without the existing visibility filter already used by other CRUD assertions, so one transfer appeared as two DOM rows; the later two-transfer lifecycle assertion has the same defect.
 - **Source-fixed:** both initial and lifecycle transfer counts now filter to the visible desktop transaction representation while retaining the exact note/kind/source/neutral-transfer checks.
 - A narrow source regression requires visibility-aware counting for both assertions.
-- Status: **pending integrated rendered proof**. No loan/domain/persistence behavior changed.
+- **Completed on exact head `4252847a…`:** CI #3181 passed self-loan create, neutral initial transfer, partial return and forgiveness through the complete rendered lifecycle. No loan/domain/persistence behavior changed.
 
 **QA-LENDING-PRIVACY-STATE — full-repayment assertion assumes visible privacy state**
 - CI #3180 passed the repaired Savings and complete self-loan lifecycle proof, then reached Lending full repayment with the correct domain state: 3 history rows, 2 repayments, `settled:true` and repayment disabled.
@@ -1454,6 +1454,12 @@ Direct review of CI #3178 and all 48 fresh nested Settings captures from the per
 - The following privacy step was also inverted: after clicking the toggle from the initial hidden state, the harness expected `aria-pressed=false` again instead of the actual revealed `true` state.
 - **Source-fixed:** the harness now asserts the settled/disabled state while values are initially masked, reveals privacy and requires visible `0,00`, then hides privacy again and requires masked identity before capture.
 - A focused source regression locks both `aria-pressed` transitions and the visible-zero proof.
-- Status: **pending integrated rendered proof**. No Lending/domain/persistence behavior changed.
+- **Completed on exact head `4252847a…`:** CI #3181 passed the full Lending create/partial/full repayment/privacy flow. No Lending/domain/persistence behavior changed.
+
+**QA-REPORTS-PERIOD-SYNTAX — Reports period-navigation harness does not parse**
+- CI #3181 completed the full Completion functional CRUD suite, mutation-validation suite, geometry matrix, UI completion/runtime, Credit over-limit/statements, refresh/recovery and session runtime checks before failing when Node parsed `scripts/reports-visual-qa.mjs`.
+- The newly added period-navigation CDP calls used double-quoted JavaScript strings containing unescaped double quotes inside `aria-label="…"` selectors at both previous-month and next-month actions, producing `SyntaxError: missing ) after argument list` before the Reports suite could execute.
+- Required remediation: use syntax-safe function strings for both selectors and add a rendered-suite module syntax preflight so future QA-script parse errors fail immediately before expensive browser work.
+- Status: **recorded, source fix pending**. No Reports product behavior has failed yet.
 
 The original QA-NESTED-ANIM timing defect is now proven resolved: all 48 recaptured states were directly inspected after the 240 ms settle boundary and no transition-opacity bleed-through remains. Implementation batch S stays open because FV-58/FV-59 are real product defects revealed by that valid evidence. These follow-ups do not change the denominator. No Android repository changes are involved.
