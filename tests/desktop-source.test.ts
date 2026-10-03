@@ -185,6 +185,18 @@ describe('MyFinHub Windows desktop boundary', () => {
     expect(workflow).not.toContain('Signed desktop releases require');
   });
 
+  it('validates native title-bar maximize, restore and resize states in the packaged Windows smoke', () => {
+    expect(workflow).toContain('MyFinHubWindowProbe');
+    expect(workflow).toContain('ShowWindowAsync');
+    expect(workflow).toContain('IsZoomed');
+    expect(workflow).toContain('GetWindowRect');
+    expect(workflow).toContain('SetWindowPos');
+    expect(workflow).toContain('main window handle is unavailable for native title-bar validation');
+    expect(workflow).toContain('did not maximize through native Windows window state');
+    expect(workflow).toContain('did not restore from maximized state');
+    expect(workflow).toContain('Native title-bar window states validated: maximize, restore, resize');
+  });
+
   it('installs, launches, verifies identity and uninstalls the real NSIS package in Windows CI', () => {
     expect(workflow).toContain('Install, launch and uninstall NSIS package');
     expect(workflow).toContain("-ArgumentList '/S'");
