@@ -7,6 +7,15 @@
 - `PROJECT_RULES.md` is a discovery/precedence pointer only; do not duplicate standing instruction sets there.
 - Precedence for repository work is: explicit current-task instruction → this `AGENTS.md` execution contract → durable owner/product decisions in #266 → task-specific issue/plan documentation. More-specific safety constraints remain binding unless explicitly superseded.
 
+## Startup and active-state discovery
+
+- Do not assume the default branch is the newest implementation state. `main` is the release/production baseline; `develop` is the normal integration baseline; an active task branch may contain the newest accepted work for that task.
+- Before implementation, reconciliation or merge work, inspect live open issues/PRs, their head/base SHAs, current CI, and the relevant task plan/checkpoint. Resume an existing active workstream instead of starting a competing replacement when that workstream still owns the scope.
+- For an active task, the explicit current checkpoint in the task's repository plan on the active branch is authoritative for current implementation/sub-implementation counters and pending work. Issue/PR descriptions are discovery summaries; if they drift, synchronize them at a meaningful checkpoint rather than treating stale numbers as truth.
+- Do not use production `main` as a design or implementation authority merely because it is the default branch. Routine changes reconcile onto current `develop`; only emergency production hotfixes flow from `main` and must then be synchronized back into `develop`.
+- Owner-supplied concept/reference images are design evidence, not independent finance/behavior specifications. Preserve current product semantics, security, accessibility, responsive behavior and accepted functionality while translating the approved visual direction into the current implementation.
+- When concurrent branches overlap, inspect the actual diff/ownership before integration. Integrate the accepted delta onto the current integration head; do not wholesale-merge a stale overlapping branch if that would reintroduce superseded code, docs, tests or UI behavior. Revalidate the resulting integrated head.
+
 - MyFinHub is a **single-owner** personal finance application. The GitHub repository and compatibility-critical internals may retain the historical RheomIQ name; do not rename stable database/migration/protocol identifiers merely for branding.
 - This repository owns the **web application and Windows/desktop implementation only**. Do not implement, refactor, fix, or otherwise change Android product code from work scoped to this repository. Android implementation is owned by a separate chat/agent and repository workflow. Android work is permitted only when the owner explicitly requests it, or when an agent explicitly proposes a specific Android change and the owner explicitly approves it before implementation. Cross-platform analysis may identify Android implications, but must stop at documenting them unless that approval exists.
 - Do not add user selection, teams, tenant switching, roles UI, public registration, or multi-user product features.
@@ -35,6 +44,10 @@
 - CI/security checks are production gates. Keep tests, dependency audit, CodeQL, Dependabot, and security headers working when changing the app.
 
 ## Cross-chat execution and progress rules
+
+- A chat is not assigned a permanent implementation role by issue #266. Active ownership is task-scoped and must be recovered from the current issue/PR/plan/branch state.
+- Parallel page, backend, database and UI work may proceed only with explicit scope ownership. Before touching a shared file or shared domain boundary, inspect concurrent work and preserve unrelated newer changes.
+- For user-visible changes, source/unit tests are not sufficient by themselves. Run the repository-required rendered QA and directly inspect the generated evidence against the approved concept/reference direction and current UI/UX system before claiming visual completion.
 
 - For substantial repository work, batch coherent changes together and avoid triggering full CI for every small edit. Prefer narrow/local/repository-specific checks while building the batch, then run the complete required CI/security/visual/release gates on the final integrated head. Use an intermediate full CI gate only when a security, database, migration, dependency, or architecture boundary makes proceeding without it materially unsafe.
 - During high-churn implementation, do not keep an implementation PR open solely as a remote checkpoint when that would trigger redundant CI on every push. Maintain a pushed implementation branch and open the PR when a coherent batch is ready for integrated validation, unless collaboration, review, or repository protection requires an earlier draft PR.
