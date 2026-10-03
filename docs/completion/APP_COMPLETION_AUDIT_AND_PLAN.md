@@ -1448,4 +1448,11 @@ Direct review of CI #3178 and all 48 fresh nested Settings captures from the per
 - A narrow source regression requires visibility-aware counting for both assertions.
 - Status: **pending integrated rendered proof**. No loan/domain/persistence behavior changed.
 
+**QA-LENDING-PRIVACY-STATE — full-repayment assertion assumes visible privacy state**
+- CI #3180 passed the repaired Savings and complete self-loan lifecycle proof, then reached Lending full repayment with the correct domain state: 3 history rows, 2 repayments, `settled:true` and repayment disabled.
+- The assertion failed only because the QA app intentionally initializes `privacyVisible=false`, so the history summary rendered a masked balance instead of visible `0,00`.
+- The following privacy step was also inverted: after clicking the toggle from the initial hidden state, the harness expected `aria-pressed=false` again instead of the actual revealed `true` state.
+- Required remediation: first assert the settled/disabled state while values are masked, reveal privacy and require visible zero balance, then hide privacy again and require masked identity before capturing evidence.
+- Status: **recorded, source fix pending**. Current evidence indicates no Lending/domain/persistence defect.
+
 The original QA-NESTED-ANIM timing defect is now proven resolved: all 48 recaptured states were directly inspected after the 240 ms settle boundary and no transition-opacity bleed-through remains. Implementation batch S stays open because FV-58/FV-59 are real product defects revealed by that valid evidence. These follow-ups do not change the denominator. No Android repository changes are involved.
