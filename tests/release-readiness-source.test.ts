@@ -163,6 +163,8 @@ describe('release-readiness source contracts',()=>{
     expect(desktopPkg.scripts.audit).toBe('node audit-policy.mjs');
     expect(desktopAuditPolicy).toContain("const allowedAdvisory='GHSA-ch52-4w7c-c8xp'");
     expect(desktopAuditPolicy).toContain("const blockedSeverities=new Set(['high','critical'])");
+    expect(desktopAuditPolicy).toContain('process.env.npm_execpath');
+    expect(desktopAuditPolicy).toContain("process.platform==='win32'?(process.env.ComSpec||'cmd.exe'):'npm'");
     expect(desktopAuditPolicy).toContain("if(blocking.length)");
     expect(desktopAuditPolicy).toContain("process.exit(1)");
     expect(desktopAuditPolicy).not.toContain('--force');
