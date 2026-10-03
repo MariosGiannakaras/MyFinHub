@@ -39,13 +39,15 @@ try{
     return {
       desktop:document.documentElement.dataset.myfinhubDesktop||'',
       theme:document.documentElement.dataset.theme||'',
-      top:Math.round(rect.top),rightGap:Math.round(innerWidth-rect.right),height:Math.round(rect.height),
+      layoutWidth:document.documentElement.clientWidth,
+      scrollbarGutter:Math.max(0,innerWidth-document.documentElement.clientWidth),
+      top:Math.round(rect.top),rightGap:Math.round(document.documentElement.clientWidth-rect.right),height:Math.round(rect.height),
       paddingRight:Math.round(parseFloat(style.paddingRight)||0),
-      actionReserve:Math.round(innerWidth-actionsRect.right),
+      actionReserve:Math.round(document.documentElement.clientWidth-actionsRect.right),
       dragRule:/app-region:\\s*drag/.test(cssText),
       noDragRule:/app-region:\\s*no-drag/.test(cssText),
       background:style.backgroundColor||style.backgroundImage||'',
-      overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth
+      overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-document.documentElement.clientWidth
     };
   }`);
 
