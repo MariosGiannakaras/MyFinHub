@@ -8,7 +8,7 @@ Release target: none — `main` remains release-only
 
 ## Current integration checkpoint — 2026-10-02
 
-**Implementations 12/24 completed · Sub-implementations 127/193 completed**
+**Implementations 12/24 completed · Sub-implementations 127/194 completed**
 
 This checkpoint supersedes older "#482 reconciliation pending" notes below for current execution state.
 
@@ -21,7 +21,7 @@ This checkpoint supersedes older "#482 reconciliation pending" notes below for c
 - FV-44 is completed on `9b25fb1…`: extreme Recurring mobile progressive disclosure, full expansion, collapsed inactive history and overflow safety all pass.
 - FV-45 exact-head rendered proof has passed: OCR persists raw `EUR`, while the owned currency select displays `EUR · Ευρώ`; stored semantics and visible presentation are validated separately. The expanded full-system audit below now governs closeout.
 - FV-54 completed on `b602617…`: the local/Windows static host preloads `index.html` and `404.html` once at startup instead of performing `sendFile()` filesystem access per document request; exact-head CodeQL #3125 is green and the prior rate-limiting review threads are resolved. No dependency, API, finance, Supabase or Android behavior changed.
-- Current counters: **Implementations 12/24 completed · Sub-implementations 127/193 completed**. Planning/scheduled functional verification in 8.4 is now closed from directly reviewed exact-head rendered evidence; isolated real-stack persistence remains a separate pending obligation. Implementations 8.1, 8.6, 8.7, 8.8 and 8.15 are fully closed; the responsive-transition and complete auth-state visual cells in 8.2 are also complete from directly reviewed evidence. The denominator remains 193.
+- Current counters: **Implementations 12/24 completed · Sub-implementations 127/194 completed**. Planning/scheduled functional verification in 8.4 is now closed from directly reviewed exact-head rendered evidence; isolated real-stack persistence remains a separate pending obligation. Implementations 8.1, 8.6, 8.7, 8.8 and 8.15 are fully closed; the responsive-transition and complete auth-state visual cells in 8.2 are also complete from directly reviewed evidence. The denominator is now 194 after the separately accepted desktop/Electron custom-title-bar item added on 2026-10-03.
 - Exact-head validation follow-up on `b2c2b0bc…`: CI #3176 exposed FV-57, a real 144 px horizontal overflow on Savings at the 720×500 / Large-text 200%-equivalent profile. Windows Desktop #2736 is separately blocked by the upstream `http-cache-semantics` GHSA-2026 advisory in the `electron-builder` build-time chain; the other exact-head gates (CodeQL, Cross-engine, Performance, Windows First Run and Windows Clean Launch) passed. These two findings are tracked in 8.47 and do not change the denominator.
 - Audit verification checkpoint 2026-10-02: 10 additional sub-implementations are directly closed by assistant review/evidence. Unsupported-future-schema handling remains open under the existing backwards-compatibility item; it does not expand the denominator.
 - Repository-admin hardening remains tracked separately in #485 and does not change this batch denominator.
@@ -651,11 +651,11 @@ No `main` promotion/release is part of this work.
 
 The prior completion audit remains valuable evidence, but it does **not** by itself prove that every visual element, every UX state, every user action/sub-action, every API/backend path and every error path has been exercised end-to-end against a canonical integrated tree. The owner has therefore expanded the accepted completion scope to require a full-system verification pass before the application is treated as fully closed.
 
-**New audit workstream: Implementations 6/16 completed · Sub-implementations 86/164 completed.**
+**New audit workstream: Implementations 6/16 completed · Sub-implementations 86/165 completed.**
 
-**Overall completion scope: Implementations 12/24 completed · Sub-implementations 127/193 completed.**
+**Overall completion scope: Implementations 12/24 completed · Sub-implementations 127/194 completed.**
 
-The denominator increased because 16 new verification implementations / 160 non-trivial sub-implementations are now accepted. Existing implementation-completion state is retained provisionally, but the expanded verification matrix has a stricter proof rule: prior evidence may be reused only after the responsible ChatGPT agent personally inspects it and confirms that it proves the exact required contract. Re-running unchanged automation is unnecessary when existing artifacts are sufficient, but no matrix cell is finally closed merely because an earlier workflow marked it green.
+The original owner-expanded audit added 16 verification implementations / 160 non-trivial sub-implementations. One additional accepted desktop/Electron title-bar sub-implementation was added on 2026-10-03, bringing the audit workstream denominator to 165 and the overall denominator to 194. Existing implementation-completion state is retained provisionally, but the expanded verification matrix has a stricter proof rule: prior evidence may be reused only after the responsible ChatGPT agent personally inspects it and confirms that it proves the exact required contract. Re-running unchanged automation is unnecessary when existing artifacts are sufficient, but no matrix cell is finally closed merely because an earlier workflow marked it green.
 
 ### 8.1 Canonical baseline, scope inventory and traceability — 7/7
 
@@ -775,7 +775,7 @@ The denominator increased because 16 new verification implementations / 160 non-
 - [x] Verify provider/receipt image handling against malicious filenames, MIME confusion, active SVG content, oversized files and path traversal attempts. Provider uploads use generated provider-scoped Storage paths independent of the supplied filename, enforce bounded bytes plus MIME/signature checks, and reject active SVG script/foreignObject/event/javascript patterns; receipt capture accepts only bounded JPEG/PNG with signature checks and normalizes through canvas without using filenames as paths.
 - [x] Re-run secret/security guards and review generated artifacts before final merge/release. Exact-head CI on `0d747e2…` directly shows the tracked-file privacy guard passed across 774 tracked files, all 152 test files / 852 tests passed, the release privacy artifact guard passed, bundle budgets passed, and both root/API high-severity dependency audits passed. This item must be reopened if the final candidate head changes after a security-relevant modification.
 
-### 8.9 Browser, responsive, performance and Windows verification — 7/8
+### 8.9 Browser, responsive, performance and Windows verification — 7/9
 
 - [ ] Chromium full rendered suite on exact head.
 - [x] WebKit compatibility suite on exact head; direct assistant log review confirms WebKit 26.5 installed successfully and the exact-head smoke completed login/MFA semantics, owned controls/modal focus, mutation+undo, Reports accessible chart alternative and narrow-mobile containment with uploaded evidence.
@@ -785,6 +785,7 @@ The denominator increased because 16 new verification implementations / 160 non-
 - [x] Bundle/CSS budgets, lazy-loading/deferred chart steady state and no performance regression from audit fixes. Direct assistant review confirms release-readiness bundle budgets pass on the exact head; large pages remain route-lazy, chart code remains out of the eager app shell in a separate CartesianChart chunk, and production-mode Lighthouse/loading-shift audits are green.
 - [x] Windows Desktop package validation, startup/lock/update proxy boundaries and clean installed-user launch. Direct assistant review of the exact-head Windows job confirms desktop audit/source checks, bootstrap validation, unpacked executable + hidden local backend smoke, NSIS install/launch/uninstall, shortcut resolution, checksum metadata and installer evidence all passed.
 - [x] Windows first-run/clean-launch validation on the exact final packaging head with no runtime provisioning requirement. Direct assistant review confirms the application-owned first-run contract passed and a fresh installed-user NSIS launch succeeded with SUPABASE/CARD_VAULT environment values removed and without creating runtime-config.json, runtime-secrets.json or pending-provision.json.
+- [ ] Desktop/Electron custom title bar integrated into the existing MyFinHub UI: prefer Electron `titleBarStyle: 'hidden'` + `titleBarOverlay` so Windows minimize/maximize/close remain native; define correct draggable and `no-drag` regions around interactive app chrome; keep styling desktop-only and visually coherent with the existing shell; do not modify the Android repository and avoid unrelated backend/security/packaging changes. Add/update focused source tests plus Windows/Electron rendered/package validation for window controls, drag behavior, responsive layout and regression safety before marking complete.
 
 ### 8.10 Real-stack integrated E2E and canonical-tree proof — 0/8
 
@@ -1395,4 +1396,20 @@ Exact-head validation on `b2c2b0bc…` produced two independent blockers after f
 - **Proof pending:** WIN-AUDIT-01 remains open until Windows Desktop passes on the integrated exact head with the scoped policy, while CodeQL and the other security/release gates remain green.
 
 Both findings are follow-ups inside existing 200%/responsive, security and Windows validation obligations; the denominator remains **193**. No finance persistence, Supabase/API semantics or Android repository code is changed.
+
+### 8.48 Planned desktop/Electron custom title bar — pending
+
+This future item is counted once in 8.9 and is intentionally **not implemented in the current batch**.
+
+Accepted implementation contract:
+- integrate a custom desktop title bar into the existing MyFinHub application chrome rather than keeping a visually separate OS title strip;
+- prefer Electron `titleBarStyle: 'hidden'` together with `titleBarOverlay` so Windows minimize, maximize/restore and close controls remain native instead of reimplementing system caption buttons;
+- establish explicit draggable regions for non-interactive title-bar space and `no-drag` regions for navigation, buttons, inputs, menus and any other interactive UI;
+- keep all title-bar layout/styling desktop/Electron-only so the web/mobile responsive shell is unchanged;
+- preserve the existing application hierarchy, theme/readability behavior and window resize/maximize semantics;
+- avoid unrelated backend, Supabase, security or packaging changes unless a concrete Electron compatibility requirement is discovered during implementation;
+- do **not** modify `MyFinHub-Android-App`; if the web/desktop shell change has any compatibility impact on Android, document it only;
+- update the relevant source tests and Windows/Electron validation so the implementation is proven for native window controls, drag/no-drag behavior, resize/maximize/restore, desktop light/dark presentation and regression-free startup/package behavior.
+
+Status: **Pending by owner request for later implementation.** No product code changes are part of this planning update. Adding this accepted sub-implementation increases the current counters to **Implementations 12/24 completed · Sub-implementations 127/194 completed**.
 
