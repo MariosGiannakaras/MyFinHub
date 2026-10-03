@@ -98,10 +98,12 @@ try{
 
   console.log('Completion functional QA: Savings manual transfer, target progress and report effects');
   const savingsBefore=await c.call("function(){const progress=document.querySelector('.savings-target-track');const amount=document.querySelector('.savings-month-amount')?.textContent||'';return {progress:Number(progress?.getAttribute('aria-valuenow')||0),amount}}");
-  await navigate('reports');
+  await clickText('.sidebar nav button','Αναφορές');
+  await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Αναφορές')}",'Reports before savings transfer');
   const reportsBeforeSaving=await c.call("function(){const cards=[...document.querySelectorAll('.report-kpi-strip .report-headline-card')];const read=label=>{const card=cards.find(node=>(node.querySelector('span')?.textContent||'').trim()===label);return (card?.textContent||'').replace(/\\s+/g,' ').trim()};return {income:read('Συνολικά έσοδα'),expense:read('Συνολικά έξοδα'),saving:read('Αποταμίευση')}}");
   assert(reportsBeforeSaving.income&&reportsBeforeSaving.expense&&reportsBeforeSaving.saving,'Reports baseline exists before savings transfer');
-  await navigate('savings');
+  await clickText('.sidebar nav button','Αποταμίευση');
+  await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Αποταμίευση')}",'Savings after report baseline');
   const savingAction=await c.call(`function(){const visible=${visible};const button=[...document.querySelectorAll('.savings-action')].find(item=>visible(item)&&(item.textContent||'').includes('Μεταφορά στην άκρη'));button?.click();return Boolean(button)}`);
   assert(savingAction,'manual savings transfer action opens');
   await waitFor("function(){return document.querySelector('#saving-editor-title')?.textContent?.includes('Μεταφορά στην άκρη')}",'manual savings transfer editor');
@@ -115,7 +117,8 @@ try{
   assert(savingsAfter.recent.includes('QA Audit Saving')&&savingsAfter.recent.includes('Μεταφορά στην άκρη')&&savingsAfter.recent.includes('25'),`savings history records manual transfer source/note/amount: ${JSON.stringify(savingsAfter)}`);
   assert(savingsAfter.amount!==savingsBefore.amount&&savingsAfter.progress>=savingsBefore.progress,`savings transfer updates monthly target progress: ${JSON.stringify({before:savingsBefore,after:savingsAfter})}`);
   await shot('savings-transaction-created');
-  await navigate('reports');
+  await clickText('.sidebar nav button','Αναφορές');
+  await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Αναφορές')}",'Reports after savings transfer');
   const reportsAfterSaving=await c.call("function(){const cards=[...document.querySelectorAll('.report-kpi-strip .report-headline-card')];const read=label=>{const card=cards.find(node=>(node.querySelector('span')?.textContent||'').trim()===label);return (card?.textContent||'').replace(/\\s+/g,' ').trim()};return {income:read('Συνολικά έσοδα'),expense:read('Συνολικά έξοδα'),saving:read('Αποταμίευση')}}");
   assert(reportsAfterSaving.income===reportsBeforeSaving.income&&reportsAfterSaving.expense===reportsBeforeSaving.expense,'savings transfer does not alter income/expense report KPIs');
   assert(reportsAfterSaving.saving!==reportsBeforeSaving.saving,'savings transfer updates savings report KPI');
