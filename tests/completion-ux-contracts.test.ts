@@ -248,6 +248,18 @@ describe('completion UX contracts',()=>{
     expect(css).toContain('.dashboard-approved .approved-bar-wrap{height:153px;min-height:153px}');
   });
 
+  it('verifies Savings transfer, target progress, history and report neutrality in rendered CRUD QA',()=>{
+    const harness=read('scripts/completion-functional-crud-qa.mjs');
+    expect(harness).toContain('Savings manual transfer, target progress and report effects');
+    expect(harness).toContain("includes('Μεταφορά στην άκρη')");
+    expect(harness).toContain('manual savings transfer resolves distinct source/destination accounts');
+    expect(harness).toContain('savings history records manual transfer source/note/amount');
+    expect(harness).toContain('savings transfer updates monthly target progress');
+    expect(harness).toContain('savings transfer does not alter income/expense report KPIs');
+    expect(harness).toContain('savings transfer updates savings report KPI');
+  });
+
+
   it('exercises Reports period navigation and KPI recalculation in rendered QA',()=>{
     const harness=read('scripts/reports-visual-qa.mjs');
     expect(harness).toContain('period navigation recalculates the active report');

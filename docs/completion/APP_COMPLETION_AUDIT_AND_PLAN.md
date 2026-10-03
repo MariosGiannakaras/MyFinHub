@@ -1352,4 +1352,11 @@ Action Center is also expanded inside its existing rendered suite:
 
 Reports is also extended in its existing rendered suite to click the real previous-month control, require July 2026 to render with recalculated KPI text, then use the now-enabled next-month control to return to August. Existing Reports evidence already covers KPI/category/flow structure, privacy, empty/over-limit states, chart/table hierarchy and mutation neutrality.
 
-This implements existing verification obligations and does not change the denominator. Receipt OCR + global tools, Budgets, Transaction Rules, Lending, Recurring, Attention/Review and Reports/analytics remain pending until the expanded assertions pass on an integrated head and their evidence/logs are directly reviewed.
+Savings is also tightened inside the existing functional CRUD suite:
+- select the explicit `Μεταφορά στην άκρη` path rather than whichever savings action happens to render first;
+- require distinct resolved source/destination accounts, persist a 25 € transfer with a user note and verify the Savings history exposes note, source and amount;
+- require the monthly savings amount/target progress to advance;
+- compare Reports before/after and require income/expense KPIs to remain unchanged while the savings KPI changes;
+- the already-green Budget/Rules rendered flow separately covers changing the savings target rate itself. No separate "planned saving" persistence entity exists; the accepted planned-target interaction is the Savings target/progress model, while scheduled transfers remain owned by Planning.
+
+This implements existing verification obligations and does not change the denominator. Savings plus Receipt OCR + global tools, Budgets, Transaction Rules, Lending, Recurring, Attention/Review and Reports/analytics remain pending until the expanded assertions pass on an integrated head and their evidence/logs are directly reviewed.
