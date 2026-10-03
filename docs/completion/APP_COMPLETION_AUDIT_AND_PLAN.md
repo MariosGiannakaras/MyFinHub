@@ -6,7 +6,7 @@ Target branch: `feat/476-completion-audit-hardening`
 Integration target: `develop`  
 Release target: none — `main` remains release-only
 
-## Current integration checkpoint — 2026-10-02
+## Current integration checkpoint — 2026-10-03
 
 **Implementations 12/24 completed · Sub-implementations 139/194 completed**
 
@@ -22,6 +22,7 @@ This checkpoint supersedes older "#482 reconciliation pending" notes below for c
 - FV-45 exact-head rendered proof has passed: OCR persists raw `EUR`, while the owned currency select displays `EUR · Ευρώ`; stored semantics and visible presentation are validated separately. The expanded full-system audit below now governs closeout.
 - FV-54 completed on `b602617…`: the local/Windows static host preloads `index.html` and `404.html` once at startup instead of performing `sendFile()` filesystem access per document request; exact-head CodeQL #3125 is green and the prior rate-limiting review threads are resolved. No dependency, API, finance, Supabase or Android behavior changed.
 - Current counters: **Implementations 12/24 completed · Sub-implementations 139/194 completed**. CI #3186 closed five functional verification cells plus the desktop/Electron custom-title-bar cell; the only new-run blocker was the separately tracked closed-`<details>` keyboard-order harness defect. Planning/scheduled functional verification in 8.4 is now closed from directly reviewed exact-head rendered evidence; isolated real-stack persistence remains a separate pending obligation. Implementations 8.1, 8.6, 8.7, 8.8 and 8.15 are fully closed; the responsive-transition and complete auth-state visual cells in 8.2 are also complete from directly reviewed evidence. The denominator is now 194 after the separately accepted desktop/Electron custom-title-bar item added on 2026-10-03.
+- CI #3193 follow-up: all source/unit checks plus CodeQL, Cross-engine, Performance and Windows gates passed, while rendered CI stopped in the provider replacement flow after the newly added Save step entered an unstubbed QA provider-write path. The harness now owns a deterministic synthetic PATCH/upload/binding success backend and updates the shared QA provider snapshot before cross-surface refresh assertions. This is a QA-only source fix; counters remain unchanged until exact-head rendered proof passes.
 - Exact-head validation follow-up on `b2c2b0bc…`: CI #3176 exposed FV-57, a real 144 px horizontal overflow on Savings at the 720×500 / Large-text 200%-equivalent profile. Windows Desktop #2736 is separately blocked by the upstream `http-cache-semantics` GHSA-2026 advisory in the `electron-builder` build-time chain; the other exact-head gates (CodeQL, Cross-engine, Performance, Windows First Run and Windows Clean Launch) passed. These two findings are tracked in 8.47 and do not change the denominator.
 - Audit verification checkpoint 2026-10-02: 10 additional sub-implementations are directly closed by assistant review/evidence. Unsupported-future-schema handling remains open under the existing backwards-compatibility item; it does not expand the denominator.
 - Repository-admin hardening remains tracked separately in #485 and does not change this batch denominator.
