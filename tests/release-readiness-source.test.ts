@@ -9,6 +9,8 @@ const commandStyles=readFileSync(new URL('../src/styles/command-palette-contextu
 const index=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const manifest=JSON.parse(readFileSync(new URL('../public/manifest.webmanifest',import.meta.url),'utf8')) as {name:string;short_name:string;start_url:string;display:string;icons:Array<{src:string;sizes:string;type:string;purpose:string}>};
 const pkg=JSON.parse(readFileSync(new URL('../package.json',import.meta.url),'utf8')) as {scripts:Record<string,string>};
+const desktopPkg=JSON.parse(readFileSync(new URL('../desktop/package.json',import.meta.url),'utf8')) as {scripts:Record<string,string>};
+const desktopAuditPolicy=readFileSync(new URL('../desktop/audit-policy.mjs',import.meta.url),'utf8');
 const budget=readFileSync(new URL('../scripts/bundle-budget.mjs',import.meta.url),'utf8');
 const privacyArtifactGuard=readFileSync(new URL('../scripts/privacy-artifact-guard.mjs',import.meta.url),'utf8');
 const webkitWorkflow=readFileSync(new URL('../.github/workflows/cross-engine-smoke.yml',import.meta.url),'utf8');
@@ -154,6 +156,16 @@ describe('release-readiness source contracts',()=>{
     expect(privacyArtifactGuard).toContain("'CARD_VAULT_KEY'");
     expect(privacyArtifactGuard).toContain("possible payment-card PAN ending");
     expect(privacyArtifactGuard).toContain("Release privacy artifact guard passed.");
+  });
+
+
+  it('keeps the desktop dependency audit exception narrow and self-expiring',()=>{
+    expect(desktopPkg.scripts.audit).toBe('node audit-policy.mjs');
+    expect(desktopAuditPolicy).toContain("const allowedAdvisory='GHSA-ch52-4w7c-c8xp'");
+    expect(desktopAuditPolicy).toContain("const blockedSeverities=new Set(['high','critical'])");
+    expect(desktopAuditPolicy).toContain("if(blocking.length)");
+    expect(desktopAuditPolicy).toContain("process.exit(1)");
+    expect(desktopAuditPolicy).not.toContain('--force');
   });
 
 });
