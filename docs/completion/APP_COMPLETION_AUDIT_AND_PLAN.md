@@ -1770,3 +1770,20 @@ This batch extends only those existing real flows:
 Existing evidence remains authoritative for owned date/select popovers, account/provider pickers, Settings account create/edit modals, command palette, mobile-more sheet, Change History, taxonomy retirement, receipt inbox, Card details/profile and other already-rendered shared surfaces.
 
 Status: **source-implemented; draft core CI, exact-head rendered proof and direct individual screenshot inspection pending.** Counters remain **Implementations 14/24 completed · Sub-implementations 150/195 completed**. No product finance semantics, backend/Supabase behavior, destructive external action or Android code changed.
+
+
+### 8.69 FV-64/FV-65 — dialog contrast and evidence-targeting defects — recorded before fix
+
+Direct individual review of CI #3255 / source `68417aba…` found two material blockers in the final 8.2 dialog-evidence cell.
+
+**FV-64 — Medium, systemic shared dialog surface**
+- Reproduction: open the mobile Credit card flow and capture either the shared MoneyEdit validation dialog or the shared credit-event destructive confirmation. The underlying dark-green/yellow card artwork remains visibly present through the dialog body, reducing text/background separation; desktop confirmation surfaces do not reproduce the issue.
+- Affected matrix cells: 8.2 exhaustive dialogs, mobile Credit validation/destructive confirmations, shared `DialogShell` visual contract.
+- Root cause classification: systemic shared component styling. `ConfirmDialog` and `MoneyEditDialog` depend on generic `quick-modal neo-raised` background semantics and do not own an explicit opaque semantic dialog surface in all lazy-loaded route combinations.
+
+**FV-65 — Medium evidence blocker, local harness targeting**
+- Reproduction: CI #3255 writes `confirm-receipt-delete.png` after the receipt alertdialog assertion, but the saved frame contains only the Receipt Inbox; `settings-device-revoke-failure-desktop.png` is captured after closing the dialog and generic screenshot preparation resets scroll to the Settings top, so the required inline failure state is absent.
+- Affected matrix cells: 8.2 receipt-delete confirmation and device-revoke failure visual proof only; functional delete/revoke assertions already pass.
+- Root cause classification: local QA evidence targeting. Fix the capture target/scroll contract rather than product behavior.
+
+Status: **recorded before fix.** Counters remain **Implementations 14/24 completed · Sub-implementations 150/195 completed**; the only open 8.2 cell remains exhaustive dialog/sheet/popover/picker/confirmation coverage.
