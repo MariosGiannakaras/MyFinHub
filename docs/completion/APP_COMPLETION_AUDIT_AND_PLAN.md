@@ -22,6 +22,7 @@ This checkpoint supersedes older "#482 reconciliation pending" notes below for c
 - FV-45 exact-head rendered proof has passed: OCR persists raw `EUR`, while the owned currency select displays `EUR · Ευρώ`; stored semantics and visible presentation are validated separately. The expanded full-system audit below now governs closeout.
 - FV-54 completed on `b602617…`: the local/Windows static host preloads `index.html` and `404.html` once at startup instead of performing `sendFile()` filesystem access per document request; exact-head CodeQL #3125 is green and the prior rate-limiting review threads are resolved. No dependency, API, finance, Supabase or Android behavior changed.
 - Current counters: **Implementations 12/24 completed · Sub-implementations 127/193 completed**. Planning/scheduled functional verification in 8.4 is now closed from directly reviewed exact-head rendered evidence; isolated real-stack persistence remains a separate pending obligation. Implementations 8.1, 8.6, 8.7, 8.8 and 8.15 are fully closed; the responsive-transition and complete auth-state visual cells in 8.2 are also complete from directly reviewed evidence. The denominator remains 193.
+- Exact-head validation follow-up on `b2c2b0bc…`: CI #3176 exposed FV-57, a real 144 px horizontal overflow on Savings at the 720×500 / Large-text 200%-equivalent profile. Windows Desktop #2736 is separately blocked by the upstream `http-cache-semantics` GHSA-2026 advisory in the `electron-builder` build-time chain; the other exact-head gates (CodeQL, Cross-engine, Performance, Windows First Run and Windows Clean Launch) passed. These two findings are tracked in 8.47 and do not change the denominator.
 - Audit verification checkpoint 2026-10-02: 10 additional sub-implementations are directly closed by assistant review/evidence. Unsupported-future-schema handling remains open under the existing backwards-compatibility item; it does not expand the denominator.
 - Repository-admin hardening remains tracked separately in #485 and does not change this batch denominator.
 - No Android changes and no `main` release/promotion are part of this checkpoint.
@@ -1373,3 +1374,25 @@ Generic Quick Entry is now included in the same existing functional suite rather
 - existing Ledger QA continues to own transfer/split proof, while Action Center/payment-flow suites already own account/context prefills.
 
 This implements existing verification obligations and does not change the denominator. Loans, Savings, Generic Quick Entry, Receipt OCR + global tools, Budgets, Transaction Rules, Lending, Recurring, Attention/Review and Reports/analytics remain pending until the expanded assertions pass on an integrated head and their evidence/logs are directly reviewed.
+
+### 8.47 CI #3176 / Windows Desktop #2736 follow-up — Savings 200% reflow and upstream audit advisory in progress
+
+Exact-head validation on `b2c2b0bc…` produced two independent blockers after five sibling gates passed.
+
+**FV-57 — Savings 200%-equivalent horizontal overflow**
+- CI #3176 reached the new route-wide 720×500 non-mobile profile with extreme data, Large readability and reduced motion and failed on Savings with `document horizontal overflow 144px`.
+- The defect is product layout, not a harness false positive: the 681–980 compact-desktop range retained the legacy Savings two-column hero/flex route assumptions, while the explicit shrink-safe account-route treatment only existed at the <=680 mobile breakpoint.
+- Remediation on staging adds a narrow 681–820 reflow contract: a shrinkable Savings hero grid, bounded gauge, shrink-safe source/destination route, ellipsis for long account values, wrapped goal-header actions and a one-column action grid where the compact shell is too narrow for the desktop composition.
+- The geometry harness now reports generic overflowing DOM nodes in addition to the total overflow and rogue interactive controls so any remaining failure identifies its owning element.
+- Regression coverage locks the intermediate breakpoint and shrink-safe route contract.
+- **Proof pending:** FV-57 is not complete until integrated exact-head rendered geometry passes the full canonical/intermediate/landscape/200%-equivalent matrix.
+
+**WIN-AUDIT-01 — unpatched build-time dependency advisory**
+- Windows Desktop #2736 stopped before packaging because `npm audit --audit-level=high` reports `GHSA-ch52-4w7c-c8xp` through the `electron-builder` toolchain (`http-cache-semantics -> cacheable-request -> got -> @electron/get -> app-builder-lib`).
+- Current upstream advisory data has no patched `http-cache-semantics` release, so dependency churn cannot honestly be recorded as a remediation.
+- The staging remediation does **not** disable npm audit and does not broadly ignore high findings. `desktop/audit-policy.mjs` consumes the real npm-audit JSON, permits only the exact advisory through an explicit build-time package chain, fails closed on dependency cycles, and exits non-zero for every other high/critical advisory. If the advisory disappears from the audit graph, no exception is exercised.
+- A source regression requires the exact GHSA allowlist, high/critical blocking behavior and the absence of an audit `--force` bypass.
+- **Proof pending:** WIN-AUDIT-01 remains open until Windows Desktop passes on the integrated exact head with the scoped policy, while CodeQL and the other security/release gates remain green.
+
+Both findings are follow-ups inside existing 200%/responsive, security and Windows validation obligations; the denominator remains **193**. No finance persistence, Supabase/API semantics or Android repository code is changed.
+
