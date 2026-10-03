@@ -91,8 +91,8 @@ try{
 
   assert(await applyTheme('dark')==='dark','dark theme resolves while editor is open');
   await shot('provider-editor-branding-reuse-dark-desktop');
-  await c.call("function(){document.querySelector('.provider-editor-header button[aria-label=\\\"Κλείσιμο\\\"]')?.click();return true}");
-  await waitFor("function(){return !document.querySelector('.provider-editor-modal')}",'editor closes for dark provider-list evidence');
+  await clickText('.provider-editor-footer button','Αποθήκευση');
+  await waitFor("function(){return !document.querySelector('.provider-editor-modal')}",'saved provider editor closes for dark provider-list evidence');
   await waitFor("function(){const image=document.querySelector('[data-bank-brand=\\\"piraeus\\\"] img');return !!image&&image.complete&&image.naturalWidth>0}",'rebound provider-list artwork');
   const replacedSource=await c.call("function(){return document.querySelector('[data-bank-brand=\\\"piraeus\\\"] img')?.src||''}");
   assert(Boolean(replacedSource)&&replacedSource!==piraeusSource,'uploaded provider asset replaces the prior base-logo binding');
