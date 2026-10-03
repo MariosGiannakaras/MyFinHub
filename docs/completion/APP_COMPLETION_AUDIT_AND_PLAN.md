@@ -1781,9 +1781,14 @@ Direct individual review of CI #3255 / source `68417aba…` found two material b
 - Affected matrix cells: 8.2 exhaustive dialogs, mobile Credit validation/destructive confirmations, shared `DialogShell` visual contract.
 - Root cause classification: systemic shared component styling. `ConfirmDialog` and `MoneyEditDialog` depend on generic `quick-modal neo-raised` background semantics and do not own an explicit opaque semantic dialog surface in all lazy-loaded route combinations.
 
-**FV-65 — Medium evidence blocker, local harness targeting**
-- Reproduction: CI #3255 writes `confirm-receipt-delete.png` after the receipt alertdialog assertion, but the saved frame contains only the Receipt Inbox; `settings-device-revoke-failure-desktop.png` is captured after closing the dialog and generic screenshot preparation resets scroll to the Settings top, so the required inline failure state is absent.
-- Affected matrix cells: 8.2 receipt-delete confirmation and device-revoke failure visual proof only; functional delete/revoke assertions already pass.
-- Root cause classification: local QA evidence targeting. Fix the capture target/scroll contract rather than product behavior.
+**FV-65 — Medium, Receipt Inbox delete-confirmation stacking**
+- Reproduction: CI #3255 asserts the receipt delete alertdialog exists, yet `confirm-receipt-delete.png` shows only the Receipt Inbox. Source inspection confirms `.receipt-inbox-backdrop` is z-index 130 while the shared `.modal-backdrop` is z-index 100, so the nested sibling confirmation is visually behind the inbox.
+- Affected matrix cells: 8.2 Receipt Inbox destructive confirmation and shared nested-modal stacking behavior.
+- Root cause classification: product stacking contract local to Receipt Inbox composition; keep shared ConfirmDialog behavior unchanged and raise only the nested confirmation layer.
+
+**FV-66 — Medium evidence blocker, Settings device-revoke failure capture**
+- Reproduction: CI #3255 reaches the synthetic revoke failure and asserts the inline alert, but the harness cancels the dialog and then generic screenshot preparation scrolls Settings to the top; the saved `settings-device-revoke-failure-desktop.png` therefore omits the failure alert.
+- Affected matrix cells: 8.2 device-revoke failure visual proof only; functional revoke failure/recovery semantics already pass.
+- Root cause classification: QA evidence ordering/scroll targeting only. Preserve the failure alert in view and capture it without the generic scroll reset.
 
 Status: **recorded before fix.** Counters remain **Implementations 14/24 completed · Sub-implementations 150/195 completed**; the only open 8.2 cell remains exhaustive dialog/sheet/popover/picker/confirmation coverage.
