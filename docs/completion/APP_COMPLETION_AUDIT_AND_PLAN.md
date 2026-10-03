@@ -1432,7 +1432,9 @@ Source implementation now complete:
 
 Validation checkpoint: exact-head Windows Desktop #2744, Windows First Run #1295 and Windows Clean Launch #1296 already pass with the native-overlay source implementation, proving packaging/startup compatibility. The Windows Desktop packaged-app smoke is now strengthened to require a real main-window handle and exercise native maximize → restore → 1100×760 resize before teardown; source regression locks those host-state checks.
 
-Status: **Source implementation complete; strengthened exact-head Windows host-state validation pending.** No Android repository changes are required; expected Android impact remains none because all renderer styling is gated by the Electron preload bridge. Counters remain **Implementations 12/24 completed · Sub-implementations 130/194 completed** until the strengthened Windows gate and desktop-specific review complete.
+Additional validation is now staged without creating a new workflow: the existing Windows Desktop smoke requires real native maximize → restore → resize behavior, while a small `desktop-titlebar-qa.mjs` suite uses only the isolated `qa.html?desktop-titlebar=1` surface to load the same desktop CSS, verify top/right integration and caption-button action clearance at 1440px/960px, and persist light/dark screenshots for direct review. The production web entry never enables this QA query path.
+
+Status: **Source implementation complete; strengthened Windows host-state + rendered desktop titlebar proof pending.** No Android repository changes are required; expected Android impact remains none because production renderer styling is gated by the Electron preload bridge. Counters remain **Implementations 12/24 completed · Sub-implementations 130/194 completed** until both validation layers and direct desktop evidence review complete.
 
 ### 8.49 CI #3178 / nested Settings direct-review follow-up — in progress
 
