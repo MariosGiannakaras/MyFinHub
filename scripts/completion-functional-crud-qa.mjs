@@ -44,6 +44,29 @@ try{
   };
   const shot=async name=>{const result=await c.send('Page.captureScreenshot',{format:'png',fromSurface:true});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(result.data,'base64'))};
   const openGlobalQuickEntry=async()=>{const opened=await c.call(`function(){const visible=${visible};const button=[...document.querySelectorAll('[data-global-quick-entry]')].find(visible);button?.click();return Boolean(button)}`);assert(opened,'visible global Quick Entry trigger exists');await waitFor("function(){return Boolean(document.querySelector('.quick-modal:not(.contextual-quick-modal)'))}",'generic Quick Entry open');};
+  const installCardLifecycleVault=async()=>{
+    const installed=await c.call(`function(){
+      if(globalThis.__myfinhubCardLifecycleOriginalFetch)return true;
+      const original=globalThis.fetch.bind(globalThis);
+      globalThis.__myfinhubCardLifecycleOriginalFetch=original;
+      globalThis.fetch=async function(input,init){
+        const raw=typeof input==='string'?input:input instanceof URL?input.href:input.url;
+        const url=new URL(raw,location.href);const method=String(init?.method||'GET').toUpperCase();
+        if(url.pathname==='/api/card-secrets'&&method==='PUT'){
+          let body={};try{body=JSON.parse(typeof init?.body==='string'?init.body:'{}')}catch{}
+          const digits=String(body.pan||'').replace(/\D/g,'');
+          return new Response(JSON.stringify({saved:true,last4:digits.slice(-4)||null}),{status:200,headers:{'content-type':'application/json'}});
+        }
+        return original(input,init);
+      };
+      return true;
+    }`);
+    assert(installed,'card lifecycle vault fixture installs');
+  };
+  const restoreCardLifecycleVault=async()=>{
+    const restored=await c.call(`function(){const original=globalThis.__myfinhubCardLifecycleOriginalFetch;if(typeof original!=='function')return false;globalThis.fetch=original;delete globalThis.__myfinhubCardLifecycleOriginalFetch;return true}`);
+    assert(restored,'card lifecycle vault fixture restores original fetch');
+  };
 
 
   console.log('Completion functional QA: Modern transaction edit updates in place');
@@ -295,8 +318,48 @@ try{
   assert(!(await c.call("function(){return [...document.querySelectorAll('[data-recurring-status=active]')].some(row=>(row.textContent||'').includes('QA Audit Recurring Updated'))}")),'stopped recurring item leaves active list');
   await shot('recurring-lifecycle-updated');
 
-    console.log('Completion functional QA: Card profile edit stays separate from vault details');
+  console.log('Completion functional QA: Cards create, archive, restore and permanent delete');
   await navigate('cards');
+  const openCreateCard=await c.call(`function(){const visible=${visible};const button=[...document.querySelectorAll('.bank-add-btn')].find(visible);button?.click();return Boolean(button)}`);
+  assert(openCreateCard,'Cards exposes an add-card action');
+  await waitFor("function(){return Boolean(document.querySelector('.card-create-modal'))}",'Cards create editor');
+  await setByLabel('Όνομα κάρτας','QA Audit Lifecycle Card');
+  const lifecycleDesign=await c.call(`function(){const visible=${visible};const option=[...document.querySelectorAll('.card-create-modal .design-option')].find(visible);option?.click();return Boolean(option)}`);
+  assert(lifecycleDesign,'new debit card exposes a selectable design');
+  await clickText('.card-create-modal button','Προσθήκη κάρτας');
+  await waitFor("function(){return Boolean(document.querySelector('.app-card-details-dialog'))&&document.body.textContent.includes('QA Audit Lifecycle Card')}",'new-card secure details step');
+  await installCardLifecycleVault();
+  await setByLabel('Αριθμός κάρτας','4242 4242 4242 4242');
+  await setByLabel('Λήξη κάρτας','12/30');
+  await setByLabel('CVV κάρτας','123');
+  await clickText('.app-card-details-dialog button','Αποθήκευση στοιχείων');
+  await waitFor("function(){return !document.querySelector('.app-card-details-dialog')&&[...document.querySelectorAll('.prototype-payment-card')].some(card=>(card.textContent||'').includes('QA Audit Lifecycle Card')&&(card.textContent||'').includes('4242'))}",'created debit card persists into active Cards stack');
+  await restoreCardLifecycleVault();
+  await shot('cards-lifecycle-created');
+
+  const archiveLifecycleCard=async()=>{
+    const armed=await c.call(`function(){const visible=${visible};const card=[...document.querySelectorAll('.prototype-payment-card')].find(node=>visible(node)&&(node.textContent||'').includes('QA Audit Lifecycle Card'));const button=card?.querySelector('button[aria-label="Αρχειοθέτηση κάρτας"]');button?.click();return Boolean(button)}`);
+    assert(armed,'lifecycle card exposes archive action');
+    await waitFor("function(){const card=[...document.querySelectorAll('.prototype-payment-card')].find(node=>(node.textContent||'').includes('QA Audit Lifecycle Card'));return Boolean(card?.querySelector('.r-card-archive-confirm'))}",'archive confirmation slider');
+    const committed=await c.call("function(){const card=[...document.querySelectorAll('.prototype-payment-card')].find(node=>(node.textContent||'').includes('QA Audit Lifecycle Card'));const button=card?.querySelector('.r-card-archive-keyboard');button?.click();return Boolean(button)}");
+    assert(committed,'keyboard archive confirmation commits lifecycle card');
+    await waitFor("function(){const details=[...document.querySelectorAll('.cards-archive')].find(node=>(node.textContent||'').includes('QA Audit Lifecycle Card'));return Boolean(details)&&![...document.querySelectorAll('.prototype-payment-card')].some(card=>(card.textContent||'').includes('QA Audit Lifecycle Card'))}",'lifecycle card moves to archive');
+  };
+  await archiveLifecycleCard();
+  const restoredLifecycle=await c.call("function(){const details=[...document.querySelectorAll('.cards-archive')].find(node=>(node.textContent||'').includes('QA Audit Lifecycle Card'));if(!details)return false;details.open=true;const row=[...details.querySelectorAll('.card-archive-row')].find(node=>(node.textContent||'').includes('QA Audit Lifecycle Card'));const button=[...row?.querySelectorAll('button')||[]].find(node=>(node.textContent||'').includes('Επαναφορά'));button?.click();return Boolean(button)}");
+  assert(restoredLifecycle,'archived lifecycle card exposes restore');
+  await waitFor("function(){return [...document.querySelectorAll('.prototype-payment-card')].some(card=>(card.textContent||'').includes('QA Audit Lifecycle Card')&&(card.textContent||'').includes('4242'))}",'restored lifecycle card returns with preserved metadata');
+  await shot('cards-lifecycle-restored');
+
+  await archiveLifecycleCard();
+  const deleteLifecycle=await c.call("function(){const details=[...document.querySelectorAll('.cards-archive')].find(node=>(node.textContent||'').includes('QA Audit Lifecycle Card'));if(!details)return false;details.open=true;const row=[...details.querySelectorAll('.card-archive-row')].find(node=>(node.textContent||'').includes('QA Audit Lifecycle Card'));const button=[...row?.querySelectorAll('button')||[]].find(node=>(node.textContent||'').includes('Οριστική διαγραφή'));button?.click();return Boolean(button)}");
+  assert(deleteLifecycle,'archived lifecycle card exposes permanent delete');
+  await waitFor("function(){return [...document.querySelectorAll('[role=alertdialog]')].some(dialog=>(dialog.textContent||'').includes('Οριστική διαγραφή κάρτας;'))}",'lifecycle permanent-delete confirmation');
+  await clickText('[role=alertdialog] button','Οριστική διαγραφή');
+  await waitFor("function(){return ![...document.querySelectorAll('.prototype-payment-card,.card-archive-row')].some(node=>(node.textContent||'').includes('QA Audit Lifecycle Card'))&&document.body.textContent.includes('διαγράφηκε οριστικά')}",'lifecycle card permanently removed');
+  await shot('cards-lifecycle-deleted');
+
+  console.log('Completion functional QA: Card profile edit stays separate from vault details');
   const cardsEdit=await c.call(`function(){const visible=${visible};const button=[...document.querySelectorAll('button[aria-label^="Επεξεργασία κάρτας"]')].find(visible);button?.click();return Boolean(button)}`);
   assert(cardsEdit,'Cards exposes profile editing separately from secure details');
   await waitFor("function(){return Boolean(document.querySelector('#card-create-title'))&&document.querySelector('#card-create-title').textContent.includes('Επεξεργασία κάρτας')}",'Cards profile editor');
