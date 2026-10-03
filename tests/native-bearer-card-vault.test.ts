@@ -109,6 +109,20 @@ describe('native bearer card-vault boundary', () => {
     expect(vault.readCardSecrets).not.toHaveBeenCalled();
   });
 
+  it('allows owner AAL2 bearer to delete the server-vault secret explicitly', async () => {
+    const token = tokenWithAal('aal2');
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(upstream(200, { id: 'owner-id' })));
+    const res = responseRecorder();
+
+    await handleCardVaultRequest(request('DELETE', token, { cardId: 'card-1' }), res);
+
+    expect(res.statusCode).toBe(200);
+    expect(devices.ensureDeviceSessionAccess).toHaveBeenCalledWith(expect.anything(), token, 'owner-id');
+    expect(vault.deleteCardSecrets).toHaveBeenCalledWith('owner-id', 'card-1', token);
+    expect(JSON.parse(res.body)).toEqual({ deleted: true });
+    expect(res.headers.has('access-control-allow-origin')).toBe(false);
+  });
+
   it('allows owner AAL2 bearer to persist CVV in the shared encrypted vault', async () => {
     const token = tokenWithAal('aal2');
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(upstream(200, { id: 'owner-id' })));

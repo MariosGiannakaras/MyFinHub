@@ -111,6 +111,7 @@ Release-closeout tracker: **#288 — complete**.
 - Persistence concurrency invariant is also closed: sequential ordering, cross-tab newer-revision handling and fail-closed queue behavior are directly exercised and backed by database preconditions.
 - Core finance semantic invariants are directly closed: neutral internal movements, credit liability/statement math, lending receivables, split/cadence/scheduled/budget/report/time boundaries all have reviewed green executable coverage.
 - Cards profile lifecycle is completed from exact-head CI #3200: create through secure-details save, archive, restore with preserved metadata, re-archive, permanent delete, profile edit and explicit Mastercard rendering all passed in the Completion Functional CRUD suite.
+- Card Vault verification is source-complete and proof-pending: existing encrypted store round-trip + invalid-input/FinanceData-secret rejection coverage is now complemented by explicit browser POST reveal/DELETE and owner+AAL2 handler DELETE regressions. Counters remain unchanged until exact-head validation passes.
 - No Android implementation and no `main` promotion/release are included.
 
 ## Next work
