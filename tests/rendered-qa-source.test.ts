@@ -15,6 +15,9 @@ const planningQa = readFileSync('scripts/planning-forecast-qa.mjs', 'utf8');
 const primitivesQa = readFileSync('scripts/primitives-adoption-qa.mjs', 'utf8');
 const receiptQa = readFileSync('scripts/receipt-local-ocr-qa.mjs', 'utf8');
 const settingsTabsQa = readFileSync('scripts/settings-tabs-qa.mjs', 'utf8');
+const confirmDialogCss = readFileSync('src/styles/confirm-dialog.css', 'utf8');
+const moneyEditDialogCss = readFileSync('src/styles/money-edit-dialog.css', 'utf8');
+const receiptInboxCss = readFileSync('src/styles/receipt-inbox.css', 'utf8');
 const qaWorkspace = readFileSync('src/qa.tsx', 'utf8');
 const qaRunner = readFileSync('scripts/qa-script-runner.mjs', 'utf8');
 const ci = readFileSync('.github/workflows/ci.yml', 'utf8');
@@ -130,6 +133,13 @@ describe('rendered browser QA reliability contract', () => {
     expect(frontendQa).toContain('confirm-persistence-recovery-mobile');
     expect(qaWorkspace).toContain('title="Φόρτωση τελευταίας αποθηκευμένης έκδοσης;"');
     expect(qaWorkspace).toContain('onRecover={()=>setRecoverOpen(true)}');
+    expect(confirmDialogCss).toContain('.quick-modal.app-confirm-dialog{background:var(--surface)!important');
+    expect(moneyEditDialogCss).toContain('.quick-modal.app-money-edit-dialog{background:var(--surface)!important');
+    expect(receiptInboxCss).toContain('.receipt-inbox-backdrop + .modal-backdrop{z-index:140}');
+    expect(receiptQa).toContain('receipt delete confirmation renders above Receipt Inbox');
+    expect(primitivesQa).toContain('dialog surface is not opaque');
+    expect(settingsTabsQa).toContain("scrollIntoView({block:'center',inline:'nearest'})");
+    expect(settingsTabsQa).toContain("screenshotCurrentViewport('settings-device-revoke-failure-desktop')");
   });
 
   it('keeps mutating validation failures in the rendered merge gate',()=>{
