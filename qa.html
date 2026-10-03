@@ -62,10 +62,7 @@
           }
           if(url.origin===location.origin&&url.pathname==='/api/auth/devices'&&String(init?.method||'GET').toUpperCase()==='POST'){
             await new Promise(resolve=>setTimeout(resolve,650));
-            let payload={};try{payload=JSON.parse(String(init?.body||'{}'))}catch{}
-            if(payload.action==='revoke')deviceRows=deviceRows.filter(device=>device.sessionId!==payload.sessionId);
-            if(payload.action==='revoke-others')deviceRows=deviceRows.filter(device=>device.current);
-            return new Response(JSON.stringify({devices:deviceRows}),{status:200,headers:{'content-type':'application/json'}});
+            return new Response(JSON.stringify({error:{code:'QA_DEVICE_REVOKE_UNAVAILABLE',message:'Synthetic device revoke unavailable'}}),{status:503,headers:{'content-type':'application/json'}});
           }
           return nativeFetch(input,init);
         };
