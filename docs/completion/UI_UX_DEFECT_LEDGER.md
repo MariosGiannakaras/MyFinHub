@@ -38,6 +38,8 @@ Last updated: 2026-10-03
 
 | QA-SELFLOAN-PRESENTATION | Medium evidence blocker | Loans → self-loan lifecycle · Transactions verification | CI #3179 counted the visible desktop transfer row and its hidden semantic-table mirror as separate finance transfers. | The harness queried shared `data-transaction-*` attributes without filtering presentation visibility, despite Transactions intentionally rendering a hidden semantic table for the same `pageRows`. | Completion functional harness + source regression only. | **Source-fixed, proof pending.** Both initial and lifecycle counts now use only visible rows; integrated rendered proof is required. |
 
+| QA-LENDING-PRIVACY-STATE | Medium evidence blocker | Lending · full repayment/privacy rendered QA | CI #3180 reached a fully settled 42€ receivable but required visible `0,00` while the synthetic app starts with privacy hidden; the next toggle assertion also expected the wrong pressed state. | Harness state-order assumption diverged from the canonical QA initial privacy state (`privacyVisible=false`). | Completion functional harness + focused source regression only. | **Recorded, remediation pending.** Verify masked settled state, reveal zero balance, then hide again for privacy evidence; no product/domain defect indicated. |
+
 ## Systemic causes
 
 1. **Theme-token bypass** — fixed white/light RGBA backgrounds inside page-specific responsive CSS. Fix shared semantic surface/control/inset/status tokens rather than accumulating dark-mode overrides.
