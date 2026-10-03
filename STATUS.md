@@ -49,7 +49,7 @@ Release-closeout tracker: **#288 — complete**.
 
 ## Active completion batch — #476
 
-**Implementations 14/24 completed · Sub-implementations 148/195 completed**
+**Implementations 14/24 completed · Sub-implementations 150/195 completed**
 
 - The completion definition has been expanded by the owner to a full-system verification matrix. Existing implementation findings remain tracked, but final closeout now requires direct assistant-led manual review plus UI/UX/accessibility, routing/404, every supported user mutation, real-stack persistence/backend proof, exhaustive failure handling, security/privacy, temporal/data-boundary coverage, operational recovery and canonical post-merge validation.
 
@@ -212,3 +212,6 @@ Subsequent changes are product fixes against the completed v1.3.0 baseline. Rout
 - Accessibility rendered proof is infrastructure-blocked on the current PR head: every earlier rendered suite passed, but Chromium failed to expose CDP for the final keyboard/semantic suite on two attempts. `audit/476-a11y-bootstrap-fix` adds isolated multi-attempt launch diagnostics/cleanup; product accessibility assertions have not failed.
 
 - FV-63 is recorded before remediation: the full mobile wordmark overlaps the Search action at 320px in multiple extreme-state routes. Shared ultra-narrow CSS now keeps the icon and hides visual wordmark copy only below 350px; route-wide rendered QA asserts >=2px brand/action separation. Exact-head recapture/direct review remain pending.
+
+- CI #3234 on `b7d2a160…` passed the full rendered coordinator with the new ultra-narrow brand/action collision assertion; Cross-engine #2360, Performance #2395, Windows Desktop #2793, Windows First Run #1344 and Windows Clean Launch #1345 are green on the same source head. Direct assistant reinspection opened all twelve refreshed 320px extreme route captures individually and confirms FV-63 is closed.
+- The 8.2 data-heavy visual cell and the full interaction-state cell are now completed from direct evidence review. Overall checkpoint: **Implementations 14/24 completed · Sub-implementations 150/195 completed**; 8.2 is 11/12. The only remaining 8.2 item is exhaustive dialog/sheet/popover/picker/confirmation state coverage.
