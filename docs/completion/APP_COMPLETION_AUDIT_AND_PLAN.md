@@ -1399,7 +1399,7 @@ Exact-head validation on `b2c2b0bc…` produced two independent blockers after f
 
 Both findings are follow-ups inside existing 200%/responsive, security and Windows validation obligations and did not themselves expand scope. The later owner-accepted desktop/Electron custom-title-bar item raises the current overall denominator to **194**. No finance persistence, Supabase/API semantics or Android repository code is changed.
 
-### 8.48 Desktop/Electron custom title bar — implementation in progress
+### 8.48 Desktop/Electron custom title bar — source implementation complete, Windows validation pending
 
 This accepted item is counted once in 8.9 and is now being implemented as an isolated desktop/Electron batch.
 
@@ -1422,7 +1422,15 @@ Implementation approach now fixed:
 - add source regressions for native-overlay options, absence of `frame:false`, desktop-only style loading, drag/no-drag regions and caption-control spacing;
 - validate through root source/build checks plus Windows Desktop/First Run/Clean Launch before completion.
 
-Status: **Implementation in progress.** No Android repository changes are required; expected Android impact is none because the renderer styling is gated by the Electron bridge. Counters remain **Implementations 12/24 completed · Sub-implementations 130/194 completed** until implementation and required Windows validation are complete.
+Source implementation now complete:
+- the main Windows `BrowserWindow` uses `titleBarStyle:'hidden'` + native `titleBarOverlay:true` and explicitly does **not** use `frame:false`;
+- the setup/recovery window retains its normal native title bar;
+- `src/main.tsx` marks only Electron renderer sessions with `data-myfinhub-desktop="true"` and dynamically imports `desktop-titlebar.css`; the stylesheet is absent from the global web bundle entry;
+- the existing topbar is the draggable region, all interactive descendants are no-drag, and the desktop-only geometry extends the topbar through the shell's top/right gutters while reserving space for native Windows caption buttons;
+- the 960–980px collapsed-desktop range receives the matching 8px shell-gutter/native-control reserve without touching <=680 mobile rules;
+- focused desktop source regressions lock the native overlay, setup-window exclusion, desktop-only style loading, drag/no-drag boundaries and integrated caption geometry.
+
+Status: **Source implementation complete; exact-head Windows validation pending.** No Android repository changes are required; expected Android impact remains none because all renderer styling is gated by the Electron preload bridge. Counters remain **Implementations 12/24 completed · Sub-implementations 130/194 completed** until required Windows validation and desktop-specific review complete.
 
 ### 8.49 CI #3178 / nested Settings direct-review follow-up — in progress
 
@@ -1477,7 +1485,7 @@ Direct review of CI #3178 and all 48 fresh nested Settings captures from the per
 - CI #3183 passed Reports, Theme System and Action Center, then advanced into Budget/Rules through budget integration, Rules workspace creation/reorder/pause/edit/delete and the start of “rules affect only new matching transactions”.
 - After navigating to Transactions, the harness found the correct route heading but its generic `setLabelInput` helper failed to resolve `Αναζήτηση συναλλαγών` because it only searches a visible wrapper `<label>` and then a nested native input.
 - Product source exposes the search field directly and accessibly as `<AppTextInput aria-label="Αναζήτηση συναλλαγών" …>`; no product regression is indicated.
-- Required remediation: make the Budget/Rules input helper prefer a visible native input whose `aria-label` exactly matches the requested label, retaining the existing wrapper-label fallback; lock that behavior in source tests and rerun the downstream suite.
-- Status: **recorded, source fix pending**. This is evidence-harness work inside the existing Transaction Rules cell and does not change the denominator.
+- **Source-fixed:** the Budget/Rules input helper now prefers a visible native `input`/`textarea` with an exact `aria-label`, then falls back to the existing visible wrapper-label lookup; the source contract locks that direct accessible-label path.
+- Status: **pending integrated rendered proof**. This is evidence-harness work inside the existing Transaction Rules cell and does not change the denominator.
 
 The original QA-NESTED-ANIM timing defect is now proven resolved: all 48 recaptured states were directly inspected after the 240 ms settle boundary and no transition-opacity bleed-through remains. Implementation batch S stays open because FV-58/FV-59 are real product defects revealed by that valid evidence. These follow-ups do not change the denominator. No Android repository changes are involved.
