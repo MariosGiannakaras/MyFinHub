@@ -163,3 +163,23 @@ Minimal/empty/extreme screenshots were opened individually route-by-route for Da
 Desktop, 375px mobile and dense views pass containment/readability review. Long Greek account/recurring/scheduled text, large monetary values, multi-line descriptions, intentional horizontal carousels/tab strips and fixed bottom navigation remain contained. However, multiple 320px extreme captures (confirmed on Dashboard, Attention, Reports and Settings) show the same shared-shell defect: the full mobile MyFinHub wordmark collides with/is clipped beneath the Search action.
 
 Disposition: **BLOCKED by FV-63**, not passed. The defect was recorded before remediation in `UI_UX_DEFECT_LEDGER.md`. Source fix hides only visual wordmark copy at <=350px while retaining the canonical icon and full accessible Dashboard-button name, and adds a rendered brand/action separation assertion. Exact-head recapture and direct reinspection are required before the data-heavy 8.2 cell can close.
+
+
+## FV-63 exact-head reinspection — CI #3234
+
+Reviewed by: ChatGPT (direct individual image inspection)  
+Source head: `b7d2a1603a1b31e0ec233e68c33e9ee06e4b7cf1`  
+Rendered CI: #3234 / artifact `11287130040`  
+Review date: 2026-10-04
+
+FV-63 invalidated the 320px extreme route evidence because the full mobile wordmark overlapped the global Search action. After the shared <=350px brand adaptation, the rendered coordinator added a brand/action separation assertion and regenerated the affected matrix.
+
+All twelve refreshed 320px extreme route captures were opened individually at useful resolution: Dashboard, Transactions, Savings, Cards, Credit, Loans, Lending, Recurring, Planning, Attention, Reports and Settings. Every frame now shows the canonical MyFinHub icon-only brand at ultra-narrow width with clear separation from Search/Undo-History/Refresh/Logout actions. No renewed document overflow, header clipping, fixed-nav occlusion or route-specific regression was found.
+
+Disposition: **FV-63 PASS / closed.** Combined with the prior individual minimal/empty/extreme route review, earlier normal-state review and direct inspection of the six dense large-data captures, the 8.2 data-heavy visual state item is completed.
+
+### Shared interaction-state review
+
+The targeted state evidence was also opened individually rather than inferred from green automation: baseline/default controls, Refresh hover tooltip, mouse-down pressed Refresh, Quick Add keyboard focus, command-palette selected/focused result, disabled updater during download, persistence loading and saving, taxonomy destructive confirmation, persistence and form-validation errors, revision-conflict banner, and updater up-to-date success. Each requested state category is visually distinct and contained.
+
+Disposition: the 8.2 interactive-state item is **PASS / completed**. The remaining 8.2 gap is the exhaustive dialog/sheet/popover/picker/confirmation surface-state matrix; source inventory identified several shared ConfirmDialog use-cases without direct screenshots, so that item remains intentionally open.
