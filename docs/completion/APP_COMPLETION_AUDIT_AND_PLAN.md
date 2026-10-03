@@ -8,7 +8,7 @@ Release target: none — `main` remains release-only
 
 ## Current integration checkpoint — 2026-10-02
 
-**Implementations 12/24 completed · Sub-implementations 130/194 completed**
+**Implementations 12/24 completed · Sub-implementations 132/194 completed**
 
 This checkpoint supersedes older "#482 reconciliation pending" notes below for current execution state.
 
@@ -21,7 +21,7 @@ This checkpoint supersedes older "#482 reconciliation pending" notes below for c
 - FV-44 is completed on `9b25fb1…`: extreme Recurring mobile progressive disclosure, full expansion, collapsed inactive history and overflow safety all pass.
 - FV-45 exact-head rendered proof has passed: OCR persists raw `EUR`, while the owned currency select displays `EUR · Ευρώ`; stored semantics and visible presentation are validated separately. The expanded full-system audit below now governs closeout.
 - FV-54 completed on `b602617…`: the local/Windows static host preloads `index.html` and `404.html` once at startup instead of performing `sendFile()` filesystem access per document request; exact-head CodeQL #3125 is green and the prior rate-limiting review threads are resolved. No dependency, API, finance, Supabase or Android behavior changed.
-- Current counters: **Implementations 12/24 completed · Sub-implementations 130/194 completed**. Planning/scheduled functional verification in 8.4 is now closed from directly reviewed exact-head rendered evidence; isolated real-stack persistence remains a separate pending obligation. Implementations 8.1, 8.6, 8.7, 8.8 and 8.15 are fully closed; the responsive-transition and complete auth-state visual cells in 8.2 are also complete from directly reviewed evidence. The denominator is now 194 after the separately accepted desktop/Electron custom-title-bar item added on 2026-10-03.
+- Current counters: **Implementations 12/24 completed · Sub-implementations 132/194 completed**. Planning/scheduled functional verification in 8.4 is now closed from directly reviewed exact-head rendered evidence; isolated real-stack persistence remains a separate pending obligation. Implementations 8.1, 8.6, 8.7, 8.8 and 8.15 are fully closed; the responsive-transition and complete auth-state visual cells in 8.2 are also complete from directly reviewed evidence. The denominator is now 194 after the separately accepted desktop/Electron custom-title-bar item added on 2026-10-03.
 - Exact-head validation follow-up on `b2c2b0bc…`: CI #3176 exposed FV-57, a real 144 px horizontal overflow on Savings at the 720×500 / Large-text 200%-equivalent profile. Windows Desktop #2736 is separately blocked by the upstream `http-cache-semantics` GHSA-2026 advisory in the `electron-builder` build-time chain; the other exact-head gates (CodeQL, Cross-engine, Performance, Windows First Run and Windows Clean Launch) passed. These two findings are tracked in 8.47 and do not change the denominator.
 - Audit verification checkpoint 2026-10-02: 10 additional sub-implementations are directly closed by assistant review/evidence. Unsupported-future-schema handling remains open under the existing backwards-compatibility item; it does not expand the denominator.
 - Repository-admin hardening remains tracked separately in #485 and does not change this batch denominator.
@@ -651,9 +651,9 @@ No `main` promotion/release is part of this work.
 
 The prior completion audit remains valuable evidence, but it does **not** by itself prove that every visual element, every UX state, every user action/sub-action, every API/backend path and every error path has been exercised end-to-end against a canonical integrated tree. The owner has therefore expanded the accepted completion scope to require a full-system verification pass before the application is treated as fully closed.
 
-**New audit workstream: Implementations 6/16 completed · Sub-implementations 89/165 completed.**
+**New audit workstream: Implementations 6/16 completed · Sub-implementations 91/165 completed.**
 
-**Overall completion scope: Implementations 12/24 completed · Sub-implementations 130/194 completed.**
+**Overall completion scope: Implementations 12/24 completed · Sub-implementations 132/194 completed.**
 
 The original owner-expanded audit added 16 verification implementations / 160 non-trivial sub-implementations. One additional accepted desktop/Electron title-bar sub-implementation was added on 2026-10-03, bringing the audit workstream denominator to 165 and the overall denominator to 194. Existing implementation-completion state is retained provisionally, but the expanded verification matrix has a stricter proof rule: prior evidence may be reused only after the responsible ChatGPT agent personally inspects it and confirms that it proves the exact required contract. Re-running unchanged automation is unnecessary when existing artifacts are sufficient, but no matrix cell is finally closed merely because an earlier workflow marked it green.
 
@@ -697,7 +697,7 @@ The original owner-expanded audit added 16 verification implementations / 160 no
 - [x] Review Greek localization/content quality: terminology consistency, grammar, capitalization, amount/date formatting, wrapping and avoidance of ambiguous financial wording. Direct assistant review combines the complete 132-image Greek UI matrix with source inspection across auth, navigation, finance forms, Settings, errors and recovery. Greek is the default product language; intentionally retained technical/brand terms are documented in `docs/completion/CONTENT_AND_FEEDBACK_AUDIT.md`, finance dates/currency use the shared Greek locale contracts, and no material mixed-language or ambiguous finance wording defect remains in the reviewed surfaces.
 - [x] Produce a designer/developer defect log with severity, affected surfaces, systemic root cause and preferred component/design-system-level remediation. `docs/completion/UI_UX_DEFECT_LEDGER.md` is the assistant-owned defect ledger and records the current systemic visual/interaction findings, severity, root causes, remediation layer and proof state.
 
-### 8.4 Complete functional user-flow / CRUD verification — 6/24
+### 8.4 Complete functional user-flow / CRUD verification — 8/24
 
 - [ ] Authentication: valid/invalid email-password login, logout and session restoration.
 - [ ] MFA: enrollment, challenge, wrong code, successful verification and post-AAL2 bootstrap.
@@ -717,8 +717,8 @@ The original owner-expanded audit added 16 verification implementations / 160 no
 - [x] Planning/scheduled: create/edit, complete into real event, skip/cancel where supported, load-more, forecast update and negative forecast state. Direct assistant review of exact-head CI #3172 plus the corresponding rendered evidence verifies scheduled creation leaves current liquidity unchanged, edit updates the pending item, completion atomically creates the real event, undo/redo restore both sides, skip/cancel persist explicit history through owned confirmations, the extreme list expands through `Προβολή περισσότερων`, 30/60/90 horizons update, and negative/empty/extreme forecast states remain explicit. I directly inspected the desktop, mobile and negative-forecast captures from artifact `11254561873`; they are contained and readable with no material visual regression. Real-backend reload/persistence remains tracked separately in 8.12 and 8.5 rather than being inferred here.
 - [x] Attention/Review: open actions, decision states, snooze/dismiss/keep semantics where supported, contextual navigation and no unintended report mutation before confirmation. Exact-head CI #3183 passed the Action Center/contextual Quick Add rendered suite: deterministic queue/privacy, legacy `Κράτα ως είναι` with byte-stable Reports KPIs, recurring/loan/credit/scheduled/account/savings/lending contextual actions, snooze + undo, empty state and responsive accessibility.
 - [x] Reports/analytics: period changes, KPI/category/flow consistency, table/chart parity, privacy and recalculation after mutations. Exact-head CI #3183 passed Reports visual QA after the syntax repair: desktop/mobile hierarchy, previous-month July recalculation and return to August, KPI/category/flow structure, dark-mobile privacy placeholder, empty and over-limit states; exact-head mutation validation and Action Center keep-semantics separately proved report recalculation/neutrality around mutations.
-- [ ] Budgets: create/edit/delete, thresholds, category/overall scopes, alert state and report reconciliation.
-- [ ] Transaction rules: create/edit/delete, matching, rule application to new transactions and no retroactive mutation unless explicitly designed.
+- [x] Budgets: create/edit/delete, thresholds, category/overall scopes, alert state and report reconciliation. Exact-head CI #3184 passed the complete Budget/Rules rendered suite after the accessible-input harness repair: Dashboard/Reports budget integration, category + overall scope management, warning threshold/near-limit state, report reconciliation, create → stable-row edit → delete, Savings target relocation and mobile containment.
+- [x] Transaction rules: create/edit/delete, matching, rule application to new transactions and no retroactive mutation unless explicitly designed. Exact-head CI #3184 passed the human-facing Rules workspace flow: read-only preview, create/reorder/pause/edit/delete, existing `QA Market Match` retained its original category, and a newly created matching transaction received the rule-selected category.
 - [ ] Settings account/provider metadata: account create/edit/delete, IBAN/provider correction, provider create/edit, asset upload/reuse/binding/replace and cross-surface refresh.
 - [ ] Taxonomy/icons/preferences: category/subcategory create/rename/move/retire/blockers, icon pack/assignment persistence, theme, text-size and other user-facing settings persistence; reduced-motion accessibility follows the accepted product contract via platform/CSS `prefers-reduced-motion` rather than a user-facing Motion preference.
 - [ ] Data management/history: backup, export/import, validation rejection, history points, undo/redo across supported scope, refresh/reload and conflict handling.
@@ -1434,7 +1434,7 @@ Validation checkpoint: exact-head Windows Desktop #2744, Windows First Run #1295
 
 Additional validation is now staged without creating a new workflow: the existing Windows Desktop smoke requires real native maximize → restore → resize behavior, while a small `desktop-titlebar-qa.mjs` suite uses only the isolated `qa.html?desktop-titlebar=1` surface to load the same desktop CSS, verify top/right integration and caption-button action clearance at 1440px/960px, and persist light/dark screenshots for direct review. The production web entry never enables this QA query path.
 
-Status: **Source implementation complete; strengthened Windows host-state + rendered desktop titlebar proof pending.** No Android repository changes are required; expected Android impact remains none because production renderer styling is gated by the Electron preload bridge. Counters remain **Implementations 12/24 completed · Sub-implementations 130/194 completed** until both validation layers and direct desktop evidence review complete.
+Status: **Source implementation complete; strengthened Windows host-state + rendered desktop titlebar proof pending.** No Android repository changes are required; expected Android impact remains none because production renderer styling is gated by the Electron preload bridge. Counters remain **Implementations 12/24 completed · Sub-implementations 132/194 completed** until both validation layers and direct desktop evidence review complete.
 
 ### 8.49 CI #3178 / nested Settings direct-review follow-up — in progress
 
@@ -1490,6 +1490,13 @@ Direct review of CI #3178 and all 48 fresh nested Settings captures from the per
 - After navigating to Transactions, the harness found the correct route heading but its generic `setLabelInput` helper failed to resolve `Αναζήτηση συναλλαγών` because it only searches a visible wrapper `<label>` and then a nested native input.
 - Product source exposes the search field directly and accessibly as `<AppTextInput aria-label="Αναζήτηση συναλλαγών" …>`; no product regression is indicated.
 - **Source-fixed:** the Budget/Rules input helper now prefers a visible native `input`/`textarea` with an exact `aria-label`, then falls back to the existing visible wrapper-label lookup; the source contract locks that direct accessible-label path.
-- Status: **pending integrated rendered proof**. This is evidence-harness work inside the existing Transaction Rules cell and does not change the denominator.
+- **Completed on exact head `174ea8d7…`:** CI #3184 passed the complete Budget/Rules rendered suite, including the existing-vs-new matching transaction assertions. This evidence-harness defect is closed.
+
+**QA-COMMAND-QUICKENTRY-SELECTOR — global Quick Entry proof throws inside browser selector evaluation**
+- CI #3184 passed Budget/Rules, Settings tabs, Provider branding, normalized payment flows and shared primitive adoption, then failed in `command-palette-qa.mjs` immediately after the global `Ctrl+Shift+Space` Quick Entry shortcut had already opened successfully.
+- The failing assertion uses an inline `document.querySelector` with unquoted attribute-value selectors to find the editable Quick Entry control; CDP reports a browser-side `Uncaught` exception before the assertion can return.
+- The same block then attempts its direct-action proof through the mobile-only `Άνοιγμα γρήγορης καταχώρισης` control even though the route is still at desktop width; programmatic clicks on hidden controls are not valid evidence of the visible desktop action.
+- Required remediation: use syntax-safe quoted attribute selectors for the editable-control assertion and invoke the visible desktop `Γρήγορη προσθήκη` control for the direct-action proof; retain the existing separate mobile trigger coverage later in the suite.
+- Status: **recorded, source fix pending**. No Quick Entry or command-palette product defect has been identified; the shortcut itself already opened Quick Entry before the harness exception.
 
 The original QA-NESTED-ANIM timing defect is now proven resolved: all 48 recaptured states were directly inspected after the 240 ms settle boundary and no transition-opacity bleed-through remains. Implementation batch S stays open because FV-58/FV-59 are real product defects revealed by that valid evidence. These follow-ups do not change the denominator. No Android repository changes are involved.
