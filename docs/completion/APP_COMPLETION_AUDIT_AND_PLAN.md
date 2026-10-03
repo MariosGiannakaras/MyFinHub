@@ -1376,7 +1376,7 @@ Generic Quick Entry is now included in the same existing functional suite rather
 
 This implements existing verification obligations and does not change the denominator. Loans, Savings, Generic Quick Entry, Receipt OCR + global tools, Budgets, Transaction Rules, Lending, Recurring, Attention/Review and Reports/analytics remain pending until the expanded assertions pass on an integrated head and their evidence/logs are directly reviewed.
 
-### 8.47 CI #3176 / Windows Desktop #2736 follow-up — Savings 200% reflow and upstream audit advisory in progress
+### 8.47 CI #3176 / Windows Desktop #2736 follow-up — completed
 
 Exact-head validation on `b2c2b0bc…` produced two independent blockers after five sibling gates passed.
 
@@ -1393,7 +1393,7 @@ Exact-head validation on `b2c2b0bc…` produced two independent blockers after f
 - Current upstream advisory data has no patched `http-cache-semantics` release, so dependency churn cannot honestly be recorded as a remediation.
 - The staging remediation does **not** disable npm audit and does not broadly ignore high findings. `desktop/audit-policy.mjs` consumes the real npm-audit JSON, permits only the exact advisory through an explicit build-time package allowlist, accepts cyclic package references only when every high/critical edge stays inside that allowlist, and exits non-zero for every other high/critical advisory or package. If the advisory disappears from the audit graph, no exception is exercised.
 - A source regression requires the exact GHSA allowlist, high/critical blocking behavior and the absence of an audit `--force` bypass.
-- **Proof pending:** WIN-AUDIT-01 remains open until Windows Desktop passes on the integrated exact head with the scoped policy, while CodeQL and the other security/release gates remain green.
+- **Completed on exact-head Windows Desktop #2738 (`2074f125…`).** The job log shows the real desktop audit ran, allowed only `GHSA-ch52-4w7c-c8xp` through the explicit eight-package build-time chain, then completed source checks, NSIS packaging, installed-user validation and checksum metadata; CodeQL and the other sibling release gates were also green.
 
 Both findings are follow-ups inside existing 200%/responsive, security and Windows validation obligations and did not themselves expand scope. The later owner-accepted desktop/Electron custom-title-bar item raises the current overall denominator to **194**. No finance persistence, Supabase/API semantics or Android repository code is changed.
 
