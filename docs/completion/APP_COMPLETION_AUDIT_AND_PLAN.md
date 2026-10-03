@@ -1454,7 +1454,7 @@ Direct review of CI #3178 and all 48 fresh nested Settings captures from the per
 - A narrow source regression locks the contextual modal contract and rejects the retired Savings-dialog path.
 - **Completed on exact head `4252847a…`:** CI #3181 passed the repaired contextual Savings manual-transfer flow, including distinct accounts, history/target/report assertions.
 
-**FV-58 — Account Management editor dark-theme contrast**
+**FV-58 — Account Management editor dark-theme contrast — completed**
 - Fresh settled dark captures on desktop/tablet/mobile show the Account Management modal using a hardcoded near-white surface while headings/labels inherit dark-theme light ink, producing materially unreadable text.
 - Root cause: `AccountManagementSettings.css` uses fixed white/light modal and segment backgrounds instead of semantic theme surfaces.
 - **Source-fixed:** Account Management modal and neutral segmented/default-choice controls now use semantic elevated/control surfaces while preserving layout, focus, animation and account semantics.
