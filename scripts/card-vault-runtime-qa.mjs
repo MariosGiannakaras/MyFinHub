@@ -69,7 +69,7 @@ try{
 
   console.log('Card Vault runtime QA: invalid input stays local and does not write');
   await clickAria('Ασφαλή στοιχεία QA Debit');
-  await waitFor("function(){return Boolean(document.querySelector('.app-card-details-dialog'))&&!document.querySelector('.app-card-details-dialog input:disabled"}",'secure details dialog ready');
+  await waitFor("function(){return Boolean(document.querySelector('.app-card-details-dialog'))&&!document.querySelector('.app-card-details-dialog input:disabled')}",'secure details dialog ready');
   await setInput('Αριθμός κάρτας','4242 4242 4242 4242');
   await setInput('Λήξη κάρτας','13/30');
   await setInput('CVV κάρτας','12');
