@@ -124,6 +124,9 @@ describe('rendered browser QA reliability contract', () => {
     expect(receiptQa).toContain('confirm-receipt-delete');
     expect(settingsTabsQa).toContain('settings-device-revoke-confirm-desktop');
     expect(settingsTabsQa).toContain('settings-json-import-confirm-desktop');
+    expect(frontendQa).toContain('confirm-persistence-recovery-mobile');
+    expect(qaWorkspace).toContain('title="Φόρτωση τελευταίας αποθηκευμένης έκδοσης;"');
+    expect(qaWorkspace).toContain('onRecover={()=>setRecoverOpen(true)}');
   });
 
   it('keeps mutating validation failures in the rendered merge gate',()=>{
