@@ -6,7 +6,7 @@ type CategoryTotal={name:string;value:number};
 
 export function DashboardSummaryChart({income,expense,animateCharts}:{income:number;expense:number;animateCharts:boolean}){
   return <ResponsiveContainer width="100%" height={74}>
-    <PieChart>
+    <PieChart accessibilityLayer={false}>
       <Pie data={[{name:'Έσοδα',value:Math.max(income,0)},{name:'Έξοδα',value:Math.max(expense,0)}]} dataKey="value" innerRadius={21} outerRadius={31} strokeWidth={0} isAnimationActive={animateCharts}>
         <Cell fill="#36c978"/><Cell fill="#ff5b62"/>
       </Pie>
@@ -16,7 +16,7 @@ export function DashboardSummaryChart({income,expense,animateCharts}:{income:num
 
 export function DashboardFlowChart({data,month,animateCharts}:{data:DailyFlow[];month:string;animateCharts:boolean}){
   return <ResponsiveContainer width="100%" height="100%">
-    <BarChart data={data} barGap={1} margin={{top:4,right:6,bottom:0,left:-12}}>
+    <BarChart accessibilityLayer={false} data={data} barGap={1} margin={{top:4,right:6,bottom:0,left:-12}}>
       <CartesianGrid stroke="#e6edf6" vertical={false}/>
       <XAxis dataKey="day" tick={{fontSize:8,fill:'#62728e'}} interval={4} axisLine={false} tickLine={false}/>
       <YAxis tick={{fontSize:8,fill:'#62728e'}} tickFormatter={value=>`${Math.round(Number(value))} €`} width={48} axisLine={false} tickLine={false}/>
@@ -29,7 +29,7 @@ export function DashboardFlowChart({data,month,animateCharts}:{data:DailyFlow[];
 
 export function DashboardCategoryChart({categories,animateCharts,colors}:{categories:CategoryTotal[];animateCharts:boolean;colors:string[]}){
   return <ResponsiveContainer width="100%" height="100%">
-    <PieChart>
+    <PieChart accessibilityLayer={false}>
       <Pie data={categories} dataKey="value" nameKey="name" innerRadius={45} outerRadius={67} strokeWidth={0} isAnimationActive={animateCharts}>
         {categories.map((_,index)=><Cell key={index} fill={colors[index%colors.length]}/>)}
       </Pie>

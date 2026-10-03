@@ -81,7 +81,8 @@ try{
    const controls=[...document.querySelectorAll('button,a[href],summary,input:not([type=hidden]),textarea,select,[role=tab],[role=radio],[role=option],[role=combobox]')].filter(visible);
    const unnamed=controls.filter(el=>!labelText(el)).map(el=>el.outerHTML.slice(0,180));
    const positiveTab=[...document.querySelectorAll('[tabindex]')].filter(el=>Number(el.getAttribute('tabindex'))>0).map(el=>el.outerHTML.slice(0,160));
-   const hiddenFocusable=[...document.querySelectorAll('[aria-hidden=true]')].filter(el=>el.matches('button,a[href],input,select,textarea,[tabindex]:not([tabindex="-1"])')&&visible(el)).map(el=>el.outerHTML.slice(0,160));
+    const hiddenSelector='button,a[href],input,select,textarea,summary,[tabindex]:not([tabindex="-1"])';
+    const hiddenFocusable=[...document.querySelectorAll('[aria-hidden=true]')].flatMap(root=>[root,...root.querySelectorAll(hiddenSelector)]).filter(el=>el.matches(hiddenSelector)&&visible(el)).map(el=>el.outerHTML.slice(0,160));
    const h1=[...document.querySelectorAll('h1')].filter(visible);
    const imgs=[...document.querySelectorAll('img')].filter(visible).filter(img=>!img.hasAttribute('alt')).map(img=>img.outerHTML.slice(0,160));
    const tables=[...document.querySelectorAll('table')].filter(visible).map(table=>({caption:Boolean(table.querySelector('caption')||table.getAttribute('aria-label')||table.getAttribute('aria-labelledby')),headers:table.querySelectorAll('th').length}));
@@ -104,7 +105,7 @@ try{
      await c.send('Input.dispatchKeyEvent',{type:'keyDown',key:'Tab',code:'Tab'});
      await c.send('Input.dispatchKeyEvent',{type:'keyUp',key:'Tab',code:'Tab'});
      const state=await c.call(`function(){
-       const el=document.activeElement;if(!(el instanceof HTMLElement))return null;
+       const el=document.activeElement;if(!(el instanceof Element))return null;
        const r=el.getBoundingClientRect(),s=getComputedStyle(el);
        const visible=r.width>0&&r.height>0&&s.visibility!=='hidden'&&s.display!=='none';
        const focusVisible=(s.outlineStyle!=='none'&&parseFloat(s.outlineWidth||'0')>0)||s.boxShadow!=='none';

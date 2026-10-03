@@ -6,6 +6,10 @@ const runner=readFileSync(new URL('../scripts/run-rendered-qa.mjs',import.meta.u
 const modalFocus=readFileSync(new URL('../src/hooks/useModalFocus.ts',import.meta.url),'utf8');
 const controls=readFileSync(new URL('../src/styles/app-controls.css',import.meta.url),'utf8');
 const credit=readFileSync(new URL('../src/pages/CreditCardPage.tsx',import.meta.url),'utf8');
+const planning=readFileSync(new URL('../src/pages/PlanningPage.tsx',import.meta.url),'utf8');
+const dashboard=readFileSync(new URL('../src/pages/DashboardPage.tsx',import.meta.url),'utf8');
+const dashboardCharts=readFileSync(new URL('../src/components/DashboardRecharts.tsx',import.meta.url),'utf8');
+const reports=readFileSync(new URL('../src/pages/ReportsPage.tsx',import.meta.url),'utf8');
 
 describe('keyboard and semantic accessibility verification contract',()=>{
   it('audits every primary route on desktop and mobile',()=>{
@@ -28,6 +32,18 @@ describe('keyboard and semantic accessibility verification contract',()=>{
   it('models closed native details descendants as outside the sequential tab order',()=>{
     expect(qa).toContain("details:not([open])");
     expect(qa).toContain("el.matches('summary')&&el.parentElement===closedDetails");
+  });
+
+  it('keeps decorative aria-hidden Recharts out of sequential keyboard focus',()=>{
+    expect(dashboard).toContain('approved-bar-wrap" aria-hidden="true"');
+    expect(dashboard).toContain('approved-category-donut" aria-hidden="true"');
+    expect(planning).toContain('<AreaChart data={forecast.points} accessibilityLayer={false}>');
+    expect((dashboardCharts.match(/<PieChart accessibilityLayer=\{false\}>/g)||[]).length).toBe(2);
+    expect(dashboardCharts).toContain('<BarChart accessibilityLayer={false} data={data}');
+    expect((reports.match(/<ComposedChart accessibilityLayer=\{false\}/g)||[]).length).toBe(3);
+    expect(qa).toContain("const hiddenSelector='button,a[href],input,select,textarea,summary,[tabindex]:not([tabindex=\"-1\"])'");
+    expect(qa).toContain('root.querySelectorAll(hiddenSelector)');
+    expect(qa).toContain('if(!(el instanceof Element))return null');
   });
 
   it('audits every Settings tab and auth/error surface on desktop and mobile',()=>{

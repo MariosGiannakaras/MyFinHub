@@ -1436,8 +1436,8 @@ Additional validation is now staged without creating a new workflow: the existin
 
 
 Validation findings from exact head `db4636f0…`:
-- **QA-DESKTOP-TITLEBAR-GUTTER — source-fixed, proof pending:** CI #3185 proved `top:0`, 76px integrated height, 167px caption reserve plus drag/no-drag rules; the observed 15px `rightGap` was exactly the vertical-scrollbar gutter. The rendered suite now computes right-edge/action clearance and overflow against `documentElement.clientWidth`, while recording scrollbar gutter separately.
-- **WIN-TITLEBAR-PROBE — source-fixed, proof pending:** Windows Desktop #2745 packaged and launched successfully but external PowerShell/user32 state injection was not reliable in the runner session. The ordinary launch/backend smoke is restored unchanged; a second packaged launch now sets only `MYFINHUB_WINDOW_STATE_PROBE_PATH`, and the Electron main process exercises its own `BrowserWindow.maximize()`, `unmaximize()`, `setSize(1100,760)` / `getSize()`, writes restrictive JSON evidence, then quits through the normal backend cleanup path. The workflow validates that evidence and no longer uses user32 state injection.
+- **QA-DESKTOP-TITLEBAR-GUTTER — completed:** CI #3186 and #3190 passed the scrollbar-aware rendered title-bar suite at light/dark 1440px and compact 960px; the 15px browser scrollbar gutter is no longer misclassified as shell whitespace.
+- **WIN-TITLEBAR-PROBE — completed:** Windows Desktop #2746 and exact-head #2750 passed the packaged Electron self-probe; BrowserWindow reported maximize/restore success and `1100x760` resize while ordinary launch/backend, NSIS, First Run and Clean Launch remained green.
 
 Both findings are validation-layer follow-ups inside the accepted custom-title-bar item; neither changes the denominator or Android/backend scope.
 
@@ -1509,7 +1509,7 @@ Direct review of CI #3178 and all 48 fresh nested Settings captures from the per
 
 The original QA-NESTED-ANIM timing defect and the two real product defects it exposed (FV-58/FV-59) are now proven resolved by the settled Final Visual QA #92 matrix and direct review above. Implementation batch S is closed. These follow-ups do not change the denominator. No Android repository changes are involved.
 
-### 8.50 CI #3186 — closed `<details>` keyboard-order evidence follow-up — source-fixed, proof pending
+### 8.50 CI #3186 — closed `<details>` keyboard-order evidence follow-up — completed
 
 Exact-head CI #3186 on `88095ca…` passed the full source/unit/build phase and all rendered suites before Keyboard/Semantic Accessibility reached the mobile Recurring route. The failure reported `document.activeElement === BODY` at Tab step 20 even though every previously reached real control had a visible focus indicator.
 
@@ -1520,13 +1520,29 @@ Direct source review shows this is a QA visibility-model defect, not a Recurring
 
 **Source-fixed:** both semantic and Tab-order visibility helpers now exclude descendants of closed native `<details>` while still treating the direct `<summary>` as visible/focusable. The existing assertions for visible focus, positive `tabindex`, focus order, control naming, table semantics and modal traps remain unchanged for actual keyboard targets. A focused source regression locks the closed-details rule so this cannot be “fixed” later by weakening the accessibility gate.
 
-Status: **pending exact-head integrated rendered proof**. CI #3188 included the closed-`<details>` source fix but stopped earlier in `recovered-surface-qa.mjs`, before the keyboard/semantic suite could execute, so the accessibility follow-up is not falsely counted as proven. This item does not change the denominator and does not modify product UI/domain behavior, backend/Supabase code or Android. Current counters remain **Implementations 12/24 completed · Sub-implementations 138/194 completed**.
+Status: **Completed on exact head `7dce0860…`.** CI #3190 progressed through the closed-`<details>` mobile Recurring route and reached the later mobile Planning tab sweep, so the corrected native disclosure visibility model is now proven. This item does not change the denominator and does not modify product UI/domain behavior, backend/Supabase code or Android. Current counters remain **Implementations 12/24 completed · Sub-implementations 138/194 completed**.
 
-### 8.51 CI #3188 — lazy-resource recovery focus timing follow-up — source-fixed, proof pending
+### 8.51 CI #3188 — lazy-resource recovery focus timing follow-up — completed
 
 CI #3188 passed source/type/unit/build and the rendered suites through runtime/error states, Credit, statements and in-place refresh. In the recovered-surface suite it successfully proved the ordinary PageErrorBoundary receives focus and recovers to Dashboard, then mounted the same safe boundary for the synthetic rejected lazy resource. The harness immediately combined focus and redaction into one assertion after only waiting for the boundary DOM node, while `PageErrorBoundary.componentDidCatch()` intentionally transfers focus on the next animation frame.
 
 Direct source review therefore identifies a QA timing race rather than a product recovery regression: the same boundary/focus implementation had just passed in the preceding ordinary-crash case, and the rendered lazy boundary exposes only the fixed safe copy. **Source-fixed:** the lazy-resource path now waits explicitly for `document.activeElement === .workspace-error` before asserting that the raw missing-resource token is absent and the safe financial-data message is present. The redaction and focus requirements are both retained; they are no longer raced against each other. A source regression locks the dedicated lazy focus wait and rejects the former combined assertion.
 
-Status: **pending exact-head rendered proof**. No product UI/domain behavior, finance persistence, backend/Supabase code or Android code changed. Counters remain **Implementations 12/24 completed · Sub-implementations 138/194 completed**.
+Status: **Completed on exact head `7dce0860…`.** CI #3190 passed the full Recovered Surface QA, including ordinary PageErrorBoundary focus/recovery and the delayed lazy-resource focus/redaction path. No product UI/domain behavior, finance persistence, backend/Supabase code or Android code changed. Counters remain **Implementations 12/24 completed · Sub-implementations 138/194 completed**.
+
+### 8.52 CI #3190 — decorative chart keyboard-focus follow-up — source-fixed, proof pending
+
+Exact-head CI #3190 on `7dce0860…` passed the source/unit/build phase and every rendered suite through Receipt OCR, Ledger foundations, large-data boundaries and 404 accessibility. Keyboard/Semantic Accessibility then failed on **mobile Planning** at Tab step 18 because `document.activeElement` became a non-HTMLElement chart target.
+
+**FV-60 — decorative Recharts remain keyboard-focusable under `aria-hidden`**
+- Planning, Dashboard and Reports intentionally mark their visual chart hosts `aria-hidden="true"` and already provide accessible text/list/table alternatives.
+- Recharts 3.10.1 enables its chart `accessibilityLayer` by default. That creates keyboard-focus behavior inside a subtree the product has explicitly declared decorative, which can move sequential focus onto SVG content that assistive technology should not encounter.
+- The semantic audit also had a blind spot: it checked whether the `aria-hidden` root itself was focusable, but not its focusable descendants; its tab diagnostic also discarded focused SVG/other DOM `Element` targets by requiring `HTMLElement`.
+
+**Source-fixed:**
+- Planning `AreaChart`, the lazy Dashboard `PieChart`/`BarChart` implementations and all three Reports `ComposedChart` roots explicitly set `accessibilityLayer={false}` because their owning regions are decorative and have separate accessible alternatives.
+- The keyboard/semantic audit now inspects focusable descendants under every `aria-hidden` ancestor and reports any focused DOM `Element`, including SVG, instead of returning `null`.
+- Focused source regression locks both the decorative-chart contract and the strengthened audit.
+
+Status: **pending exact-head integrated keyboard/semantic proof**. This is an accessibility-presentation correction only; finance/domain behavior, backend/Supabase behavior and the Android repository are unchanged. Counters remain **Implementations 12/24 completed · Sub-implementations 138/194 completed**.
 
