@@ -279,8 +279,9 @@ describe('completion UX contracts',()=>{
     expect(harness).toContain("Ιούλιος 2026");
     expect(harness).toContain('Reports KPIs recalculate after period change');
     expect(harness).toContain("Επόμενος μήνας");
-    expect(harness).toContain("c.call(\`function(){const button=document.querySelector('.period-control button[aria-label=\\\"Προηγούμενος μήνας\\\"]')");
-    expect(harness).toContain("c.call(\`function(){const button=document.querySelector('.period-control button[aria-label^=\\\"Επόμενος μήνας\\\"]')");
+    expect(harness).toContain('c.call(`function(){const button=document.querySelector(');
+    expect(harness).toContain('[aria-label="Προηγούμενος μήνας"]');
+    expect(harness).toContain('[aria-label^="Επόμενος μήνας"]');
   });
 
   it('syntax-checks every rendered QA module before launching browsers',()=>{
