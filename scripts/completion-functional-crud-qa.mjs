@@ -87,6 +87,7 @@ try{
   const deleteModern=await c.call("function(){const row=[...document.querySelectorAll('[data-transaction-source=event]')].find(item=>item.getClientRects().length>0&&(item.textContent||'').includes('QA Audit Modern Event'));const button=row?.querySelector('button[aria-label^=\"Διαγραφή\"]');button?.click();return Boolean(button)}");
   assert(deleteModern,'updated modern event exposes delete action');
   await waitFor("function(){return Boolean(document.querySelector('.app-confirm-dialog[role=alertdialog]'))}",'modern event delete confirmation');
+  await sleep(180);await shot('confirm-transaction-delete');
   await clickText('.app-confirm-dialog button','Διαγραφή');
   await waitFor("function(){return ![...document.querySelectorAll('[data-transaction-source=event]')].some(row=>(row.textContent||'').includes('QA Audit Modern Event'))}",'modern event deleted');
   const undoModern=await c.call("function(){const button=document.querySelector('button[aria-label=\"Αναίρεση τελευταίας αλλαγής\"]');button?.click();return Boolean(button&&!button.disabled)}");
@@ -162,6 +163,7 @@ try{
   const deleteGoal=await c.call(`function(){const visible=${visible};const row=[...document.querySelectorAll('.savings-goal-row.personal')].find(item=>visible(item)&&(item.textContent||'').includes('QA Audit Goal Updated'));const button=[...row?.querySelectorAll('button')||[]].find(item=>(item.textContent||'').includes('Διαγραφή'));button?.click();return Boolean(button)}`);
   assert(deleteGoal,'saved goal exposes delete');
   await waitFor("function(){return Boolean(document.querySelector('.app-confirm-dialog[role=\"alertdialog\"]'))}",'goal delete confirm');
+  await sleep(180);await shot('confirm-savings-goal-delete');
   await clickText('.app-confirm-dialog button','Διαγραφή');
   await waitFor("function(){return ![...document.querySelectorAll('.savings-goal-row.personal')].some(row=>(row.textContent||'').includes('QA Audit Goal Updated'))}",'deleted savings goal');
 
@@ -237,6 +239,7 @@ try{
   const forgive=await c.call("function(){const row=[...document.querySelectorAll('.loan-list-row.self-loan[data-loan-lifecycle=active]')].find(node=>(node.textContent||'').includes('QA Audit Self Loan'));const button=row?.querySelector('.forgive');button?.click();return Boolean(button)}");
   assert(forgive,'self-loan exposes forgiveness');
   await waitFor("function(){const dialog=document.querySelector('.app-confirm-dialog[role=alertdialog]');return Boolean(dialog&&(dialog.textContent||'').includes('Χάρισμα υπολοίπου')&&(dialog.textContent||'').includes('χωρίς μεταφορά χρημάτων'))}",'self-loan forgiveness confirmation');
+  await sleep(180);await shot('confirm-self-loan-forgiveness');
   await clickText('.app-confirm-dialog button','Χάρισμα');
   await waitFor("function(){const history=document.querySelector('[data-loan-history]');if(!history)return false;if(!history.open)history.open=true;const row=[...history.querySelectorAll('.loan-list-row.self-loan[data-loan-lifecycle=completed]')].find(node=>(node.textContent||'').includes('QA Audit Self Loan'));return Boolean(row&&!row.querySelector('.pay,.forgive')&&(row.textContent||'').includes('Χαρίστηκαν'))}",'forgiven self-loan moves to completed history');
   await shot('loan-self-lifecycle');
@@ -355,6 +358,7 @@ try{
   const deleteLifecycle=await c.call("function(){const details=[...document.querySelectorAll('.cards-archive')].find(node=>(node.textContent||'').includes('QA Audit Lifecycle Card'));if(!details)return false;details.open=true;const row=[...details.querySelectorAll('.card-archive-row')].find(node=>(node.textContent||'').includes('QA Audit Lifecycle Card'));const button=[...row?.querySelectorAll('button')||[]].find(node=>(node.textContent||'').includes('Οριστική διαγραφή'));button?.click();return Boolean(button)}");
   assert(deleteLifecycle,'archived lifecycle card exposes permanent delete');
   await waitFor("function(){return [...document.querySelectorAll('[role=alertdialog]')].some(dialog=>(dialog.textContent||'').includes('Οριστική διαγραφή κάρτας;'))}",'lifecycle permanent-delete confirmation');
+  await sleep(180);await shot('confirm-card-permanent-delete');
   await clickText('[role=alertdialog] button','Οριστική διαγραφή');
   await waitFor("function(){return ![...document.querySelectorAll('.prototype-payment-card,.card-archive-row')].some(node=>(node.textContent||'').includes('QA Audit Lifecycle Card'))&&document.body.textContent.includes('διαγράφηκε οριστικά')}",'lifecycle card permanently removed');
   await shot('cards-lifecycle-deleted');
@@ -395,6 +399,7 @@ try{
   const requestedDelete=await c.call(`function(){const row=[...document.querySelectorAll('.account-management-row')].find(item=>(item.textContent||'').includes('QA Audit Temp Cash'));const button=row?.querySelector('button[aria-label="Διαγραφή QA Audit Temp Cash"]');button?.click();return Boolean(button)}`);
   assert(requestedDelete,'temporary custom cash account exposes delete');
   await waitFor("function(){return [...document.querySelectorAll('[role=alertdialog]')].some(dialog=>(dialog.textContent||'').includes('Διαγραφή λογαριασμού;')&&(dialog.textContent||'').includes('QA Audit Temp Cash'))}",'account delete confirmation');
+  await sleep(180);await shot('confirm-account-delete');
   await clickText('[role=alertdialog] button','Διαγραφή');
   await waitFor("function(){const exists=[...document.querySelectorAll('.account-management-row')].some(row=>(row.textContent||'').includes('QA Audit Temp Cash'));const message=document.querySelector('.account-management-message')?.textContent||'';return !exists&&message.includes('Ο λογαριασμός διαγράφηκε.')}",'temporary cash account deleted');
   await shot('settings-account-create-delete');
