@@ -46,6 +46,11 @@
           disableAppPin:async()=>({ok:true,...appLockState,enabled:false}),
         })});
         const nativeFetch=window.fetch.bind(window);
+        const deviceNow=Date.now();
+        let deviceRows=[
+          {sessionId:'123e4567-e89b-42d3-a456-426614174001',current:true,platform:'windows',label:'Windows · MyFinHub PC',appVersion:'1.3.0',firstSeenAt:new Date(deviceNow-86400000*12).toISOString(),lastSeenAt:new Date(deviceNow-45000).toISOString()},
+          {sessionId:'123e4567-e89b-42d3-a456-426614174002',current:false,platform:'android',label:'Android · Pixel',appVersion:'1.0.0',firstSeenAt:new Date(deviceNow-86400000*3).toISOString(),lastSeenAt:new Date(deviceNow-32*60000).toISOString()},
+        ];
         window.fetch=async(input,init)=>{
           const href=typeof input==='string'?input:input instanceof URL?input.href:input.url;
           const url=new URL(href,location.origin);
@@ -53,11 +58,14 @@
             return new Response(JSON.stringify({authenticated:true,email:'owner@myfinhub.app'}),{status:200,headers:{'content-type':'application/json'}});
           }
           if(url.origin===location.origin&&url.pathname==='/api/auth/devices'&&(!init?.method||String(init.method).toUpperCase()==='GET')){
-            const now=Date.now();
-            return new Response(JSON.stringify({devices:[
-              {sessionId:'123e4567-e89b-42d3-a456-426614174001',current:true,platform:'windows',label:'Windows · MyFinHub PC',appVersion:'1.3.0',firstSeenAt:new Date(now-86400000*12).toISOString(),lastSeenAt:new Date(now-45000).toISOString()},
-              {sessionId:'123e4567-e89b-42d3-a456-426614174002',current:false,platform:'android',label:'Android · Pixel',appVersion:'1.0.0',firstSeenAt:new Date(now-86400000*3).toISOString(),lastSeenAt:new Date(now-32*60000).toISOString()},
-            ]}),{status:200,headers:{'content-type':'application/json'}});
+            return new Response(JSON.stringify({devices:deviceRows}),{status:200,headers:{'content-type':'application/json'}});
+          }
+          if(url.origin===location.origin&&url.pathname==='/api/auth/devices'&&String(init?.method||'GET').toUpperCase()==='POST'){
+            await new Promise(resolve=>setTimeout(resolve,650));
+            let payload={};try{payload=JSON.parse(String(init?.body||'{}'))}catch{}
+            if(payload.action==='revoke')deviceRows=deviceRows.filter(device=>device.sessionId!==payload.sessionId);
+            if(payload.action==='revoke-others')deviceRows=deviceRows.filter(device=>device.current);
+            return new Response(JSON.stringify({devices:deviceRows}),{status:200,headers:{'content-type':'application/json'}});
           }
           return nativeFetch(input,init);
         };
