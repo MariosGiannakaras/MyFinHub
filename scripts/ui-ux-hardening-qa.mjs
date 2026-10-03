@@ -46,10 +46,12 @@ try{
   for(const page of PAGE_IDS)await auditPage({page,width:1440,height:1000,text:'normal',shot:true});
   console.log('UI/UX QA: full mobile route matrix');
   for(const page of PAGE_IDS)await auditPage({page,width:375,height:812,text:'normal',shot:true});
+  console.log('UI/UX QA: minimal states desktop + mobile');
+  for(const page of PAGE_IDS){await auditPage({page,width:1440,height:1000,state:'minimal',shot:true});await auditPage({page,width:375,height:812,state:'minimal',shot:true})}
   console.log('UI/UX QA: empty states desktop + mobile');
-  for(const page of PAGE_IDS){await auditPage({page,width:1440,height:1000,state:'empty'});await auditPage({page,width:375,height:812,state:'empty'})}
+  for(const page of PAGE_IDS){await auditPage({page,width:1440,height:1000,state:'empty',shot:true});await auditPage({page,width:375,height:812,state:'empty',shot:true})}
   console.log('UI/UX QA: extreme data desktop + narrow mobile');
-  for(const page of PAGE_IDS){await auditPage({page,width:1440,height:1000,state:'extreme'});await auditPage({page,width:320,height:700,state:'extreme'})}
+  for(const page of PAGE_IDS){await auditPage({page,width:1440,height:1000,state:'extreme',shot:true});await auditPage({page,width:320,height:700,state:'extreme',shot:true})}
   console.log('UI/UX QA: Compact and Large typography across desktop + mobile');
   for(const text of ['compact','large'])for(const page of PAGE_IDS){await auditPage({page,width:1440,height:1000,text});await auditPage({page,width:375,height:812,text})}
   console.log('UI/UX QA: authentication screens');

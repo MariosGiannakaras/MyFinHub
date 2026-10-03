@@ -1702,3 +1702,15 @@ Source implementation in this batch:
 - add the real Desktop Update Panel `up-to-date` state as a clear success-state visual alongside available/downloading/ready/error host evidence.
 
 Status: **source-implemented; rendered proof and direct screenshot inspection pending.** Counters remain **Implementations 14/24 completed · Sub-implementations 147/195 completed**. This expands evidence only; it does not alter shared control styling, validation semantics, finance behavior, backend/Supabase behavior or Android code.
+
+
+### 8.64 Data-heavy visual state matrix expansion — source-implemented, proof pending
+
+The existing route-wide hardening suite already exercised empty and extreme fixtures across every primary route, but it did not persist those states for direct visual review and it had no distinct minimal-data fixture. That prevented closure of the existing 8.2 empty/minimal/normal/dense/extreme-content review item.
+
+Source implementation in this batch:
+- add a QA-only `minimal` fixture that retains a bounded representative slice of seed/domain collections, one event per event kind (bounded to eight), one scheduled/recurring/loan/lending/budget/goal/rule/statement record where available, and one debit + one credit card; IDs and production domain logic remain unchanged;
+- persist minimal, empty and extreme route captures for all twelve primary routes at desktop plus mobile/narrow-mobile sizes while retaining the existing overflow, accessible-name, touch-target and runtime-error assertions;
+- keep the existing normal desktop/mobile captures, long Greek account name, Unicode/very-long note and large monetary-value extreme fixtures; the separate large-data suite remains authoritative for 1,500-event and 100-row history performance/density boundaries.
+
+Status: **source-implemented; exact-head rendered proof and direct visual inspection pending.** Counters remain **Implementations 14/24 completed · Sub-implementations 147/195 completed**. This is fixture/evidence expansion only and does not alter product data, persistence or finance semantics.

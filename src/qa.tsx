@@ -114,6 +114,13 @@ function buildQaData(params:URLSearchParams){
   if(params.get('motion')==='reduced')next.state.settings.motion='reduced';
   next.state.settings.textSize=initialTextSize(params.get('text'));
   next.state.budgets=next.state.budgets??[];next.state.transactionRules=next.state.transactionRules??[];next.state.deletedCards=next.state.deletedCards??[];
+  if(params.get('state')==='minimal'){
+    const onePerKind=(next.state.events??[]).filter((event,index,all)=>all.findIndex(item=>item.kind===event.kind)===index);
+    next.seed.transactions=next.seed.transactions.slice(0,1);next.seed.recurring=next.seed.recurring.slice(0,1);next.seed.loans=next.seed.loans.slice(0,1);next.seed.lending=next.seed.lending.slice(0,1);
+    next.state.events=onePerKind.slice(0,8);next.state.scheduled=(next.state.scheduled??[]).slice(0,1);next.state.recurringCustom=(next.state.recurringCustom??[]).slice(0,1);next.state.customLoans=(next.state.customLoans??[]).slice(0,1);next.state.lendingCustom=(next.state.lendingCustom??[]).slice(0,1);
+    next.state.budgets=(next.state.budgets??[]).slice(0,1);next.state.savingsGoals=(next.state.savingsGoals??[]).slice(0,1);next.state.transactionRules=(next.state.transactionRules??[]).slice(0,1);next.state.creditStatements=(next.state.creditStatements??[]).slice(0,1);
+    const debit=(next.state.cards??[]).find(card=>card.kind!=='credit');const credit=(next.state.cards??[]).find(card=>card.kind==='credit');next.state.cards=[debit,credit].filter((card):card is PaymentCard=>Boolean(card));
+  }
   if(params.get('state')==='empty'){
     next.seed.transactions=[];next.seed.recurring=[];next.seed.loans=[];next.seed.lending=[];next.seed.snapshots=next.seed.snapshots.map(snapshot=>({...snapshot,balances:{...snapshot.balances,'piraeus-payroll':1000,'piraeus-savings':1000,cash:1000}}));next.state.events=[];next.state.scheduled=[];next.state.recurringCustom=[];next.state.recurringOverrides={};next.state.customLoans=[];next.state.loanOverrides={};next.state.cards=[];next.state.deletedCards=[];next.state.cardBanks=[];next.state.reviewDecisions={};next.state.attentionDecisions={};next.state.budgets=[];next.state.savingsGoals=[];next.state.transactionRules=[];
   }

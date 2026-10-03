@@ -92,6 +92,11 @@ describe('rendered browser QA reliability contract', () => {
     expect(hardening).toContain('desktop-date-popover-open');
     expect(hardening).toContain('desktop-dialog-credit');
     expect(hardening).toContain('desktop-validation-bank');
+    expect(qaWorkspace).toContain("params.get('state')==='minimal'");
+    expect(qaWorkspace).toContain('onePerKind.slice(0,8)');
+    expect(hardening).toContain("state:'minimal',shot:true");
+    expect(hardening).toContain("state:'empty',shot:true");
+    expect(hardening).toContain("state:'extreme',shot:true");
   });
 
   it('keeps mutating validation failures in the rendered merge gate',()=>{
