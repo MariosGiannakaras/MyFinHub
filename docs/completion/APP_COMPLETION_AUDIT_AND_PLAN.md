@@ -1437,11 +1437,11 @@ Additional validation is now staged without creating a new workflow: the existin
 
 Validation findings from exact head `db4636f0…`:
 - **QA-DESKTOP-TITLEBAR-GUTTER — source-fixed, proof pending:** CI #3185 proved `top:0`, 76px integrated height, 167px caption reserve plus drag/no-drag rules; the observed 15px `rightGap` was exactly the vertical-scrollbar gutter. The rendered suite now computes right-edge/action clearance and overflow against `documentElement.clientWidth`, while recording scrollbar gutter separately.
-- **WIN-TITLEBAR-PROBE — source-fixed, proof pending:** Windows Desktop #2745 packaged and launched successfully but external PowerShell/user32 state injection was not reliable in the runner session. The ordinary launch/backend smoke is restored unchanged; a second packaged launch now sets only `MYFINHUB_WINDOW_STATE_PROBE_PATH`, and the Electron main process exercises its own `BrowserWindow.maximize()`, `unmaximize()`, `setSize(1100,760)` / `getSize()`, writes restrictive JSON evidence, then quits through the normal backend cleanup path. The workflow validates that evidence and no longer uses user32 state injection.
+- **WIN-TITLEBAR-PROBE — completed:** Windows Desktop #2746 passed on exact head `88095ca1…`. The packaged Electron self-probe reported `maximize=True`, `restore=True`, `resize=1100x760`; the ordinary launch/backend smoke, NSIS packaging/install flow and Windows First Run/Clean Launch also remained green. External user32 state injection is removed.
 
 Both findings are validation-layer follow-ups inside the accepted custom-title-bar item; neither changes the denominator or Android/backend scope.
 
-Status: **Source implementation complete; strengthened Windows host-state + rendered desktop titlebar proof pending.** No Android repository changes are required; expected Android impact remains none because production renderer styling is gated by the Electron preload bridge. Counters remain **Implementations 12/24 completed · Sub-implementations 132/194 completed** until both validation layers and direct desktop evidence review complete.
+Status: **Source implementation complete; Windows host-state proof passed, rendered desktop titlebar proof/direct review pending.** No Android repository changes are required; expected Android impact remains none because production renderer styling is gated by the Electron preload bridge. Counters remain **Implementations 12/24 completed · Sub-implementations 132/194 completed** until both validation layers and direct desktop evidence review complete.
 
 ### 8.49 CI #3178 / nested Settings direct-review follow-up — in progress
 
