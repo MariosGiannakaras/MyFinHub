@@ -351,9 +351,10 @@ async function main(){
     expect(backup,200,undefined,'backup');
     assert(/^supabase:\/\/rheomiq_backups\/\d+$/.test(String(backup.body?.path||'')),'Backup did not persist through the real RPC boundary.');
 
+    console.log('[real-stack] stage direct-db-read');
     const stateRows=await upstreamJson(`${local.apiUrl}/rest/v1/rheomiq_app_state?id=eq.primary&select=revision,finance_storage_mode,updated_at`,local.serviceRole) as any[];
     assert(Array.isArray(stateRows)&&stateRows.length===1,'Direct database read-back did not find the canonical state row.');
-    assert(String(stateRows[0]?.revision)===String(persisted.body?.revision),'API revision and persisted database revision disagree.');
+    assert(String(stateRows[0]?.revision)===String(redone.body?.revision),'API revision and persisted database revision disagree.');
     assert(stateRows[0]?.finance_storage_mode==='relational_v1','Relational finance storage mode is not active.');
 
     const backupId=String(backup.body?.path||'').split('/').pop()||'';

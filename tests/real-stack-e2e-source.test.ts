@@ -44,6 +44,9 @@ describe('zero-cost real-stack E2E source contract',()=>{
     expect(script).toContain("[real-stack] stage history-redo");
     expect(script).toContain("[real-stack] stage card-vault-write");
     expect(script).toContain("[real-stack] stage backup-restore");
+    expect(script).toContain("[real-stack] stage direct-db-read");
+    expect(script).toContain("String(stateRows[0]?.revision)===String(redone.body?.revision)");
+    expect(script).not.toContain("String(stateRows[0]?.revision)===String(persisted.body?.revision)");
     expect(script).toContain('rheomiq_database_health');
     expect(script).toContain("stage='request'");
     expect(script).toContain('/api/auth/mfa/verify');
