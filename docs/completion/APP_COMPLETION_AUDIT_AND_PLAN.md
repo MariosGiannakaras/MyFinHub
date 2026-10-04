@@ -1893,3 +1893,16 @@ Real Stack E2E #6 on exact head `a7f5fd3…` localized the 422 failure to **`mfa
 - Required remediation: explicitly enable TOTP enrollment and verification in `supabase/config.toml`, add a source regression lock for both flags, and rerun the unchanged synthetic local E2E. Do not weaken mandatory MFA, do not add another login path and do not touch production Supabase state.
 
 Status: **recorded before fix; source remediation pending.** FV-68 observability work successfully identified the failing stage and is complete as diagnostic infrastructure. Completion counters remain **Implementations 16/24 completed · Sub-implementations 152/195 completed** until runtime proof passes.
+
+
+### 8.78 FV-70 — active-device first-session bootstrap blocked by INSERT representation RLS — recorded before fix
+
+Real Stack E2E #8 on exact head `5d72e0e…` proved the TOTP configuration fix: invalid password, valid password, TOTP enrollment, invalid TOTP and valid TOTP all completed. The next authenticated session bootstrap failed with HTTP 401 `DEVICE_ACCESS_REVOKED` before any finance mutation.
+
+- Reproduction: after first successful AAL2 verification, call `/api/auth/session`. `ensureDeviceSessionAccess` finds no active registry row and inserts one with `Prefer: return=representation`.
+- Affected matrix cells: 8.4 active-device lifecycle and 8.10 real-stack session/persistence proof.
+- Root cause classification: backend/RLS bootstrap defect. The hardened registry SELECT policy intentionally requires the current session to already be active; an INSERT that requests a returned representation also needs the new row to satisfy SELECT visibility. Supabase/PostgREST documents this class of 403/RLS failure for INSERT+RETURNING when SELECT policy does not yet cover the row. The registry's INSERT policy is deliberately bootstrap-capable, but the requested representation reintroduces the pre-bootstrap SELECT dependency.
+- Security-preserving remediation: bootstrap the row with `return=minimal`, synthesize the already-known non-secret registry record on success, and handle a primary-key race/conflict by re-reading the active row. If a conflicting row remains invisible after the retry, fail closed as `DEVICE_ACCESS_REVOKED`; never bypass RLS and never introduce a service-role server path.
+- Regression requirement: unit coverage must prove minimal-return bootstrap, concurrent bootstrap recovery and revoked-session fail-closed behavior.
+
+Status: **recorded before fix; remediation pending.** FV-69's local TOTP parity correction is runtime-proven through successful AAL2 verification, but no completion counter advances until the remaining real-stack sequence is green. **Implementations 16/24 completed · Sub-implementations 152/195 completed**.
