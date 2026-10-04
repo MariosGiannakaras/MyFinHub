@@ -2305,7 +2305,7 @@ Audit Rendered Review `37222673110` on `9f6d129…` proved FV-84 fixed: Receipt 
 - The single miss occurred near the end of a long parallel Chromium coordinator and exceeded the contract by 162 ms (3.24%). This is insufficient evidence for a product regression or threshold change.
 - The 5000 ms assertion remains unchanged. The exact next coherent head must rerun the same large-data proof. Only repeated failure will justify deeper contention/product profiling.
 
-Status: **open evidence blocker; fresh exact-head rendered rerun required.**
+Status: **closed by Audit Rendered Review `37225283561` on `3ea396fb…`.** The unchanged large-data proof passed with max route readiness 3461 ms, budget mutation 1438 ms, reports heap 39.8 MiB and history heap 78.5 MiB. The 5000 ms readiness contract remained unchanged; the earlier 5162 ms miss did not repeat.
 
 
 ### 8.112 FV-87 — residual static JSX presentation ownership — source-fixed, rendered proof pending
@@ -2318,4 +2318,27 @@ The completed TSX inventory distinguished state/data-driven inline parameters fr
 - Runtime-driven inline values remain intentionally allowed: progress widths, chart/category swatches, drag/delete transforms, state-derived CSS variables and dynamic donut backgrounds.
 - `final-ui-reuse-audit-source.test.ts` now locks the static ownership boundary and rejects recurrence of these exact inline patterns.
 
-Status: **source-fixed; CI/CodeQL + one-shot Audit Rendered Review pending.** The owner-mandated 8.12 source/design-system audit remains open until this proof is green and directly reviewed.
+Status: **product/runtime/visual proof passed on `3ea396fb…`; final audit-cell closure still pending FV-88/FV-89 rerun.** Audit Rendered Review `37225283561` completed every rendered browser QA module successfully, including Change History, Loans, Dashboard, Transactions, Receipt OCR, large-data and keyboard/semantic accessibility. Exact-head artifact `11311199354` was directly inspected for the distinct FV-87 contexts: Change History rows/dialog, shared sort controls + completed Loans history, Dashboard sparkline/card composition and Transactions desktop/mobile controls/actions all remain contained with no clipping/overlap or geometry regression. The workflow failed only after those proofs in the separate final-screenshot opt-in step (FV-89).
+
+
+### 8.113 FV-88 — Surface source regression rejected additive Change History owner class
+
+CI `37225288807` on `3ea396fb30de5b97dbe6a6fa7ff327a450f172e5` passed hygiene and reached 176 passing test files / 1004 passing tests before one assertion in `tests/surface-source.test.ts` failed.
+
+- The assertion required the exact class substring `command-palette surface-raised`, so the intentional additive `change-history-dialog` owner class made the literal fail even though the shared semantic `surface-raised` contract remained present.
+- The owner class is required to move static Change History grid geometry out of JSX and into `durable-history-controls.css`; restoring inline styling would regress FV-87.
+- Remediation updates only the source assertion to the exact intended class list. No product/runtime behavior changes.
+
+Status: **source-fixed; ordinary CI rerun pending.**
+
+
+### 8.114 FV-89 — dedicated Audit final-screenshot step omitted explicit opt-in
+
+Audit Rendered Review `37225283561` on `3ea396fb…` completed every rendered browser QA module successfully, then failed only in the subsequent `Capture final screenshot matrix` step because `scripts/final-screenshots-qa.mjs` correctly requires `MYFINHUB_FINAL_SCREENSHOTS=1`.
+
+- The opt-in guard is intentional and remains unchanged.
+- The dedicated audit workflow is the explicit caller that is allowed to create persistent final screenshots, so only that step now sets `MYFINHUB_FINAL_SCREENSHOTS: '1'`.
+- Regression coverage verifies the env exists within the capture step and the script still fails closed without it.
+- Artifact `11311199354` remained valid for the already-green rendered coordinator and FV-87 direct inspection; a clean rerun is still required to close the workflow itself.
+
+Status: **source-fixed; one-shot Audit Rendered Review rerun pending.** Completion counters remain **Implementations 17/24 completed · Sub-implementations 164/197 completed**.

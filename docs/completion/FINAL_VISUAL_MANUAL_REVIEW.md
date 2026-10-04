@@ -207,3 +207,22 @@ The full rendered coordinator passed and persisted 423 focused screenshots. The 
 | Taxonomy retirement confirmation + blocked desktop/mobile states | PASS — shared confirmation stays opaque; blocker guidance remains readable/responsive. |
 
 Disposition: **8.2 Exhaustive visual inspection = 12/12 complete.** FV-64, FV-65 and FV-66 are closed. This visual closure does not substitute for pending isolated real-stack auth/persistence/Supabase verification.
+
+
+## FV-87 static-presentation ownership exact-head review — Audit Rendered Review `37225283561`
+
+Reviewed by: ChatGPT (direct individual image inspection)  
+Source head: `3ea396fb30de5b97dbe6a6fa7ff327a450f172e5`  
+Artifact: `assistant-rendered-review-3ea396fb30de5b97dbe6a6fa7ff327a450f172e5` / ID `11311199354`  
+Review date: 2026-10-04
+
+The primary Chromium coordinator passed all rendered browser QA modules before the later workflow-only final-screenshot opt-in failure. The FV-87 source change only moved static presentation values from JSX into existing owner stylesheets; runtime-driven inline parameters were intentionally unchanged.
+
+| Distinct context | Direct disposition |
+| --- | --- |
+| Change History · `large-history-dialog-desktop` | PASS — grid rows, right-aligned timestamps, scroll area, footer and Undo/Redo actions remain aligned/contained; no clipping or row collapse after moving grid geometry to `durable-history-controls.css`. |
+| Loans · completed history desktop/mobile + shared sort control | PASS — completed status/history spacing remains coherent and ASC/DESC controls retain the intended touch geometry; no overlap or card/action shift. |
+| Dashboard · hierarchy/sparkline cards | PASS — account sparkline composition remains readable and contained; no visible geometry regression from moving the comparison-line/card hit-area static styling into the Dashboard owner stylesheet. |
+| Transactions · baseline desktop + extreme mobile | PASS — desktop filter row remains correctly laid out through `display:contents`; mobile Edit/Delete actions remain separated and contained at the intended touch-target geometry even with extreme long content. |
+
+Disposition: **FV-87 product/UI presentation is PASS on `3ea396fb…`.** The owner-mandated 8.12 audit cell remains open only for clean source/workflow rerun and later checklist reconciliation; the later workflow failure was FV-89, not a rendered product defect.

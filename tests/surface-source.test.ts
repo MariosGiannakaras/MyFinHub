@@ -65,7 +65,7 @@ describe('canonical Surface primitive',()=>{
     expect(appShell).not.toContain('sidebar neo-raised');
     expect(appShell).not.toContain('topbar neo-flat');
     expect(appShell).not.toContain('mobile-nav neo-raised');
-    expect(appShell).toContain('className="command-palette surface-raised"');
+    expect(appShell).toContain('className="command-palette surface-raised change-history-dialog"');
     expect(appShell).toContain('className="mobile-more-menu surface-raised"');
     expect(appShell).toContain('className="surface-inset history-row"');
     expect(appShell).toContain("saveState==='saved'?'is-quiet':'surface-inset is-active'");

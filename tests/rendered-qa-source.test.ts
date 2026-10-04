@@ -22,6 +22,7 @@ const qaWorkspace = readFileSync('src/qa.tsx', 'utf8');
 const qaRunner = readFileSync('scripts/qa-script-runner.mjs', 'utf8');
 const ci = readFileSync('.github/workflows/ci.yml', 'utf8');
 const auditRenderedWorkflow = readFileSync('.github/workflows/audit-rendered-review.yml', 'utf8');
+const finalScreenshots = readFileSync('scripts/final-screenshots-qa.mjs', 'utf8');
 const qaHtml = readFileSync('qa.html', 'utf8');
 
 describe('rendered browser QA reliability contract', () => {
@@ -71,6 +72,17 @@ describe('rendered browser QA reliability contract', () => {
     expect(auditRenderedWorkflow).toContain('npm run dev:web > /tmp/myfinhub-vite.log');
   });
 
+  it('explicitly opts the dedicated audit workflow into persistent final screenshot capture while keeping the script fail-closed',()=>{
+    const captureIndex=auditRenderedWorkflow.indexOf('- name: Capture final screenshot matrix');
+    const uploadIndex=auditRenderedWorkflow.indexOf('- name: Upload assistant review evidence');
+    expect(captureIndex).toBeGreaterThan(-1);
+    expect(uploadIndex).toBeGreaterThan(captureIndex);
+    const captureBlock=auditRenderedWorkflow.slice(captureIndex,uploadIndex);
+    expect(captureBlock).toContain("MYFINHUB_FINAL_SCREENSHOTS: '1'");
+    expect(captureBlock).toContain('run: npm run qa:final-screenshots');
+    expect(finalScreenshots).toContain("process.env.MYFINHUB_FINAL_SCREENSHOTS!=='1'");
+    expect(finalScreenshots).toContain('Final screenshot capture requires MYFINHUB_FINAL_SCREENSHOTS=1.');
+  });
   it('parallelizes independent rendered suites while serializing shared fixed CDP ports',()=>{
     expect(coordinator).toContain("MYFINHUB_QA_PARALLELISM||3");
     expect(coordinator).toContain('const activePorts=new Set()');

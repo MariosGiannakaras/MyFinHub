@@ -54,6 +54,8 @@ jobs:
       - name: Run rendered frontend QA
         run: npm run qa:frontend
       - name: Capture final screenshot matrix
+        env:
+          MYFINHUB_FINAL_SCREENSHOTS: '1'
         run: npm run qa:final-screenshots
       - name: Upload assistant review evidence
         if: always()
