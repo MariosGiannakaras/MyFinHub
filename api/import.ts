@@ -1,9 +1,12 @@
 import { accessTokenAal, assertMutationSessionOrigin, clearSessionCookiesIfCookie, requireSession } from '../server/auth.js';
-import { validateCategoryIdentityState } from '../server/categoryIdentityValidation.js';
 import { handleApi, methodNotAllowed, readJsonBody, requestHeader, sendJson, ApiError } from '../server/http.js';
 import { MAX_FINANCE_DOCUMENT_BYTES } from '../src/lib/limits.js';
 import { isOwner, writeStore } from '../server/storage.js';
-import { validateFinanceData } from '../server/validation.js';
+import { validateCompleteFinanceData } from '../server/financeDataValidation.js';
+
+export function assertImportConfirmation(value: string) {
+  if (value !== 'replace') throw new ApiError(400, 'IMPORT_CONFIRMATION_REQUIRED', 'Import confirmation is required.');
+}
 
 export default async function handler(req: any, res: any) {
   await handleApi(res, async () => {
@@ -15,12 +18,9 @@ export default async function handler(req: any, res: any) {
       throw new ApiError(401, 'AUTH_REQUIRED', 'Authentication required.');
     }
     if (accessTokenAal(session.accessToken) !== 'aal2') throw new ApiError(403, 'MFA_REQUIRED', 'Verification required.');
-    if (requestHeader(req, 'x-rheomiq-confirm-import') !== 'replace') {
-      throw new ApiError(400, 'IMPORT_CONFIRMATION_REQUIRED', 'Import confirmation is required.');
-    }
+    assertImportConfirmation(requestHeader(req, 'x-rheomiq-confirm-import'));
     const body = await readJsonBody(req, MAX_FINANCE_DOCUMENT_BYTES);
-    validateFinanceData(body);
-    validateCategoryIdentityState(body.state);
+    validateCompleteFinanceData(body);
     return sendJson(res, 200, await writeStore(body, undefined, true, session.accessToken));
   });
 }

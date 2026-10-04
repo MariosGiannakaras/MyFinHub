@@ -1,6 +1,10 @@
 import { useEffect, useRef } from 'react';
+import { useFinancialProviders } from '../hooks/useFinancialProviders';
 import { bankBrandAsset, bankBrandCardMark, bankBrandKey } from '../lib/bankBrands';
-import { defaultDesignForCard } from '../lib/cardDesigns';
+import { cardBrandSurfaceTone, defaultDesignForCard } from '../lib/cardDesigns';
+import { providerBrandUrl } from '../lib/providerBrandAssets';
+import type { FinancialProvider } from '../lib/financialProviders';
+import { cardNetworkBrand } from '../lib/cardNetworks';
 import { CardVaultClientError, cardVaultErrorMessage, revealCardSecret } from '../lib/cardVaultClient';
 import type { CardBank, PaymentCard } from '../types';
 import payzyProLogo from '../assets/canonical-credit-card/payzy-pro-logo.png';
@@ -74,8 +78,11 @@ function hashHue(text:string){
 function cardInlineStyle(card:RuntimeCard){
   return card.template==='custom'?` style="--custom-hue:${hashHue(card.bankLabel)}"`:'';
 }
-function brandMarkup(card:RuntimeCard){
+function brandMarkup(card:RuntimeCard,providers:FinancialProvider[]){
   const label=card.bankLabel||'Card';
+  const provider=providers.find(item=>item.id===card.bankId);
+  const remoteUrl=providerBrandUrl(provider,'card-mark',cardBrandSurfaceTone(card.source));
+  if(remoteUrl)return `<img class="brand-logo-img provider-brand-img" src="${esc(remoteUrl)}" alt="" data-bank-brand="${esc(card.bankId)}" data-bank-logo-source="provider-storage" />`;
   const key=bankBrandKey(card.bankId,label);
   const asset=bankBrandAsset(key);
   const mark=asset?bankBrandCardMark(asset):label;
@@ -103,8 +110,9 @@ function brandMarkup(card:RuntimeCard){
 }
 function networkMarkup(card:RuntimeCard){
   const type=esc(kindLabel(card));
-  if(card.network==='mastercard')return `<div class="card-network mastercard-network" data-network="MASTERCARD"><span class="mastercard-symbol" aria-label="Mastercard"><i></i><i></i></span><span class="mastercard-word">mastercard</span><span class="card-network-type">${type}</span></div>`;
-  return `<div class="card-network visa-network" data-network="VISA"><span class="card-network-main">VISA</span><span class="card-network-type">${type}</span></div>`;
+  const brand=cardNetworkBrand(card.network);
+  if(!brand)return `<div class="card-network other-network" data-network="OTHER"><span class="card-network-main">CARD</span><span class="card-network-type">${type}</span></div>`;
+  return `<div class="card-network card-network-assets ${brand.id}-network" data-network="${brand.dataNetwork}"><span class="card-network-badge"><img class="card-network-logo ${brand.id}-logo" src="${esc(brand.src)}" alt="${esc(brand.label)}" /></span><span class="card-network-type">${type}</span></div>`;
 }
 function stackLayout(i:number):StackLayout{
   return [
@@ -133,6 +141,9 @@ function toRuntimeCard(card:PaymentCard,banks:CardBank[]):RuntimeCard{
 }
 
 export function CanonicalCreditCardStack({cards,banks,selectedCardId,onActiveCardChange,onArchiveCard}:{cards:PaymentCard[];banks:CardBank[];selectedCardId?:string;onActiveCardChange?:(cardId:string)=>void;onArchiveCard:(card:PaymentCard)=>void|Promise<void>;}){
+  const providerCatalog=useFinancialProviders();
+  const providerRef=useRef(providerCatalog.providers);
+  providerRef.current=providerCatalog.providers;
   const stageRef=useRef<HTMLDivElement>(null);
   const dotsRef=useRef<HTMLDivElement>(null);
   const statusRef=useRef<HTMLDivElement>(null);
@@ -172,7 +183,7 @@ export function CanonicalCreditCardStack({cards,banks,selectedCardId,onActiveCar
       const cvv=revealed&&secret?.cvv?secret.cvv:maskCvv(secret?.cvv);
       const revealLabel=`${revealed?'Απόκρυψη':'Εμφάνιση'} στοιχείων`;
       const cardLabel=`${card.name} · ${card.bankLabel}`;
-      return `<div class="stack-card${stackIndex===0?' top':''}" data-card-id="${esc(card.id)}"><div class="card-slot"><article class="payment-card ${templateTheme(card.template)}" data-tilt data-revealed="${revealed?'true':'false'}" aria-label="${esc(cardLabel)}"${cardInlineStyle(card)}><div class="card-inner"><header class="card-header"><div class="card-brand-block"><div class="card-brand">${brandMarkup(card)}</div><div class="card-nickname">${esc(card.name)}</div></div><div class="card-toolbar"><button class="card-icon-btn reveal-btn" type="button" data-id="${esc(card.id)}" aria-pressed="${revealed?'true':'false'}" aria-label="${esc(revealLabel)}" title="${esc(revealLabel)}">${icon(revealed?'eyeoff':'eye')}</button><button class="card-icon-btn delete-btn" type="button" data-id="${esc(card.id)}" aria-label="Αρχειοθέτηση κάρτας" title="Αρχειοθέτηση κάρτας">${icon('trash')}</button></div></header><div class="card-body"><div class="card-number-wrap"><div class="card-number ${revealed?'':'masked'}" data-secret="number">${esc(number)}</div><button class="copy-mini copy-btn" type="button" data-field="pan" data-card-id="${esc(card.id)}" aria-label="Αντιγραφή αριθμού" title="Αντιγραφή αριθμού">${icon('copy')}</button></div><div class="card-fields"><div class="card-field"><span class="card-field-label">VALID THRU</span><div class="card-field-line"><span class="card-field-value ${revealed?'':'masked'}" data-secret="expiry">${esc(expiry)}</span><button class="copy-mini copy-btn" type="button" data-field="expiry" data-card-id="${esc(card.id)}" aria-label="Αντιγραφή λήξης" title="Αντιγραφή λήξης">${icon('copy')}</button></div></div><div class="card-field"><span class="card-field-label">CVV</span><div class="card-field-line"><span class="card-field-value ${revealed?'':'masked'}" data-secret="cvv">${esc(cvv)}</span><button class="copy-mini copy-btn" type="button" data-field="cvv" data-card-id="${esc(card.id)}" aria-label="Αντιγραφή CVV" title="Αντιγραφή CVV">${icon('copy')}</button></div></div>${networkMarkup(card)}</div></div></div></article></div></div>`;
+      return `<div class="stack-card${stackIndex===0?' top':''}" data-card-id="${esc(card.id)}"><div class="card-slot"><article class="payment-card ${templateTheme(card.template)}" data-tilt data-revealed="${revealed?'true':'false'}" aria-label="${esc(cardLabel)}"${cardInlineStyle(card)}><div class="card-inner"><header class="card-header"><div class="card-brand-block"><div class="card-brand">${brandMarkup(card,providerRef.current)}</div><div class="card-nickname">${esc(card.name)}</div></div><div class="card-toolbar"><button class="card-icon-btn reveal-btn" type="button" data-id="${esc(card.id)}" aria-pressed="${revealed?'true':'false'}" aria-label="${esc(revealLabel)}" title="${esc(revealLabel)}">${icon(revealed?'eyeoff':'eye')}</button><button class="card-icon-btn delete-btn" type="button" data-id="${esc(card.id)}" aria-label="Αρχειοθέτηση κάρτας" title="Αρχειοθέτηση κάρτας">${icon('trash')}</button></div></header><div class="card-body"><div class="card-number-wrap"><div class="card-number ${revealed?'':'masked'}" data-secret="number">${esc(number)}</div><button class="copy-mini copy-btn" type="button" data-field="pan" data-card-id="${esc(card.id)}" aria-label="Αντιγραφή αριθμού" title="Αντιγραφή αριθμού">${icon('copy')}</button></div><div class="card-fields"><div class="card-field"><span class="card-field-label">VALID THRU</span><div class="card-field-line"><span class="card-field-value ${revealed?'':'masked'}" data-secret="expiry">${esc(expiry)}</span><button class="copy-mini copy-btn" type="button" data-field="expiry" data-card-id="${esc(card.id)}" aria-label="Αντιγραφή λήξης" title="Αντιγραφή λήξης">${icon('copy')}</button></div></div><div class="card-field"><span class="card-field-label">CVV</span><div class="card-field-line"><span class="card-field-value ${revealed?'':'masked'}" data-secret="cvv">${esc(cvv)}</span><button class="copy-mini copy-btn" type="button" data-field="cvv" data-card-id="${esc(card.id)}" aria-label="Αντιγραφή CVV" title="Αντιγραφή CVV">${icon('copy')}</button></div></div>${networkMarkup(card)}</div></div></div></article></div></div>`;
     }
     function clearGhost(){if(ghostNode){ghostNode.remove();ghostNode=null}}
     function render(){

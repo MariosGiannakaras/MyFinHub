@@ -2,6 +2,10 @@ name: Final Visual QA
 
 on:
   workflow_dispatch:
+  push:
+    branches: [develop]
+    paths:
+      - '.audit/run-final-visual-review'
   pull_request:
     branches: [develop]
     types: [edited]
@@ -16,7 +20,7 @@ permissions:
 jobs:
   final-screenshots:
     name: capture-and-persist-final-screenshots
-    if: github.event_name == 'workflow_dispatch' || (github.event.pull_request.head.repo.full_name == github.repository && contains(github.event.pull_request.body, '<!-- run-final-visual-qa -->'))
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push' || (github.event.pull_request.head.repo.full_name == github.repository && contains(github.event.pull_request.body, '<!-- run-final-visual-qa -->'))
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -48,7 +52,7 @@ jobs:
           export MYFINHUB_FINAL_SCREENSHOTS=1
           npm run qa:final-screenshots
           COUNT="$(find visual-qa/final -type f -name '*.png' | wc -l | tr -d ' ')"
-          if [ "$COUNT" -ne 63 ]; then echo "Expected 63 final PNGs, found $COUNT."; exit 1; fi
+          if [ "$COUNT" -ne 216 ]; then echo "Expected 216 final PNGs, found $COUNT."; exit 1; fi
           EXTRA="$(find visual-qa -type f ! -path 'visual-qa/final/*' -print -quit)"
           if [ -n "$EXTRA" ]; then echo "Unexpected non-final visual evidence: $EXTRA"; exit 1; fi
       - name: Persist only final screenshots

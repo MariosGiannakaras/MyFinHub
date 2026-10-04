@@ -14,6 +14,9 @@ const cases=[
   {id:'desktop-reports',url:`${baseUrl}?page=reports&motion=reduced`,preset:'desktop',limits:{performance:.75,accessibility:.90,bestPractices:.90,lcp:4000,cls:.15,tbt:600}},
   {id:'mobile-dashboard',url:`${baseUrl}?page=dashboard&motion=reduced`,preset:null,limits:{performance:.65,accessibility:.90,bestPractices:.90,lcp:5500,cls:.15,tbt:1000}},
   {id:'mobile-extreme',url:`${baseUrl}?page=dashboard&state=extreme&motion=reduced`,preset:null,limits:{performance:.60,accessibility:.90,bestPractices:.90,lcp:6000,cls:.15,tbt:1200}},
+  {id:'desktop-large-transactions',url:`${baseUrl}?page=transactions&state=large&motion=reduced`,preset:'desktop',limits:{performance:.65,accessibility:.90,bestPractices:.90,lcp:5000,cls:.15,tbt:900}},
+  {id:'desktop-large-reports',url:`${baseUrl}?page=reports&state=large&motion=reduced`,preset:'desktop',limits:{performance:.60,accessibility:.90,bestPractices:.90,lcp:5500,cls:.15,tbt:1100}},
+  {id:'desktop-large-planning',url:`${baseUrl}?page=planning&state=large&motion=reduced`,preset:'desktop',limits:{performance:.60,accessibility:.90,bestPractices:.90,lcp:5500,cls:.15,tbt:1100}},
 ];
 
 const failures=[];

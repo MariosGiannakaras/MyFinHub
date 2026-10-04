@@ -28,10 +28,11 @@ const ICONS:Record<string,LucideIcon>={
   transfer:ArrowLeftRight,reconciliation:SlidersHorizontal,other:Split,
 };
 
-export function CategoryIconGlyph({iconKey,size=18,label}:{iconKey:string;size?:number;label?:string}){
+export function CategoryIconGlyph({iconKey,size=18,label,color}:{iconKey:string;size?:number;label?:string;color?:string|null}){
   const decoded=decodeCategoryIconValue(iconKey);
-  if(decoded.pack==='tabler')return <span className="category-icon-glyph" aria-label={label} aria-hidden={label?undefined:true} data-category-icon={iconKey} data-icon-pack="tabler"><TablerCategoryGlyph iconKey={decoded.key} size={size}/></span>;
-  if(decoded.pack==='phosphor'||decoded.pack==='heroicons'||decoded.pack==='bootstrap')return <span className="category-icon-glyph" aria-label={label} aria-hidden={label?undefined:true} data-category-icon={iconKey} data-icon-pack={decoded.pack}><MultiPackCategoryGlyph pack={decoded.pack} iconKey={decoded.key} size={size}/></span>;
+  const style=color?{color}:undefined;
+  if(decoded.pack==='tabler')return <span className="category-icon-glyph" aria-label={label} aria-hidden={label?undefined:true} data-category-icon={iconKey} data-icon-pack="tabler" style={style}><TablerCategoryGlyph iconKey={decoded.key} size={size}/></span>;
+  if(decoded.pack==='phosphor'||decoded.pack==='heroicons'||decoded.pack==='bootstrap')return <span className="category-icon-glyph" aria-label={label} aria-hidden={label?undefined:true} data-category-icon={iconKey} data-icon-pack={decoded.pack} style={style}><MultiPackCategoryGlyph pack={decoded.pack} iconKey={decoded.key} size={size}/></span>;
   const Icon=ICONS[decoded.key]??ReceiptText;
-  return <span className="category-icon-glyph" aria-label={label} aria-hidden={label?undefined:true} data-category-icon={iconKey} data-icon-pack="lucide"><Icon size={size}/></span>;
+  return <span className="category-icon-glyph" aria-label={label} aria-hidden={label?undefined:true} data-category-icon={iconKey} data-icon-pack="lucide" style={style}><Icon size={size}/></span>;
 }

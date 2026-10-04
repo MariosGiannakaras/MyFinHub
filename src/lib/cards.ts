@@ -1,11 +1,11 @@
 import type { CardBank, CardKind, FinanceData, FinanceEvent, PaymentCard } from '../types.js';
-import { FINANCIAL_PROVIDERS } from './financialProviders.js';
+import { FINANCIAL_PROVIDERS, type FinancialProvider } from './financialProviders.js';
 
 const LEGACY_CARD_BANK_LABELS:Record<string,string>={
   piraeus:'ΠΕΙΡΑΙΩΣ',
   revolut:'REVOLUT',
   alpha:'ALPHA BANK',
-  payzy:'PAYZY',
+  payzy:'MAGENTA PAY',
   viva:'VIVA',
 };
 
@@ -20,16 +20,20 @@ const CARD_BANK_ORDER:Record<string,number>={
   paypal:53,
 };
 
-export const DEFAULT_CARD_BANKS:CardBank[]=FINANCIAL_PROVIDERS.map(provider=>({
-  id:provider.id,
-  name:LEGACY_CARD_BANK_LABELS[provider.id]??provider.displayName,
-  order:CARD_BANK_ORDER[provider.id]??54+provider.sortOrder/1000,
-}));
+function providerCardBanks(providers:FinancialProvider[]):CardBank[]{
+  return providers.map(provider=>({
+    id:provider.id,
+    name:LEGACY_CARD_BANK_LABELS[provider.id]??provider.displayName,
+    order:CARD_BANK_ORDER[provider.id]??54+provider.sortOrder/1000,
+  }));
+}
 
-export function cardBanks(data:FinanceData){
+export const DEFAULT_CARD_BANKS:CardBank[]=providerCardBanks(FINANCIAL_PROVIDERS);
+
+export function cardBanks(data:FinanceData,providers:FinancialProvider[]=FINANCIAL_PROVIDERS){
   const custom=data.state.cardBanks??[];
   const byId=new Map<string,CardBank>();
-  for(const bank of [...DEFAULT_CARD_BANKS,...custom])byId.set(bank.id,bank);
+  for(const bank of [...providerCardBanks(providers),...custom])byId.set(bank.id,bank);
   return [...byId.values()].sort((a,b)=>a.order-b.order||a.name.localeCompare(b.name,'el'));
 }
 

@@ -1,5 +1,21 @@
-import type { BankAccountCategory, CashAccountType } from '../types.js';
+import type { Account, BankAccountCategory, CashAccountType } from '../types.js';
 export type FinancialProviderKind='bank'|'fintech'|'wallet'|'payment';
+export type FinancialProviderAssetRole='logo'|'wordmark'|'card-mark';
+export type FinancialProviderAsset={
+  assetKey:string;
+  role:FinancialProviderAssetRole;
+  variant:string;
+  url:string;
+  fileName?:string;
+  mimeType?:string;
+  sizeBytes?:number|null;
+  updatedAt?:string;
+};
+export type FinancialProviderAssetBinding={
+  role:FinancialProviderAssetRole;
+  variant:'universal'|'light'|'dark';
+  assetKey:string;
+};
 export type FinancialProvider={
   id:string;
   displayName:string;
@@ -7,20 +23,24 @@ export type FinancialProvider={
   kind:FinancialProviderKind;
   kindLabel:string;
   countryCode?:string;
-  logoAssetKey:string;
-  wordmarkAssetKey:string;
+  logoAssetKey:string|null;
+  wordmarkAssetKey:string|null;
+  logoUrl?:string|null;
+  wordmarkUrl?:string|null;
+  assets?:FinancialProviderAsset[];
+  bindings?:FinancialProviderAssetBinding[];
   sortOrder:number;
 };
 
 export const FINANCIAL_PROVIDERS:FinancialProvider[]=[
-  {id:'piraeus',displayName:'Τράπεζα Πειραιώς',shortName:'Πειραιώς',kind:'bank',kindLabel:'Τράπεζα',countryCode:'GR',logoAssetKey:'generic',wordmarkAssetKey:'generic',sortOrder:10},
-  {id:'alpha',displayName:'Alpha Bank',shortName:'Alpha',kind:'bank',kindLabel:'Τράπεζα',countryCode:'GR',logoAssetKey:'generic',wordmarkAssetKey:'generic',sortOrder:20},
+  {id:'piraeus',displayName:'Τράπεζα Πειραιώς',shortName:'Πειραιώς',kind:'bank',kindLabel:'Τράπεζα',countryCode:'GR',logoAssetKey:'piraeus-logo-green-on-yellow',wordmarkAssetKey:'piraeus-wordmark-green-on-white',sortOrder:10},
+  {id:'alpha',displayName:'Alpha Bank',shortName:'Alpha',kind:'bank',kindLabel:'Τράπεζα',countryCode:'GR',logoAssetKey:'alpha-logo-white-on-blue',wordmarkAssetKey:'alpha-wordmark-color',sortOrder:20},
   {id:'national',displayName:'Εθνική Τράπεζα',shortName:'Εθνική',kind:'bank',kindLabel:'Τράπεζα',countryCode:'GR',logoAssetKey:'generic',wordmarkAssetKey:'generic',sortOrder:30},
   {id:'eurobank',displayName:'Eurobank',shortName:'Eurobank',kind:'bank',kindLabel:'Τράπεζα',countryCode:'GR',logoAssetKey:'generic',wordmarkAssetKey:'generic',sortOrder:40},
-  {id:'revolut',displayName:'Revolut',shortName:'Revolut',kind:'fintech',kindLabel:'Ψηφιακός πάροχος',countryCode:'LT',logoAssetKey:'revolut',wordmarkAssetKey:'revolut',sortOrder:50},
-  {id:'viva',displayName:'Viva.com',shortName:'Viva',kind:'payment',kindLabel:'Πάροχος πληρωμών',countryCode:'GR',logoAssetKey:'generic',wordmarkAssetKey:'viva',sortOrder:60},
-  {id:'payzy',displayName:'payzy by COSMOTE',shortName:'payzy',kind:'wallet',kindLabel:'Ψηφιακό πορτοφόλι',countryCode:'GR',logoAssetKey:'payzy',wordmarkAssetKey:'payzy',sortOrder:70},
-  {id:'paypal',displayName:'PayPal',shortName:'PayPal',kind:'wallet',kindLabel:'Ψηφιακό πορτοφόλι',countryCode:'US',logoAssetKey:'generic',wordmarkAssetKey:'paypal',sortOrder:80},
+  {id:'revolut',displayName:'Revolut',shortName:'Revolut',kind:'fintech',kindLabel:'Ψηφιακός πάροχος',countryCode:'LT',logoAssetKey:'revolut-logo-black-on-white',wordmarkAssetKey:'revolut-wordmark-black-on-white',sortOrder:50},
+  {id:'viva',displayName:'Viva.com',shortName:'Viva',kind:'payment',kindLabel:'Πάροχος πληρωμών',countryCode:'GR',logoAssetKey:'viva-logo-navy-on-white',wordmarkAssetKey:'generic',sortOrder:60},
+  {id:'payzy',displayName:'Magenta Pay',shortName:'Magenta Pay',kind:'wallet',kindLabel:'Ψηφιακό πορτοφόλι',countryCode:'GR',logoAssetKey:null,wordmarkAssetKey:null,sortOrder:70},
+  {id:'paypal',displayName:'PayPal',shortName:'PayPal',kind:'wallet',kindLabel:'Ψηφιακό πορτοφόλι',countryCode:'US',logoAssetKey:'generic',wordmarkAssetKey:'generic',sortOrder:80},
 ];
 
 export type { BankAccountCategory, CashAccountType };
@@ -52,9 +72,18 @@ export function financialProviderId(...values:(string|undefined|null)[]){
   if(text.includes('eurobank'))return 'eurobank';
   if(text.includes('revolut'))return 'revolut';
   if(text.includes('viva'))return 'viva';
-  if(text.includes('payzy'))return 'payzy';
+  if(text.includes('payzy')||text.includes('magenta pay'))return 'payzy';
   if(text.includes('paypal'))return 'paypal';
   return '';
+}
+
+export function accountFinancialProviderId(account:Pick<Account,'providerId'|'provider'|'id'|'name'>){
+  return account.providerId?.trim()||financialProviderId(account.provider,account.id,account.name);
+}
+
+export function accountMatchesFinancialProvider(account:Pick<Account,'providerId'|'provider'|'id'|'name'>,providerId:string){
+  const target=providerId.trim();
+  return Boolean(target)&&accountFinancialProviderId(account)===target;
 }
 
 export function financialProviderLabel(id?:string){

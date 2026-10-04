@@ -1,0 +1,41 @@
+/* Electron-only custom title bar integration.
+   Loaded dynamically only when the preload bridge is present. */
+html[data-myfinhub-desktop="true"]{
+  --desktop-shell-top-gutter:14px;
+  --desktop-shell-right-gutter:14px;
+  --desktop-window-controls-reserve:152px;
+}
+html[data-myfinhub-desktop="true"] .topbar{
+  app-region:drag;
+  -webkit-app-region:drag;
+  top:0;
+  height:calc(62px + var(--desktop-shell-top-gutter));
+  margin-top:calc(-1 * var(--desktop-shell-top-gutter));
+  margin-right:calc(-1 * var(--desktop-shell-right-gutter));
+  padding-top:var(--desktop-shell-top-gutter);
+  padding-right:calc(15px + var(--desktop-window-controls-reserve));
+  border-radius:0 0 16px 16px;
+  user-select:none;
+}
+html[data-myfinhub-desktop="true"] .topbar button,
+html[data-myfinhub-desktop="true"] .topbar a[href],
+html[data-myfinhub-desktop="true"] .topbar input,
+html[data-myfinhub-desktop="true"] .topbar select,
+html[data-myfinhub-desktop="true"] .topbar textarea,
+html[data-myfinhub-desktop="true"] .topbar summary,
+html[data-myfinhub-desktop="true"] .topbar [role="button"]{
+  app-region:no-drag;
+  -webkit-app-region:no-drag;
+  user-select:auto;
+}
+html[data-myfinhub-desktop="true"] .topbar-primary,
+html[data-myfinhub-desktop="true"] .top-actions{
+  min-width:0;
+}
+@media(max-width:980px){
+  html[data-myfinhub-desktop="true"]{
+    --desktop-shell-top-gutter:8px;
+    --desktop-shell-right-gutter:8px;
+    --desktop-window-controls-reserve:146px;
+  }
+}

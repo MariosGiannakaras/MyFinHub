@@ -15,6 +15,7 @@ export type ScheduledTransactionStatus = 'pending' | 'completed' | 'skipped' | '
 export type TransactionRuleScope = 'manual' | 'imported' | 'review';
 export type StatementBoundaryRule = 'include-closing-day' | 'next-cycle';
 export type CreditStatementStatus = 'open' | 'closed' | 'due' | 'paid';
+export type CategoryIconPackId = 'lucide' | 'tabler' | 'phosphor' | 'heroicons' | 'bootstrap';
 
 export interface Account {
   id: string;
@@ -306,6 +307,11 @@ export interface FinanceSettings {
   categoryIdentities?: Record<string, CategoryIdentityRecord>;
   categoryIcons?: Record<string, string>;
   subcategoryIcons?: Record<string, string>;
+  categoryIconPack?: CategoryIconPackId;
+  categoryIconPackSelections?: Record<string, Partial<Record<CategoryIconPackId, string>>>;
+  subcategoryIconPackSelections?: Record<string, Partial<Record<CategoryIconPackId, string>>>;
+  categoryIconColors?: Record<string, string>;
+  subcategoryIconColors?: Record<string, string>;
   customPresets: string[];
   pinnedPresets: string[];
   defaultExpenseAccount: string;

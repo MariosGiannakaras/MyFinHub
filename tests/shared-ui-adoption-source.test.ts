@@ -116,11 +116,11 @@ describe('shared finance UI adoption contracts',()=>{
   it('adopts shared action primitives for Lending generic actions while preserving domain and composite controls',()=>{
     expect(lending).toContain("from '../components/Button'");
     expect(lending).toContain("from '../components/IconButton'");
-    expect(lending.match(/<Button/g)).toHaveLength(10);
+    expect(lending.match(/<Button/g)).toHaveLength(11);
     expect(lending.match(/<IconButton/g)).toHaveLength(1);
     expect(lending.match(/<button/g)).toHaveLength(2);
     expect(lending.match(/<Button[^>]+variant="primary"/g)).toHaveLength(3);
-    expect(lending.match(/<Button[^>]+variant="secondary"/g)).toHaveLength(5);
+    expect(lending.match(/<Button[^>]+variant="secondary"/g)).toHaveLength(6);
     expect(lending.match(/<Button[^>]+variant="ghost"/g)).toHaveLength(2);
     expect(lending).toContain('<IconButton type="button" aria-label="Κλείσιμο κίνησης δανεικών"');
     expect(lending).not.toContain('className="save-button"');
@@ -130,16 +130,17 @@ describe('shared finance UI adoption contracts',()=>{
     expect(lending).toContain('<button type="button" key={row.person} className={`lending-person-row');
     expect(lending).toContain('<Button type="button" variant="secondary" className="lending-quick-action repayment"');
     expect(lending).toContain('<Button type="button" variant="secondary" className="lending-quick-action lending"');
+    expect(lending).toContain('className="mobile-lending-history-more"');
     expect(lending).toContain('<button type="button" role="option"');
   });
 
   it('adopts shared action primitives for Recurring generic actions while preserving row and menu composites',()=>{
     expect(recurring).toContain("from '../components/Button'");
     expect(recurring).toContain("from '../components/IconButton'");
-    expect(recurring.match(/<Button/g)).toHaveLength(5);
+    expect(recurring.match(/<Button/g)).toHaveLength(8);
     expect(recurring.match(/<IconButton/g)).toHaveLength(6);
     expect(recurring.match(/<Button[^>]+variant="primary"/g)).toHaveLength(4);
-    expect(recurring.match(/<Button[^>]+variant="secondary"/g)).toHaveLength(1);
+    expect(recurring.match(/<Button[^>]+variant="secondary"/g)).toHaveLength(4);
     expect(recurring).toContain('<Button type="button" variant="primary" onClick={startNew}');
     expect(recurring).toContain('variant="primary" className="mobile-pay-action"');
     expect(recurring).toContain('<IconButton type="button" aria-label="Κλείσιμο επεξεργασίας παγίου"');
@@ -147,6 +148,7 @@ describe('shared finance UI adoption contracts',()=>{
     expect(recurring).not.toContain('className="secondary"');
     expect(recurring).not.toContain('className="icon-button"');
     expect(recurring).toContain('<Button type="button" variant="primary" className="pay-action"');
+    expect(recurring).toContain('className="mobile-recurring-more"');
     expect(recurring).toContain('<details className="mobile-action-menu">');
     expect(recurring.match(/<button/g)).toHaveLength(3);
     expect(recurring).toContain('<IconButton type="button" aria-label={`Παύση ${item.name}`}');
@@ -157,11 +159,11 @@ describe('shared finance UI adoption contracts',()=>{
   it('adopts shared action primitives for Loans page and row controls',()=>{
     expect(loans).toContain("from '../components/Button'");
     expect(loans).toContain("from '../components/IconButton'");
-    expect(loans.match(/<Button/g)).toHaveLength(7);
+    expect(loans.match(/<Button/g)).toHaveLength(9);
     expect(loans.match(/<IconButton/g)).toHaveLength(1);
     expect(loans.match(/<button/g)??[]).toHaveLength(0);
     expect(loans.match(/<Button[^>]+variant="primary"/g)).toHaveLength(3);
-    expect(loans.match(/<Button[^>]+variant="secondary"/g)).toHaveLength(4);
+    expect(loans.match(/<Button[^>]+variant="secondary"/g)).toHaveLength(6);
     expect(loans).toContain('<Button type="button" variant="secondary" onClick={()=>startNew(\'self-loan\')}');
     expect(loans).toContain('<Button type="button" variant="primary" onClick={()=>startNew(\'installment\')}');
     expect(loans).toContain('<IconButton type="button" aria-label="Κλείσιμο επεξεργασίας δόσεων"');
@@ -171,6 +173,7 @@ describe('shared finance UI adoption contracts',()=>{
     expect(loans).toContain('<Button type="button" variant="secondary" onClick={()=>startEdit(loan)}');
     expect(loans).toContain('<Button type="button" variant="primary" className="pay"');
     expect(loans).toContain('<Button type="button" variant="secondary" className="forgive"');
+    expect(loans.match(/className="loan-list-more"/g)).toHaveLength(2);
   });
 
   it('keeps current dialogs on the shared modal-focus behavior contract',()=>{
@@ -185,13 +188,15 @@ describe('shared finance UI adoption contracts',()=>{
     expect(cardCreateDialog).toContain('aria-modal="true"');
     expect(modalFocus).toContain("shortcutMatches(event, 'dismiss')");
     expect(modalFocus).toContain("event.key !== 'Tab'");
+    expect(modalFocus).toContain('element.tabIndex>=0');
+    expect(modalFocus).toContain('const currentIndex=current?items.indexOf(current):-1');
     expect(modalFocus).toContain("document.querySelectorAll<HTMLElement>('[aria-modal=\"true\"]')");
     expect(modalFocus).toContain('opener.current?.focus');
     expect(modalFocus).toContain(".form-error[role=\"alert\"]");
   });
 
   it('keeps keyboard focus and pointer affordances visible without relying on hover alone',()=>{
-    expect(sharedControls).toContain(':where(button,input,select,textarea,summary,[tabindex]):focus-visible{outline:0;box-shadow:var(--focus)!important}');
+    expect(sharedControls).toContain(':where(button,a[href],input,select,textarea,summary,[tabindex]):focus-visible{outline:0;box-shadow:var(--focus)!important}');
     expect(hardening).not.toContain('button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible');
     expect(hardening).toContain('.app-tooltip:hover .app-tooltip-bubble,.app-tooltip:focus-within .app-tooltip-bubble');
     expect(baseStyles).toContain('cursor:pointer');

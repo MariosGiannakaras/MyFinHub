@@ -1,5 +1,6 @@
-import type { FinanceData } from '../types';
-import { mutableSavePayload } from './persistencePayload';
+import type { FinanceData } from '../types.js';
+import { mutableSavePayload } from './persistencePayload.js';
+import { notifyAuthExpired } from './authExpiry.js';
 
 interface HistoryPointSummary { id:string; parentId:string|null; label:string; createdAt:string; current:boolean }
 export interface HistoryEnvelope {
@@ -53,25 +54,49 @@ async function json<T>(response: Response): Promise<T> {
   const payload = await response.json().catch(() => null) as { error?: string; code?: string; requestId?: string } | T | null;
   if (!response.ok) {
     const details = payload && typeof payload === 'object' ? payload as { error?: string; code?: string; requestId?: string } : {};
-    if (response.status === 401 && (details.code === 'AUTH_REQUIRED' || details.code === 'DEVICE_ACCESS_REVOKED') && typeof window !== 'undefined') {
-      window.dispatchEvent(new Event('rheomiq:auth-expired'));
-    }
+    notifyAuthExpired(response.status, details.code);
     throw new ApiError(details.error || response.statusText || 'Request failed', response.status, details.code, details.requestId);
   }
   return payload as T;
 }
 
-const request = (input: RequestInfo | URL, init: RequestInit = {}) => fetch(input, {
-  credentials: 'same-origin',
-  ...init,
-});
+export const API_REQUEST_TIMEOUT_MS = 30_000;
+
+export async function apiRequest(input: RequestInfo | URL, init: RequestInit = {}, timeoutMs = API_REQUEST_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const callerSignal = init.signal;
+  let timedOut = false;
+  const abortFromCaller = () => controller.abort();
+  if (callerSignal?.aborted) controller.abort();
+  else callerSignal?.addEventListener('abort', abortFromCaller, { once: true });
+  const timer = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, timeoutMs);
+
+  try {
+    return await fetch(input, {
+      credentials: 'same-origin',
+      ...init,
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (timedOut) throw new ApiError('Η σύνδεση με το MyFinHub άργησε πολύ. Έλεγξε τη σύνδεσή σου και δοκίμασε ξανά.', 0, 'NETWORK_TIMEOUT');
+    if (callerSignal?.aborted) throw new ApiError('Το αίτημα ακυρώθηκε.', 0, 'REQUEST_ABORTED');
+    if (error instanceof ApiError) throw error;
+    throw new ApiError('Δεν ήταν δυνατή η σύνδεση με το MyFinHub. Έλεγξε τη σύνδεσή σου και δοκίμασε ξανά.', 0, 'NETWORK_ERROR');
+  } finally {
+    clearTimeout(timer);
+    callerSignal?.removeEventListener('abort', abortFromCaller);
+  }
+}
 
 export async function getSession(): Promise<SessionInfo> {
-  return json(await request('/api/auth/session', { cache: 'no-store' }));
+  return json(await apiRequest('/api/auth/session', { cache: 'no-store' }));
 }
 
 export async function login(email: string, password: string): Promise<SessionInfo> {
-  return json(await request('/api/auth/login', {
+  return json(await apiRequest('/api/auth/login', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ email, password }),
@@ -79,11 +104,11 @@ export async function login(email: string, password: string): Promise<SessionInf
 }
 
 export async function enrollMfa(): Promise<MfaEnrollment> {
-  return json(await request('/api/auth/mfa/enroll', { method: 'POST' }));
+  return json(await apiRequest('/api/auth/mfa/enroll', { method: 'POST' }));
 }
 
 export async function verifyMfa(code: string, factorId?: string): Promise<SessionInfo> {
-  return json(await request('/api/auth/mfa/verify', {
+  return json(await apiRequest('/api/auth/mfa/verify', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ code, ...(factorId ? { factorId } : {}) }),
@@ -91,11 +116,11 @@ export async function verifyMfa(code: string, factorId?: string): Promise<Sessio
 }
 
 export async function logout(): Promise<SessionInfo> {
-  return json(await request('/api/auth/logout', { method: 'POST' }));
+  return json(await apiRequest('/api/auth/logout', { method: 'POST' }));
 }
 
 export async function changeAccountEmail(email:string):Promise<EmailChangeReceipt>{
-  return json(await request('/api/auth/account',{
+  return json(await apiRequest('/api/auth/account',{
     method:'PATCH',
     headers:{'content-type':'application/json'},
     body:JSON.stringify({action:'email',email}),
@@ -103,7 +128,7 @@ export async function changeAccountEmail(email:string):Promise<EmailChangeReceip
 }
 
 export async function changeAccountPassword(currentPassword:string,newPassword:string):Promise<PasswordChangeReceipt>{
-  return json(await request('/api/auth/account',{
+  return json(await apiRequest('/api/auth/account',{
     method:'PATCH',
     headers:{'content-type':'application/json'},
     body:JSON.stringify({action:'password',currentPassword,newPassword}),
@@ -111,11 +136,11 @@ export async function changeAccountPassword(currentPassword:string,newPassword:s
 }
 
 export async function getConnectedDevices():Promise<ConnectedDevicesEnvelope>{
-  return json(await request('/api/auth/devices',{cache:'no-store'}));
+  return json(await apiRequest('/api/auth/devices',{cache:'no-store'}));
 }
 
 export async function revokeConnectedDevice(sessionId:string):Promise<ConnectedDevicesEnvelope>{
-  return json(await request('/api/auth/devices',{
+  return json(await apiRequest('/api/auth/devices',{
     method:'POST',
     headers:{'content-type':'application/json'},
     body:JSON.stringify({action:'revoke',sessionId}),
@@ -123,7 +148,7 @@ export async function revokeConnectedDevice(sessionId:string):Promise<ConnectedD
 }
 
 export async function revokeOtherConnectedDevices():Promise<ConnectedDevicesEnvelope>{
-  return json(await request('/api/auth/devices',{
+  return json(await apiRequest('/api/auth/devices',{
     method:'POST',
     headers:{'content-type':'application/json'},
     body:JSON.stringify({action:'revoke-others'}),
@@ -134,7 +159,7 @@ export async function loadData(): Promise<DataEnvelope> {
   const canMeasure = typeof performance !== 'undefined' && typeof performance.mark === 'function';
   if (canMeasure) performance.mark('rheomiq:data-load-start');
   try {
-    return await json(await request('/api/data', { cache: 'no-store' }));
+    return await json(await apiRequest('/api/data', { cache: 'no-store' }));
   } finally {
     if (canMeasure) {
       performance.mark('rheomiq:data-load-end');
@@ -147,11 +172,11 @@ export async function loadData(): Promise<DataEnvelope> {
 }
 
 export async function loadHistory(): Promise<HistoryEnvelope> {
-  return json(await request('/api/history', { cache:'no-store' }));
+  return json(await apiRequest('/api/history', { cache:'no-store' }));
 }
 
 export async function saveData(data: FinanceData, revision: string, historyGeneration:string, historyLabel:string): Promise<WriteReceipt> {
-  return json(await request('/api/data', {
+  return json(await apiRequest('/api/data', {
     method: 'PUT',
     headers: { 'content-type': 'application/json', 'if-match': revision, 'x-rheomiq-history-generation':historyGeneration },
     body: JSON.stringify({ ...mutableSavePayload(data), historyLabel }),
@@ -159,7 +184,7 @@ export async function saveData(data: FinanceData, revision: string, historyGener
 }
 
 export async function moveHistory(direction:'undo'|'redo',revision:string,historyGeneration:string):Promise<HistoryMoveEnvelope>{
-  return json(await request('/api/history',{
+  return json(await apiRequest('/api/history',{
     method:'POST',
     headers:{'content-type':'application/json','if-match':revision,'x-rheomiq-history-generation':historyGeneration},
     body:JSON.stringify({action:direction,updatedAt:new Date().toISOString()}),
@@ -167,7 +192,7 @@ export async function moveHistory(direction:'undo'|'redo',revision:string,histor
 }
 
 export async function importData(data: FinanceData): Promise<DataEnvelope> {
-  return json(await request('/api/import', {
+  return json(await apiRequest('/api/import', {
     method: 'POST',
     headers: { 'content-type': 'application/json', 'x-rheomiq-confirm-import': 'replace' },
     body: JSON.stringify(data),
@@ -175,5 +200,5 @@ export async function importData(data: FinanceData): Promise<DataEnvelope> {
 }
 
 export async function createBackup(): Promise<{ path: string }> {
-  return json(await request('/api/backup', { method: 'POST' }));
+  return json(await apiRequest('/api/backup', { method: 'POST' }));
 }

@@ -2,6 +2,7 @@ import { accessTokenAal, assertMutationSessionOrigin, clearSessionCookiesIfCooki
 import { ApiError, handleApi, methodNotAllowed, readJsonBody, sendJson } from './http.js';
 import { isOwner } from './storage.js';
 import { fetchUpstream } from './upstream.js';
+import { accountPasswordPolicyError } from '../src/lib/passwordPolicy.js';
 
 const MAX_ACCOUNT_SECURITY_BODY_BYTES = 4 * 1024;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -56,8 +57,9 @@ export function parseAccountSecurityWrite(value: unknown): AccountSecurityWrite 
     if (Object.keys(body).some(key => key !== 'action' && key !== 'currentPassword' && key !== 'newPassword')) throw new ApiError(400, 'INVALID_ACCOUNT_CHANGE', 'Μη έγκυρη αλλαγή κωδικού.');
     const currentPassword = typeof body.currentPassword === 'string' ? body.currentPassword : '';
     const newPassword = typeof body.newPassword === 'string' ? body.newPassword : '';
-    if (currentPassword.length < 8 || currentPassword.length > 512) throw new ApiError(400, 'INVALID_CURRENT_PASSWORD', 'Ο τρέχων κωδικός δεν είναι έγκυρος.');
-    if (newPassword.length < 8 || newPassword.length > 512) throw new ApiError(400, 'INVALID_NEW_PASSWORD', 'Ο νέος κωδικός πρέπει να έχει τουλάχιστον 8 χαρακτήρες.');
+    if (!currentPassword || currentPassword.length > 512) throw new ApiError(400, 'INVALID_CURRENT_PASSWORD', 'Ο τρέχων κωδικός δεν είναι έγκυρος.');
+    const passwordError=accountPasswordPolicyError(newPassword);
+    if (passwordError) throw new ApiError(400, 'INVALID_NEW_PASSWORD', passwordError);
     if (newPassword === currentPassword) throw new ApiError(400, 'PASSWORD_UNCHANGED', 'Ο νέος κωδικός πρέπει να είναι διαφορετικός από τον τρέχοντα.');
     return { action, currentPassword, newPassword };
   }
