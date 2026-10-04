@@ -22,6 +22,8 @@ const qaWorkspace = readFileSync('src/qa.tsx', 'utf8');
 const qaRunner = readFileSync('scripts/qa-script-runner.mjs', 'utf8');
 const ci = readFileSync('.github/workflows/ci.yml', 'utf8');
 const auditRenderedWorkflow = readFileSync('.github/workflows/audit-rendered-review.yml', 'utf8');
+const finalVisualWorkflow = readFileSync('.github/workflows/final-visual-qa.yml', 'utf8');
+const finalVisualTrigger = readFileSync('.audit/run-final-visual-review', 'utf8');
 const finalScreenshots = readFileSync('scripts/final-screenshots-qa.mjs', 'utf8');
 const qaHtml = readFileSync('qa.html', 'utf8');
 
@@ -82,6 +84,15 @@ describe('rendered browser QA reliability contract', () => {
     expect(captureBlock).toContain('run: npm run qa:final-screenshots');
     expect(finalScreenshots).toContain("process.env.MYFINHUB_FINAL_SCREENSHOTS!=='1'");
     expect(finalScreenshots).toContain('Final screenshot capture requires MYFINHUB_FINAL_SCREENSHOTS=1.');
+  });
+  it('runs persistent Final Visual QA once from the canonical develop squash-merge marker',()=>{
+    expect(finalVisualWorkflow).toContain('push:');
+    expect(finalVisualWorkflow).toContain('branches: [develop]');
+    expect(finalVisualWorkflow).toContain("- '.audit/run-final-visual-review'");
+    expect(finalVisualWorkflow).toContain("github.event_name == 'push'");
+    expect(finalVisualWorkflow).toContain("TARGET_BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}");
+    expect(finalVisualWorkflow).toContain("EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}");
+    expect(finalVisualTrigger).toContain('issue-476 post-squash canonical-develop final visual release inspection');
   });
   it('parallelizes independent rendered suites while serializing shared fixed CDP ports',()=>{
     expect(coordinator).toContain("MYFINHUB_QA_PARALLELISM||3");

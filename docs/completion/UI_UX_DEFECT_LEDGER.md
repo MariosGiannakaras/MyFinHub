@@ -2,7 +2,7 @@
 
 Owner: ChatGPT direct design/development audit  
 Scope: MyFinHub web/desktop application only  
-Last updated: 2026-10-03
+Last updated: 2026-10-04
 
 ## Severity model
 
@@ -61,6 +61,34 @@ Last updated: 2026-10-03
 | FV-65 | Medium | Receipt Inbox · delete confirmation stacking | CI #3255 asserted the receipt delete alertdialog existed, but the saved frame showed only the Receipt Inbox because the confirmation was behind it. | Receipt Inbox backdrop was z-index 130 while the shared confirmation backdrop was 100. | Receipt-local stacking contract plus topmost hit-test regression. | **Completed on `7321c591…`.** CI #3271 passed the `elementFromPoint` topmost assertion; direct inspection of `confirm-receipt-delete.png` shows the destructive confirmation visibly above the inbox with clear cancel/delete hierarchy. |
 | FV-66 | Medium evidence blocker | Settings · remote-device revoke failure evidence | CI #3255 reached the synthetic revoke failure but saved a frame after generic screenshot preparation had scrolled away from the inline alert. | Evidence capture ordering/scroll normalization, not product revoke behavior. | QA harness preserves the actual failure alert in-view and captures the current viewport. | **Completed on `7321c591…`.** CI #3271 passed the visible-alert geometry/text assertion; direct inspection of `settings-device-revoke-failure-desktop.png` shows the failure message immediately below the preserved remote-device row. Product revoke semantics are unchanged. |
 
+
+## Completion-phase FV-67…FV-89
+
+| ID | Severity | Surface / finding | Root cause / remediation owner | Proof state |
+| --- | --- | --- | --- | --- |
+| FV-67 | Low evidence blocker | Initial synthetic Auth fixture-domain hypothesis did not explain 422. | Premature attribution; superseded by stage instrumentation. | **Closed/superseded by FV-68.** |
+| FV-68 | Medium evidence blocker | Real-stack Auth/MFA 422 lacked safe stage attribution. | Added privacy-safe named harness stages. | **Closed.** Later failure localized safely. |
+| FV-69 | High validation blocker | Local Supabase TOTP enrollment/verification disabled. | Local config drift from mandatory AAL2/TOTP policy. | **Closed.** Real Stack completes password→TOTP→AAL2. |
+| FV-70 | High | Active-device bootstrap failed under hardened SELECT RLS. | INSERT requested representation too early; minimal-return bootstrap + conflict re-read. | **Closed.** Revoke/re-auth scenarios pass without RLS bypass. |
+| FV-71 | Medium evidence blocker | Real-stack fixture failed canonical import validation. | Test fixture did not own production trust-boundary validity. | **Closed.** Canonical synthetic fixture passes import/restore. |
+| FV-72 | Medium evidence blocker | Direct DB/history assertion used stale pre-redo revision. | Harness expected stale cursor/revision. | **Closed.** Post-redo direct DB proof passes. |
+| FV-73 | Medium evidence blocker | Actual-browser Quick Entry helper missed wrapper label. | Selector narrower than accessible markup. | **Closed.** Browser mutation persistence passes. |
+| FV-74 | Medium infrastructure blocker | Chromium CDP startup timed out. | Single-attempt bootstrap. | **Closed.** Bounded retry/diagnostics stabilizes later runs. |
+| FV-75 | Medium evidence blocker | Taxonomy selector interpolation parse failure. | Brittle nested selector construction. | **Closed.** Real create/move/retire persistence passes. |
+| FV-76 | Medium evidence blocker | Cards harness invented nickname-qualified archive label. | Test selector diverged from product accessibility. | **Closed.** Full card lifecycle passes. |
+| FV-77 | Medium | Loopback provider Storage URL discarded after reload. | HTTPS-only validator ignored exact local integration origin. | **Closed.** HTTPS universal + loopback-only HTTP policy passes hard reload. |
+| FV-78 | Medium evidence blocker | Provider URL test imported browser client into NodeNext graph. | Regression boundary crossed Vite assumptions. | **Closed.** Pure helper/test passes CI. |
+| FV-79 | Low evidence blocker | Provider screenshot captured entrance animation. | Evidence timing only. | **Closed.** Settled capture directly reviewed. |
+| FV-80 | Low | Provider required-slot labels lacked owned semantic chip styling. | Local design-system ownership gap. | **Closed.** Exact-head chips directly reviewed. |
+| FV-81 | Medium | Split-review stylesheet detached; split disclosure bypassed shared Button; audit CSS false positives. | Reachability/shared-control ownership + parser boundary. | **Closed.** Root import/shared control/reachability guard + focused visual proof. |
+| FV-82 | Medium accessibility | Mobile split disclosure fell below 44px. | Shared `text-button` specificity conflict. | **Closed.** Owner selector preserves 44px; rendered/direct proof passes. |
+| FV-83 | Medium evidence blocker | Attention fixture treated owned date as native input. | Harness crossed `AppDateInput` abstraction. | **Closed.** Owned calendar/gridcell interaction passes Real Stack. |
+| FV-84 | Medium workflow blocker | Audit OCR manifest returned SPA HTML. | Build re-synced OCR assets after Vite start. | **Closed.** Build/sync precedes Vite; OCR passes clean audit. |
+| FV-85 | Low source-regression blocker | Workflow-order test expected wrong Vite literal. | Over-specific source assertion. | **Closed.** Correct command assertion passes CI. |
+| FV-86 | Medium evidence signal | One large-data route measured 5162ms vs 5000ms. | Non-repeating late-run contention signal; threshold unchanged. | **Closed as non-repeating.** Fresh audits pass at 3461ms and 4644ms. |
+| FV-87 | Medium design-system ownership | Residual static JSX geometry across shared/page surfaces. | Static presentation escaped existing owner stylesheets. | **Closed.** Existing owner stylesheets + source guard + direct rendered review. |
+| FV-88 | Low source-regression blocker | Surface test rejected additive Change History owner class. | Exact-string assertion over-constrained. | **Closed.** Intended class-list assertion passes CI. |
+| FV-89 | Medium workflow blocker | Dedicated Audit final screenshot step omitted opt-in. | Caller did not set guarded `MYFINHUB_FINAL_SCREENSHOTS=1`. | **Closed.** Guard preserved; clean audit passes 216/216. |
 
 ## Systemic causes
 

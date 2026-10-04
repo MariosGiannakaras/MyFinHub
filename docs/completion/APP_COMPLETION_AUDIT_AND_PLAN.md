@@ -8,11 +8,11 @@ Release target: none — `main` remains release-only
 
 ## Current integration checkpoint — 2026-10-04
 
-**Implementations 17/24 completed · Sub-implementations 164/197 completed**
+**Implementations 17/24 completed · Sub-implementations 172/197 completed**
 
 This checkpoint supersedes older "#482 reconciliation pending" notes below for current execution state.
 
-- Latest current checkpoint: Real Stack E2E #44 (`37212523937`) is green on exact implementation head `86fb57a9171c50b0506c88d7cfebf0598dd03cd5`; CI #3325 and CodeQL #3274 are green on the same head. The real provider/Storage flow now passes creation, one-asset/two-binding reuse, hard-reload catalog rebuild, direct DB/Storage read-back, registration-failure cleanup and forward-only migration recovery. Direct review of artifact `11307635658` accepts the settled `provider-storage-persisted.png` with no material clipping, overlap or transition ghosting. Providers/assets therefore moves to Reusable; the broad 8.5/8.10 cells remain open, so current progress stays **Implementations 17/24 completed · Sub-implementations 164/197 completed**. PR #477 remains draft while the pre-merge UI reuse/orphan/consistency audit continues; expensive review-ready gates remain deferred.
+- Latest current checkpoint: pre-merge audit head `c843f9ad3034f6df73adbc90987865450e728dd5` is green in CI `37226283686`, CodeQL `37226283743`, Real Stack E2E `37226283683` and Audit Rendered Review `37226278480`. The audit passed every rendered browser module and produced the full 216/216 light/dark desktop/tablet/mobile final-matrix captures; artifact `11312495666` is retained. Real Stack proves the complete generic Quick Entry intent matrix plus Attention snooze/dismiss/durable-Undo across hard reload and final canonical API read-back. The owner-mandated source/design-system audit is source/runtime/visual complete. Current counters advance only for proven pre-merge cells to **Implementations 17/24 completed · Sub-implementations 172/197 completed**. PR #477 remains draft only until this reconciliation head passes ordinary draft checks, then it must be marked review-ready once for the full final-head Cross-engine/Performance/Windows wave.
 
 - Owner decision 2026-10-04: **before #477 can be squash-merged**, complete a code-level UI reuse/consistency audit. Inventory the shared design-system primitives/tokens and identify orphaned or unused UI components/styles/variants, duplicated or parallel implementations of same-role controls, page-specific/inline styling that bypasses the shared system, and inconsistent variants that should share one semantic contract. Distinguish intentional contextual differences from accidental drift; consolidate at the shared layer where safe, remove dead/orphaned UI code where proven unused, and add narrow regression coverage for material consolidations. This audit is a prerequisite to the final visual pass, not a duplicate of it.
 - Owner decision 2026-10-04: after #477 is squash-merged into `develop`, a dedicated **post-merge final visual release inspection on the exact canonical `develop` tree is mandatory before UI closeout**. This is a detailed element-level inspection, not a page-level glance. Regenerate and directly review desktop/tablet/mobile Light/Dark evidence for all primary routes and critical dialogs/states; inspect each distinct visible/interactive UI pattern for responsive containment, clipping/overlap, semantic palette and contrast, typography/spacing, focus/touch targets, 200%/Large-text/reduced-motion behavior and Windows-specific surfaces. **Deduplicate by shared implementation:** once a shared component/design-system primitive has been proven in its required representative states/contexts, do not re-review identical instances merely because they recur on another page; only re-review materially different variants, states or layout contexts. **Also audit reuse itself:** visually/sourcely equivalent controls that should share a primitive/token contract (for example same-role buttons, fields, selectors, cards, dialogs, badges, tabs and alerts) must not drift through page-specific parallel styling or inconsistent variants; consolidate them at the shared layer where safe before closeout. Fix any defect or unjustified divergence found, rerun only invalidated/affected evidence, then perform one bounded final visual sweep. A green pre-merge visual matrix does not waive this post-merge gate.
@@ -796,35 +796,35 @@ The original owner-expanded audit added 16 verification implementations / 160 no
 - [x] Windows first-run/clean-launch validation on the exact final packaging head with no runtime provisioning requirement. Direct assistant review confirms the application-owned first-run contract passed and a fresh installed-user NSIS launch succeeded with SUPABASE/CARD_VAULT environment values removed and without creating runtime-config.json, runtime-secrets.json or pending-provision.json.
 - [x] Desktop/Electron custom title bar integrated into the existing MyFinHub UI: the main Electron window uses `titleBarStyle:'hidden'` + native `titleBarOverlay:true` without `frame:false`; desktop-only drag/no-drag/caption-reserve styling is bridge-gated; source regressions lock the contract; CI #3186 passed light/dark 1440px and compact 960px rendered title-bar QA; direct assistant inspection of all three captures found coherent topbar integration and no caption/action overlap; Windows Desktop #2746 passed packaged startup and the in-process native maximize → restore → `1100×760` resize probe. First Run/Clean Launch and sibling gates were also green. Android remains untouched.
 
-### 8.10 Real-stack integrated E2E and canonical-tree proof — 2/8
+### 8.10 Real-stack integrated E2E and canonical-tree proof — 4/8
 
 **No-cost execution decision (2026-10-04):** the owner explicitly requires zero paid subscriptions/usage for this completion work. Hosted Supabase Branching is therefore excluded. Real-stack proof will use an ephemeral local Supabase stack built from this repository's exact migrations/config on the standard public GitHub-hosted Ubuntu runner, with synthetic fixtures only and no production project credentials or finance data. The first harness is manual-dispatch while it is being stabilized; counters remain unchanged until runtime proof is green and directly reviewed.
 
 - [x] Create/use an isolated non-production test backend with the same schema/policies for destructive CRUD/E2E; never use production personal finance data as a disposable test fixture. Real Stack E2E #14 booted Supabase CLI 2.119.0, applied all 48 repository migrations through `20261001220945_reject_cross_account_id_collisions`, used only a generated local Auth owner plus canonical synthetic finance data, and discarded the stack afterward with no production project credentials/data.
-- [ ] Run browser → real API → real Supabase/Storage end-to-end flows for the mutation matrix, not only synthetic QA handlers.
-- [ ] Run reload/new-session persistence checks after representative operations in every product domain.
+- [x] Run browser → real API → real Supabase/Storage end-to-end flows for the mutation matrix, not only synthetic QA handlers. Exact-head Real Stack `37226283683` re-proved the actual-browser mutation matrix on the local migration-identical Supabase stack: generic Quick Entry expense/income/transfer/withdrawal/saving/refund/reconciliation/split; modern/legacy transactions; Credit; Savings; Loans/self-loan; Lending; Recurring; Planning; Budgets/Rules; Cards; taxonomy/icons; providers/Storage; accounts/data-management; Attention and session/device flows. Final canonical `/api/data` plus direct DB/Storage assertions verify the persisted results.
+- [x] Run reload/new-session persistence checks after representative operations in every product domain. The real-browser harness hard-reloads between representative domain mutations and re-reads the canonical API; Auth/device flows additionally revoke sessions and establish a fresh AAL2 session. Quick Entry, Attention, provider/Storage and earlier accepted domain evidence was directly inspected rather than inferred from source.
 - [x] Run concurrent/revision-conflict and auth/device-revocation scenarios against the real integration stack. Real Stack E2E #14 proved a stale revision/history writer fails with 409, while revoke-others and explicit device revoke invalidate the affected AAL2 session and a fresh re-authentication can establish a new active session.
 - [ ] After all fixes are merged, rerun the complete required suite on the exact canonical `develop` commit outside feature-branch assumptions.
 - [ ] For a release candidate, run `develop -> main` release validation on the exact merge candidate before production promotion.
 - [ ] After production deployment, verify deployed SHA equality and run non-destructive production smoke/read-only integrity checks plus only explicitly safe owner actions.
 - [ ] Treat branch/PR-only validation as supporting evidence, not final proof of the post-merge canonical tree.
 
-### 8.11 Defect remediation and revalidation loop — 0/6
+### 8.11 Defect remediation and revalidation loop — 5/6
 
-- [ ] Every discovered defect is recorded before fixing with severity, reproduction, affected matrix cells and whether it is systemic or local.
-- [ ] Fix systemic design/component/domain/backend causes at the shared layer where safe instead of patching screenshots or one page.
-- [ ] Add the narrowest regression test that would have caught each material defect before/with the fix.
-- [ ] Re-run narrow affected tests first, then all matrix cells invalidated by the change.
-- [ ] Re-run full CI/security/rendered/cross-engine/performance/Windows gates whenever final-head rules require them.
-- [ ] Do not mark an item complete from source change alone; required runtime/visual/backend proof must also pass.
+- [x] Every discovered defect is recorded before fixing with severity, reproduction, affected matrix cells and whether it is systemic or local. Completion findings FV-67…FV-89 were recorded in the active plan/issue before remediation; the durable defect ledger is reconciled in this checkpoint.
+- [x] Fix systemic design/component/domain/backend causes at the shared layer where safe instead of patching screenshots or one page. Examples include shared modal focus/surface ownership, owned date/select interaction, provider URL policy, shared Button/IconButton adoption, static presentation ownership and QA/workflow boundaries.
+- [x] Add the narrowest regression test that would have caught each material defect before/with the fix. No security/accessibility/performance/touch threshold was weakened to obtain green runs.
+- [x] Re-run narrow affected tests first, then all matrix cells invalidated by the change. FV-82/FV-83/FV-84/FV-87/FV-89 each progressed from isolated failure to focused proof before broader reruns.
+- [ ] Re-run full CI/security/rendered/cross-engine/performance/Windows gates whenever final-head rules require them. This is the only remaining 8.11 item: after this reconciliation head passes draft CI/CodeQL/Real Stack, mark #477 review-ready once and require the full exact-head Cross-engine, Performance, Windows Desktop, Windows First Run and Windows Clean Launch wave before merge.
+- [x] Do not mark an item complete from source change alone; required runtime/visual/backend proof must also pass. The plan explicitly kept FV-79…FV-89 in evidence-pending states until the corresponding exact-head artifact/runtime proof was inspected.
 
-### 8.12 Final closeout and evidence package — 0/8
+### 8.12 Final closeout and evidence package — 1/8
 
 - [ ] Close every traceability-matrix cell as passed, intentionally unsupported/out-of-scope with rationale, or blocked; no silent blanks.
 - [ ] Produce final route/state screenshot manifest and manual-review ledger with no unresolved visual/UI/UX defects.
 - [ ] Produce final functional/backend/error/security evidence summary tied to exact commit SHA and backend migration state.
 - [ ] Confirm repository plan/status/PR tracking matches reality and update counters only for fully proven items.
-- [ ] Before squash-merge, complete the code-level UI reuse/orphan/consistency audit: inventory shared primitives/tokens; identify orphaned or unused components/styles/variants, duplicate or parallel same-role controls, page-specific/inline overrides and unjustified divergent variants; verify controls that should share semantics actually use the appropriate shared contract; distinguish intentional contextual differences from accidental drift; consolidate shared behavior/styling where safe, remove proven-dead UI artifacts, and add narrow regression coverage for material consolidations. This is a source/design-system audit and should not duplicate the later visual inspection of identical shared instances.
+- [x] Before squash-merge, complete the code-level UI reuse/orphan/consistency audit: inventory shared primitives/tokens; identify orphaned or unused components/styles/variants, duplicate or parallel same-role controls, page-specific/inline overrides and unjustified divergent variants; verify controls that should share semantics actually use the appropriate shared contract; distinguish intentional contextual differences from accidental drift; consolidate shared behavior/styling where safe, remove proven-dead UI artifacts, and add narrow regression coverage for material consolidations. Completed through FV-80/FV-81/FV-82/FV-87: production TSX/CSS reachability is guarded, generic same-role actions use shared primitives, intentional semantic composites remain distinct, residual static JSX geometry moved into existing owner stylesheets, and direct exact-head rendered review found no resulting clipping/overlap/geometry regressions. This source/design-system audit does not replace the mandatory post-merge visual inspection.
 - [ ] Squash-merge only when every required exact-head gate is green and no unresolved critical/high defect remains; then prove the canonical post-merge tree.
 - [ ] After squash-merge to `develop`, run the dedicated post-merge final visual release inspection on the exact canonical `develop` tree before UI closeout. Perform a detailed element-level inspection of every **distinct** visible/interactive UI pattern across desktop/tablet/mobile Light/Dark primary routes and critical dialogs/states. Verify responsive containment, clipping/overlap, semantic palette/contrast, typography/spacing, focus/touch targets, 200%/Large-text/reduced-motion behavior and Windows-specific surfaces. Avoid duplicate inspection of identical repeated instances when they use the same shared component/design-system primitive and the relevant states/layout contexts have already been proven; re-review only materially different variants, states or contexts. Audit that controls which should be visually/semantically common actually share the appropriate primitive/token contract rather than page-specific parallel styling or divergent variants. Fix any defect or unjustified divergence, rerun only affected/invalidated evidence, then perform one bounded final visual sweep. This gate is mandatory even if the pre-merge visual matrix is green.
 - [ ] If/when promoted to production, verify production deployment SHA, production smoke and privacy-safe backend integrity before declaring the release closed.
@@ -2257,7 +2257,7 @@ With FV-82 closed, the remaining proof work is consolidated into one QA/test-onl
 - The existing `.audit/run-rendered-review` one-shot trigger is used while PR #477 remains draft, so rendered evidence can be regenerated without prematurely starting the full review-ready Windows/cross-engine/performance wave.
 - No production finance semantics, auth/MFA policy, Supabase schema/RLS, provider Storage behavior, desktop product behavior or Android code changes.
 
-Status: **CI/CodeQL + Real Stack passed; Audit Rendered Review rerun pending.** Exact head `8239b9ed5b43590208bb9b50dda953215ded0762` passed CI `37222266761`, CodeQL `37222266824` and Real Stack E2E `37222266746`. Real Stack proved all seven added Quick Entry intents through actual browser → same-origin API → local Supabase with hard reload and final canonical read-back; it also proved Attention snooze → reload, durable Undo → reload restore, dismiss → reload and final persisted decision read-back. Direct inspection of `quick-entry-intents-persisted.png` and `attention-decisions-persisted.png` found no clipping/overlap or stale-state presentation. The dedicated split-review Action Center module also passed in Audit Rendered Review `37221467371`, and its focused screenshot was directly accepted; the overall audit coordinator remains uncredited because of later FV-84 OCR workflow ordering. Do not advance 8.5, 8.10, 8.12 or completion counters until the remaining audit workflow is green and the relevant checklist cells are reconciled.
+Status: **completed for pre-merge branch proof on `c843f9ad…`.** CI `37226283686`, CodeQL `37226283743`, Real Stack `37226283683` and Audit Rendered Review `37226278480` are green. The Quick Entry/Attention actual-browser hard-reload matrix and focused legacy split-review evidence support the two newly credited 8.10 cells; canonical post-merge `develop` proof remains separately open.
 
 
 ### 8.108 FV-83 — Real Stack #45 owned-date harness boundary — source-fixed, rerun pending
@@ -2283,7 +2283,7 @@ Audit Rendered Review `37221467371` on `8843a42f1a6dd22155e313339f25c5035b69b169
 - `tests/rendered-qa-source.test.ts` now locks `Build application` before `Start Vite` in the dedicated workflow.
 - The one-shot audit trigger is advanced so the corrected ordering regenerates the final rendered evidence while PR #477 remains draft.
 
-Status: **source-fixed; exact-head Audit Rendered Review plus ordinary CI/CodeQL validation pending.** Completion counters remain **Implementations 17/24 completed · Sub-implementations 164/197 completed**.
+Status: **closed on `c843f9ad…`.** Receipt OCR passed in Audit Rendered Review `37226278480` after build/sync-before-Vite ordering; CI/CodeQL are green. Product OCR logic/privacy boundaries were never changed.
 
 
 ### 8.110 FV-85 — Audit workflow source-regression literal mismatch — source-fixed, rerun pending
@@ -2294,7 +2294,7 @@ CI `37222682109` on `9f6d129c284fc2c4601b99b7b96e99fef8dba8d9` passed hygiene an
 - The failed assertion expected the nonexistent single-line literal `run: npm run dev:web`, while the workflow correctly uses `run: |` and contains `npm run dev:web > /tmp/myfinhub-vite.log 2>&1 &`.
 - Remediation changes only the source regression to assert the actual shell command substring; workflow behavior remains unchanged.
 
-Status: **source-fixed; ordinary CI rerun pending.** No completion credit is taken from the failed CI run.
+Status: **closed on `c843f9ad…`.** CI `37226283686` passed the corrected source assertion together with the complete draft check path.
 
 
 ### 8.111 FV-86 — large-data readiness 5162 ms / 5000 ms — rerun required without threshold change
@@ -2318,7 +2318,7 @@ The completed TSX inventory distinguished state/data-driven inline parameters fr
 - Runtime-driven inline values remain intentionally allowed: progress widths, chart/category swatches, drag/delete transforms, state-derived CSS variables and dynamic donut backgrounds.
 - `final-ui-reuse-audit-source.test.ts` now locks the static ownership boundary and rejects recurrence of these exact inline patterns.
 
-Status: **product/runtime/visual proof passed on `3ea396fb…`; final audit-cell closure still pending FV-88/FV-89 rerun.** Audit Rendered Review `37225283561` completed every rendered browser QA module successfully, including Change History, Loans, Dashboard, Transactions, Receipt OCR, large-data and keyboard/semantic accessibility. Exact-head artifact `11311199354` was directly inspected for the distinct FV-87 contexts: Change History rows/dialog, shared sort controls + completed Loans history, Dashboard sparkline/card composition and Transactions desktop/mobile controls/actions all remain contained with no clipping/overlap or geometry regression. The workflow failed only after those proofs in the separate final-screenshot opt-in step (FV-89).
+Status: **closed on `c843f9ad…`.** The static-ownership regression passes; Audit Rendered Review `37226278480` passed all rendered modules and 216/216 final-matrix captures. The direct FV-87 inspection remains valid because subsequent changes were QA/docs/workflow-only.
 
 
 ### 8.113 FV-88 — Surface source regression rejected additive Change History owner class
@@ -2329,7 +2329,7 @@ CI `37225288807` on `3ea396fb30de5b97dbe6a6fa7ff327a450f172e5` passed hygiene an
 - The owner class is required to move static Change History grid geometry out of JSX and into `durable-history-controls.css`; restoring inline styling would regress FV-87.
 - Remediation updates only the source assertion to the exact intended class list. No product/runtime behavior changes.
 
-Status: **source-fixed; ordinary CI rerun pending.**
+Status: **closed on `c843f9ad…`.** CI `37226283686` passes the exact intended `command-palette surface-raised change-history-dialog` source contract.
 
 
 ### 8.114 FV-89 — dedicated Audit final-screenshot step omitted explicit opt-in
@@ -2341,4 +2341,13 @@ Audit Rendered Review `37225283561` on `3ea396fb…` completed every rendered br
 - Regression coverage verifies the env exists within the capture step and the script still fails closed without it.
 - Artifact `11311199354` remained valid for the already-green rendered coordinator and FV-87 direct inspection; a clean rerun is still required to close the workflow itself.
 
-Status: **source-fixed; one-shot Audit Rendered Review rerun pending.** Completion counters remain **Implementations 17/24 completed · Sub-implementations 164/197 completed**.
+Status: **closed on `c843f9ad…`.** Audit Rendered Review `37226278480` passed both the full rendered coordinator and explicit final screenshot step, producing 216/216 final-matrix screenshots and artifact `11312495666`. Completion counters now reflect only independently proven checklist cells: **Implementations 17/24 completed · Sub-implementations 172/197 completed**.
+
+
+### 8.115 Pre-review reconciliation and automatic post-merge visual trigger
+
+- `c843f9ad3034f6df73adbc90987865450e728dd5` passed draft CI `37226283686`, CodeQL `37226283743`, Real Stack `37226283683` and Audit Rendered Review `37226278480`; the latter passed all rendered suites and captured 216/216 final-matrix images.
+- Current proven checklist credit is **Implementations 17/24 completed · Sub-implementations 172/197 completed**: 8.10 is 4/8, 8.11 is 5/6 and 8.12 is 1/8. No 8.5 relational-agreement, canonical post-merge, release-candidate or production cell is credited.
+- The dedicated `Final Visual QA` workflow now has a one-shot `develop` push trigger scoped only to `.audit/run-final-visual-review`. This branch introduces that marker exactly once. Therefore the #477 squash merge automatically runs the mandatory final visual gate on the exact canonical `develop` merge SHA; the workflow's later screenshot-only commit does not touch the marker and cannot recursively retrigger itself.
+- Live repository rules protect `main` only; `develop` is currently unprotected, so the existing GitHub Actions `contents: write` screenshot persistence step is not predictably blocked by branch protection.
+- Next safe action after this commit's draft CI/CodeQL/Real Stack pass: mark #477 review-ready exactly once, run the complete final-head rendered/Cross-engine/Performance/Windows wave, record the last 8.11 item only if all required gates are green, then squash-merge with expected-head protection. Do not merge while any required gate is pending or failing.

@@ -226,3 +226,18 @@ The primary Chromium coordinator passed all rendered browser QA modules before t
 | Transactions · baseline desktop + extreme mobile | PASS — desktop filter row remains correctly laid out through `display:contents`; mobile Edit/Delete actions remain separated and contained at the intended touch-target geometry even with extreme long content. |
 
 Disposition: **FV-87 product/UI presentation is PASS on `3ea396fb…`.** The owner-mandated 8.12 audit cell remains open only for clean source/workflow rerun and later checklist reconciliation; the later workflow failure was FV-89, not a rendered product defect.
+
+
+## Clean pre-merge audit rerun — `c843f9ad…`
+
+Audit Rendered Review: `37226278480`  
+Artifact: `assistant-rendered-review-c843f9ad3034f6df73adbc90987865450e728dd5` / `11312495666`  
+Source head: `c843f9ad3034f6df73adbc90987865450e728dd5`
+
+- Full rendered coordinator PASS on primary Chromium with 424 persisted focused screenshots.
+- Large-data PASS with max route readiness 4644 ms under the unchanged 5000 ms contract.
+- Receipt OCR PASS after the FV-84 ordering fix.
+- Final screenshot matrix PASS: **216/216** light/dark × desktop/tablet/mobile application/auth/404/Settings+nested-editor captures.
+- Product/UI source is unchanged from the directly inspected FV-87 presentation head except for QA/docs/workflow fixes; the distinct FV-87 contexts retain their direct PASS disposition.
+
+Disposition: **pre-merge audit/evidence generation PASS.** This remains supporting evidence only; the canonical `develop` squash-merge commit must regenerate the persistent final matrix and receive its own detailed direct review before UI closeout.
