@@ -22,6 +22,8 @@ jobs:
           cache: npm
           cache-dependency-path: package-lock.json
       - run: npm ci --prefer-offline --no-audit --no-fund
+      - name: Build application
+        run: npm run build
       - name: Start Vite
         run: |
           npm run dev:web > /tmp/myfinhub-vite.log 2>&1 &
@@ -49,8 +51,6 @@ jobs:
           BROWSER_WRAPPER
           chmod +x /tmp/myfinhub-qa-browser-bin/google-chrome
           echo "/tmp/myfinhub-qa-browser-bin" >> "$GITHUB_PATH"
-      - name: Build application
-        run: npm run build
       - name: Run rendered frontend QA
         run: npm run qa:frontend
       - name: Capture final screenshot matrix

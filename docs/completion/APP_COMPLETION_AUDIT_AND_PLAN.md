@@ -2257,7 +2257,7 @@ With FV-82 closed, the remaining proof work is consolidated into one QA/test-onl
 - The existing `.audit/run-rendered-review` one-shot trigger is used while PR #477 remains draft, so rendered evidence can be regenerated without prematurely starting the full review-ready Windows/cross-engine/performance wave.
 - No production finance semantics, auth/MFA policy, Supabase schema/RLS, provider Storage behavior, desktop product behavior or Android code changes.
 
-Status: **source implemented; CI/CodeQL + Real Stack + Audit Rendered Review runtime/evidence pending.** Do not advance 8.5, 8.10, 8.12 or completion counters until the exact-head runtime and direct evidence review support each specific credit.
+Status: **CI/CodeQL + Real Stack passed; Audit Rendered Review rerun pending.** Exact head `8239b9ed5b43590208bb9b50dda953215ded0762` passed CI `37222266761`, CodeQL `37222266824` and Real Stack E2E `37222266746`. Real Stack proved all seven added Quick Entry intents through actual browser → same-origin API → local Supabase with hard reload and final canonical read-back; it also proved Attention snooze → reload, durable Undo → reload restore, dismiss → reload and final persisted decision read-back. Direct inspection of `quick-entry-intents-persisted.png` and `attention-decisions-persisted.png` found no clipping/overlap or stale-state presentation. The dedicated split-review Action Center module also passed in Audit Rendered Review `37221467371`, and its focused screenshot was directly accepted; the overall audit coordinator remains uncredited because of later FV-84 OCR workflow ordering. Do not advance 8.5, 8.10, 8.12 or completion counters until the remaining audit workflow is green and the relevant checklist cells are reconciled.
 
 
 ### 8.108 FV-83 — Real Stack #45 owned-date harness boundary — source-fixed, rerun pending
@@ -2270,4 +2270,17 @@ Real Stack E2E `37221473510` on exact head `8843a42f1a6dd22155e313339f25c5035b69
 - The Quick Entry intent matrix is not changed: #45 progressed beyond that stage, so its selectors and per-kind persistence assertions are retained unchanged.
 - No product Planning/Attention/date semantics, finance behavior, persistence schema, API/RLS, Supabase production state, Windows behavior or Android code changes.
 
-Status: **source-fixed; exact-head CI/CodeQL + Real Stack rerun pending.** Completion counters remain **Implementations 17/24 completed · Sub-implementations 164/197 completed**.
+Status: **closed on `8239b9ed5b43590208bb9b50dda953215ded0762`.** CI `37222266761`, CodeQL `37222266824` and Real Stack `37222266746` passed. The actual-browser flow completed the Attention snooze/dismiss/Undo hard-reload sequence and the final canonical API read-back; direct inspection of `attention-decisions-persisted.png` confirms the post-dismiss Attention page is readable and contained. FV-83 changed only the QA interaction with the owned date control. Completion counters remain **Implementations 17/24 completed · Sub-implementations 164/197 completed**.
+
+
+### 8.109 FV-84 — Audit Rendered Review OCR asset ordering — source-fixed, rerun pending
+
+Audit Rendered Review `37221467371` on `8843a42f1a6dd22155e313339f25c5035b69b169` passed the new focused legacy split-review flow and the complete Action Center module, then later failed in `receipt-local-ocr-qa.mjs` when `/ocr/asset-manifest.json` returned the SPA HTML document instead of JSON.
+
+- The product OCR packaging contract is unchanged and had already passed the normal review-ready CI path. The difference is workflow ordering: normal CI runs `npm run check`/build before starting Vite for rendered QA, while the dedicated Audit workflow started Vite first and then ran `npm run build`.
+- Both `predev:web` and `prebuild` execute `scripts/sync-ocr-assets.mjs`; that script intentionally removes and recreates `public/ocr`. Running the build after the dev server starts therefore mutates the public OCR tree underneath the active Vite process and can make the manifest path fall through to the SPA document.
+- Remediation aligns the dedicated audit workflow with the proven CI ordering: install → build/sync OCR → start Vite → rendered QA. No product OCR logic, assets, parser, privacy boundary or assertion is weakened.
+- `tests/rendered-qa-source.test.ts` now locks `Build application` before `Start Vite` in the dedicated workflow.
+- The one-shot audit trigger is advanced so the corrected ordering regenerates the final rendered evidence while PR #477 remains draft.
+
+Status: **source-fixed; exact-head Audit Rendered Review plus ordinary CI/CodeQL validation pending.** Completion counters remain **Implementations 17/24 completed · Sub-implementations 164/197 completed**.

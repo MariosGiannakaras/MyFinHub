@@ -21,6 +21,7 @@ const receiptInboxCss = readFileSync('src/styles/receipt-inbox.css', 'utf8');
 const qaWorkspace = readFileSync('src/qa.tsx', 'utf8');
 const qaRunner = readFileSync('scripts/qa-script-runner.mjs', 'utf8');
 const ci = readFileSync('.github/workflows/ci.yml', 'utf8');
+const auditRenderedWorkflow = readFileSync('.github/workflows/audit-rendered-review.yml', 'utf8');
 const qaHtml = readFileSync('qa.html', 'utf8');
 
 describe('rendered browser QA reliability contract', () => {
@@ -58,6 +59,16 @@ describe('rendered browser QA reliability contract', () => {
   it('enforces primary Chromium in pull-request CI', () => {
     expect(ci).toContain('export MYFINHUB_QA_REQUIRE_PRIMARY=1');
     expect(ci).toContain('${MYFINHUB_QA_REQUIRE_PRIMARY:-0}');
+  });
+
+  it('builds and synchronizes OCR assets before starting the dedicated audit Vite server',()=>{
+    const buildIndex=auditRenderedWorkflow.indexOf('- name: Build application');
+    const viteIndex=auditRenderedWorkflow.indexOf('- name: Start Vite');
+    expect(buildIndex).toBeGreaterThan(-1);
+    expect(viteIndex).toBeGreaterThan(-1);
+    expect(buildIndex).toBeLessThan(viteIndex);
+    expect(auditRenderedWorkflow).toContain('run: npm run build');
+    expect(auditRenderedWorkflow).toContain('run: npm run dev:web');
   });
 
   it('parallelizes independent rendered suites while serializing shared fixed CDP ports',()=>{
