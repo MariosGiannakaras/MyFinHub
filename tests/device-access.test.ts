@@ -41,17 +41,32 @@ describe('connected device access',()=>{
     await expect(ensureDeviceSessionAccess({headers:{}},access,'owner-1')).resolves.toBeNull();
   });
 
-  it('registers a missing active device row and fails closed for a revoked row',async()=>{
+  it('bootstraps with minimal return, recovers a same-session race and fails closed for a hidden revoked row',async()=>{
     process.env.SUPABASE_URL='https://example.supabase.co';process.env.SUPABASE_PUBLISHABLE_KEY='publishable';
     const sessionId='123e4567-e89b-42d3-a456-426614174000';const access=token({session_id:sessionId,aal:'aal2'});
-    const fetchMock=vi.fn()
-      .mockResolvedValueOnce(new Response(JSON.stringify([]),{status:200,headers:{'content-type':'application/json'}}))
-      .mockResolvedValueOnce(new Response(JSON.stringify([{session_id:sessionId,user_id:'owner-1',platform:'web',device_label:'Web browser',app_version:null,first_seen_at:'2026-09-28T00:00:00.000Z',last_seen_at:'2026-09-28T00:00:00.000Z',revoked_at:null}]),{status:201,headers:{'content-type':'application/json'}}));
-    vi.stubGlobal('fetch',fetchMock);
-    await expect(ensureDeviceSessionAccess({headers:{}},access,'owner-1')).resolves.toMatchObject({session_id:sessionId,revoked_at:null});
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const activeRow={session_id:sessionId,user_id:'owner-1',platform:'web',device_label:'Web browser',app_version:null,first_seen_at:'2026-09-28T00:00:00.000Z',last_seen_at:'2026-09-28T00:00:00.000Z',revoked_at:null};
 
-    vi.stubGlobal('fetch',vi.fn(async()=>new Response(JSON.stringify([{session_id:sessionId,user_id:'owner-1',platform:'web',device_label:'Web browser',app_version:null,first_seen_at:'2026-09-28T00:00:00.000Z',last_seen_at:'2026-09-28T00:00:00.000Z',revoked_at:'2026-09-28T01:00:00.000Z'}]),{status:200,headers:{'content-type':'application/json'}})));
+    const bootstrapFetch=vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify([]),{status:200,headers:{'content-type':'application/json'}}))
+      .mockResolvedValueOnce(new Response(null,{status:201}));
+    vi.stubGlobal('fetch',bootstrapFetch);
+    await expect(ensureDeviceSessionAccess({headers:{}},access,'owner-1')).resolves.toMatchObject({session_id:sessionId,revoked_at:null});
+    expect(bootstrapFetch).toHaveBeenCalledTimes(2);
+    const bootstrapInit=bootstrapFetch.mock.calls[1]?.[1] as RequestInit;
+    expect((bootstrapInit.headers as Record<string,string>).prefer).toBe('return=minimal');
+
+    const raceFetch=vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify([]),{status:200,headers:{'content-type':'application/json'}}))
+      .mockResolvedValueOnce(new Response(JSON.stringify({code:'23505',message:'duplicate key'}),{status:409,headers:{'content-type':'application/json'}}))
+      .mockResolvedValueOnce(new Response(JSON.stringify([activeRow]),{status:200,headers:{'content-type':'application/json'}}));
+    vi.stubGlobal('fetch',raceFetch);
+    await expect(ensureDeviceSessionAccess({headers:{}},access,'owner-1')).resolves.toMatchObject({session_id:sessionId,revoked_at:null});
+
+    const revokedFetch=vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify([]),{status:200,headers:{'content-type':'application/json'}}))
+      .mockResolvedValueOnce(new Response(JSON.stringify({code:'23505',message:'duplicate key'}),{status:409,headers:{'content-type':'application/json'}}))
+      .mockResolvedValueOnce(new Response(JSON.stringify([]),{status:200,headers:{'content-type':'application/json'}}));
+    vi.stubGlobal('fetch',revokedFetch);
     try{await ensureDeviceSessionAccess({headers:{}},access,'owner-1');throw new Error('expected revoked access to fail')}catch(error){expect(error).toBeInstanceOf(ApiError);expect((error as ApiError).code).toBe('DEVICE_ACCESS_REVOKED')}
   });
 
