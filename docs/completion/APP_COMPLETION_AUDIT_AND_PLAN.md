@@ -12,7 +12,7 @@ Release target: none — `main` remains release-only
 
 This checkpoint supersedes older "#482 reconciliation pending" notes below for current execution state.
 
-- Latest current checkpoint: Real Stack E2E #29 (`37196371045`) is green on exact head `7d56b752488d330ef7881fee82c85b1ff0224e81`; CI #3307 and CodeQL #3256 are green on the same head. Direct review closes the final 8.4 Data Management/history cell, so 8.4 is **24/24** and current overall progress is **Implementations 17/24 completed · Sub-implementations 164/195 completed**. PR #477 remains draft while the remaining real-stack/canonical-tree batches are built; expensive review-ready gates remain deferred.
+- Latest current checkpoint: Real Stack E2E #32 (`37202963311`) is green on exact head `569fc011e0b76596d844bff138279f053a5e6c00`; CI #3310 and CodeQL #3259 are green on the same head. Direct review of artifact `11303338775` accepts Planning, Budgets and Rules hard-reload persistence: the completed scheduled item, €777 overall budget and `Rule Applied` transaction are readable and contained with no material clipping/overlap. The broad 8.5/8.10 every-domain cells remain open, so current progress stays **Implementations 17/24 completed · Sub-implementations 164/195 completed**. PR #477 remains draft while the next zero-cost real-stack/canonical-tree batches are built; expensive review-ready gates remain deferred.
 
 - #483 is integrated into `develop`; #477 is based on that baseline and is ready for review.
 - The accepted #482 provider-management/API/Storage delta is source-integrated into #477. Exact-head rendered CI has passed Settings tabs and the provider-branding task flow, so provider reconciliation is completed for this batch.
@@ -2053,14 +2053,29 @@ Real Stack E2E #31 (`37197482164`) is green on exact head `72e559008a7d2657e865a
 **Implementations 17/24 completed · Sub-implementations 164/195 completed**
 
 
-### 8.92 Planning, Budgets and Rules actual-browser source — runtime proof pending
+### 8.92 Planning, Budgets and Rules actual-browser proof — runtime closed
 
-The next zero-cost real-stack batch extends the same production-built browser path across three remaining mutation domains without changing product code:
+Real Stack E2E #32 (`37202963311`) is green on exact head `569fc011e0b76596d844bff138279f053a5e6c00`; CI #3310 and CodeQL #3259 are green on the same head.
 
-- Planning: create a scheduled expense, prove pending persistence after hard reload, complete it into a real event, hard-reload again and require completed history + event persistence.
-- Budgets: create an October overall budget through Reports, require `/api/data` persistence, hard-reload and require the budget row in the real UI.
-- Rules: create a manual rule through Settings, hard-reload the rule workspace, create a matching Quick Entry transaction, require server-side rule application to the synthetic `Rule Applied` category, then hard-reload and verify the categorized transaction.
+- Planning: the real browser created `Real Browser Scheduled`, hard-reloaded the pending item, completed it into a €30 actual event, hard-reloaded again and required the completed scheduled history + persisted event state.
+- Budgets: the real Reports UI created an October overall budget of €777, required real `/api/data` persistence, hard-reloaded and required the budget row in the UI.
+- Rules: the real Settings UI created `Real Browser Rule`, hard-reloaded it, created a matching Quick Entry transaction and required the server-persisted category to be `Rule Applied`, then hard-reloaded the transaction row.
+- Artifact `11303338775` was downloaded and `planning-domain-persisted.png`, `budget-domain-persisted.png` and `rule-domain-persisted.png` were opened individually. All three are readable and contained with no material clipping/overlap.
+- The job log ends with the actual-browser hard-reload PASS plus the real-stack import/mutable-persistence/revision-conflict/history/backup direct-DB PASS.
 
-Focused screenshots are emitted for all three persisted states. Counters stay unchanged until the exact-head run and direct evidence review pass; even a green run will not by itself close the full 8.10 mutation matrix because additional product domains remain.
+These are accepted supporting real-stack persistence checks for 8.5/8.10. The every-domain mutation matrix remains open, so counters do not advance yet.
+
+**Implementations 17/24 completed · Sub-implementations 164/195 completed**
+
+### 8.93 Cards, Taxonomy and icon-preference actual-browser source — runtime proof pending
+
+The next zero-cost batch extends the same production-built browser path without production data, hosted branches or provider migrations:
+
+- Cards: create a synthetic debit card, persist real encrypted card details through the local card-vault API, hard-reload, archive, hard-reload, restore, hard-reload, then permanently delete and hard-reload absence.
+- Taxonomy: create two expense categories, create and move a subcategory between stable identities, retire the now dependency-free source category, and require the transformed tree after hard reload.
+- Icons: assign a Phosphor icon to the surviving synthetic category, require the persisted `settings.categoryIcons` value and hard-reload the rendered assignment.
+- Focused screenshots are emitted for restored-card, taxonomy and icon-preference persisted states. Source regression coverage locks these stages and the no-fetch-interception real-app boundary.
+
+This batch is proof-pending. Do not credit the Cards/Taxonomy/Icons traceability rows or the broad 8.5/8.10 cells until the exact-head Real Stack run passes and the evidence is directly inspected.
 
 **Implementations 17/24 completed · Sub-implementations 164/195 completed**

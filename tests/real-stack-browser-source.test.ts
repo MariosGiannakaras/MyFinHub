@@ -37,6 +37,16 @@ describe('actual-browser real-stack source contract',()=>{
     expect(source).toContain('stage planning-create-complete-reload');
     expect(source).toContain('stage budget-create-reload');
     expect(source).toContain('stage rule-create-apply-reload');
+    expect(source).toContain('stage cards-lifecycle-reload');
+    expect(source).toContain('Real Browser Lifecycle Card');
+    expect(source).toContain("waitCardState('Real Browser Lifecycle Card',false,false)");
+    expect(source).toContain('stage taxonomy-icons-reload');
+    expect(source).toContain('Real Browser Taxonomy');
+    expect(source).toContain('Real Browser Target');
+    expect(source).toContain('Real Browser Sub');
+    expect(source).toContain('waitExpenseCategory');
+    expect(source).toContain('waitIconChoice');
+    expect(source).toContain("iconChoice.startsWith('phosphor:')");
     expect(source).toContain('Real Browser Scheduled');
     expect(source).toContain('waitBudgetAmount(777)');
     expect(source).toContain('Real Browser Rule Match');
@@ -55,6 +65,6 @@ describe('actual-browser real-stack source contract',()=>{
     expect(source).toContain('change-history-title');
     expect(source).toContain('Durable modern undo is unavailable after reload.');
     expect(source).toContain('Durable legacy undo is unavailable after reload.');
-    expect(source).toContain('actual browser auth + modern/legacy/credit/savings/loans/lending/recurring/planning/budgets/rules/accounts/data-management persistence across hard reload');
+    expect(source).toContain('actual browser auth + modern/legacy/credit/savings/loans/lending/recurring/planning/budgets/rules/cards/taxonomy/icons/accounts/data-management persistence across hard reload');
   });
 });
