@@ -1869,3 +1869,15 @@ Real Stack E2E run #2 on head `3dd5821…` successfully booted Supabase CLI 2.11
 - Required remediation: keep a unique non-deliverable test identity but use a standards-valid `example.com` mailbox, still created through the local admin API with `email_confirm:true`; retain the existing wrong-password, MFA, session restoration, revocation and persistence assertions unchanged.
 
 Status: **recorded; source fix pending.** Completion counters remain **Implementations 16/24 completed · Sub-implementations 152/195 completed** until the corrected isolated real-stack run passes and is directly reviewed.
+
+
+### 8.76 FV-68 — real-stack auth/MFA failure lacks stage attribution — recorded before fix
+
+Real Stack E2E run #4 on head `e74c54a…` disproved the FV-67 email-domain hypothesis: changing the synthetic owner from `example.invalid` to `example.com` did not move the failure. The local Supabase stack again booted, applied the full migration chain and brought the MyFinHub API to readiness, then the harness failed within the first auth/MFA sequence with HTTP 422 `AUTH_REJECTED`.
+
+- Reproduction: run `Real Stack E2E` on the current branch. After `[real-stack] local Supabase + MyFinHub API ready`, the current harness emits only `Expected HTTP 200, received 422 (AUTH_REJECTED)` and therefore cannot distinguish valid password login/factor discovery from TOTP enrollment/verification.
+- Affected matrix cells: 8.4 Authentication/MFA/device-session real-stack proof and 8.10 isolated-backend proof only.
+- Root cause classification: QA observability/evidence blocker. The product may still be correct; the failing operation must be identified before any product/Auth configuration change is justified.
+- Required remediation: add privacy-safe stage attribution around the synthetic real-stack auth/MFA sequence without logging passwords, TOTP secrets/codes, JWTs, cookies, keys or owner data; rerun the same isolated stack unchanged and use the first named failing stage to determine the actual defect.
+
+Status: **recorded; diagnostic source fix pending.** FV-67's proposed email-domain remediation is not accepted as root cause. Completion counters remain **Implementations 16/24 completed · Sub-implementations 152/195 completed**.
