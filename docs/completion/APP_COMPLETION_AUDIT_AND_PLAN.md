@@ -2038,7 +2038,7 @@ Artifact `11300858918` was downloaded and `data-management-import-history-persis
 This closes the last 8.4 cell. Section 8.4 is now **24/24**, advancing the overall completion checkpoint to **Implementations 17/24 completed · Sub-implementations 164/195 completed**. The remaining work is concentrated in 8.5 persisted-state agreement, 8.10 broader real-stack/canonical-tree proof, 8.11–8.13 closeout/manual ledgers and the final 8.16 coherent release-identity/stop-ship proof.
 
 
-### 8.91 Multi-domain actual-browser real-stack source — runtime proof pending
+### 8.91 Multi-domain actual-browser real-stack proof — runtime closed
 
 The next coherent zero-cost batch extends the already proven production-built browser → real local API/Supabase path across five additional persistence domains without changing product code. The canonical synthetic fixture gains a dedicated `qa-savings` account so Savings can exercise a real current→savings transfer.
 
@@ -2048,6 +2048,19 @@ The next coherent zero-cost batch extends the already proven production-built br
 - Recurring: create a recurring obligation, hard-reload, pause it, hard-reload and require the paused row in inactive history.
 - Settings accounts: create a temporary custom cash account, hard-reload, then delete through the real destructive confirmation, hard-reload and require absence from both API state and UI.
 
-Each domain emits a focused persistence screenshot before the final Settings Data import/export proof runs over the expanded state. These are representative real-stack persistence checks for 8.5/8.10; no new checklist credit is taken until the exact-head run and evidence are directly reviewed.
+Real Stack E2E #31 (`37197482164`) is green on exact head `72e559008a7d2657e865aea7b83009e682c04432`; CI #3309 and CodeQL #3258 are green on the same head. The real browser completed every stage above with same-origin API read-back and hard reload. Artifact `11300514998` was downloaded and the five new persistence captures were opened individually: Savings shows the €20 transfer plus goal/progress, Loans shows `Real Browser Loan` with €120 balance / 3 remaining installments, Lending shows the €42 lend + €12 partial repayment / €30 receivable, Recurring shows the paused €19.90 obligation in inactive history, and Settings remains visually contained around the temporary-account lifecycle. The account create/delete assertions themselves are runtime DOM + `/api/data` proofs because the focused screenshot does not place the temporary row in the visible viewport. These are accepted supporting real-stack persistence checks for 8.5/8.10, but the broader 8.10 every-domain matrix is still open.
+
+**Implementations 17/24 completed · Sub-implementations 164/195 completed**
+
+
+### 8.92 Planning, Budgets and Rules actual-browser source — runtime proof pending
+
+The next zero-cost real-stack batch extends the same production-built browser path across three remaining mutation domains without changing product code:
+
+- Planning: create a scheduled expense, prove pending persistence after hard reload, complete it into a real event, hard-reload again and require completed history + event persistence.
+- Budgets: create an October overall budget through Reports, require `/api/data` persistence, hard-reload and require the budget row in the real UI.
+- Rules: create a manual rule through Settings, hard-reload the rule workspace, create a matching Quick Entry transaction, require server-side rule application to the synthetic `Rule Applied` category, then hard-reload and verify the categorized transaction.
+
+Focused screenshots are emitted for all three persisted states. Counters stay unchanged until the exact-head run and direct evidence review pass; even a green run will not by itself close the full 8.10 mutation matrix because additional product domains remain.
 
 **Implementations 17/24 completed · Sub-implementations 164/195 completed**

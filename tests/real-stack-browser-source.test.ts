@@ -34,6 +34,13 @@ describe('actual-browser real-stack source contract',()=>{
     expect(source).toContain('stage loan-create-reload');
     expect(source).toContain('stage lending-repayment-reload');
     expect(source).toContain('stage recurring-create-pause-reload');
+    expect(source).toContain('stage planning-create-complete-reload');
+    expect(source).toContain('stage budget-create-reload');
+    expect(source).toContain('stage rule-create-apply-reload');
+    expect(source).toContain('Real Browser Scheduled');
+    expect(source).toContain('waitBudgetAmount(777)');
+    expect(source).toContain('Real Browser Rule Match');
+    expect(source).toContain("waitApiEventCategory('Real Browser Rule Match','Rule Applied')");
     expect(source).toContain('stage account-create-delete-reload');
     expect(source).toContain('waitRecurringStatus');
     expect(source).toContain('Real Browser Savings Transfer');
@@ -48,6 +55,6 @@ describe('actual-browser real-stack source contract',()=>{
     expect(source).toContain('change-history-title');
     expect(source).toContain('Durable modern undo is unavailable after reload.');
     expect(source).toContain('Durable legacy undo is unavailable after reload.');
-    expect(source).toContain('actual browser auth + modern/legacy/credit/savings/loans/lending/recurring/accounts/data-management persistence across hard reload');
+    expect(source).toContain('actual browser auth + modern/legacy/credit/savings/loans/lending/recurring/planning/budgets/rules/accounts/data-management persistence across hard reload');
   });
 });

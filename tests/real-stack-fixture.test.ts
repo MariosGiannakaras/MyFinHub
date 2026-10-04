@@ -15,6 +15,7 @@ describe('real-stack synthetic finance fixture',()=>{
     const fixture=realStackFinanceData();
     expect(fixture.seed.accounts.map(item=>item.id)).toEqual(['qa-cash','qa-bank-account','qa-savings']);
     expect(fixture.seed.accounts.find(item=>item.id==='qa-savings')).toMatchObject({kind:'savings',providerId:'qa-bank',bankAccountCategory:'savings'});
+    expect(fixture.state.settings.expenseCategories).toContain('Rule Applied');
     expect(fixture.state.cards?.find(item=>item.id==='qa-credit-card')).toMatchObject({
       bankId:'qa-bank',
       kind:'credit',

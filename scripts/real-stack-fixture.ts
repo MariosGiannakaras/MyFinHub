@@ -46,7 +46,7 @@ export function realStackFinanceData(): FinanceData {
       settings: {
         excludedFromAvailable: [],
         accountNames: {},
-        expenseCategories: ['Synthetic expense'],
+        expenseCategories: ['Synthetic expense', 'Rule Applied'],
         incomeCategories: ['Synthetic income'],
         customPresets: [],
         pinnedPresets: [],

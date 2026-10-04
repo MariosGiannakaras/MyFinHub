@@ -98,6 +98,7 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     const setSelector=async(selector:string,value:string)=>{const ok=await c!.call<boolean>("function(selector,value){const input=document.querySelector(selector);if(!(input instanceof HTMLInputElement||input instanceof HTMLTextAreaElement))return false;const proto=input instanceof HTMLTextAreaElement?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;const setter=Object.getOwnPropertyDescriptor(proto,'value')?.set;setter?.call(input,value);input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));return true}",[selector,value]);assert(ok,'Missing input '+selector)};
     const setByLabel=async(label:string,value:string)=>{const ok=await c!.call<boolean>("function(label,value){const visible=node=>{if(!(node instanceof HTMLElement))return false;const style=getComputedStyle(node),rect=node.getBoundingClientRect();return style.display!=='none'&&style.visibility!=='hidden'&&Number(style.opacity)!==0&&rect.width>0&&rect.height>0};const direct=[...document.querySelectorAll('input,textarea,select')].find(node=>visible(node)&&node.getAttribute('aria-label')===label);const wrapper=[...document.querySelectorAll('label')].find(node=>visible(node)&&(node.textContent||'').replace(/\\s+/g,' ').includes(label));const control=direct??wrapper?.querySelector('input,textarea,select')??wrapper?.parentElement?.querySelector('input,textarea,select');if(control instanceof HTMLSelectElement){control.value=value;control.dispatchEvent(new Event('change',{bubbles:true}));return true}if(!(control instanceof HTMLInputElement||control instanceof HTMLTextAreaElement))return false;const proto=control instanceof HTMLTextAreaElement?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;const setter=Object.getOwnPropertyDescriptor(proto,'value')?.set;setter?.call(control,value);control.dispatchEvent(new Event('input',{bubbles:true}));control.dispatchEvent(new Event('change',{bubbles:true}));return true}",[label,value]);assert(ok,'Missing field '+label)};
     const clickText=async(selector:string,text:string)=>{const ok=await c!.call<boolean>("function(selector,text){const node=[...document.querySelectorAll(selector)].find(item=>item.getClientRects().length>0&&(item.textContent||'').trim().includes(text));if(!(node instanceof HTMLElement))return false;node.click();return true}",[selector,text]);assert(ok,'Missing control '+text)};
+    const selectOwnedOption=async(label:string,optionText:string)=>{const opened=await c!.call<boolean>("function(label){const row=[...document.querySelectorAll('label')].find(node=>node.getClientRects().length>0&&(node.querySelector(':scope > span')?.textContent||'').trim().includes(label));const input=row?.querySelector('input[role=combobox]');if(!(input instanceof HTMLInputElement))return false;input.click();return true}",[label]);assert(opened,'Missing owned selector '+label);await waitFor("function(){return Boolean(document.querySelector('.owned-select-popover [role=listbox]'))}",label+' options');const selected=await c!.call<boolean>("function(optionText){const option=[...document.querySelectorAll('.owned-select-popover [role=option]')].find(node=>(node.textContent||'').trim()===optionText&&node.getClientRects().length>0);if(!(option instanceof HTMLElement))return false;option.click();return true}",[optionText]);assert(selected,'Missing owned option '+optionText)};
     const search=async(value:string)=>setByLabel('Αναζήτηση συναλλαγών',value);
     const waitApiEvent=async(note:string,present:boolean)=>waitFor("async function(note,present){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();const exists=(payload.data?.state?.events||[]).some(item=>item.note===note);return present?exists:!exists}",'persisted event '+note,[note,present]);
     const waitLegacy=async(text:string,deleted:boolean)=>waitFor("async function(text,deleted){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();const overrides=JSON.stringify(payload.data?.state?.overrides||{});const tombstones=JSON.stringify(payload.data?.state?.deleted||[]);return overrides.includes(text)&&(deleted?tombstones.includes('qa-seed-income'):!tombstones.includes('qa-seed-income'))}",'persisted legacy state',[text,deleted]);
@@ -107,6 +108,10 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     const currentRevision=()=>c!.call<string>("async function(){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return '';const payload=await response.json();return String(payload.revision||'')}");
     const waitStateText=async(value:string,present=true)=>waitFor("async function(value,present){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();const exists=JSON.stringify(payload.data?.state||{}).includes(value);return present?exists:!exists}",present?'persisted state '+value:'removed state '+value,[value,present]);
     const waitRecurringStatus=async(name:string,status:string)=>waitFor("async function(name,status){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();return (payload.data?.state?.recurringCustom||[]).some(item=>item.name===name&&(item.status|| (item.active?'active':'stopped'))===status)}",'recurring '+name+' '+status,[name,status]);
+    const waitScheduledStatus=async(note:string,status:string)=>waitFor("async function(note,status){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();return (payload.data?.state?.scheduled||[]).some(item=>item.note===note&&item.status===status)}",'scheduled '+note+' '+status,[note,status]);
+    const waitBudgetAmount=async(amount:number)=>waitFor("async function(amount){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();return (payload.data?.state?.budgets||[]).some(item=>item.scope==='overall'&&Number(item.amount)===amount)}",'overall budget '+amount,[amount]);
+    const waitRule=async(name:string)=>waitFor("async function(name){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();return (payload.data?.state?.transactionRules||[]).some(item=>item.name===name&&item.enabled!==false)}",'rule '+name,[name]);
+    const waitApiEventCategory=async(note:string,category:string)=>waitFor("async function(note,category){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();return (payload.data?.state?.events||[]).some(item=>item.note===note&&item.category===category)}",'categorized event '+note,[note,category]);
     const shot=async(name:string)=>{const result=await c!.send('Page.captureScreenshot',{format:'png',fromSurface:true});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(result.data,'base64'))};
 
     console.log('[real-browser] stage login');
@@ -227,6 +232,50 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     await waitFor("function(){return [...document.querySelectorAll('[data-recurring-status=paused]')].some(row=>(row.textContent||'').includes('Real Browser Recurring'))}",'paused recurring after reload');
     await shot('recurring-domain-persisted');
 
+    console.log('[real-browser] stage planning-create-complete-reload');
+    await clickText('.sidebar nav button','Προγραμματισμός');
+    await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Προγραμματισμός')}",'planning workspace');
+    await clickText('#main-workspace button','Νέα προγραμματισμένη');
+    await waitFor("function(){return Boolean(document.querySelector('.planning-editor[role=dialog]'))}",'planning editor');
+    await setByLabel('Ποσό','33.30');await setByLabel('Περιγραφή','Real Browser Scheduled');await clickText('.planning-editor button','Προσθήκη στο πρόγραμμα');
+    await waitScheduledStatus('Real Browser Scheduled','pending');
+    await c.send('Page.reload',{ignoreCache:true});await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Προγραμματισμός')}",'planning reload after create');
+    await waitFor("function(){return [...document.querySelectorAll('.scheduled-row')].some(row=>(row.textContent||'').includes('Real Browser Scheduled'))}",'scheduled row after reload');
+    const completeScheduled=await c.call<boolean>("function(){const row=[...document.querySelectorAll('.scheduled-row')].find(item=>(item.textContent||'').includes('Real Browser Scheduled'));const button=[...row?.querySelectorAll('button')||[]].find(node=>(node.textContent||'').includes('Ολοκλήρωση'));if(!(button instanceof HTMLElement))return false;button.click();return true}");assert(completeScheduled,'Scheduled completion action is unavailable.');
+    await waitFor("function(){return Boolean(document.querySelector('.completion-dialog'))}",'scheduled completion dialog');
+    await setByLabel('Πραγματικό ποσό','30');await clickText('.completion-dialog button','Καταχώριση πραγματικής κίνησης');
+    await waitScheduledStatus('Real Browser Scheduled','completed');await waitApiEvent('Real Browser Scheduled',true);
+    await c.send('Page.reload',{ignoreCache:true});await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Προγραμματισμός')}",'planning reload after completion');
+    await waitFor("function(){return [...document.querySelectorAll('.scheduled-history-list>div')].some(row=>(row.textContent||'').includes('Real Browser Scheduled')&&(row.textContent||'').includes('Ολοκληρώθηκε'))}",'completed schedule after reload');
+    await shot('planning-domain-persisted');
+
+    console.log('[real-browser] stage budget-create-reload');
+    await clickText('.sidebar nav button','Αναφορές');
+    await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Αναφορές')}",'reports workspace for budget');
+    await waitFor("function(){return Boolean(document.querySelector('[data-budget-management]'))}",'budget management');
+    await selectOwnedOption('Τύπος ορίου','Συνολικό όριο');await setByLabel('Όριο €','777');await setByLabel('Προειδοποίηση %','80');await clickText('[data-budget-management] button','Αποθήκευση προϋπολογισμού');
+    await waitBudgetAmount(777);
+    await c.send('Page.reload',{ignoreCache:true});await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Αναφορές')}",'reports reload after budget');
+    await waitFor("function(){return [...document.querySelectorAll('.budget-setting-row')].some(row=>(row.textContent||'').includes('Συνολικό όριο')&&(row.textContent||'').includes('777'))}",'budget after reload');
+    await shot('budget-domain-persisted');
+
+    console.log('[real-browser] stage rule-create-apply-reload');
+    await clickText('.sidebar nav button','Ρυθμίσεις');await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Ρυθμίσεις')}",'settings workspace for rules');
+    await clickText('.settings-tablist button','Κανόνες');await waitFor("function(){return Boolean(document.querySelector('[data-rules-workspace]'))}",'rules workspace');
+    await clickText('[data-rules-workspace] button','Νέος κανόνας');await waitFor("function(){return Boolean(document.querySelector('[data-rule-editor]'))}",'rule editor');
+    await setByLabel('Όνομα αυτοματισμού','Real Browser Rule');await setByLabel('Κείμενο περιγραφής','Real Browser Rule Match');await selectOwnedOption('Κατηγορία / υποκατηγορία','Rule Applied');await clickText('[data-rule-editor] button','Δημιουργία κανόνα');
+    await waitRule('Real Browser Rule');
+    await c.send('Page.reload',{ignoreCache:true});await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Ρυθμίσεις')}",'settings reload after rule');
+    await clickText('.settings-tablist button','Κανόνες');await waitFor("function(){return [...document.querySelectorAll('.rule-settings-list article')].some(row=>(row.textContent||'').includes('Real Browser Rule'))}",'rule after reload');
+    await clickText('.sidebar nav button','Συναλλαγές');await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Συναλλαγές')}",'transactions for rule application');
+    const openRuleQuick=await c.call<boolean>("function(){const button=document.querySelector('[data-global-quick-entry]');if(!(button instanceof HTMLElement))return false;button.click();return true}");assert(openRuleQuick,'Global Quick Entry is unavailable for rule application.');
+    await waitFor("function(){return Boolean(document.querySelector('.quick-modal:not(.contextual-quick-modal)'))}",'rule Quick Entry');
+    await setByLabel('Ποσό','7.77');await setByLabel('Σχόλιο','Real Browser Rule Match');await clickText('.quick-modal button','Καταχώριση');
+    await waitApiEventCategory('Real Browser Rule Match','Rule Applied');
+    await c.send('Page.reload',{ignoreCache:true});await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Συναλλαγές')}",'transactions reload after rule match');await search('Real Browser Rule Match');
+    await waitFor("function(){return [...document.querySelectorAll('[data-transaction-source=event]')].some(row=>(row.textContent||'').includes('Real Browser Rule Match')&&(row.textContent||'').includes('Rule Applied'))}",'rule-applied transaction after reload');
+    await shot('rule-domain-persisted');
+
     console.log('[real-browser] stage account-create-delete-reload');
     await clickText('.sidebar nav button','Ρυθμίσεις');await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Ρυθμίσεις')}",'settings workspace for accounts');
     await clickText('.settings-tablist button','Λογαριασμοί');await waitFor("function(){return Boolean(document.querySelector('.account-management-settings'))}",'account management');
@@ -275,6 +324,6 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
 
     assert(runtimeErrors.length===0,'Browser runtime errors: '+runtimeErrors.join(' | '));
     assert(apiFailures.length===0,'Unexpected browser API failures: '+apiFailures.join(' | '));
-    console.log('[real-browser] PASS actual browser auth + modern/legacy/credit/savings/loans/lending/recurring/accounts/data-management persistence across hard reload');
+    console.log('[real-browser] PASS actual browser auth + modern/legacy/credit/savings/loans/lending/recurring/planning/budgets/rules/accounts/data-management persistence across hard reload');
   }finally{c?.close();await stopBrowser(child);await sleep(300);if(profile)rmSync(profile,{recursive:true,force:true,maxRetries:8,retryDelay:150})}
 }
