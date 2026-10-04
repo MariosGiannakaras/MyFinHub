@@ -1881,3 +1881,15 @@ Real Stack E2E run #4 on head `e74c54a…` disproved the FV-67 email-domain hypo
 - Required remediation: add privacy-safe stage attribution around the synthetic real-stack auth/MFA sequence without logging passwords, TOTP secrets/codes, JWTs, cookies, keys or owner data; rerun the same isolated stack unchanged and use the first named failing stage to determine the actual defect.
 
 Status: **recorded; diagnostic source fix pending.** FV-67's proposed email-domain remediation is not accepted as root cause. Completion counters remain **Implementations 16/24 completed · Sub-implementations 152/195 completed**.
+
+
+### 8.77 FV-69 — local Supabase TOTP disabled by repository config — recorded before fix
+
+Real Stack E2E #6 on exact head `a7f5fd3…` localized the 422 failure to **`mfa-enroll`**. Password rejection, valid password login, owner authorization and factor discovery all succeeded first. Current Supabase CLI config documentation defines `auth.mfa.totp.enroll_enabled` and `auth.mfa.totp.verify_enabled` with local defaults of `false`; this repository's `supabase/config.toml` has no `[auth.mfa.totp]` section.
+
+- Reproduction: boot the repository with Supabase CLI 2.119.0 and execute the real-stack flow. The harness reaches `[real-stack] stage mfa-enroll` and receives HTTP 422 `AUTH_REJECTED`.
+- Affected matrix cells: 8.4 real password + mandatory TOTP flow and 8.10 isolated real-stack proof.
+- Root cause classification: local-development configuration parity defect. Hosted/product policy requires TOTP/AAL2, but the repository-defined local stack implicitly leaves TOTP enrollment and verification disabled under the current CLI defaults.
+- Required remediation: explicitly enable TOTP enrollment and verification in `supabase/config.toml`, add a source regression lock for both flags, and rerun the unchanged synthetic local E2E. Do not weaken mandatory MFA, do not add another login path and do not touch production Supabase state.
+
+Status: **recorded before fix; source remediation pending.** FV-68 observability work successfully identified the failing stage and is complete as diagnostic infrastructure. Completion counters remain **Implementations 16/24 completed · Sub-implementations 152/195 completed** until runtime proof passes.
