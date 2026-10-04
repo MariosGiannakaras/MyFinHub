@@ -45,16 +45,20 @@ Branch: `chore/490-post-completion-hardening`
 Integration target: `develop`  
 Production target: none
 
-**Implementations 0/4 completed · Sub-implementations 1/16 completed**
+**Implementations 2/4 completed · Sub-implementations 9/16 completed**
 
 Completed so far:
 
 - reconciled stale database/provider task summaries after #477;
 - closed #478 and #481 as completed;
 - closed stacked PRs #479 and #482 without merge because their accepted deltas are already integrated into canonical `develop`;
-- preserved newer #477 workflow, migration, tracking and UI hardening rather than merging stale stacked branches.
+- preserved newer #477 workflow, migration, tracking and UI hardening rather than merging stale stacked branches;
+- reused exact canonical post-merge visual/accessibility/error-state evidence to close the bounded residual UX sweep without duplicate expensive validation;
+- completed the bounded architecture/debt review: hygiene guards, lazy/chunk budgets and the single `relational_v1` finance authority remain enforced; no speculative cleanup was introduced.
 
-Next work is bounded integration/repository hygiene, residual automated QA, architecture/maintenance debt review and release rehearsal. Existing exact-head evidence must be reused where it already proves a contract; expensive gates are not rerun merely for ceremony.
+Open hygiene dependencies are explicit: 49 stale `audit/476-*` branches are identified but cannot be physically deleted through the connected GitHub toolset; `develop` protection remains an admin dependency in #487; changelog/release-note reconciliation remains owned by the existing #491 → #465 sequence.
+
+Next work is Implementation 4 release rehearsal/readiness. It is read-only/preparatory and does not authorize `main` promotion or production mutation.
 
 Issue #490 is the current 4-implementation / 16-sub-implementation checklist and progress authority for this workstream.
 
