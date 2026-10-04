@@ -1,10 +1,10 @@
 import type { FinanceData } from '../src/types.js';
 import { migrateProductData } from '../src/lib/productMigration.js';
+import { isValidDateStamp } from '../src/lib/dateOnly.js';
 import { ApiError } from './http.js';
-import { validateRecurringCadenceData } from './recurringCadenceValidation.js';
 import { fetchUpstream } from './upstream.js';
 import { validateFinanceState } from './stateValidation.js';
-import { validateFinanceData } from './validation.js';
+import { validateCompleteFinanceData } from './financeDataValidation.js';
 
 export const DATA_SOURCE = 'Supabase/PostgreSQL';
 
@@ -91,10 +91,9 @@ function first<T>(value: T | T[]): T {
 
 function envelope(row: StateRow) {
   if (!row) throw new ApiError(500, 'EMPTY_DATABASE', 'RheomIQ database is empty.', false);
+  validateCompleteFinanceData(row.data);
   const migrated = migrateProductData(row.data);
-  validateFinanceData(migrated);
-  validateRecurringCadenceData(migrated);
-  validateFinanceState(migrated.state);
+  validateCompleteFinanceData(migrated);
   return {
     data: migrated,
     revision: String(row.revision),
@@ -119,7 +118,7 @@ function historyEnvelope(value: unknown): HistoryEnvelope {
     const parentId = item.parentId === null || item.parentId === undefined ? null : String(item.parentId);
     const label = typeof item.label === 'string' ? item.label : '';
     const createdAt = typeof item.createdAt === 'string' ? item.createdAt : '';
-    if (!/^\d+$/.test(id) || !label || label.length > 180 || !createdAt) throw new ApiError(502, 'HISTORY_RESPONSE_INVALID', 'Change history could not be read.', false);
+    if (!/^\d+$/.test(id) || !label || label.length > 180 || !isValidDateStamp(createdAt)) throw new ApiError(502, 'HISTORY_RESPONSE_INVALID', 'Change history could not be read.', false);
     if (parentId !== null && !/^\d+$/.test(parentId)) throw new ApiError(502, 'HISTORY_RESPONSE_INVALID', 'Change history could not be read.', false);
     return { id, parentId, label, createdAt, current: item.current === true };
   });
@@ -215,7 +214,7 @@ export async function writeMutableState(
   accessToken?: string,
 ) {
   validateFinanceState(state);
-  if (!updatedAt || updatedAt.length > 64) throw new ApiError(400, 'INVALID_DATA', 'The finance data is invalid.');
+  if (!isValidDateStamp(updatedAt)) throw new ApiError(400, 'INVALID_DATA', 'The finance data is invalid.');
   const label = historyLabel.trim() || 'Οικονομική αλλαγή';
   if (label.length > 180) throw new ApiError(400, 'INVALID_HISTORY', 'The change-history label is invalid.');
 
@@ -253,13 +252,9 @@ export async function moveHistory(
 }
 
 export async function writeStore(data: FinanceData, expectedRevision?: string, force = false, accessToken?: string) {
-  validateFinanceData(data);
-  validateRecurringCadenceData(data);
-  validateFinanceState(data.state);
-  const next = migrateProductData({ ...data, app: 'RheomIQ', schemaVersion: 3, updatedAt: new Date().toISOString() });
-  validateFinanceData(next);
-  validateRecurringCadenceData(next);
-  validateFinanceState(next.state);
+  validateCompleteFinanceData(data);
+  const next = migrateProductData({ ...data, app: 'RheomIQ', updatedAt: new Date().toISOString() });
+  validateCompleteFinanceData(next);
 
   const path = force ? 'rpc/rheomiq_import_state' : 'rpc/rheomiq_save_state';
   const body = force

@@ -21,6 +21,13 @@ export function requestHeader(req: any, name: string): string {
   return firstHeader(req?.headers?.[name.toLowerCase()]);
 }
 
+export function strictQueryValue(req:any,key:string):string{
+  const query=req&&typeof req==='object'?(req as {query?:unknown}).query:undefined;
+  if(!query||typeof query!=='object'||Array.isArray(query))return '';
+  const value=(query as Record<string,unknown>)[key];
+  return typeof value==='string'?value.trim():'';
+}
+
 export function sendJson(res: any, status: number, body: unknown) {
   res.statusCode = status;
   res.setHeader('content-type', 'application/json; charset=utf-8');
@@ -29,9 +36,24 @@ export function sendJson(res: any, status: number, body: unknown) {
   res.end(JSON.stringify(body));
 }
 
+function responseRequestId(res:any){
+  const value=typeof res?.getHeader==='function'?res.getHeader('x-request-id'):undefined;
+  return firstHeader(value).trim()||undefined;
+}
+
+function assertContentLengthWithinLimit(req:any,maxBytes:number){
+  const raw=requestHeader(req,'content-length').trim();
+  if(!raw)return;
+  if(!/^\d+$/.test(raw))throw new ApiError(400,'INVALID_CONTENT_LENGTH','Invalid Content-Length header.');
+  const value=Number(raw);
+  if(!Number.isSafeInteger(value)||value<0)throw new ApiError(400,'INVALID_CONTENT_LENGTH','Invalid Content-Length header.');
+  if(value>maxBytes)throw new ApiError(413,'PAYLOAD_TOO_LARGE','Request is too large.');
+}
+
 export function methodNotAllowed(res: any, allowed: string[]) {
   res.setHeader('allow', allowed.join(', '));
-  sendJson(res, 405, { error: 'Method not allowed', code: 'METHOD_NOT_ALLOWED' });
+  const requestId=responseRequestId(res);
+  sendJson(res, 405, { error: 'Method not allowed', code: 'METHOD_NOT_ALLOWED', ...(requestId?{requestId}:{}) });
 }
 
 export function assertSameOrigin(req: any) {
@@ -67,23 +89,28 @@ export async function readJsonBody<T = unknown>(req: any, maxBytes = 5 * 1024 * 
     throw new ApiError(415, 'UNSUPPORTED_MEDIA_TYPE', 'Expected application/json.');
   }
 
-  const contentLength = Number(requestHeader(req, 'content-length') || 0);
-  if (Number.isFinite(contentLength) && contentLength > maxBytes) {
-    throw new ApiError(413, 'PAYLOAD_TOO_LARGE', 'Request is too large.');
-  }
+  assertContentLengthWithinLimit(req,maxBytes);
 
   if (req.body !== undefined) {
-    const raw = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
-    if (Buffer.byteLength(raw, 'utf8') > maxBytes) throw new ApiError(413, 'PAYLOAD_TOO_LARGE', 'Request is too large.');
-    try { return (typeof req.body === 'string' ? JSON.parse(req.body || '{}') : req.body) as T; }
-    catch { throw new ApiError(400, 'INVALID_JSON', 'Invalid JSON payload.'); }
+    const body=req.body as unknown;
+    if(typeof body==='string'||Buffer.isBuffer(body)||body instanceof Uint8Array){
+      const raw=typeof body==='string'?body:Buffer.from(body).toString('utf8');
+      if(Buffer.byteLength(raw,'utf8')>maxBytes)throw new ApiError(413,'PAYLOAD_TOO_LARGE','Request is too large.');
+      try{return (raw?JSON.parse(raw):{}) as T;}
+      catch{throw new ApiError(400,'INVALID_JSON','Invalid JSON payload.');}
+    }
+    let raw:string;
+    try{raw=JSON.stringify(body);}
+    catch{throw new ApiError(400,'INVALID_JSON','Invalid JSON payload.');}
+    if(Buffer.byteLength(raw,'utf8')>maxBytes)throw new ApiError(413,'PAYLOAD_TOO_LARGE','Request is too large.');
+    return body as T;
   }
 
   const chunks: Buffer[] = [];
   let total = 0;
-  for await (const chunk of req) {
-    const buffer = Buffer.from(chunk);
-    total += buffer.length;
+  for await (const chunk of req as AsyncIterable<unknown>) {
+    const buffer=copyBoundedBinaryValue(chunk,maxBytes);
+    total += buffer.byteLength;
     if (total > maxBytes) throw new ApiError(413, 'PAYLOAD_TOO_LARGE', 'Request is too large.');
     chunks.push(buffer);
   }
@@ -91,6 +118,33 @@ export async function readJsonBody<T = unknown>(req: any, maxBytes = 5 * 1024 * 
   const raw = Buffer.concat(chunks).toString('utf8');
   try { return (raw ? JSON.parse(raw) : {}) as T; }
   catch { throw new ApiError(400, 'INVALID_JSON', 'Invalid JSON payload.'); }
+}
+
+export function copyBoundedBinaryValue(value:unknown,maxBytes:number):Buffer{
+  let buffer:Buffer;
+  if(Buffer.isBuffer(value))buffer=Buffer.from(value);
+  else if(value instanceof Uint8Array)buffer=Buffer.from(value);
+  else if(typeof value==='string')buffer=Buffer.from(value,'utf8');
+  else throw new ApiError(400,'INVALID_BINARY_BODY','Invalid binary payload.');
+  if(buffer.byteLength>maxBytes)throw new ApiError(413,'PAYLOAD_TOO_LARGE','Request is too large.');
+  return buffer;
+}
+
+export async function readBinaryBody(req:any,maxBytes:number):Promise<Buffer>{
+  assertContentLengthWithinLimit(req,maxBytes);
+
+  const body=req&&typeof req==='object'?(req as {body?:unknown}).body:undefined;
+  if(body!==undefined)return copyBoundedBinaryValue(body,maxBytes);
+
+  const chunks:Buffer[]=[];
+  let total=0;
+  for await(const chunk of req as AsyncIterable<unknown>){
+    const buffer=copyBoundedBinaryValue(chunk,maxBytes);
+    total+=buffer.byteLength;
+    if(total>maxBytes)throw new ApiError(413,'PAYLOAD_TOO_LARGE','Request is too large.');
+    chunks.push(buffer);
+  }
+  return Buffer.concat(chunks,total);
 }
 
 export async function handleApi(res: any, fn: (requestId: string) => Promise<void> | void) {
@@ -107,7 +161,8 @@ export async function handleApi(res: any, fn: (requestId: string) => Promise<voi
       console.error('[RheomIQ API]', {
         requestId,
         code: apiError.code,
-        message: error instanceof Error ? error.message : String(error),
+        status: apiError.status,
+        errorType: error instanceof Error ? error.name : typeof error,
       });
     }
 

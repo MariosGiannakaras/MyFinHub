@@ -1,3 +1,5 @@
+import { notifyAuthExpired } from './authExpiry.js';
+import { ApiError, apiRequest } from './api.js';
 import { readLocalCvv } from './localCvvVault.js';
 type CardVaultSecret={pan?:string;expiry?:string;cvv?:string};
 
@@ -10,14 +12,18 @@ export class CardVaultClientError extends Error{
 }
 
 async function request<T>(method:'POST'|'PUT'|'DELETE',body:Record<string,unknown>):Promise<T>{
-  const response=await fetch('/api/card-secrets',{
+  const response=await apiRequest('/api/card-secrets',{
     method,
     credentials:'same-origin',
     headers:{'content-type':'application/json'},
     body:JSON.stringify(body),
   });
   const payload=await response.json().catch(()=>({})) as ErrorPayload&T;
-  if(!response.ok){throw new CardVaultClientError(response.status,payload.code||'CARD_VAULT_ERROR',payload.error||'Η ενέργεια ασφαλών στοιχείων απέτυχε.');}
+  if(!response.ok){
+    const code=payload.code||'CARD_VAULT_ERROR';
+    notifyAuthExpired(response.status,code);
+    throw new CardVaultClientError(response.status,code,payload.error||'Η ενέργεια ασφαλών στοιχείων απέτυχε.');
+  }
   return payload as T;
 }
 
@@ -56,12 +62,18 @@ export async function deleteCardSecret(cardId:string){
 }
 
 export function cardVaultErrorMessage(error:unknown){
+  if(error instanceof ApiError){
+    if(error.code==='NETWORK_TIMEOUT')return 'Η σύνδεση με το ασφαλές vault άργησε πολύ. Έλεγξε τη σύνδεσή σου και δοκίμασε ξανά.';
+    if(error.code==='NETWORK_ERROR'||error.code==='REQUEST_ABORTED')return 'Δεν ήταν δυνατή η σύνδεση με το ασφαλές vault. Τα αποθηκευμένα στοιχεία δεν άλλαξαν.';
+  }
   if(error instanceof CardVaultClientError){
     if(error.code==='CARD_SECRET_NOT_FOUND')return 'Δεν έχουν αποθηκευτεί ακόμη αριθμός και λήξη για αυτή την κάρτα.';
     if(error.code==='INVALID_CARD_PAN')return 'Γράψε έναν αριθμό κάρτας με αριθμητικά ψηφία.';
     if(error.code==='INVALID_CARD_EXPIRY')return 'Έλεγξε τη λήξη της κάρτας — χρησιμοποίησε μορφή MM/YY.';
     if(error.code==='INVALID_CARD_CVV')return 'Το CVV πρέπει να έχει 3 ή 4 αριθμητικά ψηφία.';
     if(error.code==='MFA_REQUIRED')return 'Για να δεις ή να αλλάξεις τα ασφαλή στοιχεία της κάρτας, χρειάζεται να επαληθεύσεις ξανά τη σύνδεσή σου.';
+    if(error.code==='DEVICE_ACCESS_REVOKED'||error.code==='AUTH_REQUIRED')return 'Η πρόσβαση αυτής της συσκευής έχει λήξει. Συνδέσου ξανά και ολοκλήρωσε την επαλήθευση MFA.';
+    if(error.code==='CARD_VAULT_CONFIG_ERROR')return 'Η ασφαλής αποθήκευση καρτών δεν είναι διαθέσιμη λόγω ρύθμισης του διακομιστή. Τα υπόλοιπα στοιχεία της κάρτας δεν χάθηκαν.';
     if(error.code==='CARD_VAULT_RATE_LIMITED')return 'Έγιναν πολλές προσπάθειες σε μικρό χρονικό διάστημα. Περίμενε λίγο και δοκίμασε ξανά.';
     return 'Δεν μπορέσαμε να ολοκληρώσουμε την ενέργεια στα ασφαλή στοιχεία της κάρτας. Δοκίμασε ξανά.';
   }

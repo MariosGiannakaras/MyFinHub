@@ -12,7 +12,7 @@ html[data-text-size="large"]{--ux-body-size:17px;--ux-small-size:14px;--ux-tiny-
 .workspace,.modal-backdrop,.editor-backdrop,.picker-backdrop,.owned-popover-backdrop{font-size:var(--ux-body-size)}
 .sidebar nav button{font-size:var(--ux-body-size)}
 .page-heading h1{font-size:var(--ux-heading-size)}
-.page-heading p,.command-pill{font-size:var(--ux-small-size);line-height:1.6}
+.page-heading p{font-size:var(--ux-small-size);line-height:1.6}
 .eyebrow,.month-toolbar,.metric-head,.file-line,.file-panel small,.sidebar-foot,.brand-block small{font-size:var(--ux-tiny-size)}
 .panel,.semantic-table,.settings-form,.filterbar,.loan-toolbar,.action-status,.form-error,.empty-state,.empty-inline,.logic-note{line-height:1.5}
 .semantic-table{font-size:var(--ux-small-size)}

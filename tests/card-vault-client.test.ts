@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 const {readLocalCvvMock}=vi.hoisted(()=>({readLocalCvvMock:vi.fn()}));
 vi.mock('../src/lib/localCvvVault.js',()=>({readLocalCvv:readLocalCvvMock}));
 
-import { CardVaultClientError, cardVaultErrorMessage, revealCardSecret, saveCardSecret } from '../src/lib/cardVaultClient.js';
+import { CardVaultClientError, cardVaultErrorMessage, deleteCardSecret, revealCardSecret, saveCardSecret } from '../src/lib/cardVaultClient.js';
 
 afterEach(()=>{vi.unstubAllGlobals();readLocalCvvMock.mockReset()});
 
@@ -28,6 +28,30 @@ describe('card vault client',()=>{
     }));
     await saveCardSecret('card-1',{pan:'4242424242424242',expiry:'12/30',cvv:'123'});
     expect(JSON.parse(sent)).toEqual({cardId:'card-1',pan:'4242424242424242',expiry:'12/30',cvv:'123'});
+  });
+
+  it('reveals the server-backed secret through the explicit POST boundary',async()=>{
+    let method='';let sent='';
+    const fetchMock=vi.fn(async(_url:string,init?:RequestInit)=>{
+      method=String(init?.method||'');sent=String(init?.body||'');
+      return new Response(JSON.stringify({pan:'4111111111111111',expiry:'12/30',cvv:'123'}),{status:200,headers:{'content-type':'application/json'}});
+    });
+    vi.stubGlobal('fetch',fetchMock);
+    await expect(revealCardSecret('card-server')).resolves.toEqual({pan:'4111111111111111',expiry:'12/30',cvv:'123'});
+    expect(method).toBe('POST');
+    expect(JSON.parse(sent)).toEqual({cardId:'card-server'});
+    expect(readLocalCvvMock).not.toHaveBeenCalled();
+  });
+
+  it('deletes card secrets only through the explicit DELETE boundary',async()=>{
+    let method='';let sent='';
+    vi.stubGlobal('fetch',vi.fn(async(_url:string,init?:RequestInit)=>{
+      method=String(init?.method||'');sent=String(init?.body||'');
+      return new Response(JSON.stringify({deleted:true}),{status:200,headers:{'content-type':'application/json'}});
+    }));
+    await expect(deleteCardSecret('card-delete')).resolves.toEqual({deleted:true});
+    expect(method).toBe('DELETE');
+    expect(JSON.parse(sent)).toEqual({cardId:'card-delete'});
   });
 
   it('reveals a legacy local CVV without silently uploading it to the server',async()=>{

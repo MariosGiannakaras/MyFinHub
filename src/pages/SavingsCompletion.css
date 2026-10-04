@@ -1,0 +1,4 @@
+@media(max-width:380px){.savings-action{grid-template-columns:38px minmax(0,1fr) 30px;gap:8px}.savings-action strong{width:30px;font-size:0;display:grid;place-items:center}.savings-action strong svg{width:16px;height:16px}.savings-action small{-webkit-line-clamp:3}}
+
+.savings-goals-more{width:100%;min-height:42px;margin-top:9px;justify-content:center}
+@media(max-width:680px){.savings-goals-more{min-height:44px}}

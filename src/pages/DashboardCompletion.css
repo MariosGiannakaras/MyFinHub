@@ -1,0 +1,18 @@
+.dashboard-mobile-disclosure{display:none}
+@media(min-width:681px) and (max-width:980px){
+  .dashboard-approved .approved-primary-grid{align-items:start!important;grid-auto-rows:max-content!important}
+  .dashboard-approved .approved-account-card{height:auto!important;min-height:180px!important;max-height:none!important;align-self:start!important}
+  .dashboard-approved .approved-account-body{height:auto!important;min-height:72px}
+  .dashboard-approved .approved-account-chart{height:auto!important;min-height:76px;max-height:none}
+  .dashboard-approved .approved-account-actions{align-self:end}
+}
+@media(max-width:980px){
+  .dashboard-approved .approved-bar-wrap{height:153px;min-height:153px}
+}
+@media(max-width:680px){
+  .dashboard-mobile-disclosure{display:flex;width:100%;min-height:44px;justify-content:center}
+  .dashboard-approved .approved-chart-grid.mobile-collapsed,.dashboard-approved .approved-kpi-strip.mobile-collapsed{display:none!important}
+}
+
+.dashboard-mobile-summary-donut{position:relative;width:72px;height:72px;flex:0 0 72px;border-radius:50%;box-shadow:inset 0 0 0 1px rgba(49,76,115,.08)}
+.dashboard-mobile-summary-donut::after{content:"";position:absolute;inset:15px;border-radius:50%;background:var(--surface)}

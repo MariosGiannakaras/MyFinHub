@@ -1,8 +1,10 @@
-import { StrictMode, useEffect, useState } from 'react';
+import { StrictMode, Suspense, lazy, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { AppShell, type PageId } from './components/AppShell';
 import { CommandPalette } from './components/CommandPalette';
 import { ContextualQuickAdd, type QuickActionContext } from './components/ContextualQuickAdd';
+import { ConfirmDialog } from './components/ConfirmDialog';
+import { DesktopAppLockGate } from './components/DesktopAppLockGate';
 import { PageSkeleton } from './components/AppSkeleton';
 import { PeriodControl } from './components/PeriodControl';
 import { LoginScreen } from './components/LoginScreen';
@@ -10,7 +12,8 @@ import { MfaScreen } from './components/MfaScreen';
 import { PageErrorBoundary } from './components/PageErrorBoundary';
 import { PersistenceNotice } from './components/PersistenceNotice';
 import type { QuickPrefill } from './components/QuickAdd';
-import { financeChangeLabel, type ChangeHistoryEntry, type SaveState } from './hooks/useFinance';
+import { financeChangeLabel, useFinance, type ChangeHistoryEntry, type SaveState } from './hooks/useFinance';
+import { useSession } from './hooks/useSession';
 import type { AttentionItem } from './lib/attention';
 import { archiveCardRecord, withCardProfileDeleted } from './lib/cards';
 import type { RankedCommandSearchItem } from './lib/commandSearch';
@@ -31,8 +34,65 @@ import { PlanningPage } from './pages/PlanningPage';
 import { AttentionPage } from './pages/AttentionPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { NotFoundPage } from './pages/NotFoundPage';
 import type { AttentionDecision, CardBank, EventKind, FinanceData, FinanceEvent, LegacyTransaction, Loan, MonthlyBudget, PaymentCard, RecurringItem, SavingsGoal, ScheduledTransaction, TextSizePreference, TransactionRule } from './types';
 import './styles.css';
+
+const QA_SESSION_SIGNAL_SCREEN=new URLSearchParams(location.search).get('screen')==='session-signal';
+if(QA_SESSION_SIGNAL_SCREEN){
+  const originalFetch=globalThis.fetch.bind(globalThis);
+  let mode:'authenticated'|'mfa'='authenticated';
+  (globalThis as typeof globalThis & {__myfinhubQaSessionMode?:(next:'authenticated'|'mfa')=>void}).__myfinhubQaSessionMode=(next)=>{mode=next};
+  globalThis.fetch=async(input:RequestInfo|URL,init?:RequestInit)=>{
+    const raw=typeof input==='string'?input:input instanceof URL?input.href:input.url;
+    const url=new URL(raw,location.href);
+    if(url.pathname==='/api/auth/session'){
+      const payload=mode==='mfa'
+        ?{authenticated:false,email:'qa@example.invalid',mfaRequired:true,mfaEnrollmentRequired:false}
+        :{authenticated:true,email:'qa@example.invalid',mfaRequired:false,mfaEnrollmentRequired:false};
+      return new Response(JSON.stringify(payload),{status:200,headers:{'content-type':'application/json'}});
+    }
+    return originalFetch(input,init);
+  };
+}
+
+const QA_PERSISTENCE_PROBE_SCREEN=new URLSearchParams(location.search).get('screen')==='persistence-probe';
+if(QA_PERSISTENCE_PROBE_SCREEN){
+  const originalFetch=globalThis.fetch.bind(globalThis);
+  const backend=qaFinanceData();
+  let mode:'success'|'offline'|'pending'='success';
+  let revision=1;
+  let putCount=0;
+  const control=globalThis as typeof globalThis & {
+    __myfinhubQaPersistenceMode?:(next:'success'|'offline'|'pending')=>void;
+    __myfinhubQaPersistencePutCount?:()=>number;
+  };
+  control.__myfinhubQaPersistenceMode=(next)=>{mode=next};
+  control.__myfinhubQaPersistencePutCount=()=>putCount;
+  const history=()=>({
+    available:true,generation:String(revision),financeRevision:String(revision),currentPointId:String(revision),
+    canUndo:false,canRedo:false,undoDepth:0,redoDepth:0,
+    points:[{id:String(revision),parentId:null,label:'QA persistence baseline',createdAt:'2026-08-17T12:00:00.000Z',current:true}],
+  });
+  globalThis.fetch=async(input:RequestInfo|URL,init?:RequestInit)=>{
+    const raw=typeof input==='string'?input:input instanceof URL?input.href:input.url;
+    const url=new URL(raw,location.href);
+    if(url.pathname==='/api/data'&&(!init?.method||init.method==='GET')){
+      return new Response(JSON.stringify({data:backend,revision:String(revision),filePath:'QA persistence backend',lastSavedAt:'2026-08-17T12:00:00.000Z'}),{status:200,headers:{'content-type':'application/json'}});
+    }
+    if(url.pathname==='/api/history'&&(!init?.method||init.method==='GET')){
+      return new Response(JSON.stringify(history()),{status:200,headers:{'content-type':'application/json'}});
+    }
+    if(url.pathname==='/api/data'&&init?.method==='PUT'){
+      putCount+=1;
+      if(mode==='offline')throw new TypeError('Synthetic offline finance save');
+      if(mode==='pending')return await new Promise<Response>(()=>{});
+      revision+=1;
+      return new Response(JSON.stringify({revision:String(revision),filePath:'QA persistence backend',lastSavedAt:'2026-08-17T12:00:01.000Z',history:history()}),{status:200,headers:{'content-type':'application/json'}});
+    }
+    return originalFetch(input,init);
+  };
+}
 
 const QA_PAGES:PageId[]=['dashboard','transactions','savings','cards','credit','loans','lending','recurring','planning','attention','reports','settings'];
 const QA_PAGE_HEADINGS:Record<PageId,string>={dashboard:'Οι λογαριασμοί μου',transactions:'Συναλλαγές',savings:'Αποταμίευση',cards:'Κάρτες',credit:'Πιστωτική Κάρτα',loans:'Δόσεις & Δάνεια',lending:'Δανεικά & επιστροφές',recurring:'Πάγια & Συνδρομές',planning:'Προγραμματισμός & πρόβλεψη ρευστότητας',attention:'Έλεγχος',reports:'Αναφορές · Η οικονομική εικόνα του μήνα',settings:'Ρυθμίσεις'};
@@ -41,22 +101,77 @@ type DistributiveOmit<T,K extends PropertyKey>=T extends unknown?Omit<T,K>:never
 type SpecialQuickContext=DistributiveOmit<Exclude<QuickActionContext,{mode:'generic'}>,'token'>;
 
 function Crash(): never { throw new Error('synthetic-render-failure'); }
+const QA_MISSING_LAZY_RESOURCE='/__myfinhub_missing_lazy_resource__.js';
+const LazyResourceFailure=lazy(async()=>{
+  await import(/* @vite-ignore */ QA_MISSING_LAZY_RESOURCE);
+  return {default:()=>null};
+});
 function initialSaveState(raw:string|null):SaveState{return raw==='error'||raw==='conflict'||raw==='saving'||raw==='loading'?raw:'saved'}
 function initialPage(raw:string|null):PageId{if(raw==='review')return 'attention';return QA_PAGES.includes(raw as PageId)?raw as PageId:'dashboard'}
 function initialTextSize(raw:string|null):TextSizePreference{return raw==='compact'||raw==='large'?raw:'normal'}
 function buildQaData(params:URLSearchParams){
   const next=qaFinanceData();
+  if(params.get('card-vault')==='ready')next.state.cards=(next.state.cards??[]).map(card=>card.id==='qa-debit-card'?{...card,last4:'4242',vaultRef:'qa-debit-card'}:card);
   if(params.get('motion')==='reduced')next.state.settings.motion='reduced';
   next.state.settings.textSize=initialTextSize(params.get('text'));
   next.state.budgets=next.state.budgets??[];next.state.transactionRules=next.state.transactionRules??[];next.state.deletedCards=next.state.deletedCards??[];
+  if(params.get('state')==='minimal'){
+    next.seed.transactions=next.seed.transactions.slice(0,1);next.seed.recurring=next.seed.recurring.slice(0,1);next.seed.loans=next.seed.loans.slice(0,1);next.seed.lending=next.seed.lending.slice(0,1);
+    const debit=(next.state.cards??[]).find(card=>card.kind!=='credit');const credit=(next.state.cards??[]).find(card=>card.kind==='credit');next.state.cards=[debit,credit].filter((card):card is PaymentCard=>Boolean(card));
+    const retainedCardIds=new Set((next.state.cards??[]).map(card=>card.id));
+    next.state.creditStatements=(next.state.creditStatements??[]).filter(statement=>retainedCardIds.has(statement.cardId)).slice(0,1);
+    const retainedStatementIds=new Set((next.state.creditStatements??[]).map(statement=>statement.id));
+    const compatibleEvents=(next.state.events??[]).filter(event=>(!event.cardId||retainedCardIds.has(event.cardId))&&(!event.statementId||retainedStatementIds.has(event.statementId)));
+    const onePerKind=compatibleEvents.filter((event,index,all)=>all.findIndex(item=>item.kind===event.kind)===index);
+    next.state.events=onePerKind.slice(0,8);next.state.scheduled=(next.state.scheduled??[]).slice(0,1);next.state.recurringCustom=(next.state.recurringCustom??[]).slice(0,1);next.state.customLoans=(next.state.customLoans??[]).slice(0,1);next.state.lendingCustom=(next.state.lendingCustom??[]).slice(0,1);
+    next.state.budgets=(next.state.budgets??[]).slice(0,1);next.state.savingsGoals=(next.state.savingsGoals??[]).slice(0,1);next.state.transactionRules=(next.state.transactionRules??[]).slice(0,1);
+  }
   if(params.get('state')==='empty'){
     next.seed.transactions=[];next.seed.recurring=[];next.seed.loans=[];next.seed.lending=[];next.seed.snapshots=next.seed.snapshots.map(snapshot=>({...snapshot,balances:{...snapshot.balances,'piraeus-payroll':1000,'piraeus-savings':1000,cash:1000}}));next.state.events=[];next.state.scheduled=[];next.state.recurringCustom=[];next.state.recurringOverrides={};next.state.customLoans=[];next.state.loanOverrides={};next.state.cards=[];next.state.deletedCards=[];next.state.cardBanks=[];next.state.reviewDecisions={};next.state.attentionDecisions={};next.state.budgets=[];next.state.savingsGoals=[];next.state.transactionRules=[];
   }
   if(params.get('state')==='extreme'){
     next.state.settings.accountNames={...next.state.settings.accountNames,'piraeus-payroll':'Κύριος λογαριασμός μισθοδοσίας με εξαιρετικά μεγάλο όνομα για έλεγχο διάταξης'};
-    next.state.events=[...(next.state.events??[]),...Array.from({length:36},(_,index)=>({id:`extreme-${index}`,date:`2026-08-${String((index%17)+1).padStart(2,'0')}`,kind:'expense' as const,amount:index===0?987654.32:10+index,note:index===0?'Πολύ μεγάλη περιγραφή συναλλαγής που ελέγχει αναδίπλωση κειμένου χωρίς να δημιουργεί οριζόντια κύλιση ή επικάλυψη στα κουμπιά και στα ποσά':'Επαναλαμβανόμενη δοκιμαστική κίνηση',category:'Σταθερά έξοδα',accountId:'piraeus-payroll',legs:[{accountId:'piraeus-payroll',amount:-(index===0?987654.32:10+index)}],source:'user' as const,createdAt:`2026-08-17T12:${String(index%60).padStart(2,'0')}:00.000Z`,updatedAt:`2026-08-17T12:${String(index%60).padStart(2,'0')}:00.000Z`}))];
+    next.state.events=[...(next.state.events??[]),...Array.from({length:36},(_,index)=>({id:`extreme-${index}`,date:`2026-08-${String((index%17)+1).padStart(2,'0')}`,kind:'expense' as const,amount:index===0?987654.32:10+index,note:index===0?'Πολύ μεγάλη περιγραφή συναλλαγής που ελέγχει αναδίπλωση κειμένου χωρίς να δημιουργεί οριζόντια κύλιση ή επικάλυψη στα κουμπιά και στα ποσά':index===1?`Unicode δοκιμή 👩🏽‍💻 Cafe\u0301 · «ειδικά» / σύμβολα — ${'Α'.repeat(180)}`:'Επαναλαμβανόμενη δοκιμαστική κίνηση',category:'Σταθερά έξοδα',accountId:'piraeus-payroll',legs:[{accountId:'piraeus-payroll',amount:-(index===0?987654.32:10+index)}],source:'user' as const,createdAt:`2026-08-17T12:${String(index%60).padStart(2,'0')}:00.000Z`,updatedAt:`2026-08-17T12:${String(index%60).padStart(2,'0')}:00.000Z`}))];
     next.state.recurringCustom=[...(next.state.recurringCustom??[]),...Array.from({length:18},(_,index)=>({id:`rec-extreme-${index}`,name:`Συνδρομή με μεγάλο όνομα ${index+1}`,amount:10+index,day:(index%28)+1,accountId:'piraeus-payroll',category:'Σταθερά έξοδα',active:true,status:'active' as const,source:'qa'}))];
     next.state.scheduled=[...(next.state.scheduled??[]),...Array.from({length:18},(_,index)=>({id:`scheduled-extreme-${index}`,dueDate:`2026-${String(8+Math.floor((index+1)/28)).padStart(2,'0')}-${String((index%27)+1).padStart(2,'0')}`,kind:'expense' as const,amount:index===0?123456.78:20+index,note:index===0?'Πολύ μεγάλη περιγραφή προγραμματισμένης πληρωμής για έλεγχο αναδίπλωσης χωρίς overlap στα actions και στο ποσό':`Προγραμματισμένη κίνηση ${index+1}`,category:'Σταθερά έξοδα',accountId:'piraeus-payroll',status:'pending' as const,createdAt:'2026-08-10T10:00:00.000Z',updatedAt:'2026-08-10T10:00:00.000Z'}))];
+  }
+  if(params.get('state')==='large'){
+    const stamp='2026-08-17T12:00:00.000Z';
+    next.state.events=[...(next.state.events??[]),...Array.from({length:1500},(_,index)=>({
+      id:`large-event-${String(index).padStart(4,'0')}`,
+      date:`2026-08-${String((index%28)+1).padStart(2,'0')}`,
+      kind:'expense' as const,
+      amount:1+(index%250)/10,
+      note:index===1499?'Large dataset unique search target':`Large dataset transaction ${index+1}`,
+      category:index%3===0?'Τρόφιμα':index%3===1?'Μετακινήσεις':'Σταθερά έξοδα',
+      accountId:'piraeus-payroll',
+      legs:[{accountId:'piraeus-payroll',amount:-(1+(index%250)/10)}],
+      source:'user' as const,createdAt:stamp,updatedAt:stamp,
+    }))];
+    next.state.recurringCustom=[...(next.state.recurringCustom??[]),...Array.from({length:120},(_,index)=>({
+      id:`large-recurring-${index}`,name:`Large recurring ${index+1}`,amount:5+(index%25),day:(index%28)+1,
+      accountId:'piraeus-payroll',category:'Σταθερά έξοδα',active:true,status:'active' as const,source:'qa',
+    }))];
+    next.state.scheduled=[...(next.state.scheduled??[]),...Array.from({length:120},(_,index)=>({
+      id:`large-scheduled-${index}`,dueDate:`2026-08-${String((index%28)+1).padStart(2,'0')}`,kind:'expense' as const,
+      amount:10+(index%40),note:`Large scheduled ${index+1}`,category:'Σταθερά έξοδα',accountId:'piraeus-payroll',
+      status:'pending' as const,createdAt:stamp,updatedAt:stamp,
+    }))];
+    const largeCategories=Array.from({length:80},(_,index)=>`QA Κατηγορία ${String(index+1).padStart(3,'0')}`);
+    next.state.settings.expenseCategories=[...new Set([...(next.state.settings.expenseCategories??[]),...largeCategories])];
+    next.state.settings.expenseCategoryTree=[
+      ...(next.state.settings.expenseCategoryTree??next.state.settings.expenseCategories.filter(name=>!largeCategories.includes(name)).map(name=>({name,subcategories:[]}))),
+      ...largeCategories.map(name=>({name,subcategories:[]})),
+    ];
+    next.state.budgets=[...(next.state.budgets??[]),...largeCategories.map((category,index)=>({
+      id:`large-budget-${index}`,month:'2026-08',scope:'category' as const,category,amount:100+(index%20)*5,
+      alertThreshold:.8,createdAt:stamp,updatedAt:stamp,
+    }))];
+    next.state.transactionRules=[...(next.state.transactionRules??[]),...Array.from({length:80},(_,index)=>({
+      id:`large-rule-${index}`,name:`Large rule ${index+1}`,enabled:true,priority:index,scopes:['manual' as const],
+      match:{description:`large-rule-token-${index}`,mode:'contains' as const},action:{category:largeCategories[index]},
+      createdAt:stamp,updatedAt:stamp,
+    }))];
   }
   if(params.get('state')==='overlimit')next.state.cards=(next.state.cards??[]).map(card=>card.kind==='credit'?{...card,creditLimit:100}:card);
   if(params.get('state')==='forecast-negative')next.state.scheduled=[...(next.state.scheduled??[]),{id:'qa-negative-forecast',dueDate:'2026-08-18',kind:'expense',amount:3000,note:'Μεγάλη γνωστή υποχρέωση',category:'Σταθερά έξοδα',accountId:'piraeus-payroll',status:'pending',createdAt:'2026-08-10T10:00:00.000Z',updatedAt:'2026-08-10T10:00:00.000Z'}];
@@ -72,14 +187,18 @@ function buildQaData(params:URLSearchParams){
 
 function QaWorkspace(){
   const params=new URLSearchParams(location.search);
+  const lazyFailure=params.get('failure')==='lazy';
   const [data,setData]=useState<FinanceData>(()=>buildQaData(params));
   const [undoStack,setUndoStack]=useState<FinanceData[]>([]);
   const [redoStack,setRedoStack]=useState<FinanceData[]>([]);
-  const [changeHistory,setChangeHistory]=useState<ChangeHistoryEntry[]>([]);
+  const [changeHistory,setChangeHistory]=useState<ChangeHistoryEntry[]>(()=>params.get('state')==='large'
+    ?Array.from({length:100},(_,index)=>({id:`qa-large-history-${index+1}`,kind:'change' as const,label:`Large history change ${index+1}`,at:`2026-08-17T${String(11-Math.floor(index/60)).padStart(2,'0')}:${String(59-index%60).padStart(2,'0')}:00.000Z`,current:index===0}))
+    :[]);
   const [saveState,setSaveState]=useState<SaveState>(()=>initialSaveState(params.get('save')));
   const [page,setPage]=useState<PageId>(()=>initialPage(params.get('page')));
   const [quickOpen,setQuickOpen]=useState(false);
   const [commandOpen,setCommandOpen]=useState(false);
+  const [recoverOpen,setRecoverOpen]=useState(false);
   const [quickContext,setQuickContext]=useState<QuickActionContext|null>(null);
   const [editing,setEditing]=useState<string|null>(null);
   const [crash,setCrash]=useState(false);
@@ -162,15 +281,85 @@ function QaWorkspace(){
 
   return <>
     <AppShell page={page} onPage={next=>{setCrash(false);setPage(next)}} onQuickAdd={()=>openGeneric()} onCommand={openCommand} onRefresh={refresh} onUndo={undo} onRedo={redo} canUndo={undoStack.length>0} canRedo={redoStack.length>0} history={changeHistory} saveState={saveState} filePath="Synthetic QA" motionMode={data.state.settings.motion||'system'} userEmail="qa@example.invalid" onLogout={()=>{}}>
-      <PersistenceNotice saveState={saveState} onRecover={()=>setSaveState('saved')}/>
+      <PersistenceNotice saveState={saveState} onRecover={()=>setRecoverOpen(true)}/>
       {periodVisible?<div className="period-row"><PeriodControl month={month} onChange={setMonth}/><button type="button" className="text-button" data-qa-crash onClick={()=>setCrash(true)}>QA render failure</button></div>:<button type="button" className="text-button qa-crash-floating" data-qa-crash onClick={()=>setCrash(true)}>QA render failure</button>}
-      {saveState==='loading'?<div className="qa-loading-route"><h1 className="sr-only">{QA_PAGE_HEADINGS[page]}</h1><PageSkeleton/></div>:<PageErrorBoundary resetKey={page} onDashboard={()=>{setCrash(false);setPage('dashboard')}}>{crash?<Crash/>:content}</PageErrorBoundary>}
+      {saveState==='loading'?<div className="qa-loading-route"><h1 className="sr-only">{QA_PAGE_HEADINGS[page]}</h1><PageSkeleton/></div>:<PageErrorBoundary resetKey={page} onDashboard={()=>{setCrash(false);setPage('dashboard')}}>{lazyFailure?<Suspense fallback={<PageSkeleton/>}><LazyResourceFailure/></Suspense>:crash?<Crash/>:content}</PageErrorBoundary>}
     </AppShell>
     <CommandPalette open={commandOpen} data={data} motionMode={data.state.settings.motion||'system'} onClose={()=>setCommandOpen(false)} onExecute={handleCommand}/>
     <ContextualQuickAdd open={quickOpen} data={data} asOf={today} context={quickContext} initial={(data.state.events??[]).find(event=>event.id===editing)||null} motionMode={data.state.settings.motion||'system'} onClose={()=>{setQuickOpen(false);setEditing(null);setQuickContext(null)}} onCreate={addEvent} onCompleteScheduled={completeScheduled} currentBalance={id=>accountBalances(data,today)[id]||0}/>
+    <ConfirmDialog open={recoverOpen} title="Φόρτωση τελευταίας αποθηκευμένης έκδοσης;" description="Η επαναφόρτωση θα απορρίψει τυχόν τοπικές αλλαγές που δεν αποθηκεύτηκαν και θα φορτώσει την τελευταία έκδοση από τη βάση." confirmLabel="Επαναφόρτωση" tone="destructive" motionMode={data.state.settings.motion||'system'} onConfirm={()=>{setRecoverOpen(false);setSaveState('saved')}} onCancel={()=>setRecoverOpen(false)}/>
   </>;
 }
 
-function QaApp(){const params=new URLSearchParams(location.search);const screen=params.get('screen');if(screen==='login')return <LoginScreen error={params.get('error')==='1'?'Τα στοιχεία σύνδεσης δεν είναι σωστά.':''} onLogin={async()=>false}/>;if(screen==='mfa'||screen==='mfa-enroll')return <MfaScreen mode={screen==='mfa-enroll'?'enroll':'challenge'} email="qa@example.invalid" error={params.get('error')==='1'?'Ο κωδικός επαλήθευσης δεν είναι σωστός.':''} onEnroll={async()=>({factorId:'qa-factor',qrCode:'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%22120%22/%3E',secret:'QA-ONLY-SECRET'})} onVerify={async()=>false} onLogout={async()=>{}}/>;return <QaWorkspace/>}
+function QaDesktopLockProbe(){
+  return <DesktopAppLockGate><main className="boot-screen" data-desktop-lock-probe="protected"><h1>MyFinHub Windows protected workspace</h1></main></DesktopAppLockGate>;
+}
 
-createRoot(document.getElementById('root')!).render(<StrictMode><QaApp/></StrictMode>);
+function QaPersistenceProbe(){
+  const finance=useFinance();
+  if(!finance.data)return <main className="boot-screen" data-persistence-probe="loading">Φόρτωση persistence probe…</main>;
+  const budget=finance.data.state.settings.monthlyBudget??0;
+  return <main className="boot-screen" data-persistence-probe="ready">
+    <h1>Persistence QA probe</h1>
+    <output data-persistence-state={finance.saveState}>{finance.saveState}</output>
+    <output data-persistence-budget={budget}>{budget}</output>
+    <button type="button" data-persistence-mutate onClick={()=>finance.update(current=>({...current,state:{...current.state,settings:{...current.state.settings,monthlyBudget:(current.state.settings.monthlyBudget??0)+1}}}))}>Synthetic finance change</button>
+    <button type="button" data-persistence-reload onClick={()=>{void finance.reload()}}>Reload persisted state</button>
+    <PersistenceNotice saveState={finance.saveState} errorMessage={finance.saveErrorMessage} onRecover={()=>{void finance.reload()}}/>
+  </main>;
+}
+
+function QaSessionSignalProbe(){
+  const session=useSession();
+  if(session.state==='loading')return <div className="boot-screen" data-session-probe="loading">Έλεγχος συνεδρίας…</div>;
+  if(session.state==='mfa'||session.state==='mfa-enroll')return <MfaScreen mode={session.state==='mfa-enroll'?'enroll':'challenge'} email={session.email} error={session.error} onEnroll={session.enrollMfa} onVerify={session.verifyMfa} onLogout={async()=>{await session.logout()}}/>;
+  if(session.state==='authenticated')return <main className="boot-screen" data-session-probe="authenticated"><h1>Authenticated QA shell</h1></main>;
+  return <LoginScreen onLogin={session.login} error={session.error}/>;
+}
+
+function QaAuthScreen({screen,legacyError}:{screen:string;legacyError:boolean}){
+  const loginErrors:Record<string,string>={
+    'login-error':'Τα στοιχεία σύνδεσης δεν είναι σωστά.',
+    'auth-unavailable':'Η υπηρεσία σύνδεσης δεν είναι διαθέσιμη προσωρινά. Δοκίμασε ξανά σε λίγο.',
+    'session-expired':'Η συνεδρία έληξε. Συνδέσου ξανά για να συνεχίσεις.',
+    'session-revoked':'Η πρόσβαση αυτής της συσκευής έχει ανακληθεί. Συνδέσου ξανά.',
+  };
+  if(screen==='login'||screen in loginErrors)return <LoginScreen error={screen==='login'&&legacyError?'Τα στοιχεία σύνδεσης δεν είναι σωστά.':loginErrors[screen]??''} onLogin={async()=>false}/>;
+  if(screen==='mfa'||screen==='mfa-error'||screen==='mfa-enroll'||screen==='mfa-enroll-error'){
+    const enroll=screen.startsWith('mfa-enroll');
+    const error=screen==='mfa-error'||(screen==='mfa'&&legacyError)
+      ?'Ο κωδικός επαλήθευσης δεν είναι σωστός.'
+      :screen==='mfa-enroll-error'
+        ?'Δεν ήταν δυνατή η έναρξη ρύθμισης Authenticator. Δοκίμασε ξανά.'
+        :'';
+    return <MfaScreen mode={enroll?'enroll':'challenge'} email="qa@example.invalid" error={error} onEnroll={async()=>({factorId:'qa-factor',qrCode:'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%22120%22/%3E',secret:'QA-ONLY-SECRET'})} onVerify={async()=>false} onLogout={async()=>{}}/>;
+  }
+  return null;
+}
+
+function QaApp(){
+  const params=new URLSearchParams(location.search);
+  const screen=params.get('screen')??'';
+  if(screen==='desktop-lock')return <QaDesktopLockProbe/>;
+  if(screen==='persistence-probe')return <QaPersistenceProbe/>;
+  if(screen==='session-signal')return <QaSessionSignalProbe/>;
+  if(screen==='404')return <NotFoundPage onHome={()=>{}} onBack={()=>{}}/>;
+  const auth=<QaAuthScreen screen={screen} legacyError={params.get('error')==='1'}/>;
+  if(screen.startsWith('login')||screen.startsWith('mfa')||screen==='auth-unavailable'||screen.startsWith('session-'))return auth;
+  return <QaWorkspace/>;
+}
+
+async function bootstrapQa(){
+  const params=new URLSearchParams(location.search);
+  if(params.get('desktop-titlebar')==='1'){
+    document.documentElement.dataset.myfinhubDesktop='true';
+    await import('./styles/desktop-titlebar.css');
+  }
+  if(params.get('screen')==='desktop-lock'){
+    document.documentElement.dataset.myfinhubDesktop='true';
+    await Promise.all([import('./components/DesktopAppLockGate.css'),import('./styles/desktop-titlebar.css')]);
+  }
+  createRoot(document.getElementById('root')!).render(<StrictMode><QaApp/></StrictMode>);
+}
+
+void bootstrapQa();

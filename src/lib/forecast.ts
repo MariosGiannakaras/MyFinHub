@@ -1,4 +1,5 @@
 import { accountBalances, allAccounts } from './domain.js';
+import { addCalendarDays } from './dateOnly.js';
 import { isSelfLoan, loanRemainingInstallments, typicalLoanPaymentDay } from './loans.js';
 import { activeRecurringItems, nextRecurringDate } from './recurring.js';
 import { addRecurringInterval } from './recurringCadence.js';
@@ -55,9 +56,7 @@ function utcDate(value: string) {
 }
 
 export function addDays(value: string, days: number) {
-  const date = utcDate(value);
-  date.setUTCDate(date.getUTCDate() + days);
-  return date.toISOString().slice(0, 10);
+  return addCalendarDays(value, days);
 }
 
 function buildMonthlyDate(year: number, monthIndex: number, day: number) {

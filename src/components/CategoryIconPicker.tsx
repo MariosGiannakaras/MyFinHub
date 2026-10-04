@@ -21,6 +21,7 @@ export function CategoryIconPicker({
   selectedPack,
   onPackChange,
   showPackSwitcher=true,
+  color,
 }:{
   value:string|null;
   onChange:(iconKey:string|null)=>void;
@@ -29,6 +30,7 @@ export function CategoryIconPicker({
   selectedPack?:CategoryIconPack;
   onPackChange?:(pack:CategoryIconPack)=>void;
   showPackSwitcher?:boolean;
+  color?:string|null;
 }){
   const decoded=decodeCategoryIconValue(value);
   const[localPack,setLocalPack]=useState<CategoryIconPack>(decoded.pack);
@@ -52,7 +54,7 @@ export function CategoryIconPicker({
     <div className="category-icon-options" role="group" aria-label={`Εικονίδια ${CATEGORY_ICON_PACKS.find(item=>item.id===pack)?.label??pack}`}>
       {options.map(option=>{
         const iconValue=encodeCategoryIconValue(pack,option.key);
-        return <button type="button" aria-pressed={value===iconValue} className={value===iconValue?'category-icon-option active':'category-icon-option'} key={option.key} onClick={()=>onChange(iconValue)}><CategoryIconGlyph iconKey={iconValue} size={18}/><span>{option.label}</span></button>;
+        return <button type="button" aria-pressed={value===iconValue} className={value===iconValue?'category-icon-option active':'category-icon-option'} key={option.key} onClick={()=>onChange(iconValue)}><CategoryIconGlyph iconKey={iconValue} color={color} size={18}/><span>{option.label}</span></button>;
       })}
     </div>
     {!options.length?<p className="empty-inline" role="status">Δεν υπάρχει ξεχωριστό εικονίδιο σε αυτό το pack για την αναζήτηση.</p>:null}

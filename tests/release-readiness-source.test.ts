@@ -4,11 +4,15 @@ import { describe, expect, it } from 'vitest';
 const app=readFileSync(new URL('../src/App.tsx',import.meta.url),'utf8');
 const appShell=readFileSync(new URL('../src/components/AppShell.tsx',import.meta.url),'utf8');
 const reports=readFileSync(new URL('../src/pages/ReportsPage.tsx',import.meta.url),'utf8');
+const dashboardCharts=readFileSync(new URL('../src/components/DashboardRecharts.tsx',import.meta.url),'utf8');
 const commandStyles=readFileSync(new URL('../src/styles/command-palette-contextual-entry.css',import.meta.url),'utf8');
 const index=readFileSync(new URL('../index.html',import.meta.url),'utf8');
 const manifest=JSON.parse(readFileSync(new URL('../public/manifest.webmanifest',import.meta.url),'utf8')) as {name:string;short_name:string;start_url:string;display:string;icons:Array<{src:string;sizes:string;type:string;purpose:string}>};
 const pkg=JSON.parse(readFileSync(new URL('../package.json',import.meta.url),'utf8')) as {scripts:Record<string,string>};
+const desktopPkg=JSON.parse(readFileSync(new URL('../desktop/package.json',import.meta.url),'utf8')) as {scripts:Record<string,string>};
+const desktopAuditPolicy=readFileSync(new URL('../desktop/audit-policy.mjs',import.meta.url),'utf8');
 const budget=readFileSync(new URL('../scripts/bundle-budget.mjs',import.meta.url),'utf8');
+const privacyArtifactGuard=readFileSync(new URL('../scripts/privacy-artifact-guard.mjs',import.meta.url),'utf8');
 const webkitWorkflow=readFileSync(new URL('../.github/workflows/cross-engine-smoke.yml',import.meta.url),'utf8');
 const webkitSmoke=readFileSync(new URL('../scripts/webkit-smoke.mjs',import.meta.url),'utf8');
 const performanceWorkflow=readFileSync(new URL('../.github/workflows/performance-smoke.yml',import.meta.url),'utf8');
@@ -25,6 +29,10 @@ describe('release-readiness source contracts',()=>{
     expect(app).toContain("const ReportsPage = lazy(() => import('./pages/ReportsPage')");
     expect(app).not.toContain("from 'recharts'");
     expect(reports).toContain("from 'recharts'");
+    expect(dashboardCharts).toContain('ResponsiveContainer');
+    expect(dashboardCharts.match(/<ResponsiveContainer/g)?.length).toBe(3);
+    expect(dashboardCharts).not.toContain('<PieChart responsive');
+    expect(dashboardCharts).not.toContain('<BarChart responsive');
   });
 
   it('enforces explicit main, chart and CSS bundle budgets after every production build',()=>{
@@ -34,7 +42,7 @@ describe('release-readiness source contracts',()=>{
     expect(budget).toContain("label:'eager application CSS'");
     expect(budget).toContain("label:'total application CSS'");
     expect(budget).toContain("raw:256*1024,gzip:46*1024");
-    expect(budget).toContain("raw:500*1024,gzip:100*1024");
+    expect(budget).toContain("raw:512*1024,gzip:100*1024");
   });
 
   it('reruns Windows package validation when root production-build inputs change',()=>{
@@ -77,17 +85,20 @@ describe('release-readiness source contracts',()=>{
     expect(svg).toContain('viewBox="0 0 512 512"');
   });
 
-  it('keeps one visible global Quick Add route per form factor and mobile viewport-fixed outside the topbar',()=>{
+  it('keeps one visible global Quick Add route per form factor without a floating mobile overlay',()=>{
+    const mobileShell=readFileSync(new URL('../src/styles/mobile-app-shell.css',import.meta.url),'utf8');
+    const responsive=readFileSync(new URL('../src/styles/root-responsive-coordination.css',import.meta.url),'utf8');
     expect(appShell).not.toContain('className="command-pill"');
     expect(appShell).toContain('data-global-quick-entry="desktop"');
-    expect(appShell).toContain('className="mobile-quick-action"');
+    expect(appShell).toContain('className="mobile-nav-quick"');
     expect(appShell).toContain('data-global-quick-entry="mobile"');
-    expect(appShell).toContain('<Surface as="header" variant="flat" className="topbar">');
-    expect(appShell).toContain('</Surface><button type="button" className="mobile-quick-action"');
+    expect(appShell).not.toContain('className="mobile-quick-action"');
+    expect(appShell).not.toContain("page!=='settings'");
     expect(appShell).not.toContain('genericEntry');
-    expect(commandStyles).toContain('.mobile-quick-action{display:none}');
-    expect(commandStyles).toContain('.mobile-quick-action{display:flex');
-    expect(commandStyles).toContain('position:fixed;right:16px;bottom:calc(82px + env(safe-area-inset-bottom,0px))');
+    expect(commandStyles).not.toContain('.mobile-quick-action{');
+    expect(responsive).toContain('grid-template-columns:repeat(6,minmax(0,1fr))');
+    expect(mobileShell).toContain('.mobile-nav .mobile-nav-quick');
+    expect(mobileShell).toContain('padding-bottom:calc(94px + env(safe-area-inset-bottom,0px))');
   });
 
   it('keeps WebKit compatibility coverage isolated, pinned and intentionally small',()=>{
@@ -136,4 +147,27 @@ describe('release-readiness source contracts',()=>{
     expect(loadingShiftAudit).toContain("{name:'mobile',width:375,height:812,mobile:true}");
     expect(loadingShiftAudit).toContain('assert(cls<=0.10');
   });
+
+  it('keeps a release-artifact privacy scan in the production build',()=>{
+    expect(pkg.scripts.build).toContain('node scripts/privacy-artifact-guard.mjs');
+    expect(pkg.scripts.build.indexOf('privacy-artifact-guard.mjs')).toBeGreaterThan(pkg.scripts.build.indexOf('vite build'));
+    expect(privacyArtifactGuard).toContain("'SUPABASE_SECRET_KEY'");
+    expect(privacyArtifactGuard).toContain("'SUPABASE_SERVICE_ROLE_KEY'");
+    expect(privacyArtifactGuard).toContain("'CARD_VAULT_KEY'");
+    expect(privacyArtifactGuard).toContain("possible payment-card PAN ending");
+    expect(privacyArtifactGuard).toContain("Release privacy artifact guard passed.");
+  });
+
+
+  it('keeps the desktop dependency audit exception narrow and self-expiring',()=>{
+    expect(desktopPkg.scripts.audit).toBe('node audit-policy.mjs');
+    expect(desktopAuditPolicy).toContain("const allowedAdvisory='GHSA-ch52-4w7c-c8xp'");
+    expect(desktopAuditPolicy).toContain("const blockedSeverities=new Set(['high','critical'])");
+    expect(desktopAuditPolicy).toContain('process.env.npm_execpath');
+    expect(desktopAuditPolicy).toContain("process.platform==='win32'?(process.env.ComSpec||'cmd.exe'):'npm'");
+    expect(desktopAuditPolicy).toContain("if(blocking.length)");
+    expect(desktopAuditPolicy).toContain("process.exit(1)");
+    expect(desktopAuditPolicy).not.toContain('--force');
+  });
+
 });

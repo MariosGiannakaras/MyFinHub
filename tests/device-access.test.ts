@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { accessTokenSessionId, ensureDeviceSessionAccess } from '../server/deviceSessionRegistry.js';
+import { parseDeviceSessionAction } from '../server/deviceSessionsHandler.js';
 import { ApiError } from '../server/http.js';
 
 const read=(path:string)=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
@@ -13,6 +14,19 @@ afterEach(()=>{
 });
 
 describe('connected device access',()=>{
+  it('accepts only exact device revoke payloads with canonical session ids',()=>{
+    const id='123e4567-e89b-42d3-a456-426614174000';
+    expect(parseDeviceSessionAction({action:'revoke',sessionId:id})).toEqual({action:'revoke',sessionId:id});
+    expect(parseDeviceSessionAction({action:'revoke-others'})).toEqual({action:'revoke-others'});
+    for(const value of [
+      {action:'revoke',sessionId:'not-a-uuid'},
+      {action:'revoke',sessionId:id,extra:true},
+      {action:'revoke-others',sessionId:id},
+      {action:'unknown'},
+      [],
+    ])expect(()=>parseDeviceSessionAction(value)).toThrow(ApiError);
+  });
+
   it('uses the canonical Supabase session_id claim as the device-session identity',()=>{
     const id='123e4567-e89b-42d3-a456-426614174000';
     expect(accessTokenSessionId(token({session_id:id,aal:'aal2'}))).toBe(id);
@@ -54,6 +68,25 @@ describe('connected device access',()=>{
     expect(migration).not.toMatch(/security\s+definer/i);
   });
 
+  it('hardens sensitive RLS to the current active device without blocking session bootstrap',()=>{
+    const migration=read('supabase/migrations/20260930062504_harden_active_device_sensitive_rls.sql');
+    const privateHelper=read('supabase/migrations/20260930062619_move_active_device_rls_helper_private.sql');
+    expect(migration).toContain('security definer');
+    expect(migration).toContain("coalesce(((select auth.jwt()) ->> 'session_id'), '')");
+    expect(migration).toContain('and (select public.myfinhub_session_is_active())');
+    expect(migration).toContain('rheomiq_card_secrets_owner_aal2_select');
+    expect(migration).toContain('rheomiq_account_metadata_owner_aal2_select');
+    expect(migration).toContain('and (select public.rheomiq_is_owner_aal2())');
+    expect(migration).toContain('if v_uid is null or not (select public.rheomiq_is_owner_aal2()) then');
+    const insertPolicy=migration.slice(migration.indexOf('create policy myfinhub_device_sessions_owner_insert'),migration.indexOf('create policy myfinhub_device_sessions_owner_update'));
+    expect(insertPolicy).not.toContain('myfinhub_session_is_active');
+    expect(privateHelper).toContain('create schema if not exists private');
+    expect(privateHelper).toContain('create or replace function private.myfinhub_session_is_active()');
+    expect(privateHelper).toContain('security definer');
+    expect(privateHelper).toContain('and (select private.myfinhub_session_is_active())');
+    expect(privateHelper).toContain('drop function if exists public.myfinhub_session_is_active()');
+  });
+
   it('uses only publishable-key plus user JWT and supports Android device metadata',()=>{
     const registry=read('server/deviceSessionRegistry.ts');
     expect(registry).toContain('SUPABASE_PUBLISHABLE_KEY');
@@ -78,8 +111,8 @@ describe('connected device access',()=>{
     expect(handler).toContain('isOwner(session.accessToken)');
     expect(handler).toContain("accessTokenAal(session.accessToken) !== 'aal2'");
     expect(handler).toContain('assertMutationSessionOrigin(req, session)');
-    expect(handler).toContain("body?.action === 'revoke'");
-    expect(handler).toContain("body?.action === 'revoke-others'");
+    expect(handler).toContain('parseDeviceSessionAction');
+    expect(handler).toContain("action.action==='revoke'");
     expect(route).toContain('handleDeviceSessionsRequest');
     expect(route).toContain("marker === 'devices'");
     expect(config.rewrites).toContainEqual({source:'/api/auth/devices',destination:'/api/auth/session?__myfinhub_route=devices'});
@@ -90,5 +123,8 @@ describe('connected device access',()=>{
     expect(ui).toContain('Συνδεδεμένες συσκευές');
     expect(ui).toContain('Αφαίρεση όλων των άλλων');
     expect(ui).toContain('Αυτή η συσκευή');
+    expect(ui).toContain("role={messageTone==='error'?'alert':'status'}");
+    expect(ui).toContain("aria-live={messageTone==='error'?'assertive':'polite'}");
+    expect(ui).toContain("role={message&&messageTone==='error'?'alert':undefined}");
   });
 });

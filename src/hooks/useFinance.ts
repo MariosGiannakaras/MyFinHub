@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ApiError, createBackup, importData, loadData, loadHistory, moveHistory, saveData, type HistoryEnvelope } from '../lib/api';
 import { describeFinanceChange } from '../lib/changeHistory';
-import { SequentialQueue, remoteRevisionAction } from '../lib/persistenceQueue';
+import { SequentialQueue, remoteRevisionAction, shouldWarnBeforeUnload } from '../lib/persistenceQueue';
 import { migrateProductData } from '../lib/productMigration';
+import { isSupportedFinanceSchemaVersion } from '../lib/schemaVersion';
 import type { FinanceData } from '../types';
 
 export type SaveState = 'loading' | 'saved' | 'saving' | 'error' | 'conflict';
@@ -36,6 +37,7 @@ export function useFinance() {
   const [filePath, setFilePath] = useState('');
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<SaveState>('loading');
+  const [saveErrorMessage,setSaveErrorMessage]=useState<string|null>(null);
   const [undoDepth, setUndoDepth] = useState(0);
   const [redoDepth, setRedoDepth] = useState(0);
   const [changeHistory,setChangeHistory]=useState<ChangeHistoryEntry[]>([]);
@@ -55,6 +57,13 @@ export function useFinance() {
 
   const assignData = useCallback((next: FinanceData | null) => { dataRef.current = next; setData(next); }, []);
   const setCurrentSaveState=useCallback((next:SaveState)=>{saveStateRef.current=next;setSaveState(next)},[]);
+  const saveFailureMessage=useCallback((error:unknown)=>{
+    if(error instanceof ApiError){
+      if(error.code==='NETWORK_TIMEOUT'||error.code==='NETWORK_ERROR'||error.code==='REQUEST_ABORTED')return error.message;
+      if(error.status===503||error.status===504)return 'Η υπηρεσία αποθήκευσης δεν είναι διαθέσιμη αυτή τη στιγμή. Η αλλαγή δεν επιβεβαιώθηκε ως αποθηκευμένη.';
+    }
+    return 'Η τελευταία αλλαγή δεν επιβεβαιώθηκε ως αποθηκευμένη. Έλεγξε τη σύνδεση και φόρτωσε την τελευταία αποθηκευμένη έκδοση πριν συνεχίσεις.';
+  },[]);
   const applyHistory=useCallback((history:HistoryEnvelope)=>{
     historyGenerationRef.current=history.generation;
     historyAvailableRef.current=history.available;
@@ -75,6 +84,7 @@ export function useFinance() {
     setFilePath(res.filePath);
     setLastSavedAt(res.lastSavedAt);
     lastSaveFailed.current = false;
+    setSaveErrorMessage(null);
   }, [assignData]);
 
   if (!coordinatorRef.current) {
@@ -88,19 +98,31 @@ export function useFinance() {
         setLastSavedAt(res.lastSavedAt);
         applyHistory(res.history);
         lastSaveFailed.current = false;
+        setSaveErrorMessage(null);
         channelRef.current?.postMessage({ type: 'revision', revision: res.revision } satisfies RevisionMessage);
       } catch (error) {
         lastSaveFailed.current = true;
-        if (error instanceof ApiError && (error.status === 409 || error.code === 'REVISION_CONFLICT' || error.code === 'HISTORY_CURSOR_CONFLICT')) setCurrentSaveState('conflict');
-        else setCurrentSaveState('error');
+        if (error instanceof ApiError && (error.status === 409 || error.code === 'REVISION_CONFLICT' || error.code === 'HISTORY_CURSOR_CONFLICT')) { setSaveErrorMessage(null); setCurrentSaveState('conflict'); }
+        else { setSaveErrorMessage(saveFailureMessage(error)); setCurrentSaveState('error'); }
         throw error;
       }
     });
   }
   const coordinator = coordinatorRef.current!;
 
+  useEffect(()=>{
+    const guardUnload = (event: BeforeUnloadEvent) => {
+      if(!shouldWarnBeforeUnload(coordinator.hasWork(),lastSaveFailed.current))return;
+      event.preventDefault();
+      event.returnValue='';
+    };
+    window.addEventListener('beforeunload',guardUnload);
+    return()=>window.removeEventListener('beforeunload',guardUnload);
+  },[coordinator]);
+
   const reload = useCallback(async () => {
     setCurrentSaveState('loading');
+    setSaveErrorMessage(null);
     try {
       for(let attempt=0;attempt<MAX_CONSISTENT_RELOAD_ATTEMPTS;attempt+=1){
         const nextData=await loadData();
@@ -119,11 +141,12 @@ export function useFinance() {
       }
       setCurrentSaveState('conflict');
       return false;
-    } catch {
+    } catch (error) {
+      setSaveErrorMessage(saveFailureMessage(error));
       setCurrentSaveState('error');
       return false;
     }
-  }, [applyDataEnvelope,applyHistory,setCurrentSaveState]);
+  }, [applyDataEnvelope,applyHistory,saveFailureMessage,setCurrentSaveState]);
 
   useEffect(() => {
     if(initialLoadStartedRef.current)return;
@@ -162,6 +185,7 @@ export function useFinance() {
   const persist = useCallback((next: FinanceData,label:string) => {
     const stamped = { ...next, app: 'RheomIQ', schemaVersion: 3, updatedAt: new Date().toISOString() };
     assignData(stamped);
+    setSaveErrorMessage(null);
     setCurrentSaveState('saving');
     coordinator.enqueue({data:stamped,label});
     const idle=coordinator.whenIdle();
@@ -198,18 +222,20 @@ export function useFinance() {
       return true;
     }catch(error){
       lastSaveFailed.current=true;
-      if(error instanceof ApiError&&(error.status===409||error.code==='REVISION_CONFLICT'||error.code==='HISTORY_CURSOR_CONFLICT'||error.code==='HISTORY_UNAVAILABLE'))setCurrentSaveState('conflict');
-      else setCurrentSaveState('error');
+      if(error instanceof ApiError&&(error.status===409||error.code==='REVISION_CONFLICT'||error.code==='HISTORY_CURSOR_CONFLICT'||error.code==='HISTORY_UNAVAILABLE')){setSaveErrorMessage(null);setCurrentSaveState('conflict')}
+      else{setSaveErrorMessage(saveFailureMessage(error));setCurrentSaveState('error')}
       return false;
     }finally{exclusiveOperation.current=false}
-  },[applyDataEnvelope,applyHistory,coordinator,redoDepth,setCurrentSaveState,undoDepth]);
+  },[applyDataEnvelope,applyHistory,coordinator,redoDepth,saveFailureMessage,setCurrentSaveState,undoDepth]);
 
   const undo=useCallback(()=>move('undo'),[move]);
   const redo=useCallback(()=>move('redo'),[move]);
 
   const doImport = useCallback(async (incoming: FinanceData) => {
     if (exclusiveOperation.current) throw new Error('Υπάρχει ήδη λειτουργία αποθήκευσης σε εξέλιξη.');
+    if (!isSupportedFinanceSchemaVersion(incoming.schemaVersion)) throw new Error('Το αρχείο δημιουργήθηκε από νεότερη ή μη υποστηριζόμενη έκδοση του MyFinHub και δεν μπορεί να εισαχθεί με ασφάλεια.');
     exclusiveOperation.current = true;
+    setSaveErrorMessage(null);
     setCurrentSaveState('saving');
     try {
       await coordinator.whenIdle();
@@ -223,14 +249,14 @@ export function useFinance() {
         channelRef.current?.postMessage({ type: 'revision', revision: res.revision } satisfies RevisionMessage);
       } catch (error) {
         lastSaveFailed.current = true;
-        if (error instanceof ApiError && (error.status === 409 || error.code === 'REVISION_CONFLICT' || error.code === 'HISTORY_CURSOR_CONFLICT')) setCurrentSaveState('conflict');
-        else setCurrentSaveState('error');
+        if (error instanceof ApiError && (error.status === 409 || error.code === 'REVISION_CONFLICT' || error.code === 'HISTORY_CURSOR_CONFLICT')) { setSaveErrorMessage(null); setCurrentSaveState('conflict'); }
+        else { setSaveErrorMessage(saveFailureMessage(error)); setCurrentSaveState('error'); }
         throw error;
       }
     } finally {
       exclusiveOperation.current = false;
     }
-  }, [applyDataEnvelope,applyHistory, coordinator,setCurrentSaveState]);
+  }, [applyDataEnvelope,applyHistory, coordinator,saveFailureMessage,setCurrentSaveState]);
 
   const doBackup = useCallback(async () => {
     await coordinator.whenIdle();
@@ -243,5 +269,5 @@ export function useFinance() {
   const canUndo = historyAvailable && undoDepth > 0 && saveState === 'saved' && !coordinator.hasWork();
   const canRedo = historyAvailable && redoDepth > 0 && saveState === 'saved' && !coordinator.hasWork();
 
-  return useMemo(() => ({ data, revision, filePath, lastSavedAt, saveState, update, reload, undo, redo, canUndo, canRedo, undoDepth, redoDepth, changeHistory, historyAvailable, importData: doImport, createBackup: doBackup }), [data, revision, filePath, lastSavedAt, saveState, update, reload, undo, redo, canUndo, canRedo, undoDepth, redoDepth, changeHistory, historyAvailable, doImport, doBackup]);
+  return useMemo(() => ({ data, revision, filePath, lastSavedAt, saveState, saveErrorMessage, update, reload, undo, redo, canUndo, canRedo, undoDepth, redoDepth, changeHistory, historyAvailable, importData: doImport, createBackup: doBackup }), [data, revision, filePath, lastSavedAt, saveState, saveErrorMessage, update, reload, undo, redo, canUndo, canRedo, undoDepth, redoDepth, changeHistory, historyAvailable, doImport, doBackup]);
 }

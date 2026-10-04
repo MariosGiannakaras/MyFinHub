@@ -13,10 +13,12 @@ import {
   financialProviderById,
   financialProviderId,
   financialProviderLabel,
+  type FinancialProvider,
   type BankAccountCategory,
   type CashAccountType,
 } from '../lib/financialProviders';
 import { formatIban, isValidIban, normalizeIban } from '../lib/iban';
+import { userErrorMessage } from '../lib/userMessage';
 import type { Account, FinanceData, FinanceSettings } from '../types';
 import { AppSelectInput } from './AppSelectInput';
 import { AppTextInput } from './AppTextInput';
@@ -56,9 +58,9 @@ function managedAccounts(data:FinanceData,settings:FinanceSettings):ProviderAcco
 
 function displayName(settings:FinanceSettings,account:Account){return settings.accountNames[account.id]?.trim()||account.name}
 function accountProviderId(account:ProviderAccount){return account.providerId?.trim()||financialProviderId(account.provider,account.id,account.name)}
-function accountProviderLabel(account:ProviderAccount){
+function accountProviderLabel(account:ProviderAccount,providers:FinancialProvider[]){
   const id=accountProviderId(account);
-  return id?financialProviderLabel(id):account.provider?.trim()||'Τραπεζικός λογαριασμός';
+  return id?(providers.find(provider=>provider.id===id)?.displayName??financialProviderLabel(id)):account.provider?.trim()||'Τραπεζικός λογαριασμός';
 }
 function inferBankCategory(account:ProviderAccount):BankAccountCategory{
   if(account.bankAccountCategory)return account.bankAccountCategory;
@@ -100,10 +102,10 @@ function accountReferenced(data:FinanceData,id:string){
   return false;
 }
 
-function AccountIcon({account}:{account:ProviderAccount}){
+function AccountIcon({account,providers}:{account:ProviderAccount;providers:FinancialProvider[]}){
   if(account.kind==='cash')return <span className="account-management-icon is-cash"><WalletCards/></span>;
   const providerId=accountProviderId(account);
-  return <span className="account-management-brand-icon"><BankBrandMark id={providerId||account.id} name={accountProviderLabel(account)}/></span>;
+  return <span className="account-management-brand-icon"><BankBrandMark id={providerId||account.id} name={accountProviderLabel(account,providers)}/></span>;
 }
 
 export function AccountManagementSettings({data,settings,onChange}:{data:FinanceData;settings:FinanceSettings;onChange:(next:FinanceSettings)=>void}){
@@ -218,7 +220,7 @@ export function AccountManagementSettings({data,settings,onChange}:{data:Finance
       onChange(next);
       setMessage(editor.source==='new'?'Ο λογαριασμός δημιουργήθηκε.':'Οι αλλαγές αποθηκεύτηκαν.');
       setEditor(null);
-    }catch{setEditorError('Δεν ήταν δυνατή η αποθήκευση του λογαριασμού. Δοκίμασε ξανά.')}
+    }catch(error){setEditorError(userErrorMessage(error,'Δεν ήταν δυνατή η αποθήκευση του λογαριασμού. Δοκίμασε ξανά.'))}
     finally{setBusy(false)}
   };
 
@@ -241,7 +243,7 @@ export function AccountManagementSettings({data,settings,onChange}:{data:Finance
       const next:FinanceSettings={...settings,customAccounts:remaining,accountNames:names,accountOverrides:overrides,excludedFromAvailable:(settings.excludedFromAvailable??[]).filter(item=>item!==id),defaultExpenseAccount:settings.defaultExpenseAccount===id?fallback:settings.defaultExpenseAccount,defaultIncomeAccount:settings.defaultIncomeAccount===id?fallback:settings.defaultIncomeAccount,defaultLoanAccount:settings.defaultLoanAccount===id?fallback:settings.defaultLoanAccount};
       if(metadata.records[id]?.iban)await saveAccountMetadata(id,'');
       onChange(next);setMessage('Ο λογαριασμός διαγράφηκε.');setPendingDelete(null);
-    }catch{setMessage('Δεν ήταν δυνατή η διαγραφή του λογαριασμού.')}
+    }catch(error){setMessage(userErrorMessage(error,'Δεν ήταν δυνατή η διαγραφή του λογαριασμού.'))}
     finally{setBusy(false)}
   };
 
@@ -253,7 +255,6 @@ export function AccountManagementSettings({data,settings,onChange}:{data:Finance
   const editorAccount=editor&&editor.source!=='new'?accounts.find(account=>account.id===editor.id):undefined;
   const editorDeletable=Boolean(editorAccount&&editor?.source==='custom'&&!accountReferenced(data,editor.id));
   const editorCanBeDefault=Boolean(editor&&(editor.mode==='cash'?editor.cashType!=='reserve':editor.bankAccountCategory!=='term'));
-  const selectedProvider=editor?.mode==='bank'?(providers.find(item=>item.id===editor.providerId)??financialProviderById(editor.providerId)):undefined;
 
   return <div className="account-management-settings settings-tab-stack settings-accounts-tab">
     <section className="panel surface-raised account-management-defaults">
@@ -275,10 +276,10 @@ export function AccountManagementSettings({data,settings,onChange}:{data:Finance
           const category=inferBankCategory(account);
           const defaultRoles=accountDefaultRoles(settings,account.id);
           return <div className="account-management-row" role="listitem" key={account.id}>
-            <AccountIcon account={account}/>
+            <AccountIcon account={account} providers={providers}/>
             <div className="account-management-copy">
               <div className="account-management-title-line"><b>{displayName(settings,account)}</b>{defaultRoles.length?<span className="account-management-default-badges" aria-label={`Προεπιλογές: ${defaultRoles.join(', ')}`}>{defaultRoles.map(role=><span className="account-management-default-badge" key={role}>{role}</span>)}</span>:null}</div>
-              {account.kind==='cash'?<span>{cashAccountTypeLabel(cashType)}{cashType==='reserve'?' · εκτός καθημερινής χρήσης':''}</span>:<span>{accountProviderLabel(account)} · {bankAccountCategoryLabel(category)}{iban?` · ${iban}`:''}</span>}
+              {account.kind==='cash'?<span>{cashAccountTypeLabel(cashType)}{cashType==='reserve'?' · εκτός καθημερινής χρήσης':''}</span>:<span>{accountProviderLabel(account,providers)} · {bankAccountCategoryLabel(category)}{iban?` · ${iban}`:''}</span>}
             </div>
             <div className="account-management-row-actions"><button type="button" className="account-management-edit" onClick={()=>openEdit(account)}><Pencil size={15}/> Επεξεργασία</button><IconButton type="button" className="danger-text" aria-label={`Διαγραφή ${displayName(settings,account)}`} title="Διαγραφή" onClick={()=>requestDelete(account)}><Trash2 size={16}/></IconButton></div>
           </div>;
@@ -294,8 +295,7 @@ export function AccountManagementSettings({data,settings,onChange}:{data:Finance
           {editor.source==='new'?<fieldset className="account-management-segment"><legend>1. Τύπος λογαριασμού</legend><div><button type="button" data-autofocus="true" className={editor.mode==='bank'?'active':''} aria-pressed={editor.mode==='bank'} onClick={event=>{event.currentTarget.focus();setMode('bank')}}><Landmark size={16}/> Τράπεζα</button><button type="button" className={editor.mode==='cash'?'active is-cash':''} aria-pressed={editor.mode==='cash'} onClick={event=>{event.currentTarget.focus();setMode('cash')}}><WalletCards size={16}/> Μετρητά</button></div></fieldset>:null}
 
           {editor.mode==='bank'?<>
-            {editor.source==='new'?<label className="account-management-field"><span>2. Τράπεζα / πάροχος</span><AppSelectInput className="account-management-select" aria-label="Τράπεζα ή πάροχος" value={editor.providerId} onChange={event=>setEditor({...editor,providerId:event.target.value})}><option value="">Επίλεξε τράπεζα</option>{providers.map(provider=><option key={provider.id} value={provider.id}>{provider.displayName}</option>)}</AppSelectInput></label>:null}
-            {selectedProvider?<div className="account-management-provider-preview" aria-label={`Επιλεγμένος πάροχος ${selectedProvider.displayName}`}><BankBrandMark id={selectedProvider.id} name={selectedProvider.displayName}/><div><b>{selectedProvider.displayName}</b><span>{selectedProvider.kindLabel}</span></div></div>:null}
+            <fieldset className="account-management-provider-picker"><legend>{editor.source==='new'?'2. Τράπεζα / πάροχος':'Τράπεζα / πάροχος'}</legend><div role="radiogroup" aria-label="Τράπεζα ή πάροχος">{providers.map(provider=><button type="button" role="radio" aria-checked={editor.providerId===provider.id} className={editor.providerId===provider.id?'active':''} key={provider.id} onClick={()=>setEditor({...editor,providerId:provider.id})}><BankBrandMark id={provider.id} name={provider.displayName}/><span><b>{provider.displayName}</b><small>{provider.kindLabel}</small></span></button>)}</div>{providerCatalog.error?<small className="account-management-provider-fallback" role="status">{providerCatalog.error}</small>:null}</fieldset>
             <label className="account-management-field"><span>{editor.source==='new'?'3. ':''}Κατηγορία λογαριασμού</span><AppSelectInput className="account-management-select" aria-label="Κατηγορία λογαριασμού" value={editor.bankAccountCategory} onChange={event=>setEditor({...editor,bankAccountCategory:event.target.value as BankAccountCategory})}>{BANK_ACCOUNT_CATEGORIES.map(category=><option key={category.id} value={category.id}>{category.label}</option>)}</AppSelectInput></label>
             <label className="account-management-field"><span>Όνομα λογαριασμού</span><AppTextInput data-autofocus={editor.source==='new'?undefined:'true'} value={editor.name} onChange={event=>setEditor({...editor,name:event.target.value})} placeholder="π.χ. Μισθοδοσία"/></label>
             <label className="account-management-field"><span>IBAN</span><AppTextInput inputMode="text" autoCapitalize="characters" autoCorrect="off" spellCheck={false} value={editor.iban} onChange={event=>setEditor({...editor,iban:event.target.value.toUpperCase()})} placeholder="GR16 0110 …"/></label>

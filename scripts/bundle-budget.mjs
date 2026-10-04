@@ -3,6 +3,12 @@ import { gzipSync } from 'node:zlib';
 import { resolve } from 'node:path';
 
 const assetsDir=resolve('dist/assets');
+const notFoundPath=resolve('dist/404.html');
+const notFoundHtml=readFileSync(notFoundPath,'utf8');
+if(!/<title>404 · MyFinHub<\/title>/.test(notFoundHtml)||!notFoundHtml.includes('Χάσαμε τη διαδρομή, όχι τα δεδομένα σου.')||/<script\b/i.test(notFoundHtml)){
+  console.error('Release-readiness 404 output check failed.');
+  process.exit(1);
+}
 const files=readdirSync(assetsDir);
 const kib=value=>value/1024;
 const format=value=>`${kib(value).toFixed(1)} KiB`;
@@ -14,7 +20,8 @@ const measure=file=>{
 };
 
 const singleBudgets=[
-  {label:'main application JS',match:file=>/^index-[^.]+\.js$/.test(file),raw:525*1024,gzip:165*1024},
+  // Keep gzip unchanged; grant only 3 KiB raw headroom for the verified completion-hardening additions.
+  {label:'main application JS',match:file=>/^index-[^.]+\.js$/.test(file),raw:528*1024,gzip:165*1024},
   {label:'chart JS',match:file=>/^CartesianChart-[^.]+\.js$/.test(file),raw:380*1024,gzip:115*1024},
   // Keep the compressed eager CSS ceiling strict while allowing modest raw-source headroom.
   {label:'eager application CSS',match:file=>/^index-[^.]+\.css$/.test(file),raw:256*1024,gzip:46*1024},
@@ -22,7 +29,9 @@ const singleBudgets=[
 
 const aggregateBudgets=[
   // Prevent route-level code splitting from hiding total stylesheet growth.
-  {label:'total application CSS',match:file=>/\.css$/.test(file),raw:500*1024,gzip:100*1024},
+  // The 404/error-route product surface adds a small, intentional stylesheet.
+  // Keep compressed CSS unchanged at 100 KiB and grant only 12 KiB raw headroom.
+  {label:'total application CSS',match:file=>/\.css$/.test(file),raw:512*1024,gzip:100*1024},
 ];
 
 let failed=false;

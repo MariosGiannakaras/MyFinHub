@@ -60,6 +60,24 @@ try{
   assert(await c.call("function(){return document.querySelector('.attention-page .privacy-toggle')?.getAttribute('aria-pressed')==='true'}"),'privacy toggle exposes values only on request');
   await noOverflow('attention desktop');await noUnnamed('attention desktop');await screenshot('action-center-desktop');
 
+  console.log('Action Center QA: legacy review keep semantics never mutate reports implicitly');
+  await clickText('.sidebar nav button','Αναφορές');
+  await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Αναφορές')}",'Reports before review decision');
+  const reportBeforeKeep=await c.call("function(){return (document.querySelector('.report-kpi-strip')?.textContent||'').replace(/\\s+/g,' ').trim()}");
+  assert(reportBeforeKeep.length>0,'report KPI baseline exists before review decision');
+  await clickText('.sidebar nav button','Έλεγχος');
+  await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Έλεγχος')}",'Attention before keep decision');
+  await clickText('.legacy-confirmation-toggle','Προβολή');
+  await waitFor("function(){return Boolean(document.querySelector('.legacy-confirmation-row'))}",'expanded legacy confirmation');
+  const keptReview=await c.call("function(){const row=document.querySelector('.legacy-confirmation-row');const title=(row?.querySelector('h3')?.textContent||'').trim();const button=[...row?.querySelectorAll('button')||[]].find(node=>(node.textContent||'').includes('Κράτα ως είναι'));button?.click();return {title,clicked:Boolean(button)}}");
+  assert(keptReview.clicked&&keptReview.title,'legacy review exposes Keep as-is decision');
+  await waitFor("function(title){return ![...document.querySelectorAll('.legacy-confirmation-row h3')].some(node=>(node.textContent||'').trim()===title)}",'kept review leaves pending list',[keptReview.title]);
+  await screenshot('action-center-review-kept');
+  await clickText('.sidebar nav button','Αναφορές');
+  await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Αναφορές')}",'Reports after keep decision');
+  const reportAfterKeep=await c.call("function(){return (document.querySelector('.report-kpi-strip')?.textContent||'').replace(/\\s+/g,' ').trim()}");
+  assert(reportAfterKeep===reportBeforeKeep,'Keep as-is preserves report KPIs and original transaction meaning');
+
   console.log('Action Center QA: exact recurring and loan deep actions');
   await navigate('attention');
   await clickAttention('recurring:rec-1');await waitModal('Πληρωμή παγίου');
@@ -116,6 +134,10 @@ try{
   await waitFor("function(id){return !document.querySelector(`[data-attention-id=\"${CSS.escape(id)}\"]`)}",'snoozed row removal',[snoozed]);
   const undone=await c.call("function(){const button=document.querySelector('.top-actions button[aria-label=\"Αναίρεση τελευταίας αλλαγής\"]');button?.click();return Boolean(button&&!button.disabled)}");assert(undone,'attention snooze exposes enabled undo');
   await waitFor("function(id){return Boolean(document.querySelector(`[data-attention-id=\"${CSS.escape(id)}\"]`))}",'snoozed row restored by undo',[snoozed]);
+  const dismissed=await c.call("function(){const row=[...document.querySelectorAll('.attention-row')].find(node=>!node.classList.contains('danger')&&Boolean(node.querySelector('button[aria-label^=\"Απόκρυψη\"]')));const button=row?.querySelector('button[aria-label^=\"Απόκρυψη\"]');const id=row?.getAttribute('data-attention-id');button?.click();return id||''}");assert(Boolean(dismissed),'non-danger item can be dismissed');
+  await waitFor("function(id){return !document.querySelector(`[data-attention-id=\"${CSS.escape(id)}\"]`)}",'dismissed row removal',[dismissed]);
+  const undoDismiss=await c.call("function(){const button=document.querySelector('.top-actions button[aria-label=\"Αναίρεση τελευταίας αλλαγής\"]');button?.click();return Boolean(button&&!button.disabled)}");assert(undoDismiss,'attention dismiss exposes enabled undo');
+  await waitFor("function(id){return Boolean(document.querySelector(`[data-attention-id=\"${CSS.escape(id)}\"]`))}",'dismissed row restored by undo',[dismissed]);
   await navigate('attention','empty');assert(await c.call("function(){return (document.querySelector('.attention-empty')?.textContent||'').includes('Δεν υπάρχει κάτι που χρειάζεται άμεση ενέργεια')}") ,'empty attention state');
   await navigate('attention','extreme',375,812);await noOverflow('attention mobile extreme');await noUnnamed('attention mobile extreme');await touchTargets('attention mobile extreme');await screenshot('action-center-mobile');
 

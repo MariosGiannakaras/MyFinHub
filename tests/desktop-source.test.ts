@@ -11,6 +11,11 @@ const desktopPackage = JSON.parse(read('desktop/package.json'));
 const bootstrap = read('desktop/bootstrap.cjs');
 const defaults = read('desktop/runtime-defaults.cjs');
 const main = read('desktop/main.cjs');
+const rendererMain = read('src/main.tsx');
+const qaRenderer = read('src/qa.tsx');
+const desktopTitlebar = read('src/styles/desktop-titlebar.css');
+const desktopTitlebarQa = read('scripts/desktop-titlebar-qa.mjs');
+const renderedRunner = read('scripts/run-rendered-qa.mjs');
 const preload = read('desktop/preload.cjs');
 const recovery = read('desktop/setup.html');
 const recoveryRenderer = read('desktop/setup-renderer.js');
@@ -39,6 +44,57 @@ describe('MyFinHub Windows desktop boundary', () => {
     expect(desktopPackage.main).toBe('bootstrap.cjs');
     expect(main).toContain("const PRODUCT_NAME = 'MyFinHub'");
     expect(main).toContain('title: PRODUCT_NAME');
+  });
+
+  it('integrates the app topbar with native Windows caption controls without a frameless reimplementation', () => {
+    const mainWindowBlock=mainBlock('function createWindow(origin, runtime)', 'function createSetupWindow()');
+    const setupWindowBlock=mainBlock('function createSetupWindow()', 'function sanitizedUpdateState()');
+    expect(mainWindowBlock).toContain("process.platform === 'win32'");
+    expect(mainWindowBlock).toContain("titleBarStyle: 'hidden'");
+    expect(mainWindowBlock).toContain('titleBarOverlay: true');
+    expect(mainWindowBlock).not.toContain('frame: false');
+    expect(setupWindowBlock).not.toContain("titleBarStyle: 'hidden'");
+    expect(setupWindowBlock).not.toContain('titleBarOverlay');
+
+    expect(rendererMain).toContain("document.documentElement.dataset.myfinhubDesktop='true'");
+    expect(rendererMain).toContain("import('./styles/desktop-titlebar.css')");
+    expect(read('src/styles.css')).not.toContain('desktop-titlebar.css');
+
+    expect(desktopTitlebar).toContain('html[data-myfinhub-desktop="true"] .topbar');
+    expect(desktopTitlebar).toContain('app-region:drag');
+    expect(desktopTitlebar).toContain('-webkit-app-region:drag');
+    expect(desktopTitlebar).toContain('app-region:no-drag');
+    expect(desktopTitlebar).toContain('-webkit-app-region:no-drag');
+    expect(desktopTitlebar).toContain('--desktop-shell-top-gutter:14px');
+    expect(desktopTitlebar).toContain('--desktop-shell-right-gutter:14px');
+    expect(desktopTitlebar).toContain('--desktop-window-controls-reserve:152px');
+    expect(desktopTitlebar).toContain('top:0');
+    expect(desktopTitlebar).toContain('height:calc(62px + var(--desktop-shell-top-gutter))');
+    expect(desktopTitlebar).toContain('margin-top:calc(-1 * var(--desktop-shell-top-gutter))');
+    expect(desktopTitlebar).toContain('margin-right:calc(-1 * var(--desktop-shell-right-gutter))');
+    expect(desktopTitlebar).toContain('padding-top:var(--desktop-shell-top-gutter)');
+    expect(desktopTitlebar).toContain('padding-right:calc(15px + var(--desktop-window-controls-reserve))');
+    expect(desktopTitlebar).toContain('border-radius:0 0 16px 16px');
+    expect(desktopTitlebar).toContain('.topbar button');
+    expect(desktopTitlebar).toContain('.topbar input');
+    expect(desktopTitlebar).toContain('.topbar [role="button"]');
+  });
+
+  it('renders desktop-only titlebar geometry and theme evidence in the isolated QA surface', () => {
+    expect(qaRenderer).toContain("params.get('desktop-titlebar')==='1'");
+    expect(qaRenderer).toContain("document.documentElement.dataset.myfinhubDesktop='true'");
+    expect(qaRenderer).toContain("import('./styles/desktop-titlebar.css')");
+    expect(desktopTitlebarQa).toContain("url.searchParams.set('desktop-titlebar','1')");
+    expect(desktopTitlebarQa).toContain("applyTheme('light')");
+    expect(desktopTitlebarQa).toContain("applyTheme('dark')");
+    expect(desktopTitlebarQa).toContain('document.documentElement.clientWidth');
+    expect(desktopTitlebarQa).toContain('scrollbarGutter');
+    expect(desktopTitlebarQa).toContain('actionReserve');
+    expect(desktopTitlebarQa).toContain('desktop-titlebar-light-1440');
+    expect(desktopTitlebarQa).toContain('desktop-titlebar-dark-1440');
+    expect(desktopTitlebarQa).toContain('desktop-titlebar-dark-960');
+    expect(renderedRunner).toContain("path:'scripts/desktop-titlebar-qa.mjs'");
+    expect(renderedRunner).toContain("key:'desktop-titlebar'");
   });
 
   it('keeps the renderer sandboxed and exposes only narrow recovery/update IPC', () => {
@@ -147,6 +203,22 @@ describe('MyFinHub Windows desktop boundary', () => {
     expect(workflow).toContain('Unknown publisher / SmartScreen');
     expect(workflow).toContain('Get-FileHash -Algorithm SHA256');
     expect(workflow).not.toContain('Signed desktop releases require');
+  });
+
+  it('validates native title-bar maximize, restore and resize states from the packaged Electron BrowserWindow', () => {
+    expect(main).toContain("const WINDOW_STATE_PROBE_PATH = String(process.env.MYFINHUB_WINDOW_STATE_PROBE_PATH || '').trim()");
+    expect(main).toContain('async function runWindowStateProbe(window)');
+    expect(main).toContain('window.maximize()');
+    expect(main).toContain('window.isMaximized()');
+    expect(main).toContain('window.unmaximize()');
+    expect(main).toContain('window.setSize(1100, 760)');
+    expect(main).toContain('result.size = window.getSize()');
+    expect(main).toContain("fs.writeFileSync(WINDOW_STATE_PROBE_PATH, JSON.stringify(result, null, 2)");
+    expect(workflow).toContain('$env:MYFINHUB_WINDOW_STATE_PROBE_PATH = $probePath');
+    expect(workflow).toContain('titlebar-window-state.json');
+    expect(workflow).toContain('Electron BrowserWindow title-bar states validated');
+    expect(workflow).not.toContain('MyFinHubWindowProbe');
+    expect(workflow).not.toContain('ShowWindowAsync');
   });
 
   it('installs, launches, verifies identity and uninstalls the real NSIS package in Windows CI', () => {

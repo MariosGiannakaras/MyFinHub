@@ -42,34 +42,95 @@ try{
   const packs=await c.call("function(){return [...document.querySelectorAll('.settings-icons-only .category-icon-pack-switcher-global button')].map(button=>({name:(button.querySelector('b')?.textContent||'').trim(),license:(button.querySelector('small')?.textContent||'').trim(),pressed:button.getAttribute('aria-pressed'),preview:[...button.querySelectorAll('[data-icon-pack]')].map(node=>node.getAttribute('data-icon-pack'))}))}");
   assert(packs.length===5,`expected five icon packs, got ${packs.length}`);
   assert(JSON.stringify(packs.map(item=>item.name))===JSON.stringify(['Lucide','Tabler Icons','Phosphor','Heroicons','Bootstrap Icons']),'pack order and labels');
-  assert(JSON.stringify(packs.map(item=>item.license))===JSON.stringify(['ISC','MIT','MIT','MIT','MIT']),'pack licenses');
+  assert(packs[0].license.startsWith('ISC')&&packs.slice(1).every(item=>item.license.startsWith('MIT')),'pack licenses');
+  assert(packs[0].license.includes('πλήρες semantic set'),'Lucide discloses full semantic coverage');
+  assert(packs[1].license.includes('14 διαθέσιμα')&&packs[2].license.includes('7 διαθέσιμα')&&packs[3].license.includes('5 διαθέσιμα')&&packs[4].license.includes('5 διαθέσιμα'),'curated packs disclose their actual distinct glyph counts');
   const expectedPackIds=['lucide','tabler','phosphor','heroicons','bootstrap'];
   assert(packs.every((item,index)=>item.preview.length===3&&item.preview.every(pack=>pack===expectedPackIds[index])),'each library preview is rendered only by its own pack');
   assert(packs[0].pressed==='true'&&packs.slice(1).every(item=>item.pressed==='false'),'Lucide is the default global pack');
   await waitFor("function(){return document.querySelectorAll('.settings-icons-only .category-icon-unified-category').length>=4}",'dense category list below pack selector');
   await waitFor("function(){return document.querySelectorAll('.settings-icons-only .category-icon-unified-subrow').length>=4}",'dense subcategory rows');
-  const automaticLucideTarget=await c.call("function(){const rows=[...document.querySelectorAll('.settings-icons-only .category-icon-unified-category .category-icon-unified-main')];const row=rows.find(item=>item.querySelector('[data-icon-pack=\"lucide\"]')&&(item.textContent||'').includes('Lucide · Αυτόματο'));if(!row)return false;row.setAttribute('data-qa-icon-pack-target','true');return true}");
-  assert(automaticLucideTarget,'at least one automatic row truthfully shows its actual Lucide semantic icon');
+  const targetLabel=await c.call("function(){const row=document.querySelector('.settings-icons-only .category-icon-unified-category .category-icon-unified-main');return (row?.querySelector('.category-icon-unified-copy b')?.textContent||'').trim()}");
+  assert(Boolean(targetLabel),'category target label exists');
+  const rowState=label=>c.call("function(label){const rows=[...document.querySelectorAll('.settings-icons-only .category-icon-unified-category .category-icon-unified-main')];const row=rows.find(item=>(item.querySelector('.category-icon-unified-copy b')?.textContent||'').trim()===label);const glyph=row?.querySelector('[data-icon-pack]');return row&&glyph?{pack:glyph.getAttribute('data-icon-pack'),key:glyph.getAttribute('data-category-icon'),text:row.textContent||'',color:getComputedStyle(glyph).color}:null}",[label]);
+  const openRow=async label=>{const ok=await c.call("function(label){const rows=[...document.querySelectorAll('.settings-icons-only .category-icon-unified-category .category-icon-unified-main')];const row=rows.find(item=>(item.querySelector('.category-icon-unified-copy b')?.textContent||'').trim()===label);row?.click();return Boolean(row)}",[label]);assert(ok,`category row ${label} opens`);await waitFor("function(){return Boolean(document.querySelector('.settings-icons-only [data-icon-selection-panel] .category-icon-picker'))}",'shared category icon picker')};
+  const closeEditor=async()=>{const close=await c.call("function(){const button=document.querySelector('.settings-icons-only .category-icon-selection-close');button?.click();return Boolean(button)}");assert(close,'icon editor close');await waitFor("function(){return !document.querySelector('.settings-icons-only [data-icon-selection-panel]')}",'icon editor close')};
+
+  const initial=await rowState(targetLabel);
+  assert(initial?.pack==='lucide',`initial category preview should be Lucide: ${JSON.stringify(initial)}`);
   await noOverflow('icons desktop');
   await screenshot('icon-packs-desktop');
 
   await clickText('.settings-icons-only .category-icon-pack-switcher-global button','Phosphor');
   await waitFor("function(){const button=[...document.querySelectorAll('.settings-icons-only .category-icon-pack-switcher-global button')].find(item=>(item.querySelector('b')?.textContent||'').trim()==='Phosphor');return button?.getAttribute('aria-pressed')==='true'}",'Phosphor selected');
-  const editorOpened=await c.call("function(){const button=document.querySelector('.settings-icons-only [data-qa-icon-pack-target=\"true\"]');if(!button)return false;button.click();return true}");
-  assert(editorOpened,'automatic Lucide category icon editor is available');
-  await waitFor("function(){return Boolean(document.querySelector('.settings-icons-only [data-icon-selection-panel] .category-icon-picker'))}",'shared category icon picker');
+  await waitFor("function(){const glyphs=[...document.querySelectorAll('.settings-icons-only .category-icon-unified-list [data-icon-pack]')];return glyphs.length>0&&glyphs.every(node=>node.getAttribute('data-icon-pack')==='phosphor')}",'taxonomy preview switches to Phosphor');
+  const automaticPhosphor=await rowState(targetLabel);
+  assert(automaticPhosphor?.pack==='phosphor'&&automaticPhosphor.text.includes('Phosphor · Αυτόματο'),`family switch must update row preview immediately: ${JSON.stringify(automaticPhosphor)}`);
+  await screenshot('icon-family-phosphor-preview-desktop');
+
+  await openRow(targetLabel);
   assert(!(await c.call("function(){return Boolean(document.querySelector('.settings-icons-only [data-icon-selection-panel] .category-icon-pack-switcher'))}")),'shared picker does not repeat the pack selector');
-  assert((await c.call("function(){return Boolean(document.querySelector('.settings-icons-only [data-icon-selection-panel] .category-icon-selection-close'))}")),'shared picker has an explicit close action');
-  assert((await c.call("function(){const text=document.querySelector('.settings-icons-only [data-icon-selection-panel] .category-icon-selection-head')?.textContent||'';return text.includes('Τρέχον: Lucide')&&text.includes('Επιλογές: Phosphor')}")),'selection panel distinguishes current icon pack from picker library');
   const optionPacks=await c.call("function(){return [...document.querySelectorAll('.settings-icons-only [data-icon-selection-panel] .category-icon-options [data-icon-pack]')].map(node=>node.getAttribute('data-icon-pack'))}");
   assert(optionPacks.length>0&&optionPacks.every(pack=>pack==='phosphor'),'every visible picker glyph is Phosphor');
-  await noOverflow('icons picker desktop');
-  await screenshot('icon-picker-phosphor-desktop');
+  const phosphorChoice=await c.call("function(){const buttons=[...document.querySelectorAll('.settings-icons-only [data-icon-selection-panel] .category-icon-options .category-icon-option')];const button=buttons[1]||buttons[0];const key=button?.querySelector('[data-category-icon]')?.getAttribute('data-category-icon')||'';button?.click();return key}");
+  assert(Boolean(phosphorChoice),'a Phosphor picker option can be selected');
+  await waitFor("function(label){const rows=[...document.querySelectorAll('.settings-icons-only .category-icon-unified-category .category-icon-unified-main')];const row=rows.find(item=>(item.querySelector('.category-icon-unified-copy b')?.textContent||'').trim()===label);return Boolean(row&&(row.textContent||'').includes('Phosphor · Προσαρμοσμένο'))}",'Phosphor selection stored',[targetLabel]);
 
-  const chosePhosphor=await c.call("function(){const button=document.querySelector('.settings-icons-only [data-icon-selection-panel] .category-icon-options .category-icon-option');if(!button)return false;button.click();return true}");
-  assert(chosePhosphor,'a Phosphor picker option can be selected');
-  await waitFor("function(){const row=document.querySelector('.settings-icons-only [data-qa-icon-pack-target=\"true\"]');return Boolean(row?.querySelector('[data-icon-pack=\"phosphor\"]')&&(row.textContent||'').includes('Phosphor · Προσαρμοσμένο'))}",'selected row adopts Phosphor');
-  await screenshot('icon-selected-phosphor-desktop');
+  const colorSet=await c.call("function(){const swatches=[...document.querySelectorAll('.settings-icons-only .category-icon-color-controls .color-swatch')];const button=swatches[4]||swatches[0];button?.click();return button?.getAttribute('aria-label')||''}");
+  assert(Boolean(colorSet),'color preset is selectable');
+  const colored=await rowState(targetLabel);
+  assert(colored&&colored.color!=='rgb(0, 0, 0)'&&colored.text.includes('χρώμα'),`selected color must update list preview: ${JSON.stringify(colored)}`);
+  await screenshot('icon-phosphor-custom-color-desktop');
+  await closeEditor();
+
+  await clickText('.settings-icons-only .category-icon-pack-switcher-global button','Lucide');
+  await waitFor("function(){const glyphs=[...document.querySelectorAll('.settings-icons-only .category-icon-unified-list [data-icon-pack]')];return glyphs.length>0&&glyphs.every(node=>node.getAttribute('data-icon-pack')==='lucide')}",'taxonomy preview switches back to Lucide');
+  await openRow(targetLabel);
+  const lucideChoice=await c.call("function(){const buttons=[...document.querySelectorAll('.settings-icons-only [data-icon-selection-panel] .category-icon-options .category-icon-option')];const button=buttons[2]||buttons[0];const key=button?.querySelector('[data-category-icon]')?.getAttribute('data-category-icon')||'';button?.click();return key}");
+  assert(Boolean(lucideChoice)&&lucideChoice!==phosphorChoice,'Lucide can keep a distinct selection from Phosphor');
+  await closeEditor();
+
+  await clickText('.settings-icons-only .category-icon-pack-switcher-global button','Phosphor');
+  await waitFor("function(){const glyphs=[...document.querySelectorAll('.settings-icons-only .category-icon-unified-list [data-icon-pack]')];return glyphs.length>0&&glyphs.every(node=>node.getAttribute('data-icon-pack')==='phosphor')}",'Phosphor restored');
+  const restored=await rowState(targetLabel);
+  assert(restored?.key===phosphorChoice,`switching back must restore the previous Phosphor choice: expected ${phosphorChoice}, got ${JSON.stringify(restored)}`);
+  assert(restored?.text.includes('χρώμα'),'category color remains independent of family switch');
+  await screenshot('icon-phosphor-choice-restored-desktop');
+
+  await clickText('.sidebar nav button','Dashboard');
+  await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Οι λογαριασμοί μου')}",'Dashboard after icon auto-save');
+  await clickText('.sidebar nav button','Ρυθμίσεις');
+  await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Ρυθμίσεις')}",'Settings after navigation');
+  await clickText('.settings-tablist button','Εικονίδια');
+  await waitFor("function(){const button=[...document.querySelectorAll('.settings-icons-only .category-icon-pack-switcher-global button')].find(item=>(item.querySelector('b')?.textContent||'').trim()==='Phosphor');return button?.getAttribute('aria-pressed')==='true'}",'persisted Phosphor family after navigation');
+  const persisted=await rowState(targetLabel);
+  assert(persisted?.key===phosphorChoice,`auto-saved pack choice must survive navigation: ${JSON.stringify(persisted)}`);
+  assert(persisted?.text.includes('χρώμα'),'auto-saved category color survives navigation');
+
+  assert(targetLabel==='Τρόφιμα',`fixture category expected Τρόφιμα, got ${targetLabel}`);
+  await clickText('.sidebar nav button','Συναλλαγές');
+  await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Συναλλαγές')}",'Transactions after icon auto-save');
+  const searchSet=await c.call("function(){const input=document.querySelector('input[aria-label=\"Αναζήτηση συναλλαγών\"]');if(!input)return false;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')?.set;setter?.call(input,'Freddo espresso');input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));return true}");
+  assert(searchSet,'transaction search is available for icon adoption proof');
+  await waitFor("function(){return [...document.querySelectorAll('[data-transaction-kind]')].some(row=>row.getClientRects().length>0&&(row.textContent||'').includes('Freddo espresso'))}",'Freddo transaction visible');
+  const transactionVisual=await c.call("function(){const row=[...document.querySelectorAll('[data-transaction-kind]')].find(node=>node.getClientRects().length>0&&(node.textContent||'').includes('Freddo espresso'));const icon=row?.querySelector('.finance-icon');const glyph=icon?.querySelector('[data-icon-pack]');return icon&&glyph?{source:icon.getAttribute('data-icon-source'),key:icon.getAttribute('data-icon-key'),pack:glyph.getAttribute('data-icon-pack'),color:getComputedStyle(glyph).color}:null}");
+  assert(transactionVisual?.source==='category-preference',`transaction should use persisted explicit category icon: ${JSON.stringify(transactionVisual)}`);
+  assert(transactionVisual?.key===phosphorChoice&&transactionVisual?.pack==='phosphor',`transaction should render persisted Phosphor icon: ${JSON.stringify(transactionVisual)}`);
+  assert(transactionVisual?.color===persisted?.color,`transaction should render persisted category color: settings ${persisted?.color}, transaction ${transactionVisual?.color}`);
+
+  await clickText('.sidebar nav button','Ρυθμίσεις');
+  await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Ρυθμίσεις')}",'Settings after transaction icon proof');
+  await clickText('.settings-tablist button','Εικονίδια');
+  await waitFor("function(){return Boolean(document.querySelector('.settings-icons-only .category-icon-assignment-workspace'))}",'icons workspace restored');
+
+  await c.send('Emulation.setDeviceMetricsOverride',{width:375,height:812,deviceScaleFactor:1,mobile:true});
+  await noOverflow('icons mobile');
+  await openRow(targetLabel);
+  const mobileGeometry=await c.call("function(){const panel=document.querySelector('.settings-icons-only [data-icon-selection-panel]');const r=panel?.getBoundingClientRect();const swatches=[...document.querySelectorAll('.settings-icons-only .category-icon-color-controls button')].map(node=>node.getBoundingClientRect());return r?{left:r.left,right:r.right,viewport:innerWidth,targets:swatches.map(x=>({w:x.width,h:x.height}))}:null}");
+  assert(mobileGeometry&&mobileGeometry.left>=0&&mobileGeometry.right<=mobileGeometry.viewport+1,`mobile icon editor escapes viewport: ${JSON.stringify(mobileGeometry)}`);
+  assert(mobileGeometry.targets.every(target=>target.h>=40),`mobile icon color targets too small: ${JSON.stringify(mobileGeometry.targets)}`);
+  await screenshot('icon-family-color-mobile');
+
 
   assert(runtimeErrors.length===0,`runtime exceptions: ${runtimeErrors.join(' | ')}`);
   assert(failedRequests.length===0,`network loading failures: ${failedRequests.join(' | ')}`);

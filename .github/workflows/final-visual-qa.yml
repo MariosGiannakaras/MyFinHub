@@ -48,7 +48,7 @@ jobs:
           export MYFINHUB_FINAL_SCREENSHOTS=1
           npm run qa:final-screenshots
           COUNT="$(find visual-qa/final -type f -name '*.png' | wc -l | tr -d ' ')"
-          if [ "$COUNT" -ne 63 ]; then echo "Expected 63 final PNGs, found $COUNT."; exit 1; fi
+          if [ "$COUNT" -ne 216 ]; then echo "Expected 216 final PNGs, found $COUNT."; exit 1; fi
           EXTRA="$(find visual-qa -type f ! -path 'visual-qa/final/*' -print -quit)"
           if [ -n "$EXTRA" ]; then echo "Unexpected non-final visual evidence: $EXTRA"; exit 1; fi
       - name: Persist only final screenshots

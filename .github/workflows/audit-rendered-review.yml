@@ -1,0 +1,74 @@
+name: Audit Rendered Review
+
+on:
+  push:
+    branches:
+      - feat/476-completion-audit-hardening
+    paths:
+      - '.audit/run-rendered-review'
+
+permissions:
+  contents: read
+
+jobs:
+  rendered-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci --prefer-offline --no-audit --no-fund
+      - name: Start Vite
+        run: |
+          npm run dev:web > /tmp/myfinhub-vite.log 2>&1 &
+          echo $! > /tmp/myfinhub-vite.pid
+          ready=0
+          for attempt in {1..30}; do
+            if curl --fail --silent --show-error http://127.0.0.1:5173/qa.html > /dev/null; then ready=1; break; fi
+            sleep 1
+          done
+          if [ "$ready" -ne 1 ]; then cat /tmp/myfinhub-vite.log; exit 1; fi
+      - name: Configure Chromium
+        run: |
+          PRIMARY_BROWSER="$(command -v chromium || command -v chromium-browser || true)"
+          FALLBACK_BROWSER="$(command -v google-chrome || true)"
+          if [ -z "$PRIMARY_BROWSER" ]; then echo "Chromium is required."; exit 1; fi
+          echo "MYFINHUB_QA_PRIMARY_BROWSER=$PRIMARY_BROWSER" >> "$GITHUB_ENV"
+          echo "MYFINHUB_QA_FALLBACK_BROWSER=$FALLBACK_BROWSER" >> "$GITHUB_ENV"
+          echo "MYFINHUB_QA_REQUIRE_PRIMARY=1" >> "$GITHUB_ENV"
+          mkdir -p /tmp/myfinhub-qa-browser-bin
+          cat > /tmp/myfinhub-qa-browser-bin/google-chrome <<'BROWSER_WRAPPER'
+          #!/usr/bin/env bash
+          browser="${MYFINHUB_QA_PRIMARY_BROWSER}"
+          if [ "${MYFINHUB_QA_USE_FALLBACK:-0}" = "1" ] && [ "${MYFINHUB_QA_REQUIRE_PRIMARY:-0}" != "1" ] && [ -n "${MYFINHUB_QA_FALLBACK_BROWSER:-}" ]; then browser="${MYFINHUB_QA_FALLBACK_BROWSER}"; fi
+          exec "$browser" --disable-dev-shm-usage "$@"
+          BROWSER_WRAPPER
+          chmod +x /tmp/myfinhub-qa-browser-bin/google-chrome
+          echo "/tmp/myfinhub-qa-browser-bin" >> "$GITHUB_PATH"
+      - name: Build application
+        run: npm run build
+      - name: Run rendered frontend QA
+        run: npm run qa:frontend
+      - name: Capture final screenshot matrix
+        run: npm run qa:final-screenshots
+      - name: Upload assistant review evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: assistant-rendered-review-${{ github.sha }}
+          path: |
+            .qa-artifacts/visual/**/*.png
+            .qa-artifacts/visual/**/*.json
+            visual-qa/final/**/*.png
+            visual-qa/final/**/*.json
+            /tmp/myfinhub-*-qa/*.png
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Stop Vite
+        if: always()
+        run: |
+          if [ -f /tmp/myfinhub-vite.pid ]; then kill "$(cat /tmp/myfinhub-vite.pid)" || true; fi

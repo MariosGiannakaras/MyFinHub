@@ -1,16 +1,17 @@
 import type { FinanceData } from '../src/types.js';
+import { isValidDateOnly, isValidDateStamp } from '../src/lib/dateOnly.js';
 import { ApiError } from './http.js';
 
 function invalid():never{throw new ApiError(400,'INVALID_DATA','The finance data is invalid.');}
 function text(value:unknown,max:number){return typeof value==='string'&&value.length>0&&value.length<=max;}
 function billingDay(value:unknown){return Number.isInteger(value)&&Number(value)>=1&&Number(value)<=31;}
-function isoDate(value:unknown){return typeof value==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(value);}
+function isoDate(value:unknown){return isValidDateOnly(value);}
 
 export function validateCardStateExtensions(state:FinanceData['state']){
   for(const card of state.cards??[]){
     if(card.formFactor!==undefined&&!['physical','virtual'].includes(String(card.formFactor)))invalid();
     if(card.designId!==undefined&&!text(card.designId,200))invalid();
-    if(card.archivedAt!==undefined&&!text(card.archivedAt,64))invalid();
+    if(card.archivedAt!==undefined&&!isValidDateStamp(card.archivedAt))invalid();
     if(card.creditLimit!==undefined&&(!Number.isFinite(Number(card.creditLimit))||Number(card.creditLimit)<0))invalid();
     if(card.statementClosingDay!==undefined&&!billingDay(card.statementClosingDay))invalid();
     if(card.statementDueDay!==undefined&&!billingDay(card.statementDueDay))invalid();
@@ -28,7 +29,7 @@ export function validateCardStateExtensions(state:FinanceData['state']){
   for(const deleted of state.deletedCards??[]){
     if(!deleted||typeof deleted!=='object'||Array.isArray(deleted))invalid();
     if(Object.keys(deleted).some(key=>!['id','kind','createdAt','deletedAt'].includes(key)))invalid();
-    if(!text(deleted.id,200)||deleted.kind!=='credit'||!text(deleted.createdAt,64)||!text(deleted.deletedAt,64))invalid();
+    if(!text(deleted.id,200)||deleted.kind!=='credit'||!isValidDateStamp(deleted.createdAt)||!isValidDateStamp(deleted.deletedAt))invalid();
     if(cardsById.has(deleted.id)||deletedCardIds.has(deleted.id))invalid();
     deletedCardIds.add(deleted.id);
   }
@@ -41,7 +42,7 @@ export function validateCardStateExtensions(state:FinanceData['state']){
     if(Object.keys(statement).some(key=>!['id','cardId','openDate','closeDate','dueDate','boundaryRule','createdAt','updatedAt'].includes(key)))invalid();
     if(!text(statement.id,300)||!text(statement.cardId,200)||!isoDate(statement.openDate)||!isoDate(statement.closeDate)||!isoDate(statement.dueDate))invalid();
     if(statement.openDate>statement.closeDate||statement.dueDate<=statement.closeDate)invalid();
-    if(!['include-closing-day','next-cycle'].includes(String(statement.boundaryRule))||!text(statement.createdAt,64)||!text(statement.updatedAt,64))invalid();
+    if(!['include-closing-day','next-cycle'].includes(String(statement.boundaryRule))||!isValidDateStamp(statement.createdAt)||!isValidDateStamp(statement.updatedAt))invalid();
     if(statementsById.has(statement.id))invalid();
     const card=cardsById.get(statement.cardId);if(card&&card.kind!=='credit')invalid();
     if(!card&&!deletedCardIds.has(statement.cardId))invalid();
