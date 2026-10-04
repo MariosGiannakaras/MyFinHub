@@ -1,3 +1,6 @@
+.loan-completed-status{display:inline-flex;align-items:center;gap:4px;margin-top:3px}
+.loan-history-list,.loan-history-empty{margin-top:10px}
+
 /* Owner-approved Loans desktop target. Presentation only; loan accounting and handlers stay canonical. */
 @media (min-width:1100px){
   .loan-toolbar{

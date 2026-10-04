@@ -2284,3 +2284,38 @@ Audit Rendered Review `37221467371` on `8843a42f1a6dd22155e313339f25c5035b69b169
 - The one-shot audit trigger is advanced so the corrected ordering regenerates the final rendered evidence while PR #477 remains draft.
 
 Status: **source-fixed; exact-head Audit Rendered Review plus ordinary CI/CodeQL validation pending.** Completion counters remain **Implementations 17/24 completed · Sub-implementations 164/197 completed**.
+
+
+### 8.110 FV-85 — Audit workflow source-regression literal mismatch — source-fixed, rerun pending
+
+CI `37222682109` on `9f6d129c284fc2c4601b99b7b96e99fef8dba8d9` passed hygiene and reached 176 passing test files / 1003 passing tests before one newly added source assertion failed.
+
+- The ordering assertions already proved `Build application` exists and precedes `Start Vite`.
+- The failed assertion expected the nonexistent single-line literal `run: npm run dev:web`, while the workflow correctly uses `run: |` and contains `npm run dev:web > /tmp/myfinhub-vite.log 2>&1 &`.
+- Remediation changes only the source regression to assert the actual shell command substring; workflow behavior remains unchanged.
+
+Status: **source-fixed; ordinary CI rerun pending.** No completion credit is taken from the failed CI run.
+
+
+### 8.111 FV-86 — large-data readiness 5162 ms / 5000 ms — rerun required without threshold change
+
+Audit Rendered Review `37222673110` on `9f6d129…` proved FV-84 fixed: Receipt OCR passed completely after build/sync-before-Vite ordering. The coordinator later failed only because one large-state route measured 5162 ms against the existing <5000 ms readiness contract.
+
+- `scripts/large-data-boundaries-qa.mjs` is byte-identical to the prior green review-ready `65ddeca…` head, and no product route code in that measurement surface changed in the FV-83/FV-84 batches.
+- The single miss occurred near the end of a long parallel Chromium coordinator and exceeded the contract by 162 ms (3.24%). This is insufficient evidence for a product regression or threshold change.
+- The 5000 ms assertion remains unchanged. The exact next coherent head must rerun the same large-data proof. Only repeated failure will justify deeper contention/product profiling.
+
+Status: **open evidence blocker; fresh exact-head rendered rerun required.**
+
+
+### 8.112 FV-87 — residual static JSX presentation ownership — source-fixed, rendered proof pending
+
+The completed TSX inventory distinguished state/data-driven inline parameters from static presentation rules. A small residual static set remained in AppShell Change History, shared SortDirectionControl, Loans history, Dashboard KPI/sparkline and Transactions actions/filter wrappers.
+
+- Static geometry is moved into existing owner stylesheets only; no new CSS layer is introduced.
+- Change History uses `durable-history-controls.css`; shared sort geometry uses `ui-hardening-foundations.css`; Loans uses `loans-approved-target.css`; Dashboard uses `dashboard-approved-target.css`; Transactions uses `transactions-approved.css`.
+- Existing rendered dimensions are preserved: sort buttons remain 42 px, mobile transaction actions remain 44 px, filter wrappers remain `display:contents`, and the Dashboard budget hit area remains an absolute full-card target.
+- Runtime-driven inline values remain intentionally allowed: progress widths, chart/category swatches, drag/delete transforms, state-derived CSS variables and dynamic donut backgrounds.
+- `final-ui-reuse-audit-source.test.ts` now locks the static ownership boundary and rejects recurrence of these exact inline patterns.
+
+Status: **source-fixed; CI/CodeQL + one-shot Audit Rendered Review pending.** The owner-mandated 8.12 source/design-system audit remains open until this proof is green and directly reviewed.

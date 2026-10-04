@@ -68,7 +68,7 @@ describe('rendered browser QA reliability contract', () => {
     expect(viteIndex).toBeGreaterThan(-1);
     expect(buildIndex).toBeLessThan(viteIndex);
     expect(auditRenderedWorkflow).toContain('run: npm run build');
-    expect(auditRenderedWorkflow).toContain('run: npm run dev:web');
+    expect(auditRenderedWorkflow).toContain('npm run dev:web > /tmp/myfinhub-vite.log');
   });
 
   it('parallelizes independent rendered suites while serializing shared fixed CDP ports',()=>{

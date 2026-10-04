@@ -70,3 +70,7 @@
 }
 
 @media(max-width:380px){.dashboard-approved .approved-account-chart{display:block;left:44%}.dashboard-approved .approved-balance{font-size:25px}.dashboard-approved .savings-legend{font-size:7px;gap:4px}.dashboard-approved .approved-category-layout{grid-template-columns:1fr}.dashboard-approved .approved-category-donut{display:none}.dashboard-approved .approved-kpi-strip{grid-template-columns:1fr}.dashboard-approved .approved-category-table{height:140px}}
+
+.dashboard-approved .dashboard-sparkline .comparison-line{stroke:#8fc3fa;stroke-width:1.4;opacity:.88}
+.dashboard-approved .dashboard-budget-kpi{position:relative}
+.dashboard-approved .dashboard-budget-kpi-hitarea{position:absolute;inset:0;border:0;background:transparent;cursor:pointer}

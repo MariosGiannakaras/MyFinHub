@@ -65,6 +65,46 @@ describe('final UI reuse and orphan audit',()=>{
     expect(rootCompat.indexOf("@import './transaction-split-editor.css';")).toBeGreaterThan(rootCompat.indexOf("@import './visual-polish-overrides.css';"));
   });
 
+  it('keeps audited static presentation geometry out of JSX while allowing runtime-driven inline values',()=>{
+    const shell=read('src/components/AppShell.tsx');
+    const sort=read('src/components/SortDirectionControl.tsx');
+    const loans=read('src/pages/LoansPage.tsx');
+    const dashboard=read('src/pages/DashboardPage.tsx');
+    const transactions=read('src/pages/TransactionsPage.tsx');
+    const historyCss=read('src/styles/durable-history-controls.css');
+    const sharedCss=read('src/styles/ui-hardening-foundations.css');
+    const loanCss=read('src/styles/loans-approved-target.css');
+    const dashboardCss=read('src/styles/dashboard-approved-target.css');
+    const transactionCss=read('src/styles/transactions-approved.css');
+
+    expect(shell).toContain('change-history-dialog');
+    expect(shell).not.toContain("style={{gridTemplateRows:'auto auto minmax(0,1fr) auto'}}");
+    expect(shell).not.toContain("style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) auto'");
+    expect(historyCss).toContain('.change-history-dialog{grid-template-rows:auto auto minmax(0,1fr) auto}');
+    expect(historyCss).toContain('.change-history-dialog .history-row{display:grid;');
+
+    expect(sort).not.toContain('style={{ minHeight: 42 }}');
+    expect(sharedCss).toContain('.sort-direction-control button{');
+    expect(sharedCss).toContain('min-height:42px');
+
+    expect(loans).toContain('className="loan-completed-status"');
+    expect(loans).toContain('className="loan-list loan-history-list"');
+    expect(loans).not.toContain("style={{marginTop:10}}");
+    expect(loanCss).toContain('.loan-history-list,.loan-history-empty{margin-top:10px}');
+
+    expect(dashboard).toContain('className="comparison-line"');
+    expect(dashboard).toContain('className="dashboard-budget-kpi" data-budget-panel');
+    expect(dashboard).toContain('className="dashboard-budget-kpi-hitarea"');
+    expect(dashboard).not.toContain("style={{position:'relative'}}");
+    expect(dashboardCss).toContain('.dashboard-approved .dashboard-budget-kpi-hitarea{position:absolute;');
+
+    expect(transactions).toContain('className="transaction-mobile-action"');
+    expect(transactions).toContain('transaction-filter-pass-through');
+    expect(transactions).not.toContain("style={{minHeight:44}}");
+    expect(transactions).not.toContain("style={{display:'contents'}}");
+    expect(transactionCss).toContain('.transactions-approved-filters .transaction-filter-pass-through{display:contents}');
+    expect(transactionCss).toContain('.transactions-approved .mobile-row-actions .transaction-mobile-action{min-height:44px}');
+  });
   it('has no orphaned production component modules',()=>{
     const allSource=walk('src',/\.(?:ts|tsx)$/);
     const referenced=new Set<string>();
