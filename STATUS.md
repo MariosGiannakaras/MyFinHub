@@ -49,7 +49,7 @@ Release-closeout tracker: **#288 — complete**.
 
 ## Active completion batch — #476
 
-**Implementations 15/24 completed · Sub-implementations 151/195 completed**
+**Implementations 16/24 completed · Sub-implementations 152/195 completed**
 
 - The completion definition has been expanded by the owner to a full-system verification matrix. Existing implementation findings remain tracked, but final closeout now requires direct assistant-led manual review plus UI/UX/accessibility, routing/404, every supported user mutation, real-stack persistence/backend proof, exhaustive failure handling, security/privacy, temporal/data-boundary coverage, operational recovery and canonical post-merge validation.
 
@@ -222,3 +222,5 @@ Subsequent changes are product fixes against the completed v1.3.0 baseline. Rout
 - Vercel branded HTTP 404 is source-fixed on the completion branch: `vercel.json` now has a terminal `/(.*) -> /404.html` rewrite with `statusCode:404` after all API aliases; a dedicated source regression locks ordering/body privacy, and Production Smoke now requires real unknown deployed paths to return branded `text/html` with HTTP 404. Current production is still old `main`, so 8.14 remains runtime-proof pending. Counters stay **Implementations 15/24 completed · Sub-implementations 151/195 completed**.
 
 - Draft CI #3273 for the Vercel branded HTTP 404 batch failed only because two older source tests required the unknown-API rewrite to be the final array element. The API fallback itself is unchanged; both tests now require `/api/(.*)` to exist before the terminal branded web-404 rewrite instead. New 404 routing tests already passed in #3273. Counters remain **15/24 · 151/195** pending rerun.
+
+- 8.14 Vercel/HTTP routing proof is completed. Validated source `154f722a…` passed CI #3274 and CodeQL #3223. Owner-approved preview deployment `dpl_CPjne4Gbd7xiE6CjTbsP8AjyE9qs` (`target:null`) proved branded `text/html` HTTP 404 for an unknown web path, root HTTP 200, and JSON `API_NOT_FOUND` HTTP 404 for an unknown API path. No production promotion/alias occurred. The temporary feature-branch deployment toggle is removed in the same closure checkpoint. Current counters: **Implementations 16/24 completed · Sub-implementations 152/195 completed**.

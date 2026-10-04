@@ -8,7 +8,7 @@ Release target: none — `main` remains release-only
 
 ## Current integration checkpoint — 2026-10-03
 
-**Implementations 15/24 completed · Sub-implementations 151/195 completed**
+**Implementations 16/24 completed · Sub-implementations 152/195 completed**
 
 This checkpoint supersedes older "#482 reconciliation pending" notes below for current execution state.
 
@@ -21,7 +21,7 @@ This checkpoint supersedes older "#482 reconciliation pending" notes below for c
 - FV-44 is completed on `9b25fb1…`: extreme Recurring mobile progressive disclosure, full expansion, collapsed inactive history and overflow safety all pass.
 - FV-45 exact-head rendered proof has passed: OCR persists raw `EUR`, while the owned currency select displays `EUR · Ευρώ`; stored semantics and visible presentation are validated separately. The expanded full-system audit below now governs closeout.
 - FV-54 completed on `b602617…`: the local/Windows static host preloads `index.html` and `404.html` once at startup instead of performing `sendFile()` filesystem access per document request; exact-head CodeQL #3125 is green and the prior rate-limiting review threads are resolved. No dependency, API, finance, Supabase or Android behavior changed.
-- Current counters: **Implementations 15/24 completed · Sub-implementations 151/195 completed**. Exact-head CI #3216 on `74bdc0c…` passed the complete primary-Chromium rendered coordinator, all source/API checks and npm audits; CodeQL #3169, Cross-engine #2342, Performance #2377, Windows Desktop #2775, Windows First Run #1326 and Windows Clean Launch #1327 are also green on the same source head. Direct review of the corrected focused 404 Light/Dark 200%-equivalent evidence closes the manual 404 cell and the broader readability/theme/reduced-motion cell. Final Visual #98 persisted 216 captures in screenshot-only commit `2f918176…` with manifest source `74bdc0c…`. PR #477 is returned to draft for the next implementation/proof batch so documentation/source churn does not retrigger every expensive gate.
+- Current counters: **Implementations 16/24 completed · Sub-implementations 152/195 completed**. Exact-head CI #3216 on `74bdc0c…` passed the complete primary-Chromium rendered coordinator, all source/API checks and npm audits; CodeQL #3169, Cross-engine #2342, Performance #2377, Windows Desktop #2775, Windows First Run #1326 and Windows Clean Launch #1327 are also green on the same source head. Direct review of the corrected focused 404 Light/Dark 200%-equivalent evidence closes the manual 404 cell and the broader readability/theme/reduced-motion cell. Final Visual #98 persisted 216 captures in screenshot-only commit `2f918176…` with manifest source `74bdc0c…`. PR #477 is returned to draft for the next implementation/proof batch so documentation/source churn does not retrigger every expensive gate.
 - CI #3193 follow-up: all source/unit checks plus CodeQL, Cross-engine, Performance and Windows gates passed, while rendered CI stopped in the provider replacement flow after the newly added Save step entered an unstubbed QA provider-write path. The harness now owns a deterministic synthetic PATCH/upload/binding success backend and updates the shared QA provider snapshot before cross-surface refresh assertions. This is a QA-only source fix; counters remain unchanged until exact-head rendered proof passes.
 - Exact-head validation follow-up on `b2c2b0bc…`: CI #3176 exposed FV-57, a real 144 px horizontal overflow on Savings at the 720×500 / Large-text 200%-equivalent profile. Windows Desktop #2736 is separately blocked by the upstream `http-cache-semantics` GHSA-2026 advisory in the `electron-builder` build-time chain; the other exact-head gates (CodeQL, Cross-engine, Performance, Windows First Run and Windows Clean Launch) passed. These two findings are tracked in 8.47 and do not change the denominator.
 - Audit verification checkpoint 2026-10-02: 10 additional sub-implementations are directly closed by assistant review/evidence. Unsupported-future-schema handling remains open under the existing backwards-compatibility item; it does not expand the denominator.
@@ -836,14 +836,14 @@ The owner's definition of "checked" means personally inspected and reasoned abou
 - [ ] After each material fix, personally re-check the affected UI/flow/backend behavior instead of considering a rerun of the same automation sufficient.
 - [ ] The final closeout statement must be based on direct review of the evidence set and must explicitly name any residual unverified area; no blanket "all good" conclusion is allowed when evidence is incomplete.
 
-### 8.14 Routing, deep links and 404/error-page product behavior — 9/10
+### 8.14 Routing, deep links and 404/error-page product behavior — 10/10
 
 Current source already contains an authenticated hash-route `NotFound` screen for unknown `#/<route>` values. It is intentionally privacy-safe, but it is minimal and does not by itself prove correct behavior for unknown real HTTP paths. The desktop server currently falls back to `index.html` for any non-API GET after static-file lookup, while Vercel has no explicit SPA catch-all or custom HTTP 404 contract. This must be treated as a distinct product surface.
 
 - [x] Verify every valid hash route, the legacy `#/review` redirect, direct-load behavior, refresh and authenticated deep-link restoration. Direct assistant source review confirms initial routing is derived from `location.hash`, the legacy review route is replaced with `#/attention`, valid navigation uses deterministic page hashes, and refresh/direct load rehydrates from the current hash; exact-head CI covers the routing contract.
 - [x] Verify unknown/malformed hash routes produce the intended MyFinHub 404 surface and do not silently land on Dashboard. Direct assistant review confirms unknown hashes set `notFound=true` while preserving Dashboard only as an internal fallback page id; malformed/encoded/script-like fragments remain 404 and never render finance data.
 - [x] Verify browser Back/Forward history across routes, 404 → valid route recovery, and focus restoration to the destination heading. Direct assistant review confirms push/replace state navigation, hashchange+popstate synchronization, dedicated 404 Back/Dashboard recovery and explicit focus restoration to the destination H1 / 404 title.
-- [ ] Verify real unknown HTTP paths on Vercel/production-like web hosting return an intentional MyFinHub experience with an appropriate HTTP status rather than a platform-generic page or silent Dashboard fallback. **Source-fixed, deployed proof pending:** `vercel.json` now appends a terminal rewrite from `/(.*)` to the existing privacy-safe `/404.html` with `statusCode:404`, after all API compatibility rewrites. Vercel's documented routing contract gives filesystem/static resources precedence before rewrites, so real assets/index/functions remain reachable while terminal web misses get branded HTML with an actual 404. A source regression locks ordering/status/body semantics, and Production Smoke now requires an unknown deployed path to return 404 + `text/html` + MyFinHub 404 copy. Current production remains old `main`; this cell cannot close until deployment/runtime evidence proves the new route.
+- [x] Verify real unknown HTTP paths on Vercel/production-like web hosting return an intentional MyFinHub experience with an appropriate HTTP status rather than a platform-generic page or silent Dashboard fallback. **Completed by owner-approved manual preview proof.** Validated routing source `154f722a…` had CI #3274 + CodeQL #3223 PASS. A temporary deployment-only commit `567b9b4…` changed only `git.deploymentEnabled` for `feat/476-completion-audit-hardening` and produced Vercel preview deployment `dpl_CPjne4Gbd7xiE6CjTbsP8AjyE9qs` (`target:null`, no promotion/production alias). Read-only preview probes proved: `/__myfinhub-unknown-route-probe` returns HTTP 404, `content-type: text/html; charset=utf-8`, branded `404 · MYFINHUB` and privacy-safe Greek copy with the expected security headers; `/` remains HTTP 200; `/api/__myfinhub-unknown-api-probe` remains JSON HTTP 404 with `code: API_NOT_FOUND`. The temporary branch deployment toggle is removed in this closure commit; normal non-main deployment suppression is restored.
 - [x] Verify unknown HTTP paths in the local/Windows desktop server do not silently become Dashboard unless that is an explicitly accepted SPA contract. Direct assistant review confirms only `/` and `/index.html` serve the app shell; all other non-API GET paths return `404.html` with HTTP 404.
 - [x] Verify missing static assets/chunks/images return the correct failure response and are not incorrectly served `index.html` with status 200 by a broad catch-all. Direct assistant review confirms `express.static(...,{index:false})` runs before the terminal 404 and the previous broad `index.html` fallback is absent; missing asset paths therefore terminate at HTTP 404 rather than the app shell.
 - [x] Verify unknown/unsupported API routes and methods remain JSON API failures with correct 404/405 semantics and can never fall through into the HTML application shell. Direct assistant review confirms known local API routes have explicit 405 fallbacks, unknown local `/api/*` routes hit JSON `API_NOT_FOUND` before static serving, and Vercel's final `/api/(.*)` rewrite reuses the health handler to return the same JSON 404 contract.
@@ -1826,7 +1826,7 @@ The production read-only probe previously returned Vercel's generic `text/plain`
 - Extend `Production Smoke` so the first deployed production candidate must prove unknown path = HTTP 404, `text/html`, `404 · MYFINHUB` marker and privacy-safe Greek copy. This specifically distinguishes the intended app-owned 404 from the current platform-generic `text/plain` response.
 - No production deployment is performed by this source batch; Git deployment remains `main`-only.
 
-Status: **source-fixed; draft/core validation pending, deployed runtime proof still required.** Counters remain **Implementations 15/24 completed · Sub-implementations 151/195 completed**.
+Status: **completed with real Vercel preview runtime proof.** Draft CI #3274 and CodeQL #3223 passed on validated routing source `154f722a…`. The owner-approved preview `dpl_CPjne4Gbd7xiE6CjTbsP8AjyE9qs` then proved branded HTML HTTP 404, root HTTP 200 and unknown-API JSON HTTP 404. No production alias/promotion occurred, and the one-off branch deployment enablement is removed immediately after proof.
 
 
 ### 8.73 CI #3273 — stale unknown-API last-rewrite assertion — fixed, proof pending
@@ -1839,3 +1839,19 @@ Draft CI #3273 on `0b623c96…` passed hygiene and the new Vercel 404 routing re
 - No routing/product/API behavior changed in this follow-up; only the regression contract now matches the accepted two-tier API-then-web fallback ordering.
 
 Status: **test-maintenance fixed; draft core proof pending.** Counters remain **Implementations 15/24 completed · Sub-implementations 151/195 completed**.
+
+
+### 8.74 Vercel preview runtime proof — completed
+
+The owner explicitly approved a one-off Vercel preview because 8.14 could not be proven by source/local hosting alone and automatic non-main deployments are intentionally disabled.
+
+- Validated functional routing source: `154f722a175a277357e4c549a219e416ca9547ad` with draft CI #3274 PASS and CodeQL #3223 PASS.
+- Final Visual #102 persisted only screenshot evidence after that source; manifest provenance remains `154f722a…`.
+- Temporary preview-enablement commit: `567b9b4ba3e912974515900ae0d45e1b4a6d0a36`, whose only functional difference is the one-off branch entry under `git.deploymentEnabled`.
+- Vercel deployment: `dpl_CPjne4Gbd7xiE6CjTbsP8AjyE9qs`, state READY, `target:null`, branch `feat/476-completion-audit-hardening`; no production promotion/alias assignment was performed.
+- Unknown web-path probe: HTTP 404 + `text/html; charset=utf-8` + `404 · MYFINHUB` + `Χάσαμε τη διαδρομή, όχι τα δεδομένα σου.` + privacy/security response headers.
+- Root sanity probe: HTTP 200 HTML.
+- Unknown API sanity probe: HTTP 404 JSON with `code: API_NOT_FOUND` and `cache-control: no-store`, proving the terminal branded web fallback does not steal the API error boundary.
+- This closure commit removes the temporary feature-branch deployment enablement and restores the repo rule that only `main` deploys automatically.
+
+Status: **8.14 = 10/10 completed.** Overall checkpoint advances to **Implementations 16/24 completed · Sub-implementations 152/195 completed**. Production `main` remains unchanged; the preview was verification-only.
