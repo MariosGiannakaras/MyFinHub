@@ -12,7 +12,7 @@ Release target: none — `main` remains release-only
 
 This checkpoint supersedes older "#482 reconciliation pending" notes below for current execution state.
 
-- Latest current checkpoint: Real Stack E2E #32 (`37202963311`) is green on exact head `569fc011e0b76596d844bff138279f053a5e6c00`; CI #3310 and CodeQL #3259 are green on the same head. Direct review of artifact `11303338775` accepts Planning, Budgets and Rules hard-reload persistence: the completed scheduled item, €777 overall budget and `Rule Applied` transaction are readable and contained with no material clipping/overlap. The broad 8.5/8.10 every-domain cells remain open, so current progress stays **Implementations 17/24 completed · Sub-implementations 164/196 completed**. PR #477 remains draft while the next zero-cost real-stack/canonical-tree batches are built; expensive review-ready gates remain deferred.
+- Latest current checkpoint: Real Stack E2E #37 (`37206514550`) is green on exact implementation head `80a873d9dd66d841cc8b50e662a9e175090a61d9`; CI #3318 and CodeQL #3267 are green on the same head. Direct review of artifact `11304847206` accepts the Cards restore/reload, Taxonomy move/retire/reload and Phosphor icon-assignment/reload captures. The Cards traceability gap is closed; Taxonomy and Icons retain their remaining manual/control-state obligations. The broad 8.5/8.10 every-domain cells remain open, so current progress stays **Implementations 17/24 completed · Sub-implementations 164/196 completed**. PR #477 remains draft while the next zero-cost real-stack/canonical-tree batch targets real provider Storage upload/binding/failure recovery; expensive review-ready gates remain deferred.
 
 - Owner decision 2026-10-04: after #477 is squash-merged into `develop`, a dedicated **post-merge final visual release inspection on the exact canonical `develop` tree is mandatory before UI closeout**. It must regenerate and directly review desktop/tablet/mobile Light/Dark evidence for all primary routes and critical dialogs/states, verify responsive containment, clipping/overlap, semantic palette and contrast, typography/spacing, focus/touch targets, 200%/Large-text/reduced-motion behavior and Windows-specific surfaces, fix any defect found, rerun affected evidence, then perform a bounded final visual sweep. A green pre-merge visual matrix does not waive this post-merge gate.
 - #483 is integrated into `develop`; #477 is based on that baseline and is ready for review.
@@ -2069,7 +2069,7 @@ These are accepted supporting real-stack persistence checks for 8.5/8.10. The ev
 
 **Implementations 17/24 completed · Sub-implementations 164/195 completed**
 
-### 8.93 Cards, Taxonomy and icon-preference actual-browser source — runtime proof pending
+### 8.93 Cards, Taxonomy and icon-preference actual-browser source — runtime closed
 
 The next zero-cost batch extends the same production-built browser path without production data, hosted branches or provider migrations:
 
@@ -2078,7 +2078,7 @@ The next zero-cost batch extends the same production-built browser path without 
 - Icons: assign a Phosphor icon to the surviving synthetic category, require the persisted `settings.categoryIcons` value and hard-reload the rendered assignment.
 - Focused screenshots are emitted for restored-card, taxonomy and icon-preference persisted states. Source regression coverage locks these stages and the no-fetch-interception real-app boundary.
 
-This batch is proof-pending. Do not credit the Cards/Taxonomy/Icons traceability rows or the broad 8.5/8.10 cells until the exact-head Real Stack run passes and the evidence is directly inspected.
+Runtime proof is closed by Real Stack E2E #37 on exact implementation head `80a873d9dd66d841cc8b50e662a9e175090a61d9`, with CI #3318 and CodeQL #3267 green and artifact `11304847206` directly inspected. Cards receives reusable real-stack lifecycle credit; Taxonomy and Icons keep only their still-unproven blocker/manual/control-state obligations. The broad 8.5/8.10 every-domain cells remain open.
 
 **Implementations 17/24 completed · Sub-implementations 164/196 completed**
 
@@ -2088,7 +2088,7 @@ Real Stack E2E #34 on the post-merge-visual-plan head failed before any browser/
 
 FV-75 was recorded before remediation. The harness now locates the taxonomy card by iterating the already-scoped card nodes and comparing the stable `data-category-id` attribute directly, avoiding nested selector-string interpolation. The narrow source regression requires the parse-safe attribute comparison and rejects reintroduction of `CSS.escape(id)` in this browser harness.
 
-Status: **source-fixed; exact-head Real Stack runtime proof pending.** No product behavior, finance semantics, persistence schema, Supabase policy, visual styling or Android code changed. Counters remain **Implementations 17/24 completed · Sub-implementations 164/196 completed**.
+Status: **closed.** The parse-safe taxonomy selector is exercised successfully by Real Stack E2E #37; no product behavior, finance semantics, persistence schema, Supabase policy, visual styling or Android code changed. Counters remain **Implementations 17/24 completed · Sub-implementations 164/196 completed**.
 
 
 ### 8.95 Real Stack #35 Cards archive selector mismatch — FV-76 source-fixed, runtime proof pending
@@ -2100,7 +2100,7 @@ Real Stack E2E #35 on exact head `89f203630ca13f444814fe9f8b0ee8aca646ef0c` pass
 - Remediation: locate the intended visible card first, click that card's generic archive button, retain the existing keyboard-confirmation and hard-reload assertions, and lock the selector contract with a source regression that rejects the nonexistent qualified label.
 - Scope: harness + regression only. No product UI, card semantics, vault behavior, Supabase schema/policies, visual styling, release behavior or Android code changes.
 
-Status: **source-fixed; exact-head Real Stack runtime proof pending.** Counters remain **Implementations 17/24 completed · Sub-implementations 164/196 completed**.
+Status: **closed.** The scoped generic archive control, keyboard confirmation, archive/restore/delete persistence and hard-reload assertions pass in Real Stack E2E #37. Counters remain **Implementations 17/24 completed · Sub-implementations 164/196 completed**.
 
 
 ### 8.96 Real Stack #36 runtime PASS; CI selector-source encoding normalization
@@ -2109,6 +2109,22 @@ Real Stack E2E #36 (`37205971347`) completed successfully on exact head `ff857e8
 
 CI #3317 on the same head failed only in the narrow source-contract regression because the raw TypeScript browser-eval selector was written with three literal backslashes around the attribute quotes instead of the repository-standard single escaped quote. CodeQL #3266 is green. The mismatch is QA source encoding only; no product/runtime/API/database/security behavior failed.
 
-Remediation: normalize only the raw selector representation in `scripts/real-stack-browser-e2e.ts` to `button[aria-label=\"Αρχειοθέτηση κάρτας\"]`. The existing regression remains unchanged and is expected to pass on the next exact head. Cards/Taxonomy/Icons traceability credit remains pending until that exact-head CI/CodeQL/Real Stack rerun is green and the three screenshots are directly inspected.
+Remediation: normalize only the raw selector representation in `scripts/real-stack-browser-e2e.ts` to `button[aria-label=\"Αρχειοθέτηση κάρτας\"]`. The existing regression remained unchanged and passed in CI #3318; Real Stack E2E #37 and CodeQL #3267 are green on the same implementation head, and the three focused screenshots were directly inspected.
+
+**Implementations 17/24 completed · Sub-implementations 164/196 completed**
+
+
+### 8.97 Real Stack #37 Cards/Taxonomy/Icons exact-head closure
+
+Real Stack E2E #37 (`37206514550`) completed successfully on exact implementation head `80a873d9dd66d841cc8b50e662a9e175090a61d9`; CI #3318 and CodeQL #3267 are green on the same head. The real browser passed the complete Auth/TOTP/session/import/history/revision/Card Vault/device sequence plus modern/legacy transactions, Credit, Savings, Loans, Lending, Recurring, Planning, Budgets, Rules, Cards, Taxonomy, Icons, Accounts and Data Management across hard reload. Forward-only migration recovery also passed.
+
+Artifact `11304847206` was downloaded and the new focused evidence was opened individually:
+- `cards-lifecycle-persisted.png`: `Real Browser Lifecycle Card` is restored after hard reload with the secure-details suffix visible; the subsequent runtime path archives it again, permanently deletes it and proves absence after reload. The focused capture is readable and contained; the horizontally scrollable card rail is visible by design and no material clipping/overlap is present.
+- `taxonomy-domain-persisted.png`: `Real Browser Target` contains `Real Browser Sub` after moving the subcategory and retiring the source category, with the transformed tree still present after hard reload. The layout is readable and contained.
+- `icon-preference-persisted.png`: Phosphor remains the active family and `Real Browser Target` retains its custom Phosphor assignment after hard reload. The layout is readable and contained.
+
+Traceability disposition: Cards moves from Partial to Reusable for its real-stack lifecycle gap. Taxonomy remains Partial because blocker/manual destructive states are still outstanding beyond the proven create/move/retire persistence path. Icons/preferences remains Partial because every control state and 200% zoom are still outstanding beyond the proven persisted assignment. Sections 8.5 and 8.10 therefore remain **8/9** and **2/8** respectively; no broad every-domain cell is inferred from this batch.
+
+Next zero-cost real-stack target: real provider creation + Supabase Storage asset upload + binding/reuse + hard reload/read-back, plus an isolated provider upload/registration failure-cleanup case against the disposable local backend only. No production data, paid hosted branch, provider production mutation or Android implementation is included.
 
 **Implementations 17/24 completed · Sub-implementations 164/196 completed**
