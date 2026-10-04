@@ -12,7 +12,7 @@ Release target: none — `main` remains release-only
 
 This checkpoint supersedes older "#482 reconciliation pending" notes below for current execution state.
 
-- Latest current checkpoint: Real Stack E2E #37 (`37206514550`) is green on exact implementation head `80a873d9dd66d841cc8b50e662a9e175090a61d9`; CI #3318 and CodeQL #3267 are green on the same head. Direct review of artifact `11304847206` closes the Cards real-stack lifecycle gap while Taxonomy and Icons retain their remaining manual/control-state obligations. The next zero-cost batch is now source-implemented for real provider creation, Storage upload/reuse/binding, hard-reload read-back and registration-failure cleanup on the disposable local stack; runtime credit remains pending. Current progress stays **Implementations 17/24 completed · Sub-implementations 164/197 completed**. PR #477 remains draft; expensive review-ready gates remain deferred.
+- Latest current checkpoint: Real Stack E2E #44 (`37212523937`) is green on exact implementation head `86fb57a9171c50b0506c88d7cfebf0598dd03cd5`; CI #3325 and CodeQL #3274 are green on the same head. The real provider/Storage flow now passes creation, one-asset/two-binding reuse, hard-reload catalog rebuild, direct DB/Storage read-back, registration-failure cleanup and forward-only migration recovery. Direct review of artifact `11307635658` accepts the settled `provider-storage-persisted.png` with no material clipping, overlap or transition ghosting. Providers/assets therefore moves to Reusable; the broad 8.5/8.10 cells remain open, so current progress stays **Implementations 17/24 completed · Sub-implementations 164/197 completed**. PR #477 remains draft while the pre-merge UI reuse/orphan/consistency audit continues; expensive review-ready gates remain deferred.
 
 - Owner decision 2026-10-04: **before #477 can be squash-merged**, complete a code-level UI reuse/consistency audit. Inventory the shared design-system primitives/tokens and identify orphaned or unused UI components/styles/variants, duplicated or parallel implementations of same-role controls, page-specific/inline styling that bypasses the shared system, and inconsistent variants that should share one semantic contract. Distinguish intentional contextual differences from accidental drift; consolidate at the shared layer where safe, remove dead/orphaned UI code where proven unused, and add narrow regression coverage for material consolidations. This audit is a prerequisite to the final visual pass, not a duplicate of it.
 - Owner decision 2026-10-04: after #477 is squash-merged into `develop`, a dedicated **post-merge final visual release inspection on the exact canonical `develop` tree is mandatory before UI closeout**. This is a detailed element-level inspection, not a page-level glance. Regenerate and directly review desktop/tablet/mobile Light/Dark evidence for all primary routes and critical dialogs/states; inspect each distinct visible/interactive UI pattern for responsive containment, clipping/overlap, semantic palette and contrast, typography/spacing, focus/touch targets, 200%/Large-text/reduced-motion behavior and Windows-specific surfaces. **Deduplicate by shared implementation:** once a shared component/design-system primitive has been proven in its required representative states/contexts, do not re-review identical instances merely because they recur on another page; only re-review materially different variants, states or layout contexts. **Also audit reuse itself:** visually/sourcely equivalent controls that should share a primitive/token contract (for example same-role buttons, fields, selectors, cards, dialogs, badges, tabs and alerts) must not drift through page-specific parallel styling or inconsistent variants; consolidate them at the shared layer where safe before closeout. Fix any defect or unjustified divergence found, rerun only invalidated/affected evidence, then perform one bounded final visual sweep. A green pre-merge visual matrix does not waive this post-merge gate.
@@ -2141,7 +2141,7 @@ The next zero-cost real-stack batch uses only the disposable local Supabase/API 
 - This path uses no fetch interception, production provider mutation, production finance data, hosted Supabase branch, paid service or Android code.
 - Focused evidence: `provider-storage-persisted.png`.
 
-Status: **source implemented; exact-head CI/CodeQL/Real Stack runtime proof pending.** Do not credit the Providers/assets traceability row or the broad 8.5/8.10 cells until the exact-head real-stack run passes and the screenshot/log/storage evidence is directly inspected.
+Status: **closed by Real Stack E2E #44 on exact head `86fb57a9171c50b0506c88d7cfebf0598dd03cd5`.** CI #3325 and CodeQL #3274 are green; runtime, direct storage/database read-back and the settled provider screenshot were all directly inspected. Providers/assets receives Reusable traceability credit; the broad 8.5/8.10 cells remain open.
 
 **Implementations 17/24 completed · Sub-implementations 164/197 completed**
 
@@ -2155,7 +2155,7 @@ Real Stack E2E #41 on exact head `7669f7f504d4852dc837a8a8d1fe52c53368ce18` pass
 - Regression: direct unit coverage requires production HTTPS and loopback HTTP acceptance while rejecting ordinary HTTP, `javascript:` and malformed URLs.
 - Scope: provider client parser + regression only. No finance semantics, provider persistence schema, Supabase policies, production provider data, Storage write rules, Android code or release behavior changed.
 
-Status: **source-fixed; exact-head CI/CodeQL/Real Stack proof pending.** Counters remain **Implementations 17/24 completed · Sub-implementations 164/197 completed**.
+Status: **closed.** The loopback-only URL policy passes CI #3325 and Real Stack #44 while ordinary insecure HTTP remains rejected by regression. Counters remain **Implementations 17/24 completed · Sub-implementations 164/197 completed**.
 
 ### 8.100 CI #3323 / Real Stack #42 test-boundary typecheck failure — FV-78 source-fixed, runtime pending
 
@@ -2166,7 +2166,7 @@ Exact head `b934c1258eb5dcd2c1b322444b5aa926eb75776a` kept the intended loopback
 - Security contract remains unchanged: all HTTPS URLs are accepted; insecure HTTP is accepted only for exact loopback hosts `127.0.0.1`, `localhost` and `[::1]`; ordinary HTTP, `javascript:` and malformed URLs remain rejected.
 - No TypeScript/hygiene threshold is weakened and no finance, provider schema, Storage policy, production data or Android behavior changes.
 
-Status: **source-fixed; exact-head CI/CodeQL/Real Stack proof pending.** Counters remain **Implementations 17/24 completed · Sub-implementations 164/197 completed**.
+Status: **closed.** The pure helper/test boundary passes CI #3325 and Real Stack #44 without weakening NodeNext hygiene. Counters remain **Implementations 17/24 completed · Sub-implementations 164/197 completed**.
 
 ### 8.101 Real Stack #43 provider evidence capture settling — FV-79 source-fixed, visual rerun pending
 
@@ -2179,4 +2179,18 @@ Direct visual inspection of artifact `11305088122` found the focused `provider-s
 - Narrow source regression requires the settle wait immediately before the provider screenshot.
 - Only the affected provider visual evidence needs revalidation; the functional #43 provider/storage runtime proof remains valid.
 
-Status: **source-fixed; exact-head provider visual rerun pending.** Do not yet mark Providers/assets Reusable. Counters remain **Implementations 17/24 completed · Sub-implementations 164/197 completed**.
+Status: **closed.** Real Stack #44 regenerated `provider-storage-persisted.png` after the 240 ms settle boundary; direct inspection confirms the editor is fully settled, readable and contained with no ghosting, clipping or overlap. Providers/assets is Reusable. Counters remain **Implementations 17/24 completed · Sub-implementations 164/197 completed**.
+
+### 8.102 Real Stack #44 provider Storage exact-head closure
+
+Real Stack E2E #44 (`37212523937`) completed successfully on exact head `86fb57a9171c50b0506c88d7cfebf0598dd03cd5`; CI #3325 and CodeQL #3274 are green on the same head.
+
+- Actual browser: `Real Browser Provider` is created through Settings, one SVG is uploaded through the real binary account-metadata API into local Supabase Storage, the same asset is bound to both universal logo and wordmark slots, the page hard-reloads, the provider remains in the catalog, and reopening the branding editor proves one persisted library asset with two uses.
+- Direct backend proof: provider row, active asset metadata, two universal bindings and exactly one Storage object are present after the browser flow; database health remains clean.
+- Isolated failure cleanup: a provider-scoped upload for a deliberately nonexistent synthetic provider reaches Storage, metadata registration rejects the provider, and the API cleanup leaves zero Storage objects and zero metadata residue.
+- Security/parser follow-up: production HTTPS remains accepted; HTTP is accepted only on exact loopback hosts for the disposable integration stack; ordinary HTTP, malformed and executable URL schemes stay rejected.
+- Visual evidence: artifact `11307635658` / `provider-storage-persisted.png` was opened directly after the settled-capture fix. The modal, two assigned slots, library count and footer actions are readable and contained with no material clipping, overlap or transition ghosting.
+
+Traceability disposition: Providers/assets moves from Partial to Reusable. This closes the row-specific real upload/binding/failure gap but does not infer the broad 8.5 every-domain persistence cell or 8.10 canonical-tree/release cells.
+
+**Implementations 17/24 completed · Sub-implementations 164/197 completed**
