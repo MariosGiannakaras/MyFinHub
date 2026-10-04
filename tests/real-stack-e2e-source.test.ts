@@ -22,7 +22,7 @@ describe('zero-cost real-stack E2E source contract',()=>{
 
   it('keeps the harness synthetic and proves the real auth, persistence and active-device boundaries',()=>{
     expect(pkg.scripts?.['qa:real-stack']).toBe('tsx scripts/real-stack-e2e.ts');
-    expect(script).toContain("const TEST_EMAIL_DOMAIN='example.invalid'");
+    expect(script).toContain("const TEST_EMAIL_DOMAIN='example.com'");
     expect(script).toContain('qaFinanceData');
     expect(script).toContain("spawn(tsxBin,['server/index.ts']");
     expect(script).not.toContain("['run','dev:server']");

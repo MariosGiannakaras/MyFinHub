@@ -5,7 +5,7 @@ import { qaFinanceData } from '../src/qaFixture.js';
 
 const SUPABASE_CLI_VERSION='2.119.0';
 const APP_ORIGIN='http://127.0.0.1:4317';
-const TEST_EMAIL_DOMAIN='example.invalid';
+const TEST_EMAIL_DOMAIN='example.com';
 const TEST_PASSWORD='Local-Only-Real-Stack-9f7!';
 
 type Json=Record<string,unknown>;
