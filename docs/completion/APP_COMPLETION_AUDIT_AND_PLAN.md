@@ -2002,3 +2002,15 @@ The next zero-cost browser→real-stack slice extends the synthetic fixture with
 Focused screenshots `credit-purchase-persisted.png` and `credit-payment-persisted.png` are uploaded by the existing Real Stack artifact step. The 8.4 Credit cell and broader 8.10 mutation-matrix cell remain unchecked until the exact-head runtime passes and the screenshots/log are directly reviewed.
 
 **Implementations 16/24 completed · Sub-implementations 162/195 completed**
+
+
+### 8.88 FV-74 — actual-browser Chromium bootstrap flake on credit head — recorded before fix
+
+Real Stack E2E #25 (`37194701939`) on exact head `cd59d50611a4d279b374e2728d897d18c1009240` passed the complete API/Auth/RLS/import/history/vault/device sequence, then failed before the actual-browser UI opened with `Timed out waiting for Chromium.` The browser credit flow itself did not execute.
+
+- CI #3303 and CodeQL #3252 are green on the same head, so the source/fixture batch is syntactically and statically valid.
+- Root cause classification: browser bootstrap infrastructure/harness defect. The current real-stack browser helper has a single fixed-port, single-attempt Chromium launch with ignored stdout/stderr, while the repository's established rendered-QA coordinator already treats CDP bootstrap as a retryable infrastructure failure and captures launch diagnostics.
+- Required remediation: bring the real-stack browser launcher up to the same repository standard: capture browser diagnostics, fail fast if the process exits before CDP is ready, retry once with a clean profile and distinct fixed CDP port, and terminate each failed attempt before retry. Product code, finance fixtures and credit semantics must remain unchanged.
+- Affected matrix cells: only the pending actual-browser credit proof and broader 8.10 browser→real-stack evidence. Existing #23 modern/legacy closure remains valid.
+
+Status: **recorded before fix; remediation pending.** No additional checklist credit is taken. **Implementations 16/24 completed · Sub-implementations 162/195 completed**.
