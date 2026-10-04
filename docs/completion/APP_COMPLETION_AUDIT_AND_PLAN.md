@@ -8,12 +8,13 @@ Release target: none — `main` remains release-only
 
 ## Current integration checkpoint — 2026-10-04
 
-**Implementations 17/24 completed · Sub-implementations 164/195 completed**
+**Implementations 17/24 completed · Sub-implementations 164/196 completed**
 
 This checkpoint supersedes older "#482 reconciliation pending" notes below for current execution state.
 
-- Latest current checkpoint: Real Stack E2E #32 (`37202963311`) is green on exact head `569fc011e0b76596d844bff138279f053a5e6c00`; CI #3310 and CodeQL #3259 are green on the same head. Direct review of artifact `11303338775` accepts Planning, Budgets and Rules hard-reload persistence: the completed scheduled item, €777 overall budget and `Rule Applied` transaction are readable and contained with no material clipping/overlap. The broad 8.5/8.10 every-domain cells remain open, so current progress stays **Implementations 17/24 completed · Sub-implementations 164/195 completed**. PR #477 remains draft while the next zero-cost real-stack/canonical-tree batches are built; expensive review-ready gates remain deferred.
+- Latest current checkpoint: Real Stack E2E #32 (`37202963311`) is green on exact head `569fc011e0b76596d844bff138279f053a5e6c00`; CI #3310 and CodeQL #3259 are green on the same head. Direct review of artifact `11303338775` accepts Planning, Budgets and Rules hard-reload persistence: the completed scheduled item, €777 overall budget and `Rule Applied` transaction are readable and contained with no material clipping/overlap. The broad 8.5/8.10 every-domain cells remain open, so current progress stays **Implementations 17/24 completed · Sub-implementations 164/196 completed**. PR #477 remains draft while the next zero-cost real-stack/canonical-tree batches are built; expensive review-ready gates remain deferred.
 
+- Owner decision 2026-10-04: after #477 is squash-merged into `develop`, a dedicated **post-merge final visual release inspection on the exact canonical `develop` tree is mandatory before UI closeout**. It must regenerate and directly review desktop/tablet/mobile Light/Dark evidence for all primary routes and critical dialogs/states, verify responsive containment, clipping/overlap, semantic palette and contrast, typography/spacing, focus/touch targets, 200%/Large-text/reduced-motion behavior and Windows-specific surfaces, fix any defect found, rerun affected evidence, then perform a bounded final visual sweep. A green pre-merge visual matrix does not waive this post-merge gate.
 - #483 is integrated into `develop`; #477 is based on that baseline and is ready for review.
 - The accepted #482 provider-management/API/Storage delta is source-integrated into #477. Exact-head rendered CI has passed Settings tabs and the provider-branding task flow, so provider reconciliation is completed for this batch.
 - FV-35 is completed on `c852d3a…`: legacy transaction edit/delete/undo/redo passes on desktop and mobile using the real search/pagination behavior.
@@ -656,9 +657,9 @@ The prior completion audit remains valuable evidence, but it does **not** by its
 
 **New audit workstream: Implementations 8/16 completed · Sub-implementations 106/166 completed.**
 
-**Overall completion scope: Implementations 14/24 completed · Sub-implementations 147/195 completed.**
+**Overall completion scope: Implementations 14/24 completed · Sub-implementations 147/196 completed.**
 
-The original owner-expanded audit added 16 verification implementations / 160 non-trivial sub-implementations. The accepted desktop/Electron title-bar sub-implementation raised the audit workstream denominator to 165; FV-62 adds one CI teardown-hardening sub-implementation on 2026-10-03, bringing the audit workstream denominator to 166 and the overall denominator to 195. Existing implementation-completion state is retained provisionally, but the expanded verification matrix has a stricter proof rule: prior evidence may be reused only after the responsible ChatGPT agent personally inspects it and confirms that it proves the exact required contract. Re-running unchanged automation is unnecessary when existing artifacts are sufficient, but no matrix cell is finally closed merely because an earlier workflow marked it green.
+The original owner-expanded audit added 16 verification implementations / 160 non-trivial sub-implementations. The accepted desktop/Electron title-bar sub-implementation raised the audit workstream denominator to 165; FV-62 adds one CI teardown-hardening sub-implementation on 2026-10-03, bringing the audit workstream denominator to 166 and the overall denominator to 195. The owner-mandated canonical post-merge final visual release inspection adds one closeout sub-implementation on 2026-10-04, bringing the overall denominator to 196. Existing implementation-completion state is retained provisionally, but the expanded verification matrix has a stricter proof rule: prior evidence may be reused only after the responsible ChatGPT agent personally inspects it and confirms that it proves the exact required contract. Re-running unchanged automation is unnecessary when existing artifacts are sufficient, but no matrix cell is finally closed merely because an earlier workflow marked it green.
 
 ### 8.1 Canonical baseline, scope inventory and traceability — 7/7
 
@@ -816,13 +817,14 @@ The original owner-expanded audit added 16 verification implementations / 160 no
 - [ ] Re-run full CI/security/rendered/cross-engine/performance/Windows gates whenever final-head rules require them.
 - [ ] Do not mark an item complete from source change alone; required runtime/visual/backend proof must also pass.
 
-### 8.12 Final closeout and evidence package — 0/6
+### 8.12 Final closeout and evidence package — 0/7
 
 - [ ] Close every traceability-matrix cell as passed, intentionally unsupported/out-of-scope with rationale, or blocked; no silent blanks.
 - [ ] Produce final route/state screenshot manifest and manual-review ledger with no unresolved visual/UI/UX defects.
 - [ ] Produce final functional/backend/error/security evidence summary tied to exact commit SHA and backend migration state.
 - [ ] Confirm repository plan/status/PR tracking matches reality and update counters only for fully proven items.
 - [ ] Squash-merge only when every required exact-head gate is green and no unresolved critical/high defect remains; then prove the canonical post-merge tree.
+- [ ] After squash-merge to `develop`, run the dedicated post-merge final visual release inspection on the exact canonical `develop` tree before UI closeout: regenerate and personally inspect desktop/tablet/mobile Light/Dark evidence for every primary route and critical dialog/state; verify responsive containment, clipping/overlap, semantic palette/contrast, typography/spacing, focus/touch targets, 200%/Large-text/reduced-motion behavior and Windows-specific surfaces; fix any defect found, rerun all invalidated evidence, then perform a bounded final visual sweep. This gate is mandatory even if the pre-merge visual matrix is green.
 - [ ] If/when promoted to production, verify production deployment SHA, production smoke and privacy-safe backend integrity before declaring the release closed.
 
 ### 8.13 Independent assistant-led manual verification protocol — 0/10

@@ -49,8 +49,9 @@ Release-closeout tracker: **#288 — complete**.
 
 ## Active completion batch — #476
 
-**Implementations 17/24 completed · Sub-implementations 164/195 completed**
+**Implementations 17/24 completed · Sub-implementations 164/196 completed**
 
+- Owner decision recorded 2026-10-04: UI closeout now requires a dedicated final visual release inspection **after #477 is merged into `develop`**, against the exact canonical merged tree. The gate must directly review desktop/tablet/mobile Light/Dark routes and critical states for broken/clipped/overlapping UI, semantic palette/contrast, typography/spacing, focus/touch behavior, 200%/Large-text/reduced-motion behavior and Windows-specific surfaces; defects must be fixed and re-reviewed before UI completion. This adds one pending sub-implementation, so the current denominator is 196.
 - Owner constraint recorded 2026-10-04: completion must incur **no paid subscription or usage**. Supabase Pro/hosted Branching is not permitted. The replacement path is an ephemeral local Supabase 2.119.0 stack on the public repository's standard GitHub-hosted Ubuntu runner, using only synthetic fixtures and no production credentials/data. Source harness + manual workflow are being introduced without changing completion counters until real runtime proof passes and is directly inspected.
 - Real Stack E2E run #2 proved the zero-cost local stack can boot and apply the full migration ledger, then exposed FV-67: the synthetic `example.invalid` owner email is rejected by current local GoTrue with HTTP 422 on valid password login. This is recorded as a QA-fixture defect before changing the harness; product auth behavior and completion counters are unchanged.
 - Real Stack E2E run #4 on `e74c54a…` produced the same HTTP 422 `AUTH_REJECTED` after switching to `example.com`, so the FV-67 email-domain hypothesis is disproven. FV-68 is recorded as a QA observability blocker: the harness must identify the exact password/factor/enrollment stage before any further Auth/product change. Counters remain unchanged.
