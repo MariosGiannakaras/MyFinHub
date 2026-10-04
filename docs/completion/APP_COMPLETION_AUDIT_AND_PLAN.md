@@ -2080,4 +2080,12 @@ The next zero-cost batch extends the same production-built browser path without 
 
 This batch is proof-pending. Do not credit the Cards/Taxonomy/Icons traceability rows or the broad 8.5/8.10 cells until the exact-head Real Stack run passes and the evidence is directly inspected.
 
-**Implementations 17/24 completed · Sub-implementations 164/195 completed**
+**Implementations 17/24 completed · Sub-implementations 164/196 completed**
+
+### 8.94 Real Stack #34 taxonomy harness parse failure — FV-75 source-fixed, runtime proof pending
+
+Real Stack E2E #34 on the post-merge-visual-plan head failed before any browser/product assertion because esbuild could not parse the new taxonomy helper: a quoted `querySelector` attribute selector accidentally terminated the surrounding TypeScript string at the `CSS.escape(id)` interpolation. CI and CodeQL on the same head were green, so this is classified as a QA harness syntax defect rather than a product/UI/backend failure.
+
+FV-75 was recorded before remediation. The harness now locates the taxonomy card by iterating the already-scoped card nodes and comparing the stable `data-category-id` attribute directly, avoiding nested selector-string interpolation. The narrow source regression requires the parse-safe attribute comparison and rejects reintroduction of `CSS.escape(id)` in this browser harness.
+
+Status: **source-fixed; exact-head Real Stack runtime proof pending.** No product behavior, finance semantics, persistence schema, Supabase policy, visual styling or Android code changed. Counters remain **Implementations 17/24 completed · Sub-implementations 164/196 completed**.

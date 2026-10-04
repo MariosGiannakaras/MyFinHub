@@ -46,6 +46,8 @@ describe('actual-browser real-stack source contract',()=>{
     expect(source).toContain('Real Browser Sub');
     expect(source).toContain('waitExpenseCategory');
     expect(source).toContain('waitIconChoice');
+    expect(source).toContain("getAttribute('data-category-id')===id");
+    expect(source).not.toContain('CSS.escape(id)');
     expect(source).toContain("iconChoice.startsWith('phosphor:')");
     expect(source).toContain('Real Browser Scheduled');
     expect(source).toContain('waitBudgetAmount(777)');
