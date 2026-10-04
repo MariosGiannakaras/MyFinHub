@@ -6,6 +6,7 @@ const read=(path:string)=>readFileSync(path,'utf8');
 describe('zero-cost real-stack E2E source contract',()=>{
   const workflow=read('.github/workflows/real-stack-e2e.yml');
   const script=read('scripts/real-stack-e2e.ts');
+  const supabaseConfig=read('supabase/config.toml');
   const pkg=JSON.parse(read('package.json')) as {scripts?:Record<string,string>};
 
   it('uses only a pinned local Supabase CLI on the standard public GitHub runner',()=>{
@@ -18,6 +19,12 @@ describe('zero-cost real-stack E2E source contract',()=>{
     expect(workflow).not.toContain('--linked');
     expect(workflow).not.toContain('ahsukppxwaiagampsuzb');
     expect(workflow).not.toContain('vercel');
+  });
+
+  it('explicitly enables mandatory local TOTP parity',()=>{
+    expect(supabaseConfig).toContain('[auth.mfa.totp]');
+    expect(supabaseConfig).toMatch(/enroll_enabled\s*=\s*true/);
+    expect(supabaseConfig).toMatch(/verify_enabled\s*=\s*true/);
   });
 
   it('keeps the harness synthetic and proves the real auth, persistence and active-device boundaries',()=>{

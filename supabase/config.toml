@@ -15,3 +15,7 @@ major_version = 17
 [studio]
 enabled = true
 port = 54323
+
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
