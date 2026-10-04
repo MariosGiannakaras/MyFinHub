@@ -54,6 +54,17 @@ describe('final UI reuse and orphan audit',()=>{
     expect(providers).toContain('<Button type="button" variant="secondary" className="provider-edit-action"');
   });
 
+  it('keeps the shared transaction split disclosure above generic mobile text-button geometry',()=>{
+    const split=read('src/components/TransactionSplitDetails.tsx');
+    const splitStyles=read('src/styles/transaction-split-editor.css');
+    const rootCompat=read('src/styles/root-compat.css');
+    expect(split).toContain('<Button type="button" variant="ghost" className="transaction-split-toggle"');
+    expect(split).not.toContain("style={{display:'inline-flex'");
+    expect(splitStyles).toContain('.transaction-split-disclosure .transaction-split-toggle {');
+    expect(splitStyles).toContain('min-height: 44px;');
+    expect(rootCompat.indexOf("@import './transaction-split-editor.css';")).toBeGreaterThan(rootCompat.indexOf("@import './visual-polish-overrides.css';"));
+  });
+
   it('has no orphaned production component modules',()=>{
     const allSource=walk('src',/\.(?:ts|tsx)$/);
     const referenced=new Set<string>();

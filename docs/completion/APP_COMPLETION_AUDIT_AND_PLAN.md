@@ -2230,3 +2230,17 @@ CI `37217939379` on exact head `98365777a…` ran the new final UI reuse/orphan 
 - The finding was recorded in issue #476 before remediation. No finance, auth, persistence, backend/Supabase/Storage or Android semantics changed.
 
 Status: **source-fixed; exact-head CI/CodeQL and affected rendered evidence pending.** Counters remain **Implementations 17/24 completed · Sub-implementations 164/197 completed**.
+
+
+### 8.106 FV-82 — review-ready mobile split disclosure touch target — source-fixed, rerun pending
+
+Review-ready CI `37218620430` on exact head `55f8cc5db8d1ec126a49a6444f96c9cccfac5d78` passed hygiene, the full source/unit/API checks and the rendered suites up to Transactions scanability, then failed at the explicit mobile split-disclosure touch-target assertion.
+
+- Cross-engine `37218620477`, Performance `37218620487`, Windows Desktop `37218620525`, Windows First Run `37218620445` and Windows Clean Launch `37218620421` all passed on the failing source head.
+- Root cause: after FV-81 moved `TransactionSplitDetails` onto shared `Button variant="ghost"`, the button acquired the canonical `text-button` class. The earlier mobile visual-polish rule `.workspace .text-button { min-height: 42px }` has higher specificity than the later base `.transaction-split-toggle { min-height: 44px }`, so the split disclosure rendered below the repository's ~44 px mobile touch-target contract.
+- Remediation keeps the shared `Button` adoption and the 44 px requirement. The transaction-split stylesheet now scopes the geometry through `.transaction-split-disclosure .transaction-split-toggle`, matching the generic rule's specificity while loading later in the canonical root cascade. No `!important` and no QA threshold weakening are introduced.
+- Source regression now protects the shared Button adoption, removal of the old static inline geometry, the scoped split selector, the 44 px contract and the required import order after `visual-polish-overrides.css`.
+- The failing rendered artifact remains valid for unaffected 8.12 contexts. Direct review can be reused because this remediation changes only the transaction-split selector; the split disclosure itself and the restored split-review styling require exact-head rerun evidence.
+- No finance, auth, persistence, provider, Supabase/API, Windows behavior or Android code changes.
+
+Status: **source-fixed; exact-head rerun pending.** Counters remain **Implementations 17/24 completed · Sub-implementations 164/197 completed** until the 8.12 rendered review closes.

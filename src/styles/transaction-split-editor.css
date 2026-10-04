@@ -4,7 +4,7 @@
   font-weight: 800;
 }
 
-.transaction-split-toggle {
+.transaction-split-disclosure .transaction-split-toggle {
   display: inline-flex;
   align-items: center;
   gap: 6px;
