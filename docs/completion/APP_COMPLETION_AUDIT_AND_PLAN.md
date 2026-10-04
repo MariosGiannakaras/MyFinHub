@@ -1906,3 +1906,16 @@ Real Stack E2E #8 on exact head `5d72e0e…` proved the TOTP configuration fix: 
 - Regression requirement: unit coverage must prove minimal-return bootstrap, concurrent bootstrap recovery and revoked-session fail-closed behavior.
 
 Status: **source-fixed on `89671b4…`; runtime proof pending.** Device bootstrap now uses `return=minimal`; a same-session insert conflict is re-read to recover a legitimate concurrent bootstrap, while a conflicting row that remains hidden fails closed as `DEVICE_ACCESS_REVOKED`. Unit regression coverage locks minimal-return, race recovery and revoked-session behavior. Real Stack E2E #10 (`37187090650`) is the active runtime proof. FV-69's local TOTP parity correction is already runtime-proven through successful AAL2 verification, but no completion counter advances until the remaining real-stack sequence is green. **Implementations 16/24 completed · Sub-implementations 152/195 completed**.
+
+
+### 8.79 FV-71 — real-stack import fixture rejected by canonical validation — recorded before fix
+
+Real Stack E2E #12 on exact head `871dbed…` proved the FV-70 device bootstrap remediation far enough to restore the authenticated AAL2 session. The sequence passed invalid password, valid password, TOTP enrollment, wrong TOTP, valid TOTP and first active-device bootstrap, then failed on the first full-document import with HTTP 400 `INVALID_DATA`.
+
+- Reproduction: execute the isolated real-stack harness and reach the post-AAL2 import stage. The harness currently feeds the presentation-heavy `qaFinanceData()` visual fixture into the production import trust boundary.
+- Affected matrix cells: 8.4 data-management/import flow, 8.5 persisted-state agreement and 8.10 real-stack persistence proof. Auth/MFA/device bootstrap reached the next stage successfully.
+- Root cause classification: test-fixture/trust-boundary mismatch until the exact validation rule is attributed. Do not weaken `validateCompleteFinanceData` or production import validation to accommodate a visual QA fixture.
+- Required remediation: introduce a small canonical synthetic real-stack finance fixture that itself passes the same complete production validator, keep it free of personal data, add a regression assertion for that validation contract, and add named stages for import/read/history/save/backup/device operations so later failures are attributable without exposing sensitive values.
+- Independent-work rule: this fix is isolated to the real-stack harness/fixtures and must not change finance semantics, production API validation, Supabase production state or Android code.
+
+Status: **recorded before fix; source remediation pending.** Completion counters remain **Implementations 16/24 completed · Sub-implementations 152/195 completed**.
