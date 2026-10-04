@@ -45,7 +45,7 @@ Branch: `chore/490-post-completion-hardening`
 Integration target: `develop`  
 Production target: none
 
-**Implementations 2/4 completed · Sub-implementations 9/16 completed**
+**Implementations 2/4 completed · Sub-implementations 12/16 completed**
 
 Completed so far:
 
@@ -58,7 +58,9 @@ Completed so far:
 
 Open hygiene dependencies are explicit: 49 stale `audit/476-*` branches are identified but cannot be physically deleted through the connected GitHub toolset; `develop` protection remains an admin dependency in #487; changelog/release-note reconciliation remains owned by the existing #491 → #465 sequence.
 
-Next work is Implementation 4 release rehearsal/readiness. It is read-only/preparatory and does not authorize `main` promotion or production mutation.
+Release rehearsal has completed the baseline/parity comparison, reused the exact final product-tree gates and produced `docs/completion/POST_COMPLETION_RELEASE_REHEARSAL.md` with a current NO-GO disposition. Repository/live Supabase migrations match 48/48; production remains Vercel READY on `main@3333b733…`. The rehearsal found and source-fixed one release-identity gap: event-driven Production Smoke now fails closed unless the Vercel deployment SHA equals the current `main` head, with focused source regression coverage. That final rehearsal cell remains pending until the #490 exact-head CI/CodeQL passes.
+
+No `main` promotion, production mutation, tag or Android publication is authorized.
 
 Issue #490 is the current 4-implementation / 16-sub-implementation checklist and progress authority for this workstream.
 
