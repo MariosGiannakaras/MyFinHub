@@ -70,6 +70,18 @@ async function upstreamJson(url:string,serviceRole:string,init:RequestInit={}){
   return body;
 }
 
+async function upstreamStorageList(apiUrl:string,serviceRole:string,prefix:string){
+  const response=await fetch(apiUrl+'/storage/v1/object/list/financial-provider-assets',{
+    method:'POST',
+    headers:{apikey:serviceRole,authorization:'Bearer '+serviceRole,'content-type':'application/json',accept:'application/json'},
+    body:JSON.stringify({prefix,limit:100,offset:0,sortBy:{column:'name',order:'asc'}}),
+  });
+  const body=await response.json().catch(()=>null);
+  if(!response.ok)fail('Local Supabase Storage list failed: HTTP '+response.status);
+  assert(Array.isArray(body),'Local Supabase Storage list returned an invalid payload.');
+  return body as Array<{name?:string}>;
+}
+
 function redactServerLog(value:string){
   return value
     .replace(/eyJ[A-Za-z0-9_-]{12,}\.[A-Za-z0-9_-]{12,}\.[A-Za-z0-9_-]{12,}/g,'[JWT_REDACTED]')
@@ -130,6 +142,23 @@ class CookieClient{
       body=JSON.stringify(options.body);
     }
     const response=await fetch(`${APP_ORIGIN}${path}`,{method,headers,body,redirect:'manual'});
+    this.remember(response.headers);
+    const payload=await response.json().catch(()=>null);
+    return {status:response.status,body:payload,headers:response.headers};
+  }
+  async requestBinary(path:string,options:{method?:string;body:Uint8Array;headers?:Record<string,string>}):Promise<ApiResult>{
+    const method=(options.method||'PUT').toUpperCase();
+    const headers:Record<string,string>={
+      origin:APP_ORIGIN,
+      'sec-fetch-site':'same-origin',
+      'user-agent':'MyFinHub-Real-Stack-QA/1.0',
+      'x-myfinhub-client-platform':'web',
+      'x-myfinhub-device-name':this.deviceName,
+      'x-myfinhub-app-version':'real-stack-qa',
+      ...(options.headers||{}),
+    };
+    if(this.cookies.size)headers.cookie=[...this.cookies].map(([key,value])=>key+'='+value).join('; ');
+    const response=await fetch(APP_ORIGIN+path,{method,headers,body:options.body as any,redirect:'manual'});
     this.remember(response.headers);
     const payload=await response.json().catch(()=>null);
     return {status:response.status,body:payload,headers:response.headers};
@@ -440,6 +469,23 @@ async function main(){
     assert(revokeOne.body?.count===1,'Single-device revoke did not retain only the current device.');
     expect(await reauthenticated.request('/api/auth/session'),401,'DEVICE_ACCESS_REVOKED');
 
+    console.log('[real-stack] stage provider-storage-registration-failure-cleanup');
+    const missingProviderId='real-stack-missing-provider';
+    const missingProviderPrefix='providers/'+missingProviderId;
+    const storageBeforeFailure=await upstreamStorageList(local.apiUrl,local.serviceRole,missingProviderPrefix);
+    assert(storageBeforeFailure.length===0,'Provider failure fixture prefix was not clean before upload.');
+    const failureSvg=Buffer.from("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 16'><rect width='32' height='16' fill='#345'/></svg>",'utf8');
+    const failedProviderAsset=await primary.requestBinary('/api/account-metadata?resource=financial-provider-assets&providerId='+missingProviderId+'&role=logo&variant=universal&primary=0&fileName=orphan.svg',{
+      method:'PUT',
+      headers:{'content-type':'image/svg+xml'},
+      body:failureSvg,
+    });
+    expect(failedProviderAsset,400,'INVALID_PROVIDER_DATA','provider-storage-registration-failure');
+    const storageAfterFailure=await upstreamStorageList(local.apiUrl,local.serviceRole,missingProviderPrefix);
+    assert(storageAfterFailure.length===0,'Failed provider asset registration left an orphan Storage object.');
+    const failedProviderRows=await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_financial_provider_assets?provider_id=eq.'+missingProviderId+'&select=asset_key',local.serviceRole) as any[];
+    assert(Array.isArray(failedProviderRows)&&failedProviderRows.length===0,'Failed provider asset registration left metadata residue.');
+
     console.log('[real-stack] stage actual-browser-ui');
     let browserPreviousCode=lastCode;
     await runRealStackBrowserProof({
@@ -453,6 +499,21 @@ async function main(){
       },
     });
 
+    console.log('[real-stack] stage provider-storage-direct-read');
+    const providerRows=await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_financial_providers?id=eq.real-browser-provider&select=id,logo_asset_key,wordmark_asset_key,active',local.serviceRole) as any[];
+    assert(Array.isArray(providerRows)&&providerRows.length===1&&providerRows[0]?.active===true,'Real browser provider row was not persisted.');
+    const providerAssets=await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_financial_provider_assets?provider_id=eq.real-browser-provider&active=eq.true&select=asset_key,storage_bucket,storage_path,size_bytes,mime_type',local.serviceRole) as any[];
+    assert(Array.isArray(providerAssets)&&providerAssets.length===1,'Real browser provider asset metadata was not persisted exactly once.');
+    const providerAssetKey=String(providerAssets[0]?.asset_key||'');
+    assert(providerRows[0]?.logo_asset_key===providerAssetKey&&providerRows[0]?.wordmark_asset_key===providerAssetKey,'Provider primary logo/wordmark do not reference the uploaded asset.');
+    assert(providerAssets[0]?.storage_bucket==='financial-provider-assets'&&String(providerAssets[0]?.storage_path||'').startsWith('providers/real-browser-provider/')&&Number(providerAssets[0]?.size_bytes)>0&&providerAssets[0]?.mime_type==='image/svg+xml','Provider asset Storage metadata is invalid.');
+    const providerBindings=await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_financial_provider_asset_bindings?provider_id=eq.real-browser-provider&select=asset_role,variant,asset_key',local.serviceRole) as any[];
+    assert(Array.isArray(providerBindings)&&providerBindings.length===2&&providerBindings.every(row=>row?.variant==='universal'&&row?.asset_key===providerAssetKey)&&new Set(providerBindings.map(row=>row?.asset_role)).size===2,'Provider reusable logo/wordmark bindings were not persisted.');
+    const providerStorage=await upstreamStorageList(local.apiUrl,local.serviceRole,'providers/real-browser-provider');
+    assert(providerStorage.length===1,'Provider Storage object was not persisted exactly once.');
+    const providerHealth=await upstreamJson(local.apiUrl+'/rest/v1/rpc/rheomiq_database_health',local.serviceRole,{method:'POST',body:'{}'}) as any;
+    assert(providerHealth?.ok===true,'Database health is not clean after provider Storage mutation.');
+
     const logout=await primary.request('/api/auth/logout',{method:'POST',body:{}});
     expect(logout,200);
     assert(logout.body?.authenticated===false,'Logout response did not clear authenticated state.');
@@ -462,6 +523,7 @@ async function main(){
     console.log('[real-stack] PASS active-device list/revoke/revoke-others/stale-session/re-auth');
     console.log('[real-stack] PASS import, mutable persistence, revision conflict, history undo/redo, backup/restore, direct DB read-back');
     console.log('[real-stack] PASS card-vault encrypted boundary remains separate from finance backup/recovery');
+    console.log('[real-stack] PASS provider Storage upload/binding persistence + registration-failure cleanup');
   }finally{
     server.kill('SIGTERM');
     await Promise.race([

@@ -36,6 +36,11 @@ describe('zero-cost real-stack E2E source contract',()=>{
     expect(script).toContain('validateCompleteFinanceData(fixture)');
     expect(script).toContain("spawn(tsxBin,['server/index.ts','--serve-dist']");
     expect(script).toContain("runRealStackBrowserProof({");
+    expect(script).toContain("[real-stack] stage provider-storage-registration-failure-cleanup");
+    expect(script).toContain("requestBinary");
+    expect(script).toContain("/storage/v1/object/list/financial-provider-assets");
+    expect(script).toContain("'INVALID_PROVIDER_DATA'");
+    expect(script).toContain("Failed provider asset registration left an orphan Storage object.");
     expect(script).toContain("[real-stack] stage actual-browser-ui");
     expect(script).not.toContain("['run','dev:server']");
     expect(script).toContain('/api/auth/mfa/enroll');
@@ -51,6 +56,9 @@ describe('zero-cost real-stack E2E source contract',()=>{
     expect(script).toContain("[real-stack] stage direct-db-read");
     expect(script).toContain("String(stateRows[0]?.revision)===String(redone.body?.revision)");
     expect(script).not.toContain("String(stateRows[0]?.revision)===String(persisted.body?.revision)");
+    expect(script).toContain("[real-stack] stage provider-storage-direct-read");
+    expect(script).toContain("provider_id=eq.real-browser-provider");
+    expect(script).toContain("rheomiq_financial_provider_asset_bindings");
     expect(script).toContain('rheomiq_database_health');
     expect(script).toContain("stage='request'");
     expect(script).toContain('/api/auth/mfa/verify');
