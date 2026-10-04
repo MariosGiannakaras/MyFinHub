@@ -2,6 +2,7 @@ import { createHmac, randomBytes } from 'node:crypto';
 import { execFileSync, spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { validateCompleteFinanceData } from '../server/financeDataValidation.js';
+import { runRealStackBrowserProof } from './real-stack-browser-e2e.js';
 import { realStackFinanceData } from './real-stack-fixture.js';
 
 const SUPABASE_CLI_VERSION='2.119.0';
@@ -205,7 +206,7 @@ async function main(){
   });
 
   const tsxBin=process.platform==='win32'?'node_modules/.bin/tsx.cmd':'node_modules/.bin/tsx';
-  const server=spawn(tsxBin,['server/index.ts'],{
+  const server=spawn(tsxBin,['server/index.ts','--serve-dist'],{
     env:{
       ...process.env,
       RHEOMIQ_PORT:'4317',
@@ -438,6 +439,19 @@ async function main(){
     expect(revokeOne,200);
     assert(revokeOne.body?.count===1,'Single-device revoke did not retain only the current device.');
     expect(await reauthenticated.request('/api/auth/session'),401,'DEVICE_ACCESS_REVOKED');
+
+    console.log('[real-stack] stage actual-browser-ui');
+    let browserPreviousCode=lastCode;
+    await runRealStackBrowserProof({
+      origin:APP_ORIGIN,
+      email,
+      password:TEST_PASSWORD,
+      nextTotp:async()=>{
+        const code=await nextTotp(secret,browserPreviousCode);
+        browserPreviousCode=code;
+        return code;
+      },
+    });
 
     const logout=await primary.request('/api/auth/logout',{method:'POST',body:{}});
     expect(logout,200);

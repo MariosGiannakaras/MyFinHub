@@ -19,6 +19,8 @@ describe('zero-cost real-stack E2E source contract',()=>{
     expect(workflow).not.toContain('--linked');
     expect(workflow).not.toContain('ahsukppxwaiagampsuzb');
     expect(workflow).not.toContain('vercel');
+    expect(workflow).toContain('npm run build');
+    expect(workflow).toContain('myfinhub-real-stack-browser-');
   });
 
   it('explicitly enables mandatory local TOTP parity',()=>{
@@ -32,7 +34,9 @@ describe('zero-cost real-stack E2E source contract',()=>{
     expect(script).toContain("const TEST_EMAIL_DOMAIN='example.com'");
     expect(script).toContain('realStackFinanceData');
     expect(script).toContain('validateCompleteFinanceData(fixture)');
-    expect(script).toContain("spawn(tsxBin,['server/index.ts']");
+    expect(script).toContain("spawn(tsxBin,['server/index.ts','--serve-dist']");
+    expect(script).toContain("runRealStackBrowserProof({");
+    expect(script).toContain("[real-stack] stage actual-browser-ui");
     expect(script).not.toContain("['run','dev:server']");
     expect(script).toContain('/api/auth/mfa/enroll');
     expect(script).toContain("[real-stack] stage auth-valid-password");

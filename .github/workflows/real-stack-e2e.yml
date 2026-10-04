@@ -7,10 +7,12 @@ on:
     paths:
       - '.github/workflows/real-stack-e2e.yml'
       - 'scripts/real-stack-e2e.ts'
+      - 'scripts/real-stack-browser-e2e.ts'
       - 'scripts/real-stack-fixture.ts'
       - 'scripts/migration-recovery-e2e.ts'
       - 'scripts/recovery-fixtures/**'
       - 'tests/real-stack-e2e-source.test.ts'
+      - 'tests/real-stack-browser-source.test.ts'
       - 'tests/migration-recovery-source.test.ts'
       - 'tests/real-stack-fixture.test.ts'
       - 'package.json'
@@ -41,10 +43,19 @@ jobs:
         run: npx --yes supabase@2.119.0 --version
       - name: Start isolated local Supabase
         run: npx --yes supabase@2.119.0 start
+      - name: Build real application bundle
+        run: npm run build
       - name: Run MyFinHub real-stack proof
         run: npm run qa:real-stack
       - name: Rehearse forward-only migration recovery
         run: npm run qa:migration-recovery
+      - name: Upload actual-browser real-stack evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: myfinhub-real-stack-browser-${{ github.event.pull_request.head.sha || github.sha }}
+          path: /tmp/myfinhub-real-stack-browser/*.png
+          if-no-files-found: ignore
       - name: Stop and discard local Supabase data
         if: always()
         run: npx --yes supabase@2.119.0 stop --no-backup

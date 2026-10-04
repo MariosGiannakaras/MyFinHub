@@ -1958,3 +1958,15 @@ Real Stack E2E #18 (`37190958551`) completed successfully on exact head `65cb3c6
 This closes the partial/interrupted-migration recovery cell in 8.16. The only remaining 8.16 cell is coherent release identity/stop-ship evidence for an actual release candidate. Branch/PR evidence remains supporting evidence only; canonical develop/main work is still tracked separately.
 
 **Implementations 16/24 completed · Sub-implementations 160/195 completed**
+
+
+### 8.84 Actual-browser real-stack mutation proof — source integrated, runtime proof pending
+
+The next zero-cost proof batch now drives the **real production-built MyFinHub UI** in headless Chromium against the same local MyFinHub API and disposable Supabase stack used by Real Stack E2E. This is not the synthetic `qa.html` surface and does not intercept `fetch`.
+
+- Source helper `scripts/real-stack-browser-e2e.ts` signs in through the real Login/MFA screens using the synthetic local owner, then exercises modern transaction create → hard reload → edit → hard reload → delete → hard reload → durable undo, plus legacy override → hard reload → tombstone delete → hard reload → durable undo.
+- The main real-stack harness now starts the built application with `--serve-dist` and invokes the browser proof only after the existing API/RLS/device lifecycle assertions, so the browser session cannot perturb the earlier two-device count assertions.
+- The workflow builds the application before the proof and uploads the focused browser screenshots for direct assistant review. Browser/API failures and runtime exceptions remain fail-closed.
+- No production project credential, production finance data, paid Supabase branch or Vercel deployment is used.
+
+Status: **source integrated; exact-head Real Stack runtime + screenshot review pending.** No checklist credit is taken yet. **Implementations 16/24 completed · Sub-implementations 160/195 completed**.
