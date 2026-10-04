@@ -82,12 +82,16 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     const target=await fetch(`http://127.0.0.1:${port}/json/new?${encodeURIComponent(origin+'/#/transactions')}`,{method:'PUT'}).then(response=>response.json()) as any;
     c=new Cdp(target.webSocketDebuggerUrl);await c.open();await c.send('Page.enable');await c.send('Runtime.enable');await c.send('Network.enable');
     await c.send('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
-    const runtimeErrors:string[]=[];const apiFailures:string[]=[];
+    const runtimeErrors:string[]=[];const apiFailures:string[]=[];const apiResponses:string[]=[];
+    let expectedInvalidImport=false;
     c.on('Runtime.exceptionThrown',params=>runtimeErrors.push(params.exceptionDetails?.text||'runtime exception'));
     c.on('Network.responseReceived',params=>{
       const url=String(params.response?.url||'');const status=Number(params.response?.status||0);
-      if(!url.startsWith(origin+'/api/')||status<400)return;
-      const pathname=new URL(url).pathname;if(status===401&&pathname==='/api/auth/session')return;
+      if(!url.startsWith(origin+'/api/'))return;
+      const pathname=new URL(url).pathname;apiResponses.push(`${status} ${pathname}`);
+      if(status<400)return;
+      if(status===401&&pathname==='/api/auth/session')return;
+      if(status===400&&pathname==='/api/import'&&expectedInvalidImport)return;
       apiFailures.push(`${status} ${pathname}`);
     });
     const waitFor=async(fn:string,label:string,args:any[]=[])=>{for(let i=0;i<160;i++){if(await c!.call(fn,args))return;await sleep(100)}throw new Error('Timed out waiting for '+label)};
@@ -98,6 +102,9 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     const waitApiEvent=async(note:string,present:boolean)=>waitFor("async function(note,present){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();const exists=(payload.data?.state?.events||[]).some(item=>item.note===note);return present?exists:!exists}",'persisted event '+note,[note,present]);
     const waitLegacy=async(text:string,deleted:boolean)=>waitFor("async function(text,deleted){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();const overrides=JSON.stringify(payload.data?.state?.overrides||{});const tombstones=JSON.stringify(payload.data?.state?.deleted||[]);return overrides.includes(text)&&(deleted?tombstones.includes('qa-seed-income'):!tombstones.includes('qa-seed-income'))}",'persisted legacy state',[text,deleted]);
     const waitCreditState=async(paid:boolean)=>waitFor("async function(paid){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();const events=payload.data?.state?.events||[];const purchase=events.find(item=>item.kind==='card_purchase'&&item.cardId==='qa-credit-card'&&item.note==='Real Browser Credit Purchase');if(!purchase?.statementId)return false;const payment=events.find(item=>item.kind==='card_payment'&&item.cardId==='qa-credit-card'&&item.statementId===purchase.statementId);return paid?Boolean(payment):!payment}",paid?'persisted credit payment':'persisted credit purchase',[paid]);
+    const installDownloadObserver=async()=>assert(await c!.call<boolean>("function(){globalThis.__myfinhubQaDownloads=[];const observer=new MutationObserver(records=>{for(const record of records)for(const node of record.addedNodes)if(node instanceof HTMLAnchorElement&&node.download)globalThis.__myfinhubQaDownloads.push(node.download)});observer.observe(document.body,{childList:true,subtree:true});globalThis.__myfinhubQaDownloadObserver=observer;return true}"),'Download observer could not be installed.');
+    const importFile=async(mode:'invalid'|'valid')=>{const ok=await c!.call<boolean>("async function(mode){const input=document.querySelector('.settings-data-import-card input[type=file]');if(!(input instanceof HTMLInputElement))return false;let data;if(mode==='invalid'){data={app:'RheomIQ',schemaVersion:3}}else{const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();data=structuredClone(payload.data);data.updatedAt=new Date().toISOString();data.state.settings={...data.state.settings,accountNames:{...(data.state.settings?.accountNames||{}),'qa-cash':'Imported QA Cash'}}}const transfer=new DataTransfer();transfer.items.add(new File([JSON.stringify(data)],mode+'.json',{type:'application/json'}));input.files=transfer.files;input.dispatchEvent(new Event('change',{bubbles:true}));return true}",[mode]);assert(ok,'Data import file could not be attached.')};
+    const currentRevision=()=>c!.call<string>("async function(){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return '';const payload=await response.json();return String(payload.revision||'')}");
     const shot=async(name:string)=>{const result=await c!.send('Page.captureScreenshot',{format:'png',fromSurface:true});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(result.data,'base64'))};
 
     console.log('[real-browser] stage login');
@@ -155,8 +162,39 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     await waitFor("function(){const statement=document.querySelector('[data-primary-credit-statement]');const payment=document.querySelector('.credit-payments-table tbody tr');const used=[...document.querySelectorAll('.credit-card-stage-stats>div')].find(item=>(item.querySelector(':scope>span')?.textContent||'').includes('Χρησιμοποιημένο'));return Boolean(statement&&(statement.textContent||'').includes('Εξοφλημένη')&&payment&&(payment.textContent||'').includes('25,50')&&(used?.textContent||'').includes('0,00'))}",'paid credit state after reload');
     await shot('credit-payment-persisted');
 
+    console.log('[real-browser] stage data-management-backup-import');
+    await clickText('.sidebar nav button','Ρυθμίσεις');await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Ρυθμίσεις')}",'settings workspace');
+    await clickText('.settings-tablist button','Δεδομένα');await waitFor("function(){return Boolean(document.querySelector('.settings-data-tab'))}",'settings data tab');
+    await installDownloadObserver();
+    await clickText('.settings-data-action-button','Backup & λήψη');
+    await waitFor("function(){return (document.querySelector('.logic-note[role=status]')?.textContent||'').includes('αντίγραφο ασφαλείας δημιουργήθηκε')}",'backup success feedback');
+    await waitFor("function(){return (globalThis.__myfinhubQaDownloads||[]).some(name=>/^MyFinHub-backup-.*\\.json$/.test(name))}",'JSON export download');
+    assert(apiResponses.includes('200 /api/backup'),'Backup action did not reach the real API successfully.');
+
+    const beforeInvalid=await currentRevision();assert(beforeInvalid,'Could not read the pre-validation revision.');
+    expectedInvalidImport=true;await importFile('invalid');
+    await waitFor("function(){return Boolean(document.querySelector('.app-confirm-dialog[role=alertdialog]'))}",'invalid import confirmation');
+    const priorMessage=await c.call<string>("function(){return document.querySelector('.logic-note[role=status]')?.textContent||''}");
+    await clickText('.app-confirm-dialog button','Εισαγωγή');
+    await waitFor("function(previous){const text=document.querySelector('.logic-note[role=status]')?.textContent||'';return Boolean(text&&text!==previous)}",'invalid import rejection',[priorMessage]);
+    const afterInvalid=await currentRevision();expectedInvalidImport=false;
+    assert(afterInvalid===beforeInvalid,'Rejected import changed the canonical revision.');
+    assert(apiResponses.includes('400 /api/import'),'Invalid import did not exercise the real validation rejection.');
+
+    await importFile('valid');
+    await waitFor("function(){return Boolean(document.querySelector('.app-confirm-dialog[role=alertdialog]'))}",'valid import confirmation');
+    await clickText('.app-confirm-dialog button','Εισαγωγή');
+    await waitFor("function(){return (document.querySelector('.logic-note[role=status]')?.textContent||'').includes('Η εισαγωγή ολοκληρώθηκε')}",'valid import success');
+    await waitFor("async function(){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();return payload.data?.state?.settings?.accountNames?.['qa-cash']==='Imported QA Cash'}",'persisted valid import');
+    await c.send('Page.reload',{ignoreCache:true});await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}",'reload after valid import');
+    await clickText('.sidebar nav button','Dashboard');await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('λογαριασμοί')}",'dashboard after import');
+    await waitFor("function(){return document.body.textContent.includes('Imported QA Cash')}",'imported account name after reload');
+    const historyButton=await c.call<boolean>("function(){const button=document.querySelector('button[aria-label=\"Ιστορικό αλλαγών\"]');if(!(button instanceof HTMLButtonElement))return false;button.click();return true}");assert(historyButton,'Change History action is missing.');
+    await waitFor("function(){const dialog=document.querySelector('[aria-labelledby=\"change-history-title\"]');return Boolean(dialog&&(dialog.textContent||'').includes('Εισαγωγή δεδομένων')&&(dialog.textContent||'').includes('δεν εντάσσεται αυτόματα στο Undo/Redo'))}",'import history point');
+    await shot('data-management-import-history-persisted');
+
     assert(runtimeErrors.length===0,'Browser runtime errors: '+runtimeErrors.join(' | '));
     assert(apiFailures.length===0,'Unexpected browser API failures: '+apiFailures.join(' | '));
-    console.log('[real-browser] PASS actual browser auth + modern/legacy/credit mutation persistence across hard reload');
+    console.log('[real-browser] PASS actual browser auth + modern/legacy/credit/data-management persistence across hard reload');
   }finally{c?.close();await stopBrowser(child);await sleep(300);if(profile)rmSync(profile,{recursive:true,force:true,maxRetries:8,retryDelay:150})}
 }

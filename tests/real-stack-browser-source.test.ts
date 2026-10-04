@@ -30,8 +30,13 @@ describe('actual-browser real-stack source contract',()=>{
     expect(source).toContain('Real Browser Credit Purchase');
     expect(source).toContain('waitCreditState(false)');
     expect(source).toContain('waitCreditState(true)');
+    expect(source).toContain('stage data-management-backup-import');
+    expect(source).toContain('Backup & λήψη');
+    expect(source).toContain('400 /api/import');
+    expect(source).toContain('Imported QA Cash');
+    expect(source).toContain('change-history-title');
     expect(source).toContain('Durable modern undo is unavailable after reload.');
     expect(source).toContain('Durable legacy undo is unavailable after reload.');
-    expect(source).toContain('actual browser auth + modern/legacy/credit mutation persistence across hard reload');
+    expect(source).toContain('actual browser auth + modern/legacy/credit/data-management persistence across hard reload');
   });
 });
