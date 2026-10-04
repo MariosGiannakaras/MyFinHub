@@ -8,7 +8,10 @@ on:
       - '.github/workflows/real-stack-e2e.yml'
       - 'scripts/real-stack-e2e.ts'
       - 'scripts/real-stack-fixture.ts'
+      - 'scripts/migration-recovery-e2e.ts'
+      - 'scripts/recovery-fixtures/**'
       - 'tests/real-stack-e2e-source.test.ts'
+      - 'tests/migration-recovery-source.test.ts'
       - 'tests/real-stack-fixture.test.ts'
       - 'package.json'
 
@@ -40,6 +43,8 @@ jobs:
         run: npx --yes supabase@2.119.0 start
       - name: Run MyFinHub real-stack proof
         run: npm run qa:real-stack
+      - name: Rehearse forward-only migration recovery
+        run: npm run qa:migration-recovery
       - name: Stop and discard local Supabase data
         if: always()
         run: npx --yes supabase@2.119.0 stop --no-backup
