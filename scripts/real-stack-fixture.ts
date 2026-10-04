@@ -1,0 +1,70 @@
+import type { FinanceData } from '../src/types.js';
+
+export function realStackFinanceData(): FinanceData {
+  return {
+    app: 'RheomIQ',
+    schemaVersion: 3,
+    updatedAt: '2026-10-04T00:00:00.000Z',
+    seed: {
+      accounts: [
+        { id: 'qa-cash', name: 'Synthetic QA Cash', short: 'QA', kind: 'cash' },
+      ],
+      months: ['2026-10'],
+      transactions: [
+        {
+          id: 'qa-seed-income',
+          date: '2026-10-01',
+          type: 'income',
+          accountId: 'qa-cash',
+          amount: 100,
+          note: 'Synthetic real-stack seed income',
+          category: 'Synthetic income',
+          source: 'qa',
+        },
+      ],
+      snapshots: [
+        { date: '2026-09-30', balances: { 'qa-cash': 0 } },
+      ],
+      recurring: [],
+      subscriptions: [],
+      loans: [],
+      lending: [],
+      stats: { transactions: 1 },
+    },
+    state: {
+      customTransactions: [],
+      overrides: {},
+      deleted: [],
+      recurringCustom: [],
+      recurringOverrides: {},
+      loanExtra: {},
+      loanOverrides: {},
+      customLoans: [],
+      lendingCustom: [],
+      settings: {
+        excludedFromAvailable: [],
+        accountNames: {},
+        expenseCategories: ['Synthetic expense'],
+        incomeCategories: ['Synthetic income'],
+        customPresets: [],
+        pinnedPresets: [],
+        defaultExpenseAccount: 'qa-cash',
+        defaultIncomeAccount: 'qa-cash',
+        defaultLoanAccount: 'qa-cash',
+        motion: 'system',
+        textSize: 'normal',
+      },
+      cardBanks: [],
+      cards: [],
+      deletedCards: [],
+      creditStatements: [],
+      events: [],
+      scheduled: [],
+      reviewDecisions: {},
+      attentionDecisions: {},
+      budgets: [],
+      savingsGoals: [],
+      transactionRules: [],
+    },
+  };
+}

@@ -1,7 +1,8 @@
 import { createHmac, randomBytes } from 'node:crypto';
 import { execFileSync, spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { setTimeout as sleep } from 'node:timers/promises';
-import { qaFinanceData } from '../src/qaFixture.js';
+import { validateCompleteFinanceData } from '../server/financeDataValidation.js';
+import { realStackFinanceData } from './real-stack-fixture.js';
 
 const SUPABASE_CLI_VERSION='2.119.0';
 const APP_ORIGIN='http://127.0.0.1:4317';
@@ -244,30 +245,36 @@ async function main(){
     expect(verified,200,undefined,'mfa-valid-code');
     assert(verified.body?.authenticated===true,'TOTP verification did not reach AAL2.');
 
+    console.log('[real-stack] stage session-bootstrap');
     const session=await primary.request('/api/auth/session');
-    expect(session,200);
+    expect(session,200,undefined,'session-bootstrap');
     assert(session.body?.authenticated===true,'AAL2 session bootstrap failed.');
 
     const restored=new CookieClient('QA Browser A Restored',primary.snapshot());
+    console.log('[real-stack] stage session-restore');
     const restoredSession=await restored.request('/api/auth/session');
-    expect(restoredSession,200);
+    expect(restoredSession,200,undefined,'session-restore');
     assert(restoredSession.body?.authenticated===true,'Cookie session restoration failed.');
 
-    const fixture=qaFinanceData();
+    const fixture=realStackFinanceData();
+    validateCompleteFinanceData(fixture);
+    console.log('[real-stack] stage import');
     const imported=await primary.request('/api/import',{
       method:'POST',
       headers:{'x-rheomiq-confirm-import':'replace'},
       body:fixture,
     });
-    expect(imported,200);
+    expect(imported,200,undefined,'import');
     assert(String(imported.body?.revision||'')==='1','Initial local import did not create revision 1.');
 
+    console.log('[real-stack] stage data-read');
     const initial=await primary.request('/api/data');
-    expect(initial,200);
+    expect(initial,200,undefined,'data-read');
     assert(initial.body?.data?.schemaVersion===3,'Real API read did not return canonical FinanceData.');
     const initialRevision=String(initial.body?.revision||'');
+    console.log('[real-stack] stage history-read');
     const history=await primary.request('/api/history');
-    expect(history,200);
+    expect(history,200,undefined,'history-read');
     const initialGeneration=String(history.body?.generation||'');
     assert(/^\d+$/.test(initialRevision)&&/^\d+$/.test(initialGeneration),'Revision/history generation were not available.');
 
@@ -275,20 +282,22 @@ async function main(){
     const nextState=structuredClone(initial.body.data.state);
     nextState.settings={
       ...nextState.settings,
-      accountNames:{...(nextState.settings?.accountNames||{}),'piraeus-payroll':'Local Real Stack QA'},
+      accountNames:{...(nextState.settings?.accountNames||{}),'qa-cash':'Local Real Stack QA'},
     };
+    console.log('[real-stack] stage mutable-save');
     const saved=await primary.request('/api/data',{
       method:'PUT',
       headers:{'if-match':initialRevision,'x-rheomiq-history-generation':initialGeneration},
       body:{state:nextState,updatedAt:new Date().toISOString(),historyLabel:'Real-stack persistence probe'},
     });
-    expect(saved,200);
+    expect(saved,200,undefined,'mutable-save');
     assert(Number(saved.body?.revision)>Number(initialRevision),'Mutable save did not advance the revision.');
 
     staleState.settings={
       ...staleState.settings,
-      accountNames:{...(staleState.settings?.accountNames||{}),'piraeus-payroll':'Stale writer must lose'},
+      accountNames:{...(staleState.settings?.accountNames||{}),'qa-cash':'Stale writer must lose'},
     };
+    console.log('[real-stack] stage revision-conflict');
     const conflict=await restored.request('/api/data',{
       method:'PUT',
       headers:{'if-match':initialRevision,'x-rheomiq-history-generation':initialGeneration},
@@ -296,12 +305,14 @@ async function main(){
     });
     assert(conflict.status===409&&['REVISION_CONFLICT','HISTORY_CURSOR_CONFLICT'].includes(String(conflict.body?.code||'')),'Stale real-stack mutation did not fail closed.');
 
+    console.log('[real-stack] stage reload-read');
     const persisted=await restored.request('/api/data');
-    expect(persisted,200);
-    assert(persisted.body?.data?.state?.settings?.accountNames?.['piraeus-payroll']==='Local Real Stack QA','Saved state was not durable after a restored-session reload.');
+    expect(persisted,200,undefined,'reload-read');
+    assert(persisted.body?.data?.state?.settings?.accountNames?.['qa-cash']==='Local Real Stack QA','Saved state was not durable after a restored-session reload.');
 
+    console.log('[real-stack] stage backup');
     const backup=await primary.request('/api/backup',{method:'POST',body:{}});
-    expect(backup,200);
+    expect(backup,200,undefined,'backup');
     assert(/^supabase:\/\/rheomiq_backups\/\d+$/.test(String(backup.body?.path||'')),'Backup did not persist through the real RPC boundary.');
 
     const stateRows=await upstreamJson(`${local.apiUrl}/rest/v1/rheomiq_app_state?id=eq.primary&select=revision,finance_storage_mode,updated_at`,local.serviceRole) as any[];
@@ -312,6 +323,7 @@ async function main(){
     const backupRows=await upstreamJson(`${local.apiUrl}/rest/v1/rheomiq_backups?select=id,reason,revision&order=id.desc&limit=1`,local.serviceRole) as any[];
     assert(Array.isArray(backupRows)&&backupRows.length===1,'Direct database read-back did not find the real backup row.');
 
+    console.log('[real-stack] stage device-lifecycle');
     const secondary=new CookieClient('QA Browser B');
     let lastCode=await loginAndVerify(secondary,email,TEST_PASSWORD,secret,correct);
     const devices=await primary.request('/api/auth/devices');

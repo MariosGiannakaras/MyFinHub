@@ -30,12 +30,16 @@ describe('zero-cost real-stack E2E source contract',()=>{
   it('keeps the harness synthetic and proves the real auth, persistence and active-device boundaries',()=>{
     expect(pkg.scripts?.['qa:real-stack']).toBe('tsx scripts/real-stack-e2e.ts');
     expect(script).toContain("const TEST_EMAIL_DOMAIN='example.com'");
-    expect(script).toContain('qaFinanceData');
+    expect(script).toContain('realStackFinanceData');
+    expect(script).toContain('validateCompleteFinanceData(fixture)');
     expect(script).toContain("spawn(tsxBin,['server/index.ts']");
     expect(script).not.toContain("['run','dev:server']");
     expect(script).toContain('/api/auth/mfa/enroll');
     expect(script).toContain("[real-stack] stage auth-valid-password");
     expect(script).toContain("[real-stack] stage mfa-enroll");
+    expect(script).toContain("[real-stack] stage import");
+    expect(script).toContain("[real-stack] stage mutable-save");
+    expect(script).toContain("[real-stack] stage device-lifecycle");
     expect(script).toContain("stage='request'");
     expect(script).toContain('/api/auth/mfa/verify');
     expect(script).toContain('/api/auth/devices');
