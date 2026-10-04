@@ -62,7 +62,7 @@ Last updated: 2026-10-04
 | FV-66 | Medium evidence blocker | Settings · remote-device revoke failure evidence | CI #3255 reached the synthetic revoke failure but saved a frame after generic screenshot preparation had scrolled away from the inline alert. | Evidence capture ordering/scroll normalization, not product revoke behavior. | QA harness preserves the actual failure alert in-view and captures the current viewport. | **Completed on `7321c591…`.** CI #3271 passed the visible-alert geometry/text assertion; direct inspection of `settings-device-revoke-failure-desktop.png` shows the failure message immediately below the preserved remote-device row. Product revoke semantics are unchanged. |
 
 
-## Completion-phase FV-67…FV-89
+## Completion-phase FV-67…FV-91
 
 | ID | Severity | Surface / finding | Root cause / remediation owner | Proof state |
 | --- | --- | --- | --- | --- |
@@ -89,6 +89,8 @@ Last updated: 2026-10-04
 | FV-87 | Medium design-system ownership | Residual static JSX geometry across shared/page surfaces. | Static presentation escaped existing owner stylesheets. | **Closed.** Existing owner stylesheets + source guard + direct rendered review. |
 | FV-88 | Low source-regression blocker | Surface test rejected additive Change History owner class. | Exact-string assertion over-constrained. | **Closed.** Intended class-list assertion passes CI. |
 | FV-89 | Medium workflow blocker | Dedicated Audit final screenshot step omitted opt-in. | Caller did not set guarded `MYFINHUB_FINAL_SCREENSHOTS=1`. | **Closed.** Guard preserved; clean audit passes 216/216. |
+| FV-90 | Medium evidence blocker | Review-ready refresh-route QA could observe the transient PageSkeleton and miss it one CDP scheduling turn later. | Two-step transient-state observation raced the intentional 350 ms QA loading state; remediation records the atomic transition in-page with `MutationObserver`. | **Closed.** Final review head `05f97721…` passes the in-place refresh route in CI `37234768780` without product delay/threshold changes. |
+| FV-91 | Medium evidence blocker | Session-runtime QA intermittently failed with `Cannot find context with specified id`. | Two-command CDP probe obtained `globalThis` objectId then raced execution-context replacement before `Runtime.callFunctionOn`; remediation evaluates probes atomically in one `Runtime.evaluate`. | **Closed.** Final review head `05f97721…` passes session-runtime CI plus the complete required gate wave; auth/session product behavior is unchanged. |
 
 ## Systemic causes
 
