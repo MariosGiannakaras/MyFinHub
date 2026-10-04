@@ -2,6 +2,13 @@ name: Real Stack E2E
 
 on:
   workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/real-stack-e2e.yml'
+      - 'scripts/real-stack-e2e.ts'
+      - 'tests/real-stack-e2e-source.test.ts'
+      - 'package.json'
 
 permissions:
   contents: read
