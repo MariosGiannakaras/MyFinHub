@@ -698,11 +698,11 @@ The original owner-expanded audit added 16 verification implementations / 160 no
 - [x] Review Greek localization/content quality: terminology consistency, grammar, capitalization, amount/date formatting, wrapping and avoidance of ambiguous financial wording. Direct assistant review combines the complete 132-image Greek UI matrix with source inspection across auth, navigation, finance forms, Settings, errors and recovery. Greek is the default product language; intentionally retained technical/brand terms are documented in `docs/completion/CONTENT_AND_FEEDBACK_AUDIT.md`, finance dates/currency use the shared Greek locale contracts, and no material mixed-language or ambiguous finance wording defect remains in the reviewed surfaces.
 - [x] Produce a designer/developer defect log with severity, affected surfaces, systemic root cause and preferred component/design-system-level remediation. `docs/completion/UI_UX_DEFECT_LEDGER.md` is the assistant-owned defect ledger and records the current systemic visual/interaction findings, severity, root causes, remediation layer and proof state.
 
-### 8.4 Complete functional user-flow / CRUD verification — 16/24
+### 8.4 Complete functional user-flow / CRUD verification — 19/24
 
-- [ ] Authentication: valid/invalid email-password login, logout and session restoration.
-- [ ] MFA: enrollment, challenge, wrong code, successful verification and post-AAL2 bootstrap.
-- [ ] Device sessions: list, current-device state, revoke another device, revoke-others, revoked-device re-authentication and stale-session handling.
+- [x] Authentication: valid/invalid email-password login, logout and session restoration. Direct assistant review of zero-cost Real Stack E2E #14 on exact head `05b8138…` confirms invalid credentials fail, valid credentials establish the synthetic local owner session, cookie-backed session restoration succeeds and logout clears the session against the real MyFinHub API + local Supabase Auth stack.
+- [x] MFA: enrollment, challenge, wrong code, successful verification and post-AAL2 bootstrap. Real Stack E2E #14 directly passed TOTP enrollment, an intentionally wrong code, successful verification and the first post-AAL2 session bootstrap with the repository's explicit local TOTP configuration; mandatory MFA was not bypassed.
+- [x] Device sessions: list, current-device state, revoke another device, revoke-others, revoked-device re-authentication and stale-session handling. Real Stack E2E #14 created two real AAL2 sessions, verified current/other discovery, revoke-others, fail-closed stale-session access, fresh re-authentication and single-device revoke through the real API/RLS registry.
 - [x] Dashboard: account rendering, privacy toggle, IBAN copy, primary shortcuts, period changes and navigation to contextual destinations. Direct assistant review of the rendered Dashboard hierarchy/account-metadata suites and source contracts verifies primary/secondary account rendering, masked IBAN + copy confirmation, session-scoped privacy state, one desktop/mobile global Quick Entry, search/command access, current-period navigation guard, contextual Attention/Planning routing and responsive mobile analytics disclosure without finance-data exposure.
 - [ ] Modern transactions: create, edit, delete, search, filters, sorting, pagination/load-more, reload persistence and derived balance/report updates.
 - [ ] Legacy transactions: edit override, delete tombstone, undo, redo, filtering/search and reload persistence.
@@ -792,14 +792,14 @@ The original owner-expanded audit added 16 verification implementations / 160 no
 - [x] Windows first-run/clean-launch validation on the exact final packaging head with no runtime provisioning requirement. Direct assistant review confirms the application-owned first-run contract passed and a fresh installed-user NSIS launch succeeded with SUPABASE/CARD_VAULT environment values removed and without creating runtime-config.json, runtime-secrets.json or pending-provision.json.
 - [x] Desktop/Electron custom title bar integrated into the existing MyFinHub UI: the main Electron window uses `titleBarStyle:'hidden'` + native `titleBarOverlay:true` without `frame:false`; desktop-only drag/no-drag/caption-reserve styling is bridge-gated; source regressions lock the contract; CI #3186 passed light/dark 1440px and compact 960px rendered title-bar QA; direct assistant inspection of all three captures found coherent topbar integration and no caption/action overlap; Windows Desktop #2746 passed packaged startup and the in-process native maximize → restore → `1100×760` resize probe. First Run/Clean Launch and sibling gates were also green. Android remains untouched.
 
-### 8.10 Real-stack integrated E2E and canonical-tree proof — 0/8
+### 8.10 Real-stack integrated E2E and canonical-tree proof — 2/8
 
 **No-cost execution decision (2026-10-04):** the owner explicitly requires zero paid subscriptions/usage for this completion work. Hosted Supabase Branching is therefore excluded. Real-stack proof will use an ephemeral local Supabase stack built from this repository's exact migrations/config on the standard public GitHub-hosted Ubuntu runner, with synthetic fixtures only and no production project credentials or finance data. The first harness is manual-dispatch while it is being stabilized; counters remain unchanged until runtime proof is green and directly reviewed.
 
-- [ ] Create/use an isolated non-production test backend with the same schema/policies for destructive CRUD/E2E; never use production personal finance data as a disposable test fixture.
+- [x] Create/use an isolated non-production test backend with the same schema/policies for destructive CRUD/E2E; never use production personal finance data as a disposable test fixture. Real Stack E2E #14 booted Supabase CLI 2.119.0, applied all 48 repository migrations through `20261001220945_reject_cross_account_id_collisions`, used only a generated local Auth owner plus canonical synthetic finance data, and discarded the stack afterward with no production project credentials/data.
 - [ ] Run browser → real API → real Supabase/Storage end-to-end flows for the mutation matrix, not only synthetic QA handlers.
 - [ ] Run reload/new-session persistence checks after representative operations in every product domain.
-- [ ] Run concurrent/revision-conflict and auth/device-revocation scenarios against the real integration stack.
+- [x] Run concurrent/revision-conflict and auth/device-revocation scenarios against the real integration stack. Real Stack E2E #14 proved a stale revision/history writer fails with 409, while revoke-others and explicit device revoke invalidate the affected AAL2 session and a fresh re-authentication can establish a new active session.
 - [ ] After all fixes are merged, rerun the complete required suite on the exact canonical `develop` commit outside feature-branch assumptions.
 - [ ] For a release candidate, run `develop -> main` release validation on the exact merge candidate before production promotion.
 - [ ] After production deployment, verify deployed SHA equality and run non-destructive production smoke/read-only integrity checks plus only explicitly safe owner actions.
@@ -1919,3 +1919,12 @@ Real Stack E2E #12 on exact head `871dbed…` proved the FV-70 device bootstrap 
 - Independent-work rule: this fix is isolated to the real-stack harness/fixtures and must not change finance semantics, production API validation, Supabase production state or Android code.
 
 Status: **recorded before fix; source remediation pending.** Completion counters remain **Implementations 16/24 completed · Sub-implementations 152/195 completed**.
+
+
+### 8.80 Real-stack #14 closure + isolated recovery batch
+
+Real Stack E2E #14 (`37188037513`) completed successfully on exact head `05b8138e3b6f632c515fb4aec5d249bfa25a7e24`, with CI #3292 and CodeQL #3241 also green. Direct log review confirms all 48 migrations applied and the runtime passed password/Auth, mandatory TOTP/AAL2, session restoration/logout, first-device bootstrap, real import/read/history/save, stale revision conflict, reload persistence, backup, direct relational database read-back, device list/revoke/revoke-others/stale-session and re-authentication.
+
+This closes 3 cells in 8.4 and 2 cells in 8.10. The next isolated, non-production batch extends the same zero-cost stack with real history undo/redo, encrypted Card Vault CRUD and a backup → post-backup mutation → authenticated import recovery exercise. The recovery proof reads the immutable backup only inside the disposable local stack, verifies card-vault plaintext is excluded from FinanceData backup content, checks history/audit/database-health consistency after restoration and never touches production data or a paid service. Source is implemented; runtime credit is deferred until the new exact-head Real Stack E2E passes and is directly reviewed.
+
+**Implementations 16/24 completed · Sub-implementations 157/195 completed**

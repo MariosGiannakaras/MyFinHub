@@ -8,6 +8,10 @@ const SUPABASE_CLI_VERSION='2.119.0';
 const APP_ORIGIN='http://127.0.0.1:4317';
 const TEST_EMAIL_DOMAIN='example.com';
 const TEST_PASSWORD='Local-Only-Real-Stack-9f7!';
+const TEST_CARD_ID='qa-vault-card';
+const TEST_PAN=['4242','4242','4242','4242'].join('');
+const TEST_EXPIRY=['12','30'].join('/');
+const TEST_CVV=['1','2','3'].join('');
 
 type Json=Record<string,unknown>;
 type ApiResult={status:number;body:any;headers:Headers};
@@ -309,6 +313,38 @@ async function main(){
     const persisted=await restored.request('/api/data');
     expect(persisted,200,undefined,'reload-read');
     assert(persisted.body?.data?.state?.settings?.accountNames?.['qa-cash']==='Local Real Stack QA','Saved state was not durable after a restored-session reload.');
+    const savedGeneration=String(saved.body?.history?.generation||'');
+    assert(/^\d+$/.test(savedGeneration),'Mutable save did not return a history generation.');
+    console.log('[real-stack] stage history-undo');
+    const undone=await primary.request('/api/history',{
+      method:'POST',
+      headers:{'if-match':String(saved.body?.revision||''),'x-rheomiq-history-generation':savedGeneration},
+      body:{action:'undo',updatedAt:new Date().toISOString()},
+    });
+    expect(undone,200,undefined,'history-undo');
+    assert(undone.body?.data?.state?.settings?.accountNames?.['qa-cash']!=='Local Real Stack QA','Undo did not restore the previous finance state.');
+
+    console.log('[real-stack] stage history-redo');
+    const redone=await primary.request('/api/history',{
+      method:'POST',
+      headers:{'if-match':String(undone.body?.revision||''),'x-rheomiq-history-generation':String(undone.body?.history?.generation||'')},
+      body:{action:'redo',updatedAt:new Date().toISOString()},
+    });
+    expect(redone,200,undefined,'history-redo');
+    assert(redone.body?.data?.state?.settings?.accountNames?.['qa-cash']==='Local Real Stack QA','Redo did not restore the saved finance state.');
+
+    console.log('[real-stack] stage card-vault-write');
+    const vaultSaved=await primary.request('/api/card-secrets',{
+      method:'PUT',
+      body:{cardId:TEST_CARD_ID,pan:TEST_PAN,expiry:TEST_EXPIRY,cvv:TEST_CVV},
+    });
+    expect(vaultSaved,200,undefined,'card-vault-write');
+    assert(vaultSaved.body?.last4==='4242','Card vault write did not return the synthetic last4.');
+
+    console.log('[real-stack] stage card-vault-read');
+    const vaultRead=await primary.request('/api/card-secrets',{method:'POST',body:{cardId:TEST_CARD_ID}});
+    expect(vaultRead,200,undefined,'card-vault-read');
+    assert(vaultRead.body?.pan===TEST_PAN&&vaultRead.body?.expiry===TEST_EXPIRY&&vaultRead.body?.cvv===TEST_CVV,'Card vault round-trip did not preserve the synthetic secret.');
 
     console.log('[real-stack] stage backup');
     const backup=await primary.request('/api/backup',{method:'POST',body:{}});
@@ -320,8 +356,61 @@ async function main(){
     assert(String(stateRows[0]?.revision)===String(persisted.body?.revision),'API revision and persisted database revision disagree.');
     assert(stateRows[0]?.finance_storage_mode==='relational_v1','Relational finance storage mode is not active.');
 
-    const backupRows=await upstreamJson(`${local.apiUrl}/rest/v1/rheomiq_backups?select=id,reason,revision&order=id.desc&limit=1`,local.serviceRole) as any[];
+    const backupId=String(backup.body?.path||'').split('/').pop()||'';
+    const backupRows=await upstreamJson(`${local.apiUrl}/rest/v1/rheomiq_backups?id=eq.${encodeURIComponent(backupId)}&select=id,reason,revision,data&limit=1`,local.serviceRole) as any[];
     assert(Array.isArray(backupRows)&&backupRows.length===1,'Direct database read-back did not find the real backup row.');
+    const backupData=backupRows[0]?.data;
+    validateCompleteFinanceData(backupData);
+    const serializedBackup=JSON.stringify(backupData);
+    assert(!serializedBackup.includes(TEST_PAN)&&!serializedBackup.includes(TEST_EXPIRY)&&!serializedBackup.includes(TEST_CVV),'Backup unexpectedly contains card-vault plaintext.');
+
+    console.log('[real-stack] stage post-backup-mutation');
+    const postBackupHistory=await primary.request('/api/history');
+    expect(postBackupHistory,200,undefined,'post-backup-history');
+    const postBackupState=structuredClone(redone.body.data.state);
+    postBackupState.settings={
+      ...postBackupState.settings,
+      accountNames:{...(postBackupState.settings?.accountNames||{}),'qa-cash':'Post-backup mutation'},
+    };
+    const postBackupSave=await primary.request('/api/data',{
+      method:'PUT',
+      headers:{'if-match':String(redone.body?.revision||''),'x-rheomiq-history-generation':String(postBackupHistory.body?.generation||'')},
+      body:{state:postBackupState,updatedAt:new Date().toISOString(),historyLabel:'Post-backup mutation'},
+    });
+    expect(postBackupSave,200,undefined,'post-backup-mutation');
+
+    console.log('[real-stack] stage backup-restore');
+    const restoredFromBackup=await primary.request('/api/import',{
+      method:'POST',
+      headers:{'x-rheomiq-confirm-import':'replace'},
+      body:backupData,
+    });
+    expect(restoredFromBackup,200,undefined,'backup-restore');
+    assert(Number(restoredFromBackup.body?.revision)>Number(postBackupSave.body?.revision),'Backup restore did not advance the canonical revision.');
+
+    const recovered=await primary.request('/api/data');
+    expect(recovered,200,undefined,'backup-restore-read');
+    assert(recovered.body?.data?.state?.settings?.accountNames?.['qa-cash']==='Local Real Stack QA','Backup restore did not recover the backed-up finance state.');
+
+    const recoveredHistory=await primary.request('/api/history');
+    expect(recoveredHistory,200,undefined,'backup-restore-history');
+    assert(String(recoveredHistory.body?.financeRevision||'')===String(recovered.body?.revision||''),'Recovered history cursor does not match the finance revision.');
+    assert(recoveredHistory.body?.points?.some((point:any)=>point.current===true&&point.label==='Εισαγωγή δεδομένων'),'Recovered history does not expose the import recovery point.');
+
+    const auditRows=await upstreamJson(`${local.apiUrl}/rest/v1/rheomiq_audit_log?select=action,revision&order=id.desc&limit=12`,local.serviceRole) as any[];
+    const auditActions=new Set(Array.isArray(auditRows)?auditRows.map(row=>String(row?.action||'')):[]);
+    assert(auditActions.has('backup')&&auditActions.has('import')&&auditActions.has('undo')&&auditActions.has('redo'),'Recovery audit trail is missing expected actions.');
+
+    const vaultAfterRestore=await primary.request('/api/card-secrets',{method:'POST',body:{cardId:TEST_CARD_ID}});
+    expect(vaultAfterRestore,200,undefined,'card-vault-after-restore');
+    assert(vaultAfterRestore.body?.pan===TEST_PAN&&vaultAfterRestore.body?.expiry===TEST_EXPIRY&&vaultAfterRestore.body?.cvv===TEST_CVV,'Finance backup restore unexpectedly changed the separate card vault.');
+
+    const health=await upstreamJson(`${local.apiUrl}/rest/v1/rpc/rheomiq_database_health`,local.serviceRole,{method:'POST',body:'{}'}) as any;
+    assert(health?.ok===true&&health?.storageMode==='relational_v1','Database health is not clean after backup restore.');
+    assert(Number(health?.checks?.history_revision_mismatches||0)===0&&Number(health?.checks?.history_current_point_state_mismatches||0)===0,'History/state integrity is not clean after backup restore.');
+
+    console.log('[real-stack] stage card-vault-delete');
+    expect(await primary.request('/api/card-secrets',{method:'DELETE',body:{cardId:TEST_CARD_ID}}),200,undefined,'card-vault-delete');
 
     console.log('[real-stack] stage device-lifecycle');
     const secondary=new CookieClient('QA Browser B');
@@ -356,7 +445,8 @@ async function main(){
 
     console.log('[real-stack] PASS auth/password, TOTP enrollment+challenge, session restore/logout');
     console.log('[real-stack] PASS active-device list/revoke/revoke-others/stale-session/re-auth');
-    console.log('[real-stack] PASS import, mutable persistence, revision conflict, backup, direct DB read-back');
+    console.log('[real-stack] PASS import, mutable persistence, revision conflict, history undo/redo, backup/restore, direct DB read-back');
+    console.log('[real-stack] PASS card-vault encrypted boundary remains separate from finance backup/recovery');
   }finally{
     server.kill('SIGTERM');
     await Promise.race([

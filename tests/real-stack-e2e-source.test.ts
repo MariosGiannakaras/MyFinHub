@@ -40,6 +40,11 @@ describe('zero-cost real-stack E2E source contract',()=>{
     expect(script).toContain("[real-stack] stage import");
     expect(script).toContain("[real-stack] stage mutable-save");
     expect(script).toContain("[real-stack] stage device-lifecycle");
+    expect(script).toContain("[real-stack] stage history-undo");
+    expect(script).toContain("[real-stack] stage history-redo");
+    expect(script).toContain("[real-stack] stage card-vault-write");
+    expect(script).toContain("[real-stack] stage backup-restore");
+    expect(script).toContain('rheomiq_database_health');
     expect(script).toContain("stage='request'");
     expect(script).toContain('/api/auth/mfa/verify');
     expect(script).toContain('/api/auth/devices');
@@ -48,6 +53,8 @@ describe('zero-cost real-stack E2E source contract',()=>{
     expect(script).toContain('/api/data');
     expect(script).toContain("'REVISION_CONFLICT'");
     expect(script).toContain('/api/backup');
+    expect(script).toContain('/api/card-secrets');
+    expect(script).toContain('!serializedBackup.includes(TEST_PAN)');
     expect(script).toContain('rheomiq_app_state');
     expect(script).toContain("finance_storage_mode==='relational_v1'");
     expect(script).not.toContain('ahsukppxwaiagampsuzb');

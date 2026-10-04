@@ -7,7 +7,9 @@ on:
     paths:
       - '.github/workflows/real-stack-e2e.yml'
       - 'scripts/real-stack-e2e.ts'
+      - 'scripts/real-stack-fixture.ts'
       - 'tests/real-stack-e2e-source.test.ts'
+      - 'tests/real-stack-fixture.test.ts'
       - 'package.json'
 
 permissions:
