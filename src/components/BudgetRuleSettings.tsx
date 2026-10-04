@@ -14,6 +14,7 @@ import { normalizeTransactionRule, transactionRuleMatchingEvents } from '../lib/
 import { accountDisplayName } from '../lib/ui';
 import { money } from '../lib/format';
 import type { FinanceData, MonthlyBudget, TransactionRule, TransactionRuleScope } from '../types';
+import { userErrorMessage } from '../lib/userMessage';
 
 const now=()=>new Date().toISOString();
 const ruleId=()=>`rule-${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
@@ -30,7 +31,9 @@ export function BudgetRuleSettings({data,asOf,budgetMonth,onUpsertBudget,onDelet
   const [budgetAmount,setBudgetAmount]=useState('');
   const [budgetAlert,setBudgetAlert]=useState('80');
   const [budgetError,setBudgetError]=useState('');
+  const [budgetListLimit,setBudgetListLimit]=useState(24);
   const budgets=budgetProgress(data,month);
+  const visibleBudgets=budgets.slice(0,budgetListLimit);
 
   const [editingRuleId,setEditingRuleId]=useState<string|null>(null);
   const [ruleName,setRuleName]=useState('');
@@ -43,6 +46,7 @@ export function BudgetRuleSettings({data,asOf,budgetMonth,onUpsertBudget,onDelet
   const [ruleDefaultNote,setRuleDefaultNote]=useState('');
   const [ruleScope,setRuleScope]=useState<'all'|TransactionRuleScope>('manual');
   const [ruleError,setRuleError]=useState('');
+  const [ruleListLimit,setRuleListLimit]=useState(24);
   const accounts=allAccounts(data).filter(account=>account.kind!=='credit');
   const accountIds=new Set(accounts.map(account=>account.id));
   const categoryNames=new Set(expenseTree.map(item=>item.name));
@@ -64,7 +68,7 @@ export function BudgetRuleSettings({data,asOf,budgetMonth,onUpsertBudget,onDelet
       const existing=(data.state.budgets??[]).find(item=>item.id===id);const timestamp=now();
       const next=normalizeBudget({id,month,scope:budgetScope,category:budgetScope==='category'?budgetCategory:undefined,amount:Number(budgetAmount.replace(',','.')),alertThreshold:Number(budgetAlert.replace(',','.'))/100,createdAt:existing?.createdAt??timestamp,updatedAt:timestamp});
       onUpsertBudget(next);setBudgetAmount('');setBudgetError('');
-    }catch(error){setBudgetError(error instanceof Error?error.message:'Δεν μπορέσαμε να αποθηκεύσουμε τον προϋπολογισμό. Έλεγξε τα στοιχεία και δοκίμασε ξανά.')}
+    }catch(error){setBudgetError(userErrorMessage(error,'Δεν μπορέσαμε να αποθηκεύσουμε τον προϋπολογισμό. Έλεγξε τα στοιχεία και δοκίμασε ξανά.'))}
   };
 
   const resetRule=()=>{setEditingRuleId(null);setRuleName('');setRuleDescription('');setRuleMerchant('');setRuleAccount('');setRuleMode('contains');setRuleCategory(expenseFallback);setRuleSubcategory('');setRuleDefaultNote('');setRuleScope('manual');setRuleError('')};
@@ -74,7 +78,7 @@ export function BudgetRuleSettings({data,asOf,budgetMonth,onUpsertBudget,onDelet
       const existing=(data.state.transactionRules??[]).find(item=>item.id===editingRuleId);const timestamp=now();
       const next=normalizeTransactionRule({...draftRule,id:existing?.id??ruleId(),enabled:existing?.enabled??true,createdAt:existing?.createdAt??timestamp,updatedAt:timestamp});
       onUpsertRule(next);resetRule();
-    }catch(error){setRuleError(error instanceof Error?error.message:'Δεν μπορέσαμε να αποθηκεύσουμε τον αυτοματισμό. Έλεγξε τις συνθήκες και την ενέργεια και δοκίμασε ξανά.')}
+    }catch(error){setRuleError(userErrorMessage(error,'Δεν μπορέσαμε να αποθηκεύσουμε τον αυτοματισμό. Έλεγξε τις συνθήκες και την ενέργεια και δοκίμασε ξανά.'))}
   };
   const moveRule=(index:number,direction:-1|1)=>{
     const target=index+direction;if(target<0||target>=rules.length)return;
@@ -108,7 +112,7 @@ export function BudgetRuleSettings({data,asOf,budgetMonth,onUpsertBudget,onDelet
     {view!=='rules'?<section className="panel surface-raised budget-settings-panel" data-budget-management><div className="panel-head"><div><span>Προϋπολογισμοί περιόδου</span><small>Όρισε συνολικό ή ανά κατηγορία όριο. Οι επιστροφές μειώνουν τη χρήση, τα split portions μετρώνται μία φορά και οι εσωτερικές μεταφορές εξαιρούνται.</small></div><Gauge/></div>
       <div className="settings-form budget-editor-grid">{budgetMonth?null:<label><span>Μήνας</span><AppTextInput type="month" value={month} onChange={event=>setInternalMonth(event.target.value)}/></label>}<label><span>Τύπος ορίου</span><AppSelectInput value={budgetScope} onChange={event=>setBudgetScope(event.target.value as 'category'|'overall')}><option value="category">Κατηγορία</option><option value="overall">Συνολικό όριο</option></AppSelectInput></label>{budgetScope==='category'?<label><span>Κατηγορία</span><CategorySelectInput settings={data.state.settings} kind="expense" category={budgetCategory} includeSubcategories={false} onChange={selection=>setBudgetCategory(selection.category)}/></label>:null}<label><span>Όριο €</span><MoneyInput value={budgetAmount} onValueChange={setBudgetAmount} placeholder="0,00" invalid={Boolean(budgetError)}/></label><label><span>Προειδοποίηση %</span><AppTextInput inputMode="decimal" value={budgetAlert} onChange={event=>setBudgetAlert(event.target.value.replace(',','.'))}/></label></div>
       {budgetError?<FormError id="budget-editor-error">{budgetError}</FormError>:null}<Button type="button" variant="primary" onClick={saveBudget}><Plus size={16}/> Αποθήκευση προϋπολογισμού</Button>
-      {budgets.length?<div className="budget-settings-list">{budgets.map(row=><article key={row.id} className={`budget-setting-row ${row.status}`}><div><b>{row.scope==='overall'?'Συνολικό όριο':row.category}</b><small>{money.format(row.used)} από {money.format(row.limit)} · {Math.round(row.ratio*100)}%</small></div><div className="budget-meter" role="progressbar" aria-label={`Χρήση προϋπολογισμού ${row.scope==='overall'?'συνολικά':row.category}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(100,Math.round(row.ratio*100))} aria-valuetext={`${Math.round(row.ratio*100)}%`}><i style={{width:`${Math.min(100,row.ratio*100)}%`}}/></div><IconButton aria-label={`Διαγραφή προϋπολογισμού ${row.scope==='overall'?'συνολικά':row.category}`} onClick={()=>onDeleteBudget(row.id)}><Trash2/></IconButton></article>)}</div>:<div className="empty-inline">Δεν υπάρχουν προϋπολογισμοί για την επιλεγμένη περίοδο.</div>}
+      {budgets.length?<><div className="budget-settings-list">{visibleBudgets.map(row=><article key={row.id} className={`budget-setting-row ${row.status}`}><div><b>{row.scope==='overall'?'Συνολικό όριο':row.category}</b><small>{money.format(row.used)} από {money.format(row.limit)} · {Math.round(row.ratio*100)}%</small></div><div className="budget-meter" role="progressbar" aria-label={`Χρήση προϋπολογισμού ${row.scope==='overall'?'συνολικά':row.category}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(100,Math.round(row.ratio*100))} aria-valuetext={`${Math.round(row.ratio*100)}%`}><i style={{width:`${Math.min(100,row.ratio*100)}%`}}/></div><IconButton aria-label={`Διαγραφή προϋπολογισμού ${row.scope==='overall'?'συνολικά':row.category}`} onClick={()=>onDeleteBudget(row.id)}><Trash2/></IconButton></article>)}</div>{budgets.length>visibleBudgets.length?<Button type="button" variant="secondary" className="budget-settings-more" onClick={()=>setBudgetListLimit(limit=>limit+24)}>Προβολή περισσότερων · {budgets.length-visibleBudgets.length} ακόμη</Button>:null}</>:<div className="empty-inline">Δεν υπάρχουν προϋπολογισμοί για την επιλεγμένη περίοδο.</div>}
     </section>:null}
 
     {view!=='budgets'?<details open={view==='rules'?true:undefined} className="panel surface-raised technical-settings rule-settings-panel" data-advanced-automations>
@@ -127,7 +131,7 @@ export function BudgetRuleSettings({data,asOf,budgetMonth,onUpsertBudget,onDelet
       <div className="rule-preview" role="status" aria-live="polite"><div className="logic-note compact"><ListFilter/><span>Μόνο προεπισκόπηση: {previewMatches.length} υπάρχουσες κινήσεις θα ταίριαζαν με αυτές τις συνθήκες. Δεν αλλάζει καμία από αυτές.</span></div>{previewMatches.length?<ul>{previewMatches.slice(0,3).map(event=><li key={event.id}><span>{event.note}</span><b>{money.format(event.amount)}</b></li>)}</ul>:null}</div>
       {ruleError?<FormError id="rule-editor-error">{ruleError}</FormError>:null}
       <div className="editor-actions">{editingRuleId?<Button type="button" variant="secondary" onClick={resetRule}>Ακύρωση επεξεργασίας</Button>:null}<Button type="button" variant="primary" onClick={saveRule}>{editingRuleId?'Ενημέρωση αυτοματισμού':'Προσθήκη αυτοματισμού'}</Button></div>
-      {rules.length?<div className="rule-settings-list" aria-label="Σειρά αυτοματισμών">{rules.map((rule,index)=>{const invalid=invalidReason(rule);return <article key={rule.id} className={rule.enabled?'':'disabled'} data-rule-invalid={invalid?'true':'false'}><div><b>{index+1}. {rule.name}</b><small><strong>Όταν</strong> {conditionLabel(rule)} · <strong>τότε</strong> {actionLabel(rule)} · {rule.scopes.length===3?'κάθε νέα υποστηριζόμενη κίνηση':rule.scopes.map(scopeLabel).join(', ')}</small>{invalid?<small role="alert">Χρειάζεται έλεγχο: {invalid}</small>:null}</div><div className="rule-row-actions"><IconButton aria-label={`Μετακίνηση αυτοματισμού ${rule.name} προς τα πάνω`} disabled={index===0} onClick={()=>moveRule(index,-1)}><ChevronUp/></IconButton><IconButton aria-label={`Μετακίνηση αυτοματισμού ${rule.name} προς τα κάτω`} disabled={index===rules.length-1} onClick={()=>moveRule(index,1)}><ChevronDown/></IconButton><Button type="button" variant="secondary" onClick={()=>onUpsertRule({...rule,enabled:!rule.enabled,updatedAt:now()})}>{rule.enabled?'Παύση':'Ενεργοποίηση'}</Button><IconButton aria-label={`Επεξεργασία αυτοματισμού ${rule.name}`} onClick={()=>editRule(rule)}><Pencil/></IconButton><IconButton aria-label={`Διαγραφή αυτοματισμού ${rule.name}`} onClick={()=>onDeleteRule(rule.id)}><Trash2/></IconButton></div></article>})}</div>:<div className="empty-inline">Δεν υπάρχουν αυτοματισμοί. Οι νέες κινήσεις παραμένουν χειροκίνητες.</div>}
+      {rules.length?<><div className="rule-settings-list" aria-label="Σειρά αυτοματισμών">{rules.slice(0,ruleListLimit).map((rule,index)=>{const invalid=invalidReason(rule);return <article key={rule.id} className={rule.enabled?'':'disabled'} data-rule-invalid={invalid?'true':'false'}><div><b>{index+1}. {rule.name}</b><small><strong>Όταν</strong> {conditionLabel(rule)} · <strong>τότε</strong> {actionLabel(rule)} · {rule.scopes.length===3?'κάθε νέα υποστηριζόμενη κίνηση':rule.scopes.map(scopeLabel).join(', ')}</small>{invalid?<small role="alert">Χρειάζεται έλεγχο: {invalid}</small>:null}</div><div className="rule-row-actions"><IconButton aria-label={`Μετακίνηση αυτοματισμού ${rule.name} προς τα πάνω`} disabled={index===0} onClick={()=>moveRule(index,-1)}><ChevronUp/></IconButton><IconButton aria-label={`Μετακίνηση αυτοματισμού ${rule.name} προς τα κάτω`} disabled={index===rules.length-1} onClick={()=>moveRule(index,1)}><ChevronDown/></IconButton><Button type="button" variant="secondary" onClick={()=>onUpsertRule({...rule,enabled:!rule.enabled,updatedAt:now()})}>{rule.enabled?'Παύση':'Ενεργοποίηση'}</Button><IconButton aria-label={`Επεξεργασία αυτοματισμού ${rule.name}`} onClick={()=>editRule(rule)}><Pencil/></IconButton><IconButton aria-label={`Διαγραφή αυτοματισμού ${rule.name}`} onClick={()=>onDeleteRule(rule.id)}><Trash2/></IconButton></div></article>})}</div>{rules.length>ruleListLimit?<Button type="button" variant="secondary" className="rule-settings-more" onClick={()=>setRuleListLimit(limit=>limit+24)}>Προβολή περισσότερων · {rules.length-ruleListLimit} ακόμη</Button>:null}</>:<div className="empty-inline">Δεν υπάρχουν αυτοματισμοί. Οι νέες κινήσεις παραμένουν χειροκίνητες.</div>}
     </details>:null}
   </div>;
 }

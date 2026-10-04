@@ -3,13 +3,16 @@ import { describe, expect, it } from 'vitest';
 
 const source=readFileSync(new URL('../src/pages/CardsPage.tsx',import.meta.url),'utf8');
 const css=readFileSync(new URL('../src/styles/cards-approved-surrounding.css',import.meta.url),'utf8');
+const legacyCardCss=readFileSync(new URL('../src/styles/cards-prototype-presentation.css',import.meta.url),'utf8');
+const interactiveCardCss=readFileSync(new URL('../src/components/InteractivePaymentCard.css',import.meta.url),'utf8');
 
 describe('approved Cards surrounding desktop target source contract',()=>{
   it('keeps the existing bank-by-bank card workspace and card handlers intact',()=>{
     expect(source.match(/className="cards-workspace cards-prototype-workspace surface-raised"/g)).toHaveLength(1);
     expect(source.match(/className="cards-grid cards-prototype-grid"/g)).toHaveLength(1);
     expect(source).toContain('<InteractivePaymentCard');
-    expect(source).toContain('onEditDetails={editCardDetails} onArchive={archive}');
+    expect(source).toContain('onEditCard={editCardProfile} onEditDetails={editCardDetails} onArchive={archive}');
+    expect(source).toContain('initialCard={profileCard}');
     expect(source).toContain('<CardDetailsDialog');
     expect(source).toContain('onClick={()=>restore(card)}');
     expect(source).toContain('onClick={()=>setDeleteTarget(card)}');
@@ -27,6 +30,17 @@ describe('approved Cards surrounding desktop target source contract',()=>{
     expect(source).not.toContain('Συνολικές χρεώσεις');
     expect(source).not.toContain('Διαθέσιμο υπόλοιπο');
     expect(source).not.toContain('Πληρωμές κάρτας');
+  });
+
+  it('keeps active card themes while retiring duplicate legacy card geometry',()=>{
+    expect(legacyCardCss).toContain('.r-card-piraeus-yellow{');
+    expect(legacyCardCss).toContain('.r-card-revolut-gradient{');
+    expect(legacyCardCss).not.toContain('.r-card-inner{');
+    expect(legacyCardCss).not.toContain('.r-card-number-line{');
+    expect(legacyCardCss).not.toContain('.card-create-backdrop{');
+    expect(legacyCardCss).not.toContain('.card-design-grid{');
+    expect(interactiveCardCss).toContain('.prototype-payment-card .card-inner{');
+    expect(interactiveCardCss).toContain('.prototype-payment-card .card-number{');
   });
 
   it('does not restyle protected card workspace/card visual selectors',()=>{

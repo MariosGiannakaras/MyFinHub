@@ -19,7 +19,9 @@ import { allRecurringItems, recurringAccountError } from '../lib/recurring';
 import { pendingScheduled, scheduledToEvent, transitionScheduled } from '../lib/scheduled';
 import { accountDisplayName } from '../lib/ui';
 import { money } from '../lib/format';
+import { accountMatchesFinancialProvider } from '../lib/financialProviders';
 import type { EventKind, FinanceData, FinanceEvent, SavingSource, ScheduledTransaction } from '../types';
+import { userErrorMessage } from '../lib/userMessage';
 
 export type QuickActionContext =
   | {token:string;mode:'generic';kind?:EventKind;prefill?:QuickPrefill|null}
@@ -45,7 +47,7 @@ function ContextModal({data,asOf,context,onClose,onCreate,onCompleteScheduled}:{
   const loans=useMemo(()=>[...(data.seed.loans??[]).map(item=>data.state.loanOverrides?.[item.id]??item),...(data.state.customLoans??[])],[data]);
   const loan=context.mode==='loan'?loans.find(item=>item.id===context.loanId):undefined;
   const scheduled=context.mode==='scheduled'?pendingScheduled(data).find(item=>item.id===context.scheduledId):undefined;
-  const sameBankAccounts=context.mode==='credit'&&card?accounts.filter(account=>account.id.startsWith(`${card.bankId}-`)):accounts;
+  const sameBankAccounts=context.mode==='credit'&&card?accounts.filter(account=>accountMatchesFinancialProvider(account,card.bankId)):accounts;
   const savingsTargets=accounts.filter(account=>account.kind==='savings');
   const savingsSources=accounts.filter(account=>account.kind!=='savings');
   const initialAccount=context.mode==='credit'
@@ -151,7 +153,7 @@ function ContextModal({data,asOf,context,onClose,onCreate,onCompleteScheduled}:{
         event.savingSource=context.savingSource??'manual_transfer';
       }
       onCreate(event);onClose();
-    }catch(reason){setError(reason instanceof Error?reason.message:'Δεν μπορέσαμε να ολοκληρώσουμε την κίνηση. Έλεγξε τα στοιχεία και δοκίμασε ξανά.')}
+    }catch(reason){setError(userErrorMessage(reason,'Δεν μπορέσαμε να ολοκληρώσουμε την κίνηση. Έλεγξε τα στοιχεία και δοκίμασε ξανά.'))}
   };
 
   const title=context.mode==='credit'?(context.action==='payment'?(selectedStatement?'Πληρωμή δήλωσης πιστωτικής':'Πληρωμή πιστωτικής'):'Αγορά με πιστωτική'):context.mode==='lending'?(context.action==='repay'?'Επιστροφή δανεικών':'Νέα οφειλή προς εσένα'):context.mode==='loan'?(loan&&isSelfLoan(loan)?'Επιστροφή ΒΟΗΘΕΙΑΣ':installmentCount>1?'Πληρωμή δόσεων':'Πληρωμή δόσης'):context.mode==='scheduled'?'Ολοκλήρωση προγραμματισμένης':context.mode==='recurring'?'Πληρωμή παγίου':'Μεταφορά στην αποταμίευση';

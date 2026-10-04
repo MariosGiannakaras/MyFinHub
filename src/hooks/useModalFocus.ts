@@ -10,7 +10,7 @@ function isTopmostModal(root: HTMLElement) {
 }
 
 function canReceiveFocus(element:HTMLElement|null){
-  return Boolean(element&&element.matches(FOCUSABLE)&&element.isConnected&&element.getClientRects().length>0);
+  return Boolean(element&&element.matches(FOCUSABLE)&&element.tabIndex>=0&&element.isConnected&&element.getClientRects().length>0);
 }
 
 function addDescription(element:HTMLElement,id:string){
@@ -78,16 +78,22 @@ export function useModalFocus<T extends HTMLElement>(open: boolean, preferred?: 
       }
       if (event.key !== 'Tab') return;
       const items = [...root.querySelectorAll<HTMLElement>(FOCUSABLE)].filter(canReceiveFocus);
-      if (!items.length) { event.preventDefault(); root.focus({ preventScroll: true }); return; }
+      event.preventDefault();
+      if (!items.length) { root.focus({ preventScroll: true }); return; }
       const first = items[0];
       const last = items[items.length - 1];
       if (!root.contains(document.activeElement)) {
-        event.preventDefault();
         (event.shiftKey?last:first).focus({ preventScroll: true });
         return;
       }
-      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus({ preventScroll: true }); }
-      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus({ preventScroll: true }); }
+      const current=document.activeElement instanceof HTMLElement?document.activeElement:null;
+      const currentIndex=current?items.indexOf(current):-1;
+      const nextIndex=currentIndex<0
+        ?(event.shiftKey?items.length-1:0)
+        :event.shiftKey
+          ?(currentIndex-1+items.length)%items.length
+          :(currentIndex+1)%items.length;
+      items[nextIndex].focus({ preventScroll: true });
     };
     document.addEventListener('keydown', trap);
     return () => {

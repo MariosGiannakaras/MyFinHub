@@ -1,10 +1,12 @@
-import { Archive, Copy, Eye, EyeOff, Pencil, X } from 'lucide-react';
+import { Archive, Copy, Eye, EyeOff, KeyRound, Pencil, X } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
 import { BankBrandMark } from './BankBrandMark';
-import { cardThemeClass } from '../lib/cardDesigns';
+import { CardNetworkMark } from './CardNetworkMark';
+import { cardBrandSurfaceTone, cardThemeClass } from '../lib/cardDesigns';
 import { cardLabel } from '../lib/cards';
 import { cardVaultErrorMessage, revealCardSecret } from '../lib/cardVaultClient';
 import type { CardBank, PaymentCard } from '../types';
+import './InteractivePaymentCard.css';
 
 type Secrets={pan?:string;expiry?:string;cvv?:string};
 
@@ -14,18 +16,14 @@ function kindLabel(card:PaymentCard){return card.kind==='credit'?'Credit':card.k
 function PrototypeBrand({card,bank}:{card:PaymentCard;bank:CardBank}){
   const design=card.designId??'';
   const alphaVariant=design==='alpha'?'enter':design.startsWith('alpha')?'bonus':null;
-  return <><BankBrandMark id={bank.id} name={bank.name} compact={false}/>{alphaVariant?<span className={alphaVariant==='enter'?'alpha-enter':'alpha-bonus-word'}>{alphaVariant}</span>:null}</>;
-}
-
-function PrototypeNetwork({card}:{card:PaymentCard}){
-  if(card.network==='mastercard')return <div className="card-network mastercard-network" data-network="MASTERCARD"><span className="mastercard-symbol" aria-label="Mastercard"><i/><i/></span><span className="mastercard-word">mastercard</span><span className="card-network-type">{kindLabel(card)}</span></div>;
-  return <div className="card-network visa-network" data-network="VISA"><span className="card-network-main">VISA</span><span className="card-network-type">{kindLabel(card)}</span></div>;
+  return <><BankBrandMark id={bank.id} name={bank.name} compact={false} role="card-mark" surfaceTone={cardBrandSurfaceTone(card)}/>{alphaVariant?<span className={alphaVariant==='enter'?'alpha-enter':'alpha-bonus-word'}>{alphaVariant}</span>:null}</>;
 }
 
 export function InteractivePaymentCard({
-  card,bank,large=false,onEditDetails,onArchive,archiveDisabled=false,
+  card,bank,large=false,onEditCard,onEditDetails,onArchive,archiveDisabled=false,
 }:{
   card:PaymentCard;bank:CardBank;large?:boolean;
+  onEditCard?:(card:PaymentCard)=>void;
   onEditDetails?:(card:PaymentCard)=>void;
   onArchive?:(card:PaymentCard)=>void|Promise<void>;
   archiveDisabled?:boolean;
@@ -85,7 +83,8 @@ export function InteractivePaymentCard({
           <div className="card-brand-block"><div className="card-brand"><PrototypeBrand card={card} bank={bank}/></div><div className="card-nickname">{card.nickname}</div></div>
           <div className="card-toolbar">
             <button className="card-icon-btn" type="button" disabled={busy} aria-pressed={visible} aria-label={visible?'Απόκρυψη στοιχείων':'Εμφάνιση στοιχείων'} title={visible?'Απόκρυψη στοιχείων':'Εμφάνιση στοιχείων'} onClick={()=>void toggleReveal()}>{visible?<EyeOff/>:<Eye/>}</button>
-            {onEditDetails?<button className="card-icon-btn" type="button" disabled={busy} aria-label={`Επεξεργασία ασφαλών στοιχείων ${card.nickname}`} title="Επεξεργασία στοιχείων κάρτας" onClick={()=>onEditDetails(card)}><Pencil/></button>:null}
+            {onEditCard?<button className="card-icon-btn" type="button" disabled={busy} aria-label={`Επεξεργασία κάρτας ${card.nickname}`} title="Επεξεργασία κάρτας" onClick={()=>onEditCard(card)}><Pencil/></button>:null}
+            {onEditDetails?<button className="card-icon-btn" type="button" disabled={busy} aria-label={`Ασφαλή στοιχεία ${card.nickname}`} title="Ασφαλή στοιχεία · PAN / λήξη / CVV" onClick={()=>onEditDetails(card)}><KeyRound/></button>:null}
             {onArchive?<button className="card-icon-btn" type="button" disabled={busy||archiveDisabled} aria-label="Αρχειοθέτηση κάρτας" title="Αρχειοθέτηση κάρτας" onClick={()=>{setDeleteProgress(0);setDeleteOffset(0);setDeleteOpen(true)}}><Archive/></button>:null}
           </div>
         </header>
@@ -94,7 +93,7 @@ export function InteractivePaymentCard({
           <div className="card-fields">
             <div className="card-field"><span className="card-field-label">VALID THRU</span><div className="card-field-line"><span className={`card-field-value ${visible?'':'masked'}`}>{shownExpiry}</span><button className="copy-mini" type="button" disabled={busy} aria-label="Αντιγραφή λήξης" title="Αντιγραφή λήξης" onClick={()=>void copy('expiry','Η λήξη')}><Copy/></button></div></div>
             <div className="card-field"><span className="card-field-label">CVV</span><div className="card-field-line"><span className={`card-field-value ${visible?'':'masked'}`}>{shownCvv}</span><button className="copy-mini" type="button" disabled={busy} aria-label="Αντιγραφή CVV" title="Αντιγραφή CVV" onClick={()=>void copy('cvv','Το CVV')}><Copy/></button></div></div>
-            <PrototypeNetwork card={card}/>
+            <CardNetworkMark network={card.network} detail={kindLabel(card)}/>
           </div>
         </div>
         {deleteOpen?<div className="delete-confirm r-card-archive-confirm"><div className="delete-confirm-head"><div className="delete-confirm-copy"><b>Αρχειοθέτηση κάρτας;</b><small>Σύρε μέχρι τέρμα για επιβεβαίωση. Η κάρτα θα μεταφερθεί στο αρχείο και μπορεί να επανέλθει με τα ίδια στοιχεία.</small></div><button className="delete-cancel" type="button" aria-label="Ακύρωση αρχειοθέτησης" title="Ακύρωση αρχειοθέτησης" onClick={resetDelete}><X/></button></div><div ref={sliderRef} className="delete-slider" style={{'--p':deleteProgress} as React.CSSProperties}><span className="delete-slider-label">ΣΥΡΕ ΓΙΑ ΑΡΧΕΙΟΘΕΤΗΣΗ</span><button className="delete-slider-thumb r-card-archive-keyboard" type="button" aria-label="Σύρε για αρχειοθέτηση" title="Αρχειοθέτηση κάρτας" style={{transform:`translateX(${deleteOffset}px)`}} onClick={e=>{if(e.detail===0)void commitArchive()}} onPointerDown={e=>{e.currentTarget.setPointerCapture(e.pointerId);moveDelete(e.clientX)}} onPointerMove={e=>{if(e.currentTarget.hasPointerCapture(e.pointerId))moveDelete(e.clientX)}} onPointerUp={e=>{try{e.currentTarget.releasePointerCapture(e.pointerId)}catch{}if(deleteProgress>=.92){setDeleteProgress(1);void commitArchive()}else{setDeleteProgress(0);setDeleteOffset(0)}}} onPointerCancel={()=>{setDeleteProgress(0);setDeleteOffset(0)}}><Archive/><span className="sr-only">Αρχειοθέτηση</span></button></div></div>:null}

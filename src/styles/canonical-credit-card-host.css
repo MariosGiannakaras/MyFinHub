@@ -175,9 +175,10 @@
     display:grid;
     gap:7px;
     padding:11px 12px;
-    border:1px solid #dce5ef;
+    border:1px solid var(--border-subtle);
     border-radius:14px;
-    background:rgba(249,252,255,.9);
+    background:var(--surface-2);
+    color:var(--ink);
     box-shadow:var(--mobile-shadow-soft,var(--shadow-soft));
   }
   .credit-card-redesign-page .semantic-table td{
@@ -216,4 +217,9 @@
   .credit-card-redesign-page .credit-payments-table td:nth-child(2)::before{content:"Από λογαριασμό"}
   .credit-card-redesign-page .deleted-credit-history .semantic-table td:nth-child(2)::before{content:"Τύπος"}
   .credit-card-redesign-page .deleted-credit-history .semantic-table td:nth-child(3)::before{content:"Περιγραφή"}
+}
+
+.credit-history-more{margin-top:10px;justify-self:start}
+@media(max-width:680px){
+  .credit-history-more{width:100%;min-height:44px;justify-content:center}
 }

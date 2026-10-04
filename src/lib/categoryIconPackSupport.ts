@@ -49,3 +49,38 @@ export function categoryIconPackPreviewKeys(pack:CategoryIconPack):readonly Cate
   if(pack==='heroicons'||pack==='bootstrap')return ['shopping','home','flight'];
   return ['coffee','home','wallet'];
 }
+
+
+export function categoryIconPackOptionCount(pack:CategoryIconPack){
+  if(pack==='lucide')return null;
+  return keysForPack(pack)?.size??0;
+}
+
+
+const COFFEE_GROUP=new Set<CategoryIconKey>(['coffee','dining']);
+const SHOPPING_GROUP=new Set<CategoryIconKey>(['groceries','bakery','takeaway','clothing','shoes','shopping','gift','electronics','computer','phone','gaming','tobacco','kiosk','celebration']);
+const TRANSPORT_GROUP=new Set<CategoryIconKey>(['fuel','parking','car','motorcycle','public-transport','taxi','service']);
+const HOME_GROUP=new Set<CategoryIconKey>(['home','rent','furniture','maintenance','electricity','water','heating','internet','telephone','subscription','streaming','music','cinema','entertainment','education','books','course','child','family']);
+const HEALTH_GROUP=new Set<CategoryIconKey>(['sport','gym','health','doctor','dentist','pharmacy','hospital','pet','personal-care','barber','cosmetics']);
+const TRAVEL_GROUP=new Set<CategoryIconKey>(['travel','flight','hotel','ferry','holiday']);
+const FINANCE_GROUP=new Set<CategoryIconKey>(['insurance','tax','government','bank-fee','cash','card','loan','installment','saving','investment','salary','bonus','income','refund','sale','freelance','business','charity','receipt','wallet','transfer','reconciliation','other']);
+
+export function categoryIconFallbackKeyForPack(pack:CategoryIconPack,key:CategoryIconKey):CategoryIconKey{
+  if(categoryIconKeySupportedByPack(pack,key))return key;
+  if(COFFEE_GROUP.has(key))return pack==='tabler'||pack==='phosphor'?'coffee':'shopping';
+  if(SHOPPING_GROUP.has(key))return 'shopping';
+  if(TRANSPORT_GROUP.has(key))return pack==='tabler'||pack==='phosphor'?'car':'flight';
+  if(HOME_GROUP.has(key))return pack==='tabler'&&key==='books'?'books':'home';
+  if(HEALTH_GROUP.has(key))return 'health';
+  if(TRAVEL_GROUP.has(key))return 'flight';
+  if(FINANCE_GROUP.has(key)){
+    if(pack==='tabler'){
+      if(key==='receipt')return 'receipt';
+      if(key==='transfer'||key==='reconciliation')return 'transfer';
+      if(['cash','card','loan','installment','saving','investment','salary','bonus','income','refund','sale','freelance','business'].includes(key))return 'wallet';
+      return key==='other'?'other':'government';
+    }
+    return 'government';
+  }
+  return pack==='tabler'?'other':pack==='phosphor'?'government':'home';
+}

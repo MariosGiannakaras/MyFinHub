@@ -13,6 +13,7 @@ import { DialogShell } from './DialogShell';
 import { FormError } from './FormError';
 import { IconButton } from './IconButton';
 import { MoneyInput } from './MoneyInput';
+import { userErrorMessage } from '../lib/userMessage';
 
 const typeLabels: Record<LegacyTransaction['type'], string> = {
   expense: 'Έξοδο',
@@ -70,7 +71,7 @@ export function LegacyTransactionEditor({ data, transaction, onSave, onClose }: 
       onSave(normalized);
       onClose();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Δεν ήταν δυνατή η αποθήκευση της ιστορικής κίνησης.');
+      setError(userErrorMessage(cause,'Δεν ήταν δυνατή η αποθήκευση της ιστορικής κίνησης.'));
     }
   };
 

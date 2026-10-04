@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { SaveState } from '../hooks/useFinance';
 import { Button } from './Button';
 
-export function PersistenceNotice({saveState,onRecover}:{saveState:SaveState;onRecover:()=>void}){
+export function PersistenceNotice({saveState,errorMessage,onRecover}:{saveState:SaveState;errorMessage?:string|null;onRecover:()=>void}){
   const previous=useRef<SaveState>(saveState);
   const [showSaved,setShowSaved]=useState(false);
 
@@ -18,7 +18,7 @@ export function PersistenceNotice({saveState,onRecover}:{saveState:SaveState;onR
 
   if(saveState==='error'||saveState==='conflict'){
     const conflict=saveState==='conflict';
-    return <div className={`persistence-notice ${saveState}`} role="alert" aria-live="assertive"><div><b>{conflict?'Υπάρχουν νεότερα δεδομένα':'Η αποθήκευση δεν ολοκληρώθηκε'}</b><small>{conflict?'Υπάρχει νεότερη αποθηκευμένη έκδοση. Η αποθήκευση σταμάτησε για να μη γραφτεί πάνω της κατά λάθος. Φόρτωσε την τελευταία έκδοση πριν συνεχίσεις.':'Η τελευταία αλλαγή δεν έχει επιβεβαιωθεί ως αποθηκευμένη. Φόρτωσε την τελευταία αποθηκευμένη έκδοση πριν συνεχίσεις.'}</small></div><Button variant="secondary" type="button" onClick={onRecover}>Φόρτωση τελευταίας έκδοσης</Button></div>;
+    return <div className={`persistence-notice ${saveState}`} role="alert" aria-live="assertive"><div><b>{conflict?'Υπάρχουν νεότερα δεδομένα':'Η αποθήκευση δεν ολοκληρώθηκε'}</b><small>{conflict?'Υπάρχει νεότερη αποθηκευμένη έκδοση. Η αποθήκευση σταμάτησε για να μη γραφτεί πάνω της κατά λάθος. Φόρτωσε την τελευταία έκδοση πριν συνεχίσεις.':errorMessage||'Η τελευταία αλλαγή δεν έχει επιβεβαιωθεί ως αποθηκευμένη. Φόρτωσε την τελευταία αποθηκευμένη έκδοση πριν συνεχίσεις.'}</small></div><Button variant="secondary" type="button" onClick={onRecover}>Φόρτωση τελευταίας έκδοσης</Button></div>;
   }
   if(saveState==='loading')return <div className="persistence-toast loading" role="status" aria-live="polite">Ανανέωση δεδομένων…</div>;
   if(saveState==='saving')return <div className="persistence-toast saving" role="status" aria-live="polite">Αποθήκευση…</div>;

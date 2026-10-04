@@ -1,6 +1,6 @@
 import { accessTokenAal, assertMutationSessionOrigin, clearSessionCookiesIfCookie, requireSession } from '../server/auth.js';
 import { handleAndroidUpdateApi } from '../server/androidUpdateApi.js';
-import { ApiError, handleApi, methodNotAllowed, readJsonBody, sendJson } from '../server/http.js';
+import { ApiError, handleApi, methodNotAllowed, readJsonBody, sendJson, strictQueryValue } from '../server/http.js';
 import { MAX_FINANCE_DOCUMENT_BYTES } from '../src/lib/limits.js';
 import { parseMutableWrite } from '../server/stateValidation.js';
 import { isOwner, parseExpectedRevision, readStore, writeMutableState } from '../server/storage.js';
@@ -23,9 +23,8 @@ function header(req: any, name: string) {
   return String(Array.isArray(value) ? value[0] ?? '' : value ?? '');
 }
 
-function routeMarker(req: any) {
-  const value = req?.query?.__myfinhub_route;
-  return String(Array.isArray(value) ? value[0] ?? '' : value ?? '');
+function routeMarker(req:any){
+  return strictQueryValue(req,'__myfinhub_route');
 }
 
 export default async function handler(req: any, res: any) {

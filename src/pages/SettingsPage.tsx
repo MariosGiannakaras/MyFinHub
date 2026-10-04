@@ -1,6 +1,7 @@
 import { Download, FileJson, ShieldCheck } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { AccountManagementSettings } from '../components/AccountManagementSettings';
+import { FinancialProviderManagementSettings } from '../components/FinancialProviderManagementSettings';
 import { AccountSecuritySettings } from '../components/AccountSecuritySettings';
 import { CategoryIconAssignmentWorkspace } from '../components/CategoryIconAssignmentWorkspace';
 import { CategoryIconsWorkspace } from '../components/CategoryIconsWorkspace';
@@ -51,6 +52,11 @@ function cloneSettings(settings: FinanceSettings): FinanceSettings {
     incomeCategoryTree: categoryTree(settings, 'income').map((item) => ({ ...item, subcategories: [...item.subcategories] })),
     categoryIcons: { ...(settings.categoryIcons ?? {}) },
     subcategoryIcons: { ...(settings.subcategoryIcons ?? {}) },
+    categoryIconPack: settings.categoryIconPack,
+    categoryIconPackSelections: Object.fromEntries(Object.entries(settings.categoryIconPackSelections ?? {}).map(([key, packs]) => [key, { ...packs }])),
+    subcategoryIconPackSelections: Object.fromEntries(Object.entries(settings.subcategoryIconPackSelections ?? {}).map(([key, packs]) => [key, { ...packs }])),
+    categoryIconColors: { ...(settings.categoryIconColors ?? {}) },
+    subcategoryIconColors: { ...(settings.subcategoryIconColors ?? {}) },
     categoryIdentities: Object.fromEntries(
       Object.entries(settings.categoryIdentities ?? {}).map(([id, record]) => [
         id,
@@ -104,6 +110,7 @@ export function SettingsPage({
   onDeleteRule: (id: string) => void;
 }) {
   const fileRef = useRef<HTMLInputElement | null>(null);
+  const tablistRef = useRef<HTMLDivElement | null>(null);
   const runtimeEnv=(import.meta as unknown as {env?:{DEV?:boolean;VITE_MYFINHUB_SUPPORT_DIAGNOSTICS?:string}}).env;
   const supportDiagnosticsEnabled=Boolean(runtimeEnv?.DEV)||runtimeEnv?.VITE_MYFINHUB_SUPPORT_DIAGNOSTICS==='1';
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
@@ -116,6 +123,11 @@ export function SettingsPage({
   useEffect(() => {
     draftRef.current = draft;
   }, [draft]);
+
+  useEffect(() => {
+    const selected = tablistRef.current?.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]');
+    selected?.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'auto' });
+  }, [activeTab]);
 
   useEffect(() => {
     const next = cloneSettings(data.state.settings);
@@ -182,7 +194,7 @@ export function SettingsPage({
     setBusy(true);
     try {
       await onBackup();
-      downloadJson(data);
+      downloadJson({...data,state:{...data.state,settings:cloneSettings(draftRef.current)}});
       setMessage('Το αντίγραφο ασφαλείας δημιουργήθηκε και κατέβηκε επίσης στη συσκευή σου.');
     } catch (error) {
       setMessage(userErrorMessage(error, 'Δεν μπορέσαμε να δημιουργήσουμε το αντίγραφο ασφαλείας. Έλεγξε τη σύνδεσή σου και δοκίμασε ξανά.'));
@@ -195,12 +207,13 @@ export function SettingsPage({
     <div className="page-stack settings-page settings-tabs-page">
       <PageHeader className="settings-page-heading" eyebrow="ΡΥΘΜΙΣΕΙΣ" title="Ρυθμίσεις" description={<p>Διαχειρίσου τις πραγματικές προτιμήσεις και τα εργαλεία του MyFinHub ανά ενότητα.</p>}/>
 
-      <div className="settings-tablist" role="tablist" aria-label="Ενότητες ρυθμίσεων">
+      <div ref={tablistRef} className="settings-tablist" role="tablist" aria-label="Ενότητες ρυθμίσεων">
         {SETTINGS_TABS.map((tab) => (
           <button
             key={tab.id}
             type="button"
             role="tab"
+            id={`settings-tab-${tab.id}`}
             aria-selected={activeTab === tab.id}
             aria-controls={`settings-panel-${tab.id}`}
             className={activeTab === tab.id ? 'active' : ''}
@@ -211,7 +224,7 @@ export function SettingsPage({
         ))}
       </div>
 
-      <div id={`settings-panel-${activeTab}`} className="settings-tab-panel" role="tabpanel">
+      <div id={`settings-panel-${activeTab}`} className="settings-tab-panel" role="tabpanel" aria-labelledby={`settings-tab-${activeTab}`}>
         {activeTab === 'general' ? (
           <div className="settings-general-grid">
             <ReadabilitySettings value={draft.textSize ?? 'normal'} onChange={(textSize) => change({ textSize })} />
@@ -223,7 +236,7 @@ export function SettingsPage({
 
         {activeTab === 'profile' ? <AccountSecuritySettings currentEmail={currentEmail} /> : null}
 
-        {activeTab === 'accounts' ? <AccountManagementSettings data={data} settings={draft} onChange={(next) => commit(next, '')} /> : null}
+        {activeTab === 'accounts' ? <div className="settings-tab-stack settings-accounts-stack"><FinancialProviderManagementSettings/><AccountManagementSettings data={data} settings={draft} onChange={(next) => commit(next, '')} /></div> : null}
 
         {activeTab === 'categories' ? (
           <div className="settings-categories-only">

@@ -30,13 +30,22 @@ describe('Accounts owner UI contract',()=>{
     expect(styles).not.toContain('.account-management-select>.owned-input{');
     expect(styles).not.toContain('.owned-select-popover:is(');
     expect(styles).not.toContain('.account-management-field input{');
+    expect(styles).toContain('background:var(--surface-elevated)');
+    expect(styles).toContain('background:var(--control-bg)');
+    expect(styles).not.toContain('background:rgba(255,255,255,.96)');
   });
 
   it('captures the choice-driven account states for owner review',()=>{
     expect(qa).toContain("settings-accounts-default-dropdown-desktop");
     expect(qa).toContain("settings-accounts-new-bank-empty-desktop");
-    expect(qa).toContain("settings-accounts-new-bank-provider-dropdown-desktop");
+    expect(qa).toContain("settings-accounts-new-bank-provider-picker-desktop");
     expect(qa).toContain("settings-accounts-new-bank-selected-desktop");
+    expect(qa).toContain('account-management-provider-picker');
+    expect(qa).toContain('Provider picker shows a branded visual option for each provider');
+    expect(qa).toContain('selected Piraeus provider visual state');
+    expect(qa).not.toContain('account-management-provider-preview');
+    expect(source).toContain("editor.source==='new'?'2. Τράπεζα / πάροχος':'Τράπεζα / πάροχος'");
+    expect(qa).toContain('Edit modal allows correcting the provider while retaining IBAN editing');
     expect(qa).toContain("settings-accounts-new-cash-daily-desktop");
     expect(qa).toContain("settings-accounts-new-modal-desktop");
   });

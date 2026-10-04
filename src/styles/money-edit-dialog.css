@@ -1,3 +1,4 @@
+.quick-modal.app-money-edit-dialog{background:var(--surface)!important;border-color:var(--border-subtle)!important;color:var(--ink)!important}
 .app-money-edit-dialog{width:min(480px,calc(100vw - 36px));box-sizing:border-box}
 .app-money-edit-dialog-body{padding:0 20px 4px}
 .app-money-edit-dialog .money-input{width:100%;box-sizing:border-box}

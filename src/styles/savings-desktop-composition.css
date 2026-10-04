@@ -30,6 +30,23 @@
 }
 
 
+/* 200%-equivalent desktop reflow / intermediate shell width.
+   At 681–820px the compact desktop shell is still active, so the legacy
+   Savings hero must explicitly allow long account labels and large text to shrink. */
+@media (min-width:681px) and (max-width:820px){
+  .savings-page>.savings-action-section .savings-action-grid{display:grid;grid-template-columns:1fr;gap:9px}
+  .savings-page>.savings-action-section .savings-action{min-width:0}
+  .savings-hero{grid-template-columns:minmax(150px,180px) minmax(0,1fr);gap:18px;padding:20px}
+  .gauge-ring{width:150px;height:150px}
+  .savings-hero>div{min-width:0}
+  .saving-route{min-width:0;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:7px}
+  .saving-route>span{min-width:0;max-width:100%;overflow:hidden}
+  .saving-route>span b{min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .savings-goals-mobile>.panel-head{flex-wrap:wrap}
+  .savings-goals-mobile>.panel-head button{max-width:100%}
+}
+
+
 @media (min-width:1100px){
   .savings-page{gap:12px;margin-top:-55px}
   .savings-page>.page-heading{margin-bottom:2px}

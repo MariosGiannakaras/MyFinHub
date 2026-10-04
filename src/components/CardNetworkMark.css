@@ -1,0 +1,37 @@
+/* Shared real card-network artwork for card previews and interactive cards. */
+.prototype-payment-card .card-network.card-network-assets{
+  min-width:62px;
+  display:grid;
+  justify-items:end;
+  align-self:end;
+  gap:3px;
+  line-height:1;
+  text-align:right;
+  user-select:none;
+}
+.prototype-payment-card .card-network-assets .card-network-badge{
+  min-width:54px;
+  height:28px;
+  padding:4px 6px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:7px;
+  background:rgba(255,255,255,.94);
+  box-shadow:0 2px 6px rgba(0,0,0,.14),inset 0 0 0 1px rgba(18,35,77,.06);
+}
+.prototype-payment-card .card-network-assets .card-network-logo{
+  display:block;
+  width:auto;
+  height:auto;
+  object-fit:contain;
+}
+.prototype-payment-card .card-network-assets .visa-logo{max-width:46px;max-height:15px}
+.prototype-payment-card .card-network-assets .mastercard-logo{max-width:39px;max-height:20px}
+.prototype-payment-card .card-network-assets .card-network-type{margin-top:0}
+@media(max-width:680px){
+  .prototype-payment-card .card-network.card-network-assets{min-width:54px}
+  .prototype-payment-card .card-network-assets .card-network-badge{min-width:48px;height:25px;padding:3px 5px}
+  .prototype-payment-card .card-network-assets .visa-logo{max-width:40px;max-height:13px}
+  .prototype-payment-card .card-network-assets .mastercard-logo{max-width:34px;max-height:18px}
+}

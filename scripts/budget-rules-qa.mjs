@@ -36,9 +36,11 @@ try{
   const screenshot=async name=>{if(name==='advanced-automations-desktop'||name==='advanced-automations-mobile')await c.call("function(){document.querySelector('[data-advanced-automations]')?.scrollIntoView({block:'start'});return true}");if(name==='advanced-automations-ordered-desktop')await c.call("function(){document.querySelector('.rule-settings-list')?.scrollIntoView({block:'center'});return true}");if(name.startsWith('reports-budget-overview-'))await c.call("function(){document.querySelector('#report-budget-overview')?.scrollIntoView({block:'start'});window.scrollBy(0,-84);return true}");else if(name.startsWith('reports-budget-'))await c.call("function(){document.querySelector('#report-budgets')?.scrollIntoView({block:'start'});window.scrollBy(0,-84);return true}");if(name.startsWith('savings-target-'))await c.call("function(){const node=[...document.querySelectorAll('[data-savings-target-editor]')].find(item=>item.getClientRects().length>0);node?.scrollIntoView({block:'center'});return true}");await sleep(120);const shot=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(shot.data,'base64'))};
   const clickText=async(selector,text)=>{const ok=await c.call("function(selector,text){const node=[...document.querySelectorAll(selector)].find(item=>(item.textContent||'').trim().includes(text)&&item.getClientRects().length>0);node?.click();return Boolean(node)}",[selector,text]);assert(ok,`missing clickable ${text}`);await sleep(100)};
   const clickAria=async label=>{const ok=await c.call("function(label){const node=[...document.querySelectorAll(`button[aria-label=\"${CSS.escape(label)}\"]`)].find(item=>item.getClientRects().length>0);node?.click();return Boolean(node)}",[label]);assert(ok,`missing aria control ${label}`);await sleep(100)};
-  const setLabelInput=async(label,value)=>{const ok=await c.call(`function(label,value){const row=[...document.querySelectorAll('label')].find(node=>(node.querySelector(':scope > span')?.textContent||'').trim().includes(label)&&node.getClientRects().length>0);const input=row?.querySelector('input');if(!input)return false;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set;setter.call(input,value);input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));return true}`,[label,value]);assert(ok,`missing input ${label}`);await sleep(80)};
+  const setLabelInput=async(label,value)=>{const ok=await c.call(`function(label,value){const visible=node=>Boolean(node&&node.getClientRects().length>0);const direct=[...document.querySelectorAll('input,textarea')].find(node=>visible(node)&&node.getAttribute('aria-label')===label);const row=[...document.querySelectorAll('label')].find(node=>(node.querySelector(':scope > span')?.textContent||'').trim().includes(label)&&visible(node));const input=direct??row?.querySelector('input,textarea');if(!input)return false;const proto=input instanceof HTMLTextAreaElement?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;const setter=Object.getOwnPropertyDescriptor(proto,'value')?.set;if(setter)setter.call(input,value);else input.value=value;input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));return true}`,[label,value]);assert(ok,`missing input ${label}`);await sleep(80)};
   const ownedValue=label=>c.call("function(label){const row=[...document.querySelectorAll('label')].find(node=>(node.querySelector(':scope > span')?.textContent||'').trim().includes(label)&&node.getClientRects().length>0);return row?.querySelector('input[role=\"combobox\"]')?.value||''}",[label]);
   const selectBudgetScope=async(label)=>{const opened=await c.call("function(){const row=[...document.querySelectorAll('[data-budget-management] label')].find(node=>(node.querySelector(':scope > span')?.textContent||'').trim()==='Τύπος ορίου'&&node.getClientRects().length>0);const input=row?.querySelector('[role=\"combobox\"]');if(!input)return false;input.click();return true}");assert(opened,'budget scope selector opens');await waitFor("function(){return Boolean(document.querySelector('.owned-select-popover [role=\"listbox\"]'))}",'budget scope options');const selected=await c.call("function(label){const option=[...document.querySelectorAll('.owned-select-popover [role=\"option\"]')].find(node=>(node.textContent||'').trim()===label);if(!option)return false;option.click();return true}",[label]);assert(selected,`budget scope ${label} can be selected`);await sleep(100)};
+  const selectOwnedOption=async(label,optionText)=>{const opened=await c.call("function(label){const row=[...document.querySelectorAll('label')].find(node=>(node.querySelector(':scope > span')?.textContent||'').trim().includes(label)&&node.getClientRects().length>0);const input=row?.querySelector('input[role=combobox]');input?.click();return Boolean(input)}",[label]);assert(opened,`owned selector ${label} opens`);await waitFor("function(){return Boolean(document.querySelector('.owned-select-popover [role=listbox]'))}",`${label} options`);const selected=await c.call("function(optionText){const option=[...document.querySelectorAll('.owned-select-popover [role=option]')].find(node=>(node.textContent||'').trim()===optionText);option?.click();return Boolean(option)}",[optionText]);assert(selected,`owned option ${optionText} exists for ${label}`);await sleep(100)};
+
   const noOverflow=async label=>{const value=await c.call("function(){return Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}");assert(value<=1,`${label} horizontal overflow ${value}px`)};
   const touchTargets=async label=>{const offenders=await c.call("function(){return [...document.querySelectorAll('#main-workspace button,#main-workspace summary,.mobile-nav button,.topbar button')].filter(el=>{const r=el.getBoundingClientRect();if(!r.width||!r.height||getComputedStyle(el).visibility==='hidden'||el.disabled)return false;return r.width<40||r.height<40}).map(el=>({name:el.getAttribute('aria-label')||(el.textContent||'').trim().slice(0,45),w:Math.round(el.getBoundingClientRect().width),h:Math.round(el.getBoundingClientRect().height)}))}");assert(offenders.length===0,`${label} touch targets below 40px: ${JSON.stringify(offenders.slice(0,8))}`)};
   const openRuleEditor=async()=>{await clickText('.settings-rules-only .rules-new-button','Νέος κανόνας');await waitFor("function(){const modal=document.querySelector('[data-rule-editor][role=dialog][aria-modal=true]');return Boolean(modal&&modal.getClientRects().length)}",'rule editor modal')};
@@ -70,6 +72,7 @@ try{
   console.log('Budget/Rules QA: read-only preview, creation and deterministic direct reordering');
   await setLabelInput('Όνομα αυτοματισμού','QA Market first');
   await setLabelInput('Κείμενο περιγραφής','QA Market');
+  await selectOwnedOption('Κατηγορία / υποκατηγορία','Τρόφιμα');
   await waitFor("function(){const text=document.querySelector('[data-rule-editor] .rule-preview')?.textContent||'';return text.includes('1 υπάρχουσες')&&text.includes('QA Market Match')}",'rule preview with matching example');
   assert((await c.call("function(){return document.querySelector('[data-rule-editor] .rule-preview')?.textContent||''}")).includes('Δεν αλλάζει καμία από αυτές'),'preview explicitly does not mutate history');
   await clickText('[data-rule-editor] .save-button','Δημιουργία κανόνα');
@@ -92,10 +95,29 @@ try{
   await clickAria('Επεξεργασία αυτοματισμού QA Market second');
   await waitFor("function(){const modal=document.querySelector('[data-rule-editor]');return Boolean(modal&&(modal.querySelector('#rule-editor-title')?.textContent||'').includes('Επεξεργασία κανόνα')&&[...modal.querySelectorAll('button')].some(button=>(button.textContent||'').includes('Αποθήκευση αλλαγών')))}",'automation edit mode');
   assert((await c.call("function(){return document.querySelector('[data-rule-editor] .rules-name-field input')?.value||''}"))==='QA Market second','edit modal loads persisted rule name');
-  await clickText('[data-rule-editor] .secondary','Ακύρωση');
-  await waitFor("function(){return !document.querySelector('[data-rule-editor]')}",'automation edit cancel');
-  await clickAria('Διαγραφή αυτοματισμού QA Market first');
-  await waitFor("function(){return ![...document.querySelectorAll('.rule-settings-list article .rules-row-title b')].some(node=>(node.textContent||'').trim()==='QA Market first')}",'automation deletion');
+  await setLabelInput('Όνομα αυτοματισμού','QA Market second edited');
+  await clickText('[data-rule-editor] .save-button','Αποθήκευση αλλαγών');
+  await waitFor("function(){return [...document.querySelectorAll('.rule-settings-list article .rules-row-title b')].some(node=>(node.textContent||'').trim()==='QA Market second edited')&&!document.querySelector('[data-rule-editor]')}",'automation edit persists');
+  await clickAria('Διαγραφή αυτοματισμού QA Market second edited');
+  await waitFor("function(){const dialog=document.querySelector('.app-confirm-dialog[role=\"alertdialog\"]');return Boolean(dialog&&(dialog.textContent||'').includes('Διαγραφή κανόνα'))}",'automation deletion confirmation');
+  assert(await c.call("function(){return [...document.querySelectorAll('.rule-settings-list article .rules-row-title b')].some(node=>(node.textContent||'').trim()==='QA Market second edited')}"),'rule remains until destructive confirmation');
+  await clickText('.app-confirm-dialog button','Διαγραφή κανόνα');
+  await waitFor("function(){return ![...document.querySelectorAll('.rule-settings-list article .rules-row-title b')].some(node=>(node.textContent||'').trim()==='QA Market second edited')}",'automation deletion');
+
+  console.log('Budget/Rules QA: rules affect only new matching transactions');
+  await clickText('.sidebar nav button','Συναλλαγές');
+  await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').trim()==='Συναλλαγές'}",'transactions after rules');
+  await setLabelInput('Αναζήτηση συναλλαγών','QA Market Match');
+  await waitFor("function(){const row=[...document.querySelectorAll('[data-transaction-source=event]')].find(node=>(node.textContent||'').includes('QA Market Match'));return Boolean(row&&(row.textContent||'').includes('Σταθερά έξοδα')&&!(row.textContent||'').includes('Τρόφιμα'))}",'existing matching transaction remains unchanged');
+  await clickAria('Γρήγορη προσθήκη');
+  await waitFor("function(){return Boolean(document.querySelector('.quick-modal:not(.contextual-quick-modal)'))}",'Quick Entry for rule application');
+  await setLabelInput('Ποσό','12.34');
+  await setLabelInput('Σχόλιο','QA Market Fresh');
+  await clickText('.quick-modal button','Καταχώριση');
+  await waitFor("function(){return !document.querySelector('.quick-modal')}",'rule-matched Quick Entry close');
+  await setLabelInput('Αναζήτηση συναλλαγών','QA Market Fresh');
+  await waitFor("function(){const row=[...document.querySelectorAll('[data-transaction-source=event]')].find(node=>(node.textContent||'').includes('QA Market Fresh'));return Boolean(row&&(row.textContent||'').includes('Τρόφιμα'))}",'new matching transaction receives rule category');
+
 
   console.log('Budget/Rules QA: budgets are managed in Reports');
   await navigate('reports');
@@ -111,7 +133,17 @@ try{
   await clickAria('Αναίρεση τελευταίας αλλαγής');
   await selectBudgetScope('Συνολικό όριο');
   await waitFor("function(){const root=document.querySelector('[data-budget-management] .budget-editor-grid');const labels=[...(root?.querySelectorAll('label>span')||[])].map(node=>(node.textContent||'').trim());return !labels.includes('Κατηγορία')}",'overall budget state');
+  await setLabelInput('Όριο €','5000');
+  await setLabelInput('Προειδοποίηση %','50');
+  await clickText('[data-budget-management] button','Αποθήκευση προϋπολογισμού');
+  await waitFor("function(){const rows=[...document.querySelectorAll('.budget-setting-row')];const row=rows.find(node=>(node.textContent||'').includes('Συνολικό όριο'));return Boolean(row&&row.classList.contains('near')&&(row.textContent||'').includes('5.000'))}",'overall budget create with warning threshold');
+  assert(await c.call("function(){return (document.querySelector('[data-budget-overview]')?.textContent||'').includes('5.000')}"),'budget overview reconciles created overall limit');
+  await setLabelInput('Όριο €','6000');
+  await clickText('[data-budget-management] button','Αποθήκευση προϋπολογισμού');
+  await waitFor("function(){const rows=[...document.querySelectorAll('.budget-setting-row')].filter(node=>(node.textContent||'').includes('Συνολικό όριο'));return rows.length===1&&rows[0].classList.contains('near')&&(rows[0].textContent||'').includes('6.000')}",'overall budget edit updates stable row');
   await screenshot('reports-budget-overall-desktop');
+  await clickAria('Διαγραφή προϋπολογισμού συνολικά');
+  await waitFor("function(){return ![...document.querySelectorAll('.budget-setting-row')].some(node=>(node.textContent||'').includes('Συνολικό όριο'))}",'overall budget delete');
   await selectBudgetScope('Κατηγορία');
   await waitFor("function(){return [...document.querySelectorAll('[data-budget-management] .budget-editor-grid label>span')].some(node=>(node.textContent||'').trim()==='Κατηγορία')}",'category budget restored');
 

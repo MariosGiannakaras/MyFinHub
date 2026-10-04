@@ -7,12 +7,12 @@
   --ease-press:cubic-bezier(.2,.7,.3,1);
 }
 
-button,.command-pill,.searchbox,.login-input,.semantic-table tbody tr,.flow-pill,.payment-card,.bank-column{
+button,.searchbox,.login-input,.semantic-table tbody tr,.flow-pill,.payment-card,.bank-column{
   -webkit-tap-highlight-color:transparent;
 }
 
 button:disabled{cursor:not-allowed}
-.secondary,.text-button,.wide-action,.row-actions button,.mobile-more-menu button,.mobile-nav button,.command-pill,.top-actions button,.icon-button,.login-logout,.empty-bank-card,.payment-card button{
+.secondary,.text-button,.wide-action,.row-actions button,.mobile-more-menu button,.mobile-nav button,.top-actions button,.icon-button,.login-logout,.empty-bank-card,.payment-card button{
   transition:transform var(--motion-fast) var(--ease-press),box-shadow var(--motion-base) var(--ease-out),border-color var(--motion-base) ease,background-color var(--motion-base) ease,color var(--motion-base) ease,opacity var(--motion-fast) ease;
 }
 
@@ -20,11 +20,10 @@ button:disabled{cursor:not-allowed}
   .secondary:not(:disabled):hover,.wide-action:not(:disabled):hover,.empty-bank-card:not(:disabled):hover{transform:translateY(-1px);border-color:#b9cdef;box-shadow:0 8px 18px rgba(37,70,120,.10)}
   .text-button:not(:disabled):hover{transform:translateY(-1px)}
   .top-actions button:not(:disabled):hover,.icon-button:not(:disabled):hover,.row-actions button:not(:disabled):hover{transform:translateY(-1px) scale(1.025)}
-  .command-pill:hover{transform:translateY(-1px);color:var(--blue-2);box-shadow:inset 3px 3px 8px rgba(42,65,105,.07),inset -3px -3px 8px rgba(255,255,255,.92),0 8px 18px rgba(34,59,98,.07)}
   .sidebar nav button:not(.active):hover svg,.mobile-more-menu nav button:not(.active):hover svg{transform:translateX(2px) scale(1.04)}
   .payment-card:hover{transform:translateY(-2px);box-shadow:0 18px 34px rgba(28,51,91,.14),inset 0 1px 0 rgba(255,255,255,.36)}
 }
-.secondary:not(:disabled):active,.wide-action:not(:disabled):active,.empty-bank-card:not(:disabled):active,.command-pill:active,.top-actions button:not(:disabled):active,.icon-button:not(:disabled):active,.row-actions button:not(:disabled):active,.login-logout:not(:disabled):active,.payment-card button:not(:disabled):active{transform:translateY(0) scale(.975)}
+.secondary:not(:disabled):active,.wide-action:not(:disabled):active,.empty-bank-card:not(:disabled):active,.top-actions button:not(:disabled):active,.icon-button:not(:disabled):active,.row-actions button:not(:disabled):active,.login-logout:not(:disabled):active,.payment-card button:not(:disabled):active{transform:translateY(0) scale(.975)}
 .sidebar nav button svg,.mobile-nav button svg,.mobile-more-menu nav button svg,.top-actions button svg,.row-actions button svg,.icon-button svg{transition:transform var(--motion-fast) var(--ease-out),color var(--motion-base) ease}
 .sidebar nav button.active svg,.mobile-nav button.active svg{transform:scale(1.08)}
 
@@ -50,7 +49,7 @@ button:disabled{cursor:not-allowed}
 .login-input:focus-within>svg{color:var(--blue);transform:scale(1.08)}
 .login-input input::placeholder{color:#8c9ab0;transition:opacity var(--motion-fast) ease}
 .login-input:focus-within input::placeholder{opacity:.58}
-.login-password-toggle{width:34px;height:34px;min-width:34px;min-height:34px;border:0;border-radius:10px;background:transparent;color:var(--muted);display:grid;place-items:center;cursor:pointer;box-shadow:none;padding:0}
+.login-password-toggle{width:40px;height:40px;min-width:40px;min-height:40px;border:0;border-radius:10px;background:transparent;color:var(--muted);display:grid;place-items:center;cursor:pointer;box-shadow:none;padding:0}
 .login-password-toggle:hover:not(:disabled){background:rgba(47,111,237,.08);color:var(--blue-2)}
 .login-password-toggle:active:not(:disabled){transform:scale(.92)}
 .login-field-hint{display:flex;align-items:center;gap:5px;color:#83530c;font-size:9.5px;font-weight:650;animation:rh-hint-in var(--motion-fast) var(--ease-out) both}

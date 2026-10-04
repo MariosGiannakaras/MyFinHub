@@ -1,0 +1,20 @@
+@media(max-width:680px){
+  .mobile-lending-history{display:grid;gap:8px;margin-top:8px}
+  .mobile-lending-history-row{display:grid;gap:8px;min-width:0;padding:11px;border:1px solid var(--mobile-border,var(--line));border-radius:14px;background:var(--surface);box-shadow:var(--mobile-shadow-soft,var(--shadow-soft))}
+  .mobile-lending-history-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;min-width:0}
+  .mobile-lending-history-head>div{display:grid;gap:2px;min-width:0}
+  .mobile-lending-history-head b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px;color:var(--ink)}
+  .mobile-lending-history-head small{font-size:8px;color:var(--muted)}
+  .mobile-lending-history-head strong{font-size:12px;color:var(--error,#c43d4f);white-space:nowrap}
+  .mobile-lending-history-head strong.positive{color:var(--green)}
+  .mobile-lending-history-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
+  .mobile-lending-history-meta>span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:8px;color:var(--muted);text-align:right}
+  .mobile-lending-history-row p{margin:0;padding:7px 8px;border-radius:9px;background:var(--surface-soft);font-size:8.5px;line-height:1.4;color:var(--ink-2);overflow-wrap:anywhere}
+  .mobile-lending-history-balance{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-top:7px;border-top:1px solid var(--line)}
+  .mobile-lending-history-balance span{font-size:8px;color:var(--muted)}
+  .mobile-lending-history-balance b{font-size:10px;color:var(--ink-2);white-space:nowrap}
+}
+
+@media(max-width:680px){
+  .mobile-lending-history-more{width:100%;min-height:44px;margin-top:10px;justify-content:center}
+}

@@ -1,0 +1,151 @@
+/* Dark-theme remediation for high-fidelity surfaces that still carry approved light literals.
+   Keep this layer narrow: semantic tokens remain authoritative, while these selectors bridge
+   older route-specific compositions until their light-only literals are fully retired. */
+
+html[data-theme="dark"] .dashboard-approved{color:var(--ink)!important}
+html[data-theme="dark"] .dashboard-approved-heading h1,
+html[data-theme="dark"] .approved-account-identity strong,
+html[data-theme="dark"] .approved-balance,
+html[data-theme="dark"] .approved-section-title strong,
+html[data-theme="dark"] .approved-panel-head strong,
+html[data-theme="dark"] .approved-category-donut>div:last-child b,
+html[data-theme="dark"] .approved-kpi-strip b{color:var(--ink)!important}
+html[data-theme="dark"] .dashboard-approved-heading p,
+html[data-theme="dark"] .approved-secondary-account small,
+html[data-theme="dark"] .movement-row small,
+html[data-theme="dark"] .upcoming-row small,
+html[data-theme="dark"] .upcoming-row>span:nth-last-child(2),
+html[data-theme="dark"] .summary-line span,
+html[data-theme="dark"] .summary-net span,
+html[data-theme="dark"] .flow-legend,
+html[data-theme="dark"] .category-table-head,
+html[data-theme="dark"] .category-table-row>span,
+html[data-theme="dark"] .category-table-row b,
+html[data-theme="dark"] .approved-kpi-strip small,
+html[data-theme="dark"] .approved-kpi-strip span:not(.kpi-icon),
+html[data-theme="dark"] .approved-data-footer{color:var(--text-secondary)!important}
+
+html[data-theme="dark"] .approved-account-card,
+html[data-theme="dark"] .approved-secondary-panel,
+html[data-theme="dark"] .approved-panel,
+html[data-theme="dark"] .approved-kpi-strip article{
+  background:var(--surface-elevated)!important;
+  border-color:var(--border-strong)!important;
+  box-shadow:var(--shadow-soft)!important;
+}
+html[data-theme="dark"] .approved-secondary-account{
+  background:var(--surface-2)!important;
+  border-color:var(--border-subtle)!important;
+}
+html[data-theme="dark"] .approved-account-actions button,
+html[data-theme="dark"] .approved-secondary-account button{
+  background:var(--control-bg)!important;
+  border-color:var(--control-border)!important;
+  color:var(--ink-2)!important;
+  box-shadow:var(--shadow-flat)!important;
+}
+html[data-theme="dark"] .savings-target{background:var(--accent-soft)!important;border-color:var(--focus-outline)!important;color:var(--accent)!important}
+html[data-theme="dark"] .savings-legend{background:var(--surface-translucent)!important;color:var(--text-secondary)!important}
+html[data-theme="dark"] .dashboard-account-history .account-history-end{fill:var(--surface-elevated)!important}
+html[data-theme="dark"] .approved-panel-head,
+html[data-theme="dark"] .movement-head,
+html[data-theme="dark"] .movement-row,
+html[data-theme="dark"] .upcoming-row,
+html[data-theme="dark"] .summary-line,
+html[data-theme="dark"] .category-table-head,
+html[data-theme="dark"] .category-table-row{border-color:var(--chart-grid)!important}
+html[data-theme="dark"] .movement-title b,
+html[data-theme="dark"] .upcoming-row b{color:var(--ink-2)!important}
+
+html[data-theme="dark"] .transactions-approved .transactions-approved-heading h1{color:var(--ink)!important}
+html[data-theme="dark"] .transactions-approved .transactions-approved-heading p,
+html[data-theme="dark"] .transactions-summary-copy small,
+html[data-theme="dark"] .transactions-summary-copy span{color:var(--text-secondary)!important}
+html[data-theme="dark"] .transactions-summary-copy strong{color:var(--ink)!important}
+html[data-theme="dark"] .transactions-approved-filters{
+  background:var(--surface-translucent)!important;
+  border-color:var(--border-strong)!important;
+  box-shadow:var(--shadow-flat)!important;
+}
+html[data-theme="dark"] .transactions-approved-filters .searchbox,
+html[data-theme="dark"] .transactions-approved-filters .owned-select-shell,
+html[data-theme="dark"] .transactions-approved-date,
+html[data-theme="dark"] .transactions-approved-filter-button,
+html[data-theme="dark"] .transactions-page-size .owned-select-shell{
+  background:var(--control-bg)!important;
+  border-color:var(--control-border)!important;
+  color:var(--ink)!important;
+}
+html[data-theme="dark"] .transactions-approved-filters .searchbox input,
+html[data-theme="dark"] .transactions-approved-date .owned-input{color:var(--ink)!important}
+html[data-theme="dark"] .transactions-approved-date>span{color:var(--muted)!important}
+html[data-theme="dark"] .transactions-approved-table{color:var(--text-secondary)!important}
+html[data-theme="dark"] .transactions-approved-table th{
+  background:var(--surface-inset)!important;
+  border-color:var(--chart-grid)!important;
+  color:var(--text-secondary)!important;
+}
+html[data-theme="dark"] .transactions-approved-table td{
+  background:var(--surface)!important;
+  border-color:var(--chart-grid)!important;
+  color:var(--text-secondary)!important;
+}
+html[data-theme="dark"] .transactions-approved-table tbody tr:hover td{background:var(--surface-hover)!important}
+html[data-theme="dark"] .transactions-approved-table tbody tr.is-selected td{background:var(--surface-selected)!important}
+html[data-theme="dark"] .transactions-approved-check{background:var(--control-bg)!important;border-color:var(--control-border)!important}
+html[data-theme="dark"] .transactions-approved-check:checked{background:var(--accent)!important;border-color:var(--accent)!important;box-shadow:inset 0 0 0 3px var(--surface)!important}
+html[data-theme="dark"] .transactions-description-main,
+html[data-theme="dark"] .transactions-account-name,
+html[data-theme="dark"] .transactions-approved-table td.balance{color:var(--ink-2)!important}
+html[data-theme="dark"] .transactions-approved-table .row-context-button{color:var(--accent)!important}
+html[data-theme="dark"] .transactions-approved-table .row-context-button:hover{background:var(--accent-soft)!important;color:var(--accent-hover)!important}
+html[data-theme="dark"] .transactions-ledger-footer{
+  background:var(--surface-inset)!important;
+  color:var(--text-secondary)!important;
+}
+html[data-theme="dark"] .transactions-pagination button{color:var(--text-secondary)!important}
+html[data-theme="dark"] .transactions-pagination button:hover:not(:disabled){background:var(--surface-hover)!important}
+html[data-theme="dark"] .transactions-pagination button.active{background:var(--surface-selected)!important;color:var(--accent)!important}
+html[data-theme="dark"] .transactions-detail-head{border-color:var(--chart-grid)!important}
+html[data-theme="dark"] .transactions-detail-head strong,
+html[data-theme="dark"] .transactions-detail-hero b{color:var(--ink)!important}
+html[data-theme="dark"] .transactions-detail-head button{color:var(--text-secondary)!important}
+html[data-theme="dark"] .transactions-detail-empty,
+html[data-theme="dark"] .transactions-detail-hero small,
+html[data-theme="dark"] .transactions-detail-row span{color:var(--text-secondary)!important}
+html[data-theme="dark"] .transactions-detail-hero,
+html[data-theme="dark"] .transactions-detail-row{border-color:var(--chart-grid)!important}
+html[data-theme="dark"] .transactions-detail-icon{background:var(--success-bg)!important;color:var(--success)!important}
+html[data-theme="dark"] .transactions-detail-row b,
+html[data-theme="dark"] .transactions-detail-row .detail-account{color:var(--ink-2)!important}
+html[data-theme="dark"] .transactions-detail-actions button{background:var(--control-bg)!important}
+html[data-theme="dark"] .transactions-detail-actions .edit{border-color:var(--accent)!important;color:var(--accent)!important}
+html[data-theme="dark"] .transactions-detail-actions .delete{border-color:var(--error)!important;color:var(--error)!important;background:var(--error-bg)!important}
+
+html[data-theme="dark"] .mobile-transaction-filters{
+  background:var(--surface-elevated)!important;
+  border-color:var(--border-strong)!important;
+  box-shadow:var(--shadow-flat)!important;
+}
+
+html[data-theme="dark"] .quick-modal{
+  background:var(--surface-elevated)!important;
+  color:var(--ink)!important;
+}
+html[data-theme="dark"] .quick-modal>header{background:var(--surface-elevated)!important}
+html[data-theme="dark"] .quick-modal:before{background:var(--border-strong)!important}
+html[data-theme="dark"] .quick-modal:has(.generic-kind-grid) .entry-body,
+html[data-theme="dark"] .quick-modal .entry-body{background:var(--surface-2)!important}
+html[data-theme="dark"] .quick-modal:has(.generic-kind-grid)>footer,
+html[data-theme="dark"] .quick-modal>footer{
+  background:var(--surface-elevated)!important;
+  border-color:var(--border-strong)!important;
+}
+html[data-theme="dark"] .quick-modal:has(.generic-kind-grid)>footer .receipt-quick-launch,
+html[data-theme="dark"] .quick-modal>footer .receipt-quick-launch{
+  background:var(--control-bg)!important;
+  border-color:var(--control-border)!important;
+  color:var(--ink)!important;
+}
+html[data-theme="dark"] .quick-modal:has(.generic-kind-grid)>footer .receipt-quick-launch>svg,
+html[data-theme="dark"] .quick-modal>footer .receipt-quick-launch>svg{color:var(--accent)!important}

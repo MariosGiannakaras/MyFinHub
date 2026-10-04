@@ -5,6 +5,24 @@ import { isOwner } from './storage.js';
 
 const MAX_DEVICE_ACTION_BODY_BYTES = 2 * 1024;
 
+type DeviceAction={action:'revoke';sessionId:string}|{action:'revoke-others'};
+
+export function parseDeviceSessionAction(value:unknown):DeviceAction{
+  if(!value||typeof value!=='object'||Array.isArray(value))throw new ApiError(400,'INVALID_DEVICE_ACTION','Μη έγκυρη ενέργεια συσκευής.');
+  const body=value as Record<string,unknown>;
+  if(body.action==='revoke'){
+    if(Object.keys(body).some(key=>key!=='action'&&key!=='sessionId'))throw new ApiError(400,'INVALID_DEVICE_ACTION','Μη έγκυρη ενέργεια συσκευής.');
+    const sessionId=typeof body.sessionId==='string'?body.sessionId.trim():'';
+    if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sessionId))throw new ApiError(400,'INVALID_DEVICE_SESSION_ID','Μη έγκυρη αναφορά συνεδρίας συσκευής.');
+    return {action:'revoke',sessionId};
+  }
+  if(body.action==='revoke-others'){
+    if(Object.keys(body).some(key=>key!=='action'))throw new ApiError(400,'INVALID_DEVICE_ACTION','Μη έγκυρη ενέργεια συσκευής.');
+    return {action:'revoke-others'};
+  }
+  throw new ApiError(400,'INVALID_DEVICE_ACTION','Μη έγκυρη ενέργεια συσκευής.');
+}
+
 function deviceDto(row: Awaited<ReturnType<typeof listDeviceSessions>>['rows'][number], currentSessionId: string) {
   return {
     sessionId: row.session_id,
@@ -38,14 +56,9 @@ export async function handleDeviceSessionsRequest(req: any, res: any) {
     }
 
     assertMutationSessionOrigin(req, session);
-    const body = await readJsonBody<Record<string, unknown>>(req, MAX_DEVICE_ACTION_BODY_BYTES);
-    if (body?.action === 'revoke' && typeof body.sessionId === 'string') {
-      await revokeDeviceSession(session.accessToken, session.user.id, body.sessionId.trim());
-    } else if (body?.action === 'revoke-others') {
-      await revokeOtherDeviceSessions(session.accessToken, session.user.id);
-    } else {
-      throw new ApiError(400, 'INVALID_DEVICE_ACTION', 'Μη έγκυρη ενέργεια συσκευής.');
-    }
+    const action=parseDeviceSessionAction(await readJsonBody(req,MAX_DEVICE_ACTION_BODY_BYTES));
+    if(action.action==='revoke')await revokeDeviceSession(session.accessToken,session.user.id,action.sessionId);
+    else await revokeOtherDeviceSessions(session.accessToken,session.user.id);
     const result = await listDeviceSessions(session.accessToken, session.user.id);
     return sendJson(res, 200, {
       count: result.rows.length,

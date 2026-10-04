@@ -23,7 +23,7 @@
 .settings-choice-copy>b{font-size:var(--ux-body-size)}
 .settings-choice-copy>small{color:var(--muted);line-height:1.45}
 .settings-general-appearance .text-size-picker{margin:0;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-.settings-general-appearance .text-size-picker button{min-height:46px;padding:9px 11px;text-align:center;place-items:center;background:rgba(247,249,252,.82)}
+.settings-general-appearance .text-size-picker button{min-height:46px;padding:9px 11px;text-align:center;place-items:center;background:var(--surface-inset)}
 .settings-general-appearance .text-size-picker button b{font-size:var(--ux-small-size)}
 
 .settings-general-app{padding:18px}
@@ -51,25 +51,25 @@
 .settings-icons-only .category-icons-workspace>.panel-head{margin:0;padding-bottom:2px}
 .settings-icons-only .category-icons-workspace>.panel-head small{max-width:920px;line-height:1.4}
 .settings-icons-only .category-icons-workspace>.segmented-control{justify-self:start;margin:0}
-.settings-icons-only .category-icon-library{display:grid;gap:7px;padding:9px;border:1px solid var(--line);border-radius:12px;background:rgba(248,250,253,.68)}
+.settings-icons-only .category-icon-library{display:grid;gap:7px;padding:9px;border:1px solid var(--line);border-radius:12px;background:var(--surface-inset)}
 .settings-icons-only .category-icon-library-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;min-width:0}
 .settings-icons-only .category-icon-library-head>b{font-size:var(--ux-small-size)}
 .settings-icons-only .category-icon-library-head>small{color:var(--muted);font-size:var(--ux-tiny-size);text-align:right}
 .settings-icons-only .category-icon-category-list{display:grid;grid-template-columns:1fr;gap:6px}
-.settings-icons-only .category-taxonomy-card{gap:6px;padding:8px 10px;border-radius:11px;background:rgba(255,255,255,.5);box-shadow:none}
+.settings-icons-only .category-taxonomy-card{gap:6px;padding:8px 10px;border-radius:11px;background:var(--surface-2);box-shadow:none}
 .settings-icons-only .category-taxonomy-head{gap:8px}
 .settings-icons-only .category-taxonomy-glyph{width:30px;height:30px;border-radius:9px;background:rgba(247,249,252,.82)}
 .settings-icons-only .category-taxonomy-title{gap:0}
 .settings-icons-only .category-taxonomy-title b{font-size:var(--ux-small-size)}
 .settings-icons-only .category-taxonomy-title small{font-size:var(--ux-tiny-size)}
-.settings-icons-only .taxonomy-icon-disclosure{margin:0;border-radius:9px;background:rgba(248,250,253,.58)}
+.settings-icons-only .taxonomy-icon-disclosure{margin:0;border-radius:9px;background:var(--surface-inset)}
 .settings-icons-only .taxonomy-icon-disclosure>summary{min-height:34px;padding:6px 9px;font-size:var(--ux-tiny-size);font-weight:760;color:var(--blue)}
 .settings-icons-only .taxonomy-icon-disclosure>.category-icon-picker,.settings-icons-only .taxonomy-icon-disclosure>.category-icon-picker-block{padding:8px}
 .settings-icons-only .taxonomy-subcategory-section{gap:5px;padding-top:1px}
 .settings-icons-only .taxonomy-subcategory-heading b{font-size:var(--ux-tiny-size);letter-spacing:.02em;text-transform:uppercase}
 .settings-icons-only .taxonomy-subcategory-heading small{display:none}
 .settings-icons-only .taxonomy-subcategory-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
-.settings-icons-only .taxonomy-subcategory-row{padding:6px 8px;gap:5px;border-radius:9px;background:rgba(248,250,253,.5)}
+.settings-icons-only .taxonomy-subcategory-row{padding:6px 8px;gap:5px;border-radius:9px;background:var(--surface-inset)}
 .settings-icons-only .taxonomy-subcategory-main{gap:6px}
 .settings-icons-only .taxonomy-subcategory-main b{font-size:var(--ux-tiny-size)}
 .settings-icons-only .taxonomy-subcategory-main small{font-size:calc(var(--ux-tiny-size) - 1px)}
@@ -125,8 +125,9 @@
 
 @media(max-width:720px){
   .settings-tabs-page{gap:12px}
-  .settings-tablist{margin-inline:-2px;padding:4px;border-radius:13px}
-  .settings-tablist button{min-height:40px;padding:8px 11px}
+  .settings-tablist{margin-inline:-2px;padding:4px 12px;border-radius:13px;scroll-padding-inline:28px;scroll-snap-type:x proximity;scrollbar-width:none;-webkit-mask-image:linear-gradient(to right,transparent 0,#000 10px,#000 calc(100% - 10px),transparent 100%);mask-image:linear-gradient(to right,transparent 0,#000 10px,#000 calc(100% - 10px),transparent 100%)}
+  .settings-tablist::-webkit-scrollbar{display:none}
+  .settings-tablist button{min-height:40px;padding:8px 11px;scroll-snap-align:center}
   .settings-choice-group{grid-template-columns:1fr;gap:10px;padding:14px 0}
   .settings-general-appearance .text-size-picker{grid-template-columns:repeat(3,minmax(0,1fr))}
   .settings-general-appearance .text-size-picker button{min-height:42px;padding:8px 6px}
