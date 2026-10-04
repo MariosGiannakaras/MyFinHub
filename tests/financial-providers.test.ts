@@ -11,6 +11,7 @@ import {
 } from '../src/lib/financialProviders.js';
 import { bankBrandAsset, bankBrandKey } from '../src/lib/bankBrands.js';
 import { DEFAULT_CARD_BANKS } from '../src/lib/cards.js';
+import { providerAssetUrlAllowed } from '../src/lib/financialProviderClient.js';
 
 const root=process.cwd();
 const source=(relative:string)=>fs.readFileSync(path.join(root,relative),'utf8');
@@ -92,6 +93,16 @@ describe('financial provider registry',()=>{
     expect(storageMigration).toContain("storage_bucket = 'financial-provider-assets'");
     expect(storageMigration).toContain('foreign key (logo_asset_key)');
     expect(storageMigration).toContain('foreign key (wordmark_asset_key)');
+  });
+
+  it('accepts secure provider assets and only loopback HTTP for local integration stacks',()=>{
+    expect(providerAssetUrlAllowed('https://example.supabase.co/storage/v1/object/public/financial-provider-assets/providers/p/logo.svg')).toBe(true);
+    expect(providerAssetUrlAllowed('http://127.0.0.1:54321/storage/v1/object/public/financial-provider-assets/providers/p/logo.svg')).toBe(true);
+    expect(providerAssetUrlAllowed('http://localhost:54321/storage/v1/object/public/financial-provider-assets/providers/p/logo.svg')).toBe(true);
+    expect(providerAssetUrlAllowed('http://[::1]:54321/storage/v1/object/public/financial-provider-assets/providers/p/logo.svg')).toBe(true);
+    expect(providerAssetUrlAllowed('http://example.com/provider.svg')).toBe(false);
+    expect(providerAssetUrlAllowed('javascript:alert(1)')).toBe(false);
+    expect(providerAssetUrlAllowed('not-a-url')).toBe(false);
   });
 
   it('reuses the existing metadata API instead of adding another Vercel function',()=>{

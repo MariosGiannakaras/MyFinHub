@@ -22,6 +22,15 @@ function publish(next:FinancialProviderSnapshot){snapshot=next;for(const listene
 export function getFinancialProviderSnapshot(){return snapshot}
 export function subscribeFinancialProviders(listener:()=>void){listeners.add(listener);return()=>{listeners.delete(listener)}}
 
+export function providerAssetUrlAllowed(value:string){
+  try{
+    const url=new URL(value);
+    if(url.protocol==='https:')return true;
+    if(url.protocol!=='http:')return false;
+    return url.hostname==='127.0.0.1'||url.hostname==='localhost'||url.hostname==='[::1]';
+  }catch{return false}
+}
+
 function parseProvider(value:unknown):FinancialProvider|null{
   if(!value||typeof value!=='object'||Array.isArray(value))return null;
   const row=value as Record<string,unknown>;
@@ -48,7 +57,7 @@ function parseProvider(value:unknown):FinancialProvider|null{
     const mimeType=typeof asset.mimeType==='string'?asset.mimeType.trim():undefined;
     const sizeBytes=asset.sizeBytes===null||asset.sizeBytes===undefined?null:Number(asset.sizeBytes);
     const updatedAt=typeof asset.updatedAt==='string'?asset.updatedAt:undefined;
-    if(!/^[a-z][a-z0-9-]{0,95}$/.test(assetKey)||!roles.includes(role)||!/^[a-z][a-z0-9-]{0,63}$/.test(variant)||!/^https:\/\//.test(url))return null;
+    if(!/^[a-z][a-z0-9-]{0,95}$/.test(assetKey)||!roles.includes(role)||!/^[a-z][a-z0-9-]{0,63}$/.test(variant)||!providerAssetUrlAllowed(url))return null;
     if(sizeBytes!==null&&(!Number.isFinite(sizeBytes)||sizeBytes<0))return null;
     assets.push({assetKey,role,variant,url,fileName,mimeType,sizeBytes,updatedAt});
   }
@@ -67,7 +76,7 @@ function parseProvider(value:unknown):FinancialProvider|null{
   if(!/^[a-z][a-z0-9-]{0,63}$/.test(id)||!displayName||displayName.length>120||!shortName||shortName.length>80)return null;
   if(!['bank','fintech','wallet','payment'].includes(kind)||countryCode!==undefined&&!/^[A-Z]{2}$/.test(countryCode))return null;
   if(logoAssetKey!==null&&!/^[a-z][a-z0-9-]{0,95}$/.test(logoAssetKey)||wordmarkAssetKey!==null&&!/^[a-z][a-z0-9-]{0,95}$/.test(wordmarkAssetKey)||!Number.isSafeInteger(sortOrder))return null;
-  if(logoUrl!==null&&!/^https:\/\//.test(logoUrl)||wordmarkUrl!==null&&!/^https:\/\//.test(wordmarkUrl))return null;
+  if(logoUrl!==null&&!providerAssetUrlAllowed(logoUrl)||wordmarkUrl!==null&&!providerAssetUrlAllowed(wordmarkUrl))return null;
   return {id,displayName,shortName,kind,kindLabel:kindLabels[kind],countryCode,logoAssetKey,wordmarkAssetKey,logoUrl,wordmarkUrl,assets,bindings,sortOrder};
 }
 

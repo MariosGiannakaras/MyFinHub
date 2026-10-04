@@ -2144,3 +2144,15 @@ The next zero-cost real-stack batch uses only the disposable local Supabase/API 
 Status: **source implemented; exact-head CI/CodeQL/Real Stack runtime proof pending.** Do not credit the Providers/assets traceability row or the broad 8.5/8.10 cells until the exact-head real-stack run passes and the screenshot/log/storage evidence is directly inspected.
 
 **Implementations 17/24 completed · Sub-implementations 164/197 completed**
+
+### 8.99 Real Stack #41 provider catalog loopback URL filtering — FV-77 source-fixed, runtime proof pending
+
+Real Stack E2E #41 on exact head `7669f7f504d4852dc837a8a8d1fe52c53368ce18` passed CI #3322 and CodeQL #3271. The real registration-failure cleanup stage completed, and the actual browser successfully created the synthetic provider, uploaded one SVG through the real Storage path, reused it for the required logo/wordmark bindings and passed direct `/api/account-metadata?resource=financial-providers` read-back before reload. The first runtime failure occurred only after hard reload: `Timed out waiting for provider after hard reload`.
+
+- Root cause: `financialProviderClient.parseProvider()` accepted only `https://` provider asset URLs. The disposable local Supabase stack correctly exposes Storage as `http://127.0.0.1:<port>`, so the client discarded the otherwise valid provider record when rebuilding the catalog after reload.
+- Classification: shared client validation defect limited to local/integration environments; production HTTPS provider assets remain valid. The fix must not permit arbitrary insecure HTTP.
+- Remediation: centralize provider-asset URL validation so HTTPS remains universally accepted while HTTP is allowed only for exact loopback hosts (`127.0.0.1`, `localhost`, `[::1]`). Apply the helper consistently to asset, logo and wordmark URLs.
+- Regression: direct unit coverage requires production HTTPS and loopback HTTP acceptance while rejecting ordinary HTTP, `javascript:` and malformed URLs.
+- Scope: provider client parser + regression only. No finance semantics, provider persistence schema, Supabase policies, production provider data, Storage write rules, Android code or release behavior changed.
+
+Status: **source-fixed; exact-head CI/CodeQL/Real Stack proof pending.** Counters remain **Implementations 17/24 completed · Sub-implementations 164/197 completed**.
