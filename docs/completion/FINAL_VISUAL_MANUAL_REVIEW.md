@@ -241,3 +241,29 @@ Source head: `c843f9ad3034f6df73adbc90987865450e728dd5`
 - Product/UI source is unchanged from the directly inspected FV-87 presentation head except for QA/docs/workflow fixes; the distinct FV-87 contexts retain their direct PASS disposition.
 
 Disposition: **pre-merge audit/evidence generation PASS.** This remains supporting evidence only; the canonical `develop` squash-merge commit must regenerate the persistent final matrix and receive its own detailed direct review before UI closeout.
+
+
+## Canonical develop post-merge final visual release inspection — 2026-10-05
+
+Reviewed by: ChatGPT (direct individual evidence inspection)  
+Canonical product merge SHA: `6c89d9231ec30df5e580d982b926f838eb29a828`  
+Final Visual run: `37237421596`  
+Artifact: `myfinhub-final-screenshots-6c89d9231ec30df5e580d982b926f838eb29a828` / ID `11315832718`  
+Persisted screenshot-only evidence commit: `0df3334ac82803f15d3aa850c44d6834a9582fc1`  
+Manifest count/source: `216` captures, source `6c89d923…`, branch `develop`
+
+All **36 distinct surface/state groups** were inspected at useful resolution in every Light/Dark × desktop/tablet/mobile variant (6 captures per group):
+
+- 12 primary routes: Dashboard, Transactions, Savings, Cards, Credit, Loans, Lending, Recurring, Planning, Attention, Reports and Settings.
+- 6 Settings tabs: profile, accounts, categories, icons, rules and data.
+- 8 Settings nested states: provider details, provider branding, provider asset picker, new account editor, category rename editor, icon selection editor, new rule editor and JSON import confirmation.
+- 9 auth/session states: login, login error, auth unavailable, session expired, session revoked, MFA challenge, MFA error, MFA enrollment and MFA enrollment error.
+- 1 utility group: product 404 recovery.
+
+Across those 216 captures, no material clipping, overlap, horizontal overflow, modal/editor containment defect, responsive hierarchy break or Light/Dark semantic-theme drift was found. Shared components were deduplicated by implementation: identical repeated instances were not treated as independent proof when the shared primitive/state/context was already covered.
+
+Focused exact-merge CI evidence was also directly inspected for materially distinct states not represented in the 216 release matrix: session hard-expiry/MFA downgrade; conflict/offline/save/loading recovery; command palette desktop/mobile; keyboard focus + 200%-equivalent reduced-motion 404; destructive/validation dialogs; Receipt OCR capture/outage/proposal/review/delete; taxonomy retirement blocked/confirm; icon-pack/custom-color; device revoke busy/failure/confirm; JSON import confirmation; Action Center split review; dense large-data states; App Lock/update/startup recovery; and Desktop titlebar states.
+
+Canonical CI `37237421591` separately reports runtime console/network assertions PASS, keyboard/semantic accessibility PASS across primary routes/Settings/auth/404, Receipt OCR recovery PASS, taxonomy/icon/command PASS, large-data PASS with max route readiness `4141 ms`, and `All rendered browser QA suites passed` with 424 focused screenshots.
+
+Disposition: **PASS for the mandatory post-merge visual release inspection on canonical `develop`.** This does not claim the three independent-manual-browser protocol items that require a direct interactive browser/DevTools/DOM session, and it does not claim `main`/production release proof.
