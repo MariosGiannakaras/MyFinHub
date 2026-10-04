@@ -811,12 +811,12 @@ The original owner-expanded audit added 16 verification implementations / 160 no
 
 ### 8.11 Defect remediation and revalidation loop — 6/6
 
-- [x] Every discovered defect is recorded before fixing with severity, reproduction, affected matrix cells and whether it is systemic or local. Completion findings FV-67…FV-89 were recorded in the active plan/issue before remediation; the durable defect ledger is reconciled in this checkpoint.
+- [x] Every discovered defect is recorded before fixing with severity, reproduction, affected matrix cells and whether it is systemic or local. Completion findings FV-67…FV-91 were recorded in the active plan/issue before remediation; the durable defect ledger is reconciled in this checkpoint.
 - [x] Fix systemic design/component/domain/backend causes at the shared layer where safe instead of patching screenshots or one page. Examples include shared modal focus/surface ownership, owned date/select interaction, provider URL policy, shared Button/IconButton adoption, static presentation ownership and QA/workflow boundaries.
 - [x] Add the narrowest regression test that would have caught each material defect before/with the fix. No security/accessibility/performance/touch threshold was weakened to obtain green runs.
 - [x] Re-run narrow affected tests first, then all matrix cells invalidated by the change. FV-82/FV-83/FV-84/FV-87/FV-89 each progressed from isolated failure to focused proof before broader reruns.
 - [x] Re-run full CI/security/rendered/cross-engine/performance/Windows gates whenever final-head rules require them. Final review head `05f97721…` passed CI/rendered `37234768780`, CodeQL `37234768772`, Real Stack `37234768785`, Cross-engine `37234768912`, Performance `37234768805`, Windows Desktop `37234768757`, Windows First Run `37234768837` and Windows Clean Launch `37234768809` before the protected squash merge.
-- [x] Do not mark an item complete from source change alone; required runtime/visual/backend proof must also pass. The plan explicitly kept FV-79…FV-89 in evidence-pending states until the corresponding exact-head artifact/runtime proof was inspected.
+- [x] Do not mark an item complete from source change alone; required runtime/visual/backend proof must also pass. The plan explicitly kept FV-79…FV-91 in evidence-pending states until the corresponding exact-head artifact/runtime proof was inspected.
 
 ### 8.12 Final closeout and evidence package — 7/8
 
