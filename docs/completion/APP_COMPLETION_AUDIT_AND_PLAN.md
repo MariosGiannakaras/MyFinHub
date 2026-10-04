@@ -2194,3 +2194,14 @@ Real Stack E2E #44 (`37212523937`) completed successfully on exact head `86fb57a
 Traceability disposition: Providers/assets moves from Partial to Reusable. This closes the row-specific real upload/binding/failure gap but does not infer the broad 8.5 every-domain persistence cell or 8.10 canonical-tree/release cells.
 
 **Implementations 17/24 completed · Sub-implementations 164/197 completed**
+
+### 8.103 Pre-merge UI consistency: provider required badge — FV-80 source-fixed, rendered proof pending
+
+Direct inspection of the settled Real Stack #44 provider screenshot exposed a small but real design-system consistency defect unrelated to the Storage proof: `FinancialProviderManagementSettings` renders `required-badge` beside the two mandatory provider slots, but no CSS rule owned that class. The unstyled text therefore ran directly into the slot title instead of reading as a distinct status chip.
+
+- Remediation: keep the provider-specific status chip local to `FinancialProviderManagementSettings.css`; make the title line a wrapping flex row with an explicit 6 px gap; style the chip with existing semantic tokens (`--accent-soft`, `--accent`, `--border-subtle`, `--ux-tiny-size`) rather than page-specific hard-coded colors.
+- Regression: provider-brand management source coverage now requires the spacing owner and token-backed `required-badge` rule.
+- This is part of the owner-mandated pre-merge UI reuse/orphan/consistency audit. It does not create a new denominator item because the audit itself is already the pending 8.12 sub-implementation.
+- Scope: provider editor presentation only; provider Storage/API/database semantics, finance behavior, security boundaries and Android remain unchanged.
+
+Status: **source-fixed; exact-head rendered/Real Stack visual evidence pending.** Counters remain **Implementations 17/24 completed · Sub-implementations 164/197 completed**.

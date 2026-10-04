@@ -17,6 +17,7 @@ const handler=readFileSync(new URL('../server/accountMetadataHandler.ts',import.
 const storeSource=readFileSync(new URL('../server/accountMetadataStore.ts',import.meta.url),'utf8');
 const client=readFileSync(new URL('../src/lib/financialProviderClient.ts',import.meta.url),'utf8');
 const settings=readFileSync(new URL('../src/components/FinancialProviderManagementSettings.tsx',import.meta.url),'utf8');
+const settingsStyles=readFileSync(new URL('../src/components/FinancialProviderManagementSettings.css',import.meta.url),'utf8');
 const accountMetadataEntry=readFileSync(new URL('../api/account-metadata.ts',import.meta.url),'utf8');
 const qaFinancialProviderSource=readFileSync(new URL('../src/qaFinancialProviders.ts',import.meta.url),'utf8');
 const financialProviderClientSource=readFileSync(new URL('../src/lib/financialProviderClient.ts',import.meta.url),'utf8');
@@ -176,6 +177,15 @@ describe('provider branding management',()=>{
     expect(settings).not.toContain('Δεν επιλέχθηκε αρχείο');
     expect(settings).toContain('await setFinancialProviderAssetBinding');
     expect(settings).toContain("editor.source==='new'?'Δημιουργία παρόχου':'Αποθήκευση'");
+  });
+
+  it('keeps required provider slots visually separated with semantic tokens',()=>{
+    expect(settings).toContain('className="required-badge">Απαραίτητο</span>');
+    expect(settingsStyles).toContain('.provider-slot-copy>div:first-child{display:flex;align-items:center;gap:6px;flex-wrap:wrap}');
+    expect(settingsStyles).toContain('.required-badge{display:inline-flex');
+    expect(settingsStyles).toContain('background:var(--accent-soft)');
+    expect(settingsStyles).toContain('color:var(--accent)');
+    expect(settingsStyles).toContain('font-size:var(--ux-tiny-size)');
   });
 
   it('cleans up the uploaded Storage object when provider asset registration fails',async()=>{
