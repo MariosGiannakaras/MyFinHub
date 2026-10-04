@@ -2101,3 +2101,14 @@ Real Stack E2E #35 on exact head `89f203630ca13f444814fe9f8b0ee8aca646ef0c` pass
 - Scope: harness + regression only. No product UI, card semantics, vault behavior, Supabase schema/policies, visual styling, release behavior or Android code changes.
 
 Status: **source-fixed; exact-head Real Stack runtime proof pending.** Counters remain **Implementations 17/24 completed · Sub-implementations 164/196 completed**.
+
+
+### 8.96 Real Stack #36 runtime PASS; CI selector-source encoding normalization
+
+Real Stack E2E #36 (`37205971347`) completed successfully on exact head `ff857e8c5f1a4238dc56059c2b030faaab75d045`. The disposable local Supabase/API stack, actual browser flow, Cards lifecycle, Taxonomy move/retire, persisted icon preference, all previously accepted real-browser stages and forward-only migration recovery passed. This establishes that the scoped Cards archive interaction is runtime-correct.
+
+CI #3317 on the same head failed only in the narrow source-contract regression because the raw TypeScript browser-eval selector was written with three literal backslashes around the attribute quotes instead of the repository-standard single escaped quote. CodeQL #3266 is green. The mismatch is QA source encoding only; no product/runtime/API/database/security behavior failed.
+
+Remediation: normalize only the raw selector representation in `scripts/real-stack-browser-e2e.ts` to `button[aria-label=\"Αρχειοθέτηση κάρτας\"]`. The existing regression remains unchanged and is expected to pass on the next exact head. Cards/Taxonomy/Icons traceability credit remains pending until that exact-head CI/CodeQL/Real Stack rerun is green and the three screenshots are directly inspected.
+
+**Implementations 17/24 completed · Sub-implementations 164/196 completed**
