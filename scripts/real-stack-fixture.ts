@@ -9,6 +9,7 @@ export function realStackFinanceData(): FinanceData {
       accounts: [
         { id: 'qa-cash', name: 'Synthetic QA Cash', short: 'QA', kind: 'cash' },
         { id: 'qa-bank-account', name: 'Synthetic QA Bank Account', short: 'QA Bank', kind: 'bank', providerId: 'qa-bank', bankAccountCategory: 'current' },
+        { id: 'qa-savings', name: 'Synthetic QA Savings', short: 'QA Save', kind: 'savings', providerId: 'qa-bank', bankAccountCategory: 'savings' },
       ],
       months: ['2026-10'],
       transactions: [
@@ -24,7 +25,7 @@ export function realStackFinanceData(): FinanceData {
         },
       ],
       snapshots: [
-        { date: '2026-09-30', balances: { 'qa-cash': 0, 'qa-bank-account': 0 } },
+        { date: '2026-09-30', balances: { 'qa-cash': 0, 'qa-bank-account': 0, 'qa-savings': 0 } },
       ],
       recurring: [],
       subscriptions: [],

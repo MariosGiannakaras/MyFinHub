@@ -2036,3 +2036,18 @@ Real Stack E2E #29 (`37196371045`) completed successfully on exact head `7d56b75
 Artifact `11300858918` was downloaded and `data-management-import-history-persisted.png` was opened individually at full useful resolution. The Change History dialog shows `Εισαγωγή δεδομένων` as the current state, surrounding credit/transaction history entries with timestamps, and the explicit footer statement that file import remains separate and is not automatically included in Undo/Redo. The dialog is contained, readable and free of material clipping/overlap.
 
 This closes the last 8.4 cell. Section 8.4 is now **24/24**, advancing the overall completion checkpoint to **Implementations 17/24 completed · Sub-implementations 164/195 completed**. The remaining work is concentrated in 8.5 persisted-state agreement, 8.10 broader real-stack/canonical-tree proof, 8.11–8.13 closeout/manual ledgers and the final 8.16 coherent release-identity/stop-ship proof.
+
+
+### 8.91 Multi-domain actual-browser real-stack source — runtime proof pending
+
+The next coherent zero-cost batch extends the already proven production-built browser → real local API/Supabase path across five additional persistence domains without changing product code. The canonical synthetic fixture gains a dedicated `qa-savings` account so Savings can exercise a real current→savings transfer.
+
+- Savings: create a personal goal, hard-reload it, create a real savings transfer with the canonical current/savings route, hard-reload and require both UI + API persistence.
+- Loans: create a new installment obligation through the real editor, require API persistence, hard-reload and require the active loan row.
+- Lending: create a receivable, hard-reload, record a partial repayment through the real contextual flow, hard-reload again and require the persisted repayment/person state.
+- Recurring: create a recurring obligation, hard-reload, pause it, hard-reload and require the paused row in inactive history.
+- Settings accounts: create a temporary custom cash account, hard-reload, then delete through the real destructive confirmation, hard-reload and require absence from both API state and UI.
+
+Each domain emits a focused persistence screenshot before the final Settings Data import/export proof runs over the expanded state. These are representative real-stack persistence checks for 8.5/8.10; no new checklist credit is taken until the exact-head run and evidence are directly reviewed.
+
+**Implementations 17/24 completed · Sub-implementations 164/195 completed**

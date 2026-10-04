@@ -105,6 +105,8 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     const installDownloadObserver=async()=>assert(await c!.call<boolean>("function(){globalThis.__myfinhubQaDownloads=[];const observer=new MutationObserver(records=>{for(const record of records)for(const node of record.addedNodes)if(node instanceof HTMLAnchorElement&&node.download)globalThis.__myfinhubQaDownloads.push(node.download)});observer.observe(document.body,{childList:true,subtree:true});globalThis.__myfinhubQaDownloadObserver=observer;return true}"),'Download observer could not be installed.');
     const importFile=async(mode:'invalid'|'valid')=>{const ok=await c!.call<boolean>("async function(mode){const input=document.querySelector('.settings-data-import-card input[type=file]');if(!(input instanceof HTMLInputElement))return false;let data;if(mode==='invalid'){data={app:'RheomIQ',schemaVersion:3}}else{const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();data=structuredClone(payload.data);data.updatedAt=new Date().toISOString();data.state.settings={...data.state.settings,accountNames:{...(data.state.settings?.accountNames||{}),'qa-cash':'Imported QA Cash'}}}const transfer=new DataTransfer();transfer.items.add(new File([JSON.stringify(data)],mode+'.json',{type:'application/json'}));input.files=transfer.files;input.dispatchEvent(new Event('change',{bubbles:true}));return true}",[mode]);assert(ok,'Data import file could not be attached.')};
     const currentRevision=()=>c!.call<string>("async function(){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return '';const payload=await response.json();return String(payload.revision||'')}");
+    const waitStateText=async(value:string,present=true)=>waitFor("async function(value,present){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();const exists=JSON.stringify(payload.data?.state||{}).includes(value);return present?exists:!exists}",present?'persisted state '+value:'removed state '+value,[value,present]);
+    const waitRecurringStatus=async(name:string,status:string)=>waitFor("async function(name,status){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();return (payload.data?.state?.recurringCustom||[]).some(item=>item.name===name&&(item.status|| (item.active?'active':'stopped'))===status)}",'recurring '+name+' '+status,[name,status]);
     const shot=async(name:string)=>{const result=await c!.send('Page.captureScreenshot',{format:'png',fromSurface:true});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(result.data,'base64'))};
 
     console.log('[real-browser] stage login');
@@ -162,6 +164,84 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     await waitFor("function(){const statement=document.querySelector('[data-primary-credit-statement]');const payment=document.querySelector('.credit-payments-table tbody tr');const used=[...document.querySelectorAll('.credit-card-stage-stats>div')].find(item=>(item.querySelector(':scope>span')?.textContent||'').includes('Χρησιμοποιημένο'));return Boolean(statement&&(statement.textContent||'').includes('Εξοφλημένη')&&payment&&(payment.textContent||'').includes('25,50')&&(used?.textContent||'').includes('0,00'))}",'paid credit state after reload');
     await shot('credit-payment-persisted');
 
+    console.log('[real-browser] stage savings-goal-transfer-reload');
+    await clickText('.sidebar nav button','Αποταμίευση');
+    await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Αποταμίευση')}",'savings workspace');
+    await clickText('.savings-goals button','Νέος στόχος');
+    await waitFor("function(){return Boolean(document.querySelector('#savings-goal-editor-title'))}",'savings goal editor');
+    await setByLabel('Όνομα στόχου','Real Browser Savings Goal');await setByLabel('Στόχος ποσού','250');await clickText('.savings-dialog button','Αποθήκευση στόχου');
+    await waitStateText('Real Browser Savings Goal');
+    await c.send('Page.reload',{ignoreCache:true});await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Αποταμίευση')}",'savings reload after goal');
+    await waitFor("function(){return document.body.textContent.includes('Real Browser Savings Goal')}",'savings goal after reload');
+    await clickText('.savings-action','Μεταφορά στην άκρη');
+    await waitFor("function(){return (document.querySelector('#context-quick-title')?.textContent||'').includes('Μεταφορά στην αποταμίευση')}",'savings transfer modal');
+    await setByLabel('Ποσό','20');await setByLabel('Σχόλιο','Real Browser Savings Transfer');await clickText('.contextual-quick-modal button','Καταχώριση');
+    await waitStateText('Real Browser Savings Transfer');
+    await c.send('Page.reload',{ignoreCache:true});await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Αποταμίευση')}",'savings reload after transfer');
+    await waitFor("function(){return document.body.textContent.includes('Real Browser Savings Transfer')}",'savings transfer after reload');
+    await shot('savings-domain-persisted');
+
+    console.log('[real-browser] stage loan-create-reload');
+    await clickText('.sidebar nav button','Δόσεις & Δάνεια');
+    await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Δόσεις & Δάνεια')}",'loans workspace');
+    await clickText('.page-heading button','Νέο');
+    await waitFor("function(){return Boolean(document.querySelector('#loan-editor-title'))}",'loan create editor');
+    await setByLabel('Όνομα','Real Browser Loan');await setByLabel('Συνολικό ποσό','120');await setByLabel('Αριθμός δόσεων','3');await clickText('.loan-editor-dialog button','Δημιουργία');
+    await waitStateText('Real Browser Loan');
+    await c.send('Page.reload',{ignoreCache:true});await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Δόσεις & Δάνεια')}",'loan reload');
+    await waitFor("function(){return [...document.querySelectorAll('.loan-list-row[data-loan-lifecycle=active]')].some(row=>(row.textContent||'').includes('Real Browser Loan'))}",'loan after reload');
+    await shot('loan-domain-persisted');
+
+    console.log('[real-browser] stage lending-repayment-reload');
+    await clickText('.sidebar nav button','Δανεικά / Οφειλές');
+    await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Δανεικά / Οφειλές')}",'lending workspace');
+    await clickText('.lending-selected-toolbar button','Νέο άτομο');
+    await waitFor("function(){return Boolean(document.querySelector('#lending-dialog-title'))}",'lending create editor');
+    await setByLabel('Πρόσωπο','Real Browser Person');await setByLabel('Ποσό','42');await setByLabel('Σχόλιο','Real Browser Lending');await clickText('.lending-dialog button','Καταχώριση');
+    await waitStateText('Real Browser Lending');
+    await c.send('Page.reload',{ignoreCache:true});await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Δανεικά / Οφειλές')}",'lending reload after create');
+    await waitStateText('Real Browser Lending');
+    await clickText('.lending-quick-action.repayment','Νέα επιστροφή');
+    await waitFor("function(){return (document.querySelector('#context-quick-title')?.textContent||'').includes('Επιστροφή δανεικών')}",'lending repayment modal');
+    await setByLabel('Ποσό','12');await setByLabel('Σχόλιο','Real Browser Repayment');await clickText('.contextual-quick-modal button','Καταχώριση');
+    await waitStateText('Real Browser Repayment');
+    await c.send('Page.reload',{ignoreCache:true});await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Δανεικά / Οφειλές')}",'lending reload after repayment');
+    await waitStateText('Real Browser Repayment');
+    const revealLending=await c.call<boolean>("function(){const button=document.querySelector('.privacy-toggle');if(!(button instanceof HTMLButtonElement))return false;if(button.getAttribute('aria-pressed')!=='true')button.click();return true}");assert(revealLending,'Lending privacy control is unavailable.');
+    await waitFor("function(){return document.body.textContent.includes('Real Browser Person')}",'lending person after reload');
+    await shot('lending-domain-persisted');
+
+    console.log('[real-browser] stage recurring-create-pause-reload');
+    await clickText('.sidebar nav button','Πάγια');
+    await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Πάγια')}",'recurring workspace');
+    await clickText('.page-heading button','Νέο πάγιο');
+    await waitFor("function(){return Boolean(document.querySelector('#recurring-editor-title'))}",'recurring create editor');
+    await setByLabel('Όνομα','Real Browser Recurring');await setByLabel('Προκαθορισμένο ποσό','19.90');await clickText('.editor-dialog button','Αποθήκευση');
+    await waitRecurringStatus('Real Browser Recurring','active');
+    await c.send('Page.reload',{ignoreCache:true});await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Πάγια')}",'recurring reload after create');
+    await waitFor("function(){return [...document.querySelectorAll('[data-recurring-status=active]')].some(row=>(row.textContent||'').includes('Real Browser Recurring'))}",'recurring after reload');
+    const pauseRecurring=await c.call<boolean>("function(){const row=[...document.querySelectorAll('[data-recurring-status=active]')].find(item=>(item.textContent||'').includes('Real Browser Recurring'));const button=row?.querySelector('button[aria-label^=\"Παύση\"]');if(!(button instanceof HTMLElement))return false;button.click();return true}");assert(pauseRecurring,'Recurring pause action is unavailable.');
+    await waitRecurringStatus('Real Browser Recurring','paused');
+    await c.send('Page.reload',{ignoreCache:true});await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Πάγια')}",'recurring reload after pause');
+    const openInactive=await c.call<boolean>("function(){const root=document.querySelector('[data-inactive-recurring-history]');if(!(root instanceof HTMLDetailsElement))return false;root.open=true;return true}");assert(openInactive,'Inactive recurring history is unavailable.');
+    await waitFor("function(){return [...document.querySelectorAll('[data-recurring-status=paused]')].some(row=>(row.textContent||'').includes('Real Browser Recurring'))}",'paused recurring after reload');
+    await shot('recurring-domain-persisted');
+
+    console.log('[real-browser] stage account-create-delete-reload');
+    await clickText('.sidebar nav button','Ρυθμίσεις');await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Ρυθμίσεις')}",'settings workspace for accounts');
+    await clickText('.settings-tablist button','Λογαριασμοί');await waitFor("function(){return Boolean(document.querySelector('.account-management-settings'))}",'account management');
+    await clickText('.account-management-settings button','Νέος λογαριασμός');
+    await waitFor("function(){return Boolean(document.querySelector('.account-management-modal.is-new'))}",'new account editor');
+    await clickText('.account-management-modal.is-new button','Μετρητά');await setByLabel('Όνομα λογαριασμού','Real Browser Temp Cash');await clickText('.account-management-modal.is-new button','Δημιουργία λογαριασμού');
+    await waitStateText('Real Browser Temp Cash');
+    await c.send('Page.reload',{ignoreCache:true});await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Ρυθμίσεις')}",'settings reload after account create');
+    await clickText('.settings-tablist button','Λογαριασμοί');await waitFor("function(){return [...document.querySelectorAll('.account-management-row')].some(row=>(row.textContent||'').includes('Real Browser Temp Cash'))}",'account after reload');
+    await shot('account-domain-created');
+    const deleteAccount=await c.call<boolean>("function(){const row=[...document.querySelectorAll('.account-management-row')].find(item=>(item.textContent||'').includes('Real Browser Temp Cash'));const button=row?.querySelector('button[aria-label=\"Διαγραφή Real Browser Temp Cash\"]');if(!(button instanceof HTMLElement))return false;button.click();return true}");assert(deleteAccount,'Temporary account delete action is unavailable.');
+    await waitFor("function(){return Boolean(document.querySelector('.app-confirm-dialog[role=alertdialog]'))}",'account delete confirmation');await clickText('.app-confirm-dialog button','Διαγραφή');await waitStateText('Real Browser Temp Cash',false);
+    await c.send('Page.reload',{ignoreCache:true});await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Ρυθμίσεις')}",'settings reload after account delete');
+    await clickText('.settings-tablist button','Λογαριασμοί');await waitFor("function(){return ![...document.querySelectorAll('.account-management-row')].some(row=>(row.textContent||'').includes('Real Browser Temp Cash'))}",'account deletion after reload');
+
     console.log('[real-browser] stage data-management-backup-import');
     await clickText('.sidebar nav button','Ρυθμίσεις');await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Ρυθμίσεις')}",'settings workspace');
     await clickText('.settings-tablist button','Δεδομένα');await waitFor("function(){return Boolean(document.querySelector('.settings-data-tab'))}",'settings data tab');
@@ -195,6 +275,6 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
 
     assert(runtimeErrors.length===0,'Browser runtime errors: '+runtimeErrors.join(' | '));
     assert(apiFailures.length===0,'Unexpected browser API failures: '+apiFailures.join(' | '));
-    console.log('[real-browser] PASS actual browser auth + modern/legacy/credit/data-management persistence across hard reload');
+    console.log('[real-browser] PASS actual browser auth + modern/legacy/credit/savings/loans/lending/recurring/accounts/data-management persistence across hard reload');
   }finally{c?.close();await stopBrowser(child);await sleep(300);if(profile)rmSync(profile,{recursive:true,force:true,maxRetries:8,retryDelay:150})}
 }

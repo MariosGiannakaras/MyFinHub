@@ -30,6 +30,17 @@ describe('actual-browser real-stack source contract',()=>{
     expect(source).toContain('Real Browser Credit Purchase');
     expect(source).toContain('waitCreditState(false)');
     expect(source).toContain('waitCreditState(true)');
+    expect(source).toContain('stage savings-goal-transfer-reload');
+    expect(source).toContain('stage loan-create-reload');
+    expect(source).toContain('stage lending-repayment-reload');
+    expect(source).toContain('stage recurring-create-pause-reload');
+    expect(source).toContain('stage account-create-delete-reload');
+    expect(source).toContain('waitRecurringStatus');
+    expect(source).toContain('Real Browser Savings Transfer');
+    expect(source).toContain('Real Browser Loan');
+    expect(source).toContain('Real Browser Repayment');
+    expect(source).toContain('Real Browser Recurring');
+    expect(source).toContain('Real Browser Temp Cash');
     expect(source).toContain('stage data-management-backup-import');
     expect(source).toContain('Backup & λήψη');
     expect(source).toContain('400 /api/import');
@@ -37,6 +48,6 @@ describe('actual-browser real-stack source contract',()=>{
     expect(source).toContain('change-history-title');
     expect(source).toContain('Durable modern undo is unavailable after reload.');
     expect(source).toContain('Durable legacy undo is unavailable after reload.');
-    expect(source).toContain('actual browser auth + modern/legacy/credit/data-management persistence across hard reload');
+    expect(source).toContain('actual browser auth + modern/legacy/credit/savings/loans/lending/recurring/accounts/data-management persistence across hard reload');
   });
 });
