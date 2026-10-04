@@ -46,6 +46,12 @@ describe('actual-browser real-stack source contract',()=>{
     expect(source).toContain('stage recurring-create-pause-reload');
     expect(source).toContain('stage planning-create-complete-reload');
     expect(source).toContain('stage attention-decisions-reload');
+    expect(source).toContain('chooseOwnedDateOffset');
+    expect(source).toContain("chooseOwnedDateOffset('Προγραμματισμένη ημερομηνία',4)");
+    expect(source).toContain(".owned-date-popover[role=dialog]");
+    expect(source).toContain("[role=gridcell][aria-selected=true]");
+    expect(source).not.toContain("new Date(input.value+'T12:00:00Z')");
+    expect(source).not.toContain("setByLabel('Προγραμματισμένη ημερομηνία',attentionDismissDue)");
     expect(source).toContain('Real Browser Attention Dismiss');
     expect(source).toContain("waitAttentionDecision(snoozedAttentionId,'snoozed')");
     expect(source).toContain('waitAttentionDecision(snoozedAttentionId,null)');

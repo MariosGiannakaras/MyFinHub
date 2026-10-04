@@ -2258,3 +2258,16 @@ With FV-82 closed, the remaining proof work is consolidated into one QA/test-onl
 - No production finance semantics, auth/MFA policy, Supabase schema/RLS, provider Storage behavior, desktop product behavior or Android code changes.
 
 Status: **source implemented; CI/CodeQL + Real Stack + Audit Rendered Review runtime/evidence pending.** Do not advance 8.5, 8.10, 8.12 or completion counters until the exact-head runtime and direct evidence review support each specific credit.
+
+
+### 8.108 FV-83 — Real Stack #45 owned-date harness boundary — source-fixed, rerun pending
+
+Real Stack E2E `37221473510` on exact head `8843a42f1a6dd22155e313339f25c5035b69b169` passed the complete API/Auth/TOTP/session/import/history/Card Vault/device/provider prelude, actual-browser login, existing expense flow, all seven newly added generic Quick Entry intents, and every previously accepted browser domain through Planning. It then failed at the first new Attention fixture setup with `Could not derive a future Attention dismissal date.`
+
+- Classification: QA harness control-boundary defect. `AppDateInput` is an owned readonly date control: the visible input contains formatted Greek text, while canonical ISO dates live on calendar gridcells. The failed helper incorrectly treated the visible input as a native `type=date` value and would also have attempted to mutate it through a synthetic `change` event that the owned control does not consume.
+- Remediation: interact through the production control contract. Open the labelled owned date control, read the selected/today gridcell `data-date`, calculate the +4 calendar-day target, click the enabled target gridcell, and require the popover to close. The product receives the change through its real `choose()` handler.
+- Regression rejects both the former `new Date(input.value...)` read and `setByLabel(...attentionDismissDue)` write paths and requires the owned calendar/gridcell interaction.
+- The Quick Entry intent matrix is not changed: #45 progressed beyond that stage, so its selectors and per-kind persistence assertions are retained unchanged.
+- No product Planning/Attention/date semantics, finance behavior, persistence schema, API/RLS, Supabase production state, Windows behavior or Android code changes.
+
+Status: **source-fixed; exact-head CI/CodeQL + Real Stack rerun pending.** Completion counters remain **Implementations 17/24 completed · Sub-implementations 164/197 completed**.
