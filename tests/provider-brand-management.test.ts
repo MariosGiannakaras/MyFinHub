@@ -177,6 +177,10 @@ describe('provider branding management',()=>{
     expect(settings).not.toContain('Δεν επιλέχθηκε αρχείο');
     expect(settings).toContain('await setFinancialProviderAssetBinding');
     expect(settings).toContain("editor.source==='new'?'Δημιουργία παρόχου':'Αποθήκευση'");
+    expect(settings).toContain('className="provider-management panel surface-raised"');
+    expect(settings).not.toContain('className="provider-management panel neo-raised"');
+    expect(settings).toContain('<Button type="button" variant="secondary" className="provider-edit-action"');
+    expect(settings).not.toContain('<button type="button" className="provider-edit-action"');
   });
 
   it('keeps required provider slots visually separated with semantic tokens',()=>{

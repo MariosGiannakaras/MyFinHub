@@ -21,6 +21,7 @@ import {
 import type { FinanceSettings } from '../types';
 import { CategoryIconGlyph } from './CategoryIconGlyph';
 import { CategoryIconPicker } from './CategoryIconPicker';
+import { IconButton } from './IconButton';
 import './CategoryIconAssignmentWorkspace.css';
 
 type Row={kind:CategoryKind;name:string;subcategories:string[]};
@@ -97,7 +98,7 @@ export function CategoryIconAssignmentWorkspace({settings,onChange}:{settings:Fi
       <header className="category-icon-selection-head">
         <span className="category-icon-selection-current"><CategoryIconGlyph iconKey={editorResolved} color={editorResolvedColor} size={20}/></span>
         <div><b>Επιλογή εικονιδίου</b><small>{editor.subcategory?`${editor.category} › ${editor.subcategory}`:editor.category}{duplicateNames.has(editor.category)?` · ${editor.kind==='expense'?'Έξοδο':'Έσοδο'}`:''} · {CATEGORY_ICON_PACKS.find(item=>item.id===iconPack)?.label} · {editorValue?'Αποθηκευμένη επιλογή':'Αυτόματη αντιστοίχιση'}</small></div>
-        <button type="button" className="icon-button category-icon-selection-close" aria-label="Κλείσιμο επιλογής εικονιδίου" title="Κλείσιμο" onClick={()=>setEditor(null)}><X size={17}/></button>
+        <IconButton type="button" className="category-icon-selection-close" aria-label="Κλείσιμο επιλογής εικονιδίου" title="Κλείσιμο" onClick={()=>setEditor(null)}><X size={17}/></IconButton>
       </header>
 
       <div className="category-icon-color-editor" aria-label="Χρώμα εικονιδίου">

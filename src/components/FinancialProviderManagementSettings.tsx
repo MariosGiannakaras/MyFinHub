@@ -268,7 +268,7 @@ export function FinancialProviderManagementSettings(){
     ...(editor?.pendingAssets.map(asset=>({ref:asset.ref,url:asset.previewUrl,name:asset.file.name,meta:`${asset.file.type.replace('image/','').toUpperCase()} · ${formatBytes(asset.file.size)}`}))??[]),
   ];
 
-  return <section className="provider-management panel neo-raised" aria-labelledby="provider-management-title">
+  return <section className="provider-management panel surface-raised" aria-labelledby="provider-management-title">
     <input ref={fileInput} type="file" accept={ACCEPT} hidden onChange={event=>handleUpload(event.target.files?.[0])}/>
     <header className="provider-management-head">
       <div><span className="provider-management-kicker">ΤΡΑΠΕΖΕΣ & ΠΑΡΟΧΟΙ</span><h2 id="provider-management-title">Τράπεζες & πάροχοι</h2><p>Τα στοιχεία και οι εικόνες κάθε παρόχου διαχειρίζονται από την ίδια επεξεργασία.</p></div>
@@ -286,7 +286,7 @@ export function FinancialProviderManagementSettings(){
           <span>{bindings.length} χρήσεις</span>
           <div className="provider-list-thumbs">{assets.slice(0,3).map(asset=><span key={asset.assetKey}><img src={asset.url} alt="" draggable={false}/></span>)}</div>
         </div>
-        <button type="button" className="provider-edit-action" onClick={()=>openEdit(provider)}><Pencil size={15}/> Επεξεργασία</button>
+        <Button type="button" variant="secondary" className="provider-edit-action" onClick={()=>openEdit(provider)}><Pencil size={15}/> Επεξεργασία</Button>
       </article>;
     })}</div>
 

@@ -2204,4 +2204,17 @@ Direct inspection of the settled Real Stack #44 provider screenshot exposed a sm
 - This is part of the owner-mandated pre-merge UI reuse/orphan/consistency audit. It does not create a new denominator item because the audit itself is already the pending 8.12 sub-implementation.
 - Scope: provider editor presentation only; provider Storage/API/database semantics, finance behavior, security boundaries and Android remain unchanged.
 
-Status: **source-fixed; exact-head rendered/Real Stack visual evidence pending.** Counters remain **Implementations 17/24 completed · Sub-implementations 164/197 completed**.
+Status: **completed on exact head `032e4ae918c5b57678d5265ea59ee696d3a16223`.** CI `37213321445`, CodeQL `37213321431` and Real Stack E2E `37213321437` are green on the same head. Artifact `11307303002` / `provider-storage-persisted.png` was opened directly: both required labels render as distinct token-backed chips with clean spacing, no overlap, no clipping and no transition ghosting. Counters remain **Implementations 17/24 completed · Sub-implementations 164/197 completed**.
+
+
+### 8.104 Pre-merge UI reuse/orphan consistency audit — source consolidation in progress
+
+The owner-mandated 8.12 code-level audit now covers every production TSX module under `src/components` and `src/pages`, plus the CSS import graph.
+
+- The audit distinguishes intentional semantic composites (navigation items, listbox/calendar options, segmented choices, payment-card internals and domain rows/cards) from generic same-role controls.
+- Remaining generic action bypasses are consolidated onto `Button`/`IconButton`: AppShell top actions/history actions/mobile-menu close, login password reveal, MFA logout, IBAN copy, reporting-period arrows, linked-loan payment and category-icon editor close.
+- `FinancialProviderManagementSettings` drops the last discovered production `neo-raised` JSX hook in favor of `surface-raised`, and its generic edit action adopts `Button`.
+- New source regression scans production JSX for legacy `neo-*` hooks and raw generic chrome, verifies the consolidated action families, and checks that production component modules and CSS files are reachable from the source/import graph.
+- Finance semantics, auth/MFA requirements, persistence, provider Storage/API/database behavior and Android code are unchanged.
+
+Status: **source implemented; narrow CI/CodeQL validation pending.** Do not credit the 8.12 audit cell until the source guard passes and any affected rendered evidence is rechecked. **Implementations 17/24 completed · Sub-implementations 164/197 completed**.
