@@ -1,6 +1,7 @@
 import { QA_FINANCIAL_PROVIDERS } from '../qaFinancialProviders';
 import { apiRequest } from './api.js';
 import { FINANCIAL_PROVIDERS, type FinancialProvider, type FinancialProviderAsset, type FinancialProviderAssetBinding, type FinancialProviderAssetRole, type FinancialProviderKind } from './financialProviders';
+import { providerAssetUrlAllowed } from './providerAssetUrl';
 
 type FinancialProviderSnapshot={loaded:boolean;loading:boolean;providers:FinancialProvider[];error:string|null};
 
@@ -21,15 +22,6 @@ const kindLabels:Record<FinancialProviderKind,string>={
 function publish(next:FinancialProviderSnapshot){snapshot=next;for(const listener of listeners)listener();return snapshot}
 export function getFinancialProviderSnapshot(){return snapshot}
 export function subscribeFinancialProviders(listener:()=>void){listeners.add(listener);return()=>{listeners.delete(listener)}}
-
-export function providerAssetUrlAllowed(value:string){
-  try{
-    const url=new URL(value);
-    if(url.protocol==='https:')return true;
-    if(url.protocol!=='http:')return false;
-    return url.hostname==='127.0.0.1'||url.hostname==='localhost'||url.hostname==='[::1]';
-  }catch{return false}
-}
 
 function parseProvider(value:unknown):FinancialProvider|null{
   if(!value||typeof value!=='object'||Array.isArray(value))return null;

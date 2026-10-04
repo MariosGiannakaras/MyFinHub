@@ -2156,3 +2156,14 @@ Real Stack E2E #41 on exact head `7669f7f504d4852dc837a8a8d1fe52c53368ce18` pass
 - Scope: provider client parser + regression only. No finance semantics, provider persistence schema, Supabase policies, production provider data, Storage write rules, Android code or release behavior changed.
 
 Status: **source-fixed; exact-head CI/CodeQL/Real Stack proof pending.** Counters remain **Implementations 17/24 completed · Sub-implementations 164/197 completed**.
+
+### 8.100 CI #3323 / Real Stack #42 test-boundary typecheck failure — FV-78 source-fixed, runtime pending
+
+Exact head `b934c1258eb5dcd2c1b322444b5aa926eb75776a` kept the intended loopback-only provider URL policy, but the new semantic regression imported the full browser provider client directly into the NodeNext test/hygiene graph. CI #3323 and Real Stack #42 therefore failed before application runtime with TS2835 extension diagnostics on the browser client's pre-existing Vite-style imports.
+
+- Classification: QA/test-boundary defect; the provider URL policy itself was not exercised by #42 because build stopped first.
+- Remediation: move `providerAssetUrlAllowed()` unchanged into import-free `src/lib/providerAssetUrl.ts`; the browser client imports that helper, while the Node/Vitest regression imports only the pure helper through the repository's `.js` test convention.
+- Security contract remains unchanged: all HTTPS URLs are accepted; insecure HTTP is accepted only for exact loopback hosts `127.0.0.1`, `localhost` and `[::1]`; ordinary HTTP, `javascript:` and malformed URLs remain rejected.
+- No TypeScript/hygiene threshold is weakened and no finance, provider schema, Storage policy, production data or Android behavior changes.
+
+Status: **source-fixed; exact-head CI/CodeQL/Real Stack proof pending.** Counters remain **Implementations 17/24 completed · Sub-implementations 164/197 completed**.

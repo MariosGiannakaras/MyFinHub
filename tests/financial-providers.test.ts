@@ -11,7 +11,7 @@ import {
 } from '../src/lib/financialProviders.js';
 import { bankBrandAsset, bankBrandKey } from '../src/lib/bankBrands.js';
 import { DEFAULT_CARD_BANKS } from '../src/lib/cards.js';
-import { providerAssetUrlAllowed } from '../src/lib/financialProviderClient.js';
+import { providerAssetUrlAllowed } from '../src/lib/providerAssetUrl.js';
 
 const root=process.cwd();
 const source=(relative:string)=>fs.readFileSync(path.join(root,relative),'utf8');
