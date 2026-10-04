@@ -499,6 +499,16 @@ async function main(){
       },
     });
 
+    console.log('[real-stack] stage browser-finance-direct-read');
+    const browserFinance=await primary.request('/api/data');
+    expect(browserFinance,200,undefined,'browser-finance-direct-read');
+    const browserEvents=browserFinance.body?.data?.state?.events||[];
+    const expectedQuickIntents=[['Real Browser Quick Income','income'],['Real Browser Quick Transfer','transfer'],['Real Browser Quick Withdrawal','withdrawal'],['Real Browser Quick Saving','saving_cash_offset'],['Real Browser Quick Refund','refund'],['Real Browser Quick Reconciliation','reconciliation'],['Real Browser Quick Split','split']];
+    assert(expectedQuickIntents.every(([note,kind])=>browserEvents.some((event:any)=>event?.note===note&&event?.kind===kind)),'Canonical API read-back is missing one or more generic Quick Entry intents.');
+    const attentionDismissScheduled=(browserFinance.body?.data?.state?.scheduled||[]).find((item:any)=>item?.note==='Real Browser Attention Dismiss');
+    assert(attentionDismissScheduled?.id,'Canonical API read-back is missing the dismissible Attention fixture.');
+    const attentionDecision=browserFinance.body?.data?.state?.attentionDecisions?.[`scheduled:${attentionDismissScheduled.id}`];
+    assert(attentionDecision?.status==='dismissed'&&typeof attentionDecision?.fingerprint==='string'&&attentionDecision.fingerprint.length>0,'Canonical API read-back is missing the persisted Attention dismissal decision.');
     console.log('[real-stack] stage provider-storage-direct-read');
     const providerRows=await upstreamJson(local.apiUrl+'/rest/v1/rheomiq_financial_providers?id=eq.real-browser-provider&select=id,logo_asset_key,wordmark_asset_key,active',local.serviceRole) as any[];
     assert(Array.isArray(providerRows)&&providerRows.length===1&&providerRows[0]?.active===true,'Real browser provider row was not persisted.');
@@ -524,6 +534,7 @@ async function main(){
     console.log('[real-stack] PASS import, mutable persistence, revision conflict, history undo/redo, backup/restore, direct DB read-back');
     console.log('[real-stack] PASS card-vault encrypted boundary remains separate from finance backup/recovery');
     console.log('[real-stack] PASS provider Storage upload/binding persistence + registration-failure cleanup');
+    console.log('[real-stack] PASS generic Quick Entry intent matrix + persisted Attention decisions through actual browser and canonical API read-back');
   }finally{
     server.kill('SIGTERM');
     await Promise.race([

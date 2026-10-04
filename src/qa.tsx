@@ -126,6 +126,9 @@ function buildQaData(params:URLSearchParams){
     next.state.events=onePerKind.slice(0,8);next.state.scheduled=(next.state.scheduled??[]).slice(0,1);next.state.recurringCustom=(next.state.recurringCustom??[]).slice(0,1);next.state.customLoans=(next.state.customLoans??[]).slice(0,1);next.state.lendingCustom=(next.state.lendingCustom??[]).slice(0,1);
     next.state.budgets=(next.state.budgets??[]).slice(0,1);next.state.savingsGoals=(next.state.savingsGoals??[]).slice(0,1);next.state.transactionRules=(next.state.transactionRules??[]).slice(0,1);
   }
+  if(params.get('state')==='split-review'){
+    next.seed.transactions=[...next.seed.transactions,{id:'qa-review-split',date:'2026-08-18',type:'expense',accountId:'piraeus-payroll',amount:20,note:'Επιστροφή: 5€\nΑγορά: 15€',category:'Άλλα',source:'qa'}];
+  }
   if(params.get('state')==='empty'){
     next.seed.transactions=[];next.seed.recurring=[];next.seed.loans=[];next.seed.lending=[];next.seed.snapshots=next.seed.snapshots.map(snapshot=>({...snapshot,balances:{...snapshot.balances,'piraeus-payroll':1000,'piraeus-savings':1000,cash:1000}}));next.state.events=[];next.state.scheduled=[];next.state.recurringCustom=[];next.state.recurringOverrides={};next.state.customLoans=[];next.state.loanOverrides={};next.state.cards=[];next.state.deletedCards=[];next.state.cardBanks=[];next.state.reviewDecisions={};next.state.attentionDecisions={};next.state.budgets=[];next.state.savingsGoals=[];next.state.transactionRules=[];
   }

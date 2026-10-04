@@ -60,6 +60,18 @@ try{
   assert(await c.call("function(){return document.querySelector('.attention-page .privacy-toggle')?.getAttribute('aria-pressed')==='true'}"),'privacy toggle exposes values only on request');
   await noOverflow('attention desktop');await noUnnamed('attention desktop');await screenshot('action-center-desktop');
 
+  console.log('Action Center QA: focused legacy split-review editor');
+  await navigate('attention','split-review');
+  await clickText('.legacy-confirmation-toggle','Προβολή');
+  await waitFor("function(){return [...document.querySelectorAll('.legacy-confirmation-row button')].some(node=>(node.textContent||'').includes('Άνοιγμα διαχωρισμού'))}",'split-required legacy review action');
+  await clickText('.legacy-confirmation-row button','Άνοιγμα διαχωρισμού');
+  await waitFor("function(){return Boolean(document.querySelector('.split-review-summary'))&&document.querySelectorAll('.review-part').length>=2}",'legacy split review editor');
+  const splitReviewGeometry=await c.call("function(){const summary=document.querySelector('.split-review-summary'),dialog=summary?.closest('.editor-dialog'),parts=[...document.querySelectorAll('.review-part')];if(!summary||!dialog||parts.length<2)return null;const r=dialog.getBoundingClientRect(),sr=summary.getBoundingClientRect();return {parts:parts.length,dialog:{left:r.left,right:r.right,top:r.top,bottom:r.bottom},summary:{left:sr.left,right:sr.right,top:sr.top,bottom:sr.bottom},overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth,partWidths:parts.map(part=>part.getBoundingClientRect().width)}}");
+  assert(splitReviewGeometry&&splitReviewGeometry.parts>=2&&splitReviewGeometry.dialog.left>=0&&splitReviewGeometry.dialog.right<=1440&&splitReviewGeometry.dialog.top>=0&&splitReviewGeometry.dialog.bottom<=1000&&splitReviewGeometry.summary.left>=splitReviewGeometry.dialog.left&&splitReviewGeometry.summary.right<=splitReviewGeometry.dialog.right&&splitReviewGeometry.overflow<=1&&splitReviewGeometry.partWidths.every(width=>width>120),'legacy split-review dialog geometry');
+  await noUnnamed('legacy split-review editor');await screenshot('action-center-split-review-editor');
+  const splitClosed=await c.call("function(){const button=document.querySelector('button[aria-label=\"Κλείσιμο επεξεργασίας διαχωρισμού\"]');button?.click();return Boolean(button)}");assert(splitClosed,'legacy split-review close control');
+  await waitFor("function(){return !document.querySelector('.split-review-summary')}",'legacy split-review close');
+
   console.log('Action Center QA: legacy review keep semantics never mutate reports implicitly');
   await clickText('.sidebar nav button','Αναφορές');
   await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Αναφορές')}",'Reports before review decision');

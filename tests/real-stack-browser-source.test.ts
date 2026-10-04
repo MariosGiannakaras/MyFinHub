@@ -25,6 +25,16 @@ describe('actual-browser real-stack source contract',()=>{
   it('covers modern and legacy durable mutation lifecycles across hard reload',()=>{
     expect(source).toContain('stage modern-create-reload');
     expect(source).toContain('stage modern-edit-delete-undo');
+    expect(source).toContain('stage quick-entry-intent-matrix-reload');
+    expect(source).toContain("waitApiEventKind(note,kind)");
+    expect(source).toContain("['Real Browser Quick Income','income']");
+    expect(source).toContain("['Real Browser Quick Transfer','transfer']");
+    expect(source).toContain("['Real Browser Quick Withdrawal','withdrawal']");
+    expect(source).toContain("['Real Browser Quick Saving','saving_cash_offset']");
+    expect(source).toContain("['Real Browser Quick Refund','refund']");
+    expect(source).toContain("['Real Browser Quick Reconciliation','reconciliation']");
+    expect(source).toContain("['Real Browser Quick Split','split']");
+    expect(source).toContain('quick-entry-intents-persisted');
     expect(source).toContain('stage legacy-edit-delete-undo');
     expect(source).toContain('stage credit-purchase-payment-reload');
     expect(source).toContain('Real Browser Credit Purchase');
@@ -35,6 +45,12 @@ describe('actual-browser real-stack source contract',()=>{
     expect(source).toContain('stage lending-repayment-reload');
     expect(source).toContain('stage recurring-create-pause-reload');
     expect(source).toContain('stage planning-create-complete-reload');
+    expect(source).toContain('stage attention-decisions-reload');
+    expect(source).toContain('Real Browser Attention Dismiss');
+    expect(source).toContain("waitAttentionDecision(snoozedAttentionId,'snoozed')");
+    expect(source).toContain('waitAttentionDecision(snoozedAttentionId,null)');
+    expect(source).toContain("waitAttentionDecision(dismissedAttentionId,'dismissed')");
+    expect(source).toContain('attention-decisions-persisted');
     expect(source).toContain('stage budget-create-reload');
     expect(source).toContain('stage rule-create-apply-reload');
     expect(source).toContain('stage cards-lifecycle-reload');
@@ -77,6 +93,6 @@ describe('actual-browser real-stack source contract',()=>{
     expect(source).toContain('change-history-title');
     expect(source).toContain('Durable modern undo is unavailable after reload.');
     expect(source).toContain('Durable legacy undo is unavailable after reload.');
-    expect(source).toContain('actual browser auth + modern/legacy/credit/savings/loans/lending/recurring/planning/budgets/rules/cards/taxonomy/icons/providers/accounts/data-management persistence across hard reload');
+    expect(source).toContain('actual browser auth + modern/legacy/quick-intents/credit/savings/loans/lending/recurring/planning/attention/budgets/rules/cards/taxonomy/icons/providers/accounts/data-management persistence across hard reload');
   });
 });

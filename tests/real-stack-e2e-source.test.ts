@@ -56,6 +56,9 @@ describe('zero-cost real-stack E2E source contract',()=>{
     expect(script).toContain("[real-stack] stage direct-db-read");
     expect(script).toContain("String(stateRows[0]?.revision)===String(redone.body?.revision)");
     expect(script).not.toContain("String(stateRows[0]?.revision)===String(persisted.body?.revision)");
+    expect(script).toContain("[real-stack] stage browser-finance-direct-read");
+    expect(script).toContain("Canonical API read-back is missing one or more generic Quick Entry intents.");
+    expect(script).toContain("Canonical API read-back is missing the persisted Attention dismissal decision.");
     expect(script).toContain("[real-stack] stage provider-storage-direct-read");
     expect(script).toContain("provider_id=eq.real-browser-provider");
     expect(script).toContain("rheomiq_financial_provider_asset_bindings");

@@ -2243,4 +2243,18 @@ Review-ready CI `37218620430` on exact head `55f8cc5db8d1ec126a49a6444f96c9cccfa
 - The failing rendered artifact remains valid for unaffected 8.12 contexts. Direct review can be reused because this remediation changes only the transaction-split selector; the split disclosure itself and the restored split-review styling require exact-head rerun evidence.
 - No finance, auth, persistence, provider, Supabase/API, Windows behavior or Android code changes.
 
-Status: **source-fixed; exact-head rerun pending.** Counters remain **Implementations 17/24 completed · Sub-implementations 164/197 completed** until the 8.12 rendered review closes.
+Status: **closed on exact head `65ddeca0f6358b5a2af68db6f92f06916c38c72a`.** CI/rendered `37220004731`, CodeQL `37220004780`, Real Stack E2E `37220004701`, Cross-engine `37220004708`, Performance `37220004727`, Windows Desktop `37220004810`, Windows First Run `37220004789` and Windows Clean Launch `37220004736` are green. Exact-head `transactions-large-split-desktop.png` and `transactions-large-split-mobile.png` were directly inspected and show a contained split disclosure with the restored mobile touch geometry and no clipping/overlap. Counters remain **Implementations 17/24 completed · Sub-implementations 164/197 completed** until the full 8.12 audit cell closes.
+
+
+### 8.107 Final proof expansion — Quick Entry intent matrix, Attention persistence and legacy split-review evidence
+
+With FV-82 closed, the remaining proof work is consolidated into one QA/test-only batch rather than repeated product changes.
+
+- **Generic Quick Entry:** the actual-browser real-stack harness now covers the seven intents that were missing from its existing generic expense proof: income, transfer, withdrawal, saving, refund, reconciliation and split. Each mutation must reach `/api/data` with the expected canonical event kind, survive a hard reload, render back in Transactions and pass a final canonical API read-back. Together with the existing expense stage this covers all eight `ENTRY_INTENTS` through the generic Quick Entry UI.
+- **Attention:** the real browser creates deterministic scheduled items, persists a snooze decision, proves the row stays hidden after hard reload, proves durable Undo restores the decision and row after another hard reload, then persists a separate dismiss decision for a deliberately future/non-danger scheduled item and proves it remains hidden after reload. The orchestrator re-reads the final `attentionDecisions` entry through the canonical API.
+- **Legacy split-review evidence:** the rendered Action Center suite gets an isolated `state=split-review` QA fixture with one deterministic mixed legacy transaction. It opens the real split editor, asserts the restored `split-review-summary` + `review-part` geometry, captures `action-center-split-review-editor.png`, and closes through the canonical accessible action.
+- Existing source-regression owners are extended (`action-center-source`, `real-stack-browser-source`, `real-stack-e2e-source`). No parallel harness is introduced.
+- The existing `.audit/run-rendered-review` one-shot trigger is used while PR #477 remains draft, so rendered evidence can be regenerated without prematurely starting the full review-ready Windows/cross-engine/performance wave.
+- No production finance semantics, auth/MFA policy, Supabase schema/RLS, provider Storage behavior, desktop product behavior or Android code changes.
+
+Status: **source implemented; CI/CodeQL + Real Stack + Audit Rendered Review runtime/evidence pending.** Do not advance 8.5, 8.10, 8.12 or completion counters until the exact-head runtime and direct evidence review support each specific credit.
