@@ -1928,3 +1928,15 @@ Real Stack E2E #14 (`37188037513`) completed successfully on exact head `05b8138
 This closes 3 cells in 8.4 and 2 cells in 8.10. The next isolated, non-production batch extends the same zero-cost stack with real history undo/redo, encrypted Card Vault CRUD and a backup → post-backup mutation → authenticated import recovery exercise. The recovery proof reads the immutable backup only inside the disposable local stack, verifies card-vault plaintext is excluded from FinanceData backup content, checks history/audit/database-health consistency after restoration and never touches production data or a paid service. Source is implemented; runtime credit is deferred until the new exact-head Real Stack E2E passes and is directly reviewed.
 
 **Implementations 16/24 completed · Sub-implementations 157/195 completed**
+
+
+### 8.81 FV-72 — real-stack direct DB revision assertion used a pre-undo/redo revision — recorded before fix
+
+Real Stack E2E #15 on exact head `4ecbcc8555d0280b0e5b579f9f9b67a44952e161` passed the newly added history undo/redo and encrypted Card Vault write/read stages, then failed immediately after manual backup at the direct database revision check.
+
+- Reproduction: the harness saves mutable state, captures `persisted` before history movement, performs undo and redo (each correctly advancing the canonical revision), creates a backup, then compares `rheomiq_app_state.revision` against the earlier `persisted.body.revision`.
+- Affected matrix cells: only the new 8.16 backup/recovery proof and supporting 8.5 direct persisted-state agreement evidence. Product persistence, history and vault behavior reached their expected runtime stages before the faulty assertion.
+- Root cause classification: test-harness assertion defect. The expected revision must be the post-redo canonical revision; backup creation itself is revision-neutral.
+- Required remediation: compare the direct database row against `redone.body.revision`, add an explicit `direct-db-read` stage and a source regression preventing the stale pre-history comparison. Do not change finance RPCs, history semantics, Card Vault behavior or production state.
+
+Status: **recorded before fix; remediation pending.** No completion counter advances from the failed run. **Implementations 16/24 completed · Sub-implementations 157/195 completed**.
