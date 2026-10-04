@@ -199,7 +199,8 @@ async function main(){
     body:JSON.stringify({singleton:true,user_id:userId}),
   });
 
-  const server=spawn('npm',['run','dev:server'],{
+  const tsxBin=process.platform==='win32'?'node_modules/.bin/tsx.cmd':'node_modules/.bin/tsx';
+  const server=spawn(tsxBin,['server/index.ts'],{
     env:{
       ...process.env,
       RHEOMIQ_PORT:'4317',

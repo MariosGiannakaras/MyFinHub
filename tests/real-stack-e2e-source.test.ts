@@ -24,6 +24,8 @@ describe('zero-cost real-stack E2E source contract',()=>{
     expect(pkg.scripts?.['qa:real-stack']).toBe('tsx scripts/real-stack-e2e.ts');
     expect(script).toContain("const TEST_EMAIL_DOMAIN='example.invalid'");
     expect(script).toContain('qaFinanceData');
+    expect(script).toContain("spawn(tsxBin,['server/index.ts']");
+    expect(script).not.toContain("['run','dev:server']");
     expect(script).toContain('/api/auth/mfa/enroll');
     expect(script).toContain('/api/auth/mfa/verify');
     expect(script).toContain('/api/auth/devices');
