@@ -2351,3 +2351,16 @@ Status: **closed on `c843f9ad…`.** Audit Rendered Review `37226278480` passed 
 - The dedicated `Final Visual QA` workflow now has a one-shot `develop` push trigger scoped only to `.audit/run-final-visual-review`. This branch introduces that marker exactly once. Therefore the #477 squash merge automatically runs the mandatory final visual gate on the exact canonical `develop` merge SHA; the workflow's later screenshot-only commit does not touch the marker and cannot recursively retrigger itself.
 - Live repository rules protect `main` only; `develop` is currently unprotected, so the existing GitHub Actions `contents: write` screenshot persistence step is not predictably blocked by branch protection.
 - Next safe action after this commit's draft CI/CodeQL/Real Stack pass: mark #477 review-ready exactly once, run the complete final-head rendered/Cross-engine/Performance/Windows wave, record the last 8.11 item only if all required gates are green, then squash-merge with expected-head protection. Do not merge while any required gate is pending or failing.
+
+
+### 8.115 FV-90 — review-ready refresh-route transient observation race — source-fixed, rerun pending
+
+Review-ready CI `37233337127` on exact head `54f5c706e36e1a34a5e410520419d322cc8caa27` passed source/unit/API/build checks and most rendered modules, then failed only in `scripts/refresh-route-qa.mjs` after it had already observed the in-place PageSkeleton.
+
+- The script is byte-identical to pre-merge proof head `c843f9ad…`, where Audit Rendered Review `37226278480` logged `In-place refresh route QA passed.` Product refresh code did not change in the reconciliation head.
+- QA mode intentionally keeps `saveState='loading'` for 350 ms. The former script first polled until the skeleton existed and then issued a second CDP call to read AppShell/skeleton/disabled state. Under parallel review-ready Chromium load that second call can land after the 350 ms state has completed, producing a false failure despite having already seen the real skeleton.
+- Remediation arms a browser-side MutationObserver before clicking Refresh. It records the exact transient snapshot only when the route query is unchanged, AppShell remains mounted, the Reports PageSkeleton is present and the Refresh action is disabled. The test asserts that recorded snapshot after the fact, so CDP scheduling cannot erase evidence of the real transition.
+- The existing 350 ms product/QA state, route-preservation requirement, skeleton semantics and disabled-refresh requirement are unchanged. No timeout/threshold is relaxed and no artificial product delay is added.
+- Cross-engine `37233337123`, Performance `37233337133`, Windows Desktop `37233337098`, Windows First Run `37233337140` and Windows Clean Launch `37233337160` were all green on the failing head; the new head must rerun required review-ready gates because the PR remains review-ready.
+
+Status: **source-fixed; exact-head review-ready CI/rendered and repository-required final-head gates pending.** Counters remain **Implementations 17/24 completed · Sub-implementations 172/197 completed** until the final full wave closes.

@@ -25,6 +25,7 @@ const auditRenderedWorkflow = readFileSync('.github/workflows/audit-rendered-rev
 const finalVisualWorkflow = readFileSync('.github/workflows/final-visual-qa.yml', 'utf8');
 const finalVisualTrigger = readFileSync('.audit/run-final-visual-review', 'utf8');
 const finalScreenshots = readFileSync('scripts/final-screenshots-qa.mjs', 'utf8');
+const refreshRouteQa = readFileSync('scripts/refresh-route-qa.mjs', 'utf8');
 const qaHtml = readFileSync('qa.html', 'utf8');
 
 describe('rendered browser QA reliability contract', () => {
@@ -93,6 +94,15 @@ describe('rendered browser QA reliability contract', () => {
     expect(finalVisualWorkflow).toContain("TARGET_BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}");
     expect(finalVisualWorkflow).toContain("EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}");
     expect(finalVisualTrigger).toContain('issue-476 post-squash canonical-develop final visual release inspection');
+  });
+  it('records the in-place refresh transition atomically before the transient skeleton can disappear',()=>{
+    expect(refreshRouteQa).toContain("const key='__MYFINHUB_REFRESH_ROUTE_QA__'");
+    expect(refreshRouteQa).toContain('const observer=new MutationObserver(sample)');
+    expect(refreshRouteQa).toContain("snapshot.skeletonPage==='reports'");
+    expect(refreshRouteQa).toContain("snapshot.refreshDisabled");
+    expect(refreshRouteQa).toContain("globalThis.__MYFINHUB_REFRESH_ROUTE_QA__?.record?.observed");
+    expect(refreshRouteQa).toContain("observer?.disconnect?.()");
+    expect(refreshRouteQa).not.toContain("await waitFor(\"function(){return Boolean(document.querySelector('.page-skeleton[role=\\\"status\\\"][aria-label=\\\"Ανανέωση δεδομένων\\\"]'))}\",'in-place PageSkeleton')");
   });
   it('parallelizes independent rendered suites while serializing shared fixed CDP ports',()=>{
     expect(coordinator).toContain("MYFINHUB_QA_PARALLELISM||3");
