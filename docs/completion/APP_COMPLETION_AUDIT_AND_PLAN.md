@@ -1970,3 +1970,15 @@ The next zero-cost proof batch now drives the **real production-built MyFinHub U
 - No production project credential, production finance data, paid Supabase branch or Vercel deployment is used.
 
 Status: **source integrated; exact-head Real Stack runtime + screenshot review pending.** No checklist credit is taken yet. **Implementations 16/24 completed · Sub-implementations 160/195 completed**.
+
+
+### 8.85 FV-73 — actual-browser amount helper only searched `aria-label` — recorded before fix
+
+Real Stack E2E #21 (`37193647499`) on exact head `db8348d31d9d587ba0a498bf18de1eac18a01bd7` passed the complete API/Auth/RLS setup and the real browser login + MFA challenge, then failed at the first modern Quick Entry mutation with `Missing field Ποσό`.
+
+- Reproduction: the actual-browser helper opens the real Quick Entry modal, selects `Έξοδο` and then calls `setByLabel('Ποσό', ...)`. The helper currently resolves only visible `input,textarea` nodes whose `aria-label` equals the requested label.
+- Root cause classification: QA-harness selector defect, not a product form/accessibility defect. The real Quick Entry amount control is correctly associated through visible `<label><span>Ποσό</span>…</label>` markup and the existing rendered functional harness already resolves both direct `aria-label` controls and wrapper-label controls.
+- Affected matrix cells: pending 8.4 modern/legacy transaction closure, 8.10 browser→real API→real Supabase proof and supporting 8.13 direct evidence. No finance mutation was accepted after the failing browser stage.
+- Required remediation: make the actual-browser `setByLabel` follow the same accessible-label fallback used by the established functional harness (visible direct `aria-label`, then visible label wrapper / associated control), add a source regression for that contract, and rerun the exact same real-stack flow. Product Quick Entry code, validation and persistence semantics must remain unchanged.
+
+Status: **recorded before fix; remediation pending.** CI #3299 is green and CodeQL #3248 is green on the failing source head; Real Stack #21 is the only failed required proof. Counters remain **Implementations 16/24 completed · Sub-implementations 160/195 completed**.
