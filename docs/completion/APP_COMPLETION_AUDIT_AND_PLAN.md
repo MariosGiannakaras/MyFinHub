@@ -794,6 +794,8 @@ The original owner-expanded audit added 16 verification implementations / 160 no
 
 ### 8.10 Real-stack integrated E2E and canonical-tree proof — 0/8
 
+**No-cost execution decision (2026-10-04):** the owner explicitly requires zero paid subscriptions/usage for this completion work. Hosted Supabase Branching is therefore excluded. Real-stack proof will use an ephemeral local Supabase stack built from this repository's exact migrations/config on the standard public GitHub-hosted Ubuntu runner, with synthetic fixtures only and no production project credentials or finance data. The first harness is manual-dispatch while it is being stabilized; counters remain unchanged until runtime proof is green and directly reviewed.
+
 - [ ] Create/use an isolated non-production test backend with the same schema/policies for destructive CRUD/E2E; never use production personal finance data as a disposable test fixture.
 - [ ] Run browser → real API → real Supabase/Storage end-to-end flows for the mutation matrix, not only synthetic QA handlers.
 - [ ] Run reload/new-session persistence checks after representative operations in every product domain.

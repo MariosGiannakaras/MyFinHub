@@ -36,7 +36,8 @@
     "desktop:audit": "npm --prefix desktop run audit",
     "desktop:check:source": "npm --prefix desktop run check:source",
     "desktop:pack:from-dist": "npm --prefix desktop run pack",
-    "desktop:dist:from-dist": "npm --prefix desktop run dist"
+    "desktop:dist:from-dist": "npm --prefix desktop run dist",
+    "qa:real-stack": "tsx scripts/real-stack-e2e.ts"
   },
   "dependencies": {
     "@tesseract.js-data/ell": "1.0.0",

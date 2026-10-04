@@ -1,0 +1,36 @@
+name: Real Stack E2E
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: real-stack-e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  isolated-local-supabase:
+    name: isolated-local-supabase
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            api/package-lock.json
+      - run: npm ci --prefer-offline --no-audit --no-fund
+      - name: Verify pinned Supabase CLI
+        run: npx --yes supabase@2.119.0 --version
+      - name: Start isolated local Supabase
+        run: npx --yes supabase@2.119.0 start
+      - name: Run MyFinHub real-stack proof
+        run: npm run qa:real-stack
+      - name: Stop and discard local Supabase data
+        if: always()
+        run: npx --yes supabase@2.119.0 stop --no-backup
