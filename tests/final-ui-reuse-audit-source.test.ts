@@ -75,7 +75,7 @@ describe('final UI reuse and orphan audit',()=>{
     const queue=['src/styles.css'];
     for(const file of walk('src',/\.(?:ts|tsx)$/)){
       const source=read(file);
-      for(const match of source.matchAll(/(?:from\s+|import\s*)['"]([^'"]+\.css)['"]/g)){
+      for(const match of source.matchAll(/(?:from\s+|import\s+|import\s*\(\s*)['"]([^'"]+\.css)['"]/g)){
         const resolved=resolveRelative(file,match[1],['']);
         if(resolved)queue.push(resolved);
       }

@@ -4,6 +4,14 @@
   font-weight: 800;
 }
 
+.transaction-split-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  margin-top: 4px;
+}
+
 .transaction-split-details {
   display: grid;
   gap: 6px;

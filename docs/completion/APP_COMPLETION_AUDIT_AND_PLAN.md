@@ -2218,3 +2218,15 @@ The owner-mandated 8.12 code-level audit now covers every production TSX module 
 - Finance semantics, auth/MFA requirements, persistence, provider Storage/API/database behavior and Android code are unchanged.
 
 Status: **source implemented; narrow CI/CodeQL validation pending.** Do not credit the 8.12 audit cell until the source guard passes and any affected rendered evidence is rechecked. **Implementations 17/24 completed · Sub-implementations 164/197 completed**.
+
+
+### 8.105 FV-81 — split-review stylesheet detachment and audit parser boundary — source-fixed, proof pending
+
+CI `37217939379` on exact head `98365777a…` ran the new final UI reuse/orphan guard after the shared-control consolidation. The existing suite reached 176 passing test files / 999 passing tests before two new audit assertions failed.
+
+- **Real styling regression:** `LegacyConfirmationPanel` still renders `split-review-summary` and `review-part`, but `split-review-editor.css` was no longer imported by the branch root CSS graph. The stylesheet is restored to `root-compat.css`.
+- **Shared-control consistency:** `TransactionSplitDetails` used the generic `text-button` chrome on a raw button and kept static geometry inline. It now uses `Button variant="ghost"`; its static disclosure geometry moves to the existing `transaction-split-editor.css`, while the only remaining inline transform is state-dependent chevron rotation.
+- **Audit-only false positives:** `DesktopAppLockGate.css` and `desktop-titlebar.css` are intentionally loaded through dynamic `import(...)` in `main.tsx`. The reachability guard now recognizes both static and dynamic CSS imports instead of treating those desktop-only styles as orphaned.
+- The finding was recorded in issue #476 before remediation. No finance, auth, persistence, backend/Supabase/Storage or Android semantics changed.
+
+Status: **source-fixed; exact-head CI/CodeQL and affected rendered evidence pending.** Counters remain **Implementations 17/24 completed · Sub-implementations 164/197 completed**.
