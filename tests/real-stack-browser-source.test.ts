@@ -16,6 +16,11 @@ describe('actual-browser real-stack source contract',()=>{
     expect(source).toContain('Page.reload');
     expect(source).not.toContain('globalThis.fetch=');
     expect(source).not.toContain('SUPABASE_ACCESS_TOKEN');
+    expect(source).toContain('attempt<=2');
+    expect(source).toContain("stdio:['ignore','pipe','pipe']");
+    expect(source).toContain('child.exitCode!==null');
+    expect(source).toContain('Chromium bootstrap attempt');
+    expect(source).toContain('await stopBrowser(child)');
   });
   it('covers modern and legacy durable mutation lifecycles across hard reload',()=>{
     expect(source).toContain('stage modern-create-reload');

@@ -30,18 +30,55 @@ class Cdp{
 }
 
 function assert(condition:unknown,message:string):asserts condition{if(!condition)throw new Error(message)}
+function trimDiagnostics(value:string){const text=value.trim();if(!text)return '(no Chromium diagnostics captured)';return text.length>6000?text.slice(-6000):text}
+async function stopBrowser(child:ReturnType<typeof spawn>|undefined){
+  if(!child||child.exitCode!==null)return;
+  await new Promise<void>(resolve=>{
+    const timer=setTimeout(()=>{child.kill('SIGKILL');resolve()},2000);
+    child.once('exit',()=>{clearTimeout(timer);resolve()});
+    child.kill('SIGTERM');
+  });
+}
+async function launchBrowser(chrome:string,baseProfile:string){
+  let lastError:Error|undefined;
+  for(let attempt=1;attempt<=2;attempt+=1){
+    const port=9330+attempt;
+    const profile=baseProfile+'-'+attempt;
+    rmSync(profile,{recursive:true,force:true,maxRetries:8,retryDelay:150});
+    let diagnostics='',spawnError='';
+    const child=spawn(chrome,['--headless=new',`--remote-debugging-port=${port}`,'--remote-debugging-address=127.0.0.1',`--user-data-dir=${profile}`,'--no-sandbox','--disable-gpu','--disable-dev-shm-usage','--no-first-run','--no-default-browser-check','about:blank'],{stdio:['ignore','pipe','pipe']});
+    const capture=(stream:NodeJS.ReadableStream|null)=>stream?.on('data',chunk=>{diagnostics+=String(chunk);if(diagnostics.length>12000)diagnostics=diagnostics.slice(-12000)});
+    capture(child.stdout);capture(child.stderr);child.on('error',error=>{spawnError=error.stack||error.message});
+    try{
+      for(let i=0;i<100;i+=1){
+        if(spawnError)throw new Error('Chromium spawn failed: '+spawnError);
+        if(child.exitCode!==null)throw new Error(`Chromium exited before CDP became ready (exit ${child.exitCode}).\n${trimDiagnostics(diagnostics)}`);
+        try{const response=await fetch(`http://127.0.0.1:${port}/json/version`);if(response.ok){console.log(`[real-browser] Chromium CDP ready on attempt ${attempt} port ${port}`);return {child,port,profile}}}catch{}
+        await sleep(200);
+      }
+      throw new Error(`Chromium did not expose CDP on port ${port} within 20s.\n${trimDiagnostics(diagnostics)}`);
+    }catch(error){
+      lastError=error instanceof Error?error:new Error(String(error));
+      console.warn(`[real-browser] Chromium bootstrap attempt ${attempt} failed: ${lastError.message}`);
+      await stopBrowser(child);rmSync(profile,{recursive:true,force:true,maxRetries:8,retryDelay:150});
+      if(attempt<2)await sleep(750);
+    }
+  }
+  throw lastError??new Error('Chromium bootstrap failed.');
+}
 
 export async function runRealStackBrowserProof({origin,email,password,nextTotp}:BrowserProofOptions){
   const chrome=execFileSync('bash',['-lc','command -v chromium || command -v chromium-browser || command -v google-chrome'],{encoding:'utf8'}).trim();
   assert(chrome,'Chromium is required for the real-stack browser proof.');
   const evidenceDir='/tmp/myfinhub-real-stack-browser';
-  const profile='/tmp/myfinhub-real-stack-browser-profile';
-  mkdirSync(evidenceDir,{recursive:true});rmSync(profile,{recursive:true,force:true,maxRetries:5,retryDelay:100});
-  const port=9331;
-  const child=spawn(chrome,['--headless=new',`--remote-debugging-port=${port}`,'--remote-debugging-address=127.0.0.1',`--user-data-dir=${profile}`,'--no-sandbox','--disable-gpu','--disable-dev-shm-usage','--no-first-run','about:blank'],{stdio:'ignore'});
+  const baseProfile='/tmp/myfinhub-real-stack-browser-profile';
+  mkdirSync(evidenceDir,{recursive:true});
   let c:Cdp|undefined;
+  let child:ReturnType<typeof spawn>|undefined;
+  let profile='';
   try{
-    for(let i=0;i<120;i++){try{if((await fetch(`http://127.0.0.1:${port}/json/version`)).ok)break}catch{}if(i===119)throw new Error('Timed out waiting for Chromium.');await sleep(100)}
+    const launched=await launchBrowser(chrome,baseProfile);
+    child=launched.child;profile=launched.profile;const port=launched.port;
     const target=await fetch(`http://127.0.0.1:${port}/json/new?${encodeURIComponent(origin+'/#/transactions')}`,{method:'PUT'}).then(response=>response.json()) as any;
     c=new Cdp(target.webSocketDebuggerUrl);await c.open();await c.send('Page.enable');await c.send('Runtime.enable');await c.send('Network.enable');
     await c.send('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
@@ -121,5 +158,5 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     assert(runtimeErrors.length===0,'Browser runtime errors: '+runtimeErrors.join(' | '));
     assert(apiFailures.length===0,'Unexpected browser API failures: '+apiFailures.join(' | '));
     console.log('[real-browser] PASS actual browser auth + modern/legacy/credit mutation persistence across hard reload');
-  }finally{c?.close();if(child.exitCode===null)child.kill('SIGTERM');await sleep(300);rmSync(profile,{recursive:true,force:true,maxRetries:5,retryDelay:100})}
+  }finally{c?.close();await stopBrowser(child);await sleep(300);if(profile)rmSync(profile,{recursive:true,force:true,maxRetries:8,retryDelay:150})}
 }
