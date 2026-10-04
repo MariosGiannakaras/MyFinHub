@@ -60,6 +60,7 @@ describe('actual-browser real-stack source contract',()=>{
     expect(source).toContain('Real Browser Provider');
     expect(source).toContain('real-browser-provider.svg');
     expect(source).toContain('provider-storage-persisted');
+    expect(source).toContain("await sleep(240);await shot('provider-storage-persisted')");
     expect(source).toContain("resource=financial-providers");
     expect(source).toContain("/storage/v1/object/public/financial-provider-assets/providers/real-browser-provider/");
     expect(source).toContain('stage account-create-delete-reload');

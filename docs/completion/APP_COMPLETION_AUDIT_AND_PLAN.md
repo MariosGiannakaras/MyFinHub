@@ -2167,3 +2167,16 @@ Exact head `b934c1258eb5dcd2c1b322444b5aa926eb75776a` kept the intended loopback
 - No TypeScript/hygiene threshold is weakened and no finance, provider schema, Storage policy, production data or Android behavior changes.
 
 Status: **source-fixed; exact-head CI/CodeQL/Real Stack proof pending.** Counters remain **Implementations 17/24 completed · Sub-implementations 164/197 completed**.
+
+### 8.101 Real Stack #43 provider evidence capture settling — FV-79 source-fixed, visual rerun pending
+
+Exact head `bfe4d23fdec8e947481b60e4286a2a28f8d01237` is functionally green: CI #3324, CodeQL #3273 and Real Stack E2E #43 all passed. The real browser completed provider creation, Storage upload, one-asset/two-binding reuse and hard-reload persistence; direct backend read-back verified the provider row, active asset metadata, both bindings and exactly one Storage object; the isolated nonexistent-provider registration case verified cleanup with no Storage or metadata residue; forward-only migration recovery also passed.
+
+Direct visual inspection of artifact `11305088122` found the focused `provider-storage-persisted.png` was captured before the persisted branding editor's finite entrance transition had fully settled. The screenshot therefore shows transient ghosting/double-rendered text and is not accepted as visual evidence even though the DOM/API/runtime assertions already passed.
+
+- Classification: QA evidence-timing defect only; no provider persistence, Storage, binding or product-layout failure is inferred from the transient capture.
+- Remediation: wait 240 ms after the persisted branding editor and loaded provider image are both confirmed, then capture `provider-storage-persisted.png`. This matches the established settled-dialog evidence boundary used by other Settings QA.
+- Narrow source regression requires the settle wait immediately before the provider screenshot.
+- Only the affected provider visual evidence needs revalidation; the functional #43 provider/storage runtime proof remains valid.
+
+Status: **source-fixed; exact-head provider visual rerun pending.** Do not yet mark Providers/assets Reusable. Counters remain **Implementations 17/24 completed · Sub-implementations 164/197 completed**.
