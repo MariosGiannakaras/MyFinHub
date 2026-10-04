@@ -1857,3 +1857,15 @@ The owner explicitly approved a one-off Vercel preview because 8.14 could not be
 - This closure commit removes the temporary feature-branch deployment enablement and restores the repo rule that only `main` deploys automatically.
 
 Status: **8.14 = 10/10 completed.** Overall checkpoint advances to **Implementations 16/24 completed · Sub-implementations 152/195 completed**. Production `main` remains unchanged; the preview was verification-only.
+
+
+### 8.75 FV-67 — local real-stack synthetic email rejected by GoTrue — recorded before fix
+
+Real Stack E2E run #2 on head `3dd5821…` successfully booted Supabase CLI 2.119.0, applied the complete repository migration chain through `20261001220945_reject_cross_account_id_collisions`, started the MyFinHub API, and then failed at the first valid synthetic-password login with HTTP 422 `AUTH_REJECTED`.
+
+- Reproduction: the harness creates its local-only owner as `myfinhub-real-stack-<nonce>@example.invalid`; invalid-password handling reaches the expected app boundary, but the valid-login path is rejected by current local GoTrue email validation before MFA enrollment can begin.
+- Affected matrix cells: 8.4 Authentication/MFA/device-session real-stack proof and 8.10 isolated-backend proof. No production/Auth project or finance data is involved.
+- Root cause classification: QA fixture/input defect, not a product authentication regression. The reserved `.invalid` domain is unsuitable for this GoTrue validation path even though the admin-create call accepts the synthetic record.
+- Required remediation: keep a unique non-deliverable test identity but use a standards-valid `example.com` mailbox, still created through the local admin API with `email_confirm:true`; retain the existing wrong-password, MFA, session restoration, revocation and persistence assertions unchanged.
+
+Status: **recorded; source fix pending.** Completion counters remain **Implementations 16/24 completed · Sub-implementations 152/195 completed** until the corrected isolated real-stack run passes and is directly reviewed.
