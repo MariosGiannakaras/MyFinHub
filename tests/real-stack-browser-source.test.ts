@@ -39,6 +39,9 @@ describe('actual-browser real-stack source contract',()=>{
     expect(source).toContain('stage rule-create-apply-reload');
     expect(source).toContain('stage cards-lifecycle-reload');
     expect(source).toContain('Real Browser Lifecycle Card');
+    expect(source).toContain("querySelector('button[aria-label=\\\"Αρχειοθέτηση κάρτας\\\"]')");
+    expect(source).not.toContain("clickAria('Αρχειοθέτηση κάρτας Real Browser Lifecycle Card')");
+    expect(source).not.toContain('aria-label=\\\"Αρχειοθέτηση κάρτας Real Browser Lifecycle Card\\\"');
     expect(source).toContain("waitCardState('Real Browser Lifecycle Card',false,false)");
     expect(source).toContain('stage taxonomy-icons-reload');
     expect(source).toContain('Real Browser Taxonomy');

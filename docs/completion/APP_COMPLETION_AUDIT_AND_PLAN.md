@@ -2089,3 +2089,15 @@ Real Stack E2E #34 on the post-merge-visual-plan head failed before any browser/
 FV-75 was recorded before remediation. The harness now locates the taxonomy card by iterating the already-scoped card nodes and comparing the stable `data-category-id` attribute directly, avoiding nested selector-string interpolation. The narrow source regression requires the parse-safe attribute comparison and rejects reintroduction of `CSS.escape(id)` in this browser harness.
 
 Status: **source-fixed; exact-head Real Stack runtime proof pending.** No product behavior, finance semantics, persistence schema, Supabase policy, visual styling or Android code changed. Counters remain **Implementations 17/24 completed · Sub-implementations 164/196 completed**.
+
+
+### 8.95 Real Stack #35 Cards archive selector mismatch — FV-76 source-fixed, runtime proof pending
+
+Real Stack E2E #35 on exact head `89f203630ca13f444814fe9f8b0ee8aca646ef0c` passed CI #3315 and CodeQL #3264, compiled the prior taxonomy fix, started the disposable local Supabase/API stack, completed Auth/TOTP/session/import/history/revision/Card Vault/device proof and every previously accepted browser stage through Rules, then stopped at the first new Cards archive action with `Missing aria control Αρχειοθέτηση κάρτας Real Browser Lifecycle Card`.
+
+- Severity: QA-only blocker for the pending Cards/Taxonomy/Icons proof; no product/runtime/security/data regression was exercised.
+- Root cause: the harness invented a nickname-qualified archive aria-label, while each `InteractivePaymentCard` correctly exposes the generic `aria-label="Αρχειοθέτηση κάρτας"`. Multiple active cards mean the control must be scoped through the visible card carrying `Real Browser Lifecycle Card`.
+- Remediation: locate the intended visible card first, click that card's generic archive button, retain the existing keyboard-confirmation and hard-reload assertions, and lock the selector contract with a source regression that rejects the nonexistent qualified label.
+- Scope: harness + regression only. No product UI, card semantics, vault behavior, Supabase schema/policies, visual styling, release behavior or Android code changes.
+
+Status: **source-fixed; exact-head Real Stack runtime proof pending.** Counters remain **Implementations 17/24 completed · Sub-implementations 164/196 completed**.
