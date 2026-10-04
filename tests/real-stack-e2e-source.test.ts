@@ -27,6 +27,9 @@ describe('zero-cost real-stack E2E source contract',()=>{
     expect(script).toContain("spawn(tsxBin,['server/index.ts']");
     expect(script).not.toContain("['run','dev:server']");
     expect(script).toContain('/api/auth/mfa/enroll');
+    expect(script).toContain("[real-stack] stage auth-valid-password");
+    expect(script).toContain("[real-stack] stage mfa-enroll");
+    expect(script).toContain("stage='request'");
     expect(script).toContain('/api/auth/mfa/verify');
     expect(script).toContain('/api/auth/devices');
     expect(script).toContain("'DEVICE_ACCESS_REVOKED'");

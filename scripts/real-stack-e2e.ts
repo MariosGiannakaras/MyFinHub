@@ -130,9 +130,9 @@ class CookieClient{
   }
 }
 
-function expect(result:ApiResult,status:number,code?:string){
-  assert(result.status===status,`Expected HTTP ${status}, received ${result.status} (${String(result.body?.code||'no-code')}).`);
-  if(code)assert(result.body?.code===code,`Expected ${code}, received ${String(result.body?.code||'no-code')}.`);
+function expect(result:ApiResult,status:number,code?:string,stage='request'){
+  assert(result.status===status,`${stage}: expected HTTP ${status}, received ${result.status} (${String(result.body?.code||'no-code')}).`);
+  if(code)assert(result.body?.code===code,`${stage}: expected ${code}, received ${String(result.body?.code||'no-code')}.`);
 }
 
 const BASE32='ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
@@ -219,24 +219,29 @@ async function main(){
     console.log('[real-stack] local Supabase + MyFinHub API ready');
 
     const primary=new CookieClient('QA Browser A');
+    console.log('[real-stack] stage auth-invalid-password');
     const invalid=await primary.request('/api/auth/login',{method:'POST',body:{email,password:'Definitely-Wrong-Password-9!'}});
-    expect(invalid,401,'INVALID_CREDENTIALS');
+    expect(invalid,401,'INVALID_CREDENTIALS','auth-invalid-password');
 
+    console.log('[real-stack] stage auth-valid-password');
     const login=await primary.request('/api/auth/login',{method:'POST',body:{email,password:TEST_PASSWORD}});
-    expect(login,200);
+    expect(login,200,undefined,'auth-valid-password');
     assert(login.body?.mfaEnrollmentRequired===true,'First login did not require TOTP enrollment.');
 
+    console.log('[real-stack] stage mfa-enroll');
     const enrollment=await primary.request('/api/auth/mfa/enroll',{method:'POST',body:{}});
-    expect(enrollment,200);
+    expect(enrollment,200,undefined,'mfa-enroll');
     const secret=String(enrollment.body?.secret||'');
     const factorId=String(enrollment.body?.factorId||'');
     assert(secret.length>=16&&factorId.length>5,'TOTP enrollment did not return the local test factor.');
 
     const correct=totp(secret);
     const wrong=String((Number(correct)+1)%1_000_000).padStart(6,'0');
-    expect(await primary.request('/api/auth/mfa/verify',{method:'POST',body:{factorId,code:wrong}}),401,'INVALID_MFA_CODE');
+    console.log('[real-stack] stage mfa-invalid-code');
+    expect(await primary.request('/api/auth/mfa/verify',{method:'POST',body:{factorId,code:wrong}}),401,'INVALID_MFA_CODE','mfa-invalid-code');
+    console.log('[real-stack] stage mfa-valid-code');
     const verified=await primary.request('/api/auth/mfa/verify',{method:'POST',body:{factorId,code:correct}});
-    expect(verified,200);
+    expect(verified,200,undefined,'mfa-valid-code');
     assert(verified.body?.authenticated===true,'TOTP verification did not reach AAL2.');
 
     const session=await primary.request('/api/auth/session');
