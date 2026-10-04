@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
-      BASE_URL: https://rheom-iq-vert.vercel.app
+      BASE_URL: https://mgfinhub.vercel.app
 
     steps:
       - name: Verify public production surface

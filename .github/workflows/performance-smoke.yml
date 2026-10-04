@@ -2,10 +2,29 @@ name: Performance smoke
 
 on:
   pull_request:
-    branches: [develop]
+    branches: [main, develop]
     types: [opened, synchronize, reopened, ready_for_review]
-    paths-ignore:
-      - 'visual-qa/**'
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'assets/branding/myfinhub/**'
+      - 'index.html'
+      - 'qa.html'
+      - 'vite.config.ts'
+      - 'vite.performance.config.ts'
+      - 'tsconfig.json'
+      - 'tsconfig.app.json'
+      - 'tsconfig.node.json'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'scripts/performance-audit.mjs'
+      - 'scripts/loading-shift-audit.mjs'
+      - 'scripts/bundle-budget.mjs'
+      - '.github/workflows/performance-smoke.yml'
+
+concurrency:
+  group: performance-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -13,6 +32,7 @@ permissions:
 jobs:
   lighthouse:
     name: Production-mode Lighthouse audit
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:

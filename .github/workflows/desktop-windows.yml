@@ -3,6 +3,7 @@ name: Windows Desktop
 on:
   pull_request:
     branches: [main, develop]
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - desktop/**
       - server/**
@@ -12,6 +13,12 @@ on:
       - public/manifest.webmanifest
       - assets/branding/myfinhub/**
       - index.html
+      - vite.config.ts
+      - tsconfig.json
+      - tsconfig.app.json
+      - tsconfig.node.json
+      - scripts/sync-ocr-assets.mjs
+      - scripts/bundle-budget.mjs
       - tests/desktop-source.test.ts
       - package.json
       - package-lock.json
@@ -31,6 +38,12 @@ on:
       - public/manifest.webmanifest
       - assets/branding/myfinhub/**
       - index.html
+      - vite.config.ts
+      - tsconfig.json
+      - tsconfig.app.json
+      - tsconfig.node.json
+      - scripts/sync-ocr-assets.mjs
+      - scripts/bundle-budget.mjs
       - tests/desktop-source.test.ts
       - package.json
       - package-lock.json
@@ -47,6 +60,7 @@ concurrency:
 jobs:
   validate:
     name: validate-windows-package
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: windows-latest
     timeout-minutes: 30
     permissions:
@@ -65,11 +79,10 @@ jobs:
         run: |
           npm ci
           npm ci --prefix desktop
-      - name: Validate application and desktop boundary
+      - name: Validate desktop boundary and dependencies
         shell: pwsh
         run: |
           npm audit --audit-level=high
-          npm run check
           npm run desktop:check
       - name: Validate Windows PowerShell fallback bootstrap
         shell: pwsh
@@ -79,9 +92,12 @@ jobs:
           CARD_VAULT_KEY: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
           CARD_VAULT_KEY_VERSION: "1"
         run: powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File desktop\install-windows.ps1 -ValidateOnly
+      - name: Build production frontend once
+        shell: pwsh
+        run: npm run build
       - name: Build unpacked Windows desktop app
         shell: pwsh
-        run: npm run desktop:pack
+        run: npm run desktop:pack:from-dist
       - name: Smoke packaged executable and hidden local backend
         shell: pwsh
         env:
@@ -104,7 +120,7 @@ jobs:
           }
       - name: Build interactive NSIS Setup
         shell: pwsh
-        run: npm run desktop:dist
+        run: npm run desktop:dist:from-dist
       - name: Install, launch and uninstall NSIS package
         shell: pwsh
         env:
@@ -257,7 +273,7 @@ jobs:
           npm ci --prefix desktop
           npm run build
           npm run desktop:check
-          npm run desktop:dist
+          npm run desktop:dist:from-dist
       - name: Verify installer integrity and optional Authenticode
         shell: pwsh
         run: |

@@ -1,5 +1,12 @@
 # MyFinHub repository rules
 
+## Instruction authority
+
+- `AGENTS.md` is the canonical version-controlled repository execution contract for branch/PR discipline, validation cadence, progress tracking, safety boundaries, and implementation behavior.
+- GitHub issue #266 is the durable owner/product decision ledger and cross-chat continuity source. It must not redefine repository workflow mechanics or progress-counter syntax already owned here.
+- `PROJECT_RULES.md` is a discovery/precedence pointer only; do not duplicate standing instruction sets there.
+- Precedence for repository work is: explicit current-task instruction → this `AGENTS.md` execution contract → durable owner/product decisions in #266 → task-specific issue/plan documentation. More-specific safety constraints remain binding unless explicitly superseded.
+
 - MyFinHub is a **single-owner** personal finance application. The GitHub repository and compatibility-critical internals may retain the historical RheomIQ name; do not rename stable database/migration/protocol identifiers merely for branding.
 - This repository owns the **web application and Windows/desktop implementation only**. Do not implement, refactor, fix, or otherwise change Android product code from work scoped to this repository. Android implementation is owned by a separate chat/agent and repository workflow. Android work is permitted only when the owner explicitly requests it, or when an agent explicitly proposes a specific Android change and the owner explicitly approves it before implementation. Cross-platform analysis may identify Android implications, but must stop at documenting them unless that approval exists.
 - Do not add user selection, teams, tenant switching, roles UI, public registration, or multi-user product features.
@@ -30,8 +37,10 @@
 ## Cross-chat execution and progress rules
 
 - For substantial repository work, batch coherent changes together and avoid triggering full CI for every small edit. Prefer narrow/local/repository-specific checks while building the batch, then run the complete required CI/security/visual/release gates on the final integrated head. Use an intermediate full CI gate only when a security, database, migration, dependency, or architecture boundary makes proceeding without it materially unsafe.
-- When the owner explicitly asks to minimize CI runs, do not keep an implementation PR open during high-churn batching if that PR would trigger redundant CI on every push. Maintain a pushed implementation branch and open/update the review PR when the coherent batch is ready for final validation, unless repository protection or collaboration needs require an earlier PR.
-- Every progress update to the owner during a substantial task must include both counters in the form **Tasks x/y · Subtasks x/y** (localized to the conversation language when appropriate).
+- During high-churn implementation, do not keep an implementation PR open solely as a remote checkpoint when that would trigger redundant CI on every push. Maintain a pushed implementation branch and open the PR when a coherent batch is ready for integrated validation, unless collaboration, review, or repository protection requires an earlier draft PR.
+- Prefer checkpoint pushes that represent a coherent locally/narrowly validated state; do not push every trivial edit merely to persist it remotely.
+- If an early draft PR is required, core CI and CodeQL remain the draft feedback loop. Expensive rendered, cross-engine, performance, and Windows lifecycle gates may be deferred until the PR is ready for review, and must run on the actual final review head.
+- Every progress update to the owner during a substantial task must include both counters in the form **Implementations x/y · Sub-implementations x/y** (localized to the conversation language when appropriate).
 - Repository-owned progress tracking must use the same two counters. The denominator must come from an explicit checklist/phase plan in the repository, not from an ad-hoc estimate.
 - Before handing work to another chat/agent, update the repository progress checkpoint with the exact counters, branch/ref, completed work, validation, blockers, and next safe action. A future chat must be able to continue from repository state without prior conversation memory.
 

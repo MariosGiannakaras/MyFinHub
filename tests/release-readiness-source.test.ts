@@ -15,6 +15,8 @@ const performanceWorkflow=readFileSync(new URL('../.github/workflows/performance
 const performanceAudit=readFileSync(new URL('../scripts/performance-audit.mjs',import.meta.url),'utf8');
 const loadingShiftAudit=readFileSync(new URL('../scripts/loading-shift-audit.mjs',import.meta.url),'utf8');
 const performanceConfig=readFileSync(new URL('../vite.performance.config.ts',import.meta.url),'utf8');
+const desktopWorkflow=readFileSync(new URL('../.github/workflows/desktop-windows.yml',import.meta.url),'utf8');
+const cleanLaunchWorkflow=readFileSync(new URL('../.github/workflows/desktop-clean-launch.yml',import.meta.url),'utf8');
 
 describe('release-readiness source contracts',()=>{
   it('keeps large feature pages route-lazy and chart code out of the eager app shell',()=>{
@@ -29,7 +31,26 @@ describe('release-readiness source contracts',()=>{
     expect(pkg.scripts.build).toContain('node scripts/bundle-budget.mjs');
     expect(budget).toContain("label:'main application JS'");
     expect(budget).toContain("label:'chart JS'");
-    expect(budget).toContain("label:'application CSS'");
+    expect(budget).toContain("label:'eager application CSS'");
+    expect(budget).toContain("label:'total application CSS'");
+    expect(budget).toContain("raw:256*1024,gzip:46*1024");
+    expect(budget).toContain("raw:500*1024,gzip:100*1024");
+  });
+
+  it('reruns Windows package validation when root production-build inputs change',()=>{
+    expect(pkg.scripts.prebuild).toContain('scripts/sync-ocr-assets.mjs');
+    expect(pkg.scripts.build).toContain('tsc -b');
+    expect(pkg.scripts.build).toContain('vite build');
+    expect(pkg.scripts.build).toContain('scripts/bundle-budget.mjs');
+    expect(desktopWorkflow).toContain('run: npm run build');
+    expect(desktopWorkflow).toContain('run: npm run desktop:pack:from-dist');
+    expect(desktopWorkflow).toContain('run: npm run desktop:dist:from-dist');
+    expect(cleanLaunchWorkflow).toContain('run: npm run desktop:dist');
+    const required=['vite.config.ts','tsconfig.json','tsconfig.app.json','tsconfig.node.json','scripts/sync-ocr-assets.mjs','scripts/bundle-budget.mjs'];
+    for(const path of required){
+      expect(desktopWorkflow.split(`- ${path}`).length-1).toBeGreaterThanOrEqual(2);
+      expect(cleanLaunchWorkflow.split(`- ${path}`).length-1).toBeGreaterThanOrEqual(2);
+    }
   });
 
   it('keeps browser/PWA identity consistently MyFinHub with resolvable install icons',()=>{
@@ -105,6 +126,8 @@ describe('release-readiness source contracts',()=>{
     expect(performanceAudit).toContain('total-blocking-time');
     expect(performanceAudit).toContain("--only-categories=performance,accessibility,best-practices");
     expect(performanceAudit).toContain('state=extreme');
+    expect(performanceAudit).toContain("MYFINHUB_LIGHTHOUSE_RUNS||'3'");
+    expect(performanceAudit).toContain('median(samples.map');
     expect(loadingShiftAudit).toContain("PerformanceObserver");
     expect(loadingShiftAudit).toContain("type:'layout-shift'");
     expect(loadingShiftAudit).toContain("'.qa-loading-route'");
