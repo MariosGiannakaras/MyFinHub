@@ -3,7 +3,8 @@
   "git": {
     "deploymentEnabled": {
       "**": false,
-      "main": true
+      "main": true,
+      "feat/476-completion-audit-hardening": true
     }
   },
   "installCommand": "npm ci",
