@@ -1993,3 +1993,12 @@ The uploaded artifact `11299913456` contains exactly two focused captures. Both 
 This closes the 8.4 modern and legacy transaction cells. The 8.10 full browser→real API→real Supabase **mutation matrix** remains open because this proof intentionally covers the transaction domain only; broader product-domain browser mutations must not be inferred from these two flows. The previously stale 8.4 section tally is reconciled to its actual checked cells.
 
 **Implementations 16/24 completed · Sub-implementations 162/195 completed**
+
+
+### 8.87 Actual-browser real-stack credit lifecycle source — runtime proof pending
+
+The next zero-cost browser→real-stack slice extends the synthetic fixture with a custom `qa-bank` account/provider identity and a configured `qa-credit-card` (no real institution or finance data). The actual browser opens the real Credit workspace, creates a €25.50 card purchase, requires a persisted statement association after hard reload, pays the same statement through the real shared payment modal, and hard-reloads again to verify the statement is paid, the payment row is present and used credit returns to zero.
+
+Focused screenshots `credit-purchase-persisted.png` and `credit-payment-persisted.png` are uploaded by the existing Real Stack artifact step. The 8.4 Credit cell and broader 8.10 mutation-matrix cell remain unchecked until the exact-head runtime passes and the screenshots/log are directly reviewed.
+
+**Implementations 16/24 completed · Sub-implementations 162/195 completed**

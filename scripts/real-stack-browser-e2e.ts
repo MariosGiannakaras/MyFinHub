@@ -60,6 +60,7 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     const search=async(value:string)=>setByLabel('Αναζήτηση συναλλαγών',value);
     const waitApiEvent=async(note:string,present:boolean)=>waitFor("async function(note,present){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();const exists=(payload.data?.state?.events||[]).some(item=>item.note===note);return present?exists:!exists}",'persisted event '+note,[note,present]);
     const waitLegacy=async(text:string,deleted:boolean)=>waitFor("async function(text,deleted){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();const overrides=JSON.stringify(payload.data?.state?.overrides||{});const tombstones=JSON.stringify(payload.data?.state?.deleted||[]);return overrides.includes(text)&&(deleted?tombstones.includes('qa-seed-income'):!tombstones.includes('qa-seed-income'))}",'persisted legacy state',[text,deleted]);
+    const waitCreditState=async(paid:boolean)=>waitFor("async function(paid){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();const events=payload.data?.state?.events||[];const purchase=events.find(item=>item.kind==='card_purchase'&&item.cardId==='qa-credit-card'&&item.note==='Real Browser Credit Purchase');if(!purchase?.statementId)return false;const payment=events.find(item=>item.kind==='card_payment'&&item.cardId==='qa-credit-card'&&item.statementId===purchase.statementId);return paid?Boolean(payment):!payment}",paid?'persisted credit payment':'persisted credit purchase',[paid]);
     const shot=async(name:string)=>{const result=await c!.send('Page.captureScreenshot',{format:'png',fromSurface:true});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(result.data,'base64'))};
 
     console.log('[real-browser] stage login');
@@ -99,8 +100,26 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     const undoLegacy=await c.call<boolean>("function(){const button=document.querySelector('button[aria-label=\"Αναίρεση τελευταίας αλλαγής\"]');if(!(button instanceof HTMLButtonElement)||button.disabled)return false;button.click();return true}");assert(undoLegacy,'Durable legacy undo is unavailable after reload.');await waitLegacy('Synthetic real-stack seed income override',false);
     await c.send('Page.reload',{ignoreCache:true});await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}",'reload after legacy undo');await search('Synthetic real-stack seed income override');await waitFor("function(){return [...document.querySelectorAll('[data-transaction-source=legacy][data-legacy-override=true]')].some(row=>(row.textContent||'').includes('Synthetic real-stack seed income override'))}",'legacy undo persisted');await shot('legacy-transaction-persisted');
 
+    console.log('[real-browser] stage credit-purchase-payment-reload');
+    await clickText('.sidebar nav button','Πιστωτική');
+    await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Πιστωτική Κάρτα')}",'credit workspace');
+    await clickText('.page-heading .heading-actions button','Νέα αγορά');
+    await waitFor("function(){return Boolean(document.querySelector('[aria-labelledby=\"credit-purchase-title\"]'))}",'credit purchase dialog');
+    await setByLabel('Ποσό','25.50');await setByLabel('Περιγραφή','Real Browser Credit Purchase');await clickText('.credit-dialog button','Καταχώριση αγοράς');
+    await waitFor("function(){return !document.querySelector('[aria-labelledby=\"credit-purchase-title\"]')}",'credit purchase close');await waitCreditState(false);
+    await c.send('Page.reload',{ignoreCache:true});await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Πιστωτική Κάρτα')}",'credit reload after purchase');
+    await waitFor("function(){const row=[...document.querySelectorAll('.credit-purchases-table tbody tr')].find(item=>(item.textContent||'').includes('Real Browser Credit Purchase'));const statement=document.querySelector('[data-primary-credit-statement]');return Boolean(row&&(row.textContent||'').includes('25,50')&&statement&&(statement.textContent||'').includes('25,50'))}",'credit purchase + statement after reload');
+    await shot('credit-purchase-persisted');
+
+    await clickText('.page-heading .heading-actions button','Αποπληρωμή');
+    await waitFor("function(){return (document.querySelector('#context-quick-title')?.textContent||'').includes('Πληρωμή δήλωσης πιστωτικής')}",'credit statement payment');
+    await clickText('.contextual-quick-modal button','Επιβεβαίωση πληρωμής');await waitFor("function(){return !document.querySelector('.contextual-quick-modal')}",'credit payment close');await waitCreditState(true);
+    await c.send('Page.reload',{ignoreCache:true});await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Πιστωτική Κάρτα')}",'credit reload after payment');
+    await waitFor("function(){const statement=document.querySelector('[data-primary-credit-statement]');const payment=document.querySelector('.credit-payments-table tbody tr');const used=[...document.querySelectorAll('.credit-card-stage-stats>div')].find(item=>(item.querySelector(':scope>span')?.textContent||'').includes('Χρησιμοποιημένο'));return Boolean(statement&&(statement.textContent||'').includes('Εξοφλημένη')&&payment&&(payment.textContent||'').includes('25,50')&&(used?.textContent||'').includes('0,00'))}",'paid credit state after reload');
+    await shot('credit-payment-persisted');
+
     assert(runtimeErrors.length===0,'Browser runtime errors: '+runtimeErrors.join(' | '));
     assert(apiFailures.length===0,'Unexpected browser API failures: '+apiFailures.join(' | '));
-    console.log('[real-browser] PASS actual browser auth + modern/legacy mutation persistence across hard reload');
+    console.log('[real-browser] PASS actual browser auth + modern/legacy/credit mutation persistence across hard reload');
   }finally{c?.close();if(child.exitCode===null)child.kill('SIGTERM');await sleep(300);rmSync(profile,{recursive:true,force:true,maxRetries:5,retryDelay:100})}
 }

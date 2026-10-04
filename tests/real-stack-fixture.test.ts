@@ -13,7 +13,15 @@ describe('real-stack synthetic finance fixture',()=>{
 
   it('contains only deterministic synthetic finance content',()=>{
     const fixture=realStackFinanceData();
-    expect(fixture.seed.accounts.map(item=>item.id)).toEqual(['qa-cash']);
+    expect(fixture.seed.accounts.map(item=>item.id)).toEqual(['qa-cash','qa-bank-account']);
+    expect(fixture.state.cards?.find(item=>item.id==='qa-credit-card')).toMatchObject({
+      bankId:'qa-bank',
+      kind:'credit',
+      creditLimit:300,
+      statementClosingDay:12,
+      statementDueDay:20,
+      statementBoundaryRule:'next-cycle',
+    });
     expect(fixture.seed.transactions).toHaveLength(1);
     expect(JSON.stringify(fixture)).not.toMatch(/piraeus|alpha|eurobank|revolut|national|viva|payzy/i);
   });

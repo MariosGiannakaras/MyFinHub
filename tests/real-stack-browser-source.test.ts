@@ -21,8 +21,12 @@ describe('actual-browser real-stack source contract',()=>{
     expect(source).toContain('stage modern-create-reload');
     expect(source).toContain('stage modern-edit-delete-undo');
     expect(source).toContain('stage legacy-edit-delete-undo');
+    expect(source).toContain('stage credit-purchase-payment-reload');
+    expect(source).toContain('Real Browser Credit Purchase');
+    expect(source).toContain('waitCreditState(false)');
+    expect(source).toContain('waitCreditState(true)');
     expect(source).toContain('Durable modern undo is unavailable after reload.');
     expect(source).toContain('Durable legacy undo is unavailable after reload.');
-    expect(source).toContain('actual browser auth + modern/legacy mutation persistence across hard reload');
+    expect(source).toContain('actual browser auth + modern/legacy/credit mutation persistence across hard reload');
   });
 });

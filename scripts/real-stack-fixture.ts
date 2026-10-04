@@ -8,6 +8,7 @@ export function realStackFinanceData(): FinanceData {
     seed: {
       accounts: [
         { id: 'qa-cash', name: 'Synthetic QA Cash', short: 'QA', kind: 'cash' },
+        { id: 'qa-bank-account', name: 'Synthetic QA Bank Account', short: 'QA Bank', kind: 'bank', providerId: 'qa-bank', bankAccountCategory: 'current' },
       ],
       months: ['2026-10'],
       transactions: [
@@ -23,7 +24,7 @@ export function realStackFinanceData(): FinanceData {
         },
       ],
       snapshots: [
-        { date: '2026-09-30', balances: { 'qa-cash': 0 } },
+        { date: '2026-09-30', balances: { 'qa-cash': 0, 'qa-bank-account': 0 } },
       ],
       recurring: [],
       subscriptions: [],
@@ -54,7 +55,9 @@ export function realStackFinanceData(): FinanceData {
         motion: 'system',
         textSize: 'normal',
       },
-      cardBanks: [],
+      cardBanks: [
+        { id: 'qa-bank', name: 'Synthetic QA Bank', order: 10, custom: true },
+      ],
       cards: [
         {
           id: 'qa-vault-card',
@@ -65,6 +68,20 @@ export function realStackFinanceData(): FinanceData {
           holderName: 'QA OWNER',
           last4: '4242',
           vaultRef: 'qa-vault-card',
+          active: true,
+          createdAt: '2026-10-04T00:00:00.000Z',
+          updatedAt: '2026-10-04T00:00:00.000Z',
+        },
+        {
+          id: 'qa-credit-card',
+          bankId: 'qa-bank',
+          nickname: 'Synthetic QA Credit',
+          kind: 'credit',
+          network: 'mastercard',
+          creditLimit: 300,
+          statementClosingDay: 12,
+          statementDueDay: 20,
+          statementBoundaryRule: 'next-cycle',
           active: true,
           createdAt: '2026-10-04T00:00:00.000Z',
           updatedAt: '2026-10-04T00:00:00.000Z',
