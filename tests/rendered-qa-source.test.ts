@@ -26,6 +26,7 @@ const finalVisualWorkflow = readFileSync('.github/workflows/final-visual-qa.yml'
 const finalVisualTrigger = readFileSync('.audit/run-final-visual-review', 'utf8');
 const finalScreenshots = readFileSync('scripts/final-screenshots-qa.mjs', 'utf8');
 const refreshRouteQa = readFileSync('scripts/refresh-route-qa.mjs', 'utf8');
+const sessionRuntimeQa = readFileSync('scripts/session-runtime-qa.mjs', 'utf8');
 const qaHtml = readFileSync('qa.html', 'utf8');
 
 describe('rendered browser QA reliability contract', () => {
@@ -103,6 +104,14 @@ describe('rendered browser QA reliability contract', () => {
     expect(refreshRouteQa).toContain("globalThis.__MYFINHUB_REFRESH_ROUTE_QA__?.record?.observed");
     expect(refreshRouteQa).toContain("observer?.disconnect?.()");
     expect(refreshRouteQa).not.toContain("await waitFor(\"function(){return Boolean(document.querySelector('.page-skeleton[role=\\\"status\\\"][aria-label=\\\"Ανανέωση δεδομένων\\\"]'))}\",'in-place PageSkeleton')");
+  });
+  it('executes each session-runtime browser probe in one CDP evaluation context',()=>{
+    expect(sessionRuntimeQa).toContain("const expression=`(${fn})(...${JSON.stringify(args)})`");
+    expect(sessionRuntimeQa).toContain("this.send('Runtime.evaluate',{expression,returnByValue:true,awaitPromise:true})");
+    expect(sessionRuntimeQa).not.toContain("expression:'globalThis'");
+    expect(sessionRuntimeQa).not.toContain("Runtime.callFunctionOn");
+    expect(sessionRuntimeQa).toContain("rheomiq:mfa-required");
+    expect(sessionRuntimeQa).toContain("rheomiq:auth-expired");
   });
   it('parallelizes independent rendered suites while serializing shared fixed CDP ports',()=>{
     expect(coordinator).toContain("MYFINHUB_QA_PARALLELISM||3");

@@ -2364,3 +2364,17 @@ Review-ready CI `37233337127` on exact head `54f5c706e36e1a34a5e410520419d322cc8
 - Cross-engine `37233337123`, Performance `37233337133`, Windows Desktop `37233337098`, Windows First Run `37233337140` and Windows Clean Launch `37233337160` were all green on the failing head; the new head must rerun required review-ready gates because the PR remains review-ready.
 
 Status: **source-fixed; exact-head review-ready CI/rendered and repository-required final-head gates pending.** Counters remain **Implementations 17/24 completed · Sub-implementations 172/197 completed** until the final full wave closes.
+
+
+### 8.116 FV-91 — session-runtime CDP execution-context invalidation — source-fixed, final wave pending
+
+Review-ready CI `37233835932` on exact head `2ecaa2a6f0ebf83ab2397ada50946a2b0ef69ef8` passed source/unit/API/build checks and a broad rendered sequence including the FV-90 refresh-route remediation, then failed in `scripts/session-runtime-qa.mjs` with CDP `Cannot find context with specified id`.
+
+- `session-runtime-qa.mjs` is byte-identical to prior green proof heads. Audit Rendered Review `37226278480` and CI `37220004731` both logged `Session runtime QA passed.`
+- Head `2ecaa2a…` changes only refresh-route QA/tracking. CodeQL `37233835910`, Real Stack `37233835951`, Cross-engine `37233835978`, Performance `37233836008`, Windows Desktop `37233835945`, Windows First Run `37233835919` and Windows Clean Launch `37233835963` all passed.
+- Root cause is the QA helper's two-command CDP probe: it first evaluates `globalThis` to obtain an objectId, then sends `Runtime.callFunctionOn`. Chromium may replace the execution context between those commands during the session-shell transition, invalidating the objectId even though the application behavior is correct.
+- Remediation evaluates the supplied probe and serialized arguments atomically in one `Runtime.evaluate` command with `returnByValue` and `awaitPromise`. Existing MFA-downgrade, hard-auth-expiry, focus, masked-password and finance-shell assertions are unchanged.
+- Source regression rejects the former `globalThis`/`Runtime.callFunctionOn` pair and requires the one-command evaluation path.
+- No auth/session product behavior, finance state, thresholds, delays, API/RLS, Supabase, Windows or Android code changes.
+
+Status: **source-fixed; exact-head review-ready CI/rendered and repository-required final-head gates pending.** Counters remain **Implementations 17/24 completed · Sub-implementations 172/197 completed** until the final full wave closes.
