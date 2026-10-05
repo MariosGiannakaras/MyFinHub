@@ -40,6 +40,27 @@ describe('HTTP trust boundary', () => {
     expect(() => assertMutationSessionOrigin(request({}), { source: 'bearer' }))
       .not.toThrow();
   });
+
+  it('accepts same-origin requests forwarded by the dev proxy (X-Forwarded-Host / X-Forwarded-Proto)', () => {
+    // Vite proxies /api from http://127.0.0.1:5173 to http://127.0.0.1:4317 and
+    // sets x-forwarded-host / x-forwarded-proto so the backend sees the
+    // browser-facing host instead of the upstream target port.
+    expect(() => assertSameOrigin(request({
+      origin: 'http://127.0.0.1:5173',
+      host: '127.0.0.1:4317',
+      'x-forwarded-host': '127.0.0.1:5173',
+      'x-forwarded-proto': 'http',
+    }))).not.toThrow();
+  });
+
+  it('still rejects a cross-origin request even when forwarded-host headers are present', () => {
+    expect(() => assertSameOrigin(request({
+      origin: 'http://evil.example',
+      host: '127.0.0.1:4317',
+      'x-forwarded-host': '127.0.0.1:5173',
+      'x-forwarded-proto': 'http',
+    }))).toThrowError(ApiError);
+  });
 });
 
 describe('optimistic save precondition', () => {
