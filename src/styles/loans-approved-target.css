@@ -102,7 +102,7 @@
   .loan-list-row .installment-segments i.paid{background:transparent!important}
 
   .loan-list-row .self-loan-progress{grid-area:progress;margin:0;min-height:38px;display:flex;align-items:center;gap:20px;padding:10px 14px;border-radius:12px;background:color-mix(in srgb,var(--blue) 6%,var(--surface))}
-  .loan-list-row .self-loan-progress span{font-size:10px;color:var(--muted)}
+  .loan-list-row .self-loan-progress span{font-size:var(--ux-dense-label-size);color:var(--muted)}
 
   .loan-list-row .loan-list-meta{
     grid-area:meta;
