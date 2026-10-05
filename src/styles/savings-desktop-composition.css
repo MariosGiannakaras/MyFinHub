@@ -18,7 +18,7 @@
   .savings-goals-mobile .savings-goal-icon{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:color-mix(in srgb,var(--blue) 11%,transparent);color:var(--blue)}
   .savings-goals-mobile .savings-goal-icon svg{width:18px;height:18px}
   .savings-goals-mobile .savings-goal-row b{font-size:12px}
-  .savings-goals-mobile .savings-goal-row small{display:block;margin-top:3px;color:var(--muted);font-size:10px}
+  .savings-goals-mobile .savings-goal-row small{display:block;margin-top:3px;color:var(--muted);font-size:var(--ux-dense-label-size)}
   .savings-goals-mobile .savings-goal-progress{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr) 38px;align-items:center;gap:10px}
   .savings-goals-mobile .savings-goal-progress>span{height:8px;border-radius:999px;background:color-mix(in srgb,var(--line) 80%,transparent);overflow:hidden}
   .savings-goals-mobile .savings-goal-progress i{display:block;height:100%;border-radius:inherit;background:var(--blue)}
