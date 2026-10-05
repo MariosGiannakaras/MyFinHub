@@ -40,9 +40,9 @@ Those cells remain BLOCKED when no direct interactive browser/computer session i
 
 Release-only cells also remain open: explicit `develop -> main` release-candidate validation, production deployed-SHA/smoke/integrity verification, and end-to-end release identity/rollback metadata. No production promotion is authorized.
 
-## Active post-completion hardening — #490
+## Completed post-completion hardening — #490
 
-Issue #490 is the live 4-implementation / 16-sub-implementation authority for this workstream. Do not copy its changing counters into this file.
+Issue #490 completed its bounded 4-implementation / 16-sub-implementation hardening workstream. Detailed evidence remains in the issue; this file records only the stable closeout state.
 
 Completed work includes:
 
@@ -54,12 +54,12 @@ Completed work includes:
 - repository-facing documentation identity alignment through #491/#472;
 - Unreleased changelog convergence through #465/#464.
 
-Remaining repository-hygiene dependencies are explicit:
+Repository-hygiene closeout is complete:
 
-- exactly **48** `audit/476-*` branches are identified; physical deletion is not claimed because the connected GitHub toolset exposes no branch/ref deletion action;
-- `develop` repository protection and canonical homepage metadata remain tracked exclusively by #487 and require repository-admin write capability unavailable in the current integration.
+- all **48** stale `audit/476-*` branches were removed; live branch search returns zero;
+- #487 is complete and closed: `develop` is protected by the active `Protect Develop` ruleset and the repository homepage is the canonical `https://mgfinhub.vercel.app`.
 
-No stale implementation PR is an integration authority. No open `audit/476-*` branch may overwrite newer migrations, workflow rules, tracking, or validated unrelated work.
+No stale implementation PR is an integration authority, and no `audit/476-*` branch remains.
 
 ## Repository administration — #487
 
@@ -69,7 +69,7 @@ No stale implementation PR is an integration authority. No open `audit/476-*` br
 - require pull requests, resolved review threads, strict `validate`, and CodeQL at the established security threshold;
 - align the repository homepage to `https://mgfinhub.vercel.app`.
 
-These settings are currently blocked on repository-admin write capability. Older overlapping #485 is closed as superseded.
+These settings are complete. Active `Protect Develop` targets exactly `refs/heads/develop`, blocks deletion/non-fast-forward updates, requires PR + resolved threads + squash-only, strict `validate`, and CodeQL at the established threshold. The repository homepage is `https://mgfinhub.vercel.app`. Older overlapping #485 is closed as superseded.
 
 ## Durable security and finance invariants
 
