@@ -25,10 +25,14 @@ describe('theme architecture source contract',()=>{
     expect(theme).toContain("THEME_STORAGE_KEY='myfinhub.theme'");
   });
 
-  it('exposes explicit System Light Dark choices',()=>{
+  it('exposes localized System, light and dark choices while preserving stable preference values',()=>{
     expect(settings).toContain("value: 'system'");
     expect(settings).toContain("value: 'light'");
     expect(settings).toContain("value: 'dark'");
+    expect(settings).toContain("label: 'Φωτεινό'");
+    expect(settings).toContain("label: 'Σκούρο'");
+    expect(settings).not.toContain("label: 'Light'");
+    expect(settings).not.toContain("label: 'Dark'");
     expect(settings).toContain('aria-label="Θέμα εμφάνισης"');
   });
 
@@ -48,6 +52,9 @@ describe('theme architecture source contract',()=>{
     expect(workspaceCompat).toContain("@import './dark-theme-surfaces.css';");
     expect(qaHtml).toContain("await import('/src/styles/dark-theme-surfaces.css');");
     expect(reportsStyles).toContain('html[data-theme="dark"] .report-period-chip');
+    expect(reportsStyles).toContain('background:color-mix(in srgb,var(--success-bg) 72%,var(--surface))');
+    expect(reportsStyles).toContain('background:color-mix(in srgb,var(--warning-bg) 72%,var(--surface))');
+    expect(reportsStyles).toContain('background:color-mix(in srgb,var(--error-bg) 72%,var(--surface))');
     expect(rendered).toContain('dark Reports period chip is a dark surface');
   });
 
