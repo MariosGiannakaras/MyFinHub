@@ -6,6 +6,7 @@ All notable MyFinHub changes are recorded here. Release artifacts remain availab
 
 ### Changed
 
+- Unified the app-wide visual system around semantic premium-fintech surfaces and shared control primitives, retiring generic neumorphic chrome while preserving specialized financial objects and responsive information architecture.
 - Reconciled the Dashboard shell and primary account cards with the approved design direction: the desktop Quick Add lives in the shared topbar, duplicate desktop command search was removed from the sidebar, account history uses realistic balance movement, Dashboard IBANs stay masked, non-savings cards show absolute 30-day balance movement and the redundant duplicate account action was removed.
 - Adopted the owner-supplied MyFinHub PureVector identity across web/PWA and Windows desktop, including true-vector masters, browser favicon fallbacks, explicit PWA install/maskable assets and vector-backed Windows icon packaging.
 - Deferred Dashboard Recharts until after first paint with a bounded fallback, while visual QA waits for steady-state chart rendering before capturing evidence.
@@ -18,6 +19,11 @@ All notable MyFinHub changes are recorded here. Release artifacts remain availab
 
 ### Security & reliability
 
+- Patched the desktop build graph's transitive `undici` resolutions to 7.30.0 and 6.29.0 within their existing parent ranges, clearing newly published high-severity advisories without changing parent toolchain versions.
+- Routed automated Dependabot updates for root npm, API npm and GitHub Actions through canonical `develop`, preserving `main` as release-only.
+- Re-run Windows Desktop, First Run and Clean Launch validation when `.nvmrc` changes, because the packaged backend runtime copies the active Node executable.
+- Added weekly `/desktop` Dependabot coverage targeting `develop`, grouping minor/patch desktop-toolchain updates while leaving Electron major upgrades manual.
+- Re-run Windows Desktop and Clean Launch validation when root Vite/TypeScript build configuration or packaging build-helper scripts change, so installer-affecting build inputs cannot bypass Windows gates.
 - Updated the Windows desktop host from Electron 43.3.0 to 43.7.0 on the existing 43.x line to clear newly published high-severity advisories and restore the required npm audit gate.
 - Extended rendered regression coverage for Dashboard account metadata, touch targets, long-name layout, copy interaction geometry, responsive overflow and deferred chart steady state.
 
