@@ -2403,3 +2403,17 @@ Status: **source-fixed; exact-head review-ready CI/rendered and repository-requi
 - All non-release verification items are now complete. The authoritative counters advance to **Implementations 20/24 completed · Sub-implementations 192/197 completed**.
 - Remaining open cells are strictly release-only (`develop -> main` release candidate validation, production deployed-SHA/smoke verification, release identity/rollback metadata).
 
+
+
+### 8.119 Newer interactive-image audits reopen UI/UX product closeout — 2026-10-05
+
+The historical 8.12/8.13 evidence remains valid for the contracts it actually tested, but newer direct interactive screenshots exposed product-hierarchy/readability defects that the prior containment-focused acceptance did not detect. Two independent audits are preserved under docs/audits/gemini and docs/audits/gpt.
+
+- Issue #503 owns the new remediation workstream.
+- docs/audits/RECONCILIATION_AND_REMEDIATION_PLAN.md is the single canonical reconciliation of both reports.
+- Confirmed findings are R-01..R-16; disputed Gemini-only observations are reproduce-before-fix.
+- Owner intent is now explicit: Dashboard primary accounts are **Μετρητά → Μισθοδοσίας → Αποταμιευτικός** by semantic account metadata.
+- The previous final-visual PASS must not be interpreted as proof that owner intent, information hierarchy or readability are correct in the newer interactive evidence.
+- #476 completion counters remain historical to that checklist. The new #503 tracker starts at **Implementations 1/5 completed · Sub-implementations 5/30 completed** and must complete before a new UI closeout/final integration claim.
+- After remediation, generate fresh exact-head evidence and directly inspect desktop/tablet/mobile × Light/Dark plus critical changed states before merging the remediation to develop.
+- Production remains out of scope.

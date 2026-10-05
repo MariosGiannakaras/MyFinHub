@@ -41,6 +41,20 @@ Section 8.13 is fully closed at 10/10.
 Remaining open cells are strictly release-only: explicit `develop -> main` release-candidate validation, production deployed-SHA/smoke/integrity verification, and end-to-end release identity/rollback metadata. No production promotion is authorized without explicit owner instruction.
 
 
+## Latest owner-intent/UI audit reconciliation — #503
+
+The newer direct interactive screenshots and two independent audits under docs/audits exposed UI/UX defects that were not caught by the earlier containment-oriented Final Visual acceptance. Therefore the earlier Final Visual PASS remains historical evidence for its tested criteria, but it is **not** the current product-UX closeout authority.
+
+Issue #503 and docs/audits/RECONCILIATION_AND_REMEDIATION_PLAN.md are now authoritative for the non-production remediation wave.
+
+- Confirmed findings are reconciled as R-01..R-16 rather than maintained as two parallel audit backlogs.
+- The Dashboard owner contract is explicitly **Μετρητά → Μισθοδοσίας → Αποταμιευτικός** by semantic account metadata, not the weaker cash → operating → savings approximation.
+- Gemini-only observations not independently confirmed by the GPT audit are reproduce-before-fix to prevent speculative CSS changes.
+- A fresh post-fix desktop/tablet/mobile × Light/Dark visual inspection on the exact corrected head is mandatory before the remediation can merge to develop.
+- No production promotion is authorized.
+
+#503 progress: **Implementations 1/5 completed · Sub-implementations 5/30 completed**.
+
 ## Completed post-completion hardening — #490
 
 Issue #490 completed its bounded 4-implementation / 16-sub-implementation hardening workstream. Detailed evidence remains in the issue; this file records only the stable closeout state.
