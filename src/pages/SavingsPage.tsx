@@ -41,10 +41,11 @@ export function SavingsPage({data,month,asOf,onCreate,onQuickAdd,onSavingsTarget
   const rate=flow.income?flow.saving/flow.income:0;
   const progress=ratioPercent(rate,target);
   const accountChoices=financeAccountChoices(data);const accounts=accountChoices.accounts;
-  const savingsAccounts=accounts.filter(account=>account.kind==='savings');
-  const sourceAccounts=accounts.filter(account=>account.kind!=='savings');
+  const savingsAccounts=accounts.filter(account=>account.kind==='savings'||(account.kind==='bank'&&account.bankAccountCategory==='savings'));
+  const savingsIds=new Set(savingsAccounts.map(account=>account.id));
+  const sourceAccounts=accounts.filter(account=>!savingsIds.has(account.id));
   const defaultFrom=accountChoices.operating?.id??'';
-  const defaultTo=accountChoices.savings?.id??'';
+  const defaultTo=accountChoices.dashboardSavings?.id??accountChoices.savings?.id??'';
   const sourceName=defaultFrom?accountDisplayName(data,defaultFrom):'Δεν έχει οριστεί';
   const savingsName=defaultTo?accountDisplayName(data,defaultTo):'Δεν έχει οριστεί';
   const savingsBalance=savingsGoalBalance(data,asOf);
