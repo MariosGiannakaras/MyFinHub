@@ -12,6 +12,24 @@ const profile='/tmp/myfinhub-mutation-validation-qa-chrome';
 rmSync(profile,{recursive:true,force:true,maxRetries:5,retryDelay:100});
 const child=spawn(chrome,['--headless=new',`--remote-debugging-port=${port}`,'--remote-debugging-address=127.0.0.1',`--user-data-dir=${profile}`,'--no-sandbox','--disable-gpu','--disable-dev-shm-usage','about:blank'],{stdio:'ignore'});
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+async function stopBrowser(){
+  if(child.exitCode!==null)return;
+  child.kill('SIGTERM');
+  await Promise.race([new Promise(resolve=>child.once('exit',resolve)),sleep(2000)]);
+  if(child.exitCode===null){
+    child.kill('SIGKILL');
+    await Promise.race([new Promise(resolve=>child.once('exit',resolve)),sleep(1200)]);
+  }
+}
+async function removeProfile(){
+  for(let attempt=0;attempt<6;attempt+=1){
+    try{rmSync(profile,{recursive:true,force:true});return}
+    catch(error){
+      if(error?.code!=='ENOTEMPTY'||attempt===5)throw error;
+      await sleep(150*(attempt+1));
+    }
+  }
+}
 async function waitHttp(url){for(let i=0;i<120;i+=1){try{const response=await fetch(url);if(response.ok)return}catch{}await sleep(150)}throw new Error(`Timed out waiting for ${url}`)}
 class Cdp{
   constructor(url){this.url=url;this.id=0;this.pending=new Map()}
@@ -169,4 +187,4 @@ try{
 
   console.log('Mutation validation rendered QA passed for finance, cards, Reports and Settings mutating forms.');
   c.close();
-}finally{child.kill('SIGTERM');await sleep(200);rmSync(profile,{recursive:true,force:true,maxRetries:5,retryDelay:100})}
+}finally{await stopBrowser();await removeProfile()}
