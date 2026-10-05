@@ -1,4 +1,4 @@
-# RheomIQ UI/UX standards
+# MyFinHub UI/UX standards
 
 The interface uses a **flat, restrained premium-fintech surface system**. Hierarchy comes from typography, spacing, borders and selective elevation rather than embossed neumorphism.
 

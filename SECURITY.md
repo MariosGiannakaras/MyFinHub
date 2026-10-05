@@ -1,6 +1,6 @@
 # Security policy
 
-RheomIQ is a single-owner personal finance application. Security reports must not include passwords, API keys, access or refresh tokens, TOTP secrets, database credentials, or exported personal finance data.
+MyFinHub is a single-owner personal finance application. Security reports must not include passwords, API keys, access or refresh tokens, TOTP secrets, database credentials, or exported personal finance data.
 
 ## Reporting a vulnerability
 
