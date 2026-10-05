@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { financeAccountChoices } from '../src/lib/accountSelection.js';
+import { qaFinanceData } from '../src/qaFixture.js';
 import { migrateData } from '../src/lib/domain.js';
 import type { FinanceData } from '../src/types.js';
 
@@ -78,6 +79,16 @@ describe('canonical account selection',()=>{
       ['savings','save-bank'],
     ]);
     expect(choices.dashboardPayroll).toBeUndefined();
+  });
+
+  it('keeps the rendered QA fixture on the owner semantic hierarchy rather than generic operating defaults',()=>{
+    const choices=financeAccountChoices(qaFinanceData());
+    expect(choices.dashboardPrimarySlots.map(slot=>[slot.role,slot.account?.id??null])).toEqual([
+      ['cash','cash'],
+      ['payroll','piraeus-payroll'],
+      ['savings','piraeus-savings'],
+    ]);
+    expect(choices.dashboardPrimary.map(account=>account.id)).toEqual(['cash','piraeus-payroll','piraeus-savings']);
   });
 
   it('keeps stable seed ids while overlays change their presentation metadata',()=>{
