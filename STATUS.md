@@ -14,7 +14,7 @@ MyFinHub v1.3.0 remains the current production/web and Windows release baseline.
 
 ## Canonical integration state
 
-Current canonical integration baseline is `develop@8e21c2a19256c99ca545af5132f453648e0fb154`.
+Current canonical integration baseline is the live `develop` branch. This file intentionally does not embed its own volatile merge SHA; use the live branch head for the exact commit.
 
 - #477 is integrated and its final product tree passed the required source/rendered/security/cross-engine/performance/Windows validation.
 - #492 records the canonical post-merge completion closeout.
