@@ -25,6 +25,45 @@ jobs:
       BASE_URL: https://mgfinhub.vercel.app
 
     steps:
+      - name: Verify deployed release SHA
+        if: github.event_name == 'deployment_status'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DEPLOYED_SHA: ${{ github.event.deployment.sha }}
+        run: |
+          set -euo pipefail
+
+          [[ "$DEPLOYED_SHA" =~ ^[0-9a-f]{40}$ ]] || {
+            echo "Deployment event did not provide a canonical commit SHA: $DEPLOYED_SHA"
+            exit 1
+          }
+
+          expected_sha="$(
+            curl \
+              --fail \
+              --silent \
+              --show-error \
+              --location \
+              --max-time 20 \
+              --header "Accept: application/vnd.github+json" \
+              --header "Authorization: Bearer $GH_TOKEN" \
+              --header "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/$GITHUB_REPOSITORY/git/ref/heads/main" \
+              | python -c "import json,sys; print(json.load(sys.stdin)['object']['sha'])"
+          )"
+
+          [[ "$expected_sha" =~ ^[0-9a-f]{40}$ ]] || {
+            echo "GitHub main ref did not resolve to a canonical commit SHA: $expected_sha"
+            exit 1
+          }
+          [[ "$DEPLOYED_SHA" == "$expected_sha" ]] || {
+            echo "Production deployment SHA $DEPLOYED_SHA does not match main release head $expected_sha"
+            exit 1
+          }
+
+          echo "Production deployment SHA matches main release head: $DEPLOYED_SHA"
+
       - name: Verify public production surface
         shell: bash
         run: |
