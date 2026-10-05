@@ -165,7 +165,7 @@ export function DashboardPage({ data, month, asOf, motionMode='system', privacyV
         if(!account)return <article className={`primary-balance-card approved-account-card approved-account-missing account-tone-${index}`} key={slot.role} data-account-role={slot.role} data-account-missing="true">
           <div className="approved-account-head">
             <div className="approved-account-identity">
-              <span className="approved-account-icon">{slot.role==='cash'?<FinanceIcon kind="cash" size={20}/>:<WalletCards size={20}/>}</span>
+              <span className="approved-account-icon">{slot.role==='cash'?<FinanceIcon settings={data.state.settings} kind="cash" size={20}/>:<WalletCards size={20}/>}</span>
               <div><strong>{slot.label}</strong><small>Δεν έχει οριστεί αντίστοιχος λογαριασμός</small></div>
             </div>
           </div>
