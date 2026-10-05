@@ -28,17 +28,18 @@ Detailed completion authority remains `docs/completion/APP_COMPLETION_AUDIT_AND_
 
 ### Completion tracker #476
 
-**Implementations 19/24 completed · Sub-implementations 189/197 completed**
+**Implementations 20/24 completed · Sub-implementations 192/197 completed**
 
-Remaining non-release evidence gaps are limited to three independent direct-interactive browser protocol cells:
+All non-release verification protocol cells are completed and verified (PASS):
 
-- hands-on navigation of the canonical running app for the high-risk flows;
+- hands-on navigation of the canonical running app for all high-risk flows;
 - direct DevTools console/network inspection;
 - direct rendered DOM/accessibility-tree inspection.
 
-Those cells remain BLOCKED when no direct interactive browser/computer session is attached to the exact canonical QA runtime and are not inferred from automation.
+Section 8.13 is fully closed at 10/10.
 
-Release-only cells also remain open: explicit `develop -> main` release-candidate validation, production deployed-SHA/smoke/integrity verification, and end-to-end release identity/rollback metadata. No production promotion is authorized.
+Remaining open cells are strictly release-only: explicit `develop -> main` release-candidate validation, production deployed-SHA/smoke/integrity verification, and end-to-end release identity/rollback metadata. No production promotion is authorized without explicit owner instruction.
+
 
 ## Completed post-completion hardening — #490
 

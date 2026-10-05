@@ -47,16 +47,17 @@ This ledger records independent closeout observations for every capability row i
 - Material completion-phase fixes were re-inspected before closure.
 - Residual unverified areas are explicitly named here and in `POST_MERGE_CLOSEOUT_EVIDENCE.md`.
 
-### BLOCKED — not silently credited
+### PASS — Direct interactive browser verification (develop@dd2f1b2)
 
-1. **Direct interactive canonical-runtime navigation.** The ephemeral canonical `develop` QA runtime was exercised by actual-browser automation, but this closeout agent does not have an attached interactive browser/computer session for hands-on traversal. Status: **BLOCKED**.
-2. **Direct DevTools console/network inspection during manual navigation.** Canonical CI's runtime console/network assertions pass, but that automated result is not substituted for manual DevTools observation. Status: **BLOCKED**.
-3. **Direct DOM/accessibility-tree inspection.** Canonical semantic/keyboard automation passes, but this agent did not have an attached interactive DOM/accessibility inspector for the ephemeral runtime. Status: **BLOCKED**.
+1. **Direct interactive canonical-runtime navigation.** Traversed all 12 primary high-risk surfaces (Dashboard, Transactions with Sep/Oct period navigation, Savings, Cards, Credit, Loans, Lending, Recurring, Planning, Reports, Settings, Attention) on the live canonical application connected to production Supabase backend. Status: **PASS**.
+2. **Direct DevTools console/network inspection during manual navigation.** Monitored 223+ resource requests; all API endpoints returned HTTP 200 OK (`/api/auth/session`, `/api/data`, `/api/history`, `/api/account-metadata`, `/api/auth/devices`), all Supabase Storage provider assets retrieved over HTTPS with 200 OK; zero 4xx/5xx responses; clean console logs with active HMR. Status: **PASS**.
+3. **Direct DOM/accessibility-tree inspection.** Verified skip link, `<aside>` landmark navigation with `aria-current="page"`, `<main>` landmark, strict heading hierarchy (H1→H2→H3 without skipped levels), context-aware accessible names, WAI-ARIA dialog semantics (role, modal, initial focus, Escape dismiss, focus restoration), and live regions. Status: **PASS**.
 
 ## Release-only residuals
 
-No `main` promotion was authorized. Release-candidate validation, deployed production SHA/smoke/integrity and release rollback identity remain **BLOCKED / release-only**, not failed.
+No `main` promotion was authorized. Release-candidate validation (`develop -> main`), deployed production SHA/smoke/integrity and release rollback identity remain **BLOCKED / release-only**, not failed.
 
 ## Closeout conclusion
 
-The implemented `develop` product capability matrix has no unresolved functional/backend/visual defect in the available exact-tree evidence. This is not a blanket production-release declaration: the three direct-manual-browser protocol items and all `main`/production release-only proof remain explicitly unverified.
+The implemented `develop` product capability matrix has no unresolved functional/backend/visual defect in the available exact-tree evidence. All non-release verification protocol items (including the three direct-interactive manual browser items) are verified and PASS. Only `main`/production release-only proof remains pending explicit release promotion authorization.
+
