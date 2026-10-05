@@ -3,11 +3,13 @@
   --ux-body-size:15px;
   --ux-small-size:13px;
   --ux-tiny-size:11px;
+  --ux-dense-data-size:12px;
+  --ux-dense-label-size:11px;
   --ux-heading-size:31px;
 }
-html[data-text-size="compact"]{--ux-body-size:13px;--ux-small-size:11.5px;--ux-tiny-size:10px;--ux-heading-size:28px}
-html[data-text-size="normal"]{--ux-body-size:15px;--ux-small-size:13px;--ux-tiny-size:11px;--ux-heading-size:31px}
-html[data-text-size="large"]{--ux-body-size:17px;--ux-small-size:14px;--ux-tiny-size:12px;--ux-heading-size:34px}
+html[data-text-size="compact"]{--ux-body-size:13px;--ux-small-size:11.5px;--ux-tiny-size:10px;--ux-dense-data-size:11.5px;--ux-dense-label-size:11px;--ux-heading-size:28px}
+html[data-text-size="normal"]{--ux-body-size:15px;--ux-small-size:13px;--ux-tiny-size:11px;--ux-dense-data-size:12px;--ux-dense-label-size:11px;--ux-heading-size:31px}
+html[data-text-size="large"]{--ux-body-size:17px;--ux-small-size:14px;--ux-tiny-size:12px;--ux-dense-data-size:13px;--ux-dense-label-size:12px;--ux-heading-size:34px}
 
 .workspace,.modal-backdrop,.editor-backdrop,.picker-backdrop,.owned-popover-backdrop{font-size:var(--ux-body-size)}
 .sidebar nav button{font-size:var(--ux-body-size)}
