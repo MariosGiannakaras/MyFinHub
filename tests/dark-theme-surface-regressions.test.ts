@@ -12,6 +12,17 @@ describe('dark-theme surface regressions',()=>{
     expect(css).not.toContain('.private-report-placeholder{min-height:96px;border-radius:14px;padding:14px;gap:9px;background:#eef4fa');
   });
 
+  it('keeps Dashboard secondary finance text and Reports budget statuses on semantic theme roles',()=>{
+    const dashboard=read('src/styles/dashboard-approved-target.css')+read('src/styles/dashboard-desktop-alignment.css');
+    expect(dashboard).toContain('color:var(--text-secondary)');
+    expect(dashboard).not.toContain('color:#526987');
+
+    const reports=read('src/pages/ReportsPage.css');
+    expect(reports).toContain('background:color-mix(in srgb,var(--success-bg) 72%,var(--surface))');
+    expect(reports).toContain('background:color-mix(in srgb,var(--warning-bg) 72%,var(--surface))');
+    expect(reports).toContain('background:color-mix(in srgb,var(--error-bg) 72%,var(--surface))');
+  });
+
   it('keeps Settings icon-management and Rules workspaces on semantic surfaces',()=>{
     const settings=read('src/pages/SettingsPage.css');
     expect(settings).toContain('.settings-icons-only .category-icon-library');
