@@ -35,9 +35,9 @@ export function BankBrandMark({
   </span>;
   if(visualKey==='generic'||!asset)return <span className={`bank-brand-mark bankmark-${identityKey==='generic'?'generic':identityKey} bank-logo-fallback`} aria-hidden="true" data-bank-brand={identityKey} data-bank-logo-source="generic" data-provider-registry={registrySource}><Landmark/></span>;
 
-  return <span className={`bank-brand-mark bankmark-${identityKey} ${resolvedRole==='logo'?'compact':'wordmark'}`} aria-hidden="true" data-bank-brand={identityKey} data-bank-logo-source={asset.source} data-provider-registry={registrySource}>
+  return <span className={`bank-brand-mark bankmark-${identityKey} ${resolvedRole==='logo'?'compact':'wordmark'}`} aria-hidden="true" data-bank-brand={identityKey} data-bank-logo-source={asset.source} data-provider-registry={registrySource} data-bank-brand-tone={resolvedTone}>
     {asset.source==='local-image'
-      ?<img className="bank-logo-image" src={resolvedRole==='logo'?asset.src:(asset.wordmarkSrc??asset.src)} alt="" draggable={false}/>
+      ?<img className="bank-logo-image" src={resolvedRole==='logo'||resolvedTone==='dark'?asset.src:(asset.wordmarkSrc??asset.src)} alt="" draggable={false}/>
       :<span className="bank-logo-text">{bankBrandFallbackMark(asset)}</span>}
   </span>;
 }
