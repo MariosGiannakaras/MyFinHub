@@ -54,7 +54,7 @@
   .recurring-approved-page>.long-term-recurring{margin:0;padding:7px 12px 12px;border:1px solid var(--border-subtle);border-top:0;border-radius:0 0 17px 17px;background:var(--surface);box-shadow:var(--shadow-soft)}
   .recurring-group-heading{min-height:39px;display:flex;align-items:center;gap:9px;padding:8px 10px;border:1px solid var(--border-subtle);border-radius:12px 12px 0 0;background:color-mix(in srgb,var(--violet) 13%,var(--surface));color:var(--violet)}
   .recurring-group-heading>div{min-width:0}
-  .recurring-group-heading span{display:block;color:var(--ink);font-size:10px;font-weight:840}
+  .recurring-group-heading span{display:block;color:var(--ink);font-size:var(--ux-dense-data-size);font-weight:840}
   .recurring-group-heading small{display:block;margin-top:2px;color:var(--muted);font-size:var(--ux-dense-label-size);line-height:1.35}
   .long-term-recurring-list{display:grid;gap:0}
   .long-term-loan-obligation{min-height:68px;display:grid;grid-template-columns:28% 18% 18% 12% 24%;align-items:center;padding:0;border:1px solid var(--border-subtle);border-top:0;border-radius:0;background:var(--surface-2)}
@@ -74,7 +74,7 @@
   .recurring-approved-page>.inactive-recurring>summary{min-height:66px;padding:0;align-items:center}
   .recurring-approved-page>.inactive-recurring>summary span{font-size:11px;font-weight:840}
   .recurring-approved-page>.inactive-recurring>summary small{margin-top:3px;font-size:var(--ux-dense-label-size)}
-  .recurring-approved-page>.inactive-recurring>summary strong{min-width:34px;height:30px;display:grid;place-items:center;border-radius:9px;background:var(--accent-soft);color:var(--accent);font-size:10px}
+  .recurring-approved-page>.inactive-recurring>summary strong{min-width:34px;height:30px;display:grid;place-items:center;border-radius:9px;background:var(--accent-soft);color:var(--accent);font-size:var(--ux-dense-data-size)}
   .recurring-approved-page>.inactive-recurring[open]{padding-bottom:12px}
 }
 
