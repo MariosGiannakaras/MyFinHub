@@ -27,14 +27,18 @@ html[data-theme="dark"] .report-period-chip span{color:var(--text-secondary)}htm
 .reports-dense .report-category-list>div{padding:7px 0;border-bottom:1px solid rgba(84,105,139,.08)}.reports-dense .report-category-list>div:last-child{border-bottom:0}.reports-dense .report-category-list b{display:flex;align-items:center;gap:6px;font-size:.74rem}.reports-dense .report-category-list b em{font-style:normal;color:var(--muted,#64748b);font-size:.62rem;font-weight:700}.report-category-swatch{width:7px;height:7px;border-radius:999px;flex:0 0 auto}.chart-alt{margin-top:3px}.chart-alt summary{font-size:.65rem}
 
 .report-budget-overview{margin:0;scroll-margin-top:72px;display:grid;gap:10px;padding:14px}.report-budget-overview>.panel-head{margin:0}.report-budget-overview>.panel-head>svg{flex:0 0 auto;color:#2f6fed}
-.report-budget-summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.report-budget-summary-grid>article{min-width:0;display:grid;align-content:center;gap:3px;padding:10px 11px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface-2)}.report-budget-summary-grid>article>span{font-size:.63rem;font-weight:800;color:var(--muted,#64748b)}.report-budget-summary-grid>article>b{font-size:.96rem;letter-spacing:-.02em;color:var(--ink,#0f1f45)}.report-budget-summary-grid>article>small{font-size:.58rem;line-height:1.3;color:var(--muted,#64748b)}.report-budget-summary-grid>article.positive{background:rgba(232,250,244,.58)}.report-budget-summary-grid>article.warning{background:rgba(255,247,222,.62)}.report-budget-summary-grid>article.negative{background:rgba(255,238,242,.62)}
+.report-budget-summary-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.report-budget-summary-grid>article{min-width:0;display:grid;align-content:center;gap:3px;padding:10px 11px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface-2)}.report-budget-summary-grid>article>span{font-size:.63rem;font-weight:800;color:var(--muted,#64748b)}.report-budget-summary-grid>article>b{font-size:.96rem;letter-spacing:-.02em;color:var(--ink,#0f1f45)}.report-budget-summary-grid>article>small{font-size:.58rem;line-height:1.3;color:var(--muted,#64748b)}.report-budget-summary-grid>article.positive{background:color-mix(in srgb,var(--success-bg) 72%,var(--surface));border-color:color-mix(in srgb,var(--success) 28%,var(--line))}
+.report-budget-summary-grid>article.warning{background:color-mix(in srgb,var(--warning-bg) 72%,var(--surface));border-color:color-mix(in srgb,var(--warning) 28%,var(--line))}
+.report-budget-summary-grid>article.negative{background:color-mix(in srgb,var(--error-bg) 72%,var(--surface));border-color:color-mix(in srgb,var(--error) 28%,var(--line))}
 .report-budget-health-grid{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:9px;align-items:stretch}
 .report-budget-cockpit{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr) minmax(180px,.7fr);gap:9px;align-items:stretch}
 .report-budget-health-card,.report-budget-attention,.report-budget-projection{min-width:0;padding:11px 12px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface-2)}
 .report-budget-health-card{display:grid;align-content:start;gap:8px}.report-budget-health-copy{display:grid;gap:2px}.report-budget-health-copy>span,.report-budget-attention-head>span,.report-budget-projection>span{font-size:.7rem;font-weight:850;color:var(--ink,#0f1f45)}.report-budget-health-copy>b,.report-budget-projection>b{font-size:1.28rem;line-height:1}.report-budget-health-copy>small,.report-budget-attention-head>small,.report-budget-projection>small{font-size:.62rem;line-height:1.35;color:var(--muted,#64748b)}.report-budget-health-card>p,.report-budget-projection>p{margin:0;font-size:.65rem;line-height:1.35;color:var(--muted,#64748b)}
 .report-budget-meter{grid-column:1/-1;height:7px;overflow:hidden;border-radius:999px;background:rgba(84,105,139,.1)}.report-budget-meter>i{display:block;height:100%;border-radius:inherit;background:#2f6fed}.report-budget-attention-row.near .report-budget-meter>i{background:#e6a519}.report-budget-attention-row.exceeded .report-budget-meter>i{background:#df3e58}
-.report-budget-attention{display:grid;align-content:start;gap:2px}.report-budget-attention-head{display:grid;gap:1px;padding-bottom:3px}.report-budget-attention-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 8px;align-items:center;padding:7px 0;border-top:1px solid rgba(84,105,139,.08)}.report-budget-attention-row>div:first-child{min-width:0;display:grid;gap:1px}.report-budget-attention-row b{font-size:.7rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.report-budget-attention-row small{font-size:.6rem;color:var(--muted,#64748b)}.report-budget-attention-row>strong{font-size:.7rem}.report-budget-attention-row.exceeded>strong{color:#b32942}.report-budget-attention-row.near>strong{color:#9a6700}
-.report-budget-projection{display:grid;align-content:center;gap:4px}.report-budget-projection.positive{background:rgba(232,250,244,.58)}.report-budget-projection.negative{background:rgba(255,238,242,.62)}.report-budget-projection.negative>p{color:#b32942}.report-budget-projection.positive>p{color:#187852}
+.report-budget-attention{display:grid;align-content:start;gap:2px}.report-budget-attention-head{display:grid;gap:1px;padding-bottom:3px}.report-budget-attention-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 8px;align-items:center;padding:7px 0;border-top:1px solid rgba(84,105,139,.08)}.report-budget-attention-row>div:first-child{min-width:0;display:grid;gap:1px}.report-budget-attention-row b{font-size:.7rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.report-budget-attention-row small{font-size:.6rem;color:var(--muted,#64748b)}.report-budget-attention-row>strong{font-size:.7rem}.report-budget-attention-row.exceeded>strong{color:var(--finance-negative)}.report-budget-attention-row.near>strong{color:var(--warning)}
+.report-budget-projection{display:grid;align-content:center;gap:4px}.report-budget-projection.positive{background:color-mix(in srgb,var(--success-bg) 72%,var(--surface));border-color:color-mix(in srgb,var(--success) 28%,var(--line))}
+.report-budget-projection.negative{background:color-mix(in srgb,var(--error-bg) 72%,var(--surface));border-color:color-mix(in srgb,var(--error) 28%,var(--line))}
+.report-budget-projection.negative>p{color:var(--finance-negative)}.report-budget-projection.positive>p{color:var(--finance-positive)}
 .report-budget-empty{display:grid;gap:4px;justify-items:start;text-align:left}.report-budget-empty b{font-size:.8rem}.report-budget-empty span{font-size:.68rem;line-height:1.4;color:var(--muted,#64748b)}
 .report-budget-management{border-top:1px solid rgba(84,105,139,.09);padding-top:8px;scroll-margin-top:72px}.report-budget-management>summary{cursor:pointer;font-size:.72rem;font-weight:850;color:#1e5fd0;list-style-position:inside}.report-budget-management[open]>summary{margin-bottom:8px}.report-budget-management .budget-settings-panel{margin:0}.report-budget-management .budget-settings-panel>.panel-head{display:none}
 
@@ -64,3 +68,53 @@ html[data-theme="dark"] .report-period-chip span{color:var(--text-secondary)}htm
   .report-mobile-disclosure{display:flex;width:100%;min-height:44px;justify-content:center}
   .report-support-grid.mobile-collapsed>article:not(#report-obligations){display:none!important}
 }
+
+
+/* #503 dense operational type floor: financial labels/status/context are not decorative microcopy. */
+.reports-dense .report-period-chip span,
+.reports-dense .report-headline-card>span,
+.reports-dense .report-headline-card>small,
+.reports-dense .report-analytics-grid .panel-head small,
+.reports-dense .report-flow-legend,
+.reports-dense .report-donut-total span,
+.reports-dense .report-category-list b em,
+.reports-dense .chart-alt summary,
+.reports-dense .report-budget-summary-grid>article>span,
+.reports-dense .report-budget-summary-grid>article>small,
+.reports-dense .report-budget-health-copy>small,
+.reports-dense .report-budget-attention-head>small,
+.reports-dense .report-budget-projection>small,
+.reports-dense .report-budget-health-card>p,
+.reports-dense .report-budget-projection>p,
+.reports-dense .report-budget-attention-row small,
+.reports-dense .report-counterparty-list small,
+.reports-dense .report-activity-list small,
+.reports-dense .report-upcoming-list small,
+.reports-dense .report-account-distribution-list b,
+.reports-dense .report-account-distribution-list strong,
+.reports-dense .report-credit-summary,
+.reports-dense .report-income-list small,
+.reports-dense .report-comparison-head,
+.reports-dense .report-insight small,
+.reports-dense .report-account-legend,
+.reports-dense .report-footnote span{font-size:var(--ux-dense-label-size)}
+.reports-dense .report-section-nav a,
+.reports-dense .report-category-list b,
+.reports-dense .report-budget-health-copy>span,
+.reports-dense .report-budget-attention-head>span,
+.reports-dense .report-budget-projection>span,
+.reports-dense .report-budget-attention-row b,
+.reports-dense .report-budget-attention-row>strong,
+.reports-dense .report-counterparty-list b,
+.reports-dense .report-counterparty-list strong,
+.reports-dense .report-activity-list b,
+.reports-dense .report-upcoming-list b,
+.reports-dense .report-activity-list strong,
+.reports-dense .report-upcoming-list strong,
+.reports-dense .report-income-list b,
+.reports-dense .report-income-list strong,
+.reports-dense .report-comparison-row,
+.reports-dense .report-insight b,
+.reports-dense .report-savings-sources span,
+.reports-dense .report-savings-sources b,
+.reports-dense .report-footnote b{font-size:var(--ux-dense-data-size)}
