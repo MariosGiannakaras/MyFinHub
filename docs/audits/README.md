@@ -12,7 +12,6 @@ Do not edit either audit merely to make the reports agree. They are evidence sna
 ## Canonical reconciliation
 
 - RECONCILIATION_AND_REMEDIATION_PLAN.md — single authoritative finding matrix and implementation/acceptance plan for issue #503.
-- IMPLEMENTATION_PROMPT.md — ready-to-use execution prompt for the remediation agent.
 
 Where the raw audits disagree, the reconciliation file records whether the observation is confirmed or reproduce-before-fix.
 
