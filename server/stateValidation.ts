@@ -1,7 +1,9 @@
 import type { FinanceData } from '../src/types.js';
+import { isValidDateStamp } from '../src/lib/dateOnly.js';
 import { ApiError } from './http.js';
 import { validateCardStateExtensions } from './cardStateValidation.js';
 import { validateCategoryIdentityState } from './categoryIdentityValidation.js';
+import { validateFinanceStateSemantics } from './financeSemanticValidation.js';
 import { validateRecurringCadenceState } from './recurringCadenceValidation.js';
 import { validateFinanceData } from './validation.js';
 
@@ -31,9 +33,11 @@ export function validateFinanceState(value: unknown): asserts value is FinanceDa
     seed: EMPTY_SEED,
     state: value,
   });
-  validateCardStateExtensions(value as FinanceData['state']);
-  validateCategoryIdentityState(value);
-  validateRecurringCadenceState(value as FinanceData['state']);
+  const state=value as FinanceData['state'];
+  validateCardStateExtensions(state);
+  validateCategoryIdentityState(state);
+  validateRecurringCadenceState(state);
+  validateFinanceStateSemantics(state);
 }
 
 export function parseMutableWrite(value: unknown): { state: FinanceData['state']; updatedAt: string; historyLabel?: string } {
@@ -45,7 +49,7 @@ export function parseMutableWrite(value: unknown): { state: FinanceData['state']
   if (Object.keys(body).some((key) => !allowed.has(key))) {
     throw new ApiError(400, 'INVALID_DATA', 'The finance data is invalid.');
   }
-  if (typeof body.updatedAt !== 'string' || !body.updatedAt || body.updatedAt.length > 64) {
+  if (!isValidDateStamp(body.updatedAt)) {
     throw new ApiError(400, 'INVALID_DATA', 'The finance data is invalid.');
   }
   let historyLabel: string | undefined;

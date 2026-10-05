@@ -43,12 +43,13 @@ export function DeviceAccessSettings(){
   const[loading,setLoading]=useState(true);
   const[busy,setBusy]=useState(false);
   const[message,setMessage]=useState('');
+  const[messageTone,setMessageTone]=useState<'status'|'error'>('status');
   const[pending,setPending]=useState<PendingAction>(null);
 
   const load=useCallback(async()=>{
-    setLoading(true);setMessage('');
+    setLoading(true);setMessageTone('status');setMessage('');
     try{const result=await getConnectedDevices();setDevices(result.devices)}
-    catch(error){setDevices([]);setMessage(loadError(error))}
+    catch(error){setDevices([]);setMessageTone('error');setMessage(loadError(error))}
     finally{setLoading(false)}
   },[]);
 
@@ -56,15 +57,15 @@ export function DeviceAccessSettings(){
 
   const confirm=async()=>{
     if(!pending||busy)return;
-    setBusy(true);setMessage('');
+    setBusy(true);setMessageTone('status');setMessage('');
     try{
       const result=pending.kind==='others'
         ?await revokeOtherConnectedDevices()
         :await revokeConnectedDevice(pending.device.sessionId);
       setDevices(result.devices);
-      setMessage(pending.kind==='others'?'Η πρόσβαση αφαιρέθηκε από όλες τις άλλες συσκευές.':'Η πρόσβαση της συσκευής αφαιρέθηκε.');
+      setMessageTone('status');setMessage(pending.kind==='others'?'Η πρόσβαση αφαιρέθηκε από όλες τις άλλες συσκευές.':'Η πρόσβαση της συσκευής αφαιρέθηκε.');
       setPending(null);
-    }catch(error){setMessage(error instanceof ApiError&&error.code==='DEVICE_SESSION_NOT_FOUND'?'Η συσκευή δεν είναι πλέον ενεργή.':'Δεν ήταν δυνατή η αφαίρεση πρόσβασης. Δοκίμασε ξανά.')}
+    }catch(error){setMessageTone('error');setMessage(error instanceof ApiError&&error.code==='DEVICE_SESSION_NOT_FOUND'?'Η συσκευή δεν είναι πλέον ενεργή.':'Δεν ήταν δυνατή η αφαίρεση πρόσβασης. Δοκίμασε ξανά.')}
     finally{setBusy(false)}
   };
 
@@ -85,11 +86,11 @@ export function DeviceAccessSettings(){
         </div>
         {device.current?<span className="device-access-safe">Ενεργή</span>:<Button type="button" variant="secondary" className="device-access-revoke" disabled={busy} onClick={()=>setPending({kind:'single',device})}><ShieldMinus size={15}/> Αφαίρεση</Button>}
       </div>)}
-    </div>:<div className="device-access-empty"><Monitor size={20}/><div><b>Δεν εμφανίζονται ενεργές συσκευές</b><span>{message||'Μόλις ολοκληρωθεί μια ασφαλής συνεδρία, η συσκευή θα εμφανιστεί εδώ.'}</span></div></div>}
+    </div>:<div className="device-access-empty" role={message&&messageTone==='error'?'alert':undefined} aria-live={message&&messageTone==='error'?'assertive':undefined}><Monitor size={20}/><div><b>Δεν εμφανίζονται ενεργές συσκευές</b><span>{message||'Μόλις ολοκληρωθεί μια ασφαλής συνεδρία, η συσκευή θα εμφανιστεί εδώ.'}</span></div></div>}
 
-    {devices.length&&message?<div className="device-access-message" role="status" aria-live="polite">{message}</div>:null}
+    {devices.length&&message?<div className="device-access-message" role={messageTone==='error'?'alert':'status'} aria-live={messageTone==='error'?'assertive':'polite'}>{message}</div>:null}
     <div className="device-access-footer">
-      <span>Windows, Android και web συνεδρίες χρησιμοποιούν την ίδια ασφαλή βάση πρόσβασης.</span>
+      <span>Windows, Android και web συνεδρίες χρησιμοποιούν την ίδια ασφαλή βάση πρόσβασης. Μετά την αφαίρεση, η συνεδρία απορρίπτεται τόσο από το API όσο και από τα προστατευμένα δεδομένα.</span>
       {others.length?<Button type="button" variant="secondary" className="danger-text" disabled={busy} onClick={()=>setPending({kind:'others'})}>Αφαίρεση όλων των άλλων</Button>:null}
     </div>
 

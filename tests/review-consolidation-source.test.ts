@@ -9,12 +9,13 @@ describe('Review consolidation into Έλεγχος',()=>{
   it('exposes one canonical owner-facing review/action surface',()=>{
     const shell=read('src/components/AppShell.tsx');
     const app=read('src/App.tsx');
+    const routing=read('src/lib/routing.ts');
     const commands=read('src/lib/commandSearch.ts');
     expect(shell).toContain("{id:'attention',label:'Έλεγχος'");
     expect(shell).not.toContain("|'review'|");
     expect(app).not.toContain('ReviewPage');
-    expect(app).toContain("raw === 'review'");
-    expect(app).toContain("page: 'attention' as PageId");
+    expect(routing).toContain("raw === 'review'");
+    expect(routing).toContain("page: 'attention'");
     expect(app).toContain('onReviewDecision={decide}');
     expect(commands).not.toContain("['review','Έλεγχος παλιών κινήσεων'");
     expect(commands).toContain("['attention','Έλεγχος','Εκκρεμότητες και κινήσεις προς επιβεβαίωση'");

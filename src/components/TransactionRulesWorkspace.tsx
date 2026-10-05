@@ -11,13 +11,16 @@ import { AppSelectInput } from './AppSelectInput';
 import { AppTextInput } from './AppTextInput';
 import { Button } from './Button';
 import { CategorySelectInput } from './CategorySelectInput';
+import { ConfirmDialog } from './ConfirmDialog';
 import { FormError } from './FormError';
 import { IconButton } from './IconButton';
 import './TransactionRulesWorkspace.css';
+import { userErrorMessage } from '../lib/userMessage';
 
 const now=()=>new Date().toISOString();
 const ruleId=()=>`rule-${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
 const scopeLabel=(scope:TransactionRuleScope)=>scope==='manual'?'χειροκίνητη καταχώριση':scope==='imported'?'εισαγωγή':'επιβεβαίωση από έλεγχο';
+const RULE_PAGE_SIZE=24;
 
 export function TransactionRulesWorkspace({
   data,
@@ -49,6 +52,8 @@ export function TransactionRulesWorkspace({
   const[ruleDefaultNote,setRuleDefaultNote]=useState('');
   const[ruleScope,setRuleScope]=useState<'all'|TransactionRuleScope>('manual');
   const[ruleError,setRuleError]=useState('');
+  const[deleteRuleTarget,setDeleteRuleTarget]=useState<TransactionRule|null>(null);
+  const[visibleRuleCount,setVisibleRuleCount]=useState(RULE_PAGE_SIZE);
 
   function clearEditor(open=false){
     setEditingRuleId(null);
@@ -91,6 +96,8 @@ export function TransactionRulesWorkspace({
   const activeCount=rules.filter(rule=>rule.enabled).length;
   const invalidCount=rules.filter(rule=>Boolean(invalidReason(rule))).length;
   const pausedCount=rules.length-activeCount;
+  const visibleRules=rules.slice(0,visibleRuleCount);
+  const hasMoreRules=visibleRuleCount<rules.length;
 
   const startCreate=()=>clearEditor(true);
   const editRule=(rule:TransactionRule)=>{
@@ -115,7 +122,7 @@ export function TransactionRulesWorkspace({
       onUpsertRule(next);
       clearEditor(false);
     }catch(error){
-      setRuleError(error instanceof Error?error.message:'Δεν μπορέσαμε να αποθηκεύσουμε τον κανόνα. Έλεγξε τις συνθήκες και την ενέργεια και δοκίμασε ξανά.');
+      setRuleError(userErrorMessage(error,'Δεν μπορέσαμε να αποθηκεύσουμε τον κανόνα. Έλεγξε τις συνθήκες και την ενέργεια και δοκίμασε ξανά.'));
     }
   };
   const moveRule=(index:number,direction:-1|1)=>{
@@ -163,12 +170,24 @@ export function TransactionRulesWorkspace({
 
     <section className="rules-list-section" aria-labelledby="rules-order-title">
       {rules.length?<header><div><b id="rules-order-title">Σειρά κανόνων</b><small>Μετακίνησέ τους πάνω ή κάτω για να αλλάξεις ποιος ελέγχεται πρώτος.</small></div></header>:null}
-      {rules.length?<div className="rule-settings-list" aria-label="Σειρά αυτοματισμών">{rules.map((rule,index)=>{const invalid=invalidReason(rule);const state=invalid?'invalid':rule.enabled?'active':'paused';return <article key={rule.id} className={state==='paused'?'disabled':state} data-rule-invalid={invalid?'true':'false'}>
+      {rules.length?<div className="rule-settings-list" aria-label="Σειρά αυτοματισμών">{visibleRules.map((rule,index)=>{const invalid=invalidReason(rule);const state=invalid?'invalid':rule.enabled?'active':'paused';return <article key={rule.id} className={state==='paused'?'disabled':state} data-rule-invalid={invalid?'true':'false'}>
         <div className="rules-order-controls" aria-label={`Θέση ${index+1}`}><span>{index+1}</span><div><IconButton aria-label={`Μετακίνηση αυτοματισμού ${rule.name} προς τα πάνω`} disabled={index===0} onClick={()=>moveRule(index,-1)}><ChevronUp size={15}/></IconButton><IconButton aria-label={`Μετακίνηση αυτοματισμού ${rule.name} προς τα κάτω`} disabled={index===rules.length-1} onClick={()=>moveRule(index,1)}><ChevronDown size={15}/></IconButton></div></div>
         <div className="rules-row-copy"><div className="rules-row-title"><b>{rule.name}</b><span className={`rules-state ${state}`}>{invalid?<><AlertTriangle size={13}/> Χρειάζεται έλεγχο</>:rule.enabled?<><Check size={13}/> Ενεργός</>:<><CirclePause size={13}/> Σε παύση</>}</span></div><small><strong>Όταν</strong> {conditionLabel(rule)}</small><small><strong>Τότε</strong> {actionLabel(rule)} · {rule.scopes.length===3?'κάθε νέα υποστηριζόμενη κίνηση':rule.scopes.map(scopeLabel).join(', ')}</small>{invalid?<small className="rules-row-warning" role="alert">{invalid}</small>:null}</div>
-        <div className="rule-row-actions"><Button type="button" variant="secondary" onClick={()=>onUpsertRule({...rule,enabled:!rule.enabled,updatedAt:now()})}>{rule.enabled?'Παύση':'Ενεργοποίηση'}</Button><IconButton aria-label={`Επεξεργασία αυτοματισμού ${rule.name}`} title="Επεξεργασία" onClick={()=>editRule(rule)}><Pencil size={17}/></IconButton><IconButton aria-label={`Διαγραφή αυτοματισμού ${rule.name}`} title="Διαγραφή" onClick={()=>onDeleteRule(rule.id)}><Trash2 size={17}/></IconButton></div>
+        <div className="rule-row-actions"><Button type="button" variant="secondary" onClick={()=>onUpsertRule({...rule,enabled:!rule.enabled,updatedAt:now()})}>{rule.enabled?'Παύση':'Ενεργοποίηση'}</Button><IconButton aria-label={`Επεξεργασία αυτοματισμού ${rule.name}`} title="Επεξεργασία" onClick={()=>editRule(rule)}><Pencil size={17}/></IconButton><IconButton aria-label={`Διαγραφή αυτοματισμού ${rule.name}`} title="Διαγραφή" onClick={()=>setDeleteRuleTarget(rule)}><Trash2 size={17}/></IconButton></div>
       </article>})}</div>:<div className="rules-empty-state"><ListFilter size={22}/><div><b>Δεν υπάρχουν ακόμη κανόνες</b><small>Οι νέες κινήσεις παραμένουν χειροκίνητες μέχρι να προσθέσεις έναν κανόνα.</small></div><Button type="button" variant="secondary" onClick={startCreate}><Plus size={16}/> Δημιουργία κανόνα</Button></div>}
+      {hasMoreRules?<Button type="button" variant="secondary" className="rule-settings-more" onClick={()=>setVisibleRuleCount(count=>Math.min(count+RULE_PAGE_SIZE,rules.length))}>Εμφάνιση περισσότερων κανόνων ({rules.length-visibleRules.length})</Button>:null}
     </section>
+
+    <ConfirmDialog
+      open={Boolean(deleteRuleTarget)}
+      title="Διαγραφή κανόνα;"
+      description={deleteRuleTarget?`Ο κανόνας «${deleteRuleTarget.name}» θα αφαιρεθεί από τις μελλοντικές κινήσεις. Το υπάρχον ιστορικό δεν αλλάζει.`:''}
+      confirmLabel="Διαγραφή κανόνα"
+      tone="destructive"
+      motionMode={data.state.settings.motion}
+      onConfirm={()=>{if(deleteRuleTarget){onDeleteRule(deleteRuleTarget.id);setDeleteRuleTarget(null)}}}
+      onCancel={()=>setDeleteRuleTarget(null)}
+    />
 
     {editorOpen?<div className="editor-backdrop rules-editor-backdrop" onMouseDown={()=>clearEditor(false)}>
       <section ref={editorRef} className="panel surface-raised editor-dialog rules-editor" data-rule-editor role="dialog" aria-modal="true" aria-labelledby="rule-editor-title" tabIndex={-1} onMouseDown={event=>event.stopPropagation()}>

@@ -12,9 +12,16 @@ describe('Stage 2 residual security and shell action adoption',()=>{
     expect(shell).toContain('<Button type="button" variant="primary" data-global-quick-entry="desktop"');
     expect(shell).toContain('onClick={onQuickAdd}');
     expect(shell).toContain('<IconButton type="button" aria-label="Κλείσιμο ιστορικού"');
+    expect(shell).toContain('<IconButton type="button" aria-label="Αναζήτηση και εντολές"');
+    expect(shell).toContain('<IconButton type="button" aria-label="Ανανέωση δεδομένων"');
+    expect(shell).toContain('<IconButton type="button" aria-label="Αποσύνδεση"');
+    expect(shell).toContain('<IconButton type="button" aria-label="Κλείσιμο μενού"');
+    expect(shell).toContain('<Button type="button" variant="secondary" disabled={!canUndo} onClick={onUndo}>Αναίρεση</Button>');
+    expect(shell).toContain('<Button type="button" variant="secondary" disabled={!canRedo} onClick={onRedo}>Επαναφορά</Button>');
     expect(shell).toContain('onClick={()=>setHistoryOpen(false)}');
     expect(shell).not.toContain('primary-action');
     expect(shell).not.toContain('<button type="button" className="icon-button" aria-label="Κλείσιμο ιστορικού"');
+    expect(shell).not.toContain('<button type="button" aria-label="Αναζήτηση και εντολές"');
   });
 
   it('uses shared primary Button for login submit without changing submit or disabled behavior',()=>{
@@ -23,7 +30,9 @@ describe('Stage 2 residual security and shell action adoption',()=>{
     expect(login).toContain('onSubmit={submit}');
     expect(login).toContain('if(busy||!ready)return');
     expect(login).not.toContain('primary-action');
-    expect(login).toContain('className="login-password-toggle"');
+    expect(login).toContain("from './IconButton'");
+    expect(login).toContain('<IconButton type="button" className="login-password-toggle"');
+    expect(login).not.toContain('<button type="button" className="login-password-toggle"');
   });
 
   it('uses shared primary Button for MFA enrollment and verification while preserving auth guards',()=>{
@@ -33,7 +42,8 @@ describe('Stage 2 residual security and shell action adoption',()=>{
     expect(mfa).toContain('<Button variant="primary" className="login-submit" type="submit" disabled={busy || code.length !== 6}');
     expect(mfa).toContain('if (busy || !/^\\d{6}$/.test(code)) return');
     expect(mfa).toContain('await onVerify(code, enrollment?.factorId)');
-    expect(mfa).toContain('className="ghost-button login-logout"');
+    expect(mfa).toContain('<Button variant="ghost" className="ghost-button login-logout" type="button" disabled={busy}');
+    expect(mfa).not.toContain('<button className="ghost-button login-logout"');
     expect(mfa).not.toContain('primary-action');
   });
 });

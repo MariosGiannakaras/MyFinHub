@@ -1,14 +1,24 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "lib": ["ES2022"],
+    "lib": [
+      "ES2022"
+    ],
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "strict": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
-    "types": ["node"],
+    "types": [
+      "node"
+    ],
     "outDir": "dist-node"
   },
-  "include": ["server/**/*.ts", "api/**/*.ts", "vite.config.ts", "tests/**/*.ts"]
+  "include": [
+    "server/**/*.ts",
+    "api/**/*.ts",
+    "vite.config.ts",
+    "tests/**/*.ts",
+    "src/vite-env.d.ts"
+  ]
 }

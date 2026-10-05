@@ -57,20 +57,22 @@ describe('consolidated Stage 2 shared action adoption',()=>{
     expect(taxonomy).toContain('<ConfirmDialog');
   });
 
-  it('moves eight ReceiptInbox generic actions plus the close action to shared primitives',()=>{
+  it('keeps ReceiptInbox capture, review and apply actions on shared primitives',()=>{
     expect(receipts).toContain("from './Button'");
     expect(receipts).toContain("from './IconButton'");
-    expect(receipts.match(/<Button/g)).toHaveLength(8);
+    expect(receipts.match(/<Button/g)).toHaveLength(10);
     expect(receipts.match(/<IconButton/g)).toHaveLength(1);
     expect(receipts.match(/<Button[^>]+variant="primary"/g)).toHaveLength(2);
-    expect(receipts.match(/<Button[^>]+variant="secondary"/g)).toHaveLength(5);
-    expect(receipts.match(/<Button[^>]+variant="ghost"/g)).toHaveLength(1);
+    expect(receipts.match(/<Button[^>]+variant="secondary"/g)).toHaveLength(6);
+    expect(receipts.match(/<Button[^>]+variant="ghost"/g)).toHaveLength(2);
     expect(receipts).toContain('<IconButton type="button" aria-label="Κλείσιμο αποδείξεων σε αναμονή" onClick={onClose}>');
     expect(receipts).toContain('variant="primary" disabled={loading || scanning}');
     expect(receipts).toContain('variant="secondary" disabled={loading || scanning}');
-    expect(receipts).toContain('variant="primary" disabled={scanning}');
+    expect(receipts).toContain('variant="primary" disabled={scanning||reviewSaving||reviewTotalInvalid}');
     expect(receipts).toContain('<Button type="button" variant="ghost" className="danger" onClick={requestRemoveSelected}>');
     expect(receipts).toContain('<Button type="button" variant="secondary" className="danger" disabled={scanning} onClick={() => requestRemoveOne(selected)}>');
+    expect(receipts).toContain('onClick={()=>void saveReview(false)}>Αποθήκευση διορθώσεων</Button>');
+    expect(receipts).toContain('onClick={()=>void saveReview(true)}><Check size={16}/> Χρήση στη Γρήγορη Κίνηση</Button>');
     expect(receipts).not.toContain('className="save-button"');
     expect(receipts).not.toContain('className="icon-button"');
   });

@@ -3,12 +3,20 @@ name: Windows Clean Launch
 on:
   pull_request:
     branches: [main, develop]
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - desktop/**
       - server/**
       - tests/desktop-*.test.ts
       - package.json
       - package-lock.json
+      - vite.config.ts
+      - tsconfig.json
+      - tsconfig.app.json
+      - tsconfig.node.json
+      - scripts/sync-ocr-assets.mjs
+      - scripts/bundle-budget.mjs
+      - .nvmrc
       - .github/workflows/desktop-clean-launch.yml
   push:
     branches: [develop]
@@ -18,6 +26,13 @@ on:
       - tests/desktop-*.test.ts
       - package.json
       - package-lock.json
+      - vite.config.ts
+      - tsconfig.json
+      - tsconfig.app.json
+      - tsconfig.node.json
+      - scripts/sync-ocr-assets.mjs
+      - scripts/bundle-budget.mjs
+      - .nvmrc
       - .github/workflows/desktop-clean-launch.yml
 
 concurrency:
@@ -27,6 +42,7 @@ concurrency:
 jobs:
   clean-launch:
     name: Clean installed-user launch without runtime provisioning
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: windows-latest
     timeout-minutes: 25
     permissions:
@@ -45,11 +61,9 @@ jobs:
         run: |
           npm ci
           npm ci --prefix desktop
-      - name: Validate source and tests
+      - name: Validate desktop source
         shell: pwsh
-        run: |
-          npm run check
-          npm run desktop:check
+        run: npm run desktop:check:source
       - name: Isolate CI from production Supabase config
         shell: pwsh
         run: |

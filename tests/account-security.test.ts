@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { ApiError } from '../server/http.js';
 import { parseAccountSecurityWrite } from '../server/accountSecurityHandler.js';
+import { ACCOUNT_PASSWORD_MIN_LENGTH, accountPasswordPolicyError } from '../src/lib/passwordPolicy.js';
 
 const read=(path:string)=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const code=(fn:()=>unknown)=>{try{fn();return ''}catch(error){return error instanceof ApiError?error.code:'UNKNOWN'}};
@@ -13,10 +14,18 @@ describe('account security settings',()=>{
     expect(code(()=>parseAccountSecurityWrite({action:'email',email:'owner@example.com',role:'admin'}))).toBe('INVALID_ACCOUNT_CHANGE');
   });
 
-  it('requires a distinct current/new password pair',()=>{
-    expect(parseAccountSecurityWrite({action:'password',currentPassword:'old-password',newPassword:'new-password'})).toEqual({action:'password',currentPassword:'old-password',newPassword:'new-password'});
-    expect(code(()=>parseAccountSecurityWrite({action:'password',currentPassword:'short',newPassword:'new-password'}))).toBe('INVALID_CURRENT_PASSWORD');
-    expect(code(()=>parseAccountSecurityWrite({action:'password',currentPassword:'same-password',newPassword:'same-password'}))).toBe('PASSWORD_UNCHANGED');
+  it('requires a present current password and a distinct strong new password',()=>{
+    const strong='Νεος-Password-2026!';
+    expect(ACCOUNT_PASSWORD_MIN_LENGTH).toBe(12);
+    expect(accountPasswordPolicyError(strong)).toBe('');
+    expect(accountPasswordPolicyError('onlylowercase123!')).not.toBe('');
+    expect(accountPasswordPolicyError('ONLYUPPERCASE123!')).not.toBe('');
+    expect(accountPasswordPolicyError('NoNumbersHere!')).not.toBe('');
+    expect(accountPasswordPolicyError('NoSymbolsHere123')).not.toBe('');
+    expect(parseAccountSecurityWrite({action:'password',currentPassword:'old-password',newPassword:strong})).toEqual({action:'password',currentPassword:'old-password',newPassword:strong});
+    expect(parseAccountSecurityWrite({action:'password',currentPassword:'short',newPassword:strong})).toEqual({action:'password',currentPassword:'short',newPassword:strong});
+    expect(code(()=>parseAccountSecurityWrite({action:'password',currentPassword:'',newPassword:strong}))).toBe('INVALID_CURRENT_PASSWORD');
+    expect(code(()=>parseAccountSecurityWrite({action:'password',currentPassword:strong,newPassword:strong}))).toBe('PASSWORD_UNCHANGED');
     expect(code(()=>parseAccountSecurityWrite({action:'password',currentPassword:'old-password',newPassword:'short'}))).toBe('INVALID_NEW_PASSWORD');
   });
 

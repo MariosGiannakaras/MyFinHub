@@ -22,9 +22,48 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
-      BASE_URL: https://rheom-iq-vert.vercel.app
+      BASE_URL: https://mgfinhub.vercel.app
 
     steps:
+      - name: Verify deployed release SHA
+        if: github.event_name == 'deployment_status'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DEPLOYED_SHA: ${{ github.event.deployment.sha }}
+        run: |
+          set -euo pipefail
+
+          [[ "$DEPLOYED_SHA" =~ ^[0-9a-f]{40}$ ]] || {
+            echo "Deployment event did not provide a canonical commit SHA: $DEPLOYED_SHA"
+            exit 1
+          }
+
+          expected_sha="$(
+            curl \
+              --fail \
+              --silent \
+              --show-error \
+              --location \
+              --max-time 20 \
+              --header "Accept: application/vnd.github+json" \
+              --header "Authorization: Bearer $GH_TOKEN" \
+              --header "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/$GITHUB_REPOSITORY/git/ref/heads/main" \
+              | python -c "import json,sys; print(json.load(sys.stdin)['object']['sha'])"
+          )"
+
+          [[ "$expected_sha" =~ ^[0-9a-f]{40}$ ]] || {
+            echo "GitHub main ref did not resolve to a canonical commit SHA: $expected_sha"
+            exit 1
+          }
+          [[ "$DEPLOYED_SHA" == "$expected_sha" ]] || {
+            echo "Production deployment SHA $DEPLOYED_SHA does not match main release head $expected_sha"
+            exit 1
+          }
+
+          echo "Production deployment SHA matches main release head: $DEPLOYED_SHA"
+
       - name: Verify public production surface
         shell: bash
         run: |
@@ -93,6 +132,25 @@ jobs:
           data_status="$(fetch_path '/api/data' data)"
           [[ "$data_status" == '401' ]] || {
             echo "Expected unauthenticated /api/data to return 401, got $data_status"
+            exit 1
+          }
+
+          unknown_status="$(fetch_path '/__myfinhub-unknown-route-probe' unknown)"
+          [[ "$unknown_status" == '404' ]] || {
+            echo "Expected unknown web path to return 404, got $unknown_status"
+            exit 1
+          }
+          unknown_type="$(header_value "$tmp/unknown.headers" 'content-type')"
+          [[ "$unknown_type" == *'text/html'* ]] || {
+            echo "Expected branded MyFinHub HTML 404; content-type was: $unknown_type"
+            exit 1
+          }
+          grep -Fq '404 · MYFINHUB' "$tmp/unknown.body" || {
+            echo "Expected branded MyFinHub HTML 404 marker"
+            exit 1
+          }
+          grep -Fq 'Χάσαμε τη διαδρομή, όχι τα δεδομένα σου.' "$tmp/unknown.body" || {
+            echo "Expected privacy-safe MyFinHub 404 copy"
             exit 1
           }
 

@@ -64,3 +64,28 @@
   .dashboard-approved .approved-account-body{grid-template-columns:minmax(176px,1.06fr) minmax(132px,.94fr)!important}
   .dashboard-approved .approved-account-chart{padding-bottom:1px}
 }
+
+/* Tablet account cards must not inherit desktop two-column minimums inside a three-column outer grid. */
+@media(min-width:681px) and (max-width:980px){
+  .dashboard-approved .approved-primary-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    align-items:start;
+    grid-auto-rows:max-content;
+  }
+  .dashboard-approved .approved-account-card{
+    height:auto!important;
+    min-height:180px!important;
+    align-self:start;
+    overflow:hidden;
+  }
+  .dashboard-approved .approved-account-body{
+    grid-template-columns:minmax(100px,.82fr) minmax(120px,1.18fr)!important;
+    gap:8px!important;
+    min-width:0;
+  }
+  .dashboard-approved .approved-account-body>*,
+  .dashboard-approved .approved-account-chart{min-width:0}
+  .dashboard-approved .approved-account-chart{overflow:hidden}
+  .dashboard-approved .approved-balance{font-size:clamp(20px,3vw,25px)}
+  .dashboard-approved .account-iban-value{max-width:min(180px,100%)!important}
+}

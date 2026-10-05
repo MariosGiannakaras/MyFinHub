@@ -13,6 +13,7 @@ import { MoneyInput } from '../components/MoneyInput';
 import type { QuickActionContext } from '../components/ContextualQuickAdd';
 import { useModalFocus } from '../hooks/useModalFocus';
 import { accountBalances, createEvent } from '../lib/domain';
+import { calendarMonthRange, dateOnlyToUtcDate, monthOnlyToUtcDate } from '../lib/dateOnly';
 import { financeAccountChoices } from '../lib/accountSelection';
 import { money, shortDate } from '../lib/format';
 import { SAVING_SOURCE_LABELS, operationalMonthlyFlow, savingsBreakdown, savingsHistoryPresentation } from '../lib/savings';
@@ -20,6 +21,7 @@ import { savingsGoalBalance, savingsGoalProgress } from '../lib/savingsGoals';
 import { accountDisplayName, ratioPercent } from '../lib/ui';
 import { userErrorMessage } from '../lib/userMessage';
 import type { FinanceData, FinanceEvent, SavingSource, SavingsGoal } from '../types';
+import './SavingsCompletion.css';
 
 const ACTIONS:Array<{source:SavingSource;title:string;description:string;icon:typeof PiggyBank}>=[
   {source:'pay_and_save',title:'Pay & Save',description:'Στρογγυλοποίηση αγοράς που μεταφέρεται στην αποταμίευση.',icon:Sparkles},
@@ -47,8 +49,8 @@ export function SavingsPage({data,month,asOf,onCreate,onQuickAdd,onSavingsTarget
   const savingsName=defaultTo?accountDisplayName(data,defaultTo):'Δεν έχει οριστεί';
   const savingsBalance=savingsGoalBalance(data,asOf);
   const goals=data.state.savingsGoals??[];
-  const [year,monthNumber]=month.split('-').map(Number);
-  const daysInMonth=new Date(Date.UTC(year,monthNumber,0)).getUTCDate();
+  const monthRange=calendarMonthRange(month);
+  const daysInMonth=Number(monthRange.end.slice(8,10));
   const rawTrendDays=[1,8,15,22,daysInMonth];
   const trendDays=rawTrendDays.filter((day,index)=>rawTrendDays.indexOf(day)===index).sort((a,b)=>a-b);
   const targetTotal=target>0&&flow.income>0?flow.income*target:0;
@@ -63,8 +65,8 @@ export function SavingsPage({data,month,asOf,onCreate,onQuickAdd,onSavingsTarget
   const actualPoints=actualSeries.map(trendPoint).join(' ');
   const targetPoints=targetSeries.map(trendPoint).join(' ');
   const goalProgress=targetTotal>0?Math.min(100,(flow.saving/targetTotal)*100):0;
-  const goalDeadline=new Intl.DateTimeFormat('el-GR',{day:'2-digit',month:'2-digit',year:'numeric',timeZone:'UTC'}).format(new Date(Date.UTC(year,monthNumber,0)));
-  const trendMonthLabel=new Intl.DateTimeFormat('el-GR',{month:'short',timeZone:'UTC'}).format(new Date(Date.UTC(year,monthNumber-1,1)));
+  const goalDeadline=new Intl.DateTimeFormat('el-GR',{day:'2-digit',month:'2-digit',year:'numeric',timeZone:'UTC'}).format(dateOnlyToUtcDate(monthRange.end)!);
+  const trendMonthLabel=new Intl.DateTimeFormat('el-GR',{month:'short',timeZone:'UTC'}).format(monthOnlyToUtcDate(month)!);
   const recent=breakdown.rows[0]??null;
   const recentPresentation=recent?savingsHistoryPresentation(recent):null;
   const [open,setOpen]=useState(false);
@@ -82,6 +84,7 @@ export function SavingsPage({data,month,asOf,onCreate,onQuickAdd,onSavingsTarget
   const [goalAmountText,setGoalAmountText]=useState('');
   const [goalError,setGoalError]=useState('');
   const [deleteGoalTarget,setDeleteGoalTarget]=useState<SavingsGoal|null>(null);
+  const [goalLimit,setGoalLimit]=useState(12);
   const modalRef=useModalFocus<HTMLElement>(open,'[data-autofocus="true"]',()=>setOpen(false));
   const goalModalRef=useModalFocus<HTMLElement>(Boolean(goalEdit),'[data-goal-autofocus="true"]',()=>setGoalEdit(null));
 
@@ -119,11 +122,12 @@ export function SavingsPage({data,month,asOf,onCreate,onQuickAdd,onSavingsTarget
     closeGoal();
   };
   const goalRows=goals.map(goal=>({goal,progress:savingsGoalProgress(goal,savingsBalance)}));
+  const visibleGoalRows=goalRows.slice(0,goalLimit);
   const renderGoals=(surface:'desktop'|'mobile')=><section className={`panel surface-raised savings-goals savings-goals-${surface}`} aria-labelledby={`savings-goals-title-${surface}`}>
     <div className="panel-head"><div><span id={`savings-goals-title-${surface}`}>Στόχοι αποταμίευσης</span><small>Οι προσωπικοί στόχοι συγκρίνονται με το συνολικό θετικό υπόλοιπο των αποταμιευτικών λογαριασμών· δεν δεσμεύουν ξεχωριστά χρήματα.</small></div><Button type="button" variant="secondary" onClick={()=>startGoal()}><Plus size={15}/> Νέος στόχος</Button></div>
     <div className="savings-goals-head"><span>Στόχος</span><span>Πρόοδος</span><span>Αποταμιευμένα</span><span>Στόχος</span><span>Προθεσμία</span></div>
     <div className="savings-goal-row supported"><div><span className="savings-goal-icon"><PiggyBank/></span><span><b>Μηνιαίος ρυθμός αποταμίευσης</b><small>{target>0?`${Math.round(target*100)}% των πραγματικών εσόδων`:'Δεν έχει οριστεί ποσοστιαίος στόχος'}</small></span></div><div className="savings-goal-progress"><span><i style={{width:`${goalProgress}%`}}/></span><b>{Math.round(goalProgress)}%</b></div><strong>{money.format(flow.saving)}</strong><strong>{targetTotal>0?money.format(targetTotal):'—'}</strong><span>{goalDeadline}</span></div>
-    {goalRows.length?goalRows.map(({goal,progress:personalProgress})=><div className="savings-goal-row personal" key={goal.id}><div><span className="savings-goal-icon"><PiggyBank/></span><span><b>{goal.name}</b><small><Button type="button" variant="ghost" className="savings-goal-inline-action" onClick={()=>startGoal(goal)}>Επεξεργασία</Button><Button type="button" variant="ghost" className="savings-goal-inline-action danger" onClick={()=>setDeleteGoalTarget(goal)}>Διαγραφή</Button></small></span></div><div className="savings-goal-progress"><span><i style={{width:`${personalProgress}%`}}/></span><b>{Math.round(personalProgress)}%</b></div><strong>{money.format(savingsBalance)}</strong><strong>{money.format(goal.targetAmount)}</strong><span>{goal.targetDate?shortDate(goal.targetDate):'Χωρίς προθεσμία'}</span></div>):<div className="savings-goal-row placeholder"><div><span className="savings-goal-icon muted"><PiggyBank/></span><span><b>Δεν έχεις προσωπικό στόχο</b><small>Πρόσθεσε ποσό και, προαιρετικά, ημερομηνία στόχου.</small></span></div><div className="savings-goal-progress muted"><span/><b>—</b></div><strong>{money.format(savingsBalance)}</strong><strong>—</strong><span>—</span></div>}
+    {goalRows.length?visibleGoalRows.map(({goal,progress:personalProgress})=><div className="savings-goal-row personal" key={goal.id}><div><span className="savings-goal-icon"><PiggyBank/></span><span><b>{goal.name}</b><small><Button type="button" variant="ghost" className="savings-goal-inline-action" onClick={()=>startGoal(goal)}>Επεξεργασία</Button><Button type="button" variant="ghost" className="savings-goal-inline-action danger" onClick={()=>setDeleteGoalTarget(goal)}>Διαγραφή</Button></small></span></div><div className="savings-goal-progress"><span><i style={{width:`${personalProgress}%`}}/></span><b>{Math.round(personalProgress)}%</b></div><strong>{money.format(savingsBalance)}</strong><strong>{money.format(goal.targetAmount)}</strong><span>{goal.targetDate?shortDate(goal.targetDate):'Χωρίς προθεσμία'}</span></div>):<div className="savings-goal-row placeholder"><div><span className="savings-goal-icon muted"><PiggyBank/></span><span><b>Δεν έχεις προσωπικό στόχο</b><small>Πρόσθεσε ποσό και, προαιρετικά, ημερομηνία στόχου.</small></span></div><div className="savings-goal-progress muted"><span/><b>—</b></div><strong>{money.format(savingsBalance)}</strong><strong>—</strong><span>—</span></div>}{goalRows.length>visibleGoalRows.length?<Button type="button" variant="secondary" className="savings-goals-more" onClick={()=>setGoalLimit(limit=>limit+12)}>Προβολή περισσότερων · {goalRows.length-visibleGoalRows.length} ακόμη</Button>:null}
   </section>;
 
   const start=(next:SavingSource)=>{

@@ -1,4 +1,5 @@
 import express from 'express';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { accessTokenAal, assertMutationSessionOrigin, beginTotpEnrollment, challengeTotp, clearSessionCookies, clearSessionCookiesIfCookie, getTotpFactors, requireSession, revokeSession, setSessionCookies, signInWithPassword, verifyTotp } from './auth.js';
@@ -11,14 +12,15 @@ import { ApiError, assertSameOrigin, handleApi, methodNotAllowed, requestHeader,
 import { backupStore, DATA_SOURCE, isOwner, moveHistory, readHistory, readStore, writeMutableState, writeStore } from './storage.js';
 import { parseMutableWrite } from './stateValidation.js';
 import { isAuthRejection } from './upstream.js';
-import { validateFinanceData } from './validation.js';
+import { validateCompleteFinanceData } from './financeDataValidation.js';
 import { MAX_FINANCE_DOCUMENT_BYTES } from '../src/lib/limits.js';
+import { isValidDateStamp } from '../src/lib/dateOnly.js';
 
 const app = express();
 app.disable('x-powered-by');
 
 if (process.env.RHEOMIQ_DESKTOP === '1') {
-  const csp = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://upload.wikimedia.org https://www.neukunden-rabatt.de https://cdn.asp.events; font-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'self' blob:";
+  const csp = "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://ahsukppxwaiagampsuzb.supabase.co; font-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'self' blob:";
   app.use((_req, res, next) => {
     res.setHeader('Content-Security-Policy', csp);
     res.setHeader('Referrer-Policy', 'no-referrer');
@@ -182,7 +184,7 @@ app.post('/api/history', (req, res) => void handleApi(res, async () => {
   assertMutationSessionOrigin(req, session);
   const action = req.body?.action;
   const updatedAt = req.body?.updatedAt;
-  if ((action !== 'undo' && action !== 'redo') || typeof updatedAt !== 'string' || !updatedAt || updatedAt.length > 64 || Object.keys(req.body || {}).some(key => key !== 'action' && key !== 'updatedAt')) {
+  if ((action !== 'undo' && action !== 'redo') || !isValidDateStamp(updatedAt) || Object.keys(req.body || {}).some(key => key !== 'action' && key !== 'updatedAt')) {
     throw new ApiError(400, 'INVALID_HISTORY', 'The change-history request is invalid.');
   }
   sendJson(res, 200, await moveHistory(action, updatedAt, requestHeader(req, 'if-match'), requestHeader(req, 'x-rheomiq-history-generation'), session.accessToken));
@@ -195,7 +197,7 @@ app.post('/api/import', (req, res) => void handleApi(res, async () => {
   const session = await requireFinanceSession(req, res);
   assertMutationSessionOrigin(req, session);
   if (requestHeader(req, 'x-rheomiq-confirm-import') !== 'replace') throw new ApiError(400, 'IMPORT_CONFIRMATION_REQUIRED', 'Import confirmation is required.');
-  validateFinanceData(req.body);
+  validateCompleteFinanceData(req.body);
   sendJson(res, 200, await writeStore(req.body, undefined, true, session.accessToken));
 }));
 
@@ -205,7 +207,23 @@ app.post('/api/backup', (req, res) => void handleApi(res, async () => {
   sendJson(res, 200, { path: await backupStore(session.accessToken) });
 }));
 
-app.all('/api/{*splat}', (_req, res) => methodNotAllowed(res, []));
+// Known API paths must stay distinguishable from unknown routes. Vercel handlers
+// already return 405 for unsupported methods; keep the local/Windows host aligned.
+const knownMethodFallback = (route: string, allowed: string[]) => {
+  app.all(route, (_req, res) => void handleApi(res, async () => methodNotAllowed(res, allowed)));
+};
+knownMethodFallback('/api/health', ['GET']);
+knownMethodFallback('/api/auth/login', ['POST']);
+knownMethodFallback('/api/auth/session', ['GET']);
+knownMethodFallback('/api/auth/mfa/enroll', ['POST']);
+knownMethodFallback('/api/auth/mfa/verify', ['POST']);
+knownMethodFallback('/api/auth/logout', ['POST']);
+knownMethodFallback('/api/data', ['GET', 'PUT']);
+knownMethodFallback('/api/history', ['GET', 'POST']);
+knownMethodFallback('/api/import', ['POST']);
+knownMethodFallback('/api/backup', ['POST']);
+
+app.all('/api/{*splat}', (_req, res) => void handleApi(res, async () => { throw new ApiError(404, 'API_NOT_FOUND', 'API route not found.'); }));
 
 const serveDist = process.argv.includes('--serve-dist') || process.env.NODE_ENV === 'production';
 if (serveDist) {
@@ -213,7 +231,14 @@ if (serveDist) {
   const here = path.dirname(fileURLToPath(import.meta.url));
   const dist = configuredDist ? path.resolve(configuredDist) : path.resolve(here, '..', 'dist');
   app.use(express.static(dist, { index: false, maxAge: '1h' }));
-  app.get('/{*splat}', (_req, res) => res.sendFile(path.join(dist, 'index.html')));
+  const indexFile = path.join(dist, 'index.html');
+  const notFoundFile = path.join(dist, '404.html');
+  // Load the two HTML documents once at startup so repeated document requests do
+  // not perform filesystem work inside request handlers.
+  const indexDocument = readFileSync(indexFile, 'utf8');
+  const notFoundDocument = readFileSync(notFoundFile, 'utf8');
+  app.get(['/', '/index.html'], (_req, res) => res.type('html').send(indexDocument));
+  app.get('/{*splat}', (_req, res) => res.status(404).type('html').send(notFoundDocument));
 }
 
 const port = Number(process.env.RHEOMIQ_PORT || process.env.PORT || 4317);

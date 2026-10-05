@@ -1,4 +1,7 @@
+import { apiRequest } from './api.js';
 import { assertValidIban, isValidIban } from './iban';
+import { notifyAuthExpired } from './authExpiry';
+import { userErrorMessage } from './userMessage';
 
 type AccountMetadataRecord={accountId:string;iban:string|null;revision:number;updatedAt:string};
 type AccountMetadataSnapshot={loaded:boolean;loading:boolean;records:Record<string,AccountMetadataRecord>;error:string|null};
@@ -19,8 +22,7 @@ export function getAccountMetadataSnapshot(){return snapshot}
 export function subscribeAccountMetadata(listener:()=>void){listeners.add(listener);return()=>{listeners.delete(listener)}}
 
 function errorMessage(error:unknown){
-  if(error instanceof Error&&error.message)return error.message;
-  return 'Τα στοιχεία λογαριασμών δεν είναι διαθέσιμα αυτή τη στιγμή.';
+  return userErrorMessage(error,'Τα στοιχεία λογαριασμών δεν είναι διαθέσιμα αυτή τη στιγμή.');
 }
 
 function parseRecord(value:unknown):AccountMetadataRecord|null{
@@ -33,6 +35,13 @@ function parseRecord(value:unknown):AccountMetadataRecord|null{
 }
 
 async function json(response:Response){return response.json().catch(()=>null) as Promise<any>}
+function requestError(response:Response,payload:any,fallback:string){
+  const code=typeof payload?.code==='string'?payload.code:'ACCOUNT_METADATA_ERROR';
+  notifyAuthExpired(response.status,code);
+  if(code==='DEVICE_ACCESS_REVOKED'||code==='AUTH_REQUIRED')return new Error('Η πρόσβαση αυτής της συσκευής έχει λήξει. Συνδέσου ξανά και ολοκλήρωσε την επαλήθευση MFA.');
+  const candidate=typeof payload?.error==='string'?payload.error:typeof payload?.message==='string'?payload.message:'';
+  return new Error(userErrorMessage(candidate?new Error(candidate):null,fallback));
+}
 
 export async function refreshAccountMetadata(force=false){
   if(snapshot.loaded&&!force)return snapshot;
@@ -41,9 +50,9 @@ export async function refreshAccountMetadata(force=false){
   publish({...snapshot,loading:true,error:null});
   pending=(async()=>{
     try{
-      const response=await fetch('/api/account-metadata',{credentials:'same-origin',headers:{accept:'application/json'},cache:'no-store'});
+      const response=await apiRequest('/api/account-metadata',{credentials:'same-origin',headers:{accept:'application/json'},cache:'no-store'});
       const payload=await json(response);
-      if(!response.ok)throw new Error(payload?.message||'Δεν ήταν δυνατή η φόρτωση των IBAN.');
+      if(!response.ok)throw requestError(response,payload,'Δεν ήταν δυνατή η φόρτωση των IBAN.');
       const records:Array<unknown>=Array.isArray(payload?.records)?payload.records:[];
       const byId:Record<string,AccountMetadataRecord>={};
       for(const value of records){const record=parseRecord(value);if(record)byId[record.accountId]=record}
@@ -62,14 +71,14 @@ export async function saveAccountMetadata(accountId:string,iban:string|null){
     publish({...snapshot,loaded:true,loading:false,error:null,records:{...snapshot.records,[accountId]:record}});
     return record;
   }
-  const response=await fetch('/api/account-metadata',{
+  const response=await apiRequest('/api/account-metadata',{
     method:'PUT',credentials:'same-origin',headers:{'content-type':'application/json',accept:'application/json','if-match':String(current?.revision??0)},
     body:JSON.stringify({accountId,iban:normalized}),
   });
   const payload=await json(response);
   if(!response.ok){
     if(response.status===409){await refreshAccountMetadata(true);throw new Error('Το IBAN άλλαξε από άλλη συσκευή. Φορτώθηκε η νεότερη τιμή· έλεγξέ την και δοκίμασε ξανά.');}
-    throw new Error(payload?.message||'Δεν ήταν δυνατή η αποθήκευση του IBAN.');
+    throw requestError(response,payload,'Δεν ήταν δυνατή η αποθήκευση του IBAN.');
   }
   const record=parseRecord(payload?.record);
   if(!record||record.accountId!==accountId)throw new Error('Η απάντηση αποθήκευσης IBAN δεν είναι έγκυρη.');

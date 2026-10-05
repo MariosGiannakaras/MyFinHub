@@ -19,10 +19,13 @@ All notable MyFinHub changes are recorded here. Release artifacts remain availab
 
 ### Security & reliability
 
-- Updated the Windows desktop host from Electron 43.3.0 to 43.7.0 on the existing 43.x line to clear newly published high-severity advisories and restore the required npm audit gate.
 - Patched the desktop build graph's transitive `undici` resolutions to 7.30.0 and 6.29.0 within their existing parent ranges, clearing newly published high-severity advisories without changing parent toolchain versions.
-- Extended rendered regression coverage for Dashboard account metadata, touch targets, long-name layout, copy interaction geometry, responsive overflow and deferred chart steady state.
 - Routed automated Dependabot updates for root npm, API npm and GitHub Actions through canonical `develop`, preserving `main` as release-only.
+- Re-run Windows Desktop, First Run and Clean Launch validation when `.nvmrc` changes, because the packaged backend runtime copies the active Node executable.
+- Added weekly `/desktop` Dependabot coverage targeting `develop`, grouping minor/patch desktop-toolchain updates while leaving Electron major upgrades manual.
+- Re-run Windows Desktop and Clean Launch validation when root Vite/TypeScript build configuration or packaging build-helper scripts change, so installer-affecting build inputs cannot bypass Windows gates.
+- Updated the Windows desktop host from Electron 43.3.0 to 43.7.0 on the existing 43.x line to clear newly published high-severity advisories and restore the required npm audit gate.
+- Extended rendered regression coverage for Dashboard account metadata, touch targets, long-name layout, copy interaction geometry, responsive overflow and deferred chart steady state.
 
 ## [1.3.0] - 2026-09-28
 

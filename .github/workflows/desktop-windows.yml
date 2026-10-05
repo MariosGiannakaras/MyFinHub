@@ -3,6 +3,7 @@ name: Windows Desktop
 on:
   pull_request:
     branches: [main, develop]
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
       - desktop/**
       - server/**
@@ -12,9 +13,16 @@ on:
       - public/manifest.webmanifest
       - assets/branding/myfinhub/**
       - index.html
+      - vite.config.ts
+      - tsconfig.json
+      - tsconfig.app.json
+      - tsconfig.node.json
+      - scripts/sync-ocr-assets.mjs
+      - scripts/bundle-budget.mjs
       - tests/desktop-source.test.ts
       - package.json
       - package-lock.json
+      - .nvmrc
       - .env.example
       - INSTALL_MYFINHUB_WINDOWS.bat
       - .github/workflows/desktop-windows.yml
@@ -30,9 +38,16 @@ on:
       - public/manifest.webmanifest
       - assets/branding/myfinhub/**
       - index.html
+      - vite.config.ts
+      - tsconfig.json
+      - tsconfig.app.json
+      - tsconfig.node.json
+      - scripts/sync-ocr-assets.mjs
+      - scripts/bundle-budget.mjs
       - tests/desktop-source.test.ts
       - package.json
       - package-lock.json
+      - .nvmrc
       - .env.example
       - INSTALL_MYFINHUB_WINDOWS.bat
       - .github/workflows/desktop-windows.yml
@@ -45,6 +60,7 @@ concurrency:
 jobs:
   validate:
     name: validate-windows-package
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
     runs-on: windows-latest
     timeout-minutes: 30
     permissions:
@@ -63,11 +79,10 @@ jobs:
         run: |
           npm ci
           npm ci --prefix desktop
-      - name: Validate application and desktop boundary
+      - name: Validate desktop boundary and dependencies
         shell: pwsh
         run: |
           npm audit --audit-level=high
-          npm run check
           npm run desktop:check
       - name: Validate Windows PowerShell fallback bootstrap
         shell: pwsh
@@ -77,9 +92,12 @@ jobs:
           CARD_VAULT_KEY: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
           CARD_VAULT_KEY_VERSION: "1"
         run: powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File desktop\install-windows.ps1 -ValidateOnly
+      - name: Build production frontend once
+        shell: pwsh
+        run: npm run build
       - name: Build unpacked Windows desktop app
         shell: pwsh
-        run: npm run desktop:pack
+        run: npm run desktop:pack:from-dist
       - name: Smoke packaged executable and hidden local backend
         shell: pwsh
         env:
@@ -96,13 +114,45 @@ jobs:
             $_.Name -ieq 'node.exe' -and $_.CommandLine -match 'server\.mjs' -and $_.CommandLine -match '--serve-dist'
           } | Select-Object -First 1
           if (-not $backend) { throw 'Packaged MyFinHub local backend server.mjs --serve-dist process is not running.' }
+
           taskkill /PID $process.Id /T /F | Out-Null
+          Get-CimInstance Win32_Process | Where-Object { $_.Name -ieq 'node.exe' -and $_.CommandLine -match 'server\.mjs' -and $_.CommandLine -match '--serve-dist' } | ForEach-Object {
+            Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
+          }
+
+          $probePath = Join-Path $PWD 'release\desktop\titlebar-window-state.json'
+          Remove-Item -LiteralPath $probePath -Force -ErrorAction SilentlyContinue
+          $env:MYFINHUB_WINDOW_STATE_PROBE_PATH = $probePath
+          try {
+            $probeProcess = Start-Process -FilePath $exe -PassThru
+            for ($attempt = 0; $attempt -lt 80 -and -not (Test-Path -LiteralPath $probePath); $attempt++) {
+              Start-Sleep -Milliseconds 250
+              $probeProcess.Refresh()
+              if ($probeProcess.HasExited -and -not (Test-Path -LiteralPath $probePath)) { break }
+            }
+          } finally {
+            Remove-Item Env:MYFINHUB_WINDOW_STATE_PROBE_PATH -ErrorAction SilentlyContinue
+          }
+          if (-not (Test-Path -LiteralPath $probePath)) { throw 'Packaged Electron BrowserWindow state probe did not produce evidence.' }
+          $probe = Get-Content -LiteralPath $probePath -Raw | ConvertFrom-Json
+          if (-not $probe.passed -or -not $probe.maximized -or -not $probe.restored) {
+            throw "Packaged Electron BrowserWindow state probe failed: $($probe | ConvertTo-Json -Compress)"
+          }
+          if ($probe.size[0] -ne 1100 -or $probe.size[1] -ne 760) {
+            throw "Packaged Electron resize probe returned unexpected size: $($probe.size -join 'x')."
+          }
+          Write-Host "Electron BrowserWindow title-bar states validated: maximize=$($probe.maximized), restore=$($probe.restored), resize=$($probe.size -join 'x')."
+          if (-not $probeProcess.HasExited) {
+            Wait-Process -Id $probeProcess.Id -Timeout 10 -ErrorAction SilentlyContinue
+            $probeProcess.Refresh()
+          }
+          if (-not $probeProcess.HasExited) { taskkill /PID $probeProcess.Id /T /F | Out-Null }
           Get-CimInstance Win32_Process | Where-Object { $_.Name -ieq 'node.exe' -and $_.CommandLine -match 'server\.mjs' -and $_.CommandLine -match '--serve-dist' } | ForEach-Object {
             Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
           }
       - name: Build interactive NSIS Setup
         shell: pwsh
-        run: npm run desktop:dist
+        run: npm run desktop:dist:from-dist
       - name: Install, launch and uninstall NSIS package
         shell: pwsh
         env:
@@ -255,7 +305,7 @@ jobs:
           npm ci --prefix desktop
           npm run build
           npm run desktop:check
-          npm run desktop:dist
+          npm run desktop:dist:from-dist
       - name: Verify installer integrity and optional Authenticode
         shell: pwsh
         run: |

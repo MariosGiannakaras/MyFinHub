@@ -82,9 +82,9 @@
   .searchbox input,.money-input input{font-size:16px!important}
 
   /* Consistent practical touch targets and press feedback after native tap highlight suppression. */
-  .text-button,.loan-actions button,.settings-actions button,.settings-draft-actions button,.report-eye,.secondary,.save-button{min-height:44px}
-  .mobile-nav button,.mobile-more-menu button,.text-button,.loan-actions button,.settings-actions button,.settings-draft-actions button,.report-eye,.secondary,.save-button{touch-action:manipulation}
-  .mobile-nav button:active,.mobile-more-menu button:active,.text-button:active,.loan-actions button:active,.settings-actions button:active,.settings-draft-actions button:active,.report-eye:active,.secondary:active,.save-button:active{transform:translateY(1px) scale(.98)}
+  .text-button,.loan-actions button,.settings-actions button,.report-eye,.secondary,.save-button{min-height:44px}
+  .mobile-nav button,.mobile-more-menu button,.text-button,.loan-actions button,.settings-actions button,.report-eye,.secondary,.save-button{touch-action:manipulation}
+  .mobile-nav button:active,.mobile-more-menu button:active,.text-button:active,.loan-actions button:active,.settings-actions button:active:active,.report-eye:active,.secondary:active,.save-button:active{transform:translateY(1px) scale(.98)}
 
   /* On phones the already-accessible textual category list is the primary report visualization. */
   .panel:has(.category-icon-list)>div[aria-hidden="true"]{display:none}

@@ -58,7 +58,7 @@ describe('cross-page UI consistency contracts',()=>{
     expect(theme).toContain('.top-actions button,.icon-button,.settings-actions button,.secondary');
     expect(theme).toContain('input,select,textarea{background-color:var(--control-bg)!important');
     expect(theme).toContain("'--focus'");
-    expect(sharedControls).toContain(':where(button,input,select,textarea,summary,[tabindex]):focus-visible{outline:0;box-shadow:var(--focus)!important}');
+    expect(sharedControls).toContain(':where(button,a[href],input,select,textarea,summary,[tabindex]):focus-visible{outline:0;box-shadow:var(--focus)!important}');
     expect(hardening).not.toContain('button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible');
     expect(hardening).toContain('min-height:44px');
   });

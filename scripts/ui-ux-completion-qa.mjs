@@ -30,7 +30,9 @@ try{
   await viewport(1440,1000);
   console.log('Completion QA: delete, undo and redo');
   await navigate({page:'transactions'},'Συναλλαγές');
-  assert(await c.eval("document.body.textContent.includes('Freddo espresso')"),'fixture event exists before delete');
+  const foundFixture=await c.call("function(){const input=[...document.querySelectorAll('input[aria-label=\"Αναζήτηση συναλλαγών\"]')].find(node=>node.getClientRects().length>0);if(!input)return false;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')?.set;setter?.call(input,'Freddo espresso');input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));return true}");
+  assert(foundFixture,'visible transaction search is available for fixture targeting');
+  await waitFor("function(){return document.body.textContent.includes('Freddo espresso')}",'fixture event visible after search');
   await clickAria('Διαγραφή Freddo espresso');
   await waitFor("function(){return Boolean(document.querySelector('[role=alertdialog]'))}",'transaction delete confirmation');
   assert(await c.eval("(document.querySelector('[role=alertdialog]')?.textContent||'').includes('Διαγραφή κίνησης')"),'delete confirmation is app-owned dialog');

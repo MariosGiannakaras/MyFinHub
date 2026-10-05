@@ -9,7 +9,7 @@ describe('Settings Data source contract',()=>{
   it('preserves the canonical backup and import safety semantics',()=>{
     expect(settings).toContain('MAX_FINANCE_DOCUMENT_BYTES');
     expect(settings).toContain('await onBackup()');
-    expect(settings).toContain('downloadJson(data)');
+    expect(settings).toContain('downloadJson({...data,state:{...data.state,settings:cloneSettings(draftRef.current)}})');
     expect(settings).toContain('await onImport(JSON.parse(await file.text()))');
     expect(settings).toContain('tone="destructive"');
     expect(settings).toContain('δημιουργηθεί αυτόματο αντίγραφο ασφαλείας');
@@ -39,4 +39,10 @@ describe('Settings Data source contract',()=>{
     expect(css).not.toMatch(/\.settings-data[^\{]*button\s*\{[^}]*background:/s);
     expect(css).not.toMatch(/\.settings-data[^\{]*input\s*\{/s);
   });
+
+  it('downloads the latest auto-saved Settings draft after the serialized backup completes',()=>{
+    expect(settings).toContain('await onBackup()');
+    expect(settings).toContain('downloadJson({...data,state:{...data.state,settings:cloneSettings(draftRef.current)}})');
+  });
+
 });

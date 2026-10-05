@@ -12,10 +12,31 @@ const LOCAL_OCR = {
 } as const;
 
 let workerPromise: Promise<Worker> | null = null;
+let assetCheckPromise:Promise<void>|null=null;
 let activeProgress: ((progress: ReceiptOcrProgress) => void) | null = null;
 let generation = 0;
 
+async function assertLocalOcrAssets(){
+  assetCheckPromise??=(async()=>{
+    let response:Response;
+    try{response=await fetch('/ocr/asset-manifest.json',{credentials:'same-origin',cache:'no-store'})}
+    catch{throw new Error('OCR_ASSETS_UNAVAILABLE')}
+    if(!response.ok)throw new Error('OCR_ASSETS_UNAVAILABLE');
+    const manifest=await response.json().catch(()=>null) as {tesseractJs?:string;languages?:unknown;coreFiles?:unknown}|null;
+    const languages=Array.isArray(manifest?.languages)?manifest.languages.filter((value):value is string=>typeof value==='string'):[];
+    const coreFiles=Array.isArray(manifest?.coreFiles)?manifest.coreFiles.filter((value):value is string=>typeof value==='string'):[];
+    if(manifest?.tesseractJs!=='7.0.0'||!languages.includes('ell')||!languages.includes('eng')||!coreFiles.length)throw new Error('OCR_ASSETS_UNAVAILABLE');
+    const required=['/ocr/worker.min.js','/ocr/lang/ell.traineddata.gz','/ocr/lang/eng.traineddata.gz',...coreFiles.map(name=>`/ocr/core/${name}`)];
+    const probes=await Promise.all(required.map(async path=>{
+      try{return (await fetch(path,{method:'HEAD',credentials:'same-origin',cache:'no-store'})).ok}catch{return false}
+    }));
+    if(probes.some(ok=>!ok))throw new Error('OCR_ASSETS_UNAVAILABLE');
+  })().catch(error=>{assetCheckPromise=null;throw error});
+  return assetCheckPromise;
+}
+
 async function buildWorker() {
+  await assertLocalOcrAssets();
   const ownGeneration = generation;
   const worker = await createWorker(['ell', 'eng'], OEM.LSTM_ONLY, {
     ...LOCAL_OCR,
@@ -32,7 +53,12 @@ async function buildWorker() {
 }
 
 async function getWorker() {
-  if (!workerPromise) workerPromise = buildWorker();
+  if (!workerPromise) {
+    workerPromise = buildWorker().catch((error) => {
+      workerPromise = null;
+      throw error;
+    });
+  }
   return workerPromise;
 }
 
