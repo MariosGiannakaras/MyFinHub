@@ -105,6 +105,23 @@ describe('final UI reuse and orphan audit',()=>{
     expect(transactionCss).toContain('.transactions-approved-filters .transaction-filter-pass-through{display:contents}');
     expect(transactionCss).toContain('.transactions-approved .mobile-row-actions .transaction-mobile-action{min-height:44px}');
   });
+  it('keeps the audit remediation on shared dense tokens and existing primitives instead of page-local microtype systems',()=>{
+    const shared=read('src/styles/ui-hardening-foundations.css');
+    expect(shared).toContain('--ux-dense-data-size:12px');
+    expect(shared).toContain('--ux-dense-label-size:11px');
+    for(const file of [
+      'src/styles/dashboard-desktop-fidelity.css',
+      'src/styles/transactions-approved.css',
+      'src/styles/savings-desktop-composition.css',
+      'src/styles/loans-approved-target.css',
+      'src/styles/recurring-approved-target.css',
+      'src/pages/ReportsPage.css',
+    ]){
+      const source=read(file);
+      expect(source,\`${file} should consume the shared dense type roles\`).toMatch(/var\\(--ux-dense-(?:data|label)-size\\)/);
+    }
+  });
+
   it('has no orphaned production component modules',()=>{
     const allSource=walk('src',/\.(?:ts|tsx)$/);
     const referenced=new Set<string>();
