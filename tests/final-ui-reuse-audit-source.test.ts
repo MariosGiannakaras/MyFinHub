@@ -118,7 +118,7 @@ describe('final UI reuse and orphan audit',()=>{
       'src/pages/ReportsPage.css',
     ]){
       const source=read(file);
-      expect(source,\`${file} should consume the shared dense type roles\`).toMatch(/var\\(--ux-dense-(?:data|label)-size\\)/);
+      expect(source,`${file} should consume the shared dense type roles`).toMatch(/var\(--ux-dense-(?:data|label)-size\)/);
     }
   });
 
