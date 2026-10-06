@@ -76,7 +76,7 @@ If a post-deploy defect requires rollback:
 - do not reset, rewrite or roll back production finance history;
 - keep the production Supabase migration ledger intact unless a separately reviewed forward-recovery plan proves a database action is necessary.
 
-Windows v1.3.0 remains the stable desktop rollback baseline until the v1.4.0 tag workflow has successfully published and its installer/checksum identity has been independently verified.
+Windows v1.4.0 is now the stable desktop release. The verified v1.3.0 web/Windows state is retained as the documented non-destructive rollback baseline.
 
 ## Windows release identity
 
