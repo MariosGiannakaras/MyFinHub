@@ -13,6 +13,11 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/MariosGiannakaras/MyFinHub/actions/workflows/dependency-health.yml"><img alt="Dependency health" src="https://github.com/MariosGiannakaras/MyFinHub/actions/workflows/dependency-health.yml/badge.svg"></a>
+  <a href="https://github.com/MariosGiannakaras/MyFinHub/actions/workflows/dependency-health.yml"><img alt="Run dependency check" src="https://img.shields.io/badge/Run%20dependency%20check-Manual-475569?style=flat-square"></a>
+</p>
+
+<p align="center">
   <a href="https://github.com/MariosGiannakaras/MyFinHub/releases">All releases</a> ·
   <a href="https://github.com/MariosGiannakaras/MyFinHub/releases/tag/myfinhub-v1.3.0">v1.3.0 release notes</a> ·
   <a href="https://github.com/MariosGiannakaras/MyFinHub/releases/download/myfinhub-v1.3.0/MyFinHub-Setup-1.3.0-x64.exe.sha256">SHA-256</a> ·
@@ -111,6 +116,12 @@ MyFinHub preserves the existing Excel-derived behavior rather than flattening ev
 - **Scheduled items:** do not affect current balances until explicit completion.
 - **Legacy confirmation:** suggested reinterpretations affect reports only after explicit confirmation.
 
+## Dependency and runtime health
+
+MyFinHub has a read-only dependency/runtime health workflow that runs monthly and can also be started manually. It checks the Node.js LTS baseline, direct npm dependencies in the root/API/desktop packages, and npm security-audit results. It never edits manifests or lockfiles and never deploys anything.
+
+The **Dependency health** badge above shows the latest workflow result. **Run dependency check** opens the workflow page; use **Run workflow** there for an on-demand check. When review is required, the workflow creates or refreshes one maintenance notification issue containing the detailed report; when the repository is clean, it closes that notification issue.
+
 ## Updates and release history
 
 The current stable Windows release is **v1.3.0**. See [`CHANGELOG.md`](CHANGELOG.md) for released and unreleased changes, or browse the complete [GitHub Releases](https://github.com/MariosGiannakaras/MyFinHub/releases) history.
@@ -124,7 +135,7 @@ Desktop releases use `myfinhub-v<version>` tags. The Windows release workflow ve
 
 ### Requirements
 
-Node.js 22 LTS.
+Node.js 24 LTS.
 
 ### Web/local server
 
