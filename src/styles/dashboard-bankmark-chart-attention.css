@@ -26,6 +26,15 @@ html[data-theme="dark"] .bank-brand-mark.bankmark-viva .bank-logo-image{filter:n
 .dashboard-approved .account-tone-2 .approved-account-icon .bank-brand-mark[data-bank-logo-source="local-image"]::before{content:none!important}
 .dashboard-approved .account-tone-2 .approved-account-icon .bank-brand-mark[data-bank-logo-source="local-image"] .bank-logo-image{width:29px;height:26px}
 
+html[data-theme="dark"] .dashboard-approved .approved-account-icon .bank-brand-mark[data-bank-logo-source="local-image"],
+html[data-theme="dark"] .dashboard-approved .approved-account-icon .bank-brand-mark[data-bank-logo-source="provider-storage"]{
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+}
+html[data-theme="dark"] .dashboard-approved .approved-account-icon .bank-brand-mark[data-bank-logo-source="local-image"]::before,
+html[data-theme="dark"] .dashboard-approved .approved-account-icon .bank-brand-mark[data-bank-logo-source="provider-storage"]::before{content:none!important}
+
 .dashboard-approved .approved-account-chart{
   isolation:isolate;
   overflow:hidden;
