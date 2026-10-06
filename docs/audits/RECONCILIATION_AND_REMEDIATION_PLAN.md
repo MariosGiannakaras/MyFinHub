@@ -2,7 +2,7 @@
 
 Issue: #503 — Reconcile latest UI audits and remediate owner-intent drift
 
-**Implementations 1/5 completed · Sub-implementations 5/30 completed**
+**Implementations 1/5 completed · Sub-implementations 6/30 completed**
 
 ## Purpose
 
@@ -77,6 +77,17 @@ Do not create a fix unless the remediation head reproduces the condition:
 
 If reproduced, add the item to the confirmed matrix and update #503 before implementation.
 
+### Fresh exact-head conditional review — closed
+
+Direct inspection of the successful ready-review rendered artifact from the pre-residual-fix review head closed all four reproduce-before-change observations without promoting speculative defects:
+
+- **C-01 NOT REPRODUCED** — `shell-dashboard-long-account-desktop.png` shows the long payroll account title wrapping within its two-line contract without title/balance, IBAN/body or action overlap.
+- **C-02 NOT REPRODUCED as a distinct overlap defect** — Dashboard provider-mark captures show no icon/text collision. The separate confirmed R-05 synthetic bright halo/surface was reproduced and remains a normal remediation finding.
+- **C-03 NOT REPRODUCED** — `light-savings-desktop.png` shows the source → destination transfer route and arrow vertically aligned.
+- **C-04 NOT REPRODUCED** — inspected Credit evidence, including the Piraeus card state, does not show a broader foreground-color failure beyond the already confirmed R-11 identity-caption readability issue.
+
+The same direct inspection found three residual confirmed defects that must be rerun on the corrected head before visual acceptance: R-05 still showed a synthetic bright provider-mark halo on dark Dashboard surfaces; the Dashboard upcoming-payments region was blank in the empty fixture; and the Transactions desktop date-range filters crowded/overlapped. The branch now carries targeted fixes plus regression coverage for these residuals. This checkpoint does **not** complete the broader focused-evidence or final visual-sweep items.
+
 ## Implementation plan
 
 ### 1. Reconciliation and owner-contract hardening — 5/5
@@ -108,10 +119,10 @@ If reproduced, add the item to the confirmed matrix and update #503 before imple
 - [ ] Recurring wide-screen composition/actions/readability.
 - [ ] Reports/Settings page-specific polish not already solved at the shared layer.
 
-### 4. Post-fix visual verification — 0/6
+### 4. Post-fix visual verification — 1/6
 
 - [ ] Generate focused exact-head desktop captures for every changed finding and inspect directly.
-- [ ] Reproduce/close every conditional C-* observation with evidence.
+- [x] Reproduce/close every conditional C-* observation with evidence.
 - [ ] Generate exact-head desktop/tablet/mobile × Light/Dark coverage for all primary routes and critical changed states.
 - [ ] Inspect every distinct visible/interactive pattern; skip repeated identical shared-component instances only after structural equivalence is proven.
 - [ ] Explicitly verify owner-intent/product hierarchy in the rendered UI, not merely technical containment.
