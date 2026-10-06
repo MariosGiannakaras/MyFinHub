@@ -62,5 +62,8 @@
     "typescript": "^7.0.2",
     "vite": "^8.3.0",
     "vitest": "^4.1.11"
+  },
+  "overrides": {
+    "shell-quote": "1.12.0"
   }
 }
