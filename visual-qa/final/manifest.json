@@ -2,19 +2,19 @@
   "schemaVersion": 1,
   "kind": "final-release-screenshots",
   "appVersion": "v1.3.0",
-  "captureId": "2026-10-05_004640__6c89d923",
-  "generatedAt": "2026-10-04T21:46:40.253Z",
+  "captureId": "2026-10-06_183318__9068f100",
+  "generatedAt": "2026-10-06T15:33:18.580Z",
   "timeZone": "Europe/Athens",
   "source": {
-    "sha": "6c89d9231ec30df5e580d982b926f838eb29a828",
-    "shortSha": "6c89d923",
-    "branch": "develop"
+    "sha": "9068f1005f6cc432fe62773b5436aa6a61193d7f",
+    "shortSha": "9068f100",
+    "branch": "fix/503-ui-ux-owner-intent-remediation"
   },
   "baseUrl": "http://127.0.0.1:5173/qa.html",
   "count": 216,
   "screenshots": [
     {
-      "file": "visual-qa/final/dashboard/v1.3.0__2026-10-05_004640__page-light__desktop-1440x1000.png",
+      "file": "visual-qa/final/dashboard/v1.3.0__2026-10-06_183318__page-light__desktop-1440x1000.png",
       "surface": "dashboard",
       "state": "page",
       "theme": "light",
@@ -29,7 +29,7 @@
       }
     },
     {
-      "file": "visual-qa/final/transactions/v1.3.0__2026-10-05_004640__page-light__desktop-1440x1000.png",
+      "file": "visual-qa/final/transactions/v1.3.0__2026-10-06_183318__page-light__desktop-1440x1000.png",
       "surface": "transactions",
       "state": "page",
       "theme": "light",
@@ -44,7 +44,7 @@
       }
     },
     {
-      "file": "visual-qa/final/savings/v1.3.0__2026-10-05_004640__page-light__desktop-1440x1000.png",
+      "file": "visual-qa/final/savings/v1.3.0__2026-10-06_183318__page-light__desktop-1440x1000.png",
       "surface": "savings",
       "state": "page",
       "theme": "light",
@@ -55,11 +55,11 @@
       },
       "capture": {
         "width": 1425,
-        "height": 1022
+        "height": 1017
       }
     },
     {
-      "file": "visual-qa/final/cards/v1.3.0__2026-10-05_004640__page-light__desktop-1440x1000.png",
+      "file": "visual-qa/final/cards/v1.3.0__2026-10-06_183318__page-light__desktop-1440x1000.png",
       "surface": "cards",
       "state": "page",
       "theme": "light",
@@ -70,11 +70,11 @@
       },
       "capture": {
         "width": 1425,
-        "height": 1073
+        "height": 1075
       }
     },
     {
-      "file": "visual-qa/final/credit/v1.3.0__2026-10-05_004640__page-light__desktop-1440x1000.png",
+      "file": "visual-qa/final/credit/v1.3.0__2026-10-06_183318__page-light__desktop-1440x1000.png",
       "surface": "credit",
       "state": "page",
       "theme": "light",
@@ -89,7 +89,7 @@
       }
     },
     {
-      "file": "visual-qa/final/loans/v1.3.0__2026-10-05_004640__page-light__desktop-1440x1000.png",
+      "file": "visual-qa/final/loans/v1.3.0__2026-10-06_183318__page-light__desktop-1440x1000.png",
       "surface": "loans",
       "state": "page",
       "theme": "light",
@@ -104,7 +104,7 @@
       }
     },
     {
-      "file": "visual-qa/final/lending/v1.3.0__2026-10-05_004640__page-light__desktop-1440x1000.png",
+      "file": "visual-qa/final/lending/v1.3.0__2026-10-06_183318__page-light__desktop-1440x1000.png",
       "surface": "lending",
       "state": "page",
       "theme": "light",
@@ -119,7 +119,7 @@
       }
     },
     {
-      "file": "visual-qa/final/recurring/v1.3.0__2026-10-05_004640__page-light__desktop-1440x1000.png",
+      "file": "visual-qa/final/recurring/v1.3.0__2026-10-06_183318__page-light__desktop-1440x1000.png",
       "surface": "recurring",
       "state": "page",
       "theme": "light",
@@ -134,7 +134,7 @@
       }
     },
     {
-      "file": "visual-qa/final/planning/v1.3.0__2026-10-05_004640__page-light__desktop-1440x1000.png",
+      "file": "visual-qa/final/planning/v1.3.0__2026-10-06_183318__page-light__desktop-1440x1000.png",
       "surface": "planning",
       "state": "page",
       "theme": "light",
@@ -149,7 +149,7 @@
       }
     },
     {
-      "file": "visual-qa/final/attention/v1.3.0__2026-10-05_004640__page-light__desktop-1440x1000.png",
+      "file": "visual-qa/final/attention/v1.3.0__2026-10-06_183318__page-light__desktop-1440x1000.png",
       "surface": "attention",
       "state": "page",
       "theme": "light",
@@ -164,7 +164,7 @@
       }
     },
     {
-      "file": "visual-qa/final/reports/v1.3.0__2026-10-05_004640__page-light__desktop-1440x1000.png",
+      "file": "visual-qa/final/reports/v1.3.0__2026-10-06_183318__page-light__desktop-1440x1000.png",
       "surface": "reports",
       "state": "page",
       "theme": "light",
@@ -175,11 +175,11 @@
       },
       "capture": {
         "width": 1425,
-        "height": 2282
+        "height": 2246
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__page-light__desktop-1440x1000.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__page-light__desktop-1440x1000.png",
       "surface": "settings",
       "state": "page",
       "theme": "light",
@@ -194,7 +194,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__tab-profile-light__desktop-1440x1000.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__tab-profile-light__desktop-1440x1000.png",
       "surface": "settings",
       "state": "tab-profile",
       "theme": "light",
@@ -209,7 +209,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__tab-accounts-light__desktop-1440x1000.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__tab-accounts-light__desktop-1440x1000.png",
       "surface": "settings",
       "state": "tab-accounts",
       "theme": "light",
@@ -224,7 +224,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__provider-editor-details-light__desktop-1440x1000.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__provider-editor-details-light__desktop-1440x1000.png",
       "surface": "settings",
       "state": "provider-editor-details",
       "theme": "light",
@@ -239,7 +239,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__provider-editor-branding-light__desktop-1440x1000.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__provider-editor-branding-light__desktop-1440x1000.png",
       "surface": "settings",
       "state": "provider-editor-branding",
       "theme": "light",
@@ -254,7 +254,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__provider-asset-picker-light__desktop-1440x1000.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__provider-asset-picker-light__desktop-1440x1000.png",
       "surface": "settings",
       "state": "provider-asset-picker",
       "theme": "light",
@@ -269,7 +269,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__account-editor-new-light__desktop-1440x1000.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__account-editor-new-light__desktop-1440x1000.png",
       "surface": "settings",
       "state": "account-editor-new",
       "theme": "light",
@@ -284,7 +284,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__tab-categories-light__desktop-1440x1000.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__tab-categories-light__desktop-1440x1000.png",
       "surface": "settings",
       "state": "tab-categories",
       "theme": "light",
@@ -299,7 +299,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__category-rename-editor-light__desktop-1440x1000.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__category-rename-editor-light__desktop-1440x1000.png",
       "surface": "settings",
       "state": "category-rename-editor",
       "theme": "light",
@@ -314,7 +314,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__tab-icons-light__desktop-1440x1000.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__tab-icons-light__desktop-1440x1000.png",
       "surface": "settings",
       "state": "tab-icons",
       "theme": "light",
@@ -329,7 +329,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__icon-selection-editor-light__desktop-1440x1000.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__icon-selection-editor-light__desktop-1440x1000.png",
       "surface": "settings",
       "state": "icon-selection-editor",
       "theme": "light",
@@ -344,7 +344,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__tab-rules-light__desktop-1440x1000.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__tab-rules-light__desktop-1440x1000.png",
       "surface": "settings",
       "state": "tab-rules",
       "theme": "light",
@@ -359,7 +359,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__rule-editor-new-light__desktop-1440x1000.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__rule-editor-new-light__desktop-1440x1000.png",
       "surface": "settings",
       "state": "rule-editor-new",
       "theme": "light",
@@ -374,7 +374,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__tab-data-light__desktop-1440x1000.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__tab-data-light__desktop-1440x1000.png",
       "surface": "settings",
       "state": "tab-data",
       "theme": "light",
@@ -389,7 +389,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__data-import-confirmation-light__desktop-1440x1000.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__data-import-confirmation-light__desktop-1440x1000.png",
       "surface": "settings",
       "state": "data-import-confirmation",
       "theme": "light",
@@ -404,7 +404,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__login-light__desktop-1440x1000.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__login-light__desktop-1440x1000.png",
       "surface": "auth",
       "state": "login",
       "theme": "light",
@@ -419,7 +419,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__login-error-light__desktop-1440x1000.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__login-error-light__desktop-1440x1000.png",
       "surface": "auth",
       "state": "login-error",
       "theme": "light",
@@ -434,7 +434,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__auth-unavailable-light__desktop-1440x1000.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__auth-unavailable-light__desktop-1440x1000.png",
       "surface": "auth",
       "state": "auth-unavailable",
       "theme": "light",
@@ -449,7 +449,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__session-expired-light__desktop-1440x1000.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__session-expired-light__desktop-1440x1000.png",
       "surface": "auth",
       "state": "session-expired",
       "theme": "light",
@@ -464,7 +464,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__session-revoked-light__desktop-1440x1000.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__session-revoked-light__desktop-1440x1000.png",
       "surface": "auth",
       "state": "session-revoked",
       "theme": "light",
@@ -479,7 +479,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__mfa-light__desktop-1440x1000.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__mfa-light__desktop-1440x1000.png",
       "surface": "auth",
       "state": "mfa",
       "theme": "light",
@@ -494,7 +494,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__mfa-error-light__desktop-1440x1000.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__mfa-error-light__desktop-1440x1000.png",
       "surface": "auth",
       "state": "mfa-error",
       "theme": "light",
@@ -509,7 +509,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__mfa-enroll-light__desktop-1440x1000.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__mfa-enroll-light__desktop-1440x1000.png",
       "surface": "auth",
       "state": "mfa-enroll",
       "theme": "light",
@@ -524,7 +524,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__mfa-enroll-error-light__desktop-1440x1000.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__mfa-enroll-error-light__desktop-1440x1000.png",
       "surface": "auth",
       "state": "mfa-enroll-error",
       "theme": "light",
@@ -539,7 +539,7 @@
       }
     },
     {
-      "file": "visual-qa/final/not-found/v1.3.0__2026-10-05_004640__route-404-light__desktop-1440x1000.png",
+      "file": "visual-qa/final/not-found/v1.3.0__2026-10-06_183318__route-404-light__desktop-1440x1000.png",
       "surface": "not-found",
       "state": "route-404",
       "theme": "light",
@@ -554,7 +554,7 @@
       }
     },
     {
-      "file": "visual-qa/final/dashboard/v1.3.0__2026-10-05_004640__page-light__tablet-834x1112.png",
+      "file": "visual-qa/final/dashboard/v1.3.0__2026-10-06_183318__page-light__tablet-834x1112.png",
       "surface": "dashboard",
       "state": "page",
       "theme": "light",
@@ -569,7 +569,7 @@
       }
     },
     {
-      "file": "visual-qa/final/transactions/v1.3.0__2026-10-05_004640__page-light__tablet-834x1112.png",
+      "file": "visual-qa/final/transactions/v1.3.0__2026-10-06_183318__page-light__tablet-834x1112.png",
       "surface": "transactions",
       "state": "page",
       "theme": "light",
@@ -580,11 +580,11 @@
       },
       "capture": {
         "width": 819,
-        "height": 1152
+        "height": 1842
       }
     },
     {
-      "file": "visual-qa/final/savings/v1.3.0__2026-10-05_004640__page-light__tablet-834x1112.png",
+      "file": "visual-qa/final/savings/v1.3.0__2026-10-06_183318__page-light__tablet-834x1112.png",
       "surface": "savings",
       "state": "page",
       "theme": "light",
@@ -595,11 +595,11 @@
       },
       "capture": {
         "width": 819,
-        "height": 1746
+        "height": 1717
       }
     },
     {
-      "file": "visual-qa/final/cards/v1.3.0__2026-10-05_004640__page-light__tablet-834x1112.png",
+      "file": "visual-qa/final/cards/v1.3.0__2026-10-06_183318__page-light__tablet-834x1112.png",
       "surface": "cards",
       "state": "page",
       "theme": "light",
@@ -614,7 +614,7 @@
       }
     },
     {
-      "file": "visual-qa/final/credit/v1.3.0__2026-10-05_004640__page-light__tablet-834x1112.png",
+      "file": "visual-qa/final/credit/v1.3.0__2026-10-06_183318__page-light__tablet-834x1112.png",
       "surface": "credit",
       "state": "page",
       "theme": "light",
@@ -625,11 +625,11 @@
       },
       "capture": {
         "width": 819,
-        "height": 2036
+        "height": 2039
       }
     },
     {
-      "file": "visual-qa/final/loans/v1.3.0__2026-10-05_004640__page-light__tablet-834x1112.png",
+      "file": "visual-qa/final/loans/v1.3.0__2026-10-06_183318__page-light__tablet-834x1112.png",
       "surface": "loans",
       "state": "page",
       "theme": "light",
@@ -644,7 +644,7 @@
       }
     },
     {
-      "file": "visual-qa/final/lending/v1.3.0__2026-10-05_004640__page-light__tablet-834x1112.png",
+      "file": "visual-qa/final/lending/v1.3.0__2026-10-06_183318__page-light__tablet-834x1112.png",
       "surface": "lending",
       "state": "page",
       "theme": "light",
@@ -659,7 +659,7 @@
       }
     },
     {
-      "file": "visual-qa/final/recurring/v1.3.0__2026-10-05_004640__page-light__tablet-834x1112.png",
+      "file": "visual-qa/final/recurring/v1.3.0__2026-10-06_183318__page-light__tablet-834x1112.png",
       "surface": "recurring",
       "state": "page",
       "theme": "light",
@@ -674,7 +674,7 @@
       }
     },
     {
-      "file": "visual-qa/final/planning/v1.3.0__2026-10-05_004640__page-light__tablet-834x1112.png",
+      "file": "visual-qa/final/planning/v1.3.0__2026-10-06_183318__page-light__tablet-834x1112.png",
       "surface": "planning",
       "state": "page",
       "theme": "light",
@@ -689,7 +689,7 @@
       }
     },
     {
-      "file": "visual-qa/final/attention/v1.3.0__2026-10-05_004640__page-light__tablet-834x1112.png",
+      "file": "visual-qa/final/attention/v1.3.0__2026-10-06_183318__page-light__tablet-834x1112.png",
       "surface": "attention",
       "state": "page",
       "theme": "light",
@@ -704,7 +704,7 @@
       }
     },
     {
-      "file": "visual-qa/final/reports/v1.3.0__2026-10-05_004640__page-light__tablet-834x1112.png",
+      "file": "visual-qa/final/reports/v1.3.0__2026-10-06_183318__page-light__tablet-834x1112.png",
       "surface": "reports",
       "state": "page",
       "theme": "light",
@@ -715,11 +715,11 @@
       },
       "capture": {
         "width": 819,
-        "height": 4782
+        "height": 4852
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__page-light__tablet-834x1112.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__page-light__tablet-834x1112.png",
       "surface": "settings",
       "state": "page",
       "theme": "light",
@@ -730,11 +730,11 @@
       },
       "capture": {
         "width": 819,
-        "height": 2051
+        "height": 2070
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__tab-profile-light__tablet-834x1112.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__tab-profile-light__tablet-834x1112.png",
       "surface": "settings",
       "state": "tab-profile",
       "theme": "light",
@@ -749,7 +749,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__tab-accounts-light__tablet-834x1112.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__tab-accounts-light__tablet-834x1112.png",
       "surface": "settings",
       "state": "tab-accounts",
       "theme": "light",
@@ -764,7 +764,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__provider-editor-details-light__tablet-834x1112.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__provider-editor-details-light__tablet-834x1112.png",
       "surface": "settings",
       "state": "provider-editor-details",
       "theme": "light",
@@ -779,7 +779,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__provider-editor-branding-light__tablet-834x1112.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__provider-editor-branding-light__tablet-834x1112.png",
       "surface": "settings",
       "state": "provider-editor-branding",
       "theme": "light",
@@ -794,7 +794,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__provider-asset-picker-light__tablet-834x1112.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__provider-asset-picker-light__tablet-834x1112.png",
       "surface": "settings",
       "state": "provider-asset-picker",
       "theme": "light",
@@ -809,7 +809,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__account-editor-new-light__tablet-834x1112.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__account-editor-new-light__tablet-834x1112.png",
       "surface": "settings",
       "state": "account-editor-new",
       "theme": "light",
@@ -824,7 +824,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__tab-categories-light__tablet-834x1112.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__tab-categories-light__tablet-834x1112.png",
       "surface": "settings",
       "state": "tab-categories",
       "theme": "light",
@@ -839,7 +839,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__category-rename-editor-light__tablet-834x1112.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__category-rename-editor-light__tablet-834x1112.png",
       "surface": "settings",
       "state": "category-rename-editor",
       "theme": "light",
@@ -854,7 +854,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__tab-icons-light__tablet-834x1112.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__tab-icons-light__tablet-834x1112.png",
       "surface": "settings",
       "state": "tab-icons",
       "theme": "light",
@@ -869,7 +869,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__icon-selection-editor-light__tablet-834x1112.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__icon-selection-editor-light__tablet-834x1112.png",
       "surface": "settings",
       "state": "icon-selection-editor",
       "theme": "light",
@@ -884,7 +884,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__tab-rules-light__tablet-834x1112.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__tab-rules-light__tablet-834x1112.png",
       "surface": "settings",
       "state": "tab-rules",
       "theme": "light",
@@ -899,7 +899,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__rule-editor-new-light__tablet-834x1112.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__rule-editor-new-light__tablet-834x1112.png",
       "surface": "settings",
       "state": "rule-editor-new",
       "theme": "light",
@@ -914,7 +914,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__tab-data-light__tablet-834x1112.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__tab-data-light__tablet-834x1112.png",
       "surface": "settings",
       "state": "tab-data",
       "theme": "light",
@@ -929,7 +929,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__data-import-confirmation-light__tablet-834x1112.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__data-import-confirmation-light__tablet-834x1112.png",
       "surface": "settings",
       "state": "data-import-confirmation",
       "theme": "light",
@@ -944,7 +944,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__login-light__tablet-834x1112.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__login-light__tablet-834x1112.png",
       "surface": "auth",
       "state": "login",
       "theme": "light",
@@ -959,7 +959,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__login-error-light__tablet-834x1112.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__login-error-light__tablet-834x1112.png",
       "surface": "auth",
       "state": "login-error",
       "theme": "light",
@@ -974,7 +974,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__auth-unavailable-light__tablet-834x1112.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__auth-unavailable-light__tablet-834x1112.png",
       "surface": "auth",
       "state": "auth-unavailable",
       "theme": "light",
@@ -989,7 +989,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__session-expired-light__tablet-834x1112.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__session-expired-light__tablet-834x1112.png",
       "surface": "auth",
       "state": "session-expired",
       "theme": "light",
@@ -1004,7 +1004,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__session-revoked-light__tablet-834x1112.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__session-revoked-light__tablet-834x1112.png",
       "surface": "auth",
       "state": "session-revoked",
       "theme": "light",
@@ -1019,7 +1019,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__mfa-light__tablet-834x1112.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__mfa-light__tablet-834x1112.png",
       "surface": "auth",
       "state": "mfa",
       "theme": "light",
@@ -1034,7 +1034,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__mfa-error-light__tablet-834x1112.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__mfa-error-light__tablet-834x1112.png",
       "surface": "auth",
       "state": "mfa-error",
       "theme": "light",
@@ -1049,7 +1049,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__mfa-enroll-light__tablet-834x1112.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__mfa-enroll-light__tablet-834x1112.png",
       "surface": "auth",
       "state": "mfa-enroll",
       "theme": "light",
@@ -1064,7 +1064,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__mfa-enroll-error-light__tablet-834x1112.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__mfa-enroll-error-light__tablet-834x1112.png",
       "surface": "auth",
       "state": "mfa-enroll-error",
       "theme": "light",
@@ -1079,7 +1079,7 @@
       }
     },
     {
-      "file": "visual-qa/final/not-found/v1.3.0__2026-10-05_004640__route-404-light__tablet-834x1112.png",
+      "file": "visual-qa/final/not-found/v1.3.0__2026-10-06_183318__route-404-light__tablet-834x1112.png",
       "surface": "not-found",
       "state": "route-404",
       "theme": "light",
@@ -1094,7 +1094,7 @@
       }
     },
     {
-      "file": "visual-qa/final/dashboard/v1.3.0__2026-10-05_004640__page-light__mobile-375x812.png",
+      "file": "visual-qa/final/dashboard/v1.3.0__2026-10-06_183318__page-light__mobile-375x812.png",
       "surface": "dashboard",
       "state": "page",
       "theme": "light",
@@ -1109,7 +1109,7 @@
       }
     },
     {
-      "file": "visual-qa/final/transactions/v1.3.0__2026-10-05_004640__page-light__mobile-375x812.png",
+      "file": "visual-qa/final/transactions/v1.3.0__2026-10-06_183318__page-light__mobile-375x812.png",
       "surface": "transactions",
       "state": "page",
       "theme": "light",
@@ -1120,11 +1120,11 @@
       },
       "capture": {
         "width": 375,
-        "height": 3370
+        "height": 3367
       }
     },
     {
-      "file": "visual-qa/final/savings/v1.3.0__2026-10-05_004640__page-light__mobile-375x812.png",
+      "file": "visual-qa/final/savings/v1.3.0__2026-10-06_183318__page-light__mobile-375x812.png",
       "surface": "savings",
       "state": "page",
       "theme": "light",
@@ -1135,11 +1135,11 @@
       },
       "capture": {
         "width": 375,
-        "height": 2151
+        "height": 2156
       }
     },
     {
-      "file": "visual-qa/final/cards/v1.3.0__2026-10-05_004640__page-light__mobile-375x812.png",
+      "file": "visual-qa/final/cards/v1.3.0__2026-10-06_183318__page-light__mobile-375x812.png",
       "surface": "cards",
       "state": "page",
       "theme": "light",
@@ -1154,7 +1154,7 @@
       }
     },
     {
-      "file": "visual-qa/final/credit/v1.3.0__2026-10-05_004640__page-light__mobile-375x812.png",
+      "file": "visual-qa/final/credit/v1.3.0__2026-10-06_183318__page-light__mobile-375x812.png",
       "surface": "credit",
       "state": "page",
       "theme": "light",
@@ -1169,7 +1169,7 @@
       }
     },
     {
-      "file": "visual-qa/final/loans/v1.3.0__2026-10-05_004640__page-light__mobile-375x812.png",
+      "file": "visual-qa/final/loans/v1.3.0__2026-10-06_183318__page-light__mobile-375x812.png",
       "surface": "loans",
       "state": "page",
       "theme": "light",
@@ -1184,7 +1184,7 @@
       }
     },
     {
-      "file": "visual-qa/final/lending/v1.3.0__2026-10-05_004640__page-light__mobile-375x812.png",
+      "file": "visual-qa/final/lending/v1.3.0__2026-10-06_183318__page-light__mobile-375x812.png",
       "surface": "lending",
       "state": "page",
       "theme": "light",
@@ -1199,7 +1199,7 @@
       }
     },
     {
-      "file": "visual-qa/final/recurring/v1.3.0__2026-10-05_004640__page-light__mobile-375x812.png",
+      "file": "visual-qa/final/recurring/v1.3.0__2026-10-06_183318__page-light__mobile-375x812.png",
       "surface": "recurring",
       "state": "page",
       "theme": "light",
@@ -1210,11 +1210,11 @@
       },
       "capture": {
         "width": 375,
-        "height": 1326
+        "height": 1370
       }
     },
     {
-      "file": "visual-qa/final/planning/v1.3.0__2026-10-05_004640__page-light__mobile-375x812.png",
+      "file": "visual-qa/final/planning/v1.3.0__2026-10-06_183318__page-light__mobile-375x812.png",
       "surface": "planning",
       "state": "page",
       "theme": "light",
@@ -1229,7 +1229,7 @@
       }
     },
     {
-      "file": "visual-qa/final/attention/v1.3.0__2026-10-05_004640__page-light__mobile-375x812.png",
+      "file": "visual-qa/final/attention/v1.3.0__2026-10-06_183318__page-light__mobile-375x812.png",
       "surface": "attention",
       "state": "page",
       "theme": "light",
@@ -1240,11 +1240,11 @@
       },
       "capture": {
         "width": 375,
-        "height": 2514
+        "height": 2515
       }
     },
     {
-      "file": "visual-qa/final/reports/v1.3.0__2026-10-05_004640__page-light__mobile-375x812.png",
+      "file": "visual-qa/final/reports/v1.3.0__2026-10-06_183318__page-light__mobile-375x812.png",
       "surface": "reports",
       "state": "page",
       "theme": "light",
@@ -1255,11 +1255,11 @@
       },
       "capture": {
         "width": 375,
-        "height": 4416
+        "height": 4557
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__page-light__mobile-375x812.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__page-light__mobile-375x812.png",
       "surface": "settings",
       "state": "page",
       "theme": "light",
@@ -1270,11 +1270,11 @@
       },
       "capture": {
         "width": 375,
-        "height": 3049
+        "height": 3032
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__tab-profile-light__mobile-375x812.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__tab-profile-light__mobile-375x812.png",
       "surface": "settings",
       "state": "tab-profile",
       "theme": "light",
@@ -1285,11 +1285,11 @@
       },
       "capture": {
         "width": 375,
-        "height": 1735
+        "height": 1732
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__tab-accounts-light__mobile-375x812.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__tab-accounts-light__mobile-375x812.png",
       "surface": "settings",
       "state": "tab-accounts",
       "theme": "light",
@@ -1300,11 +1300,11 @@
       },
       "capture": {
         "width": 375,
-        "height": 3742
+        "height": 3645
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__provider-editor-details-light__mobile-375x812.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__provider-editor-details-light__mobile-375x812.png",
       "surface": "settings",
       "state": "provider-editor-details",
       "theme": "light",
@@ -1319,7 +1319,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__provider-editor-branding-light__mobile-375x812.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__provider-editor-branding-light__mobile-375x812.png",
       "surface": "settings",
       "state": "provider-editor-branding",
       "theme": "light",
@@ -1334,7 +1334,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__provider-asset-picker-light__mobile-375x812.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__provider-asset-picker-light__mobile-375x812.png",
       "surface": "settings",
       "state": "provider-asset-picker",
       "theme": "light",
@@ -1349,7 +1349,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__account-editor-new-light__mobile-375x812.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__account-editor-new-light__mobile-375x812.png",
       "surface": "settings",
       "state": "account-editor-new",
       "theme": "light",
@@ -1364,7 +1364,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__tab-categories-light__mobile-375x812.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__tab-categories-light__mobile-375x812.png",
       "surface": "settings",
       "state": "tab-categories",
       "theme": "light",
@@ -1375,11 +1375,11 @@
       },
       "capture": {
         "width": 375,
-        "height": 7351
+        "height": 7345
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__category-rename-editor-light__mobile-375x812.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__category-rename-editor-light__mobile-375x812.png",
       "surface": "settings",
       "state": "category-rename-editor",
       "theme": "light",
@@ -1390,11 +1390,11 @@
       },
       "capture": {
         "width": 375,
-        "height": 7533
+        "height": 7527
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__tab-icons-light__mobile-375x812.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__tab-icons-light__mobile-375x812.png",
       "surface": "settings",
       "state": "tab-icons",
       "theme": "light",
@@ -1405,11 +1405,11 @@
       },
       "capture": {
         "width": 375,
-        "height": 3032
+        "height": 2999
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__icon-selection-editor-light__mobile-375x812.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__icon-selection-editor-light__mobile-375x812.png",
       "surface": "settings",
       "state": "icon-selection-editor",
       "theme": "light",
@@ -1420,11 +1420,11 @@
       },
       "capture": {
         "width": 375,
-        "height": 3772
+        "height": 3737
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__tab-rules-light__mobile-375x812.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__tab-rules-light__mobile-375x812.png",
       "surface": "settings",
       "state": "tab-rules",
       "theme": "light",
@@ -1439,7 +1439,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__rule-editor-new-light__mobile-375x812.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__rule-editor-new-light__mobile-375x812.png",
       "surface": "settings",
       "state": "rule-editor-new",
       "theme": "light",
@@ -1454,7 +1454,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__tab-data-light__mobile-375x812.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__tab-data-light__mobile-375x812.png",
       "surface": "settings",
       "state": "tab-data",
       "theme": "light",
@@ -1469,7 +1469,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__data-import-confirmation-light__mobile-375x812.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__data-import-confirmation-light__mobile-375x812.png",
       "surface": "settings",
       "state": "data-import-confirmation",
       "theme": "light",
@@ -1484,7 +1484,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__login-light__mobile-375x812.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__login-light__mobile-375x812.png",
       "surface": "auth",
       "state": "login",
       "theme": "light",
@@ -1499,7 +1499,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__login-error-light__mobile-375x812.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__login-error-light__mobile-375x812.png",
       "surface": "auth",
       "state": "login-error",
       "theme": "light",
@@ -1514,7 +1514,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__auth-unavailable-light__mobile-375x812.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__auth-unavailable-light__mobile-375x812.png",
       "surface": "auth",
       "state": "auth-unavailable",
       "theme": "light",
@@ -1529,7 +1529,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__session-expired-light__mobile-375x812.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__session-expired-light__mobile-375x812.png",
       "surface": "auth",
       "state": "session-expired",
       "theme": "light",
@@ -1544,7 +1544,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__session-revoked-light__mobile-375x812.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__session-revoked-light__mobile-375x812.png",
       "surface": "auth",
       "state": "session-revoked",
       "theme": "light",
@@ -1559,7 +1559,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__mfa-light__mobile-375x812.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__mfa-light__mobile-375x812.png",
       "surface": "auth",
       "state": "mfa",
       "theme": "light",
@@ -1574,7 +1574,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__mfa-error-light__mobile-375x812.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__mfa-error-light__mobile-375x812.png",
       "surface": "auth",
       "state": "mfa-error",
       "theme": "light",
@@ -1589,7 +1589,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__mfa-enroll-light__mobile-375x812.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__mfa-enroll-light__mobile-375x812.png",
       "surface": "auth",
       "state": "mfa-enroll",
       "theme": "light",
@@ -1604,7 +1604,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__mfa-enroll-error-light__mobile-375x812.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__mfa-enroll-error-light__mobile-375x812.png",
       "surface": "auth",
       "state": "mfa-enroll-error",
       "theme": "light",
@@ -1619,7 +1619,7 @@
       }
     },
     {
-      "file": "visual-qa/final/not-found/v1.3.0__2026-10-05_004640__route-404-light__mobile-375x812.png",
+      "file": "visual-qa/final/not-found/v1.3.0__2026-10-06_183318__route-404-light__mobile-375x812.png",
       "surface": "not-found",
       "state": "route-404",
       "theme": "light",
@@ -1634,7 +1634,7 @@
       }
     },
     {
-      "file": "visual-qa/final/dashboard/v1.3.0__2026-10-05_004640__page-dark__desktop-1440x1000.png",
+      "file": "visual-qa/final/dashboard/v1.3.0__2026-10-06_183318__page-dark__desktop-1440x1000.png",
       "surface": "dashboard",
       "state": "page",
       "theme": "dark",
@@ -1649,7 +1649,7 @@
       }
     },
     {
-      "file": "visual-qa/final/transactions/v1.3.0__2026-10-05_004640__page-dark__desktop-1440x1000.png",
+      "file": "visual-qa/final/transactions/v1.3.0__2026-10-06_183318__page-dark__desktop-1440x1000.png",
       "surface": "transactions",
       "state": "page",
       "theme": "dark",
@@ -1664,7 +1664,7 @@
       }
     },
     {
-      "file": "visual-qa/final/savings/v1.3.0__2026-10-05_004640__page-dark__desktop-1440x1000.png",
+      "file": "visual-qa/final/savings/v1.3.0__2026-10-06_183318__page-dark__desktop-1440x1000.png",
       "surface": "savings",
       "state": "page",
       "theme": "dark",
@@ -1675,11 +1675,11 @@
       },
       "capture": {
         "width": 1425,
-        "height": 1022
+        "height": 1017
       }
     },
     {
-      "file": "visual-qa/final/cards/v1.3.0__2026-10-05_004640__page-dark__desktop-1440x1000.png",
+      "file": "visual-qa/final/cards/v1.3.0__2026-10-06_183318__page-dark__desktop-1440x1000.png",
       "surface": "cards",
       "state": "page",
       "theme": "dark",
@@ -1690,11 +1690,11 @@
       },
       "capture": {
         "width": 1425,
-        "height": 1073
+        "height": 1075
       }
     },
     {
-      "file": "visual-qa/final/credit/v1.3.0__2026-10-05_004640__page-dark__desktop-1440x1000.png",
+      "file": "visual-qa/final/credit/v1.3.0__2026-10-06_183318__page-dark__desktop-1440x1000.png",
       "surface": "credit",
       "state": "page",
       "theme": "dark",
@@ -1709,7 +1709,7 @@
       }
     },
     {
-      "file": "visual-qa/final/loans/v1.3.0__2026-10-05_004640__page-dark__desktop-1440x1000.png",
+      "file": "visual-qa/final/loans/v1.3.0__2026-10-06_183318__page-dark__desktop-1440x1000.png",
       "surface": "loans",
       "state": "page",
       "theme": "dark",
@@ -1724,7 +1724,7 @@
       }
     },
     {
-      "file": "visual-qa/final/lending/v1.3.0__2026-10-05_004640__page-dark__desktop-1440x1000.png",
+      "file": "visual-qa/final/lending/v1.3.0__2026-10-06_183318__page-dark__desktop-1440x1000.png",
       "surface": "lending",
       "state": "page",
       "theme": "dark",
@@ -1739,7 +1739,7 @@
       }
     },
     {
-      "file": "visual-qa/final/recurring/v1.3.0__2026-10-05_004640__page-dark__desktop-1440x1000.png",
+      "file": "visual-qa/final/recurring/v1.3.0__2026-10-06_183318__page-dark__desktop-1440x1000.png",
       "surface": "recurring",
       "state": "page",
       "theme": "dark",
@@ -1754,7 +1754,7 @@
       }
     },
     {
-      "file": "visual-qa/final/planning/v1.3.0__2026-10-05_004640__page-dark__desktop-1440x1000.png",
+      "file": "visual-qa/final/planning/v1.3.0__2026-10-06_183318__page-dark__desktop-1440x1000.png",
       "surface": "planning",
       "state": "page",
       "theme": "dark",
@@ -1769,7 +1769,7 @@
       }
     },
     {
-      "file": "visual-qa/final/attention/v1.3.0__2026-10-05_004640__page-dark__desktop-1440x1000.png",
+      "file": "visual-qa/final/attention/v1.3.0__2026-10-06_183318__page-dark__desktop-1440x1000.png",
       "surface": "attention",
       "state": "page",
       "theme": "dark",
@@ -1784,7 +1784,7 @@
       }
     },
     {
-      "file": "visual-qa/final/reports/v1.3.0__2026-10-05_004640__page-dark__desktop-1440x1000.png",
+      "file": "visual-qa/final/reports/v1.3.0__2026-10-06_183318__page-dark__desktop-1440x1000.png",
       "surface": "reports",
       "state": "page",
       "theme": "dark",
@@ -1795,11 +1795,11 @@
       },
       "capture": {
         "width": 1425,
-        "height": 2282
+        "height": 2246
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__page-dark__desktop-1440x1000.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__page-dark__desktop-1440x1000.png",
       "surface": "settings",
       "state": "page",
       "theme": "dark",
@@ -1814,7 +1814,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__tab-profile-dark__desktop-1440x1000.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__tab-profile-dark__desktop-1440x1000.png",
       "surface": "settings",
       "state": "tab-profile",
       "theme": "dark",
@@ -1829,7 +1829,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__tab-accounts-dark__desktop-1440x1000.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__tab-accounts-dark__desktop-1440x1000.png",
       "surface": "settings",
       "state": "tab-accounts",
       "theme": "dark",
@@ -1844,7 +1844,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__provider-editor-details-dark__desktop-1440x1000.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__provider-editor-details-dark__desktop-1440x1000.png",
       "surface": "settings",
       "state": "provider-editor-details",
       "theme": "dark",
@@ -1859,7 +1859,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__provider-editor-branding-dark__desktop-1440x1000.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__provider-editor-branding-dark__desktop-1440x1000.png",
       "surface": "settings",
       "state": "provider-editor-branding",
       "theme": "dark",
@@ -1874,7 +1874,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__provider-asset-picker-dark__desktop-1440x1000.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__provider-asset-picker-dark__desktop-1440x1000.png",
       "surface": "settings",
       "state": "provider-asset-picker",
       "theme": "dark",
@@ -1889,7 +1889,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__account-editor-new-dark__desktop-1440x1000.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__account-editor-new-dark__desktop-1440x1000.png",
       "surface": "settings",
       "state": "account-editor-new",
       "theme": "dark",
@@ -1904,7 +1904,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__tab-categories-dark__desktop-1440x1000.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__tab-categories-dark__desktop-1440x1000.png",
       "surface": "settings",
       "state": "tab-categories",
       "theme": "dark",
@@ -1919,7 +1919,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__category-rename-editor-dark__desktop-1440x1000.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__category-rename-editor-dark__desktop-1440x1000.png",
       "surface": "settings",
       "state": "category-rename-editor",
       "theme": "dark",
@@ -1934,7 +1934,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__tab-icons-dark__desktop-1440x1000.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__tab-icons-dark__desktop-1440x1000.png",
       "surface": "settings",
       "state": "tab-icons",
       "theme": "dark",
@@ -1949,7 +1949,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__icon-selection-editor-dark__desktop-1440x1000.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__icon-selection-editor-dark__desktop-1440x1000.png",
       "surface": "settings",
       "state": "icon-selection-editor",
       "theme": "dark",
@@ -1964,7 +1964,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__tab-rules-dark__desktop-1440x1000.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__tab-rules-dark__desktop-1440x1000.png",
       "surface": "settings",
       "state": "tab-rules",
       "theme": "dark",
@@ -1979,7 +1979,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__rule-editor-new-dark__desktop-1440x1000.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__rule-editor-new-dark__desktop-1440x1000.png",
       "surface": "settings",
       "state": "rule-editor-new",
       "theme": "dark",
@@ -1994,7 +1994,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__tab-data-dark__desktop-1440x1000.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__tab-data-dark__desktop-1440x1000.png",
       "surface": "settings",
       "state": "tab-data",
       "theme": "dark",
@@ -2009,7 +2009,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__data-import-confirmation-dark__desktop-1440x1000.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__data-import-confirmation-dark__desktop-1440x1000.png",
       "surface": "settings",
       "state": "data-import-confirmation",
       "theme": "dark",
@@ -2024,7 +2024,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__login-dark__desktop-1440x1000.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__login-dark__desktop-1440x1000.png",
       "surface": "auth",
       "state": "login",
       "theme": "dark",
@@ -2039,7 +2039,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__login-error-dark__desktop-1440x1000.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__login-error-dark__desktop-1440x1000.png",
       "surface": "auth",
       "state": "login-error",
       "theme": "dark",
@@ -2054,7 +2054,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__auth-unavailable-dark__desktop-1440x1000.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__auth-unavailable-dark__desktop-1440x1000.png",
       "surface": "auth",
       "state": "auth-unavailable",
       "theme": "dark",
@@ -2069,7 +2069,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__session-expired-dark__desktop-1440x1000.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__session-expired-dark__desktop-1440x1000.png",
       "surface": "auth",
       "state": "session-expired",
       "theme": "dark",
@@ -2084,7 +2084,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__session-revoked-dark__desktop-1440x1000.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__session-revoked-dark__desktop-1440x1000.png",
       "surface": "auth",
       "state": "session-revoked",
       "theme": "dark",
@@ -2099,7 +2099,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__mfa-dark__desktop-1440x1000.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__mfa-dark__desktop-1440x1000.png",
       "surface": "auth",
       "state": "mfa",
       "theme": "dark",
@@ -2114,7 +2114,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__mfa-error-dark__desktop-1440x1000.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__mfa-error-dark__desktop-1440x1000.png",
       "surface": "auth",
       "state": "mfa-error",
       "theme": "dark",
@@ -2129,7 +2129,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__mfa-enroll-dark__desktop-1440x1000.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__mfa-enroll-dark__desktop-1440x1000.png",
       "surface": "auth",
       "state": "mfa-enroll",
       "theme": "dark",
@@ -2144,7 +2144,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__mfa-enroll-error-dark__desktop-1440x1000.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__mfa-enroll-error-dark__desktop-1440x1000.png",
       "surface": "auth",
       "state": "mfa-enroll-error",
       "theme": "dark",
@@ -2159,7 +2159,7 @@
       }
     },
     {
-      "file": "visual-qa/final/not-found/v1.3.0__2026-10-05_004640__route-404-dark__desktop-1440x1000.png",
+      "file": "visual-qa/final/not-found/v1.3.0__2026-10-06_183318__route-404-dark__desktop-1440x1000.png",
       "surface": "not-found",
       "state": "route-404",
       "theme": "dark",
@@ -2174,7 +2174,7 @@
       }
     },
     {
-      "file": "visual-qa/final/dashboard/v1.3.0__2026-10-05_004640__page-dark__tablet-834x1112.png",
+      "file": "visual-qa/final/dashboard/v1.3.0__2026-10-06_183318__page-dark__tablet-834x1112.png",
       "surface": "dashboard",
       "state": "page",
       "theme": "dark",
@@ -2189,7 +2189,7 @@
       }
     },
     {
-      "file": "visual-qa/final/transactions/v1.3.0__2026-10-05_004640__page-dark__tablet-834x1112.png",
+      "file": "visual-qa/final/transactions/v1.3.0__2026-10-06_183318__page-dark__tablet-834x1112.png",
       "surface": "transactions",
       "state": "page",
       "theme": "dark",
@@ -2200,11 +2200,11 @@
       },
       "capture": {
         "width": 819,
-        "height": 1152
+        "height": 1842
       }
     },
     {
-      "file": "visual-qa/final/savings/v1.3.0__2026-10-05_004640__page-dark__tablet-834x1112.png",
+      "file": "visual-qa/final/savings/v1.3.0__2026-10-06_183318__page-dark__tablet-834x1112.png",
       "surface": "savings",
       "state": "page",
       "theme": "dark",
@@ -2215,11 +2215,11 @@
       },
       "capture": {
         "width": 819,
-        "height": 1746
+        "height": 1717
       }
     },
     {
-      "file": "visual-qa/final/cards/v1.3.0__2026-10-05_004640__page-dark__tablet-834x1112.png",
+      "file": "visual-qa/final/cards/v1.3.0__2026-10-06_183318__page-dark__tablet-834x1112.png",
       "surface": "cards",
       "state": "page",
       "theme": "dark",
@@ -2234,7 +2234,7 @@
       }
     },
     {
-      "file": "visual-qa/final/credit/v1.3.0__2026-10-05_004640__page-dark__tablet-834x1112.png",
+      "file": "visual-qa/final/credit/v1.3.0__2026-10-06_183318__page-dark__tablet-834x1112.png",
       "surface": "credit",
       "state": "page",
       "theme": "dark",
@@ -2245,11 +2245,11 @@
       },
       "capture": {
         "width": 819,
-        "height": 2036
+        "height": 2039
       }
     },
     {
-      "file": "visual-qa/final/loans/v1.3.0__2026-10-05_004640__page-dark__tablet-834x1112.png",
+      "file": "visual-qa/final/loans/v1.3.0__2026-10-06_183318__page-dark__tablet-834x1112.png",
       "surface": "loans",
       "state": "page",
       "theme": "dark",
@@ -2264,7 +2264,7 @@
       }
     },
     {
-      "file": "visual-qa/final/lending/v1.3.0__2026-10-05_004640__page-dark__tablet-834x1112.png",
+      "file": "visual-qa/final/lending/v1.3.0__2026-10-06_183318__page-dark__tablet-834x1112.png",
       "surface": "lending",
       "state": "page",
       "theme": "dark",
@@ -2279,7 +2279,7 @@
       }
     },
     {
-      "file": "visual-qa/final/recurring/v1.3.0__2026-10-05_004640__page-dark__tablet-834x1112.png",
+      "file": "visual-qa/final/recurring/v1.3.0__2026-10-06_183318__page-dark__tablet-834x1112.png",
       "surface": "recurring",
       "state": "page",
       "theme": "dark",
@@ -2294,7 +2294,7 @@
       }
     },
     {
-      "file": "visual-qa/final/planning/v1.3.0__2026-10-05_004640__page-dark__tablet-834x1112.png",
+      "file": "visual-qa/final/planning/v1.3.0__2026-10-06_183318__page-dark__tablet-834x1112.png",
       "surface": "planning",
       "state": "page",
       "theme": "dark",
@@ -2309,7 +2309,7 @@
       }
     },
     {
-      "file": "visual-qa/final/attention/v1.3.0__2026-10-05_004640__page-dark__tablet-834x1112.png",
+      "file": "visual-qa/final/attention/v1.3.0__2026-10-06_183318__page-dark__tablet-834x1112.png",
       "surface": "attention",
       "state": "page",
       "theme": "dark",
@@ -2324,7 +2324,7 @@
       }
     },
     {
-      "file": "visual-qa/final/reports/v1.3.0__2026-10-05_004640__page-dark__tablet-834x1112.png",
+      "file": "visual-qa/final/reports/v1.3.0__2026-10-06_183318__page-dark__tablet-834x1112.png",
       "surface": "reports",
       "state": "page",
       "theme": "dark",
@@ -2335,11 +2335,11 @@
       },
       "capture": {
         "width": 819,
-        "height": 4782
+        "height": 4852
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__page-dark__tablet-834x1112.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__page-dark__tablet-834x1112.png",
       "surface": "settings",
       "state": "page",
       "theme": "dark",
@@ -2350,11 +2350,11 @@
       },
       "capture": {
         "width": 819,
-        "height": 2051
+        "height": 2070
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__tab-profile-dark__tablet-834x1112.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__tab-profile-dark__tablet-834x1112.png",
       "surface": "settings",
       "state": "tab-profile",
       "theme": "dark",
@@ -2369,7 +2369,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__tab-accounts-dark__tablet-834x1112.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__tab-accounts-dark__tablet-834x1112.png",
       "surface": "settings",
       "state": "tab-accounts",
       "theme": "dark",
@@ -2384,7 +2384,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__provider-editor-details-dark__tablet-834x1112.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__provider-editor-details-dark__tablet-834x1112.png",
       "surface": "settings",
       "state": "provider-editor-details",
       "theme": "dark",
@@ -2399,7 +2399,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__provider-editor-branding-dark__tablet-834x1112.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__provider-editor-branding-dark__tablet-834x1112.png",
       "surface": "settings",
       "state": "provider-editor-branding",
       "theme": "dark",
@@ -2414,7 +2414,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__provider-asset-picker-dark__tablet-834x1112.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__provider-asset-picker-dark__tablet-834x1112.png",
       "surface": "settings",
       "state": "provider-asset-picker",
       "theme": "dark",
@@ -2429,7 +2429,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__account-editor-new-dark__tablet-834x1112.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__account-editor-new-dark__tablet-834x1112.png",
       "surface": "settings",
       "state": "account-editor-new",
       "theme": "dark",
@@ -2444,7 +2444,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__tab-categories-dark__tablet-834x1112.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__tab-categories-dark__tablet-834x1112.png",
       "surface": "settings",
       "state": "tab-categories",
       "theme": "dark",
@@ -2459,7 +2459,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__category-rename-editor-dark__tablet-834x1112.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__category-rename-editor-dark__tablet-834x1112.png",
       "surface": "settings",
       "state": "category-rename-editor",
       "theme": "dark",
@@ -2474,7 +2474,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__tab-icons-dark__tablet-834x1112.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__tab-icons-dark__tablet-834x1112.png",
       "surface": "settings",
       "state": "tab-icons",
       "theme": "dark",
@@ -2489,7 +2489,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__icon-selection-editor-dark__tablet-834x1112.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__icon-selection-editor-dark__tablet-834x1112.png",
       "surface": "settings",
       "state": "icon-selection-editor",
       "theme": "dark",
@@ -2504,7 +2504,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__tab-rules-dark__tablet-834x1112.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__tab-rules-dark__tablet-834x1112.png",
       "surface": "settings",
       "state": "tab-rules",
       "theme": "dark",
@@ -2519,7 +2519,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__rule-editor-new-dark__tablet-834x1112.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__rule-editor-new-dark__tablet-834x1112.png",
       "surface": "settings",
       "state": "rule-editor-new",
       "theme": "dark",
@@ -2534,7 +2534,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__tab-data-dark__tablet-834x1112.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__tab-data-dark__tablet-834x1112.png",
       "surface": "settings",
       "state": "tab-data",
       "theme": "dark",
@@ -2549,7 +2549,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__data-import-confirmation-dark__tablet-834x1112.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__data-import-confirmation-dark__tablet-834x1112.png",
       "surface": "settings",
       "state": "data-import-confirmation",
       "theme": "dark",
@@ -2564,7 +2564,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__login-dark__tablet-834x1112.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__login-dark__tablet-834x1112.png",
       "surface": "auth",
       "state": "login",
       "theme": "dark",
@@ -2579,7 +2579,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__login-error-dark__tablet-834x1112.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__login-error-dark__tablet-834x1112.png",
       "surface": "auth",
       "state": "login-error",
       "theme": "dark",
@@ -2594,7 +2594,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__auth-unavailable-dark__tablet-834x1112.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__auth-unavailable-dark__tablet-834x1112.png",
       "surface": "auth",
       "state": "auth-unavailable",
       "theme": "dark",
@@ -2609,7 +2609,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__session-expired-dark__tablet-834x1112.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__session-expired-dark__tablet-834x1112.png",
       "surface": "auth",
       "state": "session-expired",
       "theme": "dark",
@@ -2624,7 +2624,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__session-revoked-dark__tablet-834x1112.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__session-revoked-dark__tablet-834x1112.png",
       "surface": "auth",
       "state": "session-revoked",
       "theme": "dark",
@@ -2639,7 +2639,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__mfa-dark__tablet-834x1112.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__mfa-dark__tablet-834x1112.png",
       "surface": "auth",
       "state": "mfa",
       "theme": "dark",
@@ -2654,7 +2654,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__mfa-error-dark__tablet-834x1112.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__mfa-error-dark__tablet-834x1112.png",
       "surface": "auth",
       "state": "mfa-error",
       "theme": "dark",
@@ -2669,7 +2669,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__mfa-enroll-dark__tablet-834x1112.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__mfa-enroll-dark__tablet-834x1112.png",
       "surface": "auth",
       "state": "mfa-enroll",
       "theme": "dark",
@@ -2684,7 +2684,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__mfa-enroll-error-dark__tablet-834x1112.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__mfa-enroll-error-dark__tablet-834x1112.png",
       "surface": "auth",
       "state": "mfa-enroll-error",
       "theme": "dark",
@@ -2699,7 +2699,7 @@
       }
     },
     {
-      "file": "visual-qa/final/not-found/v1.3.0__2026-10-05_004640__route-404-dark__tablet-834x1112.png",
+      "file": "visual-qa/final/not-found/v1.3.0__2026-10-06_183318__route-404-dark__tablet-834x1112.png",
       "surface": "not-found",
       "state": "route-404",
       "theme": "dark",
@@ -2714,7 +2714,7 @@
       }
     },
     {
-      "file": "visual-qa/final/dashboard/v1.3.0__2026-10-05_004640__page-dark__mobile-375x812.png",
+      "file": "visual-qa/final/dashboard/v1.3.0__2026-10-06_183318__page-dark__mobile-375x812.png",
       "surface": "dashboard",
       "state": "page",
       "theme": "dark",
@@ -2729,7 +2729,7 @@
       }
     },
     {
-      "file": "visual-qa/final/transactions/v1.3.0__2026-10-05_004640__page-dark__mobile-375x812.png",
+      "file": "visual-qa/final/transactions/v1.3.0__2026-10-06_183318__page-dark__mobile-375x812.png",
       "surface": "transactions",
       "state": "page",
       "theme": "dark",
@@ -2740,11 +2740,11 @@
       },
       "capture": {
         "width": 375,
-        "height": 3370
+        "height": 3367
       }
     },
     {
-      "file": "visual-qa/final/savings/v1.3.0__2026-10-05_004640__page-dark__mobile-375x812.png",
+      "file": "visual-qa/final/savings/v1.3.0__2026-10-06_183318__page-dark__mobile-375x812.png",
       "surface": "savings",
       "state": "page",
       "theme": "dark",
@@ -2755,11 +2755,11 @@
       },
       "capture": {
         "width": 375,
-        "height": 2151
+        "height": 2156
       }
     },
     {
-      "file": "visual-qa/final/cards/v1.3.0__2026-10-05_004640__page-dark__mobile-375x812.png",
+      "file": "visual-qa/final/cards/v1.3.0__2026-10-06_183318__page-dark__mobile-375x812.png",
       "surface": "cards",
       "state": "page",
       "theme": "dark",
@@ -2774,7 +2774,7 @@
       }
     },
     {
-      "file": "visual-qa/final/credit/v1.3.0__2026-10-05_004640__page-dark__mobile-375x812.png",
+      "file": "visual-qa/final/credit/v1.3.0__2026-10-06_183318__page-dark__mobile-375x812.png",
       "surface": "credit",
       "state": "page",
       "theme": "dark",
@@ -2789,7 +2789,7 @@
       }
     },
     {
-      "file": "visual-qa/final/loans/v1.3.0__2026-10-05_004640__page-dark__mobile-375x812.png",
+      "file": "visual-qa/final/loans/v1.3.0__2026-10-06_183318__page-dark__mobile-375x812.png",
       "surface": "loans",
       "state": "page",
       "theme": "dark",
@@ -2804,7 +2804,7 @@
       }
     },
     {
-      "file": "visual-qa/final/lending/v1.3.0__2026-10-05_004640__page-dark__mobile-375x812.png",
+      "file": "visual-qa/final/lending/v1.3.0__2026-10-06_183318__page-dark__mobile-375x812.png",
       "surface": "lending",
       "state": "page",
       "theme": "dark",
@@ -2819,7 +2819,7 @@
       }
     },
     {
-      "file": "visual-qa/final/recurring/v1.3.0__2026-10-05_004640__page-dark__mobile-375x812.png",
+      "file": "visual-qa/final/recurring/v1.3.0__2026-10-06_183318__page-dark__mobile-375x812.png",
       "surface": "recurring",
       "state": "page",
       "theme": "dark",
@@ -2830,11 +2830,11 @@
       },
       "capture": {
         "width": 375,
-        "height": 1326
+        "height": 1370
       }
     },
     {
-      "file": "visual-qa/final/planning/v1.3.0__2026-10-05_004640__page-dark__mobile-375x812.png",
+      "file": "visual-qa/final/planning/v1.3.0__2026-10-06_183318__page-dark__mobile-375x812.png",
       "surface": "planning",
       "state": "page",
       "theme": "dark",
@@ -2849,7 +2849,7 @@
       }
     },
     {
-      "file": "visual-qa/final/attention/v1.3.0__2026-10-05_004640__page-dark__mobile-375x812.png",
+      "file": "visual-qa/final/attention/v1.3.0__2026-10-06_183318__page-dark__mobile-375x812.png",
       "surface": "attention",
       "state": "page",
       "theme": "dark",
@@ -2860,11 +2860,11 @@
       },
       "capture": {
         "width": 375,
-        "height": 2514
+        "height": 2515
       }
     },
     {
-      "file": "visual-qa/final/reports/v1.3.0__2026-10-05_004640__page-dark__mobile-375x812.png",
+      "file": "visual-qa/final/reports/v1.3.0__2026-10-06_183318__page-dark__mobile-375x812.png",
       "surface": "reports",
       "state": "page",
       "theme": "dark",
@@ -2875,11 +2875,11 @@
       },
       "capture": {
         "width": 375,
-        "height": 4416
+        "height": 4557
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__page-dark__mobile-375x812.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__page-dark__mobile-375x812.png",
       "surface": "settings",
       "state": "page",
       "theme": "dark",
@@ -2890,11 +2890,11 @@
       },
       "capture": {
         "width": 375,
-        "height": 3049
+        "height": 3032
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__tab-profile-dark__mobile-375x812.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__tab-profile-dark__mobile-375x812.png",
       "surface": "settings",
       "state": "tab-profile",
       "theme": "dark",
@@ -2905,11 +2905,11 @@
       },
       "capture": {
         "width": 375,
-        "height": 1735
+        "height": 1732
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__tab-accounts-dark__mobile-375x812.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__tab-accounts-dark__mobile-375x812.png",
       "surface": "settings",
       "state": "tab-accounts",
       "theme": "dark",
@@ -2920,11 +2920,11 @@
       },
       "capture": {
         "width": 375,
-        "height": 3742
+        "height": 3645
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__provider-editor-details-dark__mobile-375x812.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__provider-editor-details-dark__mobile-375x812.png",
       "surface": "settings",
       "state": "provider-editor-details",
       "theme": "dark",
@@ -2939,7 +2939,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__provider-editor-branding-dark__mobile-375x812.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__provider-editor-branding-dark__mobile-375x812.png",
       "surface": "settings",
       "state": "provider-editor-branding",
       "theme": "dark",
@@ -2954,7 +2954,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__provider-asset-picker-dark__mobile-375x812.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__provider-asset-picker-dark__mobile-375x812.png",
       "surface": "settings",
       "state": "provider-asset-picker",
       "theme": "dark",
@@ -2969,7 +2969,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__account-editor-new-dark__mobile-375x812.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__account-editor-new-dark__mobile-375x812.png",
       "surface": "settings",
       "state": "account-editor-new",
       "theme": "dark",
@@ -2984,7 +2984,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__tab-categories-dark__mobile-375x812.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__tab-categories-dark__mobile-375x812.png",
       "surface": "settings",
       "state": "tab-categories",
       "theme": "dark",
@@ -2995,11 +2995,11 @@
       },
       "capture": {
         "width": 375,
-        "height": 7351
+        "height": 7345
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__category-rename-editor-dark__mobile-375x812.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__category-rename-editor-dark__mobile-375x812.png",
       "surface": "settings",
       "state": "category-rename-editor",
       "theme": "dark",
@@ -3010,11 +3010,11 @@
       },
       "capture": {
         "width": 375,
-        "height": 7533
+        "height": 7527
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__tab-icons-dark__mobile-375x812.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__tab-icons-dark__mobile-375x812.png",
       "surface": "settings",
       "state": "tab-icons",
       "theme": "dark",
@@ -3025,11 +3025,11 @@
       },
       "capture": {
         "width": 375,
-        "height": 3032
+        "height": 2999
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__icon-selection-editor-dark__mobile-375x812.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__icon-selection-editor-dark__mobile-375x812.png",
       "surface": "settings",
       "state": "icon-selection-editor",
       "theme": "dark",
@@ -3040,11 +3040,11 @@
       },
       "capture": {
         "width": 375,
-        "height": 3772
+        "height": 3737
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__tab-rules-dark__mobile-375x812.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__tab-rules-dark__mobile-375x812.png",
       "surface": "settings",
       "state": "tab-rules",
       "theme": "dark",
@@ -3059,7 +3059,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__rule-editor-new-dark__mobile-375x812.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__rule-editor-new-dark__mobile-375x812.png",
       "surface": "settings",
       "state": "rule-editor-new",
       "theme": "dark",
@@ -3074,7 +3074,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__tab-data-dark__mobile-375x812.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__tab-data-dark__mobile-375x812.png",
       "surface": "settings",
       "state": "tab-data",
       "theme": "dark",
@@ -3089,7 +3089,7 @@
       }
     },
     {
-      "file": "visual-qa/final/settings/v1.3.0__2026-10-05_004640__data-import-confirmation-dark__mobile-375x812.png",
+      "file": "visual-qa/final/settings/v1.3.0__2026-10-06_183318__data-import-confirmation-dark__mobile-375x812.png",
       "surface": "settings",
       "state": "data-import-confirmation",
       "theme": "dark",
@@ -3104,7 +3104,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__login-dark__mobile-375x812.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__login-dark__mobile-375x812.png",
       "surface": "auth",
       "state": "login",
       "theme": "dark",
@@ -3119,7 +3119,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__login-error-dark__mobile-375x812.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__login-error-dark__mobile-375x812.png",
       "surface": "auth",
       "state": "login-error",
       "theme": "dark",
@@ -3134,7 +3134,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__auth-unavailable-dark__mobile-375x812.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__auth-unavailable-dark__mobile-375x812.png",
       "surface": "auth",
       "state": "auth-unavailable",
       "theme": "dark",
@@ -3149,7 +3149,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__session-expired-dark__mobile-375x812.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__session-expired-dark__mobile-375x812.png",
       "surface": "auth",
       "state": "session-expired",
       "theme": "dark",
@@ -3164,7 +3164,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__session-revoked-dark__mobile-375x812.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__session-revoked-dark__mobile-375x812.png",
       "surface": "auth",
       "state": "session-revoked",
       "theme": "dark",
@@ -3179,7 +3179,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__mfa-dark__mobile-375x812.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__mfa-dark__mobile-375x812.png",
       "surface": "auth",
       "state": "mfa",
       "theme": "dark",
@@ -3194,7 +3194,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__mfa-error-dark__mobile-375x812.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__mfa-error-dark__mobile-375x812.png",
       "surface": "auth",
       "state": "mfa-error",
       "theme": "dark",
@@ -3209,7 +3209,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__mfa-enroll-dark__mobile-375x812.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__mfa-enroll-dark__mobile-375x812.png",
       "surface": "auth",
       "state": "mfa-enroll",
       "theme": "dark",
@@ -3224,7 +3224,7 @@
       }
     },
     {
-      "file": "visual-qa/final/auth/v1.3.0__2026-10-05_004640__mfa-enroll-error-dark__mobile-375x812.png",
+      "file": "visual-qa/final/auth/v1.3.0__2026-10-06_183318__mfa-enroll-error-dark__mobile-375x812.png",
       "surface": "auth",
       "state": "mfa-enroll-error",
       "theme": "dark",
@@ -3239,7 +3239,7 @@
       }
     },
     {
-      "file": "visual-qa/final/not-found/v1.3.0__2026-10-05_004640__route-404-dark__mobile-375x812.png",
+      "file": "visual-qa/final/not-found/v1.3.0__2026-10-06_183318__route-404-dark__mobile-375x812.png",
       "surface": "not-found",
       "state": "route-404",
       "theme": "dark",
