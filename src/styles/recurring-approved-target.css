@@ -1,3 +1,4 @@
+.inactive-recurring-list,.inactive-recurring>.empty-inline{margin-top:8px}
 /* Owner-approved Recurring / Πάγια desktop composition.
  * The target controls hierarchy and density; canonical recurring/loan semantics remain in page/domain code.
  */
