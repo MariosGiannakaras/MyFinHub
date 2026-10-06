@@ -15,7 +15,7 @@ const sourceVector=path.join(root,'public','brand','icon-512.svg');
 const major=Number(process.versions.node.split('.')[0]);
 
 if(process.platform!=='win32')throw new Error('MyFinHub desktop packaging must run on Windows.');
-if(major!==22)throw new Error(`MyFinHub local backend must be packaged with Node 22.x; found ${process.version}.`);
+if(major!==24)throw new Error(`MyFinHub local backend must be packaged with Node 24.x; found ${process.version}.`);
 if(!fs.existsSync(distIndex))throw new Error('Frontend dist is missing. Run npm run build before preparing the desktop bundle.');
 if(!fs.existsSync(sourceIcon))throw new Error('MyFinHub 512x512 Windows icon source is missing.');
 if(!fs.existsSync(sourceVector))throw new Error('MyFinHub vector brand master is missing.');
@@ -31,7 +31,7 @@ await build({
   bundle:true,
   platform:'node',
   format:'esm',
-  target:'node22',
+  target:'node24',
   // Express still contains CommonJS dependencies (for example debug -> require('tty')).
   // esbuild's ESM runtime helper can delegate dynamic requires to a real Node require when
   // one exists, so provide an ESM-safe createRequire bridge at the top of the bundle.
