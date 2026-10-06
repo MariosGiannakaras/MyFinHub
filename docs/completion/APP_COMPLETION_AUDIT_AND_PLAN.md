@@ -1,16 +1,20 @@
 # MyFinHub completion audit and implementation plan
 
-Status: post-merge closeout reconciliation in progress; release-only cells explicitly open  
+Status: release-only closeout authorized and in progress  
 Tracker: #476  
-Target branch: `chore/476-post-merge-closeout`  
-Integration target: `develop`  
-Release target: none — `main` remains release-only
+Integration baseline: `develop`  
+Release candidate: `v1.4.0`  
+Production target: `main`
 
-## Current integration checkpoint — 2026-10-05
+## Current release authorization checkpoint — 2026-10-06
 
-**Implementations 19/24 completed · Sub-implementations 189/197 completed**
+**Implementations 20/24 completed · Sub-implementations 192/197 completed**
 
-This checkpoint supersedes older "#482 reconciliation pending" notes below for current execution state.
+The owner explicitly authorized the remaining maintenance integration, `develop -> main` production promotion, production verification and Windows release publication on 2026-10-06. The release contract, stop-ship conditions and rollback baseline are recorded in `docs/completion/V1_4_0_RELEASE_CANDIDATE.md`.
+
+All non-release verification cells are complete. The remaining **4 implementations / 5 sub-implementations** are release-only and stay open until their actual evidence is observed: exact release-candidate validation; production deployed-SHA/smoke/integrity proof; and coherent Git/web/Windows/migration release identity plus rollback metadata.
+
+This checkpoint supersedes older "#482 reconciliation pending" and pre-authorization notes below for current execution state.
 
 - Latest current checkpoint: PR #477 was squash-merged after exact final review head `05f97721f2a430f1ce00cd19b35face38f3cf104` passed CI `37234768780`, CodeQL `37234768772`, Real Stack `37234768785`, Cross-engine `37234768912`, Performance `37234768805`, Windows Desktop `37234768757`, Windows First Run `37234768837` and Windows Clean Launch `37234768809`. Canonical product merge SHA `6c89d9231ec30df5e580d982b926f838eb29a828` has the same Git tree as that review head. Post-merge `develop` then passed Final Visual `37237421596`, CI/rendered `37237421591`, CodeQL `37237421651`, Windows Desktop `37237421553`, Windows First Run `37237421621` and Windows Clean Launch `37237421567`. Final Visual generated 216/216 Light/Dark × desktop/tablet/mobile captures with manifest source `6c89d923…`, artifact `11315832718`, and screenshot-only evidence commit `0df3334ac82803f15d3aa850c44d6834a9582fc1`. Direct review covered all 36 distinct release-matrix surface/state groups plus materially distinct focused CI states. Proven closeout credit is now **Implementations 19/24 completed · Sub-implementations 189/197 completed**; remaining gaps are the three explicit independent-manual-browser protocol items and release-only `develop -> main` / production proof.
 
