@@ -6,10 +6,11 @@ const moneyFormatter=new Intl.NumberFormat('el-GR',{style:'currency',currency:'E
 const money=(value:number|undefined)=>moneyFormatter.format(Number(value??0));
 const dateLabel=(value:string|undefined)=>{if(!value)return 'χωρίς ημερομηνία';const parts=value.slice(0,10).split('-');return parts.length===3?`${parts[2]}/${parts[1]}/${parts[0]}`:value.slice(0,10)};
 const bounded=(value:string|undefined,max=42)=>{const next=(value??'').replace(/\s+/g,' ').trim();return next.length>max?`${next.slice(0,max-1)}…`:next};
-const different=(a:unknown,b:unknown)=>JSON.stringify(a)!==JSON.stringify(b);
+const different=(a:unknown,b:unknown)=>a===b?false:JSON.stringify(a)!==JSON.stringify(b);
 const privacyFallback='Ενημερώθηκαν ιδιωτικές λεπτομέρειες που δεν εμφανίζονται στο ιστορικό.';
 
 function arrayChange<T extends {id:string}>(before:T[]|undefined,after:T[]|undefined):Change<T>{
+  if(before===after)return null;
   const left=before??[];const right=after??[];
   const added=right.find(item=>!left.some(previous=>previous.id===item.id));if(added)return {type:'add',after:added};
   const removed=left.find(item=>!right.some(next=>next.id===item.id));if(removed)return {type:'delete',before:removed};
