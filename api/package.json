@@ -9,7 +9,7 @@
     "check": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
-    "@types/node": "22.20.2",
+    "@types/node": "24.19.1",
     "typescript": "5.9.3"
   }
 }
