@@ -30,6 +30,13 @@ Detailed completion authority remains `docs/completion/APP_COMPLETION_AUDIT_AND_
 
 **Implementations 20/24 completed · Sub-implementations 192/197 completed**
 
+### Authorized v1.4.0 release candidate
+
+Owner authorization on 2026-10-06 covers the remaining maintenance integration, the deliberate `develop -> main` production promotion, production verification and Windows v1.4.0 publication.
+
+The release-prep contract is recorded in `docs/completion/V1_4_0_RELEASE_CANDIDATE.md`. Counters remain unchanged until the release-only evidence is actually completed.
+
+
 All non-release verification protocol cells are completed and verified (PASS):
 
 - hands-on navigation of the canonical running app for all high-risk flows;
