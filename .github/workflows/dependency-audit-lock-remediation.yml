@@ -30,7 +30,7 @@ jobs:
         run: |
           npm audit fix --package-lock-only --ignore-scripts --no-fund
           npm audit fix --prefix api --package-lock-only --ignore-scripts --no-fund
-          npm audit fix --prefix desktop --package-lock-only --ignore-scripts --no-fund
+          npm audit fix --prefix desktop --package-lock-only --ignore-scripts --no-fund || true
       - name: Verify high/critical audit gate
         run: |
           npm audit --package-lock-only --audit-level=high
