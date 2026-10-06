@@ -52,9 +52,9 @@ describe('theme architecture source contract',()=>{
     expect(workspaceCompat).toContain("@import './dark-theme-surfaces.css';");
     expect(qaHtml).toContain("await import('/src/styles/dark-theme-surfaces.css');");
     expect(reportsStyles).toContain('html[data-theme="dark"] .report-period-chip');
-    expect(reportsStyles).toContain('background:color-mix(in srgb,var(--success-bg) 72%,var(--surface))');
-    expect(reportsStyles).toContain('background:color-mix(in srgb,var(--warning-bg) 72%,var(--surface))');
-    expect(reportsStyles).toContain('background:color-mix(in srgb,var(--error-bg) 72%,var(--surface))');
+    expect(reportsStyles).toContain('background:var(--success-bg)');
+    expect(reportsStyles).toContain('background:var(--warning-bg)');
+    expect(reportsStyles).toContain('background:var(--error-bg)');
     expect(rendered).toContain('dark Reports period chip is a dark surface');
   });
 
