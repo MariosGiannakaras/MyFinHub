@@ -14,8 +14,12 @@ describe('dark-theme surface regressions',()=>{
 
   it('keeps Dashboard secondary finance text and Reports budget statuses on semantic theme roles',()=>{
     const dashboard=read('src/styles/dashboard-approved-target.css')+read('src/styles/dashboard-desktop-alignment.css');
+    const bankmarks=read('src/styles/dashboard-bankmark-chart-attention.css');
     expect(dashboard).toContain('color:var(--text-secondary)');
     expect(dashboard).not.toContain('color:#526987');
+    expect(bankmarks).toContain('html[data-theme="dark"] .dashboard-approved .approved-account-icon .bank-brand-mark[data-bank-logo-source="local-image"]');
+    expect(bankmarks).toContain('html[data-theme="dark"] .dashboard-approved .approved-account-icon .bank-brand-mark[data-bank-logo-source="provider-storage"]');
+    expect(bankmarks).toContain('box-shadow:none!important');
 
     const reports=read('src/pages/ReportsPage.css');
     expect(reports).toContain('background:var(--success-bg)');
