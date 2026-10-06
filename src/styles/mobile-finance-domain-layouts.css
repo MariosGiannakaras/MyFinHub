@@ -66,7 +66,7 @@
   .saving-history>div:last-child{border-bottom:0}
   .saving-history>div>span{font-size:var(--ux-dense-label-size);color:var(--muted)}
   .saving-history b{font-size:var(--ux-dense-label-size)}
-  .saving-history small{font-size:8px;line-height:1.3}
+  .saving-history small{font-size:var(--ux-dense-label-size);line-height:1.3}
   .saving-history strong{font-size:var(--ux-dense-data-size);white-space:nowrap}
   .logic-note.compact{border-radius:15px;padding:10px 11px;font-size:var(--ux-dense-label-size);line-height:1.4}
 
@@ -88,7 +88,7 @@
   .card-history .semantic-list-title{min-width:0}
   .card-history .semantic-list-title b{font-size:var(--ux-dense-data-size)}
   .card-history .semantic-list-title small{font-size:var(--ux-dense-label-size)}
-  .card-history>div>strong{font-size:10.5px;white-space:nowrap}
+  .card-history>div>strong{font-size:var(--ux-dense-data-size);white-space:nowrap}
   .card-history>div>.text-button{grid-column:2/-1;justify-self:end;min-height:34px;padding:5px 8px;font-size:var(--ux-dense-label-size)}
   .section-title:has(+.loan-cards){align-items:center;padding:2px 1px}
   .section-title:has(+.loan-cards)>div span{font-size:12px}
@@ -118,7 +118,7 @@
   .receivable-person-grid .loan-title small{font-size:var(--ux-dense-label-size)}
   .receivable-person-grid .loan-title>b{font-size:11px}
   .receivable-person-actions{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px;padding-top:8px;border-top:1px solid #e1e9f2}
-  .receivable-person-actions>span{margin-right:auto;font-size:8px;font-weight:800;color:var(--muted)}
+  .receivable-person-actions>span{margin-right:auto;font-size:var(--ux-dense-label-size);font-weight:800;color:var(--muted)}
   .receivable-person-actions .text-button{min-height:36px;padding:6px 8px;font-size:var(--ux-dense-label-size)}
   .page-stack>.panel:has(.receivables-table){border-radius:18px;padding:12px;background:rgba(249,252,255,.78);box-shadow:var(--mobile-shadow-soft)}
   .page-stack>.panel:has(.receivables-table) .panel-head small{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden}
