@@ -6,7 +6,7 @@ on:
     types: [opened, synchronize, reopened]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   generate:
@@ -28,6 +28,19 @@ jobs:
           npm install --package-lock-only --ignore-scripts --no-audit --no-fund
           npm install --prefix api --package-lock-only --ignore-scripts --no-audit --no-fund
           npm install --prefix desktop --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Commit generated lockfiles when changed
+        shell: bash
+        run: |
+          if git diff --quiet -- package-lock.json api/package-lock.json desktop/package-lock.json; then
+            echo "Lockfiles already match the staged manifests."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json api/package-lock.json desktop/package-lock.json
+          git commit -m "chore(deps): regenerate lockfiles on Node 24"
+          git push origin "HEAD:${GITHUB_HEAD_REF}"
+
       - name: Upload generated lockfiles
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
