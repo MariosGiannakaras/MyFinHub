@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "engines": {
-    "node": "22.x"
+    "node": "24.x"
   },
   "scripts": {
     "dev": "concurrently -k \"npm:dev:server\" \"npm:dev:web\"",
@@ -20,7 +20,7 @@
     "qa:ux": "node scripts/ui-ux-hardening-qa.mjs",
     "qa:visual": "node scripts/ui-ux-visual-evidence-qa.mjs",
     "qa:frontend": "node scripts/run-rendered-qa.mjs",
-    "check": "npm run security:guard && npm run test && npm run build",
+    "check": "npm run security:guard && npm run maintenance:check && npm run test && npm run build",
     "desktop:dev": "npm --prefix desktop run dev",
     "desktop:check": "npm --prefix desktop run check",
     "desktop:pack": "npm run build && npm --prefix desktop run pack",
@@ -38,14 +38,15 @@
     "desktop:pack:from-dist": "npm --prefix desktop run pack",
     "desktop:dist:from-dist": "npm --prefix desktop run dist",
     "qa:real-stack": "tsx scripts/real-stack-e2e.ts",
-    "qa:migration-recovery": "tsx scripts/migration-recovery-e2e.ts"
+    "qa:migration-recovery": "tsx scripts/migration-recovery-e2e.ts",
+    "maintenance:check": "node --check scripts/dependency-health.mjs"
   },
   "dependencies": {
     "@tesseract.js-data/ell": "1.0.0",
     "@tesseract.js-data/eng": "1.0.0",
     "express": "^5.2.1",
     "framer-motion": "^12.43.0",
-    "lucide-react": "^1.45.0",
+    "lucide-react": "^1.52.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "recharts": "^3.10.1",
@@ -53,14 +54,14 @@
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
-    "@types/node": "^22.20.2",
+    "@types/node": "^24.19.1",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
-    "@vitejs/plugin-react": "^6.1.1",
-    "concurrently": "^10.0.4",
-    "tsx": "^4.23.13",
+    "@vitejs/plugin-react": "^6.1.2",
+    "concurrently": "^10.0.5",
+    "tsx": "^4.23.15",
     "typescript": "^7.0.2",
-    "vite": "^8.3.0",
+    "vite": "^8.3.2",
     "vitest": "^4.1.11"
   },
   "overrides": {
