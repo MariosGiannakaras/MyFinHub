@@ -50,13 +50,14 @@ Issue #503 and docs/audits/RECONCILIATION_AND_REMEDIATION_PLAN.md are now author
 - Confirmed findings are reconciled as R-01..R-16 rather than maintained as two parallel audit backlogs.
 - The Dashboard owner contract is explicitly **Μετρητά → Μισθοδοσίας → Αποταμιευτικός** by semantic account metadata, not the weaker cash → operating → savings approximation.
 - Gemini-only observations not independently confirmed by the GPT audit are reproduce-before-fix to prevent speculative CSS changes.
-- A fresh post-fix desktop/tablet/mobile × Light/Dark visual inspection on the exact corrected head is mandatory before the remediation can merge to develop.
-- Fresh ready-review evidence closed C-01 through C-04 as NOT REPRODUCED; direct inspection also exposed residual R-05 provider halo, Dashboard upcoming-empty-state and Transactions date-range crowding defects, now under a targeted draft correction batch pending exact-head rerender.
-- No production promotion is authorized.
-- The active remediation branch now carries a prevention-first defect-learning contract: each confirmed failure is classified by root cause/blast radius, receives the cheapest practical regression lock, and recurring deterministic failures are promoted into narrow preflight instead of being rediscovered by the expensive final matrix.
-- The #503 plan now contains the task-specific prevention ledger for semantic drift, readability, theme leakage, empty states, content stress, provider media treatment, responsive composition, interaction states, shared-shell drift and expensive-gate rediscovery. The existing 5 implementation / 30 sub-implementation denominators are unchanged.
+- C-01 through C-04 are closed as NOT REPRODUCED; the confirmed R-01 through R-16 remediation items are implemented and accepted by focused exact-head source/rendered evidence.
+- Coherent review head `9068f1005f6cc432fe62773b5436aa6a61193d7f` passed CI, CodeQL, Real Stack E2E, Cross-engine, Performance and all Windows gates. Its rendered artifact was directly inspected across the changed Dashboard, Transactions, Savings, Cards, Credit, Loans, Recurring, Reports and Settings surfaces with no remaining product residual.
+- Dedicated Final Visual QA run `37488415648` captured and persisted **216/216** Light/Dark × desktop/tablet/mobile screenshots. All 36 distinct surface/state groups were directly reviewed across the six theme/viewport matrices; no clipping, overlap, hierarchy, contrast, focus, responsive or state-communication defect requiring another product patch remained.
+- Final Visual evidence is persisted in `7228930f5efc633e3aad1b454e0ca911a8550265`, a screenshot-only `visual-qa/final/**` bot commit. Application source is unchanged from the green coherent review tree.
+- The active remediation branch carries the prevention-first defect-learning contract: each confirmed failure is classified by root cause/blast radius, receives the cheapest practical regression lock, and recurring deterministic failures are promoted into narrow preflight instead of being rediscovered by the expensive final matrix.
+- Final integration closeout remains: validate the documentation/evidence reconciliation head, merge to `develop` only with required checks green, then perform the bounded exact-merged-`develop` verification. No production promotion is authorized.
 
-#503 progress: **Implementations 1/5 completed · Sub-implementations 6/30 completed**.
+#503 progress: **Implementations 4/5 completed · Sub-implementations 26/30 completed**.
 
 ## Completed post-completion hardening — #490
 
