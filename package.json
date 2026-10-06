@@ -20,7 +20,7 @@
     "qa:ux": "node scripts/ui-ux-hardening-qa.mjs",
     "qa:visual": "node scripts/ui-ux-visual-evidence-qa.mjs",
     "qa:frontend": "node scripts/run-rendered-qa.mjs",
-    "check": "npm run security:guard && npm run test && npm run build",
+    "check": "npm run security:guard && npm run maintenance:check && npm run test && npm run build",
     "desktop:dev": "npm --prefix desktop run dev",
     "desktop:check": "npm --prefix desktop run check",
     "desktop:pack": "npm run build && npm --prefix desktop run pack",
@@ -38,7 +38,8 @@
     "desktop:pack:from-dist": "npm --prefix desktop run pack",
     "desktop:dist:from-dist": "npm --prefix desktop run dist",
     "qa:real-stack": "tsx scripts/real-stack-e2e.ts",
-    "qa:migration-recovery": "tsx scripts/migration-recovery-e2e.ts"
+    "qa:migration-recovery": "tsx scripts/migration-recovery-e2e.ts",
+    "maintenance:check": "node --check scripts/dependency-health.mjs"
   },
   "dependencies": {
     "@tesseract.js-data/ell": "1.0.0",
