@@ -5,6 +5,7 @@ const source=readFileSync(new URL('../src/pages/CardsPage.tsx',import.meta.url),
 const css=readFileSync(new URL('../src/styles/cards-approved-surrounding.css',import.meta.url),'utf8');
 const legacyCardCss=readFileSync(new URL('../src/styles/cards-prototype-presentation.css',import.meta.url),'utf8');
 const interactiveCardCss=readFileSync(new URL('../src/components/InteractivePaymentCard.css',import.meta.url),'utf8');
+const cardLayoutCss=readFileSync(new URL('../src/styles/cards-v15-presentation.css',import.meta.url),'utf8');
 
 describe('approved Cards surrounding desktop target source contract',()=>{
   it('keeps the existing bank-by-bank card workspace and card handlers intact',()=>{
@@ -41,6 +42,16 @@ describe('approved Cards surrounding desktop target source contract',()=>{
     expect(legacyCardCss).not.toContain('.card-design-grid{');
     expect(interactiveCardCss).toContain('.prototype-payment-card .card-inner{');
     expect(interactiveCardCss).toContain('.prototype-payment-card .card-number{');
+  });
+
+  it('uses an explicit discoverable desktop overflow contract and theme-owned foreground variables',()=>{
+    expect(cardLayoutCss).toContain('overflow-x:auto');
+    expect(cardLayoutCss).toContain('scroll-snap-type:x proximity');
+    expect(cardLayoutCss).not.toContain('.cards-workspace{border-radius:23px;padding:18px;min-width:0;overflow:hidden}');
+    expect(cardLayoutCss).toContain(':where(.payment-card){--card-text:#fff');
+    expect(legacyCardCss).toContain('.r-card-alpha{--card-text:#153a5f');
+    expect(legacyCardCss).toContain('.r-card-alpha-sky{--card-text:#153a5f');
+    expect(legacyCardCss).toContain('.r-card-payzy-pro{--card-text:#123a45');
   });
 
   it('does not restyle protected card workspace/card visual selectors',()=>{

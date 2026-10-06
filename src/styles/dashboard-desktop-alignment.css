@@ -12,7 +12,7 @@
   .dashboard-approved .approved-account-identity>div{position:relative}
   .dashboard-approved .account-iban{margin-top:3px;gap:4px;padding-right:0}
   .dashboard-approved .account-iban-label{display:none}
-  .dashboard-approved .account-iban-value{max-width:188px;font-size:8px;line-height:1.3;color:#526987;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dashboard-approved .account-iban-value{max-width:188px;font-size:var(--ux-dense-label-size);line-height:1.35;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .dashboard-approved .account-iban-dashboard .account-iban-copy{position:absolute;right:-40px;top:3px;width:48px;height:48px;min-width:48px;min-height:48px;opacity:1;box-shadow:none;background:transparent!important;transition:opacity .12s ease}
   .dashboard-approved .account-iban-copy::before{content:"";position:absolute;left:50%;top:50%;width:26px;height:26px;transform:translate(-50%,-50%);border-radius:999px;background:transparent;transition:background-color .12s ease}
   .dashboard-approved .account-iban-copy:hover::before,.dashboard-approved .account-iban-copy:focus-visible::before{background:var(--surface-2)}

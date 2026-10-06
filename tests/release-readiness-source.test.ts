@@ -138,6 +138,9 @@ describe('release-readiness source contracts',()=>{
     expect(performanceAudit).toContain("--only-categories=performance,accessibility,best-practices");
     expect(performanceAudit).toContain('state=extreme');
     expect(performanceAudit).toContain("MYFINHUB_LIGHTHOUSE_RUNS||'3'");
+    expect(performanceAudit).toContain("MYFINHUB_LIGHTHOUSE_LAUNCH_RETRIES||'1'");
+    expect(performanceAudit).toContain('waiting for dynamic debugging port in chrome-err\\.log');
+    expect(performanceAudit).toContain('transient Lighthouse launcher failure; retrying');
     expect(performanceAudit).toContain('median(samples.map');
     expect(loadingShiftAudit).toContain("PerformanceObserver");
     expect(loadingShiftAudit).toContain("type:'layout-shift'");

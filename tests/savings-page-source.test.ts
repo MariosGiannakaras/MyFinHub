@@ -23,6 +23,13 @@ describe('Savings page action hierarchy',()=>{
     expect(source).toContain('Τύπος: ${presentation.sourceLabel}');
   });
 
+  it('uses semantic savings metadata and the shared dense readability contract',()=>{
+    expect(source).toContain("account.kind==='savings'||(account.kind==='bank'&&account.bankAccountCategory==='savings')");
+    expect(source).toContain('accountChoices.dashboardSavings?.id??accountChoices.savings?.id');
+    expect(composition).toContain('font-size:var(--ux-dense-data-size)');
+    expect(composition).toContain('font-size:var(--ux-dense-label-size)');
+  });
+
   it('adopts the shared money input primitive in the Savings editor',()=>{
     expect(source).toContain("import { MoneyInput } from '../components/MoneyInput'");
     expect(source).toContain('<MoneyInput data-autofocus="true"');

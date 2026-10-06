@@ -101,6 +101,11 @@ describe('account security settings',()=>{
     expect(settings).not.toContain('Τρέχον PIN');
     expect(settingsStyles).toContain('.account-security-password-grid{display:grid;grid-template-columns:repeat(2');
     expect(settingsStyles).toContain('.account-security-idle-select .owned-input');
+    expect(settings).toContain('autoComplete="current-password"');
+    expect(settings).toContain('autoComplete="new-password"');
+    expect(settingsStyles).toContain(':-webkit-autofill');
+    expect(settingsStyles).toContain('-webkit-text-fill-color:var(--ink)');
+    expect(settingsStyles).toContain('background:var(--muted-2)');
     expect(main).toContain('<DesktopAppLockGate><App/></DesktopAppLockGate>');
   });
 });

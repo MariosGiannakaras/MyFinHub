@@ -12,6 +12,20 @@ describe('dark-theme surface regressions',()=>{
     expect(css).not.toContain('.private-report-placeholder{min-height:96px;border-radius:14px;padding:14px;gap:9px;background:#eef4fa');
   });
 
+  it('keeps Dashboard secondary finance text and Reports budget statuses on semantic theme roles',()=>{
+    const dashboard=read('src/styles/dashboard-approved-target.css')+read('src/styles/dashboard-desktop-alignment.css');
+    const bankmarks=read('src/styles/dashboard-bankmark-chart-attention.css');
+    expect(dashboard).toContain('color:var(--text-secondary)');
+    expect(dashboard).not.toContain('color:#526987');
+    expect(bankmarks).toContain('.dashboard-approved .bank-brand-mark:is([data-bank-logo-source="local-image"],[data-bank-logo-source="provider-storage"])');
+    expect(bankmarks).toContain('border:0!important;background:transparent!important;box-shadow:none!important');
+
+    const reports=read('src/pages/ReportsPage.css');
+    expect(reports).toContain('background:var(--success-bg)');
+    expect(reports).toContain('background:var(--warning-bg)');
+    expect(reports).toContain('background:var(--error-bg)');
+  });
+
   it('keeps Settings icon-management and Rules workspaces on semantic surfaces',()=>{
     const settings=read('src/pages/SettingsPage.css');
     expect(settings).toContain('.settings-icons-only .category-icon-library');

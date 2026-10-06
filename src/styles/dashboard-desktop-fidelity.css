@@ -3,61 +3,15 @@
    alter global chrome, branding or navigation geometry. */
 @media(min-width:981px){
   .dashboard-approved-heading h1{font-size:28px}
-  .dashboard-approved-heading p{font-size:11.5px}
-  .dashboard-approved-heading .eyebrow{font-size:9px}
-  .dashboard-approved-heading .privacy-toggle{font-size:10.5px}
-
-  .dashboard-approved .approved-account-identity strong{font-size:14px}
-  .dashboard-approved .approved-account-identity small{font-size:9.5px}
-  .dashboard-approved .account-iban-dashboard .account-iban-value{max-width:205px!important;font-size:10.5px!important;line-height:16px!important}
-  .dashboard-approved .savings-target{font-size:10.5px}
-  .dashboard-approved .approved-account-body{height:72px}
-  .dashboard-approved .approved-balance{font-size:28px}
-  .dashboard-approved .approved-trend{font-size:10px}
-  .dashboard-approved .approved-trend small{font-size:9px}
-  .dashboard-approved .savings-legend{font-size:8px}
-  .dashboard-approved .approved-account-actions button{font-size:12px}
+  .dashboard-approved .account-iban-dashboard .account-iban-value{max-width:205px!important;font-size:var(--ux-dense-data-size)!important;line-height:16px!important}
   .dashboard-approved .account-tone-0 .dashboard-sparkline polyline{filter:drop-shadow(0 7px 5px rgba(49,199,123,.22)) drop-shadow(0 14px 9px rgba(49,199,123,.10))}
   .dashboard-approved .account-tone-1 .dashboard-sparkline polyline{filter:drop-shadow(0 7px 5px rgba(171,54,232,.20)) drop-shadow(0 14px 9px rgba(171,54,232,.09))}
-
-  .dashboard-approved .approved-section-title strong{font-size:12px}
-  .dashboard-approved .approved-secondary-account small{font-size:9px}
-  .dashboard-approved .approved-secondary-account b{font-size:11.5px}
-  .dashboard-approved .approved-secondary-account button{font-size:8.5px}
-  .dashboard-approved .approved-secondary-more small{font-size:10px}
-
   .dashboard-approved .approved-panel-head strong{font-size:12.5px}
-  .dashboard-approved .approved-panel-head button{font-size:9px}
-  .dashboard-approved .approved-panel-head>span{font-size:8.5px}
-  .dashboard-approved .movement-head{font-size:8px}
-  .dashboard-approved .movement-title b{font-size:9.5px}
-  .dashboard-approved .movement-row small{font-size:8.5px}
-  .dashboard-approved .movement-row>b{font-size:9.5px}
-  .dashboard-approved .approved-footer-link{font-size:9px}
-
-  .dashboard-approved .upcoming-row small{font-size:8px}
-  .dashboard-approved .upcoming-row b{font-size:9.7px}
-  .dashboard-approved .upcoming-row>span:nth-last-child(2){font-size:8.5px}
-  .dashboard-approved .upcoming-row>strong{font-size:9.2px}
-
-  .dashboard-approved .summary-line small,.dashboard-approved .summary-net small{font-size:8.8px}
   .dashboard-approved .summary-line b,.dashboard-approved .summary-net>div:first-child>b{font-size:18px}
-  .dashboard-approved .summary-line span,.dashboard-approved .summary-net span{font-size:8.2px}
-  .dashboard-approved .summary-donut>span{font-size:8px}
   .dashboard-approved .summary-income .dashboard-sparkline polyline{filter:drop-shadow(0 8px 6px rgba(49,199,123,.22)) drop-shadow(0 17px 11px rgba(49,199,123,.09))}
   .dashboard-approved .summary-expense .dashboard-sparkline polyline{filter:drop-shadow(0 8px 6px rgba(255,91,98,.21)) drop-shadow(0 17px 11px rgba(255,91,98,.09))}
-
-  .dashboard-approved .flow-legend{font-size:8px}
-  .dashboard-approved .approved-flow-chart .recharts-cartesian-axis-tick-value{font-size:9px!important}
-  .dashboard-approved .approved-category-donut>div:last-child b{font-size:14px}
-  .dashboard-approved .approved-category-donut>div:last-child span{font-size:8px}
-  .dashboard-approved .category-table-head,.dashboard-approved .category-table-row{font-size:8.3px}
-  .dashboard-approved .category-table-row b{font-size:8.5px}
-
-  .dashboard-approved .approved-kpi-strip small{font-size:8px}
-  .dashboard-approved .approved-kpi-strip b{font-size:14px}
-  .dashboard-approved .approved-kpi-strip span:not(.kpi-icon){font-size:8px}
-  .dashboard-approved .approved-data-footer{font-size:7.5px}
+  .dashboard-approved .approved-flow-chart .recharts-cartesian-axis-tick-value{font-size:var(--ux-dense-label-size)!important}
+  .dashboard-approved .approved-category-donut>div:last-child b,.dashboard-approved .approved-kpi-strip b{font-size:14px}
 }
 
 @media(min-width:1410px){

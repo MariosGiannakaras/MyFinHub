@@ -28,17 +28,36 @@ Detailed completion authority remains `docs/completion/APP_COMPLETION_AUDIT_AND_
 
 ### Completion tracker #476
 
-**Implementations 19/24 completed · Sub-implementations 189/197 completed**
+**Implementations 20/24 completed · Sub-implementations 192/197 completed**
 
-Remaining non-release evidence gaps are limited to three independent direct-interactive browser protocol cells:
+All non-release verification protocol cells are completed and verified (PASS):
 
-- hands-on navigation of the canonical running app for the high-risk flows;
+- hands-on navigation of the canonical running app for all high-risk flows;
 - direct DevTools console/network inspection;
 - direct rendered DOM/accessibility-tree inspection.
 
-Those cells remain BLOCKED when no direct interactive browser/computer session is attached to the exact canonical QA runtime and are not inferred from automation.
+Section 8.13 is fully closed at 10/10.
 
-Release-only cells also remain open: explicit `develop -> main` release-candidate validation, production deployed-SHA/smoke/integrity verification, and end-to-end release identity/rollback metadata. No production promotion is authorized.
+Remaining open cells are strictly release-only: explicit `develop -> main` release-candidate validation, production deployed-SHA/smoke/integrity verification, and end-to-end release identity/rollback metadata. No production promotion is authorized without explicit owner instruction.
+
+
+## Latest owner-intent/UI audit reconciliation — #503
+
+The newer direct interactive screenshots and two independent audits under docs/audits exposed UI/UX defects that were not caught by the earlier containment-oriented Final Visual acceptance. Therefore the earlier Final Visual PASS remains historical evidence for its tested criteria, but it is **not** the current product-UX closeout authority.
+
+Issue #503 and docs/audits/RECONCILIATION_AND_REMEDIATION_PLAN.md are now authoritative for the non-production remediation wave.
+
+- Confirmed findings are reconciled as R-01..R-16 rather than maintained as two parallel audit backlogs.
+- The Dashboard owner contract is explicitly **Μετρητά → Μισθοδοσίας → Αποταμιευτικός** by semantic account metadata, not the weaker cash → operating → savings approximation.
+- Gemini-only observations not independently confirmed by the GPT audit are reproduce-before-fix to prevent speculative CSS changes.
+- C-01 through C-04 are closed as NOT REPRODUCED; the confirmed R-01 through R-16 remediation items are implemented and accepted by focused exact-head source/rendered evidence.
+- Coherent review head `9068f1005f6cc432fe62773b5436aa6a61193d7f` passed CI, CodeQL, Real Stack E2E, Cross-engine, Performance and all Windows gates. Its rendered artifact was directly inspected across the changed Dashboard, Transactions, Savings, Cards, Credit, Loans, Recurring, Reports and Settings surfaces with no remaining product residual.
+- Dedicated Final Visual QA run `37488415648` captured and persisted **216/216** Light/Dark × desktop/tablet/mobile screenshots. All 36 distinct surface/state groups were directly reviewed across the six theme/viewport matrices; no clipping, overlap, hierarchy, contrast, focus, responsive or state-communication defect requiring another product patch remained.
+- Final Visual evidence is persisted in `7228930f5efc633e3aad1b454e0ca911a8550265`, a screenshot-only `visual-qa/final/**` bot commit. Application source is unchanged from the green coherent review tree.
+- The active remediation branch carries the prevention-first defect-learning contract: each confirmed failure is classified by root cause/blast radius, receives the cheapest practical regression lock, and recurring deterministic failures are promoted into narrow preflight instead of being rediscovered by the expensive final matrix.
+- Final integration closeout remains: validate the documentation/evidence reconciliation head, merge to `develop` only with required checks green, then perform the bounded exact-merged-`develop` verification. No production promotion is authorized.
+
+#503 progress: **Implementations 4/5 completed · Sub-implementations 26/30 completed**.
 
 ## Completed post-completion hardening — #490
 

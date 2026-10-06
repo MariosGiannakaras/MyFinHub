@@ -104,6 +104,19 @@ describe('cross-page UI consistency contracts',()=>{
     }
   });
 
+  it('keeps Dashboard semantic savings actions independent of the physical account kind',()=>{
+    const dashboard=read('src/pages/DashboardPage.tsx');
+    expect(dashboard).toContain("onAccountQuickAdd(account.id,savings?'savings':account.kind)");
+  });
+
+  it('keeps the Dashboard upcoming-payments zero state intentional and actionable',()=>{
+    const dashboard=read('src/pages/DashboardPage.tsx');
+    expect(dashboard).toContain('upcoming.length?');
+    expect(dashboard).toContain('dashboard-upcoming-empty');
+    expect(dashboard).toContain('Δεν υπάρχουν επερχόμενες πληρωμές');
+    expect(dashboard).toContain('Άνοιγμα προγραμματισμού');
+  });
+
   it('routes repeated KPI families through the shared Surface primitive',()=>{
     const transactions=read('src/pages/TransactionsPage.tsx');
     const recurring=read('src/pages/RecurringPage.tsx');
