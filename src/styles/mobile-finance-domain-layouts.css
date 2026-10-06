@@ -108,7 +108,7 @@
 
   /* Lending: privacy-first summary, people as primary cards, audit history visually secondary. */
   .receivable-hero{min-height:118px;border-radius:22px;padding:15px;background:linear-gradient(135deg,#0f5d63,#168d98 62%,#25b9d7);box-shadow:0 14px 28px rgba(19,116,126,.2)}
-  .receivable-hero>div span{font-size:var(--ux-dense-label-size);opacity:14}
+  .receivable-hero>div span{font-size:var(--ux-dense-label-size);opacity:1}
   .receivable-hero>div b{font-size:27px;margin:5px 0 2px}
   .receivable-hero>div small{font-size:var(--ux-dense-label-size);opacity:1}
   .receivable-person-grid{display:grid;grid-template-columns:1fr;gap:8px}
