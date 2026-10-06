@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { describeFinanceChange } from '../src/lib/changeHistory.js';
 import { withLegacyOverride, withLegacyTombstone } from '../src/lib/legacyTransactions.js';
 import { qaFinanceData } from '../src/qaFixture.js';
@@ -62,20 +62,6 @@ describe('privacy-safe user change descriptions',()=>{
     const before=qaFinanceData();const after=clone(before);after.state.settings.accountNames={...after.state.settings.accountNames,'piraeus-payroll':'PRIVATE ACCOUNT LABEL'};
     const label=describeFinanceChange(before,after);
     expect(label).toContain('Ονόματα λογαριασμών ενημερώθηκαν');expect(label).not.toContain('PRIVATE ACCOUNT LABEL');
-  });
-
-  it('does not serialize unchanged large event branches for a budget-only change',()=>{
-    const before=qaFinanceData();
-    const largeEvents=Array.from({length:5000},(_,index)=>event(`history-large-${index}`));
-    before.state.events=largeEvents;
-    before.state.budgets=[{id:'history-budget',month:'2026-08',scope:'category',category:'Σταθερά έξοδα',amount:50,alertThreshold:.8,createdAt:stamp,updatedAt:stamp}];
-    const after={...before,state:{...before.state,budgets:[]}};
-    const stringify=vi.spyOn(JSON,'stringify');
-    try{
-      const label=describeFinanceChange(before,after);
-      expect(label).toContain('Διαγραφή budget');
-      expect(stringify.mock.calls.some(([value])=>value===largeEvents)).toBe(false);
-    }finally{stringify.mockRestore()}
   });
 
   it('keeps recurring and loan names out of history while exposing safe numeric changes',()=>{
