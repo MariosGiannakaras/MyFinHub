@@ -10,17 +10,18 @@ Windows tag after production verification: `myfinhub-v1.4.0`
 
 The owner-authorized v1.4.0 release is complete.
 
-- Production `main`: `ef305d040772b68f77d70595afbe12d6ff38cd80`.
+- Tagged v1.4.0 release commit: `ef305d040772b68f77d70595afbe12d6ff38cd80`.
 - Canonical release tree: `4c21e5dc2e51265a6ba5171c6860bfcc6e2108ef`.
-- Vercel production: `dpl_8TWQfb6uR11xKbJ56Z7eRr3XYDX9`, READY, exact same Git SHA.
+- Release-candidate Vercel production deployment: `dpl_8TWQfb6uR11xKbJ56Z7eRr3XYDX9`, READY, exact same tagged release SHA.
 - Production Smoke #172 / `37536811558`: SUCCESS.
 - Production Supabase: ACTIVE_HEALTHY, PostgreSQL 17.6.1.155, 48/48 migrations through `20261001220945_reject_cross_account_id_collisions`.
-- Windows tag: `myfinhub-v1.4.0` -> exact production main SHA.
+- Windows tag: `myfinhub-v1.4.0` -> exact tagged release commit.
 - Windows Desktop tag workflow #3019 / `37539058589`: SUCCESS.
 - GitHub Release: `MyFinHub Desktop myfinhub-v1.4.0`, published and neither draft nor prerelease.
 - Installer: `MyFinHub-Setup-1.4.0-x64.exe`, 155,945,414 bytes, GitHub SHA-256 `c670ca3c47c7c2ae72c7be5acdafad7cf86a1a4156a3262b9f6c76b1b44e41a4`.
 - Checksum asset: `MyFinHub-Setup-1.4.0-x64.exe.sha256`, 96 bytes; its GitHub digest `e19efc8fd520246c5d81832bdb569a378f6b234437a5c8dde27b9bf4dc0a982a` independently matches the expected CRLF checksum record containing the installer digest and exact filename.
 - v1.3.0 is retained as the documented non-destructive rollback baseline; production database history/migrations are not rolled back.
+- Post-release metadata-only PR #513 advanced `main` to `78aa5ee2df35649a4124e557a905920afc685887` without changing runtime source/schema; the resulting production deployment reached READY and Production Smoke #173 passed. Such later documentation heads are intentionally separate from the immutable v1.4.0 tag/installer identity.
 
 ## Release boundary
 
