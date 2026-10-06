@@ -127,35 +127,43 @@ The same direct inspection found three residual confirmed defects that must be r
 - [x] Record the exact Dashboard account hierarchy in durable owner decisions.
 - [x] Classify disputed observations as reproduce-before-fix.
 
-### 2. Shared readability/theme/system remediation — 0/5
+### 2. Shared readability/theme/system remediation — 5/5
 
-- [ ] Define/enforce a readable dense-text floor through the shared typography system; remove unjustified page-local 7.5–10px operational text.
-- [ ] Replace hardcoded light-theme finance text colors with semantic theme tokens at the owning rules.
-- [ ] Fix dark-theme semantic status-surface contrast, especially Reports budget summaries.
-- [ ] Normalize common autofill/inactive/PIN/form states without removing browser accessibility semantics.
-- [ ] Rerun shared primitive/token/orphan/duplicate audit after system changes.
+- [x] Define/enforce a readable dense-text floor through the shared typography system; remove unjustified page-local 7.5–10px operational text.
+- [x] Replace hardcoded light-theme finance text colors with semantic theme tokens at the owning rules.
+- [x] Fix dark-theme semantic status-surface contrast, especially Reports budget summaries.
+- [x] Normalize common autofill/inactive/PIN/form states without removing browser accessibility semantics.
+- [x] Rerun shared primitive/token/orphan/duplicate audit after system changes.
 
-### 3. Product/page remediation — 0/10
+### 3. Product/page remediation — 10/10
 
-- [ ] Dashboard semantic account order + exact tests/fixtures.
-- [ ] Dashboard empty states, secondary finance readability and provider-mark correction.
-- [ ] Transactions empty state + full details wrapping.
-- [ ] Savings whitespace/transfer hierarchy.
-- [ ] Cards bright-surface contrast/theme precedence.
-- [ ] Cards desktop overflow/navigation contract.
-- [ ] Credit identity-caption readability.
-- [ ] Loans wide-screen composition.
-- [ ] Recurring wide-screen composition/actions/readability.
-- [ ] Reports/Settings page-specific polish not already solved at the shared layer.
+- [x] Dashboard semantic account order + exact tests/fixtures.
+- [x] Dashboard empty states, secondary finance readability and provider-mark correction.
+- [x] Transactions empty state + full details wrapping.
+- [x] Savings whitespace/transfer hierarchy.
+- [x] Cards bright-surface contrast/theme precedence.
+- [x] Cards desktop overflow/navigation contract.
+- [x] Credit identity-caption readability.
+- [x] Loans wide-screen composition.
+- [x] Recurring wide-screen composition/actions/readability.
+- [x] Reports/Settings page-specific polish not already solved at the shared layer.
 
-### 4. Post-fix visual verification — 1/6
+### 4. Post-fix visual verification — 6/6
 
-- [ ] Generate focused exact-head desktop captures for every changed finding and inspect directly.
+- [x] Generate focused exact-head desktop captures for every changed finding and inspect directly.
 - [x] Reproduce/close every conditional C-* observation with evidence.
-- [ ] Generate exact-head desktop/tablet/mobile × Light/Dark coverage for all primary routes and critical changed states.
-- [ ] Inspect every distinct visible/interactive pattern; skip repeated identical shared-component instances only after structural equivalence is proven.
-- [ ] Explicitly verify owner-intent/product hierarchy in the rendered UI, not merely technical containment.
-- [ ] Fix any remaining defect, rerun affected evidence, then do one bounded overall final visual sweep.
+- [x] Generate exact-head desktop/tablet/mobile × Light/Dark coverage for all primary routes and critical changed states.
+- [x] Inspect every distinct visible/interactive pattern; skip repeated identical shared-component instances only after structural equivalence is proven.
+- [x] Explicitly verify owner-intent/product hierarchy in the rendered UI, not merely technical containment.
+- [x] Fix any remaining defect, rerun affected evidence, then do one bounded overall final visual sweep.
+
+### Final visual acceptance checkpoint
+
+- Coherent review head `9068f1005f6cc432fe62773b5436aa6a61193d7f` passed CI, CodeQL, Real Stack E2E, Cross-engine, Performance, Windows Desktop, Windows First Run and Windows Clean Launch.
+- Focused exact-head rendered evidence was directly inspected for Dashboard hierarchy/empty/provider states, Transactions desktop/tablet/empty/stress states, Savings, Cards, Credit, Loans, Recurring, Reports and Settings; no residual product defect remained.
+- Dedicated Final Visual QA run `37488415648` captured and persisted **216/216** screenshots covering 36 distinct surface/state groups across Light/Dark × desktop/tablet/mobile.
+- All six Final Visual theme/viewport matrices were directly inspected, including primary routes, Settings nested editors, authentication error/recovery states and the 404 surface. No clipping, overlap, hierarchy, contrast, focus, responsive or state-communication residual requiring another product patch was found.
+- Final Visual persisted evidence in bot commit `7228930f5efc633e3aad1b454e0ca911a8550265`; that commit changes only `visual-qa/final/**`, so the validated application source remains the green review tree.
 
 ### 5. Final integration closeout — 0/4
 
