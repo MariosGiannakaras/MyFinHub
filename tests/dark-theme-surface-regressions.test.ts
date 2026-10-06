@@ -17,9 +17,8 @@ describe('dark-theme surface regressions',()=>{
     const bankmarks=read('src/styles/dashboard-bankmark-chart-attention.css');
     expect(dashboard).toContain('color:var(--text-secondary)');
     expect(dashboard).not.toContain('color:#526987');
-    expect(bankmarks).toContain('html[data-theme="dark"] .dashboard-approved .approved-account-icon .bank-brand-mark[data-bank-logo-source="local-image"]');
-    expect(bankmarks).toContain('html[data-theme="dark"] .dashboard-approved .approved-account-icon .bank-brand-mark[data-bank-logo-source="provider-storage"]');
-    expect(bankmarks).toContain('box-shadow:none!important');
+    expect(bankmarks).toContain('html[data-theme="dark"] .dashboard-approved .approved-account-icon .bank-brand-mark:is([data-bank-logo-source="local-image"],[data-bank-logo-source="provider-storage"])');
+    expect(bankmarks).toContain('background:transparent!important;border:0!important;box-shadow:none!important');
 
     const reports=read('src/pages/ReportsPage.css');
     expect(reports).toContain('background:var(--success-bg)');
