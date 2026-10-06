@@ -105,7 +105,7 @@ describe('account security settings',()=>{
     expect(settings).toContain('autoComplete="new-password"');
     expect(settingsStyles).toContain(':-webkit-autofill');
     expect(settingsStyles).toContain('-webkit-text-fill-color:var(--ink)');
-    expect(settingsStyles).toContain('background:color-mix(in srgb,var(--text-secondary) 42%,transparent)');
+    expect(settingsStyles).toContain('background:var(--muted-2)');
     expect(main).toContain('<DesktopAppLockGate><App/></DesktopAppLockGate>');
   });
 });
