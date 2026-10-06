@@ -4,30 +4,12 @@
 .bank-brand-mark.bankmark-viva .bank-logo-image{filter:brightness(0) saturate(100%);opacity:.82}
 html[data-theme="dark"] .bank-brand-mark.bankmark-viva .bank-logo-image{filter:none;opacity:1}
 
-.dashboard-approved .approved-secondary-account .bank-brand-mark[data-bank-logo-source="local-image"]{
-  width:31px!important;
-  height:31px!important;
-  min-width:31px;
-  flex-basis:31px;
-  border:0!important;
-  background:transparent!important;
-  box-shadow:none!important;
-}
-.dashboard-approved .approved-secondary-account .bank-brand-mark[data-bank-logo-source="local-image"]::before{content:none!important}
+.dashboard-approved .bank-brand-mark:is([data-bank-logo-source="local-image"],[data-bank-logo-source="provider-storage"]){border:0!important;background:transparent!important;box-shadow:none!important}
+.dashboard-approved .bank-brand-mark:is([data-bank-logo-source="local-image"],[data-bank-logo-source="provider-storage"])::before{content:none!important}
+.dashboard-approved .approved-secondary-account .bank-brand-mark[data-bank-logo-source="local-image"]{width:31px!important;height:31px!important;min-width:31px;flex-basis:31px}
 .dashboard-approved .approved-secondary-account .bank-brand-mark[data-bank-logo-source="local-image"] .bank-logo-image{width:31px;height:31px}
-.dashboard-approved .account-tone-2 .approved-account-icon .bank-brand-mark[data-bank-logo-source="local-image"]{
-  width:30px!important;
-  height:27px!important;
-  min-width:30px;
-  border:0!important;
-  background:transparent!important;
-  box-shadow:none!important;
-}
-.dashboard-approved .account-tone-2 .approved-account-icon .bank-brand-mark[data-bank-logo-source="local-image"]::before{content:none!important}
+.dashboard-approved .account-tone-2 .approved-account-icon .bank-brand-mark[data-bank-logo-source="local-image"]{width:30px!important;height:27px!important;min-width:30px}
 .dashboard-approved .account-tone-2 .approved-account-icon .bank-brand-mark[data-bank-logo-source="local-image"] .bank-logo-image{width:29px;height:26px}
-
-html[data-theme="dark"] .dashboard-approved .approved-account-icon .bank-brand-mark:is([data-bank-logo-source="local-image"],[data-bank-logo-source="provider-storage"]){background:transparent!important;border:0!important;box-shadow:none!important}
-html[data-theme="dark"] .dashboard-approved .approved-account-icon .bank-brand-mark:is([data-bank-logo-source="local-image"],[data-bank-logo-source="provider-storage"])::before{content:none!important}
 
 .dashboard-approved .approved-account-chart{
   isolation:isolate;
