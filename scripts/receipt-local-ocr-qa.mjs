@@ -113,7 +113,7 @@ try {
     writeFileSync(`${evidenceDir}/${name}.png`, Buffer.from(shot.data, 'base64'));
   };
   const openReceiptInbox = async () => {
-    const opened = await c.call("function(){const button=document.querySelector('[data-global-quick-entry=\"desktop\"]')||document.querySelector('.mobile-quick-action');button?.click();return Boolean(button)}");
+    const opened = await c.call("function(){const visible=node=>Boolean(node&&node.getClientRects().length);const button=[...document.querySelectorAll('[data-global-quick-entry]')].find(visible);button?.click();return Boolean(button)}");
     assert(opened, 'generic Quick Entry launch exists');
     await waitFor("function(){return Boolean(document.querySelector('.quick-modal:not(.contextual-quick-modal)'))}", 'generic Quick Entry');
     const receipt = await c.call("function(){const button=document.querySelector('.receipt-quick-launch');button?.click();return Boolean(button)}");
@@ -134,6 +134,15 @@ try {
       request.onerror=()=>reject(request.error);
     });
   }`);
+
+  console.log('Receipt OCR QA: packaged local OCR assets are reachable');
+  const manifestUrl=new URL('/ocr/asset-manifest.json',baseUrl).href;
+  const manifestResponse=await fetch(manifestUrl);
+  assert(manifestResponse.ok,`OCR asset manifest unavailable: ${manifestResponse.status}`);
+  const manifest=await manifestResponse.json();
+  assert(manifest.tesseractJs==='7.0.0','OCR manifest pins Tesseract 7');
+  assert(Array.isArray(manifest.languages)&&manifest.languages.includes('ell')&&manifest.languages.includes('eng'),'OCR manifest includes Greek and English');
+  assert(Array.isArray(manifest.coreFiles)&&manifest.coreFiles.length>0,'OCR manifest includes local WASM core files');
 
   console.log('Receipt OCR QA: fast capture persists before OCR');
   await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}", 'QA workspace');
@@ -163,6 +172,17 @@ try {
   assert((await receiptCount()) === 1, 'one durable local receipt exists immediately after capture');
   assert((await c.call("function(){return document.querySelectorAll('.receipt-draft-row').length}")) === 1, 'pending inbox shows captured draft');
   await screenshot('receipt-local-captured');
+  const deleteReceiptRequested=await c.call("function(){const button=[...document.querySelectorAll('.receipt-review-actions button')].find(node=>(node.textContent||'').trim()==='Διαγραφή');button?.click();return Boolean(button)}");
+  assert(deleteReceiptRequested,'receipt exposes local delete action');
+  await waitFor("function(){const dialog=document.querySelector('[role=alertdialog]');return Boolean(dialog&&(dialog.textContent||'').includes('Διαγραφή τοπικής απόδειξης;'))}",'receipt delete confirmation');
+  const receiptConfirmTopmost=await c.call("function(){const dialog=document.querySelector('[role=alertdialog]');if(!dialog)return false;const r=dialog.getBoundingClientRect();const x=r.left+r.width/2,y=r.top+r.height/2;const top=document.elementFromPoint(x,y);return Boolean(r.width>0&&r.height>0&&top&&(top===dialog||dialog.contains(top)))}");
+  assert(receiptConfirmTopmost,'receipt delete confirmation renders above Receipt Inbox');
+  await sleep(180);
+  await screenshot('confirm-receipt-delete');
+  const deleteCancel=await c.call("function(){const dialog=document.querySelector('[role=alertdialog]');const button=[...dialog?.querySelectorAll('button')||[]].find(node=>(node.textContent||'').trim()==='Ακύρωση');button?.click();return Boolean(button)}");
+  assert(deleteCancel,'receipt delete confirmation exposes safe cancel');
+  await waitFor("function(){return !document.querySelector('[role=alertdialog]')}",'receipt delete cancel');
+  assert((await receiptCount())===1,'cancelled receipt delete preserves local draft');
 
   console.log('Receipt OCR QA: receipt survives close and reload');
   await c.call("function(){document.querySelector('.receipt-inbox-header .icon-button')?.click();return true}");
@@ -176,41 +196,74 @@ try {
   await waitFor("function(){return document.querySelectorAll('.receipt-draft-row').length===1}", 'reopened inbox hydration');
   assert((await c.call("function(){return document.querySelectorAll('.receipt-draft-row').length}")) === 1, 'reopened inbox restores receipt');
 
-  console.log('Receipt OCR QA: self-hosted OCR scans locally and creates proposal');
+  console.log('Receipt OCR QA: missing packaged asset fails recoverably without losing the local receipt');
+  await c.send('Network.setBlockedURLs',{urls:['*://*/ocr/asset-manifest.json']});
+  const failedScanClicked = await c.call("function(){const button=[...document.querySelectorAll('.receipt-review-actions button')].find(node=>(node.textContent||'').includes('Σάρωση τώρα'));button?.click();return Boolean(button)}");
+  assert(failedScanClicked,'scan now action exists for missing-asset recovery');
+  await waitFor("function(){const text=document.querySelector('.form-error')?.textContent||'';return text.includes('Λείπουν ή δεν φορτώνουν τα τοπικά αρχεία OCR')}",'missing OCR asset recovery message');
+  assert((await receiptCount())===1,'missing OCR assets do not delete the locally persisted receipt');
+  await screenshot('receipt-local-ocr-assets-unavailable');
+  await c.send('Network.setBlockedURLs',{urls:[]});
+
+  console.log('Receipt OCR QA: self-hosted OCR retries locally and creates proposal');
   externalRequests.length = 0;
   monitorOcrNetwork = true;
   const scanClicked = await c.call("function(){const button=[...document.querySelectorAll('.receipt-review-actions button')].find(node=>(node.textContent||'').includes('Σάρωση τώρα'));button?.click();return Boolean(button)}");
-  assert(scanClicked, 'scan now action exists');
+  assert(scanClicked, 'scan retry action exists after missing local asset failure');
+  await waitFor("function(){return !document.querySelector('.form-error')}", 'prior OCR asset error clears before retry');
   await waitFor("function(){return Boolean(document.querySelector('.receipt-proposal h3'))||Boolean(document.querySelector('.form-error'))}", 'OCR completion', [], 650);
   monitorOcrNetwork = false;
   const scanError = await c.call("function(){return document.querySelector('.form-error')?.textContent||''}");
   assert(!scanError, `local OCR failed: ${scanError}`);
-  const proposalText = await c.call("function(){return document.querySelector('.receipt-proposal')?.textContent||''}");
-  assert(/MY\s*MARKET/i.test(proposalText), `merchant proposal missing: ${proposalText}`);
-  assert(proposalText.includes('2026-08-22'), `date proposal missing: ${proposalText}`);
-  assert(/24[,.]50/.test(proposalText), `total proposal missing: ${proposalText}`);
-  assert(proposalText.includes('EUR'), `currency proposal missing: ${proposalText}`);
+  const reviewValues = await c.call("function(){return {merchant:document.querySelector('input[aria-label=\"Διόρθωση καταστήματος απόδειξης\"]')?.value||'',date:document.querySelector('input[aria-label=\"Διόρθωση ημερομηνίας απόδειξης\"]')?.value||'',total:document.querySelector('input[aria-label=\"Διόρθωση ποσού απόδειξης\"]')?.value||'',currency:document.querySelector('[aria-label=\"Διόρθωση νομίσματος απόδειξης\"]')?.value||''}}");
+  assert(/MY\s*MARKET/i.test(reviewValues.merchant), `merchant proposal missing: ${JSON.stringify(reviewValues)}`);
+  assert(/22.*Αυγ.*2026/i.test(reviewValues.date), `date proposal missing: ${JSON.stringify(reviewValues)}`);
+  assert(Number(reviewValues.total)===24.5, `total proposal missing: ${JSON.stringify(reviewValues)}`);
+  const persistedOcrProposal=await c.call(`async function(){return await new Promise((resolve,reject)=>{const request=indexedDB.open('myfinhub-local-receipts-v1',1);request.onsuccess=()=>{const db=request.result;const tx=db.transaction('receipts','readonly');const all=tx.objectStore('receipts').getAll();all.onsuccess=()=>{const row=all.result[0];db.close();resolve(row?.proposal||null)};all.onerror=()=>{db.close();reject(all.error)}};request.onerror=()=>reject(request.error)})}`);
+  assert(persistedOcrProposal?.currency==='EUR', `stored OCR currency proposal missing: ${JSON.stringify(persistedOcrProposal)}`);
+  assert(/^EUR(?:\s|·|$)/.test(reviewValues.currency), `visible EUR currency label missing: ${JSON.stringify(reviewValues)}`);
   assert(externalRequests.length === 0, `OCR scan made external HTTP requests: ${externalRequests.join(', ')}`);
   await screenshot('receipt-local-ocr-proposal');
 
-  console.log('Receipt OCR QA: proposal only prefills; normal submit owns transaction + cleanup');
+  console.log('Receipt OCR QA: user corrections persist locally and reviewed proposal owns the Quick Entry prefill');
+  const reviewEdited=await c.call("function(){const set=(input,value)=>{const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')?.set;setter?.call(input,value);input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}))};const merchant=document.querySelector('input[aria-label=\"Διόρθωση καταστήματος απόδειξης\"]');const amount=document.querySelector('input[aria-label=\"Διόρθωση ποσού απόδειξης\"]');if(!merchant||!amount)return false;set(merchant,'QA CORRECTED MARKET');set(amount,'31.75');return true}");
+  assert(reviewEdited,'editable OCR merchant and amount controls exist');
+  await waitFor("function(){const m=document.querySelector('input[aria-label=\"Διόρθωση καταστήματος απόδειξης\"]'),a=document.querySelector('input[aria-label=\"Διόρθωση ποσού απόδειξης\"]');return m?.value==='QA CORRECTED MARKET'&&a?.value==='31.75'}",'edited OCR review values');
+  const saveCorrections=await c.call("function(){const button=[...document.querySelectorAll('.receipt-review-actions button')].find(node=>(node.textContent||'').includes('Αποθήκευση διορθώσεων'));button?.click();return Boolean(button&&!button.disabled)}");
+  assert(saveCorrections,'save OCR corrections action exists');
+  await waitFor("function(){return (document.querySelector('.receipt-success')?.textContent||'').includes('διορθώσεις')}",'local OCR correction persistence');
+  const persistedReview=await c.call(`async function(){return await new Promise((resolve,reject)=>{const request=indexedDB.open('myfinhub-local-receipts-v1',1);request.onsuccess=()=>{const db=request.result;const tx=db.transaction('receipts','readonly');const all=tx.objectStore('receipts').getAll();all.onsuccess=()=>{const row=all.result[0];db.close();resolve(row?.proposal||null)};all.onerror=()=>{db.close();reject(all.error)}};request.onerror=()=>reject(request.error)})}`);
+  assert(persistedReview?.merchant==='QA CORRECTED MARKET'&&Number(persistedReview?.total)===31.75,`corrected OCR proposal not persisted locally: ${JSON.stringify(persistedReview)}`);
+  await screenshot('receipt-local-ocr-reviewed');
+
   const applyClicked = await c.call("function(){const button=[...document.querySelectorAll('.receipt-review-actions button')].find(node=>(node.textContent||'').includes('Χρήση στη Γρήγορη Κίνηση'));button?.click();return Boolean(button)}");
-  assert(applyClicked, 'proposal handoff action exists');
-  await waitFor("function(){return Boolean(document.querySelector('.quick-modal:not(.contextual-quick-modal)'))&&!document.querySelector('.receipt-inbox')}", 'Quick Entry after proposal');
+  assert(applyClicked, 'reviewed proposal handoff action exists');
+  await waitFor("function(){return Boolean(document.querySelector('.quick-modal:not(.contextual-quick-modal)'))&&!document.querySelector('.receipt-inbox')}", 'Quick Entry after reviewed proposal');
   assert((await receiptCount()) === 1, 'receipt remains pending before normal Quick Entry submit');
   const quickValues = await c.call("function(){return [...document.querySelectorAll('.quick-modal:not(.contextual-quick-modal) input')].map(input=>input.value)}");
-  assert(quickValues.some((value) => /MY\s*MARKET/i.test(value)), `merchant not prefilled: ${JSON.stringify(quickValues)}`);
+  assert(quickValues.some((value) => value==='QA CORRECTED MARKET'), `corrected merchant not prefilled: ${JSON.stringify(quickValues)}`);
   assert(quickValues.some((value) => value === '2026-08-22' || /22\s+Αυγ\s+2026/i.test(value)), `date not prefilled: ${JSON.stringify(quickValues)}`);
-  assert(quickValues.some((value) => Number(value) === 24.5), `amount not prefilled: ${JSON.stringify(quickValues)}`);
+  assert(quickValues.some((value) => Number(value) === 31.75), `corrected amount not prefilled: ${JSON.stringify(quickValues)}`);
   const submitClicked = await c.call("function(){const button=[...document.querySelectorAll('.quick-modal:not(.contextual-quick-modal) .save-button')].find(node=>(node.textContent||'').includes('Καταχώριση'));button?.click();return Boolean(button)}");
   assert(submitClicked, 'normal Quick Entry submit exists');
   await waitFor("function(){return !document.querySelector('.quick-modal')}", 'normal transaction submit');
   await waitFor(`async function(){return await new Promise((resolve,reject)=>{const request=indexedDB.open('myfinhub-local-receipts-v1',1);request.onsuccess=()=>{const db=request.result;const tx=db.transaction('receipts','readonly');const count=tx.objectStore('receipts').count();count.onsuccess=()=>{resolve(count.result===0);db.close()};count.onerror=()=>reject(count.error)};request.onerror=()=>reject(request.error)})}`, 'receipt cleanup after transaction');
   assert((await receiptCount()) === 0, 'receipt draft deleted only after normal submit');
 
-  console.log('Receipt OCR QA: mobile inbox remains usable');
+  console.log('Receipt OCR QA: mobile launcher stays inside Quick Entry footer and inbox remains usable');
   await c.send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
-  await openReceiptInbox();
+  const mobileQuickOpened=await c.call("function(){const button=document.querySelector('[data-global-quick-entry=\"mobile\"]');button?.click();return Boolean(button)}");
+  assert(mobileQuickOpened,'mobile Quick Entry launch exists');
+  await waitFor("function(){return Boolean(document.querySelector('.quick-modal:not(.contextual-quick-modal)'))}",'mobile generic Quick Entry');
+  const launcherGeometry=await c.call("function(){const footer=document.querySelector('.quick-modal:not(.contextual-quick-modal)>footer'),receipt=footer?.querySelector('.receipt-quick-launch'),actions=[...footer?.querySelectorAll('button')||[]].filter(node=>node!==receipt);if(!footer||!receipt||actions.length<2)return null;const rr=receipt.getBoundingClientRect(),fr=footer.getBoundingClientRect(),ars=actions.map(node=>node.getBoundingClientRect()),style=getComputedStyle(receipt);const overlap=ars.some(r=>Math.max(0,Math.min(rr.right,r.right)-Math.max(rr.left,r.left))*Math.max(0,Math.min(rr.bottom,r.bottom)-Math.max(rr.top,r.top))>0);return {position:style.position,receipt:{left:rr.left,right:rr.right,top:rr.top,bottom:rr.bottom,width:rr.width,height:rr.height},footer:{left:fr.left,right:fr.right,top:fr.top,bottom:fr.bottom},overlap}}");
+  assert(launcherGeometry&&launcherGeometry.position==='static',`mobile receipt launcher must be a footer item: ${JSON.stringify(launcherGeometry)}`);
+  assert(!launcherGeometry.overlap,`mobile receipt launcher overlaps primary footer actions: ${JSON.stringify(launcherGeometry)}`);
+  assert(launcherGeometry.receipt.left>=launcherGeometry.footer.left-1&&launcherGeometry.receipt.right<=launcherGeometry.footer.right+1,'mobile receipt launcher stays within footer bounds');
+  assert(launcherGeometry.receipt.height>=40,'mobile receipt launcher is touch-safe');
+  await screenshot('receipt-local-mobile-quick-entry');
+  const mobileReceiptOpened=await c.call("function(){const button=document.querySelector('.receipt-quick-launch');button?.click();return Boolean(button)}");
+  assert(mobileReceiptOpened,'mobile receipt launcher opens inbox');
+  await waitFor("function(){return Boolean(document.querySelector('.receipt-inbox'))}",'mobile receipt inbox');
   const overflow = await c.call("function(){return Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}");
   assert(overflow <= 1, `mobile receipt inbox horizontal overflow ${overflow}px`);
   await screenshot('receipt-local-mobile-empty');

@@ -5,12 +5,27 @@
 .page-stack{display:grid;gap:15px}
 .page-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;padding:6px 4px 0}
 .heading-actions{display:flex;gap:8px}
-.page-heading h1{margin:3px 0 3px;font-size:27px;letter-spacing:-.045em}
+.page-heading h1{margin:3px 0 3px;font-size:30px;letter-spacing:-.045em}
 .page-heading p{margin:0;color:var(--muted);font-size:11px}
 .eyebrow{font-size:8px;letter-spacing:.13em;font-weight:820;color:#4777d6}
 .metric-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
-.metric-card{border-radius:19px;padding:16px;min-height:125px;background:linear-gradient(145deg,#f9fbff,#edf3fa);border:1px solid rgba(255,255,255,.9);box-shadow:var(--shadow-raised);position:relative;overflow:hidden}
-.metric-card:after{content:"";position:absolute;width:65px;height:65px;border-radius:50%;right:-18px;bottom:-25px;background:var(--tone,#2f6fed);opacity:.06}
+.metric-card{border-radius:var(--radius-md);padding:16px;min-height:125px;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow-soft);position:relative;overflow:hidden}
+.metric-card:after{display:none}
 .metric-head{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:9px;font-weight:700}
-.metric-icon{width:29px;height:29px;border-radius:10px;display:grid;place-items:center;background:color-mix(in srgb,var(--tone) 11%,white);color:var(--tone)}
+.metric-icon{width:29px;height:29px;border-radius:9px;display:grid;place-items:center;background:color-mix(in srgb,var(--tone) 11%,white);color:var(--tone)}
 .metric-card strong{display:block;font-size:23px;letter-spacing:-.045em;margin-top:12px}
+
+
+@media(max-width:980px){
+  .page-heading{flex-wrap:wrap;align-items:flex-start}
+  .page-heading>div{min-width:0}
+  .heading-actions{flex-wrap:wrap;max-width:100%}
+}
+@media(max-width:680px){
+  .page-heading{display:grid;grid-template-columns:minmax(0,1fr);align-items:start;justify-content:stretch}
+  .heading-actions{width:100%;display:flex;flex-wrap:wrap;justify-content:flex-start}
+  .page-heading>button{justify-self:start}
+}
+@media(max-width:420px){
+  .heading-actions>button{flex:1 1 min(140px,100%);justify-content:center}
+}

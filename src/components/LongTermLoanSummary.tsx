@@ -9,7 +9,7 @@ import { Button } from './Button';
 export function LongTermLoanSummary({data,onPayLoan,onOpenLoans}:{data:FinanceData;onPayLoan:(loanId:string)=>void;onOpenLoans:()=>void}){
   const obligations=activeLongTermLoanObligations(data);
   if(!obligations.length)return null;
-  return <section className="panel neo-flat long-term-recurring" aria-labelledby="linked-loan-obligations-title">
+  return <section className="panel surface-flat long-term-recurring" aria-labelledby="linked-loan-obligations-title">
     <div className="recurring-group-heading recurring-loan-group-heading"><Landmark size={16}/><div><span id="linked-loan-obligations-title">Δόσεις / Δάνεια</span><small>Συνδεδεμένες δανειακές υποχρεώσεις με την κανονική ροή πληρωμής δανείου.</small></div></div>
     <div className="long-term-recurring-list" role="list" aria-label="Ενεργές δανειακές υποχρεώσεις">
       {obligations.map(({loan,remainingInstallments,nextAmount,typicalDay,lastPayment})=><article className="long-term-loan-obligation" role="listitem" aria-label={`Δανειακή υποχρέωση ${loan.name}`} data-linked-loan={loan.id} key={loan.id}>
@@ -17,7 +17,7 @@ export function LongTermLoanSummary({data,onPayLoan,onOpenLoans}:{data:FinanceDa
         <div className="long-term-loan-next"><b>{typicalDay?`Ημέρα ${typicalDay}`:'—'}</b><small>{lastPayment?`Τελευταία ${shortDate(lastPayment.date)}`:'Χωρίς ακόμη καταγεγραμμένη πληρωμή'}</small></div>
         <div className="long-term-loan-account"><b>{loan.defaultAccountId?accountDisplayName(data,loan.defaultAccountId):'—'}</b><small>{loan.defaultAccountId?'Προεπιλεγμένος':'Χωρίς προεπιλογή'}</small></div>
         <strong><AnimatedAmount value={nextAmount}/></strong>
-        <div className="long-term-loan-actions"><button type="button" className="pay-action save-button linked-loan-pay" aria-label={`Πληρωμή δανειακής υποχρέωσης ${loan.name}`} onClick={()=>onPayLoan(loan.id)}><ReceiptText size={16}/><span>Πληρωμή</span></button><Button type="button" variant="ghost" className="linked-loan-open" onClick={onOpenLoans}>Προβολή</Button></div>
+        <div className="long-term-loan-actions"><Button type="button" variant="primary" className="pay-action linked-loan-pay" aria-label={`Πληρωμή δανειακής υποχρέωσης ${loan.name}`} onClick={()=>onPayLoan(loan.id)}><ReceiptText size={16}/><span>Πληρωμή</span></Button><Button type="button" variant="ghost" className="linked-loan-open" onClick={onOpenLoans}>Προβολή</Button></div>
       </article>)}
     </div>
     <Button type="button" variant="ghost" className="long-term-loans-open" data-open-loans="true" onClick={onOpenLoans}>Άνοιγμα Δόσεων & Δανείων για πλήρη προβολή</Button>

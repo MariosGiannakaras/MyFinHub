@@ -32,7 +32,11 @@ describe('app-owned entry controls',()=>{
     expect(modalFocusSource).toContain('opener.current?.focus');
     expect(modalFocusSource).toContain("event.key !== 'Tab'");
     expect(modalFocusSource).toContain('canReceiveFocus(preferredTarget)');
+    expect(modalFocusSource).toContain('element.tabIndex>=0');
     expect(modalFocusSource).toContain('!root.contains(document.activeElement)');
+    expect(modalFocusSource).toContain('const currentIndex=current?items.indexOf(current):-1');
+    expect(modalFocusSource).toContain('(currentIndex+1)%items.length');
+    expect(modalFocusSource).toContain('(currentIndex-1+items.length)%items.length');
   });
   it('keeps accessible listbox and calendar roles',()=>{
     expect(selectSource).toContain('role="listbox"');
@@ -45,7 +49,8 @@ describe('app-owned entry controls',()=>{
   it('uses local today and refuses keyboard focus outside date bounds',()=>{
     expect(dateSource).toContain("import { localDateString } from '../lib/localDate'");
     expect(dateSource).toContain('const today=localDateString()');
-    expect(dateSource).toContain("if((min&&next<min)||(max&&next>max))return");
+    expect(dateSource).toContain("if((safeMin&&next<safeMin)||(safeMax&&next>safeMax))return");
+    expect(dateSource).toContain('isValidDateOnly(value)?value:today');
     expect(dateSource).toContain('querySelector<HTMLButtonElement>');
     expect(dateSource).toContain(':not(:disabled)');
   });
@@ -56,7 +61,7 @@ describe('app-owned entry controls',()=>{
     expect(sharedStyles).toContain('.app-control{box-sizing:border-box;width:100%;min-height:40px');
     expect(sharedStyles).toContain('padding:0 10px;font-size:var(--ux-body-size);line-height:1.4');
     expect(sharedStyles).toContain('.owned-input-shell[data-density=compact]>.app-control{min-height:32px');
-    expect(sharedStyles).toContain(':where(button,input,select,textarea,summary,[tabindex]):focus-visible{outline:0;box-shadow:var(--focus)!important}');
+    expect(sharedStyles).toContain(':where(button,a[href],input,select,textarea,summary,[tabindex]):focus-visible{outline:0;box-shadow:var(--focus)!important}');
     expect(styles).toContain('.owned-input-shell>.owned-input{padding-right:34px;cursor:pointer}');
     expect(integrationStyles).not.toContain('.settings-form .owned-input-shell>.owned-input');
   });

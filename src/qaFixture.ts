@@ -49,9 +49,9 @@ export function qaFinanceData(): FinanceData {
     app:'RheomIQ',schemaVersion:3,updatedAt:'2026-08-26T10:24:00.000Z',
     seed:{
       accounts:[
-        {id:'piraeus-payroll',name:'Μισθοδοσία',short:'ΜΙΣ',kind:'bank'},
-        {id:'piraeus-savings',name:'Ταμιευτηρίου',short:'ΤΑΜ',kind:'savings',excludeFromAvailable:true},
-        {id:'cash',name:'Μετρητά',short:'CASH',kind:'cash'},
+        {id:'piraeus-payroll',name:'Μισθοδοσία',short:'ΜΙΣ',kind:'bank',providerId:'piraeus',bankAccountCategory:'payroll'},
+        {id:'piraeus-savings',name:'Ταμιευτηρίου',short:'ΤΑΜ',kind:'savings',providerId:'piraeus',excludeFromAvailable:true},
+        {id:'cash',name:'Μετρητά',short:'CASH',kind:'cash',cashRole:'daily',cashType:'cash'},
         {id:'alpha-main',name:'Alpha Bank',short:'ALPHA',kind:'bank'},
         {id:'revolut-main',name:'Revolut',short:'REV',kind:'bank'},
         {id:'national-main',name:'Εθνική Τράπεζα',short:'ΕΤΕ',kind:'bank'},

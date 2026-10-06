@@ -3,16 +3,18 @@
   --ux-body-size:15px;
   --ux-small-size:13px;
   --ux-tiny-size:11px;
+  --ux-dense-data-size:12px;
+  --ux-dense-label-size:11px;
   --ux-heading-size:31px;
 }
-html[data-text-size="compact"]{--ux-body-size:13px;--ux-small-size:11.5px;--ux-tiny-size:10px;--ux-heading-size:28px}
-html[data-text-size="normal"]{--ux-body-size:15px;--ux-small-size:13px;--ux-tiny-size:11px;--ux-heading-size:31px}
-html[data-text-size="large"]{--ux-body-size:17px;--ux-small-size:14px;--ux-tiny-size:12px;--ux-heading-size:34px}
+html[data-text-size="compact"]{--ux-body-size:13px;--ux-small-size:11.5px;--ux-tiny-size:10px;--ux-dense-data-size:11.5px;--ux-dense-label-size:11px;--ux-heading-size:28px}
+html[data-text-size="normal"]{--ux-body-size:15px;--ux-small-size:13px;--ux-tiny-size:11px;--ux-dense-data-size:12px;--ux-dense-label-size:11px;--ux-heading-size:31px}
+html[data-text-size="large"]{--ux-body-size:17px;--ux-small-size:14px;--ux-tiny-size:12px;--ux-dense-data-size:13px;--ux-dense-label-size:12px;--ux-heading-size:34px}
 
 .workspace,.modal-backdrop,.editor-backdrop,.picker-backdrop,.owned-popover-backdrop{font-size:var(--ux-body-size)}
 .sidebar nav button{font-size:var(--ux-body-size)}
 .page-heading h1{font-size:var(--ux-heading-size)}
-.page-heading p,.command-pill{font-size:var(--ux-small-size);line-height:1.6}
+.page-heading p{font-size:var(--ux-small-size);line-height:1.6}
 .eyebrow,.month-toolbar,.metric-head,.file-line,.file-panel small,.sidebar-foot,.brand-block small{font-size:var(--ux-tiny-size)}
 .panel,.semantic-table,.settings-form,.filterbar,.loan-toolbar,.action-status,.form-error,.empty-state,.empty-inline,.logic-note{line-height:1.5}
 .semantic-table{font-size:var(--ux-small-size)}
@@ -53,7 +55,7 @@ button,input,select,textarea{line-height:1.4}
 .text-size-picker button.active{border-color:rgba(47,111,237,.52);background:rgba(47,111,237,.08);box-shadow:0 0 0 2px rgba(47,111,237,.08)}
 
 .sort-direction-control{display:inline-flex;align-items:center;gap:4px;padding:3px;border:1px solid var(--line);border-radius:10px;background:#eef3fa;box-shadow:var(--shadow-inset)}
-.sort-direction-control button{border:0;border-radius:7px;background:transparent;padding:6px 9px;min-height:32px;font-size:var(--ux-tiny-size);font-weight:760;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:4px}
+.sort-direction-control button{border:0;border-radius:7px;background:transparent;padding:6px 9px;min-height:42px;font-size:var(--ux-tiny-size);font-weight:760;color:var(--muted);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:4px}
 .sort-direction-control button.active{background:#fff;color:var(--blue);box-shadow:var(--shadow-soft)}
 .sort-direction-control button:not(.active):hover{color:var(--blue);background:rgba(255,255,255,.6)}
 .transaction-sort-summary,.loan-sort-controls,.panel-head-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
@@ -82,7 +84,7 @@ button,input,select,textarea{line-height:1.4}
   .transaction-sort-summary,.loan-sort-controls{width:100%;align-items:stretch}
   .loan-sort-controls label{width:100%;justify-content:space-between}
   .sort-direction-control{align-self:flex-start}
-  .sort-direction-control button{min-height:40px;padding-inline:12px}
+  .sort-direction-control button{min-height:42px;padding-inline:12px}
   .panel-head-actions{width:100%;justify-content:space-between}
   .mobile-row-actions button,.mobile-recurring-actions button,.mobile-nav button,.mobile-action-menu summary{min-height:44px}
   .row-actions button,.bank-add-btn,.icon-button,.close-picker{min-width:40px;min-height:40px}

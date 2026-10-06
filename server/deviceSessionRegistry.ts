@@ -103,12 +103,24 @@ export async function ensureDeviceSessionAccess(req: any, accessToken: string, u
   const metadata = clientMetadata(req);
   const now = new Date().toISOString();
   if (!existing) {
-    const created = await rest<DeviceSessionRecord[]>('myfinhub_device_sessions', accessToken, {
-      method: 'POST',
-      headers: { prefer: 'return=representation' },
-      body: JSON.stringify({ session_id: sessionId, user_id: userId, ...metadata, first_seen_at: now, last_seen_at: now }),
-    });
-    return created[0] ?? { session_id: sessionId, user_id: userId, ...metadata, first_seen_at: now, last_seen_at: now, revoked_at: null };
+    const bootstrap = { session_id: sessionId, user_id: userId, ...metadata, first_seen_at: now, last_seen_at: now, revoked_at: null };
+    try {
+      await rest<unknown>('myfinhub_device_sessions', accessToken, {
+        method: 'POST',
+        headers: { prefer: 'return=minimal' },
+        body: JSON.stringify(bootstrap),
+      });
+      return bootstrap;
+    } catch (error) {
+      if (!(error instanceof ApiError) || error.status !== 409) throw error;
+      // Two first requests can race on the same Auth session. If the other request
+      // registered the row, it is now visible through the active-session policy.
+      // A conflicting row that remains invisible is a revoked session and must fail closed.
+      const retryRows = await rest<DeviceSessionRecord[]>(rowPath(sessionId), accessToken);
+      const raced = retryRows[0];
+      if (raced && !raced.revoked_at) return raced;
+      throw new ApiError(401, 'DEVICE_ACCESS_REVOKED', 'Η πρόσβαση αυτής της συσκευής έχει αφαιρεθεί.');
+    }
   }
   const lastSeen = Date.parse(existing.last_seen_at || '');
   const metadataChanged = existing.platform !== metadata.platform || existing.device_label !== metadata.device_label || existing.app_version !== metadata.app_version;

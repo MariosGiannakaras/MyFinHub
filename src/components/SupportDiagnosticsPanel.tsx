@@ -48,7 +48,7 @@ export function SupportDiagnosticsPanel({data,filePath,lastSavedAt}:Props){
       setMessage('Δεν ήταν δυνατή η αντιγραφή διαγνωστικών.');
     }
   };
-  return <section className="panel neo-raised support-diagnostics" aria-labelledby="support-diagnostics-title">
+  return <section className="panel surface-raised support-diagnostics" aria-labelledby="support-diagnostics-title">
     <div className="panel-head"><div><span id="support-diagnostics-title">Διαγνωστικά υποστήριξης</span><small>Μόνο για development/support builds. Δεν περιλαμβάνονται ποσά, περιγραφές συναλλαγών, στοιχεία κάρτας ή tokens.</small></div><Wrench/></div>
     <div className="support-diagnostics-grid">
       <span><small>Schema</small><b>{snapshot.schemaVersion}</b></span>

@@ -7,11 +7,13 @@ import { assertValidIban, formatIban, isValidIban, normalizeIban } from '../src/
 const migration=readFileSync(new URL('../supabase/migrations/20260824205000_add_account_metadata.sql',import.meta.url),'utf8');
 const grantHardening=readFileSync(new URL('../supabase/migrations/20260825195120_tighten_account_metadata_function_grants.sql',import.meta.url),'utf8');
 const conflictFix=readFileSync(new URL('../supabase/migrations/20260901133549_fix_account_metadata_upsert_conflict.sql',import.meta.url),'utf8');
+const activeDeviceHardening=readFileSync(new URL('../supabase/migrations/20260930062504_harden_active_device_sensitive_rls.sql',import.meta.url),'utf8');
 const financeTypes=readFileSync(new URL('../src/types.ts',import.meta.url),'utf8');
 const financeHook=readFileSync(new URL('../src/hooks/useFinance.ts',import.meta.url),'utf8');
 const dashboardSource=readFileSync(new URL('../src/pages/DashboardPage.tsx',import.meta.url),'utf8');
 const settingsSource=readFileSync(new URL('../src/pages/SettingsPage.tsx',import.meta.url),'utf8');
 const accountManagerSource=readFileSync(new URL('../src/components/AccountManagementSettings.tsx',import.meta.url),'utf8');
+const accountIbanSource=readFileSync(new URL('../src/components/AccountIban.tsx',import.meta.url),'utf8');
 
 describe('account IBAN metadata',()=>{
   it('normalizes, validates and formats real IBAN checksums without inventing issuer restrictions',()=>{
@@ -60,6 +62,15 @@ describe('account IBAN metadata',()=>{
     expect(grantHardening).toContain('to authenticated');
   });
 
+  it('requires the current active device for account metadata RLS and RPC writes',()=>{
+    expect(activeDeviceHardening).toContain('create policy rheomiq_account_metadata_owner_aal2_select');
+    expect(activeDeviceHardening).toContain('create policy rheomiq_account_metadata_owner_aal2_insert');
+    expect(activeDeviceHardening).toContain('create policy rheomiq_account_metadata_owner_aal2_update');
+    expect(activeDeviceHardening).toContain('and (select public.rheomiq_is_owner_aal2())');
+    expect(activeDeviceHardening).toContain('if v_uid is null or not (select public.rheomiq_is_owner_aal2()) then');
+    expect(activeDeviceHardening).toContain('on conflict on constraint rheomiq_account_metadata_pkey do nothing');
+  });
+
   it('keeps first-write conflict handling unambiguous inside the table-returning PL/pgSQL function',()=>{
     expect(conflictFix).toContain('on conflict on constraint rheomiq_account_metadata_pkey do nothing');
     expect(conflictFix).not.toContain('on conflict (owner_user_id, account_id) do nothing');
@@ -70,7 +81,9 @@ describe('account IBAN metadata',()=>{
   it('keeps IBAN outside FinanceData and finance Undo/Redo while exposing it on Dashboard and Settings',()=>{
     expect(financeTypes.toLowerCase()).not.toContain('iban');
     expect(financeHook.toLowerCase()).not.toContain('iban');
-    expect(dashboardSource).toContain('<AccountIban accountId={account.id}/>');
+    expect(dashboardSource).toContain('<AccountIban accountId={account.id} variant="dashboard"');
+    expect(accountIbanSource).toContain("variant?:'default'|'dashboard'");
+    expect(accountIbanSource).toContain('••••');
     expect(settingsSource).toContain('<AccountManagementSettings');
     expect(accountManagerSource).toContain('useAccountMetadata');
     expect(accountManagerSource).toContain('saveAccountMetadata');

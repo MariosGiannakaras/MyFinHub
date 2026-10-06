@@ -19,12 +19,16 @@ import {
 import { useMemo, useState } from 'react';
 import { AnimatedAmount } from '../components/AnimatedAmount';
 import { Button } from '../components/Button';
+import { PageHeader } from '../components/PageHeader';
+import { IconButton } from '../components/IconButton';
 import { LegacyConfirmationPanel } from '../components/LegacyConfirmationPanel';
 import { Tooltip } from '../components/Tooltip';
 import { attentionDismissDecision, attentionSnoozeDecision, visibleAttentionItems, type AttentionItem } from '../lib/attention';
 import { shortDate } from '../lib/format';
 import { accountDisplayName } from '../lib/ui';
 import type { AttentionDecision, FinanceData, ReviewDecision } from '../types';
+import './AttentionCompletion.css';
+import { userErrorMessage } from '../lib/userMessage';
 
 const actionLabel=(item:AttentionItem)=>item.action==='complete_scheduled'?'Ολοκλήρωση':item.action==='pay_recurring'?'Πληρωμή παγίου':item.action==='pay_loan'?'Πληρωμή δόσης':item.action==='pay_credit'?'Πληρωμή κάρτας':item.action==='collect_lending'?'Καταγραφή επιστροφής':item.action==='open_budgets'?'Προβολή budgets':item.action==='open_forecast'?'Άνοιγμα πρόβλεψης':item.action==='categorize_transaction'?'Κατηγοριοποίηση':item.action==='review_duplicate'?'Έλεγχος':'Προβολή';
 const severityLabel=(severity:AttentionItem['severity'])=>severity==='danger'?'Άμεση προσοχή':severity==='warning'?'Σύντομα':'Ενημέρωση';
@@ -71,7 +75,7 @@ function ApprovedGroup({title,subtitle,tone,items,data,visible,asOf,onAction,onS
         <span className="attention-approved-group-icon" aria-hidden="true">{tone==='danger'?<AlertTriangle/>:tone==='warning'?<Clock3/>:tone==='pending'?<ListChecks/>:<BellRing/>}</span>
         <div><h2 id={`attention-${tone}-title`}>{title} ({items.length})</h2><p>{subtitle}</p></div>
       </div>
-      {items.length?<button type="button" className="attention-approved-group-link" aria-expanded={items.length>4?expanded:undefined} onClick={showAll}>{items.length>4&&expanded?'Σύμπτυξη':'Προβολή όλων'} <ArrowRight/></button>:<span className="attention-approved-group-count" aria-label="0 στοιχεία">0</span>}
+      {items.length?<Button type="button" variant="ghost" className="attention-approved-group-link" aria-expanded={items.length>4?expanded:undefined} onClick={showAll}>{items.length>4&&expanded?'Σύμπτυξη':'Προβολή όλων'} <ArrowRight/></Button>:<span className="attention-approved-group-count" aria-label="0 στοιχεία">0</span>}
     </header>
     <div className={`attention-approved-table-head ${hasAmounts?'has-amount':'no-amount'}`} aria-hidden="true"><span>Τύπος</span><span>Περιγραφή</span><span>{contextHeading}</span>{hasAmounts?<span>Ποσό</span>:null}<span>Ημερομηνία</span><span>Ενέργειες</span></div>
     {items.length?<div id={rowsId} className="attention-approved-rows" role="list">{visibleItems.map(item=><article role="listitem" className={`attention-row attention-approved-row ${item.severity} ${hasAmounts?'has-amount':'no-amount'}`} data-attention-id={item.id} key={item.id}>
@@ -80,7 +84,7 @@ function ApprovedGroup({title,subtitle,tone,items,data,visible,asOf,onAction,onS
       <div className={`attention-approved-context ${!visible&&item.kind==='lending'?'private-text':''}`}>{itemContext(data,item)}</div>
       {hasAmounts?<div className="attention-approved-amount">{item.amount!==undefined?<b><AnimatedAmount value={item.amount} hidden={!visible}/></b>:<small>—</small>}</div>:null}
       <div className="attention-approved-date">{item.dueDate?<b>{shortDate(item.dueDate)}</b>:<b>—</b>}<small>{dateContext(asOf,item.dueDate)}</small></div>
-      <div className="attention-actions attention-approved-actions"><Button type="button" variant="primary" className="compact" onClick={()=>onAction(item)}>{actionLabel(item)} <ArrowRight size={14}/></Button><Tooltip label="Προσωρινή αναβολή" side="left"><button type="button" className="attention-approved-icon-action" aria-label={`Αναβολή ${item.title}`} onClick={()=>onSnooze(item)}><Clock3/></button></Tooltip>{item.severity!=='danger'?<Tooltip label="Απόκρυψη όσο δεν αλλάζει η κατάσταση" side="left"><button type="button" className="attention-approved-icon-action" aria-label={`Απόκρυψη ${item.title}`} onClick={()=>onDismiss(item)}><XCircle/></button></Tooltip>:null}</div>
+      <div className="attention-actions attention-approved-actions"><Button type="button" variant="primary" className="compact" onClick={()=>onAction(item)}>{actionLabel(item)} <ArrowRight size={14}/></Button><Tooltip label="Προσωρινή αναβολή" side="left"><IconButton type="button" className="attention-approved-icon-action" aria-label={`Αναβολή ${item.title}`} onClick={()=>onSnooze(item)}><Clock3/></IconButton></Tooltip>{item.severity!=='danger'?<Tooltip label="Απόκρυψη όσο δεν αλλάζει η κατάσταση" side="left"><IconButton type="button" className="attention-approved-icon-action" aria-label={`Απόκρυψη ${item.title}`} onClick={()=>onDismiss(item)}><XCircle/></IconButton></Tooltip>:null}</div>
     </article>)}</div>:<div className="attention-approved-empty-row"><CheckCircle2/><span>{emptyText}</span></div>}
   </section>;
 }
@@ -88,6 +92,7 @@ function ApprovedGroup({title,subtitle,tone,items,data,visible,asOf,onAction,onS
 export function AttentionPage({data,asOf,onAction,onDecision,onReviewDecision}:{data:FinanceData;asOf:string;onAction:(item:AttentionItem)=>void;onDecision:(id:string,decision:AttentionDecision)=>void;onReviewDecision:(id:string,decision:ReviewDecision)=>void}){
   const [visible,setVisible]=useState(false);
   const [message,setMessage]=useState('');
+  const [mobileExpanded,setMobileExpanded]=useState(false);
   const items=useMemo(()=>visibleAttentionItems(data,asOf),[data,asOf]);
   const groups=useMemo(()=>{
     const danger=items.filter(item=>item.severity==='danger');
@@ -97,7 +102,7 @@ export function AttentionPage({data,asOf,onAction,onDecision,onReviewDecision}:{
     const pending=info.filter(item=>item.kind!=='forecast'&&item.kind!=='budget');
     return {danger,warning,pending,notices};
   },[items]);
-  const decide=(item:AttentionItem,kind:'snooze'|'dismiss')=>{try{const decision=kind==='snooze'?attentionSnoozeDecision(item,asOf):attentionDismissDecision(item);onDecision(item.id,decision);setMessage(kind==='snooze'?`Η υπενθύμιση «${item.title}» αναβλήθηκε προσωρινά.`:`Η ενημέρωση «${item.title}» κρύφτηκε όσο δεν αλλάζει η κατάστασή της.`)}catch(reason){setMessage(reason instanceof Error?reason.message:'Δεν ήταν δυνατή η αλλαγή της υπενθύμισης.')}};
+  const decide=(item:AttentionItem,kind:'snooze'|'dismiss')=>{try{const decision=kind==='snooze'?attentionSnoozeDecision(item,asOf):attentionDismissDecision(item);onDecision(item.id,decision);setMessage(kind==='snooze'?`Η υπενθύμιση «${item.title}» αναβλήθηκε προσωρινά.`:`Η ενημέρωση «${item.title}» κρύφτηκε όσο δεν αλλάζει η κατάστασή της.`)}catch(reason){setMessage(userErrorMessage(reason,'Δεν ήταν δυνατή η αλλαγή της υπενθύμισης.'))}};
   const activate=(item:AttentionItem)=>{
     if(item.action==='open_dashboard'){location.hash='#/dashboard';return}
     if(item.action==='open_recurring'){location.hash='#/recurring';return}
@@ -110,14 +115,17 @@ export function AttentionPage({data,asOf,onAction,onDecision,onReviewDecision}:{
     onAction(item);
   };
   const counts={danger:groups.danger.length,warning:groups.warning.length,pending:groups.pending.length,notices:groups.notices.length};
+  const mobileItems=mobileExpanded?items:items.slice(0,6);
 
   return <div className="page-stack attention-page attention-approved-page">
     <div className="attention-approved-desktop">
-      <section className="page-heading attention-approved-heading">
-        <span className="attention-approved-heading-icon" aria-hidden="true"><AlertTriangle/></span>
-        <div><h1>Έλεγχος</h1><p>Ό,τι χρειάζεται τη ματιά ή την απόφασή σου για τα οικονομικά σου.</p></div>
-        <Button type="button" variant="secondary" className="privacy-toggle" aria-pressed={visible} onClick={()=>setVisible(value=>!value)}>{visible?<EyeOff size={17}/>:<Eye size={17}/>} {visible?'Απόκρυψη ποσών':'Εμφάνιση ποσών'}</Button>
-      </section>
+      <PageHeader
+        className="attention-approved-heading"
+        title="Έλεγχος"
+        description={<p>Ό,τι χρειάζεται τη ματιά ή την απόφασή σου για τα οικονομικά σου.</p>}
+        leading={<span className="attention-approved-heading-icon" aria-hidden="true"><AlertTriangle/></span>}
+        trailing={<Button type="button" variant="secondary" className="privacy-toggle" aria-pressed={visible} onClick={()=>setVisible(value=>!value)}>{visible?<EyeOff size={17}/>:<Eye size={17}/>} {visible?'Απόκρυψη ποσών':'Εμφάνιση ποσών'}</Button>}
+      />
 
       <section className="attention-approved-summary-grid" aria-label="Σύνοψη εκκρεμοτήτων">
         <article className="attention-approved-summary-card danger"><span><AlertTriangle/></span><div><small>Επείγοντα</small><b>{counts.danger}</b><em>Άμεση ενέργεια</em></div></article>
@@ -152,10 +160,10 @@ export function AttentionPage({data,asOf,onAction,onDecision,onReviewDecision}:{
     </div>
 
     <div className="attention-canonical-mobile">
-      <section className="page-heading"><div><span className="eyebrow">ΕΛΕΓΧΟΣ</span><h1>Έλεγχος</h1><p>Εκκρεμότητες και κινήσεις που χρειάζονται τη δική σου ματιά. Το MyFinHub δεν αλλάζει οικονομικά δεδομένα χωρίς δική σου ενέργεια.</p></div><Button type="button" variant="secondary" className="privacy-toggle" aria-pressed={visible} onClick={()=>setVisible(value=>!value)}>{visible?<EyeOff size={17}/>:<Eye size={17}/>} {visible?'Απόκρυψη ποσών':'Εμφάνιση ποσών'}</Button></section>
-      <section className="attention-summary-grid" aria-label="Σύνοψη εκκρεμοτήτων"><article className="neo-raised danger"><AlertTriangle/><div><span>Άμεση προσοχή</span><b>{items.filter(item=>item.severity==='danger').length}</b><small>Δεν κρύβονται μόνιμα όσο παραμένουν επείγουσες.</small></div></article><article className="neo-raised warning"><Clock3/><div><span>Σύντομα</span><b>{items.filter(item=>item.severity==='warning').length}</b><small>Υποχρεώσεις ή όρια που πλησιάζουν.</small></div></article><article className="neo-raised info"><BellRing/><div><span>Ενημέρωση</span><b>{items.filter(item=>item.severity==='info').length}</b><small>Γνωστές επόμενες ενέργειες χαμηλότερης προτεραιότητας.</small></div></article></section>
+      <PageHeader eyebrow="ΕΛΕΓΧΟΣ" title="Έλεγχος" description={<p>Εκκρεμότητες και κινήσεις που χρειάζονται τη δική σου ματιά. Το MyFinHub δεν αλλάζει οικονομικά δεδομένα χωρίς δική σου ενέργεια.</p>} trailing={<Button type="button" variant="secondary" className="privacy-toggle" aria-pressed={visible} onClick={()=>setVisible(value=>!value)}>{visible?<EyeOff size={17}/>:<Eye size={17}/>} {visible?'Απόκρυψη ποσών':'Εμφάνιση ποσών'}</Button>}/>
+      <section className="attention-summary-grid" aria-label="Σύνοψη εκκρεμοτήτων"><article className="surface-raised danger"><AlertTriangle/><div><span>Άμεση προσοχή</span><b>{items.filter(item=>item.severity==='danger').length}</b><small>Δεν κρύβονται μόνιμα όσο παραμένουν επείγουσες.</small></div></article><article className="surface-raised warning"><Clock3/><div><span>Σύντομα</span><b>{items.filter(item=>item.severity==='warning').length}</b><small>Υποχρεώσεις ή όρια που πλησιάζουν.</small></div></article><article className="surface-raised info"><BellRing/><div><span>Ενημέρωση</span><b>{items.filter(item=>item.severity==='info').length}</b><small>Γνωστές επόμενες ενέργειες χαμηλότερης προτεραιότητας.</small></div></article></section>
       {message?<div className="action-status" role="status" aria-live="polite">{message}</div>:null}
-      <section className="panel neo-raised attention-list-panel"><div className="panel-head"><div><span>Ενεργές εκκρεμότητες</span><small>Ταξινομημένες πρώτα κατά σοβαρότητα και μετά κατά ημερομηνία.</small></div><ListChecks size={18}/></div>{items.length?<div className="attention-list" role="list">{items.map(item=><article role="listitem" className={`attention-row ${item.severity}`} data-attention-id={item.id} key={item.id}><span className="attention-severity-icon" aria-hidden="true"><SeverityIcon severity={item.severity}/></span><div className="attention-copy"><div className="attention-title-line"><span className={`attention-badge ${item.severity}`}>{severityLabel(item.severity)}</span><b className={!visible&&(item.kind==='lending'||item.kind==='credit')?'private-text':''}>{item.title}</b></div><p>{item.reason}</p><div className="attention-meta">{item.dueDate?<span><CalendarClock size={14}/> {shortDate(item.dueDate)}</span>:null}{item.amount!==undefined?<span><AnimatedAmount value={item.amount} hidden={!visible}/></span>:null}</div></div><div className="attention-actions"><Button type="button" variant="primary" className="compact" onClick={()=>activate(item)}>{actionLabel(item)}</Button><Tooltip label="Προσωρινή αναβολή" side="left"><button type="button" aria-label={`Αναβολή ${item.title}`} onClick={()=>decide(item,'snooze')}><Clock3/></button></Tooltip>{item.severity!=='danger'?<Tooltip label="Απόκρυψη όσο δεν αλλάζει η κατάσταση" side="left"><button type="button" aria-label={`Απόκρυψη ${item.title}`} onClick={()=>decide(item,'dismiss')}><XCircle/></button></Tooltip>:null}</div></article>)}</div>:<div className="attention-empty"><CheckCircle2/><div><b>Δεν υπάρχει κάτι που χρειάζεται άμεση ενέργεια.</b><span>Το MyFinHub θα εμφανίσει εδώ γνωστές υποχρεώσεις, πραγματικά χαμηλά υπόλοιπα, κινήσεις προς κατηγοριοποίηση ή έλεγχο και προβλεπόμενους κινδύνους όταν προκύψουν από τα δεδομένα σου.</span></div></div>}</section>
+      <section className="panel surface-raised attention-list-panel"><div className="panel-head"><div><span>Ενεργές εκκρεμότητες</span><small>Ταξινομημένες πρώτα κατά σοβαρότητα και μετά κατά ημερομηνία.</small></div><ListChecks size={18}/></div>{items.length?<><div className="attention-list" role="list">{mobileItems.map(item=><article role="listitem" className={`attention-row ${item.severity}`} data-attention-id={item.id} key={item.id}><span className="attention-severity-icon" aria-hidden="true"><SeverityIcon severity={item.severity}/></span><div className="attention-copy"><div className="attention-title-line"><span className={`attention-badge ${item.severity}`}>{severityLabel(item.severity)}</span><b className={!visible&&(item.kind==='lending'||item.kind==='credit')?'private-text':''}>{item.title}</b></div><p>{item.reason}</p><div className="attention-meta">{item.dueDate?<span><CalendarClock size={14}/> {shortDate(item.dueDate)}</span>:null}{item.amount!==undefined?<span><AnimatedAmount value={item.amount} hidden={!visible}/></span>:null}</div></div><div className="attention-actions"><Button type="button" variant="primary" className="compact" onClick={()=>activate(item)}>{actionLabel(item)}</Button><Tooltip label="Προσωρινή αναβολή" side="left"><IconButton type="button" aria-label={`Αναβολή ${item.title}`} onClick={()=>decide(item,'snooze')}><Clock3/></IconButton></Tooltip>{item.severity!=='danger'?<Tooltip label="Απόκρυψη όσο δεν αλλάζει η κατάσταση" side="left"><IconButton type="button" aria-label={`Απόκρυψη ${item.title}`} onClick={()=>decide(item,'dismiss')}><XCircle/></IconButton></Tooltip>:null}</div></article>)}</div>{items.length>6?<Button type="button" variant="secondary" className="attention-mobile-more" aria-expanded={mobileExpanded} onClick={()=>setMobileExpanded(value=>!value)}>{mobileExpanded?'Προβολή λιγότερων':`Προβολή όλων (${items.length})`}</Button>:null}</>:<div className="attention-empty"><CheckCircle2/><div><b>Δεν υπάρχει κάτι που χρειάζεται άμεση ενέργεια.</b><span>Το MyFinHub θα εμφανίσει εδώ γνωστές υποχρεώσεις, πραγματικά χαμηλά υπόλοιπα, κινήσεις προς κατηγοριοποίηση ή έλεγχο και προβλεπόμενους κινδύνους όταν προκύψουν από τα δεδομένα σου.</span></div></div>}</section>
       <section className="forecast-assumption-note"><b>Πώς λειτουργεί:</b> η λίστα βασίζεται μόνο σε αποθηκευμένα και υπολογίσιμα στοιχεία του MyFinHub. Δεν δημιουργούνται εικονικές ειδοποιήσεις συγχρονισμού τράπεζας όταν δεν υπάρχει πραγματική πηγή συγχρονισμού.</section>
       <LegacyConfirmationPanel data={data} onDecision={onReviewDecision} idPrefix="mobile-confirmation"/>
     </div>

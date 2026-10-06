@@ -4,6 +4,7 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    target-branch: develop
     open-pull-requests-limit: 5
     groups:
       npm-minor-patch:
@@ -22,6 +23,7 @@ updates:
     directory: /api
     schedule:
       interval: weekly
+    target-branch: develop
     open-pull-requests-limit: 3
     groups:
       api-toolchain-minor-patch:
@@ -36,10 +38,27 @@ updates:
         update-types:
           - version-update:semver-major
 
+  - package-ecosystem: npm
+    directory: /desktop
+    schedule:
+      interval: weekly
+    target-branch: develop
+    open-pull-requests-limit: 3
+    groups:
+      desktop-toolchain-minor-patch:
+        update-types:
+          - minor
+          - patch
+    ignore:
+      - dependency-name: electron
+        update-types:
+          - version-update:semver-major
+
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+    target-branch: develop
     open-pull-requests-limit: 5
     groups:
       github-actions:

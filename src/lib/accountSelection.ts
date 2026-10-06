@@ -1,6 +1,9 @@
 import type { Account, FinanceData } from '../types.js';
 import { allAccounts } from './domain.js';
 
+type DashboardPrimaryRole='cash'|'payroll'|'savings';
+type DashboardPrimarySlot={role:DashboardPrimaryRole;label:string;account?:Account};
+
 function firstUnique(accounts:Account[],ids:Array<string|undefined>,predicate:(account:Account)=>boolean){
   for(const id of ids){
     if(!id)continue;
@@ -8,6 +11,11 @@ function firstUnique(accounts:Account[],ids:Array<string|undefined>,predicate:(a
     if(account)return account;
   }
   return undefined;
+}
+
+function preferQuick(accounts:Account[],predicate:(account:Account)=>boolean){
+  return accounts.find(account=>predicate(account)&&account.showInQuickChoices!==false)
+    ??accounts.find(predicate);
 }
 
 export function financeAccountChoices(data:FinanceData){
@@ -26,17 +34,26 @@ export function financeAccountChoices(data:FinanceData){
     accounts.find(account=>account.kind==='savings'&&quick(account))
     ??accounts.find(account=>account.kind==='savings');
 
-  const dailyCash=accounts.find(account=>account.kind==='cash'&&account.cashRole==='daily'&&quick(account));
-  const primary:Account[]=[];
-  const add=(account:Account|undefined)=>{if(account&&!primary.some(item=>item.id===account.id))primary.push(account)};
-  add(dailyCash);add(operating);add(savings);
-  for(const account of accounts){if(primary.length>=3)break;if(quick(account))add(account)}
-  for(const account of accounts){if(primary.length>=3)break;add(account)}
+  // Dashboard primary slots are a product hierarchy, not generic quick choices.
+  // Never replace payroll with an operating/current/default account.
+  const dashboardDailyCash=preferQuick(accounts,account=>account.kind==='cash'&&account.cashRole==='daily');
+  const dashboardPayroll=preferQuick(accounts,account=>account.kind==='bank'&&account.bankAccountCategory==='payroll');
+  const dashboardSavings=preferQuick(accounts,account=>account.kind==='savings'||(account.kind==='bank'&&account.bankAccountCategory==='savings'));
+  const dashboardPrimarySlots:DashboardPrimarySlot[]=[
+    {role:'cash',label:'Μετρητά',account:dashboardDailyCash},
+    {role:'payroll',label:'Μισθοδοσίας',account:dashboardPayroll},
+    {role:'savings',label:'Αποταμιευτικός',account:dashboardSavings},
+  ];
+  const dashboardPrimary=dashboardPrimarySlots.flatMap(slot=>slot.account?[slot.account]:[]);
 
   return {
     accounts,
     operating,
     savings,
-    dashboardPrimary:primary.slice(0,3),
+    dashboardDailyCash,
+    dashboardPayroll,
+    dashboardSavings,
+    dashboardPrimarySlots,
+    dashboardPrimary,
   };
 }

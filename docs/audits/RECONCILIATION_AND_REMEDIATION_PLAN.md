@@ -1,0 +1,218 @@
+# Latest UI audit reconciliation and remediation plan
+
+Issue: #503 — Reconcile latest UI audits and remediate owner-intent drift
+
+**Implementations 5/5 completed · Sub-implementations 30/30 completed**
+
+## Purpose
+
+The Gemini and GPT audit documents are independent evidence, not competing implementation plans. This file is the single reconciliation authority for the remediation work that follows them.
+
+Inputs:
+- docs/audits/gemini/ui_ux_visual_audit.md
+- docs/audits/gemini/technical_code_audit.md
+- docs/audits/gpt/ui_ux_visual_audit.md
+- docs/audits/gpt/technical_code_audit.md
+- docs/audits/gemini/screenshots/*
+- current owner/product decisions in issue #266
+- current develop source and design-system contracts
+
+Previous Final Visual evidence remains useful regression evidence, but it cannot overrule defects visible in newer direct interactive screenshots.
+
+## Product contract restored by owner intent
+
+Dashboard primary account hierarchy is exactly:
+
+**Μετρητά → Μισθοδοσίας → Αποταμιευτικός**
+
+This is semantic ordering, not a label/string rule.
+
+When those account types exist:
+1. slot 1 is daily cash;
+2. slot 2 is a bank account categorized as payroll;
+3. slot 3 is a bank/savings account categorized as savings.
+
+The implementation must not silently substitute a generic current/operating account for the payroll slot. If a required semantic account genuinely does not exist, the UI must use an explicit documented missing/fallback state rather than silently changing the owner-defined hierarchy.
+
+Fixtures and regression tests must encode the exact semantic contract, not the weaker cash → operating → savings approximation.
+
+## Reconciliation rules
+
+1. A defect confirmed independently by both audits is accepted without further debate.
+2. A GPT-only defect backed by direct latest-image evidence and a high-confidence source cause is accepted.
+3. A Gemini-only observation that the GPT audit did not independently confirm is reproduce-before-fix.
+4. Technical root causes are hypotheses until current source/computed behavior supports them; do not patch by filename guess alone.
+5. Prefer shared-token/component corrections when the root cause is systemic. Do not create page-specific parallel design rules to make one screenshot pass.
+6. Product hierarchy/readability/owner intent are acceptance criteria in addition to clipping, overflow, contrast and accessibility mechanics.
+
+## Defect-prevention protocol for #503
+
+The remediation now treats R-* and any newly discovered residual as a failure class that must leave behind a cheaper prevention mechanism. This section does **not** add checklist items or change the 5/30 denominators; it governs how the existing implementation and verification items are completed.
+
+Before each correction batch:
+1. classify the root-cause owner and bounded blast radius;
+2. predict the material theme/breakpoint/data/interaction/content-stress states;
+3. prefer the shared owner over page-local overrides;
+4. sweep sibling consumers for the identical anti-pattern;
+5. add or update the cheapest regression lock before acceptance;
+6. if expensive rendered/CI evidence catches a deterministic class again, promote it into narrow preflight.
+
+Current prevention ledger:
+
+| Failure class | Evidence already seen in #503 | Owning correction direction | Required durable guard |
+| --- | --- | --- | --- |
+| Semantic owner-intent drift | Dashboard primary-account hierarchy | semantic account metadata/selection contract, never display-name matching | semantic fixture + exact order tests/rendered assertion |
+| Dense-text readability drift | 7.5–10px operational labels across routes | shared typography/dense floor before page overrides | source/shared-style guard + focused rendered readability checks |
+| Theme-token leakage | Dashboard secondary finance text and Reports status surfaces | semantic theme tokens at owning rule | Light/Dark regression assertion on affected shared owner/surface |
+| Empty-state ambiguity | Dashboard and Transactions large blank regions | explicit state composition owned by the page/shared empty-state pattern | deterministic empty fixture + rendered assertion |
+| Long-content truncation/overlap | Transaction details, long account names, crowded date range | wrapping/layout ownership with representative stress content | long-Greek/extreme fixture + geometry assertion at material breakpoints |
+| Media/provider synthetic treatment | provider-mark halo on dark surfaces | intrinsic asset rendering/shared provider-mark contract | computed-style rendered assertion in Light/Dark |
+| Wide/narrow responsive composition drift | Cards/Loans/Recurring and date filters | bounded responsive layout rule, not screenshot-specific offsets | desktop/tablet/mobile geometry/overflow check for changed surface |
+| Interaction target/state drift | recurring actions, settings form/PIN/autofill states | shared control/state primitives and semantic browser behavior | target-size/state/source assertion plus focused rendered state |
+| Route-specific shared-shell drift | prior Dashboard-conditioned global chrome | AppShell/shared primitive ownership | route-invariance source/rendered shell regression |
+| Expensive-gate rediscovery | residuals first found only after rendered/Action review | promote deterministic causes into focused QA scripts | run the narrow script before next Ready-for-Review matrix |
+
+A row is considered operational only when the corresponding defect correction carries its guard. New materially different failure classes discovered during direct evidence review must be added here or represented by an equivalent existing row before patching proceeds.
+
+## Canonical finding matrix
+
+| ID | Scope | Disposition | Reconciled finding | Primary technical direction |
+| --- | --- | --- | --- | --- |
+| R-01 | Dashboard | High / confirmed | Primary cards violate Μετρητά → Μισθοδοσίας → Αποταμιευτικός | Resolve semantic account categories deterministically; fix fixture/tests too |
+| R-02 | Cross-app | High / confirmed | Operational desktop text is routinely ~7.5–10px despite large available canvas | Reuse shared readable typography tokens/dense floor |
+| R-03 | Dashboard | Medium / confirmed | Empty month/category regions look like missing rendering | Purpose-built empty states; avoid dead chart/table space |
+| R-04 | Dashboard | High / confirmed | Secondary accounts/trend text is too dark/faint in dark theme | Replace hardcoded light-theme colors at owner rules with semantic tokens |
+| R-05 | Dashboard/Planning | Medium / confirmed, cause verify | Provider marks create harsh white/rectangular treatment | Inspect source asset alpha/variant + computed image rules before fix |
+| R-06 | Transactions | Medium / confirmed | Zero-results state is one weak line in a large empty region | Deliberate empty-state composition + contextual reset/action |
+| R-07 | Transactions | High / confirmed | Details panel ellipsizes account route/description | Wrap content in details; keep ellipsis only in compact list/table contexts |
+| R-08 | Savings | Medium / confirmed | Sparse action containers are oversized while transfer route is micro-copy | Rebalance action geometry; raise route text to readable shared scale |
+| R-09 | Cards | High accessibility / confirmed | Bright card designs render insufficient-contrast labels/details | Fix card variable precedence and verify every light-surface theme |
+| R-10 | Cards | Medium / confirmed | Desktop provider grid is forced wider than workspace and clipped | Define explicit responsive/scroll/carousel overflow contract |
+| R-11 | Credit | Medium / confirmed | Piraeus Credit identity caption is too small/faint | Raise caption size/emphasis using existing card semantic palette |
+| R-12 | Loans | Medium / confirmed | Wide row leaves a large empty middle and weak progress/meta grouping | Reallocate progress/meta/actions as coherent wide-screen grid |
+| R-13 | Recurring | High / confirmed | Summary is width-capped while operational table/actions are compressed | Use available width; raise table/action readability and spacing |
+| R-14 | Reports | High accessibility / confirmed | Dark-theme budget status cards produce light-on-light contrast | Theme-derived semantic status surfaces; add dark-mode contrast regression |
+| R-15 | Settings | Low/Medium / confirmed | Mixed localization and faint inactive/supporting labels | Greek visible labels; shared secondary text/readability tokens |
+| R-16 | Settings User & Access | Medium / confirmed | Autofill/password/PIN states look inconsistent/faint | Preserve autocomplete; normalize theme-safe autofill/PIN state styles |
+
+## Conditional observations — reproduce before change
+
+Do not create a fix unless the remediation head reproduces the condition:
+
+- C-01 exact Dashboard account-title/balance overlap;
+- C-02 exact provider icon/text overlap distinct from R-05 asset/background treatment;
+- C-03 exact Savings source→destination arrow vertical misalignment;
+- C-04 any Credit foreground-color defect broader than R-11.
+
+If reproduced, add the item to the confirmed matrix and update #503 before implementation.
+
+### Fresh exact-head conditional review — closed
+
+Direct inspection of the successful ready-review rendered artifact from the pre-residual-fix review head closed all four reproduce-before-change observations without promoting speculative defects:
+
+- **C-01 NOT REPRODUCED** — `shell-dashboard-long-account-desktop.png` shows the long payroll account title wrapping within its two-line contract without title/balance, IBAN/body or action overlap.
+- **C-02 NOT REPRODUCED as a distinct overlap defect** — Dashboard provider-mark captures show no icon/text collision. The separate confirmed R-05 synthetic bright halo/surface was reproduced and remains a normal remediation finding.
+- **C-03 NOT REPRODUCED** — `light-savings-desktop.png` shows the source → destination transfer route and arrow vertically aligned.
+- **C-04 NOT REPRODUCED** — inspected Credit evidence, including the Piraeus card state, does not show a broader foreground-color failure beyond the already confirmed R-11 identity-caption readability issue.
+
+The same direct inspection found three residual confirmed defects that must be rerun on the corrected head before visual acceptance: R-05 still showed a synthetic bright provider-mark halo on dark Dashboard surfaces; the Dashboard upcoming-payments region was blank in the empty fixture; and the Transactions desktop date-range filters crowded/overlapped. The branch now carries targeted fixes plus regression coverage for these residuals. This checkpoint does **not** complete the broader focused-evidence or final visual-sweep items.
+
+## Implementation plan
+
+### 1. Reconciliation and owner-contract hardening — 5/5
+
+- [x] Read/cross-map both latest-image visual audits.
+- [x] Map both technical audits to current source and separate proven causes from hypotheses.
+- [x] Collapse duplicates into this canonical finding matrix.
+- [x] Record the exact Dashboard account hierarchy in durable owner decisions.
+- [x] Classify disputed observations as reproduce-before-fix.
+
+### 2. Shared readability/theme/system remediation — 5/5
+
+- [x] Define/enforce a readable dense-text floor through the shared typography system; remove unjustified page-local 7.5–10px operational text.
+- [x] Replace hardcoded light-theme finance text colors with semantic theme tokens at the owning rules.
+- [x] Fix dark-theme semantic status-surface contrast, especially Reports budget summaries.
+- [x] Normalize common autofill/inactive/PIN/form states without removing browser accessibility semantics.
+- [x] Rerun shared primitive/token/orphan/duplicate audit after system changes.
+
+### 3. Product/page remediation — 10/10
+
+- [x] Dashboard semantic account order + exact tests/fixtures.
+- [x] Dashboard empty states, secondary finance readability and provider-mark correction.
+- [x] Transactions empty state + full details wrapping.
+- [x] Savings whitespace/transfer hierarchy.
+- [x] Cards bright-surface contrast/theme precedence.
+- [x] Cards desktop overflow/navigation contract.
+- [x] Credit identity-caption readability.
+- [x] Loans wide-screen composition.
+- [x] Recurring wide-screen composition/actions/readability.
+- [x] Reports/Settings page-specific polish not already solved at the shared layer.
+
+### 4. Post-fix visual verification — 6/6
+
+- [x] Generate focused exact-head desktop captures for every changed finding and inspect directly.
+- [x] Reproduce/close every conditional C-* observation with evidence.
+- [x] Generate exact-head desktop/tablet/mobile × Light/Dark coverage for all primary routes and critical changed states.
+- [x] Inspect every distinct visible/interactive pattern; skip repeated identical shared-component instances only after structural equivalence is proven.
+- [x] Explicitly verify owner-intent/product hierarchy in the rendered UI, not merely technical containment.
+- [x] Fix any remaining defect, rerun affected evidence, then do one bounded overall final visual sweep.
+
+### Final visual acceptance checkpoint
+
+- Coherent review head `9068f1005f6cc432fe62773b5436aa6a61193d7f` passed CI, CodeQL, Real Stack E2E, Cross-engine, Performance, Windows Desktop, Windows First Run and Windows Clean Launch.
+- Focused exact-head rendered evidence was directly inspected for Dashboard hierarchy/empty/provider states, Transactions desktop/tablet/empty/stress states, Savings, Cards, Credit, Loans, Recurring, Reports and Settings; no residual product defect remained.
+- Dedicated Final Visual QA run `37488415648` captured and persisted **216/216** screenshots covering 36 distinct surface/state groups across Light/Dark × desktop/tablet/mobile.
+- All six Final Visual theme/viewport matrices were directly inspected, including primary routes, Settings nested editors, authentication error/recovery states and the 404 surface. No clipping, overlap, hierarchy, contrast, focus, responsive or state-communication residual requiring another product patch was found.
+- Final Visual persisted evidence in bot commit `7228930f5efc633e3aad1b454e0ca911a8550265`; that commit changes only `visual-qa/final/**`, so the validated application source remains the green review tree.
+
+### 5. Final integration closeout — 4/4
+
+- [x] Run required final unit/source/rendered/accessibility/security/performance/Windows gates on the coherent final review head.
+- [x] Reconcile docs/status so historical PASS evidence is correctly scoped and no stale closeout statement contradicts newer evidence.
+- [x] Merge the remediation branch to develop only when required checks and direct visual review are green.
+- [x] Verify exact merged develop with the final bounded visual/regression check.
+
+### Final integration closeout evidence
+
+- Final review head `cc0c943b86ae7c308129fbc59d9e233c9064c525` passed CI `37499654536`, Cross-engine `37499654643`, Performance `37499654642`, Windows Desktop `37499654648`, Windows First Run `37499654542`, Windows Clean Launch `37499654585`, plus the already-green exact-head CodeQL `37498642779` and Real Stack E2E `37498643062`.
+- The final security correction keeps `shell-quote` at patched resolution `1.12.0`; the root high-severity npm audit gate is green. The performance harness retains all thresholds and only retries the exact transient Chrome launcher failure signature once.
+- PR #504 was squash-merged to `develop` as `226c48c481f7371446cb48021c026aba2a99701b`.
+- Live `develop` is exactly that merge commit (no later commit is present at closeout). The bounded merged-state check confirms the persisted Final Visual manifest still contains 216 entries, the security override is present, the bounded Lighthouse retry contract is present, and the standing batch-first execution policy is present.
+- No `develop -> main` production promotion is authorized or performed by this workstream.
+
+## Required regression contracts
+
+At minimum add/adjust proof for:
+
+- semantic Dashboard slots: daily cash, payroll bank category, savings bank category in exact order;
+- fixture representing those semantics, without relying on account display-name matching;
+- dense typography minimum/readability guard where practical;
+- dark-theme Dashboard secondary finance text;
+- transaction detail wrapping with long Greek account/description content;
+- transaction and Dashboard deliberate empty states;
+- Piraeus yellow and other bright-card computed foreground contrast;
+- Cards desktop overflow containment/navigation;
+- Reports budget status surfaces in dark theme;
+- recurring action targets/spacing and readable metadata;
+- browser autofill normalization without deleting autocomplete semantics.
+
+## Visual acceptance
+
+A page is not accepted merely because:
+- there is no overflow;
+- CI is green;
+- contrast automation passes;
+- the same component rendered correctly elsewhere.
+
+It must also have correct product hierarchy, usable information density, readable financial context, coherent empty states and alignment with explicit owner decisions.
+
+The post-fix visual pass is mandatory and uses newly generated evidence from the exact corrected head. Old screenshots are comparison/regression evidence only.
+
+## Guardrails
+
+- No production deployment or develop → main promotion in #503.
+- No Android repository changes.
+- No production DB mutation/destructive migration.
+- Preserve finance semantics, history/revision/conflict protection, owner authorization, AAL2, RLS and session provenance.
+- Do not weaken tests/accessibility/security/bundle/performance thresholds.
+- Prefer shared-system corrections over local screenshot-specific patches.

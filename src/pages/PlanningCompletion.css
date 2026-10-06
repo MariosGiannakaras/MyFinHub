@@ -1,0 +1,6 @@
+.planning-mobile-disclosure{display:none}
+@media(max-width:760px){.planning-mobile-disclosure{display:flex;width:100%;min-height:44px;justify-content:center}.planning-lower-grid.mobile-collapsed{display:none}}
+
+@media(max-width:1099px){
+  .planning-scheduled-more{width:100%;min-height:44px;margin-top:10px;justify-content:center}
+}

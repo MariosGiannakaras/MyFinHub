@@ -1,11 +1,15 @@
 import { Camera, Check, FileImage, LoaderCircle, ReceiptText, ScanLine, Trash2, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { AppDateInput } from './AppDateInput';
+import { AppSelectInput } from './AppSelectInput';
+import { AppTextInput } from './AppTextInput';
 import { Button } from './Button';
+import { CategorySelectInput } from './CategorySelectInput';
 import { ConfirmDialog } from './ConfirmDialog';
 import { FormError } from './FormError';
 import { IconButton } from './IconButton';
+import { MoneyInput } from './MoneyInput';
 import { useModalFocus } from '../hooks/useModalFocus';
-import { money } from '../lib/format';
 import { normalizeReceiptFile } from '../lib/receiptImage';
 import type { ReceiptOcrProgress } from '../lib/receiptOcr';
 import { suggestReceiptCategory } from '../lib/receiptParser';
@@ -80,6 +84,7 @@ function scanErrorMessage(reason: unknown) {
   const code = reason instanceof Error ? reason.message : '';
   if (code === 'OCR_TIMEOUT') return 'Η τοπική σάρωση άργησε πολύ και σταμάτησε. Μπορείς να ξαναδοκιμάσεις ή να συνεχίσεις χειροκίνητα.';
   if (code === 'OCR_NO_USEFUL_FIELDS') return 'Διαβάστηκε κείμενο, αλλά δεν βρέθηκαν αρκετά αξιόπιστα στοιχεία απόδειξης. Συνέχισε χειροκίνητα ή δοκίμασε καθαρότερη φωτογραφία.';
+  if (code === 'OCR_ASSETS_UNAVAILABLE') return 'Λείπουν ή δεν φορτώνουν τα τοπικά αρχεία OCR αυτής της εγκατάστασης. Η φωτογραφία παραμένει αποθηκευμένη και μπορείς να συνεχίσεις χειροκίνητα.';
   if (code === 'OCR_CANCELLED') return '';
   return 'Δεν ολοκληρώθηκε η τοπική OCR σάρωση. Η φωτογραφία παραμένει αποθηκευμένη στη συσκευή και μπορείς να δοκιμάσεις ξανά.';
 }
@@ -105,12 +110,23 @@ export function ReceiptInbox({
   const [progress, setProgress] = useState<ReceiptOcrProgress | null>(null);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [reviewProposal,setReviewProposal]=useState<ReceiptProposal|null>(null);
+  const [reviewTotal,setReviewTotal]=useState('');
+  const [reviewDirty,setReviewDirty]=useState(false);
+  const [reviewSaving,setReviewSaving]=useState(false);
   const cameraRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const scanToken = useRef(0);
   const modalRef = useModalFocus<HTMLElement>(open&&!deleteRequest, 'button', onClose);
 
   const selected = useMemo(() => drafts.find((draft) => draft.id === selectedId) ?? null, [drafts, selectedId]);
+
+  useEffect(()=>{
+    const proposal=selected?.proposal;
+    setReviewProposal(proposal?{...proposal}:null);
+    setReviewTotal(typeof proposal?.total==='number'?String(proposal.total):'');
+    setReviewDirty(false);
+  },[selected?.id,selected?.updatedAt]);
 
   const refresh = async (preferId?: string) => {
     try {
@@ -226,16 +242,54 @@ export function ReceiptInbox({
     return next;
   });
 
+  const updateReview=(patch:Partial<ReceiptProposal>)=>{
+    setReviewProposal(current=>current?{...current,...patch}:current);
+    setReviewDirty(true);
+    setMessage('');
+    setError('');
+  };
+  const normalizedReview=()=>{
+    if(!reviewProposal)return null;
+    const totalText=reviewTotal.trim();
+    const parsedTotal=totalText===''?undefined:Number(totalText);
+    if(parsedTotal!==undefined&&(!Number.isFinite(parsedTotal)||parsedTotal<0))return null;
+    return {
+      ...reviewProposal,
+      merchant:reviewProposal.merchant?.trim()||undefined,
+      date:reviewProposal.date||undefined,
+      total:parsedTotal,
+      currency:reviewProposal.currency?.trim().toUpperCase()||undefined,
+      category:reviewProposal.category?.trim()||undefined,
+    } satisfies ReceiptProposal;
+  };
+  const saveReview=async(apply=false)=>{
+    if(!selected||!reviewProposal||reviewSaving)return;
+    const normalized=normalizedReview();
+    if(!normalized){setError('Έλεγξε το διορθωμένο ποσό της απόδειξης.');return}
+    setReviewSaving(true);setError('');
+    try{
+      await saveReceiptProposal(selected.id,normalized);
+      if(apply){onApply(selected.id,normalized);return}
+      await refresh(selected.id);
+      setMessage('Οι διορθώσεις της πρότασης αποθηκεύτηκαν τοπικά.');
+      setReviewDirty(false);
+    }catch(reason){
+      setError(reason instanceof Error?reason.message:'Δεν αποθηκεύτηκαν οι διορθώσεις της απόδειξης.');
+    }finally{setReviewSaving(false)}
+  };
+
   if (!open) return null;
 
   const proposal = selected?.proposal;
-  const nonEur = Boolean(proposal?.currency && proposal.currency !== 'EUR');
+  const reviewed=reviewProposal??proposal;
+  const nonEur = Boolean(reviewed?.currency && reviewed.currency !== 'EUR');
+  const reviewTotalInvalid=Boolean(reviewTotal.trim()&&(!Number.isFinite(Number(reviewTotal))||Number(reviewTotal)<0));
   const scanning = Boolean(scanningId);
   const deleteCount=deleteRequest?.mode==='many'?deleteRequest.ids.length:1;
 
   return <>
   <div className="modal-backdrop receipt-inbox-backdrop" onMouseDown={onClose}>
-    <section ref={modalRef} className="receipt-inbox neo-raised" role="dialog" aria-modal="true" aria-labelledby="receipt-inbox-title" tabIndex={-1} onMouseDown={(event) => event.stopPropagation()}>
+    <section ref={modalRef} className="receipt-inbox surface-raised" role="dialog" aria-modal="true" aria-labelledby="receipt-inbox-title" tabIndex={-1} onMouseDown={(event) => event.stopPropagation()}>
       <header className="receipt-inbox-header"><div><small>LOCAL-ONLY OCR</small><h2 id="receipt-inbox-title"><ReceiptText size={21}/> Αποδείξεις σε αναμονή</h2><p>Η φωτογραφία αποθηκεύεται μόνο σε αυτή τη συσκευή. Μπορείς να τη σαρώσεις τώρα ή αργότερα και να κλείσεις την εφαρμογή μόλις επιβεβαιωθεί η αποθήκευση.</p></div><IconButton type="button" aria-label="Κλείσιμο αποδείξεων σε αναμονή" onClick={onClose}><X/></IconButton></header>
 
       <div className="receipt-capture-actions">
@@ -266,12 +320,19 @@ export function ReceiptInbox({
           {selected ? <>
             <div className="receipt-preview"><ReceiptPreview draft={selected}/><div><span>{statusLabel(selected)}</span><small>{capturedLabel(selected.capturedAt)}</small></div></div>
             {scanningId === selected.id ? <div className="receipt-scan-progress" role="status" aria-live="polite"><div><LoaderCircle className="is-spinning" size={18}/><b>Τοπική OCR σάρωση</b><span>{Math.round((progress?.progress ?? 0) * 100)}%</span></div><progress max="1" value={progress?.progress ?? 0}/><small>{progress?.status || 'Αναγνώριση κειμένου στη συσκευή…'}</small><Button type="button" variant="secondary" onClick={() => void cancelScan()}>Διακοπή</Button></div> : null}
-            {proposal ? <div className="receipt-proposal" aria-label="Προτεινόμενα στοιχεία απόδειξης"><h3>Πρόταση OCR</h3><dl><div><dt>Κατάστημα</dt><dd>{proposal.merchant || '—'} <small>{confidenceLabel(proposal.confidence?.merchant)}</small></dd></div><div><dt>Ημερομηνία</dt><dd>{proposal.date || '—'} <small>{confidenceLabel(proposal.confidence?.date)}</small></dd></div><div><dt>Σύνολο</dt><dd>{typeof proposal.total === 'number' ? money.format(proposal.total) : '—'} <small>{confidenceLabel(proposal.confidence?.total)}</small></dd></div><div><dt>Νόμισμα</dt><dd>{proposal.currency || 'Δεν εντοπίστηκε'} <small>{confidenceLabel(proposal.confidence?.currency)}</small></dd></div>{proposal.category ? <div><dt>Προτεινόμενη κατηγορία</dt><dd>{proposal.category}<small>από προηγούμενες κινήσεις</small></dd></div> : null}</dl>{nonEur ? <div className="receipt-currency-warning" role="alert">Η απόδειξη φαίνεται να είναι σε {proposal.currency}. Το MyFinHub παραμένει EUR-only, οπότε το ποσό δεν θα συμπληρωθεί αυτόματα.</div> : null}</div> : <div className="receipt-proposal receipt-proposal-empty"><ScanLine size={22}/><b>Δεν έχει γίνει ακόμη OCR</b><span>Η φωτογραφία είναι ήδη ασφαλώς αποθηκευμένη τοπικά. Η σάρωση είναι προαιρετική και μπορεί να γίνει αργότερα.</span></div>}
+            {proposal&&reviewed ? <div className="receipt-proposal receipt-proposal-editable" aria-label="Έλεγχος και διόρθωση στοιχείων OCR"><div className="receipt-proposal-head"><div><h3>Έλεγχος πρότασης OCR</h3><small>Τα ποσοστά αφορούν την αρχική αναγνώριση. Οι διορθώσεις σου υπερισχύουν πριν περάσουν στη Γρήγορη Κίνηση.</small></div>{reviewDirty?<span>Μη αποθηκευμένες διορθώσεις</span>:<span className="saved">Τοπικά αποθηκευμένη</span>}</div><div className="receipt-review-grid">
+              <label><span>Κατάστημα <small>OCR {confidenceLabel(proposal.confidence?.merchant)}</small></span><AppTextInput value={reviewed.merchant??''} maxLength={120} aria-label="Διόρθωση καταστήματος απόδειξης" onChange={event=>updateReview({merchant:event.target.value})}/></label>
+              <label><span>Ημερομηνία <small>OCR {confidenceLabel(proposal.confidence?.date)}</small></span><div className="receipt-review-date"><AppDateInput value={reviewed.date??''} aria-label="Διόρθωση ημερομηνίας απόδειξης" onChange={event=>updateReview({date:event.target.value})}/>{reviewed.date?<Button type="button" variant="ghost" onClick={()=>updateReview({date:undefined})}>Καθαρισμός</Button>:null}</div></label>
+              <label><span>Σύνολο <small>OCR {confidenceLabel(proposal.confidence?.total)}</small></span><MoneyInput value={reviewTotal} invalid={reviewTotalInvalid} aria-label="Διόρθωση ποσού απόδειξης" onValueChange={value=>{setReviewTotal(value);setReviewDirty(true);setMessage('');setError('')}}/></label>
+              <label><span>Νόμισμα <small>OCR {confidenceLabel(proposal.confidence?.currency)}</small></span><AppSelectInput aria-label="Διόρθωση νομίσματος απόδειξης" value={reviewed.currency??''} onChange={event=>updateReview({currency:event.target.value||undefined})}><option value="">Δεν εντοπίστηκε</option><option value="EUR">EUR · Ευρώ</option><option value="USD">USD · Δολάριο ΗΠΑ</option><option value="GBP">GBP · Λίρα Αγγλίας</option></AppSelectInput></label>
+              <label className="receipt-review-category"><span>Κατηγορία <small>δική σου τελική επιλογή</small></span><CategorySelectInput settings={data.state.settings} kind="expense" category={reviewed.category??''} includeSubcategories={false} allowEmpty emptyLabel="Χωρίς κατηγορία" aria-label="Διόρθωση κατηγορίας απόδειξης" onChange={selection=>updateReview({category:selection.category||undefined})}/></label>
+            </div>{reviewTotalInvalid?<FormError id="receipt-review-total-error">Το ποσό πρέπει να είναι έγκυρος θετικός αριθμός.</FormError>:null}{nonEur ? <div className="receipt-currency-warning" role="alert">Η απόδειξη έχει επιλεγμένο νόμισμα {reviewed.currency}. Το MyFinHub παραμένει EUR-only, οπότε το ποσό δεν θα συμπληρωθεί αυτόματα αν δεν το διορθώσεις σε EUR.</div> : null}</div> : <div className="receipt-proposal receipt-proposal-empty"><ScanLine size={22}/><b>Δεν έχει γίνει ακόμη OCR</b><span>Η φωτογραφία είναι ήδη ασφαλώς αποθηκευμένη τοπικά. Η σάρωση είναι προαιρετική και μπορεί να γίνει αργότερα.</span></div>}
             <div className="receipt-review-actions">
               <Button type="button" variant="secondary" className="danger" disabled={scanning} onClick={() => requestRemoveOne(selected)}><Trash2 size={16}/> Διαγραφή</Button>
               {!scanning ? <Button type="button" variant="secondary" onClick={() => void scan(selected)}><ScanLine size={16}/> {selected.status === 'ready' ? 'Νέα σάρωση' : 'Σάρωση τώρα'}</Button> : null}
               <Button type="button" variant="secondary" disabled={scanning} onClick={() => onApply(selected.id, {})}>Χειροκίνητη καταχώριση</Button>
-              {proposal ? <Button type="button" variant="primary" disabled={scanning} onClick={() => onApply(selected.id, proposal)}><Check size={16}/> Χρήση στη Γρήγορη Κίνηση</Button> : null}
+              {proposal ? <Button type="button" variant="secondary" disabled={scanning||reviewSaving||!reviewDirty||reviewTotalInvalid} onClick={()=>void saveReview(false)}>Αποθήκευση διορθώσεων</Button> : null}
+              {proposal ? <Button type="button" variant="primary" disabled={scanning||reviewSaving||reviewTotalInvalid} onClick={()=>void saveReview(true)}><Check size={16}/> Χρήση στη Γρήγορη Κίνηση</Button> : null}
             </div>
           </> : <div className="receipt-empty receipt-empty-main"><ReceiptText size={28}/><b>Γρήγορη λήψη, έλεγχος αργότερα</b><span>Η αποθήκευση είναι ανεξάρτητη από το OCR. Μόλις εμφανιστεί «Αποθηκεύτηκε για αργότερα», μπορείς να κλείσεις την εφαρμογή.</span></div>}
         </div>

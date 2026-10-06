@@ -77,3 +77,21 @@ export function defaultDesignForCard(card:Pick<PaymentCard,'bankId'|'kind'|'netw
 export function cardThemeClass(card:Pick<PaymentCard,'bankId'|'kind'|'network'|'formFactor'|'designId'>){
   return defaultDesignForCard(card)?.themeClass??'r-card-custom';
 }
+
+function channelLuma(value:number){
+  const c=value/255;
+  return c<=.04045?c/12.92:Math.pow((c+.055)/1.055,2.4);
+}
+function hexLuma(hex:string){
+  const value=hex.replace('#','');
+  if(!/^[0-9a-f]{6}$/i.test(value))return .25;
+  const r=parseInt(value.slice(0,2),16),g=parseInt(value.slice(2,4),16),b=parseInt(value.slice(4,6),16);
+  return .2126*channelLuma(r)+.7152*channelLuma(g)+.0722*channelLuma(b);
+}
+export function cardBrandSurfaceTone(card:Pick<PaymentCard,'bankId'|'kind'|'network'|'formFactor'|'designId'>):'light'|'dark'{
+  const swatch=defaultDesignForCard(card)?.swatch??'';
+  const colors=swatch.match(/#[0-9a-f]{6}/gi)??[];
+  if(!colors.length)return 'dark';
+  const average=colors.reduce((sum,color)=>sum+hexLuma(color),0)/colors.length;
+  return average>=.42?'light':'dark';
+}

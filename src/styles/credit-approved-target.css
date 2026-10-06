@@ -51,11 +51,11 @@
   }
   .credit-cycle-link svg{width:14px;height:14px}
 
-  .credit-card-redesign-page>[data-credit-statements],.credit-card-redesign-page>section.panel.neo-raised{
+  .credit-card-redesign-page>[data-credit-statements],.credit-card-redesign-page>section.panel.surface-raised{
     border:1px solid var(--line);border-radius:16px;background:var(--surface);box-shadow:var(--shadow-soft);
   }
-  .credit-card-redesign-page>section.panel.neo-raised>.panel-head{min-height:50px;padding-bottom:10px;border-bottom:1px solid color-mix(in srgb,var(--line) 76%,transparent)}
-  .credit-card-redesign-page>section.panel.neo-raised>.panel-head span{font-size:15px;font-weight:820}
+  .credit-card-redesign-page>section.panel.surface-raised>.panel-head{min-height:50px;padding-bottom:10px;border-bottom:1px solid color-mix(in srgb,var(--line) 76%,transparent)}
+  .credit-card-redesign-page>section.panel.surface-raised>.panel-head span{font-size:15px;font-weight:820}
   .credit-card-redesign-page .semantic-table-wrap{border-radius:12px}
   .credit-card-redesign-page .semantic-table{font-size:10.5px}
   .credit-card-redesign-page .semantic-table th{height:38px;font-size:9px;color:var(--muted);background:color-mix(in srgb,var(--surface-2) 72%,var(--surface))}
@@ -67,8 +67,8 @@
    * Purchases and repayments stay separate because their existing sort/actions
    * have different real handlers; visually merging them would make controls lie. */
   .credit-card-redesign-page>.action-status{order:2}
-  .credit-card-redesign-page>section.panel.neo-raised:has(.credit-purchases-table){order:3}
-  .credit-card-redesign-page>section.panel.neo-raised:has(.credit-payments-table){order:4}
+  .credit-card-redesign-page>section.panel.surface-raised:has(.credit-purchases-table){order:3}
+  .credit-card-redesign-page>section.panel.surface-raised:has(.credit-payments-table){order:4}
   .credit-card-redesign-page>[data-credit-statements]{order:5}
   .credit-card-redesign-page>.deleted-credit-history{order:6}
 }

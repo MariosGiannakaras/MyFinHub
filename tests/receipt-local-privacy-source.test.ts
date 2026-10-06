@@ -18,7 +18,15 @@ describe('local-only receipt privacy boundary',()=>{
     expect(ocr).toContain("workerPath: '/ocr/worker.min.js'");
     expect(ocr).toContain("corePath: '/ocr/core'");
     expect(ocr).toContain("langPath: '/ocr/lang'");
-    expect(ocr).not.toMatch(/https?:\/\/|fetch\(|axios|XMLHttpRequest/i);
+    expect(ocr).not.toMatch(/https?:\/\/|axios|XMLHttpRequest/i);
+    expect(ocr).toContain("fetch('/ocr/asset-manifest.json'");
+    expect(ocr).toContain("fetch(path,{method:'HEAD'");
+    expect(ocr).not.toMatch(/fetch\([^\n]*(image|blob|prepared|result\.data)/i);
+  });
+
+  it('clears a failed worker bootstrap so OCR can retry after local assets recover',()=>{
+    expect(ocr).toContain('workerPromise = buildWorker().catch((error) => {');
+    expect(ocr).toContain('workerPromise = null;');
   });
 
   it('never persists raw OCR text in the local draft schema',()=>{

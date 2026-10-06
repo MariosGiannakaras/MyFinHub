@@ -55,9 +55,52 @@ try{
   await viewport(375,812);for(const [page,heading] of Object.entries(PAGE_HEADINGS))await navigate({page},heading);
   console.log('Runtime QA: auth, loading, conflict and error-state surfaces');
   for(const screen of ['login','mfa','mfa-enroll'])await navigate({screen},null);
+
+  console.log('Runtime QA: auth expiry and MFA downgrade recovery');
+  await navigate({screen:'session-signal'},null);
+  await waitFor("function(){return document.querySelector('[data-session-probe]')?.getAttribute('data-session-probe')==='authenticated'}",'authenticated session probe');
+  await c.call("function(){globalThis.__myfinhubQaSessionMode?.('mfa');window.dispatchEvent(new Event('rheomiq:mfa-required'));return true}");
+  await waitFor("function(){const title=document.querySelector('#mfa-title');const code=document.querySelector('#mfa-code');return Boolean(title&&code)&&(title.textContent||'').includes('Επαλήθευση')}",'MFA downgrade recovery');await sleep(430);
+  const mfaDowngradeShot=await c.send('Page.captureScreenshot',{format:'png',fromSurface:true});writeFileSync(`${evidenceDir}/runtime-mfa-downgrade.png`,Buffer.from(mfaDowngradeShot.data,'base64'));
+  await c.send('Page.reload');
+  await waitFor("function(){return document.querySelector('[data-session-probe]')?.getAttribute('data-session-probe')==='authenticated'}",'authenticated session probe after reload');
+  await c.call("function(){window.dispatchEvent(new Event('rheomiq:auth-expired'));return true}");
+  await waitFor("function(){return Boolean(document.querySelector('.login-card h1'))&&(document.body.textContent||'').includes('Σύνδεση')}",'expired session recovery');
+  const authExpiredShot=await c.send('Page.captureScreenshot',{format:'png',fromSurface:true});writeFileSync(`${evidenceDir}/runtime-auth-expired.png`,Buffer.from(authExpiredShot.data,'base64'));
+
   await navigate({page:'dashboard',save:'loading'},null);await waitFor("function(){return Boolean(document.querySelector('.page-skeleton[role=\"status\"]'))}",'loading PageSkeleton');const shot=await c.send('Page.captureScreenshot',{format:'png',fromSurface:true});writeFileSync(`${evidenceDir}/runtime-loading-state.png`,Buffer.from(shot.data,'base64'));
   await navigate({page:'dashboard',save:'conflict'},PAGE_HEADINGS.dashboard);
+  assert(await c.call("function(){const notice=document.querySelector('.persistence-notice.conflict[role=alert]');const action=notice?.querySelector('button');return Boolean(notice&&(notice.textContent||'').includes('Υπάρχουν νεότερα δεδομένα')&&(notice.textContent||'').includes('Φόρτωση τελευταίας έκδοσης')&&action)}"),'conflict state is assertive and has explicit latest-version recovery');
+  const conflictShot=await c.send('Page.captureScreenshot',{format:'png',fromSurface:true});writeFileSync(`${evidenceDir}/runtime-conflict-recovery.png`,Buffer.from(conflictShot.data,'base64'));
   await navigate({page:'dashboard',save:'error'},PAGE_HEADINGS.dashboard);
+  assert(await c.call("function(){const notice=document.querySelector('.persistence-notice.error[role=alert]');const action=notice?.querySelector('button');return Boolean(notice&&(notice.textContent||'').includes('Η αποθήκευση δεν ολοκληρώθηκε')&&(notice.textContent||'').includes('δεν έχει επιβεβαιωθεί ως αποθηκευμένη')&&(notice.textContent||'').includes('Φόρτωση τελευταίας έκδοσης')&&action)}"),'save failure is assertive, avoids false success and exposes deterministic recovery');
+  const errorShot=await c.send('Page.captureScreenshot',{format:'png',fromSurface:true});writeFileSync(`${evidenceDir}/runtime-save-error-recovery.png`,Buffer.from(errorShot.data,'base64'));
+
+  console.log('Runtime QA: real finance persistence offline/pending recovery');
+  await navigate({screen:'persistence-probe'},null);
+  await waitFor("function(){return document.querySelector('[data-persistence-probe]')?.getAttribute('data-persistence-probe')==='ready'&&document.querySelector('[data-persistence-state]')?.getAttribute('data-persistence-state')==='saved'}",'persistence probe ready');
+  const baselineBudget=await c.call("function(){return Number(document.querySelector('[data-persistence-budget]')?.getAttribute('data-persistence-budget')||'0')}");
+  const cleanUnload=await c.call("function(){const event=new Event('beforeunload',{cancelable:true});const dispatched=window.dispatchEvent(event);return {defaultPrevented:event.defaultPrevented,dispatched}}");
+  assert(!cleanUnload.defaultPrevented&&cleanUnload.dispatched,'clean persisted state does not block unload');
+
+  await c.call("function(){globalThis.__myfinhubQaPersistenceMode?.('offline');document.querySelector('[data-persistence-mutate]')?.click();return true}");
+  await waitFor("function(){const notice=document.querySelector('.persistence-notice.error[role=alert]');return document.querySelector('[data-persistence-state]')?.getAttribute('data-persistence-state')==='error'&&Boolean(notice)&&(notice.textContent||'').includes('Δεν ήταν δυνατή η σύνδεση με το MyFinHub')}",'offline save failure with actionable network guidance');
+  const offlineCount=await c.call("function(){return globalThis.__myfinhubQaPersistencePutCount?.()||0}");
+  await sleep(500);
+  assert(offlineCount===1&&(await c.call("function(){return globalThis.__myfinhubQaPersistencePutCount?.()||0}"))===1,'failed save is not automatically retried');
+  const failedUnload=await c.call("function(){const event=new Event('beforeunload',{cancelable:true});const dispatched=window.dispatchEvent(event);return {defaultPrevented:event.defaultPrevented,dispatched}}");
+  assert(failedUnload.defaultPrevented&&!failedUnload.dispatched,'failed unconfirmed save guards hard reload/navigation');
+  const offlineShot=await c.send('Page.captureScreenshot',{format:'png',fromSurface:true});writeFileSync(`${evidenceDir}/runtime-real-offline-save-error.png`,Buffer.from(offlineShot.data,'base64'));
+
+  await c.call("function(){globalThis.__myfinhubQaPersistenceMode?.('success');document.querySelector('.persistence-notice.error button')?.click();return true}");
+  await waitFor("function(){return document.querySelector('[data-persistence-state]')?.getAttribute('data-persistence-state')==='saved'}",'explicit persisted-state recovery');
+  const recovered=await c.call("function(){return {puts:globalThis.__myfinhubQaPersistencePutCount?.()||0,budget:Number(document.querySelector('[data-persistence-budget]')?.getAttribute('data-persistence-budget')||'0')}}");
+  assert(recovered.puts===1&&recovered.budget===baselineBudget,'recovery reloads server-authoritative state without replaying the failed mutation');
+
+  await c.call("function(){globalThis.__myfinhubQaPersistenceMode?.('pending');document.querySelector('[data-persistence-mutate]')?.click();return true}");
+  await waitFor("function(){return document.querySelector('[data-persistence-state]')?.getAttribute('data-persistence-state')==='saving'}",'interrupted pending save');
+  const pendingUnload=await c.call("function(){const event=new Event('beforeunload',{cancelable:true});const dispatched=window.dispatchEvent(event);return {defaultPrevented:event.defaultPrevented,dispatched,puts:globalThis.__myfinhubQaPersistencePutCount?.()||0}}");
+  assert(pendingUnload.defaultPrevented&&!pendingUnload.dispatched&&pendingUnload.puts===2,'in-flight save guards hard reload and remains single-shot');
 
   c.close();console.log('UI/UX runtime console/network QA passed.');
 }finally{child.kill('SIGTERM')}

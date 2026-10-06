@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/branding/myfinhub/icon-192.png" width="128" alt="MyFinHub authentic application mark" />
+  <img src="assets/branding/myfinhub/icon-512.svg" width="128" alt="MyFinHub authentic application mark" />
 </p>
 
 <h1 align="center">MyFinHub</h1>
@@ -10,6 +10,11 @@
   <a href="https://github.com/MariosGiannakaras/MyFinHub/releases/download/myfinhub-v1.3.0/MyFinHub-Setup-1.3.0-x64.exe"><img alt="Download MyFinHub for Windows" src="https://img.shields.io/badge/Download%20for%20Windows-v1.3.0-2563EB?style=for-the-badge&logo=windows11&logoColor=white"></a>
   <a href="https://github.com/MariosGiannakaras/MyFinHub/releases/latest"><img alt="Latest release" src="https://img.shields.io/badge/Release-v1.3.0-0F766E?style=for-the-badge"></a>
   <a href="CHANGELOG.md"><img alt="Changelog" src="https://img.shields.io/badge/Changelog-View-475569?style=for-the-badge"></a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/MariosGiannakaras/MyFinHub/actions/workflows/dependency-health.yml"><img alt="Dependency health" src="https://github.com/MariosGiannakaras/MyFinHub/actions/workflows/dependency-health.yml/badge.svg"></a>
+  <a href="https://github.com/MariosGiannakaras/MyFinHub/actions/workflows/dependency-health.yml"><img alt="Run dependency check" src="https://img.shields.io/badge/Run%20dependency%20check-Manual-475569?style=flat-square"></a>
 </p>
 
 <p align="center">
@@ -88,9 +93,11 @@ Desktop updates are accepted only from the controlled MyFinHub GitHub Release ch
 
 ## Authentic branding
 
-The application mark in this repository is the **original project artwork**, recovered byte-for-byte from the pre-rebrand Git history. It is the blue wallet with the `R` mark used by the original RheomIQ application. MyFinHub keeps that authentic mark while the visible product name remains **MyFinHub**.
+MyFinHub uses the owner-approved PureVector identity: the blue wallet / `MF` symbol and associated wordmark. The canonical web/desktop masters live under `assets/branding/myfinhub/`; runtime files under `public/brand/` are platform-specific derivatives or exact compatibility aliases.
 
-`assets/branding/myfinhub/icon-192.png` is the historical 192×192 source-of-truth. The 32×32 favicon and 512×512 Windows/PWA variants are deterministic size derivatives of that source; they are not replacement artwork or a newly invented `MF` logo.
+The repository intentionally does not use one image file for every platform. Browser tabs have SVG plus 16/32 PNG fallbacks, PWA installation has explicit 192/512 `any` and safe-zone `maskable` assets, and Windows packaging uses the true SVG master for ICO generation while the packaged runtime keeps an exact 512×512 PNG export for its native window icon. In-application light/dark branding continues to use true SVG vectors. iOS-specific assets are intentionally excluded.
+
+The source SVGs are genuine vector artwork with no embedded raster payloads. Duplicate horizontal/vertical-labelled lockups from the source kit are not retained as separate canonical assets. Android adaptive/themed/store artwork is maintained in the dedicated Android repository from the same PureVector identity.
 
 Compatibility-critical historical identifiers such as `rheomiq_*` database objects and `RHEOMIQ_*` desktop/backend protocol variables remain intentionally unchanged because they are persistence/protocol contracts, not visible product branding.
 
@@ -109,6 +116,12 @@ MyFinHub preserves the existing Excel-derived behavior rather than flattening ev
 - **Scheduled items:** do not affect current balances until explicit completion.
 - **Legacy confirmation:** suggested reinterpretations affect reports only after explicit confirmation.
 
+## Dependency and runtime health
+
+MyFinHub has a read-only dependency/runtime health workflow that runs monthly and can also be started manually. It checks the Node.js LTS baseline, direct npm dependencies in the root/API/desktop packages, and npm security-audit results. It never edits manifests or lockfiles and never deploys anything.
+
+The **Dependency health** badge above shows the latest workflow result. **Run dependency check** opens the workflow page; use **Run workflow** there for an on-demand check. When review is required, the workflow creates or refreshes one maintenance notification issue containing the detailed report; when the repository is clean, it closes that notification issue.
+
 ## Updates and release history
 
 The current stable Windows release is **v1.3.0**. See [`CHANGELOG.md`](CHANGELOG.md) for released and unreleased changes, or browse the complete [GitHub Releases](https://github.com/MariosGiannakaras/MyFinHub/releases) history.
@@ -122,7 +135,7 @@ Desktop releases use `myfinhub-v<version>` tags. The Windows release workflow ve
 
 ### Requirements
 
-Node.js 22 LTS.
+Node.js 24 LTS.
 
 ### Web/local server
 

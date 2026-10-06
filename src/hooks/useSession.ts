@@ -45,9 +45,14 @@ export function useSession() {
   useEffect(() => { void refresh(); }, [refresh]);
   useEffect(() => {
     const expired = () => { setEmail(null); setError(''); setState('anonymous'); };
+    const mfaRequired = () => { void refresh(); };
     window.addEventListener('rheomiq:auth-expired', expired);
-    return () => window.removeEventListener('rheomiq:auth-expired', expired);
-  }, []);
+    window.addEventListener('rheomiq:mfa-required', mfaRequired);
+    return () => {
+      window.removeEventListener('rheomiq:auth-expired', expired);
+      window.removeEventListener('rheomiq:mfa-required', mfaRequired);
+    };
+  }, [refresh]);
 
   const login = useCallback(async (nextEmail: string, password: string) => {
     setError('');

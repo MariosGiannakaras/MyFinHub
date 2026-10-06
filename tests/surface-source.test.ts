@@ -14,11 +14,12 @@ const appSkeleton=source('src/components/AppSkeleton.tsx');
 const pageErrorBoundary=source('src/components/PageErrorBoundary.tsx');
 
 describe('canonical Surface primitive',()=>{
-  it('owns the three compatibility elevation variants without styling changes',()=>{
+  it('owns the three semantic elevation variants without embedding a visual style',()=>{
     expect(surface).toContain("type SurfaceVariant='raised'|'flat'|'inset'");
     expect(surface).not.toContain('export type SurfaceVariant');
     expect(surface).toContain("variant='raised'");
-    expect(surface).toContain('`neo-${variant}`');
+    expect(surface).toContain('`surface-${variant}`');
+    expect(surface).not.toContain('`neo-${variant}`');
     expect(surface).not.toContain('<style');
   });
 
@@ -64,10 +65,10 @@ describe('canonical Surface primitive',()=>{
     expect(appShell).not.toContain('sidebar neo-raised');
     expect(appShell).not.toContain('topbar neo-flat');
     expect(appShell).not.toContain('mobile-nav neo-raised');
-    expect(appShell).toContain('className="command-palette neo-raised"');
-    expect(appShell).toContain('className="mobile-more-menu neo-raised"');
-    expect(appShell).toContain('className="neo-inset history-row"');
-    expect(appShell).toContain("saveState==='saved'?'is-quiet':'neo-inset is-active'");
+    expect(appShell).toContain('className="command-palette surface-raised change-history-dialog"');
+    expect(appShell).toContain('className="mobile-more-menu surface-raised"');
+    expect(appShell).toContain('className="surface-inset history-row"');
+    expect(appShell).toContain("saveState==='saved'?'is-quiet':'surface-inset is-active'");
     expect(appSkeleton).toContain("import { Surface } from './Surface'");
     expect(appSkeleton).toContain('<Surface as="aside" variant="raised" className="skeleton-sidebar">');
     expect(appSkeleton).not.toContain('skeleton-sidebar neo-raised');

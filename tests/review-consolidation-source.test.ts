@@ -9,12 +9,13 @@ describe('Review consolidation into Έλεγχος',()=>{
   it('exposes one canonical owner-facing review/action surface',()=>{
     const shell=read('src/components/AppShell.tsx');
     const app=read('src/App.tsx');
+    const routing=read('src/lib/routing.ts');
     const commands=read('src/lib/commandSearch.ts');
     expect(shell).toContain("{id:'attention',label:'Έλεγχος'");
     expect(shell).not.toContain("|'review'|");
     expect(app).not.toContain('ReviewPage');
-    expect(app).toContain("raw === 'review'");
-    expect(app).toContain("page: 'attention' as PageId");
+    expect(routing).toContain("raw === 'review'");
+    expect(routing).toContain("page: 'attention'");
     expect(app).toContain('onReviewDecision={decide}');
     expect(commands).not.toContain("['review','Έλεγχος παλιών κινήσεων'");
     expect(commands).toContain("['attention','Έλεγχος','Εκκρεμότητες και κινήσεις προς επιβεβαίωση'");
@@ -24,7 +25,7 @@ describe('Review consolidation into Έλεγχος',()=>{
   it('keeps legacy confirmation behavior inside Έλεγχος without changing reports implicitly',()=>{
     const attention=read('src/pages/AttentionPage.tsx');
     const confirmation=read('src/components/LegacyConfirmationPanel.tsx');
-    expect(attention).toContain('<h1>Έλεγχος</h1>');
+    expect(attention).toContain('title="Έλεγχος"');
     expect(attention).toContain('<LegacyConfirmationPanel');
     expect(confirmation).toContain('reviewSuggestions(data)');
     expect(confirmation).toContain('Καμία αναφορά δεν αλλάζει χωρίς δική σου επιβεβαίωση.');

@@ -6,6 +6,7 @@ import type { QuickActionContext } from './components/ContextualQuickAdd';
 import { LoginScreen } from './components/LoginScreen';
 import { MfaScreen } from './components/MfaScreen';
 import { PageErrorBoundary } from './components/PageErrorBoundary';
+import { NotFoundPage } from './pages/NotFoundPage';
 import { PeriodControl } from './components/PeriodControl';
 import { PersistenceNotice } from './components/PersistenceNotice';
 import type { QuickPrefill } from './components/QuickAdd';
@@ -21,6 +22,7 @@ import { accountBalances, allAccounts } from './lib/domain';
 import { withLegacyOverride, withLegacyTombstone } from './lib/legacyTransactions';
 import { deleteLocalCvv } from './lib/localCvvVault';
 import { reportingMonthForDate } from './lib/localDate';
+import { pageHash, resolveHashRoute } from './lib/routing';
 import type { TaxonomyOperation } from './lib/taxonomyManagement';
 import { applyTransactionRules } from './lib/transactionRules';
 import type {
@@ -56,22 +58,15 @@ const AttentionPage = lazy(() => import('./pages/AttentionPage').then((module) =
 const ReportsPage = lazy(() => import('./pages/ReportsPage').then((module) => ({ default: module.ReportsPage })));
 const SettingsPage = lazy(() => import('./pages/SettingsPage').then((module) => ({ default: module.SettingsPage })));
 
-const PAGE_IDS: PageId[] = ['dashboard','transactions','savings','cards','credit','loans','lending','recurring','planning','attention','reports','settings'];
 const PERIOD_PAGES = new Set<PageId>(['dashboard','transactions','savings','reports']);
 
-function routeFromHash() {
-  const raw = location.hash.replace(/^#\/?/, '').trim();
-  if (!raw) return { page: 'dashboard' as PageId, notFound: false };
-  if (raw === 'review') { history.replaceState(null, '', '#/attention'); return { page: 'attention' as PageId, notFound: false }; }
-  if (PAGE_IDS.includes(raw as PageId)) return { page: raw as PageId, notFound: false };
-  return { page: 'dashboard' as PageId, notFound: true };
+function routeFromLocation() {
+  const route = resolveHashRoute(location.hash);
+  if (route.redirectHash && location.hash !== route.redirectHash) history.replaceState(null, '', route.redirectHash);
+  return route;
 }
 
-function pageHash(page: PageId) { return `#/${page}`; }
 function PageLoading() { return <PageSkeleton/>; }
-function NotFound({ onHome }: { onHome: () => void }) {
-  return <main className="login-screen"><section className="not-found neo-raised" aria-labelledby="not-found-title"><span className="eyebrow">404 · PRIVATE ROUTE</span><h1 id="not-found-title">Η ενότητα δεν υπάρχει</h1><p>Η διεύθυνση δεν αντιστοιχεί σε ενότητα του MyFinHub. Δεν εμφανίζονται οικονομικά στοιχεία σε αυτή την οθόνη.</p><div className="editor-actions"><Button type="button" variant="primary" onClick={onHome}>Επιστροφή στο Dashboard</Button></div></section></main>;
-}
 const quickToken = () => `quick-${Date.now()}-${Math.random().toString(36).slice(2,7)}`;
 
 type DistributiveOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never;
@@ -80,7 +75,7 @@ type SpecialQuickContext = DistributiveOmit<Exclude<QuickActionContext, { mode: 
 function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogout: () => void }) {
   const finance = useFinance();
   const today = useLocalDate();
-  const initialRoute = routeFromHash();
+  const initialRoute = routeFromLocation();
   const [page, setPage] = useState<PageId>(initialRoute.page);
   const [notFound, setNotFound] = useState(initialRoute.notFound);
   const [quickOpen, setQuickOpen] = useState(false);
@@ -103,7 +98,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   };
 
   useEffect(() => {
-    const sync = () => { const next = routeFromHash(); setPage(next.page); setNotFound(next.notFound); };
+    const sync = () => { const next = routeFromLocation(); setPage(next.page); setNotFound(next.notFound); };
     window.addEventListener('hashchange', sync);
     window.addEventListener('popstate', sync);
     return () => { window.removeEventListener('hashchange', sync); window.removeEventListener('popstate', sync); };
@@ -139,7 +134,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   useEffect(() => { document.documentElement.dataset.textSize = textSize; return () => { delete document.documentElement.dataset.textSize; }; }, [textSize]);
 
   if (!data) return <AppSkeleton/>;
-  if (notFound) return <NotFound onHome={() => navigate('dashboard', true)}/>;
+  if (notFound) return <NotFoundPage onHome={() => navigate('dashboard', true)} onBack={() => { if (history.length > 1) history.back(); else navigate('dashboard', true); }}/>;
 
   const addEvent = (event: FinanceEvent) => finance.update((current) => {
     const events = current.state.events ?? [];
@@ -266,7 +261,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
 
   return <>
     <AppShell page={page} onPage={navigate} onQuickAdd={() => openGeneric('expense')} onCommand={openCommand} onRefresh={() => { void finance.reload(); }} onUndo={() => { finance.undo(); }} onRedo={() => { finance.redo(); }} canUndo={finance.canUndo} canRedo={finance.canRedo} history={finance.changeHistory} saveState={finance.saveState} filePath={finance.filePath} motionMode="full" userEmail={userEmail} onLogout={onLogout}>
-      <PersistenceNotice saveState={finance.saveState} onRecover={recover}/>
+      <PersistenceNotice saveState={finance.saveState} errorMessage={finance.saveErrorMessage} onRecover={recover}/>
       {PERIOD_PAGES.has(page) ? <div className="period-row"><PeriodControl month={month} onChange={(next) => { setMonth(next); setMonthIsManual(true); }}/><span>Στοιχεία περιόδου</span></div> : null}
       {finance.saveState === 'loading' ? <PageSkeleton/> : <PageErrorBoundary resetKey={page} onDashboard={() => navigate('dashboard')}><Suspense fallback={<PageLoading/>}>{content}</Suspense></PageErrorBoundary>}
     </AppShell>

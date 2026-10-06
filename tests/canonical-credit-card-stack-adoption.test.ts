@@ -34,6 +34,26 @@ describe('canonical credit-card stack adoption',()=>{
     expect(cardDomain).toContain('creditDebtForCard(data,cardId,asOf)<=0.005');
   });
 
+  it('keeps credit profile edits separate from encrypted card details',()=>{
+    expect(credit).toContain('openCardProfile');
+    expect(credit).toContain('saveCreditCardProfile');
+    expect(credit).toContain('Επεξεργασία κάρτας');
+    expect(credit).toContain('Ασφαλή στοιχεία');
+    expect(credit).toContain('initialCard={profileCard} kindLock="credit"');
+  });
+
+  it('bounds growing credit ledgers while preserving explicit progressive access',()=>{
+    expect(credit).toContain('const [purchaseLimit,setPurchaseLimit]=useState(25)');
+    expect(credit).toContain('const [paymentLimit,setPaymentLimit]=useState(25)');
+    expect(credit).toContain('purchases.slice(0,purchaseLimit)');
+    expect(credit).toContain('payments.slice(0,paymentLimit)');
+    expect(credit).toContain('{visiblePurchases.map(event=>');
+    expect(credit).toContain('{visiblePayments.map(event=>');
+    expect(credit).toContain('Προβολή περισσότερων αγορών');
+    expect(credit).toContain('Προβολή περισσότερων αποπληρωμών');
+    expect(hostCss).toContain('.credit-history-more');
+  });
+
   it('keeps debit/prepaid cards out of the credit finance domain',()=>{
     expect(cards).toContain("allowedKinds={['debit','prepaid']}");
     expect(cards).toContain('Οι συναλλαγές καταχωρούνται στους αντίστοιχους λογαριασμούς, όχι στις κάρτες.');
@@ -81,5 +101,10 @@ describe('canonical credit-card stack adoption',()=>{
     expect(hostCss).toContain('.credit-purchases-table td:nth-child(5)::before');
     expect(hostCss).toContain('.credit-payments-table td:nth-child(4)::before');
     expect(hostCss).toContain('.deleted-credit-history .semantic-table td:nth-child(4)::before');
+    const mobileRows=hostCss.slice(hostCss.indexOf('.credit-card-redesign-page .semantic-table tr{'),hostCss.indexOf('.credit-card-redesign-page .semantic-table td{'));
+    expect(mobileRows).toContain('border:1px solid var(--border-subtle)');
+    expect(mobileRows).toContain('background:var(--surface-2)');
+    expect(mobileRows).toContain('color:var(--ink)');
+    expect(mobileRows).not.toMatch(/#dce5ef|rgba\(249,252,255/);
   });
 });

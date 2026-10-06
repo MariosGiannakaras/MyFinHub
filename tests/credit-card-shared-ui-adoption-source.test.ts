@@ -8,10 +8,12 @@ describe('Credit Card shared Button ownership',()=>{
   it('moves the canonical generic action hooks to shared Button and IconButton',()=>{
     expect(source).toContain("from '../components/Button'");
     expect(source).toContain("from '../components/IconButton'");
-    expect(source.match(/<Button\b/g)).toHaveLength(15);
-    expect(source.match(/<IconButton\b/g)).toHaveLength(3);
+    expect(source.match(/<Button\b/g)).toHaveLength(20);
+    expect(source.match(/<IconButton\b/g)).toHaveLength(9);
     expect(source.match(/<Button[^>]+variant=\"primary\"/g)).toHaveLength(6);
-    expect(source.match(/<Button[^>]+variant=\"secondary\"/g)).toHaveLength(9);
+    expect(source.match(/<Button[^>]+variant=\"secondary\"/g)).toHaveLength(12);
+    expect(source.match(/<Button[^>]+variant=\"ghost\"/g)).toHaveLength(1);
+    expect(source.match(/<Button[^>]+variant=\"danger\"/g)).toHaveLength(1);
     expect(source).not.toContain('className="save-button"');
     expect(source).not.toContain('className="secondary"');
     expect(source).not.toContain('className="icon-button"');
@@ -22,7 +24,10 @@ describe('Credit Card shared Button ownership',()=>{
     expect(source).toContain('<IconButton type="button" aria-label="Κλείσιμο αγοράς πιστωτικής"');
     expect(source).toContain('<IconButton type="button" className="close-picker" aria-label="Κλείσιμο αρχείου καρτών"');
     expect(source).toContain('<Button type="button" variant="primary" disabled={!card} onClick={openPurchase}');
-    expect(source).toContain('<Button type="button" variant="secondary" onClick={openCardDetails}><Pencil/> Στοιχεία κάρτας</Button>');
+    expect(source).toContain('<Button type="button" variant="secondary" onClick={openCardProfile}><Pencil/> Επεξεργασία κάρτας</Button>');
+    expect(source).toContain('<Button type="button" variant="secondary" onClick={openCardDetails}><KeyRound/> Ασφαλή στοιχεία</Button>');
+    expect(source.match(/className="credit-history-more"/g)).toHaveLength(2);
+    expect(source).toContain('initialCard={profileCard}');
     expect(source).toContain('<CardDetailsDialog');
     expect(source).toContain('<Button type="button" variant="secondary" disabled={!card||debt<=0||eligibleAccounts.length===0} onClick={openRepay}');
     expect(source).toContain('<Button data-autofocus={index===0?\'true\':undefined} type="button" variant="primary" onClick={()=>restoreArchived(archived)}');

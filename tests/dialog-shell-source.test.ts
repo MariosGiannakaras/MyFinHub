@@ -35,7 +35,7 @@ describe('DialogShell source contract',()=>{
   it('keeps product semantics outside the shell while allowing data metadata only',()=>{
     expect(shell).toContain('dataAttributes?:DialogDataAttributes');
     expect(shell).toContain('{...dataAttributes}');
-    expect(shell).toContain("['quick-modal',className,'neo-raised'].filter(Boolean).join(' ')");
+    expect(shell).toContain("['quick-modal',className,'surface-raised'].filter(Boolean).join(' ')");
     expect(shell).not.toContain("from './Button'");
     expect(shell).not.toContain("from './IconButton'");
     expect(shell).not.toContain("from './MoneyInput'");

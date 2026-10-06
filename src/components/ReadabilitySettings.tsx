@@ -10,9 +10,9 @@ const OPTIONS: Array<{ value: TextSizePreference; label: string; description: st
 ];
 
 const THEME_OPTIONS: Array<{ value: ThemePreference; label: string; description: string }> = [
-  { value: 'system', label: 'Σύστημα', description: 'Ακολουθεί αυτόματα το Light/Dark θέμα της συσκευής.' },
-  { value: 'light', label: 'Light', description: 'Φωτεινό θέμα με ήπιες επιφάνειες και καθαρή αντίθεση.' },
-  { value: 'dark', label: 'Dark', description: 'Σκούρο θέμα σχεδιασμένο για άνετη ανάγνωση χωρίς υπερβολικό contrast.' },
+  { value: 'system', label: 'Σύστημα', description: 'Ακολουθεί αυτόματα το φωτεινό ή σκούρο θέμα της συσκευής.' },
+  { value: 'light', label: 'Φωτεινό', description: 'Φωτεινό θέμα με ήπιες επιφάνειες και καθαρή αντίθεση.' },
+  { value: 'dark', label: 'Σκούρο', description: 'Σκούρο θέμα σχεδιασμένο για άνετη ανάγνωση χωρίς υπερβολική αντίθεση.' },
 ];
 
 export function ReadabilitySettings({ value = 'normal', onChange }: { value?: TextSizePreference; onChange: (value: TextSizePreference) => void }) {
@@ -57,7 +57,7 @@ export function ReadabilitySettings({ value = 'normal', onChange }: { value?: Te
       <div className="settings-choice-group">
         <div className="settings-choice-copy">
           <b>Θέμα</b>
-          <small>System, Light ή Dark χωρίς αλλαγή των οικονομικών δεδομένων.</small>
+          <small>Σύστημα, φωτεινό ή σκούρο θέμα χωρίς αλλαγή των οικονομικών δεδομένων.</small>
         </div>
         <div className="text-size-picker" role="radiogroup" aria-label="Θέμα εμφάνισης">
           {THEME_OPTIONS.map((option) => (

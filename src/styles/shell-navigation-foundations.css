@@ -1,17 +1,18 @@
 .app-shell{min-height:100vh;display:grid;grid-template-columns:260px minmax(0,1fr);gap:18px;padding:14px}
-.sidebar{height:calc(100vh - 28px);position:sticky;top:14px;border-radius:26px;padding:18px 14px;display:flex;flex-direction:column;overflow:auto}
+.sidebar{height:calc(100vh - 28px);position:sticky;top:14px;border-radius:20px;padding:18px 14px;display:flex;flex-direction:column;overflow:auto}
 .brand-block{display:flex;align-items:center;gap:10px;padding:0 7px 17px}
-.brand-icon{width:48px;height:48px;border-radius:15px;box-shadow:var(--shadow-soft)}
 .brand-word{font-size:25px;font-weight:850;letter-spacing:-.05em;color:#142a68}
 .brand-word span{color:var(--cyan)}
 .brand-block small{display:block;color:var(--muted);font-size:9px;margin-top:2px}
-.save-button{border:0;border-radius:13px;background:linear-gradient(135deg,#2f6fed,#174ea6);color:white;font-weight:750;padding:11px 13px;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 9px 18px rgba(47,111,237,.25),inset 0 1px 0 rgba(255,255,255,.3);cursor:pointer;transition:transform .15s ease,box-shadow .15s ease}
-.save-button:enabled:hover{transform:translateY(-1px);box-shadow:0 12px 23px rgba(47,111,237,.28)}
+.save-button{border:0;border-radius:10px;background:linear-gradient(135deg,#2f6fed,#245fcf);color:white;font-weight:750;padding:11px 13px;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 6px 14px rgba(47,111,237,.20);cursor:pointer;transition:transform .15s ease,box-shadow .15s ease}
+.save-button:enabled:hover{transform:translateY(-1px);box-shadow:0 8px 18px rgba(47,111,237,.22)}
 .save-button:enabled:active{transform:translateY(1px) scale(.99)}
-.sidebar nav{display:grid;gap:4px;margin-top:13px}
+.sidebar nav{display:grid;gap:10px;margin-top:13px}
+.nav-group{display:grid;gap:4px}
+.nav-group-label{padding:2px 11px;color:var(--muted);font-size:8px;font-weight:800;letter-spacing:.06em}
 .sidebar nav button{border:0;background:transparent;border-radius:12px;padding:10px 11px;display:flex;align-items:center;gap:11px;color:#395077;font-size:12px;font-weight:620;cursor:pointer;transition:.15s ease;text-align:left}
 .sidebar nav button:hover{background:rgba(255,255,255,.65);transform:translateX(2px)}
-.sidebar nav button.active{color:white;background:linear-gradient(105deg,#2f6fed,#5a8cff);box-shadow:0 7px 17px rgba(47,111,237,.24),inset 0 1px 0 rgba(255,255,255,.34)}
+.sidebar nav button.active{color:white;background:linear-gradient(105deg,#2f6fed,#5a8cff);box-shadow:0 5px 12px rgba(47,111,237,.18)}
 .count-badge{margin-left:auto;min-width:22px;height:22px;border-radius:10px;background:#fff;color:#2f6fed;display:grid;place-items:center;font-size:10px}
 .file-panel{margin-top:auto;border-radius:17px;padding:13px}
 .file-panel.is-quiet{padding:8px 9px;background:transparent;border:1px solid transparent;box-shadow:none;opacity:.72}
@@ -24,9 +25,11 @@
 .status-dot.error,.status-dot.conflict{background:#d64058}
 .file-panel small{display:block;color:var(--muted);margin-top:8px;font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sidebar-foot{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:9px;padding:13px 7px 0}
-.topbar{height:62px;border-radius:20px;display:grid;grid-template-columns:1fr auto;align-items:center;padding:0 15px;position:sticky;top:14px;z-index:25}
+.topbar{height:62px;border-radius:16px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;padding:0 15px;position:sticky;top:14px;z-index:25}
+.topbar-primary{display:flex;align-items:center}
+.topbar-primary .save-button{height:38px;padding:0 14px;border-radius:10px;box-shadow:0 4px 10px rgba(47,111,237,.16);font-size:11px}
 .top-actions{grid-column:2;display:flex;align-items:center;gap:8px}
-.top-actions button,.icon-button{border:1px solid rgba(255,255,255,.85);background:linear-gradient(145deg,#fff,#ecf2f9);box-shadow:var(--shadow-soft);width:36px;height:36px;border-radius:12px;display:grid;place-items:center;cursor:pointer;transition:.15s}
+.top-actions button,.icon-button{border:1px solid var(--line);background:var(--surface);box-shadow:none;width:36px;height:36px;border-radius:12px;display:grid;place-items:center;cursor:pointer;transition:.15s}
 .top-actions button:enabled:hover,.icon-button:enabled:hover{transform:translateY(-1px);color:var(--blue)}
 .has-dot{position:relative}
 .has-dot:after{content:"";width:7px;height:7px;background:#e4445b;border-radius:99px;position:absolute;right:7px;top:6px;border:2px solid white}

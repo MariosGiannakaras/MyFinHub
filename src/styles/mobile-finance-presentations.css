@@ -24,7 +24,7 @@
   .mobile-transaction-filters select{width:100%;height:42px;border:1px solid #d4dfec;border-radius:11px;background:#f8fbff;color:var(--ink);padding:0 9px;font-size:16px}
 
   .mobile-transaction-list{gap:9px}
-  .mobile-transaction-row{--mobile-row-tint:rgba(82,98,125,.035);--mobile-row-accent:#8795aa;position:relative;border:1px solid rgba(214,224,237,.88);border-radius:16px;padding:12px;background:linear-gradient(145deg,rgba(255,255,255,.82),var(--mobile-row-tint));box-shadow:4px 4px 11px rgba(37,59,92,.07),-4px -4px 11px rgba(255,255,255,.75);overflow:hidden}
+  .mobile-transaction-row{--mobile-row-tint:rgba(82,98,125,.035);--mobile-row-accent:#8795aa;position:relative;border:1px solid var(--line);border-radius:var(--radius-md);padding:12px;background:color-mix(in srgb,var(--mobile-row-tint) 58%,var(--surface));box-shadow:var(--shadow-flat);overflow:hidden}
   .mobile-transaction-row:before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:3px;border-radius:0 4px 4px 0;background:var(--mobile-row-accent);opacity:.66}
   .mobile-transaction-row.kind-expense,.mobile-transaction-row.kind-card_purchase{--mobile-row-tint:rgba(179,41,66,.045);--mobile-row-accent:#c34d62}
   .mobile-transaction-row.kind-income{--mobile-row-tint:rgba(24,120,82,.045);--mobile-row-accent:#33906d}
@@ -82,9 +82,9 @@
   .searchbox input,.money-input input{font-size:16px!important}
 
   /* Consistent practical touch targets and press feedback after native tap highlight suppression. */
-  .text-button,.loan-actions button,.settings-actions button,.settings-draft-actions button,.report-eye,.secondary,.save-button{min-height:44px}
-  .mobile-nav button,.mobile-more-menu button,.text-button,.loan-actions button,.settings-actions button,.settings-draft-actions button,.report-eye,.secondary,.save-button{touch-action:manipulation}
-  .mobile-nav button:active,.mobile-more-menu button:active,.text-button:active,.loan-actions button:active,.settings-actions button:active,.settings-draft-actions button:active,.report-eye:active,.secondary:active,.save-button:active{transform:translateY(1px) scale(.98)}
+  .text-button,.loan-actions button,.settings-actions button,.report-eye,.secondary,.save-button{min-height:44px}
+  .mobile-nav button,.mobile-more-menu button,.text-button,.loan-actions button,.settings-actions button,.report-eye,.secondary,.save-button{touch-action:manipulation}
+  .mobile-nav button:active,.mobile-more-menu button:active,.text-button:active,.loan-actions button:active,.settings-actions button:active:active,.report-eye:active,.secondary:active,.save-button:active{transform:translateY(1px) scale(.98)}
 
   /* On phones the already-accessible textual category list is the primary report visualization. */
   .panel:has(.category-icon-list)>div[aria-hidden="true"]{display:none}

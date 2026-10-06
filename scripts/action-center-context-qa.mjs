@@ -60,6 +60,36 @@ try{
   assert(await c.call("function(){return document.querySelector('.attention-page .privacy-toggle')?.getAttribute('aria-pressed')==='true'}"),'privacy toggle exposes values only on request');
   await noOverflow('attention desktop');await noUnnamed('attention desktop');await screenshot('action-center-desktop');
 
+  console.log('Action Center QA: focused legacy split-review editor');
+  await navigate('attention','split-review');
+  await clickText('.legacy-confirmation-toggle','Προβολή');
+  await waitFor("function(){return [...document.querySelectorAll('.legacy-confirmation-row button')].some(node=>(node.textContent||'').includes('Άνοιγμα διαχωρισμού'))}",'split-required legacy review action');
+  await clickText('.legacy-confirmation-row button','Άνοιγμα διαχωρισμού');
+  await waitFor("function(){return Boolean(document.querySelector('.split-review-summary'))&&document.querySelectorAll('.review-part').length>=2}",'legacy split review editor');
+  const splitReviewGeometry=await c.call("function(){const summary=document.querySelector('.split-review-summary'),dialog=summary?.closest('.editor-dialog'),parts=[...document.querySelectorAll('.review-part')];if(!summary||!dialog||parts.length<2)return null;const r=dialog.getBoundingClientRect(),sr=summary.getBoundingClientRect();return {parts:parts.length,dialog:{left:r.left,right:r.right,top:r.top,bottom:r.bottom},summary:{left:sr.left,right:sr.right,top:sr.top,bottom:sr.bottom},overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth,partWidths:parts.map(part=>part.getBoundingClientRect().width)}}");
+  assert(splitReviewGeometry&&splitReviewGeometry.parts>=2&&splitReviewGeometry.dialog.left>=0&&splitReviewGeometry.dialog.right<=1440&&splitReviewGeometry.dialog.top>=0&&splitReviewGeometry.dialog.bottom<=1000&&splitReviewGeometry.summary.left>=splitReviewGeometry.dialog.left&&splitReviewGeometry.summary.right<=splitReviewGeometry.dialog.right&&splitReviewGeometry.overflow<=1&&splitReviewGeometry.partWidths.every(width=>width>120),'legacy split-review dialog geometry');
+  await noUnnamed('legacy split-review editor');await screenshot('action-center-split-review-editor');
+  const splitClosed=await c.call("function(){const button=document.querySelector('button[aria-label=\"Κλείσιμο επεξεργασίας διαχωρισμού\"]');button?.click();return Boolean(button)}");assert(splitClosed,'legacy split-review close control');
+  await waitFor("function(){return !document.querySelector('.split-review-summary')}",'legacy split-review close');
+
+  console.log('Action Center QA: legacy review keep semantics never mutate reports implicitly');
+  await clickText('.sidebar nav button','Αναφορές');
+  await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Αναφορές')}",'Reports before review decision');
+  const reportBeforeKeep=await c.call("function(){return (document.querySelector('.report-kpi-strip')?.textContent||'').replace(/\\s+/g,' ').trim()}");
+  assert(reportBeforeKeep.length>0,'report KPI baseline exists before review decision');
+  await clickText('.sidebar nav button','Έλεγχος');
+  await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Έλεγχος')}",'Attention before keep decision');
+  await clickText('.legacy-confirmation-toggle','Προβολή');
+  await waitFor("function(){return Boolean(document.querySelector('.legacy-confirmation-row'))}",'expanded legacy confirmation');
+  const keptReview=await c.call("function(){const row=document.querySelector('.legacy-confirmation-row');const title=(row?.querySelector('h3')?.textContent||'').trim();const button=[...row?.querySelectorAll('button')||[]].find(node=>(node.textContent||'').includes('Κράτα ως είναι'));button?.click();return {title,clicked:Boolean(button)}}");
+  assert(keptReview.clicked&&keptReview.title,'legacy review exposes Keep as-is decision');
+  await waitFor("function(title){return ![...document.querySelectorAll('.legacy-confirmation-row h3')].some(node=>(node.textContent||'').trim()===title)}",'kept review leaves pending list',[keptReview.title]);
+  await screenshot('action-center-review-kept');
+  await clickText('.sidebar nav button','Αναφορές');
+  await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Αναφορές')}",'Reports after keep decision');
+  const reportAfterKeep=await c.call("function(){return (document.querySelector('.report-kpi-strip')?.textContent||'').replace(/\\s+/g,' ').trim()}");
+  assert(reportAfterKeep===reportBeforeKeep,'Keep as-is preserves report KPIs and original transaction meaning');
+
   console.log('Action Center QA: exact recurring and loan deep actions');
   await navigate('attention');
   await clickAttention('recurring:rec-1');await waitModal('Πληρωμή παγίου');
@@ -90,11 +120,11 @@ try{
 
   console.log('Action Center QA: account, savings and lending invocation contexts');
   await navigate('dashboard');
-  const payrollOpened=await c.call("function(){const node=document.querySelector('[data-account-id=\"piraeus-payroll\"] .account-context-action');node?.click();return Boolean(node)}");assert(payrollOpened,'dashboard payroll account context action');
+  const payrollOpened=await c.call("function(){const node=document.querySelector('[data-account-id=\"piraeus-payroll\"] [data-account-quick-entry=\"piraeus-payroll\"]');node?.click();return Boolean(node)}");assert(payrollOpened,'dashboard payroll quick action');
   await waitFor("function(){return Boolean(document.querySelector('.quick-modal:not(.contextual-quick-modal)'))}",'payroll account-context generic quick add');
   assert(await c.call("function(){return [...document.querySelectorAll('.quick-modal:not(.contextual-quick-modal) input[role=combobox]')].some(input=>(input.value||'').includes('Μισθοδοσία'))}"),'payroll context preselects originating payroll account');
   await closeGenericModal();
-  const cashOpened=await c.call("function(){const node=document.querySelector('[data-account-id=\"cash\"] .account-context-action');node?.click();return Boolean(node)}");assert(cashOpened,'dashboard cash account context action');
+  const cashOpened=await c.call("function(){const node=document.querySelector('[data-account-id=\"cash\"] [data-account-quick-entry=\"cash\"]');node?.click();return Boolean(node)}");assert(cashOpened,'dashboard cash quick action');
   await waitFor("function(){return Boolean(document.querySelector('.quick-modal:not(.contextual-quick-modal)'))}",'cash account-context generic quick add');
   assert(await c.call("function(){return [...document.querySelectorAll('.quick-modal:not(.contextual-quick-modal) input[role=combobox]')].some(input=>(input.value||'').includes('Μετρητά'))}"),'cash context preselects originating cash account');
   await closeGenericModal();
@@ -116,6 +146,10 @@ try{
   await waitFor("function(id){return !document.querySelector(`[data-attention-id=\"${CSS.escape(id)}\"]`)}",'snoozed row removal',[snoozed]);
   const undone=await c.call("function(){const button=document.querySelector('.top-actions button[aria-label=\"Αναίρεση τελευταίας αλλαγής\"]');button?.click();return Boolean(button&&!button.disabled)}");assert(undone,'attention snooze exposes enabled undo');
   await waitFor("function(id){return Boolean(document.querySelector(`[data-attention-id=\"${CSS.escape(id)}\"]`))}",'snoozed row restored by undo',[snoozed]);
+  const dismissed=await c.call("function(){const row=[...document.querySelectorAll('.attention-row')].find(node=>!node.classList.contains('danger')&&Boolean(node.querySelector('button[aria-label^=\"Απόκρυψη\"]')));const button=row?.querySelector('button[aria-label^=\"Απόκρυψη\"]');const id=row?.getAttribute('data-attention-id');button?.click();return id||''}");assert(Boolean(dismissed),'non-danger item can be dismissed');
+  await waitFor("function(id){return !document.querySelector(`[data-attention-id=\"${CSS.escape(id)}\"]`)}",'dismissed row removal',[dismissed]);
+  const undoDismiss=await c.call("function(){const button=document.querySelector('.top-actions button[aria-label=\"Αναίρεση τελευταίας αλλαγής\"]');button?.click();return Boolean(button&&!button.disabled)}");assert(undoDismiss,'attention dismiss exposes enabled undo');
+  await waitFor("function(id){return Boolean(document.querySelector(`[data-attention-id=\"${CSS.escape(id)}\"]`))}",'dismissed row restored by undo',[dismissed]);
   await navigate('attention','empty');assert(await c.call("function(){return (document.querySelector('.attention-empty')?.textContent||'').includes('Δεν υπάρχει κάτι που χρειάζεται άμεση ενέργεια')}") ,'empty attention state');
   await navigate('attention','extreme',375,812);await noOverflow('attention mobile extreme');await noUnnamed('attention mobile extreme');await touchTargets('attention mobile extreme');await screenshot('action-center-mobile');
 

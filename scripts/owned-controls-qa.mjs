@@ -23,6 +23,7 @@ try{
   const viewport=(width,height)=>c.send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<=680});
   const waitFor=async(fn,label,args=[])=>{for(let i=0;i<70;i++){if(await c.call(fn,args))return;await sleep(100)}throw new Error(`Timed out waiting for ${label}`)};
   const clickText=async(selector,text)=>assert(await c.call("function(selector,text){const node=[...document.querySelectorAll(selector)].find(item=>(item.textContent||'').includes(text));if(!node)return false;node.click();return true}",[selector,text]),`missing ${text}`);
+  const clickAria=async label=>assert(await c.call("function(label){const node=[...document.querySelectorAll('button')].find(item=>item.getAttribute('aria-label')===label);if(!node)return false;node.click();return true}",[label]),`missing ${label}`);
   const clickVisibleText=async(selector,text)=>assert(await c.call("function(selector,text){const visible=item=>{const style=getComputedStyle(item),rect=item.getBoundingClientRect();return style.display!=='none'&&style.visibility!=='hidden'&&rect.width>0&&rect.height>0};const node=[...document.querySelectorAll(selector)].find(item=>visible(item)&&(item.textContent||'').includes(text));if(!node)return false;node.click();return true}",[selector,text]),`missing visible ${text}`);
   const assertOwned=async(dialogClass,label)=>assert(await c.call("function(dialogClass){const dialog=document.querySelector('.'+dialogClass);if(!dialog)return false;const shells=[...dialog.querySelectorAll('.owned-input-shell')];return dialog.querySelectorAll('select,input[type=\"date\"]').length===0&&shells.length>0&&shells.every(shell=>{const input=shell.querySelector('input');return input&&parseFloat(getComputedStyle(input).fontSize)>=15.9&&((shell.classList.contains('owned-select-shell')&&input.getAttribute('role')==='combobox'&&input.getAttribute('aria-haspopup')==='listbox')||(shell.classList.contains('owned-date-shell')&&input.getAttribute('aria-haspopup')==='dialog'))})}",[dialogClass]),`${label} uses rendered app-owned controls`);
   const assertNoNativeSelects=async(label)=>assert(await c.call("function(){return document.querySelectorAll('.workspace select').length===0}"),`${label} has no native select controls`);
@@ -47,14 +48,14 @@ try{
   await viewport(375,812);await c.send('Page.navigate',{url:baseUrl});await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}",'workspace');
 
   console.log('Owned controls QA: Quick Entry');
-  await clickText('button','Γρήγορη προσθήκη');await waitFor("function(){return Boolean(document.querySelector('.quick-modal'))}",'Quick Entry');await assertOwned('quick-modal','Quick Entry');await exerciseNestedSelect('quick-modal','Quick Entry');
+  await clickAria('Άνοιγμα γρήγορης καταχώρισης');await waitFor("function(){return Boolean(document.querySelector('.quick-modal'))}",'Quick Entry');await assertOwned('quick-modal','Quick Entry');await exerciseNestedSelect('quick-modal','Quick Entry');
   await c.call("function(){const button=document.querySelector('button[aria-label=\"Κλείσιμο καταχώρισης\"]');if(!button)return false;button.click();return true}");await waitFor("function(){return !document.querySelector('.quick-modal')}",'Quick Entry close');
 
   const routeChecks=[['.mobile-nav button','Αποταμίευση','Αποταμίευση','Νέα','savings-dialog'],['.mobile-more-menu button','Πιστωτική','Πιστωτική Κάρτα','Νέα αγορά','credit-dialog'],['.mobile-more-menu button','Δόσεις & Δάνεια','Δόσεις & Δάνεια','Νέο','loan-editor-dialog'],['.mobile-more-menu button','Δανεικά / Οφειλές','Δανεικά / Οφειλές','Νέα κίνηση','lending-dialog'],['.mobile-more-menu button','Πάγια','Πάγια & Συνδρομές','Νέο πάγιο','editor-dialog']];
   for(const [selector,label,heading,action,dialogClass] of routeChecks){
     console.log(`Owned controls QA: ${heading}`);
     if(selector.includes('mobile-more'))await openMore();
-    await clickText(selector,label);await waitFor("function(heading){return (document.querySelector('#main-workspace h1')?.textContent||'').includes(heading)}",heading,[heading]);
+    if(selector==='.mobile-nav button')await clickAria(label);else await clickText(selector,label);await waitFor("function(heading){return (document.querySelector('#main-workspace h1')?.textContent||'').includes(heading)}",heading,[heading]);
     await assertNoNativeSelects(heading);
     if(heading==='Δανεικά / Οφειλές')await clickVisibleText('button',action);else await clickText('button',action);
     await waitFor("function(dialogClass){return Boolean(document.querySelector('.'+dialogClass))}",`${heading} editor`,[dialogClass]);await assertOwned(dialogClass,heading);await exerciseNestedSelect(dialogClass,heading);
@@ -63,13 +64,13 @@ try{
   }
 
   console.log('Owned controls QA: Cards creation');
-  await clickText('.mobile-nav button','Κάρτες');await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Κάρτες')}",'Cards heading');await assertNoNativeSelects('Cards');
+  await clickAria('Κάρτες');await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Κάρτες')}",'Cards heading');await assertNoNativeSelects('Cards');
   assert(await c.call("function(){const button=[...document.querySelectorAll('.bank-add-btn')].find(item=>!item.disabled);if(!button)return false;button.click();return true}"),'open card creation');
   await waitFor("function(){return Boolean(document.querySelector('.card-create-modal'))}",'card creation dialog');await assertOwned('card-create-modal','Card creation');await exerciseNestedSelect('card-create-modal','Card creation');
   assert(await c.call("function(){const button=document.querySelector('.card-create-modal .close-picker');if(!button)return false;button.click();return true}"),'close card creation');await waitFor("function(){return !document.querySelector('.card-create-modal')}",'card creation close');
 
   console.log('Owned controls QA: Transactions and Settings page filters');
-  await clickText('.mobile-nav button','Συναλλαγές');await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Συναλλαγές')}",'Transactions heading');await assertNoNativeSelects('Transactions');assert(await c.call("function(){return document.querySelectorAll('.mobile-transaction-filters .owned-select-shell').length>=2}"),'Transactions mobile filters use owned selects');
+  await clickAria('Συναλλαγές');await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Συναλλαγές')}",'Transactions heading');await assertNoNativeSelects('Transactions');assert(await c.call("function(){return document.querySelectorAll('.mobile-transaction-filters .owned-select-shell').length>=2}"),'Transactions mobile filters use owned selects');
   await openMore();await clickText('.mobile-more-menu button','Ρυθμίσεις');await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Ρυθμίσεις')}",'Settings heading');await clickText('.settings-tablist button','Λογαριασμοί');await assertNoNativeSelects('Settings accounts');assert(await c.call("function(){return document.querySelectorAll('.account-management-default-grid .owned-select-shell').length>=3}"),'Settings defaults use owned selects');
 
   console.log('Owned controls QA passed.');

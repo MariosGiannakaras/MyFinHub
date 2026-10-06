@@ -5,7 +5,7 @@
 The Windows edition is a packaged desktop client, not a PWA and not a shortcut to Vercel.
 
 - Electron owns the native `MyFinHub` application window, executable and Windows shortcuts.
-- A bundled **Node.js 22.x** executable starts the existing Express backend as a hidden child process.
+- A bundled **Node.js 24.x** executable starts the existing Express backend as a hidden child process.
 - The local backend binds only to `127.0.0.1` on an operating-system-selected ephemeral port. It is started by the desktop host and stopped with the application.
 - The packaged Vite build is served from that local backend, preserving the same-origin HttpOnly-cookie boundary used by the existing local runtime.
 - The backend talks directly to the canonical Supabase project through the application-owned public project URL + publishable key, authenticated owner JWT and PostgreSQL RLS.
@@ -118,7 +118,7 @@ The repository keeps a fallback bootstrap for development/recovery:
 INSTALL_MYFINHUB_WINDOWS.bat
 ```
 
-This can build/install the checked-out source and can locate or download a verified Node.js 22 build runtime. It is **not** required for ordinary released installations.
+This can build/install the checked-out source and can locate or download a verified Node.js 24 build runtime. It is **not** required for ordinary released installations.
 
 The fallback `--latest` mode remains available for recovery or machines where the application cannot start:
 

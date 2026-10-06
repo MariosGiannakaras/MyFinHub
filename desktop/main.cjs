@@ -24,6 +24,7 @@ const UPDATE_TAG = /^myfinhub-v(\d+\.\d+\.\d+)$/i;
 const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
 const MIN_INSTALLER_BYTES = 50 * 1024 * 1024;
 const MAX_INSTALLER_BYTES = 350 * 1024 * 1024;
+const WINDOW_STATE_PROBE_PATH = String(process.env.MYFINHUB_WINDOW_STATE_PROBE_PATH || '').trim();
 const UPDATE_HOSTS = new Set(['github.com', 'api.github.com', 'objects.githubusercontent.com', 'release-assets.githubusercontent.com']);
 
 let mainWindow = null;
@@ -357,10 +358,43 @@ function stopBackend() {
   try { child.kill(); } catch { /* already stopped */ }
 }
 
+const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+async function runWindowStateProbe(window) {
+  if (!WINDOW_STATE_PROBE_PATH || process.platform !== 'win32' || window.isDestroyed()) return;
+  const result = { maximized: false, restored: false, size: null, passed: false, error: null };
+  try {
+    window.maximize();
+    await delay(500);
+    result.maximized = window.isMaximized();
+
+    window.unmaximize();
+    await delay(500);
+    result.restored = !window.isMaximized();
+
+    window.setSize(1100, 760);
+    await delay(500);
+    result.size = window.getSize();
+    result.passed = Boolean(result.maximized && result.restored && result.size?.[0] === 1100 && result.size?.[1] === 760);
+  } catch (error) {
+    result.error = error instanceof Error ? error.message : String(error);
+  }
+
+  try {
+    fs.mkdirSync(path.dirname(WINDOW_STATE_PROBE_PATH), { recursive: true });
+    fs.writeFileSync(WINDOW_STATE_PROBE_PATH, JSON.stringify(result, null, 2), { mode: 0o600 });
+  } catch (error) {
+    console.error('Window-state probe write failed:', error instanceof Error ? error.message : String(error));
+  }
+
+  setTimeout(() => app.quit(), 120);
+}
+
 function createWindow(origin, runtime) {
   Menu.setApplicationMenu(null);
   mainWindow = new BrowserWindow({
     title: PRODUCT_NAME, width: 1440, height: 930, minWidth: 960, minHeight: 650, show: false,
+    ...(process.platform === 'win32' ? { titleBarStyle: 'hidden', titleBarOverlay: true } : {}),
     backgroundColor: '#0f1720', icon: runtime.icon, autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true,
@@ -368,7 +402,12 @@ function createWindow(origin, runtime) {
     },
   });
   hardenWindow(mainWindow, origin);
-  mainWindow.once('ready-to-show', () => mainWindow?.show());
+  mainWindow.once('ready-to-show', () => {
+    const window = mainWindow;
+    if (!window || window.isDestroyed()) return;
+    window.show();
+    if (WINDOW_STATE_PROBE_PATH) void runWindowStateProbe(window);
+  });
   mainWindow.webContents.once('did-finish-load', scheduleAutomaticUpdateChecks);
   mainWindow.on('closed', () => { mainWindow = null; });
   void mainWindow.loadURL(origin);
