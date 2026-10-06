@@ -51,9 +51,10 @@ Issue #503 and docs/audits/RECONCILIATION_AND_REMEDIATION_PLAN.md are now author
 - The Dashboard owner contract is explicitly **Μετρητά → Μισθοδοσίας → Αποταμιευτικός** by semantic account metadata, not the weaker cash → operating → savings approximation.
 - Gemini-only observations not independently confirmed by the GPT audit are reproduce-before-fix to prevent speculative CSS changes.
 - A fresh post-fix desktop/tablet/mobile × Light/Dark visual inspection on the exact corrected head is mandatory before the remediation can merge to develop.
+- Fresh ready-review evidence closed C-01 through C-04 as NOT REPRODUCED; direct inspection also exposed residual R-05 provider halo, Dashboard upcoming-empty-state and Transactions date-range crowding defects, now under a targeted draft correction batch pending exact-head rerender.
 - No production promotion is authorized.
 
-#503 progress: **Implementations 1/5 completed · Sub-implementations 5/30 completed**.
+#503 progress: **Implementations 1/5 completed · Sub-implementations 6/30 completed**.
 
 ## Completed post-completion hardening — #490
 
