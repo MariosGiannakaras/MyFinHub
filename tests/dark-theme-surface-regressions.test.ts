@@ -18,9 +18,9 @@ describe('dark-theme surface regressions',()=>{
     expect(dashboard).not.toContain('color:#526987');
 
     const reports=read('src/pages/ReportsPage.css');
-    expect(reports).toContain('background:color-mix(in srgb,var(--success-bg) 72%,var(--surface))');
-    expect(reports).toContain('background:color-mix(in srgb,var(--warning-bg) 72%,var(--surface))');
-    expect(reports).toContain('background:color-mix(in srgb,var(--error-bg) 72%,var(--surface))');
+    expect(reports).toContain('background:var(--success-bg)');
+    expect(reports).toContain('background:var(--warning-bg)');
+    expect(reports).toContain('background:var(--error-bg)');
   });
 
   it('keeps Settings icon-management and Rules workspaces on semantic surfaces',()=>{
