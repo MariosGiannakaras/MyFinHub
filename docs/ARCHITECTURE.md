@@ -2,7 +2,7 @@
 
 ## Runtime and trust boundary
 
-MyFinHub is a React/Vite client with a small TypeScript API boundary. Production API handlers run as Vercel Node.js Functions in Frankfurt (`fra1`); local development exposes the same server modules through Express. The repository runtime contract is Node.js 22.x.
+MyFinHub is a React/Vite client with a small TypeScript API boundary. Production API handlers run as Vercel Node.js Functions in Frankfurt (`fra1`); local development exposes the same server modules through Express. The repository runtime contract is Node.js 24.x.
 
 The browser is UI-only for durable finance state. Durable finance data lives in Supabase/PostgreSQL in `eu-central-1`, and finance data or access tokens are not persisted in `localStorage` or IndexedDB. PAN, expiry and CVV are also excluded from FinanceData: they use the separate owner+AAL2 encrypted server card vault. The former browser-local encrypted CVV store exists only as a legacy migration source and is deleted after confirmed server-vault persistence.
 
@@ -17,7 +17,7 @@ Finance access requires all of the following:
 
 ### Windows desktop runtime
 
-The Windows application is a packaged desktop client, not a Vercel wrapper or PWA. Electron owns the application window while a separately bundled Node.js 22 executable starts the existing Express backend as a hidden child process.
+The Windows application is a packaged desktop client, not a Vercel wrapper or PWA. Electron owns the application window while a separately bundled Node.js 24 executable starts the existing Express backend as a hidden child process.
 
 The desktop backend binds only to `127.0.0.1` and asks Windows for an ephemeral port. Electron waits for a machine-readable readiness line containing that actual loopback origin, then opens the packaged Vite build from the same Express origin. This preserves the existing same-origin HTTP/API and HttpOnly-cookie model without exposing Electron/Node APIs to React.
 
@@ -27,7 +27,7 @@ Desktop and Vercel therefore remain separate runtime hosts but share one Supabas
 
 Desktop PAN/expiry/CVV operations use the authenticated owner+AAL2 production `/api/card-secrets` boundary. `CARD_VAULT_KEY` remains server-side encryption material and is never provisioned to, packaged in or persisted by the Windows application.
 
-Electron itself follows its supported release line independently of the application's Node 22 backend contract. Packaging copies the Node 22 executable that ran the deterministic build into desktop resources and uses that executable for Express at runtime, avoiding an accidental backend runtime upgrade when Electron's embedded Node major changes.
+Electron itself follows its supported release line independently of the application's Node 24 backend contract. Packaging copies the Node 24 executable that ran the deterministic build into desktop resources and uses that executable for Express at runtime, avoiding an accidental backend runtime upgrade when Electron's embedded Node major changes.
 
 ## Persistence model
 
