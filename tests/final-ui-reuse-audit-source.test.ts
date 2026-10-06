@@ -104,6 +104,7 @@ describe('final UI reuse and orphan audit',()=>{
     expect(transactions).not.toContain("style={{display:'contents'}}");
     const recurring=read('src/pages/RecurringPage.tsx');
     expect(recurring).not.toContain("style={{gridTemplateColumns:'repeat(2,minmax(0,1fr))'}}");
+    expect(recurring).not.toContain('style={{marginTop:8}}');
     expect(transactionCss).toContain('.transactions-approved-filters .transaction-filter-pass-through{display:contents}');
     expect(transactionCss).toContain('.transactions-approved .mobile-row-actions .transaction-mobile-action{min-height:44px}');
   });
