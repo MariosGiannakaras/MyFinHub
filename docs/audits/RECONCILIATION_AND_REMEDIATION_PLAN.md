@@ -2,7 +2,7 @@
 
 Issue: #503 — Reconcile latest UI audits and remediate owner-intent drift
 
-**Implementations 1/5 completed · Sub-implementations 6/30 completed**
+**Implementations 5/5 completed · Sub-implementations 30/30 completed**
 
 ## Purpose
 
@@ -165,12 +165,20 @@ The same direct inspection found three residual confirmed defects that must be r
 - All six Final Visual theme/viewport matrices were directly inspected, including primary routes, Settings nested editors, authentication error/recovery states and the 404 surface. No clipping, overlap, hierarchy, contrast, focus, responsive or state-communication residual requiring another product patch was found.
 - Final Visual persisted evidence in bot commit `7228930f5efc633e3aad1b454e0ca911a8550265`; that commit changes only `visual-qa/final/**`, so the validated application source remains the green review tree.
 
-### 5. Final integration closeout — 0/4
+### 5. Final integration closeout — 4/4
 
-- [ ] Run required final unit/source/rendered/accessibility/security/performance/Windows gates on the coherent final review head.
-- [ ] Reconcile docs/status so historical PASS evidence is correctly scoped and no stale closeout statement contradicts newer evidence.
-- [ ] Merge the remediation branch to develop only when required checks and direct visual review are green.
-- [ ] Verify exact merged develop with the final bounded visual/regression check.
+- [x] Run required final unit/source/rendered/accessibility/security/performance/Windows gates on the coherent final review head.
+- [x] Reconcile docs/status so historical PASS evidence is correctly scoped and no stale closeout statement contradicts newer evidence.
+- [x] Merge the remediation branch to develop only when required checks and direct visual review are green.
+- [x] Verify exact merged develop with the final bounded visual/regression check.
+
+### Final integration closeout evidence
+
+- Final review head `cc0c943b86ae7c308129fbc59d9e233c9064c525` passed CI `37499654536`, Cross-engine `37499654643`, Performance `37499654642`, Windows Desktop `37499654648`, Windows First Run `37499654542`, Windows Clean Launch `37499654585`, plus the already-green exact-head CodeQL `37498642779` and Real Stack E2E `37498643062`.
+- The final security correction keeps `shell-quote` at patched resolution `1.12.0`; the root high-severity npm audit gate is green. The performance harness retains all thresholds and only retries the exact transient Chrome launcher failure signature once.
+- PR #504 was squash-merged to `develop` as `226c48c481f7371446cb48021c026aba2a99701b`.
+- Live `develop` is exactly that merge commit (no later commit is present at closeout). The bounded merged-state check confirms the persisted Final Visual manifest still contains 216 entries, the security override is present, the bounded Lighthouse retry contract is present, and the standing batch-first execution policy is present.
+- No `develop -> main` production promotion is authorized or performed by this workstream.
 
 ## Required regression contracts
 
