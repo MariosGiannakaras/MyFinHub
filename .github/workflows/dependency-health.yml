@@ -1,0 +1,112 @@
+name: Dependency Health
+
+on:
+  schedule:
+    - cron: '23 6 1 * *'
+  workflow_dispatch:
+
+concurrency:
+  group: dependency-health
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    name: Monthly/manual read-only dependency check
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            api/package-lock.json
+            desktop/package-lock.json
+
+      - name: Install exact locked dependencies without package scripts
+        run: |
+          npm ci --ignore-scripts --prefer-offline --no-audit --no-fund
+          npm ci --prefix api --ignore-scripts --prefer-offline --no-audit --no-fund
+          npm ci --prefix desktop --ignore-scripts --prefer-offline --no-audit --no-fund
+
+      - name: Run dependency/runtime health audit
+        id: health
+        shell: bash
+        run: |
+          set +e
+          node scripts/dependency-health.mjs
+          code=$?
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Publish report to job summary
+        if: always()
+        run: cat .dependency-health/report.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload dependency health report
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: dependency-health-${{ github.run_id }}
+          path: .dependency-health/
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Synchronize maintenance notification issue
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEALTH_EXIT_CODE: ${{ steps.health.outputs.exit_code }}
+          HEALTH_ISSUE_TITLE: Dependency/runtime health requires review
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          issue_json="$(gh issue list --state all --limit 100 --json number,title,state)"
+          match="$(printf '%s' "$issue_json" | jq -r --arg title "$HEALTH_ISSUE_TITLE" '.[] | select(.title == $title) | [.number, .state] | @tsv' | head -n 1)"
+          issue_number="$(printf '%s' "$match" | cut -f1)"
+          issue_state="$(printf '%s' "$match" | cut -f2)"
+
+          cp .dependency-health/report.md /tmp/dependency-health-issue.md
+          {
+            echo
+            echo "---"
+            echo
+            echo "Workflow run: https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+            echo
+            echo "This issue is maintained automatically by the read-only dependency health workflow. Dependency updates are never applied by this workflow."
+          } >> /tmp/dependency-health-issue.md
+
+          if [ "${HEALTH_EXIT_CODE:-2}" = "0" ]; then
+            if [ -n "$issue_number" ] && [ "$issue_state" = "OPEN" ]; then
+              gh issue close "$issue_number" --comment "The latest dependency/runtime health check is clean. No dependency files were changed."
+            fi
+          else
+            if [ -z "$issue_number" ]; then
+              gh issue create --title "$HEALTH_ISSUE_TITLE" --body-file /tmp/dependency-health-issue.md
+            else
+              if [ "$issue_state" = "CLOSED" ]; then
+                gh issue reopen "$issue_number"
+              fi
+              gh issue edit "$issue_number" --body-file /tmp/dependency-health-issue.md
+            fi
+          fi
+
+      - name: Set informational workflow result
+        if: always()
+        env:
+          HEALTH_EXIT_CODE: ${{ steps.health.outputs.exit_code }}
+        run: |
+          code="${HEALTH_EXIT_CODE:-2}"
+          if [ "$code" != "0" ]; then
+            echo "Dependency/runtime review is required; see the job summary and notification issue."
+            exit "$code"
+          fi
