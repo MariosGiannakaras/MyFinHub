@@ -7,6 +7,8 @@ const evidenceDir=process.env.MYFINHUB_PERF_EVIDENCE_DIR||'/tmp/myfinhub-perform
 const lighthouseBin=process.env.MYFINHUB_LIGHTHOUSE_BIN||resolve(process.cwd(),'node_modules/.bin/lighthouse');
 const configuredRuns=Number.parseInt(process.env.MYFINHUB_LIGHTHOUSE_RUNS||'3',10);
 const runCount=Number.isFinite(configuredRuns)&&configuredRuns>0?configuredRuns:3;
+const configuredLaunchRetries=Number.parseInt(process.env.MYFINHUB_LIGHTHOUSE_LAUNCH_RETRIES||'1',10);
+const launchRetries=Number.isFinite(configuredLaunchRetries)&&configuredLaunchRetries>=0?configuredLaunchRetries:1;
 mkdirSync(evidenceDir,{recursive:true});
 
 const cases=[
@@ -34,12 +36,21 @@ for(const entry of cases){
     const output=resolve(evidenceDir,`${entry.id}-run-${attempt}.json`);
     const args=[entry.url,'--quiet','--output=json',`--output-path=${output}`,'--only-categories=performance,accessibility,best-practices','--chrome-flags=--headless --no-sandbox --disable-dev-shm-usage --disable-gpu'];
     if(entry.preset)args.push(`--preset=${entry.preset}`);
-    const run=spawnSync(lighthouseBin,args,{encoding:'utf8',stdio:['ignore','pipe','pipe']});
-    if(run.status!==0){
+    let run;
+    for(let launchAttempt=0;launchAttempt<=launchRetries;launchAttempt+=1){
+      run=spawnSync(lighthouseBin,args,{encoding:'utf8',stdio:['ignore','pipe','pipe']});
+      if(run.status===0)break;
+      const diagnostic=`${run.stdout??''}\n${run.stderr??''}`;
+      const transientLauncherFailure=/waiting for dynamic debugging port in chrome-err\.log/i.test(diagnostic);
+      if(transientLauncherFailure&&launchAttempt<launchRetries){
+        console.warn(`${entry.id} run ${attempt}/${runCount}: transient Lighthouse launcher failure; retrying ${launchAttempt+1}/${launchRetries}`);
+        continue;
+      }
       console.error(run.stdout||'');console.error(run.stderr||'');
       failures.push(`${entry.id} run ${attempt}/${runCount}: Lighthouse exited ${run.status}`);
-      continue;
+      break;
     }
+    if(!run||run.status!==0)continue;
     const report=JSON.parse(readFileSync(output,'utf8'));
     const categories=report.categories??{};
     const audits=report.audits??{};
