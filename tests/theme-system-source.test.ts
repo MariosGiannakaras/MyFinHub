@@ -34,6 +34,11 @@ describe('theme architecture source contract',()=>{
     expect(settings).not.toContain("label: 'Light'");
     expect(settings).not.toContain("label: 'Dark'");
     expect(settings).toContain('aria-label="Θέμα εμφάνισης"');
+    expect(rendered).toContain("Σύστημα|Φωτεινό|Σκούρο");
+    expect(rendered).toContain("includes('Σκούρο')");
+    expect(rendered).toContain("innerText.trim()==='Φωτεινό'");
+    expect(rendered).not.toContain("includes('Dark')");
+    expect(rendered).not.toContain("innerText.trim()==='Light'");
   });
 
   it('binds interactive borders and formerly light-biased chrome to semantic theme roles',()=>{
