@@ -139,7 +139,7 @@ try{
 
   console.log('Transactions QA: empty state');
   await navigate(`${baseUrl}?page=transactions&state=empty`,1280,900);
-  const empty=await c.call("function(){return {state:(document.querySelector('.transaction-empty-state')?.textContent||'').trim(),desktopRows:document.querySelectorAll('.transaction-semantic-table tbody .transaction-row').length,mobileRows:document.querySelectorAll('.mobile-transaction-row').length}}");assert(empty.state.includes('Δεν υπάρχουν κινήσεις')&&empty.desktopRows===0&&empty.mobileRows===0,'empty state replaces empty transaction structures');await shot('transactions-empty-desktop');
+  const empty=await c.call("function(){return {state:(document.querySelector('.transaction-empty-state')?.textContent||'').trim(),desktopRows:document.querySelectorAll('.transaction-semantic-table tbody .transaction-row').length,mobileRows:document.querySelectorAll('.mobile-transaction-row').length}}");assert(empty.state.includes('Δεν υπάρχουν συναλλαγές σε αυτή την περίοδο')&&empty.desktopRows===0&&empty.mobileRows===0,'empty state replaces empty transaction structures');await shot('transactions-empty-desktop');
 
   console.log('Transactions scanability rendered QA passed.');
 }finally{c?.close();child.kill('SIGTERM')}
