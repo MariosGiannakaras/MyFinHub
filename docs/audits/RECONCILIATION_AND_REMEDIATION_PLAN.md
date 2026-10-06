@@ -45,6 +45,35 @@ Fixtures and regression tests must encode the exact semantic contract, not the w
 5. Prefer shared-token/component corrections when the root cause is systemic. Do not create page-specific parallel design rules to make one screenshot pass.
 6. Product hierarchy/readability/owner intent are acceptance criteria in addition to clipping, overflow, contrast and accessibility mechanics.
 
+## Defect-prevention protocol for #503
+
+The remediation now treats R-* and any newly discovered residual as a failure class that must leave behind a cheaper prevention mechanism. This section does **not** add checklist items or change the 5/30 denominators; it governs how the existing implementation and verification items are completed.
+
+Before each correction batch:
+1. classify the root-cause owner and bounded blast radius;
+2. predict the material theme/breakpoint/data/interaction/content-stress states;
+3. prefer the shared owner over page-local overrides;
+4. sweep sibling consumers for the identical anti-pattern;
+5. add or update the cheapest regression lock before acceptance;
+6. if expensive rendered/CI evidence catches a deterministic class again, promote it into narrow preflight.
+
+Current prevention ledger:
+
+| Failure class | Evidence already seen in #503 | Owning correction direction | Required durable guard |
+| --- | --- | --- | --- |
+| Semantic owner-intent drift | Dashboard primary-account hierarchy | semantic account metadata/selection contract, never display-name matching | semantic fixture + exact order tests/rendered assertion |
+| Dense-text readability drift | 7.5–10px operational labels across routes | shared typography/dense floor before page overrides | source/shared-style guard + focused rendered readability checks |
+| Theme-token leakage | Dashboard secondary finance text and Reports status surfaces | semantic theme tokens at owning rule | Light/Dark regression assertion on affected shared owner/surface |
+| Empty-state ambiguity | Dashboard and Transactions large blank regions | explicit state composition owned by the page/shared empty-state pattern | deterministic empty fixture + rendered assertion |
+| Long-content truncation/overlap | Transaction details, long account names, crowded date range | wrapping/layout ownership with representative stress content | long-Greek/extreme fixture + geometry assertion at material breakpoints |
+| Media/provider synthetic treatment | provider-mark halo on dark surfaces | intrinsic asset rendering/shared provider-mark contract | computed-style rendered assertion in Light/Dark |
+| Wide/narrow responsive composition drift | Cards/Loans/Recurring and date filters | bounded responsive layout rule, not screenshot-specific offsets | desktop/tablet/mobile geometry/overflow check for changed surface |
+| Interaction target/state drift | recurring actions, settings form/PIN/autofill states | shared control/state primitives and semantic browser behavior | target-size/state/source assertion plus focused rendered state |
+| Route-specific shared-shell drift | prior Dashboard-conditioned global chrome | AppShell/shared primitive ownership | route-invariance source/rendered shell regression |
+| Expensive-gate rediscovery | residuals first found only after rendered/Action review | promote deterministic causes into focused QA scripts | run the narrow script before next Ready-for-Review matrix |
+
+A row is considered operational only when the corresponding defect correction carries its guard. New materially different failure classes discovered during direct evidence review must be added here or represented by an equivalent existing row before patching proceeds.
+
 ## Canonical finding matrix
 
 | ID | Scope | Disposition | Reconciled finding | Primary technical direction |

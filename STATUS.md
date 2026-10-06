@@ -53,6 +53,8 @@ Issue #503 and docs/audits/RECONCILIATION_AND_REMEDIATION_PLAN.md are now author
 - A fresh post-fix desktop/tablet/mobile × Light/Dark visual inspection on the exact corrected head is mandatory before the remediation can merge to develop.
 - Fresh ready-review evidence closed C-01 through C-04 as NOT REPRODUCED; direct inspection also exposed residual R-05 provider halo, Dashboard upcoming-empty-state and Transactions date-range crowding defects, now under a targeted draft correction batch pending exact-head rerender.
 - No production promotion is authorized.
+- The active remediation branch now carries a prevention-first defect-learning contract: each confirmed failure is classified by root cause/blast radius, receives the cheapest practical regression lock, and recurring deterministic failures are promoted into narrow preflight instead of being rediscovered by the expensive final matrix.
+- The #503 plan now contains the task-specific prevention ledger for semantic drift, readability, theme leakage, empty states, content stress, provider media treatment, responsive composition, interaction states, shared-shell drift and expensive-gate rediscovery. The existing 5 implementation / 30 sub-implementation denominators are unchanged.
 
 #503 progress: **Implementations 1/5 completed · Sub-implementations 6/30 completed**.
 
