@@ -6,6 +6,23 @@ Release version: `1.4.0`
 Production target: `main`  
 Windows tag after production verification: `myfinhub-v1.4.0`
 
+## Final release result — 2026-10-07
+
+The owner-authorized v1.4.0 release is complete.
+
+- Tagged v1.4.0 release commit: `ef305d040772b68f77d70595afbe12d6ff38cd80`.
+- Canonical release tree: `4c21e5dc2e51265a6ba5171c6860bfcc6e2108ef`.
+- Release-candidate Vercel production deployment: `dpl_8TWQfb6uR11xKbJ56Z7eRr3XYDX9`, READY, exact same tagged release SHA.
+- Production Smoke #172 / `37536811558`: SUCCESS.
+- Production Supabase: ACTIVE_HEALTHY, PostgreSQL 17.6.1.155, 48/48 migrations through `20261001220945_reject_cross_account_id_collisions`.
+- Windows tag: `myfinhub-v1.4.0` -> exact tagged release commit.
+- Windows Desktop tag workflow #3019 / `37539058589`: SUCCESS.
+- GitHub Release: `MyFinHub Desktop myfinhub-v1.4.0`, published and neither draft nor prerelease.
+- Installer: `MyFinHub-Setup-1.4.0-x64.exe`, 155,945,414 bytes, GitHub SHA-256 `c670ca3c47c7c2ae72c7be5acdafad7cf86a1a4156a3262b9f6c76b1b44e41a4`.
+- Checksum asset: `MyFinHub-Setup-1.4.0-x64.exe.sha256`, 96 bytes; its GitHub digest `e19efc8fd520246c5d81832bdb569a378f6b234437a5c8dde27b9bf4dc0a982a` independently matches the expected CRLF checksum record containing the installer digest and exact filename.
+- v1.3.0 is retained as the documented non-destructive rollback baseline; production database history/migrations are not rolled back.
+- Post-release metadata-only PR #513 advanced `main` to `78aa5ee2df35649a4124e557a905920afc685887` without changing runtime source/schema; the resulting production deployment reached READY and Production Smoke #173 passed. Such later documentation heads are intentionally separate from the immutable v1.4.0 tag/installer identity.
+
 ## Release boundary
 
 The release candidate is the then-current canonical `develop` tree after the Node 24/dependency-health reconciliation is integrated. The final candidate SHA is recorded only after that integration settles and the release-prep branch is rebased/recreated from the exact live `develop` head.
@@ -60,7 +77,7 @@ If a post-deploy defect requires rollback:
 - do not reset, rewrite or roll back production finance history;
 - keep the production Supabase migration ledger intact unless a separately reviewed forward-recovery plan proves a database action is necessary.
 
-Windows v1.3.0 remains the stable desktop rollback baseline until the v1.4.0 tag workflow has successfully published and its installer/checksum identity has been independently verified.
+Windows v1.4.0 is now the stable desktop release. The verified v1.3.0 web/Windows state is retained as the documented non-destructive rollback baseline.
 
 ## Windows release identity
 
