@@ -4,8 +4,12 @@ All notable MyFinHub changes are recorded here. Release artifacts remain availab
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-10-06
+
 ### Changed
 
+- Completed the owner-intent UI/UX reconciliation across Dashboard, Transactions, Savings, Cards, Credit, Loans, Recurring, Reports and Settings, including the semantic Dashboard order Μετρητά → Μισθοδοσίας → Αποταμιευτικός and deliberate empty/responsive states.
+- Upgraded the supported application, API and packaged Windows backend runtime from Node.js 22 to Node.js 24 while keeping the existing finance, authentication and persistence contracts unchanged.
 - Unified the app-wide visual system around semantic premium-fintech surfaces and shared control primitives, retiring generic neumorphic chrome while preserving specialized financial objects and responsive information architecture.
 - Reconciled the Dashboard shell and primary account cards with the approved design direction: the desktop Quick Add lives in the shared topbar, duplicate desktop command search was removed from the sidebar, account history uses realistic balance movement, Dashboard IBANs stay masked, non-savings cards show absolute 30-day balance movement and the redundant duplicate account action was removed.
 - Adopted the owner-supplied MyFinHub PureVector identity across web/PWA and Windows desktop, including true-vector masters, browser favicon fallbacks, explicit PWA install/maskable assets and vector-backed Windows icon packaging.
@@ -13,12 +17,17 @@ All notable MyFinHub changes are recorded here. Release artifacts remain availab
 
 ### Fixed
 
+- Corrected cross-app dense-text readability, dark-theme semantic surfaces, provider-brand presentation, transaction detail wrapping, tablet transaction geometry, bright-card contrast and wide-screen finance workspace composition.
 - Enforced 48px Dashboard account-action and IBAN-copy interaction targets on mobile, and a real 48×48px IBAN copy hit area on wide desktop while keeping the visible icon compact.
 - Kept the wide-desktop Dashboard IBAN copy affordance visibly discoverable at rest without changing masking or full-value copy behavior.
 - Allowed long custom primary-account names to wrap to two lines and let cards grow safely without overlapping IBAN, chart or action content.
 
 ### Security & reliability
 
+- Added a read-only monthly/manual dependency-health workflow and runtime/dependency reporter; update discovery never upgrades packages automatically and major updates remain explicit review candidates.
+- Preserved the patched `shell-quote` 1.12.0 transitive resolution, refreshed the supported Node 24 toolchain/dependencies, and updated CodeQL Actions to v4.38.2 while retaining the existing high-severity audit gates.
+- Added bounded retry handling for the exact transient Lighthouse Chrome-launcher startup failure without changing any performance, accessibility, LCP, CLS or TBT threshold.
+- Expanded durable regression locks and the batch-first execution contract so repeated UI/CI failure classes are caught by narrow preflight before expensive final validation.
 - Patched the desktop build graph's transitive `undici` resolutions to 7.30.0 and 6.29.0 within their existing parent ranges, clearing newly published high-severity advisories without changing parent toolchain versions.
 - Routed automated Dependabot updates for root npm, API npm and GitHub Actions through canonical `develop`, preserving `main` as release-only.
 - Re-run Windows Desktop, First Run and Clean Launch validation when `.nvmrc` changes, because the packaged backend runtime copies the active Node executable.
@@ -257,7 +266,8 @@ All notable MyFinHub changes are recorded here. Release artifacts remain availab
 
 - v1.0.0 is an unsigned personal-use Windows build. Windows may display Unknown publisher / Microsoft Defender SmartScreen.
 
-[Unreleased]: https://github.com/MariosGiannakaras/MyFinHub/compare/myfinhub-v1.3.0...develop
+[Unreleased]: https://github.com/MariosGiannakaras/MyFinHub/compare/myfinhub-v1.4.0...develop
+[1.4.0]: https://github.com/MariosGiannakaras/MyFinHub/releases/tag/myfinhub-v1.4.0
 [1.3.0]: https://github.com/MariosGiannakaras/MyFinHub/releases/tag/myfinhub-v1.3.0
 [1.2.2]: https://github.com/MariosGiannakaras/MyFinHub/releases/tag/myfinhub-v1.2.2
 [1.2.1]: https://github.com/MariosGiannakaras/MyFinHub/releases/tag/myfinhub-v1.2.1
