@@ -56,7 +56,7 @@ export function RecurringPage({data,asOf,onUpsert,onOpenLoans,onPayLoan,onPayRec
   return <div className="page-stack recurring-approved-page">
     <PageHeader className="recurring-approved-heading" eyebrow="ΠΑΓΙΑ & ΣΥΝΔΡΟΜΕΣ" title={<>Πάγια<span className="sr-only"> & Συνδρομές</span></>} description={<p>Διαχειριστείτε τις επαναλαμβανόμενες πληρωμές σας και παρακολουθήστε τις επόμενες υποχρεώσεις.</p>} trailing={<Button type="button" variant="primary" onClick={startNew}><Plus size={17}/> Νέο πάγιο</Button>}/>
 
-    <section className="recurring-summary-grid" style={{gridTemplateColumns:'repeat(2,minmax(0,1fr))'}} aria-label="Σύνοψη παγίων">
+    <section className="recurring-summary-grid" aria-label="Σύνοψη παγίων">
       <Surface as="article" variant="flat" className="recurring-summary-card"><span className="recurring-summary-icon"><ReceiptText size={24}/></span><div><span>Μηνιαίο ισοδύναμο ενεργών</span><b><AnimatedAmount value={monthlyTotal}/></b><small>{active.length} ενεργά πάγια / συνδρομές με την πραγματική περιοδικότητά τους</small></div></Surface>
       <Surface as="article" variant="flat" className="recurring-summary-card"><span className="recurring-summary-icon recurring-summary-icon-next"><CalendarClock size={24}/></span><div><span>Επόμενη εκτιμώμενη πληρωμή</span><b>{nextPayment?.nextDate?shortDate(nextPayment.nextDate):'—'}</b><small>{nextPayment?`${nextPayment.item.name} · ${money.format(nextPayment.item.amount)}`:'Δεν υπάρχει προγραμματισμένη ημερομηνία'}</small></div></Surface>
     </section>
