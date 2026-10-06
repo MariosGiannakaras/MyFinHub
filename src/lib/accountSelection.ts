@@ -1,8 +1,8 @@
 import type { Account, FinanceData } from '../types.js';
 import { allAccounts } from './domain.js';
 
-export type DashboardPrimaryRole='cash'|'payroll'|'savings';
-export type DashboardPrimarySlot={role:DashboardPrimaryRole;label:string;account?:Account};
+type DashboardPrimaryRole='cash'|'payroll'|'savings';
+type DashboardPrimarySlot={role:DashboardPrimaryRole;label:string;account?:Account};
 
 function firstUnique(accounts:Account[],ids:Array<string|undefined>,predicate:(account:Account)=>boolean){
   for(const id of ids){
