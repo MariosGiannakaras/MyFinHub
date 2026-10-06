@@ -128,6 +128,25 @@ describe('final UI reuse and orphan audit',()=>{
     }
   });
 
+  it('keeps audited operational typography at or above the 11px dense floor',()=>{
+    const audited=[
+      'src/styles/dashboard-approved-target.css','src/styles/dashboard-desktop-fidelity.css',
+      'src/styles/transactions-approved.css','src/styles/savings-desktop-composition.css',
+      'src/styles/cards-v15-presentation.css','src/styles/loans-approved-target.css',
+      'src/styles/recurring-approved-target.css','src/pages/ReportsPage.css',
+      'src/styles/planning-approved-target.css','src/styles/attention-approved-target.css',
+      'src/styles/lending-approved-target.css','src/styles/mobile-finance-domain-layouts.css',
+      'src/styles/mobile-reports-settings-editors.css',
+    ];
+    for(const file of audited){
+      const source=read(file);
+      for(const match of source.matchAll(/font-size:\\s*(\\d*\\.?\\d+)(px|rem)/g)){
+        const px=match[2]==='rem'?Number(match[1])*16:Number(match[1]);
+        expect(px,\`${file} must not restore sub-11px operational text: ${match[0]}\`).toBeGreaterThanOrEqual(11);
+      }
+    }
+  });
+
   it('has no orphaned production component modules',()=>{
     const allSource=walk('src',/\.(?:ts|tsx)$/);
     const referenced=new Set<string>();
