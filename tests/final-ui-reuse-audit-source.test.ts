@@ -140,9 +140,9 @@ describe('final UI reuse and orphan audit',()=>{
     ];
     for(const file of audited){
       const source=read(file);
-      for(const match of source.matchAll(/font-size:\\s*(\\d*\\.?\\d+)(px|rem)/g)){
+      for(const match of source.matchAll(/font-size:\s*(\d*\.?\d+)(px|rem)/g)){
         const px=match[2]==='rem'?Number(match[1])*16:Number(match[1]);
-        expect(px,\`${file} must not restore sub-11px operational text: ${match[0]}\`).toBeGreaterThanOrEqual(11);
+        expect(px,`${file} must not restore sub-11px operational text: ${match[0]}`).toBeGreaterThanOrEqual(11);
       }
     }
   });
