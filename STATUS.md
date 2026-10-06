@@ -4,10 +4,10 @@
 
 MyFinHub v1.4.0 is the current production/web and Windows stable release baseline.
 
-- Production `main`: `ef305d040772b68f77d70595afbe12d6ff38cd80`.
-- Vercel production deployment: `dpl_8TWQfb6uR11xKbJ56Z7eRr3XYDX9`, READY, sourced from that exact main SHA.
+- Tagged v1.4.0 release commit: `ef305d040772b68f77d70595afbe12d6ff38cd80`.
+- Release-candidate Vercel deployment: `dpl_8TWQfb6uR11xKbJ56Z7eRr3XYDX9`, READY, sourced from that exact tagged release commit.
 - Event-driven Production Smoke #172 / run `37536811558`: SUCCESS; exact deployed-SHA equality, public health/security/no-store/401/404 and Frankfurt routing contracts passed.
-- Windows release tag: `myfinhub-v1.4.0`, resolving directly to the same production main SHA.
+- Windows release tag: `myfinhub-v1.4.0`, resolving directly to that tagged release commit.
 - Windows Desktop tag workflow #3019 / run `37539058589`: SUCCESS.
 - Published release: `MyFinHub Desktop myfinhub-v1.4.0` (not draft/prerelease).
 - Published installer: `MyFinHub-Setup-1.4.0-x64.exe` (155,945,414 bytes).
@@ -15,6 +15,7 @@ MyFinHub v1.4.0 is the current production/web and Windows stable release baselin
 - Published checksum asset: `MyFinHub-Setup-1.4.0-x64.exe.sha256`; its 96-byte asset digest `e19efc8fd520246c5d81832bdb569a378f6b234437a5c8dde27b9bf4dc0a982a` matches the expected CRLF checksum record for the installer digest/name.
 - Production Supabase remains `ACTIVE_HEALTHY` on PostgreSQL 17.6.1.155 with 48/48 migrations through `20261001220945_reject_cross_account_id_collisions`; no release migration or destructive database action was required.
 - The known v1.3.0 Vercel/Windows state remains the documented rollback baseline; no database history rewrite is part of rollback.
+- Post-release metadata-only PR #513 advanced `main` to `78aa5ee2df35649a4124e557a905920afc685887`; its Vercel deployment also reached READY and event-driven Production Smoke #173 succeeded, confirming the docs-only closeout did not regress the runtime.
 
 ## Canonical integration state
 
@@ -36,7 +37,7 @@ Detailed completion authority remains `docs/completion/APP_COMPLETION_AUDIT_AND_
 
 ### v1.4.0 release closeout
 
-The owner-authorized v1.4.0 release is fully closed. The exact candidate passed the required CI/rendered, CodeQL, Real Stack E2E, Cross-engine, Performance and Windows gates before promotion. Production `main`, Vercel deployment, Production Smoke, Supabase migration state, Windows tag, installer and checksum metadata now refer to one coherent release identity.
+The owner-authorized v1.4.0 release is fully closed. The exact candidate passed the required CI/rendered, CodeQL, Real Stack E2E, Cross-engine, Performance and Windows gates before promotion. The tagged release commit, its verified release-candidate Vercel deployment, Production Smoke, Supabase migration state, Windows tag, installer and checksum metadata refer to one coherent v1.4.0 release identity. Post-release documentation-only commits on `main` may advance the live branch/deployment SHA without changing the tagged application/Windows artifact identity; those metadata deployments remain subject to Production Smoke.
 
 All release-only cells are complete: exact `develop -> main` validation, production deployed-SHA/smoke/integrity proof, Windows publication identity, rollback metadata and stable public download metadata. Detailed evidence remains in #476, PRs #509/#510 and `docs/completion/V1_4_0_RELEASE_CANDIDATE.md`.
 
