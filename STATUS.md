@@ -2,15 +2,20 @@
 
 ## Current production
 
-MyFinHub v1.3.0 remains the current production/web and Windows release baseline.
+MyFinHub v1.4.0 is the current production/web and Windows stable release baseline.
 
-- `main` is release-only; no production promotion is authorized by the current post-completion work.
-- Current production Vercel remains on the v1.3.0 release line.
-- Windows release tag: `myfinhub-v1.3.0`.
-- Exact tagged release commit: `2673ce626c0e3db6c30fea04a46b6cf1ce9517df`.
-- Published installer: `MyFinHub-Setup-1.3.0-x64.exe`.
-- Published installer SHA-256: `a405189e016ddd03e31ab1ba92979b3991a64516edfa2a657eb7b9928fadc556`.
-- Release-closeout tracker #288 is complete.
+- Tagged v1.4.0 release commit: `ef305d040772b68f77d70595afbe12d6ff38cd80`.
+- Release-candidate Vercel deployment: `dpl_8TWQfb6uR11xKbJ56Z7eRr3XYDX9`, READY, sourced from that exact tagged release commit.
+- Event-driven Production Smoke #172 / run `37536811558`: SUCCESS; exact deployed-SHA equality, public health/security/no-store/401/404 and Frankfurt routing contracts passed.
+- Windows release tag: `myfinhub-v1.4.0`, resolving directly to that tagged release commit.
+- Windows Desktop tag workflow #3019 / run `37539058589`: SUCCESS.
+- Published release: `MyFinHub Desktop myfinhub-v1.4.0` (not draft/prerelease).
+- Published installer: `MyFinHub-Setup-1.4.0-x64.exe` (155,945,414 bytes).
+- Published installer SHA-256: `c670ca3c47c7c2ae72c7be5acdafad7cf86a1a4156a3262b9f6c76b1b44e41a4`.
+- Published checksum asset: `MyFinHub-Setup-1.4.0-x64.exe.sha256`; its 96-byte asset digest `e19efc8fd520246c5d81832bdb569a378f6b234437a5c8dde27b9bf4dc0a982a` matches the expected CRLF checksum record for the installer digest/name.
+- Production Supabase remains `ACTIVE_HEALTHY` on PostgreSQL 17.6.1.155 with 48/48 migrations through `20261001220945_reject_cross_account_id_collisions`; no release migration or destructive database action was required.
+- The known v1.3.0 Vercel/Windows state remains the documented rollback baseline; no database history rewrite is part of rollback.
+- Post-release metadata-only PR #513 advanced `main` to `78aa5ee2df35649a4124e557a905920afc685887`; its Vercel deployment also reached READY and event-driven Production Smoke #173 succeeded, confirming the docs-only closeout did not regress the runtime.
 
 ## Canonical integration state
 
@@ -28,25 +33,13 @@ Detailed completion authority remains `docs/completion/APP_COMPLETION_AUDIT_AND_
 
 ### Completion tracker #476
 
-**Implementations 20/24 completed · Sub-implementations 192/197 completed**
+**Implementations 24/24 completed · Sub-implementations 197/197 completed**
 
-### Authorized v1.4.0 release candidate
+### v1.4.0 release closeout
 
-Owner authorization on 2026-10-06 covers the remaining maintenance integration, the deliberate `develop -> main` production promotion, production verification and Windows v1.4.0 publication.
+The owner-authorized v1.4.0 release is fully closed. The exact candidate passed the required CI/rendered, CodeQL, Real Stack E2E, Cross-engine, Performance and Windows gates before promotion. The tagged release commit, its verified release-candidate Vercel deployment, Production Smoke, Supabase migration state, Windows tag, installer and checksum metadata refer to one coherent v1.4.0 release identity. Post-release documentation-only commits on `main` may advance the live branch/deployment SHA without changing the tagged application/Windows artifact identity; those metadata deployments remain subject to Production Smoke.
 
-The release-prep contract is recorded in `docs/completion/V1_4_0_RELEASE_CANDIDATE.md`. Counters remain unchanged until the release-only evidence is actually completed.
-
-
-All non-release verification protocol cells are completed and verified (PASS):
-
-- hands-on navigation of the canonical running app for all high-risk flows;
-- direct DevTools console/network inspection;
-- direct rendered DOM/accessibility-tree inspection.
-
-Section 8.13 is fully closed at 10/10.
-
-Remaining open cells are strictly release-only: explicit `develop -> main` release-candidate validation, production deployed-SHA/smoke/integrity verification, and end-to-end release identity/rollback metadata. No production promotion is authorized without explicit owner instruction.
-
+All release-only cells are complete: exact `develop -> main` validation, production deployed-SHA/smoke/integrity proof, Windows publication identity, rollback metadata and stable public download metadata. Detailed evidence remains in #476, PRs #509/#510 and `docs/completion/V1_4_0_RELEASE_CANDIDATE.md`.
 
 ## Latest owner-intent/UI audit reconciliation — #503
 
