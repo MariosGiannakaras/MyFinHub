@@ -1,5 +1,5 @@
 import { ArrowDownToLine, ArrowLeftRight, BanknoteArrowDown, Check, CircleDollarSign, PiggyBank, RotateCcw, Scale, Split, X } from 'lucide-react';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import { AppDateInput } from './AppDateInput';
 import { AppSelectInput } from './AppSelectInput';
 import { AppTextInput } from './AppTextInput';
@@ -41,6 +41,8 @@ const intentIcons:Record<EntryIntent,ReactNode>={
   reconciliation:<Scale/>,
   split:<Split/>,
 };
+const intentTones:Record<EntryIntent,{bg:string;color:string}>={expense:{bg:'#fde7f0',color:'#d73368'},income:{bg:'#e1f7ed',color:'#159b68'},transfer:{bg:'#e4f4fb',color:'#207fc3'},withdrawal:{bg:'#efe7ff',color:'#7650ce'},saving:{bg:'#e8f1ff',color:'#3171d8'},refund:{bg:'#e6f0ff',color:'#3478d7'},reconciliation:{bg:'#e7f1ff',color:'#2f73d9'},split:{bg:'#eee8ff',color:'#744ccc'}};
+const intentStyle=(intent:EntryIntent)=>({'--quick-intent-bg':intentTones[intent].bg,'--quick-intent-color':intentTones[intent].color} as CSSProperties);
 const genericKinds=ENTRY_INTENTS.map(item=>({...item,icon:intentIcons[item.intent]}));
 const labelForKind=(kind:EventKind)=>genericKinds.find(item=>item.kind===kind)?.label||'Κίνηση';
 
@@ -66,7 +68,6 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
   const [error,setError]=useState('');
   const [dirty,setDirty]=useState(false);
   const [discardOpen,setDiscardOpen]=useState(false);
-  const [kindPulse,setKindPulse]=useState<EventKind|null>(null);
   const categoryKind=kind==='income'?'income':'expense';
   const splitStatus=useMemo(()=>kind==='split'?splitAllocation(parts):null,[kind,parts]);
 
@@ -77,7 +78,7 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
 
   useEffect(()=>{
     if(!open)return;
-    setDiscardOpen(false);setKindPulse(null);
+    setDiscardOpen(false);
     if(initial){
       const defaults=entryDefaults(initial.kind,data.state.settings,fallbackAccount);
       setKind(initial.kind);
@@ -116,7 +117,6 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
   const mark=()=>setDirty(true);
   const filled=(value:string|number|undefined)=>String(value??'').trim()?'true':'false';
   const requestClose=()=>{if(dirty){setDiscardOpen(true);return}onClose()};
-  useEffect(()=>{if(!kindPulse)return;const timer=window.setTimeout(()=>setKindPulse(null),260);return()=>window.clearTimeout(timer)},[kindPulse]);
   const confirmDiscard=()=>{setDiscardOpen(false);onClose()};
   useEffect(()=>{
     if(!open||discardOpen||kind!=='split')return;
@@ -127,7 +127,7 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
     const defaults=entryDefaults(next,data.state.settings,fallbackAccount);
     const nextTree=genericCategoryTree(data.state.settings,next==='income'?'income':'expense');
     const nextCategory=nextTree.some(item=>item.name===defaults.category)?defaults.category:(nextTree[0]?.name||defaults.category);
-    setKind(next);setKindPulse(next);setError('');setAccountId(defaults.accountId);setCategory(nextCategory);setSubcategory('');mark();
+    setKind(next);setError('');setAccountId(defaults.accountId);setCategory(nextCategory);setSubcategory('');mark();
     if(next==='transfer'){setFrom(transferDefaults.from);setTo(transferDefaults.to)}
     if(next==='saving_cash_offset'){setFrom(transferDefaults.from);setTo(accounts.find(account=>account.kind==='savings'&&account.id!==transferDefaults.from)?.id||transferDefaults.to)}
     if(next==='withdrawal'){setFrom(transferDefaults.from);setTo(accounts.find(account=>account.kind==='cash'&&account.id!==transferDefaults.from)?.id||transferDefaults.to)}
@@ -163,7 +163,7 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
 
   return <><DialogShell open={open} className="generic-quick-modal" ariaLabelledBy="quick-add-title" ariaDescribedBy="quick-add-description" motionMode={motionMode} preferredFocus='[data-autofocus="true"]' focusActive={!discardOpen} onRequestClose={requestClose}>
       <header><div><small>{initial?'ΕΠΕΞΕΡΓΑΣΙΑ':'ΓΡΗΓΟΡΗ ΚΙΝΗΣΗ'}</small><h2 id="quick-add-title">{initial?'Επεξεργασία κίνησης':'Τι θέλεις να καταγράψεις;'}</h2><p id="quick-add-description">Διάλεξε την ενέργεια που έκανες. Εξειδικευμένες ροές για κάρτες, δόσεις, δάνεια και πάγια συνεχίζουν να ανοίγουν από το αντίστοιχο πλαίσιο.</p></div><IconButton type="button" aria-label="Κλείσιμο καταχώρισης" onClick={requestClose}><X/></IconButton></header>
-      {genericKinds.some(item=>item.kind===kind)?<div className="kind-grid generic-kind-grid" role="group" aria-label="Τι θέλεις να καταγράψεις">{genericKinds.map(k=><button type="button" key={k.kind} className={[kind===k.kind?'active':'',kindPulse===k.kind?'just-selected':''].filter(Boolean).join(' ')} aria-pressed={kind===k.kind} onClick={()=>chooseKind(k.kind)}><span>{k.icon}</span><b>{k.label}</b><small>{k.description}</small></button>)}</div>:null}
+      {genericKinds.some(item=>item.kind===kind)?<div className="kind-grid generic-kind-grid" role="group" aria-label="Τι θέλεις να καταγράψεις">{genericKinds.map(k=><button type="button" key={k.kind} className={kind===k.kind?'active':''} aria-pressed={kind===k.kind} onClick={()=>chooseKind(k.kind)}><span style={intentStyle(k.intent)}>{k.icon}</span><b>{k.label}</b><small>{k.description}</small></button>)}</div>:null}
       <div className="entry-body">
         {kind==='expense'?<div className="frequent-strip"><span>Συχνά</span>{frequent.slice(0,6).map(f=><button type="button" key={f.label} onClick={()=>{const preset=structuredPresetFromFrequent(f);setAmount(String(preset.amount));setCategory(preset.category||category);setSubcategory(preset.subcategory||'');if(preset.accountId&&quickAccounts.some(account=>account.id===preset.accountId))setAccountId(preset.accountId);mark()}}><FinanceIcon settings={data.state.settings} kind="expense" note={f.label} category={f.category} size={14}/><span>{f.label}</span><small>{money.format(f.lastAmount)}</small></button>)}</div>:null}
         <div className="form-grid">
