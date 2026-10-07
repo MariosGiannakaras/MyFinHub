@@ -97,7 +97,7 @@ export function ReceiptAwareQuickAdd({
         onCreate={create}
         currentBalance={currentBalance}
       />
-      {!initial && receiptHost ? createPortal(<button type="button" className="receipt-quick-launch surface-raised" aria-label="Φωτογράφιση ή σάρωση απόδειξης" onClick={() => setReceiptOpen(true)}><ReceiptText size={18}/><span>Απόδειξη</span></button>, receiptHost) : null}
+      {!initial && receiptHost ? createPortal(<button type="button" className="receipt-quick-launch surface-raised" aria-label="Φωτογράφιση ή σάρωση απόδειξης" onClick={() => setReceiptOpen(true)}><ReceiptText size={18}/><span>Απόδειξη</span><small>Σάρωση & αυτόματη συμπλήρωση</small></button>, receiptHost) : null}
     </> : null}
     <ReceiptInbox open={receiptOpen} data={data} onClose={() => setReceiptOpen(false)} onApply={applyReceipt}/>
   </>;

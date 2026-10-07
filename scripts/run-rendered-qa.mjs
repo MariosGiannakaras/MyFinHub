@@ -11,6 +11,7 @@ const scripts=[
   {path:'scripts/card-vault-runtime-qa.mjs',key:'card-vault-runtime',surface:'card-vault',profiles:['/tmp/myfinhub-card-vault-runtime-qa-chrome']},
   {path:'scripts/mutation-validation-qa.mjs',key:'mutation-validation',surface:'validation-errors',profiles:['/tmp/myfinhub-mutation-validation-qa-chrome']},
   {path:'scripts/owned-controls-qa.mjs',key:'owned-controls',surface:'controls',profiles:['/tmp/rheomiq-owned-controls-qa']},
+  {path:'scripts/quick-entry-reference-qa.mjs',key:'quick-entry-reference',surface:'quick-entry',profiles:['/tmp/myfinhub-quick-entry-reference-qa-chrome']},
   {path:'scripts/ui-ux-hardening-qa.mjs',key:'ui-hardening',surface:'app-shell',profiles:['/tmp/myfinhub-ui-ux-qa-chrome']},
   {path:'scripts/ui-ux-completion-qa.mjs',key:'ui-completion',surface:'app-shell',profiles:['/tmp/myfinhub-ui-completion-qa-chrome']},
   {path:'scripts/ui-ux-runtime-qa.mjs',key:'ui-runtime',surface:'runtime',profiles:['/tmp/myfinhub-ui-runtime-qa-chrome']},
