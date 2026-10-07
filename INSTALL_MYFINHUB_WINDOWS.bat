@@ -51,6 +51,7 @@ echo.
 echo Installing exact repository dependencies with npm ci...
 call npm.cmd ci
 if errorlevel 1 goto :dependency_install_failed
+goto :run_dev
 
 :dependency_install_failed
 set "EXITCODE=%ERRORLEVEL%"
