@@ -15,7 +15,7 @@ describe('shared form-control branding',()=>{
   it('owns default geometry and semantic states in one shared contract',()=>{
     expect(theme).toContain('--control-height:47px;--control-radius:12px');
     expect(controls).toContain('.app-control,.app-input-shell{box-sizing:border-box;width:100%;min-height:var(--control-height)');
-    expect(controls).toContain('border:1px solid var(--control-border);border-radius:var(--control-radius);background:var(--control-bg)');
+    expect(controls).toContain('border:1px solid var(--control-border,#8096b3);border-radius:var(--control-radius);background:var(--control-bg,var(--surface))');
     expect(controls).toContain('.app-control:focus-visible,.app-input-shell:focus-within');
     expect(controls).toContain('.app-control[aria-invalid=true],.app-input-shell[data-invalid=true]');
   });
