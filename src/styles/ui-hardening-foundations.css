@@ -21,7 +21,7 @@ html[data-text-size="large"]{--ux-body-size:17px;--ux-small-size:14px;--ux-tiny-
 .semantic-table th{font-size:var(--ux-tiny-size);line-height:1.4}
 .semantic-table td small,.panel small,.empty-state,.empty-inline,.logic-note,.action-status,.form-error{font-size:var(--ux-small-size)}
 .settings-form label>span,.filter-label>span{font-size:var(--ux-small-size)}
-.settings-form input,.settings-form textarea,.owned-input,.filterbar input{font-size:var(--ux-body-size);min-height:40px}
+.filterbar input{font-size:var(--ux-body-size)}
 button,input,select,textarea{line-height:1.4}
 .chart-alt summary,.cards-archive>summary,.technical-settings>summary{min-height:36px;display:flex;align-items:center;padding-block:7px;cursor:pointer}
 

@@ -2,9 +2,6 @@
 .frequent-strip{display:flex;gap:7px;align-items:center;overflow:auto;padding-bottom:10px}
 .form-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:11px}
 .form-grid .wide{grid-column:1/-1}
-.money-input{height:39px;border:1px solid #d7e1ef;border-radius:11px;background:#f8fbff;display:flex;align-items:center;overflow:hidden}
-.money-input b{padding-left:10px}
-.money-input input{border:0!important;background:transparent!important;width:100%;height:100%;font-size:16px;font-weight:780}
 .reconcile-preview{border-radius:12px;background:#eef3fa;box-shadow:var(--shadow-inset);display:grid;grid-template-columns:1fr auto;gap:4px;padding:9px;font-size:8px}
 .reconcile-preview span{color:var(--muted)}
 .reconcile-preview strong{color:#2f6fed}

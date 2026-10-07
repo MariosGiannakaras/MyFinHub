@@ -58,8 +58,8 @@ describe('app-owned entry controls',()=>{
     expect(selectSource).toContain('className="app-control owned-input"');
     expect(selectSource).toContain("density='default'");
     expect(selectSource).toContain('data-density={density}');
-    expect(sharedStyles).toContain('.app-control{box-sizing:border-box;width:100%;min-height:40px');
-    expect(sharedStyles).toContain('padding:0 10px;font-size:var(--ux-body-size);line-height:1.4');
+    expect(sharedStyles).toContain('.app-control,.app-input-shell{box-sizing:border-box;width:100%;min-height:var(--control-height)');
+    expect(sharedStyles).toContain('.app-control{padding:0 11px}');
     expect(sharedStyles).toContain('.owned-input-shell[data-density=compact]>.app-control{min-height:32px');
     expect(sharedStyles).toContain(':where(button,a[href],input,select,textarea,summary,[tabindex]):focus-visible{outline:0;box-shadow:var(--focus)!important}');
     expect(styles).toContain('.owned-input-shell>.owned-input{padding-right:34px;cursor:pointer}');
@@ -82,7 +82,7 @@ describe('app-owned entry controls',()=>{
   it('keeps Settings focus and mobile input presentation on shared primitives',()=>{
     expect(settingsStyles).not.toContain('.category-icon-pack-switcher>button:focus-visible');
     expect(settingsStyles).not.toMatch(/\.settings-[^\n{]*\b(?:input|textarea)\b[^\n{]*\{[^}]*\b(?:height|min-height|border|border-radius|padding|font-size|outline|box-shadow)\s*:/);
-    expect(sharedStyles).toContain('@media(max-width:680px){.app-control{min-height:46px;font-size:16px}');
+    expect(sharedStyles).toContain('@media(max-width:680px){.app-control,.app-input-shell{font-size:16px}');
   });
   it('keeps account editor text and select presentation shared while preserving semantic checkboxes',()=>{
     expect(accountSource).toContain("import { AppTextInput } from './AppTextInput'");
@@ -98,7 +98,7 @@ describe('app-owned entry controls',()=>{
     expect(styles).toMatch(/\.owned-popover-backdrop\s*\{\s*position:fixed;inset:0/);
     expect(styles).toContain('max-height:min(72dvh,620px)');
     expect(styles).toContain('.owned-option-list{overflow:auto');
-    expect(sharedStyles).toContain('@media(max-width:680px){.app-control{min-height:46px;font-size:16px}');
+    expect(sharedStyles).toContain('@media(max-width:680px){.app-control,.app-input-shell{font-size:16px}');
     expect(sharedStyles).toContain('.owned-input-shell[data-density=compact]>.app-control{min-height:44px;font-size:16px}');
   });
   it('keeps browser-native select, date, datalist and page-owned textarea controls out of application pages and components',()=>{

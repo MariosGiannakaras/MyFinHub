@@ -79,6 +79,7 @@ describe('account security settings',()=>{
     const gateStyles=read('src/components/DesktopAppLockGate.css');
     const settings=read('src/components/AccountSecuritySettings.tsx');
     const settingsStyles=read('src/components/AccountSecuritySettings.css');
+    const sharedControls=read('src/styles/app-controls.css');
     const main=read('src/main.tsx');
     expect(gate).toContain('const PIN_LENGTH=4');
     expect(gate).toContain('getAppLockState');
@@ -103,8 +104,8 @@ describe('account security settings',()=>{
     expect(settingsStyles).toContain('.account-security-idle-select .owned-input');
     expect(settings).toContain('autoComplete="current-password"');
     expect(settings).toContain('autoComplete="new-password"');
-    expect(settingsStyles).toContain(':-webkit-autofill');
-    expect(settingsStyles).toContain('-webkit-text-fill-color:var(--ink)');
+    expect(sharedControls).toContain(':-webkit-autofill');
+    expect(sharedControls).toContain('-webkit-text-fill-color:var(--ink)');
     expect(settingsStyles).toContain('background:var(--muted-2)');
     expect(main).toContain('<DesktopAppLockGate><App/></DesktopAppLockGate>');
   });
