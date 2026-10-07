@@ -95,7 +95,7 @@ describe('app-owned entry controls',()=>{
     expect(accountStyles).not.toContain('.owned-select-popover:is(');
   });
   it('keeps owned popovers viewport-contained and mobile-safe',()=>{
-    expect(styles).toContain('.owned-popover-backdrop{position:fixed;inset:0');
+    expect(styles).toMatch(/\\.owned-popover-backdrop\\s*\\{\\s*position:fixed;inset:0/);
     expect(styles).toContain('max-height:min(72dvh,620px)');
     expect(styles).toContain('.owned-option-list{overflow:auto');
     expect(sharedStyles).toContain('@media(max-width:680px){.app-control{min-height:46px;font-size:16px}');
