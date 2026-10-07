@@ -34,7 +34,7 @@ button:disabled{cursor:not-allowed}
 @media(hover:hover){
   .filterbar select:hover,.form-grid input:hover,.form-grid select:hover,.settings-form input:hover,.settings-form select:hover,.settings-form textarea:hover,.split-line input:hover,.split-line select:hover,.column-filter select:hover{border-color:#b7c9e5}
 }
-.searchbox:focus-within,.login-input:focus-within,.surface-inset:focus-within{border-color:var(--focus-outline);box-shadow:var(--focus)}
+.surface-inset:focus-within{border-color:var(--focus-outline);box-shadow:var(--focus)}
 .login-field:focus-within>label,.settings-form label:focus-within>span,.filter-label:focus-within>span{color:var(--blue-2)}
 
 /* Authentication: richer state feedback without turning login into an animation showcase. */
@@ -44,11 +44,6 @@ button:disabled{cursor:not-allowed}
 .login-field{display:grid;gap:6px}
 .login-field>label{color:var(--ink-2);font-size:10px;font-weight:750;transition:color var(--motion-base) ease,transform var(--motion-fast) var(--ease-out)}
 .login-field:focus-within>label{transform:translateX(2px)}
-.login-input{position:relative}
-.login-input>svg{flex:0 0 auto;transition:color var(--motion-base) ease,transform var(--motion-fast) var(--ease-out)}
-.login-input:focus-within>svg{color:var(--blue);transform:scale(1.08)}
-.login-input input::placeholder{color:#8c9ab0;transition:opacity var(--motion-fast) ease}
-.login-input:focus-within input::placeholder{opacity:.58}
 .login-password-toggle{width:40px;height:40px;min-width:40px;min-height:40px;border:0;border-radius:10px;background:transparent;color:var(--muted);display:grid;place-items:center;cursor:pointer;box-shadow:none;padding:0}
 .login-password-toggle:hover:not(:disabled){background:rgba(47,111,237,.08);color:var(--blue-2)}
 .login-password-toggle:active:not(:disabled){transform:scale(.92)}
