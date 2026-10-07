@@ -11,10 +11,7 @@
 .account-security-pending svg{flex:0 0 auto;margin-top:1px;color:var(--blue)}
 .account-security-field{display:grid;gap:6px;min-width:0}
 .account-security-field>span{font-size:var(--ux-small-size);font-weight:680;color:var(--ink)}
-.account-security-field>.app-text-input{width:100%;min-height:42px;padding:9px 11px;border:1px solid var(--line);border-radius:11px;background:var(--control-bg);color:var(--ink);font:inherit;outline:none;transition:border-color .15s ease,box-shadow .15s ease}
-.account-security-field>.app-text-input:focus{border-color:rgba(47,111,237,.6);box-shadow:0 0 0 3px rgba(47,111,237,.1)}
-.account-security-field>.app-text-input:disabled{cursor:not-allowed;background:var(--surface-inset);color:var(--text-disabled);-webkit-text-fill-color:var(--text-disabled)}
-.account-security-field>.app-text-input:-webkit-autofill,.account-security-field>.app-text-input:autofill{-webkit-text-fill-color:var(--ink);caret-color:var(--ink);box-shadow:0 0 0 1000px var(--control-bg) inset;border-color:var(--control-border)}
+.account-security-field>.app-text-input{width:100%}
 .account-security-password-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 12px}
 .account-security-password-confirm{grid-column:1/-1}
 .account-security-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;margin-top:10px}
