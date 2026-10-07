@@ -50,13 +50,14 @@ if exist "node_modules\.package-lock.json" goto :run_dev
 echo.
 echo Installing exact repository dependencies with npm ci...
 call npm.cmd ci
-if errorlevel 1 (
-  set "EXITCODE=%ERRORLEVEL%"
-  echo.
-  echo Dependency installation failed. Exit code: %EXITCODE%
-  pause
-  exit /b %EXITCODE%
-)
+if errorlevel 1 goto :dependency_install_failed
+
+:dependency_install_failed
+set "EXITCODE=%ERRORLEVEL%"
+echo.
+echo Dependency installation failed. Exit code: %EXITCODE%
+pause
+exit /b %EXITCODE%
 
 :run_dev
 echo.
