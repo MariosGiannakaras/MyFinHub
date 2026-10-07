@@ -24,8 +24,7 @@ describe('shared form-control branding',()=>{
   it('keeps Login and MFA on shared shells without auth-local box styling',()=>{
     expect(login).toContain('<AppInputShell className="login-input"');
     expect(mfa).toContain('<AppInputShell className="login-input mfa-code-shell"');
-    expect(auth).toContain('.login-input{width:100%}');
-    expect(auth).not.toMatch(/\.login-input\{[^}]*\b(?:min-height|border|border-radius|padding|background|box-shadow):/);
+    expect(auth).not.toContain('.login-input{');
     expect(auth).not.toContain('.login-input input{');
   });
 
