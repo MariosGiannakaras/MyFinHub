@@ -67,16 +67,6 @@
   .mobile-action-menu>div button{min-height:44px;border:0;border-radius:9px;background:transparent;color:var(--ink-2);display:flex;align-items:center;gap:8px;padding:8px 9px;text-align:left;font-size:10px;font-weight:700}
   .mobile-action-menu>div button:active{background:rgba(47,111,237,.09);transform:scale(.985)}
 
-  /* Quick Entry uses the dynamic visual viewport and a horizontal movement chooser on phones. */
-  .quick-modal{max-height:calc(88dvh - env(safe-area-inset-top,0px));overscroll-behavior:contain}
-  .quick-modal .generic-kind-grid{display:flex;gap:7px;overflow-x:auto;scroll-snap-type:x proximity;padding:0 13px 12px;scrollbar-width:thin;overscroll-behavior-inline:contain}
-  .quick-modal .generic-kind-grid>button{flex:0 0 136px;min-height:76px;scroll-snap-align:start;padding:9px 10px}
-  .quick-modal .generic-kind-grid>button>span{width:27px;height:27px}
-  .quick-modal .generic-kind-grid>button b{margin-top:5px}
-  .quick-modal .generic-kind-grid>button small{line-height:1.25}
-  .quick-modal .frequent-strip{scroll-snap-type:x proximity;overscroll-behavior-inline:contain}
-  .quick-modal .frequent-strip button{scroll-snap-align:start}
-
   /* Prevent iOS Safari focus zoom while keeping compact layout through height/padding. */
   input,select,textarea{font-size:16px!important}
   .searchbox input,.money-input input{font-size:16px!important}
