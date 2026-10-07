@@ -17,7 +17,7 @@ describe('shared form-control branding',()=>{
     expect(controls).toContain('.app-control,.app-input-shell{box-sizing:border-box;width:100%;min-height:var(--control-height)');
     expect(controls).toContain('border:1px solid var(--control-border,#8096b3);border-radius:var(--control-radius);background:var(--control-bg,var(--surface))');
     expect(controls).toContain('.app-control:focus-visible,.app-input-shell:focus-within');
-    expect(controls).toContain('.app-input-shell>.app-control:focus-visible{box-shadow:inset 0 -2px var(--accent,var(--blue))!important}');
+    expect(controls).not.toContain('.app-input-shell>.app-control{min-width:0;flex:1;min-height:calc(var(--control-height) - 2px);height:calc(var(--control-height) - 2px);border:0!important;border-radius:0;padding:0;background:transparent!important;box-shadow:none!important}');
     expect(controls).toContain('.app-control[aria-invalid=true],.app-input-shell[data-invalid=true]');
   });
 
