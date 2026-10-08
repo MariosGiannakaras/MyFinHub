@@ -1,0 +1,480 @@
+{
+  "schemaVersion": 1,
+  "month": "2026-09",
+  "source": "GitHub Actions REST monthly failed-run enumeration sharded into weekly created date windows",
+  "retrievedAt": "2026-10-08",
+  "reportedTotal": 1511,
+  "retrieved": 1511,
+  "completeness": "complete_for_query",
+  "shards": [
+    {
+      "from": "2026-09-01",
+      "to": "2026-09-07",
+      "expected": 728
+    },
+    {
+      "from": "2026-09-08",
+      "to": "2026-09-14",
+      "expected": 177
+    },
+    {
+      "from": "2026-09-15",
+      "to": "2026-09-21",
+      "expected": 33
+    },
+    {
+      "from": "2026-09-22",
+      "to": "2026-09-28",
+      "expected": 273
+    },
+    {
+      "from": "2026-09-29",
+      "to": "2026-09-30",
+      "expected": 300
+    }
+  ],
+  "limitations": "Failed runs are not unique bugs, and job-step/root-cause details are not included. GitHub API caps unsharded searches at first 1000 records.",
+  "errors": [],
+  "uniqueHeadShas": 703,
+  "byWorkflow": [
+    {
+      "name": "CI",
+      "count": 488
+    },
+    {
+      "name": "Performance smoke",
+      "count": 273
+    },
+    {
+      "name": "Windows Desktop",
+      "count": 197
+    },
+    {
+      "name": "Visual QA Snapshots",
+      "count": 170
+    },
+    {
+      "name": "Cross-engine smoke",
+      "count": 133
+    },
+    {
+      "name": "Windows Clean Launch",
+      "count": 114
+    },
+    {
+      "name": "CodeQL",
+      "count": 95
+    },
+    {
+      "name": "Windows First Run",
+      "count": 34
+    },
+    {
+      "name": "Final Visual QA",
+      "count": 4
+    },
+    {
+      "name": "Phase 6 main audit lock refresh",
+      "count": 1
+    },
+    {
+      "name": "Code health lock refresh",
+      "count": 1
+    },
+    {
+      "name": "Apply Review consolidation",
+      "count": 1
+    }
+  ],
+  "byDay": [
+    {
+      "name": "2026-09-30",
+      "count": 219
+    },
+    {
+      "name": "2026-09-04",
+      "count": 177
+    },
+    {
+      "name": "2026-09-06",
+      "count": 116
+    },
+    {
+      "name": "2026-09-05",
+      "count": 102
+    },
+    {
+      "name": "2026-09-07",
+      "count": 88
+    },
+    {
+      "name": "2026-09-01",
+      "count": 88
+    },
+    {
+      "name": "2026-09-28",
+      "count": 88
+    },
+    {
+      "name": "2026-09-02",
+      "count": 81
+    },
+    {
+      "name": "2026-09-29",
+      "count": 81
+    },
+    {
+      "name": "2026-09-03",
+      "count": 76
+    },
+    {
+      "name": "2026-09-25",
+      "count": 73
+    },
+    {
+      "name": "2026-09-26",
+      "count": 66
+    },
+    {
+      "name": "2026-09-09",
+      "count": 57
+    },
+    {
+      "name": "2026-09-27",
+      "count": 35
+    },
+    {
+      "name": "2026-09-10",
+      "count": 28
+    },
+    {
+      "name": "2026-09-14",
+      "count": 27
+    },
+    {
+      "name": "2026-09-08",
+      "count": 19
+    },
+    {
+      "name": "2026-09-11",
+      "count": 18
+    },
+    {
+      "name": "2026-09-13",
+      "count": 14
+    },
+    {
+      "name": "2026-09-12",
+      "count": 14
+    },
+    {
+      "name": "2026-09-21",
+      "count": 11
+    },
+    {
+      "name": "2026-09-17",
+      "count": 6
+    },
+    {
+      "name": "2026-09-15",
+      "count": 6
+    },
+    {
+      "name": "2026-09-24",
+      "count": 6
+    },
+    {
+      "name": "2026-09-18",
+      "count": 5
+    },
+    {
+      "name": "2026-09-16",
+      "count": 5
+    },
+    {
+      "name": "2026-09-22",
+      "count": 5
+    }
+  ],
+  "topBranches": [
+    {
+      "name": "feat/346-settings-tabs",
+      "count": 464
+    },
+    {
+      "name": "feat/476-completion-audit-hardening",
+      "count": 147
+    },
+    {
+      "name": "feat/439-design-system-consistency",
+      "count": 48
+    },
+    {
+      "name": "feat/448-concept-reconciliation",
+      "count": 47
+    },
+    {
+      "name": "feat/305-transactions-approved-target",
+      "count": 37
+    },
+    {
+      "name": "chore/478-db-production-readiness",
+      "count": 37
+    },
+    {
+      "name": "fix/phase6-main-updater-bridge",
+      "count": 32
+    },
+    {
+      "name": "feat/429-canonical-integration",
+      "count": 31
+    },
+    {
+      "name": "feat/481-provider-brand-management",
+      "count": 31
+    },
+    {
+      "name": "feat/343-settings-general-tab",
+      "count": 29
+    },
+    {
+      "name": "chore/357-code-health-foundation",
+      "count": 24
+    },
+    {
+      "name": "android/private-app-update-api",
+      "count": 23
+    },
+    {
+      "name": "feat/337-attention-approved-target",
+      "count": 21
+    },
+    {
+      "name": "chore/357-stage6-hygiene-baseline",
+      "count": 19
+    },
+    {
+      "name": "chore/357-code-hygiene-stage-6-baseline",
+      "count": 19
+    },
+    {
+      "name": "feat/322-credit-card-approved-target",
+      "count": 18
+    },
+    {
+      "name": "feat/346-settings-data",
+      "count": 15
+    },
+    {
+      "name": "fix/400-card-secure-details",
+      "count": 15
+    },
+    {
+      "name": "chore/450-brand-kit-v2",
+      "count": 15
+    },
+    {
+      "name": "chore/357-css-ownership-batch-1",
+      "count": 14
+    },
+    {
+      "name": "chore/357-css-ownership-batch-10-bulk",
+      "count": 13
+    },
+    {
+      "name": "feat/355-review-to-check",
+      "count": 12
+    },
+    {
+      "name": "feat/324-lending-approved-target",
+      "count": 12
+    },
+    {
+      "name": "chore/357-css-ownership-batch-11-split",
+      "count": 12
+    },
+    {
+      "name": "chore/357-css-ownership-batch-4",
+      "count": 11
+    },
+    {
+      "name": "chore/357-css-ownership-batch-3",
+      "count": 11
+    },
+    {
+      "name": "feat/332-planning-approved-target",
+      "count": 11
+    },
+    {
+      "name": "fix/326-credit-card-native-drag-navigation",
+      "count": 10
+    },
+    {
+      "name": "feat/318-cards-surrounding-approved-target",
+      "count": 10
+    },
+    {
+      "name": "chore/348-disabled-interaction-state-guards",
+      "count": 10
+    }
+  ],
+  "byEvent": [
+    {
+      "name": "pull_request",
+      "count": 1334
+    },
+    {
+      "name": "push",
+      "count": 177
+    }
+  ],
+  "examples": [
+    {
+      "id": 33475615497,
+      "workflow": "Performance smoke",
+      "branch": "feat/305-transactions-approved-target",
+      "date": "2026-09-01",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/33475615497"
+    },
+    {
+      "id": 33542227948,
+      "workflow": "Performance smoke",
+      "branch": "feat/322-credit-card-approved-target",
+      "date": "2026-09-01",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/33542227948"
+    },
+    {
+      "id": 33662456089,
+      "workflow": "Performance smoke",
+      "branch": "feat/337-attention-approved-target-final",
+      "date": "2026-09-02",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/33662456089"
+    },
+    {
+      "id": 33793997810,
+      "workflow": "Cross-engine smoke",
+      "branch": "feat/346-settings-tabs",
+      "date": "2026-09-03",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/33793997810"
+    },
+    {
+      "id": 33895411856,
+      "workflow": "Performance smoke",
+      "branch": "android/phase6-test-update-channel",
+      "date": "2026-09-04",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/33895411856"
+    },
+    {
+      "id": 33917032713,
+      "workflow": "Performance smoke",
+      "branch": "feat/346-settings-tabs",
+      "date": "2026-09-04",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/33917032713"
+    },
+    {
+      "id": 33959763157,
+      "workflow": "Visual QA Snapshots",
+      "branch": "feat/346-settings-tabs",
+      "date": "2026-09-05",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/33959763157"
+    },
+    {
+      "id": 34017642912,
+      "workflow": "CI",
+      "branch": "feat/346-settings-tabs",
+      "date": "2026-09-06",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/34017642912"
+    },
+    {
+      "id": 34062658674,
+      "workflow": "Windows Desktop",
+      "branch": "feat/346-settings-tabs",
+      "date": "2026-09-06",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/34062658674"
+    },
+    {
+      "id": 34112162307,
+      "workflow": "Performance smoke",
+      "branch": "feat/346-settings-tabs",
+      "date": "2026-09-07",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/34112162307"
+    },
+    {
+      "id": 34333066334,
+      "workflow": "CI",
+      "branch": "chore/357-code-health-foundation",
+      "date": "2026-09-09",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/34333066334"
+    },
+    {
+      "id": 34509736162,
+      "workflow": "CodeQL",
+      "branch": "chore/357-button-adopters-batch-9",
+      "date": "2026-09-10",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/34509736162"
+    },
+    {
+      "id": 34889857040,
+      "workflow": "CI",
+      "branch": "dependabot/npm_and_yarn/npm-minor-patch-ce27d2c99c",
+      "date": "2026-09-14",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/34889857040"
+    },
+    {
+      "id": 36122571079,
+      "workflow": "CI",
+      "branch": "chore/357-css-ownership-batch-10-bulk",
+      "date": "2026-09-25",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/36122571079"
+    },
+    {
+      "id": 36229067111,
+      "workflow": "CI",
+      "branch": "chore/357-stage6-hygiene-baseline",
+      "date": "2026-09-26",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/36229067111"
+    },
+    {
+      "id": 36361101809,
+      "workflow": "CI",
+      "branch": "chore/348-disabled-interaction-state-guards",
+      "date": "2026-09-28",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/36361101809"
+    },
+    {
+      "id": 36497472686,
+      "workflow": "Performance smoke",
+      "branch": "feat/439-design-system-consistency",
+      "date": "2026-09-28",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/36497472686"
+    },
+    {
+      "id": 36579323340,
+      "workflow": "Performance smoke",
+      "branch": "feat/448-concept-reconciliation",
+      "date": "2026-09-29",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/36579323340"
+    },
+    {
+      "id": 36692614753,
+      "workflow": "Performance smoke",
+      "branch": "feat/476-completion-audit-hardening",
+      "date": "2026-09-30",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/36692614753"
+    },
+    {
+      "id": 36736121298,
+      "workflow": "CI",
+      "branch": "feat/476-completion-audit-hardening",
+      "date": "2026-09-30",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/36736121298"
+    },
+    {
+      "id": 36789329951,
+      "workflow": "Windows Clean Launch",
+      "branch": "feat/476-completion-audit-hardening",
+      "date": "2026-09-30",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/36789329951"
+    }
+  ]
+}

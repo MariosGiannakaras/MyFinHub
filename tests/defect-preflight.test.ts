@@ -13,10 +13,10 @@ const run=(...args:string[])=>spawnSync(process.execPath,[cli,...args],{cwd:root
 describe('curated defect intelligence and read-only preflight',()=>{
   it('accepts verified registry entries with real guards',()=>{
     expect(validateRegistry(registry,root)).toEqual([]);
-    expect(registry.patterns.map((p:{id:string})=>p.id)).toEqual(['FP-001','FP-002','FP-003','FP-004']);
+    expect(registry.patterns.map((p:{id:string})=>p.id)).toEqual(Array.from({length:20},(_,i)=>'FP-'+String(i+1).padStart(3,'0')));
     const result=run('--check-registry');
     expect(result.status).toBe(0);
-    expect(result.stdout).toContain('4 patterns');
+    expect(result.stdout).toContain('20 patterns');
   });
 
   it('rejects unverified evidence, duplicate IDs, and missing or unsafe guards',()=>{
@@ -48,7 +48,7 @@ describe('curated defect intelligence and read-only preflight',()=>{
 
   it('orders critical incidents first and deduplicates paths and focused tests',()=>{
     const report=buildReport(registry,['src/lib/lending.ts','server/deviceSessionRegistry.ts','src/lib/lending.ts','README.md']);
-    expect(report.matches.map((p:{id:string})=>p.id)).toEqual(['FP-001','FP-002']);
+    expect(report.matches.map((p:{id:string})=>p.id)).toEqual(['FP-001','FP-002','FP-013']);
     expect(report.changedFiles).toHaveLength(3);
     expect(report.suggestedCommands).toHaveLength(1);
     expect(report.suggestedCommands[0]).toContain('tests/device-access.test.ts');
