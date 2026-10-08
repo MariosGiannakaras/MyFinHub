@@ -17,6 +17,7 @@ import { calendarMonthRange, dateOnlyToUtcDate, monthOnlyToUtcDate } from '../li
 import { financeAccountChoices } from '../lib/accountSelection';
 import { money, shortDate } from '../lib/format';
 import { SAVING_SOURCE_LABELS, operationalMonthlyFlow, savingsBreakdown, savingsHistoryPresentation } from '../lib/savings';
+import { reportingPeriodEndDate } from '../lib/reportingPeriod';
 import { savingsGoalBalance, savingsGoalProgress } from '../lib/savingsGoals';
 import { accountDisplayName, ratioPercent } from '../lib/ui';
 import { userErrorMessage } from '../lib/userMessage';
@@ -34,7 +35,8 @@ const euroCompact=new Intl.NumberFormat('el-GR',{style:'currency',currency:'EUR'
 type SavingsQuickContext=Omit<Extract<QuickActionContext,{mode:'savings'}>,'token'>;
 
 export function SavingsPage({data,month,asOf,onCreate,onQuickAdd,onSavingsTargetChange,onUpsertGoal,onDeleteGoal}:{data:FinanceData;month:string;asOf:string;onCreate:(event:FinanceEvent)=>void;onQuickAdd?:(context:SavingsQuickContext)=>void;onSavingsTargetChange:(rate:number)=>void;onUpsertGoal:(goal:SavingsGoal)=>void;onDeleteGoal:(id:string)=>void}){
-  const balances=accountBalances(data,asOf);
+  const periodEndDate=reportingPeriodEndDate(month,asOf);
+  const balances=accountBalances(data,periodEndDate);
   const flow=operationalMonthlyFlow(data,month);
   const breakdown=savingsBreakdown(data,month);
   const target=data.state.settings.savingsTargetRate??.2;
@@ -48,7 +50,7 @@ export function SavingsPage({data,month,asOf,onCreate,onQuickAdd,onSavingsTarget
   const defaultTo=accountChoices.dashboardSavings?.id??accountChoices.savings?.id??'';
   const sourceName=defaultFrom?accountDisplayName(data,defaultFrom):'Δεν έχει οριστεί';
   const savingsName=defaultTo?accountDisplayName(data,defaultTo):'Δεν έχει οριστεί';
-  const savingsBalance=savingsGoalBalance(data,asOf);
+  const savingsBalance=savingsGoalBalance(data,periodEndDate);
   const goals=data.state.savingsGoals??[];
   const monthRange=calendarMonthRange(month);
   const selectedMonthIsCurrent=month===asOf.slice(0,7);
