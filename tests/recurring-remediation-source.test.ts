@@ -44,4 +44,9 @@ describe('Recurring post-v1.4 remediation contracts',()=>{
     expect(css).toContain('.inactive-recurring.is-empty>summary small{display:none}');
     expect(css).toContain('color:var(--text-secondary)');
   });
+  it('keeps management chrome off the shared primary payment button',()=>{
+    expect(css).toContain('.recurring-actions button:not(.save-button)');
+    expect(css).toContain('.recurring-actions .pay-action{min-width:84px;min-height:38px');
+    expect(css).not.toContain('.recurring-actions .pay-action{--control-gradient:');
+  });
 });
