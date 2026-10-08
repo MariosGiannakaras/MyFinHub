@@ -162,7 +162,7 @@
   }
   .loan-history>summary{min-height:70px;display:flex;align-items:center;justify-content:space-between;gap:16px;cursor:pointer}
   .loan-history.is-empty{min-height:52px;padding-inline:16px;background:transparent;box-shadow:none;border-style:dashed}
-  .loan-history.is-empty>summary{min-height:50px}
+  .loan-history.is-empty>summary{min-height:50px;margin-bottom:0}
   .loan-history.is-empty>summary b{display:none}
   .loan-history>summary>div{display:flex;align-items:baseline;gap:10px}
   .loan-history>summary span{font-size:14px;font-weight:820;color:var(--ink)}
