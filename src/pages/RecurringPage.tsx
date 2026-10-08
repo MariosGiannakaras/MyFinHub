@@ -1,11 +1,12 @@
-import { Archive, CalendarClock, MoreHorizontal, PauseCircle, Pencil, PlayCircle, Plus, ReceiptText, X } from 'lucide-react';
-import { useState } from 'react';
+import { Archive, CalendarClock, ImagePlus, MoreHorizontal, PauseCircle, Pencil, PlayCircle, Plus, ReceiptText, Trash2, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { AnimatedAmount } from '../components/AnimatedAmount';
 import { AppDateInput } from '../components/AppDateInput';
 import { AppSelectInput } from '../components/AppSelectInput';
 import { AppTextInput } from '../components/AppTextInput';
 import { Button } from '../components/Button';
 import { PageHeader } from '../components/PageHeader';
+import { RecurringBrandMark } from '../components/RecurringBrandMark';
 import { Surface } from '../components/Surface';
 import { CategorySelectInput } from '../components/CategorySelectInput';
 import { FinanceIcon } from '../components/FinanceIcon';
@@ -20,9 +21,21 @@ import { money, shortDate } from '../lib/format';
 import { recurringDraftError } from '../lib/inputSemantics';
 import { activeRecurringItems, inactiveRecurringItems, recurringAccountChoice, recurringAccountError, recurringMonthlyTotal, recurringPayments, recurringStatus, recurringUpcoming, typicalPaymentDay } from '../lib/recurring';
 import { recurringCadenceLabel } from '../lib/recurringCadence';
+import { deleteRecurringServiceAsset, uploadRecurringServiceAsset, type RecurringServiceAsset } from '../lib/recurringServiceAssetClient';
 import { accountDisplayName } from '../lib/ui';
+import { userErrorMessage } from '../lib/userMessage';
 import type { FinanceData, RecurringItem, RecurringStatus } from '../types';
 import './RecurringCompletion.css';
+
+const RECURRING_LOGO_ACCEPT='image/png,image/jpeg,image/webp,image/svg+xml,.png,.jpg,.jpeg,.webp,.svg';
+const RECURRING_LOGO_MAX_BYTES=2*1024*1024;
+const RECURRING_LOGO_TYPES=new Set(['image/png','image/jpeg','image/webp','image/svg+xml']);
+function recurringLogoFileError(file:File){
+  if(!RECURRING_LOGO_TYPES.has(file.type))return 'Το λογότυπο πρέπει να είναι PNG, JPG, WebP ή SVG.';
+  if(file.size<1)return 'Το αρχείο λογοτύπου είναι κενό.';
+  if(file.size>RECURRING_LOGO_MAX_BYTES)return 'Το λογότυπο δεν μπορεί να ξεπερνά τα 2 MB.';
+  return null;
+}
 
 export function RecurringPage({data,asOf,onUpsert,onOpenLoans,onPayLoan,onPayRecurring}:{data:FinanceData;asOf:string;onUpsert:(item:RecurringItem)=>void;onOpenLoans:()=>void;onPayLoan:(loanId:string)=>void;onPayRecurring:(recurringId:string)=>void}){
   const active=activeRecurringItems(data);
@@ -35,6 +48,11 @@ export function RecurringPage({data,asOf,onUpsert,onOpenLoans,onPayLoan,onPayRec
   const [edit,setEdit]=useState<RecurringItem|null>(null);
   const [editAmount,setEditAmount]=useState('');
   const [editError,setEditError]=useState('');
+  const [editBusy,setEditBusy]=useState(false);
+  const [editLogoFile,setEditLogoFile]=useState<File|null>(null);
+  const [editLogoPreview,setEditLogoPreview]=useState('');
+  const [editLogoRemoved,setEditLogoRemoved]=useState(false);
+  const logoInput=useRef<HTMLInputElement|null>(null);
   const [message,setMessage]=useState('');
   const [mobileActiveLimit,setMobileActiveLimit]=useState(12);
   const [desktopActiveLimit,setDesktopActiveLimit]=useState(24);
@@ -42,11 +60,16 @@ export function RecurringPage({data,asOf,onUpsert,onOpenLoans,onPayLoan,onPayRec
   const desktopUpcoming=upcoming.slice(0,desktopActiveLimit);
   const recurringGroups=Array.from(new Set(desktopUpcoming.map(row=>row.item.category))).map(category=>({category,rows:desktopUpcoming.filter(row=>row.item.category===category)}));
   const visibleInactive=inactive.slice(0,inactiveLimit);
-  const editRef=useModalFocus<HTMLElement>(Boolean(edit),'input',()=>{setEdit(null);setEditAmount('');setEditError('')});
-  const startNew=()=>{setEditError('');setEditAmount('');setEdit({id:`rec-${Date.now()}`,name:'',amount:0,day:null,firstExpectedDate:asOf,endDate:null,accountId:defaultAccount,category:data.state.settings.expenseCategories[0]||'Άλλο',active:true,status:'active',source:'user',recurrenceUnit:'month',recurrenceInterval:1})};
-  const startEdit=(item:RecurringItem)=>{setEditError('');setEditAmount(item.amount>0?String(item.amount):'');setEdit({...item,endDate:item.endDate??null,status:recurringStatus(item)})};
-  const closeEdit=()=>{setEdit(null);setEditAmount('');setEditError('')};
-  const save=()=>{if(!edit)return;const existed=active.some(item=>item.id===edit.id)||inactive.some(item=>item.id===edit.id);const normalized={...edit,recurrenceUnit:edit.recurrenceUnit??'month',recurrenceInterval:edit.recurrenceInterval??1,active:(edit.status??'active')==='active'};const error=recurringDraftError(normalized)??recurringAccountError(accountIds,normalized.accountId);if(error){setEditError(error);return}onUpsert(normalized);setMessage(existed?'Το πάγιο ενημερώθηκε και αποθηκεύεται.':'Το νέο πάγιο δημιουργήθηκε και αποθηκεύεται.');closeEdit()};
+  useEffect(()=>()=>{if(editLogoPreview)URL.revokeObjectURL(editLogoPreview)},[editLogoPreview]);
+  const resetLogoDraft=()=>{setEditLogoFile(null);setEditLogoPreview('');setEditLogoRemoved(false);if(logoInput.current)logoInput.current.value=''};
+  const releaseEdit=()=>{setEdit(null);setEditAmount('');setEditError('');resetLogoDraft()};
+  const closeEdit=()=>{if(!editBusy)releaseEdit()};
+  const editRef=useModalFocus<HTMLElement>(Boolean(edit),'input',closeEdit);
+  const startNew=()=>{resetLogoDraft();setEditError('');setEditAmount('');setEdit({id:`rec-${Date.now()}`,name:'',amount:0,day:null,firstExpectedDate:asOf,endDate:null,accountId:defaultAccount,category:data.state.settings.expenseCategories[0]||'Άλλο',active:true,status:'active',source:'user',recurrenceUnit:'month',recurrenceInterval:1})};
+  const startEdit=(item:RecurringItem)=>{resetLogoDraft();setEditError('');setEditAmount(item.amount>0?String(item.amount):'');setEdit({...item,endDate:item.endDate??null,status:recurringStatus(item)})};
+  const selectLogo=(file?:File)=>{if(!file)return;const error=recurringLogoFileError(file);if(error){setEditError(error);if(logoInput.current)logoInput.current.value='';return}setEditLogoFile(file);setEditLogoPreview(URL.createObjectURL(file));setEditLogoRemoved(false);setEditError('')};
+  const removeLogo=()=>{setEditLogoFile(null);setEditLogoPreview('');setEditLogoRemoved(true);if(logoInput.current)logoInput.current.value=''};
+  const save=async()=>{if(!edit||editBusy)return;const existed=active.some(item=>item.id===edit.id)||inactive.some(item=>item.id===edit.id);const base:RecurringItem={...edit,recurrenceUnit:edit.recurrenceUnit??'month',recurrenceInterval:edit.recurrenceInterval??1,active:(edit.status??'active')==='active'};const error=recurringDraftError(base)??recurringAccountError(accountIds,base.accountId);if(error){setEditError(error);return}setEditBusy(true);setEditError('');let uploaded:RecurringServiceAsset|null=null;try{let logoAssetKey=editLogoRemoved?undefined:base.logoAssetKey;if(editLogoFile){uploaded=await uploadRecurringServiceAsset({recurringId:base.id,file:editLogoFile});logoAssetKey=uploaded.assetKey}const normalized:RecurringItem={...base,logoAssetKey:logoAssetKey||undefined};onUpsert(normalized);setMessage(existed?'Το πάγιο ενημερώθηκε και αποθηκεύεται.':'Το νέο πάγιο δημιουργήθηκε και αποθηκεύεται.');releaseEdit()}catch(reason){if(uploaded){try{await deleteRecurringServiceAsset(uploaded.assetKey)}catch{}}setEditError(userErrorMessage(reason,'Δεν ήταν δυνατή η αποθήκευση του παγίου ή του λογοτύπου.'))}finally{setEditBusy(false)}};
   const setLifecycle=(item:RecurringItem,status:RecurringStatus)=>{onUpsert({...item,status,active:status==='active'});setMessage(status==='active'?'Το πάγιο ενεργοποιήθηκε ξανά.':status==='paused'?'Το πάγιο μπήκε σε παύση και διατηρήθηκε στο ιστορικό.':'Το πάγιο σταμάτησε και διατηρήθηκε στο ιστορικό.')};
   const startPay=(item:RecurringItem)=>onPayRecurring(item.id);
   const mobileUpcoming=upcoming.slice(0,mobileActiveLimit);
