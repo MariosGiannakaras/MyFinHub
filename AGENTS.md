@@ -70,6 +70,8 @@
 
 ### Prevention-first implementation and defect learning
 
+- Historical, verified reusable failure classes belong in `quality/defect-patterns.json` (governance: `docs/DEFECT_INTELLIGENCE.md`). Before related work, run `npm run defects:preflight -- --base origin/develop` (or `--working`/`--files`) and the applicable focused guards. The preflight is read-only/advisory; `npm run defects:check` enforces registry integrity inside existing checks. Neither replaces mandatory final CI/security/rendered/Windows gates. Do not promote untriaged CI/test failures into the registry without confirming root cause and an appropriate guard.
+
 - Treat every confirmed defect, visual mismatch, regression, or CI failure as evidence of a **failure class**, not only as a local symptom. Before editing, identify the owning layer: product/semantic selection, shared primitive/token, route layout, responsive geometry, state handling, theme/contrast, interaction/accessibility, backend/security, fixture/test data, or tooling/CI.
 - Perform a **bounded blast-radius pass** before changing the owner: inspect direct consumers, sibling uses of the same primitive/token/pattern, and the affected dependency boundary. Do not expand this into an unrelated whole-repository audit.
 - Predict the material state space before implementation. For UI work, consider only relevant dimensions from desktop/tablet/mobile, Light/Dark, populated/empty/loading/error/conflict, interaction states, and stress content such as long Greek labels, large monetary values, missing media, or dense rows. Add a fixture/check for a state when it is a credible failure mode for the change.
