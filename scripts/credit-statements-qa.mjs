@@ -60,7 +60,7 @@ try{
   await c.send('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
   await c.send('Page.navigate',{url:url.href});
   await waitFor("function(){return Boolean(document.querySelector('.page-heading'))}",'credit page reset');
-  await c.call("function(){const button=[...document.querySelectorAll('.page-heading button')].find(item=>(item.textContent||'').includes('Αρχείο καρτών'));button?.click();return Boolean(button)}");
+  assert(await c.call("function(){const button=document.querySelector('.page-heading button[aria-label^=\\\"Αρχείο καρτών\\\"]');button?.click();return Boolean(button)}"),'credit archive action remains semantically reachable');
   await waitFor("function(){return Boolean(document.querySelector('.card-archive-manager'))}",'archive manager');
   const archive=await c.call("function(){const row=[...document.querySelectorAll('.card-archive-row')].find(item=>(item.textContent||'').includes('QA Settled'));return {text:row?.textContent||'',deleteEnabled:Boolean(row?.querySelector('button.danger:not([disabled])'))}}");
   assert(archive.text.includes('Statements 1'),'archive manager preserves statement count');
