@@ -24,10 +24,12 @@
   .savings-goals-mobile .savings-goal-progress>span{height:8px;border-radius:999px;background:color-mix(in srgb,var(--line) 80%,transparent);overflow:hidden}
   .savings-goals-mobile .savings-goal-progress i{display:block;height:100%;border-radius:inherit;background:var(--blue)}
   .savings-goals-mobile .savings-goal-row>strong,.savings-goals-mobile .savings-goal-row>span{font-size:11px;color:var(--ink-2)}
-  .savings-goals-mobile .savings-goal-row>strong:nth-of-type(1)::before{content:'Αποταμιευμένα: ';color:var(--text-secondary);font-weight:500}
+  .savings-goals-mobile .savings-goal-row>strong:nth-of-type(1)::before{content:'Κοινό υπόλοιπο: ';color:var(--text-secondary);font-weight:500}
   .savings-goals-mobile .savings-goal-row>strong:nth-of-type(2)::before{content:'Στόχος: ';color:var(--text-secondary);font-weight:500}
   .savings-goals-mobile .savings-goal-row>span:last-child{grid-column:1/-1}
   .savings-goals-mobile .savings-goal-row>span:last-child::before{content:'Προθεσμία: ';color:var(--text-secondary)}
+  .savings-goals-mobile .savings-goals-empty{min-height:72px;margin-top:8px;padding:12px;border:1px dashed var(--border-subtle);border-radius:12px;background:var(--surface-inset);display:grid;grid-template-columns:34px minmax(0,1fr);align-items:center;gap:10px}
+  .savings-goals-mobile .savings-goals-empty b{display:block;color:var(--ink);font-size:12px}.savings-goals-mobile .savings-goals-empty small{display:block;margin-top:3px;color:var(--text-secondary);font-size:var(--ux-dense-label-size);line-height:1.4}
 }
 
 
