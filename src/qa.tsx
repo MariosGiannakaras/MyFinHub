@@ -177,6 +177,16 @@ function buildQaData(params:URLSearchParams){
     }))];
   }
   if(params.get('state')==='overlimit')next.state.cards=(next.state.cards??[]).map(card=>card.kind==='credit'?{...card,creditLimit:100}:card);
+  if(params.get('state')==='credit-stack'||params.get('state')==='credit-stack-long'){
+    const cards=next.state.cards??[],base=cards.find(card=>card.kind==='credit'&&card.active!==false);
+    if(base){
+      const providers=['revolut','alpha','payzy','viva','piraeus'] as const;
+      const designs=['revolut-sage','alpha-bonus','payzy-neo','viva-cobalt','piraeus-midnight'] as const;
+      const total=params.get('state')==='credit-stack-long'?24:6;
+      const generated=Array.from({length:Math.max(0,total-1)},(_,index)=>({...base,id:`qa-credit-stack-${index+2}`,bankId:providers[index%providers.length],nickname:`QA Credit ${index+2}`,designId:designs[index%designs.length],network:index%2===0?'mastercard' as const:'visa' as const,last4:String(5100+index).padStart(4,'0'),creditLimit:1500+(index*100),statementClosingDay:undefined,statementDueDay:undefined,statementBoundaryRule:undefined,createdAt:`2026-08-${String((index%20)+2).padStart(2,'0')}T08:00:00.000Z`,updatedAt:`2026-08-${String((index%20)+2).padStart(2,'0')}T08:00:00.000Z`}));
+      next.state.cards=[...cards.filter(card=>card.kind!=='credit'||card.active===false),base,...generated];
+    }
+  }
   if(params.get('state')==='forecast-negative')next.state.scheduled=[...(next.state.scheduled??[]),{id:'qa-negative-forecast',dueDate:'2026-08-18',kind:'expense',amount:3000,note:'Μεγάλη γνωστή υποχρέωση',category:'Σταθερά έξοδα',accountId:'piraeus-payroll',status:'pending',createdAt:'2026-08-10T10:00:00.000Z',updatedAt:'2026-08-10T10:00:00.000Z'}];
   if(params.get('state')==='budget-rules'){
     const stamp='2026-08-17T12:00:00.000Z';
