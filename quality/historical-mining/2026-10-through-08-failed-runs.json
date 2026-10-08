@@ -1,0 +1,344 @@
+{
+  "schemaVersion": 1,
+  "month": "2026-10",
+  "source": "GitHub Actions REST failed-run enumeration through 2026-10-08",
+  "retrievedAt": "2026-10-08",
+  "reportedTotal": 354,
+  "retrieved": 354,
+  "completeness": "complete_for_query_at_snapshot",
+  "shards": [
+    {
+      "from": "2026-10-01",
+      "to": "2026-10-04",
+      "expected": 229
+    },
+    {
+      "from": "2026-10-05",
+      "to": "2026-10-08",
+      "expected": 125
+    }
+  ],
+  "limitations": "Month in progress; subsequent runs change totals. Failed runs are not distinct bugs.",
+  "errors": [],
+  "uniqueHeadShas": 237,
+  "byWorkflow": [
+    {
+      "name": "CI",
+      "count": 214
+    },
+    {
+      "name": "Real Stack E2E",
+      "count": 25
+    },
+    {
+      "name": "Windows Desktop",
+      "count": 22
+    },
+    {
+      "name": "Windows Clean Launch",
+      "count": 16
+    },
+    {
+      "name": "CodeQL",
+      "count": 15
+    },
+    {
+      "name": "Performance smoke",
+      "count": 15
+    },
+    {
+      "name": "Cross-engine smoke",
+      "count": 13
+    },
+    {
+      "name": "Windows First Run",
+      "count": 12
+    },
+    {
+      "name": "Audit Rendered Review",
+      "count": 9
+    },
+    {
+      "name": "Final Visual QA",
+      "count": 7
+    },
+    {
+      "name": "Dependency Audit Lock Remediation",
+      "count": 2
+    },
+    {
+      "name": "Dependency Lock Refresh",
+      "count": 2
+    },
+    {
+      "name": "npm_and_yarn in /. - Update #1611207513",
+      "count": 1
+    },
+    {
+      "name": "npm_and_yarn in /api - Update #1611207489",
+      "count": 1
+    }
+  ],
+  "byDay": [
+    {
+      "name": "2026-10-03",
+      "count": 87
+    },
+    {
+      "name": "2026-10-01",
+      "count": 70
+    },
+    {
+      "name": "2026-10-06",
+      "count": 66
+    },
+    {
+      "name": "2026-10-02",
+      "count": 39
+    },
+    {
+      "name": "2026-10-04",
+      "count": 33
+    },
+    {
+      "name": "2026-10-08",
+      "count": 24
+    },
+    {
+      "name": "2026-10-07",
+      "count": 22
+    },
+    {
+      "name": "2026-10-05",
+      "count": 13
+    }
+  ],
+  "topBranches": [
+    {
+      "name": "feat/476-completion-audit-hardening",
+      "count": 223
+    },
+    {
+      "name": "fix/503-ui-ux-owner-intent-remediation",
+      "count": 37
+    },
+    {
+      "name": "chore/505-node24-dependency-health",
+      "count": 29
+    },
+    {
+      "name": "feat/521-quick-entry-reference",
+      "count": 16
+    },
+    {
+      "name": "feat/481-provider-brand-management",
+      "count": 6
+    },
+    {
+      "name": "fix/519-post-v1-4-ui-remediation",
+      "count": 6
+    },
+    {
+      "name": "fix/519-credit-remediation",
+      "count": 6
+    },
+    {
+      "name": "fix/523-shared-control-branding",
+      "count": 5
+    },
+    {
+      "name": "fix/519-cards-remediation",
+      "count": 4
+    },
+    {
+      "name": "develop",
+      "count": 4
+    },
+    {
+      "name": "chore/476-close-8.13-interactive-verification",
+      "count": 4
+    },
+    {
+      "name": "chore/533-historical-defect-mining",
+      "count": 2
+    },
+    {
+      "name": "chore/530-defect-intelligence",
+      "count": 2
+    },
+    {
+      "name": "dependabot/github_actions/github-actions-4b2c77c676",
+      "count": 2
+    },
+    {
+      "name": "main",
+      "count": 2
+    },
+    {
+      "name": "fix/519-recurring-remediation",
+      "count": 1
+    },
+    {
+      "name": "fix/519-loans-remediation",
+      "count": 1
+    },
+    {
+      "name": "fix/519-lending-remediation",
+      "count": 1
+    },
+    {
+      "name": "fix/519-savings-remediation",
+      "count": 1
+    },
+    {
+      "name": "chore/517-local-dev-batch",
+      "count": 1
+    },
+    {
+      "name": "release/476-v1.4.0",
+      "count": 1
+    }
+  ],
+  "byEvent": [
+    {
+      "name": "pull_request",
+      "count": 339
+    },
+    {
+      "name": "push",
+      "count": 13
+    },
+    {
+      "name": "dynamic",
+      "count": 2
+    }
+  ],
+  "examples": [
+    {
+      "id": 36800462067,
+      "workflow": "CI",
+      "branch": "feat/476-completion-audit-hardening",
+      "date": "2026-10-01",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/36800462067"
+    },
+    {
+      "id": 36855771954,
+      "workflow": "Windows Desktop",
+      "branch": "feat/476-completion-audit-hardening",
+      "date": "2026-10-01",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/36855771954"
+    },
+    {
+      "id": 36885856519,
+      "workflow": "CI",
+      "branch": "feat/476-completion-audit-hardening",
+      "date": "2026-10-01",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/36885856519"
+    },
+    {
+      "id": 36931446761,
+      "workflow": "CI",
+      "branch": "feat/476-completion-audit-hardening",
+      "date": "2026-10-01",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/36931446761"
+    },
+    {
+      "id": 36984615107,
+      "workflow": "Final Visual QA",
+      "branch": "feat/476-completion-audit-hardening",
+      "date": "2026-10-02",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/36984615107"
+    },
+    {
+      "id": 37058951631,
+      "workflow": "CI",
+      "branch": "feat/476-completion-audit-hardening",
+      "date": "2026-10-02",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/37058951631"
+    },
+    {
+      "id": 37117337061,
+      "workflow": "CI",
+      "branch": "feat/476-completion-audit-hardening",
+      "date": "2026-10-03",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/37117337061"
+    },
+    {
+      "id": 37145697821,
+      "workflow": "CI",
+      "branch": "feat/476-completion-audit-hardening",
+      "date": "2026-10-03",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/37145697821"
+    },
+    {
+      "id": 37147150827,
+      "workflow": "Windows First Run",
+      "branch": "feat/476-completion-audit-hardening",
+      "date": "2026-10-03",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/37147150827"
+    },
+    {
+      "id": 37151969503,
+      "workflow": "Final Visual QA",
+      "branch": "feat/476-completion-audit-hardening",
+      "date": "2026-10-03",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/37151969503"
+    },
+    {
+      "id": 37163586530,
+      "workflow": "Windows First Run",
+      "branch": "feat/476-completion-audit-hardening",
+      "date": "2026-10-04",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/37163586530"
+    },
+    {
+      "id": 37218620430,
+      "workflow": "CI",
+      "branch": "feat/476-completion-audit-hardening",
+      "date": "2026-10-04",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/37218620430"
+    },
+    {
+      "id": 37373636881,
+      "workflow": "CI",
+      "branch": "fix/503-ui-ux-owner-intent-remediation",
+      "date": "2026-10-05",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/37373636881"
+    },
+    {
+      "id": 37439013565,
+      "workflow": "Dependency Lock Refresh",
+      "branch": "chore/505-node24-dependency-health",
+      "date": "2026-10-06",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/37439013565"
+    },
+    {
+      "id": 37439669026,
+      "workflow": "Real Stack E2E",
+      "branch": "chore/505-node24-dependency-health",
+      "date": "2026-10-06",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/37439669026"
+    },
+    {
+      "id": 37488916956,
+      "workflow": "Cross-engine smoke",
+      "branch": "fix/503-ui-ux-owner-intent-remediation",
+      "date": "2026-10-06",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/37488916956"
+    },
+    {
+      "id": 37635609626,
+      "workflow": "CI",
+      "branch": "feat/521-quick-entry-reference",
+      "date": "2026-10-07",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/37635609626"
+    },
+    {
+      "id": 37759984891,
+      "workflow": "CI",
+      "branch": "fix/519-post-v1-4-ui-remediation",
+      "date": "2026-10-08",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/37759984891"
+    }
+  ]
+}
