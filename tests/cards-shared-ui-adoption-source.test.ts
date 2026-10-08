@@ -13,7 +13,8 @@ describe('Cards shared action primitive ownership',()=>{
     expect(cards.match(/<Button[^>]+variant=\"primary\"/g)).toHaveLength(4);
     expect(cards.match(/<Button[^>]+variant=\"secondary\"/g)).toHaveLength(2);
     expect(cards.match(/<Button[^>]+variant=\"danger\"/g)).toHaveLength(1);
-    expect(cards).toContain('<Button type="button" variant="secondary" onClick={()=>{setBankName(\'\');setError(\'\');setBankOpen(true)}}>');\n    expect(cards).toContain('<Button type="button" variant="primary" onClick={()=>openCardCreate()}><Plus/> Προσθήκη κάρτας</Button>');
+    expect(cards).toContain('<Button type="button" variant="secondary" onClick={()=>{setBankName(\'\');setError(\'\');setBankOpen(true)}}>');
+    expect(cards).toContain('<Button type="button" variant="primary" onClick={()=>openCardCreate()}><Plus/> Προσθήκη κάρτας</Button>');
     expect(cards).toContain('<IconButton type="button" className="bank-add-btn"');
     expect(cards).toContain('<IconButton type="button" className="close-picker" aria-label="Κλείσιμο"');
     expect(cards).toContain('<Button type="button" variant="secondary" className="modal-secondary"');
