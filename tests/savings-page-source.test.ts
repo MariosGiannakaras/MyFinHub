@@ -50,4 +50,28 @@ describe('Savings page action hierarchy',()=>{
     expect(functionalQa).toContain("savingsAfter.recent.includes('Μεταφορά στην αποταμίευση')");
   });
 
+
+  it('uses truthful selected-period wording instead of hard-coding the current month',()=>{
+    expect(source).toContain("const selectedMonthIsCurrent=month===asOf.slice(0,7)");
+    expect(source).toContain("const selectedPeriodHeading=selectedMonthIsCurrent?'Αυτός ο μήνας':selectedMonthLabel");
+    expect(source).toContain('<h2>{selectedPeriodHeading}</h2>');
+    expect(source).toContain("selectedMonthIsCurrent?'ΑΥΤΟΣ Ο ΜΗΝΑΣ':selectedMonthLabel.toLocaleUpperCase('el-GR')");
+  });
+
+  it('renders a real no-goal empty state and makes shared-pool semantics explicit',()=>{
+    expect(source).toContain('className="savings-goals-empty"');
+    expect(source).toContain('Το κοινό υπόλοιπο αποταμίευσης είναι {money.format(savingsBalance)}');
+    expect(source).toContain('<span>Κοινό υπόλοιπο</span>');
+    expect(source).not.toContain('className="savings-goal-row placeholder"');
+    expect(composition).toContain('.savings-goals-mobile .savings-goals-empty');
+    expect(composition).toContain('.savings-goals-empty{min-height:76px');
+  });
+
+  it('bounds wide desktop measure and removes internal savings-engine jargon',()=>{
+    expect(composition).toContain('width:min(100%,1500px);margin-inline:auto');
+    expect(source).toContain('η αποταμίευση μετρά μία φορά στα σύνολα');
+    expect(source).not.toContain('canonical savings flow');
+    expect(composition).toContain('color:var(--text-secondary)');
+  });
+
 });
