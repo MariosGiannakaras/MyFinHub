@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useRecurringServiceAssets } from '../hooks/useRecurringServiceAssets';
+import { recurringServiceAssetByKey } from '../lib/recurringServiceAssetClient';
 import type { FinanceSettings, RecurringItem } from '../types';
 import { FinanceIcon } from './FinanceIcon';
 import '../styles/recurring-brand-mark.css';
@@ -14,7 +15,7 @@ export function RecurringBrandMark({
 }){
   const assets=useRecurringServiceAssets();
   const assetKey=item.logoAssetKey?.trim()||null;
-  const asset=assetKey?assets.assets.find(candidate=>candidate.assetKey===assetKey):undefined;
+  const asset=assetKey?recurringServiceAssetByKey(assetKey):null;
   const [failedAssetKey,setFailedAssetKey]=useState<string|null>(null);
   const failed=Boolean(assetKey&&failedAssetKey===assetKey);
   const style={width:size,height:size,flexBasis:size};
