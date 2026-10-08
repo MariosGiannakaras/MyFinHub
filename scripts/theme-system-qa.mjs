@@ -67,7 +67,7 @@ try{
 
   console.log('Theme system QA: dark mobile Reports and Settings semantic surfaces');
   await viewport(375,812,true);await navigate('reports',pages.reports);await applyTheme('dark');
-  const darkMobileReportCard=await computedContrast('.report-kpi-strip>.report-headline-card');
+  const darkMobileReportCard=await computedContrast('.report-financial-picture');
   const darkMobileComparison=await computedContrast('.report-comparison-panel');
   const darkMobileOperations=await computedContrast('.report-upcoming-card');
   const darkMobilePrivate=await computedContrast('.private-report-placeholder');
