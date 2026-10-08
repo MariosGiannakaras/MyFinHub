@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 const source=readFileSync(new URL('../src/pages/SavingsPage.tsx',import.meta.url),'utf8');
 const composition=readFileSync(new URL('../src/styles/savings-desktop-composition.css',import.meta.url),'utf8');
 const functionalQa=readFileSync(new URL('../scripts/completion-functional-crud-qa.mjs',import.meta.url),'utf8');
+const remediationQa=readFileSync(new URL('../scripts/savings-remediation-qa.mjs',import.meta.url),'utf8');
 
 describe('Savings page action hierarchy',()=>{
   it('renders the actionable savings choices before monthly reporting',()=>{
@@ -67,6 +68,13 @@ describe('Savings page action hierarchy',()=>{
     expect(source).not.toContain('savingsGoalBalance(data,asOf)');
     expect(source).toContain("setDate(asOf)");
     expect(source).toContain("if(goalEdit.targetDate&&goalEdit.targetDate<asOf)");
+  });
+
+  it('proves historical balances and goal progress change and restore in the browser',()=>{
+    expect(remediationQa).toContain("savings-selected-period-july");
+    expect(remediationQa).toContain("historical Savings route balances change with the selected period end");
+    expect(remediationQa).toContain("historical personal-goal balance and progress use the selected period end");
+    expect(remediationQa).toContain("Savings current-period balances and goal progress restore after historical browsing");
   });
 
   it('renders a real no-goal empty state and makes shared-pool semantics explicit',()=>{
