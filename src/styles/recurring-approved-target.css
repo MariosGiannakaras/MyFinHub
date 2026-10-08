@@ -92,7 +92,7 @@
   .recurring-approved-page>.inactive-recurring>summary strong{min-width:34px;height:30px;display:grid;place-items:center;border-radius:9px;background:var(--accent-soft);color:var(--accent);font-size:var(--ux-dense-data-size)}
   .recurring-approved-page>.inactive-recurring[open]{padding-bottom:12px}
   .recurring-approved-page>.inactive-recurring.is-empty{min-height:50px;background:transparent;box-shadow:none;border-style:dashed}
-  .recurring-approved-page>.inactive-recurring.is-empty>summary{min-height:48px}
+  .recurring-approved-page>.inactive-recurring.is-empty>summary{min-height:48px;margin-bottom:0}
   .recurring-approved-page>.inactive-recurring.is-empty>summary small{display:none}
 }
 
