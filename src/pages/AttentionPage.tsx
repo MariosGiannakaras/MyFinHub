@@ -67,24 +67,24 @@ function ApprovedGroup({title,subtitle,tone,items,data,visible,asOf,onAction,onS
   const hasAmounts=items.some(item=>item.amount!==undefined);
   const contextHeading=tone==='danger'||tone==='warning'?'Λογαριασμός':'Σχετικά';
   const rowsId=`attention-${tone}-rows`;
+  const canExpand=items.length>4;
   const visibleItems=expanded?items:items.slice(0,4);
-  const showAll=()=>{if(items.length>4){setExpanded(value=>!value);return}document.getElementById(rowsId)?.scrollIntoView({block:'nearest'})};
-  return <section className={`attention-approved-group ${tone}`} aria-labelledby={`attention-${tone}-title`}>
+  return <section className={`attention-approved-group ${tone} ${items.length?'':'is-empty'}`.trim()} aria-labelledby={`attention-${tone}-title`}>
     <header className="attention-approved-group-head">
       <div className="attention-approved-group-title">
         <span className="attention-approved-group-icon" aria-hidden="true">{tone==='danger'?<AlertTriangle/>:tone==='warning'?<Clock3/>:tone==='pending'?<ListChecks/>:<BellRing/>}</span>
         <div><h2 id={`attention-${tone}-title`}>{title} ({items.length})</h2><p>{subtitle}</p></div>
       </div>
-      {items.length?<Button type="button" variant="ghost" className="attention-approved-group-link" aria-expanded={items.length>4?expanded:undefined} onClick={showAll}>{items.length>4&&expanded?'Σύμπτυξη':'Προβολή όλων'} <ArrowRight/></Button>:<span className="attention-approved-group-count" aria-label="0 στοιχεία">0</span>}
+      {canExpand?<Button type="button" variant="ghost" className="attention-approved-group-link" aria-expanded={expanded} aria-controls={rowsId} onClick={()=>setExpanded(value=>!value)}>{expanded?'Σύμπτυξη':`Προβολή όλων (${items.length})`} <ArrowRight/></Button>:<span className="attention-approved-group-count" aria-label={`${items.length} στοιχεία`}>{items.length}</span>}
     </header>
-    <div className={`attention-approved-table-head ${hasAmounts?'has-amount':'no-amount'}`} aria-hidden="true"><span>Τύπος</span><span>Περιγραφή</span><span>{contextHeading}</span>{hasAmounts?<span>Ποσό</span>:null}<span>Ημερομηνία</span><span>Ενέργειες</span></div>
+    {items.length?<div className={`attention-approved-table-head ${hasAmounts?'has-amount':'no-amount'}`} aria-hidden="true"><span>Τύπος</span><span>Περιγραφή</span><span>{contextHeading}</span>{hasAmounts?<span>Ποσό</span>:null}<span>Ημερομηνία</span><span>Ενέργειες</span></div>:null}
     {items.length?<div id={rowsId} className="attention-approved-rows" role="list">{visibleItems.map(item=><article role="listitem" className={`attention-row attention-approved-row ${item.severity} ${hasAmounts?'has-amount':'no-amount'}`} data-attention-id={item.id} key={item.id}>
       <div className="attention-approved-kind"><span aria-hidden="true"><KindIcon kind={item.kind}/></span><small>{kindLabel(item.kind)}</small></div>
       <div className="attention-approved-copy"><b className={!visible&&(item.kind==='lending'||item.kind==='credit')?'private-text':''}>{item.title}</b><p>{item.reason}</p></div>
       <div className={`attention-approved-context ${!visible&&item.kind==='lending'?'private-text':''}`}>{itemContext(data,item)}</div>
       {hasAmounts?<div className="attention-approved-amount">{item.amount!==undefined?<b><AnimatedAmount value={item.amount} hidden={!visible}/></b>:<small>—</small>}</div>:null}
       <div className="attention-approved-date">{item.dueDate?<b>{shortDate(item.dueDate)}</b>:<b>—</b>}<small>{dateContext(asOf,item.dueDate)}</small></div>
-      <div className="attention-actions attention-approved-actions"><Button type="button" variant="primary" className="compact" onClick={()=>onAction(item)}>{actionLabel(item)} <ArrowRight size={14}/></Button><Tooltip label="Προσωρινή αναβολή" side="left"><IconButton type="button" className="attention-approved-icon-action" aria-label={`Αναβολή ${item.title}`} onClick={()=>onSnooze(item)}><Clock3/></IconButton></Tooltip>{item.severity!=='danger'?<Tooltip label="Απόκρυψη όσο δεν αλλάζει η κατάσταση" side="left"><IconButton type="button" className="attention-approved-icon-action" aria-label={`Απόκρυψη ${item.title}`} onClick={()=>onDismiss(item)}><XCircle/></IconButton></Tooltip>:null}</div>
+      <div className="attention-actions attention-approved-actions"><Button type="button" variant="primary" className="compact" onClick={()=>onAction(item)}>{actionLabel(item)} <ArrowRight size={14}/></Button><Tooltip label="Προσωρινή αναβολή" side="left"><IconButton type="button" variant="quiet" className="attention-approved-icon-action" aria-label={`Αναβολή ${item.title}`} onClick={()=>onSnooze(item)}><Clock3/></IconButton></Tooltip>{item.severity!=='danger'?<Tooltip label="Απόκρυψη όσο δεν αλλάζει η κατάσταση" side="left"><IconButton type="button" variant="quiet" className="attention-approved-icon-action" aria-label={`Απόκρυψη ${item.title}`} onClick={()=>onDismiss(item)}><XCircle/></IconButton></Tooltip>:null}</div>
     </article>)}</div>:<div className="attention-approved-empty-row"><CheckCircle2/><span>{emptyText}</span></div>}
   </section>;
 }
@@ -115,6 +115,9 @@ export function AttentionPage({data,asOf,onAction,onDecision,onReviewDecision}:{
     onAction(item);
   };
   const counts={danger:groups.danger.length,warning:groups.warning.length,pending:groups.pending.length,notices:groups.notices.length};
+  const activeActionable=items.length;
+  const clearHeadline=counts.danger?'Η λίστα είναι ενημερωμένη':activeActionable?'Δεν υπάρχουν επείγοντα θέματα':'Όλα υπό έλεγχο!';
+  const clearCopy=counts.danger?'Τα γνωστά επείγοντα θέματα εμφανίζονται παραπάνω με τις πραγματικές διαθέσιμες ενέργειες.':activeActionable?`Υπάρχουν ${activeActionable} ενεργά θέματα χαμηλότερης προτεραιότητας παραπάνω.`:'Δεν υπάρχει ενεργό θέμα που να χρειάζεται ενέργεια αυτή τη στιγμή.';
   const mobileItems=mobileExpanded?items:items.slice(0,6);
 
   return <div className="page-stack attention-page attention-approved-page">
@@ -151,8 +154,8 @@ export function AttentionPage({data,asOf,onAction,onDecision,onReviewDecision}:{
         </div>
       </section>
 
-      <section className={`attention-approved-all-clear ${counts.danger?'has-urgent':''}`} id="attention-how-it-works">
-        <div className="attention-approved-clear-head"><CheckCircle2/><div><b>{counts.danger?'Η λίστα είναι ενημερωμένη':'Όλα υπό έλεγχο!'}</b><span>{counts.danger?'Τα γνωστά επείγοντα θέματα εμφανίζονται παραπάνω με τις πραγματικές διαθέσιμες ενέργειες.':'Δεν υπάρχουν άλλα επείγοντα θέματα αυτή τη στιγμή.'}</span></div></div>
+      <section className={`attention-approved-all-clear ${counts.danger?'has-urgent':activeActionable?'has-active':'is-clear'}`} id="attention-how-it-works">
+        <div className="attention-approved-clear-head"><CheckCircle2/><div><b>{clearHeadline}</b><span>{clearCopy}</span></div></div>
         <div className="attention-approved-tip"><span aria-hidden="true">☼</span><div><b>Συμβουλή</b><small>Η σελίδα βασίζεται σε πραγματικά υπόλοιπα, ημερομηνίες και οφειλές, κατηγοριοποίηση/πιθανά διπλότυπα συναλλαγών, δηλωμένα budgets και ντετερμινιστική πρόβλεψη. Δεν εμφανίζει εικονική κατάσταση τραπεζικού συγχρονισμού.</small></div><a href="#/dashboard">Επιστροφή στην επισκόπηση <ArrowRight/></a></div>
       </section>
 
