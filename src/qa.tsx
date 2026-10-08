@@ -177,6 +177,11 @@ function buildQaData(params:URLSearchParams){
     }))];
   }
   if(params.get('state')==='overlimit')next.state.cards=(next.state.cards??[]).map(card=>card.kind==='credit'?{...card,creditLimit:100}:card);
+  if(params.get('state')==='recurring-rich'){
+    const categories=['Τηλεπικοινωνίες','Διασκέδαση','Σταθερά έξοδα'];
+    next.seed.recurring=[];next.state.recurringOverrides={};
+    next.state.recurringCustom=Array.from({length:9},(_,index):RecurringItem=>({id:`qa-recurring-rich-${index+1}`,name:`QA Πάγιο ${index+1}`,amount:12+(index*7),day:(index%24)+1,firstExpectedDate:`2026-08-${String((index%20)+1).padStart(2,'0')}`,endDate:index%3===0?'2027-08-01':null,accountId:'piraeus-payroll',category:categories[index%categories.length],active:true,status:'active',source:'qa',recurrenceUnit:index%4===0?'year':'month',recurrenceInterval:index%4===0?1:(index%3)+1}));
+  }
   if(params.get('state')==='forecast-negative')next.state.scheduled=[...(next.state.scheduled??[]),{id:'qa-negative-forecast',dueDate:'2026-08-18',kind:'expense',amount:3000,note:'Μεγάλη γνωστή υποχρέωση',category:'Σταθερά έξοδα',accountId:'piraeus-payroll',status:'pending',createdAt:'2026-08-10T10:00:00.000Z',updatedAt:'2026-08-10T10:00:00.000Z'}];
   if(params.get('state')==='budget-rules'){
     const stamp='2026-08-17T12:00:00.000Z';
