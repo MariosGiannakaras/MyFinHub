@@ -379,7 +379,8 @@ try{
 
   console.log('Completion functional QA: Credit-card profile edit');
   await navigate('credit');
-  await clickText('button','Επεξεργασία κάρτας');
+  const creditEdit=await c.call("function(){const button=document.querySelector('#myfinhub-card-stack .stack-card.top button[aria-label^=\\"Επεξεργασία κάρτας\\"]');button?.click();return Boolean(button)}");
+  assert(creditEdit,'active Credit card exposes profile editing on the canonical card');
   await waitFor("function(){return Boolean(document.querySelector('#card-create-title'))&&document.querySelector('#card-create-title').textContent.includes('Επεξεργασία κάρτας')}",'Credit profile editor');
   await setByLabel('Όνομα κάρτας','QA Audit Credit Profile');
   await clickText('.card-create-modal button','Αποθήκευση αλλαγών');
