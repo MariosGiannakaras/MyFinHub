@@ -37,6 +37,24 @@ html[data-theme="dark"] .approved-secondary-account{
   background:var(--surface-2)!important;
   border-color:var(--border-subtle)!important;
 }
+@media(min-width:981px){
+  html[data-theme="dark"] .dashboard-approved .approved-secondary-panel{
+    background:transparent!important;
+    border-color:transparent!important;
+    box-shadow:none!important;
+  }
+  html[data-theme="dark"] .dashboard-approved .approved-kpi-strip{
+    background:var(--surface-elevated)!important;
+    border:1px solid var(--border-strong)!important;
+    box-shadow:var(--shadow-flat)!important;
+  }
+  html[data-theme="dark"] .dashboard-approved .approved-kpi-strip article{
+    background:transparent!important;
+    border:0!important;
+    box-shadow:none!important;
+  }
+  html[data-theme="dark"] .dashboard-approved .approved-kpi-strip article+article{border-left:1px solid var(--chart-grid)!important}
+}
 html[data-theme="dark"] .approved-account-actions button,
 html[data-theme="dark"] .approved-secondary-account button{
   background:var(--control-bg)!important;
