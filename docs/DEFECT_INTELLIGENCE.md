@@ -27,6 +27,8 @@ npm run defects:preflight -- --files src/lib/lending.ts server/deviceSessionRegi
 npm run defects:preflight -- --base origin/develop --json
 ```
 
+The existing core CI workflow also runs the read-only risk preflight automatically against its checked-out two-commit comparison (the PR merge's first parent or the previous push commit). It reports suggested guards without executing them, and its separate registry-integrity check runs inside the standard npm check pipeline.
+
 The preflight performs read-only matching. It **does not execute** commands, touch finance data, mutate Git refs or certify a change as correct. It prints a deduplicated focused test command and context-specific preventative checks. If no known paths match, that is **not** proof of safety or permission to skip required CI. `--base` compares the merge base with HEAD for the full task-branch delta; `--working` scans unstaged, staged and untracked local files. `--files` takes explicit paths without requiring a Git checkout.
 
 Use the suggested focused tests before a coherent checkpoint, followed by the repository's existing required validation cadence. Source-test results alone never replace rendered evidence for user-visible UI changes or the required final-head CI/security/Windows gates.

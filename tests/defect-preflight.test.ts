@@ -65,6 +65,14 @@ describe('curated defect intelligence and read-only preflight',()=>{
     expect(report.suggestedCommands[0]).toContain('npx vitest run');
   });
 
+  it('runs advisory risk matching automatically in core CI without replacing its gates',()=>{
+    const ci=readFileSync(path.join(root,'.github/workflows/ci.yml'),'utf8');
+    expect(ci).toContain('fetch-depth: 2');
+    expect(ci).toContain('npm run defects:preflight -- --base HEAD^1');
+    expect(ci).toContain('npm run check');
+    expect(ci).toContain('npm audit --audit-level=high');
+  });
+
   it('rejects conflicting argument modes and invalid explicit paths',()=>{
     expect(run('--files').status).toBe(1);
     expect(run('--base','develop','--working').status).toBe(1);

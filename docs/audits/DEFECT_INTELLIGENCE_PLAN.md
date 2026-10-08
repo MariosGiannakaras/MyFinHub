@@ -31,4 +31,4 @@ Independent from #519 PRs #528/#529; preserve their active scope and shared-owne
 - CI fan-out remains review-ready for expensive gates; UI workstream #519 and Android untouched.
 
 ## Checkpoint
-Second coherent checkpoint: registry, read-only CLI, changed-path matching, focused test coverage, npm scripts, integrity gate and AGENTS.md policy in the branch. Next: run focused and required CI validations, open scoped PR and leave exact-head handoff; do not claim a CI pass before observing it.
+Review checkpoint: #531 draft is open. Exact head `6147aae938bc259d8494698deeaea4fd477f7ead` failed CI run 37759900409 at hygiene: TypeScript TS7016 because the new .mjs module lacked a typed declaration for the TS tests; security/rendered gates were not reached. This batch adds a proper .d.mts declaration and automated advisory changed-path preflight in core CI (two-commit checkout). Next: inspect new exact-head CI and CodeQL results, address any actual remaining failures, then reconcile handoff. Do not claim PASS before observing it.
