@@ -337,6 +337,7 @@ export interface RecurringItem {
   category: string;
   active: boolean;
   status?: RecurringStatus;
+  logoAssetKey?: string | null;
   source?: string;
 }
 
