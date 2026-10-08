@@ -22,7 +22,7 @@ describe('Reports post-v1.4 remediation contracts',()=>{
     expect(page).toContain("report-budget-overview ${budgetRows.length?'':'is-empty'}");
     expect(page).toContain("budgetRows.length?'Διαχείριση προϋπολογισμών':'Ορισμός προϋπολογισμού'");
     expect(css).toContain('.report-budget-overview.is-empty{grid-template-columns:minmax(0,1fr) auto');
-    expect(css).toContain('.report-budget-overview.is-empty .report-budget-management>summary{min-height:36px');
+    expect(css).toContain('.report-budget-overview.is-empty .report-budget-management>summary{min-height:44px');
   });
 
   it('subordinates secondary analysis without removing existing analytical sections',()=>{
