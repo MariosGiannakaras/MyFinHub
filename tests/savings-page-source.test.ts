@@ -5,6 +5,7 @@ const source=readFileSync(new URL('../src/pages/SavingsPage.tsx',import.meta.url
 const composition=readFileSync(new URL('../src/styles/savings-desktop-composition.css',import.meta.url),'utf8');
 const functionalQa=readFileSync(new URL('../scripts/completion-functional-crud-qa.mjs',import.meta.url),'utf8');
 const remediationQa=readFileSync(new URL('../scripts/savings-remediation-qa.mjs',import.meta.url),'utf8');
+const approvedFixture=readFileSync(new URL('../src/qaApprovedDashboardFixture.ts',import.meta.url),'utf8');
 
 describe('Savings page action hierarchy',()=>{
   it('renders the actionable savings choices before monthly reporting',()=>{
@@ -68,6 +69,13 @@ describe('Savings page action hierarchy',()=>{
     expect(source).not.toContain('savingsGoalBalance(data,asOf)');
     expect(source).toContain("setDate(asOf)");
     expect(source).toContain("if(goalEdit.targetDate&&goalEdit.targetDate<asOf)");
+  });
+
+  it('uses a dedicated approved historical fixture route for Savings evidence',()=>{
+    expect(remediationQa).toContain("url.searchParams.set('state','savings-historical')");
+    expect(approvedFixture).toContain("params.get('page')==='savings'&&params.get('state')==='savings-historical'");
+    expect(approvedFixture).toContain("name:'Ταμείο ασφαλείας'");
+    expect(approvedFixture).toContain("date:'2026-07-31'");
   });
 
   it('proves historical balances and goal progress change and restore in the browser',()=>{
