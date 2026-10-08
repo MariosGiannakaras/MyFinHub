@@ -1,7 +1,7 @@
 import { accessTokenAal, assertMutationSessionOrigin, clearSessionCookiesIfCookie, requireSession } from './auth.js';
 import { ApiError, copyBoundedBinaryValue, handleApi, methodNotAllowed, readBinaryBody, readJsonBody, requestHeader, sendJson, strictQueryValue } from './http.js';
 import { isOwner } from './storage.js';
-import { MAX_PROVIDER_ASSET_BYTES, readAccountMetadata, readFinancialProviders, setFinancialProviderAssetBinding, updateFinancialProvider, uploadFinancialProviderAsset, writeAccountMetadata, writeFinancialProvider } from './accountMetadataStore.js';
+import { MAX_PROVIDER_ASSET_BYTES, MAX_RECURRING_SERVICE_ASSET_BYTES, deleteRecurringServiceAsset, readAccountMetadata, readFinancialProviders, readRecurringServiceAssets, setFinancialProviderAssetBinding, updateFinancialProvider, uploadFinancialProviderAsset, uploadRecurringServiceAsset, writeAccountMetadata, writeFinancialProvider } from './accountMetadataStore.js';
 import { assertValidIban } from '../src/lib/iban.js';
 
 const MAX_ACCOUNT_METADATA_BODY_BYTES=4*1024;
@@ -48,6 +48,23 @@ export function parseProviderAssetUpload(req:any){
     throw new ApiError(400,'INVALID_PROVIDER_ASSET','Μη έγκυρα στοιχεία εικόνας παρόχου.');
   }
   return {providerId,role:role as 'logo'|'wordmark'|'card-mark',variant,mimeType,fileName,makePrimary};
+}
+
+export function parseRecurringServiceAssetUpload(req:any){
+  const recurringId=strictQueryValue(req,'recurringId');
+  const fileName=strictQueryValue(req,'fileName');
+  const mimeType=requestHeader(req,'content-type').split(';',1)[0].trim().toLowerCase();
+  if(!recurringId||recurringId.length>200||/[\u0000-\u001f\u007f]/.test(recurringId)||
+    !PROVIDER_ASSET_MIME_TYPES.has(mimeType)||!fileName||fileName.length>160||/[\u0000-\u001f\u007f]/.test(fileName)){
+    throw new ApiError(400,'INVALID_RECURRING_SERVICE_ASSET','Μη έγκυρα στοιχεία εικόνας υπηρεσίας.');
+  }
+  return {recurringId,mimeType,fileName};
+}
+
+export function parseRecurringServiceAssetKey(req:any){
+  const assetKey=strictQueryValue(req,'assetKey');
+  if(!/^service-asset-[a-f0-9]{24}$/.test(assetKey))throw new ApiError(400,'INVALID_RECURRING_SERVICE_ASSET','Μη έγκυρη αναφορά εικόνας υπηρεσίας.');
+  return assetKey;
 }
 
 export function parseProviderAssetBindingWrite(value:unknown){
@@ -97,13 +114,14 @@ export function parseAccountMetadataWrite(value:unknown){
 export async function handleAccountMetadataRequest(req:any,res:any){
   await handleApi(res,async()=>{
     const method=String(req.method||'').toUpperCase();
-    if(method!=='GET'&&method!=='PUT'&&method!=='POST'&&method!=='PATCH')return methodNotAllowed(res,['GET','PUT','POST','PATCH']);
+    if(method!=='GET'&&method!=='PUT'&&method!=='POST'&&method!=='PATCH'&&method!=='DELETE')return methodNotAllowed(res,['GET','PUT','POST','PATCH','DELETE']);
     const session=await requireSession(req,res,{allowBearer:true});
     if(!(await isOwner(session.accessToken))){clearSessionCookiesIfCookie(req,res,session);throw new ApiError(401,'AUTH_REQUIRED','Authentication required.');}
     if(accessTokenAal(session.accessToken)!=='aal2')throw new ApiError(403,'MFA_REQUIRED','Verification required.');
     const resource=queryResource(req);
     if(method==='GET'){
       if(resource==='financial-providers')return sendJson(res,200,{providers:await readFinancialProviders(session.accessToken)});
+      if(resource==='recurring-service-assets')return sendJson(res,200,{assets:await readRecurringServiceAssets(session.accessToken)});
       if(resource)throw new ApiError(400,'INVALID_ACCOUNT_METADATA_RESOURCE','Μη έγκυρος πόρος metadata λογαριασμών.');
       return sendJson(res,200,{records:await readAccountMetadata(session.accessToken)});
     }
@@ -121,6 +139,17 @@ export async function handleAccountMetadataRequest(req:any,res:any){
       const content=validateProviderAssetContent(input.mimeType,await readBinaryBody(req,MAX_PROVIDER_ASSET_BYTES));
       const asset=await uploadFinancialProviderAsset({...input,content},session.accessToken);
       return sendJson(res,200,{asset});
+    }
+    if(method==='PUT'&&resource==='recurring-service-assets'){
+      const input=parseRecurringServiceAssetUpload(req);
+      const content=validateProviderAssetContent(input.mimeType,await readBinaryBody(req,MAX_RECURRING_SERVICE_ASSET_BYTES));
+      const asset=await uploadRecurringServiceAsset({...input,content},session.accessToken);
+      return sendJson(res,200,{asset});
+    }
+    if(method==='DELETE'&&resource==='recurring-service-assets'){
+      const assetKey=parseRecurringServiceAssetKey(req);
+      await deleteRecurringServiceAsset(assetKey,session.accessToken);
+      return sendJson(res,200,{ok:true});
     }
     if(method==='PUT'&&resource==='financial-provider-asset-binding'){
       const input=parseProviderAssetBindingWrite(await readJsonBody(req,MAX_FINANCIAL_PROVIDER_BODY_BYTES));
