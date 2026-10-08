@@ -67,7 +67,8 @@ describe('shared finance UI adoption contracts',()=>{
     expect(button).toContain("type='button'");
     expect(iconButton).toContain("Omit<ButtonHTMLAttributes<HTMLButtonElement>,'aria-label'>");
     expect(iconButton).toContain("'aria-label':string");
-    expect(iconButton).toContain("mergeClasses('icon-button',className)");
+    expect(iconButton).toContain("type IconButtonVariant='default'|'accent'|'quiet'");
+    expect(iconButton).toContain("mergeClasses('icon-button',variantClass[variant],className)");
     expect(iconButton).toContain("type='button'");
   });
 
