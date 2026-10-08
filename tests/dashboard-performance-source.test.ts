@@ -33,7 +33,7 @@ describe('Dashboard first-paint performance contract',()=>{
     expect(visualEvidence).toContain('collapsed mobile Dashboard analytics');
     expect(visualEvidence).toContain("charts?.classList.contains('mobile-collapsed')");
     expect(visualEvidence).toContain("'.summary-donut .recharts-surface'");
-    expect(visualEvidence).toContain('deferred desktop Dashboard charts');
+    expect(visualEvidence).toContain('painted desktop Dashboard charts');
     expect(shellDashboard).toContain('waitForMobileDashboardAnalytics');
     expect(shellDashboard).toContain('summaryReady');
     expect(shellDashboard).toContain('flowReady');
