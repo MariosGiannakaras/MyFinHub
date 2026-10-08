@@ -101,3 +101,11 @@
   .mobile-more-menu{max-height:calc(100dvh - 86px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px))}
   .quick-modal{max-height:calc(92dvh - env(safe-area-inset-top,0px));border-radius:20px}
 }
+@media(max-width:420px){
+  .heading-actions>.secondary,
+  .heading-actions>.save-button{
+    flex:1 1 min(140px,100%);
+    min-width:min(140px,100%);
+    justify-content:center;
+  }
+}
