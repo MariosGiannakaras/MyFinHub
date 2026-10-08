@@ -13,6 +13,15 @@ describe('Dashboard hierarchy and painted-chart contracts',()=>{
     expect(css).toContain('.dashboard-approved .approved-kpi-strip article+article{border-left:1px solid #edf2f7}');
   });
 
+  it('keeps primary account ghost actions subordinate in Dark while preserving secondary-account controls',()=>{
+    const dark=read('src/styles/dark-theme-surfaces.css');
+    expect(dark).toContain('html[data-theme="dark"] .approved-account-actions button{');
+    expect(dark).toContain('background:transparent!important');
+    expect(dark).toContain('box-shadow:none!important');
+    expect(dark).toContain('html[data-theme="dark"] .approved-secondary-account button{');
+    expect(dark).toContain('background:var(--control-bg)!important');
+  });
+
   it('requires actual painted Dashboard chart shapes before focused visual evidence is accepted',()=>{
     const visual=read('scripts/ui-ux-visual-evidence-qa.mjs');
     const focused=read('scripts/shell-dashboard-hierarchy-qa.mjs');

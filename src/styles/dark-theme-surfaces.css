@@ -55,7 +55,12 @@ html[data-theme="dark"] .approved-secondary-account{
   }
   html[data-theme="dark"] .dashboard-approved .approved-kpi-strip article+article{border-left:1px solid var(--chart-grid)!important}
 }
-html[data-theme="dark"] .approved-account-actions button,
+html[data-theme="dark"] .approved-account-actions button{
+  background:transparent!important;
+  border-color:var(--control-border)!important;
+  color:var(--ink-2)!important;
+  box-shadow:none!important;
+}
 html[data-theme="dark"] .approved-secondary-account button{
   background:var(--control-bg)!important;
   border-color:var(--control-border)!important;
