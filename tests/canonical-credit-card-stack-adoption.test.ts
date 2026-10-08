@@ -36,10 +36,14 @@ describe('canonical credit-card stack adoption',()=>{
 
   it('keeps credit profile edits separate from encrypted card details',()=>{
     expect(credit).toContain('openCardProfile');
+    expect(credit).toContain('openCardDetails');
     expect(credit).toContain('saveCreditCardProfile');
-    expect(credit).toContain('Επεξεργασία κάρτας');
-    expect(credit).toContain('Ασφαλή στοιχεία');
     expect(credit).toContain('initialCard={profileCard} kindLock="credit"');
+    expect(credit).toContain('<CardDetailsDialog open={Boolean(detailsCard)}');
+    expect(credit).toContain('onEditCard={openCardProfile}');
+    expect(credit).toContain('onEditDetails={openCardDetails}');
+    expect(stack).toContain('Επεξεργασία κάρτας');
+    expect(stack).toContain('Ασφαλή στοιχεία');
   });
 
   it('bounds growing credit ledgers while preserving explicit progressive access',()=>{
