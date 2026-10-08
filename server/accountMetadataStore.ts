@@ -66,7 +66,7 @@ type StoredFinancialProviderAssetBindingRow={
   asset_key:string;
 };
 
-export type RecurringServiceAssetRow={
+type RecurringServiceAssetRow={
   assetKey:string;
   recurringId:string;
   url:string;

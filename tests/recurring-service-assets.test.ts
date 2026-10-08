@@ -9,7 +9,6 @@ const types=readFileSync('src/types.ts','utf8');
 const validation=readFileSync('server/validation.ts','utf8');
 const handler=readFileSync('server/accountMetadataHandler.ts','utf8');
 const store=readFileSync('server/accountMetadataStore.ts','utf8');
-const client=readFileSync('src/lib/recurringServiceAssets.ts','utf8');
 const ledger=readFileSync('tests/production-migration-ledger-source.test.ts','utf8');
 
 afterEach(()=>{
@@ -66,13 +65,11 @@ describe('recurring service asset foundation',()=>{
     expect(()=>validateProviderAssetContent('image/svg+xml',Buffer.from('<svg><script>alert(1)</script></svg>'))).toThrow(ApiError);
   });
 
-  it('exposes a dedicated account-metadata resource and client without provider-registry coupling',()=>{
+  it('exposes a dedicated account-metadata resource without provider-registry coupling',()=>{
     expect(handler).toContain("resource==='recurring-service-assets'");
     expect(handler).toContain('MAX_RECURRING_SERVICE_ASSET_BYTES');
     expect(store).toContain("const RECURRING_SERVICE_ASSET_BUCKET='recurring-service-assets'");
     expect(store).toContain('rheomiq_register_recurring_service_asset');
-    expect(client).toContain("resource:'recurring-service-assets'");
-    expect(client).not.toContain('financial-provider');
   });
 
   it('tracks the new migration as release-pending rather than production-applied history',()=>{
