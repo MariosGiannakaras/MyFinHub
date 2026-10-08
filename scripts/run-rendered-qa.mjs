@@ -26,6 +26,7 @@ const scripts=[
   {path:'scripts/desktop-titlebar-qa.mjs',key:'desktop-titlebar',surface:'desktop-titlebar',profiles:['/tmp/myfinhub-desktop-titlebar-qa-chrome']},
   {path:'scripts/desktop-host-visual-qa.mjs',key:'desktop-host-visual',surface:'desktop-host',profiles:['/tmp/myfinhub-desktop-host-visual-qa-chrome']},
   {path:'scripts/planning-forecast-qa.mjs',key:'planning-forecast',surface:'planning',profiles:['/tmp/myfinhub-planning-forecast-qa-chrome']},
+  {path:'scripts/savings-remediation-qa.mjs',key:'savings-remediation',surface:'savings',profiles:['/tmp/myfinhub-savings-remediation-qa-chrome']},
   {path:'scripts/action-center-context-qa.mjs',key:'action-center',surface:'action-center',profiles:['/tmp/myfinhub-action-center-context-qa-chrome']},
   {path:'scripts/budget-rules-qa.mjs',key:'budget-rules',surface:'budgets',profiles:['/tmp/myfinhub-budget-rules-qa-chrome']},
   {path:'scripts/settings-tabs-qa.mjs',key:'settings-tabs',surface:'settings',profiles:['/tmp/myfinhub-settings-tabs-qa-chrome']},
