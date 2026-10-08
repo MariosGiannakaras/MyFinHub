@@ -182,6 +182,14 @@ function buildQaData(params:URLSearchParams){
     next.seed.recurring=[];next.state.recurringOverrides={};
     next.state.recurringCustom=Array.from({length:9},(_,index):RecurringItem=>({id:`qa-recurring-rich-${index+1}`,name:`QA Πάγιο ${index+1}`,amount:12+(index*7),day:(index%24)+1,firstExpectedDate:`2026-08-${String((index%20)+1).padStart(2,'0')}`,endDate:index%3===0?'2027-08-01':null,accountId:'piraeus-payroll',category:categories[index%categories.length],active:true,status:'active',source:'qa',recurrenceUnit:index%4===0?'year':'month',recurrenceInterval:index%4===0?1:(index%3)+1}));
   }
+  if(params.get('state')==='recurring-branding'){
+    next.seed.recurring=[];next.state.recurringOverrides={};
+    next.state.recurringCustom=[
+      {id:'qa-service-branded',name:'QA Streaming',amount:14.99,day:18,firstExpectedDate:'2026-08-18',endDate:null,accountId:'piraeus-payroll',category:'Διασκέδαση',active:true,status:'active',source:'qa',recurrenceUnit:'month',recurrenceInterval:1,logoAssetKey:'service-asset-aaaaaaaaaaaaaaaaaaaaaaaa'},
+      {id:'qa-service-fallback',name:'QA Utility',amount:31.20,day:22,firstExpectedDate:'2026-08-22',endDate:null,accountId:'piraeus-payroll',category:'Σταθερά έξοδα',active:true,status:'active',source:'qa',recurrenceUnit:'month',recurrenceInterval:1},
+      {id:'qa-service-paused',name:'QA Paused Service',amount:7.50,day:8,firstExpectedDate:'2026-08-08',endDate:null,accountId:'piraeus-payroll',category:'Τηλεπικοινωνίες',active:false,status:'paused',source:'qa',recurrenceUnit:'month',recurrenceInterval:1,logoAssetKey:'service-asset-aaaaaaaaaaaaaaaaaaaaaaaa'},
+    ];
+  }
   if(params.get('state')==='forecast-negative')next.state.scheduled=[...(next.state.scheduled??[]),{id:'qa-negative-forecast',dueDate:'2026-08-18',kind:'expense',amount:3000,note:'Μεγάλη γνωστή υποχρέωση',category:'Σταθερά έξοδα',accountId:'piraeus-payroll',status:'pending',createdAt:'2026-08-10T10:00:00.000Z',updatedAt:'2026-08-10T10:00:00.000Z'}];
   if(params.get('state')==='budget-rules'){
     const stamp='2026-08-17T12:00:00.000Z';
