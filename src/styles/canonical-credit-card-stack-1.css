@@ -113,7 +113,8 @@
   pointer-events:auto;
 }
 
-#myfinhub-card-stack .stack-card.dragging{
+#myfinhub-card-stack .stack-card.dragging,
+#myfinhub-card-stack .stack-stage.dragging .stack-card{
   transition:none;
 }
 
