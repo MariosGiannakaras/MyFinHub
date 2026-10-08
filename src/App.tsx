@@ -22,7 +22,7 @@ import { accountBalances, allAccounts } from './lib/domain';
 import { withLegacyOverride, withLegacyTombstone } from './lib/legacyTransactions';
 import { deleteLocalCvv } from './lib/localCvvVault';
 import { reportingMonthForDate } from './lib/localDate';
-import { pageHash, resolveHashRoute } from './lib/routing';
+import { pageHash, resolveHashRoute, settingsHash, type SettingsTabId } from './lib/routing';
 import type { TaxonomyOperation } from './lib/taxonomyManagement';
 import { applyTransactionRules } from './lib/transactionRules';
 import type {
@@ -77,6 +77,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   const today = useLocalDate();
   const initialRoute = routeFromLocation();
   const [page, setPage] = useState<PageId>(initialRoute.page);
+  const [settingsTab,setSettingsTab]=useState<SettingsTabId>(initialRoute.settingsTab??'general');
   const [notFound, setNotFound] = useState(initialRoute.notFound);
   const [quickOpen, setQuickOpen] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
@@ -95,10 +96,16 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
     }
     setNotFound(false);
     setPage(next);
+    if(next==='settings')setSettingsTab('general');
+  };
+  const navigateSettingsTab=(tab:SettingsTabId)=>{
+    const hash=settingsHash(tab);
+    if(location.hash!==hash)history.pushState(null,'',hash);
+    setNotFound(false);setPage('settings');setSettingsTab(tab);
   };
 
   useEffect(() => {
-    const sync = () => { const next = routeFromLocation(); setPage(next.page); setNotFound(next.notFound); };
+    const sync = () => { const next = routeFromLocation(); setPage(next.page); setSettingsTab(next.settingsTab??'general'); setNotFound(next.notFound); };
     window.addEventListener('hashchange', sync);
     window.addEventListener('popstate', sync);
     return () => { window.removeEventListener('hashchange', sync); window.removeEventListener('popstate', sync); };
@@ -202,7 +209,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   });
   const upsertBudget=(budget:MonthlyBudget)=>finance.update(current=>{const rows=current.state.budgets??[];const exists=rows.some(item=>item.id===budget.id);return {...current,state:{...current.state,budgets:exists?rows.map(item=>item.id===budget.id?budget:item):[...rows,budget]}}});
   const deleteBudget=(id:string)=>finance.update(current=>({...current,state:{...current.state,budgets:(current.state.budgets??[]).filter(item=>item.id!==id)}}));
-  const updateSavingsTarget=(rate:number)=>finance.update(current=>({...current,state:{...current.state,settings:{...current.state.settings,savingsTargetRate:rate,motion:'full'}}}));
+  const updateSavingsTarget=(rate:number)=>finance.update(current=>({...current,state:{...current.state,settings:{...current.state.settings,savingsTargetRate:rate}}}));
   const upsertSavingsGoal=(goal:SavingsGoal)=>finance.update(current=>{const rows=current.state.savingsGoals??[];const exists=rows.some(item=>item.id===goal.id);return {...current,state:{...current.state,savingsGoals:exists?rows.map(item=>item.id===goal.id?goal:item):[...rows,goal]}}});
   const deleteSavingsGoal=(id:string)=>finance.update(current=>({...current,state:{...current.state,savingsGoals:(current.state.savingsGoals??[]).filter(item=>item.id!==id)}}));
   const upsertRule=(rule:TransactionRule)=>finance.update(current=>{const rows=current.state.transactionRules??[];const exists=rows.some(item=>item.id===rule.id);return {...current,state:{...current.state,transactionRules:exists?rows.map(item=>item.id===rule.id?rule:item):[...rows,rule]}}});
@@ -257,7 +264,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
     : page === 'planning' ? <PlanningPage data={data} asOf={today} onUpsertScheduled={upsertScheduled} onCompleteScheduled={completeScheduled}/>
     : page === 'attention' ? <AttentionPage data={data} asOf={today} onAction={handleAttention} onDecision={decideAttention} onReviewDecision={decide}/>
     : page === 'reports' ? <ReportsPage data={data} month={month} privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onUpsertBudget={upsertBudget} onDeleteBudget={deleteBudget} onUpsertRule={upsertRule} onDeleteRule={deleteRule}/>
-    : <SettingsPage data={data} asOf={today} filePath={finance.filePath} lastSavedAt={finance.lastSavedAt} onImport={finance.importData} onBackup={finance.createBackup} onSettings={(settings) => finance.update((current) => ({ ...current, state: { ...current.state, settings: { ...settings, motion: 'full' } } }))} onTaxonomyOperation={updateTaxonomy} onUpsertRule={upsertRule} onDeleteRule={deleteRule}/>;
+    : <SettingsPage data={data} asOf={today} filePath={finance.filePath} lastSavedAt={finance.lastSavedAt} activeTab={settingsTab} onActiveTabChange={navigateSettingsTab} onImport={finance.importData} onBackup={finance.createBackup} onSettings={(settings) => finance.update((current) => ({ ...current, state: { ...current.state, settings } }))} onTaxonomyOperation={updateTaxonomy} onUpsertRule={upsertRule} onDeleteRule={deleteRule}/>;
 
   return <>
     <AppShell page={page} onPage={navigate} onQuickAdd={() => openGeneric('expense')} onCommand={openCommand} onRefresh={() => { void finance.reload(); }} onUndo={() => { finance.undo(); }} onRedo={() => { finance.redo(); }} canUndo={finance.canUndo} canRedo={finance.canRedo} history={finance.changeHistory} saveState={finance.saveState} filePath={finance.filePath} motionMode="full" userEmail={userEmail} onLogout={onLogout}>
@@ -267,7 +274,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
     </AppShell>
     {commandOpen ? <Suspense fallback={null}><CommandPalette open={commandOpen} data={data} motionMode="full" onClose={()=>setCommandOpen(false)} onExecute={handleCommand}/></Suspense> : null}
     {quickOpen ? <Suspense fallback={null}><ContextualQuickAdd open={quickOpen} data={data} asOf={today} context={quickContext} motionMode="full" initial={(data.state.events ?? []).find((event) => event.id === editingEventId) || null} onClose={() => { setQuickOpen(false); setEditingEventId(null); setQuickContext(null); }} onCreate={addEvent} onCompleteScheduled={completeScheduled} currentBalance={balance}/></Suspense> : null}
-    {recoverOpen ? <Suspense fallback={null}><ConfirmDialog open title="Φόρτωση τελευταίας αποθηκευμένης έκδοσης;" description="Η επαναφόρτωση θα απορρίψει τυχόν τοπικές αλλαγές που δεν αποθηκεύτηκαν και θα φορτώσει την τελευταία έκδοση από τη βάση." confirmLabel="Επαναφόρτωση" tone="destructive" motionMode={data.state.settings.motion} onConfirm={confirmRecover} onCancel={()=>setRecoverOpen(false)}/></Suspense> : null}
+    {recoverOpen ? <Suspense fallback={null}><ConfirmDialog open title="Φόρτωση τελευταίας αποθηκευμένης έκδοσης;" description="Η επαναφόρτωση θα απορρίψει τυχόν τοπικές αλλαγές που δεν αποθηκεύτηκαν και θα φορτώσει την τελευταία έκδοση από τη βάση." confirmLabel="Επαναφόρτωση" tone="destructive" motionMode="full" onConfirm={confirmRecover} onCancel={()=>setRecoverOpen(false)}/></Suspense> : null}
   </>;
 }
 
