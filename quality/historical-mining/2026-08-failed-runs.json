@@ -1,0 +1,462 @@
+{
+  "schemaVersion": 1,
+  "month": "2026-08",
+  "source": "GitHub Actions REST /actions/runs?status=failure&created=2026-08-01..2026-08-31",
+  "retrievedAt": "2026-10-08",
+  "reportedTotal": 859,
+  "retrieved": 859,
+  "completeness": "complete_for_query",
+  "limitations": "Failed workflow runs are not distinct bugs. Job logs and deleted workflow runs may be unavailable.",
+  "errors": [],
+  "uniqueHeadShas": 581,
+  "byWorkflow": [
+    {
+      "name": "CI",
+      "count": 472
+    },
+    {
+      "name": "Visual QA Snapshots",
+      "count": 123
+    },
+    {
+      "name": "Windows Desktop",
+      "count": 83
+    },
+    {
+      "name": "Performance smoke",
+      "count": 65
+    },
+    {
+      "name": "Cross-engine smoke",
+      "count": 33
+    },
+    {
+      "name": "Windows Clean Launch",
+      "count": 18
+    },
+    {
+      "name": "CodeQL",
+      "count": 12
+    },
+    {
+      "name": ".github/workflows/.tmp-ux-foundations-bootstrap.yml",
+      "count": 10
+    },
+    {
+      "name": "Issue 298 non-visual validation",
+      "count": 9
+    },
+    {
+      "name": "Release Vault Key Bootstrap",
+      "count": 6
+    },
+    {
+      "name": ".github/workflows/patch-202-preserve-v121-once.yml",
+      "count": 3
+    },
+    {
+      "name": "Windows First Run",
+      "count": 3
+    },
+    {
+      "name": ".github/workflows/issue-298-reference-alignment.yml",
+      "count": 2
+    },
+    {
+      "name": "Issue 298 result capture",
+      "count": 2
+    },
+    {
+      "name": "Release 206 v1.2.1 Verifier",
+      "count": 2
+    },
+    {
+      "name": ".github/workflows/release-206-docs-helper.yml",
+      "count": 2
+    },
+    {
+      "name": "Temporary UX Browser QA Apply",
+      "count": 2
+    },
+    {
+      "name": "Issue 298 reference alignment",
+      "count": 1
+    },
+    {
+      "name": ".github/workflows/ci.yml",
+      "count": 1
+    },
+    {
+      "name": ".github/workflows/patch-202-v121-regressions-once.yml",
+      "count": 1
+    },
+    {
+      "name": ".github/workflows/desktop-first-run.yml",
+      "count": 1
+    },
+    {
+      "name": "OCR Quick Entry wiring",
+      "count": 1
+    },
+    {
+      "name": "Temporary UX Modal Copy Apply",
+      "count": 1
+    },
+    {
+      "name": "Temporary UX Batch Apply",
+      "count": 1
+    },
+    {
+      "name": ".github/workflows/.tmp-v102-release-diagnostic.yml",
+      "count": 1
+    },
+    {
+      "name": "Temporary v1.0.2 Release Diagnostic",
+      "count": 1
+    },
+    {
+      "name": "Temporary v1.0.2 Release Verification",
+      "count": 1
+    },
+    {
+      "name": "One-shot MyFinHub v1.0.1 release verification",
+      "count": 1
+    },
+    {
+      "name": "Production Smoke",
+      "count": 1
+    }
+  ],
+  "byDay": [
+    {
+      "name": "2026-08-26",
+      "count": 195
+    },
+    {
+      "name": "2026-08-24",
+      "count": 150
+    },
+    {
+      "name": "2026-08-23",
+      "count": 106
+    },
+    {
+      "name": "2026-08-21",
+      "count": 82
+    },
+    {
+      "name": "2026-08-20",
+      "count": 81
+    },
+    {
+      "name": "2026-08-22",
+      "count": 55
+    },
+    {
+      "name": "2026-08-19",
+      "count": 43
+    },
+    {
+      "name": "2026-08-31",
+      "count": 41
+    },
+    {
+      "name": "2026-08-18",
+      "count": 37
+    },
+    {
+      "name": "2026-08-17",
+      "count": 27
+    },
+    {
+      "name": "2026-08-25",
+      "count": 20
+    },
+    {
+      "name": "2026-08-27",
+      "count": 13
+    },
+    {
+      "name": "2026-08-28",
+      "count": 9
+    }
+  ],
+  "topBranches": [
+    {
+      "name": "ui/300-dashboard-approved-target",
+      "count": 161
+    },
+    {
+      "name": "feat/ui-ux-hardening-batch",
+      "count": 76
+    },
+    {
+      "name": "feat/241-canonical-credit-card-stack",
+      "count": 38
+    },
+    {
+      "name": "feat/237-shell-dashboard-hierarchy",
+      "count": 36
+    },
+    {
+      "name": "feat/305-transactions-approved-target",
+      "count": 33
+    },
+    {
+      "name": "issue-298-dashboard-redesign",
+      "count": 27
+    },
+    {
+      "name": "feat/232-credit-statements",
+      "count": 25
+    },
+    {
+      "name": "ui/300-dashboard-fidelity-pass-2",
+      "count": 23
+    },
+    {
+      "name": "fix/185-ux-polish",
+      "count": 22
+    },
+    {
+      "name": "feat/238-transactions-scanability",
+      "count": 21
+    },
+    {
+      "name": "feat/242-account-iban-metadata",
+      "count": 18
+    },
+    {
+      "name": "develop",
+      "count": 17
+    },
+    {
+      "name": "fix/202-windows-first-run-diagnostics",
+      "count": 16
+    },
+    {
+      "name": "feat/254-semantic-light-dark-theme",
+      "count": 15
+    },
+    {
+      "name": "feat/category-budgets-transaction-rules",
+      "count": 15
+    },
+    {
+      "name": "feat/action-center-contextual-quick-add",
+      "count": 15
+    },
+    {
+      "name": "main",
+      "count": 15
+    },
+    {
+      "name": "feat/138-windows-installer-updater",
+      "count": 15
+    },
+    {
+      "name": "feat/229-legacy-transaction-overrides",
+      "count": 14
+    },
+    {
+      "name": "feat/233-direct-taxonomy-management",
+      "count": 14
+    },
+    {
+      "name": "fix/final-ux-reconciliation",
+      "count": 14
+    },
+    {
+      "name": "chore/296-desktop-redesign-bootstrap",
+      "count": 13
+    },
+    {
+      "name": "feat/234-advanced-automations",
+      "count": 13
+    },
+    {
+      "name": "feat/188-local-receipt-ocr",
+      "count": 12
+    },
+    {
+      "name": "feat/134-card-ui-shared-credit",
+      "count": 10
+    },
+    {
+      "name": "refactor/236-primitives-adoption",
+      "count": 9
+    },
+    {
+      "name": "feat/227-authoritative-splits",
+      "count": 9
+    },
+    {
+      "name": "feat/unified-search-command-palette",
+      "count": 9
+    },
+    {
+      "name": "fix/42-frontend-audit-remediation",
+      "count": 9
+    },
+    {
+      "name": "chore/release-readiness-automation",
+      "count": 8
+    }
+  ],
+  "byEvent": [
+    {
+      "name": "pull_request",
+      "count": 662
+    },
+    {
+      "name": "push",
+      "count": 196
+    },
+    {
+      "name": "deployment_status",
+      "count": 1
+    }
+  ],
+  "examples": [
+    {
+      "id": 31996713321,
+      "workflow": "CI",
+      "branch": "main",
+      "date": "2026-08-17",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/31996713321"
+    },
+    {
+      "id": 32130127644,
+      "workflow": "CI",
+      "branch": "test/106-responsive-mobile-qa",
+      "date": "2026-08-18",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/32130127644"
+    },
+    {
+      "id": 32274578426,
+      "workflow": "CI",
+      "branch": "feat/138-windows-installer-updater",
+      "date": "2026-08-19",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/32274578426"
+    },
+    {
+      "id": 32355470342,
+      "workflow": "CI",
+      "branch": "feat/ui-ux-hardening-batch",
+      "date": "2026-08-20",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/32355470342"
+    },
+    {
+      "id": 32404509084,
+      "workflow": "CI",
+      "branch": "feat/ui-ux-hardening-batch",
+      "date": "2026-08-20",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/32404509084"
+    },
+    {
+      "id": 32484551953,
+      "workflow": "CI",
+      "branch": "feat/category-budgets-transaction-rules",
+      "date": "2026-08-21",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/32484551953"
+    },
+    {
+      "id": 32542086899,
+      "workflow": "CI",
+      "branch": "fix/185-ux-polish",
+      "date": "2026-08-22",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/32542086899"
+    },
+    {
+      "id": 32587430041,
+      "workflow": ".github/workflows/release-206-docs-helper.yml",
+      "branch": "release/206-v1.2.1",
+      "date": "2026-08-22",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/32587430041"
+    },
+    {
+      "id": 32644407054,
+      "workflow": "CI",
+      "branch": "feat/233-direct-taxonomy-management",
+      "date": "2026-08-23",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/32644407054"
+    },
+    {
+      "id": 32667844675,
+      "workflow": "CI",
+      "branch": "feat/241-canonical-credit-card-stack",
+      "date": "2026-08-23",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/32667844675"
+    },
+    {
+      "id": 32694407854,
+      "workflow": "Windows Clean Launch",
+      "branch": "feat/237-shell-dashboard-hierarchy",
+      "date": "2026-08-24",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/32694407854"
+    },
+    {
+      "id": 32716023680,
+      "workflow": "CI",
+      "branch": "feat/239-obligation-lifecycle-hierarchy",
+      "date": "2026-08-24",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/32716023680"
+    },
+    {
+      "id": 32741888016,
+      "workflow": "CI",
+      "branch": "feat/254-semantic-light-dark-theme",
+      "date": "2026-08-24",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/32741888016"
+    },
+    {
+      "id": 32817160394,
+      "workflow": "CI",
+      "branch": "feat/228-durable-undo-redo-final",
+      "date": "2026-08-25",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/32817160394"
+    },
+    {
+      "id": 32952142924,
+      "workflow": ".github/workflows/issue-298-reference-alignment.yml",
+      "branch": "issue-298-dashboard-redesign",
+      "date": "2026-08-26",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/32952142924"
+    },
+    {
+      "id": 32969181656,
+      "workflow": "Cross-engine smoke",
+      "branch": "ui/300-dashboard-approved-target",
+      "date": "2026-08-26",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/32969181656"
+    },
+    {
+      "id": 32983339588,
+      "workflow": "CI",
+      "branch": "ui/300-dashboard-approved-target",
+      "date": "2026-08-26",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/32983339588"
+    },
+    {
+      "id": 33005586190,
+      "workflow": "Visual QA Snapshots",
+      "branch": "ui/300-dashboard-approved-target",
+      "date": "2026-08-26",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/33005586190"
+    },
+    {
+      "id": 33144418311,
+      "workflow": "Windows Desktop",
+      "branch": "ui/300-dashboard-fidelity-pass-2",
+      "date": "2026-08-28",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/33144418311"
+    },
+    {
+      "id": 33398080188,
+      "workflow": "Performance smoke",
+      "branch": "feat/305-transactions-approved-target",
+      "date": "2026-08-31",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/33398080188"
+    }
+  ]
+}

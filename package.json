@@ -41,7 +41,8 @@
     "qa:migration-recovery": "tsx scripts/migration-recovery-e2e.ts",
     "maintenance:check": "node --check scripts/dependency-health.mjs && npm run defects:check",
     "defects:check": "node scripts/defect-preflight.mjs --check-registry",
-    "defects:preflight": "node scripts/defect-preflight.mjs"
+    "defects:preflight": "node scripts/defect-preflight.mjs",
+    "defects:mine": "node scripts/historical-defect-miner.mjs"
   },
   "dependencies": {
     "@tesseract.js-data/ell": "1.0.0",
