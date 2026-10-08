@@ -4,6 +4,7 @@ import { parseRecurringServiceAsset } from '../src/lib/recurringServiceAssetClie
 
 const client=readFileSync('src/lib/recurringServiceAssetClient.ts','utf8');
 const component=readFileSync('src/components/RecurringBrandMark.tsx','utf8');
+const hook=readFileSync('src/hooks/useRecurringServiceAssets.ts','utf8');
 const css=readFileSync('src/styles/recurring-brand-mark.css','utf8');
 const urlGuard=readFileSync('src/lib/providerAssetUrl.ts','utf8');
 
@@ -53,6 +54,13 @@ describe('recurring service brand client and shared renderer',()=>{
     expect(css).toContain('object-fit:contain');
     expect(css).toContain('background:var(--surface-2)');
     expect(css).toContain('overflow:hidden');
+  });
+
+  it('does not fetch service assets for no-logo recurring items',()=>{
+    expect(component).toContain('const assetKey=item.logoAssetKey?.trim()||null');
+    expect(component).toContain('useRecurringServiceAssets(Boolean(assetKey))');
+    expect(hook).toContain('export function useRecurringServiceAssets(enabled=true)');
+    expect(hook).toContain('if(enabled&&!snapshot.loaded&&!snapshot.loading)');
   });
 
   it('generalizes the existing HTTPS/local asset URL guard without breaking provider callers',()=>{
