@@ -48,7 +48,7 @@ try{
   for(const width of [1920,2560]){await viewport(width,1200);await navigate('lending-rich');current=await state();assert(current.personCount>=5,'rich fixture renders multiple people');assert(current.layout.width<=1501&&current.people.width<=381&&current.detail.width>700&&current.table.width<=1121&&current.overflow<=1,`${width}px master/detail and history remain bounded without page overflow`);await shot(`lending-rich-hidden-${width}`)}
 
   console.log('Lending remediation QA: dark privacy parity');
-  await viewport(1440,1000);await setTheme('dark');await navigate('lending-rich');current=await state();
+  await viewport(1440,1000);await navigate('lending-rich');await setTheme('dark');assert(await c.call("function(){return document.documentElement.dataset.theme==='dark'}"),'dark theme remains active after Lending navigation');current=await state();
   assert(current.rowAvatarText.every(text=>text==='')&&current.selectedAvatarText===''&&current.hiddenNames>=2,'dark privacy-hidden state masks all identity decoration');
   await shot('lending-hidden-dark-1440');
   await togglePrivacy();current=await state();
