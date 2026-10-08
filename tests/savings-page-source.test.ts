@@ -58,6 +58,17 @@ describe('Savings page action hierarchy',()=>{
     expect(source).toContain("selectedMonthIsCurrent?'ΑΥΤΟΣ Ο ΜΗΝΑΣ':selectedMonthLabel.toLocaleUpperCase('el-GR')");
   });
 
+  it('uses the selected reporting-period end for balances and personal-goal progress',()=>{
+    expect(source).toContain("import { reportingPeriodEndDate } from '../lib/reportingPeriod'");
+    expect(source).toContain('const periodEndDate=reportingPeriodEndDate(month,asOf)');
+    expect(source).toContain('const balances=accountBalances(data,periodEndDate)');
+    expect(source).toContain('const savingsBalance=savingsGoalBalance(data,periodEndDate)');
+    expect(source).not.toContain('accountBalances(data,asOf)');
+    expect(source).not.toContain('savingsGoalBalance(data,asOf)');
+    expect(source).toContain("setDate(asOf)");
+    expect(source).toContain("if(goalEdit.targetDate&&goalEdit.targetDate<asOf)");
+  });
+
   it('renders a real no-goal empty state and makes shared-pool semantics explicit',()=>{
     expect(source).toContain('className="empty-state savings-goals-empty"');
     expect(source).toContain('Το κοινό υπόλοιπο αποταμίευσης είναι {money.format(savingsBalance)}');
