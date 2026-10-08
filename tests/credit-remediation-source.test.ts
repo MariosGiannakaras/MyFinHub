@@ -41,6 +41,7 @@ describe('Credit post-v1.4 remediation contracts',()=>{
     expect(stack).toContain('Σύρε κάθετα για αλλαγή κάρτας');
     expect(stackTwo).toContain('width:min(100%,280px)');
     expect(stackTwo).toContain('overflow-x:auto');
+    expect(stackTwo).toContain('flex:0 0 auto');
     expect(stackTwo).toContain('.stack-drag-hint');
   });
 
