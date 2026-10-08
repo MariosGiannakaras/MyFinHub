@@ -19,6 +19,7 @@ describe('Recurring post-v1.4 remediation contracts',()=>{
   it('keeps Payment primary while management/navigation controls stay secondary',()=>{
     expect(page).toContain('className="pay-action"');
     expect(page).toContain('variant="primary"');
+    expect(page.match(/variant="quiet"/g)?.length).toBeGreaterThanOrEqual(5);
     expect(css).toContain('.recurring-actions .pay-action');
     expect(css).toContain('background:var(--accent-gradient)');
     expect(css).toContain('color:var(--on-accent)');

@@ -34,7 +34,8 @@ try{
   console.log('Recurring remediation QA: dark hierarchy');
   await c.call("async function(){localStorage.setItem('myfinhub.theme','dark');const mod=await import('/src/lib/theme.ts');mod.applyThemePreference('dark');await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));return document.documentElement.dataset.theme}");
   await viewport(1440,1100);await navigate();const dark=await state();
-  assert(dark.helperSize>=10&&dark.payBg!==dark.manageBg&&dark.overflow<=1,'dark recurring hierarchy/readability remains intact');
+  const darkTransparent=value=>['rgba(0, 0, 0, 0)','transparent'].includes(value);const darkPayEmphasized=(dark.payImage&&dark.payImage!=='none')||dark.payShadow!=='none'||dark.payBg!==dark.manageBg||dark.payBorder!==dark.manageBorder;const darkManageQuiet=darkTransparent(dark.manageBg)&&(!dark.manageImage||dark.manageImage==='none')&&dark.manageShadow==='none';
+  assert(dark.helperSize>=10&&darkPayEmphasized&&darkManageQuiet&&dark.overflow<=1,'dark recurring hierarchy/readability remains intact');
   await shot('recurring-remediation-dark-1440');
 
   c.close();console.log(`Recurring remediation QA passed. Evidence: ${evidenceDir}`);
