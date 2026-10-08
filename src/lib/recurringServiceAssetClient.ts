@@ -1,5 +1,5 @@
-import { apiRequest } from './api';
-import { publicAssetUrlAllowed } from './providerAssetUrl';
+import { apiRequest } from './api.js';
+import { publicAssetUrlAllowed } from './providerAssetUrl.js';
 
 export interface RecurringServiceAsset{
   assetKey:string;
