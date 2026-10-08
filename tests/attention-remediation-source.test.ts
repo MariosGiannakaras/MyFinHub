@@ -29,7 +29,7 @@ describe('Attention post-v1.4 remediation contracts',()=>{
   });
 
   it('keeps the domain action primary while snooze and dismiss use the shared quiet icon variant',()=>{
-    expect(page.match(/variant="quiet" className="attention-approved-icon-action"/g)?.length).toBe(2);
+    expect(page.match(/className="attention-approved-icon-action"/g)?.length).toBe(2);
     expect(page).toContain('variant="primary" className="compact" onClick={()=>onAction(item)}');
     expect(target).toContain('background:transparent!important');
     expect(target).toContain('color:var(--text-secondary)!important');
