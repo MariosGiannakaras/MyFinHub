@@ -58,7 +58,7 @@
     --dashboard-caption-size:var(--ux-dense-data-size);
   }
   .dashboard-approved .approved-primary-grid{gap:clamp(12px,.85vw,20px)!important}
-  .dashboard-approved .approved-secondary-panel{background:transparent;border-color:transparent;box-shadow:none;padding-left:0;padding-right:0}
+  .dashboard-approved .approved-secondary-panel{background:transparent;border:0;box-shadow:none;padding-left:0;padding-right:0}
   .dashboard-approved .approved-secondary-grid{gap:clamp(8px,.55vw,13px)}
   .dashboard-approved .approved-kpi-strip{gap:0;border:1px solid #e4edf6;border-radius:12px;background:#fff;box-shadow:0 2px 8px rgba(31,61,98,.035);padding:5px 6px;overflow:hidden}
   .dashboard-approved .approved-kpi-strip article{height:64px;border:0;border-radius:0;background:transparent;box-shadow:none;padding:7px 12px}
