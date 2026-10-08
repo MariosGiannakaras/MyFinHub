@@ -61,7 +61,7 @@ describe('theme architecture source contract',()=>{
     expect(reportsStyles).toContain('background:var(--success-bg)');
     expect(reportsStyles).toContain('background:var(--warning-bg)');
     expect(reportsStyles).toContain('background:var(--error-bg)');
-    expect(rendered).toContain('dark Reports period chip is a dark surface');
+    expect(rendered).toContain('dark Reports executive picture is a dark semantic surface');
   });
 
   it('registers a dedicated rendered Light Dark matrix',()=>{
