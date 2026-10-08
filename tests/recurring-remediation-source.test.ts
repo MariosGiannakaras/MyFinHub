@@ -20,12 +20,9 @@ describe('Recurring post-v1.4 remediation contracts',()=>{
     expect(page).toContain('className="pay-action"');
     expect(page).toContain('variant="primary"');
     expect(page.match(/<IconButton type="button" aria-label=/g)?.length).toBeGreaterThanOrEqual(5);
-    expect(css).toContain('.recurring-workspace-table .recurring-actions button{--control-gradient:transparent;--control-border:transparent;--ink:var(--text-secondary);--shadow-soft:none;');
-    expect(css).toContain('.recurring-actions .pay-action');
-    expect(css).toContain('--control-gradient:var(--accent-gradient)');
-    expect(css).toContain('--ink:var(--on-accent)');
-    expect(css).toContain('background:var(--accent-gradient)');
-    expect(css).toContain('color:var(--on-accent)');
+    expect(css).toContain('.recurring-workspace-table .recurring-actions button:not(.save-button){--control-gradient:transparent;--control-border:transparent;--ink:var(--text-secondary);--shadow-soft:none;');
+    expect(css).toContain('.recurring-actions .pay-action{min-width:84px;min-height:38px');
+    expect(css).not.toContain('.recurring-actions .pay-action{--control-gradient:');
     expect(css).toContain('.linked-loan-open{color:var(--text-secondary)}');
   });
 
