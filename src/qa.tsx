@@ -177,6 +177,18 @@ function buildQaData(params:URLSearchParams){
     }))];
   }
   if(params.get('state')==='overlimit')next.state.cards=(next.state.cards??[]).map(card=>card.kind==='credit'?{...card,creditLimit:100}:card);
+  if(params.get('state')==='lending-rich'){
+    const people=['Άννα Παπαδοπούλου','Γιώργος Νικολάου','Ελένη Δημητρίου','Νίκος Κωνσταντίνου','Μαρία Αντωνίου'];
+    const additions=people.flatMap((person,index)=>{
+      const lent=createEvent({kind:'lending',date:`2026-08-${String(6+index).padStart(2,'0')}`,amount:80+(index*25),note:`QA δανεικά ${index+1}`,accountId:'piraeus-payroll',person});
+      lent.id=`qa-lending-rich-${index}-lent`;lent.createdAt=`2026-08-${String(6+index).padStart(2,'0')}T10:00:00.000Z`;lent.updatedAt=lent.createdAt;
+      if(index>1)return [lent];
+      const repaid=createEvent({kind:'repayment',date:`2026-08-${String(13+index).padStart(2,'0')}`,amount:20+(index*10),note:`QA επιστροφή ${index+1}`,accountId:'piraeus-payroll',person});
+      repaid.id=`qa-lending-rich-${index}-repaid`;repaid.createdAt=`2026-08-${String(13+index).padStart(2,'0')}T10:00:00.000Z`;repaid.updatedAt=repaid.createdAt;
+      return [lent,repaid];
+    });
+    next.state.events=[...(next.state.events??[]),...additions];
+  }
   if(params.get('state')==='forecast-negative')next.state.scheduled=[...(next.state.scheduled??[]),{id:'qa-negative-forecast',dueDate:'2026-08-18',kind:'expense',amount:3000,note:'Μεγάλη γνωστή υποχρέωση',category:'Σταθερά έξοδα',accountId:'piraeus-payroll',status:'pending',createdAt:'2026-08-10T10:00:00.000Z',updatedAt:'2026-08-10T10:00:00.000Z'}];
   if(params.get('state')==='budget-rules'){
     const stamp='2026-08-17T12:00:00.000Z';
