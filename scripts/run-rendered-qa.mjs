@@ -17,6 +17,7 @@ const scripts=[
   {path:'scripts/ui-ux-runtime-qa.mjs',key:'ui-runtime',surface:'runtime',profiles:['/tmp/myfinhub-ui-runtime-qa-chrome']},
   {path:'scripts/ui-ux-credit-overlimit-qa.mjs',key:'credit-overlimit',surface:'credit',profiles:['/tmp/myfinhub-credit-overlimit-qa-chrome']},
   {path:'scripts/recurring-remediation-qa.mjs',key:'recurring-remediation',surface:'recurring',profiles:['/tmp/myfinhub-recurring-remediation-qa-chrome']},
+  {path:'scripts/recurring-service-brand-qa.mjs',key:'recurring-service-brand',surface:'recurring-branding',profiles:['/tmp/myfinhub-recurring-service-brand-qa-chrome']},
   {path:'scripts/credit-statements-qa.mjs',key:'credit-statements',surface:'credit',profiles:['/tmp/myfinhub-credit-statements-qa-chrome']},
   {path:'scripts/refresh-route-qa.mjs',key:'refresh-route',surface:'navigation',profiles:['/tmp/myfinhub-refresh-route-qa-chrome']},
   {path:'scripts/recovered-surface-qa.mjs',key:'recovered-surface',surface:'recovery',profiles:['/tmp/myfinhub-recovered-surface-qa-chrome']},
