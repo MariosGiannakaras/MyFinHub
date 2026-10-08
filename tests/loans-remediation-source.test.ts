@@ -23,6 +23,7 @@ describe('Loans post-v1.4 remediation contracts',()=>{
   it('raises secondary contrast while keeping zero completed history subordinate',()=>{
     expect(css).toContain('color:var(--text-secondary)');
     expect(css).toContain('.loan-history.is-empty{min-height:52px');
+    expect(css).toContain('.loan-history.is-empty>summary{min-height:50px;margin-bottom:0}');
     expect(css).toContain('.loan-history.is-empty>summary b{display:none}');
     expect(page).toContain("loan-history ${completedLoans.length?'':'is-empty'}");
   });
