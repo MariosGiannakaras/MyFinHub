@@ -50,7 +50,7 @@
 .report-budget-overview.is-empty>.panel-head{grid-column:1/-1;margin-bottom:-2px}
 .report-budget-overview.is-empty .report-budget-empty{min-height:0;padding:4px 0;background:transparent;border:0;box-shadow:none}
 .report-budget-overview.is-empty .report-budget-management{align-self:center;border-top:0;padding-top:0}
-.report-budget-overview.is-empty .report-budget-management>summary{min-height:36px;display:flex;align-items:center;padding:0 10px;border:1px solid var(--control-border);border-radius:9px;background:var(--control-bg)}
+.report-budget-overview.is-empty .report-budget-management>summary{min-height:44px;display:flex;align-items:center;padding:0 10px;border:1px solid var(--control-border);border-radius:9px;background:var(--control-bg)}
 .report-budget-overview.is-empty .report-budget-management[open]{grid-column:1/-1;width:100%}
 
 .report-support-grid{display:grid;gap:10px;align-items:stretch;scroll-margin-top:72px}.report-support-grid-four{grid-template-columns:repeat(4,minmax(0,1fr))}.report-support-grid>.panel,.report-support-grid>aside{margin:0;min-width:0;padding:13px;scroll-margin-top:72px;background:var(--surface-2);border-color:var(--border-subtle);box-shadow:none}.report-support-grid .panel-head{margin-bottom:7px}.report-support-grid .panel-head span{font-size:.8rem}.report-support-grid .panel-head small{}
