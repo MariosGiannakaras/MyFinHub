@@ -8,7 +8,7 @@
 
   .attention-approved-summary-card{min-height:86px;padding-block:10px}
   .attention-approved-summary-card small{font-size:9.4px}
-  .attention-approved-summary-card em{font-size:8.2px}
+  .attention-approved-summary-card em{font-size:var(--ux-dense-label-size)}
 
   .attention-approved-group-head{min-height:60px;padding-block:8px}
   .attention-approved-group-title h2{font-size:var(--ux-dense-data-size)}
