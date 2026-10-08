@@ -3,6 +3,7 @@ import { ApiError, copyBoundedBinaryValue } from './http.js';
 import { fetchUpstream } from './upstream.js';
 
 export const MAX_PROVIDER_ASSET_BYTES=2*1024*1024;
+export const MAX_RECURRING_SERVICE_ASSET_BYTES=MAX_PROVIDER_ASSET_BYTES;
 
 type AccountMetadataRow={accountId:string;iban:string|null;revision:number;updatedAt:string};
 type FinancialProviderAssetRow={
@@ -65,6 +66,28 @@ type StoredFinancialProviderAssetBindingRow={
   asset_key:string;
 };
 
+export type RecurringServiceAssetRow={
+  assetKey:string;
+  recurringId:string;
+  url:string;
+  fileName:string;
+  mimeType:string;
+  sizeBytes:number;
+  updatedAt:string;
+};
+type StoredRecurringServiceAssetRow={
+  asset_key:string;
+  recurring_id:string;
+  file_name:string;
+  mime_type:string;
+  storage_bucket:string|null;
+  storage_path:string|null;
+  size_bytes:number;
+  updated_at:string;
+  active:boolean;
+};
+type StoredPublicAssetRow={storage_bucket:string|null;storage_path:string|null;updated_at:string};
+
 function config(accessToken:string){
   const url=process.env.SUPABASE_URL?.replace(/\/$/,'');
   const apiKey=process.env.SUPABASE_PUBLISHABLE_KEY;
@@ -85,7 +108,10 @@ async function request(path:string,init:RequestInit,accessToken:string){
     if(response.status===403||/42501|FORBIDDEN/i.test(marker))throw new ApiError(403,'FORBIDDEN','Access denied.');
     if(/40001|REVISION_CONFLICT/i.test(marker))throw new ApiError(409,'REVISION_CONFLICT','Account metadata changed on another client. Reload and try again.');
     if(/23505|PROVIDER_ID_CONFLICT/i.test(marker))throw new ApiError(409,'PROVIDER_ID_CONFLICT','Υπάρχει ήδη πάροχος με το ίδιο αναγνωριστικό.');
+    if(/RECURRING_SERVICE_ASSET_IN_USE/i.test(marker))throw new ApiError(409,'RECURRING_SERVICE_ASSET_IN_USE','Η εικόνα χρησιμοποιείται ακόμη από πάγιο.');
+    if(/RECURRING_SERVICE_ASSET_KEY_CONFLICT/i.test(marker))throw new ApiError(409,'RECURRING_SERVICE_ASSET_CONFLICT','Υπάρχει ήδη εικόνα υπηρεσίας με το ίδιο αναγνωριστικό.');
     if(/ASSET_KEY_CONFLICT/i.test(marker))throw new ApiError(409,'PROVIDER_ASSET_CONFLICT','Υπάρχει ήδη εικόνα με το ίδιο αναγνωριστικό.');
+    if(/INVALID_RECURRING_SERVICE_ASSET|RECURRING_SERVICE_ASSET_MISSING_STORAGE_OBJECT/i.test(marker))throw new ApiError(400,'INVALID_RECURRING_SERVICE_ASSET','Μη έγκυρη εικόνα υπηρεσίας.');
     if(/22023|INVALID_PROVIDER_ASSET_BINDING|INVALID_PROVIDER_ASSET|INVALID_PROVIDER_ID|INVALID_ACCOUNT_ID|INVALID_IBAN/i.test(marker)){
       throw new ApiError(400,/INVALID_IBAN/i.test(marker)?'INVALID_IBAN':/PROVIDER/i.test(marker)?'INVALID_PROVIDER_DATA':'INVALID_ACCOUNT_ID','Invalid metadata.');
     }
@@ -162,7 +188,31 @@ function mapFinancialProviderAssetBindingRow(value:unknown):StoredFinancialProvi
   return {provider_id:row.provider_id,asset_role:row.asset_role!,variant:row.variant!,asset_key:row.asset_key};
 }
 
-function publicStorageUrl(baseUrl:string,asset:StoredFinancialProviderAssetRow){
+function mapRecurringServiceAssetRow(value:unknown):StoredRecurringServiceAssetRow{
+  const row=value as Partial<StoredRecurringServiceAssetRow>;
+  if(!row||typeof row.asset_key!=='string'||!/^[a-z][a-z0-9-]{0,95}$/.test(row.asset_key)||
+    typeof row.recurring_id!=='string'||!row.recurring_id||row.recurring_id.length>200||
+    typeof row.file_name!=='string'||!row.file_name||typeof row.mime_type!=='string'||
+    row.storage_bucket!=='recurring-service-assets'||typeof row.storage_path!=='string'||
+    !/^services\/service-asset-[a-f0-9]{24}\.(?:png|jpg|webp|svg)$/.test(row.storage_path)||
+    !Number.isFinite(Number(row.size_bytes))||Number(row.size_bytes)<=0||
+    typeof row.updated_at!=='string'||row.active!==true){
+    throw new ApiError(500,'RECURRING_SERVICE_ASSET_INVALID_ROW','Stored recurring service asset metadata is invalid.',false);
+  }
+  return {
+    asset_key:row.asset_key,
+    recurring_id:row.recurring_id,
+    file_name:row.file_name,
+    mime_type:row.mime_type,
+    storage_bucket:row.storage_bucket,
+    storage_path:row.storage_path,
+    size_bytes:Number(row.size_bytes),
+    updated_at:row.updated_at,
+    active:true,
+  };
+}
+
+function publicStorageUrl(baseUrl:string,asset:StoredPublicAssetRow){
   const path=asset.storage_path!.split('/').map(encodeURIComponent).join('/');
   return `${baseUrl}/storage/v1/object/public/${encodeURIComponent(asset.storage_bucket!)}/${path}?v=${encodeURIComponent(asset.updated_at)}`;
 }
@@ -211,6 +261,24 @@ export async function readFinancialProviders(accessToken:string):Promise<Financi
       wordmarkUrl:wordmark?publicStorageUrl(baseUrl,wordmark):null,
       assets:providerAssets,
       bindings,
+    };
+  });
+}
+
+export async function readRecurringServiceAssets(accessToken:string):Promise<RecurringServiceAssetRow[]>{
+  const payload=await request('rheomiq_recurring_service_assets?select=asset_key,recurring_id,file_name,mime_type,storage_bucket,storage_path,size_bytes,updated_at,active&active=eq.true&order=updated_at.desc,asset_key.asc',{method:'GET'},accessToken);
+  if(!Array.isArray(payload))throw new ApiError(500,'RECURRING_SERVICE_ASSET_INVALID_RESPONSE','Recurring service asset response is invalid.',false);
+  const baseUrl=config(accessToken).url;
+  return payload.map(value=>{
+    const asset=mapRecurringServiceAssetRow(value);
+    return {
+      assetKey:asset.asset_key,
+      recurringId:asset.recurring_id,
+      url:publicStorageUrl(baseUrl,asset),
+      fileName:asset.file_name,
+      mimeType:asset.mime_type,
+      sizeBytes:asset.size_bytes,
+      updatedAt:asset.updated_at,
     };
   });
 }
@@ -266,6 +334,8 @@ const PROVIDER_ASSET_EXTENSION:Record<string,string>={
   'image/webp':'webp',
   'image/svg+xml':'svg',
 };
+
+const RECURRING_SERVICE_ASSET_BUCKET='recurring-service-assets';
 
 export async function uploadFinancialProviderAsset(input:{
   providerId:string;
@@ -356,5 +426,96 @@ export async function setFinancialProviderAssetBinding(input:{
       p_variant:input.variant,
       p_asset_key:input.assetKey,
     }),
+  },accessToken);
+}
+
+export async function uploadRecurringServiceAsset(input:{
+  recurringId:string;
+  mimeType:string;
+  fileName:string;
+  content:unknown;
+},accessToken:string):Promise<RecurringServiceAssetRow>{
+  const content=copyBoundedBinaryValue(input.content,MAX_RECURRING_SERVICE_ASSET_BYTES);
+  const extension=PROVIDER_ASSET_EXTENSION[input.mimeType];
+  if(!extension)throw new ApiError(415,'UNSUPPORTED_RECURRING_SERVICE_ASSET_TYPE','Unsupported recurring service image type.');
+  const suffix=randomUUID().replace(/-/g,'').slice(0,24);
+  const assetKey=`service-asset-${suffix}`;
+  const storagePath=`services/${assetKey}.${extension}`;
+  const {url,apiKey,authorization}=config(accessToken);
+  const encodedPath=storagePath.split('/').map(encodeURIComponent).join('/');
+  const upload=await fetchUpstream(`${url}/storage/v1/object/${encodeURIComponent(RECURRING_SERVICE_ASSET_BUCKET)}/${encodedPath}`,{
+    method:'POST',
+    headers:{apikey:apiKey,authorization,'content-type':input.mimeType,'cache-control':'31536000, immutable'},
+    body:Uint8Array.from(content),
+  },'DATA');
+  if(!upload.ok){
+    const payload=await upload.json().catch(()=>null) as any;
+    const marker=`${payload?.statusCode??''} ${payload?.error??''} ${payload?.message??''}`;
+    if(upload.status===401)throw new ApiError(401,'AUTH_REQUIRED','Authentication required.');
+    if(upload.status===403||/forbidden|42501/i.test(marker))throw new ApiError(403,'FORBIDDEN','Access denied.');
+    if(upload.status>=500)throw new ApiError(503,'RECURRING_SERVICE_ASSET_STORAGE_UNAVAILABLE','Η αποθήκευση εικόνας υπηρεσίας δεν είναι προσωρινά διαθέσιμη.');
+    throw new ApiError(502,'RECURRING_SERVICE_ASSET_UPLOAD_FAILED','Δεν ήταν δυνατή η αποθήκευση της εικόνας υπηρεσίας.');
+  }
+
+  let payload:unknown;
+  try{
+    payload=await request('rpc/rheomiq_register_recurring_service_asset',{
+      method:'POST',
+      body:JSON.stringify({
+        p_recurring_id:input.recurringId,
+        p_asset_key:assetKey,
+        p_file_name:input.fileName,
+        p_mime_type:input.mimeType,
+        p_storage_path:storagePath,
+        p_size_bytes:content.byteLength,
+      }),
+    },accessToken);
+  }catch(error){
+    try{
+      const cleanup=await fetchUpstream(`${url}/storage/v1/object/${encodeURIComponent(RECURRING_SERVICE_ASSET_BUCKET)}/${encodedPath}`,{
+        method:'DELETE',
+        headers:{apikey:apiKey,authorization},
+      },'DATA');
+      if(!cleanup.ok)console.error('[RheomIQ recurring service asset cleanup]',{status:cleanup.status});
+    }catch{
+      console.error('[RheomIQ recurring service asset cleanup]',{status:'request-failed'});
+    }
+    throw error;
+  }
+  const row=Array.isArray(payload)?payload[0]:null;
+  if(!row)throw new ApiError(500,'RECURRING_SERVICE_ASSET_INVALID_RESPONSE','Recurring service image response is invalid.',false);
+  const asset=mapRecurringServiceAssetRow(row);
+  return {
+    assetKey:asset.asset_key,
+    recurringId:asset.recurring_id,
+    url:publicStorageUrl(url,asset),
+    fileName:asset.file_name,
+    mimeType:asset.mime_type,
+    sizeBytes:asset.size_bytes,
+    updatedAt:asset.updated_at,
+  };
+}
+
+export async function deleteRecurringServiceAsset(assetKey:string,accessToken:string){
+  const released=await request('rpc/rheomiq_release_recurring_service_asset',{
+    method:'POST',
+    body:JSON.stringify({p_asset_key:assetKey}),
+  },accessToken);
+  const row=Array.isArray(released)?released[0] as {storage_bucket?:unknown;storage_path?:unknown}|undefined:undefined;
+  if(!row||row.storage_bucket!==RECURRING_SERVICE_ASSET_BUCKET||typeof row.storage_path!=='string'){
+    throw new ApiError(500,'RECURRING_SERVICE_ASSET_INVALID_RESPONSE','Recurring service image release response is invalid.',false);
+  }
+  const {url,apiKey,authorization}=config(accessToken);
+  const encodedPath=row.storage_path.split('/').map(encodeURIComponent).join('/');
+  const removal=await fetchUpstream(`${url}/storage/v1/object/${encodeURIComponent(RECURRING_SERVICE_ASSET_BUCKET)}/${encodedPath}`,{
+    method:'DELETE',
+    headers:{apikey:apiKey,authorization},
+  },'DATA');
+  if(!removal.ok&&removal.status!==404){
+    throw new ApiError(503,'RECURRING_SERVICE_ASSET_STORAGE_UNAVAILABLE','Η διαγραφή της εικόνας υπηρεσίας δεν ολοκληρώθηκε.');
+  }
+  await request('rpc/rheomiq_purge_recurring_service_asset',{
+    method:'POST',
+    body:JSON.stringify({p_asset_key:assetKey}),
   },accessToken);
 }

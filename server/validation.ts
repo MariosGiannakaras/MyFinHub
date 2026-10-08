@@ -180,6 +180,10 @@ function validateRecurring(value: unknown, name: string) {
   text(value.category, `${name}.category`, 1_000, true);
   if (typeof value.active !== 'boolean') invalid(`Invalid ${name}.active.`);
   if (value.status !== undefined) oneOf(value.status, ['active','paused','stopped'], `${name}.status`);
+  if (value.logoAssetKey !== undefined && value.logoAssetKey !== null) {
+    text(value.logoAssetKey, `${name}.logoAssetKey`, 96);
+    if (!/^[a-z][a-z0-9-]{0,95}$/.test(value.logoAssetKey)) invalid(`Invalid ${name}.logoAssetKey.`);
+  }
   optionalText(value.source, `${name}.source`, 1_000);
 }
 
