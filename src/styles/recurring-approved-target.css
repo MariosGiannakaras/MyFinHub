@@ -1,4 +1,16 @@
 .inactive-recurring-list,.inactive-recurring>.empty-inline{margin-top:8px}
+.recurring-logo-editor{margin-top:14px;padding:12px;border:1px solid var(--border-subtle);border-radius:12px;background:var(--surface-2);display:flex;align-items:center;justify-content:space-between;gap:14px}
+.recurring-logo-editor-preview{min-width:0;display:flex;align-items:center;gap:12px}
+.recurring-logo-editor-preview>div{min-width:0}
+.recurring-logo-editor-preview b{display:block;color:var(--ink);font-size:var(--ux-dense-data-size)}
+.recurring-logo-editor-preview b em{font-style:normal;font-weight:650;color:var(--text-secondary)}
+.recurring-logo-editor-preview small{display:block;margin-top:4px;color:var(--text-secondary);font-size:var(--ux-dense-label-size);line-height:1.4}
+.recurring-logo-editor-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.recurring-logo-editor-actions .text-button{color:var(--text-secondary)}
+.recurring-brand-local-preview>img{display:block;width:78%;height:78%;object-fit:contain}
+.contextual-quick-modal #context-quick-title{display:flex;align-items:center;gap:8px}
+@media(max-width:680px){.recurring-logo-editor{align-items:flex-start;flex-direction:column}.recurring-logo-editor-actions{width:100%;flex-wrap:wrap}.recurring-logo-editor-actions>button{flex:1 1 140px}}
+
 /* Owner-approved Recurring / Πάγια desktop composition.
  * The target controls hierarchy and density; canonical recurring/loan semantics remain in page/domain code.
  */
@@ -42,6 +54,7 @@
   .recurring-workspace-table tbody>tr[data-recurring-status="active"]:last-child>td:first-child{border-radius:0 0 0 12px}
   .recurring-workspace-table tbody>tr[data-recurring-status="active"]:last-child>td:last-child{border-radius:0 0 12px 0}
   .recurring-workspace-table .semantic-list-title{gap:10px}
+  .recurring-workspace-table .semantic-list-title>.recurring-brand-mark{width:34px!important;height:34px!important;flex-basis:34px!important}
   .recurring-workspace-table .semantic-list-title>[data-icon-key]{width:34px;height:34px;flex:0 0 34px;border-radius:10px}
   .recurring-workspace-table .semantic-list-title b{line-height:1.3}
   .recurring-workspace-table td>b,.recurring-workspace-table .recurring-account-name{display:block;color:var(--ink-2);font-weight:790}
