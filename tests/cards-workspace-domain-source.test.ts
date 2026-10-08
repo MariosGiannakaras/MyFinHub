@@ -25,8 +25,8 @@ describe('Cards workspace domain and navigation contracts',()=>{
     const component=readFileSync(new URL('../src/components/InteractivePaymentCard.tsx',import.meta.url),'utf8');
     const componentCss=readFileSync(new URL('../src/components/InteractivePaymentCard.css',import.meta.url),'utf8');
     expect(component).toContain('card-icon-btn card-icon-reveal');
-    expect(component.match(/card-icon-btn card-icon-secondary/g)?.length).toBe(3);
-    expect(componentCss).toContain('.card-icon-btn.card-icon-secondary{background:transparent;box-shadow:none;opacity:.72}');
+    expect(component.match(/card-icon-btn card-icon-management/g)?.length).toBe(3);
+    expect(componentCss).toContain('.card-icon-btn.card-icon-management{background:transparent;box-shadow:none;opacity:.72}');
     expect(componentCss).toContain('font-size:var(--ux-dense-label-size);line-height:1;text-transform:uppercase');
     expect(componentCss).not.toContain('font-size:.50rem');
   });
