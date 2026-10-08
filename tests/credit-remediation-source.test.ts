@@ -34,6 +34,8 @@ describe('Credit post-v1.4 remediation contracts',()=>{
     expect(stack).toContain("multiCard?'multi-card-mode':'single-card-mode'");
     expect(stackOne).toContain('#myfinhub-card-stack.single-card-mode .stack-stage');
     expect(stackOne).toContain('touch-action:pan-y');
+    expect(stackOne).toContain('#myfinhub-card-stack .stack-stage.dragging .stack-card');
+    expect(stackOne).toContain('transition:none');
   });
 
   it('contains pagination and exposes drag discovery without restoring host navigation',()=>{
