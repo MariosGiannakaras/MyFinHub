@@ -1,0 +1,92 @@
+{
+  "version": 1,
+  "patterns": [
+    {
+      "id": "FP-001",
+      "title": "AAL2 device-session bootstrap must not require an RLS-protected SELECT",
+      "category": "security-auth",
+      "severity": "critical",
+      "rootCause": "A representation-returning INSERT for a newly bootstrapped device session conflicted with the table's hardened active-session SELECT RLS predicate after successful TOTP authentication.",
+      "prevention": "Preserve owner+AAL2 checks and an INSERT with explicit revoked_at:null and Prefer:return=minimal; cover the post-MFA bootstrap and RLS failure boundary.",
+      "paths": [
+        "server/deviceSessionRegistry.ts",
+        "tests/device-access.test.ts",
+        "supabase/migrations/**"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/498"
+      ],
+      "guards": [
+        "tests/device-access.test.ts"
+      ]
+    },
+    {
+      "id": "FP-002",
+      "title": "Imported Lending data must be normalized at runtime",
+      "category": "domain-data",
+      "severity": "critical",
+      "rootCause": "Lending selectors treated unvalidated historical JSON as if TypeScript types had already validated person, entries, dates and numeric fields.",
+      "prevention": "Normalize or skip malformed legacy rows at the selector boundary; preserve valid/minimal receivable summary semantics without logging financial payloads.",
+      "paths": [
+        "src/lib/lending.ts",
+        "src/pages/LendingPage.tsx",
+        "tests/lending-history.test.ts",
+        "tests/derived-finance.test.ts"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/224"
+      ],
+      "guards": [
+        "tests/lending-history.test.ts",
+        "tests/derived-finance.test.ts"
+      ]
+    },
+    {
+      "id": "FP-003",
+      "title": "Shared form controls must not drift into page-specific skins",
+      "category": "ui-shared",
+      "severity": "high",
+      "rootCause": "Default input/control styling diverged across Quick Entry, authentication and editors instead of sharing design-system primitives and semantic tokens.",
+      "prevention": "Modify the shared primitive/token owner, inspect sibling consumers and verify Light/Dark, focus, invalid, disabled and relevant responsive states.",
+      "paths": [
+        "src/components/AppInputShell.tsx",
+        "src/components/AppTextInput.tsx",
+        "src/components/AppSelectInput.tsx",
+        "src/components/AppDateInput.tsx",
+        "src/components/CategorySelectInput.tsx",
+        "src/components/MoneyInput.tsx",
+        "src/components/LoginScreen.tsx",
+        "src/components/MfaScreen.tsx",
+        "src/styles/ui-hardening-foundations.css",
+        "src/components/QuickAdd.tsx"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/523"
+      ],
+      "guards": [
+        "tests/shared-control-branding-source.test.ts",
+        "tests/quick-entry-reference-source.test.ts"
+      ]
+    },
+    {
+      "id": "FP-004",
+      "title": "CI fan-out should not repeat expensive checks on every UI correction",
+      "category": "ci-tooling",
+      "severity": "medium",
+      "rootCause": "High-churn pushes and overlapping workflow ownership generated redundant full validation, even where review-ready gates or a single owner were sufficient.",
+      "prevention": "Keep core CI and security gates; defer heavy rendered/performance/Windows checks to final review head, cancel superseded runs, and run targeted local preflight first.",
+      "paths": [
+        ".github/workflows/**",
+        "scripts/run-rendered-qa.mjs",
+        "scripts/performance-audit.mjs",
+        "package.json"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/483"
+      ],
+      "guards": [
+        "tests/workflow-optimization-source.test.ts"
+      ]
+    }
+  ]
+}
