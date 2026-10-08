@@ -59,12 +59,12 @@ describe('Savings page action hierarchy',()=>{
   });
 
   it('renders a real no-goal empty state and makes shared-pool semantics explicit',()=>{
-    expect(source).toContain('className="savings-goals-empty"');
+    expect(source).toContain('className="empty-state savings-goals-empty"');
     expect(source).toContain('Το κοινό υπόλοιπο αποταμίευσης είναι {money.format(savingsBalance)}');
     expect(source).toContain('<span>Κοινό υπόλοιπο</span>');
     expect(source).not.toContain('className="savings-goal-row placeholder"');
-    expect(composition).toContain('.savings-goals-mobile .savings-goals-empty');
-    expect(composition).toContain('.savings-goals-empty{min-height:76px');
+    expect(composition).toContain('.savings-goals-mobile .savings-goals-empty{margin-top:8px}');
+    expect(composition).toContain('.savings-goals-empty{margin-top:6px;text-align:left');
   });
 
   it('bounds wide desktop measure and removes internal savings-engine jargon',()=>{
