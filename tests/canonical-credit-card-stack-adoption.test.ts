@@ -63,6 +63,34 @@ describe('canonical credit-card stack adoption',()=>{
     expect(createDialog).toContain('allowedKinds?:CardKind[]');
   });
 
+  it('keeps one canonical card-switching model and restores populated add-card reachability',()=>{
+    expect(credit).toContain('Προσθήκη πιστωτικής');
+    expect(credit).toContain('onClick={()=>setCreateOpen(true)}');
+    expect(credit).not.toContain("type CardDeckMode='horizontal'|'stack'");
+    expect(credit).not.toContain('credit-card-view-controls');
+    expect(credit).not.toContain('credit-card-horizontal-nav');
+    expect(credit).not.toContain('selectRelativeCard');
+  });
+
+  it('keeps profile and secure-detail editing on the active canonical card only',()=>{
+    expect(credit).toContain('onEditCard={openCardProfile}');
+    expect(credit).toContain('onEditDetails={openCardDetails}');
+    expect(stack).toContain('const management=stackIndex===0?');
+    expect(stack).toContain('edit-profile-btn');
+    expect(stack).toContain('edit-details-btn');
+    expect(stack).toContain('editCardRef.current?.(card.source)');
+    expect(stack).toContain('editDetailsRef.current?.(card.source)');
+  });
+
+  it('disables deck choreography and pagination semantics for a single active card',()=>{
+    expect(stack).toContain('if(orderRef.current.length<2||deleteMode||swiping');
+    expect(stack).toContain("stage.classList.toggle('single-card',orderedCards.length===1)");
+    expect(stack).toContain("dots.innerHTML=cardsRef.current.length>1?");
+    expect(stack).toContain("const multiCard=cards.length>1");
+    expect(stack).toContain("multiCard?'multi-card-mode':'single-card-mode'");
+    expect(stack).toContain('tabIndex={multiCard?0:-1}');
+  });
+
   it('keeps the supplied stack interaction model and stable-ID ordering',()=>{
     expect(stack).toContain("orderRef=useRef<string[]>(cards.map(card=>card.id))");
     expect(stack).toContain("event.key==='ArrowUp'");
