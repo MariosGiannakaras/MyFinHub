@@ -11,6 +11,7 @@ const host=readFileSync(new URL('../src/styles/credit-approved-target.css',impor
 describe('Credit post-v1.4 remediation contracts',()=>{
   it('keeps one canonical stack navigation model and populated create reachability',()=>{
     expect(page).toContain('<Plus/> Προσθήκη πιστωτικής');
+    expect(page).toContain('aria-label={`Αρχείο καρτών, ${archivedCredit.length}`}');
     expect(page).not.toContain('CardDeckMode');
     expect(page).not.toContain('credit-card-view-controls');
     expect(page).not.toContain('credit-card-horizontal-nav');
