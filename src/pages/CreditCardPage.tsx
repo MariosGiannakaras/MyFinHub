@@ -169,7 +169,7 @@ export function CreditCardPage({
       description={<p>Η κάρτα, το διαθέσιμο όριο και όλες οι πραγματικές κινήσεις της σε μία καθαρή εικόνα.</p>}
       actions={<>
         <Button type="button" variant="secondary" onClick={()=>setCreateOpen(true)}><Plus/> Προσθήκη πιστωτικής</Button>
-        {archivedCredit.length?<Button type="button" variant="ghost" onClick={()=>setArchiveOpen(true)}><ArchiveRestore/> Αρχείο · {archivedCredit.length}</Button>:null}
+        {archivedCredit.length?<Button type="button" variant="ghost" aria-label={`Αρχείο καρτών, ${archivedCredit.length}`} onClick={()=>setArchiveOpen(true)}><ArchiveRestore/> Αρχείο · {archivedCredit.length}</Button>:null}
         <Button type="button" variant="secondary" disabled={!card||debt<=0||eligibleAccounts.length===0} onClick={openRepay}><ReceiptText/> Αποπληρωμή</Button>
         <Button type="button" variant="primary" disabled={!card} onClick={openPurchase}><CreditCard/> Νέα αγορά</Button>
       </>}
