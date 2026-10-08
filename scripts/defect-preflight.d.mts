@@ -1,5 +1,5 @@
 export type FailureSeverity='critical'|'high'|'medium'|'low';
-export type FailureCategory='security-auth'|'domain-data'|'ui-shared'|'ci-tooling';
+export type FailureCategory='security-auth'|'domain-data'|'ui-shared'|'ci-tooling'|'desktop-packaging'|'database'|'deployment-runtime'|'ui-resilience';
 
 export interface DefectPattern {
   id:string;
