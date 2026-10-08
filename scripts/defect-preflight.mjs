@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const registryFile=path.join(root,'quality/defect-patterns.json');
 const severities=['critical','high','medium','low'];
-const categories=['security-auth','domain-data','ui-shared','ci-tooling'];
+const categories=['security-auth','domain-data','ui-shared','ci-tooling','desktop-packaging','database','deployment-runtime','ui-resilience'];
 
 function safePath(value){
   return typeof value==='string'&&value.length>0&&!value.includes('\\')&&!value.startsWith('/')&&!value.split('/').some(x=>!x||x==='.'||x==='..');
@@ -42,7 +42,7 @@ export function validateRegistry(data,base=root){
     }
     if(!Array.isArray(p.evidence)||!p.evidence.length)errors.push(name+' missing verified evidence');
     else for(const link of p.evidence){
-      if(typeof link!=='string'||!/^https:\/\/github\.com\/MariosGiannakaras\/MyFinHub\/issues\/[1-9]\d*$/.test(link))errors.push(name+' invalid evidence URL');
+      if(typeof link!=='string'||!/^https:\/\/github\.com\/MariosGiannakaras\/MyFinHub\/(issues|pull)\/[1-9]\d*$/.test(link))errors.push(name+' invalid evidence URL');
     }
   }
   return errors;

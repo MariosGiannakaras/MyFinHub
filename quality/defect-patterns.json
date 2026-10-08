@@ -87,6 +87,313 @@
       "guards": [
         "tests/workflow-optimization-source.test.ts"
       ]
+    },
+    {
+      "id": "FP-005",
+      "title": "Windows packaged backend must boot through its CommonJS bridge",
+      "category": "desktop-packaging",
+      "severity": "critical",
+      "rootCause": "The Electron host appeared alive while its bundled ESM backend failed on a CommonJS require('tty'); setup-path CI bypassed live packaged backend verification.",
+      "prevention": "Keep a Node createRequire bridge in the packaged ESM backend, capture sanitized startup errors and validate live backend readiness through real first-run configuration.",
+      "paths": [
+        "desktop/prepare-build.mjs",
+        "desktop/main.cjs",
+        ".github/workflows/desktop-first-run.yml"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/204"
+      ],
+      "guards": [
+        "tests/desktop-first-run-source.test.ts",
+        "tests/desktop-startup-diagnostics.test.ts"
+      ]
+    },
+    {
+      "id": "FP-006",
+      "title": "Product migration must preserve owner category trees",
+      "category": "domain-data",
+      "severity": "critical",
+      "rootCause": "Schema-v3 product migration rebuilt settings but discarded the persisted expense and income category-tree extensions.",
+      "prevention": "Preserve both trees across load/import migration and keep older flat-category documents compatible without rewriting history.",
+      "paths": [
+        "src/lib/productMigration.ts",
+        "tests/product-migration-category-trees.test.ts"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/225"
+      ],
+      "guards": [
+        "tests/product-migration-category-trees.test.ts"
+      ]
+    },
+    {
+      "id": "FP-007",
+      "title": "Initial account metadata write must target an unambiguous constraint",
+      "category": "database",
+      "severity": "high",
+      "rootCause": "PL/pgSQL account_id output variable made ON CONFLICT(owner_user_id, account_id) ambiguous in the revision-zero insert path.",
+      "prevention": "Use the named primary-key constraint on conflict and preserve SECURITY INVOKER, owner+AAL2 and 0->1 / 1->2 revision checks.",
+      "paths": [
+        "supabase/migrations/*account_metadata*",
+        "src/lib/accountMetadataClient.ts",
+        "tests/account-metadata.test.ts"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/317"
+      ],
+      "guards": [
+        "tests/account-metadata.test.ts"
+      ]
+    },
+    {
+      "id": "FP-008",
+      "title": "Durable history audit constraint must admit undo and redo",
+      "category": "database",
+      "severity": "high",
+      "rootCause": "The audit-log action constraint admitted save/import/backup but not undo/redo already used by canonical history RPCs.",
+      "prevention": "Keep audit-action and RPC semantics aligned in forward-only migrations, and test both undo and redo without rewriting financial history.",
+      "paths": [
+        "supabase/migrations/*history*",
+        "supabase/migrations/*audit*",
+        "src/lib/changeHistory.ts"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/287"
+      ],
+      "guards": [
+        "tests/durable-history-source.test.ts"
+      ]
+    },
+    {
+      "id": "FP-009",
+      "title": "Vercel plain API functions need an independent supported TS project",
+      "category": "deployment-runtime",
+      "severity": "critical",
+      "rootCause": "Vercel's plain Node function packager could not resolve the root TypeScript 7 project-reference toolchain.",
+      "prevention": "Keep the API-local supported compiler, tsconfig without references and separate API dependency/typecheck gate.",
+      "paths": [
+        "api/package.json",
+        "api/tsconfig.json",
+        "api/package-lock.json",
+        ".github/workflows/ci.yml"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/9"
+      ],
+      "guards": [
+        "tests/historical-defect-regressions.test.ts"
+      ]
+    },
+    {
+      "id": "FP-010",
+      "title": "Operational upstream outages must not revoke valid auth sessions",
+      "category": "security-auth",
+      "severity": "critical",
+      "rootCause": "Supabase request, timeout and 5xx failures were classified as bad credentials or expired sessions, clearing otherwise valid cookies.",
+      "prevention": "Differentiate bounded upstream/unavailable/429 failures from real 401/invalid credentials and preserve browser sessions on operational failures.",
+      "paths": [
+        "server/auth.ts",
+        "tests/auth-resilience.test.ts",
+        "src/lib/api.ts"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/16"
+      ],
+      "guards": [
+        "tests/auth-resilience.test.ts"
+      ]
+    },
+    {
+      "id": "FP-011",
+      "title": "Finance document limits must fit deployment request and response budgets",
+      "category": "domain-data",
+      "severity": "critical",
+      "rootCause": "Accepted finance documents could exceed Vercel's 4.5 MB Functions body ceiling and malformed imported nested data reached consumers.",
+      "prevention": "Keep shared 4 MiB budget on read/save/import paths and validate nested financial structures before persistence.",
+      "paths": [
+        "src/lib/limits.ts",
+        "server/validation.ts",
+        "server/financeDataValidation.ts",
+        "tests/validation.test.ts"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/18"
+      ],
+      "guards": [
+        "tests/validation.test.ts",
+        "tests/historical-defect-regressions.test.ts"
+      ]
+    },
+    {
+      "id": "FP-012",
+      "title": "Editing loan payments must preserve the linked loan identity",
+      "category": "domain-data",
+      "severity": "high",
+      "rootCause": "Quick Add recreated edited payment events without loanId so existing installments stopped counting toward loan progress.",
+      "prevention": "Carry linked loan identity through edit/delete and derive loan progress from one canonical linked-event helper.",
+      "paths": [
+        "src/components/QuickAdd.tsx",
+        "src/lib/loans.ts",
+        "tests/loans.test.ts"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/29"
+      ],
+      "guards": [
+        "tests/loans.test.ts"
+      ]
+    },
+    {
+      "id": "FP-013",
+      "title": "Derived snapshots and receivables must ignore incidental input ordering",
+      "category": "domain-data",
+      "severity": "high",
+      "rootCause": "Balance baseline relied on array order and Lending Map.set silently overwrote repeated historical persons.",
+      "prevention": "Pick latest eligible date explicitly and aggregate duplicated legacy lending identities instead of replacing them.",
+      "paths": [
+        "src/lib/domain.ts",
+        "src/lib/lending.ts",
+        "tests/derived-finance.test.ts"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/30"
+      ],
+      "guards": [
+        "tests/derived-finance.test.ts"
+      ]
+    },
+    {
+      "id": "FP-014",
+      "title": "Recurring and zero-valued settings must use effective state",
+      "category": "domain-data",
+      "severity": "high",
+      "rootCause": "Dashboard read raw recurring seeds without overrides and used truthy defaults that silently replaced valid 0 budgets or 0% goals.",
+      "prevention": "Consume effective recurring items with overrides/custom entries and use nullish defaults; guard zero denominator display.",
+      "paths": [
+        "src/lib/ui.ts",
+        "src/pages/DashboardPage.tsx",
+        "src/pages/SavingsPage.tsx"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/47"
+      ],
+      "guards": [
+        "tests/ui.test.ts"
+      ]
+    },
+    {
+      "id": "FP-015",
+      "title": "Finance reporting date must refresh after local midnight",
+      "category": "domain-data",
+      "severity": "medium",
+      "rootCause": "A module-level TODAY constant stayed stale while the application remained open across a local date boundary.",
+      "prevention": "Use reactive local-date refresh including tab resume and daylight-saving changes without overwriting an explicitly chosen reporting month.",
+      "paths": [
+        "src/App.tsx",
+        "src/lib/localDate.ts",
+        "tests/local-date.test.ts"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/26"
+      ],
+      "guards": [
+        "tests/local-date.test.ts"
+      ]
+    },
+    {
+      "id": "FP-016",
+      "title": "Production smoke health assertions must follow released identity",
+      "category": "ci-tooling",
+      "severity": "medium",
+      "rootCause": "A product rename changed the health payload but production smoke still expected the old app name, failing healthy deployments.",
+      "prevention": "Keep release smoke's expected app identity synchronized with the published health contract while retaining header and deployment assertions.",
+      "paths": [
+        ".github/workflows/production-smoke.yml",
+        "tests/historical-defect-regressions.test.ts"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/142"
+      ],
+      "guards": [
+        "tests/historical-defect-regressions.test.ts"
+      ]
+    },
+    {
+      "id": "FP-017",
+      "title": "Local proxy must preserve browser-facing Origin and Host consistency",
+      "category": "security-auth",
+      "severity": "high",
+      "rootCause": "Bare Vite API proxy forwarded an upstream Host while browser Origin used the frontend port, causing 403 ORIGIN_MISMATCH on login.",
+      "prevention": "Forward the browser-facing host/protocol through the reviewed proxy headers and keep origin enforcement enabled for cookie mutations.",
+      "paths": [
+        "vite.config.ts",
+        "server/auth.ts",
+        "tests/security.test.ts"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/pull/497"
+      ],
+      "guards": [
+        "tests/security.test.ts"
+      ]
+    },
+    {
+      "id": "FP-018",
+      "title": "Production API routes must fit the serverless function-count limit",
+      "category": "deployment-runtime",
+      "severity": "high",
+      "rootCause": "Deploying another standalone API function exceeded Vercel Hobby's serverless function budget and blocked the exact release.",
+      "prevention": "Route compatible handlers through reviewed existing functions/rewrite contracts and assert the current deployment function budget.",
+      "paths": [
+        "vercel.json",
+        "api/data.ts",
+        "tests/vercel-function-budget.test.ts"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/pull/352"
+      ],
+      "guards": [
+        "tests/vercel-function-budget.test.ts"
+      ]
+    },
+    {
+      "id": "FP-019",
+      "title": "Lazy page and chunk failures need a recoverable workspace boundary",
+      "category": "ui-resilience",
+      "severity": "high",
+      "rootCause": "Suspense handled pending lazy imports but not rejected chunks or page render exceptions, leaving the workspace blank or unrecoverable.",
+      "prevention": "Keep page-local ErrorBoundary around route Suspense with retry, navigation recovery and privacy-safe error text.",
+      "paths": [
+        "src/App.tsx",
+        "src/components/PageErrorBoundary.tsx"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/51"
+      ],
+      "guards": [
+        "tests/historical-defect-regressions.test.ts"
+      ]
+    },
+    {
+      "id": "FP-020",
+      "title": "Domain input semantics must be consistent before persistence",
+      "category": "domain-data",
+      "severity": "high",
+      "rootCause": "Quick Add, reconciliation, lending attribution, split positivity and loan ranges had UI/server semantic mismatches despite structurally valid input.",
+      "prevention": "Validate empty reconciliation versus zero, required lending attribution, positive split parts and bounded loan/settings semantics on both client and server.",
+      "paths": [
+        "src/components/QuickAdd.tsx",
+        "src/lib/inputSemantics.ts",
+        "server/validation.ts",
+        "server/financeSemanticValidation.ts"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/issues/27"
+      ],
+      "guards": [
+        "tests/semantic-validation.test.ts",
+        "tests/finance-semantic-validation.test.ts"
+      ]
     }
   ]
 }
