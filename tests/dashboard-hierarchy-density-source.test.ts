@@ -7,7 +7,7 @@ describe('Dashboard hierarchy and painted-chart contracts',()=>{
   it('uses shared readable dense typography and reduces nested Dashboard surface weight on desktop',()=>{
     const css=read('src/styles/dashboard-approved-target.css');
     expect(css).toContain('--dashboard-caption-size:var(--ux-dense-data-size)');
-    expect(css).toContain('.dashboard-approved .approved-secondary-panel{background:transparent;border-color:transparent;box-shadow:none');
+    expect(css).toContain('.dashboard-approved .approved-secondary-panel{background:transparent;border:0;box-shadow:none');
     expect(css).toContain('.dashboard-approved .approved-kpi-strip{gap:0;border:1px solid #e4edf6');
     expect(css).toContain('.dashboard-approved .approved-kpi-strip article{height:64px;border:0;border-radius:0;background:transparent;box-shadow:none');
     expect(css).toContain('.dashboard-approved .approved-kpi-strip article+article{border-left:1px solid #edf2f7}');
