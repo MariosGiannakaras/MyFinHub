@@ -137,10 +137,10 @@ describe('shared finance UI adoption contracts',()=>{
   it('adopts shared action primitives for Recurring generic actions while preserving row and menu composites',()=>{
     expect(recurring).toContain("from '../components/Button'");
     expect(recurring).toContain("from '../components/IconButton'");
-    expect(recurring.match(/<Button/g)).toHaveLength(8);
+    expect(recurring.match(/<Button/g)).toHaveLength(10);
     expect(recurring.match(/<IconButton/g)).toHaveLength(6);
     expect(recurring.match(/<Button[^>]+variant="primary"/g)).toHaveLength(4);
-    expect(recurring.match(/<Button[^>]+variant="secondary"/g)).toHaveLength(4);
+    expect(recurring.match(/<Button[^>]+variant="secondary"/g)).toHaveLength(5);
     expect(recurring).toContain('<Button type="button" variant="primary" onClick={startNew}');
     expect(recurring).toContain('variant="primary" className="mobile-pay-action"');
     expect(recurring).toContain('<IconButton type="button" aria-label="Κλείσιμο επεξεργασίας παγίου"');
