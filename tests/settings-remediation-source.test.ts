@@ -8,6 +8,7 @@ const routing=readFileSync(new URL('../src/lib/routing.ts',import.meta.url),'utf
 const dialog=readFileSync(new URL('../src/components/DialogShell.tsx',import.meta.url),'utf8');
 const qa=readFileSync(new URL('../src/qa.tsx',import.meta.url),'utf8');
 const rendered=readFileSync(new URL('../scripts/settings-tabs-qa.mjs',import.meta.url),'utf8');
+const finance=readFileSync(new URL('../src/hooks/useFinance.ts',import.meta.url),'utf8');
 
 describe('Settings post-v1.4 remediation contracts',()=>{
   it('keeps legacy motion data inert and makes OS reduced motion authoritative',()=>{
@@ -20,6 +21,9 @@ describe('Settings post-v1.4 remediation contracts',()=>{
     expect(dialog).not.toContain("motionMode==='reduced'");
     expect(qa).toContain("document.documentElement.dataset.motion='full'");
     expect(qa).toContain("if(params.get('motion')==='reduced')next.state.settings.motion='reduced'");
+    expect(finance).toContain('const {motion:_legacyMotion,...settings}=migrated.state.settings');
+    expect(finance).not.toContain("motion:'full'");
+
   });
 
   it('makes all seven Settings tabs addressable through canonical hash routes',()=>{
