@@ -68,7 +68,6 @@ describe('card secure details',()=>{
   it('separates card profile editing from secure PAN/expiry/CVV editing',()=>{
     const cards=readFileSync(new URL('../src/pages/CardsPage.tsx',import.meta.url),'utf8');
     const credit=readFileSync(new URL('../src/pages/CreditCardPage.tsx',import.meta.url),'utf8');
-    const canonical=readFileSync(new URL('../src/components/CanonicalCreditCardStack.tsx',import.meta.url),'utf8');
     const interactive=readFileSync(new URL('../src/components/InteractivePaymentCard.tsx',import.meta.url),'utf8');
     expect(cards).toContain('<CardDetailsDialog');
     expect(credit).toContain('<CardDetailsDialog');
