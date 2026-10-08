@@ -38,6 +38,7 @@ describe('Recurring post-v1.4 remediation contracts',()=>{
   it('makes zero inactive history visually subordinate and improves secondary contrast',()=>{
     expect(page).toContain("inactive-recurring ${inactive.length?'':'is-empty'}");
     expect(css).toContain('.inactive-recurring.is-empty{min-height:50px');
+    expect(css).toContain('.inactive-recurring.is-empty>summary{min-height:48px;margin-bottom:0}');
     expect(css).toContain('.inactive-recurring.is-empty>summary small{display:none}');
     expect(css).toContain('color:var(--text-secondary)');
   });
