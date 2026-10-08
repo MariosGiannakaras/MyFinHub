@@ -6,8 +6,9 @@ const panel=readFileSync(new URL('../src/components/SupportDiagnosticsPanel.tsx'
 
 describe('support diagnostics privacy',()=>{
   it('keeps diagnostics outside normal production settings unless an explicit dev/support gate is active',()=>{
-    expect(settings).toContain('runtimeEnv?.DEV');
+    expect(settings).not.toContain('runtimeEnv?.DEV');
     expect(settings).toContain("VITE_MYFINHUB_SUPPORT_DIAGNOSTICS==='1'");
+    expect(settings).toContain("get('support-diagnostics')==='1'");
     expect(settings).toContain('supportDiagnosticsEnabled?<SupportDiagnosticsPanel');
   });
 
