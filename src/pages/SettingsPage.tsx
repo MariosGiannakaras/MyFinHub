@@ -18,11 +18,12 @@ import { categoryTree } from '../lib/categories';
 import { MAX_FINANCE_DOCUMENT_BYTES } from '../lib/limits';
 import { taxonomyOperationPreview, type TaxonomyOperation } from '../lib/taxonomyManagement';
 import { userErrorMessage } from '../lib/userMessage';
+import type { SettingsTabId } from '../lib/routing';
 import type { FinanceData, FinanceSettings, TransactionRule } from '../types';
 import './SettingsPage.css';
 import './SettingsData.css';
 
-type SettingsTab = 'general' | 'profile' | 'accounts' | 'categories' | 'icons' | 'rules' | 'data';
+type SettingsTab = SettingsTabId;
 
 type SettingsTabDefinition = {
   id: SettingsTab;
@@ -40,9 +41,9 @@ const SETTINGS_TABS: SettingsTabDefinition[] = [
 ];
 
 function cloneSettings(settings: FinanceSettings): FinanceSettings {
+  const {motion:_legacyMotion,...persisted}=settings;
   return {
-    ...settings,
-    motion: 'full',
+    ...persisted,
     accountNames: { ...settings.accountNames },
     customAccounts: (settings.customAccounts ?? []).map((account) => ({ ...account })),
     accountOverrides: Object.fromEntries(Object.entries(settings.accountOverrides ?? {}).map(([id, account]) => [id, { ...account }])),
@@ -90,6 +91,8 @@ export function SettingsPage({
   filePath,
   lastSavedAt,
   currentEmail,
+  activeTab:controlledTab,
+  onActiveTabChange,
   onImport,
   onBackup,
   onSettings,
@@ -102,6 +105,8 @@ export function SettingsPage({
   filePath: string;
   lastSavedAt: string | null;
   currentEmail?: string | null;
+  activeTab?:SettingsTab;
+  onActiveTabChange?:(tab:SettingsTab)=>void;
   onImport: (d: FinanceData) => Promise<void>;
   onBackup: () => Promise<{ path: string }>;
   onSettings: (settings: FinanceData['state']['settings']) => void;
@@ -111,9 +116,12 @@ export function SettingsPage({
 }) {
   const fileRef = useRef<HTMLInputElement | null>(null);
   const tablistRef = useRef<HTMLDivElement | null>(null);
-  const runtimeEnv=(import.meta as unknown as {env?:{DEV?:boolean;VITE_MYFINHUB_SUPPORT_DIAGNOSTICS?:string}}).env;
-  const supportDiagnosticsEnabled=Boolean(runtimeEnv?.DEV)||runtimeEnv?.VITE_MYFINHUB_SUPPORT_DIAGNOSTICS==='1';
-  const [activeTab, setActiveTab] = useState<SettingsTab>('general');
+  const runtimeEnv=(import.meta as unknown as {env?:{VITE_MYFINHUB_SUPPORT_DIAGNOSTICS?:string}}).env;
+  const diagnosticsRequested=typeof location!=='undefined'&&new URLSearchParams(location.search).get('support-diagnostics')==='1';
+  const supportDiagnosticsEnabled=runtimeEnv?.VITE_MYFINHUB_SUPPORT_DIAGNOSTICS==='1'||diagnosticsRequested;
+  const [localTab,setLocalTab]=useState<SettingsTab>('general');
+  const activeTab=controlledTab??localTab;
+  const selectTab=(tab:SettingsTab)=>{if(onActiveTabChange)onActiveTabChange(tab);else setLocalTab(tab)};
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [pendingImportFile, setPendingImportFile] = useState<File | null>(null);
@@ -136,7 +144,7 @@ export function SettingsPage({
   }, [data.state.settings]);
 
   const commit = (next: FinanceSettings, feedback = 'Οι ρυθμίσεις αποθηκεύονται αυτόματα.') => {
-    const normalized = { ...next, motion: 'full' as const };
+    const normalized = cloneSettings(next);
     draftRef.current = normalized;
     setDraft(normalized);
     onSettings(normalized);
@@ -146,7 +154,7 @@ export function SettingsPage({
   const change = (patch: Partial<FinanceSettings>) => commit({ ...draftRef.current, ...patch });
 
   const runTaxonomyOperation = (operation: TaxonomyOperation) => {
-    const next = { ...taxonomyOperationPreview(draftRef.current, operation), motion: 'full' as const };
+    const next = cloneSettings(taxonomyOperationPreview(draftRef.current, operation));
     draftRef.current = next;
     setDraft(next);
     onTaxonomyOperation(operation);
@@ -217,7 +225,7 @@ export function SettingsPage({
             aria-selected={activeTab === tab.id}
             aria-controls={`settings-panel-${tab.id}`}
             className={activeTab === tab.id ? 'active' : ''}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => selectTab(tab.id)}
           >
             {tab.label}
           </button>
@@ -293,7 +301,7 @@ export function SettingsPage({
         confirmLabel="Εισαγωγή"
         tone="destructive"
         busy={busy}
-        motionMode={data.state.settings.motion}
+        motionMode="full"
         onConfirm={() => void confirmImport()}
         onCancel={cancelImport}
       />
