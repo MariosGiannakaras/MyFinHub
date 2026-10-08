@@ -2,7 +2,7 @@ const PAGE_IDS = [
   'dashboard','transactions','savings','cards','credit','loans','lending','recurring','planning','attention','reports','settings',
 ] as const;
 
-export const SETTINGS_TAB_IDS=['general','profile','accounts','categories','icons','rules','data'] as const;
+const SETTINGS_TAB_IDS=['general','profile','accounts','categories','icons','rules','data'] as const;
 
 type AppRouteId = typeof PAGE_IDS[number];
 export type SettingsTabId = typeof SETTINGS_TAB_IDS[number];
