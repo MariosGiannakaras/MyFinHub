@@ -19,15 +19,15 @@
   .savings-goals-mobile .savings-goal-icon{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:color-mix(in srgb,var(--blue) 11%,transparent);color:var(--blue)}
   .savings-goals-mobile .savings-goal-icon svg{width:18px;height:18px}
   .savings-goals-mobile .savings-goal-row b{font-size:12px}
-  .savings-goals-mobile .savings-goal-row small{display:block;margin-top:3px;color:var(--muted);font-size:var(--ux-dense-label-size)}
+  .savings-goals-mobile .savings-goal-row small{display:block;margin-top:3px;color:var(--text-secondary);font-size:var(--ux-dense-label-size)}
   .savings-goals-mobile .savings-goal-progress{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr) 38px;align-items:center;gap:10px}
   .savings-goals-mobile .savings-goal-progress>span{height:8px;border-radius:999px;background:color-mix(in srgb,var(--line) 80%,transparent);overflow:hidden}
   .savings-goals-mobile .savings-goal-progress i{display:block;height:100%;border-radius:inherit;background:var(--blue)}
   .savings-goals-mobile .savings-goal-row>strong,.savings-goals-mobile .savings-goal-row>span{font-size:11px;color:var(--ink-2)}
-  .savings-goals-mobile .savings-goal-row>strong:nth-of-type(1)::before{content:'Αποταμιευμένα: ';color:var(--muted);font-weight:500}
-  .savings-goals-mobile .savings-goal-row>strong:nth-of-type(2)::before{content:'Στόχος: ';color:var(--muted);font-weight:500}
+  .savings-goals-mobile .savings-goal-row>strong:nth-of-type(1)::before{content:'Αποταμιευμένα: ';color:var(--text-secondary);font-weight:500}
+  .savings-goals-mobile .savings-goal-row>strong:nth-of-type(2)::before{content:'Στόχος: ';color:var(--text-secondary);font-weight:500}
   .savings-goals-mobile .savings-goal-row>span:last-child{grid-column:1/-1}
-  .savings-goals-mobile .savings-goal-row>span:last-child::before{content:'Προθεσμία: ';color:var(--muted)}
+  .savings-goals-mobile .savings-goal-row>span:last-child::before{content:'Προθεσμία: ';color:var(--text-secondary)}
 }
 
 
@@ -52,7 +52,7 @@
   .savings-page{gap:12px;margin-top:-55px;font-size:var(--ux-dense-data-size)}
   .savings-page>.page-heading{margin-bottom:2px}
   .savings-page>.page-heading p{max-width:760px}
-  .savings-desktop-target{display:grid;gap:12px}
+  .savings-desktop-target{display:grid;gap:12px;width:min(100%,1500px);margin-inline:auto}
   .savings-mobile-legacy{display:none}
   .savings-page>.savings-action-section{margin:0}
   .savings-page>.savings-action-section>.section-title{display:none}
@@ -63,7 +63,7 @@
   .savings-page>.savings-action-section .savings-action:nth-child(3) .savings-action-icon{background:color-mix(in srgb,#31b86a 12%,transparent);color:#249857}
   .savings-page>.savings-action-section .savings-action-icon svg{width:25px;height:25px}
   .savings-page>.savings-action-section .savings-action>div b{display:block;font-size:13px;line-height:1.25}
-  .savings-page>.savings-action-section .savings-action>div small{display:block;margin-top:7px;max-width:300px;line-height:1.45;color:var(--muted)}
+  .savings-page>.savings-action-section .savings-action>div small{display:block;margin-top:7px;max-width:300px;line-height:1.45;color:var(--text-secondary)}
   .savings-page>.savings-action-section .savings-action>strong{grid-column:2;justify-self:end;align-self:end;display:flex;align-items:center;gap:7px;color:var(--blue);white-space:nowrap}
   .savings-page>.savings-action-section .savings-action>strong svg{width:14px;height:14px}
 
@@ -73,21 +73,21 @@
   .savings-month-card{padding:19px 18px;border-right:1px solid var(--line)}
   .savings-month-amount{display:block;margin-top:14px;font-size:34px;line-height:1;letter-spacing:-.035em;color:var(--ink)}
   .savings-rate{display:flex;align-items:baseline;gap:7px;margin-top:12px;color:var(--ink)}
-  .savings-rate b{font-size:18px}.savings-rate span{font-weight:720;color:var(--muted)}
-  .savings-rate-target{display:flex;justify-content:space-between;gap:12px;margin-top:10px;color:var(--muted)}
+  .savings-rate b{font-size:18px}.savings-rate span{font-weight:720;color:var(--text-secondary)}
+  .savings-rate-target{display:flex;justify-content:space-between;gap:12px;margin-top:10px;color:var(--text-secondary)}
   .savings-rate-target b{color:var(--ink-2)}
   .savings-target-track{height:8px;margin-top:7px;border-radius:999px;background:color-mix(in srgb,var(--line) 80%,transparent);overflow:hidden}
   .savings-target-track>span{display:block;height:100%;border-radius:inherit;background:var(--blue)}
   .savings-route-target{margin-top:19px!important;padding:9px!important;border:1px solid var(--line);border-radius:13px;background:transparent!important;box-shadow:none!important}
   .savings-route-target>span{display:grid!important;grid-template-columns:26px minmax(0,1fr);grid-template-rows:auto auto;column-gap:8px;align-items:center;min-width:0;padding:0!important;background:transparent!important;border:0!important;box-shadow:none!important}
   .savings-route-target>span>svg{grid-row:1/3;width:18px;height:18px}
-  .savings-route-target small{color:var(--muted);white-space:nowrap}
+  .savings-route-target small{color:var(--text-secondary);white-space:nowrap}
   .savings-route-target b{min-width:0;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .savings-route-target b em{display:block;margin-top:3px;font-style:normal;color:var(--ink)}
-  .savings-route-target>svg{width:14px;height:14px;color:var(--muted)}
+  .savings-route-target>svg{width:14px;height:14px;color:var(--text-secondary)}
 
   .savings-trend-card{padding:19px 15px 10px;border-right:1px solid var(--line)}
-  .savings-chart-legend{display:flex;align-items:center;gap:18px;margin-top:13px;color:var(--muted)}
+  .savings-chart-legend{display:flex;align-items:center;gap:18px;margin-top:13px;color:var(--text-secondary)}
   .savings-chart-legend span{display:flex;align-items:center;gap:6px;white-space:nowrap}
   .savings-chart-legend i{width:15px;height:2px;border-radius:999px;background:var(--blue)}
   .savings-chart-legend i.goal{height:0;border-top:2px dashed var(--blue);background:transparent;opacity:.72}
@@ -117,20 +117,20 @@
   .savings-goals>.panel-head{padding:0 0 9px;border:0}
   .savings-goals>.panel-head span{font-size:var(--ux-small-size)}.savings-goals>.panel-head small{font-size:var(--ux-dense-label-size)}
   .savings-goals-head,.savings-goal-row{display:grid;grid-template-columns:minmax(280px,1.65fr) minmax(210px,1.35fr) .78fr .7fr .8fr;align-items:center;column-gap:14px}
-  .savings-goals-head{padding:0 10px 7px;color:var(--muted)}
+  .savings-goals-head{padding:0 10px 7px;color:var(--text-secondary)}
   .savings-goal-row{min-height:48px;padding:6px 10px;border:1px solid var(--line);border-radius:11px}
   .savings-goal-row+.savings-goal-row{margin-top:6px}
   .savings-goal-row>div:first-child{display:grid;grid-template-columns:32px minmax(0,1fr);align-items:center;gap:9px;min-width:0}
   .savings-goal-icon{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;background:color-mix(in srgb,var(--blue) 11%,transparent);color:var(--blue)}
-  .savings-goal-icon svg{width:17px;height:17px}.savings-goal-icon.muted{color:var(--muted);background:color-mix(in srgb,var(--line) 55%,transparent)}
-  .savings-goal-row b{line-height:1.3}.savings-goal-row small{display:block;margin-top:2px;line-height:1.25;color:var(--muted)}
+  .savings-goal-icon svg{width:17px;height:17px}.savings-goal-icon.muted{color:var(--text-secondary);background:color-mix(in srgb,var(--line) 55%,transparent)}
+  .savings-goal-row b{line-height:1.3}.savings-goal-row small{display:block;margin-top:2px;line-height:1.25;color:var(--text-secondary)}
   .savings-goal-row.personal>div:first-child small{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
   .savings-goal-row>strong,.savings-goal-row>span{color:var(--ink-2)}
   .savings-goal-progress{display:grid;grid-template-columns:minmax(90px,1fr) 32px;align-items:center;gap:9px}
   .savings-goal-progress>span{height:7px;border-radius:999px;background:color-mix(in srgb,var(--line) 80%,transparent);overflow:hidden}
   .savings-goal-progress i{display:block;height:100%;border-radius:inherit;background:var(--blue)}
   .savings-goal-progress b{text-align:right}
-  .savings-goal-row.placeholder{opacity:.64}
-  .savings-goal-progress.muted>span{background:color-mix(in srgb,var(--line) 72%,transparent)}
+  .savings-goals-empty{min-height:76px;margin-top:6px;padding:12px 10px;border:1px dashed var(--border-subtle);border-radius:11px;background:var(--surface-inset);display:grid;grid-template-columns:32px minmax(0,1fr);align-items:center;gap:10px}
+  .savings-goals-empty>div{min-width:0}.savings-goals-empty b{display:block;color:var(--ink);font-size:var(--ux-dense-data-size)}.savings-goals-empty small{display:block;margin-top:4px;color:var(--text-secondary);line-height:1.4}
   .savings-target-note{min-height:55px;margin-top:0;border-radius:14px}
 }
