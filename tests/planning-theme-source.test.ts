@@ -16,7 +16,7 @@ describe('Planning desktop theme surfaces',()=>{
 
   it('keeps the approved forecast controls contained at the 1100px desktop transition',()=>{
     expect(css).toContain('@media (min-width:1100px) and (max-width:1199px)');
-    expect(css).toContain('.planning-approved-forecast{grid-template-columns:minmax(246px,1.35fr) repeat(3,minmax(88px,.46fr)) minmax(110px,.5fr)');
+    expect(css).toContain('.planning-forecast-summary{grid-template-columns:minmax(246px,1.35fr) repeat(3,minmax(88px,.46fr)) minmax(110px,.5fr)');
     expect(css).toContain('.planning-detail-toggle{min-width:0;margin-left:3px;padding-inline:7px;white-space:normal');
   });
 
