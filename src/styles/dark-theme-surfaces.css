@@ -40,7 +40,7 @@ html[data-theme="dark"] .approved-secondary-account{
 @media(min-width:981px){
   html[data-theme="dark"] .dashboard-approved .approved-secondary-panel{
     background:transparent!important;
-    border-color:transparent!important;
+    border:0!important;
     box-shadow:none!important;
   }
   html[data-theme="dark"] .dashboard-approved .approved-kpi-strip{
