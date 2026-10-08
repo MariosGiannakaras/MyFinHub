@@ -59,12 +59,12 @@ export function LendingPage({data,asOf,privacyVisible,onPrivacyVisibleChange,onC
       <PageHeader className="lending-approved-heading" eyebrow="ΔΑΝΕΙΚΑ / ΟΦΕΙΛΕΣ" title="Δανεικά / Οφειλές" description={<p>Τα άτομα στα οποία έχεις καταγράψει δανεικά και επιστροφές, συγκεντρωμένα σε ένα σημείο.</p>}/>
 
       <section className="lending-approved-layout">
-        <aside className="panel surface-raised lending-people-panel" aria-label="Άτομα με δανεικά">
+        <aside className={`panel surface-raised lending-people-panel ${filteredPeople.length<=2?'is-sparse':''}`} aria-label="Άτομα με δανεικά">
           <div className="lending-people-head"><div><span>Τα άτομα μου</span><small>{rows.length} {rows.length===1?'πρόσωπο':'πρόσωπα'} με ιστορικό</small></div></div>
           <AppInputShell className="lending-people-search" leading={<Search size={17}/>}><AppTextInput aria-label="Αναζήτηση ατόμου" value={peopleQuery} onChange={event=>setPeopleQuery(event.target.value)} placeholder="Αναζήτηση ατόμου…"/></AppInputShell>
           <div className="lending-people-list">
             {filteredPeople.length?filteredPeople.map(row=><button type="button" key={row.person} className={`lending-person-row ${selectedPerson===row.person?'active':''}`} aria-pressed={selectedPerson===row.person} onClick={()=>{setSelectedPerson(row.person);setHistoryFilter('all')}}>
-              <span className="lending-person-avatar" aria-hidden="true">{personInitials(row.person)||<UserRound size={18}/>}</span>
+              <span className="lending-person-avatar" aria-hidden="true">{privacyVisible?(personInitials(row.person)||<UserRound size={18}/>):<UserRound size={18}/>}</span>
               <span className="lending-person-copy"><b className={!privacyVisible?'private-text':''}>{row.person}</b><small>{row.outstanding>0?'Μου χρωστάει':'Εξοφλημένο'}</small></span>
               <strong className={row.outstanding>0?'positive':''}><AnimatedAmount value={row.outstanding} hidden={!privacyVisible}/></strong><ChevronRight size={18}/>
             </button>):<div className="empty-state lending-people-empty">Δεν βρέθηκε άτομο με αυτό το όνομα.</div>}
@@ -75,7 +75,7 @@ export function LendingPage({data,asOf,privacyVisible,onPrivacyVisibleChange,onC
           <section className="panel surface-raised lending-selected-panel">
             <div className="lending-selected-toolbar"><Button variant="secondary" type="button" className="privacy-toggle" aria-pressed={privacyVisible} onClick={()=>onPrivacyVisibleChange(!privacyVisible)}>{privacyVisible?<EyeOff size={17}/>:<Eye size={17}/>} {privacyVisible?'Απόκρυψη':'Εμφάνιση'} στοιχείων</Button><Button variant="primary" type="button" onClick={()=>start('lending')}><Plus size={17}/> Νέο άτομο</Button></div>
             {selectedRow?<>
-              <div className="lending-selected-identity"><span className="lending-selected-avatar" aria-hidden="true">{personInitials(selectedRow.person)||<UserRound size={22}/>}</span><div><h2 className={!privacyVisible?'private-text':''}>{selectedRow.person}</h2><p>{selectedRow.outstanding>0?'Μου χρωστάει':'Η απαίτηση έχει εξοφληθεί'}</p></div></div>
+              <div className="lending-selected-identity"><span className="lending-selected-avatar" aria-hidden="true">{privacyVisible?(personInitials(selectedRow.person)||<UserRound size={22}/>):<UserRound size={22}/>}</span><div><h2 className={!privacyVisible?'private-text':''}>{selectedRow.person}</h2><p>{selectedRow.outstanding>0?'Μου χρωστάει':'Η απαίτηση έχει εξοφληθεί'}</p></div></div>
               <div className="lending-metric-grid">
                 <article><span className="lending-metric-icon receivable"><HandCoins size={18}/></span><div><small>Τρέχουσα απαίτηση</small><b className={selectedRow.outstanding>0?'positive':''}><AnimatedAmount value={selectedRow.outstanding} hidden={!privacyVisible}/></b></div></article>
                 <article><span className="lending-metric-icon lent"><Plus size={18}/></span><div><small>Συνολικά δανεισμένα</small><b><AnimatedAmount value={selectedTotals.lent} hidden={!privacyVisible}/></b></div></article>
