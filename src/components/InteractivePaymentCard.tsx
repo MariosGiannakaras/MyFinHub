@@ -83,9 +83,9 @@ export function InteractivePaymentCard({
           <div className="card-brand-block"><div className="card-brand"><PrototypeBrand card={card} bank={bank}/></div><div className="card-nickname">{card.nickname}</div></div>
           <div className="card-toolbar">
             <button className="card-icon-btn card-icon-reveal" type="button" disabled={busy} aria-pressed={visible} aria-label={visible?'Απόκρυψη στοιχείων':'Εμφάνιση στοιχείων'} title={visible?'Απόκρυψη στοιχείων':'Εμφάνιση στοιχείων'} onClick={()=>void toggleReveal()}>{visible?<EyeOff/>:<Eye/>}</button>
-            {onEditCard?<button className="card-icon-btn card-icon-secondary" type="button" disabled={busy} aria-label={`Επεξεργασία κάρτας ${card.nickname}`} title="Επεξεργασία κάρτας" onClick={()=>onEditCard(card)}><Pencil/></button>:null}
-            {onEditDetails?<button className="card-icon-btn card-icon-secondary" type="button" disabled={busy} aria-label={`Ασφαλή στοιχεία ${card.nickname}`} title="Ασφαλή στοιχεία · PAN / λήξη / CVV" onClick={()=>onEditDetails(card)}><KeyRound/></button>:null}
-            {onArchive?<button className="card-icon-btn card-icon-secondary" type="button" disabled={busy||archiveDisabled} aria-label="Αρχειοθέτηση κάρτας" title="Αρχειοθέτηση κάρτας" onClick={()=>{setDeleteProgress(0);setDeleteOffset(0);setDeleteOpen(true)}}><Archive/></button>:null}
+            {onEditCard?<button className="card-icon-btn card-icon-management" type="button" disabled={busy} aria-label={`Επεξεργασία κάρτας ${card.nickname}`} title="Επεξεργασία κάρτας" onClick={()=>onEditCard(card)}><Pencil/></button>:null}
+            {onEditDetails?<button className="card-icon-btn card-icon-management" type="button" disabled={busy} aria-label={`Ασφαλή στοιχεία ${card.nickname}`} title="Ασφαλή στοιχεία · PAN / λήξη / CVV" onClick={()=>onEditDetails(card)}><KeyRound/></button>:null}
+            {onArchive?<button className="card-icon-btn card-icon-management" type="button" disabled={busy||archiveDisabled} aria-label="Αρχειοθέτηση κάρτας" title="Αρχειοθέτηση κάρτας" onClick={()=>{setDeleteProgress(0);setDeleteOffset(0);setDeleteOpen(true)}}><Archive/></button>:null}
           </div>
         </header>
         <div className="card-body">
