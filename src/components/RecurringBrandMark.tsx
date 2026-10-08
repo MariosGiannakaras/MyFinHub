@@ -13,8 +13,8 @@ export function RecurringBrandMark({
   size?:number;
   className?:string;
 }){
-  const assets=useRecurringServiceAssets();
   const assetKey=item.logoAssetKey?.trim()||null;
+  const assets=useRecurringServiceAssets(Boolean(assetKey));
   const asset=assetKey?recurringServiceAssetByKey(assetKey):null;
   const [failedAssetKey,setFailedAssetKey]=useState<string|null>(null);
   const failed=Boolean(assetKey&&failedAssetKey===assetKey);
