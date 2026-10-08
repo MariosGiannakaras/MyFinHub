@@ -320,6 +320,7 @@ export interface FinanceSettings {
   monthlyBudget?: number;
   savingsTargetRate?: number;
   creditLimit?: number;
+  /** Legacy read compatibility only. Runtime motion ignores this field. */
   motion?: 'system' | 'reduced' | 'full';
   textSize?: TextSizePreference;
 }
