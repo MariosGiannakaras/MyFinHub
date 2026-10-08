@@ -32,6 +32,8 @@
 .top-actions button,.icon-button{border:1px solid var(--line);background:var(--surface);box-shadow:none;width:36px;height:36px;border-radius:12px;display:grid;place-items:center;cursor:pointer;transition:.15s}
 .icon-button-accent{background:var(--accent-soft);border-color:var(--focus-outline);color:var(--accent);box-shadow:var(--shadow-flat)}
 .icon-button-quiet{background:transparent;border-color:transparent;color:var(--text-secondary);box-shadow:none}
+.top-actions .icon-button-accent{background:var(--accent-soft);border-color:var(--focus-outline);color:var(--accent);box-shadow:var(--shadow-flat)}
+.top-actions .icon-button-quiet{background:transparent;border-color:transparent;color:var(--text-secondary);box-shadow:none}
 .top-action-command{width:40px;height:40px}
 .top-action-group{display:flex;align-items:center;gap:2px;padding:2px;border:1px solid var(--border-subtle);border-radius:13px;background:var(--surface-inset);box-shadow:var(--shadow-inset)}
 .top-action-group .icon-button{width:32px;height:32px;border-radius:9px}
