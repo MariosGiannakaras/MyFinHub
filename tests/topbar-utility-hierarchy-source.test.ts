@@ -30,7 +30,7 @@ describe('AppShell utility hierarchy',()=>{
     expect(theme).toContain('.icon-button-accent{background:var(--accent-soft)!important');
     expect(theme).toContain('.icon-button-quiet{background:transparent!important');
     expect(shellCss).toContain('.top-action-group{display:flex;align-items:center;gap:2px');
-    expect(shellCss).toContain('.top-action-system{padding-inline:0;border-color:transparent;background:transparent;box-shadow:none}');
+    expect(shellCss).toContain('.top-action-system{padding-inline:0;border:0;background:transparent;box-shadow:none}');
     expect(mobile).toContain('.top-action-group{display:contents}');
   });
 });
