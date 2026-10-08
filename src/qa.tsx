@@ -209,7 +209,7 @@ function QaWorkspace(){
   const [privacyVisible,setPrivacyVisible]=useState(false);
   const today='2026-08-17';
 
-  useEffect(()=>{document.documentElement.dataset.motion=data.state.settings.motion||'system';return()=>{delete document.documentElement.dataset.motion}},[data.state.settings.motion]);
+  useEffect(()=>{document.documentElement.dataset.motion='full';return()=>{delete document.documentElement.dataset.motion}},[]);
   useEffect(()=>{document.documentElement.dataset.textSize=data.state.settings.textSize??'normal';return()=>{delete document.documentElement.dataset.textSize}},[data.state.settings.textSize]);
 
   const recordHistory=(kind:ChangeHistoryEntry['kind'],label:string)=>{const entry:ChangeHistoryEntry={id:`qa-history-${Date.now()}-${Math.random().toString(36).slice(2,7)}`,kind,label,at:new Date().toISOString()};setChangeHistory(items=>[entry,...items].slice(0,20))};
@@ -238,7 +238,7 @@ function QaWorkspace(){
   const completeScheduled=(item:ScheduledTransaction,event:FinanceEvent)=>update(current=>{const nextEvent=applyTransactionRules(current,event);return {...current,state:{...current.state,scheduled:[...(current.state.scheduled??[]).filter(existing=>existing.id!==item.id),item],events:[...(current.state.events??[]).filter(existing=>existing.id!==nextEvent.id),nextEvent]}}});
   const upsertBudget=(budget:MonthlyBudget)=>update(current=>({...current,state:{...current.state,budgets:[...(current.state.budgets??[]).filter(item=>item.id!==budget.id),budget]}}));
   const deleteBudget=(id:string)=>update(current=>({...current,state:{...current.state,budgets:(current.state.budgets??[]).filter(item=>item.id!==id)}}));
-  const updateSavingsTarget=(rate:number)=>update(current=>({...current,state:{...current.state,settings:{...current.state.settings,savingsTargetRate:rate,motion:'full'}}}));
+  const updateSavingsTarget=(rate:number)=>update(current=>({...current,state:{...current.state,settings:{...current.state.settings,savingsTargetRate:rate}}}));
   const upsertSavingsGoal=(goal:SavingsGoal)=>update(current=>{const rows=current.state.savingsGoals??[];const exists=rows.some(item=>item.id===goal.id);return {...current,state:{...current.state,savingsGoals:exists?rows.map(item=>item.id===goal.id?goal:item):[...rows,goal]}}});
   const deleteSavingsGoal=(id:string)=>update(current=>({...current,state:{...current.state,savingsGoals:(current.state.savingsGoals??[]).filter(item=>item.id!==id)}}));
   const upsertRule=(rule:TransactionRule)=>update(current=>({...current,state:{...current.state,transactionRules:[...(current.state.transactionRules??[]).filter(item=>item.id!==rule.id),rule]}}));
@@ -268,7 +268,7 @@ function QaWorkspace(){
     if(action.type==='scheduled_complete'){openSpecial({mode:'scheduled',scheduledId:action.scheduledId})}
   };
   const content=page==='dashboard'
-    ?<DashboardPage data={data} month={month} asOf={today} motionMode={data.state.settings.motion||'system'} privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onQuickAdd={(prefill?:QuickPrefill)=>openGeneric('expense',prefill||null)} onAccountQuickAdd={(accountId,kind)=>kind==='savings'?openSpecial({mode:'savings',toAccountId:accountId,savingSource:'manual_transfer'}):openGeneric('expense',{note:'',amount:0,accountId})} onTransactions={()=>setPage('transactions')} onPlanning={()=>setPage('planning')} onAttention={()=>setPage('attention')} onReports={()=>setPage('reports')}/>
+    ?<DashboardPage data={data} month={month} asOf={today} motionMode="full" privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onQuickAdd={(prefill?:QuickPrefill)=>openGeneric('expense',prefill||null)} onAccountQuickAdd={(accountId,kind)=>kind==='savings'?openSpecial({mode:'savings',toAccountId:accountId,savingSource:'manual_transfer'}):openGeneric('expense',{note:'',amount:0,accountId})} onTransactions={()=>setPage('transactions')} onPlanning={()=>setPage('planning')} onAttention={()=>setPage('attention')} onReports={()=>setPage('reports')}/>
     :page==='transactions'?<TransactionsPage data={data} month={month} onEditEvent={editEvent} onDeleteEvent={deleteEvent} onEditLegacy={editLegacy} onDeleteLegacy={deleteLegacy}/>
     :page==='savings'?<SavingsPage data={data} month={month} asOf={today} onCreate={addEvent} onQuickAdd={openSpecial} onSavingsTargetChange={updateSavingsTarget} onUpsertGoal={upsertSavingsGoal} onDeleteGoal={deleteSavingsGoal}/>
     :page==='cards'?<CardsPage data={data} onUpsertBank={upsertBank} onUpsertCard={upsertCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard}/>
@@ -279,18 +279,18 @@ function QaWorkspace(){
     :page==='planning'?<PlanningPage data={data} asOf={today} onUpsertScheduled={upsertScheduled} onCompleteScheduled={completeScheduled}/>
     :page==='attention'?<AttentionPage data={data} asOf={today} onAction={handleAttention} onDecision={decideAttention} onReviewDecision={(id,decision)=>update(current=>({...current,state:{...current.state,reviewDecisions:{...(current.state.reviewDecisions??{}),[id]:decision}}}))}/>
     :page==='reports'?<ReportsPage data={data} month={month} privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onUpsertBudget={upsertBudget} onDeleteBudget={deleteBudget} onUpsertRule={upsertRule} onDeleteRule={deleteRule}/>
-    :<SettingsPage data={data} asOf={today} filePath="Synthetic QA" lastSavedAt={data.updatedAt} onImport={async incoming=>importData(incoming)} onBackup={async()=>({path:'synthetic/backup.json'})} onSettings={settings=>update(current=>({...current,state:{...current.state,settings:{...settings,motion:'full'}}}))} onTaxonomyOperation={updateTaxonomy} onUpsertRule={upsertRule} onDeleteRule={deleteRule}/>;
+    :<SettingsPage data={data} asOf={today} filePath="Synthetic QA" lastSavedAt={data.updatedAt} onImport={async incoming=>importData(incoming)} onBackup={async()=>({path:'synthetic/backup.json'})} onSettings={settings=>update(current=>({...current,state:{...current.state,settings}}))} onTaxonomyOperation={updateTaxonomy} onUpsertRule={upsertRule} onDeleteRule={deleteRule}/>;
   const periodVisible=['dashboard','transactions','savings','reports'].includes(page);
 
   return <>
-    <AppShell page={page} onPage={next=>{setCrash(false);setPage(next)}} onQuickAdd={()=>openGeneric()} onCommand={openCommand} onRefresh={refresh} onUndo={undo} onRedo={redo} canUndo={undoStack.length>0} canRedo={redoStack.length>0} history={changeHistory} saveState={saveState} filePath="Synthetic QA" motionMode={data.state.settings.motion||'system'} userEmail="qa@example.invalid" onLogout={()=>{}}>
+    <AppShell page={page} onPage={next=>{setCrash(false);setPage(next)}} onQuickAdd={()=>openGeneric()} onCommand={openCommand} onRefresh={refresh} onUndo={undo} onRedo={redo} canUndo={undoStack.length>0} canRedo={redoStack.length>0} history={changeHistory} saveState={saveState} filePath="Synthetic QA" motionMode="full" userEmail="qa@example.invalid" onLogout={()=>{}}>
       <PersistenceNotice saveState={saveState} onRecover={()=>setRecoverOpen(true)}/>
       {periodVisible?<div className="period-row"><PeriodControl month={month} onChange={setMonth}/><button type="button" className="text-button" data-qa-crash onClick={()=>setCrash(true)}>QA render failure</button></div>:<button type="button" className="text-button qa-crash-floating" data-qa-crash onClick={()=>setCrash(true)}>QA render failure</button>}
       {saveState==='loading'?<div className="qa-loading-route"><h1 className="sr-only">{QA_PAGE_HEADINGS[page]}</h1><PageSkeleton/></div>:<PageErrorBoundary resetKey={page} onDashboard={()=>{setCrash(false);setPage('dashboard')}}>{lazyFailure?<Suspense fallback={<PageSkeleton/>}><LazyResourceFailure/></Suspense>:crash?<Crash/>:content}</PageErrorBoundary>}
     </AppShell>
-    <CommandPalette open={commandOpen} data={data} motionMode={data.state.settings.motion||'system'} onClose={()=>setCommandOpen(false)} onExecute={handleCommand}/>
-    <ContextualQuickAdd open={quickOpen} data={data} asOf={today} context={quickContext} initial={(data.state.events??[]).find(event=>event.id===editing)||null} motionMode={data.state.settings.motion||'system'} onClose={()=>{setQuickOpen(false);setEditing(null);setQuickContext(null)}} onCreate={addEvent} onCompleteScheduled={completeScheduled} currentBalance={id=>accountBalances(data,today)[id]||0}/>
-    <ConfirmDialog open={recoverOpen} title="Φόρτωση τελευταίας αποθηκευμένης έκδοσης;" description="Η επαναφόρτωση θα απορρίψει τυχόν τοπικές αλλαγές που δεν αποθηκεύτηκαν και θα φορτώσει την τελευταία έκδοση από τη βάση." confirmLabel="Επαναφόρτωση" tone="destructive" motionMode={data.state.settings.motion||'system'} onConfirm={()=>{setRecoverOpen(false);setSaveState('saved')}} onCancel={()=>setRecoverOpen(false)}/>
+    <CommandPalette open={commandOpen} data={data} motionMode="full" onClose={()=>setCommandOpen(false)} onExecute={handleCommand}/>
+    <ContextualQuickAdd open={quickOpen} data={data} asOf={today} context={quickContext} initial={(data.state.events??[]).find(event=>event.id===editing)||null} motionMode="full" onClose={()=>{setQuickOpen(false);setEditing(null);setQuickContext(null)}} onCreate={addEvent} onCompleteScheduled={completeScheduled} currentBalance={id=>accountBalances(data,today)[id]||0}/>
+    <ConfirmDialog open={recoverOpen} title="Φόρτωση τελευταίας αποθηκευμένης έκδοσης;" description="Η επαναφόρτωση θα απορρίψει τυχόν τοπικές αλλαγές που δεν αποθηκεύτηκαν και θα φορτώσει την τελευταία έκδοση από τη βάση." confirmLabel="Επαναφόρτωση" tone="destructive" motionMode="full" onConfirm={()=>{setRecoverOpen(false);setSaveState('saved')}} onCancel={()=>setRecoverOpen(false)}/>
   </>;
 }
 
