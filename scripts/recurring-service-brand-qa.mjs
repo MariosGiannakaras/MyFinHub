@@ -30,13 +30,14 @@ try{
     const realFetch=globalThis.fetch.bind(globalThis);
     const initial={assetKey:'service-asset-aaaaaaaaaaaaaaaaaaaaaaaa',recurringId:'qa-service-branded',url:assetUrl,fileName:'streaming.svg',mimeType:'image/svg+xml',sizeBytes:512,updatedAt:'2026-10-08T18:00:00.000Z'};
     const replacement={assetKey:'service-asset-bbbbbbbbbbbbbbbbbbbbbbbb',recurringId:'qa-service-branded',url:assetUrl,fileName:'replacement.svg',mimeType:'image/svg+xml',sizeBytes:512,updatedAt:'2026-10-08T18:05:00.000Z'};
+    const paused={assetKey:'service-asset-cccccccccccccccccccccccc',recurringId:'qa-service-paused',url:assetUrl,fileName:'paused.svg',mimeType:'image/svg+xml',sizeBytes:512,updatedAt:'2026-10-08T18:06:00.000Z'};
     globalThis.__recurringAssetWrites=0;
     globalThis.__recurringAssetDeletes=0;
     globalThis.fetch=async function(input,init){
       const url=typeof input==='string'?input:input instanceof Request?input.url:String(input);
       const method=String((init&&init.method)||(input instanceof Request?input.method:'GET')||'GET').toUpperCase();
       if(url.includes('/api/account-metadata')&&url.includes('resource=recurring-service-assets')){
-        if(method==='GET')return new Response(JSON.stringify({assets:[initial]}),{status:200,headers:{'content-type':'application/json'}});
+        if(method==='GET')return new Response(JSON.stringify({assets:[initial,paused]}),{status:200,headers:{'content-type':'application/json'}});
         if(method==='PUT'){globalThis.__recurringAssetWrites+=1;return new Response(JSON.stringify({asset:replacement}),{status:200,headers:{'content-type':'application/json'}})}
         if(method==='DELETE'){globalThis.__recurringAssetDeletes+=1;return new Response(JSON.stringify({ok:true}),{status:200,headers:{'content-type':'application/json'}})}
       }
@@ -60,7 +61,7 @@ try{
   assert(current.fallbackSource==='fallback','no-logo recurring item uses canonical fallback');
   assert(current.overflow<=1,'recurring service branding does not introduce desktop overflow');
   await clickText('.inactive-recurring>summary','Παγωμένα & ανενεργά');
-  assert(await c.call("function(){const row=[...document.querySelectorAll('.inactive-recurring-list article')].find(item=>(item.textContent||'').includes('QA Paused Service'));return row?.querySelector('.recurring-brand-mark')?.getAttribute('data-recurring-brand-key')==='service-asset-aaaaaaaaaaaaaaaaaaaaaaaa'}"),'paused recurring item retains stored logo reference');
+  assert(await c.call("function(){const row=[...document.querySelectorAll('.inactive-recurring-list article')].find(item=>(item.textContent||'').includes('QA Paused Service'));return row?.querySelector('.recurring-brand-mark')?.getAttribute('data-recurring-brand-key')==='service-asset-cccccccccccccccccccccccc'}"),'paused recurring item retains stored logo reference');
   await shot('recurring-service-brand-stored-and-fallback');
 
   console.log('Recurring service-brand QA: cancel is upload-free');
@@ -75,7 +76,7 @@ try{
   console.log('Recurring service-brand QA: replace propagates to payment and lifecycle');
   await clickAria('Επεξεργασία QA Streaming');await setLogoFile();await clickText('.editor-actions button','Αποθήκευση');
   await waitFor("function(){const row=[...document.querySelectorAll('[data-recurring-status=active]')].find(item=>(item.textContent||'').includes('QA Streaming'));return !document.querySelector('.recurring-editor-dialog')&&row?.querySelector('.recurring-brand-mark')?.getAttribute('data-recurring-brand-key')==='service-asset-bbbbbbbbbbbbbbbbbbbbbbbb'}",'replaced recurring logo');
-  current=await state();assert(current.writes===1,'Save uploads exactly one replacement asset');
+  current=await state();assert(current.writes===1&&current.deletes===1,'replacement uploads one asset and releases the old unshared asset after the save');
   await clickAria('Πληρωμή QA Streaming');
   await waitFor("function(){return Boolean(document.querySelector('.contextual-quick-modal'))}",'recurring payment dialog');
   assert(await c.call("function(){return document.querySelector('.contextual-quick-modal #context-quick-title .recurring-brand-mark')?.getAttribute('data-recurring-brand-key')==='service-asset-bbbbbbbbbbbbbbbbbbbbbbbb'}"),'payment flow uses the same recurring brand mark');
@@ -91,7 +92,7 @@ try{
   console.log('Recurring service-brand QA: remove falls back without asset mutation');
   await clickAria('Επεξεργασία QA Streaming');await clickText('.recurring-logo-editor-actions button','Αφαίρεση');await clickText('.editor-actions button','Αποθήκευση');
   await waitFor("function(){const row=[...document.querySelectorAll('.inactive-recurring-list article')].find(item=>(item.textContent||'').includes('QA Streaming'));return !document.querySelector('.recurring-editor-dialog')&&row?.querySelector('.recurring-brand-mark')?.getAttribute('data-recurring-brand-source')==='fallback'}",'removed recurring logo fallback');
-  current=await state();assert(current.writes===1&&current.deletes===1,'removing the last logo reference releases the previous asset after save');
+  current=await state();assert(current.writes===1&&current.deletes===2,'removing the last logo reference releases the replacement asset after save');
   await shot('recurring-service-brand-removed');
 
   console.log('Recurring service-brand QA: failed durable finance save cleans newly uploaded asset');

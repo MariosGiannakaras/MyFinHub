@@ -15,6 +15,7 @@ const recurringPage=readFileSync('src/pages/RecurringPage.tsx','utf8');
 const financeHook=readFileSync('src/hooks/useFinance.ts','utf8');
 const app=readFileSync('src/App.tsx','utf8');
 const recurringRendered=readFileSync('scripts/recurring-service-brand-qa.mjs','utf8');
+const qaFixture=readFileSync('src/qa.tsx','utf8');
 
 afterEach(()=>{
   vi.restoreAllMocks();
@@ -43,6 +44,9 @@ describe('recurring service asset foundation',()=>{
     expect(recurringPage).toContain('if(oldKey&&oldKey!==normalized.logoAssetKey&&!oldKeyStillShared)');
     expect(recurringPage).not.toContain('onUpsert(normalized)');
     expect(recurringRendered).toContain('failed finance write retains old logo reference and deletes only newly uploaded asset');
+    expect(qaFixture).toContain("logoAssetKey:'service-asset-cccccccccccccccccccccccc'");
+    expect(recurringRendered).toContain("recurringId:'qa-service-paused'");
+    expect(recurringRendered).toContain('current.writes===1&&current.deletes===2');
   });
 
   it('uses a separate owner+AAL2 Storage and metadata domain instead of financial providers',()=>{
