@@ -28,5 +28,7 @@ describe('staged card profile + secure vault boundary',()=>{
     expect(credit).toContain('await onUpsertCardDurably(updated);if(wasNew)');
     expect(dlg).toContain('await onSaved(updated)');
     expect(dlg).toContain('else if(vaultSaved)setError(');
+    expect(qa).toContain("get('card-profile-save-failure')==='1'");
+    expect(read('scripts/card-vault-runtime-qa.mjs')).toContain('card-vault-finance-profile-failure');
   });
 });

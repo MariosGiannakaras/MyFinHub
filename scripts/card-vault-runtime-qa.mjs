@@ -124,6 +124,22 @@ try{
   const calls=await c.call("function(){return globalThis.__myfinhubQaCardVault.calls}");
   assert(calls.some(call=>call.method==='PUT')&&calls.some(call=>call.method==='POST')&&calls.some(call=>call.method==='DELETE'),'runtime exercised PUT, POST and DELETE vault methods');
   await screenshot('card-vault-empty-after-delete');
+  console.log('Card Vault runtime QA: confirmed secret write but failed FinanceData profile receipt');
+  const failureUrl=new URL(baseUrl);
+  failureUrl.searchParams.set('page','cards');failureUrl.searchParams.set('card-vault','ready');
+  failureUrl.searchParams.set('card-profile-save-failure','1');
+  await c.send('Page.navigate',{url:failureUrl.href});
+  await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').trim()==='Κάρτες'}",'Cards partial-save fixture');
+  await clickAria('Ασφαλή στοιχεία QA Debit');
+  await waitFor("function(){return Boolean(document.querySelector('.app-card-details-dialog'))&&!document.querySelector('.app-card-details-dialog input:disabled')}",'partial card save dialog');
+  await setInput('Αριθμός κάρτας','5555 5555 5555 9999');
+  await setInput('Λήξη κάρτας','12/30');
+  await setInput('CVV κάρτας','123');
+  await clickText('.app-card-details-dialog button','Αποθήκευση στοιχείων');
+  await waitFor("function(){return (document.querySelector('.app-card-details-dialog [role=alert]')?.textContent||'').includes('το προφίλ δεν επιβεβαιώθηκε')}",'vault committed but finance profile receipt failed');
+  const partial=await c.call("function(){return {modal:Boolean(document.querySelector('.app-card-details-dialog')),error:document.querySelector('.app-card-details-dialog [role=alert]')?.textContent||'',vault:globalThis.__myfinhubQaCardVault.secret,calls:globalThis.__myfinhubQaCardVault.calls}}");
+  assert(partial.modal&&partial.error.includes('Τα ασφαλή στοιχεία αποθηκεύτηκαν στο vault')&&partial.vault?.pan==='5555555555559999'&&partial.calls.some(call=>call.method==='PUT'),'partial vault save must keep dialog, acknowledge durable secret and permit explicit retry');
+  await screenshot('card-vault-finance-profile-failure');
   console.log('Card Vault runtime QA passed: invalid input, save/reveal/update, hard reload and explicit delete.');
 }finally{
   try{c?.close()}catch{}

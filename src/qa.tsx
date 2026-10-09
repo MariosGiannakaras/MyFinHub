@@ -283,7 +283,7 @@ function QaWorkspace(){
   const createSelfLoan=(loan:Loan,event:FinanceEvent)=>update(current=>{const next=withLoan(current,loan);return {...next,state:{...next.state,events:[...(next.state.events??[]).filter(existing=>existing.id!==event.id),event]}}});
   const upsertBank=(bank:CardBank)=>update(current=>({...current,state:{...current.state,cardBanks:[...(current.state.cardBanks??[]).filter(item=>item.id!==bank.id),bank]}}));
   const upsertCard=(card:PaymentCard)=>update(current=>({...current,state:{...current.state,cards:[...(current.state.cards??[]).filter(item=>item.id!==card.id),card]}}));
-  const upsertCardDurably=async(card:PaymentCard)=>{upsertCard(card)};
+  const upsertCardDurably=async(card:PaymentCard)=>{if(new URLSearchParams(location.search).get('card-profile-save-failure')==='1')throw new Error('Η δοκιμαστική αποθήκευση προφίλ απέτυχε.');upsertCard(card)};
   const stageNewCard=async(card:PaymentCard)=>{if(!(data.state.cards??[]).some(item=>item.id===card.id))upsertCard({...card,last4:undefined,vaultRef:undefined})};
   const archiveCard=(card:PaymentCard)=>upsertCard(archiveCardRecord(card));
   const deleteCard=async(card:PaymentCard)=>{update(current=>withCardSecretCleanupComplete(withCardSecretCleanupPending(current,card,`${today}T12:00:00.000Z`,today),card.id))};
