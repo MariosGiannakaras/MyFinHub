@@ -22,7 +22,8 @@ describe('recurring service asset foundation',()=>{
   it('adds only a stable optional reference to the recurring finance contract',()=>{
     expect(types).toContain('logoAssetKey?: string | null;');
     expect(validation).toContain('value.logoAssetKey');
-    expect(validation).toContain('/^[a-z][a-z0-9-]{0,95}$/');
+    expect(validation).toContain('/^service-asset-[a-f0-9]{24}$/');
+    expect(validation).not.toContain('/^[a-z][a-z0-9-]{0,95}$/');
     expect(types).not.toContain('logoData');
     expect(types).not.toContain('base64');
   });
@@ -61,6 +62,9 @@ describe('recurring service asset foundation',()=>{
     expect(()=>parseRecurringServiceAssetUpload({query:{recurringId:'rec',fileName:'x.pdf'},headers:{'content-type':'application/pdf'}})).toThrow(ApiError);
     expect(parseRecurringServiceAssetKey({query:{assetKey:'service-asset-1234567890abcdef12345678'}})).toBe('service-asset-1234567890abcdef12345678');
     expect(()=>parseRecurringServiceAssetKey({query:{assetKey:'../escape'}})).toThrow(ApiError);
+    expect(()=>parseRecurringServiceAssetKey({query:{assetKey:'unrelated-provider-key'}})).toThrow(ApiError);
+    expect(()=>parseRecurringServiceAssetKey({query:{assetKey:'service-asset-1234'}})).toThrow(ApiError);
+    expect(()=>parseRecurringServiceAssetKey({query:{assetKey:'service-asset-1234567890ABCDEF12345678'}})).toThrow(ApiError);
     expect(()=>validateProviderAssetContent('image/svg+xml',Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"><path d="M0 0"/></svg>'))).not.toThrow();
     expect(()=>validateProviderAssetContent('image/svg+xml',Buffer.from('<svg><script>alert(1)</script></svg>'))).toThrow(ApiError);
   });

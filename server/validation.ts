@@ -182,7 +182,7 @@ function validateRecurring(value: unknown, name: string) {
   if (value.status !== undefined) oneOf(value.status, ['active','paused','stopped'], `${name}.status`);
   if (value.logoAssetKey !== undefined && value.logoAssetKey !== null) {
     text(value.logoAssetKey, `${name}.logoAssetKey`, 96);
-    if (!/^[a-z][a-z0-9-]{0,95}$/.test(value.logoAssetKey)) invalid(`Invalid ${name}.logoAssetKey.`);
+    if (!/^service-asset-[a-f0-9]{24}$/.test(value.logoAssetKey)) invalid(`Invalid ${name}.logoAssetKey.`);
   }
   optionalText(value.source, `${name}.source`, 1_000);
 }
