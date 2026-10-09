@@ -54,6 +54,6 @@ describe('post-v1.4 frontend/backend capability reachability map (DV-FB01/02)',(
     expect(trace).toContain('permanent card deletion');
     expect(trace).toContain('rheomiq_delete_committed_card_secret');
     expect(trace).toContain('row');
-    expect(trace).toContain('DV-FB07/10 remain **unaccepted**');
+    expect(trace).toContain('DV-FB07/10 remain unchecked');
   });
 });
