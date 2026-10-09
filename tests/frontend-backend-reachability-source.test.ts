@@ -49,10 +49,11 @@ describe('post-v1.4 frontend/backend capability reachability map (DV-FB01/02)',(
     expect(planning).toContain('onCompleteScheduled(completed, event)');
     expect(attention).toContain('onDecision(item.id,decision)');
   });
-  it('tracks confirmed cross-store blockers and unaccepted evidence explicitly',()=>{
+  it('tracks atomic card vault cleanup and still-pending acceptance evidence explicitly',()=>{
     expect(trace).toContain('## 9. DV-FB source-to-operation reachability matrix');
     expect(trace).toContain('permanent card deletion');
-    expect(trace).toContain('recoverable secret cleanup completion contract');
+    expect(trace).toContain('rheomiq_delete_committed_card_secret');
+    expect(trace).toContain('row');
     expect(trace).toContain('DV-FB07/10 remain **unaccepted**');
   });
 });
