@@ -488,6 +488,25 @@ async function main(){
     const pendingReload=await primary.request('/api/data');
     expect(pendingReload,200,undefined,'card-cleanup-pending-reload');
     assert(!pendingReload.body.data.state.cards.some((item:any)=>item.id===cleanupId)&&pendingReload.body.data.state.pendingCardSecretDeletes.includes(cleanupId),'Card deletion cleanup intent did not survive reload.');
+    console.log('[real-stack] stage card-vault-undo-protected-atomic-cleanup');
+    const undoCardHistory=await primary.request('/api/history');
+    expect(undoCardHistory,200,undefined,'card-cleanup-undo-history');
+    const undoCard=await primary.request('/api/history',{
+      method:'POST',
+      headers:{'if-match':String(pendingReload.body.revision),'x-rheomiq-history-generation':String(undoCardHistory.body.generation)},
+      body:{action:'undo',updatedAt:new Date().toISOString()},
+    });
+    expect(undoCard,200,undefined,'card-cleanup-undo');
+    assert(undoCard.body?.data?.state?.cards?.some((item:any)=>item.id===cleanupId)&&!(undoCard.body?.data?.state?.pendingCardSecretDeletes||[]).includes(cleanupId),'Undo did not restore the card profile and revoke cleanup intent.');
+    expect(await primary.request('/api/card-secrets',{method:'DELETE',body:{cardId:cleanupId,requireCommittedDeletion:true}}),409,'CARD_SECRET_DELETE_NOT_COMMITTED','card-cleanup-undo-protects-vault');
+    expect(await primary.request('/api/card-secrets',{method:'POST',body:{cardId:cleanupId}}),200,undefined,'card-cleanup-vault-survived-undo');
+    const redoCard=await primary.request('/api/history',{
+      method:'POST',
+      headers:{'if-match':String(undoCard.body.revision),'x-rheomiq-history-generation':String(undoCard.body.history.generation)},
+      body:{action:'redo',updatedAt:new Date().toISOString()},
+    });
+    expect(redoCard,200,undefined,'card-cleanup-redo');
+    assert(!redoCard.body?.data?.state?.cards?.some((item:any)=>item.id===cleanupId)&&(redoCard.body?.data?.state?.pendingCardSecretDeletes||[]).includes(cleanupId),'Redo failed to reinstate the same committed card cleanup intent.');
     const staleCardWrite=await primary.request('/api/data',{
       method:'PUT',
       headers:{'if-match':String(beforeRemove.body.revision),'x-rheomiq-history-generation':String(beforeRemoveHistory.body.generation)},

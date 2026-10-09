@@ -42,6 +42,9 @@ describe('zero-cost real-stack E2E source contract',()=>{
     expect(script).toContain("'CARD_SECRET_DELETE_NOT_COMMITTED'");
     expect(script).toContain('card-cleanup-pending-receipt');
     expect(script).toContain('card-cleanup-guarded-delete');
+    expect(script).toContain('card-vault-undo-protected-atomic-cleanup');
+    expect(script).toContain('card-cleanup-undo-protects-vault');
+    expect(script).toContain('card-cleanup-redo');
     expect(script).toContain('card-cleanup-marker-finalize');
     expect(script).toContain('Card vault cleanup marker was not removed after successful deletion.');
     expect(script).toContain("[real-stack] stage service-storage-unauthenticated-denial");
