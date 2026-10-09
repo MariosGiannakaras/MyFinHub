@@ -16,7 +16,7 @@ import { addCalendarDays } from '../lib/dateOnly';
 import { cashFlowForecast } from '../lib/forecast';
 import { money } from '../lib/format';
 import { activeRecurringItems } from '../lib/recurring';
-import { shiftReportingMonth } from '../lib/reportingPeriod';
+import { reportingPeriodEndDate, shiftReportingMonth } from '../lib/reportingPeriod';
 import { selectAccountBalances, selectCategoryTotals, selectMonthlyFlow } from '../lib/selectors';
 import { accountDisplayName } from '../lib/ui';
 import type { Account, FinanceData, FinanceEvent, LegacyTransaction } from '../types';
@@ -100,11 +100,12 @@ export function DashboardPage({ data, month, asOf, motionMode='system', privacyV
   useEffect(()=>{const query=window.matchMedia('(max-width:680px)');const sync=()=>setMobileViewport(query.matches);sync();query.addEventListener('change',sync);return()=>query.removeEventListener('change',sync)},[]);
   useEffect(()=>{if(!mobileViewport||!mobileAnalyticsExpanded||!renderDeferredCharts){setMobileAnalyticsChartsReady(false);return}let secondFrame=0;let settled=false;const reveal=()=>{if(settled)return;settled=true;setMobileAnalyticsChartsReady(true)};const fallback=window.setTimeout(reveal,250);const firstFrame=requestAnimationFrame(()=>{secondFrame=requestAnimationFrame(reveal)});return()=>{settled=true;window.clearTimeout(fallback);cancelAnimationFrame(firstFrame);if(secondFrame)cancelAnimationFrame(secondFrame)}},[mobileViewport,mobileAnalyticsExpanded,renderDeferredCharts]);
   const heavyChartsReady=renderDeferredCharts&&(!mobileViewport||mobileAnalyticsChartsReady);
-  const flow=selectMonthlyFlow(data,month);const balances=selectAccountBalances(data,asOf);const accountChoices=financeAccountChoices(data);const accounts=accountChoices.accounts;
+  const range=monthRange(month);const periodEndDate=reportingPeriodEndDate(month,asOf);
+  const flow=selectMonthlyFlow(data,month);const balances=selectAccountBalances(data,periodEndDate);const accountChoices=financeAccountChoices(data);const accounts=accountChoices.accounts;
   const primary=accountChoices.dashboardPrimary;const primarySlots=accountChoices.dashboardPrimarySlots;const primaryIdSet=new Set(primary.map(account=>account.id));const remaining=accounts.filter(account=>!primaryIdSet.has(account.id));
-  const categories=selectCategoryTotals(data,month).slice(0,6);const range=monthRange(month);const savingsTargetRate=data.state.settings.savingsTargetRate??.2;
+  const categories=selectCategoryTotals(data,month).slice(0,6);const savingsTargetRate=data.state.settings.savingsTargetRate??.2;
   const previousMonth=shiftReportingMonth(month,-1);const previousRange=monthRange(previousMonth);const previousMonthLabel=formatMonthLabel(previousMonth);const previousFlow=selectMonthlyFlow(data,previousMonth);
-  const balanceMonth=asOf.slice(0,7);
+  const balanceMonth=month;
 
   const movements=useMemo(()=>[
     ...effectiveLegacyTransactions(data).filter(tx=>tx.date>=range.start&&tx.date<=range.end).map(tx=>movementFromLegacy(data,tx)),
@@ -118,10 +119,10 @@ export function DashboardPage({ data, month, asOf, motionMode='system', privacyV
   },[data,range.start,range.end]);
 
   const primaryAccountKey=primary.map(account=>account.id).join('|');const accountHistoryStart=dashboardHistoryStart(balanceMonth);
-  const primaryHistory=useMemo(()=>dashboardAccountHistory(data,primary.map(account=>account.id),accountHistoryStart,asOf),[data,primaryAccountKey,accountHistoryStart,asOf]);
-  const accountChanges=useMemo(()=>Object.fromEntries(primary.map(account=>[account.id,dashboardBalanceChange(data,account.id,asOf)])),[data,primaryAccountKey,asOf]);
+  const primaryHistory=useMemo(()=>dashboardAccountHistory(data,primary.map(account=>account.id),accountHistoryStart,periodEndDate),[data,primaryAccountKey,accountHistoryStart,periodEndDate]);
+  const accountChanges=useMemo(()=>Object.fromEntries(primary.map(account=>[account.id,dashboardBalanceChange(data,account.id,periodEndDate)])),[data,primaryAccountKey,periodEndDate]);
   const savingsAccount=accountChoices.dashboardSavings;
-  const previousSavings=useMemo(()=>savingsAccount?dashboardPreviousMonthValues(data,savingsAccount.id,balanceMonth,asOf):[],[data,savingsAccount?.id,balanceMonth,asOf]);
+  const previousSavings=useMemo(()=>savingsAccount?dashboardPreviousMonthValues(data,savingsAccount.id,balanceMonth,periodEndDate):[],[data,savingsAccount?.id,balanceMonth,periodEndDate]);
   const savingsAccounts=accounts.filter(account=>account.kind==='savings'||(account.kind==='bank'&&account.bankAccountCategory==='savings'));
   const accountSavingsGoal=dashboardSavingsGoal(data.state.savingsGoals,savingsAccounts.length);
   const savingAmount=flow.saving;const savingsRate=flow.income>0?savingAmount/flow.income:0;const previousSavingsRate=previousFlow.income>0?previousFlow.saving/previousFlow.income:null;
@@ -151,7 +152,7 @@ export function DashboardPage({ data, month, asOf, motionMode='system', privacyV
   const largestCategory=categories[0];const daysElapsed=month===asOf.slice(0,7)?Math.max(1,Number(asOf.slice(-2))):Number(range.end.slice(-2));const previousDays=Math.max(1,Number(previousRange.end.slice(-2)));
   const averageDailyExpense=flow.expense/daysElapsed;const previousAverageDailyExpense=previousFlow.expense/previousDays;const dailyExpenseComparison=percentChange(averageDailyExpense,previousAverageDailyExpense);
   const budgetRows=budgetProgress(data,month);const budgetHighlight=budgetRows.find(row=>row.status==='exceeded')??budgetRows.slice().sort((a,b)=>b.ratio-a.ratio||a.id.localeCompare(b.id))[0];
-  const openingDate=previousDate(range.start);const openingBalances=selectAccountBalances(data,openingDate);const periodEndDate=month===asOf.slice(0,7)?asOf:range.end;const periodEndingBalances=selectAccountBalances(data,periodEndDate);const openingTotal=accounts.reduce((sum,account)=>sum+(openingBalances[account.id]??0),0);const endingTotal=accounts.reduce((sum,account)=>sum+(periodEndingBalances[account.id]??0),0);
+  const openingDate=previousDate(range.start);const openingBalances=selectAccountBalances(data,openingDate);const openingTotal=accounts.reduce((sum,account)=>sum+(openingBalances[account.id]??0),0);const endingTotal=accounts.reduce((sum,account)=>sum+(balances[account.id]??0),0);
   const privacyMoney=(value:number)=>privacyVisible?money.format(value):'•••••• €';
   const attentionCount=visibleAttentionItems(data,asOf).length;
 
@@ -175,7 +176,7 @@ export function DashboardPage({ data, month, asOf, motionMode='system', privacyV
           </div>
         </article>;
 
-        const series=primaryHistory[account.id]??[{date:asOf,value:balances[account.id]??0}];
+        const series=primaryHistory[account.id]??[{date:periodEndDate,value:balances[account.id]??0}];
         const currentBalance=balances[account.id]??0;
         const change=accountChanges[account.id]??0;
         const savings=slot.role==='savings';
@@ -185,8 +186,8 @@ export function DashboardPage({ data, month, asOf, motionMode='system', privacyV
         const changeText=privacyVisible?`${change>0?'+':change<0?'−':''}${money.format(Math.abs(change))}`:'•••• €';
         const goalText=accountSavingsGoal?privacyMoney(accountSavingsGoal.targetAmount):`${Math.round(savingsTargetRate*100)}%`;
         return <article className={`primary-balance-card approved-account-card account-tone-${index}`} key={account.id} data-account-id={account.id} data-account-role={slot.role}>
-          <div className="approved-account-head"><div className="approved-account-identity"><span className="approved-account-icon">{account.kind==='cash'?<FinanceIcon kind="cash" size={20}/>:<BankBrandMark id={account.providerId??account.provider??account.id} name={compactAccountLabel(account,data)}/>}</span><div><strong>{compactAccountLabel(account,data)}</strong><AccountIban accountId={account.id} variant="dashboard" fallback={account.kind==='cash'?'Πορτοφόλι':undefined}/></div></div>{savings?<span className="savings-target" title={accountSavingsGoal?`${accountSavingsGoal.name}: στόχος αποταμίευσης`:'Μηνιαίος στόχος αποταμίευσης ως ποσοστό εσόδων'}><Target size={13}/> Στόχος {goalText}</span>:<span className={`approved-account-delta ${change<-.005?'negative':change>.005?'positive':'neutral'}`} title="Μεταβολή υπολοίπου τελευταίων 30 ημερών">{change<-.005?'↓':change>.005?'↑':'→'} {changeText}</span>}</div>
-          <div className="approved-account-body"><div className="account-metric-overlay"><b className="approved-balance">{privacyMoney(currentBalance)}</b></div><div className="approved-account-chart"><AccountBalanceChart series={series} comparison={savings?previousSavings:[]} tone={tone} currentMonth={balanceMonth} target={target} label={`Εξέλιξη υπολοίπου για ${compactAccountLabel(account,data)}`}/>{savings?<div className="savings-legend"><span className="current">Τρέχων μήνας</span><span className="previous">Προηγ. μήνας</span>{target!==undefined?<span className="goal">Στόχος</span>:null}</div>:null}</div></div>
+          <div className="approved-account-head"><div className="approved-account-identity"><span className="approved-account-icon">{account.kind==='cash'?<FinanceIcon kind="cash" size={20}/>:<BankBrandMark id={account.providerId??account.provider??account.id} name={compactAccountLabel(account,data)}/>}</span><div><strong>{compactAccountLabel(account,data)}</strong><AccountIban accountId={account.id} variant="dashboard" fallback={account.kind==='cash'?'Πορτοφόλι':undefined}/></div></div>{savings?<span className="savings-target" title={accountSavingsGoal?`${accountSavingsGoal.name}: στόχος αποταμίευσης`:'Μηνιαίος στόχος αποταμίευσης ως ποσοστό εσόδων'}><Target size={13}/> Στόχος {goalText}</span>:<span className={`approved-account-delta ${change<-.005?'negative':change>.005?'positive':'neutral'}`} title="Μεταβολή υπολοίπου 30 ημερών έως την επιλεγμένη περίοδο">{change<-.005?'↓':change>.005?'↑':'→'} {changeText}</span>}</div>
+          <div className="approved-account-body"><div className="account-metric-overlay"><b className="approved-balance">{privacyMoney(currentBalance)}</b></div><div className="approved-account-chart"><AccountBalanceChart series={series} comparison={savings?previousSavings:[]} tone={tone} currentMonth={balanceMonth} target={target} label={`Εξέλιξη υπολοίπου για ${compactAccountLabel(account,data)}`}/>{savings?<div className="savings-legend"><span className="current">{month===asOf.slice(0,7)?'Τρέχων μήνας':'Επιλεγμένος μήνας'}</span><span className="previous">Προηγ. μήνας</span>{target!==undefined?<span className="goal">Στόχος</span>:null}</div>:null}</div></div>
           <div className="approved-account-actions"><Button type="button" variant="ghost" data-account-quick-entry={account.id} aria-label={`${accountAction} για ${compactAccountLabel(account,data)}`} onClick={()=>onAccountQuickAdd(account.id,savings?'savings':account.kind)}><ArrowRight size={15}/> {accountAction}</Button><Button type="button" variant="ghost" onClick={onTransactions}><List size={15}/> Συναλλαγές</Button></div>
         </article>;
       })}
