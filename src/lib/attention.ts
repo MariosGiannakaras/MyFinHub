@@ -96,6 +96,10 @@ function recurringDue(data:FinanceData,item:RecurringItem,asOf:string){
     if(daysBetween(asOf,next)<=UPCOMING_DAYS)return {date:next,severity:'warning' as const,overdue:false};
     return null;
   }
+  const first=validRecurringAnchor(item.firstExpectedDate);
+  if(first&&first>asOf){
+    return daysBetween(asOf,first)<=UPCOMING_DAYS?{date:first,severity:'warning' as const,overdue:false}:null;
+  }
   const day=typicalPaymentDay(data,item);if(!day)return null;
   const current=monthDate(asOf,day);
   const paidThisMonth=recurringPayments(data,item.id).some(event=>event.date>=monthStart(asOf)&&event.date<=asOf);

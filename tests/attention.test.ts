@@ -44,6 +44,17 @@ describe('Needs Attention deterministic engine',()=>{
     expect(find('2026-04-11')?.reason).not.toContain('τρέχοντα μήνα');
   });
 
+  it('does not invent early monthly Attention items before a future first billing date',()=>{
+    const data=clone();
+    data.seed.recurring=[];
+    data.state.recurringCustom=[{id:'future-monthly',name:'Future monthly service',amount:22,day:20,firstExpectedDate:'2026-12-20',recurrenceUnit:'month',recurrenceInterval:1,accountId:'piraeus-payroll',category:'Υπηρεσίες',active:true}];
+    const find=(date:string)=>allAttentionItems(data,date).find(item=>item.id==='recurring:future-monthly');
+    expect(find('2026-10-20')).toBeUndefined();
+    expect(find('2026-12-12')).toBeUndefined();
+    expect(find('2026-12-16')).toMatchObject({dueDate:'2026-12-20',severity:'warning'});
+    expect(find('2026-12-21')).toMatchObject({dueDate:'2026-12-20',severity:'danger'});
+  });
+
   it('keeps annual recurring attention anchored to the actual yearly due date',()=>{
     const data=clone();
     data.seed.recurring=[];

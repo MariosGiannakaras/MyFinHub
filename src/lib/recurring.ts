@@ -41,6 +41,8 @@ export function typicalPaymentDay(data:FinanceData,item:RecurringItem):number|nu
 }
 
 function monthlyNextDate(data:FinanceData,item:RecurringItem,asOf:string){
+  const first=validRecurringAnchor(item.firstExpectedDate);
+  if(first&&first>asOf)return first;
   const day=typicalPaymentDay(data,item);
   if(!day)return validRecurringAnchor(item.firstExpectedDate);
   const base=new Date(`${asOf}T12:00:00Z`);
