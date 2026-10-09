@@ -17,7 +17,7 @@ describe('staged card profile + secure vault boundary',()=>{
     expect(app.indexOf('await finance.updateDurably(current=>withCardSecretCleanupPending')).toBeLessThan(app.indexOf('finishCardDeletion(card.id,finance.updateDurably)'));
     expect(app).toContain('cleanupAttempted.current.add(id)');
     expect(app).toContain('pendingCardSecretDeletes??[]');
-    expect(read('server/cardVaultHandler.ts')).toContain("throw new ApiError(409,'CARD_SECRET_DELETE_NOT_COMMITTED'");
+    expect(read('server/cardVaultStore.ts')).toContain("throw new ApiError(409,'CARD_SECRET_DELETE_NOT_COMMITTED'");
     expect(read('server/cardStateValidation.ts')).toContain('state.pendingCardSecretDeletes??[]');
     expect(read('src/types.ts')).toContain('pendingCardSecretDeletes?: string[]');
     expect(read('src/lib/cardSecretDeletion.ts')).toContain('await deleteCardSecret(cardId,true)');
