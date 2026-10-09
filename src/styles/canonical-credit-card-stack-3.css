@@ -33,6 +33,14 @@
   pointer-events:none;
 }
 
+#myfinhub-card-stack .provider-brand-img{
+  width:auto;
+  height:auto;
+  max-width:112px;
+  max-height:24px;
+}
+
+
 #myfinhub-card-stack .payzy-brand-img{
   height:27px;
   width:auto;

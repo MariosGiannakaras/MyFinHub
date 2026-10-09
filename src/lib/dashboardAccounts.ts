@@ -108,11 +108,10 @@ export function dashboardAccountHistory(data:FinanceData,accountIds:string[],sta
   return rows;
 }
 
-export function dashboardPreviousMonthValues(data:FinanceData,accountId:string,currentMonth:string,asOf:string){
+export function dashboardPreviousMonthValues(data:FinanceData,accountId:string,currentMonth:string,periodEndDate:string){
   const previousMonth=shiftDashboardMonth(currentMonth,-1);
   const previousRange=monthRange(previousMonth);
-  const currentRange=monthRange(currentMonth);
-  const currentDay=currentMonth===asOf.slice(0,7)?Number(asOf.slice(-2)):Number(currentRange.end.slice(-2));
+  const currentDay=Number(periodEndDate.slice(-2));
   const endDay=Math.min(currentDay,Number(previousRange.end.slice(-2)));
   const end=`${previousMonth}-${String(Math.max(1,endDay)).padStart(2,'0')}`;
   return dashboardAccountHistory(data,[accountId],`${previousMonth}-01`,end)[accountId]??[];

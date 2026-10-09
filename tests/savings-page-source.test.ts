@@ -4,6 +4,8 @@ import { describe, expect, it } from 'vitest';
 const source=readFileSync(new URL('../src/pages/SavingsPage.tsx',import.meta.url),'utf8');
 const composition=readFileSync(new URL('../src/styles/savings-desktop-composition.css',import.meta.url),'utf8');
 const functionalQa=readFileSync(new URL('../scripts/completion-functional-crud-qa.mjs',import.meta.url),'utf8');
+const remediationQa=readFileSync(new URL('../scripts/savings-remediation-qa.mjs',import.meta.url),'utf8');
+const approvedFixture=readFileSync(new URL('../src/qaApprovedDashboardFixture.ts',import.meta.url),'utf8');
 
 describe('Savings page action hierarchy',()=>{
   it('renders the actionable savings choices before monthly reporting',()=>{
@@ -48,6 +50,55 @@ describe('Savings page action hierarchy',()=>{
     expect(functionalQa).toContain("await setByLabel('Σχόλιο','QA Audit Saving')");
     expect(functionalQa).toContain("await clickText('.contextual-quick-modal button','Καταχώριση')");
     expect(functionalQa).toContain("savingsAfter.recent.includes('Μεταφορά στην αποταμίευση')");
+  });
+
+
+  it('uses truthful selected-period wording instead of hard-coding the current month',()=>{
+    expect(source).toContain("const selectedMonthIsCurrent=month===asOf.slice(0,7)");
+    expect(source).toContain("const selectedPeriodHeading=selectedMonthIsCurrent?'Αυτός ο μήνας':selectedMonthLabel");
+    expect(source).toContain('<h2>{selectedPeriodHeading}</h2>');
+    expect(source).toContain("selectedMonthIsCurrent?'ΑΥΤΟΣ Ο ΜΗΝΑΣ':selectedMonthLabel.toLocaleUpperCase('el-GR')");
+  });
+
+  it('uses the selected reporting-period end for balances and personal-goal progress',()=>{
+    expect(source).toContain("import { reportingPeriodEndDate } from '../lib/reportingPeriod'");
+    expect(source).toContain('const periodEndDate=reportingPeriodEndDate(month,asOf)');
+    expect(source).toContain('const balances=accountBalances(data,periodEndDate)');
+    expect(source).toContain('const savingsBalance=savingsGoalBalance(data,periodEndDate)');
+    expect(source).not.toContain('accountBalances(data,asOf)');
+    expect(source).not.toContain('savingsGoalBalance(data,asOf)');
+    expect(source).toContain("setDate(asOf)");
+    expect(source).toContain("if(goalEdit.targetDate&&goalEdit.targetDate<asOf)");
+  });
+
+  it('uses a dedicated approved historical fixture route for Savings evidence',()=>{
+    expect(remediationQa).toContain("url.searchParams.set('state','savings-historical')");
+    expect(approvedFixture).toContain("params.get('page')==='savings'&&params.get('state')==='savings-historical'");
+    expect(approvedFixture).toContain("name:'Ταμείο ασφαλείας'");
+    expect(approvedFixture).toContain("date:'2026-07-31'");
+  });
+
+  it('proves historical balances and goal progress change and restore in the browser',()=>{
+    expect(remediationQa).toContain("savings-selected-period-july");
+    expect(remediationQa).toContain("historical Savings route balances change with the selected period end");
+    expect(remediationQa).toContain("historical personal-goal balance and progress use the selected period end");
+    expect(remediationQa).toContain("Savings current-period balances and goal progress restore after historical browsing");
+  });
+
+  it('renders a real no-goal empty state and makes shared-pool semantics explicit',()=>{
+    expect(source).toContain('className="empty-state savings-goals-empty"');
+    expect(source).toContain('Το κοινό υπόλοιπο αποταμίευσης είναι {money.format(savingsBalance)}');
+    expect(source).toContain('<span>Κοινό υπόλοιπο</span>');
+    expect(source).not.toContain('className="savings-goal-row placeholder"');
+    expect(composition).toContain('.savings-goals-mobile .savings-goals-empty{margin-top:8px}');
+    expect(composition).toContain('.savings-goals-empty{margin-top:6px;text-align:left');
+  });
+
+  it('bounds wide desktop measure and removes internal savings-engine jargon',()=>{
+    expect(composition).toContain('width:min(100%,1500px);margin-inline:auto');
+    expect(source).toContain('η αποταμίευση μετρά μία φορά στα σύνολα');
+    expect(source).not.toContain('canonical savings flow');
+    expect(composition).toContain('color:var(--text-secondary)');
   });
 
 });

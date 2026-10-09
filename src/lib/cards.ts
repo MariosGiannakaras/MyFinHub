@@ -45,6 +45,15 @@ function storedCards(data:FinanceData,{includeArchived=false}:{includeArchived?:
   return allCards(data).filter(card=>card.kind!=='credit'&&(includeArchived||card.active!==false));
 }
 
+export function cardWorkspaceBanks(data:FinanceData,providers:FinancialProvider[]=FINANCIAL_PROVIDERS){
+  const represented=new Set(storedCards(data,{includeArchived:true}).map(card=>card.bankId));
+  return cardBanks(data,providers).filter(bank=>bank.custom||represented.has(bank.id));
+}
+
+export function cardDomainBankCount(data:FinanceData){
+  return new Set(storedCards(data,{includeArchived:true}).map(card=>card.bankId)).size;
+}
+
 export function cardsForBank(data:FinanceData,bankId:string){
   return storedCards(data).filter(card=>card.bankId===bankId&&card.active!==false);
 }

@@ -86,6 +86,16 @@
   cursor:grabbing;
 }
 
+#myfinhub-card-stack.single-card-mode .stack-stage{
+  cursor:default;
+  touch-action:pan-y;
+}
+
+#myfinhub-card-stack.single-card-mode .meta{
+  visibility:hidden;
+}
+
+
 #myfinhub-card-stack .stack-card{
   position:absolute;
   inset:0;
@@ -103,7 +113,8 @@
   pointer-events:auto;
 }
 
-#myfinhub-card-stack .stack-card.dragging{
+#myfinhub-card-stack .stack-card.dragging,
+#myfinhub-card-stack .stack-stage.dragging .stack-card{
   transition:none;
 }
 
@@ -236,6 +247,12 @@
   box-shadow:inset 0 0 0 1px rgba(255,255,255,.14);
   cursor:pointer;
   transition:background .15s ease,transform .15s ease,opacity .15s ease;
+}
+
+#myfinhub-card-stack .card-icon-btn:is(.edit-profile-btn,.edit-details-btn){
+  background:transparent;
+  box-shadow:none;
+  opacity:.72;
 }
 
 #myfinhub-card-stack .card-icon-btn:hover{

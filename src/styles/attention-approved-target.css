@@ -33,6 +33,11 @@
   .attention-approved-group.warning{border-color:color-mix(in srgb,var(--amber) 24%,var(--line));background:color-mix(in srgb,var(--amber) 3%,var(--surface))}
   .attention-approved-group.pending{border-color:color-mix(in srgb,var(--blue) 18%,var(--line));background:color-mix(in srgb,var(--blue) 2.5%,var(--surface))}
   .attention-approved-group.notice{border-color:color-mix(in srgb,var(--blue-2) 14%,var(--line))}
+  .attention-approved-group.pending,.attention-approved-group.notice{box-shadow:none}
+  .attention-approved-group.is-empty{background:transparent;box-shadow:none}
+  .attention-approved-group.is-empty .attention-approved-group-head{min-height:50px;border-bottom:0}
+  .attention-approved-group.is-empty .attention-approved-group-title p{max-width:780px}
+
   .attention-approved-group-head{min-height:66px;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:10px 13px;border-bottom:1px solid color-mix(in srgb,var(--line) 70%,transparent)}
   .attention-approved-group-title{display:flex;align-items:center;gap:10px;min-width:0}
   .attention-approved-group-icon{width:36px;height:36px;display:grid;place-items:center;flex:0 0 36px;border-radius:10px;background:color-mix(in srgb,currentColor 10%,var(--surface));color:var(--blue-2)}
@@ -48,7 +53,8 @@
   .attention-approved-table-head,.attention-approved-row{display:grid;align-items:center}
   .attention-approved-table-head.has-amount,.attention-approved-row.has-amount{grid-template-columns:11% minmax(0,1.35fr) minmax(120px,.68fr) minmax(82px,.42fr) minmax(100px,.5fr) minmax(170px,.76fr)}
   .attention-approved-table-head.no-amount,.attention-approved-row.no-amount{grid-template-columns:11% minmax(0,1.5fr) minmax(140px,.75fr) minmax(100px,.5fr) minmax(170px,.76fr)}
-  .attention-approved-table-head{min-height:34px;padding:0 12px;border-bottom:1px solid color-mix(in srgb,var(--line) 68%,transparent);background:color-mix(in srgb,var(--surface-2) 70%,transparent);color:var(--muted);font-weight:760;gap:9px}
+  .attention-approved-table-head{min-height:34px;width:min(100%,1480px);margin-inline:auto;padding:0 12px;border-bottom:1px solid color-mix(in srgb,var(--line) 68%,transparent);background:color-mix(in srgb,var(--surface-2) 70%,transparent);color:var(--text-secondary);font-weight:760;gap:9px}
+  .attention-approved-rows{width:min(100%,1480px);margin-inline:auto}
   .attention-approved-row{min-height:68px;padding:8px 12px;border:0;border-bottom:1px solid color-mix(in srgb,var(--line) 62%,transparent);background:transparent;box-shadow:none;gap:9px}
   .attention-approved-row:last-child{border-bottom:0}
   .attention-approved-kind{display:flex;align-items:center;gap:7px;min-width:0;color:var(--blue-2)}
@@ -57,19 +63,19 @@
   .attention-approved-kind small{font-weight:780;line-height:1.2;overflow-wrap:anywhere}
   .attention-approved-copy{min-width:0}
   .attention-approved-copy>b{display:block;color:var(--ink);line-height:1.25;font-weight:820}
-  .attention-approved-copy>p{margin:3px 0 0;color:var(--muted);line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-  .attention-approved-context{min-width:0;color:var(--ink-2);line-height:1.3;overflow-wrap:anywhere}
+  .attention-approved-copy>p{margin:3px 0 0;color:var(--text-secondary);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .attention-approved-context{min-width:0;color:var(--text-secondary);line-height:1.35;overflow-wrap:anywhere}
   .attention-approved-amount{min-width:0;display:grid;gap:2px;color:var(--ink)}
   .attention-approved-amount>b{white-space:nowrap}.attention-approved-amount>small{color:var(--muted)}
   .attention-approved-date{display:grid;gap:3px;min-width:0}
   .attention-approved-date>b{line-height:1.2;color:var(--ink)}
-  .attention-approved-date>small{line-height:1.2;color:var(--muted)}
+  .attention-approved-date>small{line-height:1.3;color:var(--text-secondary)}
   .attention-approved-actions{display:flex;align-items:center;justify-content:flex-end;gap:5px;min-width:0}
   .attention-approved-actions>.save-button{min-height:34px;padding:7px 9px;border-radius:9px;white-space:nowrap;box-shadow:0 5px 12px rgba(47,111,237,.14)}
   .attention-approved-actions>.save-button svg{width:13px;height:13px}
-  .attention-approved-icon-action{width:34px;height:34px;display:grid;place-items:center;border:1px solid color-mix(in srgb,var(--line) 86%,transparent);border-radius:9px;background:color-mix(in srgb,var(--surface) 75%,white);color:var(--muted);cursor:pointer}
+  .attention-approved-icon-action{width:32px;height:32px;display:grid;place-items:center;border-color:transparent!important;border-radius:9px;background:transparent!important;color:var(--text-secondary)!important;box-shadow:none!important;cursor:pointer}
   .attention-approved-icon-action svg{width:15px;height:15px}
-  .attention-approved-empty-row{min-height:64px;display:flex;align-items:center;gap:9px;padding:12px 16px;color:var(--muted);}
+  .attention-approved-empty-row{min-height:46px;width:min(100%,1480px);margin-inline:auto;display:flex;align-items:center;gap:9px;padding:8px 14px;color:var(--text-secondary);}
   .attention-approved-empty-row svg{width:20px;height:20px;color:var(--green)}
 
   .attention-approved-shortcuts{padding:11px 12px 12px;border:1px solid color-mix(in srgb,var(--line) 82%,transparent);border-radius:15px;background:color-mix(in srgb,var(--surface) 90%,white);box-shadow:0 9px 22px rgba(38,62,106,.045)}
@@ -89,6 +95,8 @@
 
   .attention-approved-all-clear{overflow:hidden;border:1px solid color-mix(in srgb,var(--green) 25%,var(--line));border-radius:15px;background:color-mix(in srgb,var(--green) 5%,var(--surface));box-shadow:0 8px 20px rgba(29,154,104,.045)}
   .attention-approved-all-clear.has-urgent{border-color:color-mix(in srgb,var(--amber) 22%,var(--line));background:color-mix(in srgb,var(--amber) 4%,var(--surface))}
+  .attention-approved-all-clear.has-active{border-color:color-mix(in srgb,var(--blue) 20%,var(--line));background:color-mix(in srgb,var(--blue) 3%,var(--surface))}
+  .attention-approved-all-clear.has-active .attention-approved-clear-head>svg{color:var(--blue);fill:color-mix(in srgb,var(--blue) 10%,transparent)}
   .attention-approved-clear-head{min-height:62px;display:flex;align-items:center;gap:10px;padding:11px 14px}
   .attention-approved-clear-head>svg{width:28px;height:28px;color:var(--green);fill:color-mix(in srgb,var(--green) 11%,transparent)}
   .attention-approved-all-clear.has-urgent .attention-approved-clear-head>svg{color:var(--amber)}

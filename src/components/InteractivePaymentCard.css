@@ -27,7 +27,7 @@
 .prototype-payment-card .card-brand .bank-logo-image{max-width:30px;max-height:26px}
 .prototype-payment-card .card-nickname{
   max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-  color:var(--card-muted);font-size:.66rem;font-weight:760;
+  color:var(--card-muted);font-size:var(--ux-dense-data-size);font-weight:760;
   letter-spacing:.035em;line-height:1.1;text-shadow:0 1px 3px rgba(0,0,0,.13);
 }
 .prototype-payment-card .card-toolbar{
@@ -42,7 +42,9 @@
   box-shadow:inset 0 0 0 1px rgba(255,255,255,.14);
   cursor:pointer;transition:background .15s ease,transform .15s ease,opacity .15s ease;
 }
-.prototype-payment-card .card-icon-btn:hover{background:rgba(255,255,255,.20);transform:translateY(-1px)}
+.prototype-payment-card .card-icon-btn.card-icon-reveal{background:rgba(255,255,255,.18);box-shadow:inset 0 0 0 1px rgba(255,255,255,.22)}
+.prototype-payment-card .card-icon-btn.card-icon-management{background:transparent;box-shadow:none;opacity:.72}
+.prototype-payment-card .card-icon-btn:hover{background:rgba(255,255,255,.20);transform:translateY(-1px);opacity:1}
 .prototype-payment-card .card-icon-btn:active{transform:scale(.94)}
 .prototype-payment-card .card-icon-btn:disabled{opacity:.38;cursor:wait;transform:none}
 .prototype-payment-card .card-icon-btn svg{
@@ -70,7 +72,7 @@
 .prototype-payment-card .card-field{position:relative;min-width:0}
 .prototype-payment-card .card-field-label{
   display:block;margin-bottom:5px;color:var(--card-muted);
-  font-size:.50rem;line-height:1;text-transform:uppercase;
+  font-size:var(--ux-dense-label-size);line-height:1;text-transform:uppercase;
   letter-spacing:.14em;font-weight:800;
 }
 .prototype-payment-card .card-field-line{display:flex;align-items:center;gap:5px;min-width:0}
@@ -100,7 +102,7 @@
 .prototype-payment-card .visa-network .card-network-main{font-style:italic}
 .prototype-payment-card .card-network-type{
   display:block;margin-top:4px;color:var(--card-muted);
-  font-size:.52rem;font-weight:780;letter-spacing:.04em;
+  font-size:var(--ux-dense-label-size);font-weight:780;letter-spacing:.04em;
 }
 .prototype-payment-card .mastercard-symbol{display:inline-flex;align-items:center;justify-content:flex-end}
 .prototype-payment-card .mastercard-symbol i{
@@ -121,7 +123,7 @@
   .prototype-payment-card .card-brand{gap:6px}
   .prototype-payment-card .card-brand .bank-brand-mark{width:30px;height:30px;min-width:30px;flex-basis:30px}
   .prototype-payment-card .card-brand .bank-logo-image{max-width:26px;max-height:23px}
-  .prototype-payment-card .card-nickname{max-width:112px;font-size:.58rem}
+  .prototype-payment-card .card-nickname{max-width:112px;font-size:var(--ux-dense-label-size)}
   .prototype-payment-card .card-toolbar{display:grid;grid-template-columns:repeat(2,40px);gap:4px}
   .prototype-payment-card .card-icon-btn{width:40px;height:40px;min-width:40px;border-radius:10px}
   .prototype-payment-card .card-icon-btn svg{width:16px;height:16px}
@@ -129,7 +131,7 @@
   .prototype-payment-card .card-number{font-size:.94rem;letter-spacing:.065em}
   .prototype-payment-card .card-fields{gap:8px}
   .prototype-payment-card .card-field-value{font-size:.78rem}
-  .prototype-payment-card .card-field-label{font-size:.46rem}
+  .prototype-payment-card .card-field-label{font-size:var(--ux-dense-label-size)}
   .prototype-payment-card .copy-mini{
     position:relative;width:40px;height:40px;min-width:40px;min-height:40px;
     margin:-9.5px;padding:0;border-radius:10px;background:transparent;box-shadow:none;opacity:1;

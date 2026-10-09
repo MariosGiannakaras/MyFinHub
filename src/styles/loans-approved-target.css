@@ -17,9 +17,9 @@
     justify-content:space-between;
     gap:18px;
   }
-  .loan-toolbar>span{color:var(--muted);white-space:nowrap}
+  .loan-toolbar>span{color:var(--text-secondary);white-space:nowrap}
   .loan-sort-controls{display:flex;align-items:center;gap:10px}
-  .loan-sort-controls label{display:flex;align-items:center;gap:12px;font-weight:760;color:var(--muted)}
+  .loan-sort-controls label{display:flex;align-items:center;gap:12px;font-weight:760;color:var(--text-secondary)}
   .loan-sort-controls label>div,.loan-sort-controls label>select{min-width:245px}
   .loan-sort-controls button{min-height:42px;min-width:64px;border-radius:10px}
 
@@ -27,7 +27,7 @@
   .loan-toolbar+section>.section-title{min-height:34px;padding:0 2px;display:flex;align-items:center}
   .loan-toolbar+section>.section-title>div{display:flex;align-items:baseline;gap:8px}
   .loan-toolbar+section>.section-title span{font-size:var(--ux-small-size);font-weight:820;color:var(--ink)}
-  .loan-toolbar+section>.section-title b{font-weight:560;color:var(--muted)}
+  .loan-toolbar+section>.section-title b{font-weight:560;color:var(--text-secondary)}
 
   .loan-list{display:grid;gap:16px}
   .loan-list-row{
@@ -49,6 +49,8 @@
   }
   .loan-list-row .loan-list-main{
     grid-area:main;
+    width:min(100%,1320px);
+    justify-self:center;
     display:grid;
     grid-template-columns:58px minmax(0,1fr) auto;
     gap:15px;
@@ -66,16 +68,17 @@
   }
   .loan-list-row .account-mark svg{width:28px;height:28px}
   .loan-list-main h3{margin:0 0 4px;font-size:18px;line-height:1.15;letter-spacing:-.015em;color:var(--ink)}
-  .loan-list-main h3+small{line-height:1.35;color:var(--muted)}
+  .loan-list-main h3+small{line-height:1.35;color:var(--text-secondary)}
   .loan-money{justify-self:end;display:grid;gap:4px;text-align:right}
   .loan-money b{font-size:25px;line-height:1;font-weight:840;letter-spacing:-.025em;color:var(--ink)}
-  .loan-money small{color:var(--muted)}
+  .loan-money small{color:var(--text-secondary)}
 
   /* The full track owns one continuous gradient. Neutral unpaid segments cover it;
      paid segments become transparent and progressively reveal the gradient from left to right. */
   .loan-list-row .installment-segments{
     grid-area:progress;
-    width:100%;
+    width:min(100%,1320px);
+    justify-self:center;
     height:10px;
     margin:0;
     padding:0;
@@ -104,11 +107,13 @@
   .loan-list-row .installment-segments i.paid{background:transparent!important}
 
   .loan-list-row .self-loan-progress{grid-area:progress;margin:0;min-height:38px;display:flex;align-items:center;gap:20px;padding:10px 14px;border-radius:12px;background:color-mix(in srgb,var(--blue) 6%,var(--surface))}
-  .loan-list-row .self-loan-progress span{color:var(--muted)}
+  .loan-list-row .self-loan-progress span{color:var(--text-secondary)}
 
   .loan-list-row .loan-list-meta{
     grid-area:meta;
+    width:min(100%,1320px);
     min-width:0;
+    justify-self:center;
     margin:0;
     display:flex;
     align-items:stretch;
@@ -121,15 +126,16 @@
     border-left:1px solid var(--line);
 
     line-height:1.35;
-    color:var(--muted);
+    color:var(--text-secondary);
   }
   .loan-list-row .loan-list-meta>span:first-child{padding-left:0;border-left:0}
   .loan-list-row .loan-list-meta>span b{display:block;margin-bottom:3px;line-height:1.3;font-weight:800;color:var(--ink)}
 
   .loan-list-row .loan-list-actions{
     grid-area:actions;
+    width:min(100%,1320px);
     align-self:end;
-    justify-self:end;
+    justify-self:center;
     margin:0;
     display:flex;
     align-items:center;
@@ -155,12 +161,15 @@
     box-shadow:var(--shadow-soft);
   }
   .loan-history>summary{min-height:70px;display:flex;align-items:center;justify-content:space-between;gap:16px;cursor:pointer}
+  .loan-history.is-empty{min-height:52px;padding-inline:16px;background:transparent;box-shadow:none;border-style:dashed}
+  .loan-history.is-empty>summary{min-height:50px;margin-bottom:0}
+  .loan-history.is-empty>summary b{display:none}
   .loan-history>summary>div{display:flex;align-items:baseline;gap:10px}
   .loan-history>summary span{font-size:14px;font-weight:820;color:var(--ink)}
-  .loan-history>summary b{font-weight:560;color:var(--muted)}
+  .loan-history>summary b{font-weight:560;color:var(--text-secondary)}
   .loan-history>summary strong{font-size:14px;color:var(--ink)}
 
-  .loan-progress-note{min-height:72px;align-items:center;padding:13px 18px;border-radius:15px}
+  .loan-progress-note{min-height:48px;align-items:center;padding:8px 2px;border:0;border-radius:0;background:transparent;box-shadow:none}
   .loan-progress-note svg{width:20px;height:20px;color:var(--blue)}
   .loan-progress-note b{line-height:1.35}
   .loan-progress-note span{line-height:1.45;margin-top:4px}
