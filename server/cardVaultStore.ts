@@ -101,7 +101,7 @@ export async function writeCardSecrets(ownerUserId:string,cardId:string,input:un
 export async function deleteCardSecrets(ownerUserId:string,cardId:string,accessToken:string){
   await request(`rheomiq_card_secrets?${cardIdFilter(ownerUserId,cardId)}`,{method:'DELETE',headers:{prefer:'return=minimal'}},accessToken);
 }
- 
+
 /** Transactional cleanup: FinanceData marker, active relational card absence and
  * encrypted vault DELETE are verified under one PostgreSQL state-row lock. */
 export async function deleteCommittedCardSecrets(cardId:string,accessToken:string){
