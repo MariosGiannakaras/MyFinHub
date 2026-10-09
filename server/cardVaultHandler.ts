@@ -1,7 +1,7 @@
 import { accessTokenAal, assertMutationSessionOrigin, clearSessionCookiesIfCookie, requireSession } from './auth.js';
 import { ApiError, handleApi, methodNotAllowed, readJsonBody, sendJson } from './http.js';
-import { isOwner, readStore } from './storage.js';
-import { deleteCardSecrets, readCardSecrets, writeCardSecrets } from './cardVaultStore.js';
+import { isOwner } from './storage.js';
+import { deleteCardSecrets, deleteCommittedCardSecrets, readCardSecrets, writeCardSecrets } from './cardVaultStore.js';
 import { proxyDesktopCardVault } from './desktopCardVaultProxy.js';
 
 const MAX_CARD_VAULT_BODY_BYTES=4*1024;
@@ -69,16 +69,13 @@ export async function handleCardVaultRequest(req:any,res:any){
       const secret=await writeCardSecrets(ownerUserId,input.cardId,{pan:input.pan,expiry:input.expiry,cvv:input.cvv},session.accessToken);
       return sendJson(res,200,{saved:true,last4:secret.pan?.slice(-4)??null});
     }
-    // Committed cleanup is an additive, backwards-compatible API contract.
-    // Reject a vault delete while FinanceData still contains the active card.
+    // The guarded path is one database transaction under the canonical state
+    // row lock. Never interleave profile undo and secret destruction.
     if('requireCommittedDeletion' in body&&body.requireCommittedDeletion){
-      const stored=await readStore(session.accessToken);
-      const state=stored.data.state;
-      if((state.cards??[]).some(card=>card.id===body.cardId)||!(state.pendingCardSecretDeletes??[]).includes(body.cardId)){
-        throw new ApiError(409,'CARD_SECRET_DELETE_NOT_COMMITTED','The card profile deletion has not been committed.');
-      }
+      await deleteCommittedCardSecrets(body.cardId,session.accessToken);
+    }else{
+      await deleteCardSecrets(ownerUserId,body.cardId,session.accessToken);
     }
-    await deleteCardSecrets(ownerUserId,body.cardId,session.accessToken);
     return sendJson(res,200,{deleted:true});
   });
 }
