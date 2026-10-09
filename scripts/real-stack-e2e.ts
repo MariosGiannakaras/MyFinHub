@@ -451,6 +451,67 @@ async function main(){
     assert(health?.ok===true&&health?.storageMode==='relational_v1','Database health is not clean after backup restore.');
     assert(Number(health?.checks?.history_revision_mismatches||0)===0&&Number(health?.checks?.history_current_point_state_mismatches||0)===0,'History/state integrity is not clean after backup restore.');
 
+    console.log('[real-stack] stage card-profile-vault-durable-cleanup');
+    const cleanupId='real-stack-cleanup-card';
+    const nowCard=new Date().toISOString();
+    const beforeCard=await primary.request('/api/data');
+    const beforeCardHistory=await primary.request('/api/history');
+    expect(beforeCard,200,undefined,'card-cleanup-before');
+    expect(beforeCardHistory,200,undefined,'card-cleanup-history-before');
+    const stagedCardState=structuredClone(beforeCard.body.data.state);
+    stagedCardState.cards=[...(stagedCardState.cards||[]),{id:cleanupId,bankId:'piraeus',nickname:'Real Stack Vault Cleanup',kind:'debit',network:'visa',active:true,createdAt:nowCard,updatedAt:nowCard}];
+    const stagedCardSave=await primary.request('/api/data',{
+      method:'PUT',
+      headers:{'if-match':String(beforeCard.body.revision),'x-rheomiq-history-generation':String(beforeCardHistory.body.generation)},
+      body:{state:stagedCardState,updatedAt:nowCard,historyLabel:'Stage new card before vault write'},
+    });
+    expect(stagedCardSave,200,undefined,'card-cleanup-stage-profile');
+    const stagedCardReload=await primary.request('/api/data');
+    expect(stagedCardReload,200,undefined,'card-cleanup-stage-reload');
+    assert(stagedCardReload.body?.data?.state?.cards?.some((item:any)=>item.id===cleanupId&&!item.vaultRef),'Staged card profile did not survive revisioned reload.');
+    const createdVault=await primary.request('/api/card-secrets',{method:'PUT',body:{cardId:cleanupId,pan:TEST_PAN,expiry:TEST_EXPIRY,cvv:TEST_CVV}});
+    expect(createdVault,200,undefined,'card-cleanup-stage-secret');
+    expect(await primary.request('/api/card-secrets',{method:'DELETE',body:{cardId:cleanupId,requireCommittedDeletion:true}}),409,'CARD_SECRET_DELETE_NOT_COMMITTED','card-cleanup-guard-live-profile');
+    const vaultStillPresent=await primary.request('/api/card-secrets',{method:'POST',body:{cardId:cleanupId}});
+    expect(vaultStillPresent,200,undefined,'card-cleanup-vault-before-finance-delete');
+    const beforeRemove=await primary.request('/api/data');
+    const beforeRemoveHistory=await primary.request('/api/history');
+    const pendingState=structuredClone(beforeRemove.body.data.state);
+    pendingState.cards=pendingState.cards.filter((item:any)=>item.id!==cleanupId);
+    pendingState.pendingCardSecretDeletes=[...(pendingState.pendingCardSecretDeletes||[]),cleanupId];
+    const pendingSave=await primary.request('/api/data',{
+      method:'PUT',
+      headers:{'if-match':String(beforeRemove.body.revision),'x-rheomiq-history-generation':String(beforeRemoveHistory.body.generation)},
+      body:{state:pendingState,updatedAt:new Date().toISOString(),historyLabel:'Commit card deletion and pending secret cleanup'},
+    });
+    expect(pendingSave,200,undefined,'card-cleanup-pending-receipt');
+    const pendingReload=await primary.request('/api/data');
+    expect(pendingReload,200,undefined,'card-cleanup-pending-reload');
+    assert(!pendingReload.body.data.state.cards.some((item:any)=>item.id===cleanupId)&&pendingReload.body.data.state.pendingCardSecretDeletes.includes(cleanupId),'Card deletion cleanup intent did not survive reload.');
+    const staleCardWrite=await primary.request('/api/data',{
+      method:'PUT',
+      headers:{'if-match':String(beforeRemove.body.revision),'x-rheomiq-history-generation':String(beforeRemoveHistory.body.generation)},
+      body:{state:stagedCardState,updatedAt:new Date().toISOString(),historyLabel:'Stale re-create deleted card'},
+    });
+    assert(staleCardWrite.status===409,'Stale card re-create did not fail its expected revision.');
+    const remainingSecret=await primary.request('/api/card-secrets',{method:'POST',body:{cardId:cleanupId}});
+    expect(remainingSecret,200,undefined,'card-cleanup-secret-preserved-after-stale-conflict');
+    expect(await primary.request('/api/card-secrets',{method:'DELETE',body:{cardId:cleanupId,requireCommittedDeletion:true}}),200,undefined,'card-cleanup-guarded-delete');
+    expect(await primary.request('/api/card-secrets',{method:'POST',body:{cardId:cleanupId}}),404,'CARD_SECRET_NOT_FOUND','card-cleanup-secret-absent');
+    const beforeClear=await primary.request('/api/data');
+    const beforeClearHistory=await primary.request('/api/history');
+    const clearedMarkerState=structuredClone(beforeClear.body.data.state);
+    clearedMarkerState.pendingCardSecretDeletes=clearedMarkerState.pendingCardSecretDeletes.filter((id:string)=>id!==cleanupId);
+    const clearedMarker=await primary.request('/api/data',{
+      method:'PUT',
+      headers:{'if-match':String(beforeClear.body.revision),'x-rheomiq-history-generation':String(beforeClearHistory.body.generation)},
+      body:{state:clearedMarkerState,updatedAt:new Date().toISOString(),historyLabel:'Acknowledge card vault secret cleanup'},
+    });
+    expect(clearedMarker,200,undefined,'card-cleanup-marker-finalize');
+    const finalReload=await primary.request('/api/data');
+    expect(finalReload,200,undefined,'card-cleanup-final-reload');
+    assert(!(finalReload.body?.data?.state?.pendingCardSecretDeletes||[]).includes(cleanupId),'Card vault cleanup marker was not removed after successful deletion.');
+
     console.log('[real-stack] stage card-vault-delete');
     expect(await primary.request('/api/card-secrets',{method:'DELETE',body:{cardId:TEST_CARD_ID}}),200,undefined,'card-vault-delete');
 
