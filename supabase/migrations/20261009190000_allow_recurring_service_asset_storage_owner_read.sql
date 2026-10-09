@@ -11,7 +11,7 @@ on storage.objects
 for select to authenticated
 using (
   bucket_id='recurring-service-assets'
-  and name ~ '^services/service-asset-[a-f0-9]{24}\\.(png|jpg|webp|svg)$'
+  and name ~ '^services/service-asset-[a-f0-9]{24}\.(png|jpg|webp|svg)$'
   and owner_id=(select auth.uid())::text
   and (select public.rheomiq_is_owner_aal2())
 );
