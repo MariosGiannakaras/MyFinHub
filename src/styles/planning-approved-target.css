@@ -36,7 +36,6 @@
   .planning-forecast-kpi>small.negative{background:var(--error-bg)}
   .planning-detail-toggle{min-height:38px;display:inline-flex;align-items:center;justify-content:center;gap:7px;margin-left:8px;padding:0 11px;border:1px solid var(--control-border);border-radius:9px;background:var(--control-bg);color:var(--accent);font-weight:780;white-space:nowrap;box-shadow:none}
   .planning-portfolio-trend{min-width:0;height:188px;padding:8px 12px 10px;border-top:1px solid var(--border-subtle);background:color-mix(in srgb,var(--surface-2) 58%,var(--surface))}
-  .planning-portfolio-trend .recharts-cartesian-grid line{stroke:var(--chart-grid)}
   .planning-portfolio-trend .recharts-tooltip-wrapper{font-size:var(--ux-dense-label-size)}
   .planning-approved-details-nearby{scroll-margin-top:84px}
 
@@ -101,14 +100,14 @@
   .planning-account-card[data-forecast-priority="quiet"] .planning-account-state{background:var(--neutral-bg);color:var(--text-secondary)}
   .planning-account-card[data-forecast-priority="quiet"] .planning-account-sparkline{opacity:.48}
   .planning-account-today{align-self:center;display:flex;flex-direction:column;gap:3px;color:var(--ink)}
-  .planning-account-today span{color:var(--text-secondary);font-size:var(--ux-dense-label-size)}
+  .planning-account-today span{color:var(--text-secondary)}
   .planning-account-today strong{}
   .planning-account-sparkline{width:100%;height:38px;align-self:center;overflow:visible}
   .planning-account-sparkline polyline{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linejoin:round;stroke-linecap:round}
   .planning-account-horizons{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:5px;padding-top:6px;border-top:1px solid var(--border-subtle)}
   .planning-account-horizons span{min-width:0}
-  .planning-account-horizons small{display:block;color:var(--text-secondary);font-size:var(--ux-dense-label-size);white-space:nowrap}
-  .planning-account-horizons b{display:block;margin-top:3px;color:var(--ink-2);font-size:var(--ux-dense-data-size);white-space:nowrap}
+  .planning-account-horizons small{display:block;color:var(--text-secondary);white-space:nowrap}
+  .planning-account-horizons b{display:block;margin-top:3px;color:var(--ink-2);white-space:nowrap}
   .planning-account-horizons b.negative{color:var(--red)!important}
   .planning-account-table-wrap{margin-top:10px;border:1px solid var(--border-subtle);border-radius:11px;overflow:hidden}
   .planning-account-table{width:100%;border-collapse:collapse;}
