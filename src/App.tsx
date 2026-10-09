@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { AppShell, type PageId } from './components/AppShell';
 import { AppSkeleton, PageSkeleton } from './components/AppSkeleton';
 import { Button } from './components/Button';
@@ -14,13 +14,11 @@ import { useFinance } from './hooks/useFinance';
 import { useLocalDate } from './hooks/useLocalDate';
 import { useSession } from './hooks/useSession';
 import type { AttentionItem } from './lib/attention';
-import { archiveCardRecord, canPermanentlyDeleteCreditCard, withCardProfileDeleted } from './lib/cards';
-import { deleteCardSecret } from './lib/cardVaultClient';
+import { archiveCardRecord, canPermanentlyDeleteCreditCard, withCardSecretCleanupPending } from './lib/cards';
 import type { RankedCommandSearchItem } from './lib/commandSearch';
 import { prepareCreditStatementEvent } from './lib/creditStatements';
 import { accountBalances, allAccounts } from './lib/domain';
 import { withLegacyOverride, withLegacyTombstone } from './lib/legacyTransactions';
-import { deleteLocalCvv } from './lib/localCvvVault';
 import { reportingMonthForDate } from './lib/localDate';
 import { pageHash, resolveHashRoute, settingsHash, type SettingsTabId } from './lib/routing';
 import type { TaxonomyOperation } from './lib/taxonomyManagement';
@@ -87,6 +85,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   const [monthIsManual, setMonthIsManual] = useState(false);
   const [recoverOpen,setRecoverOpen]=useState(false);
   const [privacyVisible,setPrivacyVisible]=useState(false);
+  const cleanupAttempted=useRef(new Set<string>());
 
   const navigate = (next: PageId, replace = false) => {
     const hash = pageHash(next);
@@ -136,6 +135,15 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   }, [page, notFound]);
 
   const data = finance.data;
+  useEffect(()=>{
+    if(!data||finance.saveState!=='saved')return;
+    const id=(data.state.pendingCardSecretDeletes??[]).find(key=>
+      !cleanupAttempted.current.has(key)&&!(data.state.cards??[]).some(card=>card.id===key));
+    if(!id)return;
+    cleanupAttempted.current.add(id);
+    // Retry each persisted unfinished cleanup once per mounted session.
+    void import('./lib/cardSecretDeletion').then(m=>m.finishCardDeletion(id,finance.updateDurably)).catch(()=>{});
+  },[data,finance.saveState,finance.updateDurably]);
   const textSize = data?.state.settings.textSize ?? 'normal';
   useEffect(() => { document.documentElement.dataset.motion = 'full'; return () => { delete document.documentElement.dataset.motion; }; }, []);
   useEffect(() => { document.documentElement.dataset.textSize = textSize; return () => { delete document.documentElement.dataset.textSize; }; }, [textSize]);
@@ -195,11 +203,15 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   const stageNewCard=(card:PaymentCard)=>finance.updateDurably(current=>
     (current.state.cards??[]).some(item=>item.id===card.id)?current:withCard(current,{...card,last4:undefined,vaultRef:undefined}));
   const archiveCard = (card: PaymentCard) => upsertCard(archiveCardRecord(card));
-  const deleteCard = async(card:PaymentCard) => {
+  const deleteCard=async(card:PaymentCard)=>{
     if(card.kind==='credit'&&!canPermanentlyDeleteCreditCard(data,card.id,today))throw new Error('CREDIT_CARD_HAS_OUTSTANDING_BALANCE');
-    await deleteLocalCvv(card.id);
-    await deleteCardSecret(card.id);
-    finance.update(current=>withCardProfileDeleted(current,card,new Date().toISOString(),today));
+    await finance.updateDurably(current=>withCardSecretCleanupPending(current,card,new Date().toISOString(),today));
+    cleanupAttempted.current.add(card.id);
+    try{
+      await (await import('./lib/cardSecretDeletion')).finishCardDeletion(card.id,finance.updateDurably);
+    }catch{
+      throw new Error('Το προφίλ διαγράφηκε και αποθηκεύτηκε, αλλά ο καθαρισμός των ασφαλών στοιχείων εκκρεμεί. Θα επαναληφθεί μετά από νέα σύνδεση.');
+    }
   };
   const upsertScheduled = (item: ScheduledTransaction) => finance.update((current) => {
     const items = current.state.scheduled ?? [];

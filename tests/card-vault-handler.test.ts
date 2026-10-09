@@ -21,6 +21,11 @@ describe('card vault request boundary',()=>{
       catch(error){expect(error).toBeInstanceOf(ApiError);expect((error as ApiError).code).toBe('INVALID_CARD_SECRET_REQUEST')}
     }
   });
+  it('accepts only explicit committed-deletion receipts and keeps old DELETE clients compatible',()=>{
+    expect(parseCardVaultRequest({cardId:'card-123'},'DELETE')).toEqual({cardId:'card-123'});
+    expect(parseCardVaultRequest({cardId:'card-123',requireCommittedDeletion:true},'DELETE')).toEqual({cardId:'card-123',requireCommittedDeletion:true});
+    for(const invalid of [false,'true',1])expect(()=>parseCardVaultRequest({cardId:'card-123',requireCommittedDeletion:invalid},'DELETE')).toThrow(ApiError);
+  });
   it('rejects unknown fields and malformed card ids',()=>{
     expect(()=>parseCardVaultRequest({cardId:'../../bad',pan:'4242424242424242'},'PUT')).toThrow(ApiError);
     try{parseCardVaultRequest({cardId:'card-123',pan:'4242424242424242',note:'nope'},'PUT')}catch(error){expect((error as ApiError).code).toBe('INVALID_CARD_SECRET_REQUEST')}
