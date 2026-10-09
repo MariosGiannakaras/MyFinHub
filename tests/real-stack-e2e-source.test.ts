@@ -37,6 +37,13 @@ describe('zero-cost real-stack E2E source contract',()=>{
     expect(script).toContain("spawn(tsxBin,['server/index.ts','--serve-dist']");
     expect(script).toContain("runRealStackBrowserProof({");
     expect(script).toContain("[real-stack] stage provider-storage-registration-failure-cleanup");
+    expect(script).toContain("[real-stack] stage recurring-service-asset-durability");
+    expect(script).toContain("'RECURRING_SERVICE_ASSET_IN_USE'");
+    expect(script).toContain('recurring-service-asset-upload');
+    expect(script).toContain('recurring-service-reload');
+    expect(script).toContain('Stale recurring logo write did not fail closed.');
+    expect(script).toContain('recurring-service-release-purge');
+    expect(script).toContain('Recurring service asset Storage object survived reference-aware purge.');
     expect(script).toContain("requestBinary");
     expect(script).toContain("/storage/v1/object/list/financial-provider-assets");
     expect(script).toContain("'INVALID_PROVIDER_DATA'");
