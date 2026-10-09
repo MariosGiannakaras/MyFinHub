@@ -10,6 +10,10 @@ const validation=readFileSync('server/validation.ts','utf8');
 const handler=readFileSync('server/accountMetadataHandler.ts','utf8');
 const store=readFileSync('server/accountMetadataStore.ts','utf8');
 const ledger=readFileSync('tests/production-migration-ledger-source.test.ts','utf8');
+const recurringPage=readFileSync('src/pages/RecurringPage.tsx','utf8');
+const financeHook=readFileSync('src/hooks/useFinance.ts','utf8');
+const app=readFileSync('src/App.tsx','utf8');
+const recurringRendered=readFileSync('scripts/recurring-service-brand-qa.mjs','utf8');
 
 afterEach(()=>{
   vi.restoreAllMocks();
@@ -26,6 +30,18 @@ describe('recurring service asset foundation',()=>{
     expect(validation).not.toContain('/^[a-z][a-z0-9-]{0,95}$/');
     expect(types).not.toContain('logoData');
     expect(types).not.toContain('base64');
+  });
+
+  it('requires durable finance acceptance before logo cleanup and reports cleanup distinctly',()=>{
+    expect(financeHook).toContain('coordinator.enqueueWithReceipt(mutation)');
+    expect(financeHook).toContain('updateDurably');
+    expect(app).toContain('finance.updateDurably(current=>withRecurring(current,item))');
+    expect(recurringPage).toContain('await onUpsertDurably(normalized)');
+    expect(recurringPage).toContain('if(uploaded&&!persisted)');
+    expect(recurringPage).toContain('oldKeyStillShared');
+    expect(recurringPage).toContain('if(oldKey&&oldKey!==normalized.logoAssetKey&&!oldKeyStillShared)');
+    expect(recurringPage).not.toContain('onUpsert(normalized)');
+    expect(recurringRendered).toContain('failed finance write retains old logo reference and deletes only newly uploaded asset');
   });
 
   it('uses a separate owner+AAL2 Storage and metadata domain instead of financial providers',()=>{

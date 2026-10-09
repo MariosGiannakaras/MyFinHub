@@ -37,7 +37,7 @@ function recurringLogoFileError(file:File){
   return null;
 }
 
-export function RecurringPage({data,asOf,onUpsert,onOpenLoans,onPayLoan,onPayRecurring}:{data:FinanceData;asOf:string;onUpsert:(item:RecurringItem)=>void;onOpenLoans:()=>void;onPayLoan:(loanId:string)=>void;onPayRecurring:(recurringId:string)=>void}){
+export function RecurringPage({data,asOf,onUpsert,onUpsertDurably,onOpenLoans,onPayLoan,onPayRecurring}:{data:FinanceData;asOf:string;onUpsert:(item:RecurringItem)=>void;onUpsertDurably:(item:RecurringItem)=>Promise<void>;onOpenLoans:()=>void;onPayLoan:(loanId:string)=>void;onPayRecurring:(recurringId:string)=>void}){
   const active=activeRecurringItems(data);
   const inactive=inactiveRecurringItems(data);
   const upcoming=recurringUpcoming(data,asOf);
@@ -67,7 +67,44 @@ export function RecurringPage({data,asOf,onUpsert,onOpenLoans,onPayLoan,onPayRec
   const startEdit=(item:RecurringItem)=>{resetLogoDraft();setEditError('');setEditAmount(item.amount>0?String(item.amount):'');setEdit({...item,endDate:item.endDate??null,status:recurringStatus(item)})};
   const selectLogo=(file?:File)=>{if(!file)return;const error=recurringLogoFileError(file);if(error){setEditError(error);if(logoInput.current)logoInput.current.value='';return}setEditLogoFile(file);setEditLogoRemoved(false);setEditError('')};
   const removeLogo=()=>{setEditLogoFile(null);setEditLogoRemoved(true);if(logoInput.current)logoInput.current.value=''};
-  const save=async()=>{if(!edit||editBusy)return;const existed=active.some(item=>item.id===edit.id)||inactive.some(item=>item.id===edit.id);const base:RecurringItem={...edit,recurrenceUnit:edit.recurrenceUnit??'month',recurrenceInterval:edit.recurrenceInterval??1,active:(edit.status??'active')==='active'};const error=recurringDraftError(base)??recurringAccountError(accountIds,base.accountId);if(error){setEditError(error);return}setEditBusy(true);setEditError('');let uploaded:RecurringServiceAsset|null=null;try{let logoAssetKey=editLogoRemoved?undefined:base.logoAssetKey;if(editLogoFile){uploaded=await uploadRecurringServiceAsset({recurringId:base.id,file:editLogoFile});logoAssetKey=uploaded.assetKey}const normalized:RecurringItem={...base,logoAssetKey:logoAssetKey||undefined};onUpsert(normalized);setMessage(existed?'Το πάγιο ενημερώθηκε και αποθηκεύεται.':'Το νέο πάγιο δημιουργήθηκε και αποθηκεύεται.');releaseEdit()}catch(reason){if(uploaded){try{await deleteRecurringServiceAsset(uploaded.assetKey)}catch{}}setEditError(userErrorMessage(reason,'Δεν ήταν δυνατή η αποθήκευση του παγίου ή του λογοτύπου.'))}finally{setEditBusy(false)}};
+  const save=async()=>{
+    if(!edit||editBusy)return;
+    const existed=active.some(item=>item.id===edit.id)||inactive.some(item=>item.id===edit.id);
+    const base:RecurringItem={...edit,recurrenceUnit:edit.recurrenceUnit??'month',recurrenceInterval:edit.recurrenceInterval??1,active:(edit.status??'active')==='active'};
+    const error=recurringDraftError(base)??recurringAccountError(accountIds,base.accountId);
+    if(error){setEditError(error);return}
+    setEditBusy(true);setEditError('');
+    let uploaded:RecurringServiceAsset|null=null;
+    let persisted=false;
+    const oldKey=base.logoAssetKey;
+    try{
+      let logoAssetKey=editLogoRemoved?undefined:oldKey;
+      if(editLogoFile){
+        uploaded=await uploadRecurringServiceAsset({recurringId:base.id,file:editLogoFile});
+        logoAssetKey=uploaded.assetKey;
+      }
+      const normalized:RecurringItem={...base,logoAssetKey:logoAssetKey||undefined};
+      // The editor must not close or report success until this exact finance
+      // mutation is persisted with its matching revision and history cursor.
+      await onUpsertDurably(normalized);
+      persisted=true;
+      let cleanupWarning='';
+      const oldKeyStillShared=Boolean(oldKey&&[...active,...inactive].some(item=>item.id!==base.id&&item.logoAssetKey===oldKey));
+      if(oldKey&&oldKey!==normalized.logoAssetKey&&!oldKeyStillShared){
+        try{await deleteRecurringServiceAsset(oldKey)}
+        catch{cleanupWarning=' Το προηγούμενο λογότυπο δεν ήταν δυνατό να αποδεσμευτεί· η οικονομική αλλαγή έχει αποθηκευτεί.'}
+      }
+      releaseEdit();
+      setMessage((existed?'Το πάγιο ενημερώθηκε και αποθηκεύτηκε.':'Το νέο πάγιο δημιουργήθηκε και αποθηκεύτηκε.')+cleanupWarning);
+    }catch(reason){
+      let cleanupWarning='';
+      if(uploaded&&!persisted){
+        try{await deleteRecurringServiceAsset(uploaded.assetKey)}
+        catch{cleanupWarning=' Η απομάκρυνση της νέας μη χρησιμοποιούμενης εικόνας απέτυχε· απαιτείται έλεγχος.'}
+      }
+      setEditError(userErrorMessage(reason,'Η αποθήκευση του παγίου δεν επιβεβαιώθηκε. Επαναφόρτωσε την τελευταία αποθηκευμένη έκδοση πριν συνεχίσεις.')+cleanupWarning);
+    }finally{setEditBusy(false)}
+  };
   const setLifecycle=(item:RecurringItem,status:RecurringStatus)=>{onUpsert({...item,status,active:status==='active'});setMessage(status==='active'?'Το πάγιο ενεργοποιήθηκε ξανά.':status==='paused'?'Το πάγιο μπήκε σε παύση και διατηρήθηκε στο ιστορικό.':'Το πάγιο σταμάτησε και διατηρήθηκε στο ιστορικό.')};
   const startPay=(item:RecurringItem)=>onPayRecurring(item.id);
   const mobileUpcoming=upcoming.slice(0,mobileActiveLimit);

@@ -160,13 +160,15 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   };
   const editLegacy = (transaction: LegacyTransaction) => finance.update((current) => withLegacyOverride(current, transaction));
   const deleteLegacy = (id: string) => finance.update((current) => withLegacyTombstone(current, id));
-  const upsertRecurring = (item: RecurringItem) => finance.update((current) => {
-    const seeded = current.seed.recurring.some((existing) => existing.id === item.id);
-    if (seeded) return { ...current, state: { ...current.state, recurringOverrides: { ...current.state.recurringOverrides, [item.id]: item } } };
-    const custom = current.state.recurringCustom ?? [];
-    const exists = custom.some((existing) => existing.id === item.id);
-    return { ...current, state: { ...current.state, recurringCustom: exists ? custom.map((existing) => existing.id === item.id ? item : existing) : [...custom, item] } };
-  });
+  const withRecurring=(current:FinanceData,item:RecurringItem):FinanceData=>{
+    const seeded=current.seed.recurring.some((existing)=>existing.id===item.id);
+    if(seeded)return {...current,state:{...current.state,recurringOverrides:{...current.state.recurringOverrides,[item.id]:item}}};
+    const custom=current.state.recurringCustom??[];
+    const exists=custom.some((existing)=>existing.id===item.id);
+    return {...current,state:{...current.state,recurringCustom:exists?custom.map((existing)=>existing.id===item.id?item:existing):[...custom,item]}};
+  };
+  const upsertRecurring=(item:RecurringItem)=>finance.update(current=>withRecurring(current,item));
+  const upsertRecurringDurably=(item:RecurringItem)=>finance.updateDurably(current=>withRecurring(current,item));
   const withLoan = (current: FinanceData, loan: Loan) => {
     if (current.seed.loans.some((existing) => existing.id === loan.id)) return { ...current, state: { ...current.state, loanOverrides: { ...current.state.loanOverrides, [loan.id]: loan } } };
     const custom = current.state.customLoans ?? [];
@@ -260,7 +262,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
     : page === 'credit' ? <CreditCardPage data={data} asOf={today} onCreateEvent={addEvent} onEditEvent={editEvent} onDeleteEvent={deleteEvent} onUpsertCard={upsertCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard} onPayCard={(cardId,statementId)=>openSpecial({mode:'credit',action:'payment',cardId,statementId})}/>
     : page === 'loans' ? <LoansPage data={data} asOf={today} onUpsertLoan={upsertLoan} onCreateSelfLoan={createSelfLoan} onPayLoan={(loanId)=>openSpecial({mode:'loan',loanId})}/>
     : page === 'lending' ? <LendingPage data={data} asOf={today} privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onCreateEvent={addEvent} onQuickAdd={openSpecial}/>
-    : page === 'recurring' ? <RecurringPage data={data} asOf={today} onUpsert={upsertRecurring} onOpenLoans={() => navigate('loans')} onPayLoan={(loanId)=>openSpecial({mode:'loan',loanId})} onPayRecurring={(recurringId)=>openSpecial({mode:'recurring',recurringId})}/>
+    : page === 'recurring' ? <RecurringPage data={data} asOf={today} onUpsert={upsertRecurring} onUpsertDurably={upsertRecurringDurably} onOpenLoans={() => navigate('loans')} onPayLoan={(loanId)=>openSpecial({mode:'loan',loanId})} onPayRecurring={(recurringId)=>openSpecial({mode:'recurring',recurringId})}/>
     : page === 'planning' ? <PlanningPage data={data} asOf={today} onUpsertScheduled={upsertScheduled} onCompleteScheduled={completeScheduled}/>
     : page === 'attention' ? <AttentionPage data={data} asOf={today} onAction={handleAttention} onDecision={decideAttention} onReviewDecision={decide}/>
     : page === 'reports' ? <ReportsPage data={data} month={month} privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onUpsertBudget={upsertBudget} onDeleteBudget={deleteBudget} onUpsertRule={upsertRule} onDeleteRule={deleteRule}/>

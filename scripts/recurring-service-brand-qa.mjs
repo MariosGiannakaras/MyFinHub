@@ -46,7 +46,7 @@ try{
   await c.send('Page.addScriptToEvaluateOnNewDocument',{source:'('+installMock.toString()+')('+JSON.stringify(assetUrl)+');'});
   const viewport=async(width,height)=>c.send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:false});
   const waitFor=async(fn,label,args=[])=>{for(let i=0;i<120;i++){if(await c.call(fn,args))return;await sleep(100)}throw new Error('Timed out waiting for '+label)};
-  const navigate=async(width=1440,height=1100)=>{await viewport(width,height);const url=new URL(baseUrl);url.searchParams.set('page','recurring');url.searchParams.set('state','recurring-branding');await c.send('Page.navigate',{url:url.href});await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Πάγια')&&Boolean(document.querySelector('[data-recurring-status=active]'))}",'recurring branding fixture');await waitFor("function(){return document.querySelectorAll('[data-recurring-brand-source=service-storage]').length>=1}",'storage recurring brand mark')};
+  const navigate=async(width=1440,height=1100,failSave=false)=>{await viewport(width,height);const url=new URL(baseUrl);url.searchParams.set('page','recurring');url.searchParams.set('state','recurring-branding');if(failSave)url.searchParams.set('recurring-save-failure','1');await c.send('Page.navigate',{url:url.href});await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Πάγια')&&Boolean(document.querySelector('[data-recurring-status=active]'))}",'recurring branding fixture');await waitFor("function(){return document.querySelectorAll('[data-recurring-brand-source=service-storage]').length>=1}",'storage recurring brand mark')};
   const shot=async name=>{const result=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});writeFileSync(evidenceDir+'/'+name+'.png',Buffer.from(result.data,'base64'))};
   const clickAria=async label=>{const clicked=await c.call("function(label){const node=[...document.querySelectorAll('button,[role=button],summary')].find(item=>item.getAttribute('aria-label')===label);if(!node)return false;node.click();return true}",[label]);assert(clicked,'missing control '+label)};
   const clickText=async(selector,text)=>{const clicked=await c.call("function(selector,text){const node=[...document.querySelectorAll(selector)].find(item=>(item.textContent||'').trim().includes(text));if(!node)return false;node.click();return true}",[selector,text]);assert(clicked,'missing clickable '+text)};
@@ -91,8 +91,16 @@ try{
   console.log('Recurring service-brand QA: remove falls back without asset mutation');
   await clickAria('Επεξεργασία QA Streaming');await clickText('.recurring-logo-editor-actions button','Αφαίρεση');await clickText('.editor-actions button','Αποθήκευση');
   await waitFor("function(){const row=[...document.querySelectorAll('.inactive-recurring-list article')].find(item=>(item.textContent||'').includes('QA Streaming'));return !document.querySelector('.recurring-editor-dialog')&&row?.querySelector('.recurring-brand-mark')?.getAttribute('data-recurring-brand-source')==='fallback'}",'removed recurring logo fallback');
-  current=await state();assert(current.writes===1&&current.deletes===0,'removing the item reference does not destructively delete shared asset storage');
+  current=await state();assert(current.writes===1&&current.deletes===1,'removing the last logo reference releases the previous asset after save');
   await shot('recurring-service-brand-removed');
+
+  console.log('Recurring service-brand QA: failed durable finance save cleans newly uploaded asset');
+  await navigate(1440,1100,true);
+  await clickAria('Επεξεργασία QA Streaming');await setLogoFile();await clickText('.editor-actions button','Αποθήκευση');
+  await waitFor("function(){return Boolean(document.querySelector('.recurring-editor-dialog #recurring-editor-error'))}",'recurring persistence error keeps editor open');
+  current=await state();
+  assert(current.writes===1&&current.deletes===1&&current.brandedKey==='service-asset-aaaaaaaaaaaaaaaaaaaaaaaa','failed finance write retains old logo reference and deletes only newly uploaded asset');
+  await shot('recurring-service-brand-save-failure');
 
   console.log('Recurring service-brand QA: dark and mobile containment');
   await navigate();await c.call("async function(){localStorage.setItem('myfinhub.theme','dark');const mod=await import('/src/lib/theme.ts');mod.applyThemePreference('dark');await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));return document.documentElement.dataset.theme}");
