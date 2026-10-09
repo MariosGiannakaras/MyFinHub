@@ -212,12 +212,12 @@ export function useFinance() {
     const current=dataRef.current;
     const state=saveStateRef.current;
     if(!current||!historyAvailableRef.current||state==='conflict'||state==='error'||state==='loading'||exclusiveOperation.current){
-      throw new Error('Η αποθήκευση δεν είναι διαθέσιμη. Φόρτωσε την τελευταία επιβεβαιωμένη έκδοση πριν συνεχίσεις.');
+      throw new Error('Επαναφόρτωσε πριν αποθηκεύσεις.');
     }
     const next=recipe(current);
     if(next===current)return;
     const receipt=persist(next,financeChangeLabel(current,next),true);
-    if(!receipt)throw new Error('Δεν ήταν δυνατή η έναρξη της αποθήκευσης.');
+    if(!receipt)throw new Error('Αδυναμία έναρξης αποθήκευσης.');
     await receipt;
   },[persist]);
 
