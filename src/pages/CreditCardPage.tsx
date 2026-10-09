@@ -1,4 +1,4 @@
-import { ArchiveRestore, ChevronLeft, ChevronRight, CreditCard, KeyRound, Pencil, Plus, ReceiptText, Trash2, WalletCards, X } from 'lucide-react';
+import { ArchiveRestore, ChevronRight, CreditCard, Pencil, Plus, ReceiptText, Trash2, WalletCards, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { AnimatedAmount } from '../components/AnimatedAmount';
 import { AppDateInput } from '../components/AppDateInput';
@@ -33,8 +33,6 @@ import type { CreditStatementStatus, FinanceData, FinanceEvent, PaymentCard } fr
 const statementStatusLabel:Record<CreditStatementStatus,string>={open:'Ανοιχτή',closed:'Κλειστή',due:'Προς πληρωμή',paid:'Εξοφλημένη'};
 const boundaryLabel=(value:PaymentCard['statementBoundaryRule'])=>value==='include-closing-day'?'Η ημέρα κλεισίματος ανήκει στη δήλωση που κλείνει εκείνη την ημέρα':value==='next-cycle'?'Η ημέρα κλεισίματος ανήκει στον επόμενο κύκλο':'Αναμένει τελική επιλογή προϊόντος';
 
-type CardDeckMode='horizontal'|'stack';
-
 export function CreditCardPage({
   data,asOf,onCreateEvent,onEditEvent,onDeleteEvent,onUpsertCard,onArchiveCard,onDeleteCard,onPayCard,
 }:{
@@ -54,7 +52,6 @@ export function CreditCardPage({
     events:creditEventsForCard(data,reference.id).sort((a,b)=>b.date.localeCompare(a.date)||b.createdAt.localeCompare(a.createdAt)||b.id.localeCompare(a.id)),
   })).filter(item=>item.events.length>0||item.statements.length>0),[data,deletedCredit,asOf]);
   const [selectedCardId,setSelectedCardId]=useState('');
-  const [cardDeckMode,setCardDeckMode]=useState<CardDeckMode>('horizontal');
   const [purchaseSortDirection,setPurchaseSortDirection]=useState<SortDirection>('desc');
   const [paymentSortDirection,setPaymentSortDirection]=useState<SortDirection>('desc');
   const [purchaseLimit,setPurchaseLimit]=useState(25);
@@ -64,12 +61,6 @@ export function CreditCardPage({
     setSelectedCardId(activeCredit[0]?.id??'');
   },[selectedCardId,activeCredit]);
   const card=activeCredit.find(item=>item.id===selectedCardId)??activeCredit[0];
-  const selectedCardIndex=card?Math.max(0,activeCredit.findIndex(item=>item.id===card.id)):0;
-  const selectRelativeCard=(step:number)=>{
-    if(activeCredit.length<2)return;
-    const next=(selectedCardIndex+step+activeCredit.length)%activeCredit.length;
-    setSelectedCardId(activeCredit[next].id);
-  };
   const bank=card?banks.find(item=>item.id===card.bankId):undefined;
   const debt=card?creditDebtForCard(data,card.id,asOf):0;
   const limit=card?creditLimitForCard(data,card):0;
@@ -120,9 +111,9 @@ export function CreditCardPage({
   const archiveRef=useModalFocus<HTMLElement>(archiveOpen,'[data-autofocus="true"]',()=>setArchiveOpen(false));
   const statementSetupRef=useModalFocus<HTMLElement>(statementSetupOpen,'[data-autofocus="true"]',()=>setStatementSetupOpen(false));
 
-  const openCardProfile=()=>{if(!card)return;setProfileCard(card);setMessage('')};
+  const openCardProfile=(target?:PaymentCard)=>{const selected=target??card;if(!selected)return;setProfileCard(selected);setMessage('')};
   const saveCreditCardProfile=(updated:PaymentCard)=>{onUpsertCard(updated);setSelectedCardId(updated.id);setProfileCard(null);setMessage(`Η «${updated.nickname}» ενημερώθηκε χωρίς αλλαγή στα ασφαλή στοιχεία ή στο ιστορικό της.`)};
-  const openCardDetails=()=>{if(!card)return;setDetailsIsNew(false);setDetailsCard(card);setMessage('')};
+  const openCardDetails=(target?:PaymentCard)=>{const selected=target??card;if(!selected)return;setDetailsIsNew(false);setDetailsCard(selected);setMessage('')};
   const createCreditCard=(newCard:PaymentCard)=>{const withLimit={...newCard,creditLimit:newCard.creditLimit??data.state.settings.creditLimit??0};setDetailsIsNew(true);setDetailsCard(withLimit);setMessage('')};
   const saveCreditCardDetails=(updated:PaymentCard)=>{const wasNew=detailsIsNew;onUpsertCard(updated);if(wasNew)setSelectedCardId(updated.id);setDetailsCard(null);setDetailsIsNew(false);setMessage(wasNew?'Η πιστωτική δημιουργήθηκε με αποθηκευμένα ασφαλή στοιχεία. Ρύθμισε τον κύκλο δήλωσης πριν ενεργοποιηθεί statement σύνδεση.':`Τα ασφαλή στοιχεία της «${updated.nickname}» ενημερώθηκαν.`)};
 
@@ -177,24 +168,16 @@ export function CreditCardPage({
       title="Πιστωτική Κάρτα"
       description={<p>Η κάρτα, το διαθέσιμο όριο και όλες οι πραγματικές κινήσεις της σε μία καθαρή εικόνα.</p>}
       actions={<>
-        {archivedCredit.length?<Button type="button" variant="secondary" onClick={()=>setArchiveOpen(true)}><ArchiveRestore/> Αρχείο καρτών · {archivedCredit.length}</Button>:null}
-        {card?<Button type="button" variant="secondary" onClick={openCardProfile}><Pencil/> Επεξεργασία κάρτας</Button>:null}
-        {card?<Button type="button" variant="secondary" onClick={openCardDetails}><KeyRound/> Ασφαλή στοιχεία</Button>:null}
+        <Button type="button" variant="secondary" onClick={()=>setCreateOpen(true)}><Plus/> Προσθήκη πιστωτικής</Button>
+        {archivedCredit.length?<Button type="button" variant="ghost" aria-label={`Αρχείο καρτών, ${archivedCredit.length}`} onClick={()=>setArchiveOpen(true)}><ArchiveRestore/> Αρχείο · {archivedCredit.length}</Button>:null}
         <Button type="button" variant="secondary" disabled={!card||debt<=0||eligibleAccounts.length===0} onClick={openRepay}><ReceiptText/> Αποπληρωμή</Button>
         <Button type="button" variant="primary" disabled={!card} onClick={openPurchase}><CreditCard/> Νέα αγορά</Button>
       </>}
     />
 
     {card&&bank?<section className="credit-card-stage surface-raised">
-      <div className="credit-card-stage-card" data-card-view={cardDeckMode}>
-        <div className="credit-card-view-controls" aria-label="Τρόπος προβολής πιστωτικών καρτών">
-          <div className="credit-card-view-mode" role="group" aria-label="Εμφάνιση καρτών">
-            <button type="button" className={cardDeckMode==='horizontal'?'active':''} aria-pressed={cardDeckMode==='horizontal'} onClick={()=>setCardDeckMode('horizontal')}>Οριζόντια</button>
-            <button type="button" className={cardDeckMode==='stack'?'active':''} aria-pressed={cardDeckMode==='stack'} onClick={()=>setCardDeckMode('stack')}>Στοίβα</button>
-          </div>
-          {activeCredit.length>1&&cardDeckMode==='horizontal'?<div className="credit-card-horizontal-nav" role="group" aria-label="Εναλλαγή πιστωτικής κάρτας"><IconButton type="button" aria-label="Προηγούμενη πιστωτική κάρτα" onClick={()=>selectRelativeCard(-1)}><ChevronLeft/></IconButton><span>{selectedCardIndex+1} / {activeCredit.length}</span><IconButton type="button" aria-label="Επόμενη πιστωτική κάρτα" onClick={()=>selectRelativeCard(1)}><ChevronRight/></IconButton></div>:null}
-        </div>
-        <CanonicalCreditCardStack cards={activeCredit} banks={banks} selectedCardId={card.id} onActiveCardChange={setSelectedCardId} onArchiveCard={archiveFromStack}/>
+      <div className="credit-card-stage-card">
+        <CanonicalCreditCardStack cards={activeCredit} banks={banks} selectedCardId={card.id} onActiveCardChange={setSelectedCardId} onArchiveCard={archiveFromStack} onEditCard={openCardProfile} onEditDetails={openCardDetails}/>
       </div>
       <div className="credit-card-stage-stats">
         <div><span>Χρησιμοποιημένο</span><b><AnimatedAmount value={debt}/></b><small>Πραγματική οφειλή της επιλεγμένης κάρτας.</small></div>
