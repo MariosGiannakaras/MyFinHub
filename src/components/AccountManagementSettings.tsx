@@ -108,7 +108,7 @@ function AccountIcon({account,providers}:{account:ProviderAccount;providers:Fina
   return <span className="account-management-brand-icon"><BankBrandMark id={providerId||account.id} name={accountProviderLabel(account,providers)}/></span>;
 }
 
-export function AccountManagementSettings({data,settings,onChange}:{data:FinanceData;settings:FinanceSettings;onChange:(next:FinanceSettings)=>void}){
+export function AccountManagementSettings({data,settings,onChange,onChangeDurably}:{data:FinanceData;settings:FinanceSettings;onChange:(next:FinanceSettings)=>void;onChangeDurably:(next:FinanceSettings)=>Promise<void>}){
   const metadata=useAccountMetadata();
   const providerCatalog=useFinancialProviders();
   const providers=providerCatalog.providers;
@@ -186,9 +186,6 @@ export function AccountManagementSettings({data,settings,onChange}:{data:Finance
         excludeFromAvailable:reserveCash||termDeposit,
         custom:isCustom||undefined,
       };
-      if(editor.mode==='bank')await saveAccountMetadata(id,editor.iban.trim()?normalizeIban(editor.iban):'');
-      else if(metadata.records[id]?.iban)await saveAccountMetadata(id,'');
-
       const names={...settings.accountNames,[id]:name};
       if(id!==editor.id&&editor.id)delete names[editor.id];
       const excluded=new Set(settings.excludedFromAvailable??[]);
@@ -217,8 +214,18 @@ export function AccountManagementSettings({data,settings,onChange}:{data:Finance
         };
       }
 
-      onChange(next);
-      setMessage(editor.source==='new'?'Ο λογαριασμός δημιουργήθηκε.':'Οι αλλαγές αποθηκεύτηκαν.');
+      await onChangeDurably(next);
+      // IBAN lives in a separate owner+AAL2 metadata store. Commit the
+      // canonical account revision first; do not leave orphaned metadata when
+      // the finance write fails. A later metadata error is a partial success.
+      let ibanWarning='';
+      try{
+        if(editor.mode==='bank')await saveAccountMetadata(id,editor.iban.trim()?normalizeIban(editor.iban):'');
+        else if(metadata.records[id]?.iban)await saveAccountMetadata(id,'');
+      }catch{
+        ibanWarning=' Ο λογαριασμός αποθηκεύτηκε, αλλά η ενημέρωση IBAN απέτυχε. Έλεγξε τα στοιχεία και επανάλαβε την ενημέρωση.';
+      }
+      setMessage((editor.source==='new'?'Ο λογαριασμός δημιουργήθηκε και αποθηκεύτηκε.':'Οι αλλαγές του λογαριασμού αποθηκεύτηκαν.')+ibanWarning);
       setEditor(null);
     }catch(error){setEditorError(userErrorMessage(error,'Δεν ήταν δυνατή η αποθήκευση του λογαριασμού. Δοκίμασε ξανά.'))}
     finally{setBusy(false)}
@@ -241,8 +248,14 @@ export function AccountManagementSettings({data,settings,onChange}:{data:Finance
       const active=accounts.filter(item=>item.id!==id&&item.showInQuickChoices!==false);
       const fallback=active[0]?.id||'';
       const next:FinanceSettings={...settings,customAccounts:remaining,accountNames:names,accountOverrides:overrides,excludedFromAvailable:(settings.excludedFromAvailable??[]).filter(item=>item!==id),defaultExpenseAccount:settings.defaultExpenseAccount===id?fallback:settings.defaultExpenseAccount,defaultIncomeAccount:settings.defaultIncomeAccount===id?fallback:settings.defaultIncomeAccount,defaultLoanAccount:settings.defaultLoanAccount===id?fallback:settings.defaultLoanAccount};
-      if(metadata.records[id]?.iban)await saveAccountMetadata(id,'');
-      onChange(next);setMessage('Ο λογαριασμός διαγράφηκε.');setPendingDelete(null);
+      await onChangeDurably(next);
+      let metadataWarning='';
+      if(metadata.records[id]?.iban){
+        try{await saveAccountMetadata(id,'')}
+        catch{metadataWarning=' Η αφαίρεση του παλιού IBAN από τα metadata απέτυχε· έλεγξε τα στοιχεία.'}
+      }
+      setMessage('Ο λογαριασμός διαγράφηκε και αποθηκεύτηκε.'+metadataWarning);
+      setPendingDelete(null);
     }catch(error){setMessage(userErrorMessage(error,'Δεν ήταν δυνατή η διαγραφή του λογαριασμού.'))}
     finally{setBusy(false)}
   };
