@@ -97,7 +97,7 @@ export function PlanningPage({ data, asOf, onUpsertScheduled, onCompleteSchedule
     try {
       const item = createScheduledTransaction(data, { id: draft.id, createdAt: draft.createdAt, kind: draft.kind, dueDate: draft.dueDate, amount: Number(draft.amount.replace(',', '.')), note: draft.note, category: draft.category, subcategory: draft.subcategory || undefined, accountId: draft.accountId, fromAccountId: draft.fromAccountId, toAccountId: draft.toAccountId });
       onUpsertScheduled(item);
-      setMessage(draft.id ? 'Η προγραμματισμένη κίνηση ενημερώθηκε.' : 'Η προγραμματισμένη κίνηση προστέθηκε. Δεν επηρεάζει το πραγματικό υπόλοιπο μέχρι να ολοκληρωθεί.');
+      setMessage(draft.id ? 'Η ενημέρωση της προγραμματισμένης κίνησης αποθηκεύεται.' : 'Η νέα προγραμματισμένη κίνηση αποθηκεύεται. Δεν επηρεάζει το πραγματικό υπόλοιπο μέχρι να ολοκληρωθεί.');
       closeDraft();
     } catch (cause) { setError(userErrorMessage(cause, 'Δεν μπορέσαμε να αποθηκεύσουμε την προγραμματισμένη κίνηση. Έλεγξε τα στοιχεία.')); }
   };
@@ -113,7 +113,7 @@ export function PlanningPage({ data, asOf, onUpsertScheduled, onCompleteSchedule
       const event = scheduledToEvent(data, complete, { date: actualDate, amount: Number(actualAmount.replace(',', '.')), accountId: actualAccount, fromAccountId: actualFrom, toAccountId: actualTo });
       const completed = transitionScheduled(complete, 'completed', event.id);
       onCompleteScheduled(completed, event);
-      setMessage(`Καταχωρίστηκε πραγματική κίνηση ${money.format(event.amount)} για «${complete.note}».`);
+      setMessage(`Η πραγματική κίνηση ${money.format(event.amount)} για «${complete.note}» αποθηκεύεται.`);
       closeComplete();
     } catch (cause) { setCompleteError(userErrorMessage(cause, 'Δεν μπορέσαμε να ολοκληρώσουμε την κίνηση. Έλεγξε ποσό, ημερομηνία και λογαριασμό.')); }
   };
@@ -122,7 +122,7 @@ export function PlanningPage({ data, asOf, onUpsertScheduled, onCompleteSchedule
     if(!lifecycleTarget)return;
     const {item,status}=lifecycleTarget;
     onUpsertScheduled(transitionScheduled(item,status));
-    setMessage(status==='cancelled'?'Η προγραμματισμένη κίνηση ακυρώθηκε και διατηρήθηκε στο ιστορικό.':'Η προγραμματισμένη κίνηση σημειώθηκε ως παραλειφθείσα.');
+    setMessage(status==='cancelled'?'Η ακύρωση αποθηκεύεται. Το ιστορικό διατηρείται.':'Η παράλειψη αποθηκεύεται στο ιστορικό.');
     setLifecycleTarget(null);
   };
 

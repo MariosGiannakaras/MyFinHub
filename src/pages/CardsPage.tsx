@@ -88,15 +88,15 @@ export function CardsPage({
     const name=bankName.trim();if(!name){setError('Γράψε το όνομα της τράπεζας για να μπορέσουμε να τη δημιουργήσουμε.');return}
     if(banks.some(bank=>bank.name.localeCompare(name,'el',{sensitivity:'base'})===0)){setError('Υπάρχει ήδη τράπεζα με αυτό το όνομα. Έλεγξε το όνομα ή χρησιμοποίησε την υπάρχουσα στήλη.');return}
     const now=Date.now();onUpsertBank({id:`custom-${now}`,name:name.toUpperCase(),order:Math.max(60,...banks.map(bank=>bank.order+10)),custom:true});
-    setBankOpen(false);setBankName('');setError('');setMessage('Η τράπεζα προστέθηκε.');
+    setBankOpen(false);setBankName('');setError('');setMessage('Η νέα τράπεζα αποθηκεύεται.');
   };
   const editCardProfile=(card:PaymentCard)=>{setProfileCard(card);setMessage('')};
-  const saveCardProfile=(card:PaymentCard)=>{onUpsertCard(card);setProfileCard(null);setMessage(`Η «${card.nickname}» ενημερώθηκε.`)};
+  const saveCardProfile=(card:PaymentCard)=>{onUpsertCard(card);setProfileCard(null);setMessage(`Η ενημέρωση της «${card.nickname}» αποθηκεύεται.`)};
   const editCardDetails=(card:PaymentCard)=>{setDetailsIsNew(false);setDetailsCard(card);setMessage('')};
   const createCard=(card:PaymentCard)=>{setDetailsIsNew(true);setDetailsCard(card);setMessage('')};
-  const saveCardDetails=(card:PaymentCard)=>{const wasNew=detailsIsNew;onUpsertCard(card);setDetailsCard(null);setDetailsIsNew(false);setMessage(wasNew?`Η «${card.nickname}» δημιουργήθηκε με αποθηκευμένα ασφαλή στοιχεία.`:`Τα ασφαλή στοιχεία της «${card.nickname}» ενημερώθηκαν.`)};
-  const archive=(card:PaymentCard)=>{onArchiveCard(card);setMessage(`Η «${card.nickname}» αρχειοθετήθηκε. Τα αποθηκευμένα στοιχεία της παραμένουν διαθέσιμα αν την επαναφέρεις.`)};
-  const restore=(card:PaymentCard)=>{onUpsertCard(restoreCard(card));setMessage(`Η «${card.nickname}» επανήλθε με τα ίδια αποθηκευμένα στοιχεία.`)};
+  const saveCardDetails=(card:PaymentCard)=>{const wasNew=detailsIsNew;onUpsertCard(card);setDetailsCard(null);setDetailsIsNew(false);setMessage(wasNew?`Τα ασφαλή στοιχεία της «${card.nickname}» αποθηκεύτηκαν· το προφίλ δημιουργείται.`:`Τα ασφαλή στοιχεία της «${card.nickname}» αποθηκεύτηκαν· το προφίλ ενημερώνεται.`)};
+  const archive=(card:PaymentCard)=>{onArchiveCard(card);setMessage(`Η αρχειοθέτηση της «${card.nickname}» αποθηκεύεται. Τα ασφαλή στοιχεία παραμένουν διαθέσιμα.`)};
+  const restore=(card:PaymentCard)=>{onUpsertCard(restoreCard(card));setMessage(`Η επαναφορά της «${card.nickname}» αποθηκεύεται. Τα ασφαλή στοιχεία παραμένουν.`)};
   const confirmDelete=async()=>{
     if(!deleteTarget)return;
     setDeleteBusy(true);setMessage('');
@@ -104,7 +104,7 @@ export function CardsPage({
       const name=deleteTarget.nickname;
       await onDeleteCard(deleteTarget);
       setDeleteTarget(null);
-      setMessage(`Η «${name}» διαγράφηκε οριστικά μαζί με τα αποθηκευμένα στοιχεία της.`);
+      setMessage(`Τα προστατευμένα στοιχεία της «${name}» αφαιρέθηκαν· η διαγραφή προφίλ αποθηκεύεται.`);
     }catch(error){
       setMessage(cardVaultErrorMessage(error));
     }finally{setDeleteBusy(false)}

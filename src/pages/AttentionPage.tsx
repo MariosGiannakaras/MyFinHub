@@ -102,7 +102,7 @@ export function AttentionPage({data,asOf,onAction,onDecision,onReviewDecision}:{
     const pending=info.filter(item=>item.kind!=='forecast'&&item.kind!=='budget');
     return {danger,warning,pending,notices};
   },[items]);
-  const decide=(item:AttentionItem,kind:'snooze'|'dismiss')=>{try{const decision=kind==='snooze'?attentionSnoozeDecision(item,asOf):attentionDismissDecision(item);onDecision(item.id,decision);setMessage(kind==='snooze'?`Η υπενθύμιση «${item.title}» αναβλήθηκε προσωρινά.`:`Η ενημέρωση «${item.title}» κρύφτηκε όσο δεν αλλάζει η κατάστασή της.`)}catch(reason){setMessage(userErrorMessage(reason,'Δεν ήταν δυνατή η αλλαγή της υπενθύμισης.'))}};
+  const decide=(item:AttentionItem,kind:'snooze'|'dismiss')=>{try{const decision=kind==='snooze'?attentionSnoozeDecision(item,asOf):attentionDismissDecision(item);onDecision(item.id,decision);setMessage(kind==='snooze'?`Η αναβολή της υπενθύμισης «${item.title}» αποθηκεύεται.`:`Η απόκρυψη της ενημέρωσης «${item.title}» αποθηκεύεται.`)}catch(reason){setMessage(userErrorMessage(reason,'Δεν ήταν δυνατή η αλλαγή της υπενθύμισης.'))}};
   const activate=(item:AttentionItem)=>{
     if(item.action==='open_dashboard'){location.hash='#/dashboard';return}
     if(item.action==='open_recurring'){location.hash='#/recurring';return}
