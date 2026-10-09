@@ -7,7 +7,7 @@
 .recurring-logo-editor-preview small{display:block;margin-top:4px;color:var(--text-secondary);font-size:var(--ux-dense-label-size);line-height:1.4}
 .recurring-logo-editor-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}
 .recurring-logo-editor-actions .text-button{color:var(--text-secondary)}
-.recurring-brand-local-preview>img{display:block;width:78%;height:78%;object-fit:contain}
+.recurring-brand-local-selection{color:var(--accent);background:var(--accent-soft)}
 .contextual-quick-modal #context-quick-title{display:flex;align-items:center;gap:8px}
 @media(max-width:680px){.recurring-logo-editor{align-items:flex-start;flex-direction:column}.recurring-logo-editor-actions{width:100%;flex-wrap:wrap}.recurring-logo-editor-actions>button{flex:1 1 140px}}
 

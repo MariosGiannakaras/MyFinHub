@@ -11,7 +11,8 @@ describe('Recurring service-brand integration contracts',()=>{
   it('keeps upload deferred until recurring Save and makes Cancel network-free',()=>{
     expect(page).toContain("const selectLogo=(file?:File)=>");
     expect(page).toContain('setEditLogoFile(file)');
-    expect(page).toContain('URL.createObjectURL(file)');
+    expect(page).not.toContain('URL.createObjectURL');
+    expect(page).toContain('data-recurring-brand-source="local-selection"');
     expect(page).toContain("const save=async()=>");
     expect(page).toContain('uploaded=await uploadRecurringServiceAsset({recurringId:base.id,file:editLogoFile})');
     expect(page).toContain("const closeEdit=()=>{if(!editBusy)releaseEdit()}");
@@ -22,11 +23,12 @@ describe('Recurring service-brand integration contracts',()=>{
     expect(page).toContain("logoAssetKey=editLogoRemoved?undefined:base.logoAssetKey");
     expect(page).toContain('logoAssetKey=uploaded.assetKey');
     expect(page).toContain('const normalized:RecurringItem={...base,logoAssetKey:logoAssetKey||undefined}');
-    expect(page).toContain("const removeLogo=()=>{setEditLogoFile(null);setEditLogoPreview('');setEditLogoRemoved(true)");
+    expect(page).toContain("const removeLogo=()=>{setEditLogoFile(null);setEditLogoRemoved(true)");
     expect(page).toContain("Ανέβασμα");
     expect(page).toContain("Αλλαγή");
     expect(page).toContain("Αφαίρεση");
     expect(page).not.toMatch(/base64|data:image/);
+    expect(page).not.toContain('editLogoPreview');
   });
 
   it('cleans up a newly uploaded asset when the synchronous recurring save fails',()=>{
