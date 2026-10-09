@@ -69,15 +69,18 @@ export function CardDetailsDialog({
     if(busy)return;
     setSaving(true);setError('');
     let vaultSaved=false;
+    let profileStaged=false;
     try{
       normalizeCardDetailsInput({pan,expiry,cvv},{requireCvv});
-      if(requireCvv)await onBeforeSave?.(card);
+      if(requireCvv){await onBeforeSave?.(card);profileStaged=true;}
       const updated=await saveCardDetails(card,{pan,expiry,cvv},{requireCvv});
       vaultSaved=true;
       await onSaved(updated);
     }catch(saveError){
       if(saveError instanceof CardDetailsInputError)setError(saveError.message);
       else if(vaultSaved)setError('Τα ασφαλή στοιχεία αποθηκεύτηκαν στο vault, αλλά το προφίλ δεν επιβεβαιώθηκε. Επαναφόρτωσε και επανάλαβε τη σύνδεση της κάρτας.');
+      else if(requireCvv&&!profileStaged)setError('Η δημιουργία του προφίλ δεν αποθηκεύτηκε. Δεν στάλθηκαν ασφαλή στοιχεία στο vault. Επαναφόρτωσε και δοκίμασε ξανά.');
+      else if(requireCvv)setError('Το προφίλ της κάρτας αποθηκεύτηκε, αλλά η ασφαλής αποθήκευση δεν ολοκληρώθηκε. Τα στοιχεία μπορείς να τα συμπληρώσεις ξανά.');
       else setError(cardVaultErrorMessage(saveError));
     }finally{setSaving(false)}
   };

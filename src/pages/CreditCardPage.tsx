@@ -20,7 +20,6 @@ import { Tooltip } from '../components/Tooltip';
 import { useFinancialProviders } from '../hooks/useFinancialProviders';
 import { useModalFocus } from '../hooks/useModalFocus';
 import { canPermanentlyDeleteCreditCard, cardBanks, creditCards, creditDebtForCard, creditEventsForCard, creditLimitForCard, deletedCreditCards, restoreCard } from '../lib/cards';
-import { cardVaultErrorMessage } from '../lib/cardVaultClient';
 import { categoryPath, genericCategoryTree } from '../lib/categories';
 import { cardStatementConfiguration, creditStatementEvents, creditStatementViews, recommendedPayableStatement, unlinkedCreditStatementEvents } from '../lib/creditStatements';
 import { allAccounts, createEvent } from '../lib/domain';
@@ -143,7 +142,7 @@ export function CreditCardPage({
       await onDeleteCard(deleteCardTarget);
       setDeleteCardTarget(null);
       setMessage(`Η «${name}» διαγράφηκε και τα ασφαλή στοιχεία καθαρίστηκαν. Το οικονομικό ιστορικό παραμένει.`);
-    }catch(error){setMessage(error instanceof Error&&error.message.startsWith('Το προφίλ διαγράφηκε')?error.message:cardVaultErrorMessage(error))}
+    }catch(error){setMessage(error instanceof Error&&error.message.startsWith('Το προφίλ διαγράφηκε')?error.message:'Η οικονομική διαγραφή δεν επιβεβαιώθηκε. Τα ασφαλή στοιχεία δεν αφαιρέθηκαν. Επαναφόρτωσε και δοκίμασε ξανά.')}
     finally{setDeleteCardBusy(false)}
   };
   const submitPurchase=()=>{

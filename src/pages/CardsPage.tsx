@@ -15,7 +15,6 @@ import { Tooltip } from '../components/Tooltip';
 import { useFinancialProviders } from '../hooks/useFinancialProviders';
 import { useModalFocus } from '../hooks/useModalFocus';
 import { cardBanks, archivedCardsForBank, cardDomainBankCount, cardsForBank, cardWorkspaceBanks, restoreCard } from '../lib/cards';
-import { cardVaultErrorMessage } from '../lib/cardVaultClient';
 import { categoryPath } from '../lib/categories';
 import { effectiveLegacyTransactions, flowImpactEvent, flowImpactLegacy } from '../lib/domain';
 import { cleanNote, money, shortDate } from '../lib/format';
@@ -108,7 +107,7 @@ export function CardsPage({
       setDeleteTarget(null);
       setMessage(`Η «${name}» διαγράφηκε και ο καθαρισμός του ασφαλούς vault ολοκληρώθηκε.`);
     }catch(error){
-      setMessage(error instanceof Error&&error.message.startsWith('Το προφίλ διαγράφηκε')?error.message:cardVaultErrorMessage(error));
+      setMessage(error instanceof Error&&error.message.startsWith('Το προφίλ διαγράφηκε')?error.message:'Η οικονομική διαγραφή δεν επιβεβαιώθηκε. Τα ασφαλή στοιχεία δεν αφαιρέθηκαν. Επαναφόρτωσε και δοκίμασε ξανά.');
     }finally{setDeleteBusy(false)}
   };
 
