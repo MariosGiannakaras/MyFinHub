@@ -16,12 +16,27 @@
 #myfinhub-card-stack .dots{
   display:flex;
   align-items:center;
-  justify-content:center;
+  justify-content:flex-start;
   gap:7px;
   flex-wrap:nowrap;
+  width:min(100%,280px);
+  padding:2px 4px;
+  overflow-x:auto;
+  overscroll-behavior-inline:contain;
+  scrollbar-width:none;
+}
+#myfinhub-card-stack .dots::-webkit-scrollbar{display:none}
+#myfinhub-card-stack .stack-drag-hint{
+  display:block;
+  margin-top:8px;
+  color:var(--muted);
+  font-size:var(--ux-dense-label-size);
+  font-weight:700;
+  letter-spacing:.01em;
 }
 
 #myfinhub-card-stack .dot{
+  flex:0 0 auto;
   width:6px;
   height:6px;
   border-radius:999px;

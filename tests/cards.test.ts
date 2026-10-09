@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { archiveCardRecord, archivedCardMatch, canPermanentlyDeleteCreditCard, cardBanks, cardsForBank, creditCards, creditDebtForCard, creditEventsForCard, creditLimitForCard, historicalCardLabel, legacyCreditOwnerId, primaryCreditCard, restoreCard, withCardProfileDeleted } from '../src/lib/cards.js';
+import { archiveCardRecord, archivedCardMatch, canPermanentlyDeleteCreditCard, cardBanks, cardDomainBankCount, cardsForBank, cardWorkspaceBanks, creditCards, creditDebtForCard, creditEventsForCard, creditLimitForCard, historicalCardLabel, legacyCreditOwnerId, primaryCreditCard, restoreCard, withCardProfileDeleted } from '../src/lib/cards.js';
 import { migrateProductData } from '../src/lib/productMigration.js';
 import type { FinanceData, FinanceEvent } from '../src/types.js';
 
@@ -9,6 +9,7 @@ function payment(id:string,cardId:string,amount:number,date='2026-08-08'):Financ
 
 describe('Cards metadata',()=>{
  it('keeps the approved bank order, then adds shared providers before custom banks',()=>{expect(cardBanks(fixture()).map(bank=>bank.id)).toEqual(['piraeus','revolut','alpha','payzy','viva','national','eurobank','paypal','custom-bank'])});
+ it('shows only card-represented banks plus intentional custom empty banks in the workspace',()=>{const data=fixture();expect(cardWorkspaceBanks(data).map(bank=>bank.id)).toEqual(['piraeus','custom-bank']);expect(cardDomainBankCount(data)).toBe(1);data.state.cards=data.state.cards?.map(card=>card.id==='c1'?archiveCardRecord(card):card);expect(cardWorkspaceBanks(data).map(bank=>bank.id)).toEqual(['piraeus','custom-bank']);expect(cardDomainBankCount(data)).toBe(1)});
  it('keeps credit cards out of the generic Cards page selectors',()=>{const data=fixture();expect(cardsForBank(data,'piraeus').map(card=>card.id)).toEqual(['c1']);expect(creditCards(data).map(card=>card.id)).toEqual(['cc1','cc2'])});
  it('preserves each stored credit-card statement boundary instead of overriding it at read time',()=>{const data=fixture();data.state.cards=data.state.cards?.map(card=>card.id==='cc1'?{...card,statementBoundaryRule:'include-closing-day'}:card);expect(creditCards(data).map(card=>card.statementBoundaryRule)).toEqual(['include-closing-day',undefined]);expect(data.state.cards?.find(card=>card.id==='cc1')?.statementBoundaryRule).toBe('include-closing-day')});
  it('stores no full secret field in card metadata',()=>{const cards=cardsForBank(fixture(),'piraeus');expect(cards[0]).not.toHaveProperty('pan');expect(cards[0]).not.toHaveProperty('cvv');expect(cards[0]).not.toHaveProperty('expiry')});

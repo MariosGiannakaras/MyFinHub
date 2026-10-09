@@ -19,6 +19,13 @@ describe('dark-theme surface regressions',()=>{
     expect(dashboard).not.toContain('color:#526987');
     expect(bankmarks).toContain('.dashboard-approved .bank-brand-mark:is([data-bank-logo-source="local-image"],[data-bank-logo-source="provider-storage"])');
     expect(bankmarks).toContain('border:0!important;background:transparent!important;box-shadow:none!important');
+    expect(bankmarks).toContain('.approved-account-icon:has(>.bank-brand-mark:is([data-bank-logo-source="local-image"],[data-bank-logo-source="provider-storage"]))');
+    expect(dashboard).not.toContain('bankmark-alpha::before');
+    expect(dashboard).not.toContain('account-tone-0 .approved-account-icon::before');
+    expect(dashboard).not.toContain('account-tone-2 .approved-account-icon .bank-logo-text::before');
+    const darkSurfaces=read('src/styles/dark-theme-surfaces.css');
+    expect(darkSurfaces).toContain('html[data-theme="dark"] .dashboard-approved .approved-kpi-strip{');
+    expect(darkSurfaces).toContain('html[data-theme="dark"] .dashboard-approved .approved-kpi-strip article+article{border-left:1px solid var(--chart-grid)!important}');
 
     const reports=read('src/pages/ReportsPage.css');
     expect(reports).toContain('background:var(--success-bg)');

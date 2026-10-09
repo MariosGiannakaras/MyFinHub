@@ -41,6 +41,17 @@ export function loanRemainingInstallments(data:FinanceData,loan:Loan){
   return Math.max(0,loan.installments-loanPaidCount(data,loan));
 }
 
+export function loanVisualInstallmentProgress(totalInstallments:number,paidInstallments:number,maxSegments=60){
+  const total=Math.max(0,Math.floor(Number(totalInstallments)||0));
+  const max=Math.max(1,Math.floor(Number(maxSegments)||60));
+  if(total===0)return {segments:0,paidSegments:0};
+  const paid=Math.max(0,Math.min(total,Math.floor(Number(paidInstallments)||0)));
+  const segments=Math.min(total,max);
+  if(total<=max)return {segments,paidSegments:paid};
+  if(paid>=total)return {segments,paidSegments:segments};
+  return {segments,paidSegments:Math.min(segments-1,Math.floor((paid/total)*segments))};
+}
+
 export function loanInstallmentPaymentPlan(data:FinanceData,loan:Loan,requestedCount:number):LoanInstallmentPaymentPlan|null{
   const remaining=loanRemainingInstallments(data,loan);
   const outstanding=loanOutstanding(data,loan);

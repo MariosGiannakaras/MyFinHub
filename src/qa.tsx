@@ -177,6 +177,57 @@ function buildQaData(params:URLSearchParams){
     }))];
   }
   if(params.get('state')==='overlimit')next.state.cards=(next.state.cards??[]).map(card=>card.kind==='credit'?{...card,creditLimit:100}:card);
+  if(params.get('state')==='cards-rich'){
+    const cards=next.state.cards??[],base=cards.find(card=>card.id==='qa-debit-card');
+    if(base){
+      const variants=[
+        {id:'qa-card-revolut',bankId:'revolut',nickname:'QA Revolut',kind:'debit' as const,designId:'revolut-sage',network:'mastercard' as const,last4:'2202'},
+        {id:'qa-card-alpha',bankId:'alpha',nickname:'QA Alpha',kind:'debit' as const,designId:'alpha-bonus',network:'visa' as const,last4:'3303'},
+        {id:'qa-card-payzy',bankId:'payzy',nickname:'QA Payzy',kind:'prepaid' as const,designId:'payzy-neo',network:'visa' as const,last4:'4404'},
+        {id:'qa-card-viva',bankId:'viva',nickname:'QA Viva',kind:'debit' as const,designId:'viva-cobalt',network:'mastercard' as const,last4:'5505'},
+      ];
+      next.state.cards=[...cards,...variants.map((item,index)=>({...base,...item,createdAt:`2026-08-${String(3+index).padStart(2,'0')}T07:00:00.000Z`,updatedAt:`2026-08-${String(3+index).padStart(2,'0')}T07:00:00.000Z`}))];
+    }
+  }
+  if(params.get('state')==='credit-stack'||params.get('state')==='credit-stack-long'){
+    const cards=next.state.cards??[],base=cards.find(card=>card.kind==='credit'&&card.active!==false);
+    if(base){
+      const providers=['revolut','alpha','payzy','viva','piraeus'] as const;
+      const designs=['revolut-sage','alpha-bonus','payzy-neo','viva-cobalt','piraeus-midnight'] as const;
+      const total=params.get('state')==='credit-stack-long'?24:6;
+      const generated=Array.from({length:Math.max(0,total-1)},(_,index)=>({...base,id:`qa-credit-stack-${index+2}`,bankId:providers[index%providers.length],nickname:`QA Credit ${index+2}`,designId:designs[index%designs.length],network:index%2===0?'mastercard' as const:'visa' as const,last4:String(5100+index).padStart(4,'0'),creditLimit:1500+(index*100),statementClosingDay:undefined,statementDueDay:undefined,statementBoundaryRule:undefined,createdAt:`2026-08-${String((index%20)+2).padStart(2,'0')}T08:00:00.000Z`,updatedAt:`2026-08-${String((index%20)+2).padStart(2,'0')}T08:00:00.000Z`}));
+      next.state.cards=[...cards.filter(card=>card.kind!=='credit'||card.active===false),base,...generated];
+    }
+  }
+  if(params.get('state')==='loans-long'){
+    const longLoan:Loan={id:'qa-loan-120',name:'QA 120 δόσεις',total:12000,installment:100,installments:120,paidCount:60,day:'15',provider:'QA Provider',source:'qa',kind:'loan',accountingMode:'expense-per-installment',defaultAccountId:'piraeus-payroll',firstExpectedDate:'2026-01-15',longTermRecurring:true};
+    next.seed.loans=[];next.state.customLoans=[longLoan];next.state.loanOverrides={};next.state.loanExtra={};
+  }
+  if(params.get('state')==='lending-rich'){
+    const people=['Άννα Παπαδοπούλου','Γιώργος Νικολάου','Ελένη Δημητρίου','Νίκος Κωνσταντίνου','Μαρία Αντωνίου'];
+    const additions=people.flatMap((person,index)=>{
+      const lent=createEvent({kind:'lending',date:`2026-08-${String(6+index).padStart(2,'0')}`,amount:80+(index*25),note:`QA δανεικά ${index+1}`,accountId:'piraeus-payroll',person});
+      lent.id=`qa-lending-rich-${index}-lent`;lent.createdAt=`2026-08-${String(6+index).padStart(2,'0')}T10:00:00.000Z`;lent.updatedAt=lent.createdAt;
+      if(index>1)return [lent];
+      const repaid=createEvent({kind:'repayment',date:`2026-08-${String(13+index).padStart(2,'0')}`,amount:20+(index*10),note:`QA επιστροφή ${index+1}`,accountId:'piraeus-payroll',person});
+      repaid.id=`qa-lending-rich-${index}-repaid`;repaid.createdAt=`2026-08-${String(13+index).padStart(2,'0')}T10:00:00.000Z`;repaid.updatedAt=repaid.createdAt;
+      return [lent,repaid];
+    });
+    next.state.events=[...(next.state.events??[]),...additions];
+  }
+  if(params.get('state')==='recurring-rich'){
+    const categories=['Τηλεπικοινωνίες','Διασκέδαση','Σταθερά έξοδα'];
+    next.seed.recurring=[];next.state.recurringOverrides={};
+    next.state.recurringCustom=Array.from({length:9},(_,index):RecurringItem=>({id:`qa-recurring-rich-${index+1}`,name:`QA Πάγιο ${index+1}`,amount:12+(index*7),day:(index%24)+1,firstExpectedDate:`2026-08-${String((index%20)+1).padStart(2,'0')}`,endDate:index%3===0?'2027-08-01':null,accountId:'piraeus-payroll',category:categories[index%categories.length],active:true,status:'active',source:'qa',recurrenceUnit:index%4===0?'year':'month',recurrenceInterval:index%4===0?1:(index%3)+1}));
+  }
+  if(params.get('state')==='recurring-branding'){
+    next.seed.recurring=[];next.state.recurringOverrides={};
+    next.state.recurringCustom=[
+      {id:'qa-service-branded',name:'QA Streaming',amount:14.99,day:18,firstExpectedDate:'2026-08-18',endDate:null,accountId:'piraeus-payroll',category:'Διασκέδαση',active:true,status:'active',source:'qa',recurrenceUnit:'month',recurrenceInterval:1,logoAssetKey:'service-asset-aaaaaaaaaaaaaaaaaaaaaaaa'},
+      {id:'qa-service-fallback',name:'QA Utility',amount:31.20,day:22,firstExpectedDate:'2026-08-22',endDate:null,accountId:'piraeus-payroll',category:'Σταθερά έξοδα',active:true,status:'active',source:'qa',recurrenceUnit:'month',recurrenceInterval:1},
+      {id:'qa-service-paused',name:'QA Paused Service',amount:7.50,day:8,firstExpectedDate:'2026-08-08',endDate:null,accountId:'piraeus-payroll',category:'Τηλεπικοινωνίες',active:false,status:'paused',source:'qa',recurrenceUnit:'month',recurrenceInterval:1,logoAssetKey:'service-asset-aaaaaaaaaaaaaaaaaaaaaaaa'},
+    ];
+  }
   if(params.get('state')==='forecast-negative')next.state.scheduled=[...(next.state.scheduled??[]),{id:'qa-negative-forecast',dueDate:'2026-08-18',kind:'expense',amount:3000,note:'Μεγάλη γνωστή υποχρέωση',category:'Σταθερά έξοδα',accountId:'piraeus-payroll',status:'pending',createdAt:'2026-08-10T10:00:00.000Z',updatedAt:'2026-08-10T10:00:00.000Z'}];
   if(params.get('state')==='budget-rules'){
     const stamp='2026-08-17T12:00:00.000Z';

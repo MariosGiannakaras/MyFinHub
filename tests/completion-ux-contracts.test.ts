@@ -240,6 +240,11 @@ describe('completion UX contracts',()=>{
     expect(headings).toContain('.page-heading{display:grid;grid-template-columns:minmax(0,1fr)');
     expect(headings).toContain('.heading-actions{width:100%;display:flex;flex-wrap:wrap');
     expect(headings).toContain('@media(max-width:420px)');
+    const mobilePresentations=read('src/styles/mobile-finance-presentations.css');
+    expect(mobilePresentations).toContain('@media(max-width:420px)');
+    expect(mobilePresentations).toContain('.heading-actions>.secondary,');
+    expect(mobilePresentations).toContain('flex:1 1 min(140px,100%)');
+    expect(mobilePresentations).toContain('min-width:min(140px,100%)');
   });
 
 
