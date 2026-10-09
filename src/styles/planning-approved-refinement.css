@@ -9,13 +9,13 @@
   .planning-page>.page-heading>.save-button{font-size:0;gap:7px;padding-inline:16px}
   .planning-page>.page-heading>.save-button::after{content:"Νέα προγραμματισμένη κίνηση";font-size:9.5px;line-height:1;font-weight:800}
 
-  .planning-approved-forecast{padding-inline:15px 14px}
+  .planning-forecast-summary{padding-inline:15px 14px}
   .planning-forecast-intro b{font-size:13.8px}
-  .planning-forecast-intro small{font-size:9px}
-  .planning-forecast-kpi>span{font-size:9.4px}
+  .planning-forecast-intro small{font-size:var(--ux-dense-label-size);color:var(--text-secondary)}
+  .planning-forecast-kpi>span{font-size:var(--ux-dense-label-size);color:var(--text-secondary)}
   .planning-forecast-kpi>b{font-size:21px}
-  .planning-forecast-kpi>small{font-size:8.4px}
-  .planning-detail-toggle{font-size:9px}
+  .planning-forecast-kpi>small{font-size:var(--ux-dense-label-size)}
+  .planning-detail-toggle{font-size:var(--ux-dense-data-size)}
 
   .planning-approved-title>div>span{font-size:13.8px}
   .planning-approved-title>div>small{font-size:8.8px}
@@ -35,9 +35,9 @@
 
   .planning-account-cards{grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
   .planning-account-card{min-height:151px;grid-template-columns:1fr 102px;padding:11px}
-  .planning-account-card>header b{font-size:9.7px}
-  .planning-account-today span{font-size:7.8px}
-  .planning-account-today strong{font-size:10.5px}
-  .planning-account-horizons small{font-size:7px}
-  .planning-account-horizons b{font-size:8.4px}
+  .planning-account-card>header b{font-size:var(--ux-dense-data-size)}
+  .planning-account-today span{font-size:var(--ux-dense-label-size)}
+  .planning-account-today strong{font-size:var(--ux-dense-data-size)}
+  .planning-account-horizons small{font-size:var(--ux-dense-label-size)}
+  .planning-account-horizons b{font-size:var(--ux-dense-data-size)}
 }
