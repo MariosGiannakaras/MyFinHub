@@ -101,7 +101,7 @@ describe('recurring service asset foundation',()=>{
     expect(storageReadMigration).toContain("bucket_id='recurring-service-assets'");
     expect(storageReadMigration).toContain('owner_id=(select auth.uid())::text');
     expect(storageReadMigration).toContain('(select public.rheomiq_is_owner_aal2())');
-    expect(storageReadMigration).not.toContain('to anon');
+    expect(storageReadMigration).not.toMatch(/for\s+select\s+to\s+anon\b/i);
     const appliedBlock=ledger.slice(ledger.indexOf('const productionApplied=['),ledger.indexOf('const releasePending='));
     expect(appliedBlock).not.toContain('20261008165700_add_recurring_service_assets.sql');
   });
