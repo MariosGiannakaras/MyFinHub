@@ -471,43 +471,44 @@ async function main(){
     expect(await reauthenticated.request('/api/auth/session'),401,'DEVICE_ACCESS_REVOKED');
 
     console.log('[real-stack] stage recurring-service-asset-durability');
-    const serviceIdA='real-stack-service-brand-a',serviceIdB='real-stack-service-brand-b';
+    const serviceId='real-stack-service-brand-a';
     const serviceSvg=Buffer.from("<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><rect width='32' height='32' fill='#345'/></svg>",'utf8');
     const initialServiceObjects=await upstreamStorageList(local.apiUrl,local.serviceRole,'services','recurring-service-assets');
-    const serviceUpload=await primary.requestBinary('/api/account-metadata?'+new URLSearchParams({resource:'recurring-service-assets',recurringId:serviceIdA,fileName:'real-service.svg'}),{
-      method:'PUT',headers:{'content-type':'image/svg+xml'},body:serviceSvg,
-    });
-    expect(serviceUpload,200,undefined,'recurring-service-asset-upload');
-    const serviceAssetKey=String(serviceUpload.body?.asset?.assetKey||'');
-    assert(/^service-asset-[a-f0-9]{24}$/.test(serviceAssetKey),'Recurring service upload returned a non-canonical asset key.');
+    const uploadService=async(fileName:string)=>{
+      const uploaded=await primary.requestBinary('/api/account-metadata?'+new URLSearchParams({resource:'recurring-service-assets',recurringId:serviceId,fileName}),{
+        method:'PUT',headers:{'content-type':'image/svg+xml'},body:serviceSvg,
+      });
+      expect(uploaded,200,undefined,'recurring-service-asset-upload');
+      const key=String(uploaded.body?.asset?.assetKey||'');
+      assert(/^service-asset-[a-f0-9]{24}$/.test(key),'Recurring service upload returned a non-canonical asset key.');
+      return key;
+    };
+    const serviceAssetKey=await uploadService('original.svg');
     const serviceObjectsAfterUpload=await upstreamStorageList(local.apiUrl,local.serviceRole,'services','recurring-service-assets');
-    assert(serviceObjectsAfterUpload.length===initialServiceObjects.length+1,'Recurring service asset upload did not create exactly one Storage object.');
-    const preceding=await primary.request('/api/data');
-    expect(preceding,200,undefined,'recurring-service-finance-before');
-    const precedingHistory=await primary.request('/api/history');
-    expect(precedingHistory,200,undefined,'recurring-service-history-before');
-    const oldRevision=String(preceding.body?.revision||''),oldGeneration=String(precedingHistory.body?.generation||'');
+    assert(serviceObjectsAfterUpload.length===initialServiceObjects.length+1,'Recurring service upload did not create exactly one Storage object.');
+    const original=await primary.request('/api/data');
+    expect(original,200,undefined,'recurring-service-finance-before');
+    const originalHistory=await primary.request('/api/history');
+    expect(originalHistory,200,undefined,'recurring-service-history-before');
+    const oldRevision=String(original.body?.revision||''),oldGeneration=String(originalHistory.body?.generation||'');
     assert(/^\d+$/.test(oldRevision)&&/^\d+$/.test(oldGeneration),'Recurring service mutation preconditions were unavailable.');
-    const originalState=structuredClone(preceding.body.data.state);
-    const serviceAccount=String(originalState.settings?.defaultExpenseAccount||preceding.body.data.seed.accounts?.[0]?.id||'');
-    const serviceCategory=String(originalState.settings?.expenseCategories?.[0]||'Άλλο');
-    const serviceBase={name:'Real Stack Service',amount:12,day:18,firstExpectedDate:'2026-08-18',endDate:null,accountId:serviceAccount,category:serviceCategory,active:true,status:'active',source:'user',recurrenceUnit:'month',recurrenceInterval:1,logoAssetKey:serviceAssetKey};
-    const sharedServiceRows=[{...serviceBase,id:serviceIdA},{...serviceBase,id:serviceIdB,name:'Real Stack Shared Service'}];
-    const sharedState=structuredClone(originalState);
-    sharedState.recurringCustom=[...(sharedState.recurringCustom||[]),...sharedServiceRows];
-    const sharedSave=await primary.request('/api/data',{
+    const serviceState=structuredClone(original.body.data.state);
+    const serviceAccount=String(serviceState.settings?.defaultExpenseAccount||original.body.data.seed.accounts?.[0]?.id||'');
+    const serviceCategory=String(serviceState.settings?.expenseCategories?.[0]||'Άλλο');
+    const serviceRow={id:serviceId,name:'Real Stack Service',amount:12,day:18,firstExpectedDate:'2026-08-18',endDate:null,accountId:serviceAccount,category:serviceCategory,active:true,status:'active',source:'user',recurrenceUnit:'month',recurrenceInterval:1,logoAssetKey:serviceAssetKey};
+    serviceState.recurringCustom=[...(serviceState.recurringCustom||[]),serviceRow];
+    const firstServiceSave=await primary.request('/api/data',{
       method:'PUT',headers:{'if-match':oldRevision,'x-rheomiq-history-generation':oldGeneration},
-      body:{state:sharedState,updatedAt:new Date().toISOString(),historyLabel:'Real-stack shared recurring service logo'},
+      body:{state:serviceState,updatedAt:new Date().toISOString(),historyLabel:'Real-stack service logo create'},
     });
-    expect(sharedSave,200,undefined,'recurring-service-save');
+    expect(firstServiceSave,200,undefined,'recurring-service-create-save');
     const reloadedServices=await restored.request('/api/data');
     expect(reloadedServices,200,undefined,'recurring-service-reload');
-    assert(sharedServiceRows.every(row=>reloadedServices.body?.data?.state?.recurringCustom?.some((item:any)=>item.id===row.id&&item.logoAssetKey===serviceAssetKey)),'Recurring logo references failed the revisioned save-to-reload round trip.');
-    const releasePath='/api/account-metadata?'+new URLSearchParams({resource:'recurring-service-assets',assetKey:serviceAssetKey});
-    const blockedSharedDelete=await primary.request(releasePath,{method:'DELETE'});
-    expect(blockedSharedDelete,409,'RECURRING_SERVICE_ASSET_IN_USE','recurring-service-reference-protection');
-    const staleServiceState=structuredClone(originalState);
-    staleServiceState.recurringCustom=[...(staleServiceState.recurringCustom||[]),{...serviceBase,id:serviceIdA,logoAssetKey:undefined}];
+    assert(reloadedServices.body?.data?.state?.recurringCustom?.some((item:any)=>item.id===serviceId&&item.logoAssetKey===serviceAssetKey),'New recurring logo reference failed revisioned save/reload.');
+    const assetPath=(key:string)=>'/api/account-metadata?'+new URLSearchParams({resource:'recurring-service-assets',assetKey:key});
+    expect(await primary.request(assetPath(serviceAssetKey),{method:'DELETE'}),409,'RECURRING_SERVICE_ASSET_IN_USE','recurring-service-reference-protection');
+    const staleServiceState=structuredClone(original.body.data.state);
+    staleServiceState.recurringCustom=[...(staleServiceState.recurringCustom||[]),{...serviceRow,logoAssetKey:undefined}];
     const staleServiceWrite=await restored.request('/api/data',{
       method:'PUT',headers:{'if-match':oldRevision,'x-rheomiq-history-generation':oldGeneration},
       body:{state:staleServiceState,updatedAt:new Date().toISOString(),historyLabel:'Stale recurring service asset edit'},
@@ -515,28 +516,43 @@ async function main(){
     assert(staleServiceWrite.status===409&&['REVISION_CONFLICT','HISTORY_CURSOR_CONFLICT'].includes(String(staleServiceWrite.body?.code||'')),'Stale recurring logo write did not fail closed.');
     const afterConflict=await restored.request('/api/data');
     expect(afterConflict,200,undefined,'recurring-service-after-conflict');
-    assert(sharedServiceRows.every(row=>afterConflict.body?.data?.state?.recurringCustom?.some((item:any)=>item.id===row.id&&item.logoAssetKey===serviceAssetKey)),'A stale recurring logo update rewrote durable references.');
-    const removeFirst=structuredClone(afterConflict.body.data.state);
-    removeFirst.recurringCustom=removeFirst.recurringCustom.map((item:any)=>item.id===serviceIdA?{...item,logoAssetKey:undefined}:item);
-    const conflictHistory=await primary.request('/api/history');
-    expect(conflictHistory,200,undefined,'recurring-service-history-after-conflict');
-    const firstRemoved=await primary.request('/api/data',{
-      method:'PUT',headers:{'if-match':String(afterConflict.body.revision),'x-rheomiq-history-generation':String(conflictHistory.body?.generation||'')},
-      body:{state:removeFirst,updatedAt:new Date().toISOString(),historyLabel:'Remove first shared logo reference'},
+    assert(afterConflict.body?.data?.state?.recurringCustom?.some((item:any)=>item.id===serviceId&&item.logoAssetKey===serviceAssetKey),'Stale recurring logo update rewrote the durable reference.');
+
+    // Replacement must be committed before the previous key may be released.
+    const replacementKey=await uploadService('replacement.svg');
+    assert(replacementKey!==serviceAssetKey,'A replacement upload reused the old asset key.');
+    const replaceState=structuredClone(afterConflict.body.data.state);
+    replaceState.recurringCustom=replaceState.recurringCustom.map((item:any)=>item.id===serviceId?{...item,logoAssetKey:replacementKey}:item);
+    const replacementHistory=await primary.request('/api/history');
+    expect(replacementHistory,200,undefined,'recurring-service-history-replace');
+    const replacementSave=await primary.request('/api/data',{
+      method:'PUT',headers:{'if-match':String(afterConflict.body.revision),'x-rheomiq-history-generation':String(replacementHistory.body?.generation||'')},
+      body:{state:replaceState,updatedAt:new Date().toISOString(),historyLabel:'Replace recurring service asset reference'},
     });
-    expect(firstRemoved,200,undefined,'recurring-service-first-reference-remove');
-    expect(await primary.request(releasePath,{method:'DELETE'}),409,'RECURRING_SERVICE_ASSET_IN_USE','recurring-service-second-reference-protection');
-    const removeSecond=structuredClone(firstRemoved.body?.data?.state||removeFirst);
-    removeSecond.recurringCustom=removeSecond.recurringCustom.map((item:any)=>item.id===serviceIdB?{...item,logoAssetKey:undefined}:item);
-    const finalRemoved=await primary.request('/api/data',{
-      method:'PUT',headers:{'if-match':String(firstRemoved.body.revision),'x-rheomiq-history-generation':String(firstRemoved.body?.history?.generation||'')},
-      body:{state:removeSecond,updatedAt:new Date().toISOString(),historyLabel:'Remove last shared logo reference'},
+    expect(replacementSave,200,undefined,'recurring-service-replace-save');
+    const reloadedReplacement=await restored.request('/api/data');
+    expect(reloadedReplacement,200,undefined,'recurring-service-replacement-reload');
+    assert(reloadedReplacement.body?.data?.state?.recurringCustom?.some((item:any)=>item.id===serviceId&&item.logoAssetKey===replacementKey),'Replacement recurring logo failed revisioned save/reload.');
+    expect(await primary.request(assetPath(serviceAssetKey),{method:'DELETE'}),200,undefined,'recurring-service-release-old');
+    expect(await primary.request(assetPath(replacementKey),{method:'DELETE'}),409,'RECURRING_SERVICE_ASSET_IN_USE','recurring-service-replacement-protection');
+
+    // Clearing the last reference must persist first; only then purge Storage.
+    const clearedState=structuredClone(reloadedReplacement.body.data.state);
+    clearedState.recurringCustom=clearedState.recurringCustom.map((item:any)=>item.id===serviceId?{...item,logoAssetKey:undefined}:item);
+    const clearHistory=await primary.request('/api/history');
+    expect(clearHistory,200,undefined,'recurring-service-history-remove');
+    const removedSave=await primary.request('/api/data',{
+      method:'PUT',headers:{'if-match':String(reloadedReplacement.body.revision),'x-rheomiq-history-generation':String(clearHistory.body?.generation||'')},
+      body:{state:clearedState,updatedAt:new Date().toISOString(),historyLabel:'Remove last recurring service logo reference'},
     });
-    expect(finalRemoved,200,undefined,'recurring-service-last-reference-remove');
-    expect(await primary.request(releasePath,{method:'DELETE'}),200,undefined,'recurring-service-release-purge');
+    expect(removedSave,200,undefined,'recurring-service-last-reference-remove');
+    const reloadedCleared=await restored.request('/api/data');
+    expect(reloadedCleared,200,undefined,'recurring-service-removed-reload');
+    assert(reloadedCleared.body?.data?.state?.recurringCustom?.some((item:any)=>item.id===serviceId&&!item.logoAssetKey),'Cleared recurring logo reference was not persisted.');
+    expect(await primary.request(assetPath(replacementKey),{method:'DELETE'}),200,undefined,'recurring-service-release-purge');
     const serviceAssetsAfterDelete=await primary.request('/api/account-metadata?resource=recurring-service-assets');
     expect(serviceAssetsAfterDelete,200,undefined,'recurring-service-after-purge');
-    assert(!(serviceAssetsAfterDelete.body?.assets||[]).some((asset:any)=>asset.assetKey===serviceAssetKey),'Released recurring logo metadata survived purge.');
+    assert(!(serviceAssetsAfterDelete.body?.assets||[]).some((asset:any)=>[serviceAssetKey,replacementKey].includes(asset.assetKey)),'Released recurring logo metadata survived purge.');
     const serviceObjectsAfterDelete=await upstreamStorageList(local.apiUrl,local.serviceRole,'services','recurring-service-assets');
     assert(serviceObjectsAfterDelete.length===initialServiceObjects.length,'Recurring service asset Storage object survived reference-aware purge.');
 
