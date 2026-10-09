@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createEvent } from '../src/lib/domain.js';
-import { loanInstallmentPaymentPlan, loanPaidAmount, loanPaidCount, loanPaymentInstallmentCount, preserveLoanPaymentLink, setLoanPaymentInstallmentCount } from '../src/lib/loans.js';
+import { loanInstallmentPaymentPlan, loanPaidAmount, loanPaidCount, loanPaymentInstallmentCount, loanVisualInstallmentProgress, preserveLoanPaymentLink, setLoanPaymentInstallmentCount } from '../src/lib/loans.js';
 import type { FinanceData, FinanceEvent, Loan } from '../src/types.js';
 
 const loan: Loan = {
@@ -88,5 +88,13 @@ describe('loan payment linkage', () => {
     data.state.loanExtra={'loan-1':2};
     const roundedLoan={...loan,total:145};
     expect(loanInstallmentPaymentPlan(data,roundedLoan,3)).toEqual({count:2,firstInstallment:5,lastInstallment:6,amount:45});
+  });
+
+  it('maps capped visual progress proportionally without showing completion early',()=>{
+    expect(loanVisualInstallmentProgress(60,30)).toEqual({segments:60,paidSegments:30});
+    expect(loanVisualInstallmentProgress(120,60)).toEqual({segments:60,paidSegments:30});
+    expect(loanVisualInstallmentProgress(61,60)).toEqual({segments:60,paidSegments:59});
+    expect(loanVisualInstallmentProgress(120,119)).toEqual({segments:60,paidSegments:59});
+    expect(loanVisualInstallmentProgress(120,120)).toEqual({segments:60,paidSegments:60});
   });
 });
