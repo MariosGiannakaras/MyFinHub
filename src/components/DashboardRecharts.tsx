@@ -25,10 +25,10 @@ function flowAxisLabel(value:number){
 
 export function DashboardFlowChart({data,month,animateCharts}:{data:DailyFlow[];month:string;animateCharts:boolean}){
   return <ResponsiveContainer width="100%" height="100%">
-    <BarChart accessibilityLayer={false} data={data} barGap={1} margin={{top:4,right:6,bottom:0,left:4}}>
+    <BarChart accessibilityLayer={false} data={data} barGap={1} margin={{top:4,right:6,bottom:0,left:12}}>
       <CartesianGrid stroke="#e6edf6" vertical={false}/>
       <XAxis dataKey="day" tick={{fontSize:10,fill:'#62728e'}} interval={4} axisLine={false} tickLine={false}/>
-      <YAxis tick={{fontSize:10,fill:'#62728e'}} tickFormatter={flowAxisLabel} width={64} tickMargin={4} axisLine={false} tickLine={false}/>
+      <YAxis tick={{fontSize:10,fill:'#62728e'}} tickFormatter={flowAxisLabel} width={80} tickMargin={4} axisLine={false} tickLine={false}/>
       <Tooltip formatter={(value,name)=>[money.format(Number(value)),name==='income'?'Έσοδα':'Έξοδα']} labelFormatter={day=>`${day} ${new Intl.DateTimeFormat('el-GR',{month:'short'}).format(new Date(`${month}-01T12:00:00`)).replace('.','')}`}/>
       <Bar dataKey="income" fill="#36c978" radius={[2,2,0,0]} isAnimationActive={animateCharts}/>
       <Bar dataKey="expense" fill="#ff5b62" radius={[2,2,0,0]} isAnimationActive={animateCharts}/>
