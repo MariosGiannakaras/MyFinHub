@@ -15,6 +15,35 @@ describe('Needs Attention deterministic engine',()=>{
     expect(items.some(item=>item.id==='scheduled:qa-scheduled-transfer'&&item.scheduledId==='qa-scheduled-transfer')).toBe(true);
   });
 
+  it('matches quarterly recurring cadence instead of inventing monthly overdue reminders',()=>{
+    const data=clone();
+    data.seed.recurring=[];
+    data.state.recurringCustom=[{id:'quarterly-qa',name:'Quarterly service',amount:90,day:10,firstExpectedDate:'2026-01-10',recurrenceUnit:'month',recurrenceInterval:3,accountId:'piraeus-payroll',category:'Τηλεπικοινωνίες',active:true}];
+    const paid=createEvent({kind:'expense',date:'2026-01-10',amount:90,note:'Quarterly payment',accountId:'piraeus-payroll'});
+    data.state.events=[{...paid,recurringId:'quarterly-qa'}];
+    const attention=(date:string)=>allAttentionItems(data,date).find(item=>item.id==='recurring:quarterly-qa');
+    expect(attention('2026-02-15')).toBeUndefined();
+    expect(attention('2026-03-15')).toBeUndefined();
+    expect(attention('2026-04-05')).toMatchObject({dueDate:'2026-04-10',severity:'warning'});
+    expect(attention('2026-04-11')).toMatchObject({dueDate:'2026-04-10',severity:'danger'});
+    const april=createEvent({kind:'expense',date:'2026-04-12',amount:90,note:'April quarterly payment',accountId:'piraeus-payroll'});
+    data.state.events=[...data.state.events,{...april,recurringId:'quarterly-qa'}];
+    expect(attention('2026-04-13')).toBeUndefined();
+  });
+
+  it('keeps annual recurring attention anchored to the actual yearly due date',()=>{
+    const data=clone();
+    data.seed.recurring=[];
+    data.state.recurringCustom=[{id:'annual-qa',name:'Annual service',amount:120,day:20,firstExpectedDate:'2026-12-20',recurrenceUnit:'year',recurrenceInterval:1,accountId:'piraeus-payroll',category:'Τηλεπικοινωνίες',active:true}];
+    const attention=(date:string)=>allAttentionItems(data,date).find(item=>item.id==='recurring:annual-qa');
+    expect(attention('2026-10-10')).toBeUndefined();
+    expect(attention('2026-12-16')).toMatchObject({dueDate:'2026-12-20',severity:'warning'});
+    expect(attention('2026-12-21')).toMatchObject({dueDate:'2026-12-20',severity:'danger'});
+    const paid=createEvent({kind:'expense',date:'2026-12-21',amount:120,note:'Annual payment',accountId:'piraeus-payroll'});
+    data.state.events=[{...paid,recurringId:'annual-qa'}];
+    expect(attention('2027-01-15')).toBeUndefined();
+  });
+
   it('uses statement due data and carries the exact statement payment target',()=>{
     const upcoming=allAttentionItems(clone(),'2026-08-17').find(row=>row.id==='credit-statement:qa-card:2026-08-12');
     expect(upcoming?.cardId).toBe('qa-card');

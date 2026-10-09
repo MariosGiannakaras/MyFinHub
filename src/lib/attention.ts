@@ -6,6 +6,7 @@ import { addDays, cashFlowForecast, LOW_BALANCE_THRESHOLD } from './forecast.js'
 import { lendingOutstandingFor } from './lending.js';
 import { isSelfLoan, loanPaymentEvents, loanRemainingInstallments, typicalLoanPaymentDay } from './loans.js';
 import { activeRecurringItems, recurringPayments, typicalPaymentDay } from './recurring.js';
+import { addRecurringInterval, recurringCadence, validRecurringAnchor } from './recurringCadence.js';
 import { pendingScheduled, scheduledLifecycle } from './scheduled.js';
 import type { AttentionDecision, FinanceData, FinanceEvent, Loan, RecurringItem } from '../types.js';
 
@@ -72,6 +73,25 @@ function effectiveLoans(data:FinanceData):Loan[]{
 }
 
 function recurringDue(data:FinanceData,item:RecurringItem,asOf:string){
+  if(recurringCadence(item).months>1){
+    const payments=recurringPayments(data,item.id);
+    let next=validRecurringAnchor(item.firstExpectedDate);
+    if(!next&&payments.length)next=addRecurringInterval(payments[0].date,item);
+    if(!next)return null;
+    let previous:string|null=null,cycleStart:string|null=null,guard=0;
+    while(next<=asOf&&guard++<240){
+      cycleStart=previous;
+      previous=next;
+      const advanced=addRecurringInterval(next,item);
+      if(!advanced||advanced<=next)return null;
+      next=advanced;
+    }
+    if(next<=asOf)return null;
+    const paidForPrevious=payments.some(event=>event.date<=asOf&&(!cycleStart||event.date>cycleStart));
+    if(previous&&!paidForPrevious)return {date:previous,severity:'danger' as const,overdue:true};
+    if(daysBetween(asOf,next)<=UPCOMING_DAYS)return {date:next,severity:'warning' as const,overdue:false};
+    return null;
+  }
   const day=typicalPaymentDay(data,item);if(!day)return null;
   const current=monthDate(asOf,day);
   const paidThisMonth=recurringPayments(data,item.id).some(event=>event.date>=monthStart(asOf)&&event.date<=asOf);
