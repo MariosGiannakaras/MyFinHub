@@ -23,6 +23,11 @@ describe('Settings post-v1.4 remediation contracts',()=>{
     expect(qa).toContain("if(params.get('motion')==='reduced')next.state.settings.motion='reduced'");
     expect(finance).toContain('const {motion:_legacyMotion,...settings}=migrated.state.settings');
     expect(finance).not.toContain("motion:'full'");
+    const completion=readFileSync(new URL('../scripts/ui-ux-completion-qa.mjs',import.meta.url),'utf8');
+    expect(completion).toContain("name:'prefers-reduced-motion',value:'reduce'");
+    expect(completion).toContain("reducedMotionState.system&&reducedMotionState.app==='full'");
+    expect(completion).toContain('OS reduced motion leaves workspace at rest');
+    expect(completion).not.toContain("navigate({page:'dashboard',motion:'reduced'}");
 
   });
 
