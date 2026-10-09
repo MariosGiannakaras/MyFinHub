@@ -10,6 +10,7 @@ const validation=readFileSync('server/validation.ts','utf8');
 const handler=readFileSync('server/accountMetadataHandler.ts','utf8');
 const store=readFileSync('server/accountMetadataStore.ts','utf8');
 const ledger=readFileSync('tests/production-migration-ledger-source.test.ts','utf8');
+const storageReadMigration=readFileSync('supabase/migrations/20261009190000_allow_recurring_service_asset_storage_owner_read.sql','utf8');
 const recurringPage=readFileSync('src/pages/RecurringPage.tsx','utf8');
 const financeHook=readFileSync('src/hooks/useFinance.ts','utf8');
 const app=readFileSync('src/App.tsx','utf8');
@@ -93,7 +94,14 @@ describe('recurring service asset foundation',()=>{
   });
 
   it('tracks the new migration as release-pending rather than production-applied history',()=>{
-    expect(ledger).toContain('const releasePending=["20261008165700_add_recurring_service_assets.sql"] as const;');
+    expect(ledger).toContain('"20261008165700_add_recurring_service_assets.sql"');
+    expect(ledger).toContain('"20261009190000_allow_recurring_service_asset_storage_owner_read.sql"');
+    expect(storageReadMigration).toContain('rheomiq_recurring_service_storage_owner_aal2_select');
+    expect(storageReadMigration).toContain('for select to authenticated');
+    expect(storageReadMigration).toContain("bucket_id='recurring-service-assets'");
+    expect(storageReadMigration).toContain('owner_id=(select auth.uid())::text');
+    expect(storageReadMigration).toContain('(select public.rheomiq_is_owner_aal2())');
+    expect(storageReadMigration).not.toContain('to anon');
     const appliedBlock=ledger.slice(ledger.indexOf('const productionApplied=['),ledger.indexOf('const releasePending='));
     expect(appliedBlock).not.toContain('20261008165700_add_recurring_service_assets.sql');
   });
