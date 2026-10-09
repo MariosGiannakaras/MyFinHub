@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { pageHash, resolveHashRoute } from '../src/lib/routing.js';
+import { pageHash, resolveHashRoute, settingsHash } from '../src/lib/routing.js';
 
 const app=readFileSync(new URL('../src/App.tsx',import.meta.url),'utf8');
 const notFoundPage=readFileSync(new URL('../src/pages/NotFoundPage.tsx',import.meta.url),'utf8');
@@ -19,6 +19,12 @@ describe('routing and 404 contract',()=>{
     expect(resolveHashRoute('#/does-not-exist')).toEqual({page:'dashboard',notFound:true});
     expect(resolveHashRoute('#/%2Fweird')).toEqual({page:'dashboard',notFound:true});
     expect(pageHash('reports')).toBe('#/reports');
+    expect(resolveHashRoute('#/settings')).toEqual({page:'settings',notFound:false,settingsTab:'general'});
+    expect(resolveHashRoute('#/settings/accounts')).toEqual({page:'settings',notFound:false,settingsTab:'accounts'});
+    expect(resolveHashRoute('#/settings/rules')).toEqual({page:'settings',notFound:false,settingsTab:'rules'});
+    expect(resolveHashRoute('#/settings/nope')).toEqual({page:'dashboard',notFound:true});
+    expect(settingsHash('general')).toBe('#/settings');
+    expect(settingsHash('data')).toBe('#/settings/data');
     expect(resolveHashRoute('#/transactions/')).toEqual({page:'dashboard',notFound:true});
     expect(resolveHashRoute('#/transactions?source=external')).toEqual({page:'dashboard',notFound:true});
     expect(resolveHashRoute('#//transactions')).toEqual({page:'dashboard',notFound:true});

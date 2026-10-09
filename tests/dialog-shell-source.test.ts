@@ -28,7 +28,8 @@ describe('DialogShell source contract',()=>{
     expect(shell).toContain('tabIndex={-1}');
     expect(shell).toContain('onMouseDown={event=>event.stopPropagation()}');
     expect(shell).toContain("if(motionMode==='none')return open?<div className=\"modal-backdrop\"");
-    expect(shell).toContain("motionMode==='reduced'");
+    expect(shell).toContain('const reduce=Boolean(systemReduced)');
+    expect(shell).not.toContain("motionMode==='reduced'");
     expect(shell).toContain('transition={{duration:reduce?0:.18}}');
   });
 

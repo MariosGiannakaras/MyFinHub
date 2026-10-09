@@ -1,4 +1,4 @@
-.settings-tabs-page{gap:16px}
+.settings-tabs-page{gap:16px;width:min(100%,1680px);margin-inline:auto}
 .settings-page-heading{margin-bottom:0}
 .settings-page-heading p{max-width:680px}
 
@@ -8,10 +8,10 @@
 .settings-tablist button.active{color:var(--blue);background:rgba(47,111,237,.09)}
 .settings-tablist button.active::after{content:"";position:absolute;left:14px;right:14px;bottom:2px;height:2px;border-radius:99px;background:var(--blue)}
 .settings-tablist button:disabled{cursor:not-allowed;color:var(--text-disabled);opacity:1}
-.settings-tab-panel{min-width:0}
+.settings-tab-panel{min-width:0;width:min(100%,1540px);margin-inline:auto}
 .settings-tab-stack{display:grid;gap:16px}
 
-.settings-general-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
+.settings-general-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start;width:min(100%,1320px);margin-inline:auto}
 .settings-general-grid>.keyboard-shortcuts-panel{grid-column:1/-1}
 .settings-general-grid>.panel{margin:0;min-width:0}
 .settings-general-grid .panel-head{margin-bottom:12px}

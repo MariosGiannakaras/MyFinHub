@@ -34,7 +34,8 @@ export function DialogShell({
   children:ReactNode;
 }){
   const systemReduced=useReducedMotion();
-  const reduce=Boolean(systemReduced)||motionMode==='reduced';
+  // App-level motion preferences are legacy compatibility only; OS reduced-motion is authoritative.
+  const reduce=Boolean(systemReduced);
   const modalRef=useModalFocus<HTMLElement>(open&&focusActive,preferredFocus,onRequestClose);
   const modalClassName=['quick-modal',className,'surface-raised'].filter(Boolean).join(' ');
 

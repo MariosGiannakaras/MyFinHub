@@ -82,7 +82,7 @@ try{
 
   await viewport(667,375);await navigate();await waitHeading('Οι λογαριασμοί μου');await audit('landscape dashboard');await openMore();assert(await c.eval("document.querySelector('.mobile-more-menu').getBoundingClientRect().height<window.innerHeight"),'landscape More constrained');await clickAria('Κλείσιμο μενού');
 
-  await viewport(430,800);await navigate(`${baseUrl}?motion=reduced`);await waitHeading('Οι λογαριασμοί μου');assert(await c.eval("document.documentElement.dataset.motion==='reduced'"),'reduced motion state');await audit('reduced motion');
+  await c.send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});await viewport(430,800);await navigate(`${baseUrl}?motion=reduced`);await waitHeading('Οι λογαριασμοί μου');assert(await c.eval("document.documentElement.dataset.motion==='full'&&matchMedia('(prefers-reduced-motion: reduce)').matches"),'legacy app motion is inert while OS reduced motion is authoritative');await audit('OS reduced motion');
 
   c.close();console.log('Rendered frontend QA passed.');
 }finally{child.kill('SIGTERM')}

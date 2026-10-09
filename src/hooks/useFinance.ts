@@ -19,7 +19,8 @@ type QueuedMutation = { data:FinanceData; label:string };
 
 function productData(input:FinanceData):FinanceData{
   const migrated=migrateProductData(input);
-  return {...migrated,state:{...migrated.state,settings:{...migrated.state.settings,motion:'full',textSize:migrated.state.settings.textSize??'normal'}}};
+  const {motion:_legacyMotion,...settings}=migrated.state.settings;
+  return {...migrated,state:{...migrated.state,settings:{...settings,textSize:settings.textSize??'normal'}}};
 }
 
 export function financeChangeLabel(current:FinanceData,next:FinanceData){return describeFinanceChange(current,next)}
