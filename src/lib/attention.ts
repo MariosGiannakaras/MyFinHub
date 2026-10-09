@@ -76,11 +76,15 @@ function recurringDue(data:FinanceData,item:RecurringItem,asOf:string){
   if(recurringCadence(item).months>1){
     const payments=recurringPayments(data,item.id);
     let next=validRecurringAnchor(item.firstExpectedDate);
-    if(!next&&payments.length)next=addRecurringInterval(payments[0].date,item);
+    let cycleStart:string|null=null;
+    if(!next&&payments.length){
+      cycleStart=payments[0].date;
+      next=addRecurringInterval(cycleStart,item);
+    }
     if(!next)return null;
-    let previous:string|null=null,cycleStart:string|null=null,guard=0;
+    let previous:string|null=null,guard=0;
     while(next<=asOf&&guard++<240){
-      cycleStart=previous;
+      cycleStart=previous??cycleStart;
       previous=next;
       const advanced=addRecurringInterval(next,item);
       if(!advanced||advanced<=next)return null;
@@ -123,7 +127,7 @@ function scheduledAttention(data:FinanceData,asOf:string):AttentionItem[]{
 }
 
 function recurringAttention(data:FinanceData,asOf:string):AttentionItem[]{
-  return activeRecurringItems(data).flatMap(item=>{const due=recurringDue(data,item,asOf);if(!due)return [];return [make({id:`recurring:${item.id}`,kind:'recurring',severity:due.severity,title:item.name,reason:due.overdue?'Δεν υπάρχει συνδεδεμένη πληρωμή για το πάγιο μέσα στον τρέχοντα μήνα και η γνωστή ημέρα έχει περάσει.':'Το επόμενο πάγιο πλησιάζει.',dueDate:due.date,amount:Number(item.amount||0),accountId:item.accountId,recurringId:item.id,action:'pay_recurring'})]});
+  return activeRecurringItems(data).flatMap(item=>{const due=recurringDue(data,item,asOf);if(!due)return [];return [make({id:`recurring:${item.id}`,kind:'recurring',severity:due.severity,title:item.name,reason:due.overdue?'Η προγραμματισμένη λήξη του παγίου έχει περάσει χωρίς συνδεδεμένη πληρωμή.':'Το επόμενο πάγιο πλησιάζει.',dueDate:due.date,amount:Number(item.amount||0),accountId:item.accountId,recurringId:item.id,action:'pay_recurring'})]});
 }
 
 function recurringExpiryAttention(data:FinanceData,asOf:string):AttentionItem[]{

@@ -31,6 +31,19 @@ describe('Needs Attention deterministic engine',()=>{
     expect(attention('2026-04-13')).toBeUndefined();
   });
 
+  it('uses the last payment as the previous cycle when no nonmonthly anchor was supplied',()=>{
+    const data=clone();
+    data.seed.recurring=[];
+    data.state.recurringCustom=[{id:'quarterly-last-paid',name:'Quarterly from paid event',amount:60,day:10,recurrenceUnit:'month',recurrenceInterval:3,accountId:'piraeus-payroll',category:'Υπηρεσίες',active:true}];
+    const january=createEvent({kind:'expense',date:'2026-01-10',amount:60,note:'Last quarterly installment',accountId:'piraeus-payroll'});
+    data.state.events=[{...january,recurringId:'quarterly-last-paid'}];
+    const find=(date:string)=>allAttentionItems(data,date).find(item=>item.id==='recurring:quarterly-last-paid');
+    expect(find('2026-02-12')).toBeUndefined();
+    expect(find('2026-04-05')).toMatchObject({dueDate:'2026-04-10',severity:'warning'});
+    expect(find('2026-04-11')).toMatchObject({dueDate:'2026-04-10',severity:'danger'});
+    expect(find('2026-04-11')?.reason).not.toContain('τρέχοντα μήνα');
+  });
+
   it('keeps annual recurring attention anchored to the actual yearly due date',()=>{
     const data=clone();
     data.seed.recurring=[];
