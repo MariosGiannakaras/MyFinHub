@@ -38,6 +38,10 @@ describe('zero-cost real-stack E2E source contract',()=>{
     expect(script).toContain("runRealStackBrowserProof({");
     expect(script).toContain("[real-stack] stage provider-storage-registration-failure-cleanup");
     expect(script).toContain("[real-stack] stage recurring-service-asset-durability");
+    expect(script).toContain("[real-stack] stage service-storage-unauthenticated-denial");
+    expect(script).toContain("[real-stack] stage service-storage-pre-aal2-denial");
+    expect(script).toContain('Recurring service asset upload accepted pre-AAL2 session.');
+    expect(script).toContain('Recurring service metadata read accepted pre-AAL2 session.');
     expect(script).toContain("'RECURRING_SERVICE_ASSET_IN_USE'");
     expect(script).toContain('recurring-service-asset-upload');
     expect(script).toContain('recurring-service-reload');

@@ -255,6 +255,11 @@ async function main(){
     console.log('[real-stack] local Supabase + MyFinHub API ready');
 
     const primary=new CookieClient('QA Browser A');
+    const guardedAssetPath='/api/account-metadata?'+new URLSearchParams({resource:'recurring-service-assets',recurringId:'security-negative',fileName:'negative.svg'});
+    const guardedAsset=Buffer.from("<svg xmlns='http://www.w3.org/2000/svg' width='8' height='8'><path d='M0 0'/></svg>",'utf8');
+    console.log('[real-stack] stage service-storage-unauthenticated-denial');
+    expect(await primary.requestBinary(guardedAssetPath,{method:'PUT',headers:{'content-type':'image/svg+xml'},body:guardedAsset}),401,'AUTH_REQUIRED','recurring-service-owner-unauth');
+    expect(await primary.request('/api/account-metadata?resource=recurring-service-assets'),401,'AUTH_REQUIRED','recurring-service-owner-read-unauth');
     console.log('[real-stack] stage auth-invalid-password');
     const invalid=await primary.request('/api/auth/login',{method:'POST',body:{email,password:'Definitely-Wrong-Password-9!'}});
     expect(invalid,401,'INVALID_CREDENTIALS','auth-invalid-password');
@@ -275,6 +280,11 @@ async function main(){
     const wrong=String((Number(correct)+1)%1_000_000).padStart(6,'0');
     console.log('[real-stack] stage mfa-invalid-code');
     expect(await primary.request('/api/auth/mfa/verify',{method:'POST',body:{factorId,code:wrong}}),401,'INVALID_MFA_CODE','mfa-invalid-code');
+    console.log('[real-stack] stage service-storage-pre-aal2-denial');
+    const preAal2Upload=await primary.requestBinary(guardedAssetPath,{method:'PUT',headers:{'content-type':'image/svg+xml'},body:guardedAsset});
+    assert((preAal2Upload.status===401||preAal2Upload.status===403)&&['AUTH_REQUIRED','MFA_REQUIRED'].includes(String(preAal2Upload.body?.code||'')),'Recurring service asset upload accepted pre-AAL2 session.');
+    const preAal2Read=await primary.request('/api/account-metadata?resource=recurring-service-assets');
+    assert((preAal2Read.status===401||preAal2Read.status===403)&&['AUTH_REQUIRED','MFA_REQUIRED'].includes(String(preAal2Read.body?.code||'')),'Recurring service metadata read accepted pre-AAL2 session.');
     console.log('[real-stack] stage mfa-valid-code');
     const verified=await primary.request('/api/auth/mfa/verify',{method:'POST',body:{factorId,code:correct}});
     expect(verified,200,undefined,'mfa-valid-code');
