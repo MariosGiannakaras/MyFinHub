@@ -22,6 +22,19 @@ describe('Dashboard hierarchy and painted-chart contracts',()=>{
     expect(dark).toContain('background:var(--control-bg)!important');
   });
 
+  it('keeps historical-month Dashboard flow-axis values readable and protects visible thousands labels in rendered QA',()=>{
+    const chart=read('src/components/DashboardRecharts.tsx');
+    const focused=read('scripts/shell-dashboard-hierarchy-qa.mjs');
+    expect(chart).toContain('margin={{top:4,right:6,bottom:0,left:4}}');
+    expect(chart).toContain('width={64} tickMargin={4}');
+    expect(chart).toContain('tickFormatter={flowAxisLabel}');
+    expect(chart).toContain('fontSize:10');
+    expect(chart).toContain("notation:'compact'");
+    expect(focused).toContain('historicalFlowAxis.minLeftInset>=-0.5');
+    expect(focused).toContain('historicalFlowAxis.maxValue>=3000');
+    expect(focused).toContain('historical-month Dashboard axis tick labels are fully visible');
+  });
+
   it('requires actual painted Dashboard chart shapes before focused visual evidence is accepted',()=>{
     const visual=read('scripts/ui-ux-visual-evidence-qa.mjs');
     const focused=read('scripts/shell-dashboard-hierarchy-qa.mjs');
