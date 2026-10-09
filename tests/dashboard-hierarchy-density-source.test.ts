@@ -30,6 +30,8 @@ describe('Dashboard hierarchy and painted-chart contracts',()=>{
     expect(chart).toContain('tickFormatter={flowAxisLabel}');
     expect(chart).toContain('fontSize:10');
     expect(chart).toContain("notation:'compact'");
+    expect(focused).toContain("host.querySelectorAll('svg text')");
+    expect(focused).toContain("includes('€')");
     expect(focused).toContain('historicalFlowAxis.minLeftInset>=-0.5');
     expect(focused).toContain('historicalFlowAxis.maxValue>=3000');
     expect(focused).toContain('historical-month Dashboard axis tick labels are fully visible');
