@@ -215,10 +215,7 @@ export function useFinance() {
       throw new Error('Επαναφόρτωσε πριν αποθηκεύσεις.');
     }
     const next=recipe(current);
-    if(next===current)return;
-    const receipt=persist(next,financeChangeLabel(current,next),true);
-    if(!receipt)throw new Error('Αδυναμία έναρξης αποθήκευσης.');
-    await receipt;
+    if(next!==current)await persist(next,financeChangeLabel(current,next),true)!;
   },[persist]);
 
   const move=useCallback(async(direction:'undo'|'redo')=>{
