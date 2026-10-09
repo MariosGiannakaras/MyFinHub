@@ -25,6 +25,11 @@ export function validateCardStateExtensions(state:FinanceData['state']){
   if(state.deletedCards!==undefined&&!Array.isArray(state.deletedCards))invalid();
   if((state.deletedCards?.length??0)>1_000)invalid();
   const cardsById=new Map((state.cards??[]).map(card=>[card.id,card]));
+  const pending=state.pendingCardSecretDeletes??[];
+  if(new Set(pending).size!==pending.length)invalid();
+  for(const cardId of pending){
+    if(!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$/.test(cardId)||cardsById.has(cardId))invalid();
+  }
   const deletedCardIds=new Set<string>();
   for(const deleted of state.deletedCards??[]){
     if(!deleted||typeof deleted!=='object'||Array.isArray(deleted))invalid();

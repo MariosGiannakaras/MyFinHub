@@ -283,6 +283,7 @@ export interface FinanceData {
     cardBanks?: CardBank[];
     cards?: PaymentCard[];
     deletedCards?: DeletedCardReference[];
+    pendingCardSecretDeletes?: string[];
     creditStatements?: CreditStatementRecord[];
     events?: FinanceEvent[];
     scheduled?: ScheduledTransaction[];

@@ -558,6 +558,7 @@ export function validateFinanceData(value: unknown): asserts value is FinanceDat
     state.cardBanks.forEach((item, index) => validateCardBank(item, `state.cardBanks[${index}]`));
     ensureUniqueIds(state.cardBanks, 'state.cardBanks');
   }
+  if (state.pendingCardSecretDeletes !== undefined) stringArray(state.pendingCardSecretDeletes, 'state.pendingCardSecretDeletes', 1_000, 160);
   if (state.cards !== undefined) {
     array(state.cards, 'state.cards', 1_000);
     state.cards.forEach((item, index) => validatePaymentCard(item, `state.cards[${index}]`));
