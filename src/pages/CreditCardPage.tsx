@@ -142,8 +142,8 @@ export function CreditCardPage({
       const name=deleteCardTarget.nickname;
       await onDeleteCard(deleteCardTarget);
       setDeleteCardTarget(null);
-      setMessage(`Τα προστατευμένα στοιχεία της «${name}» αφαιρέθηκαν· η οριστική διαγραφή προφίλ αποθηκεύεται. Το οικονομικό ιστορικό παραμένει.`);
-    }catch(error){setMessage(cardVaultErrorMessage(error))}
+      setMessage(`Η «${name}» διαγράφηκε και τα ασφαλή στοιχεία καθαρίστηκαν. Το οικονομικό ιστορικό παραμένει.`);
+    }catch(error){setMessage(error instanceof Error&&error.message.startsWith('Το προφίλ διαγράφηκε')?error.message:cardVaultErrorMessage(error))}
     finally{setDeleteCardBusy(false)}
   };
   const submitPurchase=()=>{

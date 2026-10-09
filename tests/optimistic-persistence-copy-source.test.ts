@@ -16,10 +16,10 @@ describe('optimistic finance edit feedback parity with durable save state (DV-FB
     expect(attention).toContain('αποθηκεύεται.');
   });
   it('distinguishes confirmed vault writes from still queued card profile changes',()=>{
-    expect(credit).toContain('Τα ασφαλή στοιχεία αποθηκεύτηκαν· το προφίλ της πιστωτικής αποθηκεύεται');
-    expect(cards).toContain('Τα ασφαλή στοιχεία της «');
-    expect(cards).toContain('η διαγραφή προφίλ αποθηκεύεται.');
-    expect(credit).toContain('η οριστική διαγραφή προφίλ αποθηκεύεται.');
-    expect(app).toContain('finance.update(current=>withCardProfileDeleted');
+    expect(credit).toContain('Το προφίλ και τα ασφαλή στοιχεία της πιστωτικής αποθηκεύτηκαν.');
+    expect(cards).toContain('επιβεβαιώθηκαν ως αποθηκευμένα.');
+    expect(cards).toContain('καθαρισμός του ασφαλούς vault ολοκληρώθηκε.');
+    expect(credit).toContain('τα ασφαλή στοιχεία καθαρίστηκαν.');
+    expect(app).toContain('finance.updateDurably(current=>withCardSecretCleanupPending');
   });
 });

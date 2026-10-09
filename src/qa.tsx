@@ -15,7 +15,7 @@ import type { QuickPrefill } from './components/QuickAdd';
 import { financeChangeLabel, useFinance, type ChangeHistoryEntry, type SaveState } from './hooks/useFinance';
 import { useSession } from './hooks/useSession';
 import type { AttentionItem } from './lib/attention';
-import { archiveCardRecord, withCardProfileDeleted } from './lib/cards';
+import { archiveCardRecord, withCardSecretCleanupPending, withCardSecretCleanupComplete } from './lib/cards';
 import type { RankedCommandSearchItem } from './lib/commandSearch';
 import { accountBalances, allAccounts, createEvent } from './lib/domain';
 import { withLegacyOverride, withLegacyTombstone } from './lib/legacyTransactions';
@@ -286,7 +286,7 @@ function QaWorkspace(){
   const upsertCardDurably=async(card:PaymentCard)=>{upsertCard(card)};
   const stageNewCard=async(card:PaymentCard)=>{if(!(data.state.cards??[]).some(item=>item.id===card.id))upsertCard({...card,last4:undefined,vaultRef:undefined})};
   const archiveCard=(card:PaymentCard)=>upsertCard(archiveCardRecord(card));
-  const deleteCard=async(card:PaymentCard)=>{update(current=>withCardProfileDeleted(current,card,`${today}T12:00:00.000Z`,today))};
+  const deleteCard=async(card:PaymentCard)=>{update(current=>withCardSecretCleanupComplete(withCardSecretCleanupPending(current,card,`${today}T12:00:00.000Z`,today),card.id))};
   const upsertScheduled=(item:ScheduledTransaction)=>update(current=>({...current,state:{...current.state,scheduled:[...(current.state.scheduled??[]).filter(existing=>existing.id!==item.id),item]}}));
   const completeScheduled=(item:ScheduledTransaction,event:FinanceEvent)=>update(current=>{const nextEvent=applyTransactionRules(current,event);return {...current,state:{...current.state,scheduled:[...(current.state.scheduled??[]).filter(existing=>existing.id!==item.id),item],events:[...(current.state.events??[]).filter(existing=>existing.id!==nextEvent.id),nextEvent]}}});
   const upsertBudget=(budget:MonthlyBudget)=>update(current=>({...current,state:{...current.state,budgets:[...(current.state.budgets??[]).filter(item=>item.id!==budget.id),budget]}}));

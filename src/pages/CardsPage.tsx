@@ -106,9 +106,9 @@ export function CardsPage({
       const name=deleteTarget.nickname;
       await onDeleteCard(deleteTarget);
       setDeleteTarget(null);
-      setMessage(`Τα προστατευμένα στοιχεία της «${name}» αφαιρέθηκαν· η διαγραφή προφίλ αποθηκεύεται.`);
+      setMessage(`Η «${name}» διαγράφηκε και ο καθαρισμός του ασφαλούς vault ολοκληρώθηκε.`);
     }catch(error){
-      setMessage(cardVaultErrorMessage(error));
+      setMessage(error instanceof Error&&error.message.startsWith('Το προφίλ διαγράφηκε')?error.message:cardVaultErrorMessage(error));
     }finally{setDeleteBusy(false)}
   };
 

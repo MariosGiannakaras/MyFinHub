@@ -13,6 +13,16 @@ describe('staged card profile + secure vault boundary',()=>{
     expect(credit).toContain('onBeforeSave={onStageNewCard}');
     expect(qa).toContain('onStageNewCard={stageNewCard}');
   });
+  it('requires durable card-profile deletion before remote vault cleanup and supports persisted retry',()=>{
+    expect(app.indexOf('await finance.updateDurably(current=>withCardSecretCleanupPending')).toBeLessThan(app.indexOf('finishCardDeletion(card.id,finance.updateDurably)'));
+    expect(app).toContain('cleanupAttempted.current.add(id)');
+    expect(app).toContain('pendingCardSecretDeletes??[]');
+    expect(read('server/cardVaultHandler.ts')).toContain("throw new ApiError(409,'CARD_SECRET_DELETE_NOT_COMMITTED'");
+    expect(read('server/cardStateValidation.ts')).toContain('state.pendingCardSecretDeletes??[]');
+    expect(read('src/types.ts')).toContain('pendingCardSecretDeletes?: string[]');
+    expect(read('src/lib/cardSecretDeletion.ts')).toContain('await deleteCardSecret(cardId,true)');
+    expect(read('src/lib/cardSecretDeletion.ts')).toContain('await updateDurably(current=>withCardSecretCleanupComplete');
+  });
   it('waits for the final exact profile receipt and retains the modal on failed profile save',()=>{
     expect(cards).toContain('await onUpsertCardDurably(card);setDetailsCard(null)');
     expect(credit).toContain('await onUpsertCardDurably(updated);if(wasNew)');
