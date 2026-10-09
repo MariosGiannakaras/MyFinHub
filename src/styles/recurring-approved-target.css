@@ -1,4 +1,16 @@
 .inactive-recurring-list,.inactive-recurring>.empty-inline{margin-top:8px}
+.recurring-logo-editor{margin-top:14px;padding:12px;border:1px solid var(--border-subtle);border-radius:12px;background:var(--surface-2);display:flex;align-items:center;justify-content:space-between;gap:14px}
+.recurring-logo-editor-preview{min-width:0;display:flex;align-items:center;gap:12px}
+.recurring-logo-editor-preview>div{min-width:0}
+.recurring-logo-editor-preview b{display:block;color:var(--ink);font-size:var(--ux-dense-data-size)}
+.recurring-logo-editor-preview b em{font-style:normal;font-weight:650;color:var(--text-secondary)}
+.recurring-logo-editor-preview small{display:block;margin-top:4px;color:var(--text-secondary);font-size:var(--ux-dense-label-size);line-height:1.4}
+.recurring-logo-editor-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto}
+.recurring-logo-editor-actions .text-button{color:var(--text-secondary)}
+.recurring-brand-local-selection{color:var(--accent);background:var(--accent-soft)}
+.contextual-quick-modal #context-quick-title{display:flex;align-items:center;gap:8px}
+@media(max-width:680px){.recurring-logo-editor{align-items:flex-start;flex-direction:column}.recurring-logo-editor-actions{width:100%;flex-wrap:wrap}.recurring-logo-editor-actions>button{flex:1 1 140px}}
+
 /* Owner-approved Recurring / Πάγια desktop composition.
  * The target controls hierarchy and density; canonical recurring/loan semantics remain in page/domain code.
  */
@@ -11,22 +23,22 @@
   .recurring-approved-heading p{max-width:780px;margin-top:7px;line-height:1.45}
   .recurring-approved-heading>.save-button{align-self:flex-start;min-height:42px;padding-inline:16px;border-radius:11px}
 
-  .recurring-approved-page>.recurring-summary-grid{width:100%;display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:18px;margin-top:-3px}
+  .recurring-approved-page>.recurring-summary-grid{width:min(100%,1500px);margin:-3px auto 0;display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:18px}
   .recurring-summary-card{min-height:116px;display:grid;grid-template-columns:58px minmax(0,1fr);align-items:center;gap:16px;padding:18px 20px;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--surface);box-shadow:var(--shadow-soft)}
   .recurring-summary-card>.recurring-summary-icon{width:58px;height:58px;display:grid;place-items:center;border-radius:var(--radius-sm);background:var(--accent-soft);color:var(--accent);box-shadow:none}
   .recurring-summary-card>.recurring-summary-icon-next{background:color-mix(in srgb,var(--violet) 14%,var(--surface));color:var(--violet)}
-  .recurring-summary-card>div>span{display:block;color:var(--muted);font-weight:760;line-height:1.3}
-  .recurring-summary-card>div>b{display:block;margin:5px 0 3px;color:var(--ink);font-size:27px;line-height:1.05;font-weight:850;letter-spacing:-.025em}
-  .recurring-summary-card>div>small{display:block;color:var(--muted);line-height:1.35}
+  .recurring-summary-card>div>span{display:block;color:var(--text-secondary);font-weight:760;line-height:1.3}
+  .recurring-summary-card>div>b{display:block;margin:5px 0 3px;color:var(--ink);font-size:27px;line-height:1.05;font-weight:850;letter-spacing:-.025em}.recurring-summary-card>div>b .animated-amount{font:inherit;letter-spacing:inherit}
+  .recurring-summary-card>div>small{display:block;color:var(--text-secondary);line-height:1.35}
 
-  .recurring-active-workspace{margin-bottom:-14px;padding:0 12px 5px;border:1px solid var(--border-subtle);border-bottom-color:transparent;border-radius:17px 17px 0 0;background:var(--surface);box-shadow:var(--shadow-soft);overflow:hidden}
+  .recurring-active-workspace{width:min(100%,1500px);margin:0 auto -14px;padding:0 12px 5px;border:1px solid var(--border-subtle);border-bottom-color:transparent;border-radius:17px 17px 0 0;background:var(--surface);box-shadow:var(--shadow-soft);overflow:hidden}
   .recurring-active-heading{min-height:58px;margin:0 -12px 0;padding:12px 18px 10px;border-bottom:1px solid rgba(69,98,145,.10)}
   .recurring-active-heading span{font-size:15px;font-weight:850}
-  .recurring-active-heading small{margin-top:3px;color:var(--muted)}
+  .recurring-active-heading small{margin-top:3px;color:var(--text-secondary)}
 
   .recurring-approved-table-wrap{overflow:visible;border:0;border-radius:0;background:transparent;box-shadow:none}
   .recurring-workspace-table{width:100%;table-layout:fixed;border-collapse:separate;border-spacing:0;font-size:var(--ux-dense-data-size)}
-  .recurring-workspace-table thead th{height:37px;padding:7px 10px;border:0;background:transparent;color:var(--muted);font-weight:780;text-align:left;white-space:nowrap}
+  .recurring-workspace-table thead th{height:37px;padding:7px 10px;border:0;background:transparent;color:var(--text-secondary);font-weight:780;text-align:left;white-space:nowrap}
   .recurring-workspace-table thead th:nth-child(1){width:28%}
   .recurring-workspace-table thead th:nth-child(2){width:18%}
   .recurring-workspace-table thead th:nth-child(3){width:18%}
@@ -42,22 +54,23 @@
   .recurring-workspace-table tbody>tr[data-recurring-status="active"]:last-child>td:first-child{border-radius:0 0 0 12px}
   .recurring-workspace-table tbody>tr[data-recurring-status="active"]:last-child>td:last-child{border-radius:0 0 12px 0}
   .recurring-workspace-table .semantic-list-title{gap:10px}
+  .recurring-workspace-table .semantic-list-title>.recurring-brand-mark{width:34px!important;height:34px!important;flex-basis:34px!important}
   .recurring-workspace-table .semantic-list-title>[data-icon-key]{width:34px;height:34px;flex:0 0 34px;border-radius:10px}
   .recurring-workspace-table .semantic-list-title b{line-height:1.3}
   .recurring-workspace-table td>b,.recurring-workspace-table .recurring-account-name{display:block;color:var(--ink-2);font-weight:790}
-  .recurring-workspace-table td small{display:block;margin-top:3px;color:var(--muted);line-height:1.35}
+  .recurring-workspace-table td small{display:block;margin-top:3px;color:var(--text-secondary);line-height:1.4}
   .recurring-workspace-table td.amount b{font-size:12.5px;color:var(--ink);white-space:nowrap}
   .recurring-workspace-table .recurring-actions{display:flex;justify-content:flex-end;gap:6px}
-  .recurring-workspace-table .recurring-actions button{height:38px;min-width:38px;padding:0 9px;border:1px solid var(--control-border);border-radius:10px;background:var(--control-bg);color:var(--accent);box-shadow:none}
+  .recurring-workspace-table .recurring-actions button:not(.save-button){--control-gradient:transparent;--control-border:transparent;--ink:var(--text-secondary);--shadow-soft:none;height:38px;min-width:38px;padding:0 9px;border:1px solid transparent;border-radius:10px;background:transparent;color:var(--text-secondary);box-shadow:none}
   .recurring-workspace-table .recurring-actions button svg{width:15px;height:15px}
-  .recurring-workspace-table .recurring-actions .pay-action{min-width:74px;display:inline-flex;align-items:center;justify-content:center;gap:5px;color:var(--blue)}
+  .recurring-workspace-table .recurring-actions .pay-action{min-width:84px;min-height:38px;display:inline-flex;align-items:center;justify-content:center;gap:5px}
   .recurring-workspace-table .recurring-actions .pay-action span{font-weight:800}
 
-  .recurring-approved-page>.long-term-recurring{margin:0;padding:7px 12px 12px;border:1px solid var(--border-subtle);border-top:0;border-radius:0 0 17px 17px;background:var(--surface);box-shadow:var(--shadow-soft)}
+  .recurring-approved-page>.long-term-recurring{width:min(100%,1500px);margin:0 auto;padding:7px 12px 12px;border:1px solid var(--border-subtle);border-top:0;border-radius:0 0 17px 17px;background:var(--surface);box-shadow:var(--shadow-soft)}
   .recurring-group-heading{min-height:39px;display:flex;align-items:center;gap:9px;padding:8px 10px;border:1px solid var(--border-subtle);border-radius:12px 12px 0 0;background:color-mix(in srgb,var(--violet) 13%,var(--surface));color:var(--violet)}
   .recurring-group-heading>div{min-width:0}
   .recurring-group-heading span{display:block;color:var(--ink);font-weight:840}
-  .recurring-group-heading small{display:block;margin-top:2px;color:var(--muted);line-height:1.35}
+  .recurring-group-heading small{display:block;margin-top:2px;color:var(--text-secondary);line-height:1.4}
   .long-term-recurring-list{display:grid;gap:0}
   .long-term-loan-obligation{min-height:68px;display:grid;grid-template-columns:28% 18% 18% 12% 24%;align-items:center;padding:0;border:1px solid var(--border-subtle);border-top:0;border-radius:0;background:var(--surface-2)}
   .long-term-loan-obligation:last-child{border-radius:0 0 12px 12px}
@@ -65,19 +78,22 @@
   .long-term-loan-copy{display:grid;grid-template-columns:34px minmax(0,1fr);align-items:center;gap:10px}
   .long-term-loan-icon{width:34px;height:34px;display:grid;place-items:center;border-radius:10px;background:linear-gradient(145deg,#f0e8ff,#e6dcff);color:#7143db}
   .long-term-loan-copy b,.long-term-loan-next b,.long-term-loan-account b{display:block;color:var(--ink);line-height:1.35}
-  .long-term-loan-copy small,.long-term-loan-next small,.long-term-loan-account small{display:block;margin-top:3px;color:var(--muted);line-height:1.35}
+  .long-term-loan-copy small,.long-term-loan-next small,.long-term-loan-account small{display:block;margin-top:3px;color:var(--text-secondary);line-height:1.4}
   .long-term-loan-obligation>strong{font-size:12.5px;color:var(--ink);white-space:nowrap}
   .long-term-loan-actions{display:flex;justify-content:flex-end;gap:6px}
-  .long-term-loan-actions .linked-loan-pay,.long-term-loan-actions .linked-loan-open{min-height:38px;border-radius:10px;padding:0 10px;box-shadow:none}
+  .long-term-loan-actions .linked-loan-pay,.long-term-loan-actions .linked-loan-open{min-height:38px;border-radius:10px;padding:0 10px;box-shadow:none}.long-term-loan-actions .linked-loan-open{color:var(--text-secondary)}
   .long-term-loan-actions .linked-loan-pay{display:inline-flex;align-items:center;justify-content:center;gap:5px}
   .long-term-loans-open{display:none}
 
-  .recurring-approved-page>.inactive-recurring{min-height:68px;padding:0 14px;border:1px solid var(--border-subtle);border-radius:15px;background:var(--surface);box-shadow:var(--shadow-soft)}
+  .recurring-approved-page>.inactive-recurring{width:min(100%,1500px);margin-inline:auto;min-height:68px;padding:0 14px;border:1px solid var(--border-subtle);border-radius:15px;background:var(--surface);box-shadow:var(--shadow-soft)}
   .recurring-approved-page>.inactive-recurring>summary{min-height:66px;padding:0;align-items:center}
   .recurring-approved-page>.inactive-recurring>summary span{font-size:11px;font-weight:840}
   .recurring-approved-page>.inactive-recurring>summary small{margin-top:3px;font-size:var(--ux-dense-label-size)}
   .recurring-approved-page>.inactive-recurring>summary strong{min-width:34px;height:30px;display:grid;place-items:center;border-radius:9px;background:var(--accent-soft);color:var(--accent);font-size:var(--ux-dense-data-size)}
   .recurring-approved-page>.inactive-recurring[open]{padding-bottom:12px}
+  .recurring-approved-page>.inactive-recurring.is-empty{min-height:50px;background:transparent;box-shadow:none;border-style:dashed}
+  .recurring-approved-page>.inactive-recurring.is-empty>summary{min-height:48px;margin-bottom:0}
+  .recurring-approved-page>.inactive-recurring.is-empty>summary small{display:none}
 }
 
 /* Phase 1 redesign is desktop-only. Preserve established mobile cards, lifecycle controls and linked-loan flow. */

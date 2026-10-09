@@ -28,7 +28,7 @@ describe('obligation lifecycle hierarchy source contracts',()=>{
     expect(activeIndex).toBeGreaterThan(-1);
     expect(linkedIndex).toBeGreaterThan(activeIndex);
     expect(inactiveIndex).toBeGreaterThan(linkedIndex);
-    expect(recurring).toContain('<details className="panel surface-flat inactive-recurring"');
+    expect(recurring).toContain('<details className={`panel surface-flat inactive-recurring ${inactive.length?\'\':\'is-empty\'}`}');
     expect(recurring).toContain('Ενεργοποίηση ${item.name}');
     expect(recurring).toContain('Επεξεργασία ${item.name}');
   });

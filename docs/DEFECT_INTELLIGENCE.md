@@ -50,3 +50,22 @@ Use the suggested focused tests before a coherent checkpoint, followed by the re
 - Do not store mutable CI status/head SHAs in this registry. Use live Actions and the relevant plan/checkpoint for current failure state.
 - New project/product decisions belong in issue #266; durable execution mechanics in AGENTS.md; active failures/counters in the owning issue/plan.
 - This implementation is scoped to MyFinHub web/backend/desktop. Android repository changes are out of scope.
+
+
+## Historical mining expansion — #533 (2026-10-08)
+
+A retrospective inventory of the accessible Actions failures, GitHub issue history and PR history is recorded in `docs/audits/HISTORICAL_FAILURE_EVIDENCE.md`. It measured **218 real issues, 311 closed PR records, 4 open PRs, 11 surviving branches, and 2,712 failed workflow runs** across the accessible August–October 2026 period. Workflow failures are not unique bugs, a closed PR need not be merged, and deleted branches / expired logs cannot be claimed as recovered.
+
+The curated registry now contains **20 evidence-backed failure classes**, FP-001–FP-020. Sixteen additional classes cover Windows ESM/first-run packaging (#204), category-tree migration (#225), metadata first-write constraint (#317), history undo/redo audit constraints (#287), API-local TypeScript packaging (#9), Supabase upstream session classification (#16), Vercel body budgets (#18), loan-payment identity (#29), ordering/duplicate assumptions (#30), recurring overrides and valid zero settings (#47), local-midnight date refresh (#26), production smoke identity (#142), Origin/Host proxy correctness (PR #497), serverless function count (PR #352), lazy-page recovery (#51) and finance semantic range guards (#27). Individual root causes and guard paths stay in the machine-readable registry; PR sources may now be used when the root-cause evidence is in a PR rather than an issue.
+
+### Opt-in historical collection
+
+```sh
+GH_TOKEN=... npm run defects:mine -- --since 2026-08-01 --until 2026-10-08 --include-trackers --inspect-jobs 12
+```
+
+`GH_TOKEN` or `GITHUB_TOKEN` must have read-only access to MyFinHub Actions, issues and PR metadata. The command **never executes proposed fixes** and never downloads raw job logs, uploaded artifacts, finance data or secrets. It emits a bounded JSON report to ignored `.qa-artifacts/defect-mining/historical-inventory.json` and a concise summary. A partial inventory exits nonzero and includes explicit missing-coverage warnings; the scan subdivides windows before the GitHub 1,000-run API pagination ceiling.
+
+A separate read-only [Historical Defect Mining](https://github.com/MariosGiannakaras/MyFinHub/actions/workflows/historical-defect-mining.yml) workflow defines a **weekly metadata-only run** plus a manually triggered date-bounded backfill. GitHub executes scheduled workflows from the default branch only: because MyFinHub's default branch is production `main`, this new scheduled workflow will **not actually run until a separately approved release promotes the workflow to `main`**. Keeping it on integration `develop` does not activate the schedule; do not bypass release discipline merely to start it. Reports are ephemeral Actions artifacts (14-day retention), not committed source or automatically accepted bug facts. Core CI still runs only the fast local registry check/change-aware preflight without network credentials.
+
+**Promotion rule:** a frequently failing workflow or test does not by itself qualify as a confirmed root cause. Investigate the originating failing step/PR/issue/actual fix, exclude cancelled or obsolete tests and infrastructure noise, confirm the narrow owning boundary, and verify a regression guard before creating/updating one FP entry. The candidate table in the evidence document stays explicitly unconfirmed.
