@@ -24,7 +24,7 @@ describe('account-management durable settings/IBAN ordering (DV-FB04/07)',()=>{
     expect(editorSave.indexOf('setMessage((editor.source')).toBeGreaterThan(commit);
     expect(editorSave).not.toContain("onChange(next);");
     expect(editorSave).toContain('αλλά η ενημέρωση IBAN απέτυχε');
-    expect(rendered).toContain('failed durable finance write did not mutate IBAN metadata');
+    expect(rendered).toContain('failed finance write did not mutate IBAN metadata');
     expect(rendered).toContain('account-metadata-durable-save-failure');
     expect(rendered).toContain('Οι αλλαγές του λογαριασμού αποθηκεύτηκαν.');
   });
