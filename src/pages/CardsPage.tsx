@@ -29,11 +29,13 @@ type RecentAccountRow={
 };
 
 export function CardsPage({
-  data,onUpsertBank,onUpsertCard,onArchiveCard,onDeleteCard,
+  data,onUpsertBank,onUpsertCard,onUpsertCardDurably,onStageNewCard,onArchiveCard,onDeleteCard,
 }:{
   data:FinanceData;
   onUpsertBank:(bank:CardBank)=>void;
   onUpsertCard:(card:PaymentCard)=>void;
+  onUpsertCardDurably:(card:PaymentCard)=>Promise<void>;
+  onStageNewCard:(card:PaymentCard)=>Promise<void>;
   onArchiveCard:(card:PaymentCard)=>void;
   onDeleteCard:(card:PaymentCard)=>Promise<void>;
 }){
@@ -94,7 +96,7 @@ export function CardsPage({
   const saveCardProfile=(card:PaymentCard)=>{onUpsertCard(card);setProfileCard(null);setMessage(`Η ενημέρωση της «${card.nickname}» αποθηκεύεται.`)};
   const editCardDetails=(card:PaymentCard)=>{setDetailsIsNew(false);setDetailsCard(card);setMessage('')};
   const createCard=(card:PaymentCard)=>{setDetailsIsNew(true);setDetailsCard(card);setMessage('')};
-  const saveCardDetails=(card:PaymentCard)=>{const wasNew=detailsIsNew;onUpsertCard(card);setDetailsCard(null);setDetailsIsNew(false);setMessage(wasNew?`Τα ασφαλή στοιχεία της «${card.nickname}» αποθηκεύτηκαν· το προφίλ δημιουργείται.`:`Τα ασφαλή στοιχεία της «${card.nickname}» αποθηκεύτηκαν· το προφίλ ενημερώνεται.`)};
+  const saveCardDetails=async(card:PaymentCard)=>{await onUpsertCardDurably(card);setDetailsCard(null);setDetailsIsNew(false);setMessage(`Η κάρτα «${card.nickname}» και τα ασφαλή στοιχεία επιβεβαιώθηκαν ως αποθηκευμένα.`)};
   const archive=(card:PaymentCard)=>{onArchiveCard(card);setMessage(`Η αρχειοθέτηση της «${card.nickname}» αποθηκεύεται. Τα ασφαλή στοιχεία παραμένουν διαθέσιμα.`)};
   const restore=(card:PaymentCard)=>{onUpsertCard(restoreCard(card));setMessage(`Η επαναφορά της «${card.nickname}» αποθηκεύεται. Τα ασφαλή στοιχεία παραμένουν.`)};
   const confirmDelete=async()=>{
@@ -149,7 +151,7 @@ export function CardsPage({
 
     <CardCreateDialog open={cardCreateOpen} data={data} banks={cardBank?[cardBank]:banks} initialBankId={cardBank?.id} allowedKinds={['debit','prepaid']} onClose={closeCardCreate} onSave={createCard}/>
     <CardCreateDialog open={Boolean(profileCard)} data={data} banks={banks} initialCard={profileCard} allowedKinds={['debit','prepaid']} onClose={()=>setProfileCard(null)} onSave={saveCardProfile}/>
-    <CardDetailsDialog open={Boolean(detailsCard)} card={detailsCard} requireCvv={detailsIsNew} motionMode={data.state.settings.motion} onSaved={saveCardDetails} onCancel={()=>{setDetailsCard(null);setDetailsIsNew(false)}}/>
+    <CardDetailsDialog open={Boolean(detailsCard)} card={detailsCard} requireCvv={detailsIsNew} motionMode={data.state.settings.motion} onBeforeSave={onStageNewCard} onSaved={saveCardDetails} onCancel={()=>{setDetailsCard(null);setDetailsIsNew(false)}}/>
 
     {bankOpen?<div className="picker-backdrop open" aria-hidden="false" onMouseDown={()=>setBankOpen(false)}><section ref={bankRef} className="picker compact surface-raised" role="dialog" aria-modal="true" aria-labelledby="new-bank-title" aria-describedby={error?'new-bank-error':undefined} tabIndex={-1} onMouseDown={event=>event.stopPropagation()}><div className="picker-head"><div><h2 id="new-bank-title">Νέα τράπεζα</h2><p>Η νέα τράπεζα θα αποκτήσει δική της στήλη και ξεχωριστό κουμπί προσθήκης καρτών.</p></div><IconButton type="button" className="close-picker" aria-label="Κλείσιμο" onClick={()=>setBankOpen(false)}>×</IconButton></div><div className="modal-form-grid one"><div className="modal-field"><label>Όνομα τράπεζας</label><AppTextInput data-autofocus="true" aria-label="Όνομα τράπεζας" maxLength={36} value={bankName} onChange={event=>setBankName(event.target.value)} placeholder="π.χ. N26" invalid={Boolean(error)} aria-describedby={error?'new-bank-error':undefined}/></div></div>{error?<FormError id="new-bank-error">{error}</FormError>:null}<div className="modal-actions"><Button type="button" variant="secondary" className="modal-secondary" onClick={()=>setBankOpen(false)}>Ακύρωση</Button><Button type="button" variant="primary" className="modal-primary" onClick={saveBank}><Plus/> Προσθήκη τράπεζας</Button></div></section></div>:null}
 

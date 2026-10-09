@@ -34,11 +34,11 @@ const statementStatusLabel:Record<CreditStatementStatus,string>={open:'Ανοι�
 const boundaryLabel=(value:PaymentCard['statementBoundaryRule'])=>value==='include-closing-day'?'Η ημέρα κλεισίματος ανήκει στη δήλωση που κλείνει εκείνη την ημέρα':value==='next-cycle'?'Η ημέρα κλεισίματος ανήκει στον επόμενο κύκλο':'Αναμένει τελική επιλογή προϊόντος';
 
 export function CreditCardPage({
-  data,asOf,onCreateEvent,onEditEvent,onDeleteEvent,onUpsertCard,onArchiveCard,onDeleteCard,onPayCard,
+  data,asOf,onCreateEvent,onEditEvent,onDeleteEvent,onUpsertCard,onUpsertCardDurably,onStageNewCard,onArchiveCard,onDeleteCard,onPayCard,
 }:{
   data:FinanceData;asOf:string;
   onCreateEvent:(event:FinanceEvent)=>void;onEditEvent:(id:string)=>void;onDeleteEvent:(id:string)=>void;
-  onUpsertCard:(card:PaymentCard)=>void;onArchiveCard:(card:PaymentCard)=>void;onDeleteCard:(card:PaymentCard)=>Promise<void>;onPayCard:(cardId:string,statementId?:string)=>void;
+  onUpsertCard:(card:PaymentCard)=>void;onUpsertCardDurably:(card:PaymentCard)=>Promise<void>;onStageNewCard:(card:PaymentCard)=>Promise<void>;onArchiveCard:(card:PaymentCard)=>void;onDeleteCard:(card:PaymentCard)=>Promise<void>;onPayCard:(cardId:string,statementId?:string)=>void;
 }){
   const providerCatalog=useFinancialProviders();
   const banks=useMemo(()=>cardBanks(data,providerCatalog.providers),[data,providerCatalog.providers]);
@@ -115,7 +115,7 @@ export function CreditCardPage({
   const saveCreditCardProfile=(updated:PaymentCard)=>{onUpsertCard(updated);setSelectedCardId(updated.id);setProfileCard(null);setMessage(`Η ενημέρωση της «${updated.nickname}» αποθηκεύεται· τα ασφαλή στοιχεία και το ιστορικό δεν αλλάζουν.`)};
   const openCardDetails=(target?:PaymentCard)=>{const selected=target??card;if(!selected)return;setDetailsIsNew(false);setDetailsCard(selected);setMessage('')};
   const createCreditCard=(newCard:PaymentCard)=>{const withLimit={...newCard,creditLimit:newCard.creditLimit??data.state.settings.creditLimit??0};setDetailsIsNew(true);setDetailsCard(withLimit);setMessage('')};
-  const saveCreditCardDetails=(updated:PaymentCard)=>{const wasNew=detailsIsNew;onUpsertCard(updated);if(wasNew)setSelectedCardId(updated.id);setDetailsCard(null);setDetailsIsNew(false);setMessage(wasNew?'Τα ασφαλή στοιχεία αποθηκεύτηκαν· το προφίλ της πιστωτικής αποθηκεύεται. Ρύθμισε τον κύκλο δήλωσης για τα statements.':`Τα ασφαλή στοιχεία της «${updated.nickname}» αποθηκεύτηκαν· το προφίλ ενημερώνεται.`)};
+  const saveCreditCardDetails=async(updated:PaymentCard)=>{const wasNew=detailsIsNew;await onUpsertCardDurably(updated);if(wasNew)setSelectedCardId(updated.id);setDetailsCard(null);setDetailsIsNew(false);setMessage('Το προφίλ και τα ασφαλή στοιχεία της πιστωτικής αποθηκεύτηκαν. Ρύθμισε τον κύκλο για τα statements.');};
 
   const reset=()=>{setAmount('');setDate(asOf);setNote('');setError('')};
   const openPurchase=()=>{if(!card){setMessage('Πρόσθεσε ή επανάφερε πρώτα ενεργή πιστωτική κάρτα.');return}reset();setCategory(categories[0]?.name||'Άλλο');setSubcategory('');setPurchaseOpen(true)};
@@ -212,7 +212,7 @@ export function CreditCardPage({
 
     <CardCreateDialog open={createOpen} data={data} banks={banks} initialBankId={card?.bankId??archivedCredit[0]?.bankId??'piraeus'} kindLock="credit" onClose={()=>setCreateOpen(false)} onSave={createCreditCard}/>
     <CardCreateDialog open={Boolean(profileCard)} data={data} banks={banks} initialCard={profileCard} kindLock="credit" onClose={()=>setProfileCard(null)} onSave={saveCreditCardProfile}/>
-    <CardDetailsDialog open={Boolean(detailsCard)} card={detailsCard} requireCvv={detailsIsNew} motionMode={data.state.settings.motion} onSaved={saveCreditCardDetails} onCancel={()=>{setDetailsCard(null);setDetailsIsNew(false)}}/>
+    <CardDetailsDialog open={Boolean(detailsCard)} card={detailsCard} requireCvv={detailsIsNew} motionMode={data.state.settings.motion} onBeforeSave={onStageNewCard} onSaved={saveCreditCardDetails} onCancel={()=>{setDetailsCard(null);setDetailsIsNew(false)}}/>
 
     {archiveOpen?<div className="picker-backdrop open" aria-hidden="false" onMouseDown={()=>setArchiveOpen(false)}><section ref={archiveRef} className="picker compact surface-raised card-archive-manager" role="dialog" aria-modal="true" aria-labelledby="credit-archive-title" tabIndex={-1} onMouseDown={event=>event.stopPropagation()}><div className="picker-head"><div><h2 id="credit-archive-title">Αρχείο πιστωτικών καρτών</h2><p>Οι κάρτες εδώ δεν εμφανίζονται στην ενεργή στοίβα. Η επαναφορά διατηρεί το ίδιο ιστορικό, statements και προστατευμένα στοιχεία.</p></div><IconButton type="button" className="close-picker" aria-label="Κλείσιμο αρχείου καρτών" onClick={()=>setArchiveOpen(false)}>×</IconButton></div><div className="card-archive-list">{archivedCredit.map((archived,index)=>{const archivedBank=banks.find(item=>item.id===archived.bankId);const archivedDebt=creditDebtForCard(data,archived.id,asOf);const archivedStatements=creditStatementViews(data,archived.id,asOf);const canDelete=canPermanentlyDeleteCreditCard(data,archived.id,asOf);return <article className="card-archive-row" key={archived.id}><div className="card-archive-identity"><b>{archived.nickname}</b><small>{archivedBank?.name??archived.bankId}{archived.last4?` · •••• ${archived.last4}`:''} · Οφειλή {money.format(archivedDebt)} · Statements {archivedStatements.length}</small></div><div className="card-archive-actions"><Button data-autofocus={index===0?'true':undefined} type="button" variant="primary" onClick={()=>restoreArchived(archived)}><ArchiveRestore/> Επαναφορά</Button><Button type="button" variant="danger" className="danger" disabled={!canDelete} aria-disabled={!canDelete} title={canDelete?'Οριστική διαγραφή πιστωτικής':'Η πιστωτική πρέπει να είναι αρχειοθετημένη και πλήρως εξοφλημένη.'} onClick={()=>{if(canDelete)setDeleteCardTarget(archived)}}><Trash2/> Ολική διαγραφή</Button></div></article>})}</div><div className="card-archive-note" role="note">Η ολική διαγραφή ακολουθεί τον κανόνα A: επιτρέπεται μόνο σε αρχειοθετημένη πιστωτική με μηδενική οφειλή. Διαγράφει το card profile και όλα τα αποθηκευμένα μυστικά, αλλά κρατά τις ιστορικές αγορές/αποπληρωμές και τα persisted statements συνδεδεμένα σε ουδέτερη αναφορά «Διαγραμμένη κάρτα».</div></section></div>:null}
 

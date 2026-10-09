@@ -6,18 +6,19 @@ import { DialogShell } from './DialogShell';
 import { FormError } from './FormError';
 import { IconButton } from './IconButton';
 import { CardVaultClientError, cardVaultErrorMessage, revealCardSecret } from '../lib/cardVaultClient';
-import { CardDetailsInputError, formatCardExpiryInput, formatCardNumberInput, saveCardDetails } from '../lib/cardDetails';
+import { CardDetailsInputError, formatCardExpiryInput, formatCardNumberInput, normalizeCardDetailsInput, saveCardDetails } from '../lib/cardDetails';
 import type { PaymentCard } from '../types';
 import '../styles/card-details-dialog.css';
 
 export function CardDetailsDialog({
-  open,card,requireCvv=false,motionMode='system',onSaved,onCancel,
+  open,card,requireCvv=false,motionMode='system',onBeforeSave,onSaved,onCancel,
 }:{
   open:boolean;
   card:PaymentCard|null;
   requireCvv?:boolean;
   motionMode?:'system'|'reduced'|'full';
-  onSaved:(card:PaymentCard)=>void;
+  onBeforeSave?:(card:PaymentCard)=>Promise<void>;
+  onSaved:(card:PaymentCard)=>Promise<void>;
   onCancel:()=>void;
 }){
   const titleId=useId();
@@ -67,11 +68,16 @@ export function CardDetailsDialog({
   const submit=async()=>{
     if(busy)return;
     setSaving(true);setError('');
+    let vaultSaved=false;
     try{
+      normalizeCardDetailsInput({pan,expiry,cvv},{requireCvv});
+      if(requireCvv)await onBeforeSave?.(card);
       const updated=await saveCardDetails(card,{pan,expiry,cvv},{requireCvv});
-      onSaved(updated);
+      vaultSaved=true;
+      await onSaved(updated);
     }catch(saveError){
       if(saveError instanceof CardDetailsInputError)setError(saveError.message);
+      else if(vaultSaved)setError('Τα ασφαλή στοιχεία αποθηκεύτηκαν στο vault, αλλά το προφίλ δεν επιβεβαιώθηκε. Επαναφόρτωσε και επανάλαβε τη σύνδεση της κάρτας.');
       else setError(cardVaultErrorMessage(saveError));
     }finally{setSaving(false)}
   };
