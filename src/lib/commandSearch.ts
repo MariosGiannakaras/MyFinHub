@@ -13,6 +13,7 @@ type CommandAction=
  | {type:'quick_add';kind:'expense'|'income'|'transfer'|'refund';accountId?:string}
  | {type:'credit_card_focus';cardId:string}
  | {type:'lending_person_focus';person:string}
+ | {type:'loan_focus';loanId:string}
  | {type:'credit_payment';cardId:string}
  | {type:'loan_payment';loanId:string;accountId?:string}
  | {type:'lending_repayment';person:string;accountId?:string}
@@ -69,7 +70,7 @@ export function buildCommandSearchIndex(data:FinanceData,asOf?:string):CommandSe
   if(card.kind==='credit')rows.push(item({id:`action:card-payment:${card.id}`,kind:'command',title:`Πληρωμή ${title}`,subtitle:'Πληρωμή συγκεκριμένης πιστωτικής κάρτας',keywords:[title,'πληρωμή','πιστωτική',banks.get(card.bankId)??''],action:{type:'credit_payment',cardId:card.id},priority:18}));
  }
  for(const loan of effectiveLoans(data)){
-  rows.push(item({id:`loan:${loan.id}`,kind:'loan',title:loan.name,subtitle:'Δόση / δάνειο',keywords:[loan.name,loan.provider??'',loan.id],action:{type:'navigate',page:'loans'},priority:58}));
+  rows.push(item({id:`loan:${loan.id}`,kind:'loan',title:loan.name,subtitle:'Δόση / δάνειο',keywords:[loan.name,loan.provider??'',loan.id],action:{type:'loan_focus',loanId:loan.id},priority:58}));
   if(loanRemainingInstallments(data,loan,asOf)>0)rows.push(item({id:`action:loan-payment:${loan.id}`,kind:'command',title:`Πληρωμή ${loan.name}`,subtitle:'Πληρωμή συγκεκριμένης δόσης ή δανείου',keywords:[loan.name,loan.provider??'','πληρωμή','δόση','δάνειο'],action:{type:'loan_payment',loanId:loan.id,accountId:loan.defaultAccountId},priority:19}));
  }
  for(const lending of lendingRows(data,asOf)){

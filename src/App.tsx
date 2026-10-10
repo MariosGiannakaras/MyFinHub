@@ -84,6 +84,8 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   const [commandCardKey,setCommandCardKey]=useState(0);
   const [commandLendingPerson,setCommandLendingPerson]=useState<string|null>(null);
   const [commandLendingKey,setCommandLendingKey]=useState(0);
+  const [commandLoanId,setCommandLoanId]=useState<string|null>(null);
+  const [commandLoanKey,setCommandLoanKey]=useState(0);
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [quickContext, setQuickContext] = useState<QuickActionContext | null>(null);
   const [month, setMonth] = useState(() => today.slice(0,7));
@@ -284,6 +286,9 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
     if(action.type==='credit_card_focus'){
       setCommandCardId(action.cardId);setCommandCardKey(key=>key+1);navigate('credit');return;
     }
+    if(action.type==='loan_focus'){
+      setCommandLoanId(action.loanId);setCommandLoanKey(key=>key+1);navigate('loans');return;
+    }
     if(action.type==='lending_person_focus'){
       setCommandLendingPerson(action.person);setCommandLendingKey(key=>key+1);navigate('lending');return;
     }
@@ -332,7 +337,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
     : page === 'savings' ? <SavingsPage data={data} month={month} asOf={today} onCreate={addEvent} onQuickAdd={openSpecial} onSavingsTargetChange={updateSavingsTarget} onUpsertGoal={upsertSavingsGoal} onDeleteGoal={deleteSavingsGoal}/>
     : page === 'cards' ? <CardsPage data={data} onUpsertBank={upsertBank} onUpsertCard={upsertCard} onUpsertCardDurably={upsertCardDurably} onStageNewCard={stageNewCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard}/>
     : page === 'credit' ? <CreditCardPage data={data} asOf={today} commandCardId={commandCardId} commandCardKey={commandCardKey} onCreateEvent={addEvent} onEditEvent={editEvent} onDeleteEvent={deleteEvent} onUpsertCard={upsertCard} onUpsertCardDurably={upsertCardDurably} onStageNewCard={stageNewCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard} onPayCard={(cardId,statementId)=>openSpecial({mode:'credit',action:'payment',cardId,statementId})}/>
-    : page === 'loans' ? <LoansPage data={data} asOf={today} onUpsertLoan={upsertLoan} onCreateSelfLoan={createSelfLoan} onPayLoan={(loanId)=>openSpecial({mode:'loan',loanId})}/>
+    : page === 'loans' ? <LoansPage data={data} asOf={today} commandLoanId={commandLoanId} commandLoanKey={commandLoanKey} onUpsertLoan={upsertLoan} onCreateSelfLoan={createSelfLoan} onPayLoan={(loanId)=>openSpecial({mode:'loan',loanId})}/>
     : page === 'lending' ? <LendingPage data={data} asOf={today} commandPerson={commandLendingPerson} commandPersonKey={commandLendingKey} privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onCreateEvent={addEvent} onQuickAdd={openSpecial}/>
     : page === 'recurring' ? <RecurringPage data={data} asOf={today} onUpsert={upsertRecurring} onUpsertDurably={upsertRecurringDurably} onOpenLoans={() => navigate('loans')} onPayLoan={(loanId)=>openSpecial({mode:'loan',loanId})} onPayRecurring={(recurringId)=>openSpecial({mode:'recurring',recurringId})}/>
     : page === 'planning' ? <PlanningPage data={data} asOf={today} onUpsertScheduled={upsertScheduled} onCompleteScheduled={completeScheduled}/>

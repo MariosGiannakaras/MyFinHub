@@ -56,6 +56,14 @@ describe('unified command search',()=>{
     expect(index.find(row=>row.id==='card:qa-debit-card')?.action).toEqual({type:'navigate',page:'cards'});
   });
 
+  it('targets the exact persisted loan instead of opening the generic Loans page',()=>{
+    const data=clone();
+    const loan=data.seed.loans?.[0];
+    expect(loan).toBeDefined();
+    const result=buildCommandSearchIndex(data,'2026-08-17').find(row=>row.id===`loan:${loan?.id}`);
+    expect(result?.action).toEqual({type:'loan_focus',loanId:loan?.id});
+  });
+
   it('selects an exact Lending person instead of opening a generic collection',()=>{
     const data=clone();
     const index=buildCommandSearchIndex(data,'2026-08-17');

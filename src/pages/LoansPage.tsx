@@ -1,5 +1,5 @@
 import { ArrowDownUp, CheckCircle2, HandCoins, Info, Landmark, Pencil, Plus, Scale, X } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { AnimatedAmount } from '../components/AnimatedAmount';
 import { AppDateInput } from '../components/AppDateInput';
 import { AppSelectInput } from '../components/AppSelectInput';
@@ -21,7 +21,7 @@ import type { FinanceData, FinanceEvent, Loan, LoanKind } from '../types';
 type SortKey='remaining'|'name'|'amount'|'next';
 const loanKindLabel=(loan:Loan)=>isSelfLoan(loan)?'ΒΟΗΘΕΙΑ · δάνειο από εμένα':loan.kind==='loan'?'Δάνειο':'Αγορά σε δόσεις';
 
-export function LoansPage({data,asOf,onUpsertLoan,onCreateSelfLoan,onPayLoan}:{data:FinanceData;asOf:string;onUpsertLoan:(loan:Loan)=>void;onCreateSelfLoan:(loan:Loan,event:FinanceEvent)=>void;onPayLoan:(loanId:string)=>void}){
+export function LoansPage({data,asOf,commandLoanId=null,commandLoanKey=0,onUpsertLoan,onCreateSelfLoan,onPayLoan}:{data:FinanceData;asOf:string;commandLoanId?:string|null;commandLoanKey?:number;onUpsertLoan:(loan:Loan)=>void;onCreateSelfLoan:(loan:Loan,event:FinanceEvent)=>void;onPayLoan:(loanId:string)=>void}){
   const loans=useMemo(()=>[...(data.seed.loans??[]).map(loan=>data.state.loanOverrides?.[loan.id]??loan),...(data.state.customLoans??[])],[data]);
   const accounts=allAccounts(data).filter(account=>account.kind!=='credit');
   const savingsAccounts=accounts.filter(account=>account.kind==='savings');
@@ -51,6 +51,22 @@ export function LoansPage({data,asOf,onUpsertLoan,onCreateSelfLoan,onPayLoan}:{d
   const isComplete=(loan:Loan)=>loanOutstanding(data,loan,asOf)<=.005||(!isSelfLoan(loan)&&loanRemainingInstallments(data,loan,asOf)<=0);
   const activeLoans=sorted.filter(loan=>!isComplete(loan));
   const completedLoans=sorted.filter(isComplete);
+  useEffect(()=>{
+    if(!commandLoanId)return;
+    const activeIndex=activeLoans.findIndex(loan=>loan.id===commandLoanId);
+    const completedIndex=completedLoans.findIndex(loan=>loan.id===commandLoanId);
+    if(activeIndex>=0)setActiveLimit(limit=>Math.max(limit,activeIndex+1));
+    if(completedIndex>=0)setHistoryLimit(limit=>Math.max(limit,completedIndex+1));
+  },[commandLoanId,commandLoanKey,activeLoans,completedLoans]);
+  useEffect(()=>{
+    if(!commandLoanId)return;
+    const frame=requestAnimationFrame(()=>{
+      const row=[...document.querySelectorAll<HTMLElement>('.loan-list-row[data-command-loan-id]')].find(node=>node.dataset.commandLoanId===commandLoanId);
+      row?.scrollIntoView({block:'center',behavior:'auto'});
+      row?.focus({preventScroll:true});
+    });
+    return()=>cancelAnimationFrame(frame);
+  },[commandLoanId,commandLoanKey,activeLimit,historyLimit]);
   const visibleActiveLoans=activeLoans.slice(0,activeLimit);
   const visibleCompletedLoans=completedLoans.slice(0,historyLimit);
   const startNew=(kind:LoanKind='installment')=>{const self=kind==='self-loan';const preferredTarget=accounts.find(account=>account.id===data.state.settings.defaultLoanAccount&&account.kind!=='savings')?.id||accounts.find(account=>account.id===data.state.settings.defaultExpenseAccount&&account.kind!=='savings')?.id||accounts.find(account=>account.kind!=='savings'&&account.showInQuickChoices!==false)?.id||accounts.find(account=>account.kind!=='savings')?.id||'';setSelfTarget(preferredTarget);setEditError('');setEditTotalText('');setEditInstallmentText('');setEdit({id:`loan-${Date.now()}`,name:self?'ΒΟΗΘΕΙΑ':'',total:0,installment:0,installments:self?1:0,day:'',provider:self?'Αποταμίευση':'',schedule:[],paidCount:0,source:self?'self-loan':'user',kind,accountingMode:'expense-per-installment',firstExpectedDate:asOf,defaultAccountId:data.state.settings.defaultLoanAccount,forgivenAmount:0,longTermRecurring:false})};
@@ -77,7 +93,7 @@ export function LoansPage({data,asOf,onUpsertLoan,onCreateSelfLoan,onPayLoan}:{d
     const visualProgress=self?null:loanVisualInstallmentProgress(loan.installments,paid);
     const payments=loanPaymentEvents(data,loan,asOf);
     const typical=typicalLoanPaymentDay(data,loan,asOf);
-    return <article className={`panel ${historical?'surface-flat':'surface-raised'} loan-list-row ${self?'self-loan':''} ${historical?'is-complete':''}`} data-loan-lifecycle={historical?'completed':'active'} key={loan.id}>
+    return <article className={`panel ${historical?'surface-flat':'surface-raised'} loan-list-row ${self?'self-loan':''} ${historical?'is-complete':''}`} data-loan-lifecycle={historical?'completed':'active'} data-command-loan-id={loan.id} tabIndex={-1} key={loan.id}>
       <div className="loan-list-main">
         <span className="account-mark">{self?<HandCoins/>:<Landmark/>}</span>
         <div><h3>{loan.name}</h3><small>{loanKindLabel({...loan,kind:loan.kind??(isLongTermLoan(loan)?'loan':'installment')})}{loan.provider?` · ${loan.provider}`:''}{isLongTermLoan(loan)?' · Μακροχρόνιο':''}</small>{historical?<small className="loan-completed-status"><CheckCircle2 size={13}/> Ολοκληρώθηκε</small>:null}</div>
