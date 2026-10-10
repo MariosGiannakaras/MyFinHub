@@ -332,6 +332,10 @@ The monthly recurring and loan forecast projections previously derived a due day
 
 `accountBalances(data,asOf)` already excludes future-dated entries, but `monthlyFlow`, savings breakdown, category spending and budget progress accumulated the entire selected month. An event dated after today could appear as realized flow, savings achieved or budget exceeded while the account balance correctly excluded it. Optional `asOf` now bounds **only the active current month** across canonical selectors, Reports, Savings and Attention. Past closed months and existing two-argument selectors retain their previous results. Focused tests lock future-dated expense, saving and budget changes. **Implemented but not accepted**, pending domain/real-stack/rendered QA and final Dashboard selected-month reconciliation.
 
+### DV-FB05 Dashboard current-month realized-flow cutoff
+
+`DashboardPage` already selected `reportingPeriodEndDate(month,asOf)` for account balances/history, but its flow, category chart, recent movements, daily actual-flow chart and budget highlights still included future-dated current-month events. `selectMonthlyFlow` and `selectCategoryTotals` now take optional `asOf` with separate memo keys, and rendered Dashboard event slices/daily chart/budget use that same cutoff. Completed historical months and existing default selector callers retain full-month totals. Source and dynamic selector regressions cover as-of cache isolation and future event omission. **Implemented, acceptance pending** until exact-head checks and rendered desktop/mobile evidence.
+
 ### Remaining inverse/invariant closeout
 
 Unclassified backend exported operations and hidden/focusable frontend branches require ongoing DV-FB02/03 source + rendered inspection, notably shortcut actions, legacy/taxonomy negative states and saved-card deletion. Verify period/as-of/statement/forecast semantics against canonical selectors (FB05), AAL2/owner/RLS/vault per sensitive operation (FB06), deployment/Windows and Android API boundary (FB09). Do not check DV-FB01–FB10 as accepted or start DV-M before all classified gaps have validated outcomes.
