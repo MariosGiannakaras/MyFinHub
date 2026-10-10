@@ -41,7 +41,10 @@ describe('unified command search',()=>{
     data.state.settings.customAccounts=[...(data.state.settings.customAccounts??[]),{id:'bank-savings-search',name:'Reserve bank',kind:'bank',bankAccountCategory:'savings',custom:true}];
     const index=buildCommandSearchIndex(data);
     expect(index.find(row=>row.id==='account:bank-savings-search')?.subtitle).toContain('Μεταφορά προς αποταμίευση');
+    expect(index.find(row=>row.id==='account:bank-savings-search')?.title).toBe('Reserve bank');
     expect(index.find(row=>row.id==='account:piraeus-payroll')?.subtitle).toContain('Καταχώριση εξόδου');
+    data.state.settings.accountNames={'bank-savings-search':'Emergency reserve'};
+    expect(buildCommandSearchIndex(data).find(row=>row.id==='account:bank-savings-search')?.title).toBe('Emergency reserve');
   });
 
   it('shows recent entities on the empty-query surface without leaking amounts',()=>{

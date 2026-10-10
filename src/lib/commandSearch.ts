@@ -2,6 +2,7 @@ import { allCards, cardBanks, cardKindLabel } from './cards.js';
 import { allAccounts, effectiveLegacyTransactions } from './domain.js';
 import { lendingRows } from './lending.js';
 import { loanRemainingInstallments } from './loans.js';
+import { accountDisplayName } from './ui.js';
 import { allRecurringItems, recurringStatus } from './recurring.js';
 import type { FinanceData, FinanceEvent, Loan } from '../types.js';
 
@@ -35,7 +36,7 @@ const pageCommands:Array<[CommandPage,string,string,number]>=[
 
 export function normalizeCommandText(value:string){return value.normalize('NFD').replace(/\p{M}/gu,'').toLocaleLowerCase('el-GR').replace(/[^\p{L}\p{N}]+/gu,' ').trim()}
 function clean(value:string|undefined){return value?.trim()||''}
-function accountName(data:FinanceData,id:string|undefined){if(!id)return '';return data.state.settings.accountNames?.[id]?.trim()||data.seed.accounts.find(account=>account.id===id)?.name||id}
+function accountName(data:FinanceData,id:string|undefined){return id?accountDisplayName(data,id):''}
 function effectiveLoans(data:FinanceData):Loan[]{const seeded=(data.seed.loans??[]).map(loan=>data.state.loanOverrides?.[loan.id]??loan);return [...seeded,...(data.state.customLoans??[])]}
 function item(value:CommandSearchItem){return value}
 function eventKindLabel(event:FinanceEvent){return event.kind==='income'?'Έσοδο':event.kind==='transfer'?'Μεταφορά':event.kind==='refund'?'Επιστροφή':event.kind==='split'?'Split αγορά':event.kind==='card_purchase'?'Αγορά κάρτας':event.kind==='card_payment'?'Πληρωμή κάρτας':'Κίνηση'}
