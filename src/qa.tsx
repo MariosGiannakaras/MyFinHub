@@ -282,6 +282,7 @@ function QaWorkspace(){
   const [page,setPage]=useState<PageId>(()=>initialPage(params.get('page')));
   const [quickOpen,setQuickOpen]=useState(false);
   const [commandOpen,setCommandOpen]=useState(false);
+  const [commandFocusKey,setCommandFocusKey]=useState(0);
   const [recoverOpen,setRecoverOpen]=useState(false);
   const [quickContext,setQuickContext]=useState<QuickActionContext|null>(null);
   const [editing,setEditing]=useState<string|null>(null);
@@ -341,6 +342,7 @@ function QaWorkspace(){
     setCommandOpen(false);const action=row.action;
     if(action.type==='navigate'){setPage(action.page);return}
     if(action.type==='transaction_focus'){
+      setCommandFocusKey(key=>key+1);
       setMonth(action.date.slice(0,7));
       const url=new URL(location.href);
       url.searchParams.delete('reportSection');
@@ -371,7 +373,7 @@ function QaWorkspace(){
   };
   const content=page==='dashboard'
     ?<DashboardPage data={data} month={month} asOf={today} motionMode="full" privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onQuickAdd={(prefill?:QuickPrefill)=>openGeneric('expense',prefill||null)} onAccountQuickAdd={(accountId,kind)=>kind==='savings'?openSpecial({mode:'savings',toAccountId:accountId,savingSource:'manual_transfer'}):openGeneric('expense',{note:'',amount:0,accountId})} onTransactions={()=>setPage('transactions')} onPlanning={()=>setPage('planning')} onAttention={()=>setPage('attention')} onReports={()=>setPage('reports')}/>
-    :page==='transactions'?<TransactionsPage data={data} month={month} onEditEvent={editEvent} onDeleteEvent={deleteEvent} onEditLegacy={editLegacy} onDeleteLegacy={deleteLegacy}/>
+    :page==='transactions'?<TransactionsPage data={data} month={month} commandFocusKey={commandFocusKey} onEditEvent={editEvent} onDeleteEvent={deleteEvent} onEditLegacy={editLegacy} onDeleteLegacy={deleteLegacy}/>
     :page==='savings'?<SavingsPage data={data} month={month} asOf={today} onCreate={addEvent} onQuickAdd={openSpecial} onSavingsTargetChange={updateSavingsTarget} onUpsertGoal={upsertSavingsGoal} onDeleteGoal={deleteSavingsGoal}/>
     :page==='cards'?<CardsPage data={data} onUpsertBank={upsertBank} onUpsertCard={upsertCard} onUpsertCardDurably={upsertCardDurably} onStageNewCard={stageNewCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard}/>
     :page==='credit'?<CreditCardPage data={data} asOf={today} onCreateEvent={addEvent} onEditEvent={editEvent} onDeleteEvent={deleteEvent} onUpsertCard={upsertCard} onUpsertCardDurably={upsertCardDurably} onStageNewCard={stageNewCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard} onPayCard={cardId=>openSpecial({mode:'credit',action:'payment',cardId})}/>

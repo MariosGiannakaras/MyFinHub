@@ -54,6 +54,20 @@ describe('unified command search',()=>{
     expect(JSON.stringify(recent)).not.toContain('987654.32');
   });
 
+  it('returns exact date/source identifiers for transaction result actions',()=>{
+    const data=clone();
+    const expense=createEvent({kind:'expense',date:'2026-07-15',amount:16,note:'Crossmonth lookup',accountId:'piraeus-payroll'});
+    expense.id='crossmonth-search';
+    const credit=createEvent({kind:'card_purchase',date:'2026-07-16',amount:50,note:'Credit-only lookup'});
+    credit.id='credit-only-search';
+    data.state.events=[...(data.state.events??[]),expense,credit];
+    expect(buildCommandSearchIndex(data).find(row=>row.id==='event:crossmonth-search')?.action).toEqual({type:'transaction_focus',id:'crossmonth-search',source:'event',date:'2026-07-15'});
+    expect(buildCommandSearchIndex(data).some(row=>row.id==='event:credit-only-search')).toBe(false);
+    const legacy=buildCommandSearchIndex(data).find(row=>row.id.startsWith('legacy:'));
+    expect(legacy?.action).toMatchObject({type:'transaction_focus',source:'legacy'});
+    expect(searchCommandItems(data,'Crossmonth lookup').some(row=>row.id==='event:crossmonth-search')).toBe(true);
+  });
+
   it('excludes archived cards and never indexes holder, last4 or vault references',()=>{
     const data=clone();
     const active:PaymentCard={id:'safe-card',bankId:'piraeus',nickname:'QA Active Card',kind:'credit',network:'visa',active:true,last4:'4321',holderName:'Private Holder',vaultRef:'vault-private-token',createdAt:stamp,updatedAt:stamp};

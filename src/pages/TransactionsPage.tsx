@@ -36,9 +36,9 @@ type TransactionRow={
 type DeleteTarget={id:string;source:'legacy'|'event'};
 
 export function TransactionsPage({
-  data,month,onEditEvent,onDeleteEvent,onEditLegacy,onDeleteLegacy,
+  data,month,commandFocusKey,onEditEvent,onDeleteEvent,onEditLegacy,onDeleteLegacy,
 }:{
-  data:FinanceData;month:string;
+  data:FinanceData;month:string;commandFocusKey?:number;
   onEditEvent:(id:string)=>void;onDeleteEvent:(id:string)=>void;
   onEditLegacy:(transaction:LegacyTransaction)=>void;onDeleteLegacy:(id:string)=>void;
 }){
@@ -105,7 +105,7 @@ export function TransactionsPage({
     setPage(Math.max(1,Math.floor(index/pageSize)+1));
     setSelectedId(focusId);setDetailOpen(true);
     setMessage('Η αναζητούμενη συναλλαγή επιλέχθηκε στο ιστορικό της σωστής περιόδου.');
-  },[sourceRows,month,sortDirection,pageSize,range.start,range.end]);
+  },[sourceRows,month,sortDirection,pageSize,range.start,range.end,commandFocusKey]);
 
   const categoryLabel=(row:TransactionRow)=>row.kind==='split'?'Επιμέρους κατηγορίες':row.category===row.kind?eventKindLabel(row.kind):categoryPath(row.category,row.subcategory);
   const categories=useMemo(()=>[...new Set(sourceRows.map(row=>categoryLabel(row)))].sort((a,b)=>a.localeCompare(b,'el')),[sourceRows]);
