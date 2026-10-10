@@ -276,6 +276,15 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   const handleCommand=(row:RankedCommandSearchItem)=>{
     setCommandOpen(false);const action=row.action;
     if(action.type==='navigate'){navigate(action.page);return}
+    if(action.type==='transaction_focus'){
+      setMonth(action.date.slice(0,7));setMonthIsManual(true);
+      const url=new URL(location.href);
+      url.searchParams.delete('reportSection');
+      url.searchParams.set('commandTx',action.id);
+      url.searchParams.set('commandSource',action.source);
+      history.replaceState(history.state,'',url.toString());
+      navigate('transactions');return;
+    }
     if(action.type==='budget_management'){
       setMonth(action.month);setMonthIsManual(true);
       if(page==='reports'){

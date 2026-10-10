@@ -15,7 +15,8 @@ type CommandAction=
  | {type:'lending_repayment';person:string;accountId?:string}
  | {type:'recurring_payment';recurringId:string;accountId?:string}
  | {type:'scheduled_complete';scheduledId:string}
- | {type:'budget_management';month:string};
+ | {type:'budget_management';month:string}
+ | {type:'transaction_focus';id:string;source:'legacy'|'event';date:string};
 
 export interface CommandSearchItem{
   id:string;
@@ -52,10 +53,11 @@ export function buildCommandSearchIndex(data:FinanceData,asOf?:string):CommandSe
   const title=accountName(data,account.id);const savings=account.kind==='savings'||(account.kind==='bank'&&account.bankAccountCategory==='savings');rows.push(item({id:`account:${account.id}`,kind:'account',title,subtitle:savings?'Μεταφορά προς αποταμίευση':'Καταχώριση εξόδου στον λογαριασμό',keywords:[account.id,account.name,account.short??'',account.kind],action:{type:'quick_add',kind:'expense',accountId:account.id},priority:60}));
  }
  for(const tx of effectiveLegacyTransactions(data)){
-  rows.push(item({id:`legacy:${tx.id}`,kind:'transaction',title:clean(tx.note)||'Κίνηση χωρίς περιγραφή',subtitle:`${tx.date} · ${tx.type==='income'?'Έσοδο':tx.type==='transfer'?'Μεταφορά':tx.type==='adjustment'?'Διόρθωση':'Έξοδο'}`,keywords:[tx.note,tx.category??'',tx.subcategory??'',accountName(data,tx.accountId??tx.fromAccountId),tx.date,tx.id],action:{type:'navigate',page:'transactions'},priority:90}));
+  rows.push(item({id:`legacy:${tx.id}`,kind:'transaction',title:clean(tx.note)||'Κίνηση χωρίς περιγραφή',subtitle:`${tx.date} · ${tx.type==='income'?'Έσοδο':tx.type==='transfer'?'Μεταφορά':tx.type==='adjustment'?'Διόρθωση':'Έξοδο'}`,keywords:[tx.note,tx.category??'',tx.subcategory??'',accountName(data,tx.accountId??tx.fromAccountId),tx.date,tx.id],action:{type:'transaction_focus',id:tx.id,source:'legacy',date:tx.date},priority:90}));
  }
  for(const event of data.state.events??[]){
-  rows.push(item({id:`event:${event.id}`,kind:'transaction',title:clean(event.note)||'Κίνηση χωρίς περιγραφή',subtitle:`${event.date} · ${eventKindLabel(event)}`,keywords:[event.note,event.category??'',event.subcategory??'',event.person??'',accountName(data,event.accountId??event.fromAccountId),event.date,event.id],action:{type:'navigate',page:'transactions'},priority:88}));
+  if(event.kind==='card_purchase'||event.kind==='card_payment')continue; // Credit activity belongs to the credit-specific ledger.
+  rows.push(item({id:`event:${event.id}`,kind:'transaction',title:clean(event.note)||'Κίνηση χωρίς περιγραφή',subtitle:`${event.date} · ${eventKindLabel(event)}`,keywords:[event.note,event.category??'',event.subcategory??'',event.person??'',accountName(data,event.accountId??event.fromAccountId),event.date,event.id],action:{type:'transaction_focus',id:event.id,source:'event',date:event.date},priority:88}));
  }
  const banks=new Map(cardBanks(data).map(bank=>[bank.id,bank.name]));
  for(const card of allCards(data).filter(card=>card.active!==false)){

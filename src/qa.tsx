@@ -247,6 +247,11 @@ function buildQaData(params:URLSearchParams){
     ];
   }
   if(params.get('state')==='forecast-negative')next.state.scheduled=[...(next.state.scheduled??[]),{id:'qa-negative-forecast',dueDate:'2026-08-18',kind:'expense',amount:3000,note:'Μεγάλη γνωστή υποχρέωση',category:'Σταθερά έξοδα',accountId:'piraeus-payroll',status:'pending',createdAt:'2026-08-10T10:00:00.000Z',updatedAt:'2026-08-10T10:00:00.000Z'}];
+  if(params.get('state')==='command-transaction'){
+    const event=createEvent({kind:'expense',date:'2026-07-15',amount:16,note:'Crossmonth Lookup Entry',category:'Τρόφιμα',accountId:'piraeus-payroll'});
+    event.id='qa-crossmonth-command-event';
+    next.state.events=[...(next.state.events??[]),event];
+  }
   if(params.get('state')==='budget-rules'||params.get('state')==='future-reporting'){
     const stamp='2026-08-17T12:00:00.000Z';
     const event=createEvent({kind:'expense',date:'2026-08-16',amount:90,note:'QA Market Match',category:'Σταθερά έξοδα',accountId:'piraeus-payroll'});event.createdAt=stamp;event.updatedAt=stamp;
@@ -335,6 +340,15 @@ function QaWorkspace(){
   const handleCommand=(row:RankedCommandSearchItem)=>{
     setCommandOpen(false);const action=row.action;
     if(action.type==='navigate'){setPage(action.page);return}
+    if(action.type==='transaction_focus'){
+      setMonth(action.date.slice(0,7));
+      const url=new URL(location.href);
+      url.searchParams.delete('reportSection');
+      url.searchParams.set('commandTx',action.id);
+      url.searchParams.set('commandSource',action.source);
+      history.replaceState(history.state,'',url.toString());
+      setPage('transactions');return;
+    }
     if(action.type==='budget_management'){
       setMonth(action.month);
       if(page==='reports'){
