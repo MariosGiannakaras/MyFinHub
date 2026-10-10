@@ -32,6 +32,10 @@ try{
   assert(august.routeValues.length===2&&august.goalBalance&&august.goalProgress,'current Savings route and personal-goal snapshot are rendered');
 
   console.log('Savings remediation QA: future-dated saving does not affect current realized progress');
+  const baselineUrl=new URL(baseUrl);baselineUrl.searchParams.set('page','savings');baselineUrl.searchParams.set('state','budget-rules');
+  await c.send('Page.navigate',{url:baselineUrl.href});
+  await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Αποταμίευση')}",'budget-matched baseline Savings');
+  await sleep(350);
   const activeSavings=await c.call("function(){return (document.querySelector('.savings-hero')?.textContent||'').replace(/\\s+/g,' ').trim()}");
   const futureUrl=new URL(baseUrl);futureUrl.searchParams.set('page','savings');futureUrl.searchParams.set('state','future-reporting');
   await c.send('Page.navigate',{url:futureUrl.href});
