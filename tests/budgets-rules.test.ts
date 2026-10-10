@@ -29,6 +29,18 @@ describe('monthly category budgets',()=>{
     expect([...spending.values()].reduce((sum,value)=>sum+value,0)).toBe(140);
   });
 
+  it('does not warn about a budget exceeded by future-dated purchases',()=>{
+    const data=clean();
+    data.state.events=[
+      createEvent({kind:'expense',date:'2026-08-10',amount:60,note:'Current',category:'Τρόφιμα',accountId:'piraeus-payroll'}),
+      createEvent({kind:'expense',date:'2026-08-26',amount:70,note:'Future',category:'Τρόφιμα',accountId:'piraeus-payroll'}),
+    ];
+    data.state.budgets=[budget('food','category',100,'Τρόφιμα')];
+    expect(budgetProgress(data,'2026-08','2026-08-17')[0]).toMatchObject({used:60,status:'ok'});
+    expect(budgetProgress(data,'2026-08','2026-09-01')[0]).toMatchObject({used:130,status:'exceeded'});
+    expect(categoryBudgetSpending(data,'2026-08','2026-08-17').get('Τρόφιμα')).toBe(60);
+    expect(categoryBudgetSpending(data,'2026-08').get('Τρόφιμα')).toBe(130);
+  });
   it('uses reviewed legacy split portions instead of the legacy row category total',()=>{
     const data=clean();data.seed.transactions=[{id:'legacy-split',date:'2026-08-09',type:'expense',accountId:'piraeus-payroll',amount:60,note:'Legacy mixed',category:'Άλλο'}];data.state.reviewDecisions={'legacy-split':{status:'confirmed',semanticKind:'split',decidedAt:stamp,parts:[{id:'p1',label:'Food',category:'Τρόφιμα',amount:45,kind:'expense'},{id:'p2',label:'Refund',category:'Τρόφιμα',amount:5,kind:'refund'},{id:'p3',label:'Travel',category:'Μετακινήσεις',amount:10,kind:'expense'}]}};
     const spending=categoryBudgetSpending(data,'2026-08');

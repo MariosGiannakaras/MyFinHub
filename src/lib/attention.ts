@@ -173,7 +173,7 @@ function creditAttention(data:FinanceData,asOf:string):AttentionItem[]{
 }
 
 function budgetAttention(data:FinanceData,asOf:string):AttentionItem[]{
-  return budgetProgress(data,asOf.slice(0,7)).flatMap(row=>{
+  return budgetProgress(data,asOf.slice(0,7),asOf).flatMap(row=>{
     if(row.status==='ok')return [];
     const label=row.scope==='overall'?'Συνολικό discretionary':row.category??'Κατηγορία';
     const severity:AttentionSeverity=row.status==='exceeded'?'danger':'warning';

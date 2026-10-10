@@ -37,8 +37,8 @@ type SavingsQuickContext=Omit<Extract<QuickActionContext,{mode:'savings'}>,'toke
 export function SavingsPage({data,month,asOf,onCreate,onQuickAdd,onSavingsTargetChange,onUpsertGoal,onDeleteGoal}:{data:FinanceData;month:string;asOf:string;onCreate:(event:FinanceEvent)=>void;onQuickAdd?:(context:SavingsQuickContext)=>void;onSavingsTargetChange:(rate:number)=>void;onUpsertGoal:(goal:SavingsGoal)=>void;onDeleteGoal:(id:string)=>void}){
   const periodEndDate=reportingPeriodEndDate(month,asOf);
   const balances=accountBalances(data,periodEndDate);
-  const flow=operationalMonthlyFlow(data,month);
-  const breakdown=savingsBreakdown(data,month);
+  const flow=operationalMonthlyFlow(data,month,asOf);
+  const breakdown=savingsBreakdown(data,month,asOf);
   const target=data.state.settings.savingsTargetRate??.2;
   const rate=flow.income?flow.saving/flow.income:0;
   const progress=ratioPercent(rate,target);

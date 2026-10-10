@@ -245,8 +245,9 @@ export function monthRange(month: string) {
   return calendarMonthRange(month);
 }
 
-export function monthlyFlow(data: FinanceData, month: string) {
-  const { start, end } = monthRange(month);
+export function monthlyFlow(data: FinanceData, month: string, asOf?: string) {
+  const range=monthRange(month),start=range.start;
+  const end=asOf&&month===asOf.slice(0,7)?asOf:range.end;
   let income = 0, expense = 0, saving = 0, refunds = 0;
   for (const tx of effectiveLegacyTransactions(data)) {
     if (tx.date < start || tx.date > end) continue;
