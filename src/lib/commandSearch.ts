@@ -12,6 +12,7 @@ type CommandAction=
  | {type:'navigate';page:CommandPage}
  | {type:'quick_add';kind:'expense'|'income'|'transfer'|'refund';accountId?:string}
  | {type:'credit_card_focus';cardId:string}
+ | {type:'lending_person_focus';person:string}
  | {type:'credit_payment';cardId:string}
  | {type:'loan_payment';loanId:string;accountId?:string}
  | {type:'lending_repayment';person:string;accountId?:string}
@@ -72,7 +73,7 @@ export function buildCommandSearchIndex(data:FinanceData,asOf?:string):CommandSe
   if(loanRemainingInstallments(data,loan,asOf)>0)rows.push(item({id:`action:loan-payment:${loan.id}`,kind:'command',title:`Πληρωμή ${loan.name}`,subtitle:'Πληρωμή συγκεκριμένης δόσης ή δανείου',keywords:[loan.name,loan.provider??'','πληρωμή','δόση','δάνειο'],action:{type:'loan_payment',loanId:loan.id,accountId:loan.defaultAccountId},priority:19}));
  }
  for(const lending of lendingRows(data,asOf)){
-  rows.push(item({id:`lending:${lending.person}`,kind:'lending',title:lending.person,subtitle:'Δανεικά / επιστροφές',keywords:[lending.person,'δανεικά','επιστροφή'],action:{type:'navigate',page:'lending'},priority:57}));
+  rows.push(item({id:`lending:${lending.person}`,kind:'lending',title:lending.person,subtitle:'Δανεικά / επιστροφές',keywords:[lending.person,'δανεικά','επιστροφή'],action:{type:'lending_person_focus',person:lending.person},priority:57}));
   if(lending.outstanding>0)rows.push(item({id:`action:lending:${lending.person}`,kind:'command',title:`Καταγραφή επιστροφής · ${lending.person}`,subtitle:'Μείωση εκκρεμούς ποσού από συγκεκριμένο πρόσωπο',keywords:[lending.person,'επιστροφή','είσπραξη'],action:{type:'lending_repayment',person:lending.person,accountId:data.state.settings.defaultIncomeAccount},priority:20}));
  }
  for(const recurring of allRecurringItems(data)){

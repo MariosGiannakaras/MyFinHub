@@ -25,7 +25,7 @@ type LendingHistoryFilter='all'|'lent'|'repaid'|'forgiven';
 
 const personInitials=(name:string)=>name.split(/\s+/).filter(Boolean).slice(0,2).map(part=>part[0]?.toLocaleUpperCase('el-GR')||'').join('');
 
-export function LendingPage({data,asOf,privacyVisible,onPrivacyVisibleChange,onCreateEvent,onQuickAdd}:{data:FinanceData;asOf:string;privacyVisible:boolean;onPrivacyVisibleChange:(privacyVisible:boolean)=>void;onCreateEvent:(event:FinanceEvent)=>void;onQuickAdd?:(context:LendingQuickContext)=>void}){
+export function LendingPage({data,asOf,commandPerson=null,commandPersonKey=0,privacyVisible,onPrivacyVisibleChange,onCreateEvent,onQuickAdd}:{data:FinanceData;asOf:string;commandPerson?:string|null;commandPersonKey?:number;privacyVisible:boolean;onPrivacyVisibleChange:(privacyVisible:boolean)=>void;onCreateEvent:(event:FinanceEvent)=>void;onQuickAdd?:(context:LendingQuickContext)=>void}){
   const rows=useMemo(()=>lendingRows(data,asOf),[data,asOf]);
   const history=useMemo(()=>lendingHistory(data,asOf),[data,asOf]);
   const total=useMemo(()=>rows.reduce((sum,row)=>sum+row.outstanding,0),[rows]);
@@ -40,6 +40,22 @@ export function LendingPage({data,asOf,privacyVisible,onPrivacyVisibleChange,onC
     if(!rows.length){if(selectedPerson)setSelectedPerson('');return}
     if(!rows.some(row=>row.person===selectedPerson))setSelectedPerson(rows[0]!.person);
   },[rows,selectedPerson]);
+
+  useEffect(()=>{
+    if(!commandPerson||!rows.some(row=>row.person===commandPerson))return;
+    setPeopleQuery('');
+    setSelectedPerson(commandPerson);
+    setHistoryFilter('all');
+  },[commandPerson,commandPersonKey,rows]);
+  useEffect(()=>{
+    if(!commandPerson||selectedPerson!==commandPerson)return;
+    const frame=requestAnimationFrame(()=>{
+      const selected=document.querySelector<HTMLButtonElement>('.lending-people-panel .lending-person-row[aria-pressed="true"]');
+      selected?.scrollIntoView({block:'nearest',behavior:'auto'});
+      selected?.focus({preventScroll:true});
+    });
+    return()=>cancelAnimationFrame(frame);
+  },[commandPerson,commandPersonKey,selectedPerson]);
 
   const filteredPeople=useMemo(()=>{const query=peopleQuery.trim().toLocaleLowerCase('el-GR');return query?rows.filter(row=>row.person.toLocaleLowerCase('el-GR').includes(query)):rows},[peopleQuery,rows]);
   const selectedRow=useMemo(()=>rows.find(row=>row.person===selectedPerson)??null,[rows,selectedPerson]);

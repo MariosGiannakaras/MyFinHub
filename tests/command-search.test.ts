@@ -56,6 +56,14 @@ describe('unified command search',()=>{
     expect(index.find(row=>row.id==='card:qa-debit-card')?.action).toEqual({type:'navigate',page:'cards'});
   });
 
+  it('selects an exact Lending person instead of opening a generic collection',()=>{
+    const data=clone();
+    const index=buildCommandSearchIndex(data,'2026-08-17');
+    const lending=index.find(row=>row.kind==='lending');
+    expect(lending?.action).toEqual({type:'lending_person_focus',person:lending?.title});
+    expect(lending?.id).toBe(`lending:${lending?.title}`);
+  });
+
   it('shows recent entities on the empty-query surface without leaking amounts',()=>{
     const data=clone();
     data.state.events=[...(data.state.events??[]),{id:'evt-search',date:'2026-08-17',kind:'expense',amount:987654.32,note:'QA Market Search',category:'Τρόφιμα',accountId:'piraeus-payroll',legs:[{accountId:'piraeus-payroll',amount:-987654.32}],source:'user',createdAt:stamp,updatedAt:stamp}];
