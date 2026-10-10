@@ -49,7 +49,7 @@ export function buildCommandSearchIndex(data:FinanceData,asOf?:string):CommandSe
  ];
  for(const account of allAccounts(data)){
   if(account.id==='credit-card')continue;
-  const title=accountName(data,account.id);rows.push(item({id:`account:${account.id}`,kind:'account',title,subtitle:account.kind==='savings'?'Λογαριασμός αποταμίευσης':'Λογαριασμός',keywords:[account.id,account.name,account.short??'',account.kind],action:{type:'quick_add',kind:'expense',accountId:account.id},priority:60}));
+  const title=accountName(data,account.id);const savings=account.kind==='savings'||(account.kind==='bank'&&account.bankAccountCategory==='savings');rows.push(item({id:`account:${account.id}`,kind:'account',title,subtitle:savings?'Μεταφορά προς αποταμίευση':'Καταχώριση εξόδου στον λογαριασμό',keywords:[account.id,account.name,account.short??'',account.kind],action:{type:'quick_add',kind:'expense',accountId:account.id},priority:60}));
  }
  for(const tx of effectiveLegacyTransactions(data)){
   rows.push(item({id:`legacy:${tx.id}`,kind:'transaction',title:clean(tx.note)||'Κίνηση χωρίς περιγραφή',subtitle:`${tx.date} · ${tx.type==='income'?'Έσοδο':tx.type==='transfer'?'Μεταφορά':tx.type==='adjustment'?'Διόρθωση':'Έξοδο'}`,keywords:[tx.note,tx.category??'',tx.subcategory??'',accountName(data,tx.accountId??tx.fromAccountId),tx.date,tx.id],action:{type:'navigate',page:'transactions'},priority:90}));

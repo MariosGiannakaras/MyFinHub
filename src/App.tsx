@@ -287,7 +287,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
       return;
     }
     if(action.type==='quick_add'){
-      if(action.accountId){const account=allAccounts(data).find(item=>item.id===action.accountId);if(account?.kind==='savings'){openSpecial({mode:'savings',toAccountId:action.accountId,savingSource:'manual_transfer'});return}openGeneric(action.kind,{note:'',amount:0,accountId:action.accountId});return}
+      if(action.accountId){const account=allAccounts(data).find(item=>item.id===action.accountId);if(account?.kind==='savings'||account?.bankAccountCategory==='savings'){openSpecial({mode:'savings',toAccountId:action.accountId,savingSource:'manual_transfer'});return}openGeneric(action.kind,{note:'',amount:0,accountId:action.accountId});return}
       openGeneric(action.kind);return;
     }
     if(action.type==='credit_payment'){openSpecial({mode:'credit',action:'payment',cardId:action.cardId});return}

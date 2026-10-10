@@ -16,6 +16,8 @@ describe('budget command frontend action reachability (DV-FB02/03)',()=>{
     expect(qa).toContain("section.querySelector<HTMLElement>('summary')?.focus");
     expect(app).toContain("url.searchParams.set('reportSection','budgets')");
     expect(qa).toContain("url.searchParams.set('reportSection','budgets')");
+    expect(app).toContain("account?.bankAccountCategory==='savings'");
+    expect(qa).toContain("account?.bankAccountCategory==='savings'");
     expect(rendered).toContain('command-budget-editor-current-page');
     expect(rendered).toContain('command-budget-editor-from-dashboard');
     expect(rendered).toContain('budget command retains keyboard focus after palette dismissal');

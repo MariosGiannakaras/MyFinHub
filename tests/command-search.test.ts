@@ -36,6 +36,14 @@ describe('unified command search',()=>{
     expect(searchCommandItems(data,'Σταθερά έξοδα').some(row=>row.id===budget?.id)).toBe(true);
   });
 
+  it('labels account results as Quick Entry actions and recognizes savings-category bank accounts',()=>{
+    const data=clone();
+    data.state.settings.customAccounts=[...(data.state.settings.customAccounts??[]),{id:'bank-savings-search',name:'Reserve bank',kind:'bank',bankAccountCategory:'savings',custom:true}];
+    const index=buildCommandSearchIndex(data);
+    expect(index.find(row=>row.id==='account:bank-savings-search')?.subtitle).toContain('Μεταφορά προς αποταμίευση');
+    expect(index.find(row=>row.id==='account:piraeus-payroll')?.subtitle).toContain('Καταχώριση εξόδου');
+  });
+
   it('shows recent entities on the empty-query surface without leaking amounts',()=>{
     const data=clone();
     data.state.events=[...(data.state.events??[]),{id:'evt-search',date:'2026-08-17',kind:'expense',amount:987654.32,note:'QA Market Search',category:'Τρόφιμα',accountId:'piraeus-payroll',legs:[{accountId:'piraeus-payroll',amount:-987654.32}],source:'user',createdAt:stamp,updatedAt:stamp}];
