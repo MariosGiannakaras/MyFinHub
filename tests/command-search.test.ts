@@ -47,6 +47,15 @@ describe('unified command search',()=>{
     expect(buildCommandSearchIndex(data).find(row=>row.id==='account:bank-savings-search')?.title).toBe('Emergency reserve');
   });
 
+  it('selects the exact credit card from a named result rather than opening a generic page',()=>{
+    const data=clone();const base=data.state.cards?.find(card=>card.id==='qa-card')!;
+    data.state.cards=[...(data.state.cards??[]),{...base,id:'credit-search-second',nickname:'QA Second Credit'}];
+    const index=buildCommandSearchIndex(data);
+    expect(index.find(row=>row.id==='card:credit-search-second')?.action).toEqual({type:'credit_card_focus',cardId:'credit-search-second'});
+    expect(index.find(row=>row.id==='action:card-payment:credit-search-second')?.action).toEqual({type:'credit_payment',cardId:'credit-search-second'});
+    expect(index.find(row=>row.id==='card:qa-debit-card')?.action).toEqual({type:'navigate',page:'cards'});
+  });
+
   it('shows recent entities on the empty-query surface without leaking amounts',()=>{
     const data=clone();
     data.state.events=[...(data.state.events??[]),{id:'evt-search',date:'2026-08-17',kind:'expense',amount:987654.32,note:'QA Market Search',category:'Τρόφιμα',accountId:'piraeus-payroll',legs:[{accountId:'piraeus-payroll',amount:-987654.32}],source:'user',createdAt:stamp,updatedAt:stamp}];

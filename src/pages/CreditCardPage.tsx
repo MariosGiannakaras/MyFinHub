@@ -1,5 +1,5 @@
 import { ArchiveRestore, ChevronRight, CreditCard, Pencil, Plus, ReceiptText, Trash2, WalletCards, X } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatedAmount } from '../components/AnimatedAmount';
 import { AppDateInput } from '../components/AppDateInput';
 import { AppSelectInput } from '../components/AppSelectInput';
@@ -33,9 +33,9 @@ const statementStatusLabel:Record<CreditStatementStatus,string>={open:'Ανοι�
 const boundaryLabel=(value:PaymentCard['statementBoundaryRule'])=>value==='include-closing-day'?'Η ημέρα κλεισίματος ανήκει στη δήλωση που κλείνει εκείνη την ημέρα':value==='next-cycle'?'Η ημέρα κλεισίματος ανήκει στον επόμενο κύκλο':'Αναμένει τελική επιλογή προϊόντος';
 
 export function CreditCardPage({
-  data,asOf,onCreateEvent,onEditEvent,onDeleteEvent,onUpsertCard,onUpsertCardDurably,onStageNewCard,onArchiveCard,onDeleteCard,onPayCard,
+  data,asOf,commandCardId,commandCardKey=0,onCreateEvent,onEditEvent,onDeleteEvent,onUpsertCard,onUpsertCardDurably,onStageNewCard,onArchiveCard,onDeleteCard,onPayCard,
 }:{
-  data:FinanceData;asOf:string;
+  data:FinanceData;asOf:string;commandCardId?:string|null;commandCardKey?:number;
   onCreateEvent:(event:FinanceEvent)=>void;onEditEvent:(id:string)=>void;onDeleteEvent:(id:string)=>void;
   onUpsertCard:(card:PaymentCard)=>void;onUpsertCardDurably:(card:PaymentCard)=>Promise<void>;onStageNewCard:(card:PaymentCard)=>Promise<void>;onArchiveCard:(card:PaymentCard)=>void;onDeleteCard:(card:PaymentCard)=>Promise<void>;onPayCard:(cardId:string,statementId?:string)=>void;
 }){
@@ -51,6 +51,7 @@ export function CreditCardPage({
     events:creditEventsForCard(data,reference.id).sort((a,b)=>b.date.localeCompare(a.date)||b.createdAt.localeCompare(a.createdAt)||b.id.localeCompare(a.id)),
   })).filter(item=>item.events.length>0||item.statements.length>0),[data,deletedCredit,asOf]);
   const [selectedCardId,setSelectedCardId]=useState('');
+  const processedCommandCardKey=useRef<number>(-1);
   const [purchaseSortDirection,setPurchaseSortDirection]=useState<SortDirection>('desc');
   const [paymentSortDirection,setPaymentSortDirection]=useState<SortDirection>('desc');
   const [purchaseLimit,setPurchaseLimit]=useState(25);
@@ -59,6 +60,13 @@ export function CreditCardPage({
     if(selectedCardId&&activeCredit.some(card=>card.id===selectedCardId))return;
     setSelectedCardId(activeCredit[0]?.id??'');
   },[selectedCardId,activeCredit]);
+  // Run after the initial/default selection effect; the explicitly searched card wins.
+  useEffect(()=>{
+    if(!commandCardId||processedCommandCardKey.current===commandCardKey)return;
+    if(!activeCredit.some(item=>item.id===commandCardId))return;
+    processedCommandCardKey.current=commandCardKey;
+    setSelectedCardId(commandCardId);
+  },[commandCardId,commandCardKey,activeCredit]);
   const card=activeCredit.find(item=>item.id===selectedCardId)??activeCredit[0];
   const bank=card?banks.find(item=>item.id===card.bankId):undefined;
   const debt=card?creditDebtForCard(data,card.id,asOf):0;

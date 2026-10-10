@@ -35,6 +35,17 @@ try{
  assert(await c.call("function(){const section=document.querySelector('#report-budgets');return Boolean(section?.open&&section.querySelector('summary')===document.activeElement)}"),'budget command navigates with focus on editor summary');
  await screenshot('command-budget-editor-from-dashboard');
 
+ console.log('Command Palette QA: named credit card selects its exact card in a multi-card stack');
+ const creditUrl=new URL(baseUrl);creditUrl.searchParams.set('page','reports');creditUrl.searchParams.set('state','credit-stack');
+ await c.send('Page.navigate',{url:creditUrl.href});
+ await waitFor("function(){return document.querySelector('#main-workspace h1')?.textContent?.includes('Αναφορές')}",'credit search source');
+ await ctrlK();await setSearch('QA Credit 3');await activateOption('QA Credit 3');await press('Enter');
+ await waitFor("function(){return !!document.querySelector('.stack-card.top[data-card-id=qa-credit-stack-3]')}",'exact selected credit card');
+ assert(await c.call("function(){return !!document.querySelector('.stack-card.top[data-card-id=qa-credit-stack-3]')&&!document.querySelector('.command-palette')}"),'credit result opens its precise selected card without exposing vault');
+ await screenshot('command-exact-credit-card-selection');
+ await ctrlK();await setSearch('QA Visa');await activateOption('QA Visa');await press('Enter');
+ await waitFor("function(){return !!document.querySelector('.stack-card.top[data-card-id=qa-card]')}",'switch selected card in same credit route');
+
  console.log('Command Palette QA: exact transaction result from another reporting month');
  const historyUrl=new URL(baseUrl);historyUrl.searchParams.set('page','reports');historyUrl.searchParams.set('state','command-transaction');
  await c.send('Page.navigate',{url:historyUrl.href});

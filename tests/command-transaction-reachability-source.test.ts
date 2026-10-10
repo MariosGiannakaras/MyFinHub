@@ -3,9 +3,21 @@ import {describe,expect,it} from 'vitest';
 const search=readFileSync('src/lib/commandSearch.ts','utf8');
 const app=readFileSync('src/App.tsx','utf8'),qa=readFileSync('src/qa.tsx','utf8');
 const ledger=readFileSync('src/pages/TransactionsPage.tsx','utf8');
+const credit=readFileSync('src/pages/CreditCardPage.tsx','utf8');
 const browser=readFileSync('scripts/command-palette-qa.mjs','utf8');
 
 describe('Command Palette source-to-selected-ledger reachability (DV-FB02/03)',()=>{
+  it('selects exact credit card search hits, including repeated choices on the same route',()=>{
+    expect(search).toContain("type:'credit_card_focus';cardId:string");
+    expect(search).toContain("type:'credit_card_focus',cardId:card.id");
+    expect(app).toContain("setCommandCardId(action.cardId);setCommandCardKey(key=>key+1);navigate('credit')");
+    expect(qa).toContain("setCommandCardId(action.cardId);setCommandCardKey(key=>key+1);setPage('credit')");
+    expect(app).toContain('commandCardId={commandCardId} commandCardKey={commandCardKey}');
+    expect(qa).toContain('commandCardId={commandCardId} commandCardKey={commandCardKey}');
+    expect(credit).toContain('setSelectedCardId(commandCardId)');
+    expect(credit).toContain('processedCommandCardKey.current===commandCardKey');
+    expect(browser).toContain('command-exact-credit-card-selection');
+  });
   it('routes individual generic transaction hits with stable identity and date',()=>{
     expect(search).toContain("type:'transaction_focus';id:string;source:'legacy'|'event';date:string");
     expect(search).toContain("type:'transaction_focus',id:tx.id,source:'legacy',date:tx.date");

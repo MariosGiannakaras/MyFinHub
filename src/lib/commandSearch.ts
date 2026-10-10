@@ -11,6 +11,7 @@ type CommandResultKind='command'|'transaction'|'account'|'card'|'loan'|'lending'
 type CommandAction=
  | {type:'navigate';page:CommandPage}
  | {type:'quick_add';kind:'expense'|'income'|'transfer'|'refund';accountId?:string}
+ | {type:'credit_card_focus';cardId:string}
  | {type:'credit_payment';cardId:string}
  | {type:'loan_payment';loanId:string;accountId?:string}
  | {type:'lending_repayment';person:string;accountId?:string}
@@ -63,7 +64,7 @@ export function buildCommandSearchIndex(data:FinanceData,asOf?:string):CommandSe
  const banks=new Map(cardBanks(data).map(bank=>[bank.id,bank.name]));
  for(const card of allCards(data).filter(card=>card.active!==false)){
   const title=clean(card.nickname)||cardKindLabel(card);const page=card.kind==='credit'?'credit':'cards';
-  rows.push(item({id:`card:${card.id}`,kind:'card',title,subtitle:`${banks.get(card.bankId)??'Κάρτα'} · ${cardKindLabel(card)}`,keywords:[title,banks.get(card.bankId)??'',card.kind,card.network],action:{type:'navigate',page},priority:55}));
+  rows.push(item({id:`card:${card.id}`,kind:'card',title,subtitle:`${banks.get(card.bankId)??'Κάρτα'} · ${cardKindLabel(card)}`,keywords:[title,banks.get(card.bankId)??'',card.kind,card.network],action:card.kind==='credit'?{type:'credit_card_focus',cardId:card.id}:{type:'navigate',page},priority:55}));
   if(card.kind==='credit')rows.push(item({id:`action:card-payment:${card.id}`,kind:'command',title:`Πληρωμή ${title}`,subtitle:'Πληρωμή συγκεκριμένης πιστωτικής κάρτας',keywords:[title,'πληρωμή','πιστωτική',banks.get(card.bankId)??''],action:{type:'credit_payment',cardId:card.id},priority:18}));
  }
  for(const loan of effectiveLoans(data)){
