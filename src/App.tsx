@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppShell, type PageId } from './components/AppShell';
 import { AppSkeleton, PageSkeleton } from './components/AppSkeleton';
 import { Button } from './components/Button';
@@ -86,6 +86,9 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   const [recoverOpen,setRecoverOpen]=useState(false);
   const [privacyVisible,setPrivacyVisible]=useState(false);
   const cleanupAttempted=useRef(new Set<string>());
+  const cleanupInFlight=useRef(new Map<string,Promise<void>>());
+  const [cleanupBusy,setCleanupBusy]=useState(false);
+  const [cleanupFailure,setCleanupFailure]=useState<string|null>(null);
 
   const navigate = (next: PageId, replace = false) => {
     const hash = pageHash(next);
@@ -135,15 +138,38 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   }, [page, notFound]);
 
   const data = finance.data;
+  // One shared operation for user-initiated, automatic-on-reload and manual
+  // retry. Never issue duplicate protected vault deletes for the same marker.
+  const runCardCleanup=useCallback((id:string):Promise<void>=>{
+    const inFlight=cleanupInFlight.current.get(id);
+    if(inFlight)return inFlight;
+    cleanupAttempted.current.add(id);
+    setCleanupBusy(true);
+    setCleanupFailure(null);
+    const task=import('./lib/cardSecretDeletion').then(m=>m.finishCardDeletion(id,finance.updateDurably))
+      .catch(error=>{
+        setCleanupFailure('Το προφίλ έχει διαγραφεί, αλλά εκκρεμεί ο ασφαλής καθαρισμός. Έλεγξε τη σύνδεση ή την επιβεβαίωση δύο παραγόντων και δοκίμασε ξανά.');
+        throw error;
+      }).finally(()=>{
+        cleanupInFlight.current.delete(id);
+        setCleanupBusy(cleanupInFlight.current.size>0);
+      });
+    cleanupInFlight.current.set(id,task);
+    return task;
+  },[finance.updateDurably]);
+  const pendingCleanup=useMemo(()=>data?(data.state.pendingCardSecretDeletes??[]).filter(id=>!(data.state.cards??[]).some(card=>card.id===id)):[],[data]);
   useEffect(()=>{
     if(!data||finance.saveState!=='saved')return;
-    const id=(data.state.pendingCardSecretDeletes??[]).find(key=>
-      !cleanupAttempted.current.has(key)&&!(data.state.cards??[]).some(card=>card.id===key));
+    const id=pendingCleanup.find(key=>!cleanupAttempted.current.has(key));
     if(!id)return;
-    cleanupAttempted.current.add(id);
-    // Retry each persisted unfinished cleanup once per mounted session.
-    void import('./lib/cardSecretDeletion').then(m=>m.finishCardDeletion(id,finance.updateDurably)).catch(()=>{});
-  },[data,finance.saveState,finance.updateDurably]);
+    // One automatic attempt per persisted marker and mounted session.
+    // Failure retains the marker AND surfaces a recoverable notice.
+    void runCardCleanup(id).catch(()=>{});
+  },[data,finance.saveState,runCardCleanup,pendingCleanup]);
+  const retryCardCleanup=()=>{
+    const id=pendingCleanup.find(key=>!cleanupInFlight.current.has(key));
+    if(id)void runCardCleanup(id).catch(()=>{});
+  };
   const textSize = data?.state.settings.textSize ?? 'normal';
   useEffect(() => { document.documentElement.dataset.motion = 'full'; return () => { delete document.documentElement.dataset.motion; }; }, []);
   useEffect(() => { document.documentElement.dataset.textSize = textSize; return () => { delete document.documentElement.dataset.textSize; }; }, [textSize]);
@@ -206,9 +232,8 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   const deleteCard=async(card:PaymentCard)=>{
     if(card.kind==='credit'&&!canPermanentlyDeleteCreditCard(data,card.id,today))throw new Error('CREDIT_CARD_HAS_OUTSTANDING_BALANCE');
     await finance.updateDurably(current=>withCardSecretCleanupPending(current,card,new Date().toISOString(),today));
-    cleanupAttempted.current.add(card.id);
     try{
-      await (await import('./lib/cardSecretDeletion')).finishCardDeletion(card.id,finance.updateDurably);
+      await runCardCleanup(card.id);
     }catch{
       throw new Error('Το προφίλ διαγράφηκε και αποθηκεύτηκε, αλλά ο καθαρισμός των ασφαλών στοιχείων εκκρεμεί. Θα επαναληφθεί μετά από νέα σύνδεση.');
     }
@@ -285,7 +310,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
 
   return <>
     <AppShell page={page} onPage={navigate} onQuickAdd={() => openGeneric('expense')} onCommand={openCommand} onRefresh={() => { void finance.reload(); }} onUndo={() => { finance.undo(); }} onRedo={() => { finance.redo(); }} canUndo={finance.canUndo} canRedo={finance.canRedo} history={finance.changeHistory} saveState={finance.saveState} filePath={finance.filePath} motionMode="full" userEmail={userEmail} onLogout={onLogout}>
-      <PersistenceNotice saveState={finance.saveState} errorMessage={finance.saveErrorMessage} onRecover={recover}/>
+      <PersistenceNotice saveState={finance.saveState} errorMessage={finance.saveErrorMessage} onRecover={recover} cleanupPending={pendingCleanup.length} cleanupBusy={cleanupBusy} cleanupError={cleanupFailure} onRetryCleanup={retryCardCleanup}/>
       {PERIOD_PAGES.has(page) ? <div className="period-row"><PeriodControl month={month} onChange={(next) => { setMonth(next); setMonthIsManual(true); }}/><span>Στοιχεία περιόδου</span></div> : null}
       {finance.saveState === 'loading' ? <PageSkeleton/> : <PageErrorBoundary resetKey={page} onDashboard={() => navigate('dashboard')}><Suspense fallback={<PageLoading/>}>{content}</Suspense></PageErrorBoundary>}
     </AppShell>
