@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { accountBalances } from '../src/lib/domain.js';
+import { accountBalances, netWorth } from '../src/lib/domain.js';
 import { lendingRows } from '../src/lib/lending.js';
 import type { FinanceData, FinanceEvent } from '../src/types.js';
 
@@ -31,6 +31,15 @@ describe('derived finance view robustness', () => {
     expect(accountBalances(data, '2026-08-17').cash).toBe(170);
   });
 
+  it('excludes future-dated receivables from selected-date net worth',()=>{
+    const data=derivedData();
+    data.state.events=[
+      {id:'lent-next-month',kind:'lending',date:'2026-09-01',amount:40,person:'Alex',receivableDelta:40,legs:[]} as FinanceEvent,
+      {id:'lent-today',kind:'lending',date:'2026-08-17',amount:10,person:'Alex',receivableDelta:10,legs:[]} as FinanceEvent,
+    ];
+    expect(netWorth(data,'2026-08-17')).toBe(netWorth(data,'2026-08-16')+30);
+    expect(netWorth(data,'2026-09-01')).toBe(netWorth(data,'2026-08-17')+40);
+  });
   it('aggregates repeated legacy lending rows before adding linked events', () => {
     const data = derivedData();
     data.seed.lending = [

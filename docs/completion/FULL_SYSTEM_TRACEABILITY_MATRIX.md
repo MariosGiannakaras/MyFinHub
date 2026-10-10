@@ -336,6 +336,10 @@ The monthly recurring and loan forecast projections previously derived a due day
 
 `DashboardPage` already selected `reportingPeriodEndDate(month,asOf)` for account balances/history, but its flow, category chart, recent movements, daily actual-flow chart and budget highlights still included future-dated current-month events. `selectMonthlyFlow` and `selectCategoryTotals` now take optional `asOf` with separate memo keys, and rendered Dashboard event slices/daily chart/budget use that same cutoff. Completed historical months and existing default selector callers retain full-month totals. Source and dynamic selector regressions cover as-of cache isolation and future event omission. **Implemented, acceptance pending** until exact-head checks and rendered desktop/mobile evidence.
 
+### DV-FB05 date-scoped Lending outstanding and receivables
+
+`LendingPage`, `Attention`, `operationalReportSnapshot` and `netWorth(data,asOf)` previously included future-dated lending/repayment `receivableDelta` events even when balances and statements used `asOf`. Optional `asOf` now scopes event-derived lending rows, outstanding per person and dated history, with page/Attention/Reports selectors and net-worth event deltas aligned. Existing no-argument behavior remains unchanged, and legacy `seed.lending[].outstanding` remains a non-recomputed workbook baseline (no unsafe backward extrapolation). Dynamic tests prove before/after future lending, repayments and net-worth. **Implemented, not yet accepted** pending exact-head CI/real-stack/rendered validation.
+
 ### Remaining inverse/invariant closeout
 
 Unclassified backend exported operations and hidden/focusable frontend branches require ongoing DV-FB02/03 source + rendered inspection, notably shortcut actions, legacy/taxonomy negative states and saved-card deletion. Verify period/as-of/statement/forecast semantics against canonical selectors (FB05), AAL2/owner/RLS/vault per sensitive operation (FB06), deployment/Windows and Android API boundary (FB09). Do not check DV-FB01–FB10 as accepted or start DV-M before all classified gaps have validated outcomes.
