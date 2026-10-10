@@ -107,8 +107,15 @@ export function useModalFocus<T extends HTMLElement>(open: boolean, preferred?: 
       body.style.width = bodyStyle.width;
       body.style.overflow = bodyStyle.overflow;
       html.style.overscrollBehavior = htmlOverscroll;
-      window.scrollTo({ left: scrollX, top: scrollY, behavior: 'auto' });
-      queueMicrotask(() => opener.current?.focus({ preventScroll: true }));
+      // A command may deliberately move focus and scroll into its destination
+      // before the exiting dialog unmounts. Preserve that destination; restore
+      // the opener and scroll only after ordinary dismissals.
+      const focused=document.activeElement;
+      const hasDestination=focused instanceof HTMLElement&&focused.isConnected&&focused!==body&&!root.contains(focused);
+      if(!hasDestination){
+        window.scrollTo({ left: scrollX, top: scrollY, behavior: 'auto' });
+        queueMicrotask(() => opener.current?.focus({ preventScroll: true }));
+      }
     };
   }, [open, preferred, generatedErrorId]);
 
