@@ -1,6 +1,6 @@
 import { accountBalances, allAccounts } from './domain.js';
 import { addCalendarDays } from './dateOnly.js';
-import { isSelfLoan, loanRemainingInstallments, typicalLoanPaymentDay } from './loans.js';
+import { isSelfLoan, loanPaymentEvents, loanRemainingInstallments, typicalLoanPaymentDay } from './loans.js';
 import { activeRecurringItems, nextRecurringDate } from './recurring.js';
 import { addRecurringInterval } from './recurringCadence.js';
 import { pendingScheduled } from './scheduled.js';
@@ -141,6 +141,8 @@ function loanMovements(data: FinanceData, asOf: string, endDate: string, ids: Se
       continue;
     }
     let date = loan.firstExpectedDate && loan.firstExpectedDate >= asOf ? loan.firstExpectedDate : nextMonthlyDate(asOf, day, true);
+    // Do not forecast another installment in a cycle already settled early.
+    if(date.slice(0,7)===asOf.slice(0,7)&&loanPaymentEvents(data,loan).some(e=>e.date<=asOf&&e.date.slice(0,7)===asOf.slice(0,7)))date=followingMonthlyDate(date,day);
     let count = 0;
     while (date <= endDate && count < remaining) {
       pushMovement(result, {

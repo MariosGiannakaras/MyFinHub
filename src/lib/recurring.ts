@@ -48,7 +48,9 @@ function monthlyNextDate(data:FinanceData,item:RecurringItem,asOf:string){
   const base=new Date(`${asOf}T12:00:00Z`);
   const build=(year:number,monthIndex:number)=>{const last=new Date(Date.UTC(year,monthIndex+1,0)).getUTCDate();return new Date(Date.UTC(year,monthIndex,Math.min(day,last),12))};
   let due=build(base.getUTCFullYear(),base.getUTCMonth());
-  if(due.getTime()<base.getTime())due=build(base.getUTCFullYear(),base.getUTCMonth()+1);
+  // A linked early payment settles this month's obligation even when the
+  // derived typical billing day has not arrived yet.
+  if(due.getTime()<base.getTime()||recurringPayments(data,item.id).some(e=>e.date<=asOf&&e.date.slice(0,7)===asOf.slice(0,7)))due=build(base.getUTCFullYear(),base.getUTCMonth()+1);
   return due.toISOString().slice(0,10);
 }
 
