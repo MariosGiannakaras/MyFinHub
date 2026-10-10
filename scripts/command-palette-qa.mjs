@@ -35,6 +35,19 @@ try{
  assert(await c.call("function(){const section=document.querySelector('#report-budgets');return Boolean(section?.open&&section.querySelector('summary')===document.activeElement)}"),'budget command navigates with focus on editor summary');
  await screenshot('command-budget-editor-from-dashboard');
 
+ console.log('Command Palette QA: named Lending result focuses the exact person, including a repeated same-route selection');
+ const lendingUrl=new URL(baseUrl);lendingUrl.searchParams.set('page','reports');lendingUrl.searchParams.set('state','lending-rich');
+ await c.send('Page.navigate',{url:lendingUrl.href});
+ await waitFor("function(){return document.querySelector('#main-workspace h1')?.textContent?.includes('Αναφορές')}",'Lending command source');
+ await ctrlK();await setSearch('Άννα Παπαδοπούλου');await activateOption('Άννα ΠαπαδοπούλουΔανεικά / επιστροφές');await press('Enter');
+ await waitFor("function(){return (document.querySelector('.lending-person-row[aria-pressed=true]')?.textContent||'').includes('Άννα Παπαδοπούλου')}",'exact Lending person selected');
+ await waitFor("function(){return document.activeElement===document.querySelector('.lending-person-row[aria-pressed=true]')}",'Lending command keyboard focus');
+ await screenshot('command-exact-lending-person');
+ await ctrlK();await setSearch('Γιώργος Νικολάου');await activateOption('Γιώργος ΝικολάουΔανεικά / επιστροφές');await press('Enter');
+ await waitFor("function(){return (document.querySelector('.lending-person-row[aria-pressed=true]')?.textContent||'').includes('Γιώργος Νικολάου')}",'same-route second Lending person selected');
+ await waitFor("function(){return document.activeElement===document.querySelector('.lending-person-row[aria-pressed=true]')}",'same-route Lending keyboard focus');
+ await screenshot('command-exact-lending-person-same-route');
+
  console.log('Command Palette QA: named credit card selects its exact card in a multi-card stack');
  const creditUrl=new URL(baseUrl);creditUrl.searchParams.set('page','reports');creditUrl.searchParams.set('state','credit-stack');
  await c.send('Page.navigate',{url:creditUrl.href});
