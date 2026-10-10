@@ -129,6 +129,6 @@ export function reportInsightModel(data:FinanceData,month:string,asOf?:string){
 }
 
 export function operationalReportSnapshot(data:FinanceData,month:string,asOf?:string){
-  const flow=operationalMonthlyFlow(data,month,asOf);const previous=operationalMonthlyFlow(data,shiftReportMonth(month,-1));const cutoff=asOf?reportingPeriodEndDate(month,asOf):monthEnd(month);const balances=accountBalances(data,cutoff);const credit=creditPortfolioSnapshot(data,cutoff);const receivables=lendingRows(data).reduce((sum,row)=>sum+row.outstanding,0);const recurring=recurringMonthlyTotal(data);const savings=savingsBreakdown(data,month,asOf);const budget=data.state.settings.monthlyBudget??0;
+  const flow=operationalMonthlyFlow(data,month,asOf);const previous=operationalMonthlyFlow(data,shiftReportMonth(month,-1));const cutoff=asOf?reportingPeriodEndDate(month,asOf):monthEnd(month);const balances=accountBalances(data,cutoff);const credit=creditPortfolioSnapshot(data,cutoff);const receivables=lendingRows(data,cutoff).reduce((sum,row)=>sum+row.outstanding,0);const recurring=recurringMonthlyTotal(data);const savings=savingsBreakdown(data,month,asOf);const budget=data.state.settings.monthlyBudget??0;
   return {flow,previous,balances,creditDebt:credit.debt,creditLimit:credit.limit,creditUsage:credit.usage,creditAvailable:credit.available,creditCards:credit.activeCards,creditCardRows:credit.cards,receivables,recurring,savings,budget,budgetRemaining:budget-flow.expense};
 }

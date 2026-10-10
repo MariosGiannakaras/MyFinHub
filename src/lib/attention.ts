@@ -187,15 +187,15 @@ function budgetAttention(data:FinanceData,asOf:string):AttentionItem[]{
 function latestOverdueLendingEvents(data:FinanceData,asOf:string){
   const byPerson=new Map<string,FinanceEvent>();
   for(const event of data.state.events??[]){
-    if(event.kind!=='lending'||!event.person||!event.expectedReturnDate||event.expectedReturnDate>=asOf)continue;
-    if(lendingOutstandingFor(data,event.person)<=0)continue;
+    if(event.kind!=='lending'||!event.person||!event.expectedReturnDate||event.expectedReturnDate>=asOf||event.date>asOf)continue;
+    if(lendingOutstandingFor(data,event.person,asOf)<=0)continue;
     const current=byPerson.get(event.person);if(!current||String(event.expectedReturnDate)<String(current.expectedReturnDate))byPerson.set(event.person,event);
   }
   return [...byPerson.values()];
 }
 
 function lendingAttention(data:FinanceData,asOf:string):AttentionItem[]{
-  return latestOverdueLendingEvents(data,asOf).map(event=>make({id:`lending:${event.person}`,kind:'lending',severity:'danger',title:`Επιστροφή από ${event.person}`,reason:'Η ρητή αναμενόμενη ημερομηνία επιστροφής έχει περάσει και παραμένει υπόλοιπο προς είσπραξη.',dueDate:event.expectedReturnDate,amount:lendingOutstandingFor(data,event.person!),accountId:event.accountId,person:event.person,action:'collect_lending'}));
+  return latestOverdueLendingEvents(data,asOf).map(event=>make({id:`lending:${event.person}`,kind:'lending',severity:'danger',title:`Επιστροφή από ${event.person}`,reason:'Η ρητή αναμενόμενη ημερομηνία επιστροφής έχει περάσει και παραμένει υπόλοιπο προς είσπραξη.',dueDate:event.expectedReturnDate,amount:lendingOutstandingFor(data,event.person!,asOf),accountId:event.accountId,person:event.person,action:'collect_lending'}));
 }
 
 function forecastAttention(data:FinanceData,asOf:string):AttentionItem[]{

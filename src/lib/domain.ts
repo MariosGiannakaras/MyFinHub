@@ -307,15 +307,15 @@ function legacyOutstandingReceivables(data: FinanceData) {
   return (data.seed.lending ?? []).reduce((sum, p) => sum + Number(p.outstanding || 0), 0);
 }
 
-function eventReceivables(data: FinanceData) {
-  return (data.state.events ?? []).reduce((sum, e) => sum + Number(e.receivableDelta || 0), 0);
+function eventReceivables(data: FinanceData,asOf:string) {
+  return (data.state.events ?? []).reduce((sum, e) => sum + (e.date<=asOf?Number(e.receivableDelta || 0):0), 0);
 }
 
 export function netWorth(data: FinanceData, asOf: string) {
   const balances = accountBalances(data, asOf);
   const assets = allAccounts(data).filter((a) => a.kind !== 'credit').reduce((sum, a) => sum + (balances[a.id] ?? 0), 0);
   const credit = Math.min(0, balances[CREDIT_ACCOUNT.id] ?? 0);
-  return assets + credit + legacyOutstandingReceivables(data) + eventReceivables(data);
+  return assets + credit + legacyOutstandingReceivables(data) + eventReceivables(data,asOf);
 }
 
 export function availableMoney(data: FinanceData, asOf: string) {
