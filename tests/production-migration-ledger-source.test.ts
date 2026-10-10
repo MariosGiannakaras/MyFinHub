@@ -52,7 +52,12 @@ const productionApplied=[
   "20261001220945_reject_cross_account_id_collisions.sql"
 ] as const;
 
-const releasePending=["20261008165700_add_recurring_service_assets.sql"] as const;
+const releasePending=[
+  "20261008165700_add_recurring_service_assets.sql",
+  "20261009190000_allow_recurring_service_asset_storage_owner_read.sql",
+  "20261010013500_atomic_card_vault_cleanup.sql",
+  "20261010145500_guard_pending_card_secret_cleanup_intent.sql",
+] as const;
 
 describe('production migration ledger source contract',()=>{
   it('keeps every production-applied migration represented by the exact applied version/name',()=>{
@@ -65,6 +70,9 @@ describe('production migration ledger source contract',()=>{
     expect(productionApplied).toContain('20260930195848_enable_user_managed_provider_assets.sql');
     expect(productionApplied).toContain('20261001192135_manage_financial_provider_assets.sql');
     expect(releasePending).toContain('20261008165700_add_recurring_service_assets.sql');
+    expect(releasePending).toContain('20261009190000_allow_recurring_service_asset_storage_owner_read.sql');
+    expect(releasePending).toContain('20261010013500_atomic_card_vault_cleanup.sql');
+    expect(releasePending).toContain('20261010145500_guard_pending_card_secret_cleanup_intent.sql');
   });
 
   it('keeps formerly release-pending migrations represented as production-applied history',()=>{

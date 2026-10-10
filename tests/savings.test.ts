@@ -25,6 +25,15 @@ describe('savings semantics',()=>{
     expect(SAVING_SOURCE_LABELS.cash_offset).toBe('Σύνθετη αποταμίευση');
   });
 
+  it('excludes future-dated saving transfers from current-month realized totals',()=>{
+    const data=fixture();
+    const event=createEvent({kind:'saving_cash_offset',date:'2026-08-28',amount:30,note:'Future saving',fromAccountId:'piraeus-payroll',toAccountId:'piraeus-savings'});
+    event.savingSource='manual_transfer';data.state.events=[event];
+    expect(operationalMonthlyFlow(data,'2026-08','2026-08-17').saving).toBeCloseTo(.75);
+    expect(savingsBreakdown(data,'2026-08','2026-08-17').total).toBeCloseTo(.75);
+    expect(operationalMonthlyFlow(data,'2026-08','2026-09-01').saving).toBeCloseTo(30.75);
+    expect(savingsBreakdown(data,'2026-08','2026-09-01').total).toBeCloseTo(30.75);
+  });
   it('treats a user reason as primary description and the mechanism as secondary metadata',()=>{
     expect(savingsHistoryPresentation({source:'cash_offset',note:'Ταξίδι Ιαπωνία'})).toEqual({
       primary:'Ταξίδι Ιαπωνία',

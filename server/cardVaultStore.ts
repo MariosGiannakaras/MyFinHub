@@ -36,6 +36,8 @@ async function request(path:string,init:RequestInit,accessToken:string){
   const payload=await response.json().catch(()=>null) as {code?:string;message?:string}|unknown;
   if(!response.ok){
     const marker=payload&&typeof payload==='object'?`${(payload as any).code??''} ${(payload as any).message??''}`:'';
+    if(/CARD_SECRET_DELETE_NOT_COMMITTED/i.test(marker))throw new ApiError(409,'CARD_SECRET_DELETE_NOT_COMMITTED','Η διαγραφή προφίλ δεν έχει επιβεβαιωθεί.');
+    if(/MFA_REQUIRED/i.test(marker))throw new ApiError(403,'MFA_REQUIRED','Verification required.');
     if(response.status===401)throw new ApiError(401,'AUTH_REQUIRED','Authentication required.');
     if(response.status===403||/42501|FORBIDDEN/i.test(marker))throw new ApiError(403,'FORBIDDEN','Access denied.');
     if(response.status===429)throw new ApiError(429,'CARD_VAULT_RATE_LIMITED','Card vault is busy. Try again shortly.');
@@ -98,4 +100,13 @@ export async function writeCardSecrets(ownerUserId:string,cardId:string,input:un
 
 export async function deleteCardSecrets(ownerUserId:string,cardId:string,accessToken:string){
   await request(`rheomiq_card_secrets?${cardIdFilter(ownerUserId,cardId)}`,{method:'DELETE',headers:{prefer:'return=minimal'}},accessToken);
+}
+
+/** Transactional cleanup: FinanceData marker, active relational card absence and
+ * encrypted vault DELETE are verified under one PostgreSQL state-row lock. */
+export async function deleteCommittedCardSecrets(cardId:string,accessToken:string){
+  await request('rpc/rheomiq_delete_committed_card_secret',{
+    method:'POST',
+    body:JSON.stringify({p_card_id:cardId}),
+  },accessToken);
 }

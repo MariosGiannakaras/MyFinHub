@@ -10,6 +10,12 @@ const validation=readFileSync('server/validation.ts','utf8');
 const handler=readFileSync('server/accountMetadataHandler.ts','utf8');
 const store=readFileSync('server/accountMetadataStore.ts','utf8');
 const ledger=readFileSync('tests/production-migration-ledger-source.test.ts','utf8');
+const storageReadMigration=readFileSync('supabase/migrations/20261009190000_allow_recurring_service_asset_storage_owner_read.sql','utf8');
+const recurringPage=readFileSync('src/pages/RecurringPage.tsx','utf8');
+const financeHook=readFileSync('src/hooks/useFinance.ts','utf8');
+const app=readFileSync('src/App.tsx','utf8');
+const recurringRendered=readFileSync('scripts/recurring-service-brand-qa.mjs','utf8');
+const qaFixture=readFileSync('src/qa.tsx','utf8');
 
 afterEach(()=>{
   vi.restoreAllMocks();
@@ -22,9 +28,25 @@ describe('recurring service asset foundation',()=>{
   it('adds only a stable optional reference to the recurring finance contract',()=>{
     expect(types).toContain('logoAssetKey?: string | null;');
     expect(validation).toContain('value.logoAssetKey');
-    expect(validation).toContain('/^[a-z][a-z0-9-]{0,95}$/');
+    expect(validation).toContain('/^service-asset-[a-f0-9]{24}$/');
+    expect(validation).not.toContain('/^[a-z][a-z0-9-]{0,95}$/');
     expect(types).not.toContain('logoData');
     expect(types).not.toContain('base64');
+  });
+
+  it('requires durable finance acceptance before logo cleanup and reports cleanup distinctly',()=>{
+    expect(financeHook).toContain('coordinator.enqueueWithReceipt(mutation)');
+    expect(financeHook).toContain('updateDurably');
+    expect(app).toContain('finance.updateDurably(current=>withRecurring(current,item))');
+    expect(recurringPage).toContain('await onUpsertDurably(normalized)');
+    expect(recurringPage).toContain('if(uploaded&&!persisted)');
+    expect(recurringPage).toContain('oldKeyStillShared');
+    expect(recurringPage).toContain('if(oldKey&&oldKey!==normalized.logoAssetKey&&!oldKeyStillShared)');
+    expect(recurringPage).not.toContain('onUpsert(normalized)');
+    expect(recurringRendered).toContain('failed finance write retains old logo reference and deletes only newly uploaded asset');
+    expect(qaFixture).toContain("logoAssetKey:'service-asset-cccccccccccccccccccccccc'");
+    expect(recurringRendered).toContain("recurringId:'qa-service-paused'");
+    expect(recurringRendered).toContain('current.writes===1&&current.deletes===2');
   });
 
   it('uses a separate owner+AAL2 Storage and metadata domain instead of financial providers',()=>{
@@ -61,6 +83,9 @@ describe('recurring service asset foundation',()=>{
     expect(()=>parseRecurringServiceAssetUpload({query:{recurringId:'rec',fileName:'x.pdf'},headers:{'content-type':'application/pdf'}})).toThrow(ApiError);
     expect(parseRecurringServiceAssetKey({query:{assetKey:'service-asset-1234567890abcdef12345678'}})).toBe('service-asset-1234567890abcdef12345678');
     expect(()=>parseRecurringServiceAssetKey({query:{assetKey:'../escape'}})).toThrow(ApiError);
+    expect(()=>parseRecurringServiceAssetKey({query:{assetKey:'unrelated-provider-key'}})).toThrow(ApiError);
+    expect(()=>parseRecurringServiceAssetKey({query:{assetKey:'service-asset-1234'}})).toThrow(ApiError);
+    expect(()=>parseRecurringServiceAssetKey({query:{assetKey:'service-asset-1234567890ABCDEF12345678'}})).toThrow(ApiError);
     expect(()=>validateProviderAssetContent('image/svg+xml',Buffer.from('<svg xmlns="http://www.w3.org/2000/svg"><path d="M0 0"/></svg>'))).not.toThrow();
     expect(()=>validateProviderAssetContent('image/svg+xml',Buffer.from('<svg><script>alert(1)</script></svg>'))).toThrow(ApiError);
   });
@@ -73,7 +98,14 @@ describe('recurring service asset foundation',()=>{
   });
 
   it('tracks the new migration as release-pending rather than production-applied history',()=>{
-    expect(ledger).toContain('const releasePending=["20261008165700_add_recurring_service_assets.sql"] as const;');
+    expect(ledger).toContain('"20261008165700_add_recurring_service_assets.sql"');
+    expect(ledger).toContain('"20261009190000_allow_recurring_service_asset_storage_owner_read.sql"');
+    expect(storageReadMigration).toContain('rheomiq_recurring_service_storage_owner_aal2_select');
+    expect(storageReadMigration).toContain('for select to authenticated');
+    expect(storageReadMigration).toContain("bucket_id='recurring-service-assets'");
+    expect(storageReadMigration).toContain('owner_id=(select auth.uid())::text');
+    expect(storageReadMigration).toContain('(select public.rheomiq_is_owner_aal2())');
+    expect(storageReadMigration).not.toMatch(/for\s+select\s+to\s+anon\b/i);
     const appliedBlock=ledger.slice(ledger.indexOf('const productionApplied=['),ledger.indexOf('const releasePending='));
     expect(appliedBlock).not.toContain('20261008165700_add_recurring_service_assets.sql');
   });

@@ -57,6 +57,20 @@ describe('finance document validation', () => {
     expect(() => validateFinanceData(validState())).not.toThrow();
   });
 
+  it('rejects non-canonical recurring service asset keys in saved finance data',()=>{
+    const valid=validState();
+    const entry={id:'rec-service',name:'Streaming',amount:12,day:10,accountId:'',category:'',active:true,logoAssetKey:'service-asset-1234567890abcdef12345678'};
+    valid.state.recurringCustom=[entry];
+    expect(()=>validateFinanceData(valid)).not.toThrow();
+    for(const invalidKey of ['provider-logo','service-asset-1234','service-asset-1234567890ABCDEF12345678','../../escape']){
+      const bad=validState();
+      bad.state.recurringCustom=[{...entry,logoAssetKey:invalidKey}];
+      expect(()=>validateFinanceData(bad)).toThrow(/logoAssetKey/);
+    }
+  });
+
+
+
   it.each([1, 2, 3])('accepts supported finance schema version %s', (schemaVersion) => {
     const state = validState();
     state.schemaVersion = schemaVersion;

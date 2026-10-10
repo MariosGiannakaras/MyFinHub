@@ -32,7 +32,7 @@ export function BudgetRuleSettings({data,asOf,budgetMonth,onUpsertBudget,onDelet
   const [budgetAlert,setBudgetAlert]=useState('80');
   const [budgetError,setBudgetError]=useState('');
   const [budgetListLimit,setBudgetListLimit]=useState(24);
-  const budgets=budgetProgress(data,month);
+  const budgets=budgetProgress(data,month,asOf);
   const visibleBudgets=budgets.slice(0,budgetListLimit);
 
   const [editingRuleId,setEditingRuleId]=useState<string|null>(null);

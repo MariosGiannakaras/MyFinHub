@@ -118,7 +118,9 @@ function creditStatementStatus(record:CreditStatementRecord,remaining:number,asO
 }
 
 export function creditStatementView(data:FinanceData,record:CreditStatementRecord,asOf:string):CreditStatementView{
-  const events=creditStatementEvents(data,record.id);
+  // Statement views are an as-of snapshot. Later repayments cannot settle an
+  // earlier snapshot, just as creditDebtForCard excludes future-dated events.
+  const events=creditStatementEvents(data,record.id).filter(event=>event.date<=asOf);
   const purchases=events.filter(event=>event.kind==='card_purchase');
   const payments=events.filter(event=>event.kind==='card_payment');
   const purchaseTotal=roundMoney(purchases.reduce((sum,event)=>sum+Number(event.amount||0),0));

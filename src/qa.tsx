@@ -15,7 +15,7 @@ import type { QuickPrefill } from './components/QuickAdd';
 import { financeChangeLabel, useFinance, type ChangeHistoryEntry, type SaveState } from './hooks/useFinance';
 import { useSession } from './hooks/useSession';
 import type { AttentionItem } from './lib/attention';
-import { archiveCardRecord, withCardProfileDeleted } from './lib/cards';
+import { archiveCardRecord, withCardSecretCleanupPending, withCardSecretCleanupComplete } from './lib/cards';
 import type { RankedCommandSearchItem } from './lib/commandSearch';
 import { accountBalances, allAccounts, createEvent } from './lib/domain';
 import { withLegacyOverride, withLegacyTombstone } from './lib/legacyTransactions';
@@ -176,6 +176,13 @@ function buildQaData(params:URLSearchParams){
       createdAt:stamp,updatedAt:stamp,
     }))];
   }
+  if(params.get('state')==='credit-future-payment'){
+    const earlier=(next.state.events??[]).find(event=>event.id==='evt-card-payment-later');
+    if(earlier)next.state.events=[...(next.state.events??[]),{
+      ...earlier,id:'qa-future-statement-payment',date:'2026-08-20',amount:90,
+      creditDelta:90,note:'QA Future Payment',legs:earlier.legs.map(leg=>({...leg,amount:leg.amount*9})),
+    }];
+  }
   if(params.get('state')==='overlimit')next.state.cards=(next.state.cards??[]).map(card=>card.kind==='credit'?{...card,creditLimit:100}:card);
   if(params.get('state')==='cards-rich'){
     const cards=next.state.cards??[],base=cards.find(card=>card.id==='qa-debit-card');
@@ -199,11 +206,16 @@ function buildQaData(params:URLSearchParams){
       next.state.cards=[...cards.filter(card=>card.kind!=='credit'||card.active===false),base,...generated];
     }
   }
-  if(params.get('state')==='loans-long'){
+  if(params.get('state')==='loans-long'||params.get('state')==='loans-future'){
     const longLoan:Loan={id:'qa-loan-120',name:'QA 120 δόσεις',total:12000,installment:100,installments:120,paidCount:60,day:'15',provider:'QA Provider',source:'qa',kind:'loan',accountingMode:'expense-per-installment',defaultAccountId:'piraeus-payroll',firstExpectedDate:'2026-01-15',longTermRecurring:true};
     next.seed.loans=[];next.state.customLoans=[longLoan];next.state.loanOverrides={};next.state.loanExtra={};
+    if(params.get('state')==='loans-future'){
+      const future=createEvent({kind:'expense',date:'2026-08-29',amount:100,note:'Future installment must not count yet',accountId:'piraeus-payroll'});
+      future.loanId=longLoan.id;future.id='qa-loan-future-payment';
+      next.state.events=[...(next.state.events??[]),future];
+    }
   }
-  if(params.get('state')==='lending-rich'){
+  if(params.get('state')==='lending-rich'||params.get('state')==='lending-future'){
     const people=['Άννα Παπαδοπούλου','Γιώργος Νικολάου','Ελένη Δημητρίου','Νίκος Κωνσταντίνου','Μαρία Αντωνίου'];
     const additions=people.flatMap((person,index)=>{
       const lent=createEvent({kind:'lending',date:`2026-08-${String(6+index).padStart(2,'0')}`,amount:80+(index*25),note:`QA δανεικά ${index+1}`,accountId:'piraeus-payroll',person});
@@ -214,6 +226,12 @@ function buildQaData(params:URLSearchParams){
       return [lent,repaid];
     });
     next.state.events=[...(next.state.events??[]),...additions];
+    if(params.get('state')==='lending-future'){
+      const repayment=createEvent({kind:'repayment',date:'2026-08-29',amount:60,note:'QA future repayment must not settle balance today',person:people[0],accountId:'piraeus-payroll'});
+      const lending=createEvent({kind:'lending',date:'2026-08-30',amount:210,note:'QA future loan not yet outstanding',person:people[4],accountId:'piraeus-payroll'});
+      repayment.id='qa-lending-future-repaid';lending.id='qa-lending-future-lent';
+      next.state.events=[...(next.state.events??[]),repayment,lending];
+    }
   }
   if(params.get('state')==='recurring-rich'){
     const categories=['Τηλεπικοινωνίες','Διασκέδαση','Σταθερά έξοδα'];
@@ -225,16 +243,27 @@ function buildQaData(params:URLSearchParams){
     next.state.recurringCustom=[
       {id:'qa-service-branded',name:'QA Streaming',amount:14.99,day:18,firstExpectedDate:'2026-08-18',endDate:null,accountId:'piraeus-payroll',category:'Διασκέδαση',active:true,status:'active',source:'qa',recurrenceUnit:'month',recurrenceInterval:1,logoAssetKey:'service-asset-aaaaaaaaaaaaaaaaaaaaaaaa'},
       {id:'qa-service-fallback',name:'QA Utility',amount:31.20,day:22,firstExpectedDate:'2026-08-22',endDate:null,accountId:'piraeus-payroll',category:'Σταθερά έξοδα',active:true,status:'active',source:'qa',recurrenceUnit:'month',recurrenceInterval:1},
-      {id:'qa-service-paused',name:'QA Paused Service',amount:7.50,day:8,firstExpectedDate:'2026-08-08',endDate:null,accountId:'piraeus-payroll',category:'Τηλεπικοινωνίες',active:false,status:'paused',source:'qa',recurrenceUnit:'month',recurrenceInterval:1,logoAssetKey:'service-asset-aaaaaaaaaaaaaaaaaaaaaaaa'},
+      {id:'qa-service-paused',name:'QA Paused Service',amount:7.50,day:8,firstExpectedDate:'2026-08-08',endDate:null,accountId:'piraeus-payroll',category:'Τηλεπικοινωνίες',active:false,status:'paused',source:'qa',recurrenceUnit:'month',recurrenceInterval:1,logoAssetKey:'service-asset-cccccccccccccccccccccccc'},
     ];
   }
   if(params.get('state')==='forecast-negative')next.state.scheduled=[...(next.state.scheduled??[]),{id:'qa-negative-forecast',dueDate:'2026-08-18',kind:'expense',amount:3000,note:'Μεγάλη γνωστή υποχρέωση',category:'Σταθερά έξοδα',accountId:'piraeus-payroll',status:'pending',createdAt:'2026-08-10T10:00:00.000Z',updatedAt:'2026-08-10T10:00:00.000Z'}];
-  if(params.get('state')==='budget-rules'){
+  if(params.get('state')==='command-transaction'){
+    const event=createEvent({kind:'expense',date:'2026-07-15',amount:16,note:'Crossmonth Lookup Entry',category:'Τρόφιμα',accountId:'piraeus-payroll'});
+    event.id='qa-crossmonth-command-event';
+    next.state.events=[...(next.state.events??[]),event];
+  }
+  if(params.get('state')==='budget-rules'||params.get('state')==='future-reporting'){
     const stamp='2026-08-17T12:00:00.000Z';
     const event=createEvent({kind:'expense',date:'2026-08-16',amount:90,note:'QA Market Match',category:'Σταθερά έξοδα',accountId:'piraeus-payroll'});event.createdAt=stamp;event.updatedAt=stamp;
     next.state.events=[...(next.state.events??[]),event];
     next.state.budgets=[{id:'budget:2026-08:%CF%83%CF%84%CE%B1%CE%B8%CE%B5%CF%81%CE%AC%20%CE%AD%CE%BE%CE%BF%CE%B4%CE%B1',month:'2026-08',scope:'category',category:'Σταθερά έξοδα',amount:50,alertThreshold:.8,createdAt:stamp,updatedAt:stamp}];
     next.state.transactionRules=[];
+    if(params.get('state')==='future-reporting'){
+      next.state.events=[...(next.state.events??[]),
+        createEvent({kind:'expense',date:'2026-08-28',amount:5000,note:'Future QA Expense',accountId:'piraeus-payroll',category:'Σταθερά έξοδα'}),
+        createEvent({kind:'saving_cash_offset',date:'2026-08-29',amount:730,note:'Future QA Saving',fromAccountId:'piraeus-payroll',toAccountId:'piraeus-savings'}),
+      ];
+    }
   }
   return next;
 }
@@ -249,9 +278,11 @@ function QaWorkspace(){
     ?Array.from({length:100},(_,index)=>({id:`qa-large-history-${index+1}`,kind:'change' as const,label:`Large history change ${index+1}`,at:`2026-08-17T${String(11-Math.floor(index/60)).padStart(2,'0')}:${String(59-index%60).padStart(2,'0')}:00.000Z`,current:index===0}))
     :[]);
   const [saveState,setSaveState]=useState<SaveState>(()=>initialSaveState(params.get('save')));
+  const [qaCleanupPending,setQaCleanupPending]=useState(()=>params.get('save')==='cleanup-pending'?1:0);
   const [page,setPage]=useState<PageId>(()=>initialPage(params.get('page')));
   const [quickOpen,setQuickOpen]=useState(false);
   const [commandOpen,setCommandOpen]=useState(false);
+  const [commandFocusKey,setCommandFocusKey]=useState(0);
   const [recoverOpen,setRecoverOpen]=useState(false);
   const [quickContext,setQuickContext]=useState<QuickActionContext|null>(null);
   const [editing,setEditing]=useState<string|null>(null);
@@ -283,8 +314,10 @@ function QaWorkspace(){
   const createSelfLoan=(loan:Loan,event:FinanceEvent)=>update(current=>{const next=withLoan(current,loan);return {...next,state:{...next.state,events:[...(next.state.events??[]).filter(existing=>existing.id!==event.id),event]}}});
   const upsertBank=(bank:CardBank)=>update(current=>({...current,state:{...current.state,cardBanks:[...(current.state.cardBanks??[]).filter(item=>item.id!==bank.id),bank]}}));
   const upsertCard=(card:PaymentCard)=>update(current=>({...current,state:{...current.state,cards:[...(current.state.cards??[]).filter(item=>item.id!==card.id),card]}}));
+  const upsertCardDurably=async(card:PaymentCard)=>{if(new URLSearchParams(location.search).get('card-profile-save-failure')==='1')throw new Error('Η δοκιμαστική αποθήκευση προφίλ απέτυχε.');upsertCard(card)};
+  const stageNewCard=async(card:PaymentCard)=>{if(!(data.state.cards??[]).some(item=>item.id===card.id))upsertCard({...card,last4:undefined,vaultRef:undefined})};
   const archiveCard=(card:PaymentCard)=>upsertCard(archiveCardRecord(card));
-  const deleteCard=async(card:PaymentCard)=>{update(current=>withCardProfileDeleted(current,card,`${today}T12:00:00.000Z`,today))};
+  const deleteCard=async(card:PaymentCard)=>{update(current=>withCardSecretCleanupComplete(withCardSecretCleanupPending(current,card,`${today}T12:00:00.000Z`,today),card.id))};
   const upsertScheduled=(item:ScheduledTransaction)=>update(current=>({...current,state:{...current.state,scheduled:[...(current.state.scheduled??[]).filter(existing=>existing.id!==item.id),item]}}));
   const completeScheduled=(item:ScheduledTransaction,event:FinanceEvent)=>update(current=>{const nextEvent=applyTransactionRules(current,event);return {...current,state:{...current.state,scheduled:[...(current.state.scheduled??[]).filter(existing=>existing.id!==item.id),item],events:[...(current.state.events??[]).filter(existing=>existing.id!==nextEvent.id),nextEvent]}}});
   const upsertBudget=(budget:MonthlyBudget)=>update(current=>({...current,state:{...current.state,budgets:[...(current.state.budgets??[]).filter(item=>item.id!==budget.id),budget]}}));
@@ -303,13 +336,34 @@ function QaWorkspace(){
     if(item.action==='collect_lending'&&item.person){openSpecial({mode:'lending',action:'repay',person:item.person,amount:item.amount,accountId:data.state.settings.defaultIncomeAccount});return}
     if(item.action==='complete_scheduled'&&item.scheduledId){openSpecial({mode:'scheduled',scheduledId:item.scheduledId});return}
     if(item.action==='open_forecast'){setPage('planning');return}
-    if(item.action==='open_budgets'){setPage('reports')}
+    if(item.action==='open_budgets'){const url=new URL(location.href);url.searchParams.set('reportSection','budgets');history.replaceState(history.state,'',url.toString());setPage('reports')}
   };
   const handleCommand=(row:RankedCommandSearchItem)=>{
     setCommandOpen(false);const action=row.action;
     if(action.type==='navigate'){setPage(action.page);return}
+    if(action.type==='transaction_focus'){
+      setCommandFocusKey(key=>key+1);
+      setMonth(action.date.slice(0,7));
+      const url=new URL(location.href);
+      url.searchParams.delete('reportSection');
+      url.searchParams.set('commandTx',action.id);
+      url.searchParams.set('commandSource',action.source);
+      url.searchParams.set('commandMonth',action.date.slice(0,7));
+      history.replaceState(history.state,'',url.toString());
+      setPage('transactions');return;
+    }
+    if(action.type==='budget_management'){
+      setMonth(action.month);
+      if(page==='reports'){
+        const section=document.getElementById('report-budgets') as HTMLDetailsElement|null;
+        if(section){section.open=true;section.scrollIntoView({block:'start',behavior:'auto'});section.querySelector<HTMLElement>('summary')?.focus({preventScroll:true})}
+      }else{
+        const url=new URL(location.href);url.searchParams.set('reportSection','budgets');history.replaceState(history.state,'',url.toString());setPage('reports')
+      }
+      return;
+    }
     if(action.type==='quick_add'){
-      if(action.accountId){const account=allAccounts(data).find(item=>item.id===action.accountId);if(account?.kind==='savings'){openSpecial({mode:'savings',toAccountId:action.accountId,savingSource:'manual_transfer'});return}openGeneric(action.kind,{note:'',amount:0,accountId:action.accountId});return}
+      if(action.accountId){const account=allAccounts(data).find(item=>item.id===action.accountId);if(account?.kind==='savings'||account?.bankAccountCategory==='savings'){openSpecial({mode:'savings',toAccountId:action.accountId,savingSource:'manual_transfer'});return}openGeneric(action.kind,{note:'',amount:0,accountId:action.accountId});return}
       openGeneric(action.kind);return;
     }
     if(action.type==='credit_payment'){openSpecial({mode:'credit',action:'payment',cardId:action.cardId});return}
@@ -320,26 +374,26 @@ function QaWorkspace(){
   };
   const content=page==='dashboard'
     ?<DashboardPage data={data} month={month} asOf={today} motionMode="full" privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onQuickAdd={(prefill?:QuickPrefill)=>openGeneric('expense',prefill||null)} onAccountQuickAdd={(accountId,kind)=>kind==='savings'?openSpecial({mode:'savings',toAccountId:accountId,savingSource:'manual_transfer'}):openGeneric('expense',{note:'',amount:0,accountId})} onTransactions={()=>setPage('transactions')} onPlanning={()=>setPage('planning')} onAttention={()=>setPage('attention')} onReports={()=>setPage('reports')}/>
-    :page==='transactions'?<TransactionsPage data={data} month={month} onEditEvent={editEvent} onDeleteEvent={deleteEvent} onEditLegacy={editLegacy} onDeleteLegacy={deleteLegacy}/>
+    :page==='transactions'?<TransactionsPage data={data} month={month} commandFocusKey={commandFocusKey} onEditEvent={editEvent} onDeleteEvent={deleteEvent} onEditLegacy={editLegacy} onDeleteLegacy={deleteLegacy}/>
     :page==='savings'?<SavingsPage data={data} month={month} asOf={today} onCreate={addEvent} onQuickAdd={openSpecial} onSavingsTargetChange={updateSavingsTarget} onUpsertGoal={upsertSavingsGoal} onDeleteGoal={deleteSavingsGoal}/>
-    :page==='cards'?<CardsPage data={data} onUpsertBank={upsertBank} onUpsertCard={upsertCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard}/>
-    :page==='credit'?<CreditCardPage data={data} asOf={today} onCreateEvent={addEvent} onEditEvent={editEvent} onDeleteEvent={deleteEvent} onUpsertCard={upsertCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard} onPayCard={cardId=>openSpecial({mode:'credit',action:'payment',cardId})}/>
+    :page==='cards'?<CardsPage data={data} onUpsertBank={upsertBank} onUpsertCard={upsertCard} onUpsertCardDurably={upsertCardDurably} onStageNewCard={stageNewCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard}/>
+    :page==='credit'?<CreditCardPage data={data} asOf={today} onCreateEvent={addEvent} onEditEvent={editEvent} onDeleteEvent={deleteEvent} onUpsertCard={upsertCard} onUpsertCardDurably={upsertCardDurably} onStageNewCard={stageNewCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard} onPayCard={cardId=>openSpecial({mode:'credit',action:'payment',cardId})}/>
     :page==='loans'?<LoansPage data={data} asOf={today} onUpsertLoan={upsertLoan} onCreateSelfLoan={createSelfLoan} onPayLoan={loanId=>openSpecial({mode:'loan',loanId})}/>
     :page==='lending'?<LendingPage data={data} asOf={today} privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onCreateEvent={addEvent} onQuickAdd={openSpecial}/>
-    :page==='recurring'?<RecurringPage data={data} asOf={today} onUpsert={upsertRecurring} onOpenLoans={()=>setPage('loans')} onPayLoan={loanId=>openSpecial({mode:'loan',loanId})} onPayRecurring={recurringId=>openSpecial({mode:'recurring',recurringId})}/>
+    :page==='recurring'?<RecurringPage data={data} asOf={today} onUpsert={upsertRecurring} onUpsertDurably={async item=>{if(new URLSearchParams(window.location.search).get('recurring-save-failure')==='1')throw new Error('Η δοκιμαστική αποθήκευση απέτυχε.');upsertRecurring(item)}} onOpenLoans={()=>setPage('loans')} onPayLoan={loanId=>openSpecial({mode:'loan',loanId})} onPayRecurring={recurringId=>openSpecial({mode:'recurring',recurringId})}/>
     :page==='planning'?<PlanningPage data={data} asOf={today} onUpsertScheduled={upsertScheduled} onCompleteScheduled={completeScheduled}/>
     :page==='attention'?<AttentionPage data={data} asOf={today} onAction={handleAttention} onDecision={decideAttention} onReviewDecision={(id,decision)=>update(current=>({...current,state:{...current.state,reviewDecisions:{...(current.state.reviewDecisions??{}),[id]:decision}}}))}/>
-    :page==='reports'?<ReportsPage data={data} month={month} privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onUpsertBudget={upsertBudget} onDeleteBudget={deleteBudget} onUpsertRule={upsertRule} onDeleteRule={deleteRule}/>
-    :<SettingsPage data={data} asOf={today} filePath="Synthetic QA" lastSavedAt={data.updatedAt} onImport={async incoming=>importData(incoming)} onBackup={async()=>({path:'synthetic/backup.json'})} onSettings={settings=>update(current=>({...current,state:{...current.state,settings}}))} onTaxonomyOperation={updateTaxonomy} onUpsertRule={upsertRule} onDeleteRule={deleteRule}/>;
+    :page==='reports'?<ReportsPage data={data} month={month} asOf={today} privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onUpsertBudget={upsertBudget} onDeleteBudget={deleteBudget} onUpsertRule={upsertRule} onDeleteRule={deleteRule}/>
+    :<SettingsPage data={data} asOf={today} filePath="Synthetic QA" lastSavedAt={data.updatedAt} onImport={async incoming=>importData(incoming)} onBackup={async()=>({path:'synthetic/backup.json'})} onSettings={settings=>update(current=>({...current,state:{...current.state,settings}}))} onFinanceDurably={async recipe=>{if(new URLSearchParams(location.search).get('account-save-failure')==='1')throw new Error('Η δοκιμαστική αποθήκευση απέτυχε.');update(recipe)}} onTaxonomyOperation={updateTaxonomy} onUpsertRule={upsertRule} onDeleteRule={deleteRule}/>;
   const periodVisible=['dashboard','transactions','savings','reports'].includes(page);
 
   return <>
     <AppShell page={page} onPage={next=>{setCrash(false);setPage(next)}} onQuickAdd={()=>openGeneric()} onCommand={openCommand} onRefresh={refresh} onUndo={undo} onRedo={redo} canUndo={undoStack.length>0} canRedo={redoStack.length>0} history={changeHistory} saveState={saveState} filePath="Synthetic QA" motionMode="full" userEmail="qa@example.invalid" onLogout={()=>{}}>
-      <PersistenceNotice saveState={saveState} onRecover={()=>setRecoverOpen(true)}/>
+      <PersistenceNotice saveState={saveState} onRecover={()=>setRecoverOpen(true)} cleanupPending={qaCleanupPending} cleanupError={qaCleanupPending?'Η δοκιμαστική επανάληψη καθαρισμού εκκρεμεί.':null} onRetryCleanup={()=>setQaCleanupPending(0)}/>
       {periodVisible?<div className="period-row"><PeriodControl month={month} onChange={setMonth}/><button type="button" className="text-button" data-qa-crash onClick={()=>setCrash(true)}>QA render failure</button></div>:<button type="button" className="text-button qa-crash-floating" data-qa-crash onClick={()=>setCrash(true)}>QA render failure</button>}
       {saveState==='loading'?<div className="qa-loading-route"><h1 className="sr-only">{QA_PAGE_HEADINGS[page]}</h1><PageSkeleton/></div>:<PageErrorBoundary resetKey={page} onDashboard={()=>{setCrash(false);setPage('dashboard')}}>{lazyFailure?<Suspense fallback={<PageSkeleton/>}><LazyResourceFailure/></Suspense>:crash?<Crash/>:content}</PageErrorBoundary>}
     </AppShell>
-    <CommandPalette open={commandOpen} data={data} motionMode="full" onClose={()=>setCommandOpen(false)} onExecute={handleCommand}/>
+    <CommandPalette open={commandOpen} data={data} asOf={today} motionMode="full" onClose={()=>setCommandOpen(false)} onExecute={handleCommand}/>
     <ContextualQuickAdd open={quickOpen} data={data} asOf={today} context={quickContext} initial={(data.state.events??[]).find(event=>event.id===editing)||null} motionMode="full" onClose={()=>{setQuickOpen(false);setEditing(null);setQuickContext(null)}} onCreate={addEvent} onCompleteScheduled={completeScheduled} currentBalance={id=>accountBalances(data,today)[id]||0}/>
     <ConfirmDialog open={recoverOpen} title="Φόρτωση τελευταίας αποθηκευμένης έκδοσης;" description="Η επαναφόρτωση θα απορρίψει τυχόν τοπικές αλλαγές που δεν αποθηκεύτηκαν και θα φορτώσει την τελευταία έκδοση από τη βάση." confirmLabel="Επαναφόρτωση" tone="destructive" motionMode="full" onConfirm={()=>{setRecoverOpen(false);setSaveState('saved')}} onCancel={()=>setRecoverOpen(false)}/>
   </>;

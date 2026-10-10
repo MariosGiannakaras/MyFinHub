@@ -42,13 +42,13 @@ export function LoansPage({data,asOf,onUpsertLoan,onCreateSelfLoan,onPayLoan}:{d
     return [...loans].sort((a,b)=>{
       let result=0;
       if(sort==='name')result=a.name.localeCompare(b.name,'el');
-      else if(sort==='amount')result=loanOutstanding(data,a)-loanOutstanding(data,b);
-      else if(sort==='next')result=(typicalLoanPaymentDay(data,a)??99)-(typicalLoanPaymentDay(data,b)??99);
-      else result=loanRemainingInstallments(data,a)-loanRemainingInstallments(data,b)||loanOutstanding(data,a)-loanOutstanding(data,b);
+      else if(sort==='amount')result=loanOutstanding(data,a,asOf)-loanOutstanding(data,b,asOf);
+      else if(sort==='next')result=(typicalLoanPaymentDay(data,a,asOf)??99)-(typicalLoanPaymentDay(data,b,asOf)??99);
+      else result=loanRemainingInstallments(data,a,asOf)-loanRemainingInstallments(data,b,asOf)||loanOutstanding(data,a,asOf)-loanOutstanding(data,b,asOf);
       return direction*(result||a.id.localeCompare(b.id));
     });
-  },[loans,sort,sortDirection,data]);
-  const isComplete=(loan:Loan)=>loanOutstanding(data,loan)<=.005||(!isSelfLoan(loan)&&loanRemainingInstallments(data,loan)<=0);
+  },[loans,sort,sortDirection,data,asOf]);
+  const isComplete=(loan:Loan)=>loanOutstanding(data,loan,asOf)<=.005||(!isSelfLoan(loan)&&loanRemainingInstallments(data,loan,asOf)<=0);
   const activeLoans=sorted.filter(loan=>!isComplete(loan));
   const completedLoans=sorted.filter(isComplete);
   const visibleActiveLoans=activeLoans.slice(0,activeLimit);
@@ -66,17 +66,17 @@ export function LoansPage({data,asOf,onUpsertLoan,onCreateSelfLoan,onPayLoan}:{d
   const selectKind=(kind:LoanKind)=>{if(!edit)return;const next=changeKind(edit,kind);setEdit(next);setEditInstallmentText(next.installment>0?String(next.installment):'')};
   const save=()=>{if(!edit)return;const name=edit.name.trim();if(!name){setEditError('Γράψε ένα όνομα για την υποχρέωση ώστε να μπορείς να την αναγνωρίζεις.');return}if(!Number.isFinite(edit.total)||edit.total<=0){setEditError('Έλεγξε το συνολικό ποσό — πρέπει να είναι μεγαλύτερο από μηδέν.');return}if(!Number.isInteger(edit.installments)||edit.installments<=0){setEditError('Έλεγξε τον αριθμό δόσεων — χρειάζεται θετικός ακέραιος αριθμός.');return}if(!Number.isFinite(edit.installment)||edit.installment<=0){setEditError('Έλεγξε το ποσό της δόσης — πρέπει να είναι μεγαλύτερο από μηδέν.');return}const defaultAccountId=edit.defaultAccountId||data.state.settings.defaultLoanAccount;if(!accounts.some(account=>account.id===defaultAccountId)){setEditError('Επίλεξε διαθέσιμο λογαριασμό για τις πληρωμές αυτής της υποχρέωσης.');return}const normalized={...edit,name,defaultAccountId,accountingMode:edit.accountingMode??'expense-per-installment',longTermRecurring:edit.kind==='loan'?Boolean(edit.longTermRecurring):false};if(isSelfLoan(normalized)&&!loans.some(loan=>loan.id===normalized.id)){const from=savingsAccounts[0]?.id;if(!from||!selfTarget||from===selfTarget){setEditError('Για τη ΒΟΗΘΕΙΑ χρειάζεται αποταμιευτικός λογαριασμός και διαφορετικός λογαριασμός λήψης.');return}const event=createEvent({kind:'transfer',date:normalized.firstExpectedDate||asOf,amount:normalized.total,note:`ΒΟΗΘΕΙΑ: ${normalized.name}`,fromAccountId:from,toAccountId:selfTarget});event.loanId=normalized.id;onCreateSelfLoan(normalized,event)}else onUpsertLoan(normalized);closeEdit()};
   const startPay=(loan:Loan)=>onPayLoan(loan.id);
-  const requestForgive=(loan:Loan)=>{const remaining=loanOutstanding(data,loan);if(!isSelfLoan(loan)||remaining<=0)return;setForgiveTarget(loan)};
-  const confirmForgive=()=>{if(!forgiveTarget)return;const current=loans.find(loan=>loan.id===forgiveTarget.id)??forgiveTarget;const remaining=loanOutstanding(data,current);if(!isSelfLoan(current)||remaining<=0){setForgiveTarget(null);return}onUpsertLoan({...current,forgivenAmount:Number(current.forgivenAmount||0)+remaining});setForgiveTarget(null)};
-  const forgiveAmount=forgiveTarget?loanOutstanding(data,loans.find(loan=>loan.id===forgiveTarget.id)??forgiveTarget):0;
+  const requestForgive=(loan:Loan)=>{const remaining=loanOutstanding(data,loan,asOf);if(!isSelfLoan(loan)||remaining<=0)return;setForgiveTarget(loan)};
+  const confirmForgive=()=>{if(!forgiveTarget)return;const current=loans.find(loan=>loan.id===forgiveTarget.id)??forgiveTarget;const remaining=loanOutstanding(data,current,asOf);if(!isSelfLoan(current)||remaining<=0){setForgiveTarget(null);return}onUpsertLoan({...current,forgivenAmount:Number(current.forgivenAmount||0)+remaining});setForgiveTarget(null)};
+  const forgiveAmount=forgiveTarget?loanOutstanding(data,loans.find(loan=>loan.id===forgiveTarget.id)??forgiveTarget,asOf):0;
   const renderLoan=(loan:Loan,historical=false)=>{
-    const paid=loanPaidCount(data,loan);
-    const remaining=loanRemainingInstallments(data,loan);
-    const outstanding=loanOutstanding(data,loan);
+    const paid=loanPaidCount(data,loan,asOf);
+    const remaining=loanRemainingInstallments(data,loan,asOf);
+    const outstanding=loanOutstanding(data,loan,asOf);
     const self=isSelfLoan(loan);
     const visualProgress=self?null:loanVisualInstallmentProgress(loan.installments,paid);
-    const payments=loanPaymentEvents(data,loan);
-    const typical=typicalLoanPaymentDay(data,loan);
+    const payments=loanPaymentEvents(data,loan,asOf);
+    const typical=typicalLoanPaymentDay(data,loan,asOf);
     return <article className={`panel ${historical?'surface-flat':'surface-raised'} loan-list-row ${self?'self-loan':''} ${historical?'is-complete':''}`} data-loan-lifecycle={historical?'completed':'active'} key={loan.id}>
       <div className="loan-list-main">
         <span className="account-mark">{self?<HandCoins/>:<Landmark/>}</span>

@@ -19,6 +19,8 @@ describe('unified command palette source contracts',()=>{
     expect(shell).toContain('onClick={onCommand}');
     expect(shell).toContain('aria-label="Αναζήτηση και εντολές"');
     expect(app).toContain('onQuickAdd={() => openGeneric(\'expense\')} onCommand={openCommand}');
+    expect(app).toContain('data={data} asOf={today} motionMode="full"');
+    expect(palette).toContain('searchCommandItems(data,query,{recentIds,limit:14,asOf})');
   });
 
   it('single-sources global app shortcuts and makes them modal/input aware',()=>{

@@ -54,6 +54,17 @@ describe('card vault client',()=>{
     expect(JSON.parse(sent)).toEqual({cardId:'card-delete'});
   });
 
+  it('uses opt-in atomic cleanup only for new clients and preserves the legacy payload',async()=>{
+    const bodies:Record<string,unknown>[]=[];
+    vi.stubGlobal('fetch',vi.fn(async (_url:string,init?:RequestInit)=>{
+      bodies.push(JSON.parse(String(init?.body||'{}')));
+      return new Response(JSON.stringify({deleted:true}),{status:200,headers:{'content-type':'application/json'}});
+    }));
+    await deleteCardSecret('card-a');
+    await deleteCardSecret('card-b',true);
+    expect(bodies).toEqual([{cardId:'card-a'},{cardId:'card-b',requireCommittedDeletion:true}]);
+  });
+
   it('reveals a legacy local CVV without silently uploading it to the server',async()=>{
     let method='';
     const fetchMock=vi.fn(async(_url:string,init?:RequestInit)=>{method=String(init?.method||'');return new Response(JSON.stringify({code:'CARD_SECRET_NOT_FOUND',error:'missing'}),{status:404,headers:{'content-type':'application/json'}})});

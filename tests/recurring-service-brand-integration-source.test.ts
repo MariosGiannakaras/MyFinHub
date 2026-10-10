@@ -20,7 +20,7 @@ describe('Recurring service-brand integration contracts',()=>{
   });
 
   it('supports add, replace and remove with stable logoAssetKey only',()=>{
-    expect(page).toContain("logoAssetKey=editLogoRemoved?undefined:base.logoAssetKey");
+    expect(page).toContain("logoAssetKey=editLogoRemoved?undefined:oldKey");
     expect(page).toContain('logoAssetKey=uploaded.assetKey');
     expect(page).toContain('const normalized:RecurringItem={...base,logoAssetKey:logoAssetKey||undefined}');
     expect(page).toContain("const removeLogo=()=>{setEditLogoFile(null);setEditLogoRemoved(true)");
@@ -31,8 +31,19 @@ describe('Recurring service-brand integration contracts',()=>{
     expect(page).not.toContain('editLogoPreview');
   });
 
-  it('cleans up a newly uploaded asset when the synchronous recurring save fails',()=>{
-    expect(page).toContain('if(uploaded){try{await deleteRecurringServiceAsset(uploaded.assetKey)}catch{}}');
+  it('defers cleanup until confirmed durable save, rejects failed saves and preserves shared references',()=>{
+    const upload=page.indexOf('uploaded=await uploadRecurringServiceAsset');
+    const durableSave=page.indexOf('await onUpsertDurably(normalized)');
+    const releaseOld=page.indexOf('await deleteRecurringServiceAsset(oldKey)');
+    expect(upload).toBeGreaterThan(0);
+    expect(durableSave).toBeGreaterThan(upload);
+    expect(releaseOld).toBeGreaterThan(durableSave);
+    expect(page).toContain('persisted=true');
+    expect(page).toContain('if(uploaded&&!persisted)');
+    expect(page).toContain('await deleteRecurringServiceAsset(uploaded.assetKey)');
+    expect(page).toContain('oldKeyStillShared');
+    expect(page).toContain('!oldKeyStillShared');
+    expect(page).toContain('η οικονομική αλλαγή έχει αποθηκευτεί');
     expect(client).toContain("method:'DELETE'");
   });
 

@@ -96,6 +96,7 @@ export function SettingsPage({
   onImport,
   onBackup,
   onSettings,
+  onFinanceDurably,
   onTaxonomyOperation,
   onUpsertRule,
   onDeleteRule,
@@ -110,6 +111,7 @@ export function SettingsPage({
   onImport: (d: FinanceData) => Promise<void>;
   onBackup: () => Promise<{ path: string }>;
   onSettings: (settings: FinanceData['state']['settings']) => void;
+  onFinanceDurably:(recipe:(current:FinanceData)=>FinanceData)=>Promise<void>;
   onTaxonomyOperation: (operation: TaxonomyOperation) => void;
   onUpsertRule: (rule: TransactionRule) => void;
   onDeleteRule: (id: string) => void;
@@ -244,7 +246,7 @@ export function SettingsPage({
 
         {activeTab === 'profile' ? <AccountSecuritySettings currentEmail={currentEmail} /> : null}
 
-        {activeTab === 'accounts' ? <div className="settings-tab-stack settings-accounts-stack"><FinancialProviderManagementSettings/><AccountManagementSettings data={data} settings={draft} onChange={(next) => commit(next, '')} /></div> : null}
+        {activeTab === 'accounts' ? <div className="settings-tab-stack settings-accounts-stack"><FinancialProviderManagementSettings/><AccountManagementSettings data={data} settings={draft} onChange={(next) => commit(next, '')} onChangeDurably={(next)=>onFinanceDurably(current=>({...current,state:{...current.state,settings:cloneSettings(next)}}))} /></div> : null}
 
         {activeTab === 'categories' ? (
           <div className="settings-categories-only">

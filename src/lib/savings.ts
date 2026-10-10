@@ -53,18 +53,18 @@ function savingsHistory(data:FinanceData,month?:string):SavingsHistoryRow[]{
   return [...legacy,...events].sort((a,b)=>b.date.localeCompare(a.date)||b.id.localeCompare(a.id));
 }
 
-export function savingsBreakdown(data:FinanceData,month:string){
-  const rows=savingsHistory(data,month);
+export function savingsBreakdown(data:FinanceData,month:string,asOf?:string){
+  const rows=savingsHistory(data,month).filter(row=>!asOf||month!==asOf.slice(0,7)||row.date<=asOf);
   const bySource:Record<SavingSource,number>={pay_and_save:0,manual_transfer:0,cash_offset:0};
   for(const row of rows)bySource[row.source]+=row.amount;
   return {rows,bySource,total:Object.values(bySource).reduce((sum,value)=>sum+value,0)};
 }
 
-export function operationalMonthlyFlow(data:FinanceData,month:string){
-  const base=monthlyFlow(data,month);
+export function operationalMonthlyFlow(data:FinanceData,month:string,asOf?:string){
+  const base=monthlyFlow(data,month,asOf);
   let income=base.income,expense=base.expense,saving=base.saving,refunds=base.refunds;
   for(const tx of effectiveLegacyTransactions(data)){
-    if(!tx.date.startsWith(`${month}-`)||!isLegacyPayAndSave(tx))continue;
+    if(!tx.date.startsWith(`${month}-`)||!isLegacyPayAndSave(tx)||(asOf&&month===asOf.slice(0,7)&&tx.date>asOf))continue;
     const decision=reviewDecision(data,tx.id);
     if(decision?.status==='confirmed'&&decision.semanticKind==='saving_cash_offset')continue;
     const original=flowImpactLegacy(data,tx);

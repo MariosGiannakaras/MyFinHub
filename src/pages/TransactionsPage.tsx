@@ -36,9 +36,9 @@ type TransactionRow={
 type DeleteTarget={id:string;source:'legacy'|'event'};
 
 export function TransactionsPage({
-  data,month,onEditEvent,onDeleteEvent,onEditLegacy,onDeleteLegacy,
+  data,month,commandFocusKey,onEditEvent,onDeleteEvent,onEditLegacy,onDeleteLegacy,
 }:{
-  data:FinanceData;month:string;
+  data:FinanceData;month:string;commandFocusKey?:number;
   onEditEvent:(id:string)=>void;onDeleteEvent:(id:string)=>void;
   onEditLegacy:(transaction:LegacyTransaction)=>void;onDeleteLegacy:(id:string)=>void;
 }){
@@ -88,6 +88,24 @@ export function TransactionsPage({
     }));
     return [...legacy,...events];
   },[data,month]);
+
+  useEffect(()=>{
+    const params=new URLSearchParams(location.search);
+    const focusId=params.get('commandTx'),focusSource=params.get('commandSource'),focusMonth=params.get('commandMonth');
+    if(!focusId||(focusSource!=='legacy'&&focusSource!=='event')||focusMonth!==month)return;
+    const match=sourceRows.find(row=>row.id===focusId&&row.source===focusSource);
+    const nextUrl=new URL(location.href);
+    nextUrl.searchParams.delete('commandTx');nextUrl.searchParams.delete('commandSource');nextUrl.searchParams.delete('commandMonth');
+    history.replaceState(history.state,'',nextUrl.toString());
+    if(!match){setMessage('Η συναλλαγή δεν είναι πλέον διαθέσιμη στην επιλεγμένη περίοδο.');return}
+    const ordered=[...sourceRows].sort((a,b)=>(sortDirection==='asc'?1:-1)*(a.date.localeCompare(b.date)||a.id.localeCompare(b.id)));
+    const index=ordered.findIndex(row=>row.id===focusId&&row.source===focusSource);
+    setQuery('');setAccount('all');setCategory('all');setType('all');
+    setDateStart(range.start);setDateEnd(range.end);
+    setPage(Math.max(1,Math.floor(index/pageSize)+1));
+    setSelectedId(focusId);setDetailOpen(true);
+    setMessage('Η αναζητούμενη συναλλαγή επιλέχθηκε στο ιστορικό της σωστής περιόδου.');
+  },[sourceRows,month,sortDirection,pageSize,range.start,range.end,commandFocusKey]);
 
   const categoryLabel=(row:TransactionRow)=>row.kind==='split'?'Επιμέρους κατηγορίες':row.category===row.kind?eventKindLabel(row.kind):categoryPath(row.category,row.subcategory);
   const categories=useMemo(()=>[...new Set(sourceRows.map(row=>categoryLabel(row)))].sort((a,b)=>a.localeCompare(b,'el')),[sourceRows]);

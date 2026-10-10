@@ -1,7 +1,7 @@
 import { accessTokenAal, assertMutationSessionOrigin, clearSessionCookiesIfCookie, requireSession } from './auth.js';
 import { ApiError, handleApi, methodNotAllowed, readJsonBody, sendJson } from './http.js';
 import { isOwner } from './storage.js';
-import { deleteCardSecrets, readCardSecrets, writeCardSecrets } from './cardVaultStore.js';
+import { deleteCardSecrets, deleteCommittedCardSecrets, readCardSecrets, writeCardSecrets } from './cardVaultStore.js';
 import { proxyDesktopCardVault } from './desktopCardVaultProxy.js';
 
 const MAX_CARD_VAULT_BODY_BYTES=4*1024;
@@ -23,10 +23,14 @@ function object(value:unknown):Record<string,unknown>{
 
 export function parseCardVaultRequest(value:unknown,method:'POST'|'PUT'|'DELETE'){
   const body=object(value);
-  const allowed=method==='PUT'?new Set(['cardId','pan','expiry','cvv']):new Set(['cardId']);
+  const allowed=method==='PUT'?new Set(['cardId','pan','expiry','cvv']):method==='DELETE'?new Set(['cardId','requireCommittedDeletion']):new Set(['cardId']);
   if(Object.keys(body).some(key=>!allowed.has(key)))throw new ApiError(400,'INVALID_CARD_SECRET_REQUEST','Μη έγκυρο αίτημα στοιχείων κάρτας.');
   const cardId=typeof body.cardId==='string'?body.cardId.trim():'';
   if(!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$/.test(cardId))throw new ApiError(400,'INVALID_CARD_ID','Μη έγκυρη αναφορά κάρτας.');
+  if(method==='DELETE'){
+    if(body.requireCommittedDeletion!==undefined&&body.requireCommittedDeletion!==true)throw new ApiError(400,'INVALID_CARD_SECRET_REQUEST','Invalid committed deletion receipt.');
+    return body.requireCommittedDeletion?{cardId,requireCommittedDeletion:true}:{cardId};
+  }
   if(method!=='PUT')return {cardId};
   const pan=body.pan===undefined?undefined:typeof body.pan==='string'?body.pan: (()=>{throw new ApiError(400,'INVALID_CARD_PAN','Ο αριθμός κάρτας δεν είναι έγκυρος.');})();
   const expiry=body.expiry===undefined?undefined:typeof body.expiry==='string'?body.expiry: (()=>{throw new ApiError(400,'INVALID_CARD_EXPIRY','Η ημερομηνία λήξης δεν είναι έγκυρη.');})();
@@ -65,7 +69,13 @@ export async function handleCardVaultRequest(req:any,res:any){
       const secret=await writeCardSecrets(ownerUserId,input.cardId,{pan:input.pan,expiry:input.expiry,cvv:input.cvv},session.accessToken);
       return sendJson(res,200,{saved:true,last4:secret.pan?.slice(-4)??null});
     }
-    await deleteCardSecrets(ownerUserId,body.cardId,session.accessToken);
+    // The guarded path is one database transaction under the canonical state
+    // row lock. Never interleave profile undo and secret destruction.
+    if('requireCommittedDeletion' in body&&body.requireCommittedDeletion){
+      await deleteCommittedCardSecrets(body.cardId,session.accessToken);
+    }else{
+      await deleteCardSecrets(ownerUserId,body.cardId,session.accessToken);
+    }
     return sendJson(res,200,{deleted:true});
   });
 }

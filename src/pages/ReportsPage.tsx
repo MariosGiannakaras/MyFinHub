@@ -1,6 +1,6 @@
 import { Bar, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { CalendarClock, CircleCheck, CreditCard, Eye, EyeOff, Landmark, ListChecks, PiggyBank, TriangleAlert, WalletCards } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { AnimatedAmount } from '../components/AnimatedAmount';
 import { BudgetRuleSettings } from '../components/BudgetRuleSettings';
 import { Button } from '../components/Button';
@@ -13,6 +13,7 @@ import { calendarMonthRange, monthOnlyToUtcDate } from '../lib/dateOnly';
 import { cleanNote, money, shortDate } from '../lib/format';
 import { categoryMomentum, monthEnd, operationalReportSnapshot, primaryAccountSeries, reportExpenseCounterparties, reportFlowSeries, reportInsightModel, reportLoanBurden } from '../lib/reports';
 import { recurringUpcoming } from '../lib/recurring';
+import { reportingPeriodEndDate } from '../lib/reportingPeriod';
 import { SAVING_SOURCE_LABELS } from '../lib/savings';
 import { accountDisplayName, eventKindLabel } from '../lib/ui';
 import type { FinanceData, MonthlyBudget, TransactionRule } from '../types';
@@ -29,18 +30,26 @@ const ACCOUNT_COLORS=['#2f6fed','#14a77f','#7a5af8','#f59e0b','#8b95ad'];
 
 type ActivityRow={id:string;date:string;title:string;category:string;subcategory?:string;amount:number};
 
-export function ReportsPage({data,month,privacyVisible,onPrivacyVisibleChange,onUpsertBudget,onDeleteBudget,onUpsertRule,onDeleteRule}:{data:FinanceData;month:string;privacyVisible:boolean;onPrivacyVisibleChange:(visible:boolean)=>void;onUpsertBudget:(budget:MonthlyBudget)=>void;onDeleteBudget:(id:string)=>void;onUpsertRule:(rule:TransactionRule)=>void;onDeleteRule:(id:string)=>void}){
- const snapshot=operationalReportSnapshot(data,month);
- const insights=reportInsightModel(data,month);
- const series=reportFlowSeries(data,month,6);
+export function ReportsPage({data,month,asOf,privacyVisible,onPrivacyVisibleChange,onUpsertBudget,onDeleteBudget,onUpsertRule,onDeleteRule}:{data:FinanceData;month:string;asOf:string;privacyVisible:boolean;onPrivacyVisibleChange:(visible:boolean)=>void;onUpsertBudget:(budget:MonthlyBudget)=>void;onDeleteBudget:(id:string)=>void;onUpsertRule:(rule:TransactionRule)=>void;onDeleteRule:(id:string)=>void}){
+ useEffect(()=>{
+   const url=new URL(location.href);
+   if(url.searchParams.get('reportSection')!=='budgets')return;
+   const section=document.getElementById('report-budgets') as HTMLDetailsElement|null;
+   if(section){section.open=true;section.scrollIntoView({block:'start',behavior:'auto'});section.querySelector<HTMLElement>('summary')?.focus({preventScroll:true});}
+   url.searchParams.delete('reportSection');
+   history.replaceState(history.state,'',url.toString());
+ },[]);
+ const snapshot=operationalReportSnapshot(data,month,asOf);
+ const insights=reportInsightModel(data,month,asOf);
+ const series=reportFlowSeries(data,month,6,asOf);
  const cumulativeSeries=useMemo(()=>{let running=0;return series.map(row=>({...row,cumulative:(running+=row.income-row.expense)}))},[series]);
- const momentum=categoryMomentum(data,month,100);
- const counterparties=reportExpenseCounterparties(data,month,5);
- const loanBurden=reportLoanBurden(data);
+ const momentum=categoryMomentum(data,month,100,asOf);
+ const counterparties=reportExpenseCounterparties(data,month,5,asOf);
+ const loanBurden=reportLoanBurden(data,reportingPeriodEndDate(month,asOf));
  const accounts=allAccounts(data).filter(account=>account.kind!=='credit');
  const accountIds=accounts.slice(0,4).map(account=>account.id);
- const accountSeries=primaryAccountSeries(data,month,accountIds);
- const budgetRows=budgetProgress(data,month);
+ const accountSeries=primaryAccountSeries(data,month,accountIds,6,asOf);
+ const budgetRows=budgetProgress(data,month,asOf);
  const exceededBudgets=budgetRows.filter(row=>row.status==='exceeded').length;
  const nearBudgets=budgetRows.filter(row=>row.status==='near').length;
  const overallBudget=budgetRows.find(row=>row.scope==='overall')??null;
@@ -49,7 +58,7 @@ export function ReportsPage({data,month,privacyVisible,onPrivacyVisibleChange,on
  const budgetUsed=budgetSummaryRows.reduce((sum,row)=>sum+row.used,0);
  const budgetRemaining=budgetLimit-budgetUsed;
  const budgetRatio=budgetLimit>0?budgetUsed/budgetLimit:0;
- const budgetDataDate=data.updatedAt.slice(0,10);
+ const budgetDataDate=asOf;
  const budgetDataMonth=budgetDataDate.slice(0,7);
  const budgetMonthRange=calendarMonthRange(month);
  const budgetDaysInMonth=Number(budgetMonthRange.end.slice(8,10));
@@ -91,24 +100,25 @@ export function ReportsPage({data,month,privacyVisible,onPrivacyVisibleChange,on
  const activityRows=useMemo<ActivityRow[]>(()=>{
    const rows:ActivityRow[]=[];
    for(const tx of effectiveLegacyTransactions(data)){
-     if(!tx.date.startsWith(`${month}-`))continue;
+     if(!tx.date.startsWith(`${month}-`)||(month===asOf.slice(0,7)&&tx.date>asOf))continue;
      const impact=flowImpactLegacy(data,tx);
      const amount=impact.income+impact.refund-impact.expense-impact.saving;
      if(Math.abs(amount)<=.005)continue;
      rows.push({id:`legacy:${tx.id}`,date:tx.date,title:cleanNote(tx.note)||tx.category||'Συναλλαγή',category:tx.category||'Άλλο',subcategory:tx.subcategory,amount});
    }
    for(const event of data.state.events??[]){
-     if(!event.date.startsWith(`${month}-`))continue;
+     if(!event.date.startsWith(`${month}-`)||(month===asOf.slice(0,7)&&event.date>asOf))continue;
      const impact=flowImpactEvent(event);
      const amount=impact.income+impact.refund-impact.expense-impact.saving;
      if(Math.abs(amount)<=.005)continue;
      rows.push({id:`event:${event.id}`,date:event.date,title:cleanNote(event.note)||eventKindLabel(event.kind),category:event.category||eventKindLabel(event.kind),subcategory:event.subcategory,amount});
    }
    return rows.sort((a,b)=>b.date.localeCompare(a.date)||b.id.localeCompare(a.id));
- },[data,month]);
+ },[data,month,asOf]);
  const recentTransactions=activityRows.slice(0,5);
  const topIncomeRows=activityRows.filter(row=>row.amount>0).sort((a,b)=>b.amount-a.amount||b.date.localeCompare(a.date)).slice(0,5);
- const periodBalances=useMemo(()=>accountBalances(data,monthEnd(month)),[data,month]);
+ const periodEndDate=reportingPeriodEndDate(month,asOf);
+ const periodBalances=useMemo(()=>accountBalances(data,periodEndDate),[data,periodEndDate]);
  const accountDistribution=useMemo(()=>accounts.map(account=>({id:account.id,name:accountDisplayName(data,account.id),balance:periodBalances[account.id]||0})).filter(row=>row.balance>.005).sort((a,b)=>b.balance-a.balance).slice(0,5),[accounts,data,periodBalances]);
  const accountDistributionTotal=accountDistribution.reduce((sum,row)=>sum+row.balance,0);
  const upcomingObligations=useMemo(()=>{
@@ -148,7 +158,7 @@ export function ReportsPage({data,month,privacyVisible,onPrivacyVisibleChange,on
      <div className="report-budget-attention" aria-label="Προϋπολογισμοί που χρειάζονται προσοχή"><div className="report-budget-attention-head"><span>Τι χρειάζεται προσοχή</span><small>Υψηλότερη χρήση πρώτα.</small></div>{budgetAttentionRows.map(row=><article key={row.id} className={`report-budget-attention-row ${row.status}`}><div><b>{row.scope==='overall'?'Συνολικό όριο':row.category}</b><small>{money.format(row.used)} / {money.format(row.limit)}</small></div><strong>{Math.round(row.ratio*100)}%</strong><div className="report-budget-meter"><i style={{width:`${Math.min(100,row.ratio*100)}%`}}/></div></article>)}</div>
     </div>
    </>:<div className="empty-state report-budget-empty"><b>Δεν υπάρχουν ενεργοί προϋπολογισμοί.</b><span>Πρόσθεσε συνολικό ή ανά κατηγορία όριο μόνο αν θέλεις να παρακολουθείς budget για αυτή την περίοδο.</span></div>}
-   <details id="report-budgets" data-budget-management className="report-budget-management"><summary>{budgetRows.length?'Διαχείριση προϋπολογισμών':'Ορισμός προϋπολογισμού'}</summary><BudgetRuleSettings data={data} asOf={`${month}-01`} budgetMonth={month} onUpsertBudget={onUpsertBudget} onDeleteBudget={onDeleteBudget} onUpsertRule={onUpsertRule} onDeleteRule={onDeleteRule} view="budgets"/></details>
+   <details id="report-budgets" data-budget-management className="report-budget-management"><summary>{budgetRows.length?'Διαχείριση προϋπολογισμών':'Ορισμός προϋπολογισμού'}</summary><BudgetRuleSettings data={data} asOf={asOf} budgetMonth={month} onUpsertBudget={onUpsertBudget} onDeleteBudget={onDeleteBudget} onUpsertRule={onUpsertRule} onDeleteRule={onDeleteRule} view="budgets"/></details>
   </section>
 
 
@@ -162,7 +172,7 @@ export function ReportsPage({data,month,privacyVisible,onPrivacyVisibleChange,on
   <section className={`report-support-grid report-support-grid-four ${mobileSupportExpanded?'':'mobile-collapsed'}`} id="report-support">
    <article className="panel surface-raised report-activity-card"><div className="panel-head"><div><span>Πρόσφατες συναλλαγές</span><small>Οι τελευταίες κινήσεις που επηρεάζουν τη μηνιαία ροή.</small></div></div>{recentTransactions.length?<div className="report-activity-list">{recentTransactions.map(row=><div key={row.id}><FinanceIcon settings={data.state.settings} kind={row.amount>=0?'income':'expense'} category={row.category} subcategory={row.subcategory} note={row.title} size={17}/><span><b>{row.title}</b><small>{shortDate(row.date)} · {row.category}</small></span><strong className={row.amount>=0?'positive':'negative'}>{row.amount>=0?'+':''}{money.format(row.amount)}</strong></div>)}</div>:<div className="empty-state">Δεν υπάρχουν κινήσεις για την περίοδο.</div>}</article>
 
-   <article className="panel surface-raised report-account-distribution"><div className="panel-head"><div><span>Κατανομή λογαριασμών</span><small>Θετικά υπόλοιπα στο τέλος της περιόδου.</small></div></div>{accountDistribution.length?<div className="report-account-distribution-list">{accountDistribution.map((row,index)=><div key={row.id}><span><i style={{background:ACCOUNT_COLORS[index%ACCOUNT_COLORS.length]}}/><b>{row.name}</b></span><div className="report-account-bar"><i style={{width:`${accountDistributionTotal>0?Math.max(4,row.balance/accountDistributionTotal*100):0}%`,background:ACCOUNT_COLORS[index%ACCOUNT_COLORS.length]}}/></div><strong>{money.format(row.balance)}</strong></div>)}</div>:<div className="empty-state">Δεν υπάρχουν θετικά υπόλοιπα για κατανομή.</div>}</article>
+   <article className="panel surface-raised report-account-distribution"><div className="panel-head"><div><span>Κατανομή λογαριασμών</span><small>{month===asOf.slice(0,7)?'Θετικά υπόλοιπα έως σήμερα.':'Θετικά υπόλοιπα στο τέλος της περιόδου.'}</small></div></div>{accountDistribution.length?<div className="report-account-distribution-list">{accountDistribution.map((row,index)=><div key={row.id}><span><i style={{background:ACCOUNT_COLORS[index%ACCOUNT_COLORS.length]}}/><b>{row.name}</b></span><div className="report-account-bar"><i style={{width:`${accountDistributionTotal>0?Math.max(4,row.balance/accountDistributionTotal*100):0}%`,background:ACCOUNT_COLORS[index%ACCOUNT_COLORS.length]}}/></div><strong>{money.format(row.balance)}</strong></div>)}</div>:<div className="empty-state">Δεν υπάρχουν θετικά υπόλοιπα για κατανομή.</div>}</article>
 
    <article className="panel surface-raised report-counterparties"><div className="panel-head"><div><span>Μεγαλύτερες δαπάνες / έμποροι</span><small>Top 5 έμποροι / περιγραφές της περιόδου.</small></div></div>{counterparties.length?<div className="report-counterparty-list">{counterparties.map((row,index)=>{const [category,subcategory]=row.category.split(' › ');return <div key={`${row.title}-${row.category}`}><span className="report-counterparty-rank">{index+1}</span><FinanceIcon settings={data.state.settings} kind="expense" category={category} subcategory={subcategory} size={18}/><span><b>{row.title}</b><small>{row.category} · {row.count===1?'1 κίνηση':`${row.count} κινήσεις`}</small></span><strong>{money.format(row.amount)}<small>{percent(row.share,1)}</small></strong></div>})}</div>:<div className="empty-state">Δεν υπάρχουν καταγεγραμμένες χρεώσεις.</div>}</article>
 

@@ -6,8 +6,8 @@ import type { FinanceData } from '../types';
 import { AnimatedAmount } from './AnimatedAmount';
 import { Button } from './Button';
 
-export function LongTermLoanSummary({data,onPayLoan,onOpenLoans}:{data:FinanceData;onPayLoan:(loanId:string)=>void;onOpenLoans:()=>void}){
-  const obligations=activeLongTermLoanObligations(data);
+export function LongTermLoanSummary({data,asOf,onPayLoan,onOpenLoans}:{data:FinanceData;asOf:string;onPayLoan:(loanId:string)=>void;onOpenLoans:()=>void}){
+  const obligations=activeLongTermLoanObligations(data,asOf);
   if(!obligations.length)return null;
   return <section className="panel surface-flat long-term-recurring" aria-labelledby="linked-loan-obligations-title">
     <div className="recurring-group-heading recurring-loan-group-heading"><Landmark size={16}/><div><span id="linked-loan-obligations-title">Δόσεις / Δάνεια</span><small>Συνδεδεμένες δανειακές υποχρεώσεις με την κανονική ροή πληρωμής δανείου.</small></div></div>

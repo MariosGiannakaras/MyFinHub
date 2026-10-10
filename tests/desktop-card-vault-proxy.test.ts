@@ -24,6 +24,24 @@ describe('desktop card vault proxy',()=>{
     expect(JSON.parse(String(init.body))).toEqual({cardId:'card-1'});
   });
 
+  it('forwards the opt-in committed deletion guard unchanged to the canonical production origin',async()=>{
+    process.env.MYFINHUB_PRODUCTION_ORIGIN='https://mgfinhub.vercel.app';
+    const fetchMock=vi.fn(async(_url:string,_init:RequestInit)=>new Response(JSON.stringify({deleted:true}),{status:200,headers:{'content-type':'application/json'}}));
+    vi.stubGlobal('fetch',fetchMock);
+    await expect(proxyDesktopCardVault('DELETE',{cardId:'card-1',requireCommittedDeletion:true},'owner-aal2-token')).resolves.toEqual({deleted:true});
+    const [url,init]=fetchMock.mock.calls[0]!;
+    expect(url).toBe('https://mgfinhub.vercel.app/api/card-secrets');
+    expect((init as RequestInit).method).toBe('DELETE');
+    expect(JSON.parse(String((init as RequestInit).body))).toEqual({cardId:'card-1',requireCommittedDeletion:true});
+    expect(((init as RequestInit).headers as Record<string,string>).authorization).toBe('Bearer owner-aal2-token');
+  });
+
+  it('preserves the guarded 409 from canonical backend rather than hiding a conflict as a retryable outage',async()=>{
+    process.env.MYFINHUB_PRODUCTION_ORIGIN='https://mgfinhub.vercel.app';
+    vi.stubGlobal('fetch',vi.fn(async()=>new Response(JSON.stringify({code:'CARD_SECRET_DELETE_NOT_COMMITTED',error:'Finance cleanup intent was undone.'}),{status:409,headers:{'content-type':'application/json'}})));
+    await expect(proxyDesktopCardVault('DELETE',{cardId:'card-1',requireCommittedDeletion:true},'owner-aal2-token')).rejects.toMatchObject({code:'CARD_SECRET_DELETE_NOT_COMMITTED',status:409});
+  });
+
   it('rejects an arbitrary non-Vercel proxy origin',async()=>{
     process.env.MYFINHUB_PRODUCTION_ORIGIN='https://evil.example';
     vi.stubGlobal('fetch',vi.fn());

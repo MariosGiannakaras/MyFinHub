@@ -70,8 +70,9 @@ async function upstreamJson(url:string,serviceRole:string,init:RequestInit={}){
   return body;
 }
 
-async function upstreamStorageList(apiUrl:string,serviceRole:string,prefix:string){
-  const response=await fetch(apiUrl+'/storage/v1/object/list/financial-provider-assets',{
+async function upstreamStorageList(apiUrl:string,serviceRole:string,prefix:string,bucket:'financial-provider-assets'|'recurring-service-assets'='financial-provider-assets'){
+  const endpoint=bucket==='recurring-service-assets'?'/storage/v1/object/list/recurring-service-assets':'/storage/v1/object/list/financial-provider-assets';
+  const response=await fetch(apiUrl+endpoint,{
     method:'POST',
     headers:{apikey:serviceRole,authorization:'Bearer '+serviceRole,'content-type':'application/json',accept:'application/json'},
     body:JSON.stringify({prefix,limit:100,offset:0,sortBy:{column:'name',order:'asc'}}),
@@ -254,6 +255,13 @@ async function main(){
     console.log('[real-stack] local Supabase + MyFinHub API ready');
 
     const primary=new CookieClient('QA Browser A');
+    const guardedAssetPath='/api/account-metadata?'+new URLSearchParams({resource:'recurring-service-assets',recurringId:'security-negative',fileName:'negative.svg'});
+    const guardedAsset=Buffer.from("<svg xmlns='http://www.w3.org/2000/svg' width='8' height='8'><path d='M0 0'/></svg>",'utf8');
+    console.log('[real-stack] stage service-storage-unauthenticated-denial');
+    expect(await primary.requestBinary(guardedAssetPath,{method:'PUT',headers:{'content-type':'image/svg+xml'},body:guardedAsset}),401,'AUTH_REQUIRED','recurring-service-owner-unauth');
+    expect(await primary.request('/api/account-metadata?resource=recurring-service-assets'),401,'AUTH_REQUIRED','recurring-service-owner-read-unauth');
+    const guardedVaultDelete={method:'DELETE' as const,body:{cardId:'security-negative-card',requireCommittedDeletion:true}};
+    expect(await primary.request('/api/card-secrets',guardedVaultDelete),401,'AUTH_REQUIRED','card-secret-guard-unauth');
     console.log('[real-stack] stage auth-invalid-password');
     const invalid=await primary.request('/api/auth/login',{method:'POST',body:{email,password:'Definitely-Wrong-Password-9!'}});
     expect(invalid,401,'INVALID_CREDENTIALS','auth-invalid-password');
@@ -274,6 +282,14 @@ async function main(){
     const wrong=String((Number(correct)+1)%1_000_000).padStart(6,'0');
     console.log('[real-stack] stage mfa-invalid-code');
     expect(await primary.request('/api/auth/mfa/verify',{method:'POST',body:{factorId,code:wrong}}),401,'INVALID_MFA_CODE','mfa-invalid-code');
+    console.log('[real-stack] stage service-storage-pre-aal2-denial');
+    const preAal2Upload=await primary.requestBinary(guardedAssetPath,{method:'PUT',headers:{'content-type':'image/svg+xml'},body:guardedAsset});
+    assert((preAal2Upload.status===401||preAal2Upload.status===403)&&['AUTH_REQUIRED','MFA_REQUIRED'].includes(String(preAal2Upload.body?.code||'')),'Recurring service asset upload accepted pre-AAL2 session.');
+    const preAal2Read=await primary.request('/api/account-metadata?resource=recurring-service-assets');
+    assert((preAal2Read.status===401||preAal2Read.status===403)&&['AUTH_REQUIRED','MFA_REQUIRED'].includes(String(preAal2Read.body?.code||'')),'Recurring service metadata read accepted pre-AAL2 session.');
+    console.log('[real-stack] stage card-vault-pre-aal2-guarded-denial');
+    const preAal2VaultDelete=await primary.request('/api/card-secrets',guardedVaultDelete);
+    assert((preAal2VaultDelete.status===401||preAal2VaultDelete.status===403)&&['AUTH_REQUIRED','MFA_REQUIRED'].includes(String(preAal2VaultDelete.body?.code||'')),'Guarded card-vault deletion accepted a pre-AAL2 session.');
     console.log('[real-stack] stage mfa-valid-code');
     const verified=await primary.request('/api/auth/mfa/verify',{method:'POST',body:{factorId,code:correct}});
     expect(verified,200,undefined,'mfa-valid-code');
@@ -440,6 +456,109 @@ async function main(){
     assert(health?.ok===true&&health?.storageMode==='relational_v1','Database health is not clean after backup restore.');
     assert(Number(health?.checks?.history_revision_mismatches||0)===0&&Number(health?.checks?.history_current_point_state_mismatches||0)===0,'History/state integrity is not clean after backup restore.');
 
+    console.log('[real-stack] stage card-profile-vault-durable-cleanup');
+    const cleanupId='real-stack-cleanup-card';
+    const nowCard=new Date().toISOString();
+    const beforeCard=await primary.request('/api/data');
+    const beforeCardHistory=await primary.request('/api/history');
+    expect(beforeCard,200,undefined,'card-cleanup-before');
+    expect(beforeCardHistory,200,undefined,'card-cleanup-history-before');
+    const stagedCardState=structuredClone(beforeCard.body.data.state);
+    stagedCardState.cards=[...(stagedCardState.cards||[]),{id:cleanupId,bankId:'piraeus',nickname:'Real Stack Vault Cleanup',kind:'debit',network:'visa',active:true,createdAt:nowCard,updatedAt:nowCard}];
+    const stagedCardSave=await primary.request('/api/data',{
+      method:'PUT',
+      headers:{'if-match':String(beforeCard.body.revision),'x-rheomiq-history-generation':String(beforeCardHistory.body.generation)},
+      body:{state:stagedCardState,updatedAt:nowCard,historyLabel:'Stage new card before vault write'},
+    });
+    expect(stagedCardSave,200,undefined,'card-cleanup-stage-profile');
+    const stagedCardReload=await primary.request('/api/data');
+    expect(stagedCardReload,200,undefined,'card-cleanup-stage-reload');
+    assert(stagedCardReload.body?.data?.state?.cards?.some((item:any)=>item.id===cleanupId&&!item.vaultRef),'Staged card profile did not survive revisioned reload.');
+    const createdVault=await primary.request('/api/card-secrets',{method:'PUT',body:{cardId:cleanupId,pan:TEST_PAN,expiry:TEST_EXPIRY,cvv:TEST_CVV}});
+    expect(createdVault,200,undefined,'card-cleanup-stage-secret');
+    expect(await primary.request('/api/card-secrets',{method:'DELETE',body:{cardId:cleanupId,requireCommittedDeletion:true}}),409,'CARD_SECRET_DELETE_NOT_COMMITTED','card-cleanup-guard-live-profile');
+    const vaultStillPresent=await primary.request('/api/card-secrets',{method:'POST',body:{cardId:cleanupId}});
+    expect(vaultStillPresent,200,undefined,'card-cleanup-vault-before-finance-delete');
+    const beforeRemove=await primary.request('/api/data');
+    const beforeRemoveHistory=await primary.request('/api/history');
+    const pendingState=structuredClone(beforeRemove.body.data.state);
+    pendingState.cards=pendingState.cards.filter((item:any)=>item.id!==cleanupId);
+    pendingState.pendingCardSecretDeletes=[...(pendingState.pendingCardSecretDeletes||[]),cleanupId];
+    const pendingSave=await primary.request('/api/data',{
+      method:'PUT',
+      headers:{'if-match':String(beforeRemove.body.revision),'x-rheomiq-history-generation':String(beforeRemoveHistory.body.generation)},
+      body:{state:pendingState,updatedAt:new Date().toISOString(),historyLabel:'Commit card deletion and pending secret cleanup'},
+    });
+    expect(pendingSave,200,undefined,'card-cleanup-pending-receipt');
+    const pendingReload=await primary.request('/api/data');
+    expect(pendingReload,200,undefined,'card-cleanup-pending-reload');
+    assert(!pendingReload.body.data.state.cards.some((item:any)=>item.id===cleanupId)&&pendingReload.body.data.state.pendingCardSecretDeletes.includes(cleanupId),'Card deletion cleanup intent did not survive reload.');
+    console.log('[real-stack] stage card-vault-older-writer-intent-preservation');
+    const beforeLegacyHistory=await primary.request('/api/history');
+    expect(beforeLegacyHistory,200,undefined,'card-cleanup-legacy-history');
+    const omittedMarkerState=structuredClone(pendingReload.body.data.state);
+    delete omittedMarkerState.pendingCardSecretDeletes;
+    const olderWrite=await primary.request('/api/data',{
+      method:'PUT',
+      headers:{'if-match':String(pendingReload.body.revision),'x-rheomiq-history-generation':String(beforeLegacyHistory.body.generation)},
+      body:{state:omittedMarkerState,updatedAt:new Date().toISOString(),historyLabel:'Older client omitted cleanup marker'},
+    });
+    expect(olderWrite,409,'CARD_CLEANUP_INTENT_REQUIRED','card-cleanup-legacy-writer-rejected');
+    const explicitPrematureState=structuredClone(pendingReload.body.data.state);
+    explicitPrematureState.pendingCardSecretDeletes=explicitPrematureState.pendingCardSecretDeletes.filter((id:string)=>id!==cleanupId);
+    const prematureWrite=await primary.request('/api/data',{
+      method:'PUT',
+      headers:{'if-match':String(pendingReload.body.revision),'x-rheomiq-history-generation':String(beforeLegacyHistory.body.generation)},
+      body:{state:explicitPrematureState,updatedAt:new Date().toISOString(),historyLabel:'Premature secret cleanup acknowledgement'},
+    });
+    expect(prematureWrite,409,'CARD_CLEANUP_INTENT_REQUIRED','card-cleanup-premature-ack-rejected');
+    const afterLegacyConflict=await primary.request('/api/data');
+    expect(afterLegacyConflict,200,undefined,'card-cleanup-legacy-reload');
+    assert(afterLegacyConflict.body.revision===pendingReload.body.revision&&(afterLegacyConflict.body.data.state.pendingCardSecretDeletes||[]).includes(cleanupId),'Legacy/premature finance save silently erased cleanup intent or advanced revision.');
+    expect(await primary.request('/api/card-secrets',{method:'POST',body:{cardId:cleanupId}}),200,undefined,'card-cleanup-ciphertext-remains-after-legacy-conflict');
+    console.log('[real-stack] stage card-vault-undo-protected-atomic-cleanup');
+    const undoCardHistory=await primary.request('/api/history');
+    expect(undoCardHistory,200,undefined,'card-cleanup-undo-history');
+    const undoCard=await primary.request('/api/history',{
+      method:'POST',
+      headers:{'if-match':String(pendingReload.body.revision),'x-rheomiq-history-generation':String(undoCardHistory.body.generation)},
+      body:{action:'undo',updatedAt:new Date().toISOString()},
+    });
+    expect(undoCard,200,undefined,'card-cleanup-undo');
+    assert(undoCard.body?.data?.state?.cards?.some((item:any)=>item.id===cleanupId)&&!(undoCard.body?.data?.state?.pendingCardSecretDeletes||[]).includes(cleanupId),'Undo did not restore the card profile and revoke cleanup intent.');
+    expect(await primary.request('/api/card-secrets',{method:'DELETE',body:{cardId:cleanupId,requireCommittedDeletion:true}}),409,'CARD_SECRET_DELETE_NOT_COMMITTED','card-cleanup-undo-protects-vault');
+    expect(await primary.request('/api/card-secrets',{method:'POST',body:{cardId:cleanupId}}),200,undefined,'card-cleanup-vault-survived-undo');
+    const redoCard=await primary.request('/api/history',{
+      method:'POST',
+      headers:{'if-match':String(undoCard.body.revision),'x-rheomiq-history-generation':String(undoCard.body.history.generation)},
+      body:{action:'redo',updatedAt:new Date().toISOString()},
+    });
+    expect(redoCard,200,undefined,'card-cleanup-redo');
+    assert(!redoCard.body?.data?.state?.cards?.some((item:any)=>item.id===cleanupId)&&(redoCard.body?.data?.state?.pendingCardSecretDeletes||[]).includes(cleanupId),'Redo failed to reinstate the same committed card cleanup intent.');
+    const staleCardWrite=await primary.request('/api/data',{
+      method:'PUT',
+      headers:{'if-match':String(beforeRemove.body.revision),'x-rheomiq-history-generation':String(beforeRemoveHistory.body.generation)},
+      body:{state:stagedCardState,updatedAt:new Date().toISOString(),historyLabel:'Stale re-create deleted card'},
+    });
+    assert(staleCardWrite.status===409,'Stale card re-create did not fail its expected revision.');
+    const remainingSecret=await primary.request('/api/card-secrets',{method:'POST',body:{cardId:cleanupId}});
+    expect(remainingSecret,200,undefined,'card-cleanup-secret-preserved-after-stale-conflict');
+    expect(await primary.request('/api/card-secrets',{method:'DELETE',body:{cardId:cleanupId,requireCommittedDeletion:true}}),200,undefined,'card-cleanup-guarded-delete');
+    expect(await primary.request('/api/card-secrets',{method:'POST',body:{cardId:cleanupId}}),404,'CARD_SECRET_NOT_FOUND','card-cleanup-secret-absent');
+    const beforeClear=await primary.request('/api/data');
+    const beforeClearHistory=await primary.request('/api/history');
+    const clearedMarkerState=structuredClone(beforeClear.body.data.state);
+    clearedMarkerState.pendingCardSecretDeletes=clearedMarkerState.pendingCardSecretDeletes.filter((id:string)=>id!==cleanupId);
+    const clearedMarker=await primary.request('/api/data',{
+      method:'PUT',
+      headers:{'if-match':String(beforeClear.body.revision),'x-rheomiq-history-generation':String(beforeClearHistory.body.generation)},
+      body:{state:clearedMarkerState,updatedAt:new Date().toISOString(),historyLabel:'Acknowledge card vault secret cleanup'},
+    });
+    expect(clearedMarker,200,undefined,'card-cleanup-marker-finalize');
+    const finalReload=await primary.request('/api/data');
+    expect(finalReload,200,undefined,'card-cleanup-final-reload');
+    assert(!(finalReload.body?.data?.state?.pendingCardSecretDeletes||[]).includes(cleanupId),'Card vault cleanup marker was not removed after successful deletion.');
+
     console.log('[real-stack] stage card-vault-delete');
     expect(await primary.request('/api/card-secrets',{method:'DELETE',body:{cardId:TEST_CARD_ID}}),200,undefined,'card-vault-delete');
 
@@ -468,6 +587,92 @@ async function main(){
     expect(revokeOne,200);
     assert(revokeOne.body?.count===1,'Single-device revoke did not retain only the current device.');
     expect(await reauthenticated.request('/api/auth/session'),401,'DEVICE_ACCESS_REVOKED');
+
+    console.log('[real-stack] stage recurring-service-asset-durability');
+    const serviceId='real-stack-service-brand-a';
+    const serviceSvg=Buffer.from("<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><rect width='32' height='32' fill='#345'/></svg>",'utf8');
+    const initialServiceObjects=await upstreamStorageList(local.apiUrl,local.serviceRole,'services','recurring-service-assets');
+    const uploadService=async(fileName:string)=>{
+      const uploaded=await primary.requestBinary('/api/account-metadata?'+new URLSearchParams({resource:'recurring-service-assets',recurringId:serviceId,fileName}),{
+        method:'PUT',headers:{'content-type':'image/svg+xml'},body:serviceSvg,
+      });
+      expect(uploaded,200,undefined,'recurring-service-asset-upload');
+      const key=String(uploaded.body?.asset?.assetKey||'');
+      assert(/^service-asset-[a-f0-9]{24}$/.test(key),'Recurring service upload returned a non-canonical asset key.');
+      return key;
+    };
+    const serviceAssetKey=await uploadService('original.svg');
+    const serviceObjectsAfterUpload=await upstreamStorageList(local.apiUrl,local.serviceRole,'services','recurring-service-assets');
+    assert(serviceObjectsAfterUpload.length===initialServiceObjects.length+1,'Recurring service upload did not create exactly one Storage object.');
+    const original=await primary.request('/api/data');
+    expect(original,200,undefined,'recurring-service-finance-before');
+    const originalHistory=await primary.request('/api/history');
+    expect(originalHistory,200,undefined,'recurring-service-history-before');
+    const oldRevision=String(original.body?.revision||''),oldGeneration=String(originalHistory.body?.generation||'');
+    assert(/^\d+$/.test(oldRevision)&&/^\d+$/.test(oldGeneration),'Recurring service mutation preconditions were unavailable.');
+    const serviceState=structuredClone(original.body.data.state);
+    const serviceAccount=String(serviceState.settings?.defaultExpenseAccount||original.body.data.seed.accounts?.[0]?.id||'');
+    const serviceCategory=String(serviceState.settings?.expenseCategories?.[0]||'Άλλο');
+    const serviceRow={id:serviceId,name:'Real Stack Service',amount:12,day:18,firstExpectedDate:'2026-08-18',endDate:null,accountId:serviceAccount,category:serviceCategory,active:true,status:'active',source:'user',recurrenceUnit:'month',recurrenceInterval:1,logoAssetKey:serviceAssetKey};
+    serviceState.recurringCustom=[...(serviceState.recurringCustom||[]),serviceRow];
+    const firstServiceSave=await primary.request('/api/data',{
+      method:'PUT',headers:{'if-match':oldRevision,'x-rheomiq-history-generation':oldGeneration},
+      body:{state:serviceState,updatedAt:new Date().toISOString(),historyLabel:'Real-stack service logo create'},
+    });
+    expect(firstServiceSave,200,undefined,'recurring-service-create-save');
+    const reloadedServices=await restored.request('/api/data');
+    expect(reloadedServices,200,undefined,'recurring-service-reload');
+    assert(reloadedServices.body?.data?.state?.recurringCustom?.some((item:any)=>item.id===serviceId&&item.logoAssetKey===serviceAssetKey),'New recurring logo reference failed revisioned save/reload.');
+    const assetPath=(key:string)=>'/api/account-metadata?'+new URLSearchParams({resource:'recurring-service-assets',assetKey:key});
+    expect(await primary.request(assetPath(serviceAssetKey),{method:'DELETE'}),409,'RECURRING_SERVICE_ASSET_IN_USE','recurring-service-reference-protection');
+    const staleServiceState=structuredClone(original.body.data.state);
+    staleServiceState.recurringCustom=[...(staleServiceState.recurringCustom||[]),{...serviceRow,logoAssetKey:undefined}];
+    const staleServiceWrite=await restored.request('/api/data',{
+      method:'PUT',headers:{'if-match':oldRevision,'x-rheomiq-history-generation':oldGeneration},
+      body:{state:staleServiceState,updatedAt:new Date().toISOString(),historyLabel:'Stale recurring service asset edit'},
+    });
+    assert(staleServiceWrite.status===409&&['REVISION_CONFLICT','HISTORY_CURSOR_CONFLICT'].includes(String(staleServiceWrite.body?.code||'')),'Stale recurring logo write did not fail closed.');
+    const afterConflict=await restored.request('/api/data');
+    expect(afterConflict,200,undefined,'recurring-service-after-conflict');
+    assert(afterConflict.body?.data?.state?.recurringCustom?.some((item:any)=>item.id===serviceId&&item.logoAssetKey===serviceAssetKey),'Stale recurring logo update rewrote the durable reference.');
+
+    // Replacement must be committed before the previous key may be released.
+    const replacementKey=await uploadService('replacement.svg');
+    assert(replacementKey!==serviceAssetKey,'A replacement upload reused the old asset key.');
+    const replaceState=structuredClone(afterConflict.body.data.state);
+    replaceState.recurringCustom=replaceState.recurringCustom.map((item:any)=>item.id===serviceId?{...item,logoAssetKey:replacementKey}:item);
+    const replacementHistory=await primary.request('/api/history');
+    expect(replacementHistory,200,undefined,'recurring-service-history-replace');
+    const replacementSave=await primary.request('/api/data',{
+      method:'PUT',headers:{'if-match':String(afterConflict.body.revision),'x-rheomiq-history-generation':String(replacementHistory.body?.generation||'')},
+      body:{state:replaceState,updatedAt:new Date().toISOString(),historyLabel:'Replace recurring service asset reference'},
+    });
+    expect(replacementSave,200,undefined,'recurring-service-replace-save');
+    const reloadedReplacement=await restored.request('/api/data');
+    expect(reloadedReplacement,200,undefined,'recurring-service-replacement-reload');
+    assert(reloadedReplacement.body?.data?.state?.recurringCustom?.some((item:any)=>item.id===serviceId&&item.logoAssetKey===replacementKey),'Replacement recurring logo failed revisioned save/reload.');
+    expect(await primary.request(assetPath(serviceAssetKey),{method:'DELETE'}),200,undefined,'recurring-service-release-old');
+    expect(await primary.request(assetPath(replacementKey),{method:'DELETE'}),409,'RECURRING_SERVICE_ASSET_IN_USE','recurring-service-replacement-protection');
+
+    // Clearing the last reference must persist first; only then purge Storage.
+    const clearedState=structuredClone(reloadedReplacement.body.data.state);
+    clearedState.recurringCustom=clearedState.recurringCustom.map((item:any)=>item.id===serviceId?{...item,logoAssetKey:undefined}:item);
+    const clearHistory=await primary.request('/api/history');
+    expect(clearHistory,200,undefined,'recurring-service-history-remove');
+    const removedSave=await primary.request('/api/data',{
+      method:'PUT',headers:{'if-match':String(reloadedReplacement.body.revision),'x-rheomiq-history-generation':String(clearHistory.body?.generation||'')},
+      body:{state:clearedState,updatedAt:new Date().toISOString(),historyLabel:'Remove last recurring service logo reference'},
+    });
+    expect(removedSave,200,undefined,'recurring-service-last-reference-remove');
+    const reloadedCleared=await restored.request('/api/data');
+    expect(reloadedCleared,200,undefined,'recurring-service-removed-reload');
+    assert(reloadedCleared.body?.data?.state?.recurringCustom?.some((item:any)=>item.id===serviceId&&!item.logoAssetKey),'Cleared recurring logo reference was not persisted.');
+    expect(await primary.request(assetPath(replacementKey),{method:'DELETE'}),200,undefined,'recurring-service-release-purge');
+    const serviceAssetsAfterDelete=await primary.request('/api/account-metadata?resource=recurring-service-assets');
+    expect(serviceAssetsAfterDelete,200,undefined,'recurring-service-after-purge');
+    assert(!(serviceAssetsAfterDelete.body?.assets||[]).some((asset:any)=>[serviceAssetKey,replacementKey].includes(asset.assetKey)),'Released recurring logo metadata survived purge.');
+    const serviceObjectsAfterDelete=await upstreamStorageList(local.apiUrl,local.serviceRole,'services','recurring-service-assets');
+    assert(serviceObjectsAfterDelete.length===initialServiceObjects.length,'Recurring service asset Storage object survived reference-aware purge.');
 
     console.log('[real-stack] stage provider-storage-registration-failure-cleanup');
     const missingProviderId='real-stack-missing-provider';

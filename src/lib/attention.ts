@@ -6,6 +6,7 @@ import { addDays, cashFlowForecast, LOW_BALANCE_THRESHOLD } from './forecast.js'
 import { lendingOutstandingFor } from './lending.js';
 import { isSelfLoan, loanPaymentEvents, loanRemainingInstallments, typicalLoanPaymentDay } from './loans.js';
 import { activeRecurringItems, recurringPayments, typicalPaymentDay } from './recurring.js';
+import { addRecurringInterval, recurringCadence, validRecurringAnchor } from './recurringCadence.js';
 import { pendingScheduled, scheduledLifecycle } from './scheduled.js';
 import type { AttentionDecision, FinanceData, FinanceEvent, Loan, RecurringItem } from '../types.js';
 
@@ -72,6 +73,33 @@ function effectiveLoans(data:FinanceData):Loan[]{
 }
 
 function recurringDue(data:FinanceData,item:RecurringItem,asOf:string){
+  if(recurringCadence(item).months>1){
+    const payments=recurringPayments(data,item.id);
+    let next=validRecurringAnchor(item.firstExpectedDate);
+    let cycleStart:string|null=null;
+    if(!next&&payments.length){
+      cycleStart=payments[0].date;
+      next=addRecurringInterval(cycleStart,item);
+    }
+    if(!next)return null;
+    let previous:string|null=null,guard=0;
+    while(next<=asOf&&guard++<240){
+      cycleStart=previous??cycleStart;
+      previous=next;
+      const advanced=addRecurringInterval(next,item);
+      if(!advanced||advanced<=next)return null;
+      next=advanced;
+    }
+    if(next<=asOf)return null;
+    const paidForPrevious=payments.some(event=>event.date<=asOf&&(!cycleStart||event.date>cycleStart));
+    if(previous&&!paidForPrevious)return {date:previous,severity:'danger' as const,overdue:true};
+    if(daysBetween(asOf,next)<=UPCOMING_DAYS)return {date:next,severity:'warning' as const,overdue:false};
+    return null;
+  }
+  const first=validRecurringAnchor(item.firstExpectedDate);
+  if(first&&first>asOf){
+    return daysBetween(asOf,first)<=UPCOMING_DAYS?{date:first,severity:'warning' as const,overdue:false}:null;
+  }
   const day=typicalPaymentDay(data,item);if(!day)return null;
   const current=monthDate(asOf,day);
   const paidThisMonth=recurringPayments(data,item.id).some(event=>event.date>=monthStart(asOf)&&event.date<=asOf);
@@ -82,11 +110,16 @@ function recurringDue(data:FinanceData,item:RecurringItem,asOf:string){
 }
 
 function loanDue(data:FinanceData,loan:Loan,asOf:string){
-  if(isSelfLoan(loan)||loanRemainingInstallments(data,loan)<=0||Number(loan.installment||0)<=0)return null;
-  const day=typicalLoanPaymentDay(data,loan);if(!day)return null;
+  if(isSelfLoan(loan)||loanRemainingInstallments(data,loan,asOf)<=0||Number(loan.installment||0)<=0)return null;
   const first=loan.firstExpectedDate;
-  const current=first&&first>=monthStart(asOf)&&first.slice(0,7)===asOf.slice(0,7)?first:monthDate(asOf,day);
-  const paidThisMonth=loanPaymentEvents(data,loan).some(event=>event.date>=monthStart(asOf)&&event.date<=asOf);
+  // The forecast respects a future first installment; Attention must not
+  // invent overdue monthly payments before that financing obligation begins.
+  if(first&&first>asOf){
+    return daysBetween(asOf,first)<=UPCOMING_DAYS?{date:first,severity:'warning' as const,overdue:false}:null;
+  }
+  const day=typicalLoanPaymentDay(data,loan,asOf);if(!day)return null;
+  const current=first&&first.slice(0,7)===asOf.slice(0,7)?first:monthDate(asOf,day);
+  const paidThisMonth=loanPaymentEvents(data,loan,asOf).some(event=>event.date>=monthStart(asOf)&&event.date<=asOf);
   if(current<=asOf&&!paidThisMonth)return {date:current,severity:'danger' as const,overdue:true};
   if(current>asOf&&!paidThisMonth&&daysBetween(asOf,current)<=UPCOMING_DAYS)return {date:current,severity:'warning' as const,overdue:false};
   if(paidThisMonth){const next=monthDate(asOf,day,1);if(daysBetween(asOf,next)<=UPCOMING_DAYS)return {date:next,severity:'warning' as const,overdue:false}}
@@ -103,7 +136,7 @@ function scheduledAttention(data:FinanceData,asOf:string):AttentionItem[]{
 }
 
 function recurringAttention(data:FinanceData,asOf:string):AttentionItem[]{
-  return activeRecurringItems(data).flatMap(item=>{const due=recurringDue(data,item,asOf);if(!due)return [];return [make({id:`recurring:${item.id}`,kind:'recurring',severity:due.severity,title:item.name,reason:due.overdue?'Δεν υπάρχει συνδεδεμένη πληρωμή για το πάγιο μέσα στον τρέχοντα μήνα και η γνωστή ημέρα έχει περάσει.':'Το επόμενο πάγιο πλησιάζει.',dueDate:due.date,amount:Number(item.amount||0),accountId:item.accountId,recurringId:item.id,action:'pay_recurring'})]});
+  return activeRecurringItems(data).flatMap(item=>{const due=recurringDue(data,item,asOf);if(!due)return [];return [make({id:`recurring:${item.id}`,kind:'recurring',severity:due.severity,title:item.name,reason:due.overdue?'Η προγραμματισμένη λήξη του παγίου έχει περάσει χωρίς συνδεδεμένη πληρωμή.':'Το επόμενο πάγιο πλησιάζει.',dueDate:due.date,amount:Number(item.amount||0),accountId:item.accountId,recurringId:item.id,action:'pay_recurring'})]});
 }
 
 function recurringExpiryAttention(data:FinanceData,asOf:string):AttentionItem[]{
@@ -140,7 +173,7 @@ function creditAttention(data:FinanceData,asOf:string):AttentionItem[]{
 }
 
 function budgetAttention(data:FinanceData,asOf:string):AttentionItem[]{
-  return budgetProgress(data,asOf.slice(0,7)).flatMap(row=>{
+  return budgetProgress(data,asOf.slice(0,7),asOf).flatMap(row=>{
     if(row.status==='ok')return [];
     const label=row.scope==='overall'?'Συνολικό discretionary':row.category??'Κατηγορία';
     const severity:AttentionSeverity=row.status==='exceeded'?'danger':'warning';
@@ -154,15 +187,15 @@ function budgetAttention(data:FinanceData,asOf:string):AttentionItem[]{
 function latestOverdueLendingEvents(data:FinanceData,asOf:string){
   const byPerson=new Map<string,FinanceEvent>();
   for(const event of data.state.events??[]){
-    if(event.kind!=='lending'||!event.person||!event.expectedReturnDate||event.expectedReturnDate>=asOf)continue;
-    if(lendingOutstandingFor(data,event.person)<=0)continue;
+    if(event.kind!=='lending'||!event.person||!event.expectedReturnDate||event.expectedReturnDate>=asOf||event.date>asOf)continue;
+    if(lendingOutstandingFor(data,event.person,asOf)<=0)continue;
     const current=byPerson.get(event.person);if(!current||String(event.expectedReturnDate)<String(current.expectedReturnDate))byPerson.set(event.person,event);
   }
   return [...byPerson.values()];
 }
 
 function lendingAttention(data:FinanceData,asOf:string):AttentionItem[]{
-  return latestOverdueLendingEvents(data,asOf).map(event=>make({id:`lending:${event.person}`,kind:'lending',severity:'danger',title:`Επιστροφή από ${event.person}`,reason:'Η ρητή αναμενόμενη ημερομηνία επιστροφής έχει περάσει και παραμένει υπόλοιπο προς είσπραξη.',dueDate:event.expectedReturnDate,amount:lendingOutstandingFor(data,event.person!),accountId:event.accountId,person:event.person,action:'collect_lending'}));
+  return latestOverdueLendingEvents(data,asOf).map(event=>make({id:`lending:${event.person}`,kind:'lending',severity:'danger',title:`Επιστροφή από ${event.person}`,reason:'Η ρητή αναμενόμενη ημερομηνία επιστροφής έχει περάσει και παραμένει υπόλοιπο προς είσπραξη.',dueDate:event.expectedReturnDate,amount:lendingOutstandingFor(data,event.person!,asOf),accountId:event.accountId,person:event.person,action:'collect_lending'}));
 }
 
 function forecastAttention(data:FinanceData,asOf:string):AttentionItem[]{

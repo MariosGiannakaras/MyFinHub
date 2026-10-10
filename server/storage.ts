@@ -67,6 +67,7 @@ async function supabase<T>(path: string, init: RequestInit = {}, accessToken?: s
     const upstreamCode = payload && typeof payload === 'object' && 'code' in payload ? payload.code : '';
     const upstreamMessage = payload && typeof payload === 'object' && 'message' in payload ? payload.message : '';
     const marker = `${upstreamCode || ''} ${upstreamMessage || ''}`;
+    if (/CARD_CLEANUP_INTENT_REQUIRED/i.test(marker)) throw new ApiError(409, 'CARD_CLEANUP_INTENT_REQUIRED', 'Card-secret cleanup is pending. Reload in an updated client before saving.');
     if (/HISTORY_CURSOR_CONFLICT/i.test(marker)) throw new ApiError(409, 'HISTORY_CURSOR_CONFLICT', 'The change history moved in another session. Reload before continuing.');
     if (/HISTORY_UNAVAILABLE/i.test(marker)) throw new ApiError(409, 'HISTORY_UNAVAILABLE', 'There is no change available in that direction. Reload the history.');
     if (/EXPECTED_HISTORY_GENERATION_REQUIRED/i.test(marker)) throw new ApiError(428, 'HISTORY_PRECONDITION_REQUIRED', 'A current history generation is required before saving.');

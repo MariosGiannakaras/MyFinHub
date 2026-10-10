@@ -71,6 +71,57 @@ describe('SequentialQueue', () => {
     expect(queue.hasWork()).toBe(false);
   });
 
+  it('resolves a receipt for exactly the completed FIFO mutation, not merely when idle', async()=>{
+    const first=deferred();
+    const seen:string[]=[];
+    const queue=new SequentialQueue<string>(async value=>{seen.push(value);if(value==='first')await first.promise});
+    const firstReceipt=queue.enqueueWithReceipt('first');
+    const secondReceipt=queue.enqueueWithReceipt('second');
+    let firstSettled=false;
+    void firstReceipt.then(()=>{firstSettled=true});
+    await Promise.resolve();
+    expect(seen).toEqual(['first']);
+    expect(firstSettled).toBe(false);
+    first.resolve();
+    await firstReceipt;
+    expect(firstSettled).toBe(true);
+    await secondReceipt;
+    await queue.whenIdle();
+    expect(seen).toEqual(['first','second']);
+  });
+
+  it('rejects the failed active receipt and all dropped dependent receipts', async()=>{
+    const first=deferred(),error=new Error('revision conflict');
+    const seen:string[]=[];
+    const queue=new SequentialQueue<string>(async value=>{seen.push(value);if(value==='first')await first.promise});
+    const active=queue.enqueueWithReceipt('first');
+    queue.enqueue('fire-and-forget-dependent');
+    const dependent=queue.enqueueWithReceipt('receipt-dependent');
+    const results=Promise.allSettled([active,dependent]);
+    first.reject(error);
+    expect(await results).toEqual([
+      {status:'rejected',reason:error},
+      {status:'rejected',reason:error},
+    ]);
+    await queue.whenIdle();
+    expect(seen).toEqual(['first']);
+    expect(queue.hasWork()).toBe(false);
+    await expect(queue.enqueueWithReceipt('explicit-retry')).resolves.toBeUndefined();
+    expect(seen).toEqual(['first','explicit-retry']);
+  });
+
+  it('interleaves receipt and fire-and-forget writes in the same FIFO order', async()=>{
+    const seen:string[]=[];
+    const queue=new SequentialQueue<string>(async value=>{seen.push(value)});
+    queue.enqueue('ordinary-a');
+    const receipt=queue.enqueueWithReceipt('receipted');
+    queue.enqueue('ordinary-b');
+    await receipt;
+    await queue.whenIdle();
+    expect(seen).toEqual(['ordinary-a','receipted','ordinary-b']);
+    expect(queue.hasWork()).toBe(false);
+  });
+
   it('fails closed and discards dependent pending mutations after the first persistence failure', async () => {
     const first=deferred();
     const seen:string[]=[];
