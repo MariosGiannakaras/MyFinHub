@@ -180,6 +180,14 @@ try{
   await waitFor("function(){const root=document.querySelector('[data-budget-management] .budget-editor-grid');const labels=[...(root?.querySelectorAll('label>span')||[])].map(node=>(node.textContent||'').trim());return !labels.includes('Κατηγορία')}",'mobile overall budget state');
   await screenshot('reports-budget-overall-mobile');
 
+  console.log('Budget/Rules QA: Attention budget action opens focused Reports budget editor');
+  await navigate('attention','budget-rules',375,812);
+  assert(await c.call("function(){const button=[...document.querySelectorAll('button')].find(node=>(node.textContent||'').includes('Προβολή budgets'));button?.click();return Boolean(button)}"),'Attention budget action is reachable');
+  await waitFor("function(){const section=document.querySelector('#report-budgets');return Boolean(section?.open&&document.querySelector('.reports-dashboard'))}",'Attention budget action opens Reports budget management');
+  assert(await c.call("function(){const section=document.querySelector('#report-budgets');return section?.querySelector('summary')===document.activeElement}"),'budget management summary receives keyboard focus');
+  await noOverflow('mobile Attention budget to Reports navigation');
+  await screenshot('attention-budget-action-expanded-reports-mobile');
+
   await navigate('savings','budget-rules',375,812);
   await clickAria('Αλλαγή στόχου αποταμίευσης');
   await waitFor("function(){return [...document.querySelectorAll('[data-savings-target-editor]')].some(node=>node.getClientRects().length>0)}",'mobile savings target editor');

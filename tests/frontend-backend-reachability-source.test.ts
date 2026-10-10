@@ -29,6 +29,10 @@ describe('post-v1.4 frontend/backend capability reachability map (DV-FB01/02)',(
       expect(api).toContain("'"+path+"'");
     }
     expect(app).toContain('finance.updateDurably');
+    expect(app).toContain("url.searchParams.set('reportSection','budgets')");
+    expect(source('src/pages/ReportsPage.tsx')).toContain("url.searchParams.get('reportSection')!=='budgets'");
+    expect(source('src/pages/ReportsPage.tsx')).toContain("section.querySelector<HTMLElement>('summary')?.focus({preventScroll:true})");
+    expect(source('scripts/budget-rules-qa.mjs')).toContain('attention-budget-action-expanded-reports-mobile');
   });
   it('keeps owner-session auth, vault, metadata and Settings tab routes reachable',()=>{
     for(const path of ['/api/auth/login','/api/auth/mfa/enroll','/api/auth/mfa/verify','/api/auth/session','/api/auth/logout','/api/account-metadata','/api/card-secrets','/api/auth/devices']){

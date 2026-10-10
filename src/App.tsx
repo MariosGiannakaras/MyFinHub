@@ -270,7 +270,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
     if (item.action === 'collect_lending' && item.person) { openSpecial({ mode: 'lending', action: 'repay', person: item.person, amount: item.amount, accountId: data.state.settings.defaultIncomeAccount }); return; }
     if (item.action === 'complete_scheduled' && item.scheduledId) { openSpecial({ mode: 'scheduled', scheduledId: item.scheduledId }); return; }
     if (item.action === 'open_forecast') { navigate('planning'); return; }
-    if (item.action === 'open_budgets') { navigate('reports'); return; }
+    if (item.action === 'open_budgets') { navigate('reports');const url=new URL(location.href);url.searchParams.set('reportSection','budgets');history.replaceState(history.state,'',url.toString());return; }
   };
 
   const handleCommand=(row:RankedCommandSearchItem)=>{

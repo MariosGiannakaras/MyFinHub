@@ -1,6 +1,6 @@
 import { Bar, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { CalendarClock, CircleCheck, CreditCard, Eye, EyeOff, Landmark, ListChecks, PiggyBank, TriangleAlert, WalletCards } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { AnimatedAmount } from '../components/AnimatedAmount';
 import { BudgetRuleSettings } from '../components/BudgetRuleSettings';
 import { Button } from '../components/Button';
@@ -31,6 +31,14 @@ const ACCOUNT_COLORS=['#2f6fed','#14a77f','#7a5af8','#f59e0b','#8b95ad'];
 type ActivityRow={id:string;date:string;title:string;category:string;subcategory?:string;amount:number};
 
 export function ReportsPage({data,month,asOf,privacyVisible,onPrivacyVisibleChange,onUpsertBudget,onDeleteBudget,onUpsertRule,onDeleteRule}:{data:FinanceData;month:string;asOf:string;privacyVisible:boolean;onPrivacyVisibleChange:(visible:boolean)=>void;onUpsertBudget:(budget:MonthlyBudget)=>void;onDeleteBudget:(id:string)=>void;onUpsertRule:(rule:TransactionRule)=>void;onDeleteRule:(id:string)=>void}){
+ useEffect(()=>{
+   const url=new URL(location.href);
+   if(url.searchParams.get('reportSection')!=='budgets')return;
+   const section=document.getElementById('report-budgets') as HTMLDetailsElement|null;
+   if(section){section.open=true;section.scrollIntoView({block:'start',behavior:'auto'});section.querySelector<HTMLElement>('summary')?.focus({preventScroll:true});}
+   url.searchParams.delete('reportSection');
+   history.replaceState(history.state,'',url.toString());
+ },[]);
  const snapshot=operationalReportSnapshot(data,month,asOf);
  const insights=reportInsightModel(data,month,asOf);
  const series=reportFlowSeries(data,month,6,asOf);

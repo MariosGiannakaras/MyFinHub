@@ -330,7 +330,7 @@ function QaWorkspace(){
     if(item.action==='collect_lending'&&item.person){openSpecial({mode:'lending',action:'repay',person:item.person,amount:item.amount,accountId:data.state.settings.defaultIncomeAccount});return}
     if(item.action==='complete_scheduled'&&item.scheduledId){openSpecial({mode:'scheduled',scheduledId:item.scheduledId});return}
     if(item.action==='open_forecast'){setPage('planning');return}
-    if(item.action==='open_budgets'){setPage('reports')}
+    if(item.action==='open_budgets'){const url=new URL(location.href);url.searchParams.set('reportSection','budgets');history.replaceState(history.state,'',url.toString());setPage('reports')}
   };
   const handleCommand=(row:RankedCommandSearchItem)=>{
     setCommandOpen(false);const action=row.action;
