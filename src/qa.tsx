@@ -348,6 +348,7 @@ function QaWorkspace(){
       url.searchParams.delete('reportSection');
       url.searchParams.set('commandTx',action.id);
       url.searchParams.set('commandSource',action.source);
+      url.searchParams.set('commandMonth',action.date.slice(0,7));
       history.replaceState(history.state,'',url.toString());
       setPage('transactions');return;
     }

@@ -91,13 +91,13 @@ export function TransactionsPage({
 
   useEffect(()=>{
     const params=new URLSearchParams(location.search);
-    const focusId=params.get('commandTx'),focusSource=params.get('commandSource');
-    if(!focusId||(focusSource!=='legacy'&&focusSource!=='event'))return;
+    const focusId=params.get('commandTx'),focusSource=params.get('commandSource'),focusMonth=params.get('commandMonth');
+    if(!focusId||(focusSource!=='legacy'&&focusSource!=='event')||focusMonth!==month)return;
     const match=sourceRows.find(row=>row.id===focusId&&row.source===focusSource);
-    if(!match)return; // Retain the one-shot hint until its target month is loaded.
     const nextUrl=new URL(location.href);
-    nextUrl.searchParams.delete('commandTx');nextUrl.searchParams.delete('commandSource');
+    nextUrl.searchParams.delete('commandTx');nextUrl.searchParams.delete('commandSource');nextUrl.searchParams.delete('commandMonth');
     history.replaceState(history.state,'',nextUrl.toString());
+    if(!match){setMessage('Η συναλλαγή δεν είναι πλέον διαθέσιμη στην επιλεγμένη περίοδο.');return}
     const ordered=[...sourceRows].sort((a,b)=>(sortDirection==='asc'?1:-1)*(a.date.localeCompare(b.date)||a.id.localeCompare(b.id)));
     const index=ordered.findIndex(row=>row.id===focusId&&row.source===focusSource);
     setQuery('');setAccount('all');setCategory('all');setType('all');
