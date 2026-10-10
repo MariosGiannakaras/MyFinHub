@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { qaFinanceData } from '../src/qaFixture.js';
+import { createEvent } from '../src/lib/domain.js';
 import { buildCommandSearchIndex, normalizeCommandText, searchCommandItems } from '../src/lib/commandSearch.js';
 import type { FinanceData, Loan, PaymentCard } from '../src/types.js';
 
@@ -37,6 +38,21 @@ describe('unified command search',()=>{
     expect(serialized).not.toContain('Private Holder');expect(serialized).not.toContain('vault-private-token');expect(serialized).not.toContain('4321');
   });
 
+  it('does not hide current loan and lending collection commands due to future settlements',()=>{
+    const data=clone();
+    data.state.customLoans=[{id:'future-paid-loan',name:'Future paid loan',total:100,installment:100,installments:1,paidCount:0,defaultAccountId:'piraeus-payroll'}];
+    const loanPayment=createEvent({kind:'expense',date:'2026-08-29',amount:100,note:'Future loan payment',accountId:'piraeus-payroll'});loanPayment.loanId='future-paid-loan';
+    const lending=createEvent({kind:'lending',date:'2026-08-01',amount:50,note:'Lent',accountId:'piraeus-payroll',person:'Future Repayee'});
+    const repay=createEvent({kind:'repayment',date:'2026-08-29',amount:50,note:'Future repayment',accountId:'piraeus-payroll',person:'Future Repayee'});
+    data.state.events=[...(data.state.events??[]),loanPayment,lending,repay];
+    const now=buildCommandSearchIndex(data,'2026-08-17').map(row=>row.id);
+    const after=buildCommandSearchIndex(data,'2026-08-30').map(row=>row.id);
+    expect(now).toContain('action:loan-payment:future-paid-loan');
+    expect(now).toContain('action:lending:Future Repayee');
+    expect(after).not.toContain('action:loan-payment:future-paid-loan');
+    expect(after).not.toContain('action:lending:Future Repayee');
+    expect(searchCommandItems(data,'future paid',{asOf:'2026-08-17'}).some(row=>row.id==='action:loan-payment:future-paid-loan')).toBe(true);
+  });
   it('preserves exact stable identifiers for eligible direct actions',()=>{
     const data=clone();
     const loan:Loan={id:'loan-search',name:'QA Laptop Loan',total:1000,installment:100,installments:10,paidCount:0,defaultAccountId:'piraeus-payroll'};

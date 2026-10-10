@@ -113,6 +113,15 @@ describe('Needs Attention deterministic engine',()=>{
     expect(allAttentionItems(data,'2026-08-30').some(item=>item.id==='lending:Future Test')).toBe(false);
   });
 
+  it('does not settle an overdue loan using a future-dated payment',()=>{
+    const data=clone();
+    data.state.customLoans=[...(data.state.customLoans??[]),{id:'future-attention-loan',name:'Future paid installment',total:100,installment:100,installments:1,paidCount:0,day:'10',firstExpectedDate:'2026-08-10',defaultAccountId:'piraeus-payroll'}];
+    const payment=createEvent({kind:'expense',date:'2026-08-29',amount:100,note:'Paid later',accountId:'piraeus-payroll'});payment.loanId='future-attention-loan';
+    data.state.events=[...(data.state.events??[]),payment];
+    expect(allAttentionItems(data,'2026-08-17').find(row=>row.id==='loan:future-attention-loan')).toMatchObject({severity:'danger',dueDate:'2026-08-10'});
+    expect(allAttentionItems(data,'2026-08-30').some(row=>row.id==='loan:future-attention-loan')).toBe(false);
+  });
+
   it('only marks lending overdue when an explicit expected return date exists and deduplicates by person',()=>{
     const data=clone();
     const first=createEvent({kind:'lending',date:'2026-08-01',amount:20,note:'QA loan',accountId:'piraeus-payroll',person:'Μαρία',expectedReturnDate:'2026-08-10'});
