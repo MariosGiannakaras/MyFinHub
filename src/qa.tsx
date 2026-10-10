@@ -210,7 +210,7 @@ function buildQaData(params:URLSearchParams){
     const longLoan:Loan={id:'qa-loan-120',name:'QA 120 δόσεις',total:12000,installment:100,installments:120,paidCount:60,day:'15',provider:'QA Provider',source:'qa',kind:'loan',accountingMode:'expense-per-installment',defaultAccountId:'piraeus-payroll',firstExpectedDate:'2026-01-15',longTermRecurring:true};
     next.seed.loans=[];next.state.customLoans=[longLoan];next.state.loanOverrides={};next.state.loanExtra={};
   }
-  if(params.get('state')==='lending-rich'){
+  if(params.get('state')==='lending-rich'||params.get('state')==='lending-future'){
     const people=['Άννα Παπαδοπούλου','Γιώργος Νικολάου','Ελένη Δημητρίου','Νίκος Κωνσταντίνου','Μαρία Αντωνίου'];
     const additions=people.flatMap((person,index)=>{
       const lent=createEvent({kind:'lending',date:`2026-08-${String(6+index).padStart(2,'0')}`,amount:80+(index*25),note:`QA δανεικά ${index+1}`,accountId:'piraeus-payroll',person});
@@ -221,6 +221,12 @@ function buildQaData(params:URLSearchParams){
       return [lent,repaid];
     });
     next.state.events=[...(next.state.events??[]),...additions];
+    if(params.get('state')==='lending-future'){
+      const repayment=createEvent({kind:'repayment',date:'2026-08-29',amount:60,note:'QA future repayment must not settle balance today',person:people[0],accountId:'piraeus-payroll'});
+      const lending=createEvent({kind:'lending',date:'2026-08-30',amount:210,note:'QA future loan not yet outstanding',person:people[4],accountId:'piraeus-payroll'});
+      repayment.id='qa-lending-future-repaid';lending.id='qa-lending-future-lent';
+      next.state.events=[...(next.state.events??[]),repayment,lending];
+    }
   }
   if(params.get('state')==='recurring-rich'){
     const categories=['Τηλεπικοινωνίες','Διασκέδαση','Σταθερά έξοδα'];
