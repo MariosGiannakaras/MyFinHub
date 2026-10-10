@@ -103,6 +103,16 @@ describe('Needs Attention deterministic engine',()=>{
     expect(item?.severity).toBe('danger');expect(item?.cardId).toBe('qa-card');expect(item?.reason).toContain('135%');
   });
 
+  it('keeps overdue lending visible until a future repayment actually happens',()=>{
+    const data=clone();
+    const lend=createEvent({kind:'lending',date:'2026-08-01',amount:60,note:'Due loan',accountId:'piraeus-payroll',person:'Future Test',expectedReturnDate:'2026-08-10'});
+    const repayment=createEvent({kind:'repayment',date:'2026-08-29',amount:60,note:'Future settlement',accountId:'piraeus-payroll',person:'Future Test'});
+    data.state.events=[...(data.state.events??[]),lend,repayment];
+    const now=allAttentionItems(data,'2026-08-17').find(item=>item.id==='lending:Future Test');
+    expect(now).toMatchObject({severity:'danger',amount:60,dueDate:'2026-08-10'});
+    expect(allAttentionItems(data,'2026-08-30').some(item=>item.id==='lending:Future Test')).toBe(false);
+  });
+
   it('only marks lending overdue when an explicit expected return date exists and deduplicates by person',()=>{
     const data=clone();
     const first=createEvent({kind:'lending',date:'2026-08-01',amount:20,note:'QA loan',accountId:'piraeus-payroll',person:'Μαρία',expectedReturnDate:'2026-08-10'});
