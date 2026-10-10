@@ -62,8 +62,8 @@ function ContextModal({data,asOf,context,onClose,onCreate,onCompleteScheduled}:{
           :context.mode==='scheduled'
             ?(scheduled?.accountId||(scheduled?.kind==='income'?defaultIncome:defaultExpense))
             :defaultExpense;
-  const loanOutstandingAmount=loan?loanOutstanding(data,loan):0;
-  const initialLoanPlan=loan&&!isSelfLoan(loan)?loanInstallmentPaymentPlan(data,loan,1):null;
+  const loanOutstandingAmount=loan?loanOutstanding(data,loan,asOf):0;
+  const initialLoanPlan=loan&&!isSelfLoan(loan)?loanInstallmentPaymentPlan(data,loan,1,asOf):null;
   const initialAmount=context.mode==='credit'
     ?(context.amount??(context.action==='payment'&&card?(selectedStatement?.remaining??creditDebtForCard(data,card.id,asOf)):0))
     :context.mode==='lending'
@@ -95,8 +95,8 @@ function ContextModal({data,asOf,context,onClose,onCreate,onCompleteScheduled}:{
   const [person,setPerson]=useState(context.mode==='lending'?(context.person??''):'');
   const [expectedReturnDate,setExpectedReturnDate]=useState(context.mode==='lending'&&context.action==='lend'?(context.expectedReturnDate??''):'');
   const [error,setError]=useState('');
-  const loanPaymentPlan=context.mode==='loan'&&loan&&!isSelfLoan(loan)?loanInstallmentPaymentPlan(data,loan,installmentCount):null;
-  const remainingLoanInstallments=loan&&!isSelfLoan(loan)?loanRemainingInstallments(data,loan):0;
+  const loanPaymentPlan=context.mode==='loan'&&loan&&!isSelfLoan(loan)?loanInstallmentPaymentPlan(data,loan,installmentCount,asOf):null;
+  const remainingLoanInstallments=loan&&!isSelfLoan(loan)?loanRemainingInstallments(data,loan,asOf):0;
 
   const submit=()=>{
     try{
@@ -125,7 +125,7 @@ function ContextModal({data,asOf,context,onClose,onCreate,onCompleteScheduled}:{
         }
       }else if(context.mode==='loan'){
         if(!loan)throw new Error('Η επιλεγμένη δόση ή το δάνειο δεν είναι πλέον διαθέσιμο.');
-        const outstanding=loanOutstanding(data,loan);if(outstanding<=0)throw new Error('Η συγκεκριμένη υποχρέωση δεν έχει υπόλοιπο προς πληρωμή.');if(numeric>outstanding+.005)throw new Error(`Η πληρωμή δεν μπορεί να ξεπερνά το υπόλοιπο των ${money.format(outstanding)}.`);
+        const outstanding=loanOutstanding(data,loan,asOf);if(outstanding<=0)throw new Error('Η συγκεκριμένη υποχρέωση δεν έχει υπόλοιπο προς πληρωμή.');if(numeric>outstanding+.005)throw new Error(`Η πληρωμή δεν μπορεί να ξεπερνά το υπόλοιπο των ${money.format(outstanding)}.`);
         if(!accounts.some(account=>account.id===accountId))throw new Error('Ο λογαριασμός πληρωμής δεν είναι πλέον διαθέσιμος. Διάλεξε έναν ενεργό λογαριασμό.');
         if(!isSelfLoan(loan)&&!loanPaymentPlan)throw new Error('Δεν υπάρχουν διαθέσιμες δόσεις προς πληρωμή.');
         if(isSelfLoan(loan)){
