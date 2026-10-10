@@ -8,6 +8,7 @@ const app=read('src/App.tsx');
 const qa=read('src/qa.tsx');
 const settings=read('src/pages/SettingsPage.tsx');
 const reports=read('src/pages/ReportsPage.tsx');
+const budgetEditor=read('src/components/BudgetRuleSettings.tsx');
 const savings=read('src/pages/SavingsPage.tsx');
 const cards=read('src/lib/cards.ts');
 const attention=read('src/lib/attention.ts');
@@ -31,6 +32,8 @@ describe('category budget and rule integration source contracts',()=>{
     expect(app).toContain("item.action === 'open_budgets'");
     expect(reports).toContain('<BudgetRuleSettings');
     expect(reports).toContain('budgetMonth={month}');
+    expect(reports).toContain('asOf={asOf} budgetMonth={month}');
+    expect(budgetEditor).toContain('budgetProgress(data,month,asOf)');
     expect(reports).toContain('onUpsertBudget={onUpsertBudget}');
     expect(reports).toContain('data-budget-overview');
     expect(reports).toContain('Πρόβλεψη τέλους μήνα');
