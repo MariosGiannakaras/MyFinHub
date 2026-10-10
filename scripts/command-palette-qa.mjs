@@ -35,6 +35,15 @@ try{
  assert(await c.call("function(){const section=document.querySelector('#report-budgets');return Boolean(section?.open&&section.querySelector('summary')===document.activeElement)}"),'budget command navigates with focus on editor summary');
  await screenshot('command-budget-editor-from-dashboard');
 
+ console.log('Command Palette QA: exact Loan entity focus and paginated list targeting');
+ const loanUrl=new URL(baseUrl);loanUrl.searchParams.set('page','reports');loanUrl.searchParams.set('state','loans-long');
+ await c.send('Page.navigate',{url:loanUrl.href});
+ await waitFor("function(){return document.querySelector('#main-workspace h1')?.textContent?.includes('Αναφορές')}",'loan entity command source');
+ await ctrlK();await setSearch('QA 120 δόσεις');await activateOption('QA 120 δόσειςΔόση / δάνειο');await press('Enter');
+ await waitFor("function(){return Boolean(document.querySelector('.loan-list-row[data-command-loan-id=qa-loan-120]'))}",'named Loan exact row');
+ await waitFor("function(){return document.activeElement===document.querySelector('.loan-list-row[data-command-loan-id=qa-loan-120]')}",'named Loan keyboard focus');
+ await screenshot('command-exact-loan-row');
+
  console.log('Command Palette QA: named Lending result focuses the exact person, including a repeated same-route selection');
  const lendingUrl=new URL(baseUrl);lendingUrl.searchParams.set('page','reports');lendingUrl.searchParams.set('state','lending-rich');
  await c.send('Page.navigate',{url:lendingUrl.href});
