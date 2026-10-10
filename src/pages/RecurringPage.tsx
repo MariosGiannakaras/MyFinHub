@@ -146,7 +146,7 @@ export function RecurringPage({data,asOf,onUpsert,onUpsertDurably,onOpenLoans,on
       </>:<div className="empty-state">Δεν υπάρχουν ενεργά πάγια.</div>}
     </section>
 
-    <LongTermLoanSummary data={data} onPayLoan={onPayLoan} onOpenLoans={onOpenLoans}/>
+    <LongTermLoanSummary data={data} asOf={asOf} onPayLoan={onPayLoan} onOpenLoans={onOpenLoans}/>
 
     <details className={`panel surface-flat inactive-recurring ${inactive.length?'':'is-empty'}`} data-inactive-recurring-history>
       <summary className="panel-head" aria-label={`Παγωμένα και ανενεργά πάγια, ${inactive.length}`}><div><span>Παγωμένα & ανενεργά</span><small>Πάγια που είναι προσωρινά παγωμένα ή ανενεργά.</small></div><strong>{inactive.length}</strong></summary>

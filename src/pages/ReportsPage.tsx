@@ -37,7 +37,7 @@ export function ReportsPage({data,month,asOf,privacyVisible,onPrivacyVisibleChan
  const cumulativeSeries=useMemo(()=>{let running=0;return series.map(row=>({...row,cumulative:(running+=row.income-row.expense)}))},[series]);
  const momentum=categoryMomentum(data,month,100,asOf);
  const counterparties=reportExpenseCounterparties(data,month,5,asOf);
- const loanBurden=reportLoanBurden(data);
+ const loanBurden=reportLoanBurden(data,reportingPeriodEndDate(month,asOf));
  const accounts=allAccounts(data).filter(account=>account.kind!=='credit');
  const accountIds=accounts.slice(0,4).map(account=>account.id);
  const accountSeries=primaryAccountSeries(data,month,accountIds,6,asOf);

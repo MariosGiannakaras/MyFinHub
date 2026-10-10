@@ -65,8 +65,8 @@ export function reportExpenseCounterparties(data:FinanceData,month:string,limit=
   return rows.slice(0,Math.max(0,limit)).map(row=>({...row,share:gross>0?row.amount/gross:null}));
 }
 
-export function reportLoanBurden(data:FinanceData){
-  const rows=activeLongTermLoanObligations(data).map(row=>({id:row.loan.id,name:row.loan.name,amount:row.nextAmount,outstanding:row.outstanding,remainingInstallments:row.remainingInstallments}));
+export function reportLoanBurden(data:FinanceData,asOf?:string){
+  const rows=activeLongTermLoanObligations(data,asOf).map(row=>({id:row.loan.id,name:row.loan.name,amount:row.nextAmount,outstanding:row.outstanding,remainingInstallments:row.remainingInstallments}));
   return {total:rows.reduce((sum,row)=>sum+row.amount,0),count:rows.length,rows};
 }
 

@@ -27,8 +27,8 @@ describe('payment flow normalization source contracts',()=>{
 
   it('routes linked loan obligations from Recurring into the same canonical loan payment context',()=>{
     expect(recurring).toContain('onPayLoan:(loanId:string)=>void');
-    expect(recurring).toContain('<LongTermLoanSummary data={data} onPayLoan={onPayLoan}');
-    expect(linkedLoans).toContain('activeLongTermLoanObligations(data)');
+    expect(recurring).toContain('<LongTermLoanSummary data={data} asOf={asOf} onPayLoan={onPayLoan}');
+    expect(linkedLoans).toContain('activeLongTermLoanObligations(data,asOf)');
     expect(linkedLoans).toContain('data-linked-loan={loan.id}');
     expect(linkedLoans).toContain('onClick={()=>onPayLoan(loan.id)}');
     for(const source of [compact(app),compact(qa)])expect(source).toMatch(/page==='recurring'.*onPayLoan=\{\(?loanId\)?=>openSpecial\(\{mode:'loan',loanId\}\)\}/);
