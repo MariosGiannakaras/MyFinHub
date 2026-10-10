@@ -14,7 +14,8 @@ describe('staged card profile + secure vault boundary',()=>{
     expect(qa).toContain('onStageNewCard={stageNewCard}');
   });
   it('requires durable card-profile deletion before remote vault cleanup and supports persisted retry',()=>{
-    expect(app.indexOf('await finance.updateDurably(current=>withCardSecretCleanupPending')).toBeLessThan(app.indexOf('finishCardDeletion(card.id,finance.updateDurably)'));
+    expect(app.indexOf('await finance.updateDurably(current=>withCardSecretCleanupPending')).toBeLessThan(app.indexOf('await runCardCleanup(card.id)'));
+    expect(app).toContain('cleanupInFlight.current.set(id,task)');
     expect(app).toContain('cleanupAttempted.current.add(id)');
     expect(app).toContain('pendingCardSecretDeletes??[]');
     expect(read('server/cardVaultStore.ts')).toContain("throw new ApiError(409,'CARD_SECRET_DELETE_NOT_COMMITTED'");
