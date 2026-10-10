@@ -33,15 +33,15 @@ type ActivityRow={id:string;date:string;title:string;category:string;subcategory
 export function ReportsPage({data,month,asOf,privacyVisible,onPrivacyVisibleChange,onUpsertBudget,onDeleteBudget,onUpsertRule,onDeleteRule}:{data:FinanceData;month:string;asOf:string;privacyVisible:boolean;onPrivacyVisibleChange:(visible:boolean)=>void;onUpsertBudget:(budget:MonthlyBudget)=>void;onDeleteBudget:(id:string)=>void;onUpsertRule:(rule:TransactionRule)=>void;onDeleteRule:(id:string)=>void}){
  const snapshot=operationalReportSnapshot(data,month,asOf);
  const insights=reportInsightModel(data,month,asOf);
- const series=reportFlowSeries(data,month,6);
+ const series=reportFlowSeries(data,month,6,asOf);
  const cumulativeSeries=useMemo(()=>{let running=0;return series.map(row=>({...row,cumulative:(running+=row.income-row.expense)}))},[series]);
- const momentum=categoryMomentum(data,month,100);
- const counterparties=reportExpenseCounterparties(data,month,5);
+ const momentum=categoryMomentum(data,month,100,asOf);
+ const counterparties=reportExpenseCounterparties(data,month,5,asOf);
  const loanBurden=reportLoanBurden(data);
  const accounts=allAccounts(data).filter(account=>account.kind!=='credit');
  const accountIds=accounts.slice(0,4).map(account=>account.id);
  const accountSeries=primaryAccountSeries(data,month,accountIds,6,asOf);
- const budgetRows=budgetProgress(data,month);
+ const budgetRows=budgetProgress(data,month,asOf);
  const exceededBudgets=budgetRows.filter(row=>row.status==='exceeded').length;
  const nearBudgets=budgetRows.filter(row=>row.status==='near').length;
  const overallBudget=budgetRows.find(row=>row.scope==='overall')??null;
@@ -92,21 +92,21 @@ export function ReportsPage({data,month,asOf,privacyVisible,onPrivacyVisibleChan
  const activityRows=useMemo<ActivityRow[]>(()=>{
    const rows:ActivityRow[]=[];
    for(const tx of effectiveLegacyTransactions(data)){
-     if(!tx.date.startsWith(`${month}-`))continue;
+     if(!tx.date.startsWith(`${month}-`)||(month===asOf.slice(0,7)&&tx.date>asOf))continue;
      const impact=flowImpactLegacy(data,tx);
      const amount=impact.income+impact.refund-impact.expense-impact.saving;
      if(Math.abs(amount)<=.005)continue;
      rows.push({id:`legacy:${tx.id}`,date:tx.date,title:cleanNote(tx.note)||tx.category||'Συναλλαγή',category:tx.category||'Άλλο',subcategory:tx.subcategory,amount});
    }
    for(const event of data.state.events??[]){
-     if(!event.date.startsWith(`${month}-`))continue;
+     if(!event.date.startsWith(`${month}-`)||(month===asOf.slice(0,7)&&event.date>asOf))continue;
      const impact=flowImpactEvent(event);
      const amount=impact.income+impact.refund-impact.expense-impact.saving;
      if(Math.abs(amount)<=.005)continue;
      rows.push({id:`event:${event.id}`,date:event.date,title:cleanNote(event.note)||eventKindLabel(event.kind),category:event.category||eventKindLabel(event.kind),subcategory:event.subcategory,amount});
    }
    return rows.sort((a,b)=>b.date.localeCompare(a.date)||b.id.localeCompare(a.id));
- },[data,month]);
+ },[data,month,asOf]);
  const recentTransactions=activityRows.slice(0,5);
  const topIncomeRows=activityRows.filter(row=>row.amount>0).sort((a,b)=>b.amount-a.amount||b.date.localeCompare(a.date)).slice(0,5);
  const periodEndDate=reportingPeriodEndDate(month,asOf);

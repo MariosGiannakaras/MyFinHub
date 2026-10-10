@@ -31,6 +31,16 @@ describe('operational reports',()=>{
   expect(reportInsightModel(data,'2026-08','2026-08-17').credit.debt).toBe(0);
   expect(reportInsightModel(data,'2026-08','2026-09-02').credit.debt).toBe(75);
  });
+ it('excludes future current-month realized expenses from Reports while preserving historical totals',()=>{
+  const data=fixture(),future=createEvent({kind:'expense',date:'2026-08-27',amount:50,note:'Future expense',category:'Όχημα',subcategory:'Βενζίνη',accountId:'piraeus-payroll'});
+  data.state.events=[future];
+  expect(operationalReportSnapshot(data,'2026-08','2026-08-17').flow.expense).toBe(40);
+  expect(operationalReportSnapshot(data,'2026-08','2026-09-01').flow.expense).toBe(90);
+  expect(reportFlowSeries(data,'2026-08',2,'2026-08-17').at(-1)?.expense).toBe(40);
+  expect(reportFlowSeries(data,'2026-08',2,'2026-09-01').at(-1)?.expense).toBe(90);
+  expect(subcategoryTotals(data,'2026-08','2026-08-17')).toContainEqual({name:'Όχημα › Βενζίνη',value:40});
+  expect(subcategoryTotals(data,'2026-08','2026-09-01')).toContainEqual({name:'Όχημα › Βενζίνη',value:90});
+ });
  it('uses explicit insufficient-history states instead of inventing a trend',()=>{const model=reportInsightModel(fixture(),'2026-08');expect(model.sufficientExpenseHistory).toBe(false);expect(model.expenseVsTrailingAverage).toBeNull();expect(model.savingsRate).not.toBeNull();expect(model.previousSavingsRate).toBeNull()});
  it('derives trailing comparisons, recurring burden and category momentum from recorded periods',()=>{const data=fixture();data.seed.transactions.push({id:'jul-income',date:'2026-07-01',type:'income',accountId:'piraeus-payroll',amount:800,note:'Salary',category:'Μισθός'},{id:'jul-fuel',date:'2026-07-02',type:'expense',accountId:'piraeus-payroll',amount:20,note:'Fuel',category:'Όχημα',subcategory:'Βενζίνη'});const model=reportInsightModel(data,'2026-08');expect(model.sufficientExpenseHistory).toBe(true);expect(model.trailingExpenseAverage).toBeCloseTo(20/3);expect(model.expenseVsTrailingAverage).toBeCloseTo(5);expect(model.recurringBurden).toBeCloseTo(.03);expect(model.topCategory).toMatchObject({name:'Όχημα › Βενζίνη',value:40,share:1,change:1});expect(categoryMomentum(data,'2026-08')[0]).toMatchObject({name:'Όχημα › Βενζίνη',value:40,previous:20,change:1})});
 });

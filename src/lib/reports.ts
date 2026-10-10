@@ -14,29 +14,29 @@ function reportMonths(month:string,count=6){return Array.from({length:count},(_,
 function reportMonthLabel(month:string){const parsed=parseMonthOnly(month);if(!parsed)throw new Error('Μη έγκυρος μήνας.');return new Intl.DateTimeFormat('el-GR',{month:'short',year:'2-digit',timeZone:'UTC'}).format(new Date(Date.UTC(parsed.year,parsed.month-1,1)))}
 export function monthEnd(month:string){return calendarMonthRange(month).end}
 
-export function reportFlowSeries(data:FinanceData,month:string,count=6){return reportMonths(month,count).map(value=>{const flow=operationalMonthlyFlow(data,value);return {month:value,label:reportMonthLabel(value),income:flow.income,expense:flow.expense,saving:flow.saving}})}
+export function reportFlowSeries(data:FinanceData,month:string,count=6,asOf?:string){return reportMonths(month,count).map(value=>{const flow=operationalMonthlyFlow(data,value,asOf);return {month:value,label:reportMonthLabel(value),income:flow.income,expense:flow.expense,saving:flow.saving}})}
 
 export function primaryAccountSeries(data:FinanceData,month:string,ids=['piraeus-payroll','piraeus-savings'],count=6,asOf?:string){return reportMonths(month,count).map(value=>{const balances=accountBalances(data,asOf?reportingPeriodEndDate(value,asOf):monthEnd(value));const row:Record<string,string|number>={month:value,label:reportMonthLabel(value)};for(const id of ids)row[id]=balances[id]||0;return row})}
 
-export function subcategoryTotals(data:FinanceData,month:string){
+export function subcategoryTotals(data:FinanceData,month:string,asOf?:string){
   const totals=new Map<string,number>();const add=(label:string,value:number)=>{totals.set(label,(totals.get(label)||0)+value)};
-  for(const tx of effectiveLegacyTransactions(data)){if(!tx.date.startsWith(`${month}-`))continue;const impact=flowImpactLegacy(data,tx);if(impact.expense)add(categoryPath(tx.category,tx.subcategory),impact.expense);if(impact.refund)add(categoryPath(tx.category,tx.subcategory),-impact.refund)}
-  for(const event of data.state.events??[]){if(!event.date.startsWith(`${month}-`))continue;if(event.parts?.length){for(const part of event.parts){if((part.kind??'expense')==='expense')add(categoryPath(part.category,part.subcategory),part.amount);if(part.kind==='refund')add(categoryPath(part.category,part.subcategory),-part.amount)}continue}const impact=flowImpactEvent(event);if(impact.expense)add(categoryPath(event.category,event.subcategory),impact.expense);if(impact.refund)add(categoryPath(event.category,event.subcategory),-impact.refund)}
+  for(const tx of effectiveLegacyTransactions(data)){if(!tx.date.startsWith(`${month}-`)||(asOf&&month===asOf.slice(0,7)&&tx.date>asOf))continue;const impact=flowImpactLegacy(data,tx);if(impact.expense)add(categoryPath(tx.category,tx.subcategory),impact.expense);if(impact.refund)add(categoryPath(tx.category,tx.subcategory),-impact.refund)}
+  for(const event of data.state.events??[]){if(!event.date.startsWith(`${month}-`)||(asOf&&month===asOf.slice(0,7)&&event.date>asOf))continue;if(event.parts?.length){for(const part of event.parts){if((part.kind??'expense')==='expense')add(categoryPath(part.category,part.subcategory),part.amount);if(part.kind==='refund')add(categoryPath(part.category,part.subcategory),-part.amount)}continue}const impact=flowImpactEvent(event);if(impact.expense)add(categoryPath(event.category,event.subcategory),impact.expense);if(impact.refund)add(categoryPath(event.category,event.subcategory),-impact.refund)}
   return [...totals.entries()].map(([name,value])=>({name,value:Math.max(0,value)})).filter(row=>row.value>.005).sort((a,b)=>b.value-a.value);
 }
 
 function relativeChange(current:number,previous:number){return previous===0?(current===0?0:null):(current-previous)/Math.abs(previous)}
 function average(values:number[]){return values.length?values.reduce((sum,value)=>sum+value,0)/values.length:0}
 
-export function categoryMomentum(data:FinanceData,month:string,limit=10){
-  const current=subcategoryTotals(data,month);
+export function categoryMomentum(data:FinanceData,month:string,limit=10,asOf?:string){
+  const current=subcategoryTotals(data,month,asOf);
   const previous=new Map(subcategoryTotals(data,shiftReportMonth(month,-1)).map(row=>[row.name,row.value]));
   return current.slice(0,limit).map(row=>{const previousValue=previous.get(row.name)??0;return {...row,previous:previousValue,change:relativeChange(row.value,previousValue)}});
 }
 
 type ReportExpenseCounterparty={title:string;category:string;amount:number;share:number|null;count:number;lastDate:string};
 
-export function reportExpenseCounterparties(data:FinanceData,month:string,limit=5):ReportExpenseCounterparty[]{
+export function reportExpenseCounterparties(data:FinanceData,month:string,limit=5,asOf?:string):ReportExpenseCounterparty[]{
   const grouped=new Map<string,{title:string;category:string;amount:number;count:number;lastDate:string}>();
   const add=(title:string,category:string,amount:number,date:string)=>{
     if(!Number.isFinite(amount)||amount<=.005)return;
@@ -48,13 +48,13 @@ export function reportExpenseCounterparties(data:FinanceData,month:string,limit=
     grouped.set(key,{title:safeTitle,category:safeCategory,amount,count:1,lastDate:date});
   };
   for(const tx of effectiveLegacyTransactions(data)){
-    if(!tx.date.startsWith(`${month}-`))continue;
+    if(!tx.date.startsWith(`${month}-`)||(asOf&&month===asOf.slice(0,7)&&tx.date>asOf))continue;
     const impact=flowImpactLegacy(data,tx);
     const category=categoryPath(tx.category,tx.subcategory);
     add(tx.note||category,category,impact.expense,tx.date);
   }
   for(const event of data.state.events??[]){
-    if(!event.date.startsWith(`${month}-`))continue;
+    if(!event.date.startsWith(`${month}-`)||(asOf&&month===asOf.slice(0,7)&&event.date>asOf))continue;
     const impact=flowImpactEvent(event);
     const partCategories=[...new Set((event.parts??[]).filter(part=>(part.kind??'expense')==='expense').map(part=>categoryPath(part.category,part.subcategory)))];
     const category=partCategories.length===1?partCategories[0]:partCategories.length>1?'Διαχωρισμένη συναλλαγή':categoryPath(event.category,event.subcategory);
@@ -95,12 +95,12 @@ function creditPortfolioSnapshot(data:FinanceData,asOf:string){
 }
 
 export function reportInsightModel(data:FinanceData,month:string,asOf?:string){
-  const flow=operationalMonthlyFlow(data,month);
+  const flow=operationalMonthlyFlow(data,month,asOf);
   const previousMonth=shiftReportMonth(month,-1);
   const previous=operationalMonthlyFlow(data,previousMonth);
   const recent=reportFlowSeries(data,shiftReportMonth(month,-1),3);
   const trailingExpenseAverage=average(recent.map(row=>row.expense));
-  const categories=subcategoryTotals(data,month);
+  const categories=subcategoryTotals(data,month,asOf);
   const previousCategories=new Map(subcategoryTotals(data,previousMonth).map(row=>[row.name,row.value]));
   const topCategory=categories[0];
   const recurring=recurringMonthlyTotal(data);
@@ -129,6 +129,6 @@ export function reportInsightModel(data:FinanceData,month:string,asOf?:string){
 }
 
 export function operationalReportSnapshot(data:FinanceData,month:string,asOf?:string){
-  const flow=operationalMonthlyFlow(data,month);const previous=operationalMonthlyFlow(data,shiftReportMonth(month,-1));const cutoff=asOf?reportingPeriodEndDate(month,asOf):monthEnd(month);const balances=accountBalances(data,cutoff);const credit=creditPortfolioSnapshot(data,cutoff);const receivables=lendingRows(data).reduce((sum,row)=>sum+row.outstanding,0);const recurring=recurringMonthlyTotal(data);const savings=savingsBreakdown(data,month);const budget=data.state.settings.monthlyBudget??0;
+  const flow=operationalMonthlyFlow(data,month,asOf);const previous=operationalMonthlyFlow(data,shiftReportMonth(month,-1));const cutoff=asOf?reportingPeriodEndDate(month,asOf):monthEnd(month);const balances=accountBalances(data,cutoff);const credit=creditPortfolioSnapshot(data,cutoff);const receivables=lendingRows(data).reduce((sum,row)=>sum+row.outstanding,0);const recurring=recurringMonthlyTotal(data);const savings=savingsBreakdown(data,month,asOf);const budget=data.state.settings.monthlyBudget??0;
   return {flow,previous,balances,creditDebt:credit.debt,creditLimit:credit.limit,creditUsage:credit.usage,creditAvailable:credit.available,creditCards:credit.activeCards,creditCardRows:credit.cards,receivables,recurring,savings,budget,budgetRemaining:budget-flow.expense};
 }
