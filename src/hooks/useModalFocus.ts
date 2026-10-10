@@ -111,7 +111,7 @@ export function useModalFocus<T extends HTMLElement>(open: boolean, preferred?: 
       // before the exiting dialog unmounts. Preserve that destination; restore
       // the opener and scroll only after ordinary dismissals.
       const focused=document.activeElement;
-      const hasDestination=focused instanceof HTMLElement&&focused.isConnected&&focused!==body&&!root.contains(focused);
+      const hasDestination=focused instanceof HTMLElement&&focused.isConnected&&focused!==body&&focused!==opener.current&&!root.contains(focused);
       if(!hasDestination){
         window.scrollTo({ left: scrollX, top: scrollY, behavior: 'auto' });
         queueMicrotask(() => opener.current?.focus({ preventScroll: true }));
