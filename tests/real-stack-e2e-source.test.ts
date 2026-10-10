@@ -41,6 +41,9 @@ describe('zero-cost real-stack E2E source contract',()=>{
     expect(script).toContain("[real-stack] stage card-profile-vault-durable-cleanup");
     expect(script).toContain("'CARD_SECRET_DELETE_NOT_COMMITTED'");
     expect(script).toContain('card-cleanup-pending-receipt');
+    expect(script).toContain('card-vault-older-writer-intent-preservation');
+    expect(script).toContain('card-cleanup-legacy-writer-rejected');
+    expect(script).toContain('card-cleanup-premature-ack-rejected');
     expect(script).toContain('card-cleanup-guarded-delete');
     expect(script).toContain('card-vault-undo-protected-atomic-cleanup');
     expect(script).toContain('card-cleanup-undo-protects-vault');

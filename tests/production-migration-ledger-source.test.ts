@@ -56,6 +56,7 @@ const releasePending=[
   "20261008165700_add_recurring_service_assets.sql",
   "20261009190000_allow_recurring_service_asset_storage_owner_read.sql",
   "20261010013500_atomic_card_vault_cleanup.sql",
+  "20261010145500_guard_pending_card_secret_cleanup_intent.sql",
 ] as const;
 
 describe('production migration ledger source contract',()=>{
@@ -71,6 +72,7 @@ describe('production migration ledger source contract',()=>{
     expect(releasePending).toContain('20261008165700_add_recurring_service_assets.sql');
     expect(releasePending).toContain('20261009190000_allow_recurring_service_asset_storage_owner_read.sql');
     expect(releasePending).toContain('20261010013500_atomic_card_vault_cleanup.sql');
+    expect(releasePending).toContain('20261010145500_guard_pending_card_secret_cleanup_intent.sql');
   });
 
   it('keeps formerly release-pending migrations represented as production-applied history',()=>{

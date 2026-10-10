@@ -493,6 +493,29 @@ async function main(){
     const pendingReload=await primary.request('/api/data');
     expect(pendingReload,200,undefined,'card-cleanup-pending-reload');
     assert(!pendingReload.body.data.state.cards.some((item:any)=>item.id===cleanupId)&&pendingReload.body.data.state.pendingCardSecretDeletes.includes(cleanupId),'Card deletion cleanup intent did not survive reload.');
+    console.log('[real-stack] stage card-vault-older-writer-intent-preservation');
+    const beforeLegacyHistory=await primary.request('/api/history');
+    expect(beforeLegacyHistory,200,undefined,'card-cleanup-legacy-history');
+    const omittedMarkerState=structuredClone(pendingReload.body.data.state);
+    delete omittedMarkerState.pendingCardSecretDeletes;
+    const olderWrite=await primary.request('/api/data',{
+      method:'PUT',
+      headers:{'if-match':String(pendingReload.body.revision),'x-rheomiq-history-generation':String(beforeLegacyHistory.body.generation)},
+      body:{state:omittedMarkerState,updatedAt:new Date().toISOString(),historyLabel:'Older client omitted cleanup marker'},
+    });
+    expect(olderWrite,409,'CARD_CLEANUP_INTENT_REQUIRED','card-cleanup-legacy-writer-rejected');
+    const explicitPrematureState=structuredClone(pendingReload.body.data.state);
+    explicitPrematureState.pendingCardSecretDeletes=explicitPrematureState.pendingCardSecretDeletes.filter((id:string)=>id!==cleanupId);
+    const prematureWrite=await primary.request('/api/data',{
+      method:'PUT',
+      headers:{'if-match':String(pendingReload.body.revision),'x-rheomiq-history-generation':String(beforeLegacyHistory.body.generation)},
+      body:{state:explicitPrematureState,updatedAt:new Date().toISOString(),historyLabel:'Premature secret cleanup acknowledgement'},
+    });
+    expect(prematureWrite,409,'CARD_CLEANUP_INTENT_REQUIRED','card-cleanup-premature-ack-rejected');
+    const afterLegacyConflict=await primary.request('/api/data');
+    expect(afterLegacyConflict,200,undefined,'card-cleanup-legacy-reload');
+    assert(afterLegacyConflict.body.revision===pendingReload.body.revision&&(afterLegacyConflict.body.data.state.pendingCardSecretDeletes||[]).includes(cleanupId),'Legacy/premature finance save silently erased cleanup intent or advanced revision.');
+    expect(await primary.request('/api/card-secrets',{method:'POST',body:{cardId:cleanupId}}),200,undefined,'card-cleanup-ciphertext-remains-after-legacy-conflict');
     console.log('[real-stack] stage card-vault-undo-protected-atomic-cleanup');
     const undoCardHistory=await primary.request('/api/history');
     expect(undoCardHistory,200,undefined,'card-cleanup-undo-history');
