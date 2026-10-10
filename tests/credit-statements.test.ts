@@ -82,6 +82,26 @@ describe('credit-card statement cycles',()=>{
     expect(creditStatementView(data,record,'2026-08-17').remaining).toBe(0);
   });
 
+  it('does not apply future statement repayments to an earlier as-of snapshot',()=>{
+    const data=qaFinanceData();
+    const record=(data.state.creditStatements??[]).find(item=>item.id==='qa-card:2026-08-12')!;
+    const futurePayment:FinanceEvent={
+      id:'future-payment',date:'2026-08-20',kind:'card_payment',amount:90,
+      note:'Future scheduled statement payment',cardId:'qa-card',statementId:record.id,
+      fromAccountId:'piraeus-payroll',legs:[{accountId:'piraeus-payroll',amount:-90},{accountId:'credit-card',amount:90}],
+      createdAt:'2026-08-10T12:00:00.000Z',updatedAt:'2026-08-10T12:00:00.000Z',
+    };
+    data.state.events=[...(data.state.events??[]),futurePayment];
+    const before=creditStatementView(data,record,'2026-08-17');
+    expect(before).toMatchObject({purchaseTotal:120,paymentTotal:30,remaining:90,status:'closed'});
+    expect(before.paymentIds).not.toContain(futurePayment.id);
+    expect(recommendedPayableStatement(data,'qa-card','2026-08-17')?.id).toBe(record.id);
+    const after=creditStatementView(data,record,'2026-08-21');
+    expect(after).toMatchObject({purchaseTotal:120,paymentTotal:120,remaining:0,status:'paid'});
+    expect(after.paymentIds).toContain(futurePayment.id);
+    expect(creditStatementView(data,record,'2026-08-11').paymentTotal).toBe(20);
+  });
+
   it('recomputes statement balances after payment deletion and recommends payable closed statements before open ones',()=>{
     const data=qaFinanceData();
     const selected=recommendedPayableStatement(data,'qa-card','2026-08-17');

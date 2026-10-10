@@ -316,6 +316,10 @@ Source comparison found `src/lib/attention.ts` previously used `monthDate(asOf,d
 
 `cashFlowForecast` already uses `loan.firstExpectedDate` as the first possible future installment, but `Attention.loanDue` previously substituted the current month's billing day when the first payment was in a later month, falsely marking not-yet-started loans overdue. The canonical future-first-date guard now suppresses all early reminders, produces an upcoming notice only inside the seven-day window, and marks overdue only after the actual first installment date if unpaid. `tests/attention.test.ts` guards October/December, the warning window and linked first payment. This is implemented but remains **unaccepted** until cross-domain and rendered evidence is reviewed.
 
+### DV-FB05 discovered future-dated statement settlement mismatch
+
+`creditStatementView(data, record, asOf)` previously summed every linked event regardless of `event.date`, while `creditDebtForCard` and canonical balances honor the selected as-of date. A future-dated repayment could therefore falsely mark the statement *paid* in an earlier date view and remove it from payable suggestions. The shared view now excludes events dated after `asOf` from totals, remaining balance, payment/purchase IDs and status **without altering persisted statement records or event history**. `tests/credit-statements.test.ts` locks unpaid August 17 vs paid August 21 and the pre-August-16 payment snapshot. This is implemented but remains pending cross-domain/rendered validation before accepting DV-FB05.
+
 ### Remaining inverse/invariant closeout
 
 Unclassified backend exported operations and hidden/focusable frontend branches require ongoing DV-FB02/03 source + rendered inspection, notably shortcut actions, legacy/taxonomy negative states and saved-card deletion. Verify period/as-of/statement/forecast semantics against canonical selectors (FB05), AAL2/owner/RLS/vault per sensitive operation (FB06), deployment/Windows and Android API boundary (FB09). Do not check DV-FB01–FB10 as accepted or start DV-M before all classified gaps have validated outcomes.
