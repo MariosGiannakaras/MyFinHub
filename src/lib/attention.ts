@@ -111,9 +111,14 @@ function recurringDue(data:FinanceData,item:RecurringItem,asOf:string){
 
 function loanDue(data:FinanceData,loan:Loan,asOf:string){
   if(isSelfLoan(loan)||loanRemainingInstallments(data,loan)<=0||Number(loan.installment||0)<=0)return null;
-  const day=typicalLoanPaymentDay(data,loan);if(!day)return null;
   const first=loan.firstExpectedDate;
-  const current=first&&first>=monthStart(asOf)&&first.slice(0,7)===asOf.slice(0,7)?first:monthDate(asOf,day);
+  // The forecast respects a future first installment; Attention must not
+  // invent overdue monthly payments before that financing obligation begins.
+  if(first&&first>asOf){
+    return daysBetween(asOf,first)<=UPCOMING_DAYS?{date:first,severity:'warning' as const,overdue:false}:null;
+  }
+  const day=typicalLoanPaymentDay(data,loan);if(!day)return null;
+  const current=first&&first.slice(0,7)===asOf.slice(0,7)?first:monthDate(asOf,day);
   const paidThisMonth=loanPaymentEvents(data,loan).some(event=>event.date>=monthStart(asOf)&&event.date<=asOf);
   if(current<=asOf&&!paidThisMonth)return {date:current,severity:'danger' as const,overdue:true};
   if(current>asOf&&!paidThisMonth&&daysBetween(asOf,current)<=UPCOMING_DAYS)return {date:current,severity:'warning' as const,overdue:false};

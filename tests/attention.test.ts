@@ -15,6 +15,24 @@ describe('Needs Attention deterministic engine',()=>{
     expect(items.some(item=>item.id==='scheduled:qa-scheduled-transfer'&&item.scheduledId==='qa-scheduled-transfer')).toBe(true);
   });
 
+  it('never flags an installment overdue before a future first loan payment',()=>{
+    const data=clone();
+    data.seed.loans=[];
+    data.state.loanOverrides={};
+    data.state.customLoans=[{
+      id:'future-loan',name:'Future loan',total:1200,installment:100,
+      installments:12,firstExpectedDate:'2026-12-20',defaultAccountId:'piraeus-payroll',
+    }];
+    const due=(date:string)=>allAttentionItems(data,date).find(item=>item.id==='loan:future-loan');
+    expect(due('2026-10-15')).toBeUndefined();
+    expect(due('2026-12-12')).toBeUndefined();
+    expect(due('2026-12-15')).toMatchObject({dueDate:'2026-12-20',severity:'warning'});
+    expect(due('2026-12-21')).toMatchObject({dueDate:'2026-12-20',severity:'danger'});
+    const payment=createEvent({kind:'expense',date:'2026-12-21',amount:100,note:'First loan installment',accountId:'piraeus-payroll'});
+    data.state.events=[...(data.state.events??[]),{...payment,loanId:'future-loan'}];
+    expect(due('2026-12-22')).toBeUndefined();
+  });
+
   it('matches quarterly recurring cadence instead of inventing monthly overdue reminders',()=>{
     const data=clone();
     data.seed.recurring=[];
