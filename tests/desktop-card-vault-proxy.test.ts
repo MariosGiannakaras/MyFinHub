@@ -26,7 +26,7 @@ describe('desktop card vault proxy',()=>{
 
   it('forwards the opt-in committed deletion guard unchanged to the canonical production origin',async()=>{
     process.env.MYFINHUB_PRODUCTION_ORIGIN='https://mgfinhub.vercel.app';
-    const fetchMock=vi.fn(async()=>new Response(JSON.stringify({deleted:true}),{status:200,headers:{'content-type':'application/json'}}));
+    const fetchMock=vi.fn(async(_url:string,_init:RequestInit)=>new Response(JSON.stringify({deleted:true}),{status:200,headers:{'content-type':'application/json'}}));
     vi.stubGlobal('fetch',fetchMock);
     await expect(proxyDesktopCardVault('DELETE',{cardId:'card-1',requireCommittedDeletion:true},'owner-aal2-token')).resolves.toEqual({deleted:true});
     const [url,init]=fetchMock.mock.calls[0]!;
