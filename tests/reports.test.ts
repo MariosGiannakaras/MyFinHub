@@ -32,7 +32,8 @@ describe('operational reports',()=>{
   expect(reportInsightModel(data,'2026-08','2026-09-02').credit.debt).toBe(75);
  });
  it('excludes future current-month realized expenses from Reports while preserving historical totals',()=>{
-  const data=fixture(),future=createEvent({kind:'expense',date:'2026-08-27',amount:50,note:'Future expense',category:'Όχημα',subcategory:'Βενζίνη',accountId:'piraeus-payroll'});
+  const data=fixture(),future=createEvent({kind:'expense',date:'2026-08-27',amount:50,note:'Future expense',category:'Όχημα',accountId:'piraeus-payroll'});
+  future.subcategory='Βενζίνη';
   data.state.events=[future];
   expect(operationalReportSnapshot(data,'2026-08','2026-08-17').flow.expense).toBe(40);
   expect(operationalReportSnapshot(data,'2026-08','2026-09-01').flow.expense).toBe(90);
