@@ -49,6 +49,9 @@ describe('zero-cost real-stack E2E source contract',()=>{
     expect(script).toContain('Card vault cleanup marker was not removed after successful deletion.');
     expect(script).toContain("[real-stack] stage service-storage-unauthenticated-denial");
     expect(script).toContain("[real-stack] stage service-storage-pre-aal2-denial");
+    expect(script).toContain("[real-stack] stage card-vault-pre-aal2-guarded-denial");
+    expect(script).toContain("'card-secret-guard-unauth'");
+    expect(script).toContain('Guarded card-vault deletion accepted a pre-AAL2 session.');
     expect(script).toContain('Recurring service asset upload accepted pre-AAL2 session.');
     expect(script).toContain('Recurring service metadata read accepted pre-AAL2 session.');
     expect(script).toContain("'RECURRING_SERVICE_ASSET_IN_USE'");

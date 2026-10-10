@@ -260,6 +260,8 @@ async function main(){
     console.log('[real-stack] stage service-storage-unauthenticated-denial');
     expect(await primary.requestBinary(guardedAssetPath,{method:'PUT',headers:{'content-type':'image/svg+xml'},body:guardedAsset}),401,'AUTH_REQUIRED','recurring-service-owner-unauth');
     expect(await primary.request('/api/account-metadata?resource=recurring-service-assets'),401,'AUTH_REQUIRED','recurring-service-owner-read-unauth');
+    const guardedVaultDelete={method:'DELETE' as const,body:{cardId:'security-negative-card',requireCommittedDeletion:true}};
+    expect(await primary.request('/api/card-secrets',guardedVaultDelete),401,'AUTH_REQUIRED','card-secret-guard-unauth');
     console.log('[real-stack] stage auth-invalid-password');
     const invalid=await primary.request('/api/auth/login',{method:'POST',body:{email,password:'Definitely-Wrong-Password-9!'}});
     expect(invalid,401,'INVALID_CREDENTIALS','auth-invalid-password');
@@ -285,6 +287,9 @@ async function main(){
     assert((preAal2Upload.status===401||preAal2Upload.status===403)&&['AUTH_REQUIRED','MFA_REQUIRED'].includes(String(preAal2Upload.body?.code||'')),'Recurring service asset upload accepted pre-AAL2 session.');
     const preAal2Read=await primary.request('/api/account-metadata?resource=recurring-service-assets');
     assert((preAal2Read.status===401||preAal2Read.status===403)&&['AUTH_REQUIRED','MFA_REQUIRED'].includes(String(preAal2Read.body?.code||'')),'Recurring service metadata read accepted pre-AAL2 session.');
+    console.log('[real-stack] stage card-vault-pre-aal2-guarded-denial');
+    const preAal2VaultDelete=await primary.request('/api/card-secrets',guardedVaultDelete);
+    assert((preAal2VaultDelete.status===401||preAal2VaultDelete.status===403)&&['AUTH_REQUIRED','MFA_REQUIRED'].includes(String(preAal2VaultDelete.body?.code||'')),'Guarded card-vault deletion accepted a pre-AAL2 session.');
     console.log('[real-stack] stage mfa-valid-code');
     const verified=await primary.request('/api/auth/mfa/verify',{method:'POST',body:{factorId,code:correct}});
     expect(verified,200,undefined,'mfa-valid-code');
