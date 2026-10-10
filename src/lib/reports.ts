@@ -6,7 +6,7 @@ import { lendingRows } from './lending.js';
 import { activeLongTermLoanObligations } from './loans.js';
 import { recurringMonthlyTotal } from './recurring.js';
 import { operationalMonthlyFlow, savingsBreakdown } from './savings.js';
-import { shiftReportingMonth } from './reportingPeriod.js';
+import { reportingPeriodEndDate, shiftReportingMonth } from './reportingPeriod.js';
 import type { FinanceData } from '../types.js';
 
 function shiftReportMonth(month:string,delta:number){return shiftReportingMonth(month,delta)}
@@ -16,7 +16,7 @@ export function monthEnd(month:string){return calendarMonthRange(month).end}
 
 export function reportFlowSeries(data:FinanceData,month:string,count=6){return reportMonths(month,count).map(value=>{const flow=operationalMonthlyFlow(data,value);return {month:value,label:reportMonthLabel(value),income:flow.income,expense:flow.expense,saving:flow.saving}})}
 
-export function primaryAccountSeries(data:FinanceData,month:string,ids=['piraeus-payroll','piraeus-savings'],count=6){return reportMonths(month,count).map(value=>{const balances=accountBalances(data,monthEnd(value));const row:Record<string,string|number>={month:value,label:reportMonthLabel(value)};for(const id of ids)row[id]=balances[id]||0;return row})}
+export function primaryAccountSeries(data:FinanceData,month:string,ids=['piraeus-payroll','piraeus-savings'],count=6,asOf?:string){return reportMonths(month,count).map(value=>{const balances=accountBalances(data,asOf?reportingPeriodEndDate(value,asOf):monthEnd(value));const row:Record<string,string|number>={month:value,label:reportMonthLabel(value)};for(const id of ids)row[id]=balances[id]||0;return row})}
 
 export function subcategoryTotals(data:FinanceData,month:string){
   const totals=new Map<string,number>();const add=(label:string,value:number)=>{totals.set(label,(totals.get(label)||0)+value)};
@@ -94,7 +94,7 @@ function creditPortfolioSnapshot(data:FinanceData,asOf:string){
   };
 }
 
-export function reportInsightModel(data:FinanceData,month:string){
+export function reportInsightModel(data:FinanceData,month:string,asOf?:string){
   const flow=operationalMonthlyFlow(data,month);
   const previousMonth=shiftReportMonth(month,-1);
   const previous=operationalMonthlyFlow(data,previousMonth);
@@ -104,7 +104,7 @@ export function reportInsightModel(data:FinanceData,month:string){
   const previousCategories=new Map(subcategoryTotals(data,previousMonth).map(row=>[row.name,row.value]));
   const topCategory=categories[0];
   const recurring=recurringMonthlyTotal(data);
-  const credit=creditPortfolioSnapshot(data,monthEnd(month));
+  const credit=creditPortfolioSnapshot(data,asOf?reportingPeriodEndDate(month,asOf):monthEnd(month));
   const topPrevious=topCategory?previousCategories.get(topCategory.name)??0:0;
   return {
     month,
@@ -128,7 +128,7 @@ export function reportInsightModel(data:FinanceData,month:string){
   };
 }
 
-export function operationalReportSnapshot(data:FinanceData,month:string){
-  const flow=operationalMonthlyFlow(data,month);const previous=operationalMonthlyFlow(data,shiftReportMonth(month,-1));const balances=accountBalances(data,monthEnd(month));const credit=creditPortfolioSnapshot(data,monthEnd(month));const receivables=lendingRows(data).reduce((sum,row)=>sum+row.outstanding,0);const recurring=recurringMonthlyTotal(data);const savings=savingsBreakdown(data,month);const budget=data.state.settings.monthlyBudget??0;
+export function operationalReportSnapshot(data:FinanceData,month:string,asOf?:string){
+  const flow=operationalMonthlyFlow(data,month);const previous=operationalMonthlyFlow(data,shiftReportMonth(month,-1));const cutoff=asOf?reportingPeriodEndDate(month,asOf):monthEnd(month);const balances=accountBalances(data,cutoff);const credit=creditPortfolioSnapshot(data,cutoff);const receivables=lendingRows(data).reduce((sum,row)=>sum+row.outstanding,0);const recurring=recurringMonthlyTotal(data);const savings=savingsBreakdown(data,month);const budget=data.state.settings.monthlyBudget??0;
   return {flow,previous,balances,creditDebt:credit.debt,creditLimit:credit.limit,creditUsage:credit.usage,creditAvailable:credit.available,creditCards:credit.activeCards,creditCardRows:credit.cards,receivables,recurring,savings,budget,budgetRemaining:budget-flow.expense};
 }
