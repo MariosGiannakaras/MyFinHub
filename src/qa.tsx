@@ -176,6 +176,13 @@ function buildQaData(params:URLSearchParams){
       createdAt:stamp,updatedAt:stamp,
     }))];
   }
+  if(params.get('state')==='credit-future-payment'){
+    const earlier=(next.state.events??[]).find(event=>event.id==='evt-card-payment-later');
+    if(earlier)next.state.events=[...(next.state.events??[]),{
+      ...earlier,id:'qa-future-statement-payment',date:'2026-08-20',amount:90,
+      creditDelta:90,note:'QA Future Payment',legs:earlier.legs.map(leg=>({...leg,amount:leg.amount*9})),
+    }];
+  }
   if(params.get('state')==='overlimit')next.state.cards=(next.state.cards??[]).map(card=>card.kind==='credit'?{...card,creditLimit:100}:card);
   if(params.get('state')==='cards-rich'){
     const cards=next.state.cards??[],base=cards.find(card=>card.id==='qa-debit-card');
