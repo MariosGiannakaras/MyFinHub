@@ -206,9 +206,14 @@ function buildQaData(params:URLSearchParams){
       next.state.cards=[...cards.filter(card=>card.kind!=='credit'||card.active===false),base,...generated];
     }
   }
-  if(params.get('state')==='loans-long'){
+  if(params.get('state')==='loans-long'||params.get('state')==='loans-future'){
     const longLoan:Loan={id:'qa-loan-120',name:'QA 120 δόσεις',total:12000,installment:100,installments:120,paidCount:60,day:'15',provider:'QA Provider',source:'qa',kind:'loan',accountingMode:'expense-per-installment',defaultAccountId:'piraeus-payroll',firstExpectedDate:'2026-01-15',longTermRecurring:true};
     next.seed.loans=[];next.state.customLoans=[longLoan];next.state.loanOverrides={};next.state.loanExtra={};
+    if(params.get('state')==='loans-future'){
+      const future=createEvent({kind:'expense',date:'2026-08-29',amount:100,note:'Future installment must not count yet',accountId:'piraeus-payroll'});
+      future.loanId=longLoan.id;future.id='qa-loan-future-payment';
+      next.state.events=[...(next.state.events??[]),future];
+    }
   }
   if(params.get('state')==='lending-rich'||params.get('state')==='lending-future'){
     const people=['Άννα Παπαδοπούλου','Γιώργος Νικολάου','Ελένη Δημητρίου','Νίκος Κωνσταντίνου','Μαρία Αντωνίου'];
