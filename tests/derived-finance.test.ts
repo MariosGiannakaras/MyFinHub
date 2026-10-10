@@ -20,6 +20,7 @@ function derivedData(): FinanceData {
       overrides: {},
       customTransactions: [],
       events: [],
+      settings: { accountOverrides: {}, excludedFromAvailable: [] },
     },
   } as unknown as FinanceData;
 }
