@@ -276,6 +276,16 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   const handleCommand=(row:RankedCommandSearchItem)=>{
     setCommandOpen(false);const action=row.action;
     if(action.type==='navigate'){navigate(action.page);return}
+    if(action.type==='budget_management'){
+      setMonth(action.month);setMonthIsManual(true);
+      if(page==='reports'){
+        const section=document.getElementById('report-budgets') as HTMLDetailsElement|null;
+        if(section){section.open=true;section.scrollIntoView({block:'start',behavior:'auto'});section.querySelector<HTMLElement>('summary')?.focus({preventScroll:true})}
+      }else{
+        const url=new URL(location.href);url.searchParams.set('reportSection','budgets');history.replaceState(history.state,'',url.toString());navigate('reports');
+      }
+      return;
+    }
     if(action.type==='quick_add'){
       if(action.accountId){const account=allAccounts(data).find(item=>item.id===action.accountId);if(account?.kind==='savings'){openSpecial({mode:'savings',toAccountId:action.accountId,savingSource:'manual_transfer'});return}openGeneric(action.kind,{note:'',amount:0,accountId:action.accountId});return}
       openGeneric(action.kind);return;

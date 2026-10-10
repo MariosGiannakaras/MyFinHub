@@ -28,6 +28,14 @@ describe('unified command search',()=>{
     expect(settings?.keywords).not.toContain('budgets');
   });
 
+  it('opens the matching budget month in Reports management instead of a generic route',()=>{
+    const data=clone();
+    data.state.budgets=[{id:'qa-budget-2026-07',month:'2026-07',scope:'category',category:'Σταθερά έξοδα',amount:100,createdAt:stamp,updatedAt:stamp}];
+    const budget=buildCommandSearchIndex(data).find(row=>row.id==='budget:qa-budget-2026-07');
+    expect(budget?.action).toEqual({type:'budget_management',month:'2026-07'});
+    expect(searchCommandItems(data,'Σταθερά έξοδα').some(row=>row.id===budget?.id)).toBe(true);
+  });
+
   it('shows recent entities on the empty-query surface without leaking amounts',()=>{
     const data=clone();
     data.state.events=[...(data.state.events??[]),{id:'evt-search',date:'2026-08-17',kind:'expense',amount:987654.32,note:'QA Market Search',category:'Τρόφιμα',accountId:'piraeus-payroll',legs:[{accountId:'piraeus-payroll',amount:-987654.32}],source:'user',createdAt:stamp,updatedAt:stamp}];

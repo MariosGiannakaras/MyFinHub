@@ -14,7 +14,8 @@ type CommandAction=
  | {type:'loan_payment';loanId:string;accountId?:string}
  | {type:'lending_repayment';person:string;accountId?:string}
  | {type:'recurring_payment';recurringId:string;accountId?:string}
- | {type:'scheduled_complete';scheduledId:string};
+ | {type:'scheduled_complete';scheduledId:string}
+ | {type:'budget_management';month:string};
 
 export interface CommandSearchItem{
   id:string;
@@ -79,7 +80,7 @@ export function buildCommandSearchIndex(data:FinanceData,asOf?:string):CommandSe
   rows.push(item({id:`scheduled:${planned.id}`,kind:'scheduled',title:planned.note,subtitle:`Προγραμματισμένη κίνηση · ${planned.dueDate}`,keywords:[planned.note,planned.category??'',planned.dueDate,planned.id,accountName(data,planned.accountId??planned.fromAccountId)],action:{type:'scheduled_complete',scheduledId:planned.id},priority:54}));
  }
  for(const budget of data.state.budgets??[]){
-  rows.push(item({id:`budget:${budget.id}`,kind:'budget',title:budget.scope==='overall'?'Συνολικό discretionary budget':`Budget · ${budget.category}`,subtitle:`Budget ${budget.month}`,keywords:[budget.category??'','budget','προϋπολογισμός',budget.month],action:{type:'navigate',page:'reports'},priority:70}));
+  rows.push(item({id:`budget:${budget.id}`,kind:'budget',title:budget.scope==='overall'?'Συνολικό discretionary budget':`Budget · ${budget.category}`,subtitle:`Budget ${budget.month}`,keywords:[budget.category??'','budget','προϋπολογισμός',budget.month],action:{type:'budget_management',month:budget.month},priority:70}));
  }
  return rows;
 }
