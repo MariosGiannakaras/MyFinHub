@@ -31,6 +31,19 @@ try{
   assert(august.period.includes('Αύγουστος 2026')&&august.heading==='Αυτός ο μήνας','current Savings state identifies August as the current reporting month');
   assert(august.routeValues.length===2&&august.goalBalance&&august.goalProgress,'current Savings route and personal-goal snapshot are rendered');
 
+  console.log('Savings remediation QA: future-dated saving does not affect current realized progress');
+  const activeSavings=await c.call("function(){return (document.querySelector('.savings-hero')?.textContent||'').replace(/\\s+/g,' ').trim()}");
+  const futureUrl=new URL(baseUrl);futureUrl.searchParams.set('page','savings');futureUrl.searchParams.set('state','future-reporting');
+  await c.send('Page.navigate',{url:futureUrl.href});
+  await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Αποταμίευση')}",'future activity Savings');
+  await sleep(430);
+  const futureSavings=await c.call("function(){return (document.querySelector('.savings-hero')?.textContent||'').replace(/\\s+/g,' ').trim()}");
+  assert(futureSavings===activeSavings,'future-dated savings transfer does not change current-month realized Savings hero');
+  await screenshot('savings-future-dated-activity-ignored');
+  await c.send('Page.navigate',{url:url.href});
+  await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Αποταμίευση')}",'return to baseline Savings');
+  await sleep(350);
+
   await clickPeriod('previous');
   await waitFor("function(){return [...document.querySelectorAll('.period-control>span')].some(node=>(node.textContent||'').includes('Ιούλιος 2026'))}",'July reporting period');
   await sleep(350);

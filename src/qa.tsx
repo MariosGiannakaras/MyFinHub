@@ -236,12 +236,18 @@ function buildQaData(params:URLSearchParams){
     ];
   }
   if(params.get('state')==='forecast-negative')next.state.scheduled=[...(next.state.scheduled??[]),{id:'qa-negative-forecast',dueDate:'2026-08-18',kind:'expense',amount:3000,note:'Μεγάλη γνωστή υποχρέωση',category:'Σταθερά έξοδα',accountId:'piraeus-payroll',status:'pending',createdAt:'2026-08-10T10:00:00.000Z',updatedAt:'2026-08-10T10:00:00.000Z'}];
-  if(params.get('state')==='budget-rules'){
+  if(params.get('state')==='budget-rules'||params.get('state')==='future-reporting'){
     const stamp='2026-08-17T12:00:00.000Z';
     const event=createEvent({kind:'expense',date:'2026-08-16',amount:90,note:'QA Market Match',category:'Σταθερά έξοδα',accountId:'piraeus-payroll'});event.createdAt=stamp;event.updatedAt=stamp;
     next.state.events=[...(next.state.events??[]),event];
     next.state.budgets=[{id:'budget:2026-08:%CF%83%CF%84%CE%B1%CE%B8%CE%B5%CF%81%CE%AC%20%CE%AD%CE%BE%CE%BF%CE%B4%CE%B1',month:'2026-08',scope:'category',category:'Σταθερά έξοδα',amount:50,alertThreshold:.8,createdAt:stamp,updatedAt:stamp}];
     next.state.transactionRules=[];
+    if(params.get('state')==='future-reporting'){
+      next.state.events=[...(next.state.events??[]),
+        createEvent({kind:'expense',date:'2026-08-28',amount:5000,note:'Future QA Expense',accountId:'piraeus-payroll',category:'Σταθερά έξοδα'}),
+        createEvent({kind:'saving_cash_offset',date:'2026-08-29',amount:730,note:'Future QA Saving',fromAccountId:'piraeus-payroll',toAccountId:'piraeus-savings'}),
+      ];
+    }
   }
   return next;
 }
