@@ -101,22 +101,22 @@ export function DashboardPage({ data, month, asOf, motionMode='system', privacyV
   useEffect(()=>{if(!mobileViewport||!mobileAnalyticsExpanded||!renderDeferredCharts){setMobileAnalyticsChartsReady(false);return}let secondFrame=0;let settled=false;const reveal=()=>{if(settled)return;settled=true;setMobileAnalyticsChartsReady(true)};const fallback=window.setTimeout(reveal,250);const firstFrame=requestAnimationFrame(()=>{secondFrame=requestAnimationFrame(reveal)});return()=>{settled=true;window.clearTimeout(fallback);cancelAnimationFrame(firstFrame);if(secondFrame)cancelAnimationFrame(secondFrame)}},[mobileViewport,mobileAnalyticsExpanded,renderDeferredCharts]);
   const heavyChartsReady=renderDeferredCharts&&(!mobileViewport||mobileAnalyticsChartsReady);
   const range=monthRange(month);const periodEndDate=reportingPeriodEndDate(month,asOf);
-  const flow=selectMonthlyFlow(data,month);const balances=selectAccountBalances(data,periodEndDate);const accountChoices=financeAccountChoices(data);const accounts=accountChoices.accounts;
+  const flow=selectMonthlyFlow(data,month,asOf);const balances=selectAccountBalances(data,periodEndDate);const accountChoices=financeAccountChoices(data);const accounts=accountChoices.accounts;
   const primary=accountChoices.dashboardPrimary;const primarySlots=accountChoices.dashboardPrimarySlots;const primaryIdSet=new Set(primary.map(account=>account.id));const remaining=accounts.filter(account=>!primaryIdSet.has(account.id));
-  const categories=selectCategoryTotals(data,month).slice(0,6);const savingsTargetRate=data.state.settings.savingsTargetRate??.2;
+  const categories=selectCategoryTotals(data,month,asOf).slice(0,6);const savingsTargetRate=data.state.settings.savingsTargetRate??.2;
   const previousMonth=shiftReportingMonth(month,-1);const previousRange=monthRange(previousMonth);const previousMonthLabel=formatMonthLabel(previousMonth);const previousFlow=selectMonthlyFlow(data,previousMonth);
   const balanceMonth=month;
 
   const movements=useMemo(()=>[
-    ...effectiveLegacyTransactions(data).filter(tx=>tx.date>=range.start&&tx.date<=range.end).map(tx=>movementFromLegacy(data,tx)),
-    ...(data.state.events??[]).filter(event=>event.date>=range.start&&event.date<=range.end).map(movementFromEvent),
-  ].sort((a,b)=>b.date.localeCompare(a.date)||b.id.localeCompare(a.id)),[data,range.start,range.end]);
+    ...effectiveLegacyTransactions(data).filter(tx=>tx.date>=range.start&&tx.date<=periodEndDate).map(tx=>movementFromLegacy(data,tx)),
+    ...(data.state.events??[]).filter(event=>event.date>=range.start&&event.date<=periodEndDate).map(movementFromEvent),
+  ].sort((a,b)=>b.date.localeCompare(a.date)||b.id.localeCompare(a.id)),[data,range.start,periodEndDate]);
 
   const dailyFlow=useMemo<DailyFlow[]>(()=>{const days=Number(range.end.slice(-2));const rows=Array.from({length:days},(_,index)=>({day:index+1,income:0,expense:0}));
-    for(const tx of effectiveLegacyTransactions(data)){if(tx.date<range.start||tx.date>range.end)continue;const impact=flowImpactLegacy(data,tx);const row=rows[Number(tx.date.slice(-2))-1];if(row){row.income+=impact.income;row.expense+=Math.max(0,impact.expense)}}
-    for(const event of data.state.events??[]){if(event.date<range.start||event.date>range.end)continue;const impact=flowImpactEvent(event);const row=rows[Number(event.date.slice(-2))-1];if(row){row.income+=impact.income;row.expense+=Math.max(0,impact.expense)}}
+    for(const tx of effectiveLegacyTransactions(data)){if(tx.date<range.start||tx.date>periodEndDate)continue;const impact=flowImpactLegacy(data,tx);const row=rows[Number(tx.date.slice(-2))-1];if(row){row.income+=impact.income;row.expense+=Math.max(0,impact.expense)}}
+    for(const event of data.state.events??[]){if(event.date<range.start||event.date>periodEndDate)continue;const impact=flowImpactEvent(event);const row=rows[Number(event.date.slice(-2))-1];if(row){row.income+=impact.income;row.expense+=Math.max(0,impact.expense)}}
     return rows;
-  },[data,range.start,range.end]);
+  },[data,range.start,periodEndDate]);
 
   const primaryAccountKey=primary.map(account=>account.id).join('|');const accountHistoryStart=dashboardHistoryStart(balanceMonth);
   const primaryHistory=useMemo(()=>dashboardAccountHistory(data,primary.map(account=>account.id),accountHistoryStart,periodEndDate),[data,primaryAccountKey,accountHistoryStart,periodEndDate]);
@@ -151,7 +151,7 @@ export function DashboardPage({ data, month, asOf, motionMode='system', privacyV
   const visibleSecondary=remaining.slice(0,4);const hiddenSecondary=Math.max(0,remaining.length-visibleSecondary.length);
   const largestCategory=categories[0];const daysElapsed=month===asOf.slice(0,7)?Math.max(1,Number(asOf.slice(-2))):Number(range.end.slice(-2));const previousDays=Math.max(1,Number(previousRange.end.slice(-2)));
   const averageDailyExpense=flow.expense/daysElapsed;const previousAverageDailyExpense=previousFlow.expense/previousDays;const dailyExpenseComparison=percentChange(averageDailyExpense,previousAverageDailyExpense);
-  const budgetRows=budgetProgress(data,month);const budgetHighlight=budgetRows.find(row=>row.status==='exceeded')??budgetRows.slice().sort((a,b)=>b.ratio-a.ratio||a.id.localeCompare(b.id))[0];
+  const budgetRows=budgetProgress(data,month,asOf);const budgetHighlight=budgetRows.find(row=>row.status==='exceeded')??budgetRows.slice().sort((a,b)=>b.ratio-a.ratio||a.id.localeCompare(b.id))[0];
   const openingDate=previousDate(range.start);const openingBalances=selectAccountBalances(data,openingDate);const openingTotal=accounts.reduce((sum,account)=>sum+(openingBalances[account.id]??0),0);const endingTotal=accounts.reduce((sum,account)=>sum+(balances[account.id]??0),0);
   const privacyMoney=(value:number)=>privacyVisible?money.format(value):'•••••• €';
   const attentionCount=visibleAttentionItems(data,asOf).length;

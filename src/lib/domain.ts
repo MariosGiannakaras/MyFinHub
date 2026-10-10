@@ -326,8 +326,9 @@ export function availableMoney(data: FinanceData, asOf: string) {
     .reduce((sum, a) => sum + (balances[a.id] ?? 0), 0);
 }
 
-export function categoryTotals(data: FinanceData, month: string) {
-  const { start, end } = monthRange(month);
+export function categoryTotals(data: FinanceData, month: string, asOf?: string) {
+  const range=monthRange(month),start=range.start;
+  const end=asOf&&month===asOf.slice(0,7)?asOf:range.end;
   const totals = new Map<string, number>();
   const add = (cat: string, amount: number) => totals.set(cat || 'Άλλο', (totals.get(cat || 'Άλλο') ?? 0) + amount);
   for (const tx of effectiveLegacyTransactions(data)) {
