@@ -123,12 +123,17 @@ export function AccountManagementSettings({data,settings,onChange,onChangeDurabl
   const modalRef=useModalFocus<HTMLElement>(Boolean(editor),'[data-autofocus="true"]',()=>{if(!busy)setEditor(null)});
   useEffect(()=>{
     if(!focusAccountId||!focusKey||!accounts.some(account=>account.id===focusAccountId))return;
+    let secondFrame=0;
     const frame=requestAnimationFrame(()=>{
-      const row=[...document.querySelectorAll<HTMLElement>('.account-management-row[data-account-id]')].find(node=>node.dataset.accountId===focusAccountId);
-      row?.scrollIntoView({block:'center',behavior:'auto'});
-      row?.focus({preventScroll:true});
+      // The app shell focuses the route heading on navigation. Focus the
+      // requested account on the following frame, after that generic effect.
+      secondFrame=requestAnimationFrame(()=>{
+        const row=[...document.querySelectorAll<HTMLElement>('.account-management-row[data-account-id]')].find(node=>node.dataset.accountId===focusAccountId);
+        row?.scrollIntoView({block:'center',behavior:'auto'});
+        row?.focus({preventScroll:true});
+      });
     });
-    return()=>cancelAnimationFrame(frame);
+    return()=>{cancelAnimationFrame(frame);cancelAnimationFrame(secondFrame)};
   },[focusAccountId,focusKey,accounts]);
 
   const patch=(next:Partial<FinanceSettings>)=>onChange({...settings,...next});

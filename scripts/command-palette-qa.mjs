@@ -117,6 +117,7 @@ try{
  await resetPalette();await setSearch('piraeus-payroll');await activateOption('Διαχείριση ·');await press('Enter');
  await waitFor("function(){return document.activeElement?.dataset.accountId==='piraeus-payroll'&&document.querySelector('#settings-tab-accounts')?.getAttribute('aria-selected')==='true'}",'payroll account focused in Settings');
  assert(!(await c.call("function(){return Boolean(document.querySelector('.quick-modal,.contextual-quick-modal'))}")),'account lookup does not start a finance write or Quick Entry');
+ assert(await c.call("function(){return getComputedStyle(document.activeElement).outlineStyle==='solid'}"),'focused account shows a visible focus outline');
  await screenshot('command-exact-account-management');
  await ctrlK();await setSearch('piraeus-savings');await activateOption('Διαχείριση ·');await press('Enter');
  await waitFor("function(){return document.activeElement?.dataset.accountId==='piraeus-savings'}",'different same-route account focused');

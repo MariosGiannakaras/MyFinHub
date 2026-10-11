@@ -15,7 +15,8 @@ describe('account management search identity to canonical settings (DV-FB02/03)'
    expect(settings).toContain('focusAccountId={accountFocusId}');
    expect(accounts).toContain('data-account-id={account.id}');
    expect(accounts).toContain("row?.focus({preventScroll:true})");
-   expect(accounts).toContain('return()=>cancelAnimationFrame(frame)');
+   expect(accounts).toContain('cancelAnimationFrame(secondFrame)');
+   expect(read('src/components/AccountManagementSettings.css')).toContain('.account-management-row:focus{outline:2px solid var(--accent)');
  });
  it('requires a browser proof for two exact accounts and no unintended Quick Entry',()=>{
    expect(browser).toContain("document.activeElement?.dataset.accountId==='piraeus-payroll'");
