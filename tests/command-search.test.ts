@@ -129,6 +129,15 @@ describe('unified command search',()=>{
     expect(after).not.toContain('action:lending:Future Repayee');
     expect(searchCommandItems(data,'future paid',{asOf:'2026-08-17'}).some(row=>row.id==='action:loan-payment:future-paid-loan')).toBe(true);
   });
+  it('distinguishes inspecting an exact scheduled item from explicitly completing it',()=>{
+    const data=clone();
+    data.state.scheduled=[{id:'scheduled-search',dueDate:'2026-08-20',kind:'expense',amount:50,note:'QA Exact Scheduled',category:'Σταθερά έξοδα',accountId:'piraeus-payroll',status:'pending',createdAt:stamp,updatedAt:stamp}];
+    const index=buildCommandSearchIndex(data);
+    expect(index.find(row=>row.id==='scheduled:scheduled-search')?.action).toEqual({type:'scheduled_focus',scheduledId:'scheduled-search'});
+    expect(index.find(row=>row.id==='action:scheduled-complete:scheduled-search')?.action).toEqual({type:'scheduled_complete',scheduledId:'scheduled-search'});
+    expect(searchCommandItems(data,'QA Exact Scheduled')[0]?.id).toBe('scheduled:scheduled-search');
+  });
+
   it('preserves exact stable identifiers for eligible direct actions',()=>{
     const data=clone();
     const loan:Loan={id:'loan-search',name:'QA Laptop Loan',total:1000,installment:100,installments:10,paidCount:0,defaultAccountId:'piraeus-payroll'};
@@ -137,7 +146,7 @@ describe('unified command search',()=>{
     const loanResult=searchCommandItems(data,'laptop πληρωμη').find(row=>row.id==='action:loan-payment:loan-search');
     const scheduled=searchCommandItems(data,'exact scheduled').find(row=>row.id==='scheduled:scheduled-search');
     expect(loanResult?.action).toEqual({type:'loan_payment',loanId:'loan-search',accountId:'piraeus-payroll'});
-    expect(scheduled?.action).toEqual({type:'scheduled_complete',scheduledId:'scheduled-search'});
+    expect(scheduled?.action).toEqual({type:'scheduled_focus',scheduledId:'scheduled-search'});
   });
 
   it('uses stable ranking and applies recency only as a bounded boost to actual typed matches',()=>{

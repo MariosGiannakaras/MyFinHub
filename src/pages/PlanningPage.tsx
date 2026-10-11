@@ -1,6 +1,6 @@
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip as ChartTooltip, XAxis, YAxis } from 'recharts';
 import { AlertTriangle, ArrowDown, ArrowLeftRight, ArrowUp, CalendarClock, Check, CircleSlash2, Clock3, Pencil, Plus, X } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { AppDateInput } from '../components/AppDateInput';
 import { AppSelectInput } from '../components/AppSelectInput';
 import { AppTextInput } from '../components/AppTextInput';
@@ -44,9 +44,11 @@ const sourceLabel = { scheduled: 'Προγραμματισμένο', recurring: 
 const lifecycleLabel = { upcoming: 'Επερχόμενο', due: 'Εκκρεμεί τώρα', completed: 'Ολοκληρώθηκε', skipped: 'Παραλείφθηκε', cancelled: 'Ακυρώθηκε' } as const;
 const kindLabel: Record<ScheduledKind, string> = { expense: 'Πληρωμή', income: 'Έσοδο', transfer: 'Μεταφορά' };
 
-export function PlanningPage({ data, asOf, onUpsertScheduled, onCompleteScheduled }: {
+export function PlanningPage({ data, asOf, commandScheduledId, commandScheduledKey=0, onUpsertScheduled, onCompleteScheduled }: {
   data: FinanceData;
   asOf: string;
+  commandScheduledId?:string|null;
+  commandScheduledKey?:number;
   onUpsertScheduled: (item: ScheduledTransaction) => void;
   onCompleteScheduled: (item: ScheduledTransaction, event: FinanceEvent) => void;
 }) {
@@ -70,6 +72,18 @@ export function PlanningPage({ data, asOf, onUpsertScheduled, onCompleteSchedule
   const pending = pendingScheduled(data);
   const history = scheduledHistory(data);
   const visiblePending=pending.slice(0,scheduledListLimit);
+  useEffect(()=>{
+    if(!commandScheduledId||!commandScheduledKey)return;
+    const index=pending.findIndex(item=>item.id===commandScheduledId);
+    if(index<0)return;
+    if(index>=scheduledListLimit){setScheduledListLimit(index+1);return}
+    const frame=requestAnimationFrame(()=>{
+      const target=[...document.querySelectorAll<HTMLElement>('[data-scheduled-id]')].find(node=>node.dataset.scheduledId===commandScheduledId);
+      target?.scrollIntoView({block:'center',behavior:'auto'});
+      target?.focus({preventScroll:true});
+    });
+    return()=>cancelAnimationFrame(frame);
+  },[commandScheduledId,commandScheduledKey,scheduledListLimit,pending.length]);
   const due = pending.filter((item) => scheduledLifecycle(item, asOf) === 'due');
   const upcoming = pending.filter((item) => scheduledLifecycle(item, asOf) === 'upcoming');
   const draftRef = useModalFocus<HTMLElement>(Boolean(draft), '[data-autofocus="true"]', () => closeDraft());
@@ -143,7 +157,7 @@ export function PlanningPage({ data, asOf, onUpsertScheduled, onCompleteSchedule
       <article className="surface-raised"><span>Σε {horizon} ημέρες</span><b className={forecast.projectedPortfolio < 0 ? 'negative' : ''}>{money.format(forecast.projectedPortfolio)}</b><small>{portfolioDelta === 0 ? 'Καμία καθαρή γνωστή μεταβολή' : `${portfolioDelta > 0 ? '+' : '−'}${money.format(Math.abs(portfolioDelta))} από τις γνωστές ροές`}</small></article>
     </section>
 
-    <section className="panel surface-raised scheduled-panel"><div className="panel-head"><div><span>Προγραμματισμένες one-off κινήσεις</span><small>Upcoming και due κινήσεις. Καμία δεν έχει γίνει πραγματική συναλλαγή ακόμη.</small></div><CalendarClock/></div>{pending.length ? <div className="scheduled-list">{visiblePending.map((item) => { const lifecycle = scheduledLifecycle(item, asOf); return <article key={item.id} className={`scheduled-row ${lifecycle}`} data-scheduled-id={item.id}><div className="scheduled-main"><span className={`scheduled-kind-icon ${item.kind}`}><FinanceIcon settings={data.state.settings} kind={item.kind} category={item.category} note={item.note} size={18}/></span><div><div className="scheduled-title"><b>{item.note}</b><em className={`scheduled-status ${lifecycle}`}>{lifecycleLabel[lifecycle]}</em></div><small>{kindLabel[item.kind]} · {shortDate(item.dueDate)} · {item.kind === 'transfer' ? `${accountDisplayName(data, item.fromAccountId)} → ${accountDisplayName(data, item.toAccountId)}` : accountDisplayName(data, item.accountId)}</small></div></div><strong>{money.format(item.amount)}</strong><div className="scheduled-actions"><Button type="button" variant="primary" className="compact" onClick={() => startComplete(item)}><Check size={15}/> Ολοκλήρωση</Button><Tooltip label={`Επεξεργασία: ${item.note}`} side="left"><IconButton type="button" aria-label={`Επεξεργασία ${item.note}`} onClick={() => startEdit(item)}><Pencil/></IconButton></Tooltip><Tooltip label={`Παράλειψη: ${item.note}`} side="left"><IconButton type="button" aria-label={`Παράλειψη ${item.note}`} onClick={() => requestLifecycle(item, 'skipped')}><CircleSlash2/></IconButton></Tooltip><Tooltip label={`Ακύρωση: ${item.note}`} side="left"><IconButton type="button" className="danger" aria-label={`Ακύρωση ${item.note}`} onClick={() => requestLifecycle(item, 'cancelled')}><X/></IconButton></Tooltip></div></article> })}</div> : <div className="empty-state">Δεν υπάρχουν pending προγραμματισμένες κινήσεις.</div>}{pending.length>visiblePending.length?<Button type="button" variant="secondary" className="planning-scheduled-more" onClick={()=>setScheduledListLimit(limit=>limit+12)}>Προβολή περισσότερων · {pending.length-visiblePending.length} ακόμη</Button>:null}</section>
+    <section className="panel surface-raised scheduled-panel"><div className="panel-head"><div><span>Προγραμματισμένες one-off κινήσεις</span><small>Upcoming και due κινήσεις. Καμία δεν έχει γίνει πραγματική συναλλαγή ακόμη.</small></div><CalendarClock/></div>{pending.length ? <div className="scheduled-list">{visiblePending.map((item) => { const lifecycle = scheduledLifecycle(item, asOf); return <article key={item.id} className={`scheduled-row ${lifecycle}`} data-scheduled-id={item.id} tabIndex={-1}><div className="scheduled-main"><span className={`scheduled-kind-icon ${item.kind}`}><FinanceIcon settings={data.state.settings} kind={item.kind} category={item.category} note={item.note} size={18}/></span><div><div className="scheduled-title"><b>{item.note}</b><em className={`scheduled-status ${lifecycle}`}>{lifecycleLabel[lifecycle]}</em></div><small>{kindLabel[item.kind]} · {shortDate(item.dueDate)} · {item.kind === 'transfer' ? `${accountDisplayName(data, item.fromAccountId)} → ${accountDisplayName(data, item.toAccountId)}` : accountDisplayName(data, item.accountId)}</small></div></div><strong>{money.format(item.amount)}</strong><div className="scheduled-actions"><Button type="button" variant="primary" className="compact" onClick={() => startComplete(item)}><Check size={15}/> Ολοκλήρωση</Button><Tooltip label={`Επεξεργασία: ${item.note}`} side="left"><IconButton type="button" aria-label={`Επεξεργασία ${item.note}`} onClick={() => startEdit(item)}><Pencil/></IconButton></Tooltip><Tooltip label={`Παράλειψη: ${item.note}`} side="left"><IconButton type="button" aria-label={`Παράλειψη ${item.note}`} onClick={() => requestLifecycle(item, 'skipped')}><CircleSlash2/></IconButton></Tooltip><Tooltip label={`Ακύρωση: ${item.note}`} side="left"><IconButton type="button" className="danger" aria-label={`Ακύρωση ${item.note}`} onClick={() => requestLifecycle(item, 'cancelled')}><X/></IconButton></Tooltip></div></article> })}</div> : <div className="empty-state">Δεν υπάρχουν pending προγραμματισμένες κινήσεις.</div>}{pending.length>visiblePending.length?<Button type="button" variant="secondary" className="planning-scheduled-more" onClick={()=>setScheduledListLimit(limit=>limit+12)}>Προβολή περισσότερων · {pending.length-visiblePending.length} ακόμη</Button>:null}</section>
 
 
     <section className="panel surface-raised forecast-panel">

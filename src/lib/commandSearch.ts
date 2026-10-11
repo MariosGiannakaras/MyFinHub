@@ -16,6 +16,7 @@ type CommandAction=
  | {type:'lending_person_focus';person:string}
  | {type:'loan_focus';loanId:string}
  | {type:'recurring_focus';recurringId:string}
+ | {type:'scheduled_focus';scheduledId:string}
  | {type:'credit_payment';cardId:string}
  | {type:'loan_payment';loanId:string;accountId?:string}
  | {type:'lending_repayment';person:string;accountId?:string}
@@ -85,7 +86,8 @@ export function buildCommandSearchIndex(data:FinanceData,asOf?:string):CommandSe
  }
  for(const planned of data.state.scheduled??[]){
   if(planned.status!=='pending')continue;
-  rows.push(item({id:`scheduled:${planned.id}`,kind:'scheduled',title:planned.note,subtitle:`Προγραμματισμένη κίνηση · ${planned.dueDate}`,keywords:[planned.note,planned.category??'',planned.dueDate,planned.id,accountName(data,planned.accountId??planned.fromAccountId)],action:{type:'scheduled_complete',scheduledId:planned.id},priority:54}));
+  rows.push(item({id:`scheduled:${planned.id}`,kind:'scheduled',title:planned.note,subtitle:`Προγραμματισμένη κίνηση · ${planned.dueDate}`,keywords:[planned.note,planned.category??'',planned.dueDate,planned.id,accountName(data,planned.accountId??planned.fromAccountId)],action:{type:'scheduled_focus',scheduledId:planned.id},priority:54}));
+  rows.push(item({id:`action:scheduled-complete:${planned.id}`,kind:'command',title:`Ολοκλήρωση · ${planned.note}`,subtitle:`Καταχώριση ολοκλήρωσης προγραμματισμένης κίνησης · ${planned.dueDate}`,keywords:[planned.note,'ολοκλήρωση','πληρωμή',planned.dueDate],action:{type:'scheduled_complete',scheduledId:planned.id},priority:85}));
  }
  for(const budget of data.state.budgets??[]){
   rows.push(item({id:`budget:${budget.id}`,kind:'budget',title:budget.scope==='overall'?'Συνολικό discretionary budget':`Budget · ${budget.category}`,subtitle:`Budget ${budget.month}`,keywords:[budget.category??'','budget','προϋπολογισμός',budget.month],action:{type:'budget_management',month:budget.month},priority:70}));
