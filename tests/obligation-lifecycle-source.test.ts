@@ -24,7 +24,7 @@ describe('obligation lifecycle hierarchy source contracts',()=>{
   it('keeps active recurring obligations first and collapses inactive history by default',()=>{
     const activeIndex=recurring.indexOf('data-active-recurring');
     const linkedIndex=recurring.indexOf('<LongTermLoanSummary');
-    const inactiveIndex=recurring.indexOf('data-inactive-recurring-history');
+    const inactiveIndex=recurring.indexOf('<details className={`panel surface-flat inactive-recurring');
     expect(activeIndex).toBeGreaterThan(-1);
     expect(linkedIndex).toBeGreaterThan(activeIndex);
     expect(inactiveIndex).toBeGreaterThan(linkedIndex);
