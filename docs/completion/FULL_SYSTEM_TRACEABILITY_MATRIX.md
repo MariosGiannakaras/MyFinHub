@@ -364,6 +364,10 @@ A named Lending-person search previously called generic `navigate('lending')`, l
 
 The named loan result previously navigated to a generic Loans route without revealing or focusing the specific loan. The typed `loan_focus` action now passes the loan stable ID and monotonically incremented selection token from the command index through web App and QA. `LoansPage` expands the correct active/completed slice when a target is beyond the current pagination limit and focuses the exact article row without entering edit or payment mode. Existing direct `loan_payment` remains unchanged. Added a synthetic browser assertion for the 120-installment QA loan and a screenshot, together with dynamic and source tests. **Implemented in prepared independent source batch, pending final rendered review and DV-FB acceptance.**
 
+### DV-FB02/03 exact recurring search-result reachability
+
+The named recurring search result previously navigated to the generic collection, without selecting the referenced payable obligation. A typed `recurring_focus` action now routes by stable recurring ID through web App/synthetic QA into RecurringPage, expands pagination or inactive history as needed, then scrolls and keyboard-focuses the exact visible item in desktop or mobile layout. Payment remains a separate explicit command, and simply locating an item does **not** mutate finances. Dynamic command-index and existing rendered Command Palette QA assert exact target, keyboard focus, no payment/edit side-effect and screenshot. **Implemented; UI acceptance pending actual browser execution/screenshot inspection.**
+
 ### Remaining inverse/invariant closeout
 
 Unclassified backend exported operations and hidden/focusable frontend branches require ongoing DV-FB02/03 source + rendered inspection, notably shortcut actions, legacy/taxonomy negative states and saved-card deletion. Verify period/as-of/statement/forecast semantics against canonical selectors (FB05), AAL2/owner/RLS/vault per sensitive operation (FB06), deployment/Windows and Android API boundary (FB09). Do not check DV-FB01–FB10 as accepted or start DV-M before all classified gaps have validated outcomes.

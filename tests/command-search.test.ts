@@ -64,6 +64,13 @@ describe('unified command search',()=>{
     expect(result?.action).toEqual({type:'loan_focus',loanId:loan?.id});
   });
 
+  it('targets a named recurring item by ID without triggering a payment',()=>{
+    const index=buildCommandSearchIndex(clone(),'2026-08-17');
+    const result=index.find(row=>row.kind==='recurring');
+    expect(result?.action).toEqual({type:'recurring_focus',recurringId:result?.id.slice('recurring:'.length)});
+    expect(index.find(row=>row.id===`action:recurring:${result?.id.slice('recurring:'.length)}`)?.action.type).toBe('recurring_payment');
+  });
+
   it('selects an exact Lending person instead of opening a generic collection',()=>{
     const data=clone();
     const index=buildCommandSearchIndex(data,'2026-08-17');

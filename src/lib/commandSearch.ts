@@ -14,6 +14,7 @@ type CommandAction=
  | {type:'credit_card_focus';cardId:string}
  | {type:'lending_person_focus';person:string}
  | {type:'loan_focus';loanId:string}
+ | {type:'recurring_focus';recurringId:string}
  | {type:'credit_payment';cardId:string}
  | {type:'loan_payment';loanId:string;accountId?:string}
  | {type:'lending_repayment';person:string;accountId?:string}
@@ -78,7 +79,7 @@ export function buildCommandSearchIndex(data:FinanceData,asOf?:string):CommandSe
   if(lending.outstanding>0)rows.push(item({id:`action:lending:${lending.person}`,kind:'command',title:`Καταγραφή επιστροφής · ${lending.person}`,subtitle:'Μείωση εκκρεμούς ποσού από συγκεκριμένο πρόσωπο',keywords:[lending.person,'επιστροφή','είσπραξη'],action:{type:'lending_repayment',person:lending.person,accountId:data.state.settings.defaultIncomeAccount},priority:20}));
  }
  for(const recurring of allRecurringItems(data)){
-  rows.push(item({id:`recurring:${recurring.id}`,kind:'recurring',title:recurring.name,subtitle:recurringStatus(recurring)==='active'?'Ενεργό πάγιο':'Ανενεργό πάγιο',keywords:[recurring.name,recurring.category,accountName(data,recurring.accountId),recurring.id],action:{type:'navigate',page:'recurring'},priority:56}));
+  rows.push(item({id:`recurring:${recurring.id}`,kind:'recurring',title:recurring.name,subtitle:recurringStatus(recurring)==='active'?'Ενεργό πάγιο':'Ανενεργό πάγιο',keywords:[recurring.name,recurring.category,accountName(data,recurring.accountId),recurring.id],action:{type:'recurring_focus',recurringId:recurring.id},priority:56}));
   if(recurringStatus(recurring)==='active')rows.push(item({id:`action:recurring:${recurring.id}`,kind:'command',title:`Πληρωμή ${recurring.name}`,subtitle:'Πληρωμή συγκεκριμένου παγίου',keywords:[recurring.name,recurring.category,'πάγιο','πληρωμή'],action:{type:'recurring_payment',recurringId:recurring.id,accountId:recurring.accountId},priority:21}));
  }
  for(const planned of data.state.scheduled??[]){

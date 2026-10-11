@@ -35,6 +35,16 @@ try{
  assert(await c.call("function(){const section=document.querySelector('#report-budgets');return Boolean(section?.open&&section.querySelector('summary')===document.activeElement)}"),'budget command navigates with focus on editor summary');
  await screenshot('command-budget-editor-from-dashboard');
 
+ console.log('Command Palette QA: exact named recurring item focus');
+ const recurringUrl=new URL(baseUrl);recurringUrl.searchParams.set('page','reports');recurringUrl.searchParams.set('state','recurring-rich');
+ await c.send('Page.navigate',{url:recurringUrl.href});
+ await waitFor("function(){return document.querySelector('#main-workspace h1')?.textContent?.includes('Αναφορές')}",'recurring source route');
+ await ctrlK();await setSearch('QA Πάγιο 7');await activateOption('QA Πάγιο 7Ενεργό πάγιο');await press('Enter');
+ await waitFor("function(){return Boolean(document.querySelector('[data-command-recurring-id=qa-recurring-rich-7]'))}",'exact recurring row');
+ await waitFor("function(){return document.activeElement?.dataset.commandRecurringId==='qa-recurring-rich-7'}",'exact recurring keyboard focus');
+ assert(await c.call("function(){return !document.querySelector('.contextual-quick-modal')&&!document.querySelector('.recurring-editor-dialog')}",'named recurring selection is navigation, not payment or edit');
+ await screenshot('command-exact-recurring-focus');
+
  console.log('Command Palette QA: exact Loan entity focus and paginated list targeting');
  const loanUrl=new URL(baseUrl);loanUrl.searchParams.set('page','reports');loanUrl.searchParams.set('state','loans-long');
  await c.send('Page.navigate',{url:loanUrl.href});
