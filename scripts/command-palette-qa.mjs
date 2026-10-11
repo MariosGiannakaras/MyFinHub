@@ -90,6 +90,18 @@ try{
  await ctrlK();await setSearch('QA Visa');await activateOption('QA Visa');await press('Enter');
  await waitFor("function(){return !!document.querySelector('.stack-card.top[data-card-id=qa-card]')}",'switch selected card in same credit route');
 
+ console.log('Command Palette QA: exact pending scheduled item is selected without starting completion');
+ const scheduledUrl=new URL(baseUrl);scheduledUrl.searchParams.set('page','reports');scheduledUrl.searchParams.set('state','extreme');
+ await c.send('Page.navigate',{url:scheduledUrl.href});
+ await waitFor("function(){return document.querySelector('#main-workspace h1')?.textContent?.includes('Αναφορές')}",'scheduled command source');
+ await ctrlK();await setSearch('Προγραμματισμένη κίνηση 18');await activateOption('Προγραμματισμένη κίνηση 18');await press('Enter');
+ await waitFor("function(){return document.activeElement?.dataset.scheduledId==='scheduled-extreme-17'}",'exact scheduled entry focused beyond initial pagination');
+ assert(await c.call("function(){return !!document.querySelector('.scheduled-row[data-scheduled-id=scheduled-extreme-17]')&&!document.querySelector('.contextual-quick-modal')&&!document.querySelector('.quick-modal')}",[]),'named scheduled item does not execute or complete financial activity');
+ await screenshot('command-exact-scheduled-item');
+ await ctrlK();await setSearch('Προγραμματισμένη κίνηση 15');await activateOption('Προγραμματισμένη κίνηση 15');await press('Enter');
+ await waitFor("function(){return document.activeElement?.dataset.scheduledId==='scheduled-extreme-14'}",'same-route scheduled item focused');
+ await screenshot('command-exact-scheduled-item-same-route');
+
  console.log('Command Palette QA: exact transaction result from another reporting month');
  const historyUrl=new URL(baseUrl);historyUrl.searchParams.set('page','reports');historyUrl.searchParams.set('state','command-transaction');
  await c.send('Page.navigate',{url:historyUrl.href});
