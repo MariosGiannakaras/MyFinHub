@@ -82,6 +82,8 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   const [commandFocusKey,setCommandFocusKey]=useState(0);
   const [commandCardId,setCommandCardId]=useState<string|null>(null);
   const [commandCardKey,setCommandCardKey]=useState(0);
+  const [commandDebitCardId,setCommandDebitCardId]=useState<string|null>(null);
+  const [commandDebitCardKey,setCommandDebitCardKey]=useState(0);
   const [commandLendingPerson,setCommandLendingPerson]=useState<string|null>(null);
   const [commandLendingKey,setCommandLendingKey]=useState(0);
   const [commandLoanId,setCommandLoanId]=useState<string|null>(null);
@@ -285,6 +287,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   const handleCommand=(row:RankedCommandSearchItem)=>{
     setCommandOpen(false);const action=row.action;
     if(action.type==='navigate'){navigate(action.page);return}
+    if(action.type==='debit_card_focus'){setCommandDebitCardId(action.cardId);setCommandDebitCardKey(key=>key+1);navigate('cards');return}
     if(action.type==='credit_card_focus'){
       setCommandCardId(action.cardId);setCommandCardKey(key=>key+1);navigate('credit');return;
     }
@@ -338,7 +341,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
     ? <DashboardPage data={data} month={month} asOf={today} motionMode="full" privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onQuickAdd={(prefill?: QuickPrefill) => openGeneric('expense', prefill || null)} onAccountQuickAdd={(accountId, kind) => kind === 'savings' ? openSpecial({ mode: 'savings', toAccountId: accountId, savingSource: 'manual_transfer' }) : openGeneric('expense', { note: '', amount: 0, accountId })} onTransactions={() => navigate('transactions')} onPlanning={() => navigate('planning')} onAttention={() => navigate('attention')} onReports={()=>navigate('reports')}/>
     : page === 'transactions' ? <TransactionsPage data={data} month={month} commandFocusKey={commandFocusKey} onEditEvent={editEvent} onDeleteEvent={deleteEvent} onEditLegacy={editLegacy} onDeleteLegacy={deleteLegacy}/>
     : page === 'savings' ? <SavingsPage data={data} month={month} asOf={today} onCreate={addEvent} onQuickAdd={openSpecial} onSavingsTargetChange={updateSavingsTarget} onUpsertGoal={upsertSavingsGoal} onDeleteGoal={deleteSavingsGoal}/>
-    : page === 'cards' ? <CardsPage data={data} onUpsertBank={upsertBank} onUpsertCard={upsertCard} onUpsertCardDurably={upsertCardDurably} onStageNewCard={stageNewCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard}/>
+    : page === 'cards' ? <CardsPage data={data} commandCardId={commandDebitCardId} commandCardKey={commandDebitCardKey} onUpsertBank={upsertBank} onUpsertCard={upsertCard} onUpsertCardDurably={upsertCardDurably} onStageNewCard={stageNewCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard}/>
     : page === 'credit' ? <CreditCardPage data={data} asOf={today} commandCardId={commandCardId} commandCardKey={commandCardKey} onCreateEvent={addEvent} onEditEvent={editEvent} onDeleteEvent={deleteEvent} onUpsertCard={upsertCard} onUpsertCardDurably={upsertCardDurably} onStageNewCard={stageNewCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard} onPayCard={(cardId,statementId)=>openSpecial({mode:'credit',action:'payment',cardId,statementId})}/>
     : page === 'loans' ? <LoansPage data={data} asOf={today} commandLoanId={commandLoanId} commandLoanKey={commandLoanKey} onUpsertLoan={upsertLoan} onCreateSelfLoan={createSelfLoan} onPayLoan={(loanId)=>openSpecial({mode:'loan',loanId})}/>
     : page === 'lending' ? <LendingPage data={data} asOf={today} commandPerson={commandLendingPerson} commandPersonKey={commandLendingKey} privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onCreateEvent={addEvent} onQuickAdd={openSpecial}/>

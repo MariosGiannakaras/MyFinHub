@@ -67,6 +67,18 @@ try{
  await waitFor("function(){return document.activeElement===document.querySelector('.lending-person-row[aria-pressed=true]')}",'same-route Lending keyboard focus');
  await screenshot('command-exact-lending-person-same-route');
 
+ console.log('Command Palette QA: precise debit/prepaid card selection without vault reveal');
+ const debitUrl=new URL(baseUrl);debitUrl.searchParams.set('page','reports');debitUrl.searchParams.set('state','cards-rich');
+ await c.send('Page.navigate',{url:debitUrl.href});
+ await waitFor("function(){return document.querySelector('#main-workspace h1')?.textContent?.includes('Αναφορές')}",'cards search source');
+ await ctrlK();await setSearch('QA Payzy');await activateOption('QA Payzy');await press('Enter');
+ await waitFor("function(){return document.activeElement?.dataset.commandCardId==='qa-card-payzy'}",'exact prepaid card focused');
+ assert(await c.call("function(){return !document.querySelector('.contextual-quick-modal')&&!document.querySelector('.card-details-dialog')}",'prepaid search does not open vault or payment');
+ await screenshot('command-exact-prepaid-card');
+ await ctrlK();await setSearch('QA Revolut');await activateOption('QA Revolut');await press('Enter');
+ await waitFor("function(){return document.activeElement?.dataset.commandCardId==='qa-card-revolut'}",'second exact debit card focused');
+ await screenshot('command-exact-debit-card-same-route');
+
  console.log('Command Palette QA: named credit card selects its exact card in a multi-card stack');
  const creditUrl=new URL(baseUrl);creditUrl.searchParams.set('page','reports');creditUrl.searchParams.set('state','credit-stack');
  await c.send('Page.navigate',{url:creditUrl.href});

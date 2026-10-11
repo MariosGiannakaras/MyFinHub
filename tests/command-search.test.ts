@@ -53,7 +53,7 @@ describe('unified command search',()=>{
     const index=buildCommandSearchIndex(data);
     expect(index.find(row=>row.id==='card:credit-search-second')?.action).toEqual({type:'credit_card_focus',cardId:'credit-search-second'});
     expect(index.find(row=>row.id==='action:card-payment:credit-search-second')?.action).toEqual({type:'credit_payment',cardId:'credit-search-second'});
-    expect(index.find(row=>row.id==='card:qa-debit-card')?.action).toEqual({type:'navigate',page:'cards'});
+    expect(index.find(row=>row.id==='card:qa-debit-card')?.action).toEqual({type:'debit_card_focus',cardId:'qa-debit-card'});
   });
 
   it('targets the exact persisted loan instead of opening the generic Loans page',()=>{

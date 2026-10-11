@@ -1,5 +1,5 @@
 import { ArchiveRestore, CreditCard, Landmark, Plus, ShieldCheck, Trash2, WalletCards } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { AppTextInput } from '../components/AppTextInput';
 import { Button } from '../components/Button';
 import { PageHeader } from '../components/PageHeader';
@@ -28,9 +28,11 @@ type RecentAccountRow={
 };
 
 export function CardsPage({
-  data,onUpsertBank,onUpsertCard,onUpsertCardDurably,onStageNewCard,onArchiveCard,onDeleteCard,
+  data,commandCardId=null,commandCardKey=0,onUpsertBank,onUpsertCard,onUpsertCardDurably,onStageNewCard,onArchiveCard,onDeleteCard,
 }:{
   data:FinanceData;
+  commandCardId?:string|null;
+  commandCardKey?:number;
   onUpsertBank:(bank:CardBank)=>void;
   onUpsertCard:(card:PaymentCard)=>void;
   onUpsertCardDurably:(card:PaymentCard)=>Promise<void>;
@@ -43,6 +45,14 @@ export function CardsPage({
   const workspaceBanks=useMemo(()=>cardWorkspaceBanks(data,providerCatalog.providers),[data,providerCatalog.providers]);
   const activeCards=useMemo(()=>banks.flatMap(bank=>cardsForBank(data,bank.id)),[banks,data]);
   const archivedCards=useMemo(()=>banks.flatMap(bank=>archivedCardsForBank(data,bank.id)),[banks,data]);
+  useEffect(()=>{
+    if(!commandCardKey||!commandCardId||!activeCards.some(card=>card.id===commandCardId))return;
+    const frame=requestAnimationFrame(()=>{
+      const target=[...document.querySelectorAll<HTMLElement>('[data-command-card-id]')].find(node=>node.dataset.commandCardId===commandCardId);
+      if(target){target.scrollIntoView({block:'center',behavior:'auto'});target.focus({preventScroll:true})}
+    });
+    return()=>cancelAnimationFrame(frame);
+  },[commandCardId,commandCardKey,activeCards]);
   const representedBankCount=useMemo(()=>cardDomainBankCount(data),[data]);
   const debitCount=activeCards.filter(card=>card.kind==='debit').length;
   const prepaidCount=activeCards.filter(card=>card.kind==='prepaid').length;
