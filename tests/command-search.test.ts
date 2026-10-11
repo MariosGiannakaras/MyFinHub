@@ -47,6 +47,19 @@ describe('unified command search',()=>{
     expect(buildCommandSearchIndex(data).find(row=>row.id==='account:bank-savings-search')?.title).toBe('Emergency reserve');
   });
 
+  it('offers an explicit exact-account management result without changing named Quick Entry',()=>{
+    const data=clone();
+    data.state.settings.customAccounts=[...(data.state.settings.customAccounts??[]),{id:'account-custom-search',name:'Custom Reserve',kind:'bank',bankAccountCategory:'savings',custom:true}];
+    const result=buildCommandSearchIndex(data);
+    expect(result.find(row=>row.id==='account:account-custom-search')?.action).toEqual({type:'quick_add',kind:'expense',accountId:'account-custom-search'});
+    const management=result.find(row=>row.id==='action:manage-account:account-custom-search');
+    expect(management?.action).toEqual({type:'account_focus',accountId:'account-custom-search'});
+    expect(management?.title).toContain('Custom Reserve');
+    expect(management?.subtitle).toContain('Ρυθμίσεις');
+    expect(searchCommandItems(data,'account-custom-search').some(row=>row.id===management?.id)).toBe(true);
+    expect(JSON.stringify(management)).not.toMatch(/iban|cvv|pan|secret/i);
+  });
+
   it('selects the exact credit card from a named result rather than opening a generic page',()=>{
     const data=clone();const base=data.state.cards?.find(card=>card.id==='qa-card')!;
     data.state.cards=[...(data.state.cards??[]),{...base,id:'credit-search-second',nickname:'QA Second Credit'}];
