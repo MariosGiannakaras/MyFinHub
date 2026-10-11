@@ -91,6 +91,8 @@ export function SettingsPage({
   filePath,
   lastSavedAt,
   currentEmail,
+  accountFocusId,
+  accountFocusKey,
   activeTab:controlledTab,
   onActiveTabChange,
   onImport,
@@ -106,6 +108,8 @@ export function SettingsPage({
   filePath: string;
   lastSavedAt: string | null;
   currentEmail?: string | null;
+  accountFocusId?:string|null;
+  accountFocusKey?:number;
   activeTab?:SettingsTab;
   onActiveTabChange?:(tab:SettingsTab)=>void;
   onImport: (d: FinanceData) => Promise<void>;
@@ -246,7 +250,7 @@ export function SettingsPage({
 
         {activeTab === 'profile' ? <AccountSecuritySettings currentEmail={currentEmail} /> : null}
 
-        {activeTab === 'accounts' ? <div className="settings-tab-stack settings-accounts-stack"><FinancialProviderManagementSettings/><AccountManagementSettings data={data} settings={draft} onChange={(next) => commit(next, '')} onChangeDurably={(next)=>onFinanceDurably(current=>({...current,state:{...current.state,settings:cloneSettings(next)}}))} /></div> : null}
+        {activeTab === 'accounts' ? <div className="settings-tab-stack settings-accounts-stack"><FinancialProviderManagementSettings/><AccountManagementSettings data={data} settings={draft} focusAccountId={accountFocusId} focusKey={accountFocusKey} onChange={(next) => commit(next, '')} onChangeDurably={(next)=>onFinanceDurably(current=>({...current,state:{...current.state,settings:cloneSettings(next)}}))} /></div> : null}
 
         {activeTab === 'categories' ? (
           <div className="settings-categories-only">

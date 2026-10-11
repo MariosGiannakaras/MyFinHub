@@ -13,6 +13,7 @@ type CommandAction=
  | {type:'quick_add';kind:'expense'|'income'|'transfer'|'refund';accountId?:string}
  | {type:'credit_card_focus';cardId:string}
  | {type:'debit_card_focus';cardId:string}
+ | {type:'account_focus';accountId:string}
  | {type:'lending_person_focus';person:string}
  | {type:'loan_focus';loanId:string}
  | {type:'recurring_focus';recurringId:string}
@@ -58,6 +59,7 @@ export function buildCommandSearchIndex(data:FinanceData,asOf?:string):CommandSe
  for(const account of allAccounts(data)){
   if(account.id==='credit-card')continue;
   const title=accountName(data,account.id);const savings=account.kind==='savings'||(account.kind==='bank'&&account.bankAccountCategory==='savings');rows.push(item({id:`account:${account.id}`,kind:'account',title,subtitle:savings?'Μεταφορά προς αποταμίευση':'Καταχώριση εξόδου στον λογαριασμό',keywords:[account.id,account.name,account.short??'',account.kind],action:{type:'quick_add',kind:'expense',accountId:account.id},priority:60}));
+  rows.push(item({id:`action:manage-account:${account.id}`,kind:'command',title:`Διαχείριση · ${title}`,subtitle:'Προβολή συγκεκριμένου λογαριασμού στις Ρυθμίσεις',keywords:[title,account.id,account.kind,'διαχείριση','ρυθμίσεις','λογαριασμός'],action:{type:'account_focus',accountId:account.id},priority:62}));
  }
  for(const tx of effectiveLegacyTransactions(data)){
   rows.push(item({id:`legacy:${tx.id}`,kind:'transaction',title:clean(tx.note)||'Κίνηση χωρίς περιγραφή',subtitle:`${tx.date} · ${tx.type==='income'?'Έσοδο':tx.type==='transfer'?'Μεταφορά':tx.type==='adjustment'?'Διόρθωση':'Έξοδο'}`,keywords:[tx.note,tx.category??'',tx.subcategory??'',accountName(data,tx.accountId??tx.fromAccountId),tx.date,tx.id],action:{type:'transaction_focus',id:tx.id,source:'legacy',date:tx.date},priority:90}));

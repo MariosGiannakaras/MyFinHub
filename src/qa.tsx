@@ -17,6 +17,7 @@ import { useSession } from './hooks/useSession';
 import type { AttentionItem } from './lib/attention';
 import { archiveCardRecord, withCardSecretCleanupPending, withCardSecretCleanupComplete } from './lib/cards';
 import type { RankedCommandSearchItem } from './lib/commandSearch';
+import type { SettingsTabId } from './lib/routing';
 import { accountBalances, allAccounts, createEvent } from './lib/domain';
 import { withLegacyOverride, withLegacyTombstone } from './lib/legacyTransactions';
 import { applyTaxonomyOperation, type TaxonomyOperation } from './lib/taxonomyManagement';
@@ -287,6 +288,9 @@ function QaWorkspace(){
   const [commandCardKey,setCommandCardKey]=useState(0);
   const [commandDebitCardId,setCommandDebitCardId]=useState<string|null>(null);
   const [commandDebitCardKey,setCommandDebitCardKey]=useState(0);
+  const [commandAccountId,setCommandAccountId]=useState<string|null>(null);
+  const [commandAccountKey,setCommandAccountKey]=useState(0);
+  const [settingsTab,setSettingsTab]=useState<SettingsTabId>('general');
   const [commandLendingPerson,setCommandLendingPerson]=useState<string|null>(null);
   const [commandLendingKey,setCommandLendingKey]=useState(0);
   const [commandLoanId,setCommandLoanId]=useState<string|null>(null);
@@ -353,6 +357,7 @@ function QaWorkspace(){
   const handleCommand=(row:RankedCommandSearchItem)=>{
     setCommandOpen(false);const action=row.action;
     if(action.type==='navigate'){setPage(action.page);return}
+    if(action.type==='account_focus'){setCommandAccountId(action.accountId);setCommandAccountKey(key=>key+1);setSettingsTab('accounts');setPage('settings');return}
     if(action.type==='debit_card_focus'){setCommandDebitCardId(action.cardId);setCommandDebitCardKey(key=>key+1);setPage('cards');return}
     if(action.type==='credit_card_focus'){
       setCommandCardId(action.cardId);setCommandCardKey(key=>key+1);setPage('credit');return;
@@ -408,7 +413,7 @@ function QaWorkspace(){
     :page==='planning'?<PlanningPage data={data} asOf={today} commandScheduledId={commandScheduledId} commandScheduledKey={commandScheduledKey} onUpsertScheduled={upsertScheduled} onCompleteScheduled={completeScheduled}/>
     :page==='attention'?<AttentionPage data={data} asOf={today} onAction={handleAttention} onDecision={decideAttention} onReviewDecision={(id,decision)=>update(current=>({...current,state:{...current.state,reviewDecisions:{...(current.state.reviewDecisions??{}),[id]:decision}}}))}/>
     :page==='reports'?<ReportsPage data={data} month={month} asOf={today} privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onUpsertBudget={upsertBudget} onDeleteBudget={deleteBudget} onUpsertRule={upsertRule} onDeleteRule={deleteRule}/>
-    :<SettingsPage data={data} asOf={today} filePath="Synthetic QA" lastSavedAt={data.updatedAt} onImport={async incoming=>importData(incoming)} onBackup={async()=>({path:'synthetic/backup.json'})} onSettings={settings=>update(current=>({...current,state:{...current.state,settings}}))} onFinanceDurably={async recipe=>{if(new URLSearchParams(location.search).get('account-save-failure')==='1')throw new Error('Η δοκιμαστική αποθήκευση απέτυχε.');update(recipe)}} onTaxonomyOperation={updateTaxonomy} onUpsertRule={upsertRule} onDeleteRule={deleteRule}/>;
+    :<SettingsPage data={data} asOf={today} activeTab={settingsTab} onActiveTabChange={setSettingsTab} accountFocusId={commandAccountId} accountFocusKey={commandAccountKey} filePath="Synthetic QA" lastSavedAt={data.updatedAt} onImport={async incoming=>importData(incoming)} onBackup={async()=>({path:'synthetic/backup.json'})} onSettings={settings=>update(current=>({...current,state:{...current.state,settings}}))} onFinanceDurably={async recipe=>{if(new URLSearchParams(location.search).get('account-save-failure')==='1')throw new Error('Η δοκιμαστική αποθήκευση απέτυχε.');update(recipe)}} onTaxonomyOperation={updateTaxonomy} onUpsertRule={upsertRule} onDeleteRule={deleteRule}/>;
   const periodVisible=['dashboard','transactions','savings','reports'].includes(page);
 
   return <>

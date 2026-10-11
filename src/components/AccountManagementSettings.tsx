@@ -1,6 +1,6 @@
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Landmark, Pencil, Plus, Trash2, WalletCards, X } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useAccountMetadata } from '../hooks/useAccountMetadata';
 import { useFinancialProviders } from '../hooks/useFinancialProviders';
 import { useModalFocus } from '../hooks/useModalFocus';
@@ -108,7 +108,7 @@ function AccountIcon({account,providers}:{account:ProviderAccount;providers:Fina
   return <span className="account-management-brand-icon"><BankBrandMark id={providerId||account.id} name={accountProviderLabel(account,providers)}/></span>;
 }
 
-export function AccountManagementSettings({data,settings,onChange,onChangeDurably}:{data:FinanceData;settings:FinanceSettings;onChange:(next:FinanceSettings)=>void;onChangeDurably:(next:FinanceSettings)=>Promise<void>}){
+export function AccountManagementSettings({data,settings,onChange,onChangeDurably,focusAccountId,focusKey}:{data:FinanceData;settings:FinanceSettings;onChange:(next:FinanceSettings)=>void;onChangeDurably:(next:FinanceSettings)=>Promise<void>;focusAccountId?:string|null;focusKey?:number}){
   const metadata=useAccountMetadata();
   const providerCatalog=useFinancialProviders();
   const providers=providerCatalog.providers;
@@ -121,6 +121,15 @@ export function AccountManagementSettings({data,settings,onChange,onChangeDurabl
   const[busy,setBusy]=useState(false);
   const[pendingDelete,setPendingDelete]=useState<ProviderAccount|null>(null);
   const modalRef=useModalFocus<HTMLElement>(Boolean(editor),'[data-autofocus="true"]',()=>{if(!busy)setEditor(null)});
+  useEffect(()=>{
+    if(!focusAccountId||!focusKey||!accounts.some(account=>account.id===focusAccountId))return;
+    const frame=requestAnimationFrame(()=>{
+      const row=[...document.querySelectorAll<HTMLElement>('.account-management-row[data-account-id]')].find(node=>node.dataset.accountId===focusAccountId);
+      row?.scrollIntoView({block:'center',behavior:'auto'});
+      row?.focus({preventScroll:true});
+    });
+    return()=>cancelAnimationFrame(frame);
+  },[focusAccountId,focusKey,accounts]);
 
   const patch=(next:Partial<FinanceSettings>)=>onChange({...settings,...next});
   const closeEditor=()=>{if(busy)return;setEditor(null);setEditorError('')};
@@ -288,7 +297,7 @@ export function AccountManagementSettings({data,settings,onChange,onChangeDurabl
           const cashType=inferCashType(account);
           const category=inferBankCategory(account);
           const defaultRoles=accountDefaultRoles(settings,account.id);
-          return <div className="account-management-row" role="listitem" key={account.id}>
+          return <div className="account-management-row" role="listitem" tabIndex={-1} data-account-id={account.id} key={account.id}>
             <AccountIcon account={account} providers={providers}/>
             <div className="account-management-copy">
               <div className="account-management-title-line"><b>{displayName(settings,account)}</b>{defaultRoles.length?<span className="account-management-default-badges" aria-label={`Προεπιλογές: ${defaultRoles.join(', ')}`}>{defaultRoles.map(role=><span className="account-management-default-badge" key={role}>{role}</span>)}</span>:null}</div>
