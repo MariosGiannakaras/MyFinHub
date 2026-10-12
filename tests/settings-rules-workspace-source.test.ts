@@ -5,6 +5,8 @@ const read=(path:string)=>readFileSync(new URL(`../${path}`,import.meta.url),'ut
 const workspace=read('src/components/TransactionRulesWorkspace.tsx');
 const categorySelect=read('src/components/CategorySelectInput.tsx');
 const settings=read('src/pages/SettingsPage.tsx');
+const rendered=read('scripts/budget-rules-qa.mjs');
+const realBrowser=read('scripts/real-stack-browser-e2e.ts');
 const css=read('src/components/TransactionRulesWorkspace.css');
 const mobileDomainCss=read('src/styles/mobile-finance-domain-layouts.css');
 
@@ -47,6 +49,15 @@ describe('Settings Rules workspace source contract',()=>{
     expect(workspace).toContain('Επεξεργασία αυτοματισμού');
     expect(workspace).toContain('Διαγραφή αυτοματισμού');
     expect(workspace).toContain('Διαγραφή κανόνα;');
+  });
+
+  it('locks dual-scope edit/reload behavior in both synthetic and real owner+AAL2 browser evidence',()=>{
+    expect(rendered).toContain("selectOwnedOption('Πότε να λειτουργεί','Καταχώριση και εισαγωγή')");
+    expect(rendered).toContain('advanced-automations-two-scope-edit-desktop');
+    expect(rendered).toContain('Reports does not expose a duplicate automation editor');
+    expect(realBrowser).toContain('dual-scope rule persisted in owner+AAL2 FinanceData');
+    expect(realBrowser).toContain('unrelated rule edit retains the dual-scope persisted contract');
+    expect(realBrowser).toContain('rule-two-scope-edit-persisted');
   });
 
   it('is the dedicated Settings Rules surface while budgets remain elsewhere',()=>{

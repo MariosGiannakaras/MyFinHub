@@ -81,6 +81,8 @@ try{
   await openRuleEditor();
   await setLabelInput('Όνομα αυτοματισμού','QA Market second');
   await setLabelInput('Κείμενο περιγραφής','QA Market');
+  await selectOwnedOption('Πότε να λειτουργεί','Καταχώριση και εισαγωγή');
+  assert((await ownedValue('Πότε να λειτουργεί'))==='Καταχώριση και εισαγωγή','two-scope choice is visible in owned selector');
   await clickText('[data-rule-editor] .save-button','Δημιουργία κανόνα');
   await waitFor("function(){const rows=[...document.querySelectorAll('.rule-settings-list article .rules-row-title b')].map(node=>(node.textContent||'').trim());return rows.length===2&&rows[0]==='QA Market first'&&rows[1]==='QA Market second'}",'second automation ordered after first');
   await clickAria('Μετακίνηση αυτοματισμού QA Market first προς τα κάτω');
@@ -95,9 +97,17 @@ try{
   await clickAria('Επεξεργασία αυτοματισμού QA Market second');
   await waitFor("function(){const modal=document.querySelector('[data-rule-editor]');return Boolean(modal&&(modal.querySelector('#rule-editor-title')?.textContent||'').includes('Επεξεργασία κανόνα')&&[...modal.querySelectorAll('button')].some(button=>(button.textContent||'').includes('Αποθήκευση αλλαγών')))}",'automation edit mode');
   assert((await c.call("function(){return document.querySelector('[data-rule-editor] .rules-name-field input')?.value||''}"))==='QA Market second','edit modal loads persisted rule name');
+  assert((await ownedValue('Πότε να λειτουργεί'))==='Καταχώριση και εισαγωγή','existing two-scope combination survives opening edit');
+  await screenshot('advanced-automations-two-scope-edit-desktop');
   await setLabelInput('Όνομα αυτοματισμού','QA Market second edited');
   await clickText('[data-rule-editor] .save-button','Αποθήκευση αλλαγών');
   await waitFor("function(){return [...document.querySelectorAll('.rule-settings-list article .rules-row-title b')].some(node=>(node.textContent||'').trim()==='QA Market second edited')&&!document.querySelector('[data-rule-editor]')}",'automation edit persists');
+  assert(await c.call("function(){const row=[...document.querySelectorAll('.rule-settings-list article')].find(node=>(node.textContent||'').includes('QA Market second edited'));return Boolean(row&&(row.textContent||'').includes('χειροκίνητη καταχώριση')&&(row.textContent||'').includes('εισαγωγή'))}"),'unrelated name edit leaves both scope labels persisted');
+  await clickAria('Επεξεργασία αυτοματισμού QA Market second edited');
+  await waitFor("function(){return Boolean(document.querySelector('[data-rule-editor]'))}",'reopened two-scope rule');
+  assert((await ownedValue('Πότε να λειτουργεί'))==='Καταχώριση και εισαγωγή','two-scope choice survives edit save and reopen');
+  await clickAria('Κλείσιμο επεξεργασίας κανόνα');
+  await waitFor("function(){return !document.querySelector('[data-rule-editor]')}",'edit close before delete');
   await clickAria('Διαγραφή αυτοματισμού QA Market second edited');
   await waitFor("function(){const dialog=document.querySelector('.app-confirm-dialog[role=\"alertdialog\"]');return Boolean(dialog&&(dialog.textContent||'').includes('Διαγραφή κανόνα'))}",'automation deletion confirmation');
   assert(await c.call("function(){return [...document.querySelectorAll('.rule-settings-list article .rules-row-title b')].some(node=>(node.textContent||'').trim()==='QA Market second edited')}"),'rule remains until destructive confirmation');
@@ -122,6 +132,7 @@ try{
   console.log('Budget/Rules QA: budgets are managed in Reports');
   await navigate('reports');
   await waitFor("function(){return Boolean(document.querySelector('[data-budget-management]'))}",'reports budget management');
+  assert(await c.call("function(){return !document.querySelector('[data-advanced-automations]')&&!document.querySelector('.rule-settings-list')}"),'Reports does not expose a duplicate automation editor');
   const reportText=await c.call("function(){return document.querySelector('#main-workspace')?.textContent||''}");assert(!reportText.includes('Γενικό budget')&&!reportText.includes('Ορίζεται από τις Ρυθμίσεις'),'Reports no longer exposes the legacy global budget UI');
   assert(await c.call("function(){const panel=document.querySelector('[data-budget-overview]');const text=panel?.textContent||'';return Boolean(panel)&&text.includes('Συνολικό όριο')&&text.includes('Χρήση ορίων')&&text.includes('Πρόβλεψη τέλους μήνα')&&text.includes('Τι χρειάζεται προσοχή')}"),'Reports budget overview is information-first');
   await screenshot('reports-budget-overview-desktop');
