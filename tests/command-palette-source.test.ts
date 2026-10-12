@@ -48,6 +48,16 @@ describe('unified command palette source contracts',()=>{
     expect(palette).toContain("event.key==='Enter'");
   });
 
+  it('distinguishes exact named navigation from overlapping payment and completion commands',()=>{
+    const rendered=readFileSync(new URL('../scripts/command-palette-qa.mjs',import.meta.url),'utf8');
+    expect(rendered).toContain('const activateExactTitle=async title=>');
+    expect(rendered).toContain("querySelector('.command-result-copy b')");
+    expect(rendered).toContain("await activateExactTitle('QA Credit 3')");
+    expect(rendered).toContain("await activateExactTitle('QA Visa')");
+    expect(rendered).toContain("await activateOption('Ολοκλήρωση · Ετήσια ασφάλεια')");
+    expect(rendered).toContain("await activateExactTitle('Προγραμματισμένη κίνηση 18')");
+    expect(rendered).toContain('visible-state');
+  });
   it('stores only recent result ids and excludes sensitive card fields from indexed copy',()=>{
     expect(palette).toContain("sessionStorage.setItem(RECENTS_KEY,JSON.stringify(ids.slice(0,8)))");
     expect(search).toContain('allCards(data).filter(card=>card.active!==false)');
