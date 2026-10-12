@@ -1,4 +1,5 @@
 import { allAccounts, createEvent } from './domain.js';
+import { isSavingsAccount } from './accountSelection.js';
 import { centsToMoney, moneyToCents } from './money.js';
 import type { FinanceData, FinanceEvent, SplitPart } from '../types.js';
 
@@ -12,7 +13,7 @@ export function defaultTransferPair(data: FinanceData) {
   const accounts = transferEligibleAccounts(data);
   const preferredFrom = data.state.settings.defaultExpenseAccount;
   const from = accounts.find((account) => account.id === preferredFrom)?.id ?? accounts[0]?.id ?? '';
-  const to = accounts.find((account) => account.id !== from && account.kind === 'savings')?.id
+  const to = accounts.find((account) => account.id !== from && isSavingsAccount(account))?.id
     ?? accounts.find((account) => account.id !== from)?.id
     ?? '';
   return { from, to };

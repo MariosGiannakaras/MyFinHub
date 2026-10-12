@@ -39,6 +39,14 @@ describe('ledger foundations', () => {
     expect(defaultTransferPair(data)).toEqual({ from: 'bank', to: 'savings' });
   });
 
+  it('prefers bank-categorized savings over a cash fallback for a transfer destination',()=>{
+    const data=minimal();
+    data.seed.accounts=data.seed.accounts.map(account=>account.id==='savings'
+      ?{...account,kind:'bank',bankAccountCategory:'savings'}
+      :account);
+    expect(defaultTransferPair(data)).toEqual({from:'bank',to:'savings'});
+  });
+
   it('rejects same, stale and credit transfer endpoints', () => {
     const data = minimal();
     expect(transferDraftError(data,{fromAccountId:'bank',toAccountId:'bank',amount:10})).toMatch(/διαφορετικοί/);

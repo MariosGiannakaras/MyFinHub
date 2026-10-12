@@ -1,6 +1,11 @@
 import type { Account, FinanceData } from '../types.js';
 import { allAccounts } from './domain.js';
 
+/** One savings identity for account choices, goals, and transfer source/target UI. */
+export function isSavingsAccount(account:Pick<Account,'kind'|'bankAccountCategory'>){
+  return account.kind==='savings'||(account.kind==='bank'&&account.bankAccountCategory==='savings');
+}
+
 type DashboardPrimaryRole='cash'|'payroll'|'savings';
 type DashboardPrimarySlot={role:DashboardPrimaryRole;label:string;account?:Account};
 
@@ -31,14 +36,14 @@ export function financeAccountChoices(data:FinanceData){
     ??accounts.find(operatingPredicate);
 
   const savings=
-    accounts.find(account=>account.kind==='savings'&&quick(account))
-    ??accounts.find(account=>account.kind==='savings');
+    accounts.find(account=>isSavingsAccount(account)&&quick(account))
+    ??accounts.find(isSavingsAccount);
 
   // Dashboard primary slots are a product hierarchy, not generic quick choices.
   // Never replace payroll with an operating/current/default account.
   const dashboardDailyCash=preferQuick(accounts,account=>account.kind==='cash'&&account.cashRole==='daily');
   const dashboardPayroll=preferQuick(accounts,account=>account.kind==='bank'&&account.bankAccountCategory==='payroll');
-  const dashboardSavings=preferQuick(accounts,account=>account.kind==='savings'||(account.kind==='bank'&&account.bankAccountCategory==='savings'));
+  const dashboardSavings=preferQuick(accounts,isSavingsAccount);
   const dashboardPrimarySlots:DashboardPrimarySlot[]=[
     {role:'cash',label:'Μετρητά',account:dashboardDailyCash},
     {role:'payroll',label:'Μισθοδοσίας',account:dashboardPayroll},

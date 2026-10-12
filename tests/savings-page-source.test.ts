@@ -2,6 +2,8 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 const source=readFileSync(new URL('../src/pages/SavingsPage.tsx',import.meta.url),'utf8');
+const contextual=readFileSync(new URL('../src/components/ContextualQuickAdd.tsx',import.meta.url),'utf8');
+const selection=readFileSync(new URL('../src/lib/accountSelection.ts',import.meta.url),'utf8');
 const composition=readFileSync(new URL('../src/styles/savings-desktop-composition.css',import.meta.url),'utf8');
 const functionalQa=readFileSync(new URL('../scripts/completion-functional-crud-qa.mjs',import.meta.url),'utf8');
 const remediationQa=readFileSync(new URL('../scripts/savings-remediation-qa.mjs',import.meta.url),'utf8');
@@ -26,7 +28,10 @@ describe('Savings page action hierarchy',()=>{
   });
 
   it('uses semantic savings metadata and the shared dense readability contract',()=>{
-    expect(source).toContain('const savingsAccounts=accounts.filter(isSavingsGoalAccount)');
+    expect(source).toContain('const savingsAccounts=accounts.filter(isSavingsAccount)');
+    expect(contextual).toContain('const savingsTargets=accounts.filter(isSavingsAccount)');
+    expect(contextual).toContain('const savingsSources=accounts.filter(account=>!isSavingsAccount(account))');
+    expect(selection).toContain("account.bankAccountCategory==='savings'");
     expect(source).toContain('savingsGoalBalance(data,periodEndDate)');
     expect(source).toContain('accountChoices.dashboardSavings?.id??accountChoices.savings?.id');
     expect(composition).toContain('font-size:var(--ux-dense-data-size)');

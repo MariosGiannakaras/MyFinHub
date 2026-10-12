@@ -12,6 +12,7 @@ import { IconButton } from './IconButton';
 import { MoneyInput } from './MoneyInput';
 import { RecurringBrandMark } from './RecurringBrandMark';
 import { allAccounts, createEvent } from '../lib/domain';
+import { isSavingsAccount } from '../lib/accountSelection';
 import { cardLabel, creditCards, creditDebtForCard } from '../lib/cards';
 import { creditStatementById, creditStatementEvents, recommendedPayableStatement } from '../lib/creditStatements';
 import { lendingOutstandingFor } from '../lib/lending';
@@ -49,8 +50,10 @@ function ContextModal({data,asOf,context,onClose,onCreate,onCompleteScheduled}:{
   const loan=context.mode==='loan'?loans.find(item=>item.id===context.loanId):undefined;
   const scheduled=context.mode==='scheduled'?pendingScheduled(data).find(item=>item.id===context.scheduledId):undefined;
   const sameBankAccounts=context.mode==='credit'&&card?accounts.filter(account=>accountMatchesFinancialProvider(account,card.bankId)):accounts;
-  const savingsTargets=accounts.filter(account=>account.kind==='savings');
-  const savingsSources=accounts.filter(account=>account.kind!=='savings');
+  // Bank-classified savings are destinations, never ordinary funding sources
+  // for a newly recorded Savings contribution.
+  const savingsTargets=accounts.filter(isSavingsAccount);
+  const savingsSources=accounts.filter(account=>!isSavingsAccount(account));
   const initialAccount=context.mode==='credit'
     ?(sameBankAccounts.some(account=>account.id===context.fromAccountId)?context.fromAccountId!:sameBankAccounts[0]?.id||'')
     :context.mode==='lending'

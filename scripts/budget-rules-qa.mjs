@@ -273,6 +273,14 @@ try{
   await waitFor("function(){return ![...document.querySelectorAll('[data-savings-target-editor]')].some(el=>el.getClientRects().length>0)&&(document.querySelector('#main-workspace')?.textContent||'').includes('Στόχος 33%')}",'Savings target closes only after durable revision');
   await screenshot('savings-target-durable-receipt-desktop');
 
+  console.log('Budget/Rules QA: contextual Savings targets bank-classified savings accounts');
+  await navigate('savings','savings-bank-transfer',1440,1000);
+  await clickAria('Νέα αποταμίευση: Μεταφορά στην άκρη');
+  await waitFor("function(){return Boolean(document.querySelector('.contextual-quick-modal'))}",'bank-classified Savings contextual dialog');
+  assert(await c.call("function(){const modal=document.querySelector('.contextual-quick-modal');const labels=[...(modal?.querySelectorAll('label')||[])];const destination=labels.find(label=>(label.querySelector(':scope > span')?.textContent||'').includes('Προς αποταμίευση'));const source=labels.find(label=>(label.querySelector(':scope > span')?.textContent||'').trim()==='Από');return Boolean(destination?.querySelector('input[role=combobox]')?.value)&&Boolean(source?.querySelector('input[role=combobox]')?.value)}"),'bank Savings destination remains selectable with a distinct source');
+  await screenshot('savings-bank-typed-target-contextual-desktop');
+  await clickAria('Κλείσιμο contextual καταχώρισης');
+
   console.log('Budget/Rules QA: a historic personal goal deadline survives an unrelated edit');
   await navigate('savings','savings-expired-goal',1440,1000);
   await waitFor("function(){return [...document.querySelectorAll('.savings-goals-desktop .savings-goal-row.personal')].some(row=>(row.textContent||'').includes('QA Expired Goal'))}",'expired goal fixture');

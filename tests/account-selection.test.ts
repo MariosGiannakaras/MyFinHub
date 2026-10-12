@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { financeAccountChoices } from '../src/lib/accountSelection.js';
+import { financeAccountChoices, isSavingsAccount } from '../src/lib/accountSelection.js';
 import { qaFinanceData } from '../src/qaFixture.js';
 import { migrateData } from '../src/lib/domain.js';
 import type { FinanceData } from '../src/types.js';
@@ -60,6 +60,21 @@ describe('canonical account selection',()=>{
     expect(choices.operating?.id).toBe('custom-current');
     expect(choices.dashboardPrimary.map(account=>account.id)).toEqual(['cash-daily','bank-payroll','custom-savings-bank']);
     expect(choices.dashboardPrimarySlots.map(slot=>slot.role)).toEqual(['cash','payroll','savings']);
+  });
+
+  it('chooses bank-categorized savings when no kind=savings account exists',()=>{
+    const data=migrateData(base([
+      {id:'savings-bank',name:'Bank Savings',kind:'bank',bankAccountCategory:'savings'},
+      {id:'current',name:'Current',kind:'bank',bankAccountCategory:'current'},
+      {id:'wallet',name:'Cash',kind:'cash'},
+    ]));
+    data.state.settings.defaultExpenseAccount='current';
+    const choices=financeAccountChoices(data);
+    expect(choices.savings?.id).toBe('savings-bank');
+    expect(choices.dashboardSavings?.id).toBe('savings-bank');
+    expect(choices.operating?.id).toBe('current');
+    expect(isSavingsAccount(choices.savings!)).toBe(true);
+    expect(isSavingsAccount(choices.operating!)).toBe(false);
   });
 
   it('keeps a missing payroll slot explicit instead of substituting a current/default account',()=>{

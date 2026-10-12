@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { migrateData } from '../src/lib/domain.js';
-import { isSavingsGoalAccount, savingsGoalBalance, savingsGoalProgress, validSavingsGoalDeadline } from '../src/lib/savingsGoals.js';
+import { savingsGoalBalance, savingsGoalProgress, validSavingsGoalDeadline } from '../src/lib/savingsGoals.js';
+import { isSavingsAccount } from '../src/lib/accountSelection.js';
 import type { FinanceData, SavingsGoal } from '../src/types.js';
 
 function fixture():FinanceData{
@@ -31,9 +32,9 @@ describe('savings goal semantics',()=>{
   it('uses only positive balances from savings accounts as goal progress backing',()=>{
     const data=fixture();
     expect(savingsGoalBalance(data,'2026-09-28')).toBe(850);
-    expect(isSavingsGoalAccount({kind:'bank',bankAccountCategory:'savings'})).toBe(true);
-    expect(isSavingsGoalAccount({kind:'bank',bankAccountCategory:'current'})).toBe(false);
-    expect(isSavingsGoalAccount({kind:'cash'})).toBe(false);
+    expect(isSavingsAccount({kind:'bank',bankAccountCategory:'savings'})).toBe(true);
+    expect(isSavingsAccount({kind:'bank',bankAccountCategory:'current'})).toBe(false);
+    expect(isSavingsAccount({kind:'cash'})).toBe(false);
   });
 
   it('retains an unchanged expired personal deadline but rejects a newly introduced past deadline',()=>{
