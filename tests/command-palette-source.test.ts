@@ -78,7 +78,10 @@ describe('unified command palette source contracts',()=>{
     expect(approved).toContain("window.matchMedia('(min-width:1100px)').matches");
     expect(approved).toContain('setScheduledLimit(index+1)');
     expect(approved).toContain('data-planning-row={item.id} data-status={item.status} tabIndex={-1}');
-    expect(approved).toContain('row?.focus({preventScroll:true})');
+    expect(approved).toContain('row.focus({preventScroll:true})');
+    expect(approved).toContain('focusedCommandScheduledKey.current=commandScheduledKey');
+    expect(approved).toContain('[commandScheduledId,commandScheduledKey,view,scheduledLimit,commandTargetPresent,commandTargetIndex]');
+    expect(approved).not.toContain('[commandScheduledId,commandScheduledKey,view,scheduledLimit,allScheduled,filteredScheduled]');
     expect(rendered).toContain('visible-state');
   });
   it('stores only recent result ids and excludes sensitive card fields from indexed copy',()=>{

@@ -20,6 +20,8 @@ describe('exact scheduled search / completion action contract',()=>{
     expect(rendered).toContain("scheduled-extreme-17");
     expect(rendered).toContain("scheduled-extreme-14");
     expect(rendered).toContain("command-exact-scheduled-item.png".replace('.png',''));
-    expect(rendered).toContain("named scheduled item does not execute or complete financial activity");
+    expect(rendered).toContain("named scheduled item is visible in desktop table and does not execute financial activity");
+    expect(rendered).toContain("'same-route desktop scheduled item focused'");
+    expect(rendered).toContain("'visible mobile scheduled entry focused beyond pagination'");
   });
 });

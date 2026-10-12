@@ -1,6 +1,6 @@
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip as ChartTooltip, XAxis, YAxis } from 'recharts';
 import { ArrowDown, ArrowLeftRight, ArrowRight, ArrowUp, BarChart3, CalendarClock, Check, ChevronDown, CircleSlash2, Info, Pencil, Table2, X } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { BankBrandMark } from './BankBrandMark';
 import { cashFlowForecast, LOW_BALANCE_THRESHOLD, type CashFlowForecast, type ForecastPoint } from '../lib/forecast';
 import { money, shortDate } from '../lib/format';
@@ -94,6 +94,7 @@ export function PlanningApprovedDesktop({data,asOf,pending,history,commandSchedu
   }),[data,asOf]);
   const [view,setView]=useState<ScheduledView>('all');
   const [scheduledLimit,setScheduledLimit]=useState(24);
+  const focusedCommandScheduledKey=useRef(-1);
   const [accountView,setAccountView]=useState<AccountView>('chart');
   const [detailsOpen,setDetailsOpen]=useState(false);
   const setDetailsVisible=(next:boolean)=>{setDetailsOpen(next);if(next)requestAnimationFrame(()=>document.getElementById('planning-approved-details')?.scrollIntoView({block:'nearest',behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'}))};
@@ -106,24 +107,28 @@ export function PlanningApprovedDesktop({data,asOf,pending,history,commandSchedu
   const allScheduled=useMemo(()=>[...pending,...history],[pending,history]);
   const filteredScheduled=allScheduled.filter(item=>view==='all'||(view==='pending'?item.status==='pending':item.status===view));
   const visibleScheduled=filteredScheduled.slice(0,scheduledLimit);
-  // The approved desktop table is the only *visible* scheduled surface at
-  // >=1100px. Expand pagination first, then focus the actual table row.
-  // Leaving this to PlanningPage's hidden mobile list silently loses focus.
+  const commandTargetPresent=Boolean(commandScheduledId&&allScheduled.some(item=>item.id===commandScheduledId));
+  const commandTargetIndex=commandScheduledId?filteredScheduled.findIndex(item=>item.id===commandScheduledId):-1;
+  // This surface replaces the hidden mobile scheduled-panel at >=1100px.
+  // Derive scalar dependencies from the rows: the raw arrays are rebuilt on
+  // each render and would steal focus back from a subsequently opened palette.
   useEffect(()=>{
-    if(!commandScheduledId||!commandScheduledKey||!window.matchMedia('(min-width:1100px)').matches)return;
-    if(!allScheduled.some(item=>item.id===commandScheduledId))return;
+    if(!commandScheduledId||!commandScheduledKey||focusedCommandScheduledKey.current===commandScheduledKey
+      ||!window.matchMedia('(min-width:1100px)').matches||!commandTargetPresent)return;
     if(view!=='all'){setView('all');return}
-    const index=filteredScheduled.findIndex(item=>item.id===commandScheduledId);
+    const index=commandTargetIndex;
     if(index<0)return;
     if(index>=scheduledLimit){setScheduledLimit(index+1);return}
     const frame=requestAnimationFrame(()=>{
       const row=[...document.querySelectorAll<HTMLElement>('.planning-approved-table [data-planning-row]')]
         .find(node=>node.dataset.planningRow===commandScheduledId&&node.getClientRects().length>0);
-      row?.scrollIntoView({block:'center',behavior:'auto'});
-      row?.focus({preventScroll:true});
+      if(!row)return;
+      row.scrollIntoView({block:'center',behavior:'auto'});
+      row.focus({preventScroll:true});
+      focusedCommandScheduledKey.current=commandScheduledKey;
     });
     return()=>cancelAnimationFrame(frame);
-  },[commandScheduledId,commandScheduledKey,view,scheduledLimit,allScheduled,filteredScheduled]);
+  },[commandScheduledId,commandScheduledKey,view,scheduledLimit,commandTargetPresent,commandTargetIndex]);
   const accountRows=[...forecasts[90].accounts].sort((a,b)=>{const aState=accountForecastState(a),bState=accountForecastState(b);return accountStatePriority[aState]-accountStatePriority[bState]||Math.abs(b.projected-b.current)-Math.abs(a.projected-a.current)||a.accountId.localeCompare(b.accountId)});
   const portfolioTrend=forecasts[90].points.map(point=>({date:point.date,portfolio:point.portfolio}));
 

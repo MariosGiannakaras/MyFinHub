@@ -415,6 +415,27 @@
         "tests/budgets-rules.test.ts",
         "tests/settings-rules-workspace-source.test.ts"
       ]
+    },
+    {
+      "id": "FP-022",
+      "title": "Command focus must target the visible responsive owner without refocusing on unrelated renders",
+      "category": "ui-resilience",
+      "severity": "high",
+      "rootCause": "A desktop Command Palette action targeted the CSS-hidden legacy Planning scheduled list rather than the visible approved table. The first correction then used freshly allocated filtered arrays in effect dependencies and repeatedly stole keyboard focus when the palette was opened again.",
+      "prevention": "Route named targets to the actually visible responsive surface, extend its pagination and make the target programmatically focusable. Derive primitive hook dependencies and consume each command-key focus once so subsequent user interactions retain focus.",
+      "paths": [
+        "src/pages/PlanningPage.tsx",
+        "src/components/PlanningApprovedDesktop.tsx",
+        "scripts/command-palette-qa.mjs"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/38292070244",
+        "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/38292919365"
+      ],
+      "guards": [
+        "tests/command-palette-source.test.ts",
+        "tests/command-scheduled-reachability-source.test.ts"
+      ]
     }
   ]
 }
