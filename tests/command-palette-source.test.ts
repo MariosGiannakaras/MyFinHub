@@ -7,6 +7,7 @@ const palette=readFileSync(new URL('../src/components/CommandPalette.tsx',import
 const shortcuts=readFileSync(new URL('../src/lib/shortcuts.ts',import.meta.url),'utf8');
 const shortcutHook=readFileSync(new URL('../src/hooks/useAppShortcuts.ts',import.meta.url),'utf8');
 const search=readFileSync(new URL('../src/lib/commandSearch.ts',import.meta.url),'utf8');
+const qa=readFileSync(new URL('../src/qa.tsx',import.meta.url),'utf8');
 
 describe('unified command palette source contracts',()=>{
   it('keeps Quick Add and unified search as distinct entry points',()=>{
@@ -54,5 +55,8 @@ describe('unified command palette source contracts',()=>{
     expect(search).not.toContain('vaultRef');
     expect(search).not.toContain('last4');
     expect(search).not.toContain('creditLimit');
+    expect(search).toContain('const savings=isSavingsAccount(account)');
+    expect(app).toContain('if(account&&isSavingsAccount(account)){');
+    expect(qa).toContain('if(account&&isSavingsAccount(account)){');
   });
 });

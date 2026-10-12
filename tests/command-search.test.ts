@@ -47,6 +47,16 @@ describe('unified command search',()=>{
     expect(buildCommandSearchIndex(data).find(row=>row.id==='account:bank-savings-search')?.title).toBe('Emergency reserve');
   });
 
+  it('does not label a mis-tagged cash wallet as a bank savings destination',()=>{
+    const data=clone();
+    data.state.settings.customAccounts=[...(data.state.settings.customAccounts??[]),
+      {id:'qa-cash-mistagged',name:'Cash wallet',kind:'cash',bankAccountCategory:'savings',custom:true},
+    ];
+    const result=buildCommandSearchIndex(data).find(row=>row.id==='account:qa-cash-mistagged');
+    expect(result?.subtitle).toContain('Καταχώριση εξόδου');
+    expect(result?.subtitle).not.toContain('Μεταφορά προς αποταμίευση');
+  });
+
   it('offers an explicit exact-account management result without changing named Quick Entry',()=>{
     const data=clone();
     data.state.settings.customAccounts=[...(data.state.settings.customAccounts??[]),{id:'account-custom-search',name:'Custom Reserve',kind:'bank',bankAccountCategory:'savings',custom:true}];
