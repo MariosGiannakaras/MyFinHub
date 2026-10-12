@@ -209,8 +209,13 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
     setQuickContext({ token: quickToken(), mode: 'generic', kind: event?.kind || 'expense', prefill: null });
     setQuickOpen(true);
   };
-  const editLegacy = (transaction: LegacyTransaction) => finance.update((current) => withLegacyOverride(current, transaction));
-  const deleteLegacy = (id: string) => finance.update((current) => withLegacyTombstone(current, id));
+  // Transactions lifecycle waits for the exact revision/history receipt.
+  const deleteEventDurably=(id:string)=>finance.updateDurably(current=>{
+    if(!(current.state.events??[]).some(event=>event.id===id))throw new Error('Η κίνηση έχει ήδη αλλάξει. Επαναφόρτωσε πριν διαγράψεις.');
+    return {...current,state:{...current.state,events:(current.state.events??[]).filter(event=>event.id!==id)}};
+  });
+  const editLegacy=(transaction:LegacyTransaction)=>finance.updateDurably(current=>withLegacyOverride(current,transaction));
+  const deleteLegacy=(id:string)=>finance.updateDurably(current=>withLegacyTombstone(current,id));
   const withRecurring=(current:FinanceData,item:RecurringItem):FinanceData=>{
     const seeded=current.seed.recurring.some((existing)=>existing.id===item.id);
     if(seeded)return {...current,state:{...current.state,recurringOverrides:{...current.state.recurringOverrides,[item.id]:item}}};
@@ -345,7 +350,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
 
   const content = page === 'dashboard'
     ? <DashboardPage data={data} month={month} asOf={today} motionMode="full" privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onQuickAdd={(prefill?: QuickPrefill) => openGeneric('expense', prefill || null)} onAccountQuickAdd={(accountId, kind) => kind === 'savings' ? openSpecial({ mode: 'savings', toAccountId: accountId, savingSource: 'manual_transfer' }) : openGeneric('expense', { note: '', amount: 0, accountId })} onTransactions={() => navigate('transactions')} onPlanning={() => navigate('planning')} onAttention={() => navigate('attention')} onReports={()=>navigate('reports')}/>
-    : page === 'transactions' ? <TransactionsPage data={data} month={month} commandFocusKey={commandFocusKey} onEditEvent={editEvent} onDeleteEvent={deleteEvent} onEditLegacy={editLegacy} onDeleteLegacy={deleteLegacy}/>
+    : page === 'transactions' ? <TransactionsPage data={data} month={month} commandFocusKey={commandFocusKey} onEditEvent={editEvent} onDeleteEvent={deleteEventDurably} onEditLegacy={editLegacy} onDeleteLegacy={deleteLegacy}/>
     : page === 'savings' ? <SavingsPage data={data} month={month} asOf={today} onCreate={addEvent} onQuickAdd={openSpecial} onSavingsTargetChange={updateSavingsTarget} onUpsertGoal={upsertSavingsGoal} onDeleteGoal={deleteSavingsGoal}/>
     : page === 'cards' ? <CardsPage data={data} commandCardId={commandDebitCardId} commandCardKey={commandDebitCardKey} onUpsertBank={upsertBank} onUpsertCard={upsertCard} onUpsertCardDurably={upsertCardDurably} onStageNewCard={stageNewCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard}/>
     : page === 'credit' ? <CreditCardPage data={data} asOf={today} commandCardId={commandCardId} commandCardKey={commandCardKey} onCreateEvent={addEvent} onEditEvent={editEvent} onDeleteEvent={deleteEvent} onUpsertCard={upsertCard} onUpsertCardDurably={upsertCardDurably} onStageNewCard={stageNewCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard} onPayCard={(cardId,statementId)=>openSpecial({mode:'credit',action:'payment',cardId,statementId})}/>

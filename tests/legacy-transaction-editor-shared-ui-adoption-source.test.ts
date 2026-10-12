@@ -12,9 +12,13 @@ describe('LegacyTransactionEditor shared action primitive ownership',()=>{
     expect(editor.match(/<IconButton/g)).toHaveLength(1);
     expect(editor.match(/<Button[^>]+variant=\"primary\"/g)).toHaveLength(1);
     expect(editor.match(/<Button[^>]+variant=\"secondary\"/g)).toHaveLength(1);
-    expect(editor).toContain('<IconButton type="button" aria-label="Κλείσιμο επεξεργασίας ιστορικής κίνησης" onClick={onClose}>');
-    expect(editor).toContain('<Button type="button" variant="secondary" onClick={onClose}>Ακύρωση</Button>');
-    expect(editor).toContain('<Button type="button" variant="primary" onClick={submit}>Αποθήκευση override</Button>');
+    expect(editor).toContain('<IconButton type="button" aria-label="Κλείσιμο επεξεργασίας ιστορικής κίνησης" disabled={saving} onClick={onClose}>');
+    expect(editor).toContain('<Button type="button" variant="secondary" disabled={saving} onClick={onClose}>Ακύρωση</Button>');
+    expect(editor).toContain('<Button type="button" variant="primary" disabled={saving} onClick={()=>void submit()}>');
+    expect(editor).toContain('await onSave(normalized)');
+    expect(editor).toContain('busy={saving}');
+    expect(editor).toContain('inert={saving}');
+    expect(editor).toContain('onRequestClose={()=>{if(!saving)onClose()}}');
   });
 
   it('removes direct generic class ownership from this editor',()=>{

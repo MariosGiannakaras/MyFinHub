@@ -369,8 +369,16 @@ function QaWorkspace(){
   };
   const deleteEvent=(id:string)=>update(current=>({...current,state:{...current.state,events:(current.state.events??[]).filter(e=>e.id!==id)}}));
   const editEvent=(id:string)=>{const event=(data.state.events??[]).find(item=>item.id===id);setEditing(id);setQuickContext({token:quickToken(),mode:'generic',kind:event?.kind||'expense',prefill:null});setQuickOpen(true)};
-  const editLegacy=(transaction:LegacyTransaction)=>update(current=>withLegacyOverride(current,transaction));
-  const deleteLegacy=(id:string)=>update(current=>withLegacyTombstone(current,id));
+  const transactionReceipt=async()=>{
+    const params=new URLSearchParams(location.search);
+    if(params.get('transaction-save-failure')==='1')throw new Error('Η δοκιμαστική αποθήκευση συναλλαγής απέτυχε.');
+    if(params.get('transaction-save-pending')==='1')await new Promise<void>(resolve=>{
+      (globalThis as typeof globalThis & {__myfinhubQaCompleteTransactionReceipt?:()=>void}).__myfinhubQaCompleteTransactionReceipt=resolve;
+    });
+  };
+  const deleteEventDurably=async(id:string)=>{await transactionReceipt();deleteEvent(id)};
+  const editLegacy=async(transaction:LegacyTransaction)=>{await transactionReceipt();update(current=>withLegacyOverride(current,transaction))};
+  const deleteLegacy=async(id:string)=>{await transactionReceipt();update(current=>withLegacyTombstone(current,id))};
   const openGeneric=(kind:EventKind='expense',prefill:QuickPrefill|null=null)=>{setEditing(null);setQuickContext({token:quickToken(),mode:'generic',kind,prefill});setQuickOpen(true)};
   const openSpecial=(context:SpecialQuickContext)=>{setEditing(null);setQuickContext({...context,token:quickToken()} as QuickActionContext);setQuickOpen(true)};
   const openCommand=()=>{if(quickOpen)return;setCommandOpen(true)};
@@ -482,7 +490,7 @@ function QaWorkspace(){
   };
   const content=page==='dashboard'
     ?<DashboardPage data={data} month={month} asOf={today} motionMode="full" privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onQuickAdd={(prefill?:QuickPrefill)=>openGeneric('expense',prefill||null)} onAccountQuickAdd={(accountId,kind)=>kind==='savings'?openSpecial({mode:'savings',toAccountId:accountId,savingSource:'manual_transfer'}):openGeneric('expense',{note:'',amount:0,accountId})} onTransactions={()=>setPage('transactions')} onPlanning={()=>setPage('planning')} onAttention={()=>setPage('attention')} onReports={()=>setPage('reports')}/>
-    :page==='transactions'?<TransactionsPage data={data} month={month} commandFocusKey={commandFocusKey} onEditEvent={editEvent} onDeleteEvent={deleteEvent} onEditLegacy={editLegacy} onDeleteLegacy={deleteLegacy}/>
+    :page==='transactions'?<TransactionsPage data={data} month={month} commandFocusKey={commandFocusKey} onEditEvent={editEvent} onDeleteEvent={deleteEventDurably} onEditLegacy={editLegacy} onDeleteLegacy={deleteLegacy}/>
     :page==='savings'?<SavingsPage data={data} month={month} asOf={today} onCreate={addEvent} onQuickAdd={openSpecial} onSavingsTargetChange={updateSavingsTarget} onUpsertGoal={upsertSavingsGoal} onDeleteGoal={deleteSavingsGoal}/>
     :page==='cards'?<CardsPage data={data} commandCardId={commandDebitCardId} commandCardKey={commandDebitCardKey} onUpsertBank={upsertBank} onUpsertCard={upsertCard} onUpsertCardDurably={upsertCardDurably} onStageNewCard={stageNewCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard}/>
     :page==='credit'?<CreditCardPage data={data} asOf={today} commandCardId={commandCardId} commandCardKey={commandCardKey} onCreateEvent={addEvent} onEditEvent={editEvent} onDeleteEvent={deleteEvent} onUpsertCard={upsertCard} onUpsertCardDurably={upsertCardDurably} onStageNewCard={stageNewCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard} onPayCard={cardId=>openSpecial({mode:'credit',action:'payment',cardId})}/>

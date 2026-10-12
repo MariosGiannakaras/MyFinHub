@@ -25,7 +25,7 @@ const typeLabels: Record<LegacyTransaction['type'], string> = {
 export function LegacyTransactionEditor({ data, transaction, onSave, onClose }: {
   data: FinanceData;
   transaction: LegacyTransaction;
-  onSave: (transaction: LegacyTransaction) => void;
+  onSave: (transaction: LegacyTransaction) => Promise<void>;
   onClose: () => void;
 }) {
   const accounts = useMemo(() => allAccounts(data).filter((account) => account.kind !== 'credit'), [data]);
@@ -39,6 +39,7 @@ export function LegacyTransactionEditor({ data, transaction, onSave, onClose }: 
   const [fromAccountId, setFromAccountId] = useState(transaction.fromAccountId ?? transaction.accountId ?? accounts[0]?.id ?? '');
   const [toAccountId, setToAccountId] = useState(transaction.toAccountId ?? accounts.find((account) => account.id !== (transaction.fromAccountId ?? transaction.accountId))?.id ?? '');
   const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
   const categoryKind = type === 'income' ? 'income' : 'expense';
 
   const changeType = (next: LegacyTransaction['type']) => {
@@ -53,7 +54,8 @@ export function LegacyTransactionEditor({ data, transaction, onSave, onClose }: 
     }
   };
 
-  const submit = () => {
+  const submit = async () => {
+    if(saving)return;
     try {
       const numeric = Number(amount.replace(',', '.'));
       const normalized = normalizeLegacyOverride(data, {
@@ -68,24 +70,28 @@ export function LegacyTransactionEditor({ data, transaction, onSave, onClose }: 
         fromAccountId: type === 'transfer' ? fromAccountId : undefined,
         toAccountId: type === 'transfer' ? toAccountId : undefined,
       });
-      onSave(normalized);
+      setSaving(true);
+      await onSave(normalized);
       onClose();
     } catch (cause) {
       setError(userErrorMessage(cause,'Δεν ήταν δυνατή η αποθήκευση της ιστορικής κίνησης.'));
+    } finally {
+      setSaving(false);
     }
   };
 
   return <DialogShell
     open={true}
     className="legacy-transaction-editor"
+    busy={saving}
     role="dialog"
     ariaLabelledBy="legacy-editor-title"
     motionMode="none"
     preferredFocus='[data-autofocus="true"]'
-    onRequestClose={onClose}
+    onRequestClose={()=>{if(!saving)onClose()}}
   >
-    <header><div><small>ΙΣΤΟΡΙΚΗ ΚΙΝΗΣΗ</small><h2 id="legacy-editor-title">Επεξεργασία συναλλαγής</h2><p>Η αλλαγή αποθηκεύεται ως override. Το αρχικό εισαγόμενο record παραμένει ανέπαφο.</p></div><IconButton type="button" aria-label="Κλείσιμο επεξεργασίας ιστορικής κίνησης" onClick={onClose}><X aria-hidden="true"/></IconButton></header>
-    <div className="form-grid">
+    <header><div><small>ΙΣΤΟΡΙΚΗ ΚΙΝΗΣΗ</small><h2 id="legacy-editor-title">Επεξεργασία συναλλαγής</h2><p>Η αλλαγή αποθηκεύεται ως override. Το αρχικό εισαγόμενο record παραμένει ανέπαφο.</p></div><IconButton type="button" aria-label="Κλείσιμο επεξεργασίας ιστορικής κίνησης" disabled={saving} onClick={onClose}><X aria-hidden="true"/></IconButton></header>
+    <div className="form-grid" inert={saving}>
       <label><span>Τύπος</span><AppSelectInput aria-label="Τύπος ιστορικής κίνησης" value={type} onChange={(event) => changeType(event.target.value as LegacyTransaction['type'])}>{(Object.keys(typeLabels) as LegacyTransaction['type'][]).map((value) => <option key={value} value={value}>{typeLabels[value]}</option>)}</AppSelectInput></label>
       <label><span>Ημερομηνία</span><AppDateInput aria-label="Ημερομηνία ιστορικής κίνησης" value={date} onChange={(event) => setDate(event.target.value)}/></label>
       <label><span>Ποσό</span><MoneyInput data-autofocus="true" aria-label="Ποσό ιστορικής κίνησης" value={amount} onValueChange={setAmount} invalid={Boolean(error && !Number.isFinite(Number(amount.replace(',', '.'))))}/></label>
@@ -97,6 +103,6 @@ export function LegacyTransactionEditor({ data, transaction, onSave, onClose }: 
       <label className="full"><span>Περιγραφή / σχόλιο</span><AppTextarea aria-label="Περιγραφή ιστορικής κίνησης" value={note} onChange={(event) => setNote(event.target.value)} rows={4}/></label>
     </div>
     {error ? <FormError id="legacy-transaction-edit-error">{error}</FormError> : null}
-    <footer className="editor-actions"><Button type="button" variant="secondary" onClick={onClose}>Ακύρωση</Button><Button type="button" variant="primary" onClick={submit}>Αποθήκευση override</Button></footer>
+    <footer className="editor-actions"><Button type="button" variant="secondary" disabled={saving} onClick={onClose}>Ακύρωση</Button><Button type="button" variant="primary" disabled={saving} onClick={()=>void submit()}>{saving?'Αποθήκευση…':'Αποθήκευση override'}</Button></footer>
   </DialogShell>;
 }
