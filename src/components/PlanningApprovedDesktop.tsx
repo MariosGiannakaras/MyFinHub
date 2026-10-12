@@ -1,6 +1,6 @@
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip as ChartTooltip, XAxis, YAxis } from 'recharts';
 import { ArrowDown, ArrowLeftRight, ArrowRight, ArrowUp, BarChart3, CalendarClock, Check, ChevronDown, CircleSlash2, Info, Pencil, Table2, X } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { BankBrandMark } from './BankBrandMark';
 import { cashFlowForecast, LOW_BALANCE_THRESHOLD, type CashFlowForecast, type ForecastPoint } from '../lib/forecast';
 import { money, shortDate } from '../lib/format';
@@ -16,6 +16,8 @@ type Props={
   asOf:string;
   pending:ScheduledTransaction[];
   history:ScheduledTransaction[];
+  commandScheduledId?:string|null;
+  commandScheduledKey?:number;
   onComplete:(item:ScheduledTransaction)=>void;
   onEdit:(item:ScheduledTransaction)=>void;
   onLifecycle:(item:ScheduledTransaction,status:'skipped'|'cancelled')=>void;
@@ -84,7 +86,7 @@ function KindIcon({kind}:{kind:ScheduledKind}){
   return <ArrowDown size={15}/>;
 }
 
-export function PlanningApprovedDesktop({data,asOf,pending,history,onComplete,onEdit,onLifecycle}:Props){
+export function PlanningApprovedDesktop({data,asOf,pending,history,commandScheduledId,commandScheduledKey=0,onComplete,onEdit,onLifecycle}:Props){
   const forecasts=useMemo(()=>({
     30:cashFlowForecast(data,asOf,30),
     60:cashFlowForecast(data,asOf,60),
@@ -104,6 +106,24 @@ export function PlanningApprovedDesktop({data,asOf,pending,history,onComplete,on
   const allScheduled=useMemo(()=>[...pending,...history],[pending,history]);
   const filteredScheduled=allScheduled.filter(item=>view==='all'||(view==='pending'?item.status==='pending':item.status===view));
   const visibleScheduled=filteredScheduled.slice(0,scheduledLimit);
+  // The approved desktop table is the only *visible* scheduled surface at
+  // >=1100px. Expand pagination first, then focus the actual table row.
+  // Leaving this to PlanningPage's hidden mobile list silently loses focus.
+  useEffect(()=>{
+    if(!commandScheduledId||!commandScheduledKey||!window.matchMedia('(min-width:1100px)').matches)return;
+    if(!allScheduled.some(item=>item.id===commandScheduledId))return;
+    if(view!=='all'){setView('all');return}
+    const index=filteredScheduled.findIndex(item=>item.id===commandScheduledId);
+    if(index<0)return;
+    if(index>=scheduledLimit){setScheduledLimit(index+1);return}
+    const frame=requestAnimationFrame(()=>{
+      const row=[...document.querySelectorAll<HTMLElement>('.planning-approved-table [data-planning-row]')]
+        .find(node=>node.dataset.planningRow===commandScheduledId&&node.getClientRects().length>0);
+      row?.scrollIntoView({block:'center',behavior:'auto'});
+      row?.focus({preventScroll:true});
+    });
+    return()=>cancelAnimationFrame(frame);
+  },[commandScheduledId,commandScheduledKey,view,scheduledLimit,allScheduled,filteredScheduled]);
   const accountRows=[...forecasts[90].accounts].sort((a,b)=>{const aState=accountForecastState(a),bState=accountForecastState(b);return accountStatePriority[aState]-accountStatePriority[bState]||Math.abs(b.projected-b.current)-Math.abs(a.projected-a.current)||a.accountId.localeCompare(b.accountId)});
   const portfolioTrend=forecasts[90].points.map(point=>({date:point.date,portfolio:point.portfolio}));
 
@@ -131,7 +151,7 @@ export function PlanningApprovedDesktop({data,asOf,pending,history,onComplete,on
 
     <section className="panel surface-raised planning-approved-scheduled" aria-labelledby="planning-approved-scheduled-title">
       <header className="planning-approved-panel-head"><div className="planning-approved-title"><span className="planning-section-icon"><CalendarClock/></span><div><span id="planning-approved-scheduled-title">Προγραμματισμένες κινήσεις</span><small>Οι γνωστές μελλοντικές κινήσεις που έχεις καταχωρίσει.</small></div><em>{pending.length} εκκρεμείς</em></div><div className="planning-lifecycle-tabs" role="group" aria-label="Φίλτρο κατάστασης προγραμματισμένων κινήσεων">{(Object.keys(viewLabels) as ScheduledView[]).map(key=><button type="button" key={key} aria-pressed={view===key} className={view===key?'active':''} onClick={()=>{setView(key);setScheduledLimit(24)}}>{viewLabels[key]}{key!=='all'?` (${counts[key]})`:''}</button>)}</div></header>
-      {visibleScheduled.length?<div className="planning-approved-table-wrap"><table className="planning-approved-table"><caption className="sr-only">Προγραμματισμένες κινήσεις</caption><thead><tr><th scope="col">Ημερομηνία</th><th scope="col">Τύπος</th><th scope="col">Περιγραφή</th><th scope="col">Λογαριασμός / Λογαριασμοί</th><th scope="col" className="amount">Ποσό</th><th scope="col">Κατάσταση</th><th scope="col" className="actions">Ενέργειες</th></tr></thead><tbody>{visibleScheduled.map(item=>{const lifecycle=scheduledLifecycle(item,asOf);const fromName=accountDisplayName(data,item.fromAccountId);const toName=accountDisplayName(data,item.toAccountId);const accountName=accountDisplayName(data,item.accountId);return <tr key={item.id} data-planning-row={item.id} data-status={item.status}><td><b>{shortDate(item.dueDate)}</b><small>{relativeDue(asOf,item.dueDate)}</small></td><td><span className={`planning-kind-chip ${item.kind}`}><KindIcon kind={item.kind}/>{kindLabel[item.kind]}</span></td><td><b>{item.note}</b><small>{item.category||'Χωρίς κατηγορία'}{item.subcategory?` · ${item.subcategory}`:''}</small></td><td>{item.kind==='transfer'?<div className="planning-account-route"><span><BankBrandMark id={item.fromAccountId} name={fromName}/><b>{fromName}</b></span><ArrowRight size={14}/><span><BankBrandMark id={item.toAccountId} name={toName}/><b>{toName}</b></span></div>:<div className="planning-account-route single"><span><BankBrandMark id={item.accountId} name={accountName}/><b>{accountName}</b></span></div>}</td><td className={`amount ${item.kind==='expense'?'negative':item.kind==='income'?'positive':''}`}><b>{item.kind==='expense'?'−':item.kind==='income'?'+':''}{money.format(item.amount)}</b></td><td><span className={`planning-status-pill ${lifecycle}`}>{lifecycle==='upcoming'||lifecycle==='due'?<i/>:null}{lifecycleLabel(item,asOf)}</span></td><td className="actions">{item.status==='pending'?<details className="planning-row-menu"><summary>Ενέργειες <ChevronDown size={14}/></summary><div><button type="button" onClick={()=>onComplete(item)}><Check size={14}/> Ολοκλήρωση</button><button type="button" onClick={()=>onEdit(item)}><Pencil size={14}/> Επεξεργασία</button><button type="button" onClick={()=>onLifecycle(item,'skipped')}><CircleSlash2 size={14}/> Παράλειψη</button><button type="button" className="danger" onClick={()=>onLifecycle(item,'cancelled')}><X size={14}/> Ακύρωση</button></div></details>:<span className="planning-closed-row">Κλειστή</span>}</td></tr>})}</tbody></table></div>:<div className="empty-state">Δεν υπάρχουν κινήσεις για το επιλεγμένο φίλτρο.</div>}
+      {visibleScheduled.length?<div className="planning-approved-table-wrap"><table className="planning-approved-table"><caption className="sr-only">Προγραμματισμένες κινήσεις</caption><thead><tr><th scope="col">Ημερομηνία</th><th scope="col">Τύπος</th><th scope="col">Περιγραφή</th><th scope="col">Λογαριασμός / Λογαριασμοί</th><th scope="col" className="amount">Ποσό</th><th scope="col">Κατάσταση</th><th scope="col" className="actions">Ενέργειες</th></tr></thead><tbody>{visibleScheduled.map(item=>{const lifecycle=scheduledLifecycle(item,asOf);const fromName=accountDisplayName(data,item.fromAccountId);const toName=accountDisplayName(data,item.toAccountId);const accountName=accountDisplayName(data,item.accountId);return <tr key={item.id} data-planning-row={item.id} data-status={item.status} tabIndex={-1}><td><b>{shortDate(item.dueDate)}</b><small>{relativeDue(asOf,item.dueDate)}</small></td><td><span className={`planning-kind-chip ${item.kind}`}><KindIcon kind={item.kind}/>{kindLabel[item.kind]}</span></td><td><b>{item.note}</b><small>{item.category||'Χωρίς κατηγορία'}{item.subcategory?` · ${item.subcategory}`:''}</small></td><td>{item.kind==='transfer'?<div className="planning-account-route"><span><BankBrandMark id={item.fromAccountId} name={fromName}/><b>{fromName}</b></span><ArrowRight size={14}/><span><BankBrandMark id={item.toAccountId} name={toName}/><b>{toName}</b></span></div>:<div className="planning-account-route single"><span><BankBrandMark id={item.accountId} name={accountName}/><b>{accountName}</b></span></div>}</td><td className={`amount ${item.kind==='expense'?'negative':item.kind==='income'?'positive':''}`}><b>{item.kind==='expense'?'−':item.kind==='income'?'+':''}{money.format(item.amount)}</b></td><td><span className={`planning-status-pill ${lifecycle}`}>{lifecycle==='upcoming'||lifecycle==='due'?<i/>:null}{lifecycleLabel(item,asOf)}</span></td><td className="actions">{item.status==='pending'?<details className="planning-row-menu"><summary>Ενέργειες <ChevronDown size={14}/></summary><div><button type="button" onClick={()=>onComplete(item)}><Check size={14}/> Ολοκλήρωση</button><button type="button" onClick={()=>onEdit(item)}><Pencil size={14}/> Επεξεργασία</button><button type="button" onClick={()=>onLifecycle(item,'skipped')}><CircleSlash2 size={14}/> Παράλειψη</button><button type="button" className="danger" onClick={()=>onLifecycle(item,'cancelled')}><X size={14}/> Ακύρωση</button></div></details>:<span className="planning-closed-row">Κλειστή</span>}</td></tr>})}</tbody></table></div>:<div className="empty-state">Δεν υπάρχουν κινήσεις για το επιλεγμένο φίλτρο.</div>}
       {filteredScheduled.length>visibleScheduled.length?<button type="button" className="planning-approved-scheduled-more" onClick={()=>setScheduledLimit(limit=>limit+24)}>Προβολή περισσότερων · {filteredScheduled.length-visibleScheduled.length} ακόμη</button>:null}
     </section>
 

@@ -108,12 +108,20 @@ try{
  await c.send('Page.navigate',{url:scheduledUrl.href});
  await waitFor("function(){return document.querySelector('#main-workspace h1')?.textContent?.includes('Αναφορές')}",'scheduled command source');
  await ctrlK();await setSearch('Προγραμματισμένη κίνηση 18');await activateExactTitle('Προγραμματισμένη κίνηση 18');await press('Enter');
- await waitFor("function(){return document.activeElement?.dataset.scheduledId==='scheduled-extreme-17'}",'exact scheduled entry focused beyond initial pagination');
- assert(await c.call("function(){return !!document.querySelector('.scheduled-row[data-scheduled-id=scheduled-extreme-17]')&&!document.querySelector('.contextual-quick-modal')&&!document.querySelector('.quick-modal')}",[]),'named scheduled item does not execute or complete financial activity');
+ await waitFor("function(){return document.activeElement?.dataset.planningRow==='scheduled-extreme-17'}",'visible desktop scheduled entry focused beyond initial pagination');
+ assert(await c.call("function(){return !!document.querySelector('.planning-approved-table [data-planning-row=scheduled-extreme-17]')&&!document.querySelector('.contextual-quick-modal')&&!document.querySelector('.quick-modal')}",[]),'named scheduled item is visible in desktop table and does not execute financial activity');
  await screenshot('command-exact-scheduled-item');
  await ctrlK();await setSearch('Προγραμματισμένη κίνηση 15');await activateExactTitle('Προγραμματισμένη κίνηση 15');await press('Enter');
- await waitFor("function(){return document.activeElement?.dataset.scheduledId==='scheduled-extreme-14'}",'same-route scheduled item focused');
+ await waitFor("function(){return document.activeElement?.dataset.planningRow==='scheduled-extreme-14'}",'same-route desktop scheduled item focused');
  await screenshot('command-exact-scheduled-item-same-route');
+ await viewport(390,844);
+ await c.send('Page.navigate',{url:scheduledUrl.href});
+ await waitFor("function(){return document.querySelector('#main-workspace h1')?.textContent?.includes('Αναφορές')}",'mobile scheduled command source');
+ await ctrlK();await setSearch('Προγραμματισμένη κίνηση 18');await activateExactTitle('Προγραμματισμένη κίνηση 18');await press('Enter');
+ await waitFor("function(){return document.activeElement?.dataset.scheduledId==='scheduled-extreme-17'}",'visible mobile scheduled entry focused beyond pagination');
+ assert(await c.call("function(){const row=document.querySelector('.scheduled-row[data-scheduled-id=scheduled-extreme-17]');return Boolean(row&&row.getClientRects().length>0&&!document.querySelector('.contextual-quick-modal'))}"),'named mobile scheduled entry visible without opening completion');
+ await noOverflow('focused scheduled mobile route');
+ await screenshot('command-exact-scheduled-item-mobile');
 
  console.log('Command Palette QA: exact transaction result from another reporting month');
  const historyUrl=new URL(baseUrl);historyUrl.searchParams.set('page','reports');historyUrl.searchParams.set('state','command-transaction');

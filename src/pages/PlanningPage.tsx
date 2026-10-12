@@ -76,6 +76,9 @@ export function PlanningPage({ data, asOf, commandScheduledId, commandScheduledK
   const visiblePending=pending.slice(0,scheduledListLimit);
   useEffect(()=>{
     if(!commandScheduledId||!commandScheduledKey)return;
+    // At desktop widths the old scheduled-panel is display:none; focus the
+    // approved desktop table instead (its own component owns that target).
+    if(!window.matchMedia('(max-width:1099px)').matches)return;
     const index=pending.findIndex(item=>item.id===commandScheduledId);
     if(index<0)return;
     if(index>=scheduledListLimit){setScheduledListLimit(index+1);return}
@@ -164,7 +167,7 @@ export function PlanningPage({ data, asOf, commandScheduledId, commandScheduledK
     <PageHeader eyebrow="ΠΡΟΓΡΑΜΜΑΤΙΣΜΟΣ" title="Προγραμματισμός & πρόβλεψη ρευστότητας" description={<p>Οι προγραμματισμένες κινήσεις είναι one-off σχέδια και δεν αλλάζουν τα πραγματικά υπόλοιπα. Η πρόβλεψη είναι ντετερμινιστική προβολή γνωστών ροών, όχι βεβαιότητα για το μέλλον.</p>} trailing={<Button type="button" variant="primary" disabled={saving} onClick={startNew}><Plus size={17}/> Νέα προγραμματισμένη</Button>}/>
     {message ? <div className="action-status" role="status" aria-live="polite">{message}</div> : null}
 
-    <PlanningApprovedDesktop data={data} asOf={asOf} pending={pending} history={history} onComplete={startComplete} onEdit={startEdit} onLifecycle={requestLifecycle}/>
+    <PlanningApprovedDesktop data={data} asOf={asOf} pending={pending} history={history} commandScheduledId={commandScheduledId} commandScheduledKey={commandScheduledKey} onComplete={startComplete} onEdit={startEdit} onLifecycle={requestLifecycle}/>
 
     <section className="planning-summary-grid" aria-label="Σύνοψη προγραμματισμού">
       <article className="surface-raised"><span>Εκκρεμούν τώρα</span><b className={due.length ? 'negative' : ''}>{due.length}</b><small>{due.length ? 'Προγραμματισμένες κινήσεις με ημερομηνία έως σήμερα' : 'Δεν υπάρχει scheduled κίνηση που να εκκρεμεί τώρα'}</small></article>

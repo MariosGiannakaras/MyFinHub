@@ -68,6 +68,17 @@ describe('unified command palette source contracts',()=>{
     expect(rendered).toContain("await activateExactTitle('QA Visa')");
     expect(rendered).toContain("await activateOption('Ολοκλήρωση · Ετήσια ασφάλεια')");
     expect(rendered).toContain("await activateExactTitle('Προγραμματισμένη κίνηση 18')");
+    expect(rendered).toContain("document.activeElement?.dataset.planningRow==='scheduled-extreme-17'");
+    expect(rendered).toContain("document.activeElement?.dataset.scheduledId==='scheduled-extreme-17'");
+    expect(rendered).toContain('command-exact-scheduled-item-mobile');
+    const planning=readFileSync(new URL('../src/pages/PlanningPage.tsx',import.meta.url),'utf8');
+    const approved=readFileSync(new URL('../src/components/PlanningApprovedDesktop.tsx',import.meta.url),'utf8');
+    expect(planning).toContain("window.matchMedia('(max-width:1099px)').matches");
+    expect(planning).toContain('commandScheduledId={commandScheduledId} commandScheduledKey={commandScheduledKey}');
+    expect(approved).toContain("window.matchMedia('(min-width:1100px)').matches");
+    expect(approved).toContain('setScheduledLimit(index+1)');
+    expect(approved).toContain('data-planning-row={item.id} data-status={item.status} tabIndex={-1}');
+    expect(approved).toContain('row?.focus({preventScroll:true})');
     expect(rendered).toContain('visible-state');
   });
   it('stores only recent result ids and excludes sensitive card fields from indexed copy',()=>{
