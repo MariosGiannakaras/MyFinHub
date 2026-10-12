@@ -89,7 +89,9 @@ describe('DialogShell source contract',()=>{
     expect(legacy).toContain('ariaLabelledBy="legacy-editor-title"');
     expect(legacy).toContain('motionMode="none"');
     expect(legacy).toContain("preferredFocus='[data-autofocus=\"true\"]'");
-    expect(legacy).toContain('onRequestClose={onClose}');
+    expect(legacy).toContain('onRequestClose={()=>{if(!saving)onClose()}}');
+    expect(legacy).toContain('busy={saving}');
+    expect(legacy).toContain('inert={saving}');
     expect(legacy).not.toContain('useModalFocus');
     expect(legacy).not.toContain('aria-modal="true"');
     expect(legacy).not.toContain("from 'framer-motion'");

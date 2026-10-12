@@ -147,11 +147,12 @@ try{
   await setLabelInput('Όριο €','5000');
   await setLabelInput('Προειδοποίηση %','50');
   await clickText('[data-budget-management] button','Αποθήκευση προϋπολογισμού');
-  await waitFor("function(){const rows=[...document.querySelectorAll('.budget-setting-row')];const row=rows.find(node=>(node.textContent||'').includes('Συνολικό όριο'));return Boolean(row&&row.classList.contains('near')&&(row.textContent||'').includes('5.000'))}",'overall budget create with warning threshold');
+  await waitFor("function(){const rows=[...document.querySelectorAll('.budget-setting-row')];const row=rows.find(node=>(node.textContent||'').includes('Συνολικό όριο'));const usedPct=parseFloat(row?.querySelector('.budget-meter i')?.style.width||'NaN');return Boolean(row&&Number.isFinite(usedPct)&&row.classList.contains(usedPct>=50?'near':'ok')&&(row.textContent||'').includes('5.000'))}",'overall budget create with warning threshold');
   assert(await c.call("function(){return (document.querySelector('[data-budget-overview]')?.textContent||'').includes('5.000')}"),'budget overview reconciles created overall limit');
+  assert(await c.call("function(){const field=[...document.querySelectorAll('[data-budget-management] label')].find(node=>(node.querySelector(':scope > span')?.textContent||'').includes('Προειδοποίηση %'));return field?.querySelector('input')?.value==='50'}"),'budget warning setting remains exactly 50% after receipt');
   await setLabelInput('Όριο €','6000');
   await clickText('[data-budget-management] button','Αποθήκευση προϋπολογισμού');
-  await waitFor("function(){const rows=[...document.querySelectorAll('.budget-setting-row')].filter(node=>(node.textContent||'').includes('Συνολικό όριο'));return rows.length===1&&rows[0].classList.contains('near')&&(rows[0].textContent||'').includes('6.000')}",'overall budget edit updates stable row');
+  await waitFor("function(){const rows=[...document.querySelectorAll('.budget-setting-row')].filter(node=>(node.textContent||'').includes('Συνολικό όριο'));const usedPct=parseFloat(rows[0]?.querySelector('.budget-meter i')?.style.width||'NaN');return rows.length===1&&Number.isFinite(usedPct)&&rows[0].classList.contains(usedPct>=50?'near':'ok')&&(rows[0].textContent||'').includes('6.000')}",'overall budget edit updates stable row');
   await screenshot('reports-budget-overall-desktop');
   await clickAria('Διαγραφή προϋπολογισμού συνολικά');
   await waitFor("function(){return ![...document.querySelectorAll('.budget-setting-row')].some(node=>(node.textContent||'').includes('Συνολικό όριο'))}",'overall budget delete');

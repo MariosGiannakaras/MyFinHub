@@ -42,7 +42,7 @@ try{
  await ctrlK();await setSearch('QA Πάγιο 7');await activateOption('QA Πάγιο 7Ενεργό πάγιο');await press('Enter');
  await waitFor("function(){return Boolean(document.querySelector('[data-command-recurring-id=qa-recurring-rich-7]'))}",'exact recurring row');
  await waitFor("function(){return document.activeElement?.dataset.commandRecurringId==='qa-recurring-rich-7'}",'exact recurring keyboard focus');
- assert(await c.call("function(){return !document.querySelector('.contextual-quick-modal')&&!document.querySelector('.recurring-editor-dialog')}",'named recurring selection is navigation, not payment or edit');
+ assert(await c.call("function(){return !document.querySelector('.contextual-quick-modal')&&!document.querySelector('.recurring-editor-dialog')}"),'named recurring selection is navigation, not payment or edit');
  await screenshot('command-exact-recurring-focus');
 
  console.log('Command Palette QA: exact Loan entity focus and paginated list targeting');
