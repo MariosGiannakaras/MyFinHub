@@ -81,8 +81,8 @@ try{
   await screenshot('planning-scheduled-complete-receipt-failure-desktop');
 
   await c.send('Page.navigate',{url:rejectedUrl.href});
-  await waitFor("function(){return Boolean(document.querySelector('[data-scheduled-id="qa-scheduled-transfer"]'))}",'Planning lifecycle row');
-  const failedSkip=await c.call("function(){const node=document.querySelector('[data-scheduled-id="qa-scheduled-transfer"] button[aria-label^="Παράλειψη"]');node?.click();return Boolean(node)}");
+  await waitFor("function(){return Boolean(document.querySelector('[data-scheduled-id=qa-scheduled-transfer]'))}",'Planning lifecycle row');
+  const failedSkip=await c.call("function(){const node=document.querySelector('[data-scheduled-id=qa-scheduled-transfer] button[aria-label^=Παράλειψη]');node?.click();return Boolean(node)}");
   assert(failedSkip,'Planning skip confirms correct row');
   await waitFor("function(){return Boolean(document.querySelector('[role=alertdialog]'))}",'Planning skip dialog');
   await clickText('[role=alertdialog] button','Παράλειψη');
@@ -92,8 +92,8 @@ try{
   console.log('Planning QA: pending scheduled receipt keeps confirmation locked until durable success');
   const pendingUrl=new URL(urlFor());pendingUrl.searchParams.set('scheduled-save-pending','1');
   await c.send('Page.navigate',{url:pendingUrl.href});
-  await waitFor("function(){return Boolean(document.querySelector('[data-scheduled-id="qa-scheduled-transfer"]'))}",'Planning pending fixture');
-  const pendingSkip=await c.call("function(){const node=document.querySelector('[data-scheduled-id="qa-scheduled-transfer"] button[aria-label^="Παράλειψη"]');node?.click();return Boolean(node)}");
+  await waitFor("function(){return Boolean(document.querySelector('[data-scheduled-id=qa-scheduled-transfer]'))}",'Planning pending fixture');
+  const pendingSkip=await c.call("function(){const node=document.querySelector('[data-scheduled-id=qa-scheduled-transfer] button[aria-label^=Παράλειψη]');node?.click();return Boolean(node)}");
   assert(pendingSkip,'Planning pending skip exists');
   await waitFor("function(){return Boolean(document.querySelector('[role=alertdialog]'))}",'Planning pending skip confirmation');
   await clickText('[role=alertdialog] button','Παράλειψη');
