@@ -16,9 +16,14 @@ describe('Settings Rules workspace source contract',()=>{
     expect(workspace).toContain('normalizeTransactionRule');
     expect(workspace).toContain('transactionRuleMatchingEvents');
     expect(workspace).toContain('onUpsertRule(next)');
+    expect(workspace).toContain('performDurably');
+    expect(workspace).toContain('if(await performDurably(()=>onUpsertRule(next),setRuleError))clearEditor(false)');
+    expect(workspace).toContain('busy={busy}');
     expect(workspace).toContain('setDeleteRuleTarget(rule)');
     expect(workspace).toContain('<ConfirmDialog');
-    expect(workspace).toContain('onDeleteRule(deleteRuleTarget.id)');
+    expect(workspace).toContain('onDeleteRule(id)');
+    expect(settings).toContain('const deleteRule=(id:string)=>onFinanceDurably');
+    expect(settings).toContain('const reorderRule=(id:string,direction:-1|1)=>onFinanceDurably');
     expect(workspace).toContain('Δεν αλλάζει καμία από αυτές');
   });
 

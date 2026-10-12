@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { AlertTriangle, Check, ChevronDown, ChevronUp, CirclePause, ListFilter, Pencil, Plus, Trash2, X } from 'lucide-react';
 import { useModalFocus } from '../hooks/useModalFocus';
 import { allAccounts } from '../lib/domain';
@@ -30,9 +30,9 @@ export function TransactionRulesWorkspace({
   onReorderRule,
 }:{
   data:FinanceData;
-  onUpsertRule:(rule:TransactionRule)=>void;
-  onDeleteRule:(id:string)=>void;
-  onReorderRule:(id:string,direction:-1|1)=>void;
+  onUpsertRule:(rule:TransactionRule)=>Promise<void>;
+  onDeleteRule:(id:string)=>Promise<void>;
+  onReorderRule:(id:string,direction:-1|1)=>Promise<void>;
 }){
   const expenseTree=useMemo(()=>categoryTree(data.state.settings,'expense'),[data.state.settings]);
   const expenseFallback=expenseTree[0]?.name||data.state.settings.expenseCategories[0]||'Άλλο';
@@ -57,6 +57,18 @@ export function TransactionRulesWorkspace({
   const[ruleError,setRuleError]=useState('');
   const[deleteRuleTarget,setDeleteRuleTarget]=useState<TransactionRule|null>(null);
   const[visibleRuleCount,setVisibleRuleCount]=useState(RULE_PAGE_SIZE);
+  const[busy,setBusy]=useState(false);
+  const[ruleActionError,setRuleActionError]=useState('');
+  const[deleteError,setDeleteError]=useState('');
+  const operationRef=useRef(false);
+  const performDurably=async(operation:()=>Promise<void>,onFailure:(message:string)=>void)=>{
+    if(operationRef.current)return false;
+    operationRef.current=true;
+    setBusy(true);
+    try{await operation();return true}
+    catch(error){onFailure(userErrorMessage(error,'Δεν αποθηκεύτηκε η αλλαγή. Επαναφόρτωσε και δοκίμασε ξανά.'));return false}
+    finally{operationRef.current=false;setBusy(false)}
+  };
 
   function clearEditor(open=false){
     setEditingRuleId(null);
@@ -73,7 +85,8 @@ export function TransactionRulesWorkspace({
     setEditorOpen(open);
   }
 
-  const editorRef=useModalFocus<HTMLElement>(editorOpen,'input:not([readonly]):not(:disabled)',()=>clearEditor(false));
+  const dismissEditor=()=>{if(!operationRef.current)clearEditor(false)};
+  const editorRef=useModalFocus<HTMLElement>(editorOpen,'input:not([readonly]):not(:disabled)',dismissEditor);
   const editingRule=rules.find(rule=>rule.id===editingRuleId);
   const draftRule=useMemo<TransactionRule>(()=>({
     id:editingRuleId||'preview',
@@ -117,21 +130,32 @@ export function TransactionRulesWorkspace({
     setRuleError('');
     setEditorOpen(true);
   };
-  const saveRule=()=>{
+  const saveRule=async()=>{
+    if(operationRef.current)return;
     try{
       const existing=rules.find(item=>item.id===editingRuleId);
       if(!existing&&rules.length>=MAX_TRANSACTION_RULES)throw new Error('Έχει συμπληρωθεί το όριο των 10.000 κανόνων.');
       const timestamp=now();
       const next=normalizeTransactionRule({...draftRule,id:existing?.id??ruleId(),enabled:existing?.enabled??true,createdAt:existing?.createdAt??timestamp,updatedAt:timestamp});
-      onUpsertRule(next);
-      clearEditor(false);
+      setRuleError('');
+      if(await performDurably(()=>onUpsertRule(next),setRuleError))clearEditor(false);
     }catch(error){
       setRuleError(userErrorMessage(error,'Δεν μπορέσαμε να αποθηκεύσουμε τον κανόνα. Έλεγξε τις συνθήκες και την ενέργεια και δοκίμασε ξανά.'));
     }
   };
+  const actOnRule=async(operation:()=>Promise<void>)=>{
+    setRuleActionError('');
+    await performDurably(operation,setRuleActionError);
+  };
   const moveRule=(index:number,direction:-1|1)=>{
     if(index+direction<0||index+direction>=rules.length)return;
-    onReorderRule(rules[index].id,direction);
+    void actOnRule(()=>onReorderRule(rules[index].id,direction));
+  };
+  const confirmDelete=async()=>{
+    if(!deleteRuleTarget)return;
+    setDeleteError('');
+    const id=deleteRuleTarget.id;
+    if(await performDurably(()=>onDeleteRule(id),setDeleteError)){setDeleteRuleTarget(null);setDeleteError('')}
   };
   const conditionLabel=(rule:TransactionRule)=>{
     const parts:string[]=[];
@@ -152,9 +176,10 @@ export function TransactionRulesWorkspace({
         <h2>Κανόνες νέων κινήσεων</h2>
         <p>Όρισε απλούς κανόνες «όταν → τότε». Εφαρμόζονται μόνο σε νέες κινήσεις και δεν αλλάζουν το ιστορικό. Οι κατηγορίες αφορούν έξοδα, επιστροφές και αγορές κάρτας· τα έσοδα διατηρούν τη δική τους κατηγορία.</p>
       </div>
-      <Button type="button" variant="primary" className="rules-new-button" onClick={startCreate}><Plus size={17}/> Νέος κανόνας</Button>
+      <Button type="button" variant="primary" className="rules-new-button" disabled={busy} onClick={startCreate}><Plus size={17}/> Νέος κανόνας</Button>
     </header>
 
+    {ruleActionError?<FormError id="rules-action-error">{ruleActionError}</FormError>:null}
     {rules.length?<div className="rules-status-strip" aria-label="Κατάσταση κανόνων">
       <div><b>{rules.length}</b><span>Σύνολο</span></div>
       <div><b>{activeCount}</b><span>Ενεργοί</span></div>
@@ -166,29 +191,29 @@ export function TransactionRulesWorkspace({
     <section className="rules-list-section" aria-labelledby="rules-order-title">
       {rules.length?<header><div><b id="rules-order-title">Σειρά κανόνων</b><small>Μετακίνησέ τους πάνω ή κάτω για να αλλάξεις ποιος ελέγχεται πρώτος.</small></div></header>:null}
       {rules.length?<div className="rule-settings-list" aria-label="Σειρά αυτοματισμών">{visibleRules.map((rule,index)=>{const invalid=invalidReason(rule);const state=invalid?'invalid':rule.enabled?'active':'paused';return <article key={rule.id} className={state==='paused'?'disabled':state} data-rule-invalid={invalid?'true':'false'}>
-        <div className="rules-order-controls" aria-label={`Θέση ${index+1}`}><span>{index+1}</span><div><IconButton aria-label={`Μετακίνηση αυτοματισμού ${rule.name} προς τα πάνω`} disabled={index===0} onClick={()=>moveRule(index,-1)}><ChevronUp size={15}/></IconButton><IconButton aria-label={`Μετακίνηση αυτοματισμού ${rule.name} προς τα κάτω`} disabled={index===rules.length-1} onClick={()=>moveRule(index,1)}><ChevronDown size={15}/></IconButton></div></div>
+        <div className="rules-order-controls" aria-label={`Θέση ${index+1}`}><span>{index+1}</span><div><IconButton aria-label={`Μετακίνηση αυτοματισμού ${rule.name} προς τα πάνω`} disabled={busy||index===0} onClick={()=>moveRule(index,-1)}><ChevronUp size={15}/></IconButton><IconButton aria-label={`Μετακίνηση αυτοματισμού ${rule.name} προς τα κάτω`} disabled={busy||index===rules.length-1} onClick={()=>moveRule(index,1)}><ChevronDown size={15}/></IconButton></div></div>
         <div className="rules-row-copy"><div className="rules-row-title"><b>{rule.name}</b><span className={`rules-state ${state}`}>{invalid?<><AlertTriangle size={13}/> Χρειάζεται έλεγχο</>:rule.enabled?<><Check size={13}/> Ενεργός</>:<><CirclePause size={13}/> Σε παύση</>}</span></div><small><strong>Όταν</strong> {conditionLabel(rule)}</small><small><strong>Τότε</strong> {actionLabel(rule)} · {rule.scopes.length===3?'κάθε νέα υποστηριζόμενη κίνηση':rule.scopes.map(scopeLabel).join(', ')}</small>{invalid?<small className="rules-row-warning" role="alert">{invalid}</small>:null}</div>
-        <div className="rule-row-actions"><Button type="button" variant="secondary" onClick={()=>onUpsertRule({...rule,enabled:!rule.enabled,updatedAt:now()})}>{rule.enabled?'Παύση':'Ενεργοποίηση'}</Button><IconButton aria-label={`Επεξεργασία αυτοματισμού ${rule.name}`} title="Επεξεργασία" onClick={()=>editRule(rule)}><Pencil size={17}/></IconButton><IconButton aria-label={`Διαγραφή αυτοματισμού ${rule.name}`} title="Διαγραφή" onClick={()=>setDeleteRuleTarget(rule)}><Trash2 size={17}/></IconButton></div>
+        <div className="rule-row-actions"><Button type="button" variant="secondary" disabled={busy} onClick={()=>void actOnRule(()=>onUpsertRule({...rule,enabled:!rule.enabled,updatedAt:now()}))}>{rule.enabled?'Παύση':'Ενεργοποίηση'}</Button><IconButton aria-label={`Επεξεργασία αυτοματισμού ${rule.name}`} title="Επεξεργασία" disabled={busy} onClick={()=>editRule(rule)}><Pencil size={17}/></IconButton><IconButton aria-label={`Διαγραφή αυτοματισμού ${rule.name}`} title="Διαγραφή" disabled={busy} onClick={()=>{setDeleteError('');setDeleteRuleTarget(rule)}}><Trash2 size={17}/></IconButton></div>
       </article>})}</div>:<div className="rules-empty-state"><ListFilter size={22}/><div><b>Δεν υπάρχουν ακόμη κανόνες</b><small>Οι νέες κινήσεις παραμένουν χειροκίνητες μέχρι να προσθέσεις έναν κανόνα.</small></div><Button type="button" variant="secondary" onClick={startCreate}><Plus size={16}/> Δημιουργία κανόνα</Button></div>}
-      {hasMoreRules?<Button type="button" variant="secondary" className="rule-settings-more" onClick={()=>setVisibleRuleCount(count=>Math.min(count+RULE_PAGE_SIZE,rules.length))}>Εμφάνιση περισσότερων κανόνων ({rules.length-visibleRules.length})</Button>:null}
+      {hasMoreRules?<Button type="button" variant="secondary" className="rule-settings-more" disabled={busy} onClick={()=>setVisibleRuleCount(count=>Math.min(count+RULE_PAGE_SIZE,rules.length))}>Εμφάνιση περισσότερων κανόνων ({rules.length-visibleRules.length})</Button>:null}
     </section>
 
     <ConfirmDialog
       open={Boolean(deleteRuleTarget)}
       title="Διαγραφή κανόνα;"
-      description={deleteRuleTarget?`Ο κανόνας «${deleteRuleTarget.name}» θα αφαιρεθεί από τις μελλοντικές κινήσεις. Το υπάρχον ιστορικό δεν αλλάζει.`:''}
+      description={deleteRuleTarget?`Ο κανόνας «${deleteRuleTarget.name}» θα αφαιρεθεί από τις μελλοντικές κινήσεις. Το υπάρχον ιστορικό δεν αλλάζει.${deleteError?' '+deleteError:''}`:''}
       confirmLabel="Διαγραφή κανόνα"
       tone="destructive"
-
-      onConfirm={()=>{if(deleteRuleTarget){onDeleteRule(deleteRuleTarget.id);setDeleteRuleTarget(null)}}}
-      onCancel={()=>setDeleteRuleTarget(null)}
+      busy={busy}
+      onConfirm={()=>void confirmDelete()}
+      onCancel={()=>{setDeleteError('');setDeleteRuleTarget(null)}}
     />
 
-    {editorOpen?<div className="editor-backdrop rules-editor-backdrop" onMouseDown={()=>clearEditor(false)}>
+    {editorOpen?<div className="editor-backdrop rules-editor-backdrop" onMouseDown={dismissEditor}>
       <section ref={editorRef} className="panel surface-raised editor-dialog rules-editor" data-rule-editor role="dialog" aria-modal="true" aria-labelledby="rule-editor-title" tabIndex={-1} onMouseDown={event=>event.stopPropagation()}>
         <header className="panel-head rules-editor-head">
           <div><span id="rule-editor-title">{editingRuleId?'Επεξεργασία κανόνα':'Νέος κανόνας'}</span><small>{editingRuleId?'Οι αλλαγές θα ισχύουν μόνο στις επόμενες υποστηριζόμενες κινήσεις.':'Συμπλήρωσε τουλάχιστον μία συνθήκη και μία ενέργεια.'}</small></div>
-          <IconButton aria-label="Κλείσιμο επεξεργασίας κανόνα" title="Κλείσιμο" onClick={()=>clearEditor(false)}><X size={17}/></IconButton>
+          <IconButton aria-label="Κλείσιμο επεξεργασίας κανόνα" title="Κλείσιμο" disabled={busy} onClick={dismissEditor}><X size={17}/></IconButton>
         </header>
 
         <label className="rules-name-field"><span>Όνομα αυτοματισμού</span><AppTextInput value={ruleName} placeholder="π.χ. Supermarket → Τρόφιμα" onChange={event=>setRuleName(event.target.value)}/></label>
@@ -219,7 +244,7 @@ export function TransactionRulesWorkspace({
           {previewMatches.length?<ul>{previewMatches.slice(0,3).map(event=><li key={event.id}><span>{event.note}</span><b>{money.format(event.amount)}</b></li>)}</ul>:<small>Δεν βρέθηκαν παραδείγματα στο υπάρχον ιστορικό.</small>}
         </div>
         {ruleError?<FormError id="rule-editor-error">{ruleError}</FormError>:null}
-        <div className="editor-actions rules-editor-actions"><Button type="button" variant="secondary" onClick={()=>clearEditor(false)}>Ακύρωση</Button><Button type="button" variant="primary" onClick={saveRule}>{editingRuleId?'Αποθήκευση αλλαγών':'Δημιουργία κανόνα'}</Button></div>
+        <div className="editor-actions rules-editor-actions"><Button type="button" variant="secondary" disabled={busy} onClick={dismissEditor}>Ακύρωση</Button><Button type="button" variant="primary" disabled={busy} onClick={()=>void saveRule()}>{busy?'Αποθήκευση…':editingRuleId?'Αποθήκευση αλλαγών':'Δημιουργία κανόνα'}</Button></div>
       </section>
     </div>:null}
   </section>;

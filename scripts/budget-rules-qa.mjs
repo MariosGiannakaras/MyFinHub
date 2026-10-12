@@ -218,6 +218,34 @@ try{
   await clickAria('Αναίρεση τελευταίας αλλαγής');
   await waitFor("function(){return [...document.querySelectorAll('.rule-settings-list article .rules-row-title b')].map(node=>(node.textContent||'').trim()).join('|')==='QA Priority First|QA Priority Max'}",'atomic priority append participates in one undo history step');
 
+  console.log('Budget/Rules QA: durable Rules mutations reject without lying about success');
+  const failureUrl=new URL(urlFor('settings','rules-priority-boundary'));
+  failureUrl.searchParams.set('rules-save-failure','1');
+  await viewport(1440,1000);
+  await c.send('Page.navigate',{url:failureUrl.href});
+  await waitFor("function(){return Boolean(document.querySelector('.settings-tablist'))}",'Rules failure fixture Settings');
+  await clickText('.settings-tablist button','Κανόνες');
+  await waitFor("function(){return [...document.querySelectorAll('.rule-settings-list article')].length===2}",'failure fixture populated Rules');
+  await openRuleEditor();
+  await setLabelInput('Όνομα αυτοματισμού','QA Rejected Rule');
+  await setLabelInput('Κείμενο περιγραφής','QA Priority');
+  await clickText('[data-rule-editor] .save-button','Δημιουργία κανόνα');
+  await waitFor("function(){return Boolean(document.querySelector('[data-rule-editor] .form-error[role=alert]'))}",'durable save failure remains in editor');
+  assert(await c.call("function(){return document.querySelectorAll('.rule-settings-list article').length===2}"),'rejected create leaves Rules unchanged');
+  await screenshot('settings-rules-rejected-create-desktop');
+  await clickAria('Κλείσιμο επεξεργασίας κανόνα');
+  await clickText('.rule-settings-list .secondary','Παύση');
+  await waitFor("function(){return Boolean(document.querySelector('#rules-action-error'))}",'failed pause exposes persistent inline error');
+  assert(await c.call("function(){return [...document.querySelectorAll('.rule-settings-list article')].every(row=>!row.classList.contains('disabled'))}"),'rejected pause does not change enabled state');
+  await screenshot('settings-rules-rejected-pause-desktop');
+  await clickAria('Διαγραφή αυτοματισμού QA Priority First');
+  await waitFor("function(){return Boolean(document.querySelector('.app-confirm-dialog'))}",'delete warning dialog');
+  await clickText('.app-confirm-dialog button','Διαγραφή κανόνα');
+  await waitFor("function(){return (document.querySelector('.app-confirm-dialog')?.textContent||'').includes('Η δοκιμαστική αποθήκευση απέτυχε.')}",'rejected delete retains confirmation and error');
+  assert(await c.call("function(){return document.querySelectorAll('.rule-settings-list article').length===2}"),'rejected delete retains both Rules');
+  await screenshot('settings-rules-rejected-delete-desktop');
+  await clickAria('Κλείσιμο επιβεβαίωσης');
+
   await navigate('reports','empty',320,700);
   assert(await c.call("function(){return (document.querySelector('[data-budget-management]')?.textContent||'').includes('Δεν υπάρχουν προϋπολογισμοί')}"),'reports no-budget state');
   await noOverflow('budget/rules narrow reports');

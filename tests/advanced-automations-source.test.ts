@@ -35,7 +35,7 @@ describe('canonical transaction automation source contracts',()=>{
     expect(panel).toContain('Μετακίνηση αυτοματισμού ${rule.name} προς τα πάνω');
     expect(panel).toContain('Μετακίνηση αυτοματισμού ${rule.name} προς τα κάτω');
     expect(panel).toContain('onReorderRule(rules[index].id,direction)');
-    expect(settings).toContain('onFinanceUpdate(current=>');
+    expect(settings).toContain('onFinanceDurably(current=>');
     expect(settings).toContain('reorderTransactionRules(rules,id,direction,new Date().toISOString())');
     expect(order).toContain('Number.isInteger(priority)');
     expect(order).toContain('ordered.map((rule,position)');

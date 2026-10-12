@@ -343,6 +343,22 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     await waitFor("function(){return [...document.querySelectorAll('[data-transaction-source=event]')].some(row=>(row.textContent||'').includes('Real Browser Rule Match')&&(row.textContent||'').includes('Rule Applied'))}",'rule-applied transaction after reload');
     await shot('rule-domain-persisted');
 
+    console.log('[real-browser] stage rule-delete-durable-reload');
+    await clickText('.sidebar nav button','Ρυθμίσεις');
+    await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Ρυθμίσεις')}",'Settings for durable rule deletion');
+    await clickText('.settings-tablist button','Κανόνες');
+    await waitFor("function(){return [...document.querySelectorAll('.rule-settings-list article')].some(row=>(row.textContent||'').includes('Real Browser Rule Edited'))}",'persisted Rules prior to deletion');
+    const requestDeleteRule=await c.call<boolean>("function(){const button=document.querySelector('button[aria-label=\"Διαγραφή αυτοματισμού Real Browser Rule Edited\"]');if(!(button instanceof HTMLElement))return false;button.click();return true}");
+    assert(requestDeleteRule,'Rules deletion control is reachable');
+    await waitFor("function(){return Boolean(document.querySelector('.app-confirm-dialog'))}",'Rules delete confirmation');
+    await clickText('.app-confirm-dialog button','Διαγραφή κανόνα');
+    await waitFor("async function(){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();return !(payload.data?.state?.transactionRules||[]).some(item=>item.name==='Real Browser Rule Edited')}",'Rules delete committed in protected finance revision');
+    await c.send('Page.reload',{ignoreCache:true});
+    await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Ρυθμίσεις')}",'Settings after rule delete reload');
+    await clickText('.settings-tablist button','Κανόνες');
+    await waitFor("function(){return ![...document.querySelectorAll('.rule-settings-list article')].some(row=>(row.textContent||'').includes('Real Browser Rule Edited'))}",'Rules deletion durable after reload');
+    await shot('rule-delete-durable-persisted');
+
     console.log('[real-browser] stage cards-lifecycle-reload');
     await clickText('.sidebar nav button','Κάρτες');await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Κάρτες')}",'cards workspace');
     const openCreateCard=await c.call<boolean>("function(){const button=[...document.querySelectorAll('.bank-add-btn')].find(node=>node.getClientRects().length>0);if(!(button instanceof HTMLElement))return false;button.click();return true}");assert(openCreateCard,'Cards add action is unavailable.');

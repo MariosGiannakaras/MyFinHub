@@ -101,9 +101,6 @@ export function SettingsPage({
   onSettings,
   onFinanceDurably,
   onTaxonomyOperation,
-  onUpsertRule,
-  onDeleteRule,
-  onFinanceUpdate,
 }: {
   data: FinanceData;
   asOf: string;
@@ -119,23 +116,23 @@ export function SettingsPage({
   onSettings: (settings: FinanceData['state']['settings']) => void;
   onFinanceDurably:(recipe:(current:FinanceData)=>FinanceData)=>Promise<void>;
   onTaxonomyOperation: (operation: TaxonomyOperation) => void;
-  onUpsertRule: (rule: TransactionRule) => void;
-  onDeleteRule: (id: string) => void;
-  onFinanceUpdate: (recipe: (current:FinanceData)=>FinanceData) => void;
 }) {
   const saveRule=(rule:TransactionRule)=>{
-    // Existing edits preserve the same rule identity/priority; only a new rule
-    // requires an atomic insert that may compact exhausted server priorities.
-    if((data.state.transactionRules??[]).some(item=>item.id===rule.id)){
-      onUpsertRule(rule);
-      return;
-    }
-    onFinanceUpdate(current=>({...current,state:{
-      ...current.state,
-      transactionRules:appendTransactionRule(current.state.transactionRules??[],rule,new Date().toISOString()),
-    }}));
+    const editing=(data.state.transactionRules??[]).some(item=>item.id===rule.id);
+    return onFinanceDurably(current=>{
+      const rules=current.state.transactionRules??[];
+      if(editing&&!rules.some(item=>item.id===rule.id))throw new Error('Ο κανόνας άλλαξε. Επαναφόρτωσε και δοκίμασε ξανά.');
+      const next=editing?rules.map(item=>item.id===rule.id?rule:item)
+        :appendTransactionRule(rules,rule,new Date().toISOString());
+      return {...current,state:{...current.state,transactionRules:next}};
+    });
   };
-  const reorderRule=(id:string,direction:-1|1)=>onFinanceUpdate(current=>{
+  const deleteRule=(id:string)=>onFinanceDurably(current=>{
+    const rules=current.state.transactionRules??[];
+    if(!rules.some(item=>item.id===id))throw new Error('Ο κανόνας άλλαξε. Επαναφόρτωσε και δοκίμασε ξανά.');
+    return {...current,state:{...current.state,transactionRules:rules.filter(item=>item.id!==id)}};
+  });
+  const reorderRule=(id:string,direction:-1|1)=>onFinanceDurably(current=>{
     const rules=current.state.transactionRules??[];
     const next=reorderTransactionRules(rules,id,direction,new Date().toISOString());
     return next===rules?current:{...current,state:{...current.state,transactionRules:next}};
@@ -286,7 +283,7 @@ export function SettingsPage({
 
         {activeTab === 'rules' ? (
           <div className="settings-tab-stack settings-rules-only">
-            <TransactionRulesWorkspace data={data} onUpsertRule={saveRule} onDeleteRule={onDeleteRule} onReorderRule={reorderRule} />
+            <TransactionRulesWorkspace data={data} onUpsertRule={saveRule} onDeleteRule={deleteRule} onReorderRule={reorderRule} />
           </div>
         ) : null}
 
