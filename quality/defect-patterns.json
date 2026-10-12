@@ -429,8 +429,7 @@
         "scripts/command-palette-qa.mjs"
       ],
       "evidence": [
-        "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/38292070244",
-        "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/38292919365"
+        "https://github.com/MariosGiannakaras/MyFinHub/pull/548"
       ],
       "guards": [
         "tests/command-palette-source.test.ts",

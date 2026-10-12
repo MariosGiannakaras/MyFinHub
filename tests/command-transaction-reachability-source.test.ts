@@ -34,6 +34,14 @@ describe('Command Palette source-to-selected-ledger reachability (DV-FB02/03)',(
     expect(ledger).toContain("focusMonth!==month");
     expect(ledger).toContain("setPage(Math.max(1,Math.floor(index/pageSize)+1))");
     expect(ledger).toContain("setSelectedId(focusId);setDetailOpen(true)");
+    // StrictMode replays mount effects. A one-time command URL must survive
+    // that replay until the selected month/detail can be committed together.
+    expect(qa).toContain('<StrictMode><QaApp/></StrictMode>');
+    expect(ledger).toContain('const frame=requestAnimationFrame(()=>{');
+    expect(ledger).toContain('return()=>cancelAnimationFrame(frame)');
+    expect(ledger.indexOf("history.replaceState(history.state,'',current.toString())"))
+      .toBeGreaterThan(ledger.indexOf('const frame=requestAnimationFrame(()=>{'));
+    expect(ledger).toContain("current.searchParams.get('commandTx')!==focusId");
   });
   it('uses a one-time hint and actionable missing-entry state',()=>{
     expect(ledger).toContain("nextUrl.searchParams.delete('commandTx')");

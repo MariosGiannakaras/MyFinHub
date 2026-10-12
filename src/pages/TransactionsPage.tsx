@@ -96,18 +96,29 @@ export function TransactionsPage({
     const params=new URLSearchParams(location.search);
     const focusId=params.get('commandTx'),focusSource=params.get('commandSource'),focusMonth=params.get('commandMonth');
     if(!focusId||(focusSource!=='legacy'&&focusSource!=='event')||focusMonth!==month)return;
-    const match=sourceRows.find(row=>row.id===focusId&&row.source===focusSource);
-    const nextUrl=new URL(location.href);
-    nextUrl.searchParams.delete('commandTx');nextUrl.searchParams.delete('commandSource');nextUrl.searchParams.delete('commandMonth');
-    history.replaceState(history.state,'',nextUrl.toString());
-    if(!match){setMessage('Η συναλλαγή δεν είναι πλέον διαθέσιμη στην επιλεγμένη περίοδο.');return}
-    const ordered=[...sourceRows].sort((a,b)=>(sortDirection==='asc'?1:-1)*(a.date.localeCompare(b.date)||a.id.localeCompare(b.id)));
-    const index=ordered.findIndex(row=>row.id===focusId&&row.source===focusSource);
-    setQuery('');setAccount('all');setCategory('all');setType('all');
-    setDateStart(range.start);setDateEnd(range.end);
-    setPage(Math.max(1,Math.floor(index/pageSize)+1));
-    setSelectedId(focusId);setDetailOpen(true);
-    setMessage('Η αναζητούμενη συναλλαγή επιλέχθηκε στο ιστορικό της σωστής περιόδου.');
+    // Under React StrictMode, mount effects are deliberately replayed. If the
+    // URL hint is consumed synchronously during the first effect pass, the
+    // later month-reset replay clears selection without restoring the target.
+    // Commit and consume the hint in a cancellable post-effect frame instead.
+    // An aborted/replayed mount never loses its one-time command request.
+    const frame=requestAnimationFrame(()=>{
+      const current=new URL(location.href);
+      if(current.searchParams.get('commandTx')!==focusId
+        ||current.searchParams.get('commandSource')!==focusSource
+        ||current.searchParams.get('commandMonth')!==focusMonth)return;
+      const match=sourceRows.find(row=>row.id===focusId&&row.source===focusSource);
+      current.searchParams.delete('commandTx');current.searchParams.delete('commandSource');current.searchParams.delete('commandMonth');
+      history.replaceState(history.state,'',current.toString());
+      if(!match){setMessage('Η συναλλαγή δεν είναι πλέον διαθέσιμη στην επιλεγμένη περίοδο.');return}
+      const ordered=[...sourceRows].sort((a,b)=>(sortDirection==='asc'?1:-1)*(a.date.localeCompare(b.date)||a.id.localeCompare(b.id)));
+      const index=ordered.findIndex(row=>row.id===focusId&&row.source===focusSource);
+      setQuery('');setAccount('all');setCategory('all');setType('all');
+      setDateStart(range.start);setDateEnd(range.end);
+      setPage(Math.max(1,Math.floor(index/pageSize)+1));
+      setSelectedId(focusId);setDetailOpen(true);
+      setMessage('Η αναζητούμενη συναλλαγή επιλέχθηκε στο ιστορικό της σωστής περιόδου.');
+    });
+    return()=>cancelAnimationFrame(frame);
   },[sourceRows,month,sortDirection,pageSize,range.start,range.end,commandFocusKey]);
 
   const categoryLabel=(row:TransactionRow)=>row.kind==='split'?'Επιμέρους κατηγορίες':row.category===row.kind?eventKindLabel(row.kind):categoryPath(row.category,row.subcategory);
