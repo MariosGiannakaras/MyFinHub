@@ -261,13 +261,18 @@ function buildQaData(params:URLSearchParams){
     ];
   }
   if(params.get('state')==='savings-bank-transfer'){
-    const original=next.seed.accounts.find(item=>item.id==='piraeus-savings');
-    if(original){
-      next.state.settings.accountOverrides={
-        ...(next.state.settings.accountOverrides??{}),
-        [original.id]:{...original,kind:'bank',bankAccountCategory:'savings',showInQuickChoices:true},
-      };
-    }
+    // Every Savings account in this fixture uses bank taxonomy. A legacy
+    // kind=savings fallback must not make the contextual selector proof pass.
+    const savingsSeeds=next.seed.accounts.filter(item=>item.kind==='savings');
+    next.state.settings.accountOverrides={
+      ...(next.state.settings.accountOverrides??{}),
+      ...Object.fromEntries(savingsSeeds.map(account=>[account.id,{
+        ...account,kind:'bank',bankAccountCategory:'savings' as const,showInQuickChoices:true,
+      }])),
+    };
+    // Exercise fallback even when a configured default points at savings.
+    next.state.settings.defaultExpenseAccount='piraeus-savings';
+    next.state.settings.defaultIncomeAccount='piraeus-savings';
   }
   if(params.get('state')==='savings-expired-goal'){
     const stamp='2026-08-17T12:00:00.000Z';

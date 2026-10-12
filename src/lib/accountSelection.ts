@@ -25,7 +25,8 @@ function preferQuick(accounts:Account[],predicate:(account:Account)=>boolean){
 
 export function financeAccountChoices(data:FinanceData){
   const accounts=allAccounts(data).filter(account=>account.kind!=='credit');
-  const operatingPredicate=(account:Account)=>account.kind!=='savings';
+  // A bank-classified savings account is still savings, not an operating source.
+  const operatingPredicate=(account:Account)=>!isSavingsAccount(account);
   const quick=(account:Account)=>account.showInQuickChoices!==false;
 
   const operating=

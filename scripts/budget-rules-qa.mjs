@@ -277,8 +277,18 @@ try{
   await navigate('savings','savings-bank-transfer',1440,1000);
   await clickAria('Νέα αποταμίευση: Μεταφορά στην άκρη');
   await waitFor("function(){return Boolean(document.querySelector('.contextual-quick-modal'))}",'bank-classified Savings contextual dialog');
-  assert(await c.call("function(){const modal=document.querySelector('.contextual-quick-modal');const labels=[...(modal?.querySelectorAll('label')||[])];const destination=labels.find(label=>(label.querySelector(':scope > span')?.textContent||'').includes('Προς αποταμίευση'));const source=labels.find(label=>(label.querySelector(':scope > span')?.textContent||'').trim()==='Από');return Boolean(destination?.querySelector('input[role=combobox]')?.value)&&Boolean(source?.querySelector('input[role=combobox]')?.value)}"),'bank Savings destination remains selectable with a distinct source');
+  assert(await c.call("function(){const modal=document.querySelector('.contextual-quick-modal');const labels=[...(modal?.querySelectorAll('label')||[])];const destination=labels.find(label=>(label.querySelector(':scope > span')?.textContent||'').includes('Προς αποταμίευση'));const source=labels.find(label=>(label.querySelector(':scope > span')?.textContent||'').trim()==='Από');const selectedTo=destination?.querySelector('input[role=combobox]')?.value;const selectedFrom=source?.querySelector('input[role=combobox]')?.value;return selectedTo==='Ταμιευτηρίου'&&selectedFrom==='Μισθοδοσία'&&selectedTo!==selectedFrom}"),'bank-only Savings destination selected with distinct payroll source');
+  const openSavingsSource=await c.call("function(){const row=[...document.querySelectorAll('.contextual-quick-modal label')].find(label=>(label.querySelector(':scope > span')?.textContent||'').trim()==='Από');const input=row?.querySelector('input[role=combobox]');input?.click();return Boolean(input)}");
+  assert(openSavingsSource,'Savings source selector opens');
+  await waitFor("function(){return Boolean(document.querySelector('.owned-select-popover [role=listbox]'))}",'bank Savings source alternatives');
+  assert(await c.call("function(){const labels=[...document.querySelectorAll('.owned-select-popover [role=option]')].map(item=>(item.textContent||'').trim());return labels.includes('Μισθοδοσία')&&['Ταμιευτηρίου','Αποθεματικό','Ταξίδια'].every(value=>!labels.includes(value))}"),'all bank-classified Savings accounts excluded from contribution sources');
+  await clickText('.owned-select-popover [role=option]','Μισθοδοσία');
   await screenshot('savings-bank-typed-target-contextual-desktop');
+  await viewport(390,844);
+  await waitFor("function(){return Boolean(document.querySelector('.contextual-quick-modal input[role=combobox]'))}",'mobile contextual bank-savings state');
+  assert(await c.call("function(){const input=[...document.querySelectorAll('.contextual-quick-modal label')].find(el=>(el.querySelector(':scope > span')?.textContent||'').includes('Προς αποταμίευση'))?.querySelector('input[role=combobox]');return input?.value==='Ταμιευτηρίου'}"),'mobile destination retains bank-savings account');
+  await noOverflow('bank savings contextual mobile');
+  await screenshot('savings-bank-typed-target-contextual-mobile');
   await clickAria('Κλείσιμο contextual καταχώρισης');
 
   console.log('Budget/Rules QA: a historic personal goal deadline survives an unrelated edit');

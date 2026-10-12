@@ -77,6 +77,20 @@ describe('canonical account selection',()=>{
     expect(isSavingsAccount(choices.operating!)).toBe(false);
   });
 
+  it('rejects an explicitly configured bank-savings operating default and selects an eligible source',()=>{
+    const data=migrateData(base([
+      {id:'bank-saving',name:'Saving',kind:'bank',bankAccountCategory:'savings'},
+      {id:'current',name:'Current',kind:'bank',bankAccountCategory:'current'},
+      {id:'cash',name:'Cash',kind:'cash',cashRole:'daily'},
+    ]));
+    data.state.settings.defaultExpenseAccount='bank-saving';
+    data.state.settings.defaultIncomeAccount='bank-saving';
+    const choices=financeAccountChoices(data);
+    expect(choices.savings?.id).toBe('bank-saving');
+    expect(choices.operating?.id).toBe('current');
+    expect(isSavingsAccount(choices.operating!)).toBe(false);
+  });
+
   it('keeps a missing payroll slot explicit instead of substituting a current/default account',()=>{
     const data=migrateData(base([
       {id:'cash-daily',name:'A',kind:'cash',cashRole:'daily'},
@@ -94,6 +108,16 @@ describe('canonical account selection',()=>{
       ['savings','save-bank'],
     ]);
     expect(choices.dashboardPayroll).toBeUndefined();
+  });
+
+  it('does not fabricate an operating account if the only accounts are savings',()=>{
+    const data=migrateData(base([
+      {id:'saving',name:'Saving only',kind:'savings'},
+      {id:'bank-saving',name:'Bank saving only',kind:'bank',bankAccountCategory:'savings'},
+    ]));
+    data.state.settings.defaultExpenseAccount='bank-saving';
+    expect(financeAccountChoices(data).operating).toBeUndefined();
+    expect(financeAccountChoices(data).savings?.id).toBe('saving');
   });
 
   it('keeps the rendered QA fixture on the owner semantic hierarchy rather than generic operating defaults',()=>{

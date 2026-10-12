@@ -32,6 +32,7 @@ describe('Savings page action hierarchy',()=>{
     expect(contextual).toContain('const savingsTargets=accounts.filter(isSavingsAccount)');
     expect(contextual).toContain('const savingsSources=accounts.filter(account=>!isSavingsAccount(account))');
     expect(selection).toContain("account.bankAccountCategory==='savings'");
+    expect(selection).toContain('const operatingPredicate=(account:Account)=>!isSavingsAccount(account)');
     expect(source).toContain('savingsGoalBalance(data,periodEndDate)');
     expect(source).toContain('accountChoices.dashboardSavings?.id??accountChoices.savings?.id');
     expect(composition).toContain('font-size:var(--ux-dense-data-size)');
