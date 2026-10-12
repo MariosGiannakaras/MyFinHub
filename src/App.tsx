@@ -37,7 +37,6 @@ import type {
   ReviewDecision,
   SavingsGoal,
   ScheduledTransaction,
-  TransactionRule,
 } from './types';
 
 const CommandPalette = lazy(() => import('./components/CommandPalette').then((module) => ({ default: module.CommandPalette })));
