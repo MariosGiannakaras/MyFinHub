@@ -72,7 +72,10 @@ describe('ledger foundations', () => {
     data.seed.accounts.push({id:'current-bank',name:'Current',kind:'bank',bankAccountCategory:'current'});
     data.seed.accounts.push({id:'payroll-bank',name:'Payroll',kind:'bank',bankAccountCategory:'payroll'});
     for(const fromAccountId of ['cash','term-bank','payment-bank','savings']){
-      expect(savingContributionDraftError(data,{fromAccountId,toAccountId:'savings',amount:10})).toMatch(/τραπεζικό/);
+      // A savings source must use a distinct destination so the source-type
+      // guard, rather than the earlier same-account guard, is exercised.
+      const toAccountId=fromAccountId==='savings'?'bank':'savings';
+      expect(savingContributionDraftError(data,{fromAccountId,toAccountId,amount:10})).toMatch(/τραπεζικό/);
       expect(transferDraftError(data,{fromAccountId,toAccountId:'bank',amount:10})).toBeNull();
     }
     for(const fromAccountId of ['bank','current-bank','payroll-bank']){
