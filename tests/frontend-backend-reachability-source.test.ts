@@ -19,7 +19,10 @@ describe('post-v1.4 frontend/backend capability reachability map (DV-FB01/02)',(
     for(const route of ['transactions','savings','cards','credit','loans','lending','recurring','planning','attention','reports']){
       expect(app).toContain("page === '"+route+"'");
     }
-    for(const link of ['onUpsert={upsertRecurring}','onUpsertDurably={upsertRecurringDurably}','onUpsertLoan={upsertLoan}','onUpsertBudget={upsertBudget}','onUpsertRule={upsertRule}','onDeleteEvent={deleteEvent}','onDecision={decideAttention}']){
+    expect(settings).toContain('onUpsertRule={saveRule} onDeleteRule={deleteRule} onReorderRule={reorderRule}');
+    expect(settings).toContain('const saveRule=(rule:TransactionRule)=>');
+    expect(settings).toContain('const deleteRule=(id:string)=>onFinanceDurably');
+    for(const link of ['onUpsert={upsertRecurring}','onUpsertDurably={upsertRecurringDurably}','onUpsertLoan={upsertLoan}','onUpsertBudget={upsertBudget}','onFinanceDurably={finance.updateDurably}','onDeleteEvent={deleteEvent}','onDecision={decideAttention}']){
       expect(app).toContain(link);
     }
   });

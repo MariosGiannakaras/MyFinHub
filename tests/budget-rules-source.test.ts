@@ -27,8 +27,11 @@ describe('category budget and rule integration source contracts',()=>{
     expect(app).toContain('const upsertBudget=');
     expect(app).toContain('const deleteBudget=');
     expect(app).toContain('const updateSavingsTarget=');
-    expect(app).toContain('const upsertRule=');
-    expect(app).toContain('const deleteRule=');
+    expect(settings).toContain('const saveRule=(rule:TransactionRule)=>');
+    expect(settings).toContain('const deleteRule=(id:string)=>onFinanceDurably');
+    expect(app).toContain('onFinanceDurably={finance.updateDurably}');
+    expect(app).not.toContain('const upsertRule=');
+    expect(app).not.toContain('const deleteRule=');
     expect(app).toContain("item.action === 'open_budgets'");
     expect(reports).toContain('<BudgetRuleSettings');
     expect(reports).not.toContain('onUpsertRule');

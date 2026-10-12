@@ -57,7 +57,8 @@ describe('Settings Rules workspace source contract',()=>{
     expect(workspace).toContain('moveRule(index,1)');
     expect(workspace).toContain('onReorderRule(rules[index].id,direction)');
     expect(workspace).toContain('MAX_TRANSACTION_RULES');
-    expect(settings).toContain('appendTransactionRule(current.state.transactionRules??[],rule');
+    expect(settings).toContain('appendTransactionRule(rules,rule,new Date().toISOString())');
+    expect(settings).toContain('onFinanceDurably(current=>');
     expect(settings).toContain('onUpsertRule={saveRule}');
     expect(workspace).not.toContain('(floor+afterTarget.priority)/2');
     expect(workspace).not.toContain('(floor+afterCurrent.priority)/2');
@@ -75,6 +76,9 @@ describe('Settings Rules workspace source contract',()=>{
     expect(realBrowser).toContain('dual-scope rule persisted in owner+AAL2 FinanceData');
     expect(realBrowser).toContain('unrelated rule edit retains the dual-scope persisted contract');
     expect(realBrowser).toContain('rule-two-scope-edit-persisted');
+    expect(realBrowser).toContain('rule-delete-durable-persisted');
+    expect(rendered).toContain('settings-rules-rejected-create-desktop');
+    expect(rendered).toContain('settings-rules-rejected-delete-desktop');
   });
 
   it('is the dedicated Settings Rules surface while budgets remain elsewhere',()=>{

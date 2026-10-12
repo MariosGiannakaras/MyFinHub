@@ -34,14 +34,15 @@ describe('Stage 2 Button/IconButton adopters batch 15',()=>{
     expect(budgets).not.toMatch(/<button\b[^>]*className="secondary"/);
   });
 
-    it('migrates ten TransactionRulesWorkspace canonical-hook actions to shared primitives',()=>{
+  it('migrates ten TransactionRulesWorkspace canonical-hook actions to shared primitives',()=>{
     expect(rules).toContain("import { Button } from './Button';");
     expect(rules).toContain("import { IconButton } from './IconButton';");
     expect(rules.match(/<IconButton\b/g)?.length??0).toBeGreaterThanOrEqual(5);
     expect(rules.match(/<Button\b/g)?.length??0).toBeGreaterThanOrEqual(5);
     expect(rules).toContain('<Button type="button" variant="primary" className="rules-new-button"');
-    expect(rules).toContain('<Button type="button" variant="secondary" onClick={()=>clearEditor(false)}>Ακύρωση</Button>');
-    expect(rules).toContain('<Button type="button" variant="primary" onClick={saveRule}>');
+    expect(rules).toContain('<Button type="button" variant="secondary" disabled={busy} onClick={dismissEditor}>Ακύρωση</Button>');
+    expect(rules).toContain('<Button type="button" variant="primary" disabled={busy} onClick={()=>void saveRule()}>');
+    expect(rules).toContain('busy={busy}');
     expect(rules).not.toMatch(/<button\b[^>]*className="(?:save-button|secondary|icon-button)/);
   });
 
