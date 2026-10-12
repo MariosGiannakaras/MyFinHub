@@ -30,7 +30,7 @@ const ACCOUNT_COLORS=['#2f6fed','#14a77f','#7a5af8','#f59e0b','#8b95ad'];
 
 type ActivityRow={id:string;date:string;title:string;category:string;subcategory?:string;amount:number};
 
-export function ReportsPage({data,month,asOf,privacyVisible,onPrivacyVisibleChange,onUpsertBudget,onDeleteBudget}:{data:FinanceData;month:string;asOf:string;privacyVisible:boolean;onPrivacyVisibleChange:(visible:boolean)=>void;onUpsertBudget:(budget:MonthlyBudget)=>void;onDeleteBudget:(id:string)=>void}){
+export function ReportsPage({data,month,asOf,privacyVisible,onPrivacyVisibleChange,onUpsertBudget,onDeleteBudget}:{data:FinanceData;month:string;asOf:string;privacyVisible:boolean;onPrivacyVisibleChange:(visible:boolean)=>void;onUpsertBudget:(budget:MonthlyBudget)=>Promise<void>;onDeleteBudget:(id:string)=>Promise<void>}){
  useEffect(()=>{
    const url=new URL(location.href);
    if(url.searchParams.get('reportSection')!=='budgets')return;

@@ -246,6 +246,38 @@ try{
   await screenshot('settings-rules-rejected-delete-desktop');
   await clickAria('Κλείσιμο επιβεβαίωσης');
 
+  console.log('Budget/Rules QA: rejected Reports budget keeps the form and original persisted row');
+  const rejectedBudgetUrl=new URL(urlFor('reports','budget-rules'));
+  rejectedBudgetUrl.searchParams.set('budget-save-failure','1');
+  await viewport(1440,1000);
+  await c.send('Page.navigate',{url:rejectedBudgetUrl.href});
+  await waitFor("function(){return Boolean(document.querySelector('#report-budgets summary'))}",'Reports budget failure fixture');
+  await clickText('#report-budgets summary','Διαχείριση προϋπολογισμών');
+  await setLabelInput('Όριο €','175');
+  await clickText('[data-budget-management] button','Αποθήκευση προϋπολογισμού');
+  await waitFor("function(){return (document.querySelector('.budget-rule-settings .form-error[role=alert]')?.textContent||'').includes('Η δοκιμαστική αποθήκευση budget απέτυχε.')}",'rejected budget save alerts');
+  assert(await c.call("function(){const editor=document.querySelector('[data-budget-management] .budget-editor-grid');return Boolean(editor&&[...editor.querySelectorAll('input')].some(input=>input.value==='175'))&&document.querySelectorAll('.budget-settings-list .budget-setting-row').length===1}"),'rejected budget save keeps draft and unchanged budget');
+  await screenshot('reports-budget-rejected-save-desktop');
+  await clickAria('Διαγραφή προϋπολογισμού Σταθερά έξοδα');
+  await waitFor("function(){return (document.querySelector('.budget-rule-settings .form-error[role=alert]')?.textContent||'').includes('Η δοκιμαστική αποθήκευση budget απέτυχε.')}",'rejected budget delete alerts');
+  assert(await c.call("function(){return document.querySelectorAll('.budget-settings-list .budget-setting-row').length===1}"),'rejected budget delete retains the original row');
+  await screenshot('reports-budget-rejected-delete-desktop');
+
+  console.log('Budget/Rules QA: pending Reports budget receipt freezes all shared form controls');
+  const pendingBudgetUrl=new URL(urlFor('reports','budget-rules'));
+  pendingBudgetUrl.searchParams.set('budget-save-pending','1');
+  await c.send('Page.navigate',{url:pendingBudgetUrl.href});
+  await waitFor("function(){return Boolean(document.querySelector('#report-budgets summary'))}",'Reports budget pending fixture');
+  await clickText('#report-budgets summary','Διαχείριση προϋπολογισμών');
+  await setLabelInput('Όριο €','175');
+  await clickText('[data-budget-management] button','Αποθήκευση προϋπολογισμού');
+  await waitFor("function(){return Boolean(globalThis.__myfinhubQaCompleteBudgetReceipt)}",'budget finance receipt in flight');
+  assert(await c.call("function(){const root=document.querySelector('.budget-rule-settings');const inputs=[...(root?.querySelectorAll('input')||[])];return Boolean(root)&&inputs.length>=4&&inputs.every(node=>node.disabled)&&Boolean(root.querySelector('button:disabled'))&&root.querySelectorAll('.budget-setting-row').length===1}"),'budget pending form freezes and leaves current budget untouched');
+  await screenshot('reports-budget-pending-receipt-desktop');
+  assert(await c.call("function(){const release=globalThis.__myfinhubQaCompleteBudgetReceipt;if(!release)return false;delete globalThis.__myfinhubQaCompleteBudgetReceipt;release();return true}"),'budget receipt released for commit');
+  await waitFor("function(){return [...document.querySelectorAll('.budget-setting-row')].some(row=>(row.textContent||'').includes('175'))}",'budget update appears only after receipt');
+  await screenshot('reports-budget-durable-receipt-desktop');
+
   console.log('Budget/Rules QA: fields freeze while exact Rules mutation is pending');
   const pendingUrl=new URL(urlFor('settings','rules-priority-boundary'));
   pendingUrl.searchParams.set('rules-save-pending','1');

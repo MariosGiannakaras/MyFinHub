@@ -343,8 +343,16 @@ function QaWorkspace(){
   const deleteCard=async(card:PaymentCard)=>{update(current=>withCardSecretCleanupComplete(withCardSecretCleanupPending(current,card,`${today}T12:00:00.000Z`,today),card.id))};
   const upsertScheduled=(item:ScheduledTransaction)=>update(current=>({...current,state:{...current.state,scheduled:[...(current.state.scheduled??[]).filter(existing=>existing.id!==item.id),item]}}));
   const completeScheduled=(item:ScheduledTransaction,event:FinanceEvent)=>update(current=>{const nextEvent=applyTransactionRules(current,event);return {...current,state:{...current.state,scheduled:[...(current.state.scheduled??[]).filter(existing=>existing.id!==item.id),item],events:[...(current.state.events??[]).filter(existing=>existing.id!==nextEvent.id),nextEvent]}}});
-  const upsertBudget=(budget:MonthlyBudget)=>update(current=>({...current,state:{...current.state,budgets:[...(current.state.budgets??[]).filter(item=>item.id!==budget.id),budget]}}));
-  const deleteBudget=(id:string)=>update(current=>({...current,state:{...current.state,budgets:(current.state.budgets??[]).filter(item=>item.id!==id)}}));
+  const upsertBudget=async(budget:MonthlyBudget)=>{
+    const params=new URLSearchParams(location.search);
+    if(params.get('budget-save-failure')==='1')throw new Error('Η δοκιμαστική αποθήκευση budget απέτυχε.');
+    if(params.get('budget-save-pending')==='1')await new Promise<void>(resolve=>{(globalThis as typeof globalThis & {__myfinhubQaCompleteBudgetReceipt?:()=>void}).__myfinhubQaCompleteBudgetReceipt=resolve});
+    update(current=>({...current,state:{...current.state,budgets:[...(current.state.budgets??[]).filter(item=>item.id!==budget.id),budget]}}));
+  };
+  const deleteBudget=async(id:string)=>{
+    if(new URLSearchParams(location.search).get('budget-save-failure')==='1')throw new Error('Η δοκιμαστική αποθήκευση budget απέτυχε.');
+    update(current=>({...current,state:{...current.state,budgets:(current.state.budgets??[]).filter(item=>item.id!==id)}}));
+  };
   const updateSavingsTarget=(rate:number)=>update(current=>({...current,state:{...current.state,settings:{...current.state.settings,savingsTargetRate:rate}}}));
   const upsertSavingsGoal=(goal:SavingsGoal)=>update(current=>{const rows=current.state.savingsGoals??[];const exists=rows.some(item=>item.id===goal.id);return {...current,state:{...current.state,savingsGoals:exists?rows.map(item=>item.id===goal.id?goal:item):[...rows,goal]}}});
   const deleteSavingsGoal=(id:string)=>update(current=>({...current,state:{...current.state,savingsGoals:(current.state.savingsGoals??[]).filter(item=>item.id!==id)}}));

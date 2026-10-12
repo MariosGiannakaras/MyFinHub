@@ -27,7 +27,7 @@ describe('Stage 2 Button/IconButton adopters batch 15',()=>{
   it('retains the canonical budget delete action and removes duplicate automation controls',()=>{
     expect(budgets).toContain("import { IconButton } from './IconButton';");
     expect(budgets).toContain('<IconButton aria-label={`Διαγραφή προϋπολογισμού');
-    expect(budgets).toContain('<Button type="button" variant="primary" onClick={saveBudget}>');
+    expect(budgets).toContain('<Button type="button" variant="primary" disabled={busy} onClick={()=>void saveBudget()}>');
     expect(budgets).not.toContain('onUpsertRule');
     expect(budgets).not.toContain('Μετακίνηση αυτοματισμού');
     expect(budgets).not.toMatch(/<button\b[^>]*className="icon-button"/);

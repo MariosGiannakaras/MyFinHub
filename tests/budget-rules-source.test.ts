@@ -24,8 +24,11 @@ describe('category budget and rule integration source contracts',()=>{
   });
 
   it('routes budgets, savings target and credit limits to their natural product surfaces while preserving legacy compatibility',()=>{
-    expect(app).toContain('const upsertBudget=');
-    expect(app).toContain('const deleteBudget=');
+    expect(app).toContain('const upsertBudget=(budget:MonthlyBudget)=>finance.updateDurably');
+    expect(app).toContain('const deleteBudget=(id:string)=>finance.updateDurably');
+    expect(budgetEditor).toContain('await onUpsertBudget(next)');
+    expect(budgetEditor).toContain('await onDeleteBudget(id)');
+    expect(budgetEditor).toContain('disabled={busy}');
     expect(app).toContain('const updateSavingsTarget=');
     expect(settings).toContain('const saveRule=(rule:TransactionRule)=>');
     expect(settings).toContain('const deleteRule=(id:string)=>onFinanceDurably');
