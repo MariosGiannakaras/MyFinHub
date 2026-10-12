@@ -102,6 +102,7 @@ export function SettingsPage({
   onTaxonomyOperation,
   onUpsertRule,
   onDeleteRule,
+  onReorderRule,
 }: {
   data: FinanceData;
   asOf: string;
@@ -119,6 +120,7 @@ export function SettingsPage({
   onTaxonomyOperation: (operation: TaxonomyOperation) => void;
   onUpsertRule: (rule: TransactionRule) => void;
   onDeleteRule: (id: string) => void;
+  onReorderRule: (id: string, direction: -1 | 1) => void;
 }) {
   const fileRef = useRef<HTMLInputElement | null>(null);
   const tablistRef = useRef<HTMLDivElement | null>(null);
@@ -266,7 +268,7 @@ export function SettingsPage({
 
         {activeTab === 'rules' ? (
           <div className="settings-tab-stack settings-rules-only">
-            <TransactionRulesWorkspace data={data} onUpsertRule={onUpsertRule} onDeleteRule={onDeleteRule} />
+            <TransactionRulesWorkspace data={data} onUpsertRule={onUpsertRule} onDeleteRule={onDeleteRule} onReorderRule={onReorderRule} />
           </div>
         ) : null}
 

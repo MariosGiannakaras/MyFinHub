@@ -5,7 +5,7 @@ import { budgetProgress, categoryBudgetSpending } from '../src/lib/budgets.js';
 import { createEvent } from '../src/lib/domain.js';
 import { createExpenseSplitEvent, createTransferEvent } from '../src/lib/ledgerFoundations.js';
 import { migrateProductData } from '../src/lib/productMigration.js';
-import { applyTransactionRules, previewTransactionRules, transactionRuleMatchingEvents, transactionRuleMatchCount } from '../src/lib/transactionRules.js';
+import { applyTransactionRules, normalizeTransactionRule, previewTransactionRules, reorderTransactionRules, ruleScopeChoice, scopesForRuleChoice, transactionRuleMatchingEvents, transactionRuleMatchCount } from '../src/lib/transactionRules.js';
 import type { MonthlyBudget, TransactionRule } from '../src/types.js';
 
 const clone=()=>structuredClone(qaFinanceData());
@@ -131,5 +131,39 @@ describe('deterministic transaction rules',()=>{
     const legacy=clean();delete legacy.state.budgets;delete legacy.state.transactionRules;
     expect(migrateProductData(legacy).state.budgets).toEqual([]);
     expect(migrateProductData(legacy).state.transactionRules).toEqual([]);
+  });
+});
+describe('transaction rule editor/server round-trip parity',()=>{
+  it('round-trips all valid one-, two- and three-scope combinations without loss',()=>{
+    const combinations=[['manual'],['imported'],['review'],['manual','imported'],['manual','review'],['imported','review'],['manual','imported','review']] as const;
+    for(const scopes of combinations){
+      const choice=ruleScopeChoice([...scopes]);
+      const encoded=scopesForRuleChoice(choice);
+      expect(encoded).toEqual(scopes);
+      expect(normalizeTransactionRule({...rule('scope',100,'market','Τρόφιμα'),scopes:encoded}).scopes).toEqual(scopes);
+    }
+    expect(ruleScopeChoice(['review','manual'])).toBe('manual+review');
+  });
+
+  it('keeps simple rule moves sparse and atomically changes only the moved rule',()=>{
+    const rows=[rule('a',100,'market','Τρόφιμα'),rule('b',200,'market','Άλλο'),rule('c',300,'market','Υγεία')];
+    const next=reorderTransactionRules(rows,'a',1,stamp);
+    expect(next.find(item=>item.id==='a')?.priority).toBe(250);
+    expect(next.find(item=>item.id==='b')).toBe(rows[1]);
+    expect(next.find(item=>item.id==='c')).toBe(rows[2]);
+    expect(rows[0].priority).toBe(100);
+    expect(reorderTransactionRules(next,'missing',1,stamp)).toBe(next);
+  });
+
+  it('compacts exhausted priority gaps into valid server integers in one operation',()=>{
+    const rows=[rule('a',100,'market','Τρόφιμα'),rule('b',101,'market','Άλλο'),rule('c',102,'market','Υγεία')];
+    const moved=reorderTransactionRules(rows,'a',1,stamp);
+    const order=(items:TransactionRule[])=>items.slice().sort((a,b)=>a.priority-b.priority||a.id.localeCompare(b.id)).map(item=>item.id);
+    expect(order(moved)).toEqual(['b','a','c']);
+    expect(moved.every(item=>Number.isInteger(item.priority)&&item.priority>=0&&item.priority<=1_000_000)).toBe(true);
+    const again=reorderTransactionRules(moved,'c',-1,stamp);
+    expect(order(again)).toEqual(['b','c','a']);
+    expect(again.every(item=>Number.isInteger(item.priority))).toBe(true);
+    expect(order(rows)).toEqual(['a','b','c']);
   });
 });

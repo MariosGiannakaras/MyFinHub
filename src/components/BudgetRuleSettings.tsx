@@ -10,7 +10,7 @@ import { MoneyInput } from './MoneyInput';
 import { budgetProgress, budgetStableId, normalizeBudget } from '../lib/budgets';
 import { categoryTree } from '../lib/categories';
 import { allAccounts } from '../lib/domain';
-import { normalizeTransactionRule, transactionRuleMatchingEvents } from '../lib/transactionRules';
+import { normalizeTransactionRule, ruleScopeChoice, scopesForRuleChoice, transactionRuleMatchingEvents, type TransactionRuleScopeChoice } from '../lib/transactionRules';
 import { accountDisplayName } from '../lib/ui';
 import { money } from '../lib/format';
 import type { FinanceData, MonthlyBudget, TransactionRule, TransactionRuleScope } from '../types';
@@ -44,7 +44,7 @@ export function BudgetRuleSettings({data,asOf,budgetMonth,onUpsertBudget,onDelet
   const [ruleCategory,setRuleCategory]=useState(expenseFallback);
   const [ruleSubcategory,setRuleSubcategory]=useState('');
   const [ruleDefaultNote,setRuleDefaultNote]=useState('');
-  const [ruleScope,setRuleScope]=useState<'all'|TransactionRuleScope>('manual');
+  const [ruleScope,setRuleScope]=useState<TransactionRuleScopeChoice>('manual');
   const [ruleError,setRuleError]=useState('');
   const [ruleListLimit,setRuleListLimit]=useState(24);
   const accounts=allAccounts(data).filter(account=>account.kind!=='credit');
@@ -56,7 +56,7 @@ export function BudgetRuleSettings({data,asOf,budgetMonth,onUpsertBudget,onDelet
 
   const draftRule=useMemo<TransactionRule>(()=>({
     id:editingRuleId||'preview',name:ruleName||'Προεπισκόπηση',enabled:true,priority:editingRule?.priority??nextPriority,
-    scopes:ruleScope==='all'?['manual','imported','review']:[ruleScope],
+    scopes:scopesForRuleChoice(ruleScope),
     match:{description:ruleDescription,merchant:ruleMerchant,accountId:ruleAccount||undefined,mode:ruleMode},
     action:{category:ruleCategory||undefined,subcategory:ruleSubcategory||undefined,note:ruleDefaultNote||undefined},createdAt:editingRule?.createdAt??now(),updatedAt:now(),
   }),[editingRuleId,editingRule?.priority,editingRule?.createdAt,nextPriority,ruleName,ruleScope,ruleDescription,ruleMerchant,ruleAccount,ruleMode,ruleCategory,ruleSubcategory,ruleDefaultNote]);
@@ -72,7 +72,7 @@ export function BudgetRuleSettings({data,asOf,budgetMonth,onUpsertBudget,onDelet
   };
 
   const resetRule=()=>{setEditingRuleId(null);setRuleName('');setRuleDescription('');setRuleMerchant('');setRuleAccount('');setRuleMode('contains');setRuleCategory(expenseFallback);setRuleSubcategory('');setRuleDefaultNote('');setRuleScope('manual');setRuleError('')};
-  const editRule=(rule:TransactionRule)=>{setEditingRuleId(rule.id);setRuleName(rule.name);setRuleDescription(rule.match.description??'');setRuleMerchant(rule.match.merchant??'');setRuleAccount(rule.match.accountId??'');setRuleMode(rule.match.mode??'contains');setRuleCategory(rule.action.category??expenseFallback);setRuleSubcategory(rule.action.subcategory??'');setRuleDefaultNote(rule.action.note??'');setRuleScope(rule.scopes.length===3?'all':rule.scopes[0]??'manual');setRuleError('')};
+  const editRule=(rule:TransactionRule)=>{setEditingRuleId(rule.id);setRuleName(rule.name);setRuleDescription(rule.match.description??'');setRuleMerchant(rule.match.merchant??'');setRuleAccount(rule.match.accountId??'');setRuleMode(rule.match.mode??'contains');setRuleCategory(rule.action.category??expenseFallback);setRuleSubcategory(rule.action.subcategory??'');setRuleDefaultNote(rule.action.note??'');setRuleScope(ruleScopeChoice(rule.scopes));setRuleError('')};
   const saveRule=()=>{
     try{
       const existing=(data.state.transactionRules??[]).find(item=>item.id===editingRuleId);const timestamp=now();
@@ -126,7 +126,7 @@ export function BudgetRuleSettings({data,asOf,budgetMonth,onUpsertBudget,onDelet
         <label><span>Και ο λογαριασμός είναι <em>προαιρετικό</em></span><AppSelectInput value={ruleAccount} onChange={event=>setRuleAccount(event.target.value)}>{ruleAccount&&!accountIds.has(ruleAccount)?<option value={ruleAccount} disabled>Μη διαθέσιμος · {ruleAccount}</option>:null}<option value="">Οποιοσδήποτε λογαριασμός</option>{accounts.map(account=><option key={account.id} value={account.id}>{accountDisplayName(data,account.id)}</option>)}</AppSelectInput></label>
         <label><span>Τότε βάλε κατηγορία / υποκατηγορία</span><CategorySelectInput settings={data.state.settings} kind="expense" category={ruleCategory} subcategory={ruleSubcategory} allowEmpty emptyLabel="Χωρίς αλλαγή κατηγορίας" aria-label="Κατηγορία ή υποκατηγορία αυτοματισμού" onChange={selection=>{setRuleCategory(selection.category);setRuleSubcategory(selection.subcategory)}}/></label>
         <label><span>Και σχόλιο αν είναι κενό <em>προαιρετικό</em></span><AppTextInput value={ruleDefaultNote} placeholder="δεν αντικαθιστά σχόλιο χρήστη" onChange={event=>setRuleDefaultNote(event.target.value)}/></label>
-        <label><span>Πότε να λειτουργεί</span><AppSelectInput value={ruleScope} onChange={event=>setRuleScope(event.target.value as 'all'|TransactionRuleScope)}><option value="manual">Όταν την καταχωρίζω εγώ</option><option value="imported">Όταν έρχεται από εισαγωγή</option><option value="review">Όταν επιβεβαιώνεται από έλεγχο</option><option value="all">Σε κάθε νέα υποστηριζόμενη κίνηση</option></AppSelectInput></label>
+        <label><span>Πότε να λειτουργεί</span><AppSelectInput value={ruleScope} onChange={event=>setRuleScope(event.target.value as TransactionRuleScopeChoice)}><option value="manual">Όταν την καταχωρίζω εγώ</option><option value="imported">Όταν έρχεται από εισαγωγή</option><option value="review">Όταν επιβεβαιώνεται από έλεγχο</option><option value="manual+imported">Καταχώριση και εισαγωγή</option><option value="manual+review">Καταχώριση και έλεγχος</option><option value="imported+review">Εισαγωγή και έλεγχος</option><option value="all">Σε κάθε νέα υποστηριζόμενη κίνηση</option></AppSelectInput></label>
       </div>
       <div className="rule-preview" role="status" aria-live="polite"><div className="logic-note compact"><ListFilter/><span>Μόνο προεπισκόπηση: {previewMatches.length} υπάρχουσες κινήσεις θα ταίριαζαν με αυτές τις συνθήκες. Δεν αλλάζει καμία από αυτές.</span></div>{previewMatches.length?<ul>{previewMatches.slice(0,3).map(event=><li key={event.id}><span>{event.note}</span><b>{money.format(event.amount)}</b></li>)}</ul>:null}</div>
       {ruleError?<FormError id="rule-editor-error">{ruleError}</FormError>:null}

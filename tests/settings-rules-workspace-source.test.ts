@@ -26,6 +26,9 @@ describe('Settings Rules workspace source contract',()=>{
     expect(workspace).toContain('<CategorySelectInput');
     expect(workspace).toContain('subcategory={ruleSubcategory}');
     expect(workspace).toContain('Πότε να λειτουργεί');
+    expect(workspace).toContain('ruleScopeChoice(rule.scopes)');
+    expect(workspace).toContain('scopesForRuleChoice(ruleScope)');
+    for(const choice of ['manual+imported','manual+review','imported+review'])expect(workspace).toContain('value="'+choice+'"');
     expect(workspace).toContain("categoryTree(data.state.settings,'expense')");
     expect(categorySelect).toContain('data-option-level="category"');
     expect(categorySelect).toContain('data-option-level="subcategory"');
@@ -36,6 +39,9 @@ describe('Settings Rules workspace source contract',()=>{
   it('keeps rule order, pause, edit and invalid-state controls explicit',()=>{
     expect(workspace).toContain('moveRule(index,-1)');
     expect(workspace).toContain('moveRule(index,1)');
+    expect(workspace).toContain('onReorderRule(rules[index].id,direction)');
+    expect(workspace).not.toContain('(floor+afterTarget.priority)/2');
+    expect(workspace).not.toContain('(floor+afterCurrent.priority)/2');
     expect(workspace).toContain("rule.enabled?'Παύση':'Ενεργοποίηση'");
     expect(workspace).toContain('Χρειάζεται έλεγχο');
     expect(workspace).toContain('Επεξεργασία αυτοματισμού');

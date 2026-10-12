@@ -4,7 +4,7 @@ import { useModalFocus } from '../hooks/useModalFocus';
 import { allAccounts } from '../lib/domain';
 import { categoryTree } from '../lib/categories';
 import { money } from '../lib/format';
-import { normalizeTransactionRule, transactionRuleMatchingEvents } from '../lib/transactionRules';
+import { normalizeTransactionRule, ruleScopeChoice, scopesForRuleChoice, transactionRuleMatchingEvents, type TransactionRuleScopeChoice } from '../lib/transactionRules';
 import { accountDisplayName } from '../lib/ui';
 import type { FinanceData, TransactionRule, TransactionRuleScope } from '../types';
 import { AppSelectInput } from './AppSelectInput';
@@ -26,10 +26,12 @@ export function TransactionRulesWorkspace({
   data,
   onUpsertRule,
   onDeleteRule,
+  onReorderRule,
 }:{
   data:FinanceData;
   onUpsertRule:(rule:TransactionRule)=>void;
   onDeleteRule:(id:string)=>void;
+  onReorderRule:(id:string,direction:-1|1)=>void;
 }){
   const expenseTree=useMemo(()=>categoryTree(data.state.settings,'expense'),[data.state.settings]);
   const expenseFallback=expenseTree[0]?.name||data.state.settings.expenseCategories[0]||'Άλλο';
@@ -50,7 +52,7 @@ export function TransactionRulesWorkspace({
   const[ruleCategory,setRuleCategory]=useState(expenseFallback);
   const[ruleSubcategory,setRuleSubcategory]=useState('');
   const[ruleDefaultNote,setRuleDefaultNote]=useState('');
-  const[ruleScope,setRuleScope]=useState<'all'|TransactionRuleScope>('manual');
+  const[ruleScope,setRuleScope]=useState<TransactionRuleScopeChoice>('manual');
   const[ruleError,setRuleError]=useState('');
   const[deleteRuleTarget,setDeleteRuleTarget]=useState<TransactionRule|null>(null);
   const[visibleRuleCount,setVisibleRuleCount]=useState(RULE_PAGE_SIZE);
@@ -77,7 +79,7 @@ export function TransactionRulesWorkspace({
     name:ruleName||'Προεπισκόπηση',
     enabled:true,
     priority:editingRule?.priority??nextPriority,
-    scopes:ruleScope==='all'?['manual','imported','review']:[ruleScope],
+    scopes:scopesForRuleChoice(ruleScope),
     match:{description:ruleDescription,merchant:ruleMerchant,accountId:ruleAccount||undefined,mode:ruleMode},
     action:{category:ruleCategory||undefined,subcategory:ruleSubcategory||undefined,note:ruleDefaultNote||undefined},
     createdAt:editingRule?.createdAt??now(),
@@ -110,7 +112,7 @@ export function TransactionRulesWorkspace({
     setRuleCategory(rule.action.category??'');
     setRuleSubcategory(rule.action.subcategory??'');
     setRuleDefaultNote(rule.action.note??'');
-    setRuleScope(rule.scopes.length===3?'all':rule.scopes[0]??'manual');
+    setRuleScope(ruleScopeChoice(rule.scopes));
     setRuleError('');
     setEditorOpen(true);
   };
@@ -126,17 +128,8 @@ export function TransactionRulesWorkspace({
     }
   };
   const moveRule=(index:number,direction:-1|1)=>{
-    const target=index+direction;
-    if(target<0||target>=rules.length)return;
-    if(direction===1){
-      const afterTarget=rules[index+2];
-      const floor=rules[target].priority;
-      onUpsertRule({...rules[index],priority:afterTarget?(floor+afterTarget.priority)/2:floor+100,updatedAt:now()});
-      return;
-    }
-    const afterCurrent=rules[index+1];
-    const floor=rules[index].priority;
-    onUpsertRule({...rules[target],priority:afterCurrent?(floor+afterCurrent.priority)/2:floor+100,updatedAt:now()});
+    if(index+direction<0||index+direction>=rules.length)return;
+    onReorderRule(rules[index].id,direction);
   };
   const conditionLabel=(rule:TransactionRule)=>{
     const parts:string[]=[];
@@ -214,7 +207,7 @@ export function TransactionRulesWorkspace({
             <div className="rules-builder-fields">
               <label className="rules-category-field"><span>Κατηγορία / υποκατηγορία</span><CategorySelectInput settings={data.state.settings} kind="expense" category={ruleCategory} subcategory={ruleSubcategory} allowEmpty emptyLabel="Χωρίς αλλαγή κατηγορίας" aria-label="Κατηγορία ή υποκατηγορία κανόνα" onChange={selection=>{setRuleCategory(selection.category);setRuleSubcategory(selection.subcategory)}}/></label>
               <label className="rules-builder-note"><span>Σχόλιο αν είναι κενό <em>προαιρετικό</em></span><AppTextInput value={ruleDefaultNote} placeholder="Δεν αντικαθιστά υπάρχον σχόλιο" onChange={event=>setRuleDefaultNote(event.target.value)}/></label>
-              <label><span>Πότε να λειτουργεί</span><AppSelectInput aria-label="Πεδίο εφαρμογής κανόνα" value={ruleScope} onChange={event=>setRuleScope(event.target.value as 'all'|TransactionRuleScope)}><option value="manual">Όταν την καταχωρίζω εγώ</option><option value="imported">Όταν έρχεται από εισαγωγή</option><option value="review">Όταν επιβεβαιώνεται από έλεγχο</option><option value="all">Σε κάθε νέα υποστηριζόμενη κίνηση</option></AppSelectInput></label>
+              <label><span>Πότε να λειτουργεί</span><AppSelectInput aria-label="Πεδίο εφαρμογής κανόνα" value={ruleScope} onChange={event=>setRuleScope(event.target.value as TransactionRuleScopeChoice)}><option value="manual">Όταν την καταχωρίζω εγώ</option><option value="imported">Όταν έρχεται από εισαγωγή</option><option value="review">Όταν επιβεβαιώνεται από έλεγχο</option><option value="manual+imported">Καταχώριση και εισαγωγή</option><option value="manual+review">Καταχώριση και έλεγχος</option><option value="imported+review">Εισαγωγή και έλεγχος</option><option value="all">Σε κάθε νέα υποστηριζόμενη κίνηση</option></AppSelectInput></label>
             </div>
           </fieldset>
         </div>
