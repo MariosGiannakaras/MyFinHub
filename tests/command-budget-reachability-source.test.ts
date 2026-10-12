@@ -16,8 +16,12 @@ describe('budget command frontend action reachability (DV-FB02/03)',()=>{
     expect(qa).toContain("section.querySelector<HTMLElement>('summary')?.focus");
     expect(app).toContain("url.searchParams.set('reportSection','budgets')");
     expect(qa).toContain("url.searchParams.set('reportSection','budgets')");
-    expect(app).toContain("account?.bankAccountCategory==='savings'");
-    expect(qa).toContain("account?.bankAccountCategory==='savings'");
+    // Bank Savings routing must use the same classifier as Command Search;
+    // a mis-tagged cash wallet must not open the Savings contribution flow.
+    expect(app).toContain("import { isSavingsAccount } from './lib/accountSemantics'");
+    expect(qa).toContain("import { isSavingsAccount } from './lib/accountSemantics'");
+    expect(app).toContain('if(account&&isSavingsAccount(account)){');
+    expect(qa).toContain('if(account&&isSavingsAccount(account)){');
     expect(rendered).toContain('command-budget-editor-current-page');
     expect(rendered).toContain('command-budget-editor-from-dashboard');
     expect(rendered).toContain('budget command retains keyboard focus after palette dismissal');
