@@ -15,9 +15,9 @@ describe('consolidated Stage 2 shared action adoption',()=>{
     expect(contextual.match(/<IconButton/g)).toHaveLength(1);
     expect(contextual.match(/<Button[^>]+variant="primary"/g)).toHaveLength(1);
     expect(contextual.match(/<Button[^>]+variant="secondary"/g)).toHaveLength(1);
-    expect(contextual).toContain('<IconButton type="button" aria-label="Κλείσιμο contextual καταχώρισης" onClick={onClose}>');
-    expect(contextual).toContain('<Button type="button" variant="secondary" onClick={onClose}>Ακύρωση</Button>');
-    expect(contextual).toContain('<Button type="button" variant="primary" onClick={submit}>');
+    expect(contextual).toContain('<IconButton type="button" aria-label="Κλείσιμο contextual καταχώρισης" disabled={saving} onClick={onClose}>');
+    expect(contextual).toContain('<Button type="button" variant="secondary" disabled={saving} onClick={onClose}>Ακύρωση</Button>');
+    expect(contextual).toContain('<Button type="button" variant="primary" disabled={saving} onClick={()=>void submit()}>');
     expect(contextual).not.toContain('className="icon-button"');
     expect(contextual).not.toContain('className="secondary"');
     expect(contextual).not.toContain('className="save-button"');
@@ -26,10 +26,16 @@ describe('consolidated Stage 2 shared action adoption',()=>{
   it('preserves ContextualQuickAdd focus and finance completion semantics',()=>{
     expect(contextual).toContain('motionMode="none"');
     expect(contextual).toContain("preferredFocus='[data-autofocus=\"true\"]'");
-    expect(contextual).toContain('onRequestClose={onClose}');
+    expect(contextual).toContain('onRequestClose={()=>{if(!saving)onClose()}}');
+    expect(contextual).toContain('busy={saving}');
+    expect(contextual).toContain('inert={saving}');
+    expect(contextual).toContain('if(saving)return;');
     expect(contextual).toContain("event=scheduledToEvent(data,scheduled,{date,amount:numeric,accountId,fromAccountId,toAccountId})");
     expect(contextual).toContain("onCompleteScheduled(transitionScheduled(scheduled,'completed',event.id),event);onClose();return;");
-    expect(contextual).toContain('onCreate(event);onClose();');
+    expect(contextual).toContain('await onCreate(event);');
+    expect(contextual).toContain('setSaving(true);');
+    expect(contextual).toContain('finally{setSaving(false)}');
+    expect(contextual.indexOf('await onCreate(event);')).toBeLessThan(contextual.indexOf('onClose();\n    }catch(reason)'));
     expect(contextual).toContain("event.savingSource=context.savingSource??'manual_transfer'");
   });
 
