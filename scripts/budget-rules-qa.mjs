@@ -323,6 +323,9 @@ try{
   await screenshot('savings-no-operating-bank-rejected-mobile');
 
   console.log('Budget/Rules QA: rejected and pending exact Quick Entry receipts');
+  // The prior no-operating-bank rejection was inspected at 390px; this
+  // failure fixture checks the *desktop* quick entry action first.
+  await viewport(1440,1000);
   const quickEntryReceiptUrl=(value)=>{const url=new URL(urlFor('savings','budget-rules'));url.searchParams.set(value,'1');return url.href};
   await c.send('Page.navigate',{url:quickEntryReceiptUrl('quick-event-save-failure')});
   await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}",'rejected Quick Entry receipt fixture');

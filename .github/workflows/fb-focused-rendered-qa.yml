@@ -25,6 +25,12 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci --prefer-offline --no-audit --no-fund
+      - name: Preflight all focused browser script syntax before launching Chromium
+        shell: bash
+        run: |
+          for suite in quick-entry-reference budget-rules planning-forecast legacy-transaction-management command-palette; do
+            node --check "scripts/$suite-qa.mjs"
+          done
       - name: Launch synthetic web QA app
         shell: bash
         run: |

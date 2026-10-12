@@ -73,7 +73,7 @@ try{
  await waitFor("function(){return document.querySelector('#main-workspace h1')?.textContent?.includes('Αναφορές')}",'cards search source');
  await ctrlK();await setSearch('QA Payzy');await activateOption('QA Payzy');await press('Enter');
  await waitFor("function(){return document.activeElement?.dataset.commandCardId==='qa-card-payzy'}",'exact prepaid card focused');
- assert(await c.call("function(){return !document.querySelector('.contextual-quick-modal')&&!document.querySelector('.card-details-dialog')}",'prepaid search does not open vault or payment');
+ assert(await c.call("function(){return !document.querySelector('.contextual-quick-modal')&&!document.querySelector('.card-details-dialog')}"),'prepaid search does not open vault or payment');
  await screenshot('command-exact-prepaid-card');
  await ctrlK();await setSearch('QA Revolut');await activateOption('QA Revolut');await press('Enter');
  await waitFor("function(){return document.activeElement?.dataset.commandCardId==='qa-card-revolut'}",'second exact debit card focused');

@@ -10,7 +10,8 @@ if(!chrome)throw new Error('Chrome/Chromium is required for Quick Entry referenc
 const port=9361;
 const profile='/tmp/myfinhub-quick-entry-reference-qa-chrome';
 rmSync(profile,{recursive:true,force:true,maxRetries:5,retryDelay:100});
-const child=spawn(chrome,['--headless=new',`--remote-debugging-port=${port}`,'--remote-debugging-address=127.0.0.1',`--user-data-dir=${profile}`,'--no-sandbox','--disable-gpu','--disable-dev-shm-usage','about:blank'],{stdio:'ignore'});
+const launchBrowser=()=>spawn(chrome,['--headless=new',`--remote-debugging-port=${port}`,'--remote-debugging-address=127.0.0.1',`--user-data-dir=${profile}`,'--no-sandbox','--disable-gpu','--disable-dev-shm-usage','about:blank'],{stdio:'ignore'});
+let child=launchBrowser();
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function stopBrowser(){if(child.exitCode!==null)return;child.kill('SIGTERM');await Promise.race([new Promise(resolve=>child.once('exit',resolve)),sleep(1800)]);if(child.exitCode===null)child.kill('SIGKILL')}
 async function waitHttp(url){for(let i=0;i<120;i+=1){try{const response=await fetch(url);if(response.ok)return}catch{}await sleep(120)}throw new Error(`Timed out waiting for ${url}`)}
@@ -18,7 +19,17 @@ class Cdp{constructor(url){this.url=url;this.id=0;this.pending=new Map();this.li
 const assert=(value,message)=>{if(!value)throw new Error(`Quick Entry reference QA assertion failed: ${message}`)};
 const approx=(value,target,tolerance=2)=>Math.abs(value-target)<=tolerance;
 try{
-  await waitHttp(`http://127.0.0.1:${port}/json/version`);
+  try{
+    await waitHttp(`http://127.0.0.1:${port}/json/version`);
+  }catch(firstStartError){
+    // A headless Chrome process occasionally exits before opening CDP on CI;
+    // retry infrastructure startup once, never an application assertion.
+    console.warn('Quick Entry QA Chromium CDP startup retry:',String(firstStartError));
+    await stopBrowser();
+    rmSync(profile,{recursive:true,force:true,maxRetries:5,retryDelay:100});
+    child=launchBrowser();
+    await waitHttp(`http://127.0.0.1:${port}/json/version`);
+  }
   const target=await fetch(`http://127.0.0.1:${port}/json/new?about:blank`,{method:'PUT'}).then(response=>response.json());
   const c=new Cdp(target.webSocketDebuggerUrl);await c.open();await c.send('Page.enable');await c.send('Runtime.enable');await c.send('Network.enable');
   const runtimeErrors=[];const failedRequests=[];

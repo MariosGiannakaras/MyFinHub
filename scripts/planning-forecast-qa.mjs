@@ -66,7 +66,16 @@ try{
   await waitFor("function(){return Boolean(document.querySelector('.planning-editor #scheduled-editor-error[role=alert]'))}",'Planning rejected create receipt');
   assert(await c.call("function(){return Boolean(document.querySelector('.planning-editor'))&&document.querySelector('.planning-editor input[data-autofocus]')?.value==='80'}"),'rejected create retains editor and amount');
   await screenshot('planning-scheduled-create-receipt-failure-desktop');
+  // Reproduce the failure at the actual mobile viewport. A desktop error
+  // followed by a resize would not prove the mobile alert is visible.
   await viewport(390,844);
+  await c.send('Page.navigate',{url:rejectedUrl.href});
+  await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))&&[...document.querySelectorAll('button')].some(node=>(node.textContent||'').includes('Νέα προγραμματισμένη'))}",'mobile rejected receipt fixture');
+  await clickText('button','Νέα προγραμματισμένη');
+  await waitFor("function(){return Boolean(document.querySelector('.planning-editor[role=dialog]'))}",'mobile Planning create dialog');
+  await setInput('Ποσό','80');
+  await clickText('.planning-editor .editor-actions button','Προσθήκη στο πρόγραμμα');
+  await waitFor("function(){const dialog=document.querySelector('.planning-editor');const alert=dialog?.querySelector('#scheduled-editor-error[role=alert]');const footer=dialog?.querySelector('.editor-actions');if(!alert||!footer)return false;const e=alert.getBoundingClientRect(),f=footer.getBoundingClientRect(),d=dialog.getBoundingClientRect();return e.height>0&&e.top>=d.top&&e.bottom<=f.top-2}",'mobile scheduled save error is visible above sticky footer');
   await noOverflow('Planning rejected create receipt mobile');
   await screenshot('planning-scheduled-create-receipt-failure-mobile');
 

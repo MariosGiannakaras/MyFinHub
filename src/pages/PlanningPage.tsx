@@ -90,6 +90,10 @@ export function PlanningPage({ data, asOf, commandScheduledId, commandScheduledK
   const upcoming = pending.filter((item) => scheduledLifecycle(item, asOf) === 'upcoming');
   const draftRef = useModalFocus<HTMLElement>(Boolean(draft), '[data-autofocus="true"]', () => closeDraft());
   const completeRef = useModalFocus<HTMLElement>(Boolean(complete), '[data-autofocus="true"]', () => closeComplete());
+  // On mobile the scheduled form is vertically scrollable with a sticky
+  // footer. Move newly rejected writes into view without stealing focus.
+  useEffect(()=>{if(error)draftRef.current?.querySelector<HTMLElement>('#scheduled-editor-error')?.scrollIntoView({block:'center',behavior:'instant'});},[error,draftRef]);
+  useEffect(()=>{if(completeError)completeRef.current?.querySelector<HTMLElement>('#scheduled-complete-error')?.scrollIntoView({block:'center',behavior:'instant'});},[completeError,completeRef]);
 
   const newDraft = (): Draft => ({
     kind: 'expense', dueDate: asOf, amount: '', note: '', category: data.state.settings.expenseCategories[0] || 'Άλλο', subcategory: '',
