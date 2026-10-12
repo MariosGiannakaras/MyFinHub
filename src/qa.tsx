@@ -21,7 +21,7 @@ import type { SettingsTabId } from './lib/routing';
 import { accountBalances, allAccounts, createEvent } from './lib/domain';
 import { withLegacyOverride, withLegacyTombstone } from './lib/legacyTransactions';
 import { applyTaxonomyOperation, type TaxonomyOperation } from './lib/taxonomyManagement';
-import { applyTransactionRules, reorderTransactionRules } from './lib/transactionRules';
+import { applyTransactionRules } from './lib/transactionRules';
 import { qaFinanceData } from './qaFixture';
 import { DashboardPage } from './pages/DashboardPage';
 import { TransactionsPage } from './pages/TransactionsPage';
@@ -343,7 +343,6 @@ function QaWorkspace(){
   const deleteSavingsGoal=(id:string)=>update(current=>({...current,state:{...current.state,savingsGoals:(current.state.savingsGoals??[]).filter(item=>item.id!==id)}}));
   const upsertRule=(rule:TransactionRule)=>update(current=>({...current,state:{...current.state,transactionRules:[...(current.state.transactionRules??[]).filter(item=>item.id!==rule.id),rule]}}));
   const deleteRule=(id:string)=>update(current=>({...current,state:{...current.state,transactionRules:(current.state.transactionRules??[]).filter(item=>item.id!==id)}}));
-  const reorderRule=(id:string,direction:-1|1)=>update(current=>{const rules=current.state.transactionRules??[];const next=reorderTransactionRules(rules,id,direction,new Date().toISOString());return next===rules?current:{...current,state:{...current.state,transactionRules:next}}});
   const updateTaxonomy=(operation:TaxonomyOperation)=>update(current=>applyTaxonomyOperation(current,operation,today));
   const decideAttention=(id:string,decision:AttentionDecision)=>update(current=>({...current,state:{...current.state,attentionDecisions:{...(current.state.attentionDecisions??{}),[id]:decision}}}));
   const handleAttention=(item:AttentionItem)=>{
@@ -414,7 +413,7 @@ function QaWorkspace(){
     :page==='planning'?<PlanningPage data={data} asOf={today} commandScheduledId={commandScheduledId} commandScheduledKey={commandScheduledKey} onUpsertScheduled={upsertScheduled} onCompleteScheduled={completeScheduled}/>
     :page==='attention'?<AttentionPage data={data} asOf={today} onAction={handleAttention} onDecision={decideAttention} onReviewDecision={(id,decision)=>update(current=>({...current,state:{...current.state,reviewDecisions:{...(current.state.reviewDecisions??{}),[id]:decision}}}))}/>
     :page==='reports'?<ReportsPage data={data} month={month} asOf={today} privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onUpsertBudget={upsertBudget} onDeleteBudget={deleteBudget} onUpsertRule={upsertRule} onDeleteRule={deleteRule}/>
-    :<SettingsPage data={data} asOf={today} activeTab={settingsTab} onActiveTabChange={setSettingsTab} accountFocusId={commandAccountId} accountFocusKey={commandAccountKey} filePath="Synthetic QA" lastSavedAt={data.updatedAt} onImport={async incoming=>importData(incoming)} onBackup={async()=>({path:'synthetic/backup.json'})} onSettings={settings=>update(current=>({...current,state:{...current.state,settings}}))} onFinanceDurably={async recipe=>{if(new URLSearchParams(location.search).get('account-save-failure')==='1')throw new Error('Η δοκιμαστική αποθήκευση απέτυχε.');update(recipe)}} onTaxonomyOperation={updateTaxonomy} onUpsertRule={upsertRule} onDeleteRule={deleteRule} onReorderRule={reorderRule}/>;
+    :<SettingsPage data={data} asOf={today} activeTab={settingsTab} onActiveTabChange={setSettingsTab} accountFocusId={commandAccountId} accountFocusKey={commandAccountKey} filePath="Synthetic QA" lastSavedAt={data.updatedAt} onImport={async incoming=>importData(incoming)} onBackup={async()=>({path:'synthetic/backup.json'})} onSettings={settings=>update(current=>({...current,state:{...current.state,settings}}))} onFinanceDurably={async recipe=>{if(new URLSearchParams(location.search).get('account-save-failure')==='1')throw new Error('Η δοκιμαστική αποθήκευση απέτυχε.');update(recipe)}} onTaxonomyOperation={updateTaxonomy} onUpsertRule={upsertRule} onDeleteRule={deleteRule} onFinanceUpdate={update}/>;
   const periodVisible=['dashboard','transactions','savings','reports'].includes(page);
 
   return <>

@@ -15,6 +15,7 @@ import { Surface } from '../components/Surface';
 import { SupportDiagnosticsPanel } from '../components/SupportDiagnosticsPanel';
 import { TransactionRulesWorkspace } from '../components/TransactionRulesWorkspace';
 import { categoryTree } from '../lib/categories';
+import { reorderTransactionRules } from '../lib/transactionRuleEditor';
 import { MAX_FINANCE_DOCUMENT_BYTES } from '../lib/limits';
 import { taxonomyOperationPreview, type TaxonomyOperation } from '../lib/taxonomyManagement';
 import { userErrorMessage } from '../lib/userMessage';
@@ -102,7 +103,7 @@ export function SettingsPage({
   onTaxonomyOperation,
   onUpsertRule,
   onDeleteRule,
-  onReorderRule,
+  onFinanceUpdate,
 }: {
   data: FinanceData;
   asOf: string;
@@ -120,8 +121,13 @@ export function SettingsPage({
   onTaxonomyOperation: (operation: TaxonomyOperation) => void;
   onUpsertRule: (rule: TransactionRule) => void;
   onDeleteRule: (id: string) => void;
-  onReorderRule: (id: string, direction: -1 | 1) => void;
+  onFinanceUpdate: (recipe: (current:FinanceData)=>FinanceData) => void;
 }) {
+  const reorderRule=(id:string,direction:-1|1)=>onFinanceUpdate(current=>{
+    const rules=current.state.transactionRules??[];
+    const next=reorderTransactionRules(rules,id,direction,new Date().toISOString());
+    return next===rules?current:{...current,state:{...current.state,transactionRules:next}};
+  });
   const fileRef = useRef<HTMLInputElement | null>(null);
   const tablistRef = useRef<HTMLDivElement | null>(null);
   const runtimeEnv=(import.meta as unknown as {env?:{VITE_MYFINHUB_SUPPORT_DIAGNOSTICS?:string}}).env;
@@ -268,7 +274,7 @@ export function SettingsPage({
 
         {activeTab === 'rules' ? (
           <div className="settings-tab-stack settings-rules-only">
-            <TransactionRulesWorkspace data={data} onUpsertRule={onUpsertRule} onDeleteRule={onDeleteRule} onReorderRule={onReorderRule} />
+            <TransactionRulesWorkspace data={data} onUpsertRule={onUpsertRule} onDeleteRule={onDeleteRule} onReorderRule={reorderRule} />
           </div>
         ) : null}
 

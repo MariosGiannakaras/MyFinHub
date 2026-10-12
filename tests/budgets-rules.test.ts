@@ -5,7 +5,8 @@ import { budgetProgress, categoryBudgetSpending } from '../src/lib/budgets.js';
 import { createEvent } from '../src/lib/domain.js';
 import { createExpenseSplitEvent, createTransferEvent } from '../src/lib/ledgerFoundations.js';
 import { migrateProductData } from '../src/lib/productMigration.js';
-import { applyTransactionRules, normalizeTransactionRule, previewTransactionRules, reorderTransactionRules, ruleScopeChoice, scopesForRuleChoice, transactionRuleMatchingEvents, transactionRuleMatchCount } from '../src/lib/transactionRules.js';
+import { applyTransactionRules, normalizeTransactionRule, previewTransactionRules, transactionRuleMatchingEvents, transactionRuleMatchCount } from '../src/lib/transactionRules.js';
+import { reorderTransactionRules, ruleScopeChoice, scopesForRuleChoice } from '../src/lib/transactionRuleEditor.js';
 import type { MonthlyBudget, TransactionRule } from '../src/types.js';
 
 const clone=()=>structuredClone(qaFinanceData());
