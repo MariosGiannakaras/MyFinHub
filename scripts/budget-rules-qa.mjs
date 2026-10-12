@@ -345,7 +345,7 @@ try{
   await clickAria('Γρήγορη προσθήκη');
   await setLabelInput('Ποσό','26');
   await clickText('.generic-quick-modal footer button','Καταχώριση');
-  await waitFor("function(){const dialog=document.querySelector('.generic-quick-modal[aria-busy=true]');return Boolean(dialog?.querySelector('footer button:last-child')?.disabled)}",'pending Quick Entry receipt locks form');
+  await waitFor("function(){const dialog=document.querySelector('.generic-quick-modal[aria-busy=true]');const save=[...(dialog?.querySelectorAll('footer button')||[])].find(button=>(button.textContent||'').includes('Αποθήκευση…'));return Boolean(globalThis.__myfinhubQaCompleteQuickEventReceipt)&&Boolean(save?.disabled)}",'pending Quick Entry receipt locks exact finance-save action');
   assert(await c.call("function(){return Boolean(document.querySelector('.generic-quick-modal'))&&document.querySelector('.generic-quick-modal header button[aria-label]')?.disabled===true}"),'Quick Entry remains open while receipt is pending');
   await screenshot('quick-entry-finance-receipt-pending-desktop');
   await c.call("function(){globalThis.__myfinhubQaCompleteQuickEventReceipt?.();return true}");
