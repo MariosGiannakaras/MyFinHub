@@ -260,6 +260,10 @@ function buildQaData(params:URLSearchParams){
       {id:'qa-rule-priority-max',name:'QA Priority Max',enabled:true,priority:1_000_000,scopes:['manual'],match:{description:'QA Priority',mode:'contains'},action:{category:'Άλλο'},createdAt:stamp,updatedAt:stamp},
     ];
   }
+  if(params.get('state')==='savings-expired-goal'){
+    const stamp='2026-08-17T12:00:00.000Z';
+    next.state.savingsGoals=[{id:'qa-goal-expired',name:'QA Expired Goal',targetAmount:500,targetDate:'2026-08-01',createdAt:stamp,updatedAt:stamp}];
+  }
   if(params.get('state')==='savings-goal-receipts'){
     const stamp='2026-08-17T12:00:00.000Z';
     next.state.savingsGoals=[{id:'qa-goal-receipts',name:'QA Original Goal',targetAmount:500,targetDate:null,createdAt:stamp,updatedAt:stamp}];

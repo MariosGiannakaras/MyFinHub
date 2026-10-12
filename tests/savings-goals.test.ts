@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { migrateData } from '../src/lib/domain.js';
-import { savingsGoalBalance, savingsGoalProgress } from '../src/lib/savingsGoals.js';
+import { isSavingsGoalAccount, savingsGoalBalance, savingsGoalProgress, validSavingsGoalDeadline } from '../src/lib/savingsGoals.js';
 import type { FinanceData, SavingsGoal } from '../src/types.js';
 
 function fixture():FinanceData{
@@ -11,9 +11,11 @@ function fixture():FinanceData{
         {id:'current',name:'Current',kind:'bank'},
         {id:'save-a',name:'Savings A',kind:'savings'},
         {id:'save-b',name:'Savings B',kind:'savings'},
+        {id:'bank-save',name:'Bank Savings',kind:'bank',bankAccountCategory:'savings'},
+        {id:'bank-current',name:'Bank Current',kind:'bank',bankAccountCategory:'current'},
       ],
       months:[],transactions:[],
-      snapshots:[{date:'2026-09-28',balances:{current:900,'save-a':600,'save-b':-50}}],
+      snapshots:[{date:'2026-09-28',balances:{current:900,'save-a':600,'save-b':-50,'bank-save':250,'bank-current':300}}],
       recurring:[],subscriptions:[],loans:[],lending:[],stats:{},
     },
     state:{
@@ -28,7 +30,20 @@ function fixture():FinanceData{
 describe('savings goal semantics',()=>{
   it('uses only positive balances from savings accounts as goal progress backing',()=>{
     const data=fixture();
-    expect(savingsGoalBalance(data,'2026-09-28')).toBe(600);
+    expect(savingsGoalBalance(data,'2026-09-28')).toBe(850);
+    expect(isSavingsGoalAccount({kind:'bank',bankAccountCategory:'savings'})).toBe(true);
+    expect(isSavingsGoalAccount({kind:'bank',bankAccountCategory:'current'})).toBe(false);
+    expect(isSavingsGoalAccount({kind:'cash'})).toBe(false);
+  });
+
+  it('retains an unchanged expired personal deadline but rejects a newly introduced past deadline',()=>{
+    const asOf='2026-10-12';
+    expect(validSavingsGoalDeadline('2026-09-30',asOf,'2026-09-30')).toBe(true);
+    expect(validSavingsGoalDeadline('2026-09-30',asOf,null)).toBe(false);
+    expect(validSavingsGoalDeadline('2026-10-01',asOf,'2026-09-30')).toBe(false);
+    expect(validSavingsGoalDeadline('2026-10-12',asOf,null)).toBe(true);
+    expect(validSavingsGoalDeadline('2026-11-01',asOf,'2026-09-30')).toBe(true);
+    expect(validSavingsGoalDeadline(null,asOf,'2026-09-30')).toBe(true);
   });
 
   it('calculates bounded progress without fabricating a target',()=>{

@@ -26,7 +26,8 @@ describe('Savings page action hierarchy',()=>{
   });
 
   it('uses semantic savings metadata and the shared dense readability contract',()=>{
-    expect(source).toContain("account.kind==='savings'||(account.kind==='bank'&&account.bankAccountCategory==='savings')");
+    expect(source).toContain('const savingsAccounts=accounts.filter(isSavingsGoalAccount)');
+    expect(source).toContain('savingsGoalBalance(data,periodEndDate)');
     expect(source).toContain('accountChoices.dashboardSavings?.id??accountChoices.savings?.id');
     expect(composition).toContain('font-size:var(--ux-dense-data-size)');
     expect(composition).toContain('font-size:var(--ux-dense-label-size)');
@@ -68,7 +69,8 @@ describe('Savings page action hierarchy',()=>{
     expect(source).not.toContain('accountBalances(data,asOf)');
     expect(source).not.toContain('savingsGoalBalance(data,asOf)');
     expect(source).toContain("setDate(asOf)");
-    expect(source).toContain("if(goalEdit.targetDate&&goalEdit.targetDate<asOf)");
+    expect(source).toContain('validSavingsGoalDeadline(goalEdit.targetDate,asOf,priorGoal?.targetDate)');
+    expect(source).toContain('Η υπάρχουσα προθεσμία έχει παρέλθει');
   });
 
   it('uses a dedicated approved historical fixture route for Savings evidence',()=>{
