@@ -19,6 +19,13 @@ describe('Settings Rules workspace source contract',()=>{
     expect(workspace).toContain('performDurably');
     expect(workspace).toContain('if(await performDurably(()=>onUpsertRule(next),setRuleError))clearEditor(false)');
     expect(workspace).toContain('busy={busy}');
+    expect(workspace).toContain('error={deleteError}');
+    expect(workspace.match(/disabled={busy}/g)?.length).toBeGreaterThanOrEqual(15);
+    expect(workspace).toContain('<AppSelectInput disabled={busy}');
+    expect(workspace).toContain('<CategorySelectInput disabled={busy}');
+    expect(workspace).toContain('<AppTextInput disabled={busy}');
+    expect(rendered).toContain('settings-rules-pending-receipt-desktop');
+    expect(rendered).toContain('settings-rules-receipt-committed-desktop');
     expect(workspace).toContain('setDeleteRuleTarget(rule)');
     expect(workspace).toContain('<ConfirmDialog');
     expect(workspace).toContain('onDeleteRule(id)');

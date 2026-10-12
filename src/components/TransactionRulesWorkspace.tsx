@@ -194,14 +194,15 @@ export function TransactionRulesWorkspace({
         <div className="rules-order-controls" aria-label={`Θέση ${index+1}`}><span>{index+1}</span><div><IconButton aria-label={`Μετακίνηση αυτοματισμού ${rule.name} προς τα πάνω`} disabled={busy||index===0} onClick={()=>moveRule(index,-1)}><ChevronUp size={15}/></IconButton><IconButton aria-label={`Μετακίνηση αυτοματισμού ${rule.name} προς τα κάτω`} disabled={busy||index===rules.length-1} onClick={()=>moveRule(index,1)}><ChevronDown size={15}/></IconButton></div></div>
         <div className="rules-row-copy"><div className="rules-row-title"><b>{rule.name}</b><span className={`rules-state ${state}`}>{invalid?<><AlertTriangle size={13}/> Χρειάζεται έλεγχο</>:rule.enabled?<><Check size={13}/> Ενεργός</>:<><CirclePause size={13}/> Σε παύση</>}</span></div><small><strong>Όταν</strong> {conditionLabel(rule)}</small><small><strong>Τότε</strong> {actionLabel(rule)} · {rule.scopes.length===3?'κάθε νέα υποστηριζόμενη κίνηση':rule.scopes.map(scopeLabel).join(', ')}</small>{invalid?<small className="rules-row-warning" role="alert">{invalid}</small>:null}</div>
         <div className="rule-row-actions"><Button type="button" variant="secondary" disabled={busy} onClick={()=>void actOnRule(()=>onUpsertRule({...rule,enabled:!rule.enabled,updatedAt:now()}))}>{rule.enabled?'Παύση':'Ενεργοποίηση'}</Button><IconButton aria-label={`Επεξεργασία αυτοματισμού ${rule.name}`} title="Επεξεργασία" disabled={busy} onClick={()=>editRule(rule)}><Pencil size={17}/></IconButton><IconButton aria-label={`Διαγραφή αυτοματισμού ${rule.name}`} title="Διαγραφή" disabled={busy} onClick={()=>{setDeleteError('');setDeleteRuleTarget(rule)}}><Trash2 size={17}/></IconButton></div>
-      </article>})}</div>:<div className="rules-empty-state"><ListFilter size={22}/><div><b>Δεν υπάρχουν ακόμη κανόνες</b><small>Οι νέες κινήσεις παραμένουν χειροκίνητες μέχρι να προσθέσεις έναν κανόνα.</small></div><Button type="button" variant="secondary" onClick={startCreate}><Plus size={16}/> Δημιουργία κανόνα</Button></div>}
+      </article>})}</div>:<div className="rules-empty-state"><ListFilter size={22}/><div><b>Δεν υπάρχουν ακόμη κανόνες</b><small>Οι νέες κινήσεις παραμένουν χειροκίνητες μέχρι να προσθέσεις έναν κανόνα.</small></div><Button type="button" variant="secondary" disabled={busy} onClick={startCreate}><Plus size={16}/> Δημιουργία κανόνα</Button></div>}
       {hasMoreRules?<Button type="button" variant="secondary" className="rule-settings-more" disabled={busy} onClick={()=>setVisibleRuleCount(count=>Math.min(count+RULE_PAGE_SIZE,rules.length))}>Εμφάνιση περισσότερων κανόνων ({rules.length-visibleRules.length})</Button>:null}
     </section>
 
     <ConfirmDialog
       open={Boolean(deleteRuleTarget)}
       title="Διαγραφή κανόνα;"
-      description={deleteRuleTarget?`Ο κανόνας «${deleteRuleTarget.name}» θα αφαιρεθεί από τις μελλοντικές κινήσεις. Το υπάρχον ιστορικό δεν αλλάζει.${deleteError?' '+deleteError:''}`:''}
+      description={deleteRuleTarget?`Ο κανόνας «${deleteRuleTarget.name}» θα αφαιρεθεί από τις μελλοντικές κινήσεις. Το υπάρχον ιστορικό δεν αλλάζει.`:''}
+      error={deleteError}
       confirmLabel="Διαγραφή κανόνα"
       tone="destructive"
       busy={busy}
@@ -216,25 +217,25 @@ export function TransactionRulesWorkspace({
           <IconButton aria-label="Κλείσιμο επεξεργασίας κανόνα" title="Κλείσιμο" disabled={busy} onClick={dismissEditor}><X size={17}/></IconButton>
         </header>
 
-        <label className="rules-name-field"><span>Όνομα αυτοματισμού</span><AppTextInput value={ruleName} placeholder="π.χ. Supermarket → Τρόφιμα" onChange={event=>setRuleName(event.target.value)}/></label>
+        <label className="rules-name-field"><span>Όνομα αυτοματισμού</span><AppTextInput disabled={busy} value={ruleName} placeholder="π.χ. Supermarket → Τρόφιμα" onChange={event=>setRuleName(event.target.value)}/></label>
 
         <div className="rules-builder-columns rule-editor-grid">
           <fieldset className="rules-builder-section">
             <legend><span>1</span> Όταν</legend>
             <div className="rules-builder-fields">
-              <label><span>Όταν η περιγραφή</span><AppSelectInput aria-label="Τρόπος αντιστοίχισης περιγραφής" value={ruleMode} onChange={event=>setRuleMode(event.target.value as 'contains'|'equals')}><option value="contains">περιέχει</option><option value="equals">είναι ακριβώς</option></AppSelectInput></label>
-              <label><span>Κείμενο περιγραφής</span><AppTextInput value={ruleDescription} placeholder="π.χ. supermarket" onChange={event=>setRuleDescription(event.target.value)}/></label>
-              <label><span>Επιπλέον λέξη <em>προαιρετικό</em></span><AppTextInput value={ruleMerchant} placeholder="π.χ. market" onChange={event=>setRuleMerchant(event.target.value)}/></label>
-              <label><span>Λογαριασμός <em>προαιρετικό</em></span><AppSelectInput aria-label="Λογαριασμός κανόνα" value={ruleAccount} onChange={event=>setRuleAccount(event.target.value)}>{ruleAccount&&!accountIds.has(ruleAccount)?<option value={ruleAccount} disabled>Μη διαθέσιμος · {ruleAccount}</option>:null}<option value="">Οποιοσδήποτε λογαριασμός</option>{accounts.map(account=><option key={account.id} value={account.id}>{accountDisplayName(data,account.id)}</option>)}</AppSelectInput></label>
+              <label><span>Όταν η περιγραφή</span><AppSelectInput disabled={busy} aria-label="Τρόπος αντιστοίχισης περιγραφής" value={ruleMode} onChange={event=>setRuleMode(event.target.value as 'contains'|'equals')}><option value="contains">περιέχει</option><option value="equals">είναι ακριβώς</option></AppSelectInput></label>
+              <label><span>Κείμενο περιγραφής</span><AppTextInput disabled={busy} value={ruleDescription} placeholder="π.χ. supermarket" onChange={event=>setRuleDescription(event.target.value)}/></label>
+              <label><span>Επιπλέον λέξη <em>προαιρετικό</em></span><AppTextInput disabled={busy} value={ruleMerchant} placeholder="π.χ. market" onChange={event=>setRuleMerchant(event.target.value)}/></label>
+              <label><span>Λογαριασμός <em>προαιρετικό</em></span><AppSelectInput disabled={busy} aria-label="Λογαριασμός κανόνα" value={ruleAccount} onChange={event=>setRuleAccount(event.target.value)}>{ruleAccount&&!accountIds.has(ruleAccount)?<option value={ruleAccount} disabled>Μη διαθέσιμος · {ruleAccount}</option>:null}<option value="">Οποιοσδήποτε λογαριασμός</option>{accounts.map(account=><option key={account.id} value={account.id}>{accountDisplayName(data,account.id)}</option>)}</AppSelectInput></label>
             </div>
           </fieldset>
 
           <fieldset className="rules-builder-section">
             <legend><span>2</span> Τότε</legend>
             <div className="rules-builder-fields">
-              <label className="rules-category-field"><span>Κατηγορία / υποκατηγορία</span><CategorySelectInput settings={data.state.settings} kind="expense" category={ruleCategory} subcategory={ruleSubcategory} allowEmpty emptyLabel="Χωρίς αλλαγή κατηγορίας" aria-label="Κατηγορία ή υποκατηγορία κανόνα" onChange={selection=>{setRuleCategory(selection.category);setRuleSubcategory(selection.subcategory)}}/></label>
-              <label className="rules-builder-note"><span>Σχόλιο αν είναι κενό <em>προαιρετικό</em></span><AppTextInput value={ruleDefaultNote} placeholder="Δεν αντικαθιστά υπάρχον σχόλιο" onChange={event=>setRuleDefaultNote(event.target.value)}/></label>
-              <label><span>Πότε να λειτουργεί</span><AppSelectInput aria-label="Πεδίο εφαρμογής κανόνα" value={ruleScope} onChange={event=>setRuleScope(event.target.value as TransactionRuleScopeChoice)}><option value="manual">Όταν την καταχωρίζω εγώ</option><option value="imported">Όταν έρχεται από εισαγωγή</option><option value="review">Όταν επιβεβαιώνεται από έλεγχο</option><option value="manual+imported">Καταχώριση και εισαγωγή</option><option value="manual+review">Καταχώριση και έλεγχος</option><option value="imported+review">Εισαγωγή και έλεγχος</option><option value="all">Σε κάθε νέα υποστηριζόμενη κίνηση</option></AppSelectInput></label>
+              <label className="rules-category-field"><span>Κατηγορία / υποκατηγορία</span><CategorySelectInput disabled={busy} settings={data.state.settings} kind="expense" category={ruleCategory} subcategory={ruleSubcategory} allowEmpty emptyLabel="Χωρίς αλλαγή κατηγορίας" aria-label="Κατηγορία ή υποκατηγορία κανόνα" onChange={selection=>{setRuleCategory(selection.category);setRuleSubcategory(selection.subcategory)}}/></label>
+              <label className="rules-builder-note"><span>Σχόλιο αν είναι κενό <em>προαιρετικό</em></span><AppTextInput disabled={busy} value={ruleDefaultNote} placeholder="Δεν αντικαθιστά υπάρχον σχόλιο" onChange={event=>setRuleDefaultNote(event.target.value)}/></label>
+              <label><span>Πότε να λειτουργεί</span><AppSelectInput disabled={busy} aria-label="Πεδίο εφαρμογής κανόνα" value={ruleScope} onChange={event=>setRuleScope(event.target.value as TransactionRuleScopeChoice)}><option value="manual">Όταν την καταχωρίζω εγώ</option><option value="imported">Όταν έρχεται από εισαγωγή</option><option value="review">Όταν επιβεβαιώνεται από έλεγχο</option><option value="manual+imported">Καταχώριση και εισαγωγή</option><option value="manual+review">Καταχώριση και έλεγχος</option><option value="imported+review">Εισαγωγή και έλεγχος</option><option value="all">Σε κάθε νέα υποστηριζόμενη κίνηση</option></AppSelectInput></label>
             </div>
           </fieldset>
         </div>

@@ -241,10 +241,30 @@ try{
   await clickAria('Διαγραφή αυτοματισμού QA Priority First');
   await waitFor("function(){return Boolean(document.querySelector('.app-confirm-dialog'))}",'delete warning dialog');
   await clickText('.app-confirm-dialog button','Διαγραφή κανόνα');
-  await waitFor("function(){return (document.querySelector('.app-confirm-dialog')?.textContent||'').includes('Η δοκιμαστική αποθήκευση απέτυχε.')}",'rejected delete retains confirmation and error');
+  await waitFor("function(){return (document.querySelector('.app-confirm-dialog .form-error[role=alert]')?.textContent||'').includes('Η δοκιμαστική αποθήκευση απέτυχε.')}",'rejected delete retains confirmation and announces error');
   assert(await c.call("function(){return document.querySelectorAll('.rule-settings-list article').length===2}"),'rejected delete retains both Rules');
   await screenshot('settings-rules-rejected-delete-desktop');
   await clickAria('Κλείσιμο επιβεβαίωσης');
+
+  console.log('Budget/Rules QA: fields freeze while exact Rules mutation is pending');
+  const pendingUrl=new URL(urlFor('settings','rules-priority-boundary'));
+  pendingUrl.searchParams.set('rules-save-pending','1');
+  await viewport(1440,1000);
+  await c.send('Page.navigate',{url:pendingUrl.href});
+  await waitFor("function(){return Boolean(document.querySelector('.settings-tablist'))}",'Rules pending-receipt fixture');
+  await clickText('.settings-tablist button','Κανόνες');
+  await openRuleEditor();
+  await setLabelInput('Όνομα αυτοματισμού','QA Pending Rule');
+  await setLabelInput('Κείμενο περιγραφής','QA Priority');
+  await clickText('[data-rule-editor] .save-button','Δημιουργία κανόνα');
+  await waitFor("function(){return Boolean(globalThis.__myfinhubQaCompleteRulesReceipt)&&Boolean(document.querySelector('[data-rule-editor] button:disabled'))}",'pending Rules durable receipt');
+  assert(await c.call("function(){const root=document.querySelector('[data-rule-editor]');const fields=[...(root?.querySelectorAll('input')||[])];return Boolean(root)&&fields.length>=8&&fields.every(field=>field.disabled)&&[...root.querySelectorAll('.editor-actions button')].every(button=>button.disabled)}"),'all shared Rules fields and actions are disabled until receipt');
+  assert(await c.call("function(){return document.querySelectorAll('.rule-settings-list article').length===2}"),'pending create does not mutate history before receipt');
+  await screenshot('settings-rules-pending-receipt-desktop');
+  const releaseReceipt=await c.call("function(){const release=globalThis.__myfinhubQaCompleteRulesReceipt;if(!release)return false;delete globalThis.__myfinhubQaCompleteRulesReceipt;release();return true}");
+  assert(releaseReceipt,'pending Rules save can be committed explicitly');
+  await waitFor("function(){return !document.querySelector('[data-rule-editor]')&&[...document.querySelectorAll('.rule-settings-list article')].some(row=>(row.textContent||'').includes('QA Pending Rule'))}",'pending Rule closes only after receipt');
+  await screenshot('settings-rules-receipt-committed-desktop');
 
   await navigate('reports','empty',320,700);
   assert(await c.call("function(){return (document.querySelector('[data-budget-management]')?.textContent||'').includes('Δεν υπάρχουν προϋπολογισμοί')}"),'reports no-budget state');
