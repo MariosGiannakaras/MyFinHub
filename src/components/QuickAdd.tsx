@@ -49,7 +49,7 @@ const intentStyle=(intent:EntryIntent)=>({'--quick-intent-bg':intentTones[intent
 const genericKinds=ENTRY_INTENTS.map(item=>({...item,icon:intentIcons[item.intent]}));
 const labelForKind=(kind:EventKind)=>genericKinds.find(item=>item.kind===kind)?.label||'Κίνηση';
 
-export function QuickAdd({ open, data, asOf, initial, initialKind='expense', prefill=null, motionMode='system', onClose, onCreate, currentBalance }: { open:boolean; data:FinanceData; asOf:string; initial?:FinanceEvent|null; initialKind?:EventKind; prefill?:QuickPrefill|null; motionMode?:'system'|'reduced'|'full'; onClose:()=>void; onCreate:(event:FinanceEvent)=>void; currentBalance:(accountId:string)=>number }) {
+export function QuickAdd({ open, data, asOf, initial, initialKind='expense', prefill=null, motionMode='system', onClose, onCreate, currentBalance }: { open:boolean; data:FinanceData; asOf:string; initial?:FinanceEvent|null; initialKind?:EventKind; prefill?:QuickPrefill|null; motionMode?:'system'|'reduced'|'full'; onClose:()=>void; onCreate:(event:FinanceEvent)=>Promise<void>; currentBalance:(accountId:string)=>number }) {
   const accounts = allAccounts(data).filter(a=>a.kind!=='credit');
   const quickAccounts = accounts.filter(account=>account.showInQuickChoices!==false);
   const accountIds = useMemo(()=>new Set(accounts.map(account=>account.id)),[accounts]);
@@ -72,6 +72,7 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
   const [actualBalance,setActualBalance]=useState('');
   const [parts,setParts]=useState<SplitPart[]>([{id:'p1',label:'',category:data.state.settings.expenseCategories[0]||'Άλλο',amount:0},{id:'p2',label:'',category:data.state.settings.expenseCategories[1]||data.state.settings.expenseCategories[0]||'Άλλο',amount:0}]);
   const [error,setError]=useState('');
+  const [saving,setSaving]=useState(false);
   const [dirty,setDirty]=useState(false);
   const [discardOpen,setDiscardOpen]=useState(false);
   const categoryKind=kind==='income'?'income':'expense';
@@ -122,7 +123,7 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
   const lendingLike=['lending','repayment'].includes(kind);
   const mark=()=>setDirty(true);
   const filled=(value:string|number|undefined)=>String(value??'').trim()?'true':'false';
-  const requestClose=()=>{if(dirty){setDiscardOpen(true);return}onClose()};
+  const requestClose=()=>{if(saving)return;if(dirty){setDiscardOpen(true);return}onClose()};
   const confirmDiscard=()=>{setDiscardOpen(false);onClose()};
   useEffect(()=>{
     if(!open||discardOpen||kind!=='split')return;
@@ -138,7 +139,8 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
     if(next==='saving_cash_offset'){setFrom(savingDefaults.from);setTo(savingDefaults.to)}
     if(next==='withdrawal'){setFrom(transferDefaults.from);setTo(accounts.find(account=>account.kind==='cash'&&account.id!==transferDefaults.from)?.id||transferDefaults.to)}
   };
-  const submit=()=>{
+  const submit=async()=>{
+    if(saving)return;
     try{
       const draftError=entryDraftError(kind,{amount,person,actualBalance,parts});
       if(draftError) throw new Error(draftError);
@@ -167,8 +169,11 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
       }
       if(kind!=='split')event.subcategory=subcategory||undefined;
       if(initial){event.id=initial.id;event.createdAt=initial.createdAt;event.updatedAt=new Date().toISOString();preserveLoanPaymentLink(event,initial)}
-      onCreate(event); reset(); onClose();
+      setSaving(true);
+      await onCreate(event);
+      reset();onClose();
     }catch(e){setError(userErrorMessage(e,'Δεν μπορέσαμε να καταχωρίσουμε την κίνηση. Έλεγξε τα στοιχεία και δοκίμασε ξανά.'))}
+    finally{setSaving(false)}
   };
 
   const accountOptions=(current:string,pool=accounts)=>{
@@ -176,10 +181,10 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
     return current&&!poolIds.has(current)?<><option value={current} disabled>{accountIds.has(current)?accountDisplayName(data,current):`Μη διαθέσιμος · ${accountDisplayName(data,current)}`}</option>{pool.map(a=><option key={a.id} value={a.id}>{accountDisplayName(data,a.id)}</option>)}</>:pool.map(a=><option key={a.id} value={a.id}>{accountDisplayName(data,a.id)}</option>);
   };
 
-  return <><DialogShell open={open} className="generic-quick-modal" ariaLabelledBy="quick-add-title" ariaDescribedBy="quick-add-description" motionMode={motionMode} preferredFocus='[data-autofocus="true"]' focusActive={!discardOpen} onRequestClose={requestClose}>
-      <header><div><small>{initial?'ΕΠΕΞΕΡΓΑΣΙΑ':'ΓΡΗΓΟΡΗ ΚΙΝΗΣΗ'}</small><h2 id="quick-add-title">{initial?'Επεξεργασία κίνησης':'Τι θέλεις να καταγράψεις;'}</h2><p id="quick-add-description">Διάλεξε την ενέργεια που έκανες. Εξειδικευμένες ροές για κάρτες, δόσεις, δάνεια και πάγια συνεχίζουν να ανοίγουν από το αντίστοιχο πλαίσιο.</p></div><IconButton type="button" aria-label="Κλείσιμο καταχώρισης" onClick={requestClose}><X/></IconButton></header>
-      {genericKinds.some(item=>item.kind===kind)?<div className="kind-grid generic-kind-grid" role="group" aria-label="Τι θέλεις να καταγράψεις">{genericKinds.map(k=><button type="button" key={k.kind} className={kind===k.kind?'active':''} aria-pressed={kind===k.kind} onClick={()=>chooseKind(k.kind)}><span style={intentStyle(k.intent)}>{k.icon}</span><b>{k.label}</b><small>{k.description}</small></button>)}</div>:null}
-      <div className="entry-body">
+  return <><DialogShell open={open} busy={saving} className="generic-quick-modal" ariaLabelledBy="quick-add-title" ariaDescribedBy="quick-add-description" motionMode={motionMode} preferredFocus='[data-autofocus="true"]' focusActive={!discardOpen} onRequestClose={requestClose}>
+      <header><div><small>{initial?'ΕΠΕΞΕΡΓΑΣΙΑ':'ΓΡΗΓΟΡΗ ΚΙΝΗΣΗ'}</small><h2 id="quick-add-title">{initial?'Επεξεργασία κίνησης':'Τι θέλεις να καταγράψεις;'}</h2><p id="quick-add-description">Διάλεξε την ενέργεια που έκανες. Εξειδικευμένες ροές για κάρτες, δόσεις, δάνεια και πάγια συνεχίζουν να ανοίγουν από το αντίστοιχο πλαίσιο.</p></div><IconButton type="button" aria-label="Κλείσιμο καταχώρισης" disabled={saving} onClick={requestClose}><X/></IconButton></header>
+      {genericKinds.some(item=>item.kind===kind)?<div className="kind-grid generic-kind-grid" inert={saving} role="group" aria-label="Τι θέλεις να καταγράψεις">{genericKinds.map(k=><button type="button" key={k.kind} className={kind===k.kind?'active':''} aria-pressed={kind===k.kind} onClick={()=>chooseKind(k.kind)}><span style={intentStyle(k.intent)}>{k.icon}</span><b>{k.label}</b><small>{k.description}</small></button>)}</div>:null}
+      <div className="entry-body" inert={saving}>
         {kind==='expense'?<div className="frequent-strip"><span>Συχνά</span>{frequent.slice(0,6).map(f=><button type="button" key={f.label} onClick={()=>{const preset=structuredPresetFromFrequent(f);setAmount(String(preset.amount));setCategory(preset.category||category);setSubcategory(preset.subcategory||'');if(preset.accountId&&quickAccounts.some(account=>account.id===preset.accountId))setAccountId(preset.accountId);mark()}}><FinanceIcon settings={data.state.settings} kind="expense" note={f.label} category={f.category} size={14}/><span>{f.label}</span><small>{money.format(f.lastAmount)}</small></button>)}</div>:null}
         <div className="form-grid">
           {kind!=='reconciliation'&&kind!=='split'?<label className="quick-field" data-filled={filled(amount)}><span>Ποσό</span><MoneyInput data-autofocus="true" value={amount} onValueChange={value=>{setAmount(value);mark()}}/></label>:null}
@@ -194,7 +199,7 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
         {kind==='split'?<div className="split-box"><div className="split-head"><b>Επιμέρους ποσά</b><span aria-live="polite">Σύνολο: {money.format(splitStatus?.total??0)}</span></div>{parts.map((p,i)=>{const subs=subcategoriesFor(data.state.settings,'expense',p.category);return <div className="split-line split-line-taxonomy" key={p.id} role="group" aria-label={`Μέρος ${i+1}`}><input aria-label={`Περιγραφή μέρους ${i+1}`} placeholder="Περιγραφή" value={p.label} onChange={e=>{setParts(ps=>ps.map((x,j)=>j===i?{...x,label:e.target.value}:x));mark()}}/><AppSelectInput aria-label={`Κατηγορία μέρους ${i+1}`} value={p.category} onChange={e=>{setParts(ps=>ps.map((x,j)=>j===i?{...x,category:e.target.value,subcategory:undefined}:x));mark()}}>{genericCategoryTree(data.state.settings,'expense').map(c=><option key={c.name}>{c.name}</option>)}</AppSelectInput>{subs.length?<AppSelectInput aria-label={`Υποκατηγορία μέρους ${i+1}`} value={p.subcategory||''} onChange={e=>{setParts(ps=>ps.map((x,j)=>j===i?{...x,subcategory:e.target.value||undefined}:x));mark()}}><option value="">—</option>{subs.map(value=><option key={value}>{value}</option>)}</AppSelectInput>:null}<input data-autofocus={i===0?true:undefined} aria-label={`Ποσό μέρους ${i+1}`} inputMode="decimal" placeholder="0,00" value={p.amount||''} onChange={e=>{const parsed=Number(e.target.value.replace(',','.'));setParts(ps=>ps.map((x,j)=>j===i?{...x,amount:Number.isFinite(parsed)?parsed:0}:x));mark()}}/><button type="button" aria-label={`Αφαίρεση μέρους ${i+1}`} disabled={parts.length<=2} onClick={()=>{setParts(ps=>ps.filter((_,j)=>j!==i));mark()}}><X size={15}/></button></div>})}<Button type="button" variant="ghost" onClick={()=>{setParts(ps=>[...ps,{id:`p${Date.now()}`,label:'',category:genericCategoryTree(data.state.settings,'expense')[0]?.name||'Άλλο',amount:0}]);mark()}}>+ Προσθήκη μέρους</Button></div>:null}
         {error?<FormError id="quick-add-error">{error}</FormError>:null}
       </div>
-      <footer><Button type="button" variant="secondary" onClick={requestClose}>Ακύρωση</Button><Button type="button" variant="primary" onClick={submit}><Check size={17}/> {initial?'Εφαρμογή αλλαγών':'Καταχώριση'}</Button></footer>
+      <footer><Button type="button" variant="secondary" disabled={saving} onClick={requestClose}>Ακύρωση</Button><Button type="button" variant="primary" disabled={saving} onClick={()=>void submit()}><Check size={17}/> {saving?'Αποθήκευση…':initial?'Εφαρμογή αλλαγών':'Καταχώριση'}</Button></footer>
   </DialogShell>
   <ConfirmDialog open={discardOpen} title="Απόρριψη μη αποθηκευμένων αλλαγών;" description="Έχεις αλλαγές που δεν έχουν αποθηκευτεί. Αν κλείσεις τώρα την καταχώριση, αυτές οι αλλαγές θα χαθούν." confirmLabel="Απόρριψη" tone="destructive" motionMode={motionMode} onConfirm={confirmDiscard} onCancel={()=>setDiscardOpen(false)}/>
   </>;

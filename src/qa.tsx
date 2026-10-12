@@ -359,6 +359,14 @@ function QaWorkspace(){
   const refresh=()=>{setSaveState('loading');window.setTimeout(()=>setSaveState('saved'),350)};
   const importData=(incoming:FinanceData)=>{setUndoStack(stack=>[...stack.slice(-19),data]);setRedoStack([]);setData(incoming)};
   const addEvent=(event:FinanceEvent)=>update(current=>{const events=current.state.events??[];const exists=events.some(existing=>existing.id===event.id);const nextEvent=exists?event:applyTransactionRules(current,event);return {...current,state:{...current.state,events:exists?events.map(existing=>existing.id===event.id?nextEvent:existing):[...events,nextEvent]}}});
+  const addEventDurably=async(event:FinanceEvent)=>{
+    const params=new URLSearchParams(location.search);
+    if(params.get('quick-event-save-failure')==='1')throw new Error('Η δοκιμαστική αποθήκευση κίνησης απέτυχε.');
+    if(params.get('quick-event-save-pending')==='1')await new Promise<void>(resolve=>{
+      (globalThis as typeof globalThis & {__myfinhubQaCompleteQuickEventReceipt?:()=>void}).__myfinhubQaCompleteQuickEventReceipt=resolve;
+    });
+    addEvent(event);
+  };
   const deleteEvent=(id:string)=>update(current=>({...current,state:{...current.state,events:(current.state.events??[]).filter(e=>e.id!==id)}}));
   const editEvent=(id:string)=>{const event=(data.state.events??[]).find(item=>item.id===id);setEditing(id);setQuickContext({token:quickToken(),mode:'generic',kind:event?.kind||'expense',prefill:null});setQuickOpen(true)};
   const editLegacy=(transaction:LegacyTransaction)=>update(current=>withLegacyOverride(current,transaction));
@@ -484,7 +492,7 @@ function QaWorkspace(){
       {saveState==='loading'?<div className="qa-loading-route"><h1 className="sr-only">{QA_PAGE_HEADINGS[page]}</h1><PageSkeleton/></div>:<PageErrorBoundary resetKey={page} onDashboard={()=>{setCrash(false);setPage('dashboard')}}>{lazyFailure?<Suspense fallback={<PageSkeleton/>}><LazyResourceFailure/></Suspense>:crash?<Crash/>:content}</PageErrorBoundary>}
     </AppShell>
     <CommandPalette open={commandOpen} data={data} asOf={today} motionMode="full" onClose={()=>setCommandOpen(false)} onExecute={handleCommand}/>
-    <ContextualQuickAdd open={quickOpen} data={data} asOf={today} context={quickContext} initial={(data.state.events??[]).find(event=>event.id===editing)||null} motionMode="full" onClose={()=>{setQuickOpen(false);setEditing(null);setQuickContext(null)}} onCreate={addEvent} onCompleteScheduled={completeScheduled} currentBalance={id=>accountBalances(data,today)[id]||0}/>
+    <ContextualQuickAdd open={quickOpen} data={data} asOf={today} context={quickContext} initial={(data.state.events??[]).find(event=>event.id===editing)||null} motionMode="full" onClose={()=>{setQuickOpen(false);setEditing(null);setQuickContext(null)}} onCreate={addEventDurably} onCompleteScheduled={completeScheduled} currentBalance={id=>accountBalances(data,today)[id]||0}/>
     <ConfirmDialog open={recoverOpen} title="Φόρτωση τελευταίας αποθηκευμένης έκδοσης;" description="Η επαναφόρτωση θα απορρίψει τυχόν τοπικές αλλαγές που δεν αποθηκεύτηκαν και θα φορτώσει την τελευταία έκδοση από τη βάση." confirmLabel="Επαναφόρτωση" tone="destructive" motionMode="full" onConfirm={()=>{setRecoverOpen(false);setSaveState('saved')}} onCancel={()=>setRecoverOpen(false)}/>
   </>;
 }

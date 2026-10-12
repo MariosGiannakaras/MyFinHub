@@ -321,6 +321,32 @@ try{
   await noOverflow('rejected Savings without bank on mobile');
   await screenshot('savings-no-operating-bank-rejected-mobile');
 
+  console.log('Budget/Rules QA: rejected and pending exact Quick Entry receipts');
+  const quickEntryReceiptUrl=(value)=>{const url=new URL(urlFor('savings','budget-rules'));url.searchParams.set(value,'1');return url.href};
+  await c.send('Page.navigate',{url:quickEntryReceiptUrl('quick-event-save-failure')});
+  await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}",'rejected Quick Entry receipt fixture');
+  await clickAria('Γρήγορη προσθήκη');
+  await setLabelInput('Ποσό','26');
+  await setLabelInput('Σχόλιο','QA Failed Durable Entry');
+  await clickText('.generic-quick-modal footer button','Καταχώριση');
+  await waitFor("function(){return (document.querySelector('#quick-add-error[role=alert]')?.textContent||'').includes('δοκιμαστική αποθήκευση')}",'rejected Quick Entry receipt error');
+  assert(await c.call("function(){return Boolean(document.querySelector('.generic-quick-modal'))&&[...document.querySelectorAll('.generic-quick-modal label')].some(label=>(label.querySelector(':scope > span')?.textContent||'').includes('Σχόλιο')&&label.querySelector('input')?.value==='QA Failed Durable Entry')}"),'rejected receipt keeps current unsaved Quick Entry draft');
+  await screenshot('quick-entry-finance-receipt-failure-desktop');
+  await viewport(390,844);
+  await noOverflow('Quick Entry rejected receipt mobile');
+  await screenshot('quick-entry-finance-receipt-failure-mobile');
+  await viewport(1440,1000);
+  await c.send('Page.navigate',{url:quickEntryReceiptUrl('quick-event-save-pending')});
+  await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}",'pending Quick Entry receipt fixture');
+  await clickAria('Γρήγορη προσθήκη');
+  await setLabelInput('Ποσό','26');
+  await clickText('.generic-quick-modal footer button','Καταχώριση');
+  await waitFor("function(){const dialog=document.querySelector('.generic-quick-modal[aria-busy=true]');return Boolean(dialog?.querySelector('footer button:last-child')?.disabled)}",'pending Quick Entry receipt locks form');
+  assert(await c.call("function(){return Boolean(document.querySelector('.generic-quick-modal'))&&document.querySelector('.generic-quick-modal header button[aria-label]')?.disabled===true}"),'Quick Entry remains open while receipt is pending');
+  await screenshot('quick-entry-finance-receipt-pending-desktop');
+  await c.call("function(){globalThis.__myfinhubQaCompleteQuickEventReceipt?.();return true}");
+  await waitFor("function(){return !document.querySelector('.generic-quick-modal')}",'Quick Entry dismissed only after finance receipt');
+
   console.log('Budget/Rules QA: a historic personal goal deadline survives an unrelated edit');
   await navigate('savings','savings-expired-goal',1440,1000);
   await waitFor("function(){return [...document.querySelectorAll('.savings-goals-desktop .savings-goal-row.personal')].some(row=>(row.textContent||'').includes('QA Expired Goal'))}",'expired goal fixture');

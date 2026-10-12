@@ -26,7 +26,7 @@ export function ReceiptAwareQuickAdd({
   prefill?: QuickPrefill | null;
   motionMode?: 'system' | 'reduced' | 'full';
   onClose: () => void;
-  onCreate: (event: FinanceEvent) => void;
+  onCreate: (event: FinanceEvent) => Promise<void>;
   currentBalance: (accountId: string) => number;
 }) {
   const [receiptOpen, setReceiptOpen] = useState(false);
@@ -70,8 +70,9 @@ export function ReceiptAwareQuickAdd({
     setReceiptSession((value) => value + 1);
   };
 
-  const create = (event: FinanceEvent) => {
-    onCreate(event);
+  const create = async (event: FinanceEvent) => {
+    // The receipt draft is deleted only once its matching finance save succeeds.
+    await onCreate(event);
     if (receiptDraftId) {
       const handledId = receiptDraftId;
       setReceiptDraftId(null);

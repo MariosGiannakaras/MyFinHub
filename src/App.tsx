@@ -192,14 +192,16 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   if (!data) return <AppSkeleton/>;
   if (notFound) return <NotFoundPage onHome={() => navigate('dashboard', true)} onBack={() => { if (history.length > 1) history.back(); else navigate('dashboard', true); }}/>;
 
-  const addEvent = (event: FinanceEvent) => finance.update((current) => {
-    const events = current.state.events ?? [];
-    const exists = events.some((existing) => existing.id === event.id);
-    const ruledEvent = exists ? event : applyTransactionRules(current,event);
+  // One identical domain reducer for optimistic page handlers and receipt-aware entry.
+  const withEvent=(current:FinanceData,event:FinanceEvent):FinanceData=>{
+    const events=current.state.events??[];
+    const exists=events.some(existing=>existing.id===event.id);
+    const ruledEvent=exists?event:applyTransactionRules(current,event);
     const prepared=prepareCreditStatementEvent(current,ruledEvent);
-    const nextEvent=prepared.event;
-    return { ...current, state: { ...current.state, creditStatements:prepared.statements, events: exists ? events.map((existing) => existing.id === event.id ? nextEvent : existing) : [...events, nextEvent] } };
-  });
+    return {...current,state:{...current.state,creditStatements:prepared.statements,events:exists?events.map(existing=>existing.id===event.id?prepared.event:existing):[...events,prepared.event]}};
+  };
+  const addEvent=(event:FinanceEvent)=>finance.update(current=>withEvent(current,event));
+  const addEventDurably=(event:FinanceEvent)=>finance.updateDurably(current=>withEvent(current,event));
   const deleteEvent = (id: string) => finance.update((current) => ({ ...current, state: { ...current.state, events: (current.state.events ?? []).filter((event) => event.id !== id) } }));
   const editEvent = (id: string) => {
     const event = (data.state.events ?? []).find((item) => item.id === id);
@@ -362,7 +364,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
       {finance.saveState === 'loading' ? <PageSkeleton/> : <PageErrorBoundary resetKey={page} onDashboard={() => navigate('dashboard')}><Suspense fallback={<PageLoading/>}>{content}</Suspense></PageErrorBoundary>}
     </AppShell>
     {commandOpen ? <Suspense fallback={null}><CommandPalette open={commandOpen} data={data} asOf={today} motionMode="full" onClose={()=>setCommandOpen(false)} onExecute={handleCommand}/></Suspense> : null}
-    {quickOpen ? <Suspense fallback={null}><ContextualQuickAdd open={quickOpen} data={data} asOf={today} context={quickContext} motionMode="full" initial={(data.state.events ?? []).find((event) => event.id === editingEventId) || null} onClose={() => { setQuickOpen(false); setEditingEventId(null); setQuickContext(null); }} onCreate={addEvent} onCompleteScheduled={completeScheduled} currentBalance={balance}/></Suspense> : null}
+    {quickOpen ? <Suspense fallback={null}><ContextualQuickAdd open={quickOpen} data={data} asOf={today} context={quickContext} motionMode="full" initial={(data.state.events ?? []).find((event) => event.id === editingEventId) || null} onClose={() => { setQuickOpen(false); setEditingEventId(null); setQuickContext(null); }} onCreate={addEventDurably} onCompleteScheduled={completeScheduled} currentBalance={balance}/></Suspense> : null}
     {recoverOpen ? <Suspense fallback={null}><ConfirmDialog open title="Φόρτωση τελευταίας αποθηκευμένης έκδοσης;" description="Η επαναφόρτωση θα απορρίψει τυχόν τοπικές αλλαγές που δεν αποθηκεύτηκαν και θα φορτώσει την τελευταία έκδοση από τη βάση." confirmLabel="Επαναφόρτωση" tone="destructive" motionMode="full" onConfirm={confirmRecover} onCancel={()=>setRecoverOpen(false)}/></Suspense> : null}
   </>;
 }
