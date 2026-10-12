@@ -14,7 +14,8 @@ import type { QuickActionContext } from '../components/ContextualQuickAdd';
 import { useModalFocus } from '../hooks/useModalFocus';
 import { accountBalances, createEvent } from '../lib/domain';
 import { calendarMonthRange, dateOnlyToUtcDate, monthOnlyToUtcDate } from '../lib/dateOnly';
-import { financeAccountChoices, isSavingsAccount } from '../lib/accountSelection';
+import { financeAccountChoices, isSavingsAccount, isSavingContributionSource } from '../lib/accountSelection';
+import { defaultSavingContributionPair, savingContributionDraftError } from '../lib/ledgerFoundations';
 import { money, shortDate } from '../lib/format';
 import { SAVING_SOURCE_LABELS, operationalMonthlyFlow, savingsBreakdown, savingsHistoryPresentation } from '../lib/savings';
 import { reportingPeriodEndDate } from '../lib/reportingPeriod';
@@ -44,9 +45,8 @@ export function SavingsPage({data,month,asOf,onCreate,onQuickAdd,onSavingsTarget
   const progress=ratioPercent(rate,target);
   const accountChoices=financeAccountChoices(data);const accounts=accountChoices.accounts;
   const savingsAccounts=accounts.filter(isSavingsAccount);
-  const savingsIds=new Set(savingsAccounts.map(account=>account.id));
-  const sourceAccounts=accounts.filter(account=>!savingsIds.has(account.id));
-  const defaultFrom=accountChoices.operating?.id??'';
+  const sourceAccounts=accounts.filter(isSavingContributionSource);
+  const defaultFrom=defaultSavingContributionPair(data).from;
   const defaultTo=accountChoices.dashboardSavings?.id??accountChoices.savings?.id??'';
   const sourceName=defaultFrom?accountDisplayName(data,defaultFrom):'Δεν έχει οριστεί';
   const savingsName=defaultTo?accountDisplayName(data,defaultTo):'Δεν έχει οριστεί';
@@ -180,6 +180,8 @@ export function SavingsPage({data,month,asOf,onCreate,onQuickAdd,onSavingsTarget
     if(!sourceAccounts.some(account=>account.id===from)){setError(sourceAccounts.length?'Ο λογαριασμός προέλευσης δεν είναι πλέον διαθέσιμος. Επίλεξε έναν από τους διαθέσιμους λογαριασμούς.':'Δεν υπάρχει διαθέσιμος λογαριασμός προέλευσης για αυτή την αποταμίευση.');return}
     if(!savingsAccounts.some(account=>account.id===to)){setError(savingsAccounts.length?'Ο λογαριασμός αποταμίευσης δεν είναι πλέον διαθέσιμος. Επίλεξε έναν από τους διαθέσιμους αποταμιευτικούς λογαριασμούς.':'Δεν υπάρχει διαθέσιμος λογαριασμός αποταμίευσης. Πρόσθεσε ή ενεργοποίησε έναν και δοκίμασε ξανά.');return}
     if(from===to){setError('Επίλεξε διαφορετικό λογαριασμό προέλευσης και αποταμίευσης.');return}
+    const savingError=savingContributionDraftError(data,{fromAccountId:from,toAccountId:to,amount:numeric});
+    if(savingError){setError(savingError);return}
     try{
       const event=createEvent({kind:'saving_cash_offset',date,amount:numeric,note:note.trim()||SAVING_SOURCE_LABELS[source],fromAccountId:from,toAccountId:to});
       event.savingSource=source;

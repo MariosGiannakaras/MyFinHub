@@ -281,7 +281,7 @@ try{
   const openSavingsSource=await c.call("function(){const row=[...document.querySelectorAll('.contextual-quick-modal label')].find(label=>(label.querySelector(':scope > span')?.textContent||'').trim()==='Από');const input=row?.querySelector('input[role=combobox]');input?.click();return Boolean(input)}");
   assert(openSavingsSource,'Savings source selector opens');
   await waitFor("function(){return Boolean(document.querySelector('.owned-select-popover [role=listbox]'))}",'bank Savings source alternatives');
-  assert(await c.call("function(){const labels=[...document.querySelectorAll('.owned-select-popover [role=option]')].map(item=>(item.textContent||'').trim());return labels.includes('Μισθοδοσία')&&['Ταμιευτηρίου','Αποθεματικό','Ταξίδια'].every(value=>!labels.includes(value))}"),'all bank-classified Savings accounts excluded from contribution sources');
+  assert(await c.call("function(){const labels=[...document.querySelectorAll('.owned-select-popover [role=option]')].map(item=>(item.textContent||'').trim());return labels.includes('Μισθοδοσία')&&['Ταμιευτηρίου','Αποθεματικό','Ταξίδια','Μετρητά'].every(value=>!labels.includes(value))}"),'all bank-classified Savings accounts excluded from contribution sources');
   await clickText('.owned-select-popover [role=option]','Μισθοδοσία');
   await screenshot('savings-bank-typed-target-contextual-desktop');
   await viewport(390,844);
@@ -300,7 +300,7 @@ try{
   const openedGenericSavingsSource=await c.call("function(){const field=[...document.querySelectorAll('.generic-quick-modal label')].find(row=>(row.querySelector(':scope > span')?.textContent||'').trim()==='Από');const input=field?.querySelector('input[role=combobox]');input?.click();return Boolean(input)}");
   assert(openedGenericSavingsSource,'generic Savings source selector opens');
   await waitFor("function(){return Boolean(document.querySelector('.owned-select-popover [role=listbox]'))}",'generic Savings source alternatives');
-  assert(await c.call("function(){const options=[...document.querySelectorAll('.owned-select-popover [role=option]')].map(row=>(row.textContent||'').trim());return options.includes('Μισθοδοσία')&&['Ταμιευτηρίου','Αποθεματικό','Ταξίδια'].every(value=>!options.includes(value))}"),'generic Savings excludes all bank-classified savings funding accounts');
+  assert(await c.call("function(){const options=[...document.querySelectorAll('.owned-select-popover [role=option]')].map(row=>(row.textContent||'').trim());return options.includes('Μισθοδοσία')&&['Ταμιευτηρίου','Αποθεματικό','Ταξίδια','Μετρητά'].every(value=>!options.includes(value))}"),'generic Savings excludes all bank-classified savings funding accounts');
   await clickText('.owned-select-popover [role=option]','Μισθοδοσία');
   await screenshot('savings-bank-typed-generic-quick-entry-desktop');
   await viewport(390,844);

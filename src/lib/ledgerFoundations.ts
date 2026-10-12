@@ -1,5 +1,5 @@
 import { allAccounts, createEvent } from './domain.js';
-import { financeAccountChoices, isSavingsAccount } from './accountSelection.js';
+import { financeAccountChoices, isSavingsAccount, isSavingContributionSource } from './accountSelection.js';
 import { centsToMoney, moneyToCents } from './money.js';
 import type { FinanceData, FinanceEvent, SplitPart } from '../types.js';
 
@@ -19,11 +19,16 @@ export function defaultTransferPair(data: FinanceData) {
   return { from, to };
 }
 
-/** Only explicitly tracked Savings contributions need a non-savings funding
- * source and a true savings destination. Ordinary transfers remain unrestricted. */
+/** Saving cash-offsets are bank(current/payroll) → savings, not wallet
+ * movements. A generic transfer may use any non-credit accounts. */
 export function defaultSavingContributionPair(data:FinanceData){
   const choices=financeAccountChoices(data);
-  return {from:choices.operating?.id??'',to:choices.savings?.id??''};
+  const candidates=choices.accounts.filter(isSavingContributionSource);
+  const preferred=[data.state.settings.defaultExpenseAccount,data.state.settings.defaultIncomeAccount];
+  const from=preferred.map(id=>candidates.find(account=>account.id===id)).find(Boolean)
+    ??candidates.find(account=>account.showInQuickChoices!==false)
+    ??candidates[0];
+  return {from:from?.id??'',to:choices.savings?.id??''};
 }
 
 export function savingContributionDraftError(data:FinanceData,draft:{fromAccountId:string;toAccountId:string;amount:number}){
@@ -32,7 +37,7 @@ export function savingContributionDraftError(data:FinanceData,draft:{fromAccount
   const accounts=transferEligibleAccounts(data);
   const source=accounts.find(account=>account.id===draft.fromAccountId)!;
   const target=accounts.find(account=>account.id===draft.toAccountId)!;
-  if(isSavingsAccount(source))return 'Η νέα αποταμίευση χρειάζεται πηγή εκτός αποταμιευτικού λογαριασμού.';
+  if(!isSavingContributionSource(source))return 'Η νέα αποταμίευση χρειάζεται τραπεζικό λογαριασμό μισθοδοσίας ή τρεχούμενο ως πηγή.';
   if(!isSavingsAccount(target))return 'Διάλεξε πραγματικό αποταμιευτικό λογαριασμό ως προορισμό.';
   return null;
 }

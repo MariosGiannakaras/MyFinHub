@@ -33,9 +33,12 @@ describe('Savings page action hierarchy',()=>{
   it('uses semantic savings metadata and the shared dense readability contract',()=>{
     expect(source).toContain('const savingsAccounts=accounts.filter(isSavingsAccount)');
     expect(contextual).toContain('const savingsTargets=accounts.filter(isSavingsAccount)');
-    expect(contextual).toContain('const savingsSources=accounts.filter(account=>!isSavingsAccount(account))');
+    expect(contextual).toContain('const savingsSources=accounts.filter(isSavingContributionSource)');
+    expect(source).toContain('const sourceAccounts=accounts.filter(isSavingContributionSource)');
+    expect(source).toContain('savingContributionDraftError(data,{fromAccountId:from,toAccountId:to,amount:numeric})');
     expect(selection).toContain("account.bankAccountCategory==='savings'");
     expect(genericQuick).toContain('savingContributionDraftError(data,');
+    expect(genericQuick).toContain('const savingSources=accounts.filter(isSavingContributionSource)');
     expect(genericQuick).toContain("accountOptions(from,kind==='saving_cash_offset'?savingSources:accounts)");
     expect(genericQuick).toContain("accountOptions(to,kind==='saving_cash_offset'?savingTargets:accounts)");
     expect(genericQuick).toContain("initial?.kind==='saving_cash_offset'");

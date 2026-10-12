@@ -12,7 +12,8 @@ import { IconButton } from './IconButton';
 import { MoneyInput } from './MoneyInput';
 import { RecurringBrandMark } from './RecurringBrandMark';
 import { allAccounts, createEvent } from '../lib/domain';
-import { isSavingsAccount } from '../lib/accountSelection';
+import { isSavingsAccount, isSavingContributionSource } from '../lib/accountSelection';
+import { savingContributionDraftError } from '../lib/ledgerFoundations';
 import { cardLabel, creditCards, creditDebtForCard } from '../lib/cards';
 import { creditStatementById, creditStatementEvents, recommendedPayableStatement } from '../lib/creditStatements';
 import { lendingOutstandingFor } from '../lib/lending';
@@ -50,10 +51,11 @@ function ContextModal({data,asOf,context,onClose,onCreate,onCompleteScheduled}:{
   const loan=context.mode==='loan'?loans.find(item=>item.id===context.loanId):undefined;
   const scheduled=context.mode==='scheduled'?pendingScheduled(data).find(item=>item.id===context.scheduledId):undefined;
   const sameBankAccounts=context.mode==='credit'&&card?accounts.filter(account=>accountMatchesFinancialProvider(account,card.bankId)):accounts;
-  // Bank-classified savings are destinations, never ordinary funding sources
-  // for a newly recorded Savings contribution.
+  // A newly counted Savings contribution is a bank operating → savings transfer.
+  // Cash and even other savings accounts may be used by ordinary transfers,
+  // but must not inflate freshly counted saving_cash_offset flow.
   const savingsTargets=accounts.filter(isSavingsAccount);
-  const savingsSources=accounts.filter(account=>!isSavingsAccount(account));
+  const savingsSources=accounts.filter(isSavingContributionSource);
   const initialAccount=context.mode==='credit'
     ?(sameBankAccounts.some(account=>account.id===context.fromAccountId)?context.fromAccountId!:sameBankAccounts[0]?.id||'')
     :context.mode==='lending'
@@ -152,7 +154,8 @@ function ContextModal({data,asOf,context,onClose,onCreate,onCompleteScheduled}:{
       }else{
         if(!savingsSources.some(account=>account.id===fromAccountId))throw new Error('Ο λογαριασμός προέλευσης δεν είναι πλέον διαθέσιμος.');
         if(!savingsTargets.some(account=>account.id===toAccountId))throw new Error('Ο αποταμιευτικός λογαριασμός δεν είναι πλέον διαθέσιμος.');
-        if(fromAccountId===toAccountId)throw new Error('Η μεταφορά χρειάζεται διαφορετικό λογαριασμό προέλευσης και αποταμίευσης.');
+        const savingError=savingContributionDraftError(data,{fromAccountId,toAccountId,amount:numeric});
+        if(savingError)throw new Error(savingError);
         event=createEvent({kind:'saving_cash_offset',date,amount:numeric,note:note.trim()||'Μεταφορά στην άκρη',fromAccountId,toAccountId});
         event.savingSource=context.savingSource??'manual_transfer';
       }

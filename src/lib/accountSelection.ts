@@ -6,6 +6,18 @@ export function isSavingsAccount(account:Pick<Account,'kind'|'bankAccountCategor
   return account.kind==='savings'||(account.kind==='bank'&&account.bankAccountCategory==='savings');
 }
 
+/** An explicitly booked new saving must originate from a bank operating account.
+ * Unknown legacy bank categories remain compatible with older imported data;
+ * a cash wallet, term deposit, payment-only account or savings account cannot
+ * be the origin of fresh saving_cash_offset flow. */
+export function isSavingContributionSource(account:Pick<Account,'kind'|'bankAccountCategory'>){
+  return account.kind==='bank'&&(
+    account.bankAccountCategory===undefined||
+    account.bankAccountCategory==='current'||
+    account.bankAccountCategory==='payroll'
+  );
+}
+
 type DashboardPrimaryRole='cash'|'payroll'|'savings';
 type DashboardPrimarySlot={role:DashboardPrimaryRole;label:string;account?:Account};
 

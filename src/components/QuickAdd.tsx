@@ -13,7 +13,7 @@ import { IconButton } from './IconButton';
 import { MoneyInput } from './MoneyInput';
 import { genericCategoryTree, subcategoriesFor } from '../lib/categories';
 import { allAccounts, createEvent, frequentDescriptions } from '../lib/domain';
-import { isSavingsAccount } from '../lib/accountSelection';
+import { isSavingsAccount, isSavingContributionSource } from '../lib/accountSelection';
 import { ENTRY_INTENTS, structuredPresetFromFrequent, type EntryIntent } from '../lib/entryIntents';
 import { entryDefaults, entryDraftError } from '../lib/inputSemantics';
 import {
@@ -55,7 +55,7 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
   const accountIds = useMemo(()=>new Set(accounts.map(account=>account.id)),[accounts]);
   const transferDefaults = useMemo(()=>defaultTransferPair(data),[data]);
   const savingDefaults=useMemo(()=>defaultSavingContributionPair(data),[data]);
-  const savingSources=accounts.filter(account=>!isSavingsAccount(account));
+  const savingSources=accounts.filter(isSavingContributionSource);
   const savingTargets=accounts.filter(isSavingsAccount);
   const fallbackAccount=quickAccounts[0]?.id||accounts[0]?.id||'cash';
   const frequent = useMemo(()=>frequentDescriptions(data,'expense',10),[data]);

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { financeAccountChoices, isSavingsAccount } from '../src/lib/accountSelection.js';
+import { financeAccountChoices, isSavingsAccount, isSavingContributionSource } from '../src/lib/accountSelection.js';
 import { qaFinanceData } from '../src/qaFixture.js';
 import { migrateData } from '../src/lib/domain.js';
 import type { FinanceData } from '../src/types.js';
@@ -89,6 +89,16 @@ describe('canonical account selection',()=>{
     expect(choices.savings?.id).toBe('bank-saving');
     expect(choices.operating?.id).toBe('current');
     expect(isSavingsAccount(choices.operating!)).toBe(false);
+  });
+
+  it('limits new Savings contribution sources to operational bank identities',()=>{
+    expect(isSavingContributionSource({kind:'bank',bankAccountCategory:'current'})).toBe(true);
+    expect(isSavingContributionSource({kind:'bank',bankAccountCategory:'payroll'})).toBe(true);
+    expect(isSavingContributionSource({kind:'bank'})).toBe(true);
+    expect(isSavingContributionSource({kind:'bank',bankAccountCategory:'savings'})).toBe(false);
+    expect(isSavingContributionSource({kind:'bank',bankAccountCategory:'term'})).toBe(false);
+    expect(isSavingContributionSource({kind:'cash'})).toBe(false);
+    expect(isSavingContributionSource({kind:'savings'})).toBe(false);
   });
 
   it('keeps a missing payroll slot explicit instead of substituting a current/default account',()=>{
