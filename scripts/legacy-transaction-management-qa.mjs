@@ -42,6 +42,9 @@ try{
  await waitFor("function(){return Boolean(document.querySelector('[role=alertdialog][aria-busy=true]'))&&Boolean(globalThis.__myfinhubQaCompleteTransactionReceipt)}",'pending tombstone receipt');
  assert(await c.call("function(){return Boolean(document.querySelector('[role=alertdialog] button:disabled'))&&[...document.querySelectorAll('[data-transaction-source=legacy]')].some(row=>(row.textContent||'').includes('Supermarket'))}"),'pending tombstone does not change history or close');
  await viewport(390,844);await noOverflow('pending legacy tombstone mobile');
+ // Screenshot acceptance requires a fully composed alertdialog, not the
+ // translucent intermediate frame of the shared Framer Motion entrance.
+ await waitFor("function(){const dialog=document.querySelector('[role=alertdialog]');const veil=dialog?.closest('.modal-backdrop');if(!dialog||!veil)return false;const alpha=Number(getComputedStyle(veil).opacity);const matrix=new DOMMatrixReadOnly(getComputedStyle(dialog).transform);return alpha>=0.98&&Math.abs(matrix.a-1)<0.005&&Math.abs(matrix.d-1)<0.005}",'settled mobile pending tombstone confirmation');
  await screenshot('legacy-transaction-receipt-pending-mobile');
  await c.call("function(){globalThis.__myfinhubQaCompleteTransactionReceipt?.();return true}");
  await waitFor("function(){return !document.querySelector('[role=alertdialog]')}",'tombstone closes after receipt');

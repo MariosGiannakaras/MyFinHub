@@ -37,6 +37,15 @@ describe('unified command palette source contracts',()=>{
     expect(shortcuts).toContain("dismiss: { label: 'Κλείσιμο παραθύρου / overlay'");
   });
 
+  it('mounts a named credit-card route on the exact requested active card without an initial wrong-card frame',()=>{
+    const credit=readFileSync(new URL('../src/pages/CreditCardPage.tsx',import.meta.url),'utf8');
+    expect(credit).toContain('const [selectedCardId,setSelectedCardId]=useState(()=>{');
+    expect(credit).toContain('commandCardId&&activeCredit.some(item=>item.id===commandCardId)');
+    expect(credit).toContain('?commandCardId');
+    expect(credit).toContain('setSelectedCardId(commandCardId)');
+    expect(qa).toContain("if(action.type==='credit_card_focus')");
+    expect(app).toContain("if(action.type==='credit_card_focus')");
+  });
   it('keeps keyboard focus on an accessible combobox with listbox active-descendant semantics',()=>{
     expect(palette).toContain('role="combobox"');
     expect(palette).toContain('aria-controls="command-results"');

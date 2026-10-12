@@ -50,7 +50,14 @@ export function CreditCardPage({
     statements:creditStatementViews(data,reference.id,asOf),
     events:creditEventsForCard(data,reference.id).sort((a,b)=>b.date.localeCompare(a.date)||b.createdAt.localeCompare(a.createdAt)||b.id.localeCompare(a.id)),
   })).filter(item=>item.events.length>0||item.statements.length>0),[data,deletedCredit,asOf]);
-  const [selectedCardId,setSelectedCardId]=useState('');
+  // A named credit-card command can mount this route from another page.
+  // Select its exact active card on the *initial* render, rather than first
+  // painting the oldest card and relying on a later effect to correct it.
+  const [selectedCardId,setSelectedCardId]=useState(()=>{
+    return commandCardId&&activeCredit.some(item=>item.id===commandCardId)
+      ?commandCardId
+      :(activeCredit[0]?.id??'');
+  });
   const processedCommandCardKey=useRef<number>(-1);
   const [purchaseSortDirection,setPurchaseSortDirection]=useState<SortDirection>('desc');
   const [paymentSortDirection,setPaymentSortDirection]=useState<SortDirection>('desc');
