@@ -66,6 +66,8 @@ describe('unified command palette source contracts',()=>{
     expect(rendered).toContain("!document.querySelector('.card-details-dialog')");
     expect(rendered).toContain("!document.querySelector('.contextual-quick-modal')");
     expect(rendered).toContain("await activateExactTitle('QA Visa')");
+    expect(rendered).toContain("await activateExactTitle('Ρυθμίσεις')");
+    expect(rendered).toContain("recents[0]==='navigate:settings'");
     expect(rendered).toContain("await activateOption('Ολοκλήρωση · Ετήσια ασφάλεια')");
     expect(rendered).toContain("await activateExactTitle('Προγραμματισμένη κίνηση 18')");
     expect(rendered).toContain("document.activeElement?.dataset.planningRow==='scheduled-extreme-17'");

@@ -44,8 +44,8 @@ describe('Command Palette source-to-selected-ledger reachability (DV-FB02/03)',(
     expect(ledger).toContain("current.searchParams.get('commandTx')!==focusId");
   });
   it('uses a one-time hint and actionable missing-entry state',()=>{
-    expect(ledger).toContain("nextUrl.searchParams.delete('commandTx')");
-    expect(ledger).toContain("nextUrl.searchParams.delete('commandMonth')");
+    expect(ledger).toContain("current.searchParams.delete('commandTx')");
+    expect(ledger).toContain("current.searchParams.delete('commandMonth')");
     expect(ledger).toContain("Η συναλλαγή δεν είναι πλέον διαθέσιμη");
     expect(browser).toContain('command-exact-historical-transaction');
     expect(browser).toContain('command-exact-transaction-same-route');
