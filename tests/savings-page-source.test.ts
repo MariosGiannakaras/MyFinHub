@@ -45,6 +45,11 @@ describe('Savings page action hierarchy',()=>{
     expect(loans).toContain('const savingsAccounts=accounts.filter(isSavingsAccount)');
     expect(loans).toContain('const selfLoanDestinations=accounts.filter(account=>!isSavingsAccount(account))');
     expect(ledger).toContain('defaultSavingContributionPair(data:FinanceData)');
+    const budgetRulesQa=readFileSync(new URL('../scripts/budget-rules-qa.mjs',import.meta.url),'utf8');
+    const qaWorkspace=readFileSync(new URL('../src/qa.tsx',import.meta.url),'utf8');
+    expect(qaWorkspace).toContain("params.get('state')==='savings-no-operating-bank'");
+    expect(budgetRulesQa).toContain('savings-no-operating-bank-rejected-desktop');
+    expect(budgetRulesQa).toContain('savings-no-operating-bank-rejected-mobile');
     expect(selection).toContain('const operatingPredicate=(account:Account)=>!isSavingsAccount(account)');
     expect(source).toContain('savingsGoalBalance(data,periodEndDate)');
     expect(source).toContain('accountChoices.dashboardSavings?.id??accountChoices.savings?.id');

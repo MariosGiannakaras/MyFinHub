@@ -260,6 +260,18 @@ function buildQaData(params:URLSearchParams){
       {id:'qa-rule-priority-max',name:'QA Priority Max',enabled:true,priority:1_000_000,scopes:['manual'],match:{description:'QA Priority',mode:'contains'},action:{category:'Άλλο'},createdAt:stamp,updatedAt:stamp},
     ];
   }
+  if(params.get('state')==='savings-no-operating-bank'){
+    // Every bank is a term deposit in this negative fixture, leaving only
+    // cash wallets and savings accounts. Neither can fund a new saving event.
+    next.state.settings.accountOverrides={
+      ...(next.state.settings.accountOverrides??{}),
+      ...Object.fromEntries(next.seed.accounts.filter(account=>account.kind==='bank').map(account=>[
+        account.id,{...account,bankAccountCategory:'term' as const},
+      ])),
+    };
+    next.state.settings.defaultExpenseAccount='cash';
+    next.state.settings.defaultIncomeAccount='cash';
+  }
   if(params.get('state')==='savings-bank-transfer'){
     // Every Savings account in this fixture uses bank taxonomy. A legacy
     // kind=savings fallback must not make the contextual selector proof pass.

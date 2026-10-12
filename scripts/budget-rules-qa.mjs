@@ -307,6 +307,20 @@ try{
   await noOverflow('generic savings Quick Entry mobile');
   await screenshot('savings-bank-typed-generic-quick-entry-mobile');
 
+  console.log('Budget/Rules QA: a missing operating bank cannot create fake Savings flow');
+  await navigate('savings','savings-no-operating-bank',1440,1000);
+  await clickAria('Γρήγορη προσθήκη');
+  await waitFor("function(){return Boolean(document.querySelector('.generic-quick-modal .generic-kind-grid'))}",'generic Quick Entry missing-bank fixture');
+  await clickText('.generic-kind-grid button','Αποταμίευση');
+  assert(await c.call("function(){const labels=[...document.querySelectorAll('.generic-quick-modal label')];const from=labels.find(node=>(node.querySelector(':scope > span')?.textContent||'').trim()==='Από');const list=from?.querySelector('input[role=combobox]');return Boolean(list)&&!list.value&&[...document.querySelectorAll('.generic-quick-modal label')].some(node=>(node.querySelector(':scope > span')?.textContent||'').trim()==='Προς')}"),'no bank source is fabricated from cash, terms or savings');
+  await setLabelInput('Ποσό','27');
+  await clickText('.generic-quick-modal footer button','Καταχώριση');
+  await waitFor("function(){const dialog=document.querySelector('.generic-quick-modal');return Boolean(dialog)&&((dialog.querySelector('#quick-add-error[role=alert]')?.textContent||'').includes('Διάλεξε υπαρκτό λογαριασμό προέλευσης'))}",'missing bank source announces failure without closing');
+  await screenshot('savings-no-operating-bank-rejected-desktop');
+  await viewport(390,844);
+  await noOverflow('rejected Savings without bank on mobile');
+  await screenshot('savings-no-operating-bank-rejected-mobile');
+
   console.log('Budget/Rules QA: a historic personal goal deadline survives an unrelated edit');
   await navigate('savings','savings-expired-goal',1440,1000);
   await waitFor("function(){return [...document.querySelectorAll('.savings-goals-desktop .savings-goal-row.personal')].some(row=>(row.textContent||'').includes('QA Expired Goal'))}",'expired goal fixture');
