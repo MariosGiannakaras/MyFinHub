@@ -33,6 +33,14 @@ describe('category budget and rule integration source contracts',()=>{
     expect(savings).toContain('await onSavingsTargetChange(numeric/100)');
     expect(savings).toContain('disabled={targetBusy}');
     expect(savings).toContain('setTargetError(userErrorMessage(error');
+    expect(app).toContain('const upsertSavingsGoal=(goal:SavingsGoal)=>finance.updateDurably');
+    expect(app).toContain('const deleteSavingsGoal=(id:string)=>finance.updateDurably');
+    expect(savings).toContain('await onUpsertGoal(');
+    expect(savings).toContain('await onDeleteGoal(deleteGoalTarget.id)');
+    expect(savings).toContain('error={deleteGoalError}');
+    expect(savings).toContain('disabled={goalBusy}');
+    expect(read('scripts/budget-rules-qa.mjs')).toContain('savings-goal-rejected-edit-desktop');
+    expect(read('scripts/budget-rules-qa.mjs')).toContain('savings-goal-pending-receipt-desktop');
     expect(settings).toContain('const saveRule=(rule:TransactionRule)=>');
     expect(settings).toContain('const deleteRule=(id:string)=>onFinanceDurably');
     expect(app).toContain('onFinanceDurably={finance.updateDurably}');

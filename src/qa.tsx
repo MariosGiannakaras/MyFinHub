@@ -260,6 +260,10 @@ function buildQaData(params:URLSearchParams){
       {id:'qa-rule-priority-max',name:'QA Priority Max',enabled:true,priority:1_000_000,scopes:['manual'],match:{description:'QA Priority',mode:'contains'},action:{category:'Άλλο'},createdAt:stamp,updatedAt:stamp},
     ];
   }
+  if(params.get('state')==='savings-goal-receipts'){
+    const stamp='2026-08-17T12:00:00.000Z';
+    next.state.savingsGoals=[{id:'qa-goal-receipts',name:'QA Original Goal',targetAmount:500,targetDate:null,createdAt:stamp,updatedAt:stamp}];
+  }
   if(params.get('state')==='budget-rules'||params.get('state')==='future-reporting'){
     const stamp='2026-08-17T12:00:00.000Z';
     const event=createEvent({kind:'expense',date:'2026-08-16',amount:90,note:'QA Market Match',category:'Σταθερά έξοδα',accountId:'piraeus-payroll'});event.createdAt=stamp;event.updatedAt=stamp;
@@ -359,8 +363,16 @@ function QaWorkspace(){
     if(params.get('savings-target-save-pending')==='1')await new Promise<void>(resolve=>{(globalThis as typeof globalThis & {__myfinhubQaCompleteSavingsReceipt?:()=>void}).__myfinhubQaCompleteSavingsReceipt=resolve});
     update(current=>({...current,state:{...current.state,settings:{...current.state.settings,savingsTargetRate:rate}}}));
   };
-  const upsertSavingsGoal=(goal:SavingsGoal)=>update(current=>{const rows=current.state.savingsGoals??[];const exists=rows.some(item=>item.id===goal.id);return {...current,state:{...current.state,savingsGoals:exists?rows.map(item=>item.id===goal.id?goal:item):[...rows,goal]}}});
-  const deleteSavingsGoal=(id:string)=>update(current=>({...current,state:{...current.state,savingsGoals:(current.state.savingsGoals??[]).filter(item=>item.id!==id)}}));
+  const upsertSavingsGoal=async(goal:SavingsGoal)=>{
+    const params=new URLSearchParams(location.search);
+    if(params.get('savings-goal-save-failure')==='1')throw new Error('Η δοκιμαστική αποθήκευση προσωπικού στόχου απέτυχε.');
+    if(params.get('savings-goal-save-pending')==='1')await new Promise<void>(resolve=>{(globalThis as typeof globalThis & {__myfinhubQaCompleteGoalReceipt?:()=>void}).__myfinhubQaCompleteGoalReceipt=resolve});
+    update(current=>{const rows=current.state.savingsGoals??[];const exists=rows.some(item=>item.id===goal.id);return {...current,state:{...current.state,savingsGoals:exists?rows.map(item=>item.id===goal.id?goal:item):[...rows,goal]}}});
+  };
+  const deleteSavingsGoal=async(id:string)=>{
+    if(new URLSearchParams(location.search).get('savings-goal-save-failure')==='1')throw new Error('Η δοκιμαστική διαγραφή προσωπικού στόχου απέτυχε.');
+    update(current=>({...current,state:{...current.state,savingsGoals:(current.state.savingsGoals??[]).filter(item=>item.id!==id)}}));
+  };
   const updateTaxonomy=(operation:TaxonomyOperation)=>update(current=>applyTaxonomyOperation(current,operation,today));
   const decideAttention=(id:string,decision:AttentionDecision)=>update(current=>({...current,state:{...current.state,attentionDecisions:{...(current.state.attentionDecisions??{}),[id]:decision}}}));
   const handleAttention=(item:AttentionItem)=>{

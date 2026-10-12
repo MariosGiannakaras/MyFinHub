@@ -273,6 +273,40 @@ try{
   await waitFor("function(){return ![...document.querySelectorAll('[data-savings-target-editor]')].some(el=>el.getClientRects().length>0)&&(document.querySelector('#main-workspace')?.textContent||'').includes('Στόχος 33%')}",'Savings target closes only after durable revision');
   await screenshot('savings-target-durable-receipt-desktop');
 
+  console.log('Budget/Rules QA: personal savings goal edit/delete retain state on failed durable write');
+  const goalFailUrl=new URL(urlFor('savings','savings-goal-receipts'));
+  goalFailUrl.searchParams.set('savings-goal-save-failure','1');
+  await viewport(1440,1000);await c.send('Page.navigate',{url:goalFailUrl.href});
+  await waitFor("function(){return [...document.querySelectorAll('.savings-goals-desktop .savings-goal-row.personal')].some(row=>(row.textContent||'').includes('QA Original Goal'))}",'seeded goal receipt fixture');
+  await clickText('.savings-goals-desktop .savings-goal-row.personal button','Επεξεργασία');
+  await setLabelInput('Όνομα στόχου','QA Rejected Goal');
+  await clickText('.savings-dialog .editor-actions button','Αποθήκευση στόχου');
+  await waitFor("function(){return (document.querySelector('.savings-dialog .form-error[role=alert]')?.textContent||'').includes('Η δοκιμαστική αποθήκευση προσωπικού στόχου απέτυχε.')}",'goal save rejection announced');
+  assert(await c.call("function(){return Boolean(document.querySelector('.savings-dialog input[data-goal-autofocus=true]')?.value==='QA Rejected Goal')&&[...document.querySelectorAll('.savings-goals-desktop .savings-goal-row.personal')].some(row=>(row.textContent||'').includes('QA Original Goal'))}"),'rejected goal edit leaves draft and original row');
+  await screenshot('savings-goal-rejected-edit-desktop');
+  await clickAria('Κλείσιμο στόχου');
+  await clickText('.savings-goals-desktop .savings-goal-row.personal button','Διαγραφή');
+  await waitFor("function(){return Boolean(document.querySelector('.app-confirm-dialog'))}",'goal delete confirmation');
+  await clickText('.app-confirm-dialog button','Διαγραφή');
+  await waitFor("function(){return (document.querySelector('.app-confirm-dialog .form-error[role=alert]')?.textContent||'').includes('Η δοκιμαστική διαγραφή προσωπικού στόχου απέτυχε.')}",'goal delete rejection announced');
+  assert(await c.call("function(){return [...document.querySelectorAll('.savings-goals-desktop .savings-goal-row.personal')].some(row=>(row.textContent||'').includes('QA Original Goal'))}"),'failed deletion retains original goal');
+  await screenshot('savings-goal-rejected-delete-desktop');
+
+  console.log('Budget/Rules QA: personal goal pending receipt freezes draft');
+  const goalPendingUrl=new URL(urlFor('savings','savings-goal-receipts'));
+  goalPendingUrl.searchParams.set('savings-goal-save-pending','1');
+  await c.send('Page.navigate',{url:goalPendingUrl.href});
+  await waitFor("function(){return [...document.querySelectorAll('.savings-goals-desktop .savings-goal-row.personal')].some(row=>(row.textContent||'').includes('QA Original Goal'))}",'pending personal goal fixture');
+  await clickText('.savings-goals-desktop .savings-goal-row.personal button','Επεξεργασία');
+  await setLabelInput('Όνομα στόχου','QA Committed Goal');
+  await clickText('.savings-dialog .editor-actions button','Αποθήκευση στόχου');
+  await waitFor("function(){return Boolean(globalThis.__myfinhubQaCompleteGoalReceipt)}",'personal goal receipt pending');
+  assert(await c.call("function(){const modal=document.querySelector('[aria-labelledby=savings-goal-editor-title]');return Boolean(modal)&&[...modal.querySelectorAll('input')].every(input=>input.disabled)&&[...modal.querySelectorAll('button')].every(btn=>btn.disabled)&&[...document.querySelectorAll('.savings-goals-desktop .savings-goal-row.personal')].some(row=>(row.textContent||'').includes('QA Original Goal'))}"),'pending personal goal freezes inputs and leaves original stored goal');
+  await screenshot('savings-goal-pending-receipt-desktop');
+  assert(await c.call("function(){const release=globalThis.__myfinhubQaCompleteGoalReceipt;if(!release)return false;delete globalThis.__myfinhubQaCompleteGoalReceipt;release();return true}"),'goal receipt explicitly released');
+  await waitFor("function(){return !document.querySelector('#savings-goal-editor-title')&&[...document.querySelectorAll('.savings-goals-desktop .savings-goal-row.personal')].some(row=>(row.textContent||'').includes('QA Committed Goal'))}",'personal goal committed after exact receipt');
+  await screenshot('savings-goal-durable-receipt-desktop');
+
   console.log('Budget/Rules QA: rejected Reports budget keeps the form and original persisted row');
   const rejectedBudgetUrl=new URL(urlFor('reports','budget-rules'));
   rejectedBudgetUrl.searchParams.set('budget-save-failure','1');
