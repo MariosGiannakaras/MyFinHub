@@ -54,7 +54,8 @@ describe('shared finance UI adoption contracts',()=>{
     expect(recurring).toMatch(/<span>Κάθε<\/span><AppTextInput type=\"number\"/);
     expect(loans).toMatch(/Αριθμός δόσεων<\/span><AppTextInput type=\"number\"/);
     expect(budgetRules).toContain('Προειδοποίηση %');
-    expect(budgetRules).toContain('<AppTextInput inputMode="decimal" value={budgetAlert}');
+    expect(budgetRules).toContain('<AppTextInput disabled={busy} inputMode="decimal" value={budgetAlert}');
+    expect(budgetRules).toContain('await onUpsertBudget(next)');
     expect(rulesWorkspace).toContain('priority:editingRule?.priority??nextPriority');
     expect(budgetRules).not.toContain('nextPriority');
     expect(budgetRules).not.toContain('<span>Προτεραιότητα</span>');

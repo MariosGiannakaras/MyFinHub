@@ -55,7 +55,8 @@ describe('DialogShell source contract',()=>{
     }
     expect(confirm).toContain('role="alertdialog"');
     expect(confirm).toContain('ariaLabelledBy={titleId}');
-    expect(confirm).toContain('ariaDescribedBy={descriptionId}');
+    expect(confirm).toContain('ariaDescribedBy={error?');
+    expect(confirm).toContain('${descriptionId} ${errorId}');
     expect(confirm).toContain("dataAttributes={{'data-tone':tone}}");
     expect(confirm).toContain('error?:string');
     expect(confirm).toContain('<FormError id={errorId}>{error}</FormError>');

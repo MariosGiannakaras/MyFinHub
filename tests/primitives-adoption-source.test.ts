@@ -58,7 +58,8 @@ describe('shared primitive adoption',()=>{
 
   it('uses shared text controls throughout Savings while preserving savings semantics',()=>{
     expect(savings).toContain("from '../components/AppTextInput'");
-    expect(savings).toContain('<AppTextInput inputMode="decimal" value={targetText}');
+    expect(savings).toContain('<AppTextInput disabled={targetBusy} inputMode="decimal" value={targetText}');
+    expect(savings).toContain('await onSavingsTargetChange(numeric/100)');
     expect(savings).toContain('<AppTextInput value={note}');
     expect(savings).toContain('event.savingSource=source');
     expect(savings).not.toMatch(/<input\b/);
