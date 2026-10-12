@@ -33,6 +33,10 @@ function orderedTransactionRules(data: FinanceData) {
 function transactionRuleMatches(rule: TransactionRule, event: FinanceEvent) {
   if (!rule.enabled || !categorizedKind(event)) return false;
   if (!rule.scopes.includes(eventScope(event))) return false;
+  // The canonical Rules editor selects expense categories only. A category or
+  // subcategory action must never reclassify income; omit it from preview and
+  // first-match precedence as well. Explicit note-only rules still match income.
+  if (event.kind === 'income' && (rule.action.category || rule.action.subcategory)) return false;
   const note = normalize(event.note);
   const description = normalize(rule.match.description);
   const merchant = normalize(rule.match.merchant);
@@ -63,9 +67,12 @@ export function applyTransactionRules(data: FinanceData, event: FinanceEvent) {
   const incomeDefault = data.state.settings.incomeCategories[0] || 'Άλλο';
   const genericDefault = event.kind === 'income' ? incomeDefault : expenseDefault;
   const categoryIsDefault = !event.category || event.category === genericDefault;
+  // Defence in depth for income taxonomies, even if a future caller changes
+  // preview/matching semantics. Expense categorization is never income taxonomy.
+  const expenseCategoryAction = event.kind !== 'income';
   const next: FinanceEvent = { ...event };
-  if (winner.action.category && categoryIsDefault) next.category = winner.action.category;
-  if (winner.action.subcategory && !event.subcategory && categoryIsDefault) next.subcategory = winner.action.subcategory;
+  if (expenseCategoryAction && winner.action.category && categoryIsDefault) next.category = winner.action.category;
+  if (expenseCategoryAction && winner.action.subcategory && !event.subcategory && categoryIsDefault) next.subcategory = winner.action.subcategory;
   if (winner.action.note && !event.note.trim()) next.note = winner.action.note;
   return next;
 }

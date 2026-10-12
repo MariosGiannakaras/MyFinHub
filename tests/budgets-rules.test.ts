@@ -125,6 +125,39 @@ describe('deterministic transaction rules',()=>{
     expect(applyTransactionRules(data,explicit)).toMatchObject({category:'Υγεία',subcategory:'Φαρμακείο'});
   });
 
+  it('never writes expense-only rule categories into income, including default income categories',()=>{
+    const data=clean();
+    const expenseRule=rule('expense-taxonomy',10,'salary','Τρόφιμα');
+    expenseRule.action.subcategory='Σούπερ Μάρκετ';
+    data.state.transactionRules=[expenseRule];
+    const income=createEvent({kind:'income',date:'2026-08-05',amount:950,note:'Salary deposit',category:data.state.settings.incomeCategories[0],accountId:'piraeus-payroll'});
+    data.state.events=[income];
+    const before=structuredClone(data.state.events);
+    expect(previewTransactionRules(data,income)).toEqual({winner:null,matches:[]});
+    expect(applyTransactionRules(data,income)).toBe(income);
+    expect(transactionRuleMatchingEvents(data,expenseRule)).toEqual([]);
+    const refund=createEvent({kind:'refund',date:'2026-08-06',amount:5,note:'Salary refund',category:data.state.settings.expenseCategories[0],accountId:'piraeus-payroll'});
+    expect(previewTransactionRules(data,refund).winner?.id).toBe('expense-taxonomy');
+    expect(applyTransactionRules(data,refund)).toMatchObject({category:'Τρόφιμα',subcategory:'Σούπερ Μάρκετ'});
+    expect(data.state.events).toEqual(before);
+  });
+
+  it('keeps income note-only rules reachable without being shadowed by expense category rules',()=>{
+    const data=clean();
+    const expenseRule=rule('category-first',1,'','Τρόφιμα');
+    expenseRule.match={accountId:'piraeus-payroll'};
+    const noteOnly:TransactionRule={...rule('note-fallback',2,'','Τρόφιμα'),match:{accountId:'piraeus-payroll'},action:{note:'Αυτόματη σημείωση'}};
+    data.state.transactionRules=[expenseRule,noteOnly];
+    const income=createEvent({kind:'income',date:'2026-08-05',amount:950,note:'',category:data.state.settings.incomeCategories[0],accountId:'piraeus-payroll'});
+    expect(previewTransactionRules(data,income).matches.map(row=>row.id)).toEqual(['note-fallback']);
+    expect(applyTransactionRules(data,income)).toMatchObject({category:data.state.settings.incomeCategories[0],note:'Αυτόματη σημείωση'});
+    const manualCategory={...income,category:'Άλλο'};
+    expect(applyTransactionRules(data,manualCategory)).toMatchObject({category:'Άλλο',note:'Αυτόματη σημείωση'});
+    const expense=createEvent({kind:'expense',date:'2026-08-05',amount:30,note:'Groceries',category:data.state.settings.expenseCategories[0],accountId:'piraeus-payroll'});
+    expect(previewTransactionRules(data,expense).winner?.id).toBe('category-first');
+    expect(applyTransactionRules(data,expense).category).toBe('Τρόφιμα');
+  });
+
   it('preserves budgets and rules through migration and defaults legacy state safely',()=>{
     const data=clean();data.state.budgets=[budget('food','category',100,'Τρόφιμα')];data.state.transactionRules=[rule('food',1,'market','Τρόφιμα')];
     expect(migrateProductData(data).state.budgets).toEqual(data.state.budgets);

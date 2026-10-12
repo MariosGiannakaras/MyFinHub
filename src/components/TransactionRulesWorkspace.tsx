@@ -149,7 +149,7 @@ export function TransactionRulesWorkspace({
       <div>
         <span className="rules-workspace-kicker">ΑΥΤΟΜΑΤΗ ΤΑΞΙΝΟΜΗΣΗ</span>
         <h2>Κανόνες νέων κινήσεων</h2>
-        <p>Όρισε απλούς κανόνες «όταν → τότε». Εφαρμόζονται μόνο σε νέες κινήσεις και δεν αλλάζουν το ιστορικό.</p>
+        <p>Όρισε απλούς κανόνες «όταν → τότε». Εφαρμόζονται μόνο σε νέες κινήσεις και δεν αλλάζουν το ιστορικό. Οι κατηγορίες αφορούν έξοδα, επιστροφές και αγορές κάρτας· τα έσοδα διατηρούν τη δική τους κατηγορία.</p>
       </div>
       <Button type="button" variant="primary" className="rules-new-button" onClick={startCreate}><Plus size={17}/> Νέος κανόνας</Button>
     </header>

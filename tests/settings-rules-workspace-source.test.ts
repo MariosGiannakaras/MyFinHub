@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 const read=(path:string)=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const workspace=read('src/components/TransactionRulesWorkspace.tsx');
+const ruleEngine=read('src/lib/transactionRules.ts');
 const categorySelect=read('src/components/CategorySelectInput.tsx');
 const settings=read('src/pages/SettingsPage.tsx');
 const rendered=read('scripts/budget-rules-qa.mjs');
@@ -36,6 +37,14 @@ describe('Settings Rules workspace source contract',()=>{
     expect(categorySelect).toContain('data-option-level="subcategory"');
     expect(workspace).not.toContain('First match wins');
     expect(workspace).not.toContain('Προτεραιότητα');
+  });
+
+  it('uses expense-only taxonomy without accidentally reclassifying income',()=>{
+    expect(workspace).toContain("categoryTree(data.state.settings,'expense')");
+    expect(workspace).toContain('τα έσοδα διατηρούν τη δική τους κατηγορία');
+    expect(ruleEngine).toContain("event.kind === 'income' && (rule.action.category || rule.action.subcategory)");
+    expect(ruleEngine).toContain('expenseCategoryAction && winner.action.category');
+    expect(ruleEngine).toContain('expenseCategoryAction && winner.action.subcategory');
   });
 
   it('keeps rule order, pause, edit and invalid-state controls explicit',()=>{

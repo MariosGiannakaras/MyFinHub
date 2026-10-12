@@ -394,6 +394,27 @@
         "tests/semantic-validation.test.ts",
         "tests/finance-semantic-validation.test.ts"
       ]
+    },
+    {
+      "id": "FP-021",
+      "title": "Rules action taxonomy must match eligible transaction kinds and preview precedence",
+      "category": "domain-data",
+      "severity": "high",
+      "rootCause": "The only active automation editor offered expense categories but its shared matching engine also applied expense category/subcategory actions to default-category income events; preview and first-match ordering could falsely match income.",
+      "prevention": "Reject income matches for expense category/subcategory rules, preserve note-only income rules and current history, and ensure preview, first-match and apply share the eligibility rule.",
+      "paths": [
+        "src/lib/transactionRules.ts",
+        "src/components/TransactionRulesWorkspace.tsx",
+        "tests/budgets-rules.test.ts",
+        "tests/settings-rules-workspace-source.test.ts"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/pull/548"
+      ],
+      "guards": [
+        "tests/budgets-rules.test.ts",
+        "tests/settings-rules-workspace-source.test.ts"
+      ]
     }
   ]
 }
