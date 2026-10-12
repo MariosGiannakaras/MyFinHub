@@ -13,12 +13,15 @@ import { IconButton } from './IconButton';
 import { MoneyInput } from './MoneyInput';
 import { genericCategoryTree, subcategoriesFor } from '../lib/categories';
 import { allAccounts, createEvent, frequentDescriptions } from '../lib/domain';
+import { isSavingsAccount } from '../lib/accountSelection';
 import { ENTRY_INTENTS, structuredPresetFromFrequent, type EntryIntent } from '../lib/entryIntents';
 import { entryDefaults, entryDraftError } from '../lib/inputSemantics';
 import {
   createExpenseSplitEvent,
   createTransferEvent,
   defaultTransferPair,
+  defaultSavingContributionPair,
+  savingContributionDraftError,
   splitAllocation,
   splitDraftError,
   transferDraftError,
@@ -51,6 +54,9 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
   const quickAccounts = accounts.filter(account=>account.showInQuickChoices!==false);
   const accountIds = useMemo(()=>new Set(accounts.map(account=>account.id)),[accounts]);
   const transferDefaults = useMemo(()=>defaultTransferPair(data),[data]);
+  const savingDefaults=useMemo(()=>defaultSavingContributionPair(data),[data]);
+  const savingSources=accounts.filter(account=>!isSavingsAccount(account));
+  const savingTargets=accounts.filter(isSavingsAccount);
   const fallbackAccount=quickAccounts[0]?.id||accounts[0]?.id||'cash';
   const frequent = useMemo(()=>frequentDescriptions(data,'expense',10),[data]);
   const [kind,setKind]=useState<EventKind>('expense');
@@ -88,8 +94,8 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
       setCategory(initial.category||defaults.category);
       setSubcategory(initial.subcategory||'');
       setAccountId(initial.accountId||initial.legs.find(l=>l.accountId!=='credit-card')?.accountId||defaults.accountId);
-      setFrom(initial.fromAccountId||initial.legs.find(l=>l.amount<0)?.accountId||transferDefaults.from);
-      setTo(initial.toAccountId||initial.legs.find(l=>l.amount>0)?.accountId||transferDefaults.to);
+      setFrom(initial.fromAccountId||initial.legs.find(l=>l.amount<0)?.accountId||(initial.kind==='saving_cash_offset'?savingDefaults.from:transferDefaults.from));
+      setTo(initial.toAccountId||initial.legs.find(l=>l.amount>0)?.accountId||(initial.kind==='saving_cash_offset'?savingDefaults.to:transferDefaults.to));
       setPerson(initial.person||'');
       setParts(initial.parts?.length?initial.parts:freshParts());
       setActualBalance(initial.kind==='reconciliation'?String(currentBalance(initial.accountId||initial.legs[0]?.accountId||defaults.accountId)):'');
@@ -102,14 +108,14 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
       setCategory(prefill?.category||defaults.category);
       setSubcategory(prefill?.subcategory||'');
       setAccountId(prefill?.accountId||defaults.accountId);
-      setFrom(transferDefaults.from);
-      setTo(transferDefaults.to);
+      setFrom(initialKind==='saving_cash_offset'?savingDefaults.from:transferDefaults.from);
+      setTo(initialKind==='saving_cash_offset'?savingDefaults.to:transferDefaults.to);
       setPerson('');
       setActualBalance('');
       setParts(freshParts());
     }
     setError('');setDirty(false);
-  },[open,initial,initialKind,prefill,asOf,transferDefaults.from,transferDefaults.to]);
+  },[open,initial,initialKind,prefill,asOf,transferDefaults.from,transferDefaults.to,savingDefaults.from,savingDefaults.to]);
 
   const reconciliationBase=(id:string)=>currentBalance(id)-(initial?.kind==='reconciliation'?Number(initial.legs.find(l=>l.accountId===id)?.amount||0):0);
   const transferLike=['transfer','saving_cash_offset','withdrawal','card_payment'].includes(kind);
@@ -129,7 +135,7 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
     const nextCategory=nextTree.some(item=>item.name===defaults.category)?defaults.category:(nextTree[0]?.name||defaults.category);
     setKind(next);setError('');setAccountId(defaults.accountId);setCategory(nextCategory);setSubcategory('');mark();
     if(next==='transfer'){setFrom(transferDefaults.from);setTo(transferDefaults.to)}
-    if(next==='saving_cash_offset'){setFrom(transferDefaults.from);setTo(accounts.find(account=>account.kind==='savings'&&account.id!==transferDefaults.from)?.id||transferDefaults.to)}
+    if(next==='saving_cash_offset'){setFrom(savingDefaults.from);setTo(savingDefaults.to)}
     if(next==='withdrawal'){setFrom(transferDefaults.from);setTo(accounts.find(account=>account.kind==='cash'&&account.id!==transferDefaults.from)?.id||transferDefaults.to)}
   };
   const submit=()=>{
@@ -148,6 +154,15 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
         if(splitError)throw new Error(splitError);
         event=createExpenseSplitEvent(data,{date,note:note||labelForKind(kind),accountId,parts});
       }else{
+        if(kind==='saving_cash_offset'){
+          // Existing financial history can retain an unchanged legacy pair
+          // during a note-only edit; never allow a new or changed invalid pair.
+          const unchangedLegacyPair=initial?.kind==='saving_cash_offset'&&initial.fromAccountId===from&&initial.toAccountId===to;
+          if(!unchangedLegacyPair){
+            const savingError=savingContributionDraftError(data,{fromAccountId:from,toAccountId:to,amount:numeric});
+            if(savingError)throw new Error(savingError);
+          }
+        }
         event=createEvent({kind,date,amount:kind==='reconciliation'?Math.abs((actual as number)-reconciliationBase(accountId)):numeric,note:note||labelForKind(kind),category,accountId,fromAccountId:from,toAccountId:to,person:person.trim(),actualBalance:actual,currentBalance:reconciliationBase(accountId)});
       }
       if(kind!=='split')event.subcategory=subcategory||undefined;
@@ -170,7 +185,7 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
           {kind!=='reconciliation'&&kind!=='split'?<label className="quick-field" data-filled={filled(amount)}><span>Ποσό</span><MoneyInput data-autofocus="true" value={amount} onValueChange={value=>{setAmount(value);mark()}}/></label>:null}
           <label className="quick-field" data-filled="true"><span>Ημερομηνία</span><AppDateInput value={date} onChange={e=>{setDate(e.target.value);mark()}}/></label>
           {!transferLike && kind!=='card_purchase'?<label className="quick-field" data-filled="true"><span>Λογαριασμός</span><AppSelectInput value={accountId} onChange={e=>{setAccountId(e.target.value);mark()}}>{accountOptions(accountId,quickAccounts)}</AppSelectInput></label>:null}
-          {transferLike?<><label className="quick-field" data-filled="true"><span>Από</span><AppSelectInput value={from} onChange={e=>{setFrom(e.target.value);mark()}}>{accountOptions(from)}</AppSelectInput></label>{kind!=='card_payment'?<label className="quick-field" data-filled="true"><span>Προς</span><AppSelectInput value={to} onChange={e=>{setTo(e.target.value);mark()}}>{accountOptions(to)}</AppSelectInput></label>:null}</>:null}
+          {transferLike?<><label className="quick-field" data-filled="true"><span>Από</span><AppSelectInput value={from} onChange={e=>{setFrom(e.target.value);mark()}}>{accountOptions(from,kind==='saving_cash_offset'?savingSources:accounts)}</AppSelectInput></label>{kind!=='card_payment'?<label className="quick-field" data-filled="true"><span>Προς</span><AppSelectInput value={to} onChange={e=>{setTo(e.target.value);mark()}}>{accountOptions(to,kind==='saving_cash_offset'?savingTargets:accounts)}</AppSelectInput></label>:null}</>:null}
           {!['transfer','withdrawal','saving_cash_offset','card_payment','reconciliation','split'].includes(kind)?<label className="quick-field" data-filled="true"><span>Κατηγορία / υποκατηγορία</span><CategorySelectInput settings={data.state.settings} kind={categoryKind} category={category} subcategory={subcategory} genericOnly aria-label="Κατηγορία ή υποκατηγορία κίνησης" onChange={selection=>{setCategory(selection.category);setSubcategory(selection.subcategory);mark()}}/></label>:null}
           {lendingLike?<label className="quick-field" data-filled={filled(person)}><span>Πρόσωπο</span><AppTextInput value={person} onChange={e=>{setPerson(e.target.value);mark()}} placeholder="π.χ. Χρήστος"/></label>:null}
           {kind==='reconciliation'?<><label className="quick-field" data-filled={filled(actualBalance)}><span>Πραγματικό υπόλοιπο</span><MoneyInput data-autofocus="true" value={actualBalance} onValueChange={value=>{setActualBalance(value);mark()}}/></label><div className="reconcile-preview"><span>Αναμενόμενο τώρα</span><b>{money.format(reconciliationBase(accountId))}</b><span>Διαφορά</span><strong>{actualBalance.trim()&&Number.isFinite(Number(actualBalance))?money.format(Number(actualBalance)-reconciliationBase(accountId)):'—'}</strong></div></>:null}

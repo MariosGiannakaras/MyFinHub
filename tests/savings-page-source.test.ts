@@ -3,6 +3,9 @@ import { describe, expect, it } from 'vitest';
 
 const source=readFileSync(new URL('../src/pages/SavingsPage.tsx',import.meta.url),'utf8');
 const contextual=readFileSync(new URL('../src/components/ContextualQuickAdd.tsx',import.meta.url),'utf8');
+const genericQuick=readFileSync(new URL('../src/components/QuickAdd.tsx',import.meta.url),'utf8');
+const loans=readFileSync(new URL('../src/pages/LoansPage.tsx',import.meta.url),'utf8');
+const ledger=readFileSync(new URL('../src/lib/ledgerFoundations.ts',import.meta.url),'utf8');
 const selection=readFileSync(new URL('../src/lib/accountSelection.ts',import.meta.url),'utf8');
 const composition=readFileSync(new URL('../src/styles/savings-desktop-composition.css',import.meta.url),'utf8');
 const functionalQa=readFileSync(new URL('../scripts/completion-functional-crud-qa.mjs',import.meta.url),'utf8');
@@ -32,6 +35,13 @@ describe('Savings page action hierarchy',()=>{
     expect(contextual).toContain('const savingsTargets=accounts.filter(isSavingsAccount)');
     expect(contextual).toContain('const savingsSources=accounts.filter(account=>!isSavingsAccount(account))');
     expect(selection).toContain("account.bankAccountCategory==='savings'");
+    expect(genericQuick).toContain('savingContributionDraftError(data,');
+    expect(genericQuick).toContain("accountOptions(from,kind==='saving_cash_offset'?savingSources:accounts)");
+    expect(genericQuick).toContain("accountOptions(to,kind==='saving_cash_offset'?savingTargets:accounts)");
+    expect(genericQuick).toContain("initial?.kind==='saving_cash_offset'");
+    expect(loans).toContain('const savingsAccounts=accounts.filter(isSavingsAccount)');
+    expect(loans).toContain('const selfLoanDestinations=accounts.filter(account=>!isSavingsAccount(account))');
+    expect(ledger).toContain('defaultSavingContributionPair(data:FinanceData)');
     expect(selection).toContain('const operatingPredicate=(account:Account)=>!isSavingsAccount(account)');
     expect(source).toContain('savingsGoalBalance(data,periodEndDate)');
     expect(source).toContain('accountChoices.dashboardSavings?.id??accountChoices.savings?.id');

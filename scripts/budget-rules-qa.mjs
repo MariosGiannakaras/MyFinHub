@@ -291,6 +291,22 @@ try{
   await screenshot('savings-bank-typed-target-contextual-mobile');
   await clickAria('Κλείσιμο contextual καταχώρισης');
 
+  console.log('Budget/Rules QA: generic Quick Entry savings uses bank-savings destination, never source');
+  await viewport(1440,1000);
+  await clickAria('Γρήγορη προσθήκη');
+  await waitFor("function(){return Boolean(document.querySelector('.generic-quick-modal .generic-kind-grid'))}",'generic Quick Entry kind choices');
+  await clickText('.generic-kind-grid button','Αποταμίευση');
+  await waitFor("function(){const fields=[...document.querySelectorAll('.generic-quick-modal label')];const from=fields.find(row=>(row.querySelector(':scope > span')?.textContent||'').trim()==='Από');const to=fields.find(row=>(row.querySelector(':scope > span')?.textContent||'').trim()==='Προς');return from?.querySelector('input[role=combobox]')?.value==='Μισθοδοσία'&&to?.querySelector('input[role=combobox]')?.value==='Ταμιευτηρίου'}",'generic Savings selects eligible source and bank savings destination');
+  const openedGenericSavingsSource=await c.call("function(){const field=[...document.querySelectorAll('.generic-quick-modal label')].find(row=>(row.querySelector(':scope > span')?.textContent||'').trim()==='Από');const input=field?.querySelector('input[role=combobox]');input?.click();return Boolean(input)}");
+  assert(openedGenericSavingsSource,'generic Savings source selector opens');
+  await waitFor("function(){return Boolean(document.querySelector('.owned-select-popover [role=listbox]'))}",'generic Savings source alternatives');
+  assert(await c.call("function(){const options=[...document.querySelectorAll('.owned-select-popover [role=option]')].map(row=>(row.textContent||'').trim());return options.includes('Μισθοδοσία')&&['Ταμιευτηρίου','Αποθεματικό','Ταξίδια'].every(value=>!options.includes(value))}"),'generic Savings excludes all bank-classified savings funding accounts');
+  await clickText('.owned-select-popover [role=option]','Μισθοδοσία');
+  await screenshot('savings-bank-typed-generic-quick-entry-desktop');
+  await viewport(390,844);
+  await noOverflow('generic savings Quick Entry mobile');
+  await screenshot('savings-bank-typed-generic-quick-entry-mobile');
+
   console.log('Budget/Rules QA: a historic personal goal deadline survives an unrelated edit');
   await navigate('savings','savings-expired-goal',1440,1000);
   await waitFor("function(){return [...document.querySelectorAll('.savings-goals-desktop .savings-goal-row.personal')].some(row=>(row.textContent||'').includes('QA Expired Goal'))}",'expired goal fixture');

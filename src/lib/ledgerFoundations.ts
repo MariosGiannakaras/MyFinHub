@@ -1,5 +1,5 @@
 import { allAccounts, createEvent } from './domain.js';
-import { isSavingsAccount } from './accountSelection.js';
+import { financeAccountChoices, isSavingsAccount } from './accountSelection.js';
 import { centsToMoney, moneyToCents } from './money.js';
 import type { FinanceData, FinanceEvent, SplitPart } from '../types.js';
 
@@ -17,6 +17,24 @@ export function defaultTransferPair(data: FinanceData) {
     ?? accounts.find((account) => account.id !== from)?.id
     ?? '';
   return { from, to };
+}
+
+/** Only explicitly tracked Savings contributions need a non-savings funding
+ * source and a true savings destination. Ordinary transfers remain unrestricted. */
+export function defaultSavingContributionPair(data:FinanceData){
+  const choices=financeAccountChoices(data);
+  return {from:choices.operating?.id??'',to:choices.savings?.id??''};
+}
+
+export function savingContributionDraftError(data:FinanceData,draft:{fromAccountId:string;toAccountId:string;amount:number}){
+  const error=transferDraftError(data,draft);
+  if(error)return error;
+  const accounts=transferEligibleAccounts(data);
+  const source=accounts.find(account=>account.id===draft.fromAccountId)!;
+  const target=accounts.find(account=>account.id===draft.toAccountId)!;
+  if(isSavingsAccount(source))return 'Η νέα αποταμίευση χρειάζεται πηγή εκτός αποταμιευτικού λογαριασμού.';
+  if(!isSavingsAccount(target))return 'Διάλεξε πραγματικό αποταμιευτικό λογαριασμό ως προορισμό.';
+  return null;
 }
 
 export function transferDraftError(data: FinanceData, draft: { fromAccountId: string; toAccountId: string; amount: number }) {

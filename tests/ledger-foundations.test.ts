@@ -4,6 +4,8 @@ import {
   createExpenseSplitEvent,
   createTransferEvent,
   defaultTransferPair,
+  defaultSavingContributionPair,
+  savingContributionDraftError,
   splitAllocation,
   splitDraftError,
   transferDraftError,
@@ -45,6 +47,21 @@ describe('ledger foundations', () => {
       ?{...account,kind:'bank',bankAccountCategory:'savings'}
       :account);
     expect(defaultTransferPair(data)).toEqual({from:'bank',to:'savings'});
+  });
+
+  it('separates savings contributions from ordinary transfers for bank-classified savings accounts',()=>{
+    const data=minimal();
+    data.seed.accounts=data.seed.accounts.map(account=>account.id==='savings'
+      ?{...account,kind:'bank',bankAccountCategory:'savings'}
+      :account);
+    data.state.settings.defaultExpenseAccount='savings'; // stale preference must not become a Savings source
+    expect(defaultSavingContributionPair(data)).toEqual({from:'bank',to:'savings'});
+    expect(savingContributionDraftError(data,{fromAccountId:'bank',toAccountId:'savings',amount:100})).toBeNull();
+    expect(savingContributionDraftError(data,{fromAccountId:'savings',toAccountId:'bank',amount:100})).toMatch(/πηγή/);
+    expect(savingContributionDraftError(data,{fromAccountId:'bank',toAccountId:'cash',amount:100})).toMatch(/αποταμιευτικό/);
+    expect(savingContributionDraftError(data,{fromAccountId:'bank',toAccountId:'bank',amount:100})).toMatch(/διαφορετικοί/);
+    // Ordinary transfer remains available even between savings-classified accounts.
+    expect(transferDraftError(data,{fromAccountId:'savings',toAccountId:'bank',amount:100})).toBeNull();
   });
 
   it('rejects same, stale and credit transfer endpoints', () => {
