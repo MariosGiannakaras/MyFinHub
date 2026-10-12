@@ -51,6 +51,9 @@ describe('Settings Rules workspace source contract',()=>{
     expect(workspace).toContain('moveRule(index,-1)');
     expect(workspace).toContain('moveRule(index,1)');
     expect(workspace).toContain('onReorderRule(rules[index].id,direction)');
+    expect(workspace).toContain('MAX_TRANSACTION_RULES');
+    expect(settings).toContain('appendTransactionRule(current.state.transactionRules??[],rule');
+    expect(settings).toContain('onUpsertRule={saveRule}');
     expect(workspace).not.toContain('(floor+afterTarget.priority)/2');
     expect(workspace).not.toContain('(floor+afterCurrent.priority)/2');
     expect(workspace).toContain("rule.enabled?'Παύση':'Ενεργοποίηση'");

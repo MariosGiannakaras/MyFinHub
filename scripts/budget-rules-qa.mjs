@@ -205,6 +205,19 @@ try{
   await noOverflow('mobile savings target editor');await touchTargets('mobile savings target editor');
   await screenshot('savings-target-editor-mobile');
 
+  console.log('Budget/Rules QA: saturated priority append preserves real Rules order');
+  await navigate('settings','rules-priority-boundary',1440,1000);
+  await clickText('.settings-tablist button','Κανόνες');
+  await waitFor("function(){return [...document.querySelectorAll('.rule-settings-list article .rules-row-title b')].map(node=>(node.textContent||'').trim()).join('|')==='QA Priority First|QA Priority Max'}",'pre-existing valid max priority ordering');
+  await openRuleEditor();
+  await setLabelInput('Όνομα αυτοματισμού','QA Priority New');
+  await setLabelInput('Κείμενο περιγραφής','QA Priority');
+  await clickText('[data-rule-editor] .save-button','Δημιουργία κανόνα');
+  await waitFor("function(){return [...document.querySelectorAll('.rule-settings-list article .rules-row-title b')].map(node=>(node.textContent||'').trim()).join('|')==='QA Priority First|QA Priority Max|QA Priority New'}",'saturated priority append produces a trailing new rule');
+  await screenshot('advanced-automations-max-priority-append-desktop');
+  await clickAria('Αναίρεση τελευταίας αλλαγής');
+  await waitFor("function(){return [...document.querySelectorAll('.rule-settings-list article .rules-row-title b')].map(node=>(node.textContent||'').trim()).join('|')==='QA Priority First|QA Priority Max'}",'atomic priority append participates in one undo history step');
+
   await navigate('reports','empty',320,700);
   assert(await c.call("function(){return (document.querySelector('[data-budget-management]')?.textContent||'').includes('Δεν υπάρχουν προϋπολογισμοί')}"),'reports no-budget state');
   await noOverflow('budget/rules narrow reports');

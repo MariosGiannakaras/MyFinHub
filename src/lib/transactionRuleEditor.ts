@@ -14,6 +14,26 @@ export function scopesForRuleChoice(choice:TransactionRuleScopeChoice):Transacti
   return choice==='all'?[...RULE_SCOPE_ORDER]:RULE_SCOPE_ORDER.filter(scope=>choice.split('+').includes(scope));
 }
 
+export const MAX_TRANSACTION_RULES=10_000;
+const MAX_RULE_PRIORITY=1_000_000;
+
+/** Append a newly created rule in the same revisioned finance mutation.
+ * A valid existing max priority may leave no room for the usual +100 step.
+ * Compact the complete ordered set only then, never silently clamp/tie
+ * the new rule, and preserve original first-match order. */
+export function appendTransactionRule(rules:TransactionRule[],rule:TransactionRule,updatedAt:string):TransactionRule[] {
+  if(rules.some(item=>item.id===rule.id))throw new Error('Ο κανόνας υπάρχει ήδη. Ενημέρωσε τη λίστα και δοκίμασε ξανά.');
+  if(rules.length>=MAX_TRANSACTION_RULES)throw new Error('Έχει συμπληρωθεί το όριο των 10.000 κανόνων.');
+  const max=rules.reduce((value,item)=>Math.max(value,item.priority),0);
+  if(Number.isInteger(rule.priority)&&rule.priority>max&&rule.priority<=MAX_RULE_PRIORITY)return [...rules,rule];
+  const ordered=rules.slice().sort((a,b)=>a.priority-b.priority||a.id.localeCompare(b.id));
+  ordered.push(rule);
+  return ordered.map((item,index)=>{
+    const priority=(index+1)*100;
+    return priority===item.priority?item:{...item,priority,updatedAt};
+  });
+}
+
 /** Reorder one rule in one revisioned FinanceData mutation, using only valid
  * integer server priorities. Preserve sparse priorities when there is room;
  * compact only when a neighboring gap is exhausted. */

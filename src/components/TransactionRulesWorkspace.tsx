@@ -5,7 +5,7 @@ import { allAccounts } from '../lib/domain';
 import { categoryTree } from '../lib/categories';
 import { money } from '../lib/format';
 import { normalizeTransactionRule, transactionRuleMatchingEvents } from '../lib/transactionRules';
-import { ruleScopeChoice, scopesForRuleChoice, type TransactionRuleScopeChoice } from '../lib/transactionRuleEditor';
+import { MAX_TRANSACTION_RULES, ruleScopeChoice, scopesForRuleChoice, type TransactionRuleScopeChoice } from '../lib/transactionRuleEditor';
 import { accountDisplayName } from '../lib/ui';
 import type { FinanceData, TransactionRule, TransactionRuleScope } from '../types';
 import { AppSelectInput } from './AppSelectInput';
@@ -120,6 +120,7 @@ export function TransactionRulesWorkspace({
   const saveRule=()=>{
     try{
       const existing=rules.find(item=>item.id===editingRuleId);
+      if(!existing&&rules.length>=MAX_TRANSACTION_RULES)throw new Error('Έχει συμπληρωθεί το όριο των 10.000 κανόνων.');
       const timestamp=now();
       const next=normalizeTransactionRule({...draftRule,id:existing?.id??ruleId(),enabled:existing?.enabled??true,createdAt:existing?.createdAt??timestamp,updatedAt:timestamp});
       onUpsertRule(next);

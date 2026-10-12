@@ -6,7 +6,7 @@ import { createEvent } from '../src/lib/domain.js';
 import { createExpenseSplitEvent, createTransferEvent } from '../src/lib/ledgerFoundations.js';
 import { migrateProductData } from '../src/lib/productMigration.js';
 import { applyTransactionRules, normalizeTransactionRule, previewTransactionRules, transactionRuleMatchingEvents, transactionRuleMatchCount } from '../src/lib/transactionRules.js';
-import { reorderTransactionRules, ruleScopeChoice, scopesForRuleChoice } from '../src/lib/transactionRuleEditor.js';
+import { appendTransactionRule, reorderTransactionRules, ruleScopeChoice, scopesForRuleChoice, MAX_TRANSACTION_RULES } from '../src/lib/transactionRuleEditor.js';
 import type { MonthlyBudget, TransactionRule } from '../src/types.js';
 
 const clone=()=>structuredClone(qaFinanceData());
@@ -168,6 +168,37 @@ describe('deterministic transaction rules',()=>{
   });
 });
 describe('transaction rule editor/server round-trip parity',()=>{
+  it('atomically appends a rule without rewriting existing sparse priorities when room remains',()=>{
+    const original=[rule('first',100,'market','Τρόφιμα'),rule('second',500,'market','Άλλο')];
+    const candidate=rule('third',600,'market','Υγεία');
+    const result=appendTransactionRule(original,candidate,stamp);
+    expect(result).toEqual([...original,candidate]);
+    expect(result[0]).toBe(original[0]);
+    expect(result[1]).toBe(original[1]);
+    expect(original).toHaveLength(2);
+  });
+
+  it('compacts a saturated valid priority boundary and preserves first-match order in one mutation',()=>{
+    const original=[rule('last',1_000_000,'market','Υγεία'),rule('first',100,'market','Τρόφιμα'),rule('middle',999_999,'market','Άλλο')];
+    const candidate=rule('new',1_000_100,'market','Μετακινήσεις');
+    const result=appendTransactionRule(original,candidate,stamp);
+    expect(result.map(item=>item.id)).toEqual(['first','middle','last','new']);
+    expect(result.map(item=>item.priority)).toEqual([100,200,300,400]);
+    expect(result.every(item=>Number.isInteger(item.priority)&&item.priority>=0&&item.priority<=1_000_000)).toBe(true);
+    expect(original.map(item=>item.priority)).toEqual([1_000_000,100,999_999]);
+    const event=createEvent({kind:'expense',date:'2026-08-05',amount:20,note:'market',category:'Άλλο',accountId:'piraeus-payroll'});
+    const data=clean();data.state.transactionRules=result;
+    expect(previewTransactionRules(data,event).matches.map(item=>item.id)).toEqual(['first','middle','last','new']);
+  });
+
+  it('rejects duplicate create IDs and full collections instead of storing server-invalid entries',()=>{
+    const present=rule('present',100,'market','Τρόφιμα');
+    expect(()=>appendTransactionRule([present],{...present},stamp)).toThrow(/υπάρχει ήδη/);
+    const full=Array.from({length:MAX_TRANSACTION_RULES},(_,index)=>rule('rule-'+index,index*100,'market','Τρόφιμα'));
+    expect(()=>appendTransactionRule(full,rule('extra',1_000_100,'market','Άλλο'),stamp)).toThrow(/10.000/);
+    expect(full).toHaveLength(MAX_TRANSACTION_RULES);
+  });
+
   it('round-trips all valid one-, two- and three-scope combinations without loss',()=>{
     const combinations=[['manual'],['imported'],['review'],['manual','imported'],['manual','review'],['imported','review'],['manual','imported','review']] as const;
     for(const scopes of combinations){

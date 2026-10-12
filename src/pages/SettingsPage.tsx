@@ -15,7 +15,7 @@ import { Surface } from '../components/Surface';
 import { SupportDiagnosticsPanel } from '../components/SupportDiagnosticsPanel';
 import { TransactionRulesWorkspace } from '../components/TransactionRulesWorkspace';
 import { categoryTree } from '../lib/categories';
-import { reorderTransactionRules } from '../lib/transactionRuleEditor';
+import { appendTransactionRule, reorderTransactionRules } from '../lib/transactionRuleEditor';
 import { MAX_FINANCE_DOCUMENT_BYTES } from '../lib/limits';
 import { taxonomyOperationPreview, type TaxonomyOperation } from '../lib/taxonomyManagement';
 import { userErrorMessage } from '../lib/userMessage';
@@ -123,6 +123,18 @@ export function SettingsPage({
   onDeleteRule: (id: string) => void;
   onFinanceUpdate: (recipe: (current:FinanceData)=>FinanceData) => void;
 }) {
+  const saveRule=(rule:TransactionRule)=>{
+    // Existing edits preserve the same rule identity/priority; only a new rule
+    // requires an atomic insert that may compact exhausted server priorities.
+    if((data.state.transactionRules??[]).some(item=>item.id===rule.id)){
+      onUpsertRule(rule);
+      return;
+    }
+    onFinanceUpdate(current=>({...current,state:{
+      ...current.state,
+      transactionRules:appendTransactionRule(current.state.transactionRules??[],rule,new Date().toISOString()),
+    }}));
+  };
   const reorderRule=(id:string,direction:-1|1)=>onFinanceUpdate(current=>{
     const rules=current.state.transactionRules??[];
     const next=reorderTransactionRules(rules,id,direction,new Date().toISOString());
@@ -274,7 +286,7 @@ export function SettingsPage({
 
         {activeTab === 'rules' ? (
           <div className="settings-tab-stack settings-rules-only">
-            <TransactionRulesWorkspace data={data} onUpsertRule={onUpsertRule} onDeleteRule={onDeleteRule} onReorderRule={reorderRule} />
+            <TransactionRulesWorkspace data={data} onUpsertRule={saveRule} onDeleteRule={onDeleteRule} onReorderRule={reorderRule} />
           </div>
         ) : null}
 

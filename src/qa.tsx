@@ -253,6 +253,13 @@ function buildQaData(params:URLSearchParams){
     event.id='qa-crossmonth-command-event';
     next.state.events=[...(next.state.events??[]),event];
   }
+  if(params.get('state')==='rules-priority-boundary'){
+    const stamp='2026-08-17T12:00:00.000Z';
+    next.state.transactionRules=[
+      {id:'qa-rule-priority-first',name:'QA Priority First',enabled:true,priority:100,scopes:['manual'],match:{description:'QA Priority',mode:'contains'},action:{category:'Τρόφιμα'},createdAt:stamp,updatedAt:stamp},
+      {id:'qa-rule-priority-max',name:'QA Priority Max',enabled:true,priority:1_000_000,scopes:['manual'],match:{description:'QA Priority',mode:'contains'},action:{category:'Άλλο'},createdAt:stamp,updatedAt:stamp},
+    ];
+  }
   if(params.get('state')==='budget-rules'||params.get('state')==='future-reporting'){
     const stamp='2026-08-17T12:00:00.000Z';
     const event=createEvent({kind:'expense',date:'2026-08-16',amount:90,note:'QA Market Match',category:'Σταθερά έξοδα',accountId:'piraeus-payroll'});event.createdAt=stamp;event.updatedAt=stamp;
