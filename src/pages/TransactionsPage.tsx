@@ -195,6 +195,6 @@ export function TransactionsPage({
     </section>
 
     {editingLegacy?<LegacyTransactionEditor key={editingLegacy.id} data={data} transaction={editingLegacy} onSave={saveLegacy} onClose={()=>setEditingLegacy(null)}/>:null}
-    <ConfirmDialog open={Boolean(deleteTarget)} title="Διαγραφή κίνησης;" description={deleteTarget?.source==='legacy'?'Η αρχική εισαγόμενη εγγραφή θα παραμείνει ανέπαφη. Η κίνηση θα εξαιρεθεί από υπολογισμούς και λίστες μέσω tombstone.':'Η κίνηση θα αφαιρεθεί από τα οικονομικά δεδομένα. Μπορείς να χρησιμοποιήσεις Αναίρεση αμέσως μετά.'} confirmLabel="Διαγραφή" tone="destructive" motionMode={data.state.settings.motion||'system'} onConfirm={confirmDelete} onCancel={()=>setDeleteTarget(null)}/>
+    <ConfirmDialog open={Boolean(deleteTarget)} title="Διαγραφή κίνησης;" description={deleteTarget?.source==='legacy'?'Η αρχική εισαγόμενη εγγραφή θα παραμείνει ανέπαφη. Η κίνηση θα εξαιρεθεί από υπολογισμούς και λίστες μέσω tombstone.':'Η κίνηση θα αφαιρεθεί από τα οικονομικά δεδομένα. Μπορείς να χρησιμοποιήσεις Αναίρεση αμέσως μετά.'} confirmLabel="Διαγραφή" tone="destructive" onConfirm={confirmDelete} onCancel={()=>setDeleteTarget(null)}/>
   </div>;
 }

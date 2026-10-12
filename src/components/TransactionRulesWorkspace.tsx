@@ -184,7 +184,7 @@ export function TransactionRulesWorkspace({
       description={deleteRuleTarget?`Ο κανόνας «${deleteRuleTarget.name}» θα αφαιρεθεί από τις μελλοντικές κινήσεις. Το υπάρχον ιστορικό δεν αλλάζει.`:''}
       confirmLabel="Διαγραφή κανόνα"
       tone="destructive"
-      motionMode={data.state.settings.motion}
+
       onConfirm={()=>{if(deleteRuleTarget){onDeleteRule(deleteRuleTarget.id);setDeleteRuleTarget(null)}}}
       onCancel={()=>setDeleteRuleTarget(null)}
     />

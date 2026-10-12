@@ -339,6 +339,6 @@ export function ReceiptInbox({
       </div>
     </section>
   </div>
-  <ConfirmDialog open={Boolean(deleteRequest)} title={deleteRequest?.mode==='many'?`Διαγραφή ${deleteCount} αποδείξεων;`:'Διαγραφή τοπικής απόδειξης;'} description={deleteRequest?.mode==='many'?'Οι επιλεγμένες τοπικές αποδείξεις θα διαγραφούν από αυτή τη συσκευή. Δεν θα δημιουργηθεί καμία συναλλαγή.':'Η τοπική απόδειξη θα διαγραφεί από αυτή τη συσκευή. Δεν θα δημιουργηθεί συναλλαγή.'} confirmLabel="Διαγραφή" tone="destructive" busy={deleting} motionMode={data.state.settings.motion} onConfirm={()=>void confirmRemove()} onCancel={()=>{if(!deleting)setDeleteRequest(null)}}/>
+  <ConfirmDialog open={Boolean(deleteRequest)} title={deleteRequest?.mode==='many'?`Διαγραφή ${deleteCount} αποδείξεων;`:'Διαγραφή τοπικής απόδειξης;'} description={deleteRequest?.mode==='many'?'Οι επιλεγμένες τοπικές αποδείξεις θα διαγραφούν από αυτή τη συσκευή. Δεν θα δημιουργηθεί καμία συναλλαγή.':'Η τοπική απόδειξη θα διαγραφεί από αυτή τη συσκευή. Δεν θα δημιουργηθεί συναλλαγή.'} confirmLabel="Διαγραφή" tone="destructive" busy={deleting} onConfirm={()=>void confirmRemove()} onCancel={()=>{if(!deleting)setDeleteRequest(null)}}/>
   </>;
 }

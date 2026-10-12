@@ -345,6 +345,6 @@ export function AccountManagementSettings({data,settings,onChange,onChangeDurabl
       </motion.section>
     </motion.div>:null}</AnimatePresence>
 
-    <ConfirmDialog open={Boolean(pendingDelete)} title="Διαγραφή λογαριασμού;" description={pendingDelete?`Ο λογαριασμός «${displayName(settings,pendingDelete)}» θα αφαιρεθεί οριστικά. Η ενέργεια επιτρέπεται μόνο επειδή δεν υπάρχει οικονομικό ιστορικό που να τον χρησιμοποιεί.`:''} confirmLabel="Διαγραφή" tone="destructive" busy={busy} motionMode={settings.motion} onConfirm={()=>void confirmDelete()} onCancel={()=>{if(!busy)setPendingDelete(null)}}/>
+    <ConfirmDialog open={Boolean(pendingDelete)} title="Διαγραφή λογαριασμού;" description={pendingDelete?`Ο λογαριασμός «${displayName(settings,pendingDelete)}» θα αφαιρεθεί οριστικά. Η ενέργεια επιτρέπεται μόνο επειδή δεν υπάρχει οικονομικό ιστορικό που να τον χρησιμοποιεί.`:''} confirmLabel="Διαγραφή" tone="destructive" busy={busy} onConfirm={()=>void confirmDelete()} onCancel={()=>{if(!busy)setPendingDelete(null)}}/>
   </div>;
 }

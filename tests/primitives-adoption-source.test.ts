@@ -35,7 +35,7 @@ describe('shared primitive adoption',()=>{
   it('uses app-owned confirmation and shared generic text controls for Loans',()=>{
     expectNoNativeDialog(loans);
     expect(loans).toContain('<ConfirmDialog');
-    expect(loans).toContain('motionMode={data.state.settings.motion}');
+    expect(loans).not.toMatch(/motionMode=\{[^}]*settings\.motion/);
     expect(loans).toContain('forgivenAmount:Number(current.forgivenAmount||0)+remaining');
     expect(loans).toContain("from '../components/AppTextInput'");
     expect(loans).toContain('<AppTextInput data-autofocus="true" value={edit.name}');
