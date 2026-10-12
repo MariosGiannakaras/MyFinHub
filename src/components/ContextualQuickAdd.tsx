@@ -37,7 +37,7 @@ export type QuickActionContext =
 
 type SpecialContext=Exclude<QuickActionContext,{mode:'generic'}>;
 
-function ContextModal({data,asOf,context,onClose,onCreate,onCompleteScheduled}:{data:FinanceData;asOf:string;context:SpecialContext;onClose:()=>void;onCreate:(event:FinanceEvent)=>Promise<void>;onCompleteScheduled?:(item:ScheduledTransaction,event:FinanceEvent)=>void}){
+function ContextModal({data,asOf,context,onClose,onCreate,onCompleteScheduled}:{data:FinanceData;asOf:string;context:SpecialContext;onClose:()=>void;onCreate:(event:FinanceEvent)=>Promise<void>;onCompleteScheduled?:(item:ScheduledTransaction,event:FinanceEvent)=>Promise<void>}){
   const accounts=useMemo(()=>allAccounts(data).filter(account=>account.kind!=='credit'),[data]);
   const defaultExpense=accounts.some(account=>account.id===data.state.settings.defaultExpenseAccount)?data.state.settings.defaultExpenseAccount:accounts[0]?.id||'';
   const defaultIncome=accounts.some(account=>account.id===data.state.settings.defaultIncomeAccount)?data.state.settings.defaultIncomeAccount:accounts[0]?.id||'';
@@ -149,7 +149,9 @@ function ContextModal({data,asOf,context,onClose,onCreate,onCompleteScheduled}:{
         if(!scheduled)throw new Error('Η προγραμματισμένη κίνηση δεν είναι πλέον εκκρεμής ή διαθέσιμη.');
         if(!onCompleteScheduled)throw new Error('Η ολοκλήρωση προγραμματισμένης κίνησης δεν είναι διαθέσιμη από αυτή την οθόνη.');
         event=scheduledToEvent(data,scheduled,{date,amount:numeric,accountId,fromAccountId,toAccountId});
-        onCompleteScheduled(transitionScheduled(scheduled,'completed',event.id),event);onClose();return;
+        setSaving(true);
+        await onCompleteScheduled(transitionScheduled(scheduled,'completed',event.id),event);
+        onClose();return;
       }else if(context.mode==='recurring'){
         if(!recurring)throw new Error('Το πάγιο δεν είναι πλέον διαθέσιμο.');const accountError=recurringAccountError(accounts.map(account=>account.id),accountId);if(accountError)throw new Error(accountError);
         event=createEvent({kind:'expense',date,amount:numeric,note:note.trim()||`Πληρωμή: ${recurring.name}`,category:recurring.category,accountId,recurringId:recurring.id});
@@ -205,7 +207,7 @@ function ContextModal({data,asOf,context,onClose,onCreate,onCompleteScheduled}:{
   {context.mode==='lending'&&context.action==='lend'?<label><span>Αναμενόμενη επιστροφή <em>προαιρετικό</em></span><AppDateInput value={expectedReturnDate} min={date} onChange={event=>setExpectedReturnDate(event.target.value)}/></label>:null}{context.mode!=='scheduled'?<label className="wide"><span>Σχόλιο <em>προαιρετικό</em></span><AppTextInput value={note} onChange={event=>setNote(event.target.value)}/></label>:<div className="wide"><span>Προγραμματισμένη κίνηση</span><b>{scheduled?.note??'Μη διαθέσιμη'}</b></div>}</div>{paymentEffect?<div className="payment-effect-summary" role="note" aria-label="Οικονομικό αποτέλεσμα πληρωμής"><span>Αποτέλεσμα</span><p>{paymentEffect}</p></div>:null}{context.mode==='credit'&&context.action==='payment'&&!sameBankAccounts.length?<FormError id="context-quick-account-warning">Δεν υπάρχει διαθέσιμος λογαριασμός της ίδιας τράπεζας για την αποπληρωμή.</FormError>:null}{context.mode==='loan'&&loan&&isSelfLoan(loan)&&!savingsTargets.length?<FormError id="context-quick-loan-warning">Δεν υπάρχει αποταμιευτικός λογαριασμός για την επιστροφή της ΒΟΗΘΕΙΑΣ.</FormError>:null}{context.mode==='savings'&&!savingsTargets.length?<FormError id="context-quick-saving-warning">Δεν υπάρχει διαθέσιμος αποταμιευτικός λογαριασμός.</FormError>:null}{error?<FormError id="context-quick-error">{error}</FormError>:null}<div className="editor-actions"><Button type="button" variant="secondary" disabled={saving} onClick={onClose}>Ακύρωση</Button><Button type="button" variant="primary" disabled={saving} onClick={()=>void submit()}>{saving?'Αποθήκευση…':context.mode==='scheduled'?'Ολοκλήρωση':paymentMode?'Επιβεβαίωση πληρωμής':'Καταχώριση'}</Button></div></div></DialogShell>;
 }
 
-export function ContextualQuickAdd({open,data,asOf,context,initial,motionMode='system',onClose,onCreate,onCompleteScheduled,currentBalance}:{open:boolean;data:FinanceData;asOf:string;context:QuickActionContext|null;initial?:FinanceEvent|null;motionMode?:'system'|'reduced'|'full';onClose:()=>void;onCreate:(event:FinanceEvent)=>Promise<void>;onCompleteScheduled?:(item:ScheduledTransaction,event:FinanceEvent)=>void;currentBalance:(accountId:string)=>number}){
+export function ContextualQuickAdd({open,data,asOf,context,initial,motionMode='system',onClose,onCreate,onCompleteScheduled,currentBalance}:{open:boolean;data:FinanceData;asOf:string;context:QuickActionContext|null;initial?:FinanceEvent|null;motionMode?:'system'|'reduced'|'full';onClose:()=>void;onCreate:(event:FinanceEvent)=>Promise<void>;onCompleteScheduled?:(item:ScheduledTransaction,event:FinanceEvent)=>Promise<void>;currentBalance:(accountId:string)=>number}){
   if(!open||!context)return null;
   if(context.mode==='generic')return <ReceiptAwareQuickAdd key={context.token} open={open} data={data} asOf={asOf} initial={initial} initialKind={context.kind||'expense'} prefill={context.prefill||null} motionMode={motionMode} onClose={onClose} onCreate={onCreate} currentBalance={currentBalance}/>;
   return <ContextModal key={context.token} data={data} asOf={asOf} context={context} onClose={onClose} onCreate={onCreate} onCompleteScheduled={onCompleteScheduled}/>;

@@ -31,7 +31,9 @@ describe('consolidated Stage 2 shared action adoption',()=>{
     expect(contextual).toContain('inert={saving}');
     expect(contextual).toContain('if(saving)return;');
     expect(contextual).toContain("event=scheduledToEvent(data,scheduled,{date,amount:numeric,accountId,fromAccountId,toAccountId})");
-    expect(contextual).toContain("onCompleteScheduled(transitionScheduled(scheduled,'completed',event.id),event);onClose();return;");
+    expect(contextual).toContain("await onCompleteScheduled(transitionScheduled(scheduled,'completed',event.id),event);");
+    expect(contextual).toContain("onClose();return;");
+    expect(contextual.indexOf("await onCompleteScheduled(transitionScheduled(scheduled,'completed',event.id),event);")).toBeLessThan(contextual.indexOf("onClose();return;"));
     expect(contextual).toContain('await onCreate(event);');
     expect(contextual).toContain('setSaving(true);');
     expect(contextual).toContain('finally{setSaving(false)}');

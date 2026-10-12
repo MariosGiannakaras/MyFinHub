@@ -386,6 +386,16 @@ function QaWorkspace(){
   const deleteCard=async(card:PaymentCard)=>{update(current=>withCardSecretCleanupComplete(withCardSecretCleanupPending(current,card,`${today}T12:00:00.000Z`,today),card.id))};
   const upsertScheduled=(item:ScheduledTransaction)=>update(current=>({...current,state:{...current.state,scheduled:[...(current.state.scheduled??[]).filter(existing=>existing.id!==item.id),item]}}));
   const completeScheduled=(item:ScheduledTransaction,event:FinanceEvent)=>update(current=>{const nextEvent=applyTransactionRules(current,event);return {...current,state:{...current.state,scheduled:[...(current.state.scheduled??[]).filter(existing=>existing.id!==item.id),item],events:[...(current.state.events??[]).filter(existing=>existing.id!==nextEvent.id),nextEvent]}}});
+  const withScheduledReceipt=async(commit:()=>void)=>{
+    const params=new URLSearchParams(location.search);
+    if(params.get('scheduled-save-failure')==='1')throw new Error('Η δοκιμαστική αποθήκευση προγραμματισμένης απέτυχε.');
+    if(params.get('scheduled-save-pending')==='1')await new Promise<void>(resolve=>{
+      (globalThis as typeof globalThis & {__myfinhubQaCompleteScheduledReceipt?:()=>void}).__myfinhubQaCompleteScheduledReceipt=resolve;
+    });
+    commit();
+  };
+  const upsertScheduledDurably=(item:ScheduledTransaction)=>withScheduledReceipt(()=>upsertScheduled(item));
+  const completeScheduledDurably=(item:ScheduledTransaction,event:FinanceEvent)=>withScheduledReceipt(()=>completeScheduled(item,event));
   const upsertBudget=async(budget:MonthlyBudget)=>{
     const params=new URLSearchParams(location.search);
     if(params.get('budget-save-failure')==='1')throw new Error('Η δοκιμαστική αποθήκευση budget απέτυχε.');
@@ -479,7 +489,7 @@ function QaWorkspace(){
     :page==='loans'?<LoansPage data={data} asOf={today} commandLoanId={commandLoanId} commandLoanKey={commandLoanKey} onUpsertLoan={upsertLoan} onCreateSelfLoan={createSelfLoan} onPayLoan={loanId=>openSpecial({mode:'loan',loanId})}/>
     :page==='lending'?<LendingPage data={data} asOf={today} commandPerson={commandLendingPerson} commandPersonKey={commandLendingKey} privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onCreateEvent={addEvent} onQuickAdd={openSpecial}/>
     :page==='recurring'?<RecurringPage data={data} asOf={today} commandRecurringId={commandRecurringId} commandRecurringKey={commandRecurringKey} onUpsert={upsertRecurring} onUpsertDurably={async item=>{if(new URLSearchParams(window.location.search).get('recurring-save-failure')==='1')throw new Error('Η δοκιμαστική αποθήκευση απέτυχε.');upsertRecurring(item)}} onOpenLoans={()=>setPage('loans')} onPayLoan={loanId=>openSpecial({mode:'loan',loanId})} onPayRecurring={recurringId=>openSpecial({mode:'recurring',recurringId})}/>
-    :page==='planning'?<PlanningPage data={data} asOf={today} commandScheduledId={commandScheduledId} commandScheduledKey={commandScheduledKey} onUpsertScheduled={upsertScheduled} onCompleteScheduled={completeScheduled}/>
+    :page==='planning'?<PlanningPage data={data} asOf={today} commandScheduledId={commandScheduledId} commandScheduledKey={commandScheduledKey} onUpsertScheduled={upsertScheduledDurably} onCompleteScheduled={completeScheduledDurably}/>
     :page==='attention'?<AttentionPage data={data} asOf={today} onAction={handleAttention} onDecision={decideAttention} onReviewDecision={(id,decision)=>update(current=>({...current,state:{...current.state,reviewDecisions:{...(current.state.reviewDecisions??{}),[id]:decision}}}))}/>
     :page==='reports'?<ReportsPage data={data} month={month} asOf={today} privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onUpsertBudget={upsertBudget} onDeleteBudget={deleteBudget}/>
     :<SettingsPage data={data} asOf={today} activeTab={settingsTab} onActiveTabChange={setSettingsTab} accountFocusId={commandAccountId} accountFocusKey={commandAccountKey} filePath="Synthetic QA" lastSavedAt={data.updatedAt} onImport={async incoming=>importData(incoming)} onBackup={async()=>({path:'synthetic/backup.json'})} onSettings={settings=>update(current=>({...current,state:{...current.state,settings}}))} onFinanceDurably={async recipe=>{if(new URLSearchParams(location.search).get('account-save-failure')==='1'||new URLSearchParams(location.search).get('rules-save-failure')==='1')throw new Error('Η δοκιμαστική αποθήκευση απέτυχε.');if(new URLSearchParams(location.search).get('rules-save-pending')==='1')await new Promise<void>(resolve=>{(globalThis as typeof globalThis & {__myfinhubQaCompleteRulesReceipt?:()=>void}).__myfinhubQaCompleteRulesReceipt=resolve});update(recipe)}} onTaxonomyOperation={updateTaxonomy}/>;
@@ -492,7 +502,7 @@ function QaWorkspace(){
       {saveState==='loading'?<div className="qa-loading-route"><h1 className="sr-only">{QA_PAGE_HEADINGS[page]}</h1><PageSkeleton/></div>:<PageErrorBoundary resetKey={page} onDashboard={()=>{setCrash(false);setPage('dashboard')}}>{lazyFailure?<Suspense fallback={<PageSkeleton/>}><LazyResourceFailure/></Suspense>:crash?<Crash/>:content}</PageErrorBoundary>}
     </AppShell>
     <CommandPalette open={commandOpen} data={data} asOf={today} motionMode="full" onClose={()=>setCommandOpen(false)} onExecute={handleCommand}/>
-    <ContextualQuickAdd open={quickOpen} data={data} asOf={today} context={quickContext} initial={(data.state.events??[]).find(event=>event.id===editing)||null} motionMode="full" onClose={()=>{setQuickOpen(false);setEditing(null);setQuickContext(null)}} onCreate={addEventDurably} onCompleteScheduled={completeScheduled} currentBalance={id=>accountBalances(data,today)[id]||0}/>
+    <ContextualQuickAdd open={quickOpen} data={data} asOf={today} context={quickContext} initial={(data.state.events??[]).find(event=>event.id===editing)||null} motionMode="full" onClose={()=>{setQuickOpen(false);setEditing(null);setQuickContext(null)}} onCreate={addEventDurably} onCompleteScheduled={completeScheduledDurably} currentBalance={id=>accountBalances(data,today)[id]||0}/>
     <ConfirmDialog open={recoverOpen} title="Φόρτωση τελευταίας αποθηκευμένης έκδοσης;" description="Η επαναφόρτωση θα απορρίψει τυχόν τοπικές αλλαγές που δεν αποθηκεύτηκαν και θα φορτώσει την τελευταία έκδοση από τη βάση." confirmLabel="Επαναφόρτωση" tone="destructive" motionMode="full" onConfirm={()=>{setRecoverOpen(false);setSaveState('saved')}} onCancel={()=>setRecoverOpen(false)}/>
   </>;
 }

@@ -255,12 +255,12 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
       throw new Error('Το προφίλ διαγράφηκε και αποθηκεύτηκε, αλλά ο καθαρισμός των ασφαλών στοιχείων εκκρεμεί. Θα επαναληφθεί μετά από νέα σύνδεση.');
     }
   };
-  const upsertScheduled = (item: ScheduledTransaction) => finance.update((current) => {
+  const upsertScheduled = (item: ScheduledTransaction) => finance.updateDurably((current) => {
     const items = current.state.scheduled ?? [];
     const exists = items.some((existing) => existing.id === item.id);
     return { ...current, state: { ...current.state, scheduled: exists ? items.map((existing) => existing.id === item.id ? item : existing) : [...items, item] } };
   });
-  const completeScheduled = (item: ScheduledTransaction, event: FinanceEvent) => finance.update((current) => {
+  const completeScheduled = (item: ScheduledTransaction, event: FinanceEvent) => finance.updateDurably((current) => {
     const scheduled = current.state.scheduled ?? [];
     const events = current.state.events ?? [];
     const nextEvent=applyTransactionRules(current,event);
