@@ -1,5 +1,5 @@
 import { ArrowRight, BanknoteArrowDown, Pencil, PiggyBank, Plus, Repeat2, Sparkles, Wallet, X } from 'lucide-react';
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { AnimatedAmount } from '../components/AnimatedAmount';
 import { AppDateInput } from '../components/AppDateInput';
 import { AppSelectInput } from '../components/AppSelectInput';
@@ -34,7 +34,7 @@ const euroCompact=new Intl.NumberFormat('el-GR',{style:'currency',currency:'EUR'
 
 type SavingsQuickContext=Omit<Extract<QuickActionContext,{mode:'savings'}>,'token'>;
 
-export function SavingsPage({data,month,asOf,onCreate,onQuickAdd,onSavingsTargetChange,onUpsertGoal,onDeleteGoal}:{data:FinanceData;month:string;asOf:string;onCreate:(event:FinanceEvent)=>void;onQuickAdd?:(context:SavingsQuickContext)=>void;onSavingsTargetChange:(rate:number)=>void;onUpsertGoal:(goal:SavingsGoal)=>void;onDeleteGoal:(id:string)=>void}){
+export function SavingsPage({data,month,asOf,onCreate,onQuickAdd,onSavingsTargetChange,onUpsertGoal,onDeleteGoal}:{data:FinanceData;month:string;asOf:string;onCreate:(event:FinanceEvent)=>void;onQuickAdd?:(context:SavingsQuickContext)=>void;onSavingsTargetChange:(rate:number)=>Promise<void>;onUpsertGoal:(goal:SavingsGoal)=>void;onDeleteGoal:(id:string)=>void}){
   const periodEndDate=reportingPeriodEndDate(month,asOf);
   const balances=accountBalances(data,periodEndDate);
   const flow=operationalMonthlyFlow(data,month,asOf);
@@ -86,6 +86,8 @@ export function SavingsPage({data,month,asOf,onCreate,onQuickAdd,onSavingsTarget
   const [targetEditing,setTargetEditing]=useState(false);
   const [targetText,setTargetText]=useState(String(Math.round(target*100)));
   const [targetError,setTargetError]=useState('');
+  const [targetBusy,setTargetBusy]=useState(false);
+  const targetSavingRef=useRef(false);
   const [goalEdit,setGoalEdit]=useState<SavingsGoal|null>(null);
   const [goalAmountText,setGoalAmountText]=useState('');
   const [goalError,setGoalError]=useState('');
@@ -97,16 +99,22 @@ export function SavingsPage({data,month,asOf,onCreate,onQuickAdd,onSavingsTarget
   useEffect(()=>{if(!targetEditing)setTargetText(String(Math.round(target*100)))},[target,targetEditing]);
 
   const startTargetEdit=()=>{setTargetText(String(Math.round(target*100)));setTargetError('');setTargetEditing(true)};
-  const cancelTargetEdit=()=>{setTargetText(String(Math.round(target*100)));setTargetError('');setTargetEditing(false)};
-  const saveTarget=()=>{
+  const cancelTargetEdit=()=>{if(targetSavingRef.current)return;setTargetText(String(Math.round(target*100)));setTargetError('');setTargetEditing(false)};
+  const saveTarget=async()=>{
+    if(targetSavingRef.current)return;
     const numeric=Number(targetText.replace(',','.'));
     if(!Number.isFinite(numeric)||numeric<0||numeric>100){setTargetError('Βάλε ποσοστό από 0 έως 100.');return}
-    onSavingsTargetChange(numeric/100);setTargetError('');setTargetEditing(false);
+    targetSavingRef.current=true;setTargetBusy(true);setTargetError('');
+    try{
+      await onSavingsTargetChange(numeric/100);
+      setTargetEditing(false);
+    }catch(error){setTargetError(userErrorMessage(error,'Δεν μπορέσαμε να αποθηκεύσουμε τον στόχο αποταμίευσης. Δοκίμασε ξανά.'))}
+    finally{targetSavingRef.current=false;setTargetBusy(false)}
   };
   const renderTargetEditor=(surface:'desktop'|'mobile')=>targetEditing?<div className="settings-form savings-target-editor" data-savings-target-editor={surface}>
-    <label><span>Στόχος αποταμίευσης %</span><AppTextInput inputMode="decimal" value={targetText} onChange={event=>setTargetText(event.target.value)} aria-invalid={Boolean(targetError)} /></label>
+    <label><span>Στόχος αποταμίευσης %</span><AppTextInput disabled={targetBusy} inputMode="decimal" value={targetText} onChange={event=>setTargetText(event.target.value)} aria-invalid={Boolean(targetError)} /></label>
     {targetError?<FormError id={`savings-target-error-${surface}`}>{targetError}</FormError>:null}
-    <div className="editor-actions"><Button type="button" variant="secondary" onClick={cancelTargetEdit}>Ακύρωση</Button><Button type="button" variant="primary" onClick={saveTarget}>Αποθήκευση στόχου</Button></div>
+    <div className="editor-actions"><Button type="button" variant="secondary" disabled={targetBusy} onClick={cancelTargetEdit}>Ακύρωση</Button><Button type="button" variant="primary" disabled={targetBusy} onClick={()=>void saveTarget()}>{targetBusy?'Αποθήκευση…':'Αποθήκευση στόχου'}</Button></div>
   </div>:null;
 
   const startGoal=(goal?:SavingsGoal)=>{

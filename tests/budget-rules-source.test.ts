@@ -29,7 +29,10 @@ describe('category budget and rule integration source contracts',()=>{
     expect(budgetEditor).toContain('await onUpsertBudget(next)');
     expect(budgetEditor).toContain('await onDeleteBudget(id)');
     expect(budgetEditor).toContain('disabled={busy}');
-    expect(app).toContain('const updateSavingsTarget=');
+    expect(app).toContain('const updateSavingsTarget=(rate:number)=>finance.updateDurably');
+    expect(savings).toContain('await onSavingsTargetChange(numeric/100)');
+    expect(savings).toContain('disabled={targetBusy}');
+    expect(savings).toContain('setTargetError(userErrorMessage(error');
     expect(settings).toContain('const saveRule=(rule:TransactionRule)=>');
     expect(settings).toContain('const deleteRule=(id:string)=>onFinanceDurably');
     expect(app).toContain('onFinanceDurably={finance.updateDurably}');

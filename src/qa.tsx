@@ -353,7 +353,12 @@ function QaWorkspace(){
     if(new URLSearchParams(location.search).get('budget-save-failure')==='1')throw new Error('Η δοκιμαστική αποθήκευση budget απέτυχε.');
     update(current=>({...current,state:{...current.state,budgets:(current.state.budgets??[]).filter(item=>item.id!==id)}}));
   };
-  const updateSavingsTarget=(rate:number)=>update(current=>({...current,state:{...current.state,settings:{...current.state.settings,savingsTargetRate:rate}}}));
+  const updateSavingsTarget=async(rate:number)=>{
+    const params=new URLSearchParams(location.search);
+    if(params.get('savings-target-save-failure')==='1')throw new Error('Η δοκιμαστική αποθήκευση στόχου απέτυχε.');
+    if(params.get('savings-target-save-pending')==='1')await new Promise<void>(resolve=>{(globalThis as typeof globalThis & {__myfinhubQaCompleteSavingsReceipt?:()=>void}).__myfinhubQaCompleteSavingsReceipt=resolve});
+    update(current=>({...current,state:{...current.state,settings:{...current.state.settings,savingsTargetRate:rate}}}));
+  };
   const upsertSavingsGoal=(goal:SavingsGoal)=>update(current=>{const rows=current.state.savingsGoals??[];const exists=rows.some(item=>item.id===goal.id);return {...current,state:{...current.state,savingsGoals:exists?rows.map(item=>item.id===goal.id?goal:item):[...rows,goal]}}});
   const deleteSavingsGoal=(id:string)=>update(current=>({...current,state:{...current.state,savingsGoals:(current.state.savingsGoals??[]).filter(item=>item.id!==id)}}));
   const updateTaxonomy=(operation:TaxonomyOperation)=>update(current=>applyTaxonomyOperation(current,operation,today));

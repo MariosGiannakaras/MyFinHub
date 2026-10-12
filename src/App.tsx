@@ -265,7 +265,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   });
   const upsertBudget=(budget:MonthlyBudget)=>finance.updateDurably(current=>{const rows=current.state.budgets??[];const exists=rows.some(item=>item.id===budget.id);return {...current,state:{...current.state,budgets:exists?rows.map(item=>item.id===budget.id?budget:item):[...rows,budget]}}});
   const deleteBudget=(id:string)=>finance.updateDurably(current=>({...current,state:{...current.state,budgets:(current.state.budgets??[]).filter(item=>item.id!==id)}}));
-  const updateSavingsTarget=(rate:number)=>finance.update(current=>({...current,state:{...current.state,settings:{...current.state.settings,savingsTargetRate:rate}}}));
+  const updateSavingsTarget=(rate:number)=>finance.updateDurably(current=>({...current,state:{...current.state,settings:{...current.state.settings,savingsTargetRate:rate}}}));
   const upsertSavingsGoal=(goal:SavingsGoal)=>finance.update(current=>{const rows=current.state.savingsGoals??[];const exists=rows.some(item=>item.id===goal.id);return {...current,state:{...current.state,savingsGoals:exists?rows.map(item=>item.id===goal.id?goal:item):[...rows,goal]}}});
   const deleteSavingsGoal=(id:string)=>finance.update(current=>({...current,state:{...current.state,savingsGoals:(current.state.savingsGoals??[]).filter(item=>item.id!==id)}}));
   const updateTaxonomy=async(operation:TaxonomyOperation)=>{

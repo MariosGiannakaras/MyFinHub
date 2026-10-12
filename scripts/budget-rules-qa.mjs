@@ -246,6 +246,33 @@ try{
   await screenshot('settings-rules-rejected-delete-desktop');
   await clickAria('Κλείσιμο επιβεβαίωσης');
 
+  console.log('Budget/Rules QA: Savings target waits for persisted receipt before closing the editor');
+  const savingsErrorUrl=new URL(urlFor('savings','budget-rules'));
+  savingsErrorUrl.searchParams.set('savings-target-save-failure','1');
+  await viewport(1440,1000);
+  await c.send('Page.navigate',{url:savingsErrorUrl.href});
+  await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}",'Savings target rejected-save fixture');
+  await clickAria('Αλλαγή στόχου αποταμίευσης');
+  await setLabelInput('Στόχος αποταμίευσης %','33');
+  await clickText('[data-savings-target-editor] button','Αποθήκευση στόχου');
+  await waitFor("function(){return (document.querySelector('[data-savings-target-editor] .form-error[role=alert]')?.textContent||'').includes('Η δοκιμαστική αποθήκευση στόχου απέτυχε.')}",'Savings target durable rejection announced');
+  assert(await c.call("function(){const root=[...document.querySelectorAll('[data-savings-target-editor]')].find(el=>el.getClientRects().length>0);return Boolean(root&&root.querySelector('input')?.value==='33')}"),'rejected savings target retains editable draft');
+  await screenshot('savings-target-rejected-save-desktop');
+
+  const savingsPendingUrl=new URL(urlFor('savings','budget-rules'));
+  savingsPendingUrl.searchParams.set('savings-target-save-pending','1');
+  await c.send('Page.navigate',{url:savingsPendingUrl.href});
+  await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}",'Savings target pending fixture');
+  await clickAria('Αλλαγή στόχου αποταμίευσης');
+  await setLabelInput('Στόχος αποταμίευσης %','33');
+  await clickText('[data-savings-target-editor] button','Αποθήκευση στόχου');
+  await waitFor("function(){return Boolean(globalThis.__myfinhubQaCompleteSavingsReceipt)}",'Savings target receipt pending');
+  assert(await c.call("function(){const root=[...document.querySelectorAll('[data-savings-target-editor]')].find(el=>el.getClientRects().length>0);return Boolean(root&&root.querySelector('input')?.disabled&&[...root.querySelectorAll('button')].every(btn=>btn.disabled)&&root.querySelector('input')?.value==='33')}"),'pending target draft frozen until acknowledgment');
+  await screenshot('savings-target-pending-receipt-desktop');
+  assert(await c.call("function(){const release=globalThis.__myfinhubQaCompleteSavingsReceipt;if(!release)return false;delete globalThis.__myfinhubQaCompleteSavingsReceipt;release();return true}"),'savings target receipt released');
+  await waitFor("function(){return ![...document.querySelectorAll('[data-savings-target-editor]')].some(el=>el.getClientRects().length>0)&&(document.querySelector('#main-workspace')?.textContent||'').includes('Στόχος 33%')}",'Savings target closes only after durable revision');
+  await screenshot('savings-target-durable-receipt-desktop');
+
   console.log('Budget/Rules QA: rejected Reports budget keeps the form and original persisted row');
   const rejectedBudgetUrl=new URL(urlFor('reports','budget-rules'));
   rejectedBudgetUrl.searchParams.set('budget-save-failure','1');
