@@ -26,6 +26,21 @@ describe('Savings page action hierarchy',()=>{
     expect(source).toContain('aria-label={`Νέα αποταμίευση: ${action.title}`}');
   });
 
+  it('makes both direct Savings entry modes receipt-aware without changing manual Quick Entry routing',()=>{
+    const app=readFileSync(new URL('../src/App.tsx',import.meta.url),'utf8');
+    const qa=readFileSync(new URL('../src/qa.tsx',import.meta.url),'utf8');
+    const browser=readFileSync(new URL('../scripts/budget-rules-qa.mjs',import.meta.url),'utf8');
+    expect(app).toContain('onCreate={addEventDurably} onQuickAdd={openSpecial}');
+    expect(qa).toContain('onCreate={addEventDurably} onQuickAdd={openSpecial}');
+    expect(source).toContain('entrySavingRef.current=true;setEntryBusy(true);setError');
+    expect(source).toContain('await onCreate(event)');
+    expect(source).toContain('aria-busy={entryBusy||undefined}');
+    expect(source).toContain('inert={entryBusy}');
+    expect(source).toContain('disabled={entryBusy} onClick={close}');
+    expect(browser).toContain('savings-pay-save-durable-rejected-mobile');
+    expect(browser).toContain('savings-complex-durable-pending-desktop');
+  });
+
   it('keeps user comments empty by default and source metadata separate',()=>{
     expect(source).toContain("note:'',savingSource:'manual_transfer'");
     expect(source).toContain("setNote('')");

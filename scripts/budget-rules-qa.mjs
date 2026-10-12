@@ -274,6 +274,36 @@ try{
   await waitFor("function(){return ![...document.querySelectorAll('[data-savings-target-editor]')].some(el=>el.getClientRects().length>0)&&(document.querySelector('#main-workspace')?.textContent||'').includes('Στόχος 33%')}",'Savings target closes only after durable revision');
   await screenshot('savings-target-durable-receipt-desktop');
 
+  console.log('Budget/Rules QA: Pay & Save and complex Savings direct edits await the same durable receipt');
+  const directSavingUrl=(status)=>{const u=new URL(urlFor('savings','budget-rules'));u.searchParams.set(status,'1');return u.href};
+  await viewport(1440,1000);
+  await c.send('Page.navigate',{url:directSavingUrl('quick-event-save-failure')});
+  await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}",'direct Savings failure fixture');
+  await clickAria('Νέα αποταμίευση: Pay & Save');
+  await waitFor("function(){return Boolean(document.querySelector('#saving-editor-title'))}",'Pay & Save owned editor');
+  await setLabelInput('Ποσό','31');
+  await setLabelInput('Σχόλιο / λόγος','QA Durable Pay Save Rejection');
+  await clickText('.savings-dialog .editor-actions button','Καταχώριση αποταμίευσης');
+  await waitFor("function(){return (document.querySelector('#saving-editor-error[role=alert]')?.textContent||'').includes('δοκιμαστική αποθήκευση')}",'Pay & Save rejected exact finance receipt');
+  assert(await c.call("function(){const dlg=document.querySelector('#saving-editor-title')?.closest('[role=dialog]');return Boolean(dlg)&&[...dlg.querySelectorAll('label')].some(label=>(label.querySelector(':scope > span')?.textContent||'').includes('Σχόλιο / λόγος')&&label.querySelector('input')?.value==='QA Durable Pay Save Rejection')}"),'Pay & Save draft remains present after rejected receipt');
+  await screenshot('savings-pay-save-durable-rejected-desktop');
+  await viewport(390,844);
+  await noOverflow('rejected Pay & Save direct mobile');
+  await screenshot('savings-pay-save-durable-rejected-mobile');
+
+  await viewport(1440,1000);
+  await c.send('Page.navigate',{url:directSavingUrl('quick-event-save-pending')});
+  await waitFor("function(){return Boolean(document.querySelector('#main-workspace h1'))}",'complex Savings pending fixture');
+  await clickAria('Νέα αποταμίευση: Σύνθετη αποταμίευση');
+  await waitFor("function(){return Boolean(document.querySelector('#saving-editor-title'))}",'complex saving owned editor');
+  await setLabelInput('Ποσό','23');
+  await clickText('.savings-dialog .editor-actions button','Καταχώριση αποταμίευσης');
+  await waitFor("function(){const dlg=document.querySelector('#saving-editor-title')?.closest('[role=dialog]');return dlg?.getAttribute('aria-busy')==='true'&&dlg.querySelector('.editor-actions button:last-child')?.disabled===true}",'complex Savings pending receipt locks repeated actions');
+  assert(await c.call("function(){const dlg=document.querySelector('#saving-editor-title')?.closest('[role=dialog]');return Boolean(dlg)&&dlg.querySelector('button[aria-label=\"Κλείσιμο αποταμίευσης\"]')?.disabled===true&&Boolean(dlg.querySelector('.settings-form[inert]'))}"),'complex saving cannot be dismissed or edited during pending receipt');
+  await screenshot('savings-complex-durable-pending-desktop');
+  await c.call("function(){globalThis.__myfinhubQaCompleteQuickEventReceipt?.();return true}");
+  await waitFor("function(){return !document.querySelector('#saving-editor-title')}",'complex Savings dismisses only after exact receipt');
+
   console.log('Budget/Rules QA: contextual Savings targets bank-classified savings accounts');
   await navigate('savings','savings-bank-transfer',1440,1000);
   await clickAria('Νέα αποταμίευση: Μεταφορά στην άκρη');
