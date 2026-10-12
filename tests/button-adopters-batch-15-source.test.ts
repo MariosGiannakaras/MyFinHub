@@ -24,19 +24,17 @@ describe('Stage 2 Button/IconButton adopters batch 15',()=>{
     expect(attention).toContain('className="attention-approved-icon-action"');
   });
 
-  it('migrates six BudgetRuleSettings canonical-hook row actions and keeps existing shared editor actions',()=>{
+  it('retains the canonical budget delete action and removes duplicate automation controls',()=>{
     expect(budgets).toContain("import { IconButton } from './IconButton';");
     expect(budgets).toContain('<IconButton aria-label={`Διαγραφή προϋπολογισμού');
-    expect(budgets).toContain('<IconButton aria-label={`Μετακίνηση αυτοματισμού ${rule.name} προς τα πάνω`}');
-    expect(budgets).toContain('<IconButton aria-label={`Μετακίνηση αυτοματισμού ${rule.name} προς τα κάτω`}');
-    expect(budgets).toContain('<Button type="button" variant="secondary" onClick={()=>onUpsertRule');
-    expect(budgets).toContain('<IconButton aria-label={`Επεξεργασία αυτοματισμού ${rule.name}`}');
-    expect(budgets).toContain('<IconButton aria-label={`Διαγραφή αυτοματισμού ${rule.name}`}');
+    expect(budgets).toContain('<Button type="button" variant="primary" onClick={saveBudget}>');
+    expect(budgets).not.toContain('onUpsertRule');
+    expect(budgets).not.toContain('Μετακίνηση αυτοματισμού');
     expect(budgets).not.toMatch(/<button\b[^>]*className="icon-button"/);
     expect(budgets).not.toMatch(/<button\b[^>]*className="secondary"/);
   });
 
-  it('migrates ten TransactionRulesWorkspace canonical-hook actions to shared primitives',()=>{
+    it('migrates ten TransactionRulesWorkspace canonical-hook actions to shared primitives',()=>{
     expect(rules).toContain("import { Button } from './Button';");
     expect(rules).toContain("import { IconButton } from './IconButton';");
     expect(rules.match(/<IconButton\b/g)?.length??0).toBeGreaterThanOrEqual(5);

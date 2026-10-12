@@ -31,6 +31,10 @@ describe('category budget and rule integration source contracts',()=>{
     expect(app).toContain('const deleteRule=');
     expect(app).toContain("item.action === 'open_budgets'");
     expect(reports).toContain('<BudgetRuleSettings');
+    expect(reports).not.toContain('onUpsertRule');
+    expect(reports).not.toContain('onDeleteRule');
+    expect(budgetEditor).not.toContain('TransactionRule');
+    expect(budgetEditor).not.toContain('data-advanced-automations');
     expect(reports).toContain('budgetMonth={month}');
     expect(reports).toContain('asOf={asOf} budgetMonth={month}');
     expect(budgetEditor).toContain('budgetProgress(data,month,asOf)');

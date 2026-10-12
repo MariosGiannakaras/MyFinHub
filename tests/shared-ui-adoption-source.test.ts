@@ -9,6 +9,7 @@ const lending=read('src/pages/LendingPage.tsx');
 const recurring=read('src/pages/RecurringPage.tsx');
 const loans=read('src/pages/LoansPage.tsx');
 const budgetRules=read('src/components/BudgetRuleSettings.tsx');
+const rulesWorkspace=read('src/components/TransactionRulesWorkspace.tsx');
 const button=read('src/components/Button.tsx');
 const iconButton=read('src/components/IconButton.tsx');
 const dialogShell=read('src/components/DialogShell.tsx');
@@ -54,7 +55,8 @@ describe('shared finance UI adoption contracts',()=>{
     expect(loans).toMatch(/Αριθμός δόσεων<\/span><AppTextInput type=\"number\"/);
     expect(budgetRules).toContain('Προειδοποίηση %');
     expect(budgetRules).toContain('<AppTextInput inputMode="decimal" value={budgetAlert}');
-    expect(budgetRules).toContain('priority:editingRule?.priority??nextPriority');
+    expect(rulesWorkspace).toContain('priority:editingRule?.priority??nextPriority');
+    expect(budgetRules).not.toContain('nextPriority');
     expect(budgetRules).not.toContain('<span>Προτεραιότητα</span>');
   });
 

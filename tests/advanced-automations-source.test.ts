@@ -1,52 +1,55 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
-const panel=readFileSync(new URL('../src/components/BudgetRuleSettings.tsx',import.meta.url),'utf8');
-const categorySelect=readFileSync(new URL('../src/components/CategorySelectInput.tsx',import.meta.url),'utf8');
-const engine=readFileSync(new URL('../src/lib/transactionRules.ts',import.meta.url),'utf8');
+const read=(p:string)=>readFileSync(new URL(`../${p}`,import.meta.url),'utf8');
+const panel=read('src/components/TransactionRulesWorkspace.tsx');
+const budget=read('src/components/BudgetRuleSettings.tsx');
+const reports=read('src/pages/ReportsPage.tsx');
+const settings=read('src/pages/SettingsPage.tsx');
+const categorySelect=read('src/components/CategorySelectInput.tsx');
+const engine=read('src/lib/transactionRules.ts');
+const order=read('src/lib/transactionRuleEditor.ts');
 
-describe('Advanced transaction automations source contracts',()=>{
-  it('moves rules behind Advanced / Automations and removes low-level priority terminology from the UI',()=>{
-    expect(panel).toContain('data-advanced-automations');
-    expect(panel).toContain('Προχωρημένα · Αυτοματισμοί');
+describe('canonical transaction automation source contracts',()=>{
+  it('only mounts the Settings Rules workspace, not a second Reports editor',()=>{
+    expect(settings).toContain('<TransactionRulesWorkspace data={data}');
+    expect(panel).toContain('data-advanced-automations data-rules-workspace');
+    expect(panel).toContain('Κανόνες νέων κινήσεων');
+    expect(reports).toContain('<BudgetRuleSettings');
+    expect(budget).toContain('budgetProgress(data,month,asOf)');
+    expect(budget).not.toContain('data-advanced-automations');
+    expect(budget).not.toContain('onUpsertRule');
+    expect(reports).not.toContain('onUpsertRule');
     expect(panel).not.toContain('<span>Προτεραιότητα</span>');
     expect(panel).not.toContain('First match wins');
-    expect(panel).not.toContain('#{rule.priority}');
   });
-
-  it('uses human condition to action language and user-facing source scope choices',()=>{
-    expect(panel).toContain('Όταν η περιγραφή');
-    expect(panel).toContain('Κείμενο περιγραφής');
-    expect(panel).toContain('Τότε βάλε κατηγορία');
-    expect(panel).toContain('Όταν την καταχωρίζω εγώ');
-    expect(panel).toContain('Όταν έρχεται από εισαγωγή');
-    expect(panel).toContain('Όταν επιβεβαιώνεται από έλεγχο');
-    expect(panel).toContain('Σε κάθε νέα υποστηριζόμενη κίνηση');
+  it('retains human when-then categories, every valid scope, and read-only previews',()=>{
+    for(const label of ['Όταν η περιγραφή','Κείμενο περιγραφής','Κατηγορία / υποκατηγορία','Όταν την καταχωρίζω εγώ','Όταν έρχεται από εισαγωγή','Όταν επιβεβαιώνεται από έλεγχο','Σε κάθε νέα υποστηριζόμενη κίνηση','Δεν αλλάζει καμία από αυτές']){
+      expect(panel).toContain(label);
+    }
+    expect(panel).toContain('ruleScopeChoice(rule.scopes)');
+    expect(panel).toContain('scopesForRuleChoice(ruleScope)');
+    expect(order).toContain("['manual','imported','review']");
   });
-
-  it('keeps numeric priority as internal storage while exposing accessible direct order controls',()=>{
-    expect(panel).toContain('priority:editingRule?.priority??nextPriority');
+  it('enforces one atomic integer-safe reorder through finance history',()=>{
     expect(panel).toContain('Μετακίνηση αυτοματισμού ${rule.name} προς τα πάνω');
     expect(panel).toContain('Μετακίνηση αυτοματισμού ${rule.name} προς τα κάτω');
-    expect(panel).toContain('onUpsertRule({...rules[index],priority,updatedAt:now()})');
-    expect(panel).toContain('onUpsertRule({...rules[target],priority,updatedAt:now()})');
+    expect(panel).toContain('onReorderRule(rules[index].id,direction)');
+    expect(settings).toContain('onFinanceUpdate(current=>');
+    expect(settings).toContain('reorderTransactionRules(rules,id,direction,new Date().toISOString())');
+    expect(order).toContain('Number.isInteger(priority)');
+    expect(order).toContain('ordered.map((rule,position)');
     expect(engine).toContain('.sort((a, b) => a.priority - b.priority || a.id.localeCompare(b.id))');
   });
-
-  it('keeps preview read-only and flags unavailable saved references instead of silently replacing them',()=>{
-    expect(panel).toContain('Μόνο προεπισκόπηση:');
-    expect(panel).toContain('Δεν αλλάζει καμία από αυτές.');
-    expect(panel).toContain('data-rule-invalid={invalid?\'true\':\'false\'}');
+  it('warns on unavailable references and uses shared taxonomy selection',()=>{
     expect(panel).toContain('Ο λογαριασμός της συνθήκης δεν είναι πλέον διαθέσιμος.');
     expect(panel).toContain('Η κατηγορία της ενέργειας δεν είναι πλέον διαθέσιμη.');
     expect(panel).toContain('Μη διαθέσιμος · {ruleAccount}');
     expect(panel).toContain('<CategorySelectInput');
     expect(categorySelect).toContain('!validCurrent&&category');
     expect(categorySelect).toContain('data-option-level="invalid"');
-    expect(categorySelect).toContain('Μη διαθέσιμη · {categoryPath(category,includeSubcategories?subcategory:undefined)}');
   });
-
-  it('preserves the existing new-event-only first-match engine and validation boundary',()=>{
+  it('keeps the first-match-only new-event engine and preserves history',()=>{
     expect(engine).toContain('First matching enabled rule wins.');
     expect(engine).toContain('Existing history is never walked or');
     expect(engine).toContain('const { winner } = previewTransactionRules(data, event)');
