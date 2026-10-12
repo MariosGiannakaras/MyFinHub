@@ -12,6 +12,7 @@ import type {
 import { cleanNote } from './format.js';
 import { calendarMonthRange, isValidDateOnly } from './dateOnly.js';
 import { isSafeMoneyValue } from './money.js';
+import { isSavingsAccount } from './accountSemantics.js';
 
 const CREDIT_ACCOUNT: Account = {
   id: 'credit-card',
@@ -26,10 +27,11 @@ export function migrateData(input: FinanceData): FinanceData {
   const state = input.state ?? ({} as FinanceData['state']);
   const seedAccounts=input.seed?.accounts??[];
   const selectable=seedAccounts.filter(account=>account.kind!=='credit'&&account.showInQuickChoices!==false);
-  const fallbackOperating=selectable.find(account=>account.kind==='bank')
+  // Never auto-provision a savings account as the expense/income default
+  // merely because the imported bank category reports kind=bank.
+  const fallbackOperating=selectable.find(account=>account.kind==='bank'&&!isSavingsAccount(account))
     ??selectable.find(account=>account.kind==='cash'&&account.cashRole!=='reserve')
-    ??selectable.find(account=>account.kind!=='savings')
-    ??selectable[0];
+    ??selectable.find(account=>!isSavingsAccount(account));
   const defaultAccountId=fallbackOperating?.id??'';
   const excludedDefaults=seedAccounts.filter(account=>account.excludeFromAvailable).map(account=>account.id);
   return {

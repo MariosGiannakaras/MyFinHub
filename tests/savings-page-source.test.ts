@@ -7,6 +7,10 @@ const genericQuick=readFileSync(new URL('../src/components/QuickAdd.tsx',import.
 const loans=readFileSync(new URL('../src/pages/LoansPage.tsx',import.meta.url),'utf8');
 const ledger=readFileSync(new URL('../src/lib/ledgerFoundations.ts',import.meta.url),'utf8');
 const selection=readFileSync(new URL('../src/lib/accountSelection.ts',import.meta.url),'utf8');
+const accountSemantics=readFileSync(new URL('../src/lib/accountSemantics.ts',import.meta.url),'utf8');
+const commandSearch=readFileSync(new URL('../src/lib/commandSearch.ts',import.meta.url),'utf8');
+const dashboard=readFileSync(new URL('../src/pages/DashboardPage.tsx',import.meta.url),'utf8');
+const domain=readFileSync(new URL('../src/lib/domain.ts',import.meta.url),'utf8');
 const composition=readFileSync(new URL('../src/styles/savings-desktop-composition.css',import.meta.url),'utf8');
 const functionalQa=readFileSync(new URL('../scripts/completion-functional-crud-qa.mjs',import.meta.url),'utf8');
 const remediationQa=readFileSync(new URL('../scripts/savings-remediation-qa.mjs',import.meta.url),'utf8');
@@ -36,7 +40,11 @@ describe('Savings page action hierarchy',()=>{
     expect(contextual).toContain('const savingsSources=accounts.filter(isSavingContributionSource)');
     expect(source).toContain('const sourceAccounts=accounts.filter(isSavingContributionSource)');
     expect(source).toContain('savingContributionDraftError(data,{fromAccountId:from,toAccountId:to,amount:numeric})');
-    expect(selection).toContain("account.bankAccountCategory==='savings'");
+    expect(accountSemantics).toContain("account.bankAccountCategory==='savings'");
+    expect(selection).toContain("export { isSavingsAccount } from './accountSemantics.js'");
+    expect(domain).toContain("import { isSavingsAccount } from './accountSemantics.js'");
+    expect(commandSearch).toContain('const savings=isSavingsAccount(account)');
+    expect(dashboard).toContain('const savingsAccounts=accounts.filter(isSavingsAccount)');
     expect(genericQuick).toContain('savingContributionDraftError(data,');
     expect(genericQuick).toContain('const savingSources=accounts.filter(isSavingContributionSource)');
     expect(genericQuick).toContain("accountOptions(from,kind==='saving_cash_offset'?savingSources:accounts)");

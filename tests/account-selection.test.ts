@@ -39,6 +39,33 @@ describe('canonical account selection',()=>{
     expect(JSON.stringify(migrated)).not.toContain('piraeus-payroll');
   });
 
+  it('migrates bank-category savings without creating a false operating default',()=>{
+    const incoming=base([
+      {id:'bank-saving',name:'Saving',kind:'bank',bankAccountCategory:'savings'},
+      {id:'current',name:'Current',kind:'bank',bankAccountCategory:'current'},
+      {id:'legacy-saving',name:'Legacy',kind:'savings'},
+    ]);
+    delete (incoming.state.settings as Partial<FinanceData['state']['settings']>).defaultExpenseAccount;
+    delete (incoming.state.settings as Partial<FinanceData['state']['settings']>).defaultIncomeAccount;
+    delete (incoming.state.settings as Partial<FinanceData['state']['settings']>).defaultLoanAccount;
+    const migrated=migrateData(incoming);
+    expect(migrated.state.settings.defaultExpenseAccount).toBe('current');
+    expect(migrated.state.settings.defaultIncomeAccount).toBe('current');
+    expect(migrated.state.settings.defaultLoanAccount).toBe('current');
+    const savingsOnly=base([
+      {id:'bank-saving',name:'Bank Savings',kind:'bank',bankAccountCategory:'savings'},
+      {id:'legacy-saving',name:'Savings',kind:'savings'},
+    ]);
+    delete (savingsOnly.state.settings as Partial<FinanceData['state']['settings']>).defaultExpenseAccount;
+    delete (savingsOnly.state.settings as Partial<FinanceData['state']['settings']>).defaultIncomeAccount;
+    delete (savingsOnly.state.settings as Partial<FinanceData['state']['settings']>).defaultLoanAccount;
+    const withoutOperating=migrateData(savingsOnly);
+    expect(withoutOperating.state.settings.defaultExpenseAccount).toBe('');
+    expect(withoutOperating.state.settings.defaultIncomeAccount).toBe('');
+    expect(withoutOperating.state.settings.defaultLoanAccount).toBe('');
+    expect(financeAccountChoices(withoutOperating).operating).toBeUndefined();
+  });
+
   it('uses the exact semantic Dashboard hierarchy independently of configured operating defaults or display names',()=>{
     const data=migrateData(base([
       {id:'cash-daily',name:'Pocket A',kind:'cash',cashRole:'daily'},

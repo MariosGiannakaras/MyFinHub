@@ -1,10 +1,8 @@
 import type { Account, FinanceData } from '../types.js';
 import { allAccounts } from './domain.js';
+import { isSavingsAccount } from './accountSemantics.js';
 
-/** One savings identity for account choices, goals, and transfer source/target UI. */
-export function isSavingsAccount(account:Pick<Account,'kind'|'bankAccountCategory'>){
-  return account.kind==='savings'||(account.kind==='bank'&&account.bankAccountCategory==='savings');
-}
+export { isSavingsAccount } from './accountSemantics.js';
 
 /** An explicitly booked new saving must originate from a bank operating account.
  * Unknown legacy bank categories remain compatible with older imported data;

@@ -1,5 +1,6 @@
 import { allCards, cardBanks, cardKindLabel } from './cards.js';
 import { allAccounts, effectiveLegacyTransactions } from './domain.js';
+import { isSavingsAccount } from './accountSemantics.js';
 import { lendingRows } from './lending.js';
 import { loanRemainingInstallments } from './loans.js';
 import { accountDisplayName } from './ui.js';
@@ -58,7 +59,7 @@ export function buildCommandSearchIndex(data:FinanceData,asOf?:string):CommandSe
  ];
  for(const account of allAccounts(data)){
   if(account.id==='credit-card')continue;
-  const title=accountName(data,account.id);const savings=account.kind==='savings'||(account.kind==='bank'&&account.bankAccountCategory==='savings');rows.push(item({id:`account:${account.id}`,kind:'account',title,subtitle:savings?'Μεταφορά προς αποταμίευση':'Καταχώριση εξόδου στον λογαριασμό',keywords:[account.id,account.name,account.short??'',account.kind],action:{type:'quick_add',kind:'expense',accountId:account.id},priority:60}));
+  const title=accountName(data,account.id);const savings=isSavingsAccount(account);rows.push(item({id:`account:${account.id}`,kind:'account',title,subtitle:savings?'Μεταφορά προς αποταμίευση':'Καταχώριση εξόδου στον λογαριασμό',keywords:[account.id,account.name,account.short??'',account.kind],action:{type:'quick_add',kind:'expense',accountId:account.id},priority:60}));
   rows.push(item({id:`action:manage-account:${account.id}`,kind:'command',title:`Διαχείριση · ${title}`,subtitle:'Προβολή συγκεκριμένου λογαριασμού στις Ρυθμίσεις',keywords:[title,account.id,account.kind,'διαχείριση','ρυθμίσεις','λογαριασμός'],action:{type:'account_focus',accountId:account.id},priority:62}));
  }
  for(const tx of effectiveLegacyTransactions(data)){

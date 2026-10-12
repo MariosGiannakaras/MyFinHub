@@ -11,6 +11,7 @@ import { budgetProgress } from '../lib/budgets';
 import { visibleAttentionItems } from '../lib/attention';
 import { effectiveLegacyTransactions, flowImpactEvent, flowImpactLegacy, monthRange } from '../lib/domain';
 import { financeAccountChoices } from '../lib/accountSelection';
+import { isSavingsAccount } from '../lib/accountSemantics';
 import { dashboardAccountHistory, dashboardBalanceChange, dashboardHistoryStart, dashboardPreviousMonthValues, dashboardSavingsGoal, type DashboardAccountPoint } from '../lib/dashboardAccounts';
 import { addCalendarDays } from '../lib/dateOnly';
 import { cashFlowForecast } from '../lib/forecast';
@@ -123,7 +124,7 @@ export function DashboardPage({ data, month, asOf, motionMode='system', privacyV
   const accountChanges=useMemo(()=>Object.fromEntries(primary.map(account=>[account.id,dashboardBalanceChange(data,account.id,periodEndDate)])),[data,primaryAccountKey,periodEndDate]);
   const savingsAccount=accountChoices.dashboardSavings;
   const previousSavings=useMemo(()=>savingsAccount?dashboardPreviousMonthValues(data,savingsAccount.id,balanceMonth,periodEndDate):[],[data,savingsAccount?.id,balanceMonth,periodEndDate]);
-  const savingsAccounts=accounts.filter(account=>account.kind==='savings'||(account.kind==='bank'&&account.bankAccountCategory==='savings'));
+  const savingsAccounts=accounts.filter(isSavingsAccount);
   const accountSavingsGoal=dashboardSavingsGoal(data.state.savingsGoals,savingsAccounts.length);
   const savingAmount=flow.saving;const savingsRate=flow.income>0?savingAmount/flow.income:0;const previousSavingsRate=previousFlow.income>0?previousFlow.saving/previousFlow.income:null;
   const incomeComparison=percentChange(flow.income,previousFlow.income);const expenseComparison=percentChange(flow.expense,previousFlow.expense);const savingComparison=percentChange(savingAmount,previousFlow.saving);const savingsRateDelta=previousSavingsRate===null?null:safePercent((savingsRate-previousSavingsRate)*100);
