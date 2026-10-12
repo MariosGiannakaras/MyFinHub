@@ -17,7 +17,7 @@ describe('LegacyTransactionEditor shared action primitive ownership',()=>{
     expect(editor).toContain('<Button type="button" variant="primary" disabled={saving} onClick={()=>void submit()}>');
     expect(editor).toContain('await onSave(normalized)');
     expect(editor).toContain('busy={saving}');
-    const visual=fs.readFileSync(path.join(root,'scripts/legacy-transaction-management-qa.mjs'),'utf8');
+    const visual=fs.readFileSync(path.join(process.cwd(),'scripts/legacy-transaction-management-qa.mjs'),'utf8');
     expect(visual).toContain('settled mobile pending tombstone confirmation');
     expect(visual).toContain('Math.abs(matrix.a-1)<0.005');
     expect(editor).toContain('inert={saving}');
