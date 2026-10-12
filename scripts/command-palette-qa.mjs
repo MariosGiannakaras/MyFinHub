@@ -95,7 +95,10 @@ try{
  await waitFor("function(){return document.querySelector('#main-workspace h1')?.textContent?.includes('Αναφορές')}",'credit search source');
  await ctrlK();await setSearch('QA Credit 3');await activateExactTitle('QA Credit 3');await press('Enter');
  await waitFor("function(){return !!document.querySelector('.stack-card.top[data-card-id=qa-credit-stack-3]')}",'exact selected credit card');
- assert(await c.call("function(){return !!document.querySelector('.stack-card.top[data-card-id=qa-credit-stack-3]')&&!document.querySelector('.command-palette')}"),'credit result opens its precise selected card without exposing vault');
+ // AnimatePresence retains the exit DOM for its 160ms transition. Wait for
+ // *both* a correctly focused card and palette dismissal before asserting.
+ await waitFor("function(){return !document.querySelector('.command-palette')}",'credit command palette exit completes');
+ assert(await c.call("function(){return !!document.querySelector('.stack-card.top[data-card-id=qa-credit-stack-3]')&&!document.querySelector('.command-palette')&&!document.querySelector('.card-details-dialog')&&!document.querySelector('.contextual-quick-modal')}"),'credit result opens its precise selected card without exposing vault');
  await screenshot('command-exact-credit-card-selection');
  await ctrlK();await setSearch('QA Visa');await activateExactTitle('QA Visa');await press('Enter');
  await waitFor("function(){return !!document.querySelector('.stack-card.top[data-card-id=qa-card]')}",'switch selected card in same credit route');

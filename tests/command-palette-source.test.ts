@@ -62,6 +62,9 @@ describe('unified command palette source contracts',()=>{
     expect(rendered).toContain('const activateExactTitle=async title=>');
     expect(rendered).toContain("querySelector('.command-result-copy b')");
     expect(rendered).toContain("await activateExactTitle('QA Credit 3')");
+    expect(rendered).toContain("'credit command palette exit completes'");
+    expect(rendered).toContain("!document.querySelector('.card-details-dialog')");
+    expect(rendered).toContain("!document.querySelector('.contextual-quick-modal')");
     expect(rendered).toContain("await activateExactTitle('QA Visa')");
     expect(rendered).toContain("await activateOption('Ολοκλήρωση · Ετήσια ασφάλεια')");
     expect(rendered).toContain("await activateExactTitle('Προγραμματισμένη κίνηση 18')");
