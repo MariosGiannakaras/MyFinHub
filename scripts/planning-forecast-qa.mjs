@@ -54,6 +54,57 @@ try{
   console.log('Planning QA: skip and cancel preserve audit history through owned confirmations');
   const skipped=await c.call("function(){const row=document.querySelector('[data-scheduled-id=\"qa-scheduled-transfer\"]');const button=row?.querySelector('button[aria-label^=\"Παράλειψη\"]');button?.click();return Boolean(button)}");assert(skipped,'skip action exists');await waitFor("function(){return Boolean(document.querySelector('[role=alertdialog]'))}",'skip confirmation');assert(await c.call("function(){const dialog=document.querySelector('[role=alertdialog]');return Boolean(dialog&&dialog.textContent.includes('Παράλειψη προγραμματισμένης'))}"),'skip uses app-owned confirmation');await sleep(180);await screenshot('confirm-planning-skip');await clickText('[role=alertdialog] .save-button','Παράλειψη');await waitFor("function(){return !document.querySelector('[role=alertdialog]')}",'skip confirmation close');await waitFor("function(){return [...document.querySelectorAll('.scheduled-history-list>div')].some(row=>row.textContent.includes('Μεταφορά στον στόχο')&&row.textContent.includes('Παραλείφθηκε'))}",'skipped history');const cancelled=await c.call("function(){const row=document.querySelector('[data-scheduled-id=\"qa-scheduled-expense\"]');const button=row?.querySelector('button[aria-label^=\"Ακύρωση\"]');button?.click();return Boolean(button)}");assert(cancelled,'cancel action exists');await waitFor("function(){return Boolean(document.querySelector('[role=alertdialog]'))}",'cancel confirmation');assert(await c.call("function(){const dialog=document.querySelector('[role=alertdialog]');return Boolean(dialog&&dialog.getAttribute('data-tone')==='destructive'&&dialog.textContent.includes('Ακύρωση προγραμματισμένης'))}"),'cancel uses destructive app-owned confirmation');await sleep(180);await screenshot('confirm-planning-cancel');await clickText('[role=alertdialog] .save-button','Ακύρωση');await waitFor("function(){return !document.querySelector('[role=alertdialog]')}",'cancel confirmation close');await waitFor("function(){return [...document.querySelectorAll('.scheduled-history-list>div')].some(row=>row.textContent.includes('Ετήσια ασφάλεια')&&row.textContent.includes('Ακυρώθηκε'))}",'cancelled history');await noOverflow('planning lifecycle desktop');
 
+  console.log('Planning QA: rejected create, completion and lifecycle receipts preserve state');
+  const rejectedUrl=new URL(urlFor());rejectedUrl.searchParams.set('scheduled-save-failure','1');
+  await viewport(1440,1000);
+  await c.send('Page.navigate',{url:rejectedUrl.href});
+  await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Προγραμματισμός')}",'Planning rejected receipt fixture');
+  await clickText('button','Νέα προγραμματισμένη');
+  await waitFor("function(){return Boolean(document.querySelector('.planning-editor[role=dialog]'))}",'Planning create editor');
+  await setInput('Ποσό','80');
+  await clickText('.planning-editor .editor-actions button','Προσθήκη στο πρόγραμμα');
+  await waitFor("function(){return Boolean(document.querySelector('.planning-editor #scheduled-editor-error[role=alert]'))}",'Planning rejected create receipt');
+  assert(await c.call("function(){return Boolean(document.querySelector('.planning-editor'))&&document.querySelector('.planning-editor input[data-autofocus]')?.value==='80'}"),'rejected create retains editor and amount');
+  await screenshot('planning-scheduled-create-receipt-failure-desktop');
+  await viewport(390,844);
+  await noOverflow('Planning rejected create receipt mobile');
+  await screenshot('planning-scheduled-create-receipt-failure-mobile');
+
+  await viewport(1440,1000);
+  await c.send('Page.navigate',{url:rejectedUrl.href});
+  await waitFor("function(){return Boolean(document.querySelector('.scheduled-row'))}",'Planning scheduled row');
+  await clickText('.scheduled-row .scheduled-actions button','Ολοκλήρωση');
+  await waitFor("function(){return Boolean(document.querySelector('.completion-dialog'))}",'Planning completion editor');
+  await clickText('.completion-dialog .editor-actions button','Καταχώριση πραγματικής κίνησης');
+  await waitFor("function(){return Boolean(document.querySelector('.completion-dialog #scheduled-complete-error[role=alert]'))}",'Planning rejected atomic completion');
+  assert(await c.call("function(){return Boolean(document.querySelector('.completion-dialog'))&&document.querySelector('.scheduled-history-list')?.textContent?.includes('Ολοκληρώθηκε')!==true}"),'failed completion keeps scheduled item pending');
+  await screenshot('planning-scheduled-complete-receipt-failure-desktop');
+
+  await c.send('Page.navigate',{url:rejectedUrl.href});
+  await waitFor("function(){return Boolean(document.querySelector('[data-scheduled-id="qa-scheduled-transfer"]'))}",'Planning lifecycle row');
+  const failedSkip=await c.call("function(){const node=document.querySelector('[data-scheduled-id="qa-scheduled-transfer"] button[aria-label^="Παράλειψη"]');node?.click();return Boolean(node)}");
+  assert(failedSkip,'Planning skip confirms correct row');
+  await waitFor("function(){return Boolean(document.querySelector('[role=alertdialog]'))}",'Planning skip dialog');
+  await clickText('[role=alertdialog] button','Παράλειψη');
+  await waitFor("function(){return Boolean(document.querySelector('[role=alertdialog] [role=alert]'))}",'Planning rejected skip receipt error');
+  await screenshot('planning-scheduled-skip-receipt-failure-desktop');
+
+  console.log('Planning QA: pending scheduled receipt keeps confirmation locked until durable success');
+  const pendingUrl=new URL(urlFor());pendingUrl.searchParams.set('scheduled-save-pending','1');
+  await c.send('Page.navigate',{url:pendingUrl.href});
+  await waitFor("function(){return Boolean(document.querySelector('[data-scheduled-id="qa-scheduled-transfer"]'))}",'Planning pending fixture');
+  const pendingSkip=await c.call("function(){const node=document.querySelector('[data-scheduled-id="qa-scheduled-transfer"] button[aria-label^="Παράλειψη"]');node?.click();return Boolean(node)}");
+  assert(pendingSkip,'Planning pending skip exists');
+  await waitFor("function(){return Boolean(document.querySelector('[role=alertdialog]'))}",'Planning pending skip confirmation');
+  await clickText('[role=alertdialog] button','Παράλειψη');
+  await waitFor("function(){return document.querySelector('[role=alertdialog][aria-busy=true] button:last-child')?.disabled===true}",'Planning pending receipt blocks duplicate confirmation');
+  await viewport(390,844);
+  await noOverflow('Planning pending receipt mobile');
+  await screenshot('planning-scheduled-skip-receipt-pending-mobile');
+  await c.call("function(){globalThis.__myfinhubQaCompleteScheduledReceipt?.();return true}");
+  await waitFor("function(){return !document.querySelector('[role=alertdialog]')}",'Planning confirm closes after receipt');
+  await waitFor("function(){return [...document.querySelectorAll('.scheduled-history-list>div')].some(row=>row.textContent.includes('Μεταφορά στον στόχο')&&row.textContent.includes('Παραλείφθηκε'))}",'Planning skip committed on receipt');
+
   console.log('Planning QA: negative and extreme forecast states');
   await navigate('forecast-negative');assert(await c.call("function(){return Boolean(document.querySelector('.forecast-account.danger'))&&document.body.textContent.includes('Αρνητικό από')}") ,'negative account date is explicit');await screenshot('planning-forecast-negative');await navigate('extreme',1440,1000);await noOverflow('planning extreme desktop');const extremeInitial=await c.call("function(){return {rows:document.querySelectorAll('.scheduled-row').length,more:(document.querySelector('.planning-scheduled-more')?.textContent||'').trim()}}");assert(extremeInitial.rows>0&&extremeInitial.rows<=12,`extreme scheduled list should start bounded: ${JSON.stringify(extremeInitial)}`);assert(extremeInitial.more.includes('Προβολή περισσότερων'),`extreme scheduled list should expose progressive expansion: ${JSON.stringify(extremeInitial)}`);await clickText('.planning-scheduled-more','Προβολή περισσότερων');await waitFor("function(before){return document.querySelectorAll('.scheduled-row').length>before}",'extreme scheduled list expansion',[extremeInitial.rows]);const extremeExpanded=await c.call("function(){return document.querySelectorAll('.scheduled-row').length}");assert(extremeExpanded>extremeInitial.rows,`extreme scheduled list expands beyond initial slice: ${extremeInitial.rows} -> ${extremeExpanded}`);await navigate('extreme',320,700);await noOverflow('planning extreme 320');await touchTargets('planning extreme 320');
 

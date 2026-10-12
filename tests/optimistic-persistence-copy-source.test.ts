@@ -9,9 +9,13 @@ const app=readFileSync('src/App.tsx','utf8');
 
 describe('optimistic finance edit feedback parity with durable save state (DV-FB07)',()=>{
   it('does not claim successful persistence before queued Planning or Attention writes',()=>{
-    expect(planning).toContain('Η ενημέρωση της προγραμματισμένης κίνησης αποθηκεύεται.');
-    expect(planning).toContain('Η ακύρωση αποθηκεύεται.');
-    expect(planning).not.toContain('Η προγραμματισμένη κίνηση ενημερώθηκε.');
+    // Planning now has receipt-backed completion rather than merely queued copy.
+    expect(planning).toContain('Η ενημέρωση της προγραμματισμένης κίνησης αποθηκεύτηκε.');
+    expect(planning).toContain('Η ακύρωση αποθηκεύτηκε.');
+    expect(planning).toContain('await onUpsertScheduled(transitionScheduled(item,status))');
+    expect(planning).toContain('await onCompleteScheduled(completed, event)');
+    expect(planning).not.toContain('Η ενημέρωση της προγραμματισμένης κίνησης αποθηκεύεται.');
+    expect(planning).not.toContain('Η ακύρωση αποθηκεύεται.');
     expect(attention).toContain('Η αναβολή της υπενθύμισης');
     expect(attention).toContain('αποθηκεύεται.');
   });

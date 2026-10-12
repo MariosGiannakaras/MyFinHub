@@ -27,6 +27,10 @@ describe('time-aware product integration', () => {
     expect(planning).toContain('aria-busy={saving||undefined}');
     expect(qa).toContain("params.get('scheduled-save-failure')==='1'");
     expect(qa).toContain('onCompleteScheduled={completeScheduledDurably}');
+    const planningQa=readFileSync(new URL('../scripts/planning-forecast-qa.mjs',import.meta.url),'utf8');
+    expect(planningQa).toContain('planning-scheduled-create-receipt-failure-mobile');
+    expect(planningQa).toContain('planning-scheduled-complete-receipt-failure-desktop');
+    expect(planningQa).toContain('planning-scheduled-skip-receipt-pending-mobile');
   });
 
   it('keeps deterministic forecast language and an accessible text alternative', () => {
