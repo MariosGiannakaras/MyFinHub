@@ -100,11 +100,18 @@ try{
   await clickText('.quick-modal button','Εφαρμογή αλλαγών');
   await setByLabel('Αναζήτηση συναλλαγών','QA Audit Modern Event');
   await waitFor("function(){const rows=[...document.querySelectorAll('[data-transaction-source=\"event\"]')].filter(row=>(row.textContent||'').includes('QA Audit Modern Event'));return rows.length>=1&&rows.some(row=>(row.textContent||'').includes('21,75'))}",'updated modern event row');
-  const modernCopies=await c.call(`function(){const visible=${visible};return [...document.querySelectorAll('[data-transaction-source="event"]')].filter(row=>visible(row)&&(row.textContent||'').includes('QA Audit Modern Event')).length}`);
-  assert(modernCopies===1,'modern edit updates the existing event instead of creating a duplicate visible record');
+  // A just-updated table row may still be in its 170ms fade entrance.
+  // Demand exactly one fully visible, non-hidden finance row after settling.
+  await waitFor(`function(){const visible=${visible},entered=${entered};const rows=[...document.querySelectorAll('.transactions-approved-table tbody [data-transaction-source="event"]')].filter(row=>visible(row)&&entered(row)&&(row.textContent||'').includes('QA Audit Modern Event'));return rows.length===1&&rows[0].textContent.includes('21,75')}`,'exactly one settled modern event in the primary ledger');
   await shot('transactions-modern-event-updated');
-  const deleteModern=await c.call("function(){const row=[...document.querySelectorAll('[data-transaction-source=event]')].find(item=>item.getClientRects().length>0&&(item.textContent||'').includes('QA Audit Modern Event'));const button=row?.querySelector('button[aria-label^=\"Διαγραφή\"]');button?.click();return Boolean(button)}");
-  assert(deleteModern,'updated modern event exposes delete action');
+  // Deleting follows the same visible Details owner as editing, not a hidden
+  // row-actions fallback or a display-none semantic table.
+  const detailReady=await c.call("function(){const detail=document.querySelector('.transactions-detail-panel');return Boolean(detail&&(detail.textContent||'').includes('QA Audit Modern Event'))}");
+  if(!detailReady){
+    await clickVisibleRowAction('.transactions-approved-table tbody [data-transaction-source="event"]','QA Audit Modern Event','.row-context-button','updated modern event details access');
+    await waitFor("function(){const detail=document.querySelector('.transactions-detail-panel');return Boolean(detail&&(detail.textContent||'').includes('QA Audit Modern Event'))}",'updated modern event detail panel');
+  }
+  await clickText('.transactions-detail-actions button','Διαγραφή');
   await waitFor("function(){return Boolean(document.querySelector('.app-confirm-dialog[role=alertdialog]'))}",'modern event delete confirmation');
   await sleep(180);await shot('confirm-transaction-delete');
   await clickText('.app-confirm-dialog button','Διαγραφή');
