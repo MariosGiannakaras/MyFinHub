@@ -61,6 +61,14 @@ jobs:
           export MYFINHUB_UX_EVIDENCE_DIR="$RUNNER_TEMP/motion-focused/screenshots"
           node scripts/completion-functional-crud-qa.mjs 2>&1 | tee "$RUNNER_TEMP/motion-focused/logs/completion-functional.log"
           exit "${PIPESTATUS[0]}"
+      - name: Check settled Quick Entry Framer modal geometry in Light/Dark at all widths
+        shell: bash
+        env:
+          RHEOMIQ_QA_URL: http://127.0.0.1:5173/qa.html
+        run: |
+          export MYFINHUB_UX_EVIDENCE_DIR="$RUNNER_TEMP/motion-focused/screenshots"
+          node scripts/quick-entry-reference-qa.mjs 2>&1 | tee "$RUNNER_TEMP/motion-focused/logs/quick-entry-reference.log"
+          exit "${PIPESTATUS[0]}"
       - name: Stop Vite and preserve diagnostics
         if: always()
         shell: bash
