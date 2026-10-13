@@ -39,10 +39,11 @@ try{
     const clicked=await c.call(`function(selector,text){const target=${target};const node=target(selector,text);node?.click();return Boolean(node)}`,[selector,text]);
     assert(clicked,`missing visible ${selector} containing ${text}`);await sleep(90);
   };
-  const clickVisibleRowAction=async(rowSelector,rowText,actionSelector,label)=>{
-    const target=`function(rowSelector,rowText,actionSelector){const visible=${visible},entered=${entered};const row=[...document.querySelectorAll(rowSelector)].find(item=>visible(item)&&entered(item)&&(item.textContent||'').includes(rowText));const button=row?.querySelector(actionSelector);return button&&visible(button)&&entered(button)&&!button.disabled?button:null}`;
-    await waitFor(`function(rowSelector,rowText,actionSelector){return Boolean((${target})(rowSelector,rowText,actionSelector))}`,label,[rowSelector,rowText,actionSelector]);
-    const clicked=await c.call(`function(rowSelector,rowText,actionSelector){const target=${target};const button=target(rowSelector,rowText,actionSelector);button?.click();return Boolean(button)}`,[rowSelector,rowText,actionSelector]);
+  const clickVisibleRowAction=async(rowSelector,rowText,actionSelector,label,actionText='')=>{
+    const args=[rowSelector,rowText,actionSelector,actionText];
+    const target=`function(rowSelector,rowText,actionSelector,actionText){const visible=${visible},entered=${entered};const row=[...document.querySelectorAll(rowSelector)].find(item=>visible(item)&&entered(item)&&(item.textContent||'').includes(rowText));const button=[...row?.querySelectorAll(actionSelector)||[]].find(item=>visible(item)&&entered(item)&&!item.disabled&&(!actionText||(item.textContent||'').includes(actionText)));return button||null}`;
+    await waitFor(`function(rowSelector,rowText,actionSelector,actionText){return Boolean((${target})(rowSelector,rowText,actionSelector,actionText))}`,label,args);
+    const clicked=await c.call(`function(rowSelector,rowText,actionSelector,actionText){const target=${target};const button=target(rowSelector,rowText,actionSelector,actionText);button?.click();return Boolean(button)}`,args);
     assert(clicked,label);await sleep(90);
   };
   const setByLabel=async(label,value)=>{
@@ -221,7 +222,7 @@ try{
   await clickText('.loan-editor-dialog button','Δημιουργία');
   await waitFor("function(){return [...document.querySelectorAll('.loan-list-row')].some(row=>(row.textContent||'').includes('QA Audit Loan'))}",'saved loan');
   await shot('loan-created');
-  await clickVisibleRowAction('.loan-list-row','QA Audit Loan','button[aria-label^="Επεξεργασία"]','saved loan exposes edit');
+  await clickVisibleRowAction('.loan-list-row','QA Audit Loan','.loan-list-actions button','saved loan exposes edit','Επεξεργασία');
   await waitFor("function(){return Boolean(document.querySelector('#loan-editor-title'))}",'loan edit editor');
   await setByLabel('Όνομα','QA Audit Loan Updated');
   await clickText('.loan-editor-dialog button','Εφαρμογή');
