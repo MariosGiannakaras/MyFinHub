@@ -175,8 +175,10 @@ try{
   assert(reportsBeforeSaving.income&&reportsBeforeSaving.expense&&reportsBeforeSaving.saving,'Reports baseline exists before savings transfer');
   await clickText('.sidebar nav button','Αποταμίευση');
   await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Αποταμίευση')}",'Savings after report baseline');
-  const savingAction=await c.call(`function(){const visible=${visible};const button=[...document.querySelectorAll('.savings-action')].find(item=>visible(item)&&(item.textContent||'').includes('Μεταφορά στην άκρη'));button?.click();return Boolean(button)}`);
-  assert(savingAction,'manual savings transfer action opens');
+  // Shared entrance motion can briefly start action cards at opacity 0. Wait for
+  // the actual Savings affordance to be fully visible and enabled before use.
+  await waitFor("function(){const button=[...document.querySelectorAll('.savings-action')].find(item=>(item.textContent||'').includes('Μεταφορά στην άκρη'));if(!button||button.disabled)return false;const style=getComputedStyle(button),rect=button.getBoundingClientRect();return style.display!=='none'&&style.visibility!=='hidden'&&Number(style.opacity)>=.99&&rect.width>0&&rect.height>0}",'visible Savings transfer action');
+  await clickText('.savings-action','Μεταφορά στην άκρη');
   await waitFor("function(){return document.querySelector('#context-quick-title')?.textContent?.includes('Μεταφορά στην αποταμίευση')}",'manual savings contextual transfer editor');
   const route=await c.call("function(){const inputs=[...document.querySelectorAll('.contextual-quick-modal input[role=combobox]')];return inputs.map(input=>input.value)}");
   assert(route.length>=2&&route[0]&&route[1]&&route[0]!==route[1],`manual savings transfer resolves distinct source/destination accounts: ${JSON.stringify(route)}`);
