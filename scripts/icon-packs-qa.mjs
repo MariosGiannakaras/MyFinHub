@@ -68,6 +68,25 @@ try{
   assert(automaticPhosphor?.pack==='phosphor'&&automaticPhosphor.text.includes('Phosphor · Αυτόματο'),`family switch must update row preview immediately: ${JSON.stringify(automaticPhosphor)}`);
   await screenshot('icon-family-phosphor-preview-desktop');
 
+  // Prove that automatic semantic previews no longer collapse unrelated categories
+  // onto the same fallback SVG, across every formerly-small icon family.
+  const checkDistinctAuto=async pack=>{
+    const labels=['Τρόφιμα','Υγεία','Καύσιμα','Αγορές'];
+    await waitFor("function(pack){const all=[...document.querySelectorAll('.settings-icons-only .category-icon-unified-category > .category-icon-unified-main')];const wanted=['Τρόφιμα','Υγεία','Καύσιμα','Αγορές'];return wanted.every(label=>{const row=all.find(node=>(node.querySelector('.category-icon-unified-copy b')?.textContent||'').trim()===label);const glyph=row?.querySelector('[data-category-icon]');return glyph?.getAttribute('data-category-icon')?.startsWith(pack+':icon/')&&glyph?.querySelector('use')?.getAttribute('href')?.startsWith('/icon-packs/'+pack+'.svg#i-');})}",`${pack} unique automatic defaults`,[pack]);
+    const choices=await c.call("function(){const all=[...document.querySelectorAll('.settings-icons-only .category-icon-unified-category > .category-icon-unified-main')];return ['Τρόφιμα','Υγεία','Καύσιμα','Αγορές'].map(label=>{const row=all.find(node=>(node.querySelector('.category-icon-unified-copy b')?.textContent||'').trim()===label);const glyph=row?.querySelector('[data-category-icon]');return {label,key:glyph?.getAttribute('data-category-icon'),href:glyph?.querySelector('use')?.getAttribute('href')};})}");
+    assert(new Set(choices.map(item=>item.key)).size===choices.length,`${pack}: automatic categories reused same semantic icon: ${JSON.stringify(choices)}`);
+    assert(new Set(choices.map(item=>item.href)).size===choices.length,`${pack}: automatic categories reused same SVG: ${JSON.stringify(choices)}`);
+  };
+  await checkDistinctAuto('phosphor');
+  for(const [pack,label] of [['tabler','Tabler Icons'],['heroicons','Heroicons'],['bootstrap','Bootstrap Icons']]){
+    await clickText('.settings-icons-only .category-icon-pack-switcher-global button',label);
+    await checkDistinctAuto(pack);
+    await screenshot(`icon-family-${pack}-distinct-desktop`);
+  }
+  await clickText('.settings-icons-only .category-icon-pack-switcher-global button','Phosphor');
+  await checkDistinctAuto('phosphor');
+
+
   await openRow(targetLabel);
   assert(!(await c.call("function(){return Boolean(document.querySelector('.settings-icons-only [data-icon-selection-panel] .category-icon-pack-switcher'))}")),'shared picker does not repeat the pack selector');
   await waitFor("function(){return document.querySelectorAll('.settings-icons-only [data-icon-selection-panel] .category-icon-options [data-icon-pack]').length>=30}",'native Phosphor catalog loaded');
