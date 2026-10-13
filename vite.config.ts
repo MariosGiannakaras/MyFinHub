@@ -21,6 +21,18 @@ export default defineConfig(({ mode }) => ({
     }
   },
   build: {
-    sourcemap: mode !== 'production'
+    sourcemap: mode !== 'production',
+    // The full, offline semantic icon table is a separately cacheable static
+    // chunk. Do not inflate the tightly-budgeted initial application JS.
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [{
+            name: 'category-icon-semantic-defaults',
+            test: /[\\/]src[\\/]lib[\\/]categoryIconSemanticDefaults\\.ts$/,
+          }],
+        },
+      },
+    },
   }
 }));
