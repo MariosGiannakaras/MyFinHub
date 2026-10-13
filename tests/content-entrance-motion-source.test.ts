@@ -42,6 +42,24 @@ describe('bounded shared collection motion contract DV-M01–M06',()=>{
     expect(functional).toContain("Number(style.opacity)>=.99");
     expect(functional).toContain("await clickText('.savings-action','Μεταφορά στην άκρη')");
     expect(functional).toContain("'manual savings contextual transfer editor'");
+    expect(functional).toContain("const entered=");
+    expect(functional).toContain("const clickVisibleRowAction=async(");
+    expect(functional).toContain("parent.matches?.('[data-content-entrance] > *')");
+    for(const caseLabel of [
+      'filtered modern event exposes edit action',
+      'saved loan exposes edit',
+      'self-loan exposes return action',
+      'self-loan exposes forgiveness',
+      'saved recurring item exposes edit',
+      'recurring item can be paused',
+      'paused recurring item can be reactivated',
+      'reactivated recurring item can be stopped',
+      'lifecycle card exposes archive action',
+    ]) {
+      expect(functional).toContain(`clickVisibleRowAction(`);
+      expect(functional).toMatch(new RegExp(`clickVisibleRowAction\\([^\\n]*${caseLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\    expect(functional).toContain("'manual savings contextual transfer editor'");
+  });')}`));
+    }
   });
   it('retains route-shaped skeletons, explicit normal/reduced tests, midframe captures and CLS limits',()=>{
     expect(load('src/App.tsx')).toContain("<Suspense fallback={<PageLoading/>}>");
