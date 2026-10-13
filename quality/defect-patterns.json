@@ -449,8 +449,7 @@
         "src/pages/CardsPage.tsx"
       ],
       "evidence": [
-        "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/38319392506",
-        "https://github.com/MariosGiannakaras/MyFinHub/actions/runs/38358297999"
+        "https://github.com/MariosGiannakaras/MyFinHub/pull/548"
       ],
       "guards": [
         "tests/account-metadata.test.ts"
