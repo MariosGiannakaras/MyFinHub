@@ -33,6 +33,19 @@ describe('large-data verification contract',()=>{
     expect(large).toContain('results.historyHeapMb<256');
   });
 
+  it('reports individual large-route load times before enforcing the unchanged 5s limit',()=>{
+    expect(large).toContain('const routeReadinessMs={reports:results.reportsLoadMs');
+    expect(large).toContain('recurringDesktop:results.recurringLoadMs');
+    expect(large).toContain('recurringMobile:results.recurringMobileLoadMs');
+    expect(large).toContain('planning:results.planningLoadMs');
+    expect(large).toContain('dashboard:results.dashboardLoadMs');
+    expect(large).toContain('settings:results.settingsLoadMs');
+    expect(large).toContain('results.maxLoadMs=Math.max(...Object.values(routeReadinessMs))');
+    expect(large).toContain('Large-data readiness by route (ms):');
+    expect(large).toContain('results.maxLoadMs<5000');
+    expect(large.indexOf("writeFileSync(`${evidenceDir}/large-data-metrics.json`")).toBeLessThan(large.indexOf('results.maxLoadMs<5000'));
+  });
+
   it('keeps high-cardinality component lists explicitly bounded in product source',()=>{
     expect(planning).toContain('const [scheduledListLimit,setScheduledListLimit]=useState(12)');
     expect(planning).toContain('const visiblePending=pending.slice(0,scheduledListLimit)');

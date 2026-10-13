@@ -46,16 +46,20 @@ try{
         for(let i=0;i<100;i++){if(await c.eval("Boolean(document.querySelector('#main-workspace h1'))"))break;if(i===99)throw new Error(`${page} did not become ready`);await sleep(60)}
         await sleep(80);
         await c.eval('globalThis.__MYFINHUB_CLS=0');
+        // The 350ms refresh skeleton can unmount between separate CDP reads
+        // under CI load. Arm the observer before clicking, and capture the
+        // route identifier plus overflow in the same actual skeleton frame.
+        const armed=await c.eval("(()=>{const key='__MYFINHUB_MOTION_SKELETON_QA__';globalThis[key]?.observer?.disconnect?.();const record={snapshot:null};const sample=()=>{if(record.snapshot)return;const skeleton=document.querySelector('.qa-loading-route .page-skeleton');if(!skeleton)return;record.snapshot={page:skeleton.dataset.skeletonPage||'',overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}};const observer=new MutationObserver(sample);observer.observe(document.documentElement,{childList:true,subtree:true});globalThis[key]={record,observer};sample();return true})()");
+        assert(armed,`${viewport.name}/${page}: skeleton observer is armed`);
         const started=await c.eval(`(()=>{const button=document.querySelector('.top-actions button[aria-label="Ανανέωση δεδομένων"]');if(!button)return false;button.click();return true})()`);
         assert(started,`${viewport.name}/${page}: refresh control is available`);
-        let sawSkeleton=false;
-        for(let i=0;i<60;i++){if(await c.eval("Boolean(document.querySelector('.qa-loading-route .page-skeleton'))")){sawSkeleton=true;break}await sleep(15)}
-        assert(sawSkeleton,`${viewport.name}/${page}: refresh renders the route skeleton`);
-        const skeletonPage=await c.eval("document.querySelector('.qa-loading-route .page-skeleton')?.dataset.skeletonPage||''");
-        assert(skeletonPage===page,`${viewport.name}/${page}: skeleton route was ${skeletonPage}`);
-        const loadingOverflow=await c.eval('Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth');
-        assert(loadingOverflow<=1,`${viewport.name}/${page}: skeleton horizontal overflow ${loadingOverflow}px`);
+        let transition=null;
+        for(let i=0;i<60;i++){transition=await c.eval("globalThis.__MYFINHUB_MOTION_SKELETON_QA__?.record?.snapshot||null");if(transition)break;await sleep(15)}
+        assert(transition,`${viewport.name}/${page}: refresh renders the route skeleton`);
+        assert(transition.page===page,`${viewport.name}/${page}: skeleton route was ${transition.page}`);
+        assert(transition.overflow<=1,`${viewport.name}/${page}: skeleton horizontal overflow ${transition.overflow}px`);
         for(let i=0;i<80;i++){if(!(await c.eval("Boolean(document.querySelector('.qa-loading-route'))")))break;if(i===79)throw new Error(`${viewport.name}/${page}: loading skeleton did not resolve`);await sleep(20)}
+        await c.eval("globalThis.__MYFINHUB_MOTION_SKELETON_QA__?.observer?.disconnect?.();delete globalThis.__MYFINHUB_MOTION_SKELETON_QA__");
         // Capture deterministic motion phases after the real skeleton → data
         // transition. Restart only test animations to sample identical frames.
         if(['dashboard','transactions','cards','loans'].includes(page)){
