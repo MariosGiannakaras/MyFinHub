@@ -133,12 +133,12 @@ export function CardsPage({
 
     <section className="cards-workspace cards-prototype-workspace surface-raised" aria-label="Χρεωστικές και προπληρωμένες κάρτες ανά τράπεζα">
       {workspaceBanks.length>3?<div className="cards-workspace-scroll-hint" aria-hidden="true">Οριζόντια κύλιση για περισσότερες τράπεζες →</div>:null}
-      {workspaceBanks.length?<div className="cards-grid cards-prototype-grid" style={{'--bank-count':Math.max(1,workspaceBanks.length)} as React.CSSProperties}>{workspaceBanks.map(bank=>{
+      {workspaceBanks.length?<div className="cards-grid cards-prototype-grid" data-content-entrance="grid" style={{'--bank-count':Math.max(1,workspaceBanks.length)} as React.CSSProperties}>{workspaceBanks.map(bank=>{
         const active=cardsForBank(data,bank.id);const archived=archivedCardsForBank(data,bank.id);
         return <section className="bank-column cards-bank-column" key={bank.id} data-bank={bank.id}>
           <header className="bank-column-head"><div className="bank-column-title"><b>{bank.name}</b><small>{active.length} {active.length===1?'κάρτα':'κάρτες'}</small></div><Tooltip label={`Προσθήκη κάρτας στην ${bank.name}`} side="left"><IconButton type="button" className="bank-add-btn" aria-label={`Προσθήκη κάρτας στην ${bank.name}`} onClick={()=>openCardCreate(bank.id)}><Plus/></IconButton></Tooltip></header>
           <div className="bank-stack">{active.length?active.map(card=><InteractivePaymentCard key={card.id} card={card} bank={bank} onEditCard={editCardProfile} onEditDetails={editCardDetails} onArchive={archive}/>):<button type="button" className="bank-empty" onClick={()=>openCardCreate(bank.id)}>Δεν υπάρχουν χρεωστικές ή προπληρωμένες κάρτες</button>}</div>
-          {archived.length?<details className="cards-archive"><summary><ArchiveRestore/> Αρχειοθετημένες · {archived.length}</summary><div className="card-archive-list">{archived.map(card=><article className="card-archive-row" key={card.id}><div className="card-archive-identity"><b>{card.nickname}</b><small>{card.last4?`•••• ${card.last4} · `:''}{card.kind==='prepaid'?'Προπληρωμένη':'Χρεωστική'}</small></div><div className="card-archive-actions"><Button type="button" variant="primary" onClick={()=>restore(card)}><ArchiveRestore/> Επαναφορά</Button><Button type="button" variant="danger" className="danger" onClick={()=>setDeleteTarget(card)}><Trash2/> Οριστική διαγραφή</Button></div></article>)}</div></details>:null}
+          {archived.length?<details className="cards-archive"><summary><ArchiveRestore/> Αρχειοθετημένες · {archived.length}</summary><div className="card-archive-list" data-content-entrance="list">{archived.map(card=><article className="card-archive-row" key={card.id}><div className="card-archive-identity"><b>{card.nickname}</b><small>{card.last4?`•••• ${card.last4} · `:''}{card.kind==='prepaid'?'Προπληρωμένη':'Χρεωστική'}</small></div><div className="card-archive-actions"><Button type="button" variant="primary" onClick={()=>restore(card)}><ArchiveRestore/> Επαναφορά</Button><Button type="button" variant="danger" className="danger" onClick={()=>setDeleteTarget(card)}><Trash2/> Οριστική διαγραφή</Button></div></article>)}</div></details>:null}
         </section>;
       })}</div>:<div className="cards-workspace-empty"><CreditCard/><div><b>Δεν έχεις αποθηκευμένη χρεωστική ή προπληρωμένη κάρτα.</b><span>Πρόσθεσε κάρτα και επίλεξε την τράπεζά της στο επόμενο βήμα.</span></div><Button type="button" variant="primary" onClick={()=>openCardCreate()}><Plus/> Προσθήκη κάρτας</Button></div>}
     </section>
@@ -147,7 +147,7 @@ export function CardsPage({
 
     <section className="cards-surrounding-recent surface-raised" aria-label="Πρόσφατες συναλλαγές λογαριασμών">
       <header className="cards-surrounding-recent-head"><div><h2>Πρόσφατες συναλλαγές</h2><p>Από τους λογαριασμούς σου — οι αποθηκευμένες κάρτες δεν δημιουργούν ξεχωριστό ιστορικό συναλλαγών.</p></div></header>
-      <div className="cards-surrounding-recent-list">{recentAccountRows.length?recentAccountRows.map(row=>{
+      <div className="cards-surrounding-recent-list" data-content-entrance="list">{recentAccountRows.length?recentAccountRows.map(row=>{
         const positive=recentPositive(row);
         return <article className="cards-surrounding-recent-row" key={`${row.kind}-${row.id}`}>
           <FinanceIcon kind={row.kind} category={row.category} subcategory={row.subcategory} note={row.note} settings={data.state.settings} size={19} className="cards-surrounding-recent-icon"/>
