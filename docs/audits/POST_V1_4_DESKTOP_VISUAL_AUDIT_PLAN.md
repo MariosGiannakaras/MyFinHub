@@ -2,6 +2,15 @@
 
 Umbrella issue: #519 — Post-v1.4 UI/UX regressions and functionality reachability.
 
+### 2026-10-13 direct-motion-evidence theme-correctness checkpoint (current Draft)
+
+**Implementations 14/15 completed · Sub-implementations 102/108 completed.** The final six DV-M items remain unaccepted pending trustworthy Light/Dark screenshots and full Ready review.
+
+- After the old failed Chromium bootstrap was fixed using the known-good primary Chromium path and bounded stderr/exit diagnostics, focused Draft browser #38375293289 **PASS on code head `5075934`**: 12-route desktop/mobile refresh skeleton→content, 48 first/mid/settled screenshots (Dashboard/Transactions/Cards/Loans), OS `prefers-reduced-motion` and overflow. CLS logged 0.000–0.001 (well under the unchanged 0.10 requirement); horizontal overflow never positive. Exact Draft CI #38375293286 **PASS** (source/unit/build + API).
+- Downloaded GitHub focused artifact #11801056278 (48 PNG + 2 logs), and **directly inspected four 12-frame contact sheets** (Light/Dark × desktop/mobile) from the actual screenshot pixels. Phase transitions behave as expected for opt-in collections, with readable settled layout and no observed clipping in these contact sheets; however, the nominal `dark` captures were visibly still light surfaces with altered border/text styling. This is **invalid Dark theme evidence**, not accepted merely because frame/CLS assertions passed.
+- Confirmed root cause in the *test*, not product CSS: direct assignment of `document.documentElement.dataset.theme` does not apply the canonical `src/lib/theme.ts` semantic token map. In the corrected coherent QA batch, `content-entrance-qa.mjs` calls `applyThemePreference('light'|'dark')` and waits for frames before sampling each theme; it asserts the resolved theme **and computed --canvas equals the canonical expected token**. The focused source guard rejects the old attribute-only method. No product theme, finance, security, UI styles, desktop, database or Android code changed.
+- Re-run focused Chromium on the corrected exact code head, download fresh PNGs and **inspect genuinely dark and light frames** before accepting M06. Afterwards run one coherent full Ready CI/rendered, CodeQL, WebKit, Lighthouse, Windows Desktop/First Run/Clean Launch and Final Visual acceptance where required; close DV-M01–M06 only with complete evidence, not source-only or mislabeled QA samples. Preserve the unchanged CSS budget and motion accessibility invariants; no merge/release until gates pass.
+
 ### 2026-10-13 cross-page motion full-review failure-class checkpoint (current Draft)
 
 **Implementations 14/15 completed · Sub-implementations 102/108 completed.** DV-M01–DV-M06 remain **unaccepted** until focused browser screenshot evidence, full review gates, and direct inspection complete.
