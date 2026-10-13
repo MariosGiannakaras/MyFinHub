@@ -1,4 +1,4 @@
-/* Static availability manifest for generated offline, deduplicated SVG packs. 
+/* Static availability manifest for generated offline, deduplicated SVG packs.
  * Source and regeneration contract: docs/ICON_CATALOG_SOURCES.md.
  * The complete search lists live under public/icon-packs/*.json and load only on demand.
  */
