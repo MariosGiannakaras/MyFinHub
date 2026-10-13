@@ -47,6 +47,19 @@ describe('bounded shared collection motion contract DV-M01–M06',()=>{
     expect(reference).toContain("mobile.modal.width>=359&&mobile.modal.width<=362");
     expect(workflow).toContain("scripts/quick-entry-reference-qa.mjs");
   });
+  it('waits for genuinely visible and unscaled Quick Entry before strict dialog geometry audit',()=>{
+    const suite=load('scripts/completion-dialog-geometry-qa.mjs');
+    expect(suite).toContain('${label} visible and entrance settled');
+    expect(suite).toContain("selector==='.quick-modal'");
+    expect(suite).toContain('Number(style.opacity)>=.995');
+    expect(suite).toContain('Math.abs(rect.width-node.offsetWidth)<=1');
+    expect(suite).toContain('Math.abs(rect.height-node.offsetHeight)<=1');
+    expect(suite).toContain("await inspect('.quick-modal',`${viewport.name} Quick Entry`)");
+    expect(suite).toContain("assert(result.left>=-1&&result.right<=result.viewportWidth+1");
+    expect(suite).toContain("assert(result.unnamedControls.length===0");
+    expect(suite).toContain("assert(result.scrollWidth<=result.clientWidth+1");
+    expect(suite).toContain("{name:'virtual-keyboard',width:375,height:500}");
+  });
   it('waits for animated action cards to become visible before CRUD interaction',()=>{
     const functional=load('scripts/completion-functional-crud-qa.mjs');
     expect(functional).toContain("'visible Savings transfer action'");
