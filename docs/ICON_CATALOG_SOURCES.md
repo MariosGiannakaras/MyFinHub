@@ -23,3 +23,9 @@ Upstream rights/attribution:
 **Rendering/storage.** Each static SVG sprite is loaded on demand via same-origin `<svg><use href="/icon-packs/PACK.svg#i-NAME" /></svg>`. The corresponding JSON names are fetched only when a picker for that family opens. Legacy semantic icon keys stay supported; new selection keys use `PACK:icon/SLUG` (including explicitly namespaced Lucide). Do not change existing persistence without a migration strategy. Real user choices and finance semantics must remain intact.
 
 **Validation expected.** Tests must verify JSON counts, canonical unique SVG bodies, safe names/markup, all five preview/render paths, locale-filtered search/paging, persisted selections, light/dark and mobile/desktop screenshots. Browser sprite loading plus offline Windows package must be verified before merging into develop.
+
+## Distinct automatic icons across categories
+
+`src/lib/categoryIconSemanticDefaults.ts` pins a real native SVG for **each of 82 canonical semantic category keys in each of the five packs** (410 meaningful keyed associations). No two canonical keys in the same pack reference the same name or SVG body. `tests/category-icon-catalog.test.ts` verifies names against the pinned real catalogs and tests this invariant.
+
+Switching icon families updates all automatic semantic category and subcategory previews; a previously saved explicit category or subcategory glyph is still retained for its original family. No owner preferences are rewritten. A custom/unknown category without a matching semantic key may still share a neutral automatic fallback with another unknown category; labels that infer the *same* semantic concept may naturally share an icon. Owners can always choose an explicit distinct SVG from the complete picker. This is intentional and avoids assigning random misleading financial symbolism to an unknown category.
