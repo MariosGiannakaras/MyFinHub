@@ -106,9 +106,14 @@ try{
   await noOverflow('large settings rules desktop');
   await screenshot('large-rules-desktop');
 
-  results.maxLoadMs=Math.max(results.reportsLoadMs,results.recurringLoadMs,results.recurringMobileLoadMs,results.planningLoadMs,results.dashboardLoadMs,results.settingsLoadMs);
-  assert(results.maxLoadMs<5000,`large-state route readiness stays under 5s (${results.maxLoadMs}ms)`);
+  const routeReadinessMs={reports:results.reportsLoadMs,recurringDesktop:results.recurringLoadMs,recurringMobile:results.recurringMobileLoadMs,planning:results.planningLoadMs,dashboard:results.dashboardLoadMs,settings:results.settingsLoadMs};
+  results.maxLoadMs=Math.max(...Object.values(routeReadinessMs));
+  results.routeReadinessMs=routeReadinessMs;
+  // Persist and print per-route evidence before the strict budget assertion.
+  // Failures must identify the actual slow surface, not only its max.
+  console.log(`Large-data readiness by route (ms): ${JSON.stringify(routeReadinessMs)}`);
   writeFileSync(`${evidenceDir}/large-data-metrics.json`,JSON.stringify(results,null,2));
+  assert(results.maxLoadMs<5000,`large-state route readiness stays under 5s (${results.maxLoadMs}ms)`);
   console.log(`Large-data boundaries QA passed: max route readiness ${results.maxLoadMs}ms, budget mutation ${results.budgetDeleteLatencyMs}ms, reports heap ${results.reportsHeapMb.toFixed(1)} MiB, history heap ${results.historyHeapMb.toFixed(1)} MiB.`);
 }finally{
   try{c?.close()}catch{}
