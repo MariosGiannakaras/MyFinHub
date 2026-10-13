@@ -45,6 +45,7 @@ describe('bounded shared collection motion contract DV-M01–M06',()=>{
     expect(functional).toContain("const entered=");
     expect(functional).toContain("const clickVisibleRowAction=async(");
     expect(functional).toContain("parent.matches?.('[data-content-entrance] > *')");
+    const guardedActions=functional.split('\n').filter(line=>line.includes('await clickVisibleRowAction('));
     for(const caseLabel of [
       'filtered modern event exposes edit action',
       'saved loan exposes edit',
@@ -55,13 +56,9 @@ describe('bounded shared collection motion contract DV-M01–M06',()=>{
       'paused recurring item can be reactivated',
       'reactivated recurring item can be stopped',
       'lifecycle card exposes archive action',
-    ]) {
-      expect(functional).toContain(`clickVisibleRowAction(`);
-      expect(functional).toMatch(new RegExp(`clickVisibleRowAction\\([^\\n]*${caseLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\    expect(functional).toContain("'manual savings contextual transfer editor'");
-  });')}`));
-    }
+    ]) expect(guardedActions.some(line=>line.includes(caseLabel))).toBe(true);
   });
-  it('retains route-shaped skeletons, explicit normal/reduced tests, midframe captures and CLS limits',()=>{
+    it('retains route-shaped skeletons, explicit normal/reduced tests, midframe captures and CLS limits',()=>{
     expect(load('src/App.tsx')).toContain("<Suspense fallback={<PageLoading/>}>");
     expect(load('src/qa.tsx')).toContain('<PageSkeleton/>');
     expect(runner).toContain('scripts/content-entrance-qa.mjs');
