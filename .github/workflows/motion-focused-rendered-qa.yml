@@ -53,6 +53,14 @@ jobs:
           export MYFINHUB_UX_EVIDENCE_DIR="$RUNNER_TEMP/motion-focused/screenshots"
           node scripts/content-entrance-qa.mjs 2>&1 | tee "$RUNNER_TEMP/motion-focused/logs/content-entrance.log"
           exit "${PIPESTATUS[0]}"
+      - name: Run entrance-aware CRUD regression across owned finance flows
+        shell: bash
+        env:
+          RHEOMIQ_QA_URL: http://127.0.0.1:5173/qa.html
+        run: |
+          export MYFINHUB_UX_EVIDENCE_DIR="$RUNNER_TEMP/motion-focused/screenshots"
+          node scripts/completion-functional-crud-qa.mjs 2>&1 | tee "$RUNNER_TEMP/motion-focused/logs/completion-functional.log"
+          exit "${PIPESTATUS[0]}"
       - name: Stop Vite and preserve diagnostics
         if: always()
         shell: bash
