@@ -2,6 +2,16 @@
 
 Umbrella issue: #519 — Post-v1.4 UI/UX regressions and functionality reachability.
 
+### 2026-10-13 accepted Framer-modal test preflight; final coherent Ready head pending
+
+**Implementations 15/15 completed · Sub-implementations 108/108 completed** (accepted product scope), integration still pending the new exact-head Ready matrix.
+
+- The precise `DialogShell` scale(.97) transient geometry failure identified in CI #38400911112 was corrected **only in test timing**, without changing Framer, Quick Entry layout, security, finance or accessibility. Strict desktop modal 1020±2px and mobile 359–362px measurement thresholds remain unchanged. Confirmed sibling `completion-dialog-geometry-qa.mjs` already delays geometry sampling through its existing 220ms preflight and `primitives-adoption-qa.mjs` checks owner semantics rather than early modal width; no arbitrary sibling changes required.
+- Focused **real Chromium** motion+CRUD+Quick Entry run **#38401990389 PASS** on QA code head `7809c15cd936a736042f69ebcc62689e62b52eff`. Its logs show all 12 page handoffs/reduced-motion+CLS checks, full finance CRUD, and successful **six Light/Dark × desktop/tablet/mobile Quick Entry reference screens** including owned date picker and untouched geometry/receipt/touch requirements. Artifact #11815082835 contains 81 PNG and 4 logs, downloaded; direct assistant inspection of the ten new Quick Entry QA captures confirms settled geometry and readable modal controls.
+- Draft exact-head **CI #38401948905 PASS** (source/unit/build/API) and **CodeQL #38401949157 PASS**, without weakened thresholds. The focused workflow now permanently preflights this shared entrance-animation timing class alongside other affected interactions.
+- **Next action:** remove Draft-only motion marker, mark PR #549 Ready once on a coherent checkpoint head, run the complete CI/rendered, CodeQL, WebKit, Lighthouse, Windows Desktop matrix; do not merge while pending/failed. The prior **216-image Final Visual #38386232293 PASS** is still representative because the latest correction touches only browser QA/workflow/test/plan, not app CSS/component code; it must not be rerun solely due to test metadata. Once all gates PASS, squash-merge to updated `develop` (which already has #551 icons), verify develop integration and reconcile #519. **Never touch production `main` or the separate Android repo.**
+
+
 ### 2026-10-13 terminal documentation-head Ready CI: confirmed Framer entrance timing failure, Draft narrow preflight
 
 **Implementations 15/15 completed · Sub-implementations 108/108 completed** for accepted app/runtime scope; **PR #549 is not yet integrated** and CI at its final checklist-only head was not green. Do not conflate accepted underlying source/visual evidence with integration approval.
