@@ -29,7 +29,7 @@ export default defineConfig(({ mode }) => ({
         codeSplitting: {
           groups: [{
             name: 'category-icon-semantic-defaults',
-            test: /[\\/]src[\\/]lib[\\/]categoryIconSemanticDefaults\\.ts$/,
+            test: /[\\/]src[\\/]lib[\\/]categoryIconSemanticDefaults\.ts$/,
           }],
         },
       },
