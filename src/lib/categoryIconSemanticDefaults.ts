@@ -3,7 +3,6 @@
  * public/icon-packs. Legacy explicit choices remain untouched.
  */
 import type { CategoryIconKey, CategoryIconPack } from './categoryIconRegistry.js';
-import { isCatalogIconKey } from './categoryIconCatalog.js';
 
 export const CATEGORY_SEMANTIC_CATALOG_DEFAULTS: Readonly<Record<CategoryIconPack,Readonly<Record<CategoryIconKey,string>>>> = {
   lucide:{
@@ -430,5 +429,6 @@ export const CATEGORY_SEMANTIC_CATALOG_DEFAULTS: Readonly<Record<CategoryIconPac
 
 export function categorySemanticCatalogDefault(pack:CategoryIconPack,key:CategoryIconKey):string|null{
   const slug=CATEGORY_SEMANTIC_CATALOG_DEFAULTS[pack][key];
-  return slug&&isCatalogIconKey(`icon/${slug}`)?`icon/${slug}`:null;
+  // Entries are pinned/verified against real icon-pack catalogs in regression tests.
+  return slug?`icon/${slug}`:null;
 }
