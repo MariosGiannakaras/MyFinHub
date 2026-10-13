@@ -36,6 +36,17 @@ describe('bounded shared collection motion contract DV-M01–M06',()=>{
     expect(rendered).toContain('Browser bootstrap exited before CDP was ready');
     expect(rendered).toContain('browserDiagnostics');
   });
+  it('waits for Framer-scaled dialog entrance before strict cross-breakpoint Quick Entry geometry',()=>{
+    const reference=load('scripts/quick-entry-reference-qa.mjs');
+    const workflow=load('.github/workflows/motion-focused-rendered-qa.yml');
+    expect(reference).toContain("'Quick Entry Framer modal entrance settles'");
+    expect(reference).toContain("Math.abs(r.width-modal.offsetWidth)<=1");
+    expect(reference).toContain("Number(s.opacity)>=.995");
+    expect(reference).toContain("await openQuick()");
+    expect(reference).toContain("approx(desktop.modal.width,1020,2)");
+    expect(reference).toContain("mobile.modal.width>=359&&mobile.modal.width<=362");
+    expect(workflow).toContain("scripts/quick-entry-reference-qa.mjs");
+  });
   it('waits for animated action cards to become visible before CRUD interaction',()=>{
     const functional=load('scripts/completion-functional-crud-qa.mjs');
     expect(functional).toContain("'visible Savings transfer action'");
