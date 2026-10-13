@@ -28,6 +28,14 @@ describe('bounded shared collection motion contract DV-M01–M06',()=>{
     expect(css).not.toContain('transition:all');
     expect(css).not.toContain('filter:blur');
   });
+  it('runs focused motion evidence on the CI primary Chromium with actionable startup diagnostics',()=>{
+    const workflow=load('.github/workflows/motion-focused-rendered-qa.yml');
+    expect(workflow).toContain('MYFINHUB_QA_PRIMARY_BROWSER=$PRIMARY_BROWSER');
+    expect(workflow).toContain('scripts/content-entrance-qa.mjs');
+    expect(rendered).toContain('process.env.MYFINHUB_QA_PRIMARY_BROWSER');
+    expect(rendered).toContain('Browser bootstrap exited before CDP was ready');
+    expect(rendered).toContain('browserDiagnostics');
+  });
   it('waits for animated action cards to become visible before CRUD interaction',()=>{
     const functional=load('scripts/completion-functional-crud-qa.mjs');
     expect(functional).toContain("'visible Savings transfer action'");
