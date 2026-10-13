@@ -7,7 +7,7 @@ const settings=():FinanceSettings=>({excludedFromAvailable:[],accountNames:{},ex
 describe('category icon preferences',()=>{
   it('uses a specific semantic icon for a recognizable subcategory before parent inheritance',()=>{
     const next=withCategoryIcon(settings(),'expense','Φαγητό','dining');
-    expect(resolvedCategoryIcon(next,'expense','Φαγητό','Καφές')).toBe('coffee');
+    expect(resolvedCategoryIcon(next,'expense','Φαγητό','Καφές')).toBe('lucide:icon/coffee');
     expect(explicitSubcategoryIcon(next,'expense','Φαγητό','Καφές')).toBeNull();
   });
 
@@ -16,7 +16,7 @@ describe('category icon preferences',()=>{
     const overridden=withSubcategoryIconOverride(parent,'expense','Φαγητό','Καφές','gift');
     expect(resolvedCategoryIcon(overridden,'expense','Φαγητό','Καφές')).toBe('gift');
     const automatic=withSubcategoryIconOverride(overridden,'expense','Φαγητό','Καφές',null);
-    expect(resolvedCategoryIcon(automatic,'expense','Φαγητό','Καφές')).toBe('coffee');
+    expect(resolvedCategoryIcon(automatic,'expense','Φαγητό','Καφές')).toBe('lucide:icon/coffee');
   });
 
   it('moves icon metadata when a category is renamed and falls back to semantic defaults when removed',()=>{
@@ -25,8 +25,8 @@ describe('category icon preferences',()=>{
     next=renameCategoryIconPreferences(next,'expense','Φαγητό','Εστίαση');
     expect(resolvedCategoryIcon(next,'expense','Εστίαση','Καφές')).toBe('coffee');
     next=removeCategoryIconPreferences(next,'expense','Εστίαση');
-    expect(resolvedCategoryIcon(next,'expense','Εστίαση','Καφές')).toBe('coffee');
-    expect(resolvedCategoryIcon(next,'expense','Εστίαση')).toBe('dining');
+    expect(resolvedCategoryIcon(next,'expense','Εστίαση','Καφές')).toBe('lucide:icon/coffee');
+    expect(resolvedCategoryIcon(next,'expense','Εστίαση')).toBe('lucide:icon/utensils');
   });
 
   it('maps common finance taxonomy labels to distinct semantic defaults',()=>{
