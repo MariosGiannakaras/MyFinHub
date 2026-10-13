@@ -68,13 +68,31 @@ try{
   assert((await currentEditIban()).includes('GR16'),'Account Management loads the current payroll IBAN');
   await editIban('GB82 WEST 1234 5698 7654 32');
   const saved=await c.call("function(){const button=document.querySelector('.account-management-modal.is-edit .save-button');if(!button)return false;button.click();return true}");assert(saved,'Account Management saves edited IBAN');
-  await waitFor("function(){return !document.querySelector('.account-management-modal.is-edit')&&((document.querySelector('.account-management-message')?.textContent||'').includes('Οι αλλαγές αποθηκεύτηκαν.'))}",'Account Management save confirmation');
+  await waitFor("function(){return !document.querySelector('.account-management-modal.is-edit')&&((document.querySelector('.account-management-message')?.textContent||'').includes('Οι αλλαγές του λογαριασμού αποθηκεύτηκαν.'))}",'Account Management save confirmation');
   await openPayrollEditor();assert((await currentEditIban())==='GB82 WEST 1234 5698 7654 32','saved IBAN stays normalized and human-readable');
   const providerChanged=await c.call("function(){const button=[...document.querySelectorAll('.account-management-modal.is-edit .account-management-provider-picker [role=radio]')].find(item=>(item.textContent||'').includes('Alpha Bank'));button?.click();return Boolean(button)}");assert(providerChanged,'existing account provider can be corrected');
   const saveProvider=await c.call("function(){const button=document.querySelector('.account-management-modal.is-edit .save-button');button?.click();return Boolean(button)}");assert(saveProvider,'provider correction saves');
   await waitFor("function(){const row=[...document.querySelectorAll('.account-management-row')].find(item=>(item.textContent||'').includes('Μισθοδοσία'));return Boolean(row&&(row.textContent||'').includes('Alpha Bank')&&row.querySelector('[data-bank-brand=alpha]'))}",'provider correction reflected in account row');
   await openPayrollEditor();const alphaSelected=await c.call("function(){const button=[...document.querySelectorAll('.account-management-modal.is-edit .account-management-provider-picker [role=radio]')].find(item=>(item.textContent||'').includes('Alpha Bank'));return button?.getAttribute('aria-checked')==='true'}");assert(alphaSelected,'corrected provider reloads in edit mode');
   await screenshot('account-metadata-settings-desktop');await closeEditor();await noOverflow('account metadata settings desktop');
+
+  console.log('Account metadata QA: failed durable finance write never commits IBAN metadata');
+  const failUrl=new URL(baseUrl);failUrl.searchParams.set('page','settings');failUrl.searchParams.set('account-save-failure','1');
+  await c.send('Page.navigate',{url:failUrl.href});
+  await waitFor("function(){return Boolean(document.querySelector('.settings-tablist'))}",'failing Settings fixture');
+  await clickText('.settings-tablist button','Λογαριασμοί');
+  await waitFor("function(){return Boolean(document.querySelector('.account-management-settings'))}",'failing Account Management fixture');
+  await scrollTo('.account-management-settings');await openPayrollEditor();
+  const beforeFailedSave=await currentEditIban();
+  await editIban('GB82 WEST 1234 5698 7654 32');
+  await clickText('.account-management-modal.is-edit button','Αποθήκευση');
+  await waitFor("function(){return Boolean(document.querySelector('.account-management-modal.is-edit .account-management-editor-error'))}",'durable finance failure keeps editor and shows error');
+  const failure=await c.call("function(){const modal=document.querySelector('.account-management-modal.is-edit');return {open:Boolean(modal),error:(modal?.querySelector('.account-management-editor-error')?.textContent||''),message:(document.querySelector('.account-management-message')?.textContent||'')}}");
+  assert(failure.open&&failure.error.includes('απέτυχε')&&!failure.message.includes('αποθηκεύτηκαν'),'failed durable finance write never reports successful account save');
+  await screenshot('account-metadata-durable-save-failure');
+  await closeEditor();await openPayrollEditor();
+  assert((await currentEditIban())===beforeFailedSave,'failed finance write did not mutate IBAN metadata');
+  await closeEditor();
 
   console.log('Account metadata QA: mobile Dashboard keeps masked IBAN and copy target');
   await viewport(375,812);await navigate('dashboard');await waitFor("function(){return Boolean(document.querySelector('[data-account-iban=\"piraeus-payroll\"]'))}",'mobile dashboard IBAN');

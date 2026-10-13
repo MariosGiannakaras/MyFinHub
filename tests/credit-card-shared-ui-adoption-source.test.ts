@@ -8,11 +8,11 @@ describe('Credit Card shared Button ownership',()=>{
   it('moves the canonical generic action hooks to shared Button and IconButton',()=>{
     expect(source).toContain("from '../components/Button'");
     expect(source).toContain("from '../components/IconButton'");
-    expect(source.match(/<Button\b/g)).toHaveLength(20);
-    expect(source.match(/<IconButton\b/g)).toHaveLength(9);
+    expect(source.match(/<Button\b/g)).toHaveLength(19);
+    expect(source.match(/<IconButton\b/g)).toHaveLength(7);
     expect(source.match(/<Button[^>]+variant=\"primary\"/g)).toHaveLength(6);
-    expect(source.match(/<Button[^>]+variant=\"secondary\"/g)).toHaveLength(12);
-    expect(source.match(/<Button[^>]+variant=\"ghost\"/g)).toHaveLength(1);
+    expect(source.match(/<Button[^>]+variant=\"secondary\"/g)).toHaveLength(10);
+    expect(source.match(/<Button[^>]+variant=\"ghost\"/g)).toHaveLength(2);
     expect(source.match(/<Button[^>]+variant=\"danger\"/g)).toHaveLength(1);
     expect(source).not.toContain('className="save-button"');
     expect(source).not.toContain('className="secondary"');
@@ -24,8 +24,9 @@ describe('Credit Card shared Button ownership',()=>{
     expect(source).toContain('<IconButton type="button" aria-label="Κλείσιμο αγοράς πιστωτικής"');
     expect(source).toContain('<IconButton type="button" className="close-picker" aria-label="Κλείσιμο αρχείου καρτών"');
     expect(source).toContain('<Button type="button" variant="primary" disabled={!card} onClick={openPurchase}');
-    expect(source).toContain('<Button type="button" variant="secondary" onClick={openCardProfile}><Pencil/> Επεξεργασία κάρτας</Button>');
-    expect(source).toContain('<Button type="button" variant="secondary" onClick={openCardDetails}><KeyRound/> Ασφαλή στοιχεία</Button>');
+    expect(source).toContain('<Button type="button" variant="secondary" onClick={()=>setCreateOpen(true)}><Plus/> Προσθήκη πιστωτικής</Button>');
+    expect(source).toContain('onEditCard={openCardProfile}');
+    expect(source).toContain('onEditDetails={openCardDetails}');
     expect(source.match(/className="credit-history-more"/g)).toHaveLength(2);
     expect(source).toContain('initialCard={profileCard}');
     expect(source).toContain('<CardDetailsDialog');
@@ -45,10 +46,11 @@ describe('Credit Card shared Button ownership',()=>{
     expect(source).toContain('useModalFocus<HTMLElement>(statementSetupOpen');
   });
 
-  it('retains Credit Card domain and composite controls as raw buttons',()=>{
-    expect(source).toContain('className={cardDeckMode===\'horizontal\'?\'active\':\'\'}');
-    expect(source).toContain('aria-label="Προηγούμενη πιστωτική κάρτα"');
-    expect(source).toContain('aria-label="Επόμενη πιστωτική κάρτα"');
+  it('keeps only genuine Credit domain/composite controls raw and removes dormant host deck controls',()=>{
+    expect(source).not.toContain('cardDeckMode');
+    expect(source).not.toContain('credit-card-view-controls');
+    expect(source).not.toContain('aria-label="Προηγούμενη πιστωτική κάρτα"');
+    expect(source).not.toContain('aria-label="Επόμενη πιστωτική κάρτα"');
     expect(source).toContain('className="inline-icon-action"');
     expect(source).toContain('className="credit-cycle-link"');
     expect(source).toContain('className="danger"');

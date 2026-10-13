@@ -8,6 +8,7 @@ const perf=readFileSync(new URL('../scripts/performance-audit.mjs',import.meta.u
 const planning=readFileSync(new URL('../src/pages/PlanningPage.tsx',import.meta.url),'utf8');
 const recurring=readFileSync(new URL('../src/pages/RecurringPage.tsx',import.meta.url),'utf8');
 const budgets=readFileSync(new URL('../src/components/BudgetRuleSettings.tsx',import.meta.url),'utf8');
+const rules=readFileSync(new URL('../src/components/TransactionRulesWorkspace.tsx',import.meta.url),'utf8');
 const shell=readFileSync(new URL('../src/components/AppShell.tsx',import.meta.url),'utf8');
 
 describe('large-data verification contract',()=>{
@@ -41,7 +42,8 @@ describe('large-data verification contract',()=>{
     expect(recurring).toContain('className="desktop-recurring-more"');
     expect(recurring).toContain('className="mobile-recurring-more"');
     expect(budgets).toContain('budgetListLimit');
-    expect(budgets).toContain('ruleListLimit');
+    expect(rules).toContain('visibleRuleCount');
+    expect(rules).toContain('visibleRules=rules.slice(0,visibleRuleCount)');
     expect(shell).toContain('const boundedHistory=effectiveHistory.slice(0,100)');
   });
 

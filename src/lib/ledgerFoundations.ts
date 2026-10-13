@@ -1,4 +1,5 @@
 import { allAccounts, createEvent } from './domain.js';
+import { financeAccountChoices, isSavingsAccount, isSavingContributionSource } from './accountSelection.js';
 import { centsToMoney, moneyToCents } from './money.js';
 import type { FinanceData, FinanceEvent, SplitPart } from '../types.js';
 
@@ -12,10 +13,33 @@ export function defaultTransferPair(data: FinanceData) {
   const accounts = transferEligibleAccounts(data);
   const preferredFrom = data.state.settings.defaultExpenseAccount;
   const from = accounts.find((account) => account.id === preferredFrom)?.id ?? accounts[0]?.id ?? '';
-  const to = accounts.find((account) => account.id !== from && account.kind === 'savings')?.id
+  const to = accounts.find((account) => account.id !== from && isSavingsAccount(account))?.id
     ?? accounts.find((account) => account.id !== from)?.id
     ?? '';
   return { from, to };
+}
+
+/** Saving cash-offsets are bank(current/payroll) → savings, not wallet
+ * movements. A generic transfer may use any non-credit accounts. */
+export function defaultSavingContributionPair(data:FinanceData){
+  const choices=financeAccountChoices(data);
+  const candidates=choices.accounts.filter(isSavingContributionSource);
+  const preferred=[data.state.settings.defaultExpenseAccount,data.state.settings.defaultIncomeAccount];
+  const from=preferred.map(id=>candidates.find(account=>account.id===id)).find(Boolean)
+    ??candidates.find(account=>account.showInQuickChoices!==false)
+    ??candidates[0];
+  return {from:from?.id??'',to:choices.savings?.id??''};
+}
+
+export function savingContributionDraftError(data:FinanceData,draft:{fromAccountId:string;toAccountId:string;amount:number}){
+  const error=transferDraftError(data,draft);
+  if(error)return error;
+  const accounts=transferEligibleAccounts(data);
+  const source=accounts.find(account=>account.id===draft.fromAccountId)!;
+  const target=accounts.find(account=>account.id===draft.toAccountId)!;
+  if(!isSavingContributionSource(source))return 'Η νέα αποταμίευση χρειάζεται τραπεζικό λογαριασμό μισθοδοσίας ή τρεχούμενο ως πηγή.';
+  if(!isSavingsAccount(target))return 'Διάλεξε πραγματικό αποταμιευτικό λογαριασμό ως προορισμό.';
+  return null;
 }
 
 export function transferDraftError(data: FinanceData, draft: { fromAccountId: string; toAccountId: string; amount: number }) {

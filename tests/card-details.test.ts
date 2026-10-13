@@ -86,14 +86,17 @@ describe('card secure details',()=>{
   it('separates card profile editing from encrypted secret editing on both card surfaces',()=>{
     const cards=readFileSync(new URL('../src/pages/CardsPage.tsx',import.meta.url),'utf8');
     const credit=readFileSync(new URL('../src/pages/CreditCardPage.tsx',import.meta.url),'utf8');
+    const canonical=readFileSync(new URL('../src/components/CanonicalCreditCardStack.tsx',import.meta.url),'utf8');
     const interactive=readFileSync(new URL('../src/components/InteractivePaymentCard.tsx',import.meta.url),'utf8');
     const createDialog=readFileSync(new URL('../src/components/CardCreateDialog.tsx',import.meta.url),'utf8');
     expect(interactive).toContain('onEditCard');
     expect(interactive).toContain('Ασφαλή στοιχεία · PAN / λήξη / CVV');
     expect(cards).toContain('initialCard={profileCard}');
     expect(credit).toContain('initialCard={profileCard}');
-    expect(credit).toContain('Επεξεργασία κάρτας');
-    expect(credit).toContain('Ασφαλή στοιχεία');
+    expect(credit).toContain('onEditCard={openCardProfile}');
+    expect(credit).toContain('onEditDetails={openCardDetails}');
+    expect(canonical).toContain('Επεξεργασία κάρτας');
+    expect(canonical).toContain('Ασφαλή στοιχεία');
     expect(createDialog).toContain('if(initialCard)');
     expect(createDialog).toContain('...initialCard');
     expect(createDialog).toContain('updatedAt:now');

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { accountBalances, availableMoney, categoryTotals, dailyExpenseSeries, monthlyFlow, netWorth } from '../src/lib/domain.js';
+import { accountBalances, availableMoney, categoryTotals, createEvent, dailyExpenseSeries, monthlyFlow, netWorth } from '../src/lib/domain.js';
 import { selectAccountBalances, selectAvailableMoney, selectCategoryTotals, selectDailyExpenseSeries, selectMonthlyFlow, selectNetWorth } from '../src/lib/selectors.js';
 import type { FinanceData } from '../src/types.js';
 
@@ -62,6 +62,19 @@ describe('memoized finance selectors', () => {
     expect(selectDailyExpenseSeries(data, '2026-08')).toEqual(dailyExpenseSeries(data, '2026-08'));
   });
 
+  it('isolates current-date Dashboard selectors from future-dated current-month expenses',()=>{
+    const data=fixture();
+    data.state.events=[createEvent({kind:'expense',date:'2026-08-29',amount:90,note:'Future groceries',category:'Food',accountId:'cash'})];
+    const current=selectMonthlyFlow(data,'2026-08','2026-08-17');
+    const full=selectMonthlyFlow(data,'2026-08','2026-08-31');
+    expect(current.expense).toBe(120);
+    expect(full.expense).toBe(210);
+    expect(selectMonthlyFlow(data,'2026-08','2026-08-17')).toBe(current);
+    expect(selectMonthlyFlow(data,'2026-08','2026-08-31')).toBe(full);
+    expect(selectCategoryTotals(data,'2026-08','2026-08-17')).toContainEqual({name:'Food',value:120});
+    expect(selectCategoryTotals(data,'2026-08','2026-08-31')).toContainEqual({name:'Food',value:210});
+    expect(selectCategoryTotals(data,'2026-08','2026-08-17')).toBe(selectCategoryTotals(data,'2026-08','2026-08-17'));
+  });
   it('reuses cached object results for unchanged data and reporting keys', () => {
     const data = fixture();
     expect(selectAccountBalances(data, '2026-08-17')).toBe(selectAccountBalances(data, '2026-08-17'));

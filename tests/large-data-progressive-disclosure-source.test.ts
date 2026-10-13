@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 const planning=readFileSync('src/components/PlanningApprovedDesktop.tsx','utf8');
 const recurring=readFileSync('src/pages/RecurringPage.tsx','utf8');
 const budgets=readFileSync('src/components/BudgetRuleSettings.tsx','utf8');
+const rules=readFileSync('src/components/TransactionRulesWorkspace.tsx','utf8');
 const qa=readFileSync('scripts/transactions-scanability-qa.mjs','utf8');
 const fixture=readFileSync('src/qa.tsx','utf8');
 
@@ -21,8 +22,9 @@ describe('large finance dataset progressive-disclosure contracts',()=>{
   it('bounds budget and automation management lists',()=>{
     expect(budgets).toContain("const [budgetListLimit,setBudgetListLimit]=useState(24)");
     expect(budgets).toContain('const visibleBudgets=budgets.slice(0,budgetListLimit)');
-    expect(budgets).toContain("const [ruleListLimit,setRuleListLimit]=useState(24)");
-    expect(budgets).toContain('rules.slice(0,ruleListLimit)');
+    expect(rules).toContain('const RULE_PAGE_SIZE=24');
+    expect(rules).toContain('const visibleRules=rules.slice(0,visibleRuleCount)');
+    expect(budgets).not.toContain('ruleListLimit');
   });
 
   it('exercises realistic events, recurring, scheduled, budgets, rules and history through rendered QA',()=>{

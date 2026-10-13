@@ -7,13 +7,13 @@
   .lending-approved-heading{margin:0;padding:0 2px;align-items:flex-start}
   .lending-approved-heading h1{margin-top:2px;font-size:29px;line-height:1.08;letter-spacing:-.025em}
   .lending-approved-heading p{max-width:760px;margin-top:5px;line-height:1.45}
-  .lending-approved-layout{display:grid;grid-template-columns:minmax(320px,.72fr) minmax(0,1.48fr);gap:12px;align-items:stretch}
+  .lending-approved-layout{width:min(100%,1500px);margin-inline:auto;display:grid;grid-template-columns:minmax(300px,380px) minmax(0,1fr);gap:14px;align-items:stretch}
   .lending-people-panel,.lending-selected-panel,.lending-quick-panel,.lending-selected-history{border:1px solid var(--line);background:var(--surface);box-shadow:var(--shadow-soft);backdrop-filter:none}
-  .lending-people-panel{padding:11px 10px 10px;min-height:438px;overflow:hidden}
+  .lending-people-panel{padding:11px 10px 10px;min-height:390px;overflow:hidden}.lending-people-panel.is-sparse{background:linear-gradient(180deg,var(--surface) 0 72%,var(--surface-inset) 100%)}
   .lending-people-head{display:flex;align-items:flex-start;justify-content:space-between;padding:1px 4px 9px}
   .lending-people-head span{display:block;font-size:15px;font-weight:850;color:var(--ink)}
-  .lending-people-head small{display:block;margin-top:2px;color:var(--muted)}
-  .lending-people-search{height:43px;border:1px solid var(--line);border-radius:12px;background:var(--control-bg);display:flex;align-items:center;gap:8px;padding:0 11px;color:var(--muted);box-shadow:var(--shadow-inset)}
+  .lending-people-head small{display:block;margin-top:2px;color:var(--text-secondary)}
+  .lending-people-search{height:43px;border:1px solid var(--line);border-radius:12px;background:var(--control-bg);display:flex;align-items:center;gap:8px;padding:0 11px;color:var(--text-secondary);box-shadow:var(--shadow-inset)}
   .lending-people-search input{min-width:0;flex:1;border:0;background:transparent;outline:0;color:var(--ink);font-weight:650}
   .lending-people-search input::placeholder{color:var(--muted-2)}
   .lending-people-list{display:grid;margin-top:8px;max-height:360px;overflow:auto;scrollbar-width:thin}
@@ -26,7 +26,7 @@
   .lending-person-row:nth-child(3n) .lending-person-avatar{background:linear-gradient(145deg,#def7ed,#b7ead8);color:#257d64}
   .lending-person-copy{min-width:0}
   .lending-person-copy b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.25}
-  .lending-person-copy small{display:block;margin-top:2px;color:var(--muted);}
+  .lending-person-copy small{display:block;margin-top:2px;color:var(--text-secondary);}
   .lending-person-row strong{white-space:nowrap;color:var(--ink-2)}
   .lending-person-row strong.positive{color:var(--green)}
   .lending-person-row>svg{color:var(--blue-2)}
@@ -39,14 +39,14 @@
   .lending-selected-identity{display:flex;align-items:center;gap:12px;margin-top:2px;padding:4px 2px 12px}
   .lending-selected-avatar{width:54px;height:54px;flex:0 0 54px;font-size:16px}
   .lending-selected-identity h2{margin:0;font-size:17px;line-height:1.15;color:var(--ink)}
-  .lending-selected-identity p{margin:4px 0 0;color:var(--muted)}
+  .lending-selected-identity p{margin:4px 0 0;color:var(--text-secondary)}
   .lending-metric-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-top:2px}
   .lending-metric-grid article{min-height:92px;display:flex;align-items:flex-start;gap:9px;padding:12px;border:1px solid var(--border-subtle);border-radius:13px;background:var(--surface-2)}
   .lending-metric-icon{width:32px;height:32px;flex:0 0 32px;display:grid;place-items:center;border-radius:50%}
   .lending-metric-icon.receivable{background:#e2f7ec;color:#15905c}
   .lending-metric-icon.lent{background:#e2efff;color:#1976d2}
   .lending-metric-icon.repaid{background:#fff0dd;color:#e67b16}
-  .lending-metric-grid small{display:block;color:var(--muted);line-height:1.3}
+  .lending-metric-grid small{display:block;color:var(--text-secondary);line-height:1.3}
   .lending-metric-grid b{display:block;margin-top:5px;font-size:16px;line-height:1.1;color:var(--ink)}
   .lending-metric-grid b.positive{color:var(--green)}
   .lending-selected-note{display:flex;align-items:center;gap:8px;margin-top:10px;padding:9px 10px;border-radius:11px;background:var(--info-bg);color:var(--info);line-height:1.35}
@@ -56,29 +56,29 @@
   .lending-quick-panel{padding:10px 12px 12px}
   .lending-quick-panel .panel-head{margin-bottom:8px}
   .lending-quick-panel .panel-head span{font-size:11px}
-  .lending-quick-panel .panel-head small{}
+  .lending-quick-panel .panel-head small{color:var(--text-secondary);line-height:1.4}
   .lending-quick-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
   .lending-quick-action{min-height:43px;border:1px solid transparent;border-radius:11px;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:800;cursor:pointer}
   .lending-quick-action.repayment{background:var(--success-bg);border-color:color-mix(in srgb,var(--success) 28%,transparent);color:var(--success)}
-  .lending-quick-action.lending{background:var(--error-bg);border-color:color-mix(in srgb,var(--error) 28%,transparent);color:var(--error)}
+  .lending-quick-action.lending{background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 28%,transparent);color:var(--accent)}
   .lending-quick-action:disabled{opacity:.45;cursor:not-allowed}
 
   .lending-selected-history{padding:0;overflow:hidden}
   .lending-history-head{min-height:58px;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 13px;border-bottom:1px solid var(--border-subtle)}
   .lending-history-head>div>span{display:block;font-size:11.5px;font-weight:850;color:var(--ink)}
-  .lending-history-head>div>small{display:block;margin-top:3px;color:var(--muted)}
+  .lending-history-head>div>small{display:block;margin-top:3px;color:var(--text-secondary)}
   .lending-history-head label{width:158px;flex:0 0 158px}
   .lending-history-head .app-select-control{min-height:37px}
-  .lending-approved-table{min-width:760px}
-  .lending-approved-table th{padding:8px 10px;background:var(--surface-inset);color:var(--muted);white-space:nowrap}
+  .lending-approved-table{width:min(100%,1120px);margin-inline:auto;min-width:760px}
+  .lending-approved-table th{padding:8px 10px;background:var(--surface-inset);color:var(--text-secondary);white-space:nowrap}
   .lending-approved-table td{padding:8px 10px;vertical-align:middle}
   .lending-approved-table td:nth-child(2){max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .lending-approved-table .receivable-action{display:inline-flex;align-items:center;min-height:22px;padding:3px 7px;border-radius:999px;font-weight:800}
-  .lending-approved-table .receivable-action.lent{background:var(--error-bg);color:var(--error)}
+  .lending-approved-table .receivable-action.lent{background:var(--accent-soft);color:var(--accent)}
   .lending-approved-table .receivable-action.repaid{background:var(--success-bg);color:var(--success)}
   .lending-approved-table .receivable-action.forgiven{background:var(--warning-bg);color:var(--warning)}
   .lending-approved-table td.amount.positive{color:var(--green);font-weight:800}
-  .lending-history-summary{padding:8px 13px;border-top:1px solid var(--border-subtle);color:var(--muted)}
+  .lending-history-summary{padding:8px 13px;border-top:1px solid var(--border-subtle);color:var(--text-secondary)}
   .lending-history-summary b{color:var(--green)}
   .lending-history-empty{min-height:150px;display:grid;place-items:center}
 }

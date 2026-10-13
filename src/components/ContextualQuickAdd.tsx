@@ -10,7 +10,10 @@ import { DialogShell } from './DialogShell';
 import { FormError } from './FormError';
 import { IconButton } from './IconButton';
 import { MoneyInput } from './MoneyInput';
+import { RecurringBrandMark } from './RecurringBrandMark';
 import { allAccounts, createEvent } from '../lib/domain';
+import { isSavingsAccount, isSavingContributionSource } from '../lib/accountSelection';
+import { savingContributionDraftError } from '../lib/ledgerFoundations';
 import { cardLabel, creditCards, creditDebtForCard } from '../lib/cards';
 import { creditStatementById, creditStatementEvents, recommendedPayableStatement } from '../lib/creditStatements';
 import { lendingOutstandingFor } from '../lib/lending';
@@ -34,7 +37,7 @@ export type QuickActionContext =
 
 type SpecialContext=Exclude<QuickActionContext,{mode:'generic'}>;
 
-function ContextModal({data,asOf,context,onClose,onCreate,onCompleteScheduled}:{data:FinanceData;asOf:string;context:SpecialContext;onClose:()=>void;onCreate:(event:FinanceEvent)=>void;onCompleteScheduled?:(item:ScheduledTransaction,event:FinanceEvent)=>void}){
+function ContextModal({data,asOf,context,onClose,onCreate,onCompleteScheduled}:{data:FinanceData;asOf:string;context:SpecialContext;onClose:()=>void;onCreate:(event:FinanceEvent)=>Promise<void>;onCompleteScheduled?:(item:ScheduledTransaction,event:FinanceEvent)=>Promise<void>}){
   const accounts=useMemo(()=>allAccounts(data).filter(account=>account.kind!=='credit'),[data]);
   const defaultExpense=accounts.some(account=>account.id===data.state.settings.defaultExpenseAccount)?data.state.settings.defaultExpenseAccount:accounts[0]?.id||'';
   const defaultIncome=accounts.some(account=>account.id===data.state.settings.defaultIncomeAccount)?data.state.settings.defaultIncomeAccount:accounts[0]?.id||'';
@@ -48,8 +51,11 @@ function ContextModal({data,asOf,context,onClose,onCreate,onCompleteScheduled}:{
   const loan=context.mode==='loan'?loans.find(item=>item.id===context.loanId):undefined;
   const scheduled=context.mode==='scheduled'?pendingScheduled(data).find(item=>item.id===context.scheduledId):undefined;
   const sameBankAccounts=context.mode==='credit'&&card?accounts.filter(account=>accountMatchesFinancialProvider(account,card.bankId)):accounts;
-  const savingsTargets=accounts.filter(account=>account.kind==='savings');
-  const savingsSources=accounts.filter(account=>account.kind!=='savings');
+  // A newly counted Savings contribution is a bank operating → savings transfer.
+  // Cash and even other savings accounts may be used by ordinary transfers,
+  // but must not inflate freshly counted saving_cash_offset flow.
+  const savingsTargets=accounts.filter(isSavingsAccount);
+  const savingsSources=accounts.filter(isSavingContributionSource);
   const initialAccount=context.mode==='credit'
     ?(sameBankAccounts.some(account=>account.id===context.fromAccountId)?context.fromAccountId!:sameBankAccounts[0]?.id||'')
     :context.mode==='lending'
@@ -61,8 +67,8 @@ function ContextModal({data,asOf,context,onClose,onCreate,onCompleteScheduled}:{
           :context.mode==='scheduled'
             ?(scheduled?.accountId||(scheduled?.kind==='income'?defaultIncome:defaultExpense))
             :defaultExpense;
-  const loanOutstandingAmount=loan?loanOutstanding(data,loan):0;
-  const initialLoanPlan=loan&&!isSelfLoan(loan)?loanInstallmentPaymentPlan(data,loan,1):null;
+  const loanOutstandingAmount=loan?loanOutstanding(data,loan,asOf):0;
+  const initialLoanPlan=loan&&!isSelfLoan(loan)?loanInstallmentPaymentPlan(data,loan,1,asOf):null;
   const initialAmount=context.mode==='credit'
     ?(context.amount??(context.action==='payment'&&card?(selectedStatement?.remaining??creditDebtForCard(data,card.id,asOf)):0))
     :context.mode==='lending'
@@ -94,10 +100,12 @@ function ContextModal({data,asOf,context,onClose,onCreate,onCompleteScheduled}:{
   const [person,setPerson]=useState(context.mode==='lending'?(context.person??''):'');
   const [expectedReturnDate,setExpectedReturnDate]=useState(context.mode==='lending'&&context.action==='lend'?(context.expectedReturnDate??''):'');
   const [error,setError]=useState('');
-  const loanPaymentPlan=context.mode==='loan'&&loan&&!isSelfLoan(loan)?loanInstallmentPaymentPlan(data,loan,installmentCount):null;
-  const remainingLoanInstallments=loan&&!isSelfLoan(loan)?loanRemainingInstallments(data,loan):0;
+  const [saving,setSaving]=useState(false);
+  const loanPaymentPlan=context.mode==='loan'&&loan&&!isSelfLoan(loan)?loanInstallmentPaymentPlan(data,loan,installmentCount,asOf):null;
+  const remainingLoanInstallments=loan&&!isSelfLoan(loan)?loanRemainingInstallments(data,loan,asOf):0;
 
-  const submit=()=>{
+  const submit=async()=>{
+    if(saving)return;
     try{
       const numeric=loanPaymentPlan?.amount??Number(amount.replace(',','.'));if(!Number.isFinite(numeric)||numeric<=0)throw new Error('Συμπλήρωσε ποσό μεγαλύτερο από μηδέν.');
       let event:FinanceEvent;
@@ -124,7 +132,7 @@ function ContextModal({data,asOf,context,onClose,onCreate,onCompleteScheduled}:{
         }
       }else if(context.mode==='loan'){
         if(!loan)throw new Error('Η επιλεγμένη δόση ή το δάνειο δεν είναι πλέον διαθέσιμο.');
-        const outstanding=loanOutstanding(data,loan);if(outstanding<=0)throw new Error('Η συγκεκριμένη υποχρέωση δεν έχει υπόλοιπο προς πληρωμή.');if(numeric>outstanding+.005)throw new Error(`Η πληρωμή δεν μπορεί να ξεπερνά το υπόλοιπο των ${money.format(outstanding)}.`);
+        const outstanding=loanOutstanding(data,loan,asOf);if(outstanding<=0)throw new Error('Η συγκεκριμένη υποχρέωση δεν έχει υπόλοιπο προς πληρωμή.');if(numeric>outstanding+.005)throw new Error(`Η πληρωμή δεν μπορεί να ξεπερνά το υπόλοιπο των ${money.format(outstanding)}.`);
         if(!accounts.some(account=>account.id===accountId))throw new Error('Ο λογαριασμός πληρωμής δεν είναι πλέον διαθέσιμος. Διάλεξε έναν ενεργό λογαριασμό.');
         if(!isSelfLoan(loan)&&!loanPaymentPlan)throw new Error('Δεν υπάρχουν διαθέσιμες δόσεις προς πληρωμή.');
         if(isSelfLoan(loan)){
@@ -141,19 +149,25 @@ function ContextModal({data,asOf,context,onClose,onCreate,onCompleteScheduled}:{
         if(!scheduled)throw new Error('Η προγραμματισμένη κίνηση δεν είναι πλέον εκκρεμής ή διαθέσιμη.');
         if(!onCompleteScheduled)throw new Error('Η ολοκλήρωση προγραμματισμένης κίνησης δεν είναι διαθέσιμη από αυτή την οθόνη.');
         event=scheduledToEvent(data,scheduled,{date,amount:numeric,accountId,fromAccountId,toAccountId});
-        onCompleteScheduled(transitionScheduled(scheduled,'completed',event.id),event);onClose();return;
+        setSaving(true);
+        await onCompleteScheduled(transitionScheduled(scheduled,'completed',event.id),event);
+        onClose();return;
       }else if(context.mode==='recurring'){
         if(!recurring)throw new Error('Το πάγιο δεν είναι πλέον διαθέσιμο.');const accountError=recurringAccountError(accounts.map(account=>account.id),accountId);if(accountError)throw new Error(accountError);
         event=createEvent({kind:'expense',date,amount:numeric,note:note.trim()||`Πληρωμή: ${recurring.name}`,category:recurring.category,accountId,recurringId:recurring.id});
       }else{
         if(!savingsSources.some(account=>account.id===fromAccountId))throw new Error('Ο λογαριασμός προέλευσης δεν είναι πλέον διαθέσιμος.');
         if(!savingsTargets.some(account=>account.id===toAccountId))throw new Error('Ο αποταμιευτικός λογαριασμός δεν είναι πλέον διαθέσιμος.');
-        if(fromAccountId===toAccountId)throw new Error('Η μεταφορά χρειάζεται διαφορετικό λογαριασμό προέλευσης και αποταμίευσης.');
+        const savingError=savingContributionDraftError(data,{fromAccountId,toAccountId,amount:numeric});
+        if(savingError)throw new Error(savingError);
         event=createEvent({kind:'saving_cash_offset',date,amount:numeric,note:note.trim()||'Μεταφορά στην άκρη',fromAccountId,toAccountId});
         event.savingSource=context.savingSource??'manual_transfer';
       }
-      onCreate(event);onClose();
+      setSaving(true);
+      await onCreate(event);
+      onClose();
     }catch(reason){setError(userErrorMessage(reason,'Δεν μπορέσαμε να ολοκληρώσουμε την κίνηση. Έλεγξε τα στοιχεία και δοκίμασε ξανά.'))}
+    finally{setSaving(false)}
   };
 
   const title=context.mode==='credit'?(context.action==='payment'?(selectedStatement?'Πληρωμή δήλωσης πιστωτικής':'Πληρωμή πιστωτικής'):'Αγορά με πιστωτική'):context.mode==='lending'?(context.action==='repay'?'Επιστροφή δανεικών':'Νέα οφειλή προς εσένα'):context.mode==='loan'?(loan&&isSelfLoan(loan)?'Επιστροφή ΒΟΗΘΕΙΑΣ':installmentCount>1?'Πληρωμή δόσεων':'Πληρωμή δόσης'):context.mode==='scheduled'?'Ολοκλήρωση προγραμματισμένης':context.mode==='recurring'?'Πληρωμή παγίου':'Μεταφορά στην αποταμίευση';
@@ -180,19 +194,20 @@ function ContextModal({data,asOf,context,onClose,onCreate,onCompleteScheduled}:{
   return <DialogShell
     open={true}
     className="contextual-quick-modal"
+    busy={saving}
     ariaLabelledBy="context-quick-title"
     ariaDescribedBy={error?'context-quick-error':'context-quick-description'}
     motionMode="none"
     preferredFocus='[data-autofocus="true"]'
-    onRequestClose={onClose}
-  ><header><div><small>ΓΡΗΓΟΡΗ ΚΙΝΗΣΗ ΜΕ ΠΛΑΙΣΙΟ</small><h2 id="context-quick-title"><Icon size={20}/> {title}</h2><p id="context-quick-description">Οι προεπιλογές εφαρμόζονται μόνο όταν ανοίγει αυτή η ενέργεια. Ό,τι αλλάξεις μέσα στη φόρμα παραμένει δική σου επιλογή μέχρι να κλείσεις ή να καταχωρίσεις.</p></div><IconButton type="button" aria-label="Κλείσιμο contextual καταχώρισης" onClick={onClose}><X/></IconButton></header><div className="entry-body">{targetLabel?<div className="context-target" aria-label="Στόχος ενέργειας"><span>Στόχος</span><b>{targetLabel}</b></div>:null}{selectedStatement?<div className="rule-preview" data-credit-statement-payment-preview role="note" aria-label="Περιεχόμενο δήλωσης προς πληρωμή"><div className="logic-note compact"><ReceiptText/><span>Δήλωση {selectedStatement.openDate.split('-').reverse().join('/')}–{selectedStatement.closeDate.split('-').reverse().join('/')} · λήξη {selectedStatement.dueDate.split('-').reverse().join('/')} · υπόλοιπο {money.format(selectedStatement.remaining)}</span></div>{statementPurchases.length?<ul>{statementPurchases.slice(0,5).map(event=><li key={event.id}><span>{event.note}</span><b>{money.format(event.amount)}</b></li>)}</ul>:null}</div>:null}<div className="form-grid"><label><span>Ποσό</span><MoneyInput data-autofocus="true" value={loanPaymentPlan?String(loanPaymentPlan.amount):amount} readOnly={Boolean(loanPaymentPlan)} aria-readonly={loanPaymentPlan?true:undefined} invalid={amountError} aria-describedby={amountError?'context-quick-error':undefined} onValueChange={value=>{if(!loanPaymentPlan)setAmount(value)}}/></label><label><span>Ημερομηνία</span><AppDateInput value={date} onChange={event=>setDate(event.target.value)}/></label>
+    onRequestClose={()=>{if(!saving)onClose()}}
+  ><header><div><small>ΓΡΗΓΟΡΗ ΚΙΝΗΣΗ ΜΕ ΠΛΑΙΣΙΟ</small><h2 id="context-quick-title">{context.mode==='recurring'&&recurring?<RecurringBrandMark item={recurring} settings={data.state.settings} size={28}/>:<Icon size={20}/>} {title}</h2><p id="context-quick-description">Οι προεπιλογές εφαρμόζονται μόνο όταν ανοίγει αυτή η ενέργεια. Ό,τι αλλάξεις μέσα στη φόρμα παραμένει δική σου επιλογή μέχρι να κλείσεις ή να καταχωρίσεις.</p></div><IconButton type="button" aria-label="Κλείσιμο contextual καταχώρισης" disabled={saving} onClick={onClose}><X/></IconButton></header><div className="entry-body" inert={saving}>{targetLabel?<div className="context-target" aria-label="Στόχος ενέργειας"><span>Στόχος</span><b>{targetLabel}</b></div>:null}{selectedStatement?<div className="rule-preview" data-credit-statement-payment-preview role="note" aria-label="Περιεχόμενο δήλωσης προς πληρωμή"><div className="logic-note compact"><ReceiptText/><span>Δήλωση {selectedStatement.openDate.split('-').reverse().join('/')}–{selectedStatement.closeDate.split('-').reverse().join('/')} · λήξη {selectedStatement.dueDate.split('-').reverse().join('/')} · υπόλοιπο {money.format(selectedStatement.remaining)}</span></div>{statementPurchases.length?<ul>{statementPurchases.slice(0,5).map(event=><li key={event.id}><span>{event.note}</span><b>{money.format(event.amount)}</b></li>)}</ul>:null}</div>:null}<div className="form-grid"><label><span>Ποσό</span><MoneyInput data-autofocus="true" value={loanPaymentPlan?String(loanPaymentPlan.amount):amount} readOnly={Boolean(loanPaymentPlan)} aria-readonly={loanPaymentPlan?true:undefined} invalid={amountError} aria-describedby={amountError?'context-quick-error':undefined} onValueChange={value=>{if(!loanPaymentPlan)setAmount(value)}}/></label><label><span>Ημερομηνία</span><AppDateInput value={date} onChange={event=>setDate(event.target.value)}/></label>
   {context.mode==='loan'&&loan&&!isSelfLoan(loan)&&remainingLoanInstallments>0?<label><span>Πόσες δόσεις</span><AppSelectInput value={String(installmentCount)} onChange={event=>setInstallmentCount(Number(event.target.value))}>{Array.from({length:remainingLoanInstallments},(_,index)=>index+1).map(count=><option key={count} value={count}>{count}</option>)}</AppSelectInput></label>:null}
   {context.mode==='lending'?<label><span>Πρόσωπο</span><AppTextInput value={person} onChange={event=>setPerson(event.target.value)}/></label>:null}
   {context.mode==='savings'?<><label><span>Από</span><AppSelectInput value={fromAccountId} onChange={event=>setFromAccountId(event.target.value)}>{savingsSources.map(account=><option value={account.id} key={account.id}>{accountDisplayName(data,account.id)}</option>)}</AppSelectInput></label><label><span>Προς αποταμίευση</span><AppSelectInput value={toAccountId} onChange={event=>setToAccountId(event.target.value)}>{savingsTargets.map(account=><option value={account.id} key={account.id}>{accountDisplayName(data,account.id)}</option>)}</AppSelectInput></label></>:context.mode==='scheduled'&&scheduled?.kind==='transfer'?<><label><span>Από</span><AppSelectInput value={fromAccountId} onChange={event=>setFromAccountId(event.target.value)}>{accounts.map(account=><option value={account.id} key={account.id}>{accountDisplayName(data,account.id)}</option>)}</AppSelectInput></label><label><span>Προς</span><AppSelectInput value={toAccountId} onChange={event=>setToAccountId(event.target.value)}>{accounts.map(account=><option value={account.id} key={account.id}>{accountDisplayName(data,account.id)}</option>)}</AppSelectInput></label></>:context.mode==='credit'&&context.action==='purchase'?null:<label><span>{context.mode==='credit'?'Πληρωμή από':context.mode==='lending'&&context.action==='repay'?'Επιστροφή σε':context.mode==='lending'?'Πληρωμή από':context.mode==='loan'||context.mode==='recurring'?'Πληρωμή από':'Λογαριασμός'}</span><AppSelectInput value={accountId} onChange={event=>setAccountId(event.target.value)}>{selectableAccounts.map(account=><option value={account.id} key={account.id}>{accountDisplayName(data,account.id)}</option>)}</AppSelectInput></label>}
-  {context.mode==='lending'&&context.action==='lend'?<label><span>Αναμενόμενη επιστροφή <em>προαιρετικό</em></span><AppDateInput value={expectedReturnDate} min={date} onChange={event=>setExpectedReturnDate(event.target.value)}/></label>:null}{context.mode!=='scheduled'?<label className="wide"><span>Σχόλιο <em>προαιρετικό</em></span><AppTextInput value={note} onChange={event=>setNote(event.target.value)}/></label>:<div className="wide"><span>Προγραμματισμένη κίνηση</span><b>{scheduled?.note??'Μη διαθέσιμη'}</b></div>}</div>{paymentEffect?<div className="payment-effect-summary" role="note" aria-label="Οικονομικό αποτέλεσμα πληρωμής"><span>Αποτέλεσμα</span><p>{paymentEffect}</p></div>:null}{context.mode==='credit'&&context.action==='payment'&&!sameBankAccounts.length?<FormError id="context-quick-account-warning">Δεν υπάρχει διαθέσιμος λογαριασμός της ίδιας τράπεζας για την αποπληρωμή.</FormError>:null}{context.mode==='loan'&&loan&&isSelfLoan(loan)&&!savingsTargets.length?<FormError id="context-quick-loan-warning">Δεν υπάρχει αποταμιευτικός λογαριασμός για την επιστροφή της ΒΟΗΘΕΙΑΣ.</FormError>:null}{context.mode==='savings'&&!savingsTargets.length?<FormError id="context-quick-saving-warning">Δεν υπάρχει διαθέσιμος αποταμιευτικός λογαριασμός.</FormError>:null}{error?<FormError id="context-quick-error">{error}</FormError>:null}<div className="editor-actions"><Button type="button" variant="secondary" onClick={onClose}>Ακύρωση</Button><Button type="button" variant="primary" onClick={submit}>{context.mode==='scheduled'?'Ολοκλήρωση':paymentMode?'Επιβεβαίωση πληρωμής':'Καταχώριση'}</Button></div></div></DialogShell>;
+  {context.mode==='lending'&&context.action==='lend'?<label><span>Αναμενόμενη επιστροφή <em>προαιρετικό</em></span><AppDateInput value={expectedReturnDate} min={date} onChange={event=>setExpectedReturnDate(event.target.value)}/></label>:null}{context.mode!=='scheduled'?<label className="wide"><span>Σχόλιο <em>προαιρετικό</em></span><AppTextInput value={note} onChange={event=>setNote(event.target.value)}/></label>:<div className="wide"><span>Προγραμματισμένη κίνηση</span><b>{scheduled?.note??'Μη διαθέσιμη'}</b></div>}</div>{paymentEffect?<div className="payment-effect-summary" role="note" aria-label="Οικονομικό αποτέλεσμα πληρωμής"><span>Αποτέλεσμα</span><p>{paymentEffect}</p></div>:null}{context.mode==='credit'&&context.action==='payment'&&!sameBankAccounts.length?<FormError id="context-quick-account-warning">Δεν υπάρχει διαθέσιμος λογαριασμός της ίδιας τράπεζας για την αποπληρωμή.</FormError>:null}{context.mode==='loan'&&loan&&isSelfLoan(loan)&&!savingsTargets.length?<FormError id="context-quick-loan-warning">Δεν υπάρχει αποταμιευτικός λογαριασμός για την επιστροφή της ΒΟΗΘΕΙΑΣ.</FormError>:null}{context.mode==='savings'&&!savingsTargets.length?<FormError id="context-quick-saving-warning">Δεν υπάρχει διαθέσιμος αποταμιευτικός λογαριασμός.</FormError>:null}{error?<FormError id="context-quick-error">{error}</FormError>:null}<div className="editor-actions"><Button type="button" variant="secondary" disabled={saving} onClick={onClose}>Ακύρωση</Button><Button type="button" variant="primary" disabled={saving} onClick={()=>void submit()}>{saving?'Αποθήκευση…':context.mode==='scheduled'?'Ολοκλήρωση':paymentMode?'Επιβεβαίωση πληρωμής':'Καταχώριση'}</Button></div></div></DialogShell>;
 }
 
-export function ContextualQuickAdd({open,data,asOf,context,initial,motionMode='system',onClose,onCreate,onCompleteScheduled,currentBalance}:{open:boolean;data:FinanceData;asOf:string;context:QuickActionContext|null;initial?:FinanceEvent|null;motionMode?:'system'|'reduced'|'full';onClose:()=>void;onCreate:(event:FinanceEvent)=>void;onCompleteScheduled?:(item:ScheduledTransaction,event:FinanceEvent)=>void;currentBalance:(accountId:string)=>number}){
+export function ContextualQuickAdd({open,data,asOf,context,initial,motionMode='system',onClose,onCreate,onCompleteScheduled,currentBalance}:{open:boolean;data:FinanceData;asOf:string;context:QuickActionContext|null;initial?:FinanceEvent|null;motionMode?:'system'|'reduced'|'full';onClose:()=>void;onCreate:(event:FinanceEvent)=>Promise<void>;onCompleteScheduled?:(item:ScheduledTransaction,event:FinanceEvent)=>Promise<void>;currentBalance:(accountId:string)=>number}){
   if(!open||!context)return null;
   if(context.mode==='generic')return <ReceiptAwareQuickAdd key={context.token} open={open} data={data} asOf={asOf} initial={initial} initialKind={context.kind||'expense'} prefill={context.prefill||null} motionMode={motionMode} onClose={onClose} onCreate={onCreate} currentBalance={currentBalance}/>;
   return <ContextModal key={context.token} data={data} asOf={asOf} context={context} onClose={onClose} onCreate={onCreate} onCompleteScheduled={onCompleteScheduled}/>;

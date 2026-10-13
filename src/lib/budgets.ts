@@ -44,10 +44,10 @@ function addSplitParts(target:Map<string,number>,parts:SplitPart[]|undefined){
  * each categorized portion is included exactly once, including reviewed legacy
  * transactions that were confirmed as semantic splits.
  */
-export function categoryBudgetSpending(data: FinanceData, month: string) {
+export function categoryBudgetSpending(data: FinanceData, month: string, asOf?: string) {
   const totals = new Map<string, number>();
   for (const transaction of effectiveLegacyTransactions(data)) {
-    if (!transaction.date.startsWith(`${month}-`)) continue;
+    if (!transaction.date.startsWith(`${month}-`) || (asOf&&month===asOf.slice(0,7)&&transaction.date>asOf)) continue;
     const decision=reviewDecision(data,transaction.id);
     if(decision?.status==='confirmed'&&decision.semanticKind==='split'){
       addSplitParts(totals,decision.parts);
@@ -57,7 +57,7 @@ export function categoryBudgetSpending(data: FinanceData, month: string) {
     if (impact.expense) add(totals, transaction.category, impact.expense);
   }
   for (const event of data.state.events ?? []) {
-    if (!event.date.startsWith(`${month}-`)) continue;
+    if (!event.date.startsWith(`${month}-`) || (asOf&&month===asOf.slice(0,7)&&event.date>asOf)) continue;
     if (event.parts?.length) {
       addSplitParts(totals,event.parts);
       continue;
@@ -75,8 +75,8 @@ function monthlyBudgets(data: FinanceData, month: string) {
     .sort((a, b) => a.scope.localeCompare(b.scope) || (a.category ?? '').localeCompare(b.category ?? '', 'el') || a.id.localeCompare(b.id));
 }
 
-export function budgetProgress(data: FinanceData, month: string): BudgetProgress[] {
-  const spending = categoryBudgetSpending(data, month);
+export function budgetProgress(data: FinanceData, month: string, asOf?: string): BudgetProgress[] {
+  const spending = categoryBudgetSpending(data, month, asOf);
   const categorizedTotal = [...spending.values()].reduce((sum, value) => sum + value, 0);
   return monthlyBudgets(data, month).map((budget) => {
     const rawUsed = budget.scope === 'overall' ? categorizedTotal : (spending.get(budget.category ?? '') ?? 0);

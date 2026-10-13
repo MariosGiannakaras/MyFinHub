@@ -57,12 +57,12 @@ export function selectNetWorth(data: FinanceData, asOf: string) {
   return memo(bucket(data).netWorth, asOf, () => netWorth(data, asOf));
 }
 
-export function selectMonthlyFlow(data: FinanceData, month: string) {
-  return memo(bucket(data).monthlyFlow, month, () => operationalMonthlyFlow(data, month));
+export function selectMonthlyFlow(data: FinanceData, month: string, asOf?: string) {
+  return memo(bucket(data).monthlyFlow, `${month}:${asOf??'full'}`, () => operationalMonthlyFlow(data, month, asOf));
 }
 
-export function selectCategoryTotals(data: FinanceData, month: string) {
-  return memo(bucket(data).categories, month, () => categoryTotals(data, month));
+export function selectCategoryTotals(data: FinanceData, month: string, asOf?: string) {
+  return memo(bucket(data).categories, `${month}:${asOf??'full'}`, () => categoryTotals(data, month, asOf));
 }
 
 export function selectDailyExpenseSeries(data: FinanceData, month: string) {

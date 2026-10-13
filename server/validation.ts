@@ -180,6 +180,10 @@ function validateRecurring(value: unknown, name: string) {
   text(value.category, `${name}.category`, 1_000, true);
   if (typeof value.active !== 'boolean') invalid(`Invalid ${name}.active.`);
   if (value.status !== undefined) oneOf(value.status, ['active','paused','stopped'], `${name}.status`);
+  if (value.logoAssetKey !== undefined && value.logoAssetKey !== null) {
+    text(value.logoAssetKey, `${name}.logoAssetKey`, 96);
+    if (!/^service-asset-[a-f0-9]{24}$/.test(value.logoAssetKey)) invalid(`Invalid ${name}.logoAssetKey.`);
+  }
   optionalText(value.source, `${name}.source`, 1_000);
 }
 
@@ -554,6 +558,7 @@ export function validateFinanceData(value: unknown): asserts value is FinanceDat
     state.cardBanks.forEach((item, index) => validateCardBank(item, `state.cardBanks[${index}]`));
     ensureUniqueIds(state.cardBanks, 'state.cardBanks');
   }
+  if (state.pendingCardSecretDeletes !== undefined) stringArray(state.pendingCardSecretDeletes, 'state.pendingCardSecretDeletes', 1_000, 160);
   if (state.cards !== undefined) {
     array(state.cards, 'state.cards', 1_000);
     state.cards.forEach((item, index) => validatePaymentCard(item, `state.cards[${index}]`));

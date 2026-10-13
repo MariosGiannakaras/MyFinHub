@@ -60,7 +60,7 @@ try{
   await c.send('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
   await c.send('Page.navigate',{url:url.href});
   await waitFor("function(){return Boolean(document.querySelector('.page-heading'))}",'credit page reset');
-  await c.call("function(){const button=[...document.querySelectorAll('.page-heading button')].find(item=>(item.textContent||'').includes('Αρχείο καρτών'));button?.click();return Boolean(button)}");
+  assert(await c.call("function(){const button=document.querySelector('.page-heading button[aria-label^=\\\"Αρχείο καρτών\\\"]');button?.click();return Boolean(button)}"),'credit archive action remains semantically reachable');
   await waitFor("function(){return Boolean(document.querySelector('.card-archive-manager'))}",'archive manager');
   const archive=await c.call("function(){const row=[...document.querySelectorAll('.card-archive-row')].find(item=>(item.textContent||'').includes('QA Settled'));return {text:row?.textContent||'',deleteEnabled:Boolean(row?.querySelector('button.danger:not([disabled])'))}}");
   assert(archive.text.includes('Statements 1'),'archive manager preserves statement count');
@@ -86,6 +86,16 @@ try{
   await c.call("function(){document.querySelector('.deleted-credit-history')?.scrollIntoView({block:'start'});return true}");
   await waitFor("function(){const node=document.querySelector('.deleted-credit-history-card > .panel-head');if(!node)return false;const r=node.getBoundingClientRect();return r.bottom>90&&r.top<innerHeight-100}",'deleted statement history header visible in mobile evidence viewport');
   await shot(c,'credit-deleted-statement-history-mobile');
+
+  console.log('Credit statement QA: future-dated payment must not settle historical as-of balance');
+  await c.send('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
+  const futureUrl=new URL(baseUrl);futureUrl.searchParams.set('page','credit');futureUrl.searchParams.set('state','credit-future-payment');
+  await c.send('Page.navigate',{url:futureUrl.href});
+  await waitFor("function(){return Boolean(document.querySelector('[data-primary-credit-statement]'))}",'historical statement with future payment');
+  const earlierStatement=await c.call("function(){const panel=document.querySelector('[data-primary-credit-statement]');return {text:panel?.textContent||'',canPay:Boolean(panel?.querySelector('button.save-button'))}}");
+  assert(earlierStatement.text.includes('90,00')&&earlierStatement.canPay,'future-dated payment prematurely settled historical statement');
+  await c.call("function(){document.querySelector('[data-primary-credit-statement]')?.scrollIntoView({block:'start'});return true}");
+  await shot(c,'credit-statement-future-payment-ignored');
 
   c.close();console.log('Credit statement lifecycle rendered QA passed.');
 }finally{child.kill('SIGTERM')}

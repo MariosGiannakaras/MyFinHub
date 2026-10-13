@@ -14,10 +14,10 @@ const kindLabel:Record<CommandSearchItem['kind'],string>={command:'Εντολή'
 function readRecentIds(){try{const raw=sessionStorage.getItem(RECENTS_KEY);const parsed=raw?JSON.parse(raw):[];return Array.isArray(parsed)?parsed.filter(value=>typeof value==='string').slice(0,8):[]}catch{return []}}
 function saveRecentIds(ids:string[]){try{sessionStorage.setItem(RECENTS_KEY,JSON.stringify(ids.slice(0,8)))}catch{/* storage can be unavailable in hardened/private contexts */}}
 
-export function CommandPalette({open,data,motionMode='system',onClose,onExecute}:{open:boolean;data:FinanceData;motionMode?:'system'|'reduced'|'full';onClose:()=>void;onExecute:(item:RankedCommandSearchItem)=>void}){
+export function CommandPalette({open,data,asOf,motionMode='system',onClose,onExecute}:{open:boolean;data:FinanceData;asOf?:string;motionMode?:'system'|'reduced'|'full';onClose:()=>void;onExecute:(item:RankedCommandSearchItem)=>void}){
  const systemReduced=useReducedMotion();const reduce=Boolean(systemReduced)||motionMode==='reduced';
  const[query,setQuery]=useState('');const[active,setActive]=useState(0);const[recentIds,setRecentIds]=useState<string[]>(readRecentIds);
- const results=useMemo(()=>searchCommandItems(data,query,{recentIds,limit:14}),[data,query,recentIds]);
+ const results=useMemo(()=>searchCommandItems(data,query,{recentIds,limit:14,asOf}),[data,query,recentIds,asOf]);
  const modalRef=useModalFocus<HTMLElement>(open,'[data-command-input="true"]',onClose);
  const commandShortcut=shortcutDisplay('commandPalette');
  const dismissShortcut=shortcutDisplay('dismiss');

@@ -67,7 +67,7 @@ try{
 
   console.log('Theme system QA: dark mobile Reports and Settings semantic surfaces');
   await viewport(375,812,true);await navigate('reports',pages.reports);await applyTheme('dark');
-  const darkMobileReportCard=await computedContrast('.report-kpi-strip>.report-headline-card');
+  const darkMobileReportCard=await computedContrast('.report-financial-picture');
   const darkMobileComparison=await computedContrast('.report-comparison-panel');
   const darkMobileOperations=await computedContrast('.report-upcoming-card');
   const darkMobilePrivate=await computedContrast('.private-report-placeholder');
@@ -89,7 +89,7 @@ try{
   console.log('Theme system QA: dark high-fidelity surface parity');
   await viewport(1440,900,false);await navigate('dashboard',pages.dashboard);await applyTheme('dark');const darkDashboardCard=await computedContrast('.approved-account-card');assert(darkDashboardCard&&darkDashboardCard.backgroundLuminance<.12,`dark Dashboard account card is a dark surface: ${JSON.stringify(darkDashboardCard)}`);assert(darkDashboardCard&&darkDashboardCard.textContrast>=4.5,`dark Dashboard account card text contrast is readable: ${JSON.stringify(darkDashboardCard)}`);await shot('dark-dashboard-surface-parity-desktop');
   await navigate('transactions',pages.transactions);await applyTheme('dark');const darkLedgerCell=await computedContrast('.transactions-approved-table tbody td');assert(darkLedgerCell&&darkLedgerCell.backgroundLuminance<.12,`dark Transactions ledger cell is a dark surface: ${JSON.stringify(darkLedgerCell)}`);assert(darkLedgerCell&&darkLedgerCell.textContrast>=4.5,`dark Transactions ledger cell text contrast is readable: ${JSON.stringify(darkLedgerCell)}`);await shot('dark-transactions-surface-parity-desktop');
-  await navigate('reports',pages.reports);await applyTheme('dark');const darkReportPeriod=await computedContrast('.report-period-chip');assert(darkReportPeriod&&darkReportPeriod.backgroundLuminance<.12,`dark Reports period chip is a dark surface: ${JSON.stringify(darkReportPeriod)}`);assert(darkReportPeriod&&darkReportPeriod.textContrast>=4.5,`dark Reports period chip text contrast is readable: ${JSON.stringify(darkReportPeriod)}`);await shot('dark-reports-period-parity-desktop');
+  await navigate('reports',pages.reports);await applyTheme('dark');const darkReportExecutive=await computedContrast('.report-financial-picture');assert(darkReportExecutive&&darkReportExecutive.backgroundLuminance<.12,`dark Reports executive picture is a dark semantic surface: ${JSON.stringify(darkReportExecutive)}`);assert(darkReportExecutive&&darkReportExecutive.textContrast>=4.5,`dark Reports executive picture text contrast is readable: ${JSON.stringify(darkReportExecutive)}`);await shot('dark-reports-financial-picture-parity-desktop');
   await navigate('dashboard',pages.dashboard);await applyTheme('dark');await c.call("function(){document.querySelector('[data-global-quick-entry=\"desktop\"]')?.click();return true}");await waitFor("function(){return !!document.querySelector('.quick-modal')}",'dark Quick Entry parity');const darkQuickFooter=await computedContrast('.quick-modal>footer');assert(darkQuickFooter&&darkQuickFooter.backgroundLuminance<.12,`dark Quick Entry footer is a dark surface: ${JSON.stringify(darkQuickFooter)}`);assert(darkQuickFooter&&darkQuickFooter.textContrast>=4.5,`dark Quick Entry footer text contrast is readable: ${JSON.stringify(darkQuickFooter)}`);await shot('dark-quick-entry-surface-parity-desktop');
 
   c.close();console.log('Theme system rendered QA passed.');

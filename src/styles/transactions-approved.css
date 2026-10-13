@@ -14,8 +14,8 @@
 .transactions-summary-copy strong{display:block;font-size:22px;line-height:1.1;letter-spacing:-.035em;color:#10265d}
 .transactions-summary-copy strong.positive{color:#11a867}.transactions-summary-copy strong.negative{color:#e53835}
 .transactions-summary-copy span{display:block;margin-top:7px;color:var(--text-secondary);font-weight:650}
-.transactions-summary-copy span.positive{color:#13a969}.transactions-summary-copy span.negative{color:#e13d3a}
-.transactions-approved-shell{display:grid;gap:10px;min-width:0}
+.transactions-summary-copy span.positive{color:var(--finance-positive)}.transactions-summary-copy span.negative{color:var(--finance-negative)}.transactions-summary-copy span.neutral{color:var(--text-secondary)}
+.transactions-approved-shell{display:grid;gap:10px;min-width:0;width:min(100%,1560px);margin-inline:auto}
 .transactions-approved-filters{display:grid;grid-template-columns:minmax(180px,1.25fr) minmax(110px,.7fr) minmax(110px,.7fr) minmax(100px,.65fr) minmax(240px,1.15fr) 42px;gap:10px;min-width:0;width:100%;box-sizing:border-box;padding:10px;border-radius:14px;background:rgba(248,251,255,.82);border:1px solid rgba(218,228,241,.75);box-shadow:0 4px 15px rgba(35,63,104,.045)}
 .transactions-approved-filters .filter-label{display:block;min-width:0}
 .transactions-approved-filters .transaction-filter-pass-through{display:contents}
@@ -23,8 +23,8 @@
 .transactions-approved-filters .searchbox{height:42px;min-width:0;width:100%;box-sizing:border-box;border:1px solid #d6e0ee;background:#fbfdff;border-radius:9px;box-shadow:none;padding:0 12px;display:flex;align-items:center;gap:9px;color:#224170}
 .transactions-approved-filters .searchbox input{height:100%;min-width:0;width:100%;border:0;background:transparent;outline:0;color:#1f3761;font-size:var(--ux-dense-data-size)}
 .transactions-approved-filters .searchbox input::placeholder{color:#8190a9}
-.transactions-approved-filters .owned-select-shell{height:42px;width:100%;min-width:0;border-radius:9px!important;border:1px solid #d6e0ee!important;background:#fbfdff!important;box-shadow:none!important;font-size:11px;color:#263d67;box-sizing:border-box}
-.transactions-approved-filters .owned-select-shell .owned-input{font-size:11px;min-width:0}
+.transactions-approved-filters .owned-select-shell{height:42px;width:100%;min-width:0;border-radius:9px!important;border:1px solid var(--control-border)!important;background:var(--control-bg)!important;box-shadow:none!important;font-size:var(--ux-dense-data-size);color:var(--ink-2);box-sizing:border-box}
+.transactions-approved-filters .owned-select-shell .owned-input{font-size:var(--ux-dense-data-size);min-width:0}
 .transactions-approved-date{height:42px;min-width:0;border:1px solid #d6e0ee;background:#fbfdff;border-radius:9px;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:2px;padding:0 6px;color:#30476e;box-sizing:border-box}
 .transactions-approved-date>.owned-date-shell{min-width:0;width:100%;border:0!important;background:transparent!important;box-shadow:none!important;padding:0}
 .transactions-approved-date .owned-input{min-width:0;width:100%;border:0;background:transparent;color:#30476e;outline:0;padding:0 2px;font-size:var(--ux-dense-label-size)!important}
@@ -37,7 +37,7 @@
 .transactions-ledger-panel,.transactions-detail-panel{min-width:0;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow-soft);border-radius:var(--radius-md);overflow:hidden}
 .transactions-approved-table-wrap{min-width:0;max-width:100%;overflow-x:auto}
 .transactions-approved-table{width:100%;max-width:100%;border-collapse:collapse;table-layout:fixed;color:var(--text-secondary)}
-.transactions-approved-table th{height:38px;text-align:left;font-weight:760;color:#4d6082;padding:0 8px;border-bottom:1px solid #dde5f0;background:#fbfdff;box-sizing:border-box}
+.transactions-approved-table th{height:38px;text-align:left;font-weight:760;color:var(--text-secondary);padding:0 8px;border-bottom:1px solid var(--chart-grid);background:var(--surface-inset);box-sizing:border-box}
 .transactions-approved-table th:first-child,.transactions-approved-table td:first-child{width:38px;text-align:center}
 .transactions-approved-table th:nth-child(2){width:17%}.transactions-approved-table th:nth-child(3){width:22%}.transactions-approved-table th:nth-child(4){width:15%}.transactions-approved-table th:nth-child(5){width:14%}.transactions-approved-table th:nth-child(6){width:12%}.transactions-approved-table th:nth-child(7){width:10%}.transactions-approved-table th:last-child,.transactions-approved-table td:last-child{width:40px;text-align:center}
 .transactions-approved-table td{height:40px;padding:0 8px;border-bottom:1px solid #e3e9f2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:rgba(255,255,255,.45);box-sizing:border-box}
@@ -45,20 +45,20 @@
 .transactions-approved-table tbody tr:hover td{background:#f4f8fd}
 .transactions-approved-table tbody tr.is-selected td{background:#eef6ff}
 .transactions-approved-table tbody tr.is-selected{box-shadow:inset 3px 0 0 #2b8af2}
-.transactions-approved-check{appearance:none;width:15px;height:15px;border:1px solid #8ea3c3;border-radius:3px;background:#fff;display:inline-grid;place-items:center;margin:0;vertical-align:middle}
-.transactions-approved-check:checked{background:#2f7fe7;border-color:#2f7fe7;box-shadow:inset 0 0 0 3px #fff}
+.transactions-approved-check{appearance:none;width:15px;height:15px;border:1px solid var(--control-border);border-radius:50%;background:var(--control-bg);display:inline-grid;place-items:center;margin:0;vertical-align:middle}
+.transactions-approved-check:checked{background:var(--accent);border-color:var(--accent);box-shadow:inset 0 0 0 4px var(--surface)}
 .transactions-category-cell{display:flex;align-items:center;gap:8px;min-width:0}
 .transactions-category-cell .finance-icon{flex:0 0 auto}
 .transactions-category-cell span{overflow:hidden;text-overflow:ellipsis}
-.transactions-description-main{font-weight:650;color:#536483;overflow:hidden;text-overflow:ellipsis}
-.transactions-account-name{color:#526382;font-weight:620}
+.transactions-description-main{font-weight:650;color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis}
+.transactions-account-name{color:var(--text-secondary);font-weight:620}
 .transactions-approved-table td.amount{font-weight:800;text-align:right}
 .transactions-approved-table td.balance{font-weight:650;color:#5a6c89;text-align:right}
 .transactions-approved-table .row-context-button{width:30px;height:30px;border:0;background:transparent;border-radius:8px;display:grid;place-items:center;color:#365487;cursor:pointer}
 .transactions-approved-table .row-context-button:hover{background:#e8f1fd;color:#166ec8}
-.transactions-ledger-footer{min-height:58px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0;color:var(--text-secondary);background:#fbfdff;box-sizing:border-box}
+.transactions-ledger-footer{min-height:58px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0;color:var(--text-secondary);font-size:var(--ux-dense-label-size);background:var(--surface-inset);box-sizing:border-box}
 .transactions-pagination{display:flex;align-items:center;gap:2px;flex:0 0 auto}
-.transactions-pagination button{width:32px;height:32px;border:1px solid transparent;background:transparent;border-radius:8px;color:#415879;cursor:pointer;font-size:var(--ux-dense-label-size)}
+.transactions-pagination button{width:32px;height:32px;border:1px solid transparent;background:transparent;border-radius:8px;color:var(--text-secondary);cursor:pointer;font-size:var(--ux-dense-label-size)}
 .transactions-pagination button:hover:not(:disabled){background:#f0f5fc}.transactions-pagination button:disabled{opacity:.35;cursor:default}.transactions-pagination button.active{background:#eaf4ff;color:#1e78d7;font-weight:800}
 .transactions-page-size{display:flex;align-items:center;gap:8px;min-width:0}
 .transactions-page-size .owned-select-shell{width:58px;min-width:58px;height:34px;border:1px solid #d7e0ed;background:#fff;border-radius:8px;color:#344c74;padding:0 4px;box-sizing:border-box}
@@ -78,6 +78,7 @@
 .transactions-detail-row{min-height:58px;display:grid;grid-template-columns:96px minmax(0,1fr);align-items:start;gap:8px;padding:12px 0;border-bottom:1px solid var(--border-subtle);font-size:var(--ux-dense-data-size)}
 .transactions-detail-row>span{color:var(--text-secondary)}.transactions-detail-row b{color:var(--ink-2);overflow:visible;text-overflow:clip;white-space:normal;overflow-wrap:anywhere;line-height:1.45}
 .transactions-detail-row .detail-account{display:grid;grid-template-columns:18px minmax(0,1fr);align-items:start;gap:7px;color:var(--ink-2)}.transactions-detail-row .detail-account svg{margin-top:1px}.transactions-detail-row .detail-account span{color:inherit;overflow-wrap:anywhere}
+.transactions-detail-comment-row b{white-space:pre-line;color:var(--text-secondary)}
 .transactions-detail-actions{margin-top:auto;padding-top:18px;display:grid;grid-template-columns:1fr 1fr;gap:9px}
 .transactions-detail-actions button{height:58px;border-radius:10px;background:#f8fbff;font-weight:750;display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer}
 .transactions-detail-actions .edit{border:1px solid #2b87e8;color:#1777d4}.transactions-detail-actions .delete{border:1px solid #f06a68;color:#de3635;background:#fff8f8}
@@ -94,4 +95,4 @@
 .transaction-empty-icon{width:46px;height:46px;display:grid;place-items:center;border-radius:14px;background:var(--accent-soft);color:var(--accent)}
 .transaction-empty-state>span:not(.transaction-empty-icon){max-width:520px}
 .transaction-empty-state button{min-height:40px}
-@media(min-width:1400px){.transactions-approved-grid{grid-template-columns:minmax(0,1fr) minmax(330px,360px)}}
+@media(min-width:1400px){.transactions-approved-grid{grid-template-columns:minmax(0,1fr) minmax(320px,340px)}}

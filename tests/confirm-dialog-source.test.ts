@@ -12,7 +12,9 @@ describe('ConfirmDialog source contract',()=>{
     expect(source).toContain('role="alertdialog"');
     expect(source).toContain('useId');
     expect(source).toContain('ariaLabelledBy={titleId}');
-    expect(source).toContain('ariaDescribedBy={descriptionId}');
+    expect(source).toContain('ariaDescribedBy={error?');
+    expect(source).toContain('${descriptionId} ${errorId}');
+    expect(source).toContain('<FormError id={errorId}>{error}</FormError>');
     expect(source).toContain('data-autofocus="true"');
     expect(shell).toContain('aria-modal="true"');
     expect(shell).toContain('useModalFocus');

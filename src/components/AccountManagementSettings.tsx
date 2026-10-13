@@ -1,6 +1,6 @@
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { Landmark, Pencil, Plus, Trash2, WalletCards, X } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useAccountMetadata } from '../hooks/useAccountMetadata';
 import { useFinancialProviders } from '../hooks/useFinancialProviders';
 import { useModalFocus } from '../hooks/useModalFocus';
@@ -108,7 +108,7 @@ function AccountIcon({account,providers}:{account:ProviderAccount;providers:Fina
   return <span className="account-management-brand-icon"><BankBrandMark id={providerId||account.id} name={accountProviderLabel(account,providers)}/></span>;
 }
 
-export function AccountManagementSettings({data,settings,onChange}:{data:FinanceData;settings:FinanceSettings;onChange:(next:FinanceSettings)=>void}){
+export function AccountManagementSettings({data,settings,onChange,onChangeDurably,focusAccountId,focusKey}:{data:FinanceData;settings:FinanceSettings;onChange:(next:FinanceSettings)=>void;onChangeDurably:(next:FinanceSettings)=>Promise<void>;focusAccountId?:string|null;focusKey?:number}){
   const metadata=useAccountMetadata();
   const providerCatalog=useFinancialProviders();
   const providers=providerCatalog.providers;
@@ -121,6 +121,20 @@ export function AccountManagementSettings({data,settings,onChange}:{data:Finance
   const[busy,setBusy]=useState(false);
   const[pendingDelete,setPendingDelete]=useState<ProviderAccount|null>(null);
   const modalRef=useModalFocus<HTMLElement>(Boolean(editor),'[data-autofocus="true"]',()=>{if(!busy)setEditor(null)});
+  useEffect(()=>{
+    if(!focusAccountId||!focusKey||!accounts.some(account=>account.id===focusAccountId))return;
+    let secondFrame=0;
+    const frame=requestAnimationFrame(()=>{
+      // The app shell focuses the route heading on navigation. Focus the
+      // requested account on the following frame, after that generic effect.
+      secondFrame=requestAnimationFrame(()=>{
+        const row=[...document.querySelectorAll<HTMLElement>('.account-management-row[data-account-id]')].find(node=>node.dataset.accountId===focusAccountId);
+        row?.scrollIntoView({block:'center',behavior:'auto'});
+        row?.focus({preventScroll:true});
+      });
+    });
+    return()=>{cancelAnimationFrame(frame);cancelAnimationFrame(secondFrame)};
+  },[focusAccountId,focusKey,accounts]);
 
   const patch=(next:Partial<FinanceSettings>)=>onChange({...settings,...next});
   const closeEditor=()=>{if(busy)return;setEditor(null);setEditorError('')};
@@ -186,9 +200,6 @@ export function AccountManagementSettings({data,settings,onChange}:{data:Finance
         excludeFromAvailable:reserveCash||termDeposit,
         custom:isCustom||undefined,
       };
-      if(editor.mode==='bank')await saveAccountMetadata(id,editor.iban.trim()?normalizeIban(editor.iban):'');
-      else if(metadata.records[id]?.iban)await saveAccountMetadata(id,'');
-
       const names={...settings.accountNames,[id]:name};
       if(id!==editor.id&&editor.id)delete names[editor.id];
       const excluded=new Set(settings.excludedFromAvailable??[]);
@@ -217,8 +228,18 @@ export function AccountManagementSettings({data,settings,onChange}:{data:Finance
         };
       }
 
-      onChange(next);
-      setMessage(editor.source==='new'?'Ο λογαριασμός δημιουργήθηκε.':'Οι αλλαγές αποθηκεύτηκαν.');
+      await onChangeDurably(next);
+      // IBAN lives in a separate owner+AAL2 metadata store. Commit the
+      // canonical account revision first; do not leave orphaned metadata when
+      // the finance write fails. A later metadata error is a partial success.
+      let ibanWarning='';
+      try{
+        if(editor.mode==='bank')await saveAccountMetadata(id,editor.iban.trim()?normalizeIban(editor.iban):'');
+        else if(metadata.records[id]?.iban)await saveAccountMetadata(id,'');
+      }catch{
+        ibanWarning=' Ο λογαριασμός αποθηκεύτηκε, αλλά η ενημέρωση IBAN απέτυχε. Έλεγξε τα στοιχεία και επανάλαβε την ενημέρωση.';
+      }
+      setMessage((editor.source==='new'?'Ο λογαριασμός δημιουργήθηκε και αποθηκεύτηκε.':'Οι αλλαγές του λογαριασμού αποθηκεύτηκαν.')+ibanWarning);
       setEditor(null);
     }catch(error){setEditorError(userErrorMessage(error,'Δεν ήταν δυνατή η αποθήκευση του λογαριασμού. Δοκίμασε ξανά.'))}
     finally{setBusy(false)}
@@ -241,8 +262,14 @@ export function AccountManagementSettings({data,settings,onChange}:{data:Finance
       const active=accounts.filter(item=>item.id!==id&&item.showInQuickChoices!==false);
       const fallback=active[0]?.id||'';
       const next:FinanceSettings={...settings,customAccounts:remaining,accountNames:names,accountOverrides:overrides,excludedFromAvailable:(settings.excludedFromAvailable??[]).filter(item=>item!==id),defaultExpenseAccount:settings.defaultExpenseAccount===id?fallback:settings.defaultExpenseAccount,defaultIncomeAccount:settings.defaultIncomeAccount===id?fallback:settings.defaultIncomeAccount,defaultLoanAccount:settings.defaultLoanAccount===id?fallback:settings.defaultLoanAccount};
-      if(metadata.records[id]?.iban)await saveAccountMetadata(id,'');
-      onChange(next);setMessage('Ο λογαριασμός διαγράφηκε.');setPendingDelete(null);
+      await onChangeDurably(next);
+      let metadataWarning='';
+      if(metadata.records[id]?.iban){
+        try{await saveAccountMetadata(id,'')}
+        catch{metadataWarning=' Η αφαίρεση του παλιού IBAN από τα metadata απέτυχε· έλεγξε τα στοιχεία.'}
+      }
+      setMessage('Ο λογαριασμός διαγράφηκε και αποθηκεύτηκε.'+metadataWarning);
+      setPendingDelete(null);
     }catch(error){setMessage(userErrorMessage(error,'Δεν ήταν δυνατή η διαγραφή του λογαριασμού.'))}
     finally{setBusy(false)}
   };
@@ -275,7 +302,7 @@ export function AccountManagementSettings({data,settings,onChange}:{data:Finance
           const cashType=inferCashType(account);
           const category=inferBankCategory(account);
           const defaultRoles=accountDefaultRoles(settings,account.id);
-          return <div className="account-management-row" role="listitem" key={account.id}>
+          return <div className="account-management-row" role="listitem" tabIndex={-1} data-account-id={account.id} key={account.id}>
             <AccountIcon account={account} providers={providers}/>
             <div className="account-management-copy">
               <div className="account-management-title-line"><b>{displayName(settings,account)}</b>{defaultRoles.length?<span className="account-management-default-badges" aria-label={`Προεπιλογές: ${defaultRoles.join(', ')}`}>{defaultRoles.map(role=><span className="account-management-default-badge" key={role}>{role}</span>)}</span>:null}</div>
@@ -318,6 +345,6 @@ export function AccountManagementSettings({data,settings,onChange}:{data:Finance
       </motion.section>
     </motion.div>:null}</AnimatePresence>
 
-    <ConfirmDialog open={Boolean(pendingDelete)} title="Διαγραφή λογαριασμού;" description={pendingDelete?`Ο λογαριασμός «${displayName(settings,pendingDelete)}» θα αφαιρεθεί οριστικά. Η ενέργεια επιτρέπεται μόνο επειδή δεν υπάρχει οικονομικό ιστορικό που να τον χρησιμοποιεί.`:''} confirmLabel="Διαγραφή" tone="destructive" busy={busy} motionMode={settings.motion} onConfirm={()=>void confirmDelete()} onCancel={()=>{if(!busy)setPendingDelete(null)}}/>
+    <ConfirmDialog open={Boolean(pendingDelete)} title="Διαγραφή λογαριασμού;" description={pendingDelete?`Ο λογαριασμός «${displayName(settings,pendingDelete)}» θα αφαιρεθεί οριστικά. Η ενέργεια επιτρέπεται μόνο επειδή δεν υπάρχει οικονομικό ιστορικό που να τον χρησιμοποιεί.`:''} confirmLabel="Διαγραφή" tone="destructive" busy={busy} onConfirm={()=>void confirmDelete()} onCancel={()=>{if(!busy)setPendingDelete(null)}}/>
   </div>;
 }

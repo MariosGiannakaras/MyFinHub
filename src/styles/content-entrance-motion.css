@@ -1,0 +1,12 @@
+/* Shared semantic list/grid/table entrance reuses existing motion keyframes.
+ * No fake loading, layout movement for tables, or nested card animation. */
+[data-content-entrance="grid"] > *,
+[data-content-entrance="list"] > *{animation:rh-bank-in 190ms var(--ease-out) backwards}
+[data-content-entrance="table"] > tr,
+table[data-content-entrance="table"] tbody > tr{animation:rh-backdrop-in 170ms var(--ease-out) backwards}
+:is([data-content-entrance] > *,table[data-content-entrance="table"] tbody > tr):nth-child(2){animation-delay:45ms}
+:is([data-content-entrance] > *,table[data-content-entrance="table"] tbody > tr):nth-child(n+3){animation-delay:90ms}
+@media(prefers-reduced-motion:reduce){
+  :is([data-content-entrance] > *,table[data-content-entrance="table"] tbody > tr){animation:none!important}
+}
+/* Existing global html[data-motion=reduced] * also disables these animations. */

@@ -9,7 +9,7 @@
   --shadow-soft:0 4px 14px rgba(24,45,78,.07);
   --shadow-inset:inset 0 0 0 1px rgba(184,200,220,.48);
   --radius-xs:8px;--radius-sm:10px;--radius-md:14px;--radius-lg:18px;--radius:18px;
-  --control-height:40px;--focus:0 0 0 3px rgba(47,111,237,.22);
+  --control-height:47px;--control-radius:12px;--focus:0 0 0 3px rgba(47,111,237,.22);
 }
 
 *{box-sizing:border-box}
@@ -23,3 +23,5 @@ button{min-width:24px;min-height:24px}
 .surface-raised{background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow-raised)}
 .surface-inset{background:var(--surface-2);border:1px solid var(--line);box-shadow:none}
 .surface-flat{background:rgba(255,255,255,.92);border:1px solid var(--line);box-shadow:0 1px 3px rgba(24,45,78,.05)}
+
+@media(max-width:1099px){:root{--control-height:44px;--control-radius:11px}}@media(max-width:680px){:root{--control-height:46px;--control-radius:10px}}

@@ -15,14 +15,16 @@ import { Surface } from '../components/Surface';
 import { SupportDiagnosticsPanel } from '../components/SupportDiagnosticsPanel';
 import { TransactionRulesWorkspace } from '../components/TransactionRulesWorkspace';
 import { categoryTree } from '../lib/categories';
+import { appendTransactionRule, reorderTransactionRules } from '../lib/transactionRuleEditor';
 import { MAX_FINANCE_DOCUMENT_BYTES } from '../lib/limits';
 import { taxonomyOperationPreview, type TaxonomyOperation } from '../lib/taxonomyManagement';
 import { userErrorMessage } from '../lib/userMessage';
+import type { SettingsTabId } from '../lib/routing';
 import type { FinanceData, FinanceSettings, TransactionRule } from '../types';
 import './SettingsPage.css';
 import './SettingsData.css';
 
-type SettingsTab = 'general' | 'profile' | 'accounts' | 'categories' | 'icons' | 'rules' | 'data';
+type SettingsTab = SettingsTabId;
 
 type SettingsTabDefinition = {
   id: SettingsTab;
@@ -40,9 +42,9 @@ const SETTINGS_TABS: SettingsTabDefinition[] = [
 ];
 
 function cloneSettings(settings: FinanceSettings): FinanceSettings {
+  const {motion:_legacyMotion,...persisted}=settings;
   return {
-    ...settings,
-    motion: 'full',
+    ...persisted,
     accountNames: { ...settings.accountNames },
     customAccounts: (settings.customAccounts ?? []).map((account) => ({ ...account })),
     accountOverrides: Object.fromEntries(Object.entries(settings.accountOverrides ?? {}).map(([id, account]) => [id, { ...account }])),
@@ -90,30 +92,59 @@ export function SettingsPage({
   filePath,
   lastSavedAt,
   currentEmail,
+  accountFocusId,
+  accountFocusKey,
+  activeTab:controlledTab,
+  onActiveTabChange,
   onImport,
   onBackup,
   onSettings,
+  onFinanceDurably,
   onTaxonomyOperation,
-  onUpsertRule,
-  onDeleteRule,
 }: {
   data: FinanceData;
   asOf: string;
   filePath: string;
   lastSavedAt: string | null;
   currentEmail?: string | null;
+  accountFocusId?:string|null;
+  accountFocusKey?:number;
+  activeTab?:SettingsTab;
+  onActiveTabChange?:(tab:SettingsTab)=>void;
   onImport: (d: FinanceData) => Promise<void>;
   onBackup: () => Promise<{ path: string }>;
   onSettings: (settings: FinanceData['state']['settings']) => void;
+  onFinanceDurably:(recipe:(current:FinanceData)=>FinanceData)=>Promise<void>;
   onTaxonomyOperation: (operation: TaxonomyOperation) => void;
-  onUpsertRule: (rule: TransactionRule) => void;
-  onDeleteRule: (id: string) => void;
 }) {
+  const saveRule=(rule:TransactionRule)=>{
+    const editing=(data.state.transactionRules??[]).some(item=>item.id===rule.id);
+    return onFinanceDurably(current=>{
+      const rules=current.state.transactionRules??[];
+      if(editing&&!rules.some(item=>item.id===rule.id))throw new Error('Ο κανόνας άλλαξε. Επαναφόρτωσε και δοκίμασε ξανά.');
+      const next=editing?rules.map(item=>item.id===rule.id?rule:item)
+        :appendTransactionRule(rules,rule,new Date().toISOString());
+      return {...current,state:{...current.state,transactionRules:next}};
+    });
+  };
+  const deleteRule=(id:string)=>onFinanceDurably(current=>{
+    const rules=current.state.transactionRules??[];
+    if(!rules.some(item=>item.id===id))throw new Error('Ο κανόνας άλλαξε. Επαναφόρτωσε και δοκίμασε ξανά.');
+    return {...current,state:{...current.state,transactionRules:rules.filter(item=>item.id!==id)}};
+  });
+  const reorderRule=(id:string,direction:-1|1)=>onFinanceDurably(current=>{
+    const rules=current.state.transactionRules??[];
+    const next=reorderTransactionRules(rules,id,direction,new Date().toISOString());
+    return next===rules?current:{...current,state:{...current.state,transactionRules:next}};
+  });
   const fileRef = useRef<HTMLInputElement | null>(null);
   const tablistRef = useRef<HTMLDivElement | null>(null);
-  const runtimeEnv=(import.meta as unknown as {env?:{DEV?:boolean;VITE_MYFINHUB_SUPPORT_DIAGNOSTICS?:string}}).env;
-  const supportDiagnosticsEnabled=Boolean(runtimeEnv?.DEV)||runtimeEnv?.VITE_MYFINHUB_SUPPORT_DIAGNOSTICS==='1';
-  const [activeTab, setActiveTab] = useState<SettingsTab>('general');
+  const runtimeEnv=(import.meta as unknown as {env?:{VITE_MYFINHUB_SUPPORT_DIAGNOSTICS?:string}}).env;
+  const diagnosticsRequested=typeof location!=='undefined'&&new URLSearchParams(location.search).get('support-diagnostics')==='1';
+  const supportDiagnosticsEnabled=runtimeEnv?.VITE_MYFINHUB_SUPPORT_DIAGNOSTICS==='1'||diagnosticsRequested;
+  const [localTab,setLocalTab]=useState<SettingsTab>('general');
+  const activeTab=controlledTab??localTab;
+  const selectTab=(tab:SettingsTab)=>{if(onActiveTabChange)onActiveTabChange(tab);else setLocalTab(tab)};
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
   const [pendingImportFile, setPendingImportFile] = useState<File | null>(null);
@@ -136,7 +167,7 @@ export function SettingsPage({
   }, [data.state.settings]);
 
   const commit = (next: FinanceSettings, feedback = 'Οι ρυθμίσεις αποθηκεύονται αυτόματα.') => {
-    const normalized = { ...next, motion: 'full' as const };
+    const normalized = cloneSettings(next);
     draftRef.current = normalized;
     setDraft(normalized);
     onSettings(normalized);
@@ -146,7 +177,7 @@ export function SettingsPage({
   const change = (patch: Partial<FinanceSettings>) => commit({ ...draftRef.current, ...patch });
 
   const runTaxonomyOperation = (operation: TaxonomyOperation) => {
-    const next = { ...taxonomyOperationPreview(draftRef.current, operation), motion: 'full' as const };
+    const next = cloneSettings(taxonomyOperationPreview(draftRef.current, operation));
     draftRef.current = next;
     setDraft(next);
     onTaxonomyOperation(operation);
@@ -217,7 +248,7 @@ export function SettingsPage({
             aria-selected={activeTab === tab.id}
             aria-controls={`settings-panel-${tab.id}`}
             className={activeTab === tab.id ? 'active' : ''}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => selectTab(tab.id)}
           >
             {tab.label}
           </button>
@@ -236,7 +267,7 @@ export function SettingsPage({
 
         {activeTab === 'profile' ? <AccountSecuritySettings currentEmail={currentEmail} /> : null}
 
-        {activeTab === 'accounts' ? <div className="settings-tab-stack settings-accounts-stack"><FinancialProviderManagementSettings/><AccountManagementSettings data={data} settings={draft} onChange={(next) => commit(next, '')} /></div> : null}
+        {activeTab === 'accounts' ? <div className="settings-tab-stack settings-accounts-stack"><FinancialProviderManagementSettings/><AccountManagementSettings data={data} settings={draft} focusAccountId={accountFocusId} focusKey={accountFocusKey} onChange={(next) => commit(next, '')} onChangeDurably={(next)=>onFinanceDurably(current=>({...current,state:{...current.state,settings:cloneSettings(next)}}))} /></div> : null}
 
         {activeTab === 'categories' ? (
           <div className="settings-categories-only">
@@ -252,7 +283,7 @@ export function SettingsPage({
 
         {activeTab === 'rules' ? (
           <div className="settings-tab-stack settings-rules-only">
-            <TransactionRulesWorkspace data={data} onUpsertRule={onUpsertRule} onDeleteRule={onDeleteRule} />
+            <TransactionRulesWorkspace data={data} onUpsertRule={saveRule} onDeleteRule={deleteRule} onReorderRule={reorderRule} />
           </div>
         ) : null}
 
@@ -293,7 +324,7 @@ export function SettingsPage({
         confirmLabel="Εισαγωγή"
         tone="destructive"
         busy={busy}
-        motionMode={data.state.settings.motion}
+        motionMode="full"
         onConfirm={() => void confirmImport()}
         onCancel={cancelImport}
       />

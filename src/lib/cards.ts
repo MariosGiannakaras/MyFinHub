@@ -45,6 +45,15 @@ function storedCards(data:FinanceData,{includeArchived=false}:{includeArchived?:
   return allCards(data).filter(card=>card.kind!=='credit'&&(includeArchived||card.active!==false));
 }
 
+export function cardWorkspaceBanks(data:FinanceData,providers:FinancialProvider[]=FINANCIAL_PROVIDERS){
+  const represented=new Set(storedCards(data,{includeArchived:true}).map(card=>card.bankId));
+  return cardBanks(data,providers).filter(bank=>bank.custom||represented.has(bank.id));
+}
+
+export function cardDomainBankCount(data:FinanceData){
+  return new Set(storedCards(data,{includeArchived:true}).map(card=>card.bankId)).size;
+}
+
 export function cardsForBank(data:FinanceData,bankId:string){
   return storedCards(data).filter(card=>card.bankId===bankId&&card.active!==false);
 }
@@ -135,6 +144,19 @@ export function withCardProfileDeleted(data:FinanceData,card:PaymentCard,deleted
     ? [...(data.state.deletedCards??[]).filter(item=>item.id!==card.id),{id:card.id,kind:'credit' as const,createdAt:card.createdAt,deletedAt}]
     : data.state.deletedCards??[];
   return {...data,state:{...data.state,cards:cards.filter(item=>item.id!==card.id),deletedCards}};
+}
+
+export function withCardSecretCleanupPending(data:FinanceData,card:PaymentCard,deletedAt:string,asOf:string):FinanceData{
+  if(!(data.state.cards??[]).some(item=>item.id===card.id))throw new Error('CARD_PROFILE_NOT_FOUND');
+  const removed=withCardProfileDeleted(data,card,deletedAt,asOf);
+  const pending=removed.state.pendingCardSecretDeletes??[];
+  return {...removed,state:{...removed.state,pendingCardSecretDeletes:pending.includes(card.id)?pending:[...pending,card.id]}};
+}
+export function withCardSecretCleanupComplete(data:FinanceData,cardId:string):FinanceData{
+  const pending=data.state.pendingCardSecretDeletes??[];
+  if(!pending.includes(cardId))return data;
+  if((data.state.cards??[]).some(card=>card.id===cardId))throw new Error('CARD_PROFILE_STILL_ACTIVE');
+  return {...data,state:{...data.state,pendingCardSecretDeletes:pending.filter(id=>id!==cardId)}};
 }
 
 export function historicalCardLabel(data:FinanceData,cardId:string){

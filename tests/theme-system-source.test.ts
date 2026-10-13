@@ -56,11 +56,12 @@ describe('theme architecture source contract',()=>{
     expect(rootCompat).not.toContain("dark-theme-surfaces.css");
     expect(workspaceCompat).toContain("@import './dark-theme-surfaces.css';");
     expect(qaHtml).toContain("await import('/src/styles/dark-theme-surfaces.css');");
-    expect(reportsStyles).toContain('html[data-theme="dark"] .report-period-chip');
+    expect(reportsStyles).toContain('.report-financial-picture{grid-template-columns:');
+    expect(reportsStyles).toContain('background:var(--surface)!important');
     expect(reportsStyles).toContain('background:var(--success-bg)');
     expect(reportsStyles).toContain('background:var(--warning-bg)');
     expect(reportsStyles).toContain('background:var(--error-bg)');
-    expect(rendered).toContain('dark Reports period chip is a dark surface');
+    expect(rendered).toContain('dark Reports executive picture is a dark semantic surface');
   });
 
   it('registers a dedicated rendered Light Dark matrix',()=>{
