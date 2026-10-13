@@ -102,7 +102,7 @@ export function CategoryIconsWorkspace({data,asOf,settings,onChange,onTaxonomyOp
       <div className="category-icon-pack-switcher category-icon-pack-switcher-global" role="group" aria-label="Πακέτο εικονιδίων">
         {CATEGORY_ICON_PACKS.map(item=><button type="button" key={item.id} className={iconPack===item.id?'active':''} aria-pressed={iconPack===item.id} onClick={()=>onChange(withCategoryIconPack(normalized,item.id))} title={item.description}>
           <span className="category-icon-pack-preview" aria-hidden="true"><CategoryIconGlyph iconKey={encodeCategoryIconValue(item.id,'coffee')} size={16}/><CategoryIconGlyph iconKey={encodeCategoryIconValue(item.id,'home')} size={16}/><CategoryIconGlyph iconKey={encodeCategoryIconValue(item.id,'wallet')} size={16}/></span>
-          <span><b>{item.label}</b><small>{item.license}{categoryIconPackOptionCount(item.id)!==null?` · ${categoryIconPackOptionCount(item.id)} διαθέσιμα`:' · πλήρες semantic set'}</small></span>
+          <span><b>{item.label}</b><small>{item.license}{` · ${categoryIconPackOptionCount(item.id).toLocaleString('el-GR')} μοναδικά SVG`}</small></span>
         </button>)}
       </div>
     </div>:null}

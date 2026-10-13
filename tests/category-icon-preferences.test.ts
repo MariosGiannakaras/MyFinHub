@@ -7,7 +7,7 @@ const settings=():FinanceSettings=>({excludedFromAvailable:[],accountNames:{},ex
 describe('category icon preferences',()=>{
   it('uses a specific semantic icon for a recognizable subcategory before parent inheritance',()=>{
     const next=withCategoryIcon(settings(),'expense','Φαγητό','dining');
-    expect(resolvedCategoryIcon(next,'expense','Φαγητό','Καφές')).toBe('coffee');
+    expect(resolvedCategoryIcon(next,'expense','Φαγητό','Καφές')).toBe('lucide:icon/coffee');
     expect(explicitSubcategoryIcon(next,'expense','Φαγητό','Καφές')).toBeNull();
   });
 
@@ -16,7 +16,7 @@ describe('category icon preferences',()=>{
     const overridden=withSubcategoryIconOverride(parent,'expense','Φαγητό','Καφές','gift');
     expect(resolvedCategoryIcon(overridden,'expense','Φαγητό','Καφές')).toBe('gift');
     const automatic=withSubcategoryIconOverride(overridden,'expense','Φαγητό','Καφές',null);
-    expect(resolvedCategoryIcon(automatic,'expense','Φαγητό','Καφές')).toBe('coffee');
+    expect(resolvedCategoryIcon(automatic,'expense','Φαγητό','Καφές')).toBe('lucide:icon/coffee');
   });
 
   it('moves icon metadata when a category is renamed and falls back to semantic defaults when removed',()=>{
@@ -25,8 +25,8 @@ describe('category icon preferences',()=>{
     next=renameCategoryIconPreferences(next,'expense','Φαγητό','Εστίαση');
     expect(resolvedCategoryIcon(next,'expense','Εστίαση','Καφές')).toBe('coffee');
     next=removeCategoryIconPreferences(next,'expense','Εστίαση');
-    expect(resolvedCategoryIcon(next,'expense','Εστίαση','Καφές')).toBe('coffee');
-    expect(resolvedCategoryIcon(next,'expense','Εστίαση')).toBe('dining');
+    expect(resolvedCategoryIcon(next,'expense','Εστίαση','Καφές')).toBe('lucide:icon/coffee');
+    expect(resolvedCategoryIcon(next,'expense','Εστίαση')).toBe('lucide:icon/utensils');
   });
 
   it('maps common finance taxonomy labels to distinct semantic defaults',()=>{
@@ -54,16 +54,16 @@ describe('category icon preferences',()=>{
 
   it('changes automatic category previews to the selected family even before a custom icon is chosen',()=>{
     let next=withCategoryIconPack(settings(),'phosphor');
-    expect(resolvedCategoryIcon(next,'expense','Φαγητό','Καφές')).toBe('phosphor:coffee');
+    expect(resolvedCategoryIcon(next,'expense','Φαγητό','Καφές')).toBe('phosphor:icon/coffee');
     next=withCategoryIconPack(next,'heroicons');
-    expect(resolvedCategoryIcon(next,'expense','Φαγητό','Καφές')).toBe('heroicons:shopping');
+    expect(resolvedCategoryIcon(next,'expense','Φαγητό','Καφές')).toBe('heroicons:icon/beaker');
   });
 
   it('never renders an unsupported automatic semantic key for a selected icon family',()=>{
     let next=withCategoryIconPack(settings(),'phosphor');
-    expect(resolvedCategoryIcon(next,'income','Μισθός')).toBe('phosphor:government');
+    expect(resolvedCategoryIcon(next,'income','Μισθός')).toBe('phosphor:icon/coins');
     next=withCategoryIconPack(next,'heroicons');
-    expect(resolvedCategoryIcon(next,'income','Μισθός')).toBe('heroicons:government');
+    expect(resolvedCategoryIcon(next,'income','Μισθός')).toBe('heroicons:icon/currency-euro');
   });
 
   it('persists category color independently from the icon family and restores automatic color when cleared',()=>{
