@@ -2,7 +2,8 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { CATEGORY_ICON_CATALOG_COUNTS, iconCatalogAsset, isCatalogIconKey } from '../src/lib/categoryIconCatalog.js';
 import { categoryIconPackOptionCount, categoryIconKeySupportedByPack } from '../src/lib/categoryIconPackSupport.js';
-import { encodeCategoryIconValue, decodeCategoryIconValue } from '../src/lib/categoryIconRegistry.js';
+import { encodeCategoryIconValue, decodeCategoryIconValue, CATEGORY_ICON_REGISTRY } from '../src/lib/categoryIconRegistry.js';
+import { CATEGORY_SEMANTIC_CATALOG_DEFAULTS, categorySemanticCatalogDefault } from '../src/lib/categoryIconSemanticDefaults.js';
 import { explicitCategoryIcon, resolvedCategoryIcon, withCategoryIcon, withCategoryIconPack } from '../src/lib/categoryIconPreferences.js';
 import type { FinanceSettings } from '../src/types.js';
 
@@ -36,6 +37,21 @@ describe('real distinct offline category icon packs',()=>{
     expect(attribution).toContain(sourceCommit);
     expect(attribution).toContain('ISC');
     expect(attribution).toContain('MIT');
+  });
+
+  it('assigns distinct, valid native SVGs to every canonical semantic key per pack',()=>{
+    const keys=CATEGORY_ICON_REGISTRY.map(item=>item.key);
+    expect(keys).toHaveLength(82);
+    for(const pack of packs){
+      const catalog=JSON.parse(file(`public/icon-packs/${pack}.json`)) as {icons:string[]};
+      const glyphs=new Set(catalog.icons);
+      const map=CATEGORY_SEMANTIC_CATALOG_DEFAULTS[pack];
+      expect(Object.keys(map).sort()).toEqual([...keys].sort());
+      const choices=keys.map(key=>map[key]);
+      expect(new Set(choices).size).toBe(keys.length);
+      expect(choices.every(icon=>glyphs.has(icon))).toBe(true);
+      for(const key of keys){expect(categorySemanticCatalogDefault(pack,key)).toBe(`icon/${map[key]}`);}
+    }
   });
 
   it('encodes new family-scoped names independently of old semantic values',()=>{
