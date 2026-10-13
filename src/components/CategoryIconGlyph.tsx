@@ -10,6 +10,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { decodeCategoryIconValue } from '../lib/categoryIconRegistry';
+import { iconCatalogAsset, isCatalogIconKey } from '../lib/categoryIconCatalog';
 import { MultiPackCategoryGlyph } from './MultiPackCategoryGlyph';
 import { TablerCategoryGlyph } from './TablerCategoryGlyph';
 
@@ -31,6 +32,10 @@ const ICONS:Record<string,LucideIcon>={
 export function CategoryIconGlyph({iconKey,size=18,label,color}:{iconKey:string;size?:number;label?:string;color?:string|null}){
   const decoded=decodeCategoryIconValue(iconKey);
   const style=color?{color}:undefined;
+  if(isCatalogIconKey(decoded.key)){
+    const slug=decoded.key.slice('icon/'.length);
+    return <span className="category-icon-glyph" aria-label={label} aria-hidden={label?undefined:true} data-category-icon={iconKey} data-icon-pack={decoded.pack} style={style}><svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" aria-hidden="true"><use width="24" height="24" href={`${iconCatalogAsset(decoded.pack,'svg')}#i-${slug}`}/></svg></span>;
+  }
   if(decoded.pack==='tabler')return <span className="category-icon-glyph" aria-label={label} aria-hidden={label?undefined:true} data-category-icon={iconKey} data-icon-pack="tabler" style={style}><TablerCategoryGlyph iconKey={decoded.key} size={size}/></span>;
   if(decoded.pack==='phosphor'||decoded.pack==='heroicons'||decoded.pack==='bootstrap')return <span className="category-icon-glyph" aria-label={label} aria-hidden={label?undefined:true} data-category-icon={iconKey} data-icon-pack={decoded.pack} style={style}><MultiPackCategoryGlyph pack={decoded.pack} iconKey={decoded.key} size={size}/></span>;
   const Icon=ICONS[decoded.key]??ReceiptText;

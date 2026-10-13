@@ -39,3 +39,11 @@
   .settings-icons-only .category-icon-options{grid-template-columns:repeat(2,minmax(0,1fr));max-height:300px}
   .settings-icons-only .category-icon-picker-mode{grid-template-columns:1fr}
 }
+
+/* Full icon catalogs: only a bounded page of native SVGs is mounted at once. */
+.category-icon-catalog-count{font-size:var(--ux-small-size);color:var(--muted);padding:3px 2px}
+.category-icon-catalog-more{justify-self:start;min-height:42px;border:1px solid var(--control-border);background:var(--control-bg);border-radius:var(--radius-control,10px);padding:8px 14px;color:var(--ink);cursor:pointer}
+.category-icon-catalog-more:hover{background:var(--surface-hover)}
+.category-icon-catalog-more:focus-visible{outline:2px solid var(--focus-outline);outline-offset:2px}
+.category-icon-legacy-choice{display:flex;gap:8px;align-items:center;color:var(--muted);font-size:var(--ux-small-size);padding:5px 3px;line-height:1.4}
+.category-icon-legacy-choice .category-icon-glyph{flex:none}

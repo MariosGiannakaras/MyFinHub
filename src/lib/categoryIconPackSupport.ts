@@ -1,4 +1,5 @@
 import type { CategoryIconKey, CategoryIconPack } from './categoryIconRegistry.js';
+import { CATEGORY_ICON_CATALOG_COUNTS, isCatalogIconKey } from './categoryIconCatalog.js';
 
 /*
  * The local third-party bundles are intentionally curated. Do not present several
@@ -36,6 +37,7 @@ const keysForPack=(pack:CategoryIconPack)=>{
 };
 
 export function categoryIconKeySupportedByPack(pack:CategoryIconPack,key:string){
+  if(isCatalogIconKey(key))return true;
   if(pack==='lucide')return true;
   return Boolean(keysForPack(pack)?.has(key as CategoryIconKey));
 }
@@ -52,8 +54,7 @@ export function categoryIconPackPreviewKeys(pack:CategoryIconPack):readonly Cate
 
 
 export function categoryIconPackOptionCount(pack:CategoryIconPack){
-  if(pack==='lucide')return null;
-  return keysForPack(pack)?.size??0;
+  return CATEGORY_ICON_CATALOG_COUNTS[pack];
 }
 
 
