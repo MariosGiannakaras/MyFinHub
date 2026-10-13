@@ -352,8 +352,7 @@ try{
   await shot('cards-lifecycle-created');
 
   const archiveLifecycleCard=async()=>{
-    const armed=await c.call(`function(){const visible=${visible};const card=[...document.querySelectorAll('.prototype-payment-card')].find(node=>visible(node)&&(node.textContent||'').includes('QA Audit Lifecycle Card'));const button=card?.querySelector('button[aria-label="Αρχειοθέτηση κάρτας"]');button?.click();return Boolean(button)}`);
-    assert(armed,'lifecycle card exposes archive action');
+    await clickVisibleRowAction('.prototype-payment-card','QA Audit Lifecycle Card','button[aria-label="Αρχειοθέτηση κάρτας"]','lifecycle card exposes archive action');
     await waitFor("function(){const card=[...document.querySelectorAll('.prototype-payment-card')].find(node=>(node.textContent||'').includes('QA Audit Lifecycle Card'));return Boolean(card?.querySelector('.r-card-archive-confirm'))}",'archive confirmation slider');
     const committed=await c.call("function(){const card=[...document.querySelectorAll('.prototype-payment-card')].find(node=>(node.textContent||'').includes('QA Audit Lifecycle Card'));const button=card?.querySelector('.r-card-archive-keyboard');button?.click();return Boolean(button)}");
     assert(committed,'keyboard archive confirmation commits lifecycle card');
