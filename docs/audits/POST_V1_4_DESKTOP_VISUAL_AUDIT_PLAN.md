@@ -2,6 +2,17 @@
 
 Umbrella issue: #519 — Post-v1.4 UI/UX regressions and functionality reachability.
 
+### 2026-10-13 terminal documentation-head Ready CI: confirmed Framer entrance timing failure, Draft narrow preflight
+
+**Implementations 15/15 completed · Sub-implementations 108/108 completed** for accepted app/runtime scope; **PR #549 is not yet integrated** and CI at its final checklist-only head was not green. Do not conflate accepted underlying source/visual evidence with integration approval.
+
+- Ready head `7c9e1daac8cab235c244eb1de31a6fbc5312a9a2`: CodeQL #38400911149 **PASS**, WebKit #38400911041 **PASS**, Lighthouse #38400911088 **PASS**, Windows Desktop #38400911078 **PASS**; complete rendered CI #38400911112 **FAIL**, with 1,289 unit/source tests, build, privacy and budgets already passing. The only failed job step was Rendered frontend QA, and the failing module was `scripts/quick-entry-reference-qa.mjs`, on its **first desktop modal-width check**: browser measured `989.4px` instead of the required `1020px`.
+- Exact cause verified in current `DialogShell.tsx`: Framer Motion opens this modal at `scale:.97`, where `1020 × .97 = 989.4`. The QA script waited only 80ms after opening before testing rendered geometry; it captured the initial animated scale instead of the settled reference. All previous app source/visual checks were green and no runtime Quick Entry width regression was demonstrated. This was a **test timing defect**, not a license to change the strict design requirement.
+- Draft remediation adds a bounded `waitFor` in Quick Entry's shared browser `openQuick` helper: rendered modal width must match its untransformed `offsetWidth` within 1px and computed opacity must have settled >=.995. This applies across desktop/tablet/mobile and Light/Dark, preserving the original strict 1020±2px desktop and 359–362px mobile assertions and all layout/input/receipt/focus checks. Dedicated regression source guard verifies timing and unchanged width contracts.
+- Expanded the existing Draft opt-in focused Chromium workflow to run `scripts/quick-entry-reference-qa.mjs` after its 12-route motion and full finance CRUD browser flows, persisting narrow screenshots/logs. This catches the same modal-animation fixture failure before another expensive full Ready review matrix. No product/finance/security/CSS/database/Windows/Android changes in this QA-only correction.
+- **Next:** on the final coherent Draft head run source/build and focused Chromium (motion, finance CRUD, Quick Entry 3 viewports × 2 themes). Inspect real browser logs/screenshots. Only then restore Ready once for all required exact-head review jobs, merge to the already updated `develop` after full PASS, verify resulting develop and reconcile #519. `main` remains production/release-only and prohibited in this task.
+
+
 ### 2026-10-13 terminal DV-M01–DV-M06 evidence acceptance — Ready PR #549
 
 **Implementations 15/15 completed · Sub-implementations 108/108 completed** on verified unchanged product code head `07ee8d54cdf16dc9dc2f633018d6d724aad5bd20` plus screenshot-only bot head `32808ca0d36d65228c0282755a261912deda182b`. This is **source, behavior, rendered evidence and full original review acceptance** for all six planned DV-M items; the administrative acceptance-document commit and any resulting check runs must still finish before PR merge.
