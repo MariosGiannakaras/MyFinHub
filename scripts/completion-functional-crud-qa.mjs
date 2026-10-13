@@ -89,7 +89,11 @@ try{
   await navigate('transactions');
   await setByLabel('Αναζήτηση συναλλαγών','Freddo espresso');
   await waitFor("function(){return [...document.querySelectorAll('[data-transaction-source=\"event\"]')].some(row=>(row.textContent||'').includes('Freddo espresso'))}",'filtered modern event row');
-  await clickVisibleRowAction('[data-transaction-source="event"]','Freddo espresso','button[aria-label^="Επεξεργασία"]','filtered modern event exposes edit action');
+  // The desktop ledger deliberately keeps legacy row-actions inside a hidden
+  // semantic fallback. A user opens the visible row details before editing.
+  await clickVisibleRowAction('[data-transaction-source="event"]','Freddo espresso','.row-context-button','filtered modern event details access');
+  await waitFor("function(){const detail=document.querySelector('.transactions-detail-panel');return Boolean(detail&&(detail.textContent||'').includes('Freddo espresso'))}",'filtered modern event detail panel');
+  await clickText('.transactions-detail-actions button','Επεξεργασία');
   await waitFor("function(){return document.querySelector('#quick-add-title')?.textContent==='Επεξεργασία κίνησης'}",'modern event editor');
   await setByLabel('Ποσό','21.75');
   await setByLabel('Σχόλιο','QA Audit Modern Event');
