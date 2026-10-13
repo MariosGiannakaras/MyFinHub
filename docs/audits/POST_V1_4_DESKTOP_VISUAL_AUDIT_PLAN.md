@@ -2,6 +2,17 @@
 
 Umbrella issue: #519 — Post-v1.4 UI/UX regressions and functionality reachability.
 
+### 2026-10-13 DV-M full review second same-class rendered QA failure (Draft remediation preflight)
+
+**Implementations 14/15 completed · Sub-implementations 102/108 completed.** DV-M01–M06 are source implemented but **not accepted**; denominators remain frozen.
+
+- Ready review head `7209c1cd968caf4c903467f4bab305a2aa9ece5a`: WebKit #38376614528 **PASS**, Lighthouse #38376614486 **PASS**, Windows Desktop #38376614548 **PASS**, CodeQL #38375994766 **PASS**, corrected focused motion browser #38375994731 **PASS** with directly inspected real Light/Dark captures. Normal complete CI #38376614470 **FAIL** only in `scripts/completion-functional-crud-qa.mjs` at `self-loan exposes return action` after passing initial Savings and Loans CRUD. No full rendered-suite acceptance or final screenshot acceptance can be claimed on this head.
+- Verified the second failure shares the earlier Savings mechanism: Loans active rows now opt into the same short opacity/translateY entrance; the synthetic browser case returns false when the row is temporarily rendered at opacity 0 immediately after route navigation. The app's self-loan button and handler still exist in source. This observed failure is a test interaction timing defect, not evidence of finance mutation failure.
+- **Same-class prevention batch:** `completion-functional-crud-qa.mjs` now uses a bounded `waitFor` against real visibility of semantic collection descendants (`[data-content-entrance] > *` including ancestors), enabled button and existing matched text before issuing clicks. Apply the helper across modern Transactions row edit, Loans edit/self-loan return+forgiveness, Recurring edit/pause/reactivate/stop, and Cards bank-stack archive, in addition to the previously corrected Savings transfer. The generic named `clickText` helper also waits for visible, enabled, fully-entered collection controls. Existing follow-up assertions still prove actual editors, receipts, persistence, history, target balances and cross-page semantics; none are weakened. Source guards lock the bounded sibling set.
+- Expanded the existing opt-in Draft Motion Focused Rendered QA workflow to execute `completion-functional-crud-qa.mjs` as a second real Chromium suite and upload its PNG/logs together with 12-route Light/Dark motion evidence. This makes recurrence detectable before any new expensive Ready matrix. Do not trigger dedicated Final Visual or count M01–M06 until focused rendered evidence is green and directly inspected.
+- No app/runtime/finance/accounting/backend/auth/Windows/Android changes were made in this batch. Next: exact-head Draft CI/source/build plus focused Chromium functional and motion suites; inspect actual logs/screenshots; if green, promote one coherent Ready head for complete gates and then Final Visual. Preserve release and database safety boundaries.
+
+
 ### 2026-10-13 direct-motion-evidence theme-correctness checkpoint (current Draft)
 
 **Implementations 14/15 completed · Sub-implementations 102/108 completed.** The final six DV-M items remain unaccepted pending trustworthy Light/Dark screenshots and full Ready review.
