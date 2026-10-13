@@ -1,5 +1,6 @@
 import type { CategoryIconPackId, FinanceSettings } from '../types.js';
 import { isCatalogIconKey } from './categoryIconCatalog.js';
+import { categorySemanticCatalogDefault } from './categoryIconSemanticDefaults.js';
 import { inferredCategoryIcon } from './categoryIconInference.js';
 import { categoryIconByKey, decodeCategoryIconValue, encodeCategoryIconValue, type CategoryIconPack } from './categoryIconRegistry.js';
 import { categoryIconFallbackKeyForPack, categoryIconKeySupportedByPack } from './categoryIconPackSupport.js';
@@ -81,7 +82,8 @@ export function explicitSubcategoryIcon(settings:FinanceSettings,kind:CategoryKi
 function semanticIconForPack(pack:CategoryIconPack,key:string|null){
   const definition=key?categoryIconByKey(key):null;
   if(!definition)return null;
-  return encodeCategoryIconValue(pack,categoryIconFallbackKeyForPack(pack,definition.key));
+  const catalogDefault=categorySemanticCatalogDefault(pack,definition.key);
+  return encodeCategoryIconValue(pack,catalogDefault??categoryIconFallbackKeyForPack(pack,definition.key));
 }
 
 export function resolvedCategoryIcon(settings:FinanceSettings,kind:CategoryKind,category:string,subcategory?:string){
