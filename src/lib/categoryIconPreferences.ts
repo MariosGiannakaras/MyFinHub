@@ -3,7 +3,7 @@ import { isCatalogIconKey } from './categoryIconCatalog.js';
 import { categorySemanticCatalogDefault } from './categoryIconSemanticDefaults.js';
 import { inferredCategoryIcon } from './categoryIconInference.js';
 import { categoryIconByKey, decodeCategoryIconValue, encodeCategoryIconValue, type CategoryIconPack } from './categoryIconRegistry.js';
-import { categoryIconFallbackKeyForPack, categoryIconKeySupportedByPack } from './categoryIconPackSupport.js';
+import { categoryIconKeySupportedByPack } from './categoryIconPackSupport.js';
 
 export type CategoryKind='expense'|'income';
 
@@ -82,8 +82,9 @@ export function explicitSubcategoryIcon(settings:FinanceSettings,kind:CategoryKi
 function semanticIconForPack(pack:CategoryIconPack,key:string|null){
   const definition=key?categoryIconByKey(key):null;
   if(!definition)return null;
-  const catalogDefault=categorySemanticCatalogDefault(pack,definition.key);
-  return encodeCategoryIconValue(pack,catalogDefault??categoryIconFallbackKeyForPack(pack,definition.key));
+  // The canonical registry is exhaustively covered by the compiled native map.
+  // Retain the old neutral glyph only for a future missing/retired mapping.
+  return encodeCategoryIconValue(pack,categorySemanticCatalogDefault(pack,definition.key)??'other');
 }
 
 export function resolvedCategoryIcon(settings:FinanceSettings,kind:CategoryKind,category:string,subcategory?:string){
