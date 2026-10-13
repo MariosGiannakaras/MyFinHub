@@ -9,7 +9,7 @@ const desktopLock=readJson('desktop/package-lock.json');
 
 describe('Web/Windows release candidate version synchronization',()=>{
   it('uses the same valid semver for the app, desktop and lockfile roots',()=>{
-    expect(root.version).toMatch(/^\\d+\\.\\d+\\.\\d+$/);
+    expect(root.version).toMatch(/^\d+\.\d+\.\d+$/);
     expect(desktop.version).toBe(root.version);
     expect(rootLock.version).toBe(root.version);
     expect(rootLock.packages[''].version).toBe(root.version);
