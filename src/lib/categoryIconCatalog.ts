@@ -12,8 +12,6 @@ export const CATEGORY_ICON_CATALOG_COUNTS: Readonly<Record<CategoryIconPack,numb
   "bootstrap": 1404
 };
 
-export const CATEGORY_ICON_CATALOG_WIDTHS: Readonly<Record<CategoryIconPack,number>> = {lucide:24,tabler:24,phosphor:256,heroicons:24,bootstrap:16};
-
 /** New catalog keys never collide with existing semantic keys/persisted legacy values. */
 export const isCatalogIconKey=(key:string):boolean=>/^icon\/[a-z0-9]+(?:-[a-z0-9]+)*$/.test(key);
 export const iconCatalogAsset=(pack:CategoryIconPack,ext:'svg'|'json')=>`/icon-packs/${pack}.${ext}`;
