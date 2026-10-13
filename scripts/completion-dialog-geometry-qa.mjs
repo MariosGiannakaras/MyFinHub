@@ -30,6 +30,10 @@ try{
   const click=async(selector,label)=>{const ok=await c.call(`function(selector){const visible=${visible};const node=[...document.querySelectorAll(selector)].find(visible);node?.click();return Boolean(node)}`,[selector]);assert(ok,`missing ${label}`);await sleep(100)};
   const clickText=async(selector,text)=>{const ok=await c.call(`function(selector,text){const visible=${visible};const node=[...document.querySelectorAll(selector)].find(n=>visible(n)&&(n.textContent||'').includes(text));node?.click();return Boolean(node)}`,[selector,text]);assert(ok,`missing ${text}`);await sleep(100)};
   const inspect=async(selector,label,{vertical=true}={})=>{
+    // Framer mounts DialogShell's .quick-modal before its animated first frame
+    // becomes visible. DOM existence or a fixed delay cannot prove readiness
+    // under a busy rendered CI runner; await the real visible/settled geometry.
+    await waitFor("function(selector){return [...document.querySelectorAll(selector)].some(node=>{const style=getComputedStyle(node),rect=node.getBoundingClientRect();if(style.display==='none'||style.visibility==='hidden'||Number(style.opacity)===0||rect.width<=0||rect.height<=0)return false;if(selector==='.quick-modal')return Number(style.opacity)>=.995&&node.offsetWidth>0&&node.offsetHeight>0&&Math.abs(rect.width-node.offsetWidth)<=1&&Math.abs(rect.height-node.offsetHeight)<=1;return true})}",`${label} visible and entrance settled`,[selector]);
     await sleep(220);
     const result=await c.call(`function(selector){
       const visible=node=>{
