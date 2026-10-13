@@ -48,6 +48,10 @@ describe('bounded shared collection motion contract DV-M01–M06',()=>{
     expect(load('src/qa.tsx')).toContain('<PageSkeleton/>');
     expect(runner).toContain('scripts/content-entrance-qa.mjs');
     expect(rendered).toContain("for(const theme of ['light','dark'])");
+    expect(rendered).toContain("mod.applyThemePreference('${theme}')");
+    expect(rendered).toContain("mod.themeTokens('${theme}')['--canvas']");
+    expect(rendered).toContain('appliedTheme.theme===theme&&appliedTheme.canvas===appliedTheme.expectedCanvas');
+    expect(rendered).not.toContain("document.documentElement.dataset.theme='${theme}'");
     expect(rendered).toContain("['first',0],['mid',90],['settled',600]");
     expect(rendered).toContain("value:'reduce'");
     expect(rendered).toContain('cls<=0.10');
