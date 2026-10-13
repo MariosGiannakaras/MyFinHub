@@ -12,10 +12,10 @@ Source: [Iconify open-source icon-sets](https://github.com/iconify/icon-sets), *
 
 Upstream rights/attribution:
 - Lucide: https://github.com/lucide-icons/lucide/blob/main/LICENSE — ISC.
-- Tabler: https://github.com/tabler/tabler-icons/blob/master/LICENSE — MIT, Paweł Kuna.
+- Tabler: https://github.com/tabler/tabler-icons/blob/main/LICENSE — MIT, Paweł Kuna.
 - Phosphor: https://github.com/phosphor-icons/core/blob/main/LICENSE — MIT.
 - Heroicons: https://github.com/tailwindlabs/heroicons/blob/master/LICENSE — MIT.
-- Bootstrap Icons: https://github.com/twbs/icons/blob/main/LICENSE.md — MIT.
+- Bootstrap Icons: https://github.com/twbs/icons/blob/main/LICENSE — MIT.
 - Iconify source transforms/metadata: https://github.com/iconify/icon-sets.
 
 **Selection rule.** Only original `icons` entries, no alias entries. Drop hidden icons, unsupported external/internal ID references and unsafe markup; restrict to monochrome paths, known safe icon-name syntax and the standard square viewBox. Dedupe normalized exact SVG bodies inside each family. Tabler excludes *-filled, Phosphor excludes -bold/-thin/-light/-fill/-duotone, Heroicons excludes solid/16-solid/20-solid, Bootstrap excludes *-fill. Different semantic descriptions of the same body must not be counted twice. Visual similarity among genuinely different SVG paths is not treated as bit-identical, and some related designs may still be similar. Each pack has one standard weight/style and counts refer to actual local data, not upstream marketing totals.

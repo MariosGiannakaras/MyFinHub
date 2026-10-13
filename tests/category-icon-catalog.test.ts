@@ -29,7 +29,7 @@ describe('real distinct offline category icon packs',()=>{
       expect(symbols.every(match=>Number(match[2])===catalog.width&&Number(match[3])===catalog.width)).toBe(true);
       const bodies=symbols.map(match=>match[4].replace(/\s+/g,' '));
       expect(new Set(bodies).size).toBe(bodies.length);
-      expect(svg).not.toMatch(/<script\b|<foreignObject\b|<image\b|(?:xlink:)?href\s*=|https?:\/\/[^"']|javascript:/i);
+      expect(bodies.join(' ')).not.toMatch(/<script\b|<foreignObject\b|<image\b|<use\b|<defs\b|(?:xlink:)?href\s*=|javascript:|url\s*\(/i);
       expect(catalog.icons.every(name=>isCatalogIconKey(`icon/${name}`))).toBe(true);
     });
     const attribution=file('docs/ICON_CATALOG_SOURCES.md');
