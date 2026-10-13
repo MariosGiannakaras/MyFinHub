@@ -405,7 +405,11 @@ try{
   await waitFor("function(){return [...document.querySelectorAll('[role=alertdialog]')].some(dialog=>(dialog.textContent||'').includes('Διαγραφή λογαριασμού;')&&(dialog.textContent||'').includes('QA Audit Temp Cash'))}",'account delete confirmation');
   await sleep(180);await shot('confirm-account-delete');
   await clickText('[role=alertdialog] button','Διαγραφή');
-  await waitFor("function(){const exists=[...document.querySelectorAll('.account-management-row')].some(row=>(row.textContent||'').includes('QA Audit Temp Cash'));const message=document.querySelector('.account-management-message')?.textContent||'';return !exists&&message.includes('Ο λογαριασμός διαγράφηκε.')}",'temporary cash account deleted');
+  // The owner confirms the exact durable finance save with "διαγράφηκε και
+  // αποθηκεύτηκε", not the obsolete optimistic "διαγράφηκε." assertion.
+  // A disappeared row alone is insufficient: require a completed, named
+  // receipt and a dismissed confirmation with no remaining error dialog.
+  await waitFor("function(){const exists=[...document.querySelectorAll('.account-management-row')].some(row=>(row.textContent||'').includes('QA Audit Temp Cash'));const status=document.querySelector('.account-management-message[role=status]')?.textContent||'';return !exists&&status.includes('Ο λογαριασμός διαγράφηκε και αποθηκεύτηκε.')&&!document.querySelector('[role=alertdialog]')&&!document.querySelector('.account-management-modal')}",'temporary cash account removed with durable finance receipt');
   await shot('settings-account-create-delete');
 
   const overflow=await c.call("function(){return Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}");
