@@ -30,6 +30,27 @@ const vaultProxy = read('server/desktopCardVaultProxy.ts');
 
 function mainBlock(start:string,end:string){const from=main.indexOf(start);const to=main.indexOf(end,from+start.length);expect(from).toBeGreaterThanOrEqual(0);expect(to).toBeGreaterThan(from);return main.slice(from,to);}
 
+describe('MyFinHub repository-local Windows launcher contract', () => {
+  it('defaults to local development and documents explicit installer recovery modes', () => {
+    const launcher = read('INSTALL_MYFINHUB_WINDOWS.bat');
+    const docs = read('docs/WINDOWS_DESKTOP.md');
+    expect(launcher).toContain('cd /d "%~dp0"');
+    expect(launcher).toContain('if /I "%~1"=="--install" goto :install');
+    expect(launcher).toContain('if /I "%~1"=="--latest" goto :install_latest');
+    expect(launcher).toContain('if /I "%~1"=="--clean-install" (');
+    expect(launcher).toContain('if exist "node_modules\\.package-lock.json" goto :run_dev');
+    expect(launcher).toContain('if not "%NODE_MAJOR%"=="24" (');
+    expect(launcher).toContain('call npm.cmd ci');
+    expect(launcher).toContain('call npm.cmd run dev');
+    expect(launcher).toContain('-File "%SCRIPT%" -Latest');
+    expect(docs).toContain('**local development**');
+    expect(docs).toContain('INSTALL_MYFINHUB_WINDOWS.bat --clean-install');
+    expect(docs).toContain('INSTALL_MYFINHUB_WINDOWS.bat --install');
+    expect(docs).toContain('INSTALL_MYFINHUB_WINDOWS.bat --latest');
+    expect(docs).toContain('the no-argument developer helper does **not** download or bootstrap Node automatically');
+  });
+});
+
 describe('MyFinHub Windows desktop boundary', () => {
   it('uses a native MyFinHub application identity and interactive per-user NSIS installer', () => {
     expect(desktopPackage.build.productName).toBe('MyFinHub');

@@ -110,23 +110,25 @@ myfinhub-v1.2.1
 
 The tagged commit must already be present on `main` and the tag version must match `desktop/package.json`. The release then publishes the installer plus its `.sha256` companion.
 
-## Source-build fallback
+## Repository-local Windows launcher and recovery installer
 
-The repository keeps a fallback bootstrap for development/recovery:
+From a checked-out MyFinHub repository, double-click `INSTALL_MYFINHUB_WINDOWS.bat` (or run it without arguments) to start **local development**, not a Windows installation or production build. The helper requires Node.js **24 LTS** and npm on `PATH`, runs `npm ci` only if root dependencies are missing, then invokes the canonical `npm run dev` script. Stop the local servers with Ctrl+C. It does not deploy or publish anything.
 
 ```text
 INSTALL_MYFINHUB_WINDOWS.bat
+INSTALL_MYFINHUB_WINDOWS.bat --clean-install
 ```
 
-This can build/install the checked-out source and can locate or download a verified Node.js 24 build runtime. It is **not** required for ordinary released installations.
-
-The fallback `--latest` mode remains available for recovery or machines where the application cannot start:
+The optional `--clean-install` forces an exact root dependency reinstall with `npm ci` before starting local development. For **Windows installation or recovery** instead, choose an explicit installer mode:
 
 ```text
+INSTALL_MYFINHUB_WINDOWS.bat --install
 INSTALL_MYFINHUB_WINDOWS.bat --latest
 ```
 
-Normal users should use `MyFinHub-Setup-*.exe` once and then the in-app updater.
+`--install` delegates to the existing `desktop/install-windows.ps1` installer workflow. `--latest` delegates to the same script with `-Latest` to install the latest published Windows release. That PowerShell installer retains its separate verified Node.js/runtime bootstrap and release-verification behavior; the no-argument developer helper does **not** download or bootstrap Node automatically.
+
+Normal users should install `MyFinHub-Setup-*.exe` once and use the in-app updater. Neither the repository-local development helper nor the fallback installation commands are needed for regular released installations.
 
 ## Development and generated files
 
