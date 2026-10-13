@@ -72,6 +72,17 @@ describe('real distinct offline category icon packs',()=>{
     expect(isCatalogIconKey('icon/<svg>')).toBe(false);
   });
 
+  it('waits for the asynchronously loaded Lucide sprite options before cross-pack selection assertions',()=>{
+    const rendered=file('scripts/icon-packs-qa.mjs');
+    expect(rendered).toContain("'native Lucide catalog loaded after family switch'");
+    expect(rendered).toContain("choices.length===96&&choices.every");
+    expect(rendered).toContain("glyph?.getAttribute('data-icon-pack')==='lucide'");
+    expect(rendered).toContain("glyph?.getAttribute('data-category-icon')?.startsWith('lucide:icon/')");
+    expect(rendered).toContain("glyph?.querySelector('use')?.getAttribute('href')?.startsWith('/icon-packs/lucide.svg#i-')");
+    expect(rendered).toContain("'Lucide choice stored independently'");
+    expect(rendered).toContain('lucideChoice!==phosphorChoice');
+  });
+
   it('encodes new family-scoped names independently of old semantic values',()=>{
     expect(encodeCategoryIconValue('lucide','coffee')).toBe('coffee');
     expect(encodeCategoryIconValue('lucide','icon/alarm-clock')).toBe('lucide:icon/alarm-clock');
