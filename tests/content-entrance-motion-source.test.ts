@@ -43,11 +43,14 @@ describe('bounded shared collection motion contract DV-M01–M06',()=>{
     expect(functional).toContain("await clickText('.savings-action','Μεταφορά στην άκρη')");
     expect(functional).toContain("'manual savings contextual transfer editor'");
     expect(functional).toContain("const entered=");
+    expect(functional).toContain("'.row-context-button','filtered modern event details access'");
+    expect(functional).toContain("'.transactions-detail-actions button','Επεξεργασία'");
+    expect(functional).toContain("'filtered modern event detail panel'");
     expect(functional).toContain("const clickVisibleRowAction=async(");
     expect(functional).toContain("parent.matches?.('[data-content-entrance] > *')");
     const guardedActions=functional.split('\n').filter(line=>line.includes('await clickVisibleRowAction('));
     for(const caseLabel of [
-      'filtered modern event exposes edit action',
+      'filtered modern event details access',
       'saved loan exposes edit',
       'self-loan exposes return action',
       'self-loan exposes forgiveness',
