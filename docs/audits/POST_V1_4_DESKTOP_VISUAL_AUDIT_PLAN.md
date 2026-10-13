@@ -2,6 +2,17 @@
 
 Umbrella issue: #519 — Post-v1.4 UI/UX regressions and functionality reachability.
 
+### 2026-10-13 cross-page motion full-review failure-class checkpoint (current Draft)
+
+**Implementations 14/15 completed · Sub-implementations 102/108 completed.** DV-M01–DV-M06 remain **unaccepted** until focused browser screenshot evidence, full review gates, and direct inspection complete.
+
+- On Ready review head `f47244e49015a97d233e0a5a1a30f8218522b03a`, CodeQL #38373853350 **PASS**, WebKit #38373851950 **PASS**, performance #38373851859 **PASS**, Windows Desktop #38373852132 **PASS**; full CI #38373851883 **FAIL** during the rendered `completion-functional-crud-qa.mjs` at `manual savings transfer action opens`. All preceding CI hygiene, 1,281+ source/unit checks, build, and API checks passed. The complete browser matrix did not finish; other Windows gates and Final Visual are not claimed on this head.
+- Root cause: this QA helper's `visible` predicate intentionally excludes opacity 0; under the new correct opt-in 190ms Savings action-card entrance, an immediate post-navigation check can find the semantic button while its CSS animation is at 0 opacity. The click assertion ran before entrance settled, so this result by itself does **not** prove a product action or persistence regression.
+- One bounded QA-only correction on the motion branch: the functional Savings case now awaits its named `Μεταφορά στην άκρη` button becoming enabled and fully visually present (computed opacity >= .99, nonzero geometry, visible display) before using the existing `clickText` click helper. It still asserts the actual contextual Quick Entry, source/destination, durable write, target/progress, history and Reports effects. `tests/content-entrance-motion-source.test.ts` locks this same-class animated-affordance wait. No production UI, finance, auth, backend, Windows, Android, migration, accessibility or CSS-budget relaxation.
+- Created the opt-in Draft `.github/workflows/motion-focused-rendered-qa.yml` to run actual Chromium Light/Dark desktop/mobile first/mid/settled evidence and 12-route CLS/overflow/reduced-motion QA with artifact upload. The first attempt skipped because the PR was Ready. PR #549 is back in Draft for this cohesive browser-test correction and dedicated focused run.
+- **Next:** obtain exact corrected-head Draft preflight + focused Chromium motion artifacts; inspect screenshots/logs directly and triage all failures together. Then promote one coherent code head to Ready for the normal full CI/CodeQL/WebKit/performance/three-Windows matrix; dedicated Final Visual acceptance only after review gates are green. Update DV-M checkboxes and counters **only** on completed evidence. Do not merge into `develop` or promote `main` while a required check is pending/failing.
+
+
 ### 2026-10-13 terminal DV-FB01–DV-FB10 reconciliation acceptance checkpoint
 
 **Implementations 14/15 completed · Sub-implementations 102/108 completed.**
