@@ -25,8 +25,14 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci --prefer-offline --no-audit --no-fund
-      - name: Preflight motion browser QA syntax
-        run: node --check scripts/content-entrance-qa.mjs
+      - name: Select CI primary Chromium and preflight motion QA
+        shell: bash
+        run: |
+          PRIMARY_BROWSER="$(command -v chromium || command -v chromium-browser || true)"
+          if [ -z "$PRIMARY_BROWSER" ]; then echo "Primary Chromium required for motion QA"; exit 1; fi
+          echo "MYFINHUB_QA_PRIMARY_BROWSER=$PRIMARY_BROWSER" >> "$GITHUB_ENV"
+          "$PRIMARY_BROWSER" --version
+          node --check scripts/content-entrance-qa.mjs
       - name: Start synthetic Vite QA surface
         shell: bash
         run: |
