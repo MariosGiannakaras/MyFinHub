@@ -61,7 +61,8 @@ try{
         if(['dashboard','transactions','cards','loans'].includes(page)){
           const selection=page==='dashboard'?'.approved-primary-grid':page==='transactions'?(viewport.mobile?'.mobile-transaction-list':'.transactions-approved-table tbody'):page==='cards'?'.cards-grid':'.loan-list';
           for(const theme of ['light','dark']){
-            await c.eval(`document.documentElement.dataset.theme='${theme}'`);
+            const appliedTheme=await c.eval(`(async()=>{const mod=await import('/src/lib/theme.ts');mod.applyThemePreference('${theme}');await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));return {theme:document.documentElement.dataset.theme,canvas:getComputedStyle(document.documentElement).getPropertyValue('--canvas').trim(),expectedCanvas:mod.themeTokens('${theme}')['--canvas']}})()`);
+            assert(appliedTheme.theme===theme&&appliedTheme.canvas===appliedTheme.expectedCanvas,`${viewport.name}/${page}: ${theme} theme tokens were not applied: ${JSON.stringify(appliedTheme)}`);
             const count=await c.eval(`(()=>{const root=document.querySelector('${selection}');const nodes=[...root?.children||[]].filter(el=>el.getClientRects().length>0);if(!nodes.length)return 0;for(const node of nodes.slice(0,6)){node.style.animation='none';void node.offsetWidth;node.style.removeProperty('animation')}globalThis.__motionQaAnimations=nodes.flatMap(node=>node.getAnimations()).filter(a=>a.animationName==='rh-bank-in'||a.animationName==='rh-backdrop-in');for(const a of globalThis.__motionQaAnimations)a.pause();return globalThis.__motionQaAnimations.length})()`);
             assert(count>0,`${viewport.name}/${page}: opted-in content has running shared entrance animation`);
             for(const [state,ms] of [['first',0],['mid',90],['settled',600]]){
