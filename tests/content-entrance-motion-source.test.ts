@@ -46,6 +46,10 @@ describe('bounded shared collection motion contract DV-M01–M06',()=>{
     expect(functional).toContain("'.row-context-button','filtered modern event details access'");
     expect(functional).toContain("'.transactions-detail-actions button','Επεξεργασία'");
     expect(functional).toContain("'filtered modern event detail panel'");
+    expect(functional).toContain("'exactly one settled modern event in the primary ledger'");
+    expect(functional).toContain("'.transactions-approved-table tbody [data-transaction-source=\"event\"]'");
+    expect(functional).toContain("'.transactions-detail-actions button','Διαγραφή'");
+    expect(functional).not.toContain("const modernCopies=");
     expect(functional).toContain("const clickVisibleRowAction=async(");
     expect(functional).toContain("parent.matches?.('[data-content-entrance] > *')");
     const guardedActions=functional.split('\n').filter(line=>line.includes('await clickVisibleRowAction('));
