@@ -394,6 +394,66 @@
         "tests/semantic-validation.test.ts",
         "tests/finance-semantic-validation.test.ts"
       ]
+    },
+    {
+      "id": "FP-021",
+      "title": "Rules action taxonomy must match eligible transaction kinds and preview precedence",
+      "category": "domain-data",
+      "severity": "high",
+      "rootCause": "The only active automation editor offered expense categories but its shared matching engine also applied expense category/subcategory actions to default-category income events; preview and first-match ordering could falsely match income.",
+      "prevention": "Reject income matches for expense category/subcategory rules, preserve note-only income rules and current history, and ensure preview, first-match and apply share the eligibility rule.",
+      "paths": [
+        "src/lib/transactionRules.ts",
+        "src/components/TransactionRulesWorkspace.tsx",
+        "tests/budgets-rules.test.ts",
+        "tests/settings-rules-workspace-source.test.ts"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/pull/548"
+      ],
+      "guards": [
+        "tests/budgets-rules.test.ts",
+        "tests/settings-rules-workspace-source.test.ts"
+      ]
+    },
+    {
+      "id": "FP-022",
+      "title": "Command focus must target the visible responsive owner without refocusing on unrelated renders",
+      "category": "ui-resilience",
+      "severity": "high",
+      "rootCause": "A desktop Command Palette action targeted the CSS-hidden legacy Planning scheduled list rather than the visible approved table. The first correction then used freshly allocated filtered arrays in effect dependencies and repeatedly stole keyboard focus when the palette was opened again.",
+      "prevention": "Route named targets to the actually visible responsive surface, extend its pagination and make the target programmatically focusable. Derive primitive hook dependencies and consume each command-key focus once so subsequent user interactions retain focus.",
+      "paths": [
+        "src/pages/PlanningPage.tsx",
+        "src/components/PlanningApprovedDesktop.tsx",
+        "scripts/command-palette-qa.mjs"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/pull/548"
+      ],
+      "guards": [
+        "tests/command-palette-source.test.ts",
+        "tests/command-scheduled-reachability-source.test.ts"
+      ]
+    },
+    {
+      "id": "FP-023",
+      "title": "Rendered CRUD receipts must follow durable owner status, not obsolete success copy",
+      "category": "ci-tooling",
+      "severity": "medium",
+      "rootCause": "Two successive coherent review runs were blocked after otherwise successful finance/security/Windows checks because old rendered CRUD deletion waits asserted obsolete literal success messages (first Cards secure-vault cleanup, then Settings account deletion), rather than the current domain owner's durable receipt.",
+      "prevention": "Before a full rendered review matrix, keep the source regression guard matching the owning UI receipt and assert both absence of the deleted entity and explicit durable success with the confirmation dialog dismissed; never replace the wait with row absence alone or weaken the underlying finance/vault checks.",
+      "paths": [
+        "scripts/completion-functional-crud-qa.mjs",
+        "src/components/AccountManagementSettings.tsx",
+        "src/pages/CardsPage.tsx"
+      ],
+      "evidence": [
+        "https://github.com/MariosGiannakaras/MyFinHub/pull/548"
+      ],
+      "guards": [
+        "tests/account-metadata.test.ts"
+      ]
     }
   ]
 }

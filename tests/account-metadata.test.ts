@@ -90,3 +90,16 @@ describe('account IBAN metadata',()=>{
     expect(accountManagerSource).toContain('metadata.records[account.id]?.iban');
   });
 });
+
+describe('account removal durable receipt rendered regression',()=>{
+  it('keeps final browser deletion proof aligned with the actual account manager receipt, not a stale copy fragment',()=>{
+    const rendered=readFileSync(new URL('../scripts/completion-functional-crud-qa.mjs',import.meta.url),'utf8');
+    expect(accountManagerSource).toContain("setMessage('Ο λογαριασμός διαγράφηκε και αποθηκεύτηκε.'+metadataWarning)");
+    expect(accountManagerSource).toContain('await onChangeDurably(next)');
+    expect(rendered).toContain("status.includes('Ο λογαριασμός διαγράφηκε και αποθηκεύτηκε.')");
+    expect(rendered).toContain("document.querySelector('.account-management-message[role=status]')");
+    expect(rendered).toContain("!document.querySelector('[role=alertdialog]')");
+    expect(rendered).toContain("!document.querySelector('.account-management-modal')");
+    expect(rendered).not.toContain("message.includes('Ο λογαριασμός διαγράφηκε.')");
+  });
+});

@@ -47,6 +47,14 @@ try{
   console.log('Lending remediation QA: rich wide desktop geometry');
   for(const width of [1920,2560]){await viewport(width,1200);await navigate('lending-rich');current=await state();assert(current.personCount>=5,'rich fixture renders multiple people');assert(current.layout.width<=1501&&current.people.width<=381&&current.detail.width>700&&current.table.width<=1121&&current.overflow<=1,`${width}px master/detail and history remain bounded without page overflow`);await shot(`lending-rich-hidden-${width}`)}
 
+  console.log('Lending remediation QA: future repayments never settle current balances');
+  await viewport(1440,1000);await navigate('lending-rich');
+  const readCurrent=()=>c.call("function(){const text=s=>(document.querySelector(s)?.textContent||'').replace(/\\s+/g,' ').trim();return {people:text('.lending-people-list'),detail:text('.lending-selected-panel'),history:text('.lending-approved-table'),rows:document.querySelectorAll('.lending-approved-table tbody tr').length}}");
+  const beforeFuture=await readCurrent();
+  await navigate('lending-future');const afterFuture=await readCurrent();
+  assert(JSON.stringify(beforeFuture)===JSON.stringify(afterFuture),'future-dated repayments or lending must not change the current receivables or visible history');
+  await shot('lending-future-dated-events-ignored');
+
   console.log('Lending remediation QA: dark privacy parity');
   await viewport(1440,1000);await navigate('lending-rich');await setTheme('dark');assert(await c.call("function(){return document.documentElement.dataset.theme==='dark'}"),'dark theme remains active after Lending navigation');current=await state();
   assert(current.rowAvatarText.every(text=>text==='')&&current.selectedAvatarText===''&&current.hiddenNames>=2,'dark privacy-hidden state masks all identity decoration');

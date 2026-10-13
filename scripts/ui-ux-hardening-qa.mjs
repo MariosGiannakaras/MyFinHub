@@ -68,6 +68,17 @@ try{
   console.log('UI/UX QA: persistence and error states');
   await viewport(1440,1000);await navigate({page:'dashboard',save:'error'},PAGE_HEADINGS.dashboard);assert(await c.eval("document.querySelector('.persistence-notice.error')?.textContent.includes('Η αποθήκευση δεν ολοκληρώθηκε')"),'friendly persistence error copy');await screenshot('desktop-persistence-error');
   await navigate({page:'dashboard',save:'conflict'},PAGE_HEADINGS.dashboard);assert(await c.eval("document.querySelector('.persistence-notice.conflict')?.textContent.includes('Υπάρχουν νεότερα δεδομένα')"),'friendly conflict copy');await screenshot('desktop-persistence-conflict');
+  console.log('UI/UX QA: recoverable post-commit card secret cleanup');
+  await navigate({page:'dashboard',save:'cleanup-pending'},PAGE_HEADINGS.dashboard);
+  assert(await c.eval("Boolean(document.querySelector('.card-cleanup-notice[role=alert] button'))"),'vault cleanup failure exposes alert with recovery action');
+  await screenshot('desktop-card-vault-cleanup-retry');
+  await clickText('.card-cleanup-notice button','Επανάληψη καθαρισμού');
+  assert(await c.eval("!document.querySelector('.card-cleanup-notice')"),'successful synthetic vault cleanup clears pending alert');
+  await viewport(375,812);
+  await navigate({page:'dashboard',save:'cleanup-pending'},PAGE_HEADINGS.dashboard);
+  assert(await c.eval("Boolean(document.querySelector('.card-cleanup-notice button'))"),'mobile vault cleanup retry stays reachable');
+  await screenshot('mobile-card-vault-cleanup-retry');
+  await viewport(1440,1000);
   await navigate({page:'dashboard',save:'loading'},PAGE_HEADINGS.dashboard);assert(await c.eval("Boolean(document.querySelector('.persistence-toast.loading'))"),'loading persistence state');await screenshot('desktop-persistence-loading');
   await navigate({page:'dashboard',save:'saving'},PAGE_HEADINGS.dashboard);assert(await c.eval("Boolean(document.querySelector('.persistence-toast.saving'))"),'saving persistence state');await screenshot('desktop-persistence-saving');
   await navigate({page:'dashboard'},PAGE_HEADINGS.dashboard);await clickText('[data-qa-crash]','QA render failure');await waitFor("function(){return Boolean(document.querySelector('.workspace-error'))}",'page error boundary');assert(await c.eval("!document.querySelector('.workspace-error')?.textContent.includes('synthetic-render-failure')"),'error boundary hides raw exception');await screenshot('desktop-page-error-recovery');

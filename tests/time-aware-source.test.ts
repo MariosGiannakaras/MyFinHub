@@ -17,9 +17,20 @@ describe('time-aware product integration', () => {
     expect(qa).toContain("planning:'Προγραμματισμός & πρόβλεψη ρευστότητας'");
   });
 
-  it('posts scheduled completion as one finance.update recipe containing both scheduled and events state', () => {
-    expect(app).toMatch(/const\s+completeScheduled\s*=\s*\([^)]*\)\s*=>\s*finance\.update\(\s*\(current\)\s*=>\s*\{[^]*scheduled:[^]*events:/);
-    expect(planning).toContain('onCompleteScheduled(completed, event)');
+  it('posts scheduled completion and lifecycle updates only after an exact finance receipt', () => {
+    expect(app).toMatch(/const\s+completeScheduled\s*=\s*\([^)]*\)\s*=>\s*finance\.updateDurably\(\s*\(current\)\s*=>\s*\{[^]*scheduled:[^]*events:/);
+    expect(app).toContain('const upsertScheduled = (item: ScheduledTransaction) => finance.updateDurably');
+    expect(planning).toContain('await onCompleteScheduled(completed, event)');
+    expect(planning).toContain('await onUpsertScheduled(item)');
+    expect(planning).toContain('await onUpsertScheduled(transitionScheduled(item,status))');
+    expect(planning).toContain('busy={saving} error={lifecycleError}');
+    expect(planning).toContain('aria-busy={saving||undefined}');
+    expect(qa).toContain("params.get('scheduled-save-failure')==='1'");
+    expect(qa).toContain('onCompleteScheduled={completeScheduledDurably}');
+    const planningQa=readFileSync(new URL('../scripts/planning-forecast-qa.mjs',import.meta.url),'utf8');
+    expect(planningQa).toContain('planning-scheduled-create-receipt-failure-mobile');
+    expect(planningQa).toContain('planning-scheduled-complete-receipt-failure-desktop');
+    expect(planningQa).toContain('planning-scheduled-skip-receipt-pending-mobile');
   });
 
   it('keeps deterministic forecast language and an accessible text alternative', () => {

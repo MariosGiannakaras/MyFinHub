@@ -146,6 +146,19 @@ export function withCardProfileDeleted(data:FinanceData,card:PaymentCard,deleted
   return {...data,state:{...data.state,cards:cards.filter(item=>item.id!==card.id),deletedCards}};
 }
 
+export function withCardSecretCleanupPending(data:FinanceData,card:PaymentCard,deletedAt:string,asOf:string):FinanceData{
+  if(!(data.state.cards??[]).some(item=>item.id===card.id))throw new Error('CARD_PROFILE_NOT_FOUND');
+  const removed=withCardProfileDeleted(data,card,deletedAt,asOf);
+  const pending=removed.state.pendingCardSecretDeletes??[];
+  return {...removed,state:{...removed.state,pendingCardSecretDeletes:pending.includes(card.id)?pending:[...pending,card.id]}};
+}
+export function withCardSecretCleanupComplete(data:FinanceData,cardId:string):FinanceData{
+  const pending=data.state.pendingCardSecretDeletes??[];
+  if(!pending.includes(cardId))return data;
+  if((data.state.cards??[]).some(card=>card.id===cardId))throw new Error('CARD_PROFILE_STILL_ACTIVE');
+  return {...data,state:{...data.state,pendingCardSecretDeletes:pending.filter(id=>id!==cardId)}};
+}
+
 export function historicalCardLabel(data:FinanceData,cardId:string){
   const current=allCards(data).find(card=>card.id===cardId);
   if(current)return cardLabel(current);

@@ -57,8 +57,8 @@ export async function saveCardSecret(cardId:string,secret:CardVaultSecret){
 }
 
 /** Explicit secret destruction only. Archiving a card must never call this. */
-export async function deleteCardSecret(cardId:string){
-  return request<{deleted:true}>('DELETE',{cardId});
+export async function deleteCardSecret(cardId:string,requireCommittedDeletion=false){
+  return request<{deleted:true}>('DELETE',requireCommittedDeletion?{cardId,requireCommittedDeletion:true}:{cardId});
 }
 
 export function cardVaultErrorMessage(error:unknown){

@@ -5,8 +5,8 @@ type LongTermLoanObligation={loan:Loan;outstanding:number;remainingInstallments:
 
 export function isSelfLoan(loan:Loan){return loan.kind==='self-loan'||loan.source==='self-loan'||/\bHELP\b|ΒΟΗΘΕΙΑ/i.test(`${loan.name} ${loan.provider||''}`)}
 
-export function loanPaymentEvents(data:FinanceData,loan:Loan){
-  const linked=(data.state.events??[]).filter(event=>event.loanId===loan.id);
+export function loanPaymentEvents(data:FinanceData,loan:Loan,asOf?:string){
+  const linked=(data.state.events??[]).filter(event=>event.loanId===loan.id&&(!asOf||event.date<=asOf));
   const payments=isSelfLoan(loan)?linked.filter(event=>event.kind==='transfer'&&/^(?:ΕΠΙΣΤΡΟΦΗ|RETURN)(?:\s|:|$)/i.test(event.note.trim())):linked;
   return payments.sort((a,b)=>b.date.localeCompare(a.date)||b.createdAt.localeCompare(a.createdAt));
 }
@@ -21,24 +21,24 @@ export function setLoanPaymentInstallmentCount(event:FinanceEvent,count:number){
   return event;
 }
 
-export function loanPaidCount(data: FinanceData, loan: Loan) {
+export function loanPaidCount(data: FinanceData, loan: Loan,asOf?:string) {
   const baseline = Number(loan.paidCount || 0);
   const legacyExtra = Number(data.state.loanExtra?.[loan.id] || 0);
-  const linkedInstallments = loanPaymentEvents(data,loan).reduce((sum,event)=>sum+loanPaymentInstallmentCount(event),0);
+  const linkedInstallments = loanPaymentEvents(data,loan,asOf).reduce((sum,event)=>sum+loanPaymentInstallmentCount(event),0);
   return Math.min(loan.installments, baseline + legacyExtra + linkedInstallments);
 }
 
-export function loanPaidAmount(data:FinanceData,loan:Loan){
+export function loanPaidAmount(data:FinanceData,loan:Loan,asOf?:string){
   const baseline=Math.min(loan.installments,Number(loan.paidCount||0)+Number(data.state.loanExtra?.[loan.id]||0))*Number(loan.installment||0);
-  return baseline+loanPaymentEvents(data,loan).reduce((sum,event)=>sum+Math.max(0,Number(event.amount||0)),0);
+  return baseline+loanPaymentEvents(data,loan,asOf).reduce((sum,event)=>sum+Math.max(0,Number(event.amount||0)),0);
 }
 
-export function loanOutstanding(data:FinanceData,loan:Loan){
-  return Math.max(0,Number(loan.total||0)-loanPaidAmount(data,loan)-Number(loan.forgivenAmount||0));
+export function loanOutstanding(data:FinanceData,loan:Loan,asOf?:string){
+  return Math.max(0,Number(loan.total||0)-loanPaidAmount(data,loan,asOf)-Number(loan.forgivenAmount||0));
 }
 
-export function loanRemainingInstallments(data:FinanceData,loan:Loan){
-  return Math.max(0,loan.installments-loanPaidCount(data,loan));
+export function loanRemainingInstallments(data:FinanceData,loan:Loan,asOf?:string){
+  return Math.max(0,loan.installments-loanPaidCount(data,loan,asOf));
 }
 
 export function loanVisualInstallmentProgress(totalInstallments:number,paidInstallments:number,maxSegments=60){
@@ -52,12 +52,12 @@ export function loanVisualInstallmentProgress(totalInstallments:number,paidInsta
   return {segments,paidSegments:Math.min(segments-1,Math.floor((paid/total)*segments))};
 }
 
-export function loanInstallmentPaymentPlan(data:FinanceData,loan:Loan,requestedCount:number):LoanInstallmentPaymentPlan|null{
-  const remaining=loanRemainingInstallments(data,loan);
-  const outstanding=loanOutstanding(data,loan);
+export function loanInstallmentPaymentPlan(data:FinanceData,loan:Loan,requestedCount:number,asOf?:string):LoanInstallmentPaymentPlan|null{
+  const remaining=loanRemainingInstallments(data,loan,asOf);
+  const outstanding=loanOutstanding(data,loan,asOf);
   if(remaining<=0||outstanding<=0)return null;
   const count=Math.min(remaining,Math.max(1,Math.floor(Number(requestedCount)||1)));
-  const alreadyPaid=loanPaidCount(data,loan);
+  const alreadyPaid=loanPaidCount(data,loan,asOf);
   const firstInstallment=alreadyPaid+1;
   const lastInstallment=alreadyPaid+count;
   const nominal=Math.max(0,Number(loan.installment||0))*count;
@@ -65,8 +65,8 @@ export function loanInstallmentPaymentPlan(data:FinanceData,loan:Loan,requestedC
   return {count,firstInstallment,lastInstallment,amount};
 }
 
-export function typicalLoanPaymentDay(data:FinanceData,loan:Loan):number|null{
-  const events=loanPaymentEvents(data,loan);
+export function typicalLoanPaymentDay(data:FinanceData,loan:Loan,asOf?:string):number|null{
+  const events=loanPaymentEvents(data,loan,asOf);
   if(events.length){return Math.max(1,Math.min(31,Math.round(events.reduce((sum,event)=>sum+Number(event.date.slice(8,10)),0)/events.length)))}
   if(loan.firstExpectedDate)return Number(loan.firstExpectedDate.slice(8,10))||null;
   const parsed=Number.parseInt(loan.day||'',10);return Number.isInteger(parsed)&&parsed>=1&&parsed<=31?parsed:null;
@@ -74,14 +74,14 @@ export function typicalLoanPaymentDay(data:FinanceData,loan:Loan):number|null{
 
 export function isLongTermLoan(loan:Loan){return loan.longTermRecurring??(loan.installments>=12&&!isSelfLoan(loan))}
 
-export function activeLongTermLoanObligations(data:FinanceData):LongTermLoanObligation[]{
+export function activeLongTermLoanObligations(data:FinanceData,asOf?:string):LongTermLoanObligation[]{
   const loans=[...(data.seed.loans??[]).map(loan=>data.state.loanOverrides?.[loan.id]??loan),...(data.state.customLoans??[])];
   return loans.filter(isLongTermLoan).map(loan=>{
-    const outstanding=loanOutstanding(data,loan);
-    const remainingInstallments=loanRemainingInstallments(data,loan);
-    const plan=loanInstallmentPaymentPlan(data,loan,1);
-    const payments=loanPaymentEvents(data,loan);
-    return {loan,outstanding,remainingInstallments,nextAmount:plan?.amount??0,typicalDay:typicalLoanPaymentDay(data,loan),lastPayment:payments[0]??null};
+    const outstanding=loanOutstanding(data,loan,asOf);
+    const remainingInstallments=loanRemainingInstallments(data,loan,asOf);
+    const plan=loanInstallmentPaymentPlan(data,loan,1,asOf);
+    const payments=loanPaymentEvents(data,loan,asOf);
+    return {loan,outstanding,remainingInstallments,nextAmount:plan?.amount??0,typicalDay:typicalLoanPaymentDay(data,loan,asOf),lastPayment:payments[0]??null};
   }).filter(row=>row.outstanding>.005&&row.remainingInstallments>0&&row.nextAmount>0).sort((a,b)=>(a.typicalDay??99)-(b.typicalDay??99)||a.loan.name.localeCompare(b.loan.name,'el'));
 }
 

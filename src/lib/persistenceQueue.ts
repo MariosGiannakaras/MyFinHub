@@ -78,15 +78,29 @@ export class LatestValueQueue<T> {
  * preserves FIFO order while still failing closed and dropping dependent
  * pending writes after the first failed persistence operation.
  */
+type SequentialQueueEntry<T> = {
+  value:T;
+  resolve?:()=>void;
+  reject?:(error:unknown)=>void;
+};
+
 export class SequentialQueue<T> {
-  private pending: T[] = [];
+  private pending: SequentialQueueEntry<T>[] = [];
   private running = false;
   private idlePromise: Promise<void> = Promise.resolve();
 
   constructor(private readonly run:(value:T)=>Promise<void>){}
 
-  enqueue(value:T){
-    this.pending.push(value);
+  // Keep the existing fire-and-forget path free of rejecting Promises.
+  enqueue(value:T){this.schedule({value})}
+
+  // The receipt belongs to this exact FIFO mutation, not to a later idle state.
+  enqueueWithReceipt(value:T):Promise<void>{
+    return new Promise<void>((resolve,reject)=>this.schedule({value,resolve,reject}));
+  }
+
+  private schedule(entry:SequentialQueueEntry<T>){
+    this.pending.push(entry);
     if(this.running)return;
     this.running=true;
     this.idlePromise=this.drain();
@@ -98,8 +112,17 @@ export class SequentialQueue<T> {
   private async drain(){
     try{
       while(this.pending.length){
-        const value=this.pending.shift()!;
-        try{await this.run(value)}catch{this.pending=[];break}
+        const entry=this.pending.shift()!;
+        try{
+          await this.run(entry.value);
+          entry.resolve?.();
+        }catch(error){
+          // Dependent writes were never run. Reject their receipts as well;
+          // otherwise callers could await forever or clean up an in-use asset.
+          entry.reject?.(error);
+          for(const dropped of this.pending.splice(0))dropped.reject?.(error);
+          break;
+        }
       }
     }finally{this.running=false}
   }

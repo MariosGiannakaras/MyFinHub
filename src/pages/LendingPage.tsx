@@ -25,9 +25,9 @@ type LendingHistoryFilter='all'|'lent'|'repaid'|'forgiven';
 
 const personInitials=(name:string)=>name.split(/\s+/).filter(Boolean).slice(0,2).map(part=>part[0]?.toLocaleUpperCase('el-GR')||'').join('');
 
-export function LendingPage({data,asOf,privacyVisible,onPrivacyVisibleChange,onCreateEvent,onQuickAdd}:{data:FinanceData;asOf:string;privacyVisible:boolean;onPrivacyVisibleChange:(privacyVisible:boolean)=>void;onCreateEvent:(event:FinanceEvent)=>void;onQuickAdd?:(context:LendingQuickContext)=>void}){
-  const rows=useMemo(()=>lendingRows(data),[data]);
-  const history=useMemo(()=>lendingHistory(data),[data]);
+export function LendingPage({data,asOf,commandPerson=null,commandPersonKey=0,privacyVisible,onPrivacyVisibleChange,onCreateEvent,onQuickAdd}:{data:FinanceData;asOf:string;commandPerson?:string|null;commandPersonKey?:number;privacyVisible:boolean;onPrivacyVisibleChange:(privacyVisible:boolean)=>void;onCreateEvent:(event:FinanceEvent)=>void;onQuickAdd?:(context:LendingQuickContext)=>void}){
+  const rows=useMemo(()=>lendingRows(data,asOf),[data,asOf]);
+  const history=useMemo(()=>lendingHistory(data,asOf),[data,asOf]);
   const total=useMemo(()=>rows.reduce((sum,row)=>sum+row.outstanding,0),[rows]);
   const accounts=useMemo(()=>allAccounts(data).filter(account=>account.kind!=='credit'),[data]);
   const [selectedPerson,setSelectedPerson]=useState(()=>rows[0]?.person||'');
@@ -41,6 +41,22 @@ export function LendingPage({data,asOf,privacyVisible,onPrivacyVisibleChange,onC
     if(!rows.some(row=>row.person===selectedPerson))setSelectedPerson(rows[0]!.person);
   },[rows,selectedPerson]);
 
+  useEffect(()=>{
+    if(!commandPerson||!rows.some(row=>row.person===commandPerson))return;
+    setPeopleQuery('');
+    setSelectedPerson(commandPerson);
+    setHistoryFilter('all');
+  },[commandPerson,commandPersonKey,rows]);
+  useEffect(()=>{
+    if(!commandPerson||selectedPerson!==commandPerson)return;
+    const frame=requestAnimationFrame(()=>{
+      const selected=document.querySelector<HTMLButtonElement>('.lending-people-panel .lending-person-row[aria-pressed="true"]');
+      selected?.scrollIntoView({block:'nearest',behavior:'auto'});
+      selected?.focus({preventScroll:true});
+    });
+    return()=>cancelAnimationFrame(frame);
+  },[commandPerson,commandPersonKey,selectedPerson]);
+
   const filteredPeople=useMemo(()=>{const query=peopleQuery.trim().toLocaleLowerCase('el-GR');return query?rows.filter(row=>row.person.toLocaleLowerCase('el-GR').includes(query)):rows},[peopleQuery,rows]);
   const selectedRow=useMemo(()=>rows.find(row=>row.person===selectedPerson)??null,[rows,selectedPerson]);
   const selectedHistory=useMemo(()=>history.filter(row=>row.person===selectedPerson),[history,selectedPerson]);
@@ -50,9 +66,9 @@ export function LendingPage({data,asOf,privacyVisible,onPrivacyVisibleChange,onC
   const knownPeople=useMemo(()=>{const query=person.trim().toLocaleLowerCase('el-GR');return rows.filter(row=>kind==='lending'||row.outstanding>0).filter(row=>!query||row.person.toLocaleLowerCase('el-GR').includes(query)).slice(0,6)},[rows,kind,person]);
   const preferredAccount=(next:'lending'|'repayment')=>{const preferred=next==='lending'?data.state.settings.defaultExpenseAccount:data.state.settings.defaultIncomeAccount;return accounts.some(item=>item.id===preferred)?preferred:accounts[0]?.id||''};
   const start=(next:'lending'|'repayment',presetPerson='')=>{setKind(next);setPerson(presetPerson);setAmount('');setDate(asOf);setExpectedReturnDate('');setAccount(preferredAccount(next));setNote('');setError('');setOpen(true)};
-  const startForPerson=(next:'lending'|'repayment',presetPerson:string)=>{if(onQuickAdd){onQuickAdd({mode:'lending',action:next==='lending'?'lend':'repay',person:presetPerson,amount:next==='repayment'?lendingOutstandingFor(data,presetPerson):undefined,accountId:preferredAccount(next)});return}start(next,presetPerson)};
+  const startForPerson=(next:'lending'|'repayment',presetPerson:string)=>{if(onQuickAdd){onQuickAdd({mode:'lending',action:next==='lending'?'lend':'repay',person:presetPerson,amount:next==='repayment'?lendingOutstandingFor(data,presetPerson,asOf):undefined,accountId:preferredAccount(next)});return}start(next,presetPerson)};
   const close=()=>{setOpen(false);setError('')};
-  const submit=()=>{const cleanPerson=person.trim();const numeric=Number(amount.replace(',','.'));if(!cleanPerson){setError('Γράψε το όνομα του προσώπου για να ξέρεις σε ποιον αφορά η κίνηση.');return}if(!Number.isFinite(numeric)||numeric<=0){setError('Έλεγξε το ποσό — πρέπει να είναι μεγαλύτερο από μηδέν.');return}if(!accounts.some(item=>item.id===account)){setError('Επίλεξε διαθέσιμο λογαριασμό για αυτή την κίνηση.');return}if(kind==='lending'&&expectedReturnDate&&expectedReturnDate<date){setError('Η αναμενόμενη επιστροφή δεν μπορεί να είναι πριν από την ημερομηνία της κίνησης.');return}if(kind==='repayment'){const outstanding=lendingOutstandingFor(data,cleanPerson);if(outstanding<=0){setError('Δεν υπάρχει καταγεγραμμένη οφειλή για αυτό το πρόσωπο.');return}if(numeric>outstanding+.01){setError(`Η επιστροφή δεν μπορεί να ξεπερνά την οφειλή των ${money.format(outstanding)}.`);return}}try{const event=createEvent({kind,date,amount:numeric,note:note.trim()||(kind==='lending'?'Πλήρωσα για άλλον':'Επιστροφή δανεικών'),accountId:account,person:cleanPerson,expectedReturnDate:kind==='lending'?(expectedReturnDate||undefined):undefined});onCreateEvent(event);setSelectedPerson(cleanPerson);close()}catch(e){setError(userErrorMessage(e,'Δεν μπορέσαμε να καταχωρίσουμε την κίνηση. Έλεγξε τα στοιχεία και δοκίμασε ξανά.'))}};
+  const submit=()=>{const cleanPerson=person.trim();const numeric=Number(amount.replace(',','.'));if(!cleanPerson){setError('Γράψε το όνομα του προσώπου για να ξέρεις σε ποιον αφορά η κίνηση.');return}if(!Number.isFinite(numeric)||numeric<=0){setError('Έλεγξε το ποσό — πρέπει να είναι μεγαλύτερο από μηδέν.');return}if(!accounts.some(item=>item.id===account)){setError('Επίλεξε διαθέσιμο λογαριασμό για αυτή την κίνηση.');return}if(kind==='lending'&&expectedReturnDate&&expectedReturnDate<date){setError('Η αναμενόμενη επιστροφή δεν μπορεί να είναι πριν από την ημερομηνία της κίνησης.');return}if(kind==='repayment'){const outstanding=lendingOutstandingFor(data,cleanPerson,asOf);if(outstanding<=0){setError('Δεν υπάρχει καταγεγραμμένη οφειλή για αυτό το πρόσωπο.');return}if(numeric>outstanding+.01){setError(`Η επιστροφή δεν μπορεί να ξεπερνά την οφειλή των ${money.format(outstanding)}.`);return}}try{const event=createEvent({kind,date,amount:numeric,note:note.trim()||(kind==='lending'?'Πλήρωσα για άλλον':'Επιστροφή δανεικών'),accountId:account,person:cleanPerson,expectedReturnDate:kind==='lending'?(expectedReturnDate||undefined):undefined});onCreateEvent(event);setSelectedPerson(cleanPerson);close()}catch(e){setError(userErrorMessage(e,'Δεν μπορέσαμε να καταχωρίσουμε την κίνηση. Έλεγξε τα στοιχεία και δοκίμασε ξανά.'))}};
 
   return <div className="page-stack lending-page">
     <div className="lending-approved-desktop">

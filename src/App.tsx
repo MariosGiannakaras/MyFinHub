@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppShell, type PageId } from './components/AppShell';
 import { AppSkeleton, PageSkeleton } from './components/AppSkeleton';
 import { Button } from './components/Button';
@@ -14,13 +14,12 @@ import { useFinance } from './hooks/useFinance';
 import { useLocalDate } from './hooks/useLocalDate';
 import { useSession } from './hooks/useSession';
 import type { AttentionItem } from './lib/attention';
-import { archiveCardRecord, canPermanentlyDeleteCreditCard, withCardProfileDeleted } from './lib/cards';
-import { deleteCardSecret } from './lib/cardVaultClient';
+import { archiveCardRecord, canPermanentlyDeleteCreditCard, withCardSecretCleanupPending } from './lib/cards';
 import type { RankedCommandSearchItem } from './lib/commandSearch';
 import { prepareCreditStatementEvent } from './lib/creditStatements';
 import { accountBalances, allAccounts } from './lib/domain';
+import { isSavingsAccount } from './lib/accountSemantics';
 import { withLegacyOverride, withLegacyTombstone } from './lib/legacyTransactions';
-import { deleteLocalCvv } from './lib/localCvvVault';
 import { reportingMonthForDate } from './lib/localDate';
 import { pageHash, resolveHashRoute, settingsHash, type SettingsTabId } from './lib/routing';
 import type { TaxonomyOperation } from './lib/taxonomyManagement';
@@ -39,7 +38,6 @@ import type {
   ReviewDecision,
   SavingsGoal,
   ScheduledTransaction,
-  TransactionRule,
 } from './types';
 
 const CommandPalette = lazy(() => import('./components/CommandPalette').then((module) => ({ default: module.CommandPalette })));
@@ -81,12 +79,31 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   const [notFound, setNotFound] = useState(initialRoute.notFound);
   const [quickOpen, setQuickOpen] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
+  const [commandFocusKey,setCommandFocusKey]=useState(0);
+  const [commandCardId,setCommandCardId]=useState<string|null>(null);
+  const [commandCardKey,setCommandCardKey]=useState(0);
+  const [commandDebitCardId,setCommandDebitCardId]=useState<string|null>(null);
+  const [commandDebitCardKey,setCommandDebitCardKey]=useState(0);
+  const [commandAccountId,setCommandAccountId]=useState<string|null>(null);
+  const [commandAccountKey,setCommandAccountKey]=useState(0);
+  const [commandLendingPerson,setCommandLendingPerson]=useState<string|null>(null);
+  const [commandLendingKey,setCommandLendingKey]=useState(0);
+  const [commandLoanId,setCommandLoanId]=useState<string|null>(null);
+  const [commandLoanKey,setCommandLoanKey]=useState(0);
+  const [commandRecurringId,setCommandRecurringId]=useState<string|null>(null);
+  const [commandRecurringKey,setCommandRecurringKey]=useState(0);
+  const [commandScheduledId,setCommandScheduledId]=useState<string|null>(null);
+  const [commandScheduledKey,setCommandScheduledKey]=useState(0);
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [quickContext, setQuickContext] = useState<QuickActionContext | null>(null);
   const [month, setMonth] = useState(() => today.slice(0,7));
   const [monthIsManual, setMonthIsManual] = useState(false);
   const [recoverOpen,setRecoverOpen]=useState(false);
   const [privacyVisible,setPrivacyVisible]=useState(false);
+  const cleanupAttempted=useRef(new Set<string>());
+  const cleanupInFlight=useRef(new Map<string,Promise<void>>());
+  const [cleanupBusy,setCleanupBusy]=useState(false);
+  const [cleanupFailure,setCleanupFailure]=useState<string|null>(null);
 
   const navigate = (next: PageId, replace = false) => {
     const hash = pageHash(next);
@@ -136,6 +153,38 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   }, [page, notFound]);
 
   const data = finance.data;
+  // One shared operation for user-initiated, automatic-on-reload and manual
+  // retry. Never issue duplicate protected vault deletes for the same marker.
+  const runCardCleanup=useCallback((id:string):Promise<void>=>{
+    const inFlight=cleanupInFlight.current.get(id);
+    if(inFlight)return inFlight;
+    cleanupAttempted.current.add(id);
+    setCleanupBusy(true);
+    setCleanupFailure(null);
+    const task=import('./lib/cardSecretDeletion').then(m=>m.finishCardDeletion(id,finance.updateDurably))
+      .catch(error=>{
+        setCleanupFailure('Το προφίλ έχει διαγραφεί, αλλά εκκρεμεί ο ασφαλής καθαρισμός. Έλεγξε τη σύνδεση ή την επιβεβαίωση δύο παραγόντων και δοκίμασε ξανά.');
+        throw error;
+      }).finally(()=>{
+        cleanupInFlight.current.delete(id);
+        setCleanupBusy(cleanupInFlight.current.size>0);
+      });
+    cleanupInFlight.current.set(id,task);
+    return task;
+  },[finance.updateDurably]);
+  const pendingCleanup=useMemo(()=>data?(data.state.pendingCardSecretDeletes??[]).filter(id=>!(data.state.cards??[]).some(card=>card.id===id)):[],[data]);
+  useEffect(()=>{
+    if(!data||finance.saveState!=='saved')return;
+    const id=pendingCleanup.find(key=>!cleanupAttempted.current.has(key));
+    if(!id)return;
+    // One automatic attempt per persisted marker and mounted session.
+    // Failure retains the marker AND surfaces a recoverable notice.
+    void runCardCleanup(id).catch(()=>{});
+  },[data,finance.saveState,runCardCleanup,pendingCleanup]);
+  const retryCardCleanup=()=>{
+    const id=pendingCleanup.find(key=>!cleanupInFlight.current.has(key));
+    if(id)void runCardCleanup(id).catch(()=>{});
+  };
   const textSize = data?.state.settings.textSize ?? 'normal';
   useEffect(() => { document.documentElement.dataset.motion = 'full'; return () => { delete document.documentElement.dataset.motion; }; }, []);
   useEffect(() => { document.documentElement.dataset.textSize = textSize; return () => { delete document.documentElement.dataset.textSize; }; }, [textSize]);
@@ -143,14 +192,16 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   if (!data) return <AppSkeleton/>;
   if (notFound) return <NotFoundPage onHome={() => navigate('dashboard', true)} onBack={() => { if (history.length > 1) history.back(); else navigate('dashboard', true); }}/>;
 
-  const addEvent = (event: FinanceEvent) => finance.update((current) => {
-    const events = current.state.events ?? [];
-    const exists = events.some((existing) => existing.id === event.id);
-    const ruledEvent = exists ? event : applyTransactionRules(current,event);
+  // One identical domain reducer for optimistic page handlers and receipt-aware entry.
+  const withEvent=(current:FinanceData,event:FinanceEvent):FinanceData=>{
+    const events=current.state.events??[];
+    const exists=events.some(existing=>existing.id===event.id);
+    const ruledEvent=exists?event:applyTransactionRules(current,event);
     const prepared=prepareCreditStatementEvent(current,ruledEvent);
-    const nextEvent=prepared.event;
-    return { ...current, state: { ...current.state, creditStatements:prepared.statements, events: exists ? events.map((existing) => existing.id === event.id ? nextEvent : existing) : [...events, nextEvent] } };
-  });
+    return {...current,state:{...current.state,creditStatements:prepared.statements,events:exists?events.map(existing=>existing.id===event.id?prepared.event:existing):[...events,prepared.event]}};
+  };
+  const addEvent=(event:FinanceEvent)=>finance.update(current=>withEvent(current,event));
+  const addEventDurably=(event:FinanceEvent)=>finance.updateDurably(current=>withEvent(current,event));
   const deleteEvent = (id: string) => finance.update((current) => ({ ...current, state: { ...current.state, events: (current.state.events ?? []).filter((event) => event.id !== id) } }));
   const editEvent = (id: string) => {
     const event = (data.state.events ?? []).find((item) => item.id === id);
@@ -158,15 +209,22 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
     setQuickContext({ token: quickToken(), mode: 'generic', kind: event?.kind || 'expense', prefill: null });
     setQuickOpen(true);
   };
-  const editLegacy = (transaction: LegacyTransaction) => finance.update((current) => withLegacyOverride(current, transaction));
-  const deleteLegacy = (id: string) => finance.update((current) => withLegacyTombstone(current, id));
-  const upsertRecurring = (item: RecurringItem) => finance.update((current) => {
-    const seeded = current.seed.recurring.some((existing) => existing.id === item.id);
-    if (seeded) return { ...current, state: { ...current.state, recurringOverrides: { ...current.state.recurringOverrides, [item.id]: item } } };
-    const custom = current.state.recurringCustom ?? [];
-    const exists = custom.some((existing) => existing.id === item.id);
-    return { ...current, state: { ...current.state, recurringCustom: exists ? custom.map((existing) => existing.id === item.id ? item : existing) : [...custom, item] } };
+  // Transactions lifecycle waits for the exact revision/history receipt.
+  const deleteEventDurably=(id:string)=>finance.updateDurably(current=>{
+    if(!(current.state.events??[]).some(event=>event.id===id))throw new Error('Η κίνηση έχει ήδη αλλάξει. Επαναφόρτωσε πριν διαγράψεις.');
+    return {...current,state:{...current.state,events:(current.state.events??[]).filter(event=>event.id!==id)}};
   });
+  const editLegacy=(transaction:LegacyTransaction)=>finance.updateDurably(current=>withLegacyOverride(current,transaction));
+  const deleteLegacy=(id:string)=>finance.updateDurably(current=>withLegacyTombstone(current,id));
+  const withRecurring=(current:FinanceData,item:RecurringItem):FinanceData=>{
+    const seeded=current.seed.recurring.some((existing)=>existing.id===item.id);
+    if(seeded)return {...current,state:{...current.state,recurringOverrides:{...current.state.recurringOverrides,[item.id]:item}}};
+    const custom=current.state.recurringCustom??[];
+    const exists=custom.some((existing)=>existing.id===item.id);
+    return {...current,state:{...current.state,recurringCustom:exists?custom.map((existing)=>existing.id===item.id?item:existing):[...custom,item]}};
+  };
+  const upsertRecurring=(item:RecurringItem)=>finance.update(current=>withRecurring(current,item));
+  const upsertRecurringDurably=(item:RecurringItem)=>finance.updateDurably(current=>withRecurring(current,item));
   const withLoan = (current: FinanceData, loan: Loan) => {
     if (current.seed.loans.some((existing) => existing.id === loan.id)) return { ...current, state: { ...current.state, loanOverrides: { ...current.state.loanOverrides, [loan.id]: loan } } };
     const custom = current.state.customLoans ?? [];
@@ -184,36 +242,40 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
     const exists = banks.some((item) => item.id === bank.id);
     return { ...current, state: { ...current.state, cardBanks: exists ? banks.map((item) => item.id === bank.id ? bank : item) : [...banks, bank] } };
   });
-  const upsertCard = (card: PaymentCard) => finance.update((current) => {
-    const cards = current.state.cards ?? [];
-    const exists = cards.some((item) => item.id === card.id);
-    return { ...current, state: { ...current.state, cards: exists ? cards.map((item) => item.id === card.id ? card : item) : [...cards, card] } };
-  });
-  const archiveCard = (card: PaymentCard) => upsertCard(archiveCardRecord(card));
-  const deleteCard = async(card:PaymentCard) => {
-    if(card.kind==='credit'&&!canPermanentlyDeleteCreditCard(data,card.id,today))throw new Error('CREDIT_CARD_HAS_OUTSTANDING_BALANCE');
-    await deleteLocalCvv(card.id);
-    await deleteCardSecret(card.id);
-    finance.update(current=>withCardProfileDeleted(current,card,new Date().toISOString(),today));
+  const withCard=(current:FinanceData,card:PaymentCard)=>{
+    const cards=current.state.cards??[];
+    return {...current,state:{...current.state,cards:cards.some(item=>item.id===card.id)?cards.map(item=>item.id===card.id?card:item):[...cards,card]}};
   };
-  const upsertScheduled = (item: ScheduledTransaction) => finance.update((current) => {
+  const upsertCard=(card:PaymentCard)=>finance.update(current=>withCard(current,card));
+  const upsertCardDurably=(card:PaymentCard)=>finance.updateDurably(current=>withCard(current,card));
+  const stageNewCard=(card:PaymentCard)=>finance.updateDurably(current=>
+    (current.state.cards??[]).some(item=>item.id===card.id)?current:withCard(current,{...card,last4:undefined,vaultRef:undefined}));
+  const archiveCard = (card: PaymentCard) => upsertCard(archiveCardRecord(card));
+  const deleteCard=async(card:PaymentCard)=>{
+    if(card.kind==='credit'&&!canPermanentlyDeleteCreditCard(data,card.id,today))throw new Error('CREDIT_CARD_HAS_OUTSTANDING_BALANCE');
+    await finance.updateDurably(current=>withCardSecretCleanupPending(current,card,new Date().toISOString(),today));
+    try{
+      await runCardCleanup(card.id);
+    }catch{
+      throw new Error('Το προφίλ διαγράφηκε και αποθηκεύτηκε, αλλά ο καθαρισμός των ασφαλών στοιχείων εκκρεμεί. Θα επαναληφθεί μετά από νέα σύνδεση.');
+    }
+  };
+  const upsertScheduled = (item: ScheduledTransaction) => finance.updateDurably((current) => {
     const items = current.state.scheduled ?? [];
     const exists = items.some((existing) => existing.id === item.id);
     return { ...current, state: { ...current.state, scheduled: exists ? items.map((existing) => existing.id === item.id ? item : existing) : [...items, item] } };
   });
-  const completeScheduled = (item: ScheduledTransaction, event: FinanceEvent) => finance.update((current) => {
+  const completeScheduled = (item: ScheduledTransaction, event: FinanceEvent) => finance.updateDurably((current) => {
     const scheduled = current.state.scheduled ?? [];
     const events = current.state.events ?? [];
     const nextEvent=applyTransactionRules(current,event);
     return { ...current, state: { ...current.state, scheduled: [...scheduled.filter((existing) => existing.id !== item.id), item], events: [...events.filter((existing) => existing.id !== nextEvent.id), nextEvent] } };
   });
-  const upsertBudget=(budget:MonthlyBudget)=>finance.update(current=>{const rows=current.state.budgets??[];const exists=rows.some(item=>item.id===budget.id);return {...current,state:{...current.state,budgets:exists?rows.map(item=>item.id===budget.id?budget:item):[...rows,budget]}}});
-  const deleteBudget=(id:string)=>finance.update(current=>({...current,state:{...current.state,budgets:(current.state.budgets??[]).filter(item=>item.id!==id)}}));
-  const updateSavingsTarget=(rate:number)=>finance.update(current=>({...current,state:{...current.state,settings:{...current.state.settings,savingsTargetRate:rate}}}));
-  const upsertSavingsGoal=(goal:SavingsGoal)=>finance.update(current=>{const rows=current.state.savingsGoals??[];const exists=rows.some(item=>item.id===goal.id);return {...current,state:{...current.state,savingsGoals:exists?rows.map(item=>item.id===goal.id?goal:item):[...rows,goal]}}});
-  const deleteSavingsGoal=(id:string)=>finance.update(current=>({...current,state:{...current.state,savingsGoals:(current.state.savingsGoals??[]).filter(item=>item.id!==id)}}));
-  const upsertRule=(rule:TransactionRule)=>finance.update(current=>{const rows=current.state.transactionRules??[];const exists=rows.some(item=>item.id===rule.id);return {...current,state:{...current.state,transactionRules:exists?rows.map(item=>item.id===rule.id?rule:item):[...rows,rule]}}});
-  const deleteRule=(id:string)=>finance.update(current=>({...current,state:{...current.state,transactionRules:(current.state.transactionRules??[]).filter(item=>item.id!==id)}}));
+  const upsertBudget=(budget:MonthlyBudget)=>finance.updateDurably(current=>{const rows=current.state.budgets??[];const exists=rows.some(item=>item.id===budget.id);return {...current,state:{...current.state,budgets:exists?rows.map(item=>item.id===budget.id?budget:item):[...rows,budget]}}});
+  const deleteBudget=(id:string)=>finance.updateDurably(current=>({...current,state:{...current.state,budgets:(current.state.budgets??[]).filter(item=>item.id!==id)}}));
+  const updateSavingsTarget=(rate:number)=>finance.updateDurably(current=>({...current,state:{...current.state,settings:{...current.state.settings,savingsTargetRate:rate}}}));
+  const upsertSavingsGoal=(goal:SavingsGoal)=>finance.updateDurably(current=>{const rows=current.state.savingsGoals??[];const exists=rows.some(item=>item.id===goal.id);return {...current,state:{...current.state,savingsGoals:exists?rows.map(item=>item.id===goal.id?goal:item):[...rows,goal]}}});
+  const deleteSavingsGoal=(id:string)=>finance.updateDurably(current=>({...current,state:{...current.state,savingsGoals:(current.state.savingsGoals??[]).filter(item=>item.id!==id)}}));
   const updateTaxonomy=async(operation:TaxonomyOperation)=>{
     const {applyTaxonomyOperation}=await import('./lib/taxonomyManagement');
     finance.update(current=>applyTaxonomyOperation(current,operation,today));
@@ -228,20 +290,54 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
     if (item.action === 'collect_lending' && item.person) { openSpecial({ mode: 'lending', action: 'repay', person: item.person, amount: item.amount, accountId: data.state.settings.defaultIncomeAccount }); return; }
     if (item.action === 'complete_scheduled' && item.scheduledId) { openSpecial({ mode: 'scheduled', scheduledId: item.scheduledId }); return; }
     if (item.action === 'open_forecast') { navigate('planning'); return; }
-    if (item.action === 'open_budgets') { navigate('reports'); return; }
+    if (item.action === 'open_budgets') { navigate('reports');const url=new URL(location.href);url.searchParams.set('reportSection','budgets');history.replaceState(history.state,'',url.toString());return; }
   };
 
   const handleCommand=(row:RankedCommandSearchItem)=>{
     setCommandOpen(false);const action=row.action;
     if(action.type==='navigate'){navigate(action.page);return}
+    if(action.type==='account_focus'){setCommandAccountId(action.accountId);setCommandAccountKey(key=>key+1);navigateSettingsTab('accounts');return}
+    if(action.type==='debit_card_focus'){setCommandDebitCardId(action.cardId);setCommandDebitCardKey(key=>key+1);navigate('cards');return}
+    if(action.type==='credit_card_focus'){
+      setCommandCardId(action.cardId);setCommandCardKey(key=>key+1);navigate('credit');return;
+    }
+    if(action.type==='loan_focus'){
+      setCommandLoanId(action.loanId);setCommandLoanKey(key=>key+1);navigate('loans');return;
+    }
+    if(action.type==='lending_person_focus'){
+      setCommandLendingPerson(action.person);setCommandLendingKey(key=>key+1);navigate('lending');return;
+    }
+    if(action.type==='recurring_focus'){setCommandRecurringId(action.recurringId);setCommandRecurringKey(key=>key+1);navigate('recurring');return}
+    if(action.type==='transaction_focus'){
+      setCommandFocusKey(key=>key+1);
+      setMonth(action.date.slice(0,7));setMonthIsManual(true);
+      const url=new URL(location.href);
+      url.searchParams.delete('reportSection');
+      url.searchParams.set('commandTx',action.id);
+      url.searchParams.set('commandSource',action.source);
+      url.searchParams.set('commandMonth',action.date.slice(0,7));
+      history.replaceState(history.state,'',url.toString());
+      navigate('transactions');return;
+    }
+    if(action.type==='budget_management'){
+      setMonth(action.month);setMonthIsManual(true);
+      if(page==='reports'){
+        const section=document.getElementById('report-budgets') as HTMLDetailsElement|null;
+        if(section){section.open=true;section.scrollIntoView({block:'start',behavior:'auto'});section.querySelector<HTMLElement>('summary')?.focus({preventScroll:true})}
+      }else{
+        const url=new URL(location.href);url.searchParams.set('reportSection','budgets');history.replaceState(history.state,'',url.toString());navigate('reports');
+      }
+      return;
+    }
     if(action.type==='quick_add'){
-      if(action.accountId){const account=allAccounts(data).find(item=>item.id===action.accountId);if(account?.kind==='savings'){openSpecial({mode:'savings',toAccountId:action.accountId,savingSource:'manual_transfer'});return}openGeneric(action.kind,{note:'',amount:0,accountId:action.accountId});return}
+      if(action.accountId){const account=allAccounts(data).find(item=>item.id===action.accountId);if(account&&isSavingsAccount(account)){openSpecial({mode:'savings',toAccountId:action.accountId,savingSource:'manual_transfer'});return}openGeneric(action.kind,{note:'',amount:0,accountId:action.accountId});return}
       openGeneric(action.kind);return;
     }
     if(action.type==='credit_payment'){openSpecial({mode:'credit',action:'payment',cardId:action.cardId});return}
     if(action.type==='loan_payment'){openSpecial({mode:'loan',loanId:action.loanId,accountId:action.accountId});return}
     if(action.type==='lending_repayment'){openSpecial({mode:'lending',action:'repay',person:action.person,accountId:action.accountId??data.state.settings.defaultIncomeAccount});return}
     if(action.type==='recurring_payment'){openSpecial({mode:'recurring',recurringId:action.recurringId,accountId:action.accountId});return}
+    if(action.type==='scheduled_focus'){setCommandScheduledId(action.scheduledId);setCommandScheduledKey(key=>key+1);navigate('planning');return}
     if(action.type==='scheduled_complete'){openSpecial({mode:'scheduled',scheduledId:action.scheduledId});}
   };
 
@@ -254,26 +350,26 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
 
   const content = page === 'dashboard'
     ? <DashboardPage data={data} month={month} asOf={today} motionMode="full" privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onQuickAdd={(prefill?: QuickPrefill) => openGeneric('expense', prefill || null)} onAccountQuickAdd={(accountId, kind) => kind === 'savings' ? openSpecial({ mode: 'savings', toAccountId: accountId, savingSource: 'manual_transfer' }) : openGeneric('expense', { note: '', amount: 0, accountId })} onTransactions={() => navigate('transactions')} onPlanning={() => navigate('planning')} onAttention={() => navigate('attention')} onReports={()=>navigate('reports')}/>
-    : page === 'transactions' ? <TransactionsPage data={data} month={month} onEditEvent={editEvent} onDeleteEvent={deleteEvent} onEditLegacy={editLegacy} onDeleteLegacy={deleteLegacy}/>
-    : page === 'savings' ? <SavingsPage data={data} month={month} asOf={today} onCreate={addEvent} onQuickAdd={openSpecial} onSavingsTargetChange={updateSavingsTarget} onUpsertGoal={upsertSavingsGoal} onDeleteGoal={deleteSavingsGoal}/>
-    : page === 'cards' ? <CardsPage data={data} onUpsertBank={upsertBank} onUpsertCard={upsertCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard}/>
-    : page === 'credit' ? <CreditCardPage data={data} asOf={today} onCreateEvent={addEvent} onEditEvent={editEvent} onDeleteEvent={deleteEvent} onUpsertCard={upsertCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard} onPayCard={(cardId,statementId)=>openSpecial({mode:'credit',action:'payment',cardId,statementId})}/>
-    : page === 'loans' ? <LoansPage data={data} asOf={today} onUpsertLoan={upsertLoan} onCreateSelfLoan={createSelfLoan} onPayLoan={(loanId)=>openSpecial({mode:'loan',loanId})}/>
-    : page === 'lending' ? <LendingPage data={data} asOf={today} privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onCreateEvent={addEvent} onQuickAdd={openSpecial}/>
-    : page === 'recurring' ? <RecurringPage data={data} asOf={today} onUpsert={upsertRecurring} onOpenLoans={() => navigate('loans')} onPayLoan={(loanId)=>openSpecial({mode:'loan',loanId})} onPayRecurring={(recurringId)=>openSpecial({mode:'recurring',recurringId})}/>
-    : page === 'planning' ? <PlanningPage data={data} asOf={today} onUpsertScheduled={upsertScheduled} onCompleteScheduled={completeScheduled}/>
+    : page === 'transactions' ? <TransactionsPage data={data} month={month} commandFocusKey={commandFocusKey} onEditEvent={editEvent} onDeleteEvent={deleteEventDurably} onEditLegacy={editLegacy} onDeleteLegacy={deleteLegacy}/>
+    : page === 'savings' ? <SavingsPage data={data} month={month} asOf={today} onCreate={addEventDurably} onQuickAdd={openSpecial} onSavingsTargetChange={updateSavingsTarget} onUpsertGoal={upsertSavingsGoal} onDeleteGoal={deleteSavingsGoal}/>
+    : page === 'cards' ? <CardsPage data={data} commandCardId={commandDebitCardId} commandCardKey={commandDebitCardKey} onUpsertBank={upsertBank} onUpsertCard={upsertCard} onUpsertCardDurably={upsertCardDurably} onStageNewCard={stageNewCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard}/>
+    : page === 'credit' ? <CreditCardPage data={data} asOf={today} commandCardId={commandCardId} commandCardKey={commandCardKey} onCreateEvent={addEvent} onEditEvent={editEvent} onDeleteEvent={deleteEvent} onUpsertCard={upsertCard} onUpsertCardDurably={upsertCardDurably} onStageNewCard={stageNewCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard} onPayCard={(cardId,statementId)=>openSpecial({mode:'credit',action:'payment',cardId,statementId})}/>
+    : page === 'loans' ? <LoansPage data={data} asOf={today} commandLoanId={commandLoanId} commandLoanKey={commandLoanKey} onUpsertLoan={upsertLoan} onCreateSelfLoan={createSelfLoan} onPayLoan={(loanId)=>openSpecial({mode:'loan',loanId})}/>
+    : page === 'lending' ? <LendingPage data={data} asOf={today} commandPerson={commandLendingPerson} commandPersonKey={commandLendingKey} privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onCreateEvent={addEvent} onQuickAdd={openSpecial}/>
+    : page === 'recurring' ? <RecurringPage data={data} asOf={today} commandRecurringId={commandRecurringId} commandRecurringKey={commandRecurringKey} onUpsert={upsertRecurring} onUpsertDurably={upsertRecurringDurably} onOpenLoans={() => navigate('loans')} onPayLoan={(loanId)=>openSpecial({mode:'loan',loanId})} onPayRecurring={(recurringId)=>openSpecial({mode:'recurring',recurringId})}/>
+    : page === 'planning' ? <PlanningPage data={data} asOf={today} commandScheduledId={commandScheduledId} commandScheduledKey={commandScheduledKey} onUpsertScheduled={upsertScheduled} onCompleteScheduled={completeScheduled}/>
     : page === 'attention' ? <AttentionPage data={data} asOf={today} onAction={handleAttention} onDecision={decideAttention} onReviewDecision={decide}/>
-    : page === 'reports' ? <ReportsPage data={data} month={month} privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onUpsertBudget={upsertBudget} onDeleteBudget={deleteBudget} onUpsertRule={upsertRule} onDeleteRule={deleteRule}/>
-    : <SettingsPage data={data} asOf={today} filePath={finance.filePath} lastSavedAt={finance.lastSavedAt} activeTab={settingsTab} onActiveTabChange={navigateSettingsTab} onImport={finance.importData} onBackup={finance.createBackup} onSettings={(settings) => finance.update((current) => ({ ...current, state: { ...current.state, settings } }))} onTaxonomyOperation={updateTaxonomy} onUpsertRule={upsertRule} onDeleteRule={deleteRule}/>;
+    : page === 'reports' ? <ReportsPage data={data} month={month} asOf={today} privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onUpsertBudget={upsertBudget} onDeleteBudget={deleteBudget}/>
+    : <SettingsPage data={data} asOf={today} accountFocusId={commandAccountId} accountFocusKey={commandAccountKey} filePath={finance.filePath} lastSavedAt={finance.lastSavedAt} activeTab={settingsTab} onActiveTabChange={navigateSettingsTab} onImport={finance.importData} onBackup={finance.createBackup} onSettings={(settings) => finance.update((current) => ({ ...current, state: { ...current.state, settings } }))} onFinanceDurably={finance.updateDurably} onTaxonomyOperation={updateTaxonomy}/>;
 
   return <>
     <AppShell page={page} onPage={navigate} onQuickAdd={() => openGeneric('expense')} onCommand={openCommand} onRefresh={() => { void finance.reload(); }} onUndo={() => { finance.undo(); }} onRedo={() => { finance.redo(); }} canUndo={finance.canUndo} canRedo={finance.canRedo} history={finance.changeHistory} saveState={finance.saveState} filePath={finance.filePath} motionMode="full" userEmail={userEmail} onLogout={onLogout}>
-      <PersistenceNotice saveState={finance.saveState} errorMessage={finance.saveErrorMessage} onRecover={recover}/>
+      <PersistenceNotice saveState={finance.saveState} errorMessage={finance.saveErrorMessage} onRecover={recover} cleanupPending={pendingCleanup.length} cleanupBusy={cleanupBusy} cleanupError={cleanupFailure} onRetryCleanup={retryCardCleanup}/>
       {PERIOD_PAGES.has(page) ? <div className="period-row"><PeriodControl month={month} onChange={(next) => { setMonth(next); setMonthIsManual(true); }}/><span>Στοιχεία περιόδου</span></div> : null}
       {finance.saveState === 'loading' ? <PageSkeleton/> : <PageErrorBoundary resetKey={page} onDashboard={() => navigate('dashboard')}><Suspense fallback={<PageLoading/>}>{content}</Suspense></PageErrorBoundary>}
     </AppShell>
-    {commandOpen ? <Suspense fallback={null}><CommandPalette open={commandOpen} data={data} motionMode="full" onClose={()=>setCommandOpen(false)} onExecute={handleCommand}/></Suspense> : null}
-    {quickOpen ? <Suspense fallback={null}><ContextualQuickAdd open={quickOpen} data={data} asOf={today} context={quickContext} motionMode="full" initial={(data.state.events ?? []).find((event) => event.id === editingEventId) || null} onClose={() => { setQuickOpen(false); setEditingEventId(null); setQuickContext(null); }} onCreate={addEvent} onCompleteScheduled={completeScheduled} currentBalance={balance}/></Suspense> : null}
+    {commandOpen ? <Suspense fallback={null}><CommandPalette open={commandOpen} data={data} asOf={today} motionMode="full" onClose={()=>setCommandOpen(false)} onExecute={handleCommand}/></Suspense> : null}
+    {quickOpen ? <Suspense fallback={null}><ContextualQuickAdd open={quickOpen} data={data} asOf={today} context={quickContext} motionMode="full" initial={(data.state.events ?? []).find((event) => event.id === editingEventId) || null} onClose={() => { setQuickOpen(false); setEditingEventId(null); setQuickContext(null); }} onCreate={addEventDurably} onCompleteScheduled={completeScheduled} currentBalance={balance}/></Suspense> : null}
     {recoverOpen ? <Suspense fallback={null}><ConfirmDialog open title="Φόρτωση τελευταίας αποθηκευμένης έκδοσης;" description="Η επαναφόρτωση θα απορρίψει τυχόν τοπικές αλλαγές που δεν αποθηκεύτηκαν και θα φορτώσει την τελευταία έκδοση από τη βάση." confirmLabel="Επαναφόρτωση" tone="destructive" motionMode="full" onConfirm={confirmRecover} onCancel={()=>setRecoverOpen(false)}/></Suspense> : null}
   </>;
 }

@@ -183,17 +183,18 @@ export function useFinance() {
     };
   }, [coordinator, reload,setCurrentSaveState]);
 
-  const persist = useCallback((next: FinanceData,label:string) => {
+  const persist = useCallback((next: FinanceData,label:string,requireReceipt=false) => {
     const stamped = { ...next, app: 'RheomIQ', schemaVersion: 3, updatedAt: new Date().toISOString() };
     assignData(stamped);
     setSaveErrorMessage(null);
     setCurrentSaveState('saving');
-    coordinator.enqueue({data:stamped,label});
+    const mutation={data:stamped,label};
+    const receipt=requireReceipt?coordinator.enqueueWithReceipt(mutation):(coordinator.enqueue(mutation),null);
     const idle=coordinator.whenIdle();
     void idle.then(()=>{
       if(!lastSaveFailed.current&&!exclusiveOperation.current&&historyAvailableRef.current)setCurrentSaveState('saved');
     });
-    return stamped;
+    return receipt;
   }, [assignData, coordinator,setCurrentSaveState]);
 
   const update = useCallback((recipe: (current: FinanceData) => FinanceData) => {
@@ -204,6 +205,18 @@ export function useFinance() {
     if (next === current) return;
     persist(next,financeChangeLabel(current,next));
   }, [persist]);
+
+  // Only use this for actions that require confirmed, exact-mutation durability
+  // before externally visible asset deletion or other non-finance side effects.
+  const updateDurably=useCallback(async(recipe:(current:FinanceData)=>FinanceData):Promise<void>=>{
+    const current=dataRef.current;
+    const state=saveStateRef.current;
+    if(!current||!historyAvailableRef.current||state==='conflict'||state==='error'||state==='loading'||exclusiveOperation.current){
+      throw new Error('Επαναφόρτωσε πριν αποθηκεύσεις.');
+    }
+    const next=recipe(current);
+    if(next!==current)await persist(next,financeChangeLabel(current,next),true)!;
+  },[persist]);
 
   const move=useCallback(async(direction:'undo'|'redo')=>{
     const current=dataRef.current;
@@ -270,5 +283,5 @@ export function useFinance() {
   const canUndo = historyAvailable && undoDepth > 0 && saveState === 'saved' && !coordinator.hasWork();
   const canRedo = historyAvailable && redoDepth > 0 && saveState === 'saved' && !coordinator.hasWork();
 
-  return useMemo(() => ({ data, revision, filePath, lastSavedAt, saveState, saveErrorMessage, update, reload, undo, redo, canUndo, canRedo, undoDepth, redoDepth, changeHistory, historyAvailable, importData: doImport, createBackup: doBackup }), [data, revision, filePath, lastSavedAt, saveState, saveErrorMessage, update, reload, undo, redo, canUndo, canRedo, undoDepth, redoDepth, changeHistory, historyAvailable, doImport, doBackup]);
+  return useMemo(() => ({ data, revision, filePath, lastSavedAt, saveState, saveErrorMessage, update, updateDurably, reload, undo, redo, canUndo, canRedo, undoDepth, redoDepth, changeHistory, historyAvailable, importData: doImport, createBackup: doBackup }), [data, revision, filePath, lastSavedAt, saveState, saveErrorMessage, update, updateDurably, reload, undo, redo, canUndo, canRedo, undoDepth, redoDepth, changeHistory, historyAvailable, doImport, doBackup]);
 }

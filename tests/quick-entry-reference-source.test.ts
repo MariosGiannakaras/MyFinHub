@@ -9,6 +9,24 @@ const runner=readFileSync('scripts/run-rendered-qa.mjs','utf8');
 const rendered=readFileSync('scripts/quick-entry-reference-qa.mjs','utf8');
 describe('Quick Entry owner-reference contract',()=>{
   it('keeps the production flow on shared React controls',()=>{for(const p of ['MoneyInput','AppTextInput','AppSelectInput','AppDateInput','CategorySelectInput','DialogShell'])expect(quick).toContain(p);expect(quick).not.toMatch(/<select\b/);expect(quick).not.toMatch(/<input\b[^>]*type=["']date["']/);expect(quick).toContain('className="generic-quick-modal"');expect(quick).toContain('className="quick-field"');expect(quick).toContain('data-filled=');expect(quick).toContain('--quick-intent-bg')});
+  it('awaits exact finance receipts and preserves scanned receipt drafts on rejected writes',()=>{
+    const app=readFileSync('src/App.tsx','utf8');
+    const contextual=readFileSync('src/components/ContextualQuickAdd.tsx','utf8');
+    const qa=readFileSync('src/qa.tsx','utf8');
+    const negative=readFileSync('scripts/budget-rules-qa.mjs','utf8');
+    expect(app).toContain('onCreate={addEventDurably}');
+    expect(app).toContain('const addEventDurably=(event:FinanceEvent)=>finance.updateDurably');
+    expect(quick).toContain('await onCreate(event)');
+    expect(quick).toContain('busy={saving}');
+    expect(quick).toContain('inert={saving}');
+    expect(contextual).toContain('await onCreate(event)');
+    expect(contextual).toContain('busy={saving}');
+    expect(receiptAware).toContain('await onCreate(event)');
+    expect(receiptAware.indexOf('await onCreate(event)')).toBeLessThan(receiptAware.indexOf('void deleteReceiptDraft(handledId)'));
+    expect(qa).toContain("params.get('quick-event-save-failure')==='1'");
+    expect(negative).toContain('quick-entry-finance-receipt-failure-mobile');
+    expect(negative).toContain('quick-entry-finance-receipt-pending-desktop');
+  });
   it('keeps frequent actions transient rather than selected controls',()=>{const frequent=quick.slice(quick.indexOf("kind==='expense'?<div className=\"frequent-strip\""),quick.indexOf('<div className="form-grid">'));expect(frequent).toContain('onClick=');expect(frequent).not.toContain('aria-pressed');expect(css).toContain('.frequent-strip button:active');expect(css).toContain('.frequent-strip>span{display:none}');expect(rendered).toContain('does not retain selection state')});
   it('matches owner desktop/tablet composition and floating-field grammar',()=>{expect(css).toContain('width:min(1020px,calc(100vw - 40px))');expect(css).toContain('grid-template-columns:repeat(4,minmax(0,1fr))');expect(css).toContain('grid-template-columns:repeat(6,minmax(0,1fr))');expect(css).toContain('grid-template-columns:repeat(3,minmax(0,1fr))');expect(css).toContain('grid-template-columns:repeat(2,minmax(0,1fr))');expect(css).toContain('.quick-field[data-filled="true"]:not(:focus-within)>span:first-child');expect(css).toContain('padding:15px 39px 4px 11px!important')});
   it('keeps receipt action semantic and footer-owned',()=>{expect(receiptAware).toContain('<small>Σάρωση & αυτόματη συμπλήρωση</small>');expect(receipt).toContain('min-width:280px;min-height:46px');expect(receipt).toContain('.quick-modal>footer .receipt-quick-launch{position:static')});

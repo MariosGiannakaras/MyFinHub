@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 
 const page=readFileSync(new URL('../src/pages/LoansPage.tsx',import.meta.url),'utf8');
 const css=readFileSync(new URL('../src/styles/loans-approved-target.css',import.meta.url),'utf8');
+const rendered=readFileSync(new URL('../scripts/loans-remediation-qa.mjs',import.meta.url),'utf8');
+const qa=readFileSync(new URL('../src/qa.tsx',import.meta.url),'utf8');
 
 describe('Loans post-v1.4 remediation contracts',()=>{
   it('uses proportional capped progress rather than comparing visual index directly with paid installments',()=>{
@@ -13,6 +15,13 @@ describe('Loans post-v1.4 remediation contracts',()=>{
     expect(page).not.toContain("className={index<paid?'paid':''}");
   });
 
+  it('renders a future linked installment without changing the current paid count',()=>{
+    expect(qa).toContain("params.get('state')==='loans-future'");
+    expect(qa).toContain("date:'2026-08-29'");
+    expect(rendered).toContain("await navigate('loans-future')");
+    expect(rendered).toContain('future loan installment must not change current paid count');
+    expect(rendered).toContain('loans-future-installment-ignored');
+  });
   it('bounds the internal desktop reading measure without recompressing loan cards',()=>{
     expect(css.match(/width:min\(100%,1320px\)/g)?.length).toBeGreaterThanOrEqual(4);
     expect(css).toContain('min-height:208px');

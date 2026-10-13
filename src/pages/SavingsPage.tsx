@@ -1,5 +1,5 @@
 import { ArrowRight, BanknoteArrowDown, Pencil, PiggyBank, Plus, Repeat2, Sparkles, Wallet, X } from 'lucide-react';
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { AnimatedAmount } from '../components/AnimatedAmount';
 import { AppDateInput } from '../components/AppDateInput';
 import { AppSelectInput } from '../components/AppSelectInput';
@@ -14,11 +14,12 @@ import type { QuickActionContext } from '../components/ContextualQuickAdd';
 import { useModalFocus } from '../hooks/useModalFocus';
 import { accountBalances, createEvent } from '../lib/domain';
 import { calendarMonthRange, dateOnlyToUtcDate, monthOnlyToUtcDate } from '../lib/dateOnly';
-import { financeAccountChoices } from '../lib/accountSelection';
+import { financeAccountChoices, isSavingsAccount, isSavingContributionSource } from '../lib/accountSelection';
+import { defaultSavingContributionPair, savingContributionDraftError } from '../lib/ledgerFoundations';
 import { money, shortDate } from '../lib/format';
 import { SAVING_SOURCE_LABELS, operationalMonthlyFlow, savingsBreakdown, savingsHistoryPresentation } from '../lib/savings';
 import { reportingPeriodEndDate } from '../lib/reportingPeriod';
-import { savingsGoalBalance, savingsGoalProgress } from '../lib/savingsGoals';
+import { savingsGoalBalance, savingsGoalProgress, validSavingsGoalDeadline } from '../lib/savingsGoals';
 import { accountDisplayName, ratioPercent } from '../lib/ui';
 import { userErrorMessage } from '../lib/userMessage';
 import type { FinanceData, FinanceEvent, SavingSource, SavingsGoal } from '../types';
@@ -34,19 +35,18 @@ const euroCompact=new Intl.NumberFormat('el-GR',{style:'currency',currency:'EUR'
 
 type SavingsQuickContext=Omit<Extract<QuickActionContext,{mode:'savings'}>,'token'>;
 
-export function SavingsPage({data,month,asOf,onCreate,onQuickAdd,onSavingsTargetChange,onUpsertGoal,onDeleteGoal}:{data:FinanceData;month:string;asOf:string;onCreate:(event:FinanceEvent)=>void;onQuickAdd?:(context:SavingsQuickContext)=>void;onSavingsTargetChange:(rate:number)=>void;onUpsertGoal:(goal:SavingsGoal)=>void;onDeleteGoal:(id:string)=>void}){
+export function SavingsPage({data,month,asOf,onCreate,onQuickAdd,onSavingsTargetChange,onUpsertGoal,onDeleteGoal}:{data:FinanceData;month:string;asOf:string;onCreate:(event:FinanceEvent)=>Promise<void>;onQuickAdd?:(context:SavingsQuickContext)=>void;onSavingsTargetChange:(rate:number)=>Promise<void>;onUpsertGoal:(goal:SavingsGoal)=>Promise<void>;onDeleteGoal:(id:string)=>Promise<void>}){
   const periodEndDate=reportingPeriodEndDate(month,asOf);
   const balances=accountBalances(data,periodEndDate);
-  const flow=operationalMonthlyFlow(data,month);
-  const breakdown=savingsBreakdown(data,month);
+  const flow=operationalMonthlyFlow(data,month,asOf);
+  const breakdown=savingsBreakdown(data,month,asOf);
   const target=data.state.settings.savingsTargetRate??.2;
   const rate=flow.income?flow.saving/flow.income:0;
   const progress=ratioPercent(rate,target);
   const accountChoices=financeAccountChoices(data);const accounts=accountChoices.accounts;
-  const savingsAccounts=accounts.filter(account=>account.kind==='savings'||(account.kind==='bank'&&account.bankAccountCategory==='savings'));
-  const savingsIds=new Set(savingsAccounts.map(account=>account.id));
-  const sourceAccounts=accounts.filter(account=>!savingsIds.has(account.id));
-  const defaultFrom=accountChoices.operating?.id??'';
+  const savingsAccounts=accounts.filter(isSavingsAccount);
+  const sourceAccounts=accounts.filter(isSavingContributionSource);
+  const defaultFrom=defaultSavingContributionPair(data).from;
   const defaultTo=accountChoices.dashboardSavings?.id??accountChoices.savings?.id??'';
   const sourceName=defaultFrom?accountDisplayName(data,defaultFrom):'Δεν έχει οριστεί';
   const savingsName=defaultTo?accountDisplayName(data,defaultTo):'Δεν έχει οριστεί';
@@ -83,30 +83,43 @@ export function SavingsPage({data,month,asOf,onCreate,onQuickAdd,onSavingsTarget
   const [to,setTo]=useState(defaultTo);
   const [note,setNote]=useState('');
   const [error,setError]=useState('');
+  const [entryBusy,setEntryBusy]=useState(false);
+  const entrySavingRef=useRef(false);
   const [targetEditing,setTargetEditing]=useState(false);
   const [targetText,setTargetText]=useState(String(Math.round(target*100)));
   const [targetError,setTargetError]=useState('');
+  const [targetBusy,setTargetBusy]=useState(false);
+  const targetSavingRef=useRef(false);
   const [goalEdit,setGoalEdit]=useState<SavingsGoal|null>(null);
   const [goalAmountText,setGoalAmountText]=useState('');
   const [goalError,setGoalError]=useState('');
+  const [goalBusy,setGoalBusy]=useState(false);
+  const goalSavingRef=useRef(false);
+  const [deleteGoalError,setDeleteGoalError]=useState('');
   const [deleteGoalTarget,setDeleteGoalTarget]=useState<SavingsGoal|null>(null);
   const [goalLimit,setGoalLimit]=useState(12);
-  const modalRef=useModalFocus<HTMLElement>(open,'[data-autofocus="true"]',()=>setOpen(false));
-  const goalModalRef=useModalFocus<HTMLElement>(Boolean(goalEdit),'[data-goal-autofocus="true"]',()=>setGoalEdit(null));
+  const modalRef=useModalFocus<HTMLElement>(open,'[data-autofocus="true"]',()=>{if(!entrySavingRef.current)setOpen(false)});
+  const goalModalRef=useModalFocus<HTMLElement>(Boolean(goalEdit),'[data-goal-autofocus="true"]',()=>{if(!goalSavingRef.current)setGoalEdit(null)});
 
   useEffect(()=>{if(!targetEditing)setTargetText(String(Math.round(target*100)))},[target,targetEditing]);
 
   const startTargetEdit=()=>{setTargetText(String(Math.round(target*100)));setTargetError('');setTargetEditing(true)};
-  const cancelTargetEdit=()=>{setTargetText(String(Math.round(target*100)));setTargetError('');setTargetEditing(false)};
-  const saveTarget=()=>{
+  const cancelTargetEdit=()=>{if(targetSavingRef.current)return;setTargetText(String(Math.round(target*100)));setTargetError('');setTargetEditing(false)};
+  const saveTarget=async()=>{
+    if(targetSavingRef.current)return;
     const numeric=Number(targetText.replace(',','.'));
     if(!Number.isFinite(numeric)||numeric<0||numeric>100){setTargetError('Βάλε ποσοστό από 0 έως 100.');return}
-    onSavingsTargetChange(numeric/100);setTargetError('');setTargetEditing(false);
+    targetSavingRef.current=true;setTargetBusy(true);setTargetError('');
+    try{
+      await onSavingsTargetChange(numeric/100);
+      setTargetEditing(false);
+    }catch(error){setTargetError(userErrorMessage(error,'Δεν μπορέσαμε να αποθηκεύσουμε τον στόχο αποταμίευσης. Δοκίμασε ξανά.'))}
+    finally{targetSavingRef.current=false;setTargetBusy(false)}
   };
   const renderTargetEditor=(surface:'desktop'|'mobile')=>targetEditing?<div className="settings-form savings-target-editor" data-savings-target-editor={surface}>
-    <label><span>Στόχος αποταμίευσης %</span><AppTextInput inputMode="decimal" value={targetText} onChange={event=>setTargetText(event.target.value)} aria-invalid={Boolean(targetError)} /></label>
+    <label><span>Στόχος αποταμίευσης %</span><AppTextInput disabled={targetBusy} inputMode="decimal" value={targetText} onChange={event=>setTargetText(event.target.value)} aria-invalid={Boolean(targetError)} /></label>
     {targetError?<FormError id={`savings-target-error-${surface}`}>{targetError}</FormError>:null}
-    <div className="editor-actions"><Button type="button" variant="secondary" onClick={cancelTargetEdit}>Ακύρωση</Button><Button type="button" variant="primary" onClick={saveTarget}>Αποθήκευση στόχου</Button></div>
+    <div className="editor-actions"><Button type="button" variant="secondary" disabled={targetBusy} onClick={cancelTargetEdit}>Ακύρωση</Button><Button type="button" variant="primary" disabled={targetBusy} onClick={()=>void saveTarget()}>{targetBusy?'Αποθήκευση…':'Αποθήκευση στόχου'}</Button></div>
   </div>:null;
 
   const startGoal=(goal?:SavingsGoal)=>{
@@ -116,24 +129,36 @@ export function SavingsPage({data,month,asOf,onCreate,onQuickAdd,onSavingsTarget
     setGoalAmountText(goal?String(goal.targetAmount):'');
     setGoalError('');
   };
-  const closeGoal=()=>{setGoalEdit(null);setGoalAmountText('');setGoalError('')};
-  const saveGoal=()=>{
-    if(!goalEdit)return;
+  const closeGoal=()=>{if(goalSavingRef.current)return;setGoalEdit(null);setGoalAmountText('');setGoalError('')};
+  const saveGoal=async()=>{
+    if(!goalEdit||goalSavingRef.current)return;
     const name=goalEdit.name.trim();
     const targetAmount=Number(goalAmountText.replace(',','.'));
     if(!name){setGoalError('Δώσε ένα όνομα στον στόχο.');return}
     if(!Number.isFinite(targetAmount)||targetAmount<=0){setGoalError('Ο στόχος ποσού πρέπει να είναι μεγαλύτερος από μηδέν.');return}
-    if(goalEdit.targetDate&&goalEdit.targetDate<asOf){setGoalError('Η προθεσμία δεν μπορεί να είναι πριν από σήμερα.');return}
-    onUpsertGoal({...goalEdit,name,targetAmount,targetDate:goalEdit.targetDate||null,updatedAt:new Date().toISOString()});
-    closeGoal();
+    const priorGoal=goals.find(goal=>goal.id===goalEdit.id);
+    if(!validSavingsGoalDeadline(goalEdit.targetDate,asOf,priorGoal?.targetDate)){setGoalError('Η νέα προθεσμία δεν μπορεί να είναι πριν από σήμερα.');return}
+    goalSavingRef.current=true;setGoalBusy(true);setGoalError('');
+    try{
+      await onUpsertGoal({...goalEdit,name,targetAmount,targetDate:goalEdit.targetDate||null,updatedAt:new Date().toISOString()});
+      setGoalEdit(null);setGoalAmountText('');
+    }catch(error){setGoalError(userErrorMessage(error,'Δεν μπορέσαμε να αποθηκεύσουμε τον προσωπικό στόχο. Δοκίμασε ξανά.'))}
+    finally{goalSavingRef.current=false;setGoalBusy(false)}
+  };
+  const confirmGoalDelete=async()=>{
+    if(!deleteGoalTarget||goalSavingRef.current)return;
+    goalSavingRef.current=true;setGoalBusy(true);setDeleteGoalError('');
+    try{await onDeleteGoal(deleteGoalTarget.id);setDeleteGoalTarget(null)}
+    catch(error){setDeleteGoalError(userErrorMessage(error,'Δεν μπορέσαμε να διαγράψουμε τον στόχο. Δοκίμασε ξανά.'))}
+    finally{goalSavingRef.current=false;setGoalBusy(false)}
   };
   const goalRows=goals.map(goal=>({goal,progress:savingsGoalProgress(goal,savingsBalance)}));
   const visibleGoalRows=goalRows.slice(0,goalLimit);
   const renderGoals=(surface:'desktop'|'mobile')=><section className={`panel surface-raised savings-goals savings-goals-${surface}`} aria-labelledby={`savings-goals-title-${surface}`}>
-    <div className="panel-head"><div><span id={`savings-goals-title-${surface}`}>Στόχοι αποταμίευσης</span><small>Όλοι οι προσωπικοί στόχοι συγκρίνονται με το ίδιο κοινό υπόλοιπο αποταμίευσης. Τα χρήματα δεν δεσμεύονται αποκλειστικά σε κάποιον στόχο.</small></div><Button type="button" variant="secondary" onClick={()=>startGoal()}><Plus size={15}/> Νέος στόχος</Button></div>
+    <div className="panel-head"><div><span id={`savings-goals-title-${surface}`}>Στόχοι αποταμίευσης</span><small>Όλοι οι προσωπικοί στόχοι συγκρίνονται με το ίδιο κοινό υπόλοιπο αποταμίευσης. Τα χρήματα δεν δεσμεύονται αποκλειστικά σε κάποιον στόχο.</small></div><Button type="button" variant="secondary" disabled={goalBusy} onClick={()=>startGoal()}><Plus size={15}/> Νέος στόχος</Button></div>
     <div className="savings-goals-head"><span>Στόχος</span><span>Πρόοδος</span><span>Κοινό υπόλοιπο</span><span>Στόχος</span><span>Προθεσμία</span></div>
     <div className="savings-goal-row supported"><div><span className="savings-goal-icon"><PiggyBank/></span><span><b>Μηνιαίος ρυθμός αποταμίευσης</b><small>{target>0?`${Math.round(target*100)}% των πραγματικών εσόδων`:'Δεν έχει οριστεί ποσοστιαίος στόχος'}</small></span></div><div className="savings-goal-progress"><span><i style={{width:`${goalProgress}%`}}/></span><b>{Math.round(goalProgress)}%</b></div><strong>{money.format(flow.saving)}</strong><strong>{targetTotal>0?money.format(targetTotal):'—'}</strong><span>{goalDeadline}</span></div>
-    {goalRows.length?visibleGoalRows.map(({goal,progress:personalProgress})=><div className="savings-goal-row personal" key={goal.id}><div><span className="savings-goal-icon"><PiggyBank/></span><span><b>{goal.name}</b><small><Button type="button" variant="ghost" className="savings-goal-inline-action" onClick={()=>startGoal(goal)}>Επεξεργασία</Button><Button type="button" variant="ghost" className="savings-goal-inline-action danger" onClick={()=>setDeleteGoalTarget(goal)}>Διαγραφή</Button></small></span></div><div className="savings-goal-progress"><span><i style={{width:`${personalProgress}%`}}/></span><b>{Math.round(personalProgress)}%</b></div><strong>{money.format(savingsBalance)}</strong><strong>{money.format(goal.targetAmount)}</strong><span>{goal.targetDate?shortDate(goal.targetDate):'Χωρίς προθεσμία'}</span></div>):<div className="empty-state savings-goals-empty"><b>Δεν έχεις προσωπικό στόχο</b><span>Το κοινό υπόλοιπο αποταμίευσης είναι {money.format(savingsBalance)} και δεν ανήκει σε κάποιον στόχο. Πρόσθεσε στόχο ποσού μόνο αν θέλεις να παρακολουθείς την πρόοδό σου.</span></div>}{goalRows.length>visibleGoalRows.length?<Button type="button" variant="secondary" className="savings-goals-more" onClick={()=>setGoalLimit(limit=>limit+12)}>Προβολή περισσότερων · {goalRows.length-visibleGoalRows.length} ακόμη</Button>:null}
+    {goalRows.length?visibleGoalRows.map(({goal,progress:personalProgress})=><div className="savings-goal-row personal" key={goal.id}><div><span className="savings-goal-icon"><PiggyBank/></span><span><b>{goal.name}</b><small><Button type="button" variant="ghost" className="savings-goal-inline-action" disabled={goalBusy} onClick={()=>startGoal(goal)}>Επεξεργασία</Button><Button type="button" variant="ghost" className="savings-goal-inline-action danger" disabled={goalBusy} onClick={()=>{setDeleteGoalError('');setDeleteGoalTarget(goal)}}>Διαγραφή</Button></small></span></div><div className="savings-goal-progress"><span><i style={{width:`${personalProgress}%`}}/></span><b>{Math.round(personalProgress)}%</b></div><strong>{money.format(savingsBalance)}</strong><strong>{money.format(goal.targetAmount)}</strong><span>{goal.targetDate?shortDate(goal.targetDate):'Χωρίς προθεσμία'}</span></div>):<div className="empty-state savings-goals-empty"><b>Δεν έχεις προσωπικό στόχο</b><span>Το κοινό υπόλοιπο αποταμίευσης είναι {money.format(savingsBalance)} και δεν ανήκει σε κάποιον στόχο. Πρόσθεσε στόχο ποσού μόνο αν θέλεις να παρακολουθείς την πρόοδό σου.</span></div>}{goalRows.length>visibleGoalRows.length?<Button type="button" variant="secondary" className="savings-goals-more" disabled={goalBusy} onClick={()=>setGoalLimit(limit=>limit+12)}>Προβολή περισσότερων · {goalRows.length-visibleGoalRows.length} ακόμη</Button>:null}
   </section>;
 
   const start=(next:SavingSource)=>{
@@ -150,19 +175,24 @@ export function SavingsPage({data,month,asOf,onCreate,onQuickAdd,onSavingsTarget
     setError('');
     setOpen(true);
   };
-  const close=()=>{setOpen(false);setError('')};
-  const submit=()=>{
+  const close=()=>{if(entrySavingRef.current)return;setOpen(false);setError('')};
+  const submit=async()=>{
+    if(entrySavingRef.current)return;
     const numeric=Number(amount.replace(',','.'));
     if(!Number.isFinite(numeric)||numeric<=0){setError('Έλεγξε το ποσό αποταμίευσης — πρέπει να είναι μεγαλύτερο από μηδέν.');return}
     if(!sourceAccounts.some(account=>account.id===from)){setError(sourceAccounts.length?'Ο λογαριασμός προέλευσης δεν είναι πλέον διαθέσιμος. Επίλεξε έναν από τους διαθέσιμους λογαριασμούς.':'Δεν υπάρχει διαθέσιμος λογαριασμός προέλευσης για αυτή την αποταμίευση.');return}
     if(!savingsAccounts.some(account=>account.id===to)){setError(savingsAccounts.length?'Ο λογαριασμός αποταμίευσης δεν είναι πλέον διαθέσιμος. Επίλεξε έναν από τους διαθέσιμους αποταμιευτικούς λογαριασμούς.':'Δεν υπάρχει διαθέσιμος λογαριασμός αποταμίευσης. Πρόσθεσε ή ενεργοποίησε έναν και δοκίμασε ξανά.');return}
     if(from===to){setError('Επίλεξε διαφορετικό λογαριασμό προέλευσης και αποταμίευσης.');return}
+    const savingError=savingContributionDraftError(data,{fromAccountId:from,toAccountId:to,amount:numeric});
+    if(savingError){setError(savingError);return}
     try{
       const event=createEvent({kind:'saving_cash_offset',date,amount:numeric,note:note.trim()||SAVING_SOURCE_LABELS[source],fromAccountId:from,toAccountId:to});
       event.savingSource=source;
-      onCreate(event);
-      close();
+      entrySavingRef.current=true;setEntryBusy(true);setError('');
+      await onCreate(event);
+      setOpen(false);
     }catch(e){setError(userErrorMessage(e,'Δεν μπορέσαμε να καταχωρίσουμε την αποταμίευση. Έλεγξε τα στοιχεία και δοκίμασε ξανά.'))}
+    finally{entrySavingRef.current=false;setEntryBusy(false)}
   };
 
   const actionGrid=<div className="savings-action-grid">{ACTIONS.map(action=>{const Icon=action.icon;return <button type="button" className="panel surface-raised savings-action" key={action.source} aria-label={`Νέα αποταμίευση: ${action.title}`} onClick={()=>start(action.source)}><span className="savings-action-icon"><Icon aria-hidden="true"/></span><div><b>{action.title}</b><small>{action.description}</small></div><strong>Νέα κίνηση <ArrowRight aria-hidden="true"/></strong></button>})}</div>;
@@ -225,8 +255,8 @@ export function SavingsPage({data,month,asOf,onCreate,onQuickAdd,onSavingsTarget
       <div className="logic-note compact"><PiggyBank/><div><b>Σύνθετη αποταμίευση</b><span>Η ενέργεια καταγράφει τη συμφωνημένη ψηφιακή μεταφορά προς τον αποταμιευτικό χωρίς να προσθέτει ή να αφαιρεί δεύτερη φορά τα φυσικά μετρητά.</span></div></div>
     </div>
 
-    {goalEdit?<div className="editor-backdrop" onMouseDown={closeGoal}><section ref={goalModalRef} className="panel surface-raised editor-dialog savings-dialog" role="dialog" aria-modal="true" aria-labelledby="savings-goal-editor-title" aria-describedby={goalError?'savings-goal-editor-error':undefined} tabIndex={-1} onMouseDown={event=>event.stopPropagation()}><div className="panel-head"><div><span id="savings-goal-editor-title">{goals.some(goal=>goal.id===goalEdit.id)?'Επεξεργασία στόχου':'Νέος στόχος αποταμίευσης'}</span><small>Το ποσό είναι στόχος αναφοράς πάνω στο συνολικό υπόλοιπο αποταμίευσης. Η προθεσμία είναι προαιρετική.</small></div><IconButton type="button" aria-label="Κλείσιμο στόχου" onClick={closeGoal}><X/></IconButton></div><div className="settings-form editor-grid"><label className="wide"><span>Όνομα στόχου</span><AppTextInput data-goal-autofocus="true" value={goalEdit.name} maxLength={80} onChange={event=>{setGoalEdit({...goalEdit,name:event.target.value});if(goalError)setGoalError('')}} placeholder="π.χ. Ταξίδι, ταμείο ασφαλείας"/></label><label><span>Στόχος ποσού</span><MoneyInput value={goalAmountText} onValueChange={value=>{setGoalAmountText(value);if(goalError)setGoalError('')}} placeholder="0,00" invalid={Boolean(goalError)}/></label><label><span>Προθεσμία <em>προαιρετική</em></span><AppDateInput min={asOf} value={goalEdit.targetDate??''} onChange={event=>{setGoalEdit({...goalEdit,targetDate:event.target.value||null});if(goalError)setGoalError('')}}/></label></div>{goalError?<FormError id="savings-goal-editor-error">{goalError}</FormError>:null}<div className="editor-actions"><Button type="button" variant="secondary" onClick={closeGoal}>Ακύρωση</Button><Button type="button" variant="primary" onClick={saveGoal}>Αποθήκευση στόχου</Button></div></section></div>:null}
-    <ConfirmDialog open={Boolean(deleteGoalTarget)} title="Διαγραφή στόχου αποταμίευσης;" description={deleteGoalTarget?`Ο στόχος «${deleteGoalTarget.name}» θα αφαιρεθεί. Δεν διαγράφεται καμία οικονομική κίνηση ή υπόλοιπο.`:''} confirmLabel="Διαγραφή" tone="destructive" motionMode={data.state.settings.motion} onConfirm={()=>{if(deleteGoalTarget)onDeleteGoal(deleteGoalTarget.id);setDeleteGoalTarget(null)}} onCancel={()=>setDeleteGoalTarget(null)}/>
-    {open?<div className="editor-backdrop" onMouseDown={close}><section ref={modalRef} className="panel surface-raised editor-dialog savings-dialog" role="dialog" aria-modal="true" aria-labelledby="saving-editor-title" aria-describedby={error?'saving-editor-error':undefined} tabIndex={-1} onMouseDown={e=>e.stopPropagation()}><div className="panel-head"><div><span id="saving-editor-title">{SAVING_SOURCE_LABELS[source]}</span><small>{ACTIONS.find(action=>action.source===source)?.description}</small></div><IconButton type="button" aria-label="Κλείσιμο αποταμίευσης" onClick={close}><X/></IconButton></div><div className="settings-form editor-grid"><label><span>Ποσό</span><MoneyInput data-autofocus="true" value={amount} onValueChange={setAmount} placeholder="0,00" invalid={Boolean(error)} aria-describedby={error?'saving-editor-error':undefined}/></label><label><span>Ημερομηνία</span><AppDateInput value={date} onChange={e=>setDate(e.target.value)}/></label><label><span>Από</span><AppSelectInput value={from} onChange={e=>setFrom(e.target.value)}>{sourceAccounts.map(account=><option key={account.id} value={account.id}>{accountDisplayName(data,account.id)}</option>)}</AppSelectInput></label><label><span>Προς αποταμίευση</span><AppSelectInput value={to} onChange={e=>setTo(e.target.value)}>{savingsAccounts.map(account=><option key={account.id} value={account.id}>{accountDisplayName(data,account.id)}</option>)}</AppSelectInput></label><label className="wide"><span>Σχόλιο / λόγος <em>προαιρετικό</em></span><AppTextInput value={note} onChange={e=>setNote(e.target.value)} placeholder="π.χ. Ταξίδι, μαξιλάρι ασφαλείας"/></label></div>{source==='cash_offset'?<div className="logic-note compact"><BanknoteArrowDown/><div><b>Μία σύνθετη κίνηση</b><span>Το MyFinHub καταγράφει τη μεταφορά προς την αποταμίευση ως μία ενιαία κίνηση, ώστε να μη μετρηθούν δύο φορές η ανάληψη, τα μετρητά ή το έξοδο.</span></div></div>:null}{error?<FormError id="saving-editor-error">{error}</FormError>:null}<div className="editor-actions"><Button type="button" variant="secondary" onClick={close}>Ακύρωση</Button><Button type="button" variant="primary" onClick={submit}>Καταχώριση αποταμίευσης</Button></div></section></div>:null}
+    {goalEdit?<div className="editor-backdrop" onMouseDown={closeGoal}><section ref={goalModalRef} className="panel surface-raised editor-dialog savings-dialog" role="dialog" aria-modal="true" aria-labelledby="savings-goal-editor-title" aria-describedby={goalError?'savings-goal-editor-error':undefined} aria-busy={goalBusy||undefined} tabIndex={-1} onMouseDown={event=>event.stopPropagation()}><div className="panel-head"><div><span id="savings-goal-editor-title">{goals.some(goal=>goal.id===goalEdit.id)?'Επεξεργασία στόχου':'Νέος στόχος αποταμίευσης'}</span><small>Το ποσό είναι στόχος αναφοράς πάνω στο συνολικό υπόλοιπο αποταμίευσης. Η προθεσμία είναι προαιρετική.</small></div><IconButton type="button" aria-label="Κλείσιμο στόχου" disabled={goalBusy} onClick={closeGoal}><X/></IconButton></div><div className="settings-form editor-grid"><label className="wide"><span>Όνομα στόχου</span><AppTextInput disabled={goalBusy} data-goal-autofocus="true" value={goalEdit.name} maxLength={80} onChange={event=>{setGoalEdit({...goalEdit,name:event.target.value});if(goalError)setGoalError('')}} placeholder="π.χ. Ταξίδι, ταμείο ασφαλείας"/></label><label><span>Στόχος ποσού</span><MoneyInput disabled={goalBusy} value={goalAmountText} onValueChange={value=>{setGoalAmountText(value);if(goalError)setGoalError('')}} placeholder="0,00" invalid={Boolean(goalError)}/></label><label><span>Προθεσμία <em>προαιρετική</em></span><AppDateInput disabled={goalBusy} min={asOf} value={goalEdit.targetDate??''} onChange={event=>{setGoalEdit({...goalEdit,targetDate:event.target.value||null});if(goalError)setGoalError('')}}/>{goalEdit.targetDate&&goalEdit.targetDate<asOf&&goals.some(goal=>goal.id===goalEdit.id&&goal.targetDate===goalEdit.targetDate)?<small>Η υπάρχουσα προθεσμία έχει παρέλθει. Μπορείς να τη διατηρήσεις ή να ορίσεις νεότερη.</small>:null}</label></div>{goalError?<FormError id="savings-goal-editor-error">{goalError}</FormError>:null}<div className="editor-actions"><Button type="button" variant="secondary" disabled={goalBusy} onClick={closeGoal}>Ακύρωση</Button><Button type="button" variant="primary" disabled={goalBusy} onClick={()=>void saveGoal()}>{goalBusy?'Αποθήκευση…':'Αποθήκευση στόχου'}</Button></div></section></div>:null}
+    <ConfirmDialog open={Boolean(deleteGoalTarget)} title="Διαγραφή στόχου αποταμίευσης;" description={deleteGoalTarget?`Ο στόχος «${deleteGoalTarget.name}» θα αφαιρεθεί. Δεν διαγράφεται καμία οικονομική κίνηση ή υπόλοιπο.`:''} error={deleteGoalError} confirmLabel="Διαγραφή" tone="destructive" busy={goalBusy} onConfirm={()=>void confirmGoalDelete()} onCancel={()=>{setDeleteGoalError('');setDeleteGoalTarget(null)}}/>
+    {open?<div className="editor-backdrop" onMouseDown={close}><section ref={modalRef} className="panel surface-raised editor-dialog savings-dialog" role="dialog" aria-modal="true" aria-labelledby="saving-editor-title" aria-describedby={error?'saving-editor-error':undefined} aria-busy={entryBusy||undefined} tabIndex={-1} onMouseDown={e=>e.stopPropagation()}><div className="panel-head"><div><span id="saving-editor-title">{SAVING_SOURCE_LABELS[source]}</span><small>{ACTIONS.find(action=>action.source===source)?.description}</small></div><IconButton type="button" aria-label="Κλείσιμο αποταμίευσης" disabled={entryBusy} onClick={close}><X/></IconButton></div><div className="settings-form editor-grid" inert={entryBusy}><label><span>Ποσό</span><MoneyInput data-autofocus="true" value={amount} onValueChange={setAmount} placeholder="0,00" invalid={Boolean(error)} aria-describedby={error?'saving-editor-error':undefined}/></label><label><span>Ημερομηνία</span><AppDateInput value={date} onChange={e=>setDate(e.target.value)}/></label><label><span>Από</span><AppSelectInput value={from} onChange={e=>setFrom(e.target.value)}>{sourceAccounts.map(account=><option key={account.id} value={account.id}>{accountDisplayName(data,account.id)}</option>)}</AppSelectInput></label><label><span>Προς αποταμίευση</span><AppSelectInput value={to} onChange={e=>setTo(e.target.value)}>{savingsAccounts.map(account=><option key={account.id} value={account.id}>{accountDisplayName(data,account.id)}</option>)}</AppSelectInput></label><label className="wide"><span>Σχόλιο / λόγος <em>προαιρετικό</em></span><AppTextInput value={note} onChange={e=>setNote(e.target.value)} placeholder="π.χ. Ταξίδι, μαξιλάρι ασφαλείας"/></label></div>{source==='cash_offset'?<div className="logic-note compact"><BanknoteArrowDown/><div><b>Μία σύνθετη κίνηση</b><span>Το MyFinHub καταγράφει τη μεταφορά προς την αποταμίευση ως μία ενιαία κίνηση, ώστε να μη μετρηθούν δύο φορές η ανάληψη, τα μετρητά ή το έξοδο.</span></div></div>:null}{error?<FormError id="saving-editor-error">{error}</FormError>:null}<div className="editor-actions"><Button type="button" variant="secondary" disabled={entryBusy} onClick={close}>Ακύρωση</Button><Button type="button" variant="primary" disabled={entryBusy} onClick={()=>void submit()}>{entryBusy?'Αποθήκευση…':'Καταχώριση αποταμίευσης'}</Button></div></section></div>:null}
   </div>;
 }

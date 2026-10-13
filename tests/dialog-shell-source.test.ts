@@ -55,8 +55,13 @@ describe('DialogShell source contract',()=>{
     }
     expect(confirm).toContain('role="alertdialog"');
     expect(confirm).toContain('ariaLabelledBy={titleId}');
-    expect(confirm).toContain('ariaDescribedBy={descriptionId}');
+    expect(confirm).toContain('ariaDescribedBy={error?');
+    expect(confirm).toContain('${descriptionId} ${errorId}');
     expect(confirm).toContain("dataAttributes={{'data-tone':tone}}");
+    expect(confirm).toContain('error?:string');
+    expect(confirm).toContain('<FormError id={errorId}>{error}</FormError>');
+    expect(confirm).toContain('ariaDescribedBy={error?');
+    expect(confirm).toContain('busy={busy}');
     expect(money).toContain('role="dialog"');
     expect(money).toContain('ariaLabelledBy={titleId}');
     expect(money).toContain('ariaDescribedBy={describedBy}');
@@ -84,7 +89,9 @@ describe('DialogShell source contract',()=>{
     expect(legacy).toContain('ariaLabelledBy="legacy-editor-title"');
     expect(legacy).toContain('motionMode="none"');
     expect(legacy).toContain("preferredFocus='[data-autofocus=\"true\"]'");
-    expect(legacy).toContain('onRequestClose={onClose}');
+    expect(legacy).toContain('onRequestClose={()=>{if(!saving)onClose()}}');
+    expect(legacy).toContain('busy={saving}');
+    expect(legacy).toContain('inert={saving}');
     expect(legacy).not.toContain('useModalFocus');
     expect(legacy).not.toContain('aria-modal="true"');
     expect(legacy).not.toContain("from 'framer-motion'");
@@ -99,7 +106,9 @@ describe('DialogShell source contract',()=>{
     expect(contextual).toContain("ariaDescribedBy={error?'context-quick-error':'context-quick-description'}");
     expect(contextual).toContain('motionMode="none"');
     expect(contextual).toContain("preferredFocus='[data-autofocus=\"true\"]'");
-    expect(contextual).toContain('onRequestClose={onClose}');
+    expect(contextual).toContain('onRequestClose={()=>{if(!saving)onClose()}}');
+    expect(contextual).toContain('busy={saving}');
+    expect(contextual).toContain('inert={saving}');
     expect(contextual).not.toContain('useModalFocus');
     expect(contextual).not.toContain('aria-modal="true"');
     expect(contextual).not.toContain("from 'framer-motion'");

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { accountBalances } from '../src/lib/domain.js';
+import { accountBalances, createEvent, netWorth } from '../src/lib/domain.js';
 import { lendingRows } from '../src/lib/lending.js';
 import type { FinanceData, FinanceEvent } from '../src/types.js';
 
@@ -20,6 +20,7 @@ function derivedData(): FinanceData {
       overrides: {},
       customTransactions: [],
       events: [],
+      settings: { accountOverrides: {}, excludedFromAvailable: [] },
     },
   } as unknown as FinanceData;
 }
@@ -31,6 +32,15 @@ describe('derived finance view robustness', () => {
     expect(accountBalances(data, '2026-08-17').cash).toBe(170);
   });
 
+  it('excludes future-dated receivables from selected-date net worth',()=>{
+    const data=derivedData();
+    data.state.events=[
+      createEvent({kind:'lending',date:'2026-09-01',amount:40,note:'Future loan disbursement',accountId:'cash',person:'Alex'}),
+      createEvent({kind:'lending',date:'2026-08-17',amount:10,note:'Present loan disbursement',accountId:'cash',person:'Alex'}),
+    ];
+    expect(netWorth(data,'2026-08-17')).toBe(netWorth(data,'2026-08-16')+20);
+    expect(netWorth(data,'2026-09-01')).toBe(netWorth(data,'2026-08-17'));
+  });
   it('aggregates repeated legacy lending rows before adding linked events', () => {
     const data = derivedData();
     data.seed.lending = [

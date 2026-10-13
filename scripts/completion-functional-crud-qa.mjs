@@ -360,7 +360,10 @@ try{
   await waitFor("function(){return [...document.querySelectorAll('[role=alertdialog]')].some(dialog=>(dialog.textContent||'').includes('Οριστική διαγραφή κάρτας;'))}",'lifecycle permanent-delete confirmation');
   await sleep(180);await shot('confirm-card-permanent-delete');
   await clickText('[role=alertdialog] button','Οριστική διαγραφή');
-  await waitFor("function(){return ![...document.querySelectorAll('.prototype-payment-card,.card-archive-row')].some(node=>(node.textContent||'').includes('QA Audit Lifecycle Card'))&&document.body.textContent.includes('διαγράφηκε οριστικά')}",'lifecycle card permanently removed');
+  // Permanent deletion is not complete merely because a card row vanishes.
+  // Require the Cards owner's explicit finance+vault cleanup receipt; the
+  // obsolete 'διαγράφηκε οριστικά' copy was never the actual success status.
+  await waitFor("function(){const stillPresent=[...document.querySelectorAll('.prototype-payment-card,.card-archive-row')].some(node=>(node.textContent||'').includes('QA Audit Lifecycle Card'));const status=document.querySelector('.cards-prototype-page .action-status[role=status]')?.textContent||'';return !stillPresent&&status.includes('QA Audit Lifecycle Card')&&status.includes('διαγράφηκε και ο καθαρισμός του ασφαλούς vault ολοκληρώθηκε')&&!document.querySelector('[role=alertdialog]')}",'lifecycle card permanently removed with confirmed vault cleanup');
   await shot('cards-lifecycle-deleted');
 
   console.log('Completion functional QA: Card profile edit stays separate from vault details');
@@ -402,7 +405,11 @@ try{
   await waitFor("function(){return [...document.querySelectorAll('[role=alertdialog]')].some(dialog=>(dialog.textContent||'').includes('Διαγραφή λογαριασμού;')&&(dialog.textContent||'').includes('QA Audit Temp Cash'))}",'account delete confirmation');
   await sleep(180);await shot('confirm-account-delete');
   await clickText('[role=alertdialog] button','Διαγραφή');
-  await waitFor("function(){const exists=[...document.querySelectorAll('.account-management-row')].some(row=>(row.textContent||'').includes('QA Audit Temp Cash'));const message=document.querySelector('.account-management-message')?.textContent||'';return !exists&&message.includes('Ο λογαριασμός διαγράφηκε.')}",'temporary cash account deleted');
+  // The owner confirms the exact durable finance save with "διαγράφηκε και
+  // αποθηκεύτηκε", not the obsolete optimistic "διαγράφηκε." assertion.
+  // A disappeared row alone is insufficient: require a completed, named
+  // receipt and a dismissed confirmation with no remaining error dialog.
+  await waitFor("function(){const exists=[...document.querySelectorAll('.account-management-row')].some(row=>(row.textContent||'').includes('QA Audit Temp Cash'));const status=document.querySelector('.account-management-message[role=status]')?.textContent||'';return !exists&&status.includes('Ο λογαριασμός διαγράφηκε και αποθηκεύτηκε.')&&!document.querySelector('[role=alertdialog]')&&!document.querySelector('.account-management-modal')}",'temporary cash account removed with durable finance receipt');
   await shot('settings-account-create-delete');
 
   const overflow=await c.call("function(){return Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}");

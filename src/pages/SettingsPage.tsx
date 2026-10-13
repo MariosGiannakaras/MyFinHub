@@ -15,6 +15,7 @@ import { Surface } from '../components/Surface';
 import { SupportDiagnosticsPanel } from '../components/SupportDiagnosticsPanel';
 import { TransactionRulesWorkspace } from '../components/TransactionRulesWorkspace';
 import { categoryTree } from '../lib/categories';
+import { appendTransactionRule, reorderTransactionRules } from '../lib/transactionRuleEditor';
 import { MAX_FINANCE_DOCUMENT_BYTES } from '../lib/limits';
 import { taxonomyOperationPreview, type TaxonomyOperation } from '../lib/taxonomyManagement';
 import { userErrorMessage } from '../lib/userMessage';
@@ -91,29 +92,51 @@ export function SettingsPage({
   filePath,
   lastSavedAt,
   currentEmail,
+  accountFocusId,
+  accountFocusKey,
   activeTab:controlledTab,
   onActiveTabChange,
   onImport,
   onBackup,
   onSettings,
+  onFinanceDurably,
   onTaxonomyOperation,
-  onUpsertRule,
-  onDeleteRule,
 }: {
   data: FinanceData;
   asOf: string;
   filePath: string;
   lastSavedAt: string | null;
   currentEmail?: string | null;
+  accountFocusId?:string|null;
+  accountFocusKey?:number;
   activeTab?:SettingsTab;
   onActiveTabChange?:(tab:SettingsTab)=>void;
   onImport: (d: FinanceData) => Promise<void>;
   onBackup: () => Promise<{ path: string }>;
   onSettings: (settings: FinanceData['state']['settings']) => void;
+  onFinanceDurably:(recipe:(current:FinanceData)=>FinanceData)=>Promise<void>;
   onTaxonomyOperation: (operation: TaxonomyOperation) => void;
-  onUpsertRule: (rule: TransactionRule) => void;
-  onDeleteRule: (id: string) => void;
 }) {
+  const saveRule=(rule:TransactionRule)=>{
+    const editing=(data.state.transactionRules??[]).some(item=>item.id===rule.id);
+    return onFinanceDurably(current=>{
+      const rules=current.state.transactionRules??[];
+      if(editing&&!rules.some(item=>item.id===rule.id))throw new Error('Ο κανόνας άλλαξε. Επαναφόρτωσε και δοκίμασε ξανά.');
+      const next=editing?rules.map(item=>item.id===rule.id?rule:item)
+        :appendTransactionRule(rules,rule,new Date().toISOString());
+      return {...current,state:{...current.state,transactionRules:next}};
+    });
+  };
+  const deleteRule=(id:string)=>onFinanceDurably(current=>{
+    const rules=current.state.transactionRules??[];
+    if(!rules.some(item=>item.id===id))throw new Error('Ο κανόνας άλλαξε. Επαναφόρτωσε και δοκίμασε ξανά.');
+    return {...current,state:{...current.state,transactionRules:rules.filter(item=>item.id!==id)}};
+  });
+  const reorderRule=(id:string,direction:-1|1)=>onFinanceDurably(current=>{
+    const rules=current.state.transactionRules??[];
+    const next=reorderTransactionRules(rules,id,direction,new Date().toISOString());
+    return next===rules?current:{...current,state:{...current.state,transactionRules:next}};
+  });
   const fileRef = useRef<HTMLInputElement | null>(null);
   const tablistRef = useRef<HTMLDivElement | null>(null);
   const runtimeEnv=(import.meta as unknown as {env?:{VITE_MYFINHUB_SUPPORT_DIAGNOSTICS?:string}}).env;
@@ -244,7 +267,7 @@ export function SettingsPage({
 
         {activeTab === 'profile' ? <AccountSecuritySettings currentEmail={currentEmail} /> : null}
 
-        {activeTab === 'accounts' ? <div className="settings-tab-stack settings-accounts-stack"><FinancialProviderManagementSettings/><AccountManagementSettings data={data} settings={draft} onChange={(next) => commit(next, '')} /></div> : null}
+        {activeTab === 'accounts' ? <div className="settings-tab-stack settings-accounts-stack"><FinancialProviderManagementSettings/><AccountManagementSettings data={data} settings={draft} focusAccountId={accountFocusId} focusKey={accountFocusKey} onChange={(next) => commit(next, '')} onChangeDurably={(next)=>onFinanceDurably(current=>({...current,state:{...current.state,settings:cloneSettings(next)}}))} /></div> : null}
 
         {activeTab === 'categories' ? (
           <div className="settings-categories-only">
@@ -260,7 +283,7 @@ export function SettingsPage({
 
         {activeTab === 'rules' ? (
           <div className="settings-tab-stack settings-rules-only">
-            <TransactionRulesWorkspace data={data} onUpsertRule={onUpsertRule} onDeleteRule={onDeleteRule} />
+            <TransactionRulesWorkspace data={data} onUpsertRule={saveRule} onDeleteRule={deleteRule} onReorderRule={reorderRule} />
           </div>
         ) : null}
 

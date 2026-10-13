@@ -22,14 +22,17 @@ describe('receipt to Quick Entry contract',()=>{
   it('OCR only applies a prefill and never owns a finance create callback',()=>{
     expect(inbox).toContain('onApply: (draftId: string, proposal: ReceiptProposal) => void');
     expect(inbox).not.toContain('onCreate: (event: FinanceEvent)');
-    expect(bridge).toContain('onCreate(event);');
+    expect(bridge).toContain('await onCreate(event);');
     expect(bridge).toContain('void deleteReceiptDraft(handledId)');
+    expect(bridge.indexOf('await onCreate(event);')).toBeLessThan(bridge.indexOf('void deleteReceiptDraft(handledId)'));
   });
 
   it('keeps the draft when Quick Entry is cancelled and deletes it only after normal submit',()=>{
-    const create=bridge.slice(bridge.indexOf('const create = (event'),bridge.indexOf('if (!open) return null'));
-    expect(create).toContain('onCreate(event);');
+    const create=bridge.slice(bridge.indexOf('const create = async (event'),bridge.indexOf('if (!open) return null'));
+    expect(create).toContain('await onCreate(event);');
     expect(create).toContain('deleteReceiptDraft(handledId)');
+    expect(create.indexOf('await onCreate(event);')).toBeLessThan(create.indexOf('deleteReceiptDraft(handledId)'));
+    expect(create).not.toContain('void onCreate(event)');
     expect(bridge).not.toMatch(/onClose[^\n]*deleteReceiptDraft/);
   });
 

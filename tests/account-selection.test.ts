@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { financeAccountChoices } from '../src/lib/accountSelection.js';
+import { financeAccountChoices, isSavingsAccount, isSavingContributionSource } from '../src/lib/accountSelection.js';
 import { qaFinanceData } from '../src/qaFixture.js';
 import { migrateData } from '../src/lib/domain.js';
 import type { FinanceData } from '../src/types.js';
@@ -39,6 +39,33 @@ describe('canonical account selection',()=>{
     expect(JSON.stringify(migrated)).not.toContain('piraeus-payroll');
   });
 
+  it('migrates bank-category savings without creating a false operating default',()=>{
+    const incoming=base([
+      {id:'bank-saving',name:'Saving',kind:'bank',bankAccountCategory:'savings'},
+      {id:'current',name:'Current',kind:'bank',bankAccountCategory:'current'},
+      {id:'legacy-saving',name:'Legacy',kind:'savings'},
+    ]);
+    delete (incoming.state.settings as Partial<FinanceData['state']['settings']>).defaultExpenseAccount;
+    delete (incoming.state.settings as Partial<FinanceData['state']['settings']>).defaultIncomeAccount;
+    delete (incoming.state.settings as Partial<FinanceData['state']['settings']>).defaultLoanAccount;
+    const migrated=migrateData(incoming);
+    expect(migrated.state.settings.defaultExpenseAccount).toBe('current');
+    expect(migrated.state.settings.defaultIncomeAccount).toBe('current');
+    expect(migrated.state.settings.defaultLoanAccount).toBe('current');
+    const savingsOnly=base([
+      {id:'bank-saving',name:'Bank Savings',kind:'bank',bankAccountCategory:'savings'},
+      {id:'legacy-saving',name:'Savings',kind:'savings'},
+    ]);
+    delete (savingsOnly.state.settings as Partial<FinanceData['state']['settings']>).defaultExpenseAccount;
+    delete (savingsOnly.state.settings as Partial<FinanceData['state']['settings']>).defaultIncomeAccount;
+    delete (savingsOnly.state.settings as Partial<FinanceData['state']['settings']>).defaultLoanAccount;
+    const withoutOperating=migrateData(savingsOnly);
+    expect(withoutOperating.state.settings.defaultExpenseAccount).toBe('');
+    expect(withoutOperating.state.settings.defaultIncomeAccount).toBe('');
+    expect(withoutOperating.state.settings.defaultLoanAccount).toBe('');
+    expect(financeAccountChoices(withoutOperating).operating).toBeUndefined();
+  });
+
   it('uses the exact semantic Dashboard hierarchy independently of configured operating defaults or display names',()=>{
     const data=migrateData(base([
       {id:'cash-daily',name:'Pocket A',kind:'cash',cashRole:'daily'},
@@ -62,6 +89,45 @@ describe('canonical account selection',()=>{
     expect(choices.dashboardPrimarySlots.map(slot=>slot.role)).toEqual(['cash','payroll','savings']);
   });
 
+  it('chooses bank-categorized savings when no kind=savings account exists',()=>{
+    const data=migrateData(base([
+      {id:'savings-bank',name:'Bank Savings',kind:'bank',bankAccountCategory:'savings'},
+      {id:'current',name:'Current',kind:'bank',bankAccountCategory:'current'},
+      {id:'wallet',name:'Cash',kind:'cash'},
+    ]));
+    data.state.settings.defaultExpenseAccount='current';
+    const choices=financeAccountChoices(data);
+    expect(choices.savings?.id).toBe('savings-bank');
+    expect(choices.dashboardSavings?.id).toBe('savings-bank');
+    expect(choices.operating?.id).toBe('current');
+    expect(isSavingsAccount(choices.savings!)).toBe(true);
+    expect(isSavingsAccount(choices.operating!)).toBe(false);
+  });
+
+  it('rejects an explicitly configured bank-savings operating default and selects an eligible source',()=>{
+    const data=migrateData(base([
+      {id:'bank-saving',name:'Saving',kind:'bank',bankAccountCategory:'savings'},
+      {id:'current',name:'Current',kind:'bank',bankAccountCategory:'current'},
+      {id:'cash',name:'Cash',kind:'cash',cashRole:'daily'},
+    ]));
+    data.state.settings.defaultExpenseAccount='bank-saving';
+    data.state.settings.defaultIncomeAccount='bank-saving';
+    const choices=financeAccountChoices(data);
+    expect(choices.savings?.id).toBe('bank-saving');
+    expect(choices.operating?.id).toBe('current');
+    expect(isSavingsAccount(choices.operating!)).toBe(false);
+  });
+
+  it('limits new Savings contribution sources to operational bank identities',()=>{
+    expect(isSavingContributionSource({kind:'bank',bankAccountCategory:'current'})).toBe(true);
+    expect(isSavingContributionSource({kind:'bank',bankAccountCategory:'payroll'})).toBe(true);
+    expect(isSavingContributionSource({kind:'bank'})).toBe(true);
+    expect(isSavingContributionSource({kind:'bank',bankAccountCategory:'savings'})).toBe(false);
+    expect(isSavingContributionSource({kind:'bank',bankAccountCategory:'term'})).toBe(false);
+    expect(isSavingContributionSource({kind:'cash'})).toBe(false);
+    expect(isSavingContributionSource({kind:'savings'})).toBe(false);
+  });
+
   it('keeps a missing payroll slot explicit instead of substituting a current/default account',()=>{
     const data=migrateData(base([
       {id:'cash-daily',name:'A',kind:'cash',cashRole:'daily'},
@@ -79,6 +145,16 @@ describe('canonical account selection',()=>{
       ['savings','save-bank'],
     ]);
     expect(choices.dashboardPayroll).toBeUndefined();
+  });
+
+  it('does not fabricate an operating account if the only accounts are savings',()=>{
+    const data=migrateData(base([
+      {id:'saving',name:'Saving only',kind:'savings'},
+      {id:'bank-saving',name:'Bank saving only',kind:'bank',bankAccountCategory:'savings'},
+    ]));
+    data.state.settings.defaultExpenseAccount='bank-saving';
+    expect(financeAccountChoices(data).operating).toBeUndefined();
+    expect(financeAccountChoices(data).savings?.id).toBe('saving');
   });
 
   it('keeps the rendered QA fixture on the owner semantic hierarchy rather than generic operating defaults',()=>{

@@ -20,6 +20,7 @@ import { cleanNote, money, shortDate } from '../lib/format';
 import { shiftReportingMonth } from '../lib/reportingPeriod';
 import { selectAccountBalances, selectMonthlyFlow } from '../lib/selectors';
 import { accountDisplayName, eventKindLabel } from '../lib/ui';
+import { userErrorMessage } from '../lib/userMessage';
 import type { FinanceData, LegacyTransaction, SplitPart } from '../types';
 import '../styles/transactions-approved.css';
 
@@ -36,11 +37,11 @@ type TransactionRow={
 type DeleteTarget={id:string;source:'legacy'|'event'};
 
 export function TransactionsPage({
-  data,month,onEditEvent,onDeleteEvent,onEditLegacy,onDeleteLegacy,
+  data,month,commandFocusKey,onEditEvent,onDeleteEvent,onEditLegacy,onDeleteLegacy,
 }:{
-  data:FinanceData;month:string;
-  onEditEvent:(id:string)=>void;onDeleteEvent:(id:string)=>void;
-  onEditLegacy:(transaction:LegacyTransaction)=>void;onDeleteLegacy:(id:string)=>void;
+  data:FinanceData;month:string;commandFocusKey?:number;
+  onEditEvent:(id:string)=>void;onDeleteEvent:(id:string)=>Promise<void>;
+  onEditLegacy:(transaction:LegacyTransaction)=>Promise<void>;onDeleteLegacy:(id:string)=>Promise<void>;
 }){
   const range=monthRange(month);
   const [query,setQuery]=useState('');
@@ -57,6 +58,8 @@ export function TransactionsPage({
   const [message,setMessage]=useState('');
   const [editingLegacy,setEditingLegacy]=useState<LegacyTransaction|null>(null);
   const [deleteTarget,setDeleteTarget]=useState<DeleteTarget|null>(null);
+  const [deleteBusy,setDeleteBusy]=useState(false);
+  const [deleteError,setDeleteError]=useState('');
   const deferred=useDeferredValue(query.toLocaleLowerCase('el-GR'));
   const accounts=allAccounts(data).filter(item=>item.kind!=='credit');
 
@@ -88,6 +91,35 @@ export function TransactionsPage({
     }));
     return [...legacy,...events];
   },[data,month]);
+
+  useEffect(()=>{
+    const params=new URLSearchParams(location.search);
+    const focusId=params.get('commandTx'),focusSource=params.get('commandSource'),focusMonth=params.get('commandMonth');
+    if(!focusId||(focusSource!=='legacy'&&focusSource!=='event')||focusMonth!==month)return;
+    // Under React StrictMode, mount effects are deliberately replayed. If the
+    // URL hint is consumed synchronously during the first effect pass, the
+    // later month-reset replay clears selection without restoring the target.
+    // Commit and consume the hint in a cancellable post-effect frame instead.
+    // An aborted/replayed mount never loses its one-time command request.
+    const frame=requestAnimationFrame(()=>{
+      const current=new URL(location.href);
+      if(current.searchParams.get('commandTx')!==focusId
+        ||current.searchParams.get('commandSource')!==focusSource
+        ||current.searchParams.get('commandMonth')!==focusMonth)return;
+      const match=sourceRows.find(row=>row.id===focusId&&row.source===focusSource);
+      current.searchParams.delete('commandTx');current.searchParams.delete('commandSource');current.searchParams.delete('commandMonth');
+      history.replaceState(history.state,'',current.toString());
+      if(!match){setMessage('Η συναλλαγή δεν είναι πλέον διαθέσιμη στην επιλεγμένη περίοδο.');return}
+      const ordered=[...sourceRows].sort((a,b)=>(sortDirection==='asc'?1:-1)*(a.date.localeCompare(b.date)||a.id.localeCompare(b.id)));
+      const index=ordered.findIndex(row=>row.id===focusId&&row.source===focusSource);
+      setQuery('');setAccount('all');setCategory('all');setType('all');
+      setDateStart(range.start);setDateEnd(range.end);
+      setPage(Math.max(1,Math.floor(index/pageSize)+1));
+      setSelectedId(focusId);setDetailOpen(true);
+      setMessage('Η αναζητούμενη συναλλαγή επιλέχθηκε στο ιστορικό της σωστής περιόδου.');
+    });
+    return()=>cancelAnimationFrame(frame);
+  },[sourceRows,month,sortDirection,pageSize,range.start,range.end,commandFocusKey]);
 
   const categoryLabel=(row:TransactionRow)=>row.kind==='split'?'Επιμέρους κατηγορίες':row.category===row.kind?eventKindLabel(row.kind):categoryPath(row.category,row.subcategory);
   const categories=useMemo(()=>[...new Set(sourceRows.map(row=>categoryLabel(row)))].sort((a,b)=>a.localeCompare(b,'el')),[sourceRows]);
@@ -128,9 +160,24 @@ export function TransactionsPage({
 
   const filterControls=(mobile=false)=><div className={`${mobile?'mobile-transaction-filters':'desktop-finance-table'} transaction-filter-controls`} aria-label="Φίλτρα συναλλαγών"><label className="filter-label"><span>Τύπος</span><AppSelectInput aria-label="Φίλτρο τύπου κίνησης" value={type} onChange={e=>{setType(e.target.value);setPage(1)}}><option value="all">Όλοι οι τύποι</option>{types.map(value=><option key={value} value={value}>{eventKindLabel(value)}</option>)}</AppSelectInput></label><label className="filter-label"><span>Λογαριασμός</span><AppSelectInput aria-label="Φίλτρο λογαριασμού" value={account} onChange={e=>{setAccount(e.target.value);setPage(1)}}><option value="all">Όλοι οι λογαριασμοί</option>{accounts.map(a=><option value={a.id} key={a.id}>{accountDisplayName(data,a.id)}</option>)}</AppSelectInput></label></div>;
   const edit=(row:TransactionRow)=>{setMessage('');if(row.source==='event')onEditEvent(row.id);else if(row.legacy)setEditingLegacy(row.legacy)};
-  const askDelete=(row:TransactionRow)=>{setMessage('');setDeleteTarget({id:row.id,source:row.source})};
-  const confirmDelete=()=>{if(!deleteTarget)return;if(deleteTarget.source==='event')onDeleteEvent(deleteTarget.id);else onDeleteLegacy(deleteTarget.id);setMessage(deleteTarget.source==='legacy'?'Η ιστορική κίνηση εξαιρέθηκε μέσω tombstone και η αλλαγή αποθηκεύεται.':'Η κίνηση αφαιρέθηκε και η αλλαγή αποθηκεύεται.');setDeleteTarget(null)};
-  const saveLegacy=(transaction:LegacyTransaction)=>{onEditLegacy(transaction);setMessage('Η ιστορική κίνηση ενημερώθηκε μέσω override και η αλλαγή αποθηκεύεται.')};
+  const askDelete=(row:TransactionRow)=>{if(deleteBusy)return;setMessage('');setDeleteError('');setDeleteTarget({id:row.id,source:row.source})};
+  const confirmDelete=async()=>{
+    if(!deleteTarget||deleteBusy)return;
+    const target=deleteTarget;
+    setDeleteBusy(true);setDeleteError('');
+    try{
+      if(target.source==='event')await onDeleteEvent(target.id);
+      else await onDeleteLegacy(target.id);
+      setMessage(target.source==='legacy'?'Η ιστορική κίνηση εξαιρέθηκε με tombstone και η αποθήκευση επιβεβαιώθηκε.':'Η διαγραφή της κίνησης αποθηκεύτηκε.');
+      setDeleteTarget(null);
+    }catch(reason){
+      setDeleteError(userErrorMessage(reason,'Η διαγραφή δεν αποθηκεύτηκε. Επανέλαβε ή επαναφόρτωσε.'));
+    }finally{setDeleteBusy(false)}
+  };
+  const saveLegacy=async(transaction:LegacyTransaction)=>{
+    await onEditLegacy(transaction);
+    setMessage('Η ιστορική κίνηση ενημερώθηκε με override και η αποθήκευση επιβεβαιώθηκε.');
+  };
   const rowActions=(row:TransactionRow,title:string,compact=false)=><div className={compact?'mobile-row-actions':'row-actions'}>
     {compact?<Button type="button" variant="ghost" className="transaction-mobile-action" aria-label={`Επεξεργασία ${title}`} onClick={()=>edit(row)}><Pencil size={15}/> Επεξεργασία</Button>:<Tooltip label={`Επεξεργασία: ${title}`} side="left"><IconButton type="button" aria-label={`Επεξεργασία ${title}`} onClick={()=>edit(row)}><Pencil/></IconButton></Tooltip>}
     {compact?<Button type="button" variant="ghost" className="danger-text transaction-mobile-action" aria-label={`Διαγραφή ${title}`} onClick={()=>askDelete(row)}><Trash2 size={15}/> Διαγραφή</Button>:<Tooltip label={`Διαγραφή: ${title}`} side="left"><IconButton type="button" aria-label={`Διαγραφή ${title}`} className="danger" onClick={()=>askDelete(row)}><Trash2/></IconButton></Tooltip>}
@@ -177,6 +224,6 @@ export function TransactionsPage({
     </section>
 
     {editingLegacy?<LegacyTransactionEditor key={editingLegacy.id} data={data} transaction={editingLegacy} onSave={saveLegacy} onClose={()=>setEditingLegacy(null)}/>:null}
-    <ConfirmDialog open={Boolean(deleteTarget)} title="Διαγραφή κίνησης;" description={deleteTarget?.source==='legacy'?'Η αρχική εισαγόμενη εγγραφή θα παραμείνει ανέπαφη. Η κίνηση θα εξαιρεθεί από υπολογισμούς και λίστες μέσω tombstone.':'Η κίνηση θα αφαιρεθεί από τα οικονομικά δεδομένα. Μπορείς να χρησιμοποιήσεις Αναίρεση αμέσως μετά.'} confirmLabel="Διαγραφή" tone="destructive" motionMode={data.state.settings.motion||'system'} onConfirm={confirmDelete} onCancel={()=>setDeleteTarget(null)}/>
+    <ConfirmDialog open={Boolean(deleteTarget)} title="Διαγραφή κίνησης;" description={deleteTarget?.source==='legacy'?'Η αρχική εισαγόμενη εγγραφή θα παραμείνει ανέπαφη. Η κίνηση θα εξαιρεθεί από υπολογισμούς και λίστες μέσω tombstone.':'Η κίνηση θα αφαιρεθεί από τα οικονομικά δεδομένα. Μπορείς να χρησιμοποιήσεις Αναίρεση αμέσως μετά.'} error={deleteError} busy={deleteBusy} confirmLabel="Διαγραφή" tone="destructive" onConfirm={()=>void confirmDelete()} onCancel={()=>{if(!deleteBusy){setDeleteTarget(null);setDeleteError('')}}}/>
   </div>;
 }

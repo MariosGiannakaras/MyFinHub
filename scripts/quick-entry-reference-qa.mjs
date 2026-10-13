@@ -10,7 +10,8 @@ if(!chrome)throw new Error('Chrome/Chromium is required for Quick Entry referenc
 const port=9361;
 const profile='/tmp/myfinhub-quick-entry-reference-qa-chrome';
 rmSync(profile,{recursive:true,force:true,maxRetries:5,retryDelay:100});
-const child=spawn(chrome,['--headless=new',`--remote-debugging-port=${port}`,'--remote-debugging-address=127.0.0.1',`--user-data-dir=${profile}`,'--no-sandbox','--disable-gpu','--disable-dev-shm-usage','about:blank'],{stdio:'ignore'});
+const launchBrowser=()=>spawn(chrome,['--headless=new',`--remote-debugging-port=${port}`,'--remote-debugging-address=127.0.0.1',`--user-data-dir=${profile}`,'--no-sandbox','--disable-gpu','--disable-dev-shm-usage','about:blank'],{stdio:'ignore'});
+let child=launchBrowser();
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function stopBrowser(){if(child.exitCode!==null)return;child.kill('SIGTERM');await Promise.race([new Promise(resolve=>child.once('exit',resolve)),sleep(1800)]);if(child.exitCode===null)child.kill('SIGKILL')}
 async function waitHttp(url){for(let i=0;i<120;i+=1){try{const response=await fetch(url);if(response.ok)return}catch{}await sleep(120)}throw new Error(`Timed out waiting for ${url}`)}
@@ -18,7 +19,17 @@ class Cdp{constructor(url){this.url=url;this.id=0;this.pending=new Map();this.li
 const assert=(value,message)=>{if(!value)throw new Error(`Quick Entry reference QA assertion failed: ${message}`)};
 const approx=(value,target,tolerance=2)=>Math.abs(value-target)<=tolerance;
 try{
-  await waitHttp(`http://127.0.0.1:${port}/json/version`);
+  try{
+    await waitHttp(`http://127.0.0.1:${port}/json/version`);
+  }catch(firstStartError){
+    // A headless Chrome process occasionally exits before opening CDP on CI;
+    // retry infrastructure startup once, never an application assertion.
+    console.warn('Quick Entry QA Chromium CDP startup retry:',String(firstStartError));
+    await stopBrowser();
+    rmSync(profile,{recursive:true,force:true,maxRetries:5,retryDelay:100});
+    child=launchBrowser();
+    await waitHttp(`http://127.0.0.1:${port}/json/version`);
+  }
   const target=await fetch(`http://127.0.0.1:${port}/json/new?about:blank`,{method:'PUT'}).then(response=>response.json());
   const c=new Cdp(target.webSocketDebuggerUrl);await c.open();await c.send('Page.enable');await c.send('Runtime.enable');await c.send('Network.enable');
   const runtimeErrors=[];const failedRequests=[];
@@ -62,7 +73,10 @@ try{
     assert(tablet.kindColumns.split(' ').length===4,'tablet keeps four intent columns');assert(tablet.formColumns.split(' ').length===2,'tablet form uses two columns');assert(tablet.receipt&&tablet.footerContent&&approx(tablet.receipt.left,tablet.footerContent.left,2)&&approx(tablet.receipt.right,tablet.footerContent.right,2)&&approx(tablet.receipt.width,tablet.footerContent.width,3),`tablet receipt action spans footer content width: ${JSON.stringify({receipt:tablet.receipt,footerContent:tablet.footerContent})}`);assert(!tablet.footerOverlap,'tablet footer actions never overlap receipt action');await noOverflow(`${theme} tablet`);await shot(`${theme}-quick-entry-tablet`);await closeQuick();
 
     console.log(`Quick Entry reference QA: ${theme} mobile`);
-    await viewport(375,812,true);await navigate();await applyTheme(theme);await openQuick();const mobile=await modalMetrics();
+    await viewport(375,812,true);await navigate();await applyTheme(theme);await openQuick();
+    // Measure the final 375px geometry, not a Framer Motion entrance frame.
+    await waitFor("function(){const modal=document.querySelector('.quick-modal:not(.contextual-quick-modal)');if(!modal)return false;const width=modal.getBoundingClientRect().width;return width>=359&&width<=362}",'mobile Quick Entry reference gutters settle');
+    const mobile=await modalMetrics();
     assert(mobile.modal&&mobile.modal.width>=359&&mobile.modal.width<=362,`mobile modal respects 7px side gutters: ${JSON.stringify(mobile.modal)}`);assert(mobile.kindDisplay==='flex','mobile intent chooser becomes horizontal strip');assert(mobile.kindFirst&&mobile.kindFirst.width>=138&&mobile.kindFirst.width<=142,'mobile intent cards use 140px reference basis');assert(mobile.formColumns.split(' ').length===1,'mobile form becomes one column');assert(mobile.receipt&&mobile.footer&&mobile.receipt.width>=mobile.footer.width-27,'mobile receipt action spans footer content width');assert(!mobile.receiptSmallVisible,'mobile receipt subtitle is hidden');assert(!mobile.footerOverlap,'mobile footer actions never overlap');assert(!mobile.frequentLabelVisible,'mobile frequent strip has no persistent section label');assert(mobile.actions.length>=2&&approx(mobile.actions[0].top,mobile.actions[1].top,2),'mobile footer actions share one row');for(const action of mobile.actions)assert(action.height>=44,'mobile footer actions meet touch target');await noOverflow(`${theme} mobile`);await shot(`${theme}-quick-entry-mobile`);
 
     const mobileDate=await c.call("function(){const input=document.querySelector('.quick-modal .owned-date-shell input');input?.click();return Boolean(input)}");assert(mobileDate,'mobile date field opens picker');await waitFor("function(){return Boolean(document.querySelector('.owned-date-popover'))}",'mobile date picker');const mobilePop=await c.call("function(){const node=document.querySelector('.owned-date-popover');const r=node?.getBoundingClientRect();const s=node?getComputedStyle(node):null;return r&&s?{left:r.left,right:r.right,bottom:r.bottom,width:r.width,radius:s.borderTopLeftRadius}:null}");assert(mobilePop&&mobilePop.left<=1&&mobilePop.right>=374&&mobilePop.radius==='20px',`mobile date picker is full-width bottom sheet: ${JSON.stringify(mobilePop)}`);await shot(`${theme}-quick-entry-date-mobile`);await c.call("function(){document.querySelector('.owned-date-popover button[aria-label=\"Κλείσιμο ημερολογίου\"]')?.click();return true}");await waitFor("function(){return !document.querySelector('.owned-date-popover')}",'mobile date picker close');await closeQuick();

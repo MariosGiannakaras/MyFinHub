@@ -1,0 +1,84 @@
+name: FB Focused Rendered QA
+
+on:
+  pull_request:
+    branches: [develop]
+    types: [synchronize, edited]
+
+concurrency:
+  group: fb-focused-rendered-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  changed-surfaces:
+    name: focused-browser-evidence
+    if: github.event.pull_request.draft == true && github.event.pull_request.head.repo.full_name == github.repository && contains(github.event.pull_request.body, '<!-- run-fb-focused-qa -->')
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci --prefer-offline --no-audit --no-fund
+      - name: Preflight all focused browser script syntax before launching Chromium
+        shell: bash
+        run: |
+          for suite in quick-entry-reference budget-rules planning-forecast legacy-transaction-management command-palette; do
+            node --check "scripts/$suite-qa.mjs"
+          done
+      - name: Launch synthetic web QA app
+        shell: bash
+        run: |
+          npm run dev:web > /tmp/myfinhub-fb-focused-vite.log 2>&1 &
+          echo $! > /tmp/myfinhub-fb-focused-vite.pid
+          ready=0
+          for attempt in {1..40}; do
+            if curl --fail --silent http://127.0.0.1:5173/qa.html >/dev/null; then ready=1; break; fi
+            sleep 1
+          done
+          if [ "$ready" != 1 ]; then cat /tmp/myfinhub-fb-focused-vite.log; exit 1; fi
+      - name: Run all changed-surface suites; retain evidence even on failures
+        shell: bash
+        env:
+          RHEOMIQ_QA_URL: http://127.0.0.1:5173/qa.html
+        run: |
+          set -u
+          export MYFINHUB_UX_EVIDENCE_DIR="$RUNNER_TEMP/fb-focused/screenshots"
+          mkdir -p "$MYFINHUB_UX_EVIDENCE_DIR" "$RUNNER_TEMP/fb-focused/logs"
+          export MYFINHUB_QA_PRIMARY_BROWSER="$(command -v chromium || command -v chromium-browser || true)"
+          if [ -z "$MYFINHUB_QA_PRIMARY_BROWSER" ]; then echo "Chromium required"; exit 1; fi
+          failures=0
+          for suite in quick-entry-reference budget-rules planning-forecast legacy-transaction-management command-palette; do
+            echo "Running changed surface: $suite"
+            if node "scripts/$suite-qa.mjs" >"$RUNNER_TEMP/fb-focused/logs/$suite.log" 2>&1; then
+              echo "PASS: $suite"
+            else
+              echo "::error::Focused browser QA failed: $suite"
+              tail -n 85 "$RUNNER_TEMP/fb-focused/logs/$suite.log"
+              failures=$((failures+1))
+            fi
+          done
+          echo "Failed focused suites: $failures"
+          exit "$((failures>0))"
+      - name: Stop Vite and upload its diagnostics
+        if: always()
+        shell: bash
+        run: |
+          if [ -f /tmp/myfinhub-fb-focused-vite.pid ]; then kill "$(cat /tmp/myfinhub-fb-focused-vite.pid)" || true; fi
+          mkdir -p "$RUNNER_TEMP/fb-focused/logs"
+          cp /tmp/myfinhub-fb-focused-vite.log "$RUNNER_TEMP/fb-focused/logs/vite.log" 2>/dev/null || true
+      - name: Upload focused screenshots and all suite logs
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: myfinhub-fb-focused-${{ github.event.pull_request.head.sha }}
+          path: |
+            ${{ runner.temp }}/fb-focused/screenshots/**/*.png
+            ${{ runner.temp }}/fb-focused/logs/*.log
+          if-no-files-found: warn
+          retention-days: 14
