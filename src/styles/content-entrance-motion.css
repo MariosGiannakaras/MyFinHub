@@ -1,60 +1,12 @@
-/* Shared collection entrance: layout-neutral, bounded, and semantic-DOM safe.
- * Explicit opt-in on populated collections. No wrappers or fake loading time.
- * Existing route-shaped skeletons remain the loading representation.
- *
- * Only opacity and compositor transforms are animated. Table rows use opacity
- * alone to avoid browser-specific table-column geometry shifts.
- */
-:root{
-  --content-entrance-duration:190ms;
-  --content-entrance-ease:cubic-bezier(.2,.8,.2,1);
-  --content-entrance-step:22ms;
-  --content-entrance-cap:110ms;
-}
-
+/* Shared semantic list/grid/table entrance reuses existing motion keyframes.
+ * No fake loading, layout movement for tables, or nested card animation. */
 [data-content-entrance="grid"] > *,
-[data-content-entrance="list"] > *{
-  animation:myfinhub-content-enter var(--content-entrance-duration) var(--content-entrance-ease) backwards;
-  animation-delay:var(--content-entrance-delay,0ms);
-}
+[data-content-entrance="list"] > *{animation:rh-bank-in 190ms var(--ease-out) backwards}
 [data-content-entrance="table"] > tr,
-table[data-content-entrance="table"] tbody > tr{
-  animation:myfinhub-content-table-enter 180ms var(--content-entrance-ease) backwards;
-  animation-delay:var(--content-entrance-delay,0ms);
+table[data-content-entrance="table"] tbody > tr{animation:rh-backdrop-in 170ms var(--ease-out) backwards}
+:is([data-content-entrance] > *,table[data-content-entrance="table"] tbody > tr):nth-child(2){animation-delay:45ms}
+:is([data-content-entrance] > *,table[data-content-entrance="table"] tbody > tr):nth-child(n+3){animation-delay:90ms}
+@media(prefers-reduced-motion:reduce){
+  :is([data-content-entrance] > *,table[data-content-entrance="table"] tbody > tr){animation:none!important}
 }
-[data-content-entrance] > :nth-child(2){--content-entrance-delay:22ms}
-[data-content-entrance] > :nth-child(3){--content-entrance-delay:44ms}
-[data-content-entrance] > :nth-child(4){--content-entrance-delay:66ms}
-[data-content-entrance] > :nth-child(5){--content-entrance-delay:88ms}
-[data-content-entrance] > :nth-child(n+6){--content-entrance-delay:110ms}
-table[data-content-entrance="table"] tbody > tr:nth-child(2){--content-entrance-delay:22ms}
-table[data-content-entrance="table"] tbody > tr:nth-child(3){--content-entrance-delay:44ms}
-table[data-content-entrance="table"] tbody > tr:nth-child(4){--content-entrance-delay:66ms}
-table[data-content-entrance="table"] tbody > tr:nth-child(5){--content-entrance-delay:88ms}
-table[data-content-entrance="table"] tbody > tr:nth-child(n+6){--content-entrance-delay:110ms}
-
-@keyframes myfinhub-content-enter{
-  from{opacity:0;transform:translate3d(0,7px,0)}
-  to{opacity:1;transform:translate3d(0,0,0)}
-}
-@keyframes myfinhub-content-table-enter{
-  from{opacity:0}
-  to{opacity:1}
-}
-
-/* Structural state changes do not tween finance figures or table geometry.
- * Focus, keyboard semantics, hit targets, and financial values remain live. */
-@media (prefers-reduced-motion:reduce){
-  [data-content-entrance] > *,
-  table[data-content-entrance="table"] tbody > tr{
-    animation:none!important;
-    transform:none;
-    opacity:1;
-  }
-}
-html[data-motion="reduced"] [data-content-entrance] > *,
-html[data-motion="reduced"] table[data-content-entrance="table"] tbody > tr{
-  animation:none!important;
-  transform:none;
-  opacity:1;
-}
+/* Existing global html[data-motion=reduced] * also disables these animations. */

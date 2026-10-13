@@ -94,11 +94,7 @@ button:disabled{cursor:not-allowed}
 .action-status,.persistence-notice,.session-error-banner{animation:rh-status-in var(--motion-base) var(--ease-out) both}
 .form-error[role="alert"]{animation:rh-error-in 220ms var(--ease-out) both}
 
-/* Card workspace initial reveal. No secret data is fetched by this animation. */
-.bank-column{animation:rh-bank-in var(--motion-slow) var(--ease-out) both}
-.bank-column:nth-child(2){animation-delay:45ms}.bank-column:nth-child(3){animation-delay:90ms}.bank-column:nth-child(4){animation-delay:135ms}.bank-column:nth-child(5){animation-delay:180ms}.bank-column:nth-child(n+6){animation-delay:210ms}
-.bank-card-stack>.payment-card{animation:rh-payment-card-in var(--motion-slow) var(--ease-out) both}
-.bank-card-stack>.payment-card:nth-child(2){animation-delay:45ms}.bank-card-stack>.payment-card:nth-child(3){animation-delay:80ms}.bank-card-stack>.payment-card:nth-child(4){animation-delay:110ms}.bank-card-stack>.payment-card:nth-child(n+5){animation-delay:135ms}
+/* Card banks use the shared bounded entrance; nested payment cards must not double animate. */
 
 @keyframes rh-login-card-in{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:none}}
 @keyframes rh-login-content-in{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
@@ -108,7 +104,6 @@ button:disabled{cursor:not-allowed}
 @keyframes rh-backdrop-in{from{opacity:0}to{opacity:1}}
 @keyframes rh-dialog-in{from{opacity:0;transform:translateY(8px) scale(.99)}to{opacity:1;transform:none}}
 @keyframes rh-bank-in{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
-@keyframes rh-payment-card-in{from{opacity:0;transform:translateY(8px) scale(.99)}to{opacity:1;transform:none}}
 @keyframes rh-spin{to{transform:rotate(360deg)}}
 
 @media(max-width:680px){
@@ -117,10 +112,10 @@ button:disabled{cursor:not-allowed}
 }
 
 @media(prefers-reduced-motion:reduce){
-  .login-card,.login-brand,.login-shield,.login-card>div:has(>h1),.login-form,.login-footnote,.login-error,.login-field-hint,.editor-backdrop,.editor-dialog,.action-status,.persistence-notice,.session-error-banner,.form-error[role="alert"],.bank-column,.bank-card-stack>.payment-card{animation:none!important}
+  .login-card,.login-brand,.login-shield,.login-card>div:has(>h1),.login-form,.login-footnote,.login-error,.login-field-hint,.editor-backdrop,.editor-dialog,.action-status,.persistence-notice,.session-error-banner,.form-error[role="alert"]{animation:none!important}
   .login-spinner,.is-spinning{animation:none!important}
   .secondary,.text-button,.wide-action,.row-actions button,.mobile-more-menu button,.mobile-nav button,.command-pill,.top-actions button,.icon-button,.login-logout,.empty-bank-card,.payment-card,.payment-card button,.searchbox,.login-input,.surface-inset,.semantic-table tbody tr,.flow-pill,.mfa-code-progress i{transition:none!important}
   .sidebar nav button svg,.mobile-nav button svg,.mobile-more-menu nav button svg,.top-actions button svg,.row-actions button svg,.icon-button svg{transition:none!important}
 }
-html[data-motion="reduced"] .login-card,html[data-motion="reduced"] .login-brand,html[data-motion="reduced"] .login-shield,html[data-motion="reduced"] .login-form,html[data-motion="reduced"] .editor-backdrop,html[data-motion="reduced"] .editor-dialog,html[data-motion="reduced"] .action-status,html[data-motion="reduced"] .persistence-notice,html[data-motion="reduced"] .bank-column,html[data-motion="reduced"] .bank-card-stack>.payment-card{animation:none!important}
+html[data-motion="reduced"] :is(.login-card,.login-brand,.login-shield,.login-form,.editor-backdrop,.editor-dialog,.action-status,.persistence-notice){animation:none!important}
 html[data-motion="reduced"] .login-spinner,html[data-motion="reduced"] .is-spinning{animation:none!important}

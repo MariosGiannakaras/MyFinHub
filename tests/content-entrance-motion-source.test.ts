@@ -2,6 +2,7 @@ import {readFileSync} from 'node:fs';
 import {describe,expect,it} from 'vitest';
 const load=(path:string)=>readFileSync(path,'utf8');
 const css=load('src/styles/content-entrance-motion.css');
+const baseMotion=load('src/styles/interaction-motion-states.css');
 const runner=load('scripts/run-rendered-qa.mjs');
 const rendered=load('scripts/content-entrance-qa.mjs');
 const routes=['Dashboard','Transactions','Savings','Cards','CreditCard','Loans','Lending','Recurring','Planning','Attention','Reports'];
@@ -15,12 +16,14 @@ describe('bounded shared collection motion contract DV-M01–M06',()=>{
     expect(css).toContain('table[data-content-entrance="table"] tbody > tr');
   });
   it('does not move finance table layout or delay populated content under reduced motion',()=>{
-    expect(css).toContain('animation:myfinhub-content-table-enter');
-    expect(css).toContain('from{opacity:0}');
+    expect(css).toContain('animation:rh-backdrop-in');
+    expect(baseMotion).toContain('@keyframes rh-bank-in{from{opacity:0;transform:translateY(7px)}');
+    expect(baseMotion).toContain('@keyframes rh-backdrop-in{from{opacity:0}');
+    expect(baseMotion).toContain('from{opacity:0}');
     expect(css).not.toMatch(/height:\s*0|width:\s*0|display:\s*none/);
-    expect(css).toContain('nth-child(n+6)');
-    expect(css).toContain('--content-entrance-delay:110ms');
-    expect(css).toContain('@media (prefers-reduced-motion:reduce)');
+    expect(css).toContain('nth-child(n+3)');
+    expect(css).toContain('animation-delay:90ms');
+    expect(css).toContain('@media(prefers-reduced-motion:reduce)');
     expect(css).toContain('animation:none!important');
     expect(css).not.toContain('transition:all');
     expect(css).not.toContain('filter:blur');
