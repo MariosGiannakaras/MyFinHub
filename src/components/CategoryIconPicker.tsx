@@ -1,7 +1,7 @@
 import { Search, Sparkles } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { categoryIconKeySupportedByPack } from '../lib/categoryIconPackSupport';
-import { iconCatalogAsset, isCatalogIconKey } from '../lib/categoryIconCatalog';
+import { isCatalogIconKey } from '../lib/categoryIconCatalog';
 import {
   CATEGORY_ICON_PACKS,
   decodeCategoryIconValue,
@@ -19,10 +19,23 @@ const PAGE_SIZE=96;
 const catalogCache=new Map<CategoryIconPack,readonly string[]>();
 const normalize=(text:string)=>text.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('el-GR').trim();
 
+// Static local URLs: even corrupted persisted pack input cannot change the
+// request origin or path. Keep separate literal fetch calls for the security gate.
+function fetchPackManifest(pack:CategoryIconPack):Promise<Response>{
+  switch(pack){
+    case 'lucide':return fetch('/icon-packs/lucide.json',{cache:'force-cache'});
+    case 'tabler':return fetch('/icon-packs/tabler.json',{cache:'force-cache'});
+    case 'phosphor':return fetch('/icon-packs/phosphor.json',{cache:'force-cache'});
+    case 'heroicons':return fetch('/icon-packs/heroicons.json',{cache:'force-cache'});
+    case 'bootstrap':return fetch('/icon-packs/bootstrap.json',{cache:'force-cache'});
+    default:throw new Error('Unsupported icon pack');
+  }
+}
+
 async function getCatalog(pack:CategoryIconPack):Promise<readonly string[]>{
   const cached=catalogCache.get(pack);
   if(cached)return cached;
-  const response=await fetch(iconCatalogAsset(pack,'json'),{cache:'force-cache'});
+  const response=await fetchPackManifest(pack);
   if(!response.ok)throw new Error(`Catalog ${pack}: HTTP ${response.status}`);
   const payload:unknown=await response.json();
   if(!payload||typeof payload!=='object'||!('pack' in payload)||!('icons' in payload))throw new Error('Invalid icon catalog.');

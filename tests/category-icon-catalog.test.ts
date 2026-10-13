@@ -54,6 +54,24 @@ describe('real distinct offline category icon packs',()=>{
     }
   });
 
+  it('constrains SVG and manifest URLs to static same-origin resources',()=>{
+    const catalogSource=file('src/lib/categoryIconCatalog.ts');
+    const pickerSource=file('src/components/CategoryIconPicker.tsx');
+    const glyphSource=file('src/components/CategoryIconGlyph.tsx');
+    expect(catalogSource).toContain('CATALOG_FILES');
+    expect(catalogSource).not.toContain('${pack}.${ext}');
+    expect(pickerSource).not.toContain('fetch(iconCatalogAsset(');
+    for(const pack of packs){
+      expect(pickerSource).toContain(`fetch('/icon-packs/${pack}.json'`);
+      expect(iconCatalogAsset(pack,'svg')).toBe(`/icon-packs/${pack}.svg`);
+      expect(iconCatalogAsset(pack,'json')).toBe(`/icon-packs/${pack}.json`);
+    }
+    expect(glyphSource).toContain('encodeURIComponent(decoded.key.slice(');
+    expect(isCatalogIconKey('icon/../../../evil')).toBe(false);
+    expect(isCatalogIconKey('icon/%2f')).toBe(false);
+    expect(isCatalogIconKey('icon/<svg>')).toBe(false);
+  });
+
   it('encodes new family-scoped names independently of old semantic values',()=>{
     expect(encodeCategoryIconValue('lucide','coffee')).toBe('coffee');
     expect(encodeCategoryIconValue('lucide','icon/alarm-clock')).toBe('lucide:icon/alarm-clock');
