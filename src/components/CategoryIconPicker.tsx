@@ -10,6 +10,7 @@ import {
   type CategoryIconPack,
 } from '../lib/categoryIconRegistry';
 import { AppInputShell } from './AppInputShell';
+import { Button } from './Button';
 import { AppTextInput } from './AppTextInput';
 import { CategoryIconGlyph } from './CategoryIconGlyph';
 import './CategoryIconPicker.css';
@@ -109,14 +110,14 @@ export function CategoryIconPicker({
     <div className="category-icon-catalog-count" role="status" aria-live="polite">
       {error||((catalog?.pack===pack)?`${matches.length.toLocaleString('el-GR')} διαφορετικά εικονίδια · εμφανίζονται ${shown.length.toLocaleString('el-GR')}`:'Φόρτωση τοπικών εικονιδίων…')}
     </div>
-    {error?<button type="button" className="category-icon-catalog-more" onClick={()=>{setError('');setRetry(value=>value+1);}}>Επανάληψη φόρτωσης</button>:null}
+    {error?<Button type="button" variant="secondary" onClick={()=>{setError('');setRetry(value=>value+1);}}>Επανάληψη φόρτωσης</Button>:null}
     <div className="category-icon-options" role="group" aria-label={`Εικονίδια ${CATEGORY_ICON_PACKS.find(item=>item.id===pack)?.label??pack}`}>
       {shown.map(name=>{
         const iconValue=encodeCategoryIconValue(pack,`icon/${name}`);
         return <button type="button" aria-pressed={value===iconValue} className={value===iconValue?'category-icon-option active':'category-icon-option'} key={name} onClick={()=>onChange(iconValue)} title={name.replaceAll('-',' ')}><CategoryIconGlyph iconKey={iconValue} color={color} size={18}/><span>{name.replaceAll('-',' ')}</span></button>;
       })}
     </div>
-    {(catalog?.pack===pack)&&matches.length>shown.length?<button type="button" className="category-icon-catalog-more" onClick={()=>setVisibleCount(count=>count+PAGE_SIZE)}>Περισσότερα εικονίδια ({(matches.length-shown.length).toLocaleString('el-GR')} ακόμη)</button>:null}
+    {(catalog?.pack===pack)&&matches.length>shown.length?<Button type="button" variant="secondary" onClick={()=>setVisibleCount(count=>count+PAGE_SIZE)}>Περισσότερα εικονίδια ({(matches.length-shown.length).toLocaleString('el-GR')} ακόμη)</Button>:null}
     {(catalog?.pack===pack)&&matches.length===0?<p className="empty-inline" role="status">Δεν βρέθηκαν εικονίδια για αυτή την αναζήτηση.</p>:null}
   </div>;
 }
