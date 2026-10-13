@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 const app=readFileSync(new URL('../src/App.tsx',import.meta.url),'utf8');
 const credit=readFileSync(new URL('../src/pages/CreditCardPage.tsx',import.meta.url),'utf8');
+const rendered=readFileSync(new URL('../scripts/primitives-adoption-qa.mjs',import.meta.url),'utf8');
 const loans=readFileSync(new URL('../src/pages/LoansPage.tsx',import.meta.url),'utf8');
 const planning=readFileSync(new URL('../src/pages/PlanningPage.tsx',import.meta.url),'utf8');
 const confirmation=readFileSync(new URL('../src/components/LegacyConfirmationPanel.tsx',import.meta.url),'utf8');
@@ -18,6 +19,14 @@ function expectNoNativeDialog(source:string){
 }
 
 describe('shared primitive adoption',()=>{
+  it('proves the credit limit edit by reopening the shared editor instead of expecting obsolete success copy',()=>{
+    expect(credit).toContain('setMessage(`Το όριο της');
+    expect(credit).toContain('αποθηκεύεται ως');
+    expect(rendered).toContain("'credit limit readback in owned editor'");
+    expect(rendered).toContain("Number(value.replace(',','.'))===1500.5");
+    expect(rendered).not.toContain("document.body.textContent.includes('ενημερώθηκε')");
+  });
+
   it('uses app-owned dialogs and shared editable controls in Credit Card flows',()=>{
     expectNoNativeDialog(credit);
     expect(credit).toContain('<MoneyEditDialog');
