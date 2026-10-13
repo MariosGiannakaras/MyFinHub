@@ -54,16 +54,16 @@ describe('category icon preferences',()=>{
 
   it('changes automatic category previews to the selected family even before a custom icon is chosen',()=>{
     let next=withCategoryIconPack(settings(),'phosphor');
-    expect(resolvedCategoryIcon(next,'expense','Φαγητό','Καφές')).toBe('phosphor:coffee');
+    expect(resolvedCategoryIcon(next,'expense','Φαγητό','Καφές')).toBe('phosphor:icon/coffee');
     next=withCategoryIconPack(next,'heroicons');
-    expect(resolvedCategoryIcon(next,'expense','Φαγητό','Καφές')).toBe('heroicons:shopping');
+    expect(resolvedCategoryIcon(next,'expense','Φαγητό','Καφές')).toBe('heroicons:icon/beaker');
   });
 
   it('never renders an unsupported automatic semantic key for a selected icon family',()=>{
     let next=withCategoryIconPack(settings(),'phosphor');
-    expect(resolvedCategoryIcon(next,'income','Μισθός')).toBe('phosphor:government');
+    expect(resolvedCategoryIcon(next,'income','Μισθός')).toBe('phosphor:icon/coins');
     next=withCategoryIconPack(next,'heroicons');
-    expect(resolvedCategoryIcon(next,'income','Μισθός')).toBe('heroicons:government');
+    expect(resolvedCategoryIcon(next,'income','Μισθός')).toBe('heroicons:icon/currency-euro');
   });
 
   it('persists category color independently from the icon family and restores automatic color when cleared',()=>{
