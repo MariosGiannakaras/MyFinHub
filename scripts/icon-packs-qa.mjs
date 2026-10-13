@@ -108,8 +108,13 @@ try{
   await clickText('.settings-icons-only .category-icon-pack-switcher-global button','Lucide');
   await waitFor("function(){const glyphs=[...document.querySelectorAll('.settings-icons-only .category-icon-unified-list [data-icon-pack]')];return glyphs.length>0&&glyphs.every(node=>node.getAttribute('data-icon-pack')==='lucide')}",'taxonomy preview switches back to Lucide');
   await openRow(targetLabel);
+  // The category list can switch to Lucide before the asynchronous native
+  // catalog has populated the picker. Never click a stale/empty first frame:
+  // require all 96 real Lucide SVG options, not just the picker shell.
+  await waitFor("function(){const picker=document.querySelector('.settings-icons-only [data-icon-selection-panel] .category-icon-picker');const choices=[...picker?.querySelectorAll('.category-icon-options .category-icon-option')||[]];return choices.length===96&&choices.every(button=>{const glyph=button.querySelector('[data-category-icon]');return glyph?.getAttribute('data-icon-pack')==='lucide'&&glyph?.getAttribute('data-category-icon')?.startsWith('lucide:icon/')&&glyph?.querySelector('use')?.getAttribute('href')?.startsWith('/icon-packs/lucide.svg#i-')})}",'native Lucide catalog loaded after family switch');
   const lucideChoice=await c.call("function(){const buttons=[...document.querySelectorAll('.settings-icons-only [data-icon-selection-panel] .category-icon-options .category-icon-option')];const button=buttons[2]||buttons[0];const key=button?.querySelector('[data-category-icon]')?.getAttribute('data-category-icon')||'';button?.click();return key}");
-  assert(Boolean(lucideChoice)&&lucideChoice!==phosphorChoice,'Lucide can keep a distinct selection from Phosphor');
+  assert(Boolean(lucideChoice)&&lucideChoice!==phosphorChoice,`Lucide can keep a distinct selection from Phosphor: selected ${lucideChoice||'<none>'}, prior ${phosphorChoice}`);
+  await waitFor("function(label,key){const rows=[...document.querySelectorAll('.settings-icons-only .category-icon-unified-category .category-icon-unified-main')];const row=rows.find(item=>(item.querySelector('.category-icon-unified-copy b')?.textContent||'').trim()===label);return Boolean(row&&(row.textContent||'').includes('Lucide · Προσαρμοσμένο')&&row.querySelector('[data-category-icon]')?.getAttribute('data-category-icon')===key)}",'Lucide choice stored independently',[targetLabel,lucideChoice]);
   await closeEditor();
 
   await clickText('.settings-icons-only .category-icon-pack-switcher-global button','Phosphor');
