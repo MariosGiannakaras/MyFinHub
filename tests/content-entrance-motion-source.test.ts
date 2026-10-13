@@ -28,6 +28,13 @@ describe('bounded shared collection motion contract DV-M01–M06',()=>{
     expect(css).not.toContain('transition:all');
     expect(css).not.toContain('filter:blur');
   });
+  it('waits for animated action cards to become visible before CRUD interaction',()=>{
+    const functional=load('scripts/completion-functional-crud-qa.mjs');
+    expect(functional).toContain("'visible Savings transfer action'");
+    expect(functional).toContain("Number(style.opacity)>=.99");
+    expect(functional).toContain("await clickText('.savings-action','Μεταφορά στην άκρη')");
+    expect(functional).toContain("'manual savings contextual transfer editor'");
+  });
   it('retains route-shaped skeletons, explicit normal/reduced tests, midframe captures and CLS limits',()=>{
     expect(load('src/App.tsx')).toContain("<Suspense fallback={<PageLoading/>}>");
     expect(load('src/qa.tsx')).toContain('<PageSkeleton/>');
