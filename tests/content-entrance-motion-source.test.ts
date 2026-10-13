@@ -60,6 +60,18 @@ describe('bounded shared collection motion contract DV-M01–M06',()=>{
     expect(suite).toContain("assert(result.scrollWidth<=result.clientWidth+1");
     expect(suite).toContain("{name:'virtual-keyboard',width:375,height:500}");
   });
+  it('atomically records transient page skeleton route and overflow before refresh resolves',()=>{
+    expect(rendered).toContain("const key='__MYFINHUB_MOTION_SKELETON_QA__'");
+    expect(rendered).toContain('const observer=new MutationObserver(sample)');
+    expect(rendered).toContain("record.snapshot={page:skeleton.dataset.skeletonPage||'',overflow:");
+    expect(rendered).toContain("assert(transition.page===page");
+    expect(rendered).toContain("assert(transition.overflow<=1");
+    expect(rendered).toContain("observer?.disconnect?.()");
+    expect(rendered).not.toContain("document.querySelector('.qa-loading-route .page-skeleton')?.dataset.skeletonPage||''");
+    expect(rendered).toContain("assert(cls<=0.10");
+    expect(rendered).toContain("['first',0],['mid',90],['settled',600]");
+    expect(rendered).toContain("value:'reduce'");
+  });
   it('waits for animated action cards to become visible before CRUD interaction',()=>{
     const functional=load('scripts/completion-functional-crud-qa.mjs');
     expect(functional).toContain("'visible Savings transfer action'");
