@@ -7,24 +7,21 @@
 .app-card-details-notice{padding:10px 12px;border:1px solid rgba(47,111,237,.2);border-radius:12px;background:rgba(47,111,237,.055);color:var(--ink-2);font-size:.82rem;line-height:1.45}
 @media(max-width:680px){.app-card-details-dialog-body{grid-template-columns:1fr;padding-left:13px;padding-right:13px}.app-card-details-dialog-body .wide,.app-card-details-security-note,.app-card-details-notice,.app-card-details-dialog-body .form-error{grid-column:1}.app-card-details-dialog>footer button{min-height:44px;flex:1}}
 
-/* #567: an accessible, on-card editing surface. The payment-card brand remains
-   visible as its outer frame; controls inherit canonical app semantic tokens. */
-.app-card-details-inline{display:grid;grid-template-rows:auto auto auto;min-width:0;min-height:0;margin:8px;padding:clamp(12px,3vw,16px);box-sizing:border-box;gap:12px;overflow-wrap:anywhere;color:var(--ink,#173467);background:var(--surface,#fff);border:1px solid var(--border-subtle,var(--line,#d5dfec));border-radius:16px;box-shadow:0 3px 14px rgba(7,28,53,.12)}
+/* #567: the original branded payment-card surface remains visible while editing.
+   Do not introduce a second framed panel or enlarge the pre-existing icon actions. */
+.app-card-details-inline{display:grid;grid-template-rows:auto auto auto;min-width:0;min-height:0;margin:0;padding:clamp(10px,3vw,16px);box-sizing:border-box;gap:8px;overflow-wrap:anywhere;color:var(--card-text,#fff);background:transparent;border:0;border-radius:0;box-shadow:none}
 .app-card-details-inline>header{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;min-width:0}
-.app-card-details-inline>header>div{min-width:0}.app-card-details-inline header small{font-size:10px;letter-spacing:.1em}.app-card-details-inline header h2{font-size:clamp(15px,3.8vw,19px);margin:3px 0;line-height:1.25}.app-card-details-inline header p{display:none}.app-card-details-inline header button{flex:0 0 40px;min-width:40px;min-height:40px;color:var(--ink);background:var(--surface-inset,#f2f6fb)}
+.app-card-details-inline>header>div{min-width:0}.app-card-details-inline header small{font-size:10px;letter-spacing:.1em}.app-card-details-inline header h2{font-size:clamp(14px,3.8vw,20px);margin:2px 0;line-height:1.25}.app-card-details-inline header p{display:none}.app-card-details-inline header button{flex:0 0 40px;min-width:40px;min-height:40px;color:inherit;background:transparent;border:0;box-shadow:none}
 .app-card-details-inline .app-card-details-dialog-body{padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;align-content:start;min-width:0}
 .app-card-details-inline label{display:grid;gap:2px;min-width:0}.app-card-details-inline label span{font-size:clamp(11px,2.6vw,13px);font-weight:700}.app-card-details-inline label.wide{grid-column:1/-1}
 .app-card-details-inline input{min-width:0;width:100%;box-sizing:border-box;font-size:16px;min-height:42px;background:var(--control-bg);color:var(--ink)}
 .app-card-details-inline .app-card-details-security-note,.app-card-details-inline .app-card-details-notice,.app-card-details-inline .form-error{grid-column:1/-1;padding:5px 7px;font-size:11px;line-height:1.3}
 .app-card-details-inline .app-card-details-security-note{display:flex;margin:2px 0 0;color:var(--ink-2,var(--ink));background:var(--surface-inset,rgba(47,111,237,.06));border:1px solid var(--border-subtle,var(--line,#d5dfec));border-radius:8px}
-.app-card-details-inline footer{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:center;gap:8px;min-width:0;margin-top:2px}
-.app-card-details-inline footer button{min-width:0;min-height:44px;padding:7px 9px;font-size:12px;line-height:1.2;white-space:normal;overflow-wrap:anywhere}
-.app-card-details-inline footer button:first-child:nth-last-child(3){grid-column:1/-1;justify-self:stretch}
-.app-card-details-inline footer button:nth-last-child(2){grid-column:1}
-.app-card-details-inline footer button:last-child{grid-column:2}
+.app-card-details-inline footer{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:6px;min-width:0;margin-top:2px}
+.app-card-details-inline footer button{min-width:0;min-height:38px;padding:5px 9px;font-size:11px;line-height:1.25;white-space:normal;overflow-wrap:anywhere}
 .app-card-details-inline footer .save-button{color:#fff;background:var(--blue,#2f6fed);border-color:var(--blue,#2f6fed)}
 .app-card-details-inline footer .secondary{color:var(--ink,#173467);background:var(--surface-inset,#f2f6fb);border-color:var(--border-subtle,var(--line,#d5dfec))}
 .app-card-details-inline footer :is(button,.save-button):focus-visible{outline:2px solid var(--blue,#2f6fed);outline-offset:2px}
-@media(max-width:360px){.app-card-details-inline .app-card-details-dialog-body{gap:8px}.app-card-details-inline{margin:6px;padding:12px}}
+@media(max-width:360px){.app-card-details-inline .app-card-details-dialog-body{gap:6px}.app-card-details-inline{padding:10px}}
 
 .app-card-details-inline .card-inline-cvv-hint{font-size:11px;line-height:1.3;color:var(--ink-2,var(--ink))}

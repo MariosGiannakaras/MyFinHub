@@ -32,9 +32,12 @@ describe('owner #567 screenshot-driven corrections',()=>{
     expect(editor).toContain("inline?'Προαιρετικό'");
     expect(editor).toContain('Κενό = διατήρηση υπάρχοντος CVV');
     const inlineCss=file('../src/styles/card-details-dialog.css');
-    expect(inlineCss).toContain('background:var(--surface,#fff)');
-    expect(inlineCss).toContain('grid-template-columns:repeat(2,minmax(0,1fr))');
-    expect(inlineCss).toContain('min-height:44px');
+    // Owner requested the original card/button visual language, not a new boxed editor.
+    expect(inlineCss).toContain('color:var(--card-text,#fff);background:transparent;border:0;border-radius:0;box-shadow:none');
+    expect(inlineCss).toContain('.app-card-details-inline footer{display:flex;');
+    expect(inlineCss).toContain('min-height:38px');
+    expect(inlineCss).not.toContain('.app-card-details-inline footer button:first-child:nth-last-child(3)');
+    expect(inlineCss).not.toContain('.app-card-details-inline{display:grid;grid-template-rows:auto auto auto;min-width:0;min-height:0;margin:8px');
     const cardCss=file('../src/components/InteractivePaymentCard.css');
     expect(cardCss).toContain('.prototype-payment-card:has(.app-card-details-inline) .card-inner{position:relative;inset:auto');
     const frontendQa=file('../scripts/frontend-qa.mjs');
