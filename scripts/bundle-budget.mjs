@@ -30,9 +30,9 @@ const singleBudgets=[
 const aggregateBudgets=[
   // Prevent route-level code splitting from hiding total stylesheet growth.
   // The 404/error-route product surface adds a small, intentional stylesheet.
-  // Approved post-v1.4 remediation increases source CSS while compressed delivery remains stable.
-  // Keep the production gzip ceiling unchanged and allow 8 KiB raw headroom for the reviewed UI batches.
-  {label:'total application CSS',match:file=>/\.css$/.test(file),raw:520*1024,gzip:100*1024},
+  // Owner-approved #567: soft thresholds warn of CSS growth; hard thresholds still block builds.
+  // Do not relax the single eager-CSS or JavaScript ceilings.
+  {label:'total application CSS',match:file=>/\.css$/.test(file),warnRaw:520*1024,warnGzip:100*1024,raw:560*1024,gzip:110*1024},
 ];
 
 let failed=false;
@@ -51,7 +51,10 @@ for(const budget of aggregateBudgets){
   const raw=assets.reduce((sum,asset)=>sum+asset.raw,0);
   const gzip=assets.reduce((sum,asset)=>sum+asset.gzip,0);
   const rawOk=raw<=budget.raw;const gzipOk=gzip<=budget.gzip;
-  console.log(`${budget.label}: ${assets.length} assets · ${format(raw)} raw / ${format(gzip)} gzip · budget ${format(budget.raw)} / ${format(budget.gzip)} ${rawOk&&gzipOk?'✓':'✗'}`);
+  const warning=raw>budget.warnRaw||gzip>budget.warnGzip;
+  const result=rawOk&&gzipOk?(warning?'⚠ above soft threshold':'✓'):'✗';
+  console.log(`${budget.label}: ${assets.length} assets · ${format(raw)} raw / ${format(gzip)} gzip · warning ${format(budget.warnRaw)} / ${format(budget.warnGzip)} · hard limit ${format(budget.raw)} / ${format(budget.gzip)} ${result}`);
+  if(warning&&rawOk&&gzipOk)console.warn(`Bundle budget warning: ${budget.label} exceeds reviewed soft size threshold; inspect CSS growth and production load/performance evidence before release.`);
   if(!rawOk||!gzipOk)failed=true;
 }
 
