@@ -29,7 +29,7 @@ describe('owner #567 screenshot-driven corrections',()=>{
     expect(editor).toContain('if(inline)return <section');
     expect(editor).toContain('await onBeforeSave?.(card)');
     expect(editor).toContain('await onSaved(updated)');
-    expect(editor).toContain("inline?'Προαιρετικό'");
+    expect(editor).toContain("inline?'Κενό'");
     expect(editor).toContain('Κενό = διατήρηση υπάρχοντος CVV');
     const inlineCss=file('../src/styles/card-details-dialog.css');
     // Owner requested the original card/button visual language, not a new boxed editor.
@@ -44,6 +44,10 @@ describe('owner #567 screenshot-driven corrections',()=>{
     expect(cardCss).toContain('stroke-width:2.4;');
     expect(interactive).toContain('A missing server vault entry is not a successful reveal');
     expect(interactive).toContain('role="alert" aria-live="assertive"');
+    expect(interactive).toContain("visible&&revealed.pan?'revealed':'masked'");
+    expect(cardCss).toContain('.prototype-payment-card:has(.card-number.revealed) .card-inner{');
+    expect(cardCss).toContain('white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;');
+    expect(file('../scripts/frontend-qa.mjs')).toContain('eye displays full 32-digit PAN without clipping');
     const qa=file('../scripts/frontend-qa.mjs');
     expect(qa).toContain("'eye reveals server PAN and CVV'");
     expect(qa).toContain("'eye reports server vault configuration error'");
