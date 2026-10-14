@@ -39,6 +39,14 @@ describe('owner #567 screenshot-driven corrections',()=>{
     expect(inlineCss).not.toContain('.app-card-details-inline footer button:first-child:nth-last-child(3)');
     expect(inlineCss).not.toContain('.app-card-details-inline{display:grid;grid-template-rows:auto auto auto;min-width:0;min-height:0;margin:8px');
     const cardCss=file('../src/components/InteractivePaymentCard.css');
+    expect(cardCss).toContain('.prototype-payment-card .card-icon-btn.card-icon-reveal,');
+    expect(cardCss).toContain('background:transparent;box-shadow:none;opacity:.96');
+    expect(cardCss).toContain('stroke-width:2.4;');
+    expect(interactive).toContain('A missing server vault entry is not a successful reveal');
+    expect(interactive).toContain('role="alert" aria-live="assertive"');
+    const qa=file('../scripts/frontend-qa.mjs');
+    expect(qa).toContain("'eye reveals server PAN and CVV'");
+    expect(qa).toContain("'eye reports server vault configuration error'");
     expect(cardCss).toContain('.prototype-payment-card:has(.app-card-details-inline) .card-inner{position:relative;inset:auto');
     const frontendQa=file('../scripts/frontend-qa.mjs');
     expect(frontendQa).toContain('on-card secure editor and every save/cancel action must remain inside expanded card');

@@ -45,10 +45,15 @@ export function InteractivePaymentCard({
   const loadSecrets=async()=>{
     setBusy(true);setMessage('');
     try{
-      let server:Awaited<ReturnType<typeof revealCardSecret>>={};
-      try{server=await revealCardSecret(card.id)}catch(error){if((error as {code?:string})?.code!=='CARD_SECRET_NOT_FOUND')throw error}
+      // A missing server vault entry is not a successful reveal.
+      const server=await revealCardSecret(card.id);
+      if(!server.pan&&!server.expiry&&!server.cvv){
+        setMessage('Δεν υπάρχουν αποθηκευμένα πλήρη στοιχεία για αυτή την κάρτα.');
+        setRevealed({});
+        return null;
+      }
       setRevealed(server);return server;
-    }catch(error){setMessage(cardVaultErrorMessage(error));return null}
+    }catch(error){setRevealed({});setMessage(cardVaultErrorMessage(error));return null}
     finally{setBusy(false)}
   };
 
@@ -101,6 +106,6 @@ export function InteractivePaymentCard({
         </>}
       </div>
     </article>
-    {message?<div className="r-card-status" role="status" aria-live="polite">{message}</div>:null}
+    {message?<div className="r-card-status" role="alert" aria-live="assertive">{message}</div>:null}
   </div>;
 }
