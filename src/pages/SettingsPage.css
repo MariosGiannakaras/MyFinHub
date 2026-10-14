@@ -165,3 +165,10 @@
 .support-diagnostics-grid b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:var(--ux-small-size)}
 @media(max-width:900px){.support-diagnostics-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:540px){.support-diagnostics-grid{grid-template-columns:1fr}}
+
+/* #567 owner screenshots: Settings must reflow instead of expanding the mobile canvas. */
+.settings-tabs-page,.settings-tab-panel,.settings-general-grid,.settings-tab-stack,.settings-general-grid>.panel{min-width:0;max-width:100%;box-sizing:border-box}
+.settings-choice-group>*,.settings-general-appearance .text-size-picker,.settings-general-appearance .text-size-picker button{min-width:0;max-width:100%;box-sizing:border-box}
+@media(max-width:980px){.settings-general-grid{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:720px){.settings-tab-panel{width:100%}.settings-general-appearance{padding:clamp(10px,3vw,18px)}.settings-choice-group{grid-template-columns:minmax(0,1fr)}.settings-general-appearance .text-size-picker{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(4px,1.5vw,8px)}.settings-general-appearance .text-size-picker button{min-height:44px;padding:8px 3px;text-align:center;place-items:center}.settings-general-appearance .text-size-picker b{font-size:clamp(11px,3.2vw,14px);overflow-wrap:anywhere}.settings-tablist{max-width:100%;overscroll-behavior-inline:contain}}
+@media(max-width:340px){.settings-general-appearance .text-size-picker{grid-template-columns:repeat(2,minmax(0,1fr))}}

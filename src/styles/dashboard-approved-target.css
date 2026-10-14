@@ -97,3 +97,6 @@
 .approved-account-missing-copy{align-self:center;display:grid;gap:5px;padding:12px;border:1px dashed var(--border-strong);border-radius:12px;background:var(--surface-inset)}
 .dashboard-empty-state{min-height:170px;display:grid;place-items:center;gap:7px;text-align:center}
 .dashboard-empty-state>svg{color:var(--accent)}
+
+/* #567 account cards scale chart and actions within their own width. */
+@media(max-width:680px){.dashboard-approved .approved-account-card{min-width:0;padding:clamp(10px,3vw,16px)!important}.dashboard-approved .approved-account-head,.dashboard-approved .approved-account-identity,.dashboard-approved .approved-account-body,.dashboard-approved .approved-account-actions{min-width:0;max-width:100%}.dashboard-approved .approved-account-chart{left:min(48%,170px);right:0;max-width:60%;overflow:hidden}.dashboard-approved .approved-balance{font-size:clamp(23px,6vw,29px)}.dashboard-approved .approved-account-actions{grid-template-columns:repeat(2,minmax(0,1fr))}.dashboard-approved .approved-account-actions>button{padding-inline:clamp(4px,2vw,10px);font-size:clamp(11px,3vw,14px)}}

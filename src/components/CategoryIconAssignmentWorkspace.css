@@ -78,3 +78,8 @@
   .category-icon-selection-head small{white-space:normal;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2}
   .category-icon-custom-color{width:100%;justify-content:space-between}
 }
+
+/* #567 icon management must never widen a narrow Settings viewport. */
+.category-icon-assignment-workspace,.category-icon-library,.category-icon-picker,.category-icon-selection-panel,.category-icon-unified-list,.category-icon-unified-category,.category-icon-color-editor,.category-icon-color-controls{min-width:0;max-width:100%;box-sizing:border-box}
+.category-icon-unified-category{width:100%}
+@media(max-width:720px){.category-icon-assignment-workspace{width:100%;padding:clamp(8px,2vw,12px)}.category-icon-library,.category-icon-selection-panel{overflow-wrap:anywhere}.category-icon-options{grid-template-columns:repeat(2,minmax(0,1fr));max-width:100%}.category-icon-pack-switcher-global{grid-template-columns:repeat(2,minmax(0,1fr))}.category-icon-color-controls{justify-content:flex-start}}
