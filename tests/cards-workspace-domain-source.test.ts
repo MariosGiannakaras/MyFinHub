@@ -30,7 +30,10 @@ describe('Cards workspace domain and navigation contracts',()=>{
     expect(component.match(/card-icon-btn card-icon-management/g)?.length).toBe(2);
     expect(component).toContain('onEditDetails||onEditCard');
     expect(component).not.toContain('KeyRound');
-    expect(componentCss).toContain('.card-icon-btn.card-icon-management{background:transparent;box-shadow:none;opacity:.72}');
+    expect(componentCss).toContain('.card-icon-btn.card-icon-reveal,');
+    expect(componentCss).toContain('.card-icon-btn.card-icon-management{background:transparent;box-shadow:none;opacity:.96}');
+    expect(componentCss).toContain('stroke-width:2.4;');
+    expect(componentCss).not.toContain('card-icon-btn.card-icon-reveal{background:rgba');
     expect(componentCss).toContain('font-size:var(--ux-dense-label-size);line-height:1;text-transform:uppercase');
     expect(componentCss).not.toContain('font-size:.50rem');
   });
