@@ -366,11 +366,11 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     await setByLabel('Όνομα κάρτας','Real Browser Lifecycle Card');
     const selectDesign=await c.call<boolean>("function(){const option=[...document.querySelectorAll('.card-create-modal .design-option')].find(node=>node.getClientRects().length>0);if(!(option instanceof HTMLElement))return false;option.click();return true}");assert(selectDesign,'Card design option is unavailable.');
     await clickText('.card-create-modal button','Προσθήκη κάρτας');
-    await waitFor("function(){return Boolean(document.querySelector('.app-card-details-dialog'))&&document.body.textContent.includes('Real Browser Lifecycle Card')}",'new card secure-details step');
-    await setByLabel('Αριθμός κάρτας','4242 4242 4242 4242');await setByLabel('Λήξη κάρτας','12/30');await setByLabel('CVV κάρτας','123');await clickText('.app-card-details-dialog button','Αποθήκευση στοιχείων');
+    await waitFor("function(){return Boolean(document.querySelector('.app-card-details-inline'))&&document.body.textContent.includes('Real Browser Lifecycle Card')}",'new card secure-details step');
+    await setByLabel('Αριθμός κάρτας','4242 4242 4242 4242');await setByLabel('Λήξη κάρτας','12/30');await setByLabel('CVV κάρτας','123');await clickText('.app-card-details-inline button','Αποθήκευση στοιχείων');
     // A new card is durably staged without secrets first. Do not reload merely
     // because its empty profile appeared; wait for vault + final finance receipt.
-    await waitFor("function(){return !document.querySelector('.app-card-details-dialog')}",'new card details closed after final durable save');
+    await waitFor("function(){return !document.querySelector('.app-card-details-inline')}",'new card details closed after final durable save');
     await waitCardState('Real Browser Lifecycle Card',true,true,'4242');
     await c.send('Page.reload',{ignoreCache:true});await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Κάρτες')}",'cards reload after create');
     await waitFor("function(){return [...document.querySelectorAll('.prototype-payment-card')].some(card=>(card.textContent||'').includes('Real Browser Lifecycle Card')&&(card.textContent||'').includes('4242'))}",'created card after reload');

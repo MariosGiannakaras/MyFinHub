@@ -126,9 +126,11 @@ try{
     await c.call("function(){document.querySelector('.picker.compact .close-picker')?.click()}");
     await waitFor("function(){return !document.querySelector('#new-bank-title')}",'new bank dialog close');
 
-    await click('button[aria-label^="Ασφαλή στοιχεία"]','secure card details editor');
-    await waitFor("function(){return Boolean(document.querySelector('.app-card-details-dialog'))}",'secure card details editor');
-    await inspect('.app-card-details-dialog',`${viewport.name} secure card details editor`);
+    await click('button[aria-label^="Επεξεργασία κάρτας"]','secure card details editor');
+    await waitFor("function(){return Boolean(document.querySelector('.app-card-details-inline'))}",'secure card details editor');
+    await c.call("function(){document.querySelector('.app-card-details-inline')?.scrollIntoView({block:'center',behavior:'instant'})}");
+     await inspect('.app-card-details-inline',`${viewport.name} on-card secure editor`,{vertical:false});
+     assert(await c.call("function(){return Boolean(document.querySelector('.prototype-payment-card .app-card-details-inline'))}"),'on-card editor remains inside payment card');
 
     await navigate('savings');
     await clickText('button','Νέος στόχος');

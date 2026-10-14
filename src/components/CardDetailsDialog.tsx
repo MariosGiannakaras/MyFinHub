@@ -1,5 +1,5 @@
 import { CreditCard, X } from 'lucide-react';
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { AppTextInput } from './AppTextInput';
 import { Button } from './Button';
 import { DialogShell } from './DialogShell';
@@ -23,6 +23,7 @@ export function CardDetailsDialog({
   onSaved:(card:PaymentCard)=>Promise<void>;
   onCancel:()=>void;
 }){
+  const inlineRef=useRef<HTMLElement|null>(null);
   const titleId=useId();
   const descriptionId=useId();
   const errorId=useId();
@@ -62,6 +63,12 @@ export function CardDetailsDialog({
     })().finally(()=>{if(!cancelled)setLoading(false)});
     return ()=>{cancelled=true};
   },[open,card?.id,requireCvv]);
+
+  useEffect(()=>{
+    if(!inline||!open||loading||!card)return;
+    const frame=requestAnimationFrame(()=>inlineRef.current?.querySelector<HTMLInputElement>('[data-autofocus="true"]')?.focus());
+    return()=>cancelAnimationFrame(frame);
+  },[inline,open,loading,card?.id]);
 
   if(!card)return null;
   const busy=loading||saving;
@@ -103,6 +110,6 @@ export function CardDetailsDialog({
       <Button variant="primary" disabled={busy} onClick={()=>void submit()}>{saving?'Αποθήκευση…':'Αποθήκευση στοιχείων'}</Button>
     </footer>
   </>;
-  if(inline)return <section className="app-card-details-inline" role="group" aria-labelledby={titleId} aria-describedby={[descriptionId,notice?noticeId:'',error?errorId:''].filter(Boolean).join(' ')}>{content}</section>;
+  if(inline)return <section ref={inlineRef} className="app-card-details-inline" role="group" aria-labelledby={titleId} aria-describedby={[descriptionId,notice?noticeId:'',error?errorId:''].filter(Boolean).join(' ')}>{content}</section>;
   return <DialogShell open={open} className="app-card-details-dialog" role="dialog" ariaLabelledBy={titleId} ariaDescribedBy={[descriptionId,notice?noticeId:'',error?errorId:''].filter(Boolean).join(' ')} busy={busy} motionMode={motionMode} preferredFocus='[data-autofocus="true"]' onRequestClose={cancel}>{content}</DialogShell>;
 }

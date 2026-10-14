@@ -1,5 +1,5 @@
 import { Archive, Copy, Eye, EyeOff, Pencil, X } from 'lucide-react';
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState, type ReactNode } from 'react';
 import { BankBrandMark } from './BankBrandMark';
 import { CardNetworkMark } from './CardNetworkMark';
 import { cardBrandSurfaceTone, cardThemeClass } from '../lib/cardDesigns';
@@ -27,7 +27,7 @@ export function InteractivePaymentCard({
   onEditDetails?:(card:PaymentCard)=>void;
   onArchive?:(card:PaymentCard)=>void|Promise<void>;
   archiveDisabled?:boolean;
-  detailsEditor?:React.ReactNode;
+  detailsEditor?:ReactNode;
   onOpenCredit?:()=>void;
 }){
   const [revealed,setRevealed]=useState<Secrets>({});
