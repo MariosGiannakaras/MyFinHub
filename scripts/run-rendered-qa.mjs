@@ -118,7 +118,14 @@ async function runRenderedItem(item){
     if(item.persist!==false)persistedScreenshots+=persistSuiteEvidence({key:item.key,surface:item.surface,evidenceDirs:[evidenceDir,...(item.extraEvidenceDirs||[])],context:evidenceContext});
   }finally{releasePort(port)}
 }
+// Latency-budget QA must measure the app, not CPU contention from unrelated browser suites.
+// Retain the identical <5s route budget and all assertions, but run this performance
+// suite after concurrent functional QA (every suite is still executed exactly once).
+const latencySuite=scripts.find(item=>item.key==='large-data-boundaries');
+if(!latencySuite)throw new Error('Required large-data performance QA suite is missing.');
+const parallelScripts=scripts.filter(item=>item!==latencySuite);
 let cursor=0;
-async function worker(){while(true){const index=cursor++;if(index>=scripts.length)return;await runRenderedItem(scripts[index])}}
-await Promise.all(Array.from({length:Math.min(parallelism,scripts.length)},()=>worker()));
+async function worker(){while(true){const index=cursor++;if(index>=parallelScripts.length)return;await runRenderedItem(parallelScripts[index])}}
+await Promise.all(Array.from({length:Math.min(parallelism,parallelScripts.length)},()=>worker()));
+await runRenderedItem(latencySuite);
 if(requirePrimary&&fallbackActivations!==0)throw new Error(`Primary-browser enforcement violated: ${fallbackActivations} fallback activation(s).`);console.log(`All rendered browser QA suites passed on primary Chromium with parallelism ${parallelism}. Primary bootstrap retries: ${primaryBootstrapRetries}; fallback activations: ${fallbackActivations}; persisted latest focused screenshots: ${persistedScreenshots}.`);
