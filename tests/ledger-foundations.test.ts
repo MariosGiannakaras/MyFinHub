@@ -4,6 +4,8 @@ import {
   createExpenseSplitEvent,
   createTransferEvent,
   defaultTransferPair,
+  defaultSavingContributionPair,
+  savingContributionDraftError,
   splitAllocation,
   splitDraftError,
   transferDraftError,
@@ -37,6 +39,55 @@ describe('ledger foundations', () => {
   it('chooses a valid transfer pair from current accounts', () => {
     const data = minimal();
     expect(defaultTransferPair(data)).toEqual({ from: 'bank', to: 'savings' });
+  });
+
+  it('prefers bank-categorized savings over a cash fallback for a transfer destination',()=>{
+    const data=minimal();
+    data.seed.accounts=data.seed.accounts.map(account=>account.id==='savings'
+      ?{...account,kind:'bank',bankAccountCategory:'savings'}
+      :account);
+    expect(defaultTransferPair(data)).toEqual({from:'bank',to:'savings'});
+  });
+
+  it('separates savings contributions from ordinary transfers for bank-classified savings accounts',()=>{
+    const data=minimal();
+    data.seed.accounts=data.seed.accounts.map(account=>account.id==='savings'
+      ?{...account,kind:'bank',bankAccountCategory:'savings'}
+      :account);
+    data.state.settings.defaultExpenseAccount='savings'; // stale preference must not become a Savings source
+    expect(defaultSavingContributionPair(data)).toEqual({from:'bank',to:'savings'});
+    expect(savingContributionDraftError(data,{fromAccountId:'bank',toAccountId:'savings',amount:100})).toBeNull();
+    expect(savingContributionDraftError(data,{fromAccountId:'savings',toAccountId:'bank',amount:100})).toMatch(/τραπεζικό/);
+    expect(savingContributionDraftError(data,{fromAccountId:'cash',toAccountId:'savings',amount:100})).toMatch(/τραπεζικό/);
+    expect(savingContributionDraftError(data,{fromAccountId:'bank',toAccountId:'cash',amount:100})).toMatch(/αποταμιευτικό/);
+    expect(savingContributionDraftError(data,{fromAccountId:'bank',toAccountId:'bank',amount:100})).toMatch(/διαφορετικοί/);
+    // Ordinary transfer remains available even between savings-classified accounts.
+    expect(transferDraftError(data,{fromAccountId:'savings',toAccountId:'bank',amount:100})).toBeNull();
+  });
+
+  it('uses only current/payroll banks as new Savings sources without removing ordinary cash transfers',()=>{
+    const data=minimal();
+    data.seed.accounts.push({id:'term-bank',name:'Term account',kind:'bank',bankAccountCategory:'term'});
+    data.seed.accounts.push({id:'payment-bank',name:'Payment only',kind:'bank',bankAccountCategory:'payment'});
+    data.seed.accounts.push({id:'current-bank',name:'Current',kind:'bank',bankAccountCategory:'current'});
+    data.seed.accounts.push({id:'payroll-bank',name:'Payroll',kind:'bank',bankAccountCategory:'payroll'});
+    for(const fromAccountId of ['cash','term-bank','payment-bank','savings']){
+      // A savings source must use a distinct destination so the source-type
+      // guard, rather than the earlier same-account guard, is exercised.
+      const toAccountId=fromAccountId==='savings'?'bank':'savings';
+      expect(savingContributionDraftError(data,{fromAccountId,toAccountId,amount:10})).toMatch(/τραπεζικό/);
+      expect(transferDraftError(data,{fromAccountId,toAccountId:'bank',amount:10})).toBeNull();
+    }
+    for(const fromAccountId of ['bank','current-bank','payroll-bank']){
+      expect(savingContributionDraftError(data,{fromAccountId,toAccountId:'savings',amount:10})).toBeNull();
+    }
+    data.state.settings.defaultExpenseAccount='cash';
+    data.state.settings.defaultIncomeAccount='term-bank';
+    expect(defaultSavingContributionPair(data)).toEqual({from:'bank',to:'savings'});
+    data.state.settings.defaultIncomeAccount='payroll-bank';
+    expect(defaultSavingContributionPair(data)).toEqual({from:'payroll-bank',to:'savings'});
+    data.seed.accounts=data.seed.accounts.filter(account=>account.kind!=='bank'||account.bankAccountCategory==='term');
+    expect(defaultSavingContributionPair(data).from).toBe('');
   });
 
   it('rejects same, stale and credit transfer endpoints', () => {

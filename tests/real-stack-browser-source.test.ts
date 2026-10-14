@@ -60,6 +60,9 @@ describe('actual-browser real-stack source contract',()=>{
     expect(source).toContain('stage budget-create-reload');
     expect(source).toContain('stage rule-create-apply-reload');
     expect(source).toContain('stage cards-lifecycle-reload');
+    expect(source).toContain("await waitCardState('Real Browser Lifecycle Card',true,true,'4242')");
+    expect(source).toContain('new card details closed after final durable save');
+    expect(source).toContain('card.last4===last4&&card.vaultRef===card.id');
     expect(source).toContain('Real Browser Lifecycle Card');
     expect(source).toContain("querySelector('button[aria-label=\\\"Αρχειοθέτηση κάρτας\\\"]')");
     expect(source).not.toContain("clickAria('Αρχειοθέτηση κάρτας Real Browser Lifecycle Card')");

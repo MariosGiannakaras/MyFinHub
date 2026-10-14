@@ -1,0 +1,88 @@
+name: Motion Focused Rendered QA
+
+on:
+  pull_request:
+    branches: [develop]
+    types: [synchronize, edited]
+
+concurrency:
+  group: motion-focused-rendered-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  content-entrance:
+    name: motion-browser-evidence
+    if: github.event.pull_request.draft == true && github.event.pull_request.head.repo.full_name == github.repository && contains(github.event.pull_request.body, '<!-- run-motion-focused-qa -->')
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci --prefer-offline --no-audit --no-fund
+      - name: Select CI primary Chromium and preflight motion QA
+        shell: bash
+        run: |
+          PRIMARY_BROWSER="$(command -v chromium || command -v chromium-browser || true)"
+          if [ -z "$PRIMARY_BROWSER" ]; then echo "Primary Chromium required for motion QA"; exit 1; fi
+          echo "MYFINHUB_QA_PRIMARY_BROWSER=$PRIMARY_BROWSER" >> "$GITHUB_ENV"
+          "$PRIMARY_BROWSER" --version
+          node --check scripts/content-entrance-qa.mjs
+      - name: Start synthetic Vite QA surface
+        shell: bash
+        run: |
+          npm run dev:web > /tmp/myfinhub-motion-vite.log 2>&1 &
+          echo $! > /tmp/myfinhub-motion-vite.pid
+          ready=0
+          for attempt in {1..40}; do
+            if curl --fail --silent http://127.0.0.1:5173/qa.html >/dev/null; then ready=1; break; fi
+            sleep 1
+          done
+          if [ "$ready" != 1 ]; then cat /tmp/myfinhub-motion-vite.log; exit 1; fi
+      - name: Verify twelve-route entrance, CLS, overflow and OS reduced motion
+        shell: bash
+        env:
+          RHEOMIQ_QA_URL: http://127.0.0.1:5173/qa.html
+        run: |
+          mkdir -p "$RUNNER_TEMP/motion-focused/screenshots" "$RUNNER_TEMP/motion-focused/logs"
+          export MYFINHUB_UX_EVIDENCE_DIR="$RUNNER_TEMP/motion-focused/screenshots"
+          node scripts/content-entrance-qa.mjs 2>&1 | tee "$RUNNER_TEMP/motion-focused/logs/content-entrance.log"
+          exit "${PIPESTATUS[0]}"
+      - name: Run entrance-aware CRUD regression across owned finance flows
+        shell: bash
+        env:
+          RHEOMIQ_QA_URL: http://127.0.0.1:5173/qa.html
+        run: |
+          export MYFINHUB_UX_EVIDENCE_DIR="$RUNNER_TEMP/motion-focused/screenshots"
+          node scripts/completion-functional-crud-qa.mjs 2>&1 | tee "$RUNNER_TEMP/motion-focused/logs/completion-functional.log"
+          exit "${PIPESTATUS[0]}"
+      - name: Check settled Quick Entry Framer modal geometry in Light/Dark at all widths
+        shell: bash
+        env:
+          RHEOMIQ_QA_URL: http://127.0.0.1:5173/qa.html
+        run: |
+          export MYFINHUB_UX_EVIDENCE_DIR="$RUNNER_TEMP/motion-focused/screenshots"
+          node scripts/quick-entry-reference-qa.mjs 2>&1 | tee "$RUNNER_TEMP/motion-focused/logs/quick-entry-reference.log"
+          exit "${PIPESTATUS[0]}"
+      - name: Stop Vite and preserve diagnostics
+        if: always()
+        shell: bash
+        run: |
+          if [ -f /tmp/myfinhub-motion-vite.pid ]; then kill "$(cat /tmp/myfinhub-motion-vite.pid)" || true; fi
+          mkdir -p "$RUNNER_TEMP/motion-focused/logs"
+          cp /tmp/myfinhub-motion-vite.log "$RUNNER_TEMP/motion-focused/logs/vite.log" 2>/dev/null || true
+      - name: Upload motion screenshots and browser logs
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: myfinhub-motion-focused-${{ github.event.pull_request.head.sha }}
+          path: |
+            ${{ runner.temp }}/motion-focused/screenshots/*.png
+            ${{ runner.temp }}/motion-focused/logs/*.log
+          if-no-files-found: warn
+          retention-days: 14

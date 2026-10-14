@@ -54,6 +54,16 @@ describe('final UI reuse and orphan audit',()=>{
     expect(providers).toContain('<Button type="button" variant="secondary" className="provider-edit-action"');
   });
 
+  it('keeps the mobile Dashboard IBAN copy affordance above 48px and reports exact rendered sizes',()=>{
+    const styles=read('src/styles/account-iban-surfaces.css');
+    const qa=read('scripts/account-metadata-qa.mjs');
+    expect(styles).toContain('.account-iban-dashboard .account-iban-copy{width:49px;height:49px;min-width:49px;min-height:49px;flex-basis:49px;');
+    expect(qa).toContain("'.primary-balance-grid .account-iban-copy',48");
+    expect(qa).toContain('return r.width<min||r.height<min');
+    expect(qa).toContain('width:r.width,height:r.height');
+    expect(qa).not.toContain('Math.round(el.getBoundingClientRect().width)');
+  });
+
   it('keeps the shared transaction split disclosure above generic mobile text-button geometry',()=>{
     const split=read('src/components/TransactionSplitDetails.tsx');
     const splitStyles=read('src/styles/transaction-split-editor.css');

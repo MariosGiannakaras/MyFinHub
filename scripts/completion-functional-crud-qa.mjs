@@ -29,7 +29,23 @@ try{
   const visible="function(node){if(!node)return false;const s=getComputedStyle(node),r=node.getBoundingClientRect();return s.display!=='none'&&s.visibility!=='hidden'&&Number(s.opacity)!==0&&r.width>0&&r.height>0}";
   const waitFor=async(fn,label,args=[])=>{for(let i=0;i<140;i+=1){if(await c.call(fn,args))return;await sleep(80)}throw new Error(`Timed out waiting for ${label}`)};
   const navigate=async page=>{const url=new URL(baseUrl);url.searchParams.set('page',page);await c.send('Page.navigate',{url:url.href});await waitFor("function(){return document.readyState==='complete'&&Boolean(document.querySelector('#main-workspace h1'))}",`${page} page`);await sleep(100)};
-  const clickText=async(selector,text)=>{const ok=await c.call(`function(selector,text){const visible=${visible};const node=[...document.querySelectorAll(selector)].find(item=>visible(item)&&(item.textContent||'').trim().includes(text));node?.click();return Boolean(node)}`,[selector,text]);assert(ok,`missing visible ${selector} containing ${text}`);await sleep(90)};
+  // A semantic control inside a collection can exist while the shared entrance
+  // animation still makes its parent fully transparent. Wait for real visibility,
+  // not a fixed sleep; never disable motion or click an invisible element.
+  const entered="function(node){for(let parent=node;parent;parent=parent.parentElement){if(parent.matches?.('[data-content-entrance] > *')&&Number(getComputedStyle(parent).opacity)<.99)return false}return true}";
+  const clickText=async(selector,text)=>{
+    const target=`function(selector,text){const visible=${visible},entered=${entered};return [...document.querySelectorAll(selector)].find(item=>visible(item)&&entered(item)&&!item.disabled&&(item.textContent||'').trim().includes(text))||null}`;
+    await waitFor(`function(selector,text){return Boolean((${target})(selector,text))}`,`visible ${selector} containing ${text}`,[selector,text]);
+    const clicked=await c.call(`function(selector,text){const target=${target};const node=target(selector,text);node?.click();return Boolean(node)}`,[selector,text]);
+    assert(clicked,`missing visible ${selector} containing ${text}`);await sleep(90);
+  };
+  const clickVisibleRowAction=async(rowSelector,rowText,actionSelector,label,actionText='')=>{
+    const args=[rowSelector,rowText,actionSelector,actionText];
+    const target=`function(rowSelector,rowText,actionSelector,actionText){const visible=${visible},entered=${entered};const row=[...document.querySelectorAll(rowSelector)].find(item=>visible(item)&&entered(item)&&(item.textContent||'').includes(rowText));const button=[...row?.querySelectorAll(actionSelector)||[]].find(item=>visible(item)&&entered(item)&&!item.disabled&&(!actionText||(item.textContent||'').includes(actionText)));return button||null}`;
+    await waitFor(`function(rowSelector,rowText,actionSelector,actionText){return Boolean((${target})(rowSelector,rowText,actionSelector,actionText))}`,label,args);
+    const clicked=await c.call(`function(rowSelector,rowText,actionSelector,actionText){const target=${target};const button=target(rowSelector,rowText,actionSelector,actionText);button?.click();return Boolean(button)}`,args);
+    assert(clicked,label);await sleep(90);
+  };
   const setByLabel=async(label,value)=>{
     const ok=await c.call(`function(label,value){const visible=${visible};const direct=[...document.querySelectorAll('input,textarea,select')].find(item=>visible(item)&&item.getAttribute('aria-label')===label);const labels=[...document.querySelectorAll('label')].filter(visible);const wrapper=labels.find(item=>(item.textContent||'').replace(/\\s+/g,' ').includes(label));const control=direct??wrapper?.querySelector('input,textarea,select')??wrapper?.parentElement?.querySelector('input,textarea,select');if(!control)return false;if(control instanceof HTMLSelectElement){control.value=value;control.dispatchEvent(new Event('change',{bubbles:true}));return true}const proto=control instanceof HTMLTextAreaElement?HTMLTextAreaElement.prototype:HTMLInputElement.prototype;const setter=Object.getOwnPropertyDescriptor(proto,'value')?.set;if(setter)setter.call(control,value);else control.value=value;control.dispatchEvent(new Event('input',{bubbles:true}));control.dispatchEvent(new Event('change',{bubbles:true}));return true}`,[label,value]);
     assert(ok,`missing control for label ${label}`);await sleep(60);
@@ -73,19 +89,29 @@ try{
   await navigate('transactions');
   await setByLabel('Αναζήτηση συναλλαγών','Freddo espresso');
   await waitFor("function(){return [...document.querySelectorAll('[data-transaction-source=\"event\"]')].some(row=>(row.textContent||'').includes('Freddo espresso'))}",'filtered modern event row');
-  const editModern=await c.call(`function(){const visible=${visible};const row=[...document.querySelectorAll('[data-transaction-source="event"]')].find(item=>visible(item)&&(item.textContent||'').includes('Freddo espresso'));const button=row?.querySelector('button[aria-label^="Επεξεργασία"]');button?.click();return Boolean(button)}`);
-  assert(editModern,'filtered modern event exposes edit action');
+  // The desktop ledger deliberately keeps legacy row-actions inside a hidden
+  // semantic fallback. A user opens the visible row details before editing.
+  await clickVisibleRowAction('[data-transaction-source="event"]','Freddo espresso','.row-context-button','filtered modern event details access');
+  await waitFor("function(){const detail=document.querySelector('.transactions-detail-panel');return Boolean(detail&&(detail.textContent||'').includes('Freddo espresso'))}",'filtered modern event detail panel');
+  await clickText('.transactions-detail-actions button','Επεξεργασία');
   await waitFor("function(){return document.querySelector('#quick-add-title')?.textContent==='Επεξεργασία κίνησης'}",'modern event editor');
   await setByLabel('Ποσό','21.75');
   await setByLabel('Σχόλιο','QA Audit Modern Event');
   await clickText('.quick-modal button','Εφαρμογή αλλαγών');
   await setByLabel('Αναζήτηση συναλλαγών','QA Audit Modern Event');
   await waitFor("function(){const rows=[...document.querySelectorAll('[data-transaction-source=\"event\"]')].filter(row=>(row.textContent||'').includes('QA Audit Modern Event'));return rows.length>=1&&rows.some(row=>(row.textContent||'').includes('21,75'))}",'updated modern event row');
-  const modernCopies=await c.call(`function(){const visible=${visible};return [...document.querySelectorAll('[data-transaction-source="event"]')].filter(row=>visible(row)&&(row.textContent||'').includes('QA Audit Modern Event')).length}`);
-  assert(modernCopies===1,'modern edit updates the existing event instead of creating a duplicate visible record');
+  // A just-updated table row may still be in its 170ms fade entrance.
+  // Demand exactly one fully visible, non-hidden finance row after settling.
+  await waitFor(`function(){const visible=${visible},entered=${entered};const rows=[...document.querySelectorAll('.transactions-approved-table tbody [data-transaction-source="event"]')].filter(row=>visible(row)&&entered(row)&&(row.textContent||'').includes('QA Audit Modern Event'));return rows.length===1&&rows[0].textContent.includes('21,75')}`,'exactly one settled modern event in the primary ledger');
   await shot('transactions-modern-event-updated');
-  const deleteModern=await c.call("function(){const row=[...document.querySelectorAll('[data-transaction-source=event]')].find(item=>item.getClientRects().length>0&&(item.textContent||'').includes('QA Audit Modern Event'));const button=row?.querySelector('button[aria-label^=\"Διαγραφή\"]');button?.click();return Boolean(button)}");
-  assert(deleteModern,'updated modern event exposes delete action');
+  // Deleting follows the same visible Details owner as editing, not a hidden
+  // row-actions fallback or a display-none semantic table.
+  const detailReady=await c.call("function(){const detail=document.querySelector('.transactions-detail-panel');return Boolean(detail&&(detail.textContent||'').includes('QA Audit Modern Event'))}");
+  if(!detailReady){
+    await clickVisibleRowAction('.transactions-approved-table tbody [data-transaction-source="event"]','QA Audit Modern Event','.row-context-button','updated modern event details access');
+    await waitFor("function(){const detail=document.querySelector('.transactions-detail-panel');return Boolean(detail&&(detail.textContent||'').includes('QA Audit Modern Event'))}",'updated modern event detail panel');
+  }
+  await clickText('.transactions-detail-actions button','Διαγραφή');
   await waitFor("function(){return Boolean(document.querySelector('.app-confirm-dialog[role=alertdialog]'))}",'modern event delete confirmation');
   await sleep(180);await shot('confirm-transaction-delete');
   await clickText('.app-confirm-dialog button','Διαγραφή');
@@ -175,8 +201,10 @@ try{
   assert(reportsBeforeSaving.income&&reportsBeforeSaving.expense&&reportsBeforeSaving.saving,'Reports baseline exists before savings transfer');
   await clickText('.sidebar nav button','Αποταμίευση');
   await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Αποταμίευση')}",'Savings after report baseline');
-  const savingAction=await c.call(`function(){const visible=${visible};const button=[...document.querySelectorAll('.savings-action')].find(item=>visible(item)&&(item.textContent||'').includes('Μεταφορά στην άκρη'));button?.click();return Boolean(button)}`);
-  assert(savingAction,'manual savings transfer action opens');
+  // Shared entrance motion can briefly start action cards at opacity 0. Wait for
+  // the actual Savings affordance to be fully visible and enabled before use.
+  await waitFor("function(){const button=[...document.querySelectorAll('.savings-action')].find(item=>(item.textContent||'').includes('Μεταφορά στην άκρη'));if(!button||button.disabled)return false;const style=getComputedStyle(button),rect=button.getBoundingClientRect();return style.display!=='none'&&style.visibility!=='hidden'&&Number(style.opacity)>=.99&&rect.width>0&&rect.height>0}",'visible Savings transfer action');
+  await clickText('.savings-action','Μεταφορά στην άκρη');
   await waitFor("function(){return document.querySelector('#context-quick-title')?.textContent?.includes('Μεταφορά στην αποταμίευση')}",'manual savings contextual transfer editor');
   const route=await c.call("function(){const inputs=[...document.querySelectorAll('.contextual-quick-modal input[role=combobox]')];return inputs.map(input=>input.value)}");
   assert(route.length>=2&&route[0]&&route[1]&&route[0]!==route[1],`manual savings transfer resolves distinct source/destination accounts: ${JSON.stringify(route)}`);
@@ -205,8 +233,7 @@ try{
   await clickText('.loan-editor-dialog button','Δημιουργία');
   await waitFor("function(){return [...document.querySelectorAll('.loan-list-row')].some(row=>(row.textContent||'').includes('QA Audit Loan'))}",'saved loan');
   await shot('loan-created');
-  const editLoan=await c.call(`function(){const visible=${visible};const row=[...document.querySelectorAll('.loan-list-row')].find(item=>visible(item)&&(item.textContent||'').includes('QA Audit Loan'));const button=[...row?.querySelectorAll('button')||[]].find(item=>(item.textContent||'').includes('Επεξεργασία'));button?.click();return Boolean(button)}`);
-  assert(editLoan,'saved loan exposes edit');
+  await clickVisibleRowAction('.loan-list-row','QA Audit Loan','.loan-list-actions button','saved loan exposes edit','Επεξεργασία');
   await waitFor("function(){return Boolean(document.querySelector('#loan-editor-title'))}",'loan edit editor');
   await setByLabel('Όνομα','QA Audit Loan Updated');
   await clickText('.loan-editor-dialog button','Εφαρμογή');
@@ -229,15 +256,13 @@ try{
   assert(selfCreateTransfer.length===1&&selfCreateTransfer[0].includes('↔'),'self-loan creation produces exactly one neutral savings-to-current transfer');
   await clickText('.sidebar nav button','Δόσεις & Δάνεια');
   await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Δόσεις & Δάνεια')}",'Loans after self-loan transfer check');
-  const selfPay=await c.call(`function(){const visible=${visible};const row=[...document.querySelectorAll('.loan-list-row.self-loan[data-loan-lifecycle=active]')].find(node=>visible(node)&&(node.textContent||'').includes('QA Audit Self Loan'));const button=row?.querySelector('.pay');button?.click();return Boolean(button)}`);
-  assert(selfPay,'self-loan exposes return action');
+  await clickVisibleRowAction('.loan-list-row.self-loan[data-loan-lifecycle=active]','QA Audit Self Loan','.pay','self-loan exposes return action');
   await waitFor("function(){return document.querySelector('#context-quick-title')?.textContent?.includes('Επιστροφή ΒΟΗΘΕΙΑΣ')}",'self-loan return modal');
   await setByLabel('Ποσό','30');
   await clickText('.contextual-quick-modal button','Επιβεβαίωση πληρωμής');
   await waitFor("function(){return !document.querySelector('.contextual-quick-modal')}",'self-loan return close');
   await waitFor("function(){const row=[...document.querySelectorAll('.loan-list-row.self-loan[data-loan-lifecycle=active]')].find(node=>(node.textContent||'').includes('QA Audit Self Loan'));return Boolean(row&&(row.textContent||'').includes('50')&&(row.textContent||'').includes('1 επιστροφές'))}",'self-loan partial return updates outstanding');
-  const forgive=await c.call("function(){const row=[...document.querySelectorAll('.loan-list-row.self-loan[data-loan-lifecycle=active]')].find(node=>(node.textContent||'').includes('QA Audit Self Loan'));const button=row?.querySelector('.forgive');button?.click();return Boolean(button)}");
-  assert(forgive,'self-loan exposes forgiveness');
+  await clickVisibleRowAction('.loan-list-row.self-loan[data-loan-lifecycle=active]','QA Audit Self Loan','.forgive','self-loan exposes forgiveness');
   await waitFor("function(){const dialog=document.querySelector('.app-confirm-dialog[role=alertdialog]');return Boolean(dialog&&(dialog.textContent||'').includes('Χάρισμα υπολοίπου')&&(dialog.textContent||'').includes('χωρίς μεταφορά χρημάτων'))}",'self-loan forgiveness confirmation');
   await sleep(180);await shot('confirm-self-loan-forgiveness');
   await clickText('.app-confirm-dialog button','Χάρισμα');
@@ -303,20 +328,17 @@ try{
   await setByLabel('Προκαθορισμένο ποσό','19.90');
   await clickText('.editor-dialog button','Αποθήκευση');
   await waitFor("function(){return [...document.querySelectorAll('[data-recurring-status=active]')].some(row=>(row.textContent||'').includes('QA Audit Recurring'))}",'saved recurring item');
-  const editRecurring=await c.call(`function(){const visible=${visible};const row=[...document.querySelectorAll('[data-recurring-status=active]')].find(item=>visible(item)&&(item.textContent||'').includes('QA Audit Recurring'));const button=row?.querySelector('button[aria-label^="Επεξεργασία"]');button?.click();return Boolean(button)}`);
-  assert(editRecurring,'saved recurring item exposes edit');
+  await clickVisibleRowAction('[data-recurring-status=active]','QA Audit Recurring','button[aria-label^="Επεξεργασία"]','saved recurring item exposes edit');
   await waitFor("function(){return Boolean(document.querySelector('#recurring-editor-title'))}",'recurring edit editor');
   await setByLabel('Όνομα','QA Audit Recurring Updated');
   await clickText('.editor-dialog button','Αποθήκευση');
   await waitFor("function(){return [...document.querySelectorAll('[data-recurring-status=active]')].some(row=>(row.textContent||'').includes('QA Audit Recurring Updated'))}",'updated recurring item');
-  const pauseRecurring=await c.call(`function(){const visible=${visible};const row=[...document.querySelectorAll('[data-recurring-status=active]')].find(item=>visible(item)&&(item.textContent||'').includes('QA Audit Recurring Updated'));const button=row?.querySelector('button[aria-label^="Παύση"]');button?.click();return Boolean(button)}`);
-  assert(pauseRecurring,'recurring item can be paused');
+  await clickVisibleRowAction('[data-recurring-status=active]','QA Audit Recurring Updated','button[aria-label^="Παύση"]','recurring item can be paused');
   await waitFor("function(){const root=document.querySelector('[data-inactive-recurring-history]');if(!root)return false;if(!root.open)root.open=true;return [...root.querySelectorAll('[data-recurring-status=paused]')].some(row=>(row.textContent||'').includes('QA Audit Recurring Updated'))}",'paused recurring history');
-  const reactivateRecurring=await c.call(`function(){const root=document.querySelector('[data-inactive-recurring-history]');if(root&&!root.open)root.open=true;const row=[...document.querySelectorAll('[data-recurring-status=paused]')].find(item=>(item.textContent||'').includes('QA Audit Recurring Updated'));const button=row?.querySelector('button[aria-label^="Ενεργοποίηση"]');button?.click();return Boolean(button)}`);
-  assert(reactivateRecurring,'paused recurring item can be reactivated');
+  await c.call("function(){const root=document.querySelector('[data-inactive-recurring-history]');if(root&&!root.open)root.open=true}");
+  await clickVisibleRowAction('[data-recurring-status=paused]','QA Audit Recurring Updated','button[aria-label^="Ενεργοποίηση"]','paused recurring item can be reactivated');
   await waitFor("function(){return [...document.querySelectorAll('[data-recurring-status=active]')].some(row=>(row.textContent||'').includes('QA Audit Recurring Updated'))}",'reactivated recurring item');
-  const stopRecurring=await c.call(`function(){const visible=${visible};const row=[...document.querySelectorAll('[data-recurring-status=active]')].find(item=>visible(item)&&(item.textContent||'').includes('QA Audit Recurring Updated'));const button=row?.querySelector('button[aria-label^="Διακοπή"]');button?.click();return Boolean(button)}`);
-  assert(stopRecurring,'reactivated recurring item can be stopped');
+  await clickVisibleRowAction('[data-recurring-status=active]','QA Audit Recurring Updated','button[aria-label^="Διακοπή"]','reactivated recurring item can be stopped');
   await waitFor("function(){const root=document.querySelector('[data-inactive-recurring-history]');if(!root)return false;if(!root.open)root.open=true;const row=[...root.querySelectorAll('[data-recurring-status=stopped]')].find(item=>(item.textContent||'').includes('QA Audit Recurring Updated'));return Boolean(row&&!row.querySelector('.pay-action,.mobile-pay-action'))}",'stopped recurring item retained without payment action');
   assert(!(await c.call("function(){return [...document.querySelectorAll('[data-recurring-status=active]')].some(row=>(row.textContent||'').includes('QA Audit Recurring Updated'))}")),'stopped recurring item leaves active list');
   await shot('recurring-lifecycle-updated');
@@ -341,8 +363,7 @@ try{
   await shot('cards-lifecycle-created');
 
   const archiveLifecycleCard=async()=>{
-    const armed=await c.call(`function(){const visible=${visible};const card=[...document.querySelectorAll('.prototype-payment-card')].find(node=>visible(node)&&(node.textContent||'').includes('QA Audit Lifecycle Card'));const button=card?.querySelector('button[aria-label="Αρχειοθέτηση κάρτας"]');button?.click();return Boolean(button)}`);
-    assert(armed,'lifecycle card exposes archive action');
+    await clickVisibleRowAction('.prototype-payment-card','QA Audit Lifecycle Card','button[aria-label="Αρχειοθέτηση κάρτας"]','lifecycle card exposes archive action');
     await waitFor("function(){const card=[...document.querySelectorAll('.prototype-payment-card')].find(node=>(node.textContent||'').includes('QA Audit Lifecycle Card'));return Boolean(card?.querySelector('.r-card-archive-confirm'))}",'archive confirmation slider');
     const committed=await c.call("function(){const card=[...document.querySelectorAll('.prototype-payment-card')].find(node=>(node.textContent||'').includes('QA Audit Lifecycle Card'));const button=card?.querySelector('.r-card-archive-keyboard');button?.click();return Boolean(button)}");
     assert(committed,'keyboard archive confirmation commits lifecycle card');
@@ -360,7 +381,10 @@ try{
   await waitFor("function(){return [...document.querySelectorAll('[role=alertdialog]')].some(dialog=>(dialog.textContent||'').includes('Οριστική διαγραφή κάρτας;'))}",'lifecycle permanent-delete confirmation');
   await sleep(180);await shot('confirm-card-permanent-delete');
   await clickText('[role=alertdialog] button','Οριστική διαγραφή');
-  await waitFor("function(){return ![...document.querySelectorAll('.prototype-payment-card,.card-archive-row')].some(node=>(node.textContent||'').includes('QA Audit Lifecycle Card'))&&document.body.textContent.includes('διαγράφηκε οριστικά')}",'lifecycle card permanently removed');
+  // Permanent deletion is not complete merely because a card row vanishes.
+  // Require the Cards owner's explicit finance+vault cleanup receipt; the
+  // obsolete 'διαγράφηκε οριστικά' copy was never the actual success status.
+  await waitFor("function(){const stillPresent=[...document.querySelectorAll('.prototype-payment-card,.card-archive-row')].some(node=>(node.textContent||'').includes('QA Audit Lifecycle Card'));const status=document.querySelector('.cards-prototype-page .action-status[role=status]')?.textContent||'';return !stillPresent&&status.includes('QA Audit Lifecycle Card')&&status.includes('διαγράφηκε και ο καθαρισμός του ασφαλούς vault ολοκληρώθηκε')&&!document.querySelector('[role=alertdialog]')}",'lifecycle card permanently removed with confirmed vault cleanup');
   await shot('cards-lifecycle-deleted');
 
   console.log('Completion functional QA: Card profile edit stays separate from vault details');
@@ -379,7 +403,8 @@ try{
 
   console.log('Completion functional QA: Credit-card profile edit');
   await navigate('credit');
-  await clickText('button','Επεξεργασία κάρτας');
+  const creditEdit=await c.call("function(){const button=document.querySelector('#myfinhub-card-stack .stack-card.top .edit-profile-btn');if(!(button instanceof HTMLButtonElement)||!button.getAttribute('aria-label')?.startsWith('Επεξεργασία κάρτας'))return false;button.click();return true}");
+  assert(creditEdit,'active Credit card exposes profile editing on the canonical card');
   await waitFor("function(){return Boolean(document.querySelector('#card-create-title'))&&document.querySelector('#card-create-title').textContent.includes('Επεξεργασία κάρτας')}",'Credit profile editor');
   await setByLabel('Όνομα κάρτας','QA Audit Credit Profile');
   await clickText('.card-create-modal button','Αποθήκευση αλλαγών');
@@ -401,7 +426,11 @@ try{
   await waitFor("function(){return [...document.querySelectorAll('[role=alertdialog]')].some(dialog=>(dialog.textContent||'').includes('Διαγραφή λογαριασμού;')&&(dialog.textContent||'').includes('QA Audit Temp Cash'))}",'account delete confirmation');
   await sleep(180);await shot('confirm-account-delete');
   await clickText('[role=alertdialog] button','Διαγραφή');
-  await waitFor("function(){const exists=[...document.querySelectorAll('.account-management-row')].some(row=>(row.textContent||'').includes('QA Audit Temp Cash'));const message=document.querySelector('.account-management-message')?.textContent||'';return !exists&&message.includes('Ο λογαριασμός διαγράφηκε.')}",'temporary cash account deleted');
+  // The owner confirms the exact durable finance save with "διαγράφηκε και
+  // αποθηκεύτηκε", not the obsolete optimistic "διαγράφηκε." assertion.
+  // A disappeared row alone is insufficient: require a completed, named
+  // receipt and a dismissed confirmation with no remaining error dialog.
+  await waitFor("function(){const exists=[...document.querySelectorAll('.account-management-row')].some(row=>(row.textContent||'').includes('QA Audit Temp Cash'));const status=document.querySelector('.account-management-message[role=status]')?.textContent||'';return !exists&&status.includes('Ο λογαριασμός διαγράφηκε και αποθηκεύτηκε.')&&!document.querySelector('[role=alertdialog]')&&!document.querySelector('.account-management-modal')}",'temporary cash account removed with durable finance receipt');
   await shot('settings-account-create-delete');
 
   const overflow=await c.call("function(){return Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}");

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createEvent } from '../src/lib/domain.js';
-import { loanInstallmentPaymentPlan, loanPaidAmount, loanPaidCount, loanPaymentInstallmentCount, preserveLoanPaymentLink, setLoanPaymentInstallmentCount } from '../src/lib/loans.js';
+import { loanInstallmentPaymentPlan, loanOutstanding, loanPaidAmount, loanPaidCount, loanPaymentEvents, loanRemainingInstallments, loanPaymentInstallmentCount, loanVisualInstallmentProgress, preserveLoanPaymentLink, setLoanPaymentInstallmentCount } from '../src/lib/loans.js';
 import type { FinanceData, FinanceEvent, Loan } from '../src/types.js';
 
 const loan: Loan = {
@@ -20,6 +20,23 @@ const financeState = () => ({
 }) as unknown as FinanceData;
 
 describe('loan payment linkage', () => {
+  it('does not mark a future linked installment as already paid at an earlier as-of date',()=>{
+    const data=financeState();
+    const future=createEvent({kind:'expense',date:'2026-09-10',amount:25,note:'Later installment',accountId:'cash'});
+    future.loanId=loan.id;data.state.events=[future];
+    expect(loanPaymentEvents(data,loan,'2026-08-17')).toHaveLength(0);
+    expect(loanPaidCount(data,loan,'2026-08-17')).toBe(3);
+    expect(loanPaidAmount(data,loan,'2026-08-17')).toBe(75);
+    expect(loanRemainingInstallments(data,loan,'2026-08-17')).toBe(3);
+    expect(loanOutstanding(data,loan,'2026-08-17')).toBe(75);
+    expect(loanInstallmentPaymentPlan(data,loan,1,'2026-08-17')).toMatchObject({firstInstallment:4,lastInstallment:4,amount:25});
+    expect(loanPaymentEvents(data,loan,'2026-09-11')).toHaveLength(1);
+    expect(loanPaidCount(data,loan,'2026-09-11')).toBe(4);
+    expect(loanPaidAmount(data,loan,'2026-09-11')).toBe(100);
+    expect(loanOutstanding(data,loan,'2026-09-11')).toBe(50);
+    expect(loanRemainingInstallments(data,loan,'2026-09-11')).toBe(2);
+    expect(loanPaidCount(data,loan)).toBe(4);
+  });
   it('combines baseline, legacy extra and linked payment events, then reverses on deletion', () => {
     const data = financeState();
     const payment = createEvent({ kind: 'expense', date: '2026-08-17', amount: 25, note: 'installment', accountId: 'cash' });
@@ -88,5 +105,13 @@ describe('loan payment linkage', () => {
     data.state.loanExtra={'loan-1':2};
     const roundedLoan={...loan,total:145};
     expect(loanInstallmentPaymentPlan(data,roundedLoan,3)).toEqual({count:2,firstInstallment:5,lastInstallment:6,amount:45});
+  });
+
+  it('maps capped visual progress proportionally without showing completion early',()=>{
+    expect(loanVisualInstallmentProgress(60,30)).toEqual({segments:60,paidSegments:30});
+    expect(loanVisualInstallmentProgress(120,60)).toEqual({segments:60,paidSegments:30});
+    expect(loanVisualInstallmentProgress(61,60)).toEqual({segments:60,paidSegments:59});
+    expect(loanVisualInstallmentProgress(120,119)).toEqual({segments:60,paidSegments:59});
+    expect(loanVisualInstallmentProgress(120,120)).toEqual({segments:60,paidSegments:60});
   });
 });

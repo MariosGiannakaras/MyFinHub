@@ -41,8 +41,9 @@ export function qaFinanceData(){
     return next;
   }
 
-  const approvedEvidence=params.get('page')==='dashboard'&&params.get('motion')==='reduced'&&!params.get('state');
-  if(!approvedEvidence)return next;
+  const approvedDashboardEvidence=params.get('page')==='dashboard'&&params.get('motion')==='reduced'&&!params.get('state');
+  const approvedSavingsHistorical=params.get('page')==='savings'&&params.get('state')==='savings-historical';
+  if(!approvedDashboardEvidence&&!approvedSavingsHistorical)return next;
 
   next.state.settings.accountNames={
     ...next.state.settings.accountNames,

@@ -26,7 +26,7 @@ function PaymentFlowHarness(){
       context={context}
       motionMode="reduced"
       onClose={()=>setOpen(false)}
-      onCreate={event=>setCreated(event)}
+      onCreate={async event=>{setCreated(event)}}
       currentBalance={accountId=>accountBalances(data,asOf)[accountId]||0}
     />
   </main>;

@@ -22,7 +22,8 @@
   .planning-approved-desktop{display:grid;gap:14px;min-width:0}
   .planning-approved-desktop>.panel{border:1px solid var(--border-subtle);background:var(--surface);box-shadow:var(--shadow-soft)}
 
-  .planning-approved-forecast{min-height:112px;display:grid;grid-template-columns:minmax(330px,1.45fr) repeat(3,minmax(120px,.48fr)) minmax(148px,.56fr);align-items:center;padding:14px 14px 14px 16px;border-radius:16px!important;overflow:hidden}
+  .planning-approved-forecast{min-height:292px;display:grid;grid-template-rows:auto minmax(0,1fr);padding:0;border-radius:16px!important;overflow:hidden}
+  .planning-forecast-summary{display:grid;grid-template-columns:minmax(330px,1.45fr) repeat(3,minmax(120px,.48fr)) minmax(148px,.56fr);align-items:center;padding:14px 14px 12px 16px}
   .planning-forecast-intro{display:grid;grid-template-columns:54px minmax(0,1fr);align-items:center;gap:14px;padding-right:14px;min-width:0}
   .planning-forecast-icon{width:54px;height:54px;display:grid;place-items:center;border-radius:12px;background:var(--accent-soft);color:var(--accent);box-shadow:var(--shadow-inset)}
   .planning-forecast-icon svg{width:25px;height:25px}
@@ -34,6 +35,9 @@
   .planning-forecast-kpi>small{align-self:flex-start;display:inline-flex;align-items:center;gap:3px;min-height:22px;padding:3px 6px;border-radius:999px;background:var(--success-bg);font-weight:820}
   .planning-forecast-kpi>small.negative{background:var(--error-bg)}
   .planning-detail-toggle{min-height:38px;display:inline-flex;align-items:center;justify-content:center;gap:7px;margin-left:8px;padding:0 11px;border:1px solid var(--control-border);border-radius:9px;background:var(--control-bg);color:var(--accent);font-weight:780;white-space:nowrap;box-shadow:none}
+  .planning-portfolio-trend{min-width:0;height:188px;padding:8px 12px 10px;border-top:1px solid var(--border-subtle);background:color-mix(in srgb,var(--surface-2) 58%,var(--surface))}
+  .planning-portfolio-trend .recharts-tooltip-wrapper{font-size:var(--ux-dense-label-size)}
+  .planning-approved-details-nearby{scroll-margin-top:84px}
 
   .planning-approved-scheduled{padding:0;border-radius:16px!important;overflow:visible}
   .planning-approved-panel-head{min-height:64px;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:10px 13px 9px;border-bottom:1px solid var(--border-subtle)}
@@ -83,21 +87,26 @@
   .planning-account-view{display:flex;gap:2px;padding:3px;border-radius:9px;background:var(--surface-inset)}
   .planning-account-view button{min-height:32px;display:inline-flex;align-items:center;gap:5px;padding:0 9px;border:0;border-radius:7px;background:transparent;color:var(--muted);font-weight:770;box-shadow:none}
   .planning-account-view button.active{background:var(--accent-gradient);color:var(--on-accent);box-shadow:var(--shadow-soft)}
-  .planning-account-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:9px;margin-top:10px}
-  .planning-account-card{min-width:0;min-height:142px;display:grid;grid-template-columns:1fr 92px;grid-template-rows:auto 1fr auto;gap:4px 9px;padding:10px 10px 9px;border:1px solid var(--border-subtle);border-radius:12px;background:var(--surface-2);box-shadow:var(--shadow-flat);color:#2f6fed}
-  .planning-account-card[data-tone="1"]{color:#17976f}.planning-account-card[data-tone="2"]{color:#d56c17}.planning-account-card[data-tone="3"]{color:#7b4ee4}
+  .planning-account-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;width:min(100%,1320px);margin:10px auto 0}
+  .planning-account-card{min-width:0;min-height:142px;display:grid;grid-template-columns:1fr 92px;grid-template-rows:auto 1fr auto;gap:4px 9px;padding:10px 10px 9px;border:1px solid var(--border-subtle);border-radius:12px;background:var(--surface-2);box-shadow:var(--shadow-flat);color:var(--finance-neutral)}
+  .planning-account-card[data-forecast-state="growing"]{color:var(--finance-positive);border-color:color-mix(in srgb,var(--finance-positive) 30%,var(--border-subtle))}
+  .planning-account-card[data-forecast-state="declining"],.planning-account-card[data-forecast-state="low"]{color:var(--warning);border-color:color-mix(in srgb,var(--warning) 32%,var(--border-subtle))}
+  .planning-account-card[data-forecast-state="negative"]{color:var(--finance-negative);border-color:color-mix(in srgb,var(--finance-negative) 38%,var(--border-subtle))}
+  .planning-account-card[data-forecast-priority="quiet"]{background:color-mix(in srgb,var(--surface-2) 74%,var(--surface));box-shadow:none}
   .planning-account-card>header{grid-column:1/-1;display:grid;grid-template-columns:28px minmax(0,1fr) auto;align-items:center;gap:7px;min-width:0}
   .planning-account-card>header .bank-brand-mark{width:28px;height:28px;border-radius:8px}
   .planning-account-card>header b{min-width:0;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .planning-account-card>header>svg{color:var(--blue-2)}
+  .planning-account-state{max-width:112px;padding:3px 6px;border-radius:999px;background:color-mix(in srgb,currentColor 10%,transparent);color:currentColor;font-size:var(--ux-dense-label-size);font-weight:780;line-height:1.2;text-align:right}
+  .planning-account-card[data-forecast-priority="quiet"] .planning-account-state{background:var(--neutral-bg);color:var(--text-secondary)}
+  .planning-account-card[data-forecast-priority="quiet"] .planning-account-sparkline{opacity:.48}
   .planning-account-today{align-self:center;display:flex;flex-direction:column;gap:3px;color:var(--ink)}
-  .planning-account-today span{color:var(--muted)}
+  .planning-account-today span{color:var(--text-secondary)}
   .planning-account-today strong{}
   .planning-account-sparkline{width:100%;height:38px;align-self:center;overflow:visible}
   .planning-account-sparkline polyline{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linejoin:round;stroke-linecap:round}
   .planning-account-horizons{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:5px;padding-top:6px;border-top:1px solid var(--border-subtle)}
   .planning-account-horizons span{min-width:0}
-  .planning-account-horizons small{display:block;color:var(--muted);white-space:nowrap}
+  .planning-account-horizons small{display:block;color:var(--text-secondary);white-space:nowrap}
   .planning-account-horizons b{display:block;margin-top:3px;color:var(--ink-2);white-space:nowrap}
   .planning-account-horizons b.negative{color:var(--red)!important}
   .planning-account-table-wrap{margin-top:10px;border:1px solid var(--border-subtle);border-radius:11px;overflow:hidden}
@@ -121,7 +130,7 @@
 }
 
 @media (min-width:1100px) and (max-width:1199px){
-  .planning-approved-forecast{grid-template-columns:minmax(246px,1.35fr) repeat(3,minmax(88px,.46fr)) minmax(110px,.5fr);padding-inline:12px 10px}
+  .planning-forecast-summary{grid-template-columns:minmax(246px,1.35fr) repeat(3,minmax(88px,.46fr)) minmax(110px,.5fr);padding-inline:12px 10px}
   .planning-forecast-intro{grid-template-columns:44px minmax(0,1fr);gap:10px;padding-right:8px}
   .planning-forecast-icon{width:44px;height:44px}
   .planning-forecast-icon svg{width:21px;height:21px}

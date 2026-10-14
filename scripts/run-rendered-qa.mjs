@@ -11,10 +11,18 @@ const scripts=[
   {path:'scripts/card-vault-runtime-qa.mjs',key:'card-vault-runtime',surface:'card-vault',profiles:['/tmp/myfinhub-card-vault-runtime-qa-chrome']},
   {path:'scripts/mutation-validation-qa.mjs',key:'mutation-validation',surface:'validation-errors',profiles:['/tmp/myfinhub-mutation-validation-qa-chrome']},
   {path:'scripts/owned-controls-qa.mjs',key:'owned-controls',surface:'controls',profiles:['/tmp/rheomiq-owned-controls-qa']},
+  {path:'scripts/quick-entry-reference-qa.mjs',key:'quick-entry-reference',surface:'quick-entry',profiles:['/tmp/myfinhub-quick-entry-reference-qa-chrome']},
+  {path:'scripts/content-entrance-qa.mjs',key:'content-entrance',surface:'cross-page-motion',profiles:['/tmp/myfinhub-content-entrance-qa-chrome']},
   {path:'scripts/ui-ux-hardening-qa.mjs',key:'ui-hardening',surface:'app-shell',profiles:['/tmp/myfinhub-ui-ux-qa-chrome']},
   {path:'scripts/ui-ux-completion-qa.mjs',key:'ui-completion',surface:'app-shell',profiles:['/tmp/myfinhub-ui-completion-qa-chrome']},
   {path:'scripts/ui-ux-runtime-qa.mjs',key:'ui-runtime',surface:'runtime',profiles:['/tmp/myfinhub-ui-runtime-qa-chrome']},
   {path:'scripts/ui-ux-credit-overlimit-qa.mjs',key:'credit-overlimit',surface:'credit',profiles:['/tmp/myfinhub-credit-overlimit-qa-chrome']},
+  {path:'scripts/cards-remediation-qa.mjs',key:'cards-remediation',surface:'cards',profiles:['/tmp/myfinhub-cards-remediation-qa-chrome']},
+  {path:'scripts/credit-stack-remediation-qa.mjs',key:'credit-stack-remediation',surface:'credit',profiles:['/tmp/myfinhub-credit-stack-remediation-qa-chrome']},
+  {path:'scripts/loans-remediation-qa.mjs',key:'loans-remediation',surface:'loans',profiles:['/tmp/myfinhub-loans-remediation-qa-chrome']},
+  {path:'scripts/lending-remediation-qa.mjs',key:'lending-remediation',surface:'lending',profiles:['/tmp/myfinhub-lending-remediation-qa-chrome']},
+  {path:'scripts/recurring-remediation-qa.mjs',key:'recurring-remediation',surface:'recurring',profiles:['/tmp/myfinhub-recurring-remediation-qa-chrome']},
+  {path:'scripts/recurring-service-brand-qa.mjs',key:'recurring-service-brand',surface:'recurring-branding',profiles:['/tmp/myfinhub-recurring-service-brand-qa-chrome']},
   {path:'scripts/credit-statements-qa.mjs',key:'credit-statements',surface:'credit',profiles:['/tmp/myfinhub-credit-statements-qa-chrome']},
   {path:'scripts/refresh-route-qa.mjs',key:'refresh-route',surface:'navigation',profiles:['/tmp/myfinhub-refresh-route-qa-chrome']},
   {path:'scripts/recovered-surface-qa.mjs',key:'recovered-surface',surface:'recovery',profiles:['/tmp/myfinhub-recovered-surface-qa-chrome']},
@@ -25,6 +33,7 @@ const scripts=[
   {path:'scripts/desktop-titlebar-qa.mjs',key:'desktop-titlebar',surface:'desktop-titlebar',profiles:['/tmp/myfinhub-desktop-titlebar-qa-chrome']},
   {path:'scripts/desktop-host-visual-qa.mjs',key:'desktop-host-visual',surface:'desktop-host',profiles:['/tmp/myfinhub-desktop-host-visual-qa-chrome']},
   {path:'scripts/planning-forecast-qa.mjs',key:'planning-forecast',surface:'planning',profiles:['/tmp/myfinhub-planning-forecast-qa-chrome']},
+  {path:'scripts/savings-remediation-qa.mjs',key:'savings-remediation',surface:'savings',profiles:['/tmp/myfinhub-savings-remediation-qa-chrome']},
   {path:'scripts/action-center-context-qa.mjs',key:'action-center',surface:'action-center',profiles:['/tmp/myfinhub-action-center-context-qa-chrome']},
   {path:'scripts/budget-rules-qa.mjs',key:'budget-rules',surface:'budgets',profiles:['/tmp/myfinhub-budget-rules-qa-chrome']},
   {path:'scripts/settings-tabs-qa.mjs',key:'settings-tabs',surface:'settings',profiles:['/tmp/myfinhub-settings-tabs-qa-chrome']},
@@ -109,7 +118,14 @@ async function runRenderedItem(item){
     if(item.persist!==false)persistedScreenshots+=persistSuiteEvidence({key:item.key,surface:item.surface,evidenceDirs:[evidenceDir,...(item.extraEvidenceDirs||[])],context:evidenceContext});
   }finally{releasePort(port)}
 }
+// Latency-budget QA must measure the app, not CPU contention from unrelated browser suites.
+// Retain the identical <5s route budget and all assertions, but run this performance
+// suite after concurrent functional QA (every suite is still executed exactly once).
+const latencySuite=scripts.find(item=>item.key==='large-data-boundaries');
+if(!latencySuite)throw new Error('Required large-data performance QA suite is missing.');
+const parallelScripts=scripts.filter(item=>item!==latencySuite);
 let cursor=0;
-async function worker(){while(true){const index=cursor++;if(index>=scripts.length)return;await runRenderedItem(scripts[index])}}
-await Promise.all(Array.from({length:Math.min(parallelism,scripts.length)},()=>worker()));
+async function worker(){while(true){const index=cursor++;if(index>=parallelScripts.length)return;await runRenderedItem(parallelScripts[index])}}
+await Promise.all(Array.from({length:Math.min(parallelism,parallelScripts.length)},()=>worker()));
+await runRenderedItem(latencySuite);
 if(requirePrimary&&fallbackActivations!==0)throw new Error(`Primary-browser enforcement violated: ${fallbackActivations} fallback activation(s).`);console.log(`All rendered browser QA suites passed on primary Chromium with parallelism ${parallelism}. Primary bootstrap retries: ${primaryBootstrapRetries}; fallback activations: ${fallbackActivations}; persisted latest focused screenshots: ${persistedScreenshots}.`);

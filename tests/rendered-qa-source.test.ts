@@ -113,12 +113,17 @@ describe('rendered browser QA reliability contract', () => {
     expect(sessionRuntimeQa).toContain("rheomiq:mfa-required");
     expect(sessionRuntimeQa).toContain("rheomiq:auth-expired");
   });
-  it('parallelizes independent rendered suites while serializing shared fixed CDP ports',()=>{
+  it('parallelizes functional suites while isolating strict latency measurement from browser contention',()=>{
     expect(coordinator).toContain("MYFINHUB_QA_PARALLELISM||3");
     expect(coordinator).toContain('const activePorts=new Set()');
     expect(coordinator).toContain('await acquirePort(port)');
     expect(coordinator).toContain('releasePort(port)');
-    expect(coordinator).toContain('Promise.all(Array.from({length:Math.min(parallelism,scripts.length)}');
+    expect(coordinator).toContain("const latencySuite=scripts.find(item=>item.key==='large-data-boundaries')");
+    expect(coordinator).toContain("if(!latencySuite)throw new Error('Required large-data performance QA suite is missing.')");
+    expect(coordinator).toContain('const parallelScripts=scripts.filter(item=>item!==latencySuite)');
+    expect(coordinator).toContain('Promise.all(Array.from({length:Math.min(parallelism,parallelScripts.length)}');
+    expect(coordinator).toContain('await runRenderedItem(latencySuite)');
+    expect(largeData).toContain("large-state route readiness stays under 5s");
   });
 
   it('waits for the lazy-resource error boundary to receive focus before checking redacted copy',()=>{
@@ -245,6 +250,14 @@ describe('rendered browser QA reliability contract', () => {
     expect(completionFunctional).toContain('archiveLifecycleCard');
     expect(completionFunctional).toContain('Επαναφορά');
     expect(completionFunctional).toContain('Οριστική διαγραφή');
+    // Keep actual UI success semantics in sync with the Cards lifecycle QA:
+    // metadata disappearance alone does not prove completed secure-vault cleanup.
+    const cardsPage=readFileSync('src/pages/CardsPage.tsx','utf8');
+    expect(cardsPage).toContain('διαγράφηκε και ο καθαρισμός του ασφαλούς vault ολοκληρώθηκε');
+    expect(completionFunctional).toContain("status.includes('διαγράφηκε και ο καθαρισμός του ασφαλούς vault ολοκληρώθηκε')");
+    expect(completionFunctional).toContain("status.includes('QA Audit Lifecycle Card')");
+    expect(completionFunctional).toContain("!document.querySelector('[role=alertdialog]')");
+    expect(completionFunctional).not.toContain("document.body.textContent.includes('διαγράφηκε οριστικά')");
   });
 
 });

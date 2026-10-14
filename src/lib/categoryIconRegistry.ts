@@ -1,15 +1,16 @@
 import type { CategoryIconPackId } from '../types.js';
+import { isCatalogIconKey } from './categoryIconCatalog.js';
 
 export type CategoryIconPack=CategoryIconPackId;
 type CategoryIconDefinition={key:string;label:string;keywords:readonly string[]};
 type CategoryIconPackDefinition={id:CategoryIconPack;label:string;license:string;description:string};
 
 export const CATEGORY_ICON_PACKS:readonly CategoryIconPackDefinition[]=[
-  {id:'lucide',label:'Lucide',license:'ISC',description:'Το υπάρχον πακέτο του MyFinHub · καθαρό outline ύφος.'},
-  {id:'tabler',label:'Tabler Icons',license:'MIT',description:'Τοπικό curated subset με διακριτά 24×24 outline glyphs για τις κατηγορίες του MyFinHub.'},
-  {id:'phosphor',label:'Phosphor',license:'MIT',description:'Τοπικό curated subset της οικογένειας Phosphor, χωρίς CDN ή διπλά οπτικά aliases.'},
-  {id:'heroicons',label:'Heroicons',license:'MIT',description:'Τοπικό curated subset της Tailwind Labs για καθαρό UI-oriented outline.'},
-  {id:'bootstrap',label:'Bootstrap Icons',license:'MIT',description:'Τοπικό curated subset με compact, ευανάγνωστα SVG glyphs για βασικές σημασιολογικές ομάδες.'},
+  {id:'lucide',label:'Lucide',license:'ISC',description:'Πλήρης τοπικός κατάλογος outline SVG χωρίς aliases.'},
+  {id:'tabler',label:'Tabler Icons',license:'MIT',description:'Χιλιάδες πραγματικά διακριτά outline SVG, αποθηκευμένα τοπικά.'},
+  {id:'phosphor',label:'Phosphor',license:'MIT',description:'Πραγματικά διαφορετικά κανονικού βάρους SVG, χωρίς διπλά aliases.'},
+  {id:'heroicons',label:'Heroicons',license:'MIT',description:'Πλήρες outline set της Tailwind Labs, τοπικό.'},
+  {id:'bootstrap',label:'Bootstrap Icons',license:'MIT',description:'Μεγάλος κατάλογος μοναδικών SVG χωρίς γεμισμένες παραλλαγές.'},
 ] as const;
 
 export const CATEGORY_ICON_REGISTRY=[
@@ -103,7 +104,7 @@ function normalize(value:string){return value.normalize('NFD').replace(/[\u0300-
 
 export function categoryIconByKey(key:string){return CATEGORY_ICON_REGISTRY.find(item=>item.key===decodeCategoryIconValue(key).key)??null}
 
-export function encodeCategoryIconValue(pack:CategoryIconPack,key:string){return pack==='lucide'?key:`${pack}:${key}`}
+export function encodeCategoryIconValue(pack:CategoryIconPack,key:string){return pack==='lucide'&&!isCatalogIconKey(key)?key:`${pack}:${key}`}
 
 export function decodeCategoryIconValue(value:string|null|undefined):{pack:CategoryIconPack;key:string}{
   if(!value)return{pack:'lucide',key:'other'};

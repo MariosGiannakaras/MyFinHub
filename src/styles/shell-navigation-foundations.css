@@ -28,8 +28,16 @@
 .topbar{height:62px;border-radius:16px;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;padding:0 15px;position:sticky;top:14px;z-index:25}
 .topbar-primary{display:flex;align-items:center}
 .topbar-primary .save-button{height:38px;padding:0 14px;border-radius:10px;box-shadow:0 4px 10px rgba(47,111,237,.16);font-size:11px}
-.top-actions{grid-column:2;display:flex;align-items:center;gap:8px}
+.top-actions{grid-column:2;display:flex;align-items:center;gap:10px}
 .top-actions button,.icon-button{border:1px solid var(--line);background:var(--surface);box-shadow:none;width:36px;height:36px;border-radius:12px;display:grid;place-items:center;cursor:pointer;transition:.15s}
+.icon-button-accent{background:var(--accent-soft);border-color:var(--focus-outline);color:var(--accent);box-shadow:var(--shadow-flat)}
+.icon-button-quiet{background:transparent;border-color:transparent;color:var(--text-secondary);box-shadow:none}
+.top-actions .icon-button-accent{background:var(--accent-soft);border-color:var(--focus-outline);color:var(--accent);box-shadow:var(--shadow-flat)}
+.top-actions .icon-button-quiet{background:transparent;border-color:transparent;color:var(--text-secondary);box-shadow:none}
+.top-action-command{width:40px;height:40px}
+.top-action-group{display:flex;align-items:center;gap:2px;padding:2px;border:1px solid var(--border-subtle);border-radius:13px;background:var(--surface-inset);box-shadow:var(--shadow-inset)}
+.top-action-group .icon-button{width:32px;height:32px;border-radius:9px}
+.top-action-system{padding-inline:0;border:0;background:transparent;box-shadow:none}
 .top-actions button:enabled:hover,.icon-button:enabled:hover{transform:translateY(-1px);color:var(--blue)}
 .has-dot{position:relative}
 .has-dot:after{content:"";width:7px;height:7px;background:#e4445b;border-radius:99px;position:absolute;right:7px;top:6px;border:2px solid white}

@@ -283,6 +283,7 @@ export interface FinanceData {
     cardBanks?: CardBank[];
     cards?: PaymentCard[];
     deletedCards?: DeletedCardReference[];
+    pendingCardSecretDeletes?: string[];
     creditStatements?: CreditStatementRecord[];
     events?: FinanceEvent[];
     scheduled?: ScheduledTransaction[];
@@ -320,6 +321,7 @@ export interface FinanceSettings {
   monthlyBudget?: number;
   savingsTargetRate?: number;
   creditLimit?: number;
+  /** Legacy read compatibility only. Runtime motion ignores this field. */
   motion?: 'system' | 'reduced' | 'full';
   textSize?: TextSizePreference;
 }
@@ -337,6 +339,7 @@ export interface RecurringItem {
   category: string;
   active: boolean;
   status?: RecurringStatus;
+  logoAssetKey?: string | null;
   source?: string;
 }
 

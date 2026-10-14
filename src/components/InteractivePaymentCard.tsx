@@ -77,15 +77,15 @@ export function InteractivePaymentCard({
   const shownCvv=visible&&revealed.cvv?revealed.cvv:'•••';
 
   return <div className={`card-slot r-card-slot prototype-card-slot ${large?'is-large':''}`}>
-    <article ref={cardRef} className={`payment-card r-payment-card prototype-payment-card ${theme} ${deleteOpen?'delete-armed':''} ${large?'is-large':''}`} style={{'--delete-p':deleteProgress} as React.CSSProperties} onPointerMove={pointerMove} onPointerLeave={resetTilt} aria-label={`${cardLabel(card)} · ${bank.name}`}>
+    <article ref={cardRef} data-command-card-id={card.id} tabIndex={-1} className={`payment-card r-payment-card prototype-payment-card ${theme} ${deleteOpen?'delete-armed':''} ${large?'is-large':''}`} style={{'--delete-p':deleteProgress} as React.CSSProperties} onPointerMove={pointerMove} onPointerLeave={resetTilt} aria-label={`${cardLabel(card)} · ${bank.name}`}>
       <div className="card-inner">
         <header className="card-header">
           <div className="card-brand-block"><div className="card-brand"><PrototypeBrand card={card} bank={bank}/></div><div className="card-nickname">{card.nickname}</div></div>
           <div className="card-toolbar">
-            <button className="card-icon-btn" type="button" disabled={busy} aria-pressed={visible} aria-label={visible?'Απόκρυψη στοιχείων':'Εμφάνιση στοιχείων'} title={visible?'Απόκρυψη στοιχείων':'Εμφάνιση στοιχείων'} onClick={()=>void toggleReveal()}>{visible?<EyeOff/>:<Eye/>}</button>
-            {onEditCard?<button className="card-icon-btn" type="button" disabled={busy} aria-label={`Επεξεργασία κάρτας ${card.nickname}`} title="Επεξεργασία κάρτας" onClick={()=>onEditCard(card)}><Pencil/></button>:null}
-            {onEditDetails?<button className="card-icon-btn" type="button" disabled={busy} aria-label={`Ασφαλή στοιχεία ${card.nickname}`} title="Ασφαλή στοιχεία · PAN / λήξη / CVV" onClick={()=>onEditDetails(card)}><KeyRound/></button>:null}
-            {onArchive?<button className="card-icon-btn" type="button" disabled={busy||archiveDisabled} aria-label="Αρχειοθέτηση κάρτας" title="Αρχειοθέτηση κάρτας" onClick={()=>{setDeleteProgress(0);setDeleteOffset(0);setDeleteOpen(true)}}><Archive/></button>:null}
+            <button className="card-icon-btn card-icon-reveal" type="button" disabled={busy} aria-pressed={visible} aria-label={visible?'Απόκρυψη στοιχείων':'Εμφάνιση στοιχείων'} title={visible?'Απόκρυψη στοιχείων':'Εμφάνιση στοιχείων'} onClick={()=>void toggleReveal()}>{visible?<EyeOff/>:<Eye/>}</button>
+            {onEditCard?<button className="card-icon-btn card-icon-management" type="button" disabled={busy} aria-label={`Επεξεργασία κάρτας ${card.nickname}`} title="Επεξεργασία κάρτας" onClick={()=>onEditCard(card)}><Pencil/></button>:null}
+            {onEditDetails?<button className="card-icon-btn card-icon-management" type="button" disabled={busy} aria-label={`Ασφαλή στοιχεία ${card.nickname}`} title="Ασφαλή στοιχεία · PAN / λήξη / CVV" onClick={()=>onEditDetails(card)}><KeyRound/></button>:null}
+            {onArchive?<button className="card-icon-btn card-icon-management" type="button" disabled={busy||archiveDisabled} aria-label="Αρχειοθέτηση κάρτας" title="Αρχειοθέτηση κάρτας" onClick={()=>{setDeleteProgress(0);setDeleteOffset(0);setDeleteOpen(true)}}><Archive/></button>:null}
           </div>
         </header>
         <div className="card-body">

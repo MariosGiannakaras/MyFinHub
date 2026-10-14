@@ -1,7 +1,9 @@
 import type { CategoryIconPackId, FinanceSettings } from '../types.js';
+import { isCatalogIconKey } from './categoryIconCatalog.js';
+import { categorySemanticCatalogDefault } from './categoryIconSemanticDefaults.js';
 import { inferredCategoryIcon } from './categoryIconInference.js';
 import { categoryIconByKey, decodeCategoryIconValue, encodeCategoryIconValue, type CategoryIconPack } from './categoryIconRegistry.js';
-import { categoryIconFallbackKeyForPack, categoryIconKeySupportedByPack } from './categoryIconPackSupport.js';
+import { categoryIconKeySupportedByPack } from './categoryIconPackSupport.js';
 
 export type CategoryKind='expense'|'income';
 
@@ -15,7 +17,7 @@ function validPack(value:unknown):value is CategoryIconPack{return typeof value=
 function validSemanticKey(value:unknown){
   if(typeof value!=='string')return null;
   const decoded=decodeCategoryIconValue(value);
-  return categoryIconByKey(decoded.key)?.key??null;
+  return isCatalogIconKey(decoded.key)?decoded.key:(categoryIconByKey(decoded.key)?.key??null);
 }
 function normalizedColor(value:unknown){
   if(typeof value!=='string')return null;
@@ -42,7 +44,7 @@ function explicitForPack(
   const previous=legacy?.[preferenceKey];
   if(previous){
     const decoded=decodeCategoryIconValue(previous);
-    if(decoded.pack===pack&&categoryIconByKey(decoded.key)&&categoryIconKeySupportedByPack(pack,decoded.key))return encodeCategoryIconValue(pack,decoded.key);
+    if(decoded.pack===pack&&(isCatalogIconKey(decoded.key)||categoryIconByKey(decoded.key))&&categoryIconKeySupportedByPack(pack,decoded.key))return encodeCategoryIconValue(pack,decoded.key);
   }
   return null;
 }
@@ -61,7 +63,7 @@ export function explicitCategoryIcon(settings:FinanceSettings,kind:CategoryKind,
     const legacy=settings.categoryIcons?.[key];
     if(!legacy)return null;
     const decoded=decodeCategoryIconValue(legacy);
-    return categoryIconByKey(decoded.key)?legacy:null;
+    return isCatalogIconKey(decoded.key)||categoryIconByKey(decoded.key)?legacy:null;
   }
   return explicitCategoryIconForPack(settings,kind,category,activeCategoryIconPack(settings));
 }
@@ -72,7 +74,7 @@ export function explicitSubcategoryIcon(settings:FinanceSettings,kind:CategoryKi
     const legacy=settings.subcategoryIcons?.[key];
     if(!legacy)return null;
     const decoded=decodeCategoryIconValue(legacy);
-    return categoryIconByKey(decoded.key)?legacy:null;
+    return isCatalogIconKey(decoded.key)||categoryIconByKey(decoded.key)?legacy:null;
   }
   return explicitSubcategoryIconForPack(settings,kind,category,subcategory,activeCategoryIconPack(settings));
 }
@@ -80,7 +82,9 @@ export function explicitSubcategoryIcon(settings:FinanceSettings,kind:CategoryKi
 function semanticIconForPack(pack:CategoryIconPack,key:string|null){
   const definition=key?categoryIconByKey(key):null;
   if(!definition)return null;
-  return encodeCategoryIconValue(pack,categoryIconFallbackKeyForPack(pack,definition.key));
+  // The canonical registry is exhaustively covered by the compiled native map.
+  // Retain the old neutral glyph only for a future missing/retired mapping.
+  return encodeCategoryIconValue(pack,categorySemanticCatalogDefault(pack,definition.key)??'other');
 }
 
 export function resolvedCategoryIcon(settings:FinanceSettings,kind:CategoryKind,category:string,subcategory?:string){
@@ -117,7 +121,7 @@ export function withCategoryIcon(settings:FinanceSettings,kind:CategoryKind,cate
   const legacy={...(settings.categoryIcons??{})};
   const decoded=iconKey?decodeCategoryIconValue(iconKey):null;
   const pack=decoded?.pack??activeCategoryIconPack(settings);
-  const semanticKey=decoded&&categoryIconByKey(decoded.key)&&categoryIconKeySupportedByPack(pack,decoded.key)?decoded.key:null;
+  const semanticKey=decoded&&(isCatalogIconKey(decoded.key)||categoryIconByKey(decoded.key))&&categoryIconKeySupportedByPack(pack,decoded.key)?decoded.key:null;
   if(semanticKey)legacy[key]=encodeCategoryIconValue(pack,semanticKey);
   else if(legacy[key]&&decodeCategoryIconValue(legacy[key]).pack===pack)delete legacy[key];
   return {
@@ -133,7 +137,7 @@ export function withSubcategoryIconOverride(settings:FinanceSettings,kind:Catego
   const legacy={...(settings.subcategoryIcons??{})};
   const decoded=iconKey?decodeCategoryIconValue(iconKey):null;
   const pack=decoded?.pack??activeCategoryIconPack(settings);
-  const semanticKey=decoded&&categoryIconByKey(decoded.key)&&categoryIconKeySupportedByPack(pack,decoded.key)?decoded.key:null;
+  const semanticKey=decoded&&(isCatalogIconKey(decoded.key)||categoryIconByKey(decoded.key))&&categoryIconKeySupportedByPack(pack,decoded.key)?decoded.key:null;
   if(semanticKey)legacy[key]=encodeCategoryIconValue(pack,semanticKey);
   else if(legacy[key]&&decodeCategoryIconValue(legacy[key]).pack===pack)delete legacy[key];
   return {

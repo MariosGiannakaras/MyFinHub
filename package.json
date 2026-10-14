@@ -1,6 +1,6 @@
 {
   "name": "rheomiq",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -39,7 +39,10 @@
     "desktop:dist:from-dist": "npm --prefix desktop run dist",
     "qa:real-stack": "tsx scripts/real-stack-e2e.ts",
     "qa:migration-recovery": "tsx scripts/migration-recovery-e2e.ts",
-    "maintenance:check": "node --check scripts/dependency-health.mjs"
+    "maintenance:check": "node --check scripts/dependency-health.mjs && npm run defects:check",
+    "defects:check": "node scripts/defect-preflight.mjs --check-registry",
+    "defects:preflight": "node scripts/defect-preflight.mjs",
+    "defects:mine": "node scripts/historical-defect-miner.mjs"
   },
   "dependencies": {
     "@tesseract.js-data/ell": "1.0.0",
@@ -62,7 +65,7 @@
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vite": "^8.3.2",
-    "vitest": "^4.1.11"
+    "vitest": "^5.0.3"
   },
   "overrides": {
     "shell-quote": "1.12.0"

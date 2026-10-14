@@ -43,6 +43,10 @@ describe('Dashboard account history',()=>{
     expect(comparison).toHaveLength(12);
     expect(comparison.every(point=>point.date.startsWith('2026-07-'))).toBe(true);
     expect(comparison.at(-1)?.value).toBe(1000);
+
+    const fullHistoricalComparison=dashboardPreviousMonthValues(data,'bank','2026-08','2026-08-31');
+    expect(fullHistoricalComparison).toHaveLength(31);
+    expect(fullHistoricalComparison.at(-1)?.date).toBe('2026-07-31');
   });
 
   it('reports the movement-derived 30-day balance change in account currency',()=>{

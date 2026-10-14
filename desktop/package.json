@@ -1,6 +1,6 @@
 {
   "name": "rheomiq-desktop",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "private": true,
   "description": "MyFinHub Windows desktop host",
   "author": "MariosGiannakaras",
@@ -16,7 +16,7 @@
   },
   "devDependencies": {
     "electron": "43.7.7",
-    "electron-builder": "26.15.6",
+    "electron-builder": "26.17.0",
     "esbuild": "0.28.2",
     "rheomiq": "file:.."
   },
