@@ -91,7 +91,7 @@ try{
   assert(!(await c.call("function(){return Boolean(document.querySelector('.settings-icons-only [data-icon-selection-panel] .category-icon-pack-switcher'))}")),'shared picker does not repeat the pack selector');
   await waitFor("function(){return document.querySelectorAll('.settings-icons-only [data-icon-selection-panel] .category-icon-options [data-icon-pack]').length>0}",'finance-first Phosphor catalog loaded');
    const curated=await c.call("function(){return document.querySelectorAll('.settings-icons-only [data-icon-selection-panel] .category-icon-options [data-icon-pack]').length}");
-   assert(curated>0&&curated<96,'finance-first picker defaults to a bounded curated selection');
+   assert(curated>0&&curated<=48,`finance-first picker defaults to at most 48 curated options (found ${curated})`);
    await clickText('.settings-icons-only [data-icon-selection-panel] .category-icon-catalog-view button','Όλα τα εικονίδια');
    await waitFor("function(){return document.querySelectorAll('.settings-icons-only [data-icon-selection-panel] .category-icon-options [data-icon-pack]').length===96}",'full Phosphor catalog is opt-in');
   const optionPacks=await c.call("function(){return [...document.querySelectorAll('.settings-icons-only [data-icon-selection-panel] .category-icon-options [data-icon-pack]')].map(node=>node.getAttribute('data-icon-pack'))}");

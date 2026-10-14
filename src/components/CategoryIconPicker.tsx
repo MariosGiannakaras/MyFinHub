@@ -103,7 +103,11 @@ export function CategoryIconPicker({
     if(catalog?.pack!==pack)return [];
     const defaults=new Set(Object.values(CATEGORY_SEMANTIC_CATALOG_DEFAULTS[pack]));
     // Search is intentionally broader when the owner supplies a term.
-    const candidates=showAll||query.trim()?catalog.names:catalog.names.filter(name=>FINANCE_ICON_CHOICES.has(name)||defaults.has(name));
+    // Prioritize the semantic defaults, then finance-friendly alternatives.
+    // The initial page is deliberately small; full search and 'All' stay opt-in.
+    const curated=[...catalog.names.filter(name=>defaults.has(name)),
+      ...catalog.names.filter(name=>FINANCE_ICON_CHOICES.has(name)&&!defaults.has(name))].slice(0,48);
+    const candidates=showAll||query.trim()?catalog.names:curated;
     if(!query.trim())return candidates;
     return candidates.filter(name=>{
       const text=name.replaceAll('-',' ');

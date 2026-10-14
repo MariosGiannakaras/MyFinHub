@@ -24,3 +24,9 @@ Owner scope: fix annotated mobile screenshots, restore on-card secure card edit,
 - This follow-up makes geometry QA exercise the actual two-step workflow instead of deleting or weakening modal assertions; adds a source contract for both steps. Review existing targeted rendered suites for additional genuine responsive issues and preserve accessibility/touch/viewport thresholds.
 - At previous Ready head: WebKit #38553136666, Windows Desktop #38553136437, First Run #38553136384, Clean Launch #38553136440 **SUCCESS**; Performance #38553136365 **PENDING** at discovery. All must be reverified at final coherent Ready head after this patch. No release or production key changes.
 - **Implementations 0/5 completed · Sub-implementations 0/20 completed** until accepted final rendered and security proofs; production vault #566 remains blocked.
+
+## 2026-10-14 Chromium Ready failure follow-up — finance-first icon picker
+- Ready-head CI #38554012068 at `98ee0d92628d63d1ff1581b3daedfda4d3717b0a` passed source/unit/build/security but failed in **rendered `scripts/icon-packs-qa.mjs`**: recommended picker showed a full 96-icon page, contrary to approved finance-focused defaults. This is an actual UX problem, not a reason to weaken QA.
+- The picker now prioritizes preserved pack-specific semantic category defaults and shows at most **48 finance-relevant icons** on initial `Προτεινόμενα` screen. Explicit `Όλα τα εικονίδια` and user-entered search still access the full library; saved custom icon preferences remain intact.
+- Rendered Chromium QA asserts at most 48 curated icons, plus unchanged independent full-catalog SVG identity, interaction and cross-pack tests. Full Ready CI/WebKit/performance/Windows gates must pass at a final coherent head; screenshot artifacts require direct review.
+- **Implementations 0/5 completed · Sub-implementations 0/20 completed** accepted; production Card Vault #566 remains blocked on original Production key provenance.

@@ -36,6 +36,8 @@ describe('owner #567 screenshot-driven corrections',()=>{
     expect(picker).toContain('FINANCE_ICON_CHOICES');
     expect(picker).toContain('CATEGORY_SEMANTIC_CATALOG_DEFAULTS[pack]');
     expect(picker).toContain('showAll||query.trim()?catalog.names');
+    expect(picker).toContain('].slice(0,48)');
+    expect(picker).toContain('catalog.names.filter(name=>defaults.has(name))');
     expect(picker).toContain('Όλα τα εικονίδια');
     expect(workspace).toContain('resettableBasicRows.reduce');
     expect(workspace).toContain('withCategoryIcon(next,row.kind,row.name,null)');
