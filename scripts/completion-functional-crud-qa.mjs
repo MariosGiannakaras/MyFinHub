@@ -352,13 +352,13 @@ try{
   const lifecycleDesign=await c.call(`function(){const visible=${visible};const option=[...document.querySelectorAll('.card-create-modal .design-option')].find(visible);option?.click();return Boolean(option)}`);
   assert(lifecycleDesign,'new debit card exposes a selectable design');
   await clickText('.card-create-modal button','Προσθήκη κάρτας');
-  await waitFor("function(){return Boolean(document.querySelector('.app-card-details-dialog'))&&document.body.textContent.includes('QA Audit Lifecycle Card')}",'new-card secure details step');
+  await waitFor("function(){return Boolean(document.querySelector('.app-card-details-inline'))&&document.body.textContent.includes('QA Audit Lifecycle Card')}",'new-card secure details step');
   await installCardLifecycleVault();
   await setByLabel('Αριθμός κάρτας','4242 4242 4242 4242');
   await setByLabel('Λήξη κάρτας','12/30');
   await setByLabel('CVV κάρτας','123');
-  await clickText('.app-card-details-dialog button','Αποθήκευση στοιχείων');
-  await waitFor("function(){return !document.querySelector('.app-card-details-dialog')&&[...document.querySelectorAll('.prototype-payment-card')].some(card=>(card.textContent||'').includes('QA Audit Lifecycle Card')&&(card.textContent||'').includes('4242'))}",'created debit card persists into active Cards stack');
+  await clickText('.app-card-details-inline button','Αποθήκευση στοιχείων');
+  await waitFor("function(){return !document.querySelector('.app-card-details-inline')&&[...document.querySelectorAll('.prototype-payment-card')].some(card=>(card.textContent||'').includes('QA Audit Lifecycle Card')&&(card.textContent||'').includes('4242'))}",'created debit card persists into active Cards stack');
   await restoreCardLifecycleVault();
   await shot('cards-lifecycle-created');
 
@@ -387,9 +387,11 @@ try{
   await waitFor("function(){const stillPresent=[...document.querySelectorAll('.prototype-payment-card,.card-archive-row')].some(node=>(node.textContent||'').includes('QA Audit Lifecycle Card'));const status=document.querySelector('.cards-prototype-page .action-status[role=status]')?.textContent||'';return !stillPresent&&status.includes('QA Audit Lifecycle Card')&&status.includes('διαγράφηκε και ο καθαρισμός του ασφαλούς vault ολοκληρώθηκε')&&!document.querySelector('[role=alertdialog]')}",'lifecycle card permanently removed with confirmed vault cleanup');
   await shot('cards-lifecycle-deleted');
 
-  console.log('Completion functional QA: Card profile edit stays separate from vault details');
+  console.log('Completion functional QA: single on-card pencil exposes both secure details and profile design editing');
   const cardsEdit=await c.call(`function(){const visible=${visible};const button=[...document.querySelectorAll('button[aria-label^="Επεξεργασία κάρτας"]')].find(visible);button?.click();return Boolean(button)}`);
-  assert(cardsEdit,'Cards exposes profile editing separately from secure details');
+  assert(cardsEdit,'Cards exposes one pencil for inline secure editing');
+   await waitFor("function(){return Boolean(document.querySelector('.app-card-details-inline'))}",'inline card secure editor');
+   await clickText('.app-card-details-inline button','Όνομα / σχέδιο');
   await waitFor("function(){return Boolean(document.querySelector('#card-create-title'))&&document.querySelector('#card-create-title').textContent.includes('Επεξεργασία κάρτας')}",'Cards profile editor');
   await setByLabel('Όνομα κάρτας','QA Audit Card Profile');
   await selectOwnedByLabel('Δίκτυο κάρτας','Mastercard');
@@ -397,8 +399,8 @@ try{
   assert(alternateDesign,'card profile exposes an alternate visual design');
   await clickText('.card-create-modal button','Αποθήκευση αλλαγών');
   await waitFor("function(){const card=[...document.querySelectorAll('.prototype-payment-card')].find(node=>(node.textContent||'').includes('QA Audit Card Profile'));return Boolean(card&&card.querySelector('[data-network=\"MASTERCARD\"]'))}",'updated Cards profile keeps explicit Mastercard network after design change');
-  const secureStillSeparate=await c.call(`function(){const visible=${visible};return [...document.querySelectorAll('button[aria-label^="Ασφαλή στοιχεία"]')].some(visible)&&!document.querySelector('.app-card-details-dialog')}`);
-  assert(secureStillSeparate,'Cards profile save does not open or merge the secure-details dialog');
+  const secureStillSeparate=await c.call(`function(){const visible=${visible};return [...document.querySelectorAll('button[aria-label^="Επεξεργασία κάρτας"]')].some(visible)&&!document.querySelector('.app-card-details-inline')}`);
+  assert(secureStillSeparate,'Cards profile save keeps inline secure-details editor closed');
   await shot('cards-profile-updated');
 
   console.log('Completion functional QA: Credit-card profile edit');

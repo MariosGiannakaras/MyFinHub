@@ -89,7 +89,11 @@ try{
 
   await openRow(targetLabel);
   assert(!(await c.call("function(){return Boolean(document.querySelector('.settings-icons-only [data-icon-selection-panel] .category-icon-pack-switcher'))}")),'shared picker does not repeat the pack selector');
-  await waitFor("function(){return document.querySelectorAll('.settings-icons-only [data-icon-selection-panel] .category-icon-options [data-icon-pack]').length>=30}",'native Phosphor catalog loaded');
+  await waitFor("function(){return document.querySelectorAll('.settings-icons-only [data-icon-selection-panel] .category-icon-options [data-icon-pack]').length>0}",'finance-first Phosphor catalog loaded');
+   const curated=await c.call("function(){return document.querySelectorAll('.settings-icons-only [data-icon-selection-panel] .category-icon-options [data-icon-pack]').length}");
+   assert(curated>0&&curated<96,'finance-first picker defaults to a bounded curated selection');
+   await clickText('.settings-icons-only [data-icon-selection-panel] .category-icon-catalog-view button','Όλα τα εικονίδια');
+   await waitFor("function(){return document.querySelectorAll('.settings-icons-only [data-icon-selection-panel] .category-icon-options [data-icon-pack]').length===96}",'full Phosphor catalog is opt-in');
   const optionPacks=await c.call("function(){return [...document.querySelectorAll('.settings-icons-only [data-icon-selection-panel] .category-icon-options [data-icon-pack]')].map(node=>node.getAttribute('data-icon-pack'))}");
   assert(optionPacks.length===96&&optionPacks.every(pack=>pack==='phosphor'),'only 96 genuine Phosphor choices are mounted in page one');
   const atlasIds=await c.call("function(){return [...document.querySelectorAll('.settings-icons-only [data-icon-selection-panel] .category-icon-options svg use')].map(node=>node.getAttribute('href'))}");
@@ -111,6 +115,8 @@ try{
   // The category list can switch to Lucide before the asynchronous native
   // catalog has populated the picker. Never click a stale/empty first frame:
   // require all 96 real Lucide SVG options, not just the picker shell.
+   await waitFor("function(){return document.querySelectorAll('.settings-icons-only [data-icon-selection-panel] .category-icon-options [data-icon-pack]').length>0}",'finance-first Lucide catalog loaded');
+   await clickText('.settings-icons-only [data-icon-selection-panel] .category-icon-catalog-view button','Όλα τα εικονίδια');
   await waitFor("function(){const picker=document.querySelector('.settings-icons-only [data-icon-selection-panel] .category-icon-picker');const choices=[...picker?.querySelectorAll('.category-icon-options .category-icon-option')||[]];return choices.length===96&&choices.every(button=>{const glyph=button.querySelector('[data-category-icon]');return glyph?.getAttribute('data-icon-pack')==='lucide'&&glyph?.getAttribute('data-category-icon')?.startsWith('lucide:icon/')&&glyph?.querySelector('use')?.getAttribute('href')?.startsWith('/icon-packs/lucide.svg#i-')})}",'native Lucide catalog loaded after family switch');
   const lucideChoice=await c.call("function(){const buttons=[...document.querySelectorAll('.settings-icons-only [data-icon-selection-panel] .category-icon-options .category-icon-option')];const button=buttons[2]||buttons[0];const key=button?.querySelector('[data-category-icon]')?.getAttribute('data-category-icon')||'';button?.click();return key}");
   assert(Boolean(lucideChoice)&&lucideChoice!==phosphorChoice,`Lucide can keep a distinct selection from Phosphor: selected ${lucideChoice||'<none>'}, prior ${phosphorChoice}`);
