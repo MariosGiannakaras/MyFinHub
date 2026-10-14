@@ -25,3 +25,8 @@
 .subcategory-icon-editor .category-icon-picker{padding:0 10px 10px}
 @media(max-width:680px){.category-icons-workspace .segmented-control{display:grid;grid-template-columns:1fr 1fr}.category-icons-workspace .segmented-control button{width:100%}.category-icon-options{grid-template-columns:repeat(2,minmax(0,1fr));max-height:320px}.category-icon-option{min-height:44px}.category-icon-editor>summary,.subcategory-icon-editor>summary{min-height:44px}.category-icon-editor-body{padding-left:10px;padding-right:10px}}
 @media(max-width:360px){.category-icon-options{grid-template-columns:1fr}}
+
+/* #567 curated icons and explicit full-catalog escape hatch. */
+.category-icon-catalog-view{display:flex;flex-wrap:wrap;gap:6px;min-width:0}
+.category-icon-catalog-view button{flex:1 1 140px;min-height:40px;padding:7px 10px;background:var(--surface);color:var(--text-secondary);border:1px solid var(--line);border-radius:10px;font:inherit;font-weight:750;font-size:var(--ux-small-size);cursor:pointer}
+.category-icon-catalog-view button.active{border-color:var(--blue);background:var(--accent-soft);color:var(--blue)}

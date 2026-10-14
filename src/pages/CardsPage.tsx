@@ -89,6 +89,13 @@ export function CardsPage({
   const [message,setMessage]=useState('');
   const bankRef=useModalFocus<HTMLElement>(bankOpen,'[data-autofocus="true"]',()=>{setBankOpen(false);setError('')});
   const cardBank=cardBankId?banks.find(bank=>bank.id===cardBankId):undefined;
+  // A newly selected bank may not yet be represented by a persisted card.
+  // Keep its inline draft visible until the owner confirms the secure save.
+  const visibleWorkspaceBanks=useMemo(()=>{
+    if(!detailsIsNew||!detailsCard||workspaceBanks.some(bank=>bank.id===detailsCard.bankId))return workspaceBanks;
+    const pendingBank=banks.find(bank=>bank.id===detailsCard.bankId);
+    return pendingBank?[...workspaceBanks,pendingBank].sort((a,b)=>a.order-b.order):workspaceBanks;
+  },[banks,workspaceBanks,detailsCard?.id,detailsCard?.bankId,detailsIsNew]);
   const openCardCreate=(bankId?:string)=>{setCardBankId(bankId??null);setCardCreateOpen(true);setMessage('')};
   const closeCardCreate=()=>{setCardCreateOpen(false);setCardBankId(null)};
   const recentCategory=(row:RecentAccountRow)=>row.kind==='split'?'Διαχωρισμός':row.category===row.kind?eventKindLabel(row.kind):categoryPath(row.category,row.subcategory);
@@ -132,12 +139,12 @@ export function CardsPage({
     </section>
 
     <section className="cards-workspace cards-prototype-workspace surface-raised" aria-label="Χρεωστικές και προπληρωμένες κάρτες ανά τράπεζα">
-      {workspaceBanks.length>3?<div className="cards-workspace-scroll-hint" aria-hidden="true">Οριζόντια κύλιση για περισσότερες τράπεζες →</div>:null}
-      {workspaceBanks.length?<div className="cards-grid cards-prototype-grid" data-content-entrance="grid" style={{'--bank-count':Math.max(1,workspaceBanks.length)} as React.CSSProperties}>{workspaceBanks.map(bank=>{
-        const active=cardsForBank(data,bank.id);const archived=archivedCardsForBank(data,bank.id);
+      {visibleWorkspaceBanks.length>3?<div className="cards-workspace-scroll-hint" aria-hidden="true">Οριζόντια κύλιση για περισσότερες τράπεζες →</div>:null}
+      {visibleWorkspaceBanks.length?<div className="cards-grid cards-prototype-grid" data-content-entrance="grid" style={{'--bank-count':Math.max(1,visibleWorkspaceBanks.length)} as React.CSSProperties}>{visibleWorkspaceBanks.map(bank=>{
+        const persisted=cardsForBank(data,bank.id);const active=detailsIsNew&&detailsCard?.bankId===bank.id?[detailsCard,...persisted.filter(card=>card.id!==detailsCard.id)]:persisted;const archived=archivedCardsForBank(data,bank.id);
         return <section className="bank-column cards-bank-column" key={bank.id} data-bank={bank.id}>
           <header className="bank-column-head"><div className="bank-column-title"><b>{bank.name}</b><small>{active.length} {active.length===1?'κάρτα':'κάρτες'}</small></div><Tooltip label={`Προσθήκη κάρτας στην ${bank.name}`} side="left"><IconButton type="button" className="bank-add-btn" aria-label={`Προσθήκη κάρτας στην ${bank.name}`} onClick={()=>openCardCreate(bank.id)}><Plus/></IconButton></Tooltip></header>
-          <div className="bank-stack">{active.length?active.map(card=><InteractivePaymentCard key={card.id} card={card} bank={bank} onEditCard={editCardProfile} onEditDetails={editCardDetails} onArchive={archive}/>):<button type="button" className="bank-empty" onClick={()=>openCardCreate(bank.id)}>Δεν υπάρχουν χρεωστικές ή προπληρωμένες κάρτες</button>}</div>
+          <div className="bank-stack">{active.length?active.map(card=><InteractivePaymentCard key={card.id} card={card} bank={bank} onEditCard={detailsIsNew&&detailsCard?.id===card.id?undefined:editCardProfile} onEditDetails={editCardDetails} onArchive={detailsIsNew&&detailsCard?.id===card.id?undefined:archive} detailsEditor={detailsCard?.id===card.id?<CardDetailsDialog inline open card={detailsCard} requireCvv={detailsIsNew} onBeforeSave={onStageNewCard} onSaved={saveCardDetails} onEditProfile={!detailsIsNew?()=>{setDetailsCard(null);editCardProfile(card)}:undefined} onCancel={()=>{setDetailsCard(null);setDetailsIsNew(false)}}/>:undefined}/>):<button type="button" className="bank-empty" onClick={()=>openCardCreate(bank.id)}>Δεν υπάρχουν χρεωστικές ή προπληρωμένες κάρτες</button>}</div>
           {archived.length?<details className="cards-archive"><summary><ArchiveRestore/> Αρχειοθετημένες · {archived.length}</summary><div className="card-archive-list" data-content-entrance="list">{archived.map(card=><article className="card-archive-row" key={card.id}><div className="card-archive-identity"><b>{card.nickname}</b><small>{card.last4?`•••• ${card.last4} · `:''}{card.kind==='prepaid'?'Προπληρωμένη':'Χρεωστική'}</small></div><div className="card-archive-actions"><Button type="button" variant="primary" onClick={()=>restore(card)}><ArchiveRestore/> Επαναφορά</Button><Button type="button" variant="danger" className="danger" onClick={()=>setDeleteTarget(card)}><Trash2/> Οριστική διαγραφή</Button></div></article>)}</div></details>:null}
         </section>;
       })}</div>:<div className="cards-workspace-empty"><CreditCard/><div><b>Δεν έχεις αποθηκευμένη χρεωστική ή προπληρωμένη κάρτα.</b><span>Πρόσθεσε κάρτα και επίλεξε την τράπεζά της στο επόμενο βήμα.</span></div><Button type="button" variant="primary" onClick={()=>openCardCreate()}><Plus/> Προσθήκη κάρτας</Button></div>}
@@ -160,7 +167,6 @@ export function CardsPage({
 
     <CardCreateDialog open={cardCreateOpen} data={data} banks={cardBank?[cardBank]:banks} initialBankId={cardBank?.id} allowedKinds={['debit','prepaid']} onClose={closeCardCreate} onSave={createCard}/>
     <CardCreateDialog open={Boolean(profileCard)} data={data} banks={banks} initialCard={profileCard} allowedKinds={['debit','prepaid']} onClose={()=>setProfileCard(null)} onSave={saveCardProfile}/>
-    <CardDetailsDialog open={Boolean(detailsCard)} card={detailsCard} requireCvv={detailsIsNew} onBeforeSave={onStageNewCard} onSaved={saveCardDetails} onCancel={()=>{setDetailsCard(null);setDetailsIsNew(false)}}/>
 
     {bankOpen?<div className="picker-backdrop open" aria-hidden="false" onMouseDown={()=>setBankOpen(false)}><section ref={bankRef} className="picker compact surface-raised" role="dialog" aria-modal="true" aria-labelledby="new-bank-title" aria-describedby={error?'new-bank-error':undefined} tabIndex={-1} onMouseDown={event=>event.stopPropagation()}><div className="picker-head"><div><h2 id="new-bank-title">Νέα τράπεζα</h2><p>Η νέα τράπεζα θα αποκτήσει δική της στήλη και ξεχωριστό κουμπί προσθήκης καρτών.</p></div><IconButton type="button" className="close-picker" aria-label="Κλείσιμο" onClick={()=>setBankOpen(false)}>×</IconButton></div><div className="modal-form-grid one"><div className="modal-field"><label>Όνομα τράπεζας</label><AppTextInput data-autofocus="true" aria-label="Όνομα τράπεζας" maxLength={36} value={bankName} onChange={event=>setBankName(event.target.value)} placeholder="π.χ. N26" invalid={Boolean(error)} aria-describedby={error?'new-bank-error':undefined}/></div></div>{error?<FormError id="new-bank-error">{error}</FormError>:null}<div className="modal-actions"><Button type="button" variant="secondary" className="modal-secondary" onClick={()=>setBankOpen(false)}>Ακύρωση</Button><Button type="button" variant="primary" className="modal-primary" onClick={saveBank}><Plus/> Προσθήκη τράπεζας</Button></div></section></div>:null}
 

@@ -29,7 +29,10 @@ describe('card secret crypto',()=>{
 
   it('accepts CVV-only partial updates and rejects malformed CVV/PAN values',()=>{
     expect(normalizeCardSecrets({cvv:'1234'})).toEqual({cvv:'1234'});
-    expect(()=>normalizeCardSecrets({cvv:'12'})).toThrow('INVALID_CARD_CVV');
+    expect(normalizeCardSecrets({cvv:'12'})).toEqual({cvv:'12'});
+    expect(normalizeCardSecrets({expiry:'99/45'})).toEqual({expiry:'99/45'});
+    expect(()=>normalizeCardSecrets({cvv:'12345'})).toThrow('INVALID_CARD_CVV');
+    expect(()=>normalizeCardSecrets({pan:'1'.repeat(33)})).toThrow('INVALID_CARD_PAN');
     expect(()=>normalizeCardSecrets({cvv:'12x'})).toThrow('INVALID_CARD_CVV');
     expect(()=>normalizeCardSecrets({pan:'not-a-number'})).toThrow('INVALID_CARD_PAN');
   });

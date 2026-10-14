@@ -216,7 +216,9 @@ describe('rendered browser QA reliability contract', () => {
 
   it('keeps server-vault save/reveal/update/reload/delete in rendered QA',()=>{
     expect(coordinator).toContain("scripts/card-vault-runtime-qa.mjs");
-    expect(cardVaultRuntime).toContain('Card Vault runtime QA: invalid input stays local and does not write');
+    expect(cardVaultRuntime).toContain('Card Vault runtime QA: incomplete expiry stays local');
+    expect(cardVaultRuntime).toContain('incomplete expiry must not reach PUT');
+    expect(cardVaultRuntime).toContain('.app-card-details-inline');
     expect(cardVaultRuntime).toContain("url.searchParams.set('card-vault','ready')");
     expect(qaWorkspace).toContain("params.get('card-vault')==='ready'");
     expect(qaWorkspace).toContain("vaultRef:'qa-debit-card'");
