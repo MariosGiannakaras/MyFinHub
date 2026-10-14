@@ -171,5 +171,7 @@
 
 /* #567 Inline secure editor uses the card's own surface, never a modal. */
 .prototype-payment-card:has(.app-card-details-inline){aspect-ratio:auto;min-height:clamp(330px,70vw,400px);transform:none!important;overflow:hidden}
-.prototype-payment-card:has(.app-card-details-inline) .card-inner{height:auto;min-height:inherit;padding:0;display:block}
+.prototype-payment-card:has(.app-card-details-inline) .card-inner{position:relative;inset:auto;height:auto;min-height:inherit;padding:0;display:block}
+ /* Prevent the default absolute credit-card inset from limiting this owner-approved expandable editor. */
+.prototype-payment-card:has(.app-card-details-inline) .app-card-details-inline{height:auto;max-height:none}
 @media(max-width:680px){.prototype-payment-card:has(.app-card-details-inline){min-height:345px}}

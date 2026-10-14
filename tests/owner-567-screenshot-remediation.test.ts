@@ -35,6 +35,12 @@ describe('owner #567 screenshot-driven corrections',()=>{
     expect(inlineCss).toContain('background:var(--surface,#fff)');
     expect(inlineCss).toContain('grid-template-columns:repeat(2,minmax(0,1fr))');
     expect(inlineCss).toContain('min-height:44px');
+    const cardCss=file('../src/components/InteractivePaymentCard.css');
+    expect(cardCss).toContain('.prototype-payment-card:has(.app-card-details-inline) .card-inner{position:relative;inset:auto');
+    const frontendQa=file('../scripts/frontend-qa.mjs');
+    expect(frontendQa).toContain('on-card secure editor and every save/cancel action must remain inside expanded card');
+    const geomQa=file('../scripts/completion-dialog-geometry-qa.mjs');
+    expect(geomQa).toContain('save/cancel buttons and complete editor must fit expanded card');
   });
   it('shows semantic finance icons first and preserves explicit opt-in to the whole catalog',()=>{
     const picker=file('../src/components/CategoryIconPicker.tsx');

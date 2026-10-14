@@ -135,6 +135,8 @@ try{
     await c.call("function(){document.querySelector('.app-card-details-inline')?.scrollIntoView({block:'center',behavior:'instant'})}");
      await inspect('.app-card-details-inline',`${viewport.name} on-card secure editor`,{vertical:false});
      assert(await c.call("function(){return Boolean(document.querySelector('.prototype-payment-card .app-card-details-inline'))}"),'on-card editor remains inside payment card');
+     const editorBounds=await c.call("function(){const card=document.querySelector('.prototype-payment-card:has(.app-card-details-inline)'),editor=card?.querySelector('.app-card-details-inline'),footer=editor?.querySelector('footer');if(!card||!editor||!footer)return null;const rect=card.getBoundingClientRect(),er=editor.getBoundingClientRect(),fr=footer.getBoundingClientRect();const buttons=[...footer.querySelectorAll('button')].map(button=>{const r=button.getBoundingClientRect();return {left:r.left,right:r.right,bottom:r.bottom}});return {cardBottom:rect.bottom,editorBottom:er.bottom,footerBottom:fr.bottom,clientHeight:card.clientHeight,scrollHeight:card.scrollHeight,buttons}}");
+     assert(editorBounds&&editorBounds.scrollHeight<=editorBounds.clientHeight+1&&editorBounds.editorBottom<=editorBounds.cardBottom+1&&editorBounds.footerBottom<=editorBounds.cardBottom+1&&editorBounds.buttons.length>=2&&editorBounds.buttons.every(item=>item.bottom<=editorBounds.cardBottom+1&&item.left>=-1&&item.right<=viewport.width+1),`${viewport.name}: save/cancel buttons and complete editor must fit expanded card: ${JSON.stringify(editorBounds)}`);
 
     await navigate('savings');
     await clickText('button','Νέος στόχος');
