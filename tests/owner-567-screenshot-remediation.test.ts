@@ -43,6 +43,13 @@ describe('owner #567 screenshot-driven corrections',()=>{
     expect(inferredCategoryIcon('expense','Καφές')).toBe('coffee');
     expect(inferredCategoryIcon('expense','Ψιλικά')).toBe('kiosk');
   });
+  it('exercises the real two-stage on-card edit to profile/design path in rendered phone QA',()=>{
+    const geometry=file('../scripts/completion-dialog-geometry-qa.mjs');
+    expect(geometry).toContain("'on-card secure details visible'");
+    expect(geometry).toContain("await clickText('.app-card-details-inline button','Όνομα / σχέδιο')");
+    expect(geometry).toContain("await inspect('.card-create-modal'");
+    expect(geometry).toContain("await inspect('.app-card-details-inline'");
+  });
   it('limits viewport geometry inside the supplied phone routes instead of hiding off-screen data',()=>{
     const settings=file('../src/pages/SettingsPage.css');
     const period=file('../src/styles/reporting-period-controls.css');

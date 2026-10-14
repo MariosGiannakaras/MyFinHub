@@ -102,7 +102,11 @@ try{
     await inspect('.quick-modal',`${viewport.name} Quick Entry`);
 
     await navigate('cards');
-    await click('[aria-label^="Επεξεργασία κάρτας"]','card profile editor');
+    // One owner-approved Pencil first expands secure details on the payment card.
+    // The separate profile/design editor is then reachable through its contextual action.
+    await click('[aria-label^="Επεξεργασία κάρτας"]','on-card secure details entry');
+    await waitFor("function(){return Boolean(document.querySelector('.prototype-payment-card .app-card-details-inline'))}",'on-card secure details visible');
+    await clickText('.app-card-details-inline button','Όνομα / σχέδιο');
     await waitFor("function(){return Boolean(document.querySelector('.card-create-modal'))}",'card profile editor');
     await inspect('.card-create-modal',`${viewport.name} card profile editor`);
 
