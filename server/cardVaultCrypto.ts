@@ -19,13 +19,13 @@ const IV_BYTES = 12;
 function normalizePan(value?: string) {
   if (value == null || value.trim() === '') return undefined;
   const digits = value.replace(/\D/g, '');
-  if (!digits) throw new Error('INVALID_CARD_PAN');
+  if (!digits || digits.length > 32) throw new Error('INVALID_CARD_PAN');
   return digits;
 }
 
 function normalizeExpiry(value?: string) {
   if (value == null || value.trim() === '') return undefined;
-  const match = value.trim().match(/^(0[1-9]|1[0-2])\s*[/\-]\s*(\d{2}|\d{4})$/);
+  const match = value.trim().match(/^(\d{2})\s*[/\-]\s*(\d{2}|\d{4})$/);
   if (!match) throw new Error('INVALID_CARD_EXPIRY');
   const year = match[2].length === 4 ? match[2].slice(2) : match[2];
   return `${match[1]}/${year}`;
@@ -34,7 +34,7 @@ function normalizeExpiry(value?: string) {
 function normalizeCvv(value?: string) {
   if (value == null || value.trim() === '') return undefined;
   const normalized = value.trim();
-  if (!/^\d{3,4}$/.test(normalized)) throw new Error('INVALID_CARD_CVV');
+  if (!/^\d{1,4}$/.test(normalized)) throw new Error('INVALID_CARD_CVV');
   return normalized;
 }
 
