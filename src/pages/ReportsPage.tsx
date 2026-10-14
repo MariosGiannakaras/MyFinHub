@@ -48,7 +48,8 @@ export function ReportsPage({data,month,asOf,privacyVisible,onPrivacyVisibleChan
  const loanBurden=reportLoanBurden(data,reportingPeriodEndDate(month,asOf));
  const accounts=allAccounts(data).filter(account=>account.kind!=='credit');
  const accountIds=accounts.slice(0,4).map(account=>account.id);
- const accountSeries=primaryAccountSeries(data,month,accountIds,6,asOf);
+ // Six month-end balance scans are needed only when the owner reveals this private chart.
+ const accountSeries=privacyVisible&&accountIds.length?primaryAccountSeries(data,month,accountIds,6,asOf):[];
  const budgetRows=budgetProgress(data,month,asOf);
  const exceededBudgets=budgetRows.filter(row=>row.status==='exceeded').length;
  const nearBudgets=budgetRows.filter(row=>row.status==='near').length;
@@ -117,8 +118,8 @@ export function ReportsPage({data,month,asOf,privacyVisible,onPrivacyVisibleChan
  },[data,month,asOf]);
  const recentTransactions=activityRows.slice(0,5);
  const topIncomeRows=activityRows.filter(row=>row.amount>0).sort((a,b)=>b.amount-a.amount||b.date.localeCompare(a.date)).slice(0,5);
- const periodEndDate=reportingPeriodEndDate(month,asOf);
- const periodBalances=useMemo(()=>accountBalances(data,periodEndDate),[data,periodEndDate]);
+ // The canonical operational snapshot already computed balances for this same period end.
+ const periodBalances=snapshot.balances;
  const accountDistribution=useMemo(()=>accounts.map(account=>({id:account.id,name:accountDisplayName(data,account.id),balance:periodBalances[account.id]||0})).filter(row=>row.balance>.005).sort((a,b)=>b.balance-a.balance).slice(0,5),[accounts,data,periodBalances]);
  const accountDistributionTotal=accountDistribution.reduce((sum,row)=>sum+row.balance,0);
  const upcomingObligations=useMemo(()=>{
