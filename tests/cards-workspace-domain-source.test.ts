@@ -34,6 +34,10 @@ describe('Cards workspace domain and navigation contracts',()=>{
     expect(componentCss).toContain('.card-icon-btn.card-icon-management{background:transparent;box-shadow:none;opacity:.96}');
     expect(componentCss).toContain('stroke-width:2.4;');
     expect(componentCss).not.toContain('card-icon-btn.card-icon-reveal{background:rgba');
+    const renderedQa=readFileSync(new URL('../scripts/cards-remediation-qa.mjs',import.meta.url),'utf8');
+    expect(renderedQa).toContain('card icon controls retain the owner-approved uniform unboxed visual hierarchy');
+    expect(renderedQa).toContain('current.toolbarIcons.every(icon=>icon.bg');
+    expect(renderedQa).not.toContain('current.revealBg!==current.managementBg');
     expect(componentCss).toContain('font-size:var(--ux-dense-label-size);line-height:1;text-transform:uppercase');
     expect(componentCss).not.toContain('font-size:.50rem');
   });
