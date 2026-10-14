@@ -9,7 +9,7 @@ const file=(path:string)=>readFileSync(new URL(path,import.meta.url),'utf8');
 describe('owner #567 screenshot-driven corrections',()=>{
   it('bounds PAN without issuer-length, Luhn, or numeric value checks on either side',()=>{
     const pan='1'.repeat(32);
-    expect(formatCardNumberInput(pan).replace(/\\D/g,'')).toBe(pan);
+    expect(formatCardNumberInput(pan).replace(/\D/g,'')).toBe(pan);
     expect(normalizeCardDetailsInput({pan,expiry:'99/99',cvv:'1'}).pan).toBe(pan);
     expect(normalizeCardSecrets({pan,expiry:'99/99',cvv:'1'})).toEqual({pan,expiry:'99/99',cvv:'1'});
     expect(()=>normalizeCardDetailsInput({pan:pan+'1',expiry:'12/31'})).toThrow();
