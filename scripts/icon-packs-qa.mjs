@@ -43,8 +43,8 @@ try{
   assert(packs.length===5,`expected five icon packs, got ${packs.length}`);
   assert(JSON.stringify(packs.map(item=>item.name))===JSON.stringify(['Lucide','Tabler Icons','Phosphor','Heroicons','Bootstrap Icons']),'pack order and labels');
   assert(packs[0].license.startsWith('ISC')&&packs.slice(1).every(item=>item.license.startsWith('MIT')),'pack licenses');
-  assert(packs[0].license.includes('πλήρες semantic set'),'Lucide discloses full semantic coverage');
-  assert(packs[1].license.includes('14 διαθέσιμα')&&packs[2].license.includes('7 διαθέσιμα')&&packs[3].license.includes('5 διαθέσιμα')&&packs[4].license.includes('5 διαθέσιμα'),'curated packs disclose their actual distinct glyph counts');
+  const expectedCounts=['1.876','5.166','1.512','322','1.404'];
+  assert(packs.every((item,index)=>item.license.includes(`${expectedCounts[index]} μοναδικά SVG`)),'five real and distinct full catalog counts are disclosed');
   const expectedPackIds=['lucide','tabler','phosphor','heroicons','bootstrap'];
   assert(packs.every((item,index)=>item.preview.length===3&&item.preview.every(pack=>pack===expectedPackIds[index])),'each library preview is rendered only by its own pack');
   assert(packs[0].pressed==='true'&&packs.slice(1).every(item=>item.pressed==='false'),'Lucide is the default global pack');
@@ -68,10 +68,32 @@ try{
   assert(automaticPhosphor?.pack==='phosphor'&&automaticPhosphor.text.includes('Phosphor · Αυτόματο'),`family switch must update row preview immediately: ${JSON.stringify(automaticPhosphor)}`);
   await screenshot('icon-family-phosphor-preview-desktop');
 
+  // Prove that automatic semantic previews no longer collapse unrelated categories
+  // onto the same fallback SVG, across every formerly-small icon family.
+  const checkDistinctAuto=async pack=>{
+    const labels=['Τρόφιμα','Υγεία','Καύσιμα','Αγορές'];
+    await waitFor("function(pack){const all=[...document.querySelectorAll('.settings-icons-only .category-icon-unified-category > .category-icon-unified-main')];const wanted=['Τρόφιμα','Υγεία','Καύσιμα','Αγορές'];return wanted.every(label=>{const row=all.find(node=>(node.querySelector('.category-icon-unified-copy b')?.textContent||'').trim()===label);const glyph=row?.querySelector('[data-category-icon]');return glyph?.getAttribute('data-category-icon')?.startsWith(pack+':icon/')&&glyph?.querySelector('use')?.getAttribute('href')?.startsWith('/icon-packs/'+pack+'.svg#i-');})}",`${pack} unique automatic defaults`,[pack]);
+    const choices=await c.call("function(){const all=[...document.querySelectorAll('.settings-icons-only .category-icon-unified-category > .category-icon-unified-main')];return ['Τρόφιμα','Υγεία','Καύσιμα','Αγορές'].map(label=>{const row=all.find(node=>(node.querySelector('.category-icon-unified-copy b')?.textContent||'').trim()===label);const glyph=row?.querySelector('[data-category-icon]');return {label,key:glyph?.getAttribute('data-category-icon'),href:glyph?.querySelector('use')?.getAttribute('href')};})}");
+    assert(new Set(choices.map(item=>item.key)).size===choices.length,`${pack}: automatic categories reused same semantic icon: ${JSON.stringify(choices)}`);
+    assert(new Set(choices.map(item=>item.href)).size===choices.length,`${pack}: automatic categories reused same SVG: ${JSON.stringify(choices)}`);
+  };
+  await checkDistinctAuto('phosphor');
+  for(const [pack,label] of [['tabler','Tabler Icons'],['heroicons','Heroicons'],['bootstrap','Bootstrap Icons']]){
+    await clickText('.settings-icons-only .category-icon-pack-switcher-global button',label);
+    await checkDistinctAuto(pack);
+    await screenshot(`icon-family-${pack}-distinct-desktop`);
+  }
+  await clickText('.settings-icons-only .category-icon-pack-switcher-global button','Phosphor');
+  await checkDistinctAuto('phosphor');
+
+
   await openRow(targetLabel);
   assert(!(await c.call("function(){return Boolean(document.querySelector('.settings-icons-only [data-icon-selection-panel] .category-icon-pack-switcher'))}")),'shared picker does not repeat the pack selector');
+  await waitFor("function(){return document.querySelectorAll('.settings-icons-only [data-icon-selection-panel] .category-icon-options [data-icon-pack]').length>=30}",'native Phosphor catalog loaded');
   const optionPacks=await c.call("function(){return [...document.querySelectorAll('.settings-icons-only [data-icon-selection-panel] .category-icon-options [data-icon-pack]')].map(node=>node.getAttribute('data-icon-pack'))}");
-  assert(optionPacks.length>0&&optionPacks.every(pack=>pack==='phosphor'),'every visible picker glyph is Phosphor');
+  assert(optionPacks.length===96&&optionPacks.every(pack=>pack==='phosphor'),'only 96 genuine Phosphor choices are mounted in page one');
+  const atlasIds=await c.call("function(){return [...document.querySelectorAll('.settings-icons-only [data-icon-selection-panel] .category-icon-options svg use')].map(node=>node.getAttribute('href'))}");
+  assert(atlasIds.length===96&&new Set(atlasIds).size===96&&atlasIds.every(href=>href?.startsWith('/icon-packs/phosphor.svg#i-')),'every Phosphor option references a different local sprite symbol');
   const phosphorChoice=await c.call("function(){const buttons=[...document.querySelectorAll('.settings-icons-only [data-icon-selection-panel] .category-icon-options .category-icon-option')];const button=buttons[1]||buttons[0];const key=button?.querySelector('[data-category-icon]')?.getAttribute('data-category-icon')||'';button?.click();return key}");
   assert(Boolean(phosphorChoice),'a Phosphor picker option can be selected');
   await waitFor("function(label){const rows=[...document.querySelectorAll('.settings-icons-only .category-icon-unified-category .category-icon-unified-main')];const row=rows.find(item=>(item.querySelector('.category-icon-unified-copy b')?.textContent||'').trim()===label);return Boolean(row&&(row.textContent||'').includes('Phosphor · Προσαρμοσμένο'))}",'Phosphor selection stored',[targetLabel]);
@@ -86,8 +108,13 @@ try{
   await clickText('.settings-icons-only .category-icon-pack-switcher-global button','Lucide');
   await waitFor("function(){const glyphs=[...document.querySelectorAll('.settings-icons-only .category-icon-unified-list [data-icon-pack]')];return glyphs.length>0&&glyphs.every(node=>node.getAttribute('data-icon-pack')==='lucide')}",'taxonomy preview switches back to Lucide');
   await openRow(targetLabel);
+  // The category list can switch to Lucide before the asynchronous native
+  // catalog has populated the picker. Never click a stale/empty first frame:
+  // require all 96 real Lucide SVG options, not just the picker shell.
+  await waitFor("function(){const picker=document.querySelector('.settings-icons-only [data-icon-selection-panel] .category-icon-picker');const choices=[...picker?.querySelectorAll('.category-icon-options .category-icon-option')||[]];return choices.length===96&&choices.every(button=>{const glyph=button.querySelector('[data-category-icon]');return glyph?.getAttribute('data-icon-pack')==='lucide'&&glyph?.getAttribute('data-category-icon')?.startsWith('lucide:icon/')&&glyph?.querySelector('use')?.getAttribute('href')?.startsWith('/icon-packs/lucide.svg#i-')})}",'native Lucide catalog loaded after family switch');
   const lucideChoice=await c.call("function(){const buttons=[...document.querySelectorAll('.settings-icons-only [data-icon-selection-panel] .category-icon-options .category-icon-option')];const button=buttons[2]||buttons[0];const key=button?.querySelector('[data-category-icon]')?.getAttribute('data-category-icon')||'';button?.click();return key}");
-  assert(Boolean(lucideChoice)&&lucideChoice!==phosphorChoice,'Lucide can keep a distinct selection from Phosphor');
+  assert(Boolean(lucideChoice)&&lucideChoice!==phosphorChoice,`Lucide can keep a distinct selection from Phosphor: selected ${lucideChoice||'<none>'}, prior ${phosphorChoice}`);
+  await waitFor("function(label,key){const rows=[...document.querySelectorAll('.settings-icons-only .category-icon-unified-category .category-icon-unified-main')];const row=rows.find(item=>(item.querySelector('.category-icon-unified-copy b')?.textContent||'').trim()===label);return Boolean(row&&(row.textContent||'').includes('Lucide · Προσαρμοσμένο')&&row.querySelector('[data-category-icon]')?.getAttribute('data-category-icon')===key)}",'Lucide choice stored independently',[targetLabel,lucideChoice]);
   await closeEditor();
 
   await clickText('.settings-icons-only .category-icon-pack-switcher-global button','Phosphor');

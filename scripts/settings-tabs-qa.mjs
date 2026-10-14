@@ -31,9 +31,12 @@ try{
   const screenshot=async(name)=>{await prepareScreenshot();await sleep(120);const shot=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(shot.data,'base64'))};
   const screenshotCurrentViewport=async(name)=>{await sleep(120);const shot=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(shot.data,'base64'))};
   const fullScreenshot=async(name)=>{await prepareScreenshot();const metrics=await c.send('Page.getLayoutMetrics');const width=Math.ceil(metrics.cssContentSize?.width||metrics.contentSize?.width||1440);const height=Math.ceil(metrics.cssContentSize?.height||metrics.contentSize?.height||1000);const shot=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:true,clip:{x:0,y:0,width,height,scale:1}});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(shot.data,'base64'))};
+  const applyTheme=preference=>c.call("async function(pref){localStorage.setItem('myfinhub.theme',pref);const mod=await import('/src/lib/theme.ts');mod.applyThemePreference(pref);await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));return document.documentElement.dataset.theme}",[preference]);
   const visibleTouchTargets=async label=>{const offenders=await c.call("function(){return [...document.querySelectorAll('#main-workspace button,#main-workspace summary,#main-workspace [role=combobox]')].filter(el=>{const r=el.getBoundingClientRect(),style=getComputedStyle(el);if(!r.width||!r.height||style.visibility==='hidden'||style.display==='none'||el.disabled)return false;return r.width<40||r.height<40}).map(el=>({name:el.getAttribute('aria-label')||(el.textContent||'').trim().slice(0,50),w:Math.round(el.getBoundingClientRect().width),h:Math.round(el.getBoundingClientRect().height)}))}");assert(offenders.length===0,`${label} touch targets below 40px: ${JSON.stringify(offenders.slice(0,8))}`)};
 
   await waitFor("function(){return Boolean(document.querySelector('.settings-tablist'))}",'Settings tabs');
+  assert(!(await c.call("function(){return Boolean(document.querySelector('.support-diagnostics'))}")),'product-default Settings baseline excludes support diagnostics');
+  assert((await applyTheme('light'))==='light','Settings product baseline uses explicit Light theme');
   const architecture=await c.call("function(){const tabs=[...document.querySelectorAll('.settings-tablist [role=tab]')];return {count:tabs.length,disabled:tabs.filter(tab=>tab.disabled).length,labels:tabs.map(tab=>(tab.textContent||'').trim())}}");assert(architecture.count===tabs.length,`expected ${tabs.length} tabs, got ${architecture.count}`);assert(architecture.disabled===0,'all Settings tabs are enabled');assert(JSON.stringify(architecture.labels)===JSON.stringify(tabs.map(tab=>tab.label)),'Settings tab order changed');assert(!architecture.labels.includes('Προϋπολογισμοί & Στόχοι'),'Budgets & Goals no longer lives in Settings');assert(!(await c.call("function(){return Boolean(document.querySelector('.settings-budgets-only,.settings-legacy-goals'))}")),'legacy budgets/goals UI is absent from Settings');
 
   for(const mode of [{name:'desktop',width:1440,height:1000},{name:'mobile',width:375,height:812}]){
@@ -130,5 +133,26 @@ try{
       }
     }
   }
+  console.log('Settings tabs QA: explicit Dark desktop evidence for every tab');
+  await viewport(1440,1000);assert((await applyTheme('dark'))==='dark','Settings Dark theme applied');
+  for(const tab of tabs){await clickTab(tab);await noPageOverflow(`dark desktop ${tab.label}`);await screenshot(`settings-${tab.id}-dark-desktop`)}
+
+  console.log('Settings tabs QA: bounded wide-desktop measure');
+  assert((await applyTheme('light'))==='light','Settings Light theme restored');
+  for(const [width,height,label] of [[1920,1080,'1920'],[2560,1440,'2560']]){
+    await viewport(width,height);
+    for(const tab of tabs){
+      await clickTab(tab);
+      const geometry=await c.call("function(){const page=document.querySelector('.settings-tabs-page'),panel=document.querySelector('.settings-tab-panel');return {page:page?.getBoundingClientRect().width||0,panel:panel?.getBoundingClientRect().width||0,overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth}}");
+      assert(geometry.page<=1681&&geometry.panel<=1541&&geometry.overflow<=1,`${label}px ${tab.label} Settings measure is bounded: ${JSON.stringify(geometry)}`);
+    }
+    await clickTab(tabs[0]);await screenshot(`settings-general-wide-${label}`);
+    await clickTab(tabs[2]);await screenshot(`settings-accounts-wide-${label}`);
+  }
+
+  console.log('Settings tabs QA: diagnostics use an explicit fixture only');
+  const diagnosticsUrl=new URL(baseUrl);diagnosticsUrl.searchParams.set('page','settings');diagnosticsUrl.searchParams.set('state','settings-tabs');diagnosticsUrl.searchParams.set('support-diagnostics','1');
+  await viewport(1440,1000);await c.send('Page.navigate',{url:diagnosticsUrl.href});await waitFor("function(){return Boolean(document.querySelector('.settings-tablist')&&document.querySelector('.support-diagnostics'))}",'explicit Settings diagnostics fixture');await screenshot('settings-diagnostics-explicit-desktop');
+
   assert(runtimeErrors.length===0,`runtime exceptions: ${runtimeErrors.join(' | ')}`);assert(failedRequests.length===0,`network loading failures: ${failedRequests.join(' | ')}`);c.close();console.log('All Settings tabs rendered QA passed on desktop and mobile.');
 }finally{c?.close();child.kill('SIGTERM')}

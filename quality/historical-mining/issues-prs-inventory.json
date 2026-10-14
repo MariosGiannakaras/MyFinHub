@@ -1,0 +1,4293 @@
+{
+  "schemaVersion": 1,
+  "retrievedAt": "2026-10-08",
+  "source": "GitHub issues?state=all (excluding embedded PR objects), pulls?state=all, branches",
+  "pages": {
+    "issues": 6,
+    "pulls": 6
+  },
+  "totals": {
+    "issues": 218,
+    "issuesClosed": 213,
+    "issuesOpen": 5,
+    "prs": 321,
+    "prsMerged": 255,
+    "prsClosedUnmerged": 57,
+    "prsOpen": 9,
+    "currentBranches": 16
+  },
+  "completeness": "complete_for_current_API_visibility",
+  "warnings": [
+    "Issue and PR numbers occupy the same namespace; GitHub issues listing includes PRs, so do not double count.",
+    "Historical/deleted branches cannot be enumerated via the current branches endpoint; PR head metadata may offer provenance but is not evidence the ref still exists.",
+    "Keyword tags suggest candidates only; an issue title or a failed run is not proof of confirmed root cause."
+  ],
+  "errors": [],
+  "branches": [
+    {
+      "name": "chore/undefined-local-dev-batch",
+      "sha": "9f46f200e95f7fc0133cba669b5471db533bece8"
+    },
+    {
+      "name": "chore/476-close-8.13-interactive-verification",
+      "sha": "e910ae197ac59b0e350ed86dec68450226035ed9"
+    },
+    {
+      "name": "chore/505-node24-dependency-health",
+      "sha": "c144f6faedddfe3b61289cab282688d2770f831d"
+    },
+    {
+      "name": "chore/517-local-dev-batch",
+      "sha": "85509e1fcc383a0d44cb74d12a0b2a1b5f230f24"
+    },
+    {
+      "name": "chore/533-historical-defect-mining",
+      "sha": "1fe0c8453e0dfa4fe1faf5143486eff58d3eaba1"
+    },
+    {
+      "name": "develop",
+      "sha": "8b74f261f6e6e36eb71258ec3f7946103f15f9c3"
+    },
+    {
+      "name": "fix/503-ui-ux-owner-intent-remediation",
+      "sha": "cc0c943b86ae7c308129fbc59d9e233c9064c525"
+    },
+    {
+      "name": "fix/519-cards-remediation",
+      "sha": "3a52e58d92726b2b027fd774a7b948f794376dfd"
+    },
+    {
+      "name": "fix/519-credit-remediation",
+      "sha": "c4d4f2704d9f3bdabbd75292684e76b90dae6573"
+    },
+    {
+      "name": "fix/519-lending-remediation",
+      "sha": "0a71b3bafd8e3b640323db3e8c3d807b0db68e6c"
+    },
+    {
+      "name": "fix/519-loans-remediation",
+      "sha": "72404413de8db9ae592009452f320fe615f28ecc"
+    },
+    {
+      "name": "fix/519-post-v1-4-ui-remediation",
+      "sha": "275a4c3a501c79ef04178b1037ddc8b57f35a89e"
+    },
+    {
+      "name": "fix/519-recurring-remediation",
+      "sha": "24ddc69d344eccef2faa9cfe245e1f4c7d98f448"
+    },
+    {
+      "name": "fix/519-savings-remediation",
+      "sha": "4b32ea727a4010f95e2e1d7d703f49edc9f302cd"
+    },
+    {
+      "name": "main",
+      "sha": "ea84d3b4e1e0f30c0f9d7c8af396740bf46245aa"
+    },
+    {
+      "name": "release/476-v1.4.0-prep",
+      "sha": "5081076fcebe7628b3c8d8688e348e92a0522411"
+    }
+  ],
+  "issues": [
+    {
+      "n": 533,
+      "t": "Historical defect mining across GitHub issues, PRs, fixes and Actions",
+      "s": "open",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/533"
+    },
+    {
+      "n": 530,
+      "t": "Build a reusable defect intelligence registry and change-aware prevention preflight",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/530"
+    },
+    {
+      "n": 525,
+      "t": "Codify shared-first UI architecture and app-wide visual standard",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/525"
+    },
+    {
+      "n": 523,
+      "t": "Unify app-wide shared form control branding with Quick Entry reference",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/523"
+    },
+    {
+      "n": 521,
+      "t": "Quick Entry visual/interaction reconciliation from owner HTML reference",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/521"
+    },
+    {
+      "n": 519,
+      "t": "AUDIT: Post-v1.4 UI/UX regressions and functionality reachability",
+      "s": "open",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/519"
+    },
+    {
+      "n": 517,
+      "t": "Chore: make Windows batch launch local development by default",
+      "s": "open",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/517"
+    },
+    {
+      "n": 515,
+      "t": "Maintenance: dependency reconciliation and repository cleanup",
+      "s": "open",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/515"
+    },
+    {
+      "n": 505,
+      "t": "Align Node 24 runtime and add read-only monthly dependency health checks",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/505"
+    },
+    {
+      "n": 503,
+      "t": "Reconcile latest UI audits and remediate owner-intent drift",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/503"
+    },
+    {
+      "n": 501,
+      "t": "Repository-wide audit follow-up — non-production cleanup and dependency hardening",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/501"
+    },
+    {
+      "n": 498,
+      "t": "Production auth: fix post-TOTP device-session bootstrap RLS regression",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/498"
+    },
+    {
+      "n": 490,
+      "t": "Post-completion hardening: integration hygiene, automated QA and release rehearsal",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/490"
+    },
+    {
+      "n": 488,
+      "t": "Docs: harden workstream and concept reconciliation",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/488"
+    },
+    {
+      "n": 487,
+      "t": "Repository admin: protect develop and align canonical homepage",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/487"
+    },
+    {
+      "n": 485,
+      "t": "Repository settings: protect develop and align canonical homepage",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/485"
+    },
+    {
+      "n": 483,
+      "t": "Optimize CI workflow fan-out and consolidate repository instructions",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/483"
+    },
+    {
+      "n": 481,
+      "t": "Provider branding management: in-app uploads and custom providers",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/481"
+    },
+    {
+      "n": 478,
+      "t": "DB: production-ready Supabase data model, storage assets and Free-plan hardening",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/478"
+    },
+    {
+      "n": 476,
+      "t": "Completion audit: cross-app UX, interaction and backend hardening",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/476"
+    },
+    {
+      "n": 474,
+      "t": "CI: rerun Windows package validation on root build-config changes",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/474"
+    },
+    {
+      "n": 472,
+      "t": "Docs: align current product documentation with MyFinHub identity",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/472"
+    },
+    {
+      "n": 470,
+      "t": "Security: patch transitive desktop undici advisories",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/470"
+    },
+    {
+      "n": 468,
+      "t": "CI: add Dependabot coverage for desktop dependencies",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/468"
+    },
+    {
+      "n": 466,
+      "t": "CI: rerun Windows gates when Node runtime contract changes",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/466"
+    },
+    {
+      "n": 464,
+      "t": "Docs: complete post-v1.3.0 Unreleased coverage",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/464"
+    },
+    {
+      "n": 462,
+      "t": "Docs: record post-v1.3.0 fixes in Unreleased changelog",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/462"
+    },
+    {
+      "n": 460,
+      "t": "UI: keep Dashboard IBAN copy affordance discoverable on desktop",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/460"
+    },
+    {
+      "n": 458,
+      "t": "Security: update Windows Electron after new high-severity advisories",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/458"
+    },
+    {
+      "n": 456,
+      "t": "UI: keep long Dashboard account names readable",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/456"
+    },
+    {
+      "n": 454,
+      "t": "UI: expand wide-desktop Dashboard IBAN copy hit area",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/454"
+    },
+    {
+      "n": 452,
+      "t": "UI: enforce 48px touch targets on Dashboard account cards",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/452"
+    },
+    {
+      "n": 450,
+      "t": "Branding: integrate owner-supplied MyFinHub Brand Kit v2",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/450"
+    },
+    {
+      "n": 448,
+      "t": "UI/UX: reconcile implemented shell and dashboard with archived concept",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/448"
+    },
+    {
+      "n": 446,
+      "t": "chore: route Dependabot updates through develop",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/446"
+    },
+    {
+      "n": 439,
+      "t": "UI/UX: app-wide consistency, shared design system and visual refinement",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/439"
+    },
+    {
+      "n": 438,
+      "t": "chore: post-release hardening and restore design concept archive",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/438"
+    },
+    {
+      "n": 436,
+      "t": "chore: sync v1.3.0 release metadata back to develop",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/436"
+    },
+    {
+      "n": 429,
+      "t": "Integration: make develop canonical and prepare production promotion",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/429"
+    },
+    {
+      "n": 407,
+      "t": "Sync CVV through encrypted card vault across web/desktop/Android",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/407"
+    },
+    {
+      "n": 406,
+      "t": "Sync CVV through encrypted card-secret vault",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/406"
+    },
+    {
+      "n": 400,
+      "t": "Fix card secure-details creation and editing",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/400"
+    },
+    {
+      "n": 362,
+      "t": "Accidental empty issue — closed",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/362"
+    },
+    {
+      "n": 361,
+      "t": "Accidental empty issue — closed",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/361"
+    },
+    {
+      "n": 357,
+      "t": "Code health: canonical UI primitives and release-safe cleanup",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/357"
+    },
+    {
+      "n": 355,
+      "t": "UI: consolidate Review into Έλεγχος",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/355"
+    },
+    {
+      "n": 350,
+      "t": "Android Phase 6: isolate private updater test channel",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/350"
+    },
+    {
+      "n": 348,
+      "t": "Post-redesign polish: premium UX, micro-interactions and global UI consistency audit",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/348"
+    },
+    {
+      "n": 346,
+      "t": "UI: complete remaining Settings tabs",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/346"
+    },
+    {
+      "n": 343,
+      "t": "UI: redesign Settings General tab from approved target",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/343"
+    },
+    {
+      "n": 340,
+      "t": "UI: combine approved Reports desktop analyses into one scrollable surface",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/340"
+    },
+    {
+      "n": 337,
+      "t": "UI: implement approved Needs Attention desktop target",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/337"
+    },
+    {
+      "n": 334,
+      "t": "Discarded accidental issue",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/334"
+    },
+    {
+      "n": 333,
+      "t": "Discarded accidental issue",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/333"
+    },
+    {
+      "n": 332,
+      "t": "UI: implement approved Planning desktop target",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/332"
+    },
+    {
+      "n": 329,
+      "t": "UI: implement approved Recurring desktop target",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/329"
+    },
+    {
+      "n": 326,
+      "t": "UI: remove redundant Credit Card navigation controls",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/326"
+    },
+    {
+      "n": 324,
+      "t": "UI: implement approved Lending desktop target",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/324"
+    },
+    {
+      "n": 322,
+      "t": "UI: implement approved Credit Card desktop target",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/322"
+    },
+    {
+      "n": 320,
+      "t": "UI: implement approved Loans desktop target",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/320"
+    },
+    {
+      "n": 318,
+      "t": "UI: implement approved Cards surrounding desktop target",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/318"
+    },
+    {
+      "n": 316,
+      "t": "[DATA] Exercise all major product features in synthetic demo state",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/316"
+    },
+    {
+      "n": 315,
+      "t": "[DATA] Replace broken test finance state with coherent one-year demo dataset",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/315"
+    },
+    {
+      "n": 313,
+      "t": "UI: implement approved Savings desktop target",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/313"
+    },
+    {
+      "n": 311,
+      "t": "UI: implement approved Quick Entry desktop target",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/311"
+    },
+    {
+      "n": 307,
+      "t": "chore: accidental duplicate placeholder",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/307"
+    },
+    {
+      "n": 306,
+      "t": "chore: accidental duplicate placeholder",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/306"
+    },
+    {
+      "n": 305,
+      "t": "UI: implement approved Transactions desktop target",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/305"
+    },
+    {
+      "n": 303,
+      "t": "TEMP",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/303"
+    },
+    {
+      "n": 300,
+      "t": "UI: implement approved Dashboard desktop target",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/300"
+    },
+    {
+      "n": 298,
+      "t": "Phase 1 desktop redesign: Dashboard approved target",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/298"
+    },
+    {
+      "n": 296,
+      "t": "[CHORE] Bootstrap desktop UI redesign workspace",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/296"
+    },
+    {
+      "n": 293,
+      "t": "Release MyFinHub v1.3.0",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/293"
+    },
+    {
+      "n": 290,
+      "t": "perf: optimize durable history RLS and cursor FK index",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/290"
+    },
+    {
+      "n": 289,
+      "t": "security: tighten grants on history and account metadata tables",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/289"
+    },
+    {
+      "n": 288,
+      "t": "release: prepare and promote MyFinHub v1.3.0",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/288"
+    },
+    {
+      "n": 286,
+      "t": "fix: allow durable Undo/Redo audit actions before v1.3 release",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/286"
+    },
+    {
+      "n": 284,
+      "t": "feat: recurring intervals and guarded workbook refresh implementation",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/284"
+    },
+    {
+      "n": 283,
+      "t": "audit: reconcile legacy workbook semantics and guarded real-data refresh",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/283"
+    },
+    {
+      "n": 266,
+      "t": "META: Durable MyFinHub owner/product decisions — NEVER CLOSE",
+      "s": "open",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/266"
+    },
+    {
+      "n": 254,
+      "t": "design: audit and unify Light/Dark theme color system across the entire app",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/254"
+    },
+    {
+      "n": 242,
+      "t": "feat: add always-visible IBAN from separate owner-only account metadata store",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/242"
+    },
+    {
+      "n": 241,
+      "t": "feat: move archived cards out of primary content and support explicit total card deletion",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/241"
+    },
+    {
+      "n": 240,
+      "t": "refactor: align favicon, MyFinHub branding and bank visual identities with local assets",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/240"
+    },
+    {
+      "n": 239,
+      "t": "refactor: improve Loans and Recurring lifecycle hierarchy, completed-state treatment and information density",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/239"
+    },
+    {
+      "n": 238,
+      "t": "refactor: improve Transactions scanability, density and split disclosure across desktop/mobile",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/238"
+    },
+    {
+      "n": 237,
+      "t": "refactor: simplify AppShell and Dashboard action hierarchy, period controls and status chrome",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/237"
+    },
+    {
+      "n": 236,
+      "t": "refactor: normalize shared form, dialog, action and accessibility primitives across the app",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/236"
+    },
+    {
+      "n": 235,
+      "t": "refactor: make Savings action-first and demote compound-savings mechanism to secondary metadata",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/235"
+    },
+    {
+      "n": 234,
+      "t": "feat: move Transaction Rules into Advanced Automations with user-facing rule builder",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/234"
+    },
+    {
+      "n": 233,
+      "t": "feat: add Settings Categories & Icons workspace with large local icon registry/picker",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/233"
+    },
+    {
+      "n": 232,
+      "t": "feat: add real credit-card statement cycles and statement-linked repayments",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/232"
+    },
+    {
+      "n": 231,
+      "t": "feat: surface long-term loans inside Recurring as linked obligations without duplicate records",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/231"
+    },
+    {
+      "n": 230,
+      "t": "feat: support one payment covering multiple full loan installments",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/230"
+    },
+    {
+      "n": 229,
+      "t": "feat: allow safe edit/delete of imported legacy transactions via overrides and tombstones",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/229"
+    },
+    {
+      "n": 228,
+      "t": "feat: persist 10-day cross-session Undo/Redo history with full recoverable states",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/228"
+    },
+    {
+      "n": 227,
+      "t": "feat: make split parts authoritative and simplify compound-purchase entry",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/227"
+    },
+    {
+      "n": 226,
+      "t": "feat: redesign Quick Entry around user intents and separate presets from comments",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/226"
+    },
+    {
+      "n": 225,
+      "t": "fix: preserve category trees across load/import migration",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/225"
+    },
+    {
+      "n": 224,
+      "t": "fix: reproduce and eliminate Lending page crash with sanitized regression coverage",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/224"
+    },
+    {
+      "n": 223,
+      "t": "audit: UI/UX, functional and semantic reconciliation backlog",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/223"
+    },
+    {
+      "n": 221,
+      "t": "chore: reconcile post-v1.2.2 repository status",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/221"
+    },
+    {
+      "n": 218,
+      "t": "chore: accidental release-verification placeholder",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/218"
+    },
+    {
+      "n": 214,
+      "t": "duplicate: Windows startup diagnostics tracker",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/214"
+    },
+    {
+      "n": 213,
+      "t": "duplicate: Windows startup diagnostics tracker",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/213"
+    },
+    {
+      "n": 212,
+      "t": "duplicate: Windows startup diagnostics tracker",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/212"
+    },
+    {
+      "n": 211,
+      "t": "duplicate: Windows startup diagnostics tracker",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/211"
+    },
+    {
+      "n": 210,
+      "t": "duplicate: Windows first-run startup diagnostics",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/210"
+    },
+    {
+      "n": 209,
+      "t": "duplicate: Windows first-run diagnostics follow-up",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/209"
+    },
+    {
+      "n": 208,
+      "t": "duplicate: Windows first-run startup diagnostics",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/208"
+    },
+    {
+      "n": 207,
+      "t": "docs: document Windows startup diagnostics and recovery",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/207"
+    },
+    {
+      "n": 206,
+      "t": "release: MyFinHub v1.2.1 desktop startup recovery",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/206"
+    },
+    {
+      "n": 205,
+      "t": "test: cover the real Windows first-run setup path",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/205"
+    },
+    {
+      "n": 204,
+      "t": "fix: make Windows first-run startup diagnosable and recoverable",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/204"
+    },
+    {
+      "n": 202,
+      "t": "fix: complete Windows first-run no-setup startup recovery",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/202"
+    },
+    {
+      "n": 199,
+      "t": "release: MyFinHub v1.2.0 finalization and repository cleanup",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/199"
+    },
+    {
+      "n": 198,
+      "t": "chore: hands-on OCR testing is outside GitHub tracking",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/198"
+    },
+    {
+      "n": 196,
+      "t": "Android native bearer authentication without weakening web session security",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/196"
+    },
+    {
+      "n": 193,
+      "t": "feat: improve dashboard logo navigation and category management",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/193"
+    },
+    {
+      "n": 190,
+      "t": "chore: accidental placeholder — closed",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/190"
+    },
+    {
+      "n": 189,
+      "t": "chore: accidental placeholder — closed",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/189"
+    },
+    {
+      "n": 188,
+      "t": "feat: local-only receipt capture inbox, OCR and deferred Quick Entry review",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/188"
+    },
+    {
+      "n": 187,
+      "t": "release: prepare and promote MyFinHub v1.1.0",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/187"
+    },
+    {
+      "n": 185,
+      "t": "fix: improve skeleton fidelity, keyboard shortcuts and change history",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/185"
+    },
+    {
+      "n": 183,
+      "t": "chore: reconcile final develop status after release-readiness closeout",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/183"
+    },
+    {
+      "n": 180,
+      "t": "fix: close final UX reconciliation gaps after roadmap merge",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/180"
+    },
+    {
+      "n": 177,
+      "t": "feat: normalize payment flows across credit, loans and recurring",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/177"
+    },
+    {
+      "n": 173,
+      "t": "chore: accidental connector placeholder — do not use",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/173"
+    },
+    {
+      "n": 170,
+      "t": "feat: unified search and command palette",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/170"
+    },
+    {
+      "n": 169,
+      "t": "feat: category budgets and deterministic transaction rules",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/169"
+    },
+    {
+      "n": 168,
+      "t": "feat: Needs Attention action center and context-aware Quick Add",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/168"
+    },
+    {
+      "n": 167,
+      "t": "feat: scheduled transactions and 30/60/90 cash-flow forecast",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/167"
+    },
+    {
+      "n": 166,
+      "t": "feat: ledger foundations — first-class transfers and split transactions",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/166"
+    },
+    {
+      "n": 165,
+      "t": "chore: release-readiness — automated cross-browser, performance and installed-package verification",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/165"
+    },
+    {
+      "n": 164,
+      "t": "epic: next product capabilities — transfers, splits, action center, forecast, budgets and automation",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/164"
+    },
+    {
+      "n": 163,
+      "t": "chore: final pre-merge reconciliation and Actions reliability audit for PR #159",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/163"
+    },
+    {
+      "n": 162,
+      "t": "fix: recover pre-branding hardening backlog before PR #159 merge",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/162"
+    },
+    {
+      "n": 161,
+      "t": "chore: accidental connector test",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/161"
+    },
+    {
+      "n": 160,
+      "t": "feat: integrate new MyFinHub brand assets and complete Reports visual restructure",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/160"
+    },
+    {
+      "n": 158,
+      "t": "feat: UI/UX quality, browser QA and analytics hardening",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/158"
+    },
+    {
+      "n": 154,
+      "t": "fix: restore cards prototype behavior and support multiple credit cards",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/154"
+    },
+    {
+      "n": 152,
+      "t": "chore: accidental connector issue",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/152"
+    },
+    {
+      "n": 151,
+      "t": "docs: refresh production status after v1.0.1 release",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/151"
+    },
+    {
+      "n": 142,
+      "t": "fix: update production smoke health identity after MyFinHub rebrand",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/142"
+    },
+    {
+      "n": 140,
+      "t": "release: promote MyFinHub cards, Windows desktop and rebrand batch",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/140"
+    },
+    {
+      "n": 138,
+      "t": "feat: rebrand to MyFinHub with native Windows installer and in-app updates",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/138"
+    },
+    {
+      "n": 136,
+      "t": "feat: add Windows desktop application target",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/136"
+    },
+    {
+      "n": 134,
+      "t": "feat: integrate interactive card prototype and shared credit-card record",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/134"
+    },
+    {
+      "n": 121,
+      "t": "chore: accidental connector test — no work required",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/121"
+    },
+    {
+      "n": 115,
+      "t": "test: mobile redesign fidelity and desktop regression matrix",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/115"
+    },
+    {
+      "n": 114,
+      "t": "ux: redesign mobile Reports, Settings and editor surfaces",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/114"
+    },
+    {
+      "n": 113,
+      "t": "ux: redesign mobile finance domain pages",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/113"
+    },
+    {
+      "n": 112,
+      "t": "ux: redesign mobile shell and Dashboard hierarchy",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/112"
+    },
+    {
+      "n": 111,
+      "t": "ux: full mobile-first redesign without desktop regression",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/111"
+    },
+    {
+      "n": 106,
+      "t": "test: expand responsive rendered QA across the mobile route matrix",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/106"
+    },
+    {
+      "n": 105,
+      "t": "ux: mobile quick entry, touch states and report presentation",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/105"
+    },
+    {
+      "n": 104,
+      "t": "fix: mobile shell, safe-area and modal behavior",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/104"
+    },
+    {
+      "n": 103,
+      "t": "ux: mobile-native transactions and recurring workflows",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/103"
+    },
+    {
+      "n": 102,
+      "t": "audit: dedicated mobile responsiveness and UX review",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/102"
+    },
+    {
+      "n": 100,
+      "t": "ux: replace stylized bank marks with real logos",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/100"
+    },
+    {
+      "n": 98,
+      "t": "ux: add semantic icon language across finance surfaces",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/98"
+    },
+    {
+      "n": 96,
+      "t": "ux: transaction comments and app-wide interaction states",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/96"
+    },
+    {
+      "n": 92,
+      "t": "product: keep IRIS/cash reimbursements out of long-term lending",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/92"
+    },
+    {
+      "n": 91,
+      "t": "security: persistent local-only CVV vault",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/91"
+    },
+    {
+      "n": 89,
+      "t": "product: add redo stack for reversible finance edits",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/89"
+    },
+    {
+      "n": 88,
+      "t": "release: configure card-vault key and promote product batch",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/88"
+    },
+    {
+      "n": 87,
+      "t": "hardening: validate new product state and animate live summary amounts",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/87"
+    },
+    {
+      "n": 86,
+      "t": "ux: replace browser-controlled date/select popovers in core entry flows",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/86"
+    },
+    {
+      "n": 85,
+      "t": "product: autosave settings and finish direct-edit UX",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/85"
+    },
+    {
+      "n": 79,
+      "t": "product: installment and loan list with self-loan HELP semantics",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/79"
+    },
+    {
+      "n": 78,
+      "t": "product: dedicated Credit Card debt and repayment workspace",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/78"
+    },
+    {
+      "n": 77,
+      "t": "product: dedicated Cards workspace by bank",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/77"
+    },
+    {
+      "n": 76,
+      "t": "security: dedicated encrypted payment-card vault",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/76"
+    },
+    {
+      "n": 71,
+      "t": "product: navigation, Review retirement, settings, backup and period cleanup",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/71"
+    },
+    {
+      "n": 70,
+      "t": "product: full receivables history and useful reports",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/70"
+    },
+    {
+      "n": 69,
+      "t": "product: category/subcategory taxonomy and inline transaction filters",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/69"
+    },
+    {
+      "n": 68,
+      "t": "product: recurring subscriptions, inactive history and manual payment flow",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/68"
+    },
+    {
+      "n": 67,
+      "t": "product: savings, Pay & Save and complex cash-offset workflow",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/67"
+    },
+    {
+      "n": 66,
+      "t": "product: separate Cards, Credit Card, and Installments/Loans workflows",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/66"
+    },
+    {
+      "n": 65,
+      "t": "ui: account-first dashboard, privacy reveal, skeleton refresh and undo",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/65"
+    },
+    {
+      "n": 64,
+      "t": "product: align RheomIQ with clarified account-centric workflows",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/64"
+    },
+    {
+      "n": 62,
+      "t": "chore: batch releases and disable automatic Vercel PR deployments",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/62"
+    },
+    {
+      "n": 60,
+      "t": "chore: stabilize CodeQL memory usage after frontend QA expansion",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/60"
+    },
+    {
+      "n": 58,
+      "t": "fix: correct installable-app metadata and mobile safe-area handling",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/58"
+    },
+    {
+      "n": 57,
+      "t": "feat: make user-relevant finance defaults configurable instead of latent state",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/57"
+    },
+    {
+      "n": 56,
+      "t": "fix: reveal and focus inline editors when review, recurring or loan edit actions open them",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/56"
+    },
+    {
+      "n": 55,
+      "t": "fix: apply the RheomIQ reduced-motion preference to all animated surfaces",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/55"
+    },
+    {
+      "n": 54,
+      "t": "test: add rendered frontend regression and accessibility QA gates",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/54"
+    },
+    {
+      "n": 53,
+      "t": "feat: complete the credit-card workspace with limit, available credit and purchase history",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/53"
+    },
+    {
+      "n": 52,
+      "t": "feat: make app sections addressable and add a deliberate private 404 experience",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/52"
+    },
+    {
+      "n": 51,
+      "t": "fix: recover gracefully from lazy-chunk and page runtime failures",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/51"
+    },
+    {
+      "n": 50,
+      "t": "fix: make destructive actions and form feedback recoverable and announced",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/50"
+    },
+    {
+      "n": 49,
+      "t": "fix: provide accessible non-hover equivalents for dashboard and report charts",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/49"
+    },
+    {
+      "n": 48,
+      "t": "fix: give dense finance lists semantic structure, labels and friendly names",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/48"
+    },
+    {
+      "n": 47,
+      "t": "fix: keep dashboard summaries consistent with effective recurring items and zero-valued goals",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/47"
+    },
+    {
+      "n": 46,
+      "t": "fix: repair mobile recurring layout and audit dense responsive finance views",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/46"
+    },
+    {
+      "n": 45,
+      "t": "fix: raise frontend typography, contrast and focus visibility to the UI standard",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/45"
+    },
+    {
+      "n": 44,
+      "t": "fix: make modal and mobile navigation focus behavior accessible",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/44"
+    },
+    {
+      "n": 43,
+      "t": "fix: make finance save failures and revision conflicts visible on every viewport",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/43"
+    },
+    {
+      "n": 42,
+      "t": "audit: exhaustive frontend UX, accessibility and responsive review",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/42"
+    },
+    {
+      "n": 38,
+      "t": "perf: persist mutable finance state without resending immutable seed",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/38"
+    },
+    {
+      "n": 37,
+      "t": "perf: lazy-load secondary pages and reuse derived finance indexes",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/37"
+    },
+    {
+      "n": 36,
+      "t": "perf: coalesce saves and synchronize finance revisions across tabs",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/36"
+    },
+    {
+      "n": 30,
+      "t": "fix: remove ordering and duplicate-key assumptions from derived finance views",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/30"
+    },
+    {
+      "n": 29,
+      "t": "fix: preserve loan-payment linkage through event edits",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/29"
+    },
+    {
+      "n": 27,
+      "t": "fix: enforce finance input semantics before persistence",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/27"
+    },
+    {
+      "n": 26,
+      "t": "fix: keep finance as-of date current across midnight",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/26"
+    },
+    {
+      "n": 23,
+      "t": "chore: add backup-table integrity constraints",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/23"
+    },
+    {
+      "n": 22,
+      "t": "chore: cover isolated API toolchain in dependency maintenance",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/22"
+    },
+    {
+      "n": 21,
+      "t": "fix: make client session and persistence failures recoverable",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/21"
+    },
+    {
+      "n": 20,
+      "t": "fix: restore access to all app sections on mobile",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/20"
+    },
+    {
+      "n": 18,
+      "t": "fix: enforce production-safe finance document validation and size budget",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/18"
+    },
+    {
+      "n": 16,
+      "t": "fix: preserve sessions and classify Supabase upstream failures",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/16"
+    },
+    {
+      "n": 15,
+      "t": "audit: exhaustive backend and production configuration review",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/15"
+    },
+    {
+      "n": 12,
+      "t": "chore: add automatic production smoke checks",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/12"
+    },
+    {
+      "n": 11,
+      "t": "fix: polish production auth screen controls and security wording",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/11"
+    },
+    {
+      "n": 9,
+      "t": "fix: restore Vercel API function build compatibility",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/9"
+    },
+    {
+      "n": 7,
+      "t": "chore: production readiness and delivery workflow hardening",
+      "s": "closed",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/issues/7"
+    }
+  ],
+  "prs": [
+    {
+      "n": 539,
+      "t": "fix: Recurring post-v1.4 remediation",
+      "s": "open",
+      "merged": false,
+      "h": "fix/519-recurring-remediation",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/539"
+    },
+    {
+      "n": 538,
+      "t": "fix: Lending post-v1.4 remediation",
+      "s": "open",
+      "merged": false,
+      "h": "fix/519-lending-remediation",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/538"
+    },
+    {
+      "n": 537,
+      "t": "chore: mine GitHub history and turn verified failures into regression guards",
+      "s": "open",
+      "merged": false,
+      "h": "chore/533-historical-defect-mining",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/537"
+    },
+    {
+      "n": 536,
+      "t": "fix: Loans post-v1.4 remediation",
+      "s": "open",
+      "merged": false,
+      "h": "fix/519-loans-remediation",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/536"
+    },
+    {
+      "n": 535,
+      "t": "fix: Credit post-v1.4 remediation",
+      "s": "open",
+      "merged": false,
+      "h": "fix/519-credit-remediation",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/535"
+    },
+    {
+      "n": 534,
+      "t": "chore: grant bounded CSS remediation headroom",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/519-css-budget-headroom",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/534"
+    },
+    {
+      "n": 532,
+      "t": "fix: Savings post-v1.4 remediation",
+      "s": "open",
+      "merged": false,
+      "h": "fix/519-savings-remediation",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/532"
+    },
+    {
+      "n": 531,
+      "t": "chore: learn from verified regressions with change-aware defect preflight",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/530-defect-intelligence",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/531"
+    },
+    {
+      "n": 529,
+      "t": "fix: Cards post-v1.4 remediation",
+      "s": "open",
+      "merged": false,
+      "h": "fix/519-cards-remediation",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/529"
+    },
+    {
+      "n": 528,
+      "t": "fix: post-v1.4 UI/UX remediation",
+      "s": "open",
+      "merged": false,
+      "h": "fix/519-post-v1-4-ui-remediation",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/528"
+    },
+    {
+      "n": 527,
+      "t": "docs: codify shared-first UI architecture and visual standard",
+      "s": "closed",
+      "merged": true,
+      "h": "docs/525-shared-first-ui-standard",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/527"
+    },
+    {
+      "n": 526,
+      "t": "docs: codify shared-first UI architecture and visual standard",
+      "s": "closed",
+      "merged": false,
+      "h": "docs/525-shared-first-ui-standard",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/526"
+    },
+    {
+      "n": 524,
+      "t": "fix: unify app-wide shared form control branding",
+      "s": "closed",
+      "merged": true,
+      "h": "fix/523-shared-control-branding",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/524"
+    },
+    {
+      "n": 522,
+      "t": "feat: reconcile Quick Entry with owner reference",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/521-quick-entry-reference",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/522"
+    },
+    {
+      "n": 520,
+      "t": "docs: track post-v1.4 desktop visual remediation plan",
+      "s": "closed",
+      "merged": true,
+      "h": "docs/519-desktop-visual-audit-plan",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/520"
+    },
+    {
+      "n": 518,
+      "t": "Chore: make Windows batch launch local development by default",
+      "s": "open",
+      "merged": false,
+      "h": "chore/517-local-dev-batch",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/518"
+    },
+    {
+      "n": 516,
+      "t": "chore: reconcile post-v1.4 maintenance and repository cleanup",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/515-maintenance-cleanup",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/516"
+    },
+    {
+      "n": 514,
+      "t": "docs: clarify immutable v1.4.0 release identity",
+      "s": "closed",
+      "merged": true,
+      "h": "release/476-v1.4.0-release-sha-wording",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/514"
+    },
+    {
+      "n": 513,
+      "t": "release: publish v1.4.0 stable download metadata",
+      "s": "closed",
+      "merged": true,
+      "h": "release/476-v1.4.0-published-links",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/513"
+    },
+    {
+      "n": 512,
+      "t": "chore(deps-dev): bump vitest from 4.1.11 to 5.0.3",
+      "s": "closed",
+      "merged": false,
+      "h": "dependabot/npm_and_yarn/develop/vitest-5.0.3",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/512"
+    },
+    {
+      "n": 511,
+      "t": "chore(deps-dev): bump electron-builder from 26.15.6 to 26.17.0 in /desktop in the desktop-toolchain-minor-patch group",
+      "s": "closed",
+      "merged": true,
+      "h": "dependabot/npm_and_yarn/desktop/develop/desktop-toolchain-minor-patch-76fca87e9c",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/511"
+    },
+    {
+      "n": 510,
+      "t": "release: promote validated MyFinHub v1.4.0 to production main",
+      "s": "closed",
+      "merged": true,
+      "h": "release/476-v1.4.0-main-reconciliation",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/510"
+    },
+    {
+      "n": 509,
+      "t": "release: prepare MyFinHub v1.4.0 candidate",
+      "s": "closed",
+      "merged": true,
+      "h": "release/476-v1.4.0",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/509"
+    },
+    {
+      "n": 508,
+      "t": "chore: reconcile Node 24 and dependency health",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/505-node24-dependency-health-reconcile",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/508"
+    },
+    {
+      "n": 507,
+      "t": "docs: close #503 remediation tracking",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/503-final-closeout",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/507"
+    },
+    {
+      "n": 506,
+      "t": "chore: align Node 24 and add dependency health monitoring",
+      "s": "closed",
+      "merged": false,
+      "h": "chore/505-node24-dependency-health",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/506"
+    },
+    {
+      "n": 504,
+      "t": "fix: remediate #503 UI/UX and owner-intent audit findings",
+      "s": "closed",
+      "merged": true,
+      "h": "fix/503-ui-ux-owner-intent-remediation",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/504"
+    },
+    {
+      "n": 502,
+      "t": "chore(deps): bump the github-actions group with 2 updates",
+      "s": "closed",
+      "merged": false,
+      "h": "dependabot/github_actions/github-actions-4b2c77c676",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/502"
+    },
+    {
+      "n": 500,
+      "t": "Fix rendered QA Chromium profile cleanup",
+      "s": "closed",
+      "merged": true,
+      "h": "fix/476-mutation-validation-cleanup",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/500"
+    },
+    {
+      "n": 499,
+      "t": "docs: close interactive verification and reconcile latest UI audits",
+      "s": "closed",
+      "merged": false,
+      "h": "chore/476-close-8.13-interactive-verification",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/499"
+    },
+    {
+      "n": 497,
+      "t": "fix(dev): forward browser-facing host/proto through Vite proxy (#476)",
+      "s": "closed",
+      "merged": true,
+      "h": "fix/476-dev-proxy-origin-mismatch",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/497"
+    },
+    {
+      "n": 496,
+      "t": "Docs: close post-completion hardening status",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/490-final-hardening-closeout",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/496"
+    },
+    {
+      "n": 495,
+      "t": "Docs: avoid volatile develop SHA in status",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/490-status-baseline-pointer",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/495"
+    },
+    {
+      "n": 494,
+      "t": "Docs: reconcile canonical post-completion status",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/490-status-convergence",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/494"
+    },
+    {
+      "n": 493,
+      "t": "CI: harden post-completion release identity",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/490-post-completion-hardening",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/493"
+    },
+    {
+      "n": 492,
+      "t": "Docs: reconcile post-merge completion closeout",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/476-post-merge-closeout",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/492"
+    },
+    {
+      "n": 491,
+      "t": "Docs: align current product documentation with MyFinHub identity",
+      "s": "closed",
+      "merged": true,
+      "h": "docs/472-myfinhub-doc-identity",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/491"
+    },
+    {
+      "n": 489,
+      "t": "Docs: harden workstream and concept reconciliation",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/488-workstream-reconciliation",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/489"
+    },
+    {
+      "n": 486,
+      "t": "Reconcile provider branding into completion audit",
+      "s": "closed",
+      "merged": false,
+      "h": "feat/481-provider-brand-management",
+      "base": "feat/476-completion-audit-hardening",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/486"
+    },
+    {
+      "n": 484,
+      "t": "Optimize CI workflow fan-out and repository instructions",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/483-ci-workflow-optimization",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/484"
+    },
+    {
+      "n": 482,
+      "t": "Provider branding management: in-app uploads and custom providers",
+      "s": "closed",
+      "merged": false,
+      "h": "feat/481-provider-brand-management",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/482"
+    },
+    {
+      "n": 480,
+      "t": "chore: sync develop into completion audit branch",
+      "s": "closed",
+      "merged": false,
+      "h": "develop",
+      "base": "feat/476-completion-audit-hardening",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/480"
+    },
+    {
+      "n": 479,
+      "t": "DB: harden Supabase provider assets, metadata and history integrity",
+      "s": "closed",
+      "merged": false,
+      "h": "chore/478-db-production-readiness",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/479"
+    },
+    {
+      "n": 477,
+      "t": "Complete cross-app UX and active-device hardening",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/476-completion-audit-hardening",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/477"
+    },
+    {
+      "n": 475,
+      "t": "ci: rerun Windows validation on root build-config changes",
+      "s": "closed",
+      "merged": true,
+      "h": "ci/474-windows-build-input-triggers",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/475"
+    },
+    {
+      "n": 473,
+      "t": "docs: complete post-v1.3.0 Unreleased coverage",
+      "s": "closed",
+      "merged": false,
+      "h": "docs/464-complete-unreleased-coverage",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/473"
+    },
+    {
+      "n": 471,
+      "t": "fix: patch transitive desktop undici advisories",
+      "s": "closed",
+      "merged": true,
+      "h": "fix/470-desktop-undici-audit",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/471"
+    },
+    {
+      "n": 469,
+      "t": "ci: add Dependabot coverage for desktop dependencies",
+      "s": "closed",
+      "merged": true,
+      "h": "ci/468-dependabot-desktop",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/469"
+    },
+    {
+      "n": 467,
+      "t": "ci: validate Windows when Node runtime contract changes",
+      "s": "closed",
+      "merged": true,
+      "h": "ci/466-windows-node-runtime-trigger",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/467"
+    },
+    {
+      "n": 465,
+      "t": "docs: complete post-v1.3.0 changelog coverage",
+      "s": "closed",
+      "merged": true,
+      "h": "docs/464-unreleased-completeness",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/465"
+    },
+    {
+      "n": 463,
+      "t": "docs: record post-v1.3.0 fixes in changelog",
+      "s": "closed",
+      "merged": true,
+      "h": "docs/462-unreleased-changelog",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/463"
+    },
+    {
+      "n": 461,
+      "t": "fix: keep Dashboard IBAN copy affordance visible",
+      "s": "closed",
+      "merged": true,
+      "h": "fix/460-dashboard-iban-copy-discoverability",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/461"
+    },
+    {
+      "n": 459,
+      "t": "fix: update Windows Electron to patched 43.7.0",
+      "s": "closed",
+      "merged": true,
+      "h": "fix/458-electron-security-update",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/459"
+    },
+    {
+      "n": 457,
+      "t": "fix: keep long Dashboard account names readable",
+      "s": "closed",
+      "merged": true,
+      "h": "fix/456-dashboard-long-account-names",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/457"
+    },
+    {
+      "n": 455,
+      "t": "fix: expand desktop Dashboard IBAN copy hit area",
+      "s": "closed",
+      "merged": true,
+      "h": "fix/454-dashboard-iban-hit-area",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/455"
+    },
+    {
+      "n": 453,
+      "t": "fix: enforce 48px Dashboard account touch targets",
+      "s": "closed",
+      "merged": true,
+      "h": "fix/452-dashboard-account-touch-targets",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/453"
+    },
+    {
+      "n": 451,
+      "t": "chore: complete PureVector platform branding",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/450-brand-kit-v2",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/451"
+    },
+    {
+      "n": 449,
+      "t": "feat: reconcile actual UI with archived concept",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/448-concept-reconciliation",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/449"
+    },
+    {
+      "n": 447,
+      "t": "chore: route Dependabot updates through develop",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/446-dependabot-develop",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/447"
+    },
+    {
+      "n": 445,
+      "t": "chore(deps): bump the github-actions group across 1 directory with 2 updates",
+      "s": "closed",
+      "merged": false,
+      "h": "dependabot/github_actions/github-actions-4b2c77c676",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/445"
+    },
+    {
+      "n": 444,
+      "t": "chore(deps-dev): bump vitest from 4.1.10 to 5.0.2",
+      "s": "closed",
+      "merged": false,
+      "h": "dependabot/npm_and_yarn/vitest-5.0.2",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/444"
+    },
+    {
+      "n": 443,
+      "t": "chore(deps): bump the npm-minor-patch group across 1 directory with 4 updates",
+      "s": "closed",
+      "merged": false,
+      "h": "dependabot/npm_and_yarn/npm-minor-patch-7fc87706a5",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/443"
+    },
+    {
+      "n": 442,
+      "t": "chore(deps-dev): bump @types/node from 22.20.2 to 22.20.4 in /api in the api-toolchain-minor-patch group across 1 directory",
+      "s": "closed",
+      "merged": false,
+      "h": "dependabot/npm_and_yarn/api/api-toolchain-minor-patch-7abd1e8c3f",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/442"
+    },
+    {
+      "n": 441,
+      "t": "feat: unify MyFinHub UI system and retire neumorphic chrome",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/439-design-system-consistency",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/441"
+    },
+    {
+      "n": 440,
+      "t": "chore: close post-v1.3 hardening review",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/438-post-release-hardening",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/440"
+    },
+    {
+      "n": 437,
+      "t": "chore: sync v1.3.0 release metadata to develop",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/436-sync-v1.3-release-metadata",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/437"
+    },
+    {
+      "n": 435,
+      "t": "release: publish v1.3.0 download metadata",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/288-v1.3.0-published-links",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/435"
+    },
+    {
+      "n": 434,
+      "t": "release: finalize MyFinHub v1.3.0 metadata",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/288-v1.3.0-release-closeout",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/434"
+    },
+    {
+      "n": 433,
+      "t": "release: promote canonical MyFinHub develop to production main",
+      "s": "closed",
+      "merged": true,
+      "h": "release/432-main-reconciliation",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/433"
+    },
+    {
+      "n": 432,
+      "t": "release: promote canonical MyFinHub develop to production main",
+      "s": "closed",
+      "merged": false,
+      "h": "develop",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/432"
+    },
+    {
+      "n": 431,
+      "t": "feat: align canonical develop app for production integration",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/429-canonical-integration",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/431"
+    },
+    {
+      "n": 430,
+      "t": "docs: establish memoryless develop-to-production integration handoff",
+      "s": "closed",
+      "merged": false,
+      "h": "chore/429-integration-handoff-plan",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/430"
+    },
+    {
+      "n": 428,
+      "t": "chore(deps): refresh develop dependency maintenance",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/develop-dependency-maintenance",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/428"
+    },
+    {
+      "n": 427,
+      "t": "Post-redesign polish: finalize interaction, motion and responsive contracts",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/348-disabled-interaction-state-guards",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/427"
+    },
+    {
+      "n": 426,
+      "t": "Post-redesign polish: canonicalize finance form feedback",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/348-canonical-form-feedback",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/426"
+    },
+    {
+      "n": 425,
+      "t": "Post-redesign polish: guard dialog and popover focus ownership",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/348-dialog-focus-ownership-guard",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/425"
+    },
+    {
+      "n": 424,
+      "t": "Post-redesign polish: restore grouped heading action layout",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/348-restore-heading-actions-layout",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/424"
+    },
+    {
+      "n": 423,
+      "t": "Post-redesign polish: finish class-equivalent shared actions",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/348-final-class-equivalent-actions",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/423"
+    },
+    {
+      "n": 422,
+      "t": "Post-redesign polish: canonicalize generic shared actions",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/348-canonical-generic-actions",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/422"
+    },
+    {
+      "n": 421,
+      "t": "Post-redesign polish: canonicalize shared close control",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/348-shared-close-controls",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/421"
+    },
+    {
+      "n": 420,
+      "t": "Code health: finalize Stage 8 release-readiness audit",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/357-stage8-release-readiness-audit",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/420"
+    },
+    {
+      "n": 419,
+      "t": "Code health: complete Stage 7 cleanup verification",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/357-stage7-full-cleanup-verification",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/419"
+    },
+    {
+      "n": 418,
+      "t": "Code health: finalize Stage 6 hygiene enforcement",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/357-stage6-finalize-hygiene",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/418"
+    },
+    {
+      "n": 417,
+      "t": "Code health: measure unused export baseline",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/357-stage6-unused-exports-baseline",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/417"
+    },
+    {
+      "n": 416,
+      "t": "Code health: enforce unused TypeScript symbols",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/357-stage6-unused-enforcement",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/416"
+    },
+    {
+      "n": 415,
+      "t": "Code health: add Stage 6 hygiene baseline",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/357-stage6-hygiene-baseline",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/415"
+    },
+    {
+      "n": 414,
+      "t": "Code health: establish Stage 6 hygiene baseline",
+      "s": "closed",
+      "merged": false,
+      "h": "chore/357-code-hygiene-stage-6-baseline",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/414"
+    },
+    {
+      "n": 413,
+      "t": "Code health: finish numeric CSS ownership",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/357-css-ownership-batch-15-base-layers",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/413"
+    },
+    {
+      "n": 412,
+      "t": "Code health: split remaining small numeric CSS owners",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/357-css-ownership-batch-14-split",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/412"
+    },
+    {
+      "n": 411,
+      "t": "Code health: split small residual CSS owners",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/357-css-ownership-batch-13-split",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/411"
+    },
+    {
+      "n": 410,
+      "t": "Code health: split skeleton and workspace CSS owners",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/357-css-ownership-batch-12-split",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/410"
+    },
+    {
+      "n": 409,
+      "t": "Code health: split first mixed CSS owners",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/357-css-ownership-batch-11-split",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/409"
+    },
+    {
+      "n": 408,
+      "t": "Sync CVV through encrypted card vault",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/407-server-synced-cvv",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/408"
+    },
+    {
+      "n": 405,
+      "t": "Code health: bulk-name coherent root CSS owners",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/357-css-ownership-batch-10-bulk",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/405"
+    },
+    {
+      "n": 404,
+      "t": "Code health: name bulk root CSS owners",
+      "s": "closed",
+      "merged": false,
+      "h": "chore/357-css-ownership-batch-10",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/404"
+    },
+    {
+      "n": 403,
+      "t": "Fix secure card details creation and editing",
+      "s": "closed",
+      "merged": true,
+      "h": "fix/400-card-secure-details-clean",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/403"
+    },
+    {
+      "n": 402,
+      "t": "Code health: name coherent root CSS owners",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/357-css-ownership-batch-9",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/402"
+    },
+    {
+      "n": 401,
+      "t": "Fix secure card details creation and editing",
+      "s": "closed",
+      "merged": false,
+      "h": "fix/400-card-secure-details",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/401"
+    },
+    {
+      "n": 399,
+      "t": "Code health: name Transactions Quick Entry and Savings CSS owners",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/357-css-ownership-batch-8",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/399"
+    },
+    {
+      "n": 398,
+      "t": "Code health: name remaining Dashboard CSS owners",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/357-css-ownership-batch-7",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/398"
+    },
+    {
+      "n": 397,
+      "t": "Code health: name Dashboard desktop fidelity CSS owner",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/357-css-ownership-batch-6",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/397"
+    },
+    {
+      "n": 396,
+      "t": "Code health: name Dashboard command-search CSS owner",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/357-css-ownership-batch-5",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/396"
+    },
+    {
+      "n": 395,
+      "t": "Code health: name canonical app-control CSS layer",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/357-css-ownership-batch-4",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/395"
+    },
+    {
+      "n": 394,
+      "t": "Code health: name root CSS compatibility entrypoint",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/357-css-ownership-batch-3",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/394"
+    },
+    {
+      "n": 393,
+      "t": "chore(deps): bump the npm-minor-patch group across 1 directory with 9 updates",
+      "s": "closed",
+      "merged": false,
+      "h": "dependabot/npm_and_yarn/npm-minor-patch-ce27d2c99c",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/393"
+    },
+    {
+      "n": 392,
+      "t": "chore(deps-dev): bump @types/node from 22.20.1 to 22.20.2 in /api in the api-toolchain-minor-patch group",
+      "s": "closed",
+      "merged": false,
+      "h": "dependabot/npm_and_yarn/api/api-toolchain-minor-patch-3c89d0b9e8",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/392"
+    },
+    {
+      "n": 391,
+      "t": "Code health: name the late workspace CSS entrypoint",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/357-css-ownership-batch-2",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/391"
+    },
+    {
+      "n": 390,
+      "t": "Code health: centralize legacy CSS tail ownership",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/357-css-ownership-batch-1",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/390"
+    },
+    {
+      "n": 389,
+      "t": "Code health: adopt Surface in page error boundary batch 4",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/357-surface-batch-4",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/389"
+    },
+    {
+      "n": 388,
+      "t": "Code health: introduce Surface batch 1",
+      "s": "closed",
+      "merged": false,
+      "h": "chore/357-surface-batch-1",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/388"
+    },
+    {
+      "n": 387,
+      "t": "Code health: adopt Surface in application chrome batch 3",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/357-surface-batch-3",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/387"
+    },
+    {
+      "n": 386,
+      "t": "Code health: adopt editor DialogShell in Lending and Savings batch 5",
+      "s": "closed",
+      "merged": false,
+      "h": "chore/357-dialog-shell-editor-batch-5",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/386"
+    },
+    {
+      "n": 385,
+      "t": "Code health: adopt Surface in Settings batch 2",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/357-surface-batch-2",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/385"
+    },
+    {
+      "n": 384,
+      "t": "Code health: introduce canonical Surface batch 1",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/357-surface-batch-1",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/384"
+    },
+    {
+      "n": 383,
+      "t": "Code health: adopt DialogShell in contextual quick add batch 4",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/357-dialog-shell-batch-4",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/383"
+    },
+    {
+      "n": 382,
+      "t": "Code health: adopt static DialogShell in legacy editor batch 3",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/357-dialog-shell-batch-3",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/382"
+    },
+    {
+      "n": 381,
+      "t": "Code health: adopt DialogShell in QuickAdd",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/357-dialog-shell-batch-2",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/381"
+    },
+    {
+      "n": 380,
+      "t": "Code health: extract shared DialogShell batch 1",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/357-dialog-shell-batch-1",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/380"
+    },
+    {
+      "n": 379,
+      "t": "Code health: complete Stage 2 shared Button/IconButton adoption",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/357-stage-2-button-completion",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/379"
+    },
+    {
+      "n": 378,
+      "t": "Code health: migrate residual security and shell actions batch 16",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/357-button-adopters-batch-16",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/378"
+    },
+    {
+      "n": 377,
+      "t": "Code health: migrate shared Button/IconButton adopters batch 15",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/357-button-adopters-batch-15",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/377"
+    },
+    {
+      "n": 376,
+      "t": "Code health: migrate Savings shared Button adopters batch 14",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/357-button-adopters-batch-14",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/376"
+    },
+    {
+      "n": 375,
+      "t": "Code health: migrate Credit Card shared Button adopters batch 13",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/357-button-adopters-batch-13",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/375"
+    },
+    {
+      "n": 374,
+      "t": "Code health: consolidate shared Button adopters batch 12",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/357-button-adopters-batch-12",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/374"
+    },
+    {
+      "n": 373,
+      "t": "Code health: migrate QuickAdd shared Button adopters batch 11",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/357-button-adopters-batch-11",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/373"
+    },
+    {
+      "n": 372,
+      "t": "Code health: migrate Settings shared Button adopters batch 10",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/357-button-adopters-batch-10",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/372"
+    },
+    {
+      "n": 371,
+      "t": "Code health: migrate Planning shared Button adopters batch 9",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/357-button-adopters-batch-9",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/371"
+    },
+    {
+      "n": 370,
+      "t": "Code health: migrate legacy transaction editor actions batch 8",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/357-button-adopters-batch-8",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/370"
+    },
+    {
+      "n": 369,
+      "t": "Code health: migrate Cards shared Button adopters batch 7",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/357-button-adopters-batch-7",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/369"
+    },
+    {
+      "n": 368,
+      "t": "Code health: migrate Loans shared Button adopters batch 6",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/357-button-adopters-batch-6",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/368"
+    },
+    {
+      "n": 367,
+      "t": "Code health: migrate Recurring shared Button adopters batch 5",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/357-button-adopters-batch-5",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/367"
+    },
+    {
+      "n": 366,
+      "t": "Code health: migrate Lending shared Button adopters batch 4",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/357-button-adopters-batch-4",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/366"
+    },
+    {
+      "n": 365,
+      "t": "Code health: migrate shared IconButton adopters batch 3",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/357-iconbutton-adopters-batch-3",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/365"
+    },
+    {
+      "n": 364,
+      "t": "Code health: migrate shared Button adopters batch 2",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/357-button-adopters-batch-2",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/364"
+    },
+    {
+      "n": 363,
+      "t": "Code health: add shared Button and IconButton foundation",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/357-shared-buttons",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/363"
+    },
+    {
+      "n": 360,
+      "t": "Code health: introduce canonical button primitives",
+      "s": "closed",
+      "merged": false,
+      "h": "chore/357-button-primitives",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/360"
+    },
+    {
+      "n": 359,
+      "t": "Code health: persist UI design-system contracts",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/357-design-system-inventory",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/359"
+    },
+    {
+      "n": 358,
+      "t": "Code health: restore production API function budget",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/357-code-health-foundation",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/358"
+    },
+    {
+      "n": 356,
+      "t": "UI: consolidate Review into Έλεγχος",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/355-review-to-check",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/356"
+    },
+    {
+      "n": 354,
+      "t": "UI: finish Settings Data tab",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/346-settings-data",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/354"
+    },
+    {
+      "n": 353,
+      "t": "chore(deps): bump the npm-minor-patch group across 1 directory with 5 updates",
+      "s": "closed",
+      "merged": false,
+      "h": "dependabot/npm_and_yarn/npm-minor-patch-2b704cebee",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/353"
+    },
+    {
+      "n": 352,
+      "t": "fix: keep Phase 6 updater within Vercel function limit",
+      "s": "closed",
+      "merged": true,
+      "h": "fix/phase6-main-updater-function-limit",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/352"
+    },
+    {
+      "n": 351,
+      "t": "fix: expose narrow Phase 6 Android updater bridge",
+      "s": "closed",
+      "merged": true,
+      "h": "fix/phase6-main-updater-bridge",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/351"
+    },
+    {
+      "n": 349,
+      "t": "Android: isolate Phase 6 private update channel",
+      "s": "closed",
+      "merged": true,
+      "h": "android/phase6-test-update-channel",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/349"
+    },
+    {
+      "n": 347,
+      "t": "UI: complete remaining Settings tabs",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/346-settings-tabs",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/347"
+    },
+    {
+      "n": 345,
+      "t": "feat(android): add private self-update distribution API",
+      "s": "closed",
+      "merged": true,
+      "h": "android/private-app-update-api",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/345"
+    },
+    {
+      "n": 344,
+      "t": "UI: redesign Settings General tab from approved target",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/343-settings-general-tab",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/344"
+    },
+    {
+      "n": 342,
+      "t": "UI: combine approved Reports analyses into one scrollable page",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/340-reports-composite-target",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/342"
+    },
+    {
+      "n": 341,
+      "t": "UI: combine approved Reports analyses into one scrollable page",
+      "s": "closed",
+      "merged": false,
+      "h": "feat/340-reports-composite-target",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/341"
+    },
+    {
+      "n": 339,
+      "t": "UI: finalize approved Needs Attention desktop target",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/337-attention-approved-target-final",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/339"
+    },
+    {
+      "n": 338,
+      "t": "UI: implement approved Needs Attention desktop target",
+      "s": "closed",
+      "merged": false,
+      "h": "feat/337-attention-approved-target",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/338"
+    },
+    {
+      "n": 336,
+      "t": "UI: finalize approved Planning desktop target",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/332-planning-approved-target-final",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/336"
+    },
+    {
+      "n": 335,
+      "t": "UI: implement approved Planning desktop target",
+      "s": "closed",
+      "merged": false,
+      "h": "feat/332-planning-approved-target",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/335"
+    },
+    {
+      "n": 331,
+      "t": "UI: implement approved Recurring desktop target",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/329-recurring-approved-target",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/331"
+    },
+    {
+      "n": 330,
+      "t": "UI: implement approved Recurring desktop target",
+      "s": "closed",
+      "merged": false,
+      "h": "feat/329-recurring-approved-target",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/330"
+    },
+    {
+      "n": 328,
+      "t": "UI: implement approved Lending desktop target",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/324-lending-approved-target",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/328"
+    },
+    {
+      "n": 327,
+      "t": "UI: keep native drag navigation on Credit Card",
+      "s": "closed",
+      "merged": true,
+      "h": "fix/326-credit-card-native-drag-navigation",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/327"
+    },
+    {
+      "n": 325,
+      "t": "UI: implement approved Lending desktop target",
+      "s": "closed",
+      "merged": false,
+      "h": "feat/324-lending-approved-target",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/325"
+    },
+    {
+      "n": 323,
+      "t": "UI: implement approved Credit Card desktop target",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/322-credit-card-approved-target",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/323"
+    },
+    {
+      "n": 321,
+      "t": "UI: implement approved Loans desktop target",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/320-loans-approved-target",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/321"
+    },
+    {
+      "n": 319,
+      "t": "UI: implement approved Cards surrounding desktop target",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/318-cards-surrounding-approved-target",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/319"
+    },
+    {
+      "n": 317,
+      "t": "fix: unblock first IBAN metadata save",
+      "s": "closed",
+      "merged": true,
+      "h": "fix/316-account-metadata-upsert",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/317"
+    },
+    {
+      "n": 314,
+      "t": "UI: implement approved Savings desktop target",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/313-savings-approved-target",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/314"
+    },
+    {
+      "n": 312,
+      "t": "UI: implement approved Quick Entry desktop target",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/311-quick-entry-approved-target",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/312"
+    },
+    {
+      "n": 310,
+      "t": "UI: implement approved Transactions desktop target",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/305-transactions-approved-target",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/310"
+    },
+    {
+      "n": 309,
+      "t": "chore(deps): bump the npm-minor-patch group across 1 directory with 5 updates",
+      "s": "closed",
+      "merged": false,
+      "h": "dependabot/npm_and_yarn/npm-minor-patch-444d325fa7",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/309"
+    },
+    {
+      "n": 308,
+      "t": "UI: implement approved Transactions desktop target",
+      "s": "closed",
+      "merged": false,
+      "h": "feat/305-transactions-approved-target",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/308"
+    },
+    {
+      "n": 304,
+      "t": "UI: refine approved Dashboard desktop fidelity",
+      "s": "closed",
+      "merged": true,
+      "h": "ui/300-dashboard-fidelity-pass-2",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/304"
+    },
+    {
+      "n": 302,
+      "t": "UI: implement approved Dashboard desktop target",
+      "s": "closed",
+      "merged": true,
+      "h": "ui/300-dashboard-approved-target",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/302"
+    },
+    {
+      "n": 301,
+      "t": "UI: implement approved Dashboard desktop target",
+      "s": "closed",
+      "merged": false,
+      "h": "ui/300-dashboard-approved-target",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/301"
+    },
+    {
+      "n": 299,
+      "t": "feat(dashboard): implement approved Phase 1 desktop redesign (#298)",
+      "s": "closed",
+      "merged": false,
+      "h": "issue-298-dashboard-redesign",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/299"
+    },
+    {
+      "n": 297,
+      "t": "[CHORE] Bootstrap desktop UI redesign workspace",
+      "s": "closed",
+      "merged": false,
+      "h": "chore/296-desktop-redesign-bootstrap",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/297"
+    },
+    {
+      "n": 295,
+      "t": "release: MyFinHub v1.3.0",
+      "s": "closed",
+      "merged": true,
+      "h": "develop",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/295"
+    },
+    {
+      "n": 294,
+      "t": "release: prepare MyFinHub v1.3.0",
+      "s": "closed",
+      "merged": true,
+      "h": "release/v1.3.0-prep",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/294"
+    },
+    {
+      "n": 292,
+      "t": "security: harden durable-history production grants and RLS (clean)",
+      "s": "closed",
+      "merged": true,
+      "h": "fix/291-security-hardening-clean",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/292"
+    },
+    {
+      "n": 291,
+      "t": "security: harden durable-history production grants and RLS",
+      "s": "closed",
+      "merged": false,
+      "h": "fix/289-tighten-new-table-grants",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/291"
+    },
+    {
+      "n": 287,
+      "t": "fix: allow durable history audit actions",
+      "s": "closed",
+      "merged": true,
+      "h": "fix/history-audit-actions-release-blocker",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/287"
+    },
+    {
+      "n": 285,
+      "t": "feat: add real recurring intervals and workbook refresh guards",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/284-recurring-intervals-workbook-refresh",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/285"
+    },
+    {
+      "n": 282,
+      "t": "feat: finalize durable cross-session undo redo",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/228-durable-undo-redo-merge",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/282"
+    },
+    {
+      "n": 281,
+      "t": "feat: finalize durable cross-session undo redo",
+      "s": "closed",
+      "merged": false,
+      "h": "feat/228-durable-undo-redo-final",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/281"
+    },
+    {
+      "n": 280,
+      "t": "feat: finalize dependency-gated taxonomy retirement",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/233-safe-taxonomy-retirement-final",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/280"
+    },
+    {
+      "n": 279,
+      "t": "feat: finalize dependency-gated taxonomy retirement",
+      "s": "closed",
+      "merged": false,
+      "h": "feat/233-safe-taxonomy-retirement-final",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/279"
+    },
+    {
+      "n": 278,
+      "t": "feat: add durable cross-session undo redo",
+      "s": "closed",
+      "merged": false,
+      "h": "feat/228-durable-undo-redo",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/278"
+    },
+    {
+      "n": 277,
+      "t": "feat: add owner-only account IBAN metadata",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/242-account-iban-metadata",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/277"
+    },
+    {
+      "n": 276,
+      "t": "feat: add dependency-gated taxonomy retirement",
+      "s": "closed",
+      "merged": false,
+      "h": "feat/233-safe-taxonomy-retirement",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/276"
+    },
+    {
+      "n": 275,
+      "t": "fix: lock credit statement closing-date purchases to next cycle",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/232-next-cycle-boundary",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/275"
+    },
+    {
+      "n": 274,
+      "t": "chore(deps): bump the github-actions group across 1 directory with 2 updates",
+      "s": "closed",
+      "merged": false,
+      "h": "dependabot/github_actions/github-actions-b632086d0b",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/274"
+    },
+    {
+      "n": 273,
+      "t": "chore(deps): bump the npm-minor-patch group across 1 directory with 4 updates",
+      "s": "closed",
+      "merged": false,
+      "h": "dependabot/npm_and_yarn/npm-minor-patch-b618f2247e",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/273"
+    },
+    {
+      "n": 272,
+      "t": "refactor: reconcile shared bank brand registry",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/240-brand-registry-reconciliation",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/272"
+    },
+    {
+      "n": 271,
+      "t": "design: unify semantic Light and Dark themes",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/254-semantic-light-dark-theme",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/271"
+    },
+    {
+      "n": 270,
+      "t": "feat: add statement-aware credit card lifecycle",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/232-credit-statements",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/270"
+    },
+    {
+      "n": 269,
+      "t": "refactor: move transaction rules into advanced automations",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/234-advanced-automations",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/269"
+    },
+    {
+      "n": 268,
+      "t": "refactor: prioritize active loan and recurring obligations",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/239-obligation-lifecycle-hierarchy",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/268"
+    },
+    {
+      "n": 267,
+      "t": "refactor: make Transactions scan-first with compact split disclosure",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/238-transactions-scanability",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/267"
+    },
+    {
+      "n": 265,
+      "t": "refactor: simplify shell and Dashboard hierarchy",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/237-shell-dashboard-hierarchy",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/265"
+    },
+    {
+      "n": 264,
+      "t": "refactor: finish shared finance form and action adoption",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/236-shared-ui-adoption",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/264"
+    },
+    {
+      "n": 263,
+      "t": "feat: adopt canonical credit-card stack and archive surface",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/241-canonical-credit-card-stack",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/263"
+    },
+    {
+      "n": 262,
+      "t": "chore: refresh #241 branch from develop",
+      "s": "closed",
+      "merged": true,
+      "h": "develop",
+      "base": "feat/241-canonical-credit-card-stack",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/262"
+    },
+    {
+      "n": 261,
+      "t": "refactor: adopt shared app-owned finance primitives",
+      "s": "closed",
+      "merged": true,
+      "h": "refactor/236-primitives-adoption",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/261"
+    },
+    {
+      "n": 260,
+      "t": "feat: edit and delete imported transactions safely",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/229-legacy-transaction-overrides",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/260"
+    },
+    {
+      "n": 259,
+      "t": "feat: adopt stable category icons across primary surfaces",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/233-cross-app-category-icons",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/259"
+    },
+    {
+      "n": 258,
+      "t": "feat: add direct stable taxonomy management",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/233-direct-taxonomy-management",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/258"
+    },
+    {
+      "n": 257,
+      "t": "refactor: make Savings action-first and user-description-first",
+      "s": "closed",
+      "merged": true,
+      "h": "refactor/235-savings-action-hierarchy",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/257"
+    },
+    {
+      "n": 256,
+      "t": "feat: introduce stable category and subcategory identities",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/233-stable-category-identity",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/256"
+    },
+    {
+      "n": 255,
+      "t": "feat: surface long-term loans as linked recurring obligations",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/231-linked-loan-obligations",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/255"
+    },
+    {
+      "n": 253,
+      "t": "refactor: add shared confirmation dialog primitive",
+      "s": "closed",
+      "merged": true,
+      "h": "refactor/236-shared-dialog-actions",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/253"
+    },
+    {
+      "n": 252,
+      "t": "feat: wire category icons into Settings",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/233-categories-icons-settings",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/252"
+    },
+    {
+      "n": 251,
+      "t": "feat: make split parts authoritative",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/227-authoritative-splits",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/251"
+    },
+    {
+      "n": 250,
+      "t": "feat: introduce local category icon registry",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/233-categories-icons-workspace",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/250"
+    },
+    {
+      "n": 249,
+      "t": "refactor: prepare shared bank brand asset pipeline",
+      "s": "closed",
+      "merged": true,
+      "h": "refactor/240-brand-bank-assets",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/249"
+    },
+    {
+      "n": 248,
+      "t": "feat: introduce credit-card statement cycle domain",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/232-credit-card-statements",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/248"
+    },
+    {
+      "n": 247,
+      "t": "refactor: introduce shared MoneyInput primitive",
+      "s": "closed",
+      "merged": true,
+      "h": "refactor/236-shared-ui-primitives",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/247"
+    },
+    {
+      "n": 246,
+      "t": "feat: introduce user-intent Quick Entry semantics",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/226-quick-entry-intents",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/246"
+    },
+    {
+      "n": 245,
+      "t": "feat: support multi-installment loan payment coverage",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/230-multi-installment-payments",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/245"
+    },
+    {
+      "n": 244,
+      "t": "fix: harden Lending against malformed legacy data",
+      "s": "closed",
+      "merged": true,
+      "h": "fix/224-lending-crash-resilience",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/244"
+    },
+    {
+      "n": 243,
+      "t": "fix: preserve category trees across migration",
+      "s": "closed",
+      "merged": true,
+      "h": "fix/225-category-tree-persistence",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/243"
+    },
+    {
+      "n": 222,
+      "t": "docs: reconcile post-v1.2.2 repository status",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/221-post-v1.2.2-status",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/222"
+    },
+    {
+      "n": 220,
+      "t": "release: MyFinHub v1.2.2",
+      "s": "closed",
+      "merged": true,
+      "h": "develop",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/220"
+    },
+    {
+      "n": 219,
+      "t": "release: prepare MyFinHub v1.2.2",
+      "s": "closed",
+      "merged": true,
+      "h": "release/202-v1.2.2-prep",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/219"
+    },
+    {
+      "n": 217,
+      "t": "release: MyFinHub v1.2.1",
+      "s": "closed",
+      "merged": true,
+      "h": "develop",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/217"
+    },
+    {
+      "n": 216,
+      "t": "release: prepare MyFinHub v1.2.1",
+      "s": "closed",
+      "merged": true,
+      "h": "release/206-v1.2.1",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/216"
+    },
+    {
+      "n": 215,
+      "t": "fix: make Windows first-run startup diagnosable and recoverable",
+      "s": "closed",
+      "merged": true,
+      "h": "fix/204-windows-first-run-startup",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/215"
+    },
+    {
+      "n": 203,
+      "t": "fix: complete Windows first-run no-setup recovery",
+      "s": "closed",
+      "merged": true,
+      "h": "fix/202-windows-first-run-diagnostics",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/203"
+    },
+    {
+      "n": 201,
+      "t": "release: MyFinHub v1.2.0",
+      "s": "closed",
+      "merged": true,
+      "h": "develop",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/201"
+    },
+    {
+      "n": 200,
+      "t": "release: prepare MyFinHub v1.2.0 and clean repository metadata",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/199-v1.2.0-release-prep",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/200"
+    },
+    {
+      "n": 197,
+      "t": "security: add scoped Android native bearer authentication",
+      "s": "closed",
+      "merged": true,
+      "h": "security/196-android-native-bearer",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/197"
+    },
+    {
+      "n": 195,
+      "t": "feat: add local-only receipt capture and OCR inbox",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/188-local-receipt-ocr",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/195"
+    },
+    {
+      "n": 194,
+      "t": "feat: improve home navigation and category management",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/193-navigation-category-management",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/194"
+    },
+    {
+      "n": 192,
+      "t": "release: MyFinHub v1.1.0",
+      "s": "closed",
+      "merged": true,
+      "h": "develop",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/192"
+    },
+    {
+      "n": 191,
+      "t": "release: prepare MyFinHub v1.1.0 metadata",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/187-v1.1.0-release-prep",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/191"
+    },
+    {
+      "n": 186,
+      "t": "fix: close skeleton, shortcut and change-history UX gaps",
+      "s": "closed",
+      "merged": true,
+      "h": "fix/185-ux-polish",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/186"
+    },
+    {
+      "n": 184,
+      "t": "docs: reconcile final develop status after release-readiness closeout",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/183-final-develop-status",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/184"
+    },
+    {
+      "n": 182,
+      "t": "chore: close automated release-readiness and installed Windows smoke",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/165-release-readiness-closeout",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/182"
+    },
+    {
+      "n": 181,
+      "t": "fix: close final Dashboard, history and skeleton UX gaps",
+      "s": "closed",
+      "merged": true,
+      "h": "fix/final-ux-reconciliation",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/181"
+    },
+    {
+      "n": 179,
+      "t": "feat: integrate verified MyFinHub hardening and product roadmap",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/release-readiness-automation",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/179"
+    },
+    {
+      "n": 178,
+      "t": "feat: normalize payment flows across obligations",
+      "s": "closed",
+      "merged": false,
+      "h": "feat/payment-flow-normalization",
+      "base": "feat/unified-search-command-palette",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/178"
+    },
+    {
+      "n": 176,
+      "t": "feat: unified search and command palette",
+      "s": "closed",
+      "merged": false,
+      "h": "feat/unified-search-command-palette",
+      "base": "feat/category-budgets-transaction-rules",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/176"
+    },
+    {
+      "n": 175,
+      "t": "feat: category budgets and deterministic transaction rules",
+      "s": "closed",
+      "merged": false,
+      "h": "feat/category-budgets-transaction-rules",
+      "base": "feat/action-center-contextual-quick-add",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/175"
+    },
+    {
+      "n": 174,
+      "t": "feat: Needs Attention action center and contextual Quick Add",
+      "s": "closed",
+      "merged": false,
+      "h": "feat/action-center-contextual-quick-add",
+      "base": "feat/time-aware-finance-model",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/174"
+    },
+    {
+      "n": 172,
+      "t": "feat: add scheduled transactions and deterministic cash-flow forecast",
+      "s": "closed",
+      "merged": false,
+      "h": "feat/time-aware-finance-model",
+      "base": "feat/product-ledger-foundations",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/172"
+    },
+    {
+      "n": 171,
+      "t": "feat: add first-class transfers and split transaction foundations",
+      "s": "closed",
+      "merged": false,
+      "h": "feat/product-ledger-foundations",
+      "base": "feat/ui-ux-hardening-batch",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/171"
+    },
+    {
+      "n": 159,
+      "t": "feat: complete UI/UX, Reports analytics and MyFinHub branding hardening",
+      "s": "closed",
+      "merged": false,
+      "h": "feat/ui-ux-hardening-batch",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/159"
+    },
+    {
+      "n": 157,
+      "t": "release: MyFinHub v1.0.2",
+      "s": "closed",
+      "merged": true,
+      "h": "develop",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/157"
+    },
+    {
+      "n": 156,
+      "t": "release: prepare MyFinHub v1.0.2",
+      "s": "closed",
+      "merged": true,
+      "h": "release/v1.0.2-prep",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/156"
+    },
+    {
+      "n": 155,
+      "t": "fix: restore cards v15 behavior and multi-credit model",
+      "s": "closed",
+      "merged": true,
+      "h": "fix/154-cards-credit-model",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/155"
+    },
+    {
+      "n": 153,
+      "t": "docs: refresh v1.0.1 production status",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/151-refresh-release-status",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/153"
+    },
+    {
+      "n": 150,
+      "t": "release: promote MyFinHub v1.0.1 authentic branding patch",
+      "s": "closed",
+      "merged": true,
+      "h": "develop",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/150"
+    },
+    {
+      "n": 149,
+      "t": "release: prepare MyFinHub v1.0.1 authentic-brand patch",
+      "s": "closed",
+      "merged": true,
+      "h": "release/v1.0.1-prep",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/149"
+    },
+    {
+      "n": 148,
+      "t": "fix: restore authentic branding and modernize README",
+      "s": "closed",
+      "merged": true,
+      "h": "fix/readme-authentic-branding",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/148"
+    },
+    {
+      "n": 147,
+      "t": "release: promote tag-safe MyFinHub desktop publishing fix",
+      "s": "closed",
+      "merged": true,
+      "h": "develop",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/147"
+    },
+    {
+      "n": 146,
+      "t": "fix: isolate tag build from desktop release publishing",
+      "s": "closed",
+      "merged": true,
+      "h": "fix/140-tag-release-publish",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/146"
+    },
+    {
+      "n": 145,
+      "t": "release: promote final MyFinHub branding and Windows icon fix",
+      "s": "closed",
+      "merged": true,
+      "h": "develop",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/145"
+    },
+    {
+      "n": 144,
+      "t": "fix: use native MyFinHub icons for web and Windows",
+      "s": "closed",
+      "merged": true,
+      "h": "fix/140-brand-installer-audit",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/144"
+    },
+    {
+      "n": 143,
+      "t": "fix: update production smoke for MyFinHub health identity",
+      "s": "closed",
+      "merged": true,
+      "h": "fix/142-production-smoke-brand",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/143"
+    },
+    {
+      "n": 141,
+      "t": "release: promote MyFinHub cards, Windows desktop and rebrand batch",
+      "s": "closed",
+      "merged": true,
+      "h": "develop",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/141"
+    },
+    {
+      "n": 139,
+      "t": "feat: rebrand to MyFinHub and complete Windows installer/updater",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/138-windows-installer-updater",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/139"
+    },
+    {
+      "n": 137,
+      "t": "feat: add Windows desktop application target",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/136-windows-desktop",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/137"
+    },
+    {
+      "n": 135,
+      "t": "feat: integrate interactive cards and shared credit identity",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/134-card-ui-shared-credit",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/135"
+    },
+    {
+      "n": 133,
+      "t": "release: promote RheomIQ product batch to main",
+      "s": "closed",
+      "merged": true,
+      "h": "develop",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/133"
+    },
+    {
+      "n": 132,
+      "t": "release: remove one-shot Vercel key bootstrap",
+      "s": "closed",
+      "merged": true,
+      "h": "release/88-bootstrap-cleanup",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/132"
+    },
+    {
+      "n": 131,
+      "t": "release: expose exact Vercel bootstrap blocker",
+      "s": "closed",
+      "merged": true,
+      "h": "release/88-vercel-key-diagnostic",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/131"
+    },
+    {
+      "n": 130,
+      "t": "release: make Vercel bootstrap result verifiable",
+      "s": "closed",
+      "merged": true,
+      "h": "release/88-vercel-key-status",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/130"
+    },
+    {
+      "n": 129,
+      "t": "release: trigger one-shot Vercel key bootstrap",
+      "s": "closed",
+      "merged": true,
+      "h": "release/88-vercel-key-trigger",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/129"
+    },
+    {
+      "n": 128,
+      "t": "release: run one-shot Vercel card-vault bootstrap",
+      "s": "closed",
+      "merged": true,
+      "h": "release/88-vercel-key-bootstrap",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/128"
+    },
+    {
+      "n": 127,
+      "t": "release: sync card-vault migrations and optimize RLS",
+      "s": "closed",
+      "merged": true,
+      "h": "release/88-db-migration-sync",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/127"
+    },
+    {
+      "n": 126,
+      "t": "docs: finalize #64 develop closeout status",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/64-final-closeout",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/126"
+    },
+    {
+      "n": 125,
+      "t": "hardening: animate live summary amounts and close product batch",
+      "s": "closed",
+      "merged": true,
+      "h": "hardening/87-live-summary-amounts-v2",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/125"
+    },
+    {
+      "n": 124,
+      "t": "ux: replace native entry popovers with app-owned controls",
+      "s": "closed",
+      "merged": true,
+      "h": "ux/86-owned-entry-controls",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/124"
+    },
+    {
+      "n": 123,
+      "t": "feat: autosave Settings without Apply/Cancel",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/85-settings-autosave-v2",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/123"
+    },
+    {
+      "n": 122,
+      "t": "fix: finish cards credit and loans integration",
+      "s": "closed",
+      "merged": true,
+      "h": "fix/77-79-product-route-integration",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/122"
+    },
+    {
+      "n": 120,
+      "t": "feat: restore redo on current develop",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/89-redo-v2",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/120"
+    },
+    {
+      "n": 119,
+      "t": "test: verify mobile redesign fidelity and desktop isolation",
+      "s": "closed",
+      "merged": true,
+      "h": "test/115-mobile-redesign-fidelity",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/119"
+    },
+    {
+      "n": 118,
+      "t": "ux: redesign mobile Reports, Settings and editor surfaces",
+      "s": "closed",
+      "merged": true,
+      "h": "ux/114-mobile-reports-settings",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/118"
+    },
+    {
+      "n": 117,
+      "t": "ux: redesign mobile finance domain pages",
+      "s": "closed",
+      "merged": true,
+      "h": "ux/113-mobile-domain-redesign",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/117"
+    },
+    {
+      "n": 116,
+      "t": "ux: redesign mobile shell and Dashboard hierarchy",
+      "s": "closed",
+      "merged": true,
+      "h": "ux/112-mobile-shell-dashboard",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/116"
+    },
+    {
+      "n": 110,
+      "t": "test: expand responsive rendered QA across the mobile route matrix",
+      "s": "closed",
+      "merged": true,
+      "h": "test/106-responsive-mobile-qa",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/110"
+    },
+    {
+      "n": 109,
+      "t": "ux: mobile quick entry, touch states and report presentation",
+      "s": "closed",
+      "merged": true,
+      "h": "ux/105-mobile-entry-touch-reports",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/109"
+    },
+    {
+      "n": 108,
+      "t": "fix: mobile shell, safe-area and modal behavior",
+      "s": "closed",
+      "merged": true,
+      "h": "fix/104-mobile-shell-safeareas",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/108"
+    },
+    {
+      "n": 107,
+      "t": "ux: mobile-native transactions and recurring workflows",
+      "s": "closed",
+      "merged": true,
+      "h": "fix/103-mobile-finance-workflows",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/107"
+    },
+    {
+      "n": 101,
+      "t": "ux: use real bank logos on account surfaces",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/100-real-bank-logos",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/101"
+    },
+    {
+      "n": 99,
+      "t": "ux: add semantic icon language across finance surfaces",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/98-semantic-icons",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/99"
+    },
+    {
+      "n": 97,
+      "t": "ux: add app-wide interaction states and visible transaction comments",
+      "s": "closed",
+      "merged": true,
+      "h": "ux/96-interaction-states",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/97"
+    },
+    {
+      "n": 95,
+      "t": "fix: keep IRIS reimbursements out of lending",
+      "s": "closed",
+      "merged": true,
+      "h": "fix/92-iris-not-lending",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/95"
+    },
+    {
+      "n": 94,
+      "t": "feat: add IRIS and cash person settlements",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/92-person-settlements",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/94"
+    },
+    {
+      "n": 93,
+      "t": "security: persist CVV locally across auth and deploys",
+      "s": "closed",
+      "merged": true,
+      "h": "security/91-local-cvv",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/93"
+    },
+    {
+      "n": 90,
+      "t": "feat: add redo for reversible finance edits",
+      "s": "closed",
+      "merged": false,
+      "h": "feat/89-redo",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/90"
+    },
+    {
+      "n": 84,
+      "t": "security: encrypted payment-card vault",
+      "s": "closed",
+      "merged": true,
+      "h": "security/76-card-vault",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/84"
+    },
+    {
+      "n": 83,
+      "t": "feat: dedicated Cards workspace by bank",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/77-cards-workspace",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/83"
+    },
+    {
+      "n": 82,
+      "t": "feat: split Credit Card and Installments & Loans workspaces",
+      "s": "closed",
+      "merged": false,
+      "h": "feat/78-79-credit-loans",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/82"
+    },
+    {
+      "n": 81,
+      "t": "feat: full receivables history and operational reports",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/70-lending-reports",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/81"
+    },
+    {
+      "n": 80,
+      "t": "feat: recurring lifecycle, history and manual payments",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/68-recurring-payments",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/80"
+    },
+    {
+      "n": 75,
+      "t": "feat: dedicated savings workflows and Pay & Save semantics",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/67-savings-workflows",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/75"
+    },
+    {
+      "n": 74,
+      "t": "feat: category subcategories and inline transaction filters",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/69-category-taxonomy",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/74"
+    },
+    {
+      "n": 73,
+      "t": "feat: scope navigation, periods, settings and backup UX",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/71-navigation-settings",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/73"
+    },
+    {
+      "n": 72,
+      "t": "feat: account-first dashboard, private balances and persisted undo",
+      "s": "closed",
+      "merged": true,
+      "h": "feat/65-account-first-shell",
+      "base": "develop",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/72"
+    },
+    {
+      "n": 63,
+      "t": "chore: batch releases before Vercel deploys",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/62-batch-releases",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/63"
+    },
+    {
+      "n": 61,
+      "t": "chore: stabilize CodeQL memory usage",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/60-codeql-memory",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/61"
+    },
+    {
+      "n": 59,
+      "t": "fix: complete frontend audit remediation",
+      "s": "closed",
+      "merged": true,
+      "h": "fix/42-frontend-audit-remediation",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/59"
+    },
+    {
+      "n": 41,
+      "t": "perf: persist mutable state without resending immutable seed",
+      "s": "closed",
+      "merged": true,
+      "h": "perf/38-state-only-writes",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/41"
+    },
+    {
+      "n": 40,
+      "t": "perf: lazy-load pages and memoize derived selectors",
+      "s": "closed",
+      "merged": true,
+      "h": "perf/37-lazy-derived-cache",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/40"
+    },
+    {
+      "n": 39,
+      "t": "perf: coalesce saves and synchronize revisions across tabs",
+      "s": "closed",
+      "merged": true,
+      "h": "perf/36-save-coalescing",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/39"
+    },
+    {
+      "n": 35,
+      "t": "fix: enforce finance input semantics before persistence",
+      "s": "closed",
+      "merged": true,
+      "h": "fix/27-finance-input-semantics",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/35"
+    },
+    {
+      "n": 34,
+      "t": "fix: remove ordering and duplicate-key assumptions from derived finance views",
+      "s": "closed",
+      "merged": true,
+      "h": "fix/30-derived-view-ordering",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/34"
+    },
+    {
+      "n": 33,
+      "t": "fix: keep finance as-of date current across midnight",
+      "s": "closed",
+      "merged": true,
+      "h": "fix/26-reactive-as-of-date",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/33"
+    },
+    {
+      "n": 32,
+      "t": "fix: preserve loan-payment linkage through event edits",
+      "s": "closed",
+      "merged": true,
+      "h": "fix/29-loan-payment-linkage",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/32"
+    },
+    {
+      "n": 31,
+      "t": "fix: make client session and persistence failures recoverable",
+      "s": "closed",
+      "merged": true,
+      "h": "fix/21-client-recovery",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/31"
+    },
+    {
+      "n": 28,
+      "t": "fix: restore access to all app sections on mobile",
+      "s": "closed",
+      "merged": true,
+      "h": "fix/20-mobile-navigation",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/28"
+    },
+    {
+      "n": 25,
+      "t": "chore: add backup-table integrity constraints",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/23-backup-integrity-constraints",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/25"
+    },
+    {
+      "n": 24,
+      "t": "chore: cover isolated API toolchain in dependency maintenance",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/22-api-dependency-maintenance",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/24"
+    },
+    {
+      "n": 19,
+      "t": "fix: enforce production-safe finance document validation and size budget",
+      "s": "closed",
+      "merged": true,
+      "h": "fix/18-finance-document-boundary",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/19"
+    },
+    {
+      "n": 17,
+      "t": "fix: preserve sessions and classify Supabase upstream failures",
+      "s": "closed",
+      "merged": true,
+      "h": "fix/16-upstream-failure-resilience",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/17"
+    },
+    {
+      "n": 14,
+      "t": "fix: polish production auth screen controls and security wording",
+      "s": "closed",
+      "merged": true,
+      "h": "fix/11-auth-screen-polish",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/14"
+    },
+    {
+      "n": 13,
+      "t": "chore: add automatic production smoke checks",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/12-production-smoke-checks",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/13"
+    },
+    {
+      "n": 10,
+      "t": "fix: restore Vercel function build compatibility",
+      "s": "closed",
+      "merged": true,
+      "h": "fix/9-vercel-typescript-compatibility",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/10"
+    },
+    {
+      "n": 8,
+      "t": "chore: harden production delivery workflow",
+      "s": "closed",
+      "merged": true,
+      "h": "chore/7-production-readiness-hardening",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/8"
+    },
+    {
+      "n": 6,
+      "t": "chore(deps): bump actions/upload-artifact from 4 to 7",
+      "s": "closed",
+      "merged": false,
+      "h": "dependabot/github_actions/actions/upload-artifact-7",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/6"
+    },
+    {
+      "n": 5,
+      "t": "chore(deps): bump actions/setup-node from 4 to 7",
+      "s": "closed",
+      "merged": false,
+      "h": "dependabot/github_actions/actions/setup-node-7",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/5"
+    },
+    {
+      "n": 4,
+      "t": "chore(deps): bump actions/checkout from 4 to 7",
+      "s": "closed",
+      "merged": false,
+      "h": "dependabot/github_actions/actions/checkout-7",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/4"
+    },
+    {
+      "n": 3,
+      "t": "chore(deps): bump github/codeql-action from 3 to 4",
+      "s": "closed",
+      "merged": false,
+      "h": "dependabot/github_actions/github/codeql-action-4",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/3"
+    },
+    {
+      "n": 2,
+      "t": "chore(deps-dev): bump @types/node from 22.20.1 to 26.2.0",
+      "s": "closed",
+      "merged": false,
+      "h": "dependabot/npm_and_yarn/types/node-26.2.0",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/2"
+    },
+    {
+      "n": 1,
+      "t": "chore(deps): bump framer-motion from 12.43.0 to 13.1.0",
+      "s": "closed",
+      "merged": false,
+      "h": "dependabot/npm_and_yarn/framer-motion-13.1.0",
+      "base": "main",
+      "url": "https://github.com/MariosGiannakaras/MyFinHub/pull/1"
+    }
+  ]
+}

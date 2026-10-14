@@ -245,6 +245,14 @@ describe('rendered browser QA reliability contract', () => {
     expect(completionFunctional).toContain('archiveLifecycleCard');
     expect(completionFunctional).toContain('Επαναφορά');
     expect(completionFunctional).toContain('Οριστική διαγραφή');
+    // Keep actual UI success semantics in sync with the Cards lifecycle QA:
+    // metadata disappearance alone does not prove completed secure-vault cleanup.
+    const cardsPage=readFileSync('src/pages/CardsPage.tsx','utf8');
+    expect(cardsPage).toContain('διαγράφηκε και ο καθαρισμός του ασφαλούς vault ολοκληρώθηκε');
+    expect(completionFunctional).toContain("status.includes('διαγράφηκε και ο καθαρισμός του ασφαλούς vault ολοκληρώθηκε')");
+    expect(completionFunctional).toContain("status.includes('QA Audit Lifecycle Card')");
+    expect(completionFunctional).toContain("!document.querySelector('[role=alertdialog]')");
+    expect(completionFunctional).not.toContain("document.body.textContent.includes('διαγράφηκε οριστικά')");
   });
 
 });

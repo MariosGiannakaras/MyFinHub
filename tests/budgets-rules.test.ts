@@ -5,7 +5,8 @@ import { budgetProgress, categoryBudgetSpending } from '../src/lib/budgets.js';
 import { createEvent } from '../src/lib/domain.js';
 import { createExpenseSplitEvent, createTransferEvent } from '../src/lib/ledgerFoundations.js';
 import { migrateProductData } from '../src/lib/productMigration.js';
-import { applyTransactionRules, previewTransactionRules, transactionRuleMatchingEvents, transactionRuleMatchCount } from '../src/lib/transactionRules.js';
+import { applyTransactionRules, normalizeTransactionRule, previewTransactionRules, transactionRuleMatchingEvents, transactionRuleMatchCount } from '../src/lib/transactionRules.js';
+import { appendTransactionRule, reorderTransactionRules, ruleScopeChoice, scopesForRuleChoice, MAX_TRANSACTION_RULES } from '../src/lib/transactionRuleEditor.js';
 import type { MonthlyBudget, TransactionRule } from '../src/types.js';
 
 const clone=()=>structuredClone(qaFinanceData());
@@ -29,6 +30,18 @@ describe('monthly category budgets',()=>{
     expect([...spending.values()].reduce((sum,value)=>sum+value,0)).toBe(140);
   });
 
+  it('does not warn about a budget exceeded by future-dated purchases',()=>{
+    const data=clean();
+    data.state.events=[
+      createEvent({kind:'expense',date:'2026-08-10',amount:60,note:'Current',category:'Τρόφιμα',accountId:'piraeus-payroll'}),
+      createEvent({kind:'expense',date:'2026-08-26',amount:70,note:'Future',category:'Τρόφιμα',accountId:'piraeus-payroll'}),
+    ];
+    data.state.budgets=[budget('food','category',100,'Τρόφιμα')];
+    expect(budgetProgress(data,'2026-08','2026-08-17')[0]).toMatchObject({used:60,status:'ok'});
+    expect(budgetProgress(data,'2026-08','2026-09-01')[0]).toMatchObject({used:130,status:'exceeded'});
+    expect(categoryBudgetSpending(data,'2026-08','2026-08-17').get('Τρόφιμα')).toBe(60);
+    expect(categoryBudgetSpending(data,'2026-08').get('Τρόφιμα')).toBe(130);
+  });
   it('uses reviewed legacy split portions instead of the legacy row category total',()=>{
     const data=clean();data.seed.transactions=[{id:'legacy-split',date:'2026-08-09',type:'expense',accountId:'piraeus-payroll',amount:60,note:'Legacy mixed',category:'Άλλο'}];data.state.reviewDecisions={'legacy-split':{status:'confirmed',semanticKind:'split',decidedAt:stamp,parts:[{id:'p1',label:'Food',category:'Τρόφιμα',amount:45,kind:'expense'},{id:'p2',label:'Refund',category:'Τρόφιμα',amount:5,kind:'refund'},{id:'p3',label:'Travel',category:'Μετακινήσεις',amount:10,kind:'expense'}]}};
     const spending=categoryBudgetSpending(data,'2026-08');
@@ -112,6 +125,39 @@ describe('deterministic transaction rules',()=>{
     expect(applyTransactionRules(data,explicit)).toMatchObject({category:'Υγεία',subcategory:'Φαρμακείο'});
   });
 
+  it('never writes expense-only rule categories into income, including default income categories',()=>{
+    const data=clean();
+    const expenseRule=rule('expense-taxonomy',10,'salary','Τρόφιμα');
+    expenseRule.action.subcategory='Σούπερ Μάρκετ';
+    data.state.transactionRules=[expenseRule];
+    const income=createEvent({kind:'income',date:'2026-08-05',amount:950,note:'Salary deposit',category:data.state.settings.incomeCategories[0],accountId:'piraeus-payroll'});
+    data.state.events=[income];
+    const before=structuredClone(data.state.events);
+    expect(previewTransactionRules(data,income)).toEqual({winner:null,matches:[]});
+    expect(applyTransactionRules(data,income)).toBe(income);
+    expect(transactionRuleMatchingEvents(data,expenseRule)).toEqual([]);
+    const refund=createEvent({kind:'refund',date:'2026-08-06',amount:5,note:'Salary refund',category:data.state.settings.expenseCategories[0],accountId:'piraeus-payroll'});
+    expect(previewTransactionRules(data,refund).winner?.id).toBe('expense-taxonomy');
+    expect(applyTransactionRules(data,refund)).toMatchObject({category:'Τρόφιμα',subcategory:'Σούπερ Μάρκετ'});
+    expect(data.state.events).toEqual(before);
+  });
+
+  it('keeps income note-only rules reachable without being shadowed by expense category rules',()=>{
+    const data=clean();
+    const expenseRule=rule('category-first',1,'','Τρόφιμα');
+    expenseRule.match={accountId:'piraeus-payroll'};
+    const noteOnly:TransactionRule={...rule('note-fallback',2,'','Τρόφιμα'),match:{accountId:'piraeus-payroll'},action:{note:'Αυτόματη σημείωση'}};
+    data.state.transactionRules=[expenseRule,noteOnly];
+    const income=createEvent({kind:'income',date:'2026-08-05',amount:950,note:'',category:data.state.settings.incomeCategories[0],accountId:'piraeus-payroll'});
+    expect(previewTransactionRules(data,income).matches.map(row=>row.id)).toEqual(['note-fallback']);
+    expect(applyTransactionRules(data,income)).toMatchObject({category:data.state.settings.incomeCategories[0],note:'Αυτόματη σημείωση'});
+    const manualCategory={...income,category:'Άλλο'};
+    expect(applyTransactionRules(data,manualCategory)).toMatchObject({category:'Άλλο',note:'Αυτόματη σημείωση'});
+    const expense=createEvent({kind:'expense',date:'2026-08-05',amount:30,note:'Groceries',category:data.state.settings.expenseCategories[0],accountId:'piraeus-payroll'});
+    expect(previewTransactionRules(data,expense).winner?.id).toBe('category-first');
+    expect(applyTransactionRules(data,expense).category).toBe('Τρόφιμα');
+  });
+
   it('preserves budgets and rules through migration and defaults legacy state safely',()=>{
     const data=clean();data.state.budgets=[budget('food','category',100,'Τρόφιμα')];data.state.transactionRules=[rule('food',1,'market','Τρόφιμα')];
     expect(migrateProductData(data).state.budgets).toEqual(data.state.budgets);
@@ -119,5 +165,70 @@ describe('deterministic transaction rules',()=>{
     const legacy=clean();delete legacy.state.budgets;delete legacy.state.transactionRules;
     expect(migrateProductData(legacy).state.budgets).toEqual([]);
     expect(migrateProductData(legacy).state.transactionRules).toEqual([]);
+  });
+});
+describe('transaction rule editor/server round-trip parity',()=>{
+  it('atomically appends a rule without rewriting existing sparse priorities when room remains',()=>{
+    const original=[rule('first',100,'market','Τρόφιμα'),rule('second',500,'market','Άλλο')];
+    const candidate=rule('third',600,'market','Υγεία');
+    const result=appendTransactionRule(original,candidate,stamp);
+    expect(result).toEqual([...original,candidate]);
+    expect(result[0]).toBe(original[0]);
+    expect(result[1]).toBe(original[1]);
+    expect(original).toHaveLength(2);
+  });
+
+  it('compacts a saturated valid priority boundary and preserves first-match order in one mutation',()=>{
+    const original=[rule('last',1_000_000,'market','Υγεία'),rule('first',100,'market','Τρόφιμα'),rule('middle',999_999,'market','Άλλο')];
+    const candidate=rule('new',1_000_100,'market','Μετακινήσεις');
+    const result=appendTransactionRule(original,candidate,stamp);
+    expect(result.map(item=>item.id)).toEqual(['first','middle','last','new']);
+    expect(result.map(item=>item.priority)).toEqual([100,200,300,400]);
+    expect(result.every(item=>Number.isInteger(item.priority)&&item.priority>=0&&item.priority<=1_000_000)).toBe(true);
+    expect(original.map(item=>item.priority)).toEqual([1_000_000,100,999_999]);
+    const event=createEvent({kind:'expense',date:'2026-08-05',amount:20,note:'market',category:'Άλλο',accountId:'piraeus-payroll'});
+    const data=clean();data.state.transactionRules=result;
+    expect(previewTransactionRules(data,event).matches.map(item=>item.id)).toEqual(['first','middle','last','new']);
+  });
+
+  it('rejects duplicate create IDs and full collections instead of storing server-invalid entries',()=>{
+    const present=rule('present',100,'market','Τρόφιμα');
+    expect(()=>appendTransactionRule([present],{...present},stamp)).toThrow(/υπάρχει ήδη/);
+    const full=Array.from({length:MAX_TRANSACTION_RULES},(_,index)=>rule('rule-'+index,index*100,'market','Τρόφιμα'));
+    expect(()=>appendTransactionRule(full,rule('extra',1_000_100,'market','Άλλο'),stamp)).toThrow(/10.000/);
+    expect(full).toHaveLength(MAX_TRANSACTION_RULES);
+  });
+
+  it('round-trips all valid one-, two- and three-scope combinations without loss',()=>{
+    const combinations=[['manual'],['imported'],['review'],['manual','imported'],['manual','review'],['imported','review'],['manual','imported','review']] as const;
+    for(const scopes of combinations){
+      const choice=ruleScopeChoice([...scopes]);
+      const encoded=scopesForRuleChoice(choice);
+      expect(encoded).toEqual(scopes);
+      expect(normalizeTransactionRule({...rule('scope',100,'market','Τρόφιμα'),scopes:encoded}).scopes).toEqual(scopes);
+    }
+    expect(ruleScopeChoice(['review','manual'])).toBe('manual+review');
+  });
+
+  it('keeps simple rule moves sparse and atomically changes only the moved rule',()=>{
+    const rows=[rule('a',100,'market','Τρόφιμα'),rule('b',200,'market','Άλλο'),rule('c',300,'market','Υγεία')];
+    const next=reorderTransactionRules(rows,'a',1,stamp);
+    expect(next.find(item=>item.id==='a')?.priority).toBe(250);
+    expect(next.find(item=>item.id==='b')).toBe(rows[1]);
+    expect(next.find(item=>item.id==='c')).toBe(rows[2]);
+    expect(rows[0].priority).toBe(100);
+    expect(reorderTransactionRules(next,'missing',1,stamp)).toBe(next);
+  });
+
+  it('compacts exhausted priority gaps into valid server integers in one operation',()=>{
+    const rows=[rule('a',100,'market','Τρόφιμα'),rule('b',101,'market','Άλλο'),rule('c',102,'market','Υγεία')];
+    const moved=reorderTransactionRules(rows,'a',1,stamp);
+    const order=(items:TransactionRule[])=>items.slice().sort((a,b)=>a.priority-b.priority||a.id.localeCompare(b.id)).map(item=>item.id);
+    expect(order(moved)).toEqual(['b','a','c']);
+    expect(moved.every(item=>Number.isInteger(item.priority)&&item.priority>=0&&item.priority<=1_000_000)).toBe(true);
+    const again=reorderTransactionRules(moved,'c',-1,stamp);
+    expect(order(again)).toEqual(['b','c','a']);
+    expect(again.every(item=>Number.isInteger(item.priority))).toBe(true);
+    expect(order(rows)).toEqual(['a','b','c']);
   });
 });

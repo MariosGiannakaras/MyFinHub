@@ -12,6 +12,7 @@ import type {
 import { cleanNote } from './format.js';
 import { calendarMonthRange, isValidDateOnly } from './dateOnly.js';
 import { isSafeMoneyValue } from './money.js';
+import { isSavingsAccount } from './accountSemantics.js';
 
 const CREDIT_ACCOUNT: Account = {
   id: 'credit-card',
@@ -26,10 +27,11 @@ export function migrateData(input: FinanceData): FinanceData {
   const state = input.state ?? ({} as FinanceData['state']);
   const seedAccounts=input.seed?.accounts??[];
   const selectable=seedAccounts.filter(account=>account.kind!=='credit'&&account.showInQuickChoices!==false);
-  const fallbackOperating=selectable.find(account=>account.kind==='bank')
+  // Never auto-provision a savings account as the expense/income default
+  // merely because the imported bank category reports kind=bank.
+  const fallbackOperating=selectable.find(account=>account.kind==='bank'&&!isSavingsAccount(account))
     ??selectable.find(account=>account.kind==='cash'&&account.cashRole!=='reserve')
-    ??selectable.find(account=>account.kind!=='savings')
-    ??selectable[0];
+    ??selectable.find(account=>!isSavingsAccount(account));
   const defaultAccountId=fallbackOperating?.id??'';
   const excludedDefaults=seedAccounts.filter(account=>account.excludeFromAvailable).map(account=>account.id);
   return {
@@ -245,8 +247,9 @@ export function monthRange(month: string) {
   return calendarMonthRange(month);
 }
 
-export function monthlyFlow(data: FinanceData, month: string) {
-  const { start, end } = monthRange(month);
+export function monthlyFlow(data: FinanceData, month: string, asOf?: string) {
+  const range=monthRange(month),start=range.start;
+  const end=asOf&&month===asOf.slice(0,7)?asOf:range.end;
   let income = 0, expense = 0, saving = 0, refunds = 0;
   for (const tx of effectiveLegacyTransactions(data)) {
     if (tx.date < start || tx.date > end) continue;
@@ -306,15 +309,15 @@ function legacyOutstandingReceivables(data: FinanceData) {
   return (data.seed.lending ?? []).reduce((sum, p) => sum + Number(p.outstanding || 0), 0);
 }
 
-function eventReceivables(data: FinanceData) {
-  return (data.state.events ?? []).reduce((sum, e) => sum + Number(e.receivableDelta || 0), 0);
+function eventReceivables(data: FinanceData,asOf:string) {
+  return (data.state.events ?? []).reduce((sum, e) => sum + (e.date<=asOf?Number(e.receivableDelta || 0):0), 0);
 }
 
 export function netWorth(data: FinanceData, asOf: string) {
   const balances = accountBalances(data, asOf);
   const assets = allAccounts(data).filter((a) => a.kind !== 'credit').reduce((sum, a) => sum + (balances[a.id] ?? 0), 0);
   const credit = Math.min(0, balances[CREDIT_ACCOUNT.id] ?? 0);
-  return assets + credit + legacyOutstandingReceivables(data) + eventReceivables(data);
+  return assets + credit + legacyOutstandingReceivables(data) + eventReceivables(data,asOf);
 }
 
 export function availableMoney(data: FinanceData, asOf: string) {
@@ -325,8 +328,9 @@ export function availableMoney(data: FinanceData, asOf: string) {
     .reduce((sum, a) => sum + (balances[a.id] ?? 0), 0);
 }
 
-export function categoryTotals(data: FinanceData, month: string) {
-  const { start, end } = monthRange(month);
+export function categoryTotals(data: FinanceData, month: string, asOf?: string) {
+  const range=monthRange(month),start=range.start;
+  const end=asOf&&month===asOf.slice(0,7)?asOf:range.end;
   const totals = new Map<string, number>();
   const add = (cat: string, amount: number) => totals.set(cat || 'Άλλο', (totals.get(cat || 'Άλλο') ?? 0) + amount);
   for (const tx of effectiveLegacyTransactions(data)) {

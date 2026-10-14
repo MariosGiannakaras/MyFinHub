@@ -240,6 +240,11 @@ describe('completion UX contracts',()=>{
     expect(headings).toContain('.page-heading{display:grid;grid-template-columns:minmax(0,1fr)');
     expect(headings).toContain('.heading-actions{width:100%;display:flex;flex-wrap:wrap');
     expect(headings).toContain('@media(max-width:420px)');
+    const mobilePresentations=read('src/styles/mobile-finance-presentations.css');
+    expect(mobilePresentations).toContain('@media(max-width:420px)');
+    expect(mobilePresentations).toContain('.heading-actions>.secondary,');
+    expect(mobilePresentations).toContain('flex:1 1 min(140px,100%)');
+    expect(mobilePresentations).toContain('min-width:min(140px,100%)');
   });
 
 
@@ -382,7 +387,11 @@ describe('completion UX contracts',()=>{
     expect(harness).toContain('partial 12/42 repayment leaves a remaining receivable');
     expect(harness).toContain('Completion functional QA: Settings custom cash account create and delete');
     expect(harness).toContain('QA Audit Temp Cash');
-    expect(harness).toContain('temporary cash account deleted');
+    // The visible success receipt follows the *current* Account Management
+    // owner contract; absence of a row alone cannot certify durable removal.
+    expect(harness).toContain('temporary cash account removed with durable finance receipt');
+    expect(harness).toContain("status.includes('Ο λογαριασμός διαγράφηκε και αποθηκεύτηκε.')");
+    expect(harness).toContain("!document.querySelector('[role=alertdialog]')");
   });
 
   it('keeps final screenshot browser bootstrap retryable and diagnosable',()=>{

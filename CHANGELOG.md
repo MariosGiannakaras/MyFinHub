@@ -4,6 +4,24 @@ All notable MyFinHub changes are recorded here. Release artifacts remain availab
 
 ## [Unreleased]
 
+### Candidate v1.5.0 — not yet published
+
+#### Added
+- Owner-managed recurring/subscription service-brand assets, including independent service-artwork registration, replacement and lifecycle handling behind owner + TOTP/AAL2 + RLS.
+- Account IBAN metadata management and privacy-safe copy/masking, and cross-surface category icon packs with owner-controlled preferences.
+- Expanded regression coverage for card-vault cleanup, large financial datasets, keyboard accessibility and responsive account/transaction management.
+
+#### Changed
+- Reconciled shared UI primitives, visual hierarchy, motion and reduced-motion behavior across Dashboard, Transactions, Savings, Cards, Credit, Loans, Lending, Recurring, Planning, Reports and Settings.
+- Improved contextual finance actions, stateful empty/error/loading experiences and desktop/mobile dialog geometry.
+- Made the repository-root Windows `INSTALL_MYFINHUB_WINDOWS.bat` start local development by default, with explicit clean-install and packaged installer modes.
+
+#### Fixed
+- Guarded persisted card-secret deletion intent and serialized encrypted-vault cleanup after durable finance changes, without removing historical finance events.
+- Stabilized rendered browser QA by capturing transient loading skeletons atomically and recording named large-state route times without relaxing strict performance budgets.
+
+**Release boundary:** this is staged candidate content, not a shipped update. The published Web/Windows version and public installer links remain v1.4.0 until a separately authorized and validated production promotion. Four repository Supabase migrations added since production v1.4.0 still require a reviewed production migration rollout.
+
 ## [1.4.0] - 2026-10-06
 
 ### Changed

@@ -25,7 +25,7 @@ describe('Accounts owner UI contract',()=>{
   it('keeps Accounts controls on shared primitives with page CSS limited to composition',()=>{
     expect(source).toContain('className="account-management-select"');
     expect(source).toContain("import { AppTextInput } from './AppTextInput'");
-    expect(sharedStyles).toContain('.app-control{box-sizing:border-box;width:100%;min-height:40px');
+    expect(sharedStyles).toContain('.app-control,.app-input-shell{box-sizing:border-box;width:100%;min-height:var(--control-height)');
     expect(styles).toContain('.account-management-select{width:100%;min-width:0}');
     expect(styles).not.toContain('.account-management-select>.owned-input{');
     expect(styles).not.toContain('.owned-select-popover:is(');

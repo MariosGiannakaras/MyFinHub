@@ -9,7 +9,7 @@ const coordinator=readFileSync(new URL('../scripts/run-rendered-qa.mjs',import.m
 
 describe('obligation lifecycle hierarchy source contracts',()=>{
   it('separates active and completed loans using existing accounting-derived completion signals',()=>{
-    expect(loans).toContain("const isComplete=(loan:Loan)=>loanOutstanding(data,loan)<=.005||(!isSelfLoan(loan)&&loanRemainingInstallments(data,loan)<=0)");
+    expect(loans).toContain("const isComplete=(loan:Loan)=>loanOutstanding(data,loan,asOf)<=.005||(!isSelfLoan(loan)&&loanRemainingInstallments(data,loan,asOf)<=0)");
     expect(loans).toContain('const activeLoans=sorted.filter(loan=>!isComplete(loan))');
     expect(loans).toContain('const completedLoans=sorted.filter(isComplete)');
     expect(loans).toContain('data-loan-lifecycle={historical?\'completed\':\'active\'}');
@@ -24,16 +24,16 @@ describe('obligation lifecycle hierarchy source contracts',()=>{
   it('keeps active recurring obligations first and collapses inactive history by default',()=>{
     const activeIndex=recurring.indexOf('data-active-recurring');
     const linkedIndex=recurring.indexOf('<LongTermLoanSummary');
-    const inactiveIndex=recurring.indexOf('data-inactive-recurring-history');
+    const inactiveIndex=recurring.indexOf('<details className={`panel surface-flat inactive-recurring');
     expect(activeIndex).toBeGreaterThan(-1);
     expect(linkedIndex).toBeGreaterThan(activeIndex);
     expect(inactiveIndex).toBeGreaterThan(linkedIndex);
-    expect(recurring).toContain('<details className="panel surface-flat inactive-recurring"');
+    expect(recurring).toContain('<details className={`panel surface-flat inactive-recurring ${inactive.length?\'\':\'is-empty\'}`}');
     expect(recurring).toContain('Ενεργοποίηση ${item.name}');
     expect(recurring).toContain('Επεξεργασία ${item.name}');
   });
   it('keeps linked long-term loans on the canonical loan payment path without duplicating records',()=>{
-    expect(linked).toContain('activeLongTermLoanObligations(data)');
+    expect(linked).toContain('activeLongTermLoanObligations(data,asOf)');
     expect(linked).toContain('onPayLoan(loan.id)');
     expect(linked).toContain('data-linked-loan={loan.id}');
     expect(linked).toContain('surface-flat long-term-recurring');

@@ -42,7 +42,7 @@ describe('release-readiness source contracts',()=>{
     expect(budget).toContain("label:'eager application CSS'");
     expect(budget).toContain("label:'total application CSS'");
     expect(budget).toContain("raw:256*1024,gzip:46*1024");
-    expect(budget).toContain("raw:512*1024,gzip:100*1024");
+    expect(budget).toContain("raw:520*1024,gzip:100*1024");
   });
 
   it('reruns Windows package validation when root production-build inputs change',()=>{

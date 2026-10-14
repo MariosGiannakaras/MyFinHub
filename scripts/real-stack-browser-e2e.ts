@@ -109,7 +109,7 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
       return target;
     };
     const clickAria=async(label:string)=>{const ok=await c!.call<boolean>("function(label){const node=[...document.querySelectorAll('button[aria-label]')].find(item=>item.getClientRects().length>0&&item.getAttribute('aria-label')===label);if(!(node instanceof HTMLElement))return false;node.click();return true}",[label]);assert(ok,'Missing aria control '+label)};
-    const waitCardState=async(nickname:string,active:boolean,present=true)=>waitFor("async function(nickname,active,present){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();const card=(payload.data?.state?.cards||[]).find(item=>item.nickname===nickname);return present?Boolean(card&&Boolean(card.active)===active):!card}",present?'persisted card '+nickname:'deleted card '+nickname,[nickname,active,present]);
+    const waitCardState=async(nickname:string,active:boolean,present=true,last4?:string)=>waitFor("async function(nickname,active,present,last4){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();const card=(payload.data?.state?.cards||[]).find(item=>item.nickname===nickname);return present?Boolean(card&&Boolean(card.active)===active&&(!last4||(card.last4===last4&&card.vaultRef===card.id))):!card}",present?'persisted card '+nickname:'deleted card '+nickname,[nickname,active,present,last4]);
     const waitExpenseCategory=async(name:string,subcategory:string|null=null,present=true)=>waitFor("async function(name,subcategory,present){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();const tree=payload.data?.state?.settings?.expenseCategoryTree||[];const category=tree.find(item=>item.name===name);if(!present)return !category;if(!category)return false;return subcategory?Array.isArray(category.subcategories)&&category.subcategories.includes(subcategory):true}",present?'persisted category '+name:'retired category '+name,[name,subcategory,present]);
     const waitIconChoice=async(choice:string)=>waitFor("async function(choice){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();return Object.values(payload.data?.state?.settings?.categoryIcons||{}).includes(choice)}",'persisted icon '+choice,[choice]);
     const search=async(value:string)=>setByLabel('Αναζήτηση συναλλαγών',value);
@@ -316,10 +316,24 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     await clickText('.sidebar nav button','Ρυθμίσεις');await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Ρυθμίσεις')}",'settings workspace for rules');
     await clickText('.settings-tablist button','Κανόνες');await waitFor("function(){return Boolean(document.querySelector('[data-rules-workspace]'))}",'rules workspace');
     await clickText('[data-rules-workspace] button','Νέος κανόνας');await waitFor("function(){return Boolean(document.querySelector('[data-rule-editor]'))}",'rule editor');
-    await setByLabel('Όνομα αυτοματισμού','Real Browser Rule');await setByLabel('Κείμενο περιγραφής','Real Browser Rule Match');await selectOwnedOption('Κατηγορία / υποκατηγορία','Rule Applied');await clickText('[data-rule-editor] button','Δημιουργία κανόνα');
+    await setByLabel('Όνομα αυτοματισμού','Real Browser Rule');await setByLabel('Κείμενο περιγραφής','Real Browser Rule Match');await selectOwnedOption('Κατηγορία / υποκατηγορία','Rule Applied');
+    await selectOwnedOption('Πότε να λειτουργεί','Καταχώριση και εισαγωγή');
+    await clickText('[data-rule-editor] button','Δημιουργία κανόνα');
     await waitRule('Real Browser Rule');
+    await waitFor("async function(){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();return (payload.data?.state?.transactionRules||[]).some(item=>item.name==='Real Browser Rule'&&JSON.stringify(item.scopes)===JSON.stringify(['manual','imported']))}",'dual-scope rule persisted in owner+AAL2 FinanceData');
     await c.send('Page.reload',{ignoreCache:true});await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Ρυθμίσεις')}",'settings reload after rule');
     await clickText('.settings-tablist button','Κανόνες');await waitFor("function(){return [...document.querySelectorAll('.rule-settings-list article')].some(row=>(row.textContent||'').includes('Real Browser Rule'))}",'rule after reload');
+    const editPersistedRule=await c.call<boolean>("function(){const button=document.querySelector('button[aria-label=\"Επεξεργασία αυτοματισμού Real Browser Rule\"]');if(!(button instanceof HTMLElement))return false;button.click();return true}");
+    assert(editPersistedRule,'Reloaded Rules editor is reachable');
+    await waitFor("function(){const root=document.querySelector('[data-rule-editor]');if(!root)return false;const row=[...root.querySelectorAll('label')].find(node=>(node.querySelector(':scope > span')?.textContent||'').includes('Πότε να λειτουργεί'));return row?.querySelector('input[role=combobox]')?.value==='Καταχώριση και εισαγωγή'}",'dual scopes retained after hard reload');
+    await setByLabel('Όνομα αυτοματισμού','Real Browser Rule Edited');
+    await clickText('[data-rule-editor] button','Αποθήκευση αλλαγών');
+    await waitFor("async function(){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();return (payload.data?.state?.transactionRules||[]).some(item=>item.name==='Real Browser Rule Edited'&&JSON.stringify(item.scopes)===JSON.stringify(['manual','imported']))}",'unrelated rule edit retains the dual-scope persisted contract');
+    await c.send('Page.reload',{ignoreCache:true});
+    await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Ρυθμίσεις')}",'Settings after dual-scope edit reload');
+    await clickText('.settings-tablist button','Κανόνες');
+    await waitFor("function(){return [...document.querySelectorAll('.rule-settings-list article')].some(row=>(row.textContent||'').includes('Real Browser Rule Edited')&&(row.textContent||'').includes('χειροκίνητη καταχώριση')&&(row.textContent||'').includes('εισαγωγή'))}",'two scope labels present after second reload');
+    await shot('rule-two-scope-edit-persisted');
     await clickText('.sidebar nav button','Συναλλαγές');await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Συναλλαγές')}",'transactions for rule application');
     const openRuleQuick=await c.call<boolean>("function(){const button=document.querySelector('[data-global-quick-entry]');if(!(button instanceof HTMLElement))return false;button.click();return true}");assert(openRuleQuick,'Global Quick Entry is unavailable for rule application.');
     await waitFor("function(){return Boolean(document.querySelector('.quick-modal:not(.contextual-quick-modal)'))}",'rule Quick Entry');
@@ -328,6 +342,22 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     await c.send('Page.reload',{ignoreCache:true});await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Συναλλαγές')}",'transactions reload after rule match');await search('Real Browser Rule Match');
     await waitFor("function(){return [...document.querySelectorAll('[data-transaction-source=event]')].some(row=>(row.textContent||'').includes('Real Browser Rule Match')&&(row.textContent||'').includes('Rule Applied'))}",'rule-applied transaction after reload');
     await shot('rule-domain-persisted');
+
+    console.log('[real-browser] stage rule-delete-durable-reload');
+    await clickText('.sidebar nav button','Ρυθμίσεις');
+    await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Ρυθμίσεις')}",'Settings for durable rule deletion');
+    await clickText('.settings-tablist button','Κανόνες');
+    await waitFor("function(){return [...document.querySelectorAll('.rule-settings-list article')].some(row=>(row.textContent||'').includes('Real Browser Rule Edited'))}",'persisted Rules prior to deletion');
+    const requestDeleteRule=await c.call<boolean>("function(){const button=document.querySelector('button[aria-label=\"Διαγραφή αυτοματισμού Real Browser Rule Edited\"]');if(!(button instanceof HTMLElement))return false;button.click();return true}");
+    assert(requestDeleteRule,'Rules deletion control is reachable');
+    await waitFor("function(){return Boolean(document.querySelector('.app-confirm-dialog'))}",'Rules delete confirmation');
+    await clickText('.app-confirm-dialog button','Διαγραφή κανόνα');
+    await waitFor("async function(){const response=await fetch('/api/data',{cache:'no-store'});if(!response.ok)return false;const payload=await response.json();return !(payload.data?.state?.transactionRules||[]).some(item=>item.name==='Real Browser Rule Edited')}",'Rules delete committed in protected finance revision');
+    await c.send('Page.reload',{ignoreCache:true});
+    await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Ρυθμίσεις')}",'Settings after rule delete reload');
+    await clickText('.settings-tablist button','Κανόνες');
+    await waitFor("function(){return ![...document.querySelectorAll('.rule-settings-list article')].some(row=>(row.textContent||'').includes('Real Browser Rule Edited'))}",'Rules deletion durable after reload');
+    await shot('rule-delete-durable-persisted');
 
     console.log('[real-browser] stage cards-lifecycle-reload');
     await clickText('.sidebar nav button','Κάρτες');await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Κάρτες')}",'cards workspace');
@@ -338,7 +368,10 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     await clickText('.card-create-modal button','Προσθήκη κάρτας');
     await waitFor("function(){return Boolean(document.querySelector('.app-card-details-dialog'))&&document.body.textContent.includes('Real Browser Lifecycle Card')}",'new card secure-details step');
     await setByLabel('Αριθμός κάρτας','4242 4242 4242 4242');await setByLabel('Λήξη κάρτας','12/30');await setByLabel('CVV κάρτας','123');await clickText('.app-card-details-dialog button','Αποθήκευση στοιχείων');
-    await waitCardState('Real Browser Lifecycle Card',true);
+    // A new card is durably staged without secrets first. Do not reload merely
+    // because its empty profile appeared; wait for vault + final finance receipt.
+    await waitFor("function(){return !document.querySelector('.app-card-details-dialog')}",'new card details closed after final durable save');
+    await waitCardState('Real Browser Lifecycle Card',true,true,'4242');
     await c.send('Page.reload',{ignoreCache:true});await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Κάρτες')}",'cards reload after create');
     await waitFor("function(){return [...document.querySelectorAll('.prototype-payment-card')].some(card=>(card.textContent||'').includes('Real Browser Lifecycle Card')&&(card.textContent||'').includes('4242'))}",'created card after reload');
     const archiveCard=async()=>{const requested=await c!.call<boolean>("function(){const card=[...document.querySelectorAll('.prototype-payment-card')].find(node=>node.getClientRects().length>0&&(node.textContent||'').includes('Real Browser Lifecycle Card'));const button=card?.querySelector('button[aria-label=\"Αρχειοθέτηση κάρτας\"]');if(!(button instanceof HTMLElement))return false;button.click();return true}");assert(requested,'Lifecycle card archive action is unavailable.');await waitFor("function(){const card=[...document.querySelectorAll('.prototype-payment-card')].find(node=>(node.textContent||'').includes('Real Browser Lifecycle Card'));return Boolean(card?.querySelector('.r-card-archive-confirm'))}",'card archive confirmation');const committed=await c!.call<boolean>("function(){const card=[...document.querySelectorAll('.prototype-payment-card')].find(node=>(node.textContent||'').includes('Real Browser Lifecycle Card'));const button=card?.querySelector('.r-card-archive-keyboard');if(!(button instanceof HTMLElement))return false;button.click();return true}");assert(committed,'Card archive keyboard confirmation is unavailable.');await waitCardState('Real Browser Lifecycle Card',false)};

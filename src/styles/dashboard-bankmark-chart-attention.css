@@ -6,10 +6,11 @@ html[data-theme="dark"] .bank-brand-mark.bankmark-viva .bank-logo-image{filter:n
 
 .dashboard-approved .bank-brand-mark:is([data-bank-logo-source="local-image"],[data-bank-logo-source="provider-storage"]){border:0!important;background:transparent!important;box-shadow:none!important}
 .dashboard-approved .bank-brand-mark:is([data-bank-logo-source="local-image"],[data-bank-logo-source="provider-storage"])::before{content:none!important}
-.dashboard-approved .approved-secondary-account .bank-brand-mark[data-bank-logo-source="local-image"]{width:31px!important;height:31px!important;min-width:31px;flex-basis:31px}
-.dashboard-approved .approved-secondary-account .bank-brand-mark[data-bank-logo-source="local-image"] .bank-logo-image{width:31px;height:31px}
-.dashboard-approved .account-tone-2 .approved-account-icon .bank-brand-mark[data-bank-logo-source="local-image"]{width:30px!important;height:27px!important;min-width:30px}
-.dashboard-approved .account-tone-2 .approved-account-icon .bank-brand-mark[data-bank-logo-source="local-image"] .bank-logo-image{width:29px;height:26px}
+.dashboard-approved .approved-secondary-account .bank-brand-mark:is([data-bank-logo-source="local-image"],[data-bank-logo-source="provider-storage"]){width:31px!important;height:31px!important;min-width:31px;flex-basis:31px;border-radius:0!important}
+.dashboard-approved .approved-secondary-account .bank-brand-mark:is([data-bank-logo-source="local-image"],[data-bank-logo-source="provider-storage"]) .bank-logo-image{width:100%;height:100%;object-fit:contain}
+.dashboard-approved .approved-account-icon:has(>.bank-brand-mark:is([data-bank-logo-source="local-image"],[data-bank-logo-source="provider-storage"])){width:44px;height:40px;min-width:44px;border:0;border-radius:0;background:transparent;box-shadow:none}
+.dashboard-approved .approved-account-icon>.bank-brand-mark:is([data-bank-logo-source="local-image"],[data-bank-logo-source="provider-storage"]){width:42px!important;height:34px!important;min-width:42px;flex-basis:42px;border-radius:0!important}
+.dashboard-approved .approved-account-icon>.bank-brand-mark:is([data-bank-logo-source="local-image"],[data-bank-logo-source="provider-storage"]) .bank-logo-image{width:100%;height:100%;object-fit:contain;object-position:center}
 
 .dashboard-approved .approved-account-chart{
   isolation:isolate;

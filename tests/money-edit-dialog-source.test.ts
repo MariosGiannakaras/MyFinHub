@@ -18,7 +18,7 @@ describe('MoneyEditDialog source contract',()=>{
     expect(source).toContain('ariaDescribedBy={describedBy}');
   });
 
-  it('supports validation, busy state and reduced motion',()=>{
+  it('supports validation, busy state and OS reduced motion',()=>{
     expect(source).toContain("from './FormError'");
     expect(source).toContain('<FormError id={errorId}>{error}</FormError>');
     expect(formError).toContain('role="alert"');
@@ -27,7 +27,8 @@ describe('MoneyEditDialog source contract',()=>{
     expect(shell).toContain('aria-busy={busy||undefined}');
     expect(source).toContain('disabled={busy}');
     expect(source).toContain('motionMode={motionMode}');
-    expect(shell).toContain("motionMode==='reduced'");
+    expect(shell).toContain('const reduce=Boolean(systemReduced)');
+    expect(shell).not.toContain("motionMode==='reduced'");
     expect(source).toContain('onRequestClose={cancel}');
   });
 

@@ -9,6 +9,7 @@ const lending=read('src/pages/LendingPage.tsx');
 const recurring=read('src/pages/RecurringPage.tsx');
 const loans=read('src/pages/LoansPage.tsx');
 const budgetRules=read('src/components/BudgetRuleSettings.tsx');
+const rulesWorkspace=read('src/components/TransactionRulesWorkspace.tsx');
 const button=read('src/components/Button.tsx');
 const iconButton=read('src/components/IconButton.tsx');
 const dialogShell=read('src/components/DialogShell.tsx');
@@ -53,8 +54,10 @@ describe('shared finance UI adoption contracts',()=>{
     expect(recurring).toMatch(/<span>Κάθε<\/span><AppTextInput type=\"number\"/);
     expect(loans).toMatch(/Αριθμός δόσεων<\/span><AppTextInput type=\"number\"/);
     expect(budgetRules).toContain('Προειδοποίηση %');
-    expect(budgetRules).toContain('<AppTextInput inputMode="decimal" value={budgetAlert}');
-    expect(budgetRules).toContain('priority:editingRule?.priority??nextPriority');
+    expect(budgetRules).toContain('<AppTextInput disabled={busy} inputMode="decimal" value={budgetAlert}');
+    expect(budgetRules).toContain('await onUpsertBudget(next)');
+    expect(rulesWorkspace).toContain('priority:editingRule?.priority??nextPriority');
+    expect(budgetRules).not.toContain('nextPriority');
     expect(budgetRules).not.toContain('<span>Προτεραιότητα</span>');
   });
 
@@ -67,7 +70,8 @@ describe('shared finance UI adoption contracts',()=>{
     expect(button).toContain("type='button'");
     expect(iconButton).toContain("Omit<ButtonHTMLAttributes<HTMLButtonElement>,'aria-label'>");
     expect(iconButton).toContain("'aria-label':string");
-    expect(iconButton).toContain("mergeClasses('icon-button',className)");
+    expect(iconButton).toContain("type IconButtonVariant='default'|'accent'|'quiet'");
+    expect(iconButton).toContain("mergeClasses('icon-button',variantClass[variant],className)");
     expect(iconButton).toContain("type='button'");
   });
 
@@ -137,10 +141,10 @@ describe('shared finance UI adoption contracts',()=>{
   it('adopts shared action primitives for Recurring generic actions while preserving row and menu composites',()=>{
     expect(recurring).toContain("from '../components/Button'");
     expect(recurring).toContain("from '../components/IconButton'");
-    expect(recurring.match(/<Button/g)).toHaveLength(8);
+    expect(recurring.match(/<Button/g)).toHaveLength(10);
     expect(recurring.match(/<IconButton/g)).toHaveLength(6);
     expect(recurring.match(/<Button[^>]+variant="primary"/g)).toHaveLength(4);
-    expect(recurring.match(/<Button[^>]+variant="secondary"/g)).toHaveLength(4);
+    expect(recurring.match(/<Button[^>]+variant="secondary"/g)).toHaveLength(5);
     expect(recurring).toContain('<Button type="button" variant="primary" onClick={startNew}');
     expect(recurring).toContain('variant="primary" className="mobile-pay-action"');
     expect(recurring).toContain('<IconButton type="button" aria-label="Κλείσιμο επεξεργασίας παγίου"');

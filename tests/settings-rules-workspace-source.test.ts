@@ -3,8 +3,11 @@ import { describe, expect, it } from 'vitest';
 
 const read=(path:string)=>readFileSync(new URL(`../${path}`,import.meta.url),'utf8');
 const workspace=read('src/components/TransactionRulesWorkspace.tsx');
+const ruleEngine=read('src/lib/transactionRules.ts');
 const categorySelect=read('src/components/CategorySelectInput.tsx');
 const settings=read('src/pages/SettingsPage.tsx');
+const rendered=read('scripts/budget-rules-qa.mjs');
+const realBrowser=read('scripts/real-stack-browser-e2e.ts');
 const css=read('src/components/TransactionRulesWorkspace.css');
 const mobileDomainCss=read('src/styles/mobile-finance-domain-layouts.css');
 
@@ -13,9 +16,21 @@ describe('Settings Rules workspace source contract',()=>{
     expect(workspace).toContain('normalizeTransactionRule');
     expect(workspace).toContain('transactionRuleMatchingEvents');
     expect(workspace).toContain('onUpsertRule(next)');
+    expect(workspace).toContain('performDurably');
+    expect(workspace).toContain('if(await performDurably(()=>onUpsertRule(next),setRuleError))clearEditor(false)');
+    expect(workspace).toContain('busy={busy}');
+    expect(workspace).toContain('error={deleteError}');
+    expect(workspace.match(/disabled={busy}/g)?.length).toBeGreaterThanOrEqual(15);
+    expect(workspace).toContain('<AppSelectInput disabled={busy}');
+    expect(workspace).toContain('<CategorySelectInput disabled={busy}');
+    expect(workspace).toContain('<AppTextInput disabled={busy}');
+    expect(rendered).toContain('settings-rules-pending-receipt-desktop');
+    expect(rendered).toContain('settings-rules-receipt-committed-desktop');
     expect(workspace).toContain('setDeleteRuleTarget(rule)');
     expect(workspace).toContain('<ConfirmDialog');
-    expect(workspace).toContain('onDeleteRule(deleteRuleTarget.id)');
+    expect(workspace).toContain('onDeleteRule(id)');
+    expect(settings).toContain('const deleteRule=(id:string)=>onFinanceDurably');
+    expect(settings).toContain('const reorderRule=(id:string,direction:-1|1)=>onFinanceDurably');
     expect(workspace).toContain('Δεν αλλάζει καμία από αυτές');
   });
 
@@ -26,6 +41,9 @@ describe('Settings Rules workspace source contract',()=>{
     expect(workspace).toContain('<CategorySelectInput');
     expect(workspace).toContain('subcategory={ruleSubcategory}');
     expect(workspace).toContain('Πότε να λειτουργεί');
+    expect(workspace).toContain('ruleScopeChoice(rule.scopes)');
+    expect(workspace).toContain('scopesForRuleChoice(ruleScope)');
+    for(const choice of ['manual+imported','manual+review','imported+review'])expect(workspace).toContain('value="'+choice+'"');
     expect(workspace).toContain("categoryTree(data.state.settings,'expense')");
     expect(categorySelect).toContain('data-option-level="category"');
     expect(categorySelect).toContain('data-option-level="subcategory"');
@@ -33,14 +51,41 @@ describe('Settings Rules workspace source contract',()=>{
     expect(workspace).not.toContain('Προτεραιότητα');
   });
 
+  it('uses expense-only taxonomy without accidentally reclassifying income',()=>{
+    expect(workspace).toContain("categoryTree(data.state.settings,'expense')");
+    expect(workspace).toContain('τα έσοδα διατηρούν τη δική τους κατηγορία');
+    expect(ruleEngine).toContain("event.kind === 'income' && (rule.action.category || rule.action.subcategory)");
+    expect(ruleEngine).toContain('expenseCategoryAction && winner.action.category');
+    expect(ruleEngine).toContain('expenseCategoryAction && winner.action.subcategory');
+  });
+
   it('keeps rule order, pause, edit and invalid-state controls explicit',()=>{
     expect(workspace).toContain('moveRule(index,-1)');
     expect(workspace).toContain('moveRule(index,1)');
+    expect(workspace).toContain('onReorderRule(rules[index].id,direction)');
+    expect(workspace).toContain('MAX_TRANSACTION_RULES');
+    expect(settings).toContain('appendTransactionRule(rules,rule,new Date().toISOString())');
+    expect(settings).toContain('onFinanceDurably(current=>');
+    expect(settings).toContain('onUpsertRule={saveRule}');
+    expect(workspace).not.toContain('(floor+afterTarget.priority)/2');
+    expect(workspace).not.toContain('(floor+afterCurrent.priority)/2');
     expect(workspace).toContain("rule.enabled?'Παύση':'Ενεργοποίηση'");
     expect(workspace).toContain('Χρειάζεται έλεγχο');
     expect(workspace).toContain('Επεξεργασία αυτοματισμού');
     expect(workspace).toContain('Διαγραφή αυτοματισμού');
     expect(workspace).toContain('Διαγραφή κανόνα;');
+  });
+
+  it('locks dual-scope edit/reload behavior in both synthetic and real owner+AAL2 browser evidence',()=>{
+    expect(rendered).toContain("selectOwnedOption('Πότε να λειτουργεί','Καταχώριση και εισαγωγή')");
+    expect(rendered).toContain('advanced-automations-two-scope-edit-desktop');
+    expect(rendered).toContain('Reports does not expose a duplicate automation editor');
+    expect(realBrowser).toContain('dual-scope rule persisted in owner+AAL2 FinanceData');
+    expect(realBrowser).toContain('unrelated rule edit retains the dual-scope persisted contract');
+    expect(realBrowser).toContain('rule-two-scope-edit-persisted');
+    expect(realBrowser).toContain('rule-delete-durable-persisted');
+    expect(rendered).toContain('settings-rules-rejected-create-desktop');
+    expect(rendered).toContain('settings-rules-rejected-delete-desktop');
   });
 
   it('is the dedicated Settings Rules surface while budgets remain elsewhere',()=>{
