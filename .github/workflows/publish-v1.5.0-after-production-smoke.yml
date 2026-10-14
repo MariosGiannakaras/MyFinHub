@@ -18,9 +18,12 @@ concurrency:
 jobs:
   tag-and-dispatch:
     name: tag-and-dispatch-validated-release
+    # This was a single-use release publisher, not a permanent production hook.
+    # Future docs or production commits must never republish v1.5.0.
     if: >-
       github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.event == 'deployment_status'
+      github.event.workflow_run.event == 'deployment_status' &&
+      github.event.workflow_run.head_sha == '0b4e20560908d2378e88ab8746d0bfd9a00e7e01'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
