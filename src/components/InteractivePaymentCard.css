@@ -44,6 +44,9 @@
 }
 .prototype-payment-card .card-icon-btn.card-icon-reveal,
 .prototype-payment-card .card-icon-btn.card-icon-management{background:transparent;box-shadow:none;opacity:.96}
+/* The debit/prepaid Card toolbar owns its own unboxed glyphs, independently of
+   the canonical credit-card stack and any generic button pseudo-surface. */
+.prototype-payment-card .card-toolbar .card-icon-btn::before{content:none;display:none;}
 .prototype-payment-card .card-icon-btn:hover{background:transparent;transform:none;opacity:1}
 .prototype-payment-card .card-icon-btn:active{transform:scale(.94)}
 .prototype-payment-card .card-icon-btn:disabled{opacity:.38;cursor:wait;transform:none}
