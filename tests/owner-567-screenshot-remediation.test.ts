@@ -29,6 +29,12 @@ describe('owner #567 screenshot-driven corrections',()=>{
     expect(editor).toContain('if(inline)return <section');
     expect(editor).toContain('await onBeforeSave?.(card)');
     expect(editor).toContain('await onSaved(updated)');
+    expect(editor).toContain("inline?'Προαιρετικό'");
+    expect(editor).toContain('Κενό = διατήρηση υπάρχοντος CVV');
+    const inlineCss=file('../src/styles/card-details-dialog.css');
+    expect(inlineCss).toContain('background:var(--surface,#fff)');
+    expect(inlineCss).toContain('grid-template-columns:repeat(2,minmax(0,1fr))');
+    expect(inlineCss).toContain('min-height:44px');
   });
   it('shows semantic finance icons first and preserves explicit opt-in to the whole catalog',()=>{
     const picker=file('../src/components/CategoryIconPicker.tsx');
