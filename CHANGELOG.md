@@ -4,23 +4,24 @@ All notable MyFinHub changes are recorded here. Release artifacts remain availab
 
 ## [Unreleased]
 
-### Candidate v1.5.0 — not yet published
+## [1.5.0] - 2026-10-14
 
-#### Added
+### Added
 - Owner-managed recurring/subscription service-brand assets, including independent service-artwork registration, replacement and lifecycle handling behind owner + TOTP/AAL2 + RLS.
 - Account IBAN metadata management and privacy-safe copy/masking, and cross-surface category icon packs with owner-controlled preferences.
 - Expanded regression coverage for card-vault cleanup, large financial datasets, keyboard accessibility and responsive account/transaction management.
 
-#### Changed
+### Changed
 - Reconciled shared UI primitives, visual hierarchy, motion and reduced-motion behavior across Dashboard, Transactions, Savings, Cards, Credit, Loans, Lending, Recurring, Planning, Reports and Settings.
 - Improved contextual finance actions, stateful empty/error/loading experiences and desktop/mobile dialog geometry.
 - Made the repository-root Windows `INSTALL_MYFINHUB_WINDOWS.bat` start local development by default, with explicit clean-install and packaged installer modes.
 
-#### Fixed
+### Fixed
 - Guarded persisted card-secret deletion intent and serialized encrypted-vault cleanup after durable finance changes, without removing historical finance events.
 - Stabilized rendered browser QA by capturing transient loading skeletons atomically and recording named large-state route times without relaxing strict performance budgets.
+- Avoided unnecessary historical account-balance scans for hidden Reports charts and reused authoritative period balances, bringing the large-data Reports readiness to 2,820 ms under the unchanged 5,000 ms gate.
 
-**Release boundary:** this is staged candidate content, not a shipped update. The published Web/Windows version and public installer links remain v1.4.0 until a separately authorized and validated production promotion. Four repository Supabase migrations added since production v1.4.0 still require a reviewed production migration rollout.
+**Release validation:** this release completed exact-head Chromium rendered QA (including strict large-dataset route readiness), WebKit, Lighthouse, CodeQL, isolated real-stack security and Windows packaging gates. Four ordered forward-only Supabase migrations were applied and verified at 52/52 before Web production deployment. Production promotion was verified by deployment-SHA-pinned event-driven smoke; the controlled Windows installer is published from the same immutable release tag.
 
 ## [1.4.0] - 2026-10-06
 
