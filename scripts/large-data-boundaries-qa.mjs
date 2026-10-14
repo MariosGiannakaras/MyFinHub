@@ -60,7 +60,7 @@ try{
   await screenshot('large-reports-desktop');
   assert(await c.call("function(){const button=document.querySelector('.report-account-history.is-private button');button?.click();return Boolean(button)}"),'historical account chart reveal action exists');
   await waitFor("function(){return Boolean(document.querySelector('.report-account-history.is-revealed .recharts-wrapper'))}",'revealed six-month account chart');
-  assert(await c.call("function(){return document.querySelectorAll('.report-account-history.is-revealed .recharts-line').length>0}"),'revealed Reports draws actual account histories');
+  await waitFor("function(){return document.querySelectorAll('.report-account-history.is-revealed .recharts-line').length>0}",'revealed Reports draws actual account histories');
 
   results.recurringLoadMs=await navigate('recurring','Πάγια & Συνδρομές');
   const recurring=await c.call("function(){return {rows:document.querySelectorAll('.recurring-workspace-table tbody tr[data-recurring-status=active]').length,more:Boolean(document.querySelector('.desktop-recurring-more')),dom:document.getElementsByTagName('*').length}}");
