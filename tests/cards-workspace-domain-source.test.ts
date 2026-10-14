@@ -38,6 +38,13 @@ describe('Cards workspace domain and navigation contracts',()=>{
     expect(renderedQa).toContain('card icon controls retain the owner-approved uniform unboxed visual hierarchy');
     expect(renderedQa).toContain('current.toolbarIcons.every(icon=>icon.bg');
     expect(renderedQa).not.toContain('current.revealBg!==current.managementBg');
+    const mobileHost=readFileSync(new URL('../src/styles/canonical-credit-card-host.css',import.meta.url),'utf8');
+    expect(mobileHost).toContain('#myfinhub-card-stack .prototype-payment-card .card-icon-btn::before');
+    expect(mobileHost).toContain('content:none;');
+    expect(mobileHost).toContain('#myfinhub-card-stack .prototype-payment-card .card-icon-btn svg');
+    expect(renderedQa).toContain('cards-remediation-mobile-unboxed-');
+    expect(renderedQa).toContain("icon.pseudo==='none'");
+    expect(renderedQa).toContain('for(const width of [320,375,412])');
     expect(componentCss).toContain('font-size:var(--ux-dense-label-size);line-height:1;text-transform:uppercase');
     expect(componentCss).not.toContain('font-size:.50rem');
   });

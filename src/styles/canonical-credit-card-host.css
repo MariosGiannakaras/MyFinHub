@@ -116,6 +116,12 @@
     backdrop-filter:blur(8px);
     box-shadow:inset 0 0 0 1px rgba(255,255,255,.14);
   }
+  /* #567: owner wants the three debit/prepaid card toolbar glyphs completely
+     unboxed. Keep the 40px touch target; do not change the separate credit
+     card host artwork or the copy-mini visual treatment. */
+  #myfinhub-card-stack .prototype-payment-card .card-icon-btn::before{
+    content:none;
+  }
   #myfinhub-card-stack .copy-mini::before{
     width:23px;
     height:23px;
@@ -139,6 +145,12 @@
     position:relative;
     z-index:1;
     pointer-events:none;
+  }
+
+  #myfinhub-card-stack .prototype-payment-card .card-icon-btn svg{
+    width:17px;
+    height:17px;
+    stroke-width:2.4;
   }
 
   /*
