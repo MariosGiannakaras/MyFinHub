@@ -19,8 +19,12 @@ describe('card secure details',()=>{
     expect(formatCardExpiryInput('1231')).toBe('12/31');
   });
 
-  it('rejects invalid expiry months and requires CVV only for new-card completion',()=>{
-    expect(()=>normalizeCardDetailsInput({pan:'12345',expiry:'13/31'})).toThrow(CardDetailsInputError);
+  it('bounds fields without checking issuer, card-number validity or expiry month value',()=>{
+    expect(normalizeCardDetailsInput({pan:'12345',expiry:'13/31'})).toEqual({pan:'12345',expiry:'13/31',cvv:undefined});
+    expect(normalizeCardDetailsInput({pan:'12345',expiry:'99/31',cvv:'1'}).cvv).toBe('1');
+    expect(formatCardNumberInput('1'.repeat(33)).replace(/\D/g,'')).toHaveLength(32);
+    expect(()=>normalizeCardDetailsInput({pan:'1'.repeat(33),expiry:'12/31'})).toThrow(CardDetailsInputError);
+    expect(()=>normalizeCardDetailsInput({pan:'12345',expiry:'12/3'})).toThrow(CardDetailsInputError);
     expect(()=>normalizeCardDetailsInput({pan:'12345',expiry:'12/31'},{requireCvv:true})).toThrow('Γράψε το CVV');
     expect(normalizeCardDetailsInput({pan:'12345',expiry:'12/31',cvv:'123'},{requireCvv:true}).cvv).toBe('123');
   });
@@ -76,7 +80,10 @@ describe('card secure details',()=>{
     expect(credit).toContain('initialCard={profileCard}');
     expect(interactive).toContain('onEditCard');
     expect(interactive).toContain('onEditDetails');
-    expect(interactive).toContain('Ασφαλή στοιχεία');
+    expect(cards).toContain('detailsEditor={detailsCard?.id===card.id?<CardDetailsDialog inline');
+    expect(interactive).toContain('detailsEditor ? detailsEditor');
+    expect(interactive).toContain('Επεξεργασία στοιχείων');
+    expect(interactive).not.toContain('KeyRound');
     expect(createDialog).toContain('if(initialCard)');
     expect(createDialog).toContain('onSave({...initialCard');
     expect(createDialog).toContain('Τα κρυπτογραφημένα PAN, λήξη και CVV παραμένουν ανέπαφα');
@@ -90,7 +97,9 @@ describe('card secure details',()=>{
     const interactive=readFileSync(new URL('../src/components/InteractivePaymentCard.tsx',import.meta.url),'utf8');
     const createDialog=readFileSync(new URL('../src/components/CardCreateDialog.tsx',import.meta.url),'utf8');
     expect(interactive).toContain('onEditCard');
-    expect(interactive).toContain('Ασφαλή στοιχεία · PAN / λήξη / CVV');
+    expect(interactive).toContain('onEditDetails');
+    expect(interactive).toContain('onEditDetails||onEditCard');
+    expect(interactive).not.toContain('KeyRound');
     expect(cards).toContain('initialCard={profileCard}');
     expect(credit).toContain('initialCard={profileCard}');
     expect(credit).toContain('onEditCard={openCardProfile}');

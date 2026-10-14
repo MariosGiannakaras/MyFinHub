@@ -89,6 +89,13 @@ export function CardsPage({
   const [message,setMessage]=useState('');
   const bankRef=useModalFocus<HTMLElement>(bankOpen,'[data-autofocus="true"]',()=>{setBankOpen(false);setError('')});
   const cardBank=cardBankId?banks.find(bank=>bank.id===cardBankId):undefined;
+  // A newly selected bank may not yet be represented by a persisted card.
+  // Keep its inline draft visible until the owner confirms the secure save.
+  const visibleWorkspaceBanks=useMemo(()=>{
+    if(!detailsIsNew||!detailsCard||workspaceBanks.some(bank=>bank.id===detailsCard.bankId))return workspaceBanks;
+    const pendingBank=banks.find(bank=>bank.id===detailsCard.bankId);
+    return pendingBank?[...workspaceBanks,pendingBank].sort((a,b)=>a.order-b.order):workspaceBanks;
+  },[banks,workspaceBanks,detailsCard?.id,detailsCard?.bankId,detailsIsNew]);
   const openCardCreate=(bankId?:string)=>{setCardBankId(bankId??null);setCardCreateOpen(true);setMessage('')};
   const closeCardCreate=()=>{setCardCreateOpen(false);setCardBankId(null)};
   const recentCategory=(row:RecentAccountRow)=>row.kind==='split'?'Διαχωρισμός':row.category===row.kind?eventKindLabel(row.kind):categoryPath(row.category,row.subcategory);
@@ -132,8 +139,8 @@ export function CardsPage({
     </section>
 
     <section className="cards-workspace cards-prototype-workspace surface-raised" aria-label="Χρεωστικές και προπληρωμένες κάρτες ανά τράπεζα">
-      {workspaceBanks.length>3?<div className="cards-workspace-scroll-hint" aria-hidden="true">Οριζόντια κύλιση για περισσότερες τράπεζες →</div>:null}
-      {workspaceBanks.length?<div className="cards-grid cards-prototype-grid" data-content-entrance="grid" style={{'--bank-count':Math.max(1,workspaceBanks.length)} as React.CSSProperties}>{workspaceBanks.map(bank=>{
+      {visibleWorkspaceBanks.length>3?<div className="cards-workspace-scroll-hint" aria-hidden="true">Οριζόντια κύλιση για περισσότερες τράπεζες →</div>:null}
+      {visibleWorkspaceBanks.length?<div className="cards-grid cards-prototype-grid" data-content-entrance="grid" style={{'--bank-count':Math.max(1,visibleWorkspaceBanks.length)} as React.CSSProperties}>{visibleWorkspaceBanks.map(bank=>{
         const persisted=cardsForBank(data,bank.id);const active=detailsIsNew&&detailsCard?.bankId===bank.id?[detailsCard,...persisted.filter(card=>card.id!==detailsCard.id)]:persisted;const archived=archivedCardsForBank(data,bank.id);
         return <section className="bank-column cards-bank-column" key={bank.id} data-bank={bank.id}>
           <header className="bank-column-head"><div className="bank-column-title"><b>{bank.name}</b><small>{active.length} {active.length===1?'κάρτα':'κάρτες'}</small></div><Tooltip label={`Προσθήκη κάρτας στην ${bank.name}`} side="left"><IconButton type="button" className="bank-add-btn" aria-label={`Προσθήκη κάρτας στην ${bank.name}`} onClick={()=>openCardCreate(bank.id)}><Plus/></IconButton></Tooltip></header>
