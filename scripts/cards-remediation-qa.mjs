@@ -100,7 +100,7 @@ try{
   await c.send('Input.dispatchMouseEvent',{type:'mouseMoved',x:coords.endX,y:coords.y,buttons:1});
   await sleep(35);
   const beforeRelease=await c.call("function(){const slider=document.querySelector('.prototype-payment-card .delete-slider');const thumb=slider?.querySelector('.r-card-archive-keyboard');return {progress:slider?getComputedStyle(slider).getPropertyValue('--p').trim():null,sliderCapture:Boolean(slider?.hasPointerCapture(1)),transform:thumb?.style.transform||'',armed:Boolean(slider)}}");
-  assert(Number(beforeRelease.progress)>=.92,`fast pointer drag reached confirmation before release: ${JSON.stringify({coords,beforeRelease})}`);
+  assert(Number(beforeRelease.progress)>=.92,`fast pointer drag (tracked at window level) reached confirmation before release: ${JSON.stringify({coords,beforeRelease})}`);
   await c.send('Input.dispatchMouseEvent',{type:'mouseReleased',x:coords.endX,y:coords.y,button:'left',clickCount:1,buttons:0});
   await waitFor("function(){const layer=document.querySelector('.r-card-archive-shred');return layer?.querySelectorAll('.r-card-archive-slice').length===9&&Boolean(document.querySelector('.prototype-payment-card:not(.r-card-archive-ghost)'))}",'fast pointerup begins nine-slice archive before removal');
   await shot('cards-archive-shred-fast-pointer-375');

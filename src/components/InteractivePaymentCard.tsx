@@ -78,6 +78,7 @@ export function InteractivePaymentCard({
   const archivingRef=useRef(false);
   const deleteProgressRef=useRef(0);
   const archivePointerIdRef=useRef<number|null>(null);
+  const archiveDragCleanupRef=useRef<(()=>void)|null>(null);
   const sliderRef=useRef<HTMLDivElement>(null);
   const theme=cardThemeClass(card);
   const visible=Boolean(revealed.pan||revealed.expiry||revealed.cvv);
@@ -104,7 +105,7 @@ export function InteractivePaymentCard({
     try{await navigator.clipboard.writeText(current);setMessage(`${label} αντιγράφηκε.`)}catch{setMessage('Δεν ήταν δυνατή η αντιγραφή.')}
   };
   const setArchiveProgress=(value:number)=>{const progress=Math.max(0,Math.min(1,value));deleteProgressRef.current=progress;setDeleteProgress(progress)};
-  const resetDelete=()=>{setDeleteOpen(false);setArchiveProgress(0);setDeleteOffset(0)};
+  const resetDelete=()=>{archiveDragCleanupRef.current?.();archiveDragCleanupRef.current=null;archivePointerIdRef.current=null;setDeleteOpen(false);setArchiveProgress(0);setDeleteOffset(0)};
   const commitArchive=async()=>{
     if(!onArchive||archiveDisabled||archivingRef.current)return;
     archivingRef.current=true;
@@ -126,34 +127,70 @@ export function InteractivePaymentCard({
   };
   const resetTilt=()=>{if(cardRef.current)cardRef.current.style.transform='perspective(1000px) rotateY(0deg) rotateX(0deg)'};
   const moveDelete=(clientX:number)=>{const el=sliderRef.current;if(!el)return;const rect=el.getBoundingClientRect();const max=Math.max(0,rect.width-47);const progress=Math.max(0,Math.min(1,(clientX-rect.left-19.5)/Math.max(1,rect.width-39)));setArchiveProgress(progress);setDeleteOffset(progress*max)};
+
+  // Keep gesture ownership on the stationary track. Window capture-phase
+  // listeners retain fast mouse/touch movement even when the animated thumb
+  // leaves the pointer target; the 92% confirmation remains mandatory.
+  const stopArchiveDrag=()=>{
+    const pointerId=archivePointerIdRef.current;
+    archiveDragCleanupRef.current?.();
+    archiveDragCleanupRef.current=null;
+    archivePointerIdRef.current=null;
+    const track=sliderRef.current;
+    if(pointerId!==null&&track?.hasPointerCapture(pointerId)){
+      try{track.releasePointerCapture(pointerId)}catch{}
+    }
+  };
   const startArchiveDrag=(event:React.PointerEvent<HTMLDivElement>)=>{
     if(busy||archiveDisabled||archivingRef.current||archivePointerIdRef.current!==null||event.button!==0)return;
     if(!(event.target instanceof Element)||!event.target.closest('.r-card-archive-keyboard'))return;
     event.preventDefault();
-    archivePointerIdRef.current=event.pointerId;
-    event.currentTarget.setPointerCapture(event.pointerId);
+    const pointerId=event.pointerId,pointerType=event.pointerType;
+    archivePointerIdRef.current=pointerId;
+    const settle=(clientX:number)=>{
+      if(archivePointerIdRef.current!==pointerId)return;
+      moveDelete(clientX);
+      const committed=deleteProgressRef.current>=.92;
+      stopArchiveDrag();
+      if(committed){setArchiveProgress(1);void commitArchive()}
+      else{setArchiveProgress(0);setDeleteOffset(0)}
+    };
+    const onMove=(current:PointerEvent)=>{
+      if(current.pointerId===pointerId)moveDelete(current.clientX);
+    };
+    // Some browser/CDP mouse paths deliver mousemove outside the thumb even
+    // when pointer capture is lost; accept only a held primary mouse button.
+    const onMouseMove=(current:MouseEvent)=>{
+      if(pointerType==='mouse'&&(current.buttons&1)!==0&&archivePointerIdRef.current===pointerId)moveDelete(current.clientX);
+    };
+    const onUp=(current:PointerEvent)=>{
+      if(current.pointerId===pointerId){current.preventDefault();settle(current.clientX)}
+    };
+    const onMouseUp=(current:MouseEvent)=>{
+      if(pointerType==='mouse')settle(current.clientX);
+    };
+    const onCancel=(current:PointerEvent)=>{
+      if(current.pointerId!==pointerId)return;
+      stopArchiveDrag();setArchiveProgress(0);setDeleteOffset(0);
+    };
+    window.addEventListener('pointermove',onMove,true);
+    window.addEventListener('pointerup',onUp,true);
+    window.addEventListener('pointercancel',onCancel,true);
+    if(pointerType==='mouse'){
+      window.addEventListener('mousemove',onMouseMove,true);
+      window.addEventListener('mouseup',onMouseUp,true);
+    }
+    archiveDragCleanupRef.current=()=>{
+      window.removeEventListener('pointermove',onMove,true);
+      window.removeEventListener('pointerup',onUp,true);
+      window.removeEventListener('pointercancel',onCancel,true);
+      window.removeEventListener('mousemove',onMouseMove,true);
+      window.removeEventListener('mouseup',onMouseUp,true);
+    };
+    try{event.currentTarget.setPointerCapture(pointerId)}catch{}
     moveDelete(event.clientX);
   };
-  const moveArchiveDrag=(event:React.PointerEvent<HTMLDivElement>)=>{
-    if(archivePointerIdRef.current!==event.pointerId)return;
-    event.preventDefault();
-    moveDelete(event.clientX);
-  };
-  const finishArchiveDrag=(event:React.PointerEvent<HTMLDivElement>)=>{
-    if(archivePointerIdRef.current!==event.pointerId)return;
-    event.preventDefault();
-    // Capture belongs to the stationary slider, not the moving thumb.
-    moveDelete(event.clientX);
-    archivePointerIdRef.current=null;
-    if(event.currentTarget.hasPointerCapture(event.pointerId))event.currentTarget.releasePointerCapture(event.pointerId);
-    if(deleteProgressRef.current>=.92){setArchiveProgress(1);void commitArchive()}
-    else{setArchiveProgress(0);setDeleteOffset(0)}
-  };
-  const cancelArchiveDrag=(event:React.PointerEvent<HTMLDivElement>)=>{
-    if(archivePointerIdRef.current!==event.pointerId)return;
-    archivePointerIdRef.current=null;
-    setArchiveProgress(0);setDeleteOffset(0);
-  };
+  useEffect(()=>()=>{archiveDragCleanupRef.current?.();archiveDragCleanupRef.current=null;archivePointerIdRef.current=null},[]);
 
   const number=visible&&revealed.pan?formatPan(revealed.pan):maskedPan(card);
   const shownExpiry=visible&&revealed.expiry?revealed.expiry:'••/••';
@@ -179,7 +216,7 @@ export function InteractivePaymentCard({
             <CardNetworkMark network={card.network} detail={kindLabel(card)}/>
           </div>
         </div>
-        {deleteOpen?<div className="delete-confirm r-card-archive-confirm"><div className="delete-confirm-head"><div className="delete-confirm-copy"><b>Αρχειοθέτηση κάρτας;</b><small>Σύρε μέχρι τέρμα για επιβεβαίωση. Η κάρτα θα μεταφερθεί στο αρχείο και μπορεί να επανέλθει με τα ίδια στοιχεία.</small></div><button className="delete-cancel" type="button" aria-label="Ακύρωση αρχειοθέτησης" title="Ακύρωση αρχειοθέτησης" onClick={resetDelete}><X/></button></div><div ref={sliderRef} className="delete-slider" style={{'--p':deleteProgress} as React.CSSProperties} onPointerDown={startArchiveDrag} onPointerMove={moveArchiveDrag} onPointerUp={finishArchiveDrag} onPointerCancel={cancelArchiveDrag}><span className="delete-slider-label">ΣΥΡΕ ΓΙΑ ΑΡΧΕΙΟΘΕΤΗΣΗ</span><button className="delete-slider-thumb r-card-archive-keyboard" type="button" disabled={busy} aria-label="Σύρε για αρχειοθέτηση" title="Αρχειοθέτηση κάρτας" style={{transform:`translateX(${deleteOffset}px)`}} onClick={e=>{if(e.detail===0)void commitArchive()}}><Archive/><span className="sr-only">Αρχειοθέτηση</span></button></div></div>:null}
+        {deleteOpen?<div className="delete-confirm r-card-archive-confirm"><div className="delete-confirm-head"><div className="delete-confirm-copy"><b>Αρχειοθέτηση κάρτας;</b><small>Σύρε μέχρι τέρμα για επιβεβαίωση. Η κάρτα θα μεταφερθεί στο αρχείο και μπορεί να επανέλθει με τα ίδια στοιχεία.</small></div><button className="delete-cancel" type="button" aria-label="Ακύρωση αρχειοθέτησης" title="Ακύρωση αρχειοθέτησης" onClick={resetDelete}><X/></button></div><div ref={sliderRef} className="delete-slider" style={{'--p':deleteProgress} as React.CSSProperties} onPointerDown={startArchiveDrag}><span className="delete-slider-label">ΣΥΡΕ ΓΙΑ ΑΡΧΕΙΟΘΕΤΗΣΗ</span><button className="delete-slider-thumb r-card-archive-keyboard" type="button" disabled={busy} aria-label="Σύρε για αρχειοθέτηση" title="Αρχειοθέτηση κάρτας" style={{transform:`translateX(${deleteOffset}px)`}} onClick={e=>{if(e.detail===0)void commitArchive()}}><Archive/><span className="sr-only">Αρχειοθέτηση</span></button></div></div>:null}
         </>}
       </div>
     </article>
