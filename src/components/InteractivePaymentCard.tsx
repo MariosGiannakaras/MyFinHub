@@ -77,6 +77,7 @@ export function InteractivePaymentCard({
   const cardRef=useRef<HTMLElement>(null);
   const archivingRef=useRef(false);
   const deleteProgressRef=useRef(0);
+  const archivePointerIdRef=useRef<number|null>(null);
   const sliderRef=useRef<HTMLDivElement>(null);
   const theme=cardThemeClass(card);
   const visible=Boolean(revealed.pan||revealed.expiry||revealed.cvv);
@@ -125,6 +126,34 @@ export function InteractivePaymentCard({
   };
   const resetTilt=()=>{if(cardRef.current)cardRef.current.style.transform='perspective(1000px) rotateY(0deg) rotateX(0deg)'};
   const moveDelete=(clientX:number)=>{const el=sliderRef.current;if(!el)return;const rect=el.getBoundingClientRect();const max=Math.max(0,rect.width-47);const progress=Math.max(0,Math.min(1,(clientX-rect.left-19.5)/Math.max(1,rect.width-39)));setArchiveProgress(progress);setDeleteOffset(progress*max)};
+  const startArchiveDrag=(event:React.PointerEvent<HTMLDivElement>)=>{
+    if(busy||archiveDisabled||archivingRef.current||archivePointerIdRef.current!==null||event.button!==0)return;
+    if(!(event.target instanceof Element)||!event.target.closest('.r-card-archive-keyboard'))return;
+    event.preventDefault();
+    archivePointerIdRef.current=event.pointerId;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    moveDelete(event.clientX);
+  };
+  const moveArchiveDrag=(event:React.PointerEvent<HTMLDivElement>)=>{
+    if(archivePointerIdRef.current!==event.pointerId)return;
+    event.preventDefault();
+    moveDelete(event.clientX);
+  };
+  const finishArchiveDrag=(event:React.PointerEvent<HTMLDivElement>)=>{
+    if(archivePointerIdRef.current!==event.pointerId)return;
+    event.preventDefault();
+    // Capture belongs to the stationary slider, not the moving thumb.
+    moveDelete(event.clientX);
+    archivePointerIdRef.current=null;
+    if(event.currentTarget.hasPointerCapture(event.pointerId))event.currentTarget.releasePointerCapture(event.pointerId);
+    if(deleteProgressRef.current>=.92){setArchiveProgress(1);void commitArchive()}
+    else{setArchiveProgress(0);setDeleteOffset(0)}
+  };
+  const cancelArchiveDrag=(event:React.PointerEvent<HTMLDivElement>)=>{
+    if(archivePointerIdRef.current!==event.pointerId)return;
+    archivePointerIdRef.current=null;
+    setArchiveProgress(0);setDeleteOffset(0);
+  };
 
   const number=visible&&revealed.pan?formatPan(revealed.pan):maskedPan(card);
   const shownExpiry=visible&&revealed.expiry?revealed.expiry:'••/••';
@@ -150,7 +179,7 @@ export function InteractivePaymentCard({
             <CardNetworkMark network={card.network} detail={kindLabel(card)}/>
           </div>
         </div>
-        {deleteOpen?<div className="delete-confirm r-card-archive-confirm"><div className="delete-confirm-head"><div className="delete-confirm-copy"><b>Αρχειοθέτηση κάρτας;</b><small>Σύρε μέχρι τέρμα για επιβεβαίωση. Η κάρτα θα μεταφερθεί στο αρχείο και μπορεί να επανέλθει με τα ίδια στοιχεία.</small></div><button className="delete-cancel" type="button" aria-label="Ακύρωση αρχειοθέτησης" title="Ακύρωση αρχειοθέτησης" onClick={resetDelete}><X/></button></div><div ref={sliderRef} className="delete-slider" style={{'--p':deleteProgress} as React.CSSProperties}><span className="delete-slider-label">ΣΥΡΕ ΓΙΑ ΑΡΧΕΙΟΘΕΤΗΣΗ</span><button className="delete-slider-thumb r-card-archive-keyboard" type="button" disabled={busy} aria-label="Σύρε για αρχειοθέτηση" title="Αρχειοθέτηση κάρτας" style={{transform:`translateX(${deleteOffset}px)`}} onClick={e=>{if(e.detail===0)void commitArchive()}} onPointerDown={e=>{e.currentTarget.setPointerCapture(e.pointerId);moveDelete(e.clientX)}} onPointerMove={e=>{if(e.currentTarget.hasPointerCapture(e.pointerId))moveDelete(e.clientX)}} onPointerUp={e=>{try{e.currentTarget.releasePointerCapture(e.pointerId)}catch{}if(deleteProgressRef.current>=.92){setArchiveProgress(1);void commitArchive()}else{setArchiveProgress(0);setDeleteOffset(0)}}} onPointerCancel={()=>{setArchiveProgress(0);setDeleteOffset(0)}}><Archive/><span className="sr-only">Αρχειοθέτηση</span></button></div></div>:null}
+        {deleteOpen?<div className="delete-confirm r-card-archive-confirm"><div className="delete-confirm-head"><div className="delete-confirm-copy"><b>Αρχειοθέτηση κάρτας;</b><small>Σύρε μέχρι τέρμα για επιβεβαίωση. Η κάρτα θα μεταφερθεί στο αρχείο και μπορεί να επανέλθει με τα ίδια στοιχεία.</small></div><button className="delete-cancel" type="button" aria-label="Ακύρωση αρχειοθέτησης" title="Ακύρωση αρχειοθέτησης" onClick={resetDelete}><X/></button></div><div ref={sliderRef} className="delete-slider" style={{'--p':deleteProgress} as React.CSSProperties} onPointerDown={startArchiveDrag} onPointerMove={moveArchiveDrag} onPointerUp={finishArchiveDrag} onPointerCancel={cancelArchiveDrag}><span className="delete-slider-label">ΣΥΡΕ ΓΙΑ ΑΡΧΕΙΟΘΕΤΗΣΗ</span><button className="delete-slider-thumb r-card-archive-keyboard" type="button" disabled={busy} aria-label="Σύρε για αρχειοθέτηση" title="Αρχειοθέτηση κάρτας" style={{transform:`translateX(${deleteOffset}px)`}} onClick={e=>{if(e.detail===0)void commitArchive()}}><Archive/><span className="sr-only">Αρχειοθέτηση</span></button></div></div>:null}
         </>}
       </div>
     </article>
