@@ -187,3 +187,32 @@
   font-size:clamp(.88rem,1.14vw,1rem);letter-spacing:.035em;line-height:1.28;
 }
 .prototype-payment-card .card-number-wrap:has(.card-number.revealed){align-items:flex-start}
+
+
+/* Debit/prepaid archive uses the same nine-strip exit vocabulary as the credit stack.
+ * This overlay is decorative only; actual soft archive runs after the animation. */
+.prototype-card-slot .r-card-archive-shred{
+  position:absolute;
+  inset:0;
+  z-index:30;
+  overflow:visible;
+  pointer-events:none;
+}
+.prototype-card-slot .r-card-archive-slice{
+  position:absolute;
+  inset:0;
+  will-change:transform,opacity,filter;
+  pointer-events:none;
+}
+.prototype-card-slot .r-card-archive-ghost{
+  height:100%;
+  min-height:0;
+  aspect-ratio:auto;
+  transform:none!important;
+  transition:none!important;
+  pointer-events:none;
+  box-shadow:0 18px 28px rgba(24,40,74,.16),inset 0 1px 0 rgba(255,255,255,.26);
+}
+@media(prefers-reduced-motion:reduce){
+  .prototype-card-slot .r-card-archive-shred{display:none}
+}
