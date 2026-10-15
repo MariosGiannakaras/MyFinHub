@@ -68,5 +68,28 @@ try{
   assert(current.bankMetaColor&&current.toolbarIcons.length===3&&current.toolbarIcons.every(icon=>icon.bg==='rgba(0, 0, 0, 0)'&&icon.shadow==='none'&&icon.opacity>=.9&&icon.stroke>=2.3)&&current.overflow<=1,'dark bank metadata and plain high-contrast card utilities remain visible and contained');
   await shot('cards-remediation-rich-dark-1440');
 
+
+  console.log('Cards remediation QA: debit/prepaid archive exits with nine visible slices before state transition');
+  const archiveCard=async(reduce=false,evidenceName='')=>{
+    const armed=await c.call("function(){const card=document.querySelector('.prototype-payment-card:not(.r-card-archive-ghost)');const button=card?.querySelector('button[aria-label=\"Αρχειοθέτηση κάρτας\"]');button?.click();return Boolean(button)}");
+    assert(armed,'debit card archive affordance remains accessible');
+    await waitFor("function(){return Boolean(document.querySelector('.prototype-payment-card:not(.r-card-archive-ghost) .r-card-archive-keyboard'))}",'archive slider exists');
+    const state=await c.call("function(){const button=document.querySelector('.prototype-payment-card:not(.r-card-archive-ghost) .r-card-archive-keyboard');button?.click();const layer=document.querySelector('.r-card-archive-shred');return {clicked:Boolean(button),slices:layer?.querySelectorAll('.r-card-archive-slice').length||0,active:Boolean(document.querySelector('.prototype-payment-card:not(.r-card-archive-ghost)'))}}");
+    assert(state.clicked,'archive thumb commits from keyboard');
+    assert(reduce?state.slices===0:state.slices===9&&state.active,reduce?'reduced-motion archive does not start animated slices':'nine animated slices are visible while card is still active');
+    if(!reduce)await shot('cards-archive-shred-'+evidenceName);
+    await waitFor("function(){return !document.querySelector('.r-card-archive-shred')&&Boolean(document.querySelector('.cards-archive .card-archive-row'))}",'archive only commits after animation');
+  };
+  for(const [width,theme] of [[375,'light'],[1440,'dark']]){
+    await viewport(width,width===375?812:1000);
+    await navigate('');
+    await c.call("async function(theme){localStorage.setItem('myfinhub.theme',theme);const mod=await import('/src/lib/theme.ts');mod.applyThemePreference(theme)}",[theme]);
+    await archiveCard(false,`${width}-${theme}`);
+    await shot(`cards-archive-completed-${width}-${theme}`);
+  }
+  await c.send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
+  await viewport(375,812);await navigate('');await archiveCard(true);
+  await c.send('Emulation.setEmulatedMedia',{features:[]});
+
   c.close();console.log(`Cards remediation QA passed. Evidence: ${evidenceDir}`);
 }finally{child.kill('SIGTERM')}
