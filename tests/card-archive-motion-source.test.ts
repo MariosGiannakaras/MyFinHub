@@ -15,6 +15,12 @@ describe('card archive exit-motion regression #570',()=>{
     expect(commit).toContain('archivingRef.current=false');
     expect(commit).toContain('catch{');
     expect(debit).toContain('if(deleteProgressRef.current>=.92)');
+    expect(debit).toContain('event.currentTarget.setPointerCapture(event.pointerId)');
+    expect(debit).toContain('archivePointerIdRef.current=event.pointerId');
+    expect(debit).toContain('archivePointerIdRef.current!==event.pointerId');
+    expect(debit).toContain('onPointerDown={startArchiveDrag} onPointerMove={moveArchiveDrag} onPointerUp={finishArchiveDrag}');
+    expect(debit).toContain("event.target.closest('.r-card-archive-keyboard')");
+    expect(debit).toContain("event.currentTarget.releasePointerCapture(event.pointerId)");
     expect(debit).toContain('deleteProgressRef.current=progress');
     expect(debit).toContain('setArchiveProgress(0)');
     expect(debit).not.toContain('if(deleteProgress>=.92)');
