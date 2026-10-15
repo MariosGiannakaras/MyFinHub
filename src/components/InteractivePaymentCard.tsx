@@ -13,6 +13,44 @@ type Secrets={pan?:string;expiry?:string;cvv?:string};
 function formatPan(value:string){return value.replace(/\D/g,'').replace(/(.{4})/g,'$1 ').trim();}
 function maskedPan(card:PaymentCard){return card.last4?`•••• •••• •••• ${card.last4}`:'•••• •••• •••• ••••';}
 function kindLabel(card:PaymentCard){return card.kind==='credit'?'Credit':card.kind==='prepaid'?'Prepaid':card.formFactor==='virtual'?'Virtual':'Debit';}
+
+/** Presentation-only: the archive mutation begins after the exit choreography. */
+async function playArchiveShred(card:HTMLElement){
+  if(!card.parentElement||typeof card.animate!=='function'||window.matchMedia('(prefers-reduced-motion: reduce)').matches||document.documentElement.dataset.motion==='reduced')return;
+  const host=card.parentElement;
+  const layer=document.createElement('div');
+  layer.className='r-card-archive-shred';
+  layer.setAttribute('aria-hidden','true');
+  const slices:HTMLElement[]=[];
+  for(let index=0;index<9;index++){
+    const slice=document.createElement('div');
+    slice.className='r-card-archive-slice';
+    slice.style.clipPath=`inset(${index*100/9}% 0 ${Math.max(0,100-(index+1)*100/9)}% 0 round 22px)`;
+    const snapshot=card.cloneNode(true) as HTMLElement;
+    snapshot.classList.remove('delete-armed');
+    snapshot.classList.add('r-card-archive-ghost');
+    snapshot.removeAttribute('id');
+    snapshot.querySelector('.delete-confirm')?.remove();
+    snapshot.querySelectorAll('button').forEach(button=>button.remove());
+    // Decorative clones must never duplicate revealed PAN, expiry or CVV.
+    snapshot.querySelectorAll('.card-number,.card-field-value').forEach(node=>{node.textContent='••••'});
+    slice.appendChild(snapshot);
+    layer.appendChild(slice);
+    slices.push(slice);
+  }
+  host.appendChild(layer);
+  const animations=[
+    card.animate([{opacity:1,transform:'translateY(0) scale(1)'},{opacity:0,transform:'translateY(18px) scale(.9)'}],{duration:560,easing:'cubic-bezier(.2,.82,.2,1)',fill:'forwards'}),
+    ...slices.map((slice,index)=>slice.animate([
+      {transform:'translate3d(0,0,0) rotateZ(0deg)',opacity:1,filter:'blur(0)'},
+      {offset:.25,transform:'translate3d(0,-4px,0) rotateZ(0deg)',opacity:1},
+      {transform:`translate3d(${(index%2===0?-1:1)*(48+index*5)}px, ${20+(index-4)*5}px, 0) rotateZ(${index%2===0?-7:7}deg)`,opacity:0,filter:'blur(2px)'}
+    ],{duration:620,easing:'cubic-bezier(.2,.8,.2,1)',fill:'forwards'}))
+  ];
+  try{await Promise.all(animations.map(animation=>animation.finished))}
+  finally{animations.forEach(animation=>animation.cancel());layer.remove()}
+}
+
 function PrototypeBrand({card,bank}:{card:PaymentCard;bank:CardBank}){
   const design=card.designId??'';
   const alphaVariant=design==='alpha'?'enter':design.startsWith('alpha')?'bonus':null;
@@ -37,6 +75,7 @@ export function InteractivePaymentCard({
   const [deleteProgress,setDeleteProgress]=useState(0);
   const [deleteOffset,setDeleteOffset]=useState(0);
   const cardRef=useRef<HTMLElement>(null);
+  const archivingRef=useRef(false);
   const sliderRef=useRef<HTMLDivElement>(null);
   const theme=cardThemeClass(card);
   const visible=Boolean(revealed.pan||revealed.expiry||revealed.cvv);
@@ -64,10 +103,17 @@ export function InteractivePaymentCard({
   };
   const resetDelete=()=>{setDeleteOpen(false);setDeleteProgress(0);setDeleteOffset(0)};
   const commitArchive=async()=>{
-    if(!onArchive||archiveDisabled)return;
-    setBusy(true);
-    try{await onArchive(card);setRevealed({});resetDelete();setMessage('Η κάρτα αρχειοθετήθηκε και μπορεί να επανέλθει με τα ίδια στοιχεία.')}
-    finally{setBusy(false)}
+    if(!onArchive||archiveDisabled||archivingRef.current)return;
+    archivingRef.current=true;
+    setBusy(true);setMessage('');
+    try{
+      if(cardRef.current)await playArchiveShred(cardRef.current);
+      await onArchive(card);
+      setRevealed({});resetDelete();setMessage('Η κάρτα αρχειοθετήθηκε και μπορεί να επανέλθει με τα ίδια στοιχεία.');
+    }catch{
+      setMessage('Η αρχειοθέτηση δεν ολοκληρώθηκε. Η κάρτα παραμένει διαθέσιμη.');
+      resetDelete();
+    }finally{archivingRef.current=false;setBusy(false)}
   };
 
   const pointerMove=(event:React.PointerEvent<HTMLElement>)=>{
