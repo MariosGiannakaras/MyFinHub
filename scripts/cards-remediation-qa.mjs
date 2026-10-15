@@ -92,14 +92,17 @@ try{
   const armedForPointer=await c.call("function(){const card=document.querySelector('.prototype-payment-card:not(.r-card-archive-ghost)');const button=card?.querySelector('button[aria-label=\"Αρχειοθέτηση κάρτας\"]');button?.click();return Boolean(button)}");
   assert(armedForPointer,'pointer archive can be armed');
   await waitFor("function(){return Boolean(document.querySelector('.prototype-payment-card .r-card-archive-keyboard'))}",'pointer slider mounted');
-  const coords=await c.call("function(){const thumb=document.querySelector('.prototype-payment-card .r-card-archive-keyboard');const slider=thumb?.closest('.delete-slider');if(!thumb||!slider)return null;const a=thumb.getBoundingClientRect(),b=slider.getBoundingClientRect();return {startX:a.left+a.width/2,endX:b.right-12,y:a.top+a.height/2}}");
-  assert(coords&&coords.endX>coords.startX,'pointer slider has valid visible travel');
+  await c.call("function(){document.querySelector('.prototype-payment-card .r-card-archive-keyboard')?.scrollIntoView({block:'center',inline:'nearest',behavior:'instant'})}");
+  const coords=await c.call("function(){const thumb=document.querySelector('.prototype-payment-card .r-card-archive-keyboard');const slider=thumb?.closest('.delete-slider');if(!thumb||!slider)return null;const a=thumb.getBoundingClientRect(),b=slider.getBoundingClientRect();const startX=a.left+a.width/2,y=a.top+a.height/2;return {startX,endX:b.right-12,y,viewportWidth:innerWidth,hit:document.elementFromPoint(startX,y)?.closest('.r-card-archive-keyboard')===thumb,sliderWidth:b.width}}");
+  assert(coords&&coords.endX>coords.startX&&coords.startX>=0&&coords.endX<coords.viewportWidth&&coords.hit,`pointer slider has valid visible hit and travel: ${JSON.stringify(coords)}`);
   await c.send('Input.dispatchMouseEvent',{type:'mouseMoved',x:coords.startX,y:coords.y,buttons:0});
   await c.send('Input.dispatchMouseEvent',{type:'mousePressed',x:coords.startX,y:coords.y,button:'left',clickCount:1,buttons:1});
   await c.send('Input.dispatchMouseEvent',{type:'mouseMoved',x:coords.endX,y:coords.y,buttons:1});
+  await sleep(35);
+  const beforeRelease=await c.call("function(){const slider=document.querySelector('.prototype-payment-card .delete-slider');const thumb=slider?.querySelector('.r-card-archive-keyboard');return {progress:slider?getComputedStyle(slider).getPropertyValue('--p').trim():null,capture:Boolean(thumb?.hasPointerCapture(1)),transform:thumb?.style.transform||'',armed:Boolean(slider)}}");
+  assert(Number(beforeRelease.progress)>=.92,`fast pointer drag reached confirmation before release: ${JSON.stringify({coords,beforeRelease})}`);
   await c.send('Input.dispatchMouseEvent',{type:'mouseReleased',x:coords.endX,y:coords.y,button:'left',clickCount:1,buttons:0});
-  const pointerOutcome=await c.call("function(){const layer=document.querySelector('.r-card-archive-shred');return {slices:layer?.querySelectorAll('.r-card-archive-slice').length||0,active:Boolean(document.querySelector('.prototype-payment-card:not(.r-card-archive-ghost)'))}}");
-  assert(pointerOutcome.slices===9&&pointerOutcome.active,'fast pointerup commits archive while nine slices animate');
+  await waitFor("function(){const layer=document.querySelector('.r-card-archive-shred');return layer?.querySelectorAll('.r-card-archive-slice').length===9&&Boolean(document.querySelector('.prototype-payment-card:not(.r-card-archive-ghost)'))}",'fast pointerup begins nine-slice archive before removal');
   await shot('cards-archive-shred-fast-pointer-375');
   await waitFor("function(){return !document.querySelector('.r-card-archive-shred')&&Boolean(document.querySelector('.cards-archive .card-archive-row'))}",'pointer archive settles only after exit motion');
 
