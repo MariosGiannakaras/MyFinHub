@@ -87,6 +87,22 @@ try{
     await archiveCard(false,`${width}-${theme}`);
     await shot(`cards-archive-completed-${width}-${theme}`);
   }
+  console.log('Cards remediation QA: fast pointer drag uses latest progress rather than stale React state');
+  await viewport(375,812);await navigate('');
+  const armedForPointer=await c.call("function(){const card=document.querySelector('.prototype-payment-card:not(.r-card-archive-ghost)');const button=card?.querySelector('button[aria-label=\"Αρχειοθέτηση κάρτας\"]');button?.click();return Boolean(button)}");
+  assert(armedForPointer,'pointer archive can be armed');
+  await waitFor("function(){return Boolean(document.querySelector('.prototype-payment-card .r-card-archive-keyboard'))}",'pointer slider mounted');
+  const coords=await c.call("function(){const thumb=document.querySelector('.prototype-payment-card .r-card-archive-keyboard');const slider=thumb?.closest('.delete-slider');if(!thumb||!slider)return null;const a=thumb.getBoundingClientRect(),b=slider.getBoundingClientRect();return {startX:a.left+a.width/2,endX:b.right-12,y:a.top+a.height/2}}");
+  assert(coords&&coords.endX>coords.startX,'pointer slider has valid visible travel');
+  await c.send('Input.dispatchMouseEvent',{type:'mouseMoved',x:coords.startX,y:coords.y,buttons:0});
+  await c.send('Input.dispatchMouseEvent',{type:'mousePressed',x:coords.startX,y:coords.y,button:'left',clickCount:1,buttons:1});
+  await c.send('Input.dispatchMouseEvent',{type:'mouseMoved',x:coords.endX,y:coords.y,buttons:1});
+  await c.send('Input.dispatchMouseEvent',{type:'mouseReleased',x:coords.endX,y:coords.y,button:'left',clickCount:1,buttons:0});
+  const pointerOutcome=await c.call("function(){const layer=document.querySelector('.r-card-archive-shred');return {slices:layer?.querySelectorAll('.r-card-archive-slice').length||0,active:Boolean(document.querySelector('.prototype-payment-card:not(.r-card-archive-ghost)'))}}");
+  assert(pointerOutcome.slices===9&&pointerOutcome.active,'fast pointerup commits archive while nine slices animate');
+  await shot('cards-archive-shred-fast-pointer-375');
+  await waitFor("function(){return !document.querySelector('.r-card-archive-shred')&&Boolean(document.querySelector('.cards-archive .card-archive-row'))}",'pointer archive settles only after exit motion');
+
   await c.send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
   await viewport(375,812);await navigate('');await archiveCard(true);
   await c.send('Emulation.setEmulatedMedia',{features:[]});
