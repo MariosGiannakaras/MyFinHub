@@ -76,6 +76,7 @@ export function InteractivePaymentCard({
   const [deleteOffset,setDeleteOffset]=useState(0);
   const cardRef=useRef<HTMLElement>(null);
   const archivingRef=useRef(false);
+  const deleteProgressRef=useRef(0);
   const sliderRef=useRef<HTMLDivElement>(null);
   const theme=cardThemeClass(card);
   const visible=Boolean(revealed.pan||revealed.expiry||revealed.cvv);
@@ -101,7 +102,8 @@ export function InteractivePaymentCard({
     const current=revealed[field]||(await loadSecrets())?.[field];if(!current)return;
     try{await navigator.clipboard.writeText(current);setMessage(`${label} αντιγράφηκε.`)}catch{setMessage('Δεν ήταν δυνατή η αντιγραφή.')}
   };
-  const resetDelete=()=>{setDeleteOpen(false);setDeleteProgress(0);setDeleteOffset(0)};
+  const setArchiveProgress=(value:number)=>{const progress=Math.max(0,Math.min(1,value));deleteProgressRef.current=progress;setDeleteProgress(progress)};
+  const resetDelete=()=>{setDeleteOpen(false);setArchiveProgress(0);setDeleteOffset(0)};
   const commitArchive=async()=>{
     if(!onArchive||archiveDisabled||archivingRef.current)return;
     archivingRef.current=true;
@@ -122,7 +124,7 @@ export function InteractivePaymentCard({
     const ry=Math.max(-6.5,Math.min(6.5,(x-.5)*13));const rx=Math.max(-6.5,Math.min(6.5,-(y-.5)*13));element.style.transform=`perspective(1000px) rotateY(${ry}deg) rotateX(${rx}deg)`;
   };
   const resetTilt=()=>{if(cardRef.current)cardRef.current.style.transform='perspective(1000px) rotateY(0deg) rotateX(0deg)'};
-  const moveDelete=(clientX:number)=>{const el=sliderRef.current;if(!el)return;const rect=el.getBoundingClientRect();const max=Math.max(0,rect.width-47);const progress=Math.max(0,Math.min(1,(clientX-rect.left-19.5)/Math.max(1,rect.width-39)));setDeleteProgress(progress);setDeleteOffset(progress*max)};
+  const moveDelete=(clientX:number)=>{const el=sliderRef.current;if(!el)return;const rect=el.getBoundingClientRect();const max=Math.max(0,rect.width-47);const progress=Math.max(0,Math.min(1,(clientX-rect.left-19.5)/Math.max(1,rect.width-39)));setArchiveProgress(progress);setDeleteOffset(progress*max)};
 
   const number=visible&&revealed.pan?formatPan(revealed.pan):maskedPan(card);
   const shownExpiry=visible&&revealed.expiry?revealed.expiry:'••/••';
@@ -137,7 +139,7 @@ export function InteractivePaymentCard({
           <div className="card-toolbar">
             <button className="card-icon-btn card-icon-reveal" type="button" disabled={busy} aria-pressed={visible} aria-label={visible?'Απόκρυψη στοιχείων':'Εμφάνιση στοιχείων'} title={visible?'Απόκρυψη στοιχείων':'Εμφάνιση στοιχείων'} onClick={()=>void toggleReveal()}>{visible?<EyeOff/>:<Eye/>}</button>
             {(onEditDetails||onEditCard)?<button className="card-icon-btn card-icon-management" type="button" disabled={busy} aria-label={`Επεξεργασία κάρτας ${card.nickname}`} title="Επεξεργασία στοιχείων" onClick={()=>{if(onEditDetails)onEditDetails(card);else onEditCard?.(card)}}><Pencil/></button>:null}
-            {onArchive?<button className="card-icon-btn card-icon-management" type="button" disabled={busy||archiveDisabled} aria-label="Αρχειοθέτηση κάρτας" title="Αρχειοθέτηση κάρτας" onClick={()=>{setDeleteProgress(0);setDeleteOffset(0);setDeleteOpen(true)}}><Archive/></button>:null}
+            {onArchive?<button className="card-icon-btn card-icon-management" type="button" disabled={busy||archiveDisabled} aria-label="Αρχειοθέτηση κάρτας" title="Αρχειοθέτηση κάρτας" onClick={()=>{setArchiveProgress(0);setDeleteOffset(0);setDeleteOpen(true)}}><Archive/></button>:null}
           </div>
         </header>
         <div className="card-body">
@@ -148,7 +150,7 @@ export function InteractivePaymentCard({
             <CardNetworkMark network={card.network} detail={kindLabel(card)}/>
           </div>
         </div>
-        {deleteOpen?<div className="delete-confirm r-card-archive-confirm"><div className="delete-confirm-head"><div className="delete-confirm-copy"><b>Αρχειοθέτηση κάρτας;</b><small>Σύρε μέχρι τέρμα για επιβεβαίωση. Η κάρτα θα μεταφερθεί στο αρχείο και μπορεί να επανέλθει με τα ίδια στοιχεία.</small></div><button className="delete-cancel" type="button" aria-label="Ακύρωση αρχειοθέτησης" title="Ακύρωση αρχειοθέτησης" onClick={resetDelete}><X/></button></div><div ref={sliderRef} className="delete-slider" style={{'--p':deleteProgress} as React.CSSProperties}><span className="delete-slider-label">ΣΥΡΕ ΓΙΑ ΑΡΧΕΙΟΘΕΤΗΣΗ</span><button className="delete-slider-thumb r-card-archive-keyboard" type="button" aria-label="Σύρε για αρχειοθέτηση" title="Αρχειοθέτηση κάρτας" style={{transform:`translateX(${deleteOffset}px)`}} onClick={e=>{if(e.detail===0)void commitArchive()}} onPointerDown={e=>{e.currentTarget.setPointerCapture(e.pointerId);moveDelete(e.clientX)}} onPointerMove={e=>{if(e.currentTarget.hasPointerCapture(e.pointerId))moveDelete(e.clientX)}} onPointerUp={e=>{try{e.currentTarget.releasePointerCapture(e.pointerId)}catch{}if(deleteProgress>=.92){setDeleteProgress(1);void commitArchive()}else{setDeleteProgress(0);setDeleteOffset(0)}}} onPointerCancel={()=>{setDeleteProgress(0);setDeleteOffset(0)}}><Archive/><span className="sr-only">Αρχειοθέτηση</span></button></div></div>:null}
+        {deleteOpen?<div className="delete-confirm r-card-archive-confirm"><div className="delete-confirm-head"><div className="delete-confirm-copy"><b>Αρχειοθέτηση κάρτας;</b><small>Σύρε μέχρι τέρμα για επιβεβαίωση. Η κάρτα θα μεταφερθεί στο αρχείο και μπορεί να επανέλθει με τα ίδια στοιχεία.</small></div><button className="delete-cancel" type="button" aria-label="Ακύρωση αρχειοθέτησης" title="Ακύρωση αρχειοθέτησης" onClick={resetDelete}><X/></button></div><div ref={sliderRef} className="delete-slider" style={{'--p':deleteProgress} as React.CSSProperties}><span className="delete-slider-label">ΣΥΡΕ ΓΙΑ ΑΡΧΕΙΟΘΕΤΗΣΗ</span><button className="delete-slider-thumb r-card-archive-keyboard" type="button" disabled={busy} aria-label="Σύρε για αρχειοθέτηση" title="Αρχειοθέτηση κάρτας" style={{transform:`translateX(${deleteOffset}px)`}} onClick={e=>{if(e.detail===0)void commitArchive()}} onPointerDown={e=>{e.currentTarget.setPointerCapture(e.pointerId);moveDelete(e.clientX)}} onPointerMove={e=>{if(e.currentTarget.hasPointerCapture(e.pointerId))moveDelete(e.clientX)}} onPointerUp={e=>{try{e.currentTarget.releasePointerCapture(e.pointerId)}catch{}if(deleteProgressRef.current>=.92){setArchiveProgress(1);void commitArchive()}else{setArchiveProgress(0);setDeleteOffset(0)}}} onPointerCancel={()=>{setArchiveProgress(0);setDeleteOffset(0)}}><Archive/><span className="sr-only">Αρχειοθέτηση</span></button></div></div>:null}
         </>}
       </div>
     </article>
