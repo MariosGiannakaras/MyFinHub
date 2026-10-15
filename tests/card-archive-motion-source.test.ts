@@ -14,7 +14,10 @@ describe('card archive exit-motion regression #570',()=>{
     expect(commit).toContain('if(!onArchive||archiveDisabled||archivingRef.current)return;');
     expect(commit).toContain('archivingRef.current=false');
     expect(commit).toContain('catch{');
-    expect(debit).toContain('if(deleteProgress>=.92)');
+    expect(debit).toContain('if(deleteProgressRef.current>=.92)');
+    expect(debit).toContain('deleteProgressRef.current=progress');
+    expect(debit).toContain('setArchiveProgress(0)');
+    expect(debit).not.toContain('if(deleteProgress>=.92)');
     expect(debit).toContain('if(e.detail===0)void commitArchive()');
   });
 
