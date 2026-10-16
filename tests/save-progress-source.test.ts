@@ -46,6 +46,9 @@ describe('top-edge save feedback ownership',()=>{
     expect(qa).toContain('save-progress-error-1440-dark');
     expect(qa).toContain('save-progress-conflict-1440-dark');
     expect(qa).toContain('Emulation.setEmulatedMedia');
+    const legacy=read('scripts/ui-ux-hardening-qa.mjs');
+    expect(legacy).toContain('receipt-backed top progress pending');
+    expect(legacy).not.toContain('Boolean(document.querySelector(\'.persistence-toast.saving\'))');
     expect(qa).toContain('double queued save');
     expect(fixtures).toContain('__myfinhubQaReleaseSave');
     expect(runner).toContain("scripts/save-progress-qa.mjs");
