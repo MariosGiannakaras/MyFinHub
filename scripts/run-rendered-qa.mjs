@@ -16,6 +16,7 @@ const scripts=[
   {path:'scripts/ui-ux-hardening-qa.mjs',key:'ui-hardening',surface:'app-shell',profiles:['/tmp/myfinhub-ui-ux-qa-chrome']},
   {path:'scripts/ui-ux-completion-qa.mjs',key:'ui-completion',surface:'app-shell',profiles:['/tmp/myfinhub-ui-completion-qa-chrome']},
   {path:'scripts/ui-ux-runtime-qa.mjs',key:'ui-runtime',surface:'runtime',profiles:['/tmp/myfinhub-ui-runtime-qa-chrome']},
+  {path:'scripts/save-progress-qa.mjs',key:'save-progress',surface:'persistence',profiles:['/tmp/myfinhub-save-progress-qa-chrome']},
   {path:'scripts/ui-ux-credit-overlimit-qa.mjs',key:'credit-overlimit',surface:'credit',profiles:['/tmp/myfinhub-credit-overlimit-qa-chrome']},
   {path:'scripts/cards-remediation-qa.mjs',key:'cards-remediation',surface:'cards',profiles:['/tmp/myfinhub-cards-remediation-qa-chrome']},
   {path:'scripts/credit-stack-remediation-qa.mjs',key:'credit-stack-remediation',surface:'credit',profiles:['/tmp/myfinhub-credit-stack-remediation-qa-chrome']},

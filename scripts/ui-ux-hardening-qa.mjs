@@ -80,7 +80,7 @@ try{
   await screenshot('mobile-card-vault-cleanup-retry');
   await viewport(1440,1000);
   await navigate({page:'dashboard',save:'loading'},PAGE_HEADINGS.dashboard);assert(await c.eval("Boolean(document.querySelector('.persistence-toast.loading'))"),'loading persistence state');await screenshot('desktop-persistence-loading');
-  await navigate({page:'dashboard',save:'saving'},PAGE_HEADINGS.dashboard);assert(await c.eval("Boolean(document.querySelector('.persistence-toast.saving'))"),'saving persistence state');await screenshot('desktop-persistence-saving');
+  await navigate({page:'dashboard',save:'saving'},PAGE_HEADINGS.dashboard);await waitFor("function(){return document.querySelector('[data-save-progress=saving]')!==null}",'receipt-backed top progress pending');assert(await c.eval("(()=>{const bar=document.querySelector('[data-save-progress=saving]');if(!bar)return false;const rect=bar.getBoundingClientRect();const progress=bar.querySelector('[role=progressbar]');return rect.top===0&&rect.height>=3&&rect.height<=6&&progress?.getAttribute('aria-valuenow')===null&&!document.querySelector('.persistence-toast.saving')})()"),'saving state is a noncompleted top-edge bar without duplicate toast');await screenshot('desktop-persistence-saving');
   await navigate({page:'dashboard'},PAGE_HEADINGS.dashboard);await clickText('[data-qa-crash]','QA render failure');await waitFor("function(){return Boolean(document.querySelector('.workspace-error'))}",'page error boundary');assert(await c.eval("!document.querySelector('.workspace-error')?.textContent.includes('synthetic-render-failure')"),'error boundary hides raw exception');await screenshot('desktop-page-error-recovery');
 
   console.log('UI/UX QA: tooltip semantics, hover, touch behavior');

@@ -8,7 +8,7 @@ import { MfaScreen } from './components/MfaScreen';
 import { PageErrorBoundary } from './components/PageErrorBoundary';
 import { NotFoundPage } from './pages/NotFoundPage';
 import { PeriodControl } from './components/PeriodControl';
-import { PersistenceNotice } from './components/PersistenceNotice';
+
 import type { QuickPrefill } from './components/QuickAdd';
 import { useFinance } from './hooks/useFinance';
 import { useLocalDate } from './hooks/useLocalDate';
@@ -40,6 +40,7 @@ import type {
   ScheduledTransaction,
 } from './types';
 
+const PersistenceNotice = lazy(() => import('./components/PersistenceNotice').then((module) => ({ default: module.PersistenceNotice })));
 const CommandPalette = lazy(() => import('./components/CommandPalette').then((module) => ({ default: module.CommandPalette })));
 const ContextualQuickAdd = lazy(() => import('./components/ContextualQuickAdd').then((module) => ({ default: module.ContextualQuickAdd })));
 const ConfirmDialog = lazy(() => import('./components/ConfirmDialog').then((module) => ({ default: module.ConfirmDialog })));
@@ -363,8 +364,8 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
     : <SettingsPage data={data} asOf={today} accountFocusId={commandAccountId} accountFocusKey={commandAccountKey} filePath={finance.filePath} lastSavedAt={finance.lastSavedAt} activeTab={settingsTab} onActiveTabChange={navigateSettingsTab} onImport={finance.importData} onBackup={finance.createBackup} onSettings={(settings) => finance.update((current) => ({ ...current, state: { ...current.state, settings } }))} onFinanceDurably={finance.updateDurably} onTaxonomyOperation={updateTaxonomy}/>;
 
   return <>
-    <AppShell page={page} onPage={navigate} onQuickAdd={() => openGeneric('expense')} onCommand={openCommand} onRefresh={() => { void finance.reload(); }} onUndo={() => { finance.undo(); }} onRedo={() => { finance.redo(); }} canUndo={finance.canUndo} canRedo={finance.canRedo} history={finance.changeHistory} saveState={finance.saveState} filePath={finance.filePath} motionMode="full" userEmail={userEmail} onLogout={onLogout}>
-      <PersistenceNotice saveState={finance.saveState} errorMessage={finance.saveErrorMessage} onRecover={recover} cleanupPending={pendingCleanup.length} cleanupBusy={cleanupBusy} cleanupError={cleanupFailure} onRetryCleanup={retryCardCleanup}/>
+    <AppShell page={page} onPage={navigate} onQuickAdd={() => openGeneric('expense')} onCommand={openCommand} onRefresh={() => { void finance.reload(); }} onUndo={() => { finance.undo(); }} onRedo={() => { finance.redo(); }} canUndo={finance.canUndo} canRedo={finance.canRedo} history={finance.changeHistory} saveState={finance.saveState} savePending={finance.savePending} saveReceiptCount={finance.saveReceiptCount} filePath={finance.filePath} motionMode="full" userEmail={userEmail} onLogout={onLogout}>
+      {(finance.saveState==='error'||finance.saveState==='conflict'||pendingCleanup.length>0) ? <Suspense fallback={null}><PersistenceNotice saveState={finance.saveState} errorMessage={finance.saveErrorMessage} onRecover={recover} cleanupPending={pendingCleanup.length} cleanupBusy={cleanupBusy} cleanupError={cleanupFailure} onRetryCleanup={retryCardCleanup}/></Suspense> : null}
       {PERIOD_PAGES.has(page) ? <div className="period-row"><PeriodControl month={month} onChange={(next) => { setMonth(next); setMonthIsManual(true); }}/><span>Στοιχεία περιόδου</span></div> : null}
       {finance.saveState === 'loading' ? <PageSkeleton/> : <PageErrorBoundary resetKey={page} onDashboard={() => navigate('dashboard')}><Suspense fallback={<PageLoading/>}>{content}</Suspense></PageErrorBoundary>}
     </AppShell>

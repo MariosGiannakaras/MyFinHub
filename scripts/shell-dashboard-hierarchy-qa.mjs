@@ -61,8 +61,14 @@ try{
   await viewport(1440,1000,false);
 
   console.log('Shell/Dashboard hierarchy QA: persistence escalation');
-  await navigateDashboard({page:'dashboard',save:'error'},{charts:false});state=await c.eval(`(()=>({active:document.querySelector('.file-panel[data-save-state="error"]')?.classList.contains('is-active')||false,alert:document.querySelector('.persistence-notice.error[role="alert"]')?.textContent||''}))()`);assert(state.active&&state.alert.includes('Η αποθήκευση δεν ολοκληρώθηκε'),'save error remains explicit and actionable');
-  await navigateDashboard({page:'dashboard',save:'conflict'},{charts:false});state=await c.eval(`(()=>({active:document.querySelector('.file-panel[data-save-state="conflict"]')?.classList.contains('is-active')||false,alert:document.querySelector('.persistence-notice.conflict[role="alert"]')?.textContent||''}))()`);assert(state.active&&state.alert.includes('Υπάρχουν νεότερα δεδομένα'),'save conflict remains explicit and actionable');
+  await navigateDashboard({page:'dashboard',save:'error'},{charts:false});
+  await waitFor("function(){return Boolean(document.querySelector('[data-save-progress=error]')&&document.querySelector('.persistence-notice.error[role=alert] button'))}",'error line and recovery action');
+  state=await c.eval(`(()=>{const bar=document.querySelector('[data-save-progress="error"]'),notice=document.querySelector('.persistence-notice.error[role="alert"]'),rect=bar?.getBoundingClientRect();return {red:Boolean(bar&&rect?.top===0&&rect.height>=3&&rect.height<=6&&bar.querySelector('[role=progressbar]:not([aria-valuenow])')),alert:notice?.textContent||'',recovery:Boolean(notice?.querySelector('button'))}})()`);
+  assert(state.red&&state.recovery&&state.alert.includes('Η αποθήκευση δεν ολοκληρώθηκε'),'save error remains explicit, red and recoverable');
+  await navigateDashboard({page:'dashboard',save:'conflict'},{charts:false});
+  await waitFor("function(){return Boolean(document.querySelector('[data-save-progress=error]')&&document.querySelector('.persistence-notice.conflict[role=alert] button'))}",'conflict line and recovery action');
+  state=await c.eval(`(()=>{const bar=document.querySelector('[data-save-progress="error"]'),notice=document.querySelector('.persistence-notice.conflict[role="alert"]');return {red:Boolean(bar&&bar.querySelector('[role=progressbar]:not([aria-valuenow])')),alert:notice?.textContent||'',recovery:Boolean(notice?.querySelector('button'))}})()`);
+  assert(state.red&&state.recovery&&state.alert.includes('Υπάρχουν νεότερα δεδομένα'),'save conflict remains explicit, red and recoverable');
 
   console.log('Shell/Dashboard hierarchy QA: Planning remains the future-date domain');await c.send('Page.navigate',{url:urlFor({page:'planning',motion:'reduced'})});await waitFor("function(){return document.querySelector('#main-workspace h1')?.textContent==='Προγραμματισμός & πρόβλεψη ρευστότητας'}",'Planning heading');assert(!(await c.eval("Boolean(document.querySelector('.period-control'))")),'Planning does not inherit reporting period navigation');
 

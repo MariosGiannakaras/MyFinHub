@@ -1,0 +1,11 @@
+/* A single app-wide, non-blocking receipt-backed save indicator. */
+.save-progress-bar{position:fixed;inset:0 0 auto;z-index:12000;pointer-events:none;height:4px;overflow:hidden;isolation:isolate}
+.save-progress-track{height:100%;width:100%;overflow:hidden;background:transparent}
+.save-progress-fill{display:block;height:100%;width:100%;transform-origin:left;background:var(--accent,#2f6fed)}
+.save-progress-bar.saving .save-progress-fill{width:40%;animation:myfinhub-save-pending 1.25s ease-in-out infinite alternate;box-shadow:0 0 7px currentColor;color:var(--accent,#2f6fed)}
+.save-progress-bar.success .save-progress-fill{width:100%;background:var(--green,#187852)}
+.save-progress-bar.error .save-progress-fill{width:100%;background:repeating-linear-gradient(115deg,var(--red,#b32942) 0 13px,#e05b67 13px 19px);box-shadow:0 0 0 1px var(--red,#b32942)}
+@keyframes myfinhub-save-pending{from{transform:translateX(-100%)}to{transform:translateX(250%)}}
+.save-progress-bar.reduced .save-progress-fill{animation:none!important}
+.save-progress-bar.reduced.saving .save-progress-fill{transform:translateX(0);width:55%;background:repeating-linear-gradient(115deg,var(--accent,#2f6fed) 0 13px,transparent 13px 18px)}
+@media(prefers-reduced-motion:reduce){.save-progress-bar.saving .save-progress-fill{animation:none;transform:translateX(0);width:55%;background:repeating-linear-gradient(115deg,var(--accent,#2f6fed) 0 13px,transparent 13px 18px)}}
