@@ -1,22 +1,34 @@
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { SaveState } from '../hooks/useFinance';
 import { getDatabaseSaveSnapshot, subscribeDatabaseSaves } from '../lib/databaseSaveActivity';
 import { resolveSaveProgressStatus, transitionSaveProgress, type SaveProgressPhase } from '../lib/saveProgressModel';
 
-/** Real receipt-backed finance writes plus the app's independent DB write clients. */
-export function SaveProgressBar({saveState,reducedMotion=false}:{saveState:SaveState;reducedMotion?:boolean}){
+/** One shared app-wide indicator: never equate elapsed time or optimistic UI with a committed revision. */
+export function SaveProgressBar({saveState,savePending=false,saveReceiptCount=0,reducedMotion=false}:{saveState:SaveState;savePending?:boolean;saveReceiptCount?:number;reducedMotion?:boolean}){
   const requests=useSyncExternalStore(subscribeDatabaseSaves,getDatabaseSaveSnapshot,getDatabaseSaveSnapshot);
-  const status=resolveSaveProgressStatus(saveState,requests);
+  const status=resolveSaveProgressStatus(saveState,requests,savePending);
+  const confirmedReceipts=saveReceiptCount+requests.completion;
   const [phase,setPhase]=useState<SaveProgressPhase>(status==='saving'?'saving':status==='error'?'error':'idle');
+  const phaseRef=useRef<SaveProgressPhase>(phase);
+  const startedAtReceipt=useRef(confirmedReceipts);
 
-  useEffect(()=>{setPhase(previous=>transitionSaveProgress(previous,status))},[status,requests.completion]);
+  useEffect(()=>{
+    const previous=phaseRef.current;
+    if(status==='saving'&&previous!=='saving')startedAtReceipt.current=confirmedReceipts;
+    const newlyConfirmed=confirmedReceipts>startedAtReceipt.current;
+    const next=transitionSaveProgress(previous,status,newlyConfirmed);
+    if(status==='idle'&&next==='idle')startedAtReceipt.current=confirmedReceipts;
+    phaseRef.current=next;
+    setPhase(next);
+  },[status,confirmedReceipts]);
   useEffect(()=>{
     if(phase!=='success')return;
-    // Only the confirmed receipt's visual acknowledgement fades; never advance
-    // or complete the bar on a timer while any write is still pending.
-    const id=window.setTimeout(()=>setPhase(current=>current==='success'?'idle':current),1450);
+    // Hide only the AFTER-receipt acknowledgement; never time a pending write.
+    const id=window.setTimeout(()=>{
+      if(phaseRef.current==='success'){phaseRef.current='idle';setPhase('idle')}
+    },1450);
     return()=>window.clearTimeout(id);
-  },[phase,requests.completion]);
+  },[phase,confirmedReceipts]);
 
   if(phase==='idle')return null;
   const label=phase==='saving'?'Αποθήκευση σε εξέλιξη':phase==='success'?'Αποθηκεύτηκε στη βάση':saveState==='conflict'?'Σύγκρουση αλλαγών — δεν αποθηκεύτηκε':'Η αποθήκευση απέτυχε';

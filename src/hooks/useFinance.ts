@@ -38,6 +38,8 @@ export function useFinance() {
   const [filePath, setFilePath] = useState('');
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const [saveState, setSaveState] = useState<SaveState>('loading');
+  const [savePending,setSavePending]=useState(false);
+  const [saveReceiptCount,setSaveReceiptCount]=useState(0);
   const [saveErrorMessage,setSaveErrorMessage]=useState<string|null>(null);
   const [undoDepth, setUndoDepth] = useState(0);
   const [redoDepth, setRedoDepth] = useState(0);
@@ -98,6 +100,7 @@ export function useFinance() {
         setFilePath(res.filePath);
         setLastSavedAt(res.lastSavedAt);
         applyHistory(res.history);
+        setSaveReceiptCount(count=>count+1); // Server revision+history receipt confirmed.
         lastSaveFailed.current = false;
         setSaveErrorMessage(null);
         channelRef.current?.postMessage({ type: 'revision', revision: res.revision } satisfies RevisionMessage);
@@ -188,11 +191,14 @@ export function useFinance() {
     assignData(stamped);
     setSaveErrorMessage(null);
     setCurrentSaveState('saving');
+    setSavePending(true);
     const mutation={data:stamped,label};
     const receipt=requireReceipt?coordinator.enqueueWithReceipt(mutation):(coordinator.enqueue(mutation),null);
     const idle=coordinator.whenIdle();
     void idle.then(()=>{
-      if(!coordinator.hasWork()&&saveStateRef.current==='saving'&&!lastSaveFailed.current&&!exclusiveOperation.current&&historyAvailableRef.current)setCurrentSaveState('saved');
+      if(coordinator.hasWork())return; // A newer accepted write extends this save cycle.
+      setSavePending(false);
+      if(saveStateRef.current==='saving'&&!lastSaveFailed.current&&!exclusiveOperation.current&&historyAvailableRef.current)setCurrentSaveState('saved');
     });
     return receipt;
   }, [assignData, coordinator,setCurrentSaveState]);
@@ -232,6 +238,7 @@ export function useFinance() {
       applyDataEnvelope(res);
       applyHistory(res.history);
       setCurrentSaveState('saved');
+      setSaveReceiptCount(count=>count+1); // Acknowledged undo/redo history revision.
       channelRef.current?.postMessage({type:'revision',revision:res.revision} satisfies RevisionMessage);
       return true;
     }catch(error){
@@ -260,6 +267,7 @@ export function useFinance() {
         const consistent=historyMatchesRevision(nextHistory,res.revision);
         applyHistory(consistent?nextHistory:{...nextHistory,available:false});
         setCurrentSaveState(consistent&&nextHistory.available?'saved':'conflict');
+        if(consistent&&nextHistory.available)setSaveReceiptCount(count=>count+1);
         channelRef.current?.postMessage({ type: 'revision', revision: res.revision } satisfies RevisionMessage);
       } catch (error) {
         lastSaveFailed.current = true;
@@ -283,5 +291,5 @@ export function useFinance() {
   const canUndo = historyAvailable && undoDepth > 0 && saveState === 'saved' && !coordinator.hasWork();
   const canRedo = historyAvailable && redoDepth > 0 && saveState === 'saved' && !coordinator.hasWork();
 
-  return useMemo(() => ({ data, revision, filePath, lastSavedAt, saveState, saveErrorMessage, update, updateDurably, reload, undo, redo, canUndo, canRedo, undoDepth, redoDepth, changeHistory, historyAvailable, importData: doImport, createBackup: doBackup }), [data, revision, filePath, lastSavedAt, saveState, saveErrorMessage, update, updateDurably, reload, undo, redo, canUndo, canRedo, undoDepth, redoDepth, changeHistory, historyAvailable, doImport, doBackup]);
+  return useMemo(() => ({ data, revision, filePath, lastSavedAt, saveState, savePending, saveReceiptCount, saveErrorMessage, update, updateDurably, reload, undo, redo, canUndo, canRedo, undoDepth, redoDepth, changeHistory, historyAvailable, importData: doImport, createBackup: doBackup }), [data, revision, filePath, lastSavedAt, saveState, savePending, saveReceiptCount, saveErrorMessage, update, updateDurably, reload, undo, redo, canUndo, canRedo, undoDepth, redoDepth, changeHistory, historyAvailable, doImport, doBackup]);
 }

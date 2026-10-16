@@ -15,7 +15,8 @@ describe('receipt-driven top-edge save indicator',()=>{
     hold.resolve(2);expect(await write).toBe(2);
     expect(getDatabaseSaveSnapshot().pending).toBe(0);
     expect(resolveSaveProgressStatus('saved',getDatabaseSaveSnapshot())).toBe('idle');
-    expect(transitionSaveProgress('saving','idle')).toBe('success');
+    expect(transitionSaveProgress('saving','idle')).toBe('idle'); // no new receipt is not success
+    expect(transitionSaveProgress('saving','idle',true)).toBe('success');
     unsub();
   });
   it('keeps multiple independent database writes pending until the final response, including failure',async()=>{
@@ -27,13 +28,16 @@ describe('receipt-driven top-edge save indicator',()=>{
     second.reject(new Error('database rejected'));await expect(b).rejects.toThrow('database rejected');
     expect(getDatabaseSaveSnapshot().pending).toBe(0);
     expect(resolveSaveProgressStatus('saved',getDatabaseSaveSnapshot())).toBe('error');
-    expect(transitionSaveProgress('saving','error')).toBe('error');
+    expect(transitionSaveProgress('saving','error',true)).toBe('error');
   });
   it('does not show a false green after initial load or after conflict',async()=>{
     expect(transitionSaveProgress('idle','idle')).toBe('idle');
     expect(transitionSaveProgress('error','idle')).toBe('idle');
     expect(resolveSaveProgressStatus('conflict',{pending:0,failed:false,completion:0})).toBe('error');
     expect(resolveSaveProgressStatus('error',{pending:1,failed:false,completion:0})).toBe('error');
+    expect(resolveSaveProgressStatus('saved',{pending:0,failed:false,completion:0},true)).toBe('saving');
+    expect(resolveSaveProgressStatus('loading',{pending:0,failed:false,completion:0})).toBe('idle');
+    expect(transitionSaveProgress('saving','idle',false)).toBe('idle'); // reload cannot fabricate a green bar.
     const recovery=trackDatabaseWrite(async()=>undefined);await recovery;
     expect(getDatabaseSaveSnapshot().failed).toBe(false);
     expect(transitionSaveProgress('error','idle')).toBe('idle');

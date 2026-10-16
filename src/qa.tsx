@@ -529,7 +529,7 @@ function QaPersistenceProbe(){
   const finance=useFinance();
   if(!finance.data)return <main className="boot-screen" data-persistence-probe="loading">Φόρτωση persistence probe…</main>;
   const budget=finance.data.state.settings.monthlyBudget??0;
-  return <><SaveProgressBar saveState={finance.saveState}/><main className="boot-screen" data-persistence-probe="ready">
+  return <><SaveProgressBar saveState={finance.saveState} savePending={finance.savePending} saveReceiptCount={finance.saveReceiptCount}/><main className="boot-screen" data-persistence-probe="ready">
     <h1>Persistence QA probe</h1>
     <output data-persistence-state={finance.saveState}>{finance.saveState}</output>
     <output data-persistence-budget={budget}>{budget}</output>
