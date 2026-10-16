@@ -50,6 +50,7 @@ try{
   // Rapid consecutive saves must not create a false green gap after the first receipt.
   await callMode('held');await c.call("function(){document.querySelector('[data-persistence-mutate]')?.click();document.querySelector('[data-persistence-mutate]')?.click();return true}");
   await waitFor(phase('saving'),'double queued save pending');
+  await waitFor("function(){return (globalThis.__myfinhubQaPersistencePutCount?.()||0)===2}",'first queued HTTP PUT reaches held backend');
   assert(await release(),'release first of double queued save');
   await waitFor("function(){return (window.__myfinhubQaPersistencePutCount?.()||0)===3}",'second queued write begins after first');
   assert((await verifyTop()).value===null,'first receipt cannot complete while second pending');
