@@ -25,6 +25,19 @@ describe('top-edge save feedback ownership',()=>{
     expect(css).toContain('position:fixed;inset:0 0 auto');
     expect(css).toContain('prefers-reduced-motion:reduce');
   });
+  it('includes real sequential-finance browser probes for pending, success, error, conflict and rapid save sequences',()=>{
+    const qa=read('scripts/save-progress-qa.mjs');
+    const fixtures=read('src/qa.tsx');
+    const runner=read('scripts/run-rendered-qa.mjs');
+    expect(qa).toContain('save-progress-pending-375-light');
+    expect(qa).toContain('save-progress-success-375-light');
+    expect(qa).toContain('save-progress-error-1440-dark');
+    expect(qa).toContain('save-progress-conflict-1440-dark');
+    expect(qa).toContain('Emulation.setEmulatedMedia');
+    expect(qa).toContain('double queued save');
+    expect(fixtures).toContain('__myfinhubQaReleaseSave');
+    expect(runner).toContain("scripts/save-progress-qa.mjs");
+  });
   it('tracks auxiliary independent saves without treating secret reveal or refresh as persistence',()=>{
     const vault=read('src/lib/cardVaultClient.ts');
     expect(vault).toContain("trackDatabaseWrite(()=>request<{saved:true");

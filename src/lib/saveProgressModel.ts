@@ -1,4 +1,5 @@
-import type { SaveState } from '../hooks/useFinance.js';
+// Structural finance state type: keep the pure model independent of React hooks.
+type SaveState='loading'|'saved'|'saving'|'error'|'conflict';
 import type { DatabaseSaveSnapshot } from './databaseSaveActivity.js';
 
 export type SaveProgressStatus='idle'|'saving'|'error';

@@ -13,6 +13,7 @@ import { PageErrorBoundary } from './components/PageErrorBoundary';
 import { PersistenceNotice } from './components/PersistenceNotice';
 import type { QuickPrefill } from './components/QuickAdd';
 import { financeChangeLabel, useFinance, type ChangeHistoryEntry, type SaveState } from './hooks/useFinance';
+import { SaveProgressBar } from './components/SaveProgressBar';
 import { useSession } from './hooks/useSession';
 import type { AttentionItem } from './lib/attention';
 import { archiveCardRecord, withCardSecretCleanupPending, withCardSecretCleanupComplete } from './lib/cards';
@@ -62,20 +63,24 @@ const QA_PERSISTENCE_PROBE_SCREEN=new URLSearchParams(location.search).get('scre
 if(QA_PERSISTENCE_PROBE_SCREEN){
   const originalFetch=globalThis.fetch.bind(globalThis);
   const backend=qaFinanceData();
-  let mode:'success'|'offline'|'pending'='success';
+  let mode:'success'|'offline'|'pending'|'held'|'conflict'='success';
+  const heldResponses:Array<()=>void>=[];
   let revision=1;
   let putCount=0;
   const control=globalThis as typeof globalThis & {
-    __myfinhubQaPersistenceMode?:(next:'success'|'offline'|'pending')=>void;
+    __myfinhubQaPersistenceMode?:(next:'success'|'offline'|'pending'|'held'|'conflict')=>void;
+    __myfinhubQaReleaseSave?:()=>boolean;
     __myfinhubQaPersistencePutCount?:()=>number;
   };
   control.__myfinhubQaPersistenceMode=(next)=>{mode=next};
+  control.__myfinhubQaReleaseSave=()=>{const release=heldResponses.shift();if(!release)return false;release();return true};
   control.__myfinhubQaPersistencePutCount=()=>putCount;
   const history=()=>({
     available:true,generation:String(revision),financeRevision:String(revision),currentPointId:String(revision),
     canUndo:false,canRedo:false,undoDepth:0,redoDepth:0,
     points:[{id:String(revision),parentId:null,label:'QA persistence baseline',createdAt:'2026-08-17T12:00:00.000Z',current:true}],
   });
+  const savedReceipt=()=>{revision+=1;return new Response(JSON.stringify({revision:String(revision),filePath:'QA persistence backend',lastSavedAt:'2026-08-17T12:00:01.000Z',history:history()}),{status:200,headers:{'content-type':'application/json'}})};
   globalThis.fetch=async(input:RequestInfo|URL,init?:RequestInit)=>{
     const raw=typeof input==='string'?input:input instanceof URL?input.href:input.url;
     const url=new URL(raw,location.href);
@@ -89,8 +94,9 @@ if(QA_PERSISTENCE_PROBE_SCREEN){
       putCount+=1;
       if(mode==='offline')throw new TypeError('Synthetic offline finance save');
       if(mode==='pending')return await new Promise<Response>(()=>{});
-      revision+=1;
-      return new Response(JSON.stringify({revision:String(revision),filePath:'QA persistence backend',lastSavedAt:'2026-08-17T12:00:01.000Z',history:history()}),{status:200,headers:{'content-type':'application/json'}});
+      if(mode==='held')return await new Promise<Response>(resolve=>heldResponses.push(()=>resolve(savedReceipt())));
+      if(mode==='conflict')return new Response(JSON.stringify({code:'REVISION_CONFLICT',error:'QA write conflict'}),{status:409,headers:{'content-type':'application/json'}});
+      return savedReceipt();
     }
     return originalFetch(input,init);
   };
@@ -523,14 +529,14 @@ function QaPersistenceProbe(){
   const finance=useFinance();
   if(!finance.data)return <main className="boot-screen" data-persistence-probe="loading">Φόρτωση persistence probe…</main>;
   const budget=finance.data.state.settings.monthlyBudget??0;
-  return <main className="boot-screen" data-persistence-probe="ready">
+  return <><SaveProgressBar saveState={finance.saveState}/><main className="boot-screen" data-persistence-probe="ready">
     <h1>Persistence QA probe</h1>
     <output data-persistence-state={finance.saveState}>{finance.saveState}</output>
     <output data-persistence-budget={budget}>{budget}</output>
     <button type="button" data-persistence-mutate onClick={()=>finance.update(current=>({...current,state:{...current.state,settings:{...current.state.settings,monthlyBudget:(current.state.settings.monthlyBudget??0)+1}}}))}>Synthetic finance change</button>
     <button type="button" data-persistence-reload onClick={()=>{void finance.reload()}}>Reload persisted state</button>
     <PersistenceNotice saveState={finance.saveState} errorMessage={finance.saveErrorMessage} onRecover={()=>{void finance.reload()}}/>
-  </main>;
+  </main></>;
 }
 
 function QaSessionSignalProbe(){
