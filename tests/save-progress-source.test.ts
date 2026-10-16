@@ -19,6 +19,9 @@ describe('top-edge save feedback ownership',()=>{
     const css=read('src/styles/save-progress-bar.css');
     expect(shell).toContain('<SaveProgressBar saveState={saveState} savePending={savePending} saveReceiptCount={saveReceiptCount} reducedMotion={reduce}/>');
     expect(shell).not.toContain("?'Αποθηκεύτηκε'");
+    const app=read('src/App.tsx');
+    expect(app).toContain("const PersistenceNotice = lazy(() => import('./components/PersistenceNotice')");
+    expect(app).toContain("finance.saveState==='error'||finance.saveState==='conflict'||pendingCleanup.length>0");
     expect(notice).not.toContain('persistence-toast saving');
     expect(notice).not.toContain('Αποθηκεύτηκε');
     expect(notice).toContain('Φόρτωση τελευταίας έκδοσης');
