@@ -50,7 +50,7 @@ try{
     return c.call("function(){return document.querySelector('.prototype-payment-card:not(.r-card-archive-ghost)')?.style.transform||''}");
   };
   const tiltedDebit=await tiltCard();
-  assert(/rotateY\\(-?\\d+(?:\\.\\d+)?deg\\)/.test(tiltedDebit)&&!tiltedDebit.includes('rotateY(0deg)'),`debit pointer motion visibly rotates card: ${tiltedDebit}`);
+  assert(/rotateY\(-?\d+(?:\.\d+)?deg\)/.test(tiltedDebit)&&!tiltedDebit.includes('rotateY(0deg)'),`debit pointer motion visibly rotates card: ${tiltedDebit}`);
   await shot('cards-remediation-debit-mouse-tilt');
   await c.send('Input.dispatchMouseEvent',{type:'mouseMoved',x:5,y:5});
   await sleep(240);

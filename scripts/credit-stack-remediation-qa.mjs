@@ -51,7 +51,7 @@ try{
     return c.call("function(){return document.querySelector('#myfinhub-card-stack .stack-card.top [data-tilt]')?.style.transform||''}");
   };
   const creditTilt=await hoverCredit();
-  assert(/rotateY\\(-?\\d+(?:\\.\\d+)?deg\\)/.test(creditTilt)&&!creditTilt.includes('rotateY(0deg)'),`credit card follows real mouse hover: ${creditTilt}`);
+  assert(/rotateY\(-?\d+(?:\.\d+)?deg\)/.test(creditTilt)&&!creditTilt.includes('rotateY(0deg)'),`credit card follows real mouse hover: ${creditTilt}`);
   await shot('credit-stack-mouse-tilt');
   await c.send('Input.dispatchMouseEvent',{type:'mouseMoved',x:5,y:5});
   await sleep(240);
