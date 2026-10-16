@@ -35,6 +35,13 @@ describe('top-edge save feedback ownership',()=>{
     expect(bar).toContain('aria-valuenow={phase===\'success\'?100:undefined}');
     expect(css).toContain('position:fixed;inset:0 0 auto');
     expect(css).toContain('prefers-reduced-motion:reduce');
+    const hierarchy=read('scripts/shell-dashboard-hierarchy-qa.mjs');
+    expect(hierarchy).toContain('save error remains explicit, red and recoverable');
+    expect(hierarchy).toContain('save conflict remains explicit, red and recoverable');
+    expect(hierarchy).toContain("document.querySelector('[data-save-progress=error]')");
+    expect(hierarchy).not.toContain('.file-panel[data-save-state="error"]');
+    expect(hierarchy).not.toContain('.file-panel[data-save-state="conflict"]');
+
   });
   it('includes real sequential-finance browser probes for pending, success, error, conflict and rapid save sequences',()=>{
     const qa=read('scripts/save-progress-qa.mjs');
