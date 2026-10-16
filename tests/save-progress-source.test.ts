@@ -1,4 +1,5 @@
 import {readFileSync} from 'node:fs';
+import {execFileSync} from 'node:child_process';
 import {describe,expect,it} from 'vitest';
 const read=(path:string)=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 describe('top-edge save feedback ownership',()=>{
@@ -36,6 +37,7 @@ describe('top-edge save feedback ownership',()=>{
     const qa=read('scripts/save-progress-qa.mjs');
     const fixtures=read('src/qa.tsx');
     const runner=read('scripts/run-rendered-qa.mjs');
+    expect(()=>execFileSync(process.execPath,['--check','scripts/save-progress-qa.mjs'],{stdio:'pipe'})).not.toThrow();
     expect(qa).toContain('save-progress-pending-375-light');
     expect(qa).toContain('save-progress-success-375-light');
     expect(qa).toContain('save-progress-error-1440-dark');
