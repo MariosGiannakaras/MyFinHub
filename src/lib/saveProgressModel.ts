@@ -2,7 +2,7 @@
 type SaveState='loading'|'saved'|'saving'|'error'|'conflict';
 import type { DatabaseSaveSnapshot } from './databaseSaveActivity.js';
 
-export type SaveProgressStatus='idle'|'saving'|'error';
+type SaveProgressStatus='idle'|'saving'|'error';
 export type SaveProgressPhase='idle'|'saving'|'success'|'error';
 
 /** Failure has precedence over pending writes: never color a failed save green. */
