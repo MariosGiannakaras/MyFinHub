@@ -192,7 +192,7 @@ export function useFinance() {
     const receipt=requireReceipt?coordinator.enqueueWithReceipt(mutation):(coordinator.enqueue(mutation),null);
     const idle=coordinator.whenIdle();
     void idle.then(()=>{
-      if(!lastSaveFailed.current&&!exclusiveOperation.current&&historyAvailableRef.current)setCurrentSaveState('saved');
+      if(!coordinator.hasWork()&&saveStateRef.current==='saving'&&!lastSaveFailed.current&&!exclusiveOperation.current&&historyAvailableRef.current)setCurrentSaveState('saved');
     });
     return receipt;
   }, [assignData, coordinator,setCurrentSaveState]);

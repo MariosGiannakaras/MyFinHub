@@ -1,5 +1,6 @@
 import { notifyAuthExpired } from './authExpiry.js';
 import { ApiError, apiRequest } from './api.js';
+import { trackDatabaseWrite } from './databaseSaveActivity.js';
 import { readLocalCvv } from './localCvvVault.js';
 type CardVaultSecret={pan?:string;expiry?:string;cvv?:string};
 
@@ -53,12 +54,12 @@ export async function revealCardSecret(cardId:string):Promise<CardVaultSecret>{
 
 export async function saveCardSecret(cardId:string,secret:CardVaultSecret){
   // Runtime whitelist as well as TypeScript typing: arbitrary extra fields never reach the request.
-  return request<{saved:true;last4:string|null}>('PUT',{cardId,pan:secret.pan,expiry:secret.expiry,cvv:secret.cvv});
+  return trackDatabaseWrite(()=>request<{saved:true;last4:string|null}>('PUT',{cardId,pan:secret.pan,expiry:secret.expiry,cvv:secret.cvv}));
 }
 
 /** Explicit secret destruction only. Archiving a card must never call this. */
 export async function deleteCardSecret(cardId:string,requireCommittedDeletion=false){
-  return request<{deleted:true}>('DELETE',requireCommittedDeletion?{cardId,requireCommittedDeletion:true}:{cardId});
+  return trackDatabaseWrite(()=>request<{deleted:true}>('DELETE',requireCommittedDeletion?{cardId,requireCommittedDeletion:true}:{cardId}));
 }
 
 export function cardVaultErrorMessage(error:unknown){
