@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { CARD_TILT_REST, cardPointerTiltTransform } from '../src/lib/cardPointerTilt';
+import { CARD_TILT_REST, cardPointerTiltTransform } from '../src/lib/cardPointerTilt.js';
 
 const debit=readFileSync(new URL('../src/components/InteractivePaymentCard.tsx',import.meta.url),'utf8');
 const credit=readFileSync(new URL('../src/components/CanonicalCreditCardStack.tsx',import.meta.url),'utf8');
@@ -21,9 +21,10 @@ describe('owner-approved card pointer tilt preservation',()=>{
     expect(credit).toContain('baseRect=card.getBoundingClientRect()');
     for(const source of [debit,credit]){
       expect(source).toContain('cardPointerTiltAllowed(event.pointerType)');
-      expect(source).toContain("card.addEventListener('pointercancel',reset)".replace("card.addEventListener('pointercancel',reset)",source===debit?'onPointerCancel={resetTilt}':"card.addEventListener('pointercancel',reset)"));
       expect(source).toContain('CARD_TILT_REST');
       expect(source).toContain('cancelAnimationFrame(');
     }
+    expect(debit).toContain('onPointerCancel={resetTilt}');
+    expect(credit).toContain("card.addEventListener('pointercancel',reset)");
   });
 });
