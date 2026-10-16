@@ -25,6 +25,9 @@ describe('top-edge save feedback ownership',()=>{
     expect(app).toContain("finance.saveState==='error'||finance.saveState==='conflict'||pendingCleanup.length>0");
     expect(notice).not.toContain('persistence-toast saving');
     expect(notice).not.toContain('Αποθηκεύτηκε');
+    const frontend=read('scripts/frontend-qa.mjs');
+    expect(frontend).toContain('conflict recovery without duplicate Saved toast');
+    expect(frontend).not.toContain('persistence-notice.saved');
     expect(notice).toContain('Φόρτωση τελευταίας έκδοσης');
     expect(bar).toContain('role="progressbar"');
     expect(bar).toContain('confirmedReceipts=saveReceiptCount+requests.completion');
