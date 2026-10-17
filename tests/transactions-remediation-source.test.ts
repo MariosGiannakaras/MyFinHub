@@ -7,7 +7,7 @@ const qa=readFileSync(new URL('../scripts/transactions-scanability-qa.mjs',impor
 
 describe('Transactions post-v1.4 remediation contracts',()=>{
   it('keeps a bounded ledger/detail reading measure with readable wrapping',()=>{
-    expect(css).toContain('.transactions-approved-shell{display:grid;gap:10px;min-width:0;width:min(100%,1560px);margin-inline:auto}');
+    expect(css).toContain('.transactions-approved-shell{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;min-width:0;width:min(100%,1560px);margin-inline:auto}');
     expect(css).toContain('.transactions-approved-table td{height:auto;min-height:48px');
     expect(css).toContain('white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere');
     expect(css).toContain('@media(min-width:1400px){.transactions-approved-grid{grid-template-columns:minmax(0,1fr) minmax(320px,340px)}}');
