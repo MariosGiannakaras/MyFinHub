@@ -95,7 +95,7 @@ try{
   await navigate(`${baseUrl}?page=transactions&state=large`,1280,900);
   const large=await c.call("function(){const visible=[...document.querySelectorAll('.transactions-approved-table tbody .transaction-row')];const semantic=[...document.querySelectorAll('.transaction-semantic-table tbody .transaction-row')];const footer=document.querySelector('.transactions-ledger-footer')?.textContent||'';return {visible:visible.length,semantic:semantic.length,first:visible[0]?.textContent||'',footer,domRows:document.querySelectorAll('.transaction-row,.mobile-transaction-row').length,pager:Boolean(document.querySelector('.transactions-pagination,.transactions-page-size,.mobile-transaction-pagination')),overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+2}}");
   assert(large.visible>=40&&large.visible<=160&&large.semantic===large.visible,'large dataset first paint stays bounded while both semantic and visual rows match');
-  assert(large.footer.includes('από 1500')||/από 15\\d\\d/.test(large.footer),'large dataset shows truthful full transaction count');
+  assert(large.footer.includes('από 1500')||/από 15\d\d/.test(large.footer),'large dataset shows truthful full transaction count');
   assert(large.domRows<500&&!large.pager&&!large.overflow,'large continuous list has no pagination and bounded initial DOM');
   await c.call("function(){document.querySelector('.transactions-ledger-footer')?.scrollIntoView({block:'end'});return true}");
   await waitFor("function(previous){return document.querySelectorAll('.transactions-approved-table tbody .transaction-row').length>previous}",'continuous ledger reveals additional rows on scroll',[large.visible]);
