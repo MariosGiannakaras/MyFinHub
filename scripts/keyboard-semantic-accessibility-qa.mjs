@@ -185,7 +185,7 @@ try{
          const theme=await c.call("async function(){const mod=await import('/src/lib/theme.ts');mod.applyThemePreference('dark');return document.documentElement.dataset.theme}");
          assert(theme==='dark','Login dark mobile QA uses canonical theme');
          const eye=await c.call("function(){const node=document.querySelector('.login-password-toggle');const css=node?getComputedStyle(node):null;return {visible:Boolean(node),bg:css?.backgroundColor||'',height:node?.getBoundingClientRect().height||0}}");
-         assert(eye.visible&&eye.height>=40&&eye.bg==='rgba(0, 0, 0, 0)','Login password reveal stays a transparent accessible action, not a nested opaque card');
+         assert(eye.visible&&eye.height>=44&&eye.bg==='rgba(0, 0, 0, 0)',`Login reveal should be transparent with a 44px touch target: ${JSON.stringify(eye)}`);
          const shot=await c.send('Page.captureScreenshot',{format:'png',fromSurface:true});writeFileSync(`${evidenceDir}/login-mobile-dark-focused-field.png`,Buffer.from(shot.data,'base64'));
          await c.call("async function(){const mod=await import('/src/lib/theme.ts');mod.applyThemePreference('light');return true}");
        }
