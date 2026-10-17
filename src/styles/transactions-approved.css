@@ -35,7 +35,9 @@
 .transactions-approved-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,310px);gap:10px;align-items:stretch;min-width:0;width:100%;box-sizing:border-box}
 .transactions-approved-grid.detail-closed{grid-template-columns:minmax(0,1fr)}
 .transactions-ledger-panel,.transactions-detail-panel{min-width:0;max-width:100%;background:var(--surface);border:1px solid var(--line);box-shadow:var(--shadow-soft);border-radius:var(--radius-md);overflow:hidden}
-.transactions-approved-table-wrap{display:block;box-sizing:border-box;min-width:0;width:100%;max-width:100%;overflow-x:auto;overscroll-behavior-inline:contain}
+/* Keep the 900px readable ledger inside a scroll viewport without letting its intrinsic
+   width expand ancestor grid tracks at intermediate tablet breakpoints. */
+.transactions-approved-table-wrap{display:block;box-sizing:border-box;min-width:0;width:100%;max-width:100%;overflow-x:auto;overscroll-behavior-inline:contain;contain:inline-size}
 .transactions-approved-table{width:100%;min-width:900px;border-collapse:collapse;table-layout:auto;color:var(--text-secondary)}
 .transactions-approved-table th{height:38px;text-align:left;font-weight:760;color:var(--text-secondary);padding:0 8px;border-bottom:1px solid var(--chart-grid);background:var(--surface-inset);box-sizing:border-box}
 .transactions-approved-table th:first-child,.transactions-approved-table td:first-child{width:38px;text-align:center}
