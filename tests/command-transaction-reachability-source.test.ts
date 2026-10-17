@@ -32,7 +32,8 @@ describe('Command Palette source-to-selected-ledger reachability (DV-FB02/03)',(
     expect(app).toContain("url.searchParams.set('commandMonth',action.date.slice(0,7))");
     expect(qa).toContain("url.searchParams.set('commandMonth',action.date.slice(0,7))");
     expect(ledger).toContain("focusMonth!==month");
-    expect(ledger).toContain("setPage(Math.max(1,Math.floor(index/pageSize)+1))");
+    expect(ledger).toContain("setRenderLimit(Math.max(LEDGER_RENDER_BATCH,index+1))");
+    expect(ledger).toContain("const selectedIndex=rows.findIndex(row=>row.id===selectedId)");
     expect(ledger).toContain("setSelectedId(focusId);setDetailOpen(true)");
     // StrictMode replays mount effects. A one-time command URL must survive
     // that replay until the selected month/detail can be committed together.

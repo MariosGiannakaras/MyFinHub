@@ -562,7 +562,7 @@ function QaAuthScreen({screen,legacyError}:{screen:string;legacyError:boolean}){
       :screen==='mfa-enroll-error'
         ?'Δεν ήταν δυνατή η έναρξη ρύθμισης Authenticator. Δοκίμασε ξανά.'
         :'';
-    return <MfaScreen mode={enroll?'enroll':'challenge'} email="qa@example.invalid" error={error} onEnroll={async()=>({factorId:'qa-factor',qrCode:'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%22120%22/%3E',secret:'QA-ONLY-SECRET'})} onVerify={async()=>false} onLogout={async()=>{}}/>;
+    return <MfaScreen mode={enroll?'enroll':'challenge'} email="qa@example.invalid" error={error} onEnroll={async()=>({factorId:'qa-factor',qrCode:'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%22120%22/%3E',secret:'QA-ONLY-SECRET'})} onVerify={async(_code)=>{document.documentElement.dataset.qaMfaVerifyCount=String(Number(document.documentElement.dataset.qaMfaVerifyCount||'0')+1);return false}} onLogout={async()=>{}}/>;
   }
   return null;
 }

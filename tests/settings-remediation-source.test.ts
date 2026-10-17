@@ -44,8 +44,10 @@ describe('Settings post-v1.4 remediation contracts',()=>{
 
   it('bounds Settings workspace measure at wide desktop sizes',()=>{
     expect(css).toContain('.settings-tabs-page{gap:16px;width:min(100%,1680px);margin-inline:auto}');
-    expect(css).toContain('.settings-tab-panel{min-width:0;width:min(100%,1540px);margin-inline:auto}');
-    expect(css).toContain('width:min(100%,1320px);margin-inline:auto');
+    expect(css).toContain('.settings-tab-panel{min-width:0;width:min(100%,1540px);margin-inline:auto;box-sizing:border-box}');
+    expect(css).toContain('.settings-general-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start;width:100%;margin-inline:auto}');
+    expect(css).toContain('.settings-tab-panel>div{min-width:0;width:100%;max-width:100%;box-sizing:border-box}');
+    expect(rendered).toContain('tab frame and visible content keep identical width');
   });
 
   it('keeps support diagnostics out of the product-default baseline',()=>{

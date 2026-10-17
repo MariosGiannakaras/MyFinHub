@@ -6,9 +6,10 @@ const css=readFileSync(new URL('../src/styles/transactions-approved.css',import.
 const qa=readFileSync(new URL('../scripts/transactions-scanability-qa.mjs',import.meta.url),'utf8');
 
 describe('Transactions post-v1.4 remediation contracts',()=>{
-  it('keeps a bounded ledger/detail reading measure without changing the 14-row density',()=>{
-    expect(css).toContain('.transactions-approved-shell{display:grid;gap:10px;min-width:0;width:min(100%,1560px);margin-inline:auto}');
-    expect(css).toContain('.transactions-approved-table td{height:40px');
+  it('keeps a bounded ledger/detail reading measure with readable wrapping',()=>{
+    expect(css).toContain('.transactions-approved-shell{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;min-width:0;width:min(100%,1560px);margin-inline:auto}');
+    expect(css).toContain('.transactions-approved-table td{height:auto;min-height:48px');
+    expect(css).toContain('white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere');
     expect(css).toContain('@media(min-width:1400px){.transactions-approved-grid{grid-template-columns:minmax(0,1fr) minmax(320px,340px)}}');
   });
 
@@ -25,12 +26,18 @@ describe('Transactions post-v1.4 remediation contracts',()=>{
     expect(css).toContain('.transactions-detail-comment-row b{white-space:pre-line;color:var(--text-secondary)}');
   });
 
-  it('uses a moving pagination window that always includes the active page',()=>{
-    expect(page).toContain('const pageWindowSize=Math.min(pageCount,5)');
-    expect(page).toContain('const pageWindowStart=Math.max(1,Math.min(safePage-Math.floor(pageWindowSize/2),pageCount-pageWindowSize+1))');
-    expect(page).toContain('pageWindowStart+index');
-    expect(page).not.toContain('Array.from({length:Math.min(pageCount,5)},(_,index)=>index+1)');
-    expect(qa).toContain('active numeric page follows the moving pager window beyond page five');
+  it('renders a progressive continuous ledger without numeric pages or page-size controls',()=>{
+    expect(page).toContain('const LEDGER_RENDER_BATCH=28');
+    expect(page).toContain('const [renderLimit,setRenderLimit]=useState(LEDGER_RENDER_BATCH)');
+    expect(page).toContain('Math.max(LEDGER_RENDER_BATCH,count)+LEDGER_RENDER_BATCH');
+    expect(page).toContain('const visibleRows=rows.slice(');
+    expect(page).toContain('new IntersectionObserver(');
+    expect(page).toContain('desktopLoadRef');
+    expect(page).toContain('mobileLoadRef');
+    expect(page).toContain('Φόρτωση περισσότερων');
+    expect(page).not.toContain('transactions-pagination');
+    expect(page).not.toContain('transactions-page-size');
+    expect(qa).toContain('continuous ledger reveals additional rows on scroll');
   });
 
   it('keeps transaction-count month-over-month movement neutral',()=>{

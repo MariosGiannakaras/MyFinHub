@@ -55,6 +55,10 @@ describe('category budget and rule integration source contracts',()=>{
     expect(reports).toContain('budgetMonth={month}');
     expect(reports).toContain('asOf={asOf} budgetMonth={month}');
     expect(budgetEditor).toContain('budgetProgress(data,month,asOf)');
+    expect(reports).toContain('const budgetRows=useMemo(()=>budgetProgress(data,month,asOf),[data,month,asOf])');
+    expect(reports).toContain('budgetRows={budgetRows}');
+    expect(budgetEditor).toContain('budgetRows?:ReturnType<typeof budgetProgress>');
+    expect(budgetEditor).toContain('const budgets=budgetRows??budgetProgress(data,month,asOf)');
     expect(reports).toContain('onUpsertBudget={onUpsertBudget}');
     expect(reports).toContain('data-budget-overview');
     expect(reports).toContain('Πρόβλεψη τέλους μήνα');

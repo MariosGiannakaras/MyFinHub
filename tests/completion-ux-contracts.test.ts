@@ -52,15 +52,15 @@ describe('completion UX contracts',()=>{
     expect(fidelity).toContain('.dashboard-approved .approved-account-chart{min-width:0}');
   });
 
-  it('uses the existing bounded transaction page slice on mobile',()=>{
+  it('keeps bounded progressive transaction rows on mobile and desktop',()=>{
     const source=read('src/pages/TransactionsPage.tsx');
     expect(source).toContain('className="mobile-transaction-list"');
-    expect(source).toContain('{pageRows.map(r=>');
-    expect(source).toMatch(/transaction-semantic-table[\s\S]*?<tbody>\{pageRows\.map\(r=>/);
+    expect(source).toContain('{visibleRows.map(r=>');
+    expect(source).toMatch(/transaction-semantic-table[\s\S]*?<tbody>\{visibleRows\.map\(r=>/);
     expect(source).not.toContain('aria-label={`Κινήσεις για ${month}`}>{rows.map');
-    expect(source).toContain('className="mobile-transaction-pagination"');
-    expect(source).toContain('setQuery(e.target.value);setPage(1)');
-    expect(source).toContain('setSortDirection(value);setPage(1)');
+    expect(source).toContain('className="mobile-transaction-progress"');
+    expect(source).toContain('setQuery(e.target.value);setRenderLimit(LEDGER_RENDER_BATCH)');
+    expect(source).toContain('setSortDirection(value);setRenderLimit(LEDGER_RENDER_BATCH)');
   });
 
   it('renders lending history as semantic cards on phones instead of a squeezed table',()=>{
@@ -184,7 +184,10 @@ describe('completion UX contracts',()=>{
 
   it('keeps authentication password reveal touch-safe',()=>{
     const motion=read('src/styles/interaction-motion-states.css');
-    expect(motion).toContain('.login-password-toggle{width:40px;height:40px;min-width:40px;min-height:40px');
+    expect(motion).toContain('@keyframes rh-login-card-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}');
+    expect(motion).not.toContain('rh-login-card-in{from{opacity:0;transform:translateY(10px) scale(');
+    expect(motion).toContain('.login-password-toggle:active:not(:disabled){transform:none}');
+    expect(motion).toContain('.login-password-toggle{width:46px;height:46px;min-width:46px;min-height:46px');
   });
 
 
