@@ -33,6 +33,8 @@ describe('shared form-control branding',()=>{
     expect(controls).toContain('.app-input-shell:focus-within{border-color:var(--accent,var(--blue))!important;box-shadow:var(--focus)!important}');
     expect(auth).toContain('background:transparent;color:var(--text-secondary);font-size:var(--ux-small-size)');
     expect(auth).toContain('.login-input .login-password-toggle{border:0!important;background:transparent!important;box-shadow:none!important}');
+    expect(auth).toContain('.login-input .login-password-toggle:hover:not(:disabled){background:transparent!important;color:var(--accent,var(--blue))}');
+    expect(auth).toContain('.login-input .login-password-toggle:focus-visible{outline:2px solid var(--accent,var(--blue))!important');
     const keyboard=read('scripts/keyboard-semantic-accessibility-qa.mjs');
     expect(keyboard).toContain("const focusOwner=el.closest('.app-input-shell')");
     expect(keyboard).toContain('login-mobile-dark-focused-field.png');
