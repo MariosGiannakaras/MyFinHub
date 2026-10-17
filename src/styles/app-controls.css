@@ -6,6 +6,6 @@
 .app-input-shell>.app-control:-webkit-autofill{border-radius:0;-webkit-text-fill-color:var(--ink)!important;caret-color:var(--ink)}
 
 /* Composite field actions use the quiet variant and a full touch target. */
-.app-input-shell .app-input-shell-trailing>.icon-button-quiet{box-sizing:border-box;width:44px;min-width:44px;height:44px;min-height:44px;flex:0 0 44px;border:0!important;background:transparent!important;background-image:none!important;box-shadow:none!important}
+.app-input-shell .app-input-shell-trailing>.icon-button-quiet{box-sizing:border-box;width:44px;min-width:44px;height:44px;min-height:44px;flex:0 0 44px;border:0!important;background:transparent!important;background-image:none!important;box-shadow:none!important;transform:none!important}
 .app-input-shell .app-input-shell-trailing>.icon-button-quiet:hover:not(:disabled){background:transparent!important;background-image:none!important;color:var(--accent,var(--blue))!important}
 .app-input-shell .app-input-shell-trailing>.icon-button-quiet:focus-visible{outline:2px solid var(--accent,var(--blue))!important;outline-offset:-3px;box-shadow:none!important}

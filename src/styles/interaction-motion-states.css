@@ -44,9 +44,9 @@ button:disabled{cursor:not-allowed}
 .login-field{display:grid;gap:6px}
 .login-field>label{color:var(--ink-2);font-size:10px;font-weight:750;transition:color var(--motion-base) ease,transform var(--motion-fast) var(--ease-out)}
 .login-field:focus-within>label{transform:translateX(2px)}
-.login-password-toggle{width:40px;height:40px;min-width:40px;min-height:40px;border:0;border-radius:10px;background:transparent;color:var(--muted);display:grid;place-items:center;cursor:pointer;box-shadow:none;padding:0}
+.login-password-toggle{width:44px;height:44px;min-width:44px;min-height:44px;border:0;border-radius:10px;background:transparent;color:var(--muted);display:grid;place-items:center;cursor:pointer;box-shadow:none;padding:0}
 .login-password-toggle:hover:not(:disabled){background:rgba(47,111,237,.08);color:var(--blue-2)}
-.login-password-toggle:active:not(:disabled){transform:scale(.92)}
+.login-password-toggle:active:not(:disabled){transform:none}
 .login-field-hint{display:flex;align-items:center;gap:5px;color:#83530c;font-size:9.5px;font-weight:650;animation:rh-hint-in var(--motion-fast) var(--ease-out) both}
 .login-error{display:flex;align-items:flex-start;gap:8px;animation:rh-error-in 220ms var(--ease-out) both}
 .login-error svg{flex:0 0 auto;margin-top:1px}
@@ -96,7 +96,7 @@ button:disabled{cursor:not-allowed}
 
 /* Card banks use the shared bounded entrance; nested payment cards must not double animate. */
 
-@keyframes rh-login-card-in{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:none}}
+@keyframes rh-login-card-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 @keyframes rh-login-content-in{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
 @keyframes rh-hint-in{from{opacity:0;transform:translateY(-2px)}to{opacity:1;transform:none}}
 @keyframes rh-error-in{0%{opacity:0;transform:translateY(-3px)}55%{transform:translateX(2px)}100%{opacity:1;transform:none}}

@@ -37,6 +37,7 @@ describe('shared form-control branding',()=>{
     expect(read('src/components/LoginScreen.tsx')).toContain('variant="quiet" className="login-password-toggle"');
     expect(controls).toContain('.app-input-shell .app-input-shell-trailing>.icon-button-quiet{box-sizing:border-box;width:44px;min-width:44px;height:44px;min-height:44px;');
     expect(controls).toContain('.app-input-shell .app-input-shell-trailing>.icon-button-quiet:hover:not(:disabled){background:transparent!important;background-image:none!important;color:var(--accent,var(--blue))!important}');
+    expect(controls).toContain('box-shadow:none!important;transform:none!important}');
     expect(auth).toContain('.login-input .login-password-toggle:focus-visible{outline:2px solid var(--accent,var(--blue))!important');
     const keyboard=read('scripts/keyboard-semantic-accessibility-qa.mjs');
     expect(keyboard).toContain("const focusOwner=el.closest('.app-input-shell')");
