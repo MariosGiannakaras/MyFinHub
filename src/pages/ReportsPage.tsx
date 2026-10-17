@@ -49,7 +49,9 @@ export function ReportsPage({data,month,asOf,privacyVisible,onPrivacyVisibleChan
  const accounts=allAccounts(data).filter(account=>account.kind!=='credit');
  const accountIds=accounts.slice(0,4).map(account=>account.id);
  const accountSeries=primaryAccountSeries(data,month,accountIds,6,asOf);
- const budgetRows=budgetProgress(data,month,asOf);
+ // Budget aggregates must be computed once for the overview and management editor.
+ // Child busy/error/retry state must not rescan 1,500+ finance events.
+ const budgetRows=useMemo(()=>budgetProgress(data,month,asOf),[data,month,asOf]);
  const exceededBudgets=budgetRows.filter(row=>row.status==='exceeded').length;
  const nearBudgets=budgetRows.filter(row=>row.status==='near').length;
  const overallBudget=budgetRows.find(row=>row.scope==='overall')??null;
@@ -158,7 +160,7 @@ export function ReportsPage({data,month,asOf,privacyVisible,onPrivacyVisibleChan
      <div className="report-budget-attention" aria-label="Προϋπολογισμοί που χρειάζονται προσοχή"><div className="report-budget-attention-head"><span>Τι χρειάζεται προσοχή</span><small>Υψηλότερη χρήση πρώτα.</small></div>{budgetAttentionRows.map(row=><article key={row.id} className={`report-budget-attention-row ${row.status}`}><div><b>{row.scope==='overall'?'Συνολικό όριο':row.category}</b><small>{money.format(row.used)} / {money.format(row.limit)}</small></div><strong>{Math.round(row.ratio*100)}%</strong><div className="report-budget-meter"><i style={{width:`${Math.min(100,row.ratio*100)}%`}}/></div></article>)}</div>
     </div>
    </>:<div className="empty-state report-budget-empty"><b>Δεν υπάρχουν ενεργοί προϋπολογισμοί.</b><span>Πρόσθεσε συνολικό ή ανά κατηγορία όριο μόνο αν θέλεις να παρακολουθείς budget για αυτή την περίοδο.</span></div>}
-   <details id="report-budgets" data-budget-management className="report-budget-management"><summary>{budgetRows.length?'Διαχείριση προϋπολογισμών':'Ορισμός προϋπολογισμού'}</summary><BudgetRuleSettings data={data} asOf={asOf} budgetMonth={month} onUpsertBudget={onUpsertBudget} onDeleteBudget={onDeleteBudget}/></details>
+   <details id="report-budgets" data-budget-management className="report-budget-management"><summary>{budgetRows.length?'Διαχείριση προϋπολογισμών':'Ορισμός προϋπολογισμού'}</summary><BudgetRuleSettings data={data} asOf={asOf} budgetMonth={month} budgetRows={budgetRows} onUpsertBudget={onUpsertBudget} onDeleteBudget={onDeleteBudget}/></details>
   </section>
 
 
