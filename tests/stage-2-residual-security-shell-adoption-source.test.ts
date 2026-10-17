@@ -35,13 +35,14 @@ describe('Stage 2 residual security and shell action adoption',()=>{
     expect(login).not.toContain('<button type="button" className="login-password-toggle"');
   });
 
-  it('uses shared primary Button for MFA enrollment and verification while preserving auth guards',()=>{
+  it('uses shared primary Button for deliberate MFA enrollment while auto-verifying TOTP without weakening auth guards',()=>{
     expect(mfa).toContain("from './Button'");
-    expect(mfa.match(/<Button variant="primary"/g)).toHaveLength(2);
+    expect(mfa.match(/<Button variant="primary"/g)).toHaveLength(1);
     expect(mfa).toContain('<Button variant="primary" className="login-submit" type="button" disabled={busy} aria-busy={busy} onClick={startEnrollment}>');
-    expect(mfa).toContain('<Button variant="primary" className="login-submit" type="submit" disabled={busy || code.length !== 6}');
-    expect(mfa).toContain('if (busy || !/^\\d{6}$/.test(code)) return');
-    expect(mfa).toContain('await onVerify(code, enrollment?.factorId)');
+    expect(mfa).toContain("if (next.length !== 6) return");
+    expect(mfa).toContain('verificationInFlight.current = true');
+    expect(mfa).toContain('await onVerify(next, enrollment?.factorId)');
+    expect(mfa).not.toContain('type="submit"');
     expect(mfa).toContain('<Button variant="ghost" className="ghost-button login-logout" type="button" disabled={busy}');
     expect(mfa).not.toContain('<button className="ghost-button login-logout"');
     expect(mfa).not.toContain('primary-action');

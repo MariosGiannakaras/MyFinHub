@@ -1,7 +1,7 @@
 import { Camera, Check, FileImage, LoaderCircle, ReceiptText, ScanLine, Trash2, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AppDateInput } from './AppDateInput';
-import { AppSelectInput } from './AppSelectInput';
+
 import { AppTextInput } from './AppTextInput';
 import { Button } from './Button';
 import { CategorySelectInput } from './CategorySelectInput';
@@ -113,6 +113,7 @@ export function ReceiptInbox({
   const [reviewProposal,setReviewProposal]=useState<ReceiptProposal|null>(null);
   const [reviewTotal,setReviewTotal]=useState('');
   const [reviewDirty,setReviewDirty]=useState(false);
+  const [reviewTotalEdited,setReviewTotalEdited]=useState(false);
   const [reviewSaving,setReviewSaving]=useState(false);
   const cameraRef = useRef<HTMLInputElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -126,6 +127,7 @@ export function ReceiptInbox({
     setReviewProposal(proposal?{...proposal}:null);
     setReviewTotal(typeof proposal?.total==='number'?String(proposal.total):'');
     setReviewDirty(false);
+    setReviewTotalEdited(false);
   },[selected?.id,selected?.updatedAt]);
 
   const refresh = async (preferId?: string) => {
@@ -258,14 +260,17 @@ export function ReceiptInbox({
       merchant:reviewProposal.merchant?.trim()||undefined,
       date:reviewProposal.date||undefined,
       total:parsedTotal,
-      currency:reviewProposal.currency?.trim().toUpperCase()||undefined,
+      // OCR origin remains foreign until an owner explicitly supplies an EUR amount.
+      currency:reviewProposal.currency&&reviewProposal.currency!=='EUR'&&!reviewTotalEdited?reviewProposal.currency:'EUR',
       category:reviewProposal.category?.trim()||undefined,
+      subcategory:reviewProposal.subcategory?.trim()||undefined,
     } satisfies ReceiptProposal;
   };
   const saveReview=async(apply=false)=>{
     if(!selected||!reviewProposal||reviewSaving)return;
     const normalized=normalizedReview();
     if(!normalized){setError('Έλεγξε το διορθωμένο ποσό της απόδειξης.');return}
+    if(apply&&normalized.currency!=='EUR'){setError('Η απόδειξη είναι σε ξένο νόμισμα. Διόρθωσε πρώτα το ποσό σε ευρώ.');return}
     setReviewSaving(true);setError('');
     try{
       await saveReceiptProposal(selected.id,normalized);
@@ -284,6 +289,7 @@ export function ReceiptInbox({
   const reviewed=reviewProposal??proposal;
   const nonEur = Boolean(reviewed?.currency && reviewed.currency !== 'EUR');
   const reviewTotalInvalid=Boolean(reviewTotal.trim()&&(!Number.isFinite(Number(reviewTotal))||Number(reviewTotal)<0));
+  const needsEurTotal=nonEur&&!reviewTotalEdited;
   const scanning = Boolean(scanningId);
   const deleteCount=deleteRequest?.mode==='many'?deleteRequest.ids.length:1;
 
@@ -323,16 +329,16 @@ export function ReceiptInbox({
             {proposal&&reviewed ? <div className="receipt-proposal receipt-proposal-editable" aria-label="Έλεγχος και διόρθωση στοιχείων OCR"><div className="receipt-proposal-head"><div><h3>Έλεγχος πρότασης OCR</h3><small>Τα ποσοστά αφορούν την αρχική αναγνώριση. Οι διορθώσεις σου υπερισχύουν πριν περάσουν στη Γρήγορη Κίνηση.</small></div>{reviewDirty?<span>Μη αποθηκευμένες διορθώσεις</span>:<span className="saved">Τοπικά αποθηκευμένη</span>}</div><div className="receipt-review-grid">
               <label><span>Κατάστημα <small>OCR {confidenceLabel(proposal.confidence?.merchant)}</small></span><AppTextInput value={reviewed.merchant??''} maxLength={120} aria-label="Διόρθωση καταστήματος απόδειξης" onChange={event=>updateReview({merchant:event.target.value})}/></label>
               <label><span>Ημερομηνία <small>OCR {confidenceLabel(proposal.confidence?.date)}</small></span><div className="receipt-review-date"><AppDateInput value={reviewed.date??''} aria-label="Διόρθωση ημερομηνίας απόδειξης" onChange={event=>updateReview({date:event.target.value})}/>{reviewed.date?<Button type="button" variant="ghost" onClick={()=>updateReview({date:undefined})}>Καθαρισμός</Button>:null}</div></label>
-              <label><span>Σύνολο <small>OCR {confidenceLabel(proposal.confidence?.total)}</small></span><MoneyInput value={reviewTotal} invalid={reviewTotalInvalid} aria-label="Διόρθωση ποσού απόδειξης" onValueChange={value=>{setReviewTotal(value);setReviewDirty(true);setMessage('');setError('')}}/></label>
-              <label><span>Νόμισμα <small>OCR {confidenceLabel(proposal.confidence?.currency)}</small></span><AppSelectInput aria-label="Διόρθωση νομίσματος απόδειξης" value={reviewed.currency??''} onChange={event=>updateReview({currency:event.target.value||undefined})}><option value="">Δεν εντοπίστηκε</option><option value="EUR">EUR · Ευρώ</option><option value="USD">USD · Δολάριο ΗΠΑ</option><option value="GBP">GBP · Λίρα Αγγλίας</option></AppSelectInput></label>
-              <label className="receipt-review-category"><span>Κατηγορία <small>δική σου τελική επιλογή</small></span><CategorySelectInput settings={data.state.settings} kind="expense" category={reviewed.category??''} includeSubcategories={false} allowEmpty emptyLabel="Χωρίς κατηγορία" aria-label="Διόρθωση κατηγορίας απόδειξης" onChange={selection=>updateReview({category:selection.category||undefined})}/></label>
-            </div>{reviewTotalInvalid?<FormError id="receipt-review-total-error">Το ποσό πρέπει να είναι έγκυρος θετικός αριθμός.</FormError>:null}{nonEur ? <div className="receipt-currency-warning" role="alert">Η απόδειξη έχει επιλεγμένο νόμισμα {reviewed.currency}. Το MyFinHub παραμένει EUR-only, οπότε το ποσό δεν θα συμπληρωθεί αυτόματα αν δεν το διορθώσεις σε EUR.</div> : null}</div> : <div className="receipt-proposal receipt-proposal-empty"><ScanLine size={22}/><b>Δεν έχει γίνει ακόμη OCR</b><span>Η φωτογραφία είναι ήδη ασφαλώς αποθηκευμένη τοπικά. Η σάρωση είναι προαιρετική και μπορεί να γίνει αργότερα.</span></div>}
+              <label><span>Σύνολο <small>OCR {confidenceLabel(proposal.confidence?.total)}</small></span><MoneyInput value={reviewTotal} invalid={reviewTotalInvalid} aria-label="Διόρθωση ποσού απόδειξης" onValueChange={value=>{setReviewTotal(value);setReviewTotalEdited(true);setReviewDirty(true);setMessage('');setError('')}}/></label>
+
+              <label className="receipt-review-category"><span>Κατηγορία <small>δική σου τελική επιλογή</small></span><CategorySelectInput settings={data.state.settings} kind="expense" category={reviewed.category??''} subcategory={reviewed.subcategory??''} allowEmpty emptyLabel="Χωρίς κατηγορία" aria-label="Διόρθωση κατηγορίας ή υποκατηγορίας απόδειξης" onChange={selection=>updateReview({category:selection.category||undefined,subcategory:selection.subcategory||undefined})}/></label>
+            </div>{reviewTotalInvalid?<FormError id="receipt-review-total-error">Το ποσό πρέπει να είναι έγκυρος θετικός αριθμός.</FormError>:null}{needsEurTotal ? <div className="receipt-currency-warning" role="alert">Το OCR αναγνώρισε {reviewed.currency} στην απόδειξη. Η καταχώριση γίνεται μόνο σε €. Διόρθωσε το ποσό σε ευρώ πριν συνεχίσεις.</div> : null}</div> : <div className="receipt-proposal receipt-proposal-empty"><ScanLine size={22}/><b>Δεν έχει γίνει ακόμη OCR</b><span>Η φωτογραφία είναι ήδη ασφαλώς αποθηκευμένη τοπικά. Η σάρωση είναι προαιρετική και μπορεί να γίνει αργότερα.</span></div>}
             <div className="receipt-review-actions">
               <Button type="button" variant="secondary" className="danger" disabled={scanning} onClick={() => requestRemoveOne(selected)}><Trash2 size={16}/> Διαγραφή</Button>
               {!scanning ? <Button type="button" variant="secondary" onClick={() => void scan(selected)}><ScanLine size={16}/> {selected.status === 'ready' ? 'Νέα σάρωση' : 'Σάρωση τώρα'}</Button> : null}
               <Button type="button" variant="secondary" disabled={scanning} onClick={() => onApply(selected.id, {})}>Χειροκίνητη καταχώριση</Button>
               {proposal ? <Button type="button" variant="secondary" disabled={scanning||reviewSaving||!reviewDirty||reviewTotalInvalid} onClick={()=>void saveReview(false)}>Αποθήκευση διορθώσεων</Button> : null}
-              {proposal ? <Button type="button" variant="primary" disabled={scanning||reviewSaving||reviewTotalInvalid} onClick={()=>void saveReview(true)}><Check size={16}/> Χρήση στη Γρήγορη Κίνηση</Button> : null}
+              {proposal ? <Button type="button" variant="primary" disabled={scanning||reviewSaving||reviewTotalInvalid||needsEurTotal} onClick={()=>void saveReview(true)}><Check size={16}/> Χρήση στη Γρήγορη Κίνηση</Button> : null}
             </div>
           </> : <div className="receipt-empty receipt-empty-main"><ReceiptText size={28}/><b>Γρήγορη λήψη, έλεγχος αργότερα</b><span>Η αποθήκευση είναι ανεξάρτητη από το OCR. Μόλις εμφανιστεί «Αποθηκεύτηκε για αργότερα», μπορείς να κλείσεις την εφαρμογή.</span></div>}
         </div>

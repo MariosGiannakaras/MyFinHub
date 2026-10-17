@@ -60,6 +60,7 @@ export function ReceiptAwareQuickAdd({
       note: receiptProposal?.merchant ?? '',
       amount: explicitNonEur ? 0 : (receiptProposal?.total ?? 0),
       category: receiptProposal?.category,
+      subcategory: receiptProposal?.subcategory,
     };
   }, [receiptDraftId, receiptProposal]);
 

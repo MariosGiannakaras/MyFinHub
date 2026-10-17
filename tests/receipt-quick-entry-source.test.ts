@@ -36,10 +36,15 @@ describe('receipt to Quick Entry contract',()=>{
     expect(bridge).not.toMatch(/onClose[^\n]*deleteReceiptDraft/);
   });
 
-  it('passes receipt date into the existing QuickAdd and blocks silent non-EUR amount prefill',()=>{
+  it('passes receipt date and full category path into QuickAdd while blocking silent non-EUR prefill',()=>{
     expect(bridge).toContain("receiptProposal?.currency && receiptProposal.currency !== 'EUR'");
     expect(bridge).toContain('amount: explicitNonEur ? 0');
     expect(bridge).toContain('asOf={receiptProposal?.date ?? asOf}');
+    expect(bridge).toContain('subcategory: receiptProposal?.subcategory');
+    expect(inbox).not.toContain('Διόρθωση νομίσματος απόδειξης');
+    expect(inbox).toContain("currency:reviewProposal.currency&&reviewProposal.currency!=='EUR'&&!reviewTotalEdited?reviewProposal.currency:'EUR'");
+    expect(inbox).toContain('disabled={scanning||reviewSaving||reviewTotalInvalid||needsEurTotal}');
+    expect(inbox).toContain('subcategory={reviewed.subcategory??\'\'}');
     expect(bridge).toContain("initialKind={receiptDraftId ? 'expense' : initialKind}");
   });
 });
