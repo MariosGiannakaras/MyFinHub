@@ -3,17 +3,18 @@
 .login-brand{display:flex;align-items:center;gap:13px}
 .login-brand img{width:58px;height:58px;border-radius:18px;box-shadow:0 3px 10px rgba(24,45,78,.08)}
 .login-brand small{color:var(--muted);font-size:10px}
-.login-shield{display:flex;align-items:center;gap:9px;width:max-content;max-width:100%;padding:9px 11px;border-radius:12px;background:rgba(47,111,237,.08);color:var(--blue-2);font-size:10px;font-weight:700}
+.login-shield{display:flex;align-items:center;gap:9px;width:max-content;max-width:100%;padding:0;border:0;border-radius:0;background:transparent;color:var(--text-secondary);font-size:var(--ux-small-size);font-weight:700;line-height:1.45}
+.login-shield svg{flex:0 0 auto;color:var(--accent,var(--blue))}
 .login-card h1{margin:0 0 6px;font-size:28px;letter-spacing:-.04em}
-.login-card p{margin:0;color:var(--muted);font-size:12px;line-height:1.55}
+.login-card p{margin:0;color:var(--text-secondary);font-size:var(--ux-small-size);line-height:1.55}
 .login-form{display:grid;gap:14px}
-.login-form label{display:grid;gap:6px;color:var(--ink-2);font-size:10px;font-weight:750}
+.login-form label{display:grid;gap:6px;color:var(--ink-2);font-size:var(--ux-small-size);font-weight:750}
 .login-submit{width:100%;min-height:44px;margin-top:2px;color:#fff!important;-webkit-text-fill-color:#fff;font-size:12px;line-height:1.2}
 .login-submit-label{display:inline-block;color:#fff;-webkit-text-fill-color:#fff;font-weight:750;opacity:1}
 .login-submit:disabled{opacity:.65;cursor:wait;transform:none}
 .login-submit:disabled .login-submit-label{opacity:1}
 .login-error{border:1px solid rgba(214,64,88,.18);background:rgba(214,64,88,.07);color:#b32942;border-radius:12px;padding:10px 11px;font-size:10px;line-height:1.45}
-.login-footnote{color:var(--muted);font-size:9px;line-height:1.5}
+.login-footnote{color:var(--text-secondary);font-size:var(--ux-tiny-size);line-height:1.5}
 .mfa-setup{display:grid;justify-items:center;gap:14px;padding:16px;border-radius:18px;text-align:center}
 .mfa-qr{width:min(220px,75vw);height:auto;border-radius:12px;background:#fff;padding:8px}
 .mfa-setup>div{display:grid;gap:7px;color:var(--ink-2);font-size:10px;line-height:1.45;max-width:100%}
@@ -26,3 +27,8 @@
 .session-error-banner{position:fixed;z-index:120;left:50%;bottom:22px;transform:translateX(-50%);width:min(520px,calc(100% - 28px));border:1px solid rgba(214,64,88,.22);background:rgba(255,245,247,.97);color:#9f263a;border-radius:14px;padding:11px 14px;box-shadow:0 12px 34px rgba(15,34,62,.18);font-size:10px;line-height:1.45;text-align:center}
 @media(max-width:680px){.session-error-banner{bottom:calc(88px + env(safe-area-inset-bottom,0px))}}
 @media(max-width:520px){.login-screen{padding:14px}.login-card{padding:20px;border-radius:23px}.login-brand img{width:52px;height:52px}}
+
+/* Password reveal is an integrated field action, not a second raised card. */
+.login-input .login-password-toggle{border:0!important;background:transparent!important;box-shadow:none!important}
+.login-input .login-password-toggle:focus-visible{outline:2px solid var(--accent,var(--blue))!important;outline-offset:-3px;box-shadow:none!important}
+.login-input .login-password-toggle:hover:not(:disabled){background:var(--accent-soft)!important}
