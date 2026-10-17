@@ -63,6 +63,10 @@ try{
  const target=await fetch(`http://127.0.0.1:${activePort}/json/new?${encodeURIComponent('about:blank')}`,{method:'PUT'}).then(response=>response.json());
  c=new Cdp(target.webSocketDebuggerUrl);await c.open();await c.send('Page.enable');await c.send('Runtime.enable');
  const waitFor=async(fn,label,args=[])=>{for(let i=0;i<120;i++){if(await c.call(fn,args))return;await sleep(75)}throw new Error(`Timed out waiting for ${label}`)};
+ const waitForAuthMotion=async(label)=>{
+   await waitFor("function(){const card=document.querySelector('.login-card');return !card||[...card.getAnimations({subtree:true})].filter(animation=>/^rh-login-(card|content)-in$/.test(animation.animationName||'')).every(animation=>animation.playState!=='running')}",label);
+   await c.call("function(){return new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))}");
+ };
  const viewport=(width,height,mobile=false)=>c.send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile});
  const navigate=async(page,heading,width,height,mobile)=>{await viewport(width,height,mobile);const url=new URL(baseUrl);url.searchParams.set('page',page);url.searchParams.set('motion','reduced');await c.send('Page.navigate',{url:url.href});await waitFor("function(text){return (document.querySelector('#main-workspace h1')?.textContent||'').includes(text)}",`${page} heading`,[heading]);await sleep(80)};
  const shot=async name=>{const image=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(image.data,'base64'))};
@@ -186,6 +190,7 @@ try{
          assert(theme==='dark','Login dark mobile QA uses canonical theme');
          const eye=await c.call("function(){const node=document.querySelector('.login-password-toggle');const css=node?getComputedStyle(node):null;return {visible:Boolean(node),bg:css?.backgroundColor||'',height:node?.getBoundingClientRect().height||0}}");
          assert(eye.visible&&eye.height>=44&&eye.bg==='rgba(0, 0, 0, 0)',`Login reveal should be transparent with a 44px touch target: ${JSON.stringify(eye)}`);
+         await waitForAuthMotion('mobile dark Login entrance settled before focus screenshot');
          const shot=await c.send('Page.captureScreenshot',{format:'png',fromSurface:true});writeFileSync(`${evidenceDir}/login-mobile-dark-focused-field.png`,Buffer.from(shot.data,'base64'));
          await c.call("async function(){const mod=await import('/src/lib/theme.ts');mod.applyThemePreference('light');return true}");
        }
@@ -211,6 +216,7 @@ try{
      }
      if(screen==='mfa'&&!error&&mode==='mobile'){
        await c.call("async function(){const mod=await import('/src/lib/theme.ts');mod.applyThemePreference('dark');return true}");
+       await waitForAuthMotion('mobile dark MFA entrance settled before screenshot');
        const shot=await c.send('Page.captureScreenshot',{format:'png',fromSurface:true});writeFileSync(`${evidenceDir}/mfa-mobile-dark.png`,Buffer.from(shot.data,'base64'));
        await c.call("async function(){const mod=await import('/src/lib/theme.ts');mod.applyThemePreference('light');return true}");
      }

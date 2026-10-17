@@ -43,6 +43,11 @@ describe('shared form-control branding',()=>{
     expect(keyboard).toContain("const focusOwner=el.closest('.app-input-shell')");
     expect(keyboard).toContain('login-mobile-dark-focused-field.png');
     expect(keyboard).toContain('mfa-mobile-dark.png');
+    expect(keyboard).toContain("waitForAuthMotion('mobile dark Login entrance settled before focus screenshot')");
+    expect(keyboard).toContain("waitForAuthMotion('mobile dark MFA entrance settled before screenshot')");
+    const finalScreenshots=read('scripts/final-screenshots-qa.mjs');
+    expect(finalScreenshots).toContain("'auth entrance motion settled before final capture'");
+    expect(finalScreenshots).toContain("animation.playState!=='running'");
     const owned=read('src/styles/owned-entry-popovers.css');
     expect(owned).toContain('background:var(--surface-selected,var(--accent-soft));color:var(--accent,var(--blue))');
     const buttons=read('src/styles/settings-form-actions-base.css');

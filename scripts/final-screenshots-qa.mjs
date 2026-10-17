@@ -108,7 +108,8 @@ try{
     await c.send('Page.navigate',{url:url.href});
     await waitFor("function(){return document.readyState==='complete'&&Boolean(document.querySelector('.login-card h1'))}",[],screen);
     await applyTheme(activeTheme);
-    await sleep(220);
+    await waitFor("function(){const card=document.querySelector('.login-card');return !card||[...card.getAnimations({subtree:true})].filter(animation=>/^rh-login-(card|content)-in$/.test(animation.animationName||'')).every(animation=>animation.playState!=='running')}",[],'auth entrance motion settled before final capture');
+    await c.call("function(){return new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))}");
   };
   const navigateUtility=async(screen)=>{
     const url=new URL(baseUrl);url.searchParams.set('screen',screen);url.searchParams.set('visual','1');
