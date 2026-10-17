@@ -18,6 +18,38 @@ describe('privacy-safe user change descriptions',()=>{
     expect(label).not.toContain('PRIVATE NOTE');
   });
 
+  it('keeps first-add, first-delete and first-edit history precedence with many event ids',()=>{
+    const before=qaFinanceData();
+    const left=Array.from({length:1500},(_,index)=>event(`bulk-${index}`));
+    before.state.events=left;
+    const inserted=event('bulk-new');
+    const added={...before,state:{...before.state,events:[...left,inserted]}};
+    expect(describeFinanceChange(before,added)).toContain('Νέα οικονομική κίνηση');
+    const removed={...before,state:{...before.state,events:left.slice(1)}};
+    expect(describeFinanceChange(before,removed)).toContain('Διαγραφή οικονομικής κίνησης');
+    const changed={...before,state:{...before.state,events:left.map((row,index)=>index===1499?{...row,amount:21.5,note:'DO NOT REVEAL SECRET'}:row)}};
+    const label=describeFinanceChange(before,changed);
+    expect(label).toContain('Επεξεργασία οικονομικής κίνησης');
+    expect(label).not.toContain('DO NOT REVEAL');
+  });
+
+  it('bounds change-label id lookups linearly on 1500+ events',()=>{
+    const before=qaFinanceData();
+    let idReads=0;
+    before.state.events=Array.from({length:1500},(_,index)=>{
+      const row=event(`bulk-${index}`);
+      Object.defineProperty(row,'id',{enumerable:true,configurable:true,get(){idReads++;return `bulk-${index}`;}});
+      return row;
+    });
+    const after={...before,state:{...before.state,events:[...before.state.events,event('bulk-1500')]}};
+    const label=describeFinanceChange(before,after);
+    expect(label).toContain('Νέα οικονομική κίνηση');
+    expect(label).not.toContain('PRIVATE NOTE');
+    // Quadratic find/some traversals exceed two million lookups on 1500 rows.
+    // The indexed algorithm uses linear scans while preserving safe labels.
+    expect(idReads).toBeLessThan(12000);
+  });
+
   it('shows safe previous → new values for event edits and hides changed notes',()=>{
     const before=qaFinanceData();before.state.events=[...(before.state.events??[]),event()];const after=clone(before);after.state.events=after.state.events!.map((row:FinanceEvent)=>row.id==='history-event'?{...row,amount:21.5,date:'2026-08-22',note:'SECOND SECRET NOTE',legs:[{accountId:'piraeus-payroll',amount:-21.5}]}:row);
     const label=describeFinanceChange(before,after);
