@@ -31,7 +31,7 @@
 /* Password reveal is an integrated field action, not a second raised card. */
 .login-input .login-password-toggle{border:0!important;background:transparent!important;box-shadow:none!important}
 .login-input .login-password-toggle:focus-visible{outline:2px solid var(--accent,var(--blue))!important;outline-offset:-3px;box-shadow:none!important}
-.login-input .login-password-toggle:hover:not(:disabled){background:var(--accent-soft)!important}
+.login-input .login-password-toggle:hover:not(:disabled){background:transparent!important;color:var(--accent,var(--blue))}
 
 /* Automatic TOTP verification is explicit, accessible and low-noise. */
 .mfa-auto-status{display:flex;align-items:center;gap:8px;min-height:28px;color:var(--text-secondary);font-size:var(--ux-small-size);line-height:1.4}
