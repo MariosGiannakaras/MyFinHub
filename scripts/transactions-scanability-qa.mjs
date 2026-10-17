@@ -95,12 +95,18 @@ try{
   await navigate(`${baseUrl}?page=transactions&state=large`,1280,900);
   const large=await c.call("function(){const visible=[...document.querySelectorAll('.transactions-approved-table tbody .transaction-row')];const semantic=[...document.querySelectorAll('.transaction-semantic-table tbody .transaction-row')];const footer=document.querySelector('.transactions-ledger-footer')?.textContent||'';return {visible:visible.length,semantic:semantic.length,first:visible[0]?.textContent||'',footer,domRows:document.querySelectorAll('.transaction-row,.mobile-transaction-row').length,pager:Boolean(document.querySelector('.transactions-pagination,.transactions-page-size,.mobile-transaction-pagination')),overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+2}}");
   assert(large.visible>=40&&large.visible<=160&&large.semantic===large.visible,'large dataset first paint stays bounded while both semantic and visual rows match');
-  assert(large.footer.includes('από 1500')||/από 15\d\d/.test(large.footer),'large dataset shows truthful full transaction count');
+  const initialLedgerCount=/Εμφανίζονται\\s+(\\d+)\\s+από\\s+(\\d+)\\s+συναλλαγές/.exec(large.footer);
+  assert(initialLedgerCount&&Number(initialLedgerCount[1])===large.visible&&Number(initialLedgerCount[2])>=1500,
+    `large dataset keeps a truthful initial visible/total count (including baseline transactions): ${JSON.stringify(large)}`);
   assert(large.domRows<500&&!large.pager&&!large.overflow,'large continuous list has no pagination and bounded initial DOM');
   await c.call("function(){document.querySelector('.transactions-ledger-footer')?.scrollIntoView({block:'end'});return true}");
   await waitFor("function(previous){return document.querySelectorAll('.transactions-approved-table tbody .transaction-row').length>previous}",'continuous ledger reveals additional rows on scroll',[large.visible]);
   const appended=await c.call("function(){const visual=document.querySelectorAll('.transactions-approved-table tbody .transaction-row').length;const semantic=document.querySelectorAll('.transaction-semantic-table tbody .transaction-row').length;const footer=document.querySelector('.transactions-ledger-footer')?.textContent||'';return {visual,semantic,footer,pager:Boolean(document.querySelector('.transactions-pagination,.transactions-page-size'))}}");
-  assert(appended.visual>large.visible&&appended.visual===appended.semantic&&!appended.pager&&appended.footer.includes('από 1500'),'progressive appended rows preserve semantic match and truthful count');
+  const appendedLedgerCount=/Εμφανίζονται\\s+(\\d+)\\s+από\\s+(\\d+)\\s+συναλλαγές/.exec(appended.footer);
+  assert(appended.visual>large.visible&&appended.visual===appended.semantic&&!appended.pager
+    &&appendedLedgerCount&&Number(appendedLedgerCount[1])===appended.visual
+    &&Number(appendedLedgerCount[2])===Number(initialLedgerCount[2]),
+    `progressive appended rows preserve semantic parity, unchanged total and truthful visible count: ${JSON.stringify({large,appended})}`);
   await shot('transactions-large-progressive-desktop');
   const readability=await c.call("function(){const row=document.querySelector('.transactions-approved-table tbody .transaction-row');const cells=row?[...row.cells]:[];return {nowrap:cells.slice(1,4).some(cell=>getComputedStyle(cell).whiteSpace==='nowrap'),ellipsis:cells.slice(1,4).some(cell=>getComputedStyle(cell).textOverflow==='ellipsis'),scroll:document.querySelector('.transactions-approved-table-wrap')?.scrollWidth>0}}");
   assert(!readability.nowrap&&!readability.ellipsis&&readability.scroll,'desktop transaction text cells wrap instead of ellipsis or clipping');
