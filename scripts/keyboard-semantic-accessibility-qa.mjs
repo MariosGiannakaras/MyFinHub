@@ -190,6 +190,25 @@ try{
          await c.call("async function(){const mod=await import('/src/lib/theme.ts');mod.applyThemePreference('light');return true}");
        }
      }
+     if(screen==='mfa'&&!error){
+       const typeCode=async value=>{
+         const entered=await c.call("function(value){const input=document.querySelector('#mfa-code');if(!(input instanceof HTMLInputElement))return false;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')?.set;setter?.call(input,value);input.dispatchEvent(new Event('input',{bubbles:true}));return true}",[value]);
+         assert(entered,mode+' MFA synthetic code input exists');
+       };
+       const attempts=()=>c.call("function(){return Number(document.documentElement.dataset.qaMfaVerifyCount||'0')}");
+       assert(await c.call("function(){return !document.querySelector('.login-form button[type=submit]')&&Boolean(document.querySelector('#mfa-auto-hint[role=status]'))}"),mode+' MFA no redundant verify button');
+       await typeCode('12345');await sleep(100);
+       assert((await attempts())===0,mode+' MFA never submits an incomplete code');
+       await typeCode('123456');
+       await waitFor("function(){return Number(document.documentElement.dataset.qaMfaVerifyCount||'0')===1}",mode+' MFA verifies on sixth digit');
+       await waitFor("function(){return document.querySelector('#mfa-code')?.value===''}",mode+' MFA rejected code resets for retry');
+       await sleep(100);
+       assert((await attempts())===1,mode+' MFA rejection cannot resubmit on rerender');
+       await typeCode('654321');
+       await waitFor("function(){return Number(document.documentElement.dataset.qaMfaVerifyCount||'0')===2}",mode+' MFA new valid-length input verifies again');
+       await waitFor("function(){return document.querySelector('#mfa-code')?.value===''}",mode+' MFA retry recovers');
+       assert((await attempts())===2,mode+' MFA requests are one per complete input');
+     }
      if(screen==='mfa'&&!error&&mode==='mobile'){
        await c.call("async function(){const mod=await import('/src/lib/theme.ts');mod.applyThemePreference('dark');return true}");
        const shot=await c.send('Page.captureScreenshot',{format:'png',fromSurface:true});writeFileSync(`${evidenceDir}/mfa-mobile-dark.png`,Buffer.from(shot.data,'base64'));

@@ -1,5 +1,5 @@
 import { AlertCircle, KeyRound, LoaderCircle, ShieldCheck } from 'lucide-react';
-import { useState, type FormEvent } from 'react';
+import { useRef, useState } from 'react';
 import type { MfaEnrollment } from '../lib/api';
 import { AppInputShell } from './AppInputShell';
 import { AppTextInput } from './AppTextInput';
@@ -24,6 +24,9 @@ export function MfaScreen({
   const [enrollment, setEnrollment] = useState<MfaEnrollment | null>(null);
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
+  const [localError, setLocalError] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+  const verificationInFlight = useRef(false);
 
   const startEnrollment = async () => {
     if (busy) return;
@@ -32,13 +35,32 @@ export function MfaScreen({
     finally { setBusy(false); }
   };
 
-  const submit = async (event: FormEvent) => {
-    event.preventDefault();
-    if (busy || !/^\d{6}$/.test(code)) return;
+  const changeCode = (value: string) => {
+    if (verificationInFlight.current) return;
+    const next = value.replace(/\D/g, '').slice(0, 6);
+    setCode(next);
+    setLocalError('');
+    if (next.length !== 6) return;
+    // The actual input event initiates verification; re-renders cannot retry a code.
+    verificationInFlight.current = true;
     setBusy(true);
-    try { await onVerify(code, enrollment?.factorId); }
-    finally { setBusy(false); }
+    void (async () => {
+      let verified = false;
+      try {
+        verified = await onVerify(next, enrollment?.factorId);
+      } catch {
+        setLocalError('Η επαλήθευση δεν ολοκληρώθηκε. Πληκτρολόγησε νέο κωδικό.');
+      } finally {
+        verificationInFlight.current = false;
+        setBusy(false);
+        if (!verified) {
+          setCode('');
+          requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }));
+        }
+      }
+    })();
   };
+  const visibleError = localError || error;
 
   return <main className="login-screen">
     <section className="login-card surface-raised" aria-labelledby="mfa-title" data-busy={busy?'true':'false'}>
@@ -60,11 +82,12 @@ export function MfaScreen({
         <div><b>Αν δεν μπορείς να σκανάρεις το QR:</b><code className="mfa-secret">{enrollment.secret}</code></div>
       </div> : null}
 
-      {(mode === 'challenge' || enrollment) ? <form onSubmit={submit} className="login-form">
+      {(mode === 'challenge' || enrollment) ? <form onSubmit={event=>event.preventDefault()} className="login-form" aria-busy={busy}>
         <div className="login-field">
           <label htmlFor="mfa-code">6ψήφιος κωδικός</label>
-          <AppInputShell className="login-input mfa-code-shell" leading={<KeyRound size={17}/>} invalid={Boolean(error)}><AppTextInput
+          <AppInputShell className="login-input mfa-code-shell" leading={<KeyRound size={17}/>} invalid={Boolean(visibleError)}><AppTextInput
             id="mfa-code"
+            ref={inputRef}
             className="mfa-code-input"
             type="text"
             inputMode="numeric"
@@ -72,17 +95,20 @@ export function MfaScreen({
             pattern="[0-9]{6}"
             maxLength={6}
             value={code}
-            onChange={e=>setCode(e.target.value.replace(/\D/g,'').slice(0,6))}
-            disabled={busy}
+            onChange={e=>changeCode(e.target.value)}
+            readOnly={busy}
+            aria-busy={busy}
             required
             autoFocus
-            invalid={Boolean(error)}
-            aria-describedby={error?'mfa-error':undefined}
+            invalid={Boolean(visibleError)}
+            aria-describedby={visibleError?'mfa-error':'mfa-auto-hint'}
           /></AppInputShell>
           <div className="mfa-code-progress" aria-hidden="true">{Array.from({length:6},(_,index)=><i key={index} className={index<code.length?'filled':''}/>)}</div>
         </div>
-        {error ? <div id="mfa-error" className="login-error" role="alert"><AlertCircle size={16}/><span>{error}</span></div> : null}
-        <Button variant="primary" className="login-submit" type="submit" disabled={busy || code.length !== 6} aria-busy={busy} data-state={busy?'loading':code.length===6?'ready':'idle'}>{busy?<LoaderCircle className="login-spinner" size={17} aria-hidden="true"/>:null}<span className="login-submit-label">{busy ? 'Επαλήθευση…' : 'Επαλήθευση'}</span></Button>
+        <small id="mfa-auto-hint" className="mfa-auto-status" role="status" aria-live="polite">
+          {busy?<><LoaderCircle className="login-spinner" size={15} aria-hidden="true"/>Έλεγχος κωδικού…</>:'Ο έλεγχος γίνεται αυτόματα με το 6ο ψηφίο.'}
+        </small>
+        {visibleError ? <div id="mfa-error" className="login-error" role="alert"><AlertCircle size={16}/><span>{visibleError}</span></div> : null}
       </form> : error ? <div id="mfa-error" className="login-error" role="alert"><AlertCircle size={16}/><span>{error}</span></div> : null}
 
       <Button variant="ghost" className="ghost-button login-logout" type="button" disabled={busy} onClick={()=>void onLogout()}>Αποσύνδεση</Button>

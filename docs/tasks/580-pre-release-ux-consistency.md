@@ -1,8 +1,8 @@
 # Issue #580 — Pre-release Settings, Transactions and shared UI owners
 
-**Checkpoint 2026-10-17: Implementations 0/3 completed · Sub-implementations 0/13 completed (accepted).** Work in Draft PR #581 branch `feat/580-settings-transactions-pre-release`, based on validated `develop@aec8b72536e9bc91d4e17e1880899dc70b1e2f25`. No production release or Android changes.
+**Checkpoint 2026-10-17: Implementations 0/4 completed · Sub-implementations 0/19 completed (accepted).** Work in Draft PR #581 branch `feat/580-settings-transactions-pre-release`, based on validated `develop@aec8b72536e9bc91d4e17e1880899dc70b1e2f25`. No production release or Android changes.
 
-## Explicit 3/13 plan
+## Explicit 4/19 plan
 1. **Settings tab consistency (4)**: inspect Light/Dark desktop/mobile evidence, unify tab/control states, repair verified Settings layout drift, real rendered width and touch regression QA. See detailed checkbox in issue #580.
 2. **Transactions continuous readable ledger (4)**: remove pagination/page-size everywhere, progressive scroll+manual accessible fallback and truthful counts, wrap readable rows with contained tablet scroll, retain filters/deep links/edit/delete and rendered 1500-row performance checks.
 3. **Shared UI controls and Login cleanup (5)**: inventory shared control owners, inspect supplied Android Chrome screenshot, fix root composite focus/decorations and semantic dropdown/secondary button states, audit sibling consumers Login/MFA/Settings/Quick Entry/Transactions, directly inspect final Light/Dark desktop/tablet/mobile interaction screenshots.
@@ -17,3 +17,10 @@
 
 ## Exact next action
 Inspect Draft CI for current branch head; fix any deterministic assertions/large-data/width defects in coherent batches. Then Ready PR #581 to trigger full Chromium rendered, WebKit, Performance, Windows Desktop, CodeQL; inspect resulting auth (Dark mobile), Settings 7-tab widths in all modes, Transactions progressive scroll and long account rows, shared dropdown/keyboard surfaces. Do not merge if failing/pending. If all pass, merge to protected `develop` and inspect merged CI. Only afterward consider **separately approved** `develop → main` Production release; leave Card Vault row/key and finance history untouched.
+
+## Owner extension 2026-10-17 — Auth Login and automatic TOTP
+The explicit issue #580 checklist now has **4 implementations / 19 sub-implementations**. Owner wants fully reviewed login/auth UX, and TOTP verification automatically when a 6-digit code is entered, with no manual verification button. Existing MFA enrollment's `Εμφάνιση QR κωδικού` remains deliberate; security server-side challenge and AAL2 are unchanged.
+
+Source diagnosis: `MfaScreen` had manual `onSubmit` code; `useSession.verifyMfa` forwards to `/api/auth/mfa/verify`, maps invalid code and 429/503 failures while preserving owner TOTP. New on-change flow strips non-digits, clamps to 6 and requests verification *once per completed user input*, protects concurrent reentry with a ref, leaves HTML form semantics but prevents implicit Enter submission, announces progress, clears/re-focuses on failure; network/back-end errors use existing handling. Login rejects sticky error styling after the owner edits credentials while keeping explicit password form submit.
+
+Synthetic QA-only MFA attempt counter added in `src/qa.tsx`, and browser keyboard coverage tests 5 digits → no request, sixth → one, error reset/retry → second, no duplicate re-renders; no actual secrets. Still need to validate precise CSS, keyboard, enrollment, failure states and screenshots in final Ready gates. **Accepted 0/4 · 0/19 until validated.**
