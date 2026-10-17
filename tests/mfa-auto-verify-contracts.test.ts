@@ -25,6 +25,8 @@ describe('automatic MFA and owner auth UX preservation',()=>{
   it('supports errors, clear-to-retry, re-focus, pending and deliberate enrollment/logout',()=>{
     expect(mfa).toContain("setCode('')");
     expect(mfa).toContain('requestAnimationFrame(() => inputRef.current?.focus({ preventScroll: true }))');
+    expect(mfa).toContain('setErrorAcknowledged(true)');
+    expect(mfa).toContain("const visibleError = localError || (!errorAcknowledged ? error : '')");
     expect(mfa).toContain('readOnly={busy}');
     expect(mfa).toContain('aria-busy={busy}');
     expect(mfa).toContain('role="status" aria-live="polite"');

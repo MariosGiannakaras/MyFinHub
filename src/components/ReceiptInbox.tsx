@@ -255,13 +255,14 @@ export function ReceiptInbox({
     const totalText=reviewTotal.trim();
     const parsedTotal=totalText===''?undefined:Number(totalText);
     if(parsedTotal!==undefined&&(!Number.isFinite(parsedTotal)||parsedTotal<0))return null;
+    const correctedEurAmount=reviewTotalEdited&&totalText!==''&&parsedTotal!==undefined&&parsedTotal>0;
     return {
       ...reviewProposal,
       merchant:reviewProposal.merchant?.trim()||undefined,
       date:reviewProposal.date||undefined,
       total:parsedTotal,
       // OCR origin remains foreign until an owner explicitly supplies an EUR amount.
-      currency:reviewProposal.currency&&reviewProposal.currency!=='EUR'&&!reviewTotalEdited?reviewProposal.currency:'EUR',
+      currency:reviewProposal.currency&&reviewProposal.currency!=='EUR'&&!correctedEurAmount?reviewProposal.currency:'EUR',
       category:reviewProposal.category?.trim()||undefined,
       subcategory:reviewProposal.subcategory?.trim()||undefined,
     } satisfies ReceiptProposal;
@@ -289,7 +290,7 @@ export function ReceiptInbox({
   const reviewed=reviewProposal??proposal;
   const nonEur = Boolean(reviewed?.currency && reviewed.currency !== 'EUR');
   const reviewTotalInvalid=Boolean(reviewTotal.trim()&&(!Number.isFinite(Number(reviewTotal))||Number(reviewTotal)<0));
-  const needsEurTotal=nonEur&&!reviewTotalEdited;
+  const needsEurTotal=nonEur&&!(reviewTotalEdited&&reviewTotal.trim()!==''&&Number.isFinite(Number(reviewTotal))&&Number(reviewTotal)>0);
   const scanning = Boolean(scanningId);
   const deleteCount=deleteRequest?.mode==='many'?deleteRequest.ids.length:1;
 

@@ -225,6 +225,17 @@ try {
   assert(externalRequests.length === 0, `OCR scan made external HTTP requests: ${externalRequests.join(', ')}`);
   await screenshot('receipt-local-ocr-proposal');
 
+  console.log('Receipt OCR QA: foreign OCR cannot be applied without explicit corrected EUR amount');
+  const changedCurrency=await c.call(`async function(){return await new Promise((resolve,reject)=>{const request=indexedDB.open('myfinhub-local-receipts-v1',1);request.onsuccess=()=>{const db=request.result;const tx=db.transaction('receipts','readwrite');const store=tx.objectStore('receipts');const all=store.getAll();all.onsuccess=()=>{const row=all.result[0];if(!row?.proposal){db.close();resolve(false);return}store.put({...row,proposal:{...row.proposal,currency:'USD'},updatedAt:new Date(Date.now()+1000).toISOString()})};tx.oncomplete=()=>{db.close();resolve(true)};tx.onerror=()=>{db.close();reject(tx.error)}};request.onerror=()=>reject(request.error)})}`);
+  assert(changedCurrency,'synthetic local foreign currency OCR fixture updated without finance write');
+  await c.call("function(){document.querySelector('.receipt-inbox-header .icon-button')?.click();return true}");
+  await waitFor("function(){return !document.querySelector('.receipt-inbox')}",'receipt closes before foreign rehydrate');
+  await openReceiptInbox();
+  await waitFor("function(){return Boolean(document.querySelector('.receipt-currency-warning'))}",'foreign OCR guard warning');
+  const foreignBlocked=await c.call("function(){const button=[...document.querySelectorAll('.receipt-review-actions button')].find(node=>(node.textContent||'').includes('Χρήση στη Γρήγορη Κίνηση'));return Boolean(button?.disabled)&&!document.querySelector('[aria-label=\"Διόρθωση νομίσματος απόδειξης\"]')}");
+  assert(foreignBlocked,'foreign source requires explicit EUR correction and never offers currency selector');
+  await screenshot('receipt-foreign-currency-safety');
+
   console.log('Receipt OCR QA: user corrections persist locally and reviewed proposal owns the Quick Entry prefill');
   const reviewEdited=await c.call("function(){const set=(input,value)=>{const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')?.set;setter?.call(input,value);input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}))};const merchant=document.querySelector('input[aria-label=\"Διόρθωση καταστήματος απόδειξης\"]');const amount=document.querySelector('input[aria-label=\"Διόρθωση ποσού απόδειξης\"]');if(!merchant||!amount)return false;set(merchant,'QA CORRECTED MARKET');set(amount,'31.75');return true}");
   assert(reviewEdited,'editable OCR merchant and amount controls exist');
@@ -233,6 +244,7 @@ try {
   assert(saveCorrections,'save OCR corrections action exists');
   await waitFor("function(){return (document.querySelector('.receipt-success')?.textContent||'').includes('διορθώσεις')}",'local OCR correction persistence');
   const persistedReview=await c.call(`async function(){return await new Promise((resolve,reject)=>{const request=indexedDB.open('myfinhub-local-receipts-v1',1);request.onsuccess=()=>{const db=request.result;const tx=db.transaction('receipts','readonly');const all=tx.objectStore('receipts').getAll();all.onsuccess=()=>{const row=all.result[0];db.close();resolve(row?.proposal||null)};all.onerror=()=>{db.close();reject(all.error)}};request.onerror=()=>reject(request.error)})}`);
+  assert(persistedReview?.currency==='EUR','explicit EUR amount correction normalizes previously foreign OCR proposal');
   assert(persistedReview?.merchant==='QA CORRECTED MARKET'&&Number(persistedReview?.total)===31.75,`corrected OCR proposal not persisted locally: ${JSON.stringify(persistedReview)}`);
   await screenshot('receipt-local-ocr-reviewed');
 

@@ -1,5 +1,5 @@
 import { AlertCircle, KeyRound, LoaderCircle, ShieldCheck } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { MfaEnrollment } from '../lib/api';
 import { AppInputShell } from './AppInputShell';
 import { AppTextInput } from './AppTextInput';
@@ -25,6 +25,8 @@ export function MfaScreen({
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [localError, setLocalError] = useState('');
+  const [errorAcknowledged,setErrorAcknowledged]=useState(false);
+  useEffect(()=>setErrorAcknowledged(false),[error]);
   const inputRef = useRef<HTMLInputElement>(null);
   const verificationInFlight = useRef(false);
 
@@ -40,6 +42,7 @@ export function MfaScreen({
     const next = value.replace(/\D/g, '').slice(0, 6);
     setCode(next);
     setLocalError('');
+    setErrorAcknowledged(true);
     if (next.length !== 6) return;
     // The actual input event initiates verification; re-renders cannot retry a code.
     verificationInFlight.current = true;
@@ -60,7 +63,7 @@ export function MfaScreen({
       }
     })();
   };
-  const visibleError = localError || error;
+  const visibleError = localError || (!errorAcknowledged ? error : '');
 
   return <main className="login-screen">
     <section className="login-card surface-raised" aria-labelledby="mfa-title" data-busy={busy?'true':'false'}>
