@@ -14,7 +14,7 @@ import { LegacyTransactionEditor } from '../components/LegacyTransactionEditor';
 import { SortDirectionControl, type SortDirection } from '../components/SortDirectionControl';
 import { Tooltip } from '../components/Tooltip';
 import { TransactionSplitDetails } from '../components/TransactionSplitDetails';
-import { categoryPath } from '../lib/categories';
+import { categoryPath, categoryTree } from '../lib/categories';
 import { allAccounts, effectiveLegacyTransactions, flowImpactEvent, flowImpactLegacy, monthRange } from '../lib/domain';
 import { cleanNote, money, shortDate } from '../lib/format';
 import { shiftReportingMonth } from '../lib/reportingPeriod';
@@ -123,7 +123,15 @@ export function TransactionsPage({
   },[sourceRows,month,sortDirection,range.start,range.end,commandFocusKey]);
 
   const categoryLabel=(row:TransactionRow)=>row.kind==='split'?'Επιμέρους κατηγορίες':row.category===row.kind?eventKindLabel(row.kind):categoryPath(row.category,row.subcategory);
-  const categories=useMemo(()=>[...new Set(sourceRows.map(row=>categoryLabel(row)))].sort((a,b)=>a.localeCompare(b,'el')),[sourceRows]);
+  // Available persisted taxonomy plus historic transaction labels: newly added
+  // categories can be filtered immediately without hiding retired legacy labels.
+  const categories=useMemo(()=>{
+    const current=['expense','income'].flatMap(kind=>
+      categoryTree(data.state.settings,kind as 'expense'|'income')
+        .flatMap(item=>[item.name,...item.subcategories.map(sub=>categoryPath(item.name,sub))]));
+    return [...new Set([...current,...sourceRows.map(row=>categoryLabel(row))])]
+      .sort((a,b)=>a.localeCompare(b,'el'));
+  },[sourceRows,data.state.settings]);
   const types=useMemo(()=>[...new Set(sourceRows.map(row=>row.kind))].sort((a,b)=>eventKindLabel(a).localeCompare(eventKindLabel(b),'el')),[sourceRows]);
 
   const rows=useMemo(()=>{
