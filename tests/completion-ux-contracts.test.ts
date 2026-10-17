@@ -187,7 +187,7 @@ describe('completion UX contracts',()=>{
     expect(motion).toContain('@keyframes rh-login-card-in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}');
     expect(motion).not.toContain('rh-login-card-in{from{opacity:0;transform:translateY(10px) scale(');
     expect(motion).toContain('.login-password-toggle:active:not(:disabled){transform:none}');
-    expect(motion).toContain('.login-password-toggle{width:44px;height:44px;min-width:44px;min-height:44px');
+    expect(motion).toContain('.login-password-toggle{width:46px;height:46px;min-width:46px;min-height:46px');
   });
 
 

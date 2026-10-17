@@ -35,7 +35,7 @@ describe('shared form-control branding',()=>{
     expect(auth).toContain('.login-input .login-password-toggle{border:0!important;background:transparent!important;box-shadow:none!important}');
     expect(auth).toContain('.login-input .login-password-toggle:hover:not(:disabled){background:transparent!important;color:var(--accent,var(--blue))}');
     expect(read('src/components/LoginScreen.tsx')).toContain('variant="quiet" className="login-password-toggle"');
-    expect(controls).toContain('.app-input-shell .app-input-shell-trailing>.icon-button-quiet{box-sizing:border-box;width:44px;min-width:44px;height:44px;min-height:44px;');
+    expect(controls).toContain('.app-input-shell .app-input-shell-trailing>.icon-button-quiet{box-sizing:border-box;width:46px;min-width:46px;height:46px;min-height:46px;');
     expect(controls).toContain('.app-input-shell .app-input-shell-trailing>.icon-button-quiet:hover:not(:disabled){background:transparent!important;background-image:none!important;color:var(--accent,var(--blue))!important}');
     expect(controls).toContain('box-shadow:none!important;transform:none!important}');
     expect(auth).toContain('.login-input .login-password-toggle:focus-visible{outline:2px solid var(--accent,var(--blue))!important');
