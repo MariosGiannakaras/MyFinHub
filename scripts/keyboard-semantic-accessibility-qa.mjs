@@ -108,7 +108,9 @@ try{
        const el=document.activeElement;if(!(el instanceof Element))return null;
        const r=el.getBoundingClientRect(),s=getComputedStyle(el);
        const visible=r.width>0&&r.height>0&&s.visibility!=='hidden'&&s.display!=='none';
-       const focusVisible=(s.outlineStyle!=='none'&&parseFloat(s.outlineWidth||'0')>0)||s.boxShadow!=='none';
+       const hasFocusRing=style=>(style.outlineStyle!=='none'&&parseFloat(style.outlineWidth||'0')>0)||style.boxShadow!=='none';
+       const focusOwner=el.closest('.app-input-shell');
+       const focusVisible=hasFocusRing(s)||(Boolean(focusOwner&&focusOwner.contains(el))&&hasFocusRing(getComputedStyle(focusOwner)));
        return {tag:el.tagName,name:(el.getAttribute('aria-label')||el.textContent||el.getAttribute('placeholder')||'').trim().slice(0,80),visible,focusVisible,positive:Number(el.getAttribute('tabindex')||0)>0};
      }`);
      assert(state&&state.visible,`${label}: Tab left the visible focus order at step ${i+1}: ${JSON.stringify(state)}`);
@@ -176,6 +178,23 @@ try{
      const audit=await semanticAudit();assertAudit(audit,`${mode}/auth/${screen}${error?'/error':''}`);
      if(error)assert(audit.statuses.some(item=>item.role==='alert'),`${mode}/auth/${screen}: error state must expose an alert`);
      await tabSweep(`${mode}/auth/${screen}${error?'/error':''}`);
+     if(screen==='login'&&!error){
+       const fieldState=await c.call("function(){const input=document.querySelector('#login-email');const outer=input?.closest('.app-input-shell');if(!input||!outer)return null;input.focus();const a=getComputedStyle(outer),b=getComputedStyle(input);return {oneShell:document.querySelectorAll('.login-field:first-child .app-input-shell').length===1,parentHasRing:a.boxShadow!=='none',outerBorder:parseFloat(a.borderTopWidth||'0'),innerBorder:parseFloat(b.borderTopWidth||'0')}}");
+       assert(fieldState?.oneShell&&fieldState.parentHasRing&&fieldState.outerBorder>=1&&fieldState.innerBorder===0,`${mode} Login has one accessible composite-field focus outline: ${JSON.stringify(fieldState)}`);
+       if(mode==='mobile'){
+         const theme=await c.call("async function(){const mod=await import('/src/lib/theme.ts');mod.applyThemePreference('dark');return document.documentElement.dataset.theme}");
+         assert(theme==='dark','Login dark mobile QA uses canonical theme');
+         const eye=await c.call("function(){const node=document.querySelector('.login-password-toggle');const css=node?getComputedStyle(node):null;return {visible:Boolean(node),bg:css?.backgroundColor||'',height:node?.getBoundingClientRect().height||0}}");
+         assert(eye.visible&&eye.height>=40&&eye.bg==='rgba(0, 0, 0, 0)','Login password reveal stays a transparent accessible action, not a nested opaque card');
+         const shot=await c.send('Page.captureScreenshot',{format:'png',fromSurface:true});writeFileSync(`${evidenceDir}/login-mobile-dark-focused-field.png`,Buffer.from(shot.data,'base64'));
+         await c.call("async function(){const mod=await import('/src/lib/theme.ts');mod.applyThemePreference('light');return true}");
+       }
+     }
+     if(screen==='mfa'&&!error&&mode==='mobile'){
+       await c.call("async function(){const mod=await import('/src/lib/theme.ts');mod.applyThemePreference('dark');return true}");
+       const shot=await c.send('Page.captureScreenshot',{format:'png',fromSurface:true});writeFileSync(`${evidenceDir}/mfa-mobile-dark.png`,Buffer.from(shot.data,'base64'));
+       await c.call("async function(){const mod=await import('/src/lib/theme.ts');mod.applyThemePreference('light');return true}");
+     }
    }
  }
 

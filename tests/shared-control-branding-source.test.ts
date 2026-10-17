@@ -28,6 +28,21 @@ describe('shared form-control branding',()=>{
     expect(auth).not.toContain('.login-input input{');
   });
 
+  it('keeps composite input focus unified and treats dropdowns and buttons as semantic siblings',()=>{
+    expect(controls).toContain('.app-input-shell>.app-control:focus-visible{outline:0!important;box-shadow:none!important}');
+    expect(controls).toContain('.app-input-shell:focus-within{border-color:var(--accent,var(--blue))!important;box-shadow:var(--focus)!important}');
+    expect(auth).toContain('background:transparent;color:var(--text-secondary);font-size:var(--ux-small-size)');
+    expect(auth).toContain('.login-input .login-password-toggle{border:0!important;background:transparent!important;box-shadow:none!important}');
+    const keyboard=read('scripts/keyboard-semantic-accessibility-qa.mjs');
+    expect(keyboard).toContain("const focusOwner=el.closest('.app-input-shell')");
+    expect(keyboard).toContain('login-mobile-dark-focused-field.png');
+    expect(keyboard).toContain('mfa-mobile-dark.png');
+    const owned=read('src/styles/owned-entry-popovers.css');
+    expect(owned).toContain('background:var(--surface-selected,var(--accent-soft));color:var(--accent,var(--blue))');
+    const buttons=read('src/styles/settings-form-actions-base.css');
+    expect(buttons).toContain('font-size:var(--ux-small-size);font-weight:700');
+  });
+
   it('keeps money and security text fields on the shared box owner',()=>{
     expect(controls).toContain('.money-input>.app-control{padding-right:34px');
     expect(quickBase).not.toContain('.money-input{height:');
