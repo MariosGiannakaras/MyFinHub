@@ -91,15 +91,19 @@ try{
   assert(!unicode.overflow&&!unicode.hasUnexpectedMarkup,'Unicode/unbroken transaction remains contained and text-only');
 
 
-  console.log('Transactions QA: realistic large-data pagination/search boundary');
+  console.log('Transactions QA: realistic large-data continuous scrolling/search boundary');
   await navigate(`${baseUrl}?page=transactions&state=large`,1280,900);
-  const large=await c.call("function(){const visible=[...document.querySelectorAll('.transactions-approved-table tbody .transaction-row')];const semantic=[...document.querySelectorAll('.transaction-semantic-table tbody .transaction-row')];const footer=document.querySelector('.transactions-ledger-footer')?.textContent||'';return {visible:visible.length,semantic:semantic.length,first:visible[0]?.textContent||'',footer,domRows:document.querySelectorAll('.transaction-row,.mobile-transaction-row').length,overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+2}}");
-  assert(large.visible===14&&large.semantic===14,'large dataset keeps desktop transaction DOM bounded to the configured page size');
-  assert(large.footer.includes('από 1500')||/από 15\d\d/.test(large.footer),'large dataset reports the full transaction count without rendering it all');
-  assert(large.domRows<50&&!large.overflow,'large dataset avoids unbounded row DOM and horizontal overflow');
-  for(let i=0;i<5;i++)await clickAria('Επόμενη σελίδα');
-  const movingPager=await c.call("function(){const buttons=[...document.querySelectorAll('.transactions-pagination button')].filter(button=>/^\\d+$/.test((button.textContent||'').trim()));const active=buttons.find(button=>button.getAttribute('aria-current')==='page');return {numbers:buttons.map(button=>Number((button.textContent||'').trim())),active:Number((active?.textContent||'').trim()||0),overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+2}}");
-  assert(movingPager.active===6&&movingPager.numbers.includes(6)&&movingPager.numbers[0]>=4&&!movingPager.overflow,`active numeric page follows the moving pager window beyond page five: ${JSON.stringify(movingPager)}`);
+  const large=await c.call("function(){const visible=[...document.querySelectorAll('.transactions-approved-table tbody .transaction-row')];const semantic=[...document.querySelectorAll('.transaction-semantic-table tbody .transaction-row')];const footer=document.querySelector('.transactions-ledger-footer')?.textContent||'';return {visible:visible.length,semantic:semantic.length,first:visible[0]?.textContent||'',footer,domRows:document.querySelectorAll('.transaction-row,.mobile-transaction-row').length,pager:Boolean(document.querySelector('.transactions-pagination,.transactions-page-size,.mobile-transaction-pagination')),overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+2}}");
+  assert(large.visible>=40&&large.visible<=160&&large.semantic===large.visible,'large dataset first paint stays bounded while both semantic and visual rows match');
+  assert(large.footer.includes('από 1500')||/από 15\\d\\d/.test(large.footer),'large dataset shows truthful full transaction count');
+  assert(large.domRows<500&&!large.pager&&!large.overflow,'large continuous list has no pagination and bounded initial DOM');
+  await c.call("function(){document.querySelector('.transactions-ledger-footer')?.scrollIntoView({block:'end'});return true}");
+  await waitFor("function(previous){return document.querySelectorAll('.transactions-approved-table tbody .transaction-row').length>previous}",'continuous ledger reveals additional rows on scroll',[large.visible]);
+  const appended=await c.call("function(){const visual=document.querySelectorAll('.transactions-approved-table tbody .transaction-row').length;const semantic=document.querySelectorAll('.transaction-semantic-table tbody .transaction-row').length;const footer=document.querySelector('.transactions-ledger-footer')?.textContent||'';return {visual,semantic,footer,pager:Boolean(document.querySelector('.transactions-pagination,.transactions-page-size'))}}");
+  assert(appended.visual>large.visible&&appended.visual===appended.semantic&&!appended.pager&&appended.footer.includes('από 1500'),'progressive appended rows preserve semantic match and truthful count');
+  await shot('transactions-large-progressive-desktop');
+  const readability=await c.call("function(){const row=document.querySelector('.transactions-approved-table tbody .transaction-row');const cells=row?[...row.cells]:[];return {nowrap:cells.slice(1,4).some(cell=>getComputedStyle(cell).whiteSpace==='nowrap'),ellipsis:cells.slice(1,4).some(cell=>getComputedStyle(cell).textOverflow==='ellipsis'),scroll:document.querySelector('.transactions-approved-table-wrap')?.scrollWidth>0}}");
+  assert(!readability.nowrap&&!readability.ellipsis&&readability.scroll,'desktop transaction text cells wrap instead of ellipsis or clipping');
 
   console.log('Transactions QA: large-data mutation latency remains interactive');
   await clickAria('Γρήγορη προσθήκη');await waitFor("function(){return Boolean(document.querySelector('.quick-modal'))}",'large-data Quick Entry');
@@ -113,9 +117,9 @@ try{
   await setInput('.transaction-searchbar input','Large dataset mutation latency target');
   await waitFor("function(){const rows=document.querySelectorAll('.transactions-approved-table tbody .transaction-row');return rows.length===1&&(rows[0].textContent||'').includes('Large dataset mutation latency target')}",'large-data mutation visible after save');
   await setInput('.transaction-searchbar input','');
-  await waitFor("function(){return document.querySelectorAll('.transactions-approved-table tbody .transaction-row').length===14}",'large dataset page restored after mutation');
+  await waitFor("function(){return document.querySelectorAll('.transactions-approved-table tbody .transaction-row').length>=40}",'large dataset continuous list restored after mutation');
 
-  await clickAria('Επόμενη σελίδα');await waitFor("function(before){const row=document.querySelector('.transactions-approved-table tbody .transaction-row');return Boolean(row)&&!((row.textContent||'')===before)}",'large dataset next page',[large.first]);
+  assert(await c.call("function(){return !document.querySelector('.transactions-pagination,.mobile-transaction-pagination,.transactions-page-size')}"),'legacy page controls remain absent after mutation');
   await setInput('.transaction-searchbar input','Large dataset unique search target');await waitFor("function(){const rows=document.querySelectorAll('.transactions-approved-table tbody .transaction-row');return rows.length===1&&(rows[0].textContent||'').includes('Large dataset unique search target')}",'large dataset unique search');
   const largeSearch=await c.call("function(){return {visible:document.querySelectorAll('.transactions-approved-table tbody .transaction-row').length,mobile:document.querySelectorAll('.mobile-transaction-row').length,footer:document.querySelector('.transactions-ledger-footer')?.textContent||''}}");
   assert(largeSearch.visible===1&&largeSearch.footer.includes('από 1'),'large dataset search collapses deterministically to one row');

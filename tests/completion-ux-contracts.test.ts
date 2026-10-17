@@ -52,15 +52,15 @@ describe('completion UX contracts',()=>{
     expect(fidelity).toContain('.dashboard-approved .approved-account-chart{min-width:0}');
   });
 
-  it('uses the existing bounded transaction page slice on mobile',()=>{
+  it('keeps bounded progressive transaction rows on mobile and desktop',()=>{
     const source=read('src/pages/TransactionsPage.tsx');
     expect(source).toContain('className="mobile-transaction-list"');
-    expect(source).toContain('{pageRows.map(r=>');
-    expect(source).toMatch(/transaction-semantic-table[\s\S]*?<tbody>\{pageRows\.map\(r=>/);
+    expect(source).toContain('{visibleRows.map(r=>');
+    expect(source).toMatch(/transaction-semantic-table[\s\S]*?<tbody>\{visibleRows\.map\(r=>/);
     expect(source).not.toContain('aria-label={`Κινήσεις για ${month}`}>{rows.map');
-    expect(source).toContain('className="mobile-transaction-pagination"');
-    expect(source).toContain('setQuery(e.target.value);setPage(1)');
-    expect(source).toContain('setSortDirection(value);setPage(1)');
+    expect(source).toContain('className="mobile-transaction-progress"');
+    expect(source).toContain('setQuery(e.target.value);setRenderLimit(40)');
+    expect(source).toContain('setSortDirection(value);setRenderLimit(40)');
   });
 
   it('renders lending history as semantic cards on phones instead of a squeezed table',()=>{
