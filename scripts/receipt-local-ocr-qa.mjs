@@ -215,13 +215,13 @@ try {
   monitorOcrNetwork = false;
   const scanError = await c.call("function(){return document.querySelector('.form-error')?.textContent||''}");
   assert(!scanError, `local OCR failed: ${scanError}`);
-  const reviewValues = await c.call("function(){return {merchant:document.querySelector('input[aria-label=\"Διόρθωση καταστήματος απόδειξης\"]')?.value||'',date:document.querySelector('input[aria-label=\"Διόρθωση ημερομηνίας απόδειξης\"]')?.value||'',total:document.querySelector('input[aria-label=\"Διόρθωση ποσού απόδειξης\"]')?.value||'',currency:document.querySelector('[aria-label=\"Διόρθωση νομίσματος απόδειξης\"]')?.value||''}}");
+  const reviewValues = await c.call("function(){return {merchant:document.querySelector('input[aria-label=\"Διόρθωση καταστήματος απόδειξης\"]')?.value||'',date:document.querySelector('input[aria-label=\"Διόρθωση ημερομηνίας απόδειξης\"]')?.value||'',total:document.querySelector('input[aria-label=\"Διόρθωση ποσού απόδειξης\"]')?.value||'',currencyPicker:document.querySelector('[aria-label=\"Διόρθωση νομίσματος απόδειξης\"]')!==null}}");
   assert(/MY\s*MARKET/i.test(reviewValues.merchant), `merchant proposal missing: ${JSON.stringify(reviewValues)}`);
   assert(/22.*Αυγ.*2026/i.test(reviewValues.date), `date proposal missing: ${JSON.stringify(reviewValues)}`);
   assert(Number(reviewValues.total)===24.5, `total proposal missing: ${JSON.stringify(reviewValues)}`);
   const persistedOcrProposal=await c.call(`async function(){return await new Promise((resolve,reject)=>{const request=indexedDB.open('myfinhub-local-receipts-v1',1);request.onsuccess=()=>{const db=request.result;const tx=db.transaction('receipts','readonly');const all=tx.objectStore('receipts').getAll();all.onsuccess=()=>{const row=all.result[0];db.close();resolve(row?.proposal||null)};all.onerror=()=>{db.close();reject(all.error)}};request.onerror=()=>reject(request.error)})}`);
   assert(persistedOcrProposal?.currency==='EUR', `stored OCR currency proposal missing: ${JSON.stringify(persistedOcrProposal)}`);
-  assert(/^EUR(?:\s|·|$)/.test(reviewValues.currency), `visible EUR currency label missing: ${JSON.stringify(reviewValues)}`);
+  assert(!reviewValues.currencyPicker, `EUR-only receipt review must not expose a currency dropdown: ${JSON.stringify(reviewValues)}`);
   assert(externalRequests.length === 0, `OCR scan made external HTTP requests: ${externalRequests.join(', ')}`);
   await screenshot('receipt-local-ocr-proposal');
 
