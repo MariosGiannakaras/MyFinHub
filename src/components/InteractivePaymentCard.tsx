@@ -1,10 +1,11 @@
 import { Archive, Copy, Eye, EyeOff, Pencil, X } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { BankBrandMark } from './BankBrandMark';
 import { CardNetworkMark } from './CardNetworkMark';
 import { cardBrandSurfaceTone, cardThemeClass } from '../lib/cardDesigns';
 import { cardLabel } from '../lib/cards';
 import { cardVaultErrorMessage, revealCardSecret } from '../lib/cardVaultClient';
+import { CARD_TILT_REST, cardPointerTiltAllowed, cardPointerTiltTransform } from '../lib/cardPointerTilt';
 import type { CardBank, PaymentCard } from '../types';
 import './InteractivePaymentCard.css';
 
@@ -82,7 +83,8 @@ export function InteractivePaymentCard({
   const sliderRef=useRef<HTMLDivElement>(null);
   const theme=cardThemeClass(card);
   const visible=Boolean(revealed.pan||revealed.expiry||revealed.cvv);
-  const tiltEnabled=useMemo(()=>typeof window==='undefined'||!window.matchMedia('(prefers-reduced-motion: reduce)').matches,[]);
+  const tiltRectRef=useRef<DOMRect|null>(null);
+  const tiltFrameRef=useRef<number|null>(null);
 
   const loadSecrets=async()=>{
     setBusy(true);setMessage('');
@@ -120,12 +122,29 @@ export function InteractivePaymentCard({
     }finally{archivingRef.current=false;setBusy(false)}
   };
 
-  const pointerMove=(event:React.PointerEvent<HTMLElement>)=>{
-    if(!tiltEnabled||event.pointerType==='touch'||deleteOpen)return;
-    const element=cardRef.current;if(!element)return;const rect=element.getBoundingClientRect();const x=(event.clientX-rect.left)/rect.width;const y=(event.clientY-rect.top)/rect.height;
-    const ry=Math.max(-6.5,Math.min(6.5,(x-.5)*13));const rx=Math.max(-6.5,Math.min(6.5,-(y-.5)*13));element.style.transform=`perspective(1000px) rotateY(${ry}deg) rotateX(${rx}deg)`;
+  const resetTilt=()=>{
+    if(tiltFrameRef.current!==null)cancelAnimationFrame(tiltFrameRef.current);
+    tiltFrameRef.current=null;
+    tiltRectRef.current=null;
+    if(cardRef.current)cardRef.current.style.transform=CARD_TILT_REST;
   };
-  const resetTilt=()=>{if(cardRef.current)cardRef.current.style.transform='perspective(1000px) rotateY(0deg) rotateX(0deg)'};
+  const pointerEnter=(event:React.PointerEvent<HTMLElement>)=>{
+    if(!cardPointerTiltAllowed(event.pointerType)||deleteOpen||detailsEditor)return;
+    // Capture the stationary bounds once: measuring after each rotation causes jitter.
+    tiltRectRef.current=event.currentTarget.getBoundingClientRect();
+  };
+  const pointerMove=(event:React.PointerEvent<HTMLElement>)=>{
+    if(!cardPointerTiltAllowed(event.pointerType)||deleteOpen||detailsEditor){resetTilt();return}
+    const element=cardRef.current;if(!element)return;
+    const rect=tiltRectRef.current??element.getBoundingClientRect();
+    tiltRectRef.current=rect;
+    const next=cardPointerTiltTransform(rect,event.clientX,event.clientY);
+    if(tiltFrameRef.current!==null)cancelAnimationFrame(tiltFrameRef.current);
+    tiltFrameRef.current=requestAnimationFrame(()=>{
+      if(cardRef.current===element)element.style.transform=next;
+      tiltFrameRef.current=null;
+    });
+  };
   const moveDelete=(clientX:number)=>{const el=sliderRef.current;if(!el)return;const rect=el.getBoundingClientRect();const max=Math.max(0,rect.width-47);const progress=Math.max(0,Math.min(1,(clientX-rect.left-19.5)/Math.max(1,rect.width-39)));setArchiveProgress(progress);setDeleteOffset(progress*max)};
 
   // Keep gesture ownership on the stationary track. Window capture-phase
@@ -190,14 +209,18 @@ export function InteractivePaymentCard({
     try{event.currentTarget.setPointerCapture(pointerId)}catch{}
     moveDelete(event.clientX);
   };
-  useEffect(()=>()=>{archiveDragCleanupRef.current?.();archiveDragCleanupRef.current=null;archivePointerIdRef.current=null},[]);
+  useEffect(()=>()=>{
+    archiveDragCleanupRef.current?.();archiveDragCleanupRef.current=null;archivePointerIdRef.current=null;
+    if(tiltFrameRef.current!==null)cancelAnimationFrame(tiltFrameRef.current);
+  },[]);
+  useEffect(()=>{if(deleteOpen||detailsEditor)resetTilt()},[deleteOpen,detailsEditor]);
 
   const number=visible&&revealed.pan?formatPan(revealed.pan):maskedPan(card);
   const shownExpiry=visible&&revealed.expiry?revealed.expiry:'••/••';
   const shownCvv=visible&&revealed.cvv?revealed.cvv:'•••';
 
   return <div className={`card-slot r-card-slot prototype-card-slot ${large?'is-large':''}`}>
-    <article ref={cardRef} data-command-card-id={card.id} tabIndex={-1} className={`payment-card r-payment-card prototype-payment-card ${theme} ${deleteOpen?'delete-armed':''} ${large?'is-large':''}`} style={{'--delete-p':deleteProgress} as React.CSSProperties} onPointerMove={pointerMove} onPointerLeave={resetTilt} aria-label={`${cardLabel(card)} · ${bank.name}`}>
+    <article ref={cardRef} data-command-card-id={card.id} tabIndex={-1} className={`payment-card r-payment-card prototype-payment-card ${theme} ${deleteOpen?'delete-armed':''} ${large?'is-large':''}`} style={{'--delete-p':deleteProgress} as React.CSSProperties} onPointerEnter={pointerEnter} onPointerMove={pointerMove} onPointerLeave={resetTilt} onPointerCancel={resetTilt} aria-label={`${cardLabel(card)} · ${bank.name}`}>
       <div className="card-inner">
         {detailsEditor ? detailsEditor : <>
         <header className="card-header">

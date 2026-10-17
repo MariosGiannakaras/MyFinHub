@@ -39,6 +39,30 @@ try{
   assert(current.recentWidth<=1121&&current.overflow<=1,'recent activity stays within controlled measure without page overflow');
   await shot('cards-remediation-one-card-1440');
 
+  // A real pointer path (not a source-only handler assertion) must rotate the
+  // live debit/prepaid card, settle on leave, and respect OS reduced motion.
+  const tiltCard=async()=>{
+    const rect=await c.call("function(){const r=document.querySelector('.prototype-payment-card:not(.r-card-archive-ghost)')?.getBoundingClientRect();return r?{x:r.left,y:r.top,w:r.width,h:r.height}:null}");
+    assert(rect&&rect.w>100&&rect.h>100,'debit card pointer tilt has visible geometry');
+    await c.send('Input.dispatchMouseEvent',{type:'mouseMoved',x:5,y:5});
+    await c.send('Input.dispatchMouseEvent',{type:'mouseMoved',x:rect.x+rect.w*.26,y:rect.y+rect.h*.32});
+    await sleep(240);
+    return c.call("function(){return document.querySelector('.prototype-payment-card:not(.r-card-archive-ghost)')?.style.transform||''}");
+  };
+  const tiltedDebit=await tiltCard();
+  assert(/rotateY\(-?\d+(?:\.\d+)?deg\)/.test(tiltedDebit)&&!tiltedDebit.includes('rotateY(0deg)'),`debit pointer motion visibly rotates card: ${tiltedDebit}`);
+  await shot('cards-remediation-debit-mouse-tilt');
+  await c.send('Input.dispatchMouseEvent',{type:'mouseMoved',x:5,y:5});
+  await sleep(240);
+  const debitRest=await c.call("function(){return document.querySelector('.prototype-payment-card:not(.r-card-archive-ghost)')?.style.transform||''}");
+  assert(debitRest==='perspective(1000px) rotateY(0deg) rotateX(0deg)',`debit pointer leave settles card: ${debitRest}`);
+  await c.send('Emulation.setEmulatedMedia',{features:[{name:'prefers-reduced-motion',value:'reduce'}]});
+  await navigate('');
+  const debitReduced=await tiltCard();
+  assert(!debitReduced||debitReduced==='perspective(1000px) rotateY(0deg) rotateX(0deg)',`debit OS reduced motion suppresses tilt: ${debitReduced}`);
+  await c.send('Emulation.setEmulatedMedia',{features:[]});
+  await navigate('');
+
   // The shared canonical mobile host adds a decorative ::before box to some
   // controls. Debit/prepaid Eye/Pencil/Archive explicitly use plain glyphs.
   console.log('Cards remediation QA: unboxed toolbar at true mobile widths');
