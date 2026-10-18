@@ -57,7 +57,8 @@ describe('large-data verification contract',()=>{
     expect(budgets).toContain('budgetListLimit');
     expect(rules).toContain('visibleRuleCount');
     expect(rules).toContain('visibleRules=rules.slice(0,visibleRuleCount)');
-    expect(shell).toContain('const boundedHistory=effectiveHistory.slice(0,100)');
+    expect(shell).toContain('history={effectiveHistory}');
+    expect(read('src/components/HistoryDialog.tsx')).toContain('classifyHistoryPoints(history.slice(0,100))');
   });
 
   it('runs the large-data audit in rendered QA and keeps dedicated Lighthouse cases',()=>{

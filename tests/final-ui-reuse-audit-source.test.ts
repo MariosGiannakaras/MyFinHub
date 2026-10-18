@@ -43,7 +43,7 @@ describe('final UI reuse and orphan audit',()=>{
 
     expect(shell).toContain('<IconButton type="button" aria-label="Αναζήτηση και εντολές"');
     expect(shell).toContain('<IconButton type="button" aria-label="Ανανέωση δεδομένων"');
-    expect(shell).toContain('<Button type="button" variant="secondary" disabled={!canUndo} onClick={onUndo}>Αναίρεση</Button>');
+    expect(read('src/components/HistoryDialog.tsx')).toContain('<Button type="button" variant="secondary" disabled={!canUndo} onClick={onUndo}>Αναίρεση</Button>');
     expect(login).toContain('<IconButton type="button" variant="quiet" className="login-password-toggle"');
     expect(mfa).toContain('<Button variant="ghost" className="ghost-button login-logout"');
     expect(iban).toContain('<IconButton type="button" className="inline-icon-action account-iban-copy"');
