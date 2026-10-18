@@ -83,6 +83,21 @@ try{
   await shot('save-progress-pending-reduced-motion-1440-dark');
   assert(await release(),'reduced-motion receipt release');
   await waitFor(phase('success'),'reduced-motion backend-confirmed green');
+  // Actual useFinance hook under a held old GET and subsequent successful,
+  // QA-only import; the old server response must not replace newer state.
+  await navigate();
+  const initialBudget=await c.call("function(){return Number(document.querySelector('[data-persistence-budget]')?.textContent||0)}");
+  assert(await c.call("function(){return globalThis.__myfinhubQaHoldNextRead?.()===true}"),'schedule held old finance GET');
+  assert(await c.call("function(){const b=document.querySelector('[data-persistence-reload]');b?.click();return Boolean(b)}"),'start reload before synthetic import');
+  await waitFor("function(){return globalThis.__myfinhubQaHeldReadCount?.()===1}",'old GET remains held');
+  assert(await c.call("function(){const b=document.querySelector('[data-persistence-import]');b?.click();return Boolean(b)}"),'synthetic import outruns held GET');
+  await waitFor(`function(){return Number(document.querySelector('[data-persistence-budget]')?.textContent||0)===${initialBudget+13}}`,'synthetic imported finance budget applied');
+  await waitFor("function(){return document.querySelector('[data-persistence-state]')?.textContent==='saved'}",'synthetic import receipt confirmed');
+  assert(await c.call("function(){return globalThis.__myfinhubQaReleaseRead?.()===true}"),'release stale GET');
+  await sleep(180);
+  const finalState=await c.call("function(){return {budget:Number(document.querySelector('[data-persistence-budget]')?.textContent||0),state:document.querySelector('[data-persistence-state]')?.textContent}}");
+  assert(finalState.budget===initialBudget+13&&finalState.state==='saved',`old database GET cannot overwrite a newer successful import: ${JSON.stringify(finalState)}`);
+  await shot('history-refresh-stale-read-after-import-1440-dark');
   c.close();
   console.log('Save-progress QA passed: pending remains active, receipt only green, persistent red failure/conflict, FIFO burst, viewport/theme/reduced-motion evidence');
 }catch(error){console.error(error);process.exitCode=1}

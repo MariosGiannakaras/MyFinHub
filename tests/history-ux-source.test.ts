@@ -24,5 +24,10 @@ describe('durable Do/Undo/Redo UI and reload safety',()=>{
   expect(finance).toContain('canApplyFinanceReload(');
   expect(finance).toContain('parentId:point.parentId');
   expect(read('src/App.tsx')).toContain('undoDepth={finance.undoDepth} redoDepth={finance.redoDepth}');
+  const qa=read('src/qa.tsx'),browser=read('scripts/save-progress-qa.mjs');
+  expect(qa).toContain('__myfinhubQaHoldNextRead');
+  expect(qa).toContain('__myfinhubQaReleaseRead');
+  expect(qa).toContain("if(url.pathname==='/api/import'&&init?.method==='POST')");
+  expect(browser).toContain('old database GET cannot overwrite a newer successful import');
  });
 });

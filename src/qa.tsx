@@ -62,19 +62,27 @@ if(QA_SESSION_SIGNAL_SCREEN){
 const QA_PERSISTENCE_PROBE_SCREEN=new URLSearchParams(location.search).get('screen')==='persistence-probe';
 if(QA_PERSISTENCE_PROBE_SCREEN){
   const originalFetch=globalThis.fetch.bind(globalThis);
-  const backend=qaFinanceData();
+  let backend=qaFinanceData();
   let mode:'success'|'offline'|'pending'|'held'|'conflict'='success';
   const heldResponses:Array<()=>void>=[];
+  const heldReadResponses:Array<()=>void>=[];
+  let holdNextRead=false;
   let revision=1;
   let putCount=0;
   const control=globalThis as typeof globalThis & {
     __myfinhubQaPersistenceMode?:(next:'success'|'offline'|'pending'|'held'|'conflict')=>void;
     __myfinhubQaReleaseSave?:()=>boolean;
     __myfinhubQaPersistencePutCount?:()=>number;
+    __myfinhubQaHoldNextRead?:()=>boolean;
+    __myfinhubQaReleaseRead?:()=>boolean;
+    __myfinhubQaHeldReadCount?:()=>number;
   };
   control.__myfinhubQaPersistenceMode=(next)=>{mode=next};
   control.__myfinhubQaReleaseSave=()=>{const release=heldResponses.shift();if(!release)return false;release();return true};
   control.__myfinhubQaPersistencePutCount=()=>putCount;
+  control.__myfinhubQaHoldNextRead=()=>{holdNextRead=true;return true};
+  control.__myfinhubQaReleaseRead=()=>{const release=heldReadResponses.shift();if(!release)return false;release();return true};
+  control.__myfinhubQaHeldReadCount=()=>heldReadResponses.length;
   const history=()=>({
     available:true,generation:String(revision),financeRevision:String(revision),currentPointId:String(revision),
     canUndo:false,canRedo:false,undoDepth:0,redoDepth:0,
@@ -85,7 +93,14 @@ if(QA_PERSISTENCE_PROBE_SCREEN){
     const raw=typeof input==='string'?input:input instanceof URL?input.href:input.url;
     const url=new URL(raw,location.href);
     if(url.pathname==='/api/data'&&(!init?.method||init.method==='GET')){
-      return new Response(JSON.stringify({data:backend,revision:String(revision),filePath:'QA persistence backend',lastSavedAt:'2026-08-17T12:00:00.000Z'}),{status:200,headers:{'content-type':'application/json'}});
+      const response=new Response(JSON.stringify({data:backend,revision:String(revision),filePath:'QA persistence backend',lastSavedAt:'2026-08-17T12:00:00.000Z'}),{status:200,headers:{'content-type':'application/json'}});
+      if(holdNextRead){holdNextRead=false;return await new Promise<Response>(resolve=>heldReadResponses.push(()=>resolve(response)))}
+      return response;
+    }
+    if(url.pathname==='/api/import'&&init?.method==='POST'){
+      backend=JSON.parse(String(init.body||'{}')) as FinanceData;
+      revision+=1;
+      return new Response(JSON.stringify({data:backend,revision:String(revision),filePath:'QA persistence backend',lastSavedAt:'2026-08-17T12:00:02.000Z'}),{status:200,headers:{'content-type':'application/json'}});
     }
     if(url.pathname==='/api/history'&&(!init?.method||init.method==='GET')){
       return new Response(JSON.stringify(history()),{status:200,headers:{'content-type':'application/json'}});
@@ -535,6 +550,7 @@ function QaPersistenceProbe(){
     <output data-persistence-budget={budget}>{budget}</output>
     <button type="button" data-persistence-mutate onClick={()=>finance.update(current=>({...current,state:{...current.state,settings:{...current.state.settings,monthlyBudget:(current.state.settings.monthlyBudget??0)+1}}}))}>Synthetic finance change</button>
     <button type="button" data-persistence-reload onClick={()=>{void finance.reload()}}>Reload persisted state</button>
+    <button type="button" data-persistence-import onClick={()=>{void finance.importData({...finance.data!,state:{...finance.data!.state,settings:{...finance.data!.state.settings,monthlyBudget:budget+13}}})}}>Synthetic import while GET pending</button>
     <PersistenceNotice saveState={finance.saveState} errorMessage={finance.saveErrorMessage} onRecover={()=>{void finance.reload()}}/>
   </main></>;
 }
