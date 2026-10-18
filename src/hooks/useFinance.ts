@@ -7,7 +7,7 @@ import { isSupportedFinanceSchemaVersion } from '../lib/schemaVersion';
 import type { FinanceData } from '../types';
 
 export type SaveState = 'loading' | 'saved' | 'saving' | 'error' | 'conflict';
-export type ChangeHistoryEntry = { id:string; kind:'change'|'undo'|'redo'; label:string; at:string; current?:boolean };
+export type ChangeHistoryEntry = { id:string; kind:'change'|'undo'|'redo'; label:string; at:string; parentId?:string|null; current?:boolean };
 // Kept as a compatibility export for AppShell and rendered QA. Its payload is now
 // server-authoritative cross-session history rather than a session-only stack.
 export const SESSION_HISTORY_EVENT = 'myfinhub-durable-change-history';
@@ -71,7 +71,7 @@ export function useFinance() {
     historyGenerationRef.current=history.generation;
     historyAvailableRef.current=history.available;
     setHistoryAvailable(history.available);
-    const next:ChangeHistoryEntry[]=history.available?history.points.map(point=>({id:point.id,kind:'change',label:point.label,at:point.createdAt,current:point.current})):[];
+    const next:ChangeHistoryEntry[]=history.available?history.points.map(point=>({id:point.id,kind:'change',label:point.label,at:point.createdAt,parentId:point.parentId,current:point.current})):[];
     changeHistoryRef.current=next;
     setChangeHistory(next);
     setUndoDepth(history.available?history.undoDepth:0);
@@ -125,6 +125,9 @@ export function useFinance() {
   },[coordinator]);
 
   const reload = useCallback(async () => {
+    // A refresh must never replace an optimistic/queued finance write with
+    // older server data while that write is awaiting a revision receipt.
+    if(coordinator.hasWork()||exclusiveOperation.current||saveStateRef.current==='saving')return false;
     setCurrentSaveState('loading');
     setSaveErrorMessage(null);
     try {
@@ -150,7 +153,7 @@ export function useFinance() {
       setCurrentSaveState('error');
       return false;
     }
-  }, [applyDataEnvelope,applyHistory,saveFailureMessage,setCurrentSaveState]);
+  }, [applyDataEnvelope,applyHistory,coordinator,saveFailureMessage,setCurrentSaveState]);
 
   useEffect(() => {
     if(initialLoadStartedRef.current)return;

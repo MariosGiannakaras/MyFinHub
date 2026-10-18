@@ -1,0 +1,32 @@
+# #583 — Do/Undo/Redo coverage, safety and UX audit
+
+**2026-10-18 baseline: Implementations 0/4 completed · Sub-implementations 0/12 completed (fully accepted).** Audit's 4/12 checklist remains issue #583; work branch `audit/583-do-undo-safety-ux` begins from `develop@f1a63ce07b449469d202946ab4732324b8579229`. This draft audit does not authorize a release or merge before external-domain decisions.
+
+## Owner intent / taxonomy
+The owner requests **a coherent Do → Undo → Redo experience across all application actions**, with consistent visible controls, truthful messages and modern accessible UI. Implement the common contract for every *persisted reversible financial/settings mutation*. Enumerate separate categories:
+- **State-cursor reversible:** finance events (including edit/delete/split/transfer), balances, schedules, loans, recurring, budgets, payment-card *metadata* while secret exists, account display settings, category trees, rules, presets and review decisions. Each confirmed write creates one durable revision/history point; redo follows the remaining active branch. No fake success before DB commit.
+- **Local-only reversible while draft remains:** form edits, locally retained OCR/review drafts and unsaved changes (local Undo must not masquerade as persisted server Undo).
+- **External irreversible effects requiring decision/protection:** truly deleted card PAN/CVV/local secrets, import containing mutable state *and immutable seed*, external exports/backups/downloads, security device revocation, logout, third-party actions. A finance snapshot **cannot** recreate a destroyed secret or erase a downloaded file. Fail closed or introduce explicitly approved reversible staging; do not falsely claim blanket Undo success.
+
+## Confirmed architecture risks (see issue #583 forensic matrix)
+1. Latest relational SQL import is recorded in cursor, but Undo only replaces state and *not imported seed*, risking mismatched data.
+2. Completed card-vault deletion is outside finance snapshots; Undo can resurrect metadata without deleted ciphertext. Already-live encrypted Production rows must remain untouched.
+3. Manual reload can overwrite optimistic pending writes; guard at UI and hook, add deterministic synthetic race verification.
+4. History popup erroneously treated all stored snapshot points as audit of Do/Undo/Redo operations. Current vs redo descendants lacked labels. Free-form category names are persisted in privacy-misleading labels.
+
+## Shared-owner UX and copy changes in draft batch
+- History becomes explicit **snapshot cursor**, not chronological list of Undo button presses. A parentId-linked future descendant gets "Αναιρεμένη · διαθέσιμη για επαναφορά"; current point is visibly marked; remaining points neutral. If ancestry cannot be proved, *do not guess* a redo.
+- Display actual server undoDepth/redoDepth, or a contextual reason controls are disabled: saving, error, revision conflict, reload. Existing top-edge save bar remains **the only normal save success feedback**, no extra "Saved" toast.
+- Correct false import-exclusion and privacy claims in the dialog. Note that full import undo and deleted secrets are not yet safe, pending fail-closed backend contract.
+- Reusable semantic status area and 44px modal actions, wrapping long Greek labels, keyboard focus, reduced-motion and mobile stacking. No new page-local generic button system.
+- Block manual reload during queued writes, preserving optimistic data and normal conflict recovery.
+- Tests: pure deterministic ancestry classification/reason copy; source ownership/guard tests; required actual rendered Light/Dark desktop/tablet/mobile and delayed save/reload tests pending.
+
+## Product decision still required before claims of universal reversible behavior
+Choose a safe import strategy: **full atomic snapshot restore across seed+state** (owner asks "everything" and this is the necessary architectural design, with new migrations/integration gates) versus an explicit fail-closed Undo barrier at import. Card vault secrets cannot be recreated after cryptographic deletion: decide whether to stage deletion with a reversible retention period, or keep irreversible final deletion separately confirmed. Do not touch real Production data or change security semantics while undecided.
+
+## Validation and concurrency
+- Draft-only, no full CI yet. Run focused tests and source/geometry checks as a coherent batch; exact final review CI only once implementation and decisions settle.
+- Concurrent PR #582 owns transaction responsiveness after #581 and has a failing 5-second Chromium route gate; **do not touch its branch/files or merge it**. This #583 work is isolated to audit/history/UI/hook files.
+- Later: deterministic synthetic SQL/real-stack tests for import boundary, post-vault deletion Undo, reload race, concurrent client conflicts, 10-day/100-point retention, error/retry and privacy. No destructive migration or live owner data, Android code or main deployment.
+- Final checkpoint must reflect accepted counters, open blockers, exact branch head, gates, next action.
