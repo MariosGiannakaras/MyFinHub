@@ -18,6 +18,10 @@ describe('durable Do/Undo/Redo UI and reload safety',()=>{
  it('blocks refresh while a queued/optimistic save is in flight',()=>{
   const finance=read('src/hooks/useFinance.ts');
   expect(finance).toContain("if(coordinator.hasWork()||exclusiveOperation.current||saveStateRef.current==='saving')return false");
+  expect(finance).toContain('const requestId=++reloadRequestRef.current');
+  expect(finance).toContain('if(!isCurrent())return false;');
+  expect(finance).toContain('mutationEpochRef.current+=1;');
+  expect(finance).toContain('canApplyFinanceReload(');
   expect(finance).toContain('parentId:point.parentId');
   expect(read('src/App.tsx')).toContain('undoDepth={finance.undoDepth} redoDepth={finance.redoDepth}');
  });

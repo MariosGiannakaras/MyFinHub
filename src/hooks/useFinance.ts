@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ApiError, createBackup, importData, loadData, loadHistory, moveHistory, saveData, type HistoryEnvelope } from '../lib/api';
 import { describeFinanceChange } from '../lib/changeHistory';
-import { SequentialQueue, remoteRevisionAction, shouldWarnBeforeUnload } from '../lib/persistenceQueue';
+import { SequentialQueue, canApplyFinanceReload, remoteRevisionAction, shouldWarnBeforeUnload } from '../lib/persistenceQueue';
 import { migrateProductData } from '../lib/productMigration';
 import { isSupportedFinanceSchemaVersion } from '../lib/schemaVersion';
 import type { FinanceData } from '../types';
@@ -57,6 +57,8 @@ export function useFinance() {
   const coordinatorRef = useRef<SequentialQueue<QueuedMutation> | null>(null);
   const changeHistoryRef=useRef<ChangeHistoryEntry[]>([]);
   const initialLoadStartedRef=useRef(false);
+  const mutationEpochRef=useRef(0);
+  const reloadRequestRef=useRef(0);
 
   const assignData = useCallback((next: FinanceData | null) => { dataRef.current = next; setData(next); }, []);
   const setCurrentSaveState=useCallback((next:SaveState)=>{saveStateRef.current=next;setSaveState(next)},[]);
@@ -128,12 +130,21 @@ export function useFinance() {
     // A refresh must never replace an optimistic/queued finance write with
     // older server data while that write is awaiting a revision receipt.
     if(coordinator.hasWork()||exclusiveOperation.current||saveStateRef.current==='saving')return false;
+    const requestId=++reloadRequestRef.current;
+    const requestMutationEpoch=mutationEpochRef.current;
+    const isCurrent=()=>canApplyFinanceReload(
+      requestMutationEpoch,mutationEpochRef.current,
+      requestId,reloadRequestRef.current,
+      coordinator.hasWork(),exclusiveOperation.current,saveStateRef.current,
+    );
     setCurrentSaveState('loading');
     setSaveErrorMessage(null);
     try {
       for(let attempt=0;attempt<MAX_CONSISTENT_RELOAD_ATTEMPTS;attempt+=1){
         const nextData=await loadData();
+        if(!isCurrent())return false;
         const nextHistory=await loadHistory();
+        if(!isCurrent())return false;
         if(!historyMatchesRevision(nextHistory,nextData.revision)){
           if(attempt<MAX_CONSISTENT_RELOAD_ATTEMPTS-1)continue;
           applyDataEnvelope(nextData);
@@ -149,6 +160,7 @@ export function useFinance() {
       setCurrentSaveState('conflict');
       return false;
     } catch (error) {
+      if(!isCurrent())return false; // A stale failed read cannot override a newer save.
       setSaveErrorMessage(saveFailureMessage(error));
       setCurrentSaveState('error');
       return false;
@@ -190,6 +202,7 @@ export function useFinance() {
   }, [coordinator, reload,setCurrentSaveState]);
 
   const persist = useCallback((next: FinanceData,label:string,requireReceipt=false) => {
+    mutationEpochRef.current+=1;
     const stamped = { ...next, app: 'RheomIQ', schemaVersion: 3, updatedAt: new Date().toISOString() };
     assignData(stamped);
     setSaveErrorMessage(null);
@@ -233,6 +246,7 @@ export function useFinance() {
     const allowed=direction==='undo'?undoDepth>0:redoDepth>0;
     if(!current||!allowed||!historyAvailableRef.current||state!=='saved'||exclusiveOperation.current||coordinator.hasWork())return false;
     exclusiveOperation.current=true;
+    mutationEpochRef.current+=1;
     setCurrentSaveState('saving');
     try{
       await coordinator.whenIdle();
@@ -259,6 +273,7 @@ export function useFinance() {
     if (exclusiveOperation.current) throw new Error('Υπάρχει ήδη λειτουργία αποθήκευσης σε εξέλιξη.');
     if (!isSupportedFinanceSchemaVersion(incoming.schemaVersion)) throw new Error('Το αρχείο δημιουργήθηκε από νεότερη ή μη υποστηριζόμενη έκδοση του MyFinHub και δεν μπορεί να εισαχθεί με ασφάλεια.');
     exclusiveOperation.current = true;
+    mutationEpochRef.current+=1;
     setSaveErrorMessage(null);
     setCurrentSaveState('saving');
     try {
