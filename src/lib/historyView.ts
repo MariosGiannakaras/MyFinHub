@@ -2,8 +2,8 @@
  * Server history is a list of saved snapshots, not an audit of cursor
  * operations. Classify only points proven reachable from the current cursor.
  */
-export type StoredPoint={id:string;parentId?:string|null;current?:boolean};
-export type HistoryPosition='current'|'redo'|'stored';
+type StoredPoint={id:string;parentId?:string|null;current?:boolean};
+type HistoryPosition='current'|'redo'|'stored';
 export function classifyHistoryPoints<T extends StoredPoint>(points:readonly T[]):Array<T&{position:HistoryPosition}>{
   const current=points.find(item=>item.current);
   const redoIds=new Set<string>();
@@ -29,7 +29,7 @@ export function classifyHistoryPoints<T extends StoredPoint>(points:readonly T[]
   }));
 }
 
-export type HistoryFeedbackState='loading'|'saving'|'saved'|'error'|'conflict';
+type HistoryFeedbackState='loading'|'saving'|'saved'|'error'|'conflict';
 export function historyAvailabilityMessage({
   state,pending,available,undoDepth,redoDepth,
 }:{
