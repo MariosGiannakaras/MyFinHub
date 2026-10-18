@@ -87,7 +87,7 @@ describe('final UI reuse and orphan audit',()=>{
     const dashboardCss=read('src/styles/dashboard-approved-target.css');
     const transactionCss=read('src/styles/transactions-approved.css');
 
-    expect(shell).toContain('change-history-dialog');
+    expect(read('src/components/HistoryDialog.tsx')).toContain('change-history-dialog');
     expect(shell).not.toContain("style={{gridTemplateRows:'auto auto minmax(0,1fr) auto'}}");
     expect(shell).not.toContain("style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) auto'");
     expect(historyCss).toContain('.change-history-dialog{grid-template-rows:auto auto minmax(0,1fr) auto}');

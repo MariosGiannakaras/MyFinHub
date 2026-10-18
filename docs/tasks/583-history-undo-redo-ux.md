@@ -30,3 +30,7 @@ Choose a safe import strategy: **full atomic snapshot restore across seed+state*
 - Concurrent PR #582 owns transaction responsiveness after #581 and has a failing 5-second Chromium route gate; **do not touch its branch/files or merge it**. This #583 work is isolated to audit/history/UI/hook files.
 - Later: deterministic synthetic SQL/real-stack tests for import boundary, post-vault deletion Undo, reload race, concurrent client conflicts, 10-day/100-point retention, error/retry and privacy. No destructive migration or live owner data, Android code or main deployment.
 - Final checkpoint must reflect accepted counters, open blockers, exact branch head, gates, next action.
+
+## 2026-10-18 Draft main-bundle budget and lazy shared history dialog
+
+**Implementations 0/4 · Sub-implementations 0/12 accepted.** Draft `85a42aab` failed main JS budget **529.2 KiB raw / 528.0 KiB strict maximum** after passing unused-export hygiene. Rather than weakening the cap or removing meaningful messages, extract shared History popup, classification, copy and cursor status into **lazy-loaded `HistoryDialog.tsx`**, triggered only on opening History. Keep real focus management, Framer motion/reduced-motion, 44px actions, shortcut owner and accurate messages; source-owner tests updated. No finance/API backend behavior changes. Next: validate bundle budget + focused CI before Ready. Full reversible import and permanent card-delete semantics still require an explicit safe design.
