@@ -46,9 +46,14 @@ export function ReportsPage({data,month,asOf,privacyVisible,onPrivacyVisibleChan
  const momentum=categoryMomentum(data,month,100,asOf);
  const counterparties=reportExpenseCounterparties(data,month,5,asOf);
  const loanBurden=reportLoanBurden(data,reportingPeriodEndDate(month,asOf));
- const accounts=allAccounts(data).filter(account=>account.kind!=='credit');
- const accountIds=accounts.slice(0,4).map(account=>account.id);
- const accountSeries=primaryAccountSeries(data,month,accountIds,6,asOf);
+ // The chart is not mounted until the owner explicitly reveals private balances.
+ // Avoid six full-ledger snapshots for values that are not visible.
+ const accounts=useMemo(()=>allAccounts(data).filter(account=>account.kind!=='credit'),[data]);
+ const accountIds=useMemo(()=>accounts.slice(0,4).map(account=>account.id),[accounts]);
+ const accountSeries=useMemo(
+   ()=>privacyVisible&&accountIds.length?primaryAccountSeries(data,month,accountIds,6,asOf):[],
+   [data,month,asOf,privacyVisible,accountIds],
+ );
  // Budget aggregates must be computed once for the overview and management editor.
  // Child busy/error/retry state must not rescan 1,500+ finance events.
  const budgetRows=useMemo(()=>budgetProgress(data,month,asOf),[data,month,asOf]);
