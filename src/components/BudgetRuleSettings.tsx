@@ -15,8 +15,9 @@ import type { FinanceData, MonthlyBudget } from '../types';
 
 // Only Reports budgets; transaction automation CRUD is owned by Settings Rules.
 const now=()=>new Date().toISOString();
-export function BudgetRuleSettings({data,asOf,budgetMonth,onUpsertBudget,onDeleteBudget}:{
+export function BudgetRuleSettings({data,asOf,budgetMonth,budgetRows,onUpsertBudget,onDeleteBudget}:{
   data:FinanceData;asOf:string;budgetMonth?:string;
+  budgetRows?:ReturnType<typeof budgetProgress>;
   onUpsertBudget:(budget:MonthlyBudget)=>Promise<void>;onDeleteBudget:(id:string)=>Promise<void>;
 }){
   const expenseTree=categoryTree(data.state.settings,'expense');
@@ -31,7 +32,9 @@ export function BudgetRuleSettings({data,asOf,budgetMonth,onUpsertBudget,onDelet
   const [busy,setBusy]=useState(false);
   const busyRef=useRef(false);
   const [budgetListLimit,setBudgetListLimit]=useState(24);
-  const budgets=budgetProgress(data,month,asOf);
+  // The Reports overview owns this canonical snapshot. Reuse it across this
+  // editor's busy/error renders; preserve standalone behavior when not supplied.
+  const budgets=budgetRows??budgetProgress(data,month,asOf);
   const visibleBudgets=budgets.slice(0,budgetListLimit);
   const saveBudget=async()=>{
     if(busyRef.current)return;

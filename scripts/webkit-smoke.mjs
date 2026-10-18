@@ -39,8 +39,19 @@ async function desktopSmoke(){
     const mfa=page.locator('#mfa-code');
     await mfa.waitFor();
     assert(await mfa.evaluate(node=>node===document.activeElement),'MFA code receives focus');
+    assert(await page.getByRole('button',{name:'Επαλήθευση',exact:true}).count()===0,'automatic MFA verification has no redundant submit button');
+    assert(await page.locator('#mfa-auto-hint[role=status]').count()===1,'MFA automatic verification is announced accessibly');
+    const attempts=()=>page.evaluate(()=>Number(document.documentElement.dataset.qaMfaVerifyCount||0));
+    await mfa.fill('12345');
+    assert(await attempts()===0,'five MFA digits never start verification');
     await mfa.fill('123456');
-    assert(await page.getByRole('button',{name:'Επαλήθευση',exact:true}).isEnabled(),'MFA submit enables for six digits');
+    await page.waitForFunction(()=>Number(document.documentElement.dataset.qaMfaVerifyCount||0)===1);
+    await page.waitForFunction(()=>document.querySelector('#mfa-code')?.value==='');
+    assert(await attempts()===1,'six MFA digits trigger exactly one verification and rejection does not auto-retry');
+    await mfa.fill('654321');
+    await page.waitForFunction(()=>Number(document.documentElement.dataset.qaMfaVerifyCount||0)===2);
+    await page.waitForFunction(()=>document.querySelector('#mfa-code')?.value==='');
+    assert(await attempts()===2,'next complete MFA code retries exactly once');
     assertHealthy('auth');
 
     console.log('WebKit smoke: owned controls, modal focus, mutation and undo');

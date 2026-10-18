@@ -10,10 +10,19 @@ const different=(a:unknown,b:unknown)=>JSON.stringify(a)!==JSON.stringify(b);
 const privacyFallback='Ενημερώθηκαν ιδιωτικές λεπτομέρειες που δεν εμφανίζονται στο ιστορικό.';
 
 function arrayChange<T extends {id:string}>(before:T[]|undefined,after:T[]|undefined):Change<T>{
+  // Finance writes are immutable: unrelated event/recurring/scheduled arrays keep
+  // their identity. Avoid rescanning large unchanged collections on every save.
+  if(before===after)return null;
   const left=before??[];const right=after??[];
-  const added=right.find(item=>!left.some(previous=>previous.id===item.id));if(added)return {type:'add',after:added};
-  const removed=left.find(item=>!right.some(next=>next.id===item.id));if(removed)return {type:'delete',before:removed};
-  for(const next of right){const previous=left.find(item=>item.id===next.id);if(previous&&different(previous,next))return {type:'edit',before:previous,after:next}}
+  // Preserve original precedence and ordering (first added, then first removed,
+  // then first edited) without quadratic nested lookups for large histories.
+  const previousById=new Map<string,T>();
+  for(const item of left)if(!previousById.has(item.id))previousById.set(item.id,item);
+  const nextIds=new Set<string>();
+  for(const item of right)nextIds.add(item.id);
+  const added=right.find(item=>!previousById.has(item.id));if(added)return {type:'add',after:added};
+  const removed=left.find(item=>!nextIds.has(item.id));if(removed)return {type:'delete',before:removed};
+  for(const next of right){const previous=previousById.get(next.id);if(previous&&different(previous,next))return {type:'edit',before:previous,after:next}}
   return null;
 }
 

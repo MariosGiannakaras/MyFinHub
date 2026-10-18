@@ -12,6 +12,7 @@ export type ReceiptProposal = {
   total?: number;
   currency?: string;
   category?: string;
+  subcategory?: string;
   accountId?: string;
   confidence?: ReceiptFieldConfidence;
 };
