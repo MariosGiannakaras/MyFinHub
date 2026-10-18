@@ -65,7 +65,7 @@ if(QA_PERSISTENCE_PROBE_SCREEN){
   let backend=qaFinanceData();
   let mode:'success'|'offline'|'pending'|'held'|'conflict'='success';
   const heldResponses:Array<()=>void>=[];
-  const heldReadResponses:Array<()=>void>=[];
+  const heldReadResponses:Array<(fail:boolean)=>void>=[];
   let holdNextRead=false;
   let revision=1;
   let putCount=0;
@@ -74,14 +74,14 @@ if(QA_PERSISTENCE_PROBE_SCREEN){
     __myfinhubQaReleaseSave?:()=>boolean;
     __myfinhubQaPersistencePutCount?:()=>number;
     __myfinhubQaHoldNextRead?:()=>boolean;
-    __myfinhubQaReleaseRead?:()=>boolean;
+    __myfinhubQaReleaseRead?:(fail?:boolean)=>boolean;
     __myfinhubQaHeldReadCount?:()=>number;
   };
   control.__myfinhubQaPersistenceMode=(next)=>{mode=next};
   control.__myfinhubQaReleaseSave=()=>{const release=heldResponses.shift();if(!release)return false;release();return true};
   control.__myfinhubQaPersistencePutCount=()=>putCount;
   control.__myfinhubQaHoldNextRead=()=>{holdNextRead=true;return true};
-  control.__myfinhubQaReleaseRead=()=>{const release=heldReadResponses.shift();if(!release)return false;release();return true};
+  control.__myfinhubQaReleaseRead=(fail=false)=>{const release=heldReadResponses.shift();if(!release)return false;release(fail);return true};
   control.__myfinhubQaHeldReadCount=()=>heldReadResponses.length;
   const history=()=>({
     available:true,generation:String(revision),financeRevision:String(revision),currentPointId:String(revision),
@@ -94,7 +94,13 @@ if(QA_PERSISTENCE_PROBE_SCREEN){
     const url=new URL(raw,location.href);
     if(url.pathname==='/api/data'&&(!init?.method||init.method==='GET')){
       const response=new Response(JSON.stringify({data:backend,revision:String(revision),filePath:'QA persistence backend',lastSavedAt:'2026-08-17T12:00:00.000Z'}),{status:200,headers:{'content-type':'application/json'}});
-      if(holdNextRead){holdNextRead=false;return await new Promise<Response>(resolve=>heldReadResponses.push(()=>resolve(response)))}
+      if(holdNextRead){
+        holdNextRead=false;
+        return await new Promise<Response>((resolve,reject)=>heldReadResponses.push(fail=>{
+          if(fail)reject(new TypeError('Synthetic stale finance GET failure'));
+          else resolve(response);
+        }));
+      }
       return response;
     }
     if(url.pathname==='/api/import'&&init?.method==='POST'){

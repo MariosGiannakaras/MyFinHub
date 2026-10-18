@@ -98,6 +98,21 @@ try{
   const finalState=await c.call("function(){return {budget:Number(document.querySelector('[data-persistence-budget]')?.textContent||0),state:document.querySelector('[data-persistence-state]')?.textContent}}");
   assert(finalState.budget===initialBudget+13&&finalState.state==='saved',`old database GET cannot overwrite a newer successful import: ${JSON.stringify(finalState)}`);
   await shot('history-refresh-stale-read-after-import-1440-dark');
+  // A request that began before an accepted import may also fail late; its
+  // obsolete network error must not replace the newer database save receipt.
+  await navigate();
+  const beforeFailedRead=await c.call("function(){return Number(document.querySelector('[data-persistence-budget]')?.textContent||0)}");
+  assert(await c.call("function(){return globalThis.__myfinhubQaHoldNextRead?.()===true}"),'hold older GET that will reject');
+  assert(await c.call("function(){const b=document.querySelector('[data-persistence-reload]');b?.click();return Boolean(b)}"),'start reload that later fails');
+  await waitFor("function(){return globalThis.__myfinhubQaHeldReadCount?.()===1}",'failed GET remains pending');
+  assert(await c.call("function(){const b=document.querySelector('[data-persistence-import]');b?.click();return Boolean(b)}"),'import while earlier GET pending');
+  await waitFor(`function(){return Number(document.querySelector('[data-persistence-budget]')?.textContent||0)===${beforeFailedRead+13}}`,'new confirmed budget after pending GET');
+  await waitFor("function(){return document.querySelector('[data-persistence-state]')?.textContent==='saved'}",'new import save receipt confirmed before old GET rejects');
+  assert(await c.call("function(){return globalThis.__myfinhubQaReleaseRead?.(true)===true}"),'reject now-stale GET');
+  await sleep(180);
+  const afterFailedRead=await c.call("function(){return {budget:Number(document.querySelector('[data-persistence-budget]')?.textContent||0),state:document.querySelector('[data-persistence-state]')?.textContent,failedBar:Boolean(document.querySelector('[data-save-progress=error]'))}}");
+  assert(afterFailedRead.budget===beforeFailedRead+13&&afterFailedRead.state==='saved'&&!afterFailedRead.failedBar,`obsolete database GET error cannot replace a confirmed import: ${JSON.stringify(afterFailedRead)}`);
+  await shot('history-refresh-stale-error-after-import-1440-dark');
   c.close();
   console.log('Save-progress QA passed: pending remains active, receipt only green, persistent red failure/conflict, FIFO burst, viewport/theme/reduced-motion evidence');
 }catch(error){console.error(error);process.exitCode=1}

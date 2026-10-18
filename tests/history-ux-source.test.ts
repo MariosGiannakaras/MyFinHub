@@ -27,6 +27,8 @@ describe('durable Do/Undo/Redo UI and reload safety',()=>{
   const qa=read('src/qa.tsx'),browser=read('scripts/save-progress-qa.mjs');
   expect(qa).toContain('__myfinhubQaHoldNextRead');
   expect(qa).toContain('__myfinhubQaReleaseRead');
+  expect(qa).toContain("Synthetic stale finance GET failure");
+  expect(browser).toContain('obsolete database GET error cannot replace a confirmed import');
   expect(qa).toContain("if(url.pathname==='/api/import'&&init?.method==='POST')");
   expect(browser).toContain('old database GET cannot overwrite a newer successful import');
  });
