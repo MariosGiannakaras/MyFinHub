@@ -59,8 +59,8 @@ describe('completion UX contracts',()=>{
     expect(source).toMatch(/transaction-semantic-table[\s\S]*?<tbody>\{visibleRows\.map\(r=>/);
     expect(source).not.toContain('aria-label={`Κινήσεις για ${month}`}>{rows.map');
     expect(source).toContain('className="mobile-transaction-progress"');
-    expect(source).toContain('setQuery(e.target.value);setRenderLimit(LEDGER_RENDER_BATCH)');
-    expect(source).toContain('setSortDirection(value);setRenderLimit(LEDGER_RENDER_BATCH)');
+    expect(source).toContain('setQuery(e.target.value);setRenderLimit(LEDGER_INITIAL_ROWS)');
+    expect(source).toContain('setSortDirection(value);setRenderLimit(LEDGER_INITIAL_ROWS)');
   });
 
   it('renders lending history as semantic cards on phones instead of a squeezed table',()=>{

@@ -94,7 +94,7 @@ try{
   console.log('Transactions QA: realistic large-data continuous scrolling/search boundary');
   await navigate(`${baseUrl}?page=transactions&state=large`,1280,900);
   const large=await c.call("function(){const visible=[...document.querySelectorAll('.transactions-approved-table tbody .transaction-row')];const semantic=[...document.querySelectorAll('.transaction-semantic-table tbody .transaction-row')];const footer=document.querySelector('.transactions-ledger-footer')?.textContent||'';return {visible:visible.length,semantic:semantic.length,first:visible[0]?.textContent||'',footer,domRows:document.querySelectorAll('.transaction-row,.mobile-transaction-row').length,pager:Boolean(document.querySelector('.transactions-pagination,.transactions-page-size,.mobile-transaction-pagination')),overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+2}}");
-  assert(large.visible>=28&&large.visible<=140&&large.semantic===large.visible,'large dataset first paint stays bounded while both semantic and visual rows match');
+  assert(large.visible>=20&&large.visible<=140&&large.semantic===large.visible,'large dataset first paint stays bounded while both semantic and visual rows match');
   const initialLedgerCount=/Εμφανίζονται\s+(\d+)\s+από\s+(\d+)\s+συναλλαγές/.exec(large.footer);
   assert(initialLedgerCount&&Number(initialLedgerCount[1])===large.visible&&Number(initialLedgerCount[2])>=1500,
     `large dataset keeps a truthful initial visible/total count (including baseline transactions): ${JSON.stringify(large)}`);
@@ -123,7 +123,7 @@ try{
   await setInput('.transaction-searchbar input','Large dataset mutation latency target');
   await waitFor("function(){const rows=document.querySelectorAll('.transactions-approved-table tbody .transaction-row');return rows.length===1&&(rows[0].textContent||'').includes('Large dataset mutation latency target')}",'large-data mutation visible after save');
   await setInput('.transaction-searchbar input','');
-  await waitFor("function(){return document.querySelectorAll('.transactions-approved-table tbody .transaction-row').length>=28}",'large dataset continuous list restored after mutation');
+  await waitFor("function(){return document.querySelectorAll('.transactions-approved-table tbody .transaction-row').length>=20}",'large dataset continuous list restored after mutation');
 
   assert(await c.call("function(){return !document.querySelector('.transactions-pagination,.mobile-transaction-pagination,.transactions-page-size')}"),'legacy page controls remain absent after mutation');
   await setInput('.transaction-searchbar input','Large dataset unique search target');await waitFor("function(){const rows=document.querySelectorAll('.transactions-approved-table tbody .transaction-row');return rows.length===1&&(rows[0].textContent||'').includes('Large dataset unique search target')}",'large dataset unique search');
