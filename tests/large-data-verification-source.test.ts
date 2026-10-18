@@ -58,7 +58,7 @@ describe('large-data verification contract',()=>{
     expect(rules).toContain('visibleRuleCount');
     expect(rules).toContain('visibleRules=rules.slice(0,visibleRuleCount)');
     expect(shell).toContain('history={effectiveHistory}');
-    expect(read('src/components/HistoryDialog.tsx')).toContain('classifyHistoryPoints(history.slice(0,100))');
+    expect(readFileSync(new URL('../src/components/HistoryDialog.tsx',import.meta.url),'utf8')).toContain('classifyHistoryPoints(history.slice(0,100))');
   });
 
   it('runs the large-data audit in rendered QA and keeps dedicated Lighthouse cases',()=>{
