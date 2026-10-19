@@ -8,10 +8,25 @@ const browser=execFileSync('bash',['-lc','command -v chromium || command -v chro
 if(!browser)throw new Error('Chromium required for History focused QA');
 const port=9377,profile=`/tmp/myfinhub-history-focused-browser-${process.pid}`;
 rmSync(profile,{force:true,recursive:true});
-const child=spawn(browser,['--headless=new',`--remote-debugging-port=${port}`,'--remote-debugging-address=127.0.0.1',`--user-data-dir=${profile}`,'--no-sandbox','--disable-gpu','--disable-dev-shm-usage','about:blank'],{stdio:'ignore'});
+const child=spawn(browser,['--headless=new',`--remote-debugging-port=${port}`,'--remote-debugging-address=127.0.0.1',`--user-data-dir=${profile}`,'--no-sandbox','--disable-gpu','--disable-dev-shm-usage','--no-first-run','--no-default-browser-check','about:blank'],{stdio:['ignore','pipe','pipe']});
+let browserDiagnostics='',spawnFailure='';
+const appendDiagnostics=chunk=>{browserDiagnostics+=chunk.toString();if(browserDiagnostics.length>14000)browserDiagnostics=browserDiagnostics.slice(-14000)};
+child.stderr?.on('data',appendDiagnostics);
+child.stdout?.on('data',appendDiagnostics);
+child.on('error',error=>{spawnFailure=error instanceof Error?error.message:String(error)});
 const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const assert=(condition,label)=>{if(!condition)throw new Error(`History rendered QA: ${label}`)};
-async function ready(url){for(let i=0;i<100;i++){try{if((await fetch(url)).ok)return}catch{}await sleep(150)}throw Error(`Browser not ready at ${url}`)}
+async function ready(url){
+  // Allow cold headless Chromium startup under a loaded hosted runner, but
+  // never weaken the actual UI, focus, geometry or persistence timeouts.
+  for(let i=0;i<180;i++){
+    if(spawnFailure||child.exitCode!==null||child.signalCode!==null)
+      throw Error(`History QA Chromium terminated during startup (exit=${child.exitCode},signal=${child.signalCode},error=${spawnFailure}). Browser diagnostics:\n${browserDiagnostics}`);
+    try{if((await fetch(url)).ok)return}catch{}
+    await sleep(150);
+  }
+  throw Error(`History QA Chromium startup CDP port ${port} unavailable after 27s. Binary=${browser}. Browser diagnostics:\n${browserDiagnostics}`);
+}
 class Cdp{
   constructor(url){this.url=url;this.id=0;this.pending=new Map()}
   async open(){await new Promise((resolve,reject)=>{this.ws=new WebSocket(this.url);this.ws.onopen=resolve;this.ws.onerror=reject;this.ws.onmessage=event=>{const message=JSON.parse(event.data);if(!message.id)return;const pending=this.pending.get(message.id);if(!pending)return;this.pending.delete(message.id);message.error?pending.reject(new Error(message.error.message)):pending.resolve(message.result)}})}
