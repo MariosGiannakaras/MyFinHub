@@ -21,6 +21,8 @@ describe('history focused rendered regression ownership',()=>{
     expect(browser).toContain("height>=44");
     expect(browser).toContain("Escape");
     expect(browser).toContain('b?.focus({preventScroll:true})');
+    expect(browser).toContain('History backdrop and modal entrance settled');
+    expect(browser).toContain('state.opacity>=0.99&&state.backdropOpacity>=0.99');
     expect(browser).toContain('history-dialog-');
   });
 });

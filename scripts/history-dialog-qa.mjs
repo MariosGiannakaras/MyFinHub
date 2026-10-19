@@ -34,6 +34,11 @@ try{
     await c.call("async function(theme){localStorage.setItem('myfinhub.theme',theme);const mod=await import('/src/lib/theme.ts');mod.applyThemePreference(theme);return true}",[theme]);
     assert(await c.call("function(){const b=document.querySelector('button[aria-label=\\\"Ιστορικό αλλαγών\\\"]');b?.focus({preventScroll:true});b?.click();return Boolean(b&&document.activeElement===b)}"),'history opener exists');
     await waitFor("function(){return Boolean(document.querySelector('.change-history-dialog[aria-modal=true] [data-history-state=current]'))}",'lazy history modal and cursor');
+    // Framer Motion mounts the dialog before its 160ms entrance completes.
+    // Capture only a fully visible settled surface; otherwise screenshots can
+    // look transparent and overlapped even when geometry assertions pass.
+    await waitFor("function(){const d=document.querySelector('.change-history-dialog');const b=d?.closest('.command-backdrop');return Boolean(d&&b&&Number(getComputedStyle(d).opacity)>=0.99&&Number(getComputedStyle(b).opacity)>=0.99)}",'History backdrop and modal entrance settled');
+    await sleep(80);
   };
   for(const {width,height,theme} of [
     {width:1440,height:900,theme:'light'},
@@ -42,7 +47,8 @@ try{
     {width:375,height:812,theme:'dark'},
   ]){
     await open({width,height,theme});
-    const state=await c.call(`function(){const d=document.querySelector('.change-history-dialog');const r=d?.getBoundingClientRect();const actions=[...document.querySelectorAll('.change-history-dialog .history-actions button')];const states=[...d.querySelectorAll('[data-history-state]')].map(x=>x.dataset.historyState);return {width:innerWidth,right:r?.right,left:r?.left,dialogWidth:r?.width,overflows:document.documentElement.scrollWidth>innerWidth+1||d.scrollWidth>d.clientWidth+1,states,actions:actions.map(b=>({text:b.textContent,disabled:b.disabled,height:b.getBoundingClientRect().height})),status:d.querySelector('.history-status')?.textContent,currentCount:states.filter(x=>x==='current').length,focused:d.contains(document.activeElement),focusLabel:document.activeElement?.getAttribute('aria-label'),text:d.textContent}}`);
+    const state=await c.call(`function(){const d=document.querySelector('.change-history-dialog');const r=d?.getBoundingClientRect();const opacity=Number(getComputedStyle(d).opacity);const backdropOpacity=Number(getComputedStyle(d.closest('.command-backdrop')).opacity);const actions=[...document.querySelectorAll('.change-history-dialog .history-actions button')];const states=[...d.querySelectorAll('[data-history-state]')].map(x=>x.dataset.historyState);return {width:innerWidth,right:r?.right,left:r?.left,dialogWidth:r?.width,opacity,backdropOpacity,overflows:document.documentElement.scrollWidth>innerWidth+1||d.scrollWidth>d.clientWidth+1,states,actions:actions.map(b=>({text:b.textContent,disabled:b.disabled,height:b.getBoundingClientRect().height})),status:d.querySelector('.history-status')?.textContent,currentCount:states.filter(x=>x==='current').length,focused:d.contains(document.activeElement),focusLabel:document.activeElement?.getAttribute('aria-label'),text:d.textContent}}`);
+    assert(state.opacity>=0.99&&state.backdropOpacity>=0.99,`fully opaque History modal and backdrop at ${width}: ${JSON.stringify(state)}`);
     assert(!state.overflows&&state.left>=-1&&state.right<=width+1,`no horizontal clipping at ${width} ${JSON.stringify(state)}`);
     assert(state.states.join(',')==='redo,current,stored',`proven current/redo/stored hierarchy at ${width}: ${state.states}`);
     assert(state.actions.length===2&&state.actions.every(x=>!x.disabled&&x.height>=44),`44px enabled Undo/Redo at ${width}: ${JSON.stringify(state.actions)}`);
