@@ -35,7 +35,7 @@ describe('history focused rendered regression ownership',()=>{
     expect(browser).toContain("guideUrl.searchParams.set('page','settings')");
     expect(browser).toContain("summary.click();summary.scrollIntoView");
     expect(browser).toContain('settings-import-guide-375-dark-warning');
-    expect(browser).toContain('settings-import-guide-'+ 'width');
+    expect(browser).toContain("screenshot('settings-import-guide-'+width+'-'+theme)");
     expect(browser).toContain('guide.summaryHeight>=44');
     expect(browser).toContain('guide.pageOverflow');
   });
