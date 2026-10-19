@@ -32,7 +32,7 @@ try{
     await c.send('Page.navigate',{url:url.href});
     await waitFor("function(){return Boolean(document.querySelector('.app-shell button[aria-label=\\\"Ιστορικό αλλαγών\\\"]'))}",'synthetic history shell');
     await c.call("async function(theme){localStorage.setItem('myfinhub.theme',theme);const mod=await import('/src/lib/theme.ts');mod.applyThemePreference(theme);return true}",[theme]);
-    assert(await c.call("function(){const b=document.querySelector('button[aria-label=\\\"Ιστορικό αλλαγών\\\"]');b?.click();return Boolean(b)}"),'history opener exists');
+    assert(await c.call("function(){const b=document.querySelector('button[aria-label=\\\"Ιστορικό αλλαγών\\\"]');b?.focus({preventScroll:true});b?.click();return Boolean(b&&document.activeElement===b)}"),'history opener exists');
     await waitFor("function(){return Boolean(document.querySelector('.change-history-dialog[aria-modal=true] [data-history-state=current]'))}",'lazy history modal and cursor');
   };
   for(const {width,height,theme} of [
