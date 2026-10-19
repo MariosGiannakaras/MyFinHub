@@ -17,7 +17,7 @@ describe('history focused rendered regression ownership',()=>{
     expect(qa).toContain("id:'qa-redo-point',parentId:'qa-current-point'");
     expect(qa).toContain('undoDepth={undoStack.length} redoDepth={redoStack.length}');
     expect(browser).toContain("['error','conflict']");
-    expect(browser).toContain('history-dialog-qa.mjs').toBe(false);
+    expect(browser).not.toContain('scripts/history-dialog-qa.mjs');
     expect(browser).toContain("height>=44");
     expect(browser).toContain("Escape");
     expect(browser).toContain('history-dialog-');
