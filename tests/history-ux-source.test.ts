@@ -9,11 +9,19 @@ describe('durable Do/Undo/Redo UI and reload safety',()=>{
   expect(dialog).toContain('classifyHistoryPoints(history.slice(0,100))');
   expect(dialog).toContain('historyAvailabilityMessage({state:saveState,pending:savePending,available:historyAvailable,undoDepth,redoDepth})');
   expect(dialog).toContain('data-history-state={entry.position}');
-  expect(dialog).toContain('Η εισαγωγή αρχείου δεν έχει ακόμη εγγυημένη πλήρη αναίρεση');
+  expect(dialog).toContain('Η εισαγωγή αρχείου δεν αναιρείται μέσω Undo/Redo');
   expect(dialog).not.toContain('Η εισαγωγή αρχείου παραμένει ξεχωριστή λειτουργία και δεν εντάσσεται αυτόματα');
   expect(shell).toContain("disabled={saveState==='loading'||saveState==='saving'||savePending}");
   const css=read('src/styles/durable-history-controls.css');
   expect(css).toContain('.history-actions button{min-height:44px}');
+ });
+ it('shows usable import instructions, validated shape and explicit irreversible boundary',()=>{
+  const page=read('src/pages/SettingsPage.tsx');
+  const css=read('src/pages/SettingsData.css');
+  for(const x of ['Οδηγίες χρήσης και δομή αρχείου JSON','Πώς γίνεται η εισαγωγή','Δομή JSON MyFinHub','<code>schemaVersion</code>','<code>seed</code>','<code>state</code>','δεν συγχωνεύει','δεν περιλαμβάνεται στο JSON backup'])expect(page).toContain(x);
+  expect(page).toContain('χειροποίητο JSON με μόνο αυτά τα πεδία δεν αρκεί');
+  expect(css).toContain('.settings-import-guide-fields');
+  expect(css).toContain('.settings-import-guide>summary:focus-visible');
  });
  it('blocks refresh while a queued/optimistic save is in flight',()=>{
   const finance=read('src/hooks/useFinance.ts');
