@@ -342,9 +342,16 @@ function QaWorkspace(){
   const params=new URLSearchParams(location.search);
   const lazyFailure=params.get('failure')==='lazy';
   const [data,setData]=useState<FinanceData>(()=>buildQaData(params));
-  const [undoStack,setUndoStack]=useState<FinanceData[]>([]);
-  const [redoStack,setRedoStack]=useState<FinanceData[]>([]);
-  const [changeHistory,setChangeHistory]=useState<ChangeHistoryEntry[]>(()=>params.get('state')==='large'
+  // QA-only graph and stack state to exercise the actual lazy HistoryDialog.
+  // Never use this synthetic stack as proof of database Undo/Redo semantics.
+  const historyCursorFixture=params.get('state')==='history-cursor';
+  const [undoStack,setUndoStack]=useState<FinanceData[]>(()=>historyCursorFixture?[qaFinanceData()]:[]);
+  const [redoStack,setRedoStack]=useState<FinanceData[]>(()=>historyCursorFixture?[qaFinanceData()]:[]);
+  const [changeHistory,setChangeHistory]=useState<ChangeHistoryEntry[]>(()=>historyCursorFixture?[
+    {id:'qa-redo-point',parentId:'qa-current-point',kind:'change',label:'Διόρθωση κατηγορίας · '+('Μεγάλη συνθετική περιγραφή ελέγχου · ').repeat(6),at:'2026-08-17T14:10:00.000Z',current:false},
+    {id:'qa-current-point',parentId:'qa-previous-point',kind:'change',label:'Τρέχουσα επιβεβαιωμένη κατάσταση · 123,45 €',at:'2026-08-17T13:00:00.000Z',current:true},
+    {id:'qa-previous-point',parentId:null,kind:'change',label:'Προηγούμενη καταχώριση · 100,00 €',at:'2026-08-17T12:00:00.000Z',current:false},
+  ]:params.get('state')==='large'
     ?Array.from({length:100},(_,index)=>({id:`qa-large-history-${index+1}`,kind:'change' as const,label:`Large history change ${index+1}`,at:`2026-08-17T${String(11-Math.floor(index/60)).padStart(2,'0')}:${String(59-index%60).padStart(2,'0')}:00.000Z`,current:index===0}))
     :[]);
   const [saveState,setSaveState]=useState<SaveState>(()=>initialSaveState(params.get('save')));
@@ -531,7 +538,7 @@ function QaWorkspace(){
   const periodVisible=['dashboard','transactions','savings','reports'].includes(page);
 
   return <>
-    <AppShell page={page} onPage={next=>{setCrash(false);setPage(next)}} onQuickAdd={()=>openGeneric()} onCommand={openCommand} onRefresh={refresh} onUndo={undo} onRedo={redo} canUndo={undoStack.length>0} canRedo={redoStack.length>0} history={changeHistory} saveState={saveState} filePath="Synthetic QA" motionMode="full" userEmail="qa@example.invalid" onLogout={()=>{}}>
+    <AppShell page={page} onPage={next=>{setCrash(false);setPage(next)}} onQuickAdd={()=>openGeneric()} onCommand={openCommand} onRefresh={refresh} onUndo={undo} onRedo={redo} canUndo={undoStack.length>0&&saveState==='saved'} canRedo={redoStack.length>0&&saveState==='saved'} undoDepth={undoStack.length} redoDepth={redoStack.length} history={changeHistory} saveState={saveState} filePath="Synthetic QA" motionMode="full" userEmail="qa@example.invalid" onLogout={()=>{}}>
       <PersistenceNotice saveState={saveState} onRecover={()=>setRecoverOpen(true)} cleanupPending={qaCleanupPending} cleanupError={qaCleanupPending?'Η δοκιμαστική επανάληψη καθαρισμού εκκρεμεί.':null} onRetryCleanup={()=>setQaCleanupPending(0)}/>
       {periodVisible?<div className="period-row"><PeriodControl month={month} onChange={setMonth}/><button type="button" className="text-button" data-qa-crash onClick={()=>setCrash(true)}>QA render failure</button></div>:<button type="button" className="text-button qa-crash-floating" data-qa-crash onClick={()=>setCrash(true)}>QA render failure</button>}
       {saveState==='loading'?<div className="qa-loading-route"><h1 className="sr-only">{QA_PAGE_HEADINGS[page]}</h1><PageSkeleton/></div>:<PageErrorBoundary resetKey={page} onDashboard={()=>{setCrash(false);setPage('dashboard')}}>{lazyFailure?<Suspense fallback={<PageSkeleton/>}><LazyResourceFailure/></Suspense>:crash?<Crash/>:content}</PageErrorBoundary>}
