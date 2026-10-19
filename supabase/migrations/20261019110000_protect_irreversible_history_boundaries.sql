@@ -53,9 +53,10 @@ on private.rheomiq_final_card_secret_deletions for insert to authenticated
 with check(owner_user_id=auth.uid() and (select public.rheomiq_is_owner_aal2()));
 
 -- One shared authoritative predicate serves both the read-only UI availability
--- counts and the locked move_history RPC. Conservatively refuse revival of any
--- absent current card metadata if its encrypted secret is also absent, covering
--- legacy deletions that predate the new tombstone table.
+-- counts and the locked move_history RPC. ID-only tombstones cover all new
+-- finalized deletes. For legacy deletions with no tombstone, reject a missing
+-- encrypted secret only when the historical card actually had a vaultRef.
+-- Metadata-only cards without vault secrets remain ordinarily reversible.
 create or replace function private.rheomiq_history_move_blocked(
   p_owner uuid,p_current_id bigint,p_target_id bigint,p_direction text
 )
@@ -89,7 +90,8 @@ as $$
             where tombstone.owner_user_id=p_owner and tombstone.card_id=old_card.card->>'id'
           )
           or (
-            not exists(
+            nullif(old_card.card->>'vaultRef','') is not null
+            and not exists(
               select 1 from private.rheomiq_cards active_card
               where active_card.owner_user_id=p_owner
                 and active_card.card_id=old_card.card->>'id'

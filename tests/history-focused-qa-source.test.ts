@@ -38,6 +38,8 @@ describe('history focused rendered regression ownership',()=>{
     expect(browser).toContain("screenshot('settings-import-guide-'+width+'-'+theme)");
     expect(browser).toContain('guide.summaryHeight>=44');
     expect(browser).toContain('guide.pageOverflow');
+    expect(browser).toContain('clearance.warningBottom<=clearance.navTop-8');
+    expect(browser).toContain('clearance.warningTop>=clearance.headerBottom+4');
   });
   it('tests real-hook cursor receipts, redo invalidation and rejected history on the QA-only database',()=>{
     const qa=read('src/qa.tsx');

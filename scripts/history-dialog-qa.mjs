@@ -105,8 +105,13 @@ try{
     await sleep(120);
     await screenshot('settings-import-guide-'+width+'-'+theme);
     if(width<=680){
-      await c.call("function(){document.querySelector('.settings-import-guide-warning')?.scrollIntoView({block:'end',behavior:'instant'});return true}");
-      await sleep(120);
+      // Fixed mobile navigation occludes scrollIntoView(block:end) snapshots,
+      // even when the page has enough bottom padding to reveal full content.
+      // Scroll to the real document end and prove the warning clears the nav.
+      await c.call("function(){const scroller=document.scrollingElement||document.documentElement;scroller.scrollTo({top:scroller.scrollHeight,behavior:'instant'});return true}");
+      await sleep(170);
+      const clearance=await c.call("function(){const w=document.querySelector('.settings-import-guide-warning')?.getBoundingClientRect();const n=document.querySelector('.mobile-nav')?.getBoundingClientRect();const h=document.querySelector('.topbar')?.getBoundingClientRect();const scroller=document.scrollingElement||document.documentElement;return {warningTop:w?.top,warningBottom:w?.bottom,navTop:n?.top,headerBottom:h?.bottom,remaining:scroller.scrollHeight-scroller.clientHeight-scroller.scrollTop}}");
+      assert(clearance.warningTop>=clearance.headerBottom+4&&clearance.warningBottom<=clearance.navTop-8,'mobile import warning fully clear of fixed navigation: '+JSON.stringify(clearance));
       await screenshot('settings-import-guide-375-dark-warning');
     }
   }

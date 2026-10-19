@@ -83,8 +83,7 @@ describe('history cross-domain boundaries — SQL guard/source proof, real-stack
     expect(fakeVaultIds.has(card.id)).toBe(false);
   });
 
-  // Do not activate until the owner selects the cross-domain policy and the
-  // implementation makes these security invariants actually enforceable.
+  // Owner-defined policies are implemented; source locks supplement runtime integration.
   it('requires the dedicated migration to block imported-seed Undo at the authoritative cursor',()=>{expect(boundaries).toContain("point.label='Εισαγωγή δεδομένων'");expect(boundaries).toContain('private.rheomiq_history_move_blocked(v_owner,v_cursor.current_point_id,v_target.id,p_direction)');expect(boundaries).toContain("message='HISTORY_IRREVERSIBLE_BOUNDARY'");});
-  it('requires atomic ciphertext delete tombstone and fail-closed profile restoration',()=>{expect(boundaries).toContain('private.rheomiq_final_card_secret_deletions');expect(boundaries).toContain('on conflict (owner_user_id,card_id) do nothing');expect(boundaries).toContain('private.rheomiq_cards active_card');expect(boundaries).toContain('public.rheomiq_card_secrets vault');});
+  it('requires atomic ciphertext delete tombstone and fail-closed profile restoration',()=>{expect(boundaries).toContain('private.rheomiq_final_card_secret_deletions');expect(boundaries).toContain('on conflict (owner_user_id,card_id) do nothing');expect(boundaries).toContain('private.rheomiq_cards active_card');expect(boundaries).toContain('public.rheomiq_card_secrets vault');expect(boundaries).toContain("nullif(old_card.card->>'vaultRef','') is not null");});
 });
