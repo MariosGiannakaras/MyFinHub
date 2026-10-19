@@ -30,6 +30,15 @@ describe('history focused rendered regression ownership',()=>{
     expect(browser).toContain('state.introVisible&&state.caveatVisible');
     expect(browser).toContain('history-dialog-');
   });
+  it('checks expanded import instructions/schema and privacy warnings in rendered desktop/mobile states',()=>{
+    const browser=read('scripts/history-dialog-qa.mjs');
+    expect(browser).toContain("guideUrl.searchParams.set('page','settings')");
+    expect(browser).toContain("summary.click();summary.scrollIntoView");
+    expect(browser).toContain('settings-import-guide-375-dark-warning');
+    expect(browser).toContain('settings-import-guide-'+ 'width');
+    expect(browser).toContain('guide.summaryHeight>=44');
+    expect(browser).toContain('guide.pageOverflow');
+  });
   it('tests real-hook cursor receipts, redo invalidation and rejected history on the QA-only database',()=>{
     const qa=read('src/qa.tsx');
     const browser=read('scripts/save-progress-qa.mjs');

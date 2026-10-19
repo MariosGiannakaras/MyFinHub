@@ -84,6 +84,33 @@ try{
     assert((save==='error'?state.status?.includes('δεν επιβεβαιώθηκε'):state.status?.includes('δεν συμφωνεί')),`accurate ${save} status: ${state.status}`);
     await screenshot(`history-dialog-375-dark-${save}`);
   }
-  console.log('History focused rendered QA passed: cursor, long Greek labels, Light/Dark responsive geometry, button states, focus/Escape and error/conflict.');
+
+  // Validate the actual import guide (user instructions + JSON structure) at
+  // desktop Light and mobile Dark. This is QA-only; it cannot import real data.
+  for(const [width,height,theme] of [[1440,900,'light'],[375,812,'dark']]){
+    await c.send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<=680});
+    const guideUrl=new URL(base);
+    guideUrl.searchParams.set('page','settings');
+    guideUrl.searchParams.set('state','settings-tabs');
+    await c.send('Page.navigate',{url:guideUrl.href});
+    await waitFor("function(){return Boolean(document.querySelector('.settings-tablist button'))}",'Settings tabs loaded for import guide');
+    await c.call("async function(theme){localStorage.setItem('myfinhub.theme',theme);const mod=await import('/src/lib/theme.ts');mod.applyThemePreference(theme);return true}",[theme]);
+    assert(await c.call("function(){const button=[...document.querySelectorAll('.settings-tablist button')].find(n=>n.textContent?.trim()==='Δεδομένα');if(!button)return false;button.click();return true}"),'Data tab is accessible');
+    await waitFor("function(){return Boolean(document.querySelector('.settings-data-tab .settings-import-guide'))}",'import guide shown');
+    assert(await c.call("function(){const root=document.querySelector('.settings-import-guide');const summary=root?.querySelector('summary');if(!summary)return false;summary.click();summary.scrollIntoView({block:'start'});return root.open}"),'guide expands by user interaction');
+    await waitFor("function(){const g=document.querySelector('.settings-import-guide');return Boolean(g?.open&&g.querySelectorAll('.settings-import-guide-fields>div').length===3)}",'import schema definition list expanded');
+    const guide=await c.call("function(){const g=document.querySelector('.settings-import-guide');const rect=g?.getBoundingClientRect();const labels=g?.textContent||'';const warning=g?.querySelector('.settings-import-guide-warning');return {left:rect?.left,right:rect?.right,width:innerWidth,pageOverflow:document.documentElement.scrollWidth>innerWidth+1,guideOverflow:g?.scrollWidth>g?.clientWidth+1,summaryHeight:g?.querySelector('summary')?.getBoundingClientRect().height,keys:['app','schemaVersion','updatedAt','seed','state'].every(key=>labels.includes(key)),backup:labels.includes('Backup & λήψη'),warning:warning?.textContent?.includes('δεν αναιρείται με Undo/Redo'),vault:labels.includes('Card Vault'),replacement:labels.includes('δεν συγχωνεύει')}}");
+    assert(!guide.pageOverflow&&!guide.guideOverflow&&guide.left>=-1&&guide.right<=width+1,'import guide responsive geometry at '+width+': '+JSON.stringify(guide));
+    assert(guide.summaryHeight>=44&&guide.keys&&guide.backup&&guide.warning&&guide.vault&&guide.replacement,'import guide accessible and complete at '+width+': '+JSON.stringify(guide));
+    await sleep(120);
+    await screenshot('settings-import-guide-'+width+'-'+theme);
+    if(width<=680){
+      await c.call("function(){document.querySelector('.settings-import-guide-warning')?.scrollIntoView({block:'end',behavior:'instant'});return true}");
+      await sleep(120);
+      await screenshot('settings-import-guide-375-dark-warning');
+    }
+  }
+
+  console.log('History focused rendered QA passed: cursor, import guide, long Greek labels, Light/Dark responsive geometry, button states, focus/Escape and error/conflict.');
 }catch(error){console.error(error);process.exitCode=1}
 finally{c?.close();child.kill('SIGTERM');rmSync(profile,{force:true,recursive:true,maxRetries:6,retryDelay:150})}
