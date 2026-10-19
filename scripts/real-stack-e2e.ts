@@ -444,6 +444,21 @@ async function main(){
     assert(String(recoveredHistory.body?.financeRevision||'')===String(recovered.body?.revision||''),'Recovered history cursor does not match the finance revision.');
     assert(recoveredHistory.body?.points?.some((point:any)=>point.current===true&&point.label==='Εισαγωγή δεδομένων'),'Recovered history does not expose the import recovery point.');
 
+    // The imported seed and state must never be partially reverted by Undo.
+    assert(recoveredHistory.body?.undoDepth===0&&recoveredHistory.body?.canUndo===false,
+      'Import history still advertises unsafe state-only Undo.');
+    const refusedImportUndo=await primary.request('/api/history',{
+      method:'POST',
+      headers:{'if-match':String(recovered.body.revision),'x-rheomiq-history-generation':String(recoveredHistory.body.generation)},
+      body:{action:'undo',updatedAt:new Date().toISOString()},
+    });
+    expect(refusedImportUndo,409,'HISTORY_IRREVERSIBLE_BOUNDARY','import-history-boundary');
+    const afterRefusedImport=await primary.request('/api/data');
+    expect(afterRefusedImport,200,undefined,'import-history-boundary-reload');
+    assert(afterRefusedImport.body.revision===recovered.body.revision&&
+      afterRefusedImport.body.data.seed.sourceName===recovered.body.data.seed.sourceName,
+      'Rejected import Undo changed the saved revision or imported seed.');
+
     const auditRows=await upstreamJson(`${local.apiUrl}/rest/v1/rheomiq_audit_log?select=action,revision&order=id.desc&limit=12`,local.serviceRole) as any[];
     const auditActions=new Set(Array.isArray(auditRows)?auditRows.map(row=>String(row?.action||'')):[]);
     assert(auditActions.has('backup')&&auditActions.has('import')&&auditActions.has('undo')&&auditActions.has('redo'),'Recovery audit trail is missing expected actions.');
@@ -558,6 +573,38 @@ async function main(){
     const finalReload=await primary.request('/api/data');
     expect(finalReload,200,undefined,'card-cleanup-final-reload');
     assert(!(finalReload.body?.data?.state?.pendingCardSecretDeletes||[]).includes(cleanupId),'Card vault cleanup marker was not removed after successful deletion.');
+
+    // After final ciphertext removal, the preceding metadata profile may not
+    // be resurrected. Allow only the safe marker-state Undo/Redo pair.
+    const cardBoundaryHistory=await primary.request('/api/history');
+    expect(cardBoundaryHistory,200,undefined,'final-card-history');
+    assert(cardBoundaryHistory.body?.canUndo===true,'Expected one safe post-deletion marker Undo.');
+    const cardMarkerUndo=await primary.request('/api/history',{
+      method:'POST',
+      headers:{'if-match':String(finalReload.body.revision),'x-rheomiq-history-generation':String(cardBoundaryHistory.body.generation)},
+      body:{action:'undo',updatedAt:new Date().toISOString()},
+    });
+    expect(cardMarkerUndo,200,undefined,'post-delete-marker-undo');
+    const forbiddenCardHistory=await primary.request('/api/history');
+    expect(forbiddenCardHistory,200,undefined,'post-delete-card-history');
+    assert(forbiddenCardHistory.body?.undoDepth===0&&!forbiddenCardHistory.body?.canUndo,
+      'Committed Card Vault deletion still advertises restoration of a dead profile.');
+    const forbiddenCardUndo=await primary.request('/api/history',{
+      method:'POST',
+      headers:{'if-match':String(cardMarkerUndo.body.revision),'x-rheomiq-history-generation':String(forbiddenCardHistory.body.generation)},
+      body:{action:'undo',updatedAt:new Date().toISOString()},
+    });
+    expect(forbiddenCardUndo,409,'HISTORY_IRREVERSIBLE_BOUNDARY','post-delete-card-profile-boundary');
+    expect(await primary.request('/api/card-secrets',{method:'POST',body:{cardId:cleanupId}}),
+      404,'CARD_SECRET_NOT_FOUND','post-delete-card-secret-still-absent');
+    const markerRedone=await primary.request('/api/history',{
+      method:'POST',
+      headers:{'if-match':String(cardMarkerUndo.body.revision),'x-rheomiq-history-generation':String(forbiddenCardHistory.body.generation)},
+      body:{action:'redo',updatedAt:new Date().toISOString()},
+    });
+    expect(markerRedone,200,undefined,'post-delete-marker-redo');
+    assert(!(markerRedone.body?.data?.state?.pendingCardSecretDeletes||[]).includes(cleanupId),
+      'Redo failed to restore the completed card-secret cleanup marker state.');
 
     console.log('[real-stack] stage card-vault-delete');
     expect(await primary.request('/api/card-secrets',{method:'DELETE',body:{cardId:TEST_CARD_ID}}),200,undefined,'card-vault-delete');

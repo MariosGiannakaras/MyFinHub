@@ -8,6 +8,7 @@ import type {PaymentCard} from '../src/types.js';
 // They MUST NOT be interpreted as acceptance of safe import/card-secret Undo.
 const sql=readFileSync(new URL('../supabase/migrations/20260930122054_relational_finance_ledger_cutover.sql',import.meta.url),'utf8');
 const atomicDelete=readFileSync(new URL('../supabase/migrations/20261010013500_atomic_card_vault_cleanup.sql',import.meta.url),'utf8');
+const boundaries=readFileSync(new URL('../supabase/migrations/20261019110000_protect_irreversible_history_boundaries.sql',import.meta.url),'utf8');
 const cleanupGuard=readFileSync(new URL('../supabase/migrations/20261010145500_guard_pending_card_secret_cleanup_intent.sql',import.meta.url),'utf8');
 const currentFunction=(name:string)=>{
   const marker=`create or replace function public.${name}(`;
@@ -18,7 +19,7 @@ const currentFunction=(name:string)=>{
   return sql.slice(start,end);
 };
 
-describe('history cross-domain boundaries — known-risk characterization, not acceptance',()=>{
+describe('history cross-domain boundaries — SQL guard/source proof, real-stack still pending',()=>{
   it('anchors the seed/state import gap to the final authoritative relational SQL',()=>{
     const importing=currentFunction('rheomiq_import_state');
     const moving=currentFunction('rheomiq_move_history');
@@ -84,6 +85,6 @@ describe('history cross-domain boundaries — known-risk characterization, not a
 
   // Do not activate until the owner selects the cross-domain policy and the
   // implementation makes these security invariants actually enforceable.
-  it.todo('real-stack Undo of an import atomically restores its seed and state, or is rejected at a defined boundary');
-  it.todo('real-stack Undo after completed encrypted card-secret deletion cannot resurrect a live-looking secretless profile');
+  it('requires the dedicated migration to block imported-seed Undo at the authoritative cursor',()=>{expect(boundaries).toContain("point.label='Εισαγωγή δεδομένων'");expect(boundaries).toContain('private.rheomiq_history_move_blocked(v_owner,v_cursor.current_point_id,v_target.id,p_direction)');expect(boundaries).toContain("message='HISTORY_IRREVERSIBLE_BOUNDARY'");});
+  it('requires atomic ciphertext delete tombstone and fail-closed profile restoration',()=>{expect(boundaries).toContain('private.rheomiq_final_card_secret_deletions');expect(boundaries).toContain('on conflict (owner_user_id,card_id) do nothing');expect(boundaries).toContain('private.rheomiq_cards active_card');expect(boundaries).toContain('public.rheomiq_card_secrets vault');});
 });

@@ -260,7 +260,7 @@ export function useFinance() {
       return true;
     }catch(error){
       lastSaveFailed.current=true;
-      if(error instanceof ApiError&&(error.status===409||error.code==='REVISION_CONFLICT'||error.code==='HISTORY_CURSOR_CONFLICT'||error.code==='HISTORY_UNAVAILABLE')){setSaveErrorMessage(null);setCurrentSaveState('conflict')}
+      if(error instanceof ApiError&&(error.status===409||error.code==='REVISION_CONFLICT'||error.code==='HISTORY_CURSOR_CONFLICT'||error.code==='HISTORY_UNAVAILABLE'||error.code==='HISTORY_IRREVERSIBLE_BOUNDARY')){setSaveErrorMessage(null);setCurrentSaveState('conflict')}
       else{setSaveErrorMessage(saveFailureMessage(error));setCurrentSaveState('error')}
       return false;
     }finally{exclusiveOperation.current=false}
