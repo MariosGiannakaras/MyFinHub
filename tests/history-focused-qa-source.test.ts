@@ -8,6 +8,9 @@ describe('history focused rendered regression ownership',()=>{
     expect(workflow).toContain("github.event.pull_request.draft == true");
     expect(workflow).toContain('scripts/history-dialog-qa.mjs');
     expect(workflow).toContain('scripts/save-progress-qa.mjs');
+    expect(workflow).toContain('node --check scripts/savings-remediation-qa.mjs');
+    expect(workflow).toContain('node scripts/savings-remediation-qa.mjs 2>&1 | tee');
+    expect(workflow).toContain('history-focused/logs/savings-remediation.log');
     expect(workflow).toContain('history-focused/screenshots/*.png');
   });
   it('covers viewport/theme matrix and actual snapshot cursor through the shared HistoryDialog',()=>{

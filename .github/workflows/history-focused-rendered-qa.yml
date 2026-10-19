@@ -29,6 +29,7 @@ jobs:
         run: |
           node --check scripts/history-dialog-qa.mjs
           node --check scripts/save-progress-qa.mjs
+          node --check scripts/savings-remediation-qa.mjs
           command -v chromium || command -v chromium-browser
       - name: Start synthetic Vite QA site
         run: |
@@ -54,6 +55,13 @@ jobs:
         run: |
           export MYFINHUB_UX_EVIDENCE_DIR="$RUNNER_TEMP/history-focused/screenshots"
           node scripts/save-progress-qa.mjs 2>&1 | tee "$RUNNER_TEMP/history-focused/logs/save-progress.log"
+          exit "${PIPESTATUS[0]}"
+      - name: Check Savings historical/current reporting balances and goal progress
+        env:
+          RHEOMIQ_QA_URL: http://127.0.0.1:5173/qa.html
+        run: |
+          export MYFINHUB_UX_EVIDENCE_DIR="$RUNNER_TEMP/history-focused/screenshots"
+          node scripts/savings-remediation-qa.mjs 2>&1 | tee "$RUNNER_TEMP/history-focused/logs/savings-remediation.log"
           exit "${PIPESTATUS[0]}"
       - name: Stop server and capture its log
         if: always()
