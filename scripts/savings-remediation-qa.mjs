@@ -23,6 +23,18 @@ try{
   const waitFor=async(fn,label)=>{for(let i=0;i<120;i++){if(await c.call(fn))return;await sleep(100)}throw new Error(`Timed out waiting for ${label}`)};
   await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Αποταμίευση')}",'Savings heading');
   const state=()=>c.call("function(){const label=[...document.querySelectorAll('.period-control>span')].find(node=>!node.classList.contains('app-tooltip'));const route=document.querySelector('.savings-route-target');const routeValues=[...route?.querySelectorAll('em')||[]].map(node=>(node.textContent||'').replace(/\\s+/g,' ').trim());const goal=[...document.querySelectorAll('.savings-goal-row.personal')].find(row=>(row.textContent||'').includes('Ταμείο ασφαλείας'));return {period:(label?.textContent||'').trim(),heading:(document.querySelector('.savings-month-card h2')?.textContent||'').trim(),routeValues,goalBalance:(goal?.querySelector(':scope > strong')?.textContent||'').replace(/\\s+/g,' ').trim(),goalProgress:(goal?.querySelector('.savings-goal-progress b')?.textContent||'').trim()}}");
+  // The selected reporting-month label updates synchronously; route balances
+  // and goals can settle in a later render. Wait for the *actual finance values*
+  // instead of guessing a fixed 350ms paint delay under concurrent QA load.
+  const waitForSavingsSnapshot=async(predicate,label)=>{
+    let last;
+    for(let attempt=0;attempt<120;attempt++){
+      last=await state();
+      if(predicate(last))return last;
+      await sleep(100);
+    }
+    throw new Error(`Savings QA values did not settle: ${label} (last=${JSON.stringify(last)})`);
+  };
   const clickPeriod=async direction=>{const label=direction==='previous'?'Προηγούμενος μήνας':'Επόμενος μήνας';const ok=await c.call("function(label){const button=[...document.querySelectorAll('.period-control button[aria-label]')].find(node=>(node.getAttribute('aria-label')||'').startsWith(label));if(!button||button.disabled)return false;button.click();return true}",[label]);assert(ok,`missing enabled ${label} control`)};
   const screenshot=async name=>{const shot=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});writeFileSync(`${evidenceDir}/${name}.png`,Buffer.from(shot.data,'base64'))};
 
@@ -50,8 +62,12 @@ try{
 
   await clickPeriod('previous');
   await waitFor("function(){return [...document.querySelectorAll('.period-control>span')].some(node=>(node.textContent||'').includes('Ιούλιος 2026'))}",'July reporting period');
-  await sleep(350);
-  const july=await state();
+  const july=await waitForSavingsSnapshot(snapshot=>
+    snapshot.heading.includes('Ιούλιος 2026')
+    &&JSON.stringify(snapshot.routeValues)!==JSON.stringify(august.routeValues)
+    &&snapshot.goalBalance!==august.goalBalance
+    &&snapshot.goalProgress!==august.goalProgress,
+    'historical July balances and goal progress');
   assert(july.heading.includes('Ιούλιος 2026'),'historical Savings heading uses the selected month label');
   assert(JSON.stringify(july.routeValues)!==JSON.stringify(august.routeValues),'historical Savings route balances change with the selected period end');
   assert(july.goalBalance!==august.goalBalance&&july.goalProgress!==august.goalProgress,'historical personal-goal balance and progress use the selected period end');
@@ -59,8 +75,12 @@ try{
 
   await clickPeriod('next');
   await waitFor("function(){return [...document.querySelectorAll('.period-control>span')].some(node=>(node.textContent||'').includes('Αύγουστος 2026'))}",'August reporting period restored');
-  await sleep(350);
-  const restored=await state();
+  const restored=await waitForSavingsSnapshot(snapshot=>
+    snapshot.heading==='Αυτός ο μήνας'
+    &&JSON.stringify(snapshot.routeValues)===JSON.stringify(august.routeValues)
+    &&snapshot.goalBalance===august.goalBalance
+    &&snapshot.goalProgress===august.goalProgress,
+    'August balances and goal progress restored after historical browsing');
   assert(restored.heading==='Αυτός ο μήνας'&&JSON.stringify(restored.routeValues)===JSON.stringify(august.routeValues)&&restored.goalBalance===august.goalBalance&&restored.goalProgress===august.goalProgress,'Savings current-period balances and goal progress restore after historical browsing');
   await screenshot('savings-selected-period-august-restored');
   c.close();console.log('Savings remediation QA passed. Evidence: '+evidenceDir);

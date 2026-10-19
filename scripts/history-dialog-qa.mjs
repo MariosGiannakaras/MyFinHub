@@ -85,6 +85,32 @@ try{
     await screenshot(`history-dialog-375-dark-${save}`);
   }
 
+
+  // Check the high-cardinality snapshot cursor independently of the separate
+  // 1500-transaction latency audit. A slow Quick Entry must not hide this
+  // History visual acceptance evidence.
+  for(const {width,height,theme} of [
+    {width:1440,height:900,theme:'light'},
+    {width:375,height:812,theme:'dark'},
+  ]){
+    await c.send('Emulation.setDeviceMetricsOverride',{width,height,deviceScaleFactor:1,mobile:width<=680});
+    const largeUrl=new URL(base);
+    largeUrl.searchParams.set('page','reports');
+    largeUrl.searchParams.set('state','large');
+    await c.send('Page.navigate',{url:largeUrl.href});
+    await waitFor("function(){return Boolean(document.querySelector('.app-shell button[aria-label=\\\"Ιστορικό αλλαγών\\\"]'))}",'large snapshot history opener');
+    await c.call("async function(theme){localStorage.setItem('myfinhub.theme',theme);const mod=await import('/src/lib/theme.ts');mod.applyThemePreference(theme);return true}",[theme]);
+    assert(await c.call("function(){const b=document.querySelector('button[aria-label=\\\"Ιστορικό αλλαγών\\\"]');b?.click();return Boolean(b)}"),'large snapshot history opens');
+    await waitFor("function(){const d=document.querySelector('.change-history-dialog');return Boolean(d?.querySelectorAll('.history-row').length===100&&d?.querySelector('.command-result-meta')?.textContent?.includes('100 αποθηκευμένα σημεία'))}",'all 100 stored snapshot labels');
+    await waitFor("function(){const d=document.querySelector('.change-history-dialog');const b=d?.closest('.command-backdrop');return Boolean(d&&b&&Number(getComputedStyle(d).opacity)>=0.99&&Number(getComputedStyle(b).opacity)>=0.99)}",'large history animation settled');
+    const geometry=await c.call("function(){const d=document.querySelector('.change-history-dialog');const list=d?.querySelector('.command-results');const bounds=d?.getBoundingClientRect();const status=d?.querySelector('.command-result-meta')?.textContent||'';return {count:d?.querySelectorAll('.history-row').length,label:status,scrollable:Boolean(list&&list.scrollHeight>list.clientHeight),contained:Boolean(bounds&&bounds.left>=-1&&bounds.right<=innerWidth+1&&bounds.top>=-1&&bounds.bottom<=innerHeight+1),horizontalOverflow:document.documentElement.scrollWidth>innerWidth+1||d.scrollWidth>d.clientWidth+1,current:d?.querySelectorAll('[data-history-state=current]').length}}");
+    assert(geometry.count===100&&geometry.label.includes('100 αποθηκευμένα σημεία')&&geometry.scrollable&&geometry.contained&&!geometry.horizontalOverflow&&geometry.current===1,`100-point History viewport and snapshot semantics at ${width}: ${JSON.stringify(geometry)}`);
+    await screenshot(`history-100-snapshots-${width}-${theme}`);
+    const bottom=await c.call("function(){const list=document.querySelector('.change-history-dialog .command-results');if(!list)return null;list.scrollTop=list.scrollHeight;const end=list.querySelector('.history-row:last-child')?.getBoundingClientRect();const viewport=list.getBoundingClientRect();return {lastVisible:Boolean(end&&end.bottom<=viewport.bottom+1&&end.top>=viewport.top-1),scrollTop:list.scrollTop,firstCount:list.querySelectorAll('.history-row').length}}");
+    assert(bottom?.lastVisible&&bottom.scrollTop>0&&bottom.firstCount===100,`last of 100 snapshots reachable by scrolling at ${width}: ${JSON.stringify(bottom)}`);
+    await screenshot(`history-100-snapshots-${width}-${theme}-end`);
+  }
+
   // Validate the actual import guide (user instructions + JSON structure) at
   // desktop Light and mobile Dark. This is QA-only; it cannot import real data.
   for(const [width,height,theme] of [[1440,900,'light'],[375,812,'dark']]){

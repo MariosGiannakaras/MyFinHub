@@ -30,6 +30,16 @@ describe('history focused rendered regression ownership',()=>{
     expect(browser).toContain('state.introVisible&&state.caveatVisible');
     expect(browser).toContain('history-dialog-');
   });
+  it('proves exactly 100 scrollable history snapshots and reaches the final row on mobile and desktop',()=>{
+    const qa=read('src/qa.tsx');
+    const browser=read('scripts/history-dialog-qa.mjs');
+    expect(qa).toContain("Array.from({length:100}");
+    expect(browser).toContain("geometry.count===100");
+    expect(browser).toContain("geometry.scrollable&&geometry.contained&&!geometry.horizontalOverflow");
+    expect(browser).toContain("bottom?.lastVisible&&bottom.scrollTop>0&&bottom.firstCount===100");
+    expect(browser).toContain("history-100-snapshots-");
+    expect(browser).toContain("100 αποθηκευμένα σημεία");
+  });
   it('checks expanded import instructions/schema and privacy warnings in rendered desktop/mobile states',()=>{
     const browser=read('scripts/history-dialog-qa.mjs');
     expect(browser).toContain("guideUrl.searchParams.set('page','settings')");
