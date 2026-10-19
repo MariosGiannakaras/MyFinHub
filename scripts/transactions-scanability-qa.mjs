@@ -150,8 +150,11 @@ try{
   assert(largeReports.budgets===24&&largeReports.more&&largeReports.svgNodes<1500&&largeReports.nodes<5000&&!largeReports.overflow,'large Reports bounds budget DOM while keeping charts contained');
   assert(await c.call("function(){const button=document.querySelector('button[aria-label=\"Ιστορικό αλλαγών\"]');button?.click();return Boolean(button)}"),'large history dialog opens');
   await waitFor("function(){return document.querySelectorAll('.command-results [role=listitem]').length===100}",'100-point bounded history');
-  const historyState=await c.call("function(){return {rows:document.querySelectorAll('.command-results [role=listitem]').length,text:document.querySelector('.command-result-meta')?.textContent||'',overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+2}}");
-  assert(historyState.rows===100&&historyState.text.includes('100 πρόσφατες εγγραφές')&&!historyState.overflow,'durable history UI remains bounded at the supported 100 points');
+  const historyState=await c.call("function(){const dialog=document.querySelector('.change-history-dialog');const rows=dialog?.querySelectorAll('.command-results [role=listitem]')||[];const results=dialog?.querySelector('.command-results');const bounds=dialog?.getBoundingClientRect();return {rows:rows.length,text:dialog?.querySelector('.command-result-meta')?.textContent||'',scrollable:Boolean(results&&results.scrollHeight>results.clientHeight),contained:Boolean(bounds&&bounds.left>=-1&&bounds.right<=innerWidth+1&&bounds.top>=-1&&bounds.bottom<=innerHeight+1),overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+2}}");
+  // The server stores snapshot points, not a chronological audit of Undo clicks.
+  // Keep all 100 available points, bounded within the scrollable History modal.
+  assert(historyState.rows===100&&historyState.text.includes('100 αποθηκευμένα σημεία')&&historyState.scrollable&&historyState.contained&&!historyState.overflow,`durable history retains all 100 snapshot points inside bounded modal: ${JSON.stringify(historyState)}`);
+  await shot('transactions-large-history-100-snapshots');
   await c.call("function(){document.querySelector('button[aria-label=\"Κλείσιμο ιστορικού\"]')?.click();return true}");
 
   await navigatePage('settings','Ρυθμίσεις',1280,900);
