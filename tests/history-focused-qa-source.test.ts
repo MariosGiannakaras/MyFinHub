@@ -23,6 +23,11 @@ describe('history focused rendered regression ownership',()=>{
     expect(browser).toContain('b?.focus({preventScroll:true})');
     expect(browser).toContain('History backdrop and modal entrance settled');
     expect(browser).toContain('state.opacity>=0.99&&state.backdropOpacity>=0.99');
+    const css=read('src/styles/durable-history-controls.css');
+    expect(css).toContain('grid-template-rows:auto auto auto minmax(0,1fr) auto');
+    expect(css).toContain('.command-palette.change-history-dialog>header p{display:block}');
+    expect(css).toContain('.command-palette.change-history-dialog>footer span:first-child{display:flex}');
+    expect(browser).toContain('state.introVisible&&state.caveatVisible');
     expect(browser).toContain('history-dialog-');
   });
 });

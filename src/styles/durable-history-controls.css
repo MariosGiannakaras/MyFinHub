@@ -2,7 +2,8 @@
 .history-actions button{min-height:36px;padding:7px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface-soft);color:var(--ink-2);font:inherit;font-size:.72rem;font-weight:780;cursor:pointer}
 .history-actions button:disabled{opacity:.45;cursor:not-allowed}
 
-.change-history-dialog{grid-template-rows:auto auto minmax(0,1fr) auto}
+/* Five direct children: header, count, status, scrollable points, footer. */
+.change-history-dialog{grid-template-rows:auto auto auto minmax(0,1fr) auto}
 .change-history-dialog .history-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;margin:0 0 8px;padding:11px 12px;border-radius:12px}
 
 /* Snapshot-cursor semantics; do not style future points as committed new writes. */
@@ -14,3 +15,10 @@
 .change-history-dialog .history-row small{overflow-wrap:anywhere}
 .change-history-dialog .history-actions button{min-height:44px}
 @media(max-width:680px){.change-history-dialog .history-row{grid-template-columns:minmax(0,1fr)}.change-history-dialog footer{flex-wrap:wrap}.change-history-dialog .history-actions{width:100%;margin-left:0}.change-history-dialog .history-actions button{flex:1;justify-content:center}}
+
+/* The generic Command Palette omits its explainer/footer at <=380px.
+   Finance history must never hide privacy, import or irreversible-deletion caveats. */
+@media(max-width:380px){
+  .command-palette.change-history-dialog>header p{display:block}
+  .command-palette.change-history-dialog>footer span:first-child{display:flex}
+}
