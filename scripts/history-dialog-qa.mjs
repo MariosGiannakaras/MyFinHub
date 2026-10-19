@@ -70,7 +70,7 @@ try{
     assert(state.actions.length===2&&state.actions.every(x=>!x.disabled&&x.height>=44),`44px enabled Undo/Redo at ${width}: ${JSON.stringify(state.actions)}`);
     assert(state.status?.includes('Αναίρεση: 1 βήμα')&&state.status?.includes('Επαναφορά: 1 βήμα'),`real fixture depth at ${width}: ${state.status}`);
     assert(state.focused,'keyboard focus trapped inside modal');
-    assert(state.text?.includes('Παλαιότερα αποθηκευμένα σημεία')&&state.text?.includes('εγγυημένη πλήρη αναίρεση'),'truthful privacy/import boundary copy');
+    assert(state.text?.includes('Παλαιότερα αποθηκευμένα σημεία')&&state.text?.includes('δεν αναιρείται μέσω Undo/Redo'),'truthful privacy/import boundary copy');
     await screenshot(`history-dialog-${width}-${theme}`);
     await c.send('Input.dispatchKeyEvent',{type:'keyDown',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});
     await c.send('Input.dispatchKeyEvent',{type:'keyUp',key:'Escape',code:'Escape',windowsVirtualKeyCode:27});

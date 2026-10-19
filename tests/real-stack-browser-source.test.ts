@@ -8,6 +8,7 @@ describe('actual-browser real-stack source contract',()=>{
     expect(source).toContain("origin+'/#/transactions'");
     expect(source).toContain("document.querySelector('#login-title')");
     expect(source).toContain("document.querySelector('#mfa-title')");
+    expect(source).not.toContain("clickText('.login-submit','Επαλήθευση')");
     expect(source).toContain('[data-global-quick-entry]');
     expect(source).toContain("querySelectorAll('label')");
     expect(source).toContain("wrapper?.querySelector('input,textarea,select')");
@@ -96,6 +97,8 @@ describe('actual-browser real-stack source contract',()=>{
     expect(source).toContain('Real Browser Recurring');
     expect(source).toContain('Real Browser Temp Cash');
     expect(source).toContain('stage data-management-backup-import');
+    expect(source).toContain('Import boundary must disable unsafe history Undo.');
+    expect(source).toContain('Import guide should expose JSON structure and irreversible contract.');
     expect(source).toContain('Backup & λήψη');
     expect(source).toContain('400 /api/import');
     expect(source).toContain('Imported QA Cash');

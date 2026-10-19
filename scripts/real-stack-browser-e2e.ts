@@ -136,7 +136,8 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     await waitFor("function(){return Boolean(document.querySelector('#login-title'))}",'login screen');
     await setSelector('#login-email',email);await setSelector('#login-password',password);await clickText('.login-submit','Σύνδεση');
     await waitFor("function(){return document.querySelector('#mfa-title')?.textContent==='Επαλήθευση'}",'MFA challenge');
-    await setSelector('#mfa-code',await nextTotp());await clickText('.login-submit','Επαλήθευση');
+    // The owner-approved TOTP auto-check starts on the sixth digit, no submit button.
+    await setSelector('#mfa-code',await nextTotp());
     await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Συναλλαγ')}",'transactions workspace');
 
     console.log('[real-browser] stage modern-create-reload');
@@ -458,6 +459,7 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     console.log('[real-browser] stage data-management-backup-import');
     await clickText('.sidebar nav button','Ρυθμίσεις');await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('Ρυθμίσεις')}",'settings workspace');
     await clickText('.settings-tablist button','Δεδομένα');await waitFor("function(){return Boolean(document.querySelector('.settings-data-tab'))}",'settings data tab');
+    assert(await c.call<boolean>("function(){const g=document.querySelector('.settings-import-guide');const summary=g?.querySelector('summary');if(!summary)return false;summary.click();return g.open&&g.textContent.includes('schemaVersion')&&g.textContent.includes('Card Vault')&&g.textContent.includes('δεν αναιρείται με Undo/Redo')}"),'Import guide should expose JSON structure and irreversible contract.');
     await installDownloadObserver();
     await clickText('.settings-data-action-button','Backup & λήψη');
     await waitFor("function(){return (document.querySelector('.logic-note[role=status]')?.textContent||'').includes('αντίγραφο ασφαλείας δημιουργήθηκε')}",'backup success feedback');
@@ -483,7 +485,8 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
     await clickText('.sidebar nav button','Dashboard');await waitFor("function(){return (document.querySelector('#main-workspace h1')?.textContent||'').includes('λογαριασμοί')}",'dashboard after import');
     await waitFor("function(){return document.body.textContent.includes('Imported QA Cash')}",'imported account name after reload');
     const historyButton=await c.call<boolean>("function(){const button=document.querySelector('button[aria-label=\"Ιστορικό αλλαγών\"]');if(!(button instanceof HTMLButtonElement))return false;button.click();return true}");assert(historyButton,'Change History action is missing.');
-    await waitFor("function(){const dialog=document.querySelector('[aria-labelledby=\"change-history-title\"]');return Boolean(dialog&&(dialog.textContent||'').includes('Εισαγωγή δεδομένων')&&(dialog.textContent||'').includes('δεν εντάσσεται αυτόματα στο Undo/Redo'))}",'import history point');
+    await waitFor("function(){const dialog=document.querySelector('[aria-labelledby=\"change-history-title\"]');return Boolean(dialog&&(dialog.textContent||'').includes('Εισαγωγή δεδομένων')&&(dialog.textContent||'').includes('δεν αναιρείται μέσω Undo/Redo'))}",'import history point');
+    assert(await c.call<boolean>("function(){const b=[...document.querySelectorAll('button[aria-label]')].find(n=>n.getAttribute('aria-label')==='Αναίρεση τελευταίας αλλαγής');return Boolean(b&&b.disabled)}"),'Import boundary must disable unsafe history Undo.');
     await shot('data-management-import-history-persisted');
 
     assert(runtimeErrors.length===0,'Browser runtime errors: '+runtimeErrors.join(' | '));
