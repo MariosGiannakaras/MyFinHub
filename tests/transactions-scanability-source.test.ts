@@ -19,7 +19,7 @@ describe('Transactions scanability source contracts',()=>{
   it('allows full account-route and long-form metadata wrapping inside the dedicated detail panel',()=>{expect(page).toContain('<span>{accountText(selected.accountIds)}</span>');expect(approvedStyles).toContain('.transactions-detail-row b{color:var(--ink-2);overflow:visible;text-overflow:clip;white-space:normal;overflow-wrap:anywhere');expect(approvedStyles).toContain('.transactions-detail-row .detail-account span{color:inherit;overflow-wrap:anywhere}')});
   it('verifies 100 durable snapshot points with semantic copy, scroll containment and screenshot evidence',()=>{
     const history=readFileSync(new URL('../src/components/HistoryDialog.tsx',import.meta.url),'utf8');
-    expect(history).toContain('100 αποθηκευμένα σημεία');
+    expect(history).toContain('${visibleHistory.length} αποθηκευμένα σημεία');
     expect(history).toContain('classifyHistoryPoints(history.slice(0,100))');
     expect(focusedQa).toContain("historyState.text.includes('100 αποθηκευμένα σημεία')");
     expect(focusedQa).not.toContain('100 πρόσφατες εγγραφές');
