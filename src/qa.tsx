@@ -60,6 +60,8 @@ if(QA_SESSION_SIGNAL_SCREEN){
 }
 
 const QA_PERSISTENCE_PROBE_SCREEN=new URLSearchParams(location.search).get('screen')==='persistence-probe';
+// QA-only: exercise the actual finance hook without Production APIs.
+const QA_HISTORY_HOOK_PROBE=new URLSearchParams(location.search).get('history-test')==='1';
 if(QA_PERSISTENCE_PROBE_SCREEN){
   const originalFetch=globalThis.fetch.bind(globalThis);
   let backend=qaFinanceData();
@@ -69,6 +71,12 @@ if(QA_PERSISTENCE_PROBE_SCREEN){
   let holdNextRead=false;
   let revision=1;
   let putCount=0;
+  let historyMoveCount=0;
+  let rejectNextHistoryMove=false;
+  type QaSnapshot={id:string;parentId:string|null;state:FinanceData['state'];label:string};
+  const snapshots:QaSnapshot[]=[{id:'1',parentId:null,state:structuredClone(backend.state),label:'QA persistence baseline'}];
+  let cursorIndex=0;
+  let nextPointId=1;
   const control=globalThis as typeof globalThis & {
     __myfinhubQaPersistenceMode?:(next:'success'|'offline'|'pending'|'held'|'conflict')=>void;
     __myfinhubQaReleaseSave?:()=>boolean;
@@ -76,6 +84,8 @@ if(QA_PERSISTENCE_PROBE_SCREEN){
     __myfinhubQaHoldNextRead?:()=>boolean;
     __myfinhubQaReleaseRead?:(fail?:boolean)=>boolean;
     __myfinhubQaHeldReadCount?:()=>number;
+    __myfinhubQaHistoryMoveCount?:()=>number;
+    __myfinhubQaRejectNextHistoryMove?:()=>boolean;
   };
   control.__myfinhubQaPersistenceMode=(next)=>{mode=next};
   control.__myfinhubQaReleaseSave=()=>{const release=heldResponses.shift();if(!release)return false;release();return true};
@@ -83,12 +93,33 @@ if(QA_PERSISTENCE_PROBE_SCREEN){
   control.__myfinhubQaHoldNextRead=()=>{holdNextRead=true;return true};
   control.__myfinhubQaReleaseRead=(fail=false)=>{const release=heldReadResponses.shift();if(!release)return false;release(fail);return true};
   control.__myfinhubQaHeldReadCount=()=>heldReadResponses.length;
-  const history=()=>({
+  control.__myfinhubQaHistoryMoveCount=()=>historyMoveCount;
+  control.__myfinhubQaRejectNextHistoryMove=()=>{rejectNextHistoryMove=true;return true};
+  const history=()=>QA_HISTORY_HOOK_PROBE?({
+    available:true,generation:String(revision),financeRevision:String(revision),
+    currentPointId:snapshots[cursorIndex]!.id,
+    canUndo:cursorIndex>0,canRedo:cursorIndex<snapshots.length-1,
+    undoDepth:cursorIndex,redoDepth:snapshots.length-cursorIndex-1,
+    points:[...snapshots].reverse().map(point=>({
+      id:point.id,parentId:point.parentId,label:point.label,
+      createdAt:'2026-08-17T12:00:00.000Z',
+      current:point.id===snapshots[cursorIndex]!.id,
+    })),
+  }):({
     available:true,generation:String(revision),financeRevision:String(revision),currentPointId:String(revision),
     canUndo:false,canRedo:false,undoDepth:0,redoDepth:0,
     points:[{id:String(revision),parentId:null,label:'QA persistence baseline',createdAt:'2026-08-17T12:00:00.000Z',current:true}],
   });
-  const savedReceipt=()=>{revision+=1;return new Response(JSON.stringify({revision:String(revision),filePath:'QA persistence backend',lastSavedAt:'2026-08-17T12:00:01.000Z',history:history()}),{status:200,headers:{'content-type':'application/json'}})};
+  const savedReceipt=(payload?:{state?:FinanceData['state'];historyLabel?:string})=>{
+    if(QA_HISTORY_HOOK_PROBE&&payload?.state){
+      const previous=snapshots[cursorIndex]!;
+      snapshots.splice(cursorIndex+1); // A successful new write invalidates redo descendants.
+      snapshots.push({id:String(++nextPointId),parentId:previous.id,
+        state:structuredClone(payload.state),label:payload.historyLabel??'QA finance edit'});
+      cursorIndex=snapshots.length-1;
+      backend={...backend,state:structuredClone(payload.state)};
+    }
+    revision+=1;return new Response(JSON.stringify({revision:String(revision),filePath:'QA persistence backend',lastSavedAt:'2026-08-17T12:00:01.000Z',history:history()}),{status:200,headers:{'content-type':'application/json'}})};
   globalThis.fetch=async(input:RequestInfo|URL,init?:RequestInit)=>{
     const raw=typeof input==='string'?input:input instanceof URL?input.href:input.url;
     const url=new URL(raw,location.href);
@@ -105,19 +136,46 @@ if(QA_PERSISTENCE_PROBE_SCREEN){
     }
     if(url.pathname==='/api/import'&&init?.method==='POST'){
       backend=JSON.parse(String(init.body||'{}')) as FinanceData;
+      if(QA_HISTORY_HOOK_PROBE){
+        snapshots.splice(0,snapshots.length,{id:String(++nextPointId),parentId:null,
+          state:structuredClone(backend.state),label:'QA import baseline'});
+        cursorIndex=0; // Fixture reset, not Production import Undo semantics.
+      }
       revision+=1;
       return new Response(JSON.stringify({data:backend,revision:String(revision),filePath:'QA persistence backend',lastSavedAt:'2026-08-17T12:00:02.000Z'}),{status:200,headers:{'content-type':'application/json'}});
     }
     if(url.pathname==='/api/history'&&(!init?.method||init.method==='GET')){
       return new Response(JSON.stringify(history()),{status:200,headers:{'content-type':'application/json'}});
     }
+    if(QA_HISTORY_HOOK_PROBE&&url.pathname==='/api/history'&&init?.method==='POST'){
+      historyMoveCount+=1;
+      const headers=new Headers(init.headers);
+      const request=JSON.parse(String(init.body||'{}')) as {action?:string};
+      const valid=headers.get('if-match')===String(revision)
+        &&headers.get('x-rheomiq-history-generation')===String(revision);
+      const destination=request.action==='undo'?cursorIndex-1:request.action==='redo'?cursorIndex+1:-1;
+      if(rejectNextHistoryMove||!valid||destination<0||destination>=snapshots.length){
+        rejectNextHistoryMove=false;
+        return new Response(JSON.stringify({code:'HISTORY_CURSOR_CONFLICT',error:'Synthetic rejected history move'}),
+          {status:409,headers:{'content-type':'application/json'}});
+      }
+      cursorIndex=destination;
+      backend={...backend,state:structuredClone(snapshots[cursorIndex]!.state)};
+      revision+=1;
+      return new Response(JSON.stringify({data:backend,revision:String(revision),
+        filePath:'QA persistence backend',lastSavedAt:'2026-08-17T12:00:03.000Z',history:history()}),
+        {status:200,headers:{'content-type':'application/json'}});
+    }
     if(url.pathname==='/api/data'&&init?.method==='PUT'){
       putCount+=1;
+      const payload=QA_HISTORY_HOOK_PROBE
+        ?JSON.parse(String(init.body||'{}')) as {state?:FinanceData['state'];historyLabel?:string}
+        :undefined;
       if(mode==='offline')throw new TypeError('Synthetic offline finance save');
       if(mode==='pending')return await new Promise<Response>(()=>{});
-      if(mode==='held')return await new Promise<Response>(resolve=>heldResponses.push(()=>resolve(savedReceipt())));
+      if(mode==='held')return await new Promise<Response>(resolve=>heldResponses.push(()=>resolve(savedReceipt(payload))));
       if(mode==='conflict')return new Response(JSON.stringify({code:'REVISION_CONFLICT',error:'QA write conflict'}),{status:409,headers:{'content-type':'application/json'}});
-      return savedReceipt();
+      return savedReceipt(payload);
     }
     return originalFetch(input,init);
   };
@@ -564,6 +622,12 @@ function QaPersistenceProbe(){
     <button type="button" data-persistence-mutate onClick={()=>finance.update(current=>({...current,state:{...current.state,settings:{...current.state.settings,monthlyBudget:(current.state.settings.monthlyBudget??0)+1}}}))}>Synthetic finance change</button>
     <button type="button" data-persistence-reload onClick={()=>{void finance.reload()}}>Reload persisted state</button>
     <button type="button" data-persistence-import onClick={()=>{void finance.importData({...finance.data!,state:{...finance.data!.state,settings:{...finance.data!.state.settings,monthlyBudget:budget+13}}})}}>Synthetic import while GET pending</button>
+    {QA_HISTORY_HOOK_PROBE?<section aria-label="Synthetic history hook">
+      <output data-persistence-undo-depth={finance.undoDepth}>{finance.undoDepth}</output>
+      <output data-persistence-redo-depth={finance.redoDepth}>{finance.redoDepth}</output>
+      <button type="button" data-persistence-undo disabled={!finance.canUndo} onClick={()=>{void finance.undo()}}>QA Undo</button>
+      <button type="button" data-persistence-redo disabled={!finance.canRedo} onClick={()=>{void finance.redo()}}>QA Redo</button>
+    </section>:null}
     <PersistenceNotice saveState={finance.saveState} errorMessage={finance.saveErrorMessage} onRecover={()=>{void finance.reload()}}/>
   </main></>;
 }

@@ -30,4 +30,19 @@ describe('history focused rendered regression ownership',()=>{
     expect(browser).toContain('state.introVisible&&state.caveatVisible');
     expect(browser).toContain('history-dialog-');
   });
+  it('tests real-hook cursor receipts, redo invalidation and rejected history on the QA-only database',()=>{
+    const qa=read('src/qa.tsx');
+    const browser=read('scripts/save-progress-qa.mjs');
+    expect(qa).toContain("const QA_HISTORY_HOOK_PROBE=");
+    expect(qa).toContain("if(QA_HISTORY_HOOK_PROBE&&url.pathname==='/api/history'&&init?.method==='POST')");
+    expect(qa).toContain('snapshots.splice(cursorIndex+1)');
+    expect(qa).toContain("headers.get('x-rheomiq-history-generation')===String(revision)");
+    expect(qa).toContain('data-persistence-undo');
+    expect(qa).toContain('data-persistence-redo');
+    expect(browser).toContain('server-backed Undo restores prior synthetic budget');
+    expect(browser).toContain('new confirmed write invalidates old Redo branch');
+    expect(browser).toContain('rejected history cursor enters conflict');
+    expect(browser).toContain('history-real-hook-undo-redo-branch-1440-dark');
+    expect(browser).toContain('history-real-hook-undo-conflict-1440-dark');
+  });
 });

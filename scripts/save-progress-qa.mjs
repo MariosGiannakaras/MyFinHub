@@ -113,6 +113,38 @@ try{
   const afterFailedRead=await c.call("function(){return {budget:Number(document.querySelector('[data-persistence-budget]')?.textContent||0),state:document.querySelector('[data-persistence-state]')?.textContent,failedBar:Boolean(document.querySelector('[data-save-progress=error]'))}}");
   assert(afterFailedRead.budget===beforeFailedRead+13&&afterFailedRead.state==='saved'&&!afterFailedRead.failedBar,`obsolete database GET error cannot replace a confirmed import: ${JSON.stringify(afterFailedRead)}`);
   await shot('history-refresh-stale-error-after-import-1440-dark');
+
+  // Synthetic DB receipts run the production useFinance hook through Do / Undo /
+  // Redo / Undo / divergent Do and one rejected history move. No live services.
+  const historyHookUrl=new URL(url.href);
+  historyHookUrl.searchParams.set('history-test','1');
+  await c.send('Page.navigate',{url:historyHookUrl.href});
+  await waitFor("function(){return document.querySelector('[data-persistence-probe=ready]')!==null&&document.querySelector('[data-persistence-state]')?.textContent==='saved'}",'real-hook history initialized');
+  const hookBudget=await c.call("function(){return Number(document.querySelector('[data-persistence-budget]')?.textContent||0)}");
+  const hookState=()=>c.call("function(){return {budget:Number(document.querySelector('[data-persistence-budget]')?.textContent||0),undo:Number(document.querySelector('[data-persistence-undo-depth]')?.textContent||0),redo:Number(document.querySelector('[data-persistence-redo-depth]')?.textContent||0),state:document.querySelector('[data-persistence-state]')?.textContent}}");
+  let hook=await hookState();
+  assert(hook.undo===0&&hook.redo===0,'initial history cannot undo');
+  assert(await mutate(),'save first reversible synthetic change');
+  await waitFor(`function(){return Number(document.querySelector('[data-persistence-budget]')?.textContent||0)===${hookBudget+1}&&Number(document.querySelector('[data-persistence-undo-depth]')?.textContent||0)===1&&document.querySelector('[data-persistence-state]')?.textContent==='saved'}`,'confirmed mutation enables Undo');
+  const press=selector=>c.call("function(selector){const b=document.querySelector(selector);if(!b||b.disabled)return false;b.click();return true}",[selector]);
+  assert(await press('[data-persistence-undo]'),'Undo uses actual hook');
+  await waitFor(`function(){return Number(document.querySelector('[data-persistence-budget]')?.textContent||0)===${hookBudget}&&Number(document.querySelector('[data-persistence-redo-depth]')?.textContent||0)===1&&document.querySelector('[data-persistence-state]')?.textContent==='saved'}`,'server-backed Undo restores prior synthetic budget');
+  assert(await press('[data-persistence-redo]'),'Redo uses actual hook');
+  await waitFor(`function(){return Number(document.querySelector('[data-persistence-budget]')?.textContent||0)===${hookBudget+1}&&Number(document.querySelector('[data-persistence-redo-depth]')?.textContent||0)===0&&document.querySelector('[data-persistence-state]')?.textContent==='saved'}`,'server-backed Redo restores confirmed budget');
+  assert(await press('[data-persistence-undo]'),'Undo creates new redo candidate');
+  await waitFor(`function(){return Number(document.querySelector('[data-persistence-budget]')?.textContent||0)===${hookBudget}&&Number(document.querySelector('[data-persistence-redo-depth]')?.textContent||0)===1&&document.querySelector('[data-persistence-state]')?.textContent==='saved'}`,'redo candidate after Undo');
+  assert(await mutate(),'divergent save after Undo');
+  await waitFor(`function(){return Number(document.querySelector('[data-persistence-budget]')?.textContent||0)===${hookBudget+1}&&Number(document.querySelector('[data-persistence-redo-depth]')?.textContent||0)===0&&Number(document.querySelector('[data-persistence-undo-depth]')?.textContent||0)===1&&document.querySelector('[data-persistence-state]')?.textContent==='saved'}`,'new confirmed write invalidates old Redo branch');
+  assert(await c.call("function(){const b=document.querySelector('[data-persistence-redo]');return Boolean(b&&b.disabled&&globalThis.__myfinhubQaHistoryMoveCount?.()===3)}"),'server received three history moves and Redo is disabled');
+  await shot('history-real-hook-undo-redo-branch-1440-dark');
+
+  assert(await c.call("function(){return globalThis.__myfinhubQaRejectNextHistoryMove?.()===true}"),'reject next synthetic history move');
+  assert(await press('[data-persistence-undo]'),'attempt synthetic rejected Undo');
+  await waitFor("function(){return document.querySelector('[data-persistence-state]')?.textContent==='conflict'}",'rejected history cursor enters conflict');
+  hook=await hookState();
+  assert(hook.budget===hookBudget+1&&hook.undo===1&&hook.redo===0,'rejected Undo preserves confirmed finance state and cursor');
+  assert(await c.call("function(){return Boolean(document.querySelector('[data-save-progress=error]'))&&document.querySelector('[data-persistence-undo]')?.disabled===true}"),'rejected Undo shows red failure and disables history');
+  await shot('history-real-hook-undo-conflict-1440-dark');
   c.close();
   console.log('Save-progress QA passed: pending remains active, receipt only green, persistent red failure/conflict, FIFO burst, viewport/theme/reduced-motion evidence');
 }catch(error){console.error(error);process.exitCode=1}
