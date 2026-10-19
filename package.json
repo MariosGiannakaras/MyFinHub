@@ -49,9 +49,9 @@
     "@tesseract.js-data/eng": "1.0.0",
     "express": "^5.3.0",
     "framer-motion": "^12.43.0",
-    "lucide-react": "^1.55.0",
-    "react": "^19.3.0",
-    "react-dom": "^19.3.0",
+    "lucide-react": "^1.58.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
     "recharts": "^3.10.1",
     "tesseract.js": "7.0.0"
   },
@@ -65,7 +65,7 @@
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
     "vite": "^8.3.4",
-    "vitest": "^5.0.3"
+    "vitest": "^5.0.5"
   },
   "overrides": {
     "shell-quote": "1.12.0"
