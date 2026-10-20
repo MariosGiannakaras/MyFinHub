@@ -14,6 +14,7 @@ export function buildLinkedTransferFee(
   const cents=moneyToCents(args.amount);
   if(!Number.isSafeInteger(cents)||cents<0)
     throw new Error('Η προμήθεια πρέπει να είναι έγκυρο μη αρνητικό ποσό σε λεπτά.');
+  if(Math.abs(args.amount*100-cents)>1e-6)throw new Error('Η προμήθεια πρέπει να έχει το πολύ δύο δεκαδικά.');
   if(cents===0)return null;
   if(!data.state.settings.expenseCategories.includes(args.category))
     throw new Error('Διάλεξε διαθέσιμη κατηγορία εξόδων για την προμήθεια.');

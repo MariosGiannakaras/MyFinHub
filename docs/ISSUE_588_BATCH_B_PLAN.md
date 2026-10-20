@@ -80,3 +80,6 @@ No Bank Excel/CSV/OFX import, third-party bank connector, automatic Euribor, car
 
 ### B2 rendered regression added
 - Existing `ledger-foundations-qa.mjs` now checks optional transfer fee creation, distinct report expense, one-step Undo/Redo group restoration and desktop screenshot. One-file source contract locks that both App and synthetic QA use the same atomic state recipe and ReceiptAwareQuickAdd forwards the callback. Browser execution/visual artifact remain **pending review-head QA**, not claimed PASS.
+
+### Draft preflight failure class — unused exports
+- Draft `validate` at `515ddaca` passed TS symbol checks but caught two unconsumed exported TypeScript-only interfaces from the reconciliation utility. Kept them file-private and bounded displayed candidate note length for responsive surfaces. Also rejected sub-cent fee inputs instead of rounding them silently. These are small repairs batched with implementation preflight; no accepted progress increment.

@@ -7,7 +7,7 @@ import type { FinanceData } from '../types.js';
  * Manual reconciliation is as-of, not the current-day balance. Candidates are
  * evidence to review, never inferred bank matches or auto-imported purchases.
  */
-export interface ReconciliationCandidate {
+interface ReconciliationCandidate {
   id: string;
   date: string;
   note: string;
@@ -16,7 +16,7 @@ export interface ReconciliationCandidate {
   sameAmount: boolean;
 }
 
-export interface ManualReconciliationPreview {
+interface ManualReconciliationPreview {
   expectedBalance: number;
   differenceCents: number | null;
   duplicateOnDate: boolean;
@@ -60,7 +60,7 @@ export function manualReconciliationPreview(
     if(event.id===options.editingEventId||event.date<from||event.date>asOf)continue;
     const delta=event.legs.filter(leg=>leg.accountId===accountId).reduce((sum,leg)=>sum+moneyToCents(leg.amount),0);
     if(!Number.isSafeInteger(delta)||delta===0)continue;
-    candidates.push({id:event.id,date:event.date,note:event.note||event.kind,amount:centsToMoney(delta),origin:'event',sameAmount:movementCents!==null&&Math.abs(delta)===movementCents});
+    candidates.push({id:event.id,date:event.date,note:(event.note||event.kind).slice(0,100),amount:centsToMoney(delta),origin:'event',sameAmount:movementCents!==null&&Math.abs(delta)===movementCents});
   }
   for(const tx of effectiveLegacyTransactions(data)){
     if(tx.date<from||tx.date>asOf)continue;
@@ -73,7 +73,7 @@ export function manualReconciliationPreview(
     }
     const cents=moneyToCents(signed);
     if(!Number.isSafeInteger(cents)||cents===0)continue;
-    candidates.push({id:tx.id,date:tx.date,note:tx.note||tx.type,amount:centsToMoney(cents),origin:'legacy',sameAmount:movementCents!==null&&Math.abs(cents)===movementCents});
+    candidates.push({id:tx.id,date:tx.date,note:(tx.note||tx.type).slice(0,100),amount:centsToMoney(cents),origin:'legacy',sameAmount:movementCents!==null&&Math.abs(cents)===movementCents});
   }
   candidates.sort((a,b)=>Number(b.sameAmount)-Number(a.sameAmount)||b.date.localeCompare(a.date)||a.id.localeCompare(b.id));
   return {
