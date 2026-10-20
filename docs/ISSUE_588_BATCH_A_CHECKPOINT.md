@@ -2,7 +2,7 @@
 
 Source of truth: [approved plan #588](https://github.com/MariosGiannakaras/MyFinHub/issues/588). Branch `feat/588-loans-credit-history`, based on `develop@f08cdf1e18060acf4b3733775bc1d1af04425e4b`. Review exact live branch head and CI before further writes.
 
-**Current accepted progress: Implementations 0/12 completed · Sub-implementations 0/24 completed.** Feature code is present, but acceptance remains pending real test/rendered/CI evidence. Do not pre-check work based on source changes alone.
+**Current accepted progress: Implementations 2/12 completed · Sub-implementations 4/24 completed.** Features #10 (Loans) and #11 (credit rate history and advisory payoff), each with both subitems, accepted after tests and direct artifact review on `f7bcdc37`. No remaining Batch A implementation task. This checkpoint metadata edit does not modify product code; validate exact new review head before merge.
 
 ## Batch A implementation present
 - Loans #10: verified existing explicit ContextualQuickAdd linked payment workflow. Per-payment amount is editable in EUR cents rather than read-only nominal installment; changing the installment count updates only the suggested amount. Preserve each event amount/date and links.
@@ -36,12 +36,14 @@ Source of truth: [approved plan #588](https://github.com/MariosGiannakaras/MyFin
 - `66063e47...` passed 1358 Vitest tests, bundle, CodeQL, WebKit, Lighthouse and all Windows checks, but Chromium rendered QA failed while waiting for an opaque mobile rate dialog. Failure occurred **after** a new `Page.navigate` into `qa.html`; unlike production startup, that synthetic QA document does not automatically reinitialize runtime semantic theme tokens. The bottom sheet uses `--surface-elevated` and can be transparent without them, so merely waiting for the 190 ms animation is not sufficient.
 - Corrected the narrow browser test to apply the canonical Light theme after mobile fixture navigation, then assert `--surface-elevated:#ffffff` before opening the editor and checking settled alpha, failed-save/history behavior and final screenshot. No production UI/CSS, finance data, security or real persisted history changed. New exact-head CI/rendered and visual artifact inspection required before accepting #10/#11.
 
-## Remaining acceptance of Batch A
-- Run focused tests for `tests/loans.test.ts`, `tests/reports.test.ts`, `tests/credit-rates.test.ts`, server card validation and existing affected card/finance tests.
-- Verify TypeScript/build, security/defect preflight, normal coherent Ready-for-Review CI and rendered mobile/tablet/desktop Light/Dark UI (including card rate modal, payoff input and loan payment modal), QA evidence inspection, history/Do→Undo→Redo and failed-save semantics.
-- Inspect any CI failures as one set, correct root causes, rerun exact-head acceptance. Do not report PASS for pending/untested gates.
-- On full acceptance update the checkbox progress for #10, #11 (and any other finished items) in issue #588; only then mark `Implementations 2/12 completed · Sub-implementations 4/24 completed` if *all four* sub-items are actually proven.
-- Stop after Batch A, even if later work is unblocked; wait for explicit owner «Συνέχισε». Next approved Batch B: #4/#5/#12 then #2 after finance-contract planning and review.
+## Batch A accepted evidence and integration boundary
+
+- Code head `f7bcdc3724002aa95e10f61de9973269c29340ef`: GitHub CI PASS (236/236 Vitest files, 1,358/1,358 tests, API checks, hygiene, security audit), 55 primary Chromium rendered suites with 653 screenshots, CodeQL, WebKit cross-engine, Lighthouse performance, Windows Desktop/First Run/Clean Launch all PASS. Main app JS within the unchanged budget (~526.0 KiB raw vs 528.0 KiB limit).
+- Downloaded the full `39469572415` rendered artifact and directly inspected selected desktop/tablet/mobile Light/Dark Credit, Loans, pay-input and persistence-error screenshots, including the final opaque `credit-rate-save-failure-mobile.png`, rate editor tablet/dialog and exact EUR-cent contextual payment. No relevant overlap, clipped controls, unreadable text or unexpected transparent dialog at its settled state.
+- #10 verified editable actual EUR cents per loan payment with independent linked event, frozen legacy paid baseline after preset edit, and no automatic amortization/rate changes. #11 verified manual effective-date nominal rates with as-of version history, revisioned finance persistence/server validation, non-posting advisory payoff scenario, failed-save/duplicate checks and no retrospective card transactions or statements rewritten.
+- #588 acceptance checklist now marks **#10 and #11 plus all four subitems completed**: **Implementations 2/12 completed · Sub-implementations 4/24 completed**. Independent remaining roadmap features remain unchecked.
+- This final **checkpoint-only commit** is an intentional metadata reconciliation. Required PR checks must still be green on the new exact head before squash merge to `develop`; verify `develop` SHA and any postmerge gates. No `main`/Production or Android changes. The roadmap Final 216-image Visual QA remains a final roadmap/release boundary.
+- **Stop after Batch A merge**; do not begin Batch B until the next explicit owner «Συνέχισε». Planned Batch B features #4/#5/#12 then #2 require a shared finance-contract design before editing.
 
 ## Safety/risks
 - No Production/main or Android changes. No bank Excel/CSV import, auto Euribor, loan amortization engine or auto interest entries.
