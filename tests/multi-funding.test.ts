@@ -26,7 +26,7 @@ describe('one economic purchase funded from multiple sources (#588 B1 preflight)
   expect(result.creditDelta).toBe(-60);
   expect(result.cardId).toBe('credit1');
   expect(result.legs).toEqual([{accountId:'cash',amount:-19.99},{accountId:'bank',amount:-20.01},{accountId:'credit-card',amount:-60}]);
-  expect(result.legs.reduce((sum,leg)=>Math.round((sum+leg.amount)*100),0)).toBe(-10000);
+  expect(Math.round(result.legs.reduce((sum,leg)=>sum+leg.amount,0)*100)).toBe(-10000);
  });
  it('supports cash plus bank without inventing credit liability',()=>{
   const result=buildMultiSourceFundingPlan(data(),{total:.3,sources:[
