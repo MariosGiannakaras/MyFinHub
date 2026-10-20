@@ -13,7 +13,12 @@ describe('effective-dated credit interest (advisory, never posted)',()=>{
     expect(creditRateAt(second,'2026-10-19')).toBeNull();
     expect(creditRateAt(second,'2026-11-30')?.annualPercent).toBe(15);
     expect(creditRateAt(second,'2026-12-01')?.annualPercent).toBe(17.25);
-    expect(()=>addCreditRate(second,18,'2026-11-01','2026-10-20')).toThrow();
+    const inserted=addCreditRate(second,16.75,'2026-11-01','2026-10-20');
+    expect(inserted.creditRateHistory?.map(version=>version.effectiveFrom)).toEqual(['2026-10-20','2026-11-01','2026-12-01']);
+    expect(creditRateAt(inserted,'2026-11-15')?.annualPercent).toBe(16.75);
+    expect(creditRateAt(inserted,'2026-12-01')?.annualPercent).toBe(17.25);
+    expect(creditRateAt(second,'2026-11-15')?.annualPercent).toBe(15);
+    expect(()=>addCreditRate(inserted,18,'2026-11-01','2026-10-20')).toThrow();
     expect(()=>addCreditRate(first,18,'2026-10-19','2026-10-20')).toThrow();
   });
   it('uses exact cents for optional projections without financial events',()=>{

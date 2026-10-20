@@ -6,14 +6,16 @@ export function creditRateAt(card:PaymentCard,asOf:string):CreditRateVersion|nul
   return [...(card.creditRateHistory??[])].filter(row=>row.effectiveFrom<=asOf).sort((a,b)=>b.effectiveFrom.localeCompare(a.effectiveFrom))[0]??null;
 }
 
-/** Append future effective dates; never rewrite a prior rate period. */
+/** Add a non-retroactive effective-dated version without rewriting existing periods. */
 export function addCreditRate(card:PaymentCard,annualPercent:number,effectiveFrom:string,today:string):PaymentCard{
   if(card.kind!=='credit')throw new Error('Το επιτόκιο αφορά μόνο πιστωτική κάρτα.');
   if(!isValidDateOnly(effectiveFrom)||!isValidDateOnly(today)||effectiveFrom<today)throw new Error('Η ημερομηνία ισχύος δεν μπορεί να είναι παλαιότερη από σήμερα.');
   if(!Number.isFinite(annualPercent)||annualPercent<0||annualPercent>100||Math.abs(Math.round(annualPercent*10000)-annualPercent*10000)>0.00001)throw new Error('Συμπλήρωσε ετήσιο επιτόκιο 0–100% με έως τέσσερα δεκαδικά.');
   const history=card.creditRateHistory??[];
-  if(history.length&&effectiveFrom<=history[history.length-1].effectiveFrom)throw new Error('Η νέα ημερομηνία πρέπει να ακολουθεί την τελευταία καταχωρισμένη αλλαγή.');
-  return {...card,creditRateHistory:[...history,{effectiveFrom,annualPercent}]};
+  if(history.some(version=>version.effectiveFrom===effectiveFrom))throw new Error('Υπάρχει ήδη επιτόκιο με αυτή την ημερομηνία ισχύος.');
+  // A newly announced rate may start before another already scheduled future rate.
+  // Keep both versions: only the ordering changes, never a previous value.
+  return {...card,creditRateHistory:[...history,{effectiveFrom,annualPercent}].sort((a,b)=>a.effectiveFrom.localeCompare(b.effectiveFrom))};
 }
 
 export interface CreditPayoffEstimate {

@@ -178,6 +178,8 @@ function ContextModal({data,asOf,context,onClose,onCreate,onCompleteScheduled}:{
   const targetLabel=context.mode==='credit'?(card?cardLabel(card):'Μη διαθέσιμη κάρτα'):context.mode==='loan'?(loan?.name??'Μη διαθέσιμη υποχρέωση'):context.mode==='recurring'?(recurring?.name??'Μη διαθέσιμο πάγιο'):context.mode==='lending'&&context.person?context.person:context.mode==='scheduled'?(scheduled?.note??'Μη διαθέσιμη προγραμματισμένη κίνηση'):'';
   const paymentMode=(context.mode==='credit'&&context.action==='payment')||context.mode==='loan'||context.mode==='recurring';
   const sourceLabel=accountId?accountDisplayName(data,accountId):'Μη διαθέσιμος λογαριασμός';
+  const validActualLoanAmount=/^\d+(?:[.,]\d{1,2})?$/.test(amount.trim())&&Number(amount.replace(',','.'))>0;
+  const actualLoanPaymentLabel=validActualLoanAmount?money.format(Number(amount.replace(',','.'))):'το ποσό που θα επιβεβαιώσεις';
   const paymentEffect=context.mode==='credit'&&context.action==='payment'
     ?selectedStatement
       ?`Από ${sourceLabel} προς ${targetLabel}. Η πληρωμή συνδέεται με τη δήλωση που έκλεισε ${selectedStatement.closeDate.split('-').reverse().join('/')} και μειώνει μόνο το υπόλοιπό της κατά μία πραγματική κίνηση.`
@@ -186,7 +188,7 @@ function ContextModal({data,asOf,context,onClose,onCreate,onCompleteScheduled}:{
       ?isSelfLoan(loan)
         ?`Από ${sourceLabel} προς την αποταμίευση, με ταυτόχρονη μείωση της υποχρέωσης ${targetLabel}. Δημιουργείται μία ενιαία κίνηση επιστροφής.`
         :loanPaymentPlan
-          ?`Από ${sourceLabel} προς ${targetLabel}. Καλύπτονται οι δόσεις ${loanPaymentPlan.firstInstallment}${loanPaymentPlan.firstInstallment===loanPaymentPlan.lastInstallment?'':`–${loanPaymentPlan.lastInstallment}`} με μία πραγματική πληρωμή ${money.format(loanPaymentPlan.amount)}.`
+          ?`Από ${sourceLabel} προς ${targetLabel}. Καλύπτονται οι δόσεις ${loanPaymentPlan.firstInstallment}${loanPaymentPlan.firstInstallment===loanPaymentPlan.lastInstallment?'':`–${loanPaymentPlan.lastInstallment}`} και η πραγματική πληρωμή θα είναι ${actualLoanPaymentLabel}.`
           :`Από ${sourceLabel} προς ${targetLabel}. Η καταχώριση ενημερώνει την ίδια υποχρέωση χωρίς δεύτερη χειροκίνητη εγγραφή.`
       :context.mode==='recurring'&&recurring
         ?`Από ${sourceLabel} προς ${targetLabel}. Καταγράφεται μία πραγματική πληρωμή του παγίου και χρεώνεται μόνο ο επιλεγμένος λογαριασμός.`
