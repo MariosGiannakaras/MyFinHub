@@ -11,6 +11,8 @@ describe('historical statement rendered regression proof (DV-FB05)',()=>{
     expect(rendered).toContain("earlierStatement.text.includes('90,00')&&earlierStatement.canPay");
     expect(rendered).toContain('credit-rate-modal-dark-tablet');
     expect(rendered).toContain('credit-rate-save-failure-mobile');
+    expect(rendered).toContain("theme.applyThemePreference('light')");
+    expect(rendered).toContain('mobile rate fixture initializes the real opaque light-theme surface');
     expect(rendered).toContain('credit-rate-payoff-desktop');
     expect(rendered).toContain('rate change never posts or edits credit purchase events');
     expect(rendered).toContain('duplicate date did not rewrite history');

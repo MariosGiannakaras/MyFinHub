@@ -32,6 +32,10 @@ Source of truth: [approved plan #588](https://github.com/MariosGiannakaras/MyFin
 - Another user-visible correction: after empty-rate validation, typing a valid numeric rate now clears the stale error immediately; effective-date edits also clear outdated errors. Source/browser regression requires this behavior. Existing sibling editor geometry/interaction QA remains in the required rendered suite.
 - This final UI-validation update requires a **new exact-head** CI/gate cycle; prior green results are not transferred to the newest head. Keep accepted counters at 0/12 and 0/24 until verification and review.
  
+## Exact-head QA environment regression
+- `66063e47...` passed 1358 Vitest tests, bundle, CodeQL, WebKit, Lighthouse and all Windows checks, but Chromium rendered QA failed while waiting for an opaque mobile rate dialog. Failure occurred **after** a new `Page.navigate` into `qa.html`; unlike production startup, that synthetic QA document does not automatically reinitialize runtime semantic theme tokens. The bottom sheet uses `--surface-elevated` and can be transparent without them, so merely waiting for the 190 ms animation is not sufficient.
+- Corrected the narrow browser test to apply the canonical Light theme after mobile fixture navigation, then assert `--surface-elevated:#ffffff` before opening the editor and checking settled alpha, failed-save/history behavior and final screenshot. No production UI/CSS, finance data, security or real persisted history changed. New exact-head CI/rendered and visual artifact inspection required before accepting #10/#11.
+
 ## Remaining acceptance of Batch A
 - Run focused tests for `tests/loans.test.ts`, `tests/reports.test.ts`, `tests/credit-rates.test.ts`, server card validation and existing affected card/finance tests.
 - Verify TypeScript/build, security/defect preflight, normal coherent Ready-for-Review CI and rendered mobile/tablet/desktop Light/Dark UI (including card rate modal, payoff input and loan payment modal), QA evidence inspection, history/Do→Undo→Redo and failed-save semantics.

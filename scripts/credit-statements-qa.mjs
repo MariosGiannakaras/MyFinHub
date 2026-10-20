@@ -141,6 +141,10 @@ try{
   await c.send('Emulation.setDeviceMetricsOverride',{width:375,height:812,deviceScaleFactor:1,mobile:true});
   await c.send('Page.navigate',{url:failureUrl.href});
   await waitFor("function(){return Boolean(document.querySelector('[data-credit-rates]'))}",'rate failure fixture');
+  // Each Page.navigate creates a new document; QA fixtures do not run the production theme bootstrap.
+  // Initialize the same opaque semantic surface tokens as the real app before inspecting a mobile sheet.
+  const mobileTheme=await c.call("async function(){const theme=await import('/src/lib/theme.ts');theme.applyThemePreference('light');return {resolved:document.documentElement.dataset.theme,surface:getComputedStyle(document.documentElement).getPropertyValue('--surface-elevated').trim()}}");
+  assert(mobileTheme.resolved==='light'&&mobileTheme.surface==='#ffffff','mobile rate fixture initializes the real opaque light-theme surface');
   await openRate();
   await setRate('16.5');
   await submitRate();
