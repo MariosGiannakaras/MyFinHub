@@ -84,6 +84,32 @@ try{
   await navigate('Αναφορές','Αναφορές');
   const reportsAfter=await c.call("function(){return document.querySelector('.report-kpi-strip')?.textContent||''}");assert(reportsAfter===reportsBefore,'transfer does not alter income/expense KPI text');
 
+  console.log('Ledger QA: transfer and linked fee share one durable history point');
+  await navigate('Συναλλαγές','Συναλλαγές');
+  await clickGlobalQuickEntry();
+  await waitFor("function(){return Boolean(document.querySelector('.quick-modal'))}",'fee entry modal');
+  await clickText('.generic-kind-grid button','Μεταφορά');
+  await setLabelInput('Ποσό','25.50');
+  await setLabelInput('Προμήθεια μεταφοράς','1.25');
+  const feeDraft=await c.call("function(){const m=document.querySelector('.quick-modal');return {text:m?.textContent||'',category:!![...m.querySelectorAll('label>span')].find(x=>(x.textContent||'').includes('Κατηγορία προμήθειας'))}}");
+  assert(feeDraft.category&&feeDraft.text.includes('ξεχωριστή δαπάνη'),'fee editor requires distinct commission category and explains non-spending principal');
+  await clickText('.quick-modal footer button','Καταχώριση');
+  await waitFor("function(){return !document.querySelector('.quick-modal')}",'linked-fee durable creation');
+  const feeGroup=()=>c.call("function(){const transfers=[...document.querySelectorAll('[data-transaction-kind=transfer][data-transaction-source=event]')];const fees=[...document.querySelectorAll('[data-transaction-kind=expense][data-transaction-source=event]')].filter(row=>(row.textContent||'').includes('Προμήθεια μεταφοράς'));return {transfers:transfers.length,fees:fees.length,feeText:fees[0]?.textContent||''}}");
+  let feeState=await feeGroup();
+  assert(feeState.transfers>=2&&feeState.fees===1&&feeState.feeText.includes('1,25'),'one linked fee is visible separately from the principal transfer');
+  const feeEvidence=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
+  writeFileSync(`${evidenceDir}/ledger-linked-fee-desktop.png`,Buffer.from(feeEvidence.data,'base64'));
+  await c.call("function(){document.querySelector('button[aria-label=\"Αναίρεση τελευταίας αλλαγής\"]')?.click()}");
+  await waitFor("function(){return [...document.querySelectorAll('[data-transaction-kind=expense]')].every(row=>!(row.textContent||'').includes('Προμήθεια μεταφοράς'))}",'linked-fee undo');
+  feeState=await feeGroup();assert(feeState.transfers===1&&feeState.fees===0,'one Undo removes fee and associated transfer atomically');
+  await c.call("function(){document.querySelector('button[aria-label=\"Επαναφορά τελευταίας αναιρεμένης αλλαγής\"]')?.click()}");
+  await waitFor("function(){return [...document.querySelectorAll('[data-transaction-kind=expense]')].some(row=>(row.textContent||'').includes('Προμήθεια μεταφοράς'))}",'linked-fee redo');
+  feeState=await feeGroup();assert(feeState.transfers>=2&&feeState.fees===1,'one Redo restores transfer and commission');
+  await navigate('Αναφορές','Αναφορές');
+  const withFee=await c.call("function(){return document.querySelector('.report-kpi-strip')?.textContent||''}");
+  assert(withFee!==reportsBefore,'real commission changes report expense totals once whereas the transfer alone does not');
+
   console.log('Ledger QA: create split transaction from authoritative parts');
   await navigate('Συναλλαγές','Συναλλαγές');await clickGlobalQuickEntry();await waitFor("function(){return !!document.querySelector('.quick-modal')}",'Quick Add split');await clickText('.generic-kind-grid button','Σύνθετη αγορά');
   const splitParentFields=await c.call("function(){const modal=document.querySelector('.quick-modal');const labels=[...modal.querySelectorAll('.form-grid label>span')].map(node=>(node.textContent||'').trim());return {hasAmount:labels.some(label=>label==='Ποσό'),hasCategory:labels.some(label=>label==='Κατηγορία'),focused:document.activeElement?.getAttribute('aria-label')||''}}");assert(!splitParentFields.hasAmount&&!splitParentFields.hasCategory,'split exposes no independent parent amount or category');assert(splitParentFields.focused==='Ποσό μέρους 1','split focuses the first authoritative part amount');

@@ -77,3 +77,6 @@ No Bank Excel/CSV/OFX import, third-party bank connector, automatic Euribor, car
 
 ### Draft TypeScript check at a881e246
 - Read failed draft TypeScript hygiene: the receipt-aware QuickAdd wrapper did not yet forward the new linked transfer callback (TS2322 in ContextualQuickAdd). The owning shared wrapper now accepts and forwards it unchanged while continuing to clean receipt drafts **only after a successful finance save**. This is still an unaccepted draft validation cycle.
+
+### B2 rendered regression added
+- Existing `ledger-foundations-qa.mjs` now checks optional transfer fee creation, distinct report expense, one-step Undo/Redo group restoration and desktop screenshot. One-file source contract locks that both App and synthetic QA use the same atomic state recipe and ReceiptAwareQuickAdd forwards the callback. Browser execution/visual artifact remain **pending review-head QA**, not claimed PASS.
