@@ -15,6 +15,7 @@ import { useLocalDate } from './hooks/useLocalDate';
 import { useSession } from './hooks/useSession';
 import type { AttentionItem } from './lib/attention';
 import { archiveCardRecord, canPermanentlyDeleteCreditCard, withCardSecretCleanupPending } from './lib/cards';
+import { preserveLoanLegacyBaseline } from './lib/loans';
 import type { RankedCommandSearchItem } from './lib/commandSearch';
 import { prepareCreditStatementEvent } from './lib/creditStatements';
 import { accountBalances, allAccounts } from './lib/domain';
@@ -226,7 +227,8 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   };
   const upsertRecurring=(item:RecurringItem)=>finance.update(current=>withRecurring(current,item));
   const upsertRecurringDurably=(item:RecurringItem)=>finance.updateDurably(current=>withRecurring(current,item));
-  const withLoan = (current: FinanceData, loan: Loan) => {
+  const withLoan = (current: FinanceData, nextLoan: Loan) => {
+    const loan=preserveLoanLegacyBaseline(current,nextLoan);
     if (current.seed.loans.some((existing) => existing.id === loan.id)) return { ...current, state: { ...current.state, loanOverrides: { ...current.state.loanOverrides, [loan.id]: loan } } };
     const custom = current.state.customLoans ?? [];
     const exists = custom.some((existing) => existing.id === loan.id);

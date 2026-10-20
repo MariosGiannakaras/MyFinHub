@@ -361,6 +361,8 @@ export interface Loan {
   provider?: string;
   schedule?: Array<{ date: string; status: string }>;
   paidCount?: number;
+  /** Frozen value of imported/legacy paid installments; not a payment event. */
+  legacyPaidAmount?: number;
   source?: string;
   accountingMode?: 'expense-per-installment' | 'liability-repayment';
   kind?: LoanKind;

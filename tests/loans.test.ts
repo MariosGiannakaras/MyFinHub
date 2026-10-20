@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createEvent } from '../src/lib/domain.js';
-import { loanInstallmentPaymentPlan, loanOutstanding, loanPaidAmount, loanPaidCount, loanPaymentEvents, loanRemainingInstallments, loanPaymentInstallmentCount, loanVisualInstallmentProgress, preserveLoanPaymentLink, setLoanPaymentInstallmentCount } from '../src/lib/loans.js';
+import { loanInstallmentPaymentPlan, loanOutstanding, loanPaidAmount, loanPaidCount, loanPaymentEvents, loanRemainingInstallments, loanPaymentInstallmentCount, loanVisualInstallmentProgress, preserveLoanLegacyBaseline, preserveLoanPaymentLink, setLoanPaymentInstallmentCount } from '../src/lib/loans.js';
 import type { FinanceData, FinanceEvent, Loan } from '../src/types.js';
 
 const loan: Loan = {
@@ -113,5 +113,15 @@ describe('loan payment linkage', () => {
     expect(loanVisualInstallmentProgress(61,60)).toEqual({segments:60,paidSegments:59});
     expect(loanVisualInstallmentProgress(120,119)).toEqual({segments:60,paidSegments:59});
     expect(loanVisualInstallmentProgress(120,120)).toEqual({segments:60,paidSegments:60});
+  });
+  it('freezes legacy paid cents on preset changes while linked payments remain exact',()=>{
+    const data=financeState();data.seed={loans:[loan]} as FinanceData['seed'];
+    const updated=preserveLoanLegacyBaseline(data,{...loan,installment:31.45});
+    expect(updated.legacyPaidAmount).toBe(75);
+    expect(loanPaidAmount(data,updated)).toBe(75);
+    const payment=createEvent({kind:'expense',date:'2026-08-17',amount:31.47,note:'Actual payment',accountId:'cash'});payment.loanId=loan.id;
+    data.state.events=[payment];expect(loanPaidAmount(data,updated)).toBe(106.47);
+    expect(loanPaidAmount(data,{...updated,installment:40.25})).toBe(106.47);
+    expect(loanPaidCount(data,updated)).toBe(4);
   });
 });

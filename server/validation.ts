@@ -198,6 +198,7 @@ function validateSubscription(value: unknown, name: string) {
 
 function validateLoan(value: unknown, name: string) {
   if (!object(value)) invalid(`Invalid ${name}.`);
+  if(value.legacyPaidAmount!==undefined){finiteNumber(value.legacyPaidAmount, `${name}.legacyPaidAmount`);if(value.legacyPaidAmount<0||Math.abs(Math.round(value.legacyPaidAmount*100)-value.legacyPaidAmount*100)>0.00001)invalid(`Invalid ${name}.legacyPaidAmount.`);}
   text(value.id, `${name}.id`, 200);
   text(value.name, `${name}.name`, 1_000);
   finiteNumber(value.total, `${name}.total`);
