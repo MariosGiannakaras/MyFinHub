@@ -86,3 +86,7 @@ No Bank Excel/CSV/OFX import, third-party bank connector, automatic Euribor, car
 
 ### Draft QA/hygiene root-cause correction
 - On `0bd8e624` draft `validate`, TypeScript symbols and exports were clean, but formatting hygiene caught trailing whitespace at ledger browser QA line 61. The same line also contained an unterminated embedded Chromium runtime function string, which source formatting could not detect. Fixed **both** together before any full browser QA review-head run; do not claim rendered PASS without runtime evidence.
+
+## B1 funding-conservation preflight (not persisted yet)
+- Added pure multi-source purchase allocation contract `src/lib/multiFunding.ts`: exact safe integer-cents totals, distinct real accounts, one verified active credit card, net negative legs and **credit liability equal only to the credit-funded share** (never the whole economic purchase). New source tests cover cash+bank+credit, cash+bank, 0.1+0.2 precision, duplicates, stale cards, missing accounts and subcent rejection.
+- No new `EventKind`, database write, card statement mutation, or visual control has been enabled at this stage. The B1 acceptance gates still require full canonical event contract and coordinated SQL migration, server credit validation, statements/card archive/reporting/UI and rendered security evidence. Do not misreport isolated allocation proof as completed #4.
