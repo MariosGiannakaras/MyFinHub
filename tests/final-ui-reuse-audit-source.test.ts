@@ -43,7 +43,7 @@ describe('final UI reuse and orphan audit',()=>{
 
     expect(shell).toContain('<IconButton type="button" aria-label="Αναζήτηση και εντολές"');
     expect(shell).toContain('<IconButton type="button" aria-label="Ανανέωση δεδομένων"');
-    expect(read('src/components/HistoryDialog.tsx')).toContain('<Button type="button" variant="secondary" disabled={!canUndo} onClick={onUndo}>Αναίρεση</Button>');
+    expect(read('src/components/HistoryDialog.tsx')).toContain('<Button type="button" variant="secondary" disabled={!canUndo||Boolean(selected)||navigating} onClick={onUndo}>Αναίρεση</Button>');
     expect(login).toContain('<IconButton type="button" variant="quiet" className="login-password-toggle"');
     expect(mfa).toContain('<Button variant="ghost" className="ghost-button login-logout"');
     expect(iban).toContain('<IconButton type="button" className="inline-icon-action account-iban-copy"');
@@ -91,7 +91,9 @@ describe('final UI reuse and orphan audit',()=>{
     expect(shell).not.toContain("style={{gridTemplateRows:'auto auto minmax(0,1fr) auto'}}");
     expect(shell).not.toContain("style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) auto'");
     expect(historyCss).toContain('.change-history-dialog{grid-template-rows:auto auto auto minmax(0,1fr) auto}');
-    expect(historyCss).toContain('.change-history-dialog .history-row{display:grid;');
+    expect(historyCss).toContain('.change-history-dialog .history-row-choice,.change-history-dialog .history-row-static{display:grid;');
+    expect(historyCss).toContain('.change-history-dialog .history-jump-confirm{');
+    expect(historyCss).toContain('.change-history-dialog footer.history-footer-confirm{display:flex;flex-direction:column;align-items:stretch');
 
     expect(sort).not.toContain('style={{ minHeight: 42 }}');
     expect(sharedCss).toContain('.sort-direction-control button{');
