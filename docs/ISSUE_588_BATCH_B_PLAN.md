@@ -104,3 +104,6 @@ No Bank Excel/CSV/OFX import, third-party bank connector, automatic Euribor, car
 
 ### B1 credit consumers ready for financial integration
 - Card debt and permanent deletion now include mixed-funded expense only for its credit liability portion. Statement grouping, persisted cycle attachment, as-of purchase/payment totals and unlinked history likewise count only that credit portion, not full economic spend. Credit page purchase/statement views show the funded share. `server/cardStateValidation.ts` permits an expense carrying a verified credit funding source and preserves card/statement ownership checks. QA/end-to-end proof and funding UI are still pending, no #4 acceptance yet.
+
+### B1 shared entry UI wired
+- Generic expense QuickAdd now exposes opt-in multi-source funding with real cash/bank and active credit selection, per-source MoneyInput EUR cents, total preview and bounded add/remove controls; existing ordinary expense remains unchanged. Uses the canonical `createMultiSourcePurchaseEvent` via dynamic import to respect eager bundle budget. Editing recognizes the persisted `funding` parts. Source-level and synthetic rendered/Real Stack contract checks still needed before this can be called accepted.
