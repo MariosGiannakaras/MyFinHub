@@ -36,14 +36,6 @@ export function loanPaidAmount(data:FinanceData,loan:Loan,asOf?:string){
   return Math.round((baseline+linked)*100)/100;
 }
 
-/** Preserve legacy paid cents at the canonical edit boundary (including seeded overrides). */
-export function preserveLoanLegacyBaseline(data:FinanceData,loan:Loan):Loan{
-  const previous=data.state.loanOverrides?.[loan.id]??data.state.customLoans?.find(item=>item.id===loan.id)??data.seed.loans.find(item=>item.id===loan.id);
-  if(!previous)return loan;
-  const count=Math.min(previous.installments,Number(previous.paidCount||0)+Number(data.state.loanExtra?.[loan.id]||0));
-  return {...loan,legacyPaidAmount:previous.legacyPaidAmount??Math.round(count*Number(previous.installment||0)*100)/100};
-}
-
 export function loanOutstanding(data:FinanceData,loan:Loan,asOf?:string){
   return Math.max(0,Number(loan.total||0)-loanPaidAmount(data,loan,asOf)-Number(loan.forgivenAmount||0));
 }

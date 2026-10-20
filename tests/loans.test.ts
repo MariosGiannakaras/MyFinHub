@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createEvent } from '../src/lib/domain.js';
-import { loanInstallmentPaymentPlan, loanOutstanding, loanPaidAmount, loanPaidCount, loanPaymentEvents, loanRemainingInstallments, loanPaymentInstallmentCount, loanVisualInstallmentProgress, preserveLoanLegacyBaseline, preserveLoanPaymentLink, setLoanPaymentInstallmentCount } from '../src/lib/loans.js';
+import { loanInstallmentPaymentPlan, loanOutstanding, loanPaidAmount, loanPaidCount, loanPaymentEvents, loanRemainingInstallments, loanPaymentInstallmentCount, loanVisualInstallmentProgress, preserveLoanPaymentLink, setLoanPaymentInstallmentCount } from '../src/lib/loans.js';
+import { preserveLoanLegacyBaseline } from '../src/lib/loanLegacyBaseline.js';
 import type { FinanceData, FinanceEvent, Loan } from '../src/types.js';
 
 const loan: Loan = {

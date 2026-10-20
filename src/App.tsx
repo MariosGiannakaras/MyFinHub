@@ -15,7 +15,7 @@ import { useLocalDate } from './hooks/useLocalDate';
 import { useSession } from './hooks/useSession';
 import type { AttentionItem } from './lib/attention';
 import { archiveCardRecord, canPermanentlyDeleteCreditCard, withCardSecretCleanupPending } from './lib/cards';
-import { preserveLoanLegacyBaseline } from './lib/loans';
+import { preserveLoanLegacyBaseline } from './lib/loanLegacyBaseline';
 import type { RankedCommandSearchItem } from './lib/commandSearch';
 import { prepareCreditStatementEvent } from './lib/creditStatements';
 import { accountBalances, allAccounts } from './lib/domain';

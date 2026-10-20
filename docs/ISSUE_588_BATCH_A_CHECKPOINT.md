@@ -11,6 +11,11 @@ Source of truth: [approved plan #588](https://github.com/MariosGiannakaras/MyFin
 - Credit #11: versioned manually entered nominal annual percentages with effective-from dates and read-back as of date, server-side finite/range/chronological validation, durable card-profile write via existing revisioned finance path, history tracking, separate advisory monthly payoff estimator using integer cents. No automatic interest posting or bank statement modification.
 - Loan and credit tests added; existing finance revisions, history/Undo/Redo, AAL2/RLS, card vault and deployed DB untouched.
 
+## Review-head failure-class correction
+- The initial Ready-for-Review PR #589 head exposed a stale rendered assertion for read-only loan payments; this was updated to require editable actual EUR cents. Loan preview now reflects the real typed amount, not the nominal preset.
+- Initial full-gate evidence: CI `validate` stopped at unused-export hygiene (`CreditPayoffEstimate` exported without consumers); Windows Clean Launch blocked by raw eager app JS 531.1 KiB versus the existing 528.0 KiB budget. Correct at source by keeping the payoff result type internal and moving only the legacy-baseline boundary helper into its own lightweight eager module rather than importing the whole loan analytics module into `App.tsx`. Never raise existing size thresholds to pass.
+- Revalidate *all* checks on the subsequent coherent head; prior failures are not acceptance evidence and completed unrelated checks do not certify the new head.
+
 ## Remaining acceptance of Batch A
 - Run focused tests for `tests/loans.test.ts`, `tests/reports.test.ts`, `tests/credit-rates.test.ts`, server card validation and existing affected card/finance tests.
 - Verify TypeScript/build, security/defect preflight, normal coherent Ready-for-Review CI and rendered mobile/tablet/desktop Light/Dark UI (including card rate modal, payoff input and loan payment modal), QA evidence inspection, history/Do→Undo→Redo and failed-save semantics.

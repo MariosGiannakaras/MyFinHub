@@ -1,4 +1,4 @@
-import { preserveLoanLegacyBaseline } from './lib/loans';
+import { preserveLoanLegacyBaseline } from './lib/loanLegacyBaseline';
 import { StrictMode, Suspense, lazy, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { AppShell, type PageId } from './components/AppShell';

@@ -18,7 +18,7 @@ export function addCreditRate(card:PaymentCard,annualPercent:number,effectiveFro
   return {...card,creditRateHistory:[...history,{effectiveFrom,annualPercent}].sort((a,b)=>a.effectiveFrom.localeCompare(b.effectiveFrom))};
 }
 
-export interface CreditPayoffEstimate {
+interface CreditPayoffEstimate {
   feasible:boolean;
   months:number;
   totalInterest:number;
