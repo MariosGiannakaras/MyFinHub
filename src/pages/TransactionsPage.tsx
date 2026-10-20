@@ -39,6 +39,9 @@ type DeleteTarget={id:string;source:'legacy'|'event'};
 // Progressive scrolling, never numeric pagination. Bound the first render so
 // large-data durable saves do not synchronously create unused desktop/mobile rows.
 const LEDGER_RENDER_BATCH=28;
+// Keep the first desktop, semantic and mobile paint compact after a durable save.
+// All remaining rows remain scroll-reachable in unchanged 28-row increments.
+const LEDGER_INITIAL_ROWS=20;
 
 export function TransactionsPage({
   data,month,commandFocusKey,onEditEvent,onDeleteEvent,onEditLegacy,onDeleteLegacy,
@@ -55,7 +58,7 @@ export function TransactionsPage({
   const [dateStart,setDateStart]=useState(range.start);
   const [dateEnd,setDateEnd]=useState(range.end);
   const [sortDirection,setSortDirection]=useState<SortDirection>('desc');
-  const [renderLimit,setRenderLimit]=useState(LEDGER_RENDER_BATCH);
+  const [renderLimit,setRenderLimit]=useState(LEDGER_INITIAL_ROWS);
   const desktopLoadRef=useRef<HTMLElement|null>(null);
   const mobileLoadRef=useRef<HTMLDivElement|null>(null);
   const [selectedId,setSelectedId]=useState<string|null>(null);
@@ -68,7 +71,7 @@ export function TransactionsPage({
   const deferred=useDeferredValue(query.toLocaleLowerCase('el-GR'));
   const accounts=allAccounts(data).filter(item=>item.kind!=='credit');
 
-  useEffect(()=>{const next=monthRange(month);setDateStart(next.start);setDateEnd(next.end);setRenderLimit(LEDGER_RENDER_BATCH);setSelectedId(null)},[month]);
+  useEffect(()=>{const next=monthRange(month);setDateStart(next.start);setDateEnd(next.end);setRenderLimit(LEDGER_INITIAL_ROWS);setSelectedId(null)},[month]);
   useEffect(()=>{
     const params=new URLSearchParams(location.search);const focusId=params.get('attentionTx');const focusSource=params.get('attentionSource');
     if(!focusId||(focusSource!=='legacy'&&focusSource!=='event'))return;
@@ -119,7 +122,7 @@ export function TransactionsPage({
       const index=ordered.findIndex(row=>row.id===focusId&&row.source===focusSource);
       setQuery('');setAccount('all');setCategory('all');setType('all');
       setDateStart(range.start);setDateEnd(range.end);
-      setRenderLimit(Math.max(LEDGER_RENDER_BATCH,index+1));
+      setRenderLimit(Math.max(LEDGER_INITIAL_ROWS,index+1));
       setSelectedId(focusId);setDetailOpen(true);
       setMessage('Η αναζητούμενη συναλλαγή επιλέχθηκε στο ιστορικό της σωστής περιόδου.');
     });
@@ -150,7 +153,7 @@ export function TransactionsPage({
   },[sourceRows,account,category,type,dateStart,dateEnd,deferred,sortDirection]);
   const firstComment=rows.map(row=>noteParts(row.note).comment).find(Boolean)||'';
   const hasActiveFilters=Boolean(query.trim())||account!=='all'||category!=='all'||type!=='all'||dateStart!==range.start||dateEnd!==range.end;
-  const resetFilters=()=>{setQuery('');setAccount('all');setCategory('all');setType('all');setDateStart(range.start);setDateEnd(range.end);setRenderLimit(LEDGER_RENDER_BATCH)};
+  const resetFilters=()=>{setQuery('');setAccount('all');setCategory('all');setType('all');setDateStart(range.start);setDateEnd(range.end);setRenderLimit(LEDGER_INITIAL_ROWS)};
 
   const flow=selectMonthlyFlow(data,month);const previousMonth=shiftReportingMonth(month,-1);const previousFlow=selectMonthlyFlow(data,previousMonth);
   const transactionCountFor=(targetMonth:string)=>effectiveLegacyTransactions(data).filter(t=>t.date.startsWith(targetMonth)).length+(data.state.events??[]).filter(e=>e.date.startsWith(targetMonth)&&!['card_purchase','card_payment'].includes(e.kind)).length;
@@ -169,17 +172,17 @@ export function TransactionsPage({
   const visibleRows=rows.slice(0,Math.min(rows.length,Math.max(renderLimit,selectedIndex+1)));
   const selected=rows.find(row=>row.id===selectedId)??rows[0]??null;
   const hasMore=visibleRows.length<rows.length;
-  const appendRows=()=>setRenderLimit(count=>Math.min(rows.length,Math.max(LEDGER_RENDER_BATCH,count)+LEDGER_RENDER_BATCH));
+  const appendRows=()=>setRenderLimit(count=>Math.min(rows.length,Math.max(LEDGER_INITIAL_ROWS,count)+LEDGER_RENDER_BATCH));
   useEffect(()=>{
     if(!hasMore||typeof IntersectionObserver==='undefined')return;
     const observer=new IntersectionObserver(entries=>{
-      if(entries.some(entry=>entry.isIntersecting))setRenderLimit(count=>Math.min(rows.length,Math.max(LEDGER_RENDER_BATCH,count)+LEDGER_RENDER_BATCH));
+      if(entries.some(entry=>entry.isIntersecting))setRenderLimit(count=>Math.min(rows.length,Math.max(LEDGER_INITIAL_ROWS,count)+LEDGER_RENDER_BATCH));
     },{rootMargin:'320px 0px',threshold:0});
     for(const target of [desktopLoadRef.current,mobileLoadRef.current])if(target)observer.observe(target);
     return()=>observer.disconnect();
   },[hasMore,rows.length,visibleRows.length]);
 
-  const filterControls=(mobile=false)=><div className={`${mobile?'mobile-transaction-filters':'desktop-finance-table'} transaction-filter-controls`} aria-label="Φίλτρα συναλλαγών"><label className="filter-label"><span>Τύπος</span><AppSelectInput aria-label="Φίλτρο τύπου κίνησης" value={type} onChange={e=>{setType(e.target.value);setRenderLimit(LEDGER_RENDER_BATCH)}}><option value="all">Όλοι οι τύποι</option>{types.map(value=><option key={value} value={value}>{eventKindLabel(value)}</option>)}</AppSelectInput></label><label className="filter-label"><span>Λογαριασμός</span><AppSelectInput aria-label="Φίλτρο λογαριασμού" value={account} onChange={e=>{setAccount(e.target.value);setRenderLimit(LEDGER_RENDER_BATCH)}}><option value="all">Όλοι οι λογαριασμοί</option>{accounts.map(a=><option value={a.id} key={a.id}>{accountDisplayName(data,a.id)}</option>)}</AppSelectInput></label></div>;
+  const filterControls=(mobile=false)=><div className={`${mobile?'mobile-transaction-filters':'desktop-finance-table'} transaction-filter-controls`} aria-label="Φίλτρα συναλλαγών"><label className="filter-label"><span>Τύπος</span><AppSelectInput aria-label="Φίλτρο τύπου κίνησης" value={type} onChange={e=>{setType(e.target.value);setRenderLimit(LEDGER_INITIAL_ROWS)}}><option value="all">Όλοι οι τύποι</option>{types.map(value=><option key={value} value={value}>{eventKindLabel(value)}</option>)}</AppSelectInput></label><label className="filter-label"><span>Λογαριασμός</span><AppSelectInput aria-label="Φίλτρο λογαριασμού" value={account} onChange={e=>{setAccount(e.target.value);setRenderLimit(LEDGER_INITIAL_ROWS)}}><option value="all">Όλοι οι λογαριασμοί</option>{accounts.map(a=><option value={a.id} key={a.id}>{accountDisplayName(data,a.id)}</option>)}</AppSelectInput></label></div>;
   const edit=(row:TransactionRow)=>{setMessage('');if(row.source==='event')onEditEvent(row.id);else if(row.legacy)setEditingLegacy(row.legacy)};
   const askDelete=(row:TransactionRow)=>{if(deleteBusy)return;setMessage('');setDeleteError('');setDeleteTarget({id:row.id,source:row.source})};
   const confirmDelete=async()=>{
@@ -216,15 +219,15 @@ export function TransactionsPage({
 
     <section className="transactions-approved-shell">
       <div className="transactions-approved-filters desktop-finance-table transaction-searchbar" aria-label="Φίλτρα συναλλαγών desktop">
-        <label className="filter-label"><span>Αναζήτηση</span><AppInputShell className="searchbox" leading={<Search size={17}/>}><AppTextInput aria-label="Αναζήτηση συναλλαγών" value={query} onChange={e=>{setQuery(e.target.value);setRenderLimit(LEDGER_RENDER_BATCH)}} placeholder="Αναζήτηση συναλλαγών..."/></AppInputShell></label>
-        <span className="desktop-finance-table transaction-filter-controls transaction-filter-pass-through"><label className="filter-label"><span>Λογαριασμός</span><AppSelectInput aria-label="Φίλτρο λογαριασμού" value={account} onChange={e=>{setAccount(e.target.value);setRenderLimit(LEDGER_RENDER_BATCH)}}><option value="all">Όλοι οι λογαριασμοί</option>{accounts.map(a=><option value={a.id} key={a.id}>{accountDisplayName(data,a.id)}</option>)}</AppSelectInput></label></span>
-        <label className="filter-label"><span>Κατηγορία</span><AppSelectInput aria-label="Φίλτρο κατηγορίας" value={category} onChange={e=>{setCategory(e.target.value);setRenderLimit(LEDGER_RENDER_BATCH)}}><option value="all">Όλες οι κατηγορίες</option>{categories.map(value=><option key={value} value={value}>{value}</option>)}</AppSelectInput></label>
-        <span className="desktop-finance-table transaction-filter-controls transaction-filter-pass-through"><label className="filter-label"><span>Τύπος</span><AppSelectInput aria-label="Φίλτρο τύπου κίνησης" value={type} onChange={e=>{setType(e.target.value);setRenderLimit(LEDGER_RENDER_BATCH)}}><option value="all">Όλοι οι τύποι</option>{types.map(value=><option key={value} value={value}>{eventKindLabel(value)}</option>)}</AppSelectInput></label></span>
-        <label className="transactions-approved-date"><AppDateInput aria-label="Από ημερομηνία" value={dateStart} min={range.start} max={range.end} onChange={e=>{setDateStart(e.target.value);setRenderLimit(LEDGER_RENDER_BATCH)}}/><span>–</span><AppDateInput aria-label="Έως ημερομηνία" value={dateEnd} min={range.start} max={range.end} onChange={e=>{setDateEnd(e.target.value);setRenderLimit(LEDGER_RENDER_BATCH)}}/></label>
+        <label className="filter-label"><span>Αναζήτηση</span><AppInputShell className="searchbox" leading={<Search size={17}/>}><AppTextInput aria-label="Αναζήτηση συναλλαγών" value={query} onChange={e=>{setQuery(e.target.value);setRenderLimit(LEDGER_INITIAL_ROWS)}} placeholder="Αναζήτηση συναλλαγών..."/></AppInputShell></label>
+        <span className="desktop-finance-table transaction-filter-controls transaction-filter-pass-through"><label className="filter-label"><span>Λογαριασμός</span><AppSelectInput aria-label="Φίλτρο λογαριασμού" value={account} onChange={e=>{setAccount(e.target.value);setRenderLimit(LEDGER_INITIAL_ROWS)}}><option value="all">Όλοι οι λογαριασμοί</option>{accounts.map(a=><option value={a.id} key={a.id}>{accountDisplayName(data,a.id)}</option>)}</AppSelectInput></label></span>
+        <label className="filter-label"><span>Κατηγορία</span><AppSelectInput aria-label="Φίλτρο κατηγορίας" value={category} onChange={e=>{setCategory(e.target.value);setRenderLimit(LEDGER_INITIAL_ROWS)}}><option value="all">Όλες οι κατηγορίες</option>{categories.map(value=><option key={value} value={value}>{value}</option>)}</AppSelectInput></label>
+        <span className="desktop-finance-table transaction-filter-controls transaction-filter-pass-through"><label className="filter-label"><span>Τύπος</span><AppSelectInput aria-label="Φίλτρο τύπου κίνησης" value={type} onChange={e=>{setType(e.target.value);setRenderLimit(LEDGER_INITIAL_ROWS)}}><option value="all">Όλοι οι τύποι</option>{types.map(value=><option key={value} value={value}>{eventKindLabel(value)}</option>)}</AppSelectInput></label></span>
+        <label className="transactions-approved-date"><AppDateInput aria-label="Από ημερομηνία" value={dateStart} min={range.start} max={range.end} onChange={e=>{setDateStart(e.target.value);setRenderLimit(LEDGER_INITIAL_ROWS)}}/><span>–</span><AppDateInput aria-label="Έως ημερομηνία" value={dateEnd} min={range.start} max={range.end} onChange={e=>{setDateEnd(e.target.value);setRenderLimit(LEDGER_INITIAL_ROWS)}}/></label>
         <span className="sort-direction-control transaction-filter-pass-through"><Tooltip label={`Σειρά: ${sortDirection==='desc'?'νεότερες πρώτα':'παλαιότερες πρώτα'}`} side="left"><button type="button" className="transactions-approved-filter-button" aria-label="Εναλλαγή ταξινόμησης κατά ημερομηνία" onClick={()=>setSortDirection(value=>value==='desc'?'asc':'desc')}><span className="sr-only">{sortDirection==='desc'?'ASC':'DESC'}</span><ArrowUpDown size={17}/></button></Tooltip></span>
       </div>
 
-      <div className="filterbar transaction-searchbar mobile-only"><label className="filter-label search-filter"><span>Αναζήτηση</span><AppInputShell className="searchbox" leading={<Search size={16}/>}><AppTextInput aria-label="Αναζήτηση συναλλαγών" value={query} onChange={e=>{setQuery(e.target.value);setRenderLimit(LEDGER_RENDER_BATCH)}} placeholder="Περιγραφή, κατηγορία ή υποκατηγορία"/></AppInputShell></label><div className="transaction-sort-summary"><SortDirectionControl value={sortDirection} onChange={value=>{setSortDirection(value);setRenderLimit(LEDGER_RENDER_BATCH)}} label="Σειρά συναλλαγών ανά ημερομηνία"/><span>{rows.length} κινήσεις</span></div></div>
+      <div className="filterbar transaction-searchbar mobile-only"><label className="filter-label search-filter"><span>Αναζήτηση</span><AppInputShell className="searchbox" leading={<Search size={16}/>}><AppTextInput aria-label="Αναζήτηση συναλλαγών" value={query} onChange={e=>{setQuery(e.target.value);setRenderLimit(LEDGER_INITIAL_ROWS)}} placeholder="Περιγραφή, κατηγορία ή υποκατηγορία"/></AppInputShell></label><div className="transaction-sort-summary"><SortDirectionControl value={sortDirection} onChange={value=>{setSortDirection(value);setRenderLimit(LEDGER_INITIAL_ROWS)}} label="Σειρά συναλλαγών ανά ημερομηνία"/><span>{rows.length} κινήσεις</span></div></div>
       {filterControls(true)}
       {message?<div className="action-status" role="status" aria-live="polite">{message}</div>:null}
 
