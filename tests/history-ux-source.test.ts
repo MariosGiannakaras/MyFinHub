@@ -12,6 +12,9 @@ describe('durable Do/Undo/Redo UI and reload safety',()=>{
   expect(dialog).toContain('data-history-selectable={selectable');
   expect(dialog).toContain('className="history-row-choice"');
   expect(dialog).toContain('history-jump-confirm');
+  expect(dialog).toContain('const triggerRef=useRef<HTMLButtonElement|null>(null)');
+  expect(dialog).toContain('navigating?confirmedPlan:canSelect?routes.get(selectedId)');
+  expect(dialog).toContain('(row?.isConnected&&!row.disabled?row:fallback)?.focus({preventScroll:true})');
   expect(dialog).toContain('Κάθε βήμα αποθηκεύεται χωριστά');
   expect(shell).toContain('onNavigate={onNavigateHistory}');
   expect(read('src/hooks/useFinance.ts')).toContain('const goToHistoryPoint=useCallback(');

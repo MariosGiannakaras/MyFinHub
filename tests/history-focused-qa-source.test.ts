@@ -28,6 +28,8 @@ describe('history focused rendered regression ownership',()=>{
     expect(browser).toContain('history-jump-confirm-');
     expect(browser).toContain('history-jump-current-');
     expect(browser).toContain('cancel selected history point');
+    expect(browser).toContain('Cancel restores keyboard focus to the selected History row');
+    expect(browser).toContain('confirmed jump moves keyboard focus to safe modal close');
     expect(browser).toContain('state.opacity>=0.99&&state.backdropOpacity>=0.99');
     const css=read('src/styles/durable-history-controls.css');
     expect(css).toContain('grid-template-rows:auto auto auto minmax(0,1fr) auto');

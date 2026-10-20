@@ -18,22 +18,36 @@ export default function HistoryDialog({onClose,reduce,history,saveState,savePend
 }){
   const [selectedId,setSelectedId]=useState<string|null>(null);
   const [navigating,setNavigating]=useState(false);
+  const [confirmedPlan,setConfirmedPlan]=useState<{direction:'undo'|'redo';pointIds:string[]}|null>(null);
+  const triggerRef=useRef<HTMLButtonElement|null>(null);
+  const hadSelectionRef=useRef(false);
   const cancelRef=useRef<HTMLButtonElement|null>(null);
   const historyRef=useModalFocus<HTMLElement>(true,'button',()=>{if(!navigating)onClose()});
   const visibleHistory=classifyHistoryPoints(history.slice(0,100));
   const routes=useMemo(()=>reachableHistoryNavigation(visibleHistory,undoDepth,redoDepth),[history,undoDepth,redoDepth]);
   const canSelect=Boolean(onNavigate&&historyAvailable&&saveState==='saved'&&!savePending&&!navigating);
-  const selected=selectedId&&canSelect?routes.get(selectedId):undefined;
+  // Keep the original confirmation visible and locked throughout every database receipt.
+  const selected=selectedId?(navigating?confirmedPlan:canSelect?routes.get(selectedId):undefined):undefined;
   const target=selected?visibleHistory.find(item=>item.id===selectedId):undefined;
   const historyStatus=historyAvailabilityMessage({state:saveState,pending:savePending,available:historyAvailable,undoDepth,redoDepth});
   const dismissShortcut=shortcutDisplay('dismiss');
-  useEffect(()=>{if(selectedId&&!navigating&&!routes.has(selectedId))setSelectedId(null)},[selectedId,navigating,routes]);
+  useEffect(()=>{if(selectedId&&!navigating&&(!canSelect||!routes.has(selectedId))){setSelectedId(null);setConfirmedPlan(null)}},[selectedId,navigating,canSelect,routes]);
+  // When Cancel/Confirm removes its focused control, return keyboard focus to
+  // the chosen row if it remains actionable, else to the modal Close control.
+  useEffect(()=>{
+    if(selectedId){hadSelectionRef.current=true;return}
+    if(!hadSelectionRef.current||navigating)return;
+    hadSelectionRef.current=false;
+    const row=triggerRef.current;
+    const fallback=historyRef.current?.querySelector<HTMLButtonElement>('button[aria-label="Κλείσιμο ιστορικού"]');
+    (row?.isConnected&&!row.disabled?row:fallback)?.focus({preventScroll:true});
+  },[selectedId,navigating]);
   useEffect(()=>{if(selected)cancelRef.current?.focus({preventScroll:true})},[selectedId,selected]);
   const performNavigation=async()=>{
-    if(!selectedId||!selected||!onNavigate||navigating)return;
+    if(!selectedId||!selected||!onNavigate||navigating||!canSelect)return;
     setNavigating(true);
     try{await onNavigate(selectedId)}
-    finally{setSelectedId(null);setNavigating(false)}
+    finally{setSelectedId(null);setConfirmedPlan(null);setNavigating(false)}
   };
   const close=()=>{if(!navigating)onClose()};
   return <motion.div className="command-backdrop" initial={reduce?false:{opacity:0}} animate={{opacity:1}} exit={reduce?undefined:{opacity:0}} onMouseDown={close}><motion.section ref={historyRef} className="command-palette surface-raised change-history-dialog" role="dialog" aria-modal="true" aria-labelledby="change-history-title" tabIndex={-1} initial={reduce?false:{opacity:0,y:14}} animate={{opacity:1,y:0}} exit={reduce?undefined:{opacity:0,y:10}} transition={{duration:reduce?0:.16}} onMouseDown={event=>event.stopPropagation()}>
@@ -45,10 +59,10 @@ export default function HistoryDialog({onClose,reduce,history,saveState,savePend
       const selectable=Boolean(plan&&onNavigate);
       const stateLabel=entry.position==='redo'&&!plan?'Αναιρεμένη · μη διαθέσιμη από την τρέχουσα κατάσταση':historyPositionLabel(entry.position);
       const label=<><div className="command-result-copy"><b>{entry.label}</b><small>{stateLabel}</small></div><small>{historyTime(entry.at)}</small></>;
-      return <div role="listitem" key={entry.id} className="surface-inset history-row" data-history-state={entry.position} data-history-selectable={selectable?'true':'false'}>{selectable?<button type="button" className="history-row-choice" disabled={!canSelect} aria-label={'Μετάβαση: '+entry.label+' · '+plan!.pointIds.length+' βήματα'} onClick={()=>setSelectedId(entry.id)}>{label}</button>:<div className="history-row-static">{label}</div>}</div>;
+      return <div role="listitem" key={entry.id} className="surface-inset history-row" data-history-state={entry.position} data-history-selectable={selectable?'true':'false'}>{selectable?<button type="button" className="history-row-choice" disabled={!canSelect} aria-label={'Μετάβαση: '+entry.label+' · '+plan!.pointIds.length+' βήματα'} onClick={event=>{triggerRef.current=event.currentTarget;setConfirmedPlan(plan??null);setSelectedId(entry.id)}}>{label}</button>:<div className="history-row-static">{label}</div>}</div>;
     }):<div className="command-empty"><History size={20}/><div><b>Δεν υπάρχει ιστορικό ακόμη</b><span>Όταν επιβεβαιωθεί η πρώτη οικονομική αλλαγή από τη βάση, θα εμφανιστεί εδώ.</span></div></div>}</div>
     <footer className={selected?"history-footer-confirm":undefined}><span>Έως 100 σημεία για 10 ημέρες. Η εισαγωγή αρχείου δεν αναιρείται μέσω Undo/Redo. Η αρχειοθέτηση κάρτας διατηρεί τα στοιχεία της· μόνο η ξεχωριστή οριστική διαγραφή είναι μη αναστρέψιμη.</span>
-      {selected&&target?<div className="history-jump-confirm" role="group" aria-label="Επιβεβαίωση μετακίνησης ιστορικού"><b>Μετάβαση στο επιλεγμένο σημείο;</b><p>{target.label} · {selected.pointIds.length} {selected.pointIds.length===1?'βήμα':'βήματα'} {selected.direction==='undo'?'πίσω':'μπροστά'}. Κάθε βήμα αποθηκεύεται χωριστά στη βάση. Αν διακοπεί, παραμένει η τελευταία επιβεβαιωμένη κατάσταση.</p><div className="history-jump-actions"><Button ref={cancelRef} type="button" variant="secondary" disabled={navigating} onClick={()=>setSelectedId(null)}>Ακύρωση</Button><Button type="button" variant="primary" disabled={navigating} onClick={()=>{void performNavigation()}}>Επιβεβαίωση μετάβασης</Button></div></div>:null}
+      {selected&&target?<div className="history-jump-confirm" role="group" aria-label="Επιβεβαίωση μετακίνησης ιστορικού"><b>Μετάβαση στο επιλεγμένο σημείο;</b><p>{target.label} · {selected.pointIds.length} {selected.pointIds.length===1?'βήμα':'βήματα'} {selected.direction==='undo'?'πίσω':'μπροστά'}. Κάθε βήμα αποθηκεύεται χωριστά στη βάση. Αν διακοπεί, παραμένει η τελευταία επιβεβαιωμένη κατάσταση.</p><div className="history-jump-actions"><Button ref={cancelRef} type="button" variant="secondary" disabled={navigating} onClick={()=>{setSelectedId(null);setConfirmedPlan(null)}}>Ακύρωση</Button><Button type="button" variant="primary" disabled={navigating} onClick={()=>{void performNavigation()}}>Επιβεβαίωση μετάβασης</Button></div></div>:null}
       {!selected?<div className="history-actions">{onUndo?<Button type="button" variant="secondary" disabled={!canUndo||Boolean(selected)||navigating} onClick={onUndo}>Αναίρεση</Button>:null}{onRedo?<Button type="button" variant="secondary" disabled={!canRedo||Boolean(selected)||navigating} onClick={onRedo}>Επαναφορά</Button>:null}</div>:null}
     </footer>
   </motion.section></motion.div>;

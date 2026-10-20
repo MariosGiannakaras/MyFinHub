@@ -94,10 +94,12 @@ try{
     await screenshot(`history-jump-confirm-${width}-${theme}`);
     assert(await c.call("function(){const b=[...document.querySelectorAll('.history-jump-actions button')].find(x=>x.textContent?.includes('Ακύρωση'));b?.click();return Boolean(b)}"),'cancel selected history point');
     await waitFor("function(){return !document.querySelector('.history-jump-confirm')}",'cancel returns to selectable history');
+    await waitFor("function(){const b=document.querySelector('.change-history-dialog [data-history-state=stored] .history-row-choice');return document.activeElement===b}",'Cancel restores keyboard focus to the selected History row');
     assert(await c.call(select),'reselect reachable ancestor');
     await waitFor("function(){return Boolean(document.querySelector('.history-jump-confirm'))}",'confirmation reopened');
     assert(await c.call("function(){const b=[...document.querySelectorAll('.history-jump-actions button')].find(x=>x.textContent?.includes('Επιβεβαίωση'));b?.click();return Boolean(b)}"),'confirmed targeted history click');
     await waitFor("function(){const d=document.querySelector('.change-history-dialog');return !d?.querySelector('.history-jump-confirm')&&d?.querySelector('[data-history-state=current]')?.textContent?.includes('Προηγούμενη καταχώριση')}",'selected snapshot becomes current only after QA receipt');
+    await waitFor("function(){return document.activeElement?.getAttribute('aria-label')==='Κλείσιμο ιστορικού'}",'confirmed jump moves keyboard focus to safe modal close when selected row becomes current');
     const done=await c.call("function(){const d=document.querySelector('.change-history-dialog');return {current:d?.querySelectorAll('[data-history-state=current]').length,redo:d?.querySelectorAll('[data-history-state=redo]').length,dialog:d?.getBoundingClientRect().bottom<=innerHeight+1,status:d?.querySelector('.history-status')?.textContent}}");
     assert(done.current===1&&done.redo>=1&&done.dialog&&done.status?.includes('Επαναφορά:'),`cursor updated after confirmation at ${width}: ${JSON.stringify(done)}`);
     await screenshot(`history-jump-current-${width}-${theme}`);
