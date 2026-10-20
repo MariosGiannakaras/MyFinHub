@@ -143,6 +143,20 @@ function validatePaymentCard(value: unknown, name: string) {
   optionalText(value.last4, `${name}.last4`, 4);
   if (value.last4 !== undefined && value.last4 !== null && !/^\d{4}$/.test(String(value.last4))) invalid(`Invalid ${name}.last4.`);
   optionalText(value.vaultRef, `${name}.vaultRef`, 500);
+  if(value.creditRateHistory!==undefined){
+    if(value.kind!=='credit')invalid(`Invalid ${name}.creditRateHistory kind.`);
+    array(value.creditRateHistory, `${name}.creditRateHistory`, 500);
+    let previousDate='';
+    for(const [index,version] of value.creditRateHistory.entries()){
+      const key=`${name}.creditRateHistory[${index}]`;
+      if(!object(version))invalid(`Invalid ${key}.`);
+      dateOnly(version.effectiveFrom, `${key}.effectiveFrom`);
+      finiteNumber(version.annualPercent, `${key}.annualPercent`, 100);
+      if(version.annualPercent<0||version.annualPercent>100||Math.abs(Math.round(version.annualPercent*10000)-version.annualPercent*10000)>0.00001)invalid(`Invalid ${key}.annualPercent.`);
+      if(version.effectiveFrom<=previousDate)invalid(`Invalid ${key} order.`);
+      previousDate=version.effectiveFrom;
+    }
+  }
   optionalNumber(value.creditLimit, `${name}.creditLimit`);
   if (value.creditLimit !== undefined && value.creditLimit !== null && Number(value.creditLimit) < 0) invalid(`Invalid ${name}.creditLimit.`);
   for (const [field, raw] of [['statementClosingDay', value.statementClosingDay], ['statementDueDay', value.statementDueDay]] as const) {

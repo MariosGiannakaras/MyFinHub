@@ -53,6 +53,13 @@ export interface CardBank {
   custom?: boolean;
 }
 
+export interface CreditRateVersion {
+  /** Effective calendar day, not transaction posting date. */
+  effectiveFrom: string;
+  /** Annual nominal percentage (not APR), from bank documents. */
+  annualPercent: number;
+}
+
 export interface PaymentCard {
   id: string;
   bankId: string;
@@ -65,6 +72,8 @@ export interface PaymentCard {
   last4?: string;
   vaultRef?: string;
   creditLimit?: number;
+  /** Manually entered effective-dated rate revisions; never auto-post interest. */
+  creditRateHistory?: CreditRateVersion[];
   statementClosingDay?: number;
   statementDueDay?: number;
   statementBoundaryRule?: StatementBoundaryRule;
