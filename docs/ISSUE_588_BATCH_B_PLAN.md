@@ -74,3 +74,6 @@ No Bank Excel/CSV/OFX import, third-party bank connector, automatic Euribor, car
 
 ### B2 UI and persistence integration
 - Transfer QuickAdd now records an optional linked commission with the shared MoneyInput, live expense-category choices and one `finance.updateDurably` contract call. QA uses one Do/Undo point; fee edit resolves the parent, and parent delete cascades to fees. This is a draft partial slice; card-payment fee UI, comprehensive browser and failure cases still require acceptance evidence.
+
+### Draft TypeScript check at a881e246
+- Read failed draft TypeScript hygiene: the receipt-aware QuickAdd wrapper did not yet forward the new linked transfer callback (TS2322 in ContextualQuickAdd). The owning shared wrapper now accepts and forwards it unchanged while continuing to clean receipt drafts **only after a successful finance save**. This is still an unaccepted draft validation cycle.
