@@ -306,12 +306,37 @@ export function SettingsPage({
                 <div className="settings-data-action-copy">
                   <b>Επαναφορά από JSON</b>
                   <p>Επίλεξε έγκυρο αντίγραφο MyFinHub. Η εισαγωγή αντικαθιστά τα τρέχοντα δεδομένα μόνο μετά από επιβεβαίωση.</p>
-                  <small>Έως 4 MB · δημιουργείται αυτόματο backup πριν από την αντικατάσταση.</small>
+                  <small>Έως 4 MB · αυτόματο backup πριν από την αντικατάσταση · χωρίς Undo της εισαγωγής.</small>
                 </div>
                 <Button className="settings-data-action-button" variant="secondary" type="button" disabled={busy} onClick={() => fileRef.current?.click()}><FileJson /> Εισαγωγή JSON</Button>
               </Surface>
             </div>
 
+            <details className="settings-import-guide">
+              <summary>Οδηγίες χρήσης και δομή αρχείου JSON</summary>
+              <div className="settings-import-guide-content">
+                <section aria-labelledby="settings-import-instructions">
+                  <h3 id="settings-import-instructions">Πώς γίνεται η εισαγωγή</h3>
+                  <ol>
+                    <li>Δημιούργησε πρώτα αντίγραφο από το «Backup & λήψη».</li>
+                    <li>Πάτησε «Εισαγωγή JSON» και επίλεξε πλήρες backup MyFinHub έως 4 MB.</li>
+                    <li>Έλεγξε την προειδοποίηση και επιβεβαίωσε. Η βάση επαληθεύει τη δομή και δημιουργεί αυτόματα backup των προηγούμενων δεδομένων πριν από την αντικατάσταση.</li>
+                    <li>Έλεγξε τα στοιχεία μετά την εισαγωγή. Για επιστροφή στα προηγούμενα δεδομένα χρειάζεται ξεχωριστή επαναφορά backup, όχι Undo.</li>
+                  </ol>
+                </section>
+                <section aria-labelledby="settings-import-structure">
+                  <h3 id="settings-import-structure">Δομή JSON MyFinHub</h3>
+                  <p>Το αρχείο είναι πλήρες JSON της εφαρμογής, όχι CSV ή απλή λίστα συναλλαγών. Τα κύρια πεδία του είναι:</p>
+                  <dl className="settings-import-guide-fields">
+                    <div><dt><code>app</code>, <code>schemaVersion</code>, <code>updatedAt</code></dt><dd>Ταυτότητα εφαρμογής, συμβατή έκδοση και ημερομηνία.</dd></div>
+                    <div><dt><code>seed</code></dt><dd>Βασικά δεδομένα: <code>accounts</code>, <code>months</code>, <code>transactions</code>, <code>snapshots</code>, <code>recurring</code>, <code>subscriptions</code>, <code>loans</code>, <code>lending</code>, <code>stats</code>.</dd></div>
+                    <div><dt><code>state</code></dt><dd>Τρέχουσα κατάσταση: <code>settings</code>, <code>events</code>, <code>cards</code>, <code>budgets</code>, <code>scheduled</code>, <code>transactionRules</code> και τροποποιημένες εγγραφές.</dd></div>
+                  </dl>
+                  <p>Χρησιμοποίησε το εξαγόμενο backup ως πρότυπο. Ένα χειροποίητο JSON με μόνο αυτά τα πεδία δεν αρκεί: ελέγχονται και τα απαιτούμενα επιμέρους πεδία και οι οικονομικές συσχετίσεις.</p>
+                </section>
+                <p className="settings-import-guide-warning">Η εισαγωγή αντικαθιστά (δεν συγχωνεύει) τα οικονομικά δεδομένα και δεν αναιρείται με Undo/Redo. Το ξεχωριστό κρυπτογραφημένο Card Vault (PAN/λήξη/CVV) δεν περιλαμβάνεται στο JSON backup. Τα δεδομένα προφίλ κάρτας δεν επαναφέρουν από μόνα τους αυτούς τους κωδικούς.</p>
+              </div>
+            </details>
             {message ? <div className="logic-note compact" role="status" aria-live="polite"><ShieldCheck /><span>{message}</span></div> : null}
           </div>
         ) : null}
@@ -320,7 +345,7 @@ export function SettingsPage({
       <ConfirmDialog
         open={Boolean(pendingImportFile)}
         title="Εισαγωγή δεδομένων από JSON;"
-        description="Η εισαγωγή θα αντικαταστήσει τα τρέχοντα δεδομένα μόνο αφού δημιουργηθεί αυτόματο αντίγραφο ασφαλείας. Η υπάρχουσα διαδικασία ελέγχου και εισαγωγής παραμένει η ίδια."
+        description="Η εισαγωγή αντικαθιστά όλα τα τρέχοντα οικονομικά δεδομένα (δεν τα συγχωνεύει), αφού δημιουργηθεί αυτόματο backup. Δεν αναιρείται με Undo. Οι κωδικοί Card Vault είναι ξεχωριστοί και δεν εισάγονται από το JSON. Συνέχεια;"
         confirmLabel="Εισαγωγή"
         tone="destructive"
         busy={busy}

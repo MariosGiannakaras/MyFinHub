@@ -28,8 +28,9 @@ describe('Transactions post-v1.4 remediation contracts',()=>{
 
   it('renders a progressive continuous ledger without numeric pages or page-size controls',()=>{
     expect(page).toContain('const LEDGER_RENDER_BATCH=28');
-    expect(page).toContain('const [renderLimit,setRenderLimit]=useState(LEDGER_RENDER_BATCH)');
-    expect(page).toContain('Math.max(LEDGER_RENDER_BATCH,count)+LEDGER_RENDER_BATCH');
+    expect(page).toContain('const LEDGER_INITIAL_ROWS=20');
+    expect(page).toContain('const [renderLimit,setRenderLimit]=useState(LEDGER_INITIAL_ROWS)');
+    expect(page).toContain('Math.max(LEDGER_INITIAL_ROWS,count)+LEDGER_RENDER_BATCH');
     expect(page).toContain('const visibleRows=rows.slice(');
     expect(page).toContain('new IntersectionObserver(');
     expect(page).toContain('desktopLoadRef');

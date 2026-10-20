@@ -60,43 +60,126 @@ if(QA_SESSION_SIGNAL_SCREEN){
 }
 
 const QA_PERSISTENCE_PROBE_SCREEN=new URLSearchParams(location.search).get('screen')==='persistence-probe';
+// QA-only: exercise the actual finance hook without Production APIs.
+const QA_HISTORY_HOOK_PROBE=new URLSearchParams(location.search).get('history-test')==='1';
 if(QA_PERSISTENCE_PROBE_SCREEN){
   const originalFetch=globalThis.fetch.bind(globalThis);
-  const backend=qaFinanceData();
+  let backend=qaFinanceData();
   let mode:'success'|'offline'|'pending'|'held'|'conflict'='success';
   const heldResponses:Array<()=>void>=[];
+  const heldReadResponses:Array<(fail:boolean)=>void>=[];
+  let holdNextRead=false;
   let revision=1;
   let putCount=0;
+  let historyMoveCount=0;
+  let rejectNextHistoryMove=false;
+  let rejectHistoryAfterSteps=0;
+  type QaSnapshot={id:string;parentId:string|null;state:FinanceData['state'];label:string};
+  const snapshots:QaSnapshot[]=[{id:'1',parentId:null,state:structuredClone(backend.state),label:'QA persistence baseline'}];
+  let cursorIndex=0;
+  let nextPointId=1;
   const control=globalThis as typeof globalThis & {
     __myfinhubQaPersistenceMode?:(next:'success'|'offline'|'pending'|'held'|'conflict')=>void;
     __myfinhubQaReleaseSave?:()=>boolean;
     __myfinhubQaPersistencePutCount?:()=>number;
+    __myfinhubQaHoldNextRead?:()=>boolean;
+    __myfinhubQaReleaseRead?:(fail?:boolean)=>boolean;
+    __myfinhubQaHeldReadCount?:()=>number;
+    __myfinhubQaHistoryMoveCount?:()=>number;
+    __myfinhubQaRejectNextHistoryMove?:()=>boolean;
+    __myfinhubQaRejectHistoryAfterSteps?:(steps:number)=>boolean;
   };
   control.__myfinhubQaPersistenceMode=(next)=>{mode=next};
   control.__myfinhubQaReleaseSave=()=>{const release=heldResponses.shift();if(!release)return false;release();return true};
   control.__myfinhubQaPersistencePutCount=()=>putCount;
-  const history=()=>({
+  control.__myfinhubQaHoldNextRead=()=>{holdNextRead=true;return true};
+  control.__myfinhubQaReleaseRead=(fail=false)=>{const release=heldReadResponses.shift();if(!release)return false;release(fail);return true};
+  control.__myfinhubQaHeldReadCount=()=>heldReadResponses.length;
+  control.__myfinhubQaHistoryMoveCount=()=>historyMoveCount;
+  control.__myfinhubQaRejectNextHistoryMove=()=>{rejectNextHistoryMove=true;return true};
+  control.__myfinhubQaRejectHistoryAfterSteps=steps=>{rejectHistoryAfterSteps=steps;return true};
+  const history=()=>QA_HISTORY_HOOK_PROBE?({
+    available:true,generation:String(revision),financeRevision:String(revision),
+    currentPointId:snapshots[cursorIndex]!.id,
+    canUndo:cursorIndex>0,canRedo:cursorIndex<snapshots.length-1,
+    undoDepth:cursorIndex,redoDepth:snapshots.length-cursorIndex-1,
+    points:[...snapshots].reverse().map(point=>({
+      id:point.id,parentId:point.parentId,label:point.label,
+      createdAt:'2026-08-17T12:00:00.000Z',
+      current:point.id===snapshots[cursorIndex]!.id,
+    })),
+  }):({
     available:true,generation:String(revision),financeRevision:String(revision),currentPointId:String(revision),
     canUndo:false,canRedo:false,undoDepth:0,redoDepth:0,
     points:[{id:String(revision),parentId:null,label:'QA persistence baseline',createdAt:'2026-08-17T12:00:00.000Z',current:true}],
   });
-  const savedReceipt=()=>{revision+=1;return new Response(JSON.stringify({revision:String(revision),filePath:'QA persistence backend',lastSavedAt:'2026-08-17T12:00:01.000Z',history:history()}),{status:200,headers:{'content-type':'application/json'}})};
+  const savedReceipt=(payload?:{state?:FinanceData['state'];historyLabel?:string})=>{
+    if(QA_HISTORY_HOOK_PROBE&&payload?.state){
+      const previous=snapshots[cursorIndex]!;
+      snapshots.splice(cursorIndex+1); // A successful new write invalidates redo descendants.
+      snapshots.push({id:String(++nextPointId),parentId:previous.id,
+        state:structuredClone(payload.state),label:payload.historyLabel??'QA finance edit'});
+      cursorIndex=snapshots.length-1;
+      backend={...backend,state:structuredClone(payload.state)};
+    }
+    revision+=1;return new Response(JSON.stringify({revision:String(revision),filePath:'QA persistence backend',lastSavedAt:'2026-08-17T12:00:01.000Z',history:history()}),{status:200,headers:{'content-type':'application/json'}})};
   globalThis.fetch=async(input:RequestInfo|URL,init?:RequestInit)=>{
     const raw=typeof input==='string'?input:input instanceof URL?input.href:input.url;
     const url=new URL(raw,location.href);
     if(url.pathname==='/api/data'&&(!init?.method||init.method==='GET')){
-      return new Response(JSON.stringify({data:backend,revision:String(revision),filePath:'QA persistence backend',lastSavedAt:'2026-08-17T12:00:00.000Z'}),{status:200,headers:{'content-type':'application/json'}});
+      const response=new Response(JSON.stringify({data:backend,revision:String(revision),filePath:'QA persistence backend',lastSavedAt:'2026-08-17T12:00:00.000Z'}),{status:200,headers:{'content-type':'application/json'}});
+      if(holdNextRead){
+        holdNextRead=false;
+        return await new Promise<Response>((resolve,reject)=>heldReadResponses.push(fail=>{
+          if(fail)reject(new TypeError('Synthetic stale finance GET failure'));
+          else resolve(response);
+        }));
+      }
+      return response;
+    }
+    if(url.pathname==='/api/import'&&init?.method==='POST'){
+      backend=JSON.parse(String(init.body||'{}')) as FinanceData;
+      if(QA_HISTORY_HOOK_PROBE){
+        snapshots.splice(0,snapshots.length,{id:String(++nextPointId),parentId:null,
+          state:structuredClone(backend.state),label:'QA import baseline'});
+        cursorIndex=0; // Fixture reset, not Production import Undo semantics.
+      }
+      revision+=1;
+      return new Response(JSON.stringify({data:backend,revision:String(revision),filePath:'QA persistence backend',lastSavedAt:'2026-08-17T12:00:02.000Z'}),{status:200,headers:{'content-type':'application/json'}});
     }
     if(url.pathname==='/api/history'&&(!init?.method||init.method==='GET')){
       return new Response(JSON.stringify(history()),{status:200,headers:{'content-type':'application/json'}});
     }
+    if(QA_HISTORY_HOOK_PROBE&&url.pathname==='/api/history'&&init?.method==='POST'){
+      historyMoveCount+=1;
+      const headers=new Headers(init.headers);
+      const request=JSON.parse(String(init.body||'{}')) as {action?:string};
+      const valid=headers.get('if-match')===String(revision)
+        &&headers.get('x-rheomiq-history-generation')===String(revision);
+      const destination=request.action==='undo'?cursorIndex-1:request.action==='redo'?cursorIndex+1:-1;
+      const forcedFailure=rejectHistoryAfterSteps>0&&--rejectHistoryAfterSteps===0;
+      if(rejectNextHistoryMove||forcedFailure||!valid||destination<0||destination>=snapshots.length){
+        rejectNextHistoryMove=false;
+        return new Response(JSON.stringify({code:'HISTORY_CURSOR_CONFLICT',error:'Synthetic rejected history move'}),
+          {status:409,headers:{'content-type':'application/json'}});
+      }
+      cursorIndex=destination;
+      backend={...backend,state:structuredClone(snapshots[cursorIndex]!.state)};
+      revision+=1;
+      return new Response(JSON.stringify({data:backend,revision:String(revision),
+        filePath:'QA persistence backend',lastSavedAt:'2026-08-17T12:00:03.000Z',history:history()}),
+        {status:200,headers:{'content-type':'application/json'}});
+    }
     if(url.pathname==='/api/data'&&init?.method==='PUT'){
       putCount+=1;
+      const payload=QA_HISTORY_HOOK_PROBE
+        ?JSON.parse(String(init.body||'{}')) as {state?:FinanceData['state'];historyLabel?:string}
+        :undefined;
       if(mode==='offline')throw new TypeError('Synthetic offline finance save');
       if(mode==='pending')return await new Promise<Response>(()=>{});
-      if(mode==='held')return await new Promise<Response>(resolve=>heldResponses.push(()=>resolve(savedReceipt())));
+      if(mode==='held')return await new Promise<Response>(resolve=>heldResponses.push(()=>resolve(savedReceipt(payload))));
       if(mode==='conflict')return new Response(JSON.stringify({code:'REVISION_CONFLICT',error:'QA write conflict'}),{status:409,headers:{'content-type':'application/json'}});
-      return savedReceipt();
+      return savedReceipt(payload);
     }
     return originalFetch(input,init);
   };
@@ -321,9 +404,16 @@ function QaWorkspace(){
   const params=new URLSearchParams(location.search);
   const lazyFailure=params.get('failure')==='lazy';
   const [data,setData]=useState<FinanceData>(()=>buildQaData(params));
-  const [undoStack,setUndoStack]=useState<FinanceData[]>([]);
-  const [redoStack,setRedoStack]=useState<FinanceData[]>([]);
-  const [changeHistory,setChangeHistory]=useState<ChangeHistoryEntry[]>(()=>params.get('state')==='large'
+  // QA-only graph and stack state to exercise the actual lazy HistoryDialog.
+  // Never use this synthetic stack as proof of database Undo/Redo semantics.
+  const historyCursorFixture=params.get('state')==='history-cursor';
+  const [undoStack,setUndoStack]=useState<FinanceData[]>(()=>historyCursorFixture?[qaFinanceData()]:[]);
+  const [redoStack,setRedoStack]=useState<FinanceData[]>(()=>historyCursorFixture?[qaFinanceData()]:[]);
+  const [changeHistory,setChangeHistory]=useState<ChangeHistoryEntry[]>(()=>historyCursorFixture?[
+    {id:'qa-redo-point',parentId:'qa-current-point',kind:'change',label:'Διόρθωση κατηγορίας · '+('Μεγάλη συνθετική περιγραφή ελέγχου · ').repeat(6),at:'2026-08-17T14:10:00.000Z',current:false},
+    {id:'qa-current-point',parentId:'qa-previous-point',kind:'change',label:'Τρέχουσα επιβεβαιωμένη κατάσταση · 123,45 €',at:'2026-08-17T13:00:00.000Z',current:true},
+    {id:'qa-previous-point',parentId:null,kind:'change',label:'Προηγούμενη καταχώριση · 100,00 €',at:'2026-08-17T12:00:00.000Z',current:false},
+  ]:params.get('state')==='large'
     ?Array.from({length:100},(_,index)=>({id:`qa-large-history-${index+1}`,kind:'change' as const,label:`Large history change ${index+1}`,at:`2026-08-17T${String(11-Math.floor(index/60)).padStart(2,'0')}:${String(59-index%60).padStart(2,'0')}:00.000Z`,current:index===0}))
     :[]);
   const [saveState,setSaveState]=useState<SaveState>(()=>initialSaveState(params.get('save')));
@@ -510,7 +600,7 @@ function QaWorkspace(){
   const periodVisible=['dashboard','transactions','savings','reports'].includes(page);
 
   return <>
-    <AppShell page={page} onPage={next=>{setCrash(false);setPage(next)}} onQuickAdd={()=>openGeneric()} onCommand={openCommand} onRefresh={refresh} onUndo={undo} onRedo={redo} canUndo={undoStack.length>0} canRedo={redoStack.length>0} history={changeHistory} saveState={saveState} filePath="Synthetic QA" motionMode="full" userEmail="qa@example.invalid" onLogout={()=>{}}>
+    <AppShell page={page} onPage={next=>{setCrash(false);setPage(next)}} onQuickAdd={()=>openGeneric()} onCommand={openCommand} onRefresh={refresh} onUndo={undo} onRedo={redo} onNavigateHistory={async pointId=>{if(!historyCursorFixture||!changeHistory.some(item=>item.id===pointId))return false;if(pointId==='qa-previous-point'){const previous=undoStack.at(-1);if(!previous)return false;setUndoStack(stack=>stack.slice(0,-1));setRedoStack(stack=>[data,...stack].slice(0,20));setData(previous)}else if(pointId==='qa-redo-point'){const next=redoStack[0];if(!next)return false;setRedoStack(stack=>stack.slice(1));setUndoStack(stack=>[...stack.slice(-19),data]);setData(next)}else return false;setChangeHistory(items=>items.map(item=>({...item,current:item.id===pointId})));return true}} canUndo={undoStack.length>0&&saveState==='saved'} canRedo={redoStack.length>0&&saveState==='saved'} undoDepth={undoStack.length} redoDepth={redoStack.length} history={changeHistory} saveState={saveState} filePath="Synthetic QA" motionMode="full" userEmail="qa@example.invalid" onLogout={()=>{}}>
       <PersistenceNotice saveState={saveState} onRecover={()=>setRecoverOpen(true)} cleanupPending={qaCleanupPending} cleanupError={qaCleanupPending?'Η δοκιμαστική επανάληψη καθαρισμού εκκρεμεί.':null} onRetryCleanup={()=>setQaCleanupPending(0)}/>
       {periodVisible?<div className="period-row"><PeriodControl month={month} onChange={setMonth}/><button type="button" className="text-button" data-qa-crash onClick={()=>setCrash(true)}>QA render failure</button></div>:<button type="button" className="text-button qa-crash-floating" data-qa-crash onClick={()=>setCrash(true)}>QA render failure</button>}
       {saveState==='loading'?<div className="qa-loading-route"><h1 className="sr-only">{QA_PAGE_HEADINGS[page]}</h1><PageSkeleton/></div>:<PageErrorBoundary resetKey={page} onDashboard={()=>{setCrash(false);setPage('dashboard')}}>{lazyFailure?<Suspense fallback={<PageSkeleton/>}><LazyResourceFailure/></Suspense>:crash?<Crash/>:content}</PageErrorBoundary>}
@@ -535,6 +625,15 @@ function QaPersistenceProbe(){
     <output data-persistence-budget={budget}>{budget}</output>
     <button type="button" data-persistence-mutate onClick={()=>finance.update(current=>({...current,state:{...current.state,settings:{...current.state.settings,monthlyBudget:(current.state.settings.monthlyBudget??0)+1}}}))}>Synthetic finance change</button>
     <button type="button" data-persistence-reload onClick={()=>{void finance.reload()}}>Reload persisted state</button>
+    <button type="button" data-persistence-import onClick={()=>{void finance.importData({...finance.data!,state:{...finance.data!.state,settings:{...finance.data!.state.settings,monthlyBudget:budget+13}}})}}>Synthetic import while GET pending</button>
+    {QA_HISTORY_HOOK_PROBE?<section aria-label="Synthetic history hook">
+      <output data-persistence-undo-depth={finance.undoDepth}>{finance.undoDepth}</output>
+      <output data-persistence-redo-depth={finance.redoDepth}>{finance.redoDepth}</output>
+      <button type="button" data-persistence-undo disabled={!finance.canUndo} onClick={()=>{void finance.undo()}}>QA Undo</button>
+      <button type="button" data-persistence-redo disabled={!finance.canRedo} onClick={()=>{void finance.redo()}}>QA Redo</button>
+      <button type="button" data-persistence-jump-first disabled={!finance.canUndo} onClick={()=>{const target=finance.changeHistory.at(-1)?.id;if(target)void finance.goToHistoryPoint(target)}}>QA Go to earliest stored point</button>
+      <button type="button" data-persistence-jump-last disabled={!finance.canRedo} onClick={()=>{const target=finance.changeHistory[0]?.id;if(target)void finance.goToHistoryPoint(target)}}>QA Go to latest stored point</button>
+    </section>:null}
     <PersistenceNotice saveState={finance.saveState} errorMessage={finance.saveErrorMessage} onRecover={()=>{void finance.reload()}}/>
   </main></>;
 }

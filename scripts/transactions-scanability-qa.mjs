@@ -94,7 +94,7 @@ try{
   console.log('Transactions QA: realistic large-data continuous scrolling/search boundary');
   await navigate(`${baseUrl}?page=transactions&state=large`,1280,900);
   const large=await c.call("function(){const visible=[...document.querySelectorAll('.transactions-approved-table tbody .transaction-row')];const semantic=[...document.querySelectorAll('.transaction-semantic-table tbody .transaction-row')];const footer=document.querySelector('.transactions-ledger-footer')?.textContent||'';return {visible:visible.length,semantic:semantic.length,first:visible[0]?.textContent||'',footer,domRows:document.querySelectorAll('.transaction-row,.mobile-transaction-row').length,pager:Boolean(document.querySelector('.transactions-pagination,.transactions-page-size,.mobile-transaction-pagination')),overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+2}}");
-  assert(large.visible>=28&&large.visible<=140&&large.semantic===large.visible,'large dataset first paint stays bounded while both semantic and visual rows match');
+  assert(large.visible>=20&&large.visible<=140&&large.semantic===large.visible,'large dataset first paint stays bounded while both semantic and visual rows match');
   const initialLedgerCount=/Εμφανίζονται\s+(\d+)\s+από\s+(\d+)\s+συναλλαγές/.exec(large.footer);
   assert(initialLedgerCount&&Number(initialLedgerCount[1])===large.visible&&Number(initialLedgerCount[2])>=1500,
     `large dataset keeps a truthful initial visible/total count (including baseline transactions): ${JSON.stringify(large)}`);
@@ -123,7 +123,7 @@ try{
   await setInput('.transaction-searchbar input','Large dataset mutation latency target');
   await waitFor("function(){const rows=document.querySelectorAll('.transactions-approved-table tbody .transaction-row');return rows.length===1&&(rows[0].textContent||'').includes('Large dataset mutation latency target')}",'large-data mutation visible after save');
   await setInput('.transaction-searchbar input','');
-  await waitFor("function(){return document.querySelectorAll('.transactions-approved-table tbody .transaction-row').length>=28}",'large dataset continuous list restored after mutation');
+  await waitFor("function(){return document.querySelectorAll('.transactions-approved-table tbody .transaction-row').length>=20}",'large dataset continuous list restored after mutation');
 
   assert(await c.call("function(){return !document.querySelector('.transactions-pagination,.mobile-transaction-pagination,.transactions-page-size')}"),'legacy page controls remain absent after mutation');
   await setInput('.transaction-searchbar input','Large dataset unique search target');await waitFor("function(){const rows=document.querySelectorAll('.transactions-approved-table tbody .transaction-row');return rows.length===1&&(rows[0].textContent||'').includes('Large dataset unique search target')}",'large dataset unique search');
@@ -150,8 +150,11 @@ try{
   assert(largeReports.budgets===24&&largeReports.more&&largeReports.svgNodes<1500&&largeReports.nodes<5000&&!largeReports.overflow,'large Reports bounds budget DOM while keeping charts contained');
   assert(await c.call("function(){const button=document.querySelector('button[aria-label=\"Ιστορικό αλλαγών\"]');button?.click();return Boolean(button)}"),'large history dialog opens');
   await waitFor("function(){return document.querySelectorAll('.command-results [role=listitem]').length===100}",'100-point bounded history');
-  const historyState=await c.call("function(){return {rows:document.querySelectorAll('.command-results [role=listitem]').length,text:document.querySelector('.command-result-meta')?.textContent||'',overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+2}}");
-  assert(historyState.rows===100&&historyState.text.includes('100 πρόσφατες εγγραφές')&&!historyState.overflow,'durable history UI remains bounded at the supported 100 points');
+  const historyState=await c.call("function(){const dialog=document.querySelector('.change-history-dialog');const rows=dialog?.querySelectorAll('.command-results [role=listitem]')||[];const results=dialog?.querySelector('.command-results');const bounds=dialog?.getBoundingClientRect();return {rows:rows.length,text:dialog?.querySelector('.command-result-meta')?.textContent||'',scrollable:Boolean(results&&results.scrollHeight>results.clientHeight),contained:Boolean(bounds&&bounds.left>=-1&&bounds.right<=innerWidth+1&&bounds.top>=-1&&bounds.bottom<=innerHeight+1),overflow:document.documentElement.scrollWidth>document.documentElement.clientWidth+2}}");
+  // The server stores snapshot points, not a chronological audit of Undo clicks.
+  // Keep all 100 available points, bounded within the scrollable History modal.
+  assert(historyState.rows===100&&historyState.text.includes('100 αποθηκευμένα σημεία')&&historyState.scrollable&&historyState.contained&&!historyState.overflow,`durable history retains all 100 snapshot points inside bounded modal: ${JSON.stringify(historyState)}`);
+  await shot('transactions-large-history-100-snapshots');
   await c.call("function(){document.querySelector('button[aria-label=\"Κλείσιμο ιστορικού\"]')?.click();return true}");
 
   await navigatePage('settings','Ρυθμίσεις',1280,900);

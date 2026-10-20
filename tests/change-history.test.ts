@@ -102,4 +102,79 @@ describe('privacy-safe user change descriptions',()=>{
     const loanBefore=qaFinanceData();const loanAfter=clone(loanBefore);const loanSeed=loanAfter.seed.loans[0]!;const loan={...loanSeed,name:'PRIVATE LOAN NAME',installment:loanSeed.installment+10};loanAfter.state.loanOverrides={...loanAfter.state.loanOverrides,[loan.id]:loan};
     const loanLabel=describeFinanceChange(loanBefore,loanAfter);expect(loanLabel).toContain('Αλλαγή');expect(loanLabel).toContain('Δόση');expect(loanLabel).not.toContain('PRIVATE LOAN NAME');
   });
+  it('does not persist owner-defined categories in event and legacy history labels',()=>{
+    const privateCategory='PRIVATE CATEGORY 3591';
+    const before=qaFinanceData();
+    const original=event('category-privacy-event');
+    original.category='PRIVATE PREVIOUS CATEGORY';
+    before.state.events=[...(before.state.events??[]),original];
+    const after=clone(before);
+    after.state.events=after.state.events!.map(row=>row.id===original.id?{...row,category:privateCategory}:row);
+    const label=describeFinanceChange(before,after);
+    expect(label).toContain('Κατηγορία ενημερώθηκε');
+    expect(label).not.toContain(privateCategory);
+    expect(label).not.toContain('PRIVATE PREVIOUS CATEGORY');
+
+    const legacyBefore=qaFinanceData();
+    const legacy=legacyBefore.seed.transactions[0]!;
+    const legacyLabel=describeFinanceChange(legacyBefore,withLegacyOverride(legacyBefore,{...legacy,category:privateCategory}));
+    expect(legacyLabel).toContain('Κατηγορία ενημερώθηκε');
+    expect(legacyLabel).not.toContain(privateCategory);
+  });
+
+  it('redacts free-form category changes in scheduled and recurring entries',()=>{
+    const privateCategory='PRIVATE HEALTH CATEGORY 6382';
+    const scheduledBefore=qaFinanceData();
+    const scheduledAfter=clone(scheduledBefore);
+    const item=scheduledAfter.state.scheduled![0]!;
+    scheduledAfter.state.scheduled=scheduledAfter.state.scheduled!.map(row=>row.id===item.id?{...row,category:privateCategory}:row);
+    const scheduledLabel=describeFinanceChange(scheduledBefore,scheduledAfter);
+    expect(scheduledLabel).toContain('Κατηγορία ενημερώθηκε');
+    expect(scheduledLabel).not.toContain(privateCategory);
+
+    const recurringBefore=qaFinanceData();
+    const recurringAfter=clone(recurringBefore);
+    const subscription=recurringAfter.state.recurringCustom[0]!;
+    recurringAfter.state.recurringCustom=recurringAfter.state.recurringCustom.map(row=>row.id===subscription.id?{...row,category:privateCategory}:row);
+    const recurringLabel=describeFinanceChange(recurringBefore,recurringAfter);
+    expect(recurringLabel).toContain('Κατηγορία ενημερώθηκε');
+    expect(recurringLabel).not.toContain(privateCategory);
+  });
+
+  it('retains budget scope and amounts without persisting user-defined category names',()=>{
+    const privateCategory='PRIVATE BUDGET CATEGORY 7131';
+    const before=qaFinanceData();
+    before.state.budgets=[];
+    const after=clone(before);
+    const budget={id:'private-budget',month:'2026-08',scope:'category' as const,category:privateCategory,amount:123.45,createdAt:stamp,updatedAt:stamp};
+    after.state.budgets=[budget];
+    const created=describeFinanceChange(before,after);
+    expect(created).toContain('budget κατηγορίας');
+    expect(created).toContain('123,45');
+    expect(created).not.toContain(privateCategory);
+
+    const changed=clone(after);
+    changed.state.budgets=[{...budget,category:'PRIVATE NEXT CATEGORY',amount:200}];
+    const updated=describeFinanceChange(after,changed);
+    expect(updated).toContain('200,00');
+    expect(updated).not.toContain(privateCategory);
+    expect(updated).not.toContain('PRIVATE NEXT CATEGORY');
+  });
+
+  it('does not persist owner-defined rule action category or subcategory',()=>{
+    const before=qaFinanceData();
+    const existing={
+      id:'privacy-rule',name:'PRIVATE RULE TITLE',enabled:true,priority:1,scopes:['manual' as const],
+      match:{description:'PRIVATE MATCH'},action:{category:'PRIVATE RULE CATEGORY',subcategory:'PRIVATE RULE SUBCATEGORY'},
+      createdAt:stamp,updatedAt:stamp,
+    };
+    before.state.transactionRules=[existing];
+    const after=clone(before);
+    after.state.transactionRules=[{...existing,action:{category:'PRIVATE REPLACEMENT CATEGORY',subcategory:'PRIVATE REPLACEMENT SUBCATEGORY'}}];
+    const label=describeFinanceChange(before,after);
+    expect(label).toContain('Κατηγορία ενημερώθηκε');
+    expect(label).toContain('Υποκατηγορία ενημερώθηκε');
+    for(const secret of ['PRIVATE RULE TITLE','PRIVATE MATCH','PRIVATE RULE CATEGORY','PRIVATE RULE SUBCATEGORY','PRIVATE REPLACEMENT CATEGORY','PRIVATE REPLACEMENT SUBCATEGORY'])expect(label).not.toContain(secret);
+  });
+
 });

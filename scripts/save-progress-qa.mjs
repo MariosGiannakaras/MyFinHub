@@ -83,6 +83,103 @@ try{
   await shot('save-progress-pending-reduced-motion-1440-dark');
   assert(await release(),'reduced-motion receipt release');
   await waitFor(phase('success'),'reduced-motion backend-confirmed green');
+  // Actual useFinance hook under a held old GET and subsequent successful,
+  // QA-only import; the old server response must not replace newer state.
+  await navigate();
+  const initialBudget=await c.call("function(){return Number(document.querySelector('[data-persistence-budget]')?.textContent||0)}");
+  assert(await c.call("function(){return globalThis.__myfinhubQaHoldNextRead?.()===true}"),'schedule held old finance GET');
+  assert(await c.call("function(){const b=document.querySelector('[data-persistence-reload]');b?.click();return Boolean(b)}"),'start reload before synthetic import');
+  await waitFor("function(){return globalThis.__myfinhubQaHeldReadCount?.()===1}",'old GET remains held');
+  assert(await c.call("function(){const b=document.querySelector('[data-persistence-import]');b?.click();return Boolean(b)}"),'synthetic import outruns held GET');
+  await waitFor(`function(){return Number(document.querySelector('[data-persistence-budget]')?.textContent||0)===${initialBudget+13}}`,'synthetic imported finance budget applied');
+  await waitFor("function(){return document.querySelector('[data-persistence-state]')?.textContent==='saved'}",'synthetic import receipt confirmed');
+  assert(await c.call("function(){return globalThis.__myfinhubQaReleaseRead?.()===true}"),'release stale GET');
+  await sleep(180);
+  const finalState=await c.call("function(){return {budget:Number(document.querySelector('[data-persistence-budget]')?.textContent||0),state:document.querySelector('[data-persistence-state]')?.textContent}}");
+  assert(finalState.budget===initialBudget+13&&finalState.state==='saved',`old database GET cannot overwrite a newer successful import: ${JSON.stringify(finalState)}`);
+  await shot('history-refresh-stale-read-after-import-1440-dark');
+  // A request that began before an accepted import may also fail late; its
+  // obsolete network error must not replace the newer database save receipt.
+  await navigate();
+  const beforeFailedRead=await c.call("function(){return Number(document.querySelector('[data-persistence-budget]')?.textContent||0)}");
+  assert(await c.call("function(){return globalThis.__myfinhubQaHoldNextRead?.()===true}"),'hold older GET that will reject');
+  assert(await c.call("function(){const b=document.querySelector('[data-persistence-reload]');b?.click();return Boolean(b)}"),'start reload that later fails');
+  await waitFor("function(){return globalThis.__myfinhubQaHeldReadCount?.()===1}",'failed GET remains pending');
+  assert(await c.call("function(){const b=document.querySelector('[data-persistence-import]');b?.click();return Boolean(b)}"),'import while earlier GET pending');
+  await waitFor(`function(){return Number(document.querySelector('[data-persistence-budget]')?.textContent||0)===${beforeFailedRead+13}}`,'new confirmed budget after pending GET');
+  await waitFor("function(){return document.querySelector('[data-persistence-state]')?.textContent==='saved'}",'new import save receipt confirmed before old GET rejects');
+  assert(await c.call("function(){return globalThis.__myfinhubQaReleaseRead?.(true)===true}"),'reject now-stale GET');
+  await sleep(180);
+  const afterFailedRead=await c.call("function(){return {budget:Number(document.querySelector('[data-persistence-budget]')?.textContent||0),state:document.querySelector('[data-persistence-state]')?.textContent,failedBar:Boolean(document.querySelector('[data-save-progress=error]'))}}");
+  assert(afterFailedRead.budget===beforeFailedRead+13&&afterFailedRead.state==='saved'&&!afterFailedRead.failedBar,`obsolete database GET error cannot replace a confirmed import: ${JSON.stringify(afterFailedRead)}`);
+  await shot('history-refresh-stale-error-after-import-1440-dark');
+
+  // Synthetic DB receipts run the production useFinance hook through Do / Undo /
+  // Redo / Undo / divergent Do and one rejected history move. No live services.
+  const historyHookUrl=new URL(url.href);
+  historyHookUrl.searchParams.set('history-test','1');
+  await c.send('Page.navigate',{url:historyHookUrl.href});
+  await waitFor("function(){return document.querySelector('[data-persistence-probe=ready]')!==null&&document.querySelector('[data-persistence-state]')?.textContent==='saved'}",'real-hook history initialized');
+  const hookBudget=await c.call("function(){return Number(document.querySelector('[data-persistence-budget]')?.textContent||0)}");
+  const hookState=()=>c.call("function(){return {budget:Number(document.querySelector('[data-persistence-budget]')?.textContent||0),undo:Number(document.querySelector('[data-persistence-undo-depth]')?.textContent||0),redo:Number(document.querySelector('[data-persistence-redo-depth]')?.textContent||0),state:document.querySelector('[data-persistence-state]')?.textContent}}");
+  let hook=await hookState();
+  assert(hook.undo===0&&hook.redo===0,'initial history cannot undo');
+  assert(await mutate(),'save first reversible synthetic change');
+  await waitFor(`function(){return Number(document.querySelector('[data-persistence-budget]')?.textContent||0)===${hookBudget+1}&&Number(document.querySelector('[data-persistence-undo-depth]')?.textContent||0)===1&&document.querySelector('[data-persistence-state]')?.textContent==='saved'}`,'confirmed mutation enables Undo');
+  const press=selector=>c.call("function(selector){const b=document.querySelector(selector);if(!b||b.disabled)return false;b.click();return true}",[selector]);
+  assert(await press('[data-persistence-undo]'),'Undo uses actual hook');
+  await waitFor(`function(){return Number(document.querySelector('[data-persistence-budget]')?.textContent||0)===${hookBudget}&&Number(document.querySelector('[data-persistence-redo-depth]')?.textContent||0)===1&&document.querySelector('[data-persistence-state]')?.textContent==='saved'}`,'server-backed Undo restores prior synthetic budget');
+  assert(await press('[data-persistence-redo]'),'Redo uses actual hook');
+  await waitFor(`function(){return Number(document.querySelector('[data-persistence-budget]')?.textContent||0)===${hookBudget+1}&&Number(document.querySelector('[data-persistence-redo-depth]')?.textContent||0)===0&&document.querySelector('[data-persistence-state]')?.textContent==='saved'}`,'server-backed Redo restores confirmed budget');
+  assert(await press('[data-persistence-undo]'),'Undo creates new redo candidate');
+  await waitFor(`function(){return Number(document.querySelector('[data-persistence-budget]')?.textContent||0)===${hookBudget}&&Number(document.querySelector('[data-persistence-redo-depth]')?.textContent||0)===1&&document.querySelector('[data-persistence-state]')?.textContent==='saved'}`,'redo candidate after Undo');
+  assert(await mutate(),'divergent save after Undo');
+  await waitFor(`function(){return Number(document.querySelector('[data-persistence-budget]')?.textContent||0)===${hookBudget+1}&&Number(document.querySelector('[data-persistence-redo-depth]')?.textContent||0)===0&&Number(document.querySelector('[data-persistence-undo-depth]')?.textContent||0)===1&&document.querySelector('[data-persistence-state]')?.textContent==='saved'}`,'new confirmed write invalidates old Redo branch');
+  assert(await c.call("function(){const b=document.querySelector('[data-persistence-redo]');return Boolean(b&&b.disabled&&globalThis.__myfinhubQaHistoryMoveCount?.()===3)}"),'server received three history moves and Redo is disabled');
+  await shot('history-real-hook-undo-redo-branch-1440-dark');
+
+  assert(await c.call("function(){return globalThis.__myfinhubQaRejectNextHistoryMove?.()===true}"),'reject next synthetic history move');
+  assert(await press('[data-persistence-undo]'),'attempt synthetic rejected Undo');
+  await waitFor("function(){return document.querySelector('[data-persistence-state]')?.textContent==='conflict'}",'rejected history cursor enters conflict');
+  hook=await hookState();
+  assert(hook.budget===hookBudget+1&&hook.undo===1&&hook.redo===0,'rejected Undo preserves confirmed finance state and cursor');
+  assert(await c.call("function(){return Boolean(document.querySelector('[data-save-progress=error]'))&&document.querySelector('[data-persistence-undo]')?.disabled===true}"),'rejected Undo shows red failure and disables history');
+  await shot('history-real-hook-undo-conflict-1440-dark');
+
+  // Real useFinance + intercepted API: direct multi-step jump must send one
+  // revision/generation-protected server move per edge, never fake a shortcut.
+  await c.send('Page.navigate',{url:historyHookUrl.href});
+  await waitFor("function(){return document.querySelector('[data-persistence-probe=ready]')!==null&&document.querySelector('[data-persistence-state]')?.textContent==='saved'}",'multi-step hook probe initialized');
+  const beforeJump=await c.call("function(){return Number(document.querySelector('[data-persistence-budget]')?.textContent||0)}");
+  for(let step=1;step<=3;step++){
+    assert(await press('[data-persistence-mutate]'),'create navigation history point '+step);
+    await waitFor(`function(){return document.querySelector('[data-persistence-state]')?.textContent==='saved'&&Number(document.querySelector('[data-persistence-undo-depth]')?.textContent||0)===${step}}`,'persisted navigation point '+step);
+  }
+  assert(await press('[data-persistence-jump-first]'),'request 3-step navigation to earliest point');
+  await waitFor(`function(){return Number(document.querySelector('[data-persistence-budget]')?.textContent||0)===${beforeJump}&&Number(document.querySelector('[data-persistence-redo-depth]')?.textContent||0)===3&&document.querySelector('[data-persistence-state]')?.textContent==='saved'}`,'three server-authoritative Undo receipts reached selected target');
+  assert(await c.call("function(){return globalThis.__myfinhubQaHistoryMoveCount?.()===3}"),'direct jump used 3 exact SQL-style cursor moves');
+  await shot('history-real-hook-jump-three-back-1440-dark');
+  assert(await press('[data-persistence-jump-last]'),'request 3-step return to latest point');
+  await waitFor(`function(){return Number(document.querySelector('[data-persistence-budget]')?.textContent||0)===${beforeJump+3}&&Number(document.querySelector('[data-persistence-undo-depth]')?.textContent||0)===3&&document.querySelector('[data-persistence-state]')?.textContent==='saved'}`,'three server-authoritative Redo receipts reached latest target');
+  assert(await c.call("function(){return globalThis.__myfinhubQaHistoryMoveCount?.()===6}"),'direct return used 6 total protected moves');
+  await shot('history-real-hook-jump-three-forward-1440-dark');
+
+  // A conflict in step 2 after step 1 committed must fail closed at the
+  // actually confirmed intermediate cursor, with the top-edge error bar red.
+  await c.send('Page.navigate',{url:historyHookUrl.href});
+  await waitFor("function(){return document.querySelector('[data-persistence-probe=ready]')!==null&&document.querySelector('[data-persistence-state]')?.textContent==='saved'}",'partial-jump probe initialized');
+  const partialBase=await c.call("function(){return Number(document.querySelector('[data-persistence-budget]')?.textContent||0)}");
+  for(let step=1;step<=3;step++){
+    assert(await press('[data-persistence-mutate]'),'create partial-jump point '+step);
+    await waitFor(`function(){return document.querySelector('[data-persistence-state]')?.textContent==='saved'&&Number(document.querySelector('[data-persistence-undo-depth]')?.textContent||0)===${step}}`,'confirmed partial-jump point '+step);
+  }
+  assert(await c.call("function(){return globalThis.__myfinhubQaRejectHistoryAfterSteps?.(2)===true}"),'arm conflict on second server cursor move');
+  assert(await press('[data-persistence-jump-first]'),'start multi-step jump with synthetic second-step conflict');
+  await waitFor("function(){return document.querySelector('[data-persistence-state]')?.textContent==='conflict'}",'partial navigation enters conflict, not success');
+  const partial=await hookState();
+  assert(partial.budget===partialBase+2&&partial.undo===2&&partial.redo===1&&await c.call("function(){return globalThis.__myfinhubQaHistoryMoveCount?.()===2&&Boolean(document.querySelector('[data-save-progress=error]'))}"),`failed second step retains exact first confirmed move and red bar: ${JSON.stringify(partial)}`);
+  await shot('history-real-hook-jump-partial-conflict-1440-dark');
+
   c.close();
   console.log('Save-progress QA passed: pending remains active, receipt only green, persistent red failure/conflict, FIFO burst, viewport/theme/reduced-motion evidence');
 }catch(error){console.error(error);process.exitCode=1}

@@ -12,7 +12,8 @@ describe('Settings Data source contract',()=>{
     expect(settings).toContain('downloadJson({...data,state:{...data.state,settings:cloneSettings(draftRef.current)}})');
     expect(settings).toContain('await onImport(JSON.parse(await file.text()))');
     expect(settings).toContain('tone="destructive"');
-    expect(settings).toContain('δημιουργηθεί αυτόματο αντίγραφο ασφαλείας');
+    expect(settings).toContain('δημιουργεί αυτόματα backup των προηγούμενων δεδομένων');
+    expect(settings).toContain('Δεν αναιρείται με Undo.');
     expect(settings).toContain('type="file" accept="application/json,.json" hidden');
   });
 

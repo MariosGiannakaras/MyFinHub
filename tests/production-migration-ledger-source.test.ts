@@ -57,10 +57,11 @@ const releasePending=[
   "20261009190000_allow_recurring_service_asset_storage_owner_read.sql",
   "20261010013500_atomic_card_vault_cleanup.sql",
   "20261010145500_guard_pending_card_secret_cleanup_intent.sql",
+  "20261019110000_protect_irreversible_history_boundaries.sql",
 ] as const;
 
 describe('production migration ledger source contract',()=>{
-  it('keeps every production-applied migration represented by the exact applied version/name',()=>{
+  it('tracks production-applied and explicitly release-pending migration filenames',()=>{
     const local=readdirSync('supabase/migrations').filter(name=>name.endsWith('.sql')).sort();
     expect(local).toEqual([...productionApplied,...releasePending].sort());
   });
@@ -73,6 +74,7 @@ describe('production migration ledger source contract',()=>{
     expect(releasePending).toContain('20261009190000_allow_recurring_service_asset_storage_owner_read.sql');
     expect(releasePending).toContain('20261010013500_atomic_card_vault_cleanup.sql');
     expect(releasePending).toContain('20261010145500_guard_pending_card_secret_cleanup_intent.sql');
+    expect(releasePending).toContain('20261019110000_protect_irreversible_history_boundaries.sql');
   });
 
   it('keeps formerly release-pending migrations represented as production-applied history',()=>{
