@@ -171,3 +171,53 @@ The first corrective Draft CI [#39244202600](https://github.com/MariosGiannakara
 ## 2026-10-19 narrow browser Savings proof added to existing Draft workflow
 
 **Implementations 0/4 completed · Sub-implementations 0/12 fully accepted.** Exact current Draft implementation head `cfb14cd` already terminal **CI SUCCESS, CodeQL SUCCESS, History Focused SUCCESS and isolated Real Stack SUCCESS**; directly inspected artifact 12193010919: all four 100-point History desktop 1440 Light / mobile 375 Dark initial + last-row screenshots readable and contained. The prior Ready full-matrix rerun on `0610955` failed `scripts/savings-remediation-qa.mjs` on returning from July to August, before the Savings result could be accepted. Current `cfb14cd` adds a bounded actual-value convergence wait, but this change's Savings browser behavior **has not yet been run**. To prove the exact regression independently before launching another expensive 60+script rendered suite, extend the already-accepted Draft-only `History Focused Rendered QA` workflow with a third existing standalone `scripts/savings-remediation-qa.mjs` step, preflight `node --check`, persist Savings screenshots and full browser log in the same focused artifact. No separate workflow or parallel production domain implementation; no 2-second/5-second performance threshold adjusted. Source lock requires the Savings script and artifact path. The new focused head must pass before Ready; directly inspect July/August/future Savings images. Keep independent PR #582's performance ownership; its ledger initial 20/append 28 and privacy-hidden Reports chart calculation are not yet integrated or validated with #584. Next action: inspect exact focused job, real-stack security, and rendered Savings artifact; batch any real QA defects, then deliberate cross-branch performance integration followed by a single full Ready review matrix.
+
+## 2026-10-20 authoritative item-level acceptance and transition matrix
+
+**Implementations 3/4 completed · Sub-implementations 11/12 completed.** Earlier repeating zero counters were an overly strict bookkeeping interpretation that withheld credit for validated audit deliverables until whole-PR merge. Historical zero snapshots above remain for provenance, but **this is the current authoritative checkpoint**. Fully completed means item-wise audit source + substantive regression proof, not Production release. The fourth implementation remains incomplete until the mandatory full review and merge disposition.
+
+### #583 audited deliverable checklist
+
+- [x] **I. State machine and semantics — 3/3**
+  - [x] Trace gesture → domain action → finance FIFO receipt/revision → latest relational SQL snapshot/cursor → Undo/Redo; identify actual authoritative SQL override (useFinance, persistenceQueue, API/history, storage and relational migration)
+  - [x] Document and exercise success, failure, conflict, branch, import, pruning, pending and reload transitions in the matrix below, focused browser, queue unit and isolated real-stack tests
+  - [x] Resolve immutable seed/state import Undo mismatch and encrypted-secret final-deletion mismatch with owner-approved irreversible boundaries; metadata-only card stays reversible
+- [x] **II. Security, durability and recovery — 4/4**
+  - [x] Validate owner, AAL2, RLS, CSRF/session provenance, generation/If-Match and denial/conflict cases, without Production data
+  - [x] Validate transactional relational state/history, audit, branch descendants, 10-day/100-point retention and baseline/parent relationships
+  - [x] Reproduce pending save, stale successful/failed GET, revision conflict, cross-tab safe update, error/retry and session expiration protections (queue tests + real hook browser + isolated real stack)
+  - [x] Differentiate reversible archive, irreversible atomic ciphertext removal with owner-private ID-only tombstone, and ordinary card metadata-only Do/Undo/Redo
+- [x] **III. Semantic UI, privacy and accessibility — 3/3**
+  - [x] Distinguish saved snapshots/current/redo descendants from an audit of Undo clicks, truthful counts/limits/depths and irreversible copy
+  - [x] Verify keyboard/modal focus, reduced motion, 44px touch controls, responsive desktop/mobile Light/Dark and full 100-point scroll with visually inspected screenshot evidence
+  - [x] Stop new persisted history labels exposing editable category/subcategory/card and other private text; recognize that legacy previously persisted labels cannot be retroactively erased
+- [ ] **IV. Non-destructive proof + final release-safe review — 1/2**
+  - [x] Focused source/unit and synthetic browser, isolated Supabase, real authenticated browser, import and Card Vault final-delete boundaries, metadata-only reversible card, migrations roll-forward/recovery and Savings month value restoration validated
+  - [ ] Remaining: coordinate independently owned performance PR #582, validate accepted composed integration head with strict full Ready CI/security/real-stack/WebKit/Lighthouse/Windows/rendered gates and 216-image Final Visual QA; only merge to develop after terminal green required evidence. No Production/main release authorization.
+
+### Audited transition and failure matrix
+
+| Action or boundary | Durable behavior expected | Verification |
+|---|---|---|
+| Reversible Do | Exactly committed server receipt yields next revision/history point; top-edge indicator only green after receipt | FIFO queue and real hook/browser |
+| Rapid Do/Do | Mutations preserve FIFO, exactly corresponding receipts, no accidental overwrite | Queue unit |
+| Error/timeout | Red save state; dependent writes fail closed, never fake success or automatic silent retry | Queue + hooked browser |
+| Undo | Parent snapshot and cursor advance only under If-Match, generation and security guards; state/ledger/audit update atomically | SQL + real stack |
+| Redo | Child on proven active branch, not any arbitrary historical row | History view + real stack |
+| Undo → divergent Do | New valid write invalidates previous redo path and preserves truthful cursor status | Synthetic browser and SQL |
+| Concurrent or stale tab | Newer server revision triggers safe reload if clean, explicit conflict if dirty | Revision unit and real-stack 409 |
+| Pending or delayed reload | Old data and old error cannot replace a newer save/import; overlapping reloads resolve by request/epoch | Queue + hooked synthetic browser |
+| Session denied/expired | Missing owner/AAL2/CSRF/RLS guard cannot mutate or reveal server history | Isolated real stack |
+| History expiry/pruning | Server enforces 10-day/100-point retention, no walk through expired ancestor; visual list max 100, actual last row reachable | SQL + focused 100-point screenshots |
+| Full JSON import | Backup, validate complete seed+state; import visible historically but neither Undo past nor Redo into the barrier | New SQL boundary + real-stack |
+| Card archive | Finance card metadata and encrypted Card Vault remain; future reactivation not treated as final erase | Card lifecycle + UI and API tests |
+| Final permanent card deletion | Atomic ciphertext delete and server private ID-only tombstone; no history metadata resurrection | SQL + isolated real stack |
+| Metadata-only card | Card never had vault secret; Do→Undo→Redo→Undo remains permitted, no false permanent-deletion inference | Isolated real stack |
+| History feedback and mobile UI | 100 points scrollable, header/footer and last row accessible; truthful current/redo, 44px actions, import warning clear of fixed nav | Focused real Chromium images |
+| Savings month | Returning from July to August waits for actual account balance and goal progress, not a fixed 350ms animation | Focused Savings browser PASS |
+
+### Exact evidence, ownership and next action
+
+Current implementation code head before this **documentation-only progress commit**: 5e7c3d4d874f1b9442b96d8c3e565ba9cde865d4, Draft PR #584 against develop@f1a63ce. Existing terminal [CI #39296274160](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/39296274160), [CodeQL #39296274202](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/39296274202), and [History+Savings Focused #39296274161](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/39296274161) are **SUCCESS**. Focused screenshot artifact 12209466417 directly inspected: all 100 history entries, desktop 1440 Light and mobile 375 Dark end-of-scroll; Savings July vs August balance and goal progress returns. [Real Stack #39296274309](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/39296274309) **latest attempt 2 job 118311199453 SUCCESS**, including authenticated Chromium browser, isolated finance/Card Vault/import history tests and migration recovery PASS; first attempt failed a runner Chromium CDP bootstrap before browser work. Latest real-stack artifact 12220934783 is available.
+
+Not yet accepted: broad Ready exact-head performance/rendered gates. Earlier full Ready CI on 0610955 measured 2100ms against unchanged <2000ms 1500-transaction Quick Entry limit; subsequent rerun failed Savings date-restoration, now independently fixed and validated. Performance PR #582 at 3e34666 is Draft and separately owned: 20 initial ledger rows, 28-row incremental load, hidden chart calculation. **Do not overwrite/wholesale-merge its branch or duplicate competing implementation.** Reconcile its minimal accepted delta intentionally into the designated integration owner, preserve #584 history/browser checks and all finance/security semantics; then one coherent full review matrix and final visual gate. Until those pass, #584 stays unmerged. Production main@5343f0ed and separate Android repo untouched. These 11 audited items are completed on the PR branch, **not yet deployed**.
