@@ -25,6 +25,9 @@ describe('history focused rendered regression ownership',()=>{
     expect(browser).toContain("Escape");
     expect(browser).toContain('b?.focus({preventScroll:true})');
     expect(browser).toContain('History backdrop and modal entrance settled');
+    expect(browser).toContain('history-jump-confirm-');
+    expect(browser).toContain('history-jump-current-');
+    expect(browser).toContain('cancel selected history point');
     expect(browser).toContain('state.opacity>=0.99&&state.backdropOpacity>=0.99');
     const css=read('src/styles/durable-history-controls.css');
     expect(css).toContain('grid-template-rows:auto auto auto minmax(0,1fr) auto');
@@ -68,5 +71,8 @@ describe('history focused rendered regression ownership',()=>{
     expect(browser).toContain('rejected history cursor enters conflict');
     expect(browser).toContain('history-real-hook-undo-redo-branch-1440-dark');
     expect(browser).toContain('history-real-hook-undo-conflict-1440-dark');
+    expect(browser).toContain('history-real-hook-jump-three-back-1440-dark');
+    expect(browser).toContain('history-real-hook-jump-three-forward-1440-dark');
+    expect(browser).toContain('history-real-hook-jump-partial-conflict-1440-dark');
   });
 });

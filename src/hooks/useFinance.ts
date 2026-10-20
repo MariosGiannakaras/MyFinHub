@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ApiError, createBackup, importData, loadData, loadHistory, moveHistory, saveData, type HistoryEnvelope } from '../lib/api';
 import { describeFinanceChange } from '../lib/changeHistory';
+import { reachableHistoryNavigation } from '../lib/historyView';
 import { SequentialQueue, canApplyFinanceReload, remoteRevisionAction, shouldWarnBeforeUnload } from '../lib/persistenceQueue';
 import { migrateProductData } from '../lib/productMigration';
 import { isSupportedFinanceSchemaVersion } from '../lib/schemaVersion';
@@ -269,6 +270,49 @@ export function useFinance() {
   const undo=useCallback(()=>move('undo'),[move]);
   const redo=useCallback(()=>move('redo'),[move]);
 
+
+  // Confirmed multi-step navigation uses the existing server cursor RPC per step.
+  // A jump is NOT an atomic restore: on partial failure, leave the exact confirmed
+  // cursor/data visible, mark the save state red/conflicted, and require reload.
+  const goToHistoryPoint=useCallback(async(targetId:string):Promise<boolean>=>{
+    if(saveStateRef.current!=='saved'||!historyAvailableRef.current||
+       coordinator.hasWork()||exclusiveOperation.current||!dataRef.current)return false;
+    const plan=reachableHistoryNavigation(changeHistoryRef.current,undoDepth,redoDepth).get(targetId);
+    if(!plan||plan.pointIds.length===0)return false;
+    exclusiveOperation.current=true;
+    mutationEpochRef.current+=1;
+    setSaveErrorMessage(null);
+    setCurrentSaveState('saving');
+    try{
+      await coordinator.whenIdle();
+      for(const expectedPoint of plan.pointIds){
+        const res=await moveHistory(plan.direction,revisionRef.current,historyGenerationRef.current);
+        if(!historyMatchesRevision(res.history,res.revision)){
+          throw new ApiError('Η βάση επέστρεψε ασύμφωνο ιστορικό.',409,'HISTORY_CURSOR_CONFLICT');
+        }
+        // Preserve the actual confirmed server position even if another actor
+        // changed the path. Never report a target success without matching ID.
+        applyDataEnvelope(res);
+        applyHistory(res.history);
+        if(res.history.currentPointId!==expectedPoint){
+          throw new ApiError('Η μετακίνηση δεν έφτασε στο αναμενόμενο σημείο.',409,'HISTORY_CURSOR_CONFLICT');
+        }
+        setSaveReceiptCount(count=>count+1);
+        channelRef.current?.postMessage({type:'revision',revision:res.revision} satisfies RevisionMessage);
+      }
+      setCurrentSaveState('saved');
+      return true;
+    }catch(error){
+      lastSaveFailed.current=true;
+      if(error instanceof ApiError&&(error.status===409||error.code==='HISTORY_UNAVAILABLE'||error.code==='HISTORY_IRREVERSIBLE_BOUNDARY')){
+        setSaveErrorMessage(null);setCurrentSaveState('conflict');
+      }else{
+        setSaveErrorMessage(saveFailureMessage(error));setCurrentSaveState('error');
+      }
+      return false;
+    }finally{exclusiveOperation.current=false}
+  },[applyDataEnvelope,applyHistory,coordinator,redoDepth,saveFailureMessage,setCurrentSaveState,undoDepth]);
+
   const doImport = useCallback(async (incoming: FinanceData) => {
     if (exclusiveOperation.current) throw new Error('Υπάρχει ήδη λειτουργία αποθήκευσης σε εξέλιξη.');
     if (!isSupportedFinanceSchemaVersion(incoming.schemaVersion)) throw new Error('Το αρχείο δημιουργήθηκε από νεότερη ή μη υποστηριζόμενη έκδοση του MyFinHub και δεν μπορεί να εισαχθεί με ασφάλεια.');
@@ -309,5 +353,5 @@ export function useFinance() {
   const canUndo = historyAvailable && undoDepth > 0 && saveState === 'saved' && !coordinator.hasWork();
   const canRedo = historyAvailable && redoDepth > 0 && saveState === 'saved' && !coordinator.hasWork();
 
-  return useMemo(() => ({ data, revision, filePath, lastSavedAt, saveState, savePending, saveReceiptCount, saveErrorMessage, update, updateDurably, reload, undo, redo, canUndo, canRedo, undoDepth, redoDepth, changeHistory, historyAvailable, importData: doImport, createBackup: doBackup }), [data, revision, filePath, lastSavedAt, saveState, savePending, saveReceiptCount, saveErrorMessage, update, updateDurably, reload, undo, redo, canUndo, canRedo, undoDepth, redoDepth, changeHistory, historyAvailable, doImport, doBackup]);
+  return useMemo(() => ({ data, revision, filePath, lastSavedAt, saveState, savePending, saveReceiptCount, saveErrorMessage, update, updateDurably, reload, undo, redo, goToHistoryPoint, canUndo, canRedo, undoDepth, redoDepth, changeHistory, historyAvailable, importData: doImport, createBackup: doBackup }), [data, revision, filePath, lastSavedAt, saveState, savePending, saveReceiptCount, saveErrorMessage, update, updateDurably, reload, undo, redo, goToHistoryPoint, canUndo, canRedo, undoDepth, redoDepth, changeHistory, historyAvailable, doImport, doBackup]);
 }

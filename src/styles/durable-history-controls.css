@@ -4,7 +4,16 @@
 
 /* Five direct children: header, count, status, scrollable points, footer. */
 .change-history-dialog{grid-template-rows:auto auto auto minmax(0,1fr) auto}
-.change-history-dialog .history-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;margin:0 0 8px;padding:11px 12px;border-radius:12px}
+.change-history-dialog .history-row{min-width:0;margin:0 0 8px;border-radius:12px}
+.change-history-dialog .history-row-choice,.change-history-dialog .history-row-static{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;min-height:44px;width:100%;padding:11px 12px;border:0;border-radius:inherit;background:transparent;color:inherit;text-align:left;font:inherit}
+.change-history-dialog .history-row-choice{cursor:pointer}
+.change-history-dialog .history-row-choice:hover:not(:disabled){background:var(--surface-soft)}
+.change-history-dialog .history-row-choice:focus-visible{outline:2px solid var(--accent,var(--blue));outline-offset:2px}
+.change-history-dialog .history-row-choice:disabled{cursor:not-allowed;opacity:.66}
+.change-history-dialog .history-jump-confirm{display:grid;gap:6px;width:100%;padding:10px;border:1px solid var(--control-border,var(--line));border-radius:12px;background:var(--surface-inset)}
+.change-history-dialog .history-jump-confirm p{margin:0;line-height:1.45;font-size:var(--ux-small-size)}
+.change-history-dialog .history-jump-actions{display:flex;gap:8px;flex-wrap:wrap}
+.change-history-dialog .history-jump-actions button{min-height:44px;flex:1}
 
 /* Snapshot-cursor semantics; do not style future points as committed new writes. */
 .change-history-dialog .history-status{margin:0;padding:9px 12px;border-radius:10px;background:var(--surface-inset);color:var(--text-secondary);font-size:var(--ux-small-size);line-height:1.45}
@@ -14,7 +23,7 @@
 .change-history-dialog .history-row[data-history-state="redo"]{border:1px dashed var(--control-border,var(--line))}
 .change-history-dialog .history-row small{overflow-wrap:anywhere}
 .change-history-dialog .history-actions button{min-height:44px}
-@media(max-width:680px){.change-history-dialog .history-row{grid-template-columns:minmax(0,1fr)}.change-history-dialog footer{flex-wrap:wrap}.change-history-dialog .history-actions{width:100%;margin-left:0}.change-history-dialog .history-actions button{flex:1;justify-content:center}}
+@media(max-width:680px){.change-history-dialog .history-row-choice,.change-history-dialog .history-row-static{grid-template-columns:minmax(0,1fr)}.change-history-dialog footer{flex-wrap:wrap}.change-history-dialog .history-actions{width:100%;margin-left:0}.change-history-dialog .history-actions button{flex:1;justify-content:center}}
 
 /* The generic Command Palette omits its explainer/footer at <=380px.
    Finance history must never hide privacy, import or irreversible-deletion caveats. */

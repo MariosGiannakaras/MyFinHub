@@ -77,6 +77,32 @@ try{
     await waitFor("function(){return !document.querySelector('.change-history-dialog')}",'Escape dismisses history');
     await waitFor("function(){return document.activeElement?.getAttribute('aria-label')==='Ιστορικό αλλαγών'}",'opener focus restored');
   }
+
+  // Selecting a real ancestor in the History dialog is a button interaction,
+  // never merely clicking a non-interactive listitem. Confirm/cancel and focus
+  // must work at mobile and desktop sizes, without concealing the caveats.
+  for(const {width,height,theme} of [
+    {width:375,height:812,theme:'dark'},
+    {width:1440,height:900,theme:'light'},
+  ]){
+    await open({width,height,theme});
+    const select="function(){const b=document.querySelector('.change-history-dialog [data-history-state=stored] .history-row-choice');if(!b||b.disabled)return false;b.click();return true}";
+    assert(await c.call(select),'stored ancestor is selectable at '+width);
+    await waitFor("function(){return Boolean(document.querySelector('.change-history-dialog .history-jump-confirm'))}",'history direct-select confirmation');
+    const pending=await c.call("function(){const d=document.querySelector('.change-history-dialog');const c=d?.querySelector('.history-jump-confirm');const r=d?.getBoundingClientRect();return {text:c?.textContent,dialogContained:Boolean(r&&r.top>=-1&&r.bottom<=innerHeight+1),horizontalOverflow:document.documentElement.scrollWidth>innerWidth+1,focus:document.activeElement?.textContent,actions:d?.querySelectorAll('.history-jump-actions button').length,caveat:d?.querySelector('footer>span:first-child')?.textContent}}");
+    assert(pending.dialogContained&&!pending.horizontalOverflow&&pending.actions===2&&pending.focus?.includes('Ακύρωση')&&pending.text?.includes('Κάθε βήμα αποθηκεύεται χωριστά')&&pending.caveat?.includes('δεν αναιρείται μέσω Undo/Redo'),`confirmation geometry/focus/disclosure at ${width}: ${JSON.stringify(pending)}`);
+    await screenshot(`history-jump-confirm-${width}-${theme}`);
+    assert(await c.call("function(){const b=[...document.querySelectorAll('.history-jump-actions button')].find(x=>x.textContent?.includes('Ακύρωση'));b?.click();return Boolean(b)}"),'cancel selected history point');
+    await waitFor("function(){return !document.querySelector('.history-jump-confirm')}",'cancel returns to selectable history');
+    assert(await c.call(select),'reselect reachable ancestor');
+    await waitFor("function(){return Boolean(document.querySelector('.history-jump-confirm'))}",'confirmation reopened');
+    assert(await c.call("function(){const b=[...document.querySelectorAll('.history-jump-actions button')].find(x=>x.textContent?.includes('Επιβεβαίωση'));b?.click();return Boolean(b)}"),'confirmed targeted history click');
+    await waitFor("function(){const d=document.querySelector('.change-history-dialog');return !d?.querySelector('.history-jump-confirm')&&d?.querySelector('[data-history-state=current]')?.textContent?.includes('Προηγούμενη καταχώριση')}",'selected snapshot becomes current only after QA receipt');
+    const done=await c.call("function(){const d=document.querySelector('.change-history-dialog');return {current:d?.querySelectorAll('[data-history-state=current]').length,redo:d?.querySelectorAll('[data-history-state=redo]').length,dialog:d?.getBoundingClientRect().bottom<=innerHeight+1,status:d?.querySelector('.history-status')?.textContent}}");
+    assert(done.current===1&&done.redo>=1&&done.dialog&&done.status?.includes('Επαναφορά:'),`cursor updated after confirmation at ${width}: ${JSON.stringify(done)}`);
+    await screenshot(`history-jump-current-${width}-${theme}`);
+  }
+
   for(const save of ['error','conflict']){
     await open({width:375,height:812,theme:'dark',save});
     const state=await c.call("function(){const d=document.querySelector('.change-history-dialog');return {status:d.querySelector('.history-status')?.textContent,disabled:[...d.querySelectorAll('.history-actions button')].every(b=>b.disabled)}}");

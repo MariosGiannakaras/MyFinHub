@@ -43,3 +43,46 @@ export function historyAvailabilityMessage({
   if(undoDepth===0&&redoDepth===0)return 'Δεν υπάρχει προηγούμενη αλλαγή για αναίρεση ή επαναφορά.';
   return `Αναίρεση: ${undoDepth} ${undoDepth===1?'βήμα':'βήματα'} · Επαναφορά: ${redoDepth} ${redoDepth===1?'βήμα':'βήματα'}`;
 }
+
+/** A click may only walk the single server-authoritative ancestor/redo branch.
+ * Depths are server-calculated and stop before import/vault barriers. Truncated
+ * or ambiguous point sets are intentionally NOT selectable.
+ */
+export type HistoryNavigationPlan={direction:'undo'|'redo';pointIds:string[]};
+export function reachableHistoryNavigation<T extends StoredPoint>(
+  points:readonly T[],undoDepth:number,redoDepth:number,
+):Map<string,HistoryNavigationPlan>{
+  const routes=new Map<string,HistoryNavigationPlan>();
+  const byId=new Map(points.map(point=>[point.id,point]));
+  if(byId.size!==points.length)return routes;
+  const active=points.filter(point=>point.current);
+  if(active.length!==1)return routes;
+  const cursor=active[0];
+  const used=new Set<string>([cursor.id]);
+  let position=cursor;
+  const undoPath:string[]=[];
+  for(let i=0;i<undoDepth;i+=1){
+    const parent=position.parentId?byId.get(position.parentId):undefined;
+    if(!parent||used.has(parent.id))break;
+    undoPath.push(parent.id);
+    routes.set(parent.id,{direction:'undo',pointIds:[...undoPath]});
+    used.add(parent.id);position=parent;
+  }
+  const children=new Map<string,T[]>();
+  for(const point of points){
+    if(!point.parentId)continue;
+    const list=children.get(point.parentId)??[];
+    list.push(point);children.set(point.parentId,list);
+  }
+  const redoUsed=new Set<string>([cursor.id]);
+  const redoPath:string[]=[];
+  position=cursor;
+  for(let i=0;i<redoDepth;i+=1){
+    const next=children.get(position.id);
+    if(!next||next.length!==1||redoUsed.has(next[0].id))break;
+    position=next[0];redoUsed.add(position.id);
+    redoPath.push(position.id);
+    routes.set(position.id,{direction:'redo',pointIds:[...redoPath]});
+  }
+  return routes;
+}

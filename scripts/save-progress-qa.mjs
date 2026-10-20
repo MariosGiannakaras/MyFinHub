@@ -145,6 +145,41 @@ try{
   assert(hook.budget===hookBudget+1&&hook.undo===1&&hook.redo===0,'rejected Undo preserves confirmed finance state and cursor');
   assert(await c.call("function(){return Boolean(document.querySelector('[data-save-progress=error]'))&&document.querySelector('[data-persistence-undo]')?.disabled===true}"),'rejected Undo shows red failure and disables history');
   await shot('history-real-hook-undo-conflict-1440-dark');
+
+  // Real useFinance + intercepted API: direct multi-step jump must send one
+  // revision/generation-protected server move per edge, never fake a shortcut.
+  await c.send('Page.navigate',{url:historyHookUrl.href});
+  await waitFor("function(){return document.querySelector('[data-persistence-probe=ready]')!==null&&document.querySelector('[data-persistence-state]')?.textContent==='saved'}",'multi-step hook probe initialized');
+  const beforeJump=await c.call("function(){return Number(document.querySelector('[data-persistence-budget]')?.textContent||0)}");
+  for(let step=1;step<=3;step++){
+    assert(await press('[data-persistence-mutate]'),'create navigation history point '+step);
+    await waitFor(`function(){return document.querySelector('[data-persistence-state]')?.textContent==='saved'&&Number(document.querySelector('[data-persistence-undo-depth]')?.textContent||0)===${step}}`,'persisted navigation point '+step);
+  }
+  assert(await press('[data-persistence-jump-first]'),'request 3-step navigation to earliest point');
+  await waitFor(`function(){return Number(document.querySelector('[data-persistence-budget]')?.textContent||0)===${beforeJump}&&Number(document.querySelector('[data-persistence-redo-depth]')?.textContent||0)===3&&document.querySelector('[data-persistence-state]')?.textContent==='saved'}`,'three server-authoritative Undo receipts reached selected target');
+  assert(await c.call("function(){return globalThis.__myfinhubQaHistoryMoveCount?.()===3}"),'direct jump used 3 exact SQL-style cursor moves');
+  await shot('history-real-hook-jump-three-back-1440-dark');
+  assert(await press('[data-persistence-jump-last]'),'request 3-step return to latest point');
+  await waitFor(`function(){return Number(document.querySelector('[data-persistence-budget]')?.textContent||0)===${beforeJump+3}&&Number(document.querySelector('[data-persistence-undo-depth]')?.textContent||0)===3&&document.querySelector('[data-persistence-state]')?.textContent==='saved'}`,'three server-authoritative Redo receipts reached latest target');
+  assert(await c.call("function(){return globalThis.__myfinhubQaHistoryMoveCount?.()===6}"),'direct return used 6 total protected moves');
+  await shot('history-real-hook-jump-three-forward-1440-dark');
+
+  // A conflict in step 2 after step 1 committed must fail closed at the
+  // actually confirmed intermediate cursor, with the top-edge error bar red.
+  await c.send('Page.navigate',{url:historyHookUrl.href});
+  await waitFor("function(){return document.querySelector('[data-persistence-probe=ready]')!==null&&document.querySelector('[data-persistence-state]')?.textContent==='saved'}",'partial-jump probe initialized');
+  const partialBase=await c.call("function(){return Number(document.querySelector('[data-persistence-budget]')?.textContent||0)}");
+  for(let step=1;step<=3;step++){
+    assert(await press('[data-persistence-mutate]'),'create partial-jump point '+step);
+    await waitFor(`function(){return document.querySelector('[data-persistence-state]')?.textContent==='saved'&&Number(document.querySelector('[data-persistence-undo-depth]')?.textContent||0)===${step}}`,'confirmed partial-jump point '+step);
+  }
+  assert(await c.call("function(){return globalThis.__myfinhubQaRejectHistoryAfterSteps?.(2)===true}"),'arm conflict on second server cursor move');
+  assert(await press('[data-persistence-jump-first]'),'start multi-step jump with synthetic second-step conflict');
+  await waitFor("function(){return document.querySelector('[data-persistence-state]')?.textContent==='conflict'}",'partial navigation enters conflict, not success');
+  const partial=await hookState();
+  assert(partial.budget===partialBase+2&&partial.undo===2&&partial.redo===1&&await c.call("function(){return globalThis.__myfinhubQaHistoryMoveCount?.()===2&&Boolean(document.querySelector('[data-save-progress=error]'))}"),`failed second step retains exact first confirmed move and red bar: ${JSON.stringify(partial)}`);
+  await shot('history-real-hook-jump-partial-conflict-1440-dark');
+
   c.close();
   console.log('Save-progress QA passed: pending remains active, receipt only green, persistent red failure/conflict, FIFO burst, viewport/theme/reduced-motion evidence');
 }catch(error){console.error(error);process.exitCode=1}

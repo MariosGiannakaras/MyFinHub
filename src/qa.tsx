@@ -73,6 +73,7 @@ if(QA_PERSISTENCE_PROBE_SCREEN){
   let putCount=0;
   let historyMoveCount=0;
   let rejectNextHistoryMove=false;
+  let rejectHistoryAfterSteps=0;
   type QaSnapshot={id:string;parentId:string|null;state:FinanceData['state'];label:string};
   const snapshots:QaSnapshot[]=[{id:'1',parentId:null,state:structuredClone(backend.state),label:'QA persistence baseline'}];
   let cursorIndex=0;
@@ -86,6 +87,7 @@ if(QA_PERSISTENCE_PROBE_SCREEN){
     __myfinhubQaHeldReadCount?:()=>number;
     __myfinhubQaHistoryMoveCount?:()=>number;
     __myfinhubQaRejectNextHistoryMove?:()=>boolean;
+    __myfinhubQaRejectHistoryAfterSteps?:(steps:number)=>boolean;
   };
   control.__myfinhubQaPersistenceMode=(next)=>{mode=next};
   control.__myfinhubQaReleaseSave=()=>{const release=heldResponses.shift();if(!release)return false;release();return true};
@@ -95,6 +97,7 @@ if(QA_PERSISTENCE_PROBE_SCREEN){
   control.__myfinhubQaHeldReadCount=()=>heldReadResponses.length;
   control.__myfinhubQaHistoryMoveCount=()=>historyMoveCount;
   control.__myfinhubQaRejectNextHistoryMove=()=>{rejectNextHistoryMove=true;return true};
+  control.__myfinhubQaRejectHistoryAfterSteps=steps=>{rejectHistoryAfterSteps=steps;return true};
   const history=()=>QA_HISTORY_HOOK_PROBE?({
     available:true,generation:String(revision),financeRevision:String(revision),
     currentPointId:snapshots[cursorIndex]!.id,
@@ -154,7 +157,8 @@ if(QA_PERSISTENCE_PROBE_SCREEN){
       const valid=headers.get('if-match')===String(revision)
         &&headers.get('x-rheomiq-history-generation')===String(revision);
       const destination=request.action==='undo'?cursorIndex-1:request.action==='redo'?cursorIndex+1:-1;
-      if(rejectNextHistoryMove||!valid||destination<0||destination>=snapshots.length){
+      const forcedFailure=rejectHistoryAfterSteps>0&&--rejectHistoryAfterSteps===0;
+      if(rejectNextHistoryMove||forcedFailure||!valid||destination<0||destination>=snapshots.length){
         rejectNextHistoryMove=false;
         return new Response(JSON.stringify({code:'HISTORY_CURSOR_CONFLICT',error:'Synthetic rejected history move'}),
           {status:409,headers:{'content-type':'application/json'}});
@@ -596,7 +600,7 @@ function QaWorkspace(){
   const periodVisible=['dashboard','transactions','savings','reports'].includes(page);
 
   return <>
-    <AppShell page={page} onPage={next=>{setCrash(false);setPage(next)}} onQuickAdd={()=>openGeneric()} onCommand={openCommand} onRefresh={refresh} onUndo={undo} onRedo={redo} canUndo={undoStack.length>0&&saveState==='saved'} canRedo={redoStack.length>0&&saveState==='saved'} undoDepth={undoStack.length} redoDepth={redoStack.length} history={changeHistory} saveState={saveState} filePath="Synthetic QA" motionMode="full" userEmail="qa@example.invalid" onLogout={()=>{}}>
+    <AppShell page={page} onPage={next=>{setCrash(false);setPage(next)}} onQuickAdd={()=>openGeneric()} onCommand={openCommand} onRefresh={refresh} onUndo={undo} onRedo={redo} onNavigateHistory={async pointId=>{if(!historyCursorFixture||!changeHistory.some(item=>item.id===pointId))return false;if(pointId==='qa-previous-point'){const previous=undoStack.at(-1);if(!previous)return false;setUndoStack(stack=>stack.slice(0,-1));setRedoStack(stack=>[data,...stack].slice(0,20));setData(previous)}else if(pointId==='qa-redo-point'){const next=redoStack[0];if(!next)return false;setRedoStack(stack=>stack.slice(1));setUndoStack(stack=>[...stack.slice(-19),data]);setData(next)}else return false;setChangeHistory(items=>items.map(item=>({...item,current:item.id===pointId})));return true}} canUndo={undoStack.length>0&&saveState==='saved'} canRedo={redoStack.length>0&&saveState==='saved'} undoDepth={undoStack.length} redoDepth={redoStack.length} history={changeHistory} saveState={saveState} filePath="Synthetic QA" motionMode="full" userEmail="qa@example.invalid" onLogout={()=>{}}>
       <PersistenceNotice saveState={saveState} onRecover={()=>setRecoverOpen(true)} cleanupPending={qaCleanupPending} cleanupError={qaCleanupPending?'Η δοκιμαστική επανάληψη καθαρισμού εκκρεμεί.':null} onRetryCleanup={()=>setQaCleanupPending(0)}/>
       {periodVisible?<div className="period-row"><PeriodControl month={month} onChange={setMonth}/><button type="button" className="text-button" data-qa-crash onClick={()=>setCrash(true)}>QA render failure</button></div>:<button type="button" className="text-button qa-crash-floating" data-qa-crash onClick={()=>setCrash(true)}>QA render failure</button>}
       {saveState==='loading'?<div className="qa-loading-route"><h1 className="sr-only">{QA_PAGE_HEADINGS[page]}</h1><PageSkeleton/></div>:<PageErrorBoundary resetKey={page} onDashboard={()=>{setCrash(false);setPage('dashboard')}}>{lazyFailure?<Suspense fallback={<PageSkeleton/>}><LazyResourceFailure/></Suspense>:crash?<Crash/>:content}</PageErrorBoundary>}
@@ -627,6 +631,8 @@ function QaPersistenceProbe(){
       <output data-persistence-redo-depth={finance.redoDepth}>{finance.redoDepth}</output>
       <button type="button" data-persistence-undo disabled={!finance.canUndo} onClick={()=>{void finance.undo()}}>QA Undo</button>
       <button type="button" data-persistence-redo disabled={!finance.canRedo} onClick={()=>{void finance.redo()}}>QA Redo</button>
+      <button type="button" data-persistence-jump-first disabled={!finance.canUndo} onClick={()=>{const target=finance.changeHistory.at(-1)?.id;if(target)void finance.goToHistoryPoint(target)}}>QA Go to earliest stored point</button>
+      <button type="button" data-persistence-jump-last disabled={!finance.canRedo} onClick={()=>{const target=finance.changeHistory[0]?.id;if(target)void finance.goToHistoryPoint(target)}}>QA Go to latest stored point</button>
     </section>:null}
     <PersistenceNotice saveState={finance.saveState} errorMessage={finance.saveErrorMessage} onRecover={()=>{void finance.reload()}}/>
   </main></>;

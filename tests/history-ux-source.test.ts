@@ -9,6 +9,12 @@ describe('durable Do/Undo/Redo UI and reload safety',()=>{
   expect(dialog).toContain('classifyHistoryPoints(history.slice(0,100))');
   expect(dialog).toContain('historyAvailabilityMessage({state:saveState,pending:savePending,available:historyAvailable,undoDepth,redoDepth})');
   expect(dialog).toContain('data-history-state={entry.position}');
+  expect(dialog).toContain('data-history-selectable={selectable');
+  expect(dialog).toContain('className="history-row-choice"');
+  expect(dialog).toContain('history-jump-confirm');
+  expect(dialog).toContain('Κάθε βήμα αποθηκεύεται χωριστά');
+  expect(shell).toContain('onNavigate={onNavigateHistory}');
+  expect(read('src/hooks/useFinance.ts')).toContain('const goToHistoryPoint=useCallback(');
   expect(dialog).toContain('Η εισαγωγή αρχείου δεν αναιρείται μέσω Undo/Redo');
   expect(dialog).not.toContain('Η εισαγωγή αρχείου παραμένει ξεχωριστή λειτουργία και δεν εντάσσεται αυτόματα');
   expect(shell).toContain("disabled={saveState==='loading'||saveState==='saving'||savePending}");
