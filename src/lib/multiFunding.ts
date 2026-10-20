@@ -1,6 +1,6 @@
-import {allAccounts} from './domain.js';
+import {allAccounts,createEvent} from './domain.js';
 import {centsToMoney,moneyToCents} from './money.js';
-import type {FinanceData,LedgerLeg} from '../types.js';
+import type {FinanceData,FinanceEvent,LedgerLeg,PurchaseFundingLeg} from '../types.js';
 
 type FundingSource={
   kind:'account'|'credit';
@@ -11,7 +11,6 @@ type FundingSource={
   amount:number;
 };
 
-type FundingLeg={kind:'account'|'credit';sourceId:string;amount:number};
 
 const exactCents=(value:number)=>{
   const cents=moneyToCents(value);
@@ -28,13 +27,13 @@ const exactCents=(value:number)=>{
 export function buildMultiSourceFundingPlan(
   data:FinanceData,
   draft:{sources:FundingSource[];total:number}
-):{total:number;creditAmount:number;creditDelta:number;cardId?:string;funding:FundingLeg[];legs:LedgerLeg[]}{
+):{total:number;creditAmount:number;creditDelta:number;cardId?:string;funding:PurchaseFundingLeg[];legs:LedgerLeg[]}{
   if(draft.sources.length<2||draft.sources.length>12)
     throw new Error('Επίλεξε από δύο έως δώδεκα διαφορετικές πηγές πληρωμής.');
   const expectedCents=exactCents(draft.total);
   const accounts=new Set(allAccounts(data).filter(a=>a.kind!=='credit').map(a=>a.id));
   const seen=new Set<string>();
-  const funding:FundingLeg[]=[];
+  const funding:PurchaseFundingLeg[]=[];
   const legs:LedgerLeg[]=[];
   let sumCents=0,creditCents=0,cardId:string|undefined;
   for(const source of draft.sources){
@@ -67,4 +66,17 @@ export function buildMultiSourceFundingPlan(
     funding,
     legs
   };
+}
+
+/** One persisted economic expense. Account/credit legs do not create extra spending. */
+export function createMultiSourcePurchaseEvent(
+  data:FinanceData,
+  args:{date:string;amount:number;note:string;category:string;subcategory?:string;sources:FundingSource[]}
+):FinanceEvent{
+  const plan=buildMultiSourceFundingPlan(data,{sources:args.sources,total:args.amount});
+  const firstAccount=plan.funding.find(item=>item.kind==='account');
+  if(!firstAccount)throw new Error('Η αγορά χρειάζεται έναν πραγματικό λογαριασμό.');
+  const event=createEvent({kind:'expense',date:args.date,amount:plan.total,
+    note:args.note,category:args.category,accountId:firstAccount.sourceId});
+  return {...event,subcategory:args.subcategory,legs:plan.legs,funding:plan.funding,cardId:plan.cardId,creditDelta:plan.creditDelta};
 }

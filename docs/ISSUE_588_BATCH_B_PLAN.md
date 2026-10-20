@@ -98,3 +98,6 @@ No Bank Excel/CSV/OFX import, third-party bank connector, automatic Euribor, car
 
 ## B3 safe projection preflight (not persisted)
 - Introduced `src/lib/lendingPlans.ts` owner-specified future settlement projection with exact cent-rounding remainder, month-end due dates, bounded installments and outstanding checks as-of selected date. New tests explicitly verify zero future cash entries/phantom report income and unchanged receivable/net worth. It creates **no actual finance event**, no write-off, and no saved repayment plan at this stage; B3 #12 is still unaccepted until durable owner confirmation, partial write-off kind/server/SQL and full History/Undo/Redo are integrated.
+
+### B1 domain event foundation
+- Persist multi-funding as one existing `expense` parent with optional exact-cent `funding` and negative ledger legs including only the credit-funded share. The existing SQL event-kind check stays valid; no destructive migration or new event kind is needed. Server input and semantic validators verify distinct funding sources, exact EUR-cent total, debit legs, first real account and credit delta. Credit/card statement owners must integrate before real UI uses this feature; no user-facing enablement yet.

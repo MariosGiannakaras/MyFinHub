@@ -137,6 +137,12 @@ export interface LedgerLeg {
   amount: number;
 }
 
+export interface PurchaseFundingLeg {
+  kind: 'account' | 'credit';
+  sourceId: string;
+  amount: number;
+}
+
 export interface SplitPart {
   id: string;
   label: string;
@@ -173,6 +179,8 @@ export interface FinanceEvent {
   recurringId?: string;
   cardId?: string;
   statementId?: string;
+  /** One economic purchase with multiple funding sources, not multiple expense events. */
+  funding?: PurchaseFundingLeg[];
   /** Separate expense fee linked to one non-spending principal operation. */
   feeForEventId?: string;
 }

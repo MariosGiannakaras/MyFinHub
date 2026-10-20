@@ -58,12 +58,43 @@ function validateSplitParts(parts:SplitPart[]|undefined,parentCents:number,conte
   if(total!==parentCents)invalid(`Split parts do not balance for ${context}.`);
 }
 
+function validateFundedExpense(event:FinanceEvent,amount:number){
+  const funding=event.funding;
+  if(!funding||event.kind!=='expense'||funding.length<2||funding.length>12)invalid(`Invalid funded purchase ${event.id}.`);
+  const seen=new Set<string>();
+  const legs:Array<[string,number]>=[];
+  let total=0,credit=0,firstAccount:string|undefined;
+  for(const part of funding){
+    const centsAmount=cents(part.amount,`funding amount for ${event.id}`);
+    if(centsAmount<=0||Math.abs(part.amount*100-centsAmount)>1e-6)invalid(`Invalid cent funding ${event.id}.`);
+    if(!part.sourceId||seen.has(`${part.kind}:${part.sourceId}`))invalid(`Duplicate or empty funding source ${event.id}.`);
+    seen.add(`${part.kind}:${part.sourceId}`);
+    if(part.kind==='credit'){
+      if(credit||!event.cardId||part.sourceId!==event.cardId)invalid(`Invalid funded card for ${event.id}.`);
+      credit=centsAmount;legs.push([CREDIT_ACCOUNT_ID,-centsAmount]);
+    }else if(part.kind==='account'){
+      if(part.sourceId===CREDIT_ACCOUNT_ID)invalid(`Invalid cash funding for ${event.id}.`);
+      firstAccount??=part.sourceId;
+      legs.push([part.sourceId,-centsAmount]);
+    }else invalid(`Invalid funding type for ${event.id}.`);
+    total+=centsAmount;
+    if(!Number.isSafeInteger(total))invalid(`Funding overflow for ${event.id}.`);
+  }
+  if(total!==amount||!firstAccount||event.accountId!==firstAccount||Boolean(event.cardId)!==Boolean(credit))
+    invalid(`Unbalanced multi-funded expense for ${event.id}.`);
+  assertLegs(event,legs);
+  return credit;
+}
+
 function validateEvent(event:FinanceEvent){
   const amount=requirePositiveAmount(event);
+  if(event.funding&&event.kind!=='expense')invalid(`Invalid funding kind for ${event.id}.`);
+  let fundedCredit=0;
   switch(event.kind){
     case 'expense':{
       if(!event.accountId)invalid(`Missing account for event ${event.id}.`);
-      assertLegs(event,[[event.accountId,-amount]]);
+      if(event.funding)fundedCredit=validateFundedExpense(event,amount);
+      else assertLegs(event,[[event.accountId,-amount]]);
       break;
     }
     case 'income':
@@ -113,7 +144,7 @@ function validateEvent(event:FinanceEvent){
 
   validateOptionalDelta(event.savingAmount,event.kind==='saving_cash_offset'?amount:0,event,'savingAmount');
   validateOptionalDelta(event.receivableDelta,event.kind==='lending'?amount:event.kind==='repayment'?-amount:0,event,'receivableDelta');
-  validateOptionalDelta(event.creditDelta,event.kind==='card_purchase'?-amount:event.kind==='card_payment'?amount:0,event,'creditDelta');
+  validateOptionalDelta(event.creditDelta,event.kind==='card_purchase'?-amount:event.kind==='card_payment'?amount:-fundedCredit,event,'creditDelta');
 }
 
 function validateLinkedFees(events:FinanceEvent[]){

@@ -308,6 +308,16 @@ function validateEvent(value: unknown, name: string) {
     text(leg.accountId, `${name}.legs[${index}].accountId`, 200);
     finiteNumber(leg.amount, `${name}.legs[${index}].amount`);
   }
+  if (value.funding !== undefined) {
+    array(value.funding, `${name}.funding`, 12);
+    for(const [index,part] of value.funding.entries()){
+      const key=`${name}.funding[${index}]`;
+      if(!object(part))invalid(`Invalid ${key}.`);
+      oneOf(part.kind,['account','credit'],`${key}.kind`);
+      text(part.sourceId,`${key}.sourceId`,200);
+      finiteNumber(part.amount,`${key}.amount`);
+    }
+  }
   if (value.parts !== undefined) {
     array(value.parts, `${name}.parts`, 1_000);
     value.parts.forEach((part, index) => validateSplitPart(part, `${name}.parts[${index}]`));
