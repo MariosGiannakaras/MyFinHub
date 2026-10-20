@@ -29,6 +29,7 @@ export function estimateCreditPayoff(balance:number,annualPercent:number,monthly
   if(!Number.isFinite(balance)||balance<0||!Number.isFinite(annualPercent)||annualPercent<0||annualPercent>100||!Number.isFinite(monthlyPayment)||monthlyPayment<=0||!Number.isInteger(maxMonths)||maxMonths<1||maxMonths>600)return null;
   if(Math.abs(Math.round(balance*100)-balance*100)>0.00001||Math.abs(Math.round(monthlyPayment*100)-monthlyPayment*100)>0.00001)return null;
   let remaining=Math.round(balance*100);const fixedPayment=Math.round(monthlyPayment*100);
+  if(remaining===0)return {feasible:true,months:0,totalInterest:0,totalPaid:0,remaining:0};
   if(!Number.isSafeInteger(remaining)||!Number.isSafeInteger(fixedPayment)||fixedPayment<=0)return null;
   let interestPaid=0,amountPaid=0;
   for(let months=1;months<=maxMonths&&remaining>0;months++){

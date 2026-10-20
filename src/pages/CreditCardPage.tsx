@@ -22,6 +22,7 @@ import { useModalFocus } from '../hooks/useModalFocus';
 import { canPermanentlyDeleteCreditCard, cardBanks, creditCards, creditDebtForCard, creditEventsForCard, creditLimitForCard, deletedCreditCards, restoreCard } from '../lib/cards';
 import { categoryPath, categoryTree } from '../lib/categories';
 import { cardStatementConfiguration, creditStatementEvents, creditStatementViews, recommendedPayableStatement, unlinkedCreditStatementEvents } from '../lib/creditStatements';
+import { addCreditRate, creditRateAt, estimateCreditPayoff } from '../lib/creditRates';
 import { allAccounts, createEvent } from '../lib/domain';
 import { money, shortDate } from '../lib/format';
 import { accountMatchesFinancialProvider } from '../lib/financialProviders';
@@ -114,6 +115,12 @@ export function CreditCardPage({
   const [limitOpen,setLimitOpen]=useState(false);
   const [limitText,setLimitText]=useState('');
   const [limitError,setLimitError]=useState('');
+  const [rateOpen,setRateOpen]=useState(false);
+  const [rateText,setRateText]=useState('');
+  const [rateDate,setRateDate]=useState(asOf);
+  const [rateError,setRateError]=useState('');
+  const [rateBusy,setRateBusy]=useState(false);
+  const [payoffText,setPayoffText]=useState('');
   const [amount,setAmount]=useState('');
   const [date,setDate]=useState(asOf);
   const [note,setNote]=useState('');
@@ -124,6 +131,10 @@ export function CreditCardPage({
   const purchaseRef=useModalFocus<HTMLElement>(purchaseOpen,'[data-autofocus="true"]',()=>setPurchaseOpen(false));
   const archiveRef=useModalFocus<HTMLElement>(archiveOpen,'[data-autofocus="true"]',()=>setArchiveOpen(false));
   const statementSetupRef=useModalFocus<HTMLElement>(statementSetupOpen,'[data-autofocus="true"]',()=>setStatementSetupOpen(false));
+  const rateRef=useModalFocus<HTMLElement>(rateOpen,'[data-autofocus="true"]',()=>{if(!rateBusy)setRateOpen(false)});
+  const currentRate=card?creditRateAt(card,asOf):null;
+  const scenarioPayment=Number(payoffText.replace(',','.'));
+  const payoff=card&&currentRate&&debt>0&&payoffText.trim()?estimateCreditPayoff(debt,currentRate.annualPercent,scenarioPayment):null;
 
   const openCardProfile=(target?:PaymentCard)=>{const selected=target??card;if(!selected)return;setProfileCard(selected);setMessage('')};
   const saveCreditCardProfile=(updated:PaymentCard)=>{onUpsertCard(updated);setSelectedCardId(updated.id);setProfileCard(null);setMessage(`Η ενημέρωση της «${updated.nickname}» αποθηκεύεται· τα ασφαλή στοιχεία και το ιστορικό δεν αλλάζουν.`)};
@@ -131,6 +142,16 @@ export function CreditCardPage({
   const createCreditCard=(newCard:PaymentCard)=>{const withLimit={...newCard,creditLimit:newCard.creditLimit??data.state.settings.creditLimit??0};setDetailsIsNew(true);setDetailsCard(withLimit);setMessage('')};
   const saveCreditCardDetails=async(updated:PaymentCard)=>{const wasNew=detailsIsNew;await onUpsertCardDurably(updated);if(wasNew)setSelectedCardId(updated.id);setDetailsCard(null);setDetailsIsNew(false);setMessage('Το προφίλ και τα ασφαλή στοιχεία της πιστωτικής αποθηκεύτηκαν. Ρύθμισε τον κύκλο για τα statements.');};
 
+  const openRate=()=>{if(!card)return;setRateText(currentRate?String(currentRate.annualPercent):'');setRateDate(asOf);setRateError('');setRateOpen(true)};
+  const saveRate=async()=>{
+    if(!card||rateBusy)return;
+    try{
+      if(!rateText.trim())throw new Error('Συμπλήρωσε το ετήσιο ονομαστικό επιτόκιο από τα έγγραφα της τράπεζας.');
+      const next=addCreditRate(card,Number(rateText.replace(',','.')),rateDate,asOf);
+      setRateBusy(true);await onUpsertCardDurably({...next,updatedAt:new Date().toISOString()});setRateOpen(false);
+    }catch(reason){setRateError(reason instanceof Error?reason.message:'Δεν επιβεβαιώθηκε η αποθήκευση του επιτοκίου.');}
+    finally{setRateBusy(false)}
+  };
   const reset=()=>{setAmount('');setDate(asOf);setNote('');setError('')};
   const openPurchase=()=>{if(!card){setMessage('Πρόσθεσε ή επανάφερε πρώτα ενεργή πιστωτική κάρτα.');return}reset();setCategory(categories[0]?.name||'Άλλο');setSubcategory('');setPurchaseOpen(true)};
   const openRepay=()=>{if(!card)return;onPayCard(card.id,payableStatement?.id)};
@@ -202,6 +223,8 @@ export function CreditCardPage({
       </div>
     </section>:<section className="credit-card-empty surface-raised"><CreditCard/><h2>Δεν υπάρχει ενεργή πιστωτική κάρτα</h2><p>{archivedCredit.length?'Οι αρχειοθετημένες πιστωτικές παραμένουν στο ξεχωριστό αρχείο και δεν εμφανίζονται στην ενεργή στοίβα.':'Πρόσθεσε πιστωτική κάρτα για να συνδέσεις αγορές, αποπληρωμές, όριο και προστατευμένα στοιχεία.'}</p><div className="credit-card-empty-actions"><Button type="button" variant="primary" onClick={()=>setCreateOpen(true)}><Plus/> Προσθήκη πιστωτικής</Button>{archivedCredit.length?<Button type="button" variant="secondary" onClick={()=>setArchiveOpen(true)}><ArchiveRestore/> Αρχείο καρτών</Button>:null}</div></section>}
 
+    {card?<section className="panel surface-raised" data-credit-rates aria-labelledby="credit-rates-title"><div className="panel-head"><div><span id="credit-rates-title">Επιτόκιο πιστωτικής · {card.nickname}</span><small>Μόνο χειροκίνητες τιμές με ημερομηνία έναρξης. Καμία αυτόματη χρέωση τόκων.</small></div><Button type="button" variant="secondary" onClick={openRate}>Νέο επιτόκιο</Button></div><p>Τρέχον ετήσιο ονομαστικό επιτόκιο: <b>{currentRate?`${currentRate.annualPercent.toLocaleString('el-GR')}% από ${shortDate(currentRate.effectiveFrom)}`:'Άγνωστο — δεν έχει καταχωριστεί'}</b>. Δες το επίσημο ενημερωτικό της τράπεζας. Το ΣΕΠΕ/APR δεν ταυτίζεται με το ονομαστικό επιτόκιο· αν είναι κυμαινόμενο, καταχώρισε κάθε νέα γνωστοποιημένη τιμή και ημερομηνία ισχύος.</p>{card.creditRateHistory?.length?<details><summary>Ιστορικό επιτοκίων · {card.creditRateHistory.length}</summary><ul>{card.creditRateHistory.map(version=><li key={version.effectiveFrom}>{shortDate(version.effectiveFrom)} · {version.annualPercent.toLocaleString('el-GR')}% ετησίως</li>)}</ul></details>:null}<div className="settings-form editor-grid"><label><span>Προαιρετικό σταθερό ποσό μηνιαίας αποπληρωμής (€)</span><MoneyInput value={payoffText} onValueChange={setPayoffText} placeholder="0,00" aria-label="Ποσό προσομοιωμένης μηνιαίας αποπληρωμής"/></label></div><p className="logic-note compact" role="note">Η πρόβλεψη χρησιμοποιεί το σημερινό επαληθευμένο υπόλοιπο, το καταχωρισμένο ονομαστικό επιτόκιο και την υποθετική σταθερή πληρωμή. Προσεγγιστικός μηνιαίος ανατοκισμός, χωρίς μελλοντικές αγορές, χρεώσεις ή αλλαγές επιτοκίου. Δεν αντικαθιστά το τραπεζικό statement και δεν δημιουργεί κινήσεις.</p>{payoff?<p role="status">{payoff.feasible?`Ενδεικτική εξόφληση σε ${payoff.months} μήνες · υπολογιζόμενοι τόκοι ${money.format(payoff.totalInterest)} · συνολικές πληρωμές ${money.format(payoff.totalPaid)}.`:'Με αυτά τα δεδομένα δεν προκύπτει εξόφληση εντός 360 μηνών ή η πληρωμή δεν καλύπτει τους εκτιμώμενους τόκους.'}</p>:payoffText.trim()?<p role="status">Δεν υπάρχει έγκυρη πρόβλεψη: έλεγξε ότι έχει καταχωριστεί επιτόκιο σε ισχύ και θετικό ποσό με έως δύο δεκαδικά.</p>:null}</section>:null}
+
     {message?<div className="action-status" role="status" aria-live="polite">{message}</div>:null}
 
     <section className="panel surface-raised" data-credit-statements aria-labelledby="credit-statements-title">
@@ -234,6 +257,7 @@ export function CreditCardPage({
 
     {purchaseOpen?<div className="editor-backdrop" onMouseDown={closePurchase}><section ref={purchaseRef} className="panel surface-raised editor-dialog credit-dialog" role="dialog" aria-modal="true" aria-labelledby="credit-purchase-title" tabIndex={-1} onMouseDown={e=>e.stopPropagation()}><div className="panel-head"><div><span id="credit-purchase-title">Νέα αγορά · {card?.nickname??'Πιστωτική'}</span><small>Η αγορά αυξάνει μόνο την οφειλή της επιλεγμένης κάρτας και μετρά μία φορά ως έξοδο. Statement σύνδεση γίνεται μόνο όταν υπάρχει πλήρης, ρητή ρύθμιση κύκλου.</small></div><IconButton type="button" aria-label="Κλείσιμο αγοράς πιστωτικής" onClick={closePurchase}><X/></IconButton></div><div className="settings-form editor-grid"><label><span>Ποσό</span><MoneyInput data-autofocus="true" value={amount} onValueChange={setAmount} invalid={Boolean(error)}/></label><label><span>Ημερομηνία</span><AppDateInput value={date} onChange={e=>setDate(e.target.value)}/></label><label><span>Κατηγορία / υποκατηγορία</span><CategorySelectInput settings={data.state.settings} kind="expense" category={category} subcategory={subcategory} aria-label="Κατηγορία ή υποκατηγορία αγοράς" onChange={selection=>{setCategory(selection.category);setSubcategory(selection.subcategory)}}/></label><label className="wide"><span>Περιγραφή</span><AppTextInput value={note} onChange={e=>setNote(e.target.value)} placeholder="Τι αγόρασες;"/></label></div>{error?<FormError id="credit-purchase-error">{error}</FormError>:null}<div className="editor-actions"><Button type="button" variant="secondary" onClick={closePurchase}>Ακύρωση</Button><Button type="button" variant="primary" onClick={submitPurchase}>Καταχώριση αγοράς</Button></div></section></div>:null}
 
+    {rateOpen&&card?<div className="editor-backdrop" onMouseDown={()=>{if(!rateBusy)setRateOpen(false)}}><section ref={rateRef} className="panel surface-raised editor-dialog credit-dialog" role="dialog" aria-modal="true" aria-labelledby="credit-rate-dialog-title" aria-describedby={rateError?'credit-rate-error':undefined} tabIndex={-1} onMouseDown={event=>event.stopPropagation()}><div className="panel-head"><div><span id="credit-rate-dialog-title">Νέο επιτόκιο · {card.nickname}</span><small>Καταχώρισε την τιμή από την επίσημη ενημέρωση της τράπεζας. Προηγούμενες τιμές και κινήσεις παραμένουν άθικτες.</small></div><IconButton type="button" aria-label="Κλείσιμο επιτοκίου" disabled={rateBusy} onClick={()=>setRateOpen(false)}><X/></IconButton></div><div className="settings-form editor-grid"><label><span>Ετήσιο ονομαστικό επιτόκιο (%)</span><AppTextInput data-autofocus="true" inputMode="decimal" type="number" min="0" max="100" step="0.0001" value={rateText} onChange={event=>setRateText(event.target.value)}/><small>Ποσοστό, όχι ποσό σε ευρώ ή ΣΕΠΕ/APR. Δεν υπολογίζεται αυτόματα από Euribor.</small></label><label><span>Ισχύει από</span><AppDateInput min={asOf} value={rateDate} onChange={event=>setRateDate(event.target.value)}/><small>Σήμερα ή μελλοντική ημερομηνία. Δεν μεταβάλλονται αναδρομικά παλιές αγορές, τόκοι ή statements.</small></label></div>{rateError?<FormError id="credit-rate-error">{rateError}</FormError>:null}<div className="editor-actions"><Button type="button" variant="secondary" disabled={rateBusy} onClick={()=>setRateOpen(false)}>Ακύρωση</Button><Button type="button" variant="primary" disabled={rateBusy} onClick={()=>void saveRate()}>{rateBusy?'Αποθήκευση…':'Καταχώριση επιτοκίου'}</Button></div></section></div>:null}
     <MoneyEditDialog open={limitOpen} title={card?`Όριο · ${card.nickname}`:'Όριο πιστωτικής'} description="Το όριο επηρεάζει μόνο τη διαθέσιμη πίστωση και τις προειδοποιήσεις υπέρβασης. Δεν δημιουργεί οικονομική κίνηση." label="Πιστωτικό όριο" value={limitText} error={limitError} onValueChange={value=>{setLimitText(value);if(limitError)setLimitError('')}} onConfirm={saveLimit} onCancel={closeLimit}/>
     <ConfirmDialog open={Boolean(deleteEventTarget)} title="Διαγραφή κίνησης πιστωτικής;" description={deleteEventTarget?.kind==='card_payment'?'Η αποπληρωμή θα αφαιρεθεί και η οφειλή της κάρτας και του συνδεδεμένου statement θα υπολογιστούν ξανά από τις υπόλοιπες κινήσεις.':'Η αγορά θα αφαιρεθεί από το οικονομικό ιστορικό και από το συνδεδεμένο statement, χωρίς επανεκχώρηση άλλων παλιών κινήσεων.'} confirmLabel="Διαγραφή" tone="destructive" onConfirm={confirmDelete} onCancel={()=>setDeleteEventTarget(null)}/>
     <ConfirmDialog open={Boolean(deleteCardTarget)} title="Ολική διαγραφή πιστωτικής;" description="Η κάρτα είναι αρχειοθετημένη και έχει μηδενική οφειλή. Θα διαγραφούν οριστικά το card profile, PAN, λήξη και CVV. Οι παλιές αγορές, αποπληρωμές και δηλώσεις δεν θα διαγραφούν και θα εμφανίζονται με ουδέτερη αναφορά «Διαγραμμένη κάρτα»." confirmLabel="Ολική διαγραφή" tone="destructive" busy={deleteCardBusy} onConfirm={()=>void confirmCardDelete()} onCancel={()=>{if(!deleteCardBusy)setDeleteCardTarget(null)}}/>
