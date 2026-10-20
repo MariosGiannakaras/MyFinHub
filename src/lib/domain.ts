@@ -206,6 +206,7 @@ export function createEvent(args: {
       break;
     case 'reconciliation': {
       const delta = Number(args.actualBalance ?? 0) - Number(args.currentBalance ?? 0);
+      if(Math.round(delta*100)===0)throw new Error('Δεν υπάρχει διαφορά λογαριασμού για διόρθωση.');
       legs.push({ accountId: requireAccount(args.accountId), amount: delta });
       break;
     }

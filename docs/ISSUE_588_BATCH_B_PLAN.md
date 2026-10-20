@@ -58,3 +58,9 @@ Inspect relational migration constraints/persistence validation and all credit-e
 ## Safety
 
 No Bank Excel/CSV/OFX import, third-party bank connector, automatic Euribor, card interest posting, destructive historical migration, Production or Android changes. No fake PASS for tests not executed. Current counters remain 2/12 · 4/24.
+
+## B4 implementation underway — 2026-10-21
+
+- Added pure as-of manual statement review model with 7-day event/legacy candidates, optional known statement transaction amount, difference in EUR cents and explicit duplicate/no-op/review confirmation checks.
+- Existing QuickAdd reconciliation now computes canonical date-specific balance excluding an edited event rather than current-day balance; UI surfaces evidence and requires a verified checkbox. Created narrow finance regressions. Full validation pending (draft head), B4 **not yet accepted**; no checklist/counter increments.
+- Ensure rendered QA exercises the new dialog and errors; inspect sibling shared controls and security/history before acceptance. Continue B1/B2/B3 on this single finance owner after safe preflight.

@@ -13,6 +13,7 @@ import { IconButton } from './IconButton';
 import { MoneyInput } from './MoneyInput';
 import { categoryTree, subcategoriesFor } from '../lib/categories';
 import { allAccounts, createEvent, frequentDescriptions } from '../lib/domain';
+import { manualReconciliationPreview, manualReconciliationDraftError } from '../lib/manualReconciliation';
 import { isSavingsAccount, isSavingContributionSource } from '../lib/accountSelection';
 import { ENTRY_INTENTS, structuredPresetFromFrequent, type EntryIntent } from '../lib/entryIntents';
 import { entryDefaults, entryDraftError } from '../lib/inputSemantics';
@@ -49,7 +50,7 @@ const intentStyle=(intent:EntryIntent)=>({'--quick-intent-bg':intentTones[intent
 const genericKinds=ENTRY_INTENTS.map(item=>({...item,icon:intentIcons[item.intent]}));
 const labelForKind=(kind:EventKind)=>genericKinds.find(item=>item.kind===kind)?.label||'Κίνηση';
 
-export function QuickAdd({ open, data, asOf, initial, initialKind='expense', prefill=null, motionMode='system', onClose, onCreate, currentBalance }: { open:boolean; data:FinanceData; asOf:string; initial?:FinanceEvent|null; initialKind?:EventKind; prefill?:QuickPrefill|null; motionMode?:'system'|'reduced'|'full'; onClose:()=>void; onCreate:(event:FinanceEvent)=>Promise<void>; currentBalance:(accountId:string)=>number }) {
+export function QuickAdd({ open, data, asOf, initial, initialKind='expense', prefill=null, motionMode='system', onClose, onCreate }: { open:boolean; data:FinanceData; asOf:string; initial?:FinanceEvent|null; initialKind?:EventKind; prefill?:QuickPrefill|null; motionMode?:'system'|'reduced'|'full'; onClose:()=>void; onCreate:(event:FinanceEvent)=>Promise<void>; currentBalance:(accountId:string)=>number }) {
   const accounts = allAccounts(data).filter(a=>a.kind!=='credit');
   const quickAccounts = accounts.filter(account=>account.showInQuickChoices!==false);
   const accountIds = useMemo(()=>new Set(accounts.map(account=>account.id)),[accounts]);
@@ -70,6 +71,8 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
   const [to,setTo]=useState(transferDefaults.to);
   const [person,setPerson]=useState('');
   const [actualBalance,setActualBalance]=useState('');
+  const [statementMovement,setStatementMovement]=useState('');
+  const [reconciliationConfirmed,setReconciliationConfirmed]=useState(false);
   const [parts,setParts]=useState<SplitPart[]>([{id:'p1',label:'',category:data.state.settings.expenseCategories[0]||'Άλλο',amount:0},{id:'p2',label:'',category:data.state.settings.expenseCategories[1]||data.state.settings.expenseCategories[0]||'Άλλο',amount:0}]);
   const [error,setError]=useState('');
   const [saving,setSaving]=useState(false);
@@ -77,6 +80,12 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
   const [discardOpen,setDiscardOpen]=useState(false);
   const categoryKind=kind==='income'?'income':'expense';
   const splitStatus=useMemo(()=>kind==='split'?splitAllocation(parts):null,[kind,parts]);
+
+  const accountBalancesForEditing=(current:FinanceData,event:FinanceEvent)=>{
+    const id=event.accountId||event.legs[0]?.accountId||fallbackAccount;
+    const previous=manualReconciliationPreview(current,id,event.date,{editingEventId:event.id}).expectedBalance;
+    return Math.round((previous+Number(event.legs.find(leg=>leg.accountId===id)?.amount??0))*100)/100;
+  };
 
   const freshParts=()=>[
     {id:'p1',label:'',category:data.state.settings.expenseCategories[0]||'Άλλο',amount:0},
@@ -99,7 +108,8 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
       setTo(initial.toAccountId||initial.legs.find(l=>l.amount>0)?.accountId||(initial.kind==='saving_cash_offset'?savingDefaults.to:transferDefaults.to));
       setPerson(initial.person||'');
       setParts(initial.parts?.length?initial.parts:freshParts());
-      setActualBalance(initial.kind==='reconciliation'?String(currentBalance(initial.accountId||initial.legs[0]?.accountId||defaults.accountId)):'');
+      setActualBalance(initial.kind==='reconciliation'?String(accountBalancesForEditing(data,initial)):'');
+      setStatementMovement('');setReconciliationConfirmed(false);
     }else{
       const defaults=entryDefaults(initialKind,data.state.settings,fallbackAccount);
       setKind(initialKind);
@@ -112,13 +122,21 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
       setFrom(initialKind==='saving_cash_offset'?savingDefaults.from:transferDefaults.from);
       setTo(initialKind==='saving_cash_offset'?savingDefaults.to:transferDefaults.to);
       setPerson('');
-      setActualBalance('');
+      setActualBalance('');setStatementMovement('');setReconciliationConfirmed(false);
       setParts(freshParts());
     }
     setError('');setDirty(false);
   },[open,initial,initialKind,prefill,asOf,transferDefaults.from,transferDefaults.to,savingDefaults.from,savingDefaults.to]);
 
-  const reconciliationBase=(id:string)=>currentBalance(id)-(initial?.kind==='reconciliation'?Number(initial.legs.find(l=>l.accountId===id)?.amount||0):0);
+  const reconciliation=useMemo(()=>{
+    if(kind!=='reconciliation')return null;
+    try{
+      const verified=actualBalance.trim()?Number(actualBalance.replace(',','.')):null;
+      const movement=statementMovement.trim()?Number(statementMovement.replace(',','.')):null;
+      return manualReconciliationPreview(data,accountId,date,{verifiedBalance:verified,statementMovement:movement,editingEventId:initial?.kind==='reconciliation'?initial.id:undefined});
+    }catch{return null}
+  },[data,kind,accountId,date,actualBalance,statementMovement,initial]);
+  const reconciliationBase=(id:string)=>id===accountId?(reconciliation?.expectedBalance??0):manualReconciliationPreview(data,id,date,{editingEventId:initial?.kind==='reconciliation'?initial.id:undefined}).expectedBalance;
   const transferLike=['transfer','saving_cash_offset','withdrawal','card_payment'].includes(kind);
   const lendingLike=['lending','repayment'].includes(kind);
   const mark=()=>setDirty(true);
@@ -129,12 +147,12 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
     if(!open||discardOpen||kind!=='split')return;
     queueMicrotask(()=>document.getElementById('quick-add-title')?.closest<HTMLElement>('[role="dialog"]')?.querySelector<HTMLInputElement>('input[aria-label="Ποσό μέρους 1"]')?.focus({preventScroll:true}));
   },[open,discardOpen,kind]);
-  const reset=()=>{setAmount('');setNote('');setSubcategory('');setError('');setActualBalance('');setDirty(false)};
+  const reset=()=>{setAmount('');setNote('');setSubcategory('');setError('');setActualBalance('');setStatementMovement('');setReconciliationConfirmed(false);setDirty(false)};
   const chooseKind=(next:EventKind)=>{
     const defaults=entryDefaults(next,data.state.settings,fallbackAccount);
     const nextTree=categoryTree(data.state.settings,next==='income'?'income':'expense');
     const nextCategory=nextTree.some(item=>item.name===defaults.category)?defaults.category:(nextTree[0]?.name||defaults.category);
-    setKind(next);setError('');setAccountId(defaults.accountId);setCategory(nextCategory);setSubcategory('');mark();
+    setKind(next);setError('');setReconciliationConfirmed(false);setAccountId(defaults.accountId);setCategory(nextCategory);setSubcategory('');mark();
     if(next==='transfer'){setFrom(transferDefaults.from);setTo(transferDefaults.to)}
     if(next==='saving_cash_offset'){setFrom(savingDefaults.from);setTo(savingDefaults.to)}
     if(next==='withdrawal'){setFrom(transferDefaults.from);setTo(accounts.find(account=>account.kind==='cash'&&account.id!==transferDefaults.from)?.id||transferDefaults.to)}
@@ -144,6 +162,11 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
     try{
       const draftError=entryDraftError(kind,{amount,person,actualBalance,parts});
       if(draftError) throw new Error(draftError);
+      if(kind==='reconciliation'){
+        if(!reconciliation)throw new Error('Δεν ήταν δυνατός ο έλεγχος υπολοίπου στη συγκεκριμένη ημερομηνία.');
+        const reviewError=manualReconciliationDraftError(reconciliation,reconciliationConfirmed);
+        if(reviewError)throw new Error(reviewError);
+      }
       const numeric=Number(amount);
       const actual=kind==='reconciliation'?Number(actualBalance):undefined;
       let event:FinanceEvent;
@@ -165,7 +188,7 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
             if(savingError)throw new Error(savingError);
           }
         }
-        event=createEvent({kind,date,amount:kind==='reconciliation'?Math.abs((actual as number)-reconciliationBase(accountId)):numeric,note:note||labelForKind(kind),category,accountId,fromAccountId:from,toAccountId:to,person:person.trim(),actualBalance:actual,currentBalance:reconciliationBase(accountId)});
+        event=createEvent({kind,date,amount:kind==='reconciliation'?Math.abs((reconciliation?.differenceCents??0)/100):numeric,note:note||labelForKind(kind),category,accountId,fromAccountId:from,toAccountId:to,person:person.trim(),actualBalance:actual,currentBalance:reconciliationBase(accountId)});
       }
       if(kind!=='split')event.subcategory=subcategory||undefined;
       if(initial){event.id=initial.id;event.createdAt=initial.createdAt;event.updatedAt=new Date().toISOString();preserveLoanPaymentLink(event,initial)}
@@ -188,12 +211,12 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
         {kind==='expense'?<div className="frequent-strip"><span>Συχνά</span>{frequent.slice(0,6).map(f=><button type="button" key={f.label} onClick={()=>{const preset=structuredPresetFromFrequent(f);setAmount(String(preset.amount));setCategory(preset.category||category);setSubcategory(preset.subcategory||'');if(preset.accountId&&quickAccounts.some(account=>account.id===preset.accountId))setAccountId(preset.accountId);mark()}}><FinanceIcon settings={data.state.settings} kind="expense" note={f.label} category={f.category} size={14}/><span>{f.label}</span><small>{money.format(f.lastAmount)}</small></button>)}</div>:null}
         <div className="form-grid">
           {kind!=='reconciliation'&&kind!=='split'?<label className="quick-field" data-filled={filled(amount)}><span>Ποσό</span><MoneyInput data-autofocus="true" value={amount} onValueChange={value=>{setAmount(value);mark()}}/></label>:null}
-          <label className="quick-field" data-filled="true"><span>Ημερομηνία</span><AppDateInput value={date} onChange={e=>{setDate(e.target.value);mark()}}/></label>
-          {!transferLike && kind!=='card_purchase'?<label className="quick-field" data-filled="true"><span>Λογαριασμός</span><AppSelectInput value={accountId} onChange={e=>{setAccountId(e.target.value);mark()}}>{accountOptions(accountId,quickAccounts)}</AppSelectInput></label>:null}
+          <label className="quick-field" data-filled="true"><span>Ημερομηνία</span><AppDateInput value={date} onChange={e=>{setDate(e.target.value);setReconciliationConfirmed(false);mark()}}/></label>
+          {!transferLike && kind!=='card_purchase'?<label className="quick-field" data-filled="true"><span>Λογαριασμός</span><AppSelectInput value={accountId} onChange={e=>{setAccountId(e.target.value);setReconciliationConfirmed(false);mark()}}>{accountOptions(accountId,quickAccounts)}</AppSelectInput></label>:null}
           {transferLike?<><label className="quick-field" data-filled="true"><span>Από</span><AppSelectInput value={from} onChange={e=>{setFrom(e.target.value);mark()}}>{accountOptions(from,kind==='saving_cash_offset'?savingSources:accounts)}</AppSelectInput></label>{kind!=='card_payment'?<label className="quick-field" data-filled="true"><span>Προς</span><AppSelectInput value={to} onChange={e=>{setTo(e.target.value);mark()}}>{accountOptions(to,kind==='saving_cash_offset'?savingTargets:accounts)}</AppSelectInput></label>:null}</>:null}
           {!['transfer','withdrawal','saving_cash_offset','card_payment','reconciliation','split'].includes(kind)?<label className="quick-field" data-filled="true"><span>Κατηγορία / υποκατηγορία</span><CategorySelectInput settings={data.state.settings} kind={categoryKind} category={category} subcategory={subcategory} aria-label="Κατηγορία ή υποκατηγορία κίνησης" onChange={selection=>{setCategory(selection.category);setSubcategory(selection.subcategory);mark()}}/></label>:null}
           {lendingLike?<label className="quick-field" data-filled={filled(person)}><span>Πρόσωπο</span><AppTextInput value={person} onChange={e=>{setPerson(e.target.value);mark()}} placeholder="π.χ. Χρήστος"/></label>:null}
-          {kind==='reconciliation'?<><label className="quick-field" data-filled={filled(actualBalance)}><span>Πραγματικό υπόλοιπο</span><MoneyInput data-autofocus="true" value={actualBalance} onValueChange={value=>{setActualBalance(value);mark()}}/></label><div className="reconcile-preview"><span>Αναμενόμενο τώρα</span><b>{money.format(reconciliationBase(accountId))}</b><span>Διαφορά</span><strong>{actualBalance.trim()&&Number.isFinite(Number(actualBalance))?money.format(Number(actualBalance)-reconciliationBase(accountId)):'—'}</strong></div></>:null}
+          {kind==='reconciliation'?<><label className="quick-field" data-filled={filled(actualBalance)}><span>Επαληθευμένο υπόλοιπο στη συγκεκριμένη ημερομηνία (€)</span><MoneyInput data-autofocus="true" value={actualBalance} onValueChange={value=>{setActualBalance(value);setReconciliationConfirmed(false);mark()}}/></label><div className="reconcile-preview" role="status" aria-live="polite"><span>Υπολογισμένο υπόλοιπο στις {date}</span><b>{reconciliation?money.format(reconciliation.expectedBalance):'—'}</b><span>Διαφορά που θα διορθωθεί (όχι δαπάνη)</span><strong>{reconciliation?.differenceCents!==null&&reconciliation?.differenceCents!==undefined?money.format(reconciliation.differenceCents/100):'—'}</strong></div><label className="quick-field"><span>Ποσό κίνησης στην κατάσταση (€) · προαιρετικό, για έλεγχο</span><MoneyInput value={statementMovement} onValueChange={value=>{setStatementMovement(value);setReconciliationConfirmed(false);mark()}}/></label><div className="reconcile-preview" aria-label="Κινήσεις προς σύγκριση"><b>Καταγεγραμμένες κινήσεις των προηγούμενων 7 ημερών</b><small>Οι κινήσεις είναι υποψήφιες για δικό σου έλεγχο, όχι αυτόματες αντιστοιχίσεις τραπεζικής κατάστασης.</small>{reconciliation?.candidates.length?<ul>{reconciliation.candidates.map(item=><li key={item.origin+'-'+item.id}>{item.date} · {item.note} · {money.format(item.amount)}{item.sameAmount?' · ίδιο ποσό':''}</li>)}</ul>:<small>Δεν βρέθηκαν καταγεγραμμένες κινήσεις στο διάστημα.</small>}{statementMovement.trim()&&reconciliation?.matchingCandidates===0?<small role="status">Δεν υπάρχει κίνηση ίδιου ποσού στο εξεταζόμενο διάστημα. Έλεγξε την κατάσταση χειροκίνητα πριν διορθώσεις.</small>:null}{reconciliation?.duplicateOnDate?<FormError>Υπάρχει ήδη διόρθωση στον ίδιο λογαριασμό και ημερομηνία.</FormError>:null}</div><label className="quick-field wide"><input type="checkbox" checked={reconciliationConfirmed} onChange={e=>{setReconciliationConfirmed(e.target.checked);mark()}}/> <span>Επιβεβαιώνω ότι έλεγξα την πραγματική κατάσταση λογαριασμού και τις υπάρχουσες κινήσεις. Η διαφορά καταχωρίζεται ως μη δαπανηρή διόρθωση.</span></label></>:null}
           <label className="quick-field wide" data-filled={filled(note)}><span>Σχόλιο <em>προαιρετικό</em></span><AppTextInput value={note} onChange={e=>{setNote(e.target.value);mark()}} placeholder="Σύντομη περιγραφή μόνο αν χρειάζεται"/></label>
         </div>
         {kind==='split'?<div className="split-box"><div className="split-head"><b>Επιμέρους ποσά</b><span aria-live="polite">Σύνολο: {money.format(splitStatus?.total??0)}</span></div>{parts.map((p,i)=>{const subs=subcategoriesFor(data.state.settings,'expense',p.category);return <div className="split-line split-line-taxonomy" key={p.id} role="group" aria-label={`Μέρος ${i+1}`}><input aria-label={`Περιγραφή μέρους ${i+1}`} placeholder="Περιγραφή" value={p.label} onChange={e=>{setParts(ps=>ps.map((x,j)=>j===i?{...x,label:e.target.value}:x));mark()}}/><AppSelectInput aria-label={`Κατηγορία μέρους ${i+1}`} value={p.category} onChange={e=>{setParts(ps=>ps.map((x,j)=>j===i?{...x,category:e.target.value,subcategory:undefined}:x));mark()}}>{categoryTree(data.state.settings,'expense').map(c=><option key={c.name}>{c.name}</option>)}</AppSelectInput>{subs.length?<AppSelectInput aria-label={`Υποκατηγορία μέρους ${i+1}`} value={p.subcategory||''} onChange={e=>{setParts(ps=>ps.map((x,j)=>j===i?{...x,subcategory:e.target.value||undefined}:x));mark()}}><option value="">—</option>{subs.map(value=><option key={value}>{value}</option>)}</AppSelectInput>:null}<input data-autofocus={i===0?true:undefined} aria-label={`Ποσό μέρους ${i+1}`} inputMode="decimal" placeholder="0,00" value={p.amount||''} onChange={e=>{const parsed=Number(e.target.value.replace(',','.'));setParts(ps=>ps.map((x,j)=>j===i?{...x,amount:Number.isFinite(parsed)?parsed:0}:x));mark()}}/><button type="button" aria-label={`Αφαίρεση μέρους ${i+1}`} disabled={parts.length<=2} onClick={()=>{setParts(ps=>ps.filter((_,j)=>j!==i));mark()}}><X size={15}/></button></div>})}<Button type="button" variant="ghost" onClick={()=>{setParts(ps=>[...ps,{id:`p${Date.now()}`,label:'',category:categoryTree(data.state.settings,'expense')[0]?.name||'Άλλο',amount:0}]);mark()}}>+ Προσθήκη μέρους</Button></div>:null}
