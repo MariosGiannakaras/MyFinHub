@@ -6,7 +6,7 @@ import type { QuickActionContext } from './components/ContextualQuickAdd';
 import { LoginScreen } from './components/LoginScreen';
 import { MfaScreen } from './components/MfaScreen';
 import { PageErrorBoundary } from './components/PageErrorBoundary';
-import { NotFoundPage } from './pages/NotFoundPage';
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage').then((module) => ({ default: module.NotFoundPage })));
 import { PeriodControl } from './components/PeriodControl';
 
 import type { QuickPrefill } from './components/QuickAdd';
@@ -192,7 +192,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   useEffect(() => { document.documentElement.dataset.textSize = textSize; return () => { delete document.documentElement.dataset.textSize; }; }, [textSize]);
 
   if (!data) return <AppSkeleton/>;
-  if (notFound) return <NotFoundPage onHome={() => navigate('dashboard', true)} onBack={() => { if (history.length > 1) history.back(); else navigate('dashboard', true); }}/>;
+  if (notFound) return <Suspense fallback={<PageLoading/>}><NotFoundPage onHome={() => navigate('dashboard', true)} onBack={() => { if (history.length > 1) history.back(); else navigate('dashboard', true); }}/></Suspense>;
 
   // One identical domain reducer for optimistic page handlers and receipt-aware entry.
   const withEvent=(current:FinanceData,event:FinanceEvent):FinanceData=>{

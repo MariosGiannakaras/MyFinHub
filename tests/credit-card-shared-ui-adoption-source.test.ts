@@ -8,12 +8,14 @@ describe('Credit Card shared Button ownership',()=>{
   it('moves the canonical generic action hooks to shared Button and IconButton',()=>{
     expect(source).toContain("from '../components/Button'");
     expect(source).toContain("from '../components/IconButton'");
-    expect(source.match(/<Button\b/g)).toHaveLength(19);
-    expect(source.match(/<IconButton\b/g)).toHaveLength(7);
-    expect(source.match(/<Button[^>]+variant=\"primary\"/g)).toHaveLength(6);
-    expect(source.match(/<Button[^>]+variant=\"secondary\"/g)).toHaveLength(10);
+    expect(source.match(/<Button\b/g)).toHaveLength(22);
+    expect(source.match(/<IconButton\b/g)).toHaveLength(8);
+    expect(source.match(/<Button[^>]+variant=\"primary\"/g)).toHaveLength(7);
+    expect(source.match(/<Button[^>]+variant=\"secondary\"/g)).toHaveLength(12);
     expect(source.match(/<Button[^>]+variant=\"ghost\"/g)).toHaveLength(2);
     expect(source.match(/<Button[^>]+variant=\"danger\"/g)).toHaveLength(1);
+    expect(source).toContain('data-credit-rates');
+    expect(source).toContain('aria-labelledby="credit-rate-dialog-title"');
     expect(source).not.toContain('className="save-button"');
     expect(source).not.toContain('className="secondary"');
     expect(source).not.toContain('className="icon-button"');

@@ -113,13 +113,15 @@ describe('shared primitive adoption',()=>{
     expect(quickAdd).toContain('<AppTextInput value={note}');
   });
 
-  it('uses shared contextual payment amounts and text controls while preserving computed loan-plan read-only behavior',()=>{
+  it('uses shared contextual payment amounts and text controls while preserving a suggested, editable actual installment payment',()=>{
     expectNoNativeDialog(contextualQuickAdd);
     expect(contextualQuickAdd).toContain('<MoneyInput data-autofocus="true"');
-    expect(contextualQuickAdd).toContain('value={loanPaymentPlan?String(loanPaymentPlan.amount):amount}');
-    expect(contextualQuickAdd).toContain('readOnly={Boolean(loanPaymentPlan)}');
+    expect(contextualQuickAdd).toContain('value={amount}');
+    expect(contextualQuickAdd).not.toContain('readOnly={Boolean(loanPaymentPlan)}');
     expect(contextualQuickAdd).toContain('invalid={amountError}');
-    expect(contextualQuickAdd).toContain('if(!loanPaymentPlan)setAmount(value)');
+    expect(contextualQuickAdd).toContain('onValueChange={setAmount}');
+    expect(contextualQuickAdd).toContain('actualLoanPaymentLabel');
+    expect(rendered).toContain('actual installment amount remains editable MoneyInput');
     expect(contextualQuickAdd).toContain("from './AppTextInput'");
     expect(contextualQuickAdd).toContain('<AppTextInput value={person}');
     expect(contextualQuickAdd).toContain('<AppTextInput value={note}');

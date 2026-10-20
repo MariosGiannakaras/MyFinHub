@@ -16,6 +16,11 @@ Source of truth: [approved plan #588](https://github.com/MariosGiannakaras/MyFin
 - Initial full-gate evidence: CI `validate` stopped at unused-export hygiene (`CreditPayoffEstimate` exported without consumers); Windows Clean Launch blocked by raw eager app JS 531.1 KiB versus the existing 528.0 KiB budget. Correct at source by keeping the payoff result type internal and moving only the legacy-baseline boundary helper into its own lightweight eager module rather than importing the whole loan analytics module into `App.tsx`. Never raise existing size thresholds to pass.
 - Revalidate *all* checks on the subsequent coherent head; prior failures are not acceptance evidence and completed unrelated checks do not certify the new head.
 
+## Second exact-head CI learning
+- `0b485397...` executed 1,358 Vitest tests: 1,355 passed, three stale source contracts failed (Credit button count and two old read-only loan-payment assumptions). Updated the assertions to encode the new approved interactions and added a browser-driven 31.47 EUR preview regression.
+- Windows bundle moved from 531.1 to 528.3 KiB raw, still 0.3 KiB above fixed 528.0 KiB ceiling. The React 404 page, irrelevant to the finance bootstrap, now loads lazily behind the existing privacy-safe 404 route and `Suspense` fallback; this intentionally reduces eager code without changing security/routing semantics or limit. All route/rendered checks must confirm it.
+- New exact-head required CI and rendered/light-dark viewport inspection pending. No local checkout to run tests; do not assert PASS without actual run evidence.
+
 ## Remaining acceptance of Batch A
 - Run focused tests for `tests/loans.test.ts`, `tests/reports.test.ts`, `tests/credit-rates.test.ts`, server card validation and existing affected card/finance tests.
 - Verify TypeScript/build, security/defect preflight, normal coherent Ready-for-Review CI and rendered mobile/tablet/desktop Light/Dark UI (including card rate modal, payoff input and loan payment modal), QA evidence inspection, history/Do→Undo→Redo and failed-save semantics.
