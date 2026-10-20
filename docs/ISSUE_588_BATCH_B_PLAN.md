@@ -83,3 +83,6 @@ No Bank Excel/CSV/OFX import, third-party bank connector, automatic Euribor, car
 
 ### Draft preflight failure class — unused exports
 - Draft `validate` at `515ddaca` passed TS symbol checks but caught two unconsumed exported TypeScript-only interfaces from the reconciliation utility. Kept them file-private and bounded displayed candidate note length for responsive surfaces. Also rejected sub-cent fee inputs instead of rounding them silently. These are small repairs batched with implementation preflight; no accepted progress increment.
+
+### Draft QA/hygiene root-cause correction
+- On `0bd8e624` draft `validate`, TypeScript symbols and exports were clean, but formatting hygiene caught trailing whitespace at ledger browser QA line 61. The same line also contained an unterminated embedded Chromium runtime function string, which source formatting could not detect. Fixed **both** together before any full browser QA review-head run; do not claim rendered PASS without runtime evidence.

@@ -58,7 +58,7 @@ try{
   await waitFor("function(){return !!document.querySelector('.quick-modal')}",'reconciliation modal');
   await clickText('.generic-kind-grid button','Διόρθωση');
   await waitFor("function(){return !!document.querySelector('.quick-modal .reconcile-preview')}",'dated reconciliation preview');
-  const dated=await c.call("function(){const modal=document.querySelector('.quick-modal');return {asOfText:modal?.querySelector('.reconcile-preview')?.textContent||'',hasApproval:!!modal?.querySelector('input[type=checkbox]'),candidatePanel:!!modal?.querySelector('[aria-label=\"Κινήσεις προς σύγκριση\"]')}"); 
+  const dated=await c.call("function(){const modal=document.querySelector('.quick-modal');return {asOfText:modal?.querySelector('.reconcile-preview')?.textContent||'',hasApproval:!!modal?.querySelector('input[type=checkbox]'),candidatePanel:!!modal?.querySelector('[aria-label=\"Κινήσεις προς σύγκριση\"]')}}");
   assert(dated.asOfText.includes('Υπολογισμένο υπόλοιπο στις')&&dated.hasApproval&&dated.candidatePanel,'reconciliation uses selected as-of date, candidate review and explicit owner confirmation');
   await setLabelInput('Επαληθευμένο υπόλοιπο','943.21');
   await clickText('.quick-modal footer button','Καταχώριση');
