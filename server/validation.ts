@@ -293,6 +293,7 @@ function validateEvent(value: unknown, name: string) {
   optionalDateStamp(value.updatedAt, `${name}.updatedAt`);
   optionalText(value.loanId, `${name}.loanId`, 200);
   optionalText(value.recurringId, `${name}.recurringId`, 200);
+  optionalText(value.feeForEventId, `${name}.feeForEventId`, 200);
   if (value.installmentCount !== undefined && value.installmentCount !== null) {
     finiteNumber(value.installmentCount, `${name}.installmentCount`, 100_000);
     if (!Number.isInteger(value.installmentCount) || value.installmentCount <= 0) invalid(`Invalid ${name}.installmentCount.`);

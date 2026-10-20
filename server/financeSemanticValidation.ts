@@ -116,8 +116,24 @@ function validateEvent(event:FinanceEvent){
   validateOptionalDelta(event.creditDelta,event.kind==='card_purchase'?-amount:event.kind==='card_payment'?amount:0,event,'creditDelta');
 }
 
+function validateLinkedFees(events:FinanceEvent[]){
+  const byId=new Map(events.map(event=>[event.id,event]));
+  const seen=new Set<string>();
+  for(const event of events){
+    if(!event.feeForEventId)continue;
+    if(event.kind!=='expense'||!event.accountId)invalid(`Invalid linked fee type for event ${event.id}.`);
+    if(seen.has(event.feeForEventId))invalid(`Duplicate linked fee for ${event.feeForEventId}.`);
+    seen.add(event.feeForEventId);
+    const principal=byId.get(event.feeForEventId);
+    if(!principal||!['transfer','withdrawal','card_payment'].includes(principal.kind))
+      invalid(`Missing or invalid linked fee principal for event ${event.id}.`);
+    if(principal.id===event.id||principal.date!==event.date||principal.fromAccountId!==event.accountId)
+      invalid(`Invalid linked fee account or date for event ${event.id}.`);
+  }
+}
 export function validateFinanceStateSemantics(state:FinanceData['state']){
   for(const event of state.events??[])validateEvent(event);
+  validateLinkedFees(state.events??[]);
 }
 
 function accountIds(data:FinanceData){

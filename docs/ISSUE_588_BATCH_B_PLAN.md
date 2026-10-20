@@ -67,3 +67,7 @@ No Bank Excel/CSV/OFX import, third-party bank connector, automatic Euribor, car
 
 ### Draft preflight result on 6cea2675
 - `CI` draft validate stopped at TypeScript hygiene TS2741: missing required `id` on the new duplicate-warning `FormError`. Fixed as one minor correctness batch along with an end-to-end Chromium rendered QA addition to the existing ledger foundations suite (review preview, explicit confirmation, saved event, duplicate guard and screenshot). Previous draft CI is **FAIL** and not acceptance evidence; do not mark green until rerun on the exact newer head.
+
+## B2 shared contract in progress — 2026-10-21
+- Added optional `feeForEventId` to a standalone expense event referencing an internal transfer, withdrawal or card payment. Fee has the real outgoing account and exact EUR cents, while the principal remains non-spending. Backend validates link existence, date/account consistency and uniqueness. No new SQL event kind (existing relational `payload` persists linkage); full real-stack gate remains necessary before acceptance.
+- Introduced one immutable reducer `replaceLinkedTransferWithFee`, with one update/history revision rather than sequential saves, stable IDs on edits and atomic removal. Narrow finance/tamper regression tests added. UI/wiring and deletion/history/QA still pending; **do not check #5 complete**.

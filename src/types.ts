@@ -173,6 +173,8 @@ export interface FinanceEvent {
   recurringId?: string;
   cardId?: string;
   statementId?: string;
+  /** Separate expense fee linked to one non-spending principal operation. */
+  feeForEventId?: string;
 }
 
 export interface ScheduledTransaction {
