@@ -48,7 +48,7 @@ export function historyAvailabilityMessage({
  * Depths are server-calculated and stop before import/vault barriers. Truncated
  * or ambiguous point sets are intentionally NOT selectable.
  */
-export type HistoryNavigationPlan={direction:'undo'|'redo';pointIds:string[]};
+type HistoryNavigationPlan={direction:'undo'|'redo';pointIds:string[]};
 export function reachableHistoryNavigation<T extends StoredPoint>(
   points:readonly T[],undoDepth:number,redoDepth:number,
 ):Map<string,HistoryNavigationPlan>{
