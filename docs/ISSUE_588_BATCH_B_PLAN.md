@@ -101,3 +101,6 @@ No Bank Excel/CSV/OFX import, third-party bank connector, automatic Euribor, car
 
 ### B1 domain event foundation
 - Persist multi-funding as one existing `expense` parent with optional exact-cent `funding` and negative ledger legs including only the credit-funded share. The existing SQL event-kind check stays valid; no destructive migration or new event kind is needed. Server input and semantic validators verify distinct funding sources, exact EUR-cent total, debit legs, first real account and credit delta. Credit/card statement owners must integrate before real UI uses this feature; no user-facing enablement yet.
+
+### B1 credit consumers ready for financial integration
+- Card debt and permanent deletion now include mixed-funded expense only for its credit liability portion. Statement grouping, persisted cycle attachment, as-of purchase/payment totals and unlinked history likewise count only that credit portion, not full economic spend. Credit page purchase/statement views show the funded share. `server/cardStateValidation.ts` permits an expense carrying a verified credit funding source and preserves card/statement ownership checks. QA/end-to-end proof and funding UI are still pending, no #4 acceptance yet.
