@@ -14,5 +14,8 @@ describe('historical statement rendered regression proof (DV-FB05)',()=>{
     expect(rendered).toContain('credit-rate-payoff-desktop');
     expect(rendered).toContain('rate change never posts or edits credit purchase events');
     expect(rendered).toContain('duplicate date did not rewrite history');
+    expect(rendered).toContain('rate dialog entrance settled and opaque');
+    expect(rendered).toContain('mobile failure modal must be fully opaque after entrance');
+    expect(rendered).toContain('corrected rate clears stale empty error');
   });
 });

@@ -103,7 +103,7 @@ try{
   await waitFor("function(){return Boolean(document.querySelector('[data-credit-rates]'))}",'credit rate section');
   assert(await c.call("function(){return (document.querySelector('[data-credit-rates]')?.textContent||'').includes('Άγνωστο — δεν έχει καταχωριστεί')}"),'unknown legacy rate stays unknown');
   const beforeRows=await c.call("function(){return document.querySelectorAll('.credit-purchases-table tbody tr').length}");
-  const openRate=async()=>{const clicked=await c.call("function(){const b=[...document.querySelectorAll('[data-credit-rates] button')].find(x=>x.textContent.includes('Νέο επιτόκιο'));b?.click();return Boolean(b)}");assert(clicked,'new rate action exists');await waitFor("function(){return Boolean(document.querySelector('#credit-rate-dialog-title'))}",'credit rate modal')};
+  const openRate=async()=>{const clicked=await c.call("function(){const b=[...document.querySelectorAll('[data-credit-rates] button')].find(x=>x.textContent.includes('Νέο επιτόκιο'));b?.click();return Boolean(b)}");assert(clicked,'new rate action exists');await waitFor("function(){return Boolean(document.querySelector('#credit-rate-dialog-title'))}",'credit rate modal');await waitFor("function(){const node=document.querySelector('.credit-dialog'),backdrop=node?.closest('.editor-backdrop');if(!node||!backdrop)return false;const panel=getComputedStyle(node),overlay=getComputedStyle(backdrop),rgba=panel.backgroundColor.match(/[\\d.]+/g)||[];const alpha=rgba.length===4?Number(rgba[3]):1;return Number(panel.opacity)>=.999&&Number(overlay.opacity)>=.999&&alpha>=.999}",'rate dialog entrance settled and opaque')};
   const setRate=async value=>{const changed=await c.call("function(value){const node=document.querySelector('.credit-dialog input[data-autofocus=true]');if(!node)return false;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')?.set;setter.call(node,value);node.dispatchEvent(new Event('input',{bubbles:true}));return true}",[value]);assert(changed,'editable annual nominal rate field')};
   const submitRate=async()=>{const clicked=await c.call("function(){const b=[...document.querySelectorAll('.credit-dialog button')].find(x=>x.textContent.includes('Καταχώριση επιτοκίου'));b?.click();return Boolean(b)}");assert(clicked,'rate submit action exists')};
   await openRate();
@@ -111,6 +111,7 @@ try{
   await submitRate();
   await waitFor("function(){return (document.querySelector('.credit-dialog .form-error')?.textContent||'').includes('Συμπλήρωσε')}",'empty nominal rate validation');
   await setRate('15.125');
+  await waitFor("function(){return !document.querySelector('.credit-dialog .form-error')}",'corrected rate clears stale empty error');
   await shot(c,'credit-rate-modal-desktop');
   await submitRate();
   await waitFor("function(){return !document.querySelector('#credit-rate-dialog-title')&&(document.querySelector('[data-credit-rates]')?.textContent||'').includes('15,125%')}",'durable synthetic rate readback');
@@ -146,6 +147,8 @@ try{
   await waitFor("function(){return (document.querySelector('.credit-dialog .form-error')?.textContent||'').includes('δοκιμαστική αποθήκευση')}",'failed rate save retains actionable error');
   const failedRate=await c.call("function(){const modal=document.querySelector('.credit-dialog'),r=modal?.getBoundingClientRect(),panel=document.querySelector('[data-credit-rates]');return {keptOpen:Boolean(modal),unchanged:(panel?.textContent||'').includes('Άγνωστο — δεν έχει καταχωριστεί'),overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth,left:r?.left,right:r?.right}}");
   assert(failedRate.keptOpen&&failedRate.unchanged&&failedRate.overflow<=1&&failedRate.left>=0&&failedRate.right<=375,'failed mobile save preserves model and modal within viewport');
+  const mobilePaint=await c.call("function(){const panel=document.querySelector('.credit-dialog'),backdrop=panel?.closest('.editor-backdrop');if(!panel||!backdrop)return null;const style=getComputedStyle(panel),bStyle=getComputedStyle(backdrop),v=style.backgroundColor.match(/[\\d.]+/g)||[];return {panelOpacity:Number(style.opacity),backdropOpacity:Number(bStyle.opacity),background:style.backgroundColor,alpha:v.length===4?Number(v[3]):1,backgroundImage:style.backgroundImage}}");
+  assert(mobilePaint&&mobilePaint.panelOpacity>=.999&&mobilePaint.backdropOpacity>=.999&&mobilePaint.alpha>=.999,`mobile failure modal must be fully opaque after entrance, not a translucent view of the bank card: ${JSON.stringify(mobilePaint)}`);
   await shot(c,'credit-rate-save-failure-mobile');
 
   c.close();console.log('Credit statement and interest-rate lifecycle rendered QA passed.');
