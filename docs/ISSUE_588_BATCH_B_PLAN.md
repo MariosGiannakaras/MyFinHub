@@ -107,3 +107,6 @@ No Bank Excel/CSV/OFX import, third-party bank connector, automatic Euribor, car
 
 ### B1 shared entry UI wired
 - Generic expense QuickAdd now exposes opt-in multi-source funding with real cash/bank and active credit selection, per-source MoneyInput EUR cents, total preview and bounded add/remove controls; existing ordinary expense remains unchanged. Uses the canonical `createMultiSourcePurchaseEvent` via dynamic import to respect eager bundle budget. Editing recognizes the persisted `funding` parts. Source-level and synthetic rendered/Real Stack contract checks still needed before this can be called accepted.
+
+### B1 system-level regression proof
+- Added complete FinanceData synthetic single-event integration tests for exact 100 EUR expense from cash/bank/credit, net worth, category once, credit liability of only 60 EUR, an as-of credit statement of 60 EUR, account-only multi-funding and cross-validator tamper rejection. Real relational DB read/write and browser QA remain untested.
