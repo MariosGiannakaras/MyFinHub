@@ -204,17 +204,21 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   };
   const addEvent=(event:FinanceEvent)=>finance.update(current=>withEvent(current,event));
   const addEventDurably=(event:FinanceEvent)=>finance.updateDurably(current=>withEvent(current,event));
-  const deleteEvent = (id: string) => finance.update((current) => ({ ...current, state: { ...current.state, events: (current.state.events ?? []).filter((event) => event.id !== id) } }));
+  const addLinkedTransferDurably=async(principal:FinanceEvent,fee:FinanceEvent|null)=>{
+    const {replaceLinkedTransferWithFee}=await import('./lib/linkedFees');
+    return finance.updateDurably(current=>replaceLinkedTransferWithFee(current,principal,fee));
+  };
+  const deleteEvent = (id: string) => finance.update((current) => ({ ...current, state: { ...current.state, events: (current.state.events ?? []).filter((event) => event.id !== id && event.feeForEventId !== id) } }));
   const editEvent = (id: string) => {
     const event = (data.state.events ?? []).find((item) => item.id === id);
-    setEditingEventId(id);
+    setEditingEventId(event?.feeForEventId??id);
     setQuickContext({ token: quickToken(), mode: 'generic', kind: event?.kind || 'expense', prefill: null });
     setQuickOpen(true);
   };
   // Transactions lifecycle waits for the exact revision/history receipt.
   const deleteEventDurably=(id:string)=>finance.updateDurably(current=>{
     if(!(current.state.events??[]).some(event=>event.id===id))throw new Error('Η κίνηση έχει ήδη αλλάξει. Επαναφόρτωσε πριν διαγράψεις.');
-    return {...current,state:{...current.state,events:(current.state.events??[]).filter(event=>event.id!==id)}};
+    return {...current,state:{...current.state,events:(current.state.events??[]).filter(event=>event.id!==id&&event.feeForEventId!==id)}};
   });
   const editLegacy=(transaction:LegacyTransaction)=>finance.updateDurably(current=>withLegacyOverride(current,transaction));
   const deleteLegacy=(id:string)=>finance.updateDurably(current=>withLegacyTombstone(current,id));
@@ -372,7 +376,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
       {finance.saveState === 'loading' ? <PageSkeleton/> : <PageErrorBoundary resetKey={page} onDashboard={() => navigate('dashboard')}><Suspense fallback={<PageLoading/>}>{content}</Suspense></PageErrorBoundary>}
     </AppShell>
     {commandOpen ? <Suspense fallback={null}><CommandPalette open={commandOpen} data={data} asOf={today} motionMode="full" onClose={()=>setCommandOpen(false)} onExecute={handleCommand}/></Suspense> : null}
-    {quickOpen ? <Suspense fallback={null}><ContextualQuickAdd open={quickOpen} data={data} asOf={today} context={quickContext} motionMode="full" initial={(data.state.events ?? []).find((event) => event.id === editingEventId) || null} onClose={() => { setQuickOpen(false); setEditingEventId(null); setQuickContext(null); }} onCreate={addEventDurably} onCompleteScheduled={completeScheduled} currentBalance={balance}/></Suspense> : null}
+    {quickOpen ? <Suspense fallback={null}><ContextualQuickAdd open={quickOpen} data={data} asOf={today} context={quickContext} motionMode="full" initial={(data.state.events ?? []).find((event) => event.id === editingEventId) || null} onClose={() => { setQuickOpen(false); setEditingEventId(null); setQuickContext(null); }} onCreate={addEventDurably} onCreateLinkedTransfer={addLinkedTransferDurably} onCompleteScheduled={completeScheduled} currentBalance={balance}/></Suspense> : null}
     {recoverOpen ? <Suspense fallback={null}><ConfirmDialog open title="Φόρτωση τελευταίας αποθηκευμένης έκδοσης;" description="Η επαναφόρτωση θα απορρίψει τυχόν τοπικές αλλαγές που δεν αποθηκεύτηκαν και θα φορτώσει την τελευταία έκδοση από τη βάση." confirmLabel="Επαναφόρτωση" tone="destructive" motionMode="full" onConfirm={confirmRecover} onCancel={()=>setRecoverOpen(false)}/></Suspense> : null}
   </>;
 }

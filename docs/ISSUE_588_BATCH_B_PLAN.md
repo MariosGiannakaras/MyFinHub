@@ -71,3 +71,6 @@ No Bank Excel/CSV/OFX import, third-party bank connector, automatic Euribor, car
 ## B2 shared contract in progress — 2026-10-21
 - Added optional `feeForEventId` to a standalone expense event referencing an internal transfer, withdrawal or card payment. Fee has the real outgoing account and exact EUR cents, while the principal remains non-spending. Backend validates link existence, date/account consistency and uniqueness. No new SQL event kind (existing relational `payload` persists linkage); full real-stack gate remains necessary before acceptance.
 - Introduced one immutable reducer `replaceLinkedTransferWithFee`, with one update/history revision rather than sequential saves, stable IDs on edits and atomic removal. Narrow finance/tamper regression tests added. UI/wiring and deletion/history/QA still pending; **do not check #5 complete**.
+
+### B2 UI and persistence integration
+- Transfer QuickAdd now records an optional linked commission with the shared MoneyInput, live expense-category choices and one `finance.updateDurably` contract call. QA uses one Do/Undo point; fee edit resolves the parent, and parent delete cascades to fees. This is a draft partial slice; card-payment fee UI, comprehensive browser and failure cases still require acceptance evidence.
