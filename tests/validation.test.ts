@@ -57,6 +57,23 @@ describe('finance document validation', () => {
     expect(() => validateFinanceData(validState())).not.toThrow();
   });
 
+  it('validates credit interest versions at the server finance boundary',()=>{
+    const card={id:'rate-card',bankId:'piraeus',nickname:'Test',kind:'credit',network:'visa',active:true,createdAt:'2026-10-20T00:00:00Z',updatedAt:'2026-10-20T00:00:00Z',creditRateHistory:[{effectiveFrom:'2026-10-20',annualPercent:15.125},{effectiveFrom:'2026-12-01',annualPercent:17}]};
+    const data=validState();data.state.cards=[card];
+    expect(()=>validateFinanceData(data)).not.toThrow();
+    for(const invalid of [
+      {...card,creditRateHistory:[card.creditRateHistory[1],card.creditRateHistory[0]]},
+      {...card,creditRateHistory:[card.creditRateHistory[0],card.creditRateHistory[0]]},
+      {...card,creditRateHistory:[{effectiveFrom:'2026-10-20',annualPercent:100.0001}]},
+      {...card,creditRateHistory:[{effectiveFrom:'2026-10-20',annualPercent:-1}]},
+      {...card,creditRateHistory:[{effectiveFrom:'2026-10-20',annualPercent:15.12345}]},
+      {...card,kind:'debit'},
+    ]){
+      const bad=validState();bad.state.cards=[invalid];
+      expect(()=>validateFinanceData(bad)).toThrow();
+    }
+  });
+
   it('rejects non-canonical recurring service asset keys in saved finance data',()=>{
     const valid=validState();
     const entry={id:'rec-service',name:'Streaming',amount:12,day:10,accountId:'',category:'',active:true,logoAssetKey:'service-asset-1234567890abcdef12345678'};

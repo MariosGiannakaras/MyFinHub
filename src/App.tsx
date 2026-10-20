@@ -6,7 +6,7 @@ import type { QuickActionContext } from './components/ContextualQuickAdd';
 import { LoginScreen } from './components/LoginScreen';
 import { MfaScreen } from './components/MfaScreen';
 import { PageErrorBoundary } from './components/PageErrorBoundary';
-import { NotFoundPage } from './pages/NotFoundPage';
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage').then((module) => ({ default: module.NotFoundPage })));
 import { PeriodControl } from './components/PeriodControl';
 
 import type { QuickPrefill } from './components/QuickAdd';
@@ -15,6 +15,7 @@ import { useLocalDate } from './hooks/useLocalDate';
 import { useSession } from './hooks/useSession';
 import type { AttentionItem } from './lib/attention';
 import { archiveCardRecord, canPermanentlyDeleteCreditCard, withCardSecretCleanupPending } from './lib/cards';
+import { preserveLoanLegacyBaseline } from './lib/loanLegacyBaseline';
 import type { RankedCommandSearchItem } from './lib/commandSearch';
 import { prepareCreditStatementEvent } from './lib/creditStatements';
 import { accountBalances, allAccounts } from './lib/domain';
@@ -191,7 +192,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   useEffect(() => { document.documentElement.dataset.textSize = textSize; return () => { delete document.documentElement.dataset.textSize; }; }, [textSize]);
 
   if (!data) return <AppSkeleton/>;
-  if (notFound) return <NotFoundPage onHome={() => navigate('dashboard', true)} onBack={() => { if (history.length > 1) history.back(); else navigate('dashboard', true); }}/>;
+  if (notFound) return <Suspense fallback={<PageLoading/>}><NotFoundPage onHome={() => navigate('dashboard', true)} onBack={() => { if (history.length > 1) history.back(); else navigate('dashboard', true); }}/></Suspense>;
 
   // One identical domain reducer for optimistic page handlers and receipt-aware entry.
   const withEvent=(current:FinanceData,event:FinanceEvent):FinanceData=>{
@@ -226,7 +227,8 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   };
   const upsertRecurring=(item:RecurringItem)=>finance.update(current=>withRecurring(current,item));
   const upsertRecurringDurably=(item:RecurringItem)=>finance.updateDurably(current=>withRecurring(current,item));
-  const withLoan = (current: FinanceData, loan: Loan) => {
+  const withLoan = (current: FinanceData, nextLoan: Loan) => {
+    const loan=preserveLoanLegacyBaseline(current,nextLoan);
     if (current.seed.loans.some((existing) => existing.id === loan.id)) return { ...current, state: { ...current.state, loanOverrides: { ...current.state.loanOverrides, [loan.id]: loan } } };
     const custom = current.state.customLoans ?? [];
     const exists = custom.some((existing) => existing.id === loan.id);

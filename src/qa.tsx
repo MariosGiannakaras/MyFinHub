@@ -1,3 +1,4 @@
+import { preserveLoanLegacyBaseline } from './lib/loanLegacyBaseline';
 import { StrictMode, Suspense, lazy, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { AppShell, type PageId } from './components/AppShell';
@@ -479,7 +480,7 @@ function QaWorkspace(){
   const openSpecial=(context:SpecialQuickContext)=>{setEditing(null);setQuickContext({...context,token:quickToken()} as QuickActionContext);setQuickOpen(true)};
   const openCommand=()=>{if(quickOpen)return;setCommandOpen(true)};
   const upsertRecurring=(item:RecurringItem)=>update(current=>{const seeded=current.seed.recurring.some(seed=>seed.id===item.id);if(seeded)return {...current,state:{...current.state,recurringOverrides:{...current.state.recurringOverrides,[item.id]:item}}};return {...current,state:{...current.state,recurringCustom:[...(current.state.recurringCustom??[]).filter(r=>r.id!==item.id),item]}}});
-  const withLoan=(current:FinanceData,loan:Loan)=>{if(current.seed.loans.some(item=>item.id===loan.id))return {...current,state:{...current.state,loanOverrides:{...current.state.loanOverrides,[loan.id]:loan}}};return {...current,state:{...current.state,customLoans:[...(current.state.customLoans??[]).filter(item=>item.id!==loan.id),loan]}}};
+  const withLoan=(current:FinanceData,nextLoan:Loan)=>{const loan=preserveLoanLegacyBaseline(current,nextLoan);if(current.seed.loans.some(item=>item.id===loan.id))return {...current,state:{...current.state,loanOverrides:{...current.state.loanOverrides,[loan.id]:loan}}};return {...current,state:{...current.state,customLoans:[...(current.state.customLoans??[]).filter(item=>item.id!==loan.id),loan]}}};
   const upsertLoan=(loan:Loan)=>update(current=>withLoan(current,loan));
   const createSelfLoan=(loan:Loan,event:FinanceEvent)=>update(current=>{const next=withLoan(current,loan);return {...next,state:{...next.state,events:[...(next.state.events??[]).filter(existing=>existing.id!==event.id),event]}}});
   const upsertBank=(bank:CardBank)=>update(current=>({...current,state:{...current.state,cardBanks:[...(current.state.cardBanks??[]).filter(item=>item.id!==bank.id),bank]}}));

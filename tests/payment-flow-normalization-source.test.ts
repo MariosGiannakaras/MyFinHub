@@ -66,7 +66,8 @@ describe('payment flow normalization source contracts',()=>{
     expect(contextual).toContain('loanInstallmentPaymentPlan');
     expect(contextual).toContain('setLoanPaymentInstallmentCount');
     expect(contextual).toContain('Πόσες δόσεις');
-    expect(contextual).toContain('readOnly={Boolean(loanPaymentPlan)}');
+    expect(contextual).toContain('onValueChange={setAmount}');
+    expect(contextual).toContain('actualLoanPaymentLabel');
     expect(contextual).toContain('Καλύπτονται οι δόσεις');
   });
 
@@ -75,9 +76,9 @@ describe('payment flow normalization source contracts',()=>{
     expect(rendered).toContain("/tmp/myfinhub-payment-flow-qa-chrome");
   });
 
-  it('locks empty, stale-id, computed-installment, linked-recurring and reduced-motion regression coverage',()=>{
+  it('locks empty, stale-id, editable-installment, linked-recurring and reduced-motion regression coverage',()=>{
     expect(paymentQa).toContain("{state:'empty'}");
-    expect(paymentQa).toContain('normal loan amount is computed and read-only');
+    expect(paymentQa).toContain('normal loan amount is editable with exact cents');
     expect(paymentQa).toContain('multi-installment range preview');
     expect(paymentQa).toContain('linked loan payment from Recurring');
     expect(paymentQa).toContain("staleHarnessUrl('missing-loan')");
