@@ -9,5 +9,10 @@ describe('historical statement rendered regression proof (DV-FB05)',()=>{
     expect(rendered).toContain("'credit-statement-future-payment-ignored'");
     expect(rendered).toContain('future-dated payment prematurely settled historical statement');
     expect(rendered).toContain("earlierStatement.text.includes('90,00')&&earlierStatement.canPay");
+    expect(rendered).toContain('credit-rate-modal-dark-tablet');
+    expect(rendered).toContain('credit-rate-save-failure-mobile');
+    expect(rendered).toContain('credit-rate-payoff-desktop');
+    expect(rendered).toContain('rate change never posts or edits credit purchase events');
+    expect(rendered).toContain('duplicate date did not rewrite history');
   });
 });

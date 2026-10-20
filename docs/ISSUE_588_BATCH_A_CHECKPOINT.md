@@ -21,6 +21,11 @@ Source of truth: [approved plan #588](https://github.com/MariosGiannakaras/MyFin
 - Windows bundle moved from 531.1 to 528.3 KiB raw, still 0.3 KiB above fixed 528.0 KiB ceiling. The React 404 page, irrelevant to the finance bootstrap, now loads lazily behind the existing privacy-safe 404 route and `Suspense` fallback; this intentionally reduces eager code without changing security/routing semantics or limit. All route/rendered checks must confirm it.
 - New exact-head required CI and rendered/light-dark viewport inspection pending. No local checkout to run tests; do not assert PASS without actual run evidence.
 
+## Exact-head validation and final focused acceptance addition
+- `8112736a...` PASS CI (`236/236` Vitest files, `1358/1358` tests), 55 rendered QA scripts including editable loan EUR-cent preview, Chromium/desktop/tablet/mobile Light/Dark and 648 evidence screenshots. Bundle main raw `526.0 KiB`, under `528.0 KiB`; CodeQL, WebKit, Lighthouse, Windows Desktop/First Run/Clean Launch all PASS.
+- Directly inspected rendered Credit/Loans screenshots and contextual loan payment on desktop, tablet, mobile and both themes, plus save-progress failure evidence. Existing snapshots do not open the new rate editor: added browser regression within existing credit statement suite for rate modal validation, successful readback, approximate payoff with no ledger event, duplicate effective date, dark tablet geometry and mobile failed durable-save semantics. This new head must pass source/rendered/security checks before accepted progress changes.
+- Final 216-image visual sweep is reserved for the roadmap's final acceptance boundary unless another requirement triggers an earlier sweep; keep current focus on the verified Batch A review head.
+
 ## Remaining acceptance of Batch A
 - Run focused tests for `tests/loans.test.ts`, `tests/reports.test.ts`, `tests/credit-rates.test.ts`, server card validation and existing affected card/finance tests.
 - Verify TypeScript/build, security/defect preflight, normal coherent Ready-for-Review CI and rendered mobile/tablet/desktop Light/Dark UI (including card rate modal, payoff input and loan payment modal), QA evidence inspection, history/Do→Undo→Redo and failed-save semantics.
