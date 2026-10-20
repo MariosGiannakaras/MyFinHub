@@ -64,3 +64,6 @@ No Bank Excel/CSV/OFX import, third-party bank connector, automatic Euribor, car
 - Added pure as-of manual statement review model with 7-day event/legacy candidates, optional known statement transaction amount, difference in EUR cents and explicit duplicate/no-op/review confirmation checks.
 - Existing QuickAdd reconciliation now computes canonical date-specific balance excluding an edited event rather than current-day balance; UI surfaces evidence and requires a verified checkbox. Created narrow finance regressions. Full validation pending (draft head), B4 **not yet accepted**; no checklist/counter increments.
 - Ensure rendered QA exercises the new dialog and errors; inspect sibling shared controls and security/history before acceptance. Continue B1/B2/B3 on this single finance owner after safe preflight.
+
+### Draft preflight result on 6cea2675
+- `CI` draft validate stopped at TypeScript hygiene TS2741: missing required `id` on the new duplicate-warning `FormError`. Fixed as one minor correctness batch along with an end-to-end Chromium rendered QA addition to the existing ledger foundations suite (review preview, explicit confirmation, saved event, duplicate guard and screenshot). Previous draft CI is **FAIL** and not acceptance evidence; do not mark green until rerun on the exact newer head.

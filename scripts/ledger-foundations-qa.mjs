@@ -53,6 +53,33 @@ try{
   await c.call("function(){document.querySelector('button[aria-label=\"Αναίρεση τελευταίας αλλαγής\"]')?.click()}");await sleep(180);transferText=await c.call("function(){return document.querySelector('[data-transaction-kind=transfer][data-transaction-source=event]')?.textContent||''}");assert(transferText.includes('42,50'),'undo restores the whole previous transfer');
   await c.call("function(){document.querySelector('button[aria-label=\"Επαναφορά τελευταίας αναιρεμένης αλλαγής\"]')?.click()}");await sleep(180);transferText=await c.call("function(){return document.querySelector('[data-transaction-kind=transfer][data-transaction-source=event]')?.textContent||''}");assert(transferText.includes('55,25'),'redo restores the whole edited transfer');
 
+  console.log('Ledger QA: manual statement reconciliation requires explicit review and is not spending');
+  await clickGlobalQuickEntry();
+  await waitFor("function(){return !!document.querySelector('.quick-modal')}",'reconciliation modal');
+  await clickText('.generic-kind-grid button','Διόρθωση');
+  await waitFor("function(){return !!document.querySelector('.quick-modal .reconcile-preview')}",'dated reconciliation preview');
+  const dated=await c.call("function(){const modal=document.querySelector('.quick-modal');return {asOfText:modal?.querySelector('.reconcile-preview')?.textContent||'',hasApproval:!!modal?.querySelector('input[type=checkbox]'),candidatePanel:!!modal?.querySelector('[aria-label=\"Κινήσεις προς σύγκριση\"]')}"); 
+  assert(dated.asOfText.includes('Υπολογισμένο υπόλοιπο στις')&&dated.hasApproval&&dated.candidatePanel,'reconciliation uses selected as-of date, candidate review and explicit owner confirmation');
+  await setLabelInput('Επαληθευμένο υπόλοιπο','943.21');
+  await clickText('.quick-modal footer button','Καταχώριση');
+  await waitFor("function(){return (document.querySelector('.quick-modal .form-error')?.textContent||'').includes('Επιβεβαίωσε')}",'unconfirmed reconciliation rejected');
+  const reconDesktop=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
+  writeFileSync(`${evidenceDir}/ledger-manual-reconciliation-review.png`,Buffer.from(reconDesktop.data,'base64'));
+  const consent=await c.call("function(){const box=document.querySelector('.quick-modal input[type=checkbox]');box?.click();return Boolean(box?.checked)}");
+  assert(consent,'owner deliberately confirms reconciliation');
+  await clickText('.quick-modal footer button','Καταχώριση');
+  await waitFor("function(){return !document.querySelector('.quick-modal')}",'reconciliation persisted');
+  await navigate('Συναλλαγές','Συναλλαγές');
+  assert(await c.call("function(){return Boolean(document.querySelector('[data-transaction-kind=reconciliation][data-transaction-source=event]'))}"),'one reconciled non-spending event visible');
+  await clickGlobalQuickEntry();
+  await clickText('.generic-kind-grid button','Διόρθωση');
+  await setLabelInput('Επαληθευμένο υπόλοιπο','942.21');
+  await waitFor("function(){return (document.querySelector('.quick-modal #quick-reconciliation-duplicate')?.textContent||'').includes('ήδη διόρθωση')}",'same date and account duplicate prompt');
+  await c.call("function(){document.querySelector('.quick-modal header button[aria-label=\"Κλείσιμο καταχώρισης\"]')?.click();return true}");
+  await waitFor("function(){return Boolean(document.querySelector('[role=alertdialog]'))}",'discard unsaved balance check');
+  await clickText('[role=alertdialog] button','Απόρριψη');
+  await waitFor("function(){return !document.querySelector('.quick-modal')}",'discard duplicate draft');
+
   console.log('Ledger QA: Reports remain neutral after internal transfer');
   await navigate('Αναφορές','Αναφορές');
   const reportsAfter=await c.call("function(){return document.querySelector('.report-kpi-strip')?.textContent||''}");assert(reportsAfter===reportsBefore,'transfer does not alter income/expense KPI text');
