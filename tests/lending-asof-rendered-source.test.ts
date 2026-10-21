@@ -18,8 +18,8 @@ describe('Lending as-of browser regression',()=>{
 
 describe('settlement mobile preview source geometry regression (#588 B3)',()=>{
   it('scopes horizontal note primitive into vertical schedule and protects mobile header',()=>{
-    const css=read('src/styles/quick-entry-body-split.css');
-    const qa=read('scripts/lending-remediation-qa.mjs');
+    const css=readFileSync('src/styles/quick-entry-body-split.css','utf8');
+    const qa=readFileSync('scripts/lending-remediation-qa.mjs','utf8');
     expect(css).toContain('.lending-settlement-modal [data-lending-plan-preview]{');
     expect(css).toContain('display:flex;flex-direction:column;align-items:stretch');
     expect(css).toContain('.lending-settlement-modal{grid-template-rows:max-content minmax(0,1fr) max-content}');
