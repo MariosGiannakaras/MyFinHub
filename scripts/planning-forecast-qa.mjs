@@ -122,5 +122,29 @@ try{
   await navigate('',1440,1000,'compact');const compact=await c.call("function(){return parseFloat(getComputedStyle(document.querySelector('.page-heading h1')).fontSize)}");await navigate('',1440,1000,'large');const large=await c.call("function(){return parseFloat(getComputedStyle(document.querySelector('.page-heading h1')).fontSize)}");assert(large>compact,`Planning typography preference changes computed heading size (${compact} -> ${large})`);
   await navigate('',375,812);await noOverflow('planning mobile');await noUnnamed('planning mobile');await touchTargets('planning mobile');assert(await c.call("function(){const control=document.querySelector('.horizon-control');const actions=document.querySelector('.scheduled-actions');return Boolean(control&&actions&&getComputedStyle(control).width!=='0px')}") ,'mobile keeps horizon and scheduled actions usable');await screenshot('planning-forecast-mobile');
 
+  console.log('Planning QA: isolated what-if scenario remains nonposting and mobile-safe');
+  await navigate('',1440,1000);
+  const realBeforeScenario=await currentLiquidity();
+  await clickText('[data-forecast-scenario-panel] button','Δοκιμή σεναρίου');
+  await waitFor("function(){return !!document.querySelector('.forecast-scenario-content')}",'scenario panel expanded');
+  await clickText('.forecast-scenario-actions button','Προσθήκη υπόθεσης');
+  await waitFor("function(){return document.querySelectorAll('.forecast-scenario-row').length===1}",'first scenario row');
+  await setInput('Ποσό (€)','150.25');
+  await waitFor("function(){return Boolean(document.querySelector('[data-scenario-results]'))}",'hypothetical projection result');
+  const scenarioDesktop=await c.call("function(){const node=document.querySelector('[data-forecast-scenario-panel]');return {text:node?.textContent||'',scenarioRows:document.querySelectorAll('.forecast-scenario-row').length,hasResult:!!document.querySelector('[data-scenario-results]')}}");
+  assert(scenarioDesktop.scenarioRows===1&&scenarioDesktop.hasResult&&scenarioDesktop.text.includes('Χωρίς υποθέσεις')&&scenarioDesktop.text.includes('Με τις υποθέσεις'),'scenario compares baseline and hypothetical cash without booking');
+  assert((await currentLiquidity())===realBeforeScenario,'scenario input does not change actual cash balance');
+  await c.call("function(){document.querySelector('[data-forecast-scenario-panel]')?.scrollIntoView({block:'start'});return true}");
+  await screenshot('planning-whatif-desktop');
+  await viewport(375,812);
+  await noOverflow('scenario open mobile 375');
+  await noUnnamed('scenario open mobile 375');
+  await c.call("function(){document.querySelector('[data-forecast-scenario-panel]')?.scrollIntoView({block:'start'});return true}");
+  await screenshot('planning-whatif-mobile');
+  await clickText('.forecast-scenario-actions button','Καθαρισμός');
+  await waitFor("function(){return !document.querySelector('[data-scenario-results]')&&document.querySelectorAll('.forecast-scenario-row').length===0}",'hypothesis removal restores initial forecast');
+  assert((await currentLiquidity())===realBeforeScenario,'clearing hypothetical changes leaves real money intact');
+  await viewport(1440,1000);
+
   assert(runtimeErrors.length===0,`runtime exceptions: ${runtimeErrors.join(' | ')}`);assert(failedRequests.length===0,`network loading failures: ${failedRequests.join(' | ')}`);c.close();console.log('Planning and forecast rendered QA passed.');
 }finally{child.kill('SIGTERM')}

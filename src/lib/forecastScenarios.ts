@@ -11,12 +11,12 @@ export interface ForecastScenarioAssumption {
   amount:number;
 }
 
-export interface ForecastScenarioPoint extends ForecastPoint {
+interface ForecastScenarioPoint extends ForecastPoint {
   /** Hypothetical movement impact; never a finance ledger entry. */
   scenarioDelta:number;
 }
 
-export interface ForecastScenarioResult {
+interface ForecastScenarioResult {
   baseline:ReturnType<typeof cashFlowForecast>;
   points:ForecastScenarioPoint[];
   projectedPortfolio:number;

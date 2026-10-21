@@ -27,3 +27,9 @@
 
 ## S1 draft preflight repair
 The first draft `validate` failed before tests because TypeScript correctly refused an unsupported literal `15` in a negative runtime horizon test. The negative test now explicitly casts it only inside the intentionally-invalid invocation; production API remains strongly typed to 30/60/90. No test guard or type contract relaxed.
+
+## S2 UI implementation and browser contract — draft, pending CI
+- Added optional `ForecastScenarioPanel` on the canonical Planning page **after** the approved desktop financial summary, so the established desktop structure is unchanged and mobile sees the same supplementary tool. It reuses `AppDateInput`, `AppSelectInput`, `MoneyInput`, `Button`, and thematic variables. Default is closed; up to 16 hypothetical income/expense movements with dates, real bank/cash/savings accounts and exact amounts; display original projection vs what-if, first shortfall, evidence provenance, and no-saving warning.
+- New UI composition CSS resides in `src/pages/PlanningCompletion.css` and uses shared control primitives/tokens; includes 1100/600 breakpoint adaptations, no new app-wide control system.
+- Extended existing `scripts/planning-forecast-qa.mjs`: opt-in scenario, add amount, verify preview and unchanged real balance, desktop and 375px mobile screenshot, overflow/accessibility control and clear assumptions. Added source regression guard. **Must execute and inspect screenshots on final review head; draft screenshots not yet generated.**
+- Conservatively adjusted the S1 module's two result/point types to file-private as they are used only as return types. Kept the assumption type exported because now imported by the UI. No tests/quality thresholds weakened; PR remains draft.
