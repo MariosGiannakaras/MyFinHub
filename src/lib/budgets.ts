@@ -81,7 +81,7 @@ function spending(data:FinanceData,month:string,asOf?:string){
     const decision=reviewDecision(data,tx.id);
     if(decision?.status==='confirmed'&&decision.semanticKind==='split'){parts(decision.parts);continue;}
     const impact=flowImpactLegacy(data,tx);
-    if(impact.expense)addExpense(decision?.category||tx.category,decision?.subcategory||tx.subcategory,impact.expense);
+    if(impact.expense)addExpense(decision?.category||tx.category,tx.subcategory,impact.expense);
   }
   for(const event of data.state.events??[]){
     if(!spendMonth(event.date,month,asOf))continue;
@@ -194,8 +194,12 @@ export function budgetProgress(data:FinanceData,month:string,asOf?:string):Budge
     const used=Math.max(0,usedCents);
     const future=commitments.reduce((sum,obligation)=>{
       const fake:MonthlyBudget={...budget};
-      const sources={categories:new Map([[normalize(obligation.category),cents(obligation.amount)]]),
-        subcategories:new Map(obligation.subcategory?[[pair(obligation.category,obligation.subcategory),cents(obligation.amount)]]:[])};
+      const sources={
+        categories:new Map([[normalize(obligation.category),cents(obligation.amount)]]),
+        subcategories:new Map(obligation.subcategory?[[pair(obligation.category,obligation.subcategory),cents(obligation.amount)]]:[]),
+        categoryNames:new Map<string,string>(),
+        subcategoryNames:new Map<string,string>()
+      };
       return sum+useBudget(data,fake,sources);
     },0);
     const threshold=Math.min(.99,Math.max(.5,Number(budget.alertThreshold??DEFAULT_ALERT_THRESHOLD)));

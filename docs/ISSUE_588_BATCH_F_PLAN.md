@@ -67,3 +67,11 @@ Commit coherent feature code as a draft PR referencing issue #588. Then extend r
 - This branch's high-churn draft CI may run narrow checks automatically, but **no rendered artifact has been inspected or marked PASS**. Continue only with exact-head batch-level validation, fix gathered failures coherently, and inspect actual resulting screenshots.
 
 **Counters unchanged: Implementations 2/12 completed · Sub-implementations 4/24 completed.**
+
+## One grouped draft TypeScript preflight correction
+
+- Earlier high-churn draft heads 7de2b0a6–266e9ef2 stopped at a shared static contract failure (not browser QA): an older ReviewDecision has no `subcategory`, the internal forecast allocation maps must include their display-label dictionaries, and test-only `createEvent` arguments cannot include direct subcategory metadata. Preserved ReviewDecision's exact established type; used legacy transaction subcategory where applicable and preserved confirmed split-part taxonomy separately.
+- New regression fixtures now append optional subcategory to the canonical event **after** the unchanged money/event builder, matching actual application ownership. The finance engine and security constraints remain unchanged.
+- Batching these issues together rather than individual source-only reruns. Next head needs type/hygiene/unit/API validation; no test or performance threshold reduced.
+
+**Accepted roadmap progress remains 2/12 · 4/24; #9 subitems unaccepted.**

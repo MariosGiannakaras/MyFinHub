@@ -4,6 +4,12 @@ import {createEvent,migrateData} from '../src/lib/domain.js';
 import type {FinanceData,MonthlyBudget} from '../src/types.js';
 
 const stamp='2026-08-01T00:00:00Z';
+// The canonical event factory owns money movement metadata. Subcategory is an
+// optional persisted classification assigned after creation by the editor.
+const classifiedEvent=(args:Parameters<typeof createEvent>[0]&{subcategory?:string})=>{
+  const {subcategory,...draft}=args;
+  return {...createEvent(draft),...(subcategory?{subcategory}:{})};
+};
 function fixture():FinanceData{
   return migrateData({
     app:'MyFinHub',schemaVersion:3,updatedAt:stamp,
@@ -26,10 +32,10 @@ describe('#588 enhanced budgets: subcategory, rollover, nonposting commitments',
  it('keeps subcategory limits separate while parent and overall count expense only once',()=>{
   const d=fixture();
   d.state.events=[
-    createEvent({kind:'expense',date:'2026-08-04',amount:50,accountId:'bank',note:'Market',category:'Τρόφιμα',subcategory:'Σούπερ μάρκετ'}),
-    createEvent({kind:'refund',date:'2026-08-05',amount:10,accountId:'bank',note:'Return',category:'Τρόφιμα',subcategory:'Σούπερ μάρκετ'}),
-    createEvent({kind:'expense',date:'2026-08-06',amount:15,accountId:'bank',note:'Street',category:'Τρόφιμα',subcategory:'Λαϊκή'}),
-    createEvent({kind:'transfer',date:'2026-08-06',amount:30,fromAccountId:'bank',toAccountId:'bank2',note:'internal'})
+    classifiedEvent({kind:'expense',date:'2026-08-04',amount:50,accountId:'bank',note:'Market',category:'Τρόφιμα',subcategory:'Σούπερ μάρκετ'}),
+    classifiedEvent({kind:'refund',date:'2026-08-05',amount:10,accountId:'bank',note:'Return',category:'Τρόφιμα',subcategory:'Σούπερ μάρκετ'}),
+    classifiedEvent({kind:'expense',date:'2026-08-06',amount:15,accountId:'bank',note:'Street',category:'Τρόφιμα',subcategory:'Λαϊκή'}),
+    classifiedEvent({kind:'transfer',date:'2026-08-06',amount:30,fromAccountId:'bank',toAccountId:'bank2',note:'internal'})
   ];
   d.state.budgets=[
     budget('2026-08','subcategory',100,'Τρόφιμα','Σούπερ μάρκετ'),
@@ -46,8 +52,8 @@ describe('#588 enhanced budgets: subcategory, rollover, nonposting commitments',
  it('rolls forward only unused previous allowance, bounded to the intended scope, not income',()=>{
   const d=fixture();
   d.state.events=[
-    createEvent({kind:'expense',date:'2026-07-05',amount:70,accountId:'bank',category:'Τρόφιμα',subcategory:'Σούπερ μάρκετ',note:'July'}),
-    createEvent({kind:'expense',date:'2026-08-05',amount:60,accountId:'bank',category:'Τρόφιμα',subcategory:'Σούπερ μάρκετ',note:'August'})
+    classifiedEvent({kind:'expense',date:'2026-07-05',amount:70,accountId:'bank',category:'Τρόφιμα',subcategory:'Σούπερ μάρκετ',note:'July'}),
+    classifiedEvent({kind:'expense',date:'2026-08-05',amount:60,accountId:'bank',category:'Τρόφιμα',subcategory:'Σούπερ μάρκετ',note:'August'})
   ];
   d.state.budgets=[
     budget('2026-07','subcategory',100,'Τρόφιμα','Σούπερ μάρκετ'),
@@ -57,7 +63,7 @@ describe('#588 enhanced budgets: subcategory, rollover, nonposting commitments',
   const sub=budgetProgress(d,'2026-08','2026-08-17').find(row=>row.scope==='subcategory');
   expect(sub).toMatchObject({baseLimit:80,carried:30,limit:110,used:60,remaining:50,carryover:true});
   expect(budgetProgress(d,'2026-08').find(row=>row.scope==='category')).toMatchObject({limit:80,carried:0,used:60});
-  d.state.events.push(createEvent({kind:'expense',date:'2026-07-09',amount:100,accountId:'bank',category:'Τρόφιμα',subcategory:'Σούπερ μάρκετ',note:'More spent'}));
+  d.state.events.push(classifiedEvent({kind:'expense',date:'2026-07-09',amount:100,accountId:'bank',category:'Τρόφιμα',subcategory:'Σούπερ μάρκετ',note:'More spent'}));
   expect(budgetProgress(d,'2026-08').find(row=>row.scope==='subcategory')).toMatchObject({carried:0,limit:80});
  });
  it('resolves historical category aliases through durable identity IDs',()=>{
@@ -68,13 +74,13 @@ describe('#588 enhanced budgets: subcategory, rollover, nonposting commitments',
   };
   d.state.budgets=[{...budget('2026-08','subcategory',50,'Τρόφιμα','Σούπερ μάρκετ'),
     categoryIdentityId:'cat-food',subcategoryIdentityId:'sub-store'}];
-  d.state.events=[createEvent({kind:'expense',date:'2026-08-05',amount:12.5,
+  d.state.events=[classifiedEvent({kind:'expense',date:'2026-08-05',amount:12.5,
     accountId:'bank',category:'Φαγητό',subcategory:'Μάρκετ',note:'Before rename'})];
   expect(budgetProgress(d,'2026-08')[0]).toMatchObject({used:12.5});
  });
  it('projects known due scheduled expense once without booking it or counting future cash as actual',()=>{
   const d=fixture();
-  d.state.events=[createEvent({kind:'expense',date:'2026-08-05',amount:20,accountId:'bank',
+  d.state.events=[classifiedEvent({kind:'expense',date:'2026-08-05',amount:20,accountId:'bank',
     category:'Τρόφιμα',subcategory:'Σούπερ μάρκετ',note:'Paid'})];
   d.state.scheduled=[{id:'sch-1',dueDate:'2026-08-20',status:'pending',kind:'expense',amount:30,
     note:'Grocery bill',category:'Τρόφιμα',subcategory:'Σούπερ μάρκετ',accountId:'bank',
