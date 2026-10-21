@@ -30,3 +30,12 @@ Before acceptance:
 ## Exact next action
 
 Commit coherent feature code as a draft PR referencing issue #588. Then extend rendered QA and run narrow static/financial preflight. Do not wait for #590 CI to finish to develop independent #9 code. Counters remain **2/12 · 4/24** until fully accepted and integrated.
+
+## Reports/Attention sibling integration — bundled with F1
+
+- Reports overview now deduplicates hierarchical budget scopes for the aggregate (overall budget takes precedence; otherwise parent categories cover their children and independent subcategory budgets enter only once). Category and subcategory limits still retain their own health/attention rows.
+- Replaced heuristic extrapolation from elapsed days in this budget overview with the conservative `verified actual + known pending obligations` projection. The forecast explicitly excludes unknown spending and does not book future transactions.
+- Attention labels distinguish subcategory paths from parent categories; existing actual near/exceeded severity remains based on booked expenditure, not merely advisory projected overrun.
+- Shared Reports DOM, mobile summary, semantic progressbar, finance precision, accounts and optimistic save/history contracts stay intact. These source changes require rendered sibling QA and limit validation before acceptance.
+
+**Implementation progress:** code bundled into draft PR #596, accepted subitems **0/2**; roadmap **2/12 · 4/24**. Exact next action: finish integrated browser evidence and focused type/finance tests, batch any failures once, then final required review gates.
