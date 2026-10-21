@@ -115,7 +115,13 @@ async function runRenderedItem(item){
     let result=await runScript(item.path,false,evidenceDir);
     if(result.code!==0&&isBrowserBootstrapFailure(result.output)){primaryBootstrapRetries+=1;console.warn(`Rendered QA browser bootstrap failed for ${item.path}; cleaning the isolated profile and retrying once with primary Chromium.`);await sleep(750);cleanPaths(item.profiles);result=await runScript(item.path,false,evidenceDir)}
     if(result.code!==0&&isBrowserBootstrapFailure(result.output)&&!requirePrimary&&hasDistinctFallback){fallbackActivations+=1;console.warn(`FALLBACK ACTIVATED for ${item.path}: primary Chromium failed twice to expose CDP; retrying once with ${fallbackBrowser}.`);await sleep(750);cleanPaths(item.profiles);result=await runScript(item.path,true,evidenceDir)}
-    await sleep(350);cleanPaths(item.profiles);if(result.code!==0)throw new Error(`Rendered QA suite failed: ${item.path} (exit ${result.code})`);
+    await sleep(350);cleanPaths(item.profiles);
+    if(result.code!==0){
+      // A failed visual assertion must still retain generated evidence for
+      // direct human inspection; no threshold or assertion is softened.
+      if(item.persist!==false)persistedScreenshots+=persistSuiteEvidence({key:item.key,surface:item.surface,evidenceDirs:[evidenceDir,...(item.extraEvidenceDirs||[])],context:evidenceContext});
+      throw new Error(`Rendered QA suite failed: ${item.path} (exit ${result.code})`);
+    }
     if(item.persist!==false)persistedScreenshots+=persistSuiteEvidence({key:item.key,surface:item.surface,evidenceDirs:[evidenceDir,...(item.extraEvidenceDirs||[])],context:evidenceContext});
   }finally{releasePort(port)}
 }
