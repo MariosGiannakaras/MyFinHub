@@ -3,7 +3,6 @@ name: Final Visual QA
 # Reusable opt-in acceptance gate. No repository writes or self-triggering commits.
 on:
   workflow_call:
-  workflow_dispatch:
 
 permissions:
   contents: read
