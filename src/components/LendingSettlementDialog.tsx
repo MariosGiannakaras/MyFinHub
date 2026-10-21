@@ -45,7 +45,7 @@ export function LendingSettlementDialog({data,asOf,person,onClose,onSave}:{
     }catch(reason){setError(userErrorMessage(reason,'Δεν αποθηκεύτηκε το πρόγραμμα. Έλεγξε τα στοιχεία και δοκίμασε ξανά.'))}
     finally{setSaving(false)}
   };
-  return <DialogShell open={true} className="contextual-quick-modal" ariaLabelledBy="lending-plan-title"
+  return <DialogShell open={true} className="contextual-quick-modal lending-settlement-modal" ariaLabelledBy="lending-plan-title"
     ariaDescribedBy="lending-plan-description" busy={saving} motionMode="full"
     preferredFocus='[data-autofocus="true"]' onRequestClose={close}>
     <header><div><small>ΕΠΙΒΕΒΑΙΩΜΕΝΟ ΠΡΟΓΡΑΜΜΑ</small><h2 id="lending-plan-title">Πρόγραμμα επιστροφής · {person}</h2>
@@ -53,22 +53,22 @@ export function LendingSettlementDialog({data,asOf,person,onClose,onSave}:{
     </div></header>
     <div className="entry-body" inert={saving}>
       <div className="form-grid">
-        <label className="quick-field"><span>Ποσό προς προγραμματισμό (€)</span><MoneyInput data-autofocus="true" value={total} onValueChange={value=>{setTotal(value);resetConfirmation()}}/></label>
-        <label className="quick-field"><span>Πρώτη ημερομηνία επιστροφής</span><AppDateInput min={asOf} value={firstDueDate} onChange={event=>{setFirstDueDate(event.target.value);resetConfirmation()}}/></label>
-        <label className="quick-field"><span>Αριθμός δόσεων (1–60)</span><AppTextInput type="number" min={1} max={60} step={1} value={installments} onChange={event=>{setInstallments(event.target.value);resetConfirmation()}}/></label>
-        <label className="quick-field"><span>Επανάληψη</span><AppSelectInput value={everyMonths} onChange={event=>{setEveryMonths(event.target.value);resetConfirmation()}}>
+        <label><span>Ποσό προς προγραμματισμό (€)</span><MoneyInput data-autofocus="true" value={total} onValueChange={value=>{setTotal(value);resetConfirmation()}}/></label>
+        <label><span>Πρώτη ημερομηνία επιστροφής</span><AppDateInput min={asOf} value={firstDueDate} onChange={event=>{setFirstDueDate(event.target.value);resetConfirmation()}}/></label>
+        <label><span>Αριθμός δόσεων (1–60)</span><AppTextInput type="number" min={1} max={60} step={1} value={installments} onChange={event=>{setInstallments(event.target.value);resetConfirmation()}}/></label>
+        <label><span>Επανάληψη</span><AppSelectInput value={everyMonths} onChange={event=>{setEveryMonths(event.target.value);resetConfirmation()}}>
           <option value="1">Κάθε μήνα</option><option value="2">Κάθε 2 μήνες</option><option value="3">Κάθε 3 μήνες</option>
           <option value="6">Κάθε 6 μήνες</option><option value="12">Κάθε χρόνο</option>
         </AppSelectInput></label>
       </div>
       <div className="logic-note" data-lending-plan-preview role="status" aria-live="polite">
         {projection.data?<><b>Προτεινόμενα {money.format(projection.data.total)} από απαίτηση {money.format(projection.data.outstanding)}</b>
-          <ul>{projection.data.schedule.slice(0,6).map((item,index)=><li key={index}>{item.dueDate} · {money.format(item.amount)}</li>)}</ul>
+          <ul className="lending-plan-schedule">{projection.data.schedule.slice(0,6).map((item,index)=><li key={index}><span>{item.dueDate}</span><strong>{money.format(item.amount)}</strong></li>)}</ul>
           {projection.data.schedule.length>6?<small>Και {projection.data.schedule.length-6} ακόμη προτεινόμενες δόσεις.</small>:null}
           <p>Καμία προγραμματισμένη δόση δεν καταχωρίζεται αυτόματα ως έσοδο ή κίνηση μετρητών.</p></>
           :<span>{projection.error}</span>}
       </div>
-      <label className="quick-field wide"><input type="checkbox" checked={confirmed}
+      <label className="lending-settlement-confirmation"><input type="checkbox" checked={confirmed}
         onChange={event=>{setConfirmed(event.target.checked);setError('')}}/>
         <span>Έλεγξα και επιβεβαιώνω το συγκεκριμένο πρόγραμμα. Δεν καταχωρίζω ακόμη πραγματική επιστροφή.</span>
       </label>

@@ -9,6 +9,8 @@ describe('multi-source purchase browser contract (#588 B1)',()=>{
     expect(browser).toContain('card history reports only the actual 60 EUR financed share');
     expect(browser).toContain('ledger-multi-funded-credit-desktop.png');
     expect(browser).toContain('one parent 100 EUR expense');
+    expect(browser).toContain(".transactions-approved-table tbody tr[data-transaction-kind=expense][data-transaction-source=event]");
+    expect(browser).toContain('visible mixed purchase rows');
     expect(qa).toContain('const prepared=prepareCreditStatementEvent(current,ruledEvent)');
   });
 });

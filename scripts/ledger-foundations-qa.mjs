@@ -130,7 +130,9 @@ try{
   assert(share.sum.includes('100,00')&&share.credit.includes('QA Visa'),'funding allocations equal the full purchase and card selection is real');
   await clickText('.quick-modal footer button','Καταχώριση');
   await waitFor("function(){return !document.querySelector('.quick-modal')}",'mixed purchase saved as one event');
-  const purchase=await c.call("function(){const rows=[...document.querySelectorAll('[data-transaction-kind=expense][data-transaction-source=event]')].filter(node=>(node.textContent||'').includes('QA mixed purchase'));return {count:rows.length,text:rows[0]?.textContent||''}}");
+  await waitFor("function(){return [...document.querySelectorAll('.transactions-approved-table tbody tr[data-transaction-kind=expense][data-transaction-source=event]')].some(row=>(row.textContent||'').includes('QA mixed purchase'))}",'mixed purchase visible in real transaction table');
+  const purchase=await c.call("function(){const rows=[...document.querySelectorAll('.transactions-approved-table tbody tr[data-transaction-kind=expense][data-transaction-source=event]')].filter(node=>(node.textContent||'').includes('QA mixed purchase'));return {count:rows.length,text:rows[0]?.textContent||''}}");
+  console.log('Ledger QA: visible mixed purchase rows',JSON.stringify(purchase));
   assert(purchase.count===1&&purchase.text.includes('100,00'),'only one parent 100 EUR expense is listed');
   const mixedScreenshot=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
   writeFileSync(`${evidenceDir}/ledger-multi-funded-purchase-desktop.png`,Buffer.from(mixedScreenshot.data,'base64'));
