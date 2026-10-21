@@ -159,3 +159,6 @@ No Bank Excel/CSV/OFX import, third-party bank connector, automatic Euribor, car
 
 ### B3 browser interaction and rendered evidence checklist
 - Extended existing `scripts/lending-remediation-qa.mjs` (not a parallel test harness): owner-confirmed plan preview, blocked unconfirmed save, real saved plan without receivable change, exact one-step Undo/Redo, mobile per-person plan dialog/overflow, and noncash writeoff confirmation/persisted dated history. Screenshot filenames are scoped to plan/writeoff desktop/mobile surfaces. These checks must actually run and resulting screenshots be directly inspected; no rendered PASS claimed on the current draft head.
+
+### B3 draft source-guard correction
+- `8ec780eb` draft CI: **1,385/1,386 tests passed**, with one newly authored source assertion incorrectly searching for `onSaveLendingPlan={` inside LendingPage rather than where the callback is wired in App; production save path compiled and its actual tests passed. Corrected the guard to test the page's typed callback and the real App prop explicitly, plus the rendered-script evidence paths, without removing any semantic checks. No rendered QA executed yet.

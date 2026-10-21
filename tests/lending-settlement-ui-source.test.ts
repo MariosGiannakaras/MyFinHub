@@ -6,7 +6,8 @@ describe('Lending settlement plans honor save receipt and privacy (#588 B3)',()=
   const app=read('src/App.tsx'),qa=read('src/qa.tsx'),page=read('src/pages/LendingPage.tsx');
   expect(app).toContain('finance.updateDurably(current=>withConfirmedLendingPlan(current,draft,true))');
   expect(qa).toContain('update(current=>withConfirmedLendingPlan(current,draft,true))');
-  expect(page).toContain('onSaveLendingPlan={');
+  expect(page).toContain('onSaveLendingPlan?:(draft:LendingSettlementDraft)=>Promise<void>');
+  expect(app).toContain('onSaveLendingPlan={saveLendingPlan}');
   expect(page).toContain('data-confirmed-lending-plan');
   expect(page).toContain('logic-note private-text');
  });
@@ -20,6 +21,12 @@ describe('Lending settlement plans honor save receipt and privacy (#588 B3)',()=
   expect(modal).toContain('setConfirmed(false)');
   expect(modal).toContain('role="status"');
   expect(modal).toContain('Δεν αποθηκεύτηκε το πρόγραμμα');
+  const browser=read('scripts/lending-remediation-qa.mjs');
+  expect(browser).toContain('lending-settlement-owner-confirmation-desktop');
+  expect(browser).toContain('lending-settlement-preview-mobile');
+  expect(browser).toContain('lending-writeoff-requires-owner-desktop');
+  expect(browser).toContain('one Undo removes planned state');
+  expect(browser).toContain('saving a plan does not book phantom cash');
  });
 });
 
