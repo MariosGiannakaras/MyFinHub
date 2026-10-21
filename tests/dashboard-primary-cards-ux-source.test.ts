@@ -35,6 +35,7 @@ describe('Desktop primary account card reconciliation (#597)',()=>{
     for(const shell of [app,qa]){
       expect(shell).toContain("setDashboardAccountId(accountId??null)");
       expect(shell).toContain("dashboardAccountFocusKey={dashboardAccountFocusKey}");
+      expect(shell).toContain("if(page!=='transactions')setDashboardAccountId(null)");
     }
     expect(ledger).toContain("setAccount(dashboardAccountId)");
     expect(ledger).toContain("dashboardAccountFocusKey");
