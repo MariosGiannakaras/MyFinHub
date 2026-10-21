@@ -15,33 +15,55 @@ const agents=read('AGENTS.md');
 const projectRules=read('PROJECT_RULES.md');
 
 describe('CI workflow optimization contracts',()=>{
-  it('keeps core CI and CodeQL cancellable while deferring rendered QA until review-ready',()=>{
+  it('has one cancellable PR/develop CI entrypoint with a fail-closed aggregator',()=>{
     expect(ci).toContain('cancel-in-progress: true');
-    expect(codeql).toContain('cancel-in-progress: true');
-    expect(ci).toContain('types: [opened, synchronize, reopened, ready_for_review]');
+    expect(ci).toContain('types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]');
     expect(ci).toContain("if: github.event_name != 'pull_request' || github.event.pull_request.draft == false");
-    expect(codeql).toContain('pull_request:');
+    expect(ci).toContain('  gate:');
+    expect(ci).toContain('if: always()');
+    expect(ci).toContain('require_success validate "$VALIDATE"');
+    expect(ci).toContain('require_success codeql "$CODEQL"');
+    expect(ci).toContain('require_success windows "$WINDOWS"');
+    expect(ci).toContain('require_success webkit "$WEBKIT"');
+    expect(ci).toContain('require_success performance "$PERFORMANCE"');
+    expect(ci).toContain('require_success windows-first-run "$FIRST_RUN"');
+    expect(ci).toContain('require_success windows-clean-launch "$CLEAN_LAUNCH"');
+    expect(ci).toContain('require_success final-visual "$FINAL_VISUAL"');
+    expect(ci).toContain('if [ "$failures" -gt 0 ]; then exit 1; fi');
   });
 
-  it('cancels superseded performance runs and scopes expensive browser gates to relevant paths',()=>{
-    expect(performance).toContain('branches: [main, develop]');
-    expect(performance).toContain('group: performance-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}');
-    expect(performance).toContain('cancel-in-progress: true');
-    expect(performance).toContain("if: github.event_name != 'pull_request' || github.event.pull_request.draft == false");
-    expect(performance).toContain("- 'scripts/performance-audit.mjs'");
-    expect(performance).not.toContain('paths-ignore:');
-    expect(cross).toContain('types: [opened, synchronize, reopened, ready_for_review]');
-    expect(cross).toContain("if: github.event_name != 'pull_request' || github.event.pull_request.draft == false");
-    expect(cross).toContain("- 'scripts/webkit-smoke.mjs'");
-    expect(cross).not.toContain('paths-ignore:');
-  });
-
-  it('keeps Windows lifecycle gates review-ready, owns dependency audit once, and avoids duplicate root builds',()=>{
-    for(const workflow of [windows,firstRun,cleanLaunch]){
-      expect(workflow).toContain('types: [opened, synchronize, reopened, ready_for_review]');
-      expect(workflow).toContain("if: github.event_name != 'pull_request' || github.event.pull_request.draft == false");
-      expect(workflow).not.toMatch(/^\s*npm run check\s*$/m);
+  it('uses original pinned CodeQL and browser jobs as reusable, without duplicate PR/push triggers',()=>{
+    expect(ci).toContain('uses: ./.github/workflows/codeql.yml');
+    expect(ci).toContain('uses: ./.github/workflows/cross-engine-smoke.yml');
+    expect(ci).toContain('uses: ./.github/workflows/performance-smoke.yml');
+    expect(codeql).toContain('workflow_call:');
+    expect(codeql).toContain("cron: '17 4 * * 1'");
+    expect(codeql).toContain('security-events: write');
+    expect(codeql).not.toContain('  pull_request:');
+    for(const reusable of [cross,performance]){
+      expect(reusable).toContain('workflow_call:');
+      expect(reusable).not.toContain('  pull_request:');
+      expect(reusable).not.toContain('    branches: [main, develop]');
     }
+    expect(cross).toContain('playwright@1.62.1');
+    expect(cross).toContain('scripts/webkit-smoke.mjs');
+    expect(performance).toContain('lighthouse@13.4.1');
+    expect(performance).toContain('node scripts/performance-audit.mjs');
+    expect(performance).toContain('node scripts/loading-shift-audit.mjs');
+  });
+
+  it('preserves Windows release tag safety and every original lifecycle test in reusable jobs',()=>{
+    for(const reusable of [windows,firstRun,cleanLaunch]){
+      expect(reusable).toContain('workflow_call:');
+      expect(reusable).not.toContain('  pull_request:');
+      expect(reusable).not.toMatch(/^\s*npm run check\s*$/m);
+    }
+    expect(ci).toContain('uses: ./.github/workflows/desktop-windows.yml');
+    expect(ci).toContain('uses: ./.github/workflows/desktop-first-run.yml');
+    expect(ci).toContain('uses: ./.github/workflows/desktop-clean-launch.yml');
+    expect(windows).toContain("tags: ['myfinhub-v*']");
+    expect(windows).toContain("startsWith(github.ref, 'refs/tags/myfinhub-v')");
+    expect(windows).toContain('git merge-base --is-ancestor $env:GITHUB_SHA origin/main');
     expect(windows).toMatch(/^\s*npm run desktop:check\s*$/m);
     expect(firstRun).toMatch(/^\s*npm run desktop:check:source\s*$/m);
     expect(cleanLaunch).toContain('run: npm run desktop:check:source');
