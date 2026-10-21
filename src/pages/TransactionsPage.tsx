@@ -72,6 +72,22 @@ export function TransactionsPage({
   const accounts=allAccounts(data).filter(item=>item.kind!=='credit');
 
   useEffect(()=>{const next=monthRange(month);setDateStart(next.start);setDateEnd(next.end);setRenderLimit(LEDGER_INITIAL_ROWS);setSelectedId(null)},[month]);
+  // One-shot account context from a Dashboard card; the existing ledger filter remains editable.
+  useEffect(()=>{
+    const hint=new URLSearchParams(location.search).get('dashboardAccount');
+    if(!hint)return;
+    const frame=requestAnimationFrame(()=>{
+      const url=new URL(location.href);
+      if(url.searchParams.get('dashboardAccount')!==hint)return;
+      url.searchParams.delete('dashboardAccount');
+      history.replaceState(history.state,'',url.toString());
+      if(!accounts.some(item=>item.id===hint))return;
+      setAccount(hint);setQuery('');setCategory('all');setType('all');
+      setDateStart(range.start);setDateEnd(range.end);
+      setRenderLimit(LEDGER_INITIAL_ROWS);setSelectedId(null);
+    });
+    return()=>cancelAnimationFrame(frame);
+  },[data,month]);
   useEffect(()=>{
     const params=new URLSearchParams(location.search);const focusId=params.get('attentionTx');const focusSource=params.get('attentionSource');
     if(!focusId||(focusSource!=='legacy'&&focusSource!=='event'))return;
