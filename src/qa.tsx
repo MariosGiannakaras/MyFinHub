@@ -423,6 +423,8 @@ function QaWorkspace(){
   const [quickOpen,setQuickOpen]=useState(false);
   const [commandOpen,setCommandOpen]=useState(false);
   const [commandFocusKey,setCommandFocusKey]=useState(0);
+  const [dashboardAccountId,setDashboardAccountId]=useState<string|null>(null);
+  const [dashboardAccountFocusKey,setDashboardAccountFocusKey]=useState(0);
   const [commandCardId,setCommandCardId]=useState<string|null>(null);
   const [commandCardKey,setCommandCardKey]=useState(0);
   const [commandDebitCardId,setCommandDebitCardId]=useState<string|null>(null);
@@ -586,8 +588,8 @@ function QaWorkspace(){
     if(action.type==='scheduled_complete'){openSpecial({mode:'scheduled',scheduledId:action.scheduledId})}
   };
   const content=page==='dashboard'
-    ?<DashboardPage data={data} month={month} asOf={today} motionMode="full" privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onQuickAdd={(prefill?:QuickPrefill)=>openGeneric('expense',prefill||null)} onAccountQuickAdd={(accountId,kind)=>kind==='savings'?openSpecial({mode:'savings',toAccountId:accountId,savingSource:'manual_transfer'}):openGeneric('expense',{note:'',amount:0,accountId})} onTransactions={(accountId)=>{if(accountId){const url=new URL(location.href);url.searchParams.set('dashboardAccount',accountId);history.replaceState(history.state,'',url.toString())}setPage('transactions')}} onPlanning={()=>setPage('planning')} onAttention={()=>setPage('attention')} onReports={()=>setPage('reports')}/>
-    :page==='transactions'?<TransactionsPage data={data} month={month} commandFocusKey={commandFocusKey} onEditEvent={editEvent} onDeleteEvent={deleteEventDurably} onEditLegacy={editLegacy} onDeleteLegacy={deleteLegacy}/>
+    ?<DashboardPage data={data} month={month} asOf={today} motionMode="full" privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onQuickAdd={(prefill?:QuickPrefill)=>openGeneric('expense',prefill||null)} onAccountQuickAdd={(accountId,kind)=>kind==='savings'?openSpecial({mode:'savings',toAccountId:accountId,savingSource:'manual_transfer'}):openGeneric('expense',{note:'',amount:0,accountId})} onTransactions={(accountId)=>{setDashboardAccountId(accountId??null);setDashboardAccountFocusKey(key=>key+1);setPage('transactions')}} onPlanning={()=>setPage('planning')} onAttention={()=>setPage('attention')} onReports={()=>setPage('reports')}/>
+    :page==='transactions'?<TransactionsPage data={data} month={month} dashboardAccountId={dashboardAccountId} dashboardAccountFocusKey={dashboardAccountFocusKey} commandFocusKey={commandFocusKey} onEditEvent={editEvent} onDeleteEvent={deleteEventDurably} onEditLegacy={editLegacy} onDeleteLegacy={deleteLegacy}/>
     :page==='savings'?<SavingsPage data={data} month={month} asOf={today} onCreate={addEventDurably} onQuickAdd={openSpecial} onSavingsTargetChange={updateSavingsTarget} onUpsertGoal={upsertSavingsGoal} onDeleteGoal={deleteSavingsGoal}/>
     :page==='cards'?<CardsPage data={data} commandCardId={commandDebitCardId} commandCardKey={commandDebitCardKey} onUpsertBank={upsertBank} onUpsertCard={upsertCard} onUpsertCardDurably={upsertCardDurably} onStageNewCard={stageNewCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard}/>
     :page==='credit'?<CreditCardPage data={data} asOf={today} commandCardId={commandCardId} commandCardKey={commandCardKey} onCreateEvent={addEvent} onEditEvent={editEvent} onDeleteEvent={deleteEvent} onUpsertCard={upsertCard} onUpsertCardDurably={upsertCardDurably} onStageNewCard={stageNewCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard} onPayCard={cardId=>openSpecial({mode:'credit',action:'payment',cardId})}/>
