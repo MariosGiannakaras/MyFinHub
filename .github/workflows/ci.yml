@@ -64,6 +64,8 @@ jobs:
           export MYFINHUB_QA_PRIMARY_BROWSER="$PRIMARY_BROWSER"
           export MYFINHUB_QA_FALLBACK_BROWSER="$FALLBACK_BROWSER"
           export MYFINHUB_QA_REQUIRE_PRIMARY=1
+          # Bound simultaneous Chromium CPU load during strict wall-clock QA assertions.
+          export MYFINHUB_QA_PARALLELISM=2
           mkdir -p /tmp/myfinhub-qa-browser-bin
           cat > /tmp/myfinhub-qa-browser-bin/google-chrome <<'BROWSER_WRAPPER'
           #!/usr/bin/env bash
