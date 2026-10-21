@@ -3,7 +3,7 @@
  * Harmonic-mean monotone tangents preserve flat intervals and never introduce
  * extrema outside the two recorded values of a segment.
  */
-export type ChartCoordinate=readonly [number,number];
+type ChartCoordinate=readonly [number,number];
 const CURVE_STRENGTH=0.8;
 
 export function monotoneChartPath(points:ReadonlyArray<ChartCoordinate>,startIndex=0,endIndex=points.length-1){
