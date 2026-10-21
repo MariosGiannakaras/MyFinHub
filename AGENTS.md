@@ -87,7 +87,7 @@
 - Repository-owned progress tracking must use the same two counters. The denominator must come from an explicit checklist/phase plan in the repository, not from an ad-hoc estimate.
 - Before handing work to another chat/agent, update the repository progress checkpoint with the exact counters, branch/ref, completed work, validation, blockers, and next safe action. A future chat must be able to continue from repository state without prior conversation memory.
 
-- Persistent release screenshots belong only in `visual-qa/final/` and are produced by the dedicated Final Visual QA gate after normal validation is green. Routine rendered QA evidence stays ephemeral under `.qa-artifacts/` or GitHub Actions artifacts; do not commit concept, intermediate, superseded, or chat-specific screenshots.
+- Final release screenshot capture uses `visual-qa/final/` inside the runner and uploads exactly 216 PNGs as immutable GitHub Actions artifacts only after required normal CI jobs are green. The Final Visual QA job is opt-in (`final-visual-qa` PR label or manual unified-CI dispatch), never writes or pushes a screenshot commit, and must not create an extra CI loop. Routine rendered evidence remains under `.qa-artifacts/` / GitHub Actions artifacts. Do not commit intermediate, superseded or chat-specific screenshots; accepted historical release screenshots already committed remain read-only provenance.
 
 ## Delivery workflow
 
