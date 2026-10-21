@@ -24,3 +24,7 @@
 Branch initial implementation owns only new files `src/lib/goalProjections.ts`, `tests/goal-projections.test.ts` and this plan. No shared finance types/validation, UI files, migration or production data touched. Do not claim PASS for GitHub runs not actually completed.
 
 **Next safe action:** inspect the draft CI type/unit/format result. If green, implement UI/QA using current shared `SavingsPage` and its goal semantics. Do not merge while Batch B or this PR needs validation. If PR #590 is still running, its exact-head rendered result determines its next action; do not edit PR #590 while it runs.
+
+### E2 integrated goal projection in existing Savings view (2026-10-21)
+- SavingsPage goal rows gain an opt-in expanded read-only projection with current selected-period as-of date, exact-cent required amount, calendar-month suggestion, user-entered hypothetical monthly amount, baseline vs recommended vs custom goal scenarios and 90-day known-obligation liquidity warning. Separate shared-control panel `SavingsGoalProjectionPanel` and layout-only responsive CSS; no mutation callback or duplicated money engine. Existing creation/edit/delete dialogs remain authoritative.
+- Required next: rendered QA desktop and mobile for real shared/estimated labels, what-if input, no clipping and historical period change; source test, latest `validate`, portfolio semantics and direct screenshot inspection. Do not claim #13 accepted until end-to-end proof. No #590 / #591 / #593 overlapping files modified.
