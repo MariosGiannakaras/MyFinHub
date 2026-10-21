@@ -26,7 +26,7 @@ describe('Desktop primary account card reconciliation (#597)',()=>{
     expect(card).toContain("privacyVisible?\`Τελικό υπόλοιπο");
     expect(card).toContain("historyFlat?'Σταθερό υπόλοιπο. ':'");
     expect(card).toContain('title={accountLabel}');
-    expect(card).toContain('account-iban');
+    expect(card).toContain('AccountIban accountId={account.id}');
   });
 
   it('uses existing transaction account filter and permits clearing it',()=>{
