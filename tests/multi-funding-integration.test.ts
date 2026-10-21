@@ -37,6 +37,7 @@ describe('single canonical multi-funded expense, credit share and as-of statemen
   expect(accountBalances(d,'2026-08-17')).toMatchObject({bank:979.99,cash:80.01,'credit-card':-60});
   expect(creditDebtForCard(d,'credit1','2026-08-16')).toBe(0);
   expect(creditDebtForCard(d,'credit1','2026-08-17')).toBe(60);
+  expect(creditDebtForCard({...d,state:{...d.state,events:[{...event,creditDelta:undefined}]}},'credit1','2026-08-17')).toBe(60);
   expect(netWorth(d,'2026-08-17')).toBeCloseTo(priorWorth-100,2);
   const statements=creditStatementViews(d,'credit1','2026-08-17');
   expect(statements).toHaveLength(1);
@@ -62,6 +63,7 @@ describe('single canonical multi-funded expense, credit share and as-of statemen
     sources:[{kind:'account',accountId:'bank',amount:40},{kind:'credit',cardId:'credit1',amount:60}]});
   const reject=(event:typeof good)=>expect(()=>validateFinanceStateSemantics({...d.state,events:[event]})).toThrow();
   reject({...good,creditDelta:-100});
+  reject({...good,creditDelta:undefined}); // A missing delta must never conceal a funded card liability.
   reject({...good,amount:120});
   reject({...good,legs:[{accountId:'bank',amount:-100},{accountId:'credit-card',amount:-60}]});
   reject({...good,funding:[...good.funding!,good.funding![0]!]});

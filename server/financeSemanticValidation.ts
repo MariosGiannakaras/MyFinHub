@@ -144,6 +144,8 @@ function validateEvent(event:FinanceEvent){
 
   validateOptionalDelta(event.savingAmount,event.kind==='saving_cash_offset'?amount:0,event,'savingAmount');
   validateOptionalDelta(event.receivableDelta,event.kind==='lending'?amount:event.kind==='repayment'?-amount:0,event,'receivableDelta');
+  if(event.funding&&fundedCredit>0&&event.creditDelta===undefined)
+    invalid(`Missing funded credit delta for event ${event.id}.`);
   validateOptionalDelta(event.creditDelta,event.kind==='card_purchase'?-amount:event.kind==='card_payment'?amount:-fundedCredit,event,'creditDelta');
 }
 

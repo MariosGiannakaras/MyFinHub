@@ -113,3 +113,6 @@ No Bank Excel/CSV/OFX import, third-party bank connector, automatic Euribor, car
 
 ### Draft source-contract regression reconciliation (2026-10-21)
 - Exact draft CI `706e48b2` passed finance source/data checks but 3 historical source assertions failed: generic QuickAdd now has one additional shared ghost button and one additional raw domain remove button; card purchase history must show `creditPurchaseAmount(event)` while ordinary card payments remain `event.amount`. Reconciled source guards to the expanded controls and credit liability semantics while retaining existing accessibility/shared-primitive checks and the historical non-animated row restriction. Do not mark review gates PASS until the new exact head completes.
+
+### Credit-liability semantic hardening — draft
+- Current branch head moved concurrently with a source-test assertion fix; that existing change was preserved. New feature-level integrity test rejects a mixed-funded card expense with missing credit delta, since legacy `validateOptionalDelta` allows optional fields for older events. Direct card debt is computed from the explicit financed funding portion, not optional client-supplied `creditDelta`, while backend still requires validated matching delta on new funded credit purchases. Any forged omission must fail server semantic validation without changing reporting/archival liability.

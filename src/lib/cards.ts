@@ -115,7 +115,8 @@ export function creditDebtForCard(data:FinanceData,cardId:string,asOf:string){
   return Math.max(0,creditEventsForCard(data,cardId).reduce((sum,event)=>{
     if(event.date>asOf)return sum;
     if(event.kind==='card_purchase')return sum+Number(event.amount||0);
-    if(event.kind==='expense'&&event.funding)return sum+Math.max(0,-Number(event.creditDelta||0));
+    if(event.kind==='expense'&&event.funding)
+      return sum+event.funding.filter(part=>part.kind==='credit').reduce((credit,part)=>credit+Number(part.amount||0),0);
     if(event.kind==='card_payment')return sum-Number(event.amount||0);
     return sum;
   },0));
