@@ -17,7 +17,7 @@ Owner branch: `chore/598-unified-ci-workflow`. Independent of Dashboard PR #595 
 - Reuse workflow files via `on: workflow_call` and `jobs.<name>.uses`; do not copy 300-line Windows commands or Lighthouse thresholds.
 - Do not add secrets or expose financial/card data. Preserve published installer tag `myfinhub-v*` with deliberate main ancestry checks, never publish on PR.
 - CI must not automatically mutate source control or create new commits via QA.
-- Preserve scheduled CodeQL and explicit manual emergency workflows; these are deliberate non-PR entrypoints, not duplicate normal PR gates.
+- Preserve scheduled CodeQL and explicit manual emergency workflows. **Enforced security-rule compatibility:** retain a direct PR CodeQL scan in addition to the unified nested CodeQL job until GitHub's protected code-scanning ruleset recognizes the reusable scan. Do not disable or bypass the security rule.
 - Draft PRs retain quick source/security checks; expensive browser, Windows and performance jobs defer until Ready. Strict final aggregate must reject failures/cancellations for required non-skipped jobs.
 - This is **not** approval to merge Dashboard PR #595, promote main, deploy to production, or touch Android.
 
