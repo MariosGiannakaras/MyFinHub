@@ -6,6 +6,8 @@ on:
   pull_request:
     branches: [main, develop]
     types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
+    paths-ignore:
+      - 'visual-qa/**'
   workflow_dispatch:
     inputs:
       final_visual:
