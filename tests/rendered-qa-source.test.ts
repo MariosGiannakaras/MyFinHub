@@ -88,7 +88,7 @@ describe('rendered browser QA reliability contract', () => {
   });
   it('requires exactly 216 read-only final screenshots as opt-in CI artifacts, not a git commit',()=>{
     expect(finalVisualWorkflow).toContain('workflow_call:');
-    expect(finalVisualWorkflow).toContain('workflow_dispatch:');
+    expect(finalVisualWorkflow).not.toContain('workflow_dispatch:');
     expect(finalVisualWorkflow).toContain('permissions:\n  contents: read');
     expect(finalVisualWorkflow).toContain('MYFINHUB_FINAL_SCREENSHOTS=1');
     expect(finalVisualWorkflow).toContain('npm run qa:final-screenshots');
