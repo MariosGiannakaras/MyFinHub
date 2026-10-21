@@ -233,7 +233,8 @@ function validateRuleAccounts(data:FinanceData,ids:Set<string>){
 }
 
 function validateWriteoffOutstanding(data:FinanceData){
-  for(const item of (data.state.events??[]).filter(event=>event.kind==='lending_writeoff')){
+  const writeoffs=(data.state.events??[]).filter(event=>event.kind==='lending_writeoff');
+  for(const item of writeoffs){
     const person=item.person?.trim();
     if(!person)invalid(`Writeoff requires person for event ${item.id}.`);
     const opening=(data.seed.lending??[]).filter(row=>row.person?.trim()===person)
@@ -242,6 +243,20 @@ function validateWriteoffOutstanding(data:FinanceData){
       .reduce((sum,event)=>sum+cents(event.receivableDelta??0,`receivable delta ${event.id}`),0);
     if(!Number.isSafeInteger(opening+delta)||opening+delta<0)
       invalid(`Writeoff exceeds as-of outstanding for ${item.id}.`);
+  }
+  // A previously confirmed writeoff must not allow a later dated repayment
+  // to silently push this person's receivable negative.
+  const people=new Set(writeoffs.map(event=>event.person?.trim()).filter((name):name is string=>Boolean(name)));
+  for(const person of people){
+    let running=(data.seed.lending??[]).filter(row=>row.person?.trim()===person)
+      .reduce((sum,row)=>sum+cents(row.outstanding,`legacy opening ${person}`),0);
+    const events=(data.state.events??[]).filter(event=>event.person?.trim()===person)
+      .sort((a,b)=>a.date.localeCompare(b.date)||a.id.localeCompare(b.id));
+    for(const event of events){
+      running+=cents(event.receivableDelta??0,`receivable delta ${event.id}`);
+      if(!Number.isSafeInteger(running)||running<0)
+        invalid(`Writeoff/repayment exceeds outstanding for ${event.id}.`);
+    }
   }
 }
 

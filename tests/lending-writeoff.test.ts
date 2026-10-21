@@ -28,6 +28,12 @@ describe('noncash receivable writeoffs preserve accounting (#588 B3)',()=>{
   const d=fixture(),item=createEvent({kind:'lending_writeoff',date:'2026-08-12',person:'Alex',amount:95,note:'Partial'});
   d.state.events=[item,createEvent({kind:'repayment',date:'2026-08-12',person:'Alex',amount:10,note:'repayment',accountId:'cash'})];
   expect(()=>validateCompleteFinanceSemantics(d)).toThrow(/exceeds as-of/);
+  const later=fixture();
+  later.state.events=[
+    createEvent({kind:'lending_writeoff',date:'2026-08-12',person:'Alex',amount:80,note:'Writeoff'}),
+    createEvent({kind:'repayment',date:'2026-08-19',person:'Alex',amount:30,note:'Future repayment',accountId:'cash'})
+  ];
+  expect(()=>validateCompleteFinanceSemantics(later)).toThrow(/exceeds outstanding/);
   expect(()=>validateFinanceStateSemantics({...d.state,events:[{...item,legs:[{accountId:'cash',amount:-95}]}]})).toThrow();
   expect(()=>validateFinanceStateSemantics({...d.state,events:[{...item,receivableDelta:undefined}]})).toThrow();
   expect(()=>createEvent({kind:'lending_writeoff',date:'2026-08-12',person:'',amount:2,note:'Bad'})).toThrow();
