@@ -13,6 +13,7 @@ import { effectiveLegacyTransactions, flowImpactEvent, flowImpactLegacy, monthRa
 import { financeAccountChoices } from '../lib/accountSelection';
 import { isSavingsAccount } from '../lib/accountSemantics';
 import { dashboardAccountHistory, dashboardBalanceChange, dashboardHistoryStart, dashboardPreviousMonthValues, dashboardSavingsGoal, type DashboardAccountPoint } from '../lib/dashboardAccounts';
+import { monotoneChartPath } from '../lib/monotoneChartPath';
 import { addCalendarDays } from '../lib/dateOnly';
 import { cashFlowForecast } from '../lib/forecast';
 import { money } from '../lib/format';
@@ -57,27 +58,32 @@ function accountChartTarget(series:DashboardAccountPoint[],comparison:DashboardA
 }
 
 function AccountBalanceChart({series,comparison=[],tone,currentMonth,target,label}:{series:DashboardAccountPoint[];comparison?:DashboardAccountPoint[];tone:'blue'|'green'|'purple';currentMonth:string;target?:number;label:string}){
-  const width=360,height=76,padX=3,padY=5;const monthStart=`${currentMonth}-01`;
-  const safeSeries=series.length?series:[{date:monthStart,value:0},{date:monthStart,value:0}];
+  const width=360,height=76,padX=3.5,padY=3.5;const monthStart=`${currentMonth}-01`;
+  const fallback={date:monthStart,value:0};
+  const safeSeries=series.length>1?series:series.length?[series[0]!,series[0]!]:[fallback,fallback];
   const visibleTarget=accountChartTarget(safeSeries,comparison,target);
   const values=[...safeSeries,...comparison].map(point=>point.value);if(visibleTarget!==undefined)values.push(visibleTarget);
-  const rawMin=Math.min(...values),rawMax=Math.max(...values);const rawSpan=Math.max(1,rawMax-rawMin);const min=rawMin-rawSpan*.12,max=rawMax+rawSpan*.12;
+  const rawMin=Math.min(...values),rawMax=Math.max(...values);const rawSpan=Math.max(1,rawMax-rawMin);const min=rawMin-rawSpan*.07,max=rawMax+rawSpan*.07;
   const start=Date.parse(`${safeSeries[0]!.date}T12:00:00Z`),end=Date.parse(`${safeSeries.at(-1)!.date}T12:00:00Z`);const usableWidth=width-padX*2;
   const xForDate=(date:string)=>padX+((Date.parse(`${date}T12:00:00Z`)-start)/Math.max(1,end-start))*usableWidth;
   const yForValue=(value:number)=>padY+(1-(value-min)/Math.max(1,max-min))*(height-padY*2);
-  const point=(entry:DashboardAccountPoint)=>[xForDate(entry.date),yForValue(entry.value)] as const;
-  const points=safeSeries.map(point);const path=(rows:ReadonlyArray<readonly[number,number]>)=>rows.map((item,index)=>`${index?'L':'M'} ${item[0].toFixed(2)} ${item[1].toFixed(2)}`).join(' ');
-  const previousPoints=safeSeries.filter(entry=>entry.date<monthStart).map(point);const currentPoints=safeSeries.filter(entry=>entry.date>=monthStart).map(point);
+  // A one-day/empty history must still use the chart width rather than collapsing at the left edge.
+  const points=safeSeries.map((entry,index)=>[end>start?xForDate(entry.date):padX+index/Math.max(1,safeSeries.length-1)*usableWidth,yForValue(entry.value)] as const);
+  const firstCurrent=safeSeries.findIndex(entry=>entry.date>=monthStart);
+  const previousPath=firstCurrent<0?monotoneChartPath(points):firstCurrent>0?monotoneChartPath(points,0,firstCurrent-1):'';
+  const currentPath=firstCurrent>=0?monotoneChartPath(points,firstCurrent):'';
+  const connectorPath=firstCurrent>0?monotoneChartPath(points,firstCurrent-1,firstCurrent):'';
   const boundaryX=Math.max(padX,Math.min(width-padX,xForDate(monthStart)));const comparisonPoints=comparison.map((entry,index)=>[boundaryX+(index/Math.max(1,comparison.length-1))*(width-padX-boundaryX),yForValue(entry.value)] as const);
   const last=points.at(-1)!;const toneColor=tone==='green'?'#31C77B':tone==='purple'?'#A15CFF':'#2463F4';const comparisonColor=tone==='blue'?'#A9C5FF':'#B9C9E8';
   return <svg className={`dashboard-account-history tone-${tone}`} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" role="img" aria-label={label}>
     {boundaryX>padX+1?<line className="account-month-boundary" x1={boundaryX} y1="2" x2={boundaryX} y2={height-2}/>:null}
     {[.25,.5,.75].map(ratio=>{const x=boundaryX+(width-padX-boundaryX)*ratio;return <line key={ratio} className="account-period-guide" x1={x} y1="4" x2={x} y2={height-4}/>})}
-    {comparisonPoints.length>1?<path className="account-history-comparison" d={path(comparisonPoints)} fill="none" stroke={comparisonColor}/>:null}
+    {comparisonPoints.length>1?<path className="account-history-comparison" d={monotoneChartPath(comparisonPoints)} fill="none" stroke={comparisonColor}/>:null}
     {visibleTarget!==undefined?<line className="account-history-target" x1={boundaryX} y1={yForValue(visibleTarget)} x2={width-padX} y2={yForValue(visibleTarget)} stroke={toneColor}/>:null}
-    {previousPoints.length>1?<path className="account-history-previous" d={path(previousPoints)} fill="none" stroke={toneColor}/>:null}
-    {currentPoints.length>1?<path className="account-history-current" d={path(currentPoints)} fill="none" stroke={toneColor}/>:null}
-    {previousPoints.length&&currentPoints.length?<line className="account-history-connector" x1={previousPoints.at(-1)![0]} y1={previousPoints.at(-1)![1]} x2={currentPoints[0]![0]} y2={currentPoints[0]![1]} stroke={toneColor}/>:null}
+    {previousPath?<path className="account-history-previous" d={previousPath} fill="none" stroke={toneColor}/>:null}
+    {currentPath?<path className="account-history-current" d={currentPath} fill="none" stroke={toneColor}/>:null}
+    {connectorPath?<path className="account-history-connector" d={connectorPath} fill="none" stroke={toneColor}/>:null}
+    {safeSeries.slice(1,-1).map((entry,index)=>Math.abs(entry.value-safeSeries[index]!.value)>.005?<circle key={entry.date} className="account-history-movement" cx={points[index+1]![0]} cy={points[index+1]![1]} r="1.35" fill={toneColor}/>:null)}
     <circle className="account-history-end" cx={last[0]} cy={last[1]} r="2.35" stroke={toneColor}/>
   </svg>;
 }
