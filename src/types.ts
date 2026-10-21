@@ -339,6 +339,10 @@ export interface RecurringItem {
   id: string;
   name: string;
   amount: number;
+  /** Legacy amount is fixed unless this field explicitly selects estimation. */
+  amountMode?: 'fixed' | 'variable';
+  estimateMin?: number;
+  estimateMax?: number;
   day?: number | null;
   firstExpectedDate?: string | null;
   endDate?: string | null;
