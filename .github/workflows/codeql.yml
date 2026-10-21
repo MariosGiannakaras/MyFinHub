@@ -2,6 +2,9 @@ name: CodeQL
 
 on:
   workflow_call:
+  # Compatibility scan for enforced CodeQL ruleset on PRs.
+  pull_request:
+    branches: [main, develop]
   schedule:
     - cron: '17 4 * * 1'
 
