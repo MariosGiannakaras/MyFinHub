@@ -19,5 +19,10 @@ describe('large-state Reports calculation contract (#588 performance regression)
     expect(source).toContain('useMemo(()=>budgetProgress(data,month,asOf),[data,month,asOf])');
     expect(qa).toContain('results.maxLoadMs<5000');
     expect(qa).toContain('Large-data readiness by route');
+    // Browser performance is measured without same-runner Chromium CPU contention.
+    const runner=readFileSync('scripts/run-rendered-qa.mjs','utf8');
+    expect(runner).toContain("resourceIsolatedSuites=new Set(['scripts/large-data-boundaries-qa.mjs'])");
+    expect(runner).toContain('parallelScripts=scripts.filter(item=>!resourceIsolatedSuites.has(item.path))');
+    expect(runner).toContain('for(const item of isolatedScripts)await runRenderedItem(item)');
   });
 });

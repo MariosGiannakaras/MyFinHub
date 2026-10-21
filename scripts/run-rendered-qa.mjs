@@ -125,7 +125,13 @@ async function runRenderedItem(item){
     if(item.persist!==false)persistedScreenshots+=persistSuiteEvidence({key:item.key,surface:item.surface,evidenceDirs:[evidenceDir,...(item.extraEvidenceDirs||[])],context:evidenceContext});
   }finally{releasePort(port)}
 }
+// Isolate the strict wall-clock browser readiness probe from competing Chromium
+// suites on this shared CI runner. Preserve its unmodified <5s gate and fixtures.
+const resourceIsolatedSuites=new Set(['scripts/large-data-boundaries-qa.mjs']);
+const parallelScripts=scripts.filter(item=>!resourceIsolatedSuites.has(item.path));
+const isolatedScripts=scripts.filter(item=>resourceIsolatedSuites.has(item.path));
 let cursor=0;
-async function worker(){while(true){const index=cursor++;if(index>=scripts.length)return;await runRenderedItem(scripts[index])}}
-await Promise.all(Array.from({length:Math.min(parallelism,scripts.length)},()=>worker()));
+async function worker(){while(true){const index=cursor++;if(index>=parallelScripts.length)return;await runRenderedItem(parallelScripts[index])}}
+await Promise.all(Array.from({length:Math.min(parallelism,parallelScripts.length)},()=>worker()));
+for(const item of isolatedScripts)await runRenderedItem(item);
 if(requirePrimary&&fallbackActivations!==0)throw new Error(`Primary-browser enforcement violated: ${fallbackActivations} fallback activation(s).`);console.log(`All rendered browser QA suites passed on primary Chromium with parallelism ${parallelism}. Primary bootstrap retries: ${primaryBootstrapRetries}; fallback activations: ${fallbackActivations}; persisted latest focused screenshots: ${persistedScreenshots}.`);
