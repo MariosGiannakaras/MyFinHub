@@ -40,6 +40,32 @@ try{
   await waitFor("function(){const label=[...document.querySelectorAll('.period-control>span')].find(node=>!node.classList.contains('app-tooltip'));return (label?.textContent||'').includes('Αύγουστος 2026')}",'return to current August Dashboard period');
   const returnedAccount=await accountPeriodState();assert(returnedAccount.balance===augustAccount.balance&&returnedAccount.chartSignature===augustAccount.chartSignature,'returning to the current reporting month restores the as-of balance and account-history graph');
 
+  // #597: read the real primary-card regions, not just whole-page overflow.
+  const primaryCardUX=()=>c.eval(`(()=>{const rect=node=>node?.getBoundingClientRect();return [...document.querySelectorAll('.approved-primary-grid [data-account-id]')].map(card=>{
+    const body=rect(card.querySelector('.approved-account-body')),plot=rect(card.querySelector('.dashboard-account-history')),balance=rect(card.querySelector('.approved-balance')),buttons=[...card.querySelectorAll('.approved-account-actions button')].map(rect);
+    const goal=card.querySelector('.approved-account-context .savings-target'),delta=card.querySelector('.approved-account-delta');
+    const copy=rect(card.querySelector('.account-iban-copy')),deltaRect=rect(delta);
+    const overlap=(a,b)=>a&&b&&a.left<b.right-1&&a.right>b.left+1&&a.top<b.bottom-1&&a.bottom>b.top+1;
+    const bounds=rect(card);
+    return {role:card.dataset.accountRole,cardWidth:bounds.width,plotWidth:plot?.width||0,plotRightInset:plot?bounds.right-plot.right:999,balancePlotOverlap:overlap(balance,plot),buttons:buttons.map(x=>x.width),footerRightInset:buttons.length?bounds.right-buttons.at(-1).right:999,delta:Boolean(delta&&delta.textContent.includes('30ημ.')),goal:Boolean(goal),context:Boolean(card.querySelector('.approved-account-context')),copyDeltaOverlap:overlap(copy,deltaRect),plotAccessible:Boolean(card.querySelector('.dashboard-account-history[role="img"][aria-label*="έως"]'))};
+  })})()`);
+  let primaryUX=await primaryCardUX();
+  assert(primaryUX.length===3&&primaryUX.every(row=>row.delta&&row.context&&row.plotAccessible),'#597: all primary accounts retain comparable delta, period and accessible history');
+  assert(primaryUX.every(row=>row.plotWidth>=row.cardWidth*.26&&row.plotRightInset>=8&&row.plotRightInset<=44),'#597: curves fill their allocated desktop space through the right safe edge');
+  assert(primaryUX.every(row=>!row.balancePlotOverlap&&!row.copyDeltaOverlap),'#597: balance/chart and IBAN copy/delta hitboxes must not overlap');
+  assert(primaryUX.every(row=>row.buttons.length===2&&Math.abs(row.buttons[0]-row.buttons[1])<=2&&row.footerRightInset>=8&&row.footerRightInset<=38),'#597: both actions use equal width and full row');
+  assert(primaryUX[2].goal&&!primaryUX[0].goal&&!primaryUX[1].goal,'#597: savings target remains savings-only and separate from 30-day change');
+  console.log('Desktop primary-card UX geometry:',JSON.stringify(primaryUX));
+
+  // Account-specific Transactions uses the existing account selector, not a parallel ledger.
+  await c.call("function(){document.querySelector('[data-account-role=\\\"payroll\\\"] .approved-account-actions button[aria-label^=\\\"Συναλλαγές\\\"]')?.click();return true}");
+  await waitFor("function(){return document.querySelector('#main-workspace h1')?.textContent==='Συναλλαγές'&&[...document.querySelectorAll('select[aria-label=\\\"Φίλτρο λογαριασμού\\\"]')].some(s=>s.value==='piraeus-payroll')}",'Dashboard account filter reaches Transactions');
+  const filtered=await c.eval("(()=>[...document.querySelectorAll('select[aria-label=\\\"Φίλτρο λογαριασμού\\\"]')].every(s=>s.value==='piraeus-payroll'))()");
+  assert(filtered,'#597: account selection reaches both ledger filter owners');
+  await c.call("function(){const s=document.querySelector('select[aria-label=\\\"Φίλτρο λογαριασμού\\\"]');s.value='all';s.dispatchEvent(new Event('change',{bubbles:true}));return true}");
+  await waitFor("function(){return [...document.querySelectorAll('select[aria-label=\\\"Φίλτρο λογαριασμού\\\"]')].every(s=>s.value==='all')}",'user can clear the account filter');
+  await navigateDashboard({page:'dashboard',motion:'reduced'});
+
   console.log('Shell/Dashboard hierarchy QA: wide desktop composition');
   await viewport(1920,1080,false);await navigateDashboard({page:'dashboard',motion:'reduced'});geometry=await desktopDashboardGeometry();assert(geometry.dashboardWidth<=geometry.workspaceWidth+1&&geometry.innerLeft>=10&&geometry.innerRight>=10&&Math.abs(geometry.innerLeft-geometry.innerRight)<=2&&geometry.cardGaps.every(gap=>gap>=15),'1920px Dashboard uses balanced gutters and deliberate primary-card spacing');assert(geometry.overflow<=1,'1920px Dashboard has no horizontal overflow');await shot('shell-dashboard-hierarchy-wide-1920');
   await viewport(2560,1440,false);await navigateDashboard({page:'dashboard',motion:'reduced'});geometry=await desktopDashboardGeometry();assert(geometry.dashboardWidth<=1881&&geometry.dashboardWidth>=1800&&Math.abs(geometry.outerLeft-geometry.outerRight)<=2,'2560px Dashboard centers a bounded workspace instead of stretching or remaining left-pinned');assert(geometry.innerLeft>=13&&geometry.innerRight>=13&&Math.abs(geometry.innerLeft-geometry.innerRight)<=2&&geometry.cardGaps.every(gap=>gap>=19),'2560px primary-account region keeps balanced outer gutters and wide-screen card gaps');assert(geometry.overflow<=1,'2560px Dashboard has no horizontal overflow');await shot('shell-dashboard-hierarchy-wide-2560');
