@@ -126,3 +126,7 @@ No Bank Excel/CSV/OFX import, third-party bank connector, automatic Euribor, car
 
 ### Draft shared source contract follow-up
 - CI on `8de35d12`: 1,377/1,378 tests passed, single source-only budget/rules assertion was stale after QA's statement-aware reducer was renamed from `nextEvent` to `ruledEvent`. Updated the regression to verify the **same rule behavior** and now also require the real `prepareCreditStatementEvent` step. No weakened predicate, production accounting untouched by this repair. Review-head CI remains required.
+
+### B3 auditable writeoff ledger and DB boundary (2026-10-21)
+- Introduced `lending_writeoff` as an auditable noncash event kind: mandatory person, empty legs, negative receivable delta, no bank account and no reported income/expense; preserve historical seed baseline unchanged. The forward-only versioned `supabase/migrations/20261021091500_add_lending_writeoff_event_kind.sql` expands the relational `event_kind` CHECK without rewriting finance rows, RLS or audit records.
+- Full dataset server semantics now reject a writeoff that would overdraw the person's receivable **as of its date**, after accounting for earlier/same-day payments. Historical UI maps it to the existing `forgiven` action. Focused money-conservation, tamper, date and Undo regressions included. Requires intermediate DB/security gate; user-confirmation UI/persisted plan still pending. **No Batch B acceptance**.

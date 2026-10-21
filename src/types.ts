@@ -127,6 +127,7 @@ export type EventKind =
   | 'refund'
   | 'lending'
   | 'repayment'
+  | 'lending_writeoff'
   | 'card_purchase'
   | 'card_payment'
   | 'reconciliation'

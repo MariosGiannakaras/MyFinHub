@@ -196,6 +196,11 @@ export function createEvent(args: {
       legs.push({ accountId: requireAccount(args.accountId), amount });
       receivableDelta = -amount;
       break;
+    case 'lending_writeoff':
+      if(!args.person?.trim()||args.accountId||args.fromAccountId||args.toAccountId)
+        throw new Error('Η διαγραφή απαίτησης χρειάζεται πρόσωπο χωρίς ταμειακό λογαριασμό.');
+      receivableDelta = -amount;
+      break;
     case 'card_purchase':
       legs.push({ accountId: CREDIT_ACCOUNT.id, amount: -amount });
       creditDelta = -amount;

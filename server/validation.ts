@@ -261,7 +261,7 @@ function validateLending(value: unknown, name: string) {
   }
 }
 
-const EVENT_KINDS = ['expense','income','transfer','saving_cash_offset','withdrawal','refund','lending','repayment','card_purchase','card_payment','reconciliation','split'] as const;
+const EVENT_KINDS = ['expense','income','transfer','saving_cash_offset','withdrawal','refund','lending','repayment','lending_writeoff','card_purchase','card_payment','reconciliation','split'] as const;
 const PART_KINDS = ['expense','income','refund','saving','transfer','reconciliation'] as const;
 
 function validateSplitPart(value: unknown, name: string) {

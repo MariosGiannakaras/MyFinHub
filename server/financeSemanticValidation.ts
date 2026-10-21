@@ -120,6 +120,13 @@ function validateEvent(event:FinanceEvent){
       assertLegs(event,[[event.accountId,amount]]);
       break;
     }
+    case 'lending_writeoff':{
+      if(!event.person?.trim()||event.accountId||event.fromAccountId||event.toAccountId||event.legs.length)
+        invalid(`Invalid non-cash writeoff for event ${event.id}.`);
+      if(event.receivableDelta===undefined)
+        invalid(`Missing receivable delta for writeoff ${event.id}.`);
+      break;
+    }
     case 'card_purchase':
       assertLegs(event,[[CREDIT_ACCOUNT_ID,-amount]]);
       break;
@@ -143,7 +150,7 @@ function validateEvent(event:FinanceEvent){
   }
 
   validateOptionalDelta(event.savingAmount,event.kind==='saving_cash_offset'?amount:0,event,'savingAmount');
-  validateOptionalDelta(event.receivableDelta,event.kind==='lending'?amount:event.kind==='repayment'?-amount:0,event,'receivableDelta');
+  validateOptionalDelta(event.receivableDelta,event.kind==='lending'?amount:event.kind==='repayment'||event.kind==='lending_writeoff'?-amount:0,event,'receivableDelta');
   if(event.funding&&fundedCredit>0&&event.creditDelta===undefined)
     invalid(`Missing funded credit delta for event ${event.id}.`);
   validateOptionalDelta(event.creditDelta,event.kind==='card_purchase'?-amount:event.kind==='card_payment'?amount:-fundedCredit,event,'creditDelta');
@@ -225,8 +232,22 @@ function validateRuleAccounts(data:FinanceData,ids:Set<string>){
   for(const [index,rule] of (data.state.transactionRules??[]).entries())requireAccount(ids,rule.match.accountId,`state.transactionRules[${index}].match.accountId`);
 }
 
+function validateWriteoffOutstanding(data:FinanceData){
+  for(const item of (data.state.events??[]).filter(event=>event.kind==='lending_writeoff')){
+    const person=item.person?.trim();
+    if(!person)invalid(`Writeoff requires person for event ${item.id}.`);
+    const opening=(data.seed.lending??[]).filter(row=>row.person?.trim()===person)
+      .reduce((sum,row)=>sum+cents(row.outstanding,`legacy outstanding ${person}`),0);
+    const delta=(data.state.events??[]).filter(event=>event.person?.trim()===person&&event.date<=item.date)
+      .reduce((sum,event)=>sum+cents(event.receivableDelta??0,`receivable delta ${event.id}`),0);
+    if(!Number.isSafeInteger(opening+delta)||opening+delta<0)
+      invalid(`Writeoff exceeds as-of outstanding for ${item.id}.`);
+  }
+}
+
 export function validateCompleteFinanceSemantics(data:FinanceData){
   validateFinanceStateSemantics(data.state);
+  validateWriteoffOutstanding(data);
   const ids=accountIds(data);
   validateSettingsAccounts(data,ids);
   validateRecurringAccounts(data,ids);

@@ -71,10 +71,11 @@ export function lendingHistory(data:FinanceData,asOf?:string):LendingHistoryRow[
     const kind=cleanString(event.kind);
     if(!person||!date||amount<=0||(asOf&&date>asOf))continue;
     const id=cleanString(event.id)||`event-${person}-${date}-${raw.length}`;
-    const note=cleanString(event.note)||(kind==='repayment'?'Επιστροφή δανεικών':'Πλήρωσα για άλλον');
+    const note=cleanString(event.note)||(kind==='repayment'?'Επιστροφή δανεικών':kind==='lending_writeoff'?'Διαγραφή απαίτησης':'Πλήρωσα για άλλον');
     const accountId=cleanString(event.accountId)||cleanString(kind==='repayment'?event.toAccountId:event.fromAccountId)||undefined;
     if(kind==='lending')raw.push({id,person,date,action:'lent',amount,note,accountId,origin:'event'});
     if(kind==='repayment')raw.push({id,person,date,action:'repaid',amount,note,accountId,origin:'event'});
+    if(kind==='lending_writeoff')raw.push({id,person,date,action:'forgiven',amount,note,origin:'event'});
   }
   const running=new Map<string,number>();
   const chronological=[...raw].sort((a,b)=>a.date.localeCompare(b.date)||a.id.localeCompare(b.id));
