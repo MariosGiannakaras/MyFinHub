@@ -30,3 +30,33 @@
 @media(max-width:680px){.lending-settlement-modal{max-height:calc(100dvh - 24px)}.lending-settlement-modal .form-grid{grid-template-columns:minmax(0,1fr)}.lending-settlement-modal>.entry-body{padding:14px}.lending-settlement-modal>header{padding:14px}.lending-settlement-modal>footer{padding:12px;gap:8px}.lending-settlement-modal>footer>button{flex:1 1 0;min-width:0}}
 
 @media(max-width:420px){.lending-settlement-modal .lending-plan-schedule li{grid-template-columns:minmax(0,1fr);gap:2px}.lending-settlement-modal .lending-plan-schedule li>strong{text-align:right;min-width:0}.lending-settlement-modal .lending-plan-schedule li>span{white-space:normal}}
+
+/* Settlement preview owns a vertical stack: the shared .logic-note is a
+   horizontal flex hint for icon+text notices, not for a table of repayments. */
+.lending-settlement-modal [data-lending-plan-preview]{
+  display:flex;flex-direction:column;align-items:stretch;gap:8px;
+  min-width:0;max-width:100%;box-sizing:border-box
+}
+.lending-settlement-modal [data-lending-plan-preview]>:is(b,ul,p,small,span){
+  flex:none;min-width:0;max-width:100%
+}
+.lending-settlement-modal [data-lending-plan-preview] .lending-plan-schedule{
+  width:100%;min-width:0;max-width:100%;margin:4px 0;
+  grid-template-columns:minmax(0,1fr)
+}
+.lending-settlement-modal [data-lending-plan-preview] .lending-plan-schedule li{
+  width:100%;min-width:0;max-width:100%;
+  overflow-wrap:anywhere
+}
+/* Header is a real content row even when the body scrolls under a mobile
+   dynamic-viewport constraint. Protect title/subtitle from grid shrinkage. */
+.lending-settlement-modal{grid-template-rows:max-content minmax(0,1fr) max-content}
+.lending-settlement-modal>header{min-width:0;min-height:max-content;overflow:visible}
+.lending-settlement-modal>header>div{min-width:0;flex:1 1 auto}
+.lending-settlement-modal>header :is(small,h2,p){
+  position:static;max-width:100%;height:auto;
+  line-height:1.35;overflow-wrap:anywhere
+}
+.lending-settlement-modal>header small{display:block;line-height:1.45}
+.lending-settlement-modal>header h2{display:block;margin:6px 0;line-height:1.2}
+.lending-settlement-modal>header p{margin:0;font-size:.8rem;line-height:1.4}
