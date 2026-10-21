@@ -159,7 +159,7 @@ export async function runRealStackBrowserProof({origin,email,password,nextTotp}:
       await selectOwnedOption('Λογαριασμός','Synthetic QA Bank Account');
       await setByLabel('Επαληθευμένο υπόλοιπο στη συγκεκριμένη ημερομηνία','123.45');
       // Verify that the real browser cannot persist a correction silently.
-      const review=await c!.call<boolean>("function(){const modal=document.querySelector('.quick-modal');return Boolean(modal?.querySelector('[aria-label=\\"Κινήσεις προς σύγκριση\\"]')&&modal?.querySelector('.reconcile-preview')?.textContent?.includes('Υπολογισμένο υπόλοιπο στις')&&modal?.querySelector('input[type=checkbox]'))}");
+      const review=await c!.call<boolean>("function(){const modal=document.querySelector('.quick-modal');if(!modal)return false;const candidates=[...modal.querySelectorAll('[aria-label]')].some(node=>node.getAttribute('aria-label')==='Κινήσεις προς σύγκριση');return Boolean(candidates&&modal.querySelector('.reconcile-preview')?.textContent?.includes('Υπολογισμένο υπόλοιπο στις')&&modal.querySelector('input[type=checkbox]'))}");
       assert(review,'Reconciliation must compare dated canonical movements and require owner review.');
       await clickText('.quick-modal footer button','Καταχώριση');
       await waitFor("function(){return (document.querySelector('#quick-add-error')?.textContent||'').includes('Επιβεβαίωσε')}",'unconfirmed reconciliation must fail closed');

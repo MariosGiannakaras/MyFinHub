@@ -1,9 +1,20 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
+import * as ts from 'typescript';
 
 const source=readFileSync('scripts/real-stack-browser-e2e.ts','utf8');
 
 describe('actual-browser real-stack source contract',()=>{
+  it('parses the entire real-stack browser runner before expensive container/browser startup',()=>{
+    const result=ts.transpileModule(source,{
+      fileName:'scripts/real-stack-browser-e2e.ts',
+      reportDiagnostics:true,
+      compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}
+    });
+    const errors=(result.diagnostics??[]).filter(item=>item.category===ts.DiagnosticCategory.Error);
+    expect(errors).toEqual([]);
+  });
+
   it('uses the real app UI and same-origin API without fetch interception',()=>{
     expect(source).toContain("origin+'/#/transactions'");
     expect(source).toContain("document.querySelector('#login-title')");
