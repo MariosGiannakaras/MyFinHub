@@ -24,3 +24,6 @@
 ## Handoff and safety
 
 **Exact next action:** Validate S1 pure module's data and source classification via draft `validate` CI; review server inputs not needed because scenario has no writes. Continue to Plan UI only on a current head and without editing canonical ledger owned by #590. If an overlapping active PR appears, reconcile ownership first. Do not merge into `develop` while Batch B has a newer incompatible baseline. No `main` production/Android changes. No preview credentials or real financial data. Update branch plan/checkpoint and issue #588 at meaningful accepted checkpoints, never simply because files were committed.
+
+## S1 draft preflight repair
+The first draft `validate` failed before tests because TypeScript correctly refused an unsupported literal `15` in a negative runtime horizon test. The negative test now explicitly casts it only inside the intentionally-invalid invocation; production API remains strongly typed to 30/60/90. No test guard or type contract relaxed.

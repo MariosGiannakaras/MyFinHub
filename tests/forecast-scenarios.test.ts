@@ -80,7 +80,7 @@ describe('isolated 30/60/90-day what-if scenarios (#588 #7)',()=>{
     expect(check({date:'2026-02-30'})).toThrow(/ημερομηνία/);
     expect(check({accountId:'ghost'})).toThrow(/πραγματικό/);
     expect(()=>cashFlowScenario(d,'2026-08-17',30,[example,example])).toThrow(/μοναδική/);
-    expect(()=>cashFlowScenario(d,'2026-08-17',15,[])).toThrow(/ορίζοντα/);
+    expect(()=>cashFlowScenario(d,'2026-08-17',15 as 30,[])).toThrow(/ορίζοντα/);
     expect(()=>cashFlowScenario(d,'2026-08-17',30,Array.from({length:17},(_,index)=>({...example,id:String(index)})))).toThrow(/16/);
   });
 });
