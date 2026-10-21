@@ -2,6 +2,7 @@ import { createHmac, randomBytes } from 'node:crypto';
 import { execFileSync, spawn, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { validateCompleteFinanceData } from '../server/financeDataValidation.js';
+import { createEvent } from '../src/lib/domain.js';
 import { runRealStackBrowserProof } from './real-stack-browser-e2e.js';
 import { realStackFinanceData } from './real-stack-fixture.js';
 
@@ -334,6 +335,14 @@ async function main(){
       ...nextState.settings,
       accountNames:{...(nextState.settings?.accountNames||{}),'qa-cash':'Local Real Stack QA'},
     };
+    // A non-cash writeoff must survive the real revisioned RPC, relational
+    // transaction table, API reload, Undo and Redo without touching cash.
+    const writeoff=createEvent({
+      kind:'lending_writeoff',date:'2026-10-04',person:'Synthetic QA Receivable',
+      amount:2.5,note:'Synthetic noncash settlement, not a cash movement',
+    });
+    nextState.events=[...(nextState.events??[]),writeoff];
+    validateCompleteFinanceData({...initial.body.data,state:nextState});
     console.log('[real-stack] stage mutable-save');
     const saved=await primary.request('/api/data',{
       method:'PUT',
@@ -359,6 +368,9 @@ async function main(){
     const persisted=await restored.request('/api/data');
     expect(persisted,200,undefined,'reload-read');
     assert(persisted.body?.data?.state?.settings?.accountNames?.['qa-cash']==='Local Real Stack QA','Saved state was not durable after a restored-session reload.');
+    assert(persisted.body?.data?.state?.events?.some((event:any)=>event.id===writeoff.id&&
+      event.kind==='lending_writeoff'&&event.receivableDelta===-2.5&&event.legs.length===0),
+      'Noncash writeoff did not round-trip through revisioned API and relational finance storage.');
     const savedGeneration=String(saved.body?.history?.generation||'');
     assert(/^\d+$/.test(savedGeneration),'Mutable save did not return a history generation.');
     console.log('[real-stack] stage history-undo');
@@ -369,6 +381,8 @@ async function main(){
     });
     expect(undone,200,undefined,'history-undo');
     assert(undone.body?.data?.state?.settings?.accountNames?.['qa-cash']!=='Local Real Stack QA','Undo did not restore the previous finance state.');
+    assert(!(undone.body?.data?.state?.events??[]).some((event:any)=>event.id===writeoff.id),
+      'Finance Undo did not reverse the noncash writeoff in the same revision.');
 
     console.log('[real-stack] stage history-redo');
     const redone=await primary.request('/api/history',{
@@ -378,6 +392,8 @@ async function main(){
     });
     expect(redone,200,undefined,'history-redo');
     assert(redone.body?.data?.state?.settings?.accountNames?.['qa-cash']==='Local Real Stack QA','Redo did not restore the saved finance state.');
+    assert((redone.body?.data?.state?.events??[]).some((event:any)=>event.id===writeoff.id&&event.receivableDelta===-2.5),
+      'Finance Redo did not restore the exact noncash writeoff.');
 
     console.log('[real-stack] stage card-vault-write');
     const vaultSaved=await primary.request('/api/card-secrets',{
