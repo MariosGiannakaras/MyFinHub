@@ -447,6 +447,10 @@ function QaWorkspace(){
   const [month,setMonth]=useState('2026-08');
   const [privacyVisible,setPrivacyVisible]=useState(false);
   const today='2026-08-17';
+  // A Dashboard card's filter is only the next navigation's context.
+  // Navigating elsewhere must not re-apply it on later generic Transactions visits.
+  useEffect(()=>{if(page!=='transactions')setDashboardAccountId(null)},[page]);
+
 
   useEffect(()=>{document.documentElement.dataset.motion='full';return()=>{delete document.documentElement.dataset.motion}},[]);
   useEffect(()=>{document.documentElement.dataset.textSize=data.state.settings.textSize??'normal';return()=>{delete document.documentElement.dataset.textSize}},[data.state.settings.textSize]);
