@@ -212,7 +212,10 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
     const {replaceLinkedTransferWithFee}=await import('./lib/linkedFees');
     return finance.updateDurably(current=>replaceLinkedTransferWithFee(current,principal,fee));
   };
-  const deleteEvent = (id: string) => finance.update((current) => ({ ...current, state: { ...current.state, events: (current.state.events ?? []).filter((event) => event.id !== id && event.feeForEventId !== id) } }));
+  const withoutEventGroup=(current:FinanceData,id:string):FinanceData=>({...current,state:{...current.state,
+    events:(current.state.events??[]).filter(event=>event.id!==id&&event.feeForEventId!==id)
+  }});
+  const deleteEvent=(id:string)=>finance.update(current=>withoutEventGroup(current,id));
   const editEvent = (id: string) => {
     const event = (data.state.events ?? []).find((item) => item.id === id);
     setEditingEventId(event?.feeForEventId??id);
@@ -221,8 +224,8 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   };
   // Transactions lifecycle waits for the exact revision/history receipt.
   const deleteEventDurably=(id:string)=>finance.updateDurably(current=>{
-    if(!(current.state.events??[]).some(event=>event.id===id))throw new Error('Η κίνηση έχει ήδη αλλάξει. Επαναφόρτωσε πριν διαγράψεις.');
-    return {...current,state:{...current.state,events:(current.state.events??[]).filter(event=>event.id!==id&&event.feeForEventId!==id)}};
+    if(!(current.state.events??[]).some(event=>event.id===id))throw new Error('Η κίνηση άλλαξε. Ανανέωσε πριν τη διαγράψεις.');
+    return withoutEventGroup(current,id);
   });
   const editLegacy=(transaction:LegacyTransaction)=>finance.updateDurably(current=>withLegacyOverride(current,transaction));
   const deleteLegacy=(id:string)=>finance.updateDurably(current=>withLegacyTombstone(current,id));

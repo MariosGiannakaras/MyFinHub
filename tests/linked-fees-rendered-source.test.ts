@@ -7,6 +7,10 @@ describe('linked transfer fee rendered and revision contract (#588 B2)',()=>{
     const browser=readFileSync('scripts/ledger-foundations-qa.mjs','utf8');
     const wrapper=readFileSync('src/components/ReceiptAwareQuickAdd.tsx','utf8');
     expect(app).toContain('finance.updateDurably(current=>replaceLinkedTransferWithFee(current,principal,fee))');
+    expect(app).toContain('const withoutEventGroup=');
+    expect(app).toContain('finance.update(current=>withoutEventGroup(current,id))');
+    expect(app).toContain('return withoutEventGroup(current,id);');
+    expect(app).toContain('event.id!==id&&event.feeForEventId!==id');
     expect(qa).toContain('update(current=>replaceLinkedTransferWithFee(current,principal,fee))');
     expect(wrapper).toContain('onCreateLinkedTransfer={onCreateLinkedTransfer}');
     const generic=readFileSync('src/components/QuickAdd.tsx','utf8');
