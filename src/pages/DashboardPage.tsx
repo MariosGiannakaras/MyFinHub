@@ -83,7 +83,7 @@ function AccountBalanceChart({series,comparison=[],tone,currentMonth,target,labe
     {previousPath?<path className="account-history-previous" d={previousPath} fill="none" stroke={toneColor}/>:null}
     {currentPath?<path className="account-history-current" d={currentPath} fill="none" stroke={toneColor}/>:null}
     {connectorPath?<path className="account-history-connector" d={connectorPath} fill="none" stroke={toneColor}/>:null}
-    {safeSeries.slice(1,-1).map((entry,index)=>Math.abs(entry.value-safeSeries[index]!.value)>.005?<circle key={entry.date} className="account-history-movement" cx={points[index+1]![0]} cy={points[index+1]![1]} r="1.35" fill={toneColor}/>:null)}
+    {safeSeries.slice(1,-1).map((entry,index)=>entry.date>=monthStart&&Math.abs(entry.value-safeSeries[index]!.value)>.005?<circle key={entry.date} className="account-history-movement" cx={points[index+1]![0]} cy={points[index+1]![1]} r="1.35" fill={toneColor}/>:null)}
     <circle className="account-history-end" cx={last[0]} cy={last[1]} r="2.35" stroke={toneColor}/>
   </svg>;
 }
