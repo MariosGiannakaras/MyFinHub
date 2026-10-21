@@ -2,7 +2,7 @@ import type {FinanceData,FinanceEvent,LegacyTransaction} from '../types.js';
 import {effectiveLegacyTransactions,flowImpactEvent,flowImpactLegacy,reviewDecision} from './domain.js';
 import type {ReceiptProposal} from './receiptDrafts.js';
 
-export type ReceiptPurchaseCandidate={
+type ReceiptPurchaseCandidate={
   /** Scoped to its canonical source to avoid conflating legacy and new IDs. */
   id:string;
   source:'event'|'legacy';
