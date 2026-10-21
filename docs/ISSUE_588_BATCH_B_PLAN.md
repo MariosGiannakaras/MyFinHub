@@ -123,3 +123,6 @@ No Bank Excel/CSV/OFX import, third-party bank connector, automatic Euribor, car
 ### B2 credit payment integration (2026-10-21)
 - Existing ContextualQuickAdd credit-card repayment now offers a **separate optional real commission**, with MoneyInput and the live expense taxonomy; principal remains a non-expense `card_payment`. A populated fee uses the same `onCreateLinkedTransfer` single `finance.updateDurably` path already used for transfer fees; failed saves keep the payment modal open. Card-payment fee builder regression asserts payer-account debit, fee-only expense and linked semantics. Statement preview now includes mixed-funded purchases with only their credit amount.
 - Card-payment commission is not yet counted accepted. Browser payment-fee screenshot, failed receipt, server roundtrip and review-head gates remain pending.
+
+### Draft shared source contract follow-up
+- CI on `8de35d12`: 1,377/1,378 tests passed, single source-only budget/rules assertion was stale after QA's statement-aware reducer was renamed from `nextEvent` to `ruledEvent`. Updated the regression to verify the **same rule behavior** and now also require the real `prepareCreditStatementEvent` step. No weakened predicate, production accounting untouched by this repair. Review-head CI remains required.
