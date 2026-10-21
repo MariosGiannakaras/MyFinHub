@@ -110,3 +110,6 @@ No Bank Excel/CSV/OFX import, third-party bank connector, automatic Euribor, car
 
 ### B1 system-level regression proof
 - Added complete FinanceData synthetic single-event integration tests for exact 100 EUR expense from cash/bank/credit, net worth, category once, credit liability of only 60 EUR, an as-of credit statement of 60 EUR, account-only multi-funding and cross-validator tamper rejection. Real relational DB read/write and browser QA remain untested.
+
+### Draft source-contract regression reconciliation (2026-10-21)
+- Exact draft CI `706e48b2` passed finance source/data checks but 3 historical source assertions failed: generic QuickAdd now has one additional shared ghost button and one additional raw domain remove button; card purchase history must show `creditPurchaseAmount(event)` while ordinary card payments remain `event.amount`. Reconciled source guards to the expanded controls and credit liability semantics while retaining existing accessibility/shared-primitive checks and the historical non-animated row restriction. Do not mark review gates PASS until the new exact head completes.
