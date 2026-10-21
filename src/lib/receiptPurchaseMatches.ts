@@ -20,13 +20,13 @@ function cents(value:unknown):number|null{
   return Number.isSafeInteger(rounded)&&rounded>0&&Math.abs(value-rounded/100)<1e-8?rounded:null;
 }
 function utcDay(value:unknown):number|null{
-  if(typeof value!=='string'||!/^\\d{4}-\\d{2}-\\d{2}$/.test(value))return null;
+  if(typeof value!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(value))return null;
   const date=new Date(`${value}T00:00:00.000Z`);
   return !Number.isNaN(date.getTime())&&date.toISOString().slice(0,10)===value?date.getTime()/86400000:null;
 }
 function merchantKey(value:string|undefined){
-  return (value??'').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'')
-    .toLocaleLowerCase('el-GR').replace(/[^\\p{L}\\p{N}]+/gu,' ').trim();
+  return (value??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .toLocaleLowerCase('el-GR').replace(/[^\p{L}\p{N}]+/gu,' ').trim();
 }
 function eligibleLegacy(data:FinanceData,tx:LegacyTransaction){
   const decision=reviewDecision(data,tx.id);
