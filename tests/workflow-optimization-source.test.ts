@@ -40,7 +40,8 @@ describe('CI workflow optimization contracts',()=>{
     expect(codeql).toContain('workflow_call:');
     expect(codeql).toContain("cron: '17 4 * * 1'");
     expect(codeql).toContain('security-events: write');
-    expect(codeql).not.toContain('  pull_request:');
+    expect(codeql).toContain('  pull_request:');
+    expect(codeql).toContain('    branches: [main, develop]');
     for(const reusable of [cross,performance]){
       expect(reusable).toContain('workflow_call:');
       expect(reusable).not.toContain('  pull_request:');
