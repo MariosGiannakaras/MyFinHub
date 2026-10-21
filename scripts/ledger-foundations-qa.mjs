@@ -146,6 +146,37 @@ try{
   writeFileSync(`${evidenceDir}/ledger-multi-funded-credit-desktop.png`,Buffer.from(creditShot.data,'base64'));
   await navigate('Συναλλαγές','Συναλλαγές');
 
+  console.log('Ledger QA: multi-funded edit and deletion remain one economic event');
+  const fundedRowSelector='.transactions-approved-table tbody tr[data-transaction-kind=expense][data-transaction-source=event]';
+  const hasFundedRow=()=>c.call("function(){return [...document.querySelectorAll('.transactions-approved-table tbody tr[data-transaction-kind=expense][data-transaction-source=event]')].some(row=>(row.textContent||'').includes('QA mixed purchase'))}");
+  assert(await hasFundedRow(),'one mixed purchase retained after credit statement navigation');
+  const openedFundedEdit=await c.call("function(){const row=[...document.querySelectorAll('.transactions-approved-table tbody tr[data-transaction-kind=expense][data-transaction-source=event]')].find(node=>(node.textContent||'').includes('QA mixed purchase'));const edit=row?.querySelector('button[aria-label^=\"Επεξεργασία\"]');edit?.click();return Boolean(edit)}");
+  assert(openedFundedEdit,'mixed purchase opens its existing parent-event editor');
+  await waitFor("function(){return !!document.querySelector('.quick-modal [data-multi-funding] input[aria-label=\"Ποσό πηγής 2\"]')}",'funding allocations recovered for edit');
+  const editPrefill=await c.call("function(){const panel=document.querySelector('.quick-modal [data-multi-funding]');return {checked:panel?.querySelector('input[type=checkbox]')?.checked,rows:panel?.querySelectorAll('.multi-funding-row').length}}");
+  assert(editPrefill.checked&&editPrefill.rows===2,'editing retains one parent and both original funding sources');
+  await setAriaInput('Ποσό πηγής 1','30');
+  await setAriaInput('Ποσό πηγής 2','70');
+  await clickText('.quick-modal footer button','Εφαρμογή αλλαγών');
+  await waitFor("function(){return !document.querySelector('.quick-modal')}",'mixed purchase edited with stable identity');
+  const afterEdit=await c.call("function(){const rows=[...document.querySelectorAll('.transactions-approved-table tbody tr[data-transaction-kind=expense][data-transaction-source=event]')].filter(row=>(row.textContent||'').includes('QA mixed purchase'));return {count:rows.length,text:rows[0]?.textContent||''}}");
+  assert(afterEdit.count===1&&afterEdit.text.includes('100,00'),'changing card share retains exactly one full-price expense');
+  await navigate('Πιστωτική','Πιστωτική Κάρτα');
+  await waitFor("function(){return !!document.querySelector('.credit-purchases-table tbody tr')}",'edited purchase in card ledger');
+  const afterCardEdit=await c.call("function(){const row=[...document.querySelectorAll('.credit-purchases-table tbody tr')].find(node=>(node.textContent||'').includes('QA mixed purchase'));return row?.textContent||''}");
+  assert(afterCardEdit.includes('70,00')&&!afterCardEdit.includes('60,00'),'changing funding reallocates just the card liability without a second purchase');
+  await navigate('Συναλλαγές','Συναλλαγές');
+  const deleteFunded=await c.call("function(){const row=[...document.querySelectorAll('.transactions-approved-table tbody tr[data-transaction-kind=expense][data-transaction-source=event]')].find(node=>(node.textContent||'').includes('QA mixed purchase'));const button=row?.querySelector('button[aria-label^=\"Διαγραφή\"]');button?.click();return Boolean(button)}");
+  assert(deleteFunded,'mixed purchase has one delete action on its parent');
+  await waitFor("function(){return !!document.querySelector('[role=alertdialog]')}",'mixed purchase deletion confirmation');
+  await clickText('[role=alertdialog] button','Διαγραφή');
+  await waitFor("function(){return ![...document.querySelectorAll('.transactions-approved-table tbody tr[data-transaction-kind=expense][data-transaction-source=event]')].some(row=>(row.textContent||'').includes('QA mixed purchase'))}",'parent purchase and its funding parts removed together');
+  await c.call("function(){document.querySelector('button[aria-label=\"Αναίρεση τελευταίας αλλαγής\"]')?.click()}");
+  await waitFor("function(){return [...document.querySelectorAll('.transactions-approved-table tbody tr[data-transaction-kind=expense][data-transaction-source=event]')].some(row=>(row.textContent||'').includes('QA mixed purchase'))}",'one Undo restores the funded parent purchase');
+  assert(await hasFundedRow(),'Undo restores exactly one economic purchase with its funding parts');
+  await c.call("function(){document.querySelector('button[aria-label=\"Επαναφορά τελευταίας αναιρεμένης αλλαγής\"]')?.click()}");
+  await waitFor("function(){return ![...document.querySelectorAll('.transactions-approved-table tbody tr[data-transaction-kind=expense][data-transaction-source=event]')].some(row=>(row.textContent||'').includes('QA mixed purchase'))}",'Redo removes the funded parent purchase again');
+
   console.log('Ledger QA: create split transaction from authoritative parts');
   await navigate('Συναλλαγές','Συναλλαγές');await clickGlobalQuickEntry();await waitFor("function(){return !!document.querySelector('.quick-modal')}",'Quick Add split');await clickText('.generic-kind-grid button','Σύνθετη αγορά');
   const splitParentFields=await c.call("function(){const modal=document.querySelector('.quick-modal');const labels=[...modal.querySelectorAll('.form-grid label>span')].map(node=>(node.textContent||'').trim());return {hasAmount:labels.some(label=>label==='Ποσό'),hasCategory:labels.some(label=>label==='Κατηγορία'),focused:document.activeElement?.getAttribute('aria-label')||''}}");assert(!splitParentFields.hasAmount&&!splitParentFields.hasCategory,'split exposes no independent parent amount or category');assert(splitParentFields.focused==='Ποσό μέρους 1','split focuses the first authoritative part amount');

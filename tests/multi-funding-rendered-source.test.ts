@@ -11,6 +11,9 @@ describe('multi-source purchase browser contract (#588 B1)',()=>{
     expect(browser).toContain('one parent 100 EUR expense');
     expect(browser).toContain(".transactions-approved-table tbody tr[data-transaction-kind=expense][data-transaction-source=event]");
     expect(browser).toContain('visible mixed purchase rows');
+    expect(browser).toContain('changing funding reallocates just the card liability without a second purchase');
+    expect(browser).toContain('one Undo restores the funded parent purchase');
+    expect(browser).toContain('Redo removes the funded parent purchase again');
     expect(qa).toContain('const prepared=prepareCreditStatementEvent(current,ruledEvent)');
   });
 });
