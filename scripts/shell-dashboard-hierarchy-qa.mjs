@@ -57,14 +57,27 @@ try{
   assert(primaryUX[2].goal&&!primaryUX[0].goal&&!primaryUX[1].goal,'#597: savings target remains savings-only and separate from 30-day change');
   console.log('Desktop primary-card UX geometry:',JSON.stringify(primaryUX));
 
-  // Account-specific Transactions uses the existing account selector, not a parallel ledger.
+  // Account-specific Transactions uses the existing accessible AppSelectInput
+  // (readonly input[role=combobox] and a real listbox), never a native <select>.
+  const payrollAccountLabel=await c.eval("document.querySelector('[data-account-role=payroll] .approved-account-identity strong')?.textContent?.trim()");
+  assert(Boolean(payrollAccountLabel),'#597: payroll account name is visible before navigation');
   const clicked=await c.call("function(){const button=[...document.querySelectorAll('[data-account-role=payroll] .approved-account-actions button')].find(x=>x.getAttribute('aria-label')?.startsWith('Συναλλαγές'));if(!button)return false;button.click();return true}");
   assert(clicked,'#597: exact payroll card Transactions action exists and is clickable');
-  await waitFor("function(){return document.querySelector('#main-workspace h1')?.textContent==='Συναλλαγές'&&[...document.querySelectorAll('select')].some(s=>s.getAttribute('aria-label')==='Φίλτρο λογαριασμού'&&s.value==='piraeus-payroll')}",'Dashboard account filter reaches Transactions');
-  const filtered=await c.eval("(()=>{const selectors=[...document.querySelectorAll('select')].filter(s=>s.getAttribute('aria-label')==='Φίλτρο λογαριασμού');return selectors.length>0&&selectors.every(s=>s.value==='piraeus-payroll')})()");
-  assert(filtered,'#597: account selection reaches both ledger filter owners');
-  await c.call("function(){const s=[...document.querySelectorAll('select')].find(s=>s.getAttribute('aria-label')==='Φίλτρο λογαριασμού');if(!s)return false;const setter=Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value')?.set;setter?.call(s,'all');s.dispatchEvent(new Event('change',{bubbles:true}));return true}");
-  await waitFor("function(){const selectors=[...document.querySelectorAll('select')].filter(s=>s.getAttribute('aria-label')==='Φίλτρο λογαριασμού');return selectors.length>0&&selectors.every(s=>s.value==='all')}",'user can clear the account filter');
+  const accountCombobox="input[role=combobox][aria-label=\\\"Φίλτρο λογαριασμού\\\"]";
+  await waitFor(`function(){const input=[...document.querySelectorAll('${accountCombobox}')];return document.querySelector('#main-workspace h1')?.textContent==='Συναλλαγές'&&input.length>0&&input.every(x=>x.value===${JSON.stringify(payrollAccountLabel)})}`,'Dashboard account filter reaches Transactions');
+  const filtered=await c.eval(`(()=>{const inputs=[...document.querySelectorAll('${accountCombobox}')];return inputs.length>0&&inputs.every(x=>x.value===${JSON.stringify(payrollAccountLabel)})})()`);
+  assert(filtered,'#597: account selection reaches both owned ledger filter controls');
+  const opened=await c.call(`function(){const field=[...document.querySelectorAll('${accountCombobox}')].find(x=>x.getBoundingClientRect().width>0&&getComputedStyle(x).display!=='none');if(!field)return false;field.click();return true}`);
+  assert(opened,'#597: existing owned account selector can be opened');
+  await waitFor("function(){return [...document.querySelectorAll('[role=listbox] [role=option]')].some(x=>x.textContent?.includes('Όλοι οι λογαριασμοί'))}",'account selector includes clear-filter option');
+  const cleared=await c.call("function(){const option=[...document.querySelectorAll('[role=listbox] [role=option]')].find(x=>x.textContent?.includes('Όλοι οι λογαριασμοί'));if(!option)return false;option.click();return true}");
+  assert(cleared,'#597: clear account filter through actual owned selector click');
+  await waitFor(`function(){const inputs=[...document.querySelectorAll('${accountCombobox}')];return inputs.length>0&&inputs.every(x=>x.value==='Όλοι οι λογαριασμοί')}`,'user can clear the account filter using the real UI');
+  await navigateDashboard({page:'dashboard',motion:'reduced'});
+  // Generic Dashboard action must not resurrect a previous card-specific filter.
+  const genericClicked=await c.call("function(){const button=document.querySelector('.approved-movements .approved-panel-head button');if(!button||!button.textContent?.includes('Προβολή όλων'))return false;button.click();return true}");
+  assert(genericClicked,'#597: generic Transactions navigation remains reachable');
+  await waitFor(`function(){const inputs=[...document.querySelectorAll('${accountCombobox}')];return document.querySelector('#main-workspace h1')?.textContent==='Συναλλαγές'&&inputs.length>0&&inputs.every(x=>x.value==='Όλοι οι λογαριασμοί')}`,'generic Transactions navigation remains unfiltered');
   await navigateDashboard({page:'dashboard',motion:'reduced'});
 
   console.log('Shell/Dashboard hierarchy QA: wide desktop composition');
