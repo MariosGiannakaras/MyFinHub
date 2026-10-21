@@ -162,3 +162,7 @@ No Bank Excel/CSV/OFX import, third-party bank connector, automatic Euribor, car
 
 ### B3 draft source-guard correction
 - `8ec780eb` draft CI: **1,385/1,386 tests passed**, with one newly authored source assertion incorrectly searching for `onSaveLendingPlan={` inside LendingPage rather than where the callback is wired in App; production save path compiled and its actual tests passed. Corrected the guard to test the page's typed callback and the real App prop explicitly, plus the rendered-script evidence paths, without removing any semantic checks. No rendered QA executed yet.
+
+### B3 strict writeoff API boundary (2026-10-21)
+- Hardened direct client event creation and backend semantic validation to reject sub-cent writeoff amounts or sub-cent receivable deltas that would otherwise be rounded during ledger verification. Explicitly forbids forged cross-domain `cardId`, `statementId`, `loanId`, `recurringId`, funding, split, linked fee or scheduled-payment metadata on noncash writeoffs. Added rejection cases for forged semantic payloads; valid writeoffs remain nonspending with no ledger account legs.
+- Draft CI and migration/real-stack/rendered tests still pending on the latest review head. No accepted progress increment.

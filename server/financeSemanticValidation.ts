@@ -125,6 +125,13 @@ function validateEvent(event:FinanceEvent){
         invalid(`Invalid non-cash writeoff for event ${event.id}.`);
       if(event.receivableDelta===undefined)
         invalid(`Missing receivable delta for writeoff ${event.id}.`);
+      if(Math.abs(event.amount*100-amount)>1e-6||
+         Math.abs(event.receivableDelta*100+amount)>1e-6)
+        invalid(`Sub-cent writeoff amount or receivable delta for event ${event.id}.`);
+      if(event.cardId||event.statementId||event.loanId||event.recurringId||
+         event.feeForEventId||event.funding?.length||event.parts?.length||
+         event.savingSource||event.expectedReturnDate)
+        invalid(`Cross-domain metadata on noncash writeoff ${event.id}.`);
       break;
     }
     case 'card_purchase':

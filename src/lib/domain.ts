@@ -200,6 +200,10 @@ export function createEvent(args: {
     case 'lending_writeoff':
       if(!args.person?.trim()||args.accountId||args.fromAccountId||args.toAccountId)
         throw new Error('Η διαγραφή απαίτησης χρειάζεται πρόσωπο χωρίς ταμειακό λογαριασμό.');
+      if(Math.abs(amount*100-Math.round(amount*100))>1e-6)
+        throw new Error('Η διαγραφή απαίτησης πρέπει να έχει ακριβώς δύο δεκαδικά σε λεπτά ευρώ.');
+      if(args.loanId||args.recurringId||args.cardId||args.parts?.length)
+        throw new Error('Η διαγραφή απαίτησης δεν συνδέεται με δόση, κάρτα ή διάσπαση δαπάνης.');
       receivableDelta = -amount;
       break;
     case 'card_purchase':

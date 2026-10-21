@@ -38,6 +38,17 @@ describe('noncash receivable writeoffs preserve accounting (#588 B3)',()=>{
   expect(()=>validateFinanceStateSemantics({...d.state,events:[{...item,receivableDelta:undefined}]})).toThrow();
   expect(()=>createEvent({kind:'lending_writeoff',date:'2026-08-12',person:'',amount:2,note:'Bad'})).toThrow();
   expect(()=>createEvent({kind:'lending_writeoff',date:'2026-08-12',person:'Alex',amount:2,note:'Bad',accountId:'cash'})).toThrow();
+  expect(()=>createEvent({kind:'lending_writeoff',date:'2026-08-12',person:'Alex',amount:2.001,note:'Sub-cent'})).toThrow(/λεπτά ευρώ/);
+  for(const forged of [
+    {...item,amount:95.001},
+    {...item,receivableDelta:-95.001},
+    {...item,loanId:'loan-from-other-contract'},
+    {...item,cardId:'card-from-other-contract'},
+    {...item,feeForEventId:'transfer-from-other-contract'},
+    {...item,parts:[{id:'part-1',category:'Άλλο',amount:95}]},
+  ]){
+    expect(()=>validateFinanceStateSemantics({...d.state,events:[forged]})).toThrow();
+  }
  });
  it('undo restores historic receivable without changing seeded legacy history',()=>{
   const d=fixture(),seed=JSON.stringify(d.seed.lending);
