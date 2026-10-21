@@ -9,6 +9,8 @@ describe('Dashboard primary-account chart presentation',()=>{
   it('uses the fixed safe curve and small movement markers while preserving historical layers and end cap',()=>{
     expect(component).toContain('monotoneChartPath(points');
     expect(component).toContain('account-history-movement');
+    // Previous-month context remains visible but never gets movement dots.
+    expect(component).toContain('entry.date>=monthStart&&Math.abs(entry.value-safeSeries[index]!.value)>.005');
     expect(component).toContain('r="1.35"');
     expect(component).toContain('account-history-comparison');
     expect(component).toContain('account-history-target');
