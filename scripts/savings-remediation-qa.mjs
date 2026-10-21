@@ -43,6 +43,30 @@ try{
   assert(august.period.includes('Αύγουστος 2026')&&august.heading==='Αυτός ο μήνας','current Savings state identifies August as the current reporting month');
   assert(august.routeValues.length===2&&august.goalBalance&&august.goalProgress,'current Savings route and personal-goal snapshot are rendered');
 
+  console.log('Savings remediation QA: advisory goal forecast does not post money');
+  const realBefore=await state();
+  const openedProjection=await c.call("function(){const button=[...document.querySelectorAll('.savings-desktop-target .savings-goal-row.personal button')].find(node=>(node.textContent||'').includes('Προβολή στόχου'));button?.click();return Boolean(button)}");
+  assert(openedProjection,'actual personal savings goal offers optional projection');
+  await waitFor("function(){return Boolean(document.querySelector('.savings-desktop-target [data-savings-goal-projection]'))}",'desktop goal advisory panel');
+  const advisory=await c.call("function(){const el=document.querySelector('.savings-desktop-target [data-savings-goal-projection]');return el?.textContent||''}");
+  assert(advisory.includes('Κοινό πραγματικό υπόλοιπο')&&advisory.includes('Καμία μεταφορά')&&advisory.includes('γνωστές κινήσεις'),'goal projection distinguishes shared real balance, hypothetical funding and bounded assumptions');
+  await screenshot('savings-goal-projection-desktop');
+  const enteredScenario=await c.call("function(){const input=document.querySelector('.savings-desktop-target [data-savings-goal-projection] input[aria-label=\"Υποθετική μηνιαία αποταμίευση\"]');if(!input)return false;const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')?.set;setter?.call(input,'50');input.dispatchEvent(new Event('input',{bubbles:true}));return true}");
+  assert(enteredScenario,'what-if monthly contribution uses shared finance money input');
+  await sleep(70);
+  const stillReal=await state();
+  assert(JSON.stringify(realBefore)===JSON.stringify(stillReal),'editable hypothetical contribution does not post finance events or change realized account balances');
+  await c.send('Emulation.setDeviceMetricsOverride',{width:375,height:812,deviceScaleFactor:1,mobile:false});
+  await c.call("function(){document.querySelector('.savings-mobile-legacy [data-savings-goal-projection]')?.scrollIntoView({block:'start'});return true}");
+  await sleep(170);
+  const mobileProjection=await c.call("function(){const node=document.querySelector('.savings-mobile-legacy [data-savings-goal-projection]');const r=node?.getBoundingClientRect();return {exists:Boolean(node),width:r?.width||0,left:r?.left??-1,right:r?.right??9999,overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth,panels:node?.querySelectorAll('.savings-projection-scenario').length??0}}");
+  await screenshot('savings-goal-projection-mobile');
+  assert(mobileProjection.exists&&mobileProjection.overflow<=1&&mobileProjection.left>=-1&&mobileProjection.right<=376,'goal projection mobile has no clipping or horizontal overflow');
+  await c.call("function(){[...document.querySelectorAll('.savings-mobile-legacy [data-savings-goal-projection] button')].find(el=>(el.textContent||'').includes('Κλείσιμο'))?.click();return true}");
+  await waitFor("function(){return !document.querySelector('[data-savings-goal-projection]')}",'projection closes without a ledger mutation');
+  await c.send('Emulation.setDeviceMetricsOverride',{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
+  assert(JSON.stringify(realBefore)===JSON.stringify(await state()),'closed goal projection has no realized-money side effects');
+
   console.log('Savings remediation QA: future-dated saving does not affect current realized progress');
   const baselineUrl=new URL(baseUrl);baselineUrl.searchParams.set('page','savings');baselineUrl.searchParams.set('state','budget-rules');
   await c.send('Page.navigate',{url:baselineUrl.href});
