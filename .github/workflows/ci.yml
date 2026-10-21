@@ -5,9 +5,14 @@ on:
     branches: [main, develop]
   pull_request:
     branches: [main, develop]
-    types: [opened, synchronize, reopened, ready_for_review]
-    paths-ignore:
-      - 'visual-qa/**'
+    types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
+  workflow_dispatch:
+    inputs:
+      final_visual:
+        description: Capture and upload the full 216-image final visual acceptance matrix
+        type: boolean
+        required: false
+        default: false
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -82,3 +87,102 @@ jobs:
             /tmp/myfinhub-settings-rules-modal-qa/*.png
           if-no-files-found: warn
           retention-days: 14
+
+  codeql:
+    name: CodeQL security analysis
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    uses: ./.github/workflows/codeql.yml
+
+  webkit:
+    name: WebKit compatibility
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    uses: ./.github/workflows/cross-engine-smoke.yml
+
+  performance:
+    name: Lighthouse and loading shift
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    uses: ./.github/workflows/performance-smoke.yml
+
+  windows:
+    name: Windows installer and lifecycle
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    uses: ./.github/workflows/desktop-windows.yml
+
+  windows-first-run:
+    name: Windows application-owned first run
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    uses: ./.github/workflows/desktop-first-run.yml
+
+  windows-clean-launch:
+    name: Windows clean installed launch
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    uses: ./.github/workflows/desktop-clean-launch.yml
+
+  final-visual:
+    name: Optional 216-image visual acceptance
+    needs: [validate, codeql, webkit, performance, windows, windows-first-run, windows-clean-launch]
+    if: >-
+      ${{ (github.event_name == 'workflow_dispatch' && inputs.final_visual) ||
+          (github.event_name == 'pull_request' &&
+           github.event.pull_request.draft == false &&
+           contains(github.event.pull_request.labels.*.name, 'final-visual-qa')) }}
+    uses: ./.github/workflows/final-visual-qa.yml
+
+  gate:
+    name: Unified required gate
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [validate, codeql, webkit, performance, windows, windows-first-run, windows-clean-launch, final-visual]
+    env:
+      VALIDATE: ${{ needs.validate.result }}
+      CODEQL: ${{ needs.codeql.result }}
+      WEBKIT: ${{ needs.webkit.result }}
+      PERFORMANCE: ${{ needs.performance.result }}
+      WINDOWS: ${{ needs.windows.result }}
+      FIRST_RUN: ${{ needs.windows-first-run.result }}
+      CLEAN_LAUNCH: ${{ needs.windows-clean-launch.result }}
+      FINAL_VISUAL: ${{ needs.final-visual.result }}
+      DRAFT_PR: ${{ github.event_name == 'pull_request' && github.event.pull_request.draft }}
+      VISUAL_REQUIRED: ${{ (github.event_name == 'workflow_dispatch' && inputs.final_visual) || (github.event_name == 'pull_request' && github.event.pull_request.draft == false && contains(github.event.pull_request.labels.*.name, 'final-visual-qa')) }}
+    steps:
+      - name: Fail closed on failed, cancelled or missing required checks
+        shell: bash
+        run: |
+          set -euo pipefail
+          failures=0
+          require_success() {
+            local name="$1" result="$2"
+            echo "$name: $result"
+            if [ "$result" != "success" ]; then failures=$((failures+1)); fi
+          }
+          require_skipped_or_success() {
+            local name="$1" result="$2"
+            echo "$name: $result"
+            if [ "$result" != "success" ] && [ "$result" != "skipped" ]; then failures=$((failures+1)); fi
+          }
+          require_success validate "$VALIDATE"
+          require_success codeql "$CODEQL"
+          if [ "$DRAFT_PR" = "true" ]; then
+            for item in WEBKIT PERFORMANCE WINDOWS FIRST_RUN CLEAN_LAUNCH; do
+              # Draft PRs intentionally defer expensive jobs. Even if a job did
+              # run successfully due to a later event, this is not a failure.
+              require_skipped_or_success "$item" "${!item}"
+            done
+          else
+            require_success webkit "$WEBKIT"
+            require_success performance "$PERFORMANCE"
+            require_success windows "$WINDOWS"
+            require_success windows-first-run "$FIRST_RUN"
+            require_success windows-clean-launch "$CLEAN_LAUNCH"
+          fi
+          if [ "$VISUAL_REQUIRED" = "true" ]; then
+            require_success final-visual "$FINAL_VISUAL"
+          elif [ "$FINAL_VISUAL" != "skipped" ] && [ "$FINAL_VISUAL" != "success" ]; then
+            echo "Unexpected final-visual result: $FINAL_VISUAL"
+            failures=$((failures+1))
+          fi
+          echo "Unified required gate failures: $failures"
+          if [ "$failures" -gt 0 ]; then exit 1; fi
