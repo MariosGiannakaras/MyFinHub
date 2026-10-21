@@ -22,7 +22,11 @@ describe('settlement mobile preview source geometry regression (#588 B3)',()=>{
     const qa=readFileSync('scripts/lending-remediation-qa.mjs','utf8');
     expect(css).toContain('.lending-settlement-modal [data-lending-plan-preview]{');
     expect(css).toContain('display:flex;flex-direction:column;align-items:stretch');
-    expect(css).toContain('.lending-settlement-modal{grid-template-rows:max-content minmax(0,1fr) max-content}');
+    expect(css).toContain('.lending-settlement-modal>header{');
+    expect(css).toContain('flex:0 0 auto;align-self:stretch');
+    expect(css).toContain('flex:1 1 auto;min-height:0;max-height:none;overflow-y:auto');
+    expect(css).toContain('.lending-settlement-modal>footer{flex:0 0 auto');
+    expect(qa).toContain("mobileFit.modalDisplay==='flex'&&mobileFit.headerFlexShrink==='0'");
     expect(qa).toContain("mobileFit.previewDirection==='column'");
     expect(qa).toContain("mobileFit.headerFits");
     expect(qa).toContain("await shot('lending-settlement-preview-mobile')");
