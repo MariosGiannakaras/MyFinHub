@@ -172,3 +172,6 @@ No Bank Excel/CSV/OFX import, third-party bank connector, automatic Euribor, car
 
 ### Typed negative test and metadata follow-up (2026-10-21)
 - The newly added forged SplitPart case lacked the required `label` in the test fixture, causing a draft TS2322 before finance tests. Added the real typed field (no casts or weakened checks). Backend noncash writeoff validation now rejects even *empty* forged `parts`/`funding` metadata arrays, and adversarial source tests prove both forms. The parallel reconciliation QA correction at `1f6a098c` was preserved. Await new exact-head validation, not yet accepted.
+
+### Fixed eager bundle root cause (2026-10-21)
+- Draft `e7ee2c3f` CI: 1,386/1,386 unit/source tests and TypeScript PASS, but production `index` JS **528.1 KiB raw exceeded unchanged 528.0 KiB limit**. The newly shared linked-fee module was statically imported by *both* generic and contextual QuickAdd, placing rarely used fee construction on the eager path. Deferred its builder to `await import('../lib/linkedFees')` inside existing save branches; kept tiny local lookup needed for fee prefill, while App/QA were already using dynamic imports for their single atomic reducer. Added source guard to prevent reintroducing static eager dependency. **Do not increase bundle budget**. Exact-head build confirmation pending.

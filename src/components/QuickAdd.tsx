@@ -14,7 +14,7 @@ import { MoneyInput } from './MoneyInput';
 import { categoryTree, subcategoriesFor } from '../lib/categories';
 import { allAccounts, createEvent, frequentDescriptions } from '../lib/domain';
 import { manualReconciliationPreview, manualReconciliationDraftError } from '../lib/manualReconciliation';
-import {buildLinkedTransferFee,linkedFeeFor} from '../lib/linkedFees';
+// Only load the linked fee builder for a confirmed paid transfer.
 import {isSafeMoneyValue} from '../lib/money';
 import { isSavingsAccount, isSavingContributionSource } from '../lib/accountSelection';
 import { ENTRY_INTENTS, structuredPresetFromFrequent, type EntryIntent } from '../lib/entryIntents';
@@ -36,6 +36,9 @@ import { userErrorMessage } from '../lib/userMessage';
 import type { EventKind, FinanceData, FinanceEvent, SplitPart } from '../types';
 
 type FundingSourceRow={id:string;sourceKey:string;amountText:string};
+
+const linkedFeeFor=(data:FinanceData,principalId:string):FinanceEvent|null=>
+  (data.state.events??[]).find(event=>event.feeForEventId===principalId)??null;
 
 export type QuickPrefill = { note:string; amount:number; category?:string; subcategory?:string; accountId?:string };
 
@@ -232,6 +235,7 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
         if(!onCreateLinkedTransfer)throw new Error('Δεν είναι διαθέσιμη η ασφαλής αποθήκευση συνδεδεμένης προμήθειας.');
         const feeValue=feeAmount.trim()?Number(feeAmount.replace(',','.')):0;
         if(!isSafeMoneyValue(feeValue)||feeValue<0)throw new Error('Η προμήθεια πρέπει να είναι μη αρνητικό ποσό σε λεπτά του ευρώ.');
+        const {buildLinkedTransferFee}=await import('../lib/linkedFees');
         const fee=buildLinkedTransferFee(data,event,{amount:feeValue,category:feeCategory});
         await onCreateLinkedTransfer(event,fee);
       }else{

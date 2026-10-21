@@ -22,7 +22,7 @@ import { allRecurringItems, recurringAccountError } from '../lib/recurring';
 import { pendingScheduled, scheduledToEvent, transitionScheduled } from '../lib/scheduled';
 import { accountDisplayName } from '../lib/ui';
 import { money } from '../lib/format';
-import { buildLinkedTransferFee } from '../lib/linkedFees';
+// The fee contract is loaded only when a real card-payment commission is saved.
 import { isSafeMoneyValue } from '../lib/money';
 import { accountMatchesFinancialProvider } from '../lib/financialProviders';
 import type { EventKind, FinanceData, FinanceEvent, SavingSource, ScheduledTransaction } from '../types';
@@ -183,6 +183,7 @@ function ContextModal({data,asOf,context,onClose,onCreate,onCreateLinkedTransfer
         const feeValue=Number(paymentFee.replace(',','.'));
         if(!isSafeMoneyValue(feeValue)||feeValue<0)throw new Error('Η προμήθεια χρειάζεται έγκυρο ποσό σε ευρώ και λεπτά.');
         if(!onCreateLinkedTransfer)throw new Error('Δεν είναι διαθέσιμη η ενιαία ασφαλής αποθήκευση πληρωμής και προμήθειας.');
+        const {buildLinkedTransferFee}=await import('../lib/linkedFees');
         const fee=buildLinkedTransferFee(data,event,{amount:feeValue,category:paymentFeeCategory});
         await onCreateLinkedTransfer(event,fee);
       }else{
