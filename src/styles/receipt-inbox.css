@@ -89,3 +89,11 @@
 @media(max-width:360px){
   .receipt-review-actions{grid-template-columns:1fr}
 }
+
+/* Local-only duplicate-purchase candidates: readable without exposing extra actions. */
+.receipt-existing-matches{margin-top:12px;padding:12px;border:1px solid var(--border-subtle);border-radius:13px;background:var(--surface-raised,#fff);color:var(--ink)}
+.receipt-existing-matches h3{margin:0;font-size:11px;line-height:1.4}
+.receipt-existing-matches p{font-size:9px;line-height:1.55;margin:6px 0;color:var(--muted)}
+.receipt-existing-matches ul{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:7px}
+.receipt-existing-matches li{padding:8px;border-radius:9px;background:var(--surface-subtle,#f0f4fa);display:grid;gap:4px;overflow-wrap:anywhere;font-size:9px;line-height:1.4}
+.receipt-existing-matches li>small{font-size:8px;color:var(--muted)}

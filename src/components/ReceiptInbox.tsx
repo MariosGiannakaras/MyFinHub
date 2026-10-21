@@ -13,6 +13,7 @@ import { useModalFocus } from '../hooks/useModalFocus';
 import { normalizeReceiptFile } from '../lib/receiptImage';
 import type { ReceiptOcrProgress } from '../lib/receiptOcr';
 import { suggestReceiptCategory } from '../lib/receiptParser';
+import { findReceiptPurchaseCandidates } from '../lib/receiptPurchaseMatches';
 import {
   createReceiptDraft,
   deleteReceiptDraft,
@@ -121,6 +122,16 @@ export function ReceiptInbox({
   const modalRef = useModalFocus<HTMLElement>(open&&!deleteRequest, 'button', onClose);
 
   const selected = useMemo(() => drafts.find((draft) => draft.id === selectedId) ?? null, [drafts, selectedId]);
+  // Advisory only: calculate candidates from the owner's current review edits,
+  // never alter transactions or associate receipts without a separate action.
+  const purchaseMatches=useMemo(()=>{
+    if(!reviewProposal)return [];
+    const totalText=reviewTotal.trim();
+    const parsedTotal=totalText?Number(totalText):undefined;
+    const correctedEur=reviewTotalEdited&&parsedTotal!==undefined&&Number.isFinite(parsedTotal)&&parsedTotal>0;
+    const currency=reviewProposal.currency&&reviewProposal.currency!=='EUR'&&!correctedEur?reviewProposal.currency:'EUR';
+    return findReceiptPurchaseCandidates(data,{merchant:reviewProposal.merchant,date:reviewProposal.date,total:parsedTotal,currency});
+  },[data,reviewProposal,reviewTotal,reviewTotalEdited]);
 
   useEffect(()=>{
     const proposal=selected?.proposal;
@@ -334,6 +345,11 @@ export function ReceiptInbox({
 
               <label className="receipt-review-category"><span>Κατηγορία <small>δική σου τελική επιλογή</small></span><CategorySelectInput settings={data.state.settings} kind="expense" category={reviewed.category??''} subcategory={reviewed.subcategory??''} allowEmpty emptyLabel="Χωρίς κατηγορία" aria-label="Διόρθωση κατηγορίας ή υποκατηγορίας απόδειξης" onChange={selection=>updateReview({category:selection.category||undefined,subcategory:selection.subcategory||undefined})}/></label>
             </div>{reviewTotalInvalid?<FormError id="receipt-review-total-error">Το ποσό πρέπει να είναι έγκυρος θετικός αριθμός.</FormError>:null}{needsEurTotal ? <div className="receipt-currency-warning" role="alert">Το OCR αναγνώρισε {reviewed.currency} στην απόδειξη. Η καταχώριση γίνεται μόνο σε €. Διόρθωσε το ποσό σε ευρώ πριν συνεχίσεις.</div> : null}</div> : <div className="receipt-proposal receipt-proposal-empty"><ScanLine size={22}/><b>Δεν έχει γίνει ακόμη OCR</b><span>Η φωτογραφία είναι ήδη ασφαλώς αποθηκευμένη τοπικά. Η σάρωση είναι προαιρετική και μπορεί να γίνει αργότερα.</span></div>}
+            {purchaseMatches.length ? <aside className="receipt-existing-matches" aria-label="Πιθανές υπάρχουσες αγορές">
+              <h3>Έλεγξε αν έχει ήδη καταχωριστεί η αγορά</h3>
+              <p>Βρέθηκαν κινήσεις με ίδιο ποσό και κοντινή ημερομηνία. Η απόδειξη δεν συσχετίζεται αυτόματα και δεν δημιουργείται νέα κίνηση από αυτή τη λίστα.</p>
+              <ul>{purchaseMatches.map(row=><li key={row.id}><span>{row.note||'Κίνηση χωρίς περιγραφή'}</span><small>{row.source==='legacy'?'Ιστορική κίνηση':'Κίνηση'} · {row.date} · {row.amount.toLocaleString('el-GR',{style:'currency',currency:'EUR'})}{row.merchantMatches?' · παρόμοιο κατάστημα':''}</small></li>)}</ul>
+            </aside> : null}
             <div className="receipt-review-actions">
               <Button type="button" variant="secondary" className="danger" disabled={scanning} onClick={() => requestRemoveOne(selected)}><Trash2 size={16}/> Διαγραφή</Button>
               {!scanning ? <Button type="button" variant="secondary" onClick={() => void scan(selected)}><ScanLine size={16}/> {selected.status === 'ready' ? 'Νέα σάρωση' : 'Σάρωση τώρα'}</Button> : null}
