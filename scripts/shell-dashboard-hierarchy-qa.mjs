@@ -58,12 +58,13 @@ try{
   console.log('Desktop primary-card UX geometry:',JSON.stringify(primaryUX));
 
   // Account-specific Transactions uses the existing account selector, not a parallel ledger.
-  await c.call("function(){document.querySelector('[data-account-role=\\\"payroll\\\"] .approved-account-actions button[aria-label^=\\\"Συναλλαγές\\\"]')?.click();return true}");
-  await waitFor("function(){return document.querySelector('#main-workspace h1')?.textContent==='Συναλλαγές'&&[...document.querySelectorAll('select[aria-label=\\\"Φίλτρο λογαριασμού\\\"]')].some(s=>s.value==='piraeus-payroll')}",'Dashboard account filter reaches Transactions');
-  const filtered=await c.eval("(()=>[...document.querySelectorAll('select[aria-label=\\\"Φίλτρο λογαριασμού\\\"]')].every(s=>s.value==='piraeus-payroll'))()");
+  const clicked=await c.call("function(){const button=[...document.querySelectorAll('[data-account-role=payroll] .approved-account-actions button')].find(x=>x.getAttribute('aria-label')?.startsWith('Συναλλαγές'));if(!button)return false;button.click();return true}");
+  assert(clicked,'#597: exact payroll card Transactions action exists and is clickable');
+  await waitFor("function(){return document.querySelector('#main-workspace h1')?.textContent==='Συναλλαγές'&&[...document.querySelectorAll('select')].some(s=>s.getAttribute('aria-label')==='Φίλτρο λογαριασμού'&&s.value==='piraeus-payroll')}",'Dashboard account filter reaches Transactions');
+  const filtered=await c.eval("(()=>{const selectors=[...document.querySelectorAll('select')].filter(s=>s.getAttribute('aria-label')==='Φίλτρο λογαριασμού');return selectors.length>0&&selectors.every(s=>s.value==='piraeus-payroll')})()");
   assert(filtered,'#597: account selection reaches both ledger filter owners');
-  await c.call("function(){const s=document.querySelector('select[aria-label=\\\"Φίλτρο λογαριασμού\\\"]');const setter=Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value')?.set;setter?.call(s,'all');s.dispatchEvent(new Event('change',{bubbles:true}));return true}");
-  await waitFor("function(){return [...document.querySelectorAll('select[aria-label=\\\"Φίλτρο λογαριασμού\\\"]')].every(s=>s.value==='all')}",'user can clear the account filter');
+  await c.call("function(){const s=[...document.querySelectorAll('select')].find(s=>s.getAttribute('aria-label')==='Φίλτρο λογαριασμού');if(!s)return false;const setter=Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value')?.set;setter?.call(s,'all');s.dispatchEvent(new Event('change',{bubbles:true}));return true}");
+  await waitFor("function(){const selectors=[...document.querySelectorAll('select')].filter(s=>s.getAttribute('aria-label')==='Φίλτρο λογαριασμού');return selectors.length>0&&selectors.every(s=>s.value==='all')}",'user can clear the account filter');
   await navigateDashboard({page:'dashboard',motion:'reduced'});
 
   console.log('Shell/Dashboard hierarchy QA: wide desktop composition');
