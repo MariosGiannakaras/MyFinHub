@@ -103,4 +103,24 @@ describe('#588 enhanced budgets: subcategory, rollover, nonposting commitments',
   expect(()=>normalizeBudget(budget('2026-13','overall',40))).toThrow(/μήνα/);
   expect(normalizeBudget(budget('2026-08','overall',40))).toMatchObject({scope:'overall',carryover:false});
  });
+ it('preserves two legitimate separate commitments with equal cents when their names differ',()=>{
+  const d=fixture();
+  d.state.scheduled=[{id:'s1',dueDate:'2026-08-20',status:'pending',kind:'expense',amount:30,
+    note:'Grocery',category:'Τρόφιμα',accountId:'bank',createdAt:stamp,updatedAt:stamp}];
+  d.state.recurringCustom=[{id:'r1',name:'Another bill',category:'Τρόφιμα',accountId:'bank',
+    day:20,amount:30,active:true}];
+  const due=budgetProjectedCommitments(d,'2026-08','2026-08-17');
+  expect(due).toHaveLength(2);
+  expect(due.reduce((sum,item)=>sum+item.amount,0)).toBe(60);
+ });
+ it('recognizes a confirmed legacy split with a subcategory absent from current taxonomy',()=>{
+  const d=fixture();
+  d.seed.transactions=[{id:'legacy',date:'2026-08-11',type:'expense',amount:16,
+    accountId:'bank',note:'Old split',category:'Άλλο'}];
+  d.state.reviewDecisions={'legacy':{status:'confirmed',semanticKind:'split',decidedAt:stamp,
+    parts:[{id:'a',label:'Food',category:'Ιστορικά τρόφιμα',subcategory:'Παλιά αγορά',amount:16}]}};
+  expect(categoryBudgetSpending(d,'2026-08').get('Ιστορικά τρόφιμα')).toBe(16);
+  expect(subcategoryBudgetSpending(d,'2026-08').get('Ιστορικά τρόφιμα › Παλιά αγορά')).toBe(16);
+ });
+
 });

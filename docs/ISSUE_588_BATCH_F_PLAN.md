@@ -39,3 +39,13 @@ Commit coherent feature code as a draft PR referencing issue #588. Then extend r
 - Shared Reports DOM, mobile summary, semantic progressbar, finance precision, accounts and optimistic save/history contracts stay intact. These source changes require rendered sibling QA and limit validation before acceptance.
 
 **Implementation progress:** code bundled into draft PR #596, accepted subitems **0/2**; roadmap **2/12 · 4/24**. Exact next action: finish integrated browser evidence and focused type/finance tests, batch any failures once, then final required review gates.
+
+## Second coherent coding slice — historical aliases, safe identity references
+
+- Historical category and subcategory budget spending preserves display names from the **actual posting part**, including confirmed legacy splits whose historical labels were later removed from the current taxonomy; budget matching still uses normalized ID/alias identity keys.
+- The editor stores stable category/subcategory IDs only when those IDs actually exist in canonical persistent identity state. No synthetic lookup-only IDs are stored in a legacy state; old name-only budgets remain writable.
+- Server category identity validation now rejects forged, missing, wrong-kind, wrong-parent or cross-category stable budget references. The category tree remains canonical and historic alias read compatibility is not rewritten.
+- Recurring/scheduled dedup is conservative: both **same amount, account, category, date AND same named obligation** must match; two different real obligations with identical amount are retained. Added regression for distinct bills and reviewed historical split.
+- No reviewed production finance history changed. Code is committed on draft PR; **no acceptance or full gate PASS claimed**. Next step is one grouped narrow preflight and rendered workflow extension.
+
+**Counters remain Implementations 2/12 completed · Sub-implementations 4/24 completed.**

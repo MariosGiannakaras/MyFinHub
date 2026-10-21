@@ -59,10 +59,15 @@ function add(target:Map<string,number>,key:string,amount:number){
  * together: a split is allocated by its actual parts exactly once. */
 function spending(data:FinanceData,month:string,asOf?:string){
   const categories=new Map<string,number>(),subcategories=new Map<string,number>();
+  const categoryNames=new Map<string,string>(),subcategoryNames=new Map<string,string>();
   const addExpense=(category:string|undefined,subcategory:string|undefined,amount:number)=>{
     if(!category?.trim())return;
+    categoryNames.set(normalize(category),category.trim());
     add(categories,normalize(category),amount);
-    if(subcategory?.trim())add(subcategories,pair(category,subcategory),amount);
+    if(subcategory?.trim()){
+      subcategoryNames.set(pair(category,subcategory),categoryPath(category,subcategory));
+      add(subcategories,pair(category,subcategory),amount);
+    }
   };
   const parts=(values:SplitPart[]|undefined)=>{
     for(const part of values??[]){
@@ -84,28 +89,24 @@ function spending(data:FinanceData,month:string,asOf?:string){
     const impact=flowImpactEvent(event);
     if(impact.expense)addExpense(event.category,event.subcategory,impact.expense);
   }
-  return {categories,subcategories};
+  return {categories,subcategories,categoryNames,subcategoryNames};
 }
 
 export function categoryBudgetSpending(data:FinanceData,month:string,asOf?:string){
-  const totals=spending(data,month,asOf).categories;
+  const allocations=spending(data,month,asOf);
   const result=new Map<string,number>();
-  // Preserve configured/display category names for legacy callers.
-  const names=new Map<string,string>();
-  for(const tx of effectiveLegacyTransactions(data)){if(tx.category)names.set(normalize(tx.category),tx.category)}
-  for(const e of data.state.events??[]){if(e.category)names.set(normalize(e.category),e.category)}
-  for(const item of data.state.settings.expenseCategories)names.set(normalize(item),item);
-  for(const [key,value] of totals)result.set(names.get(key)??key,money(value));
+  // The actual posting (including a confirmed legacy split part) owns the
+  // display label; the budget rollups use normalized identity/aliases.
+  for(const [key,value] of allocations.categories)
+    result.set(allocations.categoryNames.get(key)??key,money(value));
   return result;
 }
 
 export function subcategoryBudgetSpending(data:FinanceData,month:string,asOf?:string){
-  const allocations=spending(data,month,asOf).subcategories;
-  const names=new Map<string,string>();
-  for(const e of data.state.events??[]){if(e.category&&e.subcategory)names.set(pair(e.category,e.subcategory),categoryPath(e.category,e.subcategory))}
-  for(const tx of effectiveLegacyTransactions(data)){if(tx.category&&tx.subcategory)names.set(pair(tx.category,tx.subcategory),categoryPath(tx.category,tx.subcategory))}
+  const allocations=spending(data,month,asOf);
   const result=new Map<string,number>();
-  for(const [key,value] of allocations)result.set(names.get(key)??key.replace('\u001f',' › '),money(value));
+  for(const [key,value] of allocations.subcategories)
+    result.set(allocations.subcategoryNames.get(key)??key.replace('\u001f',' › '),money(value));
   return result;
 }
 
@@ -157,7 +158,7 @@ export function budgetProjectedCommitments(data:FinanceData,month:string,asOf:st
   for(const {item,nextDate} of recurringUpcoming(data,asOf)){
     if(!nextDate||!nextDate.startsWith(month+'-')||nextDate<=asOf||!item.category||Number(item.amount)<=0)continue;
     if((data.state.events??[]).some(e=>e.recurringId===item.id&&e.date.slice(0,7)===month))continue;
-    const duplicate=scheduled.some(s=>s.dueDate===nextDate&&s.accountId===item.accountId&&
+    const duplicate=scheduled.some(s=>s.dueDate===nextDate&&s.accountId===item.accountId&&normalize(s.note)===normalize(item.name)&&
       cents(s.amount)===cents(item.amount)&&normalize(s.category)===normalize(item.category));
     if(duplicate)continue;
     result.push({id:item.id,date:nextDate,category:item.category,amount:Number(item.amount),source:'recurring'});

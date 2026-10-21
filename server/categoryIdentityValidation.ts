@@ -15,7 +15,14 @@ export function validateCategoryIdentityState(value:unknown):asserts value is Fi
   const settings=value.settings;
   if(!object(settings))invalid('Missing settings.');
   const raw=settings.categoryIdentities;
-  if(raw===undefined)return;
+  if(raw===undefined){
+    // Older name-only budgets are valid. A stable taxonomy reference cannot
+    // point to a non-existent identity map.
+    if(Array.isArray(value.budgets)&&value.budgets.some(budget=>
+      object(budget)&&(budget.categoryIdentityId!==undefined||budget.subcategoryIdentityId!==undefined)))
+      invalid('Budgets refer to missing category identities.');
+    return;
+  }
   if(!object(raw)||Object.keys(raw).length>20_000)invalid('Invalid state.settings.categoryIdentities.');
 
   const records=new Map<string,CategoryIdentityRecord>();
@@ -57,4 +64,23 @@ export function validateCategoryIdentityState(value:unknown):asserts value is Fi
       }
     }
   }
+  const budgets=Array.isArray(value.budgets)?value.budgets:[];
+  for(const [index,budget] of budgets.entries()){
+    if(!object(budget))continue;
+    if(budget.categoryIdentityId!==undefined){
+      const category=records.get(String(budget.categoryIdentityId));
+      if(!category||category.kind!=='expense'||category.parentId!==undefined||
+        (budget.scope!=='category'&&budget.scope!=='subcategory'))
+        invalid(`Invalid state.budgets[${index}].categoryIdentityId.`);
+    }
+    if(budget.subcategoryIdentityId!==undefined){
+      const sub=records.get(String(budget.subcategoryIdentityId));
+      if(!sub||sub.kind!=='expense'||!sub.parentId||
+        budget.scope!=='subcategory'||!budget.categoryIdentityId||
+        (sub.parentId!==budget.categoryIdentityId&&
+          !(sub.parentAliases??[]).includes(String(budget.categoryIdentityId))))
+        invalid(`Invalid state.budgets[${index}].subcategoryIdentityId.`);
+    }
+  }
+
 }

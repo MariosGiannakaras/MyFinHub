@@ -44,8 +44,13 @@ export function BudgetRuleSettings({data,asOf,budgetMonth,budgetRows,onUpsertBud
     try{
       const category=budgetScope==='overall'?undefined:budgetCategory;
       const subcategory=budgetScope==='subcategory'?budgetSubcategory:undefined;
-      const categoryIdentityId=category?resolveCategoryIdentity(data.state.settings,'expense',category)?.id:undefined;
-      const subcategoryIdentityId=category&&subcategory?resolveSubcategoryIdentity(data.state.settings,'expense',category,subcategory)?.id:undefined;
+      const knownIdentities=data.state.settings.categoryIdentities??{};
+      const resolvedCategoryId=category?resolveCategoryIdentity(data.state.settings,'expense',category)?.id:undefined;
+      const resolvedSubcategoryId=category&&subcategory?resolveSubcategoryIdentity(data.state.settings,'expense',category,subcategory)?.id:undefined;
+      // Identity lookups may synthesize provisional IDs for legacy category
+      // trees; persist IDs only when the same identity is in canonical state.
+      const categoryIdentityId=resolvedCategoryId&&knownIdentities[resolvedCategoryId]?resolvedCategoryId:undefined;
+      const subcategoryIdentityId=resolvedSubcategoryId&&knownIdentities[resolvedSubcategoryId]?resolvedSubcategoryId:undefined;
       const id=budgetStableId(month,budgetScope,category,subcategory,categoryIdentityId,subcategoryIdentityId);
       const existing=(data.state.budgets??[]).find(item=>item.id===id||
         (item.month===month&&item.scope===budgetScope&&
