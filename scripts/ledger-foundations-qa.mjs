@@ -110,6 +110,38 @@ try{
   const withFee=await c.call("function(){return document.querySelector('.report-kpi-strip')?.textContent||''}");
   assert(withFee!==reportsBefore,'real commission changes report expense totals once whereas the transfer alone does not');
 
+  console.log('Ledger QA: one multi-funded purchase, only real credit share on statement');
+  await navigate('Συναλλαγές','Συναλλαγές');
+  await clickGlobalQuickEntry();
+  await waitFor("function(){return !!document.querySelector('.quick-modal')}",'mixed funding editor');
+  await setLabelInput('Ποσό','100');
+  await setLabelInput('Σχόλιο','QA mixed purchase');
+  const fundingToggle=await c.call("function(){const box=document.querySelector('[data-multi-funding] input[type=checkbox]');box?.click();return Boolean(box?.checked)}");
+  assert(fundingToggle,'multi-funding is explicitly opted into');
+  await setAriaInput('Ποσό πηγής 1','40');
+  await setAriaInput('Ποσό πηγής 2','60');
+  const openedCredit=await c.call("function(){const source=document.querySelector('input[aria-label=\"Λογαριασμός ή πιστωτική πηγής 2\"]');source?.click();return Boolean(source)}");
+  assert(openedCredit,'second source uses the shared owned select');
+  await waitFor("function(){return Boolean(document.querySelector('.owned-option-list [role=option]'))}",'credit funding choices');
+  await clickText('.owned-option-list [role=option]','QA Visa');
+  const share=await c.call("function(){const editor=document.querySelector('[data-multi-funding]');return {sum:editor?.querySelector('.split-head')?.textContent||'',credit:document.querySelector('input[aria-label=\"Λογαριασμός ή πιστωτική πηγής 2\"]')?.value||''}}");
+  assert(share.sum.includes('100,00')&&share.credit.includes('QA Visa'),'funding allocations equal the full purchase and card selection is real');
+  await clickText('.quick-modal footer button','Καταχώριση');
+  await waitFor("function(){return !document.querySelector('.quick-modal')}",'mixed purchase saved as one event');
+  const purchase=await c.call("function(){const rows=[...document.querySelectorAll('[data-transaction-kind=expense][data-transaction-source=event]')].filter(node=>(node.textContent||'').includes('QA mixed purchase'));return {count:rows.length,text:rows[0]?.textContent||''}}");
+  assert(purchase.count===1&&purchase.text.includes('100,00'),'only one parent 100 EUR expense is listed');
+  const mixedScreenshot=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
+  writeFileSync(`${evidenceDir}/ledger-multi-funded-purchase-desktop.png`,Buffer.from(mixedScreenshot.data,'base64'));
+  await navigate('Πιστωτική','Πιστωτική Κάρτα');
+  await waitFor("function(){return Boolean(document.querySelector('.credit-purchases-table'))}",'mixed card purchase appears in card history');
+  const creditShare=await c.call("function(){const row=[...document.querySelectorAll('.credit-purchases-table tbody tr')].find(node=>(node.textContent||'').includes('QA mixed purchase'));return row?.textContent||''}");
+  assert(creditShare.includes('60,00')&&!creditShare.includes('100,00'),'card history reports only the actual 60 EUR financed share');
+  const statements=await c.call("function(){return document.querySelector('[data-credit-statements]')?.textContent||''}");
+  assert(statements.includes('QA mixed purchase')||statements.includes('60,00'),'card statement contains the mixed purchase funded share');
+  const creditShot=await c.send('Page.captureScreenshot',{format:'png',captureBeyondViewport:false});
+  writeFileSync(`${evidenceDir}/ledger-multi-funded-credit-desktop.png`,Buffer.from(creditShot.data,'base64'));
+  await navigate('Συναλλαγές','Συναλλαγές');
+
   console.log('Ledger QA: create split transaction from authoritative parts');
   await navigate('Συναλλαγές','Συναλλαγές');await clickGlobalQuickEntry();await waitFor("function(){return !!document.querySelector('.quick-modal')}",'Quick Add split');await clickText('.generic-kind-grid button','Σύνθετη αγορά');
   const splitParentFields=await c.call("function(){const modal=document.querySelector('.quick-modal');const labels=[...modal.querySelectorAll('.form-grid label>span')].map(node=>(node.textContent||'').trim());return {hasAmount:labels.some(label=>label==='Ποσό'),hasCategory:labels.some(label=>label==='Κατηγορία'),focused:document.activeElement?.getAttribute('aria-label')||''}}");assert(!splitParentFields.hasAmount&&!splitParentFields.hasCategory,'split exposes no independent parent amount or category');assert(splitParentFields.focused==='Ποσό μέρους 1','split focuses the first authoritative part amount');

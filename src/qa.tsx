@@ -25,6 +25,7 @@ import { isSavingsAccount } from './lib/accountSemantics';
 import { withLegacyOverride, withLegacyTombstone } from './lib/legacyTransactions';
 import { applyTaxonomyOperation, type TaxonomyOperation } from './lib/taxonomyManagement';
 import { applyTransactionRules } from './lib/transactionRules';
+import { prepareCreditStatementEvent } from './lib/creditStatements';
 import { qaFinanceData } from './qaFixture';
 import { DashboardPage } from './pages/DashboardPage';
 import { TransactionsPage } from './pages/TransactionsPage';
@@ -455,7 +456,13 @@ function QaWorkspace(){
   const redo=()=>{const next=redoStack[0];if(!next)return;setRedoStack(stack=>stack.slice(1));setUndoStack(stack=>[...stack.slice(-19),data]);recordHistory('redo','Επαναφορά τελευταίας αναιρεμένης αλλαγής');setData(next)};
   const refresh=()=>{setSaveState('loading');window.setTimeout(()=>setSaveState('saved'),350)};
   const importData=(incoming:FinanceData)=>{setUndoStack(stack=>[...stack.slice(-19),data]);setRedoStack([]);setData(incoming)};
-  const addEvent=(event:FinanceEvent)=>update(current=>{const events=current.state.events??[];const exists=events.some(existing=>existing.id===event.id);const nextEvent=exists?event:applyTransactionRules(current,event);return {...current,state:{...current.state,events:exists?events.map(existing=>existing.id===event.id?nextEvent:existing):[...events,nextEvent]}}});
+  const addEvent=(event:FinanceEvent)=>update(current=>{
+    const events=current.state.events??[],exists=events.some(existing=>existing.id===event.id);
+    const ruledEvent=exists?event:applyTransactionRules(current,event);
+    const prepared=prepareCreditStatementEvent(current,ruledEvent);
+    return {...current,state:{...current.state,creditStatements:prepared.statements,
+      events:exists?events.map(existing=>existing.id===event.id?prepared.event:existing):[...events,prepared.event]}};
+  });
   const addEventDurably=async(event:FinanceEvent)=>{
     const params=new URLSearchParams(location.search);
     if(params.get('quick-event-save-failure')==='1')throw new Error('Η δοκιμαστική αποθήκευση κίνησης απέτυχε.');

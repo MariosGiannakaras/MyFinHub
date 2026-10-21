@@ -116,3 +116,6 @@ No Bank Excel/CSV/OFX import, third-party bank connector, automatic Euribor, car
 
 ### Credit-liability semantic hardening — draft
 - Current branch head moved concurrently with a source-test assertion fix; that existing change was preserved. New feature-level integrity test rejects a mixed-funded card expense with missing credit delta, since legacy `validateOptionalDelta` allows optional fields for older events. Direct card debt is computed from the explicit financed funding portion, not optional client-supplied `creditDelta`, while backend still requires validated matching delta on new funded credit purchases. Any forged omission must fail server semantic validation without changing reporting/archival liability.
+
+### B1 browser evidence and QA parity — 2026-10-21
+- Aligned synthetic QA event creation with the real App's `prepareCreditStatementEvent` reducer, so statement assignment is tested rather than omitted in the fixture. Expanded the existing ledger rendered QA to opt into an actual two-source 100 EUR purchase (bank 40 + QA Visa 60), persist one event, verify card history/statement against only the credit share, and capture desktop evidence for both transactions/card UI. Controls are driven through existing owned select and MoneyInput. Browser execution and screenshot inspection remain pending until review validation.
