@@ -484,7 +484,16 @@ async function main(){
     assert(vaultAfterRestore.body?.pan===TEST_PAN&&vaultAfterRestore.body?.expiry===TEST_EXPIRY&&vaultAfterRestore.body?.cvv===TEST_CVV,'Finance backup restore unexpectedly changed the separate card vault.');
 
     const health=await upstreamJson(`${local.apiUrl}/rest/v1/rpc/rheomiq_database_health`,local.serviceRole,{method:'POST',body:'{}'}) as any;
-    assert(health?.ok===true&&health?.storageMode==='relational_v1','Database health is not clean after backup restore.');
+    // Only count-based, non-sensitive integrity fields may appear in this
+    // diagnostic. Never print backup contents, personal notes or card data.
+    const failingHealthChecks=Object.entries(health?.checks??{})
+      .filter(([,value])=>typeof value==='number'&&value!==0)
+      .map(([key,value])=>`${key}:${value}`).join(',')||'none';
+    assert(health?.ok===true&&health?.storageMode==='relational_v1',
+      `Database health is not clean after backup restore (nonzero counts: ${failingHealthChecks}).`);
+    assert(Number(health?.checks?.events_without_legs)===0
+      &&Number(health?.checks?.invalid_writeoff_legs)===0,
+      'Zero-leg noncash writeoff was not recognized by the relational health contract.');
     assert(Number(health?.checks?.history_revision_mismatches||0)===0&&Number(health?.checks?.history_current_point_state_mismatches||0)===0,'History/state integrity is not clean after backup restore.');
 
     console.log('[real-stack] stage card-profile-vault-durable-cleanup');

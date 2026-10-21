@@ -59,6 +59,7 @@ const releasePending=[
   "20261010145500_guard_pending_card_secret_cleanup_intent.sql",
   "20261019110000_protect_irreversible_history_boundaries.sql",
   "20261021091500_add_lending_writeoff_event_kind.sql",
+  "20261021211500_allow_noncash_writeoff_health.sql",
 ] as const;
 
 describe('production migration ledger source contract',()=>{
