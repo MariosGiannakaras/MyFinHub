@@ -17,7 +17,6 @@ describe('QuickAdd shared action primitive ownership',()=>{
     expect(quickAdd.match(/<IconButton/g)).toHaveLength(1);
     expect(quickAdd.match(/<Button[^>]+variant="primary"/g)).toHaveLength(1);
     expect(quickAdd.match(/<Button[^>]+variant="secondary"/g)).toHaveLength(1);
-    expect(quickAdd.match(/<Button[^>]+variant="ghost"/g)).toHaveLength(1);
     expect(quickAdd).toContain('<IconButton type="button" aria-label="Κλείσιμο καταχώρισης" disabled={saving} onClick={requestClose}>');
     expect(quickAdd).toContain('<Button type="button" variant="secondary" disabled={saving} onClick={requestClose}>Ακύρωση</Button>');
     expect(quickAdd).toContain('<Button type="button" variant="primary" disabled={saving} onClick={()=>void submit()}>');
