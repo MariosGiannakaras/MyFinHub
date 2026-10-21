@@ -133,3 +133,7 @@ No Bank Excel/CSV/OFX import, third-party bank connector, automatic Euribor, car
 
 ### B3 migration ledger/reconciliation preflight
 - The new `20261021091500_add_lending_writeoff_event_kind.sql` was added to `releasePending` in the authoritative production migration source test; it is **not** production-applied and must not be labeled as such. The concurrent QA transaction-rule guard contained doubled regex backslashes (matching literal \\s rather than whitespace) after the QA reducer parity change; corrected to preserve identical actual first-match rule assertions as production App.
+
+### B3 owner-confirmed user workflow — 2026-10-21
+- Reused ContextualQuickAdd's real `onCreate` durable persistence for `lending_writeoff`, with amount, exact selected-date outstanding check, noncash semantics, explanatory preview, explicit owner checkbox and failure-keeps-dialog-open path. Added context action + accessible desktop/mobile actions from LendingPage without a separate page-local save mechanism. Source regression covers both routes, confirmation gate and single-save contract.
+- Draft contract/unit CI and migration syntax must be revalidated on the new head; the required SQL/Real Stack DB and rendered responsive/interaction evidence have **not** yet run. Plan persistence/settlement UX is still pending. Accepted counters remain **2/12 · 4/24**.
