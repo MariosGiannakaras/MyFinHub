@@ -87,13 +87,18 @@ describe('rendered browser QA reliability contract', () => {
     expect(finalScreenshots).toContain("process.env.MYFINHUB_FINAL_SCREENSHOTS!=='1'");
     expect(finalScreenshots).toContain('Final screenshot capture requires MYFINHUB_FINAL_SCREENSHOTS=1.');
   });
-  it('runs persistent Final Visual QA once from the canonical develop squash-merge marker',()=>{
-    expect(finalVisualWorkflow).toContain('push:');
-    expect(finalVisualWorkflow).toContain('branches: [develop]');
-    expect(finalVisualWorkflow).toContain("- '.audit/run-final-visual-review'");
-    expect(finalVisualWorkflow).toContain("github.event_name == 'push'");
-    expect(finalVisualWorkflow).toContain("TARGET_BRANCH: ${{ github.event.pull_request.head.ref || github.ref_name }}");
-    expect(finalVisualWorkflow).toContain("EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}");
+  it('requires exactly 216 read-only final screenshots as opt-in CI artifacts, not a git commit',()=>{
+    expect(finalVisualWorkflow).toContain('workflow_call:');
+    expect(finalVisualWorkflow).toContain('workflow_dispatch:');
+    expect(finalVisualWorkflow).toContain('permissions:\n  contents: read');
+    expect(finalVisualWorkflow).toContain('MYFINHUB_FINAL_SCREENSHOTS=1');
+    expect(finalVisualWorkflow).toContain('npm run qa:final-screenshots');
+    expect(finalVisualWorkflow).toContain('if [ "$COUNT" -ne 216 ]');
+    expect(finalVisualWorkflow).toContain('actions/upload-artifact@');
+    expect(finalVisualWorkflow).not.toContain('git push');
+    expect(finalVisualWorkflow).not.toContain('contents: write');
+    expect(ci).toContain('uses: ./.github/workflows/final-visual-qa.yml');
+    expect(ci).toContain("contains(github.event.pull_request.labels.*.name, 'final-visual-qa')");
     expect(finalVisualTrigger).toContain('issue-476 post-squash canonical-develop final visual release inspection');
   });
   it('records the in-place refresh transition atomically before the transient skeleton can disappear',()=>{
