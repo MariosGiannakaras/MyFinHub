@@ -20,7 +20,6 @@ import type { RankedCommandSearchItem } from './lib/commandSearch';
 import { prepareCreditStatementEvent } from './lib/creditStatements';
 import { accountBalances, allAccounts } from './lib/domain';
 import { isSavingsAccount } from './lib/accountSemantics';
-import { withLegacyOverride, withLegacyTombstone } from './lib/legacyTransactions';
 import { reportingMonthForDate } from './lib/localDate';
 import { pageHash, resolveHashRoute, settingsHash, type SettingsTabId } from './lib/routing';
 import type { TaxonomyOperation } from './lib/taxonomyManagement';
@@ -227,8 +226,8 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
     if(!(current.state.events??[]).some(event=>event.id===id))throw new Error('Η κίνηση άλλαξε. Ανανέωσε πριν τη διαγράψεις.');
     return withoutEventGroup(current,id);
   });
-  const editLegacy=(transaction:LegacyTransaction)=>finance.updateDurably(current=>withLegacyOverride(current,transaction));
-  const deleteLegacy=(id:string)=>finance.updateDurably(current=>withLegacyTombstone(current,id));
+  const editLegacy=async(transaction:LegacyTransaction)=>{const {withLegacyOverride}=await import('./lib/legacyTransactions');return finance.updateDurably(current=>withLegacyOverride(current,transaction))};
+  const deleteLegacy=async(id:string)=>{const {withLegacyTombstone}=await import('./lib/legacyTransactions');return finance.updateDurably(current=>withLegacyTombstone(current,id))};
   const withRecurring=(current:FinanceData,item:RecurringItem):FinanceData=>{
     const seeded=current.seed.recurring.some((existing)=>existing.id===item.id);
     if(seeded)return {...current,state:{...current.state,recurringOverrides:{...current.state.recurringOverrides,[item.id]:item}}};

@@ -118,7 +118,8 @@ describe('rendered browser QA reliability contract', () => {
     expect(coordinator).toContain('const activePorts=new Set()');
     expect(coordinator).toContain('await acquirePort(port)');
     expect(coordinator).toContain('releasePort(port)');
-    expect(coordinator).toContain('Promise.all(Array.from({length:Math.min(parallelism,scripts.length)}');
+    expect(coordinator).toContain('Promise.all(Array.from({length:Math.min(parallelism,parallelScripts.length)}');
+    expect(coordinator).toContain('for(const item of isolatedScripts)await runRenderedItem(item)');
   });
 
   it('waits for the lazy-resource error boundary to receive focus before checking redacted copy',()=>{
