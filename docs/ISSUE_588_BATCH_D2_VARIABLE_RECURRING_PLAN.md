@@ -25,3 +25,6 @@ No `main`, Production, Android, bank imports, destructive financial history or f
 
 ## Browser evidence added — draft (2026-10-21)
 - Extended existing Recurring cadence Chromium QA to select Variable via owned AppSelectInput, enter 80 € estimate with 60–100 € range using shared MoneyInputs, inspect controls and responsive 375px modal, persist through the existing durable save, confirm visible estimate label, and capture desktop/mobile editing/saved screenshots. Source guard locks test registration and the semantic distinctions. Actual browser run, screenshot inspection and failure-path QA remain pending. Do not claim completed #8.
+
+## #7 forecast boundary without overlapping PR #591 — 2026-10-21
+- Only `src/lib/forecast.ts`'s existing recurring-movement **label** is changed: when `amountMode='variable'`, it visibly states `Εκτίμηση: …`; forecast amount remains owner-entered `item.amount` (no new booked cash event). Legacy fixed recurring labels/numerics and 30/60/90-day cadence stay identical. Added isolated test verifying exactly one October estimated charge and no real event. PR #591 owns scenario UI/module; neither was touched. Integrating multi-cycle fulfillment/estimate-vs-known counts needs joint review after upstream merge. Required rendered evidence pending.
