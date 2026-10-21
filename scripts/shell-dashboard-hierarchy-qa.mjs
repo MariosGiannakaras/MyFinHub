@@ -62,7 +62,7 @@ try{
   await waitFor("function(){return document.querySelector('#main-workspace h1')?.textContent==='Συναλλαγές'&&[...document.querySelectorAll('select[aria-label=\\\"Φίλτρο λογαριασμού\\\"]')].some(s=>s.value==='piraeus-payroll')}",'Dashboard account filter reaches Transactions');
   const filtered=await c.eval("(()=>[...document.querySelectorAll('select[aria-label=\\\"Φίλτρο λογαριασμού\\\"]')].every(s=>s.value==='piraeus-payroll'))()");
   assert(filtered,'#597: account selection reaches both ledger filter owners');
-  await c.call("function(){const s=document.querySelector('select[aria-label=\\\"Φίλτρο λογαριασμού\\\"]');s.value='all';s.dispatchEvent(new Event('change',{bubbles:true}));return true}");
+  await c.call("function(){const s=document.querySelector('select[aria-label=\\\"Φίλτρο λογαριασμού\\\"]');const setter=Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value')?.set;setter?.call(s,'all');s.dispatchEvent(new Event('change',{bubbles:true}));return true}");
   await waitFor("function(){return [...document.querySelectorAll('select[aria-label=\\\"Φίλτρο λογαριασμού\\\"]')].every(s=>s.value==='all')}",'user can clear the account filter');
   await navigateDashboard({page:'dashboard',motion:'reduced'});
 
