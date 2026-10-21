@@ -9,9 +9,13 @@ A forecast projection must label variable amounts estimated. Integrate with #591
 
 ## Implementation checklist
 - [ ] Pure variable-amount validation, server structural guards, source tests and actual linked payment evidence
-- [ ] Opt-in editor via shared select/money controls, responsive amount labeling and actual-vs-estimate display
+- [ ] Opt-in editor via shared select/money controls, responsive amount labeling and actual-vs-estimate display (implementation drafted, awaiting rendered QA)
 - [ ] Forecast/history/fulfillment/report contract, delayed integration with #591 and #590
 - [ ] Narrow tests followed by full exact-head rendered Light/Dark desktop/mobile/tablet, security/DB, cross-engine, performance, Windows, artifact inspection
 - [ ] Rebase and integrate into develop only after upstream B, source review and full acceptance
 
 No `main`, Production, Android, bank imports, destructive financial history or failed/pending gate merge.
+
+## Shared UI first implementation (2026-10-21)
+- RecurringPage now offers amount mode: fixed legacy or clearly labeled variable estimate with optional exact-cent lower/upper bound; every bound uses MoneyInput and saves only through the existing `await onUpsertDurably(normalized)` revision path. Status labels distinguish estimated next amount from actual linked payments in desktop table, mobile list and next-period summary. A source regression locks these controls, save boundary and status provenance.
+- This is **partial implementation**, not accepted. Forecast in PR #591 still consumes the baseline amount and needs explicit estimated provenance after integration. Rendered/QA and server exact-head tests remain mandatory before completion.
