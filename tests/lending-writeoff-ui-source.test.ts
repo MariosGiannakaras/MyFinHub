@@ -6,11 +6,11 @@ describe('owner-confirmed writeoff through existing lending contextual dialog (#
     const page=readFileSync('src/pages/LendingPage.tsx','utf8');
     expect(modal).toContain("action:'lend'|'repay'|'writeoff'");
     expect(modal).toContain("lendingOutstandingFor(data,clean,date)");
-    expect(modal).toContain("if(!writeoffConfirmed)");
+    expect(modal).toContain("if(!writeoffConfirmed||confirmedWriteoffAmount!==amount)");
     expect(modal).toContain("kind:'lending_writeoff'");
     expect(modal).toContain("await onCreate(event)");
     expect(modal).toContain('data-lending-writeoff');
-    expect(modal).toContain("checked={writeoffConfirmed}");
+    expect(modal).toContain("checked={writeoffConfirmed&&confirmedWriteoffAmount===amount}");
     expect(modal).toContain("context.mode==='lending'&&context.action==='writeoff')?null");
     expect(page.match(/action:'writeoff'/g)).toHaveLength(2);
     expect(page).toContain('disabled={!selectedRow||selectedRow.outstanding<=0}');
