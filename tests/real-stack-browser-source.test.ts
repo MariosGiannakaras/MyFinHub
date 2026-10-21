@@ -34,6 +34,10 @@ describe('actual-browser real-stack source contract',()=>{
     expect(source).toContain("['Real Browser Quick Saving','saving_cash_offset']");
     expect(source).toContain("['Real Browser Quick Refund','refund']");
     expect(source).toContain("['Real Browser Quick Reconciliation','reconciliation']");
+    expect(source).toContain("setByLabel('Επαληθευμένο υπόλοιπο στη συγκεκριμένη ημερομηνία','123.45')");
+    expect(source).toContain('unconfirmed reconciliation must fail closed');
+    expect(source).toContain('Real owner review checkbox could not be confirmed.');
+    expect(source).not.toContain("setByLabel('Πραγματικό υπόλοιπο'");
     expect(source).toContain("['Real Browser Quick Split','split']");
     expect(source).toContain('quick-entry-intents-persisted');
     expect(source).toContain('stage legacy-edit-delete-undo');
