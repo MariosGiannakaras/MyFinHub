@@ -11,8 +11,8 @@ const rendered=read('scripts/legacy-transaction-management-qa.mjs');
 describe('Transactions exact finance receipt and non-destructive history contract',()=>{
   it('reuses the canonical revisioned finance boundary for legacy override, tombstone, and current event deletion',()=>{
     expect(app).toContain('const deleteEventDurably=(id:string)=>finance.updateDurably');
-    expect(app).toContain('const editLegacy=(transaction:LegacyTransaction)=>finance.updateDurably');
-    expect(app).toContain('const deleteLegacy=(id:string)=>finance.updateDurably');
+    expect(app).toContain("const editLegacy=async(transaction:LegacyTransaction)=>{const {withLegacyOverride}=await import('./lib/legacyTransactions');return finance.updateDurably");
+    expect(app).toContain("const deleteLegacy=async(id:string)=>{const {withLegacyTombstone}=await import('./lib/legacyTransactions');return finance.updateDurably");
     expect(app).toContain('onDeleteEvent={deleteEventDurably}');
     expect(page).toContain('await onDeleteEvent(target.id)');
     expect(page).toContain('await onDeleteLegacy(target.id)');
