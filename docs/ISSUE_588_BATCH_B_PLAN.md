@@ -156,3 +156,6 @@ No Bank Excel/CSV/OFX import, third-party bank connector, automatic Euribor, car
 ### B3 responsive privacy and save-receipt guard
 - Added plan action to the mobile per-person card using a shared ghost Button; selection is updated before the same modal opens. Mobile cards show a nonposting-plan indicator. Confirmed plan detail respects the global financial privacy toggle rather than leaking the amount during hidden mode. Updated shared primitive-count contract to 15 Buttons (3 primary, 8 secondary, 4 ghost), preserving native composite controls.
 - Added narrow source regressions to lock true `finance.updateDurably` receipt before dialog close, QA one-history-point reducer, mandatory plan confirmation, and preserved error/dialog on rejected saves. Rendered/real-stack still pending.
+
+### B3 browser interaction and rendered evidence checklist
+- Extended existing `scripts/lending-remediation-qa.mjs` (not a parallel test harness): owner-confirmed plan preview, blocked unconfirmed save, real saved plan without receivable change, exact one-step Undo/Redo, mobile per-person plan dialog/overflow, and noncash writeoff confirmation/persisted dated history. Screenshot filenames are scoped to plan/writeoff desktop/mobile surfaces. These checks must actually run and resulting screenshots be directly inspected; no rendered PASS claimed on the current draft head.

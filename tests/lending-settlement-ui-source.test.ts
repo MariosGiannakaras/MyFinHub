@@ -22,3 +22,5 @@ describe('Lending settlement plans honor save receipt and privacy (#588 B3)',()=
   expect(modal).toContain('Δεν αποθηκεύτηκε το πρόγραμμα');
  });
 });
+
+// Exact rendered integration is exercised by the existing lending-remediation QA.
