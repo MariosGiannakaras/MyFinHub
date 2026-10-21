@@ -17,5 +17,11 @@ describe('variable recurring editor and status provenance (#588 #8)',()=>{
    expect(ui).toContain("' (εκτίμηση)'");
    expect(ui).toContain('Τελευταία');
    expect(ui).toContain('lastPayment.amount');
+   const browser=readFileSync('scripts/recurring-cadence-qa.mjs','utf8');
+   expect(browser).toContain('Recurring amount QA: variable estimate');
+   expect(browser).toContain('recurring-variable-estimate-editor-desktop');
+   expect(browser).toContain('recurring-variable-estimate-editor-mobile');
+   expect(browser).toContain('recurring-variable-estimate-saved-mobile');
+   expect(browser).toContain('responsive recurring list visibly labels the forecast amount as estimate');
  });
 });

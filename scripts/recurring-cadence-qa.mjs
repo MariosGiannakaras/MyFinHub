@@ -41,6 +41,24 @@ try{
   assert(editor.labels.includes('Κάθε')&&editor.labels.includes('Μονάδα επανάληψης'),'editor exposes interval and unit controls');
   assert(editor.everyValue==='1'&&editor.unit,'legacy monthly item defaults to one-month cadence');
   await shot('recurring-cadence-editor-desktop');
+  console.log('Recurring amount QA: variable estimate has explicit controls and keeps actual payments separate');
+  const chooseAmountMode=await c.call("function(){const span=[...document.querySelectorAll('[role=dialog] label>span')].find(item=>item.textContent?.trim()==='Τύπος ποσού');const input=span?.parentElement?.querySelector('[role=combobox]');input?.click();return Boolean(input)}");
+  assert(chooseAmountMode,'amount-mode selector uses shared editable combobox');
+  await waitFor("function(){return [...document.querySelectorAll('.owned-option-list [role=option]')].some(option=>(option.textContent||'').includes('Μεταβλητό'))}",'variable amount option');
+  assert(await c.call("function(){const option=[...document.querySelectorAll('.owned-option-list [role=option]')].find(item=>(item.textContent||'').includes('Μεταβλητό'));option?.click();return Boolean(option)}"),'variable mode selected');
+  await waitFor("function(){return Boolean(document.querySelector('[data-variable-recurring-explainer]'))}",'estimate explanation');
+  const fillAmount=async(label,value)=>{
+    const ok=await c.call("function(label,value){const span=[...document.querySelectorAll('[role=dialog] label>span')].find(item=>(item.textContent||'').includes(label));const input=span?.parentElement?.querySelector('input');if(!input)return false;Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,value);input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));return true}",[label,value]);
+    assert(ok,`variable amount control ${label} exists`);
+    await sleep(90);
+  };
+  await fillAmount('Εκτιμώμενο ποσό','80');
+  await fillAmount('Κατώτερη εκτίμηση','60');
+  await fillAmount('Ανώτερη εκτίμηση','100');
+  const bounds=await c.call("function(){const labels=[...document.querySelectorAll('[role=dialog] label')];const value=name=>labels.find(label=>(label.querySelector('span')?.textContent||'').includes(name))?.querySelector('input')?.value;return {estimate:value('Εκτιμώμενο ποσό'),min:value('Κατώτερη εκτίμηση'),max:value('Ανώτερη εκτίμηση')}}");
+  assert(bounds.estimate==='80'&&bounds.min==='60'&&bounds.max==='100','variable estimate and range are editable in exact euros');
+  await shot('recurring-variable-estimate-editor-desktop');
+
 
   await viewport(375,812);await sleep(180);
   const mobile=await c.call("function(){const dialog=document.querySelector('[role=dialog]');const rect=dialog?.getBoundingClientRect();const controls=[...dialog?.querySelectorAll('button,input,[role=combobox]')||[]].filter(item=>item.getClientRects().length>0);return {left:rect?.left??-1,right:rect?.right??9999,width:rect?.width??0,viewport:innerWidth,overflow:Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-innerWidth,smallTargets:controls.filter(item=>{const r=item.getBoundingClientRect();return r.height<40||r.width<40}).map(item=>item.getAttribute('aria-label')||item.getAttribute('role')||item.tagName)}}");
@@ -48,5 +66,12 @@ try{
   assert(mobile.overflow<=2,`mobile horizontal overflow ${mobile.overflow}px`);
   assert(mobile.smallTargets.length===0,`mobile cadence controls below touch target: ${mobile.smallTargets.join(', ')}`);
   await shot('recurring-cadence-editor-mobile');
+  await shot('recurring-variable-estimate-editor-mobile');
+  const saveMode=await c.call("function(){const button=[...document.querySelectorAll('[role=dialog] button')].find(item=>(item.textContent||'').trim()==='Αποθήκευση');button?.click();return Boolean(button)}");
+  assert(saveMode,'variable amount editor shares one durable save action');
+  await waitFor("function(){return !document.querySelector('[role=dialog]')}",'variable recurring saved receipt');
+  const savedVariable=await c.call("function(){return (document.querySelector('[data-active-recurring]')?.textContent||'').includes('Εκτίμηση')}");
+  assert(savedVariable,'responsive recurring list visibly labels the forecast amount as estimate');
+  await shot('recurring-variable-estimate-saved-mobile');
   c.close();console.log('Recurring cadence rendered QA passed.');
 }finally{c?.close();child.kill('SIGTERM')}

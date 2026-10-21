@@ -22,3 +22,6 @@ No `main`, Production, Android, bank imports, destructive financial history or f
 
 ## Draft preflight TS repair — 2026-10-21
 - `6e965977` draft `validate` halted at TS18047/TS2365/TS18046 because structural validation operates on `unknown` JSON and comparing `value.estimateMin/estimateMax` did not statically narrow the object properties. Added explicit numeric narrowing **after** existing finite-number runtime validation. The constraint, cent exactness and range rejection remain unchanged. No unit/browser/full CI PASS claimed on the old head.
+
+## Browser evidence added — draft (2026-10-21)
+- Extended existing Recurring cadence Chromium QA to select Variable via owned AppSelectInput, enter 80 € estimate with 60–100 € range using shared MoneyInputs, inspect controls and responsive 375px modal, persist through the existing durable save, confirm visible estimate label, and capture desktop/mobile editing/saved screenshots. Source guard locks test registration and the semantic distinctions. Actual browser run, screenshot inspection and failure-path QA remain pending. Do not claim completed #8.
