@@ -487,5 +487,36 @@ try{
   assert(runtimeErrors.length===0,`runtime exceptions: ${runtimeErrors.join(' | ')}`);
   assert(failedRequests.length===0,`network loading failures: ${failedRequests.join(' | ')}`);
   c.close();
+  console.log('Budget/Rules QA: enhanced subcategory budget + rollover + edit');
+  await navigate('reports','budget-enhanced',1440,1000);
+  await waitFor("function(){return Boolean(document.querySelector('#report-budgets summary'))}",'enhanced budgets panel');
+  await clickText('#report-budgets summary','Ορισμός προϋπολογισμού');
+  await selectBudgetScope('Υποκατηγορία');
+  await selectOwnedOption('Κατηγορία / υποκατηγορία','Σούπερ μάρκετ');
+  const carryoverOn=await c.call("function(){const checkbox=document.querySelector('[data-budget-management] .budget-carryover-toggle input');if(!checkbox)return false;checkbox.click();return checkbox.checked}");
+  assert(carryoverOn,'carryover opt-in checkbox can be set deliberately');
+  await setLabelInput('Όριο €','80');
+  await clickText('[data-budget-management] button','Αποθήκευση προϋπολογισμού');
+  await waitFor("function(){const row=[...document.querySelectorAll('.budget-setting-row')].find(node=>(node.textContent||'').includes('Σούπερ μάρκετ'));const text=row?.textContent||'';return text.includes('110')&&text.includes('20')&&text.includes('30')&&text.includes('50')}",'real usage 20 + previous carryover 30 and known due 30 but one effective limit 110');
+  const rowText=await c.call("function(){return [...document.querySelectorAll('.budget-setting-row')].find(node=>(node.textContent||'').includes('Σούπερ μάρκετ'))?.textContent||''}");
+  assert(rowText.includes('Πραγματική χρήση')&&rowText.includes('Γνωστές εκκρεμείς υποχρεώσεις')&&rowText.includes('Δεν έχουν καταχωριστεί'),'actual spending and advisory known due are never conflated');
+  assert(await c.call("function(){return document.querySelectorAll('.budget-setting-row').length===1}"),'one budget row per scope and period');
+  const summary=await c.call("function(){return document.querySelector('[data-budget-overview]')?.textContent||''}");
+  assert(summary.includes('110')&&summary.includes('50'),'Reports reconciles one parentless subcategory without double counting');
+  await screenshot('reports-subcategory-rollover-desktop');
+  await clickAria('Επεξεργασία προϋπολογισμού Τρόφιμα › Σούπερ μάρκετ');
+  assert(await c.call("function(){return Boolean(document.querySelector('.budget-carryover-toggle input')?.checked)}"),'editing an existing budget preserves its stored carryover state');
+  await setLabelInput('Όριο €','100');
+  await clickText('[data-budget-management] button','Αποθήκευση αλλαγών');
+  await waitFor("function(){const rows=[...document.querySelectorAll('.budget-setting-row')].filter(node=>(node.textContent||'').includes('Σούπερ μάρκετ'));return rows.length===1&&(rows[0]?.textContent||'').includes('130')}",'budget edit updates the same stable budget row instead of duplicating it');
+  await viewport(375,812);
+  await waitFor("function(){return document.querySelector('.budget-setting-row')?.getBoundingClientRect().width>0}",'mobile budget row');
+  await noOverflow('subcategory budget 375x812');
+  await touchTargets('subcategory budget mobile');
+  await screenshot('reports-subcategory-rollover-mobile');
+  await viewport(834,1112);
+  await noOverflow('subcategory budget tablet');
+  await screenshot('reports-subcategory-rollover-tablet');
+
   console.log('Budget and Rules rendered QA passed.');
 }finally{c?.close();child.kill('SIGTERM')}

@@ -398,6 +398,32 @@ function buildQaData(params:URLSearchParams){
       ];
     }
   }
+  if(params.get('state')==='budget-enhanced'){
+    // Isolated deterministic owner-free budget fixture. No real finance data.
+    const stamp='2026-08-17T12:00:00.000Z';
+    const tree=next.state.settings.expenseCategoryTree??next.state.settings.expenseCategories.map(name=>({name,subcategories:[]}));
+    next.state.settings.expenseCategoryTree=tree.some(item=>item.name==='Τρόφιμα')
+      ?tree.map(item=>item.name==='Τρόφιμα'?{...item,subcategories:[...new Set([...item.subcategories,'Σούπερ μάρκετ'])]}:item)
+      :[...tree,{name:'Τρόφιμα',subcategories:['Σούπερ μάρκετ']}];
+    next.seed.transactions=[];
+    next.state.customTransactions=[];
+    next.state.overrides={};
+    next.state.deleted=[];
+    next.seed.recurring=[];
+    next.state.recurringCustom=[];
+    next.state.events=[
+      createEvent({kind:'expense',date:'2026-07-09',amount:20,note:'QA July grocery',
+        accountId:'piraeus-payroll',category:'Τρόφιμα',subcategory:'Σούπερ μάρκετ'}),
+      createEvent({kind:'expense',date:'2026-08-10',amount:20,note:'QA actual grocery',
+        accountId:'piraeus-payroll',category:'Τρόφιμα',subcategory:'Σούπερ μάρκετ'})
+    ];
+    next.state.scheduled=[{id:'qa-known-due',kind:'expense',status:'pending',dueDate:'2026-08-20',
+      amount:30,note:'QA grocery scheduled',accountId:'piraeus-payroll',
+      category:'Τρόφιμα',subcategory:'Σούπερ μάρκετ',createdAt:stamp,updatedAt:stamp}];
+    next.state.budgets=[{id:'qa-july-subcategory',month:'2026-07',scope:'subcategory',
+      category:'Τρόφιμα',subcategory:'Σούπερ μάρκετ',amount:50,carryover:false,
+      alertThreshold:.8,createdAt:stamp,updatedAt:stamp}];
+  }
   return next;
 }
 

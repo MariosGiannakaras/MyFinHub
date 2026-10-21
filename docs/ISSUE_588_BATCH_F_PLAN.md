@@ -58,3 +58,12 @@ Commit coherent feature code as a draft PR referencing issue #588. Then extend r
 - Existing uncommitted browser evidence/test cases may be batched after implementation; **no full CI gate or source PASS claimed** for this newer draft head.
 
 **Counters: Implementations 2/12 completed · Sub-implementations 4/24 completed.**
+
+## Grouped QA evidence (authored, not yet accepted)
+
+- Added isolated synthetic `budget-enhanced` QA fixture with an exactly known July expense/allowance, one August actual expense, one August pending scheduled obligation and a current subcategory taxonomy. No external account or real database record.
+- Extended the existing rendered `budget-rules-qa.mjs` to create a subcategory budget, explicitly enable carryover, assert **base 80 + 30 July unused = 110 effective**, distinguish August actual 20 and known pending 30 from posted history, then edit to base 100 **without duplicate budget rows or losing carryover**. Captures desktop, 375×812 mobile and 834×1112 tablet screenshot evidence; retains no-overflow and 40px touch-target assertions.
+- Added server taxonomy-ref tests for valid old category aliases, forged ID, cross-parent ID and name-only historic budgets. Existing title/label/readability/a11y requirements were not relaxed.
+- This branch's high-churn draft CI may run narrow checks automatically, but **no rendered artifact has been inspected or marked PASS**. Continue only with exact-head batch-level validation, fix gathered failures coherently, and inspect actual resulting screenshots.
+
+**Counters unchanged: Implementations 2/12 completed · Sub-implementations 4/24 completed.**
