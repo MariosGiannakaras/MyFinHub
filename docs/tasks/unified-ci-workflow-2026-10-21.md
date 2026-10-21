@@ -2,7 +2,7 @@
 
 Owner instruction: «Φτιάξτο» in response to proposal for one MyFinHub CI pipeline.
 Baseline: `develop@5b58d3f26e25ade08157c9099b820f46c61df5b2`.
-Owner branch: `feat/unified-ci-workflow-20261021`. Independent of Dashboard PR #595 and roadmap #588 PRs.
+Owner branch: `chore/598-unified-ci-workflow`. Independent of Dashboard PR #595 and roadmap #588 PRs.
 
 ## Acceptance — 1 implementation, 7 sub-implementations
 - [ ] One standard `CI` workflow on PRs targeting develop/main and on develop/main pushes, retaining the existing core tests, type checks, security audits, full rendered QA and bundle limits.
@@ -20,6 +20,8 @@ Owner branch: `feat/unified-ci-workflow-20261021`. Independent of Dashboard PR #
 - Preserve scheduled CodeQL and explicit manual emergency workflows; these are deliberate non-PR entrypoints, not duplicate normal PR gates.
 - Draft PRs retain quick source/security checks; expensive browser, Windows and performance jobs defer until Ready. Strict final aggregate must reject failures/cancellations for required non-skipped jobs.
 - This is **not** approval to merge Dashboard PR #595, promote main, deploy to production, or touch Android.
+
+Task: GitHub issue #598. Source branch was initially staged under `feat/unified-ci-workflow-20261021`; implementation ownership transferred to the issue-numbered branch before PR creation. Do not open a second implementation PR for the staging branch.
 
 ## Live status
 Implementations 0/1 completed · Sub-implementations 0/7 completed.
