@@ -28,6 +28,10 @@ describe('Lending settlement plans honor save receipt and privacy (#588 B3)',()=
   expect(modal).toContain('lending-settlement-modal');
   expect(modal).toContain('lending-plan-schedule');
   expect(modal).not.toContain('className="quick-field"');
+  const styles=read('src/styles/quick-entry-body-split.css');
+  expect(styles).toContain('.lending-settlement-modal .form-grid>label');
+  expect(styles).toContain('.lending-settlement-modal .lending-plan-schedule');
+  expect(styles).not.toMatch(/(^|\n)\s*\/\//);
   expect(browser).toContain('lending-writeoff-requires-owner-desktop');
   expect(browser).toContain('one Undo removes planned state');
   expect(browser).toContain('saving a plan does not book phantom cash');

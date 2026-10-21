@@ -12,8 +12,8 @@
 .form-error{margin-top:10px;border-radius:10px;background:#ffedf0;color:#a72c40;padding:9px;font-size:8.5px}
 .quick-modal>footer{display:flex;justify-content:flex-end;gap:9px;padding:14px 20px 18px}
 
-// The settlement dialog has persistent explicit field labels: it must not
-// inherit the floating labels/constant heights of generic Quick Add.
+/* The settlement dialog has persistent explicit field labels: it must not
+   inherit the floating labels/constant heights of generic Quick Add. */
 .lending-settlement-modal{width:min(690px,calc(100vw - 20px));max-height:min(92dvh,850px);display:grid;grid-template-rows:auto minmax(0,1fr) auto;overflow:hidden;background:var(--surface-elevated,var(--surface))}
 .lending-settlement-modal .entry-body{min-height:0;overflow-y:auto;overscroll-behavior:contain;background:var(--surface)}
 .lending-settlement-modal .form-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
