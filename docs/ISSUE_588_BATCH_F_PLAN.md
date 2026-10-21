@@ -49,3 +49,12 @@ Commit coherent feature code as a draft PR referencing issue #588. Then extend r
 - No reviewed production finance history changed. Code is committed on draft PR; **no acceptance or full gate PASS claimed**. Next step is one grouped narrow preflight and rendered workflow extension.
 
 **Counters remain Implementations 2/12 completed · Sub-implementations 4/24 completed.**
+
+## Third coherent coding slice — revision-safe budget editing
+
+- Existing budget rows now have a dedicated accessible **Edit** control (shared IconButton/Pencil), loading the exact stored scope/category/subcategory/amount/threshold/**carryover flag**. A user editing only the amount no longer accidentally clears carryover. Uses the same single `onUpsertBudget` revision as creation; no separate mutation path.
+- Delete remains distinct and revisioned; edit mode resets on confirmed save/deletion and preserves values on save failure. Current Reports period still owns its month; no duplicate hidden date selection.
+- Expanded grid places separate 44px edit/delete targets and keeps mobile progress meter on its own row without truncating the category/subcategory label. Actual rendered QA pending.
+- Existing uncommitted browser evidence/test cases may be batched after implementation; **no full CI gate or source PASS claimed** for this newer draft head.
+
+**Counters: Implementations 2/12 completed · Sub-implementations 4/24 completed.**
