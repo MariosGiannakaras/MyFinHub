@@ -20,6 +20,10 @@ describe('linked transfer fee rendered and revision contract (#588 B2)',()=>{
     expect(generic).not.toContain("from '../lib/linkedFees'");
     expect(contextual).not.toContain("from '../lib/linkedFees'");
     expect(browser).toContain('one Undo removes fee and associated transfer atomically');
+    expect(browser).toContain(".transactions-approved-table tbody tr[data-transaction-kind=expense]");
+    expect(browser).toContain("const table=document.querySelector('.transactions-approved-table tbody')");
+    // The hidden accessibility/semantic mirror is a second DOM node, not a second fee.
+    expect(browser).not.toContain("document.querySelectorAll('[data-transaction-kind=expense][data-transaction-source=event]')");
     expect(browser).toContain('one Redo restores transfer and commission');
     expect(browser).toContain('ledger-linked-fee-desktop.png');
   });
