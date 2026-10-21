@@ -1,7 +1,16 @@
 import {isValidDateOnly} from './dateOnly.js';
 import {lendingOutstandingFor} from './lending.js';
 import {centsToMoney,moneyToCents} from './money.js';
-import type {FinanceData} from '../types.js';
+import type {FinanceData,LendingSettlementPlan} from '../types.js';
+
+export interface LendingSettlementDraft {
+  person:string;
+  asOf:string;
+  firstDueDate:string;
+  amount:number;
+  installments:number;
+  everyMonths:number;
+}
 
 const exactPositiveCents=(value:number)=>{
   const cents=moneyToCents(value);
@@ -44,4 +53,20 @@ export function lendingSettlementProjection(
   }));
   return {person,asOf:args.asOf,total:centsToMoney(cents),outstanding:centsToMoney(available),schedule,
     note:'Μόνο προγραμματισμένη επιστροφή — καμία οικονομική κίνηση ή είσπραξη δεν καταχωρίστηκε.'};
+}
+
+/** A confirmed plan is a state fact, not a booked repayment. */
+export function withConfirmedLendingPlan(data:FinanceData,draft:LendingSettlementDraft,confirmed:boolean):FinanceData{
+  if(!confirmed)throw new Error('Απαιτείται ρητή επιβεβαίωση του προγράμματος.');
+  const proposal=lendingSettlementProjection(data,draft);
+  const existing=(data.state.lendingPlans??[]).find(plan=>plan.person===proposal.person);
+  const record:LendingSettlementPlan={
+    id:existing?.id??`lending-plan-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,
+    person:proposal.person,asOf:proposal.asOf,firstDueDate:draft.firstDueDate,
+    total:proposal.total,installments:draft.installments,everyMonths:draft.everyMonths,
+    confirmedAt:new Date().toISOString()
+  };
+  return {...data,state:{...data.state,lendingPlans:[
+    ...(data.state.lendingPlans??[]).filter(plan=>plan.person!==record.person),record
+  ]}};
 }

@@ -349,6 +349,25 @@ function validateSavingsGoal(value: unknown, name: string) {
 }
 
 
+function validateLendingSettlementPlan(value:unknown,name:string){
+  if(!object(value))invalid(`Invalid ${name}.`);
+  text(value.id,`${name}.id`,200);
+  text(value.person,`${name}.person`,120);
+  if(!value.person.trim())invalid(`Invalid ${name}.person.`);
+  dateOnly(value.asOf,`${name}.asOf`);
+  dateOnly(value.firstDueDate,`${name}.firstDueDate`);
+  dateStamp(value.confirmedAt,`${name}.confirmedAt`);
+  if(value.firstDueDate<value.asOf)invalid(`Invalid ${name}.firstDueDate.`);
+  finiteNumber(value.total,`${name}.total`);
+  const cents=Math.round(value.total*100);
+  if(cents<=0||!Number.isSafeInteger(cents)||Math.abs(value.total*100-cents)>0.00001)
+    invalid(`Invalid ${name}.total.`);
+  if(!Number.isInteger(value.installments)||value.installments<1||value.installments>60||value.installments>cents)
+    invalid(`Invalid ${name}.installments.`);
+  if(!Number.isInteger(value.everyMonths)||value.everyMonths<1||value.everyMonths>24)
+    invalid(`Invalid ${name}.everyMonths.`);
+}
+
 function validateScheduledTransaction(value: unknown, name: string) {
   if (!object(value)) invalid(`Invalid ${name}.`);
   text(value.id, `${name}.id`, 200);
@@ -578,6 +597,17 @@ export function validateFinanceData(value: unknown): asserts value is FinanceDat
   state.customLoans.forEach((item, index) => validateLoan(item, `state.customLoans[${index}]`));
   ensureUniqueIds(state.customLoans, 'state.customLoans');
   array(state.lendingCustom, 'state.lendingCustom', 100_000);
+  if(state.lendingPlans!==undefined){
+    array(state.lendingPlans,'state.lendingPlans',1000);
+    state.lendingPlans.forEach((item,index)=>validateLendingSettlementPlan(item,`state.lendingPlans[${index}]`));
+    ensureUniqueIds(state.lendingPlans,'state.lendingPlans');
+    const people=new Set<string>();
+    for(const plan of state.lendingPlans){
+      const person=plan.person.trim();
+      if(people.has(person))invalid('Multiple active settlement plans for one person.');
+      people.add(person);
+    }
+  }
   validateSettings(state.settings);
   if (state.cardBanks !== undefined) {
     array(state.cardBanks, 'state.cardBanks', 100);

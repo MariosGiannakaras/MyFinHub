@@ -1,5 +1,6 @@
 import {describe,expect,it} from 'vitest';
-import {lendingSettlementProjection} from '../src/lib/lendingPlans.js';
+import {lendingSettlementProjection,withConfirmedLendingPlan} from '../src/lib/lendingPlans.js';
+import {validateFinanceData} from '../server/validation.js';
 import {lendingOutstandingFor} from '../src/lib/lending.js';
 import {migrateData,monthlyFlow,netWorth} from '../src/lib/domain.js';
 import type {FinanceData} from '../src/types.js';
@@ -39,4 +40,35 @@ describe('dated lending settlement proposal without phantom money (#588 B3)',()=
   expect(()=>lendingSettlementProjection(d,{...base,person:'Unknown'})).toThrow(/απαίτηση/);
   expect(()=>lendingSettlementProjection(d,{...base,amount:0.03,installments:5})).toThrow(/τουλάχιστον/);
  });
+ it('saves one confirmed mutable plan, revises its stable ID, and never posts money',()=>{
+  const initial=data();
+  const before=netWorth(initial,'2026-08-17');
+  const draft={person:'Alex',asOf:'2026-08-17',firstDueDate:'2026-09-30',amount:33.33,installments:3,everyMonths:1};
+  expect(()=>withConfirmedLendingPlan(initial,draft,false)).toThrow(/επιβεβαίωση/);
+  const created=withConfirmedLendingPlan(initial,draft,true);
+  expect(created.state.lendingPlans).toHaveLength(1);
+  expect(created.state.lendingPlans![0]).toMatchObject({person:'Alex',total:33.33,installments:3,firstDueDate:'2026-09-30'});
+  expect(created.state.events).toHaveLength(0);
+  expect(netWorth(created,'2026-08-17')).toBe(before);
+  expect(monthlyFlow(created,'2026-09').income).toBe(0);
+  expect(()=>validateFinanceData(created)).not.toThrow();
+  const changed=withConfirmedLendingPlan(created,{...draft,amount:50},true);
+  expect(changed.state.lendingPlans).toHaveLength(1);
+  expect(changed.state.lendingPlans![0]?.id).toBe(created.state.lendingPlans![0]?.id);
+  expect(changed.state.lendingPlans![0]?.total).toBe(50);
+  expect(created.state.lendingPlans![0]?.total).toBe(33.33);
+  expect(initial.state.lendingPlans).toEqual([]);
+ });
+ it('rejects malformed or duplicated current plan documents at the server boundary',()=>{
+  const initial=data();
+  const draft={person:'Alex',asOf:'2026-08-17',firstDueDate:'2026-09-01',amount:40,installments:2,everyMonths:1};
+  const saved=withConfirmedLendingPlan(initial,draft,true);
+  for(const changes of [{total:40.001},{firstDueDate:'2026-07-01'},{everyMonths:0},{confirmedAt:'invalid'}]){
+    const row={...saved.state.lendingPlans![0]!,...changes};
+    expect(()=>validateFinanceData({...saved,state:{...saved.state,lendingPlans:[row]}})).toThrow();
+  }
+  const duplicate={...saved.state.lendingPlans![0]!,id:'another-plan'};
+  expect(()=>validateFinanceData({...saved,state:{...saved.state,lendingPlans:[saved.state.lendingPlans![0]!,duplicate]}})).toThrow(/Multiple active/);
+ });
+
 });

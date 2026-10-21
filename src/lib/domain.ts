@@ -50,6 +50,7 @@ export function migrateData(input: FinanceData): FinanceData {
       loanOverrides: state.loanOverrides ?? {},
       customLoans: state.customLoans ?? [],
       lendingCustom: state.lendingCustom ?? [],
+      lendingPlans: state.lendingPlans ?? [],
       settings: {
         ...(state.settings ?? {}),
         excludedFromAvailable: state.settings?.excludedFromAvailable ?? excludedDefaults,

@@ -267,6 +267,17 @@ export interface TransactionRule {
   updatedAt: string;
 }
 
+export interface LendingSettlementPlan {
+  id:string;
+  person:string;
+  asOf:string;
+  firstDueDate:string;
+  total:number;
+  installments:number;
+  everyMonths:number;
+  confirmedAt:string;
+}
+
 export interface FinanceData {
   app: string;
   schemaVersion: number;
@@ -299,6 +310,7 @@ export interface FinanceData {
     loanOverrides: Record<string, Loan>;
     customLoans: Loan[];
     lendingCustom: unknown[];
+    lendingPlans?: LendingSettlementPlan[];
     settings: FinanceSettings;
     cardBanks?: CardBank[];
     cards?: PaymentCard[];

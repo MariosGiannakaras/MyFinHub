@@ -144,3 +144,7 @@ No Bank Excel/CSV/OFX import, third-party bank connector, automatic Euribor, car
 
 ### B3 confirmation/reset source preflight
 - `cec07211` draft CI passed hygiene and most tests but two longstanding contextual payment source guards expected the shared MoneyInput to retain the direct `onValueChange={setAmount}` prop. Preserved that exact shared binding and strengthened the writeoff checkbox with a captured, explicitly confirmed amount: changing the amount immediately invalidates the prior confirmation both visually and at submit, without altering loan/payment input semantics. Domain-specific B3 source regression updated to require the snapshot comparison.
+
+### B3 confirmed settlement-plan finance state contract
+- Added optional `state.lendingPlans` storing one owner-confirmed current plan per person (as-of baseline date, first due date, exact amount, count and frequency, confirmation timestamp). `withConfirmedLendingPlan` produces one immutable finance-state revision, preserves a stable plan ID on changes, and requires explicit consent. It never creates events or counted future receipts.
+- Backend structural validation verifies cent precision, bounds and duplicate person/IDs on all mutable document saves/imports. The relational database's residual JSON state carries this non-transaction array, so no new SQL ledger table is required. Focused tests check no financial posting, stable edit and tampered plan rejection. **Still awaiting UI, actual revision receipt, Real Stack roundtrip and final rendered QA.** Counters unchanged.
