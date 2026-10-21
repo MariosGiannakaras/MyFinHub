@@ -1,0 +1,32 @@
+# Issue #588 — Batch F (#9 enhanced budgets)
+
+**Implementation owner:** `feat/588-enhanced-budgets-batch-f` (branch from `develop@5b58d3f26e25ade08157c9099b820f46c61df5b2`). The owner requested larger cohesive coding batches and full CI/repair only once after coherent code. **No Production/main/Android changes.** Keep the PR draft while implementation churn is active.
+
+**Accepted roadmap counters:** **Implementations 2/12 completed · Sub-implementations 4/24 completed.** #9 is still **0/1 implementation · 0/2 sub-implementations accepted**; code is not acceptance.
+
+## Scope ownership / concurrency
+
+- Separate actively owned PRs: #590 accounting (#2/#4/#5/#12, exact-head full gates active); #591 forecast (#7); #592 OCR/counterparties (#3/#6); #593 variable recurring (#8); #594 savings goals (#13); #595 dashboard chart owner work. This branch owns only **#9** (budgets), does not change their branches.
+- Budget changes are additive on the existing `FinanceData.state.budgets` JSON state, not bank movements, loan/payment posting, settlement calculations or production data. Existing revision-aware `onUpsertBudget`/`onDeleteBudget` still own persistence and History/Undo/Redo. Avoid speculative integration into independently owned forecast source.
+- Read `AGENTS.md`, issue #266, `PROJECT_RULES.md`, and the UI/UX standards/concept reconciliation before UI work. Shared `BudgetRuleSettings`, `MoneyInput`, `CategorySelectInput` and shared buttons retained.
+
+## Batch F1 — model, security, UI and accounting changes (coded, review pending)
+
+- [ ] **#9.1:** Allow category or **subcategory** limits with exact-cent amounts and optional stable `categoryIdentityId`/`subcategoryIdentityId` pointers backed by the canonical taxonomy, with alias-aware old spending. Parent category includes subcategories but sums actual expenses once. Confirmed legacy splits/new split portions, refunds and zero-spend internal transfers remain correct.
+- [ ] **#9.1:** Opt-in **positive-only** month-to-month carryover, strictly scoped by category/subcategory/overall; never transfer budget as actual money. Previous month budgets must exist; stop chain at missing period and bounded history. Effective limit = monthly base + unspent prior allowance, with explicit breakdown.
+- [ ] **#9.2:** Conservative projection of known future **pending scheduled expenses** and active recurring items that have a real due date/known amount, excluding matched scheduled duplicates, paid recurring and completed obligations. Actual used is separate from `projectedDue`, `projectedUsed` and forecast status. No phantom postings or inferred unknown loan/credit amounts.
+- [ ] **#9.2:** Validate structural and semantic rules at server save/import boundary, protect category IDs and optional flags, historical as-of periods, safe integer cents, amount edit/Undo/Redo and duplicate commitment handling.
+
+## Evidence and QA
+
+Initial coherent code blob bundle includes new `BudgetScope`, optional taxonomy IDs/carryover flag, cent-exact allocation and projection, editor UX, server structural constraints, responsive CSS and focused regression tests. **No checks, browser renders or DB validations have been called PASS for the new branch.**
+
+Before acceptance:
+1. Run cheap branch/draft TS/hygiene/Vitest/API source checks **once after coherent code**, fix the complete class of faults together.
+2. Add or extend `budget-rules-qa.mjs` rendered owner QA for desktop/tablet/mobile and failure/pending save, actual vs projection, first-month rollover, subcategory selector and parent rollups. Directly inspect evidence including dark/light, focus and clipping.
+3. Inspect any residual finance/identity mismatch with other PRs; integrate only after owner branches are merged, never overwritten. Keep income/expense and on-save revision boundaries.
+4. Mark PR ready only on final review-head candidate; run all required CI/security/Chromium+WebKit/Lighthouse/Windows and Real Stack if appropriate. No threshold relaxation; no merge pending/failing gates.
+
+## Exact next action
+
+Commit coherent feature code as a draft PR referencing issue #588. Then extend rendered QA and run narrow static/financial preflight. Do not wait for #590 CI to finish to develop independent #9 code. Counters remain **2/12 · 4/24** until fully accepted and integrated.

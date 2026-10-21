@@ -8,7 +8,8 @@ import { FormError } from './FormError';
 import { IconButton } from './IconButton';
 import { MoneyInput } from './MoneyInput';
 import { budgetProgress, budgetStableId, normalizeBudget } from '../lib/budgets';
-import { categoryTree } from '../lib/categories';
+import { categoryPath, categoryTree } from '../lib/categories';
+import { resolveCategoryIdentity, resolveSubcategoryIdentity } from '../lib/categoryIdentity';
 import { money } from '../lib/format';
 import { userErrorMessage } from '../lib/userMessage';
 import type { FinanceData, MonthlyBudget } from '../types';
@@ -24,8 +25,10 @@ export function BudgetRuleSettings({data,asOf,budgetMonth,budgetRows,onUpsertBud
   const expenseFallback=expenseTree[0]?.name||data.state.settings.expenseCategories[0]||'Άλλο';
   const [internalMonth,setInternalMonth]=useState(asOf.slice(0,7));
   const month=budgetMonth??internalMonth;
-  const [budgetScope,setBudgetScope]=useState<'category'|'overall'>('category');
+  const [budgetScope,setBudgetScope]=useState<MonthlyBudget['scope']>('category');
   const [budgetCategory,setBudgetCategory]=useState(expenseFallback);
+  const [budgetSubcategory,setBudgetSubcategory]=useState('');
+  const [budgetCarryover,setBudgetCarryover]=useState(false);
   const [budgetAmount,setBudgetAmount]=useState('');
   const [budgetAlert,setBudgetAlert]=useState('80');
   const [budgetError,setBudgetError]=useState('');
@@ -39,9 +42,21 @@ export function BudgetRuleSettings({data,asOf,budgetMonth,budgetRows,onUpsertBud
   const saveBudget=async()=>{
     if(busyRef.current)return;
     try{
-      const id=budgetStableId(month,budgetScope,budgetScope==='category'?budgetCategory:undefined);
-      const existing=(data.state.budgets??[]).find(item=>item.id===id);const timestamp=now();
-      const next=normalizeBudget({id,month,scope:budgetScope,category:budgetScope==='category'?budgetCategory:undefined,amount:Number(budgetAmount.replace(',','.')),alertThreshold:Number(budgetAlert.replace(',','.'))/100,createdAt:existing?.createdAt??timestamp,updatedAt:timestamp});
+      const category=budgetScope==='overall'?undefined:budgetCategory;
+      const subcategory=budgetScope==='subcategory'?budgetSubcategory:undefined;
+      const categoryIdentityId=category?resolveCategoryIdentity(data.state.settings,'expense',category)?.id:undefined;
+      const subcategoryIdentityId=category&&subcategory?resolveSubcategoryIdentity(data.state.settings,'expense',category,subcategory)?.id:undefined;
+      const id=budgetStableId(month,budgetScope,category,subcategory,categoryIdentityId,subcategoryIdentityId);
+      const existing=(data.state.budgets??[]).find(item=>item.id===id||
+        (item.month===month&&item.scope===budgetScope&&
+          (item.categoryIdentityId&&categoryIdentityId?item.categoryIdentityId===categoryIdentityId:item.category===category)&&
+          (budgetScope!=='subcategory'||(item.subcategoryIdentityId&&subcategoryIdentityId
+            ?item.subcategoryIdentityId===subcategoryIdentityId:item.subcategory===subcategory))));
+      const timestamp=now();
+      const next=normalizeBudget({id:existing?.id??id,month,scope:budgetScope,category,subcategory,
+        categoryIdentityId,subcategoryIdentityId,carryover:budgetCarryover,
+        amount:Number(budgetAmount.replace(',','.')),alertThreshold:Number(budgetAlert.replace(',','.'))/100,
+        createdAt:existing?.createdAt??timestamp,updatedAt:timestamp});
       busyRef.current=true;setBusy(true);setBudgetError('');
       await onUpsertBudget(next);
       setBudgetAmount('');
@@ -56,10 +71,29 @@ export function BudgetRuleSettings({data,asOf,budgetMonth,budgetRows,onUpsertBud
     finally{busyRef.current=false;setBusy(false)}
   };
   return <div className="budget-rule-settings">
-    <section className="panel surface-raised budget-settings-panel" data-budget-management><div className="panel-head"><div><span>Προϋπολογισμοί περιόδου</span><small>Όρισε συνολικό ή ανά κατηγορία όριο. Οι επιστροφές μειώνουν τη χρήση, τα split portions μετρώνται μία φορά και οι εσωτερικές μεταφορές εξαιρούνται.</small></div><Gauge/></div>
-      <div className="settings-form budget-editor-grid">{budgetMonth?null:<label><span>Μήνας</span><AppTextInput disabled={busy} type="month" value={month} onChange={event=>setInternalMonth(event.target.value)}/></label>}<label><span>Τύπος ορίου</span><AppSelectInput disabled={busy} value={budgetScope} onChange={event=>setBudgetScope(event.target.value as 'category'|'overall')}><option value="category">Κατηγορία</option><option value="overall">Συνολικό όριο</option></AppSelectInput></label>{budgetScope==='category'?<label><span>Κατηγορία</span><CategorySelectInput disabled={busy} settings={data.state.settings} kind="expense" category={budgetCategory} includeSubcategories={false} onChange={selection=>setBudgetCategory(selection.category)}/></label>:null}<label><span>Όριο €</span><MoneyInput disabled={busy} value={budgetAmount} onValueChange={setBudgetAmount} placeholder="0,00" invalid={Boolean(budgetError)}/></label><label><span>Προειδοποίηση %</span><AppTextInput disabled={busy} inputMode="decimal" value={budgetAlert} onChange={event=>setBudgetAlert(event.target.value.replace(',','.'))}/></label></div>
+    <section className="panel surface-raised budget-settings-panel" data-budget-management><div className="panel-head"><div><span>Προϋπολογισμοί περιόδου</span><small>Όρισε συνολικό όριο, ανά κατηγορία ή υποκατηγορία. Η μεταφορά ορίου και οι γνωστές εκκρεμείς υποχρεώσεις εμφανίζονται χωριστά από τις πραγματικές δαπάνες.</small></div><Gauge/></div>
+      <div className="settings-form budget-editor-grid">
+        {budgetMonth?null:<label><span>Μήνας</span><AppTextInput disabled={busy} type="month" value={month} onChange={event=>setInternalMonth(event.target.value)}/></label>}
+        <label><span>Τύπος ορίου</span><AppSelectInput disabled={busy} value={budgetScope} onChange={event=>setBudgetScope(event.target.value as MonthlyBudget['scope'])}>
+          <option value="category">Κατηγορία</option><option value="subcategory">Υποκατηγορία</option><option value="overall">Συνολικό όριο</option>
+        </AppSelectInput></label>
+        {budgetScope!=='overall'?<label><span>{budgetScope==='subcategory'?'Κατηγορία / υποκατηγορία':'Κατηγορία'}</span>
+          <CategorySelectInput disabled={busy} settings={data.state.settings} kind="expense"
+            category={budgetCategory} subcategory={budgetScope==='subcategory'?budgetSubcategory:''}
+            includeSubcategories={budgetScope==='subcategory'}
+            onChange={selection=>{setBudgetCategory(selection.category);setBudgetSubcategory(selection.subcategory)}}/>
+        </label>:null}
+        <label><span>Όριο €</span><MoneyInput disabled={busy} value={budgetAmount} onValueChange={setBudgetAmount} placeholder="0,00" invalid={Boolean(budgetError)}/></label>
+        <label><span>Προειδοποίηση %</span><AppTextInput disabled={busy} inputMode="decimal" value={budgetAlert} onChange={event=>setBudgetAlert(event.target.value.replace(',','.'))}/></label>
+        <label className="budget-carryover-toggle"><input type="checkbox" disabled={busy} checked={budgetCarryover} onChange={event=>setBudgetCarryover(event.target.checked)}/>
+          <span>Προαιρετική μεταφορά αχρησιμοποίητου ορίου από τον προηγούμενο μήνα</span>
+        </label>
+      </div>
       {budgetError?<FormError id="budget-editor-error">{budgetError}</FormError>:null}<Button type="button" variant="primary" disabled={busy} onClick={()=>void saveBudget()}><Plus size={16}/> Αποθήκευση προϋπολογισμού</Button>
-      {budgets.length?<><div className="budget-settings-list">{visibleBudgets.map(row=><article key={row.id} className={`budget-setting-row ${row.status}`}><div><b>{row.scope==='overall'?'Συνολικό όριο':row.category}</b><small>{money.format(row.used)} από {money.format(row.limit)} · {Math.round(row.ratio*100)}%</small></div><div className="budget-meter" role="progressbar" aria-label={`Χρήση προϋπολογισμού ${row.scope==='overall'?'συνολικά':row.category}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(100,Math.round(row.ratio*100))} aria-valuetext={`${Math.round(row.ratio*100)}%`}><i style={{width:`${Math.min(100,row.ratio*100)}%`}}/></div><IconButton aria-label={`Διαγραφή προϋπολογισμού ${row.scope==='overall'?'συνολικά':row.category}`} disabled={busy} onClick={()=>void deleteBudget(row.id)}><Trash2/></IconButton></article>)}</div>{budgets.length>visibleBudgets.length?<Button type="button" variant="secondary" className="budget-settings-more" disabled={busy} onClick={()=>setBudgetListLimit(limit=>limit+24)}>Προβολή περισσότερων · {budgets.length-visibleBudgets.length} ακόμη</Button>:null}</>:<div className="empty-inline">Δεν υπάρχουν προϋπολογισμοί για την επιλεγμένη περίοδο.</div>}
+      {budgets.length?<><div className="budget-settings-list">{visibleBudgets.map(row=><article key={row.id} className={`budget-setting-row ${row.status}`}><div><b>{row.scope==='overall'?'Συνολικό όριο':row.scope==='subcategory'?categoryPath(row.category,row.subcategory):row.category}</b>
+        <small>Πραγματική χρήση: {money.format(row.used)} από {money.format(row.limit)} · {Math.round(row.ratio*100)}%</small>
+        {row.carryover?<small>Βασικό όριο {money.format(row.baseLimit)} + μεταφορά {money.format(row.carried)}</small>:null}
+        {row.projectedDue>0?<small className="budget-forecast-note">Γνωστές εκκρεμείς υποχρεώσεις: {money.format(row.projectedDue)} · προβλεπόμενη χρήση {money.format(row.projectedUsed)} ({row.projectedStatus==='exceeded'?'πιθανή υπέρβαση':row.projectedStatus==='near'?'πλησιάζει το όριο':'εντός ορίου'}). Δεν έχουν καταχωριστεί ως δαπάνες.</small>:null}</div><div className="budget-meter" role="progressbar" aria-label={`Χρήση προϋπολογισμού ${row.scope==='overall'?'συνολικά':categoryPath(row.category,row.subcategory)}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(100,Math.round(row.ratio*100))} aria-valuetext={`${Math.round(row.ratio*100)}%`}><i style={{width:`${Math.min(100,row.ratio*100)}%`}}/></div><IconButton aria-label={`Διαγραφή προϋπολογισμού ${row.scope==='overall'?'συνολικά':categoryPath(row.category,row.subcategory)}`} disabled={busy} onClick={()=>void deleteBudget(row.id)}><Trash2/></IconButton></article>)}</div>{budgets.length>visibleBudgets.length?<Button type="button" variant="secondary" className="budget-settings-more" disabled={busy} onClick={()=>setBudgetListLimit(limit=>limit+24)}>Προβολή περισσότερων · {budgets.length-visibleBudgets.length} ακόμη</Button>:null}</>:<div className="empty-inline">Δεν υπάρχουν προϋπολογισμοί για την επιλεγμένη περίοδο.</div>}
     </section>
   </div>;
 }
