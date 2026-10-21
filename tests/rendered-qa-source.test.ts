@@ -23,7 +23,6 @@ const qaRunner = readFileSync('scripts/qa-script-runner.mjs', 'utf8');
 const ci = readFileSync('.github/workflows/ci.yml', 'utf8');
 const auditRenderedWorkflow = readFileSync('.github/workflows/audit-rendered-review.yml', 'utf8');
 const finalVisualWorkflow = readFileSync('.github/workflows/final-visual-qa.yml', 'utf8');
-const finalVisualTrigger = readFileSync('.audit/run-final-visual-review', 'utf8');
 const finalScreenshots = readFileSync('scripts/final-screenshots-qa.mjs', 'utf8');
 const refreshRouteQa = readFileSync('scripts/refresh-route-qa.mjs', 'utf8');
 const sessionRuntimeQa = readFileSync('scripts/session-runtime-qa.mjs', 'utf8');
@@ -99,7 +98,7 @@ describe('rendered browser QA reliability contract', () => {
     expect(finalVisualWorkflow).not.toContain('contents: write');
     expect(ci).toContain('uses: ./.github/workflows/final-visual-qa.yml');
     expect(ci).toContain("contains(github.event.pull_request.labels.*.name, 'final-visual-qa')");
-    expect(finalVisualTrigger).toContain('issue-476 post-squash canonical-develop final visual release inspection');
+    expect(finalVisualWorkflow).not.toContain("- '.audit/run-final-visual-review'");
   });
   it('records the in-place refresh transition atomically before the transient skeleton can disappear',()=>{
     expect(refreshRouteQa).toContain("const key='__MYFINHUB_REFRESH_ROUTE_QA__'");
