@@ -5,7 +5,7 @@ Date: 2026-10-21. Baseline: live `develop` after accepted #588 Batch A. Scope is
 ## Owner contract
 - [x] Keep daily canonical finance data, previous/current period separation, savings comparison/goal, visible last point, all account card interactions and month/as-of semantics.
 - [x] Replace straight connection segments only on primary account-balance charts with **fixed 80%** non-overshooting monotone cubic curves (not a slider); preserve calendar scaling and handle flat/large/small changes.
-- [x] Show small dots (radius 1.35 SVG units) only where consecutive daily closing balances differ; retain original terminal marker.
+- [x] Show small dots (radius 1.35 SVG units) only on **selected-month** dates with a changed daily closing balance; **no dots on previous-month history**, while retaining its curve and the original terminal marker.
 - [x] Reduce internal chart-edge padding, preserve full-width SVG stretching, and ensure one-point fallback renders across the chart.
 - [ ] Validate targeted tests, desktop/tablet/mobile Light/Dark rendered evidence and examine the screenshots on the exact changed head.
 - [x] Inspect sibling chart usages and preserve them; do not implicitly refactor unrelated charts.
