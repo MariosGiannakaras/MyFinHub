@@ -3,7 +3,7 @@
 
 ## Unified CI orchestration (owner-approved, 2026-10-21, issue #598)
 
-The canonical **`.github/workflows/ci.yml`** is the single normal pull-request / `develop` / `main` CI entrypoint. It runs existing checks as parallel reusable jobs, without cloning or weakening their commands: source/hygiene/type/build/unit/audit/Chromium rendered QA; CodeQL; pinned Playwright/WebKit; production-mode Lighthouse and loading-shift; Windows Desktop package/installer; Windows first-run; and clean-launch.
+The canonical **`.github/workflows/ci.yml`** is the central pull-request / `develop` / `main` CI entrypoint. **Protected-code-scanning compatibility:** the enforced GitHub CodeQL ruleset still requires a direct `pull_request` analysis; until it recognizes scans from reusable workflows, `.github/workflows/codeql.yml` also runs that independent security scan on PRs. The central gate retains its own required nested CodeQL result. This deliberate duplicate must not be removed by bypassing or weakening the security ruleset. It runs existing checks as parallel reusable jobs, without cloning or weakening their commands: source/hygiene/type/build/unit/audit/Chromium rendered QA; CodeQL; pinned Playwright/WebKit; production-mode Lighthouse and loading-shift; Windows Desktop package/installer; Windows first-run; and clean-launch.
 
 - Draft PR: run core source/build/unit/audits and CodeQL. Expensive browser, performance and Windows jobs are explicitly deferred.
 - Ready PR or integration push: every required job runs on the same source ref and the `CI / Unified required gate` job fails closed for failed, cancelled or missing required results. All ordinary checks should appear under this one workflow, not as duplicate independent PR jobs.
