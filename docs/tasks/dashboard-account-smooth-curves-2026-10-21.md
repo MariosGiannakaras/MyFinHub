@@ -7,7 +7,7 @@ Date: 2026-10-21. Baseline: live `develop` after accepted #588 Batch A. Scope is
 - [x] Replace straight connection segments only on primary account-balance charts with **fixed 80%** non-overshooting monotone cubic curves (not a slider); preserve calendar scaling and handle flat/large/small changes.
 - [x] Show small dots (radius 1.35 SVG units) only on **selected-month** dates with a changed daily closing balance; **no dots on previous-month history**, while retaining its curve and the original terminal marker.
 - [x] Reduce internal chart-edge padding, preserve full-width SVG stretching, and ensure one-point fallback renders across the chart.
-- [ ] Validate targeted tests, desktop/tablet/mobile Light/Dark rendered evidence and examine the screenshots on the exact changed head.
+- [x] Validate targeted tests, desktop/tablet/mobile Light/Dark rendered evidence and examine the screenshots on the exact changed head.
 - [x] Inspect sibling chart usages and preserve them; do not implicitly refactor unrelated charts.
 
 ## Scope of related charts (inventory, untouched)
@@ -17,4 +17,4 @@ Date: 2026-10-21. Baseline: live `develop` after accepted #588 Batch A. Scope is
 - Savings and other forecast charts have separate period/finance contracts; no changes are approved here.
 
 ## State
-Implementation code and focused regression tests committed on isolated feature branch; rendered repository/browser QA pending. Do not claim a full validated acceptance or merge before required evidence.
+Implementation, focused geometry/source tests, full Chromium rendered QA and 216-screenshot Final Visual QA complete on the reviewed functional code head. Final screenshots are persisted on PR branch in commit `fc8641b`; final exact-head gating and develop integration remain pending. Keep PR unmerged until required gates pass.
