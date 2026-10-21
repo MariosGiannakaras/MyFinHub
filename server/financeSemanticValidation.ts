@@ -129,7 +129,7 @@ function validateEvent(event:FinanceEvent){
          Math.abs(event.receivableDelta*100+amount)>1e-6)
         invalid(`Sub-cent writeoff amount or receivable delta for event ${event.id}.`);
       if(event.cardId||event.statementId||event.loanId||event.recurringId||
-         event.feeForEventId||event.funding?.length||event.parts?.length||
+         event.feeForEventId||event.funding!==undefined||event.parts!==undefined||
          event.savingSource||event.expectedReturnDate)
         invalid(`Cross-domain metadata on noncash writeoff ${event.id}.`);
       break;

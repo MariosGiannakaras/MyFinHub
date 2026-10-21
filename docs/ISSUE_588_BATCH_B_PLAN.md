@@ -169,3 +169,6 @@ No Bank Excel/CSV/OFX import, third-party bank connector, automatic Euribor, car
 
 ### First full review-head rendered CI discovery (2026-10-21)
 - PR #590 was marked ready on `1c55f858`; the full `validate` job passed hygiene, unit/build/API and reached rendered Chromium, but failed in `scripts/completion-functional-crud-qa.mjs` when its **old label** `Πραγματικό υπόλοιπο` no longer matched the deliberate as-of account-check UI. The script now targets `Επαληθευμένο υπόλοιπο`, explicitly checks owner confirmation, and still asserts the reconciliation event persists. PR returned to draft while repairing review-head browser findings; no full PASS or merge claimed. WebKit/Windows Clean Launch and First Run passed on previous review head; revalidate changed head.
+
+### Typed negative test and metadata follow-up (2026-10-21)
+- The newly added forged SplitPart case lacked the required `label` in the test fixture, causing a draft TS2322 before finance tests. Added the real typed field (no casts or weakened checks). Backend noncash writeoff validation now rejects even *empty* forged `parts`/`funding` metadata arrays, and adversarial source tests prove both forms. The parallel reconciliation QA correction at `1f6a098c` was preserved. Await new exact-head validation, not yet accepted.

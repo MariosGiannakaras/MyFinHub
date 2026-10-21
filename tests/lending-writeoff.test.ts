@@ -45,7 +45,9 @@ describe('noncash receivable writeoffs preserve accounting (#588 B3)',()=>{
     {...item,loanId:'loan-from-other-contract'},
     {...item,cardId:'card-from-other-contract'},
     {...item,feeForEventId:'transfer-from-other-contract'},
-    {...item,parts:[{id:'part-1',category:'Άλλο',amount:95}]},
+    {...item,parts:[{id:'part-1',label:'Forged split',category:'Άλλο',amount:95}]},
+    {...item,parts:[]},
+    {...item,funding:[]},
   ]){
     expect(()=>validateFinanceStateSemantics({...d.state,events:[forged]})).toThrow();
   }
