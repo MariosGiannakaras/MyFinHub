@@ -105,6 +105,10 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   const [recoverOpen,setRecoverOpen]=useState(false);
   const [privacyVisible,setPrivacyVisible]=useState(false);
   const cleanupAttempted=useRef(new Set<string>());
+  // A Dashboard card's filter is only the next navigation's context.
+  // Navigating elsewhere must not re-apply it on later generic Transactions visits.
+  useEffect(()=>{if(page!=='transactions')setDashboardAccountId(null)},[page]);
+
   const cleanupInFlight=useRef(new Map<string,Promise<void>>());
   const [cleanupBusy,setCleanupBusy]=useState(false);
   const [cleanupFailure,setCleanupFailure]=useState<string|null>(null);
