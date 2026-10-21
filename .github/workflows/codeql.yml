@@ -1,12 +1,7 @@
 name: CodeQL
 
 on:
-  push:
-    branches: [main, develop]
-  pull_request:
-    branches: [main, develop]
-    paths-ignore:
-      - 'visual-qa/**'
+  workflow_call:
   schedule:
     - cron: '17 4 * * 1'
 
