@@ -463,6 +463,11 @@ function QaWorkspace(){
     return {...current,state:{...current.state,creditStatements:prepared.statements,
       events:exists?events.map(existing=>existing.id===event.id?prepared.event:existing):[...events,prepared.event]}};
   });
+  const saveLendingPlan=async(draft:import('./lib/lendingPlans').LendingSettlementDraft)=>{
+    await transactionReceipt();
+    const {withConfirmedLendingPlan}=await import('./lib/lendingPlans');
+    update(current=>withConfirmedLendingPlan(current,draft,true));
+  };
   const addEventDurably=async(event:FinanceEvent)=>{
     const params=new URLSearchParams(location.search);
     if(params.get('quick-event-save-failure')==='1')throw new Error('Η δοκιμαστική αποθήκευση κίνησης απέτυχε.');
@@ -608,7 +613,7 @@ function QaWorkspace(){
     :page==='cards'?<CardsPage data={data} commandCardId={commandDebitCardId} commandCardKey={commandDebitCardKey} onUpsertBank={upsertBank} onUpsertCard={upsertCard} onUpsertCardDurably={upsertCardDurably} onStageNewCard={stageNewCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard}/>
     :page==='credit'?<CreditCardPage data={data} asOf={today} commandCardId={commandCardId} commandCardKey={commandCardKey} onCreateEvent={addEvent} onEditEvent={editEvent} onDeleteEvent={deleteEvent} onUpsertCard={upsertCard} onUpsertCardDurably={upsertCardDurably} onStageNewCard={stageNewCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard} onPayCard={cardId=>openSpecial({mode:'credit',action:'payment',cardId})}/>
     :page==='loans'?<LoansPage data={data} asOf={today} commandLoanId={commandLoanId} commandLoanKey={commandLoanKey} onUpsertLoan={upsertLoan} onCreateSelfLoan={createSelfLoan} onPayLoan={loanId=>openSpecial({mode:'loan',loanId})}/>
-    :page==='lending'?<LendingPage data={data} asOf={today} commandPerson={commandLendingPerson} commandPersonKey={commandLendingKey} privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onCreateEvent={addEvent} onQuickAdd={openSpecial}/>
+    :page==='lending'?<LendingPage data={data} asOf={today} commandPerson={commandLendingPerson} commandPersonKey={commandLendingKey} privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onCreateEvent={addEvent} onQuickAdd={openSpecial} onSaveLendingPlan={saveLendingPlan}/>
     :page==='recurring'?<RecurringPage data={data} asOf={today} commandRecurringId={commandRecurringId} commandRecurringKey={commandRecurringKey} onUpsert={upsertRecurring} onUpsertDurably={async item=>{if(new URLSearchParams(window.location.search).get('recurring-save-failure')==='1')throw new Error('Η δοκιμαστική αποθήκευση απέτυχε.');upsertRecurring(item)}} onOpenLoans={()=>setPage('loans')} onPayLoan={loanId=>openSpecial({mode:'loan',loanId})} onPayRecurring={recurringId=>openSpecial({mode:'recurring',recurringId})}/>
     :page==='planning'?<PlanningPage data={data} asOf={today} commandScheduledId={commandScheduledId} commandScheduledKey={commandScheduledKey} onUpsertScheduled={upsertScheduledDurably} onCompleteScheduled={completeScheduledDurably}/>
     :page==='attention'?<AttentionPage data={data} asOf={today} onAction={handleAttention} onDecision={decideAttention} onReviewDecision={(id,decision)=>update(current=>({...current,state:{...current.state,reviewDecisions:{...(current.state.reviewDecisions??{}),[id]:decision}}}))}/>

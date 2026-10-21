@@ -362,9 +362,9 @@ function validateLendingSettlementPlan(value:unknown,name:string){
   const cents=Math.round(value.total*100);
   if(cents<=0||!Number.isSafeInteger(cents)||Math.abs(value.total*100-cents)>0.00001)
     invalid(`Invalid ${name}.total.`);
-  if(!Number.isInteger(value.installments)||value.installments<1||value.installments>60||value.installments>cents)
+  if(typeof value.installments!=='number'||!Number.isInteger(value.installments)||value.installments<1||value.installments>60||value.installments>cents)
     invalid(`Invalid ${name}.installments.`);
-  if(!Number.isInteger(value.everyMonths)||value.everyMonths<1||value.everyMonths>24)
+  if(typeof value.everyMonths!=='number'||!Number.isInteger(value.everyMonths)||value.everyMonths<1||value.everyMonths>24)
     invalid(`Invalid ${name}.everyMonths.`);
 }
 
@@ -603,6 +603,8 @@ export function validateFinanceData(value: unknown): asserts value is FinanceDat
     ensureUniqueIds(state.lendingPlans,'state.lendingPlans');
     const people=new Set<string>();
     for(const plan of state.lendingPlans){
+      if(!object(plan))invalid('Invalid settlement plan.');
+      text(plan.person,'state.lendingPlans.person',120);
       const person=plan.person.trim();
       if(people.has(person))invalid('Multiple active settlement plans for one person.');
       people.add(person);

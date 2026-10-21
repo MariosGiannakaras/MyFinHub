@@ -204,6 +204,10 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
   };
   const addEvent=(event:FinanceEvent)=>finance.update(current=>withEvent(current,event));
   const addEventDurably=(event:FinanceEvent)=>finance.updateDurably(current=>withEvent(current,event));
+  const saveLendingPlan=async(draft:import('./lib/lendingPlans').LendingSettlementDraft)=>{
+    const {withConfirmedLendingPlan}=await import('./lib/lendingPlans');
+    await finance.updateDurably(current=>withConfirmedLendingPlan(current,draft,true));
+  };
   const addLinkedTransferDurably=async(principal:FinanceEvent,fee:FinanceEvent|null)=>{
     const {replaceLinkedTransferWithFee}=await import('./lib/linkedFees');
     return finance.updateDurably(current=>replaceLinkedTransferWithFee(current,principal,fee));
@@ -362,7 +366,7 @@ function FinanceApp({ userEmail, onLogout }: { userEmail: string | null; onLogou
     : page === 'cards' ? <CardsPage data={data} commandCardId={commandDebitCardId} commandCardKey={commandDebitCardKey} onUpsertBank={upsertBank} onUpsertCard={upsertCard} onUpsertCardDurably={upsertCardDurably} onStageNewCard={stageNewCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard}/>
     : page === 'credit' ? <CreditCardPage data={data} asOf={today} commandCardId={commandCardId} commandCardKey={commandCardKey} onCreateEvent={addEvent} onEditEvent={editEvent} onDeleteEvent={deleteEvent} onUpsertCard={upsertCard} onUpsertCardDurably={upsertCardDurably} onStageNewCard={stageNewCard} onArchiveCard={archiveCard} onDeleteCard={deleteCard} onPayCard={(cardId,statementId)=>openSpecial({mode:'credit',action:'payment',cardId,statementId})}/>
     : page === 'loans' ? <LoansPage data={data} asOf={today} commandLoanId={commandLoanId} commandLoanKey={commandLoanKey} onUpsertLoan={upsertLoan} onCreateSelfLoan={createSelfLoan} onPayLoan={(loanId)=>openSpecial({mode:'loan',loanId})}/>
-    : page === 'lending' ? <LendingPage data={data} asOf={today} commandPerson={commandLendingPerson} commandPersonKey={commandLendingKey} privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onCreateEvent={addEvent} onQuickAdd={openSpecial}/>
+    : page === 'lending' ? <LendingPage data={data} asOf={today} commandPerson={commandLendingPerson} commandPersonKey={commandLendingKey} privacyVisible={privacyVisible} onPrivacyVisibleChange={setPrivacyVisible} onCreateEvent={addEvent} onQuickAdd={openSpecial} onSaveLendingPlan={saveLendingPlan}/>
     : page === 'recurring' ? <RecurringPage data={data} asOf={today} commandRecurringId={commandRecurringId} commandRecurringKey={commandRecurringKey} onUpsert={upsertRecurring} onUpsertDurably={upsertRecurringDurably} onOpenLoans={() => navigate('loans')} onPayLoan={(loanId)=>openSpecial({mode:'loan',loanId})} onPayRecurring={(recurringId)=>openSpecial({mode:'recurring',recurringId})}/>
     : page === 'planning' ? <PlanningPage data={data} asOf={today} commandScheduledId={commandScheduledId} commandScheduledKey={commandScheduledKey} onUpsertScheduled={upsertScheduled} onCompleteScheduled={completeScheduled}/>
     : page === 'attention' ? <AttentionPage data={data} asOf={today} onAction={handleAttention} onDecision={decideAttention} onReviewDecision={decide}/>
