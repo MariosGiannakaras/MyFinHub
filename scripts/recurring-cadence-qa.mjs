@@ -73,5 +73,30 @@ try{
   const savedVariable=await c.call("function(){return (document.querySelector('[data-active-recurring]')?.textContent||'').includes('Εκτίμηση')}");
   assert(savedVariable,'responsive recurring list visibly labels the forecast amount as estimate');
   await shot('recurring-variable-estimate-saved-mobile');
+
+  console.log('Recurring amount QA: failed exact save retains variable draft and original actual money');
+  const failureUrl=new URL(baseUrl);
+  failureUrl.searchParams.set('page','recurring');
+  failureUrl.searchParams.set('recurring-save-failure','1');
+  await c.send('Page.navigate',{url:failureUrl.href});
+  await waitFor("function(){return Boolean(document.querySelector('[data-active-recurring]'))}",'fresh recurring page with rejected receipt');
+  const beforeFailedSave=await c.call("function(){return (document.querySelector('[data-active-recurring]')?.textContent||'').includes('Εκτίμηση')}");
+  assert(!beforeFailedSave,'failed-save fixture starts from the unchanged fixed recurring baseline');
+  const reopen=await c.call("function(){const node=[...document.querySelectorAll('button[aria-label^=\\\"Επεξεργασία\\\"]')].find(element=>element.getClientRects().length>0);node?.click();return Boolean(node)}");
+  assert(reopen,'the recurring editor reopens after navigation');
+  await waitFor("function(){return Boolean(document.querySelector('[role=dialog]'))}",'rejected-save editor');
+  const selectMode=await c.call("function(){const span=[...document.querySelectorAll('[role=dialog] label>span')].find(item=>item.textContent?.trim()==='Τύπος ποσού');const input=span?.parentElement?.querySelector('[role=combobox]');input?.click();return Boolean(input)}");
+  assert(selectMode,'fixed-to-variable selection exists on rejected draft');
+  await waitFor("function(){return [...document.querySelectorAll('.owned-option-list [role=option]')].some(item=>(item.textContent||'').includes('Μεταβλητό'))}",'rejected draft variable option');
+  assert(await c.call("function(){const item=[...document.querySelectorAll('.owned-option-list [role=option]')].find(item=>(item.textContent||'').includes('Μεταβλητό'));item?.click();return Boolean(item)}"),'rejected draft selected variable mode');
+  await fillAmount('Εκτιμώμενο ποσό','80');
+  await fillAmount('Κατώτερη εκτίμηση','60');
+  await fillAmount('Ανώτερη εκτίμηση','100');
+  const attempt=await c.call("function(){const item=[...document.querySelectorAll('[role=dialog] button')].find(item=>(item.textContent||'').trim()==='Αποθήκευση');item?.click();return Boolean(item)}");
+  assert(attempt,'rejected save action was submitted');
+  await waitFor("function(){return (document.querySelector('#recurring-editor-error')?.textContent||'').includes('δοκιμαστική αποθήκευση')}",'rejected durable recurring receipt');
+  const held=await c.call("function(){const dialog=document.querySelector('[role=dialog]');const error=document.querySelector('#recurring-editor-error')?.textContent||'';const inputs=[...dialog?.querySelectorAll('label')||[]];const val=label=>inputs.find(x=>(x.querySelector('span')?.textContent||'').includes(label))?.querySelector('input')?.value;return {open:!!dialog,min:val('Κατώτερη εκτίμηση'),max:val('Ανώτερη εκτίμηση'),error,storedText:document.querySelector('[data-active-recurring]')?.textContent||''}}");
+  assert(held.open&&held.min==='60'&&held.max==='100'&&held.error.includes('δοκιμαστική')&&!held.storedText.includes('Εκτίμηση'),'failed finance receipt retains editable variable draft without mutating the persisted recurring baseline');
+  await shot('recurring-variable-rejected-save-mobile');
   c.close();console.log('Recurring cadence rendered QA passed.');
 }finally{c?.close();child.kill('SIGTERM')}

@@ -28,3 +28,6 @@ No `main`, Production, Android, bank imports, destructive financial history or f
 
 ## #7 forecast boundary without overlapping PR #591 — 2026-10-21
 - Only `src/lib/forecast.ts`'s existing recurring-movement **label** is changed: when `amountMode='variable'`, it visibly states `Εκτίμηση: …`; forecast amount remains owner-entered `item.amount` (no new booked cash event). Legacy fixed recurring labels/numerics and 30/60/90-day cadence stay identical. Added isolated test verifying exactly one October estimated charge and no real event. PR #591 owns scenario UI/module; neither was touched. Integrating multi-cycle fulfillment/estimate-vs-known counts needs joint review after upstream merge. Required rendered evidence pending.
+
+### QA failure-receipt addition
+- Added a distinct mobile 375px **rejected finance receipt** scenario after the successful variable estimate editor proof. A fresh QA navigation enables existing `recurring-save-failure=1` and verifies the variable 60–100 € draft persists after a rejected durable update, its dialog/error remains open, the underlying saved recurring row remains fixed (not mislabeled estimated), and captures `recurring-variable-rejected-save-mobile.png`. The existing save-progress semantics and error messaging were not changed; rendered run and screenshot inspection remain pending.

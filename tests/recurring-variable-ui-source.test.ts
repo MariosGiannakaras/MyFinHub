@@ -22,6 +22,9 @@ describe('variable recurring editor and status provenance (#588 #8)',()=>{
    expect(browser).toContain('recurring-variable-estimate-editor-desktop');
    expect(browser).toContain('recurring-variable-estimate-editor-mobile');
    expect(browser).toContain('recurring-variable-estimate-saved-mobile');
+   expect(browser).toContain('recurring-variable-rejected-save-mobile');
+   expect(browser).toContain('failed finance receipt retains editable variable draft');
+   expect(browser).toContain("failureUrl.searchParams.set('recurring-save-failure','1')");
    expect(browser).toContain('responsive recurring list visibly labels the forecast amount as estimate');
  });
 });
