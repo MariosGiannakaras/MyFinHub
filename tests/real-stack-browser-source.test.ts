@@ -1,18 +1,17 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import * as ts from 'typescript';
+import { transformSync } from 'esbuild';
 
 const source=readFileSync('scripts/real-stack-browser-e2e.ts','utf8');
 
 describe('actual-browser real-stack source contract',()=>{
   it('parses the entire real-stack browser runner before expensive container/browser startup',()=>{
-    const result=ts.transpileModule(source,{
-      fileName:'scripts/real-stack-browser-e2e.ts',
-      reportDiagnostics:true,
-      compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}
-    });
-    const errors=(result.diagnostics??[]).filter(item=>item.category===ts.DiagnosticCategory.Error);
-    expect(errors).toEqual([]);
+    expect(()=>transformSync(source,{
+      sourcefile:'scripts/real-stack-browser-e2e.ts',
+      loader:'ts',
+      format:'esm',
+      target:'es2022'
+    })).not.toThrow();
   });
 
   it('uses the real app UI and same-origin API without fetch interception',()=>{
