@@ -62,4 +62,17 @@ describe('single-revision linked fees on internal movements (#588 B2)',()=>{
     expect(()=>buildLinkedTransferFee(d,t,{amount:-.01,category:'Άλλο'})).toThrow();
     expect(()=>buildLinkedTransferFee(d,t,{amount:1,category:'missing'})).toThrow();
   });
+ it('links optional card-payment fee to the same payer account without double-card expense',()=>{
+  const d=fixture();
+  const payment=createEvent({kind:'card_payment',date:'2026-08-14',amount:80,
+    note:'Payment',cardId:'credit1',fromAccountId:'bank'});
+  const fee=buildLinkedTransferFee(d,payment,{amount:1.01,category:'Άλλο'});
+  const state=replaceLinkedTransferWithFee(d,payment,fee);
+  expect(state.state.events).toHaveLength(2);
+  expect(fee).toMatchObject({feeForEventId:payment.id,accountId:'bank',kind:'expense',amount:1.01});
+  expect(monthlyFlow(state,'2026-08')).toMatchObject({income:0,expense:1.01,net:-1.01});
+  expect(()=>validateFinanceStateSemantics(state.state)).not.toThrow();
+  expect(()=>validateCompleteFinanceSemantics(state)).not.toThrow();
+ });
+
 });

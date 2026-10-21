@@ -119,3 +119,7 @@ No Bank Excel/CSV/OFX import, third-party bank connector, automatic Euribor, car
 
 ### B1 browser evidence and QA parity — 2026-10-21
 - Aligned synthetic QA event creation with the real App's `prepareCreditStatementEvent` reducer, so statement assignment is tested rather than omitted in the fixture. Expanded the existing ledger rendered QA to opt into an actual two-source 100 EUR purchase (bank 40 + QA Visa 60), persist one event, verify card history/statement against only the credit share, and capture desktop evidence for both transactions/card UI. Controls are driven through existing owned select and MoneyInput. Browser execution and screenshot inspection remain pending until review validation.
+
+### B2 credit payment integration (2026-10-21)
+- Existing ContextualQuickAdd credit-card repayment now offers a **separate optional real commission**, with MoneyInput and the live expense taxonomy; principal remains a non-expense `card_payment`. A populated fee uses the same `onCreateLinkedTransfer` single `finance.updateDurably` path already used for transfer fees; failed saves keep the payment modal open. Card-payment fee builder regression asserts payer-account debit, fee-only expense and linked semantics. Statement preview now includes mixed-funded purchases with only their credit amount.
+- Card-payment commission is not yet counted accepted. Browser payment-fee screenshot, failed receipt, server roundtrip and review-head gates remain pending.
