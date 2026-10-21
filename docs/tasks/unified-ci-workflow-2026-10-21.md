@@ -34,3 +34,11 @@ The implementation checkboxes above represent code/configuration, not whether Gi
 - **Integration/merge:** PR #599 remains open, targeting `develop`, not merged; branch protections remain enforced.
 - **Production/release:** no `main` promotion, tag, installer publication, or deployment.
 - **Next action:** on coherent current head, complete Ready-for-Review unified CI and separate direct CodeQL scan, verify the protected code-scanning rule is satisfied, then squash-merge to `develop` and verify its unified integration CI. Do not bypass the rule.
+
+
+## Current-develop merge-rule revalidation — 2026-10-21
+
+- Owner-approved implementation remains complete: **Implementations 1/1 implemented · Sub-implementations 6/6 implemented**. All required Ready jobs and direct CodeQL scan passed on original exact head `869fd38b7a3e660435b964c3bfb923e3d33893cf`: unified CI run [39665766031](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/39665766031) and direct CodeQL [39665638886](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/39665638886).
+- An authorized squash-merge attempt targeting `develop` was rejected by GitHub HTTP **405**, explicitly: `Required status check "validate" is expected.` No branch protection was bypassed; nothing merged. Meanwhile independent #597 had moved `develop` from `5b58d3f2` to `eb210dfb`. Old-head success does not satisfy an outstanding synthetic merge-ref requirement on the new integration base.
+- This checkpoint commit refreshes the PR head for **current-develop Ready checks**, without modifying completed workflow behavior. Review the new head's unified `validate`, direct security CodeQL, WebKit, Lighthouse, Windows and fail-closed gate, and ensure GitHub accepts the protected `validate` context before attempting an expected-head squash merge. If still blocked, inspect the exact ruleset-reported context rather than lowering or bypassing protection.
+- Do not mark integration acceptance complete until the merge succeeds and the new `develop` SHA receives its own successful CI. No `main`, production deployment or Android changes.
