@@ -199,7 +199,8 @@ function validateRecurring(value: unknown, name: string) {
       invalid(`Invalid subcent estimate for ${name}.`);
     if((value.estimateMin===undefined)!==(value.estimateMax===undefined))
       invalid(`Incomplete estimate range for ${name}.`);
-    if(value.estimateMin!==undefined&&(value.estimateMin>value.amount||value.amount>value.estimateMax))
+    const min=value.estimateMin,max=value.estimateMax;
+    if(typeof min==='number'&&typeof max==='number'&&(min>value.amount||value.amount>max))
       invalid(`Invalid variable estimate range for ${name}.`);
   }
   if (value.day !== undefined && value.day !== null) {
