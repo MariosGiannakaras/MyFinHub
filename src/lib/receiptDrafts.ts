@@ -6,6 +6,15 @@ type ReceiptFieldConfidence = {
   ocr?: number;
 };
 
+type ReceiptItemProposal = {
+  id: string;
+  description: string;
+  amount: number;
+  confidence: number;
+  category?: string;
+  subcategory?: string;
+};
+
 export type ReceiptProposal = {
   merchant?: string;
   date?: string;
@@ -14,6 +23,10 @@ export type ReceiptProposal = {
   category?: string;
   subcategory?: string;
   accountId?: string;
+  /** Untrusted, locally detected item suggestions; not posted financial events. */
+  items?: ReceiptItemProposal[];
+  /** Whether OCR item cents sum to the explicit grand total; never an auto-save approval. */
+  itemsBalanced?: boolean;
   confidence?: ReceiptFieldConfidence;
 };
 
