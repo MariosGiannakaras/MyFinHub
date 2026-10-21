@@ -160,7 +160,7 @@
   /* IBAN copy button participates in layout: no absolute overlap with delta/goal. */
   .dashboard-approved .approved-account-card .account-iban-dashboard{
     display:grid;
-    grid-template-columns:minmax(0,1fr) 40px;
+    grid-template-columns:minmax(0,1fr) 48px;
     align-items:center;
     gap:2px;
     width:min(100%,215px);
@@ -176,10 +176,10 @@
     position:static!important;
     transform:none!important;
     inset:auto!important;
-    width:40px;
-    height:40px;
-    min-width:40px;
-    min-height:40px;
+    width:48px;
+    height:48px;
+    min-width:48px;
+    min-height:48px;
     justify-self:end;
     opacity:1;
   }
