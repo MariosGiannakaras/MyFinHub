@@ -33,10 +33,11 @@ describe('Desktop primary account card reconciliation (#597)',()=>{
     expect(card).toContain('onTransactions(account.id)');
     expect(card).toContain('Συναλλαγές για');
     for(const shell of [app,qa]){
-      expect(shell).toContain("url.searchParams.set('dashboardAccount',accountId)");
+      expect(shell).toContain("setDashboardAccountId(accountId??null)");
+      expect(shell).toContain("dashboardAccountFocusKey={dashboardAccountFocusKey}");
     }
-    expect(ledger).toContain("url.searchParams.delete('dashboardAccount')");
-    expect(ledger).toContain("setAccount(hint)");
+    expect(ledger).toContain("setAccount(dashboardAccountId)");
+    expect(ledger).toContain("dashboardAccountFocusKey");
     expect(ledger).toContain("<option value=\"all\">Όλοι οι λογαριασμοί</option>");
     expect(ledger).toContain("(account==='all'||r.accountIds.includes(account))");
   });
