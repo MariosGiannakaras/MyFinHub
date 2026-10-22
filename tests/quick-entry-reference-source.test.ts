@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 const quick=readFileSync('src/components/QuickAdd.tsx','utf8');
 const receiptAware=readFileSync('src/components/ReceiptAwareQuickAdd.tsx','utf8');
 const css=readFileSync('src/styles/quick-entry-desktop-composition.css','utf8');
-const receipt=readFileSync('src/styles/receipt-inbox.css','utf8');
+const receipt=readFileSync('src/styles/receipt-launch.css','utf8');
 const popovers=readFileSync('src/styles/owned-entry-popovers.css','utf8');
 const runner=readFileSync('scripts/run-rendered-qa.mjs','utf8');
 const rendered=readFileSync('scripts/quick-entry-reference-qa.mjs','utf8');

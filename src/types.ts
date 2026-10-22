@@ -127,6 +127,7 @@ export type EventKind =
   | 'refund'
   | 'lending'
   | 'repayment'
+  | 'lending_writeoff'
   | 'card_purchase'
   | 'card_payment'
   | 'reconciliation'
@@ -137,6 +138,12 @@ export interface LedgerLeg {
   amount: number;
 }
 
+export interface PurchaseFundingLeg {
+  kind: 'account' | 'credit';
+  sourceId: string;
+  amount: number;
+}
+
 export interface SplitPart {
   id: string;
   label: string;
@@ -144,6 +151,16 @@ export interface SplitPart {
   subcategory?: string;
   amount: number;
   kind?: 'expense' | 'income' | 'refund' | 'saving' | 'transfer' | 'reconciliation';
+}
+
+/** Owner-created, immutable identity; the display label may be renamed without rewriting history. */
+export interface CounterpartyRecord {
+  id: string;
+  kind: 'merchant' | 'beneficiary';
+  displayName: string;
+  aliases?: string[];
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface FinanceEvent {
@@ -158,6 +175,8 @@ export interface FinanceEvent {
   fromAccountId?: string;
   toAccountId?: string;
   person?: string;
+  /** Explicit owner-selected merchant/beneficiary ID, not a derived OCR guess. */
+  counterpartyId?: string;
   expectedReturnDate?: string;
   legs: LedgerLeg[];
   parts?: SplitPart[];
@@ -173,6 +192,10 @@ export interface FinanceEvent {
   recurringId?: string;
   cardId?: string;
   statementId?: string;
+  /** One economic purchase with multiple funding sources, not multiple expense events. */
+  funding?: PurchaseFundingLeg[];
+  /** Separate expense fee linked to one non-spending principal operation. */
+  feeForEventId?: string;
 }
 
 export interface ScheduledTransaction {
@@ -256,6 +279,17 @@ export interface TransactionRule {
   updatedAt: string;
 }
 
+export interface LendingSettlementPlan {
+  id:string;
+  person:string;
+  asOf:string;
+  firstDueDate:string;
+  total:number;
+  installments:number;
+  everyMonths:number;
+  confirmedAt:string;
+}
+
 export interface FinanceData {
   app: string;
   schemaVersion: number;
@@ -288,6 +322,7 @@ export interface FinanceData {
     loanOverrides: Record<string, Loan>;
     customLoans: Loan[];
     lendingCustom: unknown[];
+    lendingPlans?: LendingSettlementPlan[];
     settings: FinanceSettings;
     cardBanks?: CardBank[];
     cards?: PaymentCard[];
@@ -295,6 +330,8 @@ export interface FinanceData {
     pendingCardSecretDeletes?: string[];
     creditStatements?: CreditStatementRecord[];
     events?: FinanceEvent[];
+    /** Owner-managed identities. Free-form seed and existing event notes stay unchanged. */
+    counterparties?: CounterpartyRecord[];
     scheduled?: ScheduledTransaction[];
     reviewDecisions?: Record<string, ReviewDecision>;
     attentionDecisions?: Record<string, AttentionDecision>;

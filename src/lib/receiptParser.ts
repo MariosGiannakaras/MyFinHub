@@ -1,4 +1,3 @@
-import type { FinanceData } from '../types.js';
 import type { ReceiptProposal } from './receiptDrafts.js';
 
 const TOTAL_WORDS = ['συνολο','πληρωτεο','τελικο','γενικο συνολο','total','grand total','amount due','payable'];
@@ -95,6 +94,35 @@ function detectedCurrency(text: string) {
   return undefined;
 }
 
+const ITEM_EXCLUSION_WORDS=[
+  ...TOTAL_WORDS,...BAD_TOTAL_WORDS,'αφμ','παραστατικο','παραγγελια','πιστωτικη','καρτα',
+  'card','visa','mastercard','pos','εκπτωση','discount','συναλλαγη','transaction',
+  'barcode','tax','ημερομηνια','date','τηλεφωνο','tel','credit','payment'
+];
+
+function receiptItemCandidates(lines:string[],grandTotal:number|undefined,confidence:number){
+  const items:NonNullable<ReceiptProposal['items']>=[];
+  const grandCents=grandTotal===undefined?undefined:Math.round(grandTotal*100);
+  for(const [index,line] of lines.entries()){
+    if(items.length>=40)break;
+    const key=fold(line);
+    if(ITEM_EXCLUSION_WORDS.some(word=>key.includes(word))||dateCandidate(line))continue;
+    // Final amount is a line total already printed by the till. Never multiply
+    // an OCR-recognized quantity or invent a per-unit price.
+    const match=line.match(/^(.+?)\s+((?:\d{1,3}(?:[.\s]\d{3})*|\d+)[,.]\d{2})\s*(?:€|EUR)?$/i);
+    if(!match)continue;
+    const description=normalizeSpaces(match[1]??'');
+    if(description.length<2||description.length>90||(description.match(/\p{L}/gu)??[]).length<2)continue;
+    const amount=parseMoneyToken(match[2]??'');
+    if(amount===undefined)continue;
+    const cents=Math.round(amount*100);
+    if(!Number.isSafeInteger(cents)||cents<=0||(grandCents!==undefined&&cents>grandCents))continue;
+    items.push({id:`ocr-line-${index+1}`,description,amount:cents/100,
+      confidence:Math.max(.3,Math.min(.92,.45+confidence*.4))});
+  }
+  return items;
+}
+
 export function parseReceiptText(text: string, ocrConfidence = 0): ReceiptProposal {
   const lines = text.split(/\r?\n/).map(normalizeSpaces).filter(Boolean);
   const merchant = merchantCandidate(lines);
@@ -119,21 +147,16 @@ export function parseReceiptText(text: string, ocrConfidence = 0): ReceiptPropos
     proposal.currency = currency;
     proposal.confidence!.currency = 0.96;
   }
+  const items=receiptItemCandidates(lines,proposal.total,normalizedOcr);
+  if(items.length){
+    proposal.items=items;
+    proposal.itemsCurrency=currency;
+    if(proposal.total!==undefined){
+      const totalCents=items.reduce((sum,item)=>sum+Math.round(item.amount*100),0);
+      proposal.itemsBalanced=totalCents===Math.round(proposal.total*100);
+    }
+  }
   return proposal;
 }
 
-export function suggestReceiptCategory(data: FinanceData, merchant?: string) {
-  const key = fold(merchant ?? '');
-  if (!key) return undefined;
-  const rows = (data.state.events ?? []).filter((event) => {
-    if (event.kind !== 'expense' || !event.category) return false;
-    const note = fold(event.note ?? '');
-    return note === key || note.includes(key) || key.includes(note);
-  });
-  if (rows.length < 2) return undefined;
-  const counts = new Map<string, number>();
-  for (const row of rows) counts.set(row.category!, (counts.get(row.category!) ?? 0) + 1);
-  const best = [...counts.entries()].sort((a, b) => b[1] - a[1])[0];
-  if (!best) return undefined;
-  return best[1] / rows.length >= 0.6 ? best[0] : undefined;
-}
+export { suggestReceiptCategory } from './reviewedMerchantSignals.js';

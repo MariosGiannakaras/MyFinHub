@@ -1,0 +1,11 @@
+.counterparty-directory{display:grid;gap:14px;min-width:0}.counterparty-directory h3{margin:0}.counterparty-directory p{margin:4px 0;line-height:1.5}
+.counterparty-directory-list{display:grid;gap:8px;list-style:none;padding:0;margin:0;max-height:360px;overflow:auto}
+.counterparty-directory-list li{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;min-width:0;border:1px solid var(--border-subtle);border-radius:10px;padding:10px}
+.counterparty-directory-list li>span{display:grid;gap:4px;min-width:0;overflow-wrap:anywhere}.counterparty-directory-list li small{color:var(--muted)}
+.counterparty-directory-form{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:10px}
+.counterparty-directory-form label{display:grid;align-content:start;gap:7px;min-width:0}
+.counterparty-directory-form label>span{font-size:11px;font-weight:700}
+.counterparty-directory-form .owned-input-shell,.counterparty-directory-form .app-control{min-width:0;width:100%}
+.counterparty-directory-form .counterparty-alias-field{grid-column:1/-1}
+.counterparty-directory-actions{display:flex;flex-wrap:wrap;gap:8px}
+@media(max-width:600px){.counterparty-directory-form{grid-template-columns:minmax(0,1fr)}.counterparty-directory-list li button{min-height:44px}}
