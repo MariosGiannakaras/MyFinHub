@@ -153,6 +153,16 @@ export interface SplitPart {
   kind?: 'expense' | 'income' | 'refund' | 'saving' | 'transfer' | 'reconciliation';
 }
 
+/** Owner-created, immutable identity; the display label may be renamed without rewriting history. */
+export interface CounterpartyRecord {
+  id: string;
+  kind: 'merchant' | 'beneficiary';
+  displayName: string;
+  aliases?: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface FinanceEvent {
   id: string;
   date: string;
@@ -165,6 +175,8 @@ export interface FinanceEvent {
   fromAccountId?: string;
   toAccountId?: string;
   person?: string;
+  /** Explicit owner-selected merchant/beneficiary ID, not a derived OCR guess. */
+  counterpartyId?: string;
   expectedReturnDate?: string;
   legs: LedgerLeg[];
   parts?: SplitPart[];
@@ -318,6 +330,8 @@ export interface FinanceData {
     pendingCardSecretDeletes?: string[];
     creditStatements?: CreditStatementRecord[];
     events?: FinanceEvent[];
+    /** Owner-managed identities. Free-form seed and existing event notes stay unchanged. */
+    counterparties?: CounterpartyRecord[];
     scheduled?: ScheduledTransaction[];
     reviewDecisions?: Record<string, ReviewDecision>;
     attentionDecisions?: Record<string, AttentionDecision>;

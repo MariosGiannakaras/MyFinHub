@@ -1,5 +1,5 @@
 import { ArrowDownToLine, ArrowLeftRight, BanknoteArrowDown, Check, CircleDollarSign, PiggyBank, RotateCcw, Scale, Split, X } from 'lucide-react';
-import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react';
 import { AppDateInput } from './AppDateInput';
 import { AppSelectInput } from './AppSelectInput';
 import { AppTextInput } from './AppTextInput';
@@ -34,13 +34,14 @@ import { money } from '../lib/format';
 import { accountDisplayName } from '../lib/ui';
 import { userErrorMessage } from '../lib/userMessage';
 import type { EventKind, FinanceData, FinanceEvent, SplitPart } from '../types';
+const CounterpartyQuickSelector=lazy(async()=>({default:(await import('./CounterpartyQuickSelector')).CounterpartyQuickSelector}));
 
 type FundingSourceRow={id:string;sourceKey:string;amountText:string};
 
 const linkedFeeFor=(data:FinanceData,principalId:string):FinanceEvent|null=>
   (data.state.events??[]).find(event=>event.feeForEventId===principalId)??null;
 
-export type QuickPrefill = { note:string; amount:number; category?:string; subcategory?:string; accountId?:string };
+export type QuickPrefill = { note:string; amount:number; category?:string; subcategory?:string; accountId?:string; parts?:SplitPart[] };
 
 const intentIcons:Record<EntryIntent,ReactNode>={
   expense:<CircleDollarSign/>,
@@ -79,6 +80,7 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
   const [amount,setAmount]=useState('');
   const [date,setDate]=useState(asOf);
   const [note,setNote]=useState('');
+  const [counterpartyId,setCounterpartyId]=useState('');
   const [category,setCategory]=useState(data.state.settings.expenseCategories[0]||'Άλλο');
   const [subcategory,setSubcategory]=useState('');
   const [accountId,setAccountId]=useState(data.state.settings.defaultExpenseAccount||fallbackAccount);
@@ -120,6 +122,7 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
       setAmount(String(initial.amount||''));
       setDate(initial.date||asOf);
       setNote(initial.note||'');
+      setCounterpartyId(initial.counterpartyId||'');
       setCategory(initial.category||defaults.category);
       setSubcategory(initial.subcategory||'');
       setAccountId(initial.accountId||initial.legs.find(l=>l.accountId!=='credit-card')?.accountId||defaults.accountId);
@@ -142,6 +145,8 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
       setAmount(prefill?String(prefill.amount):'');
       setDate(asOf);
       setNote(prefill?.note||'');
+      // OCR/merchant text never selects an identity without owner action.
+      setCounterpartyId('');
       setCategory(prefill?.category||defaults.category);
       setSubcategory(prefill?.subcategory||'');
       setAccountId(prefill?.accountId||defaults.accountId);
@@ -151,7 +156,7 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
       setActualBalance('');setStatementMovement('');setReconciliationConfirmed(false);
       setFeeAmount('');setFeeCategory(data.state.settings.expenseCategories[0]||'Άλλο');
       setMultiFundingOpen(false);setFundingRows(freshFundingRows());
-      setParts(freshParts());
+      setParts(initialKind==='split'&&prefill?.parts?.length?prefill.parts:freshParts());
     }
     setError('');setDirty(false);
   },[open,initial,initialKind,prefill,asOf,transferDefaults.from,transferDefaults.to,savingDefaults.from,savingDefaults.to]);
@@ -175,12 +180,12 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
     if(!open||discardOpen||kind!=='split')return;
     queueMicrotask(()=>document.getElementById('quick-add-title')?.closest<HTMLElement>('[role="dialog"]')?.querySelector<HTMLInputElement>('input[aria-label="Ποσό μέρους 1"]')?.focus({preventScroll:true}));
   },[open,discardOpen,kind]);
-  const reset=()=>{setAmount('');setNote('');setSubcategory('');setError('');setActualBalance('');setStatementMovement('');setReconciliationConfirmed(false);setFeeAmount('');setMultiFundingOpen(false);setDirty(false)};
+  const reset=()=>{setAmount('');setNote('');setCounterpartyId('');setSubcategory('');setError('');setActualBalance('');setStatementMovement('');setReconciliationConfirmed(false);setFeeAmount('');setMultiFundingOpen(false);setDirty(false)};
   const chooseKind=(next:EventKind)=>{
     const defaults=entryDefaults(next,data.state.settings,fallbackAccount);
     const nextTree=categoryTree(data.state.settings,next==='income'?'income':'expense');
     const nextCategory=nextTree.some(item=>item.name===defaults.category)?defaults.category:(nextTree[0]?.name||defaults.category);
-    setKind(next);setError('');setReconciliationConfirmed(false);setMultiFundingOpen(false);setAccountId(defaults.accountId);setCategory(nextCategory);setSubcategory('');mark();
+    setKind(next);setCounterpartyId('');setError('');setReconciliationConfirmed(false);setMultiFundingOpen(false);setAccountId(defaults.accountId);setCategory(nextCategory);setSubcategory('');mark();
     if(next==='transfer'){setFrom(transferDefaults.from);setTo(transferDefaults.to)}
     if(next==='saving_cash_offset'){setFrom(savingDefaults.from);setTo(savingDefaults.to)}
     if(next==='withdrawal'){setFrom(transferDefaults.from);setTo(accounts.find(account=>account.kind==='cash'&&account.id!==transferDefaults.from)?.id||transferDefaults.to)}
@@ -227,6 +232,13 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
         }
         event=createEvent({kind,date,amount:kind==='reconciliation'?Math.abs((reconciliation?.differenceCents??0)/100):numeric,note:note||labelForKind(kind),category,accountId,fromAccountId:from,toAccountId:to,person:person.trim(),actualBalance:actual,currentBalance:reconciliationBase(accountId)});
       }
+      if(counterpartyId){
+        const expected=['expense','card_purchase','split','refund'].includes(kind)?'merchant':
+          ['income','lending','repayment','lending_writeoff'].includes(kind)?'beneficiary':null;
+        if(!expected||!(data.state.counterparties??[]).some(row=>row.id===counterpartyId&&row.kind===expected))
+          throw new Error('Ο επιλεγμένος αντισυμβαλλόμενος δεν είναι πλέον διαθέσιμος.');
+        event.counterpartyId=counterpartyId;
+      }else delete event.counterpartyId;
       if(kind!=='split')event.subcategory=subcategory||undefined;
       if(initial){event.id=initial.id;event.createdAt=initial.createdAt;event.updatedAt=new Date().toISOString();preserveLoanPaymentLink(event,initial)}
       setSaving(true);
@@ -280,6 +292,7 @@ export function QuickAdd({ open, data, asOf, initial, initialKind='expense', pre
           </div>:null}
           {lendingLike?<label className="quick-field" data-filled={filled(person)}><span>Πρόσωπο</span><AppTextInput value={person} onChange={e=>{setPerson(e.target.value);mark()}} placeholder="π.χ. Χρήστος"/></label>:null}
           {kind==='reconciliation'?<><label className="quick-field" data-filled={filled(actualBalance)}><span>Επαληθευμένο υπόλοιπο στη συγκεκριμένη ημερομηνία (€)</span><MoneyInput data-autofocus="true" value={actualBalance} onValueChange={value=>{setActualBalance(value);setReconciliationConfirmed(false);mark()}}/></label><div className="reconcile-preview" role="status" aria-live="polite"><span>Υπολογισμένο υπόλοιπο στις {date}</span><b>{reconciliation?money.format(reconciliation.expectedBalance):'—'}</b><span>Διαφορά που θα διορθωθεί (όχι δαπάνη)</span><strong>{reconciliation?.differenceCents!==null&&reconciliation?.differenceCents!==undefined?money.format(reconciliation.differenceCents/100):'—'}</strong></div><label className="quick-field"><span>Ποσό κίνησης στην κατάσταση (€) · προαιρετικό, για έλεγχο</span><MoneyInput value={statementMovement} onValueChange={value=>{setStatementMovement(value);setReconciliationConfirmed(false);mark()}}/></label><div className="reconcile-preview" aria-label="Κινήσεις προς σύγκριση"><b>Καταγεγραμμένες κινήσεις των προηγούμενων 7 ημερών</b><small>Οι κινήσεις είναι υποψήφιες για δικό σου έλεγχο, όχι αυτόματες αντιστοιχίσεις τραπεζικής κατάστασης.</small>{reconciliation?.candidates.length?<ul>{reconciliation.candidates.map(item=><li key={item.origin+'-'+item.id}>{item.date} · {item.note} · {money.format(item.amount)}{item.sameAmount?' · ίδιο ποσό':''}</li>)}</ul>:<small>Δεν βρέθηκαν καταγεγραμμένες κινήσεις στο διάστημα.</small>}{statementMovement.trim()&&reconciliation?.matchingCandidates===0?<small role="status">Δεν υπάρχει κίνηση ίδιου ποσού στο εξεταζόμενο διάστημα. Έλεγξε την κατάσταση χειροκίνητα πριν διορθώσεις.</small>:null}{reconciliation?.duplicateOnDate?<FormError id="quick-reconciliation-duplicate">Υπάρχει ήδη διόρθωση στον ίδιο λογαριασμό και ημερομηνία.</FormError>:null}</div><label className="quick-field wide"><input type="checkbox" checked={reconciliationConfirmed} onChange={e=>{setReconciliationConfirmed(e.target.checked);mark()}}/> <span>Επιβεβαιώνω ότι έλεγξα την πραγματική κατάσταση λογαριασμού και τις υπάρχουσες κινήσεις. Η διαφορά καταχωρίζεται ως μη δαπανηρή διόρθωση.</span></label></>:null}
+          {data.state.counterparties?.length?<Suspense fallback={null}><CounterpartyQuickSelector data={data} kind={kind} note={note} value={counterpartyId} onChange={value=>{setCounterpartyId(value);mark()}}/></Suspense>:null}
           <label className="quick-field wide" data-filled={filled(note)}><span>Σχόλιο <em>προαιρετικό</em></span><AppTextInput value={note} onChange={e=>{setNote(e.target.value);mark()}} placeholder="Σύντομη περιγραφή μόνο αν χρειάζεται"/></label>
         </div>
         {kind==='split'?<div className="split-box"><div className="split-head"><b>Επιμέρους ποσά</b><span aria-live="polite">Σύνολο: {money.format(splitStatus?.total??0)}</span></div>{parts.map((p,i)=>{const subs=subcategoriesFor(data.state.settings,'expense',p.category);return <div className="split-line split-line-taxonomy" key={p.id} role="group" aria-label={`Μέρος ${i+1}`}><input aria-label={`Περιγραφή μέρους ${i+1}`} placeholder="Περιγραφή" value={p.label} onChange={e=>{setParts(ps=>ps.map((x,j)=>j===i?{...x,label:e.target.value}:x));mark()}}/><AppSelectInput aria-label={`Κατηγορία μέρους ${i+1}`} value={p.category} onChange={e=>{setParts(ps=>ps.map((x,j)=>j===i?{...x,category:e.target.value,subcategory:undefined}:x));mark()}}>{categoryTree(data.state.settings,'expense').map(c=><option key={c.name}>{c.name}</option>)}</AppSelectInput>{subs.length?<AppSelectInput aria-label={`Υποκατηγορία μέρους ${i+1}`} value={p.subcategory||''} onChange={e=>{setParts(ps=>ps.map((x,j)=>j===i?{...x,subcategory:e.target.value||undefined}:x));mark()}}><option value="">—</option>{subs.map(value=><option key={value}>{value}</option>)}</AppSelectInput>:null}<input data-autofocus={i===0?true:undefined} aria-label={`Ποσό μέρους ${i+1}`} inputMode="decimal" placeholder="0,00" value={p.amount||''} onChange={e=>{const parsed=Number(e.target.value.replace(',','.'));setParts(ps=>ps.map((x,j)=>j===i?{...x,amount:Number.isFinite(parsed)?parsed:0}:x));mark()}}/><button type="button" aria-label={`Αφαίρεση μέρους ${i+1}`} disabled={parts.length<=2} onClick={()=>{setParts(ps=>ps.filter((_,j)=>j!==i));mark()}}><X size={15}/></button></div>})}<Button type="button" variant="ghost" onClick={()=>{setParts(ps=>[...ps,{id:`p${Date.now()}`,label:'',category:categoryTree(data.state.settings,'expense')[0]?.name||'Άλλο',amount:0}]);mark()}}>+ Προσθήκη μέρους</Button></div>:null}
