@@ -9,6 +9,7 @@ describe('#588 canonical ledger and #597 dashboard coexistence',()=>{
       expect(source).toContain('const [dashboardAccountId,setDashboardAccountId]');
       expect(source).toContain("useEffect(()=>{if(page!=='transactions')setDashboardAccountId(null)},[page])");
       expect(source).toContain('dashboardAccountId={dashboardAccountId} dashboardAccountFocusKey={dashboardAccountFocusKey}');
+      expect(source).toMatch(/onTransactions=\{\(accountId\)=>\{[^\n]+(?:navigate|setPage)\('transactions'\)\}\}/);
       expect(source).toContain('onCreateLinkedTransfer={addLinkedTransferDurably}');
       expect(source).toContain('onSaveLendingPlan={saveLendingPlan}');
     }
