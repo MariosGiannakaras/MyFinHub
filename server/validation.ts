@@ -480,6 +480,7 @@ function validateIconColors(value:unknown,name:string){
 function validateCounterparty(value:unknown,name:string){
   if(!object(value))invalid(`Invalid ${name}.`);
   text(value.id,`${name}.id`,160);
+  if(!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,159}$/.test(value.id))invalid(`Invalid ${name}.id.`);
   oneOf(value.kind,['merchant','beneficiary'],`${name}.kind`);
   text(value.displayName,`${name}.displayName`,120);
   if(value.displayName.trim().length<2)invalid(`Invalid ${name}.displayName.`);
@@ -645,10 +646,14 @@ export function validateFinanceData(value: unknown): asserts value is FinanceDat
     for(const item of state.counterparties){
       if(!object(item))invalid('Invalid counterparty.');
       const kind=item.kind as 'merchant'|'beneficiary';
-      const id=item.id as string, label=(item.displayName as string).normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').toLocaleLowerCase('el-GR').trim();
-      const key=kind+':'+label;
-      if(names.has(key))invalid('Duplicate counterparty name.');
-      names.add(key);
+      const id=item.id as string, label=(item.displayName as string).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('el-GR').trim();
+      const namesForItem=[label,...(item.aliases??[]).map((alias:string)=>alias.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('el-GR').trim())];
+      for(const candidate of new Set(namesForItem)){
+        if(candidate.length<2)invalid('Invalid counterparty alias.');
+        const key=kind+':'+candidate;
+        if(names.has(key))invalid('Duplicate counterparty name or alias.');
+        names.add(key);
+      }
       identities.set(id,kind);
     }
   }

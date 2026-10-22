@@ -1,6 +1,7 @@
 import {describe,expect,it} from 'vitest';
 import {counterpartyKindForEvent,counterpartyNameKey,findCounterpartySuggestion,withCounterparty,withEventCounterparty} from '../src/lib/counterparties.js';
 import {describeFinanceChange} from '../src/lib/changeHistory.js';
+import {validateFinanceData} from '../server/validation.js';
 import type {FinanceData,FinanceEvent,CounterpartyRecord} from '../src/types.js';
 const now='2026-10-22T11:00:00.000Z';
 const merchant:CounterpartyRecord={id:'cp-market-1',kind:'merchant',displayName:'Αγορά Νέας Αρτάκης',aliases:['MARKET'],createdAt:now,updatedAt:now};
@@ -45,10 +46,23 @@ describe('optional canonical counterparty identity / finance history',()=>{
     const data=withCounterparty(base(),merchant);
     expect(()=>withCounterparty(data,{...merchant,id:'cp-market-2',displayName:'ΑΓΟΡΑ ΝΕΑΣ ΑΡΤΑΚΗΣ'})).toThrow();
     expect(()=>withCounterparty(data,{...merchant,id:'bad id'})).toThrow();
+    expect(()=>withCounterparty(data,{...merchant,id:'cp-market-2',displayName:'Άλλο',aliases:['MARKET']})).toThrow();
     const beneficiary:CounterpartyRecord={...merchant,id:'cp-person-1',kind:'beneficiary',displayName:'Κώστας'};
     const pair=withCounterparty(data,beneficiary);
     expect(()=>withEventCounterparty(pair,purchase.id,beneficiary.id,now)).toThrow();
     expect(counterpartyKindForEvent('transfer')).toBeNull();
     expect(counterpartyNameKey('Καφέ')).toBe('καφε');
+  });
+  it('accepts valid server registry references but rejects mismatched and dangling IDs and aliases',()=>{
+    const good=withEventCounterparty(withCounterparty(base(),merchant),purchase.id,merchant.id,now);
+    expect(()=>validateFinanceData(good)).not.toThrow();
+    const badLink={...good,state:{...good.state,events:[{...purchase,counterpartyId:'other'}]}};
+    expect(()=>validateFinanceData(badLink)).toThrow();
+    const wrongKind={...good,state:{...good.state,counterparties:[{...merchant,kind:'beneficiary'}]}};
+    expect(()=>validateFinanceData(wrongKind)).toThrow();
+    const duplicateAlias={...good,state:{...good.state,counterparties:[merchant,{...merchant,id:'cp-market-2',displayName:'Other',aliases:['MARKET']}]}};
+    expect(()=>validateFinanceData(duplicateAlias)).toThrow();
+    const badId={...good,state:{...good.state,counterparties:[{...merchant,id:'bad id'}]}};
+    expect(()=>validateFinanceData(badId)).toThrow();
   });
 });

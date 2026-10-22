@@ -1,5 +1,6 @@
 import {useState} from 'react';
 import {AppTextInput} from './AppTextInput';
+import {AppTextarea} from './AppTextarea';
 import {AppSelectInput} from './AppSelectInput';
 import {Button} from './Button';
 import {FormError} from './FormError';
@@ -32,7 +33,7 @@ export function CounterpartyDirectorySettings({data,onSave}:{data:FinanceData;on
   <div className="counterparty-directory-form" role="group" aria-label={editingId?'Επεξεργασία αντισυμβαλλομένου':'Νέος αντισυμβαλλόμενος'}>
     <label><span>Τύπος</span><AppSelectInput value={kind} disabled={busy||Boolean(editingId)} aria-label="Τύπος αντισυμβαλλομένου" onChange={event=>setKind(event.target.value as CounterpartyRecord['kind'])}><option value="merchant">Έμπορος</option><option value="beneficiary">Δικαιούχος</option></AppSelectInput></label>
     <label><span>Όνομα</span><AppTextInput value={name} maxLength={120} disabled={busy} aria-label="Όνομα αντισυμβαλλομένου" onChange={event=>setName(event.target.value)}/></label>
-    <label className="counterparty-alias-field"><span>Εναλλακτικές ονομασίες · μία ανά γραμμή</span><textarea className="app-control" value={aliases} rows={2} maxLength={1935} disabled={busy} aria-label="Εναλλακτικές ονομασίες αντισυμβαλλομένου" onChange={event=>setAliases(event.target.value)}/></label>
+    <label className="counterparty-alias-field"><span>Εναλλακτικές ονομασίες · μία ανά γραμμή</span><AppTextarea value={aliases} rows={2} maxLength={1935} disabled={busy} aria-label="Εναλλακτικές ονομασίες αντισυμβαλλομένου" onChange={event=>setAliases(event.target.value)}/></label>
   </div>
   {error?<FormError id="counterparty-directory-error">{error}</FormError>:null}
   <div className="counterparty-directory-actions"><Button type="button" variant="primary" disabled={busy||name.trim().length<2} onClick={()=>void save()}>{editingId?'Αποθήκευση ονόματος':'Προσθήκη ταυτότητας'}</Button>{editingId?<Button type="button" variant="secondary" disabled={busy} onClick={clear}>Ακύρωση επεξεργασίας</Button>:null}</div>

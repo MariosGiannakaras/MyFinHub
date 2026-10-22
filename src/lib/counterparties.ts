@@ -26,10 +26,12 @@ export function withCounterparty(data:FinanceData,requested:CounterpartyRecord):
   if(name.length<2||name.length>120)throw new Error('Το όνομα πρέπει να έχει 2 έως 120 χαρακτήρες.');
   const aliases=[...new Set((requested.aliases??[]).map(s=>s.trim()).filter(Boolean))];
   if(aliases.length>16||aliases.some(s=>s.length>120))throw new Error('Μη έγκυρα ψευδώνυμα.');
-  const normalized=counterpartyNameKey(name);
-  if(original.some(row=>row.id!==requested.id&&row.kind===requested.kind&&counterpartyNameKey(row.displayName)===normalized)){
-    throw new Error('Υπάρχει ήδη ταυτότητα με αυτή την ονομασία.');
-  }
+  const requestedKeys=new Set([name,...aliases].map(counterpartyNameKey));
+  if(requestedKeys.size!==aliases.length+1||[...requestedKeys].some(key=>key.length<2))
+    throw new Error('Οι εναλλακτικές ονομασίες πρέπει να είναι μοναδικές και κατανοητές.');
+  if(original.some(row=>row.id!==requested.id&&row.kind===requested.kind&&
+    [row.displayName,...(row.aliases??[])].some(value=>requestedKeys.has(counterpartyNameKey(value)))))
+    throw new Error('Υπάρχει ήδη ταυτότητα με αυτή την ονομασία ή ψευδώνυμο.');
   const old=original.find(row=>row.id===requested.id);
   if(old&&(old.kind!==requested.kind||old.createdAt!==requested.createdAt)){
     throw new Error('Η ταυτότητα και ο αρχικός τύπος δεν τροποποιούνται.');
