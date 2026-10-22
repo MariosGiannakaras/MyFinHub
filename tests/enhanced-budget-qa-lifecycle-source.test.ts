@@ -10,6 +10,8 @@ describe('enhanced budget rendered QA owns its CDP connection through completion
   expect(source.slice(0,pivot)).not.toContain('c.close()');
   expect(source.slice(pivot)).toContain("await navigate('reports','budget-enhanced',1440,1000)");
   expect(source.slice(pivot)).toContain("await screenshot('reports-subcategory-rollover-mobile')");
+  expect(source).toContain("if(name.startsWith('reports-subcategory-rollover-'))");
+  expect(source).toContain("row.scrollIntoView({block:'center',behavior:'instant'})");
   expect(source.slice(pivot)).toContain("await screenshot('reports-subcategory-rollover-tablet')");
   expect(source.slice(pivot)).toContain("finally{c?.close();child.kill('SIGTERM')}");
  });
