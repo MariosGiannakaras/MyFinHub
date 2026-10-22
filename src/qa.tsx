@@ -412,10 +412,10 @@ function buildQaData(params:URLSearchParams){
     next.seed.recurring=[];
     next.state.recurringCustom=[];
     next.state.events=[
-      createEvent({kind:'expense',date:'2026-07-09',amount:20,note:'QA July grocery',
-        accountId:'piraeus-payroll',category:'Τρόφιμα',subcategory:'Σούπερ μάρκετ'}),
-      createEvent({kind:'expense',date:'2026-08-10',amount:20,note:'QA actual grocery',
-        accountId:'piraeus-payroll',category:'Τρόφιμα',subcategory:'Σούπερ μάρκετ'})
+      {...createEvent({kind:'expense',date:'2026-07-09',amount:20,note:'QA July grocery',
+        accountId:'piraeus-payroll',category:'Τρόφιμα'}),subcategory:'Σούπερ μάρκετ'},
+      {...createEvent({kind:'expense',date:'2026-08-10',amount:20,note:'QA actual grocery',
+        accountId:'piraeus-payroll',category:'Τρόφιμα'}),subcategory:'Σούπερ μάρκετ'}
     ];
     next.state.scheduled=[{id:'qa-known-due',kind:'expense',status:'pending',dueDate:'2026-08-20',
       amount:30,note:'QA grocery scheduled',accountId:'piraeus-payroll',

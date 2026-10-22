@@ -75,3 +75,8 @@ Commit coherent feature code as a draft PR referencing issue #588. Then extend r
 - Batching these issues together rather than individual source-only reruns. Next head needs type/hygiene/unit/API validation; no test or performance threshold reduced.
 
 **Accepted roadmap progress remains 2/12 · 4/24; #9 subitems unaccepted.**
+
+## Safe independent TypeScript QA fixture fix — 2026-10-22
+
+- The exact #596 draft [CI #39631527187](https://github.com/MariosGiannakaras/MyFinHub/actions/runs/39631527187) **failed at hygiene TypeScript** on only two synthetic `src/qa.tsx` lines (416,418): the canonical `createEvent` argument contract has no `subcategory` input. Preserved this accepted canonical finance constructor; moved optional subcategory metadata to the **resulting synthetic `FinanceEvent`**, which natively supports that field. Scheduled synthetic subcategory remains an independent accepted structural field. No production finance event creation, strict budget, code threshold or UI changed.
+- This repair unblocks narrow draft static/finance checks but **is not an accepted feature**. #596 is still based on an older 2026-10-21 `develop`, and will require independent semantic reconciliation with the accepted Batch B/C `develop@315304c` and #8/#7 forecast obligations when stable. Current roadmap **8/12 (67%) · 16/24 (67%) formally accepted**, #9 estimated **55% engineering maturity** pending QA and integration. Next: read exact-head draft validate, resolve any remaining full failure class, then live browser QA and owner-branch reconciliation before review.
