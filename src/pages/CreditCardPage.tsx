@@ -20,7 +20,7 @@ import { Tooltip } from '../components/Tooltip';
 import { useFinancialProviders } from '../hooks/useFinancialProviders';
 import { useModalFocus } from '../hooks/useModalFocus';
 import { canPermanentlyDeleteCreditCard, cardBanks, creditCards, creditDebtForCard, creditEventsForCard, creditLimitForCard, deletedCreditCards, restoreCard } from '../lib/cards';
-import { categoryPath, categoryTree, defaultCategory } from '../lib/categories';
+import { categoryPath, defaultCategory } from '../lib/categories';
 import { creditPurchaseAmount, cardStatementConfiguration, creditStatementEvents, creditStatementViews, recommendedPayableStatement, unlinkedCreditStatementEvents } from '../lib/creditStatements';
 import { addCreditRate, creditRateAt, estimateCreditPayoff } from '../lib/creditRates';
 import { allAccounts, createEvent } from '../lib/domain';
@@ -97,7 +97,6 @@ export function CreditCardPage({
   const unlinkedStatementEvents=useMemo(()=>card?unlinkedCreditStatementEvents(data,card.id):[],[data,card]);
   const cardProviderId=card?.bankId??'';
   const eligibleAccounts=allAccounts(data).filter(account=>account.kind!=='credit'&&accountMatchesFinancialProvider(account,cardProviderId));
-  const categories=categoryTree(data.state.settings,'expense');
   const [createOpen,setCreateOpen]=useState(false);
   const [profileCard,setProfileCard]=useState<PaymentCard|null>(null);
   const [detailsCard,setDetailsCard]=useState<PaymentCard|null>(null);
