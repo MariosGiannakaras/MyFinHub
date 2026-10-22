@@ -11,6 +11,8 @@ describe('variable recurring editor and status provenance (#588 #8)',()=>{
    expect(ui).toContain('await onUpsertDurably(normalized)');
    expect(ui).toContain('setMessage(cleanupWarning.trim())');
    expect(ui).toContain("document.getElementById('recurring-editor-error')?.scrollIntoView");
+   expect(ui).toContain('onClick={closeEdit}><X/></IconButton></div>{editError?<FormError');
+   expect(ui).not.toContain('</div></section>{editError?<FormError');
    expect(ui).not.toContain('Το πάγιο ενημερώθηκε και αποθηκεύτηκε.');
    expect(ui).not.toContain('Το νέο πάγιο δημιουργήθηκε και αποθηκεύτηκε.');
  });
@@ -27,7 +29,7 @@ describe('variable recurring editor and status provenance (#588 #8)',()=>{
    expect(browser).toContain('recurring-variable-estimate-editor-mobile');
    expect(browser).toContain('recurring-variable-estimate-saved-mobile');
    expect(browser).toContain('recurring-variable-rejected-save-mobile');
-   expect(browser).toContain('rejected save error is visible inside 375px viewport');
+   expect(browser).toContain('rejected save error fully visible above sticky footer at 375px');
    expect(browser).toContain("const menu=[...document.querySelectorAll('.mobile-recurring-row .mobile-action-menu')]");
    expect(browser).toContain('true top-edge save progress remains the only routine save confirmation');
    expect(browser).toContain('failed finance receipt retains editable variable draft');
