@@ -185,6 +185,25 @@ function validateRecurring(value: unknown, name: string) {
   text(value.name, `${name}.name`, 1_000);
   finiteNumber(value.amount, `${name}.amount`);
   if (value.amount <= 0) invalid(`Invalid ${name}.amount.`);
+  if(value.amountMode!==undefined)oneOf(value.amountMode,['fixed','variable'],`${name}.amountMode`);
+  for(const key of ['estimateMin','estimateMax'] as const){
+    if(value[key]!==undefined){
+      finiteNumber(value[key],`${name}.${key}`);
+      if(value[key]<=0||Math.abs(Math.round(value[key]*100)-value[key]*100)>1e-6)
+        invalid(`Invalid ${name}.${key}.`);
+    }
+  }
+  if(value.amountMode!=='variable'&&(value.estimateMin!==undefined||value.estimateMax!==undefined))
+    invalid(`Unexpected variable estimate for ${name}.`);
+  if(value.amountMode==='variable'){
+    if(Math.abs(Math.round(value.amount*100)-value.amount*100)>1e-6)
+      invalid(`Invalid subcent estimate for ${name}.`);
+    if((value.estimateMin===undefined)!==(value.estimateMax===undefined))
+      invalid(`Incomplete estimate range for ${name}.`);
+    const min=value.estimateMin,max=value.estimateMax;
+    if(typeof min==='number'&&typeof max==='number'&&(min>value.amount||value.amount>max))
+      invalid(`Invalid variable estimate range for ${name}.`);
+  }
   if (value.day !== undefined && value.day !== null) {
     finiteNumber(value.day, `${name}.day`, 31);
     if (!Number.isInteger(value.day) || value.day < 1 || value.day > 31) invalid(`Invalid ${name}.day.`);
